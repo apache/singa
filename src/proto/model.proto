@@ -1,0 +1,382 @@
+package singa;
+enum MsgType{
+  kGet=0;
+  kPut=1;
+  kSync=2;
+  kUpdate=3;
+  kSyncRequest=4;
+  kSyncResponse=5;
+  kStop=6;
+  kData=7;
+  kRGet=8;
+  kRUpdate=9;
+  kConnect=10;
+};
+
+enum EntityType{
+  kWorkerParam=0;
+  kWorkerLayer=1;
+  kServer=2;
+  kStub=3;
+};
+enum Phase {
+  kTrain = 0;
+  kValidation=1;
+  kTest= 2;
+}
+enum ShareOption{
+  kValueOnly=0;
+  kWhole=1;
+};
+message ModelProto{
+  optional string name = 1;
+  // relative path to system folder
+  optional string train_folder=2 [default="train"];
+  optional string test_folder=3 [default="test"];
+  optional string validation_folder=4 [default="validation"];
+  // start display after this num steps
+  optional int32 display_after_steps = 6 [default = 0];
+  // frequency of display
+  optional int32 display_frequency = 7 [default = 0];
+
+  // the time of validation
+  //optional int32 validation_step = 9 [default = 0];
+  // start validation after this num steps
+  optional int32 validation_after_steps = 10 [default = 0];
+  // frequency of validation
+  optional int32 validation_frequency = 11 [default = 0];
+
+  // the time of test
+  //optional int32 test_step = 12 [default = 0];
+  // start test after this num steps
+  optional int32 test_after_steps = 13 [default = 0];
+  // frequency of test
+  optional int32 test_frequency = 14 [default = 0];
+  optional int32 checkpoint_after_steps = 15 [default = 0];
+  // frequency of test
+  optional int32 checkpoint_frequency = 16 [default = 0];
+  optional bool prefetch=18[default=true];
+
+
+  // total num of steps for training
+  optional int32 train_steps = 20;
+  // total num of steps for validation
+  optional int32 validation_steps=21;
+  // total num of steps for test
+  optional int32 test_steps=22;
+  // last snapshot step
+  optional int32 step=29 [default=0];
+
+  optional UpdaterProto updater=31;
+  // There are two basic algorithms for calculating gradients.
+  // Different deep learning models use different algorithms.
+  enum GradCalcAlg{
+    kBackPropagation = 1;
+    kContrastiveDivergence = 2;
+  }
+  optional GradCalcAlg alg= 32 [default = kBackPropagation];
+  optional bool hogwild=33 [default=false];
+  optional NetProto neuralnet = 40;
+  optional bool debug=41 [default=false];
+}
+
+message NetProto{
+  repeated LayerProto layer=1;
+  optional PartitionType partition_type=3 [default=kNone];
+}
+
+message ParamProto {
+  // for the program to identify it and share among layers.
+  // e.g., "conv1_weight","fc_bias"
+  optional string name = 1;
+  optional int32 id=2;
+  // in most situations, user do not need to config this,
+  // the program will calculate it
+  repeated int32 shape = 3;
+
+  // split the parameter into multiple DAryProtos for serialzation and
+  // transferring (Google Protobuf has size limit)
+  optional int32 split_threshold=4 [default=5000000];
+  // partition dimension, -1 for no partition
+  optional int32 partition_dim=5 [default =-1];
+
+  optional int32 version=6;
+
+  // value of the parameter
+  //repeated DAryProto ary = 6;
+
+  enum InitMethod {
+    kConstant = 0;
+    // sample gaussian with std and mean
+    kGaussian = 1;
+    // uniform sampling between low and high
+    kUniform = 2;
+    // copy the content and history which are from previous training
+    kPretrained = 3;
+    // from Toronto Convnet, let a=1/sqrt(fan_in), w*=a after generating from
+    // Gaussian distribution
+    kGaussainSqrtFanIn = 4;
+    // from Toronto Convnet, rectified linear activation, let
+    // a=sqrt(3)/sqrt(fan_in), range is [-a, +a]; no need to set value=sqrt(3),
+    // the program will multiply it.
+    kUniformSqrtFanIn = 5;
+    // from Theano MLP tutorial, let a=1/sqrt(fan_in+fan_out). for tanh
+    // activation, range is [-6a, +6a], for sigmoid activation, range is
+    // [-24a, +24a], put the scale factor to value field.
+    // <a href="http://deeplearning.net/tutorial/mlp.html"> Theano MLP</a>
+    kUniformSqrtFanInOut = 6;
+  }
+  optional InitMethod init_method = 7 [default = kConstant];
+  // constant init
+  optional float value = 8 [default = 1];
+  // for uniform sampling
+  optional float low = 9 [default = -1];
+  optional float high = 10 [default = 1];
+  // for gaussian sampling
+  optional float mean = 11 [default = 0];
+  optional float std = 12 [default = 1];
+  // multiplied on the global learning rate.
+  optional float learning_rate_multiplier =13 [default=1];
+  // multiplied on the global weight decay.
+  optional float weight_decay_multiplier =14 [default=1];
+}
+
+message BlobProtos{
+  repeated BlobProto blobs=1;
+  repeated int32 ids=2;
+  repeated string names=3;
+}
+
+
+
+enum PartitionType{
+  kDataPartition=0;
+  kLayerPartition=1;
+  kNone=2;
+}
+enum ConnectionType{
+  kOneToOne=0;
+  kOneToAll=1;
+}
+
+message LayerProto {
+  optional string name = 1; // the layer name
+  optional string type = 2; // the layer type from the enum above
+  repeated string srclayers=3;
+  optional int32 locationid=4 [default=0]; // todo make locationID an array
+  optional int32 partitionid=5 [default=0];
+  optional PartitionType partition_type=6;
+  // can be pos/neg neuron value for CD, neuron value/grad for BP
+  //repeated DAryProto ary = 10;
+  repeated string share_ary =11;
+  // parameters, e.g., weight matrix or bias vector
+  repeated ParamProto param = 12;
+  // names of parameters shared from other layers
+  repeated string share_param=13;
+
+  // All layers are included in the net structure for training phase by default.
+  // Layers, e.g., computing performance metrics for test phase, can be excluded
+  // by this field which defines in which phase this layer should be excluded.
+  repeated Phase exclude = 20;
+
+  // hyper-parameters for layers
+  optional ConvolutionProto convolution_param = 21;
+  optional ConcateProto concate_param = 31;
+  optional DataProto data_param = 22;
+  optional DropoutProto dropout_param = 23;
+  optional InnerProductProto inner_product_param = 24;
+  optional LRNProto lrn_param = 25;
+  optional MnistProto mnist_param= 26;
+  optional PoolingProto pooling_param = 27;
+  optional SliceProto slice_param = 32;
+  optional SplitProto split_param = 33;
+  optional ReLUProto relu_param = 28;
+  optional RGBImage rgbimage_param=34;
+  optional SoftmaxLossProto softmaxloss_param = 29;
+  optional TanhProto tanh_param=30;
+}
+message RGBImage {
+  optional float scale=1 [default=1.0];
+  optional int32 cropsize=2 [default=0];
+  optional bool mirror=3 [default=false];
+  optional string meanfile=4;
+}
+message SplitProto{
+  optional int32 num_splits=1;
+}
+// scaled tan: A*tan(B*x)
+message TanhProto{
+  optional float outer_scale=1 [default=1.0];
+  optional float inner_scale=2 [default=1.0];
+}
+
+// Message that stores parameters used by SoftmaxLossProto
+message SoftmaxLossProto {
+  // accuracy is not comptued by default, unless topk>0;
+  // When computing accuracy, count as correct by comparing the true label to
+  // the top k scoring classes.
+  optional int32 topk = 1 [default=1] ;
+  optional float scale=2 [default=1];
+}
+// Message that stores parameters used by ConvolutionLayer
+message ConvolutionProto {
+  optional uint32 num_filters = 1; // The number of outputs for the layer
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
+  // Pad, kernel size, and stride are all given as a single value for equal
+  // dimensions in height and width or as Y, X pairs.
+  optional uint32 pad = 3 [default = 0]; // The padding size (equal in Y, X)
+  optional uint32 stride = 4 [default = 1]; // The stride (equal in Y, X)
+  required uint32 kernel= 5; // The kernel height/width
+}
+
+message ConcateProto{
+  optional int32 concate_dimension=1;
+  optional int32 concate_num=2;
+}
+
+// Message that stores parameters used by DataLayer
+message DataProto {
+  // Specify the data source.
+  optional string source = 1;
+  // path to the data file/folder, absolute or relative to the
+  // ClusterProto::workspace
+  optional string path=2;
+  // Specify the batch size.
+  optional uint32 batchsize = 4;
+  // skip [0,random_skip] records
+  optional uint32 random_skip=5 [default=0];
+}
+
+message MnistProto {
+  // elastic distortion
+  optional int32 kernel=1 [default=0];
+  optional float sigma=2 [default=0];
+  optional float alpha=3 [default=0];
+  // rotation or horizontal shearing
+  optional float beta=4 [default=0];
+  // scaling
+  optional float gamma=5 [default=0];
+  // scale to this size as input for deformation
+  optional int32 resize=6 [default=0] ;
+  optional int32 elastic_freq=7 [default=0];
+  optional float norm_a=8 [default=1];
+  optional float norm_b=9 [default=0];
+}
+// Message that stores parameters used by DropoutLayer
+message DropoutProto {
+  optional float dropout_ratio = 1 [default = 0.5]; // dropout ratio
+}
+// Message that stores parameters used by InnerProductLayer
+message InnerProductProto {
+  optional uint32 num_output = 1; // The number of outputs for the layer
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
+}
+
+// Message that stores parameters used by LRNLayer
+message LRNProto {
+  optional uint32 local_size = 1 [default = 5];
+  optional float alpha = 2 [default = 1.];
+  optional float beta = 3 [default = 0.75];
+  enum NormRegion {
+    ACROSS_CHANNELS = 0;
+    WITHIN_CHANNEL = 1;
+  }
+  optional NormRegion norm_region = 4 [default = ACROSS_CHANNELS];
+  optional float knorm =5 [default=1.0];
+}
+
+// Message that stores parameters used by PoolingLayer
+message PoolingProto {
+  enum PoolMethod {
+    MAX = 0;
+    AVE = 1;
+  }
+  optional PoolMethod pool = 1 [default = MAX]; // The pooling method
+  // Pad, kernel size, and stride are all given as a single value for equal
+  // dimensions in height and width or as Y, X pairs.
+  required uint32 kernel= 2; // The kernel size (square)
+  optional uint32 pad = 4 [default = 0]; // The padding size (equal in Y, X)
+  optional uint32 stride = 3 [default = 1]; // The stride (equal in Y, X)
+}
+
+message SliceProto{
+  optional int32 slice_dimension=1;
+  optional int32 slice_num=2;
+}
+// Message that stores parameters used by ReLULayer
+message ReLUProto {
+  // Allow non-zero slope for negative inputs to speed up optimization
+  // Described in:
+  // Maas, A. L., Hannun, A. Y., & Ng, A. Y. (2013). Rectifier nonlinearities
+  // improve neural network acoustic models. In ICML Workshop on Deep Learning
+  // for Audio, Speech, and Language Processing.
+  optional float negative_slope = 1 [default = 0];
+}
+
+
+
+message Record {
+  enum Type{
+    kSingleLabelImage=0;
+  }
+  optional Type type=1 [default=kSingleLabelImage];
+  optional SingleLabelImageRecord image=2;
+}
+
+// to import caffe's lmdb dataset
+message Datum {
+  optional int32 channels = 1;
+  optional int32 height = 2;
+  optional int32 width = 3;
+  // the actual image data, in bytes
+  optional bytes data = 4;
+  optional int32 label = 5;
+  // Optionally, the datum could also hold float data.
+  repeated float float_data = 6;
+  // If true data contains an encoded image that need to be decoded
+  optional bool encoded = 7 [default = false];
+}
+message SingleLabelImageRecord{
+  repeated int32 shape=1;
+  optional int32 label=2;
+  optional bytes pixel=3;
+  repeated float data=4;
+}
+
+message UpdaterProto {
+  optional float momentum=4 [default=0];
+  optional float weight_decay=5 [default=0];
+  // used in changing learning rate
+  optional float gamma = 6 [default=1];
+  optional float pow=7 [default=0];
+  optional float delta=8 [default=0.0000001];
+  optional float rho=9 [default=0.9];
+  optional float base_learning_rate=12;
+  optional float final_learning_rate=13;
+  optional int32 learning_rate_change_frequency = 14;
+  enum ChangeProto {
+    kFixed = 0;
+    kInverse_t= 1;
+    kInverse= 2;
+    kExponential = 3;
+    kLinear = 4;
+    kStep = 5;
+    kFixedStep=6;
+  }
+  optional ChangeProto learning_rate_change_method = 16 [default = kFixed];
+  optional int32 sync_frequency=17 [default=1];
+  // warmup the parameters and then send to parameter servers.
+  optional int32 warmup_steps=25 [default=10];
+  optional float moving_rate=26 [default=0];
+  optional string param_type=27[default="Param"];
+  repeated int32 step=28;
+  repeated float step_lr=29;
+}
+message BlobProto {
+  optional int32 num = 1 [default = 0];
+  optional int32 channels = 2 [default = 0];
+  optional int32 height = 3 [default = 0];
+  optional int32 width = 4 [default = 0];
+  repeated float data = 5 [packed = true];
+  repeated float diff = 6 [packed = true];
+}
