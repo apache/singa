@@ -3,9 +3,11 @@
 
 AC_PREREQ(2.59)
 AC_INIT(singa, 0.0.1, singa@apache.com)
+AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_MACRO_DIR(config)
 AC_CONFIG_SRCDIR([src/utils/common.cc])
 AC_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE([subdir-objects])
+AM_INIT_AUTOMAKE([subdir-objects foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 ACLOCAL_AMFLAGS = -I m4 --install
 

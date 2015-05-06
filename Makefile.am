@@ -1,4 +1,4 @@
-CLOCAL_AMFLAGS = -I m4
+CLOCAL_AMFLAGS = -I config 
 
 AM_CPPFLAGS = -I$(top_srcdir)src
 
