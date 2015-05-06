@@ -6,6 +6,7 @@ AC_INIT(singa, 0.0.1, singa@apache.com)
 AC_CONFIG_SRCDIR([src/utils/common.cc])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([subdir-objects])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 ACLOCAL_AMFLAGS = -I m4 --install
 
 # Checks for programs.
@@ -38,16 +39,6 @@ AC_CHECK_LIB([opencv_highgui], [main], [], [
 AC_CHECK_LIB([opencv_core], [main], [], [
   AC_MSG_ERROR([unable to find the opencv_core])
   ])
-
-#AC_SEARCH_LIBS([google_InitGoogleLogging], [glog], [], [
-#  AC_MSG_ERROR([unable to find the InitGoogleLogging() function])
-#  ])
-#AC_SEARCH_LIBS([ParseCommandLineFlags], [gflags], [], [
-#  AC_MSG_ERROR([unable to find the ParseCommandLineFlags() function])
-#  ])
-#AC_SEARCH_LIBS([DebugString], [protobuf], [], [
-#  AC_MSG_ERROR([unable to find the DebugString() function])
-#  ])
 AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
   AC_MSG_ERROR([unable to find the mdb_env_create() function])
   ])
