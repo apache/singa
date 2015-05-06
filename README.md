@@ -12,14 +12,21 @@ Dependencies
 
 SINGA is developed and tested on Linux platforms with the following external libraries.
 
-gflags version 2.1.1, use the default setting for namespace (i.e., gflags).
-glog version 0.3.3.
-gtest version 1.7.0.
-google-protobuf version 2.6.0.
-openblas version >= 0.2.10.
-opencv version 2.4.9.
-zeromq version >= 3.2
-czmq version >= 3
+  * gflags version 2.1.1, use the default setting for namespace (i.e., gflags).
+
+  * glog version 0.3.3.
+
+  * gtest version 1.7.0.
+
+  * google-protobuf version 2.6.0.
+
+  * openblas version >= 0.2.10.
+
+  * opencv version 2.4.9.
+
+  * zeromq version >= 3.2
+
+  * czmq version >= 3
 
 Tips:
 For libraries like openblas, opencv, older versions may also work, because we do not use any newly added features.
@@ -81,7 +88,7 @@ Here is a table showing the first arguments:
 	protobuf				Google protobuf
 	zeromq					zeromq lib
 
-* : Since czmq depends on zeromq, the script offers you one more argument to indicate zeromq location.
-	The installation commands of czmq can be:
+*: Since czmq depends on zeromq, the script offers you one more argument to indicate zeromq location.
+The installation commands of czmq can be:
 		$ ./thirdparty/install-dependencies.sh czmq  /usr/local /usr/local/zeromq
-	After the execution, czmq will be installed in /usr/local while zeromq is installed in /usr/local/zeromq.
+After the execution, czmq will be installed in /usr/local while zeromq is installed in /usr/local/zeromq.
