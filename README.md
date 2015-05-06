@@ -64,16 +64,17 @@ To download the thirdparty dependencies:
 
 After downloading, to install the thirdparty dependencies:
 
-	$ ./thirdparty/install-dependencies.sh MISSING_LIBRARY_NAME1 YOUR_INSTALL_PATH1 MISSING_LIBRARY_NAME2 YOUR_INSTALL_PATH2
+	$ cd thirdparty
+	$ ./install-dependencies.sh MISSING_LIBRARY_NAME1 YOUR_INSTALL_PATH1 MISSING_LIBRARY_NAME2 YOUR_INSTALL_PATH2
 
 If you do not specify the installation path, the lirary will be installed in default folder.
 For example, if you want to build zeromq library in system folder and gflags in /usr/local, just run:
 	
-	$ ./thirdparty/install-dependencies.sh zeromq gflags /usr/local
+	$ ./install-dependencies.sh zeromq gflags /usr/local
 
 Another example can be to install all dependencies in /usr/local directory:
 
-	$ ./thirdparty/install-dependencies.sh all /usr/local
+	$ ./install-dependencies.sh all /usr/local
 
 Here is a table showing the first arguments:
 	
@@ -90,5 +91,7 @@ Here is a table showing the first arguments:
 
 *: Since czmq depends on zeromq, the script offers you one more argument to indicate zeromq location.
 The installation commands of czmq can be:
-		$ ./thirdparty/install-dependencies.sh czmq  /usr/local /usr/local/zeromq
+
+		$ ./install-dependencies.sh czmq  /usr/local /usr/local/zeromq
+
 After the execution, czmq will be installed in /usr/local while zeromq is installed in /usr/local/zeromq.
