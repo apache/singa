@@ -6,10 +6,13 @@ MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 AC_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
     $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops 
 
+INCLUDES=-I$(top_srcdir)/include
+
 PROTOS := src/proto/cluster.proto src/proto/model.proto
 PROTO_SRCS := src/proto/cluster.pb.cc src/proto/model.pb.cc
 PROTO_HDRS := src/proto/cluster.pb.h  src/proto/model.pb.h
 PROTO_OBJS := src/proto/cluster.pb.o src/proto/model.pb.o
+
 SINGA_SRCS := src/utils/cluster.cc \
 			  src/utils/graph.cc \
 			  src/utils/common.cc \
@@ -79,7 +82,6 @@ lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_SRCS) $(SINGA_HDRS)
 libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
     $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual
-INCLUDES=-I$(top_srcdir)/include
 libsinga_la_LDFLAGS = -I./include 
 
 bin_PROGRAMS=singa 
@@ -96,10 +98,12 @@ singa_LDFLAGS =	-I./include \
 				-lopencv_imgproc \
 				-lopencv_core \
 				-lopenblas \
-				-lgtest \
 				-lzmq \
 				-lczmq \
 				-llmdb
+
+clean-local:
+	rm -rf $(PROTO_SRCS) $(PROTO_HDRS) 
 
 
 $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
