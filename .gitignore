@@ -1,6 +1,7 @@
 *.orig
 *.swp
 *.o
+*.lo
 *.bin
 *.a
 *.so
@@ -13,9 +14,6 @@
 *.cproject
 *.log
 *.nfs*
-script/*
-!script/*.sh
-!script/*.awk
 src/test/data/*
 tmp
 log*
@@ -23,6 +21,18 @@ build/
 tmp/
 include/proto/*.h
 src/proto/*.cc
+src/proto/*.h
 .sync
 *lmdb
 *.binaryproto
+singa
+.libs
+*.la
+*.deps
+*.dirstamp
+libtool
+stamp-h1
+*.cache
+*.status
+config.h
+Makefile

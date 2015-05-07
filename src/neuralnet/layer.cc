@@ -648,10 +648,17 @@ void RGBImageLayer::Setup(const LayerProto& proto,
   data_.Reshape(shape);
   mean_.Reshape({shape[1],shape[2],shape[3]});
   if(proto.rgbimage_param().has_meanfile()){
-    BlobProto tmp;
-    ReadProtoFromBinaryFile(proto.rgbimage_param().meanfile().c_str(), &tmp);
-    CHECK_EQ(mean_.count(), tmp.data_size());
-    memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
+    if(proto.rgbimage_param().meanfile().find("binaryproto")!=string::npos){
+      BlobProto tmp;
+      ReadProtoFromBinaryFile(proto.rgbimage_param().meanfile().c_str(), &tmp);
+      CHECK_EQ(mean_.count(), tmp.data_size());
+      memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
+    }else{
+      SingleLabelImageRecord tmp;
+      ReadProtoFromBinaryFile(proto.rgbimage_param().meanfile().c_str(), &tmp);
+      CHECK_EQ(mean_.count(), tmp.data_size());
+      memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
+    }
   }else{
     memset(mean_.mutable_cpu_data(),0,sizeof(float)*mean_.count());
   }
@@ -671,7 +678,10 @@ void ShardDataLayer::ComputeFeature(bool training, const vector<SLayer>& srclaye
   }
   for(auto& record: records_){
     string key;
-    shard_->Next(&key, &record);
+    if(!shard_->Next(&key, &record)){
+      shard_->SeekToFirst();
+      CHECK(shard_->Next(&key, &record));
+    }
   }
 }
 

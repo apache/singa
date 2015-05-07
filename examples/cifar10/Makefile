@@ -1,0 +1,20 @@
+libs :=singa glog protobuf
+
+.PHONY: all download create
+
+download: cifar-10-binary-bin
+
+cifar-10-binary-bin:
+	wget http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz
+	tar xf cifar-10-binary.tar.gz
+
+create:
+	$(CXX) create_shard.cc -std=c++11 -lsinga -lglog -lprotobuf -I../../include \
+		-L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs -Wl,-rpath=../../.libs/ \
+		-o create_shard.bin
+	mkdir cifar10_train_shard
+	mkdir cifar10_test_shard
+	./create_shard.bin cifar-10-batches-bin .
+
+
+

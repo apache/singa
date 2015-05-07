@@ -33,8 +33,9 @@ For libraries like openblas, opencv, older versions may also work, because we do
 
 
 
-BUILDING SINGA SOFTWARE FROM SOURCES
+Building SINGA From Sources
 =====
+
 Build steps
 -----
 The build system of SINGA is based on GNU autotools.
@@ -51,7 +52,7 @@ On Unix-like systems with GNU Make as build tool, these build steps can be summa
 	$ make
 	$ make install
 
-After executing above commands, SINGA library will be installed in the default directory.
+After executing above commands, SINGA library will be installed in the system default directory.
 If you want to specify your own installation directory, use the following command instead.
 
 	$ ./configure --prefix=/YOUR/OWN/FOLDER
@@ -67,9 +68,9 @@ After downloading, to install the thirdparty dependencies:
 	$ cd thirdparty
 	$ ./install-dependencies.sh MISSING_LIBRARY_NAME1 YOUR_INSTALL_PATH1 MISSING_LIBRARY_NAME2 YOUR_INSTALL_PATH2
 
-If you do not specify the installation path, the lirary will be installed in default folder.
+If you do not specify the installation path, the library will be installed in default folder.
 For example, if you want to build zeromq library in system folder and gflags in /usr/local, just run:
-	
+
 	$ ./install-dependencies.sh zeromq gflags /usr/local
 
 Another example can be to install all dependencies in /usr/local directory:
@@ -77,7 +78,7 @@ Another example can be to install all dependencies in /usr/local directory:
 	$ ./install-dependencies.sh all /usr/local
 
 Here is a table showing the first arguments:
-	
+
 	MISSING_LIBRARY_NAME	LIBRARIES
 	cmake					cmake tools
 	czmq*					czmq lib
