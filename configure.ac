@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(singa, 0.0.1, singa@apache.com)
+AC_INIT(singa, 0.1, dev@singa.incubator.apache.org)
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR(config)
 AC_CONFIG_SRCDIR([src/utils/common.cc])
@@ -18,34 +18,34 @@ AC_PROG_LIBTOOL
 
 # Checks for libraries.
 AC_SEARCH_LIBS([cblas_sgemm], [openblas], [], [
-  AC_MSG_ERROR([unable to find the cblas_sgemm() function])
-  ])
-AC_SEARCH_LIBS([zmsg_new], [czmq], [], [
-  AC_MSG_ERROR([unable to find the zmsg_new() function])
-  ])
-AC_CHECK_LIB([gflags], [main], [], [
-  AC_MSG_ERROR([unable to find the InitGoogleLogging() function])
-  ])
-AC_CHECK_LIB([glog], [main], [], [
-  AC_MSG_ERROR([unable to find the InitGoogleLogging() function])
-  ])
-AC_CHECK_LIB([protobuf], [main], [], [
-  AC_MSG_ERROR([unable to find the InitGoogleLogging() function])
-  ])
-AC_CHECK_LIB([opencv_imgproc], [main], [], [
-  AC_MSG_ERROR([unable to find the opencv_imgproc])
-  ])
-AC_CHECK_LIB([opencv_highgui], [main], [], [
-  AC_MSG_ERROR([unable to find the opencv_highgui])
-  ])
-AC_CHECK_LIB([opencv_core], [main], [], [
-  AC_MSG_ERROR([unable to find the opencv_core])
-  ])
-AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
-  AC_MSG_ERROR([unable to find the mdb_env_create() function])
+  AC_MSG_ERROR([unable to find cblas_sgemm() function])
   ])
 AC_SEARCH_LIBS([zmq_ctx_new], [zmq], [], [
-  AC_MSG_ERROR([unable to find the czmq() function])
+  AC_MSG_ERROR([unable to find zmq_ctx_new() function])
+    ])
+AC_SEARCH_LIBS([zmsg_new], [czmq], [], [
+  AC_MSG_ERROR([unable to find zmsg_new() function])
+  ])
+AC_CHECK_LIB([gflags], [main], [], [
+  AC_MSG_ERROR([unable to find gflags library])
+  ])
+AC_CHECK_LIB([glog], [main], [], [
+  AC_MSG_ERROR([unable to find glog library])
+  ])
+AC_CHECK_LIB([protobuf], [main], [], [
+  AC_MSG_ERROR([unable to find protobuf library])
+  ])
+AC_CHECK_LIB([opencv_imgproc], [main], [], [
+  AC_MSG_ERROR([unable to find opencv_imgproc lib])
+  ])
+AC_CHECK_LIB([opencv_highgui], [main], [], [
+  AC_MSG_ERROR([unable to find opencv_highgui lib])
+  ])
+AC_CHECK_LIB([opencv_core], [main], [], [
+  AC_MSG_ERROR([unable to find opencv_core lib])
+  ])
+AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
+  AC_MSG_ERROR([unable to find mdb_env_create() function])
   ])
 
 # Checks for header files.
