@@ -32,12 +32,11 @@ Tips:
 For libraries like openblas, opencv, older versions may also work, because we do not use any newly added features.
 
 
-
-BUILDING SINGA SOFTWARE FROM SOURCES
+BUILDING SINGA FROM SOURCES
 =====
 Build steps
 -----
-The build system of SINGA is based on GNU autotools.
+The build system of SINGA is based on GNU autotools. To build singa, you need gcc version >= 4.8.
 The common steps to build SINGA can be:
 
 	1.Extract source files;
@@ -65,7 +64,7 @@ To download the thirdparty dependencies:
 After downloading, to install the thirdparty dependencies:
 
 	$ cd thirdparty
-	$ ./install-dependencies.sh MISSING_LIBRARY_NAME1 YOUR_INSTALL_PATH1 MISSING_LIBRARY_NAME2 YOUR_INSTALL_PATH2
+	$ ./install-dependencies.sh MISSING_LIBRARY_NAME1 YOUR_INSTALL_PATH1 MISSING_LIBRARY_NAME2 YOUR_INSTALL_PATH2 ...
 
 If you do not specify the installation path, the lirary will be installed in default folder.
 For example, if you want to build zeromq library in system folder and gflags in /usr/local, just run:

@@ -3,8 +3,9 @@ CLOCAL_AMFLAGS = -I config
 AM_CPPFLAGS = -I$(top_srcdir)src
 
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
+
 AC_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops 
+	$(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops 
 
 INCLUDES=-I$(top_srcdir)/include
 
@@ -30,6 +31,7 @@ SINGA_SRCS := src/utils/cluster.cc \
 			  src/neuralnet/layer.cc \
 			  src/communication/socket.cc \
 			  src/communication/msg.cc 
+
 SINGA_HDRS := include/utils/cluster.h \
 			  include/utils/param.h \
 			  include/utils/common.h \
