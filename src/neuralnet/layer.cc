@@ -142,7 +142,7 @@ void DropoutLayer::SetupAfterPartition(const LayerProto& proto,
 void DropoutLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers) {
   // check training
   if(!training){
-    data_.CopyFrom(srclayers[0]->data());
+    data_.CopyFrom(srclayers[0]->data(this));
     return;
   }
   float pkeep=1-pdrop_;
@@ -150,7 +150,7 @@ void DropoutLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers
   mask = F<op::threshold>(ASingleton<Random<cpu>>::Instance()\
       ->uniform(mask.shape), pkeep ) * (1.0f/pkeep);
   Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
-  Blob<float>* srcblob=srclayers[0]->mutable_data();
+  Blob<float>* srcblob=srclayers[0]->mutable_data(this);
   Tensor<cpu, 1> src(srcblob->mutable_cpu_data(), Shape1(srcblob->count()));
   data=src*mask;
 }
@@ -158,7 +158,7 @@ void DropoutLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers
 void DropoutLayer::ComputeGradient(const vector<SLayer>& srclayers)  {
   Tensor<cpu, 1> grad(grad_.mutable_cpu_data(), Shape1(data_.count()));
   Tensor<cpu, 1> mask(mask_.mutable_cpu_data(), Shape1(mask_.count()));
-  Blob<float>* gsrcblob=srclayers[0]->mutable_grad();
+  Blob<float>* gsrcblob=srclayers[0]->mutable_grad(this);
   Tensor<cpu, 1> gsrc(gsrcblob->mutable_cpu_data(), Shape1(gsrcblob->count()));
   gsrc=grad*mask;
 }
@@ -189,8 +189,8 @@ void InnerProductLayer::SetupAfterPartition(const LayerProto& proto,
 
 void InnerProductLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers) {
   Tensor<cpu, 2> data(data_.mutable_cpu_data(), Shape2(batchsize_,hdim_));
-  CHECK_EQ(srclayers[0]->data().count(), batchsize_*vdim_);
-  Tensor<cpu, 2> src(srclayers[0]->mutable_data()->mutable_cpu_data(),
+  CHECK_EQ(srclayers[0]->data(this).count(), batchsize_*vdim_);
+  Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
       Shape2(batchsize_,vdim_));
   Tensor<cpu, 2> weight(weight_->mutable_cpu_data(), Shape2(vdim_,hdim_));
   Tensor<cpu, 1> bias(bias_->mutable_cpu_data(), Shape1(hdim_));
@@ -200,7 +200,7 @@ void InnerProductLayer::ComputeFeature(bool training, const vector<SLayer>& srcl
 }
 
 void InnerProductLayer::ComputeGradient(const vector<SLayer>& srclayers) {
-  Tensor<cpu, 2> src(srclayers[0]->mutable_data()->mutable_cpu_data(),
+  Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
       Shape2(batchsize_,vdim_));
   Tensor<cpu, 2> grad(grad_.mutable_cpu_data(),Shape2(batchsize_,hdim_));
   Tensor<cpu, 2> weight(weight_->mutable_cpu_data(), Shape2(vdim_,hdim_));
@@ -225,10 +225,10 @@ void LabelLayer::Setup(const LayerProto& proto,
   data_.Reshape(vector<int>{batchsize});
 }
 
-void LabelLayer::ParseRecords(bool training, const vector<Record>& records, Blob<float>* blob){
-  LOG_IF(ERROR, records.size()==0)<<"Empty records to parse";
-  float *label= blob->mutable_cpu_data() ;
+void LabelLayer::ParseRecords(bool training, const vector<Record>& records,
+    Blob<float>* blob){
   int rid=0;
+  float *label= blob->mutable_cpu_data() ;
   for(const Record& record: records){
     label[rid++]=record.image().label();
     CHECK_LT(record.image().label(),10);
@@ -371,7 +371,7 @@ void LRNLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
 void LRNLayer::ComputeGradient(const vector<SLayer>& srclayers) {
   const float salpha = alpha_ / lsize_;
   Shape<4> s=Shape4(batchsize_,channels_, height_, width_);
-  Tensor<cpu, 4> src(srclayers[0]->mutable_data()->mutable_cpu_data(), s);
+  Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
   Tensor<cpu, 4> norm(norm_.mutable_cpu_data(), s);
   Tensor<cpu, 4> grad(grad_.mutable_cpu_data(), s);
   Tensor<cpu, 4> gsrc(srclayers[0]->mutable_grad(this)->mutable_cpu_data(), s);
@@ -383,8 +383,8 @@ void LRNLayer::ComputeGradient(const vector<SLayer>& srclayers) {
 
 /**************** Implementation for MnistImageLayer******************/
 
-void MnistImageLayer::ParseRecords(bool training, const vector<Record>& records,
-    Blob<float>* blob){
+void MnistImageLayer::ParseRecords(bool training,
+    const vector<Record>& records, Blob<float>* blob){
   LOG_IF(ERROR, records.size()==0)<<"Empty records to parse";
   int ndim=records.at(0).image().shape_size();
   int inputsize =records.at(0).image().shape(ndim-1);
@@ -545,8 +545,8 @@ void PoolingLayer::ComputeGradient(const vector<SLayer>& srclayers) {
 
 void ReLULayer::Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers){
-  data_.ReshapeLike(srclayers[0]->data());
-  grad_.ReshapeLike(*(srclayers[0]->mutable_grad()));
+  data_.ReshapeLike(srclayers[0]->data(this));
+  grad_.ReshapeLike(*(srclayers[0]->mutable_grad(this)));
 }
 
 void ReLULayer::SetupAfterPartition(const LayerProto& proto,
@@ -572,11 +572,10 @@ void ReLULayer::ComputeGradient(const vector<SLayer>& srclayers) {
 
 /*************** Implementation for RGBImageLayer *************************/
 
-void RGBImageLayer::ParseRecords(bool training, const vector<Record>& records,
-    Blob<float>* blob){
-  LOG_IF(ERROR, records.size()==0)<<"Empty records to parse";
+void RGBImageLayer::ParseRecords(bool training,
+    const vector<Record>& records, Blob<float>* blob){
   const vector<int>& s=blob->shape();
-  Tensor<cpu, 4> images(blob->mutable_cpu_data(), Shape4(s[0],s[1],s[2],s[3]));
+  Tensor<cpu, 4> images(data_.mutable_cpu_data(), Shape4(s[0],s[1],s[2],s[3]));
   const SingleLabelImageRecord& r=records.at(0).image();
   Tensor<cpu, 3> raw_image(Shape3(r.shape(0),r.shape(1),r.shape(2)));
   AllocSpace(raw_image);
@@ -638,8 +637,9 @@ void RGBImageLayer::Setup(const LayerProto& proto,
   Record sample=static_cast<DataLayer*>(srclayers[0].get())->sample();
   vector<int> shape;
   shape.push_back(batchsize);
-  for(int x: sample.image().shape())
+  for(int x: sample.image().shape()){
     shape.push_back(x);
+  }
   CHECK_EQ(shape.size(),4);
   if(cropsize_){
     shape[2]=cropsize_;
@@ -743,9 +743,9 @@ void SoftmaxLossLayer::SetupAfterPartition(const LayerProto& proto,
 void SoftmaxLossLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers) {
   Shape<2> s=Shape2(batchsize_, dim_);
   Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);
-  Tensor<cpu, 2> src(srclayers[0]->mutable_data()->mutable_cpu_data(), s);
+  Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
   Softmax(prob, src);
-  const float* label=srclayers[1]->data().cpu_data();
+  const float* label=srclayers[1]->data(this).cpu_data();
   const float* probptr=prob.dptr;
   float loss=0, precision=0;
   for(int n=0;n<batchsize_;n++){
@@ -777,8 +777,8 @@ void SoftmaxLossLayer::ComputeFeature(bool training, const vector<SLayer>& srcla
 }
 
 void SoftmaxLossLayer::ComputeGradient(const vector<SLayer>& srclayers) {
-  const float* label=srclayers[1]->data().cpu_data();
-  Blob<float>* gsrcblob=srclayers[0]->mutable_grad();
+  const float* label=srclayers[1]->data(this).cpu_data();
+  Blob<float>* gsrcblob=srclayers[0]->mutable_grad(this);
   gsrcblob->CopyFrom(data_);
   float* gsrcptr=gsrcblob->mutable_cpu_data();
   for(int n=0;n<batchsize_;n++){

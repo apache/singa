@@ -6,11 +6,10 @@
 #include <map>
 #include <functional>
 #include <utility>
-#include <condition_variable>
-#include <mutex>
 #include <memory>
 #include <chrono>
 #include <algorithm>
+#include <thread>
 
 #include "proto/model.pb.h"
 #include "utils/param.h"
@@ -31,36 +30,44 @@ typedef shared_ptr<Layer> SLayer;
  * Base layer class.
  * Children should implement at least Layer::Setup, Layer::ComputeFeature(),
  * Layer::ComputGradient() functions for backpropagation method;
- * TODO(wangwei) implement children layers to support contrastive divergence,
+ * TODO(zhaojing) subclass the base layer class to support contrastive divergence,
  * The identifier of each layer is the literal string of the class name without
  * the suffix "Layer", which is used in layer registration and creation.
  */
 class Layer {
  public:
   Layer(){}
+  virtual ~Layer(){}
   /**
-   * simply save the proto configuation.
-   * most initializations are done by Setup().
-   * @param layer_proto user defined layer configuration
+   * Layer initialization.
+   *
+   * It simply saves the proto configuation, most initializations are done by
+   * Setup().
+   *
+   * @param proto user defined layer configuration
    */
   virtual void Init(const LayerProto &proto);
   /**
-   * copy layer configuration from the other Layer, and set the shape.
+   * Copy layer configuration from the other Layer, and use the shape argument
+   * to as its data shape.
    */
   void Init(const Layer& other, const vector<int>& shape);
-  virtual ~Layer(){}
   /**
-   * Marshal layer properties and data into google protobuf object
-   * (i.e., snapshot).
+   * TODO(wangsheng) Marshal layer properties and data into google protobuf
+   * object (i.e., snapshot).
+   *
    * Parameters are marshalled separately into another object (i.e., model).
+   *
    * @param layer_proto
-   * @param copyData if true marshal data of DArray
+   * @param copyData if true marshal layer data, e.g., feature value
    */
   virtual void ToProto(LayerProto *layer_proto, bool copyData);
   /**
    * Setup layer properties.
+   *
    * Setup the shapes for data and parameters, also setup some properties
    * based on the layer configuration and connected src layers.
+   *
    * @param srclayers layers connecting to this layer
    */
   virtual void Setup(const LayerProto& proto,
@@ -71,8 +78,9 @@ class Layer {
   virtual void Setup();
   /**
    * Setup the layer properties except shape.
-   * the shape is already set and passed in to set other properties.
-   * perperties are set according to shapes of itself and connected layers, and
+   *
+   * The shape is already set and passed in to set other properties.
+   * properties are set according to shapes of itself and connected layers, and
    * configuration. this should not change the current shape_(
    * shape check is done outside the function).
    */
@@ -86,6 +94,7 @@ class Layer {
   virtual void SetupAfterPartition();
   /**
    * Layers that have paramters must overload this function.
+   *
    * @return parameters associated with this layer
    */
   virtual vector<shared_ptr<Param>> GetParams(){
@@ -93,8 +102,11 @@ class Layer {
   }
   /**
    * Compute features of this layer based on connected layers.
-   * Implement forward propagation for BP; TODO Implement both postive phase
-   * and negative phase for CD.
+   *
+   * Implement forward propagation for BP.
+   * TODO(zhaojing) Implement both postive phase and negative phase for CD.
+   *
+   * @param training true if in training phase
    * @param srclayers layers connecting to this layer
    */
   virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers)=0;
@@ -104,8 +116,10 @@ class Layer {
   virtual void ComputeFeature(bool training);
   /**
    * Compute gradients for parameters and connecting layers.
-   * Implement backward propagation for BP; TODO Calculate gradients for
-   * parameters for CD.
+   *
+   * Implement backward propagation for BP.
+   * TODO(zhaojing) Calculate gradients for parameters for CD.
+   *
    * @param srclayers layers connecting to this layer.
    */
   virtual void ComputeGradient(const vector<SLayer>& srclayers)=0;
@@ -114,7 +128,8 @@ class Layer {
    */
   virtual void ComputeGradient();
   /**
-   * decide on which dimension to do the partitioning.
+   * Decide on which dimension to do the partitioning.
+   *
    * @mode kLayer, kData, kNone (no partition)
    * @return the partition dimension, -1 for no partition
    */
@@ -128,7 +143,8 @@ class Layer {
   }
 
   /**
-   * return connection type between two layers.
+   * Return connection type between two layers.
+   *
    * Currently support two connections: kOneToOne, and kOneToAll.
    * kOneToOne indicates the dst neuron depends on only one neuron from src
    * layer. kOneToAll indicates the dst neuron depends on all neurons from src
@@ -139,18 +155,21 @@ class Layer {
     return kOneToOne;
   }
   /**
-   * return partition type of this layer.
-   * E.g., kNone, kLayer or kData
+   * @return partition type of this layer, e.g., kNone, kLayer or kData.
    */
   virtual PartitionType partition_type() const {
     return layer_proto_.partition_type();
   }
   /**
-   * location id is the execution unit (i.e., thread from the working group) ID.
+   * Set location ID as the worker ID within a worker group.
+   * TODO(wangwei) merge location ID with partition ID
    */
   virtual void set_locationid(int id){
     layer_proto_.set_locationid(id);
   }
+  /**
+   * @return location ID
+   */
   virtual int locationid() const {
     return layer_proto_.locationid();
   }
@@ -176,27 +195,36 @@ class Layer {
   const std::string &name() const {
     return layer_proto_.name();
   }
-  const vector<int>& shape(const Layer* layer=nullptr) const{
+  /**
+   * @return name of src data blob, used by prefetch layer to locate the data
+   * blob in parser layers; The default value is "unknown"; If the
+   * src layer is the prefetch layer and there are more than one parser layers,
+   * this value value be set.
+   */
+  const std::string &datablob() const {
+    return layer_proto_.datablob();
+  }
+  const vector<int>& shape(const Layer* layer) const{
     return data(layer).shape();
   }
 
   /**
    * @return a const ref for Blob storing neuron values of this layer for BP
    */
-  virtual const Blob<float>& data(const Layer* from=nullptr) const {
+  virtual const Blob<float>& data(const Layer* from) const {
     return data_;
   }
-  virtual Blob<float>* mutable_data(const Layer* from=nullptr){
+  virtual Blob<float>* mutable_data(const Layer* from){
     return &data_;
   }
 
-  virtual const Blob<float>& grad(const Layer* from=nullptr) const {
+  virtual const Blob<float>& grad(const Layer* from) const {
     return grad_;
   }
   /**
    * @return a pointer to storing neuron grads of this layer for BP
    */
-  virtual Blob<float>* mutable_grad(const Layer* from=nullptr) {
+  virtual Blob<float>* mutable_grad(const Layer* from) {
     return &grad_;
   }
 
@@ -250,9 +278,7 @@ class Layer {
   }
 protected:
   string name_;
-  //vector<shared_ptr<SyncedMem>> memblobs_;
   Blob<float> data_, grad_;
-  // DArray pos_, neg_;//for CD
   LayerProto layer_proto_;
   vector<SLayer> srclayers_, dstlayers_;
 };
@@ -328,8 +354,8 @@ class ConcateLayer: public Layer {
 
 
 /**
- * base layer for prefetching records from local Shard, HDFS, lmdb, etc.
- * cannot be partitioned, always returns kNone for partition type.
+ * Base layer for reading records from local Shard, HDFS, lmdb, etc.
+ * Cannot be partitioned, always returns kNone for partition type.
  */
 
 class DataLayer: public Layer{
@@ -346,14 +372,14 @@ class DataLayer: public Layer{
   virtual void Setup(){
     vector<SLayer> dummy;
     Setup(layer_proto_,dummy);
-    has_set_=true;
+    has_setup_=true;
   }
   virtual void SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers){}
 
   virtual void SetupAfterPartition(){
-    if(!has_set_)
+    if(!has_setup_)
     Setup();
   }
   virtual PartitionType partition_type () const {
@@ -367,36 +393,59 @@ class DataLayer: public Layer{
     return sample_;
   }
 
-  virtual Blob<float>* mutable_data(const Layer* layer=nullptr) {
+  virtual Blob<float>* mutable_data(const Layer* layer) {
     return nullptr;
   }
-  virtual Blob<float>* mutable_grad(const Layer* layer=nullptr) {
+  virtual Blob<float>* mutable_grad(const Layer* layer) {
     return nullptr;
   }
-  void set_prefetch(bool prefetch){
-    prefetch_=prefetch;
-  }
-
-  virtual void ComputeFeature(bool training) {
-    if(!prefetch_)
-      ComputeFeature(training, srclayers_);
-  }
-
-  virtual void Prefetching(bool training){
-    CHECK(prefetch_);
-    ComputeFeature(training, srclayers_);
-  }
-
  protected:
-  bool has_set_;
-  bool prefetch_;
+  bool has_setup_;
   int random_skip_, batchsize_;
   Record sample_;
   vector<Record> records_;
 };
 
 /**
- * Slice this layer into multiple dst layers on one dimension
+ * Layer for prefetching data records and parsing them.
+ *
+ * The data loading and parsing work is done by internal DataLayer and
+ * ParserLayer respectively. This layer controls the prefetching thread, i.e.,
+ * creating and joining the prefetching thread.
+ */
+class PrefetchLayer : public Layer {
+ public:
+  virtual ~PrefetchLayer();
+  virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers);
+  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
+  virtual const Blob<float>& data(const Layer* from) const ;
+  virtual Blob<float>* mutable_data(const Layer* layer) ;
+  virtual void ComputeGradient(const vector<SLayer>& srclayers){};
+  virtual Blob<float>* mutable_grad(const Layer* layer){
+    return nullptr;
+  }
+  virtual const Blob<float>& grad(const Layer* from) const {
+    CHECK(false)<<"Loss layer has not gradient blob";
+    return grad_;
+  }
+
+  virtual void SetupAfterPartition(const LayerProto& proto,
+      const vector<int> &shape,
+      const vector<SLayer>& srclayers){}
+
+  virtual PartitionType partition_type () const {
+    return kNone;
+  }
+
+  void Prefetch(bool training);
+ protected:
+  vector<shared_ptr<Layer>> sublayers_;
+  map<string, Blob<float>> datablobs_;
+  std::thread thread_;
+};
+
+/**
+ * Slice the source layer into multiple dst layers on one dimension
  */
 class SliceLayer: public Layer {
  public:
@@ -407,10 +456,10 @@ class SliceLayer: public Layer {
       const vector<SLayer>& srclayers){}
 
 
-  virtual const Blob<float>& data(const Layer* layer=nullptr) const;
-  virtual const Blob<float>& grad(const Layer* layer=nullptr) const;
-  virtual Blob<float>* mutable_data(const Layer* layer=nullptr);
-  virtual Blob<float>* mutable_grad(const Layer* layer=nullptr);
+  virtual const Blob<float>& data(const Layer* layer) const;
+  virtual const Blob<float>& grad(const Layer* layer) const;
+  virtual Blob<float>* mutable_data(const Layer* layer);
+  virtual Blob<float>* mutable_grad(const Layer* layer);
   virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
 
@@ -421,6 +470,7 @@ class SliceLayer: public Layer {
 
 /**
  * Replciate this layer into multiple dst layers
+ * TODO change name to ReplicateLayer.
  */
 class SplitLayer: public Layer {
  public:
@@ -445,10 +495,10 @@ class LossLayer: public Layer{
   virtual void SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers)=0;
-  virtual Blob<float>* mutable_grad(const Layer* layer=nullptr){
+  virtual Blob<float>* mutable_grad(const Layer* layer){
     return nullptr;
   }
-  virtual const Blob<float>& grad(const Layer* from=nullptr) const {
+  virtual const Blob<float>& grad(const Layer* from) const {
     CHECK(false)<<"Loss layer has not gradient blob";
     return grad_;
   }
@@ -468,30 +518,34 @@ class LossLayer: public Layer{
  */
 class ParserLayer: public Layer {
  public:
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers)=0;
+  virtual void Setup(const LayerProto& proto,
+      const vector<SLayer>& srclayers)=0;
   /**
    * Parse records from DataLayer into blob.
    * This function is called by
    * ComputeFeature(bool, const vector<SLayer>& srclayers)  or Prefetch(bool).
    */
-  virtual void ParseRecords(bool training, const vector<Record>& records, Blob<float>* blob)=0;
+  virtual void ParseRecords(bool training, const vector<Record>& records,
+      Blob<float>* blob)=0;
+
   virtual bool is_parserlayer() const {
     return true;
   }
+
+  virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers);
   /**
    * Dummy function. ParserLayer does not compute gradients.
    */
   virtual void ComputeGradient(const vector<SLayer>& srclayers){};
   virtual void Setup(){
     Setup(layer_proto_,srclayers_);
-    has_set_=true;
-    ready_=true;
-    prefetch_=false;
+    has_setup_=true;
   }
   virtual void SetupAfterPartition(){
-    if(!has_set_)
+    if(!has_setup_)
       Setup();
   }
+
   virtual void SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers){}
@@ -499,64 +553,16 @@ class ParserLayer: public Layer {
   virtual PartitionType partition_type () const{
     return kNone;
   }
-  virtual Blob<float>* mutable_grad(const Layer* layer=nullptr) {
+  virtual Blob<float>* mutable_grad(const Layer* layer) {
     return nullptr;
   }
-  virtual const Blob<float>& grad(const Layer* from=nullptr) const {
+  virtual const Blob<float>& grad(const Layer* from) const {
     CHECK(false)<<"Parser layer has not gradient blob";
     return grad_;
   }
 
-  virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers){
-    if(!prefetch_){
-      DataLayer* datalayer=static_cast<DataLayer*>(srclayers[0].get());
-      ParseRecords(training, datalayer->records(), &data_);
-    }else{
-      std::unique_lock<std::mutex> lck(mtx_);
-      while(!ready_) cv_.wait(lck);
-      data_.CopyFrom(prefetch_data_);
-      ready_=false;
-      cv_.notify_all();
-    }
-  }
-  /**
-   * prefetching is transparent to parsing logics.
-   * users implement parsing logics in ParseRecords
-   * worker/training algorithm calls this function to do prefetching in a
-   * separate thread. Records are in fact parsed into prefetch_data_, and later
-   * copied into data_.
-   */
-  void Prefetching(bool training){
-    std::unique_lock<std::mutex> lck(mtx_);
-    while(ready_) cv_.wait(lck);
-    //data_.Swap(prefetch_data_);
-    DataLayer* datalayer=static_cast<DataLayer*>(srclayers_[0].get());
-    ParseRecords(training, datalayer->records(), &prefetch_data_);
-    ready_=true;
-    cv_.notify_all();
-  }
-
-  /**
-   * must be called before calling ComputeFeature(bool) if Prefetching runs in a
-   * separate thread
-   */
-  void set_prefetch(bool prefetch) {
-    if(prefetch){
-      if(prefetch_data_.count()==0)
-        prefetch_data_.ReshapeLike(data_);
-      ready_=false;
-    }
-    prefetch_=prefetch;
-  }
-
  private:
-  std::mutex mtx_;
-  std::condition_variable cv_;
-  bool ready_;
-  bool has_set_;
-  bool prefetch_;
-  //!< prefetch_data_ is invisible to layer logics, i.e., parsing.
-  Blob<float> prefetch_data_;
+  bool has_setup_;
 };
 } // singa
 

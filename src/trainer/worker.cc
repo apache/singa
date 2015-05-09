@@ -174,13 +174,15 @@ void BPWorker::Forward(shared_ptr<NeuralNet> net, int step,  bool training){
           }
         }
       }
+      //clock_t s=clock();
       layer->ComputeFeature(training);
+      //LOG(ERROR)<<layer->name()<<":"<<(clock()-s)*1.0/CLOCKS_PER_SEC;
       if(layer->is_bridgesrclayer()){
         // send fea blobs
       }
-      if(training&&DisplayDebugInfo(step)&&layer->mutable_data()!=nullptr){
+      if(training&&DisplayDebugInfo(step)&&layer->mutable_data(nullptr)!=nullptr){
         LOG(INFO)<<StringPrintf("Forward layer  %10s data norm1 %13.9f",
-            layer->name().c_str(), layer->data().asum_data());
+            layer->name().c_str(), layer->data(nullptr).asum_data());
       }
     }
   }
@@ -196,9 +198,9 @@ void BPWorker::Backward(shared_ptr<NeuralNet> net, int step){
         // receive grad blobs
       }
       layer->ComputeGradient();
-      if(DisplayDebugInfo(step)&&layer->mutable_grad()!=nullptr){
+      if(DisplayDebugInfo(step)&&layer->mutable_grad(nullptr)!=nullptr){
         LOG(INFO)<<StringPrintf("Backward layer %10s grad norm1 %13.9f\t",
-            layer->name().c_str(), layer->grad().asum_data());
+            layer->name().c_str(), layer->grad(nullptr).asum_data());
         for(shared_ptr<Param> p: layer->GetParams())
           LOG(INFO)<<StringPrintf("param id %2d, name %10s,\
               value norm1 %13.9f, grad norm1 %13.9f",

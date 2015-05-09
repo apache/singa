@@ -166,6 +166,7 @@ message LayerProto {
   optional int32 locationid=4 [default=0]; // todo make locationID an array
   optional int32 partitionid=5 [default=0];
   optional PartitionType partition_type=6;
+  optional string datablob=7;
   // can be pos/neg neuron value for CD, neuron value/grad for BP
   //repeated DAryProto ary = 10;
   repeated string share_ary =11;
@@ -188,6 +189,7 @@ message LayerProto {
   optional LRNProto lrn_param = 25;
   optional MnistProto mnist_param= 26;
   optional PoolingProto pooling_param = 27;
+  repeated LayerProto sublayers=35;
   optional SliceProto slice_param = 32;
   optional SplitProto split_param = 33;
   optional ReLUProto relu_param = 28;
@@ -195,6 +197,7 @@ message LayerProto {
   optional SoftmaxLossProto softmaxloss_param = 29;
   optional TanhProto tanh_param=30;
 }
+
 message RGBImage {
   optional float scale=1 [default=1.0];
   optional int32 cropsize=2 [default=0];

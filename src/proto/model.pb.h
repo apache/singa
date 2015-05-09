@@ -1228,6 +1228,18 @@ class LayerProto : public ::google::protobuf::Message {
   inline ::singa::PartitionType partition_type() const;
   inline void set_partition_type(::singa::PartitionType value);
 
+  // optional string datablob = 7;
+  inline bool has_datablob() const;
+  inline void clear_datablob();
+  static const int kDatablobFieldNumber = 7;
+  inline const ::std::string& datablob() const;
+  inline void set_datablob(const ::std::string& value);
+  inline void set_datablob(const char* value);
+  inline void set_datablob(const char* value, size_t size);
+  inline ::std::string* mutable_datablob();
+  inline ::std::string* release_datablob();
+  inline void set_allocated_datablob(::std::string* datablob);
+
   // repeated string share_ary = 11;
   inline int share_ary_size() const;
   inline void clear_share_ary();
@@ -1354,6 +1366,18 @@ class LayerProto : public ::google::protobuf::Message {
   inline ::singa::PoolingProto* release_pooling_param();
   inline void set_allocated_pooling_param(::singa::PoolingProto* pooling_param);
 
+  // repeated .singa.LayerProto sublayers = 35;
+  inline int sublayers_size() const;
+  inline void clear_sublayers();
+  static const int kSublayersFieldNumber = 35;
+  inline const ::singa::LayerProto& sublayers(int index) const;
+  inline ::singa::LayerProto* mutable_sublayers(int index);
+  inline ::singa::LayerProto* add_sublayers();
+  inline const ::google::protobuf::RepeatedPtrField< ::singa::LayerProto >&
+      sublayers() const;
+  inline ::google::protobuf::RepeatedPtrField< ::singa::LayerProto >*
+      mutable_sublayers();
+
   // optional .singa.SliceProto slice_param = 32;
   inline bool has_slice_param() const;
   inline void clear_slice_param();
@@ -1420,6 +1444,8 @@ class LayerProto : public ::google::protobuf::Message {
   inline void clear_has_partitionid();
   inline void set_has_partition_type();
   inline void clear_has_partition_type();
+  inline void set_has_datablob();
+  inline void clear_has_datablob();
   inline void set_has_convolution_param();
   inline void clear_has_convolution_param();
   inline void set_has_concate_param();
@@ -1456,6 +1482,7 @@ class LayerProto : public ::google::protobuf::Message {
   ::google::protobuf::RepeatedPtrField< ::std::string> srclayers_;
   ::google::protobuf::int32 locationid_;
   ::google::protobuf::int32 partitionid_;
+  ::std::string* datablob_;
   ::google::protobuf::RepeatedPtrField< ::std::string> share_ary_;
   ::google::protobuf::RepeatedPtrField< ::singa::ParamProto > param_;
   ::google::protobuf::RepeatedPtrField< ::std::string> share_param_;
@@ -1468,6 +1495,7 @@ class LayerProto : public ::google::protobuf::Message {
   ::singa::LRNProto* lrn_param_;
   ::singa::MnistProto* mnist_param_;
   ::singa::PoolingProto* pooling_param_;
+  ::google::protobuf::RepeatedPtrField< ::singa::LayerProto > sublayers_;
   ::singa::SliceProto* slice_param_;
   ::singa::SplitProto* split_param_;
   ::singa::ReLUProto* relu_param_;
@@ -1477,7 +1505,7 @@ class LayerProto : public ::google::protobuf::Message {
   int partition_type_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(24 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(26 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -5285,6 +5313,76 @@ inline void LayerProto::set_partition_type(::singa::PartitionType value) {
   partition_type_ = value;
 }
 
+// optional string datablob = 7;
+inline bool LayerProto::has_datablob() const {
+  return (_has_bits_[0] & 0x00000040u) != 0;
+}
+inline void LayerProto::set_has_datablob() {
+  _has_bits_[0] |= 0x00000040u;
+}
+inline void LayerProto::clear_has_datablob() {
+  _has_bits_[0] &= ~0x00000040u;
+}
+inline void LayerProto::clear_datablob() {
+  if (datablob_ != &::google::protobuf::internal::kEmptyString) {
+    datablob_->clear();
+  }
+  clear_has_datablob();
+}
+inline const ::std::string& LayerProto::datablob() const {
+  return *datablob_;
+}
+inline void LayerProto::set_datablob(const ::std::string& value) {
+  set_has_datablob();
+  if (datablob_ == &::google::protobuf::internal::kEmptyString) {
+    datablob_ = new ::std::string;
+  }
+  datablob_->assign(value);
+}
+inline void LayerProto::set_datablob(const char* value) {
+  set_has_datablob();
+  if (datablob_ == &::google::protobuf::internal::kEmptyString) {
+    datablob_ = new ::std::string;
+  }
+  datablob_->assign(value);
+}
+inline void LayerProto::set_datablob(const char* value, size_t size) {
+  set_has_datablob();
+  if (datablob_ == &::google::protobuf::internal::kEmptyString) {
+    datablob_ = new ::std::string;
+  }
+  datablob_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* LayerProto::mutable_datablob() {
+  set_has_datablob();
+  if (datablob_ == &::google::protobuf::internal::kEmptyString) {
+    datablob_ = new ::std::string;
+  }
+  return datablob_;
+}
+inline ::std::string* LayerProto::release_datablob() {
+  clear_has_datablob();
+  if (datablob_ == &::google::protobuf::internal::kEmptyString) {
+    return NULL;
+  } else {
+    ::std::string* temp = datablob_;
+    datablob_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+    return temp;
+  }
+}
+inline void LayerProto::set_allocated_datablob(::std::string* datablob) {
+  if (datablob_ != &::google::protobuf::internal::kEmptyString) {
+    delete datablob_;
+  }
+  if (datablob) {
+    set_has_datablob();
+    datablob_ = datablob;
+  } else {
+    clear_has_datablob();
+    datablob_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  }
+}
+
 // repeated string share_ary = 11;
 inline int LayerProto::share_ary_size() const {
   return share_ary_.size();
@@ -5427,13 +5525,13 @@ LayerProto::mutable_exclude() {
 
 // optional .singa.ConvolutionProto convolution_param = 21;
 inline bool LayerProto::has_convolution_param() const {
-  return (_has_bits_[0] & 0x00000400u) != 0;
+  return (_has_bits_[0] & 0x00000800u) != 0;
 }
 inline void LayerProto::set_has_convolution_param() {
-  _has_bits_[0] |= 0x00000400u;
+  _has_bits_[0] |= 0x00000800u;
 }
 inline void LayerProto::clear_has_convolution_param() {
-  _has_bits_[0] &= ~0x00000400u;
+  _has_bits_[0] &= ~0x00000800u;
 }
 inline void LayerProto::clear_convolution_param() {
   if (convolution_param_ != NULL) convolution_param_->::singa::ConvolutionProto::Clear();
@@ -5465,13 +5563,13 @@ inline void LayerProto::set_allocated_convolution_param(::singa::ConvolutionProt
 
 // optional .singa.ConcateProto concate_param = 31;
 inline bool LayerProto::has_concate_param() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
+  return (_has_bits_[0] & 0x00001000u) != 0;
 }
 inline void LayerProto::set_has_concate_param() {
-  _has_bits_[0] |= 0x00000800u;
+  _has_bits_[0] |= 0x00001000u;
 }
 inline void LayerProto::clear_has_concate_param() {
-  _has_bits_[0] &= ~0x00000800u;
+  _has_bits_[0] &= ~0x00001000u;
 }
 inline void LayerProto::clear_concate_param() {
   if (concate_param_ != NULL) concate_param_->::singa::ConcateProto::Clear();
@@ -5503,13 +5601,13 @@ inline void LayerProto::set_allocated_concate_param(::singa::ConcateProto* conca
 
 // optional .singa.DataProto data_param = 22;
 inline bool LayerProto::has_data_param() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
+  return (_has_bits_[0] & 0x00002000u) != 0;
 }
 inline void LayerProto::set_has_data_param() {
-  _has_bits_[0] |= 0x00001000u;
+  _has_bits_[0] |= 0x00002000u;
 }
 inline void LayerProto::clear_has_data_param() {
-  _has_bits_[0] &= ~0x00001000u;
+  _has_bits_[0] &= ~0x00002000u;
 }
 inline void LayerProto::clear_data_param() {
   if (data_param_ != NULL) data_param_->::singa::DataProto::Clear();
@@ -5541,13 +5639,13 @@ inline void LayerProto::set_allocated_data_param(::singa::DataProto* data_param)
 
 // optional .singa.DropoutProto dropout_param = 23;
 inline bool LayerProto::has_dropout_param() const {
-  return (_has_bits_[0] & 0x00002000u) != 0;
+  return (_has_bits_[0] & 0x00004000u) != 0;
 }
 inline void LayerProto::set_has_dropout_param() {
-  _has_bits_[0] |= 0x00002000u;
+  _has_bits_[0] |= 0x00004000u;
 }
 inline void LayerProto::clear_has_dropout_param() {
-  _has_bits_[0] &= ~0x00002000u;
+  _has_bits_[0] &= ~0x00004000u;
 }
 inline void LayerProto::clear_dropout_param() {
   if (dropout_param_ != NULL) dropout_param_->::singa::DropoutProto::Clear();
@@ -5579,13 +5677,13 @@ inline void LayerProto::set_allocated_dropout_param(::singa::DropoutProto* dropo
 
 // optional .singa.InnerProductProto inner_product_param = 24;
 inline bool LayerProto::has_inner_product_param() const {
-  return (_has_bits_[0] & 0x00004000u) != 0;
+  return (_has_bits_[0] & 0x00008000u) != 0;
 }
 inline void LayerProto::set_has_inner_product_param() {
-  _has_bits_[0] |= 0x00004000u;
+  _has_bits_[0] |= 0x00008000u;
 }
 inline void LayerProto::clear_has_inner_product_param() {
-  _has_bits_[0] &= ~0x00004000u;
+  _has_bits_[0] &= ~0x00008000u;
 }
 inline void LayerProto::clear_inner_product_param() {
   if (inner_product_param_ != NULL) inner_product_param_->::singa::InnerProductProto::Clear();
@@ -5617,13 +5715,13 @@ inline void LayerProto::set_allocated_inner_product_param(::singa::InnerProductP
 
 // optional .singa.LRNProto lrn_param = 25;
 inline bool LayerProto::has_lrn_param() const {
-  return (_has_bits_[0] & 0x00008000u) != 0;
+  return (_has_bits_[0] & 0x00010000u) != 0;
 }
 inline void LayerProto::set_has_lrn_param() {
-  _has_bits_[0] |= 0x00008000u;
+  _has_bits_[0] |= 0x00010000u;
 }
 inline void LayerProto::clear_has_lrn_param() {
-  _has_bits_[0] &= ~0x00008000u;
+  _has_bits_[0] &= ~0x00010000u;
 }
 inline void LayerProto::clear_lrn_param() {
   if (lrn_param_ != NULL) lrn_param_->::singa::LRNProto::Clear();
@@ -5655,13 +5753,13 @@ inline void LayerProto::set_allocated_lrn_param(::singa::LRNProto* lrn_param) {
 
 // optional .singa.MnistProto mnist_param = 26;
 inline bool LayerProto::has_mnist_param() const {
-  return (_has_bits_[0] & 0x00010000u) != 0;
+  return (_has_bits_[0] & 0x00020000u) != 0;
 }
 inline void LayerProto::set_has_mnist_param() {
-  _has_bits_[0] |= 0x00010000u;
+  _has_bits_[0] |= 0x00020000u;
 }
 inline void LayerProto::clear_has_mnist_param() {
-  _has_bits_[0] &= ~0x00010000u;
+  _has_bits_[0] &= ~0x00020000u;
 }
 inline void LayerProto::clear_mnist_param() {
   if (mnist_param_ != NULL) mnist_param_->::singa::MnistProto::Clear();
@@ -5693,13 +5791,13 @@ inline void LayerProto::set_allocated_mnist_param(::singa::MnistProto* mnist_par
 
 // optional .singa.PoolingProto pooling_param = 27;
 inline bool LayerProto::has_pooling_param() const {
-  return (_has_bits_[0] & 0x00020000u) != 0;
+  return (_has_bits_[0] & 0x00040000u) != 0;
 }
 inline void LayerProto::set_has_pooling_param() {
-  _has_bits_[0] |= 0x00020000u;
+  _has_bits_[0] |= 0x00040000u;
 }
 inline void LayerProto::clear_has_pooling_param() {
-  _has_bits_[0] &= ~0x00020000u;
+  _has_bits_[0] &= ~0x00040000u;
 }
 inline void LayerProto::clear_pooling_param() {
   if (pooling_param_ != NULL) pooling_param_->::singa::PoolingProto::Clear();
@@ -5729,15 +5827,40 @@ inline void LayerProto::set_allocated_pooling_param(::singa::PoolingProto* pooli
   }
 }
 
+// repeated .singa.LayerProto sublayers = 35;
+inline int LayerProto::sublayers_size() const {
+  return sublayers_.size();
+}
+inline void LayerProto::clear_sublayers() {
+  sublayers_.Clear();
+}
+inline const ::singa::LayerProto& LayerProto::sublayers(int index) const {
+  return sublayers_.Get(index);
+}
+inline ::singa::LayerProto* LayerProto::mutable_sublayers(int index) {
+  return sublayers_.Mutable(index);
+}
+inline ::singa::LayerProto* LayerProto::add_sublayers() {
+  return sublayers_.Add();
+}
+inline const ::google::protobuf::RepeatedPtrField< ::singa::LayerProto >&
+LayerProto::sublayers() const {
+  return sublayers_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::singa::LayerProto >*
+LayerProto::mutable_sublayers() {
+  return &sublayers_;
+}
+
 // optional .singa.SliceProto slice_param = 32;
 inline bool LayerProto::has_slice_param() const {
-  return (_has_bits_[0] & 0x00040000u) != 0;
+  return (_has_bits_[0] & 0x00100000u) != 0;
 }
 inline void LayerProto::set_has_slice_param() {
-  _has_bits_[0] |= 0x00040000u;
+  _has_bits_[0] |= 0x00100000u;
 }
 inline void LayerProto::clear_has_slice_param() {
-  _has_bits_[0] &= ~0x00040000u;
+  _has_bits_[0] &= ~0x00100000u;
 }
 inline void LayerProto::clear_slice_param() {
   if (slice_param_ != NULL) slice_param_->::singa::SliceProto::Clear();
@@ -5769,13 +5892,13 @@ inline void LayerProto::set_allocated_slice_param(::singa::SliceProto* slice_par
 
 // optional .singa.SplitProto split_param = 33;
 inline bool LayerProto::has_split_param() const {
-  return (_has_bits_[0] & 0x00080000u) != 0;
+  return (_has_bits_[0] & 0x00200000u) != 0;
 }
 inline void LayerProto::set_has_split_param() {
-  _has_bits_[0] |= 0x00080000u;
+  _has_bits_[0] |= 0x00200000u;
 }
 inline void LayerProto::clear_has_split_param() {
-  _has_bits_[0] &= ~0x00080000u;
+  _has_bits_[0] &= ~0x00200000u;
 }
 inline void LayerProto::clear_split_param() {
   if (split_param_ != NULL) split_param_->::singa::SplitProto::Clear();
@@ -5807,13 +5930,13 @@ inline void LayerProto::set_allocated_split_param(::singa::SplitProto* split_par
 
 // optional .singa.ReLUProto relu_param = 28;
 inline bool LayerProto::has_relu_param() const {
-  return (_has_bits_[0] & 0x00100000u) != 0;
+  return (_has_bits_[0] & 0x00400000u) != 0;
 }
 inline void LayerProto::set_has_relu_param() {
-  _has_bits_[0] |= 0x00100000u;
+  _has_bits_[0] |= 0x00400000u;
 }
 inline void LayerProto::clear_has_relu_param() {
-  _has_bits_[0] &= ~0x00100000u;
+  _has_bits_[0] &= ~0x00400000u;
 }
 inline void LayerProto::clear_relu_param() {
   if (relu_param_ != NULL) relu_param_->::singa::ReLUProto::Clear();
@@ -5845,13 +5968,13 @@ inline void LayerProto::set_allocated_relu_param(::singa::ReLUProto* relu_param)
 
 // optional .singa.RGBImage rgbimage_param = 34;
 inline bool LayerProto::has_rgbimage_param() const {
-  return (_has_bits_[0] & 0x00200000u) != 0;
+  return (_has_bits_[0] & 0x00800000u) != 0;
 }
 inline void LayerProto::set_has_rgbimage_param() {
-  _has_bits_[0] |= 0x00200000u;
+  _has_bits_[0] |= 0x00800000u;
 }
 inline void LayerProto::clear_has_rgbimage_param() {
-  _has_bits_[0] &= ~0x00200000u;
+  _has_bits_[0] &= ~0x00800000u;
 }
 inline void LayerProto::clear_rgbimage_param() {
   if (rgbimage_param_ != NULL) rgbimage_param_->::singa::RGBImage::Clear();
@@ -5883,13 +6006,13 @@ inline void LayerProto::set_allocated_rgbimage_param(::singa::RGBImage* rgbimage
 
 // optional .singa.SoftmaxLossProto softmaxloss_param = 29;
 inline bool LayerProto::has_softmaxloss_param() const {
-  return (_has_bits_[0] & 0x00400000u) != 0;
+  return (_has_bits_[0] & 0x01000000u) != 0;
 }
 inline void LayerProto::set_has_softmaxloss_param() {
-  _has_bits_[0] |= 0x00400000u;
+  _has_bits_[0] |= 0x01000000u;
 }
 inline void LayerProto::clear_has_softmaxloss_param() {
-  _has_bits_[0] &= ~0x00400000u;
+  _has_bits_[0] &= ~0x01000000u;
 }
 inline void LayerProto::clear_softmaxloss_param() {
   if (softmaxloss_param_ != NULL) softmaxloss_param_->::singa::SoftmaxLossProto::Clear();
@@ -5921,13 +6044,13 @@ inline void LayerProto::set_allocated_softmaxloss_param(::singa::SoftmaxLossProt
 
 // optional .singa.TanhProto tanh_param = 30;
 inline bool LayerProto::has_tanh_param() const {
-  return (_has_bits_[0] & 0x00800000u) != 0;
+  return (_has_bits_[0] & 0x02000000u) != 0;
 }
 inline void LayerProto::set_has_tanh_param() {
-  _has_bits_[0] |= 0x00800000u;
+  _has_bits_[0] |= 0x02000000u;
 }
 inline void LayerProto::clear_has_tanh_param() {
-  _has_bits_[0] &= ~0x00800000u;
+  _has_bits_[0] &= ~0x02000000u;
 }
 inline void LayerProto::clear_tanh_param() {
   if (tanh_param_ != NULL) tanh_param_->::singa::TanhProto::Clear();

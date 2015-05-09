@@ -12,18 +12,19 @@ namespace singa {
 
 void NeuralNet::RegisterLayers(){
   Factory<Layer>* factory=Singleton<Factory<Layer>>::Instance();
+  factory->Register("kBridgeDst", CreateLayer(BridgeDstLayer));
+  factory->Register("kBridgeSrc", CreateLayer(BridgeSrcLayer));
   factory->Register("kConvolution", CreateLayer(ConvolutionLayer));
   factory->Register("kConcate", CreateLayer(ConcateLayer));
   factory->Register("kDropout", CreateLayer(DropoutLayer));
   factory->Register("kInnerProduct", CreateLayer(InnerProductLayer));
-  factory->Register("kRGBImage", CreateLayer(RGBImageLayer));
   factory->Register("kLabel", CreateLayer(LabelLayer));
   factory->Register("kLMDBData", CreateLayer(LMDBDataLayer));
   factory->Register("kLRN", CreateLayer(LRNLayer));
   factory->Register("kMnistImage", CreateLayer(MnistImageLayer));
-  factory->Register("kBridgeDst", CreateLayer(BridgeDstLayer));
-  factory->Register("kBridgeSrc", CreateLayer(BridgeSrcLayer));
   factory->Register("kPooling", CreateLayer(PoolingLayer));
+  factory->Register("kPrefetch", CreateLayer(PrefetchLayer));
+  factory->Register("kRGBImage", CreateLayer(RGBImageLayer));
   factory->Register("kReLU", CreateLayer(ReLULayer));
   factory->Register("kShardData", CreateLayer(ShardDataLayer));
   factory->Register("kSlice", CreateLayer(SliceLayer));
@@ -361,7 +362,7 @@ string NeuralNet::DebugInfo(){
   for(auto& layer: layers_){
     if(!layer->is_datalayer()){
       sprintf(display, "Forward layer  %10s data norm1 %13.9f\n",
-          layer->name().c_str(), layer->data().asum_data());
+          layer->name().c_str(), layer->data(nullptr).asum_data());
       ret+=string(display);
     }
   }
@@ -369,7 +370,7 @@ string NeuralNet::DebugInfo(){
     shared_ptr<Layer> layer=*it;
     if(!(layer->is_datalayer()||layer->is_losslayer()||layer->is_parserlayer())){
       sprintf(display, "Backward layer %10s grad norm1 %13.9f\n",
-          layer->name().c_str(), layer->grad().asum_data());
+          layer->name().c_str(), layer->grad(nullptr).asum_data());
       ret+=string(display);
     }
   }

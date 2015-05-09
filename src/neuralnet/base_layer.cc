@@ -3,11 +3,13 @@
 #include <cblas.h>
 #include <math.h>
 #include <cfloat>
+#include <glog/logging.h>
+#include "utils/singleton.h"
+#include "utils/factory.h"
 #include "neuralnet/base_layer.h"
+
 namespace singa {
-/*****************************************************************************
- * Implementation for Layer
- *****************************************************************************/
+/********* Implementation for Layer **************/
 void Layer::Init(const LayerProto &proto) {
   layer_proto_=proto;
 }
@@ -36,6 +38,8 @@ void Layer::ComputeGradient(){
 
 void Layer::ToProto(LayerProto *proto, bool copyData) {
 }
+
+/********* Implementation for BridgeSrcLayer **************/
 void BridgeSrcLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
   CHECK_EQ(srclayers.size(),1);
@@ -57,6 +61,8 @@ void BridgeSrcLayer::ComputeFeature(bool training,
 void BridgeSrcLayer::ComputeGradient(const vector<SLayer>& srclayers){
 
 }
+
+/********* Implementation for BridgeDstLayer **************/
 void BridgeDstLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
   CHECK_EQ(srclayers.size(),1);
@@ -79,9 +85,7 @@ void BridgeDstLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers)
 
 }
 
-/*******************************
- * Implementation for ConcateLayer
- *******************************/
+/************* Implementation for ConcateLayer ***********/
 void ConcateLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
   size_t concate_dim=proto.concate_param().concate_dimension();
@@ -108,9 +112,87 @@ void ConcateLayer::SetupAfterPartition(){
 void ConcateLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){}
 
 void ConcateLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){}
-/*****************************************************************************
- * Implementation for SliceLayer
- *****************************************************************************/
+
+/************* Implementation for ParserLayer ***********/
+void ParserLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
+  CHECK_EQ(srclayers.size(),1);
+  auto datalayer=static_cast<DataLayer*>(srclayers.begin()->get());
+  ParseRecords(training, datalayer->records(), &data_);
+}
+
+/************* Implementation for PrefetchLayer ***********/
+void PrefetchLayer::Prefetch(bool training){
+  //clock_t s=clock();
+  for(auto layer: sublayers_)
+    layer->ComputeFeature(training);
+  //LOG(ERROR)<<(clock()-s)*1.0/CLOCKS_PER_SEC;
+}
+
+void PrefetchLayer::ComputeFeature(bool training,
+    const vector<SLayer>& srclayers){
+  if(thread_.joinable())
+    thread_.join();
+  else{
+    Prefetch(training);
+  }
+  for(auto layer: sublayers_){
+    if(layer->is_parserlayer())
+      // TODO replace CopyFrom with Swap?
+      datablobs_.at(layer->name()).CopyFrom(layer->data(this));
+  }
+  thread_=std::thread(&PrefetchLayer::Prefetch, this, training);
+}
+
+void PrefetchLayer::Setup(const LayerProto& proto,
+    const vector<SLayer>& srclayers){
+  Factory<Layer>* factory=Singleton<Factory<Layer>>::Instance();
+  CHECK_GE(proto.sublayers_size(), 1);
+  map<string, SLayer> layers;
+  for(auto const &p:proto.sublayers()){
+    auto layer=shared_ptr<Layer>(factory->Create(p.type()));
+    layer->Init(p);
+    sublayers_.push_back(layer);
+    layers[p.name()]= layer;
+  }
+  // TODO topology sort layers
+  auto layer=sublayers_.begin();
+  for(auto const &p:proto.sublayers()){
+    std::vector<SLayer> src;
+    for(auto const &srcname: p.srclayers()){
+      src.push_back(layers[srcname]);
+      (*layer)->AddSrcLayer(layers[srcname]);
+    }
+    (*layer)->Setup(p, src);
+    layer++;
+  }
+  for(auto layer: sublayers_)
+    if(layer->is_parserlayer())
+      datablobs_[layer->name()]=Blob<float>(layer->data(this).shape());
+}
+
+const Blob<float>& PrefetchLayer::data(const Layer* from) const {
+  if(from!=nullptr){
+    return datablobs_.at(from->datablob());
+  }else{
+    //CHECK_EQ(datablobs_.size(),1);
+    return datablobs_.begin()->second;
+  }
+}
+
+Blob<float>* PrefetchLayer::mutable_data(const Layer* from) {
+  if(from!=nullptr){
+    return &(datablobs_.at(from->datablob()));
+  }else{
+    //CHECK_EQ(datablobs_.size(),1);
+    return &(datablobs_.begin()->second);
+  }
+}
+
+PrefetchLayer::~PrefetchLayer(){
+  if(thread_.joinable())
+    thread_.join();
+}
+/************* Implementation for SliceLayer****************/
 void SliceLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
   int slice_dim=proto.slice_param().slice_dimension();
@@ -179,6 +261,7 @@ void SplitLayer::Setup(const LayerProto& proto,
   grad_.Reshape(srclayers[0]->data(this).shape());
 }
 
+/************* Implementation for SplitLayer****************/
 void SplitLayer::SetupAfterPartition(){
   Setup(layer_proto_, srclayers_);
   //LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);

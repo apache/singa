@@ -115,6 +115,8 @@ class LabelLayer: public ParserLayer {
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   virtual void ParseRecords(bool training, const vector<Record>& records,
       Blob<float>* blob);
+
+
 };
 
 class LRNLayer: public Layer {
