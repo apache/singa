@@ -26,7 +26,7 @@ Dealer::Dealer(int id):id_(id){
 
 int Dealer::Connect(string endpoint){
   if(endpoint.length())
-    CHECK_EQ(zsock_connect(dealer_,endpoint.c_str()),0);
+    CHECK_EQ(zsock_connect(dealer_,"%s", endpoint.c_str()),0);
   return 1;
 }
 int Dealer::Send(Msg *msg){
@@ -57,7 +57,7 @@ Router::Router(int bufsize){
 }
 int Router::Bind(string endpoint){
   if(endpoint.length())
-    CHECK_EQ(zsock_bind(router_, endpoint.c_str()),0);
+    CHECK_EQ(zsock_bind(router_, "%s", endpoint.c_str()),0);
   return 1;
 }
 

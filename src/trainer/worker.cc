@@ -9,8 +9,8 @@
 using std::thread;
 namespace singa {
 Worker::Worker( int group_id, int worker_id):
-   group_id_(group_id), worker_id_(worker_id){
-}
+  group_id_(group_id), worker_id_(worker_id){
+  }
 
 void Worker::Setup(const ModelProto& model,
     shared_ptr<NeuralNet> train_net,
@@ -44,13 +44,9 @@ void Worker::Setup(const ModelProto& model,
 void Worker::Run(){
   step_=modelproto_.step();
   Performance perf(train_net_);
-  try{
-    while(!StopNow(step_)){
-      RunOneBatch(step_, &perf);
-      step_++;
-    }
-  }catch(WorkerException& e){
-    LOG(ERROR)<<e.what();
+  while(!StopNow(step_)){
+    RunOneBatch(step_, &perf);
+    step_++;
   }
 }
 int Worker::Put(shared_ptr<Param> param, int step){
@@ -169,9 +165,7 @@ void BPWorker::Forward(shared_ptr<NeuralNet> net, int step,  bool training){
       }
       if(training){
         for(shared_ptr<Param> p: layer->GetParams()){
-          if(Collect(p, step)==0){
-            throw WorkerException();
-          }
+          Collect(p, step);
         }
       }
       //clock_t s=clock();

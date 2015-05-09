@@ -28,7 +28,6 @@ void Server::Run(){
   ping->set_dst(0,0,kStub);
   ping->set_type(kConnect);
   dealer_->Send(ping);
-  int timeout=Cluster::Get()->server_timeout();
   Poller poller;
   poller.Add(dealer_.get());
 	//start recv loop and process requests

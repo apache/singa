@@ -169,14 +169,6 @@ class Worker {
   Poller layer_poller_, param_poller_;
 };
 
-class WorkerException: public std::exception{
- public:
-  const char* what() throw(){
-    return "Worker Exception";
-  }
-};
-
-
 class BPWorker: public Worker{
  public:
   ~BPWorker(){}

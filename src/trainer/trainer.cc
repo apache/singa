@@ -8,7 +8,7 @@ using std::map;
 
 namespace singa {
 int ProcsIDOf(int group_id, int id, int flag){
-  int procsid;
+  int procsid=-1;
   auto cluster=Cluster::Get();
   if(flag==kServer){
     procsid=group_id*cluster->nservers_per_group()/
@@ -170,7 +170,6 @@ void Trainer::Run(){
   map<int, shared_ptr<Dealer>> interprocs_dealers;
   Poller poller;
   poller.Add(router.get());
-  int timeout=cluster->stub_timeout();
   while(true){
     Msg* msg=router->Receive();
     if(msg==nullptr){

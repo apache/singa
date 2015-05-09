@@ -27,9 +27,13 @@ namespace singa {
  */
 class ConvolutionLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers);
-
   /**
    * need to reset some properties (e.g., weight matrix) according to
    * shapes (after partition, e.g., partition is done against channel dimension)
@@ -57,6 +61,11 @@ class ConvolutionLayer: public Layer {
 
 class DropoutLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers);
 
@@ -80,6 +89,11 @@ class DropoutLayer: public Layer {
   */
 class InnerProductLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers);
 
@@ -112,11 +126,11 @@ class InnerProductLayer: public Layer {
 
 class LabelLayer: public ParserLayer {
  public:
+  using ParserLayer::Setup;
+
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   virtual void ParseRecords(bool training, const vector<Record>& records,
       Blob<float>* blob);
-
-
 };
 
 class LRNLayer: public Layer {
@@ -128,6 +142,10 @@ class LRNLayer: public Layer {
  * a_i, the activation (after ReLU) of a neuron convolved with the i-th kernel.
  * b_i, the neuron after normalization, N is the total num of kernels
  */
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
 
  public:
   virtual void Setup(const LayerProto& proto,
@@ -152,6 +170,8 @@ class LRNLayer: public Layer {
 
 class MnistImageLayer: public ParserLayer {
  public:
+  using Layer::Setup;
+
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   virtual void ParseRecords(bool training, const vector<Record>& records,
       Blob<float>* blob);
@@ -169,14 +189,16 @@ class MnistImageLayer: public ParserLayer {
 
 class PoolingLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers);
-
   virtual void SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers);
-
-
   virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  protected:
@@ -187,13 +209,17 @@ class PoolingLayer: public Layer {
 
 class ReLULayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+
   virtual void Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers);
-
   virtual void SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers);
-
 
   virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
@@ -205,6 +231,11 @@ class SoftmaxLossLayer: public LossLayer {
    * connected from the label layer and the last fc layer
    */
  public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers);
 
@@ -237,6 +268,8 @@ class SoftmaxLossLayer: public LossLayer {
 
 class RGBImageLayer: public ParserLayer {
  public:
+  using Layer::Setup;
+
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   virtual void ParseRecords(bool training, const vector<Record>& records,
       Blob<float>* blob);
@@ -250,6 +283,10 @@ class RGBImageLayer: public ParserLayer {
 
 class ShardDataLayer: public DataLayer{
  public:
+  using Layer::Setup;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){};
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
@@ -258,6 +295,10 @@ class ShardDataLayer: public DataLayer{
 };
 class LMDBDataLayer: public DataLayer{
  public:
+  using Layer::Setup;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){};
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
@@ -279,6 +320,11 @@ class LMDBDataLayer: public DataLayer{
  */
 class TanhLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers);
 

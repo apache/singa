@@ -12,7 +12,7 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
   procs_id_=procs_id;
   cluster_ = cluster;
   SetupFolders(cluster);
-  int nprocs;
+  size_t nprocs;
   if(server_worker_separate())
     nprocs=nworker_procs()+nserver_procs();
   else

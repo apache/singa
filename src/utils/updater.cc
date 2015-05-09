@@ -45,7 +45,7 @@ float Updater::GetLearningRate(int step){
       ret = base * pow(proto_.gamma(), step / freq);
       break;
     case UpdaterProto_ChangeProto_kFixedStep:
-      for(size_t i=0;i<proto_.step_size();i++){
+      for(int i=0;i<proto_.step_size();i++){
         if(step>proto_.step(i))
           ret=proto_.step_lr(i);
       }

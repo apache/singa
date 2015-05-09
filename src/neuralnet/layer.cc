@@ -91,7 +91,7 @@ void ConvolutionLayer::ComputeGradient(const vector<SLayer>& srclayers) {
       Shape2(num_filters_, col_height_));
 
   Blob<float>* gsrcblob=srclayers[0]->mutable_grad(this);
-  Tensor<cpu, 4> gsrc(Shape4(batchsize_, channels_, height_, width_));
+  Tensor<cpu, 4> gsrc(nullptr, Shape4(batchsize_, channels_, height_, width_));
   if(gsrcblob!=nullptr)
     gsrc.dptr=gsrcblob->mutable_cpu_data();
   Tensor<cpu, 3> grad(grad_.mutable_cpu_data(),
@@ -579,7 +579,7 @@ void RGBImageLayer::ParseRecords(bool training,
   const SingleLabelImageRecord& r=records.at(0).image();
   Tensor<cpu, 3> raw_image(Shape3(r.shape(0),r.shape(1),r.shape(2)));
   AllocSpace(raw_image);
-  Tensor<cpu, 3> croped_image(Shape3(s[1],s[2],s[3]));
+  Tensor<cpu, 3> croped_image(nullptr, Shape3(s[1],s[2],s[3]));
   if(cropsize_)
     AllocSpace(croped_image);
     //CHECK(std::equal(croped_image.shape(), raw_image.shape());

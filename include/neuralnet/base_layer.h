@@ -289,6 +289,10 @@ protected:
  */
 class BridgeSrcLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   virtual void SetupAfterPartition();
   virtual void SetupAfterPartition(const LayerProto& proto,
@@ -316,6 +320,10 @@ class BridgeSrcLayer: public Layer {
  */
 class BridgeDstLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   virtual void SetupAfterPartition();
   virtual void SetupAfterPartition(const LayerProto& proto,
@@ -342,6 +350,10 @@ class BridgeDstLayer: public Layer {
  */
 class ConcateLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   virtual void SetupAfterPartition();
   virtual void SetupAfterPartition(const LayerProto& proto,
@@ -360,6 +372,10 @@ class ConcateLayer: public Layer {
 
 class DataLayer: public Layer{
  public:
+  using Layer::Setup;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers)=0;
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers)=0;
   virtual bool is_datalayer() const {
@@ -415,12 +431,22 @@ class DataLayer: public Layer{
  */
 class PrefetchLayer : public Layer {
  public:
+  using Layer::Setup;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+  using Layer::SetupAfterPartition;
+
   virtual ~PrefetchLayer();
-  virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers);
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
+  virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers);
+  virtual void ComputeGradient(const vector<SLayer>& srclayers){};
+  virtual void SetupAfterPartition(const LayerProto& proto,
+      const vector<int> &shape,
+      const vector<SLayer>& srclayers){}
+
   virtual const Blob<float>& data(const Layer* from) const ;
   virtual Blob<float>* mutable_data(const Layer* layer) ;
-  virtual void ComputeGradient(const vector<SLayer>& srclayers){};
+
   virtual Blob<float>* mutable_grad(const Layer* layer){
     return nullptr;
   }
@@ -428,11 +454,6 @@ class PrefetchLayer : public Layer {
     CHECK(false)<<"Loss layer has not gradient blob";
     return grad_;
   }
-
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers){}
-
   virtual PartitionType partition_type () const {
     return kNone;
   }
@@ -449,20 +470,22 @@ class PrefetchLayer : public Layer {
  */
 class SliceLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   virtual void SetupAfterPartition();
   virtual void SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers){}
 
-
   virtual const Blob<float>& data(const Layer* layer) const;
   virtual const Blob<float>& grad(const Layer* layer) const;
   virtual Blob<float>* mutable_data(const Layer* layer);
   virtual Blob<float>* mutable_grad(const Layer* layer);
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
-
  protected:
   int SliceID(const Layer* layer) const;
   vector<Blob<float>> datavec_, gradvec_;
@@ -474,6 +497,10 @@ class SliceLayer: public Layer {
  */
 class SplitLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   virtual void SetupAfterPartition();
   virtual void SetupAfterPartition(const LayerProto& proto,
@@ -489,12 +516,15 @@ class SplitLayer: public Layer {
  */
 class LossLayer: public Layer{
  public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+
   virtual void Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers)=0;
-
   virtual void SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers)=0;
+
   virtual Blob<float>* mutable_grad(const Layer* layer){
     return nullptr;
   }
@@ -505,7 +535,6 @@ class LossLayer: public Layer{
   virtual bool is_losslayer() const {
     return true;
   }
-
   virtual const Blob<float>& metric() const {
     return metric_;
   }
@@ -518,6 +547,11 @@ class LossLayer: public Layer{
  */
 class ParserLayer: public Layer {
  public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
   virtual void Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers)=0;
   /**
@@ -545,7 +579,6 @@ class ParserLayer: public Layer {
     if(!has_setup_)
       Setup();
   }
-
   virtual void SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers){}
