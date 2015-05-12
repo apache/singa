@@ -9,20 +9,20 @@
 
 
 namespace singa {
-Server::Server(int group_id, int server_id):
-  group_id_(group_id), server_id_(server_id){}
+Server::Server(int thread_id, int group_id, int server_id):
+  thread_id_(thread_id), group_id_(group_id), server_id_(server_id){}
 
 void Server::Setup(const UpdaterProto& proto,
-    shared_ptr<PMServer::ParamShard> shard,
-    shared_ptr<Dealer> dealer){
+    shared_ptr<PMServer::ParamShard> shard){
 	//VLOG(3) << "Parsing config file for host "<<hosts[id_] << " server id = " <<id_;
   pmserver_=shared_ptr<PMServer>(Singleton<Factory<PMServer>>::Instance()
       ->Create("PMServer"));
   pmserver_->Setup(group_id_, server_id_, shard, proto);
-  dealer_=dealer;
 }
 
 void Server::Run(){
+  dealer_=std::make_shared<Dealer>(thread_id_*2);
+  dealer_->Connect(kInprocRouterEndpoint);
   Msg* ping=new Msg();
   ping->set_src(group_id_, server_id_, kServer);
   ping->set_dst(0,0,kStub);

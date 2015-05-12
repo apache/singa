@@ -45,6 +45,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     int procs_id){
   RegisterDefaultClasses(mproto);
 
+  int nthreads=1;
   auto cluster=Cluster::Get(cproto, procs_id);
   // create servers
   vector<shared_ptr<Server>> servers;
@@ -59,10 +60,8 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     // the ParamShard for servers consists of a dictionary of Param objects
     auto shard=make_shared<PMServer::ParamShard>();
     for(int sid=start;sid<end;sid++){
-      auto server=make_shared<Server>(gid, sid);
-      auto dealer=make_shared<Dealer>(nSocket++);
-      dealer->Connect(kInprocRouterEndpoint);
-      server->Setup(mproto.updater(), shard, dealer);
+      auto server=make_shared<Server>(nthreads++, gid, sid);
+      server->Setup(mproto.updater(), shard);
       servers.push_back(server);
     }
   }
@@ -129,15 +128,11 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
       for(int wid=wstart;wid<wend;wid++){
         shared_ptr<Worker> worker=nullptr;
         if(mproto.alg()==ModelProto_GradCalcAlg_kBackPropagation)
-          worker=make_shared<BPWorker>(gid, wid);
+          worker=make_shared<BPWorker>(nthreads++,gid, wid);
         else{
         // TODO add CDWorker
         }
-        auto layer_dealer=make_shared<Dealer>(nSocket++);
-        auto param_dealer=make_shared<Dealer>(nSocket++);
-        layer_dealer->Connect(kInprocRouterEndpoint);
-        param_dealer->Connect(kInprocRouterEndpoint);
-        worker->Setup(mproto, train_net, shard, layer_dealer, param_dealer);
+        worker->Setup(mproto, train_net, shard);
         worker->set_test_net(test_net);
         worker->set_validation_net(validation_net);
         workers.push_back(worker);
