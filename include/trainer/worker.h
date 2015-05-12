@@ -39,11 +39,10 @@ class Performance{
  */
 class Worker {
  public:
-  Worker(int group_id, int worker_id);
+  Worker(int thread_id, int group_id, int worker_id);
   ~Worker(){}
   void Setup(const ModelProto& model, shared_ptr<NeuralNet> train_net,
-      shared_ptr<PMWorker::ParamShard> shard, shared_ptr<Dealer> layer_dealer,
-    shared_ptr<Dealer> param_dealer);
+      shared_ptr<PMWorker::ParamShard> shard);
   void set_test_net(shared_ptr<NeuralNet> test_net){
     test_net_=test_net;
   }
@@ -55,6 +54,7 @@ class Worker {
   int Get(shared_ptr<Param> param, int step);
   int Update(shared_ptr<Param> param, int step);
   int Collect(shared_ptr<Param> param, int step);
+  int CollectAll(shared_ptr<NeuralNet> net, int step);
   /**
     * check validation/test firstly, then TrainOneBatch
     * Performance collects performance for the whole neuralnet.
@@ -160,7 +160,7 @@ class Worker {
   void ReceiveBlobs(shared_ptr<NeuralNet> net);
   void SendBlob();
  protected:
-  int group_id_, worker_id_;
+  int thread_id_,group_id_, worker_id_;
   int step_;
   ModelProto modelproto_;
   shared_ptr<PMWorker> pmworker_;
@@ -172,7 +172,7 @@ class Worker {
 class BPWorker: public Worker{
  public:
   ~BPWorker(){}
-  BPWorker(int group_id, int worker_id):Worker(group_id, worker_id){}
+  BPWorker(int thread_id, int group_id, int worker_id):Worker(thread_id, group_id, worker_id){}
   virtual void TrainOneBatch(int step);
   virtual void TestOneBatch(shared_ptr<NeuralNet> net, int step, Phase phase);
   void Forward(shared_ptr<NeuralNet> net, int step, bool training);

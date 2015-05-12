@@ -10,14 +10,6 @@ using std::vector;
 using std::string;
 namespace singa {
 
-Param::Param(){
-  owner_=-1;
-  fan_in_=0;
-  set_version(-1);
-}
-
-Param::~Param(){}
-
 Msg* Param::GenPutMsg(void* arg){
   char buf[256];
   int v=*(int*)arg;
@@ -31,9 +23,10 @@ Msg* Param::GenPutMsg(void* arg){
 }
 
 Msg* Param::GenGetMsg(void* arg){
-  char buf[10];
+  char buf[12];
   int v=*(int*)arg;
   sprintf(buf, "%d", v);
+  LOG(ERROR)<<"gen get version "<<v;
   Msg* msg=new Msg();
   msg->set_type(kGet);
   msg->add_frame(buf, strlen(buf));
@@ -61,16 +54,16 @@ Msg* Param::HandlePutMsg(Msg** msg){
   float lr, wc;
   sscanf(static_cast<char*>((*msg)->frame_data()), "%d %d %f %f",
       &v, &size, &lr, &wc);
-  set_version(v);
   proto_.set_learning_rate_multiplier(lr);
   proto_.set_weight_decay_multiplier(wc);
   CHECK((*msg)->next_frame());
   vector<int> shape{size};
-  data_.Reshape(shape);
+  data_=std::make_shared<Blob<float>>(shape);
+  data_->set_version(v);
   grad_.Reshape(shape);
   history_.Reshape(shape);
   CHECK_EQ(size* sizeof(float), (*msg)->frame_size());
-  memcpy(data_.mutable_cpu_data(), (*msg)->frame_data(), size*sizeof(float));
+  memcpy(mutable_cpu_data(), (*msg)->frame_data(), size*sizeof(float));
   delete (*msg);
   *msg=nullptr;
   return nullptr;
@@ -81,7 +74,7 @@ Msg* Param::HandleGetMsg(Msg** msg){
   sscanf(static_cast<char*>((*msg)->frame_data()), "%d", &v);
   CHECK_LE(v, version());
   CHECK(!(*msg)->next_frame());
-  (*msg)->add_frame(data_.mutable_cpu_data(), sizeof(float)*size());
+  (*msg)->add_frame(mutable_cpu_data(), sizeof(float)*size());
   (*msg)->SwapAddr();
   (*msg)->set_type(kRGet);
   return *msg;
@@ -127,9 +120,10 @@ int Param::ParsePutResponseMsg(Msg **msg){
 int Param::ParseGetResponseMsg(Msg **msg){
   int v;
   sscanf(static_cast<char*>((*msg)->frame_data()), "%d", &v);
-  set_version(v);
   CHECK((*msg)->next_frame());
   memcpy(mutable_cpu_data(), (*msg)->frame_data(), (*msg)->frame_size());
+  // must be set after all other settings are done!
+  set_version(v);
   return 1;
 }
 int Param::ParseUpdateResponseMsg(Msg **msg){
@@ -138,7 +132,7 @@ int Param::ParseUpdateResponseMsg(Msg **msg){
 
 void Param::Setup(const ParamProto& proto, const vector<int>& shape,
     int fan_in){
-  data_.Reshape(shape);
+  data_=std::make_shared<Blob<float>>(shape);
   grad_.Reshape(shape);
   history_.Reshape(shape);
   proto_=proto;
@@ -146,8 +140,8 @@ void Param::Setup(const ParamProto& proto, const vector<int>& shape,
 }
 
 void Param::Init(int v){
-  proto_.set_version(v);
-  Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
+  set_version(v);
+  Tensor<cpu, 1> data(mutable_cpu_data(), Shape1(size()));
   unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
   auto random=ASingleton<Random<cpu>>::Instance(seed);
   switch (proto_.init_method()) {
@@ -168,7 +162,7 @@ void Param::Init(int v){
   case ParamProto::kUniformSqrtFanInOut:
     random->SampleUniform(data, proto_.low(), proto_.high());
     if(proto_.value())
-      data*= proto_.value()/ sqrt(data_.shape()[0] +data_.shape()[1]);
+      data*= proto_.value()/ sqrt(data_->shape()[0] +data_->shape()[1]);
     break;
   case ParamProto::kGaussian:
     random->SampleGaussian(data, proto_.mean(), proto_.std());
@@ -178,7 +172,7 @@ void Param::Init(int v){
   case ParamProto::kGaussainSqrtFanIn:
     random->SampleGaussian(data, proto_.mean(), proto_.std());
     if(proto_.value())
-      data*= proto_.value()/ sqrt(data_.shape()[0]);
+      data*= proto_.value()/ sqrt(data_->shape()[0]);
     break;
   default:
     LOG(ERROR) << "Illegal parameter init method ";

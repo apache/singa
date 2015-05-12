@@ -32,7 +32,8 @@ void NeuralNet::RegisterLayers(){
   factory->Register("kSplit", CreateLayer(SplitLayer));
   factory->Register("kTanh", CreateLayer(TanhLayer));
 }
-shared_ptr<NeuralNet> NeuralNet::SetupNeuralNet(const NetProto& np, Phase phase){
+shared_ptr<NeuralNet> NeuralNet::SetupNeuralNet(const NetProto& np, Phase phase,
+    int group_size){
   NetProto proto;
   proto.set_partition_type(np.partition_type());
   // exclude layers if necessary
@@ -48,8 +49,7 @@ shared_ptr<NeuralNet> NeuralNet::SetupNeuralNet(const NetProto& np, Phase phase)
     }
   }
   LOG(INFO)<<"NeuralNet config is "<<proto.DebugString();
-  shared_ptr<NeuralNet> net(new NeuralNet(proto));
-  return net;
+  return make_shared<NeuralNet>(proto, group_size);
 }
 NeuralNet::NeuralNet(NetProto net_proto, int group_size) {
   group_size_=group_size;
@@ -66,15 +66,11 @@ NeuralNet::NeuralNet(NetProto net_proto, int group_size) {
   for(auto layer: layers_){
     DLOG(INFO)<<layer->name();
   }
-  // assign id for params;
-  int paramid=0;
   for(auto& layer: layers_){
     for(shared_ptr<Param> p: layer->GetParams()){
       params_.push_back(p);
-      p->set_id(paramid++);
     }
   }
-
   LOG(INFO)<<"Neural Net constructed";
 }
 
@@ -112,8 +108,11 @@ void NeuralNet::ConstructNeuralNet(const NetProto& net_proto){
       layer->AddSrcLayer(name2layer_[src->name()]);
   }
   // setup layer properties, e.g., shapes
+  int paramid=0;
   for(auto& layer: layers_){
       layer->Setup();
+      for(auto param: layer->GetParams())
+        param->set_id(paramid++);
   }
   LOG(INFO)<<"network graph witout partition\n"<<ToString();
 }
@@ -122,6 +121,7 @@ void NeuralNet::PartitionNeuralNet(){
   graph_=CreatePartitonedGraph(layers_, name2layer_);
   //DLOG(ERROR)<<"pure graph after partition\n"<<graph_.ToString();
   map<string, shared_ptr<Layer>> name2layer(name2layer_);
+  map<string, vector<shared_ptr<Layer>>> share_param_layers;
   name2layer_.clear();
   layers_.clear();
   int gsize=group_size_;
@@ -130,7 +130,6 @@ void NeuralNet::PartitionNeuralNet(){
   for(SNode node: graph_.nodes()){
     LayerProto proto;
     proto.set_name(node->name());
-    proto.set_locationid(node->val().locationid);
     proto.set_partitionid(node->val().partitionid);
     const string& origin=node->val().origin;
     if (origin=="kSlice"){
@@ -173,7 +172,10 @@ void NeuralNet::PartitionNeuralNet(){
         layer->Init(*oldlayer, shape);
         layer->set_name(node->name());
         newlayer=layer;
+        if(oldlayer->partition_type()==kDataPartition)
+          share_param_layers[node->val().origin].push_back(newlayer);
       }
+      newlayer->set_partitionid(node->val().partitionid);
     }
     layers_.push_back(newlayer);
     name2layer_[node->name()]=newlayer;
@@ -193,14 +195,30 @@ void NeuralNet::PartitionNeuralNet(){
   LOG(INFO)<<"Adjacency matrix\n"<<ToAdjacency();
 
   // set up layers after
+  int paramid=0;
   for(shared_ptr<Layer> layer: layers_){
     const vector<int>& shape=layer->shape(nullptr);
     layer->SetupAfterPartition();
+    for(auto param: layer->GetParams())
+      param->set_id(paramid++);
     const vector<int>& newshape=layer->shape(nullptr);
     if(shape.size())
       CHECK(std::equal(shape.begin(),shape.end(),newshape.begin()));
   }
 
+  // share Params for layers generated from the same origin layer due to
+  // data partition
+  for(auto & entry: share_param_layers){
+    auto layers= entry.second;
+    auto owner=layers.begin();
+    auto owner_params=(*owner)->GetParams();
+    for(auto it=owner+1; it!=layers.end();it++){
+      auto params=(*it)->GetParams();
+      CHECK_EQ(params.size(), owner_params.size());
+      for(size_t i=0;i<params.size();i++)
+        params.at(i)->ShareData(owner_params.at(i));
+    }
+  }
   LOG(INFO)<<"network graph after partition layers\n"<<ToString();
 }
 
@@ -219,13 +237,12 @@ Graph NeuralNet::CreatePartitonedGraph(const vector<shared_ptr<Layer>>& layers,
         sprintf(suffix, "%02d", i);
         // differentiate partitions
         string nodename=layer->name()+"-"+string(suffix);
-        LayerInfo info;
-        auto node=graph.AddNode(nodename, LayerInfo{layer->name(),i, i,-1,-1});
+        auto node=graph.AddNode(nodename, LayerInfo{layer->name(), i,-1,-1});
         nodes.push_back(node);
       }
     }else if(layer->partition_type()==kNone){
       auto node=graph.AddNode(layer->name(),
-          LayerInfo{layer->name(), layer->locationid(), 0,-1,-1});
+          LayerInfo{layer->name(), 0,-1,-1});
       nodes.push_back(node);
     }else{
       LOG(FATAL)<<"Unknown partition type "<<layer->partition_type();
@@ -321,7 +338,7 @@ Graph NeuralNet::CreatePartitonedGraph(const vector<shared_ptr<Layer>>& layers,
     vector<SNode> dstnodes=node->dstnodes();
     for(size_t i=0;i<dstnodes.size();i++){
       SNode dstnode=dstnodes.at(i);
-      if(node->val().locationid!=dstnode->val().locationid){
+      if(node->val().partitionid!=dstnode->val().partitionid){
         graph.RemoveEdge(node, dstnode);
         graph.InsertBridgeNode(node, dstnode);
       }

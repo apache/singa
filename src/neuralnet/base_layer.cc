@@ -53,13 +53,8 @@ void BridgeSrcLayer::SetupAfterPartition(){
 
 void BridgeSrcLayer::ComputeFeature(bool training,
     const vector<SLayer>& srclayers){
-  if(training)
-    ready_=false;
-  else
-    ready_=true;
 }
 void BridgeSrcLayer::ComputeGradient(const vector<SLayer>& srclayers){
-
 }
 
 /********* Implementation for BridgeDstLayer **************/
@@ -74,16 +69,6 @@ void BridgeDstLayer::SetupAfterPartition(){
   //LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
 }
 
-void BridgeDstLayer::ComputeFeature(bool training,
-    const vector<SLayer>& srclayers){
-  if(training)
-    ready_=true;
-  else
-    ready_=false;
-}
-void BridgeDstLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){
-
-}
 
 /************* Implementation for ConcateLayer ***********/
 void ConcateLayer::Setup(const LayerProto& proto,

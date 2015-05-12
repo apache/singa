@@ -18,7 +18,7 @@ using std::make_shared;
 typedef struct _LayerInfo{
   // origin identifies the origin of this node, i.e., the corresponding layer
   string origin;
-  int locationid;// locationidation id;
+  //int locationid;// locationidation id;
   int partitionid;
   int slice_dimension;
   int concate_dimension;

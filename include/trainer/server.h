@@ -8,13 +8,12 @@ using std::shared_ptr;
 namespace singa {
 class Server{
  public:
-  Server(int group_id, int server_id);
-  void Setup(const UpdaterProto& proto, shared_ptr<PMServer::ParamShard> shard,
-    shared_ptr<Dealer> dealer);
+  Server(int thread_id, int group_id, int server_id);
+  void Setup(const UpdaterProto& proto, shared_ptr<PMServer::ParamShard> shard);
   void Run();
 
  protected:
-  int group_id_, server_id_;
+  int thread_id_,group_id_, server_id_;
   shared_ptr<PMServer> pmserver_;
   shared_ptr<Dealer> dealer_;
 };

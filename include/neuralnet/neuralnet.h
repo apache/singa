@@ -37,8 +37,11 @@ class NeuralNet {
    * setup (done outside of this funcion).
    *
    * @param np proto for the neural network.
+   * @param phase test/training/validation
+   * @param group_size partition the net among this num of workers
    */
-  static shared_ptr<NeuralNet> SetupNeuralNet(const NetProto& np, Phase phase);
+  static shared_ptr<NeuralNet> SetupNeuralNet(const NetProto& np, Phase phase,
+      int group_size);
 
  public:
   /**

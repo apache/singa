@@ -20,7 +20,7 @@ const string Graph::ToString(const map<string, string>& info) const {
   for(auto node: nodes_){
     char str[1024];
     string name=node->name();
-    string color=colors[(node->val().locationid)%colors.size()];
+    string color=colors[(node->val().partitionid)%colors.size()];
     string shape;
     string origin=node->val().origin;
     if(origin=="kSlice"||origin=="kConcate"||origin=="kSplit"

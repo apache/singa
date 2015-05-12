@@ -43,18 +43,15 @@ Msg* PMWorker::Put(Msg** msg){
 }
 
 Msg* PMWorker::Put(shared_ptr<Param> param, int step){
-  param->set_version(step);
-  // only owner can put shared parameter
-  if(param->owner()<0||param->owner()==param->id()){
-    Msg* msg= param->GenPutMsg(&step);
-    msg->set_src(group_id_, worker_id_, kWorkerParam);
-    msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
-        Sharding(param->id()), kServer);
-    msg->set_type(kPut);
-    msg->set_target(param->id());
-    return msg;
-  }else
-    return nullptr;
+  int id=param->owner();
+  auto entry=shard_->at(id);
+  Msg* msg= param->GenPutMsg(&step);
+  msg->set_src(group_id_, worker_id_, kWorkerParam);
+  msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
+      Sharding(id), kServer);
+  msg->set_type(kPut);
+  msg->set_target(id);
+  return msg;
 }
 
 Msg* PMWorker::Get(Msg** msg){
@@ -62,79 +59,62 @@ Msg* PMWorker::Get(Msg** msg){
 }
 
 Msg* PMWorker::Get(shared_ptr<Param> param, int step){
-  param->set_version(step);
-  bool send=false;
-  int id=param->id();
-  shared_ptr<ParamCounter> entry=nullptr;
-  if(param->owner()>=0){
-    entry=shard_->at(id);
-    entry->nGet++;
-    send=entry->nGet/entry->nLocal==step;
-  }
-  if(param->owner()<0||send){
-    Msg* msg=nullptr;
-    if(param->owner()<0){
-      msg=param->GenGetMsg(&step);
-      msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
-          Sharding(id), kServer);
-    } else {
-      msg=entry->param->GenGetMsg(&step);
-      msg->set_dst(entry->owner_procs,kStub);
-    }
+  int id=param->owner();
+  shared_ptr<ParamCounter> entry=shard_->at(id);
+  Msg *msg=nullptr;
+  if((entry->nGet+1)%entry->nLocal==0&&param->version()<step){
+    msg=param->GenGetMsg(&step);
+    msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
+        Sharding(id), kServer);
     msg->set_src(group_id_, worker_id_, kWorkerParam);
     msg->set_type(kGet);
     msg->set_target(id);
-    return msg;
-  }else
-    return nullptr;
+  }
+  entry->nGet++;
+  return msg;
 }
 
 Msg* PMWorker::Update(Msg** msg){
   return *msg;
 }
 Msg* PMWorker::Update(shared_ptr<Param> param, int step){
-  param->set_version(step);
-  bool send=false;
-  int id=param->id();
-  shared_ptr<ParamCounter> entry;
-  if(param->owner()>=0){
-    entry=shard_->at(param->id());
-    entry->nGet++;
-    send=entry->nGet/entry->nLocal==step;
+  int id=param->owner();
+  shared_ptr<ParamCounter> entry=shard_->at(id);
+  Msg* msg=nullptr;
+  if((entry->nUpdate+1)%entry->nLocal==0){
     auto shape=mshadow::Shape1(param->size());
-    mshadow::Tensor<mshadow::cpu,1> grad(param->mutable_cpu_grad(), shape);
-    mshadow::Tensor<mshadow::cpu,1> agg(entry->param->mutable_cpu_grad(), shape);
-    agg+=grad;
-  }
-  if(param->owner()<0||send){
-    Msg* msg=nullptr;
-    if(param->owner()<0){
-      msg=param->GenUpdateMsg(&step);
-      msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
-          Sharding(id), kServer);
-    } else {
-      entry->param->GenUpdateMsg(&step);
-      msg->set_dst(entry->owner_procs,kStub);
-      memset(param->mutable_cpu_data(), 0, sizeof(float)*param->size());
+    auto it=entry->shares.begin();
+    mshadow::Tensor<mshadow::cpu,1> agg((*it)->mutable_cpu_grad(), shape);
+    for(++it;it!=entry->shares.end();it++){
+      mshadow::Tensor<mshadow::cpu,1> grad((*it)->mutable_cpu_grad(), shape);
+      agg+=grad/entry->nTotal;
     }
+    msg=entry->shares.at(0)->GenUpdateMsg(&step);
+    msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
+        Sharding(id), kServer);
+    /*
+       entry->param->GenUpdateMsg(&step);
+       msg->set_dst(entry->owner_procs,kStub);
+       memset(param->mutable_cpu_data(), 0, sizeof(float)*param->size());
+       */
     msg->set_type(kUpdate);
     msg->set_target(id);
     msg->set_src(group_id_, worker_id_, kWorkerParam);
-    return msg;
-  }else
-    return nullptr;
+  }
+  entry->nUpdate++;
+  return msg;
 }
 
 Msg* PMWorker::Collect(Msg** msg){
   int id=(*msg)->target();
   int type=(*msg)->type();
-  auto pp=shard_->at(id)->param;
+  auto pp=shard_->at(id)->shares.at(0);
   if(type==kRGet){
     pp->ParseGetResponseMsg(msg);
   }else if(type==kRUpdate){
     pp->ParseUpdateResponseMsg(msg);
   }
-  if(pp->owner()>=0){
+  if(pp->owner()!=pp->id()){
     // forwarding to workers on other procs
   }
   delete (*msg);

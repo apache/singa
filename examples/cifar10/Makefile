@@ -5,7 +5,7 @@ libs :=singa glog protobuf
 download: cifar-10-binary-bin
 
 cifar-10-binary-bin:
-	wget http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz
+	#wget http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz
 	tar xf cifar-10-binary.tar.gz
 
 create:

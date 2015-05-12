@@ -877,12 +877,12 @@ class ParamProto : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 partition_dim() const;
   inline void set_partition_dim(::google::protobuf::int32 value);
 
-  // optional int32 version = 6;
-  inline bool has_version() const;
-  inline void clear_version();
-  static const int kVersionFieldNumber = 6;
-  inline ::google::protobuf::int32 version() const;
-  inline void set_version(::google::protobuf::int32 value);
+  // optional int32 owner = 6;
+  inline bool has_owner() const;
+  inline void clear_owner();
+  static const int kOwnerFieldNumber = 6;
+  inline ::google::protobuf::int32 owner() const;
+  inline void set_owner(::google::protobuf::int32 value);
 
   // optional .singa.ParamProto.InitMethod init_method = 7 [default = kConstant];
   inline bool has_init_method() const;
@@ -950,8 +950,8 @@ class ParamProto : public ::google::protobuf::Message {
   inline void clear_has_split_threshold();
   inline void set_has_partition_dim();
   inline void clear_has_partition_dim();
-  inline void set_has_version();
-  inline void clear_has_version();
+  inline void set_has_owner();
+  inline void clear_has_owner();
   inline void set_has_init_method();
   inline void clear_has_init_method();
   inline void set_has_value();
@@ -976,7 +976,7 @@ class ParamProto : public ::google::protobuf::Message {
   ::google::protobuf::int32 id_;
   ::google::protobuf::int32 split_threshold_;
   ::google::protobuf::int32 partition_dim_;
-  ::google::protobuf::int32 version_;
+  ::google::protobuf::int32 owner_;
   int init_method_;
   float value_;
   float low_;
@@ -4761,26 +4761,26 @@ inline void ParamProto::set_partition_dim(::google::protobuf::int32 value) {
   partition_dim_ = value;
 }
 
-// optional int32 version = 6;
-inline bool ParamProto::has_version() const {
+// optional int32 owner = 6;
+inline bool ParamProto::has_owner() const {
   return (_has_bits_[0] & 0x00000020u) != 0;
 }
-inline void ParamProto::set_has_version() {
+inline void ParamProto::set_has_owner() {
   _has_bits_[0] |= 0x00000020u;
 }
-inline void ParamProto::clear_has_version() {
+inline void ParamProto::clear_has_owner() {
   _has_bits_[0] &= ~0x00000020u;
 }
-inline void ParamProto::clear_version() {
-  version_ = 0;
-  clear_has_version();
+inline void ParamProto::clear_owner() {
+  owner_ = 0;
+  clear_has_owner();
 }
-inline ::google::protobuf::int32 ParamProto::version() const {
-  return version_;
+inline ::google::protobuf::int32 ParamProto::owner() const {
+  return owner_;
 }
-inline void ParamProto::set_version(::google::protobuf::int32 value) {
-  set_has_version();
-  version_ = value;
+inline void ParamProto::set_owner(::google::protobuf::int32 value) {
+  set_has_owner();
+  owner_ = value;
 }
 
 // optional .singa.ParamProto.InitMethod init_method = 7 [default = kConstant];

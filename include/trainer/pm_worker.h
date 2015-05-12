@@ -36,8 +36,10 @@ namespace singa {
 class ParamCounter{
   public:
   ParamCounter(shared_ptr<Param> p,int local, int owner):
-    nUpdate(0), nGet(0), nPut(0), nCollect(0), nLocal(local), nTotal(0),
-    owner_procs(owner), param(p){}
+    nUpdate(0), nGet(0), nPut(0), nCollect(0), nLocal(local), nTotal(1),
+    owner_procs(owner){
+      shares.push_back(p);
+    }
 
   /**
    * Associate the counter to a Param object.
@@ -50,10 +52,10 @@ class ParamCounter{
   void AddParam(shared_ptr<Param> p, int local, int owner){
     nLocal+=local;
     nTotal+=1;
-    if(owner_procs>-1)
+    if(owner>-1)
       owner_procs=owner;
-    if(nLocal>1){
-      // TODO copy p->param;
+    if(local>0){
+      shares.push_back(p);
     }
   }
   std::atomic<int> nUpdate, nGet, nPut, nCollect; //!< all counters are atomic
@@ -61,9 +63,8 @@ class ParamCounter{
   int nLocal; //!< # local workers uses the shared parameter
   int nTotal; //!< # total workers uses the shared parameter
   int owner_procs; //!< the procs id of the worker that owns the parameter
-  shared_ptr<Param> param;
+  vector<shared_ptr<Param>> shares;
 };
-
 
 /**
  * Parameter manager at the worker side.

@@ -95,7 +95,7 @@ class SyncedMemory {
 template <typename Dtype>
 class Blob {
  public:
-  Blob(): count_(0), capacity_(0) {}
+  Blob(): count_(0), capacity_(0) , version_(-1){}
   Blob(const vector<int>&shape);
   /**
    * @brief Change the dimensions of the blob, allocating new memory if
@@ -117,6 +117,12 @@ class Blob {
     return shape_;
   }
   inline int count() const { return count_; }
+  void set_version(int v){
+    version_=v;
+  }
+  const int version() const {
+    return version_;
+  }
   /**
    * @brief Copy from a source Blob.
    *
@@ -161,6 +167,7 @@ class Blob {
   vector<int> shape_;
   int count_;
   int capacity_;
+  int version_;
 };  // class Blob
 
 #endif // INCLUDE_UTILS_BLOB_

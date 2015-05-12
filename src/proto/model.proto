@@ -94,16 +94,13 @@ message ParamProto {
   // the program will calculate it
   repeated int32 shape = 3;
 
-  // split the parameter into multiple DAryProtos for serialzation and
+  // split the parameter into multiple sub params for serialzation and
   // transferring (Google Protobuf has size limit)
   optional int32 split_threshold=4 [default=5000000];
   // partition dimension, -1 for no partition
   optional int32 partition_dim=5 [default =-1];
 
-  optional int32 version=6;
-
-  // value of the parameter
-  //repeated DAryProto ary = 6;
+  optional int32 owner=6;
 
   enum InitMethod {
     kConstant = 0;

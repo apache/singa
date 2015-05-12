@@ -161,25 +161,12 @@ class Layer {
     return layer_proto_.partition_type();
   }
   /**
-   * Set location ID as the worker ID within a worker group.
-   * TODO(wangwei) merge location ID with partition ID
-   */
-  virtual void set_locationid(int id){
-    layer_proto_.set_locationid(id);
-  }
-  /**
-   * @return location ID
-   */
-  virtual int locationid() const {
-    return layer_proto_.locationid();
-  }
-  /**
    * partition id is the ID of the layer in the original layer.
    */
   virtual void set_partitionid(int id){
     layer_proto_.set_partitionid(id);
   }
-  virtual int partitiionid() const {
+  virtual int partitionid() const {
     return layer_proto_.partitionid();
   }
   virtual void set_name(string name){
@@ -301,10 +288,10 @@ class BridgeSrcLayer: public Layer {
 
   virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers);
   virtual void ComputeGradient(const vector<SLayer>& srclayers);
+  int dst_partition() const;
   virtual bool is_bridgesrclayer() const {
     return true;
   }
-
   virtual void set_ready(bool a) {
     ready_=a;
   }
@@ -330,8 +317,10 @@ class BridgeDstLayer: public Layer {
       const vector<int> &shape,
       const vector<SLayer>& srclayers){}
 
-  virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers);
-  virtual void ComputeGradient(const vector<SLayer>& srclayers);
+  virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers){
+    ready_=false;
+  }
+  virtual void ComputeGradient(const vector<SLayer>& srclayers){}
   virtual bool is_bridgedstlayer() const {
     return true;
   }

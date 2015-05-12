@@ -48,7 +48,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
   auto cluster=Cluster::Get(cproto, procs_id);
   // create servers
   vector<shared_ptr<Server>> servers;
-  int nSocket=1; // the first socket is the router
+  int nthreads=1; // the first socket is the router
   if(cluster->has_server()){
     int pid=cluster->procs_id();
     if(cluster->server_worker_separate())
@@ -59,10 +59,8 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     // the ParamShard for servers consists of a dictionary of Param objects
     auto shard=make_shared<PMServer::ParamShard>();
     for(int sid=start;sid<end;sid++){
-      auto server=make_shared<Server>(gid, sid);
-      auto dealer=make_shared<Dealer>(nSocket++);
-      dealer->Connect(kInprocRouterEndpoint);
-      server->Setup(mproto.updater(), shard, dealer);
+      auto server=make_shared<Server>(nthreads++,gid, sid);
+      server->Setup(mproto.updater(), shard);
       servers.push_back(server);
     }
   }
@@ -70,7 +68,9 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
   // create workers
   vector<shared_ptr<Worker>> workers;
   if(cluster->has_worker()){
-    auto net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain);
+    auto net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
+        cluster->nworkers_per_group());
+    //LOG(ERROR)<<net->ToString();
     int pid=cluster->procs_id();
     int gstart, gend, wstart, wend;
     if(cluster->nworkers_per_group()>=cluster->nworkers_per_procs()){
@@ -94,7 +94,8 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
       if(gid==gstart)
         train_net=net;
       else{
-        train_net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain);
+        train_net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
+            cluster->nworkers_per_group());
         // the train net for other groups may share parameter values from the
         // first group
         if(mproto.hogwild())
@@ -103,12 +104,14 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
       if(gid==0){
         // validation and test are performed only by the first group
         if(mproto.test_steps()){
-          test_net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTest);
+          test_net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTest,
+              cluster->nworkers_per_group());
           if(test_net!=nullptr)
             test_net->ShareParams(train_net, kValueOnly);
         }
         if(mproto.validation_steps()){
-          validation_net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kValidation);
+          validation_net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kValidation,
+              cluster->nworkers_per_group());
           if(validation_net!=nullptr)
             validation_net->ShareParams(train_net, kValueOnly);
         }
@@ -116,28 +119,24 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
       // create ParamShard for the workers
       auto shard=make_shared<PMWorker::ParamShard>();
       for(auto layer: train_net->layers()){
-        int procsid=ProcsIDOf(gid, layer->locationid(),kWorkerParam);
+        int procsid=ProcsIDOf(gid, layer->partitionid(),kWorkerParam);
         int local=procsid==cluster->procs_id();
         for(auto param: layer->GetParams()){
           int owner=param->owner()<0||param->owner()==param->id()?procsid:-1;
-          if(shard->find(param->id())==shard->end())
-            (*shard)[param->id()]=make_shared<ParamCounter>(param, local, owner);
+          if(shard->find(param->owner())==shard->end())
+            (*shard)[param->owner()]=make_shared<ParamCounter>(param, local, owner);
           else
-            shard->at(param->id())->AddParam(param, local, owner);
+            shard->at(param->owner())->AddParam(param, local, owner);
         }
       }
       for(int wid=wstart;wid<wend;wid++){
         shared_ptr<Worker> worker=nullptr;
         if(mproto.alg()==ModelProto_GradCalcAlg_kBackPropagation)
-          worker=make_shared<BPWorker>(gid, wid);
+          worker=make_shared<BPWorker>(nthreads++,gid, wid);
         else{
         // TODO add CDWorker
         }
-        auto layer_dealer=make_shared<Dealer>(nSocket++);
-        auto param_dealer=make_shared<Dealer>(nSocket++);
-        layer_dealer->Connect(kInprocRouterEndpoint);
-        param_dealer->Connect(kInprocRouterEndpoint);
-        worker->Setup(mproto, train_net, shard, layer_dealer, param_dealer);
+        worker->Setup(mproto, train_net, shard);
         worker->set_test_net(test_net);
         worker->set_validation_net(validation_net);
         workers.push_back(worker);
@@ -152,9 +151,9 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
 #endif
   vector<std::thread> threads;
   for(auto server: servers)
-    threads.push_back(std::thread(&Server::Run,server));
+    threads.push_back(std::thread(&Server::Run,server.get()));
   for(auto worker: workers)
-    threads.push_back(std::thread(&Worker::Run,worker));
+    threads.push_back(std::thread(&Worker::Run,worker.get()));
   Run();
   for(auto& thread: threads)
     thread.join();
@@ -168,8 +167,6 @@ void Trainer::Run(){
     router->Bind(cluster->endpoint());
 
   map<int, shared_ptr<Dealer>> interprocs_dealers;
-  Poller poller;
-  poller.Add(router.get());
   while(true){
     Msg* msg=router->Receive();
     if(msg==nullptr){
@@ -182,7 +179,15 @@ void Trainer::Run(){
     switch (dst_flag){ // TODO process other requests, e.g. RESTful
       case kStub:
         if(type==kConnect){
+          string ping((char*)msg->frame_data(), msg->frame_size());
+          CHECK_STREQ("PING", ping.c_str());
+          msg->SwapAddr();
+          Msg* reply=new Msg();
+          reply->SetAddr(msg);
+          reply->add_frame("PONG", 4);
+          reply->set_type(kConnect);
           delete msg;
+          router->Send(reply);
         }else{
           // TODO processing requests for worker group spanning multiple procs.
           LOG(ERROR)<<"Unkown message type ("<<type<<") to stub";
