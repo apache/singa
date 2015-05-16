@@ -13,11 +13,12 @@ Server::Server(int thread_id,int group_id, int server_id):
   thread_id_(thread_id),group_id_(group_id), server_id_(server_id){}
 
 void Server::Setup(const UpdaterProto& proto,
-    shared_ptr<PMServer::ParamShard> shard){
+    shared_ptr<Server::ParamShard> shard){
 	//VLOG(3) << "Parsing config file for host "<<hosts[id_] << " server id = " <<id_;
-  pmserver_=shared_ptr<PMServer>(Singleton<Factory<PMServer>>::Instance()
-      ->Create("PMServer"));
-  pmserver_->Setup(group_id_, server_id_, shard, proto);
+  updater_=shared_ptr<Updater>(Singleton<Factory<Updater>>::Instance()
+      ->Create("Updater"));
+  updater_->Init(proto);
+  shard_=shard;
 }
 
 void Server::Run(){
@@ -26,12 +27,10 @@ void Server::Run(){
 
   Msg* ping=new Msg();
   ping->set_src(group_id_, server_id_, kServer);
-  ping->set_dst(0,0,kStub);
+  ping->set_dst(-1,-1,kStub);
   ping->add_frame("PING", 4);
   ping->set_type(kConnect);
-  dealer_->Send(ping);
-  Poller poller;
-  poller.Add(dealer_.get());
+  dealer_->Send(&ping);
 	//start recv loop and process requests
   while (true){
     Msg* msg=dealer_->Receive();
@@ -39,39 +38,89 @@ void Server::Run(){
       break;
     Msg* response=nullptr;
     int type=msg->type();
-    switch (type){
-      case kConnect:{
-        string pong((char*)msg->frame_data(), msg->frame_size());
-        CHECK_STREQ("PONG", pong.c_str());
-        delete msg;
-        break;
-                    }
-      case kPut:
-        response = pmserver_->HandlePut(&msg);
-        break;
-      case kGet:
-        response = pmserver_->HandleGet(&msg);
-        break;
-      case kUpdate:
-        response = pmserver_->HandleUpdate(&msg);
-        break;
-      case kSyncRequest:
-        VLOG(3)<<"Handle SYNC-REQUEST";
-        response = pmserver_->HandleSyncRequest(&msg);
-        break;
-      case kSyncResponse:
-        VLOG(3) << "Handle SYNC response";
-        pmserver_->HandleSyncResponse(&msg);
-        break;
-    }
-
-    if (response!=nullptr){
-      //LOG(ERROR)<<"type: "<<type<<" response to "<<response->dst_id();
-      dealer_->Send(response);
+    if (type==kConnect){
+      // TODO remove receiving pong msg
+      string pong((char*)msg->frame_data(), msg->frame_size());
+      CHECK_STREQ("PONG", pong.c_str());
+      delete msg;
+    }else if(type==kPut){
+      int pid=msg->target_first();
+      shared_ptr<Param> param=nullptr;
+      if(shard_->find(pid)!=shard_->end()){
+        LOG(ERROR)<<"Param ("<<pid<<") is put more than once";
+        param=shard_->at(pid);
+      }else{
+        param=shared_ptr<Param>(Singleton<Factory<Param>>::Instance()
+            ->Create("Param"));
+        param->set_id(pid);
+        (*shard_)[pid]=param;
+      }
+      response = HandlePut(param, &msg);
+    }else{
+      int pid=msg->target_first();
+      if(shard_->find(pid)==shard_->end()){
+        // delay the processing by re-queue the msg.
+        response=msg;
+      } else{
+        CHECK(shard_->find(pid)!=shard_->end()) <<"Param ("<<pid
+          <<") is not maintained by server ("
+          <<group_id_ <<", " <<server_id_<<")";
+        auto param=shard_->at(pid);
+        switch (type){
+          case kGet:
+            response=HandleGet(param, &msg);
+            break;
+          case kUpdate:
+            response = HandleUpdate(param, &msg);
+            break;
+          case kSyncRequest:
+            VLOG(3)<<"Handle SYNC-REQUEST";
+            response = HandleSyncRequest(param, &msg);
+            break;
+          case kSyncResponse:
+            VLOG(3) << "Handle SYNC response";
+            HandleSyncResponse(param, &msg);
+            break;
+        }
+        if (response!=nullptr){
+          dealer_->Send(&response);
+        }
+      }
     }
   }
 }
 
+bool Server::SyncNow(){
+  return false;
+}
+Msg* Server::HandlePut(shared_ptr<Param> param, Msg **msg){
+  return param->HandlePutMsg(msg);
+}
 
+Msg* Server::HandleGet(shared_ptr<Param> param, Msg **msg){
+  return param->HandleGetMsg(msg);
+}
+
+Msg* Server::HandleUpdate(shared_ptr<Param> param, Msg **msg) {
+  //repsonse of the format: <identity><type: kData><paramId><param content>
+  auto* tmp=static_cast<Msg*>((*msg)->CopyAddr());
+  int v=(*msg)->target_second()+1;
+  param->ParseUpdateMsg(msg);
+  updater_->Update(param->version(), param);
+  param->set_version(param->version()+1);
+  auto response=param->GenUpdateResponseMsg(&v);
+  tmp->SwapAddr();
+  response->SetAddr(tmp);
+  delete tmp;
+  return response;
+}
+
+Msg* Server::HandleSyncRequest(shared_ptr<Param> param, Msg **msg){
+  return param->HandleSyncMsg(msg);
+}
+
+int Server::HandleSyncResponse(shared_ptr<Param> param, Msg **msg){
+  return param->ParseSyncResponseMsg(msg);
+}
 
 } /* singa */

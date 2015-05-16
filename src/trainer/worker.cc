@@ -2,24 +2,23 @@
 #include <thread>
 #include <memory>
 #include <iostream>
+#include <chrono>
+#include <thread>
 #include "utils/singleton.h"
 #include "utils/factory.h"
 #include "trainer/worker.h"
 #include "proto/model.pb.h"
 using std::thread;
+DECLARE_int32(sleep);
 namespace singa {
 Worker::Worker(int thread_id, int group_id, int worker_id):
-  thread_id_(thread_id),group_id_(group_id), worker_id_(worker_id){
+  thread_id_(thread_id), group_id_(group_id), worker_id_(worker_id){
   }
 
 void Worker::Setup(const ModelProto& model,
-    shared_ptr<NeuralNet> train_net,
-    shared_ptr<PMWorker::ParamShard> shard){
+    shared_ptr<NeuralNet> train_net){
   train_net_=train_net;
   modelproto_=model;
-  pmworker_=shared_ptr<PMWorker>(Singleton<Factory<PMWorker>>::Instance()
-      ->Create("PMWorker"));
-  pmworker_->Setup(group_id_, worker_id_, shard);
 }
 
 void Worker::Run(){
@@ -29,13 +28,13 @@ void Worker::Run(){
   layer_dealer_=make_shared<Dealer>(2*thread_id_+1);
   layer_dealer_->Connect(kInprocRouterEndpoint);
 
-  {
+  { // TODO remove waiting pong msg
   Msg* ping=new Msg();
   ping->set_src(group_id_, worker_id_, kWorkerParam);
-  ping->set_dst(0,0,kStub);
+  ping->set_dst(-1,-1,kStub);
   ping->set_type(kConnect);
   ping->add_frame("PING", 4);
-  param_dealer_->Send(ping);
+  param_dealer_->Send(&ping);
   ping=param_dealer_->Receive();
   string pong((char*)ping->frame_data(), ping->frame_size());
   CHECK_STREQ("PONG", pong.c_str());
@@ -45,10 +44,10 @@ void Worker::Run(){
   {
   Msg* ping=new Msg();
   ping->set_src(group_id_, worker_id_, kWorkerLayer);
-  ping->set_dst(0,0,kStub);
+  ping->set_dst(-1,-1,kStub);
   ping->set_type(kConnect);
   ping->add_frame("PING", 4);
-  layer_dealer_->Send(ping);
+  layer_dealer_->Send(&ping);
   ping=layer_dealer_->Receive();
   string pong((char*)ping->frame_data(), ping->frame_size());
   CHECK_STREQ("PONG", pong.c_str());
@@ -60,37 +59,60 @@ void Worker::Run(){
     //LOG(ERROR)<<layer->partitionid()<<" : "<<layer->name();
     if(layer->partitionid()==worker_id_)
       for(auto param: layer->GetParams()){
-        if(group_id_==0&&param->owner()==param->id()){
-          param->Init(0);
-          Put(param, step_);
+        if(group_id_==0){
+          if(param->owner()==param->id()){
+            param->Init(0);
+            Put(param, step_);
+          }else{
+            Get(param, 0);
+          }
         }else{
-          Get(param, step_);
+          Get(param, modelproto_.warmup_steps());
         }
       }
   }
-  step_=modelproto_.step();
-  Performance perf(train_net_);
+  Metric perf;
+  if(group_id_==0&&step_<modelproto_.warmup_steps()){
+    for(step_=0;step_<modelproto_.warmup_steps();step_++)
+      RunOneBatch(step_, &perf);
+    for(auto layer: train_net_->layers()){
+      //LOG(ERROR)<<layer->partitionid()<<" : "<<layer->name();
+      if(layer->partitionid()==worker_id_)
+        for(auto param: layer->GetParams())
+          if(param->owner()==param->id())
+            Put(param, step_);
+    }
+  }
   while(!StopNow(step_)){
     RunOneBatch(step_, &perf);
     step_++;
   }
 }
 int Worker::Put(shared_ptr<Param> param, int step){
-  auto msg=pmworker_->Put(param, step);
-  if(msg!=nullptr)
-    param_dealer_->Send(msg);
+  Msg* msg=new Msg();
+  msg->set_src(group_id_, worker_id_, kWorkerParam);
+  msg->set_dst(-1, -1, kStub);
+  msg->set_type(kPut);
+  msg->set_target(param->owner(), step);
+  param_dealer_->Send(&msg);
   return 1;
 }
 int Worker::Get(shared_ptr<Param> param, int step){
-  auto msg=pmworker_->Get(param, step);
-  if(msg!=nullptr)
-    param_dealer_->Send(msg);
+  Msg* msg=new Msg();
+  msg->set_src(group_id_, worker_id_, kWorkerParam);
+  msg->set_dst(-1, -1, kStub);
+  msg->set_type(kGet);
+  msg->set_target(param->owner(), step);
+  param_dealer_->Send(&msg);
   return 1;
 }
 int Worker::Update(shared_ptr<Param> param, int step){
-  auto msg=pmworker_->Update(param, step);
-  if(msg!=nullptr)
-    param_dealer_->Send(msg);
+  Msg* msg=new Msg();
+  msg->set_src(group_id_, worker_id_, kWorkerParam);
+  msg->set_dst(-1, -1, kStub);
+  msg->set_type(kUpdate);
+  msg->set_target(param->owner(), step);
+  param_dealer_->Send(&msg);
   return 1;
 }
 
@@ -106,22 +128,24 @@ int Worker::CollectAll(shared_ptr<NeuralNet> net, int step){
 }
 int Worker::Collect(shared_ptr<Param> param, int step){
   while(param->version()<step){
-    Socket* which=param_poller_.Wait(10);
-    if(which!=nullptr){
-      Msg* msg=param_dealer_->Receive();
-      if(msg==nullptr)
-        return 0;
-      pmworker_->Collect(&msg);
-    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(FLAGS_sleep));
   }
   return 1;
 }
+const void Worker::DisplayPerformance(const Metric & perf, const string& prefix){
+  /* TODO send perf to Stub thread for printing
+     Msg* msg=new Msg();
+     msg->set_src(group_id_, worker_id_, kWorkerParam);
+     msg->set_dst(-1,-1, kStub);
+     msg->set_type(kMetric);
+     const string disp=perf.ToString();
+     msg->AddFrame(disp.c_str(), disp.length());
+     param_dealer_->Send(&msg);
+     */
+  LOG(ERROR)<<prefix<<" "<<perf.ToString();
+}
 
-void Worker::RunOneBatch(int step, Performance* perf){
-  //DLOG(ERROR)<<"Step "<<step;
-  // Test will call Pull which updates the sync time
-  // Hence we store the sync time, and restore it later
-  //float tSyncData=tSyncData_, tSyncParam=tSyncParam_;
+void Worker::RunOneBatch(int step, Metric* perf){
   if(ValidateNow(step)){
     LOG(ERROR)<<"Validation at step "<<step;
     CollectAll(validation_net_, step);
@@ -132,20 +156,23 @@ void Worker::RunOneBatch(int step, Performance* perf){
     CollectAll(test_net_, step);
     Test(test_net_, modelproto_.test_steps(), perf!=nullptr);
   }
-  //tSyncData_=tSyncData; tSyncParam_=tSyncParam;
-
-  CollectAll(train_net_, step);
   TrainOneBatch(step);
   if(perf!=nullptr){
-    perf->Update();
+    auto losslayers=train_net_->losslayers();
+    for(auto layer: losslayers){
+      if(layer->partitionid()==worker_id_){
+        const float * ptr=layer->metric().cpu_data();
+        for(int j=0;j<layer->metric().count();j++)
+          perf->AddMetric(layer->name()+"-"+std::to_string(j), ptr[j]);
+      }
+    }
+    perf->Inc();
     if(DisplayNow(step)){
-      LOG(ERROR)<<"Training at step "<<step;
-      LOG(ERROR)<<"\t"<<perf->ToString();
+      perf->Avg();
+      DisplayPerformance(*perf, "Train at step "+std::to_string(step));
       perf->Reset();
-      //LOG(ERROR)<<"\t"<<TimerInfo();
     }
   }
-
   /*
   if(CheckpointNow(step)){
     pm_->Checkpoint(cluster_->workspace()+"/snapshot-"+std::to_string(step));
@@ -154,44 +181,32 @@ void Worker::RunOneBatch(int step, Performance* perf){
 }
 
 void Worker::ReceiveBlobs(shared_ptr<NeuralNet> net){
-  /*
-  int type;
-  char *name;
-  int64_t tick=zclock_mono();
-  zframe_t* frame=zframe_new_empty();
-
-  zsock_recv(pull_, "isf", &type, &name, &frame);
-  if(type==kDataFrame){
-    auto* dst=static_cast<BridgeDstLayer*>(
-        net->name2layer(string(name)).get());
-    memcpy(dst->mutable_data()->mutable_cpu_data(), zframe_data(frame),
-        zframe_size(frame));
-    dst->set_ready(true);
-  }else if(type==kGradFrame){
-    auto* src=static_cast<BridgeSrcLayer*>(net->name2layer(string(name)).get());
-    memcpy(src->mutable_grad()->mutable_cpu_data(), zframe_data(frame),
-        zframe_size(frame));
-    src->set_ready(true);
-  }
-  zframe_destroy(&frame);
-  delete name;
-  tSyncData_+=zclock_mono()-tick;
-  */
 }
 
 void Worker::SendBlob(){
-
 }
 
 void Worker::Test(shared_ptr<NeuralNet> net, int nsteps, bool disperf){
-  Performance perf(net);
+  const auto& losslayers=net->losslayers();
+  Metric perf;
   for(int step=0;step<nsteps;step++){
     TestOneBatch(net, step, kTest);
-    if(disperf)
-      perf.Update();
+    if(disperf){
+      for(auto layer: losslayers){
+        if(layer->partitionid()==worker_id_){
+          const float * ptr=layer->metric().cpu_data();
+          for(int j=0;j<layer->metric().count();j++)
+            perf.AddMetric(layer->name()+"-"+std::to_string(j), ptr[j]);
+        }
+      }
+      perf.Inc();
+    }
   }
-  if(disperf)
-    LOG(ERROR)<<"\t"<<perf.ToString();
+  if(disperf){
+    perf.Avg();
+    DisplayPerformance(perf, "Test");
+    perf.Reset();
+  }
 }
 
 /****************************BPWorker**********************************/
@@ -204,7 +219,7 @@ void BPWorker::Forward(shared_ptr<NeuralNet> net, int step,  bool training){
         auto* dst=static_cast<BridgeDstLayer*>(layer.get());
         while(!dst->ready()){
           auto msg=layer_dealer_->Receive();
-          CHECK_EQ(msg->src_group_id(), group_id_);
+          CHECK_EQ(msg->src_first(), group_id_);
           string name((char*)msg->frame_data(), msg->frame_size());
           auto tmp=net->name2layer(name);
           CHECK(tmp->is_bridgedstlayer());
@@ -232,7 +247,7 @@ void BPWorker::Forward(shared_ptr<NeuralNet> net, int step,  bool training){
         msg->add_frame(dst->name().c_str(), dst->name().length());
         auto const & blob=layer->data(nullptr);
         msg->add_frame(blob.cpu_data(), blob.count()*sizeof(float));
-        layer_dealer_->Send(msg);
+        layer_dealer_->Send(&msg);
       }
       if(training&&DisplayDebugInfo(step)&&layer->mutable_data(nullptr)!=nullptr){
         LOG(INFO)<<StringPrintf("Forward layer  %10s data norm1 %13.9f",
@@ -279,77 +294,5 @@ void BPWorker::TrainOneBatch(int step){
 void BPWorker::TestOneBatch(shared_ptr<NeuralNet> net,int step, Phase phase){
   Forward(net, step, false);
 }
-
-/*********************Implementation for Performance class*******************/
-Performance::Performance(shared_ptr<NeuralNet> net):net_(net), counter_(0){
-  for(auto& layer: net->losslayers()){
-    name_.push_back(layer->name());
-    metric_.push_back(vector<float>{});
-    metric_.back().resize(layer->metric().count(),0.f);
-  }
-}
-
-void Performance::Update(){
-  const auto& losslayers=net_->losslayers();
-  for(size_t i=0;i<losslayers.size();i++){
-    const float * ptr=losslayers[i]->metric().cpu_data();
-    vector<float>& m=metric_.at(i);
-    for(int j=0;j<losslayers[i]->metric().count();j++)
-      m[j]+=ptr[j];
-  }
-  counter_++;
-}
-
-void Performance::Reset(){
-  for(auto& m: metric_)
-    for(auto& x: m)
-      x=0.f;
-  counter_=0;
-}
-
-string Performance::ToString(){
-  string disp="";
-  for(size_t i=0;i<metric_.size();i++){
-    disp+="Output from "+name_[i]+" layer ";
-    vector<float> m=metric_.at(i);
-    for(size_t j=0;j<m.size();j++)
-        disp+=std::to_string(j)+" : "+std::to_string(m[j]/counter_)+"\t";
-    disp+="\n";
-  }
-  return disp;
-}
-/*
-void Executor::Setup(int local_threadid, const ModelProto& model){
-  tForward_=tBackward_=tSyncData_=tSyncParam_=0;
-  modelproto_=model;
-  local_threadid_=local_threadid;
-  if(model.prefetch()){
-    for(auto& layer: train_net_->datalayers()){
-      if(cluster_->group_threadid(local_threadid_)==layer->locationid())
-        localDataLayers_.push_back(layer);
-    }
-    if(localDataLayers_.size())
-      prefetch_thread_=std::thread(Executor::PrefetchData,
-          std::ref(localDataLayers_), true,1);
-  }
-  int gthreadid=cluster_->group_threadid(local_threadid);
-}
-
-void Executor::PrefetchData(const vector<DataLayer*>& datalayers, bool training,
-    int steps){
-  if(datalayers.size()==0)
-    return;
-  for(int i=0;i<steps;i++){
-    for(auto& layer: datalayers){
-      layer->Prefetching(training);
-      for(auto& dstlayer: layer->dstlayers()){
-        CHECK(dstlayer->is_parserlayer());
-        auto parserlayer=static_cast<ParserLayer*>(dstlayer.get());
-        parserlayer->Prefetching(training);
-      }
-    }
-  }
-}
-*/
 
 }  // namespace singa

@@ -567,6 +567,13 @@ class ModelProto : public ::google::protobuf::Message {
   inline bool debug() const;
   inline void set_debug(bool value);
 
+  // optional int32 warmup_steps = 50 [default = 0];
+  inline bool has_warmup_steps() const;
+  inline void clear_warmup_steps();
+  static const int kWarmupStepsFieldNumber = 50;
+  inline ::google::protobuf::int32 warmup_steps() const;
+  inline void set_warmup_steps(::google::protobuf::int32 value);
+
   // @@protoc_insertion_point(class_scope:singa.ModelProto)
  private:
   inline void set_has_name();
@@ -613,6 +620,8 @@ class ModelProto : public ::google::protobuf::Message {
   inline void clear_has_neuralnet();
   inline void set_has_debug();
   inline void clear_has_debug();
+  inline void set_has_warmup_steps();
+  inline void clear_has_warmup_steps();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -641,9 +650,10 @@ class ModelProto : public ::google::protobuf::Message {
   bool debug_;
   int alg_;
   ::singa::NetProto* neuralnet_;
+  ::google::protobuf::int32 warmup_steps_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(22 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(23 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -3577,13 +3587,6 @@ class UpdaterProto : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 sync_frequency() const;
   inline void set_sync_frequency(::google::protobuf::int32 value);
 
-  // optional int32 warmup_steps = 25 [default = 10];
-  inline bool has_warmup_steps() const;
-  inline void clear_warmup_steps();
-  static const int kWarmupStepsFieldNumber = 25;
-  inline ::google::protobuf::int32 warmup_steps() const;
-  inline void set_warmup_steps(::google::protobuf::int32 value);
-
   // optional float moving_rate = 26 [default = 0];
   inline bool has_moving_rate() const;
   inline void clear_moving_rate();
@@ -3651,8 +3654,6 @@ class UpdaterProto : public ::google::protobuf::Message {
   inline void clear_has_learning_rate_change_method();
   inline void set_has_sync_frequency();
   inline void clear_has_sync_frequency();
-  inline void set_has_warmup_steps();
-  inline void clear_has_warmup_steps();
   inline void set_has_moving_rate();
   inline void clear_has_moving_rate();
   inline void set_has_param_type();
@@ -3671,15 +3672,14 @@ class UpdaterProto : public ::google::protobuf::Message {
   ::google::protobuf::int32 learning_rate_change_frequency_;
   int learning_rate_change_method_;
   ::google::protobuf::int32 sync_frequency_;
-  ::google::protobuf::int32 warmup_steps_;
+  float moving_rate_;
   ::std::string* param_type_;
   static ::std::string* _default_param_type_;
   ::google::protobuf::RepeatedField< ::google::protobuf::int32 > step_;
   ::google::protobuf::RepeatedField< float > step_lr_;
-  float moving_rate_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(16 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(15 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -4542,6 +4542,28 @@ inline bool ModelProto::debug() const {
 inline void ModelProto::set_debug(bool value) {
   set_has_debug();
   debug_ = value;
+}
+
+// optional int32 warmup_steps = 50 [default = 0];
+inline bool ModelProto::has_warmup_steps() const {
+  return (_has_bits_[0] & 0x00400000u) != 0;
+}
+inline void ModelProto::set_has_warmup_steps() {
+  _has_bits_[0] |= 0x00400000u;
+}
+inline void ModelProto::clear_has_warmup_steps() {
+  _has_bits_[0] &= ~0x00400000u;
+}
+inline void ModelProto::clear_warmup_steps() {
+  warmup_steps_ = 0;
+  clear_has_warmup_steps();
+}
+inline ::google::protobuf::int32 ModelProto::warmup_steps() const {
+  return warmup_steps_;
+}
+inline void ModelProto::set_warmup_steps(::google::protobuf::int32 value) {
+  set_has_warmup_steps();
+  warmup_steps_ = value;
 }
 
 // -------------------------------------------------------------------
@@ -7917,37 +7939,15 @@ inline void UpdaterProto::set_sync_frequency(::google::protobuf::int32 value) {
   sync_frequency_ = value;
 }
 
-// optional int32 warmup_steps = 25 [default = 10];
-inline bool UpdaterProto::has_warmup_steps() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
-}
-inline void UpdaterProto::set_has_warmup_steps() {
-  _has_bits_[0] |= 0x00000800u;
-}
-inline void UpdaterProto::clear_has_warmup_steps() {
-  _has_bits_[0] &= ~0x00000800u;
-}
-inline void UpdaterProto::clear_warmup_steps() {
-  warmup_steps_ = 10;
-  clear_has_warmup_steps();
-}
-inline ::google::protobuf::int32 UpdaterProto::warmup_steps() const {
-  return warmup_steps_;
-}
-inline void UpdaterProto::set_warmup_steps(::google::protobuf::int32 value) {
-  set_has_warmup_steps();
-  warmup_steps_ = value;
-}
-
 // optional float moving_rate = 26 [default = 0];
 inline bool UpdaterProto::has_moving_rate() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
+  return (_has_bits_[0] & 0x00000800u) != 0;
 }
 inline void UpdaterProto::set_has_moving_rate() {
-  _has_bits_[0] |= 0x00001000u;
+  _has_bits_[0] |= 0x00000800u;
 }
 inline void UpdaterProto::clear_has_moving_rate() {
-  _has_bits_[0] &= ~0x00001000u;
+  _has_bits_[0] &= ~0x00000800u;
 }
 inline void UpdaterProto::clear_moving_rate() {
   moving_rate_ = 0;
@@ -7963,13 +7963,13 @@ inline void UpdaterProto::set_moving_rate(float value) {
 
 // optional string param_type = 27 [default = "Param"];
 inline bool UpdaterProto::has_param_type() const {
-  return (_has_bits_[0] & 0x00002000u) != 0;
+  return (_has_bits_[0] & 0x00001000u) != 0;
 }
 inline void UpdaterProto::set_has_param_type() {
-  _has_bits_[0] |= 0x00002000u;
+  _has_bits_[0] |= 0x00001000u;
 }
 inline void UpdaterProto::clear_has_param_type() {
-  _has_bits_[0] &= ~0x00002000u;
+  _has_bits_[0] &= ~0x00001000u;
 }
 inline void UpdaterProto::clear_param_type() {
   if (param_type_ != _default_param_type_) {

@@ -16,7 +16,7 @@ class Socket{
     * @param  the message to be sent
     * @return 1 for success queuing the message for sending, 0 for failure
     */
-  virtual int Send(Msg* msg)=0;
+  virtual int Send(Msg** msg)=0;
   /**
     * Receive a message from any connected socket.
     *
@@ -84,7 +84,7 @@ class Dealer : public Socket{
     * @return 1 connection sets up successfully; 0 otherwise
     */
   virtual int Connect(string endpoint);
-  virtual int Send(Msg* msg);
+  virtual int Send(Msg** msg);
   virtual Msg* Receive();
   virtual void* InternalID() const{
     return dealer_;
@@ -123,7 +123,7 @@ class Router : public Socket{
  /**
    * If the destination socket has not connected yet, buffer this the message.
    */
-  virtual int Send(Msg* msg);
+  virtual int Send(Msg** msg);
   virtual Msg* Receive();
   virtual void* InternalID() const{
     return router_;

@@ -78,6 +78,7 @@ message ModelProto{
   optional bool hogwild=33 [default=false];
   optional NetProto neuralnet = 40;
   optional bool debug=41 [default=false];
+  optional int32 warmup_steps=50 [default=0];
 }
 
 message NetProto{
@@ -366,7 +367,6 @@ message UpdaterProto {
   optional ChangeProto learning_rate_change_method = 16 [default = kFixed];
   optional int32 sync_frequency=17 [default=1];
   // warmup the parameters and then send to parameter servers.
-  optional int32 warmup_steps=25 [default=10];
   optional float moving_rate=26 [default=0];
   optional string param_type=27[default="Param"];
   repeated int32 step=28;

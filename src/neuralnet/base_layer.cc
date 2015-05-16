@@ -180,19 +180,20 @@ PrefetchLayer::~PrefetchLayer(){
 /************* Implementation for SliceLayer****************/
 void SliceLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
-  int slice_dim=proto.slice_param().slice_dimension();
-  int slice_num=proto.slice_param().slice_num();
-  CHECK_GE(slice_dim,0);
-  CHECK_EQ(slice_num, dstlayers_.size());
+  slice_dim_=proto.slice_param().slice_dimension();
+  slice_num_=proto.slice_param().slice_num();
+  CHECK_GE(slice_dim_,0);
+  CHECK_EQ(slice_num_, dstlayers_.size());
   data_.Reshape(srclayers[0]->data(this).shape());
   grad_.ReshapeLike(data_);
-  datavec_.resize(slice_num);
-  gradvec_.resize(slice_num);
+  datavec_.resize(slice_num_);
+  gradvec_.resize(slice_num_);
+  CHECK_EQ(data_.count()%slice_num_, 0); // restrict equal slicing
   //LOG(ERROR)<<"slice dim "<<slice_dim<<" slice num "<<slice_num;
-  for(int i=0;i<slice_num;i++){
+  for(int i=0;i<slice_num_;i++){
     vector<int> newshape(data_.shape());
-    newshape[slice_dim]=newshape[slice_dim]/slice_num+
-      ((i==slice_num-1)?newshape[slice_dim]%slice_num:0);
+    newshape[slice_dim_]=newshape[slice_dim_]/slice_num_+
+      ((i==slice_num_-1)?newshape[slice_dim_]%slice_num_:0);
     datavec_[i].Reshape(newshape);
     gradvec_[i].Reshape(newshape);
     //LOG(ERROR)<<"slice "<<IntVecToString(newshape);
@@ -236,8 +237,22 @@ Blob<float>* SliceLayer::mutable_grad(const Layer* layer){
     return &grad_;
   return &gradvec_[SliceID(layer)];
 }
-void SliceLayer::ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers){}
-void SliceLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){}
+void SliceLayer::ComputeFeature(bool training,
+    const vector<shared_ptr<Layer>>& srclayers){
+  CHECK_EQ(srclayers.size(),1);
+  if(slice_dim_==0){
+    const auto& blob=srclayers.at(0)->data(this);
+    int size=blob.count()/slice_num_;
+    for(int i=0;i<slice_num_;i++){
+      float* dst=datavec_[i].mutable_cpu_data();
+      const float* src=blob.cpu_data()+i*size;
+      memcpy(dst, src, size*sizeof(float));
+    }
+  }
+}
+void SliceLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){
+
+}
 
 void SplitLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){

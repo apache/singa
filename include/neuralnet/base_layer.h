@@ -288,6 +288,19 @@ class BridgeSrcLayer: public Layer {
 
   virtual void ComputeFeature(bool training, const vector<SLayer>& srclayers);
   virtual void ComputeGradient(const vector<SLayer>& srclayers);
+  virtual const Blob<float>& data(const Layer* from) const {
+    return srclayers_[0]->data(this);
+  }
+  virtual Blob<float>* mutable_data(const Layer* from){
+    return srclayers_[0]->mutable_data(this);
+  }
+
+  virtual const Blob<float>& grad(const Layer* from) const {
+    return srclayers_[0]->grad(this);
+  }
+  virtual Blob<float>* mutable_grad(const Layer* from) {
+    return srclayers_[0]->mutable_grad(this);
+  }
   int dst_partition() const;
   virtual bool is_bridgesrclayer() const {
     return true;
@@ -478,6 +491,7 @@ class SliceLayer: public Layer {
  protected:
   int SliceID(const Layer* layer) const;
   vector<Blob<float>> datavec_, gradvec_;
+  int slice_dim_, slice_num_;
 };
 
 /**

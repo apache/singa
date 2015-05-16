@@ -29,10 +29,11 @@ int Dealer::Connect(string endpoint){
     CHECK_EQ(zsock_connect(dealer_,"%s", endpoint.c_str()),0);
   return 1;
 }
-int Dealer::Send(Msg *msg){
-  zmsg_t* zmsg=(static_cast<Msg*>(msg))->DumpToZmsg();
+int Dealer::Send(Msg** msg){
+  zmsg_t* zmsg=(*msg)->DumpToZmsg();
   zmsg_send(&zmsg, dealer_);
-  delete msg;
+  delete *msg;
+  *msg=NULL;
   return 1;
 }
 
@@ -61,9 +62,9 @@ int Router::Bind(string endpoint){
   return 1;
 }
 
-int Router::Send(Msg *msg){
-  zmsg_t* zmsg=static_cast<Msg*>(msg)->DumpToZmsg();
-  int dstid=static_cast<Msg*>(msg)->dst();
+int Router::Send(Msg **msg){
+  zmsg_t* zmsg=(*msg)->DumpToZmsg();
+  int dstid=(*msg)->dst();
   if(id2addr_.find(dstid)!=id2addr_.end()){
     // the connection has already been set up
     zframe_t* addr=zframe_dup(id2addr_[dstid]);
@@ -77,7 +78,8 @@ int Router::Send(Msg *msg){
     nBufmsg_++;
     CHECK_LE(nBufmsg_, bufsize_);
   }
-  delete msg;
+  delete *msg;
+  *msg=NULL;
   return 1;
 }
 

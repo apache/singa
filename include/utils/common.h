@@ -47,5 +47,36 @@ inline float rand_real(){
   return  static_cast<float>(rand())/(RAND_MAX+1.0f);
 }
 
+class Metric{
+ public:
+  Metric():counter_(0){}
+  void AddMetric(string name, float value){
+    if(data_.find(name)==data_.end())
+      data_[name]=value;
+    else
+      data_[name]+=value;
+  }
+  void Reset(){
+    data_.clear();
+    counter_=0;
+  }
+  void Avg(){
+    for(auto& entry: data_)
+      entry.second/=counter_;
+  }
+  void Inc(){
+    counter_++;
+  }
+  const string ToString() const{
+    string disp="";
+    for(const auto& entry: data_){
+      disp+=entry.first+":"+std::to_string(entry.second)+"\t";
+    }
+    return disp;
+  }
+ private:
+  map<string, float> data_;
+  int counter_;
+};
 } /* singa */
 #endif  // INCLUDE_UTILS_COMMON_H_

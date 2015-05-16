@@ -4,34 +4,11 @@
 #include <exception>
 #include "neuralnet/neuralnet.h"
 #include "proto/model.pb.h"
-#include "trainer/pm_worker.h"
 #include "utils/cluster.h"
 #include "communication/socket.h"
 #include "communication/msg.h"
 
 namespace singa {
-/**
- * Collecting metrics, like accuracy, loss, etc.
- */
-class Performance{
- public:
-  /**
-   * Collect from LossLayer of net.
-   */
-  explicit Performance(shared_ptr<NeuralNet> net);
-  /**
-   * aggregate metrics from LossLayerS
-   */
-  void Update();
-  void Reset();
-  string ToString();
- private:
-  vector<string> name_;
-  shared_ptr<NeuralNet> net_;
-  vector<vector<float>> metric_;
-  int counter_; //!< inc by 1 for every Update
-};
-
 /**
  * The Worker class which runs the training algorithm.
  * The first worker group will initialize parameters of the Net,
@@ -41,8 +18,7 @@ class Worker {
  public:
   Worker(int thread_id, int group_id, int worker_id);
   ~Worker(){}
-  void Setup(const ModelProto& model, shared_ptr<NeuralNet> train_net,
-      shared_ptr<PMWorker::ParamShard> shard);
+  void Setup(const ModelProto& model, shared_ptr<NeuralNet> train_net);
   void set_test_net(shared_ptr<NeuralNet> test_net){
     test_net_=test_net;
   }
@@ -61,7 +37,7 @@ class Worker {
     * Hence, no need to collect performance in every thread.
     * Only the main thread will pass none null perf.
     */
-  void RunOneBatch(int step, Performance* perf=nullptr);
+  void RunOneBatch(int step, Metric* perf=nullptr);
   /**
     * Train one mini-batch.
     * Test/Validation is done before training.
@@ -105,6 +81,7 @@ class Worker {
   const bool DisplayDebugInfo(const int step) const {
     return DisplayNow(step)&&modelproto_.debug()&&group_id_==0;
   }
+  const void DisplayPerformance(const Metric & perf, const string& prefix);
 
   /**
    * return true if the stop condition is satisfied, e.g., the maximum number
@@ -163,7 +140,6 @@ class Worker {
   int thread_id_,group_id_, worker_id_;
   int step_;
   ModelProto modelproto_;
-  shared_ptr<PMWorker> pmworker_;
   shared_ptr<NeuralNet> train_net_, test_net_, validation_net_;
   shared_ptr<Dealer> layer_dealer_, param_dealer_;
   Poller layer_poller_, param_poller_;

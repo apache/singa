@@ -5,7 +5,7 @@
 #include "utils/singleton.h"
 #include "utils/factory.h"
 #include "utils/graph.h"
-
+#include "utils/cluster.h"
 
 namespace singa {
 #define CreateLayer(id) CreateInstance(id, Layer)
@@ -61,8 +61,21 @@ NeuralNet::NeuralNet(NetProto net_proto, int group_size) {
 
   LOG(INFO)<<"Construct Neural Net...";
   ConstructNeuralNet(net_proto);
-  if(group_size_>1)
+  {
+    string vis_folder=Cluster::Get()->vis_folder();
+    std::ofstream fout(vis_folder+"/nopartition.json", std::ofstream::out);
+    fout<<ToString();
+    fout.flush();
+    fout.close();
+  }
+  if(group_size_>1){
     PartitionNeuralNet();
+    string vis_folder=Cluster::Get()->vis_folder();
+    std::ofstream fout(vis_folder+"/partition.json", std::ofstream::out);
+    fout<<ToString();
+    fout.flush();
+    fout.close();
+  }
   for(auto layer: layers_){
     DLOG(INFO)<<layer->name();
   }
@@ -88,7 +101,7 @@ void NeuralNet::ConstructNeuralNet(const NetProto& net_proto){
 
   // topology sort
   graph_.Sort();
-  //DLOG(INFO)<<"pure graph without partition\n"<< graph_.ToString();
+  //LOG(ERROR)<<"pure graph without partition\n"<< graph_.ToString();
 
   auto* factory=Singleton<Factory<Layer>>::Instance();
   // create Layers according to topology order

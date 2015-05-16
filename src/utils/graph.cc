@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <queue>
 #include "utils/graph.h"
 
 const string Graph::ToString() const {
@@ -78,28 +79,41 @@ void Graph::topology_sort_inner(SNode node,
 
 // sort to make `bottom' nodes be placed in the front positions
 void Graph::Sort() {
-  // adjacent list from upper layers to lower layers
-  std::map<string, bool> visited;
-  // prepare adjacent list; input layers will be processed firstly,
-  // hence no need to sort them (mark them as visited)
-  for (SNode node: nodes_) {
-    visited[node->name()] = false;
+  SNode start=nullptr;
+  map<string, bool> visited;
+  for(auto node: nodes_){
+    if(node->srcnodes().size()==0){
+      CHECK(start==nullptr);
+      start=node;
+    }
+    visited[node->name()]=false;
   }
-  // the `top' layer in the net will be placed at the bottom of the stack
-  // and then be processed (i.e., forward) at last
-  std::stack<string > stack;
-  for (SNode node: nodes_) {
-    if (visited[node->name()] == false)
-      topology_sort_inner(node, &visited, &stack);
-  }
+  int n=nodes_.size();
+  std::queue<SNode> tmp;
+  tmp.push(start);
   nodes_.clear();
-
-  while (!stack.empty()) {
-    nodes_.push_back(name2node_[stack.top()]);
-    stack.pop();
+  while(!tmp.empty()){
+    auto node=tmp.front();
+    tmp.pop();
+    bool visit=true;
+    for(auto src: node->srcnodes())
+      if(visited[src->name()]==false){
+        visit=false;
+        break;
+      }
+    if(visit){
+      nodes_.push_back(node);
+      visited[node->name()]=true;
+      for(auto dst: node->dstnodes()){
+        CHECK(visited.find(dst->name())!=visited.end())<<dst->name();
+        if(visited[dst->name()]==false){
+          tmp.push(dst);
+        }
+      }
+    }
   }
+  CHECK_EQ(nodes_.size(), n);
 }
-
 
 
 SNode Graph::InsertSliceNode(SNode srcnode, const vector<SNode>& dstnodes,

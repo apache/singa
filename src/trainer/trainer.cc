@@ -3,6 +3,7 @@
 #include <map>
 #include <glog/logging.h>
 #include "trainer/trainer.h"
+#include "mshadow/tensor.h"
 using std::vector;
 using std::map;
 
@@ -33,16 +34,11 @@ void Trainer::RegisterDefaultClasses(const singa::ModelProto& proto){
       "Param", CreateInstance(singa::Param, singa::Param));
   Singleton<Factory<singa::Updater>>::Instance() ->Register(
       "Updater", CreateInstance(singa::SGDUpdater, singa::Updater));
-  Singleton<Factory<singa::PMWorker>>::Instance() ->Register(
-      "PMWorker", CreateInstance(singa::PMWorker, singa::PMWorker));
-  Singleton<Factory<singa::PMServer>>::Instance() ->Register(
-      "PMServer", CreateInstance(singa::PMServer, singa::PMServer));
-  Singleton<Factory<singa::PMServer>>::Instance() ->Register(
-      "PMServer", CreateInstance(singa::PMServer, singa::PMServer));
 }
 
 void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     int procs_id){
+  procs_id_=procs_id;
   RegisterDefaultClasses(mproto);
 
   auto cluster=Cluster::Get(cproto, procs_id);
@@ -57,7 +53,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     int start=pid*cluster->nservers_per_procs()%cluster->nservers_per_group();
     int end=start+cluster->nservers_per_group();
     // the ParamShard for servers consists of a dictionary of Param objects
-    auto shard=make_shared<PMServer::ParamShard>();
+    auto shard=make_shared<Server::ParamShard>();
     for(int sid=start;sid<end;sid++){
       auto server=make_shared<Server>(nthreads++,gid, sid);
       server->Setup(mproto.updater(), shard);
@@ -67,6 +63,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
 
   // create workers
   vector<shared_ptr<Worker>> workers;
+  std::map<int, shared_ptr<Trainer::ParamShard>> shards;
   if(cluster->has_worker()){
     auto net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
         cluster->nworkers_per_group());
@@ -117,14 +114,15 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
         }
       }
       // create ParamShard for the workers
-      auto shard=make_shared<PMWorker::ParamShard>();
+      auto shard=make_shared<Trainer::ParamShard>();
+      shards[gid]=shard;
       for(auto layer: train_net->layers()){
         int procsid=ProcsIDOf(gid, layer->partitionid(),kWorkerParam);
         int local=procsid==cluster->procs_id();
         for(auto param: layer->GetParams()){
           int owner=param->owner()<0||param->owner()==param->id()?procsid:-1;
           if(shard->find(param->owner())==shard->end())
-            (*shard)[param->owner()]=make_shared<ParamCounter>(param, local, owner);
+            (*shard)[param->owner()]=make_shared<ParamInfo>(param, local, owner);
           else
             shard->at(param->owner())->AddParam(param, local, owner);
         }
@@ -136,7 +134,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
         else{
         // TODO add CDWorker
         }
-        worker->Setup(mproto, train_net, shard);
+        worker->Setup(mproto, train_net);
         worker->set_test_net(test_net);
         worker->set_validation_net(validation_net);
         workers.push_back(worker);
@@ -154,13 +152,14 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     threads.push_back(std::thread(&Server::Run,server.get()));
   for(auto worker: workers)
     threads.push_back(std::thread(&Worker::Run,worker.get()));
-  Run();
+  Run(shards);
   for(auto& thread: threads)
     thread.join();
 }
 
-void Trainer::Run(){
+void Trainer::Run(const std::map<int, shared_ptr<Trainer::ParamShard>>& shards){
   auto cluster=Cluster::Get();
+  procs_id_=cluster->procs_id();
   auto router=make_shared<Router>();
   router->Bind(kInprocRouterEndpoint);
   if(cluster->nprocs()>1)
@@ -173,38 +172,179 @@ void Trainer::Run(){
       LOG(ERROR)<<"Connection broken!";
       exit(0);
     }
-    int dst_flag=msg->dst_flag();
-    int type=msg->type();
-    int group_id, id, procs_id;
-    switch (dst_flag){ // TODO process other requests, e.g. RESTful
-      case kStub:
+    while(msg!=nullptr){
+      int dst_flag=msg->dst_flag();
+      int type=msg->type();
+      int dst_procs=msg->dst_first();
+      if(dst_flag == kStub&&(dst_procs==procs_id_||dst_procs==-1)){
         if(type==kConnect){
-          string ping((char*)msg->frame_data(), msg->frame_size());
-          CHECK_STREQ("PING", ping.c_str());
-          msg->SwapAddr();
-          Msg* reply=new Msg();
-          reply->SetAddr(msg);
-          reply->add_frame("PONG", 4);
-          reply->set_type(kConnect);
-          delete msg;
-          router->Send(reply);
+          msg =HandleConnect(&msg);
         }else{
-          // TODO processing requests for worker group spanning multiple procs.
-          LOG(ERROR)<<"Unkown message type ("<<type<<") to stub";
+          int group_id=msg->src_first();
+          int paramid=msg->target_first();
+          auto entry=shards.at(group_id)->at(paramid);
+          switch (type){ // TODO process other requests, e.g. RESTful
+            case kUpdate:
+              msg=HandleUpdate(entry, &msg);
+              break;
+            case kRUpdate:
+              HandleUpdateResponse(entry, &msg);
+              break;
+            case kGet:
+              msg=HandleGet(entry, &msg);
+              break;
+            case kRGet:
+              msg=HandleGetResponse(entry, &msg);
+              break;
+            case kPut:
+              msg=HandlePut(entry, &msg);
+              break;
+            default:
+              break;
+          }
         }
-        break;
-      default:
-        group_id=msg->dst_group_id();
-        id=msg->dst_id();
-        procs_id=ProcsIDOf(group_id, id, dst_flag);
-        if(procs_id!=cluster->procs_id()){
-          if (interprocs_dealers.find(procs_id)==interprocs_dealers.end())
-            interprocs_dealers[procs_id]=make_shared<Dealer>(procs_id);
-          interprocs_dealers[procs_id]->Send(msg);
-        } else
-          router->Send(msg);
-        break;
+      }else{
+        int dst_procs_id;
+        if(dst_flag==kStub){
+          dst_procs_id=msg->dst_first();
+        }else{
+          dst_procs_id=ProcsIDOf(msg->dst_first(), msg->dst_second(), msg->dst_flag());
+        }
+        if(dst_procs_id!=procs_id_){
+          /*
+             // forward to other procs
+             if (interprocs_dealers.find(procs_id)==interprocs_dealers.end())
+             interprocs_dealers[procs_id]=make_shared<Dealer>(procs_id);
+             interprocs_dealers[procs_id]->Send(&msg);
+             */
+        }else{
+          router->Send(&msg);
+        }
+      }
     }
   }
+}
+Msg* Trainer::HandleConnect(Msg** msg){
+  string ping((char*)(*msg)->frame_data(), (*msg)->frame_size());
+  CHECK_STREQ("PING", ping.c_str());
+  // ping-pong for debug
+  (*msg)->SwapAddr();
+  Msg* reply=new Msg();
+  reply->SetAddr(*msg);
+  reply->add_frame("PONG", 4);
+  reply->set_type(kConnect);
+  delete *msg;
+  *msg=NULL;
+  return reply;
+}
+int Trainer::Sharding(int param_id){
+  return param_id%Cluster::Get()->nservers_per_group();
+}
+/*
+int Worker::Sharding(int param_id){
+  static map<int, int> id2procs;
+  if(id2procs.find(param_id)==id2procs.end()){
+  auto cluster=Cluster::Get();
+  int server_group=group_id_%cluster->nserver_groups();
+  int nprocs_per_server_group=
+    cluster->nservers_per_group()/cluster->nservers_per_procs();
+  int procsid=server_group*nprocs_per_server_group+
+    param_id%nprocs_per_server_group;
+  procsid= cluster->server_worker_separate()?
+    cluster->nworker_procs()+procsid:procsid;
+  id2procs[param_id]=procsid;
+  }
+  return id2procs[param_id];
+}
+*/
+
+
+Msg* Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
+  Msg* msgg=*msg, *reply=nullptr;
+  int version=msgg->target_second();
+  if(msgg->src_flag()==kStub){
+    if(version<=pi->shares.at(0)->version()){
+      reply=pi->shares.at(0)->HandleGetMsg(msg);
+    }else if(version>pi->next_version){
+      // reinsert into a msg queue.
+    }
+  }else if(version>pi->next_version){
+    pi->next_version=version;
+    reply=pi->shares.at(0)->GenGetMsg(&version);
+    int gid=msgg->src_first(), pid=msgg->target_first();
+    reply->set_src(procs_id_, gid, kStub);
+    reply->set_dst(gid/Cluster::Get()->nworker_groups_per_server_group(),
+        Sharding(pid), kServer);
+  }
+  return reply;
+}
+
+Msg* Trainer::HandleGetResponse(shared_ptr<ParamInfo>pi, Msg** msg){
+  pi->shares.at(0)->ParseGetResponseMsg(msg);
+  return nullptr;
+  // process get requests in waiting queue
+}
+
+Msg* Trainer::HandleUpdate(shared_ptr<ParamInfo>pi, Msg** msg){
+  Msg* msgg=*msg, *update=nullptr;
+  if(msgg->src_flag()==kStub){
+    if(pi->num_update<pi->num_local)
+      return *msg; //wait unitl local updates are ready
+    int n;
+    sscanf((char*)(*msg)->frame_data(), "%d", &n);
+    pi->num_update+=n;
+    auto it=pi->shares.begin();
+    auto shape=mshadow::Shape1((*it)->size());
+    mshadow::Tensor<mshadow::cpu,1> agg((*it)->mutable_cpu_grad(), shape);
+    mshadow::Tensor<mshadow::cpu,1> grad((*it)->mutable_cpu_grad(), shape);
+    agg+=grad;
+  }else if(++pi->num_update>=pi->num_local){
+    auto it=pi->shares.begin();
+    auto shape=mshadow::Shape1((*it)->size());
+    mshadow::Tensor<mshadow::cpu,1> agg((*it)->mutable_cpu_grad(), shape);
+    for(++it;it!=pi->shares.end();it++){
+      mshadow::Tensor<mshadow::cpu,1> grad((*it)->mutable_cpu_grad(), shape);
+      agg+=grad;
+    }
+    agg/=pi->num_total;
+    if(pi->num_local<pi->num_total){
+      int v=msgg->target_second();
+      update=pi->shares.at(0)->GenUpdateMsg(&v);
+      int gid=msgg->src_first();
+      update->set_src(procs_id_, gid,kStub);
+      update->set_dst(pi->owner_procs, gid, kStub);
+      pi->num_update=0;
+    }
+  }
+  if(pi->num_update==pi->num_total){
+    int v=msgg->target_second();
+    update=pi->shares.at(0)->GenUpdateMsg(&v);
+    int gid=msgg->src_first();
+    update->set_src(procs_id_, gid, kStub);
+    update->set_dst(gid/Cluster::Get()->nworker_groups_per_server_group(),
+        Sharding((*msg)->target_first()), kServer);
+    pi->num_update=0;
+  }
+  delete *msg;
+  *msg=NULL;
+  return update;
+}
+
+int Trainer::HandleUpdateResponse(shared_ptr<Trainer::ParamInfo> pi, Msg** msg){
+  HandleGetResponse(pi, msg);
+  return 1;
+}
+
+Msg* Trainer::HandlePut(shared_ptr<Trainer::ParamInfo>pi, Msg** msg){
+  CHECK_NE((*msg)->src_flag(), kStub);
+  Msg* put=pi->shares.at(0)->GenPutMsg();
+  int gid=(*msg)->src_first();
+  int id=(*msg)->target_first();
+  put->set_src(procs_id_, gid , kStub);
+  put->set_dst(gid/Cluster::Get()->nworker_groups_per_server_group(),
+      Sharding(id), kServer);
+  delete *msg;
+  *msg=NULL;
+  return put;
 }
 } /* singa */
