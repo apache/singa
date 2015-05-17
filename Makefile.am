@@ -23,9 +23,7 @@ SINGA_SRCS := src/utils/cluster.cc \
 			  src/utils/blob.cc \
 			  src/trainer/server.cc \
 			  src/trainer/worker.cc \
-			  src/trainer/pm_server.cc \
 			  src/trainer/trainer.cc \
-			  src/trainer/pm_worker.cc \
 			  src/neuralnet/base_layer.cc \
 			  src/neuralnet/neuralnet.cc \
 			  src/neuralnet/layer.cc \
@@ -43,9 +41,7 @@ SINGA_HDRS := include/utils/cluster.h \
 			  include/utils/updater.h \
 			  include/trainer/server.h \
 			  include/trainer/worker.h \
-			  include/trainer/pm_worker.h \
 			  include/trainer/trainer.h \
-			  include/trainer/pm_server.h \
 			  include/neuralnet/base_layer.h \
 			  include/neuralnet/layer.h \
 			  include/neuralnet/neuralnet.h \
