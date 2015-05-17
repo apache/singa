@@ -92,3 +92,15 @@ The installation commands of czmq can be:
 After the execution, czmq will be installed in /usr/local while zeromq is installed in /usr/local/zeromq.
 
 ### FAQ
+
+Q1:While compiling Singa and installing glog on max OS X, I get fatal error "'ext/slist' file not found"
+A1:You may install glog individually and try command :
+
+	$ make CFLAGS='-stdlib=libstdc++' CXXFLAGS='stdlib=libstdc++'
+#
+
+Q2:While compiling Singa, I get error "SSE2 instruction set not enabled"
+A2:You can try following command:
+	
+	$ make CFLAGS='-msse2' CXXFLAGS='-msse2'
+#

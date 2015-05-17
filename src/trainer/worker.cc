@@ -54,6 +54,7 @@ void Worker::Run(){
   delete ping;
   }
   step_=modelproto_.step();
+  //layer_dealer_=std::make_shared<Dealer>(thread_id_*2);
   // init params
   for(auto layer: train_net_->layers()){
     //LOG(ERROR)<<layer->partitionid()<<" : "<<layer->name();

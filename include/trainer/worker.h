@@ -137,7 +137,7 @@ class Worker {
   void ReceiveBlobs(shared_ptr<NeuralNet> net);
   void SendBlob();
  protected:
-  int thread_id_,group_id_, worker_id_;
+  int thread_id_, group_id_, worker_id_;
   int step_;
   ModelProto modelproto_;
   shared_ptr<NeuralNet> train_net_, test_net_, validation_net_;

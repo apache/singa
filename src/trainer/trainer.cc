@@ -55,7 +55,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     // the ParamShard for servers consists of a dictionary of Param objects
     auto shard=make_shared<Server::ParamShard>();
     for(int sid=start;sid<end;sid++){
-      auto server=make_shared<Server>(nthreads++,gid, sid);
+      auto server=make_shared<Server>(nthreads++, gid, sid);
       server->Setup(mproto.updater(), shard);
       servers.push_back(server);
     }
