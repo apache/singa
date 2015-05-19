@@ -9,7 +9,7 @@
 #include "trainer/worker.h"
 #include "proto/model.pb.h"
 using std::thread;
-DECLARE_int32(sleep);
+DEFINE_int32(sleep, 5, "sleep seconds");
 namespace singa {
 Worker::Worker(int thread_id, int group_id, int worker_id):
   thread_id_(thread_id), group_id_(group_id), worker_id_(worker_id){

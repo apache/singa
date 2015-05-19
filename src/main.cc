@@ -20,7 +20,6 @@
 DEFINE_int32(procsID, 0, "Global process ID");
 DEFINE_string(cluster, "examples/mnist/cluster.conf", "Cluster config file");
 DEFINE_string(model, "examples/mnist/conv.conf", "Model config file");
-DEFINE_int32(sleep, 5, "sleep seconds");
 
 /**
  * Register layers, and other customizable classes.
