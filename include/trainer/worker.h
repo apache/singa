@@ -9,6 +9,7 @@
 #include "communication/msg.h"
 
 namespace singa {
+const int kCollectSleepTime=5;//milliseconds;
 /**
  * The Worker class which runs the training algorithm.
  * The first worker group will initialize parameters of the Net,
