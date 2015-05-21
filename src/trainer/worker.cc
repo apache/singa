@@ -323,7 +323,7 @@ void CDWorker::PositivePhase(shared_ptr<NeuralNet> net, int step, bool training)
         }
       }
       //clock_t s=clock();
-      layer->ComputeFeature(positive);
+      layer->ComputeFeature(true);
       //LOG(ERROR)<<layer->name()<<":"<<(clock()-s)*1.0/CLOCKS_PER_SEC;
       if(layer->is_bridgesrclayer()){
         auto dst=layer->dstlayers().at(0);
@@ -352,7 +352,7 @@ void CDWorker::NegativePhase(shared_ptr<NeuralNet> net, int step){
         //auto* src=static_cast<BridgeSrcLayer*>(layer.get());
         // receive grad blobs
       }
-      layer->ComputeFeature(Negative);
+      layer->ComputeFeature(false);
       if(DisplayDebugInfo(step)&&layer->mutable_grad(nullptr)!=nullptr){
         LOG(INFO)<<StringPrintf("Backward layer %10s grad norm1 %13.9f\t",
             layer->name().c_str(), layer->grad(nullptr).asum_data());
