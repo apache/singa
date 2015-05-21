@@ -295,4 +295,120 @@ void BPWorker::TestOneBatch(shared_ptr<NeuralNet> net,int step, Phase phase){
   Forward(net, step, false);
 }
 
+/****************************CDWorker**********************************/
+
+void CDWorker::PositivePhase(shared_ptr<NeuralNet> net, int step, bool training){
+  auto& layers=net->layers();
+  for(auto& layer: layers){
+    if(layer->partitionid()==worker_id_){
+      if(layer->is_bridgedstlayer()){
+        auto* dst=static_cast<BridgeDstLayer*>(layer.get());
+        while(!dst->ready()){
+          auto msg=layer_dealer_->Receive();
+          CHECK_EQ(msg->src_first(), group_id_);
+          string name((char*)msg->frame_data(), msg->frame_size());
+          auto tmp=net->name2layer(name);
+          CHECK(tmp->is_bridgedstlayer());
+          auto* dstlayer=static_cast<BridgeDstLayer*>(tmp.get());
+          auto data=dstlayer->mutable_data(nullptr);
+          msg->next_frame();
+          memcpy(data->mutable_cpu_data(), msg->frame_data(), msg->frame_size());
+          dstlayer->set_ready(true);
+          delete msg;
+        }
+      }
+      if(training){                                     //in RBM there is no difference between training and testing
+        for(shared_ptr<Param> p: layer->GetParams()){
+          Collect(p, step);
+        }
+      }
+      //clock_t s=clock();
+      layer->ComputeFeature(positive);
+      //LOG(ERROR)<<layer->name()<<":"<<(clock()-s)*1.0/CLOCKS_PER_SEC;
+      if(layer->is_bridgesrclayer()){
+        auto dst=layer->dstlayers().at(0);
+        Msg *msg=new Msg();
+        msg->set_src(group_id_, worker_id_, kWorkerLayer);
+        msg->set_dst(group_id_, dst->partitionid(), kWorkerLayer);
+        msg->add_frame(dst->name().c_str(), dst->name().length());
+        auto const & blob=layer->data(nullptr);
+        msg->add_frame(blob.cpu_data(), blob.count()*sizeof(float));
+        layer_dealer_->Send(&msg);
+      }
+      if(training&&DisplayDebugInfo(step)&&layer->mutable_data(nullptr)!=nullptr){
+        LOG(INFO)<<StringPrintf("Forward layer  %10s data norm1 %13.9f",
+            layer->name().c_str(), layer->data(nullptr).asum_data());
+      }
+    }
+  }
+}
+
+void CDWorker::NegativePhase(shared_ptr<NeuralNet> net, int step){
+  auto& layers=net->layers();
+  for (auto it = layers.rbegin(); it != layers.rend(); it++){    //what is the difference between forward and backward in terms of traverse all layers
+    shared_ptr<Layer> layer=*it;
+    if(layer->partitionid()==worker_id_){
+      if(layer->is_bridgesrclayer()){
+        //auto* src=static_cast<BridgeSrcLayer*>(layer.get());
+        // receive grad blobs
+      }
+      layer->ComputeFeature(Negative);
+      if(DisplayDebugInfo(step)&&layer->mutable_grad(nullptr)!=nullptr){
+        LOG(INFO)<<StringPrintf("Backward layer %10s grad norm1 %13.9f\t",
+            layer->name().c_str(), layer->grad(nullptr).asum_data());
+        for(shared_ptr<Param> p: layer->GetParams())
+          LOG(INFO)<<StringPrintf("param id %2d, name %10s,\
+              value norm1 %13.9f, grad norm1 %13.9f",
+              p->id(), p->name().c_str(),
+              p->data().asum_data(), p->grad().asum_data());
+      }
+      for(shared_ptr<Param> p: layer->GetParams()){
+        Update(p, step);
+      }
+      if(layer->is_bridgedstlayer()){
+        // send grad blobs
+      }
+    }
+  }
+}
+
+void CDWorker::GradientPhase(shared_ptr<NeuralNet> net, int step){
+  auto& layers=net->layers();
+  for (auto it = layers.rbegin(); it != layers.rend(); it++){
+    shared_ptr<Layer> layer=*it;
+    if(layer->partitionid()==worker_id_){
+      if(layer->is_bridgesrclayer()){
+        //auto* src=static_cast<BridgeSrcLayer*>(layer.get());
+        // receive grad blobs
+      }
+      layer->ComputeGradient();
+      if(DisplayDebugInfo(step)&&layer->mutable_grad(nullptr)!=nullptr){
+        LOG(INFO)<<StringPrintf("Backward layer %10s grad norm1 %13.9f\t",
+            layer->name().c_str(), layer->grad(nullptr).asum_data());
+        for(shared_ptr<Param> p: layer->GetParams())
+          LOG(INFO)<<StringPrintf("param id %2d, name %10s,\
+              value norm1 %13.9f, grad norm1 %13.9f",
+              p->id(), p->name().c_str(),
+              p->data().asum_data(), p->grad().asum_data());
+      }
+      for(shared_ptr<Param> p: layer->GetParams()){
+        Update(p, step);
+      }
+      if(layer->is_bridgedstlayer()){
+        // send grad blobs
+      }
+    }
+  }
+}
+
+void CDWorker::TrainOneBatch(int step){
+  PositivePhase(train_net_, step, true);
+  NegativePhase(train_net_, step);
+  GradientPhase(train_net_, step);
+}
+
+void CDWorker::TestOneBatch(shared_ptr<NeuralNet> net,int step, Phase phase){
+  PositivePhase(net, step, false);
+}
+
 }  // namespace singa

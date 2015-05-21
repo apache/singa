@@ -85,6 +85,117 @@ class DropoutLayer: public Layer {
 };
 
 /**
+  * DBM bottom layer
+  */
+class DBMBottomLayer: public Layer {
+ public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+  virtual void Setup(const LayerProto& proto,
+      const vector<SLayer>& srclayers);
+  
+  virtual void SetupAfterPartition(const LayerProto& proto,
+      const vector<int> &shape,
+      const vector<SLayer>& srclayers);
+  virtual ConnectionType connection_type(int k) const {
+    CHECK_LT(k, srclayers_.size());
+    return kOneToAll;
+  }
+
+  virtual void ComputeFeature(bool positive, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
+  //virtual void ToProto(LayerProto *layer_proto, bool copyData);
+  virtual vector<shared_ptr<Param>> GetParams() {
+    return vector<shared_ptr<Param>>{weight_, bias_};
+  }
+
+ private:
+  //! dimension of the hidden layer
+  int hdim_;
+  //! dimension of the visible layer
+  int vdim_;
+  int batchsize_;
+  shared_ptr<Param> weight_, bias_;
+};
+
+/**
+  * DBM middle layer
+  */
+class DBMMiddleLayer: public Layer {
+ public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+  virtual void Setup(const LayerProto& proto,
+      const vector<SLayer>& srclayers);
+
+  virtual void SetupAfterPartition(const LayerProto& proto,
+      const vector<int> &shape,
+      const vector<SLayer>& srclayers);
+  virtual ConnectionType connection_type(int k) const {
+    CHECK_LT(k, srclayers_.size());
+    return kOneToAll;
+  }
+
+  virtual void ComputeFeature(bool positive, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
+  //virtual void ToProto(LayerProto *layer_proto, bool copyData);
+  virtual vector<shared_ptr<Param>> GetParams() {
+    return vector<shared_ptr<Param>>{weight_, bias_};
+  }
+
+ private:
+  //! dimension of the hidden layer
+  int hdim_;
+  //! dimension of the visible layer
+  int vdim_;
+  int batchsize_;
+  shared_ptr<Param> weight_, bias_;
+};
+
+/**
+  * DBM top layer
+  */
+class DBMTopLayer: public Layer {
+ public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+  virtual void Setup(const LayerProto& proto,
+      const vector<SLayer>& srclayers);
+  
+  virtual void SetupAfterPartition(const LayerProto& proto,
+      const vector<int> &shape,
+      const vector<SLayer>& srclayers);
+  virtual ConnectionType connection_type(int k) const {
+    CHECK_LT(k, srclayers_.size());
+    return kOneToAll;
+  }
+
+  virtual void ComputeFeature(bool positive, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
+  //virtual void ToProto(LayerProto *layer_proto, bool copyData);
+  virtual vector<shared_ptr<Param>> GetParams() {
+    return vector<shared_ptr<Param>>{weight_, bias_};
+  }
+
+ private:
+  //! dimension of the hidden layer
+  int hdim_;
+  //! dimension of the visible layer
+  int vdim_;
+  int batchsize_;
+  shared_ptr<Param> weight_, bias_;
+};
+
+/**
   * fully connected layer
   */
 class InnerProductLayer: public Layer {
