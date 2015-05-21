@@ -1,5 +1,5 @@
 ##Apache SINGA
-I am zhaojing
+I am not zhaojing
 
 Distributed deep learning system
 
