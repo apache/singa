@@ -317,13 +317,13 @@ void CDWorker::PositivePhase(shared_ptr<NeuralNet> net, int step, bool training)
           delete msg;
         }
       }
-      if(training){                                     //in RBM there is no difference between training and testing
+      if(training){                                     //in RBM there is no difference between training and testing??
         for(shared_ptr<Param> p: layer->GetParams()){
           Collect(p, step);
         }
       }
       //clock_t s=clock();
-      layer->ComputeFeature(true);
+      layer->ComputeFeature(true);			//I only modified here
       //LOG(ERROR)<<layer->name()<<":"<<(clock()-s)*1.0/CLOCKS_PER_SEC;
       if(layer->is_bridgesrclayer()){
         auto dst=layer->dstlayers().at(0);
@@ -345,14 +345,14 @@ void CDWorker::PositivePhase(shared_ptr<NeuralNet> net, int step, bool training)
 
 void CDWorker::NegativePhase(shared_ptr<NeuralNet> net, int step){
   auto& layers=net->layers();
-  for (auto it = layers.rbegin(); it != layers.rend(); it++){    //what is the difference between forward and backward in terms of traverse all layers
+  for (auto it = layers.rbegin(); it != layers.rend(); it++){    //what is the difference between forward and backward in terms of traverse all layers (line302)
     shared_ptr<Layer> layer=*it;
     if(layer->partitionid()==worker_id_){
       if(layer->is_bridgesrclayer()){
         //auto* src=static_cast<BridgeSrcLayer*>(layer.get());
         // receive grad blobs
       }
-      layer->ComputeFeature(false);
+      layer->ComputeFeature(false);				//I only modified here
       if(DisplayDebugInfo(step)&&layer->mutable_grad(nullptr)!=nullptr){
         LOG(INFO)<<StringPrintf("Backward layer %10s grad norm1 %13.9f\t",
             layer->name().c_str(), layer->grad(nullptr).asum_data());
@@ -402,12 +402,12 @@ void CDWorker::GradientPhase(shared_ptr<NeuralNet> net, int step){
 }
 
 void CDWorker::TrainOneBatch(int step){
-  PositivePhase(train_net_, step, true);
+  PositivePhase(train_net_, step, true);     // no need to specify training or not in RBM??
   NegativePhase(train_net_, step);
-  GradientPhase(train_net_, step);
+  GradientPhase(train_net_, step);           
 }
 
-void CDWorker::TestOneBatch(shared_ptr<NeuralNet> net,int step, Phase phase){
+void CDWorker::TestOneBatch(shared_ptr<NeuralNet> net,int step, Phase phase){  //I think for RBM, this can be removed
   PositivePhase(net, step, false);
 }
 

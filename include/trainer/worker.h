@@ -188,8 +188,8 @@ class CDWorker: public Worker{
   ~CDWorker(){}
   CDWorker(int thread_id, int group_id, int worker_id):Worker(thread_id, group_id, worker_id){}
   virtual void TrainOneBatch(int step);
-  virtual void TestOneBatch(shared_ptr<NeuralNet> net, int step, Phase phase);
-  void PositivePhase(shared_ptr<NeuralNet> net, int step, bool training);
+  virtual void TestOneBatch(shared_ptr<NeuralNet> net, int step, Phase phase);   /*In RBM, what is the testing?*/
+  void PositivePhase(shared_ptr<NeuralNet> net, int step, bool training);        /*should we differentiate training and testing in RBM?*/
   void Negativephase(shared_ptr<NeuralNet> net, int step);
   void GradientPhase(shared_ptr<NeuralNet> net, int step);
 };
