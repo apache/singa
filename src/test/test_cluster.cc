@@ -7,8 +7,22 @@ using namespace singa;
 
 string folder="src/test/data/";
 
-TEST(CluserRuntimeTest, Basic){
-  ClusterRuntime* rt = new ZKClusterRT("localhost:2181");
+string host="localhost:2181";
+
+void zk_cb(void *contest){
+  LOG(INFO) << "zk callback: " << (char *)contest;
+}
+
+TEST(CluserRuntimeTest, ZooKeeper){
+  ClusterRuntime* rt = new ZKClusterRT(host);
+  ASSERT_EQ(rt->Init(), true);
+  ASSERT_EQ(rt->sWatchSGroup(1, 1, zk_cb, "test call back"), true);
+  ASSERT_EQ(rt->wJoinSGroup(1, 1, 1), true);
+  ASSERT_EQ(rt->wJoinSGroup(1, 2, 1), true);
+  ASSERT_EQ(rt->wLeaveSGroup(1, 2, 1), true);
+  ASSERT_EQ(rt->wLeaveSGroup(1, 1, 1), true);
+  
+  sleep(3);
   delete rt;
 }
 
