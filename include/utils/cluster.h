@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include "proto/cluster.pb.h"
+#include "cluster_rt.h"
 
 using std::shared_ptr;
 using std::string;
@@ -108,6 +109,19 @@ class Cluster {
   }
    */
 
+  //ClusterRuntime functions
+  bool server_watch(int gid, int sid) const {
+    return false;
+  }
+
+  bool worker_join_sgroup(int gid, int wid, int server_group) const {
+    return false;
+  }
+
+  bool worker_leave_sgroup(int gid, int wid, int s_group) const {
+    return false;
+  }
+
  private:
   Cluster(const ClusterProto &cluster, int procs_id) ;
   void SetupFolders(const ClusterProto &cluster);
@@ -120,6 +134,7 @@ class Cluster {
   // make this class a singlton
   static shared_ptr<Cluster> instance_;
 };
+
 }  // namespace singa
 
 #endif  // INCLUDE_UTILS_CLUSTER_H_
