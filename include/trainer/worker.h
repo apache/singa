@@ -56,7 +56,7 @@ class Worker {
     * @param net, neural network
     * @param phase kValidation or kTest.
     */
-  void Test(shared_ptr<NeuralNet> net, int nsteps, bool dispperf);
+  void Test(shared_ptr<NeuralNet> net, int nsteps, const string &prefix);
 
   /**
     * Main function of Worker.

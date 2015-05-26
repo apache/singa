@@ -193,11 +193,12 @@ enum MsgType {
   kData = 7,
   kRGet = 8,
   kRUpdate = 9,
-  kConnect = 10
+  kConnect = 10,
+  kMetric = 11
 };
 bool MsgType_IsValid(int value);
 const MsgType MsgType_MIN = kGet;
-const MsgType MsgType_MAX = kConnect;
+const MsgType MsgType_MAX = kMetric;
 const int MsgType_ARRAYSIZE = MsgType_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* MsgType_descriptor();

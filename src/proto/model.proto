@@ -11,6 +11,7 @@ enum MsgType{
   kRGet=8;
   kRUpdate=9;
   kConnect=10;
+  kMetric=11;
 };
 
 enum EntityType{

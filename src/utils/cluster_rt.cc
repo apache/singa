@@ -83,7 +83,7 @@ bool ZKClusterRT::wJoinSGroup(int gid, int wid, int s_group){
 
   int ret = zoo_create(zkhandle_, path.c_str(), NULL, -1, &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, buf, MAX_BUF_LEN);
   if (ret == ZOK){
-    LOG(ERROR) << "zookeeper node " << buf << " created";
+    LOG(INFO) << "zookeeper node " << buf << " created";
     return true;
   }
   else if (ret == ZNODEEXISTS){
@@ -105,7 +105,7 @@ bool ZKClusterRT::wLeaveSGroup(int gid, int wid, int s_group){
 
   int ret = zoo_delete(zkhandle_, path.c_str(), -1);
   if (ret == ZOK){
-    LOG(ERROR) << "zookeeper node " << path << " deleted";
+    LOG(INFO) << "zookeeper node " << path << " deleted";
     return true;
   }
   else if (ret == ZNONODE){

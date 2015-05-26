@@ -21,7 +21,7 @@ void Worker::Setup(const ModelProto& model,
   modelproto_=model;
   auto cluster=Cluster::Get();
   int sgid=group_id_/cluster->nworker_groups_per_server_group();
-  cluster->runtime()->wJoinSGroup(group_id_, worker_id_, sgid);
+  CHECK(cluster->runtime()->wJoinSGroup(group_id_, worker_id_, sgid));
 }
 
 void Worker::Run(){
@@ -150,28 +150,28 @@ int Worker::Collect(shared_ptr<Param> param, int step){
   return 1;
 }
 const void Worker::DisplayPerformance(const Metric & perf, const string& prefix){
-  /* TODO send perf to Stub thread for printing
-     Msg* msg=new Msg();
-     msg->set_src(group_id_, worker_id_, kWorkerParam);
-     msg->set_dst(-1,-1, kStub);
-     msg->set_type(kMetric);
-     const string disp=perf.ToString();
-     msg->AddFrame(disp.c_str(), disp.length());
-     param_dealer_->Send(&msg);
-     */
-  LOG(ERROR)<<prefix<<" "<<perf.ToString();
+  Msg* msg=new Msg();
+  msg->set_src(group_id_, worker_id_, kWorkerParam);
+  msg->set_dst(-1,-1, kStub);
+  msg->set_type(kMetric);
+  msg->set_target(step_,0);
+  const string disp=perf.ToString();
+  msg->add_frame(prefix.c_str(), prefix.length());
+  msg->add_frame(disp.c_str(), disp.length());
+  param_dealer_->Send(&msg);
+  //LOG(ERROR)<<prefix<<" "<<perf.ToString();
 }
 
 void Worker::RunOneBatch(int step, Metric* perf){
   if(ValidateNow(step)){
-    LOG(ERROR)<<"Validation at step "<<step;
+    //LOG(ERROR)<<"Validation at step "<<step;
     CollectAll(validation_net_, step);
-    Test(validation_net_, modelproto_.validation_steps(), perf!=nullptr);
+    Test(validation_net_, modelproto_.validation_steps(), "Validation");
   }
   if(TestNow(step)){
-    LOG(ERROR)<<"Test at step "<<step;
+    //LOG(ERROR)<<"Test at step "<<step;
     CollectAll(test_net_, step);
-    Test(test_net_, modelproto_.test_steps(), perf!=nullptr);
+    Test(test_net_, modelproto_.test_steps(), "Test");
   }
   TrainOneBatch(step);
   if(perf!=nullptr){
@@ -180,13 +180,13 @@ void Worker::RunOneBatch(int step, Metric* perf){
       if(layer->partitionid()==worker_id_){
         const float * ptr=layer->metric().cpu_data();
         for(int j=0;j<layer->metric().count();j++)
-          perf->AddMetric(layer->name()+"-"+std::to_string(j), ptr[j]);
+          perf->AddMetric(std::to_string(j)+"#"+layer->name(), ptr[j]);
       }
     }
     perf->Inc();
     if(DisplayNow(step)){
       perf->Avg();
-      DisplayPerformance(*perf, "Train at step "+std::to_string(step));
+      DisplayPerformance(*perf, "Train");
       perf->Reset();
     }
   }
@@ -203,27 +203,22 @@ void Worker::ReceiveBlobs(shared_ptr<NeuralNet> net){
 void Worker::SendBlob(){
 }
 
-void Worker::Test(shared_ptr<NeuralNet> net, int nsteps, bool disperf){
+void Worker::Test(shared_ptr<NeuralNet> net, int nsteps, const string& prefix){
   const auto& losslayers=net->losslayers();
   Metric perf;
   for(int step=0;step<nsteps;step++){
     TestOneBatch(net, step, kTest);
-    if(disperf){
-      for(auto layer: losslayers){
-        if(layer->partitionid()==worker_id_){
-          const float * ptr=layer->metric().cpu_data();
-          for(int j=0;j<layer->metric().count();j++)
-            perf.AddMetric(layer->name()+"-"+std::to_string(j), ptr[j]);
-        }
+    for(auto layer: losslayers){
+      if(layer->partitionid()==worker_id_){
+        const float * ptr=layer->metric().cpu_data();
+        for(int j=0;j<layer->metric().count();j++)
+          perf.AddMetric(std::to_string(j)+"#"+layer->name(), ptr[j]);
       }
-      perf.Inc();
     }
+    perf.Inc();
   }
-  if(disperf){
-    perf.Avg();
-    DisplayPerformance(perf, "Test");
-    perf.Reset();
-  }
+  perf.Avg();
+  DisplayPerformance(perf, prefix);
 }
 
 /****************************BPWorker**********************************/

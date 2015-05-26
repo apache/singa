@@ -76,13 +76,10 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
         auto server=make_shared<Server>(nthreads++, gid, sid);
         server->Setup(mproto.updater(), shard);
         servers.push_back(server);
-        HandleContext hc;
-        hc.dealer=dealer;
-        hc.group_id=gid;
-        hc.id=sid;
+        HandleContext hc{dealer, gid, sid};
         ctx.push_back(hc);
-        cluster->runtime()->sWatchSGroup(gid, sid, HandleWorkerFinish,
-            &ctx.back());
+        CHECK(cluster->runtime()->sWatchSGroup(gid, sid, HandleWorkerFinish,
+            &ctx.back()));
       }
     }
   }
@@ -193,6 +190,9 @@ void Trainer::Run(int nworkers, int nservers,
     router->Bind(cluster->endpoint());
 
   map<int, shared_ptr<Dealer>> interprocs_dealers;
+  Metric perf;
+  int perf_step=-1;
+  string perf_prefix;
   bool stop=false;
   while(!stop){
     Msg* msg=router->Receive();
@@ -218,8 +218,27 @@ void Trainer::Run(int nworkers, int nservers,
             stop=true;
             break;
           }
-          LOG(ERROR)<<"Stub recv Stop";
-        }else{
+        }else if(type==kMetric){
+          int step=msg->target_first();
+          string prefix((char*)msg->frame_data(), msg->frame_size());
+          if(step!=perf_step||perf_prefix!=prefix){
+            if(perf_step>=0){
+              perf.Avg();
+              LOG(ERROR)<<perf_prefix<<" step-"
+                <<perf_step<<", "<<perf.ToString();
+              perf.Reset();
+            }
+            perf_step=step;
+            perf_prefix=prefix;
+          }
+          msg->next_frame();
+          Metric cur;
+          cur.ParseString(string((char*)msg->frame_data(), msg->frame_size()));
+          perf.AddMetrics(cur);
+          perf.Inc();
+          delete msg;
+          msg=nullptr;
+        }else {
           int group_id=msg->src_first();
           int paramid=msg->target_first();
           auto entry=shards.at(group_id)->at(paramid);
@@ -251,19 +270,21 @@ void Trainer::Run(int nworkers, int nservers,
           dst_procs_id=ProcsIDOf(msg->dst_first(), msg->dst_second(), msg->dst_flag());
         }
         if(dst_procs_id!=procs_id_){
-          /*
-             // forward to other procs
-             if (interprocs_dealers.find(procs_id)==interprocs_dealers.end())
-             interprocs_dealers[procs_id]=make_shared<Dealer>(procs_id);
-             interprocs_dealers[procs_id]->Send(&msg);
-             */
+        /*
+          // forward to other procs
+          if (interprocs_dealers.find(procs_id)==interprocs_dealers.end())
+          interprocs_dealers[procs_id]=make_shared<Dealer>(procs_id);
+          interprocs_dealers[procs_id]->Send(&msg);
+          */
         }else{
           router->Send(&msg);
         }
       }
     }
   }
-  LOG(ERROR)<<"Stub finishes";
+  perf.Avg();
+  if(perf_step>=0)
+    LOG(ERROR)<<perf_prefix<<" step-"<<perf_step<<", "<<perf.ToString();
 }
 Msg* Trainer::HandleConnect(Msg** msg){
   string ping((char*)(*msg)->frame_data(), (*msg)->frame_size());
