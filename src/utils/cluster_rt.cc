@@ -14,7 +14,12 @@ ZKClusterRT::ZKClusterRT(string host, int timeout){
 }
 
 ZKClusterRT::~ZKClusterRT(){
+  //close zookeeper handler
   zookeeper_close(zkhandle_);
+  //release callback vector
+  for (RTCallback *p : cb_vec_){
+    delete p;
+  }
 }
 
 bool ZKClusterRT::Init(){
