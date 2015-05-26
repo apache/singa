@@ -12,16 +12,20 @@ using std::thread;
 namespace singa {
 Worker::Worker(int thread_id, int group_id, int worker_id):
   thread_id_(thread_id), group_id_(group_id), worker_id_(worker_id){
-  }
+
+}
 
 void Worker::Setup(const ModelProto& model,
     shared_ptr<NeuralNet> train_net){
   train_net_=train_net;
   modelproto_=model;
+  auto cluster=Cluster::Get();
+  int sgid=group_id_/cluster->nworker_groups_per_server_group();
+  cluster->runtime()->wJoinSGroup(group_id_, worker_id_, sgid);
 }
 
 void Worker::Run(){
-  param_dealer_=make_shared<Dealer>(2*thread_id_);
+    param_dealer_=make_shared<Dealer>(2*thread_id_);
   param_dealer_->Connect(kInprocRouterEndpoint);
   param_poller_.Add(param_dealer_.get());
   layer_dealer_=make_shared<Dealer>(2*thread_id_+1);
@@ -87,6 +91,19 @@ void Worker::Run(){
     RunOneBatch(step_, &perf);
     step_++;
   }
+
+  Stop();
+}
+
+void Worker::Stop(){
+  auto cluster=Cluster::Get();
+  int sgid=group_id_/cluster->nworker_groups_per_server_group();
+  cluster->runtime()->wLeaveSGroup(group_id_, worker_id_, sgid);
+  Msg* msg=new Msg();
+  msg->set_src(group_id_, worker_id_, kWorkerParam);
+  msg->set_dst(-1,-1, kStub);
+  msg->set_type(kStop);
+  param_dealer_->Send(&msg);
 }
 int Worker::Put(shared_ptr<Param> param, int step){
   Msg* msg=new Msg();

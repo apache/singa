@@ -21,6 +21,7 @@ void Server::Setup(const UpdaterProto& proto,
   shard_=shard;
 }
 
+
 void Server::Run(){
   dealer_=std::make_shared<Dealer>(2*thread_id_);
   dealer_->Connect(kInprocRouterEndpoint);
@@ -38,7 +39,12 @@ void Server::Run(){
       break;
     Msg* response=nullptr;
     int type=msg->type();
-    if (type==kConnect){
+    if (type== kStop){
+      msg->set_src(group_id_, server_id_, kServer);
+      msg->set_dst(-1,-1, kStub);
+      dealer_->Send(&msg);
+      break;
+    }else if (type==kConnect){
       // TODO remove receiving pong msg
       string pong((char*)msg->frame_data(), msg->frame_size());
       CHECK_STREQ("PONG", pong.c_str());

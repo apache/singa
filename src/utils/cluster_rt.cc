@@ -39,7 +39,7 @@ bool ZKClusterRT::Init(){
 }
 
 bool ZKClusterRT::sWatchSGroup(int gid, int sid, rt_callback fn, void *ctx){
- 
+
   string path = getSGroupPath(gid);
   struct Stat stat;
 
@@ -49,7 +49,7 @@ bool ZKClusterRT::sWatchSGroup(int gid, int sid, rt_callback fn, void *ctx){
   if (ret == ZOK) ;
   //need to create zk node first
   else if (ret == ZNONODE){
-    char buf[MAX_BUF_LEN]; 
+    char buf[MAX_BUF_LEN];
     ret = zoo_create(zkhandle_, path.c_str(), NULL, -1, &ZOO_OPEN_ACL_UNSAFE, 0, buf, MAX_BUF_LEN);
     if (ret == ZOK){
       LOG(INFO) << "zookeeper node " << buf << " created";
@@ -77,13 +77,13 @@ bool ZKClusterRT::sWatchSGroup(int gid, int sid, rt_callback fn, void *ctx){
 }
 
 bool ZKClusterRT::wJoinSGroup(int gid, int wid, int s_group){
-  
+
   string path = getSGroupPath(s_group) + getWorkerPath(gid, wid);
-  char buf[MAX_BUF_LEN]; 
-  
+  char buf[MAX_BUF_LEN];
+
   int ret = zoo_create(zkhandle_, path.c_str(), NULL, -1, &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, buf, MAX_BUF_LEN);
   if (ret == ZOK){
-    LOG(INFO) << "zookeeper node " << buf << " created";
+    LOG(ERROR) << "zookeeper node " << buf << " created";
     return true;
   }
   else if (ret == ZNODEEXISTS){
@@ -94,18 +94,18 @@ bool ZKClusterRT::wJoinSGroup(int gid, int wid, int s_group){
     LOG(ERROR) << "zookeeper parent node " << getSGroupPath(s_group) << " not exist";
     return false;
   }
-  
+
   LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_create)";
   return false;
 }
 
 bool ZKClusterRT::wLeaveSGroup(int gid, int wid, int s_group){
-  
+
   string path = getSGroupPath(s_group) + getWorkerPath(gid, wid);
-  
+
   int ret = zoo_delete(zkhandle_, path.c_str(), -1);
   if (ret == ZOK){
-    LOG(INFO) << "zookeeper node " << path << " deleted";
+    LOG(ERROR) << "zookeeper node " << path << " deleted";
     return true;
   }
   else if (ret == ZNONODE){

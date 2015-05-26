@@ -6,7 +6,7 @@
 #include <memory>
 #include <vector>
 #include "proto/cluster.pb.h"
-#include "cluster_rt.h"
+#include "utils/cluster_rt.h"
 
 using std::shared_ptr;
 using std::string;
@@ -122,6 +122,10 @@ class Cluster {
     return false;
   }
 
+  shared_ptr<ClusterRuntime> runtime() const {
+    return cluster_rt_;
+  }
+
  private:
   Cluster(const ClusterProto &cluster, int procs_id) ;
   void SetupFolders(const ClusterProto &cluster);
@@ -131,6 +135,7 @@ class Cluster {
   std::vector<std::string> endpoints_;
   // cluster config proto
   ClusterProto cluster_;
+  shared_ptr<ClusterRuntime> cluster_rt_;
   // make this class a singlton
   static shared_ptr<Cluster> instance_;
 };

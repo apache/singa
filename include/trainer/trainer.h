@@ -86,7 +86,8 @@ class Trainer{
   // point.
 
  protected:
-  void Run(const std::map<int, shared_ptr<ParamShard>>& shards);
+  void Run(int nworkers, int nservers,
+      const std::map<int, shared_ptr<ParamShard>>& shards);
   /**
    * Register default implementations for all base classes used in the system,
    * e.g., the Updater, BaseMsg, etc.

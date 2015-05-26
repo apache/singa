@@ -27,6 +27,8 @@ class Worker {
     validation_net_=val_net;
   }
 
+
+  void Stop();
   int Put(shared_ptr<Param> param, int step);
   int Get(shared_ptr<Param> param, int step);
   int Update(shared_ptr<Param> param, int step);

@@ -36,6 +36,20 @@ void Trainer::RegisterDefaultClasses(const singa::ModelProto& proto){
       "Updater", CreateInstance(singa::SGDUpdater, singa::Updater));
 }
 
+typedef struct HandleContext_{
+  shared_ptr<Dealer> dealer;
+  int group_id, id;
+} HandleContext;
+
+void HandleWorkerFinish(void * ctx){
+  HandleContext* hctx=static_cast<HandleContext*> (ctx);
+  Msg* msg=new Msg();
+  msg->set_src(-1,-1, kRuntime);
+  msg->set_dst(hctx->group_id, hctx->id, kServer);
+  msg->set_type(kStop);
+  hctx->dealer->Send(&msg);
+}
+
 void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     int procs_id){
   procs_id_=procs_id;
@@ -44,6 +58,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
   auto cluster=Cluster::Get(cproto, procs_id);
   // create servers
   vector<shared_ptr<Server>> servers;
+  vector<HandleContext> ctx;
   int nthreads=1; // the first socket is the router
   if(cluster->has_server()){
     int pid=cluster->procs_id();
@@ -54,10 +69,21 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     int end=start+cluster->nservers_per_group();
     // the ParamShard for servers consists of a dictionary of Param objects
     auto shard=make_shared<Server::ParamShard>();
-    for(int sid=start;sid<end;sid++){
-      auto server=make_shared<Server>(nthreads++, gid, sid);
-      server->Setup(mproto.updater(), shard);
-      servers.push_back(server);
+    if(start<end){
+      auto dealer=make_shared<Dealer>();
+      dealer->Connect(kInprocRouterEndpoint);
+      for(int sid=start;sid<end;sid++){
+        auto server=make_shared<Server>(nthreads++, gid, sid);
+        server->Setup(mproto.updater(), shard);
+        servers.push_back(server);
+        HandleContext hc;
+        hc.dealer=dealer;
+        hc.group_id=gid;
+        hc.id=sid;
+        ctx.push_back(hc);
+        cluster->runtime()->sWatchSGroup(gid, sid, HandleWorkerFinish,
+            &ctx.back());
+      }
     }
   }
 
@@ -152,12 +178,13 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     threads.push_back(std::thread(&Server::Run,server.get()));
   for(auto worker: workers)
     threads.push_back(std::thread(&Worker::Run,worker.get()));
-  Run(shards);
+  Run(servers.size(), workers.size(), shards);
   for(auto& thread: threads)
     thread.join();
 }
 
-void Trainer::Run(const std::map<int, shared_ptr<Trainer::ParamShard>>& shards){
+void Trainer::Run(int nworkers, int nservers,
+    const std::map<int, shared_ptr<Trainer::ParamShard>>& shards){
   auto cluster=Cluster::Get();
   procs_id_=cluster->procs_id();
   auto router=make_shared<Router>();
@@ -166,7 +193,8 @@ void Trainer::Run(const std::map<int, shared_ptr<Trainer::ParamShard>>& shards){
     router->Bind(cluster->endpoint());
 
   map<int, shared_ptr<Dealer>> interprocs_dealers;
-  while(true){
+  bool stop=false;
+  while(!stop){
     Msg* msg=router->Receive();
     if(msg==nullptr){
       LOG(ERROR)<<"Connection broken!";
@@ -179,6 +207,18 @@ void Trainer::Run(const std::map<int, shared_ptr<Trainer::ParamShard>>& shards){
       if(dst_flag == kStub&&(dst_procs==procs_id_||dst_procs==-1)){
         if(type==kConnect){
           msg =HandleConnect(&msg);
+        }else if(type==kStop){
+          if(msg->src_flag()==kServer)
+            nworkers--;
+          else if (msg->src_flag()==kWorkerParam)
+            nservers--;
+          delete msg;
+          msg=nullptr;
+          if(nworkers==0&&nservers==0){
+            stop=true;
+            break;
+          }
+          LOG(ERROR)<<"Stub recv Stop";
         }else{
           int group_id=msg->src_first();
           int paramid=msg->target_first();
@@ -223,6 +263,7 @@ void Trainer::Run(const std::map<int, shared_ptr<Trainer::ParamShard>>& shards){
       }
     }
   }
+  LOG(ERROR)<<"Stub finishes";
 }
 Msg* Trainer::HandleConnect(Msg** msg){
   string ping((char*)(*msg)->frame_data(), (*msg)->frame_size());
