@@ -109,6 +109,7 @@ class Worker {
   const bool TestNow(const int step) const{
     return (group_id_==0
         && modelproto_.test_frequency() > 0
+        && modelproto_.test_steps() > 0
         && step >= modelproto_.test_after_steps()
         && ((step - modelproto_.test_after_steps())
           % modelproto_.test_frequency() == 0));
@@ -120,6 +121,7 @@ class Worker {
   const bool ValidateNow(const int step) {
     return (group_id_==0
         && modelproto_.validation_frequency() > 0
+        && modelproto_.validation_steps() > 0
         && step >= modelproto_.validation_after_steps()
         && ((step - modelproto_.validation_after_steps())
           % modelproto_.validation_frequency() == 0));
