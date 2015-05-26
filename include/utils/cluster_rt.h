@@ -76,6 +76,8 @@ class ZKClusterRT : public ClusterRuntime{
   const int MAX_BUF_LEN = 50;
   const int RETRY_NUM = 10;
   const int SLEEP_SEC = 1;
+  const string ZK_P_SINGA = "/singa";
+  const string ZK_P_STATUS = "/status";
 };
 
 } // namespace singa

@@ -35,6 +35,22 @@ bool ZKClusterRT::Init(){
     return false;
   }
 
+  char buf[MAX_BUF_LEN];
+  //create ZK_P_SINGA
+  string path = ZK_P_SINGA;
+  int ret = zoo_create(zkhandle_, path.c_str(), NULL, -1, &ZOO_OPEN_ACL_UNSAFE, 0, buf, MAX_BUF_LEN);
+  if (ret != ZOK && ret != ZNODEEXISTS){
+    LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_create)";
+    return false;
+  }
+  //create ZK_P_STATUS
+  path += ZK_P_STATUS;
+  ret = zoo_create(zkhandle_, path.c_str(), NULL, -1, &ZOO_OPEN_ACL_UNSAFE, 0, buf, MAX_BUF_LEN);
+  if (ret != ZOK && ret != ZNODEEXISTS){
+    LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_create)";
+    return false;
+  }
+
   return true;
 }
 
@@ -98,13 +114,14 @@ bool ZKClusterRT::wJoinSGroup(int gid, int wid, int s_group){
     else if (ret == ZNONODE){
       LOG(WARNING) << "zookeeper parent node " << getSGroupPath(s_group) << " not exist, retry later";
       sleep(SLEEP_SEC);
+      continue;
     }
     
     LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_create)";
     return false;
   }
 
-  LOG(ERROR) << "zookeeper parent node " << getSGroupPath(s_group) << "still not exist after " << RETRY_NUM << " tries";
+  LOG(ERROR) << "zookeeper parent node " << getSGroupPath(s_group) << " still not exist after " << RETRY_NUM << " tries";
   return false;
 }
 
@@ -156,8 +173,8 @@ void ZKClusterRT::childChanges(zhandle_t *zh, int type, int state, const char *p
 }
 
 string ZKClusterRT::getSGroupPath(int gid){
-  //return "/singa/status";
-  return "/singa/status/sg"+to_string(gid);
+  //return "/singa/status/sg"+to_string(gid);
+  return ZK_P_SINGA+ZK_P_STATUS+"/sg"+to_string(gid); 
 }
 
 string ZKClusterRT::getWorkerPath(int gid, int wid){
