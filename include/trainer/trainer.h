@@ -9,6 +9,7 @@
 #include "neuralnet/neuralnet.h"
 #include "trainer/worker.h"
 #include "trainer/server.h"
+#include "communication/socket.h"
 
 namespace singa {
 /**
@@ -131,6 +132,7 @@ class Trainer{
 
  protected:
   int procs_id_;
+  shared_ptr<Router> router_;
 };
 } /* singa */
 #endif // INCLUDE_TRAINER_TRAINER_H_

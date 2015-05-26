@@ -56,6 +56,11 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
   RegisterDefaultClasses(mproto);
 
   auto cluster=Cluster::Get(cproto, procs_id);
+  router_=make_shared<Router>();
+  router_->Bind(kInprocRouterEndpoint);
+  if(cluster->nprocs()>1)
+    router_->Bind(cluster->endpoint());
+
   // create servers
   vector<shared_ptr<Server>> servers;
   vector<HandleContext> ctx;
@@ -184,18 +189,13 @@ void Trainer::Run(int nworkers, int nservers,
     const std::map<int, shared_ptr<Trainer::ParamShard>>& shards){
   auto cluster=Cluster::Get();
   procs_id_=cluster->procs_id();
-  auto router=make_shared<Router>();
-  router->Bind(kInprocRouterEndpoint);
-  if(cluster->nprocs()>1)
-    router->Bind(cluster->endpoint());
-
   map<int, shared_ptr<Dealer>> interprocs_dealers;
   Metric perf;
   int perf_step=-1;
   string perf_prefix;
   bool stop=false;
   while(!stop){
-    Msg* msg=router->Receive();
+    Msg* msg=router_->Receive();
     if(msg==nullptr){
       LOG(ERROR)<<"Connection broken!";
       exit(0);
@@ -277,7 +277,7 @@ void Trainer::Run(int nworkers, int nservers,
           interprocs_dealers[procs_id]->Send(&msg);
           */
         }else{
-          router->Send(&msg);
+          router_->Send(&msg);
         }
       }
     }
