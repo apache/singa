@@ -81,21 +81,30 @@ bool ZKClusterRT::wJoinSGroup(int gid, int wid, int s_group){
   string path = getSGroupPath(s_group) + getWorkerPath(gid, wid);
   char buf[MAX_BUF_LEN];
 
-  int ret = zoo_create(zkhandle_, path.c_str(), NULL, -1, &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, buf, MAX_BUF_LEN);
-  if (ret == ZOK){
-    LOG(INFO) << "zookeeper node " << buf << " created";
-    return true;
-  }
-  else if (ret == ZNODEEXISTS){
-    LOG(WARNING) << "zookeeper node " << path << " already exist";
-    return true;
-  }
-  else if (ret == ZNONODE){
-    LOG(ERROR) << "zookeeper parent node " << getSGroupPath(s_group) << " not exist";
+  //try to create a file under the server group path
+  for (int i = 0; i < RETRY_NUM; ++i){
+    //send the zk request
+    int ret = zoo_create(zkhandle_, path.c_str(), NULL, -1, &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL, buf, MAX_BUF_LEN);
+
+    if (ret == ZOK){
+      LOG(INFO) << "zookeeper node " << buf << " created";
+      return true;
+    }
+    else if (ret == ZNODEEXISTS){
+      LOG(WARNING) << "zookeeper node " << path << " already exist";
+      return true;
+    }
+    //the parent node is not on, need to wait
+    else if (ret == ZNONODE){
+      LOG(WARNING) << "zookeeper parent node " << getSGroupPath(s_group) << " not exist, retry later";
+      sleep(SLEEP_SEC);
+    }
+    
+    LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_create)";
     return false;
   }
 
-  LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_create)";
+  LOG(ERROR) << "zookeeper parent node " << getSGroupPath(s_group) << "still not exist after " << RETRY_NUM << " tries";
   return false;
 }
 

@@ -74,6 +74,8 @@ class ZKClusterRT : public ClusterRuntime{
   vector<RTCallback *> cb_vec_;
     
   const int MAX_BUF_LEN = 50;
+  const int RETRY_NUM = 10;
+  const int SLEEP_SEC = 1;
 };
 
 } // namespace singa

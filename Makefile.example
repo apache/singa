@@ -51,7 +51,7 @@ OBJS := $(sort $(SINGA_OBJS) $(TEST_OBJS) )
 .PHONY: singa test
 
 singa: $(PROTO_OBJS) $(SINGA_OBJS)
-	$(CXX) $(SINGA_OBJS) src/main.cc -o $(BUILD_DIR)/singa $(CXXFLAGS) $(LDFLAGS)
+	$(CXX) $(SINGA_OBJS) src/main.cc -o singa $(CXXFLAGS) $(LDFLAGS)
 	@echo
 
 loader: proto $(LOADER_OBJS)

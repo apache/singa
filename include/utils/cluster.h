@@ -109,19 +109,6 @@ class Cluster {
   }
    */
 
-  //ClusterRuntime functions
-  bool server_watch(int gid, int sid) const {
-    return false;
-  }
-
-  bool worker_join_sgroup(int gid, int wid, int server_group) const {
-    return false;
-  }
-
-  bool worker_leave_sgroup(int gid, int wid, int s_group) const {
-    return false;
-  }
-
   shared_ptr<ClusterRuntime> runtime() const {
     return cluster_rt_;
   }
