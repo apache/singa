@@ -19,7 +19,7 @@
 # * See the License for the specific language governing permissions and
 # * limitations under the License.
 # */
-# 
+#
 # Run a Singa job
 #
 
@@ -29,7 +29,7 @@ usage="Usage: singa-run.sh"
 #  echo $usage
 #  exit 1
 #fi
-  
+
 BIN=`dirname "${BASH_SOURCE-$0}"`
 BIN=`cd "$BIN">/dev/null; pwd`
 BASE=`cd "$BIN/..">/dev/null; pwd`
@@ -46,8 +46,9 @@ sleep 3
 
 echo starting singa ...
 
-#echo $@
-./singa $@
+echo "./singa" $@
+#. ./singa $@
+. ./singa $@
 
 echo stopping singa ...
 

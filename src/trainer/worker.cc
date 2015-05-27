@@ -174,6 +174,7 @@ void Worker::RunOneBatch(int step, Metric* perf){
     Test(test_net_, modelproto_.test_steps(), "Test");
   }
   TrainOneBatch(step);
+  //LOG(ERROR)<<"Train "<<step;
   if(perf!=nullptr){
     auto losslayers=train_net_->losslayers();
     for(auto layer: losslayers){
