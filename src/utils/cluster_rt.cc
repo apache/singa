@@ -1,4 +1,3 @@
-#include <zookeeper/zookeeper_log.h>
 #include "utils/cluster_rt.h"
 
 using std::to_string;
@@ -116,7 +115,7 @@ bool ZKClusterRT::wJoinSGroup(int gid, int wid, int s_group){
       sleep(SLEEP_SEC);
       continue;
     }
-    
+
     LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_create)";
     return false;
   }
@@ -174,7 +173,7 @@ void ZKClusterRT::childChanges(zhandle_t *zh, int type, int state, const char *p
 
 string ZKClusterRT::getSGroupPath(int gid){
   //return "/singa/status/sg"+to_string(gid);
-  return ZK_P_SINGA+ZK_P_STATUS+"/sg"+to_string(gid); 
+  return ZK_P_SINGA+ZK_P_STATUS+"/sg"+to_string(gid);
 }
 
 string ZKClusterRT::getWorkerPath(int gid, int wid){
