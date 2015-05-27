@@ -29,8 +29,9 @@ usage="Usage: singa-cleanup.sh"
 #  echo $usage
 #  exit 1
 #fi
-  
-bin=`dirname "${BASH_SOURCE-$0}"`
-bin=`cd "$bin">/dev/null; pwd`
 
-$bin/zk-service.sh stop
+BIN=`dirname "${BASH_SOURCE-$0}"`
+BIN=`cd "$BIN">/dev/null; pwd`
+BASE=`cd "$BIN/..">/dev/null; pwd`
+
+$BIN/zk-service.sh stop

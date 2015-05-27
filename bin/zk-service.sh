@@ -29,18 +29,28 @@ if [ $# -le 0 ]; then
   echo $usage
   exit 1
 fi
-  
-bin=`dirname "${BASH_SOURCE-$0}"`
-bin=`cd "$bin">/dev/null; pwd`
-zkbin=$bin/../thirdparty/zookeeper-3.4.6/bin
 
-#echo $zkbin
+BIN=`dirname "${BASH_SOURCE-$0}"`
+BIN=`cd "$BIN">/dev/null; pwd`
+BASE=`cd "$BIN/..">/dev/null; pwd`
+ZKBASE=$BASE/thirdparty/zookeeper-3.4.6
+
+#echo $ZKBASE
 
 if [ "$SINGA_MANAGES_ZK" = "" ]; then
   SINGA_MANAGES_ZK=true
 fi
 
 #echo 'SINGA_MANAGES_ZK='$SINGA_MANAGES_ZK
+
+if [ "$SINGA_MANAGES_ZK" = "true" ]; then
+  #check zookeeper installation
+  if [ ! -d $ZKBASE ]; then
+    echo "zookeeper not found, please install zookeeper first:"
+    echo "$./SINGA_BASE/thirdparty/install.sh zookeeper"
+    exit 1
+  fi
+fi
 
 #get argument
 cmd=$1
@@ -51,12 +61,12 @@ case $cmd in
   #start zk service
   if [ "$SINGA_MANAGES_ZK" = "true" ]; then
     #check zoo,cfg
-    if [ ! -f $zkbin/../conf/zoo.cfg ]; then
-      echo 'zoo.cfg not found, create from sample.cfg'
-      cp $zkbin/../conf/zoo_sample.cfg $zkbin/../conf/zoo.cfg
+    if [ ! -f $ZKBASE/conf/zoo.cfg ]; then
+      echo "zoo.cfg not found, create from sample.cfg"
+      cp $ZKBASE/conf/zoo_sample.cfg $ZKBASE/conf/zoo.cfg
     fi
     #echo 'starting zookeeper service...'
-    $zkbin/zkServer.sh start
+    $ZKBASE/bin/zkServer.sh start
   fi
   ;;
 
@@ -64,7 +74,7 @@ case $cmd in
   #stop zk service
   if [ "$SINGA_MANAGES_ZK" = "true" ]; then
     #echo 'stopping zookeeper service...'
-    $zkbin/zkServer.sh stop
+    $ZKBASE/bin/zkServer.sh stop
   fi
   ;;
 

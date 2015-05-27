@@ -30,16 +30,16 @@ usage="Usage: singa-run.sh"
 #  exit 1
 #fi
   
-bin=`dirname "${BASH_SOURCE-$0}"`
-bin=`cd "$bin">/dev/null; pwd`
+BIN=`dirname "${BASH_SOURCE-$0}"`
+BIN=`cd "$BIN">/dev/null; pwd`
+BASE=`cd "$BIN/..">/dev/null; pwd`
 
 #get argument
 cmd=$1
 
-#$bin/singa-cleanup.sh
+cd $BASE
 
-cd $bin
-$bin/zk-service.sh start
+$BIN/zk-service.sh start
 
 #wait for zk service to be up
 sleep 3
@@ -47,10 +47,8 @@ sleep 3
 echo starting singa ...
 
 #echo $@
-cd $bin/..
 ./singa $@
 
 echo stopping singa ...
 
-cd $bin
-$bin/zk-service.sh stop
+$BIN/zk-service.sh stop
