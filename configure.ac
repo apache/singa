@@ -47,6 +47,9 @@ AC_CHECK_LIB([opencv_core], [main], [], [
 AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
   AC_MSG_ERROR([unable to find mdb_env_create() function])
   ])
+AC_CHECK_LIB([zookeeper_mt], [main], [], [
+  AC_MSG_ERROR([unable to find zookeeper])
+  ])
 
 # Checks for header files.
 AC_HEADER_STDC
