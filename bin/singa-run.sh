@@ -44,9 +44,13 @@ $bin/zk-service.sh start
 #wait for zk service to be up
 sleep 3
 
+echo starting singa ...
+
 #echo $@
 cd $bin/..
 ./singa $@
+
+echo stopping singa ...
 
 cd $bin
 $bin/zk-service.sh stop
