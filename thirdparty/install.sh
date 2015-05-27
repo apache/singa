@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function install_cmake()
 {
@@ -700,7 +700,20 @@ do
 		fi
 		;;
 	*)
-		echo "INVALID ARGUMENTS";
+		echo "USAGE: ./install.sh [MISSING_LIBRARY_NAME1] [YOUR_INSTALL_PATH1] [MISSING_LIBRARY_NAME2] [YOUR_INSTALL_PATH2] ...";
+		echo " MISSING_LIBRARY_NAME can be:	"
+		echo "	cmake"
+		echo "	czmq"
+		echo "	gflags"
+		echo "	glog"
+		echo "	lmdb"
+		echo "	OpenBLAS"
+		echo "	opencv"
+		echo "	protobuf"
+		echo "	zeromq"
+		echo "	zookeeper"
+		echo " To install all dependencies, you can run:	"
+		echo "	./install.sh all"
 		exit;
 	esac	
 done

@@ -68,6 +68,7 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_2 = src/proto/libsinga_la-cluster.pb.lo \
 	src/proto/libsinga_la-model.pb.lo
 am__objects_3 = src/utils/libsinga_la-cluster.lo \
+	src/utils/libsinga_la-cluster_rt.lo \
 	src/utils/libsinga_la-graph.lo src/utils/libsinga_la-common.lo \
 	src/utils/libsinga_la-param.lo \
 	src/utils/libsinga_la-updater.lo \
@@ -84,6 +85,12 @@ am__objects_3 = src/utils/libsinga_la-cluster.lo \
 am_libsinga_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
 	$(am__objects_3) $(am__objects_1)
 libsinga_la_OBJECTS = $(am_libsinga_la_OBJECTS)
+libsingashard_la_LIBADD =
+am_libsingashard_la_OBJECTS =  \
+	src/utils/libsingashard_la-data_shard.lo \
+	src/proto/libsingashard_la-model.pb.lo \
+	src/utils/libsingashard_la-common.lo
+libsingashard_la_OBJECTS = $(am_libsingashard_la_OBJECTS)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_singa_OBJECTS = src/singa-main.$(OBJEXT)
@@ -108,8 +115,10 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libsinga_la_SOURCES) $(singa_SOURCES)
-DIST_SOURCES = $(libsinga_la_SOURCES) $(singa_SOURCES)
+SOURCES = $(libsinga_la_SOURCES) $(libsingashard_la_SOURCES) \
+	$(singa_SOURCES)
+DIST_SOURCES = $(libsinga_la_SOURCES) $(libsingashard_la_SOURCES) \
+	$(singa_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -221,7 +230,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 CLOCAL_AMFLAGS = -I config 
-AM_CPPFLAGS = -I$(top_srcdir)src
+AM_CPPFLAGS = -I$(top_srcdir)/src
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 AC_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
 	$(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops 
@@ -232,6 +241,7 @@ PROTO_SRCS := src/proto/cluster.pb.cc src/proto/model.pb.cc
 PROTO_HDRS := src/proto/cluster.pb.h  src/proto/model.pb.h
 PROTO_OBJS := src/proto/cluster.pb.o src/proto/model.pb.o
 SINGA_SRCS := src/utils/cluster.cc \
+			  src/utils/cluster_rt.cc \
 			  src/utils/graph.cc \
 			  src/utils/common.cc \
 			  src/utils/param.cc \
@@ -248,6 +258,7 @@ SINGA_SRCS := src/utils/cluster.cc \
 			  src/communication/msg.cc 
 
 SINGA_HDRS := include/utils/cluster.h \
+			  include/utils/cluster_rt.h \
 			  include/utils/param.h \
 			  include/utils/common.h \
 			  include/utils/factory.h \
@@ -276,6 +287,7 @@ SINGA_HDRS := include/utils/cluster.h \
 SINGA_OBJS := src/proto/cluster.pb.o \
 			  src/proto/model.pb.o \
 			  src/utils/cluster.o \
+			  src/utils/cluster_rt.o \
 			  src/utils/graph.o \
 			  src/utils/common.o \
 			  src/utils/param.o \
@@ -293,15 +305,26 @@ SINGA_OBJS := src/proto/cluster.pb.o \
 			  src/communication/socket.o \
 			  src/communication/msg.o 
 
-lib_LTLIBRARIES = libsinga.la
+lib_LTLIBRARIES = libsinga.la libsingashard.la
 libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_SRCS) $(SINGA_HDRS)
 libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual
+    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive 
 
 libsinga_la_LDFLAGS = -I./include 
+libsingashard_la_SOURCES = src/utils/data_shard.cc \
+						   src/proto/model.pb.cc \
+						   src/utils/common.cc \
+						   include/proto/model.pb.h \
+						   include/utils/common.h \
+						   include/utils/data_shard.h
+
+libsingashard_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
+    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual
+
+libsingashard_la_LDFLAGS = -I./include
 singa_SOURCES = src/main.cc
 singa_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
-    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops
+    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED -fpermissive
 
 singa_LDFLAGS = -I./include \
 				-lsinga \
@@ -315,7 +338,8 @@ singa_LDFLAGS = -I./include \
 				-lopenblas \
 				-lzmq \
 				-lczmq \
-				-llmdb
+				-llmdb \
+				-lzookeeper_mt
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -417,6 +441,8 @@ src/utils/$(DEPDIR)/$(am__dirstamp):
 	@: > src/utils/$(DEPDIR)/$(am__dirstamp)
 src/utils/libsinga_la-cluster.lo: src/utils/$(am__dirstamp) \
 	src/utils/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsinga_la-cluster_rt.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
 src/utils/libsinga_la-graph.lo: src/utils/$(am__dirstamp) \
 	src/utils/$(DEPDIR)/$(am__dirstamp)
 src/utils/libsinga_la-common.lo: src/utils/$(am__dirstamp) \
@@ -468,6 +494,14 @@ src/communication/libsinga_la-msg.lo:  \
 	src/communication/$(DEPDIR)/$(am__dirstamp)
 libsinga.la: $(libsinga_la_OBJECTS) $(libsinga_la_DEPENDENCIES) 
 	$(CXXLINK) -rpath $(libdir) $(libsinga_la_LDFLAGS) $(libsinga_la_OBJECTS) $(libsinga_la_LIBADD) $(LIBS)
+src/utils/libsingashard_la-data_shard.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
+src/proto/libsingashard_la-model.pb.lo: src/proto/$(am__dirstamp) \
+	src/proto/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsingashard_la-common.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
+libsingashard.la: $(libsingashard_la_OBJECTS) $(libsingashard_la_DEPENDENCIES) 
+	$(CXXLINK) -rpath $(libdir) $(libsingashard_la_LDFLAGS) $(libsingashard_la_OBJECTS) $(libsingashard_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
@@ -524,6 +558,8 @@ mostlyclean-compile:
 	-rm -f src/proto/libsinga_la-cluster.pb.lo
 	-rm -f src/proto/libsinga_la-model.pb.$(OBJEXT)
 	-rm -f src/proto/libsinga_la-model.pb.lo
+	-rm -f src/proto/libsingashard_la-model.pb.$(OBJEXT)
+	-rm -f src/proto/libsingashard_la-model.pb.lo
 	-rm -f src/singa-main.$(OBJEXT)
 	-rm -f src/trainer/libsinga_la-server.$(OBJEXT)
 	-rm -f src/trainer/libsinga_la-server.lo
@@ -535,6 +571,8 @@ mostlyclean-compile:
 	-rm -f src/utils/libsinga_la-blob.lo
 	-rm -f src/utils/libsinga_la-cluster.$(OBJEXT)
 	-rm -f src/utils/libsinga_la-cluster.lo
+	-rm -f src/utils/libsinga_la-cluster_rt.$(OBJEXT)
+	-rm -f src/utils/libsinga_la-cluster_rt.lo
 	-rm -f src/utils/libsinga_la-common.$(OBJEXT)
 	-rm -f src/utils/libsinga_la-common.lo
 	-rm -f src/utils/libsinga_la-data_shard.$(OBJEXT)
@@ -545,6 +583,10 @@ mostlyclean-compile:
 	-rm -f src/utils/libsinga_la-param.lo
 	-rm -f src/utils/libsinga_la-updater.$(OBJEXT)
 	-rm -f src/utils/libsinga_la-updater.lo
+	-rm -f src/utils/libsingashard_la-common.$(OBJEXT)
+	-rm -f src/utils/libsingashard_la-common.lo
+	-rm -f src/utils/libsingashard_la-data_shard.$(OBJEXT)
+	-rm -f src/utils/libsingashard_la-data_shard.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -557,16 +599,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/neuralnet/$(DEPDIR)/libsinga_la-neuralnet.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-cluster.pb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-model.pb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsingashard_la-model.pb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/trainer/$(DEPDIR)/libsinga_la-server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/trainer/$(DEPDIR)/libsinga_la-trainer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/trainer/$(DEPDIR)/libsinga_la-worker.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-blob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-cluster.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-cluster_rt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-data_shard.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-graph.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-param.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-updater.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsingashard_la-common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsingashard_la-data_shard.Plo@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`; \
@@ -612,6 +658,13 @@ src/utils/libsinga_la-cluster.lo: src/utils/cluster.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/utils/cluster.cc' object='src/utils/libsinga_la-cluster.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-cluster.lo `test -f 'src/utils/cluster.cc' || echo '$(srcdir)/'`src/utils/cluster.cc
+
+src/utils/libsinga_la-cluster_rt.lo: src/utils/cluster_rt.cc
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-cluster_rt.lo -MD -MP -MF "src/utils/$(DEPDIR)/libsinga_la-cluster_rt.Tpo" -c -o src/utils/libsinga_la-cluster_rt.lo `test -f 'src/utils/cluster_rt.cc' || echo '$(srcdir)/'`src/utils/cluster_rt.cc; \
+@am__fastdepCXX_TRUE@	then mv -f "src/utils/$(DEPDIR)/libsinga_la-cluster_rt.Tpo" "src/utils/$(DEPDIR)/libsinga_la-cluster_rt.Plo"; else rm -f "src/utils/$(DEPDIR)/libsinga_la-cluster_rt.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/utils/cluster_rt.cc' object='src/utils/libsinga_la-cluster_rt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-cluster_rt.lo `test -f 'src/utils/cluster_rt.cc' || echo '$(srcdir)/'`src/utils/cluster_rt.cc
 
 src/utils/libsinga_la-graph.lo: src/utils/graph.cc
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-graph.lo -MD -MP -MF "src/utils/$(DEPDIR)/libsinga_la-graph.Tpo" -c -o src/utils/libsinga_la-graph.lo `test -f 'src/utils/graph.cc' || echo '$(srcdir)/'`src/utils/graph.cc; \
@@ -710,6 +763,27 @@ src/communication/libsinga_la-msg.lo: src/communication/msg.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/communication/msg.cc' object='src/communication/libsinga_la-msg.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/communication/libsinga_la-msg.lo `test -f 'src/communication/msg.cc' || echo '$(srcdir)/'`src/communication/msg.cc
+
+src/utils/libsingashard_la-data_shard.lo: src/utils/data_shard.cc
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsingashard_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsingashard_la-data_shard.lo -MD -MP -MF "src/utils/$(DEPDIR)/libsingashard_la-data_shard.Tpo" -c -o src/utils/libsingashard_la-data_shard.lo `test -f 'src/utils/data_shard.cc' || echo '$(srcdir)/'`src/utils/data_shard.cc; \
+@am__fastdepCXX_TRUE@	then mv -f "src/utils/$(DEPDIR)/libsingashard_la-data_shard.Tpo" "src/utils/$(DEPDIR)/libsingashard_la-data_shard.Plo"; else rm -f "src/utils/$(DEPDIR)/libsingashard_la-data_shard.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/utils/data_shard.cc' object='src/utils/libsingashard_la-data_shard.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsingashard_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsingashard_la-data_shard.lo `test -f 'src/utils/data_shard.cc' || echo '$(srcdir)/'`src/utils/data_shard.cc
+
+src/proto/libsingashard_la-model.pb.lo: src/proto/model.pb.cc
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsingashard_la_CXXFLAGS) $(CXXFLAGS) -MT src/proto/libsingashard_la-model.pb.lo -MD -MP -MF "src/proto/$(DEPDIR)/libsingashard_la-model.pb.Tpo" -c -o src/proto/libsingashard_la-model.pb.lo `test -f 'src/proto/model.pb.cc' || echo '$(srcdir)/'`src/proto/model.pb.cc; \
+@am__fastdepCXX_TRUE@	then mv -f "src/proto/$(DEPDIR)/libsingashard_la-model.pb.Tpo" "src/proto/$(DEPDIR)/libsingashard_la-model.pb.Plo"; else rm -f "src/proto/$(DEPDIR)/libsingashard_la-model.pb.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/proto/model.pb.cc' object='src/proto/libsingashard_la-model.pb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsingashard_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsingashard_la-model.pb.lo `test -f 'src/proto/model.pb.cc' || echo '$(srcdir)/'`src/proto/model.pb.cc
+
+src/utils/libsingashard_la-common.lo: src/utils/common.cc
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsingashard_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsingashard_la-common.lo -MD -MP -MF "src/utils/$(DEPDIR)/libsingashard_la-common.Tpo" -c -o src/utils/libsingashard_la-common.lo `test -f 'src/utils/common.cc' || echo '$(srcdir)/'`src/utils/common.cc; \
+@am__fastdepCXX_TRUE@	then mv -f "src/utils/$(DEPDIR)/libsingashard_la-common.Tpo" "src/utils/$(DEPDIR)/libsingashard_la-common.Plo"; else rm -f "src/utils/$(DEPDIR)/libsingashard_la-common.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/utils/common.cc' object='src/utils/libsingashard_la-common.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsingashard_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsingashard_la-common.lo `test -f 'src/utils/common.cc' || echo '$(srcdir)/'`src/utils/common.cc
 
 src/singa-main.o: src/main.cc
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singa_CXXFLAGS) $(CXXFLAGS) -MT src/singa-main.o -MD -MP -MF "src/$(DEPDIR)/singa-main.Tpo" -c -o src/singa-main.o `test -f 'src/main.cc' || echo '$(srcdir)/'`src/main.cc; \

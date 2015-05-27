@@ -1,6 +1,6 @@
 CLOCAL_AMFLAGS = -I config 
 
-AM_CPPFLAGS = -I$(top_srcdir)src
+AM_CPPFLAGS = -I$(top_srcdir)/src
 
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 
@@ -15,6 +15,7 @@ PROTO_HDRS := src/proto/cluster.pb.h  src/proto/model.pb.h
 PROTO_OBJS := src/proto/cluster.pb.o src/proto/model.pb.o
 
 SINGA_SRCS := src/utils/cluster.cc \
+			  src/utils/cluster_rt.cc \
 			  src/utils/graph.cc \
 			  src/utils/common.cc \
 			  src/utils/param.cc \
@@ -31,6 +32,7 @@ SINGA_SRCS := src/utils/cluster.cc \
 			  src/communication/msg.cc 
 
 SINGA_HDRS := include/utils/cluster.h \
+			  include/utils/cluster_rt.h \
 			  include/utils/param.h \
 			  include/utils/common.h \
 			  include/utils/factory.h \
@@ -59,6 +61,7 @@ SINGA_HDRS := include/utils/cluster.h \
 SINGA_OBJS := src/proto/cluster.pb.o \
 			  src/proto/model.pb.o \
 			  src/utils/cluster.o \
+			  src/utils/cluster_rt.o \
 			  src/utils/graph.o \
 			  src/utils/common.o \
 			  src/utils/param.o \
@@ -79,13 +82,24 @@ SINGA_OBJS := src/proto/cluster.pb.o \
 lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_SRCS) $(SINGA_HDRS)
 libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual
+    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive 
 libsinga_la_LDFLAGS = -I./include 
+
+lib_LTLIBRARIES += libsingashard.la
+libsingashard_la_SOURCES = src/utils/data_shard.cc \
+						   src/proto/model.pb.cc \
+						   src/utils/common.cc \
+						   include/proto/model.pb.h \
+						   include/utils/common.h \
+						   include/utils/data_shard.h
+libsingashard_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
+    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual
+libsingashard_la_LDFLAGS = -I./include
 
 bin_PROGRAMS=singa 
 singa_SOURCES=src/main.cc
 singa_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
-    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops
+    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED -fpermissive
 singa_LDFLAGS =	-I./include \
 				-lsinga \
 				-lglog  \
@@ -98,7 +112,8 @@ singa_LDFLAGS =	-I./include \
 				-lopenblas \
 				-lzmq \
 				-lczmq \
-				-llmdb
+				-llmdb \
+				-lzookeeper_mt
 
 clean-local:
 	rm -rf $(PROTO_SRCS) $(PROTO_HDRS) 

@@ -26,6 +26,8 @@ SINGA is developed and tested on Linux platforms with the following external lib
 
   * czmq version >= 3
 
+  * zookeeper version >= 3.4.6
+
 Tips:
 For libraries like openblas, opencv, older versions may also work, because we do not use any newly added features.
 
@@ -53,23 +55,19 @@ If you want to specify your own installation directory, use the following comman
 
 The result of configure script will indicate you whether there exist dependency missings in your system.
 If you do not install the dependencies, you can run the following commands.
-To download the thirdparty dependencies:
-
-	$ ./script/download.sh
-
-After downloading, to install the thirdparty dependencies:
+To download & install the thirdparty dependencies:
 
 	$ cd thirdparty
-	$ ./install-dependencies.sh MISSING_LIBRARY_NAME1 YOUR_INSTALL_PATH1 MISSING_LIBRARY_NAME2 YOUR_INSTALL_PATH2 ...
+	$ ./install.sh MISSING_LIBRARY_NAME1 YOUR_INSTALL_PATH1 MISSING_LIBRARY_NAME2 YOUR_INSTALL_PATH2 ...
 
 If you do not specify the installation path, the library will be installed in default folder.
 For example, if you want to build zeromq library in system folder and gflags in /usr/local, just run:
 
-	$ ./install-dependencies.sh zeromq gflags /usr/local
+	$ ./install.sh zeromq gflags /usr/local
 
 Another example can be to install all dependencies in /usr/local directory:
 
-	$ ./install-dependencies.sh all /usr/local
+	$ ./install.sh all /usr/local
 
 Here is a table showing the first arguments:
 
@@ -83,11 +81,12 @@ Here is a table showing the first arguments:
 	opencv					OpenCV
 	protobuf				Google protobuf
 	zeromq					zeromq lib
+	zookeeper				Apache zookeeper
 
 *: Since czmq depends on zeromq, the script offers you one more argument to indicate zeromq location.
 The installation commands of czmq can be:
 
-		$ ./install-dependencies.sh czmq  /usr/local /usr/local/zeromq
+		$ ./install.sh czmq  /usr/local /usr/local/zeromq
 
 After the execution, czmq will be installed in /usr/local while zeromq is installed in /usr/local/zeromq.
 
@@ -98,6 +97,7 @@ A1:You may install glog individually and try command :
 
 	$ make CFLAGS='-stdlib=libstdc++' CXXFLAGS='stdlib=libstdc++'
 #
+
 
 Q2:While compiling Singa, I get error "SSE2 instruction set not enabled"
 A2:You can try following command:
