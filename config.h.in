@@ -30,6 +30,9 @@
 /* Define to 1 if you have the `protobuf' library (-lprotobuf). */
 #undef HAVE_LIBPROTOBUF
 
+/* Define to 1 if you have the `zookeeper_mt' library (-lzookeeper_mt). */
+#undef HAVE_LIBZOOKEEPER_MT
+
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #undef HAVE_MALLOC
