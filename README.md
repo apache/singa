@@ -26,7 +26,7 @@ SINGA is developed and tested on Linux platforms with the following external lib
 
   * czmq version >= 3
 
-  * zookeeper version >= 3.4.6
+  * zookeeper version 3.4.6
 
 Tips:
 For libraries like openblas, opencv, older versions may also work, because we do not use any newly added features.

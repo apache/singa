@@ -157,17 +157,30 @@ void ZKClusterRT::childChanges(zhandle_t *zh, int type, int state, const char *p
   RTCallback *cb = (RTCallback *)watcherCtx;
   if (cb->fn == nullptr) return;
 
-  struct String_vector child;
-  //check the child list and put another watcher
-  int ret = zoo_wget_children(zh, path, childChanges, watcherCtx, &child);
-  LOG(INFO) << "ret = " << ret;
-  if (ret == ZOK){
-    LOG(INFO) << "child.count = " << child.count;
-    if (child.count == 0){
-      //all workers leave, we do callback now
-      (*cb->fn)(cb->ctx);
-      cb->fn = nullptr;
+  if (type == ZOO_CHILD_EVENT){
+    struct String_vector child;
+    //check the child list and put another watcher
+    int ret = zoo_wget_children(zh, path, childChanges, watcherCtx, &child);
+    LOG(INFO) << "ret = " << ret;
+    if (ret == ZOK){
+      LOG(INFO) << "child.count = " << child.count;
+      if (child.count == 0){
+        //LOG(ERROR) << "do call back";
+        //LOG(ERROR) << "type = " << type;
+        //LOG(ERROR) << "state = " << state;
+        //LOG(ERROR) << "path = " << path;
+        
+        //all workers leave, we do callback now
+        (*cb->fn)(cb->ctx);
+        cb->fn = nullptr;
+      }
     }
+    else{
+      LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_wget_children)";
+    }
+  }
+  else{
+    LOG(ERROR) << "Unhandled callback type code: "<< type;
   }
 }
 
