@@ -33,5 +33,11 @@ usage="Usage: singa-cleanup.sh"
 BIN=`dirname "${BASH_SOURCE-$0}"`
 BIN=`cd "$BIN">/dev/null; pwd`
 BASE=`cd "$BIN/..">/dev/null; pwd`
+ZKDATADIR="/tmp/zookeeper"
 
-$BIN/zk-service.sh stop
+. $BIN/zk-service.sh stop 2>/dev/null
+
+echo cleanning data in zookeeper...
+#remove zk data
+rm -r $ZKDATADIR
+

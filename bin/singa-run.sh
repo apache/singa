@@ -34,22 +34,23 @@ BIN=`dirname "${BASH_SOURCE-$0}"`
 BIN=`cd "$BIN">/dev/null; pwd`
 BASE=`cd "$BIN/..">/dev/null; pwd`
 
-#get argument
-cmd=$1
-
 cd $BASE
 
-$BIN/zk-service.sh start
+#cleanup singa data
+. $BIN/singa-cleanup.sh
+
+#start zookeeper
+. $BIN/zk-service.sh start 2>/dev/null
 
 #wait for zk service to be up
 sleep 3
 
+#run singa
+cmd="./singa "$@
 echo starting singa ...
+echo executing: $cmd
+exec $cmd
 
-echo "./singa" $@
-#. ./singa $@
-. ./singa $@
-
+#stop zookeeper
 echo stopping singa ...
-
-$BIN/zk-service.sh stop
+. $BIN/zk-service.sh stop 2>/dev/null
