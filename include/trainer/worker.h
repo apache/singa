@@ -5,6 +5,7 @@
 #include "neuralnet/neuralnet.h"
 #include "proto/model.pb.h"
 #include "utils/cluster.h"
+#include "utils/updater.h"
 #include "communication/socket.h"
 #include "communication/msg.h"
 
@@ -148,6 +149,7 @@ class Worker {
   shared_ptr<NeuralNet> train_net_, test_net_, validation_net_;
   shared_ptr<Dealer> layer_dealer_, param_dealer_;
   Poller layer_poller_, param_poller_;
+  shared_ptr<Updater> updater_;
 };
 
 class BPWorker: public Worker{

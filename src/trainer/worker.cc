@@ -22,6 +22,11 @@ void Worker::Setup(const ModelProto& model,
   auto cluster=Cluster::Get();
   int sgid=group_id_/cluster->nworker_groups_per_server_group();
   CHECK(cluster->runtime()->wJoinSGroup(group_id_, worker_id_, sgid));
+  if(model.hogwild()){
+    updater_=shared_ptr<Updater>(Singleton<Factory<Updater>>::Instance()
+        ->Create("Updater"));
+    updater_->Init(model.updater());
+  }
 }
 
 void Worker::Run(){
@@ -124,12 +129,17 @@ int Worker::Get(shared_ptr<Param> param, int step){
   return 1;
 }
 int Worker::Update(shared_ptr<Param> param, int step){
-  Msg* msg=new Msg();
-  msg->set_src(group_id_, worker_id_, kWorkerParam);
-  msg->set_dst(-1, -1, kStub);
-  msg->set_type(kUpdate);
-  msg->set_target(param->owner(), step);
-  param_dealer_->Send(&msg);
+  if(updater_){
+    updater_->Update(step, param);
+    param->set_version(param->version()+1);
+  }else{
+    Msg* msg=new Msg();
+    msg->set_src(group_id_, worker_id_, kWorkerParam);
+    msg->set_dst(-1, -1, kStub);
+    msg->set_type(kUpdate);
+    msg->set_target(param->owner(), step);
+    param_dealer_->Send(&msg);
+  }
   return 1;
 }
 

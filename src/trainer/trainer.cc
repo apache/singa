@@ -180,7 +180,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     threads.push_back(std::thread(&Server::Run,server.get()));
   for(auto worker: workers)
     threads.push_back(std::thread(&Worker::Run,worker.get()));
-  Run(servers.size(), workers.size(), shards);
+  Run(workers.size(), servers.size(), shards);
   for(auto& thread: threads)
     thread.join();
 }
@@ -191,8 +191,6 @@ void Trainer::Run(int nworkers, int nservers,
   procs_id_=cluster->procs_id();
   map<int, shared_ptr<Dealer>> interprocs_dealers;
   Metric perf;
-  int perf_step=-1;
-  string perf_prefix;
   bool stop=false;
   while(!stop){
     Msg* msg=router_->Receive();
@@ -209,9 +207,9 @@ void Trainer::Run(int nworkers, int nservers,
           msg =HandleConnect(&msg);
         }else if(type==kStop){
           if(msg->src_flag()==kServer)
-            nworkers--;
-          else if (msg->src_flag()==kWorkerParam)
             nservers--;
+          else if (msg->src_flag()==kWorkerParam)
+            nworkers--;
           delete msg;
           msg=nullptr;
           if(nworkers==0&&nservers==0){
@@ -219,26 +217,19 @@ void Trainer::Run(int nworkers, int nservers,
             break;
           }
         }else if(type==kMetric){
-          int step=msg->target_first();
-          string prefix((char*)msg->frame_data(), msg->frame_size());
-          if(step!=perf_step||perf_prefix!=prefix){
-            if(perf_step>=0){
-              perf.Avg();
-              LOG(ERROR)<<perf_prefix<<" step-"
-                <<perf_step<<", "<<perf.ToString();
-              perf.Reset();
-            }
-            perf_step=step;
-            perf_prefix=prefix;
+          if(msg->src_first()==0){
+            int step=msg->target_first();
+            string prefix((char*)msg->frame_data(), msg->frame_size());
+            msg->next_frame();
+            Metric cur;
+            cur.ParseString(string((char*)msg->frame_data(), msg->frame_size()));
+            perf.AddMetrics(cur);
+            LOG(ERROR)<<prefix<<" step-" <<step<<", "<<perf.ToString();
+            perf.Reset();
           }
-          msg->next_frame();
-          Metric cur;
-          cur.ParseString(string((char*)msg->frame_data(), msg->frame_size()));
-          perf.AddMetrics(cur);
-          perf.Inc();
           delete msg;
           msg=nullptr;
-        }else {
+        }else if(cluster->nserver_groups()>1){
           int group_id=msg->src_first();
           int paramid=msg->target_first();
           auto entry=shards.at(group_id)->at(paramid);
@@ -261,6 +252,9 @@ void Trainer::Run(int nworkers, int nservers,
             default:
               break;
           }
+        }else{
+          delete msg;
+          msg=nullptr;
         }
       }else{
         int dst_procs_id;
@@ -282,9 +276,11 @@ void Trainer::Run(int nworkers, int nservers,
       }
     }
   }
+  /*
   perf.Avg();
   if(perf_step>=0)
     LOG(ERROR)<<perf_prefix<<" step-"<<perf_step<<", "<<perf.ToString();
+    */
 }
 Msg* Trainer::HandleConnect(Msg** msg){
   string ping((char*)(*msg)->frame_data(), (*msg)->frame_size());

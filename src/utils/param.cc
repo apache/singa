@@ -175,6 +175,116 @@ void Param::Init(int v){
   set_version(v);
 }
 
+/********************HogwildParam***************************/
+Msg* HogwildParam::GenPutMsg(void* arg){
+  char buf[128];
+  sprintf(buf, "%d %f %f %p", size(),
+      learning_rate_multiplier(), weight_decay_multiplier(), mutable_cpu_data());
+  Msg* msg=new Msg();
+  msg->set_type(kPut);
+  int v=version();
+  if(arg!=nullptr)
+    v=*(int*)arg;
+  msg->set_target(owner(), v);
+  msg->add_frame(buf, strlen(buf));
+	return msg;
+}
+
+Msg* HogwildParam::GenGetMsg(void* arg){
+  Msg* msg=new Msg();
+  msg->set_type(kGet);
+  int v=version();
+  if(arg!=nullptr)
+    v=*(int*)arg;
+  msg->set_target(owner(), v);
+  return msg;
+}
+
+Msg* HogwildParam::GenUpdateMsg(void* arg){
+  Msg* msg=new Msg();
+  msg->set_type(kUpdate);
+  int v=version();
+  if(arg!=nullptr)
+    v=*(int*)arg;
+  msg->set_target(owner(), v);
+  void* p=mutable_cpu_grad();
+  msg->add_frame(p, sizeof(void*));
+  return msg;
+}
+
+Msg* HogwildParam::GenSyncMsg(void* arg){
+  return nullptr;
+}
+
+Msg* HogwildParam::HandlePutMsg(Msg** msg){
+  int size;
+  float lr, wc;
+  sscanf(static_cast<char*>((*msg)->frame_data()), "%d %f %f",
+      &size, &lr, &wc);
+  proto_.set_learning_rate_multiplier(lr);
+  proto_.set_weight_decay_multiplier(wc);
+  CHECK((*msg)->next_frame());
+  vector<int> shape{size};
+  // set pointer
+  data_=std::make_shared<Blob<float>>(shape);
+  data_->set_version((*msg)->target_second());
+  grad_.Reshape(shape);
+  history_.Reshape(shape);
+  delete (*msg);
+  *msg=nullptr;
+  return nullptr;
+}
+
+Msg* HogwildParam::HandleGetMsg(Msg** msg){
+  if((*msg)->target_second()<=version()){
+    (*msg)->add_frame(mutable_cpu_data(), sizeof(float)*size());
+    (*msg)->SwapAddr();
+    (*msg)->set_type(kRGet);
+  }
+  return *msg;
+}
+
+int HogwildParam::ParseUpdateMsg(Msg** msg){
+  delete (*msg);
+  *msg=nullptr;
+  return 1;
+}
+
+Msg* HogwildParam::GenUpdateResponseMsg(void* arg){
+  Msg* msg=new Msg();
+  msg->set_type(kRUpdate);
+  int v=version();
+  if(arg!=nullptr)
+    v=*(int*)arg;
+  msg->set_target(owner(), v);
+  return msg;
+}
+
+Msg* HogwildParam::HandleSyncMsg(Msg** msg){
+  delete *msg;
+  *msg=nullptr;
+  return nullptr;
+}
+
+int HogwildParam::ParseSyncResponseMsg(Msg** msg){
+  delete *msg;
+  *msg=nullptr;
+  return 1;
+}
+int HogwildParam::ParsePutResponseMsg(Msg **msg){
+  return ParseSyncResponseMsg(msg);
+}
+int HogwildParam::ParseGetResponseMsg(Msg **msg){
+  // must be set after all other settings are done!
+  set_version((*msg)->target_second());
+  delete *msg;
+  *msg=nullptr;
+  return 1;
+}
+int HogwildParam::ParseUpdateResponseMsg(Msg **msg){
+  return ParseGetResponseMsg(msg);
+}
+
 /**************************RandomSyncParam********************************
 const vector<int> RandomSyncParam::RandomSample(int seed, int m, int n){
   vector<int> samples(m);

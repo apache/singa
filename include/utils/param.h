@@ -133,39 +133,32 @@ class Param {
   int fan_in_;
 };
 /**
- * Sync with server by randomly sampling some parameters for every sync.
-class RandomSyncParam: public Param{
- public:
-  virtual zmsg_t* HandleSyncMsg(zmsg_t** msg);
-  virtual zmsg_t *GenSyncMsgFromWorker(float sample_ratio);
-  virtual void ParseSyncMsgFromPS(zmsg_t** msg);
-  virtual void Setup(const ParamProto& proto, const vector<int>& shape, int fan_in);
-  virtual void Init();
-
-  float* mutable_cpu_snapshot(){
-    return snapshot_.mutable_cpu_data();
-  }
-  const float* cpu_snapshot(){
-    return snapshot_.cpu_data();
-  }
-
- protected:
-  const vector<int> RandomSample(int seed, int m, int n);
-
-
-  Blob<float> snapshot_;
-};
+ * To support the shared memory and distributed Hogwild algorithm.
+ * Each worker group has one worker. Workers from the same process share the
+ * memory space for parameter values. Each process has one server group which
+ * also shares the same memory space. Messages except synchronization messages
+ * only transfer pointers to parameter value or gradient space. Hence memory
+ * copy is avoided for intra-process communication.
  */
-/**
- * Sync with server by elastic SGD see http://arxiv.org/abs/1412.6651.
-class ElasticParam: public Param{
+class HogwildParam: public Param{
  public:
-  virtual zmsg_t* HandleSyncMsg(zmsg_t** msg);
-  virtual zmsg_t *GenSyncMsgFromWorker(float moving_rate);
-  virtual void ParseSyncMsgFromPS(zmsg_t** msg);
-};
- */
+  virtual Msg* GenGetMsg(void* arg=nullptr);
+  virtual Msg* GenPutMsg(void* arg=nullptr);
+  virtual Msg* GenUpdateMsg(void* arg=nullptr);
+  virtual Msg* GenSyncMsg(void* arg=nullptr);
 
+  virtual Msg* HandleGetMsg(Msg** msg);
+  virtual Msg* HandlePutMsg(Msg** msg);
+  virtual int ParseUpdateMsg(Msg** msg);
+  virtual Msg* GenUpdateResponseMsg(void* arg=nullptr);
+  virtual Msg* HandleSyncMsg(Msg** msg);
+
+  virtual int ParseGetResponseMsg(Msg** msg);
+  virtual int ParsePutResponseMsg(Msg** msg);
+  virtual int ParseUpdateResponseMsg(Msg** msg);
+  virtual int ParseSyncResponseMsg(Msg** msg);
+
+};
 
 }  // namespace singa
 
