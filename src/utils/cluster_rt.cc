@@ -55,6 +55,8 @@ bool ZKClusterRT::Init(){
 
 bool ZKClusterRT::sWatchSGroup(int gid, int sid, rt_callback fn, void *ctx){
 
+  CHECK_NOTNULL(fn);
+
   string path = getSGroupPath(gid);
   struct Stat stat;
 
