@@ -236,6 +236,20 @@ class ClusterProto : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 server_timeout() const;
   inline void set_server_timeout(::google::protobuf::int32 value);
 
+  // optional bool server_update = 40 [default = true];
+  inline bool has_server_update() const;
+  inline void clear_server_update();
+  static const int kServerUpdateFieldNumber = 40;
+  inline bool server_update() const;
+  inline void set_server_update(bool value);
+
+  // optional bool share_memory = 41 [default = true];
+  inline bool has_share_memory() const;
+  inline void clear_share_memory();
+  static const int kShareMemoryFieldNumber = 41;
+  inline bool share_memory() const;
+  inline void set_share_memory(bool value);
+
   // @@protoc_insertion_point(class_scope:singa.ClusterProto)
  private:
   inline void set_has_nworker_groups();
@@ -270,6 +284,10 @@ class ClusterProto : public ::google::protobuf::Message {
   inline void clear_has_worker_timeout();
   inline void set_has_server_timeout();
   inline void clear_has_server_timeout();
+  inline void set_has_server_update();
+  inline void clear_has_server_update();
+  inline void set_has_share_memory();
+  inline void clear_has_share_memory();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -280,20 +298,22 @@ class ClusterProto : public ::google::protobuf::Message {
   ::google::protobuf::int32 nworkers_per_procs_;
   ::google::protobuf::int32 nservers_per_procs_;
   ::std::string* hostfile_;
-  bool server_worker_separate_;
   ::google::protobuf::int32 nprocs_;
+  ::google::protobuf::int32 start_port_;
   ::std::string* workspace_;
   ::std::string* log_dir_;
-  ::google::protobuf::int32 start_port_;
-  ::google::protobuf::int32 stub_timeout_;
   ::std::string* zookeeper_host_;
   static ::std::string* _default_zookeeper_host_;
   ::google::protobuf::RepeatedPtrField< ::singa::ServerTopology > server_group_;
+  ::google::protobuf::int32 stub_timeout_;
+  bool server_worker_separate_;
+  bool server_update_;
+  bool share_memory_;
   ::google::protobuf::int32 worker_timeout_;
   ::google::protobuf::int32 server_timeout_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(17 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(19 + 31) / 32];
 
   friend void  protobuf_AddDesc_cluster_2eproto();
   friend void protobuf_AssignDesc_cluster_2eproto();
@@ -981,6 +1001,50 @@ inline ::google::protobuf::int32 ClusterProto::server_timeout() const {
 inline void ClusterProto::set_server_timeout(::google::protobuf::int32 value) {
   set_has_server_timeout();
   server_timeout_ = value;
+}
+
+// optional bool server_update = 40 [default = true];
+inline bool ClusterProto::has_server_update() const {
+  return (_has_bits_[0] & 0x00020000u) != 0;
+}
+inline void ClusterProto::set_has_server_update() {
+  _has_bits_[0] |= 0x00020000u;
+}
+inline void ClusterProto::clear_has_server_update() {
+  _has_bits_[0] &= ~0x00020000u;
+}
+inline void ClusterProto::clear_server_update() {
+  server_update_ = true;
+  clear_has_server_update();
+}
+inline bool ClusterProto::server_update() const {
+  return server_update_;
+}
+inline void ClusterProto::set_server_update(bool value) {
+  set_has_server_update();
+  server_update_ = value;
+}
+
+// optional bool share_memory = 41 [default = true];
+inline bool ClusterProto::has_share_memory() const {
+  return (_has_bits_[0] & 0x00040000u) != 0;
+}
+inline void ClusterProto::set_has_share_memory() {
+  _has_bits_[0] |= 0x00040000u;
+}
+inline void ClusterProto::clear_has_share_memory() {
+  _has_bits_[0] &= ~0x00040000u;
+}
+inline void ClusterProto::clear_share_memory() {
+  share_memory_ = true;
+  clear_has_share_memory();
+}
+inline bool ClusterProto::share_memory() const {
+  return share_memory_;
+}
+inline void ClusterProto::set_share_memory(bool value) {
+  set_has_share_memory();
+  share_memory_ = value;
 }
 
 // -------------------------------------------------------------------

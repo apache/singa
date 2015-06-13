@@ -102,6 +102,14 @@ class Cluster {
     return cluster_.server_timeout();
   }
 
+  const bool server_update() const {
+    return cluster_.server_update();
+  }
+
+  const bool share_memory() const {
+    return cluster_.share_memory();
+  }
+
   /**
    * bandwidth MB/s
   float bandwidth() const {

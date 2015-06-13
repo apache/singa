@@ -11,19 +11,20 @@
 namespace singa {
 class Param {
  public:
-  Param():data_(nullptr){}
+  Param();
   virtual ~Param(){};
 
-  virtual Msg* GenGetMsg(void* arg=nullptr);
-  virtual Msg* GenPutMsg(void* arg=nullptr);
-  virtual Msg* GenUpdateMsg(void* arg=nullptr);
-  virtual Msg* GenSyncMsg(void* arg=nullptr);
+  virtual Msg* GenGetMsg(bool copy, int v=-1);
+  virtual Msg* GenPutMsg(bool copy, int v=-1);
+  virtual Msg* GenUpdateMsg(bool copy, int v=-1);
+  virtual Msg* GenSyncMsg(bool copy, int v=-1);
 
   virtual Msg* HandleGetMsg(Msg** msg);
   virtual Msg* HandlePutMsg(Msg** msg);
-  virtual int ParseUpdateMsg(Msg** msg);
-  virtual Msg* GenUpdateResponseMsg(void* arg=nullptr);
   virtual Msg* HandleSyncMsg(Msg** msg);
+  virtual const std::pair<bool, int> ParseUpdateMsg(Msg** msg);
+  virtual Msg* GenUpdateResponseMsg(bool copy, int v=-1);
+
 
   virtual int ParseGetResponseMsg(Msg** msg);
   virtual int ParsePutResponseMsg(Msg** msg);
@@ -74,11 +75,26 @@ class Param {
     proto_.set_owner(id);
   }
 
+  /**
+   * return the version of the parameter value shared by multiple workers
+   */
   int version() const {
-    return data_->version(); // TODO store version in data blob
+    return data_->version();
   }
+
   void set_version(int v) {
     data_->set_version(v); // TODO read version from data blob
+  }
+
+  /**
+   * return the version of the parameter value local to a worker
+   */
+  int local_version() const {
+    return local_version_;
+  }
+
+  void set_local_version(int v){
+    local_version_=v;
   }
    /**
     * @return num of floats.
@@ -131,6 +147,7 @@ class Param {
   Blob<float> grad_, history_;
   ParamProto proto_;
   int fan_in_;
+  int local_version_;
 };
 /**
  * To support the shared memory and distributed Hogwild algorithm.
@@ -141,23 +158,6 @@ class Param {
  * copy is avoided for intra-process communication.
  */
 class HogwildParam: public Param{
- public:
-  virtual Msg* GenGetMsg(void* arg=nullptr);
-  virtual Msg* GenPutMsg(void* arg=nullptr);
-  virtual Msg* GenUpdateMsg(void* arg=nullptr);
-  virtual Msg* GenSyncMsg(void* arg=nullptr);
-
-  virtual Msg* HandleGetMsg(Msg** msg);
-  virtual Msg* HandlePutMsg(Msg** msg);
-  virtual int ParseUpdateMsg(Msg** msg);
-  virtual Msg* GenUpdateResponseMsg(void* arg=nullptr);
-  virtual Msg* HandleSyncMsg(Msg** msg);
-
-  virtual int ParseGetResponseMsg(Msg** msg);
-  virtual int ParsePutResponseMsg(Msg** msg);
-  virtual int ParseUpdateResponseMsg(Msg** msg);
-  virtual int ParseSyncResponseMsg(Msg** msg);
-
 };
 
 }  // namespace singa

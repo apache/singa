@@ -36,6 +36,11 @@ message ClusterProto{
   optional int32 stub_timeout=30 [default=5000];
   optional int32 worker_timeout=31 [default=5000];
   optional int32 server_timeout=32 [default=5000];
+
+  // conduct updates at server side; otherwise do it at worker side
+  optional bool server_update=40 [default=true];
+  // share memory space between worker groups in one procs
+  optional bool share_memory=41 [default=true];
 }
 
 message ServerTopology{
