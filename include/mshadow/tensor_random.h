@@ -7,13 +7,17 @@
  *   Based on curand|MKL|stdlib
  */
 #include <cstdlib>
+#include <random>
+#include <chrono>
 #include "tensor.h"
 #include "tensor_container.h"
 
 namespace mshadow {
-    /*! 
-     * \brief random number generator 
+    /*!
+     * \brief random number generator
      * \tparam Device the device of random number generator
+     *
+     * Note: replaced rand (srand) with c++11's random functions.
      */
     template<typename Device>
     class Random {};
@@ -23,6 +27,14 @@ namespace mshadow {
     class Random<cpu> {
     public:
         /*!
+         * \brief constructor of random engine using default seed
+         */
+        Random<cpu> (){
+          // obtain a seed from the system clock:
+          unsigned s= std::chrono::system_clock::now().time_since_epoch().count();
+          Seed(s);
+        }
+        /*!
          * \brief constructor of random engine
          * \param seed random number seed
          */
@@ -31,7 +43,8 @@ namespace mshadow {
             int status = vslNewStream(&vStream_, VSL_BRNG_MT19937, seed);
             utils::Assert( status == VSL_STATUS_OK, "MKL VSL Random engine failed to be initialized.\n" );
             #else
-            srand(seed);
+            //srand(seed);
+            gen_.seed(seed);
             #endif
             buffer_.Resize( Shape1( kRandBufferSize ) );
         }
@@ -51,7 +64,8 @@ namespace mshadow {
             status = vslNewStream(&vStream_, VSL_BRNG_MT19937, seed);
             utils::Assert(status == VSL_STATUS_OK);
             #else
-            srand( seed );
+            // srand( seed );
+            gen_.seed(seed);
             #endif
         }
         /*!
@@ -64,6 +78,7 @@ namespace mshadow {
         template<int dim>
         inline void SampleUniform( Tensor<cpu, dim> &dst, real_t a=0.0f, real_t b=1.0f ) {
             Tensor<cpu, 2> mat = dst.FlatTo2D();
+            std::uniform_real_distribution<real_t> distribution (a,b);
             for ( index_t i = 0; i < mat.shape[1]; ++i ) {
                 #if MSHADOW_USE_MKL
                 #if MSHADOW_SINGLE_PRECISION
@@ -74,8 +89,13 @@ namespace mshadow {
                 utils::Assert(status == VSL_STATUS_OK, "Failed to generate random number by MKL.\n" );
                 #else
                 // use stdlib
+                /*
                 for ( index_t j = 0; j < mat.shape[0]; ++j ) {
                     mat[i][j] = this->RandNext()*(b-a) + a;
+                }
+                */
+                for ( index_t j = 0; j < mat.shape[0]; ++j ) {
+                    mat[i][j] = distribution(gen_);
                 }
                 #endif
             }
@@ -93,6 +113,7 @@ namespace mshadow {
                 dst = mu; return;
             }
             Tensor<cpu, 2> mat = dst.FlatTo2D();
+            std::normal_distribution<real_t> distribution (mu, sigma);
             for (index_t i = 0; i < mat.shape[1]; ++i) {
                 #if MSHADOW_USE_MKL
                 #if MSHADOW_SINGLE_PRECISION
@@ -102,6 +123,7 @@ namespace mshadow {
                 #endif
                 utils::Assert(status == VSL_STATUS_OK, "Failed to generate random number by MKL.\n" );
                 #else
+                /*
                 real_t g1 = 0.0f, g2 = 0.0f;
                 for (index_t j = 0; j < mat.shape[0]; ++j) {
                     if( (j & 1) == 0 ){
@@ -110,6 +132,10 @@ namespace mshadow {
                     }else{
                         mat[i][j] = mu + g2 * sigma;
                     }
+                }
+                */
+                for (index_t j = 0; j < mat.shape[0]; ++j) {
+                  mat[i][j] = distribution(gen_);
                 }
                 #endif
             }
@@ -177,6 +203,9 @@ namespace mshadow {
         #endif
         /*! \brief temporal space used to store random numbers */
         TensorContainer<cpu,1> buffer_;
+
+        /*! \brief c++11 random generator, added for SINGA use */
+        std::mt19937 gen_;
     }; // class Random<cpu>
 
 #ifdef __CUDACC__

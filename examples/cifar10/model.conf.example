@@ -1,7 +1,7 @@
 name: "cifar10-convnet"
-train_steps: 70000
+train_steps: 1000
 test_steps:100
-test_frequency:1000
+test_frequency:300
 display_frequency:30
 updater{
   momentum:0.9
@@ -21,7 +21,7 @@ layer{
   type: "kShardData"
   data_param {
     path: "examples/cifar10/cifar10_train_shard"
-    batchsize: 128
+    batchsize: 16
   }
   exclude: kTest
 }
