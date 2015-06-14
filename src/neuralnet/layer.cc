@@ -129,8 +129,6 @@ void DropoutLayer::Setup(const LayerProto& proto,
   grad_.ReshapeLike(*srclayers[0]->mutable_grad(this));
   mask_.Reshape(srclayers[0]->data(this).shape());
   pdrop_=proto.dropout_param().dropout_ratio();
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  ASingleton<Random<cpu>>::Instance(seed);
 }
 
 void DropoutLayer::SetupAfterPartition(const LayerProto& proto,
@@ -147,7 +145,7 @@ void DropoutLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers
   }
   float pkeep=1-pdrop_;
   Tensor<cpu, 1> mask(mask_.mutable_cpu_data(), Shape1(mask_.count()));
-  mask = F<op::threshold>(ASingleton<Random<cpu>>::Instance()\
+  mask = F<op::threshold>(TSingleton<Random<cpu>>::Instance()\
       ->uniform(mask.shape), pkeep ) * (1.0f/pkeep);
   Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
   Blob<float>* srcblob=srclayers[0]->mutable_data(this);

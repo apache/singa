@@ -136,8 +136,7 @@ void Param::Setup(const ParamProto& proto, const vector<int>& shape,
 
 void Param::Init(int v){
   Tensor<cpu, 1> data(mutable_cpu_data(), Shape1(size()));
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  auto random=ASingleton<Random<cpu>>::Instance(seed);
+  auto random=TSingleton<Random<cpu>>::Instance();
   switch (proto_.init_method()) {
   case ParamProto::kConstant:
     data=proto_.value();
