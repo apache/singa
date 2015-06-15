@@ -11,19 +11,20 @@
 namespace singa {
 class Param {
  public:
-  Param():data_(nullptr){}
+  Param();
   virtual ~Param(){};
 
-  virtual Msg* GenGetMsg(void* arg=nullptr);
-  virtual Msg* GenPutMsg(void* arg=nullptr);
-  virtual Msg* GenUpdateMsg(void* arg=nullptr);
-  virtual Msg* GenSyncMsg(void* arg=nullptr);
+  virtual Msg* GenGetMsg(bool copy, int v=-1);
+  virtual Msg* GenPutMsg(bool copy, int v=-1);
+  virtual Msg* GenUpdateMsg(bool copy, int v=-1);
+  virtual Msg* GenSyncMsg(bool copy, int v=-1);
 
   virtual Msg* HandleGetMsg(Msg** msg);
   virtual Msg* HandlePutMsg(Msg** msg);
-  virtual int ParseUpdateMsg(Msg** msg);
-  virtual Msg* GenUpdateResponseMsg(void* arg=nullptr);
   virtual Msg* HandleSyncMsg(Msg** msg);
+  virtual const std::pair<bool, int> ParseUpdateMsg(Msg** msg);
+  virtual Msg* GenUpdateResponseMsg(bool copy, int v=-1);
+
 
   virtual int ParseGetResponseMsg(Msg** msg);
   virtual int ParsePutResponseMsg(Msg** msg);
@@ -74,11 +75,26 @@ class Param {
     proto_.set_owner(id);
   }
 
+  /**
+   * return the version of the parameter value shared by multiple workers
+   */
   int version() const {
-    return data_->version(); // TODO store version in data blob
+    return data_->version();
   }
+
   void set_version(int v) {
     data_->set_version(v); // TODO read version from data blob
+  }
+
+  /**
+   * return the version of the parameter value local to a worker
+   */
+  int local_version() const {
+    return local_version_;
+  }
+
+  void set_local_version(int v){
+    local_version_=v;
   }
    /**
     * @return num of floats.
@@ -131,41 +147,18 @@ class Param {
   Blob<float> grad_, history_;
   ParamProto proto_;
   int fan_in_;
+  int local_version_;
 };
 /**
- * Sync with server by randomly sampling some parameters for every sync.
-class RandomSyncParam: public Param{
- public:
-  virtual zmsg_t* HandleSyncMsg(zmsg_t** msg);
-  virtual zmsg_t *GenSyncMsgFromWorker(float sample_ratio);
-  virtual void ParseSyncMsgFromPS(zmsg_t** msg);
-  virtual void Setup(const ParamProto& proto, const vector<int>& shape, int fan_in);
-  virtual void Init();
-
-  float* mutable_cpu_snapshot(){
-    return snapshot_.mutable_cpu_data();
-  }
-  const float* cpu_snapshot(){
-    return snapshot_.cpu_data();
-  }
-
- protected:
-  const vector<int> RandomSample(int seed, int m, int n);
-
-
-  Blob<float> snapshot_;
-};
+ * To support the shared memory and distributed Hogwild algorithm.
+ * Each worker group has one worker. Workers from the same process share the
+ * memory space for parameter values. Each process has one server group which
+ * also shares the same memory space. Messages except synchronization messages
+ * only transfer pointers to parameter value or gradient space. Hence memory
+ * copy is avoided for intra-process communication.
  */
-/**
- * Sync with server by elastic SGD see http://arxiv.org/abs/1412.6651.
-class ElasticParam: public Param{
- public:
-  virtual zmsg_t* HandleSyncMsg(zmsg_t** msg);
-  virtual zmsg_t *GenSyncMsgFromWorker(float moving_rate);
-  virtual void ParseSyncMsgFromPS(zmsg_t** msg);
+class HogwildParam: public Param{
 };
- */
-
 
 }  // namespace singa
 

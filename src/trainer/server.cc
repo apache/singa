@@ -110,11 +110,10 @@ Msg* Server::HandleGet(shared_ptr<Param> param, Msg **msg){
 Msg* Server::HandleUpdate(shared_ptr<Param> param, Msg **msg) {
   //repsonse of the format: <identity><type: kData><paramId><param content>
   auto* tmp=static_cast<Msg*>((*msg)->CopyAddr());
-  int v=(*msg)->target_second()+1;
-  param->ParseUpdateMsg(msg);
-  updater_->Update(param->version(), param);
+  const std::pair<bool, int> copy_step=param->ParseUpdateMsg(msg);
+  updater_->Update(copy_step.second, param);
   param->set_version(param->version()+1);
-  auto response=param->GenUpdateResponseMsg(&v);
+  auto response=param->GenUpdateResponseMsg(copy_step.first, param->version());
   tmp->SwapAddr();
   response->SetAddr(tmp);
   delete tmp;

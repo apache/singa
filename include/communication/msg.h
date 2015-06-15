@@ -51,7 +51,6 @@ class BaseMsg{
     */
   virtual bool next_frame()=0;
 };
-
 // TODO make it a compiler argument
 #define USE_ZMQ
 
@@ -186,6 +185,11 @@ class Msg : public BaseMsg{
   zframe_t *frame_;
 };
 #endif
+inline void DeleteMsg(Msg** msg){
+  delete *msg;
+  *msg=nullptr;
+}
+
 
 } /* singa */
 

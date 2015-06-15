@@ -13,7 +13,6 @@
 *.project
 *.cproject
 *.log
-*.conf
 *.nfs*
 src/test/data/*
 tmp

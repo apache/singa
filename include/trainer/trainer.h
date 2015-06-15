@@ -54,14 +54,11 @@ class Trainer{
       *  otherwise
       * @param owner the procs id of the worker who ownes this Param object
       */
-    void AddParam(shared_ptr<Param> p, int local, int owner){
+    void AddParam(shared_ptr<Param> p, bool local){
       num_local+=local;
       num_total+=1;
-      if(owner>-1)
-        owner_procs=owner;
-      if(local>0){
+      if(local)
         shares.push_back(p);
-      }
     }
     int num_update, next_version; //!< all counters are atomic
 

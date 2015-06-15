@@ -65,7 +65,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
   vector<shared_ptr<Server>> servers;
   vector<HandleContext> ctx;
   int nthreads=1; // the first socket is the router
-  if(cluster->has_server()){
+  if(cluster->has_server()){ // todo move sever creation to a method
     int pid=cluster->procs_id();
     if(cluster->server_worker_separate())
       pid-=cluster->nworker_procs();
@@ -88,11 +88,10 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
       }
     }
   }
-
   // create workers
   vector<shared_ptr<Worker>> workers;
   std::map<int, shared_ptr<Trainer::ParamShard>> shards;
-  if(cluster->has_worker()){
+  if(cluster->has_worker()){ //move worker creation to a method
     auto net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
         cluster->nworkers_per_group());
     //LOG(ERROR)<<net->ToString();
@@ -123,7 +122,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
             cluster->nworkers_per_group());
         // the train net for other groups may share parameter values from the
         // first group
-        if(mproto.hogwild())
+        if(cluster->share_memory())
           train_net->ShareParams(net, kValueOnly);
       }
       if(gid==0){
@@ -146,13 +145,14 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
       shards[gid]=shard;
       for(auto layer: train_net->layers()){
         int procsid=ProcsIDOf(gid, layer->partitionid(),kWorkerParam);
-        int local=procsid==cluster->procs_id();
+        bool local=procsid==cluster->procs_id();
         for(auto param: layer->GetParams()){
-          int owner=param->owner()<0||param->owner()==param->id()?procsid:-1;
+          int owner_procs=param->owner()==param->id()?procsid:procs_id_;
           if(shard->find(param->owner())==shard->end())
-            (*shard)[param->owner()]=make_shared<ParamInfo>(param, local, owner);
+            (*shard)[param->owner()]=
+              make_shared<ParamInfo>(param, local, owner_procs);
           else
-            shard->at(param->owner())->AddParam(param, local, owner);
+            shard->at(param->owner())->AddParam(param, local);
         }
       }
       for(int wid=wstart;wid<wend;wid++){
@@ -180,7 +180,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     threads.push_back(std::thread(&Server::Run,server.get()));
   for(auto worker: workers)
     threads.push_back(std::thread(&Worker::Run,worker.get()));
-  Run(servers.size(), workers.size(), shards);
+  Run(workers.size(), servers.size(), shards);
   for(auto& thread: threads)
     thread.join();
 }
@@ -191,8 +191,6 @@ void Trainer::Run(int nworkers, int nservers,
   procs_id_=cluster->procs_id();
   map<int, shared_ptr<Dealer>> interprocs_dealers;
   Metric perf;
-  int perf_step=-1;
-  string perf_prefix;
   bool stop=false;
   while(!stop){
     Msg* msg=router_->Receive();
@@ -209,9 +207,9 @@ void Trainer::Run(int nworkers, int nservers,
           msg =HandleConnect(&msg);
         }else if(type==kStop){
           if(msg->src_flag()==kServer)
-            nworkers--;
-          else if (msg->src_flag()==kWorkerParam)
             nservers--;
+          else if (msg->src_flag()==kWorkerParam)
+            nworkers--;
           delete msg;
           msg=nullptr;
           if(nworkers==0&&nservers==0){
@@ -219,26 +217,19 @@ void Trainer::Run(int nworkers, int nservers,
             break;
           }
         }else if(type==kMetric){
-          int step=msg->target_first();
-          string prefix((char*)msg->frame_data(), msg->frame_size());
-          if(step!=perf_step||perf_prefix!=prefix){
-            if(perf_step>=0){
-              perf.Avg();
-              LOG(ERROR)<<perf_prefix<<" step-"
-                <<perf_step<<", "<<perf.ToString();
-              perf.Reset();
-            }
-            perf_step=step;
-            perf_prefix=prefix;
+          if(msg->src_first()==0){
+            int step=msg->target_first();
+            string prefix((char*)msg->frame_data(), msg->frame_size());
+            msg->next_frame();
+            Metric cur;
+            cur.ParseString(string((char*)msg->frame_data(), msg->frame_size()));
+            perf.AddMetrics(cur);
+            LOG(ERROR)<<prefix<<" step-" <<step<<", "<<perf.ToString();
+            perf.Reset();
           }
-          msg->next_frame();
-          Metric cur;
-          cur.ParseString(string((char*)msg->frame_data(), msg->frame_size()));
-          perf.AddMetrics(cur);
-          perf.Inc();
           delete msg;
           msg=nullptr;
-        }else {
+        }else if(cluster->nserver_groups()>0){
           int group_id=msg->src_first();
           int paramid=msg->target_first();
           auto entry=shards.at(group_id)->at(paramid);
@@ -261,6 +252,9 @@ void Trainer::Run(int nworkers, int nservers,
             default:
               break;
           }
+        }else{
+          delete msg;
+          msg=nullptr;
         }
       }else{
         int dst_procs_id;
@@ -282,9 +276,11 @@ void Trainer::Run(int nworkers, int nservers,
       }
     }
   }
+  /*
   perf.Avg();
   if(perf_step>=0)
     LOG(ERROR)<<perf_prefix<<" step-"<<perf_step<<", "<<perf.ToString();
+    */
 }
 Msg* Trainer::HandleConnect(Msg** msg){
   string ping((char*)(*msg)->frame_data(), (*msg)->frame_size());
@@ -332,11 +328,13 @@ Msg* Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
     }
   }else if(version>pi->next_version){
     pi->next_version=version;
-    reply=pi->shares.at(0)->GenGetMsg(&version);
     int gid=msgg->src_first(), pid=msgg->target_first();
+    int dstgroup=gid/Cluster::Get()->nworker_groups_per_server_group();
+    int dstid=Sharding(pid);
+    int dstprocs=ProcsIDOf(dstgroup, dstid, kServer);
+    reply=pi->shares.at(0)->GenGetMsg(dstprocs!=procs_id_);
     reply->set_src(procs_id_, gid, kStub);
-    reply->set_dst(gid/Cluster::Get()->nworker_groups_per_server_group(),
-        Sharding(pid), kServer);
+    reply->set_dst(dstgroup, dstid, kServer);
   }
   return reply;
 }
@@ -349,6 +347,7 @@ Msg* Trainer::HandleGetResponse(shared_ptr<ParamInfo>pi, Msg** msg){
 
 Msg* Trainer::HandleUpdate(shared_ptr<ParamInfo>pi, Msg** msg){
   Msg* msgg=*msg, *update=nullptr;
+  int step= msgg->target_second();
   if(msgg->src_flag()==kStub){
     if(pi->num_update<pi->num_local)
       return *msg; //wait unitl local updates are ready
@@ -370,8 +369,7 @@ Msg* Trainer::HandleUpdate(shared_ptr<ParamInfo>pi, Msg** msg){
     }
     agg/=pi->num_total;
     if(pi->num_local<pi->num_total){
-      int v=msgg->target_second();
-      update=pi->shares.at(0)->GenUpdateMsg(&v);
+      update=pi->shares.at(0)->GenUpdateMsg(pi->owner_procs!=procs_id_, step);
       int gid=msgg->src_first();
       update->set_src(procs_id_, gid,kStub);
       update->set_dst(pi->owner_procs, gid, kStub);
@@ -379,12 +377,13 @@ Msg* Trainer::HandleUpdate(shared_ptr<ParamInfo>pi, Msg** msg){
     }
   }
   if(pi->num_update==pi->num_total){
-    int v=msgg->target_second();
-    update=pi->shares.at(0)->GenUpdateMsg(&v);
     int gid=msgg->src_first();
+    int dstgroup=gid/Cluster::Get()->nworker_groups_per_server_group();
+    int dstid=Sharding(msgg->target_first());
+    int dstprocs=ProcsIDOf(dstgroup, dstid, kServer);
+    update=pi->shares.at(0)->GenUpdateMsg(dstprocs!=procs_id_, step);
     update->set_src(procs_id_, gid, kStub);
-    update->set_dst(gid/Cluster::Get()->nworker_groups_per_server_group(),
-        Sharding((*msg)->target_first()), kServer);
+    update->set_dst(dstgroup, dstid, kServer);
     pi->num_update=0;
   }
   delete *msg;
@@ -399,12 +398,14 @@ int Trainer::HandleUpdateResponse(shared_ptr<Trainer::ParamInfo> pi, Msg** msg){
 
 Msg* Trainer::HandlePut(shared_ptr<Trainer::ParamInfo>pi, Msg** msg){
   CHECK_NE((*msg)->src_flag(), kStub);
-  Msg* put=pi->shares.at(0)->GenPutMsg();
   int gid=(*msg)->src_first();
   int id=(*msg)->target_first();
+  int dstgroup=gid/Cluster::Get()->nworker_groups_per_server_group();
+  int dstid=Sharding(id);
+  int dstprocs=ProcsIDOf(dstgroup, dstid, kServer);
+  Msg* put=pi->shares.at(0)->GenPutMsg(dstprocs!=procs_id_);
   put->set_src(procs_id_, gid , kStub);
-  put->set_dst(gid/Cluster::Get()->nworker_groups_per_server_group(),
-      Sharding(id), kServer);
+  put->set_dst(dstgroup, dstid, kServer);
   delete *msg;
   *msg=NULL;
   return put;
