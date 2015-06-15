@@ -20,12 +20,12 @@ Msg* Param::GenPutMsg(bool copy, int v){
   sprintf(buf, "%d %f %f", size(),
       learning_rate_multiplier(), weight_decay_multiplier());
   if(copy){
-    sprintf(buf+strlen(buf), " %p", nullptr);
+    sprintf(buf+strlen(buf), " %p ", nullptr);
     msg->add_frame(buf, strlen(buf));
     msg->add_frame(mutable_cpu_data(), size()*sizeof(float));
   }else{
     //share the data blob which includes the blob version
-    sprintf(buf+strlen(buf), " %p", data_.get());
+    sprintf(buf+strlen(buf), " %p ", data_.get());
     msg->add_frame(buf, strlen(buf));
   }
 	return msg;
@@ -47,9 +47,8 @@ Msg* Param::GenUpdateMsg(bool copy, int v){
   if(copy)
     msg->add_frame(mutable_cpu_grad(), size()*sizeof(float));
   else{ // to share values of grad blob
-    char buf[32]; sprintf(buf, "%p", &grad_);
+    char buf[32]; sprintf(buf, " %p ", &grad_);
     msg->add_frame(buf, strlen(buf));
-    //LOG(ERROR)<<"param id="<<id()<<" ptr="<<buf;
   }
   return msg;
 }
@@ -62,7 +61,7 @@ Msg* Param::HandlePutMsg(Msg** msg){
   int size;
   float lr, wc;
   void* ptr;
-  sscanf(static_cast<char*>((*msg)->frame_data()), "%d %f %f %p",
+  sscanf(static_cast<char*>((*msg)->frame_data()), "%d %f %f %p ",
       &size, &lr, &wc, &ptr);
   proto_.set_learning_rate_multiplier(lr);
   proto_.set_weight_decay_multiplier(wc);
@@ -103,8 +102,7 @@ const std::pair<bool, int> Param::ParseUpdateMsg(Msg** msg){
     memcpy(mutable_cpu_grad(), (*msg)->frame_data(),(*msg)->frame_size());
   }else {// use the same data field of the grad blob
     Blob<float>* ptr=nullptr;
-    sscanf(static_cast<char*>((*msg)->frame_data()), "%p", &ptr);
-    //LOG(ERROR)<<"id="<<id()<<" ptr="<<ptr;
+    sscanf(static_cast<char*>((*msg)->frame_data()), " %p ", &ptr);
     grad_.ShareData(*ptr);
   }
   DeleteMsg(msg);
