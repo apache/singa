@@ -180,8 +180,13 @@ void Worker::RunOneBatch(int step, Metric* perf){
     for(auto layer: losslayers){
       if(layer->partitionid()==worker_id_){
         const float * ptr=layer->metric().cpu_data();
+        /*
         for(int j=0;j<layer->metric().count();j++)
           perf->AddMetric(std::to_string(j)+"#"+layer->name(), ptr[j]);
+        */
+        // hard code display info
+        perf->AddMetric(std::to_string(0)+"#loss", ptr[0]);
+        perf->AddMetric(std::to_string(1)+"#accuracy", ptr[1]);
       }
     }
     perf->Inc();
@@ -212,8 +217,13 @@ void Worker::Test(shared_ptr<NeuralNet> net, int nsteps, const string& prefix){
     for(auto layer: losslayers){
       if(layer->partitionid()==worker_id_){
         const float * ptr=layer->metric().cpu_data();
+        /*
         for(int j=0;j<layer->metric().count();j++)
           perf.AddMetric(std::to_string(j)+"#"+layer->name(), ptr[j]);
+        */
+        // hard code display info
+        perf.AddMetric(std::to_string(0)+"#loss", ptr[0]);
+        perf.AddMetric(std::to_string(1)+"#accuracy", ptr[1]);
       }
     }
     perf.Inc();

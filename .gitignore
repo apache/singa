@@ -13,6 +13,7 @@
 *.project
 *.cproject
 *.log
+*.conf
 *.nfs*
 src/test/data/*
 tmp
@@ -36,3 +37,5 @@ stamp-h1
 *.status
 config.h
 Makefile
+thirdparty/*
+!thirdpary/install.sh
