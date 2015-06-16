@@ -227,8 +227,7 @@ void Trainer::Run(int nworkers, int nservers,
             LOG(ERROR)<<prefix<<" step-" <<step<<", "<<perf.ToString();
             perf.Reset();
           }
-          delete msg;
-          msg=nullptr;
+          DeleteMsg(&msg);
         }else if(cluster->nserver_groups()>0){
           int group_id=msg->src_first();
           int paramid=msg->target_first();
