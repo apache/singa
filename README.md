@@ -34,7 +34,7 @@ For libraries like openblas, opencv, older versions may also work, because we do
 
 ###Building SINGA From Sources
 
-The build system of SINGA is based on GNU autotools. To build singa, you need gcc version >= 4.8.
+The build system of SINGA is based on GNU autotools. To build singa, you need gcc version >= 4.8.2.
 The common steps to build SINGA can be:
 
 	1.Extract source files;
