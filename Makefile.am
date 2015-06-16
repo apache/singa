@@ -1,4 +1,5 @@
 CLOCAL_AMFLAGS = -I config 
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
@@ -9,7 +10,7 @@ AC_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
 
 INCLUDES=-I$(top_srcdir)/include
 
-PROTOS := src/proto/cluster.proto src/proto/model.proto
+PROTOS := $(top_srcdir)/src/proto/cluster.proto $(top_srcdir)/src/proto/model.proto 
 PROTO_SRCS := src/proto/cluster.pb.cc src/proto/model.pb.cc
 PROTO_HDRS := src/proto/cluster.pb.h  src/proto/model.pb.h
 PROTO_OBJS := src/proto/cluster.pb.o src/proto/model.pb.o
@@ -120,7 +121,7 @@ clean-local:
 
 
 $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
-	protoc --proto_path=src/proto --cpp_out=src/proto $(PROTOS)
-	mkdir -p include/proto/
-	cp src/proto/*.pb.h include/proto/
+	protoc --proto_path=$(top_srcdir)/src/proto --cpp_out=$(top_srcdir)/src/proto $(PROTOS)
+	mkdir -p $(top_srcdir)/include/proto/
+	cp $(top_srcdir)/src/proto/*.pb.h $(top_srcdir)/include/proto/
 	@echo

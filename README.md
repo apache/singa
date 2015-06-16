@@ -53,6 +53,14 @@ If you want to specify your own installation directory, use the following comman
 
 	$ ./configure --prefix=/YOUR/OWN/FOLDER
 
+Also, you can create your own build directory and run those commands. For example, please try:
+
+	$ cd SINGA/FOLDER
+	$ mkdir build && cd build
+	$ ../configure
+	$ make	
+	$ make install
+
 The result of configure script will indicate you whether there exist dependency missings in your system.
 If you do not install the dependencies, you can run the following commands.
 To download & install the thirdparty dependencies:
