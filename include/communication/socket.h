@@ -19,10 +19,10 @@ class SocketInterface {
  public:
   virtual ~SocketInterface() {}
   /**
-    * Send a message to connected socket(s), non-blocking. The message 
-    * will be deallocated after sending, thus should not be used after 
+    * Send a message to connected socket(s), non-blocking. The message
+    * will be deallocated after sending, thus should not be used after
     * calling Send();
-    * 
+    *
     * @param msg The message to be sent
     * @return 1 for success queuing the message for sending, 0 for failure
     */
@@ -55,6 +55,11 @@ class Poller {
     * queue; nullptr if no message in any sockets,
     */
   SocketInterface* Wait(int duration);
+
+  /**
+   * @return true if the poller is terminated due to process interupt
+   */
+  virtual bool Terminated()=0;
 
  protected:
 #ifdef USE_ZMQ

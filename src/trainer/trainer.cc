@@ -2,12 +2,16 @@
 #include <vector>
 #include <map>
 #include <queue>
+#include <chrono>
 #include <glog/logging.h>
 #include "proto/common.pb.h"
 #include "trainer/trainer.h"
 #include "mshadow/tensor.h"
 using std::vector;
 using std::map;
+using namespace std::chrono;
+
+typedef std::chrono::milliseconds TimeT;
 
 namespace singa {
 
@@ -21,14 +25,17 @@ void Trainer::RegisterDefaultClasses(const singa::ModelProto& proto){
 }
 
 void HandleWorkerFinish(void * ctx){
+  /*
   HandleContext* hctx=static_cast<HandleContext*> (ctx);
   Msg* msg=new Msg();
   msg->set_src(-1,-1, kRuntime);
   msg->set_dst(hctx->group_id, hctx->id, kServer);
   msg->set_type(kStop);
   hctx->dealer->Send(&msg);
+  */
 }
 
+<<<<<<< HEAD
 const std::unordered_map<int, vector<std::pair<int, int>>> SliceParams(int num,
     const vector<shared_ptr<Param>>& params){
   std::unordered_map<int, vector<std::pair<int, int>>> paramid2slices;
@@ -276,20 +283,51 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     threads.push_back(std::thread(&Server::Run,server.get()));
   for(auto worker: workers)
     threads.push_back(std::thread(&Worker::Run,worker.get()));
-  Run(workers.size(), servers.size());
+  Run(workers, servers, shards);
   for(auto& thread: threads)
     thread.join();
   for(auto x: ctx)
     delete x;
 }
 
-void Trainer::Run(int nworkers, int nservers){
+inline int bandwidth(int bytes, system_clock::time_point start){
+  auto now=system_clock::now();
+  auto duration=duration_cast<TimeT> (now - start);
+  return static_cast<int>(bytes*1000.f/duration.count());
+}
+void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
+    const vector<shared_ptr<Server>>& servers,
+    const std::map<int, shared_ptr<Trainer::ParamShard>>& shards){
   auto cluster=Cluster::Get();
   procs_id_=cluster->procs_id();
+  LOG(INFO)<<"Stub in process "<<procs_id_<<" starts";
   map<int, shared_ptr<Dealer>> interprocs_dealers;
   std::queue<Msg*> msg_queue;
   bool stop=false;
+  auto start=std::chrono::system_clock::now();
+  float amount=0.f;
+  Poller poll;
+  poll.Add(router_.get());
+  int sync_server=0, nworkers=workers.size(), nservers=servers.size();
   while(!stop){
+    Socket *sock=poll.Wait(cluster->poll_time());
+    if(poll.Terminated()){
+      LOG(ERROR)<<"Connection broken!";
+      exit(0);
+    }else if(sock==nullptr){
+      if(cluster->nserver_groups()>1&&
+          bandwidth(amount, start)<cluster->bandwidth()){
+        Msg* msg=new Msg();
+        msg->set_src(-1,-1, kStub);
+        msg->set_dst(servers[sync_server]->group_id(),
+            servers[sync_server]->server_id(), kServer);
+        msg->set_type(kSyncReminder);
+        sync_server=(sync_server+1)%servers.size();
+        router_->Send(&msg);
+        //LOG(ERROR)<<"Reminder";
+      }
+      continue;
+    }
     Msg* msg=router_->Receive();
     if(msg==nullptr){
       LOG(ERROR)<<"Connection broken!";
@@ -360,6 +398,7 @@ void Trainer::Run(int nworkers, int nservers){
                 msg_queue.push(x);
               break;
             default:
+              LOG(ERROR)<<"Unknow message type:"<<type;
               break;
           }
         }else{
@@ -374,12 +413,30 @@ void Trainer::Run(int nworkers, int nservers){
               msg->dst_second(), msg->dst_flag());
         }
         if(dst_procs_id!=procs_id_){
+          // forward to other procs
+          if (interprocs_dealers.find(dst_procs_id)==interprocs_dealers.end()){
+            auto dealer=make_shared<Dealer>();
+            interprocs_dealers[dst_procs_id]=dealer;
+            dealer->Connect("tcp://"+cluster->endpoint(dst_procs_id));
+          }
+          if(bandwidth(amount, start) <=cluster->bandwidth()){
+            start=std::chrono::system_clock::now();
+            amount=0;
+          }
+          amount+=msg->size();
+          interprocs_dealers[dst_procs_id]->Send(&msg);
         }else{
+          if(type==kSyncRequest){
+            char buf[32];
+            sprintf(buf, "%d", cluster->bandwidth()-bandwidth(amount, start));
+            msg->add_frame(buf, strlen(buf));
+          }
           router_->Send(&msg);
         }
       }
     }
   }
+  LOG(INFO)<<"Stub in process "<<procs_id_<<" stops";
 }
 Msg* Trainer::HandleConnect(Msg** msg){
   string ping((char*)(*msg)->frame_data(), (*msg)->frame_size());
@@ -394,7 +451,6 @@ Msg* Trainer::HandleConnect(Msg** msg){
   *msg=NULL;
   return reply;
 }
-
 const vector<Msg*> Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
   Msg* msgg=*msg;
   vector<Msg*> replies;

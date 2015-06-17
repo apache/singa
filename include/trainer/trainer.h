@@ -95,13 +95,14 @@ class Trainer{
   // point.
 
  protected:
-
   vector<shared_ptr<Server>> CreateServers(int nthread, const ModelProto& mproto,
       const vector<int> slices, vector<HandleContext*>* ctx);
   vector<shared_ptr<Worker>> CreateWorkers(int nthread,
       const ModelProto& mproto, vector<int> *slice_size);
 
-  void Run(int nworkers, int nservers);
+  void Run(const vector<shared_ptr<Worker>>& workers,
+      const vector<shared_ptr<Server>>& servers,
+      const std::map<int, shared_ptr<ParamShard>>& shards);
   /**
    * Register default implementations for all base classes used in the system,
    * e.g., the Updater, BaseMsg, etc.

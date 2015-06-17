@@ -23,6 +23,7 @@ class Msg {
     * @param second worker/server id within the group
     * @param flag 0 for server, 1 for worker, 2 for stub
     */
+<<<<<<< HEAD
   inline void set_src(int first, int second, int flag) {
     src_ = (first << kOff1) | (second << kOff2) | flag;
   }
@@ -78,7 +79,6 @@ class Msg {
   void ParseFromZmsg(zmsg_t* msg);
   zmsg_t* DumpToZmsg();
 #endif
-
  protected:
   static const unsigned int kOff1 = 16;
   static const unsigned int kOff2 = 4;

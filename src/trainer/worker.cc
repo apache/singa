@@ -47,6 +47,7 @@ void Worker::ConnectStub(shared_ptr<Dealer> dealer, EntityType type){
 }
 
 void Worker::Run(){
+  LOG(INFO)<<"Worker (group_id= "<<group_id_<<", id="<<worker_id_<<") starts";
   dealer_=make_shared<Dealer>(2*thread_id_);
   ConnectStub(dealer_, kWorkerParam);
   for(auto layer: train_net_->layers())
@@ -61,8 +62,10 @@ void Worker::Run(){
   for(auto layer: train_net_->layers()){
     if(layer->partitionid()==worker_id_)
       for(auto param: layer->GetParams()){
+        // only owners fill the memory of parameter values.
+        // others share the memory with owners hence do not need to put/get.
         if(param->owner() == param->id()){
-          if(group_id_==0)
+          if(group_id_%Cluster::Get()->nworker_groups_per_server_group()==0)
             param->InitValues(0);
           else
             Get(param, modelproto_.warmup_steps());
@@ -70,7 +73,7 @@ void Worker::Run(){
       }
   }
   Metric perf;
-  if(group_id_==0){
+  if(group_id_%Cluster::Get()->nworker_groups_per_server_group()==0){
     for(step_=0;step_<modelproto_.warmup_steps();step_++)
       RunOneBatch(step_, &perf);
     for(auto layer: train_net_->layers()){
@@ -86,6 +89,7 @@ void Worker::Run(){
   }
 
   Stop();
+  LOG(INFO)<<"Worker (group_id= "<<group_id_<<", id="<<worker_id_<<") stops";
 }
 
 void Worker::Stop(){

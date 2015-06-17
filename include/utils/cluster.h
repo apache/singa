@@ -112,11 +112,15 @@ class Cluster {
   }
 
   /**
-   * bandwidth MB/s
-  float bandwidth() const {
+   * bandwidth Bytes/s
+   */
+  const int bandwidth() const {
     return cluster_.bandwidth();
   }
-   */
+
+  const int poll_time() const {
+    return cluster_.poll_time();
+  }
 
   shared_ptr<ClusterRuntime> runtime() const {
     return cluster_rt_;

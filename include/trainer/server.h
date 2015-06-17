@@ -27,6 +27,12 @@ class Server{
   void Setup(const UpdaterProto& proto, shared_ptr<ServerShard> shard,
       const vector<int>& slice2group);
   void Run();
+  const int group_id() const {
+    return group_id_;
+  }
+  const int server_id() const {
+    return server_id_;
+  }
 
  protected:
 
@@ -50,17 +56,12 @@ class Server{
    * @return the original message or response message. If we don't want need to
    * acknowledge the put request, then return nullptr.
 	 */
-	virtual void HandlePut(shared_ptr<Param> param, Msg **msg);
+	virtual Msg* HandlePut(Msg **msg);
 
 	/**
    * TODO Process SYNC request.
 	 */
 	virtual Msg* HandleSyncRequest(shared_ptr<Param> param, Msg** msg);
-
-	/**
-   * TODO Process SYNC response.
-	virtual int HandleSyncResponse(shared_ptr<Param> param, Msg** msg);
-	 */
 
  protected:
   int thread_id_,group_id_, server_id_;
@@ -68,6 +69,7 @@ class Server{
   shared_ptr<Updater> updater_;
   shared_ptr<ServerShard> shard_;
   vector<int> slice2group_;
+  std::map<int, shared_ptr<Blob<float>>> last_data_;
 };
 } /* Server */
 #endif //INCLUDE_TRAINER_SERVER_H_

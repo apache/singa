@@ -19,8 +19,13 @@ SocketInterface* Poller::Wait(int timeout) {
   zsock_t* sock = static_cast<zsock_t*>(zpoller_wait(poller_, timeout));
   if (sock != nullptr)
     return zsock2Socket_[sock];
-  return nullptr;
+  else
+    return nullptr;
 }
+bool Poller::Terminated(){
+  return zpoller_terminated(poller_);
+}
+
 
 Dealer::Dealer() : Dealer(-1) {}
 
@@ -31,6 +36,7 @@ Dealer::Dealer(int id) : id_(id) {
   CHECK_NOTNULL(poller_);
 }
 
+<<<<<<< HEAD
 Dealer::~Dealer() {
   zsock_destroy(&dealer_);
 }

@@ -71,6 +71,7 @@ class Param {
    */
   virtual Msg* HandleSyncMsg(Msg** msg);
 
+<<<<<<< HEAD
   /**
    * Server parses update request message.
    *
@@ -105,6 +106,7 @@ class Param {
    * @param shape
    */
   virtual void Setup(const ParamProto& proto, const std::vector<int>& shape);
+  virtual void Setup(const vector<int>& shape);
   /*
    * Fill the values according to initmethod, e.g., gaussian distribution
    *
@@ -238,7 +240,6 @@ class Param {
   ParamProto proto_;
   int local_version_;
 };
-
 }  // namespace singa
 
 #endif  // INCLUDE_UTILS_PARAM_H_

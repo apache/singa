@@ -38,6 +38,12 @@ message ClusterProto {
   optional bool server_update = 40 [default = true];
   // share memory space between worker groups in one procs
   optional bool share_memory = 41 [default = true];
+
+  // bandwidth of ethernet, Bytes per second, default is 1 Gbps
+  optional int32 bandwidth=50 [default=134217728];
+  // poll time in milliseconds
+  optional int32 poll_time=51 [default =100];
+>>>>>>> SINGA-8 Implement distributed Hogwild
 }
 
 message ServerTopology {
