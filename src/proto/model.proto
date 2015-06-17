@@ -25,6 +25,8 @@ enum Phase {
   kTrain = 0;
   kValidation=1;
   kTest= 2;
+  kPositive = 3;
+  kNegative = 4;
 }
 enum ShareOption{
   kValueOnly=0;
