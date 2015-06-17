@@ -94,7 +94,7 @@ Here is a table showing the first arguments:
 *: Since czmq depends on zeromq, the script offers you one more argument to indicate zeromq location.
 The installation commands of czmq can be:
 
-		$ ./install.sh czmq  /usr/local /usr/local/zeromq
+	$ ./install.sh czmq  /usr/local /usr/local/zeromq
 
 After the execution, czmq will be installed in /usr/local while zeromq is installed in /usr/local/zeromq.
 
