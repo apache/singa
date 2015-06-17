@@ -5,7 +5,7 @@
 
 using namespace singa;
 
-string folder="src/test/data/";
+//string folder="src/test/data/";
 
 string host="localhost:2181";
 
@@ -13,15 +13,34 @@ void zk_cb(void *contest){
   LOG(INFO) << "zk callback: " << (char *)contest;
 }
 
-TEST(CluserRuntimeTest, ZooKeeper){
+TEST(CluserRuntimeTest, GroupManagement){
   ClusterRuntime* rt = new ZKClusterRT(host);
   ASSERT_EQ(rt->Init(), true);
+  
   ASSERT_EQ(rt->sWatchSGroup(1, 1, zk_cb, "test call back"), true);
+  
   ASSERT_EQ(rt->wJoinSGroup(1, 1, 1), true);
   ASSERT_EQ(rt->wJoinSGroup(1, 2, 1), true);
+  
   ASSERT_EQ(rt->wLeaveSGroup(1, 2, 1), true);
   ASSERT_EQ(rt->wLeaveSGroup(1, 1, 1), true);
   
+  sleep(3);
+  delete rt;
+}
+
+TEST(CluserRuntimeTest, ProcessManagement){
+  ClusterRuntime* rt = new ZKClusterRT(host);
+  ASSERT_EQ(rt->Init(), true);
+  
+  ASSERT_EQ(rt->RegistProc("1.2.3.4:5"), 0);
+  ASSERT_EQ(rt->RegistProc("1.2.3.4:6"), 1);
+  ASSERT_EQ(rt->RegistProc("1.2.3.4:7"), 2);
+
+  ASSERT_NE(rt->GetProcHost(0), "");
+  ASSERT_NE(rt->GetProcHost(1), "");
+  ASSERT_NE(rt->GetProcHost(2), "");
+
   sleep(3);
   delete rt;
 }
