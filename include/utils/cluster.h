@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include "proto/cluster.pb.h"
+#include "utils/cluster_rt.h"
 
 using std::shared_ptr;
 using std::string;
@@ -101,12 +102,24 @@ class Cluster {
     return cluster_.server_timeout();
   }
 
+  const bool server_update() const {
+    return cluster_.server_update();
+  }
+
+  const bool share_memory() const {
+    return cluster_.share_memory();
+  }
+
   /**
    * bandwidth MB/s
   float bandwidth() const {
     return cluster_.bandwidth();
   }
    */
+
+  shared_ptr<ClusterRuntime> runtime() const {
+    return cluster_rt_;
+  }
 
  private:
   Cluster(const ClusterProto &cluster, int procs_id) ;
@@ -117,9 +130,11 @@ class Cluster {
   std::vector<std::string> endpoints_;
   // cluster config proto
   ClusterProto cluster_;
+  shared_ptr<ClusterRuntime> cluster_rt_;
   // make this class a singlton
   static shared_ptr<Cluster> instance_;
 };
+
 }  // namespace singa
 
 #endif  // INCLUDE_UTILS_CLUSTER_H_

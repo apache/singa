@@ -21,7 +21,7 @@ build/
 tmp/
 include/proto/*.h
 src/proto/*.cc
-src/proto/*.h
+src/proto/*.pb.h
 .sync
 *lmdb
 *.binaryproto
@@ -36,3 +36,5 @@ stamp-h1
 *.status
 config.h
 Makefile
+thirdparty/*
+!thirdpary/install.sh

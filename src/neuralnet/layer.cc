@@ -60,7 +60,7 @@ void ConvolutionLayer::SetupAfterPartition(const LayerProto& proto,
   Setup(newproto, srclayers);
 }
 
-void ConvolutionLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
+void ConvolutionLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
   Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
       Shape4(batchsize_, channels_, height_, width_));
   Tensor<cpu, 3> data(data_.mutable_cpu_data(),
@@ -129,8 +129,6 @@ void DropoutLayer::Setup(const LayerProto& proto,
   grad_.ReshapeLike(*srclayers[0]->mutable_grad(this));
   mask_.Reshape(srclayers[0]->data(this).shape());
   pdrop_=proto.dropout_param().dropout_ratio();
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  ASingleton<Random<cpu>>::Instance(seed);
 }
 
 void DropoutLayer::SetupAfterPartition(const LayerProto& proto,
@@ -139,15 +137,15 @@ void DropoutLayer::SetupAfterPartition(const LayerProto& proto,
   Setup(proto, srclayers);
 }
 
-void DropoutLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers) {
+void DropoutLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers) {
   // check training
-  if(!training){
+  if(phase!= kTrain){//!training){
     data_.CopyFrom(srclayers[0]->data(this));
     return;
   }
   float pkeep=1-pdrop_;
   Tensor<cpu, 1> mask(mask_.mutable_cpu_data(), Shape1(mask_.count()));
-  mask = F<op::threshold>(ASingleton<Random<cpu>>::Instance()\
+  mask = F<op::threshold>(TSingleton<Random<cpu>>::Instance()\
       ->uniform(mask.shape), pkeep ) * (1.0f/pkeep);
   Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
   Blob<float>* srcblob=srclayers[0]->mutable_data(this);
@@ -423,7 +421,7 @@ void InnerProductLayer::SetupAfterPartition(const LayerProto& proto,
   Setup(newproto, srclayers);
 }
 
-void InnerProductLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers) {
+void InnerProductLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers) {
   Tensor<cpu, 2> data(data_.mutable_cpu_data(), Shape2(batchsize_,hdim_));
   CHECK_EQ(srclayers[0]->data(this).count(), batchsize_*vdim_);
   Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
@@ -461,7 +459,7 @@ void LabelLayer::Setup(const LayerProto& proto,
   data_.Reshape(vector<int>{batchsize});
 }
 
-void LabelLayer::ParseRecords(bool training, const vector<Record>& records,
+void LabelLayer::ParseRecords(Phase phase, const vector<Record>& records,
     Blob<float>* blob){
   int rid=0;
   float *label= blob->mutable_cpu_data() ;
@@ -474,7 +472,7 @@ void LabelLayer::ParseRecords(bool training, const vector<Record>& records,
 
 
 /*********************LMDBDataLayer**********************************/
-void LMDBDataLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
+void LMDBDataLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
   if(random_skip_){
     int nskip=rand()%random_skip_;
     int n=0;
@@ -593,7 +591,7 @@ void LRNLayer::SetupAfterPartition(const LayerProto& proto,
   Setup(proto, srclayers);
 }
 
-void LRNLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
+void LRNLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
   const float salpha = alpha_ / lsize_;
   Shape<4> s=Shape4(batchsize_,channels_, height_, width_);
   Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
@@ -619,7 +617,7 @@ void LRNLayer::ComputeGradient(const vector<SLayer>& srclayers) {
 
 /**************** Implementation for MnistImageLayer******************/
 
-void MnistImageLayer::ParseRecords(bool training,
+void MnistImageLayer::ParseRecords(Phase phase,
     const vector<Record>& records, Blob<float>* blob){
   LOG_IF(ERROR, records.size()==0)<<"Empty records to parse";
   int ndim=records.at(0).image().shape_size();
@@ -747,7 +745,7 @@ void PoolingLayer::SetupAfterPartition(const LayerProto& proto,
   Setup(proto, srclayers);
 }
 
-void PoolingLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
+void PoolingLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
   Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
       Shape4(batchsize_, channels_, height_, width_));
   Tensor<cpu, 4> data(data_.mutable_cpu_data(),
@@ -791,7 +789,7 @@ void ReLULayer::SetupAfterPartition(const LayerProto& proto,
   Setup(proto, srclayers);
 }
 
-void ReLULayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
+void ReLULayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
   Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
   Tensor<cpu, 1> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
       Shape1(data_.count()));
@@ -808,7 +806,7 @@ void ReLULayer::ComputeGradient(const vector<SLayer>& srclayers) {
 
 /*************** Implementation for RGBImageLayer *************************/
 
-void RGBImageLayer::ParseRecords(bool training,
+void RGBImageLayer::ParseRecords(Phase phase,
     const vector<Record>& records, Blob<float>* blob){
   const vector<int>& s=blob->shape();
   Tensor<cpu, 4> images(data_.mutable_cpu_data(), Shape4(s[0],s[1],s[2],s[3]));
@@ -823,8 +821,8 @@ void RGBImageLayer::ParseRecords(bool training,
   const float* meandptr=mean_.cpu_data();
   for(const Record& record: records){
     auto image=images[rid];
-    bool do_crop=cropsize_>0&&training;
-    bool do_mirror=mirror_&&rand()%2&&training;
+    bool do_crop=cropsize_>0&&(phase == kTrain);
+    bool do_mirror=mirror_&&rand()%2&&(phase == kTrain);
     float* dptr=nullptr;
     if(do_crop||do_mirror)
       dptr=raw_image.dptr;
@@ -901,7 +899,7 @@ void RGBImageLayer::Setup(const LayerProto& proto,
 }
 
 /***************Implementation for ShardDataLayer**************************/
-void ShardDataLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
+void ShardDataLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
   if(random_skip_){
     int nskip=rand()%random_skip_;
     LOG(INFO)<<"Random Skip "<<nskip<<" records, there are "<<shard_->Count()
@@ -946,7 +944,7 @@ void TanhLayer::SetupAfterPartition(const LayerProto& proto,
 }
 
 
-void TanhLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
+void TanhLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
   Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
   Tensor<cpu, 1> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
       Shape1(data_.count()));
@@ -976,7 +974,7 @@ void SoftmaxLossLayer::SetupAfterPartition(const LayerProto& proto,
       const vector<SLayer>& srclayers){
   Setup(proto, srclayers);
 }
-void SoftmaxLossLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers) {
+void SoftmaxLossLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers) {
   Shape<2> s=Shape2(batchsize_, dim_);
   Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);
   Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);

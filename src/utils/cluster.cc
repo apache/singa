@@ -30,6 +30,9 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
     }
     CHECK_EQ(endpoints_.size(), nprocs);
   }
+  auto rt=new ZKClusterRT(cluster_.zookeeper_host());
+  rt->Init();
+  cluster_rt_=shared_ptr<ClusterRuntime>(static_cast<ClusterRuntime*>(rt));
 }
 
 void Cluster::SetupFolders(const ClusterProto &cluster){

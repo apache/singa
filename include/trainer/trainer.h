@@ -9,6 +9,7 @@
 #include "neuralnet/neuralnet.h"
 #include "trainer/worker.h"
 #include "trainer/server.h"
+#include "communication/socket.h"
 
 namespace singa {
 /**
@@ -53,14 +54,11 @@ class Trainer{
       *  otherwise
       * @param owner the procs id of the worker who ownes this Param object
       */
-    void AddParam(shared_ptr<Param> p, int local, int owner){
+    void AddParam(shared_ptr<Param> p, bool local){
       num_local+=local;
       num_total+=1;
-      if(owner>-1)
-        owner_procs=owner;
-      if(local>0){
+      if(local)
         shares.push_back(p);
-      }
     }
     int num_update, next_version; //!< all counters are atomic
 
@@ -86,7 +84,8 @@ class Trainer{
   // point.
 
  protected:
-  void Run(const std::map<int, shared_ptr<ParamShard>>& shards);
+  void Run(int nworkers, int nservers,
+      const std::map<int, shared_ptr<ParamShard>>& shards);
   /**
    * Register default implementations for all base classes used in the system,
    * e.g., the Updater, BaseMsg, etc.
@@ -130,6 +129,7 @@ class Trainer{
 
  protected:
   int procs_id_;
+  shared_ptr<Router> router_;
 };
 } /* singa */
 #endif // INCLUDE_TRAINER_TRAINER_H_

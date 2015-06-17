@@ -1,41 +1,31 @@
 #ifndef INCLUDE_UTILS_SINGLETON_H_
 #define INCLUDE_UTILS_SINGLETON_H_
-
+/**
+  * thread-safe implementation for C++11 according to
+  * http://stackoverflow.com/questions/2576022/efficient-thread-safe-singleton-in-c
+  */
 template<typename T>
 class Singleton {
  public:
+
   static T* Instance() {
-    if (data_==nullptr) {
-      data_ = new T();
-    }
+    static T* data_=new T();
     return data_;
   }
- private:
-  static T* data_;
 };
-
-template<typename T> T* Singleton<T>::data_ = nullptr;
-
 
 /**
- * Singleton initiated with argument
+ * Thread Specific Singleton
+ *
+ * Each thread will have its own data_ storage.
  */
-template<typename T, typename X=int>
-class ASingleton {
+template<typename T>
+class TSingleton {
  public:
   static T* Instance(){
+    static thread_local T* data_=new T();
     return data_;
   }
-  static T* Instance(X x) {
-    if (data_==nullptr) {
-      data_ = new T(x);
-    }
-    return data_;
-  }
- private:
-  static T* data_;
 };
-
-template<typename T, typename X> T* ASingleton<T,X>::data_ = nullptr;
 
 #endif // INCLUDE_UTILS_SINGLETON_H_

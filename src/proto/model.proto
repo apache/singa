@@ -11,6 +11,7 @@ enum MsgType{
   kRGet=8;
   kRUpdate=9;
   kConnect=10;
+  kMetric=11;
 };
 
 enum EntityType{
@@ -18,11 +19,14 @@ enum EntityType{
   kWorkerLayer=1;
   kServer=2;
   kStub=3;
+  kRuntime=4;
 };
 enum Phase {
   kTrain = 0;
   kValidation=1;
   kTest= 2;
+  kPositive = 3;
+  kNegative = 4;
 }
 enum ShareOption{
   kValueOnly=0;

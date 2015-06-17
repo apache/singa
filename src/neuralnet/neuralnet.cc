@@ -85,6 +85,11 @@ NeuralNet::NeuralNet(NetProto net_proto, int group_size) {
     }
   }
   LOG(INFO)<<"Neural Net constructed";
+  // init all data members to avoid conflicts from multi-thread access
+  losslayers();
+  paramid2param(0);
+  datalayers();
+  parserlayers();
 }
 
 void NeuralNet::ConstructNeuralNet(const NetProto& net_proto){
@@ -249,7 +254,7 @@ Graph NeuralNet::CreatePartitonedGraph(const vector<shared_ptr<Layer>>& layers,
       for(int i=0;i<gsize;i++){
         sprintf(suffix, "%02d", i);
         // differentiate partitions
-        string nodename=layer->name()+"-"+string(suffix);
+        string nodename=layer->name()+"@"+string(suffix);
         auto node=graph.AddNode(nodename, LayerInfo{layer->name(), i,-1,-1});
         nodes.push_back(node);
       }
@@ -262,7 +267,6 @@ Graph NeuralNet::CreatePartitonedGraph(const vector<shared_ptr<Layer>>& layers,
     }
     layer2nodes[layer->name()]=nodes;
   }
-
 
   // connect nodes, nodes for ConcateLayer and SliceLayer are added.
   for(shared_ptr<Layer> layer: layers){
