@@ -42,7 +42,7 @@ class ConvolutionLayer: public Layer {
       const vector<int> &shape,
       const vector<SLayer>& srclayers);
 
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
   virtual vector<shared_ptr<Param>> GetParams() {
     return vector<shared_ptr<Param>>{weight_, bias_};
@@ -73,7 +73,7 @@ class DropoutLayer: public Layer {
       const vector<int> &shape,
       const vector<SLayer>& srclayers);
 
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  protected:
   // drop probability
@@ -108,7 +108,7 @@ class InnerProductLayer: public Layer {
     return kOneToAll;
   }
 
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
   //virtual void ToProto(LayerProto *layer_proto, bool copyData);
   virtual vector<shared_ptr<Param>> GetParams() {
@@ -129,7 +129,7 @@ class LabelLayer: public ParserLayer {
   using ParserLayer::Setup;
 
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void ParseRecords(bool training, const vector<Record>& records,
+  virtual void ParseRecords(Phase phase, const vector<Record>& records,
       Blob<float>* blob);
 };
 
@@ -156,7 +156,7 @@ class LRNLayer: public Layer {
       const vector<SLayer>& srclayers);
 
 
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  protected:
   //! shape of the bottom layer feature
@@ -173,7 +173,7 @@ class MnistImageLayer: public ParserLayer {
   using Layer::Setup;
 
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void ParseRecords(bool training, const vector<Record>& records,
+  virtual void ParseRecords(Phase phase, const vector<Record>& records,
       Blob<float>* blob);
 
  protected:
@@ -199,7 +199,7 @@ class PoolingLayer: public Layer {
   virtual void SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers);
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  protected:
   int kernel_, pad_, stride_;
@@ -221,7 +221,7 @@ class ReLULayer: public Layer {
       const vector<int> &shape,
       const vector<SLayer>& srclayers);
 
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
 };
 
@@ -257,7 +257,7 @@ class SoftmaxLossLayer: public LossLayer {
     return kOneToAll;
   }
 
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  private:
   int batchsize_;
@@ -271,7 +271,7 @@ class RGBImageLayer: public ParserLayer {
   using Layer::Setup;
 
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void ParseRecords(bool training, const vector<Record>& records,
+  virtual void ParseRecords(Phase phase, const vector<Record>& records,
       Blob<float>* blob);
 
  private:
@@ -287,7 +287,7 @@ class ShardDataLayer: public DataLayer{
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){};
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
  private:
@@ -299,7 +299,7 @@ class LMDBDataLayer: public DataLayer{
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){};
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   void ConvertDatumToSingleLableImageRecord(const Datum& datum,
@@ -333,7 +333,7 @@ class TanhLayer: public Layer {
       const vector<SLayer>& srclayers);
 
 
-  virtual void ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  private:
   float outer_scale_, inner_scale_;

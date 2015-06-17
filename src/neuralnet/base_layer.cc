@@ -29,8 +29,8 @@ void Layer::SetupAfterPartition(){
   CHECK(std::equal(shape.begin(), shape.end(), data_.shape().begin()))<<name()
     <<IntVecToString(shape)<<"--"<<IntVecToString(data_.shape());
 }
-void Layer::ComputeFeature(bool training){
-  ComputeFeature(training, srclayers_);
+void Layer::ComputeFeature(Phase phase){
+  ComputeFeature(phase, srclayers_);
 }
 void Layer::ComputeGradient(){
   ComputeGradient(srclayers_);
@@ -51,7 +51,7 @@ void BridgeSrcLayer::SetupAfterPartition(){
   //LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
 }
 
-void BridgeSrcLayer::ComputeFeature(bool training,
+void BridgeSrcLayer::ComputeFeature(Phase phase,
     const vector<SLayer>& srclayers){
 }
 void BridgeSrcLayer::ComputeGradient(const vector<SLayer>& srclayers){
@@ -94,38 +94,38 @@ void ConcateLayer::SetupAfterPartition(){
 //  LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
 }
 
-void ConcateLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){}
+void ConcateLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){}
 
 void ConcateLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){}
 
 /************* Implementation for ParserLayer ***********/
-void ParserLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers){
+void ParserLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
   CHECK_EQ(srclayers.size(),1);
   auto datalayer=static_cast<DataLayer*>(srclayers.begin()->get());
-  ParseRecords(training, datalayer->records(), &data_);
+  ParseRecords(phase, datalayer->records(), &data_);
 }
 
 /************* Implementation for PrefetchLayer ***********/
-void PrefetchLayer::Prefetch(bool training){
+void PrefetchLayer::Prefetch(Phase phase){
   //clock_t s=clock();
   for(auto layer: sublayers_)
-    layer->ComputeFeature(training);
+    layer->ComputeFeature(phase);
   //LOG(ERROR)<<(clock()-s)*1.0/CLOCKS_PER_SEC;
 }
 
-void PrefetchLayer::ComputeFeature(bool training,
+void PrefetchLayer::ComputeFeature(Phase phase,
     const vector<SLayer>& srclayers){
   if(thread_.joinable())
     thread_.join();
   else{
-    Prefetch(training);
+    Prefetch(phase);
   }
   for(auto layer: sublayers_){
     if(layer->is_parserlayer())
       // TODO replace CopyFrom with Swap?
       datablobs_.at(layer->name()).CopyFrom(layer->data(this));
   }
-  thread_=std::thread(&PrefetchLayer::Prefetch, this, training);
+  thread_=std::thread(&PrefetchLayer::Prefetch, this, phase);
 }
 
 void PrefetchLayer::Setup(const LayerProto& proto,
@@ -237,7 +237,7 @@ Blob<float>* SliceLayer::mutable_grad(const Layer* layer){
     return &grad_;
   return &gradvec_[SliceID(layer)];
 }
-void SliceLayer::ComputeFeature(bool training,
+void SliceLayer::ComputeFeature(Phase phase,
     const vector<shared_ptr<Layer>>& srclayers){
   CHECK_EQ(srclayers.size(),1);
   if(slice_dim_==0){
@@ -266,7 +266,7 @@ void SplitLayer::SetupAfterPartition(){
   Setup(layer_proto_, srclayers_);
   //LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
 }
-void SplitLayer::ComputeFeature(bool training, const vector<shared_ptr<Layer>>& srclayers){
+void SplitLayer::ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers){
 
 }
 void SplitLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){
