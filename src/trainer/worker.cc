@@ -169,22 +169,9 @@ void Worker::RunOneBatch(int step, Metric* perf){
     CollectAll(test_net_, step);
     Test(modelproto_.test_steps(), kTest, test_net_);
   }
-  TrainOneBatch(step);
+  TrainOneBatch(step, perf);
   //LOG(ERROR)<<"Train "<<step;
   if(perf!=nullptr){
-    auto losslayers=train_net_->losslayers();
-    for(auto layer: losslayers){
-      if(layer->partitionid()==worker_id_){
-        const float * ptr=layer->metric().cpu_data();
-        /*
-        for(int j=0;j<layer->metric().count();j++)
-          perf->AddMetric(std::to_string(j)+"#"+layer->name(), ptr[j]);
-        */
-        // hard code display info
-        perf->AddMetric(std::to_string(0)+"#loss", ptr[0]);
-        perf->AddMetric(std::to_string(1)+"#accuracy", ptr[1]);
-      }
-    }
     perf->Inc();
     if(DisplayNow(step)){
       perf->Avg();
@@ -206,22 +193,9 @@ void Worker::SendBlob(){
 }
 
 void Worker::Test(int nsteps, Phase phase, shared_ptr<NeuralNet> net){
-  const auto& losslayers=net->losslayers();
   Metric perf;
   for(int step=0;step<nsteps;step++){
-    TestOneBatch(step, phase, net);
-    for(auto layer: losslayers){
-      if(layer->partitionid()==worker_id_){
-        const float * ptr=layer->metric().cpu_data();
-        /*
-        for(int j=0;j<layer->metric().count();j++)
-          perf.AddMetric(std::to_string(j)+"#"+layer->name(), ptr[j]);
-        */
-        // hard code display info
-        perf.AddMetric(std::to_string(0)+"#loss", ptr[0]);
-        perf.AddMetric(std::to_string(1)+"#accuracy", ptr[1]);
-      }
-    }
+    TestOneBatch(step, phase, net, &perf);
     perf.Inc();
   }
   perf.Avg();
@@ -313,13 +287,39 @@ void BPWorker::Backward(int step, shared_ptr<NeuralNet> net){
   }
 }
 
-void BPWorker::TrainOneBatch(int step){
+void BPWorker::TrainOneBatch(int step, Metric* perf){
   Forward(step, kTrain, train_net_);
   Backward(step, train_net_);
+  auto losslayers=train_net_->losslayers();
+  for(auto layer: losslayers){
+      if(layer->partitionid()==worker_id_){
+        const float * ptr=layer->metric().cpu_data();
+        /*
+        for(int j=0;j<layer->metric().count();j++)
+          perf->AddMetric(std::to_string(j)+"#"+layer->name(), ptr[j]);
+        */
+        // hard code display info
+        perf->AddMetric(std::to_string(0)+"#loss", ptr[0]);
+        perf->AddMetric(std::to_string(1)+"#accuracy", ptr[1]);
+      }
+    }
 }
 
-void BPWorker::TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net){
+void BPWorker::TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net, Metric* perf){
   Forward(step, phase, net);
+  const auto& losslayers=net->losslayers();
+  for(auto layer: losslayers){
+      if(layer->partitionid()==worker_id_){
+        const float * ptr=layer->metric().cpu_data();
+        /*
+        for(int j=0;j<layer->metric().count();j++)
+          perf.AddMetric(std::to_string(j)+"#"+layer->name(), ptr[j]);
+        */
+        // hard code display info
+        perf->AddMetric(std::to_string(0)+"#loss", ptr[0]);
+        perf->AddMetric(std::to_string(1)+"#accuracy", ptr[1]);
+      }
+    }
 }
 
 }  // namespace singa
