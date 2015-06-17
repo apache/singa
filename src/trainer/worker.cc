@@ -29,10 +29,10 @@ void Worker::Setup(const ModelProto& model,
   }
 }
 
-void Worker::ConnectStub(shared_ptr<Dealer> dealer){
+void Worker::ConnectStub(shared_ptr<Dealer> dealer, EntityType type){
   dealer->Connect(kInprocRouterEndpoint);
   Msg* ping=new Msg();
-  ping->set_src(group_id_, worker_id_, kWorkerParam);
+  ping->set_src(group_id_, worker_id_, type);
   ping->set_dst(-1,-1,kStub);
   ping->set_type(kConnect);
   ping->add_frame("PING", 4);
@@ -45,12 +45,12 @@ void Worker::ConnectStub(shared_ptr<Dealer> dealer){
 
 void Worker::Run(){
   dealer_=make_shared<Dealer>(2*thread_id_);
-  ConnectStub(dealer_);
+  ConnectStub(dealer_, kWorkerParam);
   for(auto layer: train_net_->layers())
     if(layer->partitionid()==worker_id_)
       if(layer->is_bridgedstlayer()||layer->is_bridgesrclayer()){
         layer_dealer_=make_shared<Dealer>(2*thread_id_+1);
-        ConnectStub(layer_dealer_);
+        ConnectStub(layer_dealer_, kWorkerLayer);
         break;
       }
   step_=modelproto_.step();
@@ -263,7 +263,7 @@ void BPWorker::Forward(int step, Phase phase, shared_ptr<NeuralNet> net){
         }
       }
       //clock_t s=clock();
-      layer->ComputeFeature(phase==kTrain);
+      layer->ComputeFeature(phase);
       //LOG(ERROR)<<layer->name()<<":"<<(clock()-s)*1.0/CLOCKS_PER_SEC;
       if(layer->is_bridgesrclayer()){
         auto dst=layer->dstlayers().at(0);
