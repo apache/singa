@@ -45,11 +45,11 @@ class Worker {
     * Train one mini-batch.
     * Test/Validation is done before training.
     */
-  virtual void TrainOneBatch(int step)=0;
+  virtual void TrainOneBatch(int step, Metric* perf)=0;
   /**
    * Test/validate one mini-batch.
    */
-  virtual void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net)=0;
+  virtual void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net, Metric* perf)=0;
   /**
     * Test the perforance of the learned model on validation or test dataset.
     * Test is done by the first group.
@@ -142,8 +142,8 @@ class BPWorker: public Worker{
  public:
   BPWorker(int thread_id, int group_id, int worker_id);
   ~BPWorker(){}
-  virtual void TrainOneBatch(int step);
-  virtual void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net);
+  virtual void TrainOneBatch(int step, Metric* perf);
+  virtual void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net, Metric* perf);
   void Forward(int step, Phase phase, shared_ptr<NeuralNet> net);
   void Backward(int step, shared_ptr<NeuralNet> net);
 };
