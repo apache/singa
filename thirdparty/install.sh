@@ -47,22 +47,32 @@ function install_czmq()
 	tar zxvf czmq-3.0.0-rc1.tar.gz && cd czmq-3.0.0;
 	
 	if [ $# == 2 ]
+	then
+		if [ $1 == "null" ]
 		then
-			echo "install czmq in $1 and libzmq path is $2";
+			echo "install czmq in default path. libzmq path is $2";
+			./configure --with-libzmq=$2;
+			make && sudo make install;
+		else
+			echo "install czmq in $1. libzmq path is $2";
 			./configure --prefix=$1 --with-libzmq=$2;
 			make && make install;
-		elif [ $# == 1 ]
+		fi
+	elif [ $# == 1 ]
+	then
+		if [ $1 == "null" ]
 		then
-			echo "install czmq in $1 and libzmq path is default";
-			./configure --prefix=$1;
-			make && make install;
-		elif [ $# == 0 ]
-		then
-			echo "install czmq in default path";
+			echo "install czmq in default path.";
 			./configure;
 			make && sudo make install;
 		else
-			echo "wrong commands";
+			echo "install czmq in $1";
+			./configure --prefix=$1;
+			make && make install;
+		fi
+	else
+		echo "ERROR: wrong command.";
+		return -1;
 	fi
 
 	if [ $? -ne 0 ]
@@ -381,34 +391,52 @@ do
 		;;
 	"czmq")
 		echo "install czmq";
-		if [[ $2 == */* ]];then
-			if [[ $3 == */* ]];then
-				install_czmq $2 $3;
-				if [ $? -ne 0 ] 
-				then
-					echo "ERROR during czmq installation" ;
-					exit;
-				fi  
-				shift
-				shift
-				shift
+		if [ $2 == "-f" ]
+		then
+			if [[ $4 == */* ]]
+			then
+				install_czmq $4 $3;
 			else
-				install_czmq $2;
-				if [ $? -ne 0 ] 
-				then
-				    echo "ERROR during czmq installation" ;
-				    exit;
-				fi  
-				shift
-				shift
+				install_czmq null $3;
 			fi
+			if [ $? -ne 0 ] 
+			then
+				echo "ERROR during czmq installation" ;
+				exit;
+			fi
+			shift
+			shift
+			shift
+			shift
+		elif [ $3 == "-f" ]
+		then
+			install_czmq $2 $4;
+			if [ $? -ne 0 ] 
+			then
+				echo "ERROR during czmq installation" ;
+				exit;
+			fi
+			shift
+			shift
+			shift
+			shift
+		elif [[ $2 == */* ]]
+		then
+			install_czmq $2;
+			if [ $? -ne 0 ] 
+			then
+				echo "ERROR during czmq installation" ;
+				exit;
+			fi
+			shift
+			shift
 		else
-			install_czmq;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during czmq installation" ;
-		        exit;
-		    fi  
+			install_czmq null;
+			if [ $? -ne 0 ] 
+			then
+			    echo "ERROR during czmq installation" ;
+			    exit;
+			fi  
 			shift
 		fi
 		;;
@@ -658,7 +686,7 @@ do
 		        echo "ERROR during zeromq installation" ;
 		        exit;
 		    fi  
-			install_czmq;
+			install_czmq null;
 		    if [ $? -ne 0 ] 
 		    then
 		        echo "ERROR during czmq installation" ;
