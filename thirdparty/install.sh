@@ -14,15 +14,16 @@ function install_cmake()
 		then
 			echo "install cmake in $1";
 			./configure --prefix=$1;
+			make && make install;
 		elif [ $# == 0 ]
 		then
 			echo "install cmake in default path";
 			./configure;
+			make && sudo make install;
 		else
 			echo "wrong commands";
 	fi
 
-	make && make install
 	if [ $? -ne 0 ]
 	then
 		cd ..;
@@ -46,22 +47,34 @@ function install_czmq()
 	tar zxvf czmq-3.0.0-rc1.tar.gz && cd czmq-3.0.0;
 	
 	if [ $# == 2 ]
+	then
+		if [ $1 == "null" ]
 		then
-			echo "install czmq in $1 and libzmq path is $2";
-			./configure --prefix=$1 --with-libzmq=$2;
-		elif [ $# == 1 ]
-		then
-			echo "install czmq in $1 and libzmq path is default";
-			./configure --prefix=$1;
-		elif [ $# == 0 ]
-		then
-			echo "install czmq in default path";
-			./configure;
+			echo "install czmq in default path. libzmq path is $2";
+			./configure --with-libzmq=$2;
+			make && sudo make install;
 		else
-			echo "wrong commands";
+			echo "install czmq in $1. libzmq path is $2";
+			./configure --prefix=$1 --with-libzmq=$2;
+			make && make install;
+		fi
+	elif [ $# == 1 ]
+	then
+		if [ $1 == "null" ]
+		then
+			echo "install czmq in default path.";
+			./configure;
+			make && sudo make install;
+		else
+			echo "install czmq in $1";
+			./configure --prefix=$1;
+			make && make install;
+		fi
+	else
+		echo "ERROR: wrong command.";
+		return -1;
 	fi
 
-	make && make install;
 	if [ $? -ne 0 ]
 	then
 		cd ..;
@@ -85,15 +98,16 @@ function install_gflags()
 		then
 			echo "install gflags in $1"
 			cmake .. -DCMAKE_INSTALL_PREFIX=$1;
+			make && make install;
 		elif [ $# == 0 ]
 		then 
 			echo "install gflags in default path";
 			cmake ..;
+			make && sudo make install;
 		else
 			echo "gflags is done";
 	fi
 	
-	make && make install;
 	if [ $? -ne 0 ]
 	then
 		cd ../..;
@@ -118,15 +132,16 @@ function install_glog()
 		then
 			echo "install glog in $1";
 			./configure --prefix=$1;
+			make && make install;
 		elif [ $# == 0 ]
 		then
 			echo "install glog in default path";
 			./configure;
+			make && sudo make install;
 		else
 			echo "wrong commands";
 	fi
 
-	make && make install;
 	if [ $? -ne 0 ]
 	then
 		cd ..;
@@ -150,14 +165,15 @@ function install_lmdb()
 		then
 			echo "install lmdb in $1";
 			sed -i "26s#^.*#prefix=$1#g" Makefile;
+			make && make install;
 		elif [ $# == 0 ]
 		then
 			echo "install lmdb in default path";
+			make && sudo make install;
 		else
 			echo "wrong commands";
 	fi
 
-	make && make install;
 	if [ $? -ne 0 ]
 	then
 		cd ../../..;
@@ -195,7 +211,7 @@ function install_openblas()
 		elif [ $# == 0 ]
 		then
 			echo "install cmake in default path";
-			make install;
+			sudo make install;
 			if [ $? -ne 0 ]
 			then
 				cd ..;
@@ -223,15 +239,16 @@ function install_opencv()
 		then
 			echo "install opencv in $1";
 			cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=$1;
+			make && make install;
 		elif [ $# == 0 ]
 		then
 			echo "install opencv in default path";
 			cmake -DCMAKE_BUILD_TYPE=RELEASE;
+			make && sudo make install;
 		else
 			echo "wrong commands";
 	fi
 
-	make && make install;
 	if [ $? -ne 0 ]
 	then
 		cd ..;
@@ -255,15 +272,16 @@ function install_protobuf()
 		then
 			echo "install protobuf in $1";
 			./configure --prefix=$1;
+			make && make install;
 		elif [ $# == 0 ]
 		then
 			echo "install protobuf in default path";
 			./configure;
+			make && sudo make install;
 		else
 			echo "wrong commands";
 	fi
 
-	make && make install;
 	if [ $? -ne 0 ]
 	then
 		cd ..;
@@ -287,15 +305,16 @@ function install_zeromq()
 		then
 			echo "install zeromq in $1";
 			./configure --prefix=$1;
+			make && make install;
 		elif [ $# == 0 ]
 		then
 			echo "install zeromq in default path";
 			./configure;
+			make && sudo make install;
 		else
 			echo "wrong commands";
 	fi
 	
-	make && make install;
 	if [ $? -ne 0 ]
 	then
 		cd ..;
@@ -320,15 +339,16 @@ function install_zookeeper()
 		then
 			echo "install zookeeper in $1";
 			./configure --prefix=$1;
+			make && make install;
 		elif [ $# == 0 ]
 		then
 			echo "install zookeeper in default path";
 			./configure;
+			make && sudo make install;
 		else 
 			echo "wrong commands";
 	fi
 
-	make && make install;
 	if [ $? -ne 0 ]
 	then
 		cd ../../..;
@@ -371,34 +391,52 @@ do
 		;;
 	"czmq")
 		echo "install czmq";
-		if [[ $2 == */* ]];then
-			if [[ $3 == */* ]];then
-				install_czmq $2 $3;
-				if [ $? -ne 0 ] 
-				then
-					echo "ERROR during czmq installation" ;
-					exit;
-				fi  
-				shift
-				shift
-				shift
+		if [ $2 == "-f" ]
+		then
+			if [[ $4 == */* ]]
+			then
+				install_czmq $4 $3;
 			else
-				install_czmq $2;
-				if [ $? -ne 0 ] 
-				then
-				    echo "ERROR during czmq installation" ;
-				    exit;
-				fi  
-				shift
-				shift
+				install_czmq null $3;
 			fi
+			if [ $? -ne 0 ] 
+			then
+				echo "ERROR during czmq installation" ;
+				exit;
+			fi
+			shift
+			shift
+			shift
+			shift
+		elif [ $3 == "-f" ]
+		then
+			install_czmq $2 $4;
+			if [ $? -ne 0 ] 
+			then
+				echo "ERROR during czmq installation" ;
+				exit;
+			fi
+			shift
+			shift
+			shift
+			shift
+		elif [[ $2 == */* ]]
+		then
+			install_czmq $2;
+			if [ $? -ne 0 ] 
+			then
+				echo "ERROR during czmq installation" ;
+				exit;
+			fi
+			shift
+			shift
 		else
-			install_czmq;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during czmq installation" ;
-		        exit;
-		    fi  
+			install_czmq null;
+			if [ $? -ne 0 ] 
+			then
+			    echo "ERROR during czmq installation" ;
+			    exit;
+			fi  
 			shift
 		fi
 		;;
@@ -648,7 +686,7 @@ do
 		        echo "ERROR during zeromq installation" ;
 		        exit;
 		    fi  
-			install_czmq;
+			install_czmq null;
 		    if [ $? -ne 0 ] 
 		    then
 		        echo "ERROR during czmq installation" ;
