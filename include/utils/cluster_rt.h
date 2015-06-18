@@ -15,7 +15,7 @@ namespace singa {
  * ClusterRuntime is a runtime service that manages dynamic configuration and status
  * of the whole cluster. It mainly provides following services:
  *    1)  Provide running status of each server/worker
- *    1)  Translate process id to (hostname:port)
+ *    2)  Translate process id to (hostname:port)
  */
 
 typedef void (*rt_callback)(void *contest);
@@ -29,6 +29,20 @@ class ClusterRuntime{
    * Initialize the runtime instance
    */
   virtual bool Init(){ return false;}
+
+  /**
+   * register the process, and get a unique process id
+   *
+   * \return the process id, -1 if failed
+   */
+  virtual int RegistProc(const string& host_addr){ return -1;};
+
+  /**
+   * translate the process id to host address
+   *
+   * \return the host and port, "" if no such proc id
+   */
+  virtual string GetProcHost(int proc_id){ return "";};   
 
   /**
    * Server: watch all workers in a server group, will be notified when all workers have left 
@@ -53,15 +67,21 @@ class ZKClusterRT : public ClusterRuntime{
   ZKClusterRT(string host, int timeout = 30000);
   ~ZKClusterRT();
   bool Init();
+  int RegistProc(const string& host_addr);
+  string GetProcHost(int proc_id);   
   bool sWatchSGroup(int gid, int sid, rt_callback fn, void *ctx);
   bool wJoinSGroup(int gid, int wid, int s_group);
   bool wLeaveSGroup(int gid, int wid, int s_group);
-  static void watcherGlobal(zhandle_t * zh, int type, int state, const char *path, void *watcherCtx);
   
  private:
-  static void childChanges(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
-  string getSGroupPath(int gid);
-  string getWorkerPath(int gid, int wid);
+  static void WatcherGlobal(zhandle_t * zh, int type, int state, const char *path, void *watcherCtx);
+  static void ChildChanges(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
+  bool CreateZKNode(const char* path, const char* val, int flag, char* output);
+  bool DeleteZKNode(const char* path);
+  bool GetZKNode(const char* path, char* output);
+  bool GetZKChild(const char* path, vector<string>& vt);
+  string groupPath(int gid);
+  string workerPath(int gid, int wid);
 
   struct RTCallback{
     rt_callback fn;
@@ -76,8 +96,11 @@ class ZKClusterRT : public ClusterRuntime{
   const int MAX_BUF_LEN = 50;
   const int RETRY_NUM = 10;
   const int SLEEP_SEC = 1;
-  const string ZK_P_SINGA = "/singa";
-  const string ZK_P_STATUS = "/status";
+  const string ZPATH_SINGA = "/singa";
+  const string ZPATH_STATUS = "/singa/status";
+  const string ZPATH_REGIST = "/singa/regist";
+  const string ZPATH_REGIST_PROC = "/singa/regist/proc";
+  const string ZPATH_REGIST_LOCK = "/singa/regist/lock";
 };
 
 } // namespace singa
