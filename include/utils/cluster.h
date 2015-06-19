@@ -23,7 +23,7 @@ namespace singa {
 class Cluster {
  public:
   static shared_ptr<Cluster> Get();
-  static shared_ptr<Cluster> Get(const ClusterProto& cluster, int procs_id);
+  static shared_ptr<Cluster> Get(const ClusterProto& cluster, int procs_id=0);
 
   const int nserver_groups()const{ return cluster_.nserver_groups(); }
   const int nworker_groups()const { return cluster_.nworker_groups(); }
@@ -71,17 +71,12 @@ class Cluster {
     return nprocs_;
   }
 
-  const string endpoint() const {
-    return endpoint(procs_id());
-  }
+
   /**
    * @return endpoint of the router of a procs with the specified id
    */
-  const string endpoint(int procs_id) const {
-    CHECK_LT(procs_id, nprocs_);
-    CHECK_GE(procs_id, 0);
-    return endpoints_.at(procs_id);
-  }
+  const string endpoint(const int procs_id) const;
+
   const string workspace() {return cluster_.workspace();}
   const string vis_folder(){
     return cluster_.workspace()+"/visualization";
@@ -127,6 +122,11 @@ class Cluster {
   }
 
   int ProcsIDOf(int group_id, int id, int flag);
+  const string hostname() const {
+    return hostname_;
+  }
+  void Register(const string& endpoint);
+
  private:
   Cluster(const ClusterProto &cluster, int procs_id) ;
   void SetupFolders(const ClusterProto &cluster);
@@ -135,6 +135,7 @@ class Cluster {
  private:
   int procs_id_;
   int nprocs_;
+  string hostname_;
   std::vector<std::string> endpoints_;
   // cluster config proto
   ClusterProto cluster_;

@@ -10,7 +10,7 @@ namespace singa {
 typedef void (*rt_callback)(void *contest);
 
 /**
- * ClusterRuntime is a runtime service that manages dynamic configuration 
+ * ClusterRuntime is a runtime service that manages dynamic configuration
  * and status of the whole cluster. It mainly provides following services:
  *    1)  Provide running status of each server/worker
  *    2)  Translate process id to (hostname:port)
@@ -35,8 +35,8 @@ class ClusterRuntime {
    */
   virtual std::string GetProcHost(int proc_id) = 0;
   /**
-   * Server: watch all workers in a server group, 
-   * will be notified when all workers have left 
+   * Server: watch all workers in a server group,
+   * will be notified when all workers have left
    */
   virtual bool WatchSGroup(int gid, int sid, rt_callback fn, void* ctx) = 0;
   /**

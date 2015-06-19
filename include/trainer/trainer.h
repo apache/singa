@@ -89,7 +89,7 @@ class Trainer{
    * @param clusterproto
    */
   void Start(const ModelProto& modelproto, const ClusterProto& clusterproto,
-    int procs_id);
+    const int procs_id);
 
   // TODO add Resume() function to continue training from a previously stopped
   // point.

@@ -25,17 +25,14 @@ void Trainer::RegisterDefaultClasses(const singa::ModelProto& proto){
 }
 
 void HandleWorkerFinish(void * ctx){
-  /*
   HandleContext* hctx=static_cast<HandleContext*> (ctx);
   Msg* msg=new Msg();
   msg->set_src(-1,-1, kRuntime);
   msg->set_dst(hctx->group_id, hctx->id, kServer);
   msg->set_type(kStop);
   hctx->dealer->Send(&msg);
-  */
 }
 
-<<<<<<< HEAD
 const std::unordered_map<int, vector<std::pair<int, int>>> SliceParams(int num,
     const vector<shared_ptr<Param>>& params){
   std::unordered_map<int, vector<std::pair<int, int>>> paramid2slices;
@@ -417,6 +414,11 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
           if (interprocs_dealers.find(dst_procs_id)==interprocs_dealers.end()){
             auto dealer=make_shared<Dealer>();
             interprocs_dealers[dst_procs_id]=dealer;
+            while(cluster->endpoint(dst_procs_id)==""){
+              std::this_thread::sleep_for(
+                  std::chrono::milliseconds(kCollectSleepTime));
+              LOG(ERROR)<<"waiting for procs "<< dst_procs_id<<" to register";
+            }
             dealer->Connect("tcp://"+cluster->endpoint(dst_procs_id));
           }
           if(bandwidth(amount, start) <=cluster->bandwidth()){

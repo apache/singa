@@ -36,7 +36,6 @@ Dealer::Dealer(int id) : id_(id) {
   CHECK_NOTNULL(poller_);
 }
 
-<<<<<<< HEAD
 Dealer::~Dealer() {
   zsock_destroy(&dealer_);
 }
@@ -92,13 +91,14 @@ Router::~Router() {
   }
 }
 
-int Router::Bind(const std::string& endpoint) {
-  CHECK_GT(endpoint.length(), 0);
-  if (endpoint.length()) {
-    CHECK_EQ(zsock_bind(router_, "%s", endpoint.c_str()), 0);
-    return 1;
+int Router::Bind(string endpoint){
+  int port=-1;
+  if(endpoint.length()){
+    port=zsock_bind(router_, "%s", endpoint.c_str());
   }
-  return 0;
+  CHECK_NE(port,-1)<<endpoint;
+  LOG(INFO)<<"bind successfully to "<<endpoint+":"+std::to_string(port);
+  return port;
 }
 
 int Router::Send(Msg **msg) {

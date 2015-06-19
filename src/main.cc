@@ -19,7 +19,7 @@
  * easily, e.g., AddLayer(layer_type, source_layers, meta_data).
  */
 
-DEFINE_int32(procsID, 0, "Global process ID");
+DEFINE_int32(procsID, -1, "Global process ID");
 DEFINE_string(cluster, "examples/mnist/cluster.conf", "Cluster config file");
 DEFINE_string(model, "examples/mnist/conv.conf", "Model config file");
 
