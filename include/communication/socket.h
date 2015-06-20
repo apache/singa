@@ -5,7 +5,7 @@
 #include "communication/msg.h"
 namespace singa {
 
-const string kInprocRouterEndpoint="inproc://router";
+const std::string kInprocRouterEndpoint="inproc://router";
 class Socket{
   public:
   Socket(){}
@@ -83,7 +83,7 @@ class Dealer : public Socket{
     * format, i.e., IP:port, where IP is the connected process.
     * @return 1 connection sets up successfully; 0 otherwise
     */
-  virtual int Connect(string endpoint);
+  virtual int Connect(std::string endpoint);
   virtual int Send(Msg** msg);
   virtual Msg* Receive();
   virtual void* InternalID() const{
@@ -119,7 +119,7 @@ class Router : public Socket{
   * intra-process connection.
   * @return number of connected dealers.
   */
-  virtual int Bind(string endpoint);
+  virtual int Bind(std::string endpoint);
  /**
    * If the destination socket has not connected yet, buffer this the message.
    */

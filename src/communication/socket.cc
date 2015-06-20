@@ -24,7 +24,7 @@ Dealer::Dealer(int id):id_(id){
   poller_=zpoller_new(dealer_);
 }
 
-int Dealer::Connect(string endpoint){
+int Dealer::Connect(std::string endpoint){
   if(endpoint.length())
     CHECK_EQ(zsock_connect(dealer_,"%s", endpoint.c_str()),0);
   return 1;
@@ -56,7 +56,7 @@ Router::Router(int bufsize){
   CHECK_NOTNULL(router_);
   poller_=zpoller_new(router_);
 }
-int Router::Bind(string endpoint){
+int Router::Bind(std::string endpoint){
   if(endpoint.length())
     CHECK_EQ(zsock_bind(router_, "%s", endpoint.c_str()),0);
   return 1;
