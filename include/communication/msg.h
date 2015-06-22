@@ -4,8 +4,8 @@
 // TODO(wangwei): make it a compiler argument
 #define USE_ZMQ
 
-#include <algorithm>
 #include <string>
+#include <utility>
 
 #ifdef USE_ZMQ
 #include <czmq.h>
