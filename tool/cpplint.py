@@ -1666,12 +1666,16 @@ def GetHeaderGuardCPPVariable(filename):
   filename = re.sub(r'/\.flymake/([^/]*)$', r'/\1', filename)
   # Replace 'c++' with 'cpp'.
   filename = filename.replace('C++', 'cpp').replace('c++', 'cpp')
-  
+
   fileinfo = FileInfo(filename)
   file_path_from_root = fileinfo.RepositoryName()
   if _root:
     file_path_from_root = re.sub('^' + _root + os.sep, '', file_path_from_root)
-  return re.sub(r'[^a-zA-Z0-9]', '_', file_path_from_root).upper() + '_'
+  # return re.sub(r'[^a-zA-Z0-9]', '_', file_path_from_root).upper() + '_'
+
+  # wangsheng@singa.apache: change INCLUDE to SINGA
+  singa_path = re.sub(r'[^a-zA-Z0-9]', '_', file_path_from_root).upper() + '_'
+  return singa_path.replace("INCLUDE", "SINGA")
 
 
 def CheckForHeaderGuard(filename, clean_lines, error):
@@ -4794,7 +4798,7 @@ def CheckLanguage(filename, clean_lines, linenum, file_extension,
 
   # Make Windows paths like Unix.
   fullname = os.path.abspath(filename).replace('\\', '/')
-  
+
   # Perform other checks now that we are sure that this is not an include line
   CheckCasts(filename, clean_lines, linenum, error)
   CheckGlobalStatic(filename, clean_lines, linenum, error)
@@ -6034,7 +6038,7 @@ def ProcessFileData(filename, file_extension, lines, error,
   nesting_state.CheckCompletedBlocks(filename, error)
 
   CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error)
-  
+
   # Check that the .cc file has included its header if it exists.
   if file_extension == 'cc':
     CheckHeaderFileIncluded(filename, include_state, error)
