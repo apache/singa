@@ -19,7 +19,10 @@ void Worker::Setup(const ModelProto& model,
   train_net_=train_net;
   modelproto_=model;
   auto cluster=Cluster::Get();
-  if(!(cluster->nserver_groups()&&cluster->server_update())){
+  if(cluster->nserver_groups()&&cluster->server_update()){
+    int sgid=group_id_/cluster->nworker_groups_per_server_group();
+    CHECK(cluster->runtime()->JoinSGroup(group_id_, worker_id_, sgid));
+  }else{
     updater_=shared_ptr<Updater>(Singleton<Factory<Updater>>::Instance()
         ->Create("Updater"));
     updater_->Init(model.updater());
@@ -91,7 +94,7 @@ void Worker::Run(){
 void Worker::Stop(){
   auto cluster=Cluster::Get();
   int sgid=group_id_/cluster->nworker_groups_per_server_group();
-  cluster->runtime()->wLeaveSGroup(group_id_, worker_id_, sgid);
+  cluster->runtime()->LeaveSGroup(group_id_, worker_id_, sgid);
   Msg* msg=new Msg();
   msg->set_src(group_id_, worker_id_, kWorkerParam);
   msg->set_dst(-1,-1, kStub);

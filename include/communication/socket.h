@@ -13,7 +13,7 @@
 
 namespace singa {
 
-const char kInprocRouterEndpoint[] = "inproc://router";
+const std::string kInprocRouterEndpoint = "inproc://router";
 
 class SocketInterface {
  public:
