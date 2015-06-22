@@ -83,7 +83,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
         servers.push_back(server);
         HandleContext hc{dealer, gid, sid};
         ctx.push_back(hc);
-        CHECK(cluster->runtime()->sWatchSGroup(gid, sid, HandleWorkerFinish,
+        CHECK(cluster->runtime()->WatchSGroup(gid, sid, HandleWorkerFinish,
             &ctx.back()));
       }
     }
