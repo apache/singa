@@ -85,5 +85,20 @@ void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
   int fd= open(filename, O_CREAT|O_WRONLY|O_TRUNC, 0644);
   CHECK(proto.SerializeToFileDescriptor(fd));
 }
+int gcd(int a, int b)
+{
+  for (;;)
+  {
+    if (a == 0) return b;
+    b %= a;
+    if (b == 0) return a;
+    a %= b;
+  }
+}
+int LeastCommonMultiple(int a, int b)
+{
+  int temp = gcd(a, b);
 
+  return temp ? (a / temp * b) : 0;
+}
 }  // namespace singa

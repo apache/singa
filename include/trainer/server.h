@@ -1,6 +1,7 @@
 #ifndef INCLUDE_TRAINER_SERVER_H_
 #define INCLUDE_TRAINER_SERVER_H_
 #include <memory>
+#include <unordered_map>
 #include <utils/param.h>
 #include <utils/updater.h>
 #include "proto/model.pb.h"
@@ -8,6 +9,7 @@
 
 using std::shared_ptr;
 namespace singa {
+typedef std::unordered_map<int, shared_ptr<Param>> ServerShard;
 /* Repsond to worker's get/put/udpate request, and periodically syncing with
   * other servers.
   *
@@ -20,10 +22,10 @@ namespace singa {
   */
 class Server{
  public:
-  typedef std::map<int, shared_ptr<Param>> ParamShard;
 
   Server(int thread_id, int group_id, int server_id);
-  void Setup(const UpdaterProto& proto, shared_ptr<ParamShard> shard);
+  void Setup(const UpdaterProto& proto, shared_ptr<ServerShard> shard,
+      const vector<int>& slice2group);
   void Run();
 
  protected:
@@ -48,7 +50,7 @@ class Server{
    * @return the original message or response message. If we don't want need to
    * acknowledge the put request, then return nullptr.
 	 */
-	virtual Msg* HandlePut(shared_ptr<Param> param, Msg **msg);
+	virtual void HandlePut(shared_ptr<Param> param, Msg **msg);
 
 	/**
    * TODO Process SYNC request.
@@ -57,21 +59,15 @@ class Server{
 
 	/**
    * TODO Process SYNC response.
-	 */
 	virtual int HandleSyncResponse(shared_ptr<Param> param, Msg** msg);
-
-  /**
-   * Scheduler for synchronizing server groups.
-   *
-   * TODO implement the Caffe's synchronization scheduler for data parallelism
-   */
-  virtual bool SyncNow();
+	 */
 
  protected:
   int thread_id_,group_id_, server_id_;
   shared_ptr<Dealer> dealer_;
   shared_ptr<Updater> updater_;
-  shared_ptr<ParamShard> shard_;
+  shared_ptr<ServerShard> shard_;
+  vector<int> slice2group_;
 };
 } /* Server */
 #endif //INCLUDE_TRAINER_SERVER_H_

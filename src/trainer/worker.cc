@@ -19,10 +19,7 @@ void Worker::Setup(const ModelProto& model,
   train_net_=train_net;
   modelproto_=model;
   auto cluster=Cluster::Get();
-  if(cluster->nserver_groups()&&cluster->server_update()){
-    int sgid=group_id_/cluster->nworker_groups_per_server_group();
-    CHECK(cluster->runtime()->wJoinSGroup(group_id_, worker_id_, sgid));
-  }else{
+  if(!(cluster->nserver_groups()&&cluster->server_update())){
     updater_=shared_ptr<Updater>(Singleton<Factory<Updater>>::Instance()
         ->Create("Updater"));
     updater_->Init(model.updater());
@@ -30,6 +27,12 @@ void Worker::Setup(const ModelProto& model,
 }
 
 void Worker::ConnectStub(shared_ptr<Dealer> dealer, EntityType type){
+  if(updater_==nullptr){
+    auto cluster=Cluster::Get();
+    int sgid=group_id_/cluster->nworker_groups_per_server_group();
+    CHECK(cluster->runtime()->wJoinSGroup(group_id_, worker_id_, sgid));
+  }
+
   dealer->Connect(kInprocRouterEndpoint);
   Msg* ping=new Msg();
   ping->set_src(group_id_, worker_id_, type);
@@ -60,7 +63,7 @@ void Worker::Run(){
       for(auto param: layer->GetParams()){
         if(param->owner() == param->id()){
           if(group_id_==0)
-            param->Init(0);
+            param->InitValues(0);
           else
             Get(param, modelproto_.warmup_steps());
         }

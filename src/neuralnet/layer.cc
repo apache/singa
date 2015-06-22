@@ -46,9 +46,9 @@ void ConvolutionLayer::Setup(const LayerProto& proto,
 
   Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
   weight_=shared_ptr<Param>(factory->Create("Param"));
-  weight_->Setup(proto.param(0), vector<int>{num_filters_, col_height_}, col_height_);
+  weight_->Setup(proto.param(0), vector<int>{num_filters_, col_height_});
   bias_=shared_ptr<Param>(factory->Create("Param"));
-  bias_->Setup(proto.param(1), vector<int>{num_filters_},0);
+  bias_->Setup(proto.param(1), vector<int>{num_filters_});
 }
 
 void ConvolutionLayer::SetupAfterPartition(const LayerProto& proto,
@@ -173,8 +173,8 @@ void InnerProductLayer::Setup(const LayerProto& proto,
   Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
   weight_=shared_ptr<Param>(factory->Create("Param"));
   bias_=shared_ptr<Param>(factory->Create("Param"));
-  weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_}, vdim_*hdim_);
-  bias_->Setup(proto.param(1), vector<int>{hdim_},0);
+  weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
+  bias_->Setup(proto.param(1), vector<int>{hdim_});
 }
 void InnerProductLayer::SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,

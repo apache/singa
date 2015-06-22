@@ -1,8 +1,8 @@
 package singa;
 
 message ClusterProto{
-  optional int32 nworker_groups=1;
-  optional int32 nserver_groups=2;
+  optional int32 nworker_groups=1 [default=1];
+  optional int32 nserver_groups=2 [default=1];
   optional int32 nworkers_per_group=3 [default=1];
   optional int32 nservers_per_group=4 [default=1];
   optional int32 nworkers_per_procs=5 [default=1];
@@ -11,27 +11,24 @@ message ClusterProto{
   // Used in standalone mode, one ip or hostname per line
   // For YARN or Mesos version, the processes are allocted dynamically,
   // hence no need to specify the hosts statically
-  optional string hostfile=10;
+  optional string hostfile=10 [default=""];
 
   // servers and workers in different processes?
   optional bool server_worker_separate=11 [default=false];
-
-  // if configured, must be consistent with the one computed from 1-6
-  optional int32 nprocs=12;
 
   // port number is used by ZeroMQ
   optional int32 start_port=13 [default=6723];
   // local workspace, train/val/test shards, checkpoint files
   required string workspace=14;
   // relative path to workspace. if not set, use the default dir of glog
-  optional string log_dir=15;
+  optional string log_dir=15 [default="/tmp"];
   // ip/hostname : port [, ip/hostname : port]
   optional string zookeeper_host=16 [default="localhost:2181"];
   // message size limit, default 1MB
   // optional int32 largest_message=20 [default=1048576];
   // optional float bandwidth=21 [default=100];//MB/s
 
-	repeated ServerTopology server_group = 20;
+	//repeated ServerTopology server_group = 20;
 
   optional int32 stub_timeout=30 [default=5000];
   optional int32 worker_timeout=31 [default=5000];
@@ -50,3 +47,26 @@ message ServerTopology{
   // neighbor group id
 	repeated int32 neighbor = 3;
 }
+enum MsgType{
+  kGet=0;
+  kPut=1;
+  kSync=2;
+  kUpdate=3;
+  kSyncRequest=4;
+  kSyncResponse=5;
+  kStop=6;
+  kData=7;
+  kRGet=8;
+  kRUpdate=9;
+  kConnect=10;
+  kMetric=11;
+};
+
+enum EntityType{
+  kWorkerParam=0;
+  kWorkerLayer=1;
+  kServer=2;
+  kStub=3;
+  kRuntime=4;
+};
+

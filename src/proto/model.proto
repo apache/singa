@@ -1,26 +1,4 @@
 package singa;
-enum MsgType{
-  kGet=0;
-  kPut=1;
-  kSync=2;
-  kUpdate=3;
-  kSyncRequest=4;
-  kSyncResponse=5;
-  kStop=6;
-  kData=7;
-  kRGet=8;
-  kRUpdate=9;
-  kConnect=10;
-  kMetric=11;
-};
-
-enum EntityType{
-  kWorkerParam=0;
-  kWorkerLayer=1;
-  kServer=2;
-  kStub=3;
-  kRuntime=4;
-};
 enum Phase {
   kTrain = 0;
   kValidation=1;
@@ -33,25 +11,17 @@ enum ShareOption{
   kWhole=1;
 };
 message ModelProto{
-  optional string name = 1;
-  // relative path to system folder
-  optional string train_folder=2 [default="train"];
-  optional string test_folder=3 [default="test"];
-  optional string validation_folder=4 [default="validation"];
+  required string name = 1;
   // start display after this num steps
   optional int32 display_after_steps = 6 [default = 0];
   // frequency of display
   optional int32 display_frequency = 7 [default = 0];
 
-  // the time of validation
-  //optional int32 validation_step = 9 [default = 0];
   // start validation after this num steps
   optional int32 validation_after_steps = 10 [default = 0];
   // frequency of validation
   optional int32 validation_frequency = 11 [default = 0];
 
-  // the time of test
-  //optional int32 test_step = 12 [default = 0];
   // start test after this num steps
   optional int32 test_after_steps = 13 [default = 0];
   // frequency of test
@@ -63,24 +33,23 @@ message ModelProto{
 
 
   // total num of steps for training
-  optional int32 train_steps = 20;
+  required int32 train_steps = 20;
   // total num of steps for validation
-  optional int32 validation_steps=21;
+  optional int32 validation_steps=21 [default=0];
   // total num of steps for test
-  optional int32 test_steps=22;
+  optional int32 test_steps=22 [default=0];
   // last snapshot step
-  optional int32 step=29 [default=0];
+  optional int32 step=29;
 
-  optional UpdaterProto updater=31;
+  required UpdaterProto updater=31;
   // There are two basic algorithms for calculating gradients.
   // Different deep learning models use different algorithms.
   enum GradCalcAlg{
     kBackPropagation = 1;
     kContrastiveDivergence = 2;
   }
-  optional GradCalcAlg alg= 32 [default = kBackPropagation];
-  optional bool hogwild=33 [default=false];
-  optional NetProto neuralnet = 40;
+  required GradCalcAlg alg= 32 [default = kBackPropagation];
+  required NetProto neuralnet = 40;
   optional bool debug=41 [default=false];
   optional int32 warmup_steps=50 [default=0];
 }
@@ -93,7 +62,7 @@ message NetProto{
 message ParamProto {
   // for the program to identify it and share among layers.
   // e.g., "conv1_weight","fc_bias"
-  optional string name = 1;
+  required string name = 1;
   optional int32 id=2;
   // in most situations, user do not need to config this,
   // the program will calculate it
@@ -149,25 +118,24 @@ message BlobProtos{
   repeated string names=3;
 }
 
-
-
 enum PartitionType{
   kDataPartition=0;
   kLayerPartition=1;
   kNone=2;
 }
+
 enum ConnectionType{
   kOneToOne=0;
   kOneToAll=1;
 }
 
 message LayerProto {
-  optional string name = 1; // the layer name
-  optional string type = 2; // the layer type from the enum above
+  required string name = 1; // the layer name
+  required string type = 2; // the layer type from the enum above
   repeated string srclayers=3;
   optional int32 locationid=4 [default=0]; // todo make locationID an array
   optional int32 partitionid=5 [default=0];
-  optional PartitionType partition_type=6;
+  optional PartitionType partition_type=6 [default=kNone];
   optional string datablob=7;
   // can be pos/neg neuron value for CD, neuron value/grad for BP
   //repeated DAryProto ary = 10;
@@ -204,10 +172,10 @@ message RGBImage {
   optional float scale=1 [default=1.0];
   optional int32 cropsize=2 [default=0];
   optional bool mirror=3 [default=false];
-  optional string meanfile=4;
+  optional string meanfile=4 [default=""];
 }
 message SplitProto{
-  optional int32 num_splits=1;
+  required int32 num_splits=1;
 }
 // scaled tan: A*tan(B*x)
 message TanhProto{
@@ -225,7 +193,7 @@ message SoftmaxLossProto {
 }
 // Message that stores parameters used by ConvolutionLayer
 message ConvolutionProto {
-  optional uint32 num_filters = 1; // The number of outputs for the layer
+  required uint32 num_filters = 1; // The number of outputs for the layer
   optional bool bias_term = 2 [default = true]; // whether to have bias terms
   // Pad, kernel size, and stride are all given as a single value for equal
   // dimensions in height and width or as Y, X pairs.
@@ -235,19 +203,17 @@ message ConvolutionProto {
 }
 
 message ConcateProto{
-  optional int32 concate_dimension=1;
-  optional int32 concate_num=2;
+  required int32 concate_dimension=1;
+  required int32 concate_num=2;
 }
 
 // Message that stores parameters used by DataLayer
 message DataProto {
-  // Specify the data source.
-  optional string source = 1;
   // path to the data file/folder, absolute or relative to the
   // ClusterProto::workspace
-  optional string path=2;
+  required string path=2;
   // Specify the batch size.
-  optional uint32 batchsize = 4;
+  required uint32 batchsize = 4;
   // skip [0,random_skip] records
   optional uint32 random_skip=5 [default=0];
 }
@@ -273,13 +239,13 @@ message DropoutProto {
 }
 // Message that stores parameters used by InnerProductLayer
 message InnerProductProto {
-  optional uint32 num_output = 1; // The number of outputs for the layer
+  required uint32 num_output = 1; // The number of outputs for the layer
   optional bool bias_term = 2 [default = true]; // whether to have bias terms
 }
 
 // Message that stores parameters used by LRNLayer
 message LRNProto {
-  optional uint32 local_size = 1 [default = 5];
+  optional int32 local_size = 1 [default = 5];
   optional float alpha = 2 [default = 1.];
   optional float beta = 3 [default = 0.75];
   enum NormRegion {
@@ -305,8 +271,8 @@ message PoolingProto {
 }
 
 message SliceProto{
-  optional int32 slice_dimension=1;
-  optional int32 slice_num=2;
+  required int32 slice_dimension=1;
+  required int32 slice_num=2;
 }
 // Message that stores parameters used by ReLULayer
 message ReLUProto {
@@ -356,9 +322,9 @@ message UpdaterProto {
   optional float pow=7 [default=0];
   optional float delta=8 [default=0.0000001];
   optional float rho=9 [default=0.9];
-  optional float base_learning_rate=12;
-  optional float final_learning_rate=13;
-  optional int32 learning_rate_change_frequency = 14;
+  optional float base_learning_rate=12 [default=0];
+  optional float final_learning_rate=13 [default=0];
+  optional int32 learning_rate_change_frequency = 14 [default=0];
   enum ChangeProto {
     kFixed = 0;
     kInverse_t= 1;

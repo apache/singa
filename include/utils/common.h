@@ -42,6 +42,8 @@ inline void Sleep(int millisec=1){
 }
 */
 
+int gcd(int a, int b);
+int LeastCommonMultiple(int a, int b);
 inline float rand_real(){
   return  static_cast<float>(rand())/(RAND_MAX+1.0f);
 }

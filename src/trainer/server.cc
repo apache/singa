@@ -13,14 +13,14 @@ Server::Server(int thread_id,int group_id, int server_id):
   thread_id_(thread_id),group_id_(group_id), server_id_(server_id){}
 
 void Server::Setup(const UpdaterProto& proto,
-    shared_ptr<Server::ParamShard> shard){
+    shared_ptr<ServerShard> shard, const vector<int>& slice2group){
 	//VLOG(3) << "Parsing config file for host "<<hosts[id_] << " server id = " <<id_;
   updater_=shared_ptr<Updater>(Singleton<Factory<Updater>>::Instance()
       ->Create("Updater"));
   updater_->Init(proto);
   shard_=shard;
+  slice2group_=slice2group;
 }
-
 
 void Server::Run(){
   dealer_=std::make_shared<Dealer>(2*thread_id_);
@@ -61,7 +61,7 @@ void Server::Run(){
         param->set_id(pid);
         (*shard_)[pid]=param;
       }
-      response = HandlePut(param, &msg);
+      param->HandlePutMsg(&msg);
     }else{
       int pid=msg->target_first();
       if(shard_->find(pid)==shard_->end()){
@@ -83,10 +83,6 @@ void Server::Run(){
             VLOG(3)<<"Handle SYNC-REQUEST";
             response = HandleSyncRequest(param, &msg);
             break;
-          case kSyncResponse:
-            VLOG(3) << "Handle SYNC response";
-            HandleSyncResponse(param, &msg);
-            break;
         }
         if (response!=nullptr){
           dealer_->Send(&response);
@@ -96,11 +92,8 @@ void Server::Run(){
   }
 }
 
-bool Server::SyncNow(){
-  return false;
-}
-Msg* Server::HandlePut(shared_ptr<Param> param, Msg **msg){
-  return param->HandlePutMsg(msg);
+void Server::HandlePut(shared_ptr<Param> param, Msg **msg){
+  param->HandlePutMsg(msg);
 }
 
 Msg* Server::HandleGet(shared_ptr<Param> param, Msg **msg){
@@ -110,11 +103,15 @@ Msg* Server::HandleGet(shared_ptr<Param> param, Msg **msg){
 Msg* Server::HandleUpdate(shared_ptr<Param> param, Msg **msg) {
   //repsonse of the format: <identity><type: kData><paramId><param content>
   auto* tmp=static_cast<Msg*>((*msg)->CopyAddr());
-  const std::pair<bool, int> copy_step=param->ParseUpdateMsg(msg);
-  updater_->Update(copy_step.second, param);
-  param->set_version(param->version()+1);
-  auto response=param->GenUpdateResponseMsg(copy_step.first, param->version());
   tmp->SwapAddr();
+  int paramid=(*msg)->target_first();
+  int sliceid=(*msg)->target_second();
+  int step=(*msg)->target_third();
+  bool copy=param->ParseUpdateMsg(msg);
+  updater_->Update(step, param);
+  param->set_version(param->version()+1);
+  auto response=param->GenUpdateResponseMsg(copy);
+  response->set_target(paramid, sliceid, param->version());
   response->SetAddr(tmp);
   delete tmp;
   return response;
@@ -122,10 +119,6 @@ Msg* Server::HandleUpdate(shared_ptr<Param> param, Msg **msg) {
 
 Msg* Server::HandleSyncRequest(shared_ptr<Param> param, Msg **msg){
   return param->HandleSyncMsg(msg);
-}
-
-int Server::HandleSyncResponse(shared_ptr<Param> param, Msg **msg){
-  return param->ParseSyncResponseMsg(msg);
 }
 
 } /* singa */

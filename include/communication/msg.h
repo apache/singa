@@ -45,7 +45,7 @@ class Msg {
   }
   inline int target_first() const { return target_first_; }
   inline int target_second() const { return target_second_; }
-  /**
+ /**
    * Copy src and dst address, including first, id, flag
    */
   inline Msg* CopyAddr() {
