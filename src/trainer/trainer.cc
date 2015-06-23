@@ -190,7 +190,6 @@ void Trainer::Run(int nworkers, int nservers,
   auto cluster=Cluster::Get();
   procs_id_=cluster->procs_id();
   map<int, shared_ptr<Dealer>> interprocs_dealers;
-  Metric perf;
   bool stop=false;
   while(!stop){
     Msg* msg=router_->Receive();
@@ -223,9 +222,7 @@ void Trainer::Run(int nworkers, int nservers,
             msg->next_frame();
             Metric cur;
             cur.ParseString(string((char*)msg->frame_data(), msg->frame_size()));
-            perf.AddMetrics(cur);
-            LOG(ERROR)<<prefix<<" step-" <<step<<", "<<perf.ToString();
-            perf.Reset();
+            LOG(ERROR)<<prefix<<" step-" <<step<<", "<<cur.ToString();
           }
           DeleteMsg(&msg);
         }else if(cluster->nserver_groups()>0){
@@ -275,11 +272,6 @@ void Trainer::Run(int nworkers, int nservers,
       }
     }
   }
-  /*
-  perf.Avg();
-  if(perf_step>=0)
-    LOG(ERROR)<<perf_prefix<<" step-"<<perf_step<<", "<<perf.ToString();
-    */
 }
 Msg* Trainer::HandleConnect(Msg** msg){
   string ping((char*)(*msg)->frame_data(), (*msg)->frame_size());
