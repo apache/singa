@@ -180,7 +180,7 @@ void Worker::RunOneBatch(int step, Metric* perf){
   if(perf!=nullptr){
     perf->Inc();
     if(DisplayNow(step)){
-      perf->Avg();
+      //perf->Avg();
       DisplayPerformance(*perf, "Train");
       perf->Reset();
     }
@@ -204,7 +204,7 @@ void Worker::Test(int nsteps, Phase phase, shared_ptr<NeuralNet> net){
     TestOneBatch(step, phase, net, &perf);
     perf.Inc();
   }
-  perf.Avg();
+  //perf.Avg();
   if(phase==kValidation)
     DisplayPerformance(perf, "Validation");
   else if (phase==kTest)
