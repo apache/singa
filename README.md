@@ -118,7 +118,7 @@ A2:You can try following command:
 
 Q3:I get error "./configure --> cannot find blas_segmm() function" even I run "install.sh OpenBLAS".
 
-A3:Since OpenBLAS library is installed in /opt folder by default or /other/folder by your preference, you may edit your environment settings. For example, you can add its default installation directories to LIBRARY_PATH, just run:
+A3:Since OpenBLAS library is installed in /opt folder by default or /other/folder by your preference, you may edit your environment settings. You need add its default installation directories before linking, just run:
 
 	$ export LDFLAGS=-L/opt
 	
