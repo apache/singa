@@ -210,8 +210,8 @@ function install_openblas()
 			fi
 		elif [ $# == 0 ]
 		then
-			echo "install cmake in default path";
-			sudo make install;
+			cho "install OpenBLAS in /usr/local/" 
+			sudo make PREFIX=/usr/local install;
 			if [ $? -ne 0 ]
 			then
 				cd ..;
