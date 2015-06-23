@@ -108,7 +108,8 @@ Msg* Param::GenGetMsg(bool copy, int idx){
   CHECK_LT(idx, num_slices_);
   Msg* msg=new Msg();
   msg->set_type(kGet);
-  msg->add_frame(&copy, sizeof(bool));
+  char buf[8]; sprintf(buf, " %c ", copy);
+  msg->add_frame(buf, sizeof(buf));
   pending_get_[idx]=true;
   num_pending_requests_++;
   return msg;
@@ -118,7 +119,8 @@ Msg* Param::GenUpdateMsg(bool copy, int idx){
   CHECK_LT(idx, num_slices_);
   Msg* msg=new Msg();
   msg->set_type(kUpdate);
-  msg->add_frame(&copy, sizeof(bool));
+  char buf[8]; sprintf(buf, " %c ", copy);
+  msg->add_frame(buf, sizeof(buf));
   void* ptr=grad_.mutable_cpu_data()+slice_offset_[idx];
   if(copy)
     msg->add_frame(ptr, slice_size_[idx]*sizeof(float));
@@ -159,9 +161,9 @@ Msg* Param::HandlePutMsg(Msg** msg){
 }
 
 Msg* Param::HandleGetMsg(Msg** msg){
-  bool* copy=static_cast<bool*>((*msg)->frame_data());
+  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %c ", &copy);
   (*msg)->next_frame();
-  if(*copy)
+  if(copy)
     (*msg)->add_frame(mutable_cpu_data(), sizeof(float)*size());
   // else the mem space is shared among all worker and servers
   (*msg)->SwapAddr();
@@ -170,9 +172,9 @@ Msg* Param::HandleGetMsg(Msg** msg){
 }
 
 int Param::ParseUpdateMsg(Msg** msg){
-  bool* copy=static_cast<bool*>((*msg)->frame_data());
+  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %c ", &copy);
   (*msg)->next_frame();
-  if(*copy){
+  if(copy){
     CHECK((*msg)->frame_size());
     memcpy(mutable_cpu_grad(), (*msg)->frame_data(),(*msg)->frame_size());
   }else {// use the same data field of the grad blob
@@ -181,13 +183,14 @@ int Param::ParseUpdateMsg(Msg** msg){
     grad_.set_cpu_data(ptr);
   }
   DeleteMsg(msg);
-  return *copy;
+  return copy;
 }
 
 Msg* Param::GenUpdateResponseMsg(bool copy){
   Msg* msg=new Msg();
   msg->set_type(kRUpdate);
-  msg->add_frame(&copy, sizeof(bool));
+  char buf[8]; sprintf(buf, " %c ", copy);
+  msg->add_frame(buf, sizeof(buf));
   if(copy)
     msg->add_frame(mutable_cpu_data(), size()*sizeof(float));
   return msg;
@@ -218,11 +221,12 @@ int Param::ParseUpdateResponseMsg(Msg **msg, int slice_idx){
 }
 
 void Param::ParseResponseMsg(Msg** msg, int slice_idx){
-  bool *copy=static_cast<bool*>((*msg)->frame_data());
+  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %c ", &copy);
   (*msg)->next_frame();
-  if(*copy){
+  if(copy){
+    LOG(ERROR)<<"copy";
     CHECK((*msg)->frame_size());
-    memcpy(mutable_cpu_data()+slice_offset_[slice_idx-slice_start_],
+    memcpy(mutable_cpu_data()+slice_offset_[slice_idx],
         (*msg)->frame_data(), (*msg)->frame_size());
   }
   DeleteMsg(msg);
