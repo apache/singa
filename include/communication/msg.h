@@ -39,12 +39,14 @@ class Msg {
   inline void SwapAddr() { std::swap(src_, dst_); }
   inline void set_type(int type) { type_ = type; }
   inline int type() const { return type_; }
-  inline void set_target(int first, int second) {
-    target_first_ = first;
-    target_second_ = second;
+  inline void set_trgt(int first, int second, int third) {
+    trgt_first_ = first;
+    trgt_second_ = second;
+    trgt_third_ = third;
   }
-  inline int target_first() const { return target_first_; }
-  inline int target_second() const { return target_second_; }
+  inline int trgt_first() const { return trgt_first_; }
+  inline int trgt_second() const { return trgt_second_; }
+  inline int trgt_third() const { return trgt_third_; }
  /**
    * Copy src and dst address, including first, id, flag
    */
@@ -84,8 +86,9 @@ class Msg {
   int src_ = 0;
   int dst_ = 0;
   int type_ = 0;
-  int target_first_ = 0;
-  int target_second_ = 0;
+  int trgt_first_ = 0;
+  int trgt_second_ = 0;
+  int trgt_third_ = 0;
 #ifdef USE_ZMQ
   zmsg_t* msg_ = nullptr;
   zframe_t *frame_ = nullptr;

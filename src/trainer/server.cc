@@ -50,7 +50,7 @@ void Server::Run(){
       CHECK_STREQ("PONG", pong.c_str());
       delete msg;
     }else if(type==kPut){
-      int pid=msg->target_first();
+      int pid=msg->trgt_second();
       shared_ptr<Param> param=nullptr;
       if(shard_->find(pid)!=shard_->end()){
         LOG(ERROR)<<"Param ("<<pid<<") is put more than once";
@@ -61,16 +61,14 @@ void Server::Run(){
         param->set_id(pid);
         (*shard_)[pid]=param;
       }
-      param->HandlePutMsg(&msg);
+      HandlePut(param, &msg);
     }else{
-      int pid=msg->target_first();
+      int pid=msg->trgt_second();
       if(shard_->find(pid)==shard_->end()){
         // delay the processing by re-queue the msg.
         response=msg;
+        DLOG(ERROR)<<"Requeue msg";
       } else{
-        CHECK(shard_->find(pid)!=shard_->end()) <<"Param ("<<pid
-          <<") is not maintained by server ("
-          <<group_id_ <<", " <<server_id_<<")";
         auto param=shard_->at(pid);
         switch (type){
           case kGet:
@@ -80,7 +78,6 @@ void Server::Run(){
             response = HandleUpdate(param, &msg);
             break;
           case kSyncRequest:
-            VLOG(3)<<"Handle SYNC-REQUEST";
             response = HandleSyncRequest(param, &msg);
             break;
         }
@@ -93,25 +90,33 @@ void Server::Run(){
 }
 
 void Server::HandlePut(shared_ptr<Param> param, Msg **msg){
+  int version=(*msg)->trgt_third();
   param->HandlePutMsg(msg);
+  // must set version after HandlePutMsg which allocates the memory
+  param->set_version(version);
 }
 
 Msg* Server::HandleGet(shared_ptr<Param> param, Msg **msg){
-  return param->HandleGetMsg(msg);
+  if(param->version()<(*msg)->trgt_third())
+    return *msg;
+  else{
+    auto reply= param->HandleGetMsg(msg);
+    int paramid=reply->trgt_first(), slice=reply->trgt_second();
+    reply->set_trgt(paramid, slice, param->version());
+  }
 }
 
 Msg* Server::HandleUpdate(shared_ptr<Param> param, Msg **msg) {
-  //repsonse of the format: <identity><type: kData><paramId><param content>
   auto* tmp=static_cast<Msg*>((*msg)->CopyAddr());
   tmp->SwapAddr();
-  int paramid=(*msg)->target_first();
-  int sliceid=(*msg)->target_second();
-  int step=(*msg)->target_third();
+  int paramid=(*msg)->trgt_first();
+  int sliceid=(*msg)->trgt_second();
+  int step=(*msg)->trgt_third();
   bool copy=param->ParseUpdateMsg(msg);
   updater_->Update(step, param);
   param->set_version(param->version()+1);
   auto response=param->GenUpdateResponseMsg(copy);
-  response->set_target(paramid, sliceid, param->version());
+  response->set_trgt(paramid, sliceid, param->version());
   response->SetAddr(tmp);
   delete tmp;
   return response;

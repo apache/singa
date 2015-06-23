@@ -37,11 +37,11 @@ const std::unordered_map<int, vector<std::pair<int, int>>> SliceParams(int num,
     if(x->owner()==x->id())
       avg+=x->size();
   }
-  avg/=num;
+  avg=avg/num+avg%num;
   int diff=avg/10;
   LOG(INFO)<<"Slicer, param avg="<<avg<<", diff= "<<diff;
 
-  int capacity=avg, sliceid=0;
+  int capacity=avg, sliceid=0, nbox=0;
   std::unordered_map<int, vector<std::pair<int, int>>> paramid2slices;
   for(auto& param: params){
     if(param->id()!=param->owner())
@@ -50,20 +50,22 @@ const std::unordered_map<int, vector<std::pair<int, int>>> SliceParams(int num,
     LOG(INFO)<<"param id="<<paramid<<", total size="<<x;
     while(x>0){
       int size=0;
-      if(capacity>x){
+      if(capacity>=x){
         capacity-=x;
         size=x;
         x=0;
-      }else if(capacity+diff>x){
-        capacity=avg;
+      }else if(capacity+diff>=x){
         size=x;
         x=0;
-      }else if(capacity>diff){
+        capacity=0;
+      }else if(capacity>=diff){
         x-=capacity;
         size=capacity;
         capacity=avg;
+        nbox++;
       }else{
         capacity=avg;
+        nbox++;
       }
       if(size){
         paramid2slices[paramid].push_back(std::make_pair(sliceid++, size));
@@ -71,29 +73,42 @@ const std::unordered_map<int, vector<std::pair<int, int>>> SliceParams(int num,
       }
     }
   }
+  CHECK_LE(nbox, num);
   return paramid2slices;
 }
 const vector<int> PartitionSlice(int num, const vector<int>& slices){
   int avg=0;
   for(int x: slices)
     avg+=x;
-  avg/=num;
+  avg=avg/num+avg%num;
   int box=avg, boxid=0, diff=avg/10;
   vector<int> slice2box;
-  for(int x: slices){
+  for(auto it=slices.begin(); it!=slices.end();){
+    int x=*it;
     if(box>=x){
       box-=x;
       slice2box.push_back(boxid);
+      it++;
     }else if(box+diff>=x){
       slice2box.push_back(boxid);
-      box=avg;
-      boxid++;
+      it++;
+      box=0;
     }else{
       box=avg;
       boxid++;
     }
   }
-  CHECK_LE(boxid, num);
+//  CHECK_LT(slice2box.back(), num);
+  CHECK_EQ(slice2box.size(), slices.size());
+  int previd=slice2box[0];
+  std::string disp;
+  for(size_t i=0;i<slice2box.size();i++)
+    if(previd!=slice2box[i]){
+      disp+=", "+std::to_string(slices[i]);
+      previd=slice2box[i];
+    } else
+      disp+=" "+std::to_string(slices[i]);
+  LOG(INFO)<<"partition slice (av ="<<avg<<", num="<<num<<"):"<<disp;
   return slice2box;
 }
 vector<shared_ptr<Server>> Trainer::CreateServers(int nthreads,
@@ -298,7 +313,7 @@ void Trainer::Run(int nworkers, int nservers){
           }
         }else if(type==kMetric){
           if(msg->src_first()==0){
-            int step=msg->target_first();
+            int step=msg->trgt_first();
             string prefix((char*)msg->frame_data(), msg->frame_size());
             msg->next_frame();
             Metric cur;
@@ -308,7 +323,7 @@ void Trainer::Run(int nworkers, int nservers){
           DeleteMsg(&msg);
         }else if(cluster->nserver_groups()>0){
           int group_id;
-          int paramid=msg->target_first();
+          int paramid=msg->trgt_first();
           shared_ptr<ParamInfo> entry;
           switch (type){ // TODO process other requests, e.g. RESTful
             case kUpdate:
@@ -378,7 +393,7 @@ Msg* Trainer::HandleConnect(Msg** msg){
 const vector<Msg*> Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
   Msg* msgg=*msg;
   vector<Msg*> replies;
-  int version=msgg->target_second();
+  int version=msgg->trgt_third();
   if(msgg->src_flag()==kStub){
     if(version<=pi->shares.at(0)->version()){
       pi->shares.at(0)->HandleGetMsg(msg);
@@ -394,7 +409,7 @@ const vector<Msg*> Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
       int server=slice2server_[id+idx];
       int procs=Cluster::Get()->ProcsIDOf(group, server, kServer);
       auto x=param->GenGetMsg(procs!=procs_id_, idx);
-      x->set_target(param->owner(), id+idx, param->local_version()+1);
+      x->set_trgt(param->owner(), id+idx, param->local_version()+1);
       x->set_src(procs_id_, gid, kStub);
       x->set_dst(group, server, kServer);
       replies.push_back(x);
@@ -406,7 +421,7 @@ const vector<Msg*> Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
 const vector<Msg*> Trainer::HandleUpdate(shared_ptr<ParamInfo>pi, Msg** msg){
   Msg* msgg=*msg ;
   vector<Msg*> ret;
-  int step= msgg->target_second();
+  int step= msgg->trgt_third();
   if(msgg->src_flag()==kStub){
     if(pi->num_update<pi->num_local){
       ret.push_back(*msg);
@@ -448,7 +463,7 @@ const vector<Msg*> Trainer::HandleUpdate(shared_ptr<ParamInfo>pi, Msg** msg){
       int server=slice2server_[idx+id];
       int procs=Cluster::Get()->ProcsIDOf(group, server, kServer);
       auto x=param->GenUpdateMsg(procs!=procs_id_, idx);
-      x->set_target(param->owner(), id+idx, step);
+      x->set_trgt(param->owner(), id+idx, step);
       x->set_src(procs_id_, srcgid, kStub);
       x->set_dst(group, server, kServer);
       ret.push_back(x);
@@ -463,13 +478,14 @@ const vector<Msg*> Trainer::HandlePut(shared_ptr<ParamInfo>pi, Msg** msg){
   vector<Msg*> ret;
   CHECK_NE((*msg)->src_flag(), kStub);
   int gid=(*msg)->src_first();
+  int version=(*msg)->trgt_third();
   auto param=pi->shares.at(0);
   int group=gid/Cluster::Get()->nworker_groups_per_server_group();
   for(int idx=0, start=param->slice_start();idx<param->num_slices(); idx++){
     int server=slice2server_[start+idx];
     int procs=Cluster::Get()->ProcsIDOf(group, server, kServer);
     auto x=param->GenPutMsg(procs!=procs_id_, idx);
-    x->set_target(param->owner(), start+idx, param->version());
+    x->set_trgt(param->owner(), start+idx, version);
     x->set_src(procs_id_, gid, kStub);
     x->set_dst(group, server, kServer);
     ret.push_back(x);
@@ -479,8 +495,8 @@ const vector<Msg*> Trainer::HandlePut(shared_ptr<ParamInfo>pi, Msg** msg){
 }
 
 void Trainer::HandleGetResponse(shared_ptr<ParamInfo>pi, Msg** msg){
-  int version=(*msg)->target_third();
-  int sliceid=(*msg)->target_second();
+  int version=(*msg)->trgt_third();
+  int sliceid=(*msg)->trgt_second();
   auto param=pi->shares.at(0);
   if(param->ParseGetResponseMsg(msg,sliceid-param->slice_start()))
     param->set_version(version);
@@ -489,10 +505,11 @@ void Trainer::HandleGetResponse(shared_ptr<ParamInfo>pi, Msg** msg){
 
 
 void Trainer::HandleUpdateResponse(shared_ptr<ParamInfo> pi, Msg** msg){
-  int version=(*msg)->target_third();
-  int sliceid=(*msg)->target_second();
+  int sliceid=(*msg)->trgt_second();
+  int version=(*msg)->trgt_third();
   auto param=pi->shares.at(0);
-  if(param->ParseUpdateResponseMsg(msg,sliceid-param->slice_start()))
+  if(param->ParseUpdateResponseMsg(msg,sliceid-param->slice_start())){
     param->set_version(version);
+  }
 }
 } /* singa */

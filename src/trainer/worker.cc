@@ -103,7 +103,7 @@ int Worker::Put(shared_ptr<Param> param, int step){
   msg->set_src(group_id_, worker_id_, kWorkerParam);
   msg->set_dst(-1, -1, kStub);
   msg->set_type(kPut);
-  msg->set_target(param->owner(), step);
+  msg->set_trgt(param->owner(), 0, step);
   dealer_->Send(&msg);
   return 1;
 }
@@ -112,7 +112,7 @@ int Worker::Get(shared_ptr<Param> param, int step){
   msg->set_src(group_id_, worker_id_, kWorkerParam);
   msg->set_dst(-1, -1, kStub);
   msg->set_type(kGet);
-  msg->set_target(param->owner(), step);
+  msg->set_trgt(param->owner(), 0, step);
   dealer_->Send(&msg);
   return 1;
 }
@@ -126,7 +126,7 @@ int Worker::Update(shared_ptr<Param> param, int step){
     msg->set_src(group_id_, worker_id_, kWorkerParam);
     msg->set_dst(-1, -1, kStub);
     msg->set_type(kUpdate);
-    msg->set_target(param->owner(), step);
+    msg->set_trgt(param->owner(), 0, step);
     dealer_->Send(&msg);
   }
   return 1;
@@ -153,7 +153,7 @@ const void Worker::DisplayPerformance(const Metric & perf, const string& prefix)
   msg->set_src(group_id_, worker_id_, kWorkerParam);
   msg->set_dst(-1,-1, kStub);
   msg->set_type(kMetric);
-  msg->set_target(step_,0);
+  msg->set_trgt(step_,0,0);
   const string disp=perf.ToString();
   msg->add_frame(prefix.c_str(), prefix.length());
   msg->add_frame(disp.c_str(), disp.length());
