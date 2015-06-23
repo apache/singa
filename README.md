@@ -101,6 +101,7 @@ After the execution, czmq will be installed in /usr/local while zeromq is instal
 ### FAQ
 
 Q1:While compiling Singa and installing glog on max OS X, I get fatal error "'ext/slist' file not found"
+
 A1:You may install glog individually and try command :
 
 	$ make CFLAGS='-stdlib=libstdc++' CXXFLAGS='stdlib=libstdc++'
@@ -108,6 +109,7 @@ A1:You may install glog individually and try command :
 
 
 Q2:While compiling Singa, I get error "SSE2 instruction set not enabled"
+
 A2:You can try following command:
 	
 	$ make CFLAGS='-msse2' CXXFLAGS='-msse2'
@@ -115,7 +117,11 @@ A2:You can try following command:
 
 
 Q3:I get error "./configure --> cannot find blas_segmm() function" even I run "install.sh OpenBLAS".
-A3:Since OpenBLAS library is installed in /opt folder by default or /other/folder by your preference, you may edit your environment settings. For example, you can add its default installation directories to LD_LIBRARY_PATH, just run:
 
-	$ export $LD_LIBRARY_PATH=/opt
+A3:Since OpenBLAS library is installed in /opt folder by default or /other/folder by your preference, you may edit your environment settings. For example, you can add its default installation directories to LIBRARY_PATH, just run:
+
+	$ export LDFLAGS=-L/opt
+	
+Or as an alternative option, you can also edit LIBRARY_PATH to figure it out.
+
 #

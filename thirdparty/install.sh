@@ -97,12 +97,12 @@ function install_gflags()
 	if [ $# == 1 ]
 		then
 			echo "install gflags in $1"
-			cmake .. -DCMAKE_INSTALL_PREFIX=$1;
+			cmake .. -DCMAKE_INSTALL_PREFIX=$1 -DCMAKE_CXX_FLAGS=-fPIC;
 			make && make install;
 		elif [ $# == 0 ]
 		then 
 			echo "install gflags in default path";
-			cmake ..;
+			cmake .. -DCMAKE_CXX_FLAGS=-fPIC;
 			make && sudo make install;
 		else
 			echo "gflags is done";
