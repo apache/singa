@@ -1,16 +1,16 @@
-#ifndef INCLUDE_UTILS_SINGLETON_H_
-#define INCLUDE_UTILS_SINGLETON_H_
+#ifndef SINGA_UTILS_SINGLETON_H_
+#define SINGA_UTILS_SINGLETON_H_
+
 /**
-  * thread-safe implementation for C++11 according to
+  * Thread-safe implementation for C++11 according to
   * http://stackoverflow.com/questions/2576022/efficient-thread-safe-singleton-in-c
   */
 template<typename T>
 class Singleton {
  public:
-
   static T* Instance() {
-    static T* data_=new T();
-    return data_;
+    static T data_;
+    return &data_;
   }
 };
 
@@ -23,9 +23,9 @@ template<typename T>
 class TSingleton {
  public:
   static T* Instance(){
-    static thread_local T* data_=new T();
-    return data_;
+    static thread_local T data_;
+    return &data_;
   }
 };
 
-#endif // INCLUDE_UTILS_SINGLETON_H_
+#endif  // SINGA_UTILS_SINGLETON_H_

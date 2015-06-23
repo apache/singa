@@ -1,14 +1,17 @@
 #ifndef SINGA_COMMUNICATION_MSG_H_
 #define SINGA_COMMUNICATION_MSG_H_
 
-#include <czmq.h>
-#include <glog/logging.h>
-#include <algorithm>
+// TODO(wangwei): make it a compiler argument
+#define USE_ZMQ
+
 #include <string>
+#include <utility>
+
+#ifdef USE_ZMQ
+#include <czmq.h>
+#endif
 
 namespace singa {
-
-#define USE_ZMQ
 
 class Msg {
  public:
@@ -58,7 +61,6 @@ class Msg {
     src_ = msg->src_;
     dst_ = msg->dst_;
   }
-
   /**
    * Add a frame (a chunck of bytes) into the message
    */
