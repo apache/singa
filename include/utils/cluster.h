@@ -58,6 +58,7 @@ class Cluster {
    * @return global procs id, which starts from 0.
    */
   int procs_id()const {return procs_id_;}
+  void set_procs_id(int procs_id) {procs_id_ = procs_id;}
   bool server_worker_separate() const {
     return cluster_.server_worker_separate();
   }

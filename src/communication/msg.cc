@@ -7,9 +7,22 @@ Msg::Msg() {
   msg_ = zmsg_new();
 }
 
+Msg::Msg(const Msg& msg){
+  src_=msg.src_;
+  dst_=msg.dst_;
+  type_=msg.type_;
+  target_first_=msg.target_first_;
+  target_second_=msg.target_second_;
+  msg_=zmsg_dup(msg.msg_);
+}
+
 Msg::~Msg() {
   if (msg_ != nullptr)
     zmsg_destroy(&msg_);
+}
+
+int Msg::size() const{
+  return zmsg_content_size(msg_);
 }
 
 void Msg::add_frame(const void* addr, int nBytes) {

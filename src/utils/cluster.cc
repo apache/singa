@@ -63,6 +63,7 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
 
 void Cluster::Register(const string& endpoint){
   procs_id_=cluster_rt_->RegistProc(endpoint);
+  LOG(ERROR)<<endpoint;
   CHECK_GE(procs_id_,0);
   CHECK_LT(procs_id_,nprocs());
 }

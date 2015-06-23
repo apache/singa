@@ -76,7 +76,7 @@ void Server::Run(){
           if(i!=group_id_) {
             Msg* tmp=sync;
             if(i<cluster->nserver_groups()-1)
-              tmp= new Msg(sync);
+              tmp= new Msg(*sync);
             tmp->set_dst(i, server_locator_->at(param), kServer);
             tmp->set_src(group_id_, server_id_, kServer);
             dealer_->Send(&tmp);
