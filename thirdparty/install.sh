@@ -210,8 +210,8 @@ function install_openblas()
 			fi
 		elif [ $# == 0 ]
 		then
-			cho "install OpenBLAS in /usr/local/" 
-			sudo make PREFIX=/usr/local install;
+			echo "install OpenBLAS in default path" 
+			sudo make install;
 			if [ $? -ne 0 ]
 			then
 				cd ..;

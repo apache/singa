@@ -112,3 +112,10 @@ A2:You can try following command:
 	
 	$ make CFLAGS='-msse2' CXXFLAGS='-msse2'
 #
+
+
+Q3:I get error "./configure --> cannot find blas_segmm() function" even I run "install.sh OpenBLAS".
+A3:Since OpenBLAS library is installed in /opt folder by default or /other/folder by your preference, you may edit your environment settings. For example, you can add its default installation directories to LD_LIBRARY_PATH, just run:
+
+	$ export $LD_LIBRARY_PATH=/opt
+#
