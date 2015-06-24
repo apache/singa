@@ -31,7 +31,9 @@ void HandleWorkerFinish(void * ctx){
 
 const std::unordered_map<int, vector<std::pair<int, int>>> SliceParams(int num,
     const vector<shared_ptr<Param>>& params){
-  CHECK_GT(num,0);
+  std::unordered_map<int, vector<std::pair<int, int>>> paramid2slices;
+  if (num==0)
+    return paramid2slices;
   vector<int> param_size;
   int avg=0;
   for(const auto& x:params){
@@ -43,7 +45,6 @@ const std::unordered_map<int, vector<std::pair<int, int>>> SliceParams(int num,
   LOG(INFO)<<"Slicer, param avg="<<avg<<", diff= "<<diff;
 
   int capacity=avg, sliceid=0, nbox=0;
-  std::unordered_map<int, vector<std::pair<int, int>>> paramid2slices;
   for(auto& param: params){
     if(param->id()!=param->owner())
       continue;
@@ -115,7 +116,7 @@ const vector<int> PartitionSlice(int num, const vector<int>& slices){
 vector<shared_ptr<Server>> Trainer::CreateServers(int nthreads,
     const ModelProto & mproto,
     const vector<int> slices,
-    vector<HandleContext>* ctx){
+    vector<HandleContext*>* ctx){
   auto cluster=Cluster::Get();
   vector<shared_ptr<Server>> servers;
   if(!cluster->has_server())
@@ -137,10 +138,10 @@ vector<shared_ptr<Server>> Trainer::CreateServers(int nthreads,
       auto server=make_shared<Server>(nthreads++, gid, sid);
       server->Setup(mproto.updater(), server_shard_, slice2group);
       servers.push_back(server);
-      HandleContext hc{dealer, gid, sid};
+      auto *hc=new HandleContext{dealer, gid, sid};
       ctx->push_back(hc);
-      CHECK(cluster->runtime()->sWatchSGroup(gid, sid, HandleWorkerFinish,
-            &(ctx->back())));
+      CHECK(cluster->runtime()->WatchSGroup(gid, sid, HandleWorkerFinish,
+            ctx->back()));
     }
   }
   return servers;
@@ -174,12 +175,12 @@ vector<shared_ptr<Worker>> Trainer::CreateWorkers(int nthreads,
   auto net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
       cluster->nworkers_per_group());
   int lcm=LeastCommonMultiple(cluster->nserver_groups(), cluster->nservers_per_group());
-  auto paramid2slices=SliceParams(lcm, net->params()); // sliceid, size
-  for(auto param: net->params()){
-    if(param->id()==param->owner())
-      for(auto entry: paramid2slices[param->id()])
-        slice_size->push_back(entry.second);
-  }
+    auto paramid2slices=SliceParams(lcm, net->params()); // sliceid, size
+    for(auto param: net->params()){
+      if(param->id()==param->owner())
+        for(auto entry: paramid2slices[param->id()])
+          slice_size->push_back(entry.second);
+    }
 
   for(int gid=gstart;gid<gend;gid++){
     shared_ptr<NeuralNet> train_net, test_net, validation_net;
@@ -257,10 +258,11 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
   // create workers
   vector<int> slices;
   vector<shared_ptr<Worker>> workers=CreateWorkers(nthreads, mproto, &slices);
-  slice2server_=PartitionSlice(cluster->nservers_per_group(), slices);
+  if(cluster->nserver_groups()&&cluster->nservers_per_group())
+    slice2server_=PartitionSlice(cluster->nservers_per_group(), slices);
   nthreads+=workers.size();
   // create servers
-  vector<HandleContext> ctx;
+  vector<HandleContext*> ctx;
   vector<shared_ptr<Server>> servers=CreateServers(nthreads, mproto, slices,
       &ctx);
 

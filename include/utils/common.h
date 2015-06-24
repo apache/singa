@@ -9,6 +9,9 @@
 
 namespace singa {
 
+std::string IntVecToString(const std::vector<int>& vec) ;
+std::string VStringPrintf(std::string fmt, va_list l) ;
+std::string StringPrintf(std::string fmt, ...) ;
 void ReadProtoFromTextFile(const char* filename,
                            google::protobuf::Message* proto);
 void WriteProtoToTextFile(const google::protobuf::Message& proto,
@@ -17,13 +20,7 @@ void ReadProtoFromBinaryFile(const char* filename,
                              google::protobuf::Message* proto);
 void WriteProtoToBinaryFile(const google::protobuf::Message& proto,
                             const char* filename);
-std::string IntVecToString(const std::vector<int>& vec);
-std::string StringPrintf(std::string fmt, ...);
-inline float rand_real() {
-  return static_cast<float>(rand()) / (RAND_MAX + 1.0f);
-}
 
-<<<<<<< HEAD
 /*
 inline void Sleep(int millisec=1){
   std::this_thread::sleep_for(std::chrono::milliseconds(millisec));

@@ -18,6 +18,41 @@ using google::protobuf::io::ZeroCopyInputStream;
 using google::protobuf::Message;
 
 const int kBufLen = 1024;
+std::string IntVecToString(const vector<int>& vec) {
+  string disp="(";
+  for(int x: vec)
+    disp+=std::to_string(x)+", ";
+  return disp+")";
+}
+/**
+ *  * Formatted string.
+ *   */
+string VStringPrintf(string fmt, va_list l) {
+  char buffer[32768];
+  vsnprintf(buffer, 32768, fmt.c_str(), l);
+  return string(buffer);
+}
+
+/**
+ *  * Formatted string.
+ *   */
+string StringPrintf(string fmt, ...) {
+  va_list l;
+  va_start(l, fmt); //fmt.AsString().c_str());
+  string result = VStringPrintf(fmt, l);
+  va_end(l);
+  return result;
+}
+
+void Debug() {
+  int i = 0;
+  char hostname[256];
+  gethostname(hostname, sizeof(hostname));
+  printf("PID %d on %s ready for attach\n", getpid(), hostname);
+  fflush(stdout);
+  while (0 == i)
+    sleep(5);
+}
 
 // the proto related functions are from Caffe.
 void ReadProtoFromTextFile(const char* filename, Message* proto) {

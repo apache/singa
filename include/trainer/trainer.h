@@ -97,7 +97,7 @@ class Trainer{
  protected:
 
   vector<shared_ptr<Server>> CreateServers(int nthread, const ModelProto& mproto,
-      const vector<int> slices, vector<HandleContext>* ctx);
+      const vector<int> slices, vector<HandleContext*>* ctx);
   vector<shared_ptr<Worker>> CreateWorkers(int nthread,
       const ModelProto& mproto, vector<int> *slice_size);
 

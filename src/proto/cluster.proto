@@ -47,26 +47,3 @@ message ServerTopology {
   // neighbor group id
 	repeated int32 neighbor = 3;
 }
-enum MsgType{
-  kGet=0;
-  kPut=1;
-  kSync=2;
-  kUpdate=3;
-  kSyncRequest=4;
-  kSyncResponse=5;
-  kStop=6;
-  kData=7;
-  kRGet=8;
-  kRUpdate=9;
-  kConnect=10;
-  kMetric=11;
-};
-
-enum EntityType{
-  kWorkerParam=0;
-  kWorkerLayer=1;
-  kServer=2;
-  kStub=3;
-  kRuntime=4;
-};
-

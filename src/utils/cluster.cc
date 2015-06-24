@@ -3,6 +3,7 @@
 #include <fstream>
 #include "utils/cluster.h"
 #include "proto/cluster.pb.h"
+#include "proto/common.pb.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 namespace singa {
