@@ -171,7 +171,7 @@ void ZKClusterRT::ChildChanges(zhandle_t *zh, int type, int state,
 bool ZKClusterRT::CreateZKNode(const char* path, const char* val, int flag,
                                char* output) {
   char buf[kMaxBufLen];
-  int ret;
+  int ret = 0;
   // send the zk request
   for (int i = 0; i < kNumRetry; ++i) {
     ret = zoo_create(zkhandle_, path, val, val == nullptr ? -1 : strlen(val),

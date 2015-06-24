@@ -21,7 +21,8 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
   if(nprocs_>1){
     std::ifstream ifs(cluster.hostfile(), std::ifstream::in);
     std::string line;
-    while(std::getline(ifs, line)&&endpoints_.size()<nprocs_){
+    while(std::getline(ifs, line)
+        &&endpoints_.size()<static_cast<size_t>(nprocs_)){
       endpoints_.push_back(line);
     }
     CHECK_EQ(endpoints_.size(), nprocs_);
@@ -29,7 +30,7 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
 
   // locate the process id of every worker/server
   int ngrps=cluster_.nworker_groups(), grp_size=cluster_.nworkers_per_group();
-  int procs;
+  int procs=0;
   for(int i=0;i<ngrps;i++){
     for(int j=0;j<grp_size;j++){
       procs=(i*grp_size+j) / cluster_.nworkers_per_procs();
@@ -37,8 +38,8 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
       procs_ids_[Hash(i,j,kWorkerParam)]=procs;
     }
   }
-  ngrps=cluster_.nserver_groups(), grp_size=cluster_.nservers_per_group();
   int offset=cluster_.server_worker_separate()? procs:0;
+  ngrps=cluster_.nserver_groups(), grp_size=cluster_.nservers_per_group();
   for(int i=0;i<ngrps;i++){
     for(int j=0;j<grp_size;j++){
       procs_ids_[Hash(i,j,kServer)]=(i*grp_size+j) / cluster_.nservers_per_procs()+offset;

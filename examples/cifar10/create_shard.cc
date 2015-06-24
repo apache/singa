@@ -19,6 +19,7 @@
 #include "utils/data_shard.h"
 #include "utils/common.h"
 #include "proto/model.pb.h"
+#include "proto/common.pb.h"
 
 using std::string;
 

@@ -103,6 +103,7 @@ Msg* Server::HandleGet(shared_ptr<Param> param, Msg **msg){
     auto reply= param->HandleGetMsg(msg);
     int paramid=reply->trgt_first(), slice=reply->trgt_second();
     reply->set_trgt(paramid, slice, param->version());
+    return reply;
   }
 }
 
