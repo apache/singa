@@ -183,7 +183,7 @@ bool ZKClusterRT::CreateZKNode(const char* path, const char* val, int flag,
   }
   // copy the node name ot output
   if (output != nullptr && (ret == ZOK || ret == ZNODEEXISTS)) {
-    snprintf(output, strlen(buf), "%s", buf);
+    strcpy(output, buf);
   }
   if (ret == ZOK) {
     LOG(INFO) << "created zookeeper node " << buf
