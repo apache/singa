@@ -26,7 +26,7 @@ class Factory {
   /**
    * Register functions to create user defined classes.
    * This function is called by the REGISTER_FACTORY macro.
-   * 
+   *
    * @param id Identifier of the creating function/class
    * @param func a function that creates a layer instance
    */
@@ -37,19 +37,43 @@ class Factory {
     str2func_[id] = func;
   }
   /**
-   * create a layer instance by providing its type
-   * 
-   * @param id The identifier of the layer to be created
+   * Register functions to create user defined classes.
+   * This function is called by the REGISTER_FACTORY macro.
+   *
+   * @param id Identifier of the creating function/class
+   * @param func a function that creates a layer instance
+   */
+  inline void Register(int id,
+                       const std::function<T*(void)>& func) {
+    CHECK(id2func_.find(id) == id2func_.end())
+      << "The id has been registered by another function";
+    id2func_[id] = func;
+  }
+
+  /**
+   * create an instance by providing its id
+   *
+   * @param id
    */
   inline T* Create(const std::string& id) {
     CHECK(str2func_.find(id) != str2func_.end())
       << "The creation function for " << id << " has not been registered";
     return str2func_[id]();
   }
-
+  /**
+   * create an instance by providing its id
+   *
+   * @param id
+   */
+  inline T* Create(int id) {
+    CHECK(id2func_.find(id) != id2func_.end())
+      << "The creation function for " << id << " has not been registered";
+    return id2func_[id]();
+  }
  private:
   // Map that stores the registered creation functions
   std::map<std::string, std::function<T*(void)>> str2func_;
+  std::map<int, std::function<T*(void)>> id2func_;
 };
 
 #endif  // SINGA_UTILS_FACTORY_H_

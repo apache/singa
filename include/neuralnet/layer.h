@@ -168,7 +168,7 @@ class LRNLayer: public Layer {
   Blob<float> norm_;
 };
 
-class MnistImageLayer: public ParserLayer {
+class MnistLayer: public ParserLayer {
  public:
   using Layer::Setup;
 
@@ -290,6 +290,9 @@ class ShardDataLayer: public DataLayer{
   virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){};
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
+  virtual int batchsize() const {
+    return layer_proto_.sharddata_conf().batchsize();
+  }
  private:
   shared_ptr<DataShard> shard_;
 };
@@ -304,7 +307,9 @@ class LMDBDataLayer: public DataLayer{
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
   void ConvertDatumToSingleLableImageRecord(const Datum& datum,
     SingleLabelImageRecord* record);
-
+  virtual int batchsize() const {
+    return layer_proto_.lmdbdata_conf().batchsize();
+  }
  private:
   MDB_env* mdb_env_;
   MDB_dbi mdb_dbi_;

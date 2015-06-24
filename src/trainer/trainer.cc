@@ -3,6 +3,7 @@
 #include <map>
 #include <queue>
 #include <glog/logging.h>
+#include "proto/common.pb.h"
 #include "trainer/trainer.h"
 #include "mshadow/tensor.h"
 using std::vector;
@@ -276,6 +277,8 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
   Run(workers.size(), servers.size());
   for(auto& thread: threads)
     thread.join();
+  for(auto x: ctx)
+    delete x;
 }
 
 void Trainer::Run(int nworkers, int nservers){

@@ -73,7 +73,7 @@ void BridgeDstLayer::SetupAfterPartition(){
 /************* Implementation for ConcateLayer ***********/
 void ConcateLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
-  size_t concate_dim=proto.concate_param().concate_dimension();
+  size_t concate_dim=proto.concate_conf().concate_dimension();
   CHECK_GE(concate_dim,0);
   CHECK_GT(srclayers.size(),1);
   vector<int> shape=srclayers[0]->data(this).shape();
@@ -131,9 +131,10 @@ void PrefetchLayer::ComputeFeature(Phase phase,
 void PrefetchLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
   Factory<Layer>* factory=Singleton<Factory<Layer>>::Instance();
-  CHECK_GE(proto.sublayers_size(), 1);
+  const auto& sublayers=proto.prefetch_conf().sublayers();
+  CHECK_GE(sublayers.size(), 1);
   map<string, SLayer> layers;
-  for(auto const &p:proto.sublayers()){
+  for(auto const &p:sublayers){
     auto layer=shared_ptr<Layer>(factory->Create(p.type()));
     layer->Init(p);
     sublayers_.push_back(layer);
@@ -141,7 +142,7 @@ void PrefetchLayer::Setup(const LayerProto& proto,
   }
   // TODO topology sort layers
   auto layer=sublayers_.begin();
-  for(auto const &p:proto.sublayers()){
+  for(auto const &p:sublayers){
     std::vector<SLayer> src;
     for(auto const &srcname: p.srclayers()){
       src.push_back(layers[srcname]);
@@ -180,8 +181,8 @@ PrefetchLayer::~PrefetchLayer(){
 /************* Implementation for SliceLayer****************/
 void SliceLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
-  slice_dim_=proto.slice_param().slice_dimension();
-  slice_num_=proto.slice_param().slice_num();
+  slice_dim_=proto.slice_conf().slice_dimension();
+  slice_num_=proto.slice_conf().slice_num();
   CHECK_GE(slice_dim_,0);
   CHECK_EQ(slice_num_, dstlayers_.size());
   data_.Reshape(srclayers[0]->data(this).shape());

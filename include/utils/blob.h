@@ -43,7 +43,7 @@
 #include <memory>
 #include <vector>
 #include <glog/logging.h>
-#include "proto/model.pb.h"
+#include "proto/common.pb.h"
 using std::shared_ptr;
 using std::vector;
 

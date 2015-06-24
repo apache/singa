@@ -3,76 +3,68 @@ enum Phase {
   kTrain = 0;
   kValidation = 1;
   kTest= 2;
+  // postivie phase for contrastive divergence algorithm
   kPositive = 3;
+  // negative phase for contrastive divergence algorithm
   kNegative = 4;
 }
 
-enum ShareOption {
-  kValueOnly = 0;
-  kWhole = 1;
-};
-message ModelProto{
+message ModelProto {
+  // model name, e.g., "cifar10-dcnn", "mnist-mlp"
   required string name = 1;
-  // start display after this num steps
-  optional int32 display_after_steps = 6 [default = 0];
-  // frequency of display
-  optional int32 display_frequency = 7 [default = 0];
-
-  // start validation after this num steps
-  optional int32 validation_after_steps = 10 [default = 0];
-  // frequency of validation
-  optional int32 validation_frequency = 11 [default = 0];
-
-  // start test after this num steps
-  optional int32 test_after_steps = 13 [default = 0];
-  // frequency of test
-  optional int32 test_frequency = 14 [default = 0];
-  optional int32 checkpoint_after_steps = 15 [default = 0];
-  // frequency of test
-  optional int32 checkpoint_frequency = 16 [default = 0];
-  optional bool prefetch=18[default = true];
+  // frequency of displaying training info
+  required int32 display_frequency = 3 ;
   // total num of steps for training
-  required int32 train_steps = 20;
-  // total num of steps for validation
-  optional int32 validation_steps=21 [default=0];
-  // total num of steps for test
-  optional int32 test_steps=22 [default=0];
-  // last snapshot step
-  optional int32 step=29;
-
-  required UpdaterProto updater=31;
-  // There are two basic algorithms for calculating gradients.
-  // Different deep learning models use different algorithms.
+  required int32 train_steps = 5;
+  // configuration of SGD updater, including learning rate, etc.
+  required UpdaterProto updater = 7;
   enum GradCalcAlg {
+    // BP algorithm for feed-forward models, e.g., CNN, MLP, RNN
     kBackPropagation = 1;
+    // CD algorithm for RBM, DBM etc., models
     kContrastiveDivergence = 2;
   }
-  required GradCalcAlg alg= 32 [default = kBackPropagation];
-  required NetProto neuralnet = 40;
-  optional bool debug=41 [default=false];
-  optional int32 warmup_steps=50 [default=0];
+ // gradient calculation algorithm
+  required GradCalcAlg alg = 8 [default = kBackPropagation];
+  required NetProto neuralnet = 9;
+
+  // total num of steps for validation
+  optional int32 validation_steps = 30 [default = 0];
+  // total num of steps for test
+  optional int32 test_steps = 31 [default = 0];
+  // frequency of validation
+  optional int32 validation_frequency = 32;
+  // frequency of test
+  optional int32 test_frequency = 33 [default = 0];
+  // frequency of checkpoint
+  optional int32 checkpoint_frequency = 34 [default = 0];
+  // send parameters to servers after training for this num of steps
+  optional int32 warmup_steps = 35 [default = 0];
+
+   // start display after this num steps
+  optional int32 display_after_steps =  60[default = 0];
+  // start checkpoint after this num steps
+  optional int32 checkpoint_after_steps = 61 [default = 0];
+  // start test after this num steps
+  optional int32 test_after_steps = 62 [default = 0];
+// start validation after this num steps
+  optional int32 validation_after_steps = 63 [default = 0];
+  // last snapshot step
+  optional int32 step = 64 [default = 0];
+  // display debug info
+  optional bool debug = 65 [default = false];
 }
 
 message NetProto {
   repeated LayerProto layer = 1;
+  // partitioning type for parallelism
   optional PartitionType partition_type = 3 [default = kNone];
 }
 
+// weight matrix should be defined before bias vector
 message ParamProto {
-  // for the program to identify it and share among layers.
-  // e.g., "conv1_weight","fc_bias"
-  required string name = 1;
-  optional int32 id=2;
-  // in most situations, user do not need to config this,
-  // the program will calculate it
-  repeated int32 shape = 3;
-  // split the parameter into multiple sub params for serialzation and
-  // transferring (Google Protobuf has size limit)
-  optional int32 split_threshold = 4 [default = 5000000];
-  // partition dimension, -1 for no partition
-  optional int32 partition_dim = 5 [default = -1];
-  optional int32 owner = 6;
   enum InitMethod {
+    // fix the values of all parameters  a constant in the value field
     kConstant = 0;
     // sample gaussian with std and mean
     kGaussian = 1;
@@ -87,31 +79,38 @@ message ParamProto {
     // a=sqrt(3)/sqrt(fan_in), range is [-a, +a]; no need to set value=sqrt(3),
     // the program will multiply it.
     kUniformSqrtFanIn = 5;
-    // from Theano MLP tutorial, let a=1/sqrt(fan_in+fan_out). for tanh
-    // activation, range is [-6a, +6a], for sigmoid activation, range is
-    // [-24a, +24a], put the scale factor to value field.
+    // from Theano MLP tutorial, let a=sqrt(6/(fan_in+fan_out)). for tanh
+    // activation, range is [-a, +a], for sigmoid activation, range is
+    // [-4a, +4a], put the scale factor to value field.
     // <a href="http://deeplearning.net/tutorial/mlp.html"> Theano MLP</a>
     kUniformSqrtFanInOut = 6;
   }
-  optional InitMethod init_method = 7 [default = kConstant];
+  required InitMethod init_method = 1 [default = kGaussian];
   // constant init
-  optional float value = 8 [default = 1];
+  optional float value = 5 [default = 1];
   // for uniform sampling
-  optional float low = 9 [default = -1];
-  optional float high = 10 [default = 1];
+  optional float low = 6 [default = -1];
+  optional float high = 7 [default = 1];
   // for gaussian sampling
-  optional float mean = 11 [default = 0];
-  optional float std = 12 [default = 1];
+  optional float mean = 8 [default = 0];
+  optional float std = 9 [default = 1];
   // multiplied on the global learning rate.
-  optional float learning_rate_multiplier = 13 [default = 1];
+  optional float learning_rate_multiplier = 15 [default = 1];
   // multiplied on the global weight decay.
-  optional float weight_decay_multiplier = 14 [default = 1];
-}
+  optional float weight_decay_multiplier = 16 [default = 1];
+  // partition dimension, -1 for no partition
+  optional int32 partition_dim = 30 [default = -1];
+  // usually, the program will infer the param shape
+  repeated int32 shape = 31;
 
-message BlobProtos {
-  repeated BlobProto blobs = 1;
-  repeated int32 ids = 2;
-  repeated string names = 3;
+  // used for identifying the same params from diff models and display deug info
+  optional string name =  61 [default = "param"];
+  // used interally
+  optional int32 id = 62;
+  // parameter slice limit (Google Protobuf also has size limit)
+  optional int32 split_threshold = 63 [default = 5000000];
+  // used internally
+  optional int32 owner = 64 [default = -1];
 }
 
 enum PartitionType{
@@ -120,159 +119,212 @@ enum PartitionType{
   kNone=2;
 }
 
-enum ConnectionType{
-  kOneToOne=0;
-  kOneToAll=1;
-}
-
 message LayerProto {
-  required string name = 1; // the layer name
-  required string type = 2; // the layer type from the enum above
-  repeated string srclayers=3;
-  optional int32 locationid=4 [default=0]; // todo make locationID an array
-  optional int32 partitionid=5 [default=0];
-  optional PartitionType partition_type=6 [default=kNone];
-  optional string datablob=7;
-  // can be pos/neg neuron value for CD, neuron value/grad for BP
-  //repeated DAryProto ary = 10;
-  repeated string share_ary = 11;
+  // the layer name used for identification
+  required string name = 1;
+  enum LayerType{
+    kBridgeSrc = 15;
+    kBridgeDst = 16;
+    kConvolution = 1;
+    kConcate = 2;
+    kShardData = 3;
+    kDropout = 4;
+    kInnerProduct = 5;
+    kLabel = 18;
+    kLMDBData = 17;
+    kLRN = 6;
+    kMnist = 7;
+    kPooling = 8;
+    kPrefetch = 19;
+    kReLU = 9;
+    kRGBImage = 10;
+    kSoftmaxLoss = 11;
+    kSlice = 12;
+    kSplit = 13;
+    kTanh = 14;
+  }
+  // source layer names
+  repeated string srclayers = 3;
   // parameters, e.g., weight matrix or bias vector
   repeated ParamProto param = 12;
+  // all layers are included in the net structure for training phase by default.
+  // some layers like data layer for loading test data are not used by training
+  // phase should be removed by setting the exclude field.
+  repeated Phase exclude = 15;
+  // the layer type from the enum above
+  required LayerType type = 20;
+  // configuration for convolution layer
+  optional ConvolutionProto convolution_conf = 30;
+  // configuration for concatenation layer
+  optional ConcateProto concate_conf = 31;
+  // configuration for dropout layer
+  optional DropoutProto dropout_conf = 33;
+  // configuration for inner product layer
+  optional InnerProductProto innerproduct_conf = 34;
+  // configuration for local response normalization layer
+  optional DataProto lmdbdata_conf = 35;
+  // configuration for local response normalization layer
+  optional LRNProto lrn_conf = 45;
+  // configuration for mnist parser layer
+  optional MnistProto mnist_conf= 36;
+  // configuration for pooling layer
+  optional PoolingProto pooling_conf = 37;
+  // configuration for prefetch layer
+  optional PrefetchProto prefetch_conf = 44;
+  // configuration for rectified linear unit layer
+  optional ReLUProto relu_conf = 38;
+  // configuration for rgb image parser layer
+  optional RGBImageProto rgbimage_conf = 39;
+  // configuration for data layer
+  optional DataProto sharddata_conf = 32;
+ // configuration for slice layer
+  optional SliceProto slice_conf = 41;
+  // configuration for softmax loss layer
+  optional SoftmaxLossProto softmaxloss_conf = 40;
+  // configuration for split layer
+  optional SplitProto split_conf = 42;
+  // configuration for tanh layer
+  optional TanhProto tanh_conf = 43;
+  // partition type which overrides the partition type for neural net
+  optional PartitionType partition_type = 59;
+  optional string datablob = 58 [default = "unknow"];
+
   // names of parameters shared from other layers
-  repeated string share_param = 13;
-  // All layers are included in the net structure for training phase by default.
-  // Layers, e.g., computing performance metrics for test phase, can be excluded
-  // by this field which defines in which phase this layer should be excluded.
-  repeated Phase exclude = 20;
-  // hyper-parameters for layers
-  optional ConvolutionProto convolution_param = 21;
-  optional ConcateProto concate_param = 31;
-  optional DataProto data_param = 22;
-  optional DropoutProto dropout_param = 23;
-  optional InnerProductProto inner_product_param = 24;
-  optional LRNProto lrn_param = 25;
-  optional MnistProto mnist_param= 26;
-  optional PoolingProto pooling_param = 27;
-  optional ReLUProto relu_param = 28;
-  optional SoftmaxLossProto softmaxloss_param = 29;
-  optional TanhProto tanh_param = 30;
-  optional SliceProto slice_param = 32;
-  optional SplitProto split_param = 33;
-  optional RGBImage rgbimage_param = 34;
-  repeated LayerProto sublayers = 35;
+  repeated string share_param = 60;
+  // TODO(wangwei): make location ID an array
+  optional int32 locationid = 61 [default = 0];
+  optional int32 partitionid = 62 [default = 0];
 }
 
-message RGBImage {
-  optional float scale=1 [default=1.0];
-  optional int32 cropsize=2 [default=0];
-  optional bool mirror=3 [default=false];
-  optional string meanfile=4 [default=""];
+message RGBImageProto {
+  // scale factor for each pixel
+  optional float scale = 1 [default = 1.0];
+  // size after cropping
+  optional int32 cropsize = 2 [default = 0];
+  // mirror the image
+  optional bool mirror = 3 [default = false];
+  // meanfile path
+  optional string meanfile = 4 [default = ""];
 }
-message SplitProto{
-  required int32 num_splits=1;
+
+message PrefetchProto{
+  repeated LayerProto sublayers = 1;
+}
+
+message SplitProto {
+  optional int32 num_splits = 1 [default =1];
 }
 
 // scaled tan: A*tan(B*x)
 message TanhProto {
+  // A of A*tan(B*x)
   optional float outer_scale = 1 [default = 1.0];
+  // B of A*tan(B*x)
   optional float inner_scale = 2 [default = 1.0];
 }
 
-// Message that stores parameters used by SoftmaxLossProto
 message SoftmaxLossProto {
-  // accuracy is not comptued by default, unless topk>0;
-  // When computing accuracy, count as correct by comparing the true label to
-  // the top k scoring classes.
+  // computing accuracy against topk results
   optional int32 topk = 1 [default = 1];
-  optional float scale= 2 [default = 1];
+  // loss scale factor
+  optional float scale= 30 [default = 1];
 }
 
-// Message that stores parameters used by ConvolutionLayer
 message ConvolutionProto {
-  required uint32 num_filters = 1; // The number of outputs for the layer
-  optional bool bias_term = 2 [default = true]; // whether to have bias terms
-  // Pad, kernel size, and stride are all given as a single value for equal
-  // dimensions in height and width or as Y, X pairs.
-  // The padding size (equal in Y, X)
-  optional uint32 pad = 3 [default = 0];
-  // The stride (equal in Y, X)
-  optional uint32 stride = 4 [default = 1];
-  // The kernel height/width
-  required uint32 kernel= 5;
+  // The number of outputs for the layer
+  required int32 num_filters = 1;
+  // the kernel height/width
+  required int32 kernel= 2;
+
+  // The padding height/width
+  optional int32 pad = 30 [default = 0];
+  // the stride
+  optional int32 stride = 31 [default = 1];
+  // whether to have bias terms
+  optional bool bias_term = 32 [default = true];
 }
 
-message ConcateProto{
-  required int32 concate_dimension=1;
-  required int32 concate_num=2;
+message ConcateProto {
+  // on which dimension, starts from 0
+  required int32 concate_dimension = 1;
+  // concatenate offset
+  optional int32 concate_num = 30;
 }
 
-// Message that stores parameters used by DataLayer
 message DataProto {
-  // path to the data file/folder, absolute or relative to the
-  // ClusterProto::workspace
-  required string path=2;
-  // Specify the batch size.
-  required uint32 batchsize = 4;
+  // path to the data file/folder, absolute or relative to the workspace
+  required string path = 2;
+  // batch size.
+  required int32 batchsize = 4;
   // skip [0,random_skip] records
-  optional uint32 random_skip = 5 [default = 0];
+  optional int32 random_skip = 30 [default = 0];
 }
 
 message MnistProto {
+  // normalization x/norm_a
+  required float norm_a = 1 [default = 1];
+  // normalization x-norm_b
+  required float norm_b = 2 [default = 0];
+
   // elastic distortion
-  optional int32 kernel = 1 [default = 0];
-  optional float sigma = 2 [default = 0];
-  optional float alpha = 3 [default = 0];
+  optional int32 kernel = 30 [default = 0];
+  optional float sigma = 31 [default = 0];
+  optional float alpha = 32 [default = 0];
   // rotation or horizontal shearing
-  optional float beta = 4 [default = 0];
+  optional float beta = 33 [default = 0];
   // scaling
-  optional float gamma = 5 [default = 0];
+  optional float gamma = 34 [default = 0];
   // scale to this size as input for deformation
-  optional int32 resize = 6 [default = 0] ;
-  optional int32 elastic_freq = 7 [default = 0];
-  optional float norm_a = 8 [default = 1];
-  optional float norm_b = 9 [default = 0];
+  optional int32 resize = 35 [default = 0] ;
+  optional int32 elastic_freq = 36 [default = 0];
 }
 
 // Message that stores parameters used by DropoutLayer
 message DropoutProto {
-  optional float dropout_ratio = 1 [default = 0.5]; // dropout ratio
+  // dropout ratio
+  optional float dropout_ratio = 30 [default = 0.5];
 }
 
 // Message that stores parameters used by InnerProductLayer
 message InnerProductProto {
-  required uint32 num_output = 1; // The number of outputs for the layer
-  optional bool bias_term = 2 [default = true]; // whether to have bias terms
+  // number of outputs for the layer
+  required int32 num_output = 1;
+  // use bias vector or not
+  optional bool bias_term = 30 [default = true];
 }
 
-// Message that stores parameters used by LRNLayer
 message LRNProto {
-  optional int32 local_size = 1 [default = 5];
-  optional float alpha = 2 [default = 1.];
-  optional float beta = 3 [default = 0.75];
+  // local response size
+  required int32 local_size = 1 [default = 5];
+  // scale factor
+  optional float alpha = 31 [default = 1.0];
+  // exponential number
+  optional float beta = 32 [default = 0.75];
   enum NormRegion {
+    // across channels, e.g., r,g,b
     ACROSS_CHANNELS = 0;
+    // within channel, e.g., r, g and b are concatenated into one channel
     WITHIN_CHANNEL = 1;
   }
-  optional NormRegion norm_region = 4 [default = ACROSS_CHANNELS];
-  optional float knorm =5 [default = 1.0];
+  // normalization objective
+  optional NormRegion norm_region = 33 [default = ACROSS_CHANNELS];
+  // offset
+  optional float knorm =34 [default = 1.0];
 }
 
-// Message that stores parameters used by PoolingLayer
 message PoolingProto {
+  // The kernel size (square)
+  required int32 kernel= 1;
   enum PoolMethod {
     MAX = 0;
     AVE = 1;
   }
   // The pooling method
-  optional PoolMethod pool = 1 [default = MAX];
-  // Pad, kernel size, and stride are all given as a single value for equal
-  // dimensions in height and width or as Y, X pairs.
-  // The kernel size (square)
-  required uint32 kernel= 2;
-  // The padding size (equal in Y, X)
-  optional uint32 pad = 4 [default = 0];
-  // The stride (equal in Y, X)
-  optional uint32 stride = 3 [default = 1];
+  optional PoolMethod pool = 30 [default = MAX];
+  // The padding size
+  optional uint32 pad = 31 [default = 0];
+  // The stride
+  optional uint32 stride = 32 [default = 1];
 }
 
 message SliceProto{
@@ -280,79 +332,90 @@ message SliceProto{
   required int32 slice_num=2;
 }
 
-// Message that stores parameters used by ReLULayer
 message ReLUProto {
-  // Allow non-zero slope for negative inputs to speed up optimization
-  // Described in:
-  // Maas, A. L., Hannun, A. Y., & Ng, A. Y. (2013). Rectifier nonlinearities
-  // improve neural network acoustic models. In ICML Workshop on Deep Learning
-  // for Audio, Speech, and Language Processing.
+  // Ref. Maas, A. L., Hannun, A. Y., & Ng, A. Y. (2013).
+  // Rectifier nonlinearities improve neural network acoustic models.
+  // In ICML Workshop on Deep Learning for Audio, Speech, and Language Processing.
   optional float negative_slope = 1 [default = 0];
 }
 
-message Record {
-  enum Type {
-    kSingleLabelImage = 0;
-  }
-  optional Type type = 1 [default = kSingleLabelImage];
-  optional SingleLabelImageRecord image = 2;
-}
-
-// to import caffe's lmdb dataset
-message Datum {
-  optional int32 channels = 1;
-  optional int32 height = 2;
-  optional int32 width = 3;
-  // the actual image data, in bytes
-  optional bytes data = 4;
-  optional int32 label = 5;
-  // Optionally, the datum could also hold float data.
-  repeated float float_data = 6;
-  // If true data contains an encoded image that need to be decoded
-  optional bool encoded = 7 [default = false];
-}
-
-message SingleLabelImageRecord {
-  repeated int32 shape = 1;
-  optional int32 label = 2;
-  optional bytes pixel = 3;
-  repeated float data = 4;
-}
-
 message UpdaterProto {
-  optional float momentum = 4 [default = 0];
-  optional float weight_decay = 5 [default = 0];
-  // used in changing learning rate
-  optional float gamma = 6 [default=1];
-  optional float pow=7 [default=0];
-  optional float delta=8 [default=0.0000001];
-  optional float rho=9 [default=0.9];
-  optional float base_learning_rate=12 [default=0];
-  optional float final_learning_rate=13 [default=0];
-  optional int32 learning_rate_change_frequency = 14 [default=0];
-  enum ChangeProto {
+  enum UpdaterType{
+    // noraml SGD with momentum and weight decay
+    kSGD = 1;
+    // adaptive subgradient, http://www.magicbroom.info/Papers/DuchiHaSi10.pdf
+    kAdaGrad = 2;
+    // http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
+    kRMSProp = 3;
+    // Nesterov first optimal gradient method
+    kNesterov = 4;
+  }
+  // updater type
+  required UpdaterType type = 1 [default=kSGD];
+  // configuration for RMSProp algorithm
+  optional RMSPropProto rmsprop_conf = 50;
+
+ enum ChangeMethod {
     kFixed = 0;
-    kInverse_t = 1;
+    kInverseT = 1;
     kInverse = 2;
     kExponential = 3;
     kLinear = 4;
     kStep = 5;
     kFixedStep = 6;
   }
-  optional ChangeProto learning_rate_change_method = 16 [default = kFixed];
-  optional int32 sync_frequency = 17 [default = 1];
-  // warmup the parameters and then send to parameter servers.
-  optional float moving_rate = 26 [default = 0];
-  optional string param_type = 27 [default = "Param"];
+  // change method for learning rate
+  required ChangeMethod lr_change= 2 [default = kFixed];
+
+  optional FixedStepProto fixedstep_conf=40;
+  optional StepProto step_conf=41;
+  optional LinearProto linear_conf=42;
+  optional ExponentialProto exponential_conf=43;
+  optional InverseProto inverse_conf=44;
+  optional InverseTProto inverset_conf=45;
+
+  optional float momentum = 31 [default = 0];
+  optional float weight_decay = 32 [default = 0];
+  // base learning rate
+  optional float base_lr = 34 [default = 0];
+  // used to avoid divide by 0, i.e. x/(y+delta)
+  optional float delta = 35 [default = 0.00000001];
+}
+
+message RMSPropProto{
+  // history=history*rho_+(1-rho_)*(grad*grad_scale);
+  required float rho = 1;
+}
+
+message FixedStepProto{
   repeated int32 step = 28;
+  // lr = step_lr[i] if current step >= step[i]
   repeated float step_lr = 29;
 }
 
-message BlobProto {
-  optional int32 num = 1 [default = 0];
-  optional int32 channels = 2 [default = 0];
-  optional int32 height = 3 [default = 0];
-  optional int32 width = 4 [default = 0];
-  repeated float data = 5 [packed = true];
-  repeated float diff = 6 [packed = true];
+message StepProto{
+  // lr = base_lr * gamma^(step/change_freq)
+  required float gamma = 35 [default = 1];
+  // lr = base_lr * gamma^(step/change_freq)
+  required int32 change_freq= 40;
+}
+message LinearProto{
+  // lr = (1 - step / freq) * base_lr + (step / freq) * final_lr
+  required int32 change_freq= 40;
+  // lr = (1 - step / freq) * base_lr + (step / freq) * final_lr
+  required float final_lr = 39;
+}
+message ExponentialProto{
+  // lr = base / 2^(step/change_freq)
+  required int32 change_freq= 40;
+}
+message InverseTProto{
+  // lr = base_lr / (1+step/final_lr)
+  required float final_lr = 39;
+}
+message InverseProto{
+  // lr = base_lr*(1+gamma*step)^(-pow)
+  required float gamma = 1 [default = 1];
+  // lr = base_lr*(1+gamma*step)^(-pow)
+  required float pow = 2 [default = 0];
 }
