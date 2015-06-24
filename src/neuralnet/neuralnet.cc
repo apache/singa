@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <queue>
 
+#include "proto/model.pb.h"
 #include "neuralnet/neuralnet.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"
@@ -8,29 +9,33 @@
 #include "utils/cluster.h"
 
 namespace singa {
-#define CreateLayer(id) CreateInstance(id, Layer)
+#define LayerT(x) LayerProto_LayerType_k##x
+
+#define RegisterLayer(factory, id) \
+  factory->Register(LayerProto_LayerType_k##id,\
+      CreateInstance(id##Layer, Layer))
 
 void NeuralNet::RegisterLayers(){
   Factory<Layer>* factory=Singleton<Factory<Layer>>::Instance();
-  factory->Register("kBridgeDst", CreateLayer(BridgeDstLayer));
-  factory->Register("kBridgeSrc", CreateLayer(BridgeSrcLayer));
-  factory->Register("kConvolution", CreateLayer(ConvolutionLayer));
-  factory->Register("kConcate", CreateLayer(ConcateLayer));
-  factory->Register("kDropout", CreateLayer(DropoutLayer));
-  factory->Register("kInnerProduct", CreateLayer(InnerProductLayer));
-  factory->Register("kLabel", CreateLayer(LabelLayer));
-  factory->Register("kLMDBData", CreateLayer(LMDBDataLayer));
-  factory->Register("kLRN", CreateLayer(LRNLayer));
-  factory->Register("kMnistImage", CreateLayer(MnistImageLayer));
-  factory->Register("kPooling", CreateLayer(PoolingLayer));
-  factory->Register("kPrefetch", CreateLayer(PrefetchLayer));
-  factory->Register("kRGBImage", CreateLayer(RGBImageLayer));
-  factory->Register("kReLU", CreateLayer(ReLULayer));
-  factory->Register("kShardData", CreateLayer(ShardDataLayer));
-  factory->Register("kSlice", CreateLayer(SliceLayer));
-  factory->Register("kSoftmaxLoss", CreateLayer(SoftmaxLossLayer));
-  factory->Register("kSplit", CreateLayer(SplitLayer));
-  factory->Register("kTanh", CreateLayer(TanhLayer));
+  RegisterLayer(factory, BridgeDst);
+  RegisterLayer(factory, BridgeSrc);
+  RegisterLayer(factory, Convolution);
+  RegisterLayer(factory, Concate);
+  RegisterLayer(factory, Dropout);
+  RegisterLayer(factory, InnerProduct);
+  RegisterLayer(factory, Label);
+  RegisterLayer(factory, LMDBData);
+  RegisterLayer(factory, LRN);
+  RegisterLayer(factory, Mnist);
+  RegisterLayer(factory, Prefetch);
+  RegisterLayer(factory, Pooling);
+  RegisterLayer(factory, RGBImage);
+  RegisterLayer(factory, ReLU);
+  RegisterLayer(factory, ShardData);
+  RegisterLayer(factory, Slice);
+  RegisterLayer(factory, SoftmaxLoss);
+  RegisterLayer(factory, Split);
+  RegisterLayer(factory, Tanh);
 }
 shared_ptr<NeuralNet> NeuralNet::SetupNeuralNet(const NetProto& np, Phase phase,
     int group_size){
@@ -139,7 +144,7 @@ void NeuralNet::PartitionNeuralNet(){
   graph_=CreatePartitonedGraph(layers_, name2layer_);
   //DLOG(ERROR)<<"pure graph after partition\n"<<graph_.ToString();
   map<string, shared_ptr<Layer>> name2layer(name2layer_);
-  map<string, vector<shared_ptr<Layer>>> share_param_layers;
+  map<string, vector<shared_ptr<Layer>>> share_conf_layers;
   name2layer_.clear();
   layers_.clear();
   int gsize=group_size_;
@@ -149,23 +154,25 @@ void NeuralNet::PartitionNeuralNet(){
     LayerProto proto;
     proto.set_name(node->name());
     proto.set_partitionid(node->val().partitionid);
-    const string& origin=node->val().origin;
+    string origin=node->val().origin;
     if (origin=="kSlice"){
-      proto.set_type(origin);
-      SliceProto *slice=proto.mutable_slice_param();
+      proto.set_type(LayerT(Slice));
+      SliceProto *slice=proto.mutable_slice_conf();
       slice->set_slice_dimension(node->val().slice_dimension);
       slice->set_slice_num(node->dstnodes().size());
     }else if(origin== "kConcate"){
-      proto.set_type(origin);
-      ConcateProto *concate=proto.mutable_concate_param();
+      proto.set_type(LayerT(Concate));
+      ConcateProto *concate=proto.mutable_concate_conf();
       concate->set_concate_dimension(node->val().concate_dimension);
       concate->set_concate_num(node->srcnodes().size());
     }else if(origin=="kSplit"){
-      proto.set_type(origin);
-      SplitProto *split=proto.mutable_split_param();
+      proto.set_type(LayerT(Split));
+      SplitProto *split=proto.mutable_split_conf();
       split->set_num_splits(node->dstnodes().size());
-    }else if(origin=="kBridgeSrc" || origin== "kBridgeDst"){
-      proto.set_type(origin);
+    }else if(origin=="kBridgeSrc"){
+      proto.set_type(LayerT(BridgeSrc));
+    }else if(origin =="kBridgeDst"){
+      proto.set_type(LayerT(BridgeDst));
     }else{
       CHECK(name2layer.find(node->val().origin)!=name2layer_.end())
         <<"Unkown origin for node "<<node->val().origin;
@@ -191,7 +198,7 @@ void NeuralNet::PartitionNeuralNet(){
         layer->set_name(node->name());
         newlayer=layer;
         if(oldlayer->partition_type()==kDataPartition)
-          share_param_layers[node->val().origin].push_back(newlayer);
+          share_conf_layers[node->val().origin].push_back(newlayer);
       }
       newlayer->set_partitionid(node->val().partitionid);
     }
@@ -226,15 +233,15 @@ void NeuralNet::PartitionNeuralNet(){
 
   // share Params for layers generated from the same origin layer due to
   // data partition
-  for(auto & entry: share_param_layers){
+  for(auto & entry: share_conf_layers){
     auto layers= entry.second;
     auto owner=layers.begin();
-    auto owner_params=(*owner)->GetParams();
+    auto owner_confs=(*owner)->GetParams();
     for(auto it=owner+1; it!=layers.end();it++){
       auto params=(*it)->GetParams();
-      CHECK_EQ(params.size(), owner_params.size());
+      CHECK_EQ(params.size(), owner_confs.size());
       for(size_t i=0;i<params.size();i++)
-        params.at(i)->ShareData(owner_params.at(i));
+        params.at(i)->ShareData(owner_confs.at(i));
     }
   }
   LOG(INFO)<<"network graph after partition layers\n"<<ToString();
@@ -369,7 +376,6 @@ std::string NeuralNet::ToString(){
   map<string, string> info;
   for(auto layer: layers_){
     info[layer->name()]=IntVecToString(layer->shape(nullptr));
-    string type=layer->type();
   }
   return graph_.ToString(info);
 }

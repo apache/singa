@@ -1,7 +1,9 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include "trainer/trainer.h"
-
+#ifndef GFLAGS_GFLAGS_H_
+  namespace gflags = google;
+#endif  // GFLAGS_GFLAGS_H_
 /**
  * \file main.cc is the main entry of SINGA, like the driver program for Hadoop.
  *

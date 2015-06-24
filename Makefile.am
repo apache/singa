@@ -1,4 +1,4 @@
-CLOCAL_AMFLAGS = -I config 
+CLOCAL_AMFLAGS = -I config
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
@@ -6,14 +6,14 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 
 AC_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-	$(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops 
+	$(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops
 
 INCLUDES=-I$(top_srcdir)/include
 
-PROTOS := $(top_srcdir)/src/proto/cluster.proto $(top_srcdir)/src/proto/model.proto 
-PROTO_SRCS := src/proto/cluster.pb.cc src/proto/model.pb.cc
-PROTO_HDRS := src/proto/cluster.pb.h  src/proto/model.pb.h
-PROTO_OBJS := src/proto/cluster.pb.o src/proto/model.pb.o
+PROTOS := $(top_srcdir)/src/proto/cluster.proto $(top_srcdir)/src/proto/model.proto $(top_srcdir)/src/proto/common.proto
+PROTO_SRCS := src/proto/cluster.pb.cc src/proto/model.pb.cc src/proto/common.pb.cc
+PROTO_HDRS := src/proto/cluster.pb.h  src/proto/model.pb.h src/proto/common.pb.h
+PROTO_OBJS := src/proto/cluster.pb.o src/proto/model.pb.o src/proto/common.pb.o
 
 SINGA_SRCS := src/utils/cluster.cc \
 			  src/utils/cluster_rt.cc \
@@ -30,7 +30,7 @@ SINGA_SRCS := src/utils/cluster.cc \
 			  src/neuralnet/neuralnet.cc \
 			  src/neuralnet/layer.cc \
 			  src/communication/socket.cc \
-			  src/communication/msg.cc 
+			  src/communication/msg.cc
 
 SINGA_HDRS := include/utils/cluster.h \
 			  include/utils/cluster_rt.h \
@@ -57,7 +57,7 @@ SINGA_HDRS := include/utils/cluster.h \
 			  include/mshadow/tensor_base.h \
 			  include/mshadow/tensor_random.h \
 			  include/communication/msg.h \
-			  include/communication/socket.h 
+			  include/communication/socket.h
 
 SINGA_OBJS := src/proto/cluster.pb.o \
 			  src/proto/model.pb.o \
@@ -78,13 +78,13 @@ SINGA_OBJS := src/proto/cluster.pb.o \
 			  src/neuralnet/neuralnet.o \
 			  src/neuralnet/layer.o \
 			  src/communication/socket.o \
-			  src/communication/msg.o 
+			  src/communication/msg.o
 
 lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_SRCS) $(SINGA_HDRS)
 libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive 
-libsinga_la_LDFLAGS = -I./include 
+    $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive
+libsinga_la_LDFLAGS = -I./include
 
 lib_LTLIBRARIES += libsingashard.la
 libsingashard_la_SOURCES = src/utils/data_shard.cc \
@@ -97,7 +97,7 @@ libsingashard_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pra
     $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -gstrict-dwarf -Woverloaded-virtual
 libsingashard_la_LDFLAGS = -I./include
 
-bin_PROGRAMS=singa 
+bin_PROGRAMS=singa
 singa_SOURCES=src/main.cc
 singa_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
     $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED -fpermissive
@@ -117,7 +117,7 @@ singa_LDFLAGS =	-I./include \
 				-lzookeeper_mt
 
 clean-local:
-	rm -rf $(PROTO_SRCS) $(PROTO_HDRS) 
+	rm -rf $(PROTO_SRCS) $(PROTO_HDRS)
 
 
 $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)

@@ -12,33 +12,110 @@ namespace singa {
 class Param {
  public:
   Param();
-  virtual ~Param(){};
-
-  virtual Msg* GenGetMsg(bool copy, int v=-1);
-  virtual Msg* GenPutMsg(bool copy, int v=-1);
-  virtual Msg* GenUpdateMsg(bool copy, int v=-1);
-  virtual Msg* GenSyncMsg(bool copy, int v=-1);
-
-  virtual Msg* HandleGetMsg(Msg** msg);
-  virtual Msg* HandlePutMsg(Msg** msg);
-  virtual Msg* HandleSyncMsg(Msg** msg);
-  virtual const std::pair<bool, int> ParseUpdateMsg(Msg** msg);
-  virtual Msg* GenUpdateResponseMsg(bool copy, int v=-1);
-
-
-  virtual int ParseGetResponseMsg(Msg** msg);
-  virtual int ParsePutResponseMsg(Msg** msg);
-  virtual int ParseUpdateResponseMsg(Msg** msg);
-  virtual int ParseSyncResponseMsg(Msg** msg);
+  virtual ~Param(){ }
+  /**
+   * Generate the message for a get request, i.e., get parameters from a server
+   *
+   * This function is called at worker/stub side.
+   * @param copy decides whether to copy the parameter values from the server.
+   * @param slice_idx index of the slice from which the message is generated.
+   * @return generated message without setting src, dst, target fields.
+   */
+  virtual Msg* GenGetMsg(bool copy, int slice_idx);
+  /**
+   * Generate the message for a put request, i.e., put parameters to a server.
+   * \copydetails GenGetMsg(bool, int);
+   */
+  virtual Msg* GenPutMsg(bool copy, int slice_idx);
+  /**
+   * Generate the message for a update request, i.e., pass info to server for
+   * parameter update.
+   * \copydetails GenGetMsg(bool, int);
+   */
+  virtual Msg* GenUpdateMsg(bool copy, int slice_idx);
+  /**
+   * Generate the message for a synchronization request between server groups.
+   *
+   * This function is called at server side where the Param is actually a slice
+   * of an original Param object.
+   * */
+  virtual Msg* GenSyncMsg();
+  /**
+   * Generate the message to response the update request.
+   *
+   * This function is called at the server side, where the Param is actually a slice
+   * of an original Param object.
+   * @param copy if true copy the parameter value into the message, otherwise
+   * only transfer the pointer of the parameter values.
+   * @return response message pointer
+   */
+  virtual Msg* GenUpdateResponseMsg(bool copy);
 
   /**
-   * setup param shape
+   * Server handling function for get request.
+   *
+   * @param msg  request message
+   * @return resposne message
    */
-  virtual void Setup(const ParamProto& proto, const std::vector<int>& shape, int fan_in);
+  virtual Msg* HandleGetMsg(Msg** msg);
+  /**
+   * Server handling function for put request.
+   *
+   * \copydetails HandleGetMsg(Msg**)
+   */
+  virtual Msg* HandlePutMsg(Msg** msg);
+  /**
+   * Server handling function for synchronization message
+   *
+   * \copydetails HandleGetMsg(Msg**)
+   */
+  virtual Msg* HandleSyncMsg(Msg** msg);
+
+  /**
+   * Server parses update request message.
+   *
+   * @param msg
+   * @return 1 for copy, 0 for no copy
+   */
+  virtual int ParseUpdateMsg(Msg** msg);
+  /**
+   * Worker/Stub parsing function for get response.
+   *
+   * @param msg
+   * @param slice_idx index for the slice
+   */
+  virtual int ParseGetResponseMsg(Msg** msg, int slice_idx);
+  /**
+   * Worker/Server parsing function for update response
+   *
+   * \copydetails ParseGetResponseMsg(Msg**, int);
+   */
+  virtual int ParseUpdateResponseMsg(Msg** msg, int slice_idx);
+  /**
+   * Server parsing function for synchronization response.
+   *
+   * \copydetails ParseGetResponseMsg(Msg** , int);
+   */
+  virtual int ParseSyncResponseMsg(Msg** msg, int slice_idx);
+
+  /**
+   * Setup param object
+   *
+   * @param proto includes learning rate/weight decay multipliers
+   * @param shape
+   */
+  virtual void Setup(const ParamProto& proto, const std::vector<int>& shape);
   /*
-   * fill the data according to initmethod, i.e., random/gaussian/fixed value
+   * Fill the values according to initmethod, e.g., gaussian distribution
+   *
+   * @param version initial version
    */
-  virtual void Init(int v=0);
+  virtual void InitValues(int version=0);
+  /**
+   * Share the data blob from other Param objects.
+   *
+   * @param other the Param object whose owner owns the data blob
+   */
   void ShareData(shared_ptr<Param> other){
     proto_.set_owner(other->owner());
     if(data_!=nullptr)
@@ -52,11 +129,6 @@ class Param {
   float weight_decay_multiplier() {
     return proto_.weight_decay_multiplier();
   }
-  /*
-  const int split_threshold(){
-    return proto_.split_threshold();
-  }
-  */
   const std::string& name() {
     return proto_.name();
   }
@@ -137,27 +209,34 @@ class Param {
   float* mutable_cpu_history(){
     return history_.mutable_cpu_data();
   }
+  int slice_start() const {
+    return slice_start_;
+  }
+
+  int num_slices() const {
+    return num_slices_;
+  }
+
+  void AddSlice(int slice_id, int size);
+
  protected:
+  void ParseResponseMsg(Msg** msg, int slice_idx);
+
+ protected:
+
   /**
    * name of the parameter used to share wights between neuralnets
    */
   std::string name_;
   shared_ptr<Blob<float>> data_;
+  int slice_start_, num_slices_;
+  vector<int> slice_offset_, slice_size_;
+  vector<bool> pending_put_,pending_get_, pending_update_;
+  int num_pending_requests_;
   //! gradient, history gradient of this parameter
   Blob<float> grad_, history_;
   ParamProto proto_;
-  int fan_in_;
   int local_version_;
-};
-/**
- * To support the shared memory and distributed Hogwild algorithm.
- * Each worker group has one worker. Workers from the same process share the
- * memory space for parameter values. Each process has one server group which
- * also shares the same memory space. Messages except synchronization messages
- * only transfer pointers to parameter value or gradient space. Hence memory
- * copy is avoided for intra-process communication.
- */
-class HogwildParam: public Param{
 };
 
 }  // namespace singa

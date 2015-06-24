@@ -1,0 +1,80 @@
+package singa;
+
+enum MsgType {
+  kGet = 0;
+  kPut = 1;
+  kSync = 2;
+  kUpdate = 3;
+  kSyncRequest = 4;
+  kSyncResponse = 5;
+  kStop = 6;
+  kData = 7;
+  kRGet = 8;
+  kRUpdate = 9;
+  kConnect = 10;
+  kMetric = 11;
+};
+
+enum EntityType {
+  kWorkerParam = 0;
+  kWorkerLayer = 1;
+  kServer = 2;
+  kStub = 3;
+  kRuntime = 4;
+};
+
+enum ShareOption {
+  kValueOnly = 0;
+  kWhole = 1;
+};
+
+message BlobProtos {
+  repeated BlobProto blobs = 1;
+  repeated int32 ids = 2;
+  repeated string names = 3;
+}
+
+enum ConnectionType {
+  kOneToOne = 0;
+  kOneToAll = 1;
+}
+
+// to import caffe's lmdb dataset
+message Datum {
+  optional int32 channels = 1;
+  optional int32 height = 2;
+  optional int32 width = 3;
+  // the actual image data, in bytes
+  optional bytes data = 4;
+  optional int32 label = 5;
+  // Optionally, the datum could also hold float data.
+  repeated float float_data = 6;
+  // If true data contains an encoded image that need to be decoded
+  optional bool encoded = 7 [default = false];
+}
+
+message BlobProto {
+  optional int32 num = 1 [default = 0];
+  optional int32 channels = 2 [default = 0];
+  optional int32 height = 3 [default = 0];
+  optional int32 width = 4 [default = 0];
+  repeated float data = 5 [packed = true];
+  repeated float diff = 6 [packed = true];
+}
+
+message Record {
+  enum Type {
+    // each record contains image raw feature and its label.
+    kSingleLabelImage = 0;
+  }
+  optional Type type = 1 [default = kSingleLabelImage];
+  // configuration for
+  optional SingleLabelImageRecord image = 2;
+}
+
+message SingleLabelImageRecord {
+  repeated int32 shape = 1;
+  optional int32 label = 2;
+  optional bytes pixel = 3;
+  repeated float data = 4;
+}

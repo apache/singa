@@ -18,12 +18,12 @@ namespace singa {
 void ConvolutionLayer::Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers){
   CHECK_EQ(srclayers.size(),1);
-  ConvolutionProto conv_param=proto.convolution_param();
-  kernel_=conv_param.kernel();
+  ConvolutionProto conv_conf=proto.convolution_conf();
+  kernel_=conv_conf.kernel();
   CHECK_GT(kernel_, 0) << "Filter size cannot be zero.";
-  pad_=conv_param.pad();
-  stride_=conv_param.stride();
-  num_filters_=conv_param.num_filters();
+  pad_=conv_conf.pad();
+  stride_=conv_conf.stride();
+  num_filters_=conv_conf.num_filters();
   const vector<int>& srcshape=srclayers[0]->data(this).shape();
   int dim=srcshape.size();
   CHECK_GT(dim, 2);
@@ -46,17 +46,17 @@ void ConvolutionLayer::Setup(const LayerProto& proto,
 
   Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
   weight_=shared_ptr<Param>(factory->Create("Param"));
-  weight_->Setup(proto.param(0), vector<int>{num_filters_, col_height_}, col_height_);
+  weight_->Setup(proto.param(0), vector<int>{num_filters_, col_height_});
   bias_=shared_ptr<Param>(factory->Create("Param"));
-  bias_->Setup(proto.param(1), vector<int>{num_filters_},0);
+  bias_->Setup(proto.param(1), vector<int>{num_filters_});
 }
 
 void ConvolutionLayer::SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers){
   LayerProto newproto(proto);
-  ConvolutionProto *conv_param=newproto.mutable_convolution_param();
-  conv_param->set_num_filters(shape[1]);
+  ConvolutionProto *conv_conf=newproto.mutable_convolution_conf();
+  conv_conf->set_num_filters(shape[1]);
   Setup(newproto, srclayers);
 }
 
@@ -128,7 +128,7 @@ void DropoutLayer::Setup(const LayerProto& proto,
   data_.ReshapeLike(srclayers[0]->data(this));
   grad_.ReshapeLike(*srclayers[0]->mutable_grad(this));
   mask_.Reshape(srclayers[0]->data(this).shape());
-  pdrop_=proto.dropout_param().dropout_ratio();
+  pdrop_=proto.dropout_conf().dropout_ratio();
 }
 
 void DropoutLayer::SetupAfterPartition(const LayerProto& proto,
@@ -167,20 +167,20 @@ void InnerProductLayer::Setup(const LayerProto& proto,
   const auto& src=srclayers[0]->data(this);
   batchsize_=src.shape()[0];
   vdim_=src.count()/batchsize_;
-  hdim_=proto.inner_product_param().num_output();
+  hdim_=proto.innerproduct_conf().num_output();
   data_.Reshape(vector<int>{batchsize_, hdim_});
   grad_.ReshapeLike(data_);
   Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
   weight_=shared_ptr<Param>(factory->Create("Param"));
   bias_=shared_ptr<Param>(factory->Create("Param"));
-  weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_}, vdim_*hdim_);
-  bias_->Setup(proto.param(1), vector<int>{hdim_},0);
+  weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
+  bias_->Setup(proto.param(1), vector<int>{hdim_});
 }
 void InnerProductLayer::SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
       const vector<SLayer>& srclayers){
   LayerProto newproto(proto);
-  InnerProductProto * innerproto=newproto.mutable_inner_product_param();
+  InnerProductProto * innerproto=newproto.mutable_innerproduct_conf();
   innerproto->set_num_output(shape[1]);
   Setup(newproto, srclayers);
 }
@@ -301,16 +301,16 @@ void LMDBDataLayer::Setup(const LayerProto& proto,
   CHECK_EQ(mdb_env_create(&mdb_env_), MDB_SUCCESS) << "mdb_env_create failed";
   CHECK_EQ(mdb_env_set_mapsize(mdb_env_, 1099511627776), MDB_SUCCESS); // 1TB
   CHECK_EQ(mdb_env_open(mdb_env_,
-        proto.data_param().path().c_str(),
+        proto.lmdbdata_conf().path().c_str(),
         MDB_RDONLY, 0664), MDB_SUCCESS) << "cannot open lmdb "
-    << proto.data_param().path();
+    << proto.lmdbdata_conf().path();
   CHECK_EQ(mdb_txn_begin(mdb_env_, NULL, MDB_RDONLY, &mdb_txn_), MDB_SUCCESS)
     << "mdb_txn_begin failed";
   CHECK_EQ(mdb_open(mdb_txn_, NULL, 0, &mdb_dbi_), MDB_SUCCESS)
     << "mdb_open failed";
   CHECK_EQ(mdb_cursor_open(mdb_txn_, mdb_dbi_, &mdb_cursor_), MDB_SUCCESS)
     << "mdb_cursor_open failed";
-  LOG(INFO) << "Opening lmdb " << proto.data_param().path();
+  LOG(INFO) << "Opening lmdb " << proto.lmdbdata_conf().path();
   CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, MDB_FIRST),
       MDB_SUCCESS) << "mdb_cursor_get failed";
 
@@ -324,20 +324,20 @@ void LMDBDataLayer::Setup(const LayerProto& proto,
   SingleLabelImageRecord* record=sample_.mutable_image();
   ConvertDatumToSingleLableImageRecord(datum, record);
 
-  batchsize_=proto.data_param().batchsize();
+  batchsize_=batchsize();
   records_.resize(batchsize_);
-  random_skip_=proto.data_param().random_skip();
+  random_skip_=proto.lmdbdata_conf().random_skip();
 }
 
 /***************** Implementation for LRNLayer *************************/
 void LRNLayer::Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers){
   CHECK_EQ(srclayers.size(),1);
-  lsize_ = proto.lrn_param().local_size();
+  lsize_ = proto.lrn_conf().local_size();
   CHECK_EQ(lsize_ % 2, 1) << "LRN only supports odd values for Localvol";
-  knorm_=proto.lrn_param().knorm();
-  alpha_ = proto.lrn_param().alpha();
-  beta_ = proto.lrn_param().beta();
+  knorm_=proto.lrn_conf().knorm();
+  alpha_ = proto.lrn_conf().alpha();
+  beta_ = proto.lrn_conf().beta();
 
   const vector<int>& s=srclayers[0]->data(this).shape();
   data_.Reshape(s);
@@ -381,7 +381,7 @@ void LRNLayer::ComputeGradient(const vector<SLayer>& srclayers) {
 
 /**************** Implementation for MnistImageLayer******************/
 
-void MnistImageLayer::ParseRecords(Phase phase,
+void MnistLayer::ParseRecords(Phase phase,
     const vector<Record>& records, Blob<float>* blob){
   LOG_IF(ERROR, records.size()==0)<<"Empty records to parse";
   int ndim=records.at(0).image().shape_size();
@@ -448,20 +448,20 @@ void MnistImageLayer::ParseRecords(Phase phase,
   }
   CHECK_EQ(dptr, blob->mutable_cpu_data()+blob->count());
 }
-void MnistImageLayer::Setup(const LayerProto& proto,
+void MnistLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
   CHECK_EQ(srclayers.size(),1);
   int batchsize=static_cast<DataLayer*>(srclayers[0].get())->batchsize();
   Record sample=static_cast<DataLayer*>(srclayers[0].get())->sample();
-  kernel_=proto.mnist_param().kernel();
-  sigma_=proto.mnist_param().sigma();
-  alpha_=proto.mnist_param().alpha();
-  beta_=proto.mnist_param().beta();
-  gamma_=proto.mnist_param().gamma();
-  resize_=proto.mnist_param().resize();
-  norm_a_=proto.mnist_param().norm_a();
-  norm_b_=proto.mnist_param().norm_b();
-  elastic_freq_=proto.mnist_param().elastic_freq();
+  kernel_=proto.mnist_conf().kernel();
+  sigma_=proto.mnist_conf().sigma();
+  alpha_=proto.mnist_conf().alpha();
+  beta_=proto.mnist_conf().beta();
+  gamma_=proto.mnist_conf().gamma();
+  resize_=proto.mnist_conf().resize();
+  norm_a_=proto.mnist_conf().norm_a();
+  norm_b_=proto.mnist_conf().norm_b();
+  elastic_freq_=proto.mnist_conf().elastic_freq();
 
   int ndim=sample.image().shape_size();
   CHECK_GE(ndim,2);
@@ -478,11 +478,11 @@ void MnistImageLayer::Setup(const LayerProto& proto,
 void PoolingLayer::Setup(const LayerProto& proto,
       const vector<SLayer>& srclayers){
   CHECK_EQ(srclayers.size(),1);
-  PoolingProto pool_param = proto.pooling_param();
-  kernel_=pool_param.kernel();
-  stride_=pool_param.stride();
+  PoolingProto pool_conf = proto.pooling_conf();
+  kernel_=pool_conf.kernel();
+  stride_=pool_conf.stride();
   CHECK_LT(pad_, kernel_);
-  pool_=proto.pooling_param().pool();
+  pool_=proto.pooling_conf().pool();
   CHECK(pool_ == PoolingProto_PoolMethod_AVE
         || pool_ == PoolingProto_PoolMethod_MAX)
       << "Padding implemented only for average and max pooling.";
@@ -628,9 +628,9 @@ void RGBImageLayer::ParseRecords(Phase phase,
 void RGBImageLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
   CHECK_EQ(srclayers.size(),1);
-  scale_=proto.rgbimage_param().scale();
-  cropsize_=proto.rgbimage_param().cropsize();
-  mirror_=proto.rgbimage_param().mirror();
+  scale_=proto.rgbimage_conf().scale();
+  cropsize_=proto.rgbimage_conf().cropsize();
+  mirror_=proto.rgbimage_conf().mirror();
   int batchsize=static_cast<DataLayer*>(srclayers[0].get())->batchsize();
   Record sample=static_cast<DataLayer*>(srclayers[0].get())->sample();
   vector<int> shape;
@@ -645,15 +645,15 @@ void RGBImageLayer::Setup(const LayerProto& proto,
   }
   data_.Reshape(shape);
   mean_.Reshape({shape[1],shape[2],shape[3]});
-  if(proto.rgbimage_param().has_meanfile()){
-    if(proto.rgbimage_param().meanfile().find("binaryproto")!=string::npos){
+  if(proto.rgbimage_conf().has_meanfile()){
+    if(proto.rgbimage_conf().meanfile().find("binaryproto")!=string::npos){
       BlobProto tmp;
-      ReadProtoFromBinaryFile(proto.rgbimage_param().meanfile().c_str(), &tmp);
+      ReadProtoFromBinaryFile(proto.rgbimage_conf().meanfile().c_str(), &tmp);
       CHECK_EQ(mean_.count(), tmp.data_size());
       memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
     }else{
       SingleLabelImageRecord tmp;
-      ReadProtoFromBinaryFile(proto.rgbimage_param().meanfile().c_str(), &tmp);
+      ReadProtoFromBinaryFile(proto.rgbimage_conf().meanfile().c_str(), &tmp);
       CHECK_EQ(mean_.count(), tmp.data_size());
       memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
     }
@@ -685,14 +685,14 @@ void ShardDataLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers
 
 void ShardDataLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
-  shard_= std::make_shared<DataShard>(proto.data_param().path(),
+  shard_= std::make_shared<DataShard>(proto.sharddata_conf().path(),
       DataShard::kRead);
   string key;
   shard_->Next(&key, &sample_);
-  batchsize_=proto.data_param().batchsize();
+  batchsize_=proto.sharddata_conf().batchsize();
 
   records_.resize(batchsize_);
-  random_skip_=proto.data_param().random_skip();
+  random_skip_=proto.sharddata_conf().random_skip();
 }
 /*******************Implementation of TanLayer***************************/
 void TanhLayer::Setup(const LayerProto& proto,
@@ -729,9 +729,9 @@ void SoftmaxLossLayer::Setup(const LayerProto& proto,
   data_.Reshape(srclayers[0]->data(this).shape());
   batchsize_=data_.shape()[0];
   dim_=data_.count()/batchsize_;
-  topk_=proto.softmaxloss_param().topk();
+  topk_=proto.softmaxloss_conf().topk();
   metric_.Reshape(vector<int>{2});
-  scale_=proto.softmaxloss_param().scale();
+  scale_=proto.softmaxloss_conf().scale();
 }
 void SoftmaxLossLayer::SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,

@@ -1,0 +1,22 @@
+libs :=singa glog protobuf
+
+.PHONY: all download create
+
+download: mnist
+
+mnist:
+	wget http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
+	wget http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
+	wget http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz
+	wget http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
+	gunzip train-images-idx3-ubyte.gz && gunzip train-labels-idx1-ubyte.gz
+	gunzip t10k-images-idx3-ubyte.gz && gunzip t10k-labels-idx1-ubyte.gz
+
+create:
+	$(CXX) create_shard.cc -std=c++11 -lsinga -lprotobuf -lglog -I../../include \
+		-L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs -Wl,-rpath=../../.libs/ \
+		-o create_shard.bin
+	mkdir mnist_train_shard
+	mkdir mnist_test_shard
+	./create_shard.bin train-images-idx3-ubyte train-labels-idx1-ubyte mnist_train_shard
+	./create_shard.bin t10k-images-idx3-ubyte t10k-labels-idx1-ubyte mnist_test_shard

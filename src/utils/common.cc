@@ -1,30 +1,32 @@
+#include "utils/common.h"
+
 #include <fcntl.h>
+#include <glog/logging.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
-#include "utils/common.h"
-using std::ios;
-using std::max;
-using google::protobuf::io::FileInputStream;
-using google::protobuf::io::FileOutputStream;
-using google::protobuf::io::ZeroCopyInputStream;
-using google::protobuf::io::CodedInputStream;
-using google::protobuf::io::ZeroCopyOutputStream;
-using google::protobuf::io::CodedOutputStream;
+#include <stdarg.h>
 
 namespace singa {
 
-const int kBufLen=1024;
+using std::string;
+using std::vector;
+using google::protobuf::io::CodedInputStream;
+using google::protobuf::io::FileInputStream;
+using google::protobuf::io::FileOutputStream;
+using google::protobuf::io::ZeroCopyInputStream;
+using google::protobuf::Message;
+
+const int kBufLen = 1024;
 std::string IntVecToString(const vector<int>& vec) {
   string disp="(";
   for(int x: vec)
     disp+=std::to_string(x)+", ";
   return disp+")";
 }
-
 /**
- * Formatted string.
- */
+ *  * Formatted string.
+ *   */
 string VStringPrintf(string fmt, va_list l) {
   char buffer[32768];
   vsnprintf(buffer, 32768, fmt.c_str(), l);
@@ -32,8 +34,8 @@ string VStringPrintf(string fmt, va_list l) {
 }
 
 /**
- * Formatted string.
- */
+ *  * Formatted string.
+ *   */
 string StringPrintf(string fmt, ...) {
   va_list l;
   va_start(l, fmt); //fmt.AsString().c_str());
@@ -53,8 +55,7 @@ void Debug() {
 }
 
 // the proto related functions are from Caffe.
-void ReadProtoFromTextFile(const char* filename,
-    ::google::protobuf::Message* proto) {
+void ReadProtoFromTextFile(const char* filename, Message* proto) {
   int fd = open(filename, O_RDONLY);
   CHECK_NE(fd, -1) << "File not found: " << filename;
   FileInputStream* input = new FileInputStream(fd);
@@ -62,6 +63,7 @@ void ReadProtoFromTextFile(const char* filename,
   delete input;
   close(fd);
 }
+
 void WriteProtoToTextFile(const Message& proto, const char* filename) {
   int fd = open(filename, O_WRONLY | O_CREAT, 0644);
   FileOutputStream* output = new FileOutputStream(fd);
@@ -69,6 +71,7 @@ void WriteProtoToTextFile(const Message& proto, const char* filename) {
   delete output;
   close(fd);
 }
+
 void ReadProtoFromBinaryFile(const char* filename, Message* proto) {
   int fd = open(filename, O_RDONLY);
   CHECK_NE(fd, -1) << "File not found: " << filename;
@@ -81,9 +84,26 @@ void ReadProtoFromBinaryFile(const char* filename, Message* proto) {
   delete raw_input;
   close(fd);
 }
+
 void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
-  int fd= open(filename, O_CREAT|O_WRONLY|O_TRUNC, 0644);
+  int fd = open(filename, O_CREAT|O_WRONLY|O_TRUNC, 0644);
+  CHECK_NE(fd, -1) << "File cannot open: " << filename;
   CHECK(proto.SerializeToFileDescriptor(fd));
 }
+int gcd(int a, int b)
+{
+  for (;;)
+  {
+    if (a == 0) return b;
+    b %= a;
+    if (b == 0) return a;
+    a %= b;
+  }
+}
+int LeastCommonMultiple(int a, int b)
+{
+  int temp = gcd(a, b);
 
+  return temp ? (a / temp * b) : 0;
+}
 }  // namespace singa

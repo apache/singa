@@ -12,6 +12,7 @@
 #include <thread>
 
 #include "proto/model.pb.h"
+#include "proto/common.pb.h"
 #include "utils/param.h"
 #include "utils/common.h"
 #include "utils/blob.h"
@@ -173,7 +174,7 @@ class Layer {
     name_=name;
     layer_proto_.set_name(name);
   }
-  virtual const string type() const {
+  virtual int type() const {
     return layer_proto_.type();
   }
   /**
@@ -404,9 +405,7 @@ class DataLayer: public Layer{
     return kNone;
   }
 
-  virtual int batchsize() const {
-    return layer_proto_.data_param().batchsize();
-  }
+  virtual int batchsize() const=0;
   virtual const Record& sample() const {
     return sample_;
   }

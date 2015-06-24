@@ -5,6 +5,7 @@
 #include <utility>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include "proto/cluster.pb.h"
 #include "utils/cluster_rt.h"
 
@@ -39,7 +40,7 @@ class Cluster {
    */
   bool has_server()const {
     if(server_worker_separate()){
-      CHECK_LT(procs_id_, nprocs());
+      CHECK_LT(procs_id_, nprocs_);
       return procs_id_>=nworker_procs();
     }else
       return procs_id_<nserver_procs();
@@ -51,7 +52,7 @@ class Cluster {
     if(server_worker_separate()){
       return procs_id_<nworker_procs();
     }else
-      return procs_id_<nprocs();
+      return procs_id_<nprocs_;
   }
   /**
    * @return global procs id, which starts from 0.
@@ -67,7 +68,7 @@ class Cluster {
     return nserver_groups()*nservers_per_group()/nservers_per_procs();
   }
   int nprocs() const {
-    return cluster_.nprocs();
+    return nprocs_;
   }
 
   const string endpoint() const {
@@ -77,7 +78,7 @@ class Cluster {
    * @return endpoint of the router of a procs with the specified id
    */
   const string endpoint(int procs_id) const {
-    CHECK_LT(procs_id, nprocs());
+    CHECK_LT(procs_id, nprocs_);
     CHECK_GE(procs_id, 0);
     return endpoints_.at(procs_id);
   }
@@ -121,18 +122,22 @@ class Cluster {
     return cluster_rt_;
   }
 
+  int ProcsIDOf(int group_id, int id, int flag);
  private:
   Cluster(const ClusterProto &cluster, int procs_id) ;
   void SetupFolders(const ClusterProto &cluster);
+  int Hash(int gid, int id, int flag);
 
  private:
   int procs_id_;
+  int nprocs_;
   std::vector<std::string> endpoints_;
   // cluster config proto
   ClusterProto cluster_;
   shared_ptr<ClusterRuntime> cluster_rt_;
   // make this class a singlton
   static shared_ptr<Cluster> instance_;
+  std::unordered_map<int, int> procs_ids_;
 };
 
 }  // namespace singa

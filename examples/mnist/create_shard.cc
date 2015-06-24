@@ -17,7 +17,7 @@
 
 #include "utils/data_shard.h"
 #include "utils/common.h"
-#include "proto/model.pb.h"
+#include "proto/common.pb.h"
 
 using singa::DataShard;
 using singa::WriteProtoToBinaryFile;
@@ -85,21 +85,6 @@ void create_shard(const char* image_filename, const char* label_filename,
 }
 
 int main(int argc, char** argv) {
-/*
-#ifndef GFLAGS_GFLAGS_H_
-  namespace gflags = google;
-#endif
-  gflags::SetUsageMessage("This program create a DataShard for a MNIST dataset\n"
-        "Usage:\n"
-        "    create_shard.bin  input_image_file input_label_file output_db_file\n"
-        "The MNIST dataset could be downloaded at\n"
-        "    http://yann.lecun.com/exdb/mnist/\n"
-        "You should gunzip them after downloading.");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-    gflags::ShowUsageWithFlagsRestrict(argv[0],
-        "examples/mnist/create_shard.bin");
-*/
-
   if (argc != 4) {
     std::cout<<"This program create a DataShard for a MNIST dataset\n"
         "Usage:\n"
