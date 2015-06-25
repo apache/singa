@@ -28,7 +28,7 @@ ZKClusterRT::~ZKClusterRT() {
 char zk_cxt[] = "ZKClusterRT";
 
 bool ZKClusterRT::Init() {
-  zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
+  zoo_set_debug_level(ZOO_LOG_LEVEL_ERROR);
   zkhandle_ = zookeeper_init(host_.c_str(), WatcherGlobal, timeout_, 0,
                              static_cast<void *>(zk_cxt), 0);
   if (zkhandle_ == NULL) {
@@ -176,9 +176,14 @@ bool ZKClusterRT::CreateZKNode(const char* path, const char* val, int flag,
   for (int i = 0; i < kNumRetry; ++i) {
     ret = zoo_create(zkhandle_, path, val, val == nullptr ? -1 : strlen(val),
                      &ZOO_OPEN_ACL_UNSAFE, flag, buf, kMaxBufLen);
-    if (ret != ZNONODE) break;
-    LOG(WARNING) << "zookeeper parent node of " << path
-                 << " not exist, retry later";
+    if (ret == ZNONODE) {
+      LOG(WARNING) << "zookeeper parent node of " << path
+                  << " not exist, retry later";
+    } else if (ret == ZCONNECTIONLOSS) {
+      LOG(WARNING) << "zookeeper disconnected, retry later";
+    } else {
+      break;
+    }
     sleep(kSleepSec);
   }
   // copy the node name ot output

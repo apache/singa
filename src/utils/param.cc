@@ -168,7 +168,8 @@ Msg* Param::HandlePutMsg(Msg** msg){
 }
 
 Msg* Param::HandleGetMsg(Msg** msg){
-  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
+  int copy;
+  sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
   (*msg)->next_frame();
   if(copy)
     (*msg)->add_frame(mutable_cpu_data(), sizeof(float)*size());
@@ -179,7 +180,8 @@ Msg* Param::HandleGetMsg(Msg** msg){
 }
 
 int Param::ParseUpdateMsg(Msg** msg){
-  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
+  int copy;
+  sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
   (*msg)->next_frame();
   if(copy){
     LOG(ERROR)<<"Copy in parse update";
@@ -231,7 +233,8 @@ int Param::ParseUpdateResponseMsg(Msg **msg, int slice_idx){
 }
 
 void Param::ParseResponseMsg(Msg** msg, int slice_idx){
-  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
+  int copy;
+  sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
   (*msg)->next_frame();
   if(copy){
     CHECK((*msg)->frame_size());
