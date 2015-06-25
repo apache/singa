@@ -108,7 +108,7 @@ Msg* Param::GenGetMsg(bool copy, int idx){
   CHECK_LT(idx, num_slices_);
   Msg* msg=new Msg();
   msg->set_type(kGet);
-  char buf[8]; sprintf(buf, " %c ", copy);
+  char buf[8]; sprintf(buf, " %d ", copy);
   msg->add_frame(buf, sizeof(buf));
   pending_get_[idx]=true;
   num_pending_requests_++;
@@ -119,11 +119,13 @@ Msg* Param::GenUpdateMsg(bool copy, int idx){
   CHECK_LT(idx, num_slices_);
   Msg* msg=new Msg();
   msg->set_type(kUpdate);
-  char buf[8]; sprintf(buf, " %c ", copy);
+  char buf[8]; sprintf(buf, " %d ", copy);
   msg->add_frame(buf, sizeof(buf));
   void* ptr=grad_.mutable_cpu_data()+slice_offset_[idx];
-  if(copy)
+  if(copy){
+    LOG(ERROR)<<"Copy in gen update";
     msg->add_frame(ptr, slice_size_[idx]*sizeof(float));
+  }
   else{ // to share values of grad blob
     char buf[32]; sprintf(buf, " %p ", ptr);
     msg->add_frame(buf, strlen(buf));
@@ -166,7 +168,7 @@ Msg* Param::HandlePutMsg(Msg** msg){
 }
 
 Msg* Param::HandleGetMsg(Msg** msg){
-  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %c ", &copy);
+  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
   (*msg)->next_frame();
   if(copy)
     (*msg)->add_frame(mutable_cpu_data(), sizeof(float)*size());
@@ -177,9 +179,10 @@ Msg* Param::HandleGetMsg(Msg** msg){
 }
 
 int Param::ParseUpdateMsg(Msg** msg){
-  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %c ", &copy);
+  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
   (*msg)->next_frame();
   if(copy){
+    LOG(ERROR)<<"Copy in parse update";
     CHECK((*msg)->frame_size());
     memcpy(mutable_cpu_grad(), (*msg)->frame_data(),(*msg)->frame_size());
   }else {// use the same data field of the grad blob
@@ -194,10 +197,12 @@ int Param::ParseUpdateMsg(Msg** msg){
 Msg* Param::GenUpdateResponseMsg(bool copy){
   Msg* msg=new Msg();
   msg->set_type(kRUpdate);
-  char buf[8]; sprintf(buf, " %c ", copy);
+  char buf[8]; sprintf(buf, " %d ", copy);
   msg->add_frame(buf, sizeof(buf));
-  if(copy)
+  if(copy){
+    LOG(ERROR)<<"Copy in gen";
     msg->add_frame(mutable_cpu_data(), size()*sizeof(float));
+  }
   return msg;
 }
 
@@ -226,10 +231,9 @@ int Param::ParseUpdateResponseMsg(Msg **msg, int slice_idx){
 }
 
 void Param::ParseResponseMsg(Msg** msg, int slice_idx){
-  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %c ", &copy);
+  char copy; sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
   (*msg)->next_frame();
   if(copy){
-    LOG(ERROR)<<"copy";
     CHECK((*msg)->frame_size());
     memcpy(mutable_cpu_data()+slice_offset_[slice_idx],
         (*msg)->frame_data(), (*msg)->frame_size());

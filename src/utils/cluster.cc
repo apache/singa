@@ -51,9 +51,7 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
   rt->Init();
   cluster_rt_=shared_ptr<ClusterRuntime>(static_cast<ClusterRuntime*>(rt));
 
-  char buf[128];
-  gethostname(buf, 128);
-  hostname_=string(buf);
+  hostip_=GetHostIP();
 }
 
 void Cluster::Register(const string& endpoint){

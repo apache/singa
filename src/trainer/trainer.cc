@@ -257,8 +257,9 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
   router_=make_shared<Router>();
   router_->Bind(kInprocRouterEndpoint);
   if(cluster->nprocs()>1){
-    int port=router_->Bind("tcp://127.0.0.1:*");
-    cluster->Register(cluster->hostname()+":"+std::to_string(port));
+    const string hostip=cluster->hostip();
+    int port=router_->Bind("tcp://"+hostip+":*");
+    cluster->Register(hostip+":"+std::to_string(port));
   }else
     cluster->set_procs_id(0);
 
@@ -312,6 +313,9 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
   poll.Add(router_.get());
   int sync_server=0, nworkers=workers.size(), nservers=servers.size();
   while(!stop){
+    // if the poll time is large, then the poller may not expire
+    // if it is small, then many reminder messages will be sent which may
+    // slow done the process of other request. TODO tune it.
     auto *sock=poll.Wait(cluster->poll_time());
     if(poll.Terminated()){
       LOG(ERROR)<<"Connection broken!";
@@ -411,6 +415,8 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
         }else{
           dst_procs_id=cluster->ProcsIDOf(msg->dst_first(),
               msg->dst_second(), msg->dst_flag());
+          if(type==kSync)
+            LOG(ERROR)<<msg->dst_first()<<","<<msg->dst_second()<<","<<dst_procs_id;
         }
         if(dst_procs_id!=procs_id_){
           // forward to other procs
@@ -474,6 +480,8 @@ const vector<Msg*> Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
     for(int idx=0, id=param->slice_start();idx<param->num_slices();idx++){
       int server=slice2server_[id+idx];
       int procs=Cluster::Get()->ProcsIDOf(group, server, kServer);
+      if(procs!=procs_id_)
+        LOG(ERROR)<<"Copy for update";
       auto x=param->GenGetMsg(procs!=procs_id_, idx);
       x->set_trgt(param->owner(), id+idx, param->local_version()+1);
       x->set_src(procs_id_, gid, kStub);

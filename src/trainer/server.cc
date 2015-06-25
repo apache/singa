@@ -70,7 +70,12 @@ void Server::Run(){
         if(syncEntry>=master_params.size())
           continue;
         auto param=master_params.at(syncEntry);
-        if(param->local_version()!=param->version()){
+        // control the frequency of synchronization
+        // currently sync is triggerred only when the slice is updated
+        // by local worker or other workers for at least nserver_groups times.
+        // TODO may optimize the trigger condition.
+        if(abs(param->local_version()-param->version())>=cluster->nserver_groups()){
+          // TODO replace the argument (0,0) to sync a chunk instead of a slice
           sync=param->GenSyncMsg(0,0);
           for(int i=0;i<cluster->nserver_groups();i++){
             if(i!=group_id_) {
@@ -82,7 +87,7 @@ void Server::Run(){
               tmp->set_src(group_id_, server_id_, kServer);
               dealer_->Send(&tmp);
               param->set_version(param->local_version());
-              //DLOG(ERROR)<<"sync";
+              //LOG(ERROR)<<"sync slice="<<param->id()<<" to procs "<<i;
             }
           }
           syncEntry=(syncEntry+1)%master_params.size();
@@ -172,6 +177,7 @@ Msg* Server::HandleSyncRequest(shared_ptr<Param> param, Msg **msg){
   CHECK_EQ((*msg)->frame_size(), param->size()*sizeof(float));
   Tensor<cpu, 1> tmp(static_cast<float*>((*msg)->frame_data()), shape);
   Tensor<cpu, 1> cur(param->mutable_cpu_data(), shape);
+  //LOG(ERROR)<<"Recv sync for "<<param->id();
   if(slice2group_[param->id()]==group_id_){
     cur+=tmp;
     param->set_local_version(param->local_version()+1);

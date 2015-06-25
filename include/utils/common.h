@@ -32,6 +32,7 @@ int LeastCommonMultiple(int a, int b);
 inline float rand_real(){
   return  static_cast<float>(rand())/(RAND_MAX+1.0f);
 }
+const std::string GetHostIP();
 
 class Metric {
  public:

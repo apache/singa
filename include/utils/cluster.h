@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include "utils/common.h"
 #include "proto/cluster.pb.h"
 #include "utils/cluster_rt.h"
 
@@ -123,8 +124,8 @@ class Cluster {
   }
 
   int ProcsIDOf(int group_id, int id, int flag);
-  const string hostname() const {
-    return hostname_;
+  const string hostip() const {
+    return hostip_;
   }
   void Register(const string& endpoint);
 
@@ -136,7 +137,7 @@ class Cluster {
  private:
   int procs_id_;
   int nprocs_;
-  string hostname_;
+  string hostip_;
   std::vector<std::string> endpoints_;
   // cluster config proto
   ClusterProto cluster_;
