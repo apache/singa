@@ -163,7 +163,20 @@ endif
 clean-local:
 	rm -rf $(PROTO_SRCS) $(PROTO_HDRS)
 	rm -rf $(PROTO_PYS)
+	rm -rf rat_check
+	rm -rf tool/pb2
 
+rat:
+	@if test ! -z '$(shell command -v java 2>/dev/null)'; then \
+		if test ! -z '$(shell echo $$RAT_PATH)'; then \
+			make clean;\
+			java -jar $(RAT_PATH) -E rat-excludes -d . > rat_check; \
+		else \
+			echo "RAT_PATH is not set to correct jar file"; \
+		fi \
+	else \
+		echo "java is not found"; \
+	fi
 
 $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
 	protoc --proto_path=$(top_srcdir)/src/proto --cpp_out=$(top_srcdir)/src/proto $(PROTOS)

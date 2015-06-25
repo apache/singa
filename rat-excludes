@@ -1,0 +1,13 @@
+rat-excludes
+Makefile.*
+configure
+.gitignore
+conf/*
+config/*
+\.dirstamp
+autom4te.cache/*
+config.*
+libtool
+stamp-h1
+.*\.conf
+.*\.md
