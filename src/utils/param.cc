@@ -133,11 +133,11 @@ Msg* Param::GenUpdateMsg(bool copy, int idx){
   return msg;
 }
 
-Msg* Param::GenSyncMsg(bool copy, int v){
+Msg* Param::GenSyncMsg(int offset, int size){
   Msg* msg=new Msg();
   msg->set_type(kSyncRequest);
-  msg->set_target(id(), local_version());
-  msg->add_frame(mutable_cpu_data(), size()*sizeof(float));
+  msg->set_trgt(-1, id(), local_version());
+  msg->add_frame(mutable_cpu_data(), data_->count()*sizeof(float));
   return msg;
 }
 
@@ -150,9 +150,10 @@ Msg* Param::HandlePutMsg(Msg** msg){
   proto_.set_learning_rate_multiplier(lr);
   proto_.set_weight_decay_multiplier(wc);
   vector<int> shape{size};
-  Setup(shape);
-  set_local_version((*msg)->target_second());
-  set_version((*msg)->target_second());
+  ParamProto proto;
+  Setup(proto, shape);
+  set_local_version((*msg)->trgt_third());
+  set_version((*msg)->trgt_third());
   if(ptr==nullptr){
     CHECK((*msg)->next_frame());
     CHECK_EQ(size* sizeof(float), (*msg)->frame_size());
@@ -205,7 +206,6 @@ Msg* Param::HandleSyncMsg(Msg** msg){
   return nullptr;
 }
 
-<<<<<<< HEAD
 int Param::ParseSyncResponseMsg(Msg** msg, int slice_idx){
   DeleteMsg(msg);
   return 1;

@@ -90,7 +90,7 @@ Router::~Router() {
       zmsg_destroy(&msg);
   }
 }
-int Router::Bind(std::string endpoint){
+int Router::Bind(const std::string& endpoint){
   int port=-1;
   if(endpoint.length()){
     port=zsock_bind(router_, "%s", endpoint.c_str());

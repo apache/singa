@@ -7,6 +7,7 @@
 #include "utils/singleton.h"
 #include "utils/factory.h"
 #include "utils/cluster.h"
+#include "proto/common.pb.h"
 
 using namespace mshadow;
 namespace singa {
@@ -34,8 +35,9 @@ void Server::Run(){
   ping->add_frame("PING", 4);
   ping->set_type(kConnect);
   dealer_->Send(&ping);
-  int syncEntry=0;
-	//start recv loop and process requests
+  vector<shared_ptr<Param>> master_params;
+  size_t syncEntry=0;
+  //start recv loop and process requests
   while (true){
     Msg* msg=dealer_->Receive();
     if (msg==nullptr)
@@ -53,46 +55,39 @@ void Server::Run(){
       CHECK_STREQ("PONG", pong.c_str());
       DeleteMsg(&msg);
     }else if(type==kPut){
+      int pid = msg->trgt_second();
       response = HandlePut(&msg);
+      if(slice2group_[pid]==group_id_)
+        master_params.push_back(shard_->at(pid));
     }else{
       int pid=msg->trgt_second();
       if(shard_->find(pid)==shard_->end()){
         // delay the processing by re-queue the msg.
         response=msg;
         DLOG(ERROR)<<"Requeue msg";
-    }else if(type==kSyncReminder){
-      DeleteMsg(&msg);
-      unsigned nchecks=0, nparams=shard_->size();
-      while(nchecks<nparams
-          &&group_locator_->at(shard_->at(syncEntry))!=group_id_){
-        syncEntry=(syncEntry+1)%nparams;
-        nchecks++;
-      }
-      if(nchecks==nparams) continue;
-      auto param=shard_->at(syncEntry);
-      if(param->local_version()!=param->version()){
-        sync=param->GenSyncMsg(true);
-        for(int i=0;i<cluster->nserver_groups();i++){
-          if(i!=group_id_) {
-            Msg* tmp=sync;
-            if(i<cluster->nserver_groups()-1)
-              tmp= new Msg(*sync);
-            tmp->set_dst(i, server_locator_->at(param), kServer);
-            tmp->set_src(group_id_, server_id_, kServer);
-            dealer_->Send(&tmp);
-            param->set_version(param->local_version());
-            //DLOG(ERROR)<<"sync";
+      }else if(type == kSyncReminder){
+        DeleteMsg(&msg);
+        if(syncEntry>=master_params.size())
+          continue;
+        auto param=master_params.at(syncEntry);
+        if(param->local_version()!=param->version()){
+          sync=param->GenSyncMsg(0,0);
+          for(int i=0;i<cluster->nserver_groups();i++){
+            if(i!=group_id_) {
+              Msg* tmp=sync;
+              if(i<cluster->nserver_groups()-1)
+                tmp= new Msg(*sync);
+              // assume only one server per group, TODO generalize it
+              tmp->set_dst(i, 0, kServer);
+              tmp->set_src(group_id_, server_id_, kServer);
+              dealer_->Send(&tmp);
+              param->set_version(param->local_version());
+              //DLOG(ERROR)<<"sync";
+            }
           }
+          syncEntry=(syncEntry+1)%master_params.size();
         }
-      }
-    }else {
-      int pid=msg->target_first();
-      if(shard_->find(pid)==shard_->end()){
-        // delay the processing by re-queue the msg.
-        response=msg;
-        LOG(ERROR)<<"Requeue";
->>>>>>> SINGA-8 Implement distributed Hogwild
-      } else{
+      }else{
         auto param=shard_->at(pid);
         switch (type){
           case kGet:
@@ -118,7 +113,7 @@ void Server::Run(){
 
 Msg* Server::HandlePut(Msg **msg){
   int version=(*msg)->trgt_third();
-  int pid=(*msg)->target_first();
+  int pid=(*msg)->trgt_second();
   shared_ptr<Param> param=nullptr;
   if(shard_->find(pid)!=shard_->end()){
     LOG(ERROR)<<"Param ("<<pid<<") is put more than once";
@@ -126,19 +121,21 @@ Msg* Server::HandlePut(Msg **msg){
   }else{
     auto factory=Singleton<Factory<Param>>::Instance();
     param=shared_ptr<Param>(factory ->Create("Param"));
-    param->set_id(pid);
     (*shard_)[pid]=param;
   }
   auto response=param->HandlePutMsg(msg);
   // must set version after HandlePutMsg which allocates the memory
   param->set_version(version);
+  param->set_local_version(version);
+  param->set_id(pid);
   if(Cluster::Get()->nserver_groups()>1 &&
-      group_locator_->at(param)!=group_id_){
+      slice2group_[pid]!=group_id_){
     last_data_[pid]=std::make_shared<Blob<float>>();
     last_data_[pid]->ReshapeLike(param->data());
     last_data_[pid]->CopyFrom(param->data());
   }
-  LOG(INFO)<<"Server put param "<<pid<<" size="<<param->size()<<" Bytes";
+  LOG(INFO)<<"server ("<<group_id_<<", "<<server_id_
+    <<") put slice="<<pid<<" size="<<param->size();
   return response;
 }
 
@@ -161,9 +158,9 @@ Msg* Server::HandleUpdate(shared_ptr<Param> param, Msg **msg) {
   int step=(*msg)->trgt_third();
   bool copy=param->ParseUpdateMsg(msg);
   updater_->Update(step, param);
-  param->set_version(param->version()+1);
+  param->set_local_version(param->local_version()+1);
   auto response=param->GenUpdateResponseMsg(copy);
-  response->set_trgt(paramid, sliceid, param->version());
+  response->set_trgt(paramid, sliceid, param->local_version());
   response->SetAddr(tmp);
   delete tmp;
   return response;
@@ -175,7 +172,7 @@ Msg* Server::HandleSyncRequest(shared_ptr<Param> param, Msg **msg){
   CHECK_EQ((*msg)->frame_size(), param->size()*sizeof(float));
   Tensor<cpu, 1> tmp(static_cast<float*>((*msg)->frame_data()), shape);
   Tensor<cpu, 1> cur(param->mutable_cpu_data(), shape);
-  if(group_locator_->at(param)==group_id_){
+  if(slice2group_[param->id()]==group_id_){
     cur+=tmp;
     param->set_local_version(param->local_version()+1);
   }else{
@@ -188,7 +185,7 @@ Msg* Server::HandleSyncRequest(shared_ptr<Param> param, Msg **msg){
     if(bandwidth>0){
       response=new Msg();
       response->set_type(kSyncRequest);
-      response->set_target(param->id(), param->version());
+      response->set_trgt(-1, param->id(), param->version());
       response->add_frame(diff.dptr, param->size()*sizeof(float));
       (*msg)->SwapAddr();
       response->SetAddr(*msg);

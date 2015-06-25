@@ -39,7 +39,7 @@ class Param {
    * This function is called at server side where the Param is actually a slice
    * of an original Param object.
    * */
-  virtual Msg* GenSyncMsg();
+  virtual Msg* GenSyncMsg(int offset, int size);
   /**
    * Generate the message to response the update request.
    *
@@ -70,8 +70,6 @@ class Param {
    * \copydetails HandleGetMsg(Msg**)
    */
   virtual Msg* HandleSyncMsg(Msg** msg);
-
-<<<<<<< HEAD
   /**
    * Server parses update request message.
    *
@@ -106,7 +104,6 @@ class Param {
    * @param shape
    */
   virtual void Setup(const ParamProto& proto, const std::vector<int>& shape);
-  virtual void Setup(const vector<int>& shape);
   /*
    * Fill the values according to initmethod, e.g., gaussian distribution
    *

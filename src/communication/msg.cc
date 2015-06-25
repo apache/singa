@@ -11,8 +11,8 @@ Msg::Msg(const Msg& msg){
   src_=msg.src_;
   dst_=msg.dst_;
   type_=msg.type_;
-  target_first_=msg.target_first_;
-  target_second_=msg.target_second_;
+  trgt_first_=msg.trgt_first_;
+  trgt_second_=msg.trgt_second_;
   msg_=zmsg_dup(msg.msg_);
 }
 

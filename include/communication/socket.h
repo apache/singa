@@ -59,7 +59,7 @@ class Poller {
   /**
    * @return true if the poller is terminated due to process interupt
    */
-  virtual bool Terminated()=0;
+  virtual bool Terminated();
 
  protected:
 #ifdef USE_ZMQ

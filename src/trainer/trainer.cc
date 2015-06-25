@@ -179,12 +179,12 @@ vector<shared_ptr<Worker>> Trainer::CreateWorkers(int nthreads,
   auto net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
       cluster->nworkers_per_group());
   int lcm=LeastCommonMultiple(cluster->nserver_groups(), cluster->nservers_per_group());
-    auto paramid2slices=SliceParams(lcm, net->params()); // sliceid, size
-    for(auto param: net->params()){
-      if(param->id()==param->owner())
-        for(auto entry: paramid2slices[param->id()])
-          slice_size->push_back(entry.second);
-    }
+  auto paramid2slices=SliceParams(lcm, net->params()); // sliceid, size
+  for(auto param: net->params()){
+    if(param->id()==param->owner())
+      for(auto entry: paramid2slices[param->id()])
+        slice_size->push_back(entry.second);
+  }
 
   for(int gid=gstart;gid<gend;gid++){
     shared_ptr<NeuralNet> train_net, test_net, validation_net;
@@ -249,15 +249,20 @@ vector<shared_ptr<Worker>> Trainer::CreateWorkers(int nthreads,
 
 void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     int procs_id){
-  procs_id_=procs_id;
+  // procs_id is only used for resume training
+  CHECK_EQ(procs_id, -1);
   RegisterDefaultClasses(mproto);
 
   auto cluster=Cluster::Get(cproto, procs_id);
   router_=make_shared<Router>();
   router_->Bind(kInprocRouterEndpoint);
-  if(cluster->nprocs()>1)
-    router_->Bind(cluster->endpoint());
+  if(cluster->nprocs()>1){
+    int port=router_->Bind("tcp://127.0.0.1:*");
+    cluster->Register(cluster->hostname()+":"+std::to_string(port));
+  }else
+    cluster->set_procs_id(0);
 
+  procs_id_ = cluster->procs_id();
   int nthreads=1;
   // create workers
   vector<int> slices;
@@ -280,7 +285,7 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
     threads.push_back(std::thread(&Server::Run,server.get()));
   for(auto worker: workers)
     threads.push_back(std::thread(&Worker::Run,worker.get()));
-  Run(workers, servers, shards);
+  Run(workers, servers);
   for(auto& thread: threads)
     thread.join();
   for(auto x: ctx)
@@ -292,9 +297,9 @@ inline int bandwidth(int bytes, system_clock::time_point start){
   auto duration=duration_cast<TimeT> (now - start);
   return static_cast<int>(bytes*1000.f/duration.count());
 }
+
 void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
-    const vector<shared_ptr<Server>>& servers,
-    const std::map<int, shared_ptr<Trainer::ParamShard>>& shards){
+    const vector<shared_ptr<Server>>& servers){
   auto cluster=Cluster::Get();
   procs_id_=cluster->procs_id();
   LOG(INFO)<<"Stub in process "<<procs_id_<<" starts";
@@ -307,7 +312,7 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
   poll.Add(router_.get());
   int sync_server=0, nworkers=workers.size(), nservers=servers.size();
   while(!stop){
-    Socket *sock=poll.Wait(cluster->poll_time());
+    auto *sock=poll.Wait(cluster->poll_time());
     if(poll.Terminated()){
       LOG(ERROR)<<"Connection broken!";
       exit(0);
@@ -321,7 +326,6 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
         msg->set_type(kSyncReminder);
         sync_server=(sync_server+1)%servers.size();
         router_->Send(&msg);
-        //LOG(ERROR)<<"Reminder";
       }
       continue;
     }
@@ -345,14 +349,13 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
             nservers--;
           else if (msg->src_flag()==kWorkerParam)
             nworkers--;
-          delete msg;
-          msg=nullptr;
+          DeleteMsg(&msg);
           if(nworkers==0&&nservers==0){
             stop=true;
             break;
           }
         }else if(type==kMetric){
-          if(msg->src_first()==0){
+          if(msg->src_first()>=0){
             int step=msg->trgt_first();
             string prefix((char*)msg->frame_data(), msg->frame_size());
             msg->next_frame();

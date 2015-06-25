@@ -14,21 +14,16 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
   procs_id_=procs_id;
   cluster_ = cluster;
   SetupFolders(cluster);
-  int nprocs;
   if(server_worker_separate())
     nprocs_=nworker_procs()+nserver_procs();
   else
-    nprocs=std::max(nworker_procs(), nserver_procs());
-  CHECK_LT(procs_id, nprocs);
-  if (cluster_.has_nprocs())
-    CHECK_EQ(cluster.nprocs(), nprocs);
-  else
-    cluster_.set_nprocs(nprocs);
-  if(nprocs>1&&procs_id>-1){
+    nprocs_=std::max(nworker_procs(), nserver_procs());
+  CHECK_LT(procs_id, nprocs_);
+  if(nprocs_>1&&procs_id>-1){
     std::ifstream ifs(cluster.hostfile(), std::ifstream::in);
     std::string line;
-    while(std::getline(ifs, line)
-        &&endpoints_.size()<static_cast<size_t>(nprocs_)){
+    while(std::getline(ifs, line)&&
+        endpoints_.size()< static_cast<size_t>(nprocs_)){
       endpoints_.push_back(line);
     }
     CHECK_EQ(endpoints_.size(), nprocs_);

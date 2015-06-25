@@ -32,7 +32,10 @@ class Cluster {
   int nworkers_per_procs()const{return cluster_.nworkers_per_procs();}
   int nservers_per_procs()const{return cluster_.nservers_per_procs();}
   int nworker_groups_per_server_group() const {
-    return cluster_.nworker_groups()/cluster_.nserver_groups();
+    if(nserver_groups()==0||nservers_per_group()==0)
+      return 1;
+    else
+      return cluster_.nworker_groups()/cluster_.nserver_groups();
   }
 
   /**
@@ -49,10 +52,7 @@ class Cluster {
    * @return true if the calling procs has worker threads.
    */
   bool has_worker()const {
-    if(server_worker_separate()){
-      return procs_id_<nworker_procs();
-    }else
-      return procs_id_<nprocs_;
+    return procs_id_<nworker_procs();
   }
   /**
    * @return global procs id, which starts from 0.

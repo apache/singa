@@ -43,7 +43,6 @@ message ClusterProto {
   optional int32 bandwidth=50 [default=134217728];
   // poll time in milliseconds
   optional int32 poll_time=51 [default =100];
->>>>>>> SINGA-8 Implement distributed Hogwild
 }
 
 message ServerTopology {
