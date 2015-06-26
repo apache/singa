@@ -42,7 +42,8 @@ int main(int argc, char **argv) {
   singa::ReadProtoFromTextFile(FLAGS_cluster.c_str(), &cluster);
   singa::ModelProto model;
   singa::ReadProtoFromTextFile(FLAGS_model.c_str(), &model);
-  singa::SetupLog(cluster.workspace(), model.name());
+  if(cluster.has_log_dir())
+    singa::SetupLog(cluster.log_dir(), model.name());
 
   LOG(INFO) << "The cluster config is\n" << cluster.DebugString();
   LOG(INFO) << "The model config is\n" << model.DebugString();

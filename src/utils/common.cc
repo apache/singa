@@ -146,15 +146,14 @@ const string GetHostIP() {
   return ip;
 }
 
-void SetupLog(const std::string& workspace, const std::string& model) {
-  std::string folder = workspace+"/log/";
+void SetupLog(const std::string& log_dir, const std::string& model) {
   // TODO check if NFS, then create folder using script otherwise may have
   // problems due to multiple processes create the same folder.
-  CreateFolder(folder);
-  std::string warn = folder + model + "-warn-";
-  std::string info = folder + model + "-info-";
-  std::string error = folder + model + "-error-";
-  std::string fatal = folder + model + "-fatal-";
+  CreateFolder(log_dir);
+  std::string warn = log_dir + "/" + model + "-warn-";
+  std::string info = log_dir + "/" +  model + "-info-";
+  std::string error = log_dir + "/" +  model + "-error-";
+  std::string fatal = log_dir + "/" + model + "-fatal-";
   google::SetLogDestination(google::WARNING, warn.c_str());
   google::SetLogDestination(google::INFO, info.c_str());
   google::SetLogDestination(google::ERROR, error.c_str());
