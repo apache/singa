@@ -99,8 +99,8 @@ Msg* Param::GenPutMsg(bool copy, int idx){
     sprintf(buf+strlen(buf), " %p ", ptr);
     msg->add_frame(buf, strlen(buf));
   }
-  pending_put_[idx]=true;
-  num_pending_requests_++;
+  //pending_put_[idx]=true;
+  //num_pending_requests_++;
 	return msg;
 }
 
@@ -108,7 +108,8 @@ Msg* Param::GenGetMsg(bool copy, int idx){
   CHECK_LT(idx, num_slices_);
   Msg* msg=new Msg();
   msg->set_type(kGet);
-  char buf[8]; sprintf(buf, " %d ", copy);
+  char buf[32]; sprintf(buf, " %d %p ", copy,
+      data_->cpu_data()+slice_offset_[idx]);
   msg->add_frame(buf, sizeof(buf));
   pending_get_[idx]=true;
   num_pending_requests_++;
@@ -123,7 +124,7 @@ Msg* Param::GenUpdateMsg(bool copy, int idx){
   msg->add_frame(buf, sizeof(buf));
   void* ptr=grad_.mutable_cpu_data()+slice_offset_[idx];
   if(copy){
-    LOG(ERROR)<<"Copy in gen update";
+    //LOG(ERROR)<<"Copy in gen update";
     msg->add_frame(ptr, slice_size_[idx]*sizeof(float));
   }
   else{ // to share values of grad blob
@@ -154,13 +155,11 @@ Msg* Param::HandlePutMsg(Msg** msg){
   vector<int> shape{size};
   ParamProto proto;
   Setup(proto, shape);
-  set_local_version((*msg)->trgt_third());
-  set_version((*msg)->trgt_third());
   if(ptr==nullptr){
     CHECK((*msg)->next_frame());
     CHECK_EQ(size* sizeof(float), (*msg)->frame_size());
     memcpy(mutable_cpu_data(), (*msg)->frame_data(), size*sizeof(float));
-  } else{
+  }else{
     data_->set_cpu_data(ptr);
   }
   DeleteMsg(msg);
@@ -169,10 +168,15 @@ Msg* Param::HandlePutMsg(Msg** msg){
 
 Msg* Param::HandleGetMsg(Msg** msg){
   int copy;
-  sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
+  float* ptr;
+  sscanf(static_cast<char*>((*msg)->frame_data()), " %d %p ", &copy, &ptr);
   (*msg)->next_frame();
   if(copy)
     (*msg)->add_frame(mutable_cpu_data(), sizeof(float)*size());
+  else if(ptr!=data_->cpu_data()){
+    memcpy(ptr, data_->cpu_data(), sizeof(float)*size());
+    data_->set_cpu_data(ptr);
+  }
   // else the mem space is shared among all worker and servers
   (*msg)->SwapAddr();
   (*msg)->set_type(kRGet);
@@ -184,7 +188,7 @@ int Param::ParseUpdateMsg(Msg** msg){
   sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
   (*msg)->next_frame();
   if(copy){
-    LOG(ERROR)<<"Copy in parse update";
+    //LOG(ERROR)<<"Copy in parse update";
     CHECK((*msg)->frame_size());
     memcpy(mutable_cpu_grad(), (*msg)->frame_data(),(*msg)->frame_size());
   }else {// use the same data field of the grad blob
@@ -202,9 +206,12 @@ Msg* Param::GenUpdateResponseMsg(bool copy){
   char buf[8]; sprintf(buf, " %d ", copy);
   msg->add_frame(buf, sizeof(buf));
   if(copy){
-    LOG(ERROR)<<"Copy in gen";
+    //LOG(ERROR)<<"Copy in gen";
+  //  LOG(ERROR)<<"gen copy resonse for "<<id()<<", "<<size();
     msg->add_frame(mutable_cpu_data(), size()*sizeof(float));
   }
+  //  LOG(ERROR)<<"gen share resonse for "<<id()<<", "<<size();
+
   return msg;
 }
 
@@ -237,10 +244,11 @@ void Param::ParseResponseMsg(Msg** msg, int slice_idx){
   sscanf(static_cast<char*>((*msg)->frame_data()), " %d ", &copy);
   (*msg)->next_frame();
   if(copy){
-    CHECK((*msg)->frame_size());
+        CHECK_EQ((*msg)->frame_size(), slice_size_[slice_idx]*sizeof(float));
     memcpy(mutable_cpu_data()+slice_offset_[slice_idx],
         (*msg)->frame_data(), (*msg)->frame_size());
   }
+  //LOG(ERROR)<<"parse response norm "<<data_->asum_data()<<" of "<<id();
   DeleteMsg(msg);
 }
 }

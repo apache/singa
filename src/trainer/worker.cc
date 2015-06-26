@@ -47,7 +47,7 @@ void Worker::ConnectStub(shared_ptr<Dealer> dealer, EntityType type){
 }
 
 void Worker::Run(){
-  LOG(INFO)<<"Worker (group_id= "<<group_id_<<", id="<<worker_id_<<") starts";
+  LOG(ERROR)<<"Worker (group_id= "<<group_id_<<", id="<<worker_id_<<") starts";
   dealer_=make_shared<Dealer>(2*thread_id_);
   ConnectStub(dealer_, kWorkerParam);
   for(auto layer: train_net_->layers())
@@ -67,8 +67,9 @@ void Worker::Run(){
         if(param->owner() == param->id()){
           if(group_id_%Cluster::Get()->nworker_groups_per_server_group()==0)
             param->InitValues(0);
-          else
+          else{
             Get(param, modelproto_.warmup_steps());
+          }
         }
       }
   }
@@ -277,7 +278,7 @@ void BPWorker::Backward(int step, shared_ptr<NeuralNet> net){
         // receive grad blobs
       }
       layer->ComputeGradient();
-      if(DisplayDebugInfo(step)&&layer->mutable_grad(nullptr)!=nullptr){
+      if(layer->mutable_grad(nullptr)!=nullptr&&DisplayDebugInfo(step)){
         LOG(INFO)<<StringPrintf("Backward layer %10s grad norm1 %13.9f\t",
             layer->name().c_str(), layer->grad(nullptr).asum_data());
         for(shared_ptr<Param> p: layer->GetParams())

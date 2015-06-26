@@ -39,7 +39,7 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
       procs_ids_[Hash(i,j,kWorkerParam)]=procs;
     }
   }
-  int offset=cluster_.server_worker_separate()? procs:0;
+  int offset=cluster_.server_worker_separate()? procs+1:0;
   ngrps=cluster_.nserver_groups(), grp_size=cluster_.nservers_per_group();
   for(int i=0;i<ngrps;i++){
     for(int j=0;j<grp_size;j++){
