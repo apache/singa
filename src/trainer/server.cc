@@ -25,7 +25,8 @@ void Server::Setup(const UpdaterProto& proto,
 }
 
 void Server::Run(){
-  LOG(ERROR)<<"Server (group_id= "<<group_id_<<", id="<<server_id_<<") starts";
+  LOG(ERROR)<<"Server (group_id = "<<group_id_
+    <<", id = "<<server_id_<<") starts";
   dealer_=std::make_shared<Dealer>(2*thread_id_);
   dealer_->Connect(kInprocRouterEndpoint);
   auto cluster=Cluster::Get();
@@ -113,7 +114,8 @@ void Server::Run(){
     if (response!=nullptr)
       dealer_->Send(&response);
   }
-  LOG(INFO)<<"Server (group_id= "<<group_id_<<", id="<<server_id_<<") stops";
+  LOG(ERROR)<<"Server (group_id = "<<group_id_
+    <<", id = "<<server_id_<<") stops";
 }
 
 Msg* Server::HandlePut(Msg **msg){

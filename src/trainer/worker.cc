@@ -47,7 +47,8 @@ void Worker::ConnectStub(shared_ptr<Dealer> dealer, EntityType type){
 }
 
 void Worker::Run(){
-  LOG(ERROR)<<"Worker (group_id= "<<group_id_<<", id="<<worker_id_<<") starts";
+  LOG(ERROR)<<"Worker (group_id = "<<group_id_
+    <<", id = "<<worker_id_<<") starts";
   dealer_=make_shared<Dealer>(2*thread_id_);
   ConnectStub(dealer_, kWorkerParam);
   for(auto layer: train_net_->layers())
@@ -90,7 +91,8 @@ void Worker::Run(){
   }
 
   Stop();
-  LOG(INFO)<<"Worker (group_id= "<<group_id_<<", id="<<worker_id_<<") stops";
+  LOG(ERROR)<<"Worker (group_id = "<<group_id_
+    <<", id = "<<worker_id_<<") stops";
 }
 
 void Worker::Stop(){

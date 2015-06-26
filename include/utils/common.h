@@ -2,6 +2,7 @@
 #define SINGA_UTILS_COMMON_H_
 
 #include <google/protobuf/message.h>
+#include <stdlib.h>
 #include <map>
 #include <sstream>
 #include <string>
@@ -9,9 +10,9 @@
 
 namespace singa {
 
-std::string IntVecToString(const std::vector<int>& vec) ;
-std::string VStringPrintf(std::string fmt, va_list l) ;
-std::string StringPrintf(std::string fmt, ...) ;
+std::string IntVecToString(const std::vector<int>& vec);
+std::string VStringPrintf(std::string fmt, va_list l);
+std::string StringPrintf(std::string fmt, ...);
 void ReadProtoFromTextFile(const char* filename,
                            google::protobuf::Message* proto);
 void WriteProtoToTextFile(const google::protobuf::Message& proto,
@@ -21,6 +22,8 @@ void ReadProtoFromBinaryFile(const char* filename,
 void WriteProtoToBinaryFile(const google::protobuf::Message& proto,
                             const char* filename);
 
+const std::string CurrentDateTime();
+void  CreateFolder(const std::string name);
 /*
 inline void Sleep(int millisec=1){
   std::this_thread::sleep_for(std::chrono::milliseconds(millisec));
@@ -29,10 +32,13 @@ inline void Sleep(int millisec=1){
 
 int gcd(int a, int b);
 int LeastCommonMultiple(int a, int b);
-inline float rand_real(){
-  return  static_cast<float>(rand())/(RAND_MAX+1.0f);
+/*
+inline float rand_real() {
+  return  static_cast<float>(rand_r())/(RAND_MAX+1.0f);
 }
+*/
 const std::string GetHostIP();
+void SetupLog(const std::string& workspace, const std::string& model);
 
 class Metric {
  public:
