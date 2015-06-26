@@ -36,6 +36,8 @@ void NeuralNet::RegisterLayers(){
   RegisterLayer(factory, SoftmaxLoss);
   RegisterLayer(factory, Split);
   RegisterLayer(factory, Tanh);
+  RegisterLayer(factory, DBMBottom);
+  RegisterLayer(factory, DBMTop);
 }
 shared_ptr<NeuralNet> NeuralNet::SetupNeuralNet(const NetProto& np, Phase phase,
     int group_size){

@@ -116,6 +116,10 @@ class Layer {
    */
   virtual void ComputeFeature(Phase phase);
   /**
+   * \copybrief ComputeLoss()
+   */
+  virtual void ComputeLoss(Metric* perf) {}
+  /**
    * Compute gradients for parameters and connecting layers.
    *
    * Implement backward propagation for BP.

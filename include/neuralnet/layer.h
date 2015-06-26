@@ -85,6 +85,112 @@ class DropoutLayer: public Layer {
 };
 
 /**
+  * DBM bottom layer
+  */
+class DBMBottomLayer: public Layer {
+ public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+  virtual void Setup(const LayerProto& proto,
+      const vector<SLayer>& srclayers);
+  virtual bool is_bottomlayer() const {
+    return true;
+  }
+  virtual void SetupAfterPartition(const LayerProto& proto,
+      const vector<int> &shape,
+      const vector<SLayer>& srclayers);
+  virtual ConnectionType connection_type(int k) const {
+    CHECK_LT(k, srclayers_.size());
+    return kOneToAll;
+  }
+
+  virtual void ComputeFeature(Phase phase,
+     const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeLoss(Metric* perf);
+  virtual Blob<float>* mutable_data(const Layer* from) {
+    if (kPhase)
+      return &data_;
+    else
+      return &hidden_data_;
+  }
+  virtual const Blob<float>& data(const Layer* from) const {
+    if (kPhase)
+      return data_;
+    else
+      return hidden_data_;
+  }
+  // virtual void ToProto(LayerProto *layer_proto, bool copyData);
+  virtual vector<shared_ptr<Param>> GetParams() {
+    return vector<shared_ptr<Param>>{weight_, bias_};
+  }
+
+ private:
+  //! dimension of the hidden layer
+  int hdim_;
+  //! dimension of the visible layer
+  int vdim_;
+  int batchsize_;
+  // batchsize of negative phase
+  int neg_batchsize_;
+  bool is_first_iteration_bottom;
+  float scale_;
+  shared_ptr<Param> weight_, bias_;
+  // data to store variables of negative phase
+  Blob<float> hidden_data_;
+  // in order to implement Persistent Contrastive Divergence,
+  // we should store the gibbs result in bottom layer
+  Blob<float> negsrc_;
+};
+
+/**
+  * DBM top layer
+  */
+class DBMTopLayer: public Layer {
+ public:
+  using Layer::Setup;
+  using Layer::SetupAfterPartition;
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+  virtual void Setup(const LayerProto& proto,
+      const vector<SLayer>& srclayers);
+  virtual bool is_toplayer() const {
+    return true;
+  }
+  virtual void SetupAfterPartition(const LayerProto& proto,
+      const vector<int> &shape,
+      const vector<SLayer>& srclayers);
+  virtual ConnectionType connection_type(int k) const {
+    CHECK_LT(k, srclayers_.size());
+    return kOneToAll;
+  }
+
+  virtual void ComputeFeature(Phase phase,
+     const vector<shared_ptr<Layer>>& srclayers);
+  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
+  /*virtual Blob<float>* mutable_data(const Layer* from);*/
+  /*virtual const Blob<float>& data(const Layer* from) const;*/
+  // virtual void ToProto(LayerProto *layer_proto, bool copyData);
+  virtual vector<shared_ptr<Param>> GetParams() {
+    return vector<shared_ptr<Param>>{bias_};
+  }
+
+ private:
+  //! dimension of the visible layer
+  int vdim_;
+  int batchsize_;
+  // batchsize of negative phase
+  int neg_batchsize_;
+  bool is_first_iteration_top;
+  float scale_;
+  shared_ptr<Param> bias_;
+};
+
+/**
   * fully connected layer
   */
 class InnerProductLayer: public Layer {

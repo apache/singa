@@ -147,6 +147,20 @@ class BPWorker: public Worker{
   void Forward(int step, Phase phase, shared_ptr<NeuralNet> net);
   void Backward(int step, shared_ptr<NeuralNet> net);
 };
+
+class CDWorker: public Worker{
+ public:
+  CDWorker(int thread_id, int group_id, int worker_id);
+  ~CDWorker() {}
+  virtual void TrainOneBatch(int step, Metric* perf);
+  virtual void TestOneBatch(int step, Phase phase,
+       shared_ptr<NeuralNet> net, Metric* perf);
+  void PositivePhase(int step, shared_ptr<NeuralNet> net);
+  void NegativePhase(int step, shared_ptr<NeuralNet> net);
+  void GradientPhase(int step, shared_ptr<NeuralNet> net);
+  void LossPhase(int step, Phase phase,
+       shared_ptr<NeuralNet> net, Metric* perf);
+};
 }  // namespace singa
 
 #endif  // INCLUDE_TRAINER_WORKER_H_
