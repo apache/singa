@@ -1,4 +1,4 @@
-CLOCAL_AMFLAGS = -I config
+ACLOCAL_AMFLAGS = -I config
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
 AM_CPPFLAGS = -I$(top_srcdir)/src

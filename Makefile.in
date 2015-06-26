@@ -43,7 +43,11 @@ DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	config/depcomp config/install-sh config/ltmain.sh \
 	config/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
+	$(top_srcdir)/config/ltoptions.m4 \
+	$(top_srcdir)/config/ltsugar.m4 \
+	$(top_srcdir)/config/ltversion.m4 \
+	$(top_srcdir)/config/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -310,7 +314,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-CLOCAL_AMFLAGS = -I config
+ACLOCAL_AMFLAGS = -I config
 AUTOMAKE_OPTIONS = foreign subdir-objects
 AM_CPPFLAGS = -I$(top_srcdir)/src
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
