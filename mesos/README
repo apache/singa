@@ -13,7 +13,8 @@ INSTALLING mesos:
 	tar -zxvf mesos-0.22.0.tar.gz
 	cd mesos-0.22.0
 	patch -p5 < $SINGA_HOME/mesos/mesos_patch  
-
+	mkdir build
+	cd build; make; sudo make install
 
 *****************************
 Step 1: Create scheduler
