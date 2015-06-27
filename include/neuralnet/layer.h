@@ -21,7 +21,6 @@
  * the transformation of features.
  */
 namespace singa {
-
 /**
  * Convolution layer.
  */
@@ -111,14 +110,14 @@ class DBMBottomLayer: public Layer {
      const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
   virtual void ComputeLoss(Metric* perf);
-  virtual Blob<float>* mutable_data(const Layer* from) {
-    if (kPhase)
+  virtual Blob<float>* mutable_data(const Layer* from, Phase phase) {
+    if (phase == kPositive)
       return &data_;
     else
       return &hidden_data_;
   }
-  virtual const Blob<float>& data(const Layer* from) const {
-    if (kPhase)
+  virtual const Blob<float>& data(const Layer* from, Phase phase) const {
+    if (phase == kPositive)
       return data_;
     else
       return hidden_data_;
@@ -136,7 +135,7 @@ class DBMBottomLayer: public Layer {
   int batchsize_;
   // batchsize of negative phase
   int neg_batchsize_;
-  bool is_first_iteration_bottom;
+  bool is_first_iteration_bottom_;
   float scale_;
   shared_ptr<Param> weight_, bias_;
   // data to store variables of negative phase
@@ -185,7 +184,7 @@ class DBMTopLayer: public Layer {
   int batchsize_;
   // batchsize of negative phase
   int neg_batchsize_;
-  bool is_first_iteration_top;
+  bool is_first_iteration_top_;
   float scale_;
   shared_ptr<Param> bias_;
 };

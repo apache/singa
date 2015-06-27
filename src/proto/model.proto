@@ -146,8 +146,8 @@ message LayerProto {
     kSlice = 12;
     kSplit = 13;
     kTanh = 14;
-    kDBMBottom = 15;
-    kDBMTop = 16;
+    kDBMBottom = 21;
+    kDBMTop = 22;
   }
   // source layer names
   repeated string srclayers = 3;
@@ -297,13 +297,13 @@ message DropoutProto {
 
 // Message that stores parameters used by DBMBottomLayer
 message DBMBottomProto {
-  optional uint32 num_output = 1; // The number of outputs for the layer
+  optional int32 num_output = 1; // The number of outputs for the layer
   optional bool bias_term = 2 [default = true]; // whether to have bias terms
 }
 
 // Message that stores parameters used by DBMTopLayer
 message DBMTopProto {
-  optional uint32 num_output = 1; // The number of outputs for the layer
+  optional int32 num_output = 1; // The number of outputs for the layer
   optional bool bias_term = 2 [default = true]; // whether to have bias terms
 }
 
