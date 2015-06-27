@@ -63,13 +63,13 @@ cd $BASE
 
 # clenup singa data
 if [ -z $host_path ] ; then
-  . $BIN/singa-stop.sh
+  $BIN/singa-stop.sh 
 else
-  . $BIN/singa-stop.sh $host_path
+  $BIN/singa-stop.sh $host_path
 fi
 
 # start zookeeper
-. $BIN/zk-service.sh start 2>/dev/null
+$BIN/zk-service.sh start 2>/dev/null
 
 # wait for zk service to be up
 sleep 3
@@ -100,7 +100,7 @@ fi
 
 # cleanup singa data
 if [ -z $host_path ] ; then
-  . $BIN/singa-stop.sh
+  $BIN/singa-stop.sh
 else
-  . $BIN/singa-stop.sh $host_path
+  $BIN/singa-stop.sh $host_path
 fi

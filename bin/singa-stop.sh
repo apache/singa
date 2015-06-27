@@ -45,7 +45,7 @@ HOST_FILE=$1
 if [ $# = 0 ] ; then
   echo kill singa @ localhost ...
   cmd="killall -s SIGKILL "$PROC_NAME
-  exec $cmd
+  $cmd
 elif [ $# = 1 ] ; then
   ssh_options="-oStrictHostKeyChecking=no \
   -oUserKnownHostsFile=/dev/null \
