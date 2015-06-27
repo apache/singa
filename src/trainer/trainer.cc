@@ -359,7 +359,7 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
             break;
           }
         }else if(type==kMetric){
-          if(msg->src_first()>=0){
+          if(msg->src_first()==0){
             int step=msg->trgt_first();
             string prefix((char*)msg->frame_data(), msg->frame_size());
             msg->next_frame();
