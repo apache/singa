@@ -1,181 +1,247 @@
+// Copyright 2015 Anh Dinh
+
+#include <stdio.h>
+#include <glog/logging.h>
+#include <gflags/gflags.h>
+#include <stdlib.h>
 #include <mesos/scheduler.hpp>
 #include <string>
-#include <glog/logging.h>
-#include <stdio.h>
 #include <iostream>
 #include <fstream>
-#include <stdlib.h>
 
-using namespace std; 
-using namespace mesos; 
+using std::string;
+using mesos::SchedulerDriver;
+using std::vector;
+using std::map;
 
 /**
-* Assume 2 CPU per instance
-*/
-#define CPU_PER_INSTANCE 2
-#define MEM_PER_INSTANCE 1024
+ * Mesos scheduler for Singa. When one of the task/node fails, restart the entire scheduler.
+ *
+ * Usage: scheduler --singa_home --singa_workdir --nhosts --ncpus_per_host --nmem_per_host
+ *
+ * + singa_home: contains the singa binary
+ * + singa_workdir (for example, singa_home/examples/cifra10) contains the files necessary for training a model:
+ * 		- singa_workdir/hostfile
+ * 		- singa_workdir/cluster.conf
+ * 		- singa_workdir/model.conf
+ * + nhosts: number of singa nodes
+ * + ncpus_per_host: how many CPUs per singa node
+ * + nmem_per_host: how much memory per singa node
+ */
 
-class SingaFramework: public Scheduler{
+DEFINE_string(singa_home, "/home/dinhtta/Research/incubator-singa", "");
+DEFINE_string(singa_workdir,
+		"/home/dinhtta/Research/incubator-singa/examples/cifar10", "");
+DEFINE_int32(nhosts, 1, "number of hosts");
+DEFINE_int32(ncpus_per_host, 2, "number of cpus per host");
+DEFINE_int32(nmem_per_host, 1024, "memory per host");
+
+class SingaFramework: public mesos::Scheduler {
 public:
-	SingaFramework(){}
-
-	SingaFramework(int ninstances, string command): ninstances_(ninstances), 
-							command_(command), launched_tasks_(0),
-							pending_tasks_(0){}
-
-	virtual void registered(SchedulerDriver *driver, const FrameworkID& frameworkId, 
-					const MasterInfo& masterInfo){
-		LOG(INFO) << "frameworkId = " << frameworkId.value(); 	
-		frameworkId_ = frameworkId.value(); 
-
-	}
-		
-	virtual void reregistered(SchedulerDriver *driver, const MasterInfo& masterInfo){
-		LOG(INFO) << "reassigned frameworkID = " << frameworkId_; 
-	}
-	virtual void disconnected(SchedulerDriver *driver){
-		LOG(INFO) << "Bye bye"; 
+	SingaFramework() :
+			launched_tasks_(0), pending_tasks_(0), has_launched_(false) {
 	}
 
-	virtual void resourceOffers(SchedulerDriver* driver,	
-					const std::vector<Offer>& offers){
-		LOG(INFO) << "Number of offers = " <<offers.size(); 
-		//print out offer
-		for (int i=0; i<offers.size(); i++){
-			const Offer offer = offers[i]; 
-			LOG(INFO) << "Got offer ID = .." << offer.id().value(); 
-			string slave_host = offer.slave_id().value(); 
-			LOG(INFO) <<"    From host " << slave_host << " name = " << offer.hostname(); 
-			
-			int cpus=0, mem=0; 
-			int nresources = offer.resources().size(); 
+	virtual void registered(SchedulerDriver *driver,
+			const mesos::FrameworkID& frameworkId,
+			const mesos::MasterInfo& masterInfo) {
+		LOG(INFO) << "Registered frameworkId = " << frameworkId.value();
+		frameworkId_ = frameworkId.value();
+	}
 
-			vector<TaskInfo> *new_tasks = new vector<TaskInfo>();  
+	virtual void reregistered(SchedulerDriver *driver,
+			const mesos::MasterInfo& masterInfo) {
+		LOG(INFO) << "Reassigned frameworkID = " << frameworkId_;
+	}
 
-			for (int r=0; r<nresources; r++){
-				const Resource& resource = offer.resources(r); 
-				if (resource.name()=="cpus" && resource.type()==Value::SCALAR)
-					cpus=resource.scalar().value(); 
-				else if (resource.name()=="mem" && resource.type()==Value::SCALAR)
-					mem=resource.scalar().value(); 
+	virtual void disconnected(SchedulerDriver *driver) {
+		LOG(INFO) << "Bye bye";
+	}
+
+	/**
+	 * Handle resource offers from Mesos nodes.
+	 *
+	 * 1. Create corresponding tasks for each offer.
+	 * 2. Wait until having enough resources as required (nodes, cpus per node, memory).
+	 * 3. Write to host file, with IDs (IP addresses) of the nodes offering resources.
+	 * 4. Launch tasks.
+	 */
+	virtual void resourceOffers(SchedulerDriver* driver,
+			const std::vector<mesos::Offer>& offers) {
+		LOG(INFO) << "Received " << offers.size() << " offers";
+		if (has_launched_) {
+			LOG(INFO) << "Already launched tasks, skipped this offer";
+			return;
+		}
+
+		// print out offer
+		for (int i = 0; i < offers.size(); i++) {
+			const mesos::Offer offer = offers[i];
+			string slave_host = offer.slave_id().value();
+			LOG(INFO) << "Offer " << offer.id().value() << " from host "
+					<< slave_host << " hostname = " << offer.hostname();
+
+			int cpus = 0, mem = 0;
+			int nresources = offer.resources().size();
+
+			vector < mesos::TaskInfo > *new_tasks =
+					new vector<mesos::TaskInfo>();
+
+			for (int r = 0; r < nresources; r++) {
+				const mesos::Resource& resource = offer.resources(r);
+				if (resource.name() == "cpus"
+						&& resource.type() == mesos::Value::SCALAR)
+					cpus = resource.scalar().value();
+				else if (resource.name() == "mem"
+						&& resource.type() == mesos::Value::SCALAR)
+					mem = resource.scalar().value();
 			}
-			
-			if (cpus < CPU_PER_INSTANCE || mem < MEM_PER_INSTANCE || 
-				pending_tasks_ >= ninstances_){
-				LOG(INFO) << "Decline offer, not enough resource"; 
-				driver->declineOffer(offer.id()); 
-				return; 
+
+			if (cpus < FLAGS_ncpus_per_host || mem < FLAGS_nmem_per_host
+					|| pending_tasks_ >= FLAGS_nhosts) {
+				LOG(INFO) << "Decline offer, not enough resource";
+				driver->declineOffer(offer.id());
+				return;
 			}
 
-			//wait until having enough resource, then launch
-			while (cpus >= CPU_PER_INSTANCE && mem >= MEM_PER_INSTANCE && 
-					pending_tasks_<ninstances_){
-					
-					//create tasks and add to pending tasks
-					TaskInfo task; 
-					task.set_name("SINGA task"); 
-					char string_id[512]; 
-					sprintf(string_id,"%d",pending_tasks_); 
-					task.mutable_task_id()->set_value(string(string_id));
-					task.mutable_slave_id()->MergeFrom(offer.slave_id()); 
-					
-					sprintf(string_id,"cd %s/mesos; ./pm_run.sh %d",command_.c_str(), pending_tasks_); 
-					LOG(INFO) << "Command = " << string_id; 
+			// wait until having enough resource, then launch
+			while (cpus >= FLAGS_ncpus_per_host && mem >= FLAGS_nmem_per_host
+					&& pending_tasks_ < FLAGS_nhosts) {
+				// create tasks and add to pending tasks
+				mesos::TaskInfo task;
+				task.set_name("Singa task");
+				char string_id[512];
+				snprintf(string_id, 256, "%d", pending_tasks_);
+				task.mutable_task_id()->set_value(string(string_id));
+				task.mutable_slave_id()->MergeFrom(offer.slave_id());
 
-					task.mutable_command()->set_value(string(string_id)); 		 
+				snprintf(string_id, 256,
+						"cd %s/mesos; ./launch_script.sh --model=%s/model.conf --cluster=%s/cluster.conf > out 2>&1",
+						FLAGS_singa_home.c_str(), FLAGS_singa_workdir.c_str(),
+						FLAGS_singa_workdir.c_str());
 
-					Resource *resource; 
-					resource = task.add_resources(); 
-					resource->set_name("cpus"); 
-					resource->set_type(Value::SCALAR); 
-					resource->mutable_scalar()->set_value(CPU_PER_INSTANCE); 
+				LOG(INFO) << "Command = " << string_id;
 
-					resource = task.add_resources(); 
-					resource->set_name("mem"); 
-					resource->set_type(Value::SCALAR); 
-					resource->mutable_scalar()->set_value(MEM_PER_INSTANCE); 
-			
-					new_tasks->push_back(task); 
-					pending_tasks_++; 
-					cpus-=CPU_PER_INSTANCE; 
-					mem-=MEM_PER_INSTANCE; 
+				task.mutable_command()->set_value(string(string_id));
 
-					singa_hosts_.push_back(offer.hostname()); 
+				mesos::Resource *resource;
+				resource = task.add_resources();
+				resource->set_name("cpus");
+				resource->set_type(mesos::Value::SCALAR);
+				resource->mutable_scalar()->set_value(FLAGS_ncpus_per_host);
+
+				resource = task.add_resources();
+				resource->set_name("mem");
+				resource->set_type(mesos::Value::SCALAR);
+				resource->mutable_scalar()->set_value(FLAGS_nmem_per_host);
+
+				new_tasks->push_back(task);
+				pending_tasks_++;
+				cpus -= FLAGS_ncpus_per_host;
+				mem -= FLAGS_nmem_per_host;
+
+				singa_hosts_.push_back(offer.hostname());
 			}
-			tasks_[offer.id().value()] = new_tasks;  		
-			//send offer
-			if (pending_tasks_==ninstances_){
-				//write to file
+			tasks_[offer.id().value()] = new_tasks;
+			// send offer
+			if (pending_tasks_ == FLAGS_nhosts) {
+				// write to file
 				char path[256];
-				sprintf(path,"%s/examples/mnist/hostfile",command_.c_str()); 
-				ofstream file(path); 
-				for (int i=0; i<singa_hosts_.size(); i++)
-					file << singa_hosts_[i] << "\n"; 
-				file.close(); 	
-				for (map<string,vector<TaskInfo>*>::iterator it = tasks_.begin(); it!=tasks_.end(); ++it){
-					OfferID newId; 
-					newId.set_value(it->first); 
-					LOG(INFO) << "Launching task with offer ID " << it->first; 
-					driver->launchTasks(newId, *(it->second)); 
+				snprintf(path, 256, "%s/hostfile", FLAGS_singa_workdir.c_str());
+				std::ofstream file(path);
+				for (int i = 0; i < singa_hosts_.size(); i++)
+					file << singa_hosts_[i] << "\n";
+				file.close();
+				for (map<string, vector<mesos::TaskInfo>*>::iterator it =
+						tasks_.begin(); it != tasks_.end(); ++it) {
+					mesos::OfferID newId;
+					newId.set_value(it->first);
+					LOG(INFO) << "Launching task with offer ID " << it->first;
+					driver->launchTasks(newId, *(it->second));
 				}
+				has_launched_ = true;
 			}
 		}
 	}
 
-	virtual void offerRescinded(SchedulerDriver *driver, const OfferID& offerId){}
-
-	virtual void statusUpdate(SchedulerDriver* driver, const TaskStatus& status){
-		LOG(INFO) <<" Task status report for task " << status.task_id().value(); 
-		LOG(INFO) <<"      Status = " << status.state(); 
-		if (status.state()== TASK_FINISHED)
-			driver->stop(); 
+	virtual void offerRescinded(SchedulerDriver *driver,
+			const mesos::OfferID& offerId) {
 	}
 
-	virtual void frameworkMessage(SchedulerDriver* driver, const ExecutorID& executorId,
-					const SlaveID& slaveId, const std::string& data){}
+	virtual void statusUpdate(SchedulerDriver* driver,
+			const mesos::TaskStatus& status) {
+		LOG(INFO) << " Task status report for task "
+				<< status.task_id().value();
+		LOG(INFO) << "      Status = " << status.state();
 
-	virtual void slaveLost(SchedulerDriver* driver, const SlaveID& slaveId){}
+		if (status.state() == mesos::TASK_FINISHED)
+			driver->stop();
+		else if (status.state() == mesos::TASK_FAILED)
+			driver->abort();
+	}
 
-	virtual void executorLost(SchedulerDriver* driver, const ExecutorID& executorId, 
-							const SlaveID& slaveId, int status){}
+	virtual void frameworkMessage(SchedulerDriver* driver,
+			const mesos::ExecutorID& executorId, const mesos::SlaveID& slaveId,
+			const string& data) {
+		LOG(INFO) << "Got a framework message " << data;
+	}
 
-	virtual void error(SchedulerDriver* driver, const std::string& message){}
-					
+	virtual void slaveLost(SchedulerDriver* driver,
+			const mesos::SlaveID& slaveId) {
+	}
+
+	virtual void executorLost(SchedulerDriver* driver,
+			const mesos::ExecutorID& executorId, const mesos::SlaveID& slaveId,
+			int status) {
+		LOG(INFO) << "Executor lost";
+	}
+
+	virtual void error(SchedulerDriver* driver, const string& message) {
+		LOG(INFO) << "Got an error " << message;
+	}
+
 private:
-	int ninstances_; 
-	string command_; 
-	string frameworkId_; 
-	vector<string> singa_hosts_; 
-	int launched_tasks_; 
-	int pending_tasks_; 
-
-	map<string, vector<TaskInfo>*> tasks_; 
+	string frameworkId_;
+	vector<string> singa_hosts_;
+	int launched_tasks_;
+	int pending_tasks_;
+	bool has_launched_;
+	map<string, vector<mesos::TaskInfo>*> tasks_;
 };
 
 /**
-* <master address> <ninstances> <SINGA HOME> 
-*/
-int main(int argc, char** argv){
+ * <master address> <ninstances> <SINGA HOME>
+ */
+int main(int argc, char** argv) {
 	gflags::ParseCommandLineFlags(&argc, &argv, true);
-	//google::InitGoogleLogging(argv[0]);
-	//FLAGS_logtostderr = 1;
+	// google::InitGoogleLogging(argv[0]);
+	FLAGS_logtostderr = 1;
 
-	if (argc!=4){
-		std::cerr << "Usage <master address> <ninstances> <SINGA HOME>" << endl; 
-		exit(1); 
+	if (argc != 2) {
+		std::cerr << "Usage <master address>" << std::endl;
+		exit(1);
 	}
 
-	SingaFramework scheduler(atoi(argv[2]), argv[3]); 
+	SchedulerDriver *driver = NULL;
+	int status = mesos::DRIVER_RUNNING;
+	while (true) {
+		SingaFramework scheduler;
 
-	FrameworkInfo framework; 
-	framework.set_user(""); 
-	framework.set_name("Anh's test"); 
+		mesos::FrameworkInfo framework;
+		framework.set_user("");
+		framework.set_name("Singa framework");
 
-	SchedulerDriver *driver = new MesosSchedulerDriver(&scheduler, framework, argv[1]); 
-	int status = driver->run() == DRIVER_STOPPED ? 0 : 1; 
+		driver = new mesos::MesosSchedulerDriver(&scheduler, framework,
+				argv[1]);
+		LOG(INFO) << "Starting Singa framework...";
+		status = driver->run();
+		if (status == mesos::DRIVER_ABORTED)
+			LOG(INFO) << "Singa framework aborted. Restarting ...";
+		sleep(2);
+		driver->stop();
+		delete driver;
+	}
 
-	driver->stop(); 
-	delete driver; 
-	return status; 
+	return status == mesos::DRIVER_STOPPED ? 0 : 1;
 }
 

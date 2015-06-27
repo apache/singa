@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source mesos.conf
+source singa.conf
+
 if [ -z $MESOS_HOME ]; then
 	echo "MESOS_HOME not set"
 	exit 1
@@ -16,9 +19,12 @@ if [ -z $SINGA_HOME ]; then
 fi
 
 # read from the file
-COMMAND="cat framework_log | grep frameworkId | awk '{print \$7}'"
-#COMMAND="./singa_scheduler $MESOS_MASTER_IP:5050 $1 $SINGA_HOME > framework_log 2>&1 &"
-ID=`eval $COMMAND`
-COMMAND="curl -d \"frameworkId=$ID\" -X POST http://$MESOS_MASTER_IP:5050/master/shutdown"
-eval $COMMAND
+for i in `cat framework_log | grep frameworkId | awk '{print \$8}'`
+do
+	echo "Killing framework $i"
+	COMMAND="curl -d \"frameworkId=$i\" -X POST http://$MESOS_MASTER_IP:5050/master/shutdown"
+	eval $COMMAND
+	echo
+done
+
 killall -KILL singa_scheduler
