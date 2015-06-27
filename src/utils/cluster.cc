@@ -39,7 +39,7 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
       procs_ids_[Hash(i,j,kWorkerParam)]=procs;
     }
   }
-  int offset=cluster_.server_worker_separate()? procs:0;
+  int offset=cluster_.server_worker_separate()? procs+1:0;
   ngrps=cluster_.nserver_groups(), grp_size=cluster_.nservers_per_group();
   for(int i=0;i<ngrps;i++){
     for(int j=0;j<grp_size;j++){
@@ -56,9 +56,9 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
 
 void Cluster::Register(const string& endpoint){
   procs_id_=cluster_rt_->RegistProc(endpoint);
-  LOG(ERROR)<<endpoint;
   CHECK_GE(procs_id_,0);
   CHECK_LT(procs_id_,nprocs());
+  LOG(ERROR) << "proc #" << procs_id_ << " -> " << endpoint;
 }
 const string Cluster::endpoint(int procsid) const{
   CHECK_LT(procsid, nprocs());

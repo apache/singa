@@ -44,7 +44,7 @@ typedef struct HandleContext_{
 class ParamInfo{
    public:
   ParamInfo(shared_ptr<Param> p,int local, int owner):
-    num_update(0), next_version(0),num_local(local), num_total(1),
+    num_update(0), next_version(-1),num_local(local), num_total(1),
     owner_procs(owner){
       shares.push_back(p);
     }

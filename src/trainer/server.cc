@@ -25,7 +25,8 @@ void Server::Setup(const UpdaterProto& proto,
 }
 
 void Server::Run(){
-  LOG(INFO)<<"Server (group_id= "<<group_id_<<", id="<<server_id_<<") starts";
+  LOG(ERROR)<<"Server (group_id = "<<group_id_
+    <<", id = "<<server_id_<<") starts";
   dealer_=std::make_shared<Dealer>(2*thread_id_);
   dealer_->Connect(kInprocRouterEndpoint);
   auto cluster=Cluster::Get();
@@ -64,7 +65,7 @@ void Server::Run(){
       if(shard_->find(pid)==shard_->end()){
         // delay the processing by re-queue the msg.
         response=msg;
-        DLOG(ERROR)<<"Requeue msg";
+        //LOG(INFO)<<"Requeue msg"<<type;
       }else if(type == kSyncReminder){
         DeleteMsg(&msg);
         if(syncEntry>=master_params.size())
@@ -113,7 +114,8 @@ void Server::Run(){
     if (response!=nullptr)
       dealer_->Send(&response);
   }
-  LOG(INFO)<<"Server (group_id= "<<group_id_<<", id="<<server_id_<<") stops";
+  LOG(ERROR)<<"Server (group_id = "<<group_id_
+    <<", id = "<<server_id_<<") stops";
 }
 
 Msg* Server::HandlePut(Msg **msg){
@@ -133,6 +135,7 @@ Msg* Server::HandlePut(Msg **msg){
   param->set_version(version);
   param->set_local_version(version);
   param->set_id(pid);
+  //LOG(ERROR)<<"put norm "<<param->data().asum_data()<<", "<<pid;
   if(Cluster::Get()->nserver_groups()>1 &&
       slice2group_[pid]!=group_id_){
     last_data_[pid]=std::make_shared<Blob<float>>();

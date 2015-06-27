@@ -131,7 +131,7 @@ vector<shared_ptr<Server>> Trainer::CreateServers(int nthreads,
     pid-=cluster->nworker_procs();
   int gid=pid*cluster->nservers_per_procs()/cluster->nservers_per_group();
   int start=pid*cluster->nservers_per_procs()%cluster->nservers_per_group();
-  int end=start+cluster->nservers_per_group();
+  int end=start+cluster->nservers_per_procs();
   // the ServerShard for servers consists of a dictionary of Param objects
   server_shard_=make_shared<ServerShard>();
   auto slice2group=PartitionSlice(cluster->nserver_groups(), slices);
@@ -154,6 +154,16 @@ vector<shared_ptr<Server>> Trainer::CreateServers(int nthreads,
 vector<shared_ptr<Worker>> Trainer::CreateWorkers(int nthreads,
     const ModelProto& mproto, vector<int> *slice_size){
   auto cluster=Cluster::Get();
+  auto net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
+      cluster->nworkers_per_group());
+  int lcm=LeastCommonMultiple(cluster->nserver_groups(), cluster->nservers_per_group());
+  auto paramid2slices=SliceParams(lcm, net->params()); // sliceid, size
+  for(auto param: net->params()){
+    if(param->id()==param->owner())
+      for(auto entry: paramid2slices[param->id()])
+        slice_size->push_back(entry.second);
+  }
+
   vector<shared_ptr<Worker>> workers;
   if(!cluster->has_worker())
     return workers;
@@ -176,16 +186,6 @@ vector<shared_ptr<Worker>> Trainer::CreateWorkers(int nthreads,
     wstart=0;
     wend=cluster->nworkers_per_group();
   }
-  auto net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
-      cluster->nworkers_per_group());
-  int lcm=LeastCommonMultiple(cluster->nserver_groups(), cluster->nservers_per_group());
-  auto paramid2slices=SliceParams(lcm, net->params()); // sliceid, size
-  for(auto param: net->params()){
-    if(param->id()==param->owner())
-      for(auto entry: paramid2slices[param->id()])
-        slice_size->push_back(entry.second);
-  }
-
   for(int gid=gstart;gid<gend;gid++){
     shared_ptr<NeuralNet> train_net, test_net, validation_net;
     if(gid==gstart)
@@ -359,7 +359,7 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
             break;
           }
         }else if(type==kMetric){
-          if(msg->src_first()>=0){
+          if(msg->src_first()==0){
             int step=msg->trgt_first();
             string prefix((char*)msg->frame_data(), msg->frame_size());
             msg->next_frame();
@@ -415,8 +415,6 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
         }else{
           dst_procs_id=cluster->ProcsIDOf(msg->dst_first(),
               msg->dst_second(), msg->dst_flag());
-          if(type==kSync)
-            LOG(ERROR)<<msg->dst_first()<<","<<msg->dst_second()<<","<<dst_procs_id;
         }
         if(dst_procs_id!=procs_id_){
           // forward to other procs
@@ -425,7 +423,7 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
             interprocs_dealers[dst_procs_id]=dealer;
             while(cluster->endpoint(dst_procs_id)==""){
               std::this_thread::sleep_for(
-                  std::chrono::milliseconds(kCollectSleepTime));
+                  std::chrono::milliseconds(3000));//kCollectSleepTime));
               LOG(ERROR)<<"waiting for procs "<< dst_procs_id<<" to register";
             }
             dealer->Connect("tcp://"+cluster->endpoint(dst_procs_id));
@@ -435,6 +433,7 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
             amount=0;
           }
           amount+=msg->size();
+          //LOG(ERROR)<<"send inter msg of type "<<msg->type();
           interprocs_dealers[dst_procs_id]->Send(&msg);
         }else{
           if(type==kSyncRequest){
@@ -458,8 +457,7 @@ Msg* Trainer::HandleConnect(Msg** msg){
   reply->SetAddr(*msg);
   reply->add_frame("PONG", 4);
   reply->set_type(kConnect);
-  delete *msg;
-  *msg=NULL;
+  DeleteMsg(msg);
   return reply;
 }
 const vector<Msg*> Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
@@ -467,11 +465,15 @@ const vector<Msg*> Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
   vector<Msg*> replies;
   int version=msgg->trgt_third();
   if(msgg->src_flag()==kStub){
+    LOG(FATAL)<<"Not implemented";
+    /*
     if(version<=pi->shares.at(0)->version()){
-      pi->shares.at(0)->HandleGetMsg(msg);
+      replies.push_back(pi->shares.at(0)->HandleGetMsg(msg));
     }else if(version>pi->next_version){
       // reinsert into a msg queue.
+      replies.push_back(mmsg);
     }
+    */
   }else if(version>pi->next_version){
     pi->next_version=version;
     int gid=msgg->src_first();
@@ -480,12 +482,11 @@ const vector<Msg*> Trainer::HandleGet(shared_ptr<ParamInfo> pi, Msg** msg){
     for(int idx=0, id=param->slice_start();idx<param->num_slices();idx++){
       int server=slice2server_[id+idx];
       int procs=Cluster::Get()->ProcsIDOf(group, server, kServer);
-      if(procs!=procs_id_)
-        LOG(ERROR)<<"Copy for update";
       auto x=param->GenGetMsg(procs!=procs_id_, idx);
       x->set_trgt(param->owner(), id+idx, param->local_version()+1);
       x->set_src(procs_id_, gid, kStub);
       x->set_dst(group, server, kServer);
+      //LOG(ERROR)<<"stub handle get for "<<idx+id<<","<<group<<","<<server;
       replies.push_back(x);
     }
   }
@@ -563,6 +564,7 @@ const vector<Msg*> Trainer::HandlePut(shared_ptr<ParamInfo>pi, Msg** msg){
     x->set_src(procs_id_, gid, kStub);
     x->set_dst(group, server, kServer);
     ret.push_back(x);
+    //LOG(ERROR)<<"stub handle put "<<start+idx<<"to "<<group<<","<<server;
   }
   DeleteMsg(msg);
   return ret;

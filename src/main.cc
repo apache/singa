@@ -1,6 +1,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include "trainer/trainer.h"
+#include "utils/common.h"
 #ifndef GFLAGS_GFLAGS_H_
   namespace gflags = google;
 #endif  // GFLAGS_GFLAGS_H_
@@ -29,11 +30,11 @@ DEFINE_string(model, "examples/mnist/conv.conf", "Model config file");
  * If users want to use their own implemented classes, they should register
  * them here. Refer to the Worker::RegisterDefaultClasses()
  */
-void RegisterClasses(const singa::ModelProto& proto){
+void RegisterClasses(const singa::ModelProto& proto) {
 }
 
+
 int main(int argc, char **argv) {
-  // TODO set log dir
   google::InitGoogleLogging(argv[0]);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
@@ -41,8 +42,11 @@ int main(int argc, char **argv) {
   singa::ReadProtoFromTextFile(FLAGS_cluster.c_str(), &cluster);
   singa::ModelProto model;
   singa::ReadProtoFromTextFile(FLAGS_model.c_str(), &model);
-  LOG(INFO)<<"The cluster config is\n"<<cluster.DebugString();
-  LOG(INFO)<<"The model config is\n"<<model.DebugString();
+  if(cluster.has_log_dir())
+    singa::SetupLog(cluster.log_dir(), model.name());
+
+  LOG(INFO) << "The cluster config is\n" << cluster.DebugString();
+  LOG(INFO) << "The model config is\n" << model.DebugString();
 
   RegisterClasses(model);
   singa::Trainer trainer;

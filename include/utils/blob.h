@@ -42,6 +42,7 @@
 #define INCLUDE_UTILS_BLOB_
 #include <memory>
 #include <vector>
+//#include <atomic>
 #include <glog/logging.h>
 #include "proto/common.pb.h"
 using std::shared_ptr;

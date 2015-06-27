@@ -20,24 +20,52 @@
 # * limitations under the License.
 # */
 # 
-# Manage a zookeeper service
+# Clean up singa processes and zookeeper metadata
 #
 
-usage="Usage: singa-cleanup.sh"
+usage="Usage: \n \
+      (local process): singa-stop.sh \n \
+      (distributed): singa-stop.sh HOST_FILE"
 
-#if [ $# -le 0 ]; then
-#  echo $usage
-#  exit 1
-#fi
+if [ $# -gt 1 ]; then
+  echo -e $usage
+  exit 1
+fi
 
 BIN=`dirname "${BASH_SOURCE-$0}"`
 BIN=`cd "$BIN">/dev/null; pwd`
 BASE=`cd "$BIN/..">/dev/null; pwd`
-ZKDATADIR="/tmp/zookeeper"
+ZKDATA_DIR="/tmp/zookeeper"
 
+PROC_NAME="lt-singa"
+HOST_FILE=$1
+
+
+# kill singa processes
+if [ $# = 0 ] ; then
+  echo kill singa @ localhost ...
+  cmd="killall -s SIGKILL "$PROC_NAME
+  $cmd
+elif [ $# = 1 ] ; then
+  ssh_options="-oStrictHostKeyChecking=no \
+  -oUserKnownHostsFile=/dev/null \
+  -oLogLevel=quiet"
+  hosts=(`cat $HOST_FILE |cut -d ' ' -f 1`)
+  for i in ${hosts[@]} ; do
+    cmd="killall -s SIGKILL "$PROC_NAME
+    echo kill singa @ $i ...
+    if [ $i == localhost ] ; then
+      $cmd
+    else
+      ssh $ssh_options $i $cmd
+    fi
+  done
+fi
+
+# close zookeeper
 . $BIN/zk-service.sh stop 2>/dev/null
 
-echo cleanning data in zookeeper...
-#remove zk data
-rm -r $ZKDATADIR
+echo cleanning metadata in zookeeper ...
+# remove zk data
+rm -r $ZKDATA_DIR
 

@@ -8,14 +8,15 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <net/if.h>
 #include <arpa/inet.h>
-
-
+#include <time.h>
+#include <string>
 
 namespace singa {
 
@@ -28,18 +29,18 @@ using google::protobuf::io::ZeroCopyInputStream;
 using google::protobuf::Message;
 
 const int kBufLen = 1024;
-std::string IntVecToString(const vector<int>& vec) {
-  string disp="(";
-  for(int x: vec)
-    disp+=std::to_string(x)+", ";
-  return disp+")";
+string IntVecToString(const vector<int>& vec) {
+  string disp = "(";
+  for (int x : vec)
+    disp += std::to_string(x) + ", ";
+  return disp + ")";
 }
 /**
  *  * Formatted string.
  *   */
 string VStringPrintf(string fmt, va_list l) {
   char buffer[32768];
-  vsnprintf(buffer, 32768, fmt.c_str(), l);
+  vsnprintf(buffer, sizeof(buffer), fmt.c_str(), l);
   return string(buffer);
 }
 
@@ -48,7 +49,7 @@ string VStringPrintf(string fmt, va_list l) {
  *   */
 string StringPrintf(string fmt, ...) {
   va_list l;
-  va_start(l, fmt); //fmt.AsString().c_str());
+  va_start(l, fmt);  // fmt.AsString().c_str());
   string result = VStringPrintf(fmt, l);
   va_end(l);
   return result;
@@ -62,6 +63,14 @@ void Debug() {
   fflush(stdout);
   while (0 == i)
     sleep(5);
+}
+
+void  CreateFolder(const std::string name) {
+  struct stat buffer;
+  if (stat(name.c_str(), &buffer) != 0) {
+    mkdir(name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    CHECK_EQ(stat(name.c_str(), &buffer), 0);
+  }
 }
 
 // the proto related functions are from Caffe.
@@ -100,24 +109,22 @@ void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
   CHECK_NE(fd, -1) << "File cannot open: " << filename;
   CHECK(proto.SerializeToFileDescriptor(fd));
 }
-int gcd(int a, int b)
-{
-  for (;;)
-  {
+
+int gcd(int a, int b) {
+  for (;;) {
     if (a == 0) return b;
     b %= a;
     if (b == 0) return a;
     a %= b;
   }
 }
-int LeastCommonMultiple(int a, int b)
-{
+int LeastCommonMultiple(int a, int b) {
   int temp = gcd(a, b);
 
   return temp ? (a / temp * b) : 0;
 }
 
-const std::string GetHostIP(){
+const string GetHostIP() {
   int fd;
   struct ifreq ifr;
 
@@ -135,7 +142,22 @@ const std::string GetHostIP(){
 
   string ip(inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
   /* display result */
-  LOG(INFO)<<"Host IP=("<<ip;
+  LOG(INFO) << "Host IP=(" << ip;
   return ip;
 }
+
+void SetupLog(const std::string& log_dir, const std::string& model) {
+  // TODO check if NFS, then create folder using script otherwise may have
+  // problems due to multiple processes create the same folder.
+  CreateFolder(log_dir);
+  std::string warn = log_dir + "/" + model + "-warn-";
+  std::string info = log_dir + "/" +  model + "-info-";
+  std::string error = log_dir + "/" +  model + "-error-";
+  std::string fatal = log_dir + "/" + model + "-fatal-";
+  google::SetLogDestination(google::WARNING, warn.c_str());
+  google::SetLogDestination(google::INFO, info.c_str());
+  google::SetLogDestination(google::ERROR, error.c_str());
+  google::SetLogDestination(google::FATAL, fatal.c_str());
+}
+
 }  // namespace singa

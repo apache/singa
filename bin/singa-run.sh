@@ -23,34 +23,87 @@
 # Run a Singa job
 #
 
-usage="Usage: singa-run.sh"
+usage="Usage: \n \
+  (single node): singa-run.sh -cluster=YOUR_CONF_FILE -model=YOUR_CONF_FILE \n \
+  (distributed): singa-run.sh -conf=YOUR_CONF_DIR \ 
+  (the directory should contain cluster.conf/model.conf/hostfile)"
 
-#if [ $# -le 0 ]; then
-#  echo $usage
+#if [ $# -le 0 ] || [ $# -ge 3 ] ; then
+#  echo -e $usage
 #  exit 1
 #fi
 
+valid_args=false
+
+if [ $# = 1 ] ; then
+  if [[ $1 = "-conf="* ]] ; then
+    valid_args=true
+    conf_path=${1:6}
+    host_path=$conf_path/hostfile
+  fi
+elif [ $# = 2 ] ; then
+  if [[ $1 = "-cluster="* ]] && [[ $2 = "-model="*  ]] ; then
+    valid_args=true
+  elif [[ $2 = "-cluster="* ]] && [[ $1 = "-model="*  ]] ; then
+    valid_args=true
+  fi
+fi
+
+if [ $valid_args = false ] ; then
+  echo -e $usage
+  exit 1 
+fi
+
+# get singa-base
 BIN=`dirname "${BASH_SOURCE-$0}"`
 BIN=`cd "$BIN">/dev/null; pwd`
 BASE=`cd "$BIN/..">/dev/null; pwd`
 
 cd $BASE
 
-#cleanup singa data
-. $BIN/singa-cleanup.sh
+# clenup singa data
+if [ -z $host_path ] ; then
+  $BIN/singa-stop.sh 
+else
+  $BIN/singa-stop.sh $host_path
+fi
 
-#start zookeeper
-. $BIN/zk-service.sh start 2>/dev/null
+# start zookeeper
+$BIN/zk-service.sh start 2>/dev/null
 
-#wait for zk service to be up
+# wait for zk service to be up
 sleep 3
 
-#run singa
-cmd="./singa "$@
-echo starting singa ...
-echo executing: $cmd
-exec $cmd
+# check mode
+if [ $# = 2 ] ; then
+  # start singa process
+  cmd="./singa "$@
+  echo starting singa ...
+  echo executing : $cmd
+  $cmd
+elif [ $# = 1 ] ; then
+  # ssh and start singa processes
+  ssh_options="-oStrictHostKeyChecking=no \
+  -oUserKnownHostsFile=/dev/null \
+  -oLogLevel=quiet"
+  hosts=(`cat $host_path |cut -d ' ' -f 1`)
+  cmd="./singa -cluster=$conf_path/cluster.conf -model=$conf_path/model.conf"
+  ssh_cmd="cd $BASE; "$cmd
+  for i in ${hosts[@]} ; do
+    if [ $i = localhost ] ; then
+      echo executing : $cmd
+      $cmd &
+    else
+      echo executing @ $i : $ssh_cmd
+      ssh $ssh_options $i $ssh_cmd &
+    fi
+  done
+  wait
+fi
 
-#stop zookeeper
-echo stopping singa ...
-. $BIN/zk-service.sh stop 2>/dev/null
+# cleanup singa data
+if [ -z $host_path ] ; then
+  $BIN/singa-stop.sh
+else
+  $BIN/singa-stop.sh $host_path
+fi

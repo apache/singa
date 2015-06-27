@@ -23,7 +23,7 @@
 # Manage a zookeeper service
 #
 
-usage="Usage: zk-service.sh (start|stop)"
+usage="Usage: zk-service.sh [start|stop]"
 
 if [ $# -le 0 ]; then
   echo $usage
@@ -35,16 +35,12 @@ BIN=`cd "$BIN">/dev/null; pwd`
 BASE=`cd "$BIN/..">/dev/null; pwd`
 ZKBASE=$BASE/thirdparty/zookeeper-3.4.6
 
-#echo $ZKBASE
-
-if [ "$SINGA_MANAGES_ZK" = "" ]; then
+if [ -z $SINGA_MANAGES_ZK ]; then
   SINGA_MANAGES_ZK=true
 fi
 
-#echo 'SINGA_MANAGES_ZK='$SINGA_MANAGES_ZK
-
-if [ "$SINGA_MANAGES_ZK" = "true" ]; then
-  #check zookeeper installation
+if [ $SINGA_MANAGES_ZK = true ]; then
+  # check zookeeper installation
   if [ ! -d $ZKBASE ]; then
     echo "zookeeper not found, please install zookeeper first:"
     echo "$./SINGA_BASE/thirdparty/install.sh zookeeper"
@@ -52,28 +48,28 @@ if [ "$SINGA_MANAGES_ZK" = "true" ]; then
   fi
 fi
 
-#get argument
+# get argument
 cmd=$1
 
 case $cmd in
 
 (start)
-  #start zk service
-  if [ "$SINGA_MANAGES_ZK" = "true" ]; then
-    #check zoo,cfg
+  # start zk service
+  if [ $SINGA_MANAGES_ZK = true ]; then
+    # check zoo,cfg
     if [ ! -f $ZKBASE/conf/zoo.cfg ]; then
       echo "zoo.cfg not found, create from sample.cfg"
       cp $ZKBASE/conf/zoo_sample.cfg $ZKBASE/conf/zoo.cfg
     fi
-    #echo 'starting zookeeper service...'
+    # echo 'starting zookeeper service...'
     $ZKBASE/bin/zkServer.sh start
   fi
   ;;
 
 (stop)
-  #stop zk service
-  if [ "$SINGA_MANAGES_ZK" = "true" ]; then
-    #echo 'stopping zookeeper service...'
+  # stop zk service
+  if [ $SINGA_MANAGES_ZK = true ]; then
+    # echo 'stopping zookeeper service...'
     $ZKBASE/bin/zkServer.sh stop
   fi
   ;;
