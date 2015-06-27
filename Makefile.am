@@ -14,6 +14,7 @@ PROTOS := $(top_srcdir)/src/proto/cluster.proto $(top_srcdir)/src/proto/model.pr
 PROTO_SRCS := src/proto/cluster.pb.cc src/proto/model.pb.cc src/proto/common.pb.cc
 PROTO_HDRS := src/proto/cluster.pb.h  src/proto/model.pb.h src/proto/common.pb.h
 PROTO_OBJS := src/proto/cluster.pb.o src/proto/model.pb.o src/proto/common.pb.o
+PROTO_PYS := tool/plot/cluster_pb2.py tool/plot/model_pb2.py tool/plot/common_pb2.py
 
 SINGA_SRCS := src/utils/cluster.cc \
 			  src/utils/cluster_rt.cc \
@@ -118,10 +119,13 @@ singa_LDFLAGS =	-I./include \
 
 clean-local:
 	rm -rf $(PROTO_SRCS) $(PROTO_HDRS)
+	rm -rf $(PROTO_PYS)
 
 
 $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
+	echo $(top_srcdir)
 	protoc --proto_path=$(top_srcdir)/src/proto --cpp_out=$(top_srcdir)/src/proto $(PROTOS)
+	protoc --proto_path=$(top_srcdir)/src/proto --python_out=$(top_srcdir)/tool/plot $(PROTOS)
 	mkdir -p $(top_srcdir)/include/proto/
 	cp $(top_srcdir)/src/proto/*.pb.h $(top_srcdir)/include/proto/
 	@echo

@@ -34,7 +34,7 @@ For libraries like openblas, opencv, older versions may also work, because we do
 
 ###Building SINGA From Sources
 
-The build system of SINGA is based on GNU autotools. To build singa, you need gcc version >= 4.8.2.
+The build system of SINGA is based on GNU autotools. To build singa, you need gcc version >= 4.8.2. To support visualization, you need python2.7.x.
 The common steps to build SINGA can be:
 
 	1.Extract source files;
@@ -123,5 +123,18 @@ A3:Since OpenBLAS library is installed in /opt folder by default or /other/folde
 	$ export LDFLAGS=-L/opt
 	
 Or as an alternative option, you can also edit LIBRARY_PATH to figure it out.
+
+#
+
+Q4:I get ImportError from google.protobuf.internal when I try to import .py files. (ImportError: cannot import name enum_type_wrapper)
+
+A4:After install google protobuf by "make install", we should install python runtime libraries. Go to protobuf source directory, run:
+
+	$ cd /PROTOBUF/SOURCE/FOLDER
+	$ cd python
+	$ python setup.py build
+	$ python setup.py install
+
+You may need "sudo" when you try to install python runtime libraries in system folder.
 
 #
