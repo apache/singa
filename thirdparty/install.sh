@@ -273,11 +273,19 @@ function install_protobuf()
 			echo "install protobuf in $1";
 			./configure --prefix=$1;
 			make && make install;
+			cd python;
+			python setup.py build;
+			python setup.py install --prefix=$1;
+			cd ..;
 		elif [ $# == 0 ]
 		then
 			echo "install protobuf in default path";
 			./configure;
 			make && sudo make install;
+			cd python;
+			python setup.py build;
+			sudo python setup.py install;
+			cd ..;
 		else
 			echo "wrong commands";
 	fi
