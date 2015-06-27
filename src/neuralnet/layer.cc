@@ -4,6 +4,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "mshadow/tensor.h"
+#include "mshadow/tensor_random.h"
 #include "mshadow/cxxnet_op.h"
 #include "neuralnet/layer.h"
 #include "utils/singleton.h"
@@ -11,7 +12,6 @@
 
 using namespace mshadow;
 using namespace mshadow::expr;
-
 namespace singa {
 
 /************ Implementation for ConvProductLayer*************************/
@@ -180,7 +180,6 @@ void DBMBottomLayer::Setup(const LayerProto& proto,
   bias_ = shared_ptr<Param>(factory->Create("Param"));
   weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
   bias_->Setup(proto.param(1), vector<int>{vdim_});
-  srand((unsigned)time(NULL));
 }
 void DBMBottomLayer::SetupAfterPartition(const LayerProto& proto,
       const vector<int> &shape,
@@ -227,9 +226,7 @@ void DBMBottomLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers
             negsrc = dot(hidden_data, weight.T());
             negsrc+=repmat(bias, neg_batchsize_);
             negsrc = F<op::sigmoid>(negsrc);
-            for (int i = 0; i < neg_batchsize_; i++)
-              for (int j = 0; j < vdim_; j++)
-                negsrc[i][j] = static_cast<float>((rand() / static_cast<double>(RAND_MAX)) > negsrc[i][j] ? 0 : 1);
+            TSingleton<Random<cpu>>::Instance()->SampleBinary(negsrc);
             hidden_data = dot(negsrc, weight);
         }
   }
@@ -267,10 +264,10 @@ void DBMBottomLayer::ComputeLoss(Metric* perf) {
   reconstruct = dot(data, weight.T());
   reconstruct+=repmat(bias, batchsize_);
   reconstruct = F<op::sigmoid>(reconstruct);
-  for (int i = 0; i < batchsize_; i++)
-    for (int j = 0; j < vdim_; j++) {
-      loss += -(possrc[i][j]*log(reconstruct[i][j])+(1-possrc[i][j])*log(1-reconstruct[i][j]));
-    }
+  float *possrc_dptr = possrc.dptr;
+  float *reconstruct_dptr = reconstruct.dptr;
+  for (int i = 0; i < vdim_*batchsize_; i++)
+    loss += -(possrc_dptr[i]*log(reconstruct_dptr[i])+(1-possrc_dptr[i])*log(1-reconstruct_dptr[i]));
   loss/=batchsize_;
   FreeSpace(reconstruct);
   perf->Reset();
@@ -290,7 +287,6 @@ void DBMTopLayer::Setup(const LayerProto& proto,
   Factory<Param>* factory = Singleton<Factory<Param>>::Instance();
   bias_ = shared_ptr<Param>(factory->Create("Param"));
   bias_->Setup(proto.param(0), vector<int>{vdim_});
-  srand((unsigned)time(NULL));
 }
 
 void DBMTopLayer::SetupAfterPartition(const LayerProto& proto,
@@ -314,17 +310,13 @@ void DBMTopLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers) {
     Tensor<cpu, 1> bias(bias_->mutable_cpu_data(), Shape1(vdim_));
     negsrc+=repmat(bias, neg_batchsize_);
     negsrc = F<op::sigmoid>(negsrc);
-    for (int i = 0; i < neg_batchsize_; i++)
-      for (int j = 0; j < vdim_; j++)
-        negsrc[i][j] = static_cast<float>((rand() / static_cast<double>(RAND_MAX)) > negsrc[i][j] ? 0 : 1);
+    TSingleton<Random<cpu>>::Instance()->SampleBinary(negsrc);
   }
   else if (phase == kTest) {   /*test phase*/
      CHECK_EQ(srclayers[0]->data(this, kPositive).count(), batchsize_*vdim_);
      Tensor<cpu, 2> possrc(srclayers[0]->mutable_data(this, kPositive)->mutable_cpu_data(),
          Shape2(batchsize_, vdim_));
-     for (int i = 0; i < batchsize_; i++)  /*the reconstruct vector*/
-       for (int j = 0; j < vdim_; j++)
-         possrc[i][j] = static_cast<float>((rand() / static_cast<double>(RAND_MAX)) > possrc[i][j] ? 0 : 1);
+     TSingleton<Random<cpu>>::Instance()->SampleBinary(possrc);
   }
 }
 
