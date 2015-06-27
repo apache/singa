@@ -1296,8 +1296,8 @@ clean-local:
 	rm -rf $(PROTO_PYS)
 
 $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
-	echo $(top_srcdir)
 	protoc --proto_path=$(top_srcdir)/src/proto --cpp_out=$(top_srcdir)/src/proto $(PROTOS)
+	mkdir -p $(top_srcdir)/tool/plot/
 	protoc --proto_path=$(top_srcdir)/src/proto --python_out=$(top_srcdir)/tool/plot $(PROTOS)
 	mkdir -p $(top_srcdir)/include/proto/
 	cp $(top_srcdir)/src/proto/*.pb.h $(top_srcdir)/include/proto/
