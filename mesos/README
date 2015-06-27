@@ -17,14 +17,18 @@ INSTALLING mesos:
 
 *****************************
 Step 1: Create scheduler
-	make
+	cd $SINGA_HOME/mesos; make
 
 ****************************
 Step 2: Starting Mesos
 
 Mesos must be started as root. 
-	+ At the master: ./singa-mesos --master --start
-	+ At each of the slave: ./singa-mesos --slave --start 
+	+ At the master: 
+		cd $SINGA_HOME/mesos 
+		./singa-mesos --master --start
+	+ At each of the slave: 
+		cd $SINGA_HOME/mesos 
+		./singa-mesos --slave --start 
 
 The user must specify several environment variables in "mesos.conf" file:
 	+ MESOS_HOME: path to Mesos installation. It expects to find
@@ -50,13 +54,15 @@ Two important variables MUST be set in "singa.conf":
 
 
 To start:
-	+ ./singa-submit [--nhosts=..] [--ncpus_per_host=..] [--nmem_per_host=..] [other singa flags]
+	cd $SINGA_HOME/mesos
+	./singa-submit [--nhosts=..] [--ncpus_per_host=..] [--nmem_per_host=..] [other singa flags]
 	
 	The default values for nhosts, ncpus_per_host and nmem_per_host are 1, 2, 1024.
 	Other singa flags can also be passed.  
 
 To stop:
-	+ ./singa-stop
+	cd $SINGA_HOME/mesos
+	./singa-stop
 
 * Failure recovery:
 	When a Singa nodes fail, the entire framework is automatically restarted. One can test by killing
@@ -69,6 +75,7 @@ values for SINGA_WORKDIR and run "singa-submit" again.
 
 *************************
 Step 4: Stopping Mesos 
+	cd $SINGA_HOME/mesos; 
 	./singa-mesos --master --stop  // at the master node
 	./singa-mesos --slave --stop  // at each slave node
 
