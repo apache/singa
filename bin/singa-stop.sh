@@ -54,7 +54,11 @@ elif [ $# = 1 ] ; then
   for i in ${hosts[@]} ; do
     cmd="killall -s SIGKILL "$PROC_NAME
     echo kill singa @ $i ...
-    ssh $ssh_options $i $cmd
+    if [ $i == localhost ] ; then
+      $cmd
+    else
+      ssh $ssh_options $i $cmd
+    fi
   done
 fi
 

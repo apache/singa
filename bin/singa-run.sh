@@ -80,20 +80,23 @@ if [ $# = 2 ] ; then
   cmd="./singa "$@
   echo starting singa ...
   echo executing : $cmd
-  exec $cmd
+  $cmd
 elif [ $# = 1 ] ; then
   # ssh and start singa processes
   ssh_options="-oStrictHostKeyChecking=no \
   -oUserKnownHostsFile=/dev/null \
   -oLogLevel=quiet"
   hosts=(`cat $host_path |cut -d ' ' -f 1`)
+  cmd="./singa -cluster=$conf_path/cluster.conf -model=$conf_path/model.conf"
+  ssh_cmd="cd $BASE; "$cmd
   for i in ${hosts[@]} ; do
-    cmd="cd $BASE; \
-        ./singa \
-        -cluster=$conf_path/cluster.conf \
-        -model=$conf_path/model.conf"
-    echo executing @ $i : $cmd
-    ssh $ssh_options $i $cmd &
+    if [ $i = localhost ] ; then
+      echo executing : $cmd
+      $cmd &
+    else
+      echo executing @ $i : $ssh_cmd
+      ssh $ssh_options $i $ssh_cmd &
+    fi
   done
   wait
 fi
