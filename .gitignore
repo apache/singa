@@ -38,3 +38,4 @@ config.h
 Makefile
 thirdparty/*
 !thirdpary/install.sh
+tags
