@@ -35,7 +35,7 @@ fi
 BIN=`dirname "${BASH_SOURCE-$0}"`
 BIN=`cd "$BIN">/dev/null; pwd`
 BASE=`cd "$BIN/..">/dev/null; pwd`
-ZKDATA_DIR="/tmp/zookeeper"
+ZKDATA_DIR="/home/hzchenhongxiang/chx/incubator-singa/thirdparty/zookeeper"
 
 PROC_NAME="lt-singa"
 HOST_FILE=$1
