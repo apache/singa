@@ -47,7 +47,7 @@
 #include "proto/common.pb.h"
 using std::shared_ptr;
 using std::vector;
-
+#define DEVICE 1
 #define NOT_IMPLEMENTED LOG(FATAL) << "Not implemented function"
 inline void MallocHost(void** ptr, size_t size) {
   *ptr = malloc(size);
@@ -144,6 +144,7 @@ class Blob {
   const Dtype* gpu_data() const;
   Dtype* mutable_cpu_data();
   Dtype* mutable_gpu_data();
+  Dtype* mutable_xpu_data();
   /*
   void FromProto(const BlobProto& proto);
   */
@@ -169,6 +170,7 @@ class Blob {
   int count_;
   int capacity_;
   int version_;
+  int device_=DEVICE;
 };  // class Blob
 
 #endif // INCLUDE_UTILS_BLOB_

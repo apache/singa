@@ -243,6 +243,17 @@ Dtype* Blob<Dtype>::mutable_gpu_data() {
 }
 
 template <typename Dtype>
+Dtype* Blob<Dtype>::mutable_xpu_data() {
+  CHECK(data_);
+  if(device_!=1) {
+	return static_cast<Dtype*>(data_->mutable_gpu_data());
+  }
+  else {
+	return static_cast<Dtype*>(data_->mutable_cpu_data());
+  }
+}
+
+template <typename Dtype>
 void Blob<Dtype>::ShareData(const Blob& other) {
   CHECK_EQ(count_, other.count());
   data_ = other.data();
