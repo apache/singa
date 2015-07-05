@@ -236,7 +236,7 @@ vector<shared_ptr<Worker>> Trainer::CreateWorkers(int nthreads,
       if(mproto.alg()==ModelProto_GradCalcAlg_kBackPropagation)
         worker=make_shared<BPWorker>(nthreads++,gid, wid);
       else{
-        // TODO add CDWorker
+        worker=make_shared<CDWorker>(nthreads++,gid, wid);
       }
       worker->Setup(mproto, train_net);
       worker->set_test_net(test_net);

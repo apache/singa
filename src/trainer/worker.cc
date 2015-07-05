@@ -8,6 +8,12 @@
 #include "utils/factory.h"
 #include "trainer/worker.h"
 #include "proto/model.pb.h"
+#include <sstream>
+#include <string.h>
+#include "mshadow/tensor.h"
+
+using namespace mshadow;
+using namespace mshadow::expr;
 using std::thread;
 namespace singa {
 Worker::Worker(int thread_id, int group_id, int worker_id):
@@ -334,4 +340,93 @@ void BPWorker::TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net, Me
     }
 }
 
+/****************************CDWorker**********************************/
+CDWorker::CDWorker(int thread_id, int group_id, int worker_id):
+  Worker(thread_id, group_id, worker_id) {
+}
+// TODO model partition (spliting layers) will be done in the future
+void CDWorker::PositivePhase(int step, shared_ptr<NeuralNet> net) {
+  auto& layers = net->layers();
+  for (auto& layer : layers) {
+      // clock_t s=clock();
+    layer->ComputeFeature(kPositive);
+  }
+}
+
+void CDWorker::NegativePhase(int step, shared_ptr<NeuralNet> net) {
+// for negative phase, gibbs sampling only concerns RBM bottom and top layer
+  auto& layers = net->layers();
+  for (int i = 0; i < modelproto_.pcd_k(); i++) {
+    for (auto& layer : layers) {
+      if (layer->is_bottomlayer() || layer->is_toplayer())
+        layer->ComputeFeature(kNegative);
+    }
+  }
+}
+
+void CDWorker::GradientPhase(int step, shared_ptr<NeuralNet> net) {
+  auto& layers = net->layers();
+  for (auto& layer : layers) {
+      layer->ComputeGradient();
+      for (shared_ptr<Param> p : layer->GetParams()) {
+        Update(p, step);
+      }
+  }
+}
+
+void CDWorker::LossPhase(int step, Phase phase,
+     shared_ptr<NeuralNet> net, Metric* perf) {
+  auto& layers = net->layers();
+  if (phase == kTrain) 
+    ;
+  else if (phase == kTest) { // kTest
+    for (auto& layer : layers) {
+        if (layer->is_datalayer() || layer->is_parserlayer() || layer->is_bottomlayer())
+          layer->ComputeFeature(kPositive);
+    }
+  }
+  for (auto& layer : layers) {
+    if (layer->is_toplayer())
+      layer->ComputeFeature(kTest);
+  }
+  for (auto& layer : layers) {
+    if (layer->is_bottomlayer())
+      layer->ComputeLoss(perf);
+  }
+  if (step % modelproto_.vis_step() == 0 && step!= 0) { /*print weight matrix*/
+    BlobProto bp;
+    int rownum;
+    int colnum;
+    const float *dptr;
+    for (auto& layer : layers) {
+      if (layer->is_bottomlayer()) {
+        for (shared_ptr<Param> p : layer->GetParams()) {
+          rownum = p->data().shape()[0];
+          colnum = p->data().shape()[1];
+          dptr = p->data().cpu_data();
+          for (int i = 0; i < p->data().count(); i++)
+              bp.add_data(static_cast<float>(dptr[i]));
+          break;
+        }
+        bp.set_height(rownum);
+        bp.set_width(colnum);
+        auto cluster = Cluster::Get();
+        string filename = cluster->vis_folder() + "/" + std::to_string(static_cast<int>(step / modelproto_.vis_step()));
+        WriteProtoToBinaryFile(bp, filename.c_str());
+      }
+    }
+  }
+}
+
+void CDWorker::TrainOneBatch(int step, Metric* perf) {
+  PositivePhase(step, train_net_);
+  NegativePhase(step, train_net_);
+  GradientPhase(step, train_net_);
+  LossPhase(step, kTrain, train_net_, perf);
+}
+
+void CDWorker::TestOneBatch(int step, Phase phase,
+     shared_ptr<NeuralNet> net, Metric* perf) {
+  LossPhase(step, kTest, train_net_, perf);
+}
 }  // namespace singa

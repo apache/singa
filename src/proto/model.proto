@@ -40,6 +40,10 @@ message ModelProto {
   optional int32 checkpoint_frequency = 34 [default = 0];
   // send parameters to servers after training for this num of steps
   optional int32 warmup_steps = 35 [default = 0];
+  //number of steps for gibbs sampling
+  optional int32 pcd_k=67 [default=15];
+  //number of steps for visualization
+  optional int32 vis_step=68 [default=5000];
 
    // start display after this num steps
   optional int32 display_after_steps =  60[default = 0];
@@ -142,6 +146,8 @@ message LayerProto {
     kSlice = 12;
     kSplit = 13;
     kTanh = 14;
+    kDBMBottom = 21;
+    kDBMTop = 22;
   }
   // source layer names
   repeated string srclayers = 3;
@@ -185,6 +191,10 @@ message LayerProto {
   optional SplitProto split_conf = 42;
   // configuration for tanh layer
   optional TanhProto tanh_conf = 43;
+  // configuration for dbmbottom layer
+  optional DBMBottomProto dbmbottom_conf = 46;
+  // configuration for dbmtop layer
+  optional DBMTopProto dbmtop_conf = 47;
   // partition type which overrides the partition type for neural net
   optional PartitionType partition_type = 59;
   optional string datablob = 58 [default = "unknow"];
@@ -283,6 +293,18 @@ message MnistProto {
 message DropoutProto {
   // dropout ratio
   optional float dropout_ratio = 30 [default = 0.5];
+}
+
+// Message that stores parameters used by DBMBottomLayer
+message DBMBottomProto {
+  optional int32 num_output = 1; // The number of outputs for the layer
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
+}
+
+// Message that stores parameters used by DBMTopLayer
+message DBMTopProto {
+  optional int32 num_output = 1; // The number of outputs for the layer
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
 }
 
 // Message that stores parameters used by InnerProductLayer
