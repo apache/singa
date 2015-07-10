@@ -38,3 +38,7 @@ config.h
 Makefile
 thirdparty/*
 !thirdpary/install.sh
+tags
+tool/plot
+examples/mnist/*ubyte
+examples/mnist/visualization

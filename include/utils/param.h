@@ -208,6 +208,16 @@ class Param {
   float* mutable_cpu_history(){
     return history_.mutable_cpu_data();
   }
+
+  float* mutable_xpu_data(){
+    return data_->mutable_xpu_data();
+  }
+  float* mutable_xpu_grad(){
+    return grad_.mutable_xpu_data();
+  }
+  float* mutable_xpu_history(){
+    return history_.mutable_xpu_data();
+  }
   int slice_start() const {
     return slice_start_;
   }

@@ -11,7 +11,7 @@
 
 using namespace mshadow;
 using namespace mshadow::expr;
-
+#define xpu mshadow::cpu
 namespace singa {
 
 /************ Implementation for ConvProductLayer*************************/
@@ -61,15 +61,15 @@ void ConvolutionLayer::SetupAfterPartition(const LayerProto& proto,
 }
 
 void ConvolutionLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
-  Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
+  Tensor<xpu, 4> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(),
       Shape4(batchsize_, channels_, height_, width_));
-  Tensor<cpu, 3> data(data_.mutable_cpu_data(),
+  Tensor<xpu, 3> data(data_.mutable_xpu_data(),
       Shape3(batchsize_, num_filters_, conv_height_* conv_width_));
-  Tensor<cpu, 2> col(col_data_.mutable_cpu_data(),
+  Tensor<xpu, 2> col(col_data_.mutable_xpu_data(),
       Shape2(col_height_, col_width_));
-  Tensor<cpu, 2> weight(weight_->mutable_cpu_data(),
+  Tensor<xpu, 2> weight(weight_->mutable_xpu_data(),
       Shape2(num_filters_, col_height_));
-  Tensor<cpu, 1> bias(bias_->mutable_cpu_data(),
+  Tensor<xpu, 1> bias(bias_->mutable_xpu_data(),
       Shape1(num_filters_));
 
   for(int n=0;n<batchsize_;n++){
@@ -83,24 +83,24 @@ void ConvolutionLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclaye
 }
 
 void ConvolutionLayer::ComputeGradient(const vector<SLayer>& srclayers) {
-  Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
+  Tensor<xpu, 4> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(),
       Shape4(batchsize_, channels_, height_, width_));
-  Tensor<cpu, 2> col(col_data_.mutable_cpu_data(),
+  Tensor<xpu, 2> col(col_data_.mutable_xpu_data(),
       Shape2(col_height_, col_width_));
-  Tensor<cpu, 2> weight(weight_->mutable_cpu_data(),
+  Tensor<xpu, 2> weight(weight_->mutable_xpu_data(),
       Shape2(num_filters_, col_height_));
 
   Blob<float>* gsrcblob=srclayers[0]->mutable_grad(this);
-  Tensor<cpu, 4> gsrc(nullptr, Shape4(batchsize_, channels_, height_, width_));
+  Tensor<xpu, 4> gsrc(nullptr, Shape4(batchsize_, channels_, height_, width_));
   if(gsrcblob!=nullptr)
-    gsrc.dptr=gsrcblob->mutable_cpu_data();
-  Tensor<cpu, 3> grad(grad_.mutable_cpu_data(),
+    gsrc.dptr=gsrcblob->mutable_xpu_data();
+  Tensor<xpu, 3> grad(grad_.mutable_xpu_data(),
       Shape3(batchsize_, num_filters_, conv_height_* conv_width_));
-  Tensor<cpu, 2> gcol(col_grad_.mutable_cpu_data(),
+  Tensor<xpu, 2> gcol(col_grad_.mutable_xpu_data(),
       Shape2(col_height_, col_width_));
-  Tensor<cpu, 2> gweight(weight_->mutable_cpu_grad(),
+  Tensor<xpu, 2> gweight(weight_->mutable_xpu_grad(),
       Shape2(num_filters_, col_height_));
-  Tensor<cpu, 1> gbias(bias_->mutable_cpu_grad(),
+  Tensor<xpu, 1> gbias(bias_->mutable_xpu_grad(),
       Shape1(num_filters_));
 
   gweight=0.0f;
@@ -144,20 +144,20 @@ void DropoutLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers) 
     return;
   }
   float pkeep=1-pdrop_;
-  Tensor<cpu, 1> mask(mask_.mutable_cpu_data(), Shape1(mask_.count()));
+  Tensor<xpu, 1> mask(mask_.mutable_xpu_data(), Shape1(mask_.count()));
   mask = F<op::threshold>(TSingleton<Random<cpu>>::Instance()\
       ->uniform(mask.shape), pkeep ) * (1.0f/pkeep);
-  Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
+  Tensor<xpu, 1> data(data_.mutable_xpu_data(), Shape1(data_.count()));
   Blob<float>* srcblob=srclayers[0]->mutable_data(this);
-  Tensor<cpu, 1> src(srcblob->mutable_cpu_data(), Shape1(srcblob->count()));
+  Tensor<xpu, 1> src(srcblob->mutable_xpu_data(), Shape1(srcblob->count()));
   data=src*mask;
 }
 
 void DropoutLayer::ComputeGradient(const vector<SLayer>& srclayers)  {
-  Tensor<cpu, 1> grad(grad_.mutable_cpu_data(), Shape1(data_.count()));
-  Tensor<cpu, 1> mask(mask_.mutable_cpu_data(), Shape1(mask_.count()));
+  Tensor<xpu, 1> grad(grad_.mutable_xpu_data(), Shape1(data_.count()));
+  Tensor<xpu, 1> mask(mask_.mutable_xpu_data(), Shape1(mask_.count()));
   Blob<float>* gsrcblob=srclayers[0]->mutable_grad(this);
-  Tensor<cpu, 1> gsrc(gsrcblob->mutable_cpu_data(), Shape1(gsrcblob->count()));
+  Tensor<xpu, 1> gsrc(gsrcblob->mutable_xpu_data(), Shape1(gsrcblob->count()));
   gsrc=grad*mask;
 }
 /**************** Implementation for InnerProductLayer********************/
@@ -186,29 +186,29 @@ void InnerProductLayer::SetupAfterPartition(const LayerProto& proto,
 }
 
 void InnerProductLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers) {
-  Tensor<cpu, 2> data(data_.mutable_cpu_data(), Shape2(batchsize_,hdim_));
+  Tensor<xpu, 2> data(data_.mutable_xpu_data(), Shape2(batchsize_,hdim_));
   CHECK_EQ(srclayers[0]->data(this).count(), batchsize_*vdim_);
-  Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
+  Tensor<xpu, 2> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(),
       Shape2(batchsize_,vdim_));
-  Tensor<cpu, 2> weight(weight_->mutable_cpu_data(), Shape2(vdim_,hdim_));
-  Tensor<cpu, 1> bias(bias_->mutable_cpu_data(), Shape1(hdim_));
+  Tensor<xpu, 2> weight(weight_->mutable_xpu_data(), Shape2(vdim_,hdim_));
+  Tensor<xpu, 1> bias(bias_->mutable_xpu_data(), Shape1(hdim_));
   data=dot(src, weight);
   // repmat: repeat bias vector into batchsize rows
   data+=repmat(bias, batchsize_);
 }
 
 void InnerProductLayer::ComputeGradient(const vector<SLayer>& srclayers) {
-  Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
+  Tensor<xpu, 2> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(),
       Shape2(batchsize_,vdim_));
-  Tensor<cpu, 2> grad(grad_.mutable_cpu_data(),Shape2(batchsize_,hdim_));
-  Tensor<cpu, 2> weight(weight_->mutable_cpu_data(), Shape2(vdim_,hdim_));
-  Tensor<cpu, 2> gweight(weight_->mutable_cpu_grad(), Shape2(vdim_,hdim_));
-  Tensor<cpu, 1> gbias(bias_->mutable_cpu_grad(), Shape1(hdim_));
+  Tensor<xpu, 2> grad(grad_.mutable_xpu_data(),Shape2(batchsize_,hdim_));
+  Tensor<xpu, 2> weight(weight_->mutable_xpu_data(), Shape2(vdim_,hdim_));
+  Tensor<xpu, 2> gweight(weight_->mutable_xpu_grad(), Shape2(vdim_,hdim_));
+  Tensor<xpu, 1> gbias(bias_->mutable_xpu_grad(), Shape1(hdim_));
 
   gbias=sum_rows(grad);
   gweight=dot(src.T(), grad);
   if(srclayers[0]->mutable_grad(this)!=nullptr){
-    Tensor<cpu, 2> gsrc(srclayers[0]->mutable_grad(this)->mutable_cpu_data(),
+    Tensor<xpu, 2> gsrc(srclayers[0]->mutable_grad(this)->mutable_xpu_data(),
         Shape2(batchsize_,vdim_));
     gsrc=dot(grad, weight.T());
   }
@@ -226,7 +226,7 @@ void LabelLayer::Setup(const LayerProto& proto,
 void LabelLayer::ParseRecords(Phase phase, const vector<Record>& records,
     Blob<float>* blob){
   int rid=0;
-  float *label= blob->mutable_cpu_data() ;
+  float *label= blob->mutable_xpu_data() ;
   for(const Record& record: records){
     label[rid++]=record.image().label();
     CHECK_LT(record.image().label(),10);
@@ -358,9 +358,9 @@ void LRNLayer::SetupAfterPartition(const LayerProto& proto,
 void LRNLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
   const float salpha = alpha_ / lsize_;
   Shape<4> s=Shape4(batchsize_,channels_, height_, width_);
-  Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
-  Tensor<cpu, 4> data(data_.mutable_cpu_data(), s);
-  Tensor<cpu, 4> norm(norm_.mutable_cpu_data(), s);
+  Tensor<xpu, 4> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(), s);
+  Tensor<xpu, 4> data(data_.mutable_xpu_data(), s);
+  Tensor<xpu, 4> norm(norm_.mutable_xpu_data(), s);
   // stores normalizer without power
   norm= chpool<red::sum>( F<op::square>(src) , lsize_ ) * salpha + knorm_;
   data = src * F<op::power>(norm, -beta_ );
@@ -369,10 +369,10 @@ void LRNLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
 void LRNLayer::ComputeGradient(const vector<SLayer>& srclayers) {
   const float salpha = alpha_ / lsize_;
   Shape<4> s=Shape4(batchsize_,channels_, height_, width_);
-  Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
-  Tensor<cpu, 4> norm(norm_.mutable_cpu_data(), s);
-  Tensor<cpu, 4> grad(grad_.mutable_cpu_data(), s);
-  Tensor<cpu, 4> gsrc(srclayers[0]->mutable_grad(this)->mutable_cpu_data(), s);
+  Tensor<xpu, 4> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(), s);
+  Tensor<xpu, 4> norm(norm_.mutable_xpu_data(), s);
+  Tensor<xpu, 4> grad(grad_.mutable_xpu_data(), s);
+  Tensor<xpu, 4> gsrc(srclayers[0]->mutable_grad(this)->mutable_xpu_data(), s);
 
   gsrc = grad * F<op::power>( norm, -beta_ );
   gsrc += ( - 2.0f * beta_ * salpha ) * chpool<red::sum>(
@@ -387,7 +387,7 @@ void MnistLayer::ParseRecords(Phase phase,
   int ndim=records.at(0).image().shape_size();
   int inputsize =records.at(0).image().shape(ndim-1);
 
-  float* dptr=blob->mutable_cpu_data();
+  float* dptr=blob->mutable_xpu_data();
   for(const Record& record: records){
     // copy from record to cv::Mat
     cv::Mat input(inputsize, inputsize, CV_32FC1);
@@ -446,7 +446,7 @@ void MnistLayer::ParseRecords(Phase phase,
       }
     }
   }
-  CHECK_EQ(dptr, blob->mutable_cpu_data()+blob->count());
+  CHECK_EQ(dptr, blob->mutable_xpu_data()+blob->count());
 }
 void MnistLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
@@ -510,9 +510,9 @@ void PoolingLayer::SetupAfterPartition(const LayerProto& proto,
 }
 
 void PoolingLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
-  Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
+  Tensor<xpu, 4> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(),
       Shape4(batchsize_, channels_, height_, width_));
-  Tensor<cpu, 4> data(data_.mutable_cpu_data(),
+  Tensor<xpu, 4> data(data_.mutable_xpu_data(),
       Shape4(batchsize_, channels_, pooled_height_, pooled_width_));
   if(pool_ == PoolingProto_PoolMethod_MAX)
     data=pool<red::maximum>(src, kernel_, stride_);
@@ -527,11 +527,11 @@ void PoolingLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
  */
 void PoolingLayer::ComputeGradient(const vector<SLayer>& srclayers) {
   Shape<4> s1= Shape4(batchsize_, channels_, height_, width_);
-  Tensor<cpu, 4> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),s1);
-  Tensor<cpu, 4> gsrc(srclayers[0]->mutable_grad(this)->mutable_cpu_data(),s1);
+  Tensor<xpu, 4> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(),s1);
+  Tensor<xpu, 4> gsrc(srclayers[0]->mutable_grad(this)->mutable_xpu_data(),s1);
   Shape<4> s2= Shape4(batchsize_, channels_, pooled_height_, pooled_width_);
-  Tensor<cpu, 4> data(data_.mutable_cpu_data(), s2);
-  Tensor<cpu, 4> grad(grad_.mutable_cpu_data(), s2);
+  Tensor<xpu, 4> data(data_.mutable_xpu_data(), s2);
+  Tensor<xpu, 4> grad(grad_.mutable_xpu_data(), s2);
   if(pool_ == PoolingProto_PoolMethod_MAX)
       gsrc = unpool<red::maximum>(src, data, grad, kernel_, stride_);
   else if(pool_ == PoolingProto_PoolMethod_AVE)
@@ -554,16 +554,16 @@ void ReLULayer::SetupAfterPartition(const LayerProto& proto,
 }
 
 void ReLULayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
-  Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
-  Tensor<cpu, 1> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
+  Tensor<xpu, 1> data(data_.mutable_xpu_data(), Shape1(data_.count()));
+  Tensor<xpu, 1> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(),
       Shape1(data_.count()));
   data=F<op::relu>(src);
 }
 
 void ReLULayer::ComputeGradient(const vector<SLayer>& srclayers) {
-  Tensor<cpu, 1> grad(grad_.mutable_cpu_data(), Shape1(grad_.count()));
-  Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
-  Tensor<cpu, 1> gsrc(srclayers[0]->mutable_grad(this)->mutable_cpu_data(),
+  Tensor<xpu, 1> grad(grad_.mutable_xpu_data(), Shape1(grad_.count()));
+  Tensor<xpu, 1> data(data_.mutable_xpu_data(), Shape1(data_.count()));
+  Tensor<xpu, 1> gsrc(srclayers[0]->mutable_grad(this)->mutable_xpu_data(),
       Shape1(data_.count()));
   gsrc=F<op::relu_grad>(data)*grad;
 }
@@ -573,11 +573,11 @@ void ReLULayer::ComputeGradient(const vector<SLayer>& srclayers) {
 void RGBImageLayer::ParseRecords(Phase phase,
     const vector<Record>& records, Blob<float>* blob){
   const vector<int>& s=blob->shape();
-  Tensor<cpu, 4> images(data_.mutable_cpu_data(), Shape4(s[0],s[1],s[2],s[3]));
+  Tensor<xpu, 4> images(data_.mutable_xpu_data(), Shape4(s[0],s[1],s[2],s[3]));
   const SingleLabelImageRecord& r=records.at(0).image();
-  Tensor<cpu, 3> raw_image(Shape3(r.shape(0),r.shape(1),r.shape(2)));
+  Tensor<xpu, 3> raw_image(Shape3(r.shape(0),r.shape(1),r.shape(2)));
   AllocSpace(raw_image);
-  Tensor<cpu, 3> croped_image(nullptr, Shape3(s[1],s[2],s[3]));
+  Tensor<xpu, 3> croped_image(nullptr, Shape3(s[1],s[2],s[3]));
   if(cropsize_)
     AllocSpace(croped_image);
     //CHECK(std::equal(croped_image.shape(), raw_image.shape());
@@ -650,15 +650,15 @@ void RGBImageLayer::Setup(const LayerProto& proto,
       BlobProto tmp;
       ReadProtoFromBinaryFile(proto.rgbimage_conf().meanfile().c_str(), &tmp);
       CHECK_EQ(mean_.count(), tmp.data_size());
-      memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
+      memcpy(mean_.mutable_xpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
     }else{
       SingleLabelImageRecord tmp;
       ReadProtoFromBinaryFile(proto.rgbimage_conf().meanfile().c_str(), &tmp);
       CHECK_EQ(mean_.count(), tmp.data_size());
-      memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
+      memcpy(mean_.mutable_xpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
     }
   }else{
-    memset(mean_.mutable_cpu_data(),0,sizeof(float)*mean_.count());
+    memset(mean_.mutable_xpu_data(),0,sizeof(float)*mean_.count());
   }
 }
 
@@ -709,16 +709,16 @@ void TanhLayer::SetupAfterPartition(const LayerProto& proto,
 
 
 void TanhLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
-  Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
-  Tensor<cpu, 1> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
+  Tensor<xpu, 1> data(data_.mutable_xpu_data(), Shape1(data_.count()));
+  Tensor<xpu, 1> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(),
       Shape1(data_.count()));
   data=F<op::stanh>(src);
 }
 
 void TanhLayer::ComputeGradient(const vector<SLayer>& srclayers) {
-  Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
-  Tensor<cpu, 1> grad(grad_.mutable_cpu_data(), Shape1(grad_.count()));
-  Tensor<cpu, 1> gsrc(srclayers[0]->mutable_grad(this)->mutable_cpu_data(),
+  Tensor<xpu, 1> data(data_.mutable_xpu_data(), Shape1(data_.count()));
+  Tensor<xpu, 1> grad(grad_.mutable_xpu_data(), Shape1(grad_.count()));
+  Tensor<xpu, 1> gsrc(srclayers[0]->mutable_grad(this)->mutable_xpu_data(),
       Shape1(data_.count()));
   gsrc=F<op::stanh_grad>(data)*grad;
 }
@@ -740,8 +740,8 @@ void SoftmaxLossLayer::SetupAfterPartition(const LayerProto& proto,
 }
 void SoftmaxLossLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers) {
   Shape<2> s=Shape2(batchsize_, dim_);
-  Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);
-  Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
+  Tensor<xpu, 2> prob(data_.mutable_xpu_data(), s);
+  Tensor<xpu, 2> src(srclayers[0]->mutable_data(this)->mutable_xpu_data(), s);
   Softmax(prob, src);
   const float* label=srclayers[1]->data(this).cpu_data();
   const float* probptr=prob.dptr;
@@ -769,7 +769,7 @@ void SoftmaxLossLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclaye
     probptr+=dim_;
   }
   CHECK_EQ(probptr, prob.dptr+prob.shape.Size());
-  float *metric=metric_.mutable_cpu_data();
+  float *metric=metric_.mutable_xpu_data();
   metric[0]=loss*scale_/(1.0f*batchsize_);
   metric[1]=precision*scale_/(1.0f*batchsize_);
 }
@@ -778,11 +778,11 @@ void SoftmaxLossLayer::ComputeGradient(const vector<SLayer>& srclayers) {
   const float* label=srclayers[1]->data(this).cpu_data();
   Blob<float>* gsrcblob=srclayers[0]->mutable_grad(this);
   gsrcblob->CopyFrom(data_);
-  float* gsrcptr=gsrcblob->mutable_cpu_data();
+  float* gsrcptr=gsrcblob->mutable_xpu_data();
   for(int n=0;n<batchsize_;n++){
     gsrcptr[n*dim_+static_cast<int>(label[n])]-=1.0f;
   }
-  Tensor<cpu, 1> gsrc(gsrcptr, Shape1(gsrcblob->count()));
+  Tensor<xpu, 1> gsrc(gsrcptr, Shape1(gsrcblob->count()));
   gsrc*=scale_/(1.0f*batchsize_);
 }
 

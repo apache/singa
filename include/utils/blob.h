@@ -42,7 +42,6 @@
 #define INCLUDE_UTILS_BLOB_
 #include <memory>
 #include <vector>
-//#include <atomic>
 #include <glog/logging.h>
 #include "proto/common.pb.h"
 using std::shared_ptr;
@@ -144,6 +143,7 @@ class Blob {
   const Dtype* gpu_data() const;
   Dtype* mutable_cpu_data();
   Dtype* mutable_gpu_data();
+  Dtype* mutable_xpu_data();
   /*
   void FromProto(const BlobProto& proto);
   */
