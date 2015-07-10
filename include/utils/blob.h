@@ -42,12 +42,11 @@
 #define INCLUDE_UTILS_BLOB_
 #include <memory>
 #include <vector>
-//#include <atomic>
 #include <glog/logging.h>
 #include "proto/common.pb.h"
 using std::shared_ptr;
 using std::vector;
-#define DEVICE 1
+
 #define NOT_IMPLEMENTED LOG(FATAL) << "Not implemented function"
 inline void MallocHost(void** ptr, size_t size) {
   *ptr = malloc(size);
@@ -170,7 +169,6 @@ class Blob {
   int count_;
   int capacity_;
   int version_;
-  int device_=DEVICE;
 };  // class Blob
 
 #endif // INCLUDE_UTILS_BLOB_
