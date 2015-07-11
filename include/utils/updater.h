@@ -12,7 +12,7 @@ class Updater{
   virtual void Init(const UpdaterProto &proto){
     proto_=proto;
   }
-  virtual void Update(int step, shared_ptr<Param> param, float grad_scale=1.0f)=0;
+  virtual void Update(int step, Param* param, float grad_scale=1.0f)=0;
 
   float GetLearningRate(int step);
  protected:
@@ -21,7 +21,7 @@ class Updater{
 class SGDUpdater : public Updater{
  public:
   virtual void Init(const UpdaterProto& proto);
-  virtual void Update(int step, shared_ptr<Param> param, float grad_scale=1.0f);
+  virtual void Update(int step, Param* param, float grad_scale=1.0f);
 
  protected:
   float base_lr_;
@@ -31,7 +31,7 @@ class SGDUpdater : public Updater{
 class NesterovUpdater : public Updater{
  public:
   virtual void Init(const UpdaterProto& proto);
-  virtual void Update(int step, shared_ptr<Param> param, float grad_scale=1.0f);
+  virtual void Update(int step, Param* param, float grad_scale=1.0f);
 
  protected:
   float base_lr_;
@@ -41,7 +41,7 @@ class NesterovUpdater : public Updater{
 class AdaGradUpdater : public Updater{
  public:
   virtual void Init(const UpdaterProto& proto);
-  virtual void Update(int step, shared_ptr<Param> param, float grad_scale=1.0f);
+  virtual void Update(int step, Param* param, float grad_scale=1.0f);
 
  protected:
   float base_lr_;
@@ -52,7 +52,7 @@ class AdaGradUpdater : public Updater{
 class RMSPropUpdater : public Updater{
  public:
   virtual void Init(const UpdaterProto& proto);
-  virtual void Update(int step, shared_ptr<Param> param, float grad_scale=1.0f);
+  virtual void Update(int step, Param* param, float grad_scale=1.0f);
 
  protected:
   float base_lr_;
@@ -65,7 +65,7 @@ class RMSPropUpdater : public Updater{
 class AdaDeltaUpdater : public Updater{
  public:
   virtual void Init(const UpdaterProto& proto);
-  virtual void Update(int step, shared_ptr<Param> param, float grad_scale=1.0f);
+  virtual void Update(int step, Param* param, float grad_scale=1.0f);
 
  protected:
   float rho_;

@@ -1,159 +1,119 @@
-#ifndef INCLUDE_NET_NET_H_
-#define INCLUDE_NET_NET_H_
+#ifndef SINGA_NEURALNET_NEURALNET_H_
+#define SINGA_NEURALNET_NEURALNET_H_
 
-#include <glog/logging.h>
 #include <vector>
 #include <map>
 #include <memory>
+#include <string>
 
 #include "proto/model.pb.h"
 #include "neuralnet/layer.h"
 #include "utils/factory.h"
 #include "utils/graph.h"
 
+namespace singa {
 using std::vector;
 using std::string;
 using std::map;
 using std::shared_ptr;
-namespace singa {
+
 /**
- * The neural network is constructed from user configured layers through google
- * protocol buffer. TODO support constructing neural network by adding layers
- * explicitly. E.g., users create layers and connect them manually in the code.
+ * The neural network is constructed from user configurations in NetProto.
  *
- * Some layers, e.g., SplitLayer and BridgeSrcLayer/BridgeDstLayer will be added
- * implicitly to partition the neural network.
+ * Some layers, e.g., SplitLayer and BridgeSrcLayer/BridgeDstLayer
+ * will be added implicitly to partition the neural network.
+ * TODO create wrappers for popular models, e.g., MLP, CNN.
  */
 class NeuralNet {
  public:
   /**
-   * Register Layers
+   * Register Layers, i.e., map layer type to layer class
    */
   static void RegisterLayers();
   /**
-   * Setup the neural network for training, test or validation.
+   * Create the neural network for training, test or validation.
    *
    * Parameters for test/validation net can share those from training after
    * setup (done outside of this funcion).
    *
-   * @param np proto for the neural network.
+   * @param np proto for the neural network
    * @param phase test/training/validation
-   * @param group_size partition the net among this num of workers
+   * @param num num of partitions, do partitioning if num > 1
+   * @return shared pointer to a neural net
    */
-  static shared_ptr<NeuralNet> SetupNeuralNet(const NetProto& np, Phase phase,
-      int group_size);
+  static shared_ptr<NeuralNet> Create(const NetProto& np, Phase phase, int num);
 
  public:
   /**
    * construct the net structure from protocol buffer.
+   * @param netproto neural net config
+   * @param npartitions num of partitions. 1 for no partitioning.
    */
-  NeuralNet(NetProto net_proto, int group_size=1);
+  explicit NeuralNet(NetProto netproto, int npartitions = 1);
+  ~NeuralNet();
   /**
-   * construct a json string representing the neuralnet graph.
-   * The json string can be used by other graph engine to draw a figure for
-   * displaying the neuralnet structure.
-   */
-  std::string ToString();
-  /**
-   * Print Norm1 of data and grad of each Layer and parameter.
-   * @param net, neural network
-   */
-  string DebugInfo();
-
-  /**
-   * to display the adjacency layers
+   * To display the adjacency layers
    */
   std::string ToAdjacency();
   /**
-   * Add layer explicitly used in manually programming/constructing neural net.
+   * Share memory of parameter values from other neuralnet
    */
-  void AddLayer(const LayerProto &layer_proto){};
-  /**
-   * Add layer explicitly used in manually programming/constructing neural net.
-   */
-  void AddLayer(const Layer* layer){};
-  /**
-   * share weights from other neuralnet
-   */
-  void ShareParams(shared_ptr<NeuralNet> other,int flag);
-  void ToProto(NetProto *net_proto, bool copyData=false);
-  const std::vector<shared_ptr<Layer>>& layers() {
+  void ShareParams(shared_ptr<NeuralNet> other);
+
+  const std::vector<Layer*>& layers() {
     return layers_;
   }
-  /**
-   * return ParserLayer of the neuralnet.
-   */
-  const std::vector<ParserLayer*>& parserlayers() {
-    if(parserlayers_.size()==0){
-      for(auto& layer: layers_)
-        if(layer->is_parserlayer())
-          parserlayers_.push_back(static_cast<ParserLayer*>(layer.get()));
-    }
+  const std::vector<ParserLayer*>& parserlayers() const {
     return parserlayers_;
   }
-  const std::vector<LossLayer*>& losslayers() {
-    if(losslayers_.size()==0){
-      for(auto& layer: layers_)
-        if(layer->is_losslayer())
-          losslayers_.push_back(static_cast<LossLayer*>(layer.get()));
-    }
+  const std::vector<LossLayer*>& losslayers() const {
     return losslayers_;
   }
-  const std::vector<DataLayer*>& datalayers() {
-    if(datalayers_.size()==0){
-      for(auto& layer: layers_)
-        if(layer->is_datalayer())
-          datalayers_.push_back(static_cast<DataLayer*>(layer.get()));
-    }
+  const std::vector<DataLayer*>& datalayers() const {
     return datalayers_;
   }
-  const std::vector<shared_ptr<Param>> &params()const {
+  const std::vector<Param*>& params() const {
     return params_;
   }
-  shared_ptr<Layer> name2layer(string name){
-    if (name2layer_.find(name)!=name2layer_.end())
-      return name2layer_[name];
-    else return nullptr;
+  Layer* name2layer(string name) const {
+    if (name2layer_.find(name) != name2layer_.end())
+      return name2layer_.at(name);
+    else
+      return nullptr;
   }
-
-  shared_ptr<Param> paramid2param(int id) {
-    if(paramid2param_.size()==0){
-      for(auto& layer: layers_){
-        for(shared_ptr<Param> p: layer->GetParams()){
-          paramid2param_[p->id()]=p;
-        }
-      }
-    }
-    return paramid2param_[id];
+  Param* paramid2param(int id) const {
+    return paramid2param_.at(id);
   }
 
  protected:
-  void ConstructNeuralNet(const NetProto &net_proto);
-  void PartitionNeuralNet();
-  map<string, shared_ptr<Layer>> GetNameToLayer(
-    const vector<shared_ptr<Layer>>& layers);
-  Graph CreatePartitonedGraph(const vector<shared_ptr<Layer>>& layers,
-    const map<string, shared_ptr<Layer>>& name2layer);
-
   /**
-   * Partition each layer according its partition type and dimension.
-   * @param layers original unpartitioned layers
+   * Create a neural net graph, one node for each layer.
+   *
+   * Partition the graph if npartitions > 1, each layer is sliced according to
+   * its own partition setting.
+   * @param netproto
+   * @npartitions
+   * @return neural net graph
    */
-  map<string, vector<shared_ptr<Layer>>> PartitionLayers(
-      const vector<shared_ptr<Layer>>& layers);
+  Graph* CreateGraph(const NetProto& netproto, int npartitions);
+  /**
+   * Create neural net from graph, one layer per node.
+   */
+  void CreateNetFromGraph(Graph* graph, int npartitions);
+  /**
+   * prepare data structures, e.g., params_, layers_, etc.
+   */
+  void PrepareDataStructures();
 
  protected:
-  vector<shared_ptr<Layer>> layers_;
+  vector<Layer*> layers_;
   vector<ParserLayer*> parserlayers_;
   vector<LossLayer*> losslayers_;
   vector<DataLayer*> datalayers_;
-  vector<shared_ptr<Param>> params_;
-  map<string, shared_ptr<Layer>> name2layer_;
-  map<int, shared_ptr<Param>> paramid2param_;
+  vector<Param*> params_;
 
-  map<string, LayerProto> name2layerproto_;
-  int group_size_;
-  Graph graph_;
+  map<string, Layer*> name2layer_;
+  map<int, Param*> paramid2param_;
 };
 }  // namespace singa
-#endif  // INCLUDE_NET_NET_H_
+#endif  // SINGA_NEURALNET_NEURALNET_H_

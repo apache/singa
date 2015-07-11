@@ -43,7 +43,7 @@ typedef struct HandleContext_{
   */
 class ParamInfo{
    public:
-  ParamInfo(shared_ptr<Param> p,int local, int owner):
+  ParamInfo(Param* p,int local, int owner):
     num_update(0), next_version(-1),num_local(local), num_total(1),
     owner_procs(owner){
       shares.push_back(p);
@@ -57,7 +57,7 @@ class ParamInfo{
     *  otherwise
     * @param owner the procs id of the worker who ownes this Param object
     */
-  void AddParam(shared_ptr<Param> p, bool local){
+  void AddParam(Param* p, bool local){
     num_local+=local;
     num_total+=1;
     if(local)
@@ -68,7 +68,7 @@ class ParamInfo{
   int num_local; //!< # local workers uses the shared parameter
   int num_total; //!< # total workers uses the shared parameter
   int owner_procs; //!< the procs id of the worker that owns the parameter
-  vector<shared_ptr<Param>> shares;
+  vector<Param*> shares;
 };
 
 typedef std::map<int, shared_ptr<ParamInfo>> WorkerShard;
@@ -95,13 +95,12 @@ class Trainer{
   // point.
 
  protected:
-  vector<shared_ptr<Server>> CreateServers(int nthread, const ModelProto& mproto,
+  vector<Server*> CreateServers(int nthread, const ModelProto& mproto,
       const vector<int> slices, vector<HandleContext*>* ctx);
-  vector<shared_ptr<Worker>> CreateWorkers(int nthread,
-      const ModelProto& mproto, vector<int> *slice_size);
+  vector<Worker*> CreateWorkers(int nthread, const ModelProto& mproto,
+      vector<int> *slice_size);
 
-  void Run(const vector<shared_ptr<Worker>>& workers,
-      const vector<shared_ptr<Server>>& servers);
+  void Run(const vector<Worker*>& workers, const vector<Server*>& servers);
   /**
    * Register default implementations for all base classes used in the system,
    * e.g., the Updater, BaseMsg, etc.

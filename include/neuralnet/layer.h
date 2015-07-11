@@ -27,54 +27,38 @@ namespace singa {
  */
 class ConvolutionLayer: public Layer {
  public:
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers);
-  /**
-   * need to reset some properties (e.g., weight matrix) according to
-   * shapes (after partition, e.g., partition is done against channel dimension)
-   */
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers);
-
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
-  virtual vector<shared_ptr<Param>> GetParams() {
-    return vector<shared_ptr<Param>>{weight_, bias_};
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
+  const vector<Param*> GetParams() const override {
+    vector<Param*> params{weight_, bias_};
+    return params;
   }
-  virtual ConnectionType connection_type(int k) const {
-    CHECK_LT(k, srclayers_.size());
+  ConnectionType src_neuron_connection(int k) const  override{
+    // CHECK_LT(k, srclayers_.size());
     return kOneToAll;
   }
+  ~ConvolutionLayer();
  protected:
   int kernel_, pad_,  stride_ ;
   int batchsize_,  channels_, height_,width_;
   int col_height_, col_width_, conv_height_, conv_width_, num_filters_;
-  shared_ptr<Param> weight_, bias_;
+  Param* weight_, *bias_;
   Blob<float> col_data_, col_grad_;
 };
 
 class DropoutLayer: public Layer {
  public:
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
 
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers);
-
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  protected:
   // drop probability
   float pdrop_;
@@ -89,48 +73,39 @@ class DropoutLayer: public Layer {
   */
 class InnerProductLayer: public Layer {
  public:
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
 
-  /**
-   * need to reset weight matrix in case of LayerPartition
-   */
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers);
-  virtual ConnectionType connection_type(int k) const {
-    CHECK_LT(k, srclayers_.size());
+
+  ConnectionType src_neuron_connection(int k) const override {
+    // CHECK_LT(k, srclayers_.size());
     return kOneToAll;
   }
-
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
-  //virtual void ToProto(LayerProto *layer_proto, bool copyData);
-  virtual vector<shared_ptr<Param>> GetParams() {
-    return vector<shared_ptr<Param>>{weight_, bias_};
+  const vector<Param*> GetParams() const override{
+    vector<Param*> params{weight_, bias_};
+    return params;
   }
-
+  ~InnerProductLayer();
  private:
   //! dimension of the hidden layer
   int hdim_;
   //! dimension of the visible layer
   int vdim_;
   int batchsize_;
-  shared_ptr<Param> weight_, bias_;
+  Param* weight_, *bias_;
 };
 
 class LabelLayer: public ParserLayer {
  public:
-  using ParserLayer::Setup;
+  using ParserLayer::ParseRecords;
 
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void ParseRecords(Phase phase, const vector<Record>& records,
-      Blob<float>* blob);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ParseRecords(Phase phase, const vector<Record>& records,
+      Blob<float>* blob) override;
 };
 
 class LRNLayer: public Layer {
@@ -142,22 +117,13 @@ class LRNLayer: public Layer {
  * a_i, the activation (after ReLU) of a neuron convolved with the i-th kernel.
  * b_i, the neuron after normalization, N is the total num of kernels
  */
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
- public:
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
 
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers);
-
-
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  protected:
   //! shape of the bottom layer feature
   int batchsize_, channels_, height_, width_;
@@ -170,11 +136,11 @@ class LRNLayer: public Layer {
 
 class MnistLayer: public ParserLayer {
  public:
-  using Layer::Setup;
+  using ParserLayer::ParseRecords;
 
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void ParseRecords(Phase phase, const vector<Record>& records,
-      Blob<float>* blob);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ParseRecords(Phase phase, const vector<Record>& records,
+      Blob<float>* blob) override;
 
  protected:
   // height and width of the image after deformation
@@ -189,18 +155,13 @@ class MnistLayer: public ParserLayer {
 
 class PoolingLayer: public Layer {
  public:
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers);
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers);
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
+
  protected:
   int kernel_, pad_, stride_;
   int batchsize_,channels_, height_, width_, pooled_height_, pooled_width_;
@@ -209,20 +170,12 @@ class PoolingLayer: public Layer {
 
 class ReLULayer: public Layer {
  public:
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers);
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers);
-
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
+  void Setup(const LayerProto& proto, int npartitions = 1) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
 };
 
 
@@ -231,34 +184,26 @@ class SoftmaxLossLayer: public LossLayer {
    * connected from the label layer and the last fc layer
    */
  public:
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
 
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers);
   /**
    * softmax is not recommendeded for partition because it requires the whole
    * src layer for normalization.
    */
-  virtual PartitionType partition_type() const {
-    if(layer_proto_.partition_type()==kLayerPartition)
-      return kNone;
-    else
-      return layer_proto_.partition_type();
+  int partition_dim() const override {
+    CHECK_LE(layer_proto_.partition_dim(), 1);
+    return layer_proto_.partition_dim();
   }
-  virtual ConnectionType connection_type(int k) const {
-    CHECK_LT(k, srclayers_.size());
+  ConnectionType src_neuron_connection(int k) const override {
+    // CHECK_LT(k, srclayers_.size());
     return kOneToAll;
   }
 
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  private:
   int batchsize_;
   int dim_;
@@ -268,11 +213,11 @@ class SoftmaxLossLayer: public LossLayer {
 
 class RGBImageLayer: public ParserLayer {
  public:
-  using Layer::Setup;
+  using ParserLayer::ParseRecords;
 
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void ParseRecords(Phase phase, const vector<Record>& records,
-      Blob<float>* blob);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ParseRecords(Phase phase, const vector<Record>& records,
+      Blob<float>* blob) override;
 
  private:
   float scale_;
@@ -283,33 +228,21 @@ class RGBImageLayer: public ParserLayer {
 
 class ShardDataLayer: public DataLayer{
  public:
-  using Layer::Setup;
   using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
 
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){};
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual int batchsize() const {
-    return layer_proto_.sharddata_conf().batchsize();
-  }
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
  private:
   shared_ptr<DataShard> shard_;
 };
 class LMDBDataLayer: public DataLayer{
  public:
-  using Layer::Setup;
   using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
 
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){};
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
   void ConvertDatumToSingleLableImageRecord(const Datum& datum,
     SingleLabelImageRecord* record);
-  virtual int batchsize() const {
-    return layer_proto_.lmdbdata_conf().batchsize();
-  }
  private:
   MDB_env* mdb_env_;
   MDB_dbi mdb_dbi_;
@@ -325,21 +258,13 @@ class LMDBDataLayer: public DataLayer{
  */
 class TanhLayer: public Layer {
  public:
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers);
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
 
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers);
-
-
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
  private:
   float outer_scale_, inner_scale_;
 };

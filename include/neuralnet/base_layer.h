@@ -1,14 +1,11 @@
-#ifndef INCLUDE_BASE_LAYER_H_
-#define INCLUDE_BASE_LAYER_H_
+#ifndef SINGA_BASE_LAYER_H_
+#define SINGA_BASE_LAYER_H_
 
 #include <vector>
 #include <string>
 #include <map>
-#include <functional>
 #include <utility>
 #include <memory>
-#include <chrono>
-#include <algorithm>
 #include <thread>
 
 #include "proto/model.pb.h"
@@ -17,162 +14,110 @@
 #include "utils/common.h"
 #include "utils/blob.h"
 
+namespace singa{
+
 using std::vector;
-using std::shared_ptr;
-using std::make_shared;
 using std::string;
 using std::map;
 
-namespace singa{
 
 class Layer;
-typedef shared_ptr<Layer> SLayer;
 /**
  * Base layer class.
- * Children should implement at least Layer::Setup, Layer::ComputeFeature(),
- * Layer::ComputGradient() functions for backpropagation method;
- * TODO(zhaojing) subclass the base layer class to support contrastive divergence,
- * The identifier of each layer is the literal string of the class name without
- * the suffix "Layer", which is used in layer registration and creation.
+ *
+ * Children should implement at least
+ * Layer::ComputeFeature() and Layer::ComputGradient()
+ * functions for contrastive-divergence/back-propagation algorithm.
  */
 class Layer {
  public:
   Layer(){}
   virtual ~Layer(){}
   /**
-   * Layer initialization.
-   *
-   * It simply saves the proto configuation, most initializations are done by
-   * Setup().
-   *
-   * @param proto user defined layer configuration
-   */
-  virtual void Init(const LayerProto &proto);
-  /**
-   * Copy layer configuration from the other Layer, and use the shape argument
-   * to as its data shape.
-   */
-  void Init(const Layer& other, const vector<int>& shape);
-  /**
-   * TODO(wangsheng) Marshal layer properties and data into google protobuf
-   * object (i.e., snapshot).
-   *
-   * Parameters are marshalled separately into another object (i.e., model).
-   *
-   * @param layer_proto
-   * @param copyData if true marshal layer data, e.g., feature value
-   */
-  virtual void ToProto(LayerProto *layer_proto, bool copyData);
-  /**
    * Setup layer properties.
    *
    * Setup the shapes for data and parameters, also setup some properties
-   * based on the layer configuration and connected src layers.
+   * based on the layer configuration and connected layers.
    *
-   * @param srclayers layers connecting to this layer
+   * @param proto layer configuration.
+   * @param npartitions num of total partitions of the original layer. This
+   * layer should be setup as one partition.
    */
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers)=0;
-  /**
-   * \copydoc Setup(const LayerProto&, const vector<SLayer>&)
-   */
-  virtual void Setup();
-  /**
-   * Setup the layer properties except shape.
-   *
-   * The shape is already set and passed in to set other properties.
-   * properties are set according to shapes of itself and connected layers, and
-   * configuration. this should not change the current shape_(
-   * shape check is done outside the function).
-   */
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers)=0;
-  /**
-   * \copybrief SetupAfterPartition(const LayerProto&, const vector<int> &,
-   * const vector<SLayer>& ).
-   */
-  virtual void SetupAfterPartition();
-  /**
-   * Layers that have paramters must overload this function.
-   *
-   * @return parameters associated with this layer
-   */
-  virtual vector<shared_ptr<Param>> GetParams(){
-    return vector<shared_ptr<Param>>();
-  }
+  virtual void Setup(const LayerProto& proto,int npartitions = 1);
+
   /**
    * Compute features of this layer based on connected layers.
    *
-   * Implement forward propagation for BP.
-   * TODO(zhaojing) Implement both postive phase and negative phase for CD.
-   *
-   * @param training true if in training phase
-   * @param srclayers layers connecting to this layer
+   * @param phase kTrain, kTest, kPositive, etc.
    */
-  virtual void ComputeFeature(Phase phase, const vector<SLayer>& srclayers)=0;
+  virtual void ComputeFeature(Phase phase, Metric* perf) = 0;
   /**
-   * \copybrief ComputeFeature(const vector<SLayer>& srclayers)
-   */
-  virtual void ComputeFeature(Phase phase);
-  /**
-   * Compute gradients for parameters and connecting layers.
+   * Compute gradients for parameters and connected layers.
    *
-   * Implement backward propagation for BP.
-   * TODO(zhaojing) Calculate gradients for parameters for CD.
-   *
-   * @param srclayers layers connecting to this layer.
+   * @param phase kTrain, kTest, kPositive, etc.
    */
-  virtual void ComputeGradient(const vector<SLayer>& srclayers)=0;
+  virtual void ComputeGradient(Phase phase) = 0;
+
   /**
-   * \copybrief ComputeGradient(const vector<SLayer>& srclayers)
-   */
-  virtual void ComputeGradient();
-  /**
-   * Decide on which dimension to do the partitioning.
+   * For print debug info about each layer, e.g., norm of feature vector,
+   * norm of parameters.
    *
-   * @mode kLayer, kData, kNone (no partition)
-   * @return the partition dimension, -1 for no partition
+   * @param step training/test/validation step
+   * @param phase forward/backward/positive/negative...
+   * @return debug info about this layer.
    */
-  virtual int partition_dimension() const {
-    int ret=0;
-    if(partition_type()==kLayerPartition)
-      ret= 1;
-    else if(partition_type()==kNone)
-      ret= -1;
-    return ret;
+  const string DebugString(int step, Phase phase);
+  /**
+   * Layers that have paramters must override this function.
+   *
+   * @return parameters associated with this layer
+   */
+  virtual const vector<Param*> GetParams() const {
+    return vector<Param*>{};
+  }
+  /**
+   * Return the connection type between one neuron of this layer and
+   * its source layer.
+   * Currently support two connection types: kOneToOne, and kOneToAll.
+   * kOneToOne indicates the neuron depends on only one neuron from src layer.
+   * kOneToAll indicates the neuron depends on all neurons from src layer.
+   * TODO support kOneToMany.
+   *
+   * @param k index of source layer (current only support k = 0.
+   * @param connection type.
+   */
+  virtual ConnectionType src_neuron_connection(int k) const {
+    // CHECK_LT(k, srclayers_.size());
+    return kOneToOne;
   }
 
   /**
-   * Return connection type between two layers.
+   * Return the connection type of this layer and all dst layers.
    *
-   * Currently support two connections: kOneToOne, and kOneToAll.
-   * kOneToOne indicates the dst neuron depends on only one neuron from src
-   * layer. kOneToAll indicates the dst neuron depends on all neurons from src
-   * layer. TODO support kOneToMany.
+   * Currently support two connection types: kOneToOne, and kOneToMany.
+   * kOneToOne indicates the users implement the ComputeFeature and
+   * ComputeGradient function considering only one dest layer. In this case,
+   * a SplitLayer will be added automatically to connect this layer with all
+   * dest layer.
+   * kOneToMany indicates the users has already considered multiple dest layers
+   * in the implementation.
+   * @return connection type default is kOneToOne.
    */
-  virtual ConnectionType connection_type(int k) const {
-    CHECK_LT(k, srclayers_.size());
+  virtual ConnectionType dst_layer_connection() const {
     return kOneToOne;
   }
   /**
-   * @return partition type of this layer, e.g., kNone, kLayer or kData.
+   * @return partition dimension of this layer.
+   * -1 for no partition;
+   *  0 for partition the mini-batch into sub-mini-batch.
+   *  1 for partition the layer feature vector into sub-vector.
    */
-  virtual PartitionType partition_type() const {
-    return layer_proto_.partition_type();
+  virtual int partition_dim() const {
+    return layer_proto_.partition_dim();
   }
-  /**
-   * partition id is the ID of the layer in the original layer.
-   */
-  virtual void set_partitionid(int id){
-    layer_proto_.set_partitionid(id);
-  }
-  virtual int partitionid() const {
-    return layer_proto_.partitionid();
-  }
-  virtual void set_name(string name){
-    name_=name;
-    layer_proto_.set_name(name);
+
+  virtual int partition_id() const {
+    return layer_proto_.partition_id();
   }
   virtual int type() const {
     return layer_proto_.type();
@@ -187,15 +132,11 @@ class Layer {
    * @return name of src data blob, used by prefetch layer to locate the data
    * blob in parser layers; The default value is "unknown"; If the
    * src layer is the prefetch layer and there are more than one parser layers,
-   * this value value be set.
+   * this value be set.
    */
   const std::string &datablob() const {
     return layer_proto_.datablob();
   }
-  const vector<int>& shape(const Layer* layer) const{
-    return data(layer).shape();
-  }
-
   /**
    * @return a const ref for Blob storing neuron values of this layer for BP
    */
@@ -215,37 +156,36 @@ class Layer {
   virtual Blob<float>* mutable_grad(const Layer* from) {
     return &grad_;
   }
-
   /**
    * return LayerS that connected to this layer
    */
-  virtual const vector< SLayer> srclayers() const {
+  virtual const vector<Layer*> srclayers() const {
     return srclayers_;
   }
   /**
    * return LayerS that this layer connected to
    */
-  virtual const vector<SLayer> dstlayers() const {
+  virtual const vector<Layer*> dstlayers() const {
     return dstlayers_;
   }
 
-  virtual const int srclayers_size() const {
+  virtual int srclayers_size() const {
     return srclayers_.size();
   }
-  virtual const int dstlayers_size() const {
+  virtual int dstlayers_size() const {
     return dstlayers_.size();
   }
-  virtual void ClearDstLayers() {
+  virtual void clear_dstlayers() {
     dstlayers_.clear();
   }
-  virtual void ClearSrcLayers() {
+  virtual void clear_srclayers() {
     srclayers_.clear();
   }
 
-  virtual void AddSrcLayer(SLayer src){
+  virtual void add_srclayer(Layer* src){
     srclayers_.push_back(src);
   }
-  virtual void AddDstLayer(SLayer dst){
+  virtual void add_dstlayer(Layer* dst){
     dstlayers_.push_back(dst);
   }
 
@@ -264,11 +204,11 @@ class Layer {
   virtual bool is_bridgedstlayer() const {
     return false;
   }
+
 protected:
-  string name_;
-  Blob<float> data_, grad_;
   LayerProto layer_proto_;
-  vector<SLayer> srclayers_, dstlayers_;
+  Blob<float> data_, grad_;
+  vector<Layer*> srclayers_, dstlayers_;
 };
 
 /**
@@ -277,42 +217,43 @@ protected:
  */
 class BridgeSrcLayer: public Layer {
  public:
-  using Layer::Setup;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
+  using Layer::data;
+  using Layer::mutable_data;
+  using Layer::grad;
+  using Layer::mutable_grad;
+  using Layer::is_bridgesrclayer;
 
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void SetupAfterPartition();
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers){}
+  void ComputeFeature(Phase phase, Metric* perf) override {}
+  void ComputeGradient(Phase phase) override {
+    ready_ = false;
+  }
 
-  virtual void ComputeFeature(Phase phase, const vector<SLayer>& srclayers);
-  virtual void ComputeGradient(const vector<SLayer>& srclayers);
-  virtual const Blob<float>& data(const Layer* from) const {
+  const Blob<float>& data(const Layer* from) const override {
     return srclayers_[0]->data(this);
   }
-  virtual Blob<float>* mutable_data(const Layer* from){
+  Blob<float>* mutable_data(const Layer* from) override {
     return srclayers_[0]->mutable_data(this);
   }
-
-  virtual const Blob<float>& grad(const Layer* from) const {
+  const Blob<float>& grad(const Layer* from) const override {
     return srclayers_[0]->grad(this);
   }
-  virtual Blob<float>* mutable_grad(const Layer* from) {
+  Blob<float>* mutable_grad(const Layer* from) override {
     return srclayers_[0]->mutable_grad(this);
   }
-  int dst_partition() const;
-  virtual bool is_bridgesrclayer() const {
+
+  bool is_bridgesrclayer() const override {
     return true;
   }
-  virtual void set_ready(bool a) {
+  void set_ready(bool a) {
     ready_=a;
   }
-  virtual bool ready() const {
+  bool ready() const {
     return ready_;
   }
  protected:
+  //!< true if received grad from BridgeDstLayer
   bool ready_;
 };
 /**
@@ -321,30 +262,26 @@ class BridgeSrcLayer: public Layer {
  */
 class BridgeDstLayer: public Layer {
  public:
-  using Layer::Setup;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void SetupAfterPartition();
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers){}
-
-  virtual void ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
-    ready_=false;
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric* perf) override {
+   // reset ready_ for next iteration.
+    ready_ = false;
   }
-  virtual void ComputeGradient(const vector<SLayer>& srclayers){}
-  virtual bool is_bridgedstlayer() const {
+  void ComputeGradient(Phase phase) override {}
+  bool is_bridgedstlayer() const {
     return true;
   }
-  virtual void set_ready(bool a) {
-    ready_=a;
+  void set_ready(bool ready) {
+    ready_ = ready;
   }
-  virtual bool ready() const {
+  bool ready() const {
     return ready_;
   }
  protected:
+  //!< true if received data from BridgeSrcLayer
   bool ready_;
 };
 
@@ -353,71 +290,51 @@ class BridgeDstLayer: public Layer {
  */
 class ConcateLayer: public Layer {
  public:
-  using Layer::Setup;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void SetupAfterPartition();
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers){}
-
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
+  virtual void Setup(const LayerProto& proto,int npartitions) override;
+  void ComputeFeature(Phase phase, Metric* perf) override;
+  void ComputeGradient(Phase phase) override;
 };
-
 
 /**
  * Base layer for reading records from local Shard, HDFS, lmdb, etc.
- * Cannot be partitioned, always returns kNone for partition type.
  */
-
 class DataLayer: public Layer{
  public:
-  using Layer::Setup;
-  using Layer::ComputeFeature;
   using Layer::ComputeGradient;
+  using Layer::mutable_data;
+  using Layer::mutable_grad;
+  using Layer::dst_layer_connection;
 
-  virtual void ComputeFeature(Phase phase, const vector<SLayer>& srclayers)=0;
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers)=0;
-  virtual bool is_datalayer() const {
+  void ComputeGradient(Phase phase) override {}
+  virtual bool is_datalayer() const override {
     return true;
   }
-  virtual void ComputeGradient(const vector<SLayer>& srclayers){};
-  virtual const vector<Record>& records() const {
-    return records_;
+  Blob<float>* mutable_data(const Layer* layer) override {
+    return nullptr;
   }
-  virtual void Setup(){
-    vector<SLayer> dummy;
-    Setup(layer_proto_,dummy);
-    has_setup_=true;
+  Blob<float>* mutable_grad(const Layer* layer) override {
+    return nullptr;
   }
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers){}
-
-  virtual void SetupAfterPartition(){
-    if(!has_setup_)
-    Setup();
-  }
-  virtual PartitionType partition_type () const {
-    return kNone;
+  ConnectionType dst_layer_connection() const override {
+    return kOneToMany;
   }
 
-  virtual int batchsize() const=0;
+  int batchsize() const {
+    return batchsize_;
+  }
   virtual const Record& sample() const {
     return sample_;
   }
-
-  virtual Blob<float>* mutable_data(const Layer* layer) {
-    return nullptr;
-  }
-  virtual Blob<float>* mutable_grad(const Layer* layer) {
-    return nullptr;
+  /**
+   * @return the loaded records
+   */
+  virtual const vector<Record>& records() const {
+    return records_;
   }
  protected:
-  bool has_setup_;
   int random_skip_, batchsize_;
   Record sample_;
   vector<Record> records_;
@@ -432,36 +349,28 @@ class DataLayer: public Layer{
  */
 class PrefetchLayer : public Layer {
  public:
-  using Layer::Setup;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
-  using Layer::SetupAfterPartition;
 
-  virtual ~PrefetchLayer();
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void ComputeFeature(Phase phase, const vector<SLayer>& srclayers);
-  virtual void ComputeGradient(const vector<SLayer>& srclayers){};
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers){}
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric* perf) override;
+  void ComputeGradient(Phase phase) override {};
 
-  virtual const Blob<float>& data(const Layer* from) const ;
-  virtual Blob<float>* mutable_data(const Layer* layer) ;
+  const Blob<float>& data(const Layer* from) const override;
+  Blob<float>* mutable_data(const Layer* layer) override ;
 
-  virtual Blob<float>* mutable_grad(const Layer* layer){
+  Blob<float>* mutable_grad(const Layer* layer) override {
     return nullptr;
   }
-  virtual const Blob<float>& grad(const Layer* from) const {
+  const Blob<float>& grad(const Layer* from) const override{
     CHECK(false)<<"Loss layer has not gradient blob";
     return grad_;
   }
-  virtual PartitionType partition_type () const {
-    return kNone;
-  }
 
   void Prefetch(Phase phase);
+  virtual ~PrefetchLayer();
  protected:
-  vector<shared_ptr<Layer>> sublayers_;
+  vector<Layer*> sublayers_;
   map<string, Blob<float>> datablobs_;
   std::thread thread_;
 };
@@ -471,46 +380,46 @@ class PrefetchLayer : public Layer {
  */
 class SliceLayer: public Layer {
  public:
-  using Layer::Setup;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void SetupAfterPartition();
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers){}
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric* perf) override;
+  void ComputeGradient(Phase phase) override;
+  ConnectionType dst_layer_connection() const override {
+    return kOneToMany;
+  }
+  const Blob<float>& data(const Layer* layer) const override;
+  const Blob<float>& grad(const Layer* layer) const override;
+  Blob<float>* mutable_data(const Layer* layer) override;
+  Blob<float>* mutable_grad(const Layer* layer) override;
 
-  virtual const Blob<float>& data(const Layer* layer) const;
-  virtual const Blob<float>& grad(const Layer* layer) const;
-  virtual Blob<float>* mutable_data(const Layer* layer);
-  virtual Blob<float>* mutable_grad(const Layer* layer);
  protected:
   int SliceID(const Layer* layer) const;
+
+ private:
   vector<Blob<float>> datavec_, gradvec_;
   int slice_dim_, slice_num_;
 };
 
 /**
- * Replciate this layer into multiple dst layers
- * TODO change name to ReplicateLayer.
+ * Connect the source layer with multiple dst layers.
+ * Pass source layer's data blob directly to dst layers.
+ * Aggregate dst layer's gradients into source layer's gradient.
  */
 class SplitLayer: public Layer {
  public:
-  using Layer::Setup;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
-  virtual void SetupAfterPartition();
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers){}
-
-  virtual void ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers);
-  virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers);
+  void Setup(const LayerProto& proto, int npartitions) override ;
+  void ComputeFeature(Phase phase, Metric* perf) override;
+  void ComputeGradient(Phase phase) override;
+  ConnectionType dst_layer_connection() const override {
+    return kOneToMany;
+  }
+ protected:
+  Blob<float> grads_;
 };
 
 /**
@@ -518,14 +427,9 @@ class SplitLayer: public Layer {
  */
 class LossLayer: public Layer{
  public:
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
-
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers)=0;
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers)=0;
+  using Layer::mutable_grad;
+  using Layer::grad;
+  using Layer::is_losslayer;
 
   virtual Blob<float>* mutable_grad(const Layer* layer){
     return nullptr;
@@ -537,9 +441,7 @@ class LossLayer: public Layer{
   virtual bool is_losslayer() const {
     return true;
   }
-  virtual const Blob<float>& metric() const {
-    return metric_;
-  }
+
  protected:
   Blob<float> metric_;
 };
@@ -549,56 +451,30 @@ class LossLayer: public Layer{
  */
 class ParserLayer: public Layer {
  public:
-  using Layer::Setup;
-  using Layer::SetupAfterPartition;
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
+  using Layer::is_parserlayer;
+  using Layer::mutable_grad;
+  using Layer::grad;
 
-  virtual void Setup(const LayerProto& proto,
-      const vector<SLayer>& srclayers)=0;
+  void ComputeFeature(Phase phase, Metric* perf) override;
+  void ComputeGradient(Phase phase) override {};
   /**
    * Parse records from DataLayer into blob.
-   * This function is called by
-   * ComputeFeature(Phase, const vector<SLayer>& srclayers)  or Prefetch(Phase).
    */
   virtual void ParseRecords(Phase phase, const vector<Record>& records,
       Blob<float>* blob)=0;
-
-  virtual bool is_parserlayer() const {
+  bool is_parserlayer() const override{
     return true;
   }
-
-  virtual void ComputeFeature(Phase phase, const vector<SLayer>& srclayers);
-  /**
-   * Dummy function. ParserLayer does not compute gradients.
-   */
-  virtual void ComputeGradient(const vector<SLayer>& srclayers){};
-  virtual void Setup(){
-    Setup(layer_proto_,srclayers_);
-    has_setup_=true;
-  }
-  virtual void SetupAfterPartition(){
-    if(!has_setup_)
-      Setup();
-  }
-  virtual void SetupAfterPartition(const LayerProto& proto,
-      const vector<int> &shape,
-      const vector<SLayer>& srclayers){}
-
-  virtual PartitionType partition_type () const{
-    return kNone;
-  }
-  virtual Blob<float>* mutable_grad(const Layer* layer) {
+  Blob<float>* mutable_grad(const Layer* layer) override {
     return nullptr;
   }
-  virtual const Blob<float>& grad(const Layer* from) const {
+  const Blob<float>& grad(const Layer* from) const  override {
     CHECK(false)<<"Parser layer has not gradient blob";
     return grad_;
   }
-
- private:
-  bool has_setup_;
 };
 } // singa
 
-#endif // INCLUDE_BASE_LAYER_H_
+#endif // SINGA_BASE_LAYER_H_
