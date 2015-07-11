@@ -160,4 +160,52 @@ void SetupLog(const std::string& log_dir, const std::string& model) {
   google::SetLogDestination(google::FATAL, fatal.c_str());
 }
 
+void Metric::Add(const string& name, float value) {
+  if(entry_.find(name) == entry_.end())
+    entry_[name] = std::make_pair(1, value);
+  else{
+    auto& e = entry_.at(name);
+    e.first += 1;
+    e.second += value;
+  }
+}
+
+void Metric::Reset() {
+  for(auto e : entry_) {
+    e.second.first = 0;
+    e.second.second = 0;
+  }
+}
+const string Metric::ToLogString() const{
+  string ret;
+  size_t k = 0;
+  for(auto e : entry_) {
+    ret += e.first + " : " ;
+    ret += std::to_string(e.second.second / e.second.first);
+    if(++k < entry_.size())
+      ret +=  ", ";
+  }
+  return ret;
+}
+
+const string Metric::ToString() const{
+  MetricProto proto;
+  for(auto e : entry_) {
+    proto.add_name(e.first);
+    proto.add_count(e.second.first);
+    proto.add_val(e.second.second);
+  }
+  string ret;
+  proto.SerializeToString(&ret);
+  return ret;
+}
+
+void Metric::ParseFrom(const string& msg) {
+  MetricProto proto;
+  proto.ParseFromString(msg);
+  Reset();
+  for(int i = 0; i < proto.name_size(); i++) {
+    entry_[proto.name(i)] = std::make_pair(proto.count(i), proto.val(i));
+  }
+}
 }  // namespace singa

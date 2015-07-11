@@ -19,7 +19,7 @@ const int kCollectSleepTime=5;//milliseconds;
 class Worker {
  public:
   Worker(int thread_id, int group_id, int worker_id);
-  ~Worker(){}
+  virtual ~Worker(){}
   void Setup(const ModelProto& model, shared_ptr<NeuralNet> train_net);
   void set_test_net(shared_ptr<NeuralNet> test_net){
     test_net_=test_net;
@@ -29,10 +29,10 @@ class Worker {
   }
 
   void Stop();
-  int Put(shared_ptr<Param> param, int step);
-  int Get(shared_ptr<Param> param, int step);
-  int Update(shared_ptr<Param> param, int step);
-  int Collect(shared_ptr<Param> param, int step);
+  int Put(Param* param, int step);
+  int Get(Param* param, int step);
+  int Update(Param* param, int step);
+  int Collect(Param* param, int step);
   int CollectAll(shared_ptr<NeuralNet> net, int step);
   /**
     * check validation/test firstly, then TrainOneBatch
@@ -49,7 +49,8 @@ class Worker {
   /**
    * Test/validate one mini-batch.
    */
-  virtual void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net, Metric* perf)=0;
+  virtual void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net,
+      Metric* perf)=0;
   /**
     * Test the perforance of the learned model on validation or test dataset.
     * Test is done by the first group.
@@ -77,7 +78,7 @@ class Worker {
   const bool DisplayDebugInfo(const int step) const {
     return DisplayNow(step)&&modelproto_.debug()&&group_id_==0;
   }
-  const void DisplayPerformance(const Metric & perf, const string& prefix);
+  void DisplayPerformance(const string& prefix, const Metric & perf);
 
   /**
    * return true if the stop condition is satisfied, e.g., the maximum number
@@ -142,9 +143,11 @@ class BPWorker: public Worker{
  public:
   BPWorker(int thread_id, int group_id, int worker_id);
   ~BPWorker(){}
-  virtual void TrainOneBatch(int step, Metric* perf);
-  virtual void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net, Metric* perf);
-  void Forward(int step, Phase phase, shared_ptr<NeuralNet> net);
+  void TrainOneBatch(int step, Metric* perf) override;
+  void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net,
+      Metric* perf) override;
+
+  void Forward(int step, Phase phase, shared_ptr<NeuralNet> net, Metric* perf);
   void Backward(int step, shared_ptr<NeuralNet> net);
 };
 }  // namespace singa

@@ -7,6 +7,8 @@ enum Phase {
   kPositive = 3;
   // negative phase for contrastive divergence algorithm
   kNegative = 4;
+  kForward = 5;
+  kBackward = 6;
 }
 
 message ModelProto {
@@ -58,7 +60,7 @@ message ModelProto {
 message NetProto {
   repeated LayerProto layer = 1;
   // partitioning type for parallelism
-  optional PartitionType partition_type = 3 [default = kNone];
+  optional int32 partition_dim = 2 [default = -1];
 }
 
 // weight matrix should be defined before bias vector
@@ -99,7 +101,7 @@ message ParamProto {
   // multiplied on the global weight decay.
   optional float weight_decay_multiplier = 16 [default = 1];
   // partition dimension, -1 for no partition
-  optional int32 partition_dim = 30 [default = -1];
+  optional int32 partition_dim = 30;
   // usually, the program will infer the param shape
   repeated int32 shape = 31;
 
@@ -185,15 +187,15 @@ message LayerProto {
   optional SplitProto split_conf = 42;
   // configuration for tanh layer
   optional TanhProto tanh_conf = 43;
-  // partition type which overrides the partition type for neural net
-  optional PartitionType partition_type = 59;
+
+
+  // overrides the partition dimension for neural net
+  optional int32 partition_dim =59 [default = -1];
   optional string datablob = 58 [default = "unknow"];
 
   // names of parameters shared from other layers
   repeated string share_param = 60;
-  // TODO(wangwei): make location ID an array
-  optional int32 locationid = 61 [default = 0];
-  optional int32 partitionid = 62 [default = 0];
+  optional int32 partition_id = 62 [default = 0];
 }
 
 message RGBImageProto {
@@ -246,9 +248,7 @@ message ConvolutionProto {
 
 message ConcateProto {
   // on which dimension, starts from 0
-  required int32 concate_dimension = 1;
-  // concatenate offset
-  optional int32 concate_num = 30;
+  required int32 concate_dim = 1;
 }
 
 message DataProto {
@@ -328,8 +328,7 @@ message PoolingProto {
 }
 
 message SliceProto{
-  required int32 slice_dimension=1;
-  required int32 slice_num=2;
+  required int32 slice_dim = 1;
 }
 
 message ReLUProto {

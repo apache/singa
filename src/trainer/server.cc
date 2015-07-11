@@ -36,7 +36,7 @@ void Server::Run(){
   ping->add_frame("PING", 4);
   ping->set_type(kConnect);
   dealer_->Send(&ping);
-  vector<shared_ptr<Param>> master_params;
+  vector<Param*> master_params;
   size_t syncEntry=0;
   //start recv loop and process requests
   while (true){
@@ -121,13 +121,13 @@ void Server::Run(){
 Msg* Server::HandlePut(Msg **msg){
   int version=(*msg)->trgt_third();
   int pid=(*msg)->trgt_second();
-  shared_ptr<Param> param=nullptr;
+  Param* param=nullptr;
   if(shard_->find(pid)!=shard_->end()){
     LOG(ERROR)<<"Param ("<<pid<<") is put more than once";
     param=shard_->at(pid);
   }else{
     auto factory=Singleton<Factory<Param>>::Instance();
-    param=shared_ptr<Param>(factory ->Create("Param"));
+    param=factory ->Create("Param");
     (*shard_)[pid]=param;
   }
   auto response=param->HandlePutMsg(msg);
@@ -147,7 +147,7 @@ Msg* Server::HandlePut(Msg **msg){
   return response;
 }
 
-Msg* Server::HandleGet(shared_ptr<Param> param, Msg **msg){
+Msg* Server::HandleGet(Param* param, Msg **msg){
   if(param->version()<(*msg)->trgt_third())
     return *msg;
   else{
@@ -158,7 +158,7 @@ Msg* Server::HandleGet(shared_ptr<Param> param, Msg **msg){
   }
 }
 
-Msg* Server::HandleUpdate(shared_ptr<Param> param, Msg **msg) {
+Msg* Server::HandleUpdate(Param* param, Msg **msg) {
   auto* tmp=static_cast<Msg*>((*msg)->CopyAddr());
   tmp->SwapAddr();
   int paramid=(*msg)->trgt_first();
@@ -174,7 +174,7 @@ Msg* Server::HandleUpdate(shared_ptr<Param> param, Msg **msg) {
   return response;
 }
 
-Msg* Server::HandleSyncRequest(shared_ptr<Param> param, Msg **msg){
+Msg* Server::HandleSyncRequest(Param* param, Msg **msg){
   Msg* response=nullptr;
   auto shape=Shape1(param->size());
   CHECK_EQ((*msg)->frame_size(), param->size()*sizeof(float));

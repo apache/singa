@@ -9,76 +9,46 @@
 #include "neuralnet/base_layer.h"
 
 namespace singa {
-/********* Implementation for Layer **************/
-void Layer::Init(const LayerProto &proto) {
-  layer_proto_=proto;
+
+void Layer::Setup(const LayerProto& proto, int npartitions) {
+  CHECK_GE(npartitions, 1);
+  layer_proto_ = proto;
 }
 
-void Layer::Init(const Layer& other, const vector<int>& shape){
-  data_.Reshape(shape);
-  grad_.Reshape(shape);
-  layer_proto_=other.layer_proto_;
+const string Layer::DebugString(int step, Phase phase) {
+  string ret =StringPrintf("Layer %10s ", name().c_str());
+  if(data_.count() != 0)
+    return ret;
+  if(phase == kForward) {
+    ret += StringPrintf("data %10s data norm1 %13.9f", data_.asum_data());
+  }else if(phase == kBackward) {
+    ret += StringPrintf("grad norm1 %13.9f\n", grad_.asum_data());
+    for(Param* p: GetParams())
+      ret += StringPrintf("param id %2d, name %10s,\
+          value norm1 %13.9f, grad norm1 %13.9f\n",
+          p->id(), p->name().c_str(),
+          p->data().asum_data(), p->grad().asum_data());
+  }
+  return ret;
 }
-void Layer::Setup(){
-  Setup(layer_proto_, srclayers_);
-}
-void Layer::SetupAfterPartition(){
-  vector<int> shape=data_.shape();
-  SetupAfterPartition(layer_proto_, shape, srclayers_);
-  //LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
-  CHECK(std::equal(shape.begin(), shape.end(), data_.shape().begin()))<<name()
-    <<IntVecToString(shape)<<"--"<<IntVecToString(data_.shape());
-}
-void Layer::ComputeFeature(Phase phase){
-  ComputeFeature(phase, srclayers_);
-}
-void Layer::ComputeGradient(){
-  ComputeGradient(srclayers_);
-}
-
-void Layer::ToProto(LayerProto *proto, bool copyData) {
-}
-
-/********* Implementation for BridgeSrcLayer **************/
-void BridgeSrcLayer::Setup(const LayerProto& proto,
-    const vector<SLayer>& srclayers){
-  CHECK_EQ(srclayers.size(),1);
-  data_.Reshape(srclayers[0]->data(this).shape());
-  grad_.ReshapeLike(data_);
-}
-void BridgeSrcLayer::SetupAfterPartition(){
-  Setup(layer_proto_, srclayers_);
-  //LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
-}
-
-void BridgeSrcLayer::ComputeFeature(Phase phase,
-    const vector<SLayer>& srclayers){
-}
-void BridgeSrcLayer::ComputeGradient(const vector<SLayer>& srclayers){
-}
-
 /********* Implementation for BridgeDstLayer **************/
-void BridgeDstLayer::Setup(const LayerProto& proto,
-    const vector<SLayer>& srclayers){
-  CHECK_EQ(srclayers.size(),1);
-  data_.Reshape(srclayers[0]->data(this).shape());
+void BridgeDstLayer::Setup(const LayerProto& proto, int npartitions) {
+  Layer::Setup(proto, npartitions);
+  CHECK_EQ(srclayers_.size(),1);
+  data_.Reshape(srclayers_[0]->data(this).shape());
   grad_.ReshapeLike(data_);
 }
-void BridgeDstLayer::SetupAfterPartition(){
-  Setup(layer_proto_, srclayers_);
-  //LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
-}
-
 
 /************* Implementation for ConcateLayer ***********/
-void ConcateLayer::Setup(const LayerProto& proto,
-    const vector<SLayer>& srclayers){
-  size_t concate_dim=proto.concate_conf().concate_dimension();
+void ConcateLayer::Setup(const LayerProto& proto, int npartitions) {
+  // CHECK_EQ(npartitions, 1);
+  Layer::Setup(proto, npartitions);
+  size_t concate_dim=proto.concate_conf().concate_dim();
   CHECK_GE(concate_dim,0);
-  CHECK_GT(srclayers.size(),1);
-  vector<int> shape=srclayers[0]->data(this).shape();
-  for(size_t i=1;i<srclayers.size();i++){
-    const vector<int>& srcshape=srclayers[i]->data(this).shape();
+  CHECK_GT(srclayers_.size(),1);
+  vector<int> shape=srclayers_[0]->data(this).shape();
+  for(size_t i=1;i<srclayers_.size();i++){
+    const vector<int>& srcshape=srclayers_[i]->data(this).shape();
     for(size_t j=0;j<shape.size();j++)
       if(j==concate_dim)
         shape[j]+=srcshape[j];
@@ -89,19 +59,18 @@ void ConcateLayer::Setup(const LayerProto& proto,
   grad_.Reshape(shape);
 }
 
-void ConcateLayer::SetupAfterPartition(){
-  Setup(layer_proto_, srclayers_);
-//  LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
+void ConcateLayer::ComputeFeature(Phase phase, Metric *perf){
+  LOG(FATAL) << "Not implemented for Concate Layer";
 }
 
-void ConcateLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){}
-
-void ConcateLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){}
+void ConcateLayer::ComputeGradient(Phase phase){
+  LOG(FATAL) << "Not implemented for Concate Layer";
+}
 
 /************* Implementation for ParserLayer ***********/
-void ParserLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
-  CHECK_EQ(srclayers.size(),1);
-  auto datalayer=static_cast<DataLayer*>(srclayers.begin()->get());
+void ParserLayer::ComputeFeature(Phase phase, Metric *perf){
+  CHECK_EQ(srclayers_.size(),1);
+  auto datalayer=static_cast<DataLayer*>(*srclayers_.begin());
   ParseRecords(phase, datalayer->records(), &data_);
 }
 
@@ -109,12 +78,11 @@ void ParserLayer::ComputeFeature(Phase phase, const vector<SLayer>& srclayers){
 void PrefetchLayer::Prefetch(Phase phase){
   //clock_t s=clock();
   for(auto layer: sublayers_)
-    layer->ComputeFeature(phase);
+    layer->ComputeFeature(phase, nullptr);
   //LOG(ERROR)<<(clock()-s)*1.0/CLOCKS_PER_SEC;
 }
 
-void PrefetchLayer::ComputeFeature(Phase phase,
-    const vector<SLayer>& srclayers){
+void PrefetchLayer::ComputeFeature(Phase phase, Metric* perf){
   if(thread_.joinable())
     thread_.join();
   else{
@@ -128,27 +96,27 @@ void PrefetchLayer::ComputeFeature(Phase phase,
   thread_=std::thread(&PrefetchLayer::Prefetch, this, phase);
 }
 
-void PrefetchLayer::Setup(const LayerProto& proto,
-    const vector<SLayer>& srclayers){
+void PrefetchLayer::Setup(const LayerProto& proto, int npartitions) {
+  Layer::Setup(proto, npartitions);
+  // CHECK_EQ(npartitions, 1);
   Factory<Layer>* factory=Singleton<Factory<Layer>>::Instance();
   const auto& sublayers=proto.prefetch_conf().sublayers();
   CHECK_GE(sublayers.size(), 1);
-  map<string, SLayer> layers;
+  map<string, Layer*> layers;
   for(auto const &p:sublayers){
-    auto layer=shared_ptr<Layer>(factory->Create(p.type()));
-    layer->Init(p);
+    auto layer=factory->Create(p.type());
     sublayers_.push_back(layer);
     layers[p.name()]= layer;
   }
   // TODO topology sort layers
   auto layer=sublayers_.begin();
-  for(auto const &p:sublayers){
-    std::vector<SLayer> src;
+  for(auto const &p : sublayers){
+    std::vector<Layer*> src;
     for(auto const &srcname: p.srclayers()){
       src.push_back(layers[srcname]);
-      (*layer)->AddSrcLayer(layers[srcname]);
+      (*layer)->add_srclayer(layers[srcname]);
     }
-    (*layer)->Setup(p, src);
+    (*layer)->Setup(p);
     layer++;
   }
   for(auto layer: sublayers_)
@@ -177,15 +145,18 @@ Blob<float>* PrefetchLayer::mutable_data(const Layer* from) {
 PrefetchLayer::~PrefetchLayer(){
   if(thread_.joinable())
     thread_.join();
+  for(auto layer : sublayers_)
+    delete layer;
 }
 /************* Implementation for SliceLayer****************/
-void SliceLayer::Setup(const LayerProto& proto,
-    const vector<SLayer>& srclayers){
-  slice_dim_=proto.slice_conf().slice_dimension();
-  slice_num_=proto.slice_conf().slice_num();
+void SliceLayer::Setup(const LayerProto& proto, int npartitions){
+  // CHECK_EQ(npartitions, 1);
+  Layer::Setup(proto, npartitions);
+  slice_dim_=proto.slice_conf().slice_dim();
+  slice_num_= npartitions;
   CHECK_GE(slice_dim_,0);
   CHECK_EQ(slice_num_, dstlayers_.size());
-  data_.Reshape(srclayers[0]->data(this).shape());
+  data_.Reshape(srclayers_[0]->data(this).shape());
   grad_.ReshapeLike(data_);
   datavec_.resize(slice_num_);
   gradvec_.resize(slice_num_);
@@ -201,17 +172,11 @@ void SliceLayer::Setup(const LayerProto& proto,
   }
 }
 
-void SliceLayer::SetupAfterPartition(){
-  Setup(layer_proto_, srclayers_);
-  //LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
-}
-
-
 int SliceLayer::SliceID(const Layer* layer) const {
   CHECK(layer!= nullptr);
   for(size_t i=0;i<datavec_.size();i++){
     //LOG(ERROR)<<"get slice "<<IntVecToString(shapes_[i]);
-    if(dstlayers_[i].get() == layer)
+    if(dstlayers_[i] == layer)
       return i;
   }
   CHECK(false);
@@ -238,11 +203,10 @@ Blob<float>* SliceLayer::mutable_grad(const Layer* layer){
     return &grad_;
   return &gradvec_[SliceID(layer)];
 }
-void SliceLayer::ComputeFeature(Phase phase,
-    const vector<shared_ptr<Layer>>& srclayers){
-  CHECK_EQ(srclayers.size(),1);
+void SliceLayer::ComputeFeature(Phase phase, Metric *perf) {
+  CHECK_EQ(srclayers_.size(),1);
   if(slice_dim_==0){
-    const auto& blob=srclayers.at(0)->data(this);
+    const auto& blob=srclayers_.at(0)->data(this);
     int size=blob.count()/slice_num_;
     for(int i=0;i<slice_num_;i++){
       float* dst=datavec_[i].mutable_cpu_data();
@@ -251,27 +215,26 @@ void SliceLayer::ComputeFeature(Phase phase,
     }
   }
 }
-void SliceLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){
-
-}
-
-void SplitLayer::Setup(const LayerProto& proto,
-    const vector<SLayer>& srclayers){
-  CHECK_EQ(srclayers.size(),1);
-  data_.Reshape(srclayers[0]->data(this).shape());
-  grad_.Reshape(srclayers[0]->data(this).shape());
+void SliceLayer::ComputeGradient(Phase phase) {
+  // LOG(FATAL) << "Not implemented";
 }
 
 /************* Implementation for SplitLayer****************/
-void SplitLayer::SetupAfterPartition(){
-  Setup(layer_proto_, srclayers_);
-  //LOG(ERROR)<<name()<<":"<<IntVecToString(shape_);
+void SplitLayer::Setup(const LayerProto& proto, int npartitions) {
+  // CHECK_EQ(npartitions, 1);
+  Layer::Setup(proto, npartitions);
+
+  CHECK_EQ(srclayers_.size(),1);
+  data_.Reshape(srclayers_[0]->data(this).shape());
+  grad_.Reshape(srclayers_[0]->data(this).shape());
 }
-void SplitLayer::ComputeFeature(Phase phase, const vector<shared_ptr<Layer>>& srclayers){
+
+void SplitLayer::ComputeFeature(Phase phase, Metric *perf) {
+  LOG(FATAL) << "Not implemented";
 
 }
-void SplitLayer::ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){
-
+void SplitLayer::ComputeGradient(Phase phase) {
+  LOG(FATAL) << "Not implemented";
 }
 
 }  // namespace singa

@@ -115,7 +115,7 @@ class Param {
    *
    * @param other the Param object whose owner owns the data blob
    */
-  void ShareData(shared_ptr<Param> other){
+  void ShareData(Param* other){
     proto_.set_owner(other->owner());
     if(data_!=nullptr)
       CHECK(std::equal(data_->shape().begin(), data_->shape().end(),

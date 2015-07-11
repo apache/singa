@@ -9,7 +9,7 @@
 
 using std::shared_ptr;
 namespace singa {
-typedef std::unordered_map<int, shared_ptr<Param>> ServerShard;
+typedef std::unordered_map<int, Param*> ServerShard;
 /* Repsond to worker's get/put/udpate request, and periodically syncing with
   * other servers.
   *
@@ -24,6 +24,7 @@ class Server{
  public:
 
   Server(int thread_id, int group_id, int server_id);
+  virtual ~Server() {};
   void Setup(const UpdaterProto& proto, shared_ptr<ServerShard> shard,
       const vector<int>& slice2group);
   void Run();
@@ -41,14 +42,14 @@ class Server{
    *
    * @return the orignal message or response message
    */
-	virtual Msg* HandleGet(shared_ptr<Param> param, Msg** msg);
+	virtual Msg* HandleGet(Param* param, Msg** msg);
 
 	/**
 	 * Process Update request.
    *
    * @return the orignal message or response message
    */
-	virtual Msg* HandleUpdate(shared_ptr<Param> param, Msg** msg);
+	virtual Msg* HandleUpdate(Param* param, Msg** msg);
 
 	/**
 	 * Process PUT request.
@@ -61,7 +62,7 @@ class Server{
 	/**
    * TODO Process SYNC request.
 	 */
-	virtual Msg* HandleSyncRequest(shared_ptr<Param> param, Msg** msg);
+	virtual Msg* HandleSyncRequest(Param* param, Msg** msg);
 
  protected:
   int thread_id_,group_id_, server_id_;

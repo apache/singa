@@ -38,6 +38,7 @@ message BlobProtos {
 enum ConnectionType {
   kOneToOne = 0;
   kOneToAll = 1;
+  kOneToMany = 2;
 }
 
 // to import caffe's lmdb dataset
@@ -78,4 +79,10 @@ message SingleLabelImageRecord {
   optional int32 label = 2;
   optional bytes pixel = 3;
   repeated float data = 4;
+}
+
+message MetricProto {
+  repeated string name =1;
+  repeated int32 count = 2;
+  repeated float val = 3;
 }

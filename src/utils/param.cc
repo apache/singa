@@ -27,8 +27,7 @@ void Param::AddSlice(int slice_id, int size){
     //must be added in order
     CHECK_EQ(slice_start_+num_slices_, slice_id);
     offset=slice_offset_.back()+slice_size_.back();
-  }
-  else{
+  } else {
     slice_start_=slice_id;
     offset=0;
   }

@@ -3,10 +3,11 @@
 
 #include <google/protobuf/message.h>
 #include <stdlib.h>
-#include <map>
+#include <unordered_map>
 #include <sstream>
 #include <string>
 #include <vector>
+#include "proto/common.pb.h"
 
 namespace singa {
 
@@ -40,54 +41,39 @@ inline float rand_real() {
 const std::string GetHostIP();
 void SetupLog(const std::string& workspace, const std::string& model);
 
+/**
+ * Performance mtrics.
+ */
 class Metric {
  public:
-  Metric() : counter_(0) {}
-  inline void AddMetric(const std::string& name, float value) {
-    std::string prefix = name;
-    if (name.find("@") != std::string::npos)
-      prefix = name.substr(0, name.find("@"));
-    if (data_.find(prefix) == data_.end())
-      data_[prefix] = value;
-    else
-      data_[prefix] += value;
-  }
-  inline void AddMetrics(const Metric& other) {
-    for (auto& entry : other.data_)
-      AddMetric(entry.first, entry.second);
-  }
-  inline void Reset() {
-    data_.clear();
-    counter_ = 0;
-  }
-  inline void Inc() { ++counter_; }
-  inline std::string ToString() const {
-    std::string disp = std::to_string(data_.size()) + " fields, ";
-    for (const auto& entry : data_) {
-      disp += entry.first + " : " + std::to_string(entry.second / counter_)
-              + "\t";
-    }
-    return disp;
-  }
-  inline void ParseString(const std::string& perf) {
-    std::stringstream stream(perf);
-    int n;
-    std::string str;
-    stream >> n >> str;
-    for (int i = 0; i < n; ++i) {
-      float f;
-      std::string sep;
-      stream >> str >> sep >> f;
-      data_[str] = f;
-    }
-    counter_ = 1;
-  }
-
+  /**
+   * Add one metric.
+   *
+   * If the metric exist, the aggregate. Otherwise create a new entry for it.
+   *
+   * @param name metric name, e.g., 'loss'
+   * @param value metric value
+   */
+  void Add(const std::string& name, float value);
+  /**
+   * reset all metric counter and value to 0
+   */
+  void Reset();
+  /**
+   * Generate a one line string for logging
+   */
+  const std::string ToLogString() const;
+  /**
+   * Serialize the object into a string
+   */
+  const std::string ToString() const;
+  /**
+   * Parse the metric from a string
+   */
+  void ParseFrom(const std::string& msg);
  private:
-  std::map<std::string, float> data_;
-  int counter_;
+  std::unordered_map<std::string, std::pair<int, float>> entry_;
 };
-
 }  // namespace singa
 
 #endif  // SINGA_UTILS_COMMON_H_

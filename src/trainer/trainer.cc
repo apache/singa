@@ -7,13 +7,14 @@
 #include "proto/common.pb.h"
 #include "trainer/trainer.h"
 #include "mshadow/tensor.h"
+
+namespace singa {
 using std::vector;
 using std::map;
 using namespace std::chrono;
+using std::make_shared;
 
 typedef std::chrono::milliseconds TimeT;
-
-namespace singa {
 
 void Trainer::RegisterDefaultClasses(const singa::ModelProto& proto){
   // register all layers appearing in the neural net
@@ -33,8 +34,8 @@ void HandleWorkerFinish(void * ctx){
   hctx->dealer->Send(&msg);
 }
 
-const std::unordered_map<int, vector<std::pair<int, int>>> SliceParams(int num,
-    const vector<shared_ptr<Param>>& params){
+const std::unordered_map<int, vector<std::pair<int, int>>>
+SliceParams(int num, const vector<Param*>& params){
   std::unordered_map<int, vector<std::pair<int, int>>> paramid2slices;
   if (num==0)
     return paramid2slices;
@@ -114,15 +115,15 @@ const vector<int> PartitionSlice(int num, const vector<int>& slices){
       previd=slice2box[i];
     } else
       disp+=" "+std::to_string(slices[i]);
-  LOG(INFO)<<"partition slice (av ="<<avg<<", num="<<num<<"):"<<disp;
+  LOG(INFO)<<"partition slice (avg ="<<avg<<", num="<<num<<"):"<<disp;
   return slice2box;
 }
-vector<shared_ptr<Server>> Trainer::CreateServers(int nthreads,
+vector<Server*> Trainer::CreateServers(int nthreads,
     const ModelProto & mproto,
     const vector<int> slices,
     vector<HandleContext*>* ctx){
   auto cluster=Cluster::Get();
-  vector<shared_ptr<Server>> servers;
+  vector<Server*> servers;
   if(!cluster->has_server())
     return servers;
 
@@ -139,7 +140,7 @@ vector<shared_ptr<Server>> Trainer::CreateServers(int nthreads,
     auto dealer=make_shared<Dealer>();
     dealer->Connect(kInprocRouterEndpoint);
     for(int sid=start;sid<end;sid++){
-      auto server=make_shared<Server>(nthreads++, gid, sid);
+      auto server=new Server(nthreads++, gid, sid);
       server->Setup(mproto.updater(), server_shard_, slice2group);
       servers.push_back(server);
       auto *hc=new HandleContext{dealer, gid, sid};
@@ -151,20 +152,20 @@ vector<shared_ptr<Server>> Trainer::CreateServers(int nthreads,
   return servers;
 }
 
-vector<shared_ptr<Worker>> Trainer::CreateWorkers(int nthreads,
+vector<Worker*> Trainer::CreateWorkers(int nthreads,
     const ModelProto& mproto, vector<int> *slice_size){
   auto cluster=Cluster::Get();
-  auto net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
+  auto net=NeuralNet::Create(mproto.neuralnet(), kTrain,
       cluster->nworkers_per_group());
   int lcm=LeastCommonMultiple(cluster->nserver_groups(), cluster->nservers_per_group());
   auto paramid2slices=SliceParams(lcm, net->params()); // sliceid, size
   for(auto param: net->params()){
-    if(param->id()==param->owner())
+    if(param->id() == param->owner())
       for(auto entry: paramid2slices[param->id()])
         slice_size->push_back(entry.second);
   }
 
-  vector<shared_ptr<Worker>> workers;
+  vector<Worker*> workers;
   if(!cluster->has_worker())
     return workers;
   //LOG(ERROR)<<net->ToString();
@@ -191,33 +192,33 @@ vector<shared_ptr<Worker>> Trainer::CreateWorkers(int nthreads,
     if(gid==gstart)
       train_net=net;
     else{
-      train_net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTrain,
+      train_net=NeuralNet::Create(mproto.neuralnet(), kTrain,
           cluster->nworkers_per_group());
       // the train net for other groups may share parameter values from the
       // first group
       if(cluster->share_memory())
-        train_net->ShareParams(net, kValueOnly);
+        train_net->ShareParams(net);
     }
     if(gid==0){
       // validation and test are performed only by the first group
       if(mproto.test_steps()){
-        test_net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kTest,
+        test_net=NeuralNet::Create(mproto.neuralnet(), kTest,
             cluster->nworkers_per_group());
         if(test_net!=nullptr)
-          test_net->ShareParams(train_net, kValueOnly);
+          test_net->ShareParams(train_net);
       }
       if(mproto.validation_steps()){
-        validation_net=NeuralNet::SetupNeuralNet(mproto.neuralnet(), kValidation,
+        validation_net=NeuralNet::Create(mproto.neuralnet(), kValidation,
             cluster->nworkers_per_group());
         if(validation_net!=nullptr)
-          validation_net->ShareParams(train_net, kValueOnly);
+          validation_net->ShareParams(train_net);
       }
     }
     // create ServerShard for the workers
     auto shard=make_shared<WorkerShard>();
     worker_shards_[gid]=shard;
     for(auto layer: train_net->layers()){
-      int procsid=cluster->ProcsIDOf(gid, layer->partitionid(), kWorkerLayer);
+      int procsid=cluster->ProcsIDOf(gid, layer->partition_id(), kWorkerLayer);
       bool local=procsid==cluster->procs_id();
       for(auto param: layer->GetParams()){
         for(auto entry :paramid2slices[param->owner()]){
@@ -232,9 +233,9 @@ vector<shared_ptr<Worker>> Trainer::CreateWorkers(int nthreads,
       }
     }
     for(int wid=wstart;wid<wend;wid++){
-      shared_ptr<Worker> worker=nullptr;
+      Worker* worker=nullptr;
       if(mproto.alg()==ModelProto_GradCalcAlg_kBackPropagation)
-        worker=make_shared<BPWorker>(nthreads++,gid, wid);
+        worker = new BPWorker(nthreads++,gid, wid);
       else{
         // TODO add CDWorker
       }
@@ -267,13 +268,13 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
   int nthreads=1;
   // create workers
   vector<int> slices;
-  vector<shared_ptr<Worker>> workers=CreateWorkers(nthreads, mproto, &slices);
+  vector<Worker*> workers=CreateWorkers(nthreads, mproto, &slices);
   if(cluster->nserver_groups()&&cluster->nservers_per_group())
     slice2server_=PartitionSlice(cluster->nservers_per_group(), slices);
   nthreads+=workers.size();
   // create servers
   vector<HandleContext*> ctx;
-  vector<shared_ptr<Server>> servers=CreateServers(nthreads, mproto, slices,
+  vector<Server*> servers=CreateServers(nthreads, mproto, slices,
       &ctx);
 
 #ifdef USE_MPI
@@ -283,13 +284,17 @@ void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
 #endif
   vector<std::thread> threads;
   for(auto server: servers)
-    threads.push_back(std::thread(&Server::Run,server.get()));
+    threads.push_back(std::thread(&Server::Run,server));
   for(auto worker: workers)
-    threads.push_back(std::thread(&Worker::Run,worker.get()));
+    threads.push_back(std::thread(&Worker::Run,worker));
   Run(workers, servers);
   for(auto& thread: threads)
     thread.join();
   for(auto x: ctx)
+    delete x;
+  for(auto x : servers)
+    delete x;
+  for(auto x : workers)
     delete x;
 }
 
@@ -299,8 +304,8 @@ inline int bandwidth(int bytes, system_clock::time_point start){
   return static_cast<int>(bytes*1000.f/duration.count());
 }
 
-void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
-    const vector<shared_ptr<Server>>& servers){
+void Trainer::Run(const vector<Worker*>& workers,
+    const vector<Server*>& servers){
   auto cluster=Cluster::Get();
   procs_id_=cluster->procs_id();
   LOG(INFO)<<"Stub in process "<<procs_id_<<" starts";
@@ -364,8 +369,8 @@ void Trainer::Run(const vector<shared_ptr<Worker>>& workers,
             string prefix((char*)msg->frame_data(), msg->frame_size());
             msg->next_frame();
             Metric cur;
-            cur.ParseString(string((char*)msg->frame_data(), msg->frame_size()));
-            LOG(ERROR)<<prefix<<" step-" <<step<<", "<<cur.ToString();
+            cur.ParseFrom(string((char*)msg->frame_data(), msg->frame_size()));
+            LOG(ERROR)<<prefix<<" step-" <<step<<", "<<cur.ToLogString();
           }
           DeleteMsg(&msg);
         }else if(cluster->nserver_groups()>0){

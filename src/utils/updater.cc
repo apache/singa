@@ -64,7 +64,7 @@ void SGDUpdater::Init(const UpdaterProto& proto){
   weight_decay_=proto.weight_decay();
 }
 
-void SGDUpdater::Update(int step, shared_ptr<Param> param, float grad_scale){
+void SGDUpdater::Update(int step, Param* param, float grad_scale){
   Shape<1> s=Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
@@ -92,7 +92,7 @@ void NesterovUpdater::Init(const UpdaterProto& proto){
   weight_decay_=proto.weight_decay();
 }
 
-void NesterovUpdater::Update(int step, shared_ptr<Param> param, float grad_scale){
+void NesterovUpdater::Update(int step, Param* param, float grad_scale){
   Shape<1> s=Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
@@ -118,7 +118,7 @@ void AdaGradUpdater::Init(const UpdaterProto& proto){
   weight_decay_=proto.weight_decay();
 }
 
-void AdaGradUpdater::Update(int step, shared_ptr<Param> param, float grad_scale){
+void AdaGradUpdater::Update(int step, Param* param, float grad_scale){
   Shape<1> s=Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
@@ -143,7 +143,7 @@ void RMSPropUpdater::Init(const UpdaterProto& proto){
   weight_decay_=proto.weight_decay();
 }
 
-void RMSPropUpdater::Update(int step, shared_ptr<Param> param, float grad_scale){
+void RMSPropUpdater::Update(int step, Param* param, float grad_scale){
   Shape<1> s=Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
@@ -166,7 +166,7 @@ void AdaDeltaUpdater::Init(const UpdaterProto& proto){
   weight_decay_=proto.weight_decay();
 }
 
-void AdaDeltaUpdater::Update(int step, shared_ptr<Param> param, float grad_scale){
+void AdaDeltaUpdater::Update(int step, Param* param, float grad_scale){
   Shape<1> s=Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
