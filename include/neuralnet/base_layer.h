@@ -1,5 +1,5 @@
-#ifndef SINGA_BASE_LAYER_H_
-#define SINGA_BASE_LAYER_H_
+#ifndef SINGA_NEURALNET_BASE_LAYER_H_
+#define SINGA_NEURALNET_BASE_LAYER_H_
 
 #include <vector>
 #include <string>
@@ -14,7 +14,7 @@
 #include "utils/common.h"
 #include "utils/blob.h"
 
-namespace singa{
+namespace singa {
 
 using std::vector;
 using std::string;
@@ -31,8 +31,8 @@ class Layer;
  */
 class Layer {
  public:
-  Layer(){}
-  virtual ~Layer(){}
+  Layer() { }
+  virtual ~Layer() {}
   /**
    * Setup layer properties.
    *
@@ -43,7 +43,7 @@ class Layer {
    * @param npartitions num of total partitions of the original layer. This
    * layer should be setup as one partition.
    */
-  virtual void Setup(const LayerProto& proto,int npartitions = 1);
+  virtual void Setup(const LayerProto& proto, int npartitions = 1);
 
   /**
    * Compute features of this layer based on connected layers.
@@ -73,7 +73,7 @@ class Layer {
    * @return parameters associated with this layer
    */
   virtual const vector<Param*> GetParams() const {
-    return vector<Param*>{};
+    return vector<Param*> {};
   }
   /**
    * Return the connection type between one neuron of this layer and
@@ -143,7 +143,7 @@ class Layer {
   virtual const Blob<float>& data(const Layer* from) const {
     return data_;
   }
-  virtual Blob<float>* mutable_data(const Layer* from){
+  virtual Blob<float>* mutable_data(const Layer* from) {
     return &data_;
   }
 
@@ -182,10 +182,10 @@ class Layer {
     srclayers_.clear();
   }
 
-  virtual void add_srclayer(Layer* src){
+  virtual void add_srclayer(Layer* src) {
     srclayers_.push_back(src);
   }
-  virtual void add_dstlayer(Layer* dst){
+  virtual void add_dstlayer(Layer* dst) {
     dstlayers_.push_back(dst);
   }
 
@@ -205,7 +205,7 @@ class Layer {
     return false;
   }
 
-protected:
+ protected:
   LayerProto layer_proto_;
   Blob<float> data_, grad_;
   vector<Layer*> srclayers_, dstlayers_;
@@ -247,11 +247,12 @@ class BridgeSrcLayer: public Layer {
     return true;
   }
   void set_ready(bool a) {
-    ready_=a;
+    ready_ = a;
   }
   bool ready() const {
     return ready_;
   }
+
  protected:
   //!< true if received grad from BridgeDstLayer
   bool ready_;
@@ -267,7 +268,7 @@ class BridgeDstLayer: public Layer {
 
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(Phase phase, Metric* perf) override {
-   // reset ready_ for next iteration.
+    // reset ready_ for next iteration.
     ready_ = false;
   }
   void ComputeGradient(Phase phase) override {}
@@ -293,7 +294,7 @@ class ConcateLayer: public Layer {
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  virtual void Setup(const LayerProto& proto,int npartitions) override;
+  void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(Phase phase, Metric* perf) override;
   void ComputeGradient(Phase phase) override;
 };
@@ -309,7 +310,7 @@ class DataLayer: public Layer{
   using Layer::dst_layer_connection;
 
   void ComputeGradient(Phase phase) override {}
-  virtual bool is_datalayer() const override {
+  bool is_datalayer() const override {
     return true;
   }
   Blob<float>* mutable_data(const Layer* layer) override {
@@ -334,6 +335,7 @@ class DataLayer: public Layer{
   virtual const vector<Record>& records() const {
     return records_;
   }
+
  protected:
   int random_skip_, batchsize_;
   Record sample_;
@@ -357,18 +359,19 @@ class PrefetchLayer : public Layer {
   void ComputeGradient(Phase phase) override {};
 
   const Blob<float>& data(const Layer* from) const override;
-  Blob<float>* mutable_data(const Layer* layer) override ;
+  Blob<float>* mutable_data(const Layer* layer) override;
 
   Blob<float>* mutable_grad(const Layer* layer) override {
     return nullptr;
   }
-  const Blob<float>& grad(const Layer* from) const override{
-    CHECK(false)<<"Loss layer has not gradient blob";
+  const Blob<float>& grad(const Layer* from) const override {
+    CHECK(false) << "Loss layer has not gradient blob";
     return grad_;
   }
 
   void Prefetch(Phase phase);
   virtual ~PrefetchLayer();
+
  protected:
   vector<Layer*> sublayers_;
   map<string, Blob<float>> datablobs_;
@@ -412,7 +415,7 @@ class SplitLayer: public Layer {
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  void Setup(const LayerProto& proto, int npartitions) override ;
+  void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(Phase phase, Metric* perf) override;
   void ComputeGradient(Phase phase) override;
   ConnectionType dst_layer_connection() const override {
@@ -431,14 +434,14 @@ class LossLayer: public Layer{
   using Layer::grad;
   using Layer::is_losslayer;
 
-  virtual Blob<float>* mutable_grad(const Layer* layer){
+  Blob<float>* mutable_grad(const Layer* layer) override {
     return nullptr;
   }
-  virtual const Blob<float>& grad(const Layer* from) const {
-    CHECK(false)<<"Loss layer has not gradient blob";
+  const Blob<float>& grad(const Layer* from) const override {
+    CHECK(false) << "Loss layer has not gradient blob";
     return grad_;
   }
-  virtual bool is_losslayer() const {
+  bool is_losslayer() const override {
     return true;
   }
 
@@ -463,18 +466,18 @@ class ParserLayer: public Layer {
    * Parse records from DataLayer into blob.
    */
   virtual void ParseRecords(Phase phase, const vector<Record>& records,
-      Blob<float>* blob)=0;
-  bool is_parserlayer() const override{
+      Blob<float>* blob) = 0;
+  bool is_parserlayer() const override {
     return true;
   }
   Blob<float>* mutable_grad(const Layer* layer) override {
     return nullptr;
   }
   const Blob<float>& grad(const Layer* from) const  override {
-    CHECK(false)<<"Parser layer has not gradient blob";
+    CHECK(false) << "Parser layer has not gradient blob";
     return grad_;
   }
 };
-} // singa
+}  // namespace singa
 
-#endif // SINGA_BASE_LAYER_H_
+#endif  // SINGA_NEURALNET_BASE_LAYER_H_

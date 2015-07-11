@@ -1,5 +1,7 @@
-#ifndef INCLUDE_NET_LAYER_H_
-#define INCLUDE_NET_LAYER_H_
+#ifndef SINGA_NEURALNET_LAYER_H_
+#define SINGA_NEURALNET_LAYER_H_
+
+#include <lmdb.h>
 
 #include <vector>
 #include <string>
@@ -9,12 +11,10 @@
 #include <memory>
 #include <chrono>
 #include <random>
-#include <lmdb.h>
 
 #include "proto/model.pb.h"
 #include "utils/data_shard.h"
 #include "neuralnet/base_layer.h"
-
 
 /**
  * \file this file includes the declarations neuron layer classes that conduct
@@ -37,14 +37,15 @@ class ConvolutionLayer: public Layer {
     vector<Param*> params{weight_, bias_};
     return params;
   }
-  ConnectionType src_neuron_connection(int k) const  override{
+  ConnectionType src_neuron_connection(int k) const  override {
     // CHECK_LT(k, srclayers_.size());
     return kOneToAll;
   }
   ~ConvolutionLayer();
+
  protected:
-  int kernel_, pad_,  stride_ ;
-  int batchsize_,  channels_, height_,width_;
+  int kernel_, pad_,  stride_;
+  int batchsize_,  channels_, height_, width_;
   int col_height_, col_width_, conv_height_, conv_width_, num_filters_;
   Param* weight_, *bias_;
   Blob<float> col_data_, col_grad_;
@@ -85,11 +86,12 @@ class InnerProductLayer: public Layer {
     // CHECK_LT(k, srclayers_.size());
     return kOneToAll;
   }
-  const vector<Param*> GetParams() const override{
+  const vector<Param*> GetParams() const override {
     vector<Param*> params{weight_, bias_};
     return params;
   }
   ~InnerProductLayer();
+
  private:
   //! dimension of the hidden layer
   int hdim_;
@@ -148,7 +150,7 @@ class MnistLayer: public ParserLayer {
   // n^2 images are processed as a batch for elastic distortion
   // conv height and conv width
   // gauss kernel values, displacements, column image and tmp buffer
-  //float* gauss_, *displacementx_, *displacementy_, *colimg_, *tmpimg_;
+  // float* gauss_, *displacementx_, *displacementy_, *colimg_, *tmpimg_;
   float  gamma_, beta_, sigma_, kernel_, alpha_, norm_a_, norm_b_;
   int resize_, elastic_freq_;
 };
@@ -164,7 +166,7 @@ class PoolingLayer: public Layer {
 
  protected:
   int kernel_, pad_, stride_;
-  int batchsize_,channels_, height_, width_, pooled_height_, pooled_width_;
+  int batchsize_, channels_, height_, width_, pooled_height_, pooled_width_;
   PoolingProto_PoolMethod pool_;
 };
 
@@ -272,4 +274,4 @@ class TanhLayer: public Layer {
 
 }  // namespace singa
 
-#endif  // INCLUDE_NET_LAYER_H_
+#endif  // SINGA_NEURALNET_LAYER_H_
