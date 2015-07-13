@@ -38,6 +38,7 @@ config.h
 Makefile
 thirdparty/*
 !thirdpary/install.sh
+*.out
 tags
 tool/plot
 examples/mnist/*ubyte
