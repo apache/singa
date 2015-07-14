@@ -42,6 +42,8 @@ message ModelProto {
   optional int32 checkpoint_frequency = 34 [default = 0];
   // send parameters to servers after training for this num of steps
   optional int32 warmup_steps = 35 [default = 0];
+  // checkpoint path
+  optional bool resume = 36 [default = false];
 
    // start display after this num steps
   optional int32 display_after_steps =  60[default = 0];
@@ -60,7 +62,7 @@ message ModelProto {
 message NetProto {
   repeated LayerProto layer = 1;
   // partitioning type for parallelism
-  optional int32 partition_dim = 2 [default = -1];
+  optional int32 partition_dim = 2 [default = 0];
 }
 
 // weight matrix should be defined before bias vector
@@ -209,7 +211,7 @@ message RGBImageProto {
   optional string meanfile = 4 [default = ""];
 }
 
-message PrefetchProto{
+message PrefetchProto {
   repeated LayerProto sublayers = 1;
 }
 

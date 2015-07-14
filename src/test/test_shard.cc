@@ -17,7 +17,7 @@ std::string tuple[] = {"firsttuple",
 using namespace singa;
 
 TEST(DataShardTest, CreateDataShard) {
-  std::string path = "src/test/data/shard_test";
+  std::string path = "src/test/shard_test";
   mkdir(path.c_str(), 0755);
   DataShard shard(path, DataShard::kCreate, 50);
   shard.Insert(key[0], tuple[0]);
@@ -27,7 +27,7 @@ TEST(DataShardTest, CreateDataShard) {
 }
 
 TEST(DataShardTest, AppendDataShard) {
-  std::string path = "src/test/data/shard_test";
+  std::string path = "src/test/shard_test";
   DataShard shard(path, DataShard::kAppend, 50);
   shard.Insert(key[3], tuple[3]);
   shard.Insert(key[4], tuple[4]);
@@ -35,14 +35,14 @@ TEST(DataShardTest, AppendDataShard) {
 }
 
 TEST(DataShardTest, CountDataShard) {
-  std::string path = "src/test/data/shard_test";
+  std::string path = "src/test/shard_test";
   DataShard shard(path, DataShard::kRead, 50);
   int count = shard.Count();
   ASSERT_EQ(5, count);
 }
 
 TEST(DataShardTest, ReadDataShard) {
-  std::string path = "src/test/data/shard_test";
+  std::string path = "src/test/shard_test";
   DataShard shard(path, DataShard::kRead, 50);
   std::string k, t;
   ASSERT_TRUE(shard.Next(&k, &t));

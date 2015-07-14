@@ -58,7 +58,7 @@ class NeuralNet {
   /**
    * Share memory of parameter values from other neuralnet
    */
-  void ShareParams(shared_ptr<NeuralNet> other);
+  void ShareParamsFrom(shared_ptr<NeuralNet> other);
 
   const std::vector<Layer*>& layers() {
     return layers_;

@@ -160,6 +160,10 @@ void SetupLog(const std::string& log_dir, const std::string& model) {
   google::SetLogDestination(google::FATAL, fatal.c_str());
 }
 
+Metric::Metric(const std::string& str) {
+  ParseFrom(str);
+}
+
 void Metric::Add(const string& name, float value) {
   if(entry_.find(name) == entry_.end())
     entry_[name] = std::make_pair(1, value);
@@ -176,7 +180,7 @@ void Metric::Reset() {
     e.second.second = 0;
   }
 }
-const string Metric::ToLogString() const{
+const string Metric::ToLogString() const {
   string ret;
   size_t k = 0;
   for(auto e : entry_) {
@@ -188,7 +192,7 @@ const string Metric::ToLogString() const{
   return ret;
 }
 
-const string Metric::ToString() const{
+const string Metric::ToString() const {
   MetricProto proto;
   for(auto e : entry_) {
     proto.add_name(e.first);
@@ -207,5 +211,90 @@ void Metric::ParseFrom(const string& msg) {
   for(int i = 0; i < proto.name_size(); i++) {
     entry_[proto.name(i)] = std::make_pair(proto.count(i), proto.val(i));
   }
+}
+
+
+const vector<vector<int>> Slice(int num, const vector<int>& sizes) {
+  vector<vector<int>> slices;
+  if (num == 0)
+    return slices;
+  int avg = 0;
+  for(int x : sizes)
+      avg += x;
+  avg = avg / num + avg % num;
+  int diff = avg / 10;
+  LOG(INFO) << "Slicer, param avg=" << avg << ", diff= " << diff;
+
+  int capacity = avg, nbox = 0;
+  for (int x : sizes) {
+    vector<int> slice;
+    string slicestr = "";
+    while (x > 0) {
+      int size=0;
+      if (capacity >= x) {
+        capacity -= x;
+        size = x;
+        x = 0;
+      }else if(capacity + diff >= x) {
+        size = x;
+        x = 0;
+        capacity = 0;
+      }else if (capacity >= diff) {
+        x -= capacity;
+        size = capacity;
+        capacity = avg;
+        nbox++;
+      } else {
+        capacity = avg;
+        nbox++;
+      }
+      if (size) {
+        slice.push_back(size);
+        slicestr += ", " + std::to_string(size);
+      }
+    }
+    LOG(INFO) << slicestr;
+    slices.push_back(slice);
+  }
+  CHECK_LE(nbox, num);
+  return slices;
+}
+
+const vector<int> PartitionSlices(int num, const vector<int>& slices) {
+  vector<int> slice2box;
+  if (num == 0)
+    return slice2box;
+  int avg = 0;
+  for(int x : slices)
+    avg += x;
+  avg = avg / num + avg % num;
+  int box = avg, boxid = 0, diff = avg / 10;
+  for (auto it = slices.begin(); it != slices.end();) {
+    int x = *it;
+    if (box >= x) {
+      box -= x;
+      slice2box.push_back(boxid);
+      it++;
+    } else if (box + diff >= x) {
+      slice2box.push_back(boxid);
+      it++;
+      box = 0;
+    } else {
+      box = avg;
+      boxid++;
+    }
+  }
+  CHECK_EQ(slice2box.size(), slices.size());
+  int previd = -1;
+  std::string disp;
+  for (size_t i = 0; i < slice2box.size(); i++) {
+    if (previd != slice2box[i]) {
+      previd = slice2box[i];
+      disp += " box = " +std::to_string(previd) + ":";
+    }
+    disp += " " + std::to_string(slices[i]);
+  }
+  LOG(INFO) << "partition slice (avg =" << avg << ", num="<<num<<"):" << disp;
+  return slice2box;
 }
 }  // namespace singa

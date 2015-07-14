@@ -43,6 +43,7 @@ class SocketInterface {
 class Poller {
  public:
   Poller();
+  Poller(SocketInterface* socket);
   /**
     * Add a socket for polling; Multiple sockets can be polled together by
     * adding them into the same poller.

@@ -204,6 +204,9 @@ class Layer {
   virtual bool is_bridgedstlayer() const {
     return false;
   }
+  virtual bool is_bridgelayer() const {
+    return false;
+  }
 
  protected:
   LayerProto layer_proto_;
@@ -211,19 +214,30 @@ class Layer {
   vector<Layer*> srclayers_, dstlayers_;
 };
 
+class BridgeLayer : public Layer {
+ public:
+  void set_ready(bool a) {
+    ready_ = a;
+  }
+  bool ready() const {
+    return ready_;
+  }
+  bool is_bridgelayer() const override {
+    return true;
+  }
+
+ protected:
+  //!< true if received grad from BridgeDstLayer
+  bool ready_;
+};
 /**
  * For sending data to layer on other threads which may resident on other nodes
  * due to layer/data partition.
  */
-class BridgeSrcLayer: public Layer {
+class BridgeSrcLayer: public BridgeLayer {
  public:
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
-  using Layer::data;
-  using Layer::mutable_data;
-  using Layer::grad;
-  using Layer::mutable_grad;
-  using Layer::is_bridgesrclayer;
 
   void ComputeFeature(Phase phase, Metric* perf) override {}
   void ComputeGradient(Phase phase) override {
@@ -246,22 +260,12 @@ class BridgeSrcLayer: public Layer {
   bool is_bridgesrclayer() const override {
     return true;
   }
-  void set_ready(bool a) {
-    ready_ = a;
-  }
-  bool ready() const {
-    return ready_;
-  }
-
- protected:
-  //!< true if received grad from BridgeDstLayer
-  bool ready_;
 };
 /**
  * For recv data from layer on other threads which may resident on other nodes
  * due to layer/data partiton
  */
-class BridgeDstLayer: public Layer {
+class BridgeDstLayer: public BridgeLayer {
  public:
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
@@ -275,15 +279,6 @@ class BridgeDstLayer: public Layer {
   bool is_bridgedstlayer() const {
     return true;
   }
-  void set_ready(bool ready) {
-    ready_ = ready;
-  }
-  bool ready() const {
-    return ready_;
-  }
- protected:
-  //!< true if received data from BridgeSrcLayer
-  bool ready_;
 };
 
 /**

@@ -9,6 +9,11 @@ Poller::Poller() {
   poller_ = zpoller_new(nullptr);
 }
 
+Poller::Poller(SocketInterface* socket) {
+  poller_ = zpoller_new(nullptr);
+  Add(socket);
+}
+
 void Poller::Add(SocketInterface* socket) {
   zsock_t* zsock = static_cast<zsock_t*>(socket->InternalID());
   zpoller_add(poller_, zsock);
@@ -20,8 +25,9 @@ SocketInterface* Poller::Wait(int timeout) {
   if (sock != nullptr)
     return zsock2Socket_[sock];
   else
-    return nullptr;
+  return nullptr;
 }
+
 bool Poller::Terminated(){
   return zpoller_terminated(poller_);
 }
@@ -32,8 +38,6 @@ Dealer::Dealer() : Dealer(-1) {}
 Dealer::Dealer(int id) : id_(id) {
   dealer_ = zsock_new(ZMQ_DEALER);
   CHECK_NOTNULL(dealer_);
-  poller_ = zpoller_new(dealer_);
-  CHECK_NOTNULL(poller_);
 }
 
 Dealer::~Dealer() {
@@ -123,8 +127,10 @@ int Router::Send(Msg **msg) {
 
 Msg* Router::Receive() {
   zmsg_t* zmsg = zmsg_recv(router_);
-  if (zmsg == nullptr)
-    return nullptr;
+  if (zmsg == nullptr) {
+    LOG(ERROR)<<"Connection broken!";
+    exit(0);
+  }
   zframe_t* dealer = zmsg_pop(zmsg);
   Msg* msg = new Msg();
   msg->ParseFromZmsg(zmsg);

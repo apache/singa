@@ -9,6 +9,7 @@ namespace singa{
  */
 class Updater{
  public:
+  virtual ~Updater() {}
   virtual void Init(const UpdaterProto &proto){
     proto_=proto;
   }

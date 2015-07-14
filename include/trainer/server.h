@@ -7,9 +7,7 @@
 #include "proto/model.pb.h"
 #include "communication/socket.h"
 
-using std::shared_ptr;
 namespace singa {
-typedef std::unordered_map<int, Param*> ServerShard;
 /* Repsond to worker's get/put/udpate request, and periodically syncing with
   * other servers.
   *
@@ -22,17 +20,17 @@ typedef std::unordered_map<int, Param*> ServerShard;
   */
 class Server{
  public:
-
   Server(int thread_id, int group_id, int server_id);
-  virtual ~Server() {};
-  void Setup(const UpdaterProto& proto, shared_ptr<ServerShard> shard,
+  virtual ~Server();
+  void Setup(const UpdaterProto& proto,
+      std::unordered_map<int, ParamEntry*>* shard,
       const vector<int>& slice2group);
   void Run();
-  const int group_id() const {
-    return group_id_;
+  const int grp_id() const {
+    return grp_id_;
   }
-  const int server_id() const {
-    return server_id_;
+  const int id() const {
+    return id_;
   }
 
  protected:
@@ -42,14 +40,14 @@ class Server{
    *
    * @return the orignal message or response message
    */
-	virtual Msg* HandleGet(Param* param, Msg** msg);
+	virtual Msg* HandleGet(Msg** msg);
 
 	/**
 	 * Process Update request.
    *
    * @return the orignal message or response message
    */
-	virtual Msg* HandleUpdate(Param* param, Msg** msg);
+  const vector<Msg*> HandleUpdate(Msg **msg);
 
 	/**
 	 * Process PUT request.
@@ -62,15 +60,23 @@ class Server{
 	/**
    * TODO Process SYNC request.
 	 */
-	virtual Msg* HandleSyncRequest(Param* param, Msg** msg);
+	virtual Msg* HandleSyncRequest(Msg** msg);
+
+  /**
+   * Generate sync message which sends local mastered Param slice to other
+   * server groups
+   * @param param slice to be sync with others
+   * @return sync messages
+   */
+  const vector<Msg*> GenSyncMsgs(Param* param);
 
  protected:
-  int thread_id_,group_id_, server_id_;
-  shared_ptr<Dealer> dealer_;
-  shared_ptr<Updater> updater_;
-  shared_ptr<ServerShard> shard_;
+  int thread_id_,grp_id_, id_;
+  Updater* updater_;
+  std::unordered_map<int, ParamEntry*> *shard_;
   vector<int> slice2group_;
-  std::map<int, shared_ptr<Blob<float>>> last_data_;
+  std::unordered_map<int, shared_ptr<Blob<float>>> last_data_;
+  std::unordered_map<int, vector<Msg*>> buffer_requests_;
 };
 } /* Server */
 #endif //INCLUDE_TRAINER_SERVER_H_

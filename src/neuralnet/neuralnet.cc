@@ -5,6 +5,7 @@
 #include "utils/singleton.h"
 
 namespace singa {
+// macros to shorten the code
 #define LayerT(x) LayerProto_LayerType_k##x
 
 #define RegisterLayer(factory, id) \
@@ -36,31 +37,31 @@ void NeuralNet::RegisterLayers() {
 }
 
 shared_ptr<NeuralNet> NeuralNet::Create(
-    const NetProto& conf,
+    const NetProto& net_conf,
     Phase phase,
     int npartitions) {
-  NetProto proto;
-  proto.CopyFrom(conf);
-  proto.clear_layer();
+  NetProto conf;
+  conf.CopyFrom(net_conf);
+  conf.clear_layer();
   // exclude layers according to phase
-  for (const auto& layer : conf.layer()) {
+  for (const auto& layer : net_conf.layer()) {
     bool include = true;
-    for (auto x : layer.exclude()) {
-      if (x == phase)
+    for (auto p : layer.exclude()) {
+      if (p == phase)
         include = false;
     }
     if (include) {
-      LayerProto* lp = proto.add_layer();
-      lp->CopyFrom(layer);
+      LayerProto* layer_conf = conf.add_layer();
+      layer_conf->CopyFrom(layer);
       // using net partition if layer partition is not set
-      if (!lp->has_partition_dim())
-        lp->set_partition_dim(proto.partition_dim());
+      if (!layer_conf->has_partition_dim())
+        layer_conf->set_partition_dim(net_conf.partition_dim());
     }
   }
-  LOG(INFO) << "NeuralNet config is\n" << proto.DebugString();
+  LOG(INFO) << "NeuralNet config is\n" << conf.DebugString();
 
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc
-  auto net = std::make_shared<NeuralNet>(proto, npartitions);
+  auto net = std::make_shared<NeuralNet>(conf, npartitions);
   return net;
 }
 
@@ -120,7 +121,7 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
       auto params = (*it)->GetParams();
       CHECK_EQ(params.size(), owner_params.size());
       for (size_t i = 0; i < params.size(); i++)
-        params.at(i)->ShareData(owner_params.at(i));
+        params.at(i)->ShareFrom(*owner_params.at(i));
     }
   }
 }
@@ -349,7 +350,7 @@ std::string NeuralNet::ToAdjacency() {
   return disp;
 }
 
-void NeuralNet::ShareParams(shared_ptr<NeuralNet> other) {
+void NeuralNet::ShareParamsFrom(shared_ptr<NeuralNet> other) {
   for (auto& layer : layers_) {
     auto otherlayer = other->name2layer(layer->name());
     if (otherlayer != nullptr) {
@@ -357,7 +358,7 @@ void NeuralNet::ShareParams(shared_ptr<NeuralNet> other) {
       const auto& params = layer->GetParams();
       CHECK_EQ(params.size(), otherparams.size());
       for (size_t i = 0; i < params.size(); i++) {
-        params[i]->ShareData(otherparams[i]);
+        params[i]->ShareFrom(*otherparams[i]);
       }
     }
   }

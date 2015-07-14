@@ -1,9 +1,9 @@
 #ifndef INCLUDE_TRAINER_TRAINER_H_
 #define INCLUDE_TRAINER_TRAINER_H_
 #include <unordered_map>
+#include <queue>
 #include "proto/cluster.pb.h"
 #include "proto/model.pb.h"
-#include "utils/updater.h"
 #include "utils/param.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"
@@ -14,66 +14,6 @@
 
 namespace singa {
 /**
- * Callback function for zookeeper
- */
-void HandleWorkerFinish(void * ctx);
-/**
- * Zookeeper handler context used by HandleWorkerFinish(void*)function.
- */
-typedef struct HandleContext_{
-  shared_ptr<Dealer> dealer;
-  int group_id, id;
-} HandleContext;
-/**
-  * ParamInfo is used to construct a parameter shard.
-  *
-  * For each worker group:
-  *   Every unique Param object is associated with a ParamCounter object whose
-  *   param field points the to Param object itself.
-  *
-  *   Param objects sharing the same values (due to data parallelism) are
-  *   associated with the same ParamCounter whose param field also shares the
-  *   same values.
-  *
-  *   Usage: we need to aggregate gradients from all workers for the shared
-  *   parameters before sending the update request. The nUpdate counter counts
-  *   the number.
-  *
-  * TODO test with different physical architectures.
-  */
-class ParamInfo{
-   public:
-  ParamInfo(Param* p,int local, int owner):
-    num_update(0), next_version(-1),num_local(local), num_total(1),
-    owner_procs(owner){
-      shares.push_back(p);
-    }
-
-  /**
-    * Associate the counter to a Param object.
-    *
-    * @param p
-    * @param local 1 if this Param object is used by workers in this procs, 0
-    *  otherwise
-    * @param owner the procs id of the worker who ownes this Param object
-    */
-  void AddParam(Param* p, bool local){
-    num_local+=local;
-    num_total+=1;
-    if(local)
-      shares.push_back(p);
-  }
-  int num_update, next_version; //!< all counters are atomic
-
-  int num_local; //!< # local workers uses the shared parameter
-  int num_total; //!< # total workers uses the shared parameter
-  int owner_procs; //!< the procs id of the worker that owns the parameter
-  vector<Param*> shares;
-};
-
-typedef std::map<int, shared_ptr<ParamInfo>> WorkerShard;
-
-/**
  * Every running process has a training object which launches one or more
  * worker (and server) threads.
  *
@@ -82,23 +22,56 @@ typedef std::map<int, shared_ptr<ParamInfo>> WorkerShard;
 
 class Trainer{
  public:
+  ~Trainer();
   /**
-   * Start the training in one process
+   * Entrance function which construct the workers and servers, and luanch
+   * one thread per worker/server. TODO rename variables about cluster config,
+   * job config, etc.
    *
-   * @param modelproto
-   * @param clusterproto
+   * @param mconf model configuration
+   * @param globalconf global singa configuration
+   * @param cconf cluster configuration
+   * @param job job ID
    */
-  void Start(const ModelProto& modelproto, const GlobalProto& globalproto, 
-             const ClusterProto& clusterproto, const int procs_id);
+  void Start(const ModelProto& mconf, const GlobalProto& globalconf,
+             const ClusterProto& cconf, const int job);
 
   // TODO add Resume() function to continue training from a previously stopped
   // point.
-
  protected:
-  vector<Server*> CreateServers(int nthread, const ModelProto& mproto,
-      const vector<int> slices, vector<HandleContext*>* ctx);
-  vector<Worker*> CreateWorkers(int nthread, const ModelProto& mproto,
-      vector<int> *slice_size);
+  /**
+   * Create server instances.
+   * @param nthread total num of threads in current procs which is used to
+   * assign each thread a local thread ID. The number of workers is extracted
+   * from Cluster
+   * @param model_conf
+   * @return server instances
+   */
+  vector<Server*> CreateServers(int nthread, const ModelProto& mproto);
+  /**
+   * Create workers instances.
+   * @param nthread total num of threads in current procs which is used to
+   * assign each thread a local thread ID. The number of workers is extracted
+   * from Cluster
+   * @param model_conf
+   * @return worker instances
+   */
+  vector<Worker*> CreateWorkers(int nthread, const ModelProto& mproto);
+
+  /**
+   * Setup workers and servers.
+   *
+   * For each worker, create and assign a neuralnet to it.
+   * For each server, create and assign the param shard to it.
+   * Create the partition map from slice ID to server
+   * @param model_conf
+   * @param workers
+   * @param servers
+   */
+  void SetupWorkerServer(
+    const ModelProto& model_conf,
+    const vector<Worker*>& workers,
+    const vector<Server*>& servers);
 
   void Run(const vector<Worker*>& workers, const vector<Server*>& servers);
   /**
@@ -111,37 +84,73 @@ class Trainer{
    * implementation class as the value, e.g., <"Updater" SGDUpdater>.
    */
   void RegisterDefaultClasses(const singa::ModelProto& proto);
-
   /**
-   * Workers from the same group resident in the same process share the same
-   * WorkerShard which contains ParamCounters for Param objects used/updated by
-   * these worekrs. Shared Param objects are associated with the same
-   * ParamCounter.
+   * Generate msg to trigger synchronization with other server groups.
+   *
+   * @param server the local server index whom the message is sent to
+   * @param servers all local servers
+   * @return sync msg
    */
+  Msg* GenSyncReminderMsg(int server, const vector<Server*>& servers);
+  /**
+   * Display metrics to log (standard output)
+   */
+  void DisplayMetric(Msg** msg);
+  /**
+   * Create a socket to send msg to the specified process
+   * @param dst_procs the dst process (logical) ID
+   * @return the newly created socket
+   */
+  Dealer* CreateInterProcsDealer(int dst_procs);
+  /**
+   * Handle messages to local servers and local stub
+   */
+  void HandleLocalMsg(std::queue<Msg*>* msg_queue, Msg** msg);
 
 	/**
 	 * Generate a request message to Get the parameter object.
 	 */
-	virtual const vector<Msg*> HandleGet(shared_ptr<ParamInfo>counter, Msg** msg);
-	virtual void HandleGetResponse(shared_ptr<ParamInfo>counter, Msg** msg);
+	const vector<Msg*> HandleGet(ParamEntry* entry, Msg** msg);
+	void HandleGetResponse(ParamEntry* entry, Msg** msg);
 
 	/**
 	 * Generate a request message to Update the parameter object.
 	 */
-	virtual const vector<Msg*> HandleUpdate(shared_ptr<ParamInfo>counter, Msg** msg);
-  virtual void HandleUpdateResponse(shared_ptr<ParamInfo>counter, Msg** msg);
+	const vector<Msg*> HandleUpdate(ParamEntry* entry, Msg** msg);
+  void HandleUpdateResponse(ParamEntry* entry, Msg** msg);
 
   /**
 	 * Generate a request message to Put the parameter object.
 	 */
-	virtual const vector<Msg*> HandlePut(shared_ptr<ParamInfo>counter, Msg** msg);
-	virtual Msg* HandleConnect(Msg** msg);
+	const vector<Msg*> HandlePut(ParamEntry* entry, Msg** msg);
+
+  /**
+   * Called by HandlePut, HandleUpdate and HandleGet functions
+   * @param type message type
+   * @param version param version
+   * @param entry
+   * @param msg
+   * @param ret generated messages
+   */
+  void GenMsgs(int type, int version, ParamEntry* entry,
+    Msg* msg, vector<Msg*> *ret);
+  /**
+   * Get a hash id for a Param object from a group.
+   *
+   * Simple multiple group_id with a large prime number 997 (assuming there are
+   * no more than 997 worker groups) and plus owner param id.
+   */
+  inline int Hash(int grp_id, int param_id) {
+    return grp_id * 997 + param_id;
+  }
 
  protected:
   int procs_id_;
-  shared_ptr<Router> router_;
-  std::unordered_map<int, shared_ptr<WorkerShard>> worker_shards_;
-  shared_ptr<ServerShard> server_shard_;
+  Router *router_;
+  std::unordered_map<int, ParamEntry*> worker_shard_;
+  //!< map from slice ID to slice, used by servers and deleted in the destructor
+  std::unordered_map<int, ParamEntry*> server_shard_;
+  //!< map from slice to the server that updates it
   vector<int> slice2server_;
 };
 } /* singa */

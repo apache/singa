@@ -4,7 +4,6 @@
 // TODO(wangwei): make it a compiler argument
 #define USE_ZMQ
 
-#include <string>
 #include <utility>
 
 #ifdef USE_ZMQ
@@ -12,86 +11,199 @@
 #endif
 
 namespace singa {
+/**
+ * Wrapper to generate message address
+ * @param grp worker/server group id
+ * @param id_or_proc worker/server id or procs id
+ * @param type msg type
+ */
+inline int Addr(int grp, int id_or_proc, int type) {
+  return (grp << 16) | (id_or_proc << 8) | type;
+}
 
+/**
+ * Parse group id from addr.
+ *
+ * @return group id
+ */
+inline int AddrGrp(int addr) {
+  return addr >> 16;
+}
+/**
+ * Parse worker/server id from addr.
+ *
+ * @return id
+ */
+inline int AddrID(int addr) {
+  static const int mask = (1 << 8) - 1;
+  return (addr >> 8) & mask;
+}
+
+/**
+ * Parse worker/server procs from addr.
+ *
+ * @return procs id
+ */
+inline int AddrProc(int addr) {
+  return AddrID(addr);
+}
+/**
+ * Parse msg type from addr
+ * @return msg type
+ */
+inline int AddrType(int addr) {
+  static const int mask = (1 << 8) -1;
+  return addr & mask;
+}
+
+/**
+ * Msg used to transfer Param info (gradient or value), feature blob, etc
+ * between workers, stubs and servers.
+ *
+ * Each msg has a source addr and dest addr identified by a unique integer.
+ * It is also associated with a target field (value and version) for ease of
+ * getting some meta info (e.g., parameter id) from the msg.
+ *
+ * Other data is added into the message as frames.
+ */
 class Msg {
  public:
-  Msg();
-  Msg(const Msg& msg);
   ~Msg();
-  int size() const;
-
+  Msg();
   /**
-    * @param first worker/server group id
-    * @param second worker/server id within the group
-    * @param flag 0 for server, 1 for worker, 2 for stub
-    */
-  inline void set_src(int first, int second, int flag) {
-    src_ = (first << kOff1) | (second << kOff2) | flag;
-  }
-  inline void set_dst(int first, int second, int flag) {
-    dst_ = (first << kOff1) | (second << kOff2) | flag;
-  }
-  inline void set_src(int procs_id, int flag) { set_src(procs_id, 0, flag); }
-  inline void set_dst(int procs_id, int flag) { set_dst(procs_id, 0, flag); }
-  inline int src() const { return src_; }
-  inline int dst() const { return dst_; }
-  inline int src_first() const { return src_ >> kOff1; }
-  inline int dst_first() const { return dst_ >> kOff1; }
-  inline int src_second() const { return (src_ & kMask1) >> kOff2; }
-  inline int dst_second() const { return (dst_ & kMask1) >> kOff2; }
-  inline int src_flag() const { return src_&kMask2; }
-  inline int dst_flag() const { return dst_&kMask2; }
-  inline void SwapAddr() { std::swap(src_, dst_); }
-  inline void set_type(int type) { type_ = type; }
-  inline int type() const { return type_; }
-  inline void set_trgt(int first, int second, int third) {
-    trgt_first_ = first;
-    trgt_second_ = second;
-    trgt_third_ = third;
-  }
-  inline int trgt_first() const { return trgt_first_; }
-  inline int trgt_second() const { return trgt_second_; }
-  inline int trgt_third() const { return trgt_third_; }
- /**
-   * Copy src and dst address, including first, id, flag
+   * Construct the msg providing source and destination addr.
    */
-  inline Msg* CopyAddr() {
-    Msg* msg = new Msg();
-    msg->src_ = src_;
-    msg->dst_ = dst_;
-    return msg;
-  }
-  inline void SetAddr(Msg* msg) {
-    src_ = msg->src_;
-    dst_ = msg->dst_;
-  }
+  Msg(int src, int dst);
+  /**
+   * Copy constructor.
+   */
+  Msg(const Msg& msg);
+  /**
+   * Swap the src/dst addr
+   */
+  void SwapAddr();
   /**
    * Add a frame (a chunck of bytes) into the message
    */
-  void add_frame(const void* addr, int nBytes);
-  int frame_size();
-  void* frame_data();
+  void AddFrame(const void* addr, int nBytes);
   /**
-    * Move the cursor to the next frame
-    * @return true if the next frame is not NULL; otherwise false
-    */
-  bool next_frame();
+   * @return num of bytes of the current frame.
+   */
+  int FrameSize();
+  /**
+   * @return the pointer to the current frame data.
+   */
+  void* FrameData();
+  /**
+   * @return the data of the current frame as c string
+   */
+  char* FrameStr();
+  /**
+   * Move the cursor to the first frame.
+   */
+  void FirstFrame();
+  /**
+   * Move the cursor to the last frame.
+   */
+  void LastFrame();
+  /**
+   * Move the cursor to the next frame
+   * @return true if the next frame is not NULL; otherwise false
+   */
+  bool NextFrame();
+  /**
+   *  Add a 'format' frame to the msg (like CZMQ's zsock_send).
+   *
+   *  The format is a string that defines the type of each field.
+   *  The format can contain any of these characters, each corresponding to
+   *  one or two arguments:
+   *  i = int (signed)
+   *  1 = uint8_t
+   *  2 = uint16_t
+   *  4 = uint32_t
+   *  8 = uint64_t
+   *  p = void * (sends the pointer value, only meaningful over inproc)
+   *  s = char**
+   *
+   *  Returns size of the added content.
+   */
+  int AddFormatFrame(const char *format, ...);
+  /**
+   *  Parse the current frame added using AddFormatFrame(const char*, ...).
+   *
+   *  The format is a string that defines the type of each field.
+   *  The format can contain any of these characters, each corresponding to
+   *  one or two arguments:
+   *  i = int (signed)
+   *  1 = uint8_t
+   *  2 = uint16_t
+   *  4 = uint32_t
+   *  8 = uint64_t
+   *  p = void * (sends the pointer value, only meaningful over inproc)
+   *  s = char**
+   *
+   *  Returns size of the parsed content.
+   */
+  int ParseFormatFrame(const char* format, ...);
+
 #ifdef USE_ZMQ
   void ParseFromZmsg(zmsg_t* msg);
   zmsg_t* DumpToZmsg();
 #endif
- protected:
-  static const unsigned int kOff1 = 16;
-  static const unsigned int kOff2 = 4;
-  static const unsigned int kMask1 = (1 << kOff1) - 1;
-  static const unsigned int kMask2 = (1 << kOff2) - 1;
 
+  /**
+   * @return msg size in terms of bytes, ignore meta info.
+   */
+  int size() const;
+  /**
+   * Set source addr.
+   * @param addr unique identify one worker/server/stub in the current job
+   */
+  void set_src(int addr) { src_ = addr; }
+  /**
+   * @return source addr.
+   */
+  int src() const { return src_; }
+  /**
+   * Set destination addr.
+   * @param addr unique identify one worker/server/stub in the current job
+   */
+  void set_dst(int addr) { dst_ = addr; }
+  /**
+   * @return dst addr.
+   */
+  int dst() const { return dst_; }
+  /**
+   * Set msg type, e.g., kPut, kGet, kUpdate, kRequest
+   */
+  void set_type(int type) { type_ = type; }
+  /**
+   * @return msg type.
+   */
+  int type() const { return type_; }
+  /**
+   * Set msg target.
+   *
+   * One msg has a target to identify some entity in worker/server/stub.
+   * The target is associated with a version, e.g., Param version.
+   */
+  void set_trgt(int val, int version) {
+    trgt_val_ = val;
+    trgt_version_ = version;
+  }
+  int trgt_val() const {
+    return trgt_val_;
+  }
+  int trgt_version() const {
+    return trgt_version_;
+  }
+
+ protected:
   int src_ = 0;
   int dst_ = 0;
   int type_ = 0;
-  int trgt_first_ = 0;
-  int trgt_second_ = 0;
-  int trgt_third_ = 0;
+  int trgt_val_ = 0;
+  int trgt_version_ = 0;
 #ifdef USE_ZMQ
   zmsg_t* msg_ = nullptr;
   zframe_t *frame_ = nullptr;

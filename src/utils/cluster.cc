@@ -56,13 +56,14 @@ Cluster::Cluster(const GlobalProto & global, const ClusterProto &cluster,
   hostip_=GetHostIP();
 }
 
-void Cluster::Register(const string& endpoint){
+void Cluster::Register(const string& endpoint) {
   procs_id_=cluster_rt_->RegistProc(endpoint);
   CHECK_GE(procs_id_,0);
   CHECK_LT(procs_id_,nprocs());
   LOG(ERROR) << "proc #" << procs_id_ << " -> " << endpoint;
 }
-const string Cluster::endpoint(int procsid) const{
+
+const string Cluster::endpoint(int procsid) const {
   CHECK_LT(procsid, nprocs());
   CHECK_GE(procsid, 0);
   if(endpoints_.size())
@@ -70,6 +71,7 @@ const string Cluster::endpoint(int procsid) const{
   else
     return cluster_rt_->GetProcHost(procsid);
 }
+
 void Cluster::SetupFolders(const ClusterProto &cluster){
   // create visulization folder
   mkdir(vis_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);

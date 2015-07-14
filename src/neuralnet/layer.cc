@@ -235,7 +235,7 @@ void LabelLayer::ParseRecords(Phase phase, const vector<Record>& records,
 /*********************LMDBDataLayer**********************************/
 void LMDBDataLayer::ComputeFeature(Phase phase, Metric* perf){
   if(random_skip_){
-    int nskip=rand()%random_skip_;
+    int nskip = rand() % random_skip_;
     int n=0;
     CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
           &mdb_value_, MDB_FIRST), MDB_SUCCESS);
@@ -637,7 +637,7 @@ void RGBImageLayer::Setup(const LayerProto& proto, int npartitions) {
 /***************Implementation for ShardDataLayer**************************/
 void ShardDataLayer::ComputeFeature(Phase phase, Metric* perf){
   if(random_skip_){
-    int nskip=rand()%random_skip_;
+    int nskip = rand() % random_skip_;
     LOG(INFO)<<"Random Skip "<<nskip<<" records, there are "<<shard_->Count()
       <<" records in total";
     string key;
