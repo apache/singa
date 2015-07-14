@@ -37,7 +37,7 @@ BIN=`cd "$BIN">/dev/null; pwd`
 BASE=`cd "$BIN/..">/dev/null; pwd`
 ZKDATA_DIR="/tmp/zookeeper"
 
-PROC_NAME="lt-singa"
+PROC_NAME="*singa"
 HOST_FILE=$1
 
 
@@ -52,7 +52,7 @@ elif [ $# = 1 ] ; then
   -oLogLevel=quiet"
   hosts=(`cat $HOST_FILE |cut -d ' ' -f 1`)
   for i in ${hosts[@]} ; do
-    cmd="killall -s SIGKILL "$PROC_NAME
+    cmd="killall -s SIGKILL -r "$PROC_NAME
     echo kill singa @ $i ...
     if [ $i == localhost ] ; then
       $cmd

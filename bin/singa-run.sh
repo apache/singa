@@ -39,7 +39,7 @@ if [ $# = 1 ] ; then
   if [[ $1 = "-conf="* ]] ; then
     valid_args=true
     conf_path=${1:6}
-    host_path=$conf_path/hostfile
+    host_path=$conf_path/job.hosts
   fi
 elif [ $# = 2 ] ; then
   if [[ $1 = "-cluster="* ]] && [[ $2 = "-model="*  ]] ; then
@@ -62,11 +62,7 @@ BASE=`cd "$BIN/..">/dev/null; pwd`
 cd $BASE
 
 # clenup singa data
-if [ -z $host_path ] ; then
-  $BIN/singa-stop.sh 
-else
-  $BIN/singa-stop.sh $host_path
-fi
+$BIN/singa-stop.sh conf/hostfile
 
 # start zookeeper
 $BIN/zk-service.sh start 2>/dev/null
@@ -76,12 +72,18 @@ sleep 3
 
 # check mode
 if [ $# = 2 ] ; then
-  # start singa process
+  # start single singa process
   cmd="./singa "$@
   echo starting singa ...
   echo executing : $cmd
   $cmd
 elif [ $# = 1 ] ; then
+  # start multiple singa processes
+  # generate host file
+  cmd=" python tool/gen_hosts.py -conf=$conf_path/cluster.conf \
+    -src=conf/hostfile -dst=$host_path"
+  echo $cmd
+  $cmd
   # ssh and start singa processes
   ssh_options="-oStrictHostKeyChecking=no \
   -oUserKnownHostsFile=/dev/null \
@@ -102,8 +104,4 @@ elif [ $# = 1 ] ; then
 fi
 
 # cleanup singa data
-if [ -z $host_path ] ; then
-  $BIN/singa-stop.sh
-else
-  $BIN/singa-stop.sh $host_path
-fi
+$BIN/singa-stop.sh conf/hostfile
