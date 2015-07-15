@@ -82,11 +82,15 @@ $(PROTO_SRCS): $(PROTOS)
 	protoc --proto_path=src/proto --cpp_out=src/proto $(PROTOS)
 	mkdir -p include/proto/
 	cp src/proto/*.pb.h include/proto/
+	mkdir -p tool/pb2/
+	touch tool/pb2/__init__.py
+	protoc --proto_path=src/proto --python_out=tool/pb2/ $(PROTOS)
 	@echo
 
 clean:
 	rm -rf *.a *.so
 	rm -rf include/proto/*
 	rm -rf src/proto/*.pb.h src/proto/*.pb.cc
+	rm -rf tool/pb2/*
 	rm -rf $(BUILD_DIR)
 	@echo

@@ -14,12 +14,11 @@
 *.cproject
 *.log
 *.nfs*
-*_pb2.py
-*.pyc
 *.pb.h
 *.pb.cc
 *.hosts
 *.out
+tool/pb2/*
 src/test/data/*
 tmp
 log*

@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 from google.protobuf import text_format
-from plot.cluster_pb2 import ClusterProto
+from pb2.cluster_pb2 import ClusterProto
 
 # parse command line
 parser = argparse.ArgumentParser(description='Generate host list from host file for a SINGA job')
@@ -12,11 +12,6 @@ parser.add_argument('-conf', dest='conf', metavar='CONF_FILE', required=True, he
 parser.add_argument('-src', dest='src', metavar='SRC_FILE', required=True, help='global host file')
 parser.add_argument('-dst', dest='dst', metavar='DST_FILE', required=True, help='generated list')
 args = parser.parse_args();
-
-# change to SINGA_HOME
-abspath = os.path.abspath(__file__)
-dname = os.path.dirname(abspath)
-os.chdir(dname+'/..')
 
 # read from .conf file
 fd_conf = open(args.conf, 'r')
@@ -44,7 +39,7 @@ fd_src.close()
 # write to dst file
 num_hosts = len(hosts)
 if (num_hosts == 0):
-  print 'source host file is empty'
+  print 'ERROR: source host file is empty'
   sys.exit()
 fd_dst = open(args.dst, 'w')
 for i in range(nprocs):

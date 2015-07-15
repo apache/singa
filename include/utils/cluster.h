@@ -9,6 +9,7 @@
 #include "utils/common.h"
 #include "proto/cluster.pb.h"
 #include "utils/cluster_rt.h"
+#include "proto/global.pb.h"
 
 using std::shared_ptr;
 using std::string;
@@ -24,7 +25,8 @@ namespace singa {
 class Cluster {
  public:
   static shared_ptr<Cluster> Get();
-  static shared_ptr<Cluster> Get(const ClusterProto& cluster, int procs_id=0);
+  static shared_ptr<Cluster> Get(const GlobalProto& global, 
+                                 const ClusterProto& cluster, int procs_id=0);
 
   const int nserver_groups()const{ return cluster_.nserver_groups(); }
   const int nworker_groups()const { return cluster_.nworker_groups(); }
@@ -83,13 +85,6 @@ class Cluster {
   const string vis_folder(){
     return cluster_.workspace()+"/visualization";
   }
-  const string log_folder(){
-    if(cluster_.has_log_dir()){
-      return cluster_.workspace()+"log";
-    }else
-      return "";
-  }
-
   const int stub_timeout() const {
     return cluster_.stub_timeout();
   }
@@ -130,7 +125,7 @@ class Cluster {
   void Register(const string& endpoint);
 
  private:
-  Cluster(const ClusterProto &cluster, int procs_id) ;
+  Cluster(const GlobalProto& global, const ClusterProto &cluster, int procs_id) ;
   void SetupFolders(const ClusterProto &cluster);
   int Hash(int gid, int id, int flag);
 
@@ -141,6 +136,7 @@ class Cluster {
   std::vector<std::string> endpoints_;
   // cluster config proto
   ClusterProto cluster_;
+  GlobalProto global_;
   shared_ptr<ClusterRuntime> cluster_rt_;
   // make this class a singlton
   static shared_ptr<Cluster> instance_;

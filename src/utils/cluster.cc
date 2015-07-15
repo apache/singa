@@ -10,9 +10,11 @@
 namespace singa {
 
 std::shared_ptr<Cluster> Cluster::instance_;
-Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
+Cluster::Cluster(const GlobalProto & global, const ClusterProto &cluster,
+                int procs_id) {
   procs_id_=procs_id;
   cluster_ = cluster;
+  global_ = global;
   SetupFolders(cluster);
   if(server_worker_separate())
     nprocs_=nworker_procs()+nserver_procs();
@@ -47,7 +49,7 @@ Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
     }
   }
 
-  auto rt=new ZKClusterRT(cluster_.zookeeper_host());
+  auto rt=new ZKClusterRT(global_.zookeeper_host());
   rt->Init();
   cluster_rt_=shared_ptr<ClusterRuntime>(static_cast<ClusterRuntime*>(rt));
 
@@ -73,8 +75,9 @@ void Cluster::SetupFolders(const ClusterProto &cluster){
   mkdir(vis_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
-shared_ptr<Cluster> Cluster::Get(const ClusterProto& cluster, int procs_id){
-  instance_.reset(new Cluster(cluster, procs_id));
+shared_ptr<Cluster> Cluster::Get(const GlobalProto& global, const ClusterProto& cluster,
+                                 int procs_id){
+  instance_.reset(new Cluster(global, cluster, procs_id));
   return instance_;
 }
 

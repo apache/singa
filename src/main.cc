@@ -23,6 +23,7 @@
 DEFINE_int32(procsID, -1, "Global process ID");
 DEFINE_string(cluster, "examples/mnist/cluster.conf", "Cluster config file");
 DEFINE_string(model, "examples/mnist/conv.conf", "Model config file");
+DEFINE_string(global, "conf/singa.conf", "Global config file");
 
 /**
  * Register layers, and other customizable classes.
@@ -42,14 +43,16 @@ int main(int argc, char **argv) {
   singa::ReadProtoFromTextFile(FLAGS_cluster.c_str(), &cluster);
   singa::ModelProto model;
   singa::ReadProtoFromTextFile(FLAGS_model.c_str(), &model);
-  if(cluster.has_log_dir())
-    singa::SetupLog(cluster.log_dir(), model.name());
+  singa::GlobalProto global;
+  singa::ReadProtoFromTextFile(FLAGS_global.c_str(), &global);
+  singa::SetupLog(global.log_dir(), model.name());
 
   LOG(INFO) << "The cluster config is\n" << cluster.DebugString();
   LOG(INFO) << "The model config is\n" << model.DebugString();
+  LOG(INFO) << "The global config is\n" << global.DebugString();
 
   RegisterClasses(model);
   singa::Trainer trainer;
-  trainer.Start(model, cluster, FLAGS_procsID);
+  trainer.Start(model, global, cluster, FLAGS_procsID);
   return 0;
 }

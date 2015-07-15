@@ -248,13 +248,14 @@ vector<Worker*> Trainer::CreateWorkers(int nthreads,
   return workers;
 }
 
-void Trainer::Start(const ModelProto& mproto, const ClusterProto& cproto,
+void Trainer::Start(const ModelProto& mproto, const GlobalProto& gproto, 
+                    const ClusterProto& cproto,
     int procs_id){
   // procs_id is only used for resume training
   CHECK_EQ(procs_id, -1);
   RegisterDefaultClasses(mproto);
 
-  auto cluster=Cluster::Get(cproto, procs_id);
+  auto cluster=Cluster::Get(gproto, cproto, procs_id);
   router_=make_shared<Router>();
   router_->Bind(kInprocRouterEndpoint);
   if(cluster->nprocs()>1){
