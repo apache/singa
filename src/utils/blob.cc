@@ -189,7 +189,7 @@ void* SyncedMemory::mutable_gpu_data() {
 template <typename Dtype>
 Blob<Dtype>::Blob(const vector<int>& shape)
   // capacity_ must be initialized before calling Reshape
-  : capacity_(0), version_(-1) {
+  : capacity_(0) {
   Reshape(shape);
 }
 
@@ -240,6 +240,16 @@ template <typename Dtype>
 Dtype* Blob<Dtype>::mutable_gpu_data() {
   CHECK(data_);
   return static_cast<Dtype*>(data_->mutable_gpu_data());
+}
+
+template <typename Dtype>
+Dtype* Blob<Dtype>::mutable_xpu_data() {
+  CHECK(data_);
+#ifndef CPU_ONLY
+	return static_cast<Dtype*>(data_->mutable_gpu_data());
+#else
+	return static_cast<Dtype*>(data_->mutable_cpu_data());
+#endif
 }
 
 template <typename Dtype>
