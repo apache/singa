@@ -104,4 +104,4 @@ elif [ $# = 1 ] ; then
 fi
 
 # cleanup singa data
-$BIN/singa-stop.sh conf/hostfile
+#$BIN/singa-stop.sh conf/hostfile
