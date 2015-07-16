@@ -40,6 +40,7 @@ ZKDATA_DIR="/tmp/zookeeper"
 PROC_NAME="*singa"
 HOST_FILE=$1
 
+cd $BASE
 
 # kill singa processes
 if [ $# = 0 ] ; then
@@ -62,10 +63,10 @@ elif [ $# = 1 ] ; then
   done
 fi
 
-# close zookeeper
-. $BIN/zk-service.sh stop 2>/dev/null
+# wait for killall command
+sleep 2
 
 echo cleanning metadata in zookeeper ...
 # remove zk data
-rm -r $ZKDATA_DIR
+./singatool
 

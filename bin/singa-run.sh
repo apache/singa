@@ -61,14 +61,14 @@ BASE=`cd "$BIN/..">/dev/null; pwd`
 
 cd $BASE
 
-# clenup singa data
-$BIN/singa-stop.sh conf/hostfile
-
 # start zookeeper
 $BIN/zk-service.sh start 2>/dev/null
 
 # wait for zk service to be up
 sleep 3
+
+# clenup singa data
+$BIN/singa-stop.sh conf/hostfile
 
 # check mode
 if [ $# = 2 ] ; then

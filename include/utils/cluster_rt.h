@@ -49,6 +49,42 @@ class ClusterRuntime {
   virtual bool LeaveSGroup(int gid, int wid, int s_group) = 0;
 };
 
+const std::string kZKPathSinga = "/singa";
+const std::string kZKPathStatus = "/singa/status";
+const std::string kZKPathRegist = "/singa/regist";
+const std::string kZKPathRegistProc = "/singa/regist/proc";
+const std::string kZKPathRegistLock = "/singa/regist/lock";
+const int kZKBufSize = 50;
+
+struct RTCallback {
+  rt_callback fn;
+  void* ctx;
+};
+
+class ZKService {
+ public:
+  static void ChildChanges(zhandle_t* zh, int type, int state,
+                           const char *path, void* watcherCtx);
+  ~ZKService();
+  bool Init(const std::string& host, int timeout);
+  bool CreateNode(const char* path, const char* val, int flag, char* output);
+  bool DeleteNode(const char* path);
+  bool Exist(const char* path);
+  bool GetNode(const char* path, char* output);
+  bool GetChild(const char* path, std::vector<std::string>* vt);
+  bool WGetChild(const char* path, std::vector<std::string>* vt,
+                   RTCallback *cb);
+
+ private:
+  const int kNumRetry = 10;
+  const int kSleepSec = 1;
+
+  static void WatcherGlobal(zhandle_t* zh, int type, int state,
+                            const char *path, void* watcherCtx);
+
+  zhandle_t* zkhandle_ = nullptr;
+};
+
 class ZKClusterRT : public ClusterRuntime {
  public:
   explicit ZKClusterRT(const std::string& host);
@@ -63,35 +99,33 @@ class ZKClusterRT : public ClusterRuntime {
   bool LeaveSGroup(int gid, int wid, int s_group) override;
 
  private:
-  struct RTCallback {
-    rt_callback fn;
-    void* ctx;
-  };
+  inline std::string groupPath(int gid) {
+    return kZKPathStatus + "/sg" + std::to_string(gid);
+  }
+  inline std::string workerPath(int gid, int wid) {
+    return "/g" + std::to_string(gid) + "_w" + std::to_string(wid);
+  }
+  
+  int timeout_ = 30000;
+  std::string host_ = "";
+  ZKService zk_;
+  std::vector<RTCallback*> cb_vec_;
+};
 
-  const int kMaxBufLen = 50;
-  const int kNumRetry = 10;
-  const int kSleepSec = 1;
-  const std::string kZPathSinga = "/singa";
-  const std::string kZPathStatus = "/singa/status";
-  const std::string kZPathRegist = "/singa/regist";
-  const std::string kZPathRegistProc = "/singa/regist/proc";
-  const std::string kZPathRegistLock = "/singa/regist/lock";
+class JobManager {
+ public:
+  explicit JobManager(const std::string& host);
+  JobManager(const std::string& host, int timeout);
 
-  static void WatcherGlobal(zhandle_t* zh, int type, int state,
-                            const char *path, void* watcherCtx);
-  static void ChildChanges(zhandle_t* zh, int type, int state,
-                           const char *path, void* watcherCtx);
-  bool CreateZKNode(const char* path, const char* val, int flag, char* output);
-  bool DeleteZKNode(const char* path);
-  bool GetZKNode(const char* path, char* output);
-  bool GetZKChild(const char* path, std::vector<std::string>* vt);
-  inline std::string groupPath(int gid);
-  std::string workerPath(int gid, int wid);
+  bool Init();
+  bool Clean();
+
+ private:
+  bool CleanPath(const std::string& path);
 
   int timeout_ = 30000;
   std::string host_ = "";
-  zhandle_t* zkhandle_ = nullptr;
-  std::vector<RTCallback*> cb_vec_;
+  ZKService zk_;
 };
 
 }  // namespace singa

@@ -2,7 +2,6 @@
 #define INCLUDE_TRAINER_TRAINER_H_
 #include <unordered_map>
 #include "proto/cluster.pb.h"
-#include "proto/global.pb.h"
 #include "proto/model.pb.h"
 #include "utils/updater.h"
 #include "utils/param.h"

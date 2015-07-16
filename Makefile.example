@@ -31,7 +31,7 @@ PROTO_HDRS :=$(patsubst src%, include%, $(PROTOS:.proto=.pb.h))
 PROTO_OBJS :=$(addprefix $(BUILD_DIR)/, $(PROTO_SRCS:.cc=.o))
 
 # each singa src file will generate a .o file
-SINGA_SRCS := $(shell find src/ \( -path "src/test" -o -path "src/main.cc" \) \
+SINGA_SRCS := $(shell find src/ \( -path "src/test" -o -path "src/main.cc" -o -path "src/utils/tool.cc" \) \
 	-prune -o \( -name "*.cc" -type f \) -print )
 SINGA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(SINGA_SRCS:.cc=.o)) \
 	$(PROTO_OBJS) )
@@ -52,6 +52,8 @@ OBJS := $(sort $(SINGA_OBJS) $(TEST_OBJS) )
 
 singa: $(PROTO_OBJS) $(SINGA_OBJS)
 	$(CXX) $(SINGA_OBJS) src/main.cc -o singa $(CXXFLAGS) $(LDFLAGS)
+	@echo
+	$(CXX) $(SINGA_OBJS) src/utils/tool.cc -o singatool $(CXXFLAGS) $(LDFLAGS)
 	@echo
 
 loader: proto $(LOADER_OBJS)

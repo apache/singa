@@ -9,7 +9,6 @@
 #include "utils/common.h"
 #include "proto/cluster.pb.h"
 #include "utils/cluster_rt.h"
-#include "proto/global.pb.h"
 
 using std::shared_ptr;
 using std::string;

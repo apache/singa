@@ -28,6 +28,7 @@ tmp/
 *lmdb
 *.binaryproto
 singa
+singatool
 .libs
 *.la
 *.deps
