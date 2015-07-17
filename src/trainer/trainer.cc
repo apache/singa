@@ -345,7 +345,7 @@ void Trainer::DisplayMetric(Msg** msg) {
     char prefix[128];
     msgg->ParseFormatFrame("s", prefix);
     CHECK(msgg->NextFrame());
-    const string perf(static_cast<char*>(msgg->FrameData()), msgg->FrameSize());;
+    const string perf(static_cast<char*>(msgg->FrameData()), msgg->FrameSize());
     Metric cur(perf);
     LOG(ERROR) << prefix << " step-" << step <<", " << cur.ToLogString();
   }

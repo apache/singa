@@ -68,8 +68,7 @@ void Worker::InitLocalParams() {
   for (auto layer : train_net_->layers()) {
     if (layer->partition_id() == id_)
       for (auto param : layer->GetParams())
-        if (param->owner() != param->id())
-          Get(param, modelproto_.warmup_steps());
+        Get(param, modelproto_.warmup_steps());
   }
 }
 
@@ -114,7 +113,7 @@ void Worker::Run() {
       Test(modelproto_.test_steps(), kTest, test_net_);
     }
     TrainOneBatch(step_, &perf);
-    //LOG(ERROR)<<"Train "<<step;
+    // LOG(ERROR) << "Train " << step_;
     if (DisplayNow(step_)) {
       Report("Train", perf);
       perf.Reset();
