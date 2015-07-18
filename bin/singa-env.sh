@@ -19,42 +19,39 @@
 # * See the License for the specific language governing permissions and
 # * limitations under the License.
 # */
-# 
-# clean up singa processes and zookeeper metadata
+#
+# set Singa environment variables, includes:
+#   * SINGA_HOME
+#   * SINGA_BIN
+#   * SINGA_CONF
+#   * ZK_HOME
+#   * SINGA_MANAGES_ZK
 #
 
-# usage="Usage: \n \
-#       (local process): singa-stop.sh \n \
-#       (distributed): singa-stop.sh HOST_FILE"
-# 
-# if [ $# -gt 1 ]; then
-#   echo -e $usage
-#   exit 1
-# fi
+# set SINGA_BIN
+if [ -z $SINGA_BIN ]; then
+  SINGA_BIN=`dirname "${BASH_SOURCE-$0}"`
+  SINGA_BIN=`cd "$SINGA_BIN">/dev/null; pwd`
+fi
 
-# get environment variables
-. `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
+# set SINGA_HOME
+if [ -z $SINGA_HOME ]; then
+  SINGA_HOME=`cd "$SINGA_BIN/..">/dev/null; pwd`
+fi
 
-# kill singa processes
-host_file=$SINGA_CONF/hostfile
-ssh_options="-oStrictHostKeyChecking=no \
-             -oUserKnownHostsFile=/dev/null \
-             -oLogLevel=quiet"
-hosts=`cat $host_file |cut -d ' ' -f 1`
-singa_kill="killall -s SIGKILL -r singa"
-for i in ${hosts[@]}; do
-  echo kill singa @ $i ...
-  if [ $i == localhost ]; then
-    $singa_kill
-  else
-    ssh $ssh_options $i $singa_kill
-  fi
-done
-# wait for killall command
-sleep 2
+# set SINGA_CONF
+if [ -z $SINGA_CONF ]; then
+  SINGA_CONF=$SINGA_HOME/conf
+fi
 
-# remove zk data
-# singatool need global conf under SINGA_HOME
-echo cleanning metadata in zookeeper ...
-cd $SINGA_HOME
-./singatool || exit 1
+# set ZK_HOME
+if [ -z $ZK_HOME ]; then
+  ZK_HOME=$SINGA_HOME/thirdparty/zookeeper-3.4.6
+  SINGA_MANAGES_ZK=true
+fi
+
+# set SINGA_MANAGES_ZK
+if [ -z $SINGA_MANAGES_ZK ]; then
+  SINGA_MANAGES_ZK=false
+fi
+

@@ -183,7 +183,7 @@ void Worker::Run() {
   msg->set_type(kStop);
   dealer_->Send(&msg);  // use param dealer to send the stop msg
 
-  LOG(ERROR) << "Worker (group = " <<grp_id_ << ", id = " << id_ << ") stop";
+  LOG(ERROR) << "Worker (group = " <<grp_id_ << ", id = " << id_ << ") stops";
 }
 
 

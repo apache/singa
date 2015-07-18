@@ -106,7 +106,7 @@ bool ZKService::Exist(const char* path) {
   int ret = zoo_exists(zkhandle_, path, 0, &stat);
   if (ret == ZOK) return true;
   else if (ret == ZNONODE) return false;
-  LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_exists)";
+  //LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_exists)";
   return false;
 }
 

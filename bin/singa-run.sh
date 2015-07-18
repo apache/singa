@@ -20,88 +20,59 @@
 # * limitations under the License.
 # */
 #
-# Run a Singa job
+# run a Singa job
 #
 
-usage="Usage: \n \
-  (single node): singa-run.sh -cluster=YOUR_CONF_FILE -model=YOUR_CONF_FILE \n \
-  (distributed): singa-run.sh -conf=YOUR_CONF_DIR \
-  (the directory should contain cluster.conf/model.conf/hostfile)"
+usage="Usage: singa-run.sh -conf=CONF_DIR 
+      (CONF_DIR should contain cluster.conf && model.conf)"
+# usage="Usage: \n
+#       (single process): singa-run.sh -cluster=YOUR_CONF_FILE -model=YOUR_CONF_FILE \n
+#       (multi-process): singa-run.sh -conf=YOUR_CONF_DIR 
+#       (the directory should contain cluster.conf && model.conf)"
 
-#if [ $# -le 0 ] || [ $# -ge 3 ] ; then
-#  echo -e $usage
-#  exit 1
-#fi
-
-valid_args=false
-
-if [ $# = 1 ] ; then
-  if [[ $1 = "-conf="* ]] ; then
-    valid_args=true
-    conf_path=${1:6}
-    host_path=$conf_path/job.hosts
-  fi
-elif [ $# = 2 ] ; then
-  if [[ $1 = "-cluster="* ]] && [[ $2 = "-model="*  ]] ; then
-    valid_args=true
-  elif [[ $2 = "-cluster="* ]] && [[ $1 = "-model="*  ]] ; then
-    valid_args=true
-  fi
-fi
-
-if [ $valid_args = false ] ; then
-  echo -e $usage
+# check arguments
+if [ $# != 1 ] || [[ $1 != "-conf="* ]]; then
+  echo $usage
   exit 1
 fi
 
-# get singa-base
-BIN=`dirname "${BASH_SOURCE-$0}"`
-BIN=`cd "$BIN">/dev/null; pwd`
-BASE=`cd "$BIN/..">/dev/null; pwd`
-
-cd $BASE
+# get environment variables
+. `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
+# get workspace path
+workspace=`cd "${1:6}">/dev/null; pwd`
 
 # start zookeeper
-$BIN/zk-service.sh start 2>/dev/null
-
-# wait for zk service to be up
-sleep 3
-
-# clenup singa data
-$BIN/singa-stop.sh conf/hostfile
-
-# check mode
-if [ $# = 2 ] ; then
-  # start single singa process
-  cmd="./singa "$@
-  echo starting singa ...
-  echo executing : $cmd
-  $cmd
-elif [ $# = 1 ] ; then
-  # start multiple singa processes
-  # generate host file
-  cmd=" python tool/gen_hosts.py -conf=$conf_path/cluster.conf \
-    -src=conf/hostfile -dst=$host_path"
-  echo $cmd
-  $cmd
-  # ssh and start singa processes
-  ssh_options="-oStrictHostKeyChecking=no \
-  -oUserKnownHostsFile=/dev/null \
-  -oLogLevel=quiet"
-  hosts=(`cat $host_path |cut -d ' ' -f 1`)
-  cmd="./singa -cluster=$conf_path/cluster.conf -model=$conf_path/model.conf"
-  ssh_cmd="cd $BASE; "$cmd
-  for i in ${hosts[@]} ; do
-    if [ $i = localhost ] ; then
-      echo executing : $cmd
-      $cmd &
-    else
-      echo executing @ $i : $ssh_cmd
-      ssh $ssh_options $i $ssh_cmd &
-    fi
-  done
-  wait
+if [ $SINGA_MANAGES_ZK = true ]; then
+  $SINGA_BIN/zk-service.sh start || exit 1
 fi
 
-# cleanup singa data
-#$BIN/singa-stop.sh conf/hostfile
+# cleanup old processes and data
+$SINGA_BIN/singa-stop.sh || exit 1
+
+# generate host file
+host_file=$workspace/job.hosts
+python $SINGA_HOME/tool/gen_hosts.py -conf=$workspace/cluster.conf \
+                                     -hosts=$SINGA_CONF/hostfile \
+                                     -output=$host_file \
+                                     || exit 1
+
+# ssh and start singa processes
+ssh_options="-oStrictHostKeyChecking=no \
+-oUserKnownHostsFile=/dev/null \
+-oLogLevel=quiet"
+hosts=`cat $host_file |cut -d ' ' -f 1`
+# cd to SINGA_HOME as it need conf/singa.conf
+cd $SINGA_HOME
+singa_run="./singa -cluster=$workspace/cluster.conf -model=$workspace/model.conf"
+singa_sshrun="cd $SINGA_HOME; ./singa -cluster=$workspace/cluster.conf \
+              -model=$workspace/model.conf"
+for i in ${hosts[@]} ; do
+  if [ $i = localhost ] ; then
+    echo executing : $singa_run
+    $singa_run &
+  else
+    echo executing @ $i : $singa_sshrun
+    ssh $ssh_options $i $singa_sshrun &
+  fi
+done
+wait

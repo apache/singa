@@ -9,8 +9,8 @@ from pb2.cluster_pb2 import ClusterProto
 # parse command line
 parser = argparse.ArgumentParser(description='Generate host list from host file for a SINGA job')
 parser.add_argument('-conf', dest='conf', metavar='CONF_FILE', required=True, help='cluster.conf file')
-parser.add_argument('-src', dest='src', metavar='SRC_FILE', required=True, help='global host file')
-parser.add_argument('-dst', dest='dst', metavar='DST_FILE', required=True, help='generated list')
+parser.add_argument('-hosts', dest='hosts', metavar='HOST_FILE', required=True, help='global host file')
+parser.add_argument('-output', dest='output', metavar='OUTPUT_FILE', required=True, help='generated list')
 args = parser.parse_args();
 
 # read from .conf file
@@ -27,21 +27,22 @@ else:
 fd_conf.close()
 
 # read from source host file
-fd_src = open(args.src, 'r')
+fd_hosts = open(args.hosts, 'r')
 hosts = []
-for line in fd_src:
+for line in fd_hosts:
   line = line.strip()
   if len(line) == 0 or line[0] == '#':
     continue
   hosts.append(line)
-fd_src.close()
+fd_hosts.close()
 
-# write to dst file
+# write to output file
 num_hosts = len(hosts)
 if (num_hosts == 0):
-  print 'ERROR: source host file is empty'
-  sys.exit()
-fd_dst = open(args.dst, 'w')
+  print "contains no valid host %s" % args.hosts
+  sys.exit(1)
+fd_output = open(args.output, 'w')
 for i in range(nprocs):
-  fd_dst.write(hosts[i % num_hosts] + '\n')
-fd_dst.close()
+  fd_output.write(hosts[i % num_hosts] + '\n')
+fd_output.close()
+print 'generate host list at %s' % args.output

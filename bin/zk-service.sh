@@ -20,59 +20,55 @@
 # * limitations under the License.
 # */
 # 
-# Manage a zookeeper service
+# manage ZooKeeper service
 #
 
 usage="Usage: zk-service.sh [start|stop]"
 
-if [ $# -le 0 ]; then
+if [ $# != 1 ]; then
   echo $usage
   exit 1
 fi
 
-BIN=`dirname "${BASH_SOURCE-$0}"`
-BIN=`cd "$BIN">/dev/null; pwd`
-BASE=`cd "$BIN/..">/dev/null; pwd`
-ZKBASE=$BASE/thirdparty/zookeeper-3.4.6
+# get environment variables
+. `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
 
-if [ -z $SINGA_MANAGES_ZK ]; then
-  SINGA_MANAGES_ZK=true
+# check if singa manages zookeeper service
+if [ $SINGA_MANAGES_ZK != true ]; then
+  echo "Singa does not manage a valid zookeeper service (SINGA_MANAGES_ZK != true)"
+  exit 1
 fi
 
-if [ $SINGA_MANAGES_ZK = true ]; then
-  # check zookeeper installation
-  if [ ! -d $ZKBASE ]; then
-    echo "zookeeper not found, please install zookeeper first:"
-    echo "$./SINGA_BASE/thirdparty/install.sh zookeeper"
-    exit 1
-  fi
+# check zookeeper installation
+if [ ! -d $ZK_HOME ]; then
+  echo "zookeeper not found at $ZK_HOME"
+  echo "if you do not have zookeeper service, please install:"
+  echo "    $SINGA_HOME/thirdparty/install.sh zookeeper"
+  echo "otherwise, please set ZK_HOME correctly"
+  exit 1
 fi
 
-# get argument
-cmd=$1
-
-case $cmd in
-
-(start)
-  # start zk service
-  if [ $SINGA_MANAGES_ZK = true ]; then
-    # check zoo,cfg
-    if [ ! -f $ZKBASE/conf/zoo.cfg ]; then
+# get command
+case $1 in
+  start)
+    # start zk service
+    # check zoo.cfg
+    if [ ! -f $ZK_HOME/conf/zoo.cfg ]; then
       echo "zoo.cfg not found, create from sample.cfg"
-      cp $ZKBASE/conf/zoo_sample.cfg $ZKBASE/conf/zoo.cfg
+      cp $ZK_HOME/conf/zoo_sample.cfg $ZK_HOME/conf/zoo.cfg
     fi
-    # echo 'starting zookeeper service...'
-    $ZKBASE/bin/zkServer.sh start
-  fi
-  ;;
+    # cd to SINGA_HOME as zookeeper.out will be here
+    cd $SINGA_HOME
+    $ZK_HOME/bin/zkServer.sh start 2>/dev/null
+    ;;
 
-(stop)
-  # stop zk service
-  if [ $SINGA_MANAGES_ZK = true ]; then
-    # echo 'stopping zookeeper service...'
-    $ZKBASE/bin/zkServer.sh stop
-  fi
-  ;;
-
+  stop)
+    # stop zk service
+    $ZK_HOME/bin/zkServer.sh stop 2>/dev/null
+    ;;
+  
+  *)
+    echo $usage
+    exit 1
 esac
 
