@@ -80,6 +80,12 @@ void Param::InitValues(int version){
   }
   set_version(version);
 }
+void Param::FromProto(const BlobProto& blob) {
+  data_->FromProto(blob);
+}
+void Param::ToProto(BlobProto* blob) {
+  data_->ToProto(blob);
+}
 
 /**************Message related functions********/
 Msg* Param::GenPutMsg(bool copy, int idx) {

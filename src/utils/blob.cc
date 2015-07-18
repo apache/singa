@@ -196,7 +196,7 @@ Blob<Dtype>::Blob(const vector<int>& shape)
 template <typename Dtype>
 void Blob<Dtype>::Reshape(const vector<int>& shape) {
   count_=1;
-  shape_=shape;
+  shape_ = shape;
   for(size_t i=0;i<shape.size();i++){
     CHECK(shape[i]);
     count_*=shape[i];
@@ -297,27 +297,26 @@ void Blob<Dtype>::CopyFrom(const Blob& source, bool reshape) {
         sizeof(Dtype)*count_);
 }
 
-/*
 template <typename Dtype>
-void Blob<Dtype>::FromProto(const BlobProto& proto) {
-  Reshape();
+void Blob<Dtype>::FromProto(const singa::BlobProto& proto) {
+  vector<int> shape;
+  for (int s : proto.shape())
+    shape.push_back(s);
+  int count = count_;
+  Reshape(shape);
+  if (count != count_)
+    LOG(WARNING) << "Blob is reshaped to diff size " << count << ":" << count_;
   // copy data
   Dtype* data_vec = mutable_cpu_data();
   for (int i = 0; i < count_; ++i) {
     data_vec[i] = proto.data(i);
   }
 }
-*/
 
 template <typename Dtype>
 void Blob<Dtype>::ToProto(singa::BlobProto* proto) const {
-  proto->set_num(shape_[0]);
-  if(shape_.size()>1)
-    proto->set_channels(shape_[1]);
-  if(shape_.size()>2)
-    proto->set_height(shape_[2]);
-  if(shape_.size()>3)
-    proto->set_width(shape_[3]);
+  for (int s : shape_)
+    proto->add_shape(s);
   proto->clear_data();
   const Dtype* data_vec = cpu_data();
   for (int i = 0; i < count_; ++i) {

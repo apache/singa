@@ -24,7 +24,7 @@ namespace singa {
 class Cluster {
  public:
   static shared_ptr<Cluster> Get();
-  static shared_ptr<Cluster> Get(const GlobalProto& global, 
+  static shared_ptr<Cluster> Get(const GlobalProto& global,
                                  const ClusterProto& cluster, int procs_id=0);
 
   const int nserver_groups()const{ return cluster_.nserver_groups(); }
@@ -81,8 +81,12 @@ class Cluster {
   const string endpoint(const int procs_id) const;
 
   const string workspace() {return cluster_.workspace();}
-  const string vis_folder(){
+
+  const string vis_folder() const {
     return cluster_.workspace()+"/visualization";
+  }
+  const string checkpoint_folder() const {
+    return cluster_.workspace()+"/checkpoint";
   }
   const int stub_timeout() const {
     return cluster_.stub_timeout();

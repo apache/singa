@@ -29,11 +29,7 @@ enum ShareOption {
   kWhole = 1;
 };
 
-message BlobProtos {
-  repeated BlobProto blobs = 1;
-  repeated int32 ids = 2;
-  repeated string names = 3;
-}
+
 
 enum ConnectionType {
   kOneToOne = 0;
@@ -42,7 +38,7 @@ enum ConnectionType {
 }
 
 // to import caffe's lmdb dataset
-message Datum {
+message CaffeDatum {
   optional int32 channels = 1;
   optional int32 height = 2;
   optional int32 width = 3;
@@ -55,13 +51,26 @@ message Datum {
   optional bool encoded = 7 [default = false];
 }
 
-message BlobProto {
+// to import caffe's blob, e.g., image mean
+message CaffeBlob {
   optional int32 num = 1 [default = 0];
   optional int32 channels = 2 [default = 0];
   optional int32 height = 3 [default = 0];
   optional int32 width = 4 [default = 0];
   repeated float data = 5 [packed = true];
   repeated float diff = 6 [packed = true];
+}
+
+message BlobProto {
+  repeated int32 shape = 1;
+  repeated float data = 2 [packed = true];
+}
+
+message BlobProtos {
+  repeated int32 id = 2;
+  repeated int32 version = 3;
+  repeated string name = 4;
+  repeated BlobProto blob = 5;
 }
 
 message Record {
@@ -78,7 +87,7 @@ message SingleLabelImageRecord {
   repeated int32 shape = 1;
   optional int32 label = 2;
   optional bytes pixel = 3;
-  repeated float data = 4;
+  repeated float data = 4 [packed = true];
 }
 
 message MetricProto {

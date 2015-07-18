@@ -243,8 +243,9 @@ class LMDBDataLayer: public DataLayer{
 
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(Phase phase, Metric *perf) override;
-  void ConvertDatumToSingleLableImageRecord(const Datum& datum,
-    SingleLabelImageRecord* record);
+  void ConvertCaffeDatumToRecord(const CaffeDatum& datum,
+      SingleLabelImageRecord* record);
+
  private:
   MDB_env* mdb_env_;
   MDB_dbi mdb_dbi_;

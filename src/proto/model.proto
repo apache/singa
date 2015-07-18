@@ -46,17 +46,21 @@ message ModelProto {
   optional bool resume = 36 [default = false];
 
    // start display after this num steps
-  optional int32 display_after_steps =  60[default = 0];
+  optional int32 display_after =  60[default = 0];
   // start checkpoint after this num steps
-  optional int32 checkpoint_after_steps = 61 [default = 0];
+  optional int32 checkpoint_after = 61 [default = 0];
   // start test after this num steps
-  optional int32 test_after_steps = 62 [default = 0];
+  optional int32 test_after = 62 [default = 0];
 // start validation after this num steps
-  optional int32 validation_after_steps = 63 [default = 0];
+  optional int32 validation_after = 63 [default = 0];
   // last snapshot step
   optional int32 step = 64 [default = 0];
   // display debug info
   optional bool debug = 65 [default = false];
+  // checkpoint files
+  repeated string checkpoint = 66;
+  // reset the version of params loaded from checkpoint file to step
+  optional bool reset_param_version = 67 [default = false];
 }
 
 message NetProto {
@@ -108,7 +112,7 @@ message ParamProto {
   repeated int32 shape = 31;
 
   // used for identifying the same params from diff models and display deug info
-  optional string name =  61 [default = "param"];
+  optional string name =  61 [default = ""];
   // used interally
   optional int32 id = 62;
   // parameter slice limit (Google Protobuf also has size limit)

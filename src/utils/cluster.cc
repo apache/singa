@@ -75,6 +75,8 @@ const string Cluster::endpoint(int procsid) const {
 void Cluster::SetupFolders(const ClusterProto &cluster){
   // create visulization folder
   mkdir(vis_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  // create checkpoint folder
+  mkdir(checkpoint_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
 shared_ptr<Cluster> Cluster::Get(const GlobalProto& global, const ClusterProto& cluster,

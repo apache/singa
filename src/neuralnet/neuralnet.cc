@@ -107,8 +107,15 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
     auto layer = name2layer_[node->name];
     layer->Setup(*(static_cast<LayerProto*>(node->proto)), npartitions);
     layerinfo[layer->name()] = IntVecToString(layer->data(nullptr).shape());
-    for (auto param : layer->GetParams())
+    string param_name = "$";
+    for (auto param : layer->GetParams()) {
       param->set_id(paramid++);
+      // if user does not name the param, then name it based on layer name.
+      if (param->name() == "") {
+        param->set_name(layer->name() + param_name);
+        param_name += "$";
+      }
+    }
     if (layer->partition_dim() == 0)
       share_param_layers[node->origin].push_back(layer);
   }

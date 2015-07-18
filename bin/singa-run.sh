@@ -25,7 +25,7 @@
 
 usage="Usage: \n \
   (single node): singa-run.sh -cluster=YOUR_CONF_FILE -model=YOUR_CONF_FILE \n \
-  (distributed): singa-run.sh -conf=YOUR_CONF_DIR \ 
+  (distributed): singa-run.sh -conf=YOUR_CONF_DIR \
   (the directory should contain cluster.conf/model.conf/hostfile)"
 
 #if [ $# -le 0 ] || [ $# -ge 3 ] ; then
@@ -51,7 +51,7 @@ fi
 
 if [ $valid_args = false ] ; then
   echo -e $usage
-  exit 1 
+  exit 1
 fi
 
 # get singa-base
@@ -89,7 +89,7 @@ elif [ $# = 1 ] ; then
   -oUserKnownHostsFile=/dev/null \
   -oLogLevel=quiet"
   hosts=(`cat $host_path |cut -d ' ' -f 1`)
-  cmd="./singa -cluster=$conf_path/cluster.conf -model=$conf_path/model.conf"
+  cmd="./singa -cluster=$conf_path/cluster.conf -model=$conf_path/model.conf -resume=true"
   ssh_cmd="cd $BASE; "$cmd
   for i in ${hosts[@]} ; do
     if [ $i = localhost ] ; then

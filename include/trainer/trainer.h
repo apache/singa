@@ -28,17 +28,26 @@ class Trainer{
    * one thread per worker/server. TODO rename variables about cluster config,
    * job config, etc.
    *
+   * @param resume if true resume the training from the latest checkpoint files
+   * @param job job ID
    * @param mconf model configuration
    * @param globalconf global singa configuration
    * @param cconf cluster configuration
-   * @param job job ID
    */
-  void Start(const ModelProto& mconf, const GlobalProto& globalconf,
-             const ClusterProto& cconf, const int job);
+  void Start(bool resume, int job, ModelProto& mconf,
+    const GlobalProto& gconf, const ClusterProto& cconf);
 
-  // TODO add Resume() function to continue training from a previously stopped
-  // point.
  protected:
+  /**
+   * Setting the checkpoint field of model configuration to resume training.
+   *
+   * The checkpoint folder will be searched to get the files for the latest
+   * checkpoint, which will be added into the checkpoint field. The workers
+   * would then load the values of params from the checkpoint files.
+   *
+   * @param model_conf model configuration
+   */
+  void Resume(ModelProto& model_conf);
   /**
    * Create server instances.
    * @param nthread total num of threads in current procs which is used to

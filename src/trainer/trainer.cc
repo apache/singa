@@ -3,6 +3,7 @@
 #include <map>
 #include <chrono>
 #include <glog/logging.h>
+#include "utils/tinydir.h"
 #include "utils/cluster.h"
 #include "utils/common.h"
 #include "proto/common.pb.h"
@@ -191,17 +192,51 @@ vector<Worker*> Trainer::CreateWorkers(int nthreads, const ModelProto& mconf){
   return workers;
 }
 
-void Trainer::Start(const ModelProto& mconf, const GlobalProto& gconf,
-                    const ClusterProto& cconf, int job){
-  RegisterDefaultClasses(mconf);
+void Trainer::Resume(ModelProto& mconf) {
+  tinydir_dir dir;
+  string folder = Cluster::Get()->checkpoint_folder();
+  tinydir_open(&dir, folder.c_str());
+  int latest_step = 0;
+  // there would be multi checkpoint files (from diff workers) for one step
+  vector<char *> ck_files;
+  // iterate all files to get the files for the last checkpoint
+  while (dir.has_next) {
+    tinydir_file file;
+    tinydir_readfile(&dir, &file);
+    tinydir_next(&dir);
+    char* ch = strstr(file.name, "step");
+    if (ch == nullptr && file.name[0] != '.' && file.name[1] != '.') {
+      LOG(INFO) << "Irregular file in checkpoint folder: " << file.name;
+      continue;
+    }
 
-  // register job to zookeeper
-  auto cluster=Cluster::Get(gconf, cconf, job);
-  if (mconf.resume()) {
-    // TODO(wangwei) resume from checkpoint
-    // load param slices to server_shard_ and reset running step of worker
-    // mproto.set_step(step);
+    LOG(ERROR) << ch;
+    int step = atoi(ch+4);
+    if (step == latest_step) {
+      ck_files.push_back(file.name);
+    } else if(step > latest_step) {
+      latest_step = step;
+      ck_files.clear();
+      ck_files.push_back(file.name);
+    }
   }
+
+  if (latest_step > 0) {
+    mconf.set_step(latest_step);
+    for (auto ck_file : ck_files)
+      mconf.add_checkpoint(folder + "/" +string(ck_file));
+  }
+  tinydir_close(&dir);
+}
+
+void Trainer::Start(bool resume, int job, ModelProto& mconf,
+    const GlobalProto& gconf, const ClusterProto& cconf) {
+  // register job to zookeeper at the beginning
+  auto cluster=Cluster::Get(gconf, cconf, job);
+
+  RegisterDefaultClasses(mconf);
+  if (resume)
+    Resume(mconf);
 
   router_ = new Router();
   router_->Bind(kInprocRouterEndpoint);

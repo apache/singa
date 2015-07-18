@@ -14,13 +14,14 @@
  * 3. Users call trainer to start the training.
  *
  * TODO
- * 1. Add the resume function to continue training from a previously stopped
- * point.
- * 2. Add helper functions for users to configure their model and cluster
+ * 1. Add helper functions for users to configure their model and cluster
  * easily, e.g., AddLayer(layer_type, source_layers, meta_data).
  */
 
-DEFINE_int32(procsID, -1, "Global process ID");
+// Job ID is not used now, TODO passing job id from singa-run script and
+// re-organize ClusterProto, GlobalProto and ModelProto.
+DEFINE_int32(job, -1, "Job ID");  // not used now
+DEFINE_bool(resume, false, "resume from checkpoint");
 DEFINE_string(cluster, "examples/mnist/cluster.conf", "Cluster config file");
 DEFINE_string(model, "examples/mnist/conv.conf", "Model config file");
 DEFINE_string(global, "conf/singa.conf", "Global config file");
@@ -53,6 +54,6 @@ int main(int argc, char **argv) {
 
   RegisterClasses(model);
   singa::Trainer trainer;
-  trainer.Start(model, global, cluster, FLAGS_procsID);
+  trainer.Start(FLAGS_resume, FLAGS_job, model, global, cluster);
   return 0;
 }

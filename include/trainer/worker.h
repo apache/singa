@@ -40,10 +40,6 @@ class Worker {
     */
   void Run();
   /**
-   * Resume from snapshot
-   */
-  void Resume();
-  /**
    * Init all local params (i.e., params from layers resident in this worker).
    *
    * If the param is owned by the worker, then init it and put it to servers.
@@ -55,10 +51,22 @@ class Worker {
    * train for a couple of steps to warmup the params before put
    * them to servers (warmup of ModelProto controls this).
    *
-   * TODO(wangwei) If the worker is resumed from checkpoint, the owner param's
+   * If the owner param is availabel from checkpoint file, then its
    * values are parsed from the checkpoint file instead of randomly initialized.
+   * For params who do not have checkpoints, randomly init them.
    */
   void InitLocalParams();
+
+  /**
+   * Checkpoint all params owned by the worker from the first group onto disk.
+   * The serialization is done using BlobProtos which includes the name, version
+   * and values of each Param.
+   * Different worker would generate different checkpoint files. The file path
+   * is <workspace>/checkpoint-<modelname>-step<step>-worker<worker_id>.bin
+   * @param step training step of this worker
+   * @param net the training net whose params will be dumped.
+   */
+  void Checkpoint(int step, shared_ptr<NeuralNet> net);
   /**
     * Test the perforance of the learned model on validation or test dataset.
     * Test is done by the first group.

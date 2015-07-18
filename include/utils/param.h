@@ -68,6 +68,9 @@ class Param {
   const std::string& name() {
     return proto_.name();
   }
+  void set_name(const std::string& name) {
+    proto_.set_name(name);
+  }
   /**
    * If it shares data from others, then owner is the id of that Param,
    * otherwise it is itself's id.
@@ -133,13 +136,13 @@ class Param {
   Blob<float> *mutable_grad() {
     return &grad_;
   }
-  float* mutable_cpu_data(){
+  float* mutable_cpu_data() {
     return data_->mutable_cpu_data();
   }
-  float* mutable_cpu_grad(){
+  float* mutable_cpu_grad() {
     return grad_.mutable_cpu_data();
   }
-  float* mutable_cpu_history(){
+  float* mutable_cpu_history() {
     return history_.mutable_cpu_data();
   }
 
@@ -161,6 +164,14 @@ class Param {
    * @param size num of floats for this slice
    */
   void AddSlice(int slice_id, int size);
+  /**
+   * Init param values from checkpoint blob.
+   */
+  void FromProto(const BlobProto& blob);
+  /**
+   * Dump param values to blob.
+   */
+  void ToProto(BlobProto* blob);
   /**********************Msg related functions***************************/
 
   /**
@@ -258,11 +269,6 @@ class Param {
   void ParseResponseMsg(Msg* msg, int slice_idx);
 
  protected:
-
-  /**
-   * name of the parameter used to share wights between neuralnets
-   */
-  std::string name_;
   int local_version_;
   //!< the ID of the first slice
   int slice_start_;

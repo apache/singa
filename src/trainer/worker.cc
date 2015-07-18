@@ -43,15 +43,37 @@ Worker::~Worker() {
 void Worker::InitLocalParams() {
   // for each server grp, its first subscriber worker grp does the param init
   if (grp_id_ % Cluster::Get()->nworker_groups_per_server_group() == 0) {
+    // extract params that should be initialized by this worker
+    // Must gen a name for each param if the user doesn't config it
+    std::unordered_map<string, Param*> name2param;
     for (auto layer: train_net_->layers()){
       if (layer->partition_id() == id_) {
         for (auto param : layer->GetParams()) {
           // only owners fill the memory of parameter values.
-          if(param->owner() == param->id())
-            param->InitValues(0);
+          if(param->owner() == param->id()) {
+            CHECK(name2param.find(param->name()) == name2param.end());
+            name2param[param->name()] = param;
+          }
         }
       }
     }
+    // load from checkpoint. Get param blob based on param name
+    for (const auto checkpoint : modelproto_.checkpoint()) {
+      LOG(INFO) << "Load from checkpoint file " << checkpoint;
+      BlobProtos bps;
+      ReadProtoFromBinaryFile(checkpoint.c_str(), &bps);
+      for (int i = 0; i < bps.name_size(); i++) {
+        if (name2param.find(bps.name(i)) != name2param.end()) {
+          name2param.at(bps.name(i))->FromProto(bps.blob(i));
+          name2param.at(bps.name(i))->set_version(bps.version(i));
+        }
+      }
+    }
+    // init other params who do not have checkpoint version
+    for (auto entry : name2param)
+      if (entry.second->version() < 0 || modelproto_.reset_param_version())
+        entry.second->InitValues(modelproto_.step());
+
     Metric perf;
     // warmup training before put params to servers
     for (; step_ < modelproto_.warmup_steps(); step_++)
@@ -69,6 +91,30 @@ void Worker::InitLocalParams() {
     if (layer->partition_id() == id_)
       for (auto param : layer->GetParams())
         Get(param, modelproto_.warmup_steps());
+  }
+}
+
+void Worker::Checkpoint(int step, shared_ptr<NeuralNet> net) {
+  if (grp_id_ == 0) {
+    BlobProtos bps;
+    for (auto layer: net->layers()){
+      if (layer->partition_id() == id_) {
+        for (auto param : layer->GetParams()) {
+          // only owners fill the memory of parameter values.
+          if(param->owner() == param->id()) {
+            auto *blob = bps.add_blob();
+            param->ToProto(blob);
+            bps.add_version(param->version());
+            bps.add_name(param->name());
+          }
+        }
+      }
+    }
+    char buf[256];
+    snprintf(buf, sizeof(buf), "%s/step%d-worker%d.bin",
+         Cluster::Get()->checkpoint_folder().c_str(), step, id_);
+    LOG(INFO) << "checkpoint to " << buf;
+    WriteProtoToBinaryFile(bps, buf);
   }
 }
 
@@ -112,6 +158,12 @@ void Worker::Run() {
       CollectAll(test_net_, step_);
       Test(modelproto_.test_steps(), kTest, test_net_);
     }
+
+    if (CheckpointNow(step_)) {
+      CollectAll(train_net_, step_);
+      Checkpoint(step_, train_net_);
+      modelproto_.set_step(step_);
+    }
     TrainOneBatch(step_, &perf);
     // LOG(ERROR) << "Train " << step_;
     if (DisplayNow(step_)) {
@@ -134,9 +186,7 @@ void Worker::Run() {
   LOG(ERROR) << "Worker (group = " <<grp_id_ << ", id = " << id_ << ") stop";
 }
 
-void Worker::Resume() {
-  // TODO(wangwei)
-}
+
 
 int Worker::Put(Param* param, int step) {
   Msg* msg=new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
@@ -232,10 +282,11 @@ void Worker::Test(int nsteps, Phase phase, shared_ptr<NeuralNet> net) {
   else if (phase == kTest)
     Report("Test", perf);
 }
+
 bool Worker::DisplayNow(int step) const {
   return (modelproto_.display_frequency() > 0
-      && step >= modelproto_.display_after_steps()
-      && ((step - modelproto_.display_after_steps())
+      && step >= modelproto_.display_after()
+      && ((step - modelproto_.display_after())
         % modelproto_.display_frequency() == 0));
 }
 
@@ -248,24 +299,24 @@ bool Worker::StopNow(int step) const {
 bool Worker::CheckpointNow(int step) const {
   return (grp_id_ == 0
       && modelproto_.checkpoint_frequency() > 0
-      && step >= modelproto_.checkpoint_after_steps()
-      && ((step - modelproto_.checkpoint_after_steps())
+      && step >= modelproto_.checkpoint_after()
+      && ((step - modelproto_.checkpoint_after())
         % modelproto_.checkpoint_frequency() == 0));
 }
 bool Worker::TestNow(const int step) const {
   return (grp_id_ == 0
       && modelproto_.test_frequency() > 0
       && modelproto_.test_steps() > 0
-      && step >= modelproto_.test_after_steps()
-      && ((step - modelproto_.test_after_steps())
+      && step >= modelproto_.test_after()
+      && ((step - modelproto_.test_after())
         % modelproto_.test_frequency() == 0));
 }
 bool Worker::ValidateNow(const int step) const {
   return (grp_id_ == 0
       && modelproto_.validation_frequency() > 0
       && modelproto_.validation_steps() > 0
-      && step >= modelproto_.validation_after_steps()
-      && ((step - modelproto_.validation_after_steps())
+      && step >= modelproto_.validation_after()
+      && ((step - modelproto_.validation_after())
         % modelproto_.validation_frequency() == 0));
 }
 

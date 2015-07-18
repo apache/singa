@@ -257,13 +257,13 @@ void LMDBDataLayer::ComputeFeature(Phase phase, Metric* perf){
     }
     random_skip_=0;
   }
-  Datum datum;
+  CaffeDatum datum;
   for(auto& record: records_){
     SingleLabelImageRecord* image=record.mutable_image();
     CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
           &mdb_value_, MDB_GET_CURRENT), MDB_SUCCESS);
     datum.ParseFromArray(mdb_value_.mv_data, mdb_value_.mv_size);
-    ConvertDatumToSingleLableImageRecord(datum, image);
+    ConvertCaffeDatumToRecord(datum, image);
     if (mdb_cursor_get(mdb_cursor_, &mdb_key_,
           &mdb_value_, MDB_NEXT) != MDB_SUCCESS) {
       // We have reached the end. Restart from the first.
@@ -274,7 +274,7 @@ void LMDBDataLayer::ComputeFeature(Phase phase, Metric* perf){
   }
 }
 
-void LMDBDataLayer::ConvertDatumToSingleLableImageRecord(const Datum& datum,
+void LMDBDataLayer::ConvertCaffeDatumToRecord(const CaffeDatum& datum,
     SingleLabelImageRecord* record){
   record->set_label(datum.label());
   record->clear_shape();
@@ -316,10 +316,10 @@ void LMDBDataLayer::Setup(const LayerProto& proto, int npartitions) {
     CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_,
           MDB_FIRST), MDB_SUCCESS);
   }
-  Datum datum;
+  CaffeDatum datum;
   datum.ParseFromArray(mdb_value_.mv_data, mdb_value_.mv_size);
   SingleLabelImageRecord* record=sample_.mutable_image();
-  ConvertDatumToSingleLableImageRecord(datum, record);
+  ConvertCaffeDatumToRecord(datum, record);
 
   batchsize_=batchsize();
   if(partition_dim() == 0)
@@ -618,18 +618,20 @@ void RGBImageLayer::Setup(const LayerProto& proto, int npartitions) {
   data_.Reshape(shape);
   mean_.Reshape({shape[1],shape[2],shape[3]});
   if(proto.rgbimage_conf().has_meanfile()){
-    if(proto.rgbimage_conf().meanfile().find("binaryproto")!=string::npos){
-      BlobProto tmp;
-      ReadProtoFromBinaryFile(proto.rgbimage_conf().meanfile().c_str(), &tmp);
-      CHECK_EQ(mean_.count(), tmp.data_size());
-      memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
-    }else{
-      SingleLabelImageRecord tmp;
-      ReadProtoFromBinaryFile(proto.rgbimage_conf().meanfile().c_str(), &tmp);
-      CHECK_EQ(mean_.count(), tmp.data_size());
-      memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
+    if(proto.rgbimage_conf().meanfile().find("binaryproto") != string::npos) {
+      CaffeBlob mean;
+      ReadProtoFromBinaryFile(proto.rgbimage_conf().meanfile().c_str(), &mean);
+      CHECK_EQ(mean_.count(), mean.data_size());
+      memcpy(mean_.mutable_cpu_data(), mean.data().data(),
+          sizeof(float)*mean.data_size());
+    } else {
+      SingleLabelImageRecord mean;
+      ReadProtoFromBinaryFile(proto.rgbimage_conf().meanfile().c_str(), &mean);
+      CHECK_EQ(mean_.count(), mean.data_size());
+      memcpy(mean_.mutable_cpu_data(), mean.data().data(),
+          sizeof(float)*mean.data_size());
     }
-  }else{
+  } else {
     memset(mean_.mutable_cpu_data(),0,sizeof(float)*mean_.count());
   }
 }
