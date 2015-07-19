@@ -175,12 +175,27 @@ void Graph::Sort() {
     auto node = visiting_nodes.front();
     visiting_nodes.pop();
     bool visit = true;
-    for (auto src : node->srcnodes) {
-      // visit this node only if all srouce nodes have been visited
-      if (visited_set.find(src) == visited_set.end()) {
-        visit = false;
-        break;
-      }
+    bool bi_direction = false;
+    // check if a node has a bi-direction edge with its neighbour
+    for (auto src : node->srcnodes)
+      for (auto src_of_src : src->srcnodes)
+        if (strcmp((src_of_src->name).c_str(), (node->name).c_str()) == 0) {
+          bi_direction = true;
+          break;
+        }
+    // check whether its src nodes number greater than 1
+    if (bi_direction && (node->srcnodes).size() > 1) {
+        auto src =  node->srcnodes.at(0);  
+        if (visited_set.find(src) == visited_set.end()) {
+          visit = false;
+        }
+    }
+    else {
+      for (auto src : node->srcnodes)
+        if (visited_set.find(src) == visited_set.end()) {
+          visit = false;
+          break;
+        }
     }
     if (visit) {
       nodes_.push_back(node);
@@ -196,6 +211,10 @@ void Graph::Sort() {
       visiting_nodes.push(node);
     }
   }
+  for (auto node : nodes_) {
+    LOG(INFO) << "nodes: " << node->name;
+  }
+  LOG(INFO) << "finish printing nodes ";
   CHECK_EQ(nodes_.size(), n);
 }
 

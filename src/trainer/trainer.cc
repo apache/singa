@@ -186,7 +186,7 @@ vector<Worker*> Trainer::CreateWorkers(int nthreads, const ModelProto& mconf){
       if (mconf.alg() == ModelProto_GradCalcAlg_kBackPropagation)
         worker = new BPWorker(nthreads++,gid, wid);
       else {
-        // TODO add CDWorker and BPTTWorker
+        worker=new CDWorker(nthreads++,gid, wid);
       }
       workers.push_back(worker);
     }

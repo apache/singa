@@ -378,4 +378,64 @@ void BPWorker::TestOneBatch(int step, Phase phase,
   Forward(step, phase, net, perf);
 }
 
+/****************************CDWorker**********************************/
+CDWorker::CDWorker(int thread_id, int group_id, int worker_id):
+  Worker(thread_id, group_id, worker_id) {
+}
+
+void CDWorker::PositivePhase(int step,
+     shared_ptr<NeuralNet> net, Metric* perf) {
+  auto& layers = net->layers();
+  for (auto& layer : layers) {
+      // clock_t s=clock();
+    layer->ComputeFeature(kPositive, perf);
+  }
+}
+
+void CDWorker::NegativePhase(int step,
+     shared_ptr<NeuralNet> net, Metric* perf) {
+// for negative phase, gibbs sampling only concerns RBM bottom and top layer
+  auto& layers = net->layers();
+  for (int i = 0; i < modelproto_.pcd_k(); i++) {
+    for (auto& layer : layers) {
+      if (layer->is_vislayer() || layer->is_hidlayer())
+        layer->ComputeFeature(kNegative, perf);
+    }
+  }
+}
+
+void CDWorker::GradientPhase(int step, shared_ptr<NeuralNet> net) {
+  auto& layers = net->layers();
+  for (auto& layer : layers) {
+      layer->ComputeGradient(kTrain);
+      for (Param* p : layer->GetParams()) {
+        Update(p, step);
+      }
+  }
+}
+
+void CDWorker::LossPhase(int step, shared_ptr<NeuralNet> net, Metric* perf) {
+  auto& layers = net->layers();
+  for (auto& layer : layers) {
+    if (layer->is_hidlayer())
+      layer->ComputeFeature(kLoss, perf);
+  }
+  for (auto& layer : layers) {
+    if (layer->is_vislayer())
+      layer->ComputeLoss(perf);
+  }
+}
+
+void CDWorker::TrainOneBatch(int step, Metric* perf) {
+  PositivePhase(step, train_net_, perf);
+  NegativePhase(step, train_net_, perf);
+  GradientPhase(step, train_net_);
+  LossPhase(step, train_net_, perf);
+}
+
+void CDWorker::TestOneBatch(int step, Phase phase,
+     shared_ptr<NeuralNet> net, Metric* perf) {
+  PositivePhase(step, test_net_, perf);
+  LossPhase(step, test_net_, perf);
+}
 }  // namespace singa

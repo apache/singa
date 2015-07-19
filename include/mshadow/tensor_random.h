@@ -69,6 +69,40 @@ namespace mshadow {
             #endif
         }
         /*!
+         * \brief generate binary data according to a probability matrix
+         * \param dst destination
+         * \param a lower bound of uniform
+         * \param b upper bound of uniform
+         * \tparam dim dimension of tensor
+         */
+        template<int dim>
+        inline void SampleBinary( Tensor<cpu, dim> &dst) {
+            real_t a=0.0f;
+            real_t b=1.0f;
+            Tensor<cpu, 2> mat = dst.FlatTo2D();
+            std::uniform_real_distribution<real_t> distribution (a,b);
+            for ( index_t i = 0; i < mat.shape[1]; ++i ) {
+                #if MSHADOW_USE_MKL
+                #if MSHADOW_SINGLE_PRECISION
+                int status = vsRngUniform( 0, vStream_, mat.shape[0], mat[i].dptr, a, b );
+                #else
+                int status = vdRngUniform( 0, vStream_, mat.shape[0], mat[i].dptr, a, b );
+                #endif
+                utils::Assert(status == VSL_STATUS_OK, "Failed to generate random number by MKL.\n" );
+                #else
+                // use stdlib
+                /*
+                for ( index_t j = 0; j < mat.shape[0]; ++j ) {
+                    mat[i][j] = this->RandNext()*(b-a) + a;
+                }
+                */
+                for ( index_t j = 0; j < mat.shape[0]; ++j ) {
+                    mat[i][j] = distribution(gen_) > mat[i][j] ? 0.0f: 1.0f;
+                }
+                #endif
+            }
+        }
+        /*!
          * \brief generate data from uniform [a,b)
          * \param dst destination
          * \param a lower bound of uniform

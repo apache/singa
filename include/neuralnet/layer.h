@@ -68,7 +68,110 @@ class DropoutLayer: public Layer {
    */
   Blob<float> mask_;
 };
+/**
+  * RBM visible layer
+  */
+class RBMVisLayer: public Layer {
+ public:
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
 
+  void Setup(const LayerProto& proto,
+      int npartitions) override;
+  virtual bool is_vislayer() const {
+    return true;
+  }
+
+  void ComputeFeature(Phase phase,
+     Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
+  virtual void ComputeLoss(Metric* perf);
+  virtual Blob<float>* mutable_data(const Layer* from, Phase phase) {
+    if (phase == kPositive) {
+      return &data_;
+    } else {
+       return &vis_sample_;
+    }
+  }
+  virtual const Blob<float>& data(const Layer* from, Phase phase) const {
+    if (phase == kPositive) {
+      return data_;
+    } else {
+       return vis_sample_;
+    }
+  }
+  // virtual void ToProto(LayerProto *layer_proto, bool copyData);
+  const vector<Param*> GetParams() const override {
+    vector<Param*> params{weight_, bias_};
+    return params;
+  }
+  ~RBMVisLayer();
+
+
+ private:
+  //! dimension of the hidden layer
+  int hdim_;
+  //! dimension of the visible layer
+  int vdim_;
+  int batchsize_;
+  // batchsize of negative phase
+  int neg_batchsize_;
+  bool is_first_iteration_vis_;
+  float scale_;
+  // srclayer index
+  int data_idx_;
+  int hid_idx_;
+  Param* weight_, *bias_;
+  // data to store sampling result
+  Blob<float> vis_sample_;
+  // in order to implement Persistent Contrastive Divergence,
+};
+/**
+  * RBM hidden layer
+  */
+class RBMHidLayer: public Layer {
+ public:
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+  void Setup(const LayerProto& proto,
+      int npartitions) override;
+  virtual bool is_hidlayer() const {
+    return true;
+  }
+
+  void ComputeFeature(Phase phase,
+     Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
+  virtual Blob<float>* mutable_data(const Layer* from, Phase phase) {
+    if (phase == kPositive)
+      return &data_;
+    else
+      return &hid_sample_;
+  }
+  virtual const Blob<float>& data(const Layer* from, Phase phase) const {
+    if (phase == kPositive)
+      return data_;
+    else
+      return hid_sample_;
+  }
+  const vector<Param*> GetParams() const override {
+    vector<Param*> params{weight_, bias_};
+    return params;
+  }
+  ~RBMHidLayer();
+
+ private:
+  //! dimension of the hidden layer
+  int hdim_;
+  int vdim_;  // dimension of visible layer
+  int batchsize_;
+  // batchsize of negative phase
+  int neg_batchsize_;
+  float scale_;
+  Blob<float> hid_sample_;
+  Param* weight_, *bias_;
+};
 /**
   * fully connected layer
   */
