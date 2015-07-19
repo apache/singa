@@ -56,8 +56,8 @@ class Layer {
    *
    * @param phase kTrain, kTest, kPositive, etc.
    */
+  virtual void ComputeLoss(Metric* perf) {}
   virtual void ComputeGradient(Phase phase) = 0;
-
   /**
    * For print debug info about each layer, e.g., norm of feature vector,
    * norm of parameters.
@@ -140,10 +140,10 @@ class Layer {
   /**
    * @return a const ref for Blob storing neuron values of this layer for BP
    */
-  virtual const Blob<float>& data(const Layer* from) const {
+  virtual const Blob<float>& data(const Layer* from, Phase = kPositive) const {
     return data_;
   }
-  virtual Blob<float>* mutable_data(const Layer* from) {
+  virtual Blob<float>* mutable_data(const Layer* from, Phase = kPositive) {
     return &data_;
   }
 
@@ -207,6 +207,12 @@ class Layer {
   virtual bool is_bridgelayer() const {
     return false;
   }
+  virtual bool is_vislayer() const {
+    return false;
+  }
+  virtual bool is_hidlayer() const {
+    return false;
+  }
 
  protected:
   LayerProto layer_proto_;
@@ -244,10 +250,10 @@ class BridgeSrcLayer: public BridgeLayer {
     ready_ = false;
   }
 
-  const Blob<float>& data(const Layer* from) const override {
+  const Blob<float>& data(const Layer* from, Phase phase) const override {
     return srclayers_[0]->data(this);
   }
-  Blob<float>* mutable_data(const Layer* from) override {
+  Blob<float>* mutable_data(const Layer* from, Phase phase) override {
     return srclayers_[0]->mutable_data(this);
   }
   const Blob<float>& grad(const Layer* from) const override {
@@ -308,7 +314,7 @@ class DataLayer: public Layer{
   bool is_datalayer() const override {
     return true;
   }
-  Blob<float>* mutable_data(const Layer* layer) override {
+  Blob<float>* mutable_data(const Layer* layer, Phase phase) override {
     return nullptr;
   }
   Blob<float>* mutable_grad(const Layer* layer) override {
@@ -353,8 +359,8 @@ class PrefetchLayer : public Layer {
   void ComputeFeature(Phase phase, Metric* perf) override;
   void ComputeGradient(Phase phase) override {};
 
-  const Blob<float>& data(const Layer* from) const override;
-  Blob<float>* mutable_data(const Layer* layer) override;
+  const Blob<float>& data(const Layer* from, Phase phase) const override;
+  Blob<float>* mutable_data(const Layer* layer, Phase phase) override;
 
   Blob<float>* mutable_grad(const Layer* layer) override {
     return nullptr;
@@ -387,9 +393,9 @@ class SliceLayer: public Layer {
   ConnectionType dst_layer_connection() const override {
     return kOneToMany;
   }
-  const Blob<float>& data(const Layer* layer) const override;
+  const Blob<float>& data(const Layer* layer, Phase phase) const override;
   const Blob<float>& grad(const Layer* layer) const override;
-  Blob<float>* mutable_data(const Layer* layer) override;
+  Blob<float>* mutable_data(const Layer* layer, Phase phase) override;
   Blob<float>* mutable_grad(const Layer* layer) override;
 
  protected:

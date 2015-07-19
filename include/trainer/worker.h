@@ -191,6 +191,19 @@ class BPWorker: public Worker{
   void Backward(int step, shared_ptr<NeuralNet> net);
 };
 
+class CDWorker: public Worker{
+ public:
+  CDWorker(int thread_id, int group_id, int worker_id);
+  ~CDWorker() {}
+  virtual void TrainOneBatch(int step, Metric* perf);
+  virtual void TestOneBatch(int step, Phase phase,
+       shared_ptr<NeuralNet> net, Metric* perf);
+  void PositivePhase(int step, shared_ptr<NeuralNet> net, Metric* perf);
+  void NegativePhase(int step, shared_ptr<NeuralNet> net, Metric* perf);
+  void GradientPhase(int step, shared_ptr<NeuralNet> net);
+  void LossPhase(int step, shared_ptr<NeuralNet> net, Metric* perf);
+};
+
 inline int BlobTrgt(int grp, int layer) {
   return (grp << 16) | layer;
 }

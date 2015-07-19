@@ -274,9 +274,10 @@ void Param::ParseResponseMsg(Msg* msg, int slice_idx) {
 
 void Param::ShareFrom(const Param& other) {
   proto_.set_owner(other.owner());
-  if(data_!=nullptr)
+  if(data_!=nullptr) {
     CHECK(std::equal(data_->shape().begin(), data_->shape().end(),
           other.data_->shape().begin()));
+  }
   data_ = other.data_;
   slice_offset_ = other.slice_offset_;
   slice_size_ = other.slice_size_;
