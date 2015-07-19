@@ -115,6 +115,9 @@ class Param {
   void set_local_version(int v) {
     local_version_=v;
   }
+  const std::string& share_from() const {
+    return proto_.share_from();
+  }
    /**
     * @return num of floats.
     */

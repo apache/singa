@@ -89,7 +89,7 @@ elif [ $# = 1 ] ; then
   -oUserKnownHostsFile=/dev/null \
   -oLogLevel=quiet"
   hosts=(`cat $host_path |cut -d ' ' -f 1`)
-  cmd="./singa -cluster=$conf_path/cluster.conf -model=$conf_path/model.conf -resume=true"
+  cmd="./singa -cluster=$conf_path/cluster.conf -model=$conf_path/model.conf"
   ssh_cmd="cd $BASE; "$cmd
   for i in ${hosts[@]} ; do
     if [ $i = localhost ] ; then
