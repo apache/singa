@@ -37,7 +37,7 @@ BIN=`cd "$BIN">/dev/null; pwd`
 BASE=`cd "$BIN/..">/dev/null; pwd`
 ZKDATA_DIR="/tmp/zookeeper"
 
-PROC_NAME="*singa"
+PROC_NAME="singa"
 HOST_FILE=$1
 
 cd $BASE

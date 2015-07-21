@@ -53,6 +53,7 @@ SINGA_HDRS := include/utils/cluster.h \
               include/utils/graph.h \
               include/utils/blob.h \
               include/utils/updater.h \
+              include/utils/tinydir.h \
               include/trainer/server.h \
               include/trainer/worker.h \
               include/trainer/trainer.h \
