@@ -5,6 +5,7 @@
 
 using std::string;
 using std::to_string;
+using std::vector;
 
 namespace singa {
 
@@ -25,11 +26,11 @@ void ZKService::ChildChanges(zhandle_t *zh, int type, int state,
         cb->fn = nullptr;
       }
     } else {
-      LOG(ERROR) << "Unhandled ZK error code: " << ret
-                 << " (zoo_wget_children)";
+      LOG(FATAL) << "Unhandled ZK error code: " << ret
+                 << " (zoo_wget_children " << path << ")";
     }
   } else {
-    LOG(ERROR) << "Unhandled callback type code: "<< type;
+    LOG(FATAL) << "Unhandled callback type code: "<< type;
   }
 }
 
@@ -84,7 +85,8 @@ bool ZKService::CreateNode(const char* path, const char* val, int flag,
     LOG(WARNING) << "zookeeper node " << path << " already exists";
     return true;
   }
-  LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_create)";
+  LOG(FATAL) << "Unhandled ZK error code: " << ret
+             << " (zoo_create " << path << ")";
   return false;
 }
 
@@ -97,7 +99,8 @@ bool ZKService::DeleteNode(const char* path) {
     LOG(WARNING) << "try to delete an non-existing zookeeper node " << path;
     return true;
   }
-  LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_delete)";
+  LOG(FATAL) << "Unhandled ZK error code: " << ret
+             << " (zoo_delete " << path << ")";
   return false;
 }
 
@@ -106,7 +109,7 @@ bool ZKService::Exist(const char* path) {
   int ret = zoo_exists(zkhandle_, path, 0, &stat);
   if (ret == ZOK) return true;
   else if (ret == ZNONODE) return false;
-  //LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_exists)";
+  LOG(WARNING) << "Unhandled ZK error code: " << ret << " (zoo_exists)";
   return false;
 }
 
@@ -121,30 +124,35 @@ bool ZKService::GetNode(const char* path, char* output) {
     LOG(ERROR) << "zk node " << path << " does not exist";
     return false;
   }
-  LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_get)";
+  LOG(FATAL) << "Unhandled ZK error code: " << ret
+            << " (zoo_get " << path << ")";
   return false;
 }
 
-bool ZKService::GetChild(const char* path, std::vector<string>* vt) {
+bool ZKService::GetChild(const char* path, vector<string>* vt) {
   struct String_vector child;
   int ret = zoo_get_children(zkhandle_, path, 0, &child);
   if (ret == ZOK) {
+    vt->clear();
     for (int i = 0; i < child.count; ++i) vt->push_back(child.data[i]);
     return true;
   }
-  LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_get_children)";
+  LOG(FATAL) << "Unhandled ZK error code: " << ret
+             << " (zoo_get_children " << path << ")";
   return false;
 }
 
-bool ZKService::WGetChild(const char* path, std::vector<std::string>* vt,
+bool ZKService::WGetChild(const char* path, vector<string>* vt,
                             RTCallback *cb) {
   struct String_vector child;
   int ret = zoo_wget_children(zkhandle_, path, ChildChanges, cb, &child);
   if (ret == ZOK) {
+    vt->clear();
     for (int i = 0; i < child.count; ++i) vt->push_back(child.data[i]);
     return true;
   }
-  LOG(ERROR) << "Unhandled ZK error code: " << ret << " (zoo_get_children)";
+  LOG(FATAL) << "Unhandled ZK error code: " << ret
+             << " (zoo_get_children " << path << ")";
   return false;
 }
 
@@ -159,11 +167,15 @@ void ZKService::WatcherGlobal(zhandle_t * zh, int type, int state,
   }
 }
 
-ZKClusterRT::ZKClusterRT(const string& host) : ZKClusterRT(host, 30000) {}
+ZKClusterRT::ZKClusterRT(const string& host, int job_id) : ZKClusterRT(host, job_id, 30000) {}
 
-ZKClusterRT::ZKClusterRT(const string& host, int timeout) {
+ZKClusterRT::ZKClusterRT(const string& host, int job_id, int timeout) {
   host_ = host;
   timeout_ = timeout;
+  workspace_ = GetZKJobWorkspace(job_id);
+  group_path_ = workspace_ + kZKPathJobGroup;
+  proc_path_ = workspace_ + kZKPathJobProc;
+  proc_lock_path_ = workspace_ + kZKPathJobPLock;
 }
 
 ZKClusterRT::~ZKClusterRT() {
@@ -175,41 +187,38 @@ ZKClusterRT::~ZKClusterRT() {
 
 bool ZKClusterRT::Init() {
   if (!zk_.Init(host_, timeout_)) return false;
-  // create kZKPathSinga
   if (!zk_.CreateNode(kZKPathSinga.c_str(), nullptr, 0, nullptr))
     return false;
-  // create kZKPathStatus
-  if (!zk_.CreateNode(kZKPathStatus.c_str(), nullptr, 0, nullptr))
+  if (!zk_.CreateNode(kZKPathApp.c_str(), nullptr, 0, nullptr))
     return false;
-  // create kZKPathRegist
-  if (!zk_.CreateNode(kZKPathRegist.c_str(), nullptr, 0, nullptr))
+  if (!zk_.CreateNode(workspace_.c_str(), nullptr, 0, nullptr))
     return false;
-  // create kZKPathRegistProc
-  if (!zk_.CreateNode(kZKPathRegistProc.c_str(), nullptr, 0, nullptr))
+  if (!zk_.CreateNode(group_path_.c_str(), nullptr, 0, nullptr))
     return false;
-  // create kZKPathRegistLock
-  if (!zk_.CreateNode(kZKPathRegistLock.c_str(), nullptr, 0, nullptr))
+  if (!zk_.CreateNode(proc_path_.c_str(), nullptr, 0, nullptr))
+    return false;
+  if (!zk_.CreateNode(proc_lock_path_.c_str(), nullptr, 0, nullptr))
     return false;
   return true;
 }
 
-int ZKClusterRT::RegistProc(const string& host_addr) {
+int ZKClusterRT::RegistProc(const string& host_addr, int pid) {
   char buf[kZKBufSize];
-  string lock = kZKPathRegistLock+"/lock-";
+  string lock = proc_lock_path_ + "/lock-";
   if (!zk_.CreateNode(lock.c_str(), nullptr,
                         ZOO_EPHEMERAL | ZOO_SEQUENCE, buf)) {
     return -1;
   }
   // get all children in lock folder
-  std::vector<string> vt;
-  if (!zk_.GetChild(kZKPathRegistLock.c_str(), &vt)) {
+  vector<string> vt;
+  if (!zk_.GetChild(proc_lock_path_.c_str(), &vt)) {
     return -1;
   }
   // find own position among all locks
   int id = -1;
   std::sort(vt.begin(), vt.end());
   for (int i = 0; i < static_cast<int>(vt.size()); ++i) {
-    if (kZKPathRegistLock+"/"+vt[i] == buf) {
+    if (proc_lock_path_+"/"+vt[i] == buf) {
       id = i;
       break;
     }
@@ -219,8 +228,9 @@ int ZKClusterRT::RegistProc(const string& host_addr) {
     return -1;
   }
   // create a new node in proc path
-  string path = kZKPathRegistProc+"/proc-"+to_string(id);
-  if (!zk_.CreateNode(path.c_str(), host_addr.c_str(), ZOO_EPHEMERAL,
+  string path = proc_path_ + "/proc-" + to_string(id);
+  string content = host_addr + "|" + to_string(pid);
+  if (!zk_.CreateNode(path.c_str(), content.c_str(), ZOO_EPHEMERAL,
                       nullptr)) {
     return -1;
   }
@@ -232,7 +242,7 @@ bool ZKClusterRT::WatchSGroup(int gid, int sid, rt_callback fn, void *ctx) {
   string path = groupPath(gid);
   // create zk node
   if (!zk_.CreateNode(path.c_str(), nullptr, 0, nullptr)) return false;
-  std::vector<string> child;
+  vector<string> child;
   // store the callback function and context for later usage
   RTCallback *cb = new RTCallback;
   cb->fn = fn;
@@ -242,12 +252,16 @@ bool ZKClusterRT::WatchSGroup(int gid, int sid, rt_callback fn, void *ctx) {
   return zk_.WGetChild(path.c_str(), &child, cb);
 }
 
-string ZKClusterRT::GetProcHost(int proc_id) {
+std::string ZKClusterRT::GetProcHost(int proc_id) {
   // char buf[kZKBufSize];
   char val[kZKBufSize];
   // construct file name
-  string path = kZKPathRegistProc+"/proc-"+to_string(proc_id);
+  string path = proc_path_+"/proc-"+to_string(proc_id);
   if (!zk_.GetNode(path.c_str(), val)) return "";
+  int len = strlen(val)-1;
+  while (len && val[len] != '|') --len;
+  CHECK(len);
+  val[len] = '\0';
   return string(val);
 }
 
@@ -270,23 +284,110 @@ JobManager::JobManager(const string& host, int timeout) {
 }
 
 bool JobManager::Init() {
-  return zk_.Init(host_, timeout_);
+  if (!zk_.Init(host_, timeout_)) return false;
+  if (!zk_.CreateNode(kZKPathSinga.c_str(), nullptr, 0, nullptr))
+    return false;
+  if (!zk_.CreateNode(kZKPathSys.c_str(), nullptr, 0, nullptr))
+    return false;
+  if (!zk_.CreateNode(kZKPathJLock.c_str(), nullptr, 0, nullptr))
+    return false;
+  if (!zk_.CreateNode(kZKPathApp.c_str(), nullptr, 0, nullptr))
+    return false;
+  return true;
 }
 
-bool JobManager::Clean() {
-  if (zk_.Exist(kZKPathSinga.c_str())) {
-    return CleanPath(kZKPathSinga.c_str());
+int JobManager::GenerateJobID() {
+  char buf[kZKBufSize];
+  string lock = kZKPathJLock + "/lock-";
+  if (!zk_.CreateNode(lock.c_str(), nullptr,
+                        ZOO_EPHEMERAL | ZOO_SEQUENCE, buf)) {
+    return -1;
+  }
+  return atoi(buf+strlen(buf)-10);
+}
+
+bool JobManager::ListJobProcs(int job, vector<string>* procs) {
+  procs->clear();
+  string job_path = GetZKJobWorkspace(job);
+  // check job path
+  if (!zk_.Exist(job_path.c_str())) {
+    LOG(ERROR) << "job " << job << " not exists";
+    return true;
+  }
+  string proc_path = job_path + kZKPathJobProc;
+  vector<string> vt;
+  // check job proc path
+  if (!zk_.GetChild(proc_path.c_str(), &vt)) {
+    return false;
+  }
+  char buf[singa::kZKBufSize];
+  for (string pname : vt){
+    pname = proc_path + "/" + pname;
+    if (!zk_.GetNode(pname.c_str(), buf)) continue;
+    std::string proc = "";
+    for (int i = 0; buf[i] != '\0'; ++i) {
+      if (buf[i] == ':') {
+        buf[i] = '\0';
+        proc += buf; 
+      }
+      else if (buf[i] == '|') {
+        proc += buf + i;
+      }
+    }
+    procs->push_back(proc);
+  }
+  if (!procs->size()) LOG(ERROR) << "job " << job << " not exists";
+  return true;
+}
+
+bool JobManager::ListJobs(vector<JobInfo>* jobs) {
+  // get all children in app path
+  jobs->clear();
+  vector<string> vt;
+  if (!zk_.GetChild(kZKPathApp.c_str(), &vt)) {
+    return false;
+  }
+  std::sort(vt.begin(), vt.end());
+  int size = static_cast<int>(vt.size());
+  vector<string> procs;
+  for (int i = 0; i < size; ++i) {
+    string path = kZKPathApp + "/" + vt[i] + kZKPathJobProc;
+    if (!zk_.GetChild(path.c_str(), &procs)) continue;
+    JobInfo job;
+    string jid = vt[i].substr(vt[i].length()-10);
+    job.id = atoi(jid.c_str());
+    job.procs = procs.size();
+    jobs->push_back(job);
+    //may need to delete it
+    if (!job.procs && (i + kJobsNotRemoved < size))
+        CleanPath(kZKPathApp + "/" + vt[i], true);
   }
   return true;
 }
 
-bool JobManager::CleanPath(const std::string& path) {
-  std::vector<string> child;
+bool JobManager::Clean(int job) {
+  string path = GetZKJobWorkspace(job) + kZKPathJobProc;
+  if (zk_.Exist(path.c_str())) {
+    return CleanPath(path.c_str(), false);
+  }
+  return true;
+}
+
+bool JobManager::Cleanup() {
+  if (zk_.Exist(kZKPathSinga.c_str())) {
+    return CleanPath(kZKPathSinga.c_str(), true);
+  }
+  return true;
+}
+
+bool JobManager::CleanPath(const string& path, bool remove) {
+  vector<string> child;
   if (!zk_.GetChild(path.c_str(), &child)) return false;
   for (string c : child) {
-    if (!CleanPath(path + "/" + c)) return false;
+    if (!CleanPath(path + "/" + c, true)) return false;
   }
-  return zk_.DeleteNode(path.c_str());
+  if (remove) return zk_.DeleteNode(path.c_str());
+  return true;
 }
 
 }  // namespace singa

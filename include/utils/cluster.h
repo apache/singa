@@ -24,8 +24,8 @@ namespace singa {
 class Cluster {
  public:
   static shared_ptr<Cluster> Get();
-  static shared_ptr<Cluster> Get(const GlobalProto& global,
-                                 const ClusterProto& cluster, int procs_id=0);
+  static shared_ptr<Cluster> Get(const GlobalProto& global, 
+                                 const ClusterProto& cluster, int job_id);
 
   const int nserver_groups()const{ return cluster_.nserver_groups(); }
   const int nworker_groups()const { return cluster_.nworker_groups(); }
@@ -125,10 +125,10 @@ class Cluster {
   const string hostip() const {
     return hostip_;
   }
-  void Register(const string& endpoint);
+  void Register(const string& endpoint, int pid);
 
  private:
-  Cluster(const GlobalProto& global, const ClusterProto &cluster, int procs_id) ;
+  Cluster(const GlobalProto& global, const ClusterProto &cluster, int job_id);
   void SetupFolders(const ClusterProto &cluster);
   int Hash(int gid, int id, int flag);
 

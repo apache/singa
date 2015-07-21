@@ -34,8 +34,8 @@ class Trainer{
    * @param globalconf global singa configuration
    * @param cconf cluster configuration
    */
-  void Start(bool resume, int job, ModelProto& mconf,
-    const GlobalProto& gconf, const ClusterProto& cconf);
+  void Start(ModelProto& mconf, const GlobalProto& gconf,
+             const ClusterProto& cconf, int job, bool resume);
 
  protected:
   /**

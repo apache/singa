@@ -17,6 +17,8 @@
 *.pb.h
 *.pb.cc
 *.hosts
+*.id
+*.tmp
 *.out
 tool/pb2/*
 src/test/data/*

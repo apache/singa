@@ -4,6 +4,7 @@
 #include <chrono>
 #include <glog/logging.h>
 #include "utils/tinydir.h"
+#include <unistd.h>
 #include "utils/cluster.h"
 #include "utils/common.h"
 #include "proto/common.pb.h"
@@ -229,8 +230,8 @@ void Trainer::Resume(ModelProto& mconf) {
   tinydir_close(&dir);
 }
 
-void Trainer::Start(bool resume, int job, ModelProto& mconf,
-    const GlobalProto& gconf, const ClusterProto& cconf) {
+void Trainer::Start(ModelProto& mconf, const GlobalProto& gconf,
+                    const ClusterProto& cconf, int job, bool resume){
   // register job to zookeeper at the beginning
   auto cluster=Cluster::Get(gconf, cconf, job);
 
@@ -240,14 +241,10 @@ void Trainer::Start(bool resume, int job, ModelProto& mconf,
 
   router_ = new Router();
   router_->Bind(kInprocRouterEndpoint);
-  if (cluster->nprocs() > 1) {
-    const string hostip = cluster->hostip();
-    int port = router_->Bind("tcp://" + hostip + ":*");
-    // register endpoint to zookeeper
-    cluster->Register(hostip + ":" + std::to_string(port));
-  } else {
-    cluster->set_procs_id(0);
-  }
+  const string hostip = cluster->hostip();
+  int port = router_->Bind("tcp://" + hostip + ":*");
+  // register endpoint to zookeeper
+  cluster->Register(hostip + ":" + std::to_string(port), getpid());
 
   int nthreads = 1;
   const vector<Worker*> workers = CreateWorkers(nthreads, mconf);

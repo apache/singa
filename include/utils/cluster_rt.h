@@ -27,11 +27,11 @@ class ClusterRuntime {
    *
    * \return the process id, -1 if failed
    */
-  virtual int RegistProc(const std::string& host_addr) = 0;
+  virtual int RegistProc(const std::string& host_addr, int pid) = 0;
   /**
    * translate the process id to host address
    *
-   * \return the host and port, "" if no such proc id
+   * \return the host and port, "" if no such proc id 
    */
   virtual std::string GetProcHost(int proc_id) = 0;
   /**
@@ -49,16 +49,33 @@ class ClusterRuntime {
   virtual bool LeaveSGroup(int gid, int wid, int s_group) = 0;
 };
 
+const int kZKBufSize = 100;
+// following paths are global
 const std::string kZKPathSinga = "/singa";
-const std::string kZKPathStatus = "/singa/status";
-const std::string kZKPathRegist = "/singa/regist";
-const std::string kZKPathRegistProc = "/singa/regist/proc";
-const std::string kZKPathRegistLock = "/singa/regist/lock";
-const int kZKBufSize = 50;
+const std::string kZKPathSys =   "/singa/sys";
+const std::string kZKPathJLock = "/singa/sys/job-lock";
+const std::string kZKPathApp =   "/singa/app";
+const std::string kZKPathJob =   "/singa/app/job-";
+// following paths are local under /singa/app/job-X
+const std::string kZKPathJobGroup = "/group";
+const std::string kZKPathJobProc =  "/proc";
+const std::string kZKPathJobPLock = "/proc-lock";
+
+inline std::string GetZKJobWorkspace(int job_id) {
+  char buf[kZKBufSize];
+  sprintf(buf, "%010d", job_id);
+  return kZKPathJob + buf;
+}
 
 struct RTCallback {
   rt_callback fn;
   void* ctx;
+};
+
+struct JobInfo {
+  int id;
+  int procs;
+  std::string name;
 };
 
 class ZKService {
@@ -87,12 +104,12 @@ class ZKService {
 
 class ZKClusterRT : public ClusterRuntime {
  public:
-  explicit ZKClusterRT(const std::string& host);
-  ZKClusterRT(const std::string& host, int timeout);
+  ZKClusterRT(const std::string& host, int job_id);
+  ZKClusterRT(const std::string& host, int job_id, int timeout);
   ~ZKClusterRT() override;
 
   bool Init() override;
-  int RegistProc(const std::string& host_addr) override;
+  int RegistProc(const std::string& host_addr, int pid) override;
   std::string GetProcHost(int proc_id) override;
   bool WatchSGroup(int gid, int sid, rt_callback fn, void* ctx) override;
   bool JoinSGroup(int gid, int wid, int s_group) override;
@@ -100,7 +117,7 @@ class ZKClusterRT : public ClusterRuntime {
 
  private:
   inline std::string groupPath(int gid) {
-    return kZKPathStatus + "/sg" + std::to_string(gid);
+    return group_path_ + "/sg" + std::to_string(gid);
   }
   inline std::string workerPath(int gid, int wid) {
     return "/g" + std::to_string(gid) + "_w" + std::to_string(wid);
@@ -109,6 +126,10 @@ class ZKClusterRT : public ClusterRuntime {
   int timeout_ = 30000;
   std::string host_ = "";
   ZKService zk_;
+  std::string workspace_ = "";
+  std::string group_path_ = "";
+  std::string proc_path_ = "";
+  std::string proc_lock_path_ = ""; 
   std::vector<RTCallback*> cb_vec_;
 };
 
@@ -118,10 +139,16 @@ class JobManager {
   JobManager(const std::string& host, int timeout);
 
   bool Init();
-  bool Clean();
+  int GenerateJobID();
+  bool ListJobs(std::vector<JobInfo>* jobs);
+  bool ListJobProcs(int job, std::vector<std::string>* procs);
+  bool Clean(int job);
+  bool Cleanup();
 
  private:
-  bool CleanPath(const std::string& path);
+  const int kJobsNotRemoved = 10;
+
+  bool CleanPath(const std::string& path, bool remove);
 
   int timeout_ = 30000;
   std::string host_ = "";

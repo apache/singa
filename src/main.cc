@@ -18,10 +18,9 @@
  * easily, e.g., AddLayer(layer_type, source_layers, meta_data).
  */
 
-// Job ID is not used now, TODO passing job id from singa-run script and
-// re-organize ClusterProto, GlobalProto and ModelProto.
-DEFINE_int32(job, -1, "Job ID");  // not used now
-DEFINE_bool(resume, false, "resume from checkpoint");
+// TODO: re-organize ClusterProto, GlobalProto and ModelProto.
+DEFINE_int32(job, -1, "Unique job ID");
+DEFINE_bool(resume, false, "Resume from checkpoint");
 DEFINE_string(cluster, "examples/mnist/cluster.conf", "Cluster config file");
 DEFINE_string(model, "examples/mnist/conv.conf", "Model config file");
 DEFINE_string(global, "conf/singa.conf", "Global config file");
@@ -54,6 +53,6 @@ int main(int argc, char **argv) {
 
   RegisterClasses(model);
   singa::Trainer trainer;
-  trainer.Start(FLAGS_resume, FLAGS_job, model, global, cluster);
+  trainer.Start(model, global, cluster, FLAGS_job, FLAGS_resume);
   return 0;
 }

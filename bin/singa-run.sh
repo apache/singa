@@ -23,12 +23,8 @@
 # run a Singa job
 #
 
-usage="Usage: singa-run.sh -conf=CONF_DIR 
-      (CONF_DIR should contain cluster.conf && model.conf)"
-# usage="Usage: \n
-#       (single process): singa-run.sh -cluster=YOUR_CONF_FILE -model=YOUR_CONF_FILE \n
-#       (multi-process): singa-run.sh -conf=YOUR_CONF_DIR 
-#       (the directory should contain cluster.conf && model.conf)"
+usage="Usage: singa-run.sh -conf=CONF_DIR
+       (CONF_DIR should contain cluster.conf && model.conf)"
 
 # check arguments
 if [ $# != 1 ] || [[ $1 != "-conf="* ]]; then
@@ -40,32 +36,40 @@ fi
 . `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
 # get workspace path
 workspace=`cd "${1:6}">/dev/null; pwd`
+cluster_conf=$workspace/cluster.conf
+model_conf=$workspace/model.conf
+if [ ! -f $cluster_conf ] || [ ! -f $model_conf ]; then
+  echo cluster.conf or model.conf not exists in $workspace
+  exit 1
+fi
+cd $SINGA_HOME
 
 # start zookeeper
 if [ $SINGA_MANAGES_ZK = true ]; then
   $SINGA_BIN/zk-service.sh start || exit 1
 fi
 
-# cleanup old processes and data
-$SINGA_BIN/singa-stop.sh || exit 1
-
 # generate host file
 host_file=$workspace/job.hosts
-python $SINGA_HOME/tool/gen_hosts.py -conf=$workspace/cluster.conf \
+python $SINGA_HOME/tool/gen_hosts.py -conf=$cluster_conf \
                                      -hosts=$SINGA_CONF/hostfile \
                                      -output=$host_file \
                                      || exit 1
+
+# generate unique job id
+./singatool create 1>$workspace/job.id || exit 1
+job_id=`cat $workspace/job.id`
+echo generate job id at $workspace/job.id [job_id = $job_id]
 
 # ssh and start singa processes
 ssh_options="-oStrictHostKeyChecking=no \
 -oUserKnownHostsFile=/dev/null \
 -oLogLevel=quiet"
-hosts=`cat $host_file |cut -d ' ' -f 1`
-# cd to SINGA_HOME as it need conf/singa.conf
-cd $SINGA_HOME
-singa_run="./singa -cluster=$workspace/cluster.conf -model=$workspace/model.conf"
-singa_sshrun="cd $SINGA_HOME; ./singa -cluster=$workspace/cluster.conf \
-              -model=$workspace/model.conf"
+hosts=`cat $host_file | cut -d ' ' -f 1`
+singa_run="./singa -cluster=$cluster_conf -model=$model_conf \
+           -job=$job_id"
+singa_sshrun="cd $SINGA_HOME; $singa_run"
+
 for i in ${hosts[@]} ; do
   if [ $i = localhost ] ; then
     echo executing : $singa_run

@@ -20,41 +20,62 @@
 # * limitations under the License.
 # */
 # 
-# clean up singa processes and zookeeper metadata
+# console to list/view/kill singa jobs
 #
 
-# usage="Usage: \n \
-#       (local process): singa-stop.sh \n \
-#       (distributed): singa-stop.sh HOST_FILE"
-# 
-# if [ $# -gt 1 ]; then
-#   echo -e $usage
-#   exit 1
-# fi
+usage="Usage:\n
+       singa-console.sh list         :  list running singa jobs\n
+       singa-console.sh view JOB_ID  :  view procs of a singa job\n
+       singa-console.sh kill JOB_ID  :  kill a singa job"
+
+if [ $# == 0 ]; then
+  echo -e $usage
+  exit 1
+fi
 
 # get environment variables
 . `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
 cd $SINGA_HOME
 
-# kill singa processes
-host_file=$SINGA_CONF/hostfile
-ssh_options="-oStrictHostKeyChecking=no \
+case $1 in
+  list)
+    if [ $# != 1 ]; then
+      echo -e $usage
+      exit 1
+    fi
+    ./singatool list || exit 1
+    ;;
+
+  view)
+    if [ $# != 2 ]; then
+      echo -e $usage
+      exit 1
+    fi
+    ./singatool view $2 || exit 1
+    ;;
+
+  kill)
+    if [ $# != 2 ]; then
+      echo -e $usage
+      exit 1
+    fi
+    host_file="job-$2.tmp"
+    ./singatool view $2 1>$host_file || exit 1
+    ssh_options="-oStrictHostKeyChecking=no \
              -oUserKnownHostsFile=/dev/null \
              -oLogLevel=quiet"
-hosts=`cat $host_file | cut -d ' ' -f 1`
-singa_kill="killall -s SIGKILL -r singa"
-for i in ${hosts[@]}; do
-  echo kill singa @ $i ...
-  if [ $i == localhost ]; then
-    $singa_kill
-  else
-    ssh $ssh_options $i $singa_kill
-  fi
-done
-# wait for killall command
-sleep 2
-
-# remove zk data
-# singatool need global conf under SINGA_HOME
-echo cleanning metadata in zookeeper ...
-./singatool cleanup || exit 1
+    hosts=`cat $host_file | cut -d ' ' -f 1`
+    for i in ${hosts[@]}; do
+      echo kill singa @ $i ...
+      proc=(`echo $i | tr '|' ' '`)
+      singa_kill="kill -9 "${proc[1]}
+      ssh $ssh_options ${proc[0]} $singa_kill
+    done
+    rm $host_file
+    ./singatool clean $2 || exit 1
+    ;;
+  
+  *)
+    echo -e $usage
+    exit 1
+esac

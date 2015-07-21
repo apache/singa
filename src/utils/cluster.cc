@@ -11,8 +11,7 @@ namespace singa {
 
 std::shared_ptr<Cluster> Cluster::instance_;
 Cluster::Cluster(const GlobalProto & global, const ClusterProto &cluster,
-                int procs_id) {
-  procs_id_=procs_id;
+                 int job_id) {
   cluster_ = cluster;
   global_ = global;
   SetupFolders(cluster);
@@ -20,16 +19,6 @@ Cluster::Cluster(const GlobalProto & global, const ClusterProto &cluster,
     nprocs_=nworker_procs()+nserver_procs();
   else
     nprocs_=std::max(nworker_procs(), nserver_procs());
-  CHECK_LT(procs_id, nprocs_);
-  if(nprocs_>1&&procs_id>-1){
-    std::ifstream ifs(cluster.hostfile(), std::ifstream::in);
-    std::string line;
-    while(std::getline(ifs, line)&&
-        endpoints_.size()< static_cast<size_t>(nprocs_)){
-      endpoints_.push_back(line);
-    }
-    CHECK_EQ(endpoints_.size(), nprocs_);
-  }
 
   // locate the process id of every worker/server
   int ngrps=cluster_.nworker_groups(), grp_size=cluster_.nworkers_per_group();
@@ -49,18 +38,19 @@ Cluster::Cluster(const GlobalProto & global, const ClusterProto &cluster,
     }
   }
 
-  auto rt=new ZKClusterRT(global_.zookeeper_host());
+  auto rt = new ZKClusterRT(global_.zookeeper_host(), job_id);
   rt->Init();
   cluster_rt_=shared_ptr<ClusterRuntime>(static_cast<ClusterRuntime*>(rt));
 
   hostip_=GetHostIP();
 }
 
-void Cluster::Register(const string& endpoint) {
-  procs_id_=cluster_rt_->RegistProc(endpoint);
+void Cluster::Register(const string& endpoint, int pid) {
+  procs_id_=cluster_rt_->RegistProc(endpoint, pid);
   CHECK_GE(procs_id_,0);
   CHECK_LT(procs_id_,nprocs());
-  LOG(ERROR) << "proc #" << procs_id_ << " -> " << endpoint;
+  LOG(ERROR) << "proc #" << procs_id_ << " -> " << endpoint
+             << " (pid = " << pid << ")";
 }
 
 const string Cluster::endpoint(int procsid) const {
@@ -79,9 +69,9 @@ void Cluster::SetupFolders(const ClusterProto &cluster){
   mkdir(checkpoint_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
-shared_ptr<Cluster> Cluster::Get(const GlobalProto& global, const ClusterProto& cluster,
-                                 int procs_id){
-  instance_.reset(new Cluster(global, cluster, procs_id));
+shared_ptr<Cluster> Cluster::Get(const GlobalProto& global,
+                                 const ClusterProto& cluster, int job_id){
+  instance_.reset(new Cluster(global, cluster, job_id));
   return instance_;
 }
 
