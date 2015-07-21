@@ -63,7 +63,7 @@ const std::string kZKPathJobPLock = "/proc-lock";
 
 inline std::string GetZKJobWorkspace(int job_id) {
   char buf[kZKBufSize];
-  sprintf(buf, "%010d", job_id);
+  snprintf(buf, kZKBufSize, "%010d", job_id);
   return kZKPathJob + buf;
 }
 
@@ -122,14 +122,14 @@ class ZKClusterRT : public ClusterRuntime {
   inline std::string workerPath(int gid, int wid) {
     return "/g" + std::to_string(gid) + "_w" + std::to_string(wid);
   }
-  
+
   int timeout_ = 30000;
   std::string host_ = "";
   ZKService zk_;
   std::string workspace_ = "";
   std::string group_path_ = "";
   std::string proc_path_ = "";
-  std::string proc_lock_path_ = ""; 
+  std::string proc_lock_path_ = "";
   std::vector<RTCallback*> cb_vec_;
 };
 

@@ -167,7 +167,8 @@ void ZKService::WatcherGlobal(zhandle_t * zh, int type, int state,
   }
 }
 
-ZKClusterRT::ZKClusterRT(const string& host, int job_id) : ZKClusterRT(host, job_id, 30000) {}
+ZKClusterRT::ZKClusterRT(const string& host, int job_id)
+    : ZKClusterRT(host, job_id, 30000) {}
 
 ZKClusterRT::ZKClusterRT(const string& host, int job_id, int timeout) {
   host_ = host;
@@ -321,16 +322,15 @@ bool JobManager::ListJobProcs(int job, vector<string>* procs) {
     return false;
   }
   char buf[singa::kZKBufSize];
-  for (string pname : vt){
+  for (string pname : vt) {
     pname = proc_path + "/" + pname;
     if (!zk_.GetNode(pname.c_str(), buf)) continue;
     std::string proc = "";
     for (int i = 0; buf[i] != '\0'; ++i) {
       if (buf[i] == ':') {
         buf[i] = '\0';
-        proc += buf; 
-      }
-      else if (buf[i] == '|') {
+        proc += buf;
+      } else if (buf[i] == '|') {
         proc += buf + i;
       }
     }
@@ -358,7 +358,7 @@ bool JobManager::ListJobs(vector<JobInfo>* jobs) {
     job.id = atoi(jid.c_str());
     job.procs = procs.size();
     jobs->push_back(job);
-    //may need to delete it
+    // may need to delete it
     if (!job.procs && (i + kJobsNotRemoved < size))
         CleanPath(kZKPathApp + "/" + vt[i], true);
   }
