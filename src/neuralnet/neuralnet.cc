@@ -43,6 +43,9 @@ shared_ptr<NeuralNet> NeuralNet::Create(
   NetProto conf;
   conf.CopyFrom(net_conf);
   conf.clear_layer();
+  // for sharing param conf
+  std::unordered_map<string, ParamProto*> name2param;
+  std::vector<ParamProto*> shares;
   // exclude layers according to phase
   for (const auto& layer : net_conf.layer()) {
     bool include = true;
@@ -56,8 +59,30 @@ shared_ptr<NeuralNet> NeuralNet::Create(
       // using net partition if layer partition is not set
       if (!layer_conf->has_partition_dim())
         layer_conf->set_partition_dim(net_conf.partition_dim());
+      for (int i = 0; i < layer_conf->param_size(); i++) {
+        ParamProto* param = layer_conf->mutable_param(i);
+        if (param->has_name() && param->name() != "") {
+          CHECK(name2param.find(param->name()) == name2param.end())
+            << "param name is repeated: " << param->name();
+          name2param[param->name()] = param;
+        }
+        if (param->has_share_from() && param->share_from() != "")
+          shares.push_back(param);
+      }
     }
   }
+  for (auto param : shares) {
+    const std::string from = param->share_from();
+    const std::string name = param->name();
+    CHECK(name2param.find(from) != name2param.end())
+      << "can't find param " << from;
+    // CopyFrom will overwrite the name and share_from fields
+    param->CopyFrom(*name2param.at(from));
+    param->set_name(name);
+    param->set_share_from(from);
+  }
+
+  for (auto layer : net_conf.layer())
   LOG(INFO) << "NeuralNet config is\n" << conf.DebugString();
 
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc
@@ -120,10 +145,35 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
       share_param_layers[node->origin].push_back(layer);
   }
   LOG(INFO) << "Neural net structure\n"  << graph->ToJson(layerinfo);
-  // share Params for layers generated from the same origin layer
+
+  // create map from param name to param ptr
+  std::unordered_map<string, Param*> name2param;
+  for (auto layer : layers_) {
+    for (auto param : layer->GetParams()) {
+      name2param[param->name()] = param;
+    }
+  }
   for (auto & entry : share_param_layers) {
-    auto owner = entry.second.begin();
-    auto owner_params = (*owner)->GetParams();
+    // overwrite entries for replicated params due to layer partition (dim 0).
+    for (auto *param : entry.second.front()->GetParams())
+      name2param.at(param->name()) = param;
+  }
+  // share params based on share_from field
+  for (auto & entry : name2param) {
+    Param* param = entry.second;
+    const string share_from = param->share_from();
+    if (param->share_from() != "") {
+      if(name2param.find(share_from) != name2param.end()) {
+        param->ShareFrom(*name2param.at(param->share_from()));
+      } else {
+        LOG(FATAL) << "No param with the name (share_from) " << share_from;
+      }
+    }
+  }
+  // share Params for layers generated (partitioned) from the same origin layer
+  for (auto & entry : share_param_layers) {
+    const auto& owner = entry.second.begin();
+    const auto& owner_params = (*owner)->GetParams();
     for (auto it = owner + 1; it != entry.second.end(); it++) {
       auto params = (*it)->GetParams();
       CHECK_EQ(params.size(), owner_params.size());

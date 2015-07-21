@@ -93,7 +93,7 @@ message ParamProto {
     // <a href="http://deeplearning.net/tutorial/mlp.html"> Theano MLP</a>
     kUniformSqrtFanInOut = 6;
   }
-  required InitMethod init_method = 1 [default = kGaussian];
+  optional InitMethod init_method = 1 [default = kGaussian];
   // constant init
   optional float value = 5 [default = 1];
   // for uniform sampling
@@ -110,15 +110,16 @@ message ParamProto {
   optional int32 partition_dim = 30;
   // usually, the program will infer the param shape
   repeated int32 shape = 31;
-
   // used for identifying the same params from diff models and display deug info
   optional string name =  61 [default = ""];
+  // name of the owner param from which this param shares the values
+  optional string share_from = 62;
   // used interally
-  optional int32 id = 62;
+  optional int32 id = 63;
   // parameter slice limit (Google Protobuf also has size limit)
-  optional int32 split_threshold = 63 [default = 5000000];
+  optional int32 split_threshold = 64 [default = 5000000];
   // used internally
-  optional int32 owner = 64 [default = -1];
+  optional int32 owner = 65 [default = -1];
 }
 
 enum PartitionType{
