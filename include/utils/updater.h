@@ -1,6 +1,6 @@
 #ifndef INCLUDE_UTILS_UPDATER_H_
 #define INCLUDE_UTILS_UPDATER_H_
-#include "proto/model.pb.h"
+#include "proto/job.pb.h"
 #include "utils/param.h"
 
 namespace singa{

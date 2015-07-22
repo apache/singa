@@ -23,23 +23,38 @@
 # run a Singa job
 #
 
-usage="Usage: singa-run.sh -conf=CONF_DIR
-       (CONF_DIR should contain cluster.conf && model.conf)"
+usage="Usage: singa-run.sh -workspace=YOUR_WORKSPACE [ --resume ]\n
+       # workspace should contain job.conf\n
+       # set --resume if want to recover a job\n
+       ### NOTICE ###\n
+       # if you are using model.conf + cluster.conf,\n
+       # please see how to combine them to a job.conf:\n
+       # http://singa.incubator.apache.org/quick-start.html"
 
 # check arguments
-if [ $# != 1 ] || [[ $1 != "-conf="* ]]; then
-  echo $usage
+while [ $# != 0 ]; do
+  if [[ $1 == "-workspace="* ]]; then
+    workspace=$1
+  elif [ $1 == "--resume" ]; then
+    resume=1
+  else
+    echo -e $usage
+    exit 1
+  fi
+  shift
+done
+if [ -z $workspace ]; then
+  echo -e $usage
   exit 1
 fi
 
 # get environment variables
 . `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
 # get workspace path
-workspace=`cd "${1:6}">/dev/null; pwd`
-cluster_conf=$workspace/cluster.conf
-model_conf=$workspace/model.conf
-if [ ! -f $cluster_conf ] || [ ! -f $model_conf ]; then
-  echo cluster.conf or model.conf not exists in $workspace
+workspace=`cd "${workspace:11}">/dev/null; pwd`
+job_conf=$workspace/job.conf
+if [ ! -f $job_conf ]; then
+  echo job.conf not exists in $workspace
   exit 1
 fi
 cd $SINGA_HOME
@@ -51,7 +66,7 @@ fi
 
 # generate host file
 host_file=$workspace/job.hosts
-python $SINGA_HOME/tool/gen_hosts.py -conf=$cluster_conf \
+python $SINGA_HOME/tool/gen_hosts.py -conf=$job_conf \
                                      -hosts=$SINGA_CONF/hostfile \
                                      -output=$host_file \
                                      || exit 1
@@ -59,24 +74,32 @@ python $SINGA_HOME/tool/gen_hosts.py -conf=$cluster_conf \
 # generate unique job id
 ./singatool create 1>$workspace/job.id || exit 1
 job_id=`cat $workspace/job.id`
-echo generate job id at $workspace/job.id [job_id = $job_id]
+echo Generate job id to $workspace/job.id [job_id = $job_id]
+
+# set command to run singa
+singa_run="./singa -workspace=$workspace -job=$job_id"
+if [ ! -z $resume ]; then
+  singa_run="$singa_run --resume"
+fi
+singa_sshrun="cd $SINGA_HOME; $singa_run"
 
 # ssh and start singa processes
 ssh_options="-oStrictHostKeyChecking=no \
 -oUserKnownHostsFile=/dev/null \
 -oLogLevel=quiet"
 hosts=`cat $host_file | cut -d ' ' -f 1`
-singa_run="./singa -cluster=$cluster_conf -model=$model_conf \
-           -job=$job_id"
-singa_sshrun="cd $SINGA_HOME; $singa_run"
-
 for i in ${hosts[@]} ; do
   if [ $i = localhost ] ; then
-    echo executing : $singa_run
+    echo Executing : $singa_run
     $singa_run &
   else
-    echo executing @ $i : $singa_sshrun
+    echo Executing @ $i : $singa_sshrun
     ssh $ssh_options $i $singa_sshrun &
   fi
 done
+
+# generate pid list for this job
+sleep 2
+./singatool view $job_id 1>$workspace/job.pids || exit
+echo Generate pid list to $workspace/job.pids
 wait

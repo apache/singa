@@ -2,7 +2,7 @@
 #define INCLUDE_UTILS_PARAM_H_
 #include <vector>
 #include <string>
-#include "proto/model.pb.h"
+#include "proto/job.pb.h"
 #include "utils/blob.h"
 #include "communication/msg.h"
 

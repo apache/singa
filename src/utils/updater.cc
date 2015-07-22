@@ -2,7 +2,7 @@
 #include "utils/updater.h"
 #include "mshadow/tensor.h"
 #include "mshadow/cxxnet_op.h"
-#include "proto/model.pb.h"
+#include "proto/job.pb.h"
 using namespace mshadow;
 using namespace mshadow::expr;
 

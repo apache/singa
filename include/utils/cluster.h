@@ -7,7 +7,8 @@
 #include <vector>
 #include <unordered_map>
 #include "utils/common.h"
-#include "proto/cluster.pb.h"
+#include "proto/job.pb.h"
+#include "proto/singa.pb.h"
 #include "utils/cluster_rt.h"
 
 using std::shared_ptr;
@@ -24,8 +25,8 @@ namespace singa {
 class Cluster {
  public:
   static shared_ptr<Cluster> Get();
-  static shared_ptr<Cluster> Get(const GlobalProto& global, 
-                                 const ClusterProto& cluster, int job_id);
+  static shared_ptr<Cluster> Get(int job_id,
+      const SingaProto& singaConf, const ClusterProto& clusterConf);
 
   const int nserver_groups()const{ return cluster_.nserver_groups(); }
   const int nworker_groups()const { return cluster_.nworker_groups(); }
@@ -59,7 +60,7 @@ class Cluster {
   /**
    * @return global procs id, which starts from 0.
    */
-  int procs_id()const {return procs_id_;}
+  int procs_id() const {return procs_id_;}
   void set_procs_id(int procs_id) {procs_id_ = procs_id;}
   bool server_worker_separate() const {
     return cluster_.server_worker_separate();
@@ -88,6 +89,7 @@ class Cluster {
   const string checkpoint_folder() const {
     return cluster_.workspace()+"/checkpoint";
   }
+  /*
   const int stub_timeout() const {
     return cluster_.stub_timeout();
   }
@@ -97,6 +99,7 @@ class Cluster {
   const int server_timeout() const {
     return cluster_.server_timeout();
   }
+  */
 
   const bool server_update() const {
     return cluster_.server_update();
@@ -121,14 +124,24 @@ class Cluster {
     return cluster_rt_;
   }
 
+  /**
+   * @return logical procs ID
+   */
   int ProcsIDOf(int group_id, int id, int flag);
   const string hostip() const {
     return hostip_;
   }
-  void Register(const string& endpoint, int pid);
+  /**
+   * Register this process.
+   *
+   * @param pid physical process id get from OS, all other procs ID refers to
+   * logical process ID.
+   * @param endpoint unique string for other procs to connect
+   */
+  void Register(int pid, const string& endpoint);
 
  private:
-  Cluster(const GlobalProto& global, const ClusterProto &cluster, int job_id);
+  Cluster(int job, const SingaProto& singaConf, const ClusterProto& clusterConf);
   void SetupFolders(const ClusterProto &cluster);
   int Hash(int gid, int id, int flag);
 
@@ -139,7 +152,7 @@ class Cluster {
   std::vector<std::string> endpoints_;
   // cluster config proto
   ClusterProto cluster_;
-  GlobalProto global_;
+  SingaProto singa_;
   shared_ptr<ClusterRuntime> cluster_rt_;
   // make this class a singlton
   static shared_ptr<Cluster> instance_;

@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <utils/param.h>
 #include <utils/updater.h>
-#include "proto/model.pb.h"
+#include "proto/job.pb.h"
 #include "communication/socket.h"
 
 namespace singa {

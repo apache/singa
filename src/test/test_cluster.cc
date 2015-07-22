@@ -1,5 +1,4 @@
 #include "gtest/gtest.h"
-#include "proto/cluster.pb.h"
 #include "utils/cluster.h"
 
 using namespace singa;

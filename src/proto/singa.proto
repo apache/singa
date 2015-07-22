@@ -1,0 +1,8 @@
+package singa;
+
+message SingaProto {
+  // ip/hostname:port[,ip/hostname:port]
+  required string zookeeper_host = 1;
+  // if not set, use the default dir of glog
+  optional string log_dir = 2;
+}

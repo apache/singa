@@ -2,12 +2,18 @@
 #define SINGA_UTILS_COMMON_H_
 
 #include <google/protobuf/message.h>
+#include <gflags/gflags.h>
 #include <stdlib.h>
 #include <unordered_map>
 #include <sstream>
 #include <string>
 #include <vector>
 #include "proto/common.pb.h"
+
+#ifndef GFLAGS_GFLAGS_H_
+  namespace gflags = google;
+#endif  // GFLAGS_GFLAGS_H_
+
 
 namespace singa {
 using std::vector;

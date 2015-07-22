@@ -6,7 +6,6 @@
 #include "utils/cluster.h"
 #include "utils/factory.h"
 #include "trainer/worker.h"
-#include "proto/model.pb.h"
 
 namespace singa {
 using std::thread;
@@ -172,6 +171,9 @@ void Worker::Run() {
     }
     step_++;
   }
+
+  // save the model
+  Checkpoint(step_, train_net_);
 
   // clean up
   if(updater_ == nullptr) {

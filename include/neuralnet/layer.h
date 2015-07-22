@@ -12,7 +12,7 @@
 #include <chrono>
 #include <random>
 
-#include "proto/model.pb.h"
+#include "proto/job.pb.h"
 #include "utils/data_shard.h"
 #include "neuralnet/base_layer.h"
 
@@ -236,22 +236,6 @@ class ShardDataLayer: public DataLayer{
   void ComputeFeature(Phase phase, Metric *perf) override;
  private:
   shared_ptr<DataShard> shard_;
-};
-class LMDBDataLayer: public DataLayer{
- public:
-  using Layer::ComputeFeature;
-
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ConvertCaffeDatumToRecord(const CaffeDatum& datum,
-      SingleLabelImageRecord* record);
-
- private:
-  MDB_env* mdb_env_;
-  MDB_dbi mdb_dbi_;
-  MDB_txn* mdb_txn_;
-  MDB_cursor* mdb_cursor_;
-  MDB_val mdb_key_, mdb_value_;
 };
 
 /**

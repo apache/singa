@@ -1,4 +1,38 @@
 package singa;
+
+message JobProto {
+  required ClusterProto cluster = 1;
+  required ModelProto model = 2;
+}
+
+message ClusterProto {
+  optional int32 nworker_groups = 1;
+  optional int32 nserver_groups = 2;
+  optional int32 nworkers_per_group = 3 [default = 1];
+  optional int32 nservers_per_group = 4 [default = 1];
+  optional int32 nworkers_per_procs = 5 [default = 1];
+  optional int32 nservers_per_procs = 6 [default = 1];
+
+  // servers and workers in different processes?
+  optional bool server_worker_separate = 11 [default = false];
+
+  // port number is used by ZeroMQ
+  optional int32 start_port = 13 [default = 6723];
+  // local workspace, train/val/test shards, checkpoint files
+  optional string workspace = 14 [default = "workspace"];
+
+  // conduct updates at server side; otherwise do it at worker side
+  optional bool server_update = 40 [default = true];
+  // share memory space between worker groups in one procs
+  optional bool share_memory = 41 [default = true];
+
+  // bandwidth of ethernet, Bytes per second, default is 1 Gbps
+  optional int32 bandwidth=50 [default=134217728];
+  // poll time in milliseconds
+  optional int32 poll_time=51 [default =100];
+}
+
+
 enum Phase {
   kTrain = 0;
   kValidation = 1;

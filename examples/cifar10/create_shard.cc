@@ -16,10 +16,7 @@
 #include <cstdint>
 #include <iostream>
 
-#include "utils/data_shard.h"
-#include "utils/common.h"
-#include "proto/model.pb.h"
-#include "proto/common.pb.h"
+#include "singa.h"
 
 using std::string;
 

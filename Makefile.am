@@ -10,20 +10,17 @@ AC_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
 
 INCLUDES = -I$(top_srcdir)/include
 
-PROTOS := $(top_srcdir)/src/proto/cluster.proto \
-          $(top_srcdir)/src/proto/model.proto \
+PROTOS := $(top_srcdir)/src/proto/singa.proto \
+          $(top_srcdir)/src/proto/job.proto \
           $(top_srcdir)/src/proto/common.proto
-PROTO_SRCS := src/proto/cluster.pb.cc \
-              src/proto/model.pb.cc \
+PROTO_SRCS := src/proto/singa.pb.cc \
+              src/proto/job.pb.cc \
               src/proto/common.pb.cc
-PROTO_HDRS := src/proto/cluster.pb.h \
-              src/proto/model.pb.h \
-              src/proto/common.pb.h
-PROTO_OBJS := src/proto/cluster.pb.o \
-              src/proto/model.pb.o \
-              src/proto/common.pb.o
-PROTO_PYS := tool/pb2/cluster_pb2.py \
-             tool/pb2/model_pb2.py \
+PROTO_HDRS := include/proto/singa.pb.h \
+              include/proto/job.pb.h \
+              include/proto/common.pb.h
+PROTO_PYS := tool/pb2/singa_pb2.py \
+             tool/pb2/job_pb2.py \
              tool/pb2/common_pb2.py
 
 SINGA_SRCS := src/utils/cluster.cc \
@@ -39,11 +36,13 @@ SINGA_SRCS := src/utils/cluster.cc \
               src/trainer/trainer.cc \
               src/neuralnet/base_layer.cc \
               src/neuralnet/neuralnet.cc \
+              src/neuralnet/optional_layer.cc \
               src/neuralnet/layer.cc \
               src/communication/socket.cc \
               src/communication/msg.cc
 
-SINGA_HDRS := include/utils/cluster.h \
+SINGA_HDRS := include/singa.h \
+              include/utils/cluster.h \
               include/utils/cluster_rt.h \
               include/utils/param.h \
               include/utils/common.h \
@@ -59,6 +58,7 @@ SINGA_HDRS := include/utils/cluster.h \
               include/trainer/trainer.h \
               include/neuralnet/base_layer.h \
               include/neuralnet/layer.h \
+              include/neuralnet/optional_layer.h \
               include/neuralnet/neuralnet.h \
               include/mshadow/tensor_expr.h \
               include/mshadow/tensor_container.h \
@@ -71,29 +71,9 @@ SINGA_HDRS := include/utils/cluster.h \
               include/communication/msg.h \
               include/communication/socket.h
 
-SINGA_OBJS := src/proto/cluster.pb.o \
-              src/proto/model.pb.o \
-              src/utils/cluster.o \
-              src/utils/cluster_rt.o \
-              src/utils/graph.o \
-              src/utils/common.o \
-              src/utils/param.o \
-              src/utils/updater.o \
-              src/utils/data_shard.o \
-              src/utils/blob.o \
-              src/trainer/server.o \
-              src/trainer/worker.o \
-              src/trainer/pm_server.o \
-              src/trainer/trainer.o \
-              src/trainer/pm_worker.o \
-              src/neuralnet/base_layer.o \
-              src/neuralnet/neuralnet.o \
-              src/neuralnet/layer.o \
-              src/communication/socket.o \
-              src/communication/msg.o
 
 lib_LTLIBRARIES = libsinga.la
-libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_SRCS) $(SINGA_HDRS)
+libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_HDRS) $(SINGA_SRCS)
 libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
                        $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 \
                        -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive

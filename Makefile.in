@@ -82,8 +82,8 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 libsinga_la_LIBADD =
 am__objects_1 =
 am__dirstamp = $(am__leading_dot)dirstamp
-am__objects_2 = src/proto/libsinga_la-cluster.pb.lo \
-	src/proto/libsinga_la-model.pb.lo \
+am__objects_2 = src/proto/libsinga_la-singa.pb.lo \
+	src/proto/libsinga_la-job.pb.lo \
 	src/proto/libsinga_la-common.pb.lo
 am__objects_3 = src/utils/libsinga_la-cluster.lo \
 	src/utils/libsinga_la-cluster_rt.lo \
@@ -97,11 +97,12 @@ am__objects_3 = src/utils/libsinga_la-cluster.lo \
 	src/trainer/libsinga_la-trainer.lo \
 	src/neuralnet/libsinga_la-base_layer.lo \
 	src/neuralnet/libsinga_la-neuralnet.lo \
+	src/neuralnet/libsinga_la-optional_layer.lo \
 	src/neuralnet/libsinga_la-layer.lo \
 	src/communication/libsinga_la-socket.lo \
 	src/communication/libsinga_la-msg.lo
 am_libsinga_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3) $(am__objects_1)
+	$(am__objects_1) $(am__objects_3)
 libsinga_la_OBJECTS = $(am_libsinga_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -304,24 +305,20 @@ AC_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
               $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops
 
 INCLUDES = -I$(top_srcdir)/include
-PROTOS := $(top_srcdir)/src/proto/cluster.proto \
-          $(top_srcdir)/src/proto/model.proto \
+PROTOS := $(top_srcdir)/src/proto/singa.proto \
+          $(top_srcdir)/src/proto/job.proto \
           $(top_srcdir)/src/proto/common.proto
 
-PROTO_SRCS := src/proto/cluster.pb.cc \
-              src/proto/model.pb.cc \
+PROTO_SRCS := src/proto/singa.pb.cc \
+              src/proto/job.pb.cc \
               src/proto/common.pb.cc
 
-PROTO_HDRS := src/proto/cluster.pb.h \
-              src/proto/model.pb.h \
-              src/proto/common.pb.h
+PROTO_HDRS := include/proto/singa.pb.h \
+              include/proto/job.pb.h \
+              include/proto/common.pb.h
 
-PROTO_OBJS := src/proto/cluster.pb.o \
-              src/proto/model.pb.o \
-              src/proto/common.pb.o
-
-PROTO_PYS := tool/pb2/cluster_pb2.py \
-             tool/pb2/model_pb2.py \
+PROTO_PYS := tool/pb2/singa_pb2.py \
+             tool/pb2/job_pb2.py \
              tool/pb2/common_pb2.py
 
 SINGA_SRCS := src/utils/cluster.cc \
@@ -337,11 +334,13 @@ SINGA_SRCS := src/utils/cluster.cc \
               src/trainer/trainer.cc \
               src/neuralnet/base_layer.cc \
               src/neuralnet/neuralnet.cc \
+              src/neuralnet/optional_layer.cc \
               src/neuralnet/layer.cc \
               src/communication/socket.cc \
               src/communication/msg.cc
 
-SINGA_HDRS := include/utils/cluster.h \
+SINGA_HDRS := include/singa.h \
+              include/utils/cluster.h \
               include/utils/cluster_rt.h \
               include/utils/param.h \
               include/utils/common.h \
@@ -357,6 +356,7 @@ SINGA_HDRS := include/utils/cluster.h \
               include/trainer/trainer.h \
               include/neuralnet/base_layer.h \
               include/neuralnet/layer.h \
+              include/neuralnet/optional_layer.h \
               include/neuralnet/neuralnet.h \
               include/mshadow/tensor_expr.h \
               include/mshadow/tensor_container.h \
@@ -369,29 +369,8 @@ SINGA_HDRS := include/utils/cluster.h \
               include/communication/msg.h \
               include/communication/socket.h
 
-SINGA_OBJS := src/proto/cluster.pb.o \
-              src/proto/model.pb.o \
-              src/utils/cluster.o \
-              src/utils/cluster_rt.o \
-              src/utils/graph.o \
-              src/utils/common.o \
-              src/utils/param.o \
-              src/utils/updater.o \
-              src/utils/data_shard.o \
-              src/utils/blob.o \
-              src/trainer/server.o \
-              src/trainer/worker.o \
-              src/trainer/pm_server.o \
-              src/trainer/trainer.o \
-              src/trainer/pm_worker.o \
-              src/neuralnet/base_layer.o \
-              src/neuralnet/neuralnet.o \
-              src/neuralnet/layer.o \
-              src/communication/socket.o \
-              src/communication/msg.o
-
 lib_LTLIBRARIES = libsinga.la
-libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_SRCS) $(SINGA_HDRS)
+libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_HDRS) $(SINGA_SRCS)
 libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
                        $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 \
                        -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive
@@ -520,9 +499,9 @@ src/proto/$(am__dirstamp):
 src/proto/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/proto/$(DEPDIR)
 	@: > src/proto/$(DEPDIR)/$(am__dirstamp)
-src/proto/libsinga_la-cluster.pb.lo: src/proto/$(am__dirstamp) \
+src/proto/libsinga_la-singa.pb.lo: src/proto/$(am__dirstamp) \
 	src/proto/$(DEPDIR)/$(am__dirstamp)
-src/proto/libsinga_la-model.pb.lo: src/proto/$(am__dirstamp) \
+src/proto/libsinga_la-job.pb.lo: src/proto/$(am__dirstamp) \
 	src/proto/$(DEPDIR)/$(am__dirstamp)
 src/proto/libsinga_la-common.pb.lo: src/proto/$(am__dirstamp) \
 	src/proto/$(DEPDIR)/$(am__dirstamp)
@@ -570,6 +549,9 @@ src/neuralnet/libsinga_la-base_layer.lo:  \
 	src/neuralnet/$(am__dirstamp) \
 	src/neuralnet/$(DEPDIR)/$(am__dirstamp)
 src/neuralnet/libsinga_la-neuralnet.lo: src/neuralnet/$(am__dirstamp) \
+	src/neuralnet/$(DEPDIR)/$(am__dirstamp)
+src/neuralnet/libsinga_la-optional_layer.lo:  \
+	src/neuralnet/$(am__dirstamp) \
 	src/neuralnet/$(DEPDIR)/$(am__dirstamp)
 src/neuralnet/libsinga_la-layer.lo: src/neuralnet/$(am__dirstamp) \
 	src/neuralnet/$(DEPDIR)/$(am__dirstamp)
@@ -659,12 +641,14 @@ mostlyclean-compile:
 	-rm -f src/neuralnet/libsinga_la-layer.lo
 	-rm -f src/neuralnet/libsinga_la-neuralnet.$(OBJEXT)
 	-rm -f src/neuralnet/libsinga_la-neuralnet.lo
-	-rm -f src/proto/libsinga_la-cluster.pb.$(OBJEXT)
-	-rm -f src/proto/libsinga_la-cluster.pb.lo
+	-rm -f src/neuralnet/libsinga_la-optional_layer.$(OBJEXT)
+	-rm -f src/neuralnet/libsinga_la-optional_layer.lo
 	-rm -f src/proto/libsinga_la-common.pb.$(OBJEXT)
 	-rm -f src/proto/libsinga_la-common.pb.lo
-	-rm -f src/proto/libsinga_la-model.pb.$(OBJEXT)
-	-rm -f src/proto/libsinga_la-model.pb.lo
+	-rm -f src/proto/libsinga_la-job.pb.$(OBJEXT)
+	-rm -f src/proto/libsinga_la-job.pb.lo
+	-rm -f src/proto/libsinga_la-singa.pb.$(OBJEXT)
+	-rm -f src/proto/libsinga_la-singa.pb.lo
 	-rm -f src/singa-main.$(OBJEXT)
 	-rm -f src/trainer/libsinga_la-server.$(OBJEXT)
 	-rm -f src/trainer/libsinga_la-server.lo
@@ -699,9 +683,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/neuralnet/$(DEPDIR)/libsinga_la-base_layer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/neuralnet/$(DEPDIR)/libsinga_la-layer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/neuralnet/$(DEPDIR)/libsinga_la-neuralnet.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-cluster.pb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/neuralnet/$(DEPDIR)/libsinga_la-optional_layer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-common.pb.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-model.pb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-job.pb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-singa.pb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/trainer/$(DEPDIR)/libsinga_la-server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/trainer/$(DEPDIR)/libsinga_la-trainer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/trainer/$(DEPDIR)/libsinga_la-worker.Plo@am__quote@
@@ -742,21 +727,21 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-src/proto/libsinga_la-cluster.pb.lo: src/proto/cluster.pb.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/proto/libsinga_la-cluster.pb.lo -MD -MP -MF src/proto/$(DEPDIR)/libsinga_la-cluster.pb.Tpo -c -o src/proto/libsinga_la-cluster.pb.lo `test -f 'src/proto/cluster.pb.cc' || echo '$(srcdir)/'`src/proto/cluster.pb.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/proto/$(DEPDIR)/libsinga_la-cluster.pb.Tpo src/proto/$(DEPDIR)/libsinga_la-cluster.pb.Plo
+src/proto/libsinga_la-singa.pb.lo: src/proto/singa.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/proto/libsinga_la-singa.pb.lo -MD -MP -MF src/proto/$(DEPDIR)/libsinga_la-singa.pb.Tpo -c -o src/proto/libsinga_la-singa.pb.lo `test -f 'src/proto/singa.pb.cc' || echo '$(srcdir)/'`src/proto/singa.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/proto/$(DEPDIR)/libsinga_la-singa.pb.Tpo src/proto/$(DEPDIR)/libsinga_la-singa.pb.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/proto/cluster.pb.cc' object='src/proto/libsinga_la-cluster.pb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/proto/singa.pb.cc' object='src/proto/libsinga_la-singa.pb.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-cluster.pb.lo `test -f 'src/proto/cluster.pb.cc' || echo '$(srcdir)/'`src/proto/cluster.pb.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-singa.pb.lo `test -f 'src/proto/singa.pb.cc' || echo '$(srcdir)/'`src/proto/singa.pb.cc
 
-src/proto/libsinga_la-model.pb.lo: src/proto/model.pb.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/proto/libsinga_la-model.pb.lo -MD -MP -MF src/proto/$(DEPDIR)/libsinga_la-model.pb.Tpo -c -o src/proto/libsinga_la-model.pb.lo `test -f 'src/proto/model.pb.cc' || echo '$(srcdir)/'`src/proto/model.pb.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/proto/$(DEPDIR)/libsinga_la-model.pb.Tpo src/proto/$(DEPDIR)/libsinga_la-model.pb.Plo
+src/proto/libsinga_la-job.pb.lo: src/proto/job.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/proto/libsinga_la-job.pb.lo -MD -MP -MF src/proto/$(DEPDIR)/libsinga_la-job.pb.Tpo -c -o src/proto/libsinga_la-job.pb.lo `test -f 'src/proto/job.pb.cc' || echo '$(srcdir)/'`src/proto/job.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/proto/$(DEPDIR)/libsinga_la-job.pb.Tpo src/proto/$(DEPDIR)/libsinga_la-job.pb.Plo
 @am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/proto/model.pb.cc' object='src/proto/libsinga_la-model.pb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/proto/job.pb.cc' object='src/proto/libsinga_la-job.pb.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-model.pb.lo `test -f 'src/proto/model.pb.cc' || echo '$(srcdir)/'`src/proto/model.pb.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-job.pb.lo `test -f 'src/proto/job.pb.cc' || echo '$(srcdir)/'`src/proto/job.pb.cc
 
 src/proto/libsinga_la-common.pb.lo: src/proto/common.pb.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/proto/libsinga_la-common.pb.lo -MD -MP -MF src/proto/$(DEPDIR)/libsinga_la-common.pb.Tpo -c -o src/proto/libsinga_la-common.pb.lo `test -f 'src/proto/common.pb.cc' || echo '$(srcdir)/'`src/proto/common.pb.cc
@@ -869,6 +854,14 @@ src/neuralnet/libsinga_la-neuralnet.lo: src/neuralnet/neuralnet.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/neuralnet/neuralnet.cc' object='src/neuralnet/libsinga_la-neuralnet.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-neuralnet.lo `test -f 'src/neuralnet/neuralnet.cc' || echo '$(srcdir)/'`src/neuralnet/neuralnet.cc
+
+src/neuralnet/libsinga_la-optional_layer.lo: src/neuralnet/optional_layer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/neuralnet/libsinga_la-optional_layer.lo -MD -MP -MF src/neuralnet/$(DEPDIR)/libsinga_la-optional_layer.Tpo -c -o src/neuralnet/libsinga_la-optional_layer.lo `test -f 'src/neuralnet/optional_layer.cc' || echo '$(srcdir)/'`src/neuralnet/optional_layer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/neuralnet/$(DEPDIR)/libsinga_la-optional_layer.Tpo src/neuralnet/$(DEPDIR)/libsinga_la-optional_layer.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/neuralnet/optional_layer.cc' object='src/neuralnet/libsinga_la-optional_layer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-optional_layer.lo `test -f 'src/neuralnet/optional_layer.cc' || echo '$(srcdir)/'`src/neuralnet/optional_layer.cc
 
 src/neuralnet/libsinga_la-layer.lo: src/neuralnet/layer.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/neuralnet/libsinga_la-layer.lo -MD -MP -MF src/neuralnet/$(DEPDIR)/libsinga_la-layer.Tpo -c -o src/neuralnet/libsinga_la-layer.lo `test -f 'src/neuralnet/layer.cc' || echo '$(srcdir)/'`src/neuralnet/layer.cc

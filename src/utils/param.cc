@@ -3,7 +3,7 @@
 #include <chrono>
 #include <random>
 #include "utils/param.h"
-#include "proto/cluster.pb.h"
+#include "proto/job.pb.h"
 #include "mshadow/tensor.h"
 #include "utils/singleton.h"
 using namespace mshadow;

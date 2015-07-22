@@ -8,7 +8,7 @@
 #include <memory>
 #include <thread>
 
-#include "proto/model.pb.h"
+#include "proto/job.pb.h"
 #include "proto/common.pb.h"
 #include "utils/param.h"
 #include "utils/common.h"

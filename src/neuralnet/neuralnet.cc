@@ -22,7 +22,6 @@ void NeuralNet::RegisterLayers() {
   RegisterLayer(factory, Dropout);
   RegisterLayer(factory, InnerProduct);
   RegisterLayer(factory, Label);
-  RegisterLayer(factory, LMDBData);
   RegisterLayer(factory, LRN);
   RegisterLayer(factory, Mnist);
   RegisterLayer(factory, Prefetch);
@@ -34,6 +33,10 @@ void NeuralNet::RegisterLayers() {
   RegisterLayer(factory, SoftmaxLoss);
   RegisterLayer(factory, Split);
   RegisterLayer(factory, Tanh);
+
+#ifdef USE_OPTIONAL_LAYER
+  RegisterLayer(factory, LMDBData);
+#endif
 }
 
 shared_ptr<NeuralNet> NeuralNet::Create(

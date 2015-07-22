@@ -2,8 +2,8 @@
 #include <glog/logging.h>
 #include <iostream>
 #include <fstream>
-#include "proto/cluster.pb.h"
 #include "utils/cluster_rt.h"
+#include "proto/singa.pb.h"
 #include "utils/common.h"
 #ifndef GFLAGS_GFLAGS_H_
   namespace gflags = google;
@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  singa::GlobalProto global;
+  singa::SingaProto global;
   singa::ReadProtoFromTextFile(FLAGS_global.c_str(), &global);
   singa::SetupLog(global.log_dir(), "SingaTool");
 

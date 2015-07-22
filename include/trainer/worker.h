@@ -1,7 +1,7 @@
 #ifndef SINGA_TRAINER_WORKER_H_
 #define SINGA_TRAINER_WORKER_H_
 #include "neuralnet/neuralnet.h"
-#include "proto/model.pb.h"
+#include "proto/job.pb.h"
 #include "utils/updater.h"
 #include "communication/socket.h"
 

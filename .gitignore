@@ -18,6 +18,7 @@
 *.pb.cc
 *.hosts
 *.id
+*.pids
 *.tmp
 *.out
 tool/pb2/*

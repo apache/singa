@@ -13,7 +13,7 @@ mnist:
 	gunzip t10k-images-idx3-ubyte.gz && gunzip t10k-labels-idx1-ubyte.gz
 
 create:
-	$(CXX) create_shard.cc -std=c++11 -lsinga -lprotobuf -lglog -I../../include \
+	$(CXX) create_shard.cc -std=c++11 -lsinga -lprotobuf -lglog -lzookeeper_mt -I../../include \
 		-L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs -Wl,-rpath=../../.libs/ \
 		-o create_shard.bin
 	mkdir mnist_train_shard

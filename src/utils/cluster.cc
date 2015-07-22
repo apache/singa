@@ -3,18 +3,17 @@
 #include <unistd.h>
 #include <fstream>
 #include "utils/cluster.h"
-#include "proto/cluster.pb.h"
 #include "proto/common.pb.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 namespace singa {
 
 std::shared_ptr<Cluster> Cluster::instance_;
-Cluster::Cluster(const GlobalProto & global, const ClusterProto &cluster,
-                 int job_id) {
-  cluster_ = cluster;
-  global_ = global;
-  SetupFolders(cluster);
+Cluster::Cluster(
+    int job, const SingaProto& singaConf, const ClusterProto& clusterConf) {
+  cluster_ = clusterConf;
+  singa_ = singaConf;
+  SetupFolders(clusterConf);
   if(server_worker_separate())
     nprocs_=nworker_procs()+nserver_procs();
   else
@@ -38,14 +37,14 @@ Cluster::Cluster(const GlobalProto & global, const ClusterProto &cluster,
     }
   }
 
-  auto rt = new ZKClusterRT(global_.zookeeper_host(), job_id);
+  auto rt = new ZKClusterRT(singa_.zookeeper_host(), job);
   rt->Init();
   cluster_rt_=shared_ptr<ClusterRuntime>(static_cast<ClusterRuntime*>(rt));
 
   hostip_=GetHostIP();
 }
 
-void Cluster::Register(const string& endpoint, int pid) {
+void Cluster::Register(int pid, const string& endpoint) {
   procs_id_=cluster_rt_->RegistProc(endpoint, pid);
   CHECK_GE(procs_id_,0);
   CHECK_LT(procs_id_,nprocs());
@@ -69,9 +68,9 @@ void Cluster::SetupFolders(const ClusterProto &cluster){
   mkdir(checkpoint_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
-shared_ptr<Cluster> Cluster::Get(const GlobalProto& global,
-                                 const ClusterProto& cluster, int job_id){
-  instance_.reset(new Cluster(global, cluster, job_id));
+shared_ptr<Cluster> Cluster::Get(
+    int job, const SingaProto& singaConf, const ClusterProto& clusterConf) {
+  instance_.reset(new Cluster(job, singaConf, clusterConf));
   return instance_;
 }
 
@@ -82,7 +81,7 @@ shared_ptr<Cluster> Cluster::Get() {
   }
   return instance_;
 }
-int Cluster::Hash(int gid, int id, int flag){
+int Cluster::Hash(int gid, int id, int flag) {
   int ret=-1;
   if(flag==kServer){
     ret=(flag*cluster_.nserver_groups()+gid)*cluster_.nservers_per_group() + id;
@@ -91,7 +90,7 @@ int Cluster::Hash(int gid, int id, int flag){
   }
   return ret;
 }
-int Cluster::ProcsIDOf(int group_id, int id, int flag){
+int Cluster::ProcsIDOf(int group_id, int id, int flag) {
   return procs_ids_.at(Hash(group_id, id, flag));
 }
 

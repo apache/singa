@@ -23,15 +23,6 @@
 # clean up singa processes and zookeeper metadata
 #
 
-# usage="Usage: \n \
-#       (local process): singa-stop.sh \n \
-#       (distributed): singa-stop.sh HOST_FILE"
-# 
-# if [ $# -gt 1 ]; then
-#   echo -e $usage
-#   exit 1
-# fi
-
 # get environment variables
 . `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
 cd $SINGA_HOME
@@ -44,7 +35,7 @@ ssh_options="-oStrictHostKeyChecking=no \
 hosts=`cat $host_file | cut -d ' ' -f 1`
 singa_kill="killall -s SIGKILL -r singa"
 for i in ${hosts[@]}; do
-  echo kill singa @ $i ...
+  echo Kill singa @ $i ...
   if [ $i == localhost ]; then
     $singa_kill
   else
@@ -55,6 +46,5 @@ done
 sleep 2
 
 # remove zk data
-# singatool need global conf under SINGA_HOME
-echo cleanning metadata in zookeeper ...
+echo Cleanning metadata in zookeeper ...
 ./singatool cleanup || exit 1

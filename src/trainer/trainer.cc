@@ -11,6 +11,7 @@
 #include "trainer/trainer.h"
 #include "mshadow/tensor.h"
 
+
 namespace singa {
 using std::vector;
 using std::map;
@@ -193,7 +194,7 @@ vector<Worker*> Trainer::CreateWorkers(int nthreads, const ModelProto& mconf){
   return workers;
 }
 
-void Trainer::Resume(ModelProto& mconf) {
+void Trainer::Resume(ModelProto* modelConf) {
   tinydir_dir dir;
   string folder = Cluster::Get()->checkpoint_folder();
   tinydir_open(&dir, folder.c_str());
@@ -223,34 +224,34 @@ void Trainer::Resume(ModelProto& mconf) {
   }
 
   if (latest_step > 0) {
-    mconf.set_step(latest_step);
+    modelConf->set_step(latest_step);
     for (auto ck_file : ck_files)
-      mconf.add_checkpoint(folder + "/" +string(ck_file));
+      modelConf->add_checkpoint(folder + "/" +string(ck_file));
   }
   tinydir_close(&dir);
 }
 
-void Trainer::Start(ModelProto& mconf, const GlobalProto& gconf,
-                    const ClusterProto& cconf, int job, bool resume){
+void Trainer::Start(int job, bool resume,
+    const JobProto& jobConf, const SingaProto& singaConf) {
   // register job to zookeeper at the beginning
-  auto cluster=Cluster::Get(gconf, cconf, job);
-
-  RegisterDefaultClasses(mconf);
+  auto cluster = Cluster::Get(job, singaConf, jobConf.cluster());
+  ModelProto model = jobConf.model();
+  RegisterDefaultClasses(model);
   if (resume)
-    Resume(mconf);
+    Resume(&model);
 
   router_ = new Router();
   router_->Bind(kInprocRouterEndpoint);
   const string hostip = cluster->hostip();
   int port = router_->Bind("tcp://" + hostip + ":*");
   // register endpoint to zookeeper
-  cluster->Register(hostip + ":" + std::to_string(port), getpid());
+  cluster->Register(getpid(), hostip + ":" + std::to_string(port));
 
   int nthreads = 1;
-  const vector<Worker*> workers = CreateWorkers(nthreads, mconf);
+  const vector<Worker*> workers = CreateWorkers(nthreads, model);
   nthreads += workers.size();
-  const vector<Server*> servers = CreateServers(nthreads, mconf);
-  SetupWorkerServer(mconf, workers, servers);
+  const vector<Server*> servers = CreateServers(nthreads, model);
+  SetupWorkerServer(model, workers, servers);
 
 #ifdef USE_MPI
   for (int i = 0; i < nthreads; i++)

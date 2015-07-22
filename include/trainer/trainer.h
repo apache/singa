@@ -2,8 +2,8 @@
 #define INCLUDE_TRAINER_TRAINER_H_
 #include <unordered_map>
 #include <queue>
-#include "proto/cluster.pb.h"
-#include "proto/model.pb.h"
+#include "proto/job.pb.h"
+#include "proto/singa.pb.h"
 #include "utils/param.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"
@@ -25,17 +25,16 @@ class Trainer{
   ~Trainer();
   /**
    * Entrance function which construct the workers and servers, and luanch
-   * one thread per worker/server. TODO rename variables about cluster config,
-   * job config, etc.
+   * one thread per worker/server.
    *
-   * @param resume if true resume the training from the latest checkpoint files
    * @param job job ID
-   * @param mconf model configuration
-   * @param globalconf global singa configuration
-   * @param cconf cluster configuration
+   * @param resume if true resume the training from the latest checkpoint files
+   * @param jobConf job configuration, including cluster and model configuration
+   * @param singaConf global singa configuration including zookeeper and
+   * log dir setting.
    */
-  void Start(ModelProto& mconf, const GlobalProto& gconf,
-             const ClusterProto& cconf, int job, bool resume);
+  void Start(int job, bool resume,
+      const JobProto& jobConf, const SingaProto& singaConf);
 
  protected:
   /**
@@ -45,27 +44,27 @@ class Trainer{
    * checkpoint, which will be added into the checkpoint field. The workers
    * would then load the values of params from the checkpoint files.
    *
-   * @param model_conf model configuration
+   * @param modelConf model configuration
    */
-  void Resume(ModelProto& model_conf);
+  void Resume(ModelProto* modelConf);
   /**
    * Create server instances.
    * @param nthread total num of threads in current procs which is used to
    * assign each thread a local thread ID. The number of workers is extracted
    * from Cluster
-   * @param model_conf
+   * @param modelConf
    * @return server instances
    */
-  vector<Server*> CreateServers(int nthread, const ModelProto& mproto);
+  vector<Server*> CreateServers(int nthread, const ModelProto& modelConf);
   /**
    * Create workers instances.
    * @param nthread total num of threads in current procs which is used to
    * assign each thread a local thread ID. The number of workers is extracted
    * from Cluster
-   * @param model_conf
+   * @param modelConf
    * @return worker instances
    */
-  vector<Worker*> CreateWorkers(int nthread, const ModelProto& mproto);
+  vector<Worker*> CreateWorkers(int nthread, const ModelProto& modelConf);
 
   /**
    * Setup workers and servers.
@@ -73,12 +72,12 @@ class Trainer{
    * For each worker, create and assign a neuralnet to it.
    * For each server, create and assign the param shard to it.
    * Create the partition map from slice ID to server
-   * @param model_conf
+   * @param modelConf
    * @param workers
    * @param servers
    */
   void SetupWorkerServer(
-    const ModelProto& model_conf,
+    const ModelProto& modelConf,
     const vector<Worker*>& workers,
     const vector<Server*>& servers);
 
