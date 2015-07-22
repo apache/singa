@@ -34,6 +34,8 @@ void NeuralNet::RegisterLayers() {
   RegisterLayer(factory, SoftmaxLoss);
   RegisterLayer(factory, Split);
   RegisterLayer(factory, Tanh);
+  RegisterLayer(factory, RBMVis);
+  RegisterLayer(factory, RBMHid);
 }
 
 shared_ptr<NeuralNet> NeuralNet::Create(
@@ -131,6 +133,7 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
   for (Node* node : graph->nodes()) {
     auto layer = name2layer_[node->name];
     layer->Setup(*(static_cast<LayerProto*>(node->proto)), npartitions);
+    LOG(INFO) << "constructing graph: " << layer->name();
     layerinfo[layer->name()] = IntVecToString(layer->data(nullptr).shape());
     string param_name = "$";
     for (auto param : layer->GetParams()) {

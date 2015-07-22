@@ -9,6 +9,7 @@ enum Phase {
   kNegative = 4;
   kForward = 5;
   kBackward = 6;
+  kLoss = 7;
 }
 
 message ModelProto {
@@ -40,6 +41,8 @@ message ModelProto {
   optional int32 test_frequency = 33 [default = 0];
   // frequency of checkpoint
   optional int32 checkpoint_frequency = 34 [default = 0];
+  //frequency of visualization
+  optional int32 visualization_frequency = 37 [default=5000];
   // send parameters to servers after training for this num of steps
   optional int32 warmup_steps = 35 [default = 0];
   // checkpoint path
@@ -61,6 +64,8 @@ message ModelProto {
   repeated string checkpoint = 66;
   // reset the version of params loaded from checkpoint file to step
   optional bool reset_param_version = 67 [default = false];
+  //number of steps for gibbs sampling
+  optional int32 pcd_k=69 [default=15];
 }
 
 message NetProto {
@@ -151,6 +156,8 @@ message LayerProto {
     kSlice = 12;
     kSplit = 13;
     kTanh = 14;
+    kRBMVis = 23;
+    kRBMHid = 24;
   }
   // source layer names
   repeated string srclayers = 3;
@@ -194,6 +201,10 @@ message LayerProto {
   optional SplitProto split_conf = 42;
   // configuration for tanh layer
   optional TanhProto tanh_conf = 43;
+  // configuration for rbmvis layer
+  optional RBMVisProto rbmvis_conf = 48;
+  // configuration for rbmhid layer
+  optional RBMHidProto rbmhid_conf = 49;
 
 
   // overrides the partition dimension for neural net
@@ -290,6 +301,16 @@ message MnistProto {
 message DropoutProto {
   // dropout ratio
   optional float dropout_ratio = 30 [default = 0.5];
+}
+
+message RBMVisProto {
+  optional int32 num_output = 1; // The number of outputs for the layer
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
+}
+
+message RBMHidProto {
+  optional int32 hid_dim = 1; // The number of outputs for the layer
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
 }
 
 // Message that stores parameters used by InnerProductLayer
