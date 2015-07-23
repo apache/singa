@@ -163,6 +163,10 @@ void DropoutLayer::ComputeGradient(Phase phase)  {
   gsrc = grad * mask;
 }
 /**************** Implementation for RBMVisLayer********************/
+RBMVisLayer::~RBMVisLayer() {
+  delete weight_;
+  delete bias_;
+}
 void RBMVisLayer::Setup(const LayerProto& proto,
       int npartitions) {
   Layer::Setup(proto, npartitions);
@@ -193,8 +197,6 @@ void RBMVisLayer::Setup(const LayerProto& proto,
 }
 
 void RBMVisLayer::ComputeFeature(Phase phase, Metric* perf) {
-  float matrix_norm = (weight_->data()).sum_data();
-  float bias_norm = (bias_->data()).sum_data();
   if (phase == kPositive) { /*positive phase*/
         auto data = Tensor2(&data_);
         CHECK_EQ(srclayers_[data_idx_]->data(this).count(), batchsize_*vdim_);
@@ -260,6 +262,10 @@ void RBMVisLayer::ComputeLoss(Metric* perf) {
   perf->Add("reconstruct_error", loss);
 }
 /**************** Implementation for RBMHidLayer********************/
+RBMHidLayer::~RBMHidLayer() {
+  delete weight_;
+  delete bias_;
+}
 void RBMHidLayer::Setup(const LayerProto& proto,
       int npartitions) {
   Layer::Setup(proto, npartitions);
@@ -312,13 +318,9 @@ void RBMHidLayer::ComputeGradient(Phase phase) {
   auto data = Tensor2(&data_);
   auto hid_sample = Tensor2(&hid_sample_);
   auto gbias = Tensor1(bias_->mutable_grad());
-  auto gweight = Tensor2(weight_->mutable_grad());
   gbias = sum_rows(hid_sample);
   gbias-=sum_rows(data);
   gbias*=scale_/(1.0f*batchsize_);
-  float* gweight_dptr = gweight.dptr;
-  for (int i = 0; i < vdim_*hdim_; i++)
-    gweight_dptr[i] = 0.0f;
 }
 /*********** Implementation for InnerProductLayer**********/
 InnerProductLayer::~InnerProductLayer() {

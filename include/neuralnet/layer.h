@@ -105,6 +105,7 @@ class RBMVisLayer: public Layer {
     vector<Param*> params{weight_, bias_};
     return params;
   }
+  ~RBMVisLayer();
 
 
  private:
@@ -158,7 +159,7 @@ class RBMHidLayer: public Layer {
     vector<Param*> params{weight_, bias_};
     return params;
   }
-
+  ~RBMHidLayer();
 
  private:
   //! dimension of the hidden layer

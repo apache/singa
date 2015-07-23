@@ -421,32 +421,6 @@ void CDWorker::LossPhase(int step, shared_ptr<NeuralNet> net, Metric* perf) {
     if (layer->is_vislayer())
       layer->ComputeLoss(perf);
   }
-  if (modelproto_.visualization_frequency() != 0) {
-    if (step % modelproto_.visualization_frequency() == 0 && step!= 0) { /*print weight matrix*/
-      BlobProto bp;
-      int rownum;
-      int colnum;
-      const float *dptr;
-      for (auto& layer : layers) {
-        if (layer->is_vislayer()) {
-          for (Param* p : layer->GetParams()) {
-            rownum = p->data().shape()[0];
-            colnum = p->data().shape()[1];
-            dptr = p->data().cpu_data();
-            for (int i = 0; i < p->data().count(); i++){
-              bp.add_data(static_cast<float>(dptr[i]));
-            }  
-            break;
-          }
-          bp.add_shape(rownum);
-          bp.add_shape(colnum);
-          auto cluster = Cluster::Get();
-          string filename = cluster->vis_folder() + "/" + std::to_string(static_cast<int>(step / modelproto_.visualization_frequency()));
-          WriteProtoToBinaryFile(bp, filename.c_str());
-        } 
-      }
-    }
-  }
 }
 
 void CDWorker::TrainOneBatch(int step, Metric* perf) {
