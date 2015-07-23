@@ -6,29 +6,30 @@
 #include "proto/singa.pb.h"
 #include "utils/common.h"
 #ifndef GFLAGS_GFLAGS_H_
-  namespace gflags = google;
+namespace gflags = google;
 #endif  // GFLAGS_GFLAGS_H_
 
 DEFINE_string(global, "conf/singa.conf", "Global config file");
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
+  // set logging level to ERROR and log to STDERR
+  FLAGS_logtostderr = 1;
+  FLAGS_minloglevel = 2;
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   singa::SingaProto global;
   singa::ReadProtoFromTextFile(FLAGS_global.c_str(), &global);
-  singa::SetupLog(global.log_dir(), "SingaTool");
-
   LOG(INFO) << "The global config is \n" << global.DebugString();
 
   singa::JobManager mng(global.zookeeper_host());
   std::string usage = "singatool usage:\n"
-      "./singatool create       :  generate a unique job id\n"
-      "./singatool list         :  list running singa jobs\n"
-      "./singatool view JOB_ID  :  view procs of a singa job\n"
-      "./singatool clean JOB_ID :  clean a job path in zookeeper\n"
-      "./singatool cleanup      :  clean all singa data in zookeeper\n"
-      "./singatool listall      :  list all singa jobs\n";
+      "# ./singatool create       :  generate a unique job id\n"
+      "# ./singatool list         :  list running singa jobs\n"
+      "# ./singatool view JOB_ID  :  view procs of a singa job\n"
+      "# ./singatool clean JOB_ID :  clean a job path in zookeeper\n"
+      "# ./singatool cleanup      :  clean all singa data in zookeeper\n"
+      "# ./singatool listall      :  list all singa jobs\n";
   if (argc <= 1) {
     LOG(ERROR) << usage;
     return 1;
