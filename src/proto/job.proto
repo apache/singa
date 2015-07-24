@@ -75,8 +75,6 @@ message ModelProto {
   optional int32 test_frequency = 33 [default = 0];
   // frequency of checkpoint
   optional int32 checkpoint_frequency = 34 [default = 0];
-  //frequency of visualization
-  optional int32 visualization_frequency = 37 [default=5000];
   // send parameters to servers after training for this num of steps
   optional int32 warmup_steps = 35 [default = 0];
   // checkpoint path
