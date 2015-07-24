@@ -160,7 +160,168 @@ void DropoutLayer::ComputeGradient(Phase phase)  {
   auto gsrc = Tensor1(srclayers_[0]->mutable_grad(this));
   gsrc = grad * mask;
 }
+/**************** Implementation for RBMVisLayer********************/
+RBMVisLayer::~RBMVisLayer() {
+  delete weight_;
+  delete bias_;
+}
+void RBMVisLayer::Setup(const LayerProto& proto,
+      int npartitions) {
+  Layer::Setup(proto, npartitions);
+  CHECK_EQ(srclayers_.size(), 2);
+  // hid_idx_: index indicating which srclayer is is hidden layer
+  // data_idx_: index indicating which srclayer is data layer
+  for (unsigned int i = 0; i < srclayers_.size(); i++)
+    for (unsigned int j = 0; j < (srclayers_[i]-> dstlayers()).size(); j++)
+      if (strcmp(((srclayers_[i]->dstlayers()).at(j)->name().c_str()),
+        (this->name()).c_str()) == 0)
+        hid_idx_ = i;
+  for (unsigned int i = 0; i < srclayers_.size(); i++)
+    if (i != static_cast<unsigned int>(hid_idx_) )
+      data_idx_ = i;
+  const auto& src = srclayers_[data_idx_]->data(this);
+  is_first_iteration_vis_ = true;
+  batchsize_ = src.shape()[0];
+  neg_batchsize_ = batchsize_;
+  /*gibbs sampling size and input have the same size*/
+  vdim_ = src.count()/batchsize_;
+  hdim_ = proto.rbmvis_conf().num_output();
+  data_.Reshape(vector<int>{batchsize_, vdim_});  // this is visible dimension
+  vis_sample_.Reshape(vector<int>{neg_batchsize_, vdim_});
+  Factory<Param>* factory = Singleton<Factory<Param>>::Instance();
+  weight_ = factory->Create("Param");
+  bias_ = factory->Create("Param");
+  weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
+  bias_->Setup(proto.param(1), vector<int>{vdim_});
+}
 
+void RBMVisLayer::ComputeFeature(Phase phase, Metric* perf) {
+  if (phase == kPositive) { /*positive phase*/
+    auto data = Tensor2(&data_);
+    CHECK_EQ(srclayers_[data_idx_]->data(this).count(), batchsize_*vdim_);
+    auto src = Tensor2(srclayers_[data_idx_]->mutable_data(this));
+    Copy(data, src);
+  } else if (phase == kNegative) {   /*negative phase*/
+      if (is_first_iteration_vis_) {
+        CHECK_EQ(srclayers_[data_idx_]->data(this).count(), batchsize_*vdim_);
+        auto src = Tensor2(srclayers_[data_idx_]->mutable_data(this));
+        auto vis_sample = Tensor2(&vis_sample_);
+        Copy(vis_sample, src);
+        is_first_iteration_vis_ = false;
+      } else {
+          auto hid_sample =
+                Tensor2(srclayers_[hid_idx_]->mutable_data(this, kNegative));
+          // fetch sampling results from hidden layer
+          auto vis_sample = Tensor2(&vis_sample_);
+          auto weight = Tensor2(weight_->mutable_data());
+          auto bias = Tensor1(bias_->mutable_data());
+          vis_sample = dot(hid_sample, weight.T());
+          vis_sample+=repmat(bias, neg_batchsize_);
+          vis_sample = F<op::sigmoid>(vis_sample);
+          TSingleton<Random<cpu>>::Instance()->SampleBinary(vis_sample);
+        }
+    }
+}
+
+void RBMVisLayer::ComputeGradient(Phase phase) {
+  auto data = Tensor2(&data_);
+  auto hid_data = Tensor2(srclayers_[hid_idx_]->mutable_data(this, kPositive));
+  auto vis_sample = Tensor2(&vis_sample_);
+  auto hid_sample =
+       Tensor2(srclayers_[hid_idx_]->mutable_data(this, kNegative));
+  // fetch sampling results from hidden layer
+  auto gweight = Tensor2(weight_->mutable_grad());
+  auto gbias = Tensor1(bias_->mutable_grad());
+  gbias = sum_rows(vis_sample);
+  gbias -= sum_rows(data);
+  gweight = dot(vis_sample.T(), hid_sample);
+  gweight -= dot(data.T(), hid_data);
+  gbias*=(1.0f)/(1.0f*batchsize_);
+  gweight*=(1.0f)/(1.0f*batchsize_);
+}
+
+void RBMVisLayer::ComputeLoss(Metric* perf) {
+  float loss = (0.0f);
+  CHECK_EQ(srclayers_[data_idx_]->data(this).count(), batchsize_*vdim_);
+  auto src = Tensor2(srclayers_[data_idx_]->mutable_data(this));
+  auto hid_data = Tensor2(srclayers_[hid_idx_]->mutable_data(this, kPositive));
+  // gibbs using u
+  auto weight = Tensor2(weight_->mutable_data());
+  auto bias = Tensor1(bias_->mutable_data());
+  Tensor<cpu, 2> reconstruct(Shape2(batchsize_, vdim_)); /*reconstruct error*/
+  AllocSpace(reconstruct);
+  reconstruct = dot(hid_data, weight.T());
+  reconstruct+=repmat(bias, batchsize_);
+  reconstruct = F<op::sigmoid>(reconstruct);
+  float *src_dptr = src.dptr;
+  float *reconstruct_dptr = reconstruct.dptr;
+  for (int i = 0; i < vdim_*batchsize_; i++)
+    loss += -(src_dptr[i]*log(reconstruct_dptr[i])
+            +(1-src_dptr[i])*log(1-reconstruct_dptr[i]));
+  loss/=batchsize_;
+  FreeSpace(reconstruct);
+  perf->Reset();
+  perf->Add("reconstruct_error", loss);
+}
+/**************** Implementation for RBMHidLayer********************/
+RBMHidLayer::~RBMHidLayer() {
+  delete weight_;
+  delete bias_;
+}
+void RBMHidLayer::Setup(const LayerProto& proto,
+      int npartitions) {
+  Layer::Setup(proto, npartitions);
+  CHECK_EQ(srclayers_.size(), 1);
+  const auto& src_data = srclayers_[0]->data(this, kPositive);
+  const auto& src_sample = srclayers_[0]->data(this, kNegative);
+  scale_ = static_cast<float> (1.0f);
+  batchsize_ = src_data.shape()[0];
+  neg_batchsize_ = src_sample.shape()[0];
+  vdim_ = src_data.count()/batchsize_;
+  hdim_ = proto.rbmhid_conf().hid_dim();
+  data_.Reshape(vector<int>{batchsize_, hdim_});
+  hid_sample_.Reshape(vector<int>{neg_batchsize_, hdim_});
+  Factory<Param>* factory = Singleton<Factory<Param>>::Instance();
+  bias_ = factory->Create("Param");
+  weight_ = factory->Create("Param");
+  bias_->Setup(proto.param(1), vector<int>{hdim_});
+  weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
+}
+
+void RBMHidLayer::ComputeFeature(Phase phase, Metric* perf) {
+  if (phase == kPositive) {  /*postive phase*/
+    auto data = Tensor2(&data_);
+    CHECK_EQ(srclayers_[0]->data(this, kPositive).count(), batchsize_*vdim_);
+    auto src = Tensor2(srclayers_[0]->mutable_data(this, kPositive));
+    auto weight = Tensor2(weight_->mutable_data());
+    auto bias = Tensor1(bias_->mutable_data());
+    data = dot(src, weight);
+    data += repmat(bias, batchsize_);
+    data = F<op::sigmoid>(data);
+  } else if (phase == kNegative) {   /*negative phase*/
+      CHECK_EQ(srclayers_[0]->data(this, kNegative).count(),
+         neg_batchsize_*vdim_);
+      auto src_sample = Tensor2(srclayers_[0]->mutable_data(this, kNegative));
+      auto hid_sample = Tensor2(&hid_sample_);
+      auto bias = Tensor1(bias_->mutable_data());
+      auto weight = Tensor2(weight_->mutable_data());
+      hid_sample = dot(src_sample, weight);
+      hid_sample += repmat(bias, neg_batchsize_);
+      hid_sample = F<op::sigmoid>(hid_sample);
+      TSingleton<Random<cpu>>::Instance()->SampleBinary(hid_sample);
+    } else if (phase == kLoss) {   /*test phase*/
+       auto data = Tensor2(&data_);  // data: sigmoid(Wv+b)
+       TSingleton<Random<cpu>>::Instance()->SampleBinary(data);
+      }
+}
+void RBMHidLayer::ComputeGradient(Phase phase) {
+  auto data = Tensor2(&data_);
+  auto hid_sample = Tensor2(&hid_sample_);
+  auto gbias = Tensor1(bias_->mutable_grad());
+  gbias = sum_rows(hid_sample);
+  gbias -= sum_rows(data);
+  gbias *= scale_/(1.0f*batchsize_);
+}
 /*********** Implementation for InnerProductLayer**********/
 InnerProductLayer::~InnerProductLayer() {
   delete weight_;

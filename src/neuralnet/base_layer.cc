@@ -124,7 +124,7 @@ void PrefetchLayer::Setup(const LayerProto& proto, int npartitions) {
       datablobs_[layer->name()]=Blob<float>(layer->data(this).shape());
 }
 
-const Blob<float>& PrefetchLayer::data(const Layer* from) const {
+const Blob<float>& PrefetchLayer::data(const Layer* from, Phase phase) const {
   if(from!=nullptr){
     return datablobs_.at(from->datablob());
   }else{
@@ -133,7 +133,7 @@ const Blob<float>& PrefetchLayer::data(const Layer* from) const {
   }
 }
 
-Blob<float>* PrefetchLayer::mutable_data(const Layer* from) {
+Blob<float>* PrefetchLayer::mutable_data(const Layer* from, Phase phase) {
   if(from!=nullptr){
     return &(datablobs_.at(from->datablob()));
   }else{
@@ -183,7 +183,7 @@ int SliceLayer::SliceID(const Layer* layer) const {
   return -1;
 }
 
-const Blob<float>& SliceLayer::data(const Layer* layer) const {
+const Blob<float>& SliceLayer::data(const Layer* layer, Phase phase) const {
   if(layer==nullptr)
     return data_;
   return datavec_[SliceID(layer)];
@@ -193,7 +193,7 @@ const Blob<float>& SliceLayer::grad(const Layer* layer) const {
     return grad_;
   return gradvec_[SliceID(layer)];
 }
-Blob<float>* SliceLayer::mutable_data(const Layer* layer) {
+Blob<float>* SliceLayer::mutable_data(const Layer* layer, Phase phase) {
   if(layer==nullptr)
     return &data_;
   return &datavec_[SliceID(layer)];
