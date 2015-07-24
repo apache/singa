@@ -65,11 +65,19 @@ case $1 in
              -oUserKnownHostsFile=/dev/null \
              -oLogLevel=quiet"
     hosts=`cat $host_file | cut -d ' ' -f 1`
+    if [ `head -1 "$SINGA_CONF"/hostfile` == localhost ]; then
+      local_procs=1
+    fi
     for i in ${hosts[@]}; do
-      echo kill singa @ $i ...
       proc=(`echo $i | tr '|' ' '`)
       singa_kill="kill -9 "${proc[1]}
-      ssh $ssh_options ${proc[0]} $singa_kill
+      if [ -z $local_procs ]; then
+        echo Kill singa @ $i ...
+        ssh $ssh_options ${proc[0]} $singa_kill
+      else
+        echo Kill singa @ ${proc[1]} ...
+        $singa_kill
+      fi
     done
     rm $host_file
     ./singatool clean $2 || exit 1

@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
     printf("----------|-----------\n");
     for (singa::JobInfo job : jobs) {
       if (!job.procs) continue;
-      printf("job-%-6d|%-10d\n", job.id, job.procs);
+      printf("%-10d|%-10d\n", job.id, job.procs);
     }
   } else if (!strcmp(argv[1], "listall")) {
     std::vector<singa::JobInfo> jobs;
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     printf("JOB ID    |NUM PROCS  \n");
     printf("----------|-----------\n");
     for (singa::JobInfo job : jobs) {
-      printf("job-%-6d|%-10d\n", job.id, job.procs);
+      printf("%-10d|%-10d\n", job.id, job.procs);
     }
   } else if (!strcmp(argv[1], "view")) {
     if (argc <= 2) {
