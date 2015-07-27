@@ -143,6 +143,7 @@ class Blob {
   const Dtype* gpu_data() const;
   Dtype* mutable_cpu_data();
   Dtype* mutable_gpu_data();
+  Dtype* mutable_xpu_data();
   void FromProto(const singa::BlobProto& proto);
   void ToProto(singa::BlobProto* proto) const;
 
