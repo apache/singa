@@ -218,6 +218,14 @@ namespace mshadow {
          * \brief constructor of random engine
          * \param seed random number seed
          */
+        Random<gpu>() {
+            curandStatus_t status;
+            status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
+            utils::Assert(status == CURAND_STATUS_SUCCESS, "Can not create CURAND Generator");
+            this->Seed();
+            buffer_.Resize( Shape1(kRandBufferSize) );
+        }
+
         Random<gpu>(int seed) {
             curandStatus_t status;
             status = curandCreateGenerator(&gen_, CURAND_RNG_PSEUDO_DEFAULT);
@@ -235,6 +243,11 @@ namespace mshadow {
          * \brief seed random number generator using this seed
          * \param seed seed of prng
          */
+        inline void Seed(){
+            curandStatus_t status;
+            status = curandSetPseudoRandomGeneratorSeed(gen_, 0);
+            utils::Assert(status == CURAND_STATUS_SUCCESS, "Set CURAND seed failed.");
+        }
         inline void Seed( int seed ){
             curandStatus_t status;
             status = curandSetPseudoRandomGeneratorSeed(gen_, seed);
