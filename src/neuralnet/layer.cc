@@ -10,28 +10,58 @@
 using namespace mshadow;
 using namespace mshadow::expr;
 
+#ifndef CPU_ONLY
+	#define xpu mshadow::gpu
+#else
+	#define xpu mshadow::cpu
+#endif
+
 namespace singa {
-inline Tensor<cpu, 4> Tensor4(Blob<float>* blob) {
+inline Tensor<cpu, 4> Tensor4CPU(Blob<float>* blob) {
   const vector<int>& shape = blob->shape();
   Tensor<cpu, 4> tensor(blob->mutable_cpu_data(),
       Shape4(shape[0], shape[1], shape[2], shape[3]));
   return tensor;
 }
 
-inline Tensor<cpu, 3> Tensor3(Blob<float>* blob){
+inline Tensor<cpu, 3> Tensor3CPU(Blob<float>* blob){
   const vector<int>& shape = blob->shape();
   Tensor<cpu, 3> tensor(blob->mutable_cpu_data(),
       Shape3(shape[0], shape[1], blob->count() / shape[0] / shape[1]));
   return tensor;
 }
-inline Tensor<cpu, 2> Tensor2(Blob<float>* blob){
+inline Tensor<cpu, 2> Tensor2CPU(Blob<float>* blob){
   const vector<int>& shape = blob->shape();
   Tensor<cpu, 2> tensor(blob->mutable_cpu_data(),
       Shape2(shape[0], blob->count() / shape[0]));
   return tensor;
 }
-inline Tensor<cpu, 1> Tensor1(Blob<float>* blob){
+inline Tensor<cpu, 1> Tensor1CPU(Blob<float>* blob){
   Tensor<cpu, 1> tensor(blob->mutable_cpu_data(), Shape1(blob->count()));
+  return tensor;
+}
+
+inline Tensor<xpu, 4> Tensor4(Blob<float>* blob) {
+  const vector<int>& shape = blob->shape();
+  Tensor<xpu, 4> tensor(blob->mutable_xpu_data(),
+      Shape4(shape[0], shape[1], shape[2], shape[3]));
+  return tensor;
+}
+
+inline Tensor<xpu, 3> Tensor3(Blob<float>* blob){
+  const vector<int>& shape = blob->shape();
+  Tensor<xpu, 3> tensor(blob->mutable_xpu_data(),
+      Shape3(shape[0], shape[1], blob->count() / shape[0] / shape[1]));
+  return tensor;
+}
+inline Tensor<xpu, 2> Tensor2(Blob<float>* blob){
+  const vector<int>& shape = blob->shape();
+  Tensor<xpu, 2> tensor(blob->mutable_xpu_data(),
+      Shape2(shape[0], blob->count() / shape[0]));
+  return tensor;
+}
+inline Tensor<xpu, 1> Tensor1(Blob<float>* blob){
+  Tensor<xpu, 1> tensor(blob->mutable_xpu_data(), Shape1(blob->count()));
   return tensor;
 }
 
@@ -106,9 +136,9 @@ void ConvolutionLayer::ComputeGradient(Phase phase) {
   auto gbias = Tensor1(bias_->mutable_grad());
 
   Blob<float>* gsrcblob=srclayers_[0]->mutable_grad(this);
-  Tensor<cpu, 4> gsrc(nullptr, Shape4(batchsize_, channels_, height_, width_));
+  Tensor<xpu, 4> gsrc(nullptr, Shape4(batchsize_, channels_, height_, width_));
   if(gsrcblob!=nullptr)
-    gsrc.dptr=gsrcblob->mutable_cpu_data();
+    gsrc.dptr=gsrcblob->mutable_xpu_data();
   gbias=sumall_except_dim<1>(grad);
 
   gweight = 0.0f;
@@ -128,6 +158,7 @@ void ConvolutionLayer::ComputeGradient(Phase phase) {
       gsrc[n] = crop(pack_col2patch(gcol, padshp, kernel_, stride_), imgshp);
     }
   }
+  weight_->mutable_data()->mutable_cpu_data();
 }
 
 /****************** Implementation for DropoutLayer ***********************/
@@ -147,7 +178,7 @@ void DropoutLayer::ComputeFeature(Phase phase, Metric* perf) {
   }
   float pkeep=1-pdrop_;
   auto mask = Tensor1(&mask_);
-  mask = F<op::threshold>(TSingleton<Random<cpu>>::Instance()\
+  mask = F<op::threshold>(TSingleton<Random<xpu>>::Instance()\
       ->uniform(mask.shape), pkeep ) * (1.0f/pkeep);
   auto data = Tensor1(&data_);
   auto src = Tensor1(srclayers_[0]->mutable_data(this));
@@ -266,9 +297,13 @@ void LRNLayer::ComputeGradient(Phase phase) {
   auto grad = Tensor4(&grad_);
   auto gsrc = Tensor4(srclayers_[0]->mutable_grad(this));
 
+ // TensorContainer<xpu> temp(norm.shape_);
+  Tensor<xpu,4> temp = NewTensor<xpu>(norm.shape, 0.0f);
   gsrc = grad * F<op::power>( norm, -beta_ );
-  gsrc += ( - 2.0f * beta_ * salpha ) * chpool<red::sum>(
-      grad * src * F<op::power>( norm, -beta_-1.0f ), lsize_ )  * src;
+  temp += F<op::power>( norm, -beta_-1.0f );
+  gsrc += ( - 2.0f * beta_ * salpha ) * chpool<red::sum>(grad * src * temp, lsize_ )  * src;
+  //gsrc += ( - 2.0f * beta_ * salpha ) * chpool<red::sum>(
+      //grad * src * F<op::power>( norm, -beta_-1.0f ), lsize_ )  * src;
 }
 
 /**************** Implementation for MnistImageLayer******************/
@@ -412,7 +447,7 @@ void ReLULayer::ComputeGradient(Phase phase) {
 void RGBImageLayer::ParseRecords(Phase phase,
     const vector<Record>& records, Blob<float>* blob){
   const vector<int>& s=blob->shape();
-  auto images = Tensor4(&data_);
+  auto images = Tensor4CPU(&data_);
   const SingleLabelImageRecord& r=records.at(0).image();
   Tensor<cpu, 3> raw_image(Shape3(r.shape(0),r.shape(1),r.shape(2)));
   AllocSpace(raw_image);
@@ -613,5 +648,4 @@ void SoftmaxLossLayer::ComputeGradient(Phase phase) {
   Tensor<cpu, 1> gsrc(gsrcptr, Shape1(gsrcblob->count()));
   gsrc*=scale_/(1.0f*batchsize_);
 }
-
 }  // namespace singa
