@@ -207,8 +207,9 @@ void Trainer::Resume(ModelProto* modelConf) {
     tinydir_readfile(&dir, &file);
     tinydir_next(&dir);
     char* ch = strstr(file.name, "step");
-    if (ch == nullptr && file.name[0] != '.' && file.name[1] != '.') {
-      LOG(INFO) << "Irregular file in checkpoint folder: " << file.name;
+    if (ch == nullptr) {
+      if (file.name[0] != '.')
+        LOG(INFO) << "Irregular file in checkpoint folder: " << file.name;
       continue;
     }
 
