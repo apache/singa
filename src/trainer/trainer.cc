@@ -200,7 +200,7 @@ void Trainer::Resume(ModelProto* modelConf) {
   tinydir_open(&dir, folder.c_str());
   int latest_step = 0;
   // there would be multi checkpoint files (from diff workers) for one step
-  vector<char *> ck_files;
+  vector<string> ck_files;
   // iterate all files to get the files for the last checkpoint
   while (dir.has_next) {
     tinydir_file file;
@@ -213,21 +213,24 @@ void Trainer::Resume(ModelProto* modelConf) {
       continue;
     }
 
-    LOG(ERROR) << ch;
+    LOG(INFO) << "Add checkpoint file for resume: " << ch;
     int step = atoi(ch+4);
     if (step == latest_step) {
       ck_files.push_back(file.name);
     } else if(step > latest_step) {
       latest_step = step;
       ck_files.clear();
-      ck_files.push_back(file.name);
+      ck_files.push_back(string(file.name));
     }
   }
 
   if (latest_step > 0) {
     modelConf->set_step(latest_step);
+    if (!modelConf->has_reset_param_version())
+      modelConf->set_reset_param_version(false);
+    modelConf->clear_checkpoint();
     for (auto ck_file : ck_files)
-      modelConf->add_checkpoint(folder + "/" +string(ck_file));
+      modelConf->add_checkpoint(folder + "/" + ck_file);
   }
   tinydir_close(&dir);
 }
@@ -310,7 +313,7 @@ void Trainer::Run(
       } else if (sock == nullptr) {
         if (nserver_grps > 1 && bandwidth(trans_size, start) < max_bandwidth) {
           Msg* msg = GenSyncReminderMsg(sync_server_id, servers);
-          router_->Send(&msg);
+          router_->Send(&msg) ;
           sync_server_id = (sync_server_id + 1) % nservers;
         }
         continue;

@@ -385,7 +385,7 @@ void LabelLayer::ParseRecords(Phase phase, const vector<Record>& records,
   float *label= blob->mutable_cpu_data() ;
   for(const Record& record: records){
     label[rid++]=record.image().label();
-    CHECK_LT(record.image().label(),10);
+    //  CHECK_LT(record.image().label(),10);
   }
   CHECK_EQ(rid, blob->shape()[0]);
 }
@@ -738,7 +738,7 @@ void SoftmaxLossLayer::ComputeFeature(Phase phase, Metric* perf) {
   float loss=0, precision=0;
   for(int n=0;n<batchsize_;n++){
     int ilabel=static_cast<int>(label[n]);
-    CHECK_LT(ilabel,10);
+    //  CHECK_LT(ilabel,10);
     CHECK_GE(ilabel,0);
     float prob_of_truth=probptr[ilabel];
     loss-=log(std::max(prob_of_truth, FLT_MIN));

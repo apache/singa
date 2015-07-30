@@ -43,7 +43,7 @@ void Worker::InitLocalParams() {
   // for each server grp, its first subscriber worker grp does the param init
   if (grp_id_ % Cluster::Get()->nworker_groups_per_server_group() == 0) {
     // extract params that should be initialized by this worker
-    // Must gen a name for each param if the user doesn't config it
+    // must gen a name for each param if the user doesn't config it
     std::unordered_map<string, Param*> name2param;
     for (auto layer: train_net_->layers()){
       if (layer->partition_id() == id_) {
@@ -56,7 +56,9 @@ void Worker::InitLocalParams() {
         }
       }
     }
-    // load from checkpoint. Get param blob based on param name
+    // load from checkpoints. get param blob based on param name.
+    // the param from previous checkpoint files will be overwritten by
+    // the param with the same name in later checkpoint files.
     for (const auto checkpoint : modelproto_.checkpoint()) {
       LOG(INFO) << "Load from checkpoint file " << checkpoint;
       BlobProtos bps;
@@ -64,14 +66,22 @@ void Worker::InitLocalParams() {
       for (int i = 0; i < bps.name_size(); i++) {
         if (name2param.find(bps.name(i)) != name2param.end()) {
           name2param.at(bps.name(i))->FromProto(bps.blob(i));
-          name2param.at(bps.name(i))->set_version(bps.version(i));
+          //  if load from pre-training params, reset version to start step
+          if(modelproto_.reset_param_version())
+            name2param.at(bps.name(i))->set_version(modelproto_.step());
+          else  // if resume training, use the same version as last checkpoint
+            name2param.at(bps.name(i))->set_version(bps.version(i));
         }
       }
     }
     // init other params who do not have checkpoint version
     for (auto entry : name2param)
-      if (entry.second->version() < 0 || modelproto_.reset_param_version())
+      if (entry.second->version() < 0) {
         entry.second->InitValues(modelproto_.step());
+        if (!modelproto_.reset_param_version())
+          LOG(ERROR) << "better reset version of params from checkpoints "
+            << "to the same as other newly initialized params!";
+      }
 
     Metric perf;
     // warmup training before put params to servers
@@ -81,7 +91,7 @@ void Worker::InitLocalParams() {
       if (layer->partition_id() == id_)
         for (auto param : layer->GetParams())
           if (param->owner() == param->id())
-            Put(param, step_);
+            Put(param, param->version());
     }
   }
   // wait owners in the same procs init params, then no get requests sent

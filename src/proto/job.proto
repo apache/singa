@@ -95,7 +95,7 @@ message ModelProto {
   // checkpoint files
   repeated string checkpoint = 66;
   // reset the version of params loaded from checkpoint file to step
-  optional bool reset_param_version = 67 [default = false];
+  optional bool reset_param_version = 67 [default = true];
   //number of steps for gibbs sampling
   optional int32 pcd_k=69 [default=15];
 }
