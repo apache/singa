@@ -175,7 +175,7 @@ void Metric::Add(const string& name, float value) {
 }
 
 void Metric::Reset() {
-  for(auto e : entry_) {
+  for(auto& e : entry_) {
     e.second.first = 0;
     e.second.second = 0;
   }
