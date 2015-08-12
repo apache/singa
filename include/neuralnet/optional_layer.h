@@ -1,4 +1,5 @@
-#ifdef USE_OPTIONAL_LAYER
+//#ifdef USE_OPTIONAL_LAYER
+#ifdef USE_LMDB
 #ifndef SINGA_NEURALNET_OPTIONAL_LAYER_
 #define SINGA_NEURALNET_OPTIONAL_LAYER_
 #include "neuralnet/layer.h"
