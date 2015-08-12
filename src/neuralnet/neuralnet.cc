@@ -288,6 +288,7 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
         // differentiate partitions
         string nodename = layer.name() + "@" + string(suffix);
         proto->set_partition_id(i);
+        proto->set_name(nodename);
         auto node = new Node(nodename, layer.name(), i, proto);
         graph->AddNode(node);
         nodes.push_back(node);

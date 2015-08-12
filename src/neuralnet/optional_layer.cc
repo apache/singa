@@ -95,7 +95,7 @@ void LMDBDataLayer::Setup(const LayerProto& proto, int npartitions) {
   SingleLabelImageRecord* record=sample_.mutable_image();
   ConvertCaffeDatumToRecord(datum, record);
 
-  batchsize_=batchsize();
+  batchsize_ = proto.lmdbdata_conf().batchsize();
   if(partition_dim() == 0)
     batchsize_ /= npartitions;
   records_.resize(batchsize_);

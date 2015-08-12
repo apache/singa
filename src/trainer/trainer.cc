@@ -86,51 +86,52 @@ void Trainer::SetupWorkerServer(
   auto net = NeuralNet::Create(net_conf, kTrain, grp_size);
   // MUST do SliceParam before share param/net with others
   auto slices = SliceParams(net->params());
-  shared_ptr<NeuralNet> train_net, test_net, valid_net;
-  int grp = workers.size() ? workers.at(0)->grp_id() : -1;
-  if (grp == 0 && model_conf.test_steps()) {
-    // test are performed only by the first group
-    test_net = NeuralNet::Create(net_conf, kTest, grp_size);
-    test_net->ShareParamsFrom(net);
-  }
-  if (grp == 0 && model_conf.validation_steps()) {
-    // validation are performed only by the first group
-    valid_net = NeuralNet::Create(net_conf, kValidation, grp_size);
-    valid_net->ShareParamsFrom(net);
-  }
-  bool prepare_param = true;
+
+  std::unordered_map<int, shared_ptr<NeuralNet>> grp_net;
+  int first_grp = workers.size() ? workers.at(0)->grp_id() : -1;
   for (auto worker : workers) {
-    if (worker->grp_id() != grp) {
-      train_net = NeuralNet::Create(net_conf, kTrain, grp_size);
-      if(cluster->share_memory())
-        train_net->ShareParamsFrom(net);
-      valid_net = test_net = nullptr;
-      grp = worker->grp_id();
-      prepare_param = true;
-    } else {
-      train_net = net;
-    }
-    worker->Setup(model_conf, train_net, valid_net, test_net);
-    // Prepare ParamEntry
-    if (prepare_param) {
-      for (auto layer : train_net->layers()) {
+    int grp_id = worker->grp_id();
+    int worker_id = worker->id();
+    shared_ptr<NeuralNet> test_net = nullptr, valid_net = nullptr;
+    if (grp_net.find(grp_id) == grp_net.end()) {
+      if (grp_id == first_grp) {
+        //  test are performed only by the first group now. TODO update.
+        if (first_grp == 0 && model_conf.test_steps() && worker_id == 0) {
+          test_net = NeuralNet::Create(net_conf, kTest, 1); // hard code for exp
+          test_net->ShareParamsFrom(net);
+        }
+        //  validation are performed only by the first group. TODO update.
+        if (first_grp == 0 && model_conf.validation_steps() && worker_id == 0) {
+          valid_net = NeuralNet::Create(net_conf, kValidation, 1);
+          valid_net->ShareParamsFrom(net);
+        }
+        grp_net[grp_id] = net;
+      } else {
+        grp_net[grp_id] = NeuralNet::Create(net_conf, kTrain, grp_size);
+        if(cluster->share_memory())
+          grp_net[grp_id]->ShareParamsFrom(net);
+      }
+      for (auto layer : grp_net[grp_id]->layers()) {
         bool local = layer->partition_id() >= workers.front()->id()
           && layer->partition_id() <= workers.back()->id();
         for (auto param : layer->GetParams()) {
-          int hash = Hash(grp, param->owner());
+          int hash = Hash(grp_id, param->owner());
           if (worker_shard_.find(hash) == worker_shard_.end())
             worker_shard_[hash] = new ParamEntry();
           worker_shard_[hash]->AddParam(local, param);
         }
       }
-      prepare_param = false;
     }
+    LOG(INFO) << "grp " << worker->grp_id() << ", worker "
+      << worker->id() << " net " << grp_net[grp_id].get();
+    worker->Setup(model_conf, grp_net[grp_id], valid_net, test_net);
   }
-  // partition among server groups, each group maintains one sub-set for sync
+
+  //  partition among server groups, each group maintains one sub-set for sync
   auto slice2group = PartitionSlices(cluster->nserver_groups(), slices);
   for (auto server : servers)
     server->Setup(model_conf.updater(), &server_shard_, slice2group);
-  // partition within one server group, each server updates for one sub-set
+  //  partition within one server group, each server updates for one sub-set
   slice2server_ = PartitionSlices(cluster->nservers_per_group(), slices);
 }
 
