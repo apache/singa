@@ -18,7 +18,7 @@ LDFLAGS := $(foreach librarydir, $(LIBRARY_DIRS), -L$(librarydir))\
 BUILD_DIR := .libs
 MSHADOW_FLAGS :=-DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 ZK_FLAGS :=-DTHREADED -fpermissive
-CXXFLAGS := -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
+CXXFLAGS := -O2 -msse3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
 	$(MSHADOW_FLAGS) -DCPU_ONLY=1 $(ZK_FLAGS)\
 	-funroll-loops $(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
 
