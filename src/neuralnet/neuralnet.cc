@@ -3,6 +3,9 @@
 
 #include "neuralnet/neuralnet.h"
 #include "utils/singleton.h"
+#ifdef USE_OPTIONAL_LAYER
+#include "neuralnet/optional_layer.h"
+#endif
 
 namespace singa {
 // macros to shorten the code

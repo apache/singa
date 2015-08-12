@@ -3,7 +3,9 @@
 namespace singa {
 
 /*********************LMDBDataLayer**********************************/
-void LMDBDataLayer::ComputeFeature(Phase phase, Metric* perf){
+void LMDBDataLayer::ComputeFeature(Phase phase, Metric* perf) {
+  if (mdb_cursor_ == nullptr)
+    OpenLMDB(layer_proto_.lmdbdata_conf().path());
   if(random_skip_){
     int nskip = rand() % random_skip_;
     int n=0;
@@ -63,29 +65,31 @@ void LMDBDataLayer::ConvertCaffeDatumToRecord(const CaffeDatum& datum,
   }
 }
 
-void LMDBDataLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
+void LMDBDataLayer::OpenLMDB(const std::string& path) {
   CHECK_EQ(mdb_env_create(&mdb_env_), MDB_SUCCESS) << "mdb_env_create failed";
   CHECK_EQ(mdb_env_set_mapsize(mdb_env_, 1099511627776), MDB_SUCCESS); // 1TB
-  CHECK_EQ(mdb_env_open(mdb_env_,
-        proto.lmdbdata_conf().path().c_str(),
-        MDB_RDONLY, 0664), MDB_SUCCESS) << "cannot open lmdb "
-    << proto.lmdbdata_conf().path();
+  CHECK_EQ(mdb_env_open(mdb_env_, path.c_str(),
+        MDB_RDONLY, 0664), MDB_SUCCESS) << "cannot open lmdb " << path;
   CHECK_EQ(mdb_txn_begin(mdb_env_, NULL, MDB_RDONLY, &mdb_txn_), MDB_SUCCESS)
     << "mdb_txn_begin failed";
   CHECK_EQ(mdb_open(mdb_txn_, NULL, 0, &mdb_dbi_), MDB_SUCCESS)
     << "mdb_open failed";
   CHECK_EQ(mdb_cursor_open(mdb_txn_, mdb_dbi_, &mdb_cursor_), MDB_SUCCESS)
     << "mdb_cursor_open failed";
-  LOG(INFO) << "Opening lmdb " << proto.lmdbdata_conf().path();
+  LOG(INFO) << "Opening lmdb " << path;
   CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, MDB_FIRST),
       MDB_SUCCESS) << "mdb_cursor_get failed";
+}
 
-  if (mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, MDB_NEXT)
-      != MDB_SUCCESS) {
-    CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_,
-          MDB_FIRST), MDB_SUCCESS);
-  }
+void LMDBDataLayer::Setup(const LayerProto& proto, int npartitions) {
+  Layer::Setup(proto, npartitions);
+  OpenLMDB(proto.lmdbdata_conf().path());
+  CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, MDB_NEXT),
+      MDB_SUCCESS);
+  mdb_cursor_close(mdb_cursor_);
+  mdb_txn_abort(mdb_txn_);
+  mdb_cursor_ = nullptr;
+
   CaffeDatum datum;
   datum.ParseFromArray(mdb_value_.mv_data, mdb_value_.mv_size);
   SingleLabelImageRecord* record=sample_.mutable_image();
@@ -96,6 +100,12 @@ void LMDBDataLayer::Setup(const LayerProto& proto, int npartitions) {
     batchsize_ /= npartitions;
   records_.resize(batchsize_);
   random_skip_=proto.lmdbdata_conf().random_skip();
+}
+
+LMDBDataLayer::~LMDBDataLayer() {
+  mdb_cursor_close(mdb_cursor_);
+  mdb_txn_abort(mdb_txn_);
+  mdb_cursor_ = nullptr;
 }
 
 } /* singa */

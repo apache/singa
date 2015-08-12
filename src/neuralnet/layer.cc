@@ -666,6 +666,9 @@ void RGBImageLayer::Setup(const LayerProto& proto, int npartitions) {
 
 /***************Implementation for ShardDataLayer**************************/
 void ShardDataLayer::ComputeFeature(Phase phase, Metric* perf){
+  if (shard_ == nullptr)
+    shard_ = new DataShard(layer_proto_.sharddata_conf().path(),
+        DataShard::kRead);
   if(random_skip_){
     int nskip = rand() % random_skip_;
     LOG(INFO)<<"Random Skip "<<nskip<<" records, there are "<<shard_->Count()
@@ -687,16 +690,23 @@ void ShardDataLayer::ComputeFeature(Phase phase, Metric* perf){
 
 void ShardDataLayer::Setup(const LayerProto& proto, int npartitions) {
   Layer::Setup(proto, npartitions);
-  shard_= std::make_shared<DataShard>(proto.sharddata_conf().path(),
-      DataShard::kRead);
+  shard_= new DataShard(proto.sharddata_conf().path(), DataShard::kRead);
   string key;
   shard_->Next(&key, &sample_);
+  delete shard_;
+  shard_ = nullptr;
   batchsize_=proto.sharddata_conf().batchsize();
   if(partition_dim() == 0)
     batchsize_ /= npartitions;
 
   records_.resize(batchsize_);
   random_skip_=proto.sharddata_conf().random_skip();
+}
+
+ShardDataLayer::~ShardDataLayer() {
+  if (shard_ != nullptr)
+    delete shard_;
+  shard_ = nullptr;
 }
 /*******************Implementation of TanLayer***************************/
 void TanhLayer::Setup(const LayerProto& proto, int npartitions){

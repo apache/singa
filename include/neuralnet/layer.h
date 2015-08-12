@@ -335,10 +335,12 @@ class ShardDataLayer: public DataLayer{
  public:
   using Layer::ComputeFeature;
 
+  ~ShardDataLayer();
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(Phase phase, Metric *perf) override;
+
  private:
-  shared_ptr<DataShard> shard_;
+  DataShard* shard_;
 };
 
 /**

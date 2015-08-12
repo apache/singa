@@ -9,6 +9,8 @@ class LMDBDataLayer: public DataLayer{
  public:
   using Layer::ComputeFeature;
 
+  ~LMDBDataLayer();
+  void OpenLMDB(const std::string& path);
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(Phase phase, Metric *perf) override;
   void ConvertCaffeDatumToRecord(const CaffeDatum& datum,
