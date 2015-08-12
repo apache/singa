@@ -1,48 +1,42 @@
-#ifndef INCLUDE_UTILS_UPDATER_H_
-#define INCLUDE_UTILS_UPDATER_H_
+#ifndef SINGA_UTILS_UPDATER_H_
+#define SINGA_UTILS_UPDATER_H_
+
 #include "proto/job.pb.h"
 #include "utils/param.h"
 
-namespace singa{
+namespace singa {
 /**
  * Updater for Param.
  */
 class Updater{
  public:
   virtual ~Updater() {}
-  virtual void Init(const UpdaterProto &proto){
-    proto_=proto;
+  virtual void Init(const UpdaterProto &proto) {
+    proto_ = proto;
   }
-  virtual void Update(int step, Param* param, float grad_scale=1.0f)=0;
+  virtual void Update(int step, Param* param, float grad_scale = 1.0f) = 0;
 
   float GetLearningRate(int step);
+
  protected:
   UpdaterProto proto_;
 };
-class SGDUpdater : public Updater{
+
+class SGDUpdater : public Updater {
  public:
   virtual void Init(const UpdaterProto& proto);
-  virtual void Update(int step, Param* param, float grad_scale=1.0f);
+  virtual void Update(int step, Param* param, float grad_scale = 1.0f);
 
  protected:
   float base_lr_;
   float momentum_;
   float weight_decay_;
 };
-class NesterovUpdater : public Updater{
- public:
-  virtual void Init(const UpdaterProto& proto);
-  virtual void Update(int step, Param* param, float grad_scale=1.0f);
 
- protected:
-  float base_lr_;
-  float momentum_;
-  float weight_decay_;
-};
 class AdaGradUpdater : public Updater{
  public:
   virtual void Init(const UpdaterProto& proto);
-  virtual void Update(int step, Param* param, float grad_scale=1.0f);
+  virtual void Update(int step, Param* param, float grad_scale = 1.0f);
 
  protected:
   float base_lr_;
@@ -50,6 +44,18 @@ class AdaGradUpdater : public Updater{
   float weight_decay_;
 };
 
+
+class NesterovUpdater : public Updater {
+ public:
+  virtual void Init(const UpdaterProto& proto);
+  virtual void Update(int step, Param* param, float grad_scale = 1.0f);
+
+ protected:
+  float base_lr_;
+  float momentum_;
+  float weight_decay_;
+};
+/*
 class RMSPropUpdater : public Updater{
  public:
   virtual void Init(const UpdaterProto& proto);
@@ -62,7 +68,6 @@ class RMSPropUpdater : public Updater{
   float weight_decay_;
 };
 
-/*
 class AdaDeltaUpdater : public Updater{
  public:
   virtual void Init(const UpdaterProto& proto);
@@ -74,6 +79,6 @@ class AdaDeltaUpdater : public Updater{
   float weight_decay_;
 };
 */
-}
+}  // namespace singa
 
-#endif // INCLUDE_UTILS_UPDATER_H_
+#endif  // SINGA_UTILS_UPDATER_H_
