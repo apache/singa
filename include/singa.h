@@ -2,6 +2,7 @@
 #define SINGA_SINGA_H_
 #include <gflags/gflags.h>
 #include <glog/logging.h>
+#include <cblas.h>
 
 #include "utils/common.h"
 #include "proto/job.pb.h"
@@ -24,9 +25,13 @@ void SubmitJob(int job, bool resume, const JobProto& jobConf) {
   if (singaConf.has_log_dir())
     SetupLog(singaConf.log_dir(),
         std::to_string(job) + "-" + jobConf.model().name());
+  if (jobConf.num_openblas_threads() != 1)
+    LOG(WARNING) << "openblas is set with " << jobConf.num_openblas_threads()
+      << " threads";
+  openblas_set_num_threads(jobConf.num_openblas_threads());
   Trainer trainer;
   trainer.Start(job, resume, jobConf, singaConf);
 }
-} /* singa */
+}  // namespace singa
 #endif  //  SINGA_SINGA_H_
 

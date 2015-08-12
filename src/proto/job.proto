@@ -3,6 +3,7 @@ package singa;
 message JobProto {
   required ClusterProto cluster = 1;
   required ModelProto model = 2;
+  optional int32 num_openblas_threads = 3 [default = 1];
 }
 
 message ClusterProto {
