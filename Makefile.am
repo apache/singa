@@ -89,36 +89,21 @@ bin_PROGRAMS = singa
 singa_SOURCES = src/main.cc
 singa_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
                  $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED
+singa_LDFLAGS = -I./include \
+                -lsinga \
+                -lglog  \
+                -lgflags \
+                -lprotobuf \
+                -lrt \
+                -lopencv_highgui \
+                -lopencv_imgproc \
+                -lopencv_core \
+                -lopenblas \
+                -lzmq \
+                -lczmq \
+                -lzookeeper_mt
 if LMDB
-singa_LDFLAGS = -I./include \
-                -lsinga \
-                -lglog  \
-                -lgflags \
-                -lprotobuf \
-                -lrt \
-                -lopencv_highgui \
-                -lopencv_imgproc \
-                -lopencv_core \
-                -lopenblas \
-                -lzmq \
-                -lczmq \
-                -llmdb \
-                -lzookeeper_mt
-else
-singa_LDFLAGS = -I./include \
-                -lsinga \
-                -lglog  \
-                -lgflags \
-                -lprotobuf \
-                -lrt \
-                -lopencv_highgui \
-                -lopencv_imgproc \
-                -lopencv_core \
-                -lopenblas \
-                -lzmq \
-                -lczmq \
-                -llmdb \
-                -lzookeeper_mt
+singa_LDFLAGS += -llmdb
 endif
 
 bin_PROGRAMS += singatool
