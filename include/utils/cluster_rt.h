@@ -142,8 +142,9 @@ class JobManager {
   bool GenerateJobID(int* id);
   bool ListJobs(std::vector<JobInfo>* jobs);
   bool ListJobProcs(int job, std::vector<std::string>* procs);
-  bool Clean(int job);
-  bool Cleanup();
+  bool Remove(int job);
+  bool RemoveAllJobs();
+  bool CleanUp();
 
  private:
   const int kJobsNotRemoved = 10;

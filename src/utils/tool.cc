@@ -103,11 +103,19 @@ int view(int id) {
   return SUCCESS;
 }
 
-// clean a job path in zookeeper
-int clean(int id) {
+// remove a job path in zookeeper
+int remove(int id) {
   singa::JobManager mngr(global.zookeeper_host());
   if (!mngr.Init()) return RUN_ERR;
-  if (!mngr.Clean(id)) return RUN_ERR;
+  if (!mngr.Remove(id)) return RUN_ERR;
+  return SUCCESS;
+}
+
+// remove all job paths in zookeeper
+int removeall() {
+  singa::JobManager mngr(global.zookeeper_host());
+  if (!mngr.Init()) return RUN_ERR;
+  if (!mngr.RemoveAllJobs()) return RUN_ERR;
   return SUCCESS;
 }
 
@@ -115,19 +123,20 @@ int clean(int id) {
 int cleanup() {
   singa::JobManager mngr(global.zookeeper_host());
   if (!mngr.Init()) return RUN_ERR;
-  if (!mngr.Cleanup()) return RUN_ERR;
+  if (!mngr.CleanUp()) return RUN_ERR;
   return SUCCESS;
 }
 
 int main(int argc, char **argv) {
-  std::string usage = "usage: singatool <command> <args>\n"
+  std::string usage = "Usage: singatool <command> <args>\n"
       " getlogdir        :  show log dir in global config\n"
       " create           :  generate a unique job id\n"
       " genhost JOB_CONF :  generate a host list\n"
       " list             :  list running singa jobs\n"
       " listall          :  list all singa jobs\n"
       " view JOB_ID      :  view procs of a singa job\n"
-      " clean JOB_ID     :  clean a job path in zookeeper\n"
+      " remove JOB_ID    :  remove a job path in zookeeper\n"
+      " removeall        :  remova all job paths in zookeeper\n"
       " cleanup          :  clean all singa data in zookeeper\n";
   // set logging level to ERROR and log to STDERR
   FLAGS_logtostderr = 1;
@@ -151,8 +160,10 @@ int main(int argc, char **argv) {
       stat = list(true);
     else if (!strcmp(argv[1], "view"))
       stat = (argc > 2) ? view(atoi(argv[2])) : ARG_ERR;
-    else if (!strcmp(argv[1], "clean"))
-      stat = (argc > 2) ? clean(atoi(argv[2])) : ARG_ERR;
+    else if (!strcmp(argv[1], "remove"))
+      stat = (argc > 2) ? remove(atoi(argv[2])) : ARG_ERR;
+    else if (!strcmp(argv[1], "removeall"))
+      stat = removeall();
     else if (!strcmp(argv[1], "cleanup"))
       stat = cleanup();
     else

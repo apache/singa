@@ -20,7 +20,7 @@
 # * limitations under the License.
 # */
 # 
-# clean up singa processes and zookeeper metadata
+# kill all singa jobs
 #
 
 # get environment variables
@@ -45,6 +45,5 @@ done
 # wait for killall command
 sleep 2
 
-# remove zk data
-echo Cleanning metadata in zookeeper ...
-./singatool cleanup || exit 1
+# remove job paths in zookeeper
+./singatool removeall || exit 1

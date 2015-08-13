@@ -20,7 +20,7 @@
 # * limitations under the License.
 # */
 #
-# set Singa environment variables, includes:
+# set singa environment variables, includes:
 #   * SINGA_HOME
 #   * SINGA_BIN
 #   * SINGA_CONF

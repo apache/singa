@@ -20,16 +20,15 @@
 # * limitations under the License.
 # */
 # 
-# clean up singa processes and zookeeper metadata
+# kill all singa jobs and clean up zookeeper
 #
 
 # get environment variables
 . `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
+cd $SINGA_HOME
 
-# clean singa jobs and data
+# kill singa jobs
 $SINGA_BIN/singa-stop.sh || exit 1
 
-# close zookeeper
-if [ $SINGA_MANAGES_ZK = true ]; then
-  $SINGA_BIN/zk-service.sh stop || exit 1
-fi
+# cleanup whole zookeeper
+./singatool cleanup || exit 1

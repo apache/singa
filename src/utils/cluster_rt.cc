@@ -84,6 +84,13 @@ bool ZKService::CreateNode(const char* path, const char* val, int flag,
   } else if (ret == ZNODEEXISTS) {
     LOG(WARNING) << "zookeeper node " << path << " already exists";
     return true;
+  } else if (ret == ZCONNECTIONLOSS) {
+    LOG(ERROR) << "Cannot connect to zookeeper, "
+               << "please ensure it is running properly...\n"
+               << "If want to use zookeeper in our thirdparty folder, "
+               << "you can start it by:\n"
+               << "$ ./bin/zk-service start";
+    return false;
   }
   LOG(FATAL) << "Unhandled ZK error code: " << ret
              << " (zoo_create " << path << ")";
@@ -366,7 +373,7 @@ bool JobManager::ListJobs(vector<JobInfo>* jobs) {
   return true;
 }
 
-bool JobManager::Clean(int job) {
+bool JobManager::Remove(int job) {
   string path = GetZKJobWorkspace(job) + kZKPathJobProc;
   if (zk_.Exist(path.c_str())) {
     return CleanPath(path.c_str(), false);
@@ -374,7 +381,14 @@ bool JobManager::Clean(int job) {
   return true;
 }
 
-bool JobManager::Cleanup() {
+bool JobManager::RemoveAllJobs() {
+  if (zk_.Exist(kZKPathApp.c_str())) {
+    return CleanPath(kZKPathApp.c_str(), false);
+  }
+  return true;
+}
+
+bool JobManager::CleanUp() {
   if (zk_.Exist(kZKPathSinga.c_str())) {
     return CleanPath(kZKPathSinga.c_str(), true);
   }

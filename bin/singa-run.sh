@@ -20,15 +20,15 @@
 # * limitations under the License.
 # */
 #
-# run a Singa job
+# run a singa job
 #
 
 usage="Usage: singa-run.sh -conf=JOB_CONF [ --resume ]\n
-       # set --resume if want to recover a job\n
+        set --resume if want to recover a job\n
        ### NOTICE ###\n
-       # if you are using model.conf + cluster.conf,\n
-       # please see how to combine them to a job.conf:\n
-       # http://singa.incubator.apache.org/quick-start.html"
+        if you are using model.conf + cluster.conf,\n
+        please see how to combine them to a job.conf:\n
+        http://singa.incubator.apache.org/quick-start.html"
 
 # check arguments
 while [ $# != 0 ]; do
@@ -59,11 +59,6 @@ if [ ! -f $job_conf ]; then
   exit 1
 fi
 cd $SINGA_HOME
-
-# start zookeeper
-if [ $SINGA_MANAGES_ZK = true ]; then
-  $SINGA_BIN/zk-service.sh start || exit 1
-fi
 
 # generate unique job id
 job_id=`./singatool create`

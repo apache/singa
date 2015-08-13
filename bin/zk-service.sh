@@ -59,12 +59,12 @@ case $1 in
     fi
     # cd to SINGA_HOME as zookeeper.out will be here
     cd $SINGA_HOME
-    $ZK_HOME/bin/zkServer.sh start 2>/dev/null
+    $ZK_HOME/bin/zkServer.sh start
     ;;
 
   stop)
     # stop zk service
-    $ZK_HOME/bin/zkServer.sh stop 2>/dev/null
+    $ZK_HOME/bin/zkServer.sh stop
     ;;
   
   *)

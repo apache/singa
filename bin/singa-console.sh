@@ -78,7 +78,7 @@ case $1 in
         $singa_kill
       fi
     done
-    ./singatool clean $2 || exit 1
+    ./singatool remove $2 || exit 1
     ;;
   
   *)
