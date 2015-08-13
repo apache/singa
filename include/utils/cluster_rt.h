@@ -93,7 +93,7 @@ class ZKService {
                    RTCallback *cb);
 
  private:
-  const int kNumRetry = 10;
+  const int kNumRetry = 5;
   const int kSleepSec = 1;
 
   static void WatcherGlobal(zhandle_t* zh, int type, int state,
@@ -139,7 +139,7 @@ class JobManager {
   JobManager(const std::string& host, int timeout);
 
   bool Init();
-  int GenerateJobID();
+  bool GenerateJobID(int* id);
   bool ListJobs(std::vector<JobInfo>* jobs);
   bool ListJobProcs(int job, std::vector<std::string>* procs);
   bool Clean(int job);

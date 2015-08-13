@@ -20,7 +20,7 @@ message ClusterProto {
   // port number is used by ZeroMQ
   optional int32 start_port = 13 [default = 6723];
   // local workspace, train/val/test shards, checkpoint files
-  optional string workspace = 14 [default = "workspace"];
+  required string workspace = 14;
 
   // conduct updates at server side; otherwise do it at worker side
   optional bool server_update = 40 [default = true];

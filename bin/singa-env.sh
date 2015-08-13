@@ -24,9 +24,13 @@
 #   * SINGA_HOME
 #   * SINGA_BIN
 #   * SINGA_CONF
+#   * SINGA_LOG
 #   * ZK_HOME
 #   * SINGA_MANAGES_ZK
 #
+
+# exit if varaiables already set
+[ -z $SINGA_ENV_DONE ] || exit 0
 
 # set SINGA_BIN
 if [ -z $SINGA_BIN ]; then
@@ -44,6 +48,13 @@ if [ -z $SINGA_CONF ]; then
   SINGA_CONF=$SINGA_HOME/conf
 fi
 
+# set SINGA_LOG
+if [ -z $SINGA_LOG ]; then
+  # add -global arg, so no need to run under SINGA_HOME
+  SINGA_LOG=`"$SINGA_HOME"/singatool getlogdir -global="$SINGA_CONF"/singa.conf`
+  [ $? == 0 ] || exit 1 
+fi
+
 # set ZK_HOME
 if [ -z $ZK_HOME ]; then
   ZK_HOME=$SINGA_HOME/thirdparty/zookeeper-3.4.6
@@ -55,3 +66,5 @@ if [ -z $SINGA_MANAGES_ZK ]; then
   SINGA_MANAGES_ZK=false
 fi
 
+# mark that we have done all
+SINGA_ENV_DONE=1

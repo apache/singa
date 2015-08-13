@@ -23,8 +23,7 @@
 # run a Singa job
 #
 
-usage="Usage: singa-run.sh -workspace=YOUR_WORKSPACE [ --resume ]\n
-       # workspace should contain job.conf\n
+usage="Usage: singa-run.sh -conf=JOB_CONF [ --resume ]\n
        # set --resume if want to recover a job\n
        ### NOTICE ###\n
        # if you are using model.conf + cluster.conf,\n
@@ -33,28 +32,30 @@ usage="Usage: singa-run.sh -workspace=YOUR_WORKSPACE [ --resume ]\n
 
 # check arguments
 while [ $# != 0 ]; do
-  if [[ $1 == "-workspace="* ]]; then
-    workspace=$1
+  if [[ $1 == "-conf="* ]]; then
+    conf=$1
   elif [ $1 == "--resume" ]; then
     resume=1
   else
-    echo -e $usage
-    exit 1
+    echo -e $usage && exit 1
   fi
   shift
 done
-if [ -z $workspace ]; then
+if [ -z $conf ]; then
   echo -e $usage
   exit 1
 fi
 
 # get environment variables
 . `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
-# get workspace path
-workspace=`cd "${workspace:11}">/dev/null; pwd`
-job_conf=$workspace/job.conf
+
+# change conf to an absolute path
+conf_dir=`dirname "${conf:6}"`
+conf_dir=`cd "$conf_dir">/dev/null; pwd`
+conf_base=`basename "${conf:6}"`
+job_conf=$conf_dir/$conf_base
 if [ ! -f $job_conf ]; then
-  echo job.conf not exists in $workspace
+  echo $job_conf not exists
   exit 1
 fi
 cd $SINGA_HOME
@@ -64,20 +65,26 @@ if [ $SINGA_MANAGES_ZK = true ]; then
   $SINGA_BIN/zk-service.sh start || exit 1
 fi
 
+# generate unique job id
+job_id=`./singatool create`
+[ $? == 0 ] || exit 1
+echo Unique JOB_ID is $job_id
+
+# generate job info dir
+# format: job-JOB_ID-YYYYMMDD-HHMMSS
+log_dir=$SINGA_LOG/job-info/job-$job_id-$(date '+%Y%m%d-%H%M%S');
+mkdir -p $log_dir
+echo Record job information to $log_dir
+
 # generate host file
-host_file=$workspace/job.hosts
+host_file=$log_dir/job.hosts
 python $SINGA_HOME/tool/gen_hosts.py -conf=$job_conf \
                                      -hosts=$SINGA_CONF/hostfile \
                                      -output=$host_file \
                                      || exit 1
 
-# generate unique job id
-./singatool create 1>$workspace/job.id || exit 1
-job_id=`cat $workspace/job.id`
-echo Generate job id to $workspace/job.id [job_id = $job_id]
-
 # set command to run singa
-singa_run="./singa -workspace=$workspace -job=$job_id"
+singa_run="./singa -conf=$job_conf -job=$job_id"
 if [ ! -z $resume ]; then
   singa_run="$singa_run --resume"
 fi
@@ -100,6 +107,5 @@ done
 
 # generate pid list for this job
 sleep 2
-./singatool view $job_id 1>$workspace/job.pids || exit
-echo Generate pid list to $workspace/job.pids
+./singatool view $job_id 1>$log_dir/job.pids || exit 1
 wait

@@ -297,14 +297,15 @@ bool JobManager::Init() {
   return true;
 }
 
-int JobManager::GenerateJobID() {
+bool JobManager::GenerateJobID(int* id) {
   char buf[kZKBufSize];
   string lock = kZKPathJLock + "/lock-";
   if (!zk_.CreateNode(lock.c_str(), nullptr,
                         ZOO_EPHEMERAL | ZOO_SEQUENCE, buf)) {
-    return -1;
+    return false;
   }
-  return atoi(buf+strlen(buf)-10);
+  *id = atoi(buf+strlen(buf)-10);
+  return true;
 }
 
 bool JobManager::ListJobProcs(int job, vector<string>* procs) {
