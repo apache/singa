@@ -1,20 +1,31 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
-#include <iostream>
+#include <algorithm>
 #include <fstream>
-#include "utils/cluster_rt.h"
+#include <iostream>
+#include "proto/job.pb.h"
 #include "proto/singa.pb.h"
+#include "utils/cluster_rt.h"
 #include "utils/common.h"
+
 #ifndef GFLAGS_GFLAGS_H_
 namespace gflags = google;
 #endif  // GFLAGS_GFLAGS_H_
 
-DEFINE_string(global, "conf/singa.conf", "Global config file");
+DEFINE_string(confdir, "conf", "Global config dir");
 
 singa::SingaProto global;
 const int SUCCESS = 0;
 const int ARG_ERR = 1;
 const int RUN_ERR = 2;
+
+// show log dir in global config
+int getlogdir() {
+  std::string dir = global.log_dir();
+  while (dir.length() > 1 && dir[dir.length()-1] == '/') dir.pop_back();
+  printf("%s\n", dir.c_str());
+  return SUCCESS;
+}
 
 // generate a unique job id
 int create() {
@@ -23,6 +34,45 @@ int create() {
   int id;
   if (!mngr.GenerateJobID(&id)) return RUN_ERR;
   printf("%d\n", id);
+  return SUCCESS;
+}
+
+// generate a host list
+int genhost(char* job_conf) {
+  // compute required #process from job conf
+  singa::JobProto job;
+  singa::ReadProtoFromTextFile(job_conf, &job);
+  singa::ClusterProto cluster = job.cluster();
+  int nworker_procs = cluster.nworker_groups() * cluster.nworkers_per_group()
+                      / cluster.nworkers_per_procs();
+  int nserver_procs = cluster.nserver_groups() * cluster.nservers_per_group()
+                      / cluster.nservers_per_procs();
+  int nprocs = 0;
+  if (cluster.server_worker_separate())
+    nprocs = nworker_procs + nserver_procs;
+  else
+    nprocs = std::max(nworker_procs, nserver_procs);
+
+  // get available host list from global conf
+  std::fstream hostfile(FLAGS_confdir+"/hostfile");
+  if (!hostfile.is_open()) {
+    LOG(ERROR) << "Cannot open file: " << FLAGS_confdir+"/hostfile";
+    return RUN_ERR;
+  }
+  std::vector<std::string> hosts;
+  std::string host;
+  while (!hostfile.eof()) {
+    getline(hostfile, host);
+    if (!host.length() || host[0] == '#') continue;
+    hosts.push_back(host);
+  }
+  if (!hosts.size()) {
+    LOG(ERROR) << "Empty host file";
+    return RUN_ERR;
+  }
+  // output selected hosts
+  for (int i = 0; i < nprocs; ++i)
+    printf("%s\n", hosts[i % hosts.size()].c_str());
   return SUCCESS;
 }
 
@@ -69,36 +119,32 @@ int cleanup() {
   return SUCCESS;
 }
 
-// show log dir in global config
-int getlogdir() {
-  std::string dir = global.log_dir();
-  while (dir.length() > 1 && dir[dir.length()-1] == '/') dir.pop_back();
-  printf("%s\n", dir.c_str());
-  return SUCCESS;
-}
-
 int main(int argc, char **argv) {
   std::string usage = "usage: singatool <command> <args>\n"
-      " getlogdir    :  show log dir in global config\n"
-      " create       :  generate a unique job id\n"
-      " list         :  list running singa jobs\n"
-      " listall      :  list all singa jobs\n"
-      " view JOB_ID  :  view procs of a singa job\n"
-      " clean JOB_ID :  clean a job path in zookeeper\n"
-      " cleanup      :  clean all singa data in zookeeper\n";
+      " getlogdir        :  show log dir in global config\n"
+      " create           :  generate a unique job id\n"
+      " genhost JOB_CONF :  generate a host list\n"
+      " list             :  list running singa jobs\n"
+      " listall          :  list all singa jobs\n"
+      " view JOB_ID      :  view procs of a singa job\n"
+      " clean JOB_ID     :  clean a job path in zookeeper\n"
+      " cleanup          :  clean all singa data in zookeeper\n";
   // set logging level to ERROR and log to STDERR
   FLAGS_logtostderr = 1;
   FLAGS_minloglevel = 2;
   google::InitGoogleLogging(argv[0]);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  singa::ReadProtoFromTextFile(FLAGS_global.c_str(), &global);
+  singa::ReadProtoFromTextFile((FLAGS_confdir+"/singa.conf").c_str(), &global);
 
   // stat code: ARG_ERR for wrong argument, RUN_ERR for runtime error
-  int stat = SUCCESS;
-  if (argc <= 1) stat = ARG_ERR;
-  else {
-    if (!strcmp(argv[1], "create"))
+  int stat = (argc <= 1) ? ARG_ERR : SUCCESS;
+  if (stat == SUCCESS) {
+    if (!strcmp(argv[1], "getlogdir"))
+      stat = getlogdir();
+    else if (!strcmp(argv[1], "create"))
       stat = create();
+    else if (!strcmp(argv[1], "genhost"))
+      stat = (argc > 2) ? genhost(argv[2]) : ARG_ERR;
     else if (!strcmp(argv[1], "list"))
       stat = list(false);
     else if (!strcmp(argv[1], "listall"))
@@ -109,11 +155,10 @@ int main(int argc, char **argv) {
       stat = (argc > 2) ? clean(atoi(argv[2])) : ARG_ERR;
     else if (!strcmp(argv[1], "cleanup"))
       stat = cleanup();
-    else if (!strcmp(argv[1], "getlogdir"))
-      stat = getlogdir();
-    else stat = ARG_ERR;
+    else
+      stat = ARG_ERR;
   }
-  
+
   if (stat == ARG_ERR) LOG(ERROR) << usage;
   return stat;
 }

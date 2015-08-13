@@ -50,8 +50,8 @@ fi
 
 # set SINGA_LOG
 if [ -z $SINGA_LOG ]; then
-  # add -global arg, so no need to run under SINGA_HOME
-  SINGA_LOG=`"$SINGA_HOME"/singatool getlogdir -global="$SINGA_CONF"/singa.conf`
+  # add -confdir arg, so no need to run under SINGA_HOME
+  SINGA_LOG=`"$SINGA_HOME"/singatool getlogdir -confdir="$SINGA_CONF"`
   [ $? == 0 ] || exit 1 
 fi
 

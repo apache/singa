@@ -78,10 +78,7 @@ echo Record job information to $log_dir
 
 # generate host file
 host_file=$log_dir/job.hosts
-python $SINGA_HOME/tool/gen_hosts.py -conf=$job_conf \
-                                     -hosts=$SINGA_CONF/hostfile \
-                                     -output=$host_file \
-                                     || exit 1
+./singatool genhost $job_conf 1>$host_file || exit 1
 
 # set command to run singa
 singa_run="./singa -conf=$job_conf -job=$job_id"
