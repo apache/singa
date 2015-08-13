@@ -36,6 +36,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = singa$(EXEEXT) singatool$(EXEEXT)
+@LMDB_TRUE@am__append_1 = -llmdb
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -130,8 +131,9 @@ singatool_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(singatool_CXXFLAGS) \
 	$(CXXFLAGS) $(singatool_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
-depcomp =
-am__depfiles_maybe =
+depcomp = $(SHELL) $(top_srcdir)/config/depcomp
+am__depfiles_maybe = depfiles
+am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -396,36 +398,9 @@ singa_SOURCES = src/main.cc
 singa_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
                  $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED
 
-@LMDB_FALSE@singa_LDFLAGS = -I./include \
-@LMDB_FALSE@                -lsinga \
-@LMDB_FALSE@                -lglog  \
-@LMDB_FALSE@                -lgflags \
-@LMDB_FALSE@                -lprotobuf \
-@LMDB_FALSE@                -lrt \
-@LMDB_FALSE@                -lopencv_highgui \
-@LMDB_FALSE@                -lopencv_imgproc \
-@LMDB_FALSE@                -lopencv_core \
-@LMDB_FALSE@                -lopenblas \
-@LMDB_FALSE@                -lzmq \
-@LMDB_FALSE@                -lczmq \
-@LMDB_FALSE@                -llmdb \
-@LMDB_FALSE@                -lzookeeper_mt
-
-@LMDB_TRUE@singa_LDFLAGS = -I./include \
-@LMDB_TRUE@                -lsinga \
-@LMDB_TRUE@                -lglog  \
-@LMDB_TRUE@                -lgflags \
-@LMDB_TRUE@                -lprotobuf \
-@LMDB_TRUE@                -lrt \
-@LMDB_TRUE@                -lopencv_highgui \
-@LMDB_TRUE@                -lopencv_imgproc \
-@LMDB_TRUE@                -lopencv_core \
-@LMDB_TRUE@                -lopenblas \
-@LMDB_TRUE@                -lzmq \
-@LMDB_TRUE@                -lczmq \
-@LMDB_TRUE@                -llmdb \
-@LMDB_TRUE@                -lzookeeper_mt
-
+singa_LDFLAGS = -I./include -lsinga -lglog -lgflags -lprotobuf -lrt \
+	-lopencv_highgui -lopencv_imgproc -lopencv_core -lopenblas \
+	-lzmq -lczmq -lzookeeper_mt $(am__append_1)
 singatool_SOURCES = src/utils/tool.cc
 singatool_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
                      -funroll-loops -DTHREADED
@@ -448,15 +423,15 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
-	      echo ' cd $(srcdir) && $(AUTOMAKE) --foreign --ignore-deps'; \
-	      $(am__cd) $(srcdir) && $(AUTOMAKE) --foreign --ignore-deps \
+	      echo ' cd $(srcdir) && $(AUTOMAKE) --foreign'; \
+	      $(am__cd) $(srcdir) && $(AUTOMAKE) --foreign \
 		&& exit 0; \
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign --ignore-deps Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign --ignore-deps Makefile
+	  $(AUTOMAKE) --foreign Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -525,42 +500,77 @@ clean-libLTLIBRARIES:
 src/proto/$(am__dirstamp):
 	@$(MKDIR_P) src/proto
 	@: > src/proto/$(am__dirstamp)
-src/proto/libsinga_la-singa.pb.lo: src/proto/$(am__dirstamp)
-src/proto/libsinga_la-job.pb.lo: src/proto/$(am__dirstamp)
-src/proto/libsinga_la-common.pb.lo: src/proto/$(am__dirstamp)
+src/proto/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/proto/$(DEPDIR)
+	@: > src/proto/$(DEPDIR)/$(am__dirstamp)
+src/proto/libsinga_la-singa.pb.lo: src/proto/$(am__dirstamp) \
+	src/proto/$(DEPDIR)/$(am__dirstamp)
+src/proto/libsinga_la-job.pb.lo: src/proto/$(am__dirstamp) \
+	src/proto/$(DEPDIR)/$(am__dirstamp)
+src/proto/libsinga_la-common.pb.lo: src/proto/$(am__dirstamp) \
+	src/proto/$(DEPDIR)/$(am__dirstamp)
 src/utils/$(am__dirstamp):
 	@$(MKDIR_P) src/utils
 	@: > src/utils/$(am__dirstamp)
-src/utils/libsinga_la-cluster.lo: src/utils/$(am__dirstamp)
-src/utils/libsinga_la-cluster_rt.lo: src/utils/$(am__dirstamp)
-src/utils/libsinga_la-graph.lo: src/utils/$(am__dirstamp)
-src/utils/libsinga_la-common.lo: src/utils/$(am__dirstamp)
-src/utils/libsinga_la-param.lo: src/utils/$(am__dirstamp)
-src/utils/libsinga_la-updater.lo: src/utils/$(am__dirstamp)
-src/utils/libsinga_la-data_shard.lo: src/utils/$(am__dirstamp)
-src/utils/libsinga_la-blob.lo: src/utils/$(am__dirstamp)
+src/utils/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/utils/$(DEPDIR)
+	@: > src/utils/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsinga_la-cluster.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsinga_la-cluster_rt.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsinga_la-graph.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsinga_la-common.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsinga_la-param.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsinga_la-updater.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsinga_la-data_shard.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
+src/utils/libsinga_la-blob.lo: src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
 src/trainer/$(am__dirstamp):
 	@$(MKDIR_P) src/trainer
 	@: > src/trainer/$(am__dirstamp)
-src/trainer/libsinga_la-server.lo: src/trainer/$(am__dirstamp)
-src/trainer/libsinga_la-worker.lo: src/trainer/$(am__dirstamp)
-src/trainer/libsinga_la-trainer.lo: src/trainer/$(am__dirstamp)
+src/trainer/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/trainer/$(DEPDIR)
+	@: > src/trainer/$(DEPDIR)/$(am__dirstamp)
+src/trainer/libsinga_la-server.lo: src/trainer/$(am__dirstamp) \
+	src/trainer/$(DEPDIR)/$(am__dirstamp)
+src/trainer/libsinga_la-worker.lo: src/trainer/$(am__dirstamp) \
+	src/trainer/$(DEPDIR)/$(am__dirstamp)
+src/trainer/libsinga_la-trainer.lo: src/trainer/$(am__dirstamp) \
+	src/trainer/$(DEPDIR)/$(am__dirstamp)
 src/neuralnet/$(am__dirstamp):
 	@$(MKDIR_P) src/neuralnet
 	@: > src/neuralnet/$(am__dirstamp)
+src/neuralnet/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/neuralnet/$(DEPDIR)
+	@: > src/neuralnet/$(DEPDIR)/$(am__dirstamp)
 src/neuralnet/libsinga_la-base_layer.lo:  \
-	src/neuralnet/$(am__dirstamp)
-src/neuralnet/libsinga_la-neuralnet.lo: src/neuralnet/$(am__dirstamp)
+	src/neuralnet/$(am__dirstamp) \
+	src/neuralnet/$(DEPDIR)/$(am__dirstamp)
+src/neuralnet/libsinga_la-neuralnet.lo: src/neuralnet/$(am__dirstamp) \
+	src/neuralnet/$(DEPDIR)/$(am__dirstamp)
 src/neuralnet/libsinga_la-optional_layer.lo:  \
-	src/neuralnet/$(am__dirstamp)
-src/neuralnet/libsinga_la-layer.lo: src/neuralnet/$(am__dirstamp)
+	src/neuralnet/$(am__dirstamp) \
+	src/neuralnet/$(DEPDIR)/$(am__dirstamp)
+src/neuralnet/libsinga_la-layer.lo: src/neuralnet/$(am__dirstamp) \
+	src/neuralnet/$(DEPDIR)/$(am__dirstamp)
 src/communication/$(am__dirstamp):
 	@$(MKDIR_P) src/communication
 	@: > src/communication/$(am__dirstamp)
+src/communication/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/communication/$(DEPDIR)
+	@: > src/communication/$(DEPDIR)/$(am__dirstamp)
 src/communication/libsinga_la-socket.lo:  \
-	src/communication/$(am__dirstamp)
+	src/communication/$(am__dirstamp) \
+	src/communication/$(DEPDIR)/$(am__dirstamp)
 src/communication/libsinga_la-msg.lo:  \
-	src/communication/$(am__dirstamp)
+	src/communication/$(am__dirstamp) \
+	src/communication/$(DEPDIR)/$(am__dirstamp)
 libsinga.la: $(libsinga_la_OBJECTS) $(libsinga_la_DEPENDENCIES) $(EXTRA_libsinga_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libsinga_la_LINK) -rpath $(libdir) $(libsinga_la_OBJECTS) $(libsinga_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
@@ -609,11 +619,16 @@ clean-binPROGRAMS:
 src/$(am__dirstamp):
 	@$(MKDIR_P) src
 	@: > src/$(am__dirstamp)
-src/singa-main.$(OBJEXT): src/$(am__dirstamp)
+src/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/$(DEPDIR)
+	@: > src/$(DEPDIR)/$(am__dirstamp)
+src/singa-main.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 singa$(EXEEXT): $(singa_OBJECTS) $(singa_DEPENDENCIES) $(EXTRA_singa_DEPENDENCIES) 
 	@rm -f singa$(EXEEXT)
 	$(AM_V_CXXLD)$(singa_LINK) $(singa_OBJECTS) $(singa_LDADD) $(LIBS)
-src/utils/singatool-tool.$(OBJEXT): src/utils/$(am__dirstamp)
+src/utils/singatool-tool.$(OBJEXT): src/utils/$(am__dirstamp) \
+	src/utils/$(DEPDIR)/$(am__dirstamp)
 singatool$(EXEEXT): $(singatool_OBJECTS) $(singatool_DEPENDENCIES) $(EXTRA_singatool_DEPENDENCIES) 
 	@rm -f singatool$(EXEEXT)
 	$(AM_V_CXXLD)$(singatool_LINK) $(singatool_OBJECTS) $(singatool_LDADD) $(LIBS)
@@ -666,86 +681,220 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/singa-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/communication/$(DEPDIR)/libsinga_la-msg.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/communication/$(DEPDIR)/libsinga_la-socket.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/neuralnet/$(DEPDIR)/libsinga_la-base_layer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/neuralnet/$(DEPDIR)/libsinga_la-layer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/neuralnet/$(DEPDIR)/libsinga_la-neuralnet.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/neuralnet/$(DEPDIR)/libsinga_la-optional_layer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-common.pb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-job.pb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/proto/$(DEPDIR)/libsinga_la-singa.pb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/trainer/$(DEPDIR)/libsinga_la-server.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/trainer/$(DEPDIR)/libsinga_la-trainer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/trainer/$(DEPDIR)/libsinga_la-worker.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-blob.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-cluster.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-cluster_rt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-data_shard.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-graph.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-param.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/libsinga_la-updater.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/utils/$(DEPDIR)/singatool-tool.Po@am__quote@
+
 .cc.o:
-	$(AM_V_CXX)$(CXXCOMPILE) -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cc.obj:
-	$(AM_V_CXX)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .cc.lo:
-	$(AM_V_CXX)$(LTCXXCOMPILE) -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
 src/proto/libsinga_la-singa.pb.lo: src/proto/singa.pb.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-singa.pb.lo `test -f 'src/proto/singa.pb.cc' || echo '$(srcdir)/'`src/proto/singa.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/proto/libsinga_la-singa.pb.lo -MD -MP -MF src/proto/$(DEPDIR)/libsinga_la-singa.pb.Tpo -c -o src/proto/libsinga_la-singa.pb.lo `test -f 'src/proto/singa.pb.cc' || echo '$(srcdir)/'`src/proto/singa.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/proto/$(DEPDIR)/libsinga_la-singa.pb.Tpo src/proto/$(DEPDIR)/libsinga_la-singa.pb.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/proto/singa.pb.cc' object='src/proto/libsinga_la-singa.pb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-singa.pb.lo `test -f 'src/proto/singa.pb.cc' || echo '$(srcdir)/'`src/proto/singa.pb.cc
 
 src/proto/libsinga_la-job.pb.lo: src/proto/job.pb.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-job.pb.lo `test -f 'src/proto/job.pb.cc' || echo '$(srcdir)/'`src/proto/job.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/proto/libsinga_la-job.pb.lo -MD -MP -MF src/proto/$(DEPDIR)/libsinga_la-job.pb.Tpo -c -o src/proto/libsinga_la-job.pb.lo `test -f 'src/proto/job.pb.cc' || echo '$(srcdir)/'`src/proto/job.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/proto/$(DEPDIR)/libsinga_la-job.pb.Tpo src/proto/$(DEPDIR)/libsinga_la-job.pb.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/proto/job.pb.cc' object='src/proto/libsinga_la-job.pb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-job.pb.lo `test -f 'src/proto/job.pb.cc' || echo '$(srcdir)/'`src/proto/job.pb.cc
 
 src/proto/libsinga_la-common.pb.lo: src/proto/common.pb.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-common.pb.lo `test -f 'src/proto/common.pb.cc' || echo '$(srcdir)/'`src/proto/common.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/proto/libsinga_la-common.pb.lo -MD -MP -MF src/proto/$(DEPDIR)/libsinga_la-common.pb.Tpo -c -o src/proto/libsinga_la-common.pb.lo `test -f 'src/proto/common.pb.cc' || echo '$(srcdir)/'`src/proto/common.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/proto/$(DEPDIR)/libsinga_la-common.pb.Tpo src/proto/$(DEPDIR)/libsinga_la-common.pb.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/proto/common.pb.cc' object='src/proto/libsinga_la-common.pb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/proto/libsinga_la-common.pb.lo `test -f 'src/proto/common.pb.cc' || echo '$(srcdir)/'`src/proto/common.pb.cc
 
 src/utils/libsinga_la-cluster.lo: src/utils/cluster.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-cluster.lo `test -f 'src/utils/cluster.cc' || echo '$(srcdir)/'`src/utils/cluster.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-cluster.lo -MD -MP -MF src/utils/$(DEPDIR)/libsinga_la-cluster.Tpo -c -o src/utils/libsinga_la-cluster.lo `test -f 'src/utils/cluster.cc' || echo '$(srcdir)/'`src/utils/cluster.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/libsinga_la-cluster.Tpo src/utils/$(DEPDIR)/libsinga_la-cluster.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/cluster.cc' object='src/utils/libsinga_la-cluster.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-cluster.lo `test -f 'src/utils/cluster.cc' || echo '$(srcdir)/'`src/utils/cluster.cc
 
 src/utils/libsinga_la-cluster_rt.lo: src/utils/cluster_rt.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-cluster_rt.lo `test -f 'src/utils/cluster_rt.cc' || echo '$(srcdir)/'`src/utils/cluster_rt.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-cluster_rt.lo -MD -MP -MF src/utils/$(DEPDIR)/libsinga_la-cluster_rt.Tpo -c -o src/utils/libsinga_la-cluster_rt.lo `test -f 'src/utils/cluster_rt.cc' || echo '$(srcdir)/'`src/utils/cluster_rt.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/libsinga_la-cluster_rt.Tpo src/utils/$(DEPDIR)/libsinga_la-cluster_rt.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/cluster_rt.cc' object='src/utils/libsinga_la-cluster_rt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-cluster_rt.lo `test -f 'src/utils/cluster_rt.cc' || echo '$(srcdir)/'`src/utils/cluster_rt.cc
 
 src/utils/libsinga_la-graph.lo: src/utils/graph.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-graph.lo `test -f 'src/utils/graph.cc' || echo '$(srcdir)/'`src/utils/graph.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-graph.lo -MD -MP -MF src/utils/$(DEPDIR)/libsinga_la-graph.Tpo -c -o src/utils/libsinga_la-graph.lo `test -f 'src/utils/graph.cc' || echo '$(srcdir)/'`src/utils/graph.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/libsinga_la-graph.Tpo src/utils/$(DEPDIR)/libsinga_la-graph.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/graph.cc' object='src/utils/libsinga_la-graph.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-graph.lo `test -f 'src/utils/graph.cc' || echo '$(srcdir)/'`src/utils/graph.cc
 
 src/utils/libsinga_la-common.lo: src/utils/common.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-common.lo `test -f 'src/utils/common.cc' || echo '$(srcdir)/'`src/utils/common.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-common.lo -MD -MP -MF src/utils/$(DEPDIR)/libsinga_la-common.Tpo -c -o src/utils/libsinga_la-common.lo `test -f 'src/utils/common.cc' || echo '$(srcdir)/'`src/utils/common.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/libsinga_la-common.Tpo src/utils/$(DEPDIR)/libsinga_la-common.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/common.cc' object='src/utils/libsinga_la-common.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-common.lo `test -f 'src/utils/common.cc' || echo '$(srcdir)/'`src/utils/common.cc
 
 src/utils/libsinga_la-param.lo: src/utils/param.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-param.lo `test -f 'src/utils/param.cc' || echo '$(srcdir)/'`src/utils/param.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-param.lo -MD -MP -MF src/utils/$(DEPDIR)/libsinga_la-param.Tpo -c -o src/utils/libsinga_la-param.lo `test -f 'src/utils/param.cc' || echo '$(srcdir)/'`src/utils/param.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/libsinga_la-param.Tpo src/utils/$(DEPDIR)/libsinga_la-param.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/param.cc' object='src/utils/libsinga_la-param.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-param.lo `test -f 'src/utils/param.cc' || echo '$(srcdir)/'`src/utils/param.cc
 
 src/utils/libsinga_la-updater.lo: src/utils/updater.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-updater.lo `test -f 'src/utils/updater.cc' || echo '$(srcdir)/'`src/utils/updater.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-updater.lo -MD -MP -MF src/utils/$(DEPDIR)/libsinga_la-updater.Tpo -c -o src/utils/libsinga_la-updater.lo `test -f 'src/utils/updater.cc' || echo '$(srcdir)/'`src/utils/updater.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/libsinga_la-updater.Tpo src/utils/$(DEPDIR)/libsinga_la-updater.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/updater.cc' object='src/utils/libsinga_la-updater.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-updater.lo `test -f 'src/utils/updater.cc' || echo '$(srcdir)/'`src/utils/updater.cc
 
 src/utils/libsinga_la-data_shard.lo: src/utils/data_shard.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-data_shard.lo `test -f 'src/utils/data_shard.cc' || echo '$(srcdir)/'`src/utils/data_shard.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-data_shard.lo -MD -MP -MF src/utils/$(DEPDIR)/libsinga_la-data_shard.Tpo -c -o src/utils/libsinga_la-data_shard.lo `test -f 'src/utils/data_shard.cc' || echo '$(srcdir)/'`src/utils/data_shard.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/libsinga_la-data_shard.Tpo src/utils/$(DEPDIR)/libsinga_la-data_shard.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/data_shard.cc' object='src/utils/libsinga_la-data_shard.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-data_shard.lo `test -f 'src/utils/data_shard.cc' || echo '$(srcdir)/'`src/utils/data_shard.cc
 
 src/utils/libsinga_la-blob.lo: src/utils/blob.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-blob.lo `test -f 'src/utils/blob.cc' || echo '$(srcdir)/'`src/utils/blob.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/utils/libsinga_la-blob.lo -MD -MP -MF src/utils/$(DEPDIR)/libsinga_la-blob.Tpo -c -o src/utils/libsinga_la-blob.lo `test -f 'src/utils/blob.cc' || echo '$(srcdir)/'`src/utils/blob.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/libsinga_la-blob.Tpo src/utils/$(DEPDIR)/libsinga_la-blob.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/blob.cc' object='src/utils/libsinga_la-blob.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/libsinga_la-blob.lo `test -f 'src/utils/blob.cc' || echo '$(srcdir)/'`src/utils/blob.cc
 
 src/trainer/libsinga_la-server.lo: src/trainer/server.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/trainer/libsinga_la-server.lo `test -f 'src/trainer/server.cc' || echo '$(srcdir)/'`src/trainer/server.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/trainer/libsinga_la-server.lo -MD -MP -MF src/trainer/$(DEPDIR)/libsinga_la-server.Tpo -c -o src/trainer/libsinga_la-server.lo `test -f 'src/trainer/server.cc' || echo '$(srcdir)/'`src/trainer/server.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/trainer/$(DEPDIR)/libsinga_la-server.Tpo src/trainer/$(DEPDIR)/libsinga_la-server.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/trainer/server.cc' object='src/trainer/libsinga_la-server.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/trainer/libsinga_la-server.lo `test -f 'src/trainer/server.cc' || echo '$(srcdir)/'`src/trainer/server.cc
 
 src/trainer/libsinga_la-worker.lo: src/trainer/worker.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/trainer/libsinga_la-worker.lo `test -f 'src/trainer/worker.cc' || echo '$(srcdir)/'`src/trainer/worker.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/trainer/libsinga_la-worker.lo -MD -MP -MF src/trainer/$(DEPDIR)/libsinga_la-worker.Tpo -c -o src/trainer/libsinga_la-worker.lo `test -f 'src/trainer/worker.cc' || echo '$(srcdir)/'`src/trainer/worker.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/trainer/$(DEPDIR)/libsinga_la-worker.Tpo src/trainer/$(DEPDIR)/libsinga_la-worker.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/trainer/worker.cc' object='src/trainer/libsinga_la-worker.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/trainer/libsinga_la-worker.lo `test -f 'src/trainer/worker.cc' || echo '$(srcdir)/'`src/trainer/worker.cc
 
 src/trainer/libsinga_la-trainer.lo: src/trainer/trainer.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/trainer/libsinga_la-trainer.lo `test -f 'src/trainer/trainer.cc' || echo '$(srcdir)/'`src/trainer/trainer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/trainer/libsinga_la-trainer.lo -MD -MP -MF src/trainer/$(DEPDIR)/libsinga_la-trainer.Tpo -c -o src/trainer/libsinga_la-trainer.lo `test -f 'src/trainer/trainer.cc' || echo '$(srcdir)/'`src/trainer/trainer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/trainer/$(DEPDIR)/libsinga_la-trainer.Tpo src/trainer/$(DEPDIR)/libsinga_la-trainer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/trainer/trainer.cc' object='src/trainer/libsinga_la-trainer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/trainer/libsinga_la-trainer.lo `test -f 'src/trainer/trainer.cc' || echo '$(srcdir)/'`src/trainer/trainer.cc
 
 src/neuralnet/libsinga_la-base_layer.lo: src/neuralnet/base_layer.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-base_layer.lo `test -f 'src/neuralnet/base_layer.cc' || echo '$(srcdir)/'`src/neuralnet/base_layer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/neuralnet/libsinga_la-base_layer.lo -MD -MP -MF src/neuralnet/$(DEPDIR)/libsinga_la-base_layer.Tpo -c -o src/neuralnet/libsinga_la-base_layer.lo `test -f 'src/neuralnet/base_layer.cc' || echo '$(srcdir)/'`src/neuralnet/base_layer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/neuralnet/$(DEPDIR)/libsinga_la-base_layer.Tpo src/neuralnet/$(DEPDIR)/libsinga_la-base_layer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/neuralnet/base_layer.cc' object='src/neuralnet/libsinga_la-base_layer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-base_layer.lo `test -f 'src/neuralnet/base_layer.cc' || echo '$(srcdir)/'`src/neuralnet/base_layer.cc
 
 src/neuralnet/libsinga_la-neuralnet.lo: src/neuralnet/neuralnet.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-neuralnet.lo `test -f 'src/neuralnet/neuralnet.cc' || echo '$(srcdir)/'`src/neuralnet/neuralnet.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/neuralnet/libsinga_la-neuralnet.lo -MD -MP -MF src/neuralnet/$(DEPDIR)/libsinga_la-neuralnet.Tpo -c -o src/neuralnet/libsinga_la-neuralnet.lo `test -f 'src/neuralnet/neuralnet.cc' || echo '$(srcdir)/'`src/neuralnet/neuralnet.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/neuralnet/$(DEPDIR)/libsinga_la-neuralnet.Tpo src/neuralnet/$(DEPDIR)/libsinga_la-neuralnet.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/neuralnet/neuralnet.cc' object='src/neuralnet/libsinga_la-neuralnet.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-neuralnet.lo `test -f 'src/neuralnet/neuralnet.cc' || echo '$(srcdir)/'`src/neuralnet/neuralnet.cc
 
 src/neuralnet/libsinga_la-optional_layer.lo: src/neuralnet/optional_layer.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-optional_layer.lo `test -f 'src/neuralnet/optional_layer.cc' || echo '$(srcdir)/'`src/neuralnet/optional_layer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/neuralnet/libsinga_la-optional_layer.lo -MD -MP -MF src/neuralnet/$(DEPDIR)/libsinga_la-optional_layer.Tpo -c -o src/neuralnet/libsinga_la-optional_layer.lo `test -f 'src/neuralnet/optional_layer.cc' || echo '$(srcdir)/'`src/neuralnet/optional_layer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/neuralnet/$(DEPDIR)/libsinga_la-optional_layer.Tpo src/neuralnet/$(DEPDIR)/libsinga_la-optional_layer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/neuralnet/optional_layer.cc' object='src/neuralnet/libsinga_la-optional_layer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-optional_layer.lo `test -f 'src/neuralnet/optional_layer.cc' || echo '$(srcdir)/'`src/neuralnet/optional_layer.cc
 
 src/neuralnet/libsinga_la-layer.lo: src/neuralnet/layer.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-layer.lo `test -f 'src/neuralnet/layer.cc' || echo '$(srcdir)/'`src/neuralnet/layer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/neuralnet/libsinga_la-layer.lo -MD -MP -MF src/neuralnet/$(DEPDIR)/libsinga_la-layer.Tpo -c -o src/neuralnet/libsinga_la-layer.lo `test -f 'src/neuralnet/layer.cc' || echo '$(srcdir)/'`src/neuralnet/layer.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/neuralnet/$(DEPDIR)/libsinga_la-layer.Tpo src/neuralnet/$(DEPDIR)/libsinga_la-layer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/neuralnet/layer.cc' object='src/neuralnet/libsinga_la-layer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/neuralnet/libsinga_la-layer.lo `test -f 'src/neuralnet/layer.cc' || echo '$(srcdir)/'`src/neuralnet/layer.cc
 
 src/communication/libsinga_la-socket.lo: src/communication/socket.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/communication/libsinga_la-socket.lo `test -f 'src/communication/socket.cc' || echo '$(srcdir)/'`src/communication/socket.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/communication/libsinga_la-socket.lo -MD -MP -MF src/communication/$(DEPDIR)/libsinga_la-socket.Tpo -c -o src/communication/libsinga_la-socket.lo `test -f 'src/communication/socket.cc' || echo '$(srcdir)/'`src/communication/socket.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/communication/$(DEPDIR)/libsinga_la-socket.Tpo src/communication/$(DEPDIR)/libsinga_la-socket.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/communication/socket.cc' object='src/communication/libsinga_la-socket.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/communication/libsinga_la-socket.lo `test -f 'src/communication/socket.cc' || echo '$(srcdir)/'`src/communication/socket.cc
 
 src/communication/libsinga_la-msg.lo: src/communication/msg.cc
-	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/communication/libsinga_la-msg.lo `test -f 'src/communication/msg.cc' || echo '$(srcdir)/'`src/communication/msg.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -MT src/communication/libsinga_la-msg.lo -MD -MP -MF src/communication/$(DEPDIR)/libsinga_la-msg.Tpo -c -o src/communication/libsinga_la-msg.lo `test -f 'src/communication/msg.cc' || echo '$(srcdir)/'`src/communication/msg.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/communication/$(DEPDIR)/libsinga_la-msg.Tpo src/communication/$(DEPDIR)/libsinga_la-msg.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/communication/msg.cc' object='src/communication/libsinga_la-msg.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libsinga_la_CXXFLAGS) $(CXXFLAGS) -c -o src/communication/libsinga_la-msg.lo `test -f 'src/communication/msg.cc' || echo '$(srcdir)/'`src/communication/msg.cc
 
 src/singa-main.o: src/main.cc
-	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singa_CXXFLAGS) $(CXXFLAGS) -c -o src/singa-main.o `test -f 'src/main.cc' || echo '$(srcdir)/'`src/main.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singa_CXXFLAGS) $(CXXFLAGS) -MT src/singa-main.o -MD -MP -MF src/$(DEPDIR)/singa-main.Tpo -c -o src/singa-main.o `test -f 'src/main.cc' || echo '$(srcdir)/'`src/main.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/singa-main.Tpo src/$(DEPDIR)/singa-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/main.cc' object='src/singa-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singa_CXXFLAGS) $(CXXFLAGS) -c -o src/singa-main.o `test -f 'src/main.cc' || echo '$(srcdir)/'`src/main.cc
 
 src/singa-main.obj: src/main.cc
-	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singa_CXXFLAGS) $(CXXFLAGS) -c -o src/singa-main.obj `if test -f 'src/main.cc'; then $(CYGPATH_W) 'src/main.cc'; else $(CYGPATH_W) '$(srcdir)/src/main.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singa_CXXFLAGS) $(CXXFLAGS) -MT src/singa-main.obj -MD -MP -MF src/$(DEPDIR)/singa-main.Tpo -c -o src/singa-main.obj `if test -f 'src/main.cc'; then $(CYGPATH_W) 'src/main.cc'; else $(CYGPATH_W) '$(srcdir)/src/main.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/singa-main.Tpo src/$(DEPDIR)/singa-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/main.cc' object='src/singa-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singa_CXXFLAGS) $(CXXFLAGS) -c -o src/singa-main.obj `if test -f 'src/main.cc'; then $(CYGPATH_W) 'src/main.cc'; else $(CYGPATH_W) '$(srcdir)/src/main.cc'; fi`
 
 src/utils/singatool-tool.o: src/utils/tool.cc
-	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singatool_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/singatool-tool.o `test -f 'src/utils/tool.cc' || echo '$(srcdir)/'`src/utils/tool.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singatool_CXXFLAGS) $(CXXFLAGS) -MT src/utils/singatool-tool.o -MD -MP -MF src/utils/$(DEPDIR)/singatool-tool.Tpo -c -o src/utils/singatool-tool.o `test -f 'src/utils/tool.cc' || echo '$(srcdir)/'`src/utils/tool.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/singatool-tool.Tpo src/utils/$(DEPDIR)/singatool-tool.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/tool.cc' object='src/utils/singatool-tool.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singatool_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/singatool-tool.o `test -f 'src/utils/tool.cc' || echo '$(srcdir)/'`src/utils/tool.cc
 
 src/utils/singatool-tool.obj: src/utils/tool.cc
-	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singatool_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/singatool-tool.obj `if test -f 'src/utils/tool.cc'; then $(CYGPATH_W) 'src/utils/tool.cc'; else $(CYGPATH_W) '$(srcdir)/src/utils/tool.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singatool_CXXFLAGS) $(CXXFLAGS) -MT src/utils/singatool-tool.obj -MD -MP -MF src/utils/$(DEPDIR)/singatool-tool.Tpo -c -o src/utils/singatool-tool.obj `if test -f 'src/utils/tool.cc'; then $(CYGPATH_W) 'src/utils/tool.cc'; else $(CYGPATH_W) '$(srcdir)/src/utils/tool.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) src/utils/$(DEPDIR)/singatool-tool.Tpo src/utils/$(DEPDIR)/singatool-tool.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='src/utils/tool.cc' object='src/utils/singatool-tool.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(singatool_CXXFLAGS) $(CXXFLAGS) -c -o src/utils/singatool-tool.obj `if test -f 'src/utils/tool.cc'; then $(CYGPATH_W) 'src/utils/tool.cc'; else $(CYGPATH_W) '$(srcdir)/src/utils/tool.cc'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1010,11 +1159,17 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f src/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/$(am__dirstamp)
+	-rm -f src/communication/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/communication/$(am__dirstamp)
+	-rm -f src/neuralnet/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/neuralnet/$(am__dirstamp)
+	-rm -f src/proto/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/proto/$(am__dirstamp)
+	-rm -f src/trainer/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/trainer/$(am__dirstamp)
+	-rm -f src/utils/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/utils/$(am__dirstamp)
 
 maintainer-clean-generic:
@@ -1027,6 +1182,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
+	-rm -rf src/$(DEPDIR) src/communication/$(DEPDIR) src/neuralnet/$(DEPDIR) src/proto/$(DEPDIR) src/trainer/$(DEPDIR) src/utils/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-libtool distclean-tags
@@ -1074,6 +1230,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
+	-rm -rf src/$(DEPDIR) src/communication/$(DEPDIR) src/neuralnet/$(DEPDIR) src/proto/$(DEPDIR) src/trainer/$(DEPDIR) src/utils/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
