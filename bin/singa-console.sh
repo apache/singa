@@ -23,10 +23,10 @@
 # console to list/view/kill singa jobs
 #
 
-usage="Usage:\n
-       # singa-console.sh list         :  list running singa jobs\n
-       # singa-console.sh view JOB_ID  :  view procs of a singa job\n
-       # singa-console.sh kill JOB_ID  :  kill a singa job"
+usage="Usage: singa-console.sh <command> <args>\n
+        list         :  list running singa jobs\n
+        view JOB_ID  :  view procs of a singa job\n
+        kill JOB_ID  :  kill a singa job"
 
 if [ $# == 0 ]; then
   echo -e $usage
@@ -59,12 +59,11 @@ case $1 in
       echo -e $usage
       exit 1
     fi
-    host_file="job-$2.tmp"
-    ./singatool view $2 1>$host_file || exit 1
+    hosts=`./singatool view "$2"`
+    [ $? == 0 ] || exit 1
     ssh_options="-oStrictHostKeyChecking=no \
              -oUserKnownHostsFile=/dev/null \
              -oLogLevel=quiet"
-    hosts=`cat $host_file | cut -d ' ' -f 1`
     if [ `head -1 "$SINGA_CONF"/hostfile` == localhost ]; then
       local_procs=1
     fi
@@ -79,7 +78,6 @@ case $1 in
         $singa_kill
       fi
     done
-    rm $host_file
     ./singatool clean $2 || exit 1
     ;;
   

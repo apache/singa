@@ -3,6 +3,6 @@ package singa;
 message SingaProto {
   // ip/hostname:port[,ip/hostname:port]
   required string zookeeper_host = 1;
-  // if not set, use the default dir of glog
-  optional string log_dir = 2;
+  // log dir for singa binary and job information(job id, host list, pid list)
+  optional string log_dir = 2 [default = "/tmp/singa-log/"];
 }

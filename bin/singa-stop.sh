@@ -33,7 +33,7 @@ ssh_options="-oStrictHostKeyChecking=no \
              -oUserKnownHostsFile=/dev/null \
              -oLogLevel=quiet"
 hosts=`cat $host_file | cut -d ' ' -f 1`
-singa_kill="killall -s SIGKILL -r singa"
+singa_kill="killall -q -s SIGKILL -r singa"
 for i in ${hosts[@]}; do
   echo Kill singa @ $i ...
   if [ $i == localhost ]; then

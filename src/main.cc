@@ -13,7 +13,7 @@
 
 DEFINE_int32(job, -1, "Unique job ID generated from singa-run.sh");
 DEFINE_bool(resume, false, "Resume from checkpoint passed at cmd line");
-DEFINE_string(workspace, "./workspace", "workspace passed at cmd line");
+DEFINE_string(conf, "./job.conf", "job conf passed at cmd line");
 
 /**
  * Register layers, and other customizable classes.
@@ -31,12 +31,10 @@ int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   singa::JobProto jobConf;
-  std::string job_file = FLAGS_workspace + "/job.conf";
+  std::string job_file = FLAGS_conf;
   singa::ReadProtoFromTextFile(job_file.c_str(), &jobConf);
   CHECK(jobConf.has_cluster());
   CHECK(jobConf.has_model());
-  if (!jobConf.cluster().has_workspace())
-    jobConf.mutable_cluster()->set_workspace(FLAGS_workspace);
 
   RegisterClasses();
   singa::SubmitJob(FLAGS_job, FLAGS_resume, jobConf);

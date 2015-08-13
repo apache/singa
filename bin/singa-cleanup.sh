@@ -31,5 +31,5 @@ $SINGA_BIN/singa-stop.sh || exit 1
 
 # close zookeeper
 if [ $SINGA_MANAGES_ZK = true ]; then
-  $SINGA_BIN/zk-service.sh stop
+  $SINGA_BIN/zk-service.sh stop || exit 1
 fi
