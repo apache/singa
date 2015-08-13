@@ -35,6 +35,18 @@ AC_CHECK_LIB([glog], [main], [], [
 AC_CHECK_LIB([protobuf], [main], [], [
   AC_MSG_ERROR([unable to find protobuf library])
   ])
+
+AC_ARG_ENABLE(lmdb,
+     AS_HELP_STRING([--enable-lmdb],[enable debug option]),
+	 [enable_lmdb=yes],[enable_lmdb=no])
+AM_CONDITIONAL(LMDB, test "$enable_lmdb" = yes)
+if test x"$enable_lmdb" = x"yes"; then
+	AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
+	  AC_MSG_ERROR([unable to find mdb_env_create() function])
+	  ])
+	AC_DEFINE(LMDB, 1, [Enable Option layer])
+fi
+
 AC_CHECK_LIB([opencv_imgproc], [main], [], [
   AC_MSG_ERROR([unable to find opencv_imgproc lib])
   ])
@@ -43,9 +55,6 @@ AC_CHECK_LIB([opencv_highgui], [main], [], [
   ])
 AC_CHECK_LIB([opencv_core], [main], [], [
   AC_MSG_ERROR([unable to find opencv_core lib])
-  ])
-AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
-  AC_MSG_ERROR([unable to find mdb_env_create() function])
   ])
 AC_CHECK_LIB([zookeeper_mt], [main], [], [
   AC_MSG_ERROR([unable to find zookeeper])

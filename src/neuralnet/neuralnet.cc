@@ -2,10 +2,8 @@
 #include <queue>
 
 #include "neuralnet/neuralnet.h"
-#include "utils/singleton.h"
-#ifdef USE_OPTIONAL_LAYER
 #include "neuralnet/optional_layer.h"
-#endif
+#include "utils/singleton.h"
 
 namespace singa {
 // macros to shorten the code
@@ -39,7 +37,7 @@ void NeuralNet::RegisterLayers() {
   RegisterLayer(factory, RBMVis);
   RegisterLayer(factory, RBMHid);
 
-#ifdef USE_OPTIONAL_LAYER
+#ifdef USE_LMDB
   RegisterLayer(factory, LMDBData);
 #endif
 }

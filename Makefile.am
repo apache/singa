@@ -74,15 +74,22 @@ SINGA_HDRS := include/singa.h \
 
 lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_HDRS) $(SINGA_SRCS)
+if LMDB
+libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
+                       $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 \
+                       -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive -DUSE_LMDB
+else
 libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
                        $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 \
                        -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive
+endif
 libsinga_la_LDFLAGS = -I./include
 
 bin_PROGRAMS = singa
 singa_SOURCES = src/main.cc
 singa_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
                  $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED
+if LMDB
 singa_LDFLAGS = -I./include \
                 -lsinga \
                 -lglog  \
@@ -97,6 +104,22 @@ singa_LDFLAGS = -I./include \
                 -lczmq \
                 -llmdb \
                 -lzookeeper_mt
+else
+singa_LDFLAGS = -I./include \
+                -lsinga \
+                -lglog  \
+                -lgflags \
+                -lprotobuf \
+                -lrt \
+                -lopencv_highgui \
+                -lopencv_imgproc \
+                -lopencv_core \
+                -lopenblas \
+                -lzmq \
+                -lczmq \
+                -llmdb \
+                -lzookeeper_mt
+endif
 
 bin_PROGRAMS += singatool
 singatool_SOURCES = src/utils/tool.cc
