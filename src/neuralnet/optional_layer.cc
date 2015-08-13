@@ -1,4 +1,3 @@
-//#ifdef USE_OPTIONAL_LAYER
 #ifdef USE_LMDB
 #include "neuralnet/optional_layer.h"
 namespace singa {
