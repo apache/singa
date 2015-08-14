@@ -43,15 +43,15 @@ void Param::InitValues(int version){
   Tensor<cpu, 1> data(mutable_cpu_data(), Shape1(size()));
   auto random=TSingleton<Random<cpu>>::Instance();
   switch (proto_.init_method()) {
-  case ParamProto::kConstant:
+  case InitMethod::kConstant:
     data = proto_.value();
     break;
-  case ParamProto::kUniform:
+  case InitMethod::kUniform:
     random->SampleUniform(data, proto_.low(), proto_.high());
     if(proto_.value() != 1)
       data *= proto_.value();
     break;
-  case ParamProto::kUniformSqrtFanIn:
+  case InitMethod::kUniformSqrtFanIn:
     random->SampleUniform(data, proto_.low(), proto_.high());
     // only valid for param matrix with dim 1 for fan in
     LOG(ERROR) << "init fan in";
@@ -59,17 +59,17 @@ void Param::InitValues(int version){
     data *= proto_.value() / sqrt(data_->shape().at(1) / 3.0f);
     LOG(ERROR) << "end fan in";
     break;
-  case ParamProto::kUniformSqrtFanInOut:
+  case InitMethod::kUniformSqrtFanInOut:
     random->SampleUniform(data, proto_.low(), proto_.high());
     if(proto_.value())
       data *= proto_.value()/ sqrt(data_->shape()[0] +data_->shape()[1]);
     break;
-  case ParamProto::kGaussian:
+  case InitMethod::kGaussian:
     random->SampleGaussian(data, proto_.mean(), proto_.std());
     if(proto_.value() != 1)
       data *= proto_.value();
     break;
-  case ParamProto::kGaussainSqrtFanIn:
+  case InitMethod::kGaussainSqrtFanIn:
     random->SampleGaussian(data, proto_.mean(), proto_.std());
     if(proto_.value())
       data *= proto_.value()/ sqrt(data_->shape()[0]);

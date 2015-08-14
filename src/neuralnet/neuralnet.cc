@@ -7,10 +7,10 @@
 
 namespace singa {
 // macros to shorten the code
-#define LayerT(x) LayerProto_LayerType_k##x
+#define LayerT(x) LayerType::k##x
 
 #define RegisterLayer(factory, id) \
-  factory->Register(LayerProto_LayerType_k##id, \
+  factory->Register(LayerType::k##id, \
       CreateInstance(id##Layer, Layer))
 
 void NeuralNet::RegisterLayers() {
@@ -195,7 +195,7 @@ Node* SliceNode(Graph* graph, Node* srcnode,
   string name = srcnode->name + "<";
   LayerProto *proto = new LayerProto();
   proto->set_name(name);
-  proto->set_type(LayerProto_LayerType_kSlice);
+  proto->set_type(LayerType::kSlice);
   proto->set_partition_id(
       static_cast<LayerProto*>(srcnode->proto)->partition_id());
   auto conf = proto->mutable_slice_conf();
@@ -215,7 +215,7 @@ Node* ConcateNodes(Graph* graph, const vector<Node*>& srcnodes, Node* dstnode) {
   string name = ">" + dstnode->name;
   LayerProto *proto = new LayerProto();
   proto->set_name(name);
-  proto->set_type(LayerProto_LayerType_kConcate);
+  proto->set_type(LayerType::kConcate);
   proto->set_partition_id(
       static_cast<LayerProto*>(dstnode->proto)->partition_id());
   auto conf = proto->mutable_concate_conf();
@@ -234,7 +234,7 @@ Node* SplitNode(Graph* graph, Node* srcnode, const vector<Node*>& dstnodes) {
   string name = srcnode->name + "+";
   LayerProto *proto = new LayerProto();
   proto->set_name(name);
-  proto->set_type(LayerProto_LayerType_kSplit);
+  proto->set_type(LayerType::kSplit);
   proto->set_partition_id(
       static_cast<LayerProto*>(srcnode->proto)->partition_id());
   Node* node = new Node(name, "##" + name, proto->partition_id(), proto);
@@ -251,14 +251,14 @@ void BridgeNodes(Graph* graph, Node* srcnode, Node* dstnode) {
   string sname = srcnode->name + ":-";
   LayerProto *sproto = new LayerProto();
   sproto->set_name(sname);
-  sproto->set_type(LayerProto_LayerType_kBridgeSrc);
+  sproto->set_type(LayerType::kBridgeSrc);
   sproto->set_partition_id(
       static_cast<LayerProto*>(srcnode->proto)->partition_id());
   auto sbridge = new Node(sname, "##" + sname, sproto->partition_id(), sproto);
   string dname = "-:" + dstnode->name;
   LayerProto *dproto = new LayerProto();
   dproto->set_name(dname);
-  dproto->set_type(LayerProto_LayerType_kBridgeDst);
+  dproto->set_type(LayerType::kBridgeDst);
   dproto->set_partition_id(
       static_cast<LayerProto*>(dstnode->proto)->partition_id());
   auto dbridge = new Node(dname, "##" + dname, dproto->partition_id(), dproto);

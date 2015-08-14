@@ -13,38 +13,38 @@ float Updater::GetLearningRate(int step) {
   float ret = 0., r = 0., base = proto_.base_lr();
   int freq = 0;
   switch (proto_.lr_change()) {
-    case UpdaterProto_ChangeMethod_kFixed:
+    case ChangeMethod::kFixed:
       ret = base;
       break;
-    case UpdaterProto_ChangeMethod_kLinear:
+    case ChangeMethod::kLinear:
       // a is init, b is the final
       freq = proto_.linear_conf().change_freq();
       r = step * 1.0  / freq;
       ret = (1.0 - r) * base + r * proto_.linear_conf().final_lr();
       break;
-    case UpdaterProto_ChangeMethod_kExponential:
+    case ChangeMethod::kExponential:
       // a is init, b is the final, from convnet
       freq = proto_.exponential_conf().change_freq();
       ret = base / pow(2, step * 1. / freq);
       break;
-    case UpdaterProto_ChangeMethod_kInverseT:
+    case ChangeMethod::kInverseT:
       // a is init, b is the final, from convnet
       CHECK_EQ(base, 2 * proto_.inverset_conf().final_lr())
         << "final value should be the half";
       ret = base / (1. + step * 1. / proto_.inverset_conf().final_lr());
       break;
-    case UpdaterProto_ChangeMethod_kInverse:
+    case ChangeMethod::kInverse:
       // a is init, b is gamma, c is pow
       ret = base * pow(1.f + proto_.inverse_conf().gamma() * step,
            - proto_.inverse_conf().pow());
       break;
-    case UpdaterProto_ChangeMethod_kStep:
+    case ChangeMethod::kStep:
       // a is the base learning rate, b is gamma, from caffe
       // notice it is step/change_steps, not step*1.0/change_steps
       freq = proto_.step_conf().change_freq();
       ret = base * pow(proto_.step_conf().gamma(), step / freq);
       break;
-    case UpdaterProto_ChangeMethod_kFixedStep:
+    case ChangeMethod::kFixedStep:
       for (int i = 0; i < proto_.fixedstep_conf().step_size(); i++) {
         if (step > proto_.fixedstep_conf().step(i))
           ret = proto_.fixedstep_conf().step_lr(i);

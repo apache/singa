@@ -20,7 +20,6 @@ using std::vector;
 using std::string;
 using std::map;
 
-
 class Layer;
 /**
  * Base layer class.
