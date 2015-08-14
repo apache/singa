@@ -43,7 +43,7 @@ void Param::InitValues(int version) {
   Tensor<cpu, 1> data(mutable_cpu_data(), Shape1(size()));
   auto random = TSingleton<Random<cpu>>::Instance();
   switch (proto_.init_method()) {
-  case ParamProto::kConstant:
+  case InitMethod::kConstant:
     data = proto_.value();
     break;
   case InitMethod::kUniform:
