@@ -1,5 +1,5 @@
-#ifndef INCLUDE_UTILS_PARAM_H_
-#define INCLUDE_UTILS_PARAM_H_
+#ifndef SINGA_UTILS_PARAM_H_
+#define SINGA_UTILS_PARAM_H_
 #include <vector>
 #include <string>
 #include "proto/job.pb.h"
@@ -28,7 +28,7 @@ namespace singa {
 class Param {
  public:
   Param();
-  virtual ~Param(){ }
+  virtual ~Param() {}
   /**
    * Setup param object
    *
@@ -41,7 +41,7 @@ class Param {
    *
    * @param version initial version
    */
-  virtual void InitValues(int version=0);
+  virtual void InitValues(int version = 0);
   /**
    * Share the data blob from other Param objects.
    *
@@ -113,7 +113,7 @@ class Param {
   }
 
   void set_local_version(int v) {
-    local_version_=v;
+    local_version_ = v;
   }
   const std::string& share_from() const {
     return proto_.share_from();
@@ -280,7 +280,7 @@ class Param {
   vector<int> slice_offset_, slice_size_;
 
   //!< for debug checking
-  vector<bool> pending_put_,pending_get_, pending_update_;
+  vector<bool> pending_put_, pending_get_, pending_update_;
   int num_pending_requests_;
 
   shared_ptr<Blob<float>> data_;
@@ -309,8 +309,8 @@ class ParamEntry{
    */
   void AddParam(bool local, Param* p);
   int num_update, next_version;
-  int num_local; //!< # local workers using the shared parameter
-  int num_total; //!< # total workers using the shared parameter
+  int num_local;  //!< # local workers using the shared parameter
+  int num_total;  //!< # total workers using the shared parameter
   //!< Shares are deleted by neuralnet's destructor
   vector<Param*> shares;
 };
@@ -329,4 +329,4 @@ inline int SliceID(int param_trgt) {
 }
 }  // namespace singa
 
-#endif  // INCLUDE_UTILS_PARAM_H_
+#endif  // SINGA_UTILS_PARAM_H_
