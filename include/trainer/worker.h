@@ -31,7 +31,7 @@ class Worker {
   /**
    * Setup members
    */
-  void Setup(const ModelProto& model, shared_ptr<NeuralNet> train_net,
+  void Setup(const JobProto& job, shared_ptr<NeuralNet> train_net,
       shared_ptr<NeuralNet> valid_net, shared_ptr<NeuralNet> test_net);
   /**
     * Main function of Worker.
@@ -49,7 +49,7 @@ class Worker {
    * If the training starts from scrath, the params are initialzed using random
    * distributions, e.g., Gaussian distribution. After that, the worker may
    * train for a couple of steps to warmup the params before put
-   * them to servers (warmup of ModelProto controls this).
+   * them to servers (warmup of JobProto controls this).
    *
    * If the owner param is availabel from checkpoint file, then its
    * values are parsed from the checkpoint file instead of randomly initialized.
@@ -62,7 +62,7 @@ class Worker {
    * The serialization is done using BlobProtos which includes the name, version
    * and values of each Param.
    * Different worker would generate different checkpoint files. The file path
-   * is <workspace>/checkpoint-<modelname>-step<step>-worker<worker_id>.bin
+   * is <workspace>/checkpoint-<jobname>-step<step>-worker<worker_id>.bin
    * @param step training step of this worker
    * @param net the training net whose params will be dumped.
    */
@@ -173,7 +173,7 @@ class Worker {
  protected:
   int thread_id_, grp_id_, id_;
   int step_;
-  ModelProto modelproto_;
+  JobProto job_conf_;
   shared_ptr<NeuralNet> train_net_, test_net_, validation_net_;
   Dealer* layer_dealer_, *dealer_;
   Updater* updater_;

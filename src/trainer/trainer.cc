@@ -28,7 +28,7 @@ Trainer::~Trainer() {
   delete router_;
 }
 
-void Trainer::RegisterDefaultClasses(const singa::ModelProto& model_conf) {
+void Trainer::RegisterDefaultClasses() {
   // register all implemented layers
   singa::NeuralNet::RegisterLayers();
   auto param_factory = Singleton<Factory<singa::Param>>::Instance();
@@ -77,12 +77,12 @@ const vector<int> SliceParams(const vector<Param*>& params) {
 }
 
 void Trainer::SetupWorkerServer(
-    const ModelProto& model_conf,
+    const JobProto& job_conf,
     const vector<Worker*>& workers,
     const vector<Server*>& servers) {
   auto cluster = Cluster::Get();
   int grp_size = cluster->nworkers_per_group();
-  const auto& net_conf = model_conf.neuralnet();
+  const auto& net_conf = job_conf.neuralnet();
   auto net = NeuralNet::Create(net_conf, kTrain, grp_size);
   // MUST do SliceParam before share param/net with others
   auto slices = SliceParams(net->params());
@@ -96,12 +96,12 @@ void Trainer::SetupWorkerServer(
     if (grp_net.find(grp_id) == grp_net.end()) {
       if (grp_id == first_grp) {
         //  test are performed only by the first group now. TODO update.
-        if (first_grp == 0 && model_conf.test_steps() && worker_id == 0) {
+        if (first_grp == 0 && job_conf.test_steps() && worker_id == 0) {
           test_net = NeuralNet::Create(net_conf, kTest, 1); // hard code for exp
           test_net->ShareParamsFrom(net);
         }
         //  validation are performed only by the first group. TODO update.
-        if (first_grp == 0 && model_conf.validation_steps() && worker_id == 0) {
+        if (first_grp == 0 && job_conf.valid_steps() && worker_id == 0) {
           valid_net = NeuralNet::Create(net_conf, kValidation, 1);
           valid_net->ShareParamsFrom(net);
         }
@@ -124,18 +124,18 @@ void Trainer::SetupWorkerServer(
     }
     LOG(INFO) << "grp " << worker->grp_id() << ", worker "
       << worker->id() << " net " << grp_net[grp_id].get();
-    worker->Setup(model_conf, grp_net[grp_id], valid_net, test_net);
+    worker->Setup(job_conf, grp_net[grp_id], valid_net, test_net);
   }
 
   //  partition among server groups, each group maintains one sub-set for sync
   auto slice2group = PartitionSlices(cluster->nserver_groups(), slices);
   for (auto server : servers)
-    server->Setup(model_conf.updater(), &server_shard_, slice2group);
+    server->Setup(job_conf.updater(), &server_shard_, slice2group);
   //  partition within one server group, each server updates for one sub-set
   slice2server_ = PartitionSlices(cluster->nservers_per_group(), slices);
 }
 
-vector<Server*> Trainer::CreateServers(int nthreads, const ModelProto& mconf) {
+vector<Server*> Trainer::CreateServers(int nthreads, const JobProto& job) {
   auto cluster = Cluster::Get();
   vector<Server*> servers;
   if (!cluster->has_server())
@@ -157,7 +157,7 @@ vector<Server*> Trainer::CreateServers(int nthreads, const ModelProto& mconf) {
   return servers;
 }
 
-vector<Worker*> Trainer::CreateWorkers(int nthreads, const ModelProto& mconf){
+vector<Worker*> Trainer::CreateWorkers(int nthreads, const JobProto& job) {
   auto cluster=Cluster::Get();
   vector<Worker*> workers;
   if(!cluster->has_worker())
@@ -184,18 +184,19 @@ vector<Worker*> Trainer::CreateWorkers(int nthreads, const ModelProto& mconf){
   for (int gid = gstart; gid < gend; gid++) {
     for (int wid = wstart; wid < wend; wid++) {
       Worker* worker=nullptr;
-      if (mconf.alg() == ModelProto_GradCalcAlg_kBackPropagation)
+      if (job.alg() == TrainOneBatchAlg::kBP)
         worker = new BPWorker(nthreads++,gid, wid);
-      else {
+      else if (job.alg() == TrainOneBatchAlg::kCD)
         worker=new CDWorker(nthreads++,gid, wid);
-      }
+      else
+        LOG(FATAL) << "unknown alg for trainonebatch func " << job.alg();
       workers.push_back(worker);
     }
   }
   return workers;
 }
 
-void Trainer::Resume(ModelProto* modelConf) {
+void Trainer::Resume(JobProto* jobConf) {
   tinydir_dir dir;
   string folder = Cluster::Get()->checkpoint_folder();
   tinydir_open(&dir, folder.c_str());
@@ -226,24 +227,22 @@ void Trainer::Resume(ModelProto* modelConf) {
   }
 
   if (latest_step > 0) {
-    modelConf->set_step(latest_step);
-    if (!modelConf->has_reset_param_version())
-      modelConf->set_reset_param_version(false);
-    modelConf->clear_checkpoint();
+    jobConf->set_step(latest_step);
+    if (!jobConf->has_reset_param_version())
+      jobConf->set_reset_param_version(false);
+    jobConf->clear_checkpoint_path();
     for (auto ck_file : ck_files)
-      modelConf->add_checkpoint(folder + "/" + ck_file);
+      jobConf->add_checkpoint_path(folder + "/" + ck_file);
   }
   tinydir_close(&dir);
 }
 
-void Trainer::Start(int job, bool resume,
-    const JobProto& jobConf, const SingaProto& singaConf) {
+void Trainer::Start(bool resume, const SingaProto& singaConf, JobProto* job) {
   // register job to zookeeper at the beginning
-  auto cluster = Cluster::Get(job, singaConf, jobConf.cluster());
-  ModelProto model = jobConf.model();
-  RegisterDefaultClasses(model);
+  auto cluster = Cluster::Get(job->id(), singaConf, job->cluster());
+  RegisterDefaultClasses();
   if (resume)
-    Resume(&model);
+    Resume(job);
 
   router_ = new Router();
   router_->Bind(kInprocRouterEndpoint);
@@ -253,10 +252,10 @@ void Trainer::Start(int job, bool resume,
   cluster->Register(getpid(), hostip + ":" + std::to_string(port));
 
   int nthreads = 1;
-  const vector<Worker*> workers = CreateWorkers(nthreads, model);
+  const vector<Worker*> workers = CreateWorkers(nthreads, *job);
   nthreads += workers.size();
-  const vector<Server*> servers = CreateServers(nthreads, model);
-  SetupWorkerServer(model, workers, servers);
+  const vector<Server*> servers = CreateServers(nthreads, *job);
+  SetupWorkerServer(*job, workers, servers);
 
 #ifdef USE_MPI
   for (int i = 0; i < nthreads; i++)

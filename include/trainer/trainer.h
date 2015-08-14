@@ -27,14 +27,11 @@ class Trainer{
    * Entrance function which construct the workers and servers, and luanch
    * one thread per worker/server.
    *
-   * @param job job ID
    * @param resume if true resume the training from the latest checkpoint files
-   * @param jobConf job configuration, including cluster and model configuration
    * @param singaConf global singa configuration including zookeeper and
-   * log dir setting.
+   * @param jobConf job configuration, including cluster and model configuration
    */
-  void Start(int job, bool resume,
-      const JobProto& jobConf, const SingaProto& singaConf);
+  void Start(bool resume, const SingaProto& singaConf, JobProto* jobConf);
 
  protected:
   /**
@@ -44,27 +41,27 @@ class Trainer{
    * checkpoint, which will be added into the checkpoint field. The workers
    * would then load the values of params from the checkpoint files.
    *
-   * @param modelConf model configuration
+   * @param jobConf job configuration
    */
-  void Resume(ModelProto* modelConf);
+  void Resume(JobProto* jobConf);
   /**
    * Create server instances.
    * @param nthread total num of threads in current procs which is used to
    * assign each thread a local thread ID. The number of workers is extracted
    * from Cluster
-   * @param modelConf
+   * @param jobConf
    * @return server instances
    */
-  vector<Server*> CreateServers(int nthread, const ModelProto& modelConf);
+  vector<Server*> CreateServers(int nthread, const JobProto& jobConf);
   /**
    * Create workers instances.
    * @param nthread total num of threads in current procs which is used to
    * assign each thread a local thread ID. The number of workers is extracted
    * from Cluster
-   * @param modelConf
+   * @param jobConf
    * @return worker instances
    */
-  vector<Worker*> CreateWorkers(int nthread, const ModelProto& modelConf);
+  vector<Worker*> CreateWorkers(int nthread, const JobProto& jobConf);
 
   /**
    * Setup workers and servers.
@@ -77,7 +74,7 @@ class Trainer{
    * @param servers
    */
   void SetupWorkerServer(
-    const ModelProto& modelConf,
+    const JobProto& jobConf,
     const vector<Worker*>& workers,
     const vector<Server*>& servers);
 
@@ -91,7 +88,7 @@ class Trainer{
    * For other base classes, use its base class name (string) as the key and the
    * implementation class as the value, e.g., <"Updater" SGDUpdater>.
    */
-  void RegisterDefaultClasses(const singa::ModelProto& proto);
+  void RegisterDefaultClasses();
   /**
    * Generate msg to trigger synchronization with other server groups.
    *

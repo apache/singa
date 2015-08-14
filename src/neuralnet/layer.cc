@@ -439,7 +439,7 @@ void MnistLayer::ParseRecords(Phase phase,
   LOG_IF(ERROR, records.size()==0)<<"Empty records to parse";
   int ndim=records.at(0).image().shape_size();
   int inputsize =records.at(0).image().shape(ndim-1);
-  CHECK_EQ(inputsize, blob->shape()[1]);
+  CHECK_EQ(inputsize, blob->shape()[2]);
 
   float* dptr=blob->mutable_cpu_data();
   for(const Record& record: records){
@@ -485,11 +485,11 @@ void MnistLayer::Setup(const LayerProto& proto, int npartitions) {
   int ndim=sample.image().shape_size();
   CHECK_GE(ndim,2);
   if(resize_)
-    data_.Reshape(vector<int>{batchsize, resize_, resize_});
+    data_.Reshape(vector<int>{batchsize, 1, resize_, resize_});
   else{
     int s=sample.image().shape(ndim-1);
     CHECK_EQ(s,sample.image().shape(ndim-2));
-    data_.Reshape(vector<int>{batchsize, s, s });
+    data_.Reshape(vector<int>{batchsize, 1, s, s });
   }
 }
 

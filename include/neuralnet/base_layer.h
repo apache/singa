@@ -133,10 +133,10 @@ class Layer {
    * blob in parser layers; The default value is "unknown"; If the
    * src layer is the prefetch layer and there are more than one parser layers,
    * this value be set.
-   */
   const std::string &datablob() const {
     return layer_proto_.datablob();
   }
+   */
   /**
    * @return a const ref for Blob storing neuron values of this layer for BP
    */

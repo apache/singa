@@ -88,7 +88,6 @@ shared_ptr<NeuralNet> NeuralNet::Create(
     param->set_share_from(from);
   }
 
-  for (auto layer : net_conf.layer())
   LOG(INFO) << "NeuralNet config is\n" << conf.DebugString();
 
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc

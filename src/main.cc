@@ -33,8 +33,6 @@ int main(int argc, char **argv) {
   singa::JobProto jobConf;
   std::string job_file = FLAGS_conf;
   singa::ReadProtoFromTextFile(job_file.c_str(), &jobConf);
-  CHECK(jobConf.has_cluster());
-  CHECK(jobConf.has_model());
 
   RegisterClasses();
   singa::SubmitJob(FLAGS_job, FLAGS_resume, jobConf);

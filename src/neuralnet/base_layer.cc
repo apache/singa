@@ -125,17 +125,19 @@ void PrefetchLayer::Setup(const LayerProto& proto, int npartitions) {
 }
 
 const Blob<float>& PrefetchLayer::data(const Layer* from, Phase phase) const {
-  if(from!=nullptr){
-    return datablobs_.at(from->datablob());
-  }else{
+  LOG(FATAL) << " needs update";
+  if(from != nullptr) {
+    return datablobs_.at("");
+  } else {
     //CHECK_EQ(datablobs_.size(),1);
     return datablobs_.begin()->second;
   }
 }
 
 Blob<float>* PrefetchLayer::mutable_data(const Layer* from, Phase phase) {
+  LOG(FATAL) << " needs update";
   if(from!=nullptr){
-    return &(datablobs_.at(from->datablob()));
+    return &(datablobs_.at(""));
   }else{
     //CHECK_EQ(datablobs_.size(),1);
     return &(datablobs_.begin()->second);

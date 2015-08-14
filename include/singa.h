@@ -24,13 +24,16 @@ void SubmitJob(int job, bool resume, const JobProto& jobConf) {
   ReadProtoFromTextFile(FLAGS_singa_conf.c_str(), &singaConf);
   if (singaConf.has_log_dir())
     SetupLog(singaConf.log_dir(),
-        std::to_string(job) + "-" + jobConf.model().name());
+        std::to_string(job) + "-" + jobConf.name());
   if (jobConf.num_openblas_threads() != 1)
     LOG(WARNING) << "openblas is set with " << jobConf.num_openblas_threads()
       << " threads";
   openblas_set_num_threads(jobConf.num_openblas_threads());
+  JobProto proto;
+  proto.CopyFrom(jobConf);
+  proto.set_id(job);
   Trainer trainer;
-  trainer.Start(job, resume, jobConf, singaConf);
+  trainer.Start(resume, singaConf, &proto);
 }
 }  // namespace singa
 #endif  //  SINGA_SINGA_H_

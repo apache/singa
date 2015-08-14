@@ -1,9 +1,73 @@
 package singa;
+enum TrainOneBatchAlg {
+  // Back-propagation algorithm for feed-forward models, e.g., CNN,  and RNN
+  kBP = 1;
+  // Contrastive Divergence algorithm for RBM, DBM etc.
+  kCD = 2;
+}
 
 message JobProto {
-  required ClusterProto cluster = 1;
-  required ModelProto model = 2;
-  optional int32 num_openblas_threads = 3 [default = 1];
+  // job name, e.g., "cifar10-dcnn", "mnist-mlp"
+  required string name = 1;
+  // neural net consits of a set of connected layers
+  required NetProto neuralnet = 3;
+  // algorithms calculating gradients for one mini-batch/iteration
+  required TrainOneBatchAlg alg = 5;
+  // configuration of SGD updater, including learning rate, etc.
+  required UpdaterProto updater = 7;
+  // cluster toplogy conf
+  required ClusterProto cluster = 9;
+
+  // for setting CD fields
+  optional CDProto cd_conf = 12;
+
+  // total num of steps for training
+  required int32 train_steps = 16;
+  // frequency of displaying training info
+  optional int32 disp_freq = 17 [default = 0];
+
+  // frequency of test, e.g., do test every 100 training steps
+  optional int32 test_freq = 20 [default = 0];
+  // total num of steps for testing all test data; todo set -1 for test forever
+  optional int32 test_steps =  21 [default = 0];
+  // frequency of validation, e.g., do validation every 100 training steps
+  optional int32 valid_freq = 25 [default = 0];
+  // total num of steps for validating all validation data
+  optional int32 valid_steps = 26 [default = 0];
+  // frequency of checkpoint
+  optional int32 checkpoint_freq = 30 [default = 0];
+
+  // for loading checkpoint files to init parameters
+  repeated string checkpoint_path = 60;
+  // send parameters to servers after training for this num of steps
+  optional int32 warmup_steps = 61 [default = 0];
+  // display debug info
+  optional bool debug = 62 [default = false];
+  // reset the version of params loaded from checkpoint file to step
+  optional bool reset_param_version = 63 [default = true];
+  // set num of threads used by openblas
+  optional int32 num_openblas_threads = 64 [default = 1];
+
+  // start checkpoint after this num steps
+  optional int32 checkpoint_after = 80 [default = 0];
+  // start display after this num steps
+  optional int32 disp_after =  81[default = 0];
+  // start test after this num steps
+  optional int32 test_after = 82 [default = 0];
+  // start validation after this num steps
+  optional int32 valid_after = 83 [default = 0];
+
+  // used by SINGA; uses typically do not touch these fields
+  optional bool resume = 90 [default = false];
+  // last snapshot step
+  optional int32 step = 91 [default = 0];
+  // job id allocated by zookeeper
+  optional int32 id = 92 [default = -1];
+}
+
+message CDProto {
+  //number of steps for gibbs sampling
+  optional int32 pcd_k = 1 [default = 1];
 }
 
 message ClusterProto {
@@ -13,24 +77,23 @@ message ClusterProto {
   optional int32 nservers_per_group = 4 [default = 1];
   optional int32 nworkers_per_procs = 5 [default = 1];
   optional int32 nservers_per_procs = 6 [default = 1];
+  // local workspace for checkpoint files and vis files
+  required string workspace = 10;
 
   // servers and workers in different processes?
-  optional bool server_worker_separate = 11 [default = false];
+  optional bool server_worker_separate = 20 [default = false];
 
   // port number is used by ZeroMQ
-  optional int32 start_port = 13 [default = 6723];
-  // local workspace, train/val/test shards, checkpoint files
-  required string workspace = 14;
-
-  // conduct updates at server side; otherwise do it at worker side
-  optional bool server_update = 40 [default = true];
+  optional int32 start_port = 60 [default = 6723];
+    // conduct updates at server side; otherwise do it at worker side
+  optional bool server_update = 61 [default = true];
   // share memory space between worker groups in one procs
-  optional bool share_memory = 41 [default = true];
+  optional bool share_memory = 62 [default = true];
 
   // bandwidth of ethernet, Bytes per second, default is 1 Gbps
-  optional int32 bandwidth=50 [default=134217728];
+  optional int32 bandwidth=80 [default=134217728];
   // poll time in milliseconds
-  optional int32 poll_time=51 [default =100];
+  optional int32 poll_time=81 [default =100];
 }
 
 
@@ -47,67 +110,14 @@ enum Phase {
   kLoss = 7;
 }
 
-message ModelProto {
-  // model name, e.g., "cifar10-dcnn", "mnist-mlp"
-  required string name = 1;
-  // frequency of displaying training info
-  required int32 display_frequency = 3 ;
-  // total num of steps for training
-  required int32 train_steps = 5;
-  // configuration of SGD updater, including learning rate, etc.
-  required UpdaterProto updater = 7;
-  enum GradCalcAlg {
-    // BP algorithm for feed-forward models, e.g., CNN, MLP, RNN
-    kBackPropagation = 1;
-    // CD algorithm for RBM, DBM etc., models
-    kContrastiveDivergence = 2;
-  }
- // gradient calculation algorithm
-  required GradCalcAlg alg = 8 [default = kBackPropagation];
-  required NetProto neuralnet = 9;
-
-  // total num of steps for validation
-  optional int32 validation_steps = 30 [default = 0];
-  // total num of steps for test
-  optional int32 test_steps = 31 [default = 0];
-  // frequency of validation
-  optional int32 validation_frequency = 32;
-  // frequency of test
-  optional int32 test_frequency = 33 [default = 0];
-  // frequency of checkpoint
-  optional int32 checkpoint_frequency = 34 [default = 0];
-  // send parameters to servers after training for this num of steps
-  optional int32 warmup_steps = 35 [default = 0];
-  // checkpoint path
-  optional bool resume = 36 [default = false];
-
-   // start display after this num steps
-  optional int32 display_after =  60[default = 0];
-  // start checkpoint after this num steps
-  optional int32 checkpoint_after = 61 [default = 0];
-  // start test after this num steps
-  optional int32 test_after = 62 [default = 0];
-// start validation after this num steps
-  optional int32 validation_after = 63 [default = 0];
-  // last snapshot step
-  optional int32 step = 64 [default = 0];
-  // display debug info
-  optional bool debug = 65 [default = false];
-  // checkpoint files
-  repeated string checkpoint = 66;
-  // reset the version of params loaded from checkpoint file to step
-  optional bool reset_param_version = 67 [default = true];
-  //number of steps for gibbs sampling
-  optional int32 pcd_k=69 [default=15];
-}
-
 message NetProto {
   repeated LayerProto layer = 1;
   // partitioning type for parallelism
-  optional int32 partition_dim = 2 [default = 0];
+  optional int32 partition_dim = 20 [default = 0];
 }
 
-// weight matrix should be defined before bias vector
+// weight matrix should be defined before bias vector;
+// todo separate conf for diff init method
 message ParamProto {
   enum InitMethod {
     // fix the values of all parameters  a constant in the value field
@@ -131,7 +141,9 @@ message ParamProto {
     // <a href="http://deeplearning.net/tutorial/mlp.html"> Theano MLP</a>
     kUniformSqrtFanInOut = 6;
   }
-  optional InitMethod init_method = 1 [default = kGaussian];
+  // used for identifying the same params from diff models and display deug info
+  optional string name =  1 [default = ""];
+  optional InitMethod init_method = 2 [default = kGaussian];
   // constant init
   optional float value = 5 [default = 1];
   // for uniform sampling
@@ -144,20 +156,18 @@ message ParamProto {
   optional float learning_rate_multiplier = 15 [default = 1];
   // multiplied on the global weight decay.
   optional float weight_decay_multiplier = 16 [default = 1];
-  // partition dimension, -1 for no partition
-  optional int32 partition_dim = 30;
-  // usually, the program will infer the param shape
-  repeated int32 shape = 31;
-  // used for identifying the same params from diff models and display deug info
-  optional string name =  61 [default = ""];
-  // name of the owner param from which this param shares the values
-  optional string share_from = 62;
+
+    // name of the owner param from which this param shares the values
+  optional string share_from = 60;
+
   // used interally
-  optional int32 id = 63;
-  // parameter slice limit (Google Protobuf also has size limit)
-  optional int32 split_threshold = 64 [default = 5000000];
+  optional int32 id = 90;
   // used internally
-  optional int32 owner = 65 [default = -1];
+  optional int32 owner = 91 [default = -1];
+  // partition dimension, -1 for no partition
+  optional int32 partition_dim = 92;
+  // usually, the program will infer the param shape
+  repeated int32 shape = 93;
 }
 
 enum PartitionType{
@@ -241,12 +251,9 @@ message LayerProto {
 
 
   // overrides the partition dimension for neural net
-  optional int32 partition_dim =59 [default = -1];
-  optional string datablob = 58 [default = "unknow"];
-
+  optional int32 partition_dim =60 [default = -1];
   // names of parameters shared from other layers
-  repeated string share_param = 60;
-  optional int32 partition_id = 62 [default = 0];
+  optional int32 partition_id = 90 [default = 0];
 }
 
 message RGBImageProto {

@@ -16,23 +16,16 @@ Worker::Worker(int thread_id, int grp_id, int id):
 }
 
 void Worker::Setup(
-    const ModelProto& model, shared_ptr<NeuralNet> train_net,
+    const JobProto& job, shared_ptr<NeuralNet> train_net,
     shared_ptr<NeuralNet> valid_net, shared_ptr<NeuralNet> test_net) {
-  modelproto_.CopyFrom(model);
+  job_conf_.CopyFrom(job);
   train_net_ = train_net;
   validation_net_ = valid_net;
   test_net_ = test_net;
   auto cluster = Cluster::Get();
-  // if no server or user requires worker to do param update
-  if (!(cluster->nserver_groups() && cluster->server_update())) {
-    updater_ = Singleton<Factory<Updater>>::Instance()->Create("Updater");
-    updater_->Init(model.updater());
-  }
 }
 
 Worker::~Worker() {
-  if (updater_ != nullptr)
-    delete updater_;
   if (layer_dealer_)
     delete layer_dealer_;
   if (dealer_)
@@ -59,7 +52,7 @@ void Worker::InitLocalParams() {
     // load from checkpoints. get param blob based on param name.
     // the param from previous checkpoint files will be overwritten by
     // the param with the same name in later checkpoint files.
-    for (const auto checkpoint : modelproto_.checkpoint()) {
+    for (const auto checkpoint : job_conf_.checkpoint_path()) {
       LOG(INFO) << "Load from checkpoint file " << checkpoint;
       BlobProtos bps;
       ReadProtoFromBinaryFile(checkpoint.c_str(), &bps);
@@ -67,8 +60,8 @@ void Worker::InitLocalParams() {
         if (name2param.find(bps.name(i)) != name2param.end()) {
           name2param.at(bps.name(i))->FromProto(bps.blob(i));
           //  if load from pre-training params, reset version to start step
-          if(modelproto_.reset_param_version())
-            name2param.at(bps.name(i))->set_version(modelproto_.step());
+          if(job_conf_.reset_param_version())
+            name2param.at(bps.name(i))->set_version(job_conf_.step());
           else  // if resume training, use the same version as last checkpoint
             name2param.at(bps.name(i))->set_version(bps.version(i));
         }
@@ -77,15 +70,15 @@ void Worker::InitLocalParams() {
     // init other params who do not have checkpoint version
     for (auto entry : name2param)
       if (entry.second->version() < 0) {
-        entry.second->InitValues(modelproto_.step());
-        if (!modelproto_.reset_param_version())
+        entry.second->InitValues(job_conf_.step());
+        if (!job_conf_.reset_param_version())
           LOG(ERROR) << "better reset version of params from checkpoints "
             << "to the same as other newly initialized params!";
       }
 
     Metric perf;
     // warmup training before put params to servers
-    for (; step_ < modelproto_.warmup_steps(); step_++)
+    for (; step_ < job_conf_.warmup_steps(); step_++)
       TrainOneBatch(step_, &perf);
     for (auto layer : train_net_->layers()) {
       if (layer->partition_id() == id_)
@@ -99,7 +92,7 @@ void Worker::InitLocalParams() {
   for (auto layer : train_net_->layers()) {
     if (layer->partition_id() == id_)
       for (auto param : layer->GetParams())
-        Get(param, modelproto_.warmup_steps());
+        Get(param, job_conf_.warmup_steps());
   }
 }
 
@@ -153,25 +146,25 @@ void Worker::Run() {
     }
   }
 
-  step_ = modelproto_.step();
+  step_ = job_conf_.step();
   InitLocalParams();
   Metric perf;
   while (!StopNow(step_)) {
     if (ValidateNow(step_)) {
       //LOG(ERROR)<<"Validation at step "<<step;
       CollectAll(validation_net_, step_);
-      Test(modelproto_.validation_steps(), kValidation, validation_net_);
+      Test(job_conf_.valid_steps(), kValidation, validation_net_);
     }
     if (TestNow(step_)) {
       //LOG(ERROR)<<"Test at step "<<step;
       CollectAll(test_net_, step_);
-      Test(modelproto_.test_steps(), kTest, test_net_);
+      Test(job_conf_.test_steps(), kTest, test_net_);
     }
 
     if (CheckpointNow(step_)) {
       CollectAll(train_net_, step_);
       Checkpoint(step_, train_net_);
-      modelproto_.set_step(step_);
+      job_conf_.set_step(step_);
     }
     TrainOneBatch(step_, &perf);
     // LOG(ERROR) << "Train " << step_;
@@ -296,40 +289,40 @@ void Worker::Test(int nsteps, Phase phase, shared_ptr<NeuralNet> net) {
 }
 
 bool Worker::DisplayNow(int step) const {
-  return (modelproto_.display_frequency() > 0
-      && step >= modelproto_.display_after()
-      && ((step - modelproto_.display_after())
-        % modelproto_.display_frequency() == 0));
+  return (job_conf_.disp_freq() > 0
+      && step >= job_conf_.disp_after()
+      && ((step - job_conf_.disp_after())
+        % job_conf_.disp_freq() == 0));
 }
 
 bool Worker::DisplayDebugInfo(int step) const {
-  return DisplayNow(step) && modelproto_.debug() && grp_id_ == 0;
+  return DisplayNow(step) && job_conf_.debug() && grp_id_ == 0;
 }
 bool Worker::StopNow(int step) const {
-  return step >= modelproto_.train_steps();
+  return step >= job_conf_.train_steps();
 }
 bool Worker::CheckpointNow(int step) const {
   return (grp_id_ == 0
-      && modelproto_.checkpoint_frequency() > 0
-      && step >= modelproto_.checkpoint_after()
-      && ((step - modelproto_.checkpoint_after())
-        % modelproto_.checkpoint_frequency() == 0));
+      && job_conf_.checkpoint_freq() > 0
+      && step >= job_conf_.checkpoint_after()
+      && ((step - job_conf_.checkpoint_after())
+        % job_conf_.checkpoint_freq() == 0));
 }
 bool Worker::TestNow(const int step) const {
   return (grp_id_ == 0
-      && modelproto_.test_frequency() > 0
-      && modelproto_.test_steps() > 0
-      && step >= modelproto_.test_after()
-      && ((step - modelproto_.test_after())
-        % modelproto_.test_frequency() == 0));
+      && job_conf_.test_freq() > 0
+      && job_conf_.test_steps() > 0
+      && step >= job_conf_.test_after()
+      && ((step - job_conf_.test_after())
+        % job_conf_.test_freq() == 0));
 }
 bool Worker::ValidateNow(const int step) const {
   return (grp_id_ == 0
-      && modelproto_.validation_frequency() > 0
-      && modelproto_.validation_steps() > 0
-      && step >= modelproto_.validation_after()
-      && ((step - modelproto_.validation_after())
-        % modelproto_.validation_frequency() == 0));
+      && job_conf_.valid_freq() > 0
+      && job_conf_.valid_steps() > 0
+      && step >= job_conf_.valid_after()
+      && ((step - job_conf_.valid_after())
+        % job_conf_.valid_freq() == 0));
 }
 
 
@@ -406,7 +399,7 @@ void CDWorker::NegativePhase(int step,
      shared_ptr<NeuralNet> net, Metric* perf) {
 // for negative phase, gibbs sampling only concerns RBM bottom and top layer
   auto& layers = net->layers();
-  for (int i = 0; i < modelproto_.pcd_k(); i++) {
+  for (int i = 0; i < job_conf_.cd_conf().pcd_k(); i++) {
     for (auto& layer : layers) {
       if (layer->is_vislayer() || layer->is_hidlayer())
         layer->ComputeFeature(kNegative, perf);

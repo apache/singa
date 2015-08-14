@@ -24,13 +24,6 @@ enum EntityType {
   kRuntime = 4;
 };
 
-enum ShareOption {
-  kValueOnly = 0;
-  kWhole = 1;
-};
-
-
-
 enum ConnectionType {
   kOneToOne = 0;
   kOneToAll = 1;
