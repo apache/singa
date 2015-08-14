@@ -2,7 +2,6 @@
 #define SINGA_SINGA_H_
 
 #include <cblas.h>
-#include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <string>
 #include "communication/socket.h"
@@ -78,9 +77,16 @@ class Driver {
    * launching script.
    */
   inline int job_id() const { return job_id_; }
+  /**
+   * @return job conf path which is passed by users at the command line. It
+   * should at least contains the cluster configuration.
+   */
+  inline JobProto job_conf() const { return job_conf_; }
 
  private:
   int job_id_;
+  JobProto job_conf_;
+  SingaProto singa_conf_;
 };
 
 }  // namespace singa

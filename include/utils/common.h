@@ -2,18 +2,12 @@
 #define SINGA_UTILS_COMMON_H_
 
 #include <google/protobuf/message.h>
-#include <gflags/gflags.h>
 #include <stdlib.h>
 #include <unordered_map>
 #include <sstream>
 #include <string>
 #include <vector>
 #include "proto/common.pb.h"
-
-#ifndef GFLAGS_GFLAGS_H_
-  namespace gflags = google;
-#endif  // GFLAGS_GFLAGS_H_
-
 
 namespace singa {
 using std::vector;
@@ -29,6 +23,16 @@ void ReadProtoFromBinaryFile(const char* filename,
                              google::protobuf::Message* proto);
 void WriteProtoToBinaryFile(const google::protobuf::Message& proto,
                             const char* filename);
+
+/**
+ * Locate the position of the arg in arglist.
+ *
+ * @param argc total num of arguments
+ * @param arglist all arguments
+ * @param the searched argument
+ * @return the position of arg in the arglist; -1 if not found.
+ */
+int ArgPos(int argc, char** arglist, const char* arg);
 
 const std::string CurrentDateTime();
 void  CreateFolder(const std::string name);

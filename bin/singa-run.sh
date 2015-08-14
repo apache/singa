@@ -23,21 +23,26 @@
 # run a singa job
 #
 
-usage="Usage: singa-run.sh -conf=JOB_CONF [ --resume ]\n
-        set --resume if want to recover a job\n
+usage="Usage: singa-run.sh -conf <job config file> [ other arguments ]\n
+        -resume                 : if want to recover a job\n
+        -exec <path to mysinga> : if want to use own singa driver\n
        ### NOTICE ###\n
         if you are using model.conf + cluster.conf,\n
         please see how to combine them to a job.conf:\n
         http://singa.incubator.apache.org/quick-start.html"
 
-# check arguments
+# parse arguments
+# make sure we have '-conf' and remove '-exec'
+exe=./singa
 while [ $# != 0 ]; do
-  if [[ $1 == "-conf="* ]]; then
+  if [ $1 == "-exec" ]; then
+    shift
+    exe=$1
+  elif [ $1 == "-conf" ]; then
+    shift
     conf=$1
-  elif [ $1 == "--resume" ]; then
-    resume=1
   else
-    echo -e $usage && exit 1
+    args="$args $1"
   fi
   shift
 done
@@ -50,9 +55,9 @@ fi
 . `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
 
 # change conf to an absolute path
-conf_dir=`dirname "${conf:6}"`
+conf_dir=`dirname "$conf"`
 conf_dir=`cd "$conf_dir">/dev/null; pwd`
-conf_base=`basename "${conf:6}"`
+conf_base=`basename "$conf"`
 job_conf=$conf_dir/$conf_base
 if [ ! -f $job_conf ]; then
   echo $job_conf not exists
@@ -67,7 +72,7 @@ echo Unique JOB_ID is $job_id
 
 # generate job info dir
 # format: job-JOB_ID-YYYYMMDD-HHMMSS
-log_dir=$SINGA_LOG/job-info/job-$job_id-$(date '+%Y%m%d-%H%M%S');
+log_dir=$SINGA_LOG/job-info/job-$job_id-$(date '+%Y%m%d-%H%M%S')
 mkdir -p $log_dir
 echo Record job information to $log_dir
 
@@ -76,10 +81,9 @@ host_file=$log_dir/job.hosts
 ./singatool genhost $job_conf 1>$host_file || exit 1
 
 # set command to run singa
-singa_run="./singa -conf=$job_conf -job=$job_id"
-if [ ! -z $resume ]; then
-  singa_run="$singa_run --resume"
-fi
+singa_run="$exe $args -conf $job_conf \
+            -singa_conf $SINGA_HOME/conf/singa.conf \
+            -singa_job $job_id" 
 singa_sshrun="cd $SINGA_HOME; $singa_run"
 
 # ssh and start singa processes

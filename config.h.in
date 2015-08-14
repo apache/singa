@@ -12,9 +12,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `gflags' library (-lgflags). */
-#undef HAVE_LIBGFLAGS
-
 /* Define to 1 if you have the `glog' library (-lglog). */
 #undef HAVE_LIBGLOG
 
@@ -111,6 +108,9 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION

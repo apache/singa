@@ -7,7 +7,6 @@
 // The MNIST dataset could be downloaded at
 //    http://yann.lecun.com/exdb/mnist/
 
-#include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <cstdint>
 #include <iostream>

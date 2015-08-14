@@ -24,9 +24,9 @@
 #
 
 usage="Usage: singa-console.sh <command> <args>\n
-        list         :  list running singa jobs\n
-        view JOB_ID  :  view procs of a singa job\n
-        kill JOB_ID  :  kill a singa job"
+        list           :  list running singa jobs\n
+        view <job id>  :  view procs of a singa job\n
+        kill <job id>  :  kill a singa job"
 
 if [ $# == 0 ]; then
   echo -e $usage

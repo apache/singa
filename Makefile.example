@@ -9,8 +9,7 @@ INCLUDE_DIRS := $(HOME_DIR)/include ./include $(HOME_DIR)/local/include/zookeepe
 CXX := g++
 
 ######################Setting Varialbes#######################################
-LIBRARIES := glog gflags protobuf rt opencv_highgui opencv_imgproc opencv_core\
-	lmdb openblas zmq czmq zookeeper_mt
+LIBRARIES := glog protobuf openblas zmq czmq zookeeper_mt
 
 LDFLAGS := $(foreach librarydir, $(LIBRARY_DIRS), -L$(librarydir))\
 	$(foreach library, $(LIBRARIES), -l$(library))

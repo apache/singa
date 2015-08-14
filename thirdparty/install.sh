@@ -84,40 +84,6 @@ function install_czmq()
 	return 0;
 }
 
-function install_gflags()
-{
-	if [ ! -e "gflags-2.1.1.tar.gz" ]
-	then
-		wget http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/thirdparty/gflags-2.1.1.tar.gz;
-	fi
-	rm -rf gflags-2.1.1;
-	tar zxvf gflags-2.1.1.tar.gz && cd gflags-2.1.1;
-	mkdir build && cd build;
-
-	if [ $# == 1 ]
-		then
-			echo "install gflags in $1"
-			cmake .. -DCMAKE_INSTALL_PREFIX=$1 -DCMAKE_CXX_FLAGS=-fPIC;
-			make && make install;
-		elif [ $# == 0 ]
-		then 
-			echo "install gflags in default path";
-			cmake .. -DCMAKE_CXX_FLAGS=-fPIC;
-			make && sudo make install;
-		else
-			echo "gflags is done";
-	fi
-	
-	if [ $? -ne 0 ]
-	then
-		cd ../..;
-		return -1;
-	fi
-	
-	cd ../..;
-	return 0;
-}
-
 function install_glog()
 {
 	if [ ! -e "glog-0.3.3.tar.gz" ]
@@ -448,27 +414,6 @@ do
 			shift
 		fi
 		;;
-	"gflags")
-		echo "install gflags";
-		if [[ $2 == */* ]];then
-			install_gflags $2;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during gflags installation" ;
-		        exit;
-		    fi  
-			shift
-			shift
-		else
-			install_gflags;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during gflags installation" ;
-		        exit;
-		    fi  
-			shift
-		fi
-		;;
 	"glog")
 		echo "install glog";
 		if [[ $2 == */* ]];then
@@ -637,12 +582,6 @@ do
 		        echo "ERROR during czmq installation" ;
 		        exit;
 		    fi  
-			install_gflags $2;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during gflags installation" ;
-		        exit;
-		    fi  
 			install_glog $2;
 		    if [ $? -ne 0 ] 
 		    then
@@ -700,12 +639,6 @@ do
 		        echo "ERROR during czmq installation" ;
 		        exit;
 		    fi  
-			install_gflags;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during gflags installation" ;
-		        exit;
-		    fi  
 			install_glog;
 		    if [ $? -ne 0 ] 
 		    then
@@ -750,7 +683,6 @@ do
 		echo " MISSING_LIBRARY_NAME can be:	"
 		echo "	cmake"
 		echo "	czmq"
-		echo "	gflags"
 		echo "	glog"
 		echo "	lmdb"
 		echo "	OpenBLAS"

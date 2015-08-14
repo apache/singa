@@ -64,7 +64,14 @@ void Debug() {
   while (0 == i)
     sleep(5);
 }
-
+int ArgPos(int argc, char** arglist, const char* arg) {
+  for (int i = 0; i < argc; i++) {
+    if (strcmp(arglist[i], arg) == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
 void  CreateFolder(const std::string name) {
   struct stat buffer;
   if (stat(name.c_str(), &buffer) != 0) {

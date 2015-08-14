@@ -1,4 +1,3 @@
-#include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <algorithm>
 #include <fstream>
@@ -7,12 +6,6 @@
 #include "proto/singa.pb.h"
 #include "utils/cluster_rt.h"
 #include "utils/common.h"
-
-#ifndef GFLAGS_GFLAGS_H_
-namespace gflags = google;
-#endif  // GFLAGS_GFLAGS_H_
-
-DEFINE_string(confdir, "conf", "Global config dir");
 
 singa::SingaProto global;
 const int SUCCESS = 0;
@@ -54,9 +47,9 @@ int genhost(char* job_conf) {
     nprocs = std::max(nworker_procs, nserver_procs);
 
   // get available host list from global conf
-  std::fstream hostfile(FLAGS_confdir+"/hostfile");
+  std::fstream hostfile("conf/hostfile");
   if (!hostfile.is_open()) {
-    LOG(ERROR) << "Cannot open file: " << FLAGS_confdir+"/hostfile";
+    LOG(ERROR) << "Cannot open file: " << "conf/hostfile";
     return RUN_ERR;
   }
   std::vector<std::string> hosts;
@@ -129,21 +122,20 @@ int cleanup() {
 
 int main(int argc, char **argv) {
   std::string usage = "Usage: singatool <command> <args>\n"
-      " getlogdir        :  show log dir in global config\n"
-      " create           :  generate a unique job id\n"
-      " genhost JOB_CONF :  generate a host list\n"
-      " list             :  list running singa jobs\n"
-      " listall          :  list all singa jobs\n"
-      " view JOB_ID      :  view procs of a singa job\n"
-      " remove JOB_ID    :  remove a job path in zookeeper\n"
-      " removeall        :  remova all job paths in zookeeper\n"
-      " cleanup          :  clean all singa data in zookeeper\n";
-  // set logging level to ERROR and log to STDERR
-  FLAGS_logtostderr = 1;
-  FLAGS_minloglevel = 2;
+      " getlogdir          :  show log dir in global config\n"
+      " create             :  generate a unique job id\n"
+      " genhost <job conf> :  generate a host list\n"
+      " list               :  list running singa jobs\n"
+      " listall            :  list all singa jobs\n"
+      " view <job id>      :  view procs of a singa job\n"
+      " remove <job id>    :  remove a job path in zookeeper\n"
+      " removeall          :  remova all job paths in zookeeper\n"
+      " cleanup            :  clean all singa data in zookeeper\n";
+  // set logging level to ERROR and log to STDERR only
+  google::LogToStderr();
+  google::SetStderrLogging(google::ERROR);
   google::InitGoogleLogging(argv[0]);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  singa::ReadProtoFromTextFile((FLAGS_confdir+"/singa.conf").c_str(), &global);
+  singa::ReadProtoFromTextFile("conf/singa.conf", &global);
 
   // stat code: ARG_ERR for wrong argument, RUN_ERR for runtime error
   int stat = (argc <= 1) ? ARG_ERR : SUCCESS;
