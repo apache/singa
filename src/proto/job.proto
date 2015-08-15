@@ -70,7 +70,7 @@ message JobProto {
 
   // for internal use
   // users typically do not touch following fields
-  
+
   // resume flag
   optional bool resume = 90 [default = false];
   // last snapshot step
@@ -79,7 +79,7 @@ message JobProto {
   optional int32 id = 92 [default = -1];
 }
 
-// ----------------------- 
+// -----------------------
 // Protos used by JobProto
 // -----------------------
 
@@ -98,15 +98,12 @@ message UpdaterProto {
   // change method for learning rate
   required ChangeMethod lr_change = 2 [default = kFixed];
 
-  // proto of change method
-  oneof change_conf {
-    FixedStepProto fixedstep_conf = 40;
-    StepProto step_conf = 41;
-    LinearProto linear_conf = 42;
-    ExponentialProto exponential_conf = 43;
-    InverseProto inverse_conf = 44;
-    InverseTProto inverset_conf = 45;
-  }
+  optional FixedStepProto fixedstep_conf = 40;
+  optional StepProto step_conf = 41;
+  optional LinearProto linear_conf = 42;
+  optional ExponentialProto exponential_conf = 43;
+  optional InverseProto inverse_conf = 44;
+  optional InverseTProto inverset_conf = 45;
 
   optional float momentum = 31 [default = 0];
   optional float weight_decay = 32 [default = 0];
@@ -161,45 +158,43 @@ message LayerProto {
   // the layer type
   required LayerType type = 20;
   // proto for the specific layer
-  oneof layer_conf {
-    // configuration for convolution layer
-    ConvolutionProto convolution_conf = 30;
-    // configuration for concatenation layer
-    ConcateProto concate_conf = 31;
-    // configuration for dropout layer
-    DropoutProto dropout_conf = 33;
-    // configuration for inner product layer
-    InnerProductProto innerproduct_conf = 34;
-    // configuration for local response normalization layer
-    DataProto lmdbdata_conf = 35;
-    // configuration for local response normalization layer
-    LRNProto lrn_conf = 45;
-    // configuration for mnist parser layer
-    MnistProto mnist_conf = 36;
-    // configuration for pooling layer
-    PoolingProto pooling_conf = 37;
-    // configuration for prefetch layer
-    PrefetchProto prefetch_conf = 44;
-    // configuration for rectified linear unit layer
-    ReLUProto relu_conf = 38;
-    // configuration for rgb image parser layer
-    RGBImageProto rgbimage_conf = 39;
-    // configuration for data layer
-    DataProto sharddata_conf = 32;
-    // configuration for slice layer
-    SliceProto slice_conf = 41;
-    // configuration for softmax loss layer
-    SoftmaxLossProto softmaxloss_conf = 40;
-    // configuration for split layer
-    SplitProto split_conf = 42;
-    // configuration for tanh layer
-    TanhProto tanh_conf = 43;
-    // configuration for rbmvis layer
-    RBMVisProto rbmvis_conf = 48;
-    // configuration for rbmhid layer
-    RBMHidProto rbmhid_conf = 49;
-  }
-  
+  // configuration for convolution layer
+  optional ConvolutionProto convolution_conf = 30;
+  // configuration for concatenation layer
+  optional ConcateProto concate_conf = 31;
+  // configuration for dropout layer
+  optional DropoutProto dropout_conf = 33;
+  // configuration for inner product layer
+  optional InnerProductProto innerproduct_conf = 34;
+  // configuration for local response normalization layer
+  optional DataProto lmdbdata_conf = 35;
+  // configuration for local response normalization layer
+  optional LRNProto lrn_conf = 45;
+  // configuration for mnist parser layer
+  optional MnistProto mnist_conf = 36;
+  // configuration for pooling layer
+  optional PoolingProto pooling_conf = 37;
+  // configuration for prefetch layer
+  optional PrefetchProto prefetch_conf = 44;
+  // configuration for rectified linear unit layer
+  optional ReLUProto relu_conf = 38;
+  // configuration for rgb image parser layer
+  optional RGBImageProto rgbimage_conf = 39;
+  // configuration for data layer
+  optional DataProto sharddata_conf = 32;
+  // configuration for slice layer
+  optional SliceProto slice_conf = 41;
+  // configuration for softmax loss layer
+  optional SoftmaxLossProto softmaxloss_conf = 40;
+  // configuration for split layer
+  optional SplitProto split_conf = 42;
+  // configuration for tanh layer
+  optional TanhProto tanh_conf = 43;
+  // configuration for rbmvis layer
+  optional RBMVisProto rbmvis_conf = 48;
+  // configuration for rbmhid layer
+  optional RBMHidProto rbmhid_conf = 49;
+
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
   // names of parameters shared from other layers
@@ -507,7 +502,7 @@ enum LayerType {
 enum PartitionType {
   kDataPartition = 0;
   kLayerPartition = 1;
-  kNone = 2; 
+  kNone = 2;
 }
 
 enum Phase {
