@@ -68,8 +68,8 @@ void SGDUpdater::Update(int step, Param* param, float grad_scale) {
   Shape<1> s = Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
-  float lr = GetLearningRate(step)*param->learning_rate_multiplier();
-  float wd = weight_decay_*param->weight_decay_multiplier();
+  float lr = GetLearningRate(step)*param->lr_scale();
+  float wd = weight_decay_*param->wd_scale();
   if (grad_scale != 1.f)
     grad *= grad_scale;
   if (wd > 0) {  // L2 regularization, should be done after timing grad_scale
@@ -99,8 +99,8 @@ void NesterovUpdater::Update(int step, Param* param, float grad_scale) {
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
   Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
   TensorContainer<cpu, 1> tmp(s);
-  float lr = GetLearningRate(step)*param->learning_rate_multiplier();
-  float wd = weight_decay_*param->weight_decay_multiplier();
+  float lr = GetLearningRate(step)*param->lr_scale();
+  float wd = weight_decay_*param->wd_scale();
   if (grad_scale != 1.f)
     grad *= grad_scale;
   if (wd > 0) {  // L2 regularization, should be done after timing grad_scale
@@ -125,8 +125,8 @@ void AdaGradUpdater::Update(int step, Param* param, float grad_scale) {
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
   Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
-  float lr = GetLearningRate(step)*param->learning_rate_multiplier();
-  float wd = weight_decay_*param->weight_decay_multiplier();
+  float lr = GetLearningRate(step)*param->lr_scale();
+  float wd = weight_decay_*param->wd_scale();
   if (grad_scale != 1.f)
     grad *= grad_scale;
   if (wd > 0) {  //  L2 regularization, should be done after timing grad_scale
@@ -152,8 +152,8 @@ void RMSPropUpdater::Update(int step, Param* param, float grad_scale){
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
   Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
   history=history*rho_+(1-rho_)*F<op::square>(grad*grad_scale);
-  float lr=GetLearningRate(step)*param->learning_rate_multiplier();
-  float wd=weight_decay_*param->weight_decay_multiplier();
+  float lr=GetLearningRate(step)*param->lr_scale();
+  float wd=weight_decay_*param->wd_scale();
   if(wd>0){ // L2 regularization
     grad+=data*wd;
   }
@@ -175,7 +175,7 @@ void AdaDeltaUpdater::Update(int step, Param* param, float grad_scale){
   Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
   Tensor<cpu, 1> update(param->mutable_cpu_update(), s);
   TensorContainer<cpu, 1> tmp(s);
-  float wd=weight_decay_*param->weight_decay_multiplier();
+  float wd=weight_decay_*param->wd_scale();
   if(wd>0){ // L2 regularization
     grad+=data*wd;
   }

@@ -213,10 +213,10 @@ message ParamProto {
   // for gaussian sampling
   optional float mean = 8 [default = 0];
   optional float std = 9 [default = 1];
-  // multiplied on the global learning rate.
-  optional float learning_rate_multiplier = 15 [default = 1];
-  // multiplied on the global weight decay.
-  optional float weight_decay_multiplier = 16 [default = 1];
+  // scale factor, multiplied on the global learning rate.
+  optional float lr_scale = 15 [default = 1];
+  // scale factor, multiplied on the global weight decay.
+  optional float wd_scale = 16 [default = 1];
 
   // name of the owner param from which this param shares the values
   optional string share_from = 60;

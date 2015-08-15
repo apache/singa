@@ -53,11 +53,9 @@ void Param::InitValues(int version) {
     break;
   case InitMethod::kUniformSqrtFanIn:
     random->SampleUniform(data, proto_.low(), proto_.high());
-    // only valid for param matrix with dim 1 for fan in
-    LOG(ERROR) << "init fan in";
+    // only valid for param matrix with num of cols as fan in
     CHECK_EQ(data_->shape().size(), 2);
     data *= proto_.value() / sqrt(data_->shape().at(1) / 3.0f);
-    LOG(ERROR) << "end fan in";
     break;
   case InitMethod::kUniformSqrtFanInOut:
     random->SampleUniform(data, proto_.low(), proto_.high());
@@ -96,7 +94,7 @@ Msg* Param::GenPutMsg(bool copy, int idx) {
   void *p = ptr;
   if (copy) p = nullptr;
   msg->AddFormatFrame("iffp", slice_size_[idx],
-      learning_rate_multiplier(), weight_decay_multiplier(), p);
+      lr_scale(), wd_scale(), p);
   if (copy) {
     msg->AddFrame(ptr, slice_size_[idx] * sizeof(float));
   }
@@ -146,8 +144,8 @@ Msg* Param::HandlePutMsg(Msg** msg, bool reserve) {
   float* ptr;
   (*msg)->ParseFormatFrame("iffp", &size, &lr, &wc, &ptr);
   ParamProto proto;
-  proto.set_learning_rate_multiplier(lr);
-  proto.set_weight_decay_multiplier(wc);
+  proto.set_lr_scale(lr);
+  proto.set_wd_scale(wc);
   vector<int> shape{size};
   Setup(proto, shape);
   if (ptr == nullptr) {

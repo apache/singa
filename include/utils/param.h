@@ -52,14 +52,14 @@ class Param {
   /**
    * Scale the learning rate when updating parameters in the Param object
    */
-  float learning_rate_multiplier() {
-    return proto_.learning_rate_multiplier();
+  float lr_scale() {
+    return proto_.lr_scale();
   }
   /**
    * Scale the weight decay when updating parameters in the Param object
    */
-  float weight_decay_multiplier() {
-    return proto_.weight_decay_multiplier();
+  float wd_scale() {
+    return proto_.wd_scale();
   }
   /**
    * Parameter name used for Param re-use in other model or sharing between

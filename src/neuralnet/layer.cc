@@ -341,7 +341,7 @@ void InnerProductLayer::Setup(const LayerProto& proto, int npartitions) {
   Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
   weight_ = factory->Create("Param");
   bias_ = factory->Create("Param");
-  weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
+  weight_->Setup(proto.param(0), vector<int>{hdim_, vdim_});
   bias_->Setup(proto.param(1), vector<int>{hdim_});
 }
 
@@ -350,7 +350,7 @@ void InnerProductLayer::ComputeFeature(Phase phase, Metric* perf) {
   auto src = Tensor2(srclayers_[0]->mutable_data(this));
   auto weight = Tensor2(weight_->mutable_data());
   auto bias = Tensor1(bias_->mutable_data());
-  data=dot(src, weight);
+  data=dot(src, weight.T());
   // repmat: repeat bias vector into batchsize rows
   data+=repmat(bias, batchsize_);
 }
@@ -363,10 +363,10 @@ void InnerProductLayer::ComputeGradient(Phase phas) {
   auto gbias = Tensor1(bias_->mutable_grad());
 
   gbias=sum_rows(grad);
-  gweight=dot(src.T(), grad);
+  gweight=dot(grad.T(), src);
   if(srclayers_[0]->mutable_grad(this)!=nullptr){
     auto gsrc = Tensor2(srclayers_[0]->mutable_grad(this));
-    gsrc=dot(grad, weight.T());
+    gsrc=dot(grad, weight);
   }
 }
 /*****************************************************************************
