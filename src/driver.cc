@@ -1,4 +1,5 @@
 #include "singa.h"
+
 namespace singa {
 
 /**
@@ -35,13 +36,13 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<RBMVisLayer>(kRBMVis);
   RegisterLayer<RBMHidLayer>(kRBMHid);
 #ifdef USE_LMDB
-  RegisterLayer(factory, LMDBData);
+  RegisterLayer<LMDBDataLayer>(kLMDBData);
 #endif
 
   // register updater
   RegisterUpdater<AdaGradUpdater>(kAdaGrad);
   RegisterUpdater<NesterovUpdater>(kNesterov);
-  //  TODO(wangwei)  RegisterUpdater<kRMSPropUpdater>(kRMSProp);
+  // TODO(wangwei) RegisterUpdater<kRMSPropUpdater>(kRMSProp);
   RegisterUpdater<SGDUpdater>(kSGD);
 
   // register worker

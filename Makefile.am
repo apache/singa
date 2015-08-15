@@ -23,7 +23,8 @@ PROTO_PYS := tool/pb2/singa_pb2.py \
              tool/pb2/job_pb2.py \
              tool/pb2/common_pb2.py
 
-SINGA_SRCS := src/utils/cluster.cc \
+SINGA_SRCS := src/driver.cc \
+              src/utils/cluster.cc \
               src/utils/cluster_rt.cc \
               src/utils/graph.cc \
               src/utils/common.cc \
@@ -89,36 +90,21 @@ bin_PROGRAMS = singa
 singa_SOURCES = src/main.cc
 singa_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
                  $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED
+singa_LDFLAGS = -I./include \
+                -lsinga \
+                -lglog  \
+                -lgflags \
+                -lprotobuf \
+                -lrt \
+                -lopencv_highgui \
+                -lopencv_imgproc \
+                -lopencv_core \
+                -lopenblas \
+                -lzmq \
+                -lczmq \
+                -lzookeeper_mt
 if LMDB
-singa_LDFLAGS = -I./include \
-                -lsinga \
-                -lglog  \
-                -lgflags \
-                -lprotobuf \
-                -lrt \
-                -lopencv_highgui \
-                -lopencv_imgproc \
-                -lopencv_core \
-                -lopenblas \
-                -lzmq \
-                -lczmq \
-                -llmdb \
-                -lzookeeper_mt
-else
-singa_LDFLAGS = -I./include \
-                -lsinga \
-                -lglog  \
-                -lgflags \
-                -lprotobuf \
-                -lrt \
-                -lopencv_highgui \
-                -lopencv_imgproc \
-                -lopencv_core \
-                -lopenblas \
-                -lzmq \
-                -lczmq \
-                -llmdb \
-                -lzookeeper_mt
+singa_LDFLAGS += -llmdb
 endif
 
 bin_PROGRAMS += singatool
