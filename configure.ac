@@ -26,9 +26,6 @@ AC_SEARCH_LIBS([zmq_ctx_new], [zmq], [], [
 AC_SEARCH_LIBS([zmsg_new], [czmq], [], [
   AC_MSG_ERROR([unable to find zmsg_new() function])
   ])
-AC_CHECK_LIB([gflags], [main], [], [
-  AC_MSG_ERROR([unable to find gflags library])
-  ])
 AC_CHECK_LIB([glog], [main], [], [
   AC_MSG_ERROR([unable to find glog library])
   ])
