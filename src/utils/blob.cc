@@ -40,6 +40,7 @@
 #include <utility>
 #include <math.h>
 #include <cblas.h>
+#include <cuda_runtime.h>
 #include "utils/blob.h"
 /*********************SyncedMemory implementation************************/
 
@@ -123,7 +124,8 @@ inline void SyncedMemory::to_gpu() {
   switch (head_) {
   case UNINITIALIZED:
     CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
-    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, N));  // NOLINT(caffe/alt_fn)
+    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, size_));
+    //CUDA_CHECK(cudaMemset(gpu_ptr_, 0, N));  // NOLINT(caffe/alt_fn)
     head_ = HEAD_AT_GPU;
     break;
   case HEAD_AT_CPU:
@@ -240,6 +242,16 @@ template <typename Dtype>
 Dtype* Blob<Dtype>::mutable_gpu_data() {
   CHECK(data_);
   return static_cast<Dtype*>(data_->mutable_gpu_data());
+}
+
+template <typename Dtype>
+Dtype* Blob<Dtype>::mutable_xpu_data() {
+  CHECK(data_);
+#ifndef CPU_ONLY
+  return static_cast<Dtype*>(data_->mutable_gpu_data());
+#else
+  return static_cast<Dtype*>(data_->mutable_cpu_data());
+#endif
 }
 
 template <typename Dtype>
