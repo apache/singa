@@ -199,39 +199,6 @@ message LayerProto {
   optional int32 partition_id = 90 [default = 0];
 }
 
-// weight matrix should be defined before bias vector
-// TODO(wangwei): separate conf for diff init method
-message ParamProto {
-  // used for identifying the same params from diff models and display deug info
-  optional string name =  1 [default = ""];
-  optional InitMethod init_method = 2 [default = kGaussian];
-  // currently there is only one built-in Param impl with type 0.
-  optional int32 type = 3 [default = 0];
-  // constant init
-  optional float value = 5 [default = 1];
-  // for uniform sampling
-  optional float low = 6 [default = -1];
-  optional float high = 7 [default = 1];
-  // for gaussian sampling
-  optional float mean = 8 [default = 0];
-  optional float std = 9 [default = 1];
-  // scale factor, multiplied on the global learning rate.
-  optional float lr_scale = 15 [default = 1];
-  // scale factor, multiplied on the global weight decay.
-  optional float wd_scale = 16 [default = 1];
-
-  // name of the owner param from which this param shares the values
-  optional string share_from = 60;
-
-  // used interally
-  optional int32 id = 90;
-  // used internally
-  optional int32 owner = 91 [default = -1];
-  // partition dimension, -1 for no partition
-  optional int32 partition_dim = 92;
-  // usually, the program will infer the param shape
-  repeated int32 shape = 93;
-}
 
 // ---------------------------
 // protos for different layers
@@ -243,6 +210,7 @@ message ParamProto {
   // used for identifying the same params from diff models and display deug info
   optional string name =  1 [default = ""];
   optional InitMethod init_method = 2 [default = kGaussian];
+  optional int32 type = 3 [default = 0];
   // constant init
   optional float value = 5 [default = 1];
   // for uniform sampling
@@ -252,9 +220,9 @@ message ParamProto {
   optional float mean = 8 [default = 0];
   optional float std = 9 [default = 1];
   // multiplied on the global learning rate.
-  optional float learning_rate_multiplier = 15 [default = 1];
+  optional float lr_scale = 15 [default = 1];
   // multiplied on the global weight decay.
-  optional float weight_decay_multiplier = 16 [default = 1];
+  optional float wd_scale = 16 [default = 1];
 
   // name of the owner param from which this param shares the values
   optional string share_from = 60;
