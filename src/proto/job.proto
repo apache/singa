@@ -205,6 +205,8 @@ message ParamProto {
   // used for identifying the same params from diff models and display deug info
   optional string name =  1 [default = ""];
   optional InitMethod init_method = 2 [default = kGaussian];
+  // currently there is only one built-in Param impl with type 0.
+  optional int32 type = 3 [default = 0];
   // constant init
   optional float value = 5 [default = 1];
   // for uniform sampling
@@ -422,7 +424,7 @@ message ReLUProto {
 }
 
 message RMSPropProto {
-  // history=history*rho_+(1-rho_)*(grad*grad_scale);
+ // history=history*rho_+(1-rho_)*(grad*grad_scale);
   required float rho = 1;
 }
 

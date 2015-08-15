@@ -1,40 +1,40 @@
 #include "singa.h"
 /**
- * \file main.cc is the main entry of SINGA, like the driver program for Hadoop.
+ * \file main.cc provides an example main func.
  *
- * 1. Users register their own implemented classes, e.g., layer, updater, etc.
- * 2. Users prepare the google protobuf object for the job configuration.
- * 3. Users call trainer to start the training.
+ * Like the main func of Hadoop, it prepares the job configuration and submit it
+ * to the Driver which starts the training.
+ *
+ * Users can define their own main func to prepare the job configuration in
+ * different ways other than reading it from a configuration file. But the main
+ * func must call Driver::Init at the beginning, and pass the job configuration
+ * and resume option to the Driver for job submission.
+ *
+ * Optionally, users can register their own implemented classes, e.g., layer,
+ * updater, through the registration func provided by the Driver.
+ *
  *
  * TODO
- * 1. Add helper functions for users to configure their model easily,
- * e.g., AddLayer(layer_type, source_layers, meta_data).
+ * Add helper functions for users to generate their configurations easily.
+ * e.g., AddLayer(layer_type, source_layers, meta_data),
+ * or, MLP(layer1_size, layer2_size, tanh, loss);
  */
 
-DEFINE_int32(job, -1, "Unique job ID generated from singa-run.sh");
 DEFINE_bool(resume, false, "Resume from checkpoint passed at cmd line");
 DEFINE_string(conf, "./job.conf", "job conf passed at cmd line");
 
-/**
- * Register layers, and other customizable classes.
- *
- * If users want to use their own implemented classes, they should register
- * them here. Refer to the Worker::RegisterDefaultClasses()
- */
-void RegisterClasses() {
-
-}
-
-
 int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  //  must create driver at the beginning and call its Init method.
+  singa::Driver driver;
+  driver.Init(argc, argv);
 
+  //  users can register new subclasses of layer, updater, etc.
+
+  //  prepare job conf;
   singa::JobProto jobConf;
-  std::string job_file = FLAGS_conf;
-  singa::ReadProtoFromTextFile(job_file.c_str(), &jobConf);
+  singa::ReadProtoFromTextFile(FLAGS_conf.c_str(), &jobConf);
 
-  RegisterClasses();
-  singa::SubmitJob(FLAGS_job, FLAGS_resume, jobConf);
+  //  submit the job
+  driver.Submit(FLAGS_resume, jobConf);
   return 0;
 }

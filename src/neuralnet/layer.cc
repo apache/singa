@@ -72,9 +72,9 @@ void ConvolutionLayer::Setup(const LayerProto& proto, int npartitions) {
   col_grad_.Reshape(vector<int>{col_height_, col_width_});
 
   Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
-  weight_ = factory->Create("Param");
+  weight_ = factory->Create(proto.param(0).type());
   weight_->Setup(proto.param(0), vector<int>{num_filters_, col_height_});
-  bias_ = factory->Create("Param");
+  bias_ = factory->Create(proto.param(1).type());
   bias_->Setup(proto.param(1), vector<int>{num_filters_});
 }
 
@@ -189,8 +189,8 @@ void RBMVisLayer::Setup(const LayerProto& proto,
   data_.Reshape(vector<int>{batchsize_, vdim_});  // this is visible dimension
   vis_sample_.Reshape(vector<int>{neg_batchsize_, vdim_});
   Factory<Param>* factory = Singleton<Factory<Param>>::Instance();
-  weight_ = factory->Create("Param");
-  bias_ = factory->Create("Param");
+  weight_ = factory->Create(proto.param(0).type());
+  bias_ = factory->Create(proto.param(1).type());
   weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
   bias_->Setup(proto.param(1), vector<int>{vdim_});
 }
@@ -282,10 +282,10 @@ void RBMHidLayer::Setup(const LayerProto& proto,
   data_.Reshape(vector<int>{batchsize_, hdim_});
   hid_sample_.Reshape(vector<int>{neg_batchsize_, hdim_});
   Factory<Param>* factory = Singleton<Factory<Param>>::Instance();
-  bias_ = factory->Create("Param");
-  weight_ = factory->Create("Param");
-  bias_->Setup(proto.param(1), vector<int>{hdim_});
+  weight_ = factory->Create(proto.param(0).type());
+  bias_ = factory->Create(proto.param(0).type());
   weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
+  bias_->Setup(proto.param(1), vector<int>{hdim_});
 }
 
 void RBMHidLayer::ComputeFeature(Phase phase, Metric* perf) {
@@ -339,8 +339,8 @@ void InnerProductLayer::Setup(const LayerProto& proto, int npartitions) {
   data_.Reshape(vector<int>{batchsize_, hdim_});
   grad_.ReshapeLike(data_);
   Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
-  weight_ = factory->Create("Param");
-  bias_ = factory->Create("Param");
+  weight_ = factory->Create(proto.param(0).type());
+  bias_ = factory->Create(proto.param(0).type());
   weight_->Setup(proto.param(0), vector<int>{hdim_, vdim_});
   bias_->Setup(proto.param(1), vector<int>{hdim_});
 }

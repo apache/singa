@@ -18,7 +18,7 @@ Server::Server(int thread_id,int group_id, int server_id):
 void Server::Setup(const UpdaterProto& proto,
     std::unordered_map<int, ParamEntry*>* shard,
     const vector<int>& slice2group) {
-  updater_ = Singleton<Factory<Updater>>::Instance()->Create("Updater");
+  updater_ = Singleton<Factory<Updater>>::Instance()->Create(proto.type());
   updater_->Init(proto);
   shard_ = shard;
   slice2group_ = slice2group;
@@ -143,7 +143,8 @@ Msg* Server::HandlePut(Msg **msg) {
   if (shard_->find(slice_id) != shard_->end())
     LOG(FATAL) << "Param (" << slice_id << ") is put more than once";
 
-  auto  param = Singleton<Factory<Param>>::Instance()->Create("Param");
+  // TODO(wangwei) replace hard coded param type 0
+  auto  param = Singleton<Factory<Param>>::Instance()->Create(0);
   auto response = param->HandlePutMsg(msg, true);
   // parse num of shares of this param from a worker group
   int num_shares = 1;

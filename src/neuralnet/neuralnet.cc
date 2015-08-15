@@ -2,46 +2,9 @@
 #include <queue>
 
 #include "neuralnet/neuralnet.h"
-#include "neuralnet/optional_layer.h"
 #include "utils/singleton.h"
 
 namespace singa {
-// macros to shorten the code
-#define LayerT(x) LayerType::k##x
-
-#define RegisterLayer(factory, id) \
-  factory->Register(LayerType::k##id, \
-      CreateInstance(id##Layer, Layer))
-
-void NeuralNet::RegisterLayers() {
-  Factory<Layer>* factory = Singleton<Factory<Layer>>::Instance();
-  // FooLayer's type is kFoo, register using Foo
-  RegisterLayer(factory, BridgeDst);
-  RegisterLayer(factory, BridgeSrc);
-  RegisterLayer(factory, Convolution);
-  RegisterLayer(factory, Concate);
-  RegisterLayer(factory, Dropout);
-  RegisterLayer(factory, InnerProduct);
-  RegisterLayer(factory, Label);
-  RegisterLayer(factory, LRN);
-  RegisterLayer(factory, Mnist);
-  RegisterLayer(factory, Prefetch);
-  RegisterLayer(factory, Pooling);
-  RegisterLayer(factory, RGBImage);
-  RegisterLayer(factory, ReLU);
-  RegisterLayer(factory, ShardData);
-  RegisterLayer(factory, Slice);
-  RegisterLayer(factory, SoftmaxLoss);
-  RegisterLayer(factory, Split);
-  RegisterLayer(factory, Tanh);
-  RegisterLayer(factory, RBMVis);
-  RegisterLayer(factory, RBMHid);
-
-#ifdef USE_LMDB
-  RegisterLayer(factory, LMDBData);
-#endif
-}
-
 shared_ptr<NeuralNet> NeuralNet::Create(
     const NetProto& net_conf,
     Phase phase,

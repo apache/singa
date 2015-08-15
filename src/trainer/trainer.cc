@@ -28,15 +28,6 @@ Trainer::~Trainer() {
   delete router_;
 }
 
-void Trainer::RegisterDefaultClasses() {
-  // register all implemented layers
-  singa::NeuralNet::RegisterLayers();
-  auto param_factory = Singleton<Factory<singa::Param>>::Instance();
-  param_factory->Register("Param", CreateInstance(Param, Param));
-  auto updater_factory = Singleton<Factory<singa::Updater>>::Instance();
-  updater_factory->Register("Updater", CreateInstance(SGDUpdater, Updater));
-}
-
 const vector<int> SliceParams(const vector<Param*>& params) {
   // for load-balance among servers in a group and among server groups
   int nserver_grps = Cluster::Get()->nserver_groups();
@@ -181,15 +172,11 @@ vector<Worker*> Trainer::CreateWorkers(int nthreads, const JobProto& job) {
     wstart = 0;
     wend = grp_size;
   }
+  auto factory = Singleton<Factory<singa::Worker>>::Instance();
   for (int gid = gstart; gid < gend; gid++) {
     for (int wid = wstart; wid < wend; wid++) {
-      Worker* worker=nullptr;
-      if (job.alg() == TrainOneBatchAlg::kBP)
-        worker = new BPWorker(nthreads++,gid, wid);
-      else if (job.alg() == TrainOneBatchAlg::kCD)
-        worker=new CDWorker(nthreads++,gid, wid);
-      else
-        LOG(FATAL) << "unknown alg for trainonebatch func " << job.alg();
+      Worker* worker = factory->Create(job.alg());
+      worker->Init(nthreads++,gid, wid);
       workers.push_back(worker);
     }
   }
@@ -240,7 +227,6 @@ void Trainer::Resume(JobProto* jobConf) {
 void Trainer::Start(bool resume, const SingaProto& singaConf, JobProto* job) {
   // register job to zookeeper at the beginning
   auto cluster = Cluster::Get(job->id(), singaConf, job->cluster());
-  RegisterDefaultClasses();
   if (resume)
     Resume(job);
 

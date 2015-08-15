@@ -52,9 +52,9 @@ void Param::InitValues(int version) {
       data *= proto_.value();
     break;
   case InitMethod::kUniformSqrtFanIn:
-    random->SampleUniform(data, proto_.low(), proto_.high());
     // only valid for param matrix with num of cols as fan in
     CHECK_EQ(data_->shape().size(), 2);
+    random->SampleUniform(data, proto_.low(), proto_.high());
     data *= proto_.value() / sqrt(data_->shape().at(1) / 3.0f);
     break;
   case InitMethod::kUniformSqrtFanInOut:
@@ -68,9 +68,10 @@ void Param::InitValues(int version) {
       data *= proto_.value();
     break;
   case InitMethod::kGaussainSqrtFanIn:
+    // only valid for param matrix with num of cols as fan in
+    CHECK_EQ(data_->shape().size(), 2);
     random->SampleGaussian(data, proto_.mean(), proto_.std());
-    if (proto_.value())
-      data *= proto_.value() / sqrt(data_->shape()[0]);
+    data *= proto_.value() / sqrt(data_->shape().at(1));
     break;
   default:
     LOG(ERROR) << "Illegal parameter init method ";

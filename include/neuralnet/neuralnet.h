@@ -27,10 +27,6 @@ using std::shared_ptr;
 class NeuralNet {
  public:
   /**
-   * Register Layers, i.e., map layer type to layer class
-   */
-  static void RegisterLayers();
-  /**
    * Create the neural network for training, test or validation.
    *
    * Parameters for test/validation net can share those from training after

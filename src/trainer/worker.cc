@@ -10,9 +10,12 @@
 namespace singa {
 using std::thread;
 
-Worker::Worker(int thread_id, int grp_id, int id):
-  thread_id_(thread_id), grp_id_(grp_id), id_(id),
-  layer_dealer_(nullptr), dealer_(nullptr), updater_(nullptr) {
+void Worker::Init(int thread_id, int grp_id, int id) {
+  thread_id_ = thread_id;
+  grp_id_ = grp_id;
+  id_ = id;
+  layer_dealer_ = dealer_ = nullptr;
+  updater_ = nullptr;
 }
 
 void Worker::Setup(
@@ -327,8 +330,8 @@ bool Worker::ValidateNow(const int step) const {
 
 
 /****************************BPWorker**********************************/
-BPWorker::BPWorker(int thread_id, int group_id, int worker_id):
-  Worker(thread_id, group_id, worker_id) {
+void BPWorker::Init(int thread_id, int group_id, int worker_id) {
+  Worker::Init(thread_id, group_id, worker_id);
 }
 
 void BPWorker::Forward(
@@ -382,8 +385,8 @@ void BPWorker::TestOneBatch(int step, Phase phase,
 }
 
 /****************************CDWorker**********************************/
-CDWorker::CDWorker(int thread_id, int group_id, int worker_id):
-  Worker(thread_id, group_id, worker_id) {
+void CDWorker::Init(int thread_id, int group_id, int worker_id) {
+  Worker::Init(thread_id, group_id, worker_id);
 }
 
 void CDWorker::PositivePhase(int step,

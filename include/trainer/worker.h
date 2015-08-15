@@ -26,7 +26,7 @@ class Worker {
    * @param grp_id global worker group ID
    * @param id worker ID within the group
    */
-  Worker(int thread_id, int grp_id, int id);
+  virtual void Init(int thread_id, int grp_id, int id);
   virtual ~Worker();
   /**
    * Setup members
@@ -181,8 +181,8 @@ class Worker {
 
 class BPWorker: public Worker{
  public:
-  BPWorker(int thread_id, int grp_id, int id);
   ~BPWorker(){}
+  void Init(int thread_id, int grp_id, int id) override;
   void TrainOneBatch(int step, Metric* perf) override;
   void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net,
       Metric* perf) override;
@@ -193,11 +193,11 @@ class BPWorker: public Worker{
 
 class CDWorker: public Worker{
  public:
-  CDWorker(int thread_id, int group_id, int worker_id);
   ~CDWorker() {}
-  virtual void TrainOneBatch(int step, Metric* perf);
-  virtual void TestOneBatch(int step, Phase phase,
-       shared_ptr<NeuralNet> net, Metric* perf);
+  void Init(int thread_id, int group_id, int worker_id) override;
+  void TrainOneBatch(int step, Metric* perf) override;
+  void TestOneBatch(int step, Phase phase,
+       shared_ptr<NeuralNet> net, Metric* perf) override;
   void PositivePhase(int step, shared_ptr<NeuralNet> net, Metric* perf);
   void NegativePhase(int step, shared_ptr<NeuralNet> net, Metric* perf);
   void GradientPhase(int step, shared_ptr<NeuralNet> net);

@@ -80,16 +80,6 @@ class Trainer{
 
   void Run(const vector<Worker*>& workers, const vector<Server*>& servers);
   /**
-   * Register default implementations for all base classes used in the system,
-   * e.g., the Updater, BaseMsg, etc.
-   *
-   * All built-in layer implementations are
-   * registered here.
-   * For other base classes, use its base class name (string) as the key and the
-   * implementation class as the value, e.g., <"Updater" SGDUpdater>.
-   */
-  void RegisterDefaultClasses();
-  /**
    * Generate msg to trigger synchronization with other server groups.
    *
    * @param server the local server index whom the message is sent to
