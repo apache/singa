@@ -69,8 +69,8 @@ class DropoutLayer: public Layer {
   Blob<float> mask_;
 };
 /**
-  * RBM visible layer
-  */
+ * RBM visible layer
+ */
 class RBMVisLayer: public Layer {
  public:
   using Layer::ComputeFeature;
@@ -108,6 +108,7 @@ class RBMVisLayer: public Layer {
   ~RBMVisLayer();
 
 
+
  private:
   //! dimension of the hidden layer
   int hdim_;
@@ -127,8 +128,8 @@ class RBMVisLayer: public Layer {
   // in order to implement Persistent Contrastive Divergence,
 };
 /**
-  * RBM hidden layer
-  */
+ * RBM hidden layer
+ */
 class RBMHidLayer: public Layer {
  public:
   using Layer::ComputeFeature;
@@ -154,7 +155,7 @@ class RBMHidLayer: public Layer {
       return data_;
     else
       return hid_sample_;
-  }
+    }
   const vector<Param*> GetParams() const override {
     vector<Param*> params{weight_, bias_};
     return params;
@@ -169,6 +170,8 @@ class RBMHidLayer: public Layer {
   // batchsize of negative phase
   int neg_batchsize_;
   float scale_;
+  // whether use gaussian sampling
+  bool gaussian_;
   Blob<float> hid_sample_;
   Param* weight_, *bias_;
 };
@@ -183,7 +186,6 @@ class InnerProductLayer: public Layer {
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(Phase phase, Metric *perf) override;
   void ComputeGradient(Phase phase) override;
-
 
   ConnectionType src_neuron_connection(int k) const override {
     // CHECK_LT(k, srclayers_.size());
@@ -201,6 +203,7 @@ class InnerProductLayer: public Layer {
   //! dimension of the visible layer
   int vdim_;
   int batchsize_;
+  bool transpose_;
   Param* weight_, *bias_;
 };
 
@@ -246,7 +249,9 @@ class MnistLayer: public ParserLayer {
   void Setup(const LayerProto& proto, int npartitions) override;
   void ParseRecords(Phase phase, const vector<Record>& records,
       Blob<float>* blob) override;
-
+  ConnectionType dst_layer_connection() const override {
+    return kOneToMany;
+  }
  protected:
   // height and width of the image after deformation
   // kernel size for elastic distortion
@@ -283,6 +288,29 @@ class ReLULayer: public Layer {
   void ComputeGradient(Phase phase) override;
 };
 
+class EuclideanLossLayer: public LossLayer {
+ public:
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
+
+
+  int partition_dim() const override {
+    CHECK_LE(layer_proto_.partition_dim(), 1);
+    return layer_proto_.partition_dim();
+  }
+  ConnectionType src_neuron_connection(int k) const override {
+    // CHECK_LT(k, srclayers_.size());
+    return kOneToAll;
+  }
+
+ private:
+  int batchsize_;
+  int dim_;
+};
 
 class SoftmaxLossLayer: public LossLayer {
   /*
@@ -341,6 +369,21 @@ class ShardDataLayer: public DataLayer{
 
  private:
   DataShard* shard_;
+};
+
+/**
+ * This layer apply Sigmoid function to neuron activations.
+ * f(x)=1/(1+exp(-x))
+ * f'(x)=f(x)*(1-f(x))
+ */
+class SigmoidLayer: public Layer {
+ public:
+  using Layer::ComputeFeature;
+  using Layer::ComputeGradient;
+
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase) override;
 };
 
 /**

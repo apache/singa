@@ -163,6 +163,7 @@ RBMVisLayer::~RBMVisLayer() {
   delete weight_;
   delete bias_;
 }
+
 void RBMVisLayer::Setup(const LayerProto& proto,
       int npartitions) {
   Layer::Setup(proto, npartitions);
@@ -188,7 +189,7 @@ void RBMVisLayer::Setup(const LayerProto& proto,
   vis_sample_.Reshape(vector<int>{neg_batchsize_, vdim_});
   weight_ = Param::Create(proto.param(0));
   bias_ = Param::Create(proto.param(1));
-  weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
+  weight_->Setup(proto.param(0), vector<int>{hdim_, vdim_});
   bias_->Setup(proto.param(1), vector<int>{vdim_});
 }
 
@@ -199,24 +200,15 @@ void RBMVisLayer::ComputeFeature(Phase phase, Metric* perf) {
     auto src = Tensor2(srclayers_[data_idx_]->mutable_data(this));
     Copy(data, src);
   } else if (phase == kNegative) {   /*negative phase*/
-      if (is_first_iteration_vis_) {
-        CHECK_EQ(srclayers_[data_idx_]->data(this).count(), batchsize_*vdim_);
-        auto src = Tensor2(srclayers_[data_idx_]->mutable_data(this));
-        auto vis_sample = Tensor2(&vis_sample_);
-        Copy(vis_sample, src);
-        is_first_iteration_vis_ = false;
-      } else {
-          auto hid_sample =
-                Tensor2(srclayers_[hid_idx_]->mutable_data(this, kNegative));
-          // fetch sampling results from hidden layer
-          auto vis_sample = Tensor2(&vis_sample_);
-          auto weight = Tensor2(weight_->mutable_data());
-          auto bias = Tensor1(bias_->mutable_data());
-          vis_sample = dot(hid_sample, weight.T());
-          vis_sample+=repmat(bias, neg_batchsize_);
-          vis_sample = F<op::sigmoid>(vis_sample);
-          TSingleton<Random<cpu>>::Instance()->SampleBinary(vis_sample);
-        }
+      auto hid_sample =
+        Tensor2(srclayers_[hid_idx_]->mutable_data(this, kNegative));
+      // fetch sampling results from hidden layer
+      auto vis_sample = Tensor2(&vis_sample_);
+      auto weight = Tensor2(weight_->mutable_data());
+      auto bias = Tensor1(bias_->mutable_data());
+      vis_sample = dot(hid_sample, weight);
+      vis_sample+=repmat(bias, neg_batchsize_);
+      vis_sample = F<op::sigmoid>(vis_sample);
     }
 }
 
@@ -231,14 +223,14 @@ void RBMVisLayer::ComputeGradient(Phase phase) {
   auto gbias = Tensor1(bias_->mutable_grad());
   gbias = sum_rows(vis_sample);
   gbias -= sum_rows(data);
-  gweight = dot(vis_sample.T(), hid_sample);
-  gweight -= dot(data.T(), hid_data);
+  gweight = dot(hid_sample.T(), vis_sample);
+  gweight -= dot(hid_data.T(), data);
   gbias*=(1.0f)/(1.0f*batchsize_);
   gweight*=(1.0f)/(1.0f*batchsize_);
 }
 
 void RBMVisLayer::ComputeLoss(Metric* perf) {
-  float loss = (0.0f);
+  float loss_sqr = (0.0f);
   CHECK_EQ(srclayers_[data_idx_]->data(this).count(), batchsize_*vdim_);
   auto src = Tensor2(srclayers_[data_idx_]->mutable_data(this));
   auto hid_data = Tensor2(srclayers_[hid_idx_]->mutable_data(this, kPositive));
@@ -247,24 +239,26 @@ void RBMVisLayer::ComputeLoss(Metric* perf) {
   auto bias = Tensor1(bias_->mutable_data());
   Tensor<cpu, 2> reconstruct(Shape2(batchsize_, vdim_)); /*reconstruct error*/
   AllocSpace(reconstruct);
-  reconstruct = dot(hid_data, weight.T());
+  reconstruct = dot(hid_data, weight);
   reconstruct+=repmat(bias, batchsize_);
   reconstruct = F<op::sigmoid>(reconstruct);
   float *src_dptr = src.dptr;
-  float *reconstruct_dptr = reconstruct.dptr;
-  for (int i = 0; i < vdim_*batchsize_; i++)
-    loss += -(src_dptr[i]*log(reconstruct_dptr[i])
-            +(1-src_dptr[i])*log(1-reconstruct_dptr[i]));
-  loss/=batchsize_;
+  for (int i = 0; i < vdim_*batchsize_; i++) {
+      int recon_row = i / vdim_;
+      int recon_col = i - recon_row * vdim_;
+      loss_sqr += (src_dptr[i] - reconstruct[recon_row][recon_col]) *
+                  (src_dptr[i] - reconstruct[recon_row][recon_col]);
+  }
   FreeSpace(reconstruct);
   perf->Reset();
-  perf->Add("reconstruct_error", loss);
+  perf->Add("sqr_reconstruct_error", loss_sqr);
 }
 /**************** Implementation for RBMHidLayer********************/
 RBMHidLayer::~RBMHidLayer() {
   delete weight_;
   delete bias_;
 }
+
 void RBMHidLayer::Setup(const LayerProto& proto,
       int npartitions) {
   Layer::Setup(proto, npartitions);
@@ -276,24 +270,44 @@ void RBMHidLayer::Setup(const LayerProto& proto,
   neg_batchsize_ = src_sample.shape()[0];
   vdim_ = src_data.count()/batchsize_;
   hdim_ = proto.rbmhid_conf().hid_dim();
+  gaussian_ = proto.rbmhid_conf().gaussian();
   data_.Reshape(vector<int>{batchsize_, hdim_});
   hid_sample_.Reshape(vector<int>{neg_batchsize_, hdim_});
   weight_ = Param::Create(proto.param(0));
   bias_ = Param::Create(proto.param(1));
-  weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
   bias_->Setup(proto.param(1), vector<int>{hdim_});
+  weight_->Setup(proto.param(0), vector<int>{hdim_, vdim_});
 }
 
 void RBMHidLayer::ComputeFeature(Phase phase, Metric* perf) {
   if (phase == kPositive) {  /*postive phase*/
     auto data = Tensor2(&data_);
+
+    auto hid_sample = Tensor2(&hid_sample_);
+
     CHECK_EQ(srclayers_[0]->data(this, kPositive).count(), batchsize_*vdim_);
     auto src = Tensor2(srclayers_[0]->mutable_data(this, kPositive));
     auto weight = Tensor2(weight_->mutable_data());
     auto bias = Tensor1(bias_->mutable_data());
-    data = dot(src, weight);
+    data = dot(src, weight.T());
     data += repmat(bias, batchsize_);
-    data = F<op::sigmoid>(data);
+
+    if (!gaussian_)
+      data = F<op::sigmoid>(data);
+
+    Copy(hid_sample, data);
+
+    if (gaussian_) {  // first gibbs
+      Tensor<cpu, 2> gaussian_sample(Shape2(batchsize_, hdim_));
+      AllocSpace(gaussian_sample);
+      auto random = TSingleton<Random<cpu>>::Instance();
+      random->SampleGaussian(gaussian_sample, 0.0f, 1.0f);
+      hid_sample += gaussian_sample;
+      FreeSpace(gaussian_sample);
+    } else {
+        TSingleton<Random<cpu>>::Instance()->SampleBinary(hid_sample);
+    }
+
   } else if (phase == kNegative) {   /*negative phase*/
       CHECK_EQ(srclayers_[0]->data(this, kNegative).count(),
          neg_batchsize_*vdim_);
@@ -301,15 +315,25 @@ void RBMHidLayer::ComputeFeature(Phase phase, Metric* perf) {
       auto hid_sample = Tensor2(&hid_sample_);
       auto bias = Tensor1(bias_->mutable_data());
       auto weight = Tensor2(weight_->mutable_data());
-      hid_sample = dot(src_sample, weight);
+      hid_sample = dot(src_sample, weight.T());
       hid_sample += repmat(bias, neg_batchsize_);
-      hid_sample = F<op::sigmoid>(hid_sample);
-      TSingleton<Random<cpu>>::Instance()->SampleBinary(hid_sample);
+      if (!gaussian_)
+        hid_sample = F<op::sigmoid>(hid_sample);
     } else if (phase == kLoss) {   /*test phase*/
-       auto data = Tensor2(&data_);  // data: sigmoid(Wv+b)
-       TSingleton<Random<cpu>>::Instance()->SampleBinary(data);
+        auto data = Tensor2(&data_);  // data: sigmoid(Wv+b)
+        if (gaussian_) {
+          Tensor<cpu, 2> gaussian_sample(Shape2(batchsize_, hdim_));
+          AllocSpace(gaussian_sample);
+          auto random = TSingleton<Random<cpu>>::Instance();
+          random->SampleGaussian(gaussian_sample, 0.0f, 1.0f);
+          data += gaussian_sample;
+          FreeSpace(gaussian_sample);
+        }
+        else
+          TSingleton<Random<cpu>>::Instance()->SampleBinary(data);
       }
 }
+
 void RBMHidLayer::ComputeGradient(Phase phase) {
   auto data = Tensor2(&data_);
   auto hid_sample = Tensor2(&hid_sample_);
@@ -326,17 +350,21 @@ InnerProductLayer::~InnerProductLayer() {
 void InnerProductLayer::Setup(const LayerProto& proto, int npartitions) {
   Layer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
-  const auto& src=srclayers_[0]->data(this);
-  batchsize_=src.shape()[0];
-  vdim_=src.count()/batchsize_;
-  hdim_=proto.innerproduct_conf().num_output();
-  if(partition_dim()>0)
+  const auto& src = srclayers_[0]->data(this);
+  batchsize_ = src.shape()[0];
+  vdim_ = src.count()/batchsize_;
+  hdim_ = proto.innerproduct_conf().num_output();
+  transpose_ = proto.innerproduct_conf().transpose();
+  if (partition_dim() > 0)
     hdim_ /= npartitions;
   data_.Reshape(vector<int>{batchsize_, hdim_});
   grad_.ReshapeLike(data_);
   weight_ = Param::Create(proto.param(0));
   bias_ = Param::Create(proto.param(1));
-  weight_->Setup(proto.param(0), vector<int>{hdim_, vdim_});
+  if (transpose_)
+    weight_->Setup(proto.param(0), vector<int>{vdim_, hdim_});
+  else
+    weight_->Setup(proto.param(0), vector<int>{hdim_, vdim_});
   bias_->Setup(proto.param(1), vector<int>{hdim_});
 }
 
@@ -345,7 +373,10 @@ void InnerProductLayer::ComputeFeature(Phase phase, Metric* perf) {
   auto src = Tensor2(srclayers_[0]->mutable_data(this));
   auto weight = Tensor2(weight_->mutable_data());
   auto bias = Tensor1(bias_->mutable_data());
-  data=dot(src, weight.T());
+  if (transpose_)
+    data = dot(src, weight);
+  else
+    data = dot(src, weight.T());
   // repmat: repeat bias vector into batchsize rows
   data+=repmat(bias, batchsize_);
 }
@@ -357,11 +388,17 @@ void InnerProductLayer::ComputeGradient(Phase phas) {
   auto gweight = Tensor2(weight_->mutable_grad());
   auto gbias = Tensor1(bias_->mutable_grad());
 
-  gbias=sum_rows(grad);
-  gweight=dot(grad.T(), src);
-  if(srclayers_[0]->mutable_grad(this)!=nullptr){
+  gbias = sum_rows(grad);
+  if (transpose_)
+    gweight = dot(src.T(), grad);
+  else
+    gweight = dot(grad.T(), src);
+  if (srclayers_[0]->mutable_grad(this) != nullptr) {
     auto gsrc = Tensor2(srclayers_[0]->mutable_grad(this));
-    gsrc=dot(grad, weight);
+    if (transpose_)
+      gsrc = dot(grad, weight.T());
+    else
+      gsrc = dot(grad, weight);
   }
 }
 /*****************************************************************************
@@ -703,6 +740,25 @@ ShardDataLayer::~ShardDataLayer() {
     delete shard_;
   shard_ = nullptr;
 }
+/*******************Implementation of SigmoidLayer***************************/
+void SigmoidLayer::Setup(const LayerProto& proto, int npartitions) {
+  Layer::Setup(proto, npartitions);
+  data_.ReshapeLike(srclayers_[0]->data(this));
+  grad_.ReshapeLike(srclayers_[0]->grad(this));
+}
+
+void SigmoidLayer::ComputeFeature(Phase phase, Metric* perf) {
+  auto data = Tensor1(&data_);
+  auto src = Tensor1(srclayers_[0]->mutable_data(this));
+  data = F<op::sigmoid>(src);
+}
+
+void SigmoidLayer::ComputeGradient(Phase phase) {
+  auto data = Tensor1(&data_);
+  auto grad = Tensor1(&grad_);
+  auto gsrc = Tensor1(srclayers_[0]->mutable_grad(this));
+  gsrc = F<op::sigmoid_grad>(data)*grad;
+}
 /*******************Implementation of TanLayer***************************/
 void TanhLayer::Setup(const LayerProto& proto, int npartitions){
   Layer::Setup(proto, npartitions);
@@ -721,6 +777,45 @@ void TanhLayer::ComputeGradient(Phase phase) {
   auto grad = Tensor1(&grad_);
   auto gsrc = Tensor1(srclayers_[0]->mutable_grad(this));
   gsrc=F<op::stanh_grad>(data)*grad;
+}
+/********** * Implementation for EuclideanLossLayer*************************/
+void EuclideanLossLayer::Setup(const LayerProto& proto, int npartitions) {
+  LossLayer::Setup(proto, npartitions);
+  CHECK_EQ(srclayers_.size(), 2);
+  data_.Reshape(srclayers_[0]->data(this).shape());
+  batchsize_ = data_.shape()[0];
+  dim_ = data_.count()/batchsize_;
+  metric_.Reshape(vector<int>{1});
+}
+void EuclideanLossLayer::ComputeFeature(Phase phase, Metric* perf) {
+  const float* reconstruct_dptr = srclayers_[0]->data(this).cpu_data();
+  const float* input_dptr = srclayers_[1]->data(this).cpu_data();
+  float loss = 0;
+  for (int n = 0; n < batchsize_; n++) {
+    for (int j = 0; j < dim_; ++j) {
+      loss += (input_dptr[j] - reconstruct_dptr[j]) *
+                 (input_dptr[j] - reconstruct_dptr[j]);
+    }
+    reconstruct_dptr+=dim_;
+    input_dptr+=dim_;
+  }
+  CHECK_EQ(reconstruct_dptr,
+            srclayers_[0]->data(this).cpu_data() + (batchsize_*dim_));
+  CHECK_EQ(input_dptr,
+      srclayers_[1]->data(this).cpu_data() + (batchsize_*dim_));
+  perf->Add("loss", loss/(1.0f*batchsize_));
+}
+void EuclideanLossLayer::ComputeGradient(Phase phase) {
+  const float* reconstruct_dptr = srclayers_[0]->data(this).cpu_data();
+  const float* input_dptr = srclayers_[1]->data(this).cpu_data();
+  Blob<float>* gsrcblob = srclayers_[0]->mutable_grad(this);
+  float* gsrcptr = gsrcblob->mutable_cpu_data();
+  for (int n = 0; n < batchsize_; n++) {
+    for (int j = 0; j < dim_; j++)
+    gsrcptr[n*dim_+j]= 2 * (reconstruct_dptr[n*dim_+j]-input_dptr[n*dim_+j]);
+  }
+  Tensor<cpu, 1> gsrc(gsrcptr, Shape1(gsrcblob->count()));
+  gsrc*=1.0f/(1.0f*batchsize_);
 }
 /********** * Implementation for SoftmaxLossLayer*************************/
 void SoftmaxLossLayer::Setup(const LayerProto& proto, int npartitions) {

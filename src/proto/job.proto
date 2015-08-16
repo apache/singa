@@ -166,6 +166,8 @@ message LayerProto {
   optional ConcateProto concate_conf = 31;
   // configuration for dropout layer
   optional DropoutProto dropout_conf = 33;
+  // configuration for euclideanloss layer
+  optional EuclideanLossProto euclideanloss_conf = 50;
   // configuration for inner product layer
   optional InnerProductProto innerproduct_conf = 34;
   // configuration for local response normalization layer
@@ -178,6 +180,10 @@ message LayerProto {
   optional PoolingProto pooling_conf = 37;
   // configuration for prefetch layer
   optional PrefetchProto prefetch_conf = 44;
+  // configuration for rbmhid layer
+  optional RBMHidProto rbmhid_conf = 49;
+  // configuration for rbmvis layer
+  optional RBMVisProto rbmvis_conf = 48;
   // configuration for rectified linear unit layer
   optional ReLUProto relu_conf = 38;
   // configuration for rgb image parser layer
@@ -192,10 +198,7 @@ message LayerProto {
   optional SplitProto split_conf = 42;
   // configuration for tanh layer
   optional TanhProto tanh_conf = 43;
-  // configuration for rbmvis layer
-  optional RBMVisProto rbmvis_conf = 48;
-  // configuration for rbmhid layer
-  optional RBMHidProto rbmhid_conf = 49;
+
 
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
@@ -299,6 +302,9 @@ message TanhProto {
   optional float inner_scale = 2 [default = 1.0];
 }
 
+message EuclideanLossProto {
+}
+
 message SoftmaxLossProto {
   // computing accuracy against topk results
   optional int32 topk = 1 [default = 1];
@@ -367,6 +373,7 @@ message RBMVisProto {
 message RBMHidProto {
   optional int32 hid_dim = 1; // The number of outputs for the layer
   optional bool bias_term = 2 [default = true]; // whether to have bias terms
+  optional bool gaussian = 3 [default = false]; // use gaussian sampling or not
 }
 
 // Message that stores parameters used by InnerProductLayer
@@ -375,6 +382,8 @@ message InnerProductProto {
   required int32 num_output = 1;
   // use bias vector or not
   optional bool bias_term = 30 [default = true];
+  // transpose or not
+  optional bool transpose = 31 [default = false];
 }
 
 message LRNProto {
@@ -524,12 +533,14 @@ enum LayerType {
   kLRN = 6;
   kPooling = 8;
   kReLU = 9;
-  kRBMHid = 24;
   kRBMVis = 23;
+  kRBMHid = 24;
+  kSigmoid = 26;
   kTanh = 14;
   // Loss layers
   //  - Compute objective loss
   kSoftmaxLoss = 11;
+  kEuclideanLoss = 25;
   // Other layers
   //  - Connect layers when neural net is partitioned
   kBridgeDst = 16;

@@ -31,21 +31,23 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<ConvolutionLayer, int>(kConvolution);
   RegisterLayer<ConcateLayer, int>(kConcate);
   RegisterLayer<DropoutLayer, int>(kDropout);
+  RegisterLayer<EuclideanLossLayer, int>(kEuclideanLoss);
   RegisterLayer<InnerProductLayer, int>(kInnerProduct);
   RegisterLayer<LabelLayer, int>(kLabel);
   RegisterLayer<LRNLayer, int>(kLRN);
   RegisterLayer<MnistLayer, int>(kMnist);
   RegisterLayer<PrefetchLayer, int>(kPrefetch);
   RegisterLayer<PoolingLayer, int>(kPooling);
+  RegisterLayer<RBMHidLayer, int>(kRBMHid);
+  RegisterLayer<RBMVisLayer, int>(kRBMVis);
   RegisterLayer<RGBImageLayer, int>(kRGBImage);
   RegisterLayer<ReLULayer, int>(kReLU);
   RegisterLayer<ShardDataLayer, int>(kShardData);
+  RegisterLayer<SigmoidLayer, int>(kSigmoid);
   RegisterLayer<SliceLayer, int>(kSlice);
   RegisterLayer<SoftmaxLossLayer, int>(kSoftmaxLoss);
   RegisterLayer<SplitLayer, int>(kSplit);
   RegisterLayer<TanhLayer, int>(kTanh);
-  RegisterLayer<RBMVisLayer, int>(kRBMVis);
-  RegisterLayer<RBMHidLayer, int>(kRBMHid);
 #ifdef USE_LMDB
   RegisterLayer<LMDBDataLayer, int>(kLMDBData);
 #endif

@@ -380,7 +380,6 @@ void BPWorker::TestOneBatch(int step, Phase phase,
     shared_ptr<NeuralNet> net, Metric* perf) {
   Forward(step, phase, net, perf);
 }
-
 /****************************CDWorker**********************************/
 void CDWorker::Init(int thread_id, int group_id, int worker_id) {
   Worker::Init(thread_id, group_id, worker_id);
@@ -389,8 +388,11 @@ void CDWorker::Init(int thread_id, int group_id, int worker_id) {
 void CDWorker::PositivePhase(int step,
      shared_ptr<NeuralNet> net, Metric* perf) {
   auto& layers = net->layers();
+  // LOG(ERROR)<<"Positive Phase";
   for (auto& layer : layers) {
-      // clock_t s=clock();
+    for (Param* p : layer->GetParams()) {  // wait until param is updated
+      Collect(p, step);
+    }
     layer->ComputeFeature(kPositive, perf);
   }
 }
@@ -399,33 +401,39 @@ void CDWorker::NegativePhase(int step,
      shared_ptr<NeuralNet> net, Metric* perf) {
 // for negative phase, gibbs sampling only concerns RBM bottom and top layer
   auto& layers = net->layers();
-  for (int i = 0; i < job_conf_.cd_conf().pcd_k(); i++) {
+  // LOG(ERROR)<<"Negative Phase";
     for (auto& layer : layers) {
-      if (layer->is_vislayer() || layer->is_hidlayer())
+      if (layer->is_vislayer() || layer->is_hidlayer()) {
         layer->ComputeFeature(kNegative, perf);
+      }
     }
-  }
 }
 
 void CDWorker::GradientPhase(int step, shared_ptr<NeuralNet> net) {
   auto& layers = net->layers();
+  // LOG(ERROR)<<"Gradient Phase";
   for (auto& layer : layers) {
+    if (layer->is_vislayer() || layer->is_hidlayer()) {
       layer->ComputeGradient(kTrain);
       for (Param* p : layer->GetParams()) {
         Update(p, step);
       }
+    }
   }
 }
 
 void CDWorker::LossPhase(int step, shared_ptr<NeuralNet> net, Metric* perf) {
   auto& layers = net->layers();
+  // LOG(ERROR)<<"Loss Phase";
   for (auto& layer : layers) {
-    if (layer->is_hidlayer())
+    if (layer->is_hidlayer()) {
       layer->ComputeFeature(kLoss, perf);
+    }
   }
   for (auto& layer : layers) {
-    if (layer->is_vislayer())
+    if (layer->is_vislayer()) {
       layer->ComputeLoss(perf);
+    }
   }
 }
 
