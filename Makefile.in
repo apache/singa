@@ -400,7 +400,7 @@ singa_SOURCES = src/main.cc
 singa_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
                  $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED
 
-singa_LDFLAGS = -I./include -lsinga -lglog -lgflags -lprotobuf -lrt \
+singa_LDFLAGS = -I./include -lsinga -lglog -lprotobuf -lrt \
 	-lopencv_highgui -lopencv_imgproc -lopencv_core -lopenblas \
 	-lzmq -lczmq -lzookeeper_mt $(am__append_1)
 singatool_SOURCES = src/utils/tool.cc
@@ -410,7 +410,6 @@ singatool_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragm
 singatool_LDFLAGS = -I./include \
                     -lsinga \
                     -lglog  \
-                    -lgflags \
                     -lprotobuf \
                     -lzookeeper_mt
 

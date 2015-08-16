@@ -93,7 +93,6 @@ singa_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
 singa_LDFLAGS = -I./include \
                 -lsinga \
                 -lglog  \
-                -lgflags \
                 -lprotobuf \
                 -lrt \
                 -lopencv_highgui \
@@ -114,7 +113,6 @@ singatool_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragm
 singatool_LDFLAGS = -I./include \
                     -lsinga \
                     -lglog  \
-                    -lgflags \
                     -lprotobuf \
                     -lzookeeper_mt
 
