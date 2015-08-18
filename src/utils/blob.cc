@@ -37,12 +37,13 @@
  * or otherwise, the contributor releases their content to the
  * license and copyright terms herein.
  */
-#include <utility>
-#include <math.h>
-#include <cblas.h>
 #include "utils/blob.h"
-/*********************SyncedMemory implementation************************/
 
+#include <cblas.h>
+#include <math.h>
+#include <utility>
+
+#define NOT_IMPLEMENTED LOG(FATAL) << "Not implemented function"
 #define NO_GPU LOG(FATAL) << "CPU-only Mode: cannot make GPU call."
 // Instantiate a class with float and double specifications.
 #define INSTANTIATE_CLASS(classname) \
@@ -77,14 +78,14 @@ private:\
       << caffe::curandGetErrorString(status); \
   } while (0)
 
-#endif // CPU_ONLY
+#endif  // CPU_ONLY
 
+namespace singa {
 
 SyncedMemory::~SyncedMemory() {
   if (cpu_ptr_ && own_cpu_data_) {
     FreeHost(cpu_ptr_);
   }
-
 #ifndef CPU_ONLY
   if (gpu_ptr_) {
     CUDA_CHECK(cudaFree(gpu_ptr_));
@@ -92,75 +93,15 @@ SyncedMemory::~SyncedMemory() {
 #endif  // CPU_ONLY
 }
 
-inline void SyncedMemory::to_cpu() {
-  switch (head_) {
-  case UNINITIALIZED:
-    MallocHost(&cpu_ptr_, size_);
-    memset(cpu_ptr_,0, size_);
-    head_ = HEAD_AT_CPU;
-    own_cpu_data_ = true;
-    break;
-  case HEAD_AT_GPU:
-#ifndef CPU_ONLY
-    if (cpu_ptr_ == NULL) {
-      MallocHost(&cpu_ptr_, size_);
-      own_cpu_data_ = true;
-    }
-    CUDA_CHECK(cudaMemcpy(cpu_ptr_, gpu_ptr_, size_, cudaMemcpyDefault));
-    head_ = SYNCED;
-#else
-    NO_GPU;
-#endif
-    break;
-  case HEAD_AT_CPU:
-  case SYNCED:
-    break;
-  }
-}
-
-inline void SyncedMemory::to_gpu() {
-#ifndef CPU_ONLY
-  switch (head_) {
-  case UNINITIALIZED:
-    CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
-    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, N));  // NOLINT(caffe/alt_fn)
-    head_ = HEAD_AT_GPU;
-    break;
-  case HEAD_AT_CPU:
-    if (gpu_ptr_ == NULL) {
-      CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
-    }
-    CUDA_CHECK(cudaMemcpy( gpu_ptr_,cpu_ptr_, size_, cudaMemcpyDefault));
-    head_ = SYNCED;
-    break;
-  case HEAD_AT_GPU:
-  case SYNCED:
-    break;
-  }
-#else
-  NO_GPU;
-#endif
-}
-
 const void* SyncedMemory::cpu_data() {
   to_cpu();
-  return (const void*)cpu_ptr_;
-}
-
-void SyncedMemory::set_cpu_data(void* data) {
-  CHECK(data);
-  if (own_cpu_data_) {
-    FreeHost(cpu_ptr_);
-  }
-  cpu_ptr_ = data;
-  head_ = HEAD_AT_CPU;
-  own_cpu_data_ = false;
+  return cpu_ptr_;
 }
 
 const void* SyncedMemory::gpu_data() {
 #ifndef CPU_ONLY
   to_gpu();
-  return (const void*)gpu_ptr_;
+  return gpu_ptr_;
 #else
   NO_GPU;
 #endif
@@ -184,22 +125,73 @@ void* SyncedMemory::mutable_gpu_data() {
   return nullptr;
 }
 
-/*********************Blob implementation************************/
+void SyncedMemory::set_cpu_data(void* data) {
+  CHECK(data);
+  if (own_cpu_data_) {
+    FreeHost(cpu_ptr_);
+  }
+  cpu_ptr_ = data;
+  head_ = HEAD_AT_CPU;
+  own_cpu_data_ = false;
+}
 
-template <typename Dtype>
-Blob<Dtype>::Blob(const vector<int>& shape)
-  // capacity_ must be initialized before calling Reshape
-  : capacity_(0), version_(-1) {
-  Reshape(shape);
+void SyncedMemory::to_cpu() {
+  switch (head_) {
+  case UNINITIALIZED:
+    MallocHost(&cpu_ptr_, size_);
+    memset(cpu_ptr_, 0, size_);
+    head_ = HEAD_AT_CPU;
+    own_cpu_data_ = true;
+    break;
+  case HEAD_AT_GPU:
+#ifndef CPU_ONLY
+    if (cpu_ptr_ == NULL) {
+      MallocHost(&cpu_ptr_, size_);
+      own_cpu_data_ = true;
+    }
+    CUDA_CHECK(cudaMemcpy(cpu_ptr_, gpu_ptr_, size_, cudaMemcpyDefault));
+    head_ = SYNCED;
+#else
+    NO_GPU;
+#endif
+    break;
+  case HEAD_AT_CPU:
+  case SYNCED:
+    break;
+  }
+}
+
+void SyncedMemory::to_gpu() {
+#ifndef CPU_ONLY
+  switch (head_) {
+  case UNINITIALIZED:
+    CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
+    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, N));
+    head_ = HEAD_AT_GPU;
+    break;
+  case HEAD_AT_CPU:
+    if (gpu_ptr_ == NULL) {
+      CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
+    }
+    CUDA_CHECK(cudaMemcpy(gpu_ptr_, cpu_ptr_, size_, cudaMemcpyDefault));
+    head_ = SYNCED;
+    break;
+  case HEAD_AT_GPU:
+  case SYNCED:
+    break;
+  }
+#else
+  NO_GPU;
+#endif
 }
 
 template <typename Dtype>
-void Blob<Dtype>::Reshape(const vector<int>& shape) {
-  count_=1;
+void Blob<Dtype>::Reshape(const std::vector<int>& shape) {
+  count_ = 1;
   shape_ = shape;
-  for(size_t i=0;i<shape.size();i++){
+  for (size_t i = 0; i < shape.size(); ++i) {
     CHECK(shape[i]);
-    count_*=shape[i];
+    count_ *= shape[i];
   }
   if (count_ > capacity_) {
     capacity_ = count_;
@@ -213,76 +205,13 @@ void Blob<Dtype>::ReshapeLike(const Blob<Dtype>& other) {
 }
 
 template <typename Dtype>
-const Dtype* Blob<Dtype>::cpu_data() const {
-  CHECK(data_);
-  return (const Dtype*)data_->cpu_data();
-}
-
-template <typename Dtype>
-void Blob<Dtype>::set_cpu_data(Dtype* data) {
-  CHECK(data);
-  data_->set_cpu_data(data);
-}
-
-template <typename Dtype>
-const Dtype* Blob<Dtype>::gpu_data() const {
-  CHECK(data_);
-  return (const Dtype*)data_->gpu_data();
-}
-
-template <typename Dtype>
-Dtype* Blob<Dtype>::mutable_cpu_data() {
-  CHECK(data_);
-  return static_cast<Dtype*>(data_->mutable_cpu_data());
-}
-
-template <typename Dtype>
-Dtype* Blob<Dtype>::mutable_gpu_data() {
-  CHECK(data_);
-  return static_cast<Dtype*>(data_->mutable_gpu_data());
-}
-
-template <typename Dtype>
-void Blob<Dtype>::ShareData(const Blob& other) {
-  CHECK_EQ(count_, other.count());
-  data_ = other.data();
-}
-
-template <> float Blob<float>::asum_data() const {
-  if(count()==0)
-    return 0.f;
-  return cblas_sasum(count(), cpu_data(), 1)/count();
-}
-template <> float Blob<float>::sum_data() const {
-  if(count()==0)
-    return 0.f;
-  float sum=0.f;
-  const float *dptr=cpu_data();
-  for(int i=0;i<count();i++)
-    sum+=dptr[i];
-  return sum/count();
-}
-template <> unsigned int Blob<unsigned int>::asum_data() const {
-  NOT_IMPLEMENTED;
-  return 0;
-}
-
-template <> int Blob<int>::asum_data() const {
-  NOT_IMPLEMENTED;
-  return 0;
-}
-
-template <typename Dtype>
-void Blob<Dtype>::Swap(Blob& other){
-  CHECK_EQ(other.count(), count());
-  CHECK(std::equal(shape_.begin(), shape_.end(), other.shape_.begin()));
-  std::swap(data_, other.data_);
-  std::swap(capacity_, other.capacity_);
+void Blob<Dtype>::CopyFrom(const Blob& source) {
+    CopyFrom(source, false);
 }
 
 template <typename Dtype>
 void Blob<Dtype>::CopyFrom(const Blob& source, bool reshape) {
-  if (!std::equal(shape_.begin(),shape_.end(),source.shape_.begin())) {
+  if (!std::equal(shape_.begin(), shape_.end(), source.shape_.begin())) {
     if (reshape) {
       Reshape(source.shape_);
     } else {
@@ -291,17 +220,18 @@ void Blob<Dtype>::CopyFrom(const Blob& source, bool reshape) {
   }
 #ifndef CPU_ONLY
   CUDA_CHECK(cudaMemcpy(static_cast<Dtype*>(data_->mutable_gpu_data()),
-            source.gpu_data(), sizeof(Dtype) * count_, cudaMemcpyDefault));
+             source.gpu_data(), sizeof(Dtype) * count_, cudaMemcpyDefault));
 #endif
-  memcpy(static_cast<Dtype*>(data_->mutable_cpu_data()),source.cpu_data(),
-        sizeof(Dtype)*count_);
+  memcpy(static_cast<Dtype*>(data_->mutable_cpu_data()), source.cpu_data(),
+         sizeof(Dtype)*count_);
 }
 
 template <typename Dtype>
 void Blob<Dtype>::FromProto(const singa::BlobProto& proto) {
-  vector<int> shape;
-  for (int s : proto.shape())
+  std::vector<int> shape;
+  for (int s : proto.shape()) {
     shape.push_back(s);
+  }
   int count = count_;
   Reshape(shape);
   if (count != count_)
@@ -315,8 +245,9 @@ void Blob<Dtype>::FromProto(const singa::BlobProto& proto) {
 
 template <typename Dtype>
 void Blob<Dtype>::ToProto(singa::BlobProto* proto) const {
-  for (int s : shape_)
+  for (int s : shape_) {
     proto->add_shape(s);
+  }
   proto->clear_data();
   const Dtype* data_vec = cpu_data();
   for (int i = 0; i < count_; ++i) {
@@ -324,6 +255,45 @@ void Blob<Dtype>::ToProto(singa::BlobProto* proto) const {
   }
 }
 
+template <typename Dtype>
+void Blob<Dtype>::ShareData(const Blob& other) {
+  CHECK_EQ(count_, other.count());
+  data_ = other.data_;
+}
+
+template <typename Dtype>
+void Blob<Dtype>::Swap(Blob& other) {
+  CHECK_EQ(other.count(), count());
+  CHECK(std::equal(shape_.begin(), shape_.end(), other.shape_.begin()));
+  std::swap(data_, other.data_);
+  std::swap(capacity_, other.capacity_);
+}
+
+template <> float Blob<float>::asum_data() const {
+  if (count() == 0) return 0.f;
+  return cblas_sasum(count(), cpu_data(), 1) / count();
+}
+template <> float Blob<float>::sum_data() const {
+  if (count() == 0) return 0.f;
+  float sum = 0.f;
+  const float* dptr = cpu_data();
+  for (int i = 0; i < count(); ++i)
+    sum += dptr[i];
+  return sum / count();
+}
+
+template <> unsigned int Blob<unsigned int>::asum_data() const {
+  NOT_IMPLEMENTED;
+  return 0;
+}
+
+template <> int Blob<int>::asum_data() const {
+  NOT_IMPLEMENTED;
+  return 0;
+}
+
 INSTANTIATE_CLASS(Blob);
 template class Blob<int>;
 template class Blob<unsigned int>;
+
+}  // namespace singa

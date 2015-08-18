@@ -38,16 +38,16 @@
  * license and copyright terms herein.
  *
  */
-#ifndef INCLUDE_UTILS_BLOB_
-#define INCLUDE_UTILS_BLOB_
+#ifndef SINGA_UTILS_BLOB_H_
+#define SINGA_UTILS_BLOB_H_
+
+#include <glog/logging.h>
 #include <memory>
 #include <vector>
-#include <glog/logging.h>
 #include "proto/common.pb.h"
-using std::shared_ptr;
-using std::vector;
 
-#define NOT_IMPLEMENTED LOG(FATAL) << "Not implemented function"
+namespace singa {
+
 inline void MallocHost(void** ptr, size_t size) {
   *ptr = malloc(size);
 }
@@ -64,39 +64,40 @@ inline void FreeHost(void* ptr) {
  */
 class SyncedMemory {
  public:
-  SyncedMemory()
-      : cpu_ptr_(NULL), gpu_ptr_(NULL), size_(0), head_(UNINITIALIZED),
-        own_cpu_data_(false) {}
-  explicit SyncedMemory(size_t size)
-      : cpu_ptr_(NULL), gpu_ptr_(NULL), size_(size), head_(UNINITIALIZED),
-        own_cpu_data_(false) {}
+  enum SyncedHead { UNINITIALIZED,
+                    HEAD_AT_CPU,
+                    HEAD_AT_GPU,
+                    SYNCED };
+
+  SyncedMemory() {}
+  explicit SyncedMemory(size_t size) : size_(size) {}
   ~SyncedMemory();
+
   const void* cpu_data();
-  void set_cpu_data(void* data);
   const void* gpu_data();
   void* mutable_cpu_data();
   void* mutable_gpu_data();
-  enum SyncedHead { UNINITIALIZED, HEAD_AT_CPU, HEAD_AT_GPU, SYNCED };
-  SyncedHead head() { return head_; }
-  size_t size() { return size_; }
+  void set_cpu_data(void* data);
+  inline SyncedHead head() { return head_; }
+  inline size_t size() { return size_; }
 
  private:
   void to_cpu();
   void to_gpu();
-  void* cpu_ptr_;
-  void* gpu_ptr_;
-  size_t size_;
-  SyncedHead head_;
-  bool own_cpu_data_;
 
+  void* cpu_ptr_ = nullptr;
+  void* gpu_ptr_ = nullptr;
+  size_t size_ = 0;
+  SyncedHead head_ = UNINITIALIZED;
+  bool own_cpu_data_ = false;
 };  // class SyncedMemory
 
 
 template <typename Dtype>
 class Blob {
  public:
-  Blob(): count_(0), capacity_(0) , version_(-1){}
-  Blob(const vector<int>&shape);
+  Blob() {}
+  explicit Blob(const std::vector<int>& shape) { Reshape(shape); }
   /**
    * @brief Change the dimensions of the blob, allocating new memory if
    *        necessary.
@@ -111,18 +112,8 @@ class Blob {
    * an error; either Net::Forward or Net::Reshape need to be called to
    * propagate the new input shape to higher layers.
    */
-  void Reshape(const vector<int>& shape);
+  void Reshape(const std::vector<int>& shape);
   void ReshapeLike(const Blob& other);
-  const vector<int>& shape() const{
-    return shape_;
-  }
-  inline int count() const { return count_; }
-  void set_version(int v){
-    version_=v;
-  }
-  const int version() const {
-    return version_;
-  }
   /**
    * @brief Copy from a source Blob.
    *
@@ -131,25 +122,10 @@ class Blob {
    *        of other (and die otherwise); if true, Reshape this Blob to other's
    *        shape if necessary
    */
-  void CopyFrom(const Blob<Dtype>& source, bool reshape = false);
-
-  inline const shared_ptr<SyncedMemory>& data() const {
-    CHECK(data_);
-    return data_;
-  }
-
-  const Dtype* cpu_data() const;
-  void set_cpu_data(Dtype* data);
-  const Dtype* gpu_data() const;
-  Dtype* mutable_cpu_data();
-  Dtype* mutable_gpu_data();
+  void CopyFrom(const Blob<Dtype>& source);
+  void CopyFrom(const Blob<Dtype>& source, bool reshape);
   void FromProto(const singa::BlobProto& proto);
   void ToProto(singa::BlobProto* proto) const;
-
-  /// @brief Compute the sum of absolute values (L1 norm) of the data.
-  Dtype asum_data() const;
-  Dtype sum_data() const;
-
   /**
    * @brief Set the data_ shared_ptr to point to the SyncedMemory holding the
    *        data_ of Blob other -- useful in Layer&s which simply perform a copy
@@ -160,12 +136,42 @@ class Blob {
    */
   void ShareData(const Blob& other);
   void Swap(Blob& other);
-  shared_ptr<SyncedMemory> data_;
+  inline const std::vector<int>& shape() const { return shape_; }
+  inline int count() const { return count_; }
+  inline const int version() const { return version_; }
+  inline void set_version(int v) { version_ = v; }
+  inline const Dtype* cpu_data() const {
+    CHECK(data_);
+    return static_cast<const Dtype*>(data_->cpu_data());
+  }
+  inline void set_cpu_data(Dtype* data) {
+    CHECK(data);
+    data_->set_cpu_data(data);
+  }
+  inline const Dtype* gpu_data() const {
+    CHECK(data_);
+    return static_cast<const Dtype*>(data_->gpu_data());
+  }
+  inline Dtype* mutable_cpu_data() {
+    CHECK(data_);
+    return static_cast<Dtype*>(data_->mutable_cpu_data());
+  }
+  inline Dtype* mutable_gpu_data() {
+    CHECK(data_);
+    return static_cast<Dtype*>(data_->mutable_gpu_data());
+  }
+  /// @brief Compute the sum of absolute values (L1 norm) of the data.
+  Dtype asum_data() const;
+  Dtype sum_data() const;
+
  protected:
-  vector<int> shape_;
-  int count_;
-  int capacity_;
-  int version_;
+  std::shared_ptr<SyncedMemory> data_ = nullptr;
+  std::vector<int> shape_;
+  int count_ = 0;
+  int capacity_ = 0;
+  int version_ = -1;
 };  // class Blob
 
-#endif // INCLUDE_UTILS_BLOB_
+}  // namespace singa
+
+#endif  // SINGA_UTILS_BLOB_H_

@@ -24,7 +24,7 @@ class Server{
   virtual ~Server();
   void Setup(const UpdaterProto& proto,
       std::unordered_map<int, ParamEntry*>* shard,
-      const vector<int>& slice2group);
+      const std::vector<int>& slice2group);
   void Run();
   const int grp_id() const {
     return grp_id_;
@@ -47,7 +47,7 @@ class Server{
    *
    * @return the orignal message or response message
    */
-  const vector<Msg*> HandleUpdate(Msg **msg);
+  const std::vector<Msg*> HandleUpdate(Msg **msg);
 
 	/**
 	 * Process PUT request.
@@ -68,15 +68,15 @@ class Server{
    * @param param slice to be sync with others
    * @return sync messages
    */
-  const vector<Msg*> GenSyncMsgs(Param* param);
+  const std::vector<Msg*> GenSyncMsgs(Param* param);
 
  protected:
   int thread_id_,grp_id_, id_;
   Updater* updater_;
   std::unordered_map<int, ParamEntry*> *shard_;
-  vector<int> slice2group_;
-  std::unordered_map<int, shared_ptr<Blob<float>>> last_data_;
-  std::unordered_map<int, vector<Msg*>> buffer_requests_;
+  std::vector<int> slice2group_;
+  std::unordered_map<int, std::shared_ptr<Blob<float>>> last_data_;
+  std::unordered_map<int, std::vector<Msg*>> buffer_requests_;
 };
 } /* Server */
 #endif //INCLUDE_TRAINER_SERVER_H_

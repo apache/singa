@@ -216,7 +216,8 @@ class Param {
    * request in msgs.
    * @return response messages
    */
-  virtual const vector<Msg*> GenUpdateResponseMsgs(const vector<Msg*>& msgs);
+  virtual const std::vector<Msg*>
+    GenUpdateResponseMsgs(const std::vector<Msg*>& msgs);
 
   /**
    * Server handling function for get request.
@@ -254,9 +255,9 @@ class Param {
   virtual int ParseUpdateResponseMsg(Msg* msg, int slice_idx);
   /**
    * Server parse update requests.
-   * \copydetails GenUpdateResponseMsgs(const vector<Msg*>& msgs);
+   * \copydetails GenUpdateResponseMsgs(const std::vector<Msg*>& msgs);
    */
-  virtual void ParseUpdateMsgs(const vector<Msg*>& msgs);
+  virtual void ParseUpdateMsgs(const std::vector<Msg*>& msgs);
   /**
    * Server parsing function for synchronization response.
    *
@@ -277,13 +278,13 @@ class Param {
   int slice_start_;
   int num_slices_;
   //!< offset and size of each slice
-  vector<int> slice_offset_, slice_size_;
+  std::vector<int> slice_offset_, slice_size_;
 
   //!< for debug checking
-  vector<bool> pending_put_, pending_get_, pending_update_;
+  std::vector<bool> pending_put_, pending_get_, pending_update_;
   int num_pending_requests_;
 
-  shared_ptr<Blob<float>> data_;
+  std::shared_ptr<Blob<float>> data_;
   //! gradient, history gradient of this parameter
   Blob<float> grad_, history_;
   ParamProto proto_;
@@ -312,7 +313,7 @@ class ParamEntry{
   int num_local;  //!< # local workers using the shared parameter
   int num_total;  //!< # total workers using the shared parameter
   //!< Shares are deleted by neuralnet's destructor
-  vector<Param*> shares;
+  std::vector<Param*> shares;
 };
 
 inline int ParamTrgt(int param_id, int slice_id) {
