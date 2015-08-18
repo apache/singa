@@ -2,6 +2,8 @@
 #include "utils/updater.h"
 #include "mshadow/tensor.h"
 #include "mshadow/cxxnet_op.h"
+#include "utils/singleton.h"
+#include "utils/factory.h"
 #include "proto/job.pb.h"
 namespace  singa {
 
@@ -9,6 +11,15 @@ using namespace mshadow;
 using namespace mshadow::expr;
 
 
+Updater* Updater::Create(const UpdaterProto& proto) {
+  auto factory = Singleton<Factory<Updater>>::Instance();
+  Updater* updater = nullptr;
+  if (proto.has_user_type())
+    updater = factory->Create(proto.user_type());
+  else
+    updater = factory->Create(proto.type());
+  return updater;
+}
 float Updater::GetLearningRate(int step) {
   float ret = 0., r = 0., base = proto_.base_lr();
   int freq = 0;

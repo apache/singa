@@ -1,5 +1,9 @@
 #include "singa.h"
 
+#include <cblas.h>
+#include <glog/logging.h>
+#include <string>
+
 namespace singa {
 
 void Driver::Init(int argc, char **argv) {
@@ -22,28 +26,28 @@ void Driver::Init(int argc, char **argv) {
   ReadProtoFromTextFile(argv[arg_pos+1], &job_conf_);
 
   // register layers
-  RegisterLayer<BridgeDstLayer>(kBridgeDst);
-  RegisterLayer<BridgeSrcLayer>(kBridgeSrc);
-  RegisterLayer<ConvolutionLayer>(kConvolution);
-  RegisterLayer<ConcateLayer>(kConcate);
-  RegisterLayer<DropoutLayer>(kDropout);
-  RegisterLayer<InnerProductLayer>(kInnerProduct);
-  RegisterLayer<LabelLayer>(kLabel);
-  RegisterLayer<LRNLayer>(kLRN);
-  RegisterLayer<MnistLayer>(kMnist);
-  RegisterLayer<PrefetchLayer>(kPrefetch);
-  RegisterLayer<PoolingLayer>(kPooling);
-  RegisterLayer<RGBImageLayer>(kRGBImage);
-  RegisterLayer<ReLULayer>(kReLU);
-  RegisterLayer<ShardDataLayer>(kShardData);
-  RegisterLayer<SliceLayer>(kSlice);
-  RegisterLayer<SoftmaxLossLayer>(kSoftmaxLoss);
-  RegisterLayer<SplitLayer>(kSplit);
-  RegisterLayer<TanhLayer>(kTanh);
-  RegisterLayer<RBMVisLayer>(kRBMVis);
-  RegisterLayer<RBMHidLayer>(kRBMHid);
+  RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
+  RegisterLayer<BridgeSrcLayer, int>(kBridgeSrc);
+  RegisterLayer<ConvolutionLayer, int>(kConvolution);
+  RegisterLayer<ConcateLayer, int>(kConcate);
+  RegisterLayer<DropoutLayer, int>(kDropout);
+  RegisterLayer<InnerProductLayer, int>(kInnerProduct);
+  RegisterLayer<LabelLayer, int>(kLabel);
+  RegisterLayer<LRNLayer, int>(kLRN);
+  RegisterLayer<MnistLayer, int>(kMnist);
+  RegisterLayer<PrefetchLayer, int>(kPrefetch);
+  RegisterLayer<PoolingLayer, int>(kPooling);
+  RegisterLayer<RGBImageLayer, int>(kRGBImage);
+  RegisterLayer<ReLULayer, int>(kReLU);
+  RegisterLayer<ShardDataLayer, int>(kShardData);
+  RegisterLayer<SliceLayer, int>(kSlice);
+  RegisterLayer<SoftmaxLossLayer, int>(kSoftmaxLoss);
+  RegisterLayer<SplitLayer, int>(kSplit);
+  RegisterLayer<TanhLayer, int>(kTanh);
+  RegisterLayer<RBMVisLayer, int>(kRBMVis);
+  RegisterLayer<RBMHidLayer, int>(kRBMHid);
 #ifdef USE_LMDB
-  RegisterLayer<LMDBDataLayer>(kLMDBData);
+  RegisterLayer<LMDBDataLayer, int>(kLMDBData);
 #endif
 
   // register updater
@@ -60,33 +64,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterParam<Param>(0);
 }
 
-template<typename T>
-int Driver::RegisterLayer(int type) {
-  auto factory = Singleton<Factory<singa::Layer>>::Instance();
-  factory->Register(type, CreateInstance(T, Layer));
-  return 1;
-}
 
-template<typename T>
-int Driver::RegisterParam(int type) {
-  auto factory = Singleton<Factory<singa::Param>>::Instance();
-  factory->Register(type, CreateInstance(T, Param));
-  return 1;
-}
-
-template<typename T>
-int Driver::RegisterUpdater(int type) {
-  auto factory = Singleton<Factory<singa::Updater>>::Instance();
-  factory->Register(type, CreateInstance(T, Updater));
-  return 1;
-}
-
-template<typename T>
-int Driver::RegisterWorker(int type) {
-  auto factory = Singleton<Factory<singa::Worker>>::Instance();
-  factory->Register(type, CreateInstance(T, Worker));
-  return 1;
-}
 
 void Driver::Submit(bool resume, const JobProto& jobConf) {
   if (singa_conf_.has_log_dir())

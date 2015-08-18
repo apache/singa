@@ -21,6 +21,7 @@ using std::string;
 using std::map;
 
 class Layer;
+
 /**
  * Base layer class.
  *
@@ -30,6 +31,7 @@ class Layer;
  */
 class Layer {
  public:
+  static Layer *Create(const LayerProto& proto);
   Layer() { }
   virtual ~Layer() {}
   /**

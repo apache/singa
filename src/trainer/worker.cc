@@ -10,6 +10,15 @@
 namespace singa {
 using std::thread;
 
+Worker* Worker::Create(const JobProto& proto) {
+  auto factory = Singleton<Factory<singa::Worker>>::Instance();
+  Worker* worker = nullptr;
+  if (proto.has_user_alg())
+    worker = factory->Create(proto.user_alg());
+  else
+    worker = factory->Create(proto.alg());
+  return worker;
+}
 void Worker::Init(int thread_id, int grp_id, int id) {
   thread_id_ = thread_id;
   grp_id_ = grp_id;

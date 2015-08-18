@@ -10,6 +10,7 @@ namespace singa {
  */
 class Updater{
  public:
+  static Updater* Create(const UpdaterProto& proto);
   virtual ~Updater() {}
   virtual void Init(const UpdaterProto &proto) {
     proto_ = proto;

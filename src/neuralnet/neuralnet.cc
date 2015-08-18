@@ -75,10 +75,10 @@ NeuralNet::NeuralNet(NetProto netproto, int npartitions) {
 }
 
 void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
-  auto* factory = Singleton<Factory<Layer>>::Instance();
   // create one layer per node
   for (Node* node : graph->nodes()) {
-    auto layer = factory->Create(static_cast<LayerProto*>(node->proto)->type());
+    auto proto_ptr =  static_cast<LayerProto*>(node->proto);
+    auto layer = Layer::Create(*proto_ptr);
     layers_.push_back(layer);
     name2layer_[node->name] = layer;
   }
@@ -267,7 +267,6 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
   }
 
   // connect nodes, nodes for ConcateLayer, SliceLayer and SplitLayer are added.
-  auto* factory = Singleton<Factory<Layer>>::Instance();
   for (const auto& layerproto : netproto.layer()) {
     string name = layerproto.name();
     int pdim = layerproto.partition_dim();
@@ -275,7 +274,7 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
     for (auto srcname : layerproto.srclayers()) {
       const vector<Node*>& srcnodes = name2nodes.at(srcname);
       // TODO(wangwei): consider the type of each connection
-      auto *layer = factory->Create(layerproto.type());
+      Layer *layer = Layer::Create(layerproto);
       ConnectionType connection = layer->src_neuron_connection(0);
       delete layer;
       int src_pdim = name2proto[srcname]->partition_dim();
@@ -314,7 +313,7 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
   // add nodes for SplitLayer
   vector<Node*> oldnodes = graph->nodes();
   for (Node* node : oldnodes) {
-    auto layer = factory->Create(static_cast<LayerProto*>(node->proto)->type());
+    auto layer = Layer::Create(*static_cast<LayerProto*>(node->proto));
     if (node->dstnodes.size() > 1
         && layer->dst_layer_connection() == kOneToOne) {
       vector<Node*> dstnodes = node->dstnodes;

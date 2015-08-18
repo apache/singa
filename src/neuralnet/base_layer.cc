@@ -9,6 +9,15 @@
 #include "neuralnet/base_layer.h"
 
 namespace singa {
+Layer *Layer::Create(const LayerProto& proto) {
+  auto* factory = Singleton<Factory<Layer>>::Instance();
+  Layer * layer = nullptr;
+  if (proto.has_user_type())
+    layer = factory->Create(proto.user_type());
+  else
+    layer = factory->Create(proto.type());
+  return layer;
+}
 
 void Layer::Setup(const LayerProto& proto, int npartitions) {
   CHECK_GE(npartitions, 1);

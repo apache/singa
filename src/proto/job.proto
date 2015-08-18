@@ -22,7 +22,9 @@ message JobProto {
   // neural net consits of a set of connected layers
   required NetProto neuralnet = 3;
   // algorithms calculating gradients for one mini-batch/iteration
-  required TrainOneBatchAlg alg = 5;
+  optional TrainOneBatchAlg alg = 5 [default = kUserAlg];
+  // user defined algorithm
+  optional string user_alg = 6;
   // configuration of SGD updater, including learning rate, etc.
   required UpdaterProto updater = 7;
   // cluster toplogy conf
@@ -77,6 +79,8 @@ message JobProto {
   optional int32 step = 91 [default = 0];
   // job id allocated by zookeeper
   optional int32 id = 92 [default = -1];
+
+  extensions 101 to 200;
 }
 
 // Protos used by JobProto
@@ -89,13 +93,18 @@ message NetProto {
 }
 
 message UpdaterProto {
-  // updater type
-  required UpdaterType type = 1 [default = kSGD];
-  // configuration for RMSProp algorithm
-  optional RMSPropProto rmsprop_conf = 50;
+  // built-in updater type
+  optional UpdaterType type = 1 [default = kUserUpdater];
+  // user-defned updater type
+  optional string user_type = 2;
 
-  // change method for learning rate
-  required ChangeMethod lr_change = 2 [default = kFixed];
+  // configuration for RMSProp algorithm
+  optional RMSPropProto rmsprop_conf = 3;
+
+  // built-in change method for learning rate
+  optional ChangeMethod lr_change = 10 [default = kUserChange];
+  // user-defined change method
+  optional string user_lr_change = 11;
 
   optional FixedStepProto fixedstep_conf = 40;
   optional StepProto step_conf = 41;
@@ -109,6 +118,8 @@ message UpdaterProto {
   optional float base_lr = 34 [default = 0];
   // used to avoid divide by 0, i.e. x/(y+delta)
   optional float delta = 35 [default = 0.00000001];
+
+  extensions 101 to 200;
 }
 
 message ClusterProto {
@@ -153,8 +164,11 @@ message LayerProto {
   // some layers like data layer for loading test data are not used by training
   // phase should be removed by setting the exclude field.
   repeated Phase exclude = 15;
-  // the layer type
-  required LayerType type = 20;
+  // type of built-in layer
+  optional LayerType type = 20 [default = kUserLayer];
+  // type of user layer
+  optional string user_type =21;
+
   // proto for the specific layer
   // configuration for convolution layer
   optional ConvolutionProto convolution_conf = 30;
@@ -197,12 +211,9 @@ message LayerProto {
   optional int32 partition_dim = 60 [default = -1];
   // names of parameters shared from other layers
   optional int32 partition_id = 90 [default = 0];
+
+  extensions 101 to 200;
 }
-
-
-// ---------------------------
-// protos for different layers
-// ---------------------------
 
 // weight matrix should be defined before bias vector
 // TODO(wangwei): separate conf for diff init method
@@ -210,15 +221,22 @@ message ParamProto {
   // used for identifying the same params from diff models and display deug info
   optional string name =  1 [default = ""];
   optional InitMethod init_method = 2 [default = kGaussian];
-  optional int32 type = 3 [default = 0];
+  // for built-in Param
+  optional ParamType type = 3 [default = kParam];
+  // for user-defined Param
+  optional string user_type = 4;
   // constant init
   optional float value = 5 [default = 1];
   // for uniform sampling
-  optional float low = 6 [default = -1];
-  optional float high = 7 [default = 1];
+  optional UniformProto uniform_conf = 6;
+  optional float low = 7 [default = -1];
+  optional float high = 8 [default = 1];
+
   // for gaussian sampling
-  optional float mean = 8 [default = 0];
-  optional float std = 9 [default = 1];
+  optional GaussianProto gaussian_conf = 9;
+  optional float mean = 10 [default = 0];
+  optional float std = 11 [default = 1];
+
   // multiplied on the global learning rate.
   optional float lr_scale = 15 [default = 1];
   // multiplied on the global weight decay.
@@ -235,6 +253,8 @@ message ParamProto {
   optional int32 partition_dim = 92;
   // usually, the program will infer the param shape
   repeated int32 shape = 93;
+
+  extensions 101 to 200;
 }
 
 // ---------------------------
@@ -353,14 +373,6 @@ message LRNProto {
   optional float alpha = 31 [default = 1.0];
   // exponential number
   optional float beta = 32 [default = 0.75];
-  enum NormRegion {
-    // across channels, e.g., r,g,b
-    ACROSS_CHANNELS = 0;
-    // within channel, e.g., r, g and b are concatenated into one channel
-    WITHIN_CHANNEL = 1;
-  }
-  // normalization objective
-  optional NormRegion norm_region = 33 [default = ACROSS_CHANNELS];
   // offset
   optional float knorm = 34 [default = 1.0];
 }
@@ -431,6 +443,15 @@ message InverseProto {
   // lr = base_lr*(1+gamma*step)^(-pow)
   required float pow = 2 [default = 0];
 }
+message UniformProto {
+  optional float low = 1 [default = -1];
+  optional float high = 2 [default = 1];
+}
+message GaussianProto {
+  optional float mean = 1 [default = 0];
+  optional float std = 2 [default = 1];
+}
+
 
 // --------------
 // All Enum Types
@@ -444,6 +465,8 @@ enum ChangeMethod {
   kLinear = 4;
   kStep = 5;
   kFixedStep = 6;
+  // For user defiend change method
+  kUserChange = 100;
 }
 
 enum InitMethod {
@@ -467,6 +490,9 @@ enum InitMethod {
   // [-4a, +4a], put the scale factor to value field.
   // <a href="http://deeplearning.net/tutorial/mlp.html"> Theano MLP</a>
   kUniformSqrtFanInOut = 6;
+
+  // For user defined init method
+  kUserInit = 101;
 }
 
 enum LayerType {
@@ -501,6 +527,9 @@ enum LayerType {
   kBridgeSrc = 15;
   kSlice = 12;
   kSplit = 13;
+
+  // Indicate the user defined layer. Users should configure user_type
+  kUserLayer = 102;
 }
 
 enum PartitionType {
@@ -522,11 +551,20 @@ enum Phase {
   kLoss = 7;
 }
 
+enum ParamType {
+  // built-in Param
+  kParam = 0;
+  // user-defined Param
+  kUser = 103;
+}
+
 enum TrainOneBatchAlg {
   // Back-propagation algorithm for feed-forward models, e.g., CNN and RNN
   kBP = 1;
   // Contrastive Divergence algorithm for RBM, DBM, etc.
   kCD = 2;
+  // For user defined algorithm.
+  kUserAlg = 104;
 }
 
 enum UpdaterType {
@@ -538,4 +576,6 @@ enum UpdaterType {
   kRMSProp = 3;
   // Nesterov first optimal gradient method
   kNesterov = 4;
+  // For user defined updater
+  kUserUpdater = 105;
 }

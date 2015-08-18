@@ -6,10 +6,21 @@
 #include "proto/job.pb.h"
 #include "mshadow/tensor.h"
 #include "utils/singleton.h"
+#include "utils/factory.h"
 namespace singa {
 using namespace mshadow;
 using std::vector;
 using std::string;
+
+Param* Param::Create(const ParamProto& proto) {
+  Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
+  Param* p = nullptr;
+  if (proto.has_user_type())
+    p = factory->Create(proto.user_type());
+  else
+    p = factory->Create(proto.type());
+  return p;
+}
 
 Param::Param():local_version_(-1), slice_start_(0), num_slices_(0),
   num_pending_requests_(0), data_(nullptr) {

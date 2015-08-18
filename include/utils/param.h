@@ -27,6 +27,7 @@
 namespace singa {
 class Param {
  public:
+  static Param* Create(const ParamProto& proto);
   Param();
   virtual ~Param() {}
   /**

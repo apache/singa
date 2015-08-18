@@ -72,8 +72,9 @@ message Record {
     kSingleLabelImage = 0;
   }
   optional Type type = 1 [default = kSingleLabelImage];
+  optional string user_type =2;
   // configuration for
-  optional SingleLabelImageRecord image = 2;
+  optional SingleLabelImageRecord image = 5;
 }
 
 message SingleLabelImageRecord {

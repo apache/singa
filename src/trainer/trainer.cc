@@ -172,10 +172,9 @@ vector<Worker*> Trainer::CreateWorkers(int nthreads, const JobProto& job) {
     wstart = 0;
     wend = grp_size;
   }
-  auto factory = Singleton<Factory<singa::Worker>>::Instance();
   for (int gid = gstart; gid < gend; gid++) {
     for (int wid = wstart; wid < wend; wid++) {
-      Worker* worker = factory->Create(job.alg());
+      auto *worker = Worker::Create(job);
       worker->Init(nthreads++,gid, wid);
       workers.push_back(worker);
     }

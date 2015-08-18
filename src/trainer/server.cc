@@ -20,7 +20,7 @@ Server::Server(int thread_id,int group_id, int server_id):
 void Server::Setup(const UpdaterProto& proto,
     std::unordered_map<int, ParamEntry*>* shard,
     const vector<int>& slice2group) {
-  updater_ = Singleton<Factory<Updater>>::Instance()->Create(proto.type());
+  updater_ = Updater::Create(proto);
   updater_->Init(proto);
   shard_ = shard;
   slice2group_ = slice2group;

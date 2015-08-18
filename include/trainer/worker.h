@@ -21,6 +21,7 @@ const int kCollectSleepTime=5;
  */
 class Worker {
  public:
+  static Worker* Create(const JobProto& proto);
   /**
    * @param thread_id local thread index within the procs
    * @param grp_id global worker group ID
