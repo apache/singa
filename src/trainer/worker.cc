@@ -25,7 +25,6 @@ void Worker::Setup(
   train_net_ = train_net;
   validation_net_ = valid_net;
   test_net_ = test_net;
-  auto cluster = Cluster::Get();
 }
 
 Worker::~Worker() {

@@ -226,7 +226,7 @@ void Trainer::Resume(JobProto* jobConf) {
 
 void Trainer::Start(bool resume, const SingaProto& singaConf, JobProto* job) {
   // register job to zookeeper at the beginning
-  auto cluster = Cluster::Get(job->id(), singaConf, job->cluster());
+  auto cluster = Cluster::Setup(job->id(), singaConf, job->cluster());
   if (resume)
     Resume(job);
 

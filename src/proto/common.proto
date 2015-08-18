@@ -84,7 +84,7 @@ message SingleLabelImageRecord {
 }
 
 message MetricProto {
-  repeated string name =1;
+  repeated string name = 1;
   repeated int32 count = 2;
   repeated float val = 3;
 }

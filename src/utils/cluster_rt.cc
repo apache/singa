@@ -39,7 +39,7 @@ ZKService::~ZKService() {
   zookeeper_close(zkhandle_);
 }
 
-char zk_cxt[] = "ZKClusterRT";
+char zk_cxt[] = "ClusterRuntime";
 
 bool ZKService::Init(const string& host, int timeout) {
   zoo_set_debug_level(ZOO_LOG_LEVEL_ERROR);
@@ -174,10 +174,10 @@ void ZKService::WatcherGlobal(zhandle_t * zh, int type, int state,
   }
 }
 
-ZKClusterRT::ZKClusterRT(const string& host, int job_id)
-    : ZKClusterRT(host, job_id, 30000) {}
+ClusterRuntime::ClusterRuntime(const string& host, int job_id)
+    : ClusterRuntime(host, job_id, 30000) {}
 
-ZKClusterRT::ZKClusterRT(const string& host, int job_id, int timeout) {
+ClusterRuntime::ClusterRuntime(const string& host, int job_id, int timeout) {
   host_ = host;
   timeout_ = timeout;
   workspace_ = GetZKJobWorkspace(job_id);
@@ -186,14 +186,14 @@ ZKClusterRT::ZKClusterRT(const string& host, int job_id, int timeout) {
   proc_lock_path_ = workspace_ + kZKPathJobPLock;
 }
 
-ZKClusterRT::~ZKClusterRT() {
+ClusterRuntime::~ClusterRuntime() {
   // release callback vector
   for (RTCallback* p : cb_vec_) {
     delete p;
   }
 }
 
-bool ZKClusterRT::Init() {
+bool ClusterRuntime::Init() {
   if (!zk_.Init(host_, timeout_)) return false;
   if (!zk_.CreateNode(kZKPathSinga.c_str(), nullptr, 0, nullptr))
     return false;
@@ -210,7 +210,7 @@ bool ZKClusterRT::Init() {
   return true;
 }
 
-int ZKClusterRT::RegistProc(const string& host_addr, int pid) {
+int ClusterRuntime::RegistProc(const string& host_addr, int pid) {
   char buf[kZKBufSize];
   string lock = proc_lock_path_ + "/lock-";
   if (!zk_.CreateNode(lock.c_str(), nullptr,
@@ -245,7 +245,7 @@ int ZKClusterRT::RegistProc(const string& host_addr, int pid) {
   return id;
 }
 
-bool ZKClusterRT::WatchSGroup(int gid, int sid, rt_callback fn, void *ctx) {
+bool ClusterRuntime::WatchSGroup(int gid, int sid, rt_callback fn, void *ctx) {
   CHECK_NOTNULL(fn);
   string path = groupPath(gid);
   // create zk node
@@ -260,7 +260,7 @@ bool ZKClusterRT::WatchSGroup(int gid, int sid, rt_callback fn, void *ctx) {
   return zk_.WGetChild(path.c_str(), &child, cb);
 }
 
-std::string ZKClusterRT::GetProcHost(int proc_id) {
+std::string ClusterRuntime::GetProcHost(int proc_id) {
   // char buf[kZKBufSize];
   char val[kZKBufSize];
   // construct file name
@@ -273,13 +273,13 @@ std::string ZKClusterRT::GetProcHost(int proc_id) {
   return string(val);
 }
 
-bool ZKClusterRT::JoinSGroup(int gid, int wid, int s_group) {
+bool ClusterRuntime::JoinSGroup(int gid, int wid, int s_group) {
   string path = groupPath(s_group) + workerPath(gid, wid);
   // try to create an ephemeral node under server group path
   return zk_.CreateNode(path.c_str(), nullptr, ZOO_EPHEMERAL, nullptr);
 }
 
-bool ZKClusterRT::LeaveSGroup(int gid, int wid, int s_group) {
+bool ClusterRuntime::LeaveSGroup(int gid, int wid, int s_group) {
   string path = groupPath(s_group) + workerPath(gid, wid);
   return zk_.DeleteNode(path.c_str());
 }
