@@ -8,7 +8,7 @@ std::string host = "localhost:2181";
 void zk_cb(void *contest) {
   LOG(INFO) << "zk callback: " << static_cast<char *>(contest);
 }
-
+/*
 TEST(CluserRuntimeTest, GroupManagement) {
   ClusterRuntime* rt = new ZKClusterRT(host);
   ASSERT_EQ(rt->Init(), true);
@@ -34,7 +34,6 @@ TEST(CluserRuntimeTest, ProcessManagement) {
   delete rt;
 }
 
-/**
 ClusterProto GenClusterProto(){
   ClusterProto proto;
   int nworker=6, nserver=4;

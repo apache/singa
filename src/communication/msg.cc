@@ -170,8 +170,8 @@ int Msg::ParseFormatFrame(const char *format, ...) {
       size += sizeof(*x);
     } else if (*format == 's') {
       char* x = va_arg(argptr, char *);
-      int len = strlen(src + size);
       CHECK_EQ(src[size++], 's');
+      int len = strlen(src + size);
       memcpy(x, src + size, len);
       x[len] = 0;
       size += len + 1;
