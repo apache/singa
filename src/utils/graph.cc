@@ -1,16 +1,15 @@
-
 #include "utils/graph.h"
+
 #include <glog/logging.h>
 #include <algorithm>
 #include <queue>
 #include <unordered_set>
 
 namespace singa {
-/************************Node********************************/
 
-Node::~Node() {
-  // the proto field is deleted outside by other functions
-}
+using std::map;
+using std::string;
+using std::vector;
 
 Node::Node(string name) {
   this->name = name;
@@ -43,11 +42,10 @@ void Node::RemoveSrcNode(Node* src) {
   auto iter = srcnodes.begin();
   while ((*iter)->name != src->name && iter != srcnodes.end())
     iter++;
-  CHECK((*iter)->name == src->name);
+  CHECK_STREQ((*iter)->name.c_str(), src->name.c_str());
   srcnodes.erase(iter);
 }
 
-/*************************Graph****************************/
 Graph::~Graph() {
   for (Node* node : nodes_)
     delete node;
@@ -55,6 +53,8 @@ Graph::~Graph() {
 
 void Graph::AddNode(Node* node) {
   nodes_.push_back(node);
+  CHECK(name2node_.find(node->name) == name2node_.end())
+    << "node " << node->name << " already exists";
   name2node_[node->name] = node;
 }
 
@@ -70,13 +70,11 @@ void Graph::AddEdge(Node* srcnode, Node* dstnode) {
 }
 
 void Graph::AddEdge(const string& src, const string& dst) {
-  CHECK(name2node_.find(src) != name2node_.end())
-    <<"can't find src node " << src;
-  CHECK(name2node_.find(dst) != name2node_.end())
-    <<"can't find dst node " << dst;
-
-  Node* srcnode = name2node_[src], *dstnode = name2node_[dst];
-  AddEdge(srcnode, dstnode);
+  auto srcnode = name2node_.find(src);
+  CHECK(srcnode != name2node_.end()) << "can't find src node " << src;
+  auto dstnode = name2node_.find(dst);
+  CHECK(dstnode != name2node_.end()) << "can't find dst node " << dst;
+  AddEdge(srcnode->second, dstnode->second);
 }
 
 void Graph::RemoveEdge(Node* src, Node* dst) {
@@ -85,29 +83,27 @@ void Graph::RemoveEdge(Node* src, Node* dst) {
 }
 
 void Graph::RemoveEdge(const string &src, const string& dst) {
-  CHECK(name2node_.find(src) != name2node_.end())
-    <<"can't find src node " << src;
-  CHECK(name2node_.find(dst) != name2node_.end())
-    <<"can't find dst node " << dst;
-
-  Node* srcnode = name2node_[src], *dstnode = name2node_[dst];
-  RemoveEdge(srcnode, dstnode);
+  auto srcnode = name2node_.find(src);
+  CHECK(srcnode != name2node_.end()) << "can't find src node " << src;
+  auto dstnode = name2node_.find(dst);
+  CHECK(dstnode != name2node_.end()) << "can't find dst node " << dst;
+  RemoveEdge(srcnode->second, dstnode->second);
 }
 
-const string Graph::ToJson() const {
+string Graph::ToJson() const {
   map<string, string> info;
   return ToJson(info);
 }
 
-const string Graph::ToJson(const map<string, string>& info) const {
+string Graph::ToJson(const map<string, string>& info) const {
   map<string, int> nodeid;
   string disp = "{\"directed\":1,\n";
 
   // add nodes
   disp += "\"nodes\":[\n";
   bool first = true;
-
   vector<string> colors = {"red", "blue", "black", "green"};
+
   // see for more shapes at http://www.graphviz.org/doc/info/shapes.html
   vector<string> shapes = {"box", "ellipse"};
   int id = 0;
@@ -185,12 +181,11 @@ void Graph::Sort() {
         }
     // check whether its src nodes number greater than 1
     if (bi_direction && (node->srcnodes).size() > 1) {
-        auto src =  node->srcnodes.at(0);  
+        auto src = node->srcnodes.at(0);
         if (visited_set.find(src) == visited_set.end()) {
           visit = false;
         }
-    }
-    else {
+    } else {
       for (auto src : node->srcnodes)
         if (visited_set.find(src) == visited_set.end()) {
           visit = false;

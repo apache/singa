@@ -28,7 +28,7 @@ SocketInterface* Poller::Wait(int timeout) {
   return nullptr;
 }
 
-bool Poller::Terminated(){
+bool Poller::Terminated() {
   return zpoller_terminated(poller_);
 }
 
@@ -94,13 +94,13 @@ Router::~Router() {
       zmsg_destroy(&msg);
   }
 }
-int Router::Bind(const std::string& endpoint){
-  int port=-1;
-  if(endpoint.length()){
-    port=zsock_bind(router_, "%s", endpoint.c_str());
+int Router::Bind(const std::string& endpoint) {
+  int port = -1;
+  if (endpoint.length()) {
+    port = zsock_bind(router_, "%s", endpoint.c_str());
   }
-  CHECK_NE(port,-1)<<endpoint;
-  LOG(INFO)<<"bind successfully to "<<endpoint+":"+std::to_string(port);
+  CHECK_NE(port, -1) << endpoint;
+  LOG(INFO) << "bind successfully to " << endpoint + ":" + std::to_string(port);
   return port;
 }
 
@@ -128,7 +128,7 @@ int Router::Send(Msg **msg) {
 Msg* Router::Receive() {
   zmsg_t* zmsg = zmsg_recv(router_);
   if (zmsg == nullptr) {
-    LOG(ERROR)<<"Connection broken!";
+    LOG(ERROR) << "Connection broken!";
     exit(0);
   }
   zframe_t* dealer = zmsg_pop(zmsg);

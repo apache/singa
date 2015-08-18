@@ -5,7 +5,6 @@
 #define USE_ZMQ
 
 #include <utility>
-
 #ifdef USE_ZMQ
 #include <czmq.h>
 #endif
@@ -29,6 +28,7 @@ inline int Addr(int grp, int id_or_proc, int type) {
 inline int AddrGrp(int addr) {
   return addr >> 16;
 }
+
 /**
  * Parse worker/server id from addr.
  *
@@ -47,6 +47,7 @@ inline int AddrID(int addr) {
 inline int AddrProc(int addr) {
   return AddrID(addr);
 }
+
 /**
  * Parse msg type from addr
  * @return msg type
@@ -159,44 +160,40 @@ class Msg {
    * Set source addr.
    * @param addr unique identify one worker/server/stub in the current job
    */
-  void set_src(int addr) { src_ = addr; }
+  inline void set_src(int addr) { src_ = addr; }
   /**
    * @return source addr.
    */
-  int src() const { return src_; }
+  inline int src() const { return src_; }
   /**
    * Set destination addr.
    * @param addr unique identify one worker/server/stub in the current job
    */
-  void set_dst(int addr) { dst_ = addr; }
+  inline void set_dst(int addr) { dst_ = addr; }
   /**
    * @return dst addr.
    */
-  int dst() const { return dst_; }
+  inline int dst() const { return dst_; }
   /**
    * Set msg type, e.g., kPut, kGet, kUpdate, kRequest
    */
-  void set_type(int type) { type_ = type; }
+  inline void set_type(int type) { type_ = type; }
   /**
    * @return msg type.
    */
-  int type() const { return type_; }
+  inline int type() const { return type_; }
   /**
    * Set msg target.
    *
    * One msg has a target to identify some entity in worker/server/stub.
    * The target is associated with a version, e.g., Param version.
    */
-  void set_trgt(int val, int version) {
+  inline void set_trgt(int val, int version) {
     trgt_val_ = val;
     trgt_version_ = version;
   }
-  int trgt_val() const {
-    return trgt_val_;
-  }
-  int trgt_version() const {
-    return trgt_version_;
-  }
+  inline int trgt_val() const { return trgt_val_; }
+  inline int trgt_version() const { return trgt_version_; }
 
  protected:
   int src_ = 0;

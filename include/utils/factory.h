@@ -49,7 +49,6 @@ class Factory {
       << "The id has been registered by another function";
     id2func_[id] = func;
   }
-
   /**
    * create an instance by providing its id
    *
@@ -70,6 +69,7 @@ class Factory {
       << "The creation function for " << id << " has not been registered";
     return id2func_[id]();
   }
+
  private:
   // Map that stores the registered creation functions
   std::map<std::string, std::function<T*(void)>> str2func_;

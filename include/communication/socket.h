@@ -1,15 +1,13 @@
 #ifndef SINGA_COMMUNICATION_SOCKET_H_
 #define SINGA_COMMUNICATION_SOCKET_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
-#include "communication/msg.h"
-
 #ifdef USE_ZMQ
 #include <czmq.h>
 #endif
+#include <map>
+#include <string>
+#include <vector>
+#include "communication/msg.h"
 
 namespace singa {
 
@@ -43,7 +41,7 @@ class SocketInterface {
 class Poller {
  public:
   Poller();
-  Poller(SocketInterface* socket);
+  explicit Poller(SocketInterface* socket);
   /**
     * Add a socket for polling; Multiple sockets can be polled together by
     * adding them into the same poller.

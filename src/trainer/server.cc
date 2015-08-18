@@ -9,7 +9,9 @@
 #include "proto/common.pb.h"
 
 namespace singa {
+
 using namespace mshadow;
+using std::vector;
 
 Server::Server(int thread_id,int group_id, int server_id):
   thread_id_(thread_id),grp_id_(group_id), id_(server_id){

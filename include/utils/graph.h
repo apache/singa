@@ -1,15 +1,12 @@
 #ifndef SINGA_UTILS_GRAPH_H_
 #define SINGA_UTILS_GRAPH_H_
-#include <vector>
+
+#include <stack>
 #include <string>
 #include <map>
-#include <stack>
-#include <memory>
+#include <vector>
 
 namespace singa {
-using std::vector;
-using std::string;
-using std::map;
 
 class Node {
  public:
@@ -18,7 +15,7 @@ class Node {
    *
    * @param name name of the corresponding layer
    */
-  explicit Node(string name);
+  explicit Node(std::string name);
   /**
    * Node constructor.
    *
@@ -28,24 +25,22 @@ class Node {
    * @param id partition id of this node
    * @param proto conf of the corresponding layer
    */
-  Node(const string& name, const string& origin, int id, void* proto);
-  ~Node();
+  Node(const std::string& name, const std::string& origin, int id, void* proto);
+  ~Node() {}  // the proto field is deleted outside by other functions
   void AddDstNode(Node* dstnode);
   void AddSrcNode(Node* srcnode);
   void RemoveDstNode(Node* dst);
   void RemoveSrcNode(Node* src);
 
- public:
-  string name;
+  std::string name = "";
   //! name of the origin node/layer from which is node is derived
-  string origin;
+  std::string origin = "";
   //! partition id
-  int partition_id;
+  int partition_id = 0;
   //! proto of the corresponding layer
-  void* proto;
-
-  vector<Node*> srcnodes;
-  vector<Node*> dstnodes;
+  void* proto = nullptr;
+  std::vector<Node*> srcnodes;
+  std::vector<Node*> dstnodes;
 };
 
 /**
@@ -60,42 +55,43 @@ class Graph {
   /**
    * @return all nodes of the graph
    */
-  const vector<Node*>& nodes() const {
+  inline const std::vector<Node*>& nodes() const {
     return nodes_;
   }
   /**
    * @param name node name
    * @return return the node of given name
    */
-  Node* node(const string& name) const {
+  inline Node* node(const std::string& name) const {
     return name2node_.at(name);
   }
-
   void AddNode(Node* node);
-  Node* AddNode(const string& name);
+  Node* AddNode(const std::string& name);
   void AddEdge(Node* srcnode, Node* dstnode);
-  void AddEdge(const string& src, const string& dst);
+  void AddEdge(const std::string& src, const std::string& dst);
   void RemoveEdge(Node* src, Node* dst);
-  void RemoveEdge(const string &src, const string& dst);
+  void RemoveEdge(const std::string &src, const std::string& dst);
   /**
    * Dump the graph into json string which can be used to draw a picture by
    * graphviz
    */
-  const string ToJson() const;
+  std::string ToJson() const;
   /**
    * \copybreif ToJson()
    *
    * @param info info associated with each node
    */
-  const string ToJson(const map<string, string>& info) const;
+  std::string ToJson(const std::map<std::string, std::string>& info) const;
   /**
    * Do topology sort for all nodes of the graph.
    */
   void Sort();
 
  private:
-  vector<Node*> nodes_;
-  map<string, Node*> name2node_;
+  std::vector<Node*> nodes_;
+  std::map<std::string, Node*> name2node_;
 };
+
 }  // namespace singa
+
 #endif  // SINGA_UTILS_GRAPH_H_

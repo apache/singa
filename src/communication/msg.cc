@@ -1,5 +1,6 @@
-#include <glog/logging.h>
 #include "communication/msg.h"
+
+#include <glog/logging.h>
 
 namespace singa {
 
@@ -20,7 +21,7 @@ Msg::Msg(const Msg& msg) {
   type_ = msg.type_;
   trgt_val_ = msg.trgt_val_;
   trgt_version_ = msg.trgt_version_;
-  msg_=zmsg_dup(msg.msg_);
+  msg_ = zmsg_dup(msg.msg_);
 }
 
 Msg::Msg(int src, int dst) {
@@ -155,7 +156,7 @@ int Msg::ParseFormatFrame(const char *format, ...) {
       CHECK_EQ(src[size++], 'f');
       memcpy(x, src + size, sizeof(*x));
       size += sizeof(*x);
-    }else if (*format == '1') {
+    } else if (*format == '1') {
       uint8_t *x = va_arg(argptr, uint8_t *);
       memcpy(x, src + size, sizeof(*x));
       size += sizeof(*x);
@@ -188,8 +189,6 @@ int Msg::ParseFormatFrame(const char *format, ...) {
   delete src;
   return size;
 }
-
 #endif
 
 }  // namespace singa
-
