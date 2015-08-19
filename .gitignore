@@ -43,4 +43,9 @@ stamp-h1
 config.h
 Makefile
 thirdparty/*
+config/*
+config.h.in
+configure
+aclocal.m4
+Makefile.in
 !thirdpary/install.sh
