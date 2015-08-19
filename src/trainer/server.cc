@@ -21,7 +21,6 @@ void Server::Setup(const UpdaterProto& proto,
     std::unordered_map<int, ParamEntry*>* shard,
     const vector<int>& slice2group) {
   updater_ = Updater::Create(proto);
-  updater_->Init(proto);
   shard_ = shard;
   slice2group_ = slice2group;
 }

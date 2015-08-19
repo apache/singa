@@ -50,18 +50,35 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<LMDBDataLayer, int>(kLMDBData);
 #endif
 
-  // register updater
+  // register updaters
   RegisterUpdater<AdaGradUpdater>(kAdaGrad);
   RegisterUpdater<NesterovUpdater>(kNesterov);
   // TODO(wangwei) RegisterUpdater<kRMSPropUpdater>(kRMSProp);
   RegisterUpdater<SGDUpdater>(kSGD);
 
-  // register worker
+  // register learning rate change methods
+  RegisterLRGenerator<LRGenerator>(kFixed);
+  RegisterLRGenerator<FixedStepLRGen>(kFixedStep);
+  RegisterLRGenerator<StepLRGen>(kStep);
+  RegisterLRGenerator<LinearLRGen>(kLinear);
+  RegisterLRGenerator<ExpLRGen>(kExponential);
+  RegisterLRGenerator<InvLRGen>(kInverse);
+  RegisterLRGenerator<InvTLRGen>(kInverseT);
+
+  // register workers
   RegisterWorker<BPWorker>(kBP);
   RegisterWorker<CDWorker>(kCD);
 
-  // register param
+  // register params
   RegisterParam<Param>(0);
+
+  // register param init methods
+  RegisterParamGenerator<ParamGenerator>(kConstant);
+  RegisterParamGenerator<GaussianGen>(kGaussian);
+  RegisterParamGenerator<UniformGen>(kUniform);
+  RegisterParamGenerator<GaussianSqrtFanInGen>(kGaussianSqrtFanIn);
+  RegisterParamGenerator<UniformSqrtFanInGen>(kUniformSqrtFanIn);
+  RegisterParamGenerator<UniformSqrtFanInOutGen>(kUniformSqrtFanInOut);
 }
 
 

@@ -12,6 +12,60 @@ using namespace mshadow;
 using std::vector;
 using std::string;
 
+ParamGenerator* ParamGenerator::Create(const ParamGenProto& proto) {
+  auto factory = Singleton<Factory<ParamGenerator>>::Instance();
+  ParamGenerator * gen = nullptr;
+  if (proto.has_user_type())
+    gen = factory->Create(proto.user_type());
+  else
+    gen = factory->Create(proto.type());
+  gen->Init(proto);
+  return gen;
+}
+
+void ParamGenerator::Fill (Blob<float>* blob) {
+  Tensor<cpu, 1> data(blob->mutable_cpu_data(), Shape1(blob->count()));
+  data = proto_.value();
+}
+void GaussianGen::Fill (Blob<float>* blob) {
+  Tensor<cpu, 1> data(blob->mutable_cpu_data(), Shape1(blob->count()));
+  auto random = TSingleton<Random<cpu>>::Instance();
+  random->SampleGaussian(data, proto_.mean(), proto_.std());
+  if(proto_.value() != 1)
+    data *= proto_.value();
+}
+void GaussianSqrtFanInGen::Fill (Blob<float>* blob) {
+  // only valid for param matrix with num of cols as fan in
+  CHECK_EQ(blob->shape().size(), 2);
+  Tensor<cpu, 1> data(blob->mutable_cpu_data(), Shape1(blob->count()));
+  GaussianGen::Fill(blob);
+  data /= sqrt(blob->shape().at(1));
+}
+
+void UniformGen::Fill (Blob<float>* blob) {
+  Tensor<cpu, 1> data(blob->mutable_cpu_data(), Shape1(blob->count()));
+  auto random = TSingleton<Random<cpu>>::Instance();
+  random->SampleUniform(data, proto_.low(), proto_.high());
+  if(proto_.value() != 1)
+    data *= proto_.value();
+}
+
+void UniformSqrtFanInGen::Fill (Blob<float>* blob) {
+  // only valid for param matrix with num of cols as fan in
+  CHECK_EQ(blob->shape().size(), 2);
+  Tensor<cpu, 1> data(blob->mutable_cpu_data(), Shape1(blob->count()));
+  UniformGen::Fill(blob);
+  data /= sqrt(blob->shape().at(1) / 3.0f);
+}
+
+void UniformSqrtFanInOutGen::Fill (Blob<float>* blob) {
+  // only valid for param matrix with num of cols as fan in
+  CHECK_EQ(blob->shape().size(), 2);
+  Tensor<cpu, 1> data(blob->mutable_cpu_data(), Shape1(blob->count()));
+  UniformGen::Fill(blob);
+  data /= sqrt(blob->shape()[0] + blob->shape()[1]);
+}
+/*****************Param***********************************/
 Param* Param::Create(const ParamProto& proto) {
   Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
   Param* p = nullptr;
@@ -51,43 +105,8 @@ void Param::AddSlice(int slice_id, int size) {
 }
 
 void Param::InitValues(int version) {
-  Tensor<cpu, 1> data(mutable_cpu_data(), Shape1(size()));
-  auto random = TSingleton<Random<cpu>>::Instance();
-  switch (proto_.init_method()) {
-  case InitMethod::kConstant:
-    data = proto_.value();
-    break;
-  case InitMethod::kUniform:
-    random->SampleUniform(data, proto_.low(), proto_.high());
-    if(proto_.value() != 1)
-      data *= proto_.value();
-    break;
-  case InitMethod::kUniformSqrtFanIn:
-    // only valid for param matrix with num of cols as fan in
-    CHECK_EQ(data_->shape().size(), 2);
-    random->SampleUniform(data, proto_.low(), proto_.high());
-    data *= proto_.value() / sqrt(data_->shape().at(1) / 3.0f);
-    break;
-  case InitMethod::kUniformSqrtFanInOut:
-    random->SampleUniform(data, proto_.low(), proto_.high());
-    if (proto_.value())
-      data *= proto_.value() / sqrt(data_->shape()[0] + data_->shape()[1]);
-    break;
-  case InitMethod::kGaussian:
-    random->SampleGaussian(data, proto_.mean(), proto_.std());
-    if(proto_.value() != 1)
-      data *= proto_.value();
-    break;
-  case InitMethod::kGaussainSqrtFanIn:
-    // only valid for param matrix with num of cols as fan in
-    CHECK_EQ(data_->shape().size(), 2);
-    random->SampleGaussian(data, proto_.mean(), proto_.std());
-    data *= proto_.value() / sqrt(data_->shape().at(1));
-    break;
-  default:
-    LOG(ERROR) << "Illegal parameter init method ";
-    break;
-  }
+  ParamGenerator* gen = ParamGenerator::Create(proto_.init());
+  gen->Fill(data_.get());
   set_version(version);
 }
 void Param::FromProto(const BlobProto& blob) {

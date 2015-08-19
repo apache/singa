@@ -24,7 +24,6 @@ void Worker::Init(int thread_id, int grp_id, int id) {
   grp_id_ = grp_id;
   id_ = id;
   layer_dealer_ = dealer_ = nullptr;
-  updater_ = nullptr;
 }
 
 void Worker::Setup(
@@ -141,10 +140,8 @@ void ConnectStub(int grp, int id, Dealer* dealer, EntityType entity) {
 void Worker::Run() {
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") start";
   auto cluster = Cluster::Get();
-  if (updater_==nullptr) {
-    int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
-    CHECK(cluster->runtime()->JoinSGroup(grp_id_, id_, svr_grp));
-  }
+  int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
+  CHECK(cluster->runtime()->JoinSGroup(grp_id_, id_, svr_grp));
   dealer_ = new Dealer(2*thread_id_);
   ConnectStub(grp_id_, id_, dealer_, kWorkerParam);
   for (auto layer : train_net_->layers()) {
@@ -190,10 +187,7 @@ void Worker::Run() {
   Checkpoint(step_, train_net_);
 
   // clean up
-  if(updater_ == nullptr) {
-    int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
-    cluster->runtime()->LeaveSGroup(grp_id_, id_, svr_grp);
-  }
+  cluster->runtime()->LeaveSGroup(grp_id_, id_, svr_grp);
   // notify the stub on worker stop
   Msg* msg=new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1,-1, kStub));
   msg->set_type(kStop);
@@ -224,15 +218,10 @@ int Worker::Get(Param* param, int step) {
 
 int Worker::Update(Param* param, int step) {
   param->set_local_version(param->version());
-  if (updater_) {
-    updater_->Update(step, param);
-    param->set_version(param->version() + 1);
-  } else {
-    Msg* msg=new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
-    msg->set_trgt(ParamTrgt(param->owner(), 0), step);
-    msg->set_type(kUpdate);
-    dealer_->Send(&msg);
-  }
+  Msg* msg=new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
+  msg->set_trgt(ParamTrgt(param->owner(), 0), step);
+  msg->set_type(kUpdate);
+  dealer_->Send(&msg);
   return 1;
 }
 

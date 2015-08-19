@@ -10,6 +10,53 @@ namespace  singa {
 using namespace mshadow;
 using namespace mshadow::expr;
 
+/**********************Learning rate generator******************************/
+LRGenerator* LRGenerator::Create(const LRGenProto& proto) {
+  auto factory = Singleton<Factory<LRGenerator>>::Instance();
+  LRGenerator* gen = nullptr;
+  if (proto.has_user_type())
+    gen = factory->Create(proto.user_type());
+  else
+    gen = factory->Create(proto.type());
+  gen->Init(proto);
+  return gen;
+}
+
+float FixedStepLRGen::Get(int step) {
+  if (last_idx_ < proto_.fixedstep_conf().step_size() -1
+      && step >= proto_.fixedstep_conf().step(last_idx_ + 1)) {
+      last_idx_ ++;
+    }
+  return proto_.fixedstep_conf().step_lr(last_idx_);
+}
+
+float StepLRGen::Get(int step) {
+  // do not cast int to float
+  int freq = proto_.step_conf().change_freq();
+  return  proto_.base_lr() * pow(proto_.step_conf().gamma(), step / freq);
+}
+
+float LinearLRGen::Get(int step) {
+  int freq = proto_.linear_conf().change_freq();
+  float r = step * 1.0  / freq;
+  return (1.0 - r) * proto_.base_lr() + r * proto_.linear_conf().final_lr();
+}
+
+float ExpLRGen::Get(int step) {
+  int freq = proto_.exponential_conf().change_freq();
+  return proto_.base_lr() / pow(2, step * 1. / freq);
+}
+
+float InvLRGen::Get(int step) {
+  return proto_.base_lr() * pow(1.f + proto_.inverse_conf().gamma() * step,
+           - proto_.inverse_conf().pow());
+}
+
+float InvTLRGen::Get(int step) {
+  return proto_.base_lr() / (1 + step * 1. / proto_.inverset_conf().final_lr());
+}
+
+/***********************Updater********************************/
 
 Updater* Updater::Create(const UpdaterProto& proto) {
   auto factory = Singleton<Factory<Updater>>::Instance();
@@ -18,69 +65,23 @@ Updater* Updater::Create(const UpdaterProto& proto) {
     updater = factory->Create(proto.user_type());
   else
     updater = factory->Create(proto.type());
+  updater->Init(proto);
   return updater;
-}
-float Updater::GetLearningRate(int step) {
-  float ret = 0., r = 0., base = proto_.base_lr();
-  int freq = 0;
-  switch (proto_.lr_change()) {
-    case ChangeMethod::kFixed:
-      ret = base;
-      break;
-    case ChangeMethod::kLinear:
-      // a is init, b is the final
-      freq = proto_.linear_conf().change_freq();
-      r = step * 1.0  / freq;
-      ret = (1.0 - r) * base + r * proto_.linear_conf().final_lr();
-      break;
-    case ChangeMethod::kExponential:
-      // a is init, b is the final, from convnet
-      freq = proto_.exponential_conf().change_freq();
-      ret = base / pow(2, step * 1. / freq);
-      break;
-    case ChangeMethod::kInverseT:
-      // a is init, b is the final, from convnet
-      CHECK_EQ(base, 2 * proto_.inverset_conf().final_lr())
-        << "final value should be the half";
-      ret = base / (1. + step * 1. / proto_.inverset_conf().final_lr());
-      break;
-    case ChangeMethod::kInverse:
-      // a is init, b is gamma, c is pow
-      ret = base * pow(1.f + proto_.inverse_conf().gamma() * step,
-           - proto_.inverse_conf().pow());
-      break;
-    case ChangeMethod::kStep:
-      // a is the base learning rate, b is gamma, from caffe
-      // notice it is step/change_steps, not step*1.0/change_steps
-      freq = proto_.step_conf().change_freq();
-      ret = base * pow(proto_.step_conf().gamma(), step / freq);
-      break;
-    case ChangeMethod::kFixedStep:
-      for (int i = 0; i < proto_.fixedstep_conf().step_size(); i++) {
-        if (step > proto_.fixedstep_conf().step(i))
-          ret = proto_.fixedstep_conf().step_lr(i);
-      }
-      break;
-    default:
-      LOG(ERROR) << "Wrong hyper-parameter update method";
-  }
-  return ret;
 }
 
 /***********************SGD with momentum******************************/
-void SGDUpdater::Init(const UpdaterProto& proto) {
-  Updater::Init(proto);
-  base_lr_ = proto.base_lr();
+void Updater::Init(const UpdaterProto& proto) {
   momentum_ = proto.momentum();
   weight_decay_ = proto.weight_decay();
+  lr_gen_ = LRGenerator::Create(proto.learning_rate());
 }
 
 void SGDUpdater::Update(int step, Param* param, float grad_scale) {
   Shape<1> s = Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
-  float lr = GetLearningRate(step)*param->lr_scale();
-  float wd = weight_decay_*param->wd_scale();
+  float lr = lr_gen_->Get(step) * param->lr_scale();
+  float wd = weight_decay_ * param->wd_scale();
   if (grad_scale != 1.f)
     grad *= grad_scale;
   if (wd > 0) {  // L2 regularization, should be done after timing grad_scale
@@ -97,20 +98,13 @@ void SGDUpdater::Update(int step, Param* param, float grad_scale) {
 }
 
 /***********************Nesterov******************************/
-void NesterovUpdater::Init(const UpdaterProto& proto) {
-  Updater::Init(proto);
-  base_lr_ = proto.base_lr();
-  CHECK_GT(base_lr_, 0);
-  weight_decay_ = proto.weight_decay();
-}
-
 void NesterovUpdater::Update(int step, Param* param, float grad_scale) {
   Shape<1> s = Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
   Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
   TensorContainer<cpu, 1> tmp(s);
-  float lr = GetLearningRate(step)*param->lr_scale();
+  float lr = lr_gen_->Get(step)*param->lr_scale();
   float wd = weight_decay_*param->wd_scale();
   if (grad_scale != 1.f)
     grad *= grad_scale;
@@ -123,20 +117,12 @@ void NesterovUpdater::Update(int step, Param* param, float grad_scale) {
   data -= tmp;
 }
 /***********************AdaGrad******************************/
-void AdaGradUpdater::Init(const UpdaterProto& proto) {
-  Updater::Init(proto);
-  base_lr_ = proto.base_lr();
-  CHECK_GT(base_lr_, 0);
-  delta_ = proto.delta();
-  weight_decay_ = proto.weight_decay();
-}
-
 void AdaGradUpdater::Update(int step, Param* param, float grad_scale) {
   Shape<1> s = Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
   Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
-  float lr = GetLearningRate(step)*param->lr_scale();
+  float lr = lr_gen_->Get(step)*param->lr_scale();
   float wd = weight_decay_*param->wd_scale();
   if (grad_scale != 1.f)
     grad *= grad_scale;
@@ -144,7 +130,7 @@ void AdaGradUpdater::Update(int step, Param* param, float grad_scale) {
     grad += data * wd;
   }
   history += F<op::square>(grad);
-  data -= lr * grad / (F<op::sqrtop>(history, delta_));
+  data -= lr * grad / (F<op::sqrtop>(history, proto_.delta()));
 }
 
 /***********************RMSProp******************************

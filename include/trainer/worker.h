@@ -2,7 +2,6 @@
 #define SINGA_TRAINER_WORKER_H_
 #include "neuralnet/neuralnet.h"
 #include "proto/job.pb.h"
-#include "utils/updater.h"
 #include "communication/socket.h"
 
 namespace singa {
@@ -177,7 +176,6 @@ class Worker {
   JobProto job_conf_;
   shared_ptr<NeuralNet> train_net_, test_net_, validation_net_;
   Dealer* layer_dealer_, *dealer_;
-  Updater* updater_;
 };
 
 class BPWorker: public Worker{

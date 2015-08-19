@@ -34,6 +34,16 @@ class Driver {
   template<typename Subclass, typename Type>
   int RegisterUpdater(const Type& type);
   /**
+   * Register a learning rate generator subclasses.
+   *
+   * @param type ID of the subclass. If called to register built-in subclasses,
+   * it is from ChangeMethod; if called to register user-defined
+   * subclass, it is a string;
+   * @return 0 if success; otherwise -1.
+   */
+  template<typename Subclass, typename Type>
+  int RegisterLRGenerator(const Type& type);
+  /**
    * Register a Worker subclass.
    *
    * @param type ID of the subclass. If called to register built-in subclasses,
@@ -53,6 +63,17 @@ class Driver {
    */
   template<typename Subclass, typename Type>
   int RegisterParam(const Type& type);
+  /**
+   * Register ParamGenerator subclasses for initalizing Param objects.
+   *
+   * @param type ID of the subclass. If called to register built-in subclasses,
+   * it is from InitMethod; if called to register user-defined
+   * subclass, it is a string;
+   * @return 0 if success; otherwise -1.
+   */
+  template<typename Subclass, typename Type>
+  int RegisterParamGenerator(const Type& type);
+
   /**
    * Submit the job configuration for starting the job.
    * @param resume resume from last checkpoint if true.
@@ -90,9 +111,21 @@ int Driver::RegisterParam(const Type& type) {
   return 1;
 }
 template<typename Subclass, typename Type>
+int Driver::RegisterParamGenerator(const Type& type) {
+  auto factory = Singleton<Factory<singa::ParamGenerator>>::Instance();
+  factory->Register(type, CreateInstance(Subclass, ParamGenerator));
+  return 1;
+}
+template<typename Subclass, typename Type>
 int Driver::RegisterUpdater(const Type& type) {
   auto factory = Singleton<Factory<singa::Updater>>::Instance();
   factory->Register(type, CreateInstance(Subclass, Updater));
+  return 1;
+}
+template<typename Subclass, typename Type>
+int Driver::RegisterLRGenerator(const Type& type) {
+  auto factory = Singleton<Factory<singa::LRGenerator>>::Instance();
+  factory->Register(type, CreateInstance(Subclass, LRGenerator));
   return 1;
 }
 template<typename Subclass, typename Type>

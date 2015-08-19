@@ -6,6 +6,51 @@
 #include "utils/blob.h"
 #include "communication/msg.h"
 
+namespace singa {
+
+/**
+ * Base parameter generator which intializes parameter values.
+ */
+
+class ParamGenerator {
+ public:
+  static ParamGenerator* Create(const ParamGenProto& proto);
+  virtual ~ParamGenerator() {}
+
+  virtual void Init(const ParamGenProto& proto) {
+    proto_ = proto;
+  }
+
+  virtual void Fill(Blob<float>* data);
+
+ protected:
+  ParamGenProto proto_;
+};
+
+class GaussianGen: public ParamGenerator {
+ public:
+  void  Fill(Blob<float>* data) override;
+};
+
+class UniformGen: public ParamGenerator {
+ public:
+  void  Fill(Blob<float>* data) override;
+};
+
+class GaussianSqrtFanInGen: public GaussianGen {
+ public:
+  void  Fill(Blob<float>* data) override;
+};
+
+class UniformSqrtFanInGen: public UniformGen {
+ public:
+  void Fill(Blob<float>* data) override;
+};
+
+class UniformSqrtFanInOutGen: public UniformGen {
+ public:
+  void Fill(Blob<float>* data) override;
+};
 /**
  * Base paramter class.
  *
@@ -24,7 +69,6 @@
  * load-balance among servers. Hence, we slice large Param objects into small
  * pieces. At the server side, one slice is a Param object.
  */
-namespace singa {
 class Param {
  public:
   static Param* Create(const ParamProto& proto);

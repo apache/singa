@@ -101,21 +101,11 @@ message UpdaterProto {
   // configuration for RMSProp algorithm
   optional RMSPropProto rmsprop_conf = 3;
 
-  // built-in change method for learning rate
-  optional ChangeMethod lr_change = 10 [default = kUserChange];
-  // user-defined change method
-  optional string user_lr_change = 11;
-
-  optional FixedStepProto fixedstep_conf = 40;
-  optional StepProto step_conf = 41;
-  optional LinearProto linear_conf = 42;
-  optional ExponentialProto exponential_conf = 43;
-  optional InverseProto inverse_conf = 44;
-  optional InverseTProto inverset_conf = 45;
+  // learning rate generator
+  optional LRGenProto learning_rate = 11;
   optional float momentum = 31 [default = 0];
   optional float weight_decay = 32 [default = 0];
-  // base learning rate
-  optional float base_lr = 34 [default = 0];
+
   // used to avoid divide by 0, i.e. x/(y+delta)
   optional float delta = 35 [default = 0.00000001];
 
@@ -220,24 +210,13 @@ message LayerProto {
 message ParamProto {
   // used for identifying the same params from diff models and display deug info
   optional string name =  1 [default = ""];
-  optional InitMethod init_method = 2 [default = kGaussian];
   // for built-in Param
   optional ParamType type = 3 [default = kParam];
   // for user-defined Param
   optional string user_type = 4;
-  // constant init
-  optional float value = 5 [default = 1];
-  // for uniform sampling
-  optional UniformProto uniform_conf = 6;
-  optional float low = 7 [default = -1];
-  optional float high = 8 [default = 1];
 
-  // for gaussian sampling
-  optional GaussianProto gaussian_conf = 9;
-  optional float mean = 10 [default = 0];
-  optional float std = 11 [default = 1];
-
-  // multiplied on the global learning rate.
+  optional ParamGenProto init =5;
+    // multiplied on the global learning rate.
   optional float lr_scale = 15 [default = 1];
   // multiplied on the global weight decay.
   optional float wd_scale = 16 [default = 1];
@@ -260,6 +239,38 @@ message ParamProto {
 // ---------------------------
 // protos for different layers
 // ---------------------------
+// learning rate generator proto
+message LRGenProto {
+  // user-defined change method
+  optional ChangeMethod type = 1 [default = kUserChange];
+  optional string user_type = 2;
+
+  optional float base_lr = 3 [default = 0.01];
+
+  optional FixedStepProto fixedstep_conf = 40;
+  optional StepProto step_conf = 41;
+  optional LinearProto linear_conf = 42;
+  optional ExponentialProto exponential_conf = 43;
+  optional InverseProto inverse_conf = 44;
+  optional InverseTProto inverset_conf = 45;
+
+  extensions 101 to 200;
+}
+
+message ParamGenProto {
+  optional InitMethod type = 1 [default = kUserInit];
+  optional string user_type =2;
+  // constant init
+  optional float value = 3 [default = 1];
+  // for gaussian sampling
+  optional float mean = 4 [default = 0];
+  optional float std = 5 [default = 1];
+  // for uniform sampling
+  optional float low = 8 [default = -1];
+  optional float high = 9 [default = 1];
+
+  extensions 101 to 200;
+}
 
 message RGBImageProto {
   // scale factor for each pixel
@@ -476,11 +487,9 @@ enum InitMethod {
   kGaussian = 1;
   // uniform sampling between low and high
   kUniform = 2;
-  // copy the content and history which are from previous training
-  kPretrained = 3;
   // from Toronto Convnet, let a=1/sqrt(fan_in), w*=a after generating from
   // Gaussian distribution
-  kGaussainSqrtFanIn = 4;
+  kGaussianSqrtFanIn = 4;
   // from Toronto Convnet, rectified linear activation, let
   // a=sqrt(3)/sqrt(fan_in), range is [-a, +a]; no need to set value=sqrt(3),
   // the program will multiply it.
