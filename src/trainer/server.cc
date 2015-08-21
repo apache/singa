@@ -177,7 +177,7 @@ Msg* Server::HandleGet(Msg **msg) {
     return *msg;
   else {
     // LOG(ERROR) << "get " << slice << " from "<<(*msg)->src_first();
-    auto reply = param->HandleGetMsg(msg);
+    auto reply = param->HandleGetMsg(msg, false);
     reply->set_trgt(val, param->version());
     return reply;
   }
@@ -203,14 +203,13 @@ const vector<Msg*> Server::HandleUpdate(Msg **msg) {
     auto param = entry->shares.at(0);
     // extract and aggregate gradients
     param->ParseUpdateMsgs(request);
-    updater_->Update(step, param);
+    updater_->Update(step, param, 1.0f);
     param->set_local_version(param->local_version() + 1);
     // response to all shares of this param
-    for (auto response : param->GenUpdateResponseMsgs(request)) {
+    for (auto response : param->GenUpdateResponseMsgs(&request, false)) {
       response->set_trgt((*msg)->trgt_val(), param->local_version());
       ret.push_back(response);
     }
-    request.clear();
     entry->num_update = 0;
   }
   *msg = nullptr;

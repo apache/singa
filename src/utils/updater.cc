@@ -1,16 +1,21 @@
-
 #include "utils/updater.h"
-#include "mshadow/tensor.h"
+
 #include "mshadow/cxxnet_op.h"
+#include "mshadow/tensor.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"
-#include "proto/job.pb.h"
-namespace  singa {
 
-using namespace mshadow;
-using namespace mshadow::expr;
+namespace singa {
 
-/**********************Learning rate generator******************************/
+using mshadow::cpu;
+using mshadow::expr::F;
+using mshadow::op::sqrtop;
+using mshadow::op::square;
+using mshadow::Shape;
+using mshadow::Shape1;
+using mshadow::Tensor;
+using mshadow::TensorContainer;
+
 LRGenerator* LRGenerator::Create(const LRGenProto& proto) {
   auto factory = Singleton<Factory<LRGenerator>>::Instance();
   LRGenerator* gen = nullptr;
@@ -23,9 +28,9 @@ LRGenerator* LRGenerator::Create(const LRGenProto& proto) {
 }
 
 float FixedStepLRGen::Get(int step) {
-  if (last_idx_ < proto_.fixedstep_conf().step_size() -1
+  if (last_idx_ < proto_.fixedstep_conf().step_size() - 1
       && step >= proto_.fixedstep_conf().step(last_idx_ + 1)) {
-      last_idx_ ++;
+      last_idx_++;
     }
   return proto_.fixedstep_conf().step_lr(last_idx_);
 }
@@ -38,7 +43,7 @@ float StepLRGen::Get(int step) {
 
 float LinearLRGen::Get(int step) {
   int freq = proto_.linear_conf().change_freq();
-  float r = step * 1.0  / freq;
+  float r = step * 1.0 / freq;
   return (1.0 - r) * proto_.base_lr() + r * proto_.linear_conf().final_lr();
 }
 
@@ -55,8 +60,6 @@ float InvLRGen::Get(int step) {
 float InvTLRGen::Get(int step) {
   return proto_.base_lr() / (1 + step * 1. / proto_.inverset_conf().final_lr());
 }
-
-/***********************Updater********************************/
 
 Updater* Updater::Create(const UpdaterProto& proto) {
   auto factory = Singleton<Factory<Updater>>::Instance();
@@ -84,9 +87,8 @@ void SGDUpdater::Update(int step, Param* param, float grad_scale) {
   float wd = weight_decay_ * param->wd_scale();
   if (grad_scale != 1.f)
     grad *= grad_scale;
-  if (wd > 0) {  // L2 regularization, should be done after timing grad_scale
+  if (wd > 0)  // L2 regularization, should be done after timing grad_scale
     grad += data * wd;
-  }
   if (momentum_ > 0) {
     Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
     history = history * momentum_ - lr * grad;
@@ -108,9 +110,8 @@ void NesterovUpdater::Update(int step, Param* param, float grad_scale) {
   float wd = weight_decay_*param->wd_scale();
   if (grad_scale != 1.f)
     grad *= grad_scale;
-  if (wd > 0) {  // L2 regularization, should be done after timing grad_scale
+  if (wd > 0)  // L2 regularization, should be done after timing grad_scale
     grad += data * wd;
-  }
   Copy(tmp, history);
   history = history * momentum_ + lr * grad;
   tmp = history * (1 + momentum_) - tmp * momentum_;
@@ -126,11 +127,10 @@ void AdaGradUpdater::Update(int step, Param* param, float grad_scale) {
   float wd = weight_decay_*param->wd_scale();
   if (grad_scale != 1.f)
     grad *= grad_scale;
-  if (wd > 0) {  //  L2 regularization, should be done after timing grad_scale
+  if (wd > 0)  //  L2 regularization, should be done after timing grad_scale
     grad += data * wd;
-  }
-  history += F<op::square>(grad);
-  data -= lr * grad / (F<op::sqrtop>(history, proto_.delta()));
+  history += F<square>(grad);
+  data -= lr * grad / (F<sqrtop>(history, proto_.delta()));
 }
 
 /***********************RMSProp******************************

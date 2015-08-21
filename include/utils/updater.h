@@ -10,24 +10,20 @@ namespace singa {
  *
  * Generate learning rate for a give training step/iteration.
  * There are many different ways to change the learning rate through time/step.
- * Users can inherint this class to implment their own change method.
+ * Users can inherint this class to implement their own change method.
  */
 class LRGenerator {
  public:
   static LRGenerator* Create(const LRGenProto& proto);
+
   virtual ~LRGenerator() {}
 
-  virtual void Init(const LRGenProto& proto) {
-    proto_ = proto;
-  }
-
+  virtual void Init(const LRGenProto& proto) { proto_ = proto; }
   /**
    * @param step training step/iteration.
    * @return base learning rate regardless of step
    */
-  virtual float Get(int step) {
-    return proto_.base_lr();
-  }
+  virtual float Get(int step) { return proto_.base_lr(); }
 
  protected:
   LRGenProto proto_;
@@ -39,35 +35,43 @@ class FixedStepLRGen : public LRGenerator {
  private:
   int last_idx_ = 0;
 };
+
 class StepLRGen : public LRGenerator {
  public:
   float Get(int step) override;
 };
+
 class LinearLRGen : public LRGenerator {
  public:
   float Get(int step) override;
 };
+
 class ExpLRGen : public LRGenerator {
  public:
   float Get(int step) override;
 };
+
 class InvLRGen : public LRGenerator {
  public:
   float Get(int step) override;
 };
+
 class InvTLRGen : public LRGenerator {
  public:
   float Get(int step) override;
 };
+
 /**
  * Updater for Param.
  */
-class Updater{
+class Updater {
  public:
   static Updater* Create(const UpdaterProto& proto);
+
   virtual ~Updater() {}
+
   virtual void Init(const UpdaterProto &proto);
-  virtual void Update(int step, Param* param, float grad_scale = 1.0f) = 0;
+  virtual void Update(int step, Param* param, float grad_scale) = 0;
 
  protected:
   UpdaterProto proto_;
@@ -78,23 +82,24 @@ class Updater{
 
 class SGDUpdater : public Updater {
  public:
-  void Update(int step, Param* param, float grad_scale = 1.0f);
+  void Update(int step, Param* param, float grad_scale) override;
 };
 
-class AdaGradUpdater : public Updater{
+class AdaGradUpdater : public Updater {
  public:
-  void Update(int step, Param* param, float grad_scale = 1.0f) override;
+  void Update(int step, Param* param, float grad_scale) override;
 };
 
 
 class NesterovUpdater : public Updater {
  public:
-  void Update(int step, Param* param, float grad_scale = 1.0f) override;
+  void Update(int step, Param* param, float grad_scale) override;
 };
+
 /*
-class RMSPropUpdater : public Updater{
+class RMSPropUpdater : public Updater {
  public:
-  virtual void Update(int step, Param* param, float grad_scale=1.0f);
+  virtual void Update(int step, Param* param, float grad_scale);
 
  protected:
   float base_lr_;
@@ -103,9 +108,9 @@ class RMSPropUpdater : public Updater{
   float weight_decay_;
 };
 
-class AdaDeltaUpdater : public Updater{
+class AdaDeltaUpdater : public Updater {
  public:
-  virtual void Update(int step, Param* param, float grad_scale=1.0f);
+  virtual void Update(int step, Param* param, float grad_scale);
 
  protected:
   float rho_;
@@ -113,6 +118,7 @@ class AdaDeltaUpdater : public Updater{
   float weight_decay_;
 };
 */
+
 }  // namespace singa
 
 #endif  // SINGA_UTILS_UPDATER_H_

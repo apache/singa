@@ -1,56 +1,56 @@
 #ifndef SINGA_UTILS_PARAM_H_
 #define SINGA_UTILS_PARAM_H_
-#include <vector>
+
+#include <memory>
 #include <string>
+#include <vector>
+#include "communication/msg.h"
 #include "proto/job.pb.h"
 #include "utils/blob.h"
-#include "communication/msg.h"
 
 namespace singa {
 
 /**
  * Base parameter generator which intializes parameter values.
  */
-
 class ParamGenerator {
  public:
   static ParamGenerator* Create(const ParamGenProto& proto);
+
   virtual ~ParamGenerator() {}
 
-  virtual void Init(const ParamGenProto& proto) {
-    proto_ = proto;
-  }
-
+  virtual void Init(const ParamGenProto& proto) { proto_ = proto; }
   virtual void Fill(Blob<float>* data);
 
  protected:
   ParamGenProto proto_;
 };
 
-class GaussianGen: public ParamGenerator {
+class GaussianGen : public ParamGenerator {
  public:
   void  Fill(Blob<float>* data) override;
 };
 
-class UniformGen: public ParamGenerator {
+class GaussianSqrtFanInGen : public GaussianGen {
  public:
   void  Fill(Blob<float>* data) override;
 };
 
-class GaussianSqrtFanInGen: public GaussianGen {
+class UniformGen : public ParamGenerator {
  public:
   void  Fill(Blob<float>* data) override;
 };
 
-class UniformSqrtFanInGen: public UniformGen {
+class UniformSqrtFanInGen : public UniformGen {
  public:
   void Fill(Blob<float>* data) override;
 };
 
-class UniformSqrtFanInOutGen: public UniformGen {
+class UniformSqrtFanInOutGen : public UniformGen {
  public:
   void Fill(Blob<float>* data) override;
 };
+
 /**
  * Base paramter class.
  *
@@ -72,7 +72,8 @@ class UniformSqrtFanInOutGen: public UniformGen {
 class Param {
  public:
   static Param* Create(const ParamProto& proto);
-  Param();
+
+  Param() {}
   virtual ~Param() {}
   void Init(const ParamProto& proto) { proto_ = proto; }
   /**
@@ -87,132 +88,14 @@ class Param {
    *
    * @param version initial version
    */
-  virtual void InitValues(int version = 0);
+  virtual void InitValues();
+  virtual void InitValues(int version);
   /**
    * Share the data blob from other Param objects.
    *
    * @param other the Param object whose owner owns the data blob
    */
   void ShareFrom(const Param& other);
-
-  /**
-   * Scale the learning rate when updating parameters in the Param object
-   */
-  float lr_scale() {
-    return proto_.lr_scale();
-  }
-  /**
-   * Scale the weight decay when updating parameters in the Param object
-   */
-  float wd_scale() {
-    return proto_.wd_scale();
-  }
-  /**
-   * Parameter name used for Param re-use in other model or sharing between
-   * layers
-   */
-  const std::string& name() {
-    return proto_.name();
-  }
-  void set_name(const std::string& name) {
-    proto_.set_name(name);
-  }
-  /**
-   * If it shares data from others, then owner is the id of that Param,
-   * otherwise it is itself's id.
-   */
-  const int owner() const {
-    return proto_.owner();
-  }
-  /**
-   * ID start from 0 and ordered for all Param from the same neuralnet
-   */
-  int id() const {
-    return proto_.id();
-  }
-  /**
-   * Set ID
-   */
-  void set_id(int id) {
-    proto_.set_id(id);
-    proto_.set_owner(id);
-  }
-
-  /**
-   * Param version is stored inside the data blob to enable all Param objs
-   * sharing the same values have the same version.
-   * @return the param version
-   */
-  int version() const {
-    return data_->version();
-  }
-
-  void set_version(int v) {
-    data_->set_version(v);
-  }
-
-  /**
-   * @return the version of the parameter value local to a worker
-   */
-  int local_version() const {
-    return local_version_;
-  }
-
-  void set_local_version(int v) {
-    local_version_ = v;
-  }
-  const std::string& share_from() const {
-    return proto_.share_from();
-  }
-   /**
-    * @return num of floats.
-    */
-  int size() const {
-    return data_->count();
-  }
-  const Blob<float> &data() {
-    return *data_;
-  }
-  Blob<float> *mutable_data() {
-    return data_.get();
-  }
-  /**
-   * Return gradient of this parameter
-   */
-  const Blob<float> &grad() {
-    return grad_;
-  }
-  Blob<float> *mutable_grad() {
-    return &grad_;
-  }
-  float* mutable_cpu_data() {
-    return data_->mutable_cpu_data();
-  }
-  float* mutable_cpu_grad() {
-    return grad_.mutable_cpu_data();
-  }
-  float* mutable_cpu_history() {
-    return history_.mutable_cpu_data();
-  }
-
-  /**
-   * @return slice start ID
-   */
-  int slice_start() const {
-    return slice_start_;
-  }
-
-  int num_slices() const {
-    return num_slices_;
-  }
-
-  /**
-   * Add a slice
-   *
-   * @param slice_id
-   * @param size num of floats for this slice
-   */
-  void AddSlice(int slice_id, int size);
   /**
    * Init param values from checkpoint blob.
    */
@@ -221,26 +104,109 @@ class Param {
    * Dump param values to blob.
    */
   void ToProto(BlobProto* blob);
-  /**********************Msg related functions***************************/
+  /**
+   * Add a slice
+   *
+   * @param slice_id
+   * @param size num of floats for this slice
+   */
+  void AddSlice(int slice_id, int size);
+  /**
+   * Scale the learning rate when updating parameters in the Param object
+   */
+  inline float lr_scale() const { return proto_.lr_scale(); }
+  /**
+   * Scale the weight decay when updating parameters in the Param object
+   */
+  inline float wd_scale() const { return proto_.wd_scale(); }
+  /**
+   * Parameter name used for Param re-use in other model or sharing between
+   * layers
+   */
+  inline const std::string& name() const { return proto_.name(); }
+  inline void set_name(const std::string& name) { proto_.set_name(name); }
+  /**
+   * If it shares data from others, then owner is the id of that Param,
+   * otherwise it is itself's id.
+   */
+  inline int owner() const { return proto_.owner(); }
+  /**
+   * ID start from 0 and ordered for all Param from the same neuralnet
+   */
+  inline int id() const { return proto_.id(); }
+  /**
+   * Set ID
+   */
+  inline void set_id(int id) {
+    proto_.set_id(id);
+    proto_.set_owner(id);
+  }
+  /**
+   * Param version is stored inside the data blob to enable all Param objs
+   * sharing the same values have the same version.
+   * @return the param version
+   */
+  inline int version() const { return data_->version(); }
+  inline void set_version(int v) { data_->set_version(v); }
+  /**
+   * @return the version of the parameter value local to a worker
+   */
+  inline int local_version() const { return local_version_; }
+  inline void set_local_version(int v) { local_version_ = v; }
+  inline const std::string& share_from() const { return proto_.share_from(); }
+   /**
+    * @return num of floats.
+    */
+  inline int size() const { return data_->count(); }
+  inline const Blob<float>& data() const { return *data_; }
+  inline Blob<float>* mutable_data() { return data_.get(); }
+  inline const Blob<float> &grad() const { return grad_; }
+  inline Blob<float> *mutable_grad() { return &grad_; }
+  inline float* mutable_cpu_data() { return data_->mutable_cpu_data(); }
+  inline float* mutable_cpu_grad() { return grad_.mutable_cpu_data(); }
+  inline float* mutable_cpu_history() { return history_.mutable_cpu_data(); }
+  /**
+   * @return slice start ID
+   */
+  inline int slice_start() const { return slice_start_; }
+  inline int num_slices() const { return num_slices_; }
 
   /**
-   * Generate the message for a get request, i.e., get parameters from a server
+   * Below are message/request related functions.
+   * The basic communication workflows are as follow:
+   *------------------------------------------------------------------------
+   *         |Put         |Get           |Update           |Sync
+   *------------------------------------------------------------------------
+   * Generate|(stub)      |(stub)        |(stub)           |(server)
+   * Message |GenPutMsg   |GenGetMsg     |GenUpdateMsg     |GenSyncMsg
+   *------------------------------------------------------------------------
+   * Handle  |(server)    |(server)      |(server)         |(server)
+   * Message |HandlePutMsg|HandleGetMsg  |ParseUpdateMsg   |HandleSyncMsg
+   *         |            |              |GenUpdateResMsg  |
+   *------------------------------------------------------------------------
+   * Handle  |            |(stub)        |(stub)           |(server)
+   * Response|            |ParseGetResMsg|ParseUpdateResMsg|ParseSyncResMsg
+   *------------------------------------------------------------------------
+   */
+
+  /**
+   * Generate the message for a put request, i.e., put parameters to a server
    *
    * This function is called at worker/stub side.
    * @param copy decides whether to copy the parameter values from the server.
    * @param slice_idx index of the slice from which the message is generated.
    * @return generated message without setting src, dst, target fields.
    */
-  virtual Msg* GenGetMsg(bool copy, int slice_idx);
-  /**
-   * Generate the message for a put request, i.e., put parameters to a server.
-   * \copydetails GenGetMsg(bool, int);
-   */
   virtual Msg* GenPutMsg(bool copy, int slice_idx);
+  /**
+   * Generate the message for a get request, i.e., get parameters from a server
+   * \copydetails GenPutMsg(bool, int);
+   */
+  virtual Msg* GenGetMsg(bool copy, int slice_idx);
   /**
    * Generate the message for a update request, i.e., pass info to server for
    * parameter update.
-   * \copydetails GenGetMsg(bool, int);
+   * \copydetails GenPutMsg(bool, int);
    */
   virtual Msg* GenUpdateMsg(bool copy, int slice_idx);
   /**
@@ -250,6 +216,26 @@ class Param {
    * of an original Param object.
    * */
   virtual Msg* GenSyncMsg(int offset, int size);
+  /**
+   * Server handling function for put request.
+   *
+   * @param msg request
+   * @param reserve if true reserve the msg space for the calling function;
+   * otherwise the msg should be freed inside the function.
+   * @return resposne message
+   */
+  virtual Msg* HandlePutMsg(Msg** msg, bool reserve);
+  /**
+   * Server handling function for put request.
+   *
+   * \copydetails HandleGetMsg(Msg**, bool reserve)
+   */
+  virtual Msg* HandleGetMsg(Msg** msg, bool reserve);
+  /**
+   * Server parse update requests.
+   * \copydetails GenUpdateResponseMsgs(const std::vector<Msg*>& msgs);
+   */
+  virtual void ParseUpdateMsgs(const std::vector<Msg*>& msgs);
   /**
    * Generate the messages to response the update requests.
    *
@@ -263,29 +249,13 @@ class Param {
    * @return response messages
    */
   virtual const std::vector<Msg*>
-    GenUpdateResponseMsgs(const std::vector<Msg*>& msgs);
-
-  /**
-   * Server handling function for get request.
-   *
-   * @param msg request
-   * @param reserve if true reserve the msg space for the calling function;
-   * otherwise the msg should be freed inside the function.
-   * @return resposne message
-   */
-  virtual Msg* HandleGetMsg(Msg** msg, bool reserve = false);
-  /**
-   * Server handling function for put request.
-   *
-   * \copydetails HandleGetMsg(Msg**, bool reserve)
-   */
-  virtual Msg* HandlePutMsg(Msg** msg, bool reserve = false);
+    GenUpdateResponseMsgs(std::vector<Msg*>* msgs, bool reserve);
   /**
    * Server handling function for synchronization message
    *
    * \copydetails HandleGetMsg(Msg**, bool reserve)
    */
-  virtual Msg* HandleSyncMsg(Msg** msg, bool reserve = false);
+  virtual Msg* HandleSyncMsg(Msg** msg, bool reserve);
   /**
    * Worker/Stub parsing function for get response.
    *
@@ -299,11 +269,6 @@ class Param {
    * \copydetails ParseGetResponseMsg(Msg**, int);
    */
   virtual int ParseUpdateResponseMsg(Msg* msg, int slice_idx);
-  /**
-   * Server parse update requests.
-   * \copydetails GenUpdateResponseMsgs(const std::vector<Msg*>& msgs);
-   */
-  virtual void ParseUpdateMsgs(const std::vector<Msg*>& msgs);
   /**
    * Server parsing function for synchronization response.
    *
@@ -319,19 +284,21 @@ class Param {
   void ParseResponseMsg(Msg* msg, int slice_idx);
 
  protected:
-  int local_version_;
-  //!< the ID of the first slice
-  int slice_start_;
-  int num_slices_;
-  //!< offset and size of each slice
-  std::vector<int> slice_offset_, slice_size_;
-
-  //!< for debug checking
-  std::vector<bool> pending_put_, pending_get_, pending_update_;
-  int num_pending_requests_;
-
-  std::shared_ptr<Blob<float>> data_;
-  //! gradient, history gradient of this parameter
+  int local_version_ = -1;
+  // the ID of the first slice
+  int slice_start_ = 0;
+  int num_slices_ = 0;
+  // offset and size of each slice
+  std::vector<int> slice_offset_;
+  std::vector<int> slice_size_;
+  // for debug checking
+  // since put request has no feedback, we do not track its pending status
+  std::vector<bool> pending_get_;
+  std::vector<bool> pending_update_;
+  int num_pending_requests_ = 0;
+  // data field
+  std::shared_ptr<Blob<float>> data_ = nullptr;
+  // gradient, history gradient of this parameter
   Blob<float> grad_, history_;
   ParamProto proto_;
 };
@@ -344,9 +311,9 @@ class Param {
  * Param objects sharing the same values are associated with the same
  * ParamEntry.
  */
-class ParamEntry{
+class ParamEntry {
  public:
-  ParamEntry();
+  ParamEntry() {}
   ParamEntry(int total, Param* p);
   /**
    * Associate the counter to a Param object.
@@ -355,9 +322,10 @@ class ParamEntry{
    * @param local 1 if it is used by workers in this procs, 0 otherwise
    */
   void AddParam(bool local, Param* p);
-  int num_update, next_version;
-  int num_local;  //!< # local workers using the shared parameter
-  int num_total;  //!< # total workers using the shared parameter
+  int next_version = -1;  // next_version & num_update are directly used by stub
+  int num_update = 0;
+  int num_local = 0;  //!< # local workers using the shared parameter
+  int num_total = 0;  //!< # total workers using the shared parameter
   //!< Shares are deleted by neuralnet's destructor
   std::vector<Param*> shares;
 };
@@ -371,9 +339,10 @@ inline int ParamID(int param_trgt) {
 }
 
 inline int SliceID(int param_trgt) {
-  static int mask = (1 << 16) -1;
+  static const int mask = (1 << 16) -1;
   return param_trgt & mask;
 }
+
 }  // namespace singa
 
 #endif  // SINGA_UTILS_PARAM_H_

@@ -22,7 +22,7 @@ class Singleton {
 template<typename T>
 class TSingleton {
  public:
-  static T* Instance(){
+  static T* Instance() {
     static thread_local T data_;
     return &data_;
   }
