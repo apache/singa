@@ -1,20 +1,24 @@
+#ifndef SINGA_NEURALNET_OPTIONAL_LAYER_H_
+#define SINGA_NEURALNET_OPTIONAL_LAYER_H_
+
 #ifdef USE_LMDB
-#ifndef SINGA_NEURALNET_OPTIONAL_LAYER_
-#define SINGA_NEURALNET_OPTIONAL_LAYER_
-#include "neuralnet/layer.h"
+#include <lmdb.h>
+#endif
+#include <string>
+#include "neuralnet/base_layer.h"
 
 namespace singa {
 
-class LMDBDataLayer: public DataLayer{
+#ifdef USE_LMDB
+class LMDBDataLayer : public DataLayer {
  public:
-  using Layer::ComputeFeature;
-
   ~LMDBDataLayer();
-  void OpenLMDB(const std::string& path);
+
   void Setup(const LayerProto& proto, int npartitions) override;
+  void OpenLMDB(const std::string& path);
   void ComputeFeature(Phase phase, Metric *perf) override;
   void ConvertCaffeDatumToRecord(const CaffeDatum& datum,
-      SingleLabelImageRecord* record);
+                                 SingleLabelImageRecord* record);
 
  private:
   MDB_env* mdb_env_;
@@ -23,8 +27,8 @@ class LMDBDataLayer: public DataLayer{
   MDB_cursor* mdb_cursor_;
   MDB_val mdb_key_, mdb_value_;
 };
-} /* singa */
-
-#endif  // SINGA_NEURALNET_OPTIONAL_LAYER_
 #endif
 
+}  // namespace singa
+
+#endif  // SINGA_NEURALNET_OPTIONAL_LAYER_H_

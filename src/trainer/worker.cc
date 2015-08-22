@@ -361,7 +361,7 @@ void BPWorker::Backward(int step, shared_ptr<NeuralNet> net) {
       if(layer->is_bridgesrclayer()) {
         // ReceiveBlobs(false, true, layer, net);
       }
-      layer->ComputeGradient(kTrain | kBackward);
+      layer->ComputeGradient(kTrain | kBackward, nullptr);
       if (DisplayDebugInfo(step))
         LOG(INFO) << layer->DebugString(step, kTrain | kBackward);
       for (Param* p : layer->GetParams())
@@ -398,7 +398,7 @@ void CDWorker::TrainOneBatch(int step, Metric* perf) {
     }
   }
   for (auto* layer : layers) {
-    layer->ComputeGradient(kTrain);
+    layer->ComputeGradient(kTrain, nullptr);
     for (Param* p : layer->GetParams()) {
       Update(p, step);
     }

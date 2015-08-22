@@ -1,26 +1,18 @@
 #ifndef SINGA_NEURALNET_BASE_LAYER_H_
 #define SINGA_NEURALNET_BASE_LAYER_H_
 
-#include <vector>
-#include <string>
 #include <map>
-#include <utility>
-#include <memory>
+#include <string>
 #include <thread>
+#include <vector>
 
-#include "proto/job.pb.h"
 #include "proto/common.pb.h"
-#include "utils/param.h"
+#include "proto/job.pb.h"
 #include "utils/common.h"
 #include "utils/blob.h"
+#include "utils/param.h"
 
 namespace singa {
-
-using std::vector;
-using std::string;
-using std::map;
-
-class Layer;
 
 /**
  * Base layer class.
@@ -31,8 +23,9 @@ class Layer;
  */
 class Layer {
  public:
-  static Layer *Create(const LayerProto& proto);
-  Layer() { }
+  static Layer* Create(const LayerProto& proto);
+
+  Layer() {}
   virtual ~Layer() {}
   /**
    * Setup layer properties.
@@ -44,8 +37,10 @@ class Layer {
    * @param npartitions num of total partitions of the original layer. This
    * layer should be setup as one partition.
    */
-  virtual void Setup(const LayerProto& proto, int npartitions = 1);
-
+  virtual void Setup(const LayerProto& proto, int npartitions = 1) {
+    CHECK_GE(npartitions, 1);
+    layer_proto_ = proto;
+  }
   /**
    * Compute features of this layer based on connected layers.
    *
@@ -57,8 +52,8 @@ class Layer {
    *
    * @param flag kTrain, kTest, kPositive, etc.
    */
-  virtual void ComputeLoss(Metric* perf) {}
-  virtual void ComputeGradient(int flag) = 0;
+  virtual void ComputeGradient(int flag, Metric* perf) = 0;
+  virtual void ComputeGradient(int flag, Metric* perf) = 0;
   /**
    * For print debug info about each layer, e.g., norm of feature vector,
    * norm of parameters.
@@ -73,8 +68,8 @@ class Layer {
    *
    * @return parameters associated with this layer
    */
-  virtual const vector<Param*> GetParams() const {
-    return vector<Param*> {};
+  virtual const std::vector<Param*> GetParams() const {
+    return std::vector<Param*> {};
   }
   /**
    * Return the connection type between one neuron of this layer and
@@ -82,7 +77,7 @@ class Layer {
    * Currently support two connection types: kOneToOne, and kOneToAll.
    * kOneToOne indicates the neuron depends on only one neuron from src layer.
    * kOneToAll indicates the neuron depends on all neurons from src layer.
-   * TODO support kOneToMany.
+   * TODO(wangwei) support kOneToMany.
    *
    * @param k index of source layer (current only support k = 0.
    * @param connection type.
@@ -91,7 +86,6 @@ class Layer {
     // CHECK_LT(k, srclayers_.size());
     return kOneToOne;
   }
-
   /**
    * Return the connection type of this layer and all dst layers.
    *
@@ -108,27 +102,30 @@ class Layer {
     return kOneToOne;
   }
   /**
+   * For print debug info about each layer, e.g., norm of feature vector,
+   * norm of parameters.
+   *
+   * @param step training/test/validation step
+   * @param phase forward/backward/positive/negative...
+   * @return debug info about this layer.
+   */
+  virtual const std::string DebugString(int step, Phase phase);
+  /**
    * @return partition dimension of this layer.
    * -1 for no partition;
    *  0 for partition the mini-batch into sub-mini-batch.
    *  1 for partition the layer feature vector into sub-vector.
    */
-  virtual int partition_dim() const {
+  inline int partition_dim() const {
+    CHECK_LE(layer_proto_.partition_dim(), 1);
     return layer_proto_.partition_dim();
   }
-
-  virtual int partition_id() const {
-    return layer_proto_.partition_id();
-  }
-  virtual int type() const {
-    return layer_proto_.type();
-  }
+  inline int partition_id() const { return layer_proto_.partition_id(); }
+  inline int type() const { return layer_proto_.type(); }
   /**
    * Return name of this layer
    */
-  const std::string &name() const {
-    return layer_proto_.name();
-  }
+  inline const std::string &name() const { return layer_proto_.name(); }
   /**
    * @return name of src data blob, used by prefetch layer to locate the data
    * blob in parser layers; The default value is "unknown"; If the
@@ -147,7 +144,6 @@ class Layer {
   virtual Blob<float>* mutable_data(const Layer* from) {
     return &data_;
   }
-
   virtual const Blob<float>& grad(const Layer* from) const {
     return grad_;
   }
@@ -160,36 +156,17 @@ class Layer {
   /**
    * return LayerS that connected to this layer
    */
-  virtual const vector<Layer*> srclayers() const {
-    return srclayers_;
-  }
+  inline const std::vector<Layer*> srclayers() const { return srclayers_; }
   /**
    * return LayerS that this layer connected to
    */
-  virtual const vector<Layer*> dstlayers() const {
-    return dstlayers_;
-  }
-
-  virtual int srclayers_size() const {
-    return srclayers_.size();
-  }
-  virtual int dstlayers_size() const {
-    return dstlayers_.size();
-  }
-  virtual void clear_dstlayers() {
-    dstlayers_.clear();
-  }
-  virtual void clear_srclayers() {
-    srclayers_.clear();
-  }
-
-  virtual void add_srclayer(Layer* src) {
-    srclayers_.push_back(src);
-  }
-  virtual void add_dstlayer(Layer* dst) {
-    dstlayers_.push_back(dst);
-  }
-
+  inline const std::vector<Layer*> dstlayers() const { return dstlayers_; }
+  inline int srclayers_size() const { return srclayers_.size(); }
+  inline int dstlayers_size() const { return dstlayers_.size(); }
+  inline void clear_dstlayers() { dstlayers_.clear(); }
+  inline void clear_srclayers() { srclayers_.clear(); }
+  inline void add_srclayer(Layer* src) { srclayers_.push_back(src); }
+  inline void add_dstlayer(Layer* dst) { dstlayers_.push_back(dst); }
   virtual bool is_datalayer() const {
     return false;
   }
@@ -217,6 +194,7 @@ class Layer {
 
  protected:
   LayerProto layer_proto_;
+<<<<<<< HEAD
   Blob<float> data_, grad_;
   vector<Layer*> srclayers_, dstlayers_;
 };
@@ -304,14 +282,9 @@ class ConcateLayer: public Layer {
 /**
  * Base layer for reading records from local Shard, HDFS, lmdb, etc.
  */
-class DataLayer: public Layer{
+class DataLayer: public Layer {
  public:
-  using Layer::ComputeGradient;
-  using Layer::mutable_data;
-  using Layer::mutable_grad;
-  using Layer::dst_layer_connection;
-
-  void ComputeGradient(int flag) override {}
+  void ComputeGradient(int flag, Metric* perf) override {}
   bool is_datalayer() const override {
     return true;
   }
@@ -324,150 +297,35 @@ class DataLayer: public Layer{
   ConnectionType dst_layer_connection() const override {
     return kOneToMany;
   }
-
-  int batchsize() const {
-    return batchsize_;
-  }
+  inline int batchsize() const { return batchsize_; }
   virtual const Record& sample() const {
     return sample_;
   }
   /**
    * @return the loaded records
    */
-  virtual const vector<Record>& records() const {
+  virtual const std::vector<Record>& records() const {
     return records_;
   }
 
  protected:
-  int random_skip_, batchsize_;
+  int random_skip_;
+  int batchsize_;
   Record sample_;
-  vector<Record> records_;
+  std::vector<Record> records_;
 };
 
 /**
- * Layer for prefetching data records and parsing them.
- *
- * The data loading and parsing work is done by internal DataLayer and
- * ParserLayer respectively. This layer controls the prefetching thread, i.e.,
- * creating and joining the prefetching thread.
+ * Base layer for parsing the input records into Blobs.
  */
-class PrefetchLayer : public Layer {
+class ParserLayer : public Layer {
  public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag) override {};
-
-  const Blob<float>& data(const Layer* from) const override;
-  Blob<float>* mutable_data(const Layer* layer) override;
-
-  Blob<float>* mutable_grad(const Layer* layer) override {
-    return nullptr;
-  }
-  const Blob<float>& grad(const Layer* from) const override {
-    CHECK(false) << "Loss layer has not gradient blob";
-    return grad_;
-  }
-
-  void Prefetch(int flag);
-  virtual ~PrefetchLayer();
-
- protected:
-  vector<Layer*> sublayers_;
-  map<string, Blob<float>> datablobs_;
-  std::thread thread_;
-};
-
-/**
- * Slice the source layer into multiple dst layers on one dimension
- */
-class SliceLayer: public Layer {
- public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag) override;
-  ConnectionType dst_layer_connection() const override {
-    return kOneToMany;
-  }
-  const Blob<float>& data(const Layer* layer) const override;
-  const Blob<float>& grad(const Layer* layer) const override;
-  Blob<float>* mutable_data(const Layer* layer) override;
-  Blob<float>* mutable_grad(const Layer* layer) override;
-
- protected:
-  int SliceID(const Layer* layer) const;
-
- private:
-  vector<Blob<float>> datavec_, gradvec_;
-  int slice_dim_, slice_num_;
-};
-
-/**
- * Connect the source layer with multiple dst layers.
- * Pass source layer's data blob directly to dst layers.
- * Aggregate dst layer's gradients into source layer's gradient.
- */
-class SplitLayer: public Layer {
- public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag) override;
-  ConnectionType dst_layer_connection() const override {
-    return kOneToMany;
-  }
- protected:
-  Blob<float> grads_;
-};
-
-/**
- * Loss layer to calculate loss and other metrics, e.g., precison.
- */
-class LossLayer: public Layer{
- public:
-  using Layer::mutable_grad;
-  using Layer::grad;
-  using Layer::is_losslayer;
-
-  Blob<float>* mutable_grad(const Layer* layer) override {
-    return nullptr;
-  }
-  const Blob<float>& grad(const Layer* from) const override {
-    CHECK(false) << "Loss layer has not gradient blob";
-    return grad_;
-  }
-  bool is_losslayer() const override {
-    return true;
-  }
-
- protected:
-  Blob<float> metric_;
-};
-
-/**
- * parse the input records into Blobs.
- */
-class ParserLayer: public Layer {
- public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-  using Layer::is_parserlayer;
-  using Layer::mutable_grad;
-  using Layer::grad;
-
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag) override {};
+  void ComputeFeature(Phase phase, Metric* perf) override;
+  void ComputeGradient(Phase phase, Metric* perf) override {}
   /**
    * Parse records from DataLayer into blob.
    */
-  virtual void ParseRecords(int flag, const vector<Record>& records,
+  virtual void ParseRecords(Phase phase, const std::vector<Record>& records,
       Blob<float>* blob) = 0;
   bool is_parserlayer() const override {
     return true;
@@ -479,6 +337,81 @@ class ParserLayer: public Layer {
     CHECK(false) << "Parser layer has not gradient blob";
     return grad_;
   }
+};
+
+class NeuronLayer : public Layer {
+  // defined as a layer category
+};
+
+/**
+ * Base layer for calculating loss and other metrics, e.g., precison.
+ */
+class LossLayer: public Layer {
+ public:
+  Blob<float>* mutable_grad(const Layer* layer) override {
+    return nullptr;
+  }
+  const Blob<float>& grad(const Layer* from) const override {
+    LOG(FATAL) << "Loss layer has no gradient blob";
+    return grad_;
+  }
+  bool is_losslayer() const override {
+    return true;
+  }
+
+ protected:
+  Blob<float> metric_;
+};
+
+/**
+ * Base layer for sending/waiting remote messages.
+ */
+class BridgeLayer : public Layer {
+ public:
+  inline void set_ready(bool a) { ready_ = a; }
+  inline bool ready() const { return ready_; }
+  bool is_bridgelayer() const override { return true; }
+
+ protected:
+  //!< true if received grad from BridgeDstLayer
+  bool ready_;
+};
+
+/**
+ * Base layer for connecting layers when neural net is partitioned.
+ */
+class ConnectionLayer : public Layer {
+  // defined as a layer category
+};
+
+/**
+ * Layer for prefetching data records and parsing them.
+ *
+ * The data loading and parsing work is done by internal DataLayer and
+ * ParserLayer respectively. This layer controls the prefetching thread, i.e.,
+ * creating and joining the prefetching thread.
+ */
+class PrefetchLayer : public Layer {
+ public:
+  ~PrefetchLayer();
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric* perf) override;
+  void ComputeGradient(Phase phase, Metric* perf) override {}
+  const Blob<float>& data(const Layer* from, Phase phase) const override;
+  void Prefetch(Phase phase);
+  Blob<float>* mutable_data(const Layer* layer, Phase phase) override;
+  Blob<float>* mutable_grad(const Layer* layer) override {
+    return nullptr;
+  }
+  const Blob<float>& grad(const Layer* from) const override {
+    CHECK(false) << "Loss layer has not gradient blob";
+    return grad_;
+  }
+
+ protected:
+  std::vector<Layer*> sublayers_;
+  std::map<std::string, Blob<float>> datablobs_;
+  std::thread thread_;
 };
 
 class RBMLayer: public Layer {

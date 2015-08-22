@@ -1,20 +1,10 @@
 #ifndef SINGA_NEURALNET_LAYER_H_
 #define SINGA_NEURALNET_LAYER_H_
 
-#include <lmdb.h>
-
 #include <vector>
-#include <string>
-#include <map>
-#include <functional>
-#include <utility>
-#include <memory>
-#include <chrono>
-#include <random>
-
+#include "neuralnet/base_layer.h"
 #include "proto/job.pb.h"
 #include "utils/data_shard.h"
-#include "neuralnet/base_layer.h"
 
 /**
  * \file this file includes the declarations neuron layer classes that conduct
@@ -22,26 +12,78 @@
  */
 namespace singa {
 
+/********** Derived from DataLayer **********/
+
+class ShardDataLayer : public DataLayer {
+ public:
+  ~ShardDataLayer();
+
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+
+ private:
+  DataShard* shard_;
+};
+
+/********** Derived from ParserLayer **********/
+
+class LabelLayer : public ParserLayer {
+ public:
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ParseRecords(Phase phase, const std::vector<Record>& records,
+                    Blob<float>* blob) override;
+};
+
+class MnistLayer : public ParserLayer {
+ public:
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ParseRecords(Phase phase, const std::vector<Record>& records,
+                    Blob<float>* blob) override;
+
+ protected:
+  // height and width of the image after deformation
+  // kernel size for elastic distortion
+  // n^2 images are processed as a batch for elastic distortion
+  // conv height and conv width
+  // gauss kernel values, displacements, column image and tmp buffer
+  // float* gauss_, *displacementx_, *displacementy_, *colimg_, *tmpimg_;
+  float  gamma_, beta_, sigma_, kernel_, alpha_, norm_a_, norm_b_;
+  int resize_, elastic_freq_;
+};
+
+class RGBImageLayer : public ParserLayer {
+ public:
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ParseRecords(Phase phase, const std::vector<Record>& records,
+                    Blob<float>* blob) override;
+
+ private:
+  float scale_;
+  int cropsize_;
+  bool mirror_;
+  Blob<float> mean_;
+};
+
+/********** Derived from NeuronLayer **********/
+
 /**
  * Convolution layer.
  */
-class ConvolutionLayer: public Layer {
+class ConvolutionLayer : public NeuronLayer {
  public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
+  ~ConvolutionLayer();
 
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(int flag, Metric *perf) override;
   void ComputeGradient(int flag) override;
-  const vector<Param*> GetParams() const override {
-    vector<Param*> params{weight_, bias_};
+  const std::vector<Param*> GetParams() const override {
+    std::vector<Param*> params{weight_, bias_};
     return params;
   }
   ConnectionType src_neuron_connection(int k) const  override {
     // CHECK_LT(k, srclayers_.size());
     return kOneToAll;
   }
-  ~ConvolutionLayer();
 
  protected:
   int kernel_, pad_,  stride_;
@@ -51,15 +93,11 @@ class ConvolutionLayer: public Layer {
   Blob<float> col_data_, col_grad_;
 };
 
-class DropoutLayer: public Layer {
+class DropoutLayer : public NeuronLayer {
  public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
-
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag, Metric* perf) override;
  protected:
   // drop probability
   float pdrop_;
@@ -87,66 +125,8 @@ class RBMVisLayer: public RBMLayer {
   RBMLayer* hid_layer_;
   Layer* input_layer_;
 };
-/**
- * RBM hidden layer
- */
-class RBMHidLayer: public RBMLayer {
- public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
 
-  ~RBMHidLayer();
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
-  Blob<float>* Sample(int flat) override;
- private:
-  // whether use gaussian sampling
-  bool gaussian_;
-  RBMLayer *vis_layer_;
-};
-/**
-  * fully connected layer
-  */
-class InnerProductLayer: public Layer {
- public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
-
-  ConnectionType src_neuron_connection(int k) const override {
-    // CHECK_LT(k, srclayers_.size());
-    return kOneToAll;
-  }
-  const vector<Param*> GetParams() const override {
-    vector<Param*> params{weight_, bias_};
-    return params;
-  }
-  ~InnerProductLayer();
-
- private:
-  //! dimension of the hidden layer
-  int hdim_;
-  //! dimension of the visible layer
-  int vdim_;
-  int batchsize_;
-  bool transpose_;
-  Param* weight_, *bias_;
-};
-
-class LabelLayer: public ParserLayer {
- public:
-  using ParserLayer::ParseRecords;
-
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ParseRecords(int flag, const vector<Record>& records,
-      Blob<float>* blob) override;
-};
-
-class LRNLayer: public Layer {
+class LRNLayer : public NeuronLayer {
 /**
  * Local Response Normalization edge
  * b_i=a_i/x_i^beta
@@ -155,12 +135,9 @@ class LRNLayer: public Layer {
  * a_i, the activation (after ReLU) of a neuron convolved with the i-th kernel.
  * b_i, the neuron after normalization, N is the total num of kernels
  */
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase, Metric* perf) override;
 
  protected:
   //! shape of the bottom layer feature
@@ -172,35 +149,11 @@ class LRNLayer: public Layer {
   Blob<float> norm_;
 };
 
-class MnistLayer: public ParserLayer {
+class PoolingLayer : public NeuronLayer {
  public:
-  using ParserLayer::ParseRecords;
-
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ParseRecords(int flag, const vector<Record>& records,
-      Blob<float>* blob) override;
-  ConnectionType dst_layer_connection() const override {
-    return kOneToMany;
-  }
- protected:
-  // height and width of the image after deformation
-  // kernel size for elastic distortion
-  // n^2 images are processed as a batch for elastic distortion
-  // conv height and conv width
-  // gauss kernel values, displacements, column image and tmp buffer
-  // float* gauss_, *displacementx_, *displacementy_, *colimg_, *tmpimg_;
-  float  gamma_, beta_, sigma_, kernel_, alpha_, norm_a_, norm_b_;
-  int resize_, elastic_freq_;
-};
-
-class PoolingLayer: public Layer {
- public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase, Metric* perf) override;
 
  protected:
   int kernel_, pad_, stride_;
@@ -208,60 +161,97 @@ class PoolingLayer: public Layer {
   PoolingProto_PoolMethod pool_;
 };
 
-class ReLULayer: public Layer {
+class ReLULayer : public NeuronLayer {
  public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
-  void Setup(const LayerProto& proto, int npartitions = 1) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase, Metric* perf) override;
 };
 
-class EuclideanLossLayer: public LossLayer {
+/**
+ * RBM hidden layer
+ */
+class RBMHidLayer: public RBMLayer {
  public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
+  ~RBMHidLayer();
+
+  ~RBMHidLayer();
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag, Metric* perf) override;
+  Blob<float>* Sample(int flat) override;
+ private:
+  // whether use gaussian sampling
+  bool gaussian_;
+  RBMLayer *vis_layer_;
+};
+
+/**
+  * RBM visible layer
+  */
+class RBMVisLayer : public NeuronLayer {
+ public:
+  ~RBMVisLayer();
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag, Metric* perf) override;
 
-
-  int partition_dim() const override {
-    CHECK_LE(layer_proto_.partition_dim(), 1);
-    return layer_proto_.partition_dim();
-  }
   ConnectionType src_neuron_connection(int k) const override {
     // CHECK_LT(k, srclayers_.size());
     return kOneToAll;
   }
+  const Blob<float>& data(const Layer* from, Phase phase) const override {
+    return (phase == kPositive) ? data_ : vis_sample_;
+  }
+  const std::vector<Param*> GetParams() const override {
+    std::vector<Param*> params{weight_, bias_};
+    return params;
+  }
 
  private:
+  //! dimension of the hidden layer
+  int hdim_;
+  //! dimension of the visible layer
+  int vdim_;
   int batchsize_;
-  int dim_;
+  bool transpose_;
+  Param* weight_, *bias_;
+  // data to store sampling result
+  Blob<float> vis_sample_;
+  // in order to implement Persistent Contrastive Divergence,
 };
 
-class SoftmaxLossLayer: public LossLayer {
+/**
+ * This layer apply Tan function to neuron activations.
+ * f(x)=A tanh(Bx)
+ * f'(x)=B/A (A*A-f(x)*f(x))
+ */
+class TanhLayer : public NeuronLayer {
+ public:
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeGradient(Phase phase, Metric* perf) override;
+
+ private:
+  float outer_scale_, inner_scale_;
+};
+
+/********** Derived from LossLayer **********/
+
+class SoftmaxLossLayer : public LossLayer {
   /*
    * connected from the label layer and the last fc layer
    */
  public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag, Metric* perf) override;
 
   /**
    * softmax is not recommendeded for partition because it requires the whole
    * src layer for normalization.
    */
-  int partition_dim() const override {
-    CHECK_LE(layer_proto_.partition_dim(), 1);
-    return layer_proto_.partition_dim();
-  }
   ConnectionType src_neuron_connection(int k) const override {
     // CHECK_LT(k, srclayers_.size());
     return kOneToAll;
@@ -274,31 +264,77 @@ class SoftmaxLossLayer: public LossLayer {
   int topk_;
 };
 
-class RGBImageLayer: public ParserLayer {
+/********** Derived from BridgeLayer **********/
+
+/**
+ * For recv data from layer on other threads which may resident on other nodes
+ * due to layer/data partiton
+ */
+class BridgeDstLayer : public BridgeLayer {
  public:
-  using ParserLayer::ParseRecords;
-
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ParseRecords(int flag, const vector<Record>& records,
-      Blob<float>* blob) override;
-
- private:
-  float scale_;
-  int cropsize_;
-  bool mirror_;
-  Blob<float> mean_;
+  void ComputeFeature(int flag, Metric* perf) override {
+    // reset ready_ for next iteration.
+    ready_ = false;
+  }
+  void ComputeGradient(int flag, Metric* perf) override {}
+  bool is_bridgedstlayer() const {
+    return true;
+  }
 };
 
-class ShardDataLayer: public DataLayer{
+/**
+ * For sending data to layer on other threads which may resident on other nodes
+ * due to layer/data partition.
+ */
+class BridgeSrcLayer : public BridgeLayer {
  public:
-  using Layer::ComputeFeature;
+  void ComputeFeature(Phase phase, Metric* perf) override {}
+  void ComputeGradient(Phase phase, Metric* perf) override {
+    ready_ = false;
+  }
+  const Blob<float>& data(const Layer* from, Phase phase) const override {
+    return srclayers_[0]->data(this);
+  }
+  Blob<float>* mutable_data(const Layer* from, Phase phase) override {
+    return srclayers_[0]->mutable_data(this);
+  }
+  const Blob<float>& grad(const Layer* from) const override {
+    return srclayers_[0]->grad(this);
+  }
+  Blob<float>* mutable_grad(const Layer* from) override {
+    return srclayers_[0]->mutable_grad(this);
+  }
+  bool is_bridgesrclayer() const override {
+    return true;
+  }
+};
 
-  ~ShardDataLayer();
+/********** Derived from ConnectionLayer **********/
+
+/**
+ * Concate src layers on one dimension
+ */
+class ConcateLayer : public ConnectionLayer {
+ public:
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(Phase phase, Metric* perf) override;
+  void ComputeGradient(Phase phase, Metric* perf) override;
+};
+
+/**
+ * Slice the source layer into multiple dst layers on one dimension
+ */
+class SliceLayer : public ConnectionLayer {
+ public:
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(int flag, Metric *perf) override;
 
  private:
-  DataShard* shard_;
+  std::vector<Blob<float>> datavec_;
+  std::vector<Blob<float>> gradvec_;
+  int slice_dim_;
+  int slice_num_;
 };
 
 /**
@@ -312,28 +348,24 @@ class SigmoidLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag, Metric* perf) override;
 };
 
 /**
- * This layer apply Tan function to neuron activations.
- * f(x)=A tanh(Bx)
- * f'(x)=B/A (A*A-f(x)*f(x))
+ * Connect the source layer with multiple dst layers.
+ * Pass source layer's data blob directly to dst layers.
+ * Aggregate dst layer's gradients into source layer's gradient.
  */
-class TanhLayer: public Layer {
+class SplitLayer : public ConnectionLayer {
  public:
-  using Layer::ComputeFeature;
-  using Layer::ComputeGradient;
-
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag) override;
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag, Metric* perf) override;
 
- private:
-  float outer_scale_, inner_scale_;
+ protected:
+  Blob<float> grads_;
 };
-
 
 }  // namespace singa
 

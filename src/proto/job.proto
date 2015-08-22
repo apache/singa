@@ -523,7 +523,6 @@ enum LayerType {
   kRGBImage = 10;
   // Neuron layers
   //  - Feature transformation
-  kConcate = 2;
   kConvolution = 1;
   kDropout = 4;
   kInnerProduct = 5;
@@ -538,10 +537,11 @@ enum LayerType {
   //  - Compute objective loss
   kSoftmaxLoss = 11;
   kEuclideanLoss = 25;
-  // Other layers
+  // Connection layers
   //  - Connect layers when neural net is partitioned
   kBridgeDst = 16;
   kBridgeSrc = 15;
+  kConcate = 2;
   kSlice = 12;
   kSplit = 13;
 
@@ -556,6 +556,7 @@ enum PartitionType {
 }
 
 enum Phase {
+  kUnknown = 0;
   kTrain = 1;
   kValidation = 2;
   kTest= 4;
