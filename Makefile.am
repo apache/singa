@@ -85,6 +85,7 @@ GTEST_SRCS := include/gtest/gtest-all.cc
 GTEST_HRDS := include/gtest/gtest.h
 TEST_SRCS := include/gtest/gtest_main.cc \
 			 src/test/test_cluster.cc \
+             src/test/test_common.cc \
 			 src/test/test_msg.cc \
 			 src/test/test_neuralnet.cc \
 			 src/test/test_paramslicer.cc \
