@@ -1,8 +1,11 @@
-#include "singa.h"
 
 #include <cblas.h>
 #include <glog/logging.h>
 #include <string>
+
+#include "singa.h"
+
+#include "utils/tinydir.h"
 
 namespace singa {
 
@@ -89,6 +92,9 @@ void Driver::Submit(bool resume, const JobProto& jobConf) {
   if (singa_conf_.has_log_dir())
     SetupLog(singa_conf_.log_dir(), std::to_string(job_id_)
              + "-" + jobConf.name());
+  tinydir_dir workspace;
+  if (tinydir_open(&workspace, jobConf.cluster().workspace().c_str()) == -1)
+    LOG(FATAL) << "workspace does not exist: " << jobConf.cluster().workspace();
   if (jobConf.num_openblas_threads() != 1)
     LOG(WARNING) << "openblas with "
       << jobConf.num_openblas_threads() << " threads";

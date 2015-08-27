@@ -40,7 +40,7 @@ string IntVecToString(const vector<int>& vec) {
  *  * Formatted string.
  *   */
 string VStringPrintf(string fmt, va_list l) {
-  char buffer[32768];
+  char buffer[4096];
   vsnprintf(buffer, sizeof(buffer), fmt.c_str(), l);
   return string(buffer);
 }

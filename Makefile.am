@@ -95,9 +95,6 @@ singa_LDFLAGS = -I./include \
                 -lglog  \
                 -lprotobuf \
                 -lrt \
-                -lopencv_highgui \
-                -lopencv_imgproc \
-                -lopencv_core \
                 -lopenblas \
                 -lzmq \
                 -lczmq \

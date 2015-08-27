@@ -192,15 +192,9 @@ class BPWorker: public Worker{
 
 class CDWorker: public Worker{
  public:
-  ~CDWorker() {}
-  void Init(int thread_id, int grp_id, int id) override;
   void TrainOneBatch(int step, Metric* perf) override;
   void TestOneBatch(int step, Phase phase, shared_ptr<NeuralNet> net,
       Metric* perf) override;
-  void PositivePhase(int step, shared_ptr<NeuralNet> net, Metric* perf);
-  void NegativePhase(int step, shared_ptr<NeuralNet> net, Metric* perf);
-  void GradientPhase(int step, shared_ptr<NeuralNet> net);
-  void LossPhase(int step, shared_ptr<NeuralNet> net, Metric* perf);
 };
 
 inline int BlobTrgt(int grp, int layer) {

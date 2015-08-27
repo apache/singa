@@ -73,17 +73,18 @@ Param* Param::Create(const ParamProto& proto) {
     p = factory->Create(proto.user_type());
   else
     p = factory->Create(proto.type());
+  p->Init(proto);
   return p;
 }
 
 Param::Param():local_version_(-1), slice_start_(0), num_slices_(0),
   num_pending_requests_(0), data_(nullptr) {
 }
-void Param::Setup(const ParamProto& proto, const vector<int>& shape) {
+
+void Param::Setup(const vector<int>& shape) {
   data_ = std::make_shared<Blob<float>>(shape);
   grad_.Reshape(shape);
   history_.Reshape(shape);
-  proto_.CopyFrom(proto);
 }
 
 void Param::AddSlice(int slice_id, int size) {
@@ -178,7 +179,8 @@ Msg* Param::HandlePutMsg(Msg** msg, bool reserve) {
   proto.set_lr_scale(lr);
   proto.set_wd_scale(wc);
   vector<int> shape{size};
-  Setup(proto, shape);
+  Init(proto);
+  Setup(shape);
   if (ptr == nullptr) {
     CHECK((*msg)->NextFrame());
     CHECK_EQ(size* sizeof(float), (*msg)->FrameSize());
@@ -298,6 +300,8 @@ void Param::ShareFrom(const Param& other) {
           other.data_->shape().begin()));
   }
   data_ = other.data_;
+  if (grad_.count() == 0)
+    grad_.Reshape(data_->shape());
   slice_offset_ = other.slice_offset_;
   slice_size_ = other.slice_size_;
   slice_start_ = other.slice_start_;

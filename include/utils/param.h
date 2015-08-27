@@ -74,13 +74,14 @@ class Param {
   static Param* Create(const ParamProto& proto);
   Param();
   virtual ~Param() {}
+  void Init(const ParamProto& proto) { proto_ = proto; }
   /**
    * Setup param object
    *
    * @param conf param configuration, include learning rate multiplier etc.
    * @param shape one value per dimension
    */
-  virtual void Setup(const ParamProto& conf, const std::vector<int>& shape);
+  virtual void Setup(const std::vector<int>& shape);
   /*
    * Fill the values according to init method, e.g., gaussian distribution.
    *

@@ -21,18 +21,12 @@ message JobProto {
   required string name = 1;
   // neural net consits of a set of connected layers
   required NetProto neuralnet = 3;
-  // algorithms calculating gradients for one mini-batch/iteration
-  optional TrainOneBatchAlg alg = 5 [default = kUserAlg];
-  // user defined algorithm
-  optional string user_alg = 6;
+  // algorithm for computing gradients over one mini-batch
+  required AlgProto train_one_batch = 5;
   // configuration of SGD updater, including learning rate, etc.
   required UpdaterProto updater = 7;
   // cluster toplogy conf
   required ClusterProto cluster = 9;
-
-  // for setting CD fields
-  optional CDProto cd_conf = 12;
-
   // total num of steps for training
   required int32 train_steps = 16;
   // frequency of displaying training info
@@ -86,6 +80,16 @@ message JobProto {
 // Protos used by JobProto
 // -----------------------
 
+message AlgProto {
+  // algorithms calculating gradients for one mini-batch/iteration
+  optional AlgType alg = 1 [default = kUserAlg];
+  // user defined algorithm
+  optional string user_alg = 2;
+  // for setting CD fields
+  optional CDProto cd_conf = 10;
+
+  extensions 101 to 200;
+}
 message NetProto {
   repeated LayerProto layer = 1;
   // partitioning type for parallelism
@@ -140,7 +144,7 @@ message ClusterProto {
 
 message CDProto {
   //number of steps for gibbs sampling
-  optional int32 pcd_k = 1 [default = 1];
+  optional int32 cd_k = 1 [default = 1];
 }
 
 message LayerProto {
@@ -182,8 +186,6 @@ message LayerProto {
   optional PrefetchProto prefetch_conf = 44;
   // configuration for rbmhid layer
   optional RBMHidProto rbmhid_conf = 49;
-  // configuration for rbmvis layer
-  optional RBMVisProto rbmvis_conf = 48;
   // configuration for rectified linear unit layer
   optional ReLUProto relu_conf = 38;
   // configuration for rgb image parser layer
@@ -363,11 +365,6 @@ message MnistProto {
 message DropoutProto {
   // dropout ratio
   optional float dropout_ratio = 30 [default = 0.5];
-}
-
-message RBMVisProto {
-  optional int32 num_output = 1; // The number of outputs for the layer
-  optional bool bias_term = 2 [default = true]; // whether to have bias terms
 }
 
 message RBMHidProto {
@@ -559,16 +556,16 @@ enum PartitionType {
 }
 
 enum Phase {
-  kTrain = 0;
-  kValidation = 1;
-  kTest= 2;
+  kTrain = 1;
+  kValidation = 2;
+  kTest= 4;
   // postivie phase for contrastive divergence algorithm
-  kPositive = 3;
+  kPositive = 8;
   // negative phase for contrastive divergence algorithm
-  kNegative = 4;
-  kForward = 5;
-  kBackward = 6;
-  kLoss = 7;
+  kNegative = 16;
+  kForward = 32;
+  kBackward = 64;
+  kLoss = 128;
 }
 
 enum ParamType {
@@ -578,7 +575,7 @@ enum ParamType {
   kUser = 103;
 }
 
-enum TrainOneBatchAlg {
+enum AlgType {
   // Back-propagation algorithm for feed-forward models, e.g., CNN and RNN
   kBP = 1;
   // Contrastive Divergence algorithm for RBM, DBM, etc.

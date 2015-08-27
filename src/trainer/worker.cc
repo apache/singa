@@ -13,12 +13,14 @@ using std::thread;
 Worker* Worker::Create(const JobProto& proto) {
   auto factory = Singleton<Factory<singa::Worker>>::Instance();
   Worker* worker = nullptr;
-  if (proto.has_user_alg())
-    worker = factory->Create(proto.user_alg());
+  const auto& conf = proto.train_one_batch();
+  if (conf.has_user_alg())
+    worker = factory->Create(conf.user_alg());
   else
-    worker = factory->Create(proto.alg());
+    worker = factory->Create(conf.alg());
   return worker;
 }
+
 void Worker::Init(int thread_id, int grp_id, int id) {
   thread_id_ = thread_id;
   grp_id_ = grp_id;
@@ -63,7 +65,7 @@ void Worker::InitLocalParams() {
     // the param from previous checkpoint files will be overwritten by
     // the param with the same name in later checkpoint files.
     for (const auto checkpoint : job_conf_.checkpoint_path()) {
-      LOG(INFO) << "Load from checkpoint file " << checkpoint;
+      LOG(ERROR) << "Load from checkpoint file " << checkpoint;
       BlobProtos bps;
       ReadProtoFromBinaryFile(checkpoint.c_str(), &bps);
       for (int i = 0; i < bps.name_size(); i++) {
@@ -342,11 +344,11 @@ void BPWorker::Forward(
           Collect(p, step);
         }
       }
-      layer->ComputeFeature(phase, perf);
+      layer->ComputeFeature(phase | kForward, perf);
       if (layer->is_bridgesrclayer())  // send data to other workers
         SendBlobs(true, false, static_cast<BridgeLayer*>(layer), net);
       if (DisplayDebugInfo(step))
-        LOG(INFO) << layer->DebugString(step, kForward);
+        LOG(INFO) << layer->DebugString(step, phase | kForward);
     }
   }
 }
@@ -359,9 +361,9 @@ void BPWorker::Backward(int step, shared_ptr<NeuralNet> net) {
       if(layer->is_bridgesrclayer()) {
         // ReceiveBlobs(false, true, layer, net);
       }
-      layer->ComputeGradient(kTrain);
+      layer->ComputeGradient(kTrain | kBackward);
       if (DisplayDebugInfo(step))
-        LOG(INFO) << layer->DebugString(step, kBackward);
+        LOG(INFO) << layer->DebugString(step, kTrain | kBackward);
       for (Param* p : layer->GetParams())
         Update(p, step);
       if (layer->is_bridgedstlayer()) {
@@ -381,72 +383,34 @@ void BPWorker::TestOneBatch(int step, Phase phase,
   Forward(step, phase, net, perf);
 }
 /****************************CDWorker**********************************/
-void CDWorker::Init(int thread_id, int group_id, int worker_id) {
-  Worker::Init(thread_id, group_id, worker_id);
-}
-
-void CDWorker::PositivePhase(int step,
-     shared_ptr<NeuralNet> net, Metric* perf) {
-  auto& layers = net->layers();
-  // LOG(ERROR)<<"Positive Phase";
-  for (auto& layer : layers) {
-    for (Param* p : layer->GetParams()) {  // wait until param is updated
-      Collect(p, step);
-    }
-    layer->ComputeFeature(kPositive, perf);
-  }
-}
-
-void CDWorker::NegativePhase(int step,
-     shared_ptr<NeuralNet> net, Metric* perf) {
-// for negative phase, gibbs sampling only concerns RBM bottom and top layer
-  auto& layers = net->layers();
-  // LOG(ERROR)<<"Negative Phase";
-    for (auto& layer : layers) {
-      if (layer->is_vislayer() || layer->is_hidlayer()) {
-        layer->ComputeFeature(kNegative, perf);
-      }
-    }
-}
-
-void CDWorker::GradientPhase(int step, shared_ptr<NeuralNet> net) {
-  auto& layers = net->layers();
-  // LOG(ERROR)<<"Gradient Phase";
-  for (auto& layer : layers) {
-    if (layer->is_vislayer() || layer->is_hidlayer()) {
-      layer->ComputeGradient(kTrain);
-      for (Param* p : layer->GetParams()) {
-        Update(p, step);
-      }
-    }
-  }
-}
-
-void CDWorker::LossPhase(int step, shared_ptr<NeuralNet> net, Metric* perf) {
-  auto& layers = net->layers();
-  // LOG(ERROR)<<"Loss Phase";
-  for (auto& layer : layers) {
-    if (layer->is_hidlayer()) {
-      layer->ComputeFeature(kLoss, perf);
-    }
-  }
-  for (auto& layer : layers) {
-    if (layer->is_vislayer()) {
-      layer->ComputeLoss(perf);
-    }
-  }
-}
-
 void CDWorker::TrainOneBatch(int step, Metric* perf) {
-  PositivePhase(step, train_net_, perf);
-  NegativePhase(step, train_net_, perf);
-  GradientPhase(step, train_net_);
-  LossPhase(step, train_net_, perf);
+  const auto& layers = train_net_->layers();
+  for (auto* layer : layers) {
+    for (Param* p : layer->GetParams())  // wait until param is updated
+      Collect(p, step);
+    layer->ComputeFeature(kPositive | kForward, perf);
+  }
+  for (auto* layer : layers)
+    layer->ComputeFeature(kNegative | kTest, perf);
+  for (int i = 1; i < job_conf_.train_one_batch().cd_conf().cd_k(); i++) {
+    for (auto* layer : layers) {
+      layer->ComputeFeature(kNegative, perf);
+    }
+  }
+  for (auto* layer : layers) {
+    layer->ComputeGradient(kTrain);
+    for (Param* p : layer->GetParams()) {
+      Update(p, step);
+    }
+  }
 }
 
 void CDWorker::TestOneBatch(int step, Phase phase,
-     shared_ptr<NeuralNet> net, Metric* perf) {
-  PositivePhase(step, test_net_, perf);
-  LossPhase(step, test_net_, perf);
+    shared_ptr<NeuralNet> net, Metric* perf) {
+  auto& layers = net->layers();
+  for (auto layer : layers)
+    layer->ComputeFeature(kPositive | kForward, perf);
+  for (auto layer : layers)
+    layer->ComputeFeature(kNegative | kTest, perf);
 }
 }  // namespace singa

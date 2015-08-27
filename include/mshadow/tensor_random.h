@@ -68,20 +68,27 @@ namespace mshadow {
             gen_.seed(seed);
             #endif
         }
+        template<int dim>
+        inline void SampleBinary(Tensor<cpu, dim> &src) {
+          SampleBinary(src, src);
+        }
+
         /*!
          * \brief generate binary data according to a probability matrix
+         * \param src source
          * \param dst destination
          * \param a lower bound of uniform
          * \param b upper bound of uniform
          * \tparam dim dimension of tensor
          */
         template<int dim>
-        inline void SampleBinary( Tensor<cpu, dim> &dst) {
+        inline void SampleBinary(Tensor<cpu, dim> &dst, Tensor<cpu, dim> &src) {
             real_t a=0.0f;
             real_t b=1.0f;
-            Tensor<cpu, 2> mat = dst.FlatTo2D();
+            Tensor<cpu, 2> dmat = dst.FlatTo2D();
+            Tensor<cpu, 2> smat = src.FlatTo2D();
             std::uniform_real_distribution<real_t> distribution (a,b);
-            for ( index_t i = 0; i < mat.shape[1]; ++i ) {
+            for ( index_t i = 0; i < dmat.shape[1]; ++i ) {
                 #if MSHADOW_USE_MKL
                 #if MSHADOW_SINGLE_PRECISION
                 int status = vsRngUniform( 0, vStream_, mat.shape[0], mat[i].dptr, a, b );
@@ -96,8 +103,8 @@ namespace mshadow {
                     mat[i][j] = this->RandNext()*(b-a) + a;
                 }
                 */
-                for ( index_t j = 0; j < mat.shape[0]; ++j ) {
-                    mat[i][j] = distribution(gen_) > mat[i][j] ? 0.0f: 1.0f;
+                for ( index_t j = 0; j < dmat.shape[0]; ++j ) {
+                    dmat[i][j] = distribution(gen_) > smat[i][j] ? 0.0f: 1.0f;
                 }
                 #endif
             }

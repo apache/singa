@@ -44,15 +44,15 @@ if test x"$enable_lmdb" = x"yes"; then
 	AC_DEFINE(LMDB, 1, [Enable Option layer])
 fi
 
-AC_CHECK_LIB([opencv_imgproc], [main], [], [
-  AC_MSG_ERROR([unable to find opencv_imgproc lib])
-  ])
-AC_CHECK_LIB([opencv_highgui], [main], [], [
-  AC_MSG_ERROR([unable to find opencv_highgui lib])
-  ])
-AC_CHECK_LIB([opencv_core], [main], [], [
-  AC_MSG_ERROR([unable to find opencv_core lib])
-  ])
+#AC_CHECK_LIB([opencv_imgproc], [main], [], [
+#  AC_MSG_ERROR([unable to find opencv_imgproc lib])
+#  ])
+#AC_CHECK_LIB([opencv_highgui], [main], [], [
+#  AC_MSG_ERROR([unable to find opencv_highgui lib])
+#  ])
+#AC_CHECK_LIB([opencv_core], [main], [], [
+#  AC_MSG_ERROR([unable to find opencv_core lib])
+#  ])
 AC_CHECK_LIB([zookeeper_mt], [main], [], [
   AC_MSG_ERROR([unable to find zookeeper])
   ])

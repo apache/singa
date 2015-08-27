@@ -31,8 +31,8 @@ class ConvolutionLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
   const vector<Param*> GetParams() const override {
     vector<Param*> params{weight_, bias_};
     return params;
@@ -57,8 +57,8 @@ class DropoutLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
 
  protected:
   // drop probability
@@ -68,112 +68,42 @@ class DropoutLayer: public Layer {
    */
   Blob<float> mask_;
 };
+
 /**
  * RBM visible layer
  */
-class RBMVisLayer: public Layer {
+class RBMVisLayer: public RBMLayer {
  public:
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  void Setup(const LayerProto& proto,
-      int npartitions) override;
-  virtual bool is_vislayer() const {
-    return true;
-  }
-
-  void ComputeFeature(Phase phase,
-     Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
-  virtual void ComputeLoss(Metric* perf);
-  virtual Blob<float>* mutable_data(const Layer* from, Phase phase) {
-    if (phase == kPositive) {
-      return &data_;
-    } else {
-       return &vis_sample_;
-    }
-  }
-  virtual const Blob<float>& data(const Layer* from, Phase phase) const {
-    if (phase == kPositive) {
-      return data_;
-    } else {
-       return vis_sample_;
-    }
-  }
-  // virtual void ToProto(LayerProto *layer_proto, bool copyData);
-  const vector<Param*> GetParams() const override {
-    vector<Param*> params{weight_, bias_};
-    return params;
-  }
   ~RBMVisLayer();
-
-
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
+  Blob<float>* Sample(int flat) override;
 
  private:
-  //! dimension of the hidden layer
-  int hdim_;
-  //! dimension of the visible layer
-  int vdim_;
-  int batchsize_;
-  // batchsize of negative phase
-  int neg_batchsize_;
-  bool is_first_iteration_vis_;
-  float scale_;
-  // srclayer index
-  int data_idx_;
-  int hid_idx_;
-  Param* weight_, *bias_;
-  // data to store sampling result
-  Blob<float> vis_sample_;
-  // in order to implement Persistent Contrastive Divergence,
+  RBMLayer* hid_layer_;
+  Layer* input_layer_;
 };
 /**
  * RBM hidden layer
  */
-class RBMHidLayer: public Layer {
+class RBMHidLayer: public RBMLayer {
  public:
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  void Setup(const LayerProto& proto,
-      int npartitions) override;
-  virtual bool is_hidlayer() const {
-    return true;
-  }
-
-  void ComputeFeature(Phase phase,
-     Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
-  virtual Blob<float>* mutable_data(const Layer* from, Phase phase) {
-    if (phase == kPositive)
-      return &data_;
-    else
-      return &hid_sample_;
-  }
-  virtual const Blob<float>& data(const Layer* from, Phase phase) const {
-    if (phase == kPositive)
-      return data_;
-    else
-      return hid_sample_;
-    }
-  const vector<Param*> GetParams() const override {
-    vector<Param*> params{weight_, bias_};
-    return params;
-  }
   ~RBMHidLayer();
-
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
+  Blob<float>* Sample(int flat) override;
  private:
-  //! dimension of the hidden layer
-  int hdim_;
-  int vdim_;  // dimension of visible layer
-  int batchsize_;
-  // batchsize of negative phase
-  int neg_batchsize_;
-  float scale_;
   // whether use gaussian sampling
   bool gaussian_;
-  Blob<float> hid_sample_;
-  Param* weight_, *bias_;
+  RBMLayer *vis_layer_;
 };
 /**
   * fully connected layer
@@ -184,8 +114,8 @@ class InnerProductLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
 
   ConnectionType src_neuron_connection(int k) const override {
     // CHECK_LT(k, srclayers_.size());
@@ -212,7 +142,7 @@ class LabelLayer: public ParserLayer {
   using ParserLayer::ParseRecords;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ParseRecords(Phase phase, const vector<Record>& records,
+  void ParseRecords(int flag, const vector<Record>& records,
       Blob<float>* blob) override;
 };
 
@@ -229,8 +159,8 @@ class LRNLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
 
  protected:
   //! shape of the bottom layer feature
@@ -247,7 +177,7 @@ class MnistLayer: public ParserLayer {
   using ParserLayer::ParseRecords;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ParseRecords(Phase phase, const vector<Record>& records,
+  void ParseRecords(int flag, const vector<Record>& records,
       Blob<float>* blob) override;
   ConnectionType dst_layer_connection() const override {
     return kOneToMany;
@@ -269,8 +199,8 @@ class PoolingLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
 
  protected:
   int kernel_, pad_, stride_;
@@ -284,8 +214,8 @@ class ReLULayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions = 1) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
 };
 
 class EuclideanLossLayer: public LossLayer {
@@ -294,8 +224,8 @@ class EuclideanLossLayer: public LossLayer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
 
 
   int partition_dim() const override {
@@ -321,8 +251,8 @@ class SoftmaxLossLayer: public LossLayer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
 
   /**
    * softmax is not recommendeded for partition because it requires the whole
@@ -349,7 +279,7 @@ class RGBImageLayer: public ParserLayer {
   using ParserLayer::ParseRecords;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ParseRecords(Phase phase, const vector<Record>& records,
+  void ParseRecords(int flag, const vector<Record>& records,
       Blob<float>* blob) override;
 
  private:
@@ -365,7 +295,7 @@ class ShardDataLayer: public DataLayer{
 
   ~ShardDataLayer();
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
+  void ComputeFeature(int flag, Metric *perf) override;
 
  private:
   DataShard* shard_;
@@ -382,8 +312,8 @@ class SigmoidLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
 };
 
 /**
@@ -397,8 +327,8 @@ class TanhLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric *perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag) override;
 
  private:
   float outer_scale_, inner_scale_;

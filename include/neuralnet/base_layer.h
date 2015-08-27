@@ -49,25 +49,25 @@ class Layer {
   /**
    * Compute features of this layer based on connected layers.
    *
-   * @param phase kTrain, kTest, kPositive, etc.
+   * @param flag kTrain, kTest, kPositive, etc.
    */
-  virtual void ComputeFeature(Phase phase, Metric* perf) = 0;
+  virtual void ComputeFeature(int flag, Metric* perf) = 0;
   /**
    * Compute gradients for parameters and connected layers.
    *
-   * @param phase kTrain, kTest, kPositive, etc.
+   * @param flag kTrain, kTest, kPositive, etc.
    */
   virtual void ComputeLoss(Metric* perf) {}
-  virtual void ComputeGradient(Phase phase) = 0;
+  virtual void ComputeGradient(int flag) = 0;
   /**
    * For print debug info about each layer, e.g., norm of feature vector,
    * norm of parameters.
    *
    * @param step training/test/validation step
-   * @param phase forward/backward/positive/negative...
+   * @param flag forward/backward/positive/negative...
    * @return debug info about this layer.
    */
-  const string DebugString(int step, Phase phase);
+  const string DebugString(int step, int flag);
   /**
    * Layers that have paramters must override this function.
    *
@@ -141,10 +141,10 @@ class Layer {
   /**
    * @return a const ref for Blob storing neuron values of this layer for BP
    */
-  virtual const Blob<float>& data(const Layer* from, Phase = kPositive) const {
+  virtual const Blob<float>& data(const Layer* from) const {
     return data_;
   }
-  virtual Blob<float>* mutable_data(const Layer* from, Phase = kPositive) {
+  virtual Blob<float>* mutable_data(const Layer* from) {
     return &data_;
   }
 
@@ -246,15 +246,15 @@ class BridgeSrcLayer: public BridgeLayer {
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  void ComputeFeature(Phase phase, Metric* perf) override {}
-  void ComputeGradient(Phase phase) override {
+  void ComputeFeature(int flag, Metric* perf) override {}
+  void ComputeGradient(int flag) override {
     ready_ = false;
   }
 
-  const Blob<float>& data(const Layer* from, Phase phase) const override {
+  const Blob<float>& data(const Layer* from) const override {
     return srclayers_[0]->data(this);
   }
-  Blob<float>* mutable_data(const Layer* from, Phase phase) override {
+  Blob<float>* mutable_data(const Layer* from) override {
     return srclayers_[0]->mutable_data(this);
   }
   const Blob<float>& grad(const Layer* from) const override {
@@ -278,11 +278,11 @@ class BridgeDstLayer: public BridgeLayer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric* perf) override {
+  void ComputeFeature(int flag, Metric* perf) override {
     // reset ready_ for next iteration.
     ready_ = false;
   }
-  void ComputeGradient(Phase phase) override {}
+  void ComputeGradient(int flag) override {}
   bool is_bridgedstlayer() const {
     return true;
   }
@@ -297,8 +297,8 @@ class ConcateLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric* perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag) override;
 };
 
 /**
@@ -311,11 +311,11 @@ class DataLayer: public Layer{
   using Layer::mutable_grad;
   using Layer::dst_layer_connection;
 
-  void ComputeGradient(Phase phase) override {}
+  void ComputeGradient(int flag) override {}
   bool is_datalayer() const override {
     return true;
   }
-  Blob<float>* mutable_data(const Layer* layer, Phase phase) override {
+  Blob<float>* mutable_data(const Layer* layer) override {
     return nullptr;
   }
   Blob<float>* mutable_grad(const Layer* layer) override {
@@ -357,11 +357,11 @@ class PrefetchLayer : public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric* perf) override;
-  void ComputeGradient(Phase phase) override {};
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag) override {};
 
-  const Blob<float>& data(const Layer* from, Phase phase) const override;
-  Blob<float>* mutable_data(const Layer* layer, Phase phase) override;
+  const Blob<float>& data(const Layer* from) const override;
+  Blob<float>* mutable_data(const Layer* layer) override;
 
   Blob<float>* mutable_grad(const Layer* layer) override {
     return nullptr;
@@ -371,7 +371,7 @@ class PrefetchLayer : public Layer {
     return grad_;
   }
 
-  void Prefetch(Phase phase);
+  void Prefetch(int flag);
   virtual ~PrefetchLayer();
 
  protected:
@@ -389,14 +389,14 @@ class SliceLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric* perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag) override;
   ConnectionType dst_layer_connection() const override {
     return kOneToMany;
   }
-  const Blob<float>& data(const Layer* layer, Phase phase) const override;
+  const Blob<float>& data(const Layer* layer) const override;
   const Blob<float>& grad(const Layer* layer) const override;
-  Blob<float>* mutable_data(const Layer* layer, Phase phase) override;
+  Blob<float>* mutable_data(const Layer* layer) override;
   Blob<float>* mutable_grad(const Layer* layer) override;
 
  protected:
@@ -418,8 +418,8 @@ class SplitLayer: public Layer {
   using Layer::ComputeGradient;
 
   void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(Phase phase, Metric* perf) override;
-  void ComputeGradient(Phase phase) override;
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag) override;
   ConnectionType dst_layer_connection() const override {
     return kOneToMany;
   }
@@ -462,12 +462,12 @@ class ParserLayer: public Layer {
   using Layer::mutable_grad;
   using Layer::grad;
 
-  void ComputeFeature(Phase phase, Metric* perf) override;
-  void ComputeGradient(Phase phase) override {};
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag) override {};
   /**
    * Parse records from DataLayer into blob.
    */
-  virtual void ParseRecords(Phase phase, const vector<Record>& records,
+  virtual void ParseRecords(int flag, const vector<Record>& records,
       Blob<float>* blob) = 0;
   bool is_parserlayer() const override {
     return true;
@@ -479,6 +479,33 @@ class ParserLayer: public Layer {
     CHECK(false) << "Parser layer has not gradient blob";
     return grad_;
   }
+};
+
+class RBMLayer: public Layer {
+ public:
+  const Blob<float>& neg_data(const Layer* layer) {
+    return neg_data_;
+  }
+  Blob<float>* mutable_neg_data(const Layer* layer) {
+    return &neg_data_;
+  }
+  const vector<Param*> GetParams() const override {
+    vector<Param*> params{weight_, bias_};
+    return params;
+  }
+  virtual Blob<float>* Sample(int flat) = 0;
+
+ protected:
+  //! dimension of the hidden layer
+  int hdim_;
+  //! dimension of the visible layer
+  int vdim_;
+  int batchsize_;
+  Param* weight_, *bias_;
+
+  Blob<float> neg_data_;
+  Blob<float> neg_sample_;
+  Blob<float> sample_;
 };
 }  // namespace singa
 

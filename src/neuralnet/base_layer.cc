@@ -1,5 +1,3 @@
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <cblas.h>
 #include <math.h>
 #include <cfloat>
@@ -24,14 +22,13 @@ void Layer::Setup(const LayerProto& proto, int npartitions) {
   layer_proto_ = proto;
 }
 
-const string Layer::DebugString(int step, Phase phase) {
+const string Layer::DebugString(int step, int flag) {
   string ret =StringPrintf("Layer %10s ", name().c_str());
-  if(data_.count() != 0)
-    return ret;
-  if(phase == kForward) {
-    ret += StringPrintf("data %10s data norm1 %13.9f", data_.asum_data());
-  }else if(phase == kBackward) {
-    ret += StringPrintf("grad norm1 %13.9f\n", grad_.asum_data());
+  if ((flag & kForward) == kForward && data_.count() !=0) {
+    ret += StringPrintf("data norm1 %13.9f", data_.asum_data());
+  } else if ((flag & kBackward) == kBackward) {
+    if (grad_.count() != 0)
+      ret += StringPrintf("grad norm1 %13.9f\n", grad_.asum_data());
     for(Param* p: GetParams())
       ret += StringPrintf("param id %2d, name %10s,\
           value norm1 %13.9f, grad norm1 %13.9f\n",
@@ -68,41 +65,41 @@ void ConcateLayer::Setup(const LayerProto& proto, int npartitions) {
   grad_.Reshape(shape);
 }
 
-void ConcateLayer::ComputeFeature(Phase phase, Metric *perf){
+void ConcateLayer::ComputeFeature(int flag, Metric *perf){
   LOG(FATAL) << "Not implemented for Concate Layer";
 }
 
-void ConcateLayer::ComputeGradient(Phase phase){
+void ConcateLayer::ComputeGradient(int flag){
   LOG(FATAL) << "Not implemented for Concate Layer";
 }
 
 /************* Implementation for ParserLayer ***********/
-void ParserLayer::ComputeFeature(Phase phase, Metric *perf){
+void ParserLayer::ComputeFeature(int flag, Metric *perf){
   CHECK_EQ(srclayers_.size(),1);
   auto datalayer=static_cast<DataLayer*>(*srclayers_.begin());
-  ParseRecords(phase, datalayer->records(), &data_);
+  ParseRecords(flag, datalayer->records(), &data_);
 }
 
 /************* Implementation for PrefetchLayer ***********/
-void PrefetchLayer::Prefetch(Phase phase){
+void PrefetchLayer::Prefetch(int flag){
   //clock_t s=clock();
   for(auto layer: sublayers_)
-    layer->ComputeFeature(phase, nullptr);
+    layer->ComputeFeature(flag, nullptr);
   //LOG(ERROR)<<(clock()-s)*1.0/CLOCKS_PER_SEC;
 }
 
-void PrefetchLayer::ComputeFeature(Phase phase, Metric* perf){
+void PrefetchLayer::ComputeFeature(int flag, Metric* perf){
   if(thread_.joinable())
     thread_.join();
   else{
-    Prefetch(phase);
+    Prefetch(flag);
   }
   for(auto layer: sublayers_){
     if(layer->is_parserlayer())
       // TODO replace CopyFrom with Swap?
       datablobs_.at(layer->name()).CopyFrom(layer->data(this));
   }
-  thread_=std::thread(&PrefetchLayer::Prefetch, this, phase);
+  thread_=std::thread(&PrefetchLayer::Prefetch, this, flag);
 }
 
 void PrefetchLayer::Setup(const LayerProto& proto, int npartitions) {
@@ -133,7 +130,7 @@ void PrefetchLayer::Setup(const LayerProto& proto, int npartitions) {
       datablobs_[layer->name()]=Blob<float>(layer->data(this).shape());
 }
 
-const Blob<float>& PrefetchLayer::data(const Layer* from, Phase phase) const {
+const Blob<float>& PrefetchLayer::data(const Layer* from) const {
   LOG(FATAL) << " needs update";
   if(from != nullptr) {
     return datablobs_.at("");
@@ -143,7 +140,7 @@ const Blob<float>& PrefetchLayer::data(const Layer* from, Phase phase) const {
   }
 }
 
-Blob<float>* PrefetchLayer::mutable_data(const Layer* from, Phase phase) {
+Blob<float>* PrefetchLayer::mutable_data(const Layer* from) {
   LOG(FATAL) << " needs update";
   if(from!=nullptr){
     return &(datablobs_.at(""));
@@ -194,7 +191,7 @@ int SliceLayer::SliceID(const Layer* layer) const {
   return -1;
 }
 
-const Blob<float>& SliceLayer::data(const Layer* layer, Phase phase) const {
+const Blob<float>& SliceLayer::data(const Layer* layer) const {
   if(layer==nullptr)
     return data_;
   return datavec_[SliceID(layer)];
@@ -204,7 +201,7 @@ const Blob<float>& SliceLayer::grad(const Layer* layer) const {
     return grad_;
   return gradvec_[SliceID(layer)];
 }
-Blob<float>* SliceLayer::mutable_data(const Layer* layer, Phase phase) {
+Blob<float>* SliceLayer::mutable_data(const Layer* layer) {
   if(layer==nullptr)
     return &data_;
   return &datavec_[SliceID(layer)];
@@ -214,7 +211,7 @@ Blob<float>* SliceLayer::mutable_grad(const Layer* layer){
     return &grad_;
   return &gradvec_[SliceID(layer)];
 }
-void SliceLayer::ComputeFeature(Phase phase, Metric *perf) {
+void SliceLayer::ComputeFeature(int flag, Metric *perf) {
   CHECK_EQ(srclayers_.size(),1);
   if(slice_dim_==0){
     const auto& blob=srclayers_.at(0)->data(this);
@@ -226,7 +223,7 @@ void SliceLayer::ComputeFeature(Phase phase, Metric *perf) {
     }
   }
 }
-void SliceLayer::ComputeGradient(Phase phase) {
+void SliceLayer::ComputeGradient(int flag) {
   // LOG(FATAL) << "Not implemented";
 }
 
@@ -240,11 +237,11 @@ void SplitLayer::Setup(const LayerProto& proto, int npartitions) {
   grad_.Reshape(srclayers_[0]->data(this).shape());
 }
 
-void SplitLayer::ComputeFeature(Phase phase, Metric *perf) {
+void SplitLayer::ComputeFeature(int flag, Metric *perf) {
   LOG(FATAL) << "Not implemented";
 
 }
-void SplitLayer::ComputeGradient(Phase phase) {
+void SplitLayer::ComputeGradient(int flag) {
   LOG(FATAL) << "Not implemented";
 }
 
