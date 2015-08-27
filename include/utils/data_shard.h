@@ -23,7 +23,7 @@ namespace singa {
  * and key size do not match because the last write of tuple crashed.
  *
  * TODO
- * 1. split one shard into multile shards.
+ * 1. split one shard into multiple shards.
  * 2. add threading to prefetch and parse records
  *
  */
@@ -52,7 +52,7 @@ class DataShard {
 
   /**
    * read next tuple from the shard.
-   * 
+   *
    * @param key Tuple key
    * @param val Record of type Message
    * @return false if read unsuccess, e.g., the tuple was not inserted
@@ -61,7 +61,7 @@ class DataShard {
   bool Next(std::string* key, google::protobuf::Message* val);
   /**
    * read next tuple from the shard.
-   * 
+   *
    * @param key Tuple key
    * @param val Record of type string
    * @return false if read unsuccess, e.g., the tuple was not inserted
@@ -70,7 +70,7 @@ class DataShard {
   bool Next(std::string* key, std::string* val);
   /**
    * Append one tuple to the shard.
-   * 
+   *
    * @param key e.g., image path
    * @param val
    * @return false if unsucess, e.g., inserted before
@@ -78,7 +78,7 @@ class DataShard {
   bool Insert(const std::string& key, const google::protobuf::Message& tuple);
   /**
    * Append one tuple to the shard.
-   * 
+   *
    * @param key e.g., image path
    * @param val
    * @return false if unsucess, e.g., inserted before
@@ -96,7 +96,7 @@ class DataShard {
   void Flush();
   /**
    * Iterate through all tuples to get the num of all tuples.
-   * 
+   *
    * @return num of tuples
    */
   int Count();
@@ -108,7 +108,7 @@ class DataShard {
  protected:
   /**
    * Read the next key and prepare buffer for reading value.
-   * 
+   *
    * @param key
    * @return length (i.e., bytes) of value field.
    */
@@ -116,14 +116,14 @@ class DataShard {
   /**
    * Setup the disk pointer to the right position for append in case that
    * the pervious write crashes.
-   * 
+   *
    * @param path shard path.
    * @return offset (end pos) of the last success written record.
    */
   int PrepareForAppend(const std::string& path);
   /**
    * Read data from disk if the current data in the buffer is not a full field.
-   * 
+   *
    * @param size size of the next field.
    */
   bool PrepareNextField(int size);

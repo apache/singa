@@ -60,12 +60,15 @@ class NeuralNet {
     return layers_;
   }
   const std::vector<ParserLayer*>& parserlayers() const {
+    LOG(FATAL)<< " not implemented";
     return parserlayers_;
   }
   const std::vector<LossLayer*>& losslayers() const {
+    LOG(FATAL)<< " not implemented";
     return losslayers_;
   }
   const std::vector<DataLayer*>& datalayers() const {
+    LOG(FATAL)<< " not implemented";
     return datalayers_;
   }
   const std::vector<Param*>& params() const {

@@ -339,10 +339,6 @@ void Param::ParseResponseMsg(Msg* msg, int slice_idx) {
 }
 
 /************************ParamEntry***************************/
-ParamEntry::ParamEntry():
-  num_update(0), next_version(-1), num_local(0), num_total(0) {
-}
-
 ParamEntry::ParamEntry(int total, Param* p) {
   num_total = total;
   shares.push_back(p);

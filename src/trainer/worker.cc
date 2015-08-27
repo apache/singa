@@ -2,6 +2,7 @@
 #include <thread>
 #include <chrono>
 #include <thread>
+#include <typeinfo>
 #include "utils/singleton.h"
 #include "utils/cluster.h"
 #include "utils/factory.h"
@@ -148,7 +149,8 @@ void Worker::Run() {
   ConnectStub(grp_id_, id_, dealer_, kWorkerParam);
   for (auto layer : train_net_->layers()) {
     if (layer->partition_id() == id_) {
-      if (layer->is_bridgelayer()) {
+      if (typeid(layer) == typeid(BridgeDstLayer)
+          || typeid(layer) == typeid(BridgeSrcLayer)) {
         layer_dealer_ = new Dealer(2*thread_id_+1);
         ConnectStub(grp_id_, id_, layer_dealer_, kWorkerLayer);
         break;
@@ -259,7 +261,6 @@ void Worker::ReceiveBlobs(
     CHECK_EQ(AddrGrp(msg->src()), grp_id_);
     string name(static_cast<char*>(msg->FrameData()), msg->FrameSize());
     auto receive_layer = net->name2layer(name);
-    CHECK(receive_layer->is_bridgelayer());
     auto data = receive_layer->mutable_data(nullptr);
     msg->NextFrame();
     memcpy(data->mutable_cpu_data(), msg->FrameData(), msg->FrameSize());
@@ -337,7 +338,7 @@ void BPWorker::Forward(
     int step, Phase phase, shared_ptr<NeuralNet> net, Metric* perf) {
   for (auto& layer : net->layers()) {
     if (layer->partition_id() == id_) {
-      if (layer->is_bridgedstlayer())  // recv data from other workers
+      if (typeid(*layer) == typeid(BridgeDstLayer))  // recv data from other workers
         ReceiveBlobs(true, false, static_cast<BridgeLayer*>(layer), net);
       if (phase == kTrain) {
         for (Param* p : layer->GetParams()) {  // wait until param is updated
@@ -345,7 +346,7 @@ void BPWorker::Forward(
         }
       }
       layer->ComputeFeature(phase | kForward, perf);
-      if (layer->is_bridgesrclayer())  // send data to other workers
+      if (typeid(*layer) == typeid(BridgeSrcLayer))  // send data to other workers
         SendBlobs(true, false, static_cast<BridgeLayer*>(layer), net);
       if (DisplayDebugInfo(step))
         LOG(INFO) << layer->DebugString(step, phase | kForward);
@@ -358,17 +359,15 @@ void BPWorker::Backward(int step, shared_ptr<NeuralNet> net) {
   for (auto it = layers.rbegin(); it != layers.rend(); it++){
     Layer* layer = *it;
     if (layer->partition_id() == id_) {
-      if(layer->is_bridgesrclayer()) {
-        // ReceiveBlobs(false, true, layer, net);
-      }
+      // if (typeid(layer) == typeid(BridgeSrcLayer))  // send data to other workers
+      // ReceiveBlobs(false, true, layer, net);
       layer->ComputeGradient(kTrain | kBackward, nullptr);
       if (DisplayDebugInfo(step))
         LOG(INFO) << layer->DebugString(step, kTrain | kBackward);
       for (Param* p : layer->GetParams())
         Update(p, step);
-      if (layer->is_bridgedstlayer()) {
-        // SendBlobs(false, true, layer);
-      }
+      if (typeid(layer) == typeid(BridgeDstLayer))  // recv data from other workers
+        SendBlobs(false, true, static_cast<BridgeDstLayer*>(layer), net);
     }
   }
 }
@@ -388,19 +387,26 @@ void CDWorker::TrainOneBatch(int step, Metric* perf) {
   for (auto* layer : layers) {
     for (Param* p : layer->GetParams())  // wait until param is updated
       Collect(p, step);
-    layer->ComputeFeature(kPositive | kForward, perf);
+    layer->ComputeFeature(kPositive, perf);
   }
   for (auto* layer : layers)
-    layer->ComputeFeature(kNegative | kTest, perf);
+    if (typeid(*layer) == typeid(RBMVisLayer)
+          || typeid(*layer) == typeid(RBMHidLayer))
+      layer->ComputeFeature(kNegative | kTest, perf);
   for (int i = 1; i < job_conf_.train_one_batch().cd_conf().cd_k(); i++) {
     for (auto* layer : layers) {
+      if (typeid(*layer) == typeid(RBMVisLayer)
+          || typeid(*layer) == typeid(RBMHidLayer))
       layer->ComputeFeature(kNegative, perf);
     }
   }
   for (auto* layer : layers) {
-    layer->ComputeGradient(kTrain, nullptr);
-    for (Param* p : layer->GetParams()) {
-      Update(p, step);
+    if (typeid(*layer) == typeid(RBMVisLayer)
+        || typeid(*layer) == typeid(RBMHidLayer)) {
+      layer->ComputeGradient(kTrain, nullptr);
+      for (Param* p : layer->GetParams()) {
+        Update(p, step);
+      }
     }
   }
 }
@@ -408,9 +414,10 @@ void CDWorker::TrainOneBatch(int step, Metric* perf) {
 void CDWorker::TestOneBatch(int step, Phase phase,
     shared_ptr<NeuralNet> net, Metric* perf) {
   auto& layers = net->layers();
-  for (auto layer : layers)
-    layer->ComputeFeature(kPositive | kForward, perf);
-  for (auto layer : layers)
-    layer->ComputeFeature(kNegative | kTest, perf);
+  for (auto *layer : layers)
+    layer->ComputeFeature(kPositive, perf);
+  for (auto *layer : layers)
+    if (typeid(*layer) == typeid(RBMVisLayer))
+      layer->ComputeFeature(kNegative | kTest, perf);
 }
 }  // namespace singa

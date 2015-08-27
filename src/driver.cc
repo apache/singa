@@ -50,7 +50,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<SliceLayer, int>(kSlice);
   RegisterLayer<SoftmaxLossLayer, int>(kSoftmaxLoss);
   RegisterLayer<SplitLayer, int>(kSplit);
-  RegisterLayer<TanhLayer, int>(kTanh);
+  RegisterLayer<STanhLayer, int>(kSTanh);
 #ifdef USE_LMDB
   RegisterLayer<LMDBDataLayer, int>(kLMDBData);
 #endif

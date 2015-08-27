@@ -353,12 +353,14 @@ void NeuralNet::PrepareDataStructures() {
 
   for (auto& layer : layers_) {
     name2layer_[layer->name()] = layer;
+    /*
     if (layer->is_parserlayer())
       parserlayers_.push_back(static_cast<ParserLayer*>(layer));
     if (layer->is_losslayer())
       losslayers_.push_back(static_cast<LossLayer*>(layer));
     if (layer->is_datalayer())
       datalayers_.push_back(static_cast<DataLayer*>(layer));
+      */
     for (Param* p : layer->GetParams()) {
       paramid2param_[p->id()] = p;
       params_.push_back(p);

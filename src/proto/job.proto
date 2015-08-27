@@ -198,8 +198,6 @@ message LayerProto {
   optional SoftmaxLossProto softmaxloss_conf = 40;
   // configuration for split layer
   optional SplitProto split_conf = 42;
-  // configuration for tanh layer
-  optional TanhProto tanh_conf = 43;
 
 
   // overrides the partition dimension for neural net
@@ -294,14 +292,6 @@ message PrefetchProto {
 
 message SplitProto {
   optional int32 num_splits = 1 [default = 1];
-}
-
-// scaled tan: A*tan(B*x)
-message TanhProto {
-  // A of A*tan(B*x)
-  optional float outer_scale = 1 [default = 1.0];
-  // B of A*tan(B*x)
-  optional float inner_scale = 2 [default = 1.0];
 }
 
 message EuclideanLossProto {
@@ -532,7 +522,7 @@ enum LayerType {
   kRBMVis = 23;
   kRBMHid = 24;
   kSigmoid = 26;
-  kTanh = 14;
+  kSTanh = 14;
   // Loss layers
   //  - Compute objective loss
   kSoftmaxLoss = 11;
