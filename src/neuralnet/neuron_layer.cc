@@ -164,6 +164,35 @@ void DropoutLayer::ComputeGradient(int flag, Metric* perf)  {
   auto gsrc = Tensor1(srclayers_[0]->mutable_grad(this));
   gsrc = grad * mask;
 }
+
+
+/**************** Implementation for RBMLayer********************/
+Blob<float>* RBMLayer::Sample(int flag) {
+  Tensor<cpu, 2> sample, data;
+  if ((flag & kPositive) == kPositive || first_gibbs_) {
+    data = Tensor2(&data_);
+    sample = Tensor2(&sample_);
+  } else {
+    data = Tensor2(&neg_data_);
+    sample = Tensor2(&neg_sample_);
+  }
+  auto random = TSingleton<Random<cpu>>::Instance();
+  if (gaussian_) {
+    random->SampleGaussian(sample, 0.0f, 1.0f);
+    sample += data;
+  } else {
+    random->SampleBinary(sample, data);
+  }
+  return (flag & kPositive) == kPositive || first_gibbs_ ?
+    &sample_ : &neg_sample_;
+}
+void RBMLayer::Setup(const LayerProto& proto, int npartitions) {
+  CHECK_EQ(npartitions, 1);  //  TODO test for npartitions > 1
+  Layer::Setup(proto, npartitions);
+  hdim_ = proto.rbm_conf().hdim();
+  gaussian_ = proto.rbm_conf().gaussian();
+  first_gibbs_ = true;
+}
 /**************** Implementation for RBMVisLayer********************/
 RBMVisLayer::~RBMVisLayer() {
   delete weight_;
@@ -171,7 +200,7 @@ RBMVisLayer::~RBMVisLayer() {
 }
 
 void RBMVisLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
+  RBMLayer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 2);
   hid_layer_ = nullptr;
   for (auto src : srclayers_) {
@@ -185,31 +214,23 @@ void RBMVisLayer::Setup(const LayerProto& proto, int npartitions) {
   input_layer_ = srclayers_[0] != hid_layer_ ? srclayers_[0]: srclayers_[1];
   const auto& src = input_layer_->data(this);
   batchsize_ = src.shape()[0];
-  data_.ReshapeLike(src);  // this is visible dimension
+  data_.ReshapeLike(src);
   neg_data_.ReshapeLike(data_);
   neg_sample_.ReshapeLike(data_);
+  vdim_ = src.count() / batchsize_;
   weight_ = Param::Create(proto.param(0));
+  weight_ ->Setup(vector<int>{hdim_, vdim_});
   bias_ = Param::Create(proto.param(1));
-  bias_->Setup(vector<int>{src.count() / batchsize_});
+  bias_->Setup(vector<int>{vdim_});
 }
-Blob<float>* RBMVisLayer::Sample(int flag) {
-  Tensor<cpu, 2> sample, data;
-  if ((flag & kPositive) == kPositive) {
-    LOG(FATAL) << "RBMVisLayer can not be sampled for positive flag";
-  } else {
-    data = Tensor2(&neg_data_);
-    sample = Tensor2(&neg_sample_);
-  }
-  auto random = TSingleton<Random<cpu>>::Instance();
-  random->SampleBinary(sample, data);
-  return &neg_sample_;
-}
+
 void RBMVisLayer::ComputeFeature(int flag, Metric* perf) {
-  if ((flag & kPositive) == kPositive) { /*positive flag*/
+  if ((flag & kPositive) == kPositive) {
     data_.CopyFrom(input_layer_->data(this), true);
-  } else if ((flag & kNegative) == kNegative) {   /*negative flag*/
-    auto hid_sample = Tensor2(hid_layer_->Sample(flag));
+    first_gibbs_ = true;
+  } else if ((flag & kNegative) == kNegative) {
     // fetch sampling results from hidden layer
+    auto hid_sample = Tensor2(hid_layer_->Sample(flag));
     auto data = Tensor2(&neg_data_);
     auto weight = Tensor2(weight_->mutable_data());
     auto bias = Tensor1(bias_->mutable_data());
@@ -224,15 +245,25 @@ void RBMVisLayer::ComputeFeature(int flag, Metric* perf) {
       }
       perf->Add("Squared Error", err / batchsize_);
     }
+    first_gibbs_ = false;
   }
 }
 
 void RBMVisLayer::ComputeGradient(int flag, Metric* perf) {
   auto vis_pos = Tensor2(&data_);
   auto vis_neg = Tensor2(&neg_data_);
-    auto gbias = Tensor1(bias_->mutable_grad());
+  auto hid_pos = Tensor2(hid_layer_->mutable_data(this));
+  auto hid_neg = Tensor2(hid_layer_->mutable_neg_data(this));
+
+  auto gbias = Tensor1(bias_->mutable_grad());
   gbias = expr::sum_rows(vis_neg);
   gbias -= expr::sum_rows(vis_pos);
+  gbias /= batchsize_;
+
+  auto gweight = Tensor2(weight_->mutable_grad());
+  gweight = dot(hid_neg.T(), vis_neg);
+  gweight -= dot(hid_pos.T(), vis_pos);
+  gweight /= batchsize_;
 }
 /**************** Implementation for RBMHidLayer********************/
 RBMHidLayer::~RBMHidLayer() {
@@ -242,41 +273,20 @@ RBMHidLayer::~RBMHidLayer() {
 
 void RBMHidLayer::Setup(const LayerProto& proto,
       int npartitions) {
-  Layer::Setup(proto, npartitions);
+  RBMLayer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
   const auto& src_data = srclayers_[0]->data(this);
   batchsize_ = src_data.shape()[0];
-  vdim_ = src_data.count()/batchsize_;
-  hdim_ = proto.rbmhid_conf().hid_dim();
-  gaussian_ = proto.rbmhid_conf().gaussian();
+  vdim_ = src_data.count() / batchsize_;
   data_.Reshape(vector<int>{batchsize_, hdim_});
   neg_data_.ReshapeLike(data_);
   sample_.ReshapeLike(data_);
   neg_sample_.ReshapeLike(data_);
   weight_ = Param::Create(proto.param(0));
+  weight_->Setup(vector<int>{hdim_, vdim_});
   bias_ = Param::Create(proto.param(1));
   bias_->Setup(vector<int>{hdim_});
-  weight_->Setup(vector<int>{hdim_, vdim_});
   vis_layer_ = static_cast<RBMVisLayer*> (srclayers_[0]);
-}
-
-Blob<float>* RBMHidLayer::Sample(int flag) {
-  Tensor<cpu, 2> sample, data;
-  if ((flag & kPositive) == kPositive) {
-    data = Tensor2(&data_);
-    sample = Tensor2(&sample_);
-  } else {
-    data = Tensor2(&neg_data_);
-    sample = Tensor2(&neg_sample_);
-  }
-  auto random = TSingleton<Random<cpu>>::Instance();
-  if (gaussian_) {  // first gibbs
-    random->SampleGaussian(sample, 0.0f, 1.0f);
-    sample += data;
-  } else {
-    random->SampleBinary(sample, data);
-  }
-  return (flag & kPositive) == kPositive ? &sample_ : &neg_sample_;
 }
 
 void RBMHidLayer::ComputeFeature(int flag, Metric* perf) {
@@ -284,12 +294,15 @@ void RBMHidLayer::ComputeFeature(int flag, Metric* perf) {
   auto bias = Tensor1(bias_->mutable_data());
 
   Tensor<cpu, 2> data, src;
-  if ((flag & kPositive) == kPositive) {  /*postive flag*/
+  if ((flag & kPositive) == kPositive) {
     data = Tensor2(&data_);
     src = Tensor2(vis_layer_->mutable_data(this));
+    first_gibbs_ = true;
   } else {
     data = Tensor2(&neg_data_);
-    src = Tensor2(vis_layer_->Sample(flag));
+    // hinton's science paper does not sample the vis layer
+    src = Tensor2(vis_layer_->mutable_neg_data(this));
+    first_gibbs_ = false;
   }
   data = dot(src, weight.T());
   data += expr::repmat(bias, batchsize_);
@@ -301,18 +314,10 @@ void RBMHidLayer::ComputeFeature(int flag, Metric* perf) {
 void RBMHidLayer::ComputeGradient(int flag, Metric* perf) {
   auto hid_pos = Tensor2(&data_);
   auto hid_neg = Tensor2(&neg_data_);
-  auto vis_pos = Tensor2(vis_layer_->mutable_data(this));
-  auto vis_neg = Tensor2(vis_layer_->mutable_data(this));
-
   auto gbias = Tensor1(bias_->mutable_grad());
   gbias = expr::sum_rows(hid_neg);
   gbias -= expr::sum_rows(hid_pos);
   gbias /= batchsize_;
-
-  auto gweight = Tensor2(weight_->mutable_grad());
-  gweight = dot(hid_neg.T(), vis_neg);
-  gweight -= dot(hid_pos.T(), vis_pos);
-  gweight /= batchsize_;
 }
 /*********** Implementation for InnerProductLayer**********/
 InnerProductLayer::~InnerProductLayer() {

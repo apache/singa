@@ -143,6 +143,7 @@ class SigmoidLayer: public Layer {
 class RBMLayer: public Layer {
  public:
   virtual ~RBMLayer() {}
+  void Setup(const LayerProto& proto, int npartitions) override;
   const Blob<float>& neg_data(const Layer* layer) {
     return neg_data_;
   }
@@ -153,14 +154,17 @@ class RBMLayer: public Layer {
     std::vector<Param*> params{weight_, bias_};
     return params;
   }
-  virtual Blob<float>* Sample(int flat) = 0;
+  virtual Blob<float>* Sample(int flat);
 
  protected:
+  //! if ture, sampling according to guassian distribution
+  bool gaussian_;
   //! dimension of the hidden layer
   int hdim_;
   //! dimension of the visible layer
   int vdim_;
   int batchsize_;
+  bool first_gibbs_;
   Param* weight_, *bias_;
 
   Blob<float> neg_data_;
@@ -177,7 +181,6 @@ class RBMVisLayer: public RBMLayer {
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(int flag, Metric* perf) override;
   void ComputeGradient(int flag, Metric* perf) override;
-  Blob<float>* Sample(int flat) override;
 
  private:
   RBMLayer* hid_layer_;
@@ -192,11 +195,8 @@ class RBMHidLayer: public RBMLayer {
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(int flag, Metric* perf) override;
   void ComputeGradient(int flag, Metric* perf) override;
-  Blob<float>* Sample(int flat) override;
 
  private:
-  // whether use gaussian sampling
-  bool gaussian_;
   RBMLayer *vis_layer_;
 };
 

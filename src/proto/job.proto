@@ -185,7 +185,7 @@ message LayerProto {
   // configuration for prefetch layer
   optional PrefetchProto prefetch_conf = 44;
   // configuration for rbmhid layer
-  optional RBMHidProto rbmhid_conf = 49;
+  optional RBMProto rbm_conf = 49;
   // configuration for rectified linear unit layer
   optional ReLUProto relu_conf = 38;
   // configuration for rgb image parser layer
@@ -357,8 +357,8 @@ message DropoutProto {
   optional float dropout_ratio = 30 [default = 0.5];
 }
 
-message RBMHidProto {
-  optional int32 hid_dim = 1; // The number of outputs for the layer
+message RBMProto {
+  required int32 hdim = 1; // The number of outputs for the layer
   optional bool bias_term = 2 [default = true]; // whether to have bias terms
   optional bool gaussian = 3 [default = false]; // use gaussian sampling or not
 }
