@@ -35,10 +35,13 @@ SINGA_SRCS := src/driver.cc \
               src/trainer/server.cc \
               src/trainer/worker.cc \
               src/trainer/trainer.cc \
-              src/neuralnet/base_layer.cc \
-              src/neuralnet/neuralnet.cc \
-              src/neuralnet/optional_layer.cc \
               src/neuralnet/layer.cc \
+              src/neuralnet/connection_layer.cc \
+              src/neuralnet/input_layer.cc \
+              src/neuralnet/loss_layer.cc \
+              src/neuralnet/neuron_layer.cc \
+              src/neuralnet/output_layer.cc \
+              src/neuralnet/neuralnet.cc \
               src/communication/socket.cc \
               src/communication/msg.cc
 
@@ -57,9 +60,12 @@ SINGA_HDRS := include/singa.h \
               include/trainer/server.h \
               include/trainer/worker.h \
               include/trainer/trainer.h \
-              include/neuralnet/base_layer.h \
               include/neuralnet/layer.h \
-              include/neuralnet/optional_layer.h \
+              include/neuralnet/connection_layer.h \
+              include/neuralnet/input_layer.h \
+              include/neuralnet/loss_layer.h \
+              include/neuralnet/neuron_layer.h \
+              include/neuralnet/output_layer.h \
               include/neuralnet/neuralnet.h \
               include/mshadow/tensor_expr.h \
               include/mshadow/tensor_container.h \
@@ -75,14 +81,11 @@ SINGA_HDRS := include/singa.h \
 
 lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_HDRS) $(SINGA_SRCS)
-if LMDB
 libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-                       $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 \
-                       -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive -DUSE_LMDB
-else
-libsinga_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-                       $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 \
+                       $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -msse3 \
                        -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive
+if LMDB
+libsinga_la_CXXFLAGS += -DUSE_LMDB
 endif
 libsinga_la_LDFLAGS = -I./include
 
