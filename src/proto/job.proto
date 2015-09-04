@@ -117,8 +117,8 @@ message UpdaterProto {
 }
 
 message ClusterProto {
-  optional int32 nworker_groups = 1;
-  optional int32 nserver_groups = 2;
+  optional int32 nworker_groups = 1 [default = 1];
+  optional int32 nserver_groups = 2 [default = 1];
   optional int32 nworkers_per_group = 3 [default = 1];
   optional int32 nservers_per_group = 4 [default = 1];
   optional int32 nworkers_per_procs = 5 [default = 1];

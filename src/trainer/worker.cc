@@ -162,12 +162,12 @@ void Worker::Run() {
   InitLocalParams();
   Metric perf;
   while (!StopNow(step_)) {
-    if (ValidateNow(step_)) {
+    if (ValidateNow(step_) && validation_net_ != nullptr) {
       //LOG(ERROR)<<"Validation at step "<<step;
       CollectAll(validation_net_, step_);
       Test(job_conf_.valid_steps(), kValidation, validation_net_);
     }
-    if (TestNow(step_)) {
+    if (TestNow(step_) && test_net_ != nullptr) {
       //LOG(ERROR)<<"Test at step "<<step;
       CollectAll(test_net_, step_);
       Test(job_conf_.test_steps(), kTest, test_net_);
