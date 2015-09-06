@@ -78,6 +78,14 @@ SINGA_HDRS := include/singa.h \
               include/communication/msg.h \
               include/communication/socket.h
 
+GTEST_SRCS := include/gtest/gtest-all.cc
+GTEST_HRDS := include/gtest/gtest.h
+TEST_SRCS := include/gtest/gtest_main.cc \
+			 src/test/test_cluster.cc \
+			 src/test/test_msg.cc \
+			 src/test/test_neuralnet.cc \
+			 src/test/test_paramslicer.cc \
+			 src/test/test_shard.cc
 
 lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_HDRS) $(SINGA_SRCS)
@@ -88,6 +96,17 @@ if LMDB
 libsinga_la_CXXFLAGS += -DUSE_LMDB
 endif
 libsinga_la_LDFLAGS = -I./include
+
+lib_LTLIBRARIES += libgtest.la
+libgtest_la_SOURCES = $(GTEST_HDRS) $(GTEST_SRCS)
+libgtest_la_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
+                       $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -gdwarf-2 -msse3 \
+                       -gstrict-dwarf -Woverloaded-virtual -DTHREADED -fpermissive
+if LMDB
+libgtest_la_CXXFLAGS += -DUSE_LMDB
+endif
+libgtest_la_LDFLAGS = -I./include
+
 
 bin_PROGRAMS = singa
 singa_SOURCES = src/main.cc
@@ -115,6 +134,24 @@ singatool_LDFLAGS = -I./include \
                     -lglog  \
                     -lprotobuf \
                     -lzookeeper_mt
+
+bin_PROGRAMS += singatest
+singatest_SOURCES = $(GTEST_HDRS) $(TEST_SRCS)
+singatest_CXXFLAGS = -O3 -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
+                 $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED
+singatest_LDFLAGS = -I./include \
+                -lsinga \
+                -lglog  \
+                -lprotobuf \
+                -lrt \
+                -lopenblas \
+                -lzmq \
+                -lczmq \
+                -lzookeeper_mt \
+				-lgtest
+if LMDB
+singatest_LDFLAGS += -llmdb
+endif
 
 clean-local:
 	rm -rf $(PROTO_SRCS) $(PROTO_HDRS)
