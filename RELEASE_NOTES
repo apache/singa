@@ -1,0 +1,93 @@
+Release Notes - SINGA - Version singa-incubating-0.1-rc0
+-----------------------------------------
+This release includes these features:
+
+  * Job management
+    * [SINGA-3] - Use Zookeeper to check stopping (finish) time of the system
+    * [SINGA-16] - Runtime Process id Management
+    * [SINGA-25] - Setup glog output path
+    * [SINGA-26] - Run distributed training in a single command
+    * [SINGA-30] - Enhance easy-to-use feature and support concurrent jobs
+    * [SINGA-33] - Automatically launch a number of processes in the cluster
+    * [SINGA-34] - Support external zookeeper service
+    * [SINGA-38] - Support concurrent jobs
+    * [SINGA-39] - Avoid ssh in scripts for single node environment
+    * [SINGA-43] - Remove Job-related output from workspace
+    * [SINGA-56] - No automatic launching of zookeeper service
+
+  * Installation with GNU Auto tool
+    * [SINGA-4] - Refine thirdparty-dependency installation
+    * [SINGA-13] - Separate intermediate files of compilation from source files
+    * [SINGA-17] - Add root permission within thirdparty/install.
+    * [SINGA-27] - Generate python modules for proto objects
+    * [SINGA-53] - Add lmdb compiling options
+    * [SINGA-62] - Remove building scrips and auxiliary files
+    * [SINGA-67] - Add singatest into build targets
+
+  * Distributed training
+    * [SINGA-7] - Implement shared memory Hogwild algorithm
+    * [SINGA-8] - Implement distributed Hogwild
+    * [SINGA-19] - Slice large Param objects for load-balance
+    * [SINGA-29] - Update NeuralNet class to enable layer partition type customization
+    * [SINGA-24] - Implement Downpour training framework
+    * [SINGA-32] - Implement AllReduce training framework
+    * [SINGA-57] - Improve Distributed Hogwild
+
+  * Training algorithms for different model categories
+    * [SINGA-9] - Add Support for Restricted Boltzman Machine (RBM) model
+    * [SINGA-10] - Add Support for Recurrent Neural Networks (RNN)
+
+  * Checkpoint and restore
+    * [SINGA-12] - Support Checkpoint and Restore
+
+  * Unit test
+    * [SINGA-64] - Add the test module for utils/common
+
+  * Programming model
+    * [SINGA-36] - Refactor job configuration, driver program and scripts
+    * [SINGA-37] - Enable users to set parameter sharing in model configuration
+    * [SINGA-54] - Refactor job configuration to move fields in ModelProto out
+    * [SINGA-55] - Refactor main.cc and singa.h
+    * [SINGA-61] - Support user defined classes
+    * [SINGA-65] - Add an example of writing user-defined layers
+
+  * Other features
+    * [SINGA-6] - Implement thread-safe singleton
+    * [SINGA-18] - Update API for displaying performance metric
+
+Some bugs are fixed during the development of this release
+  * [SINGA-2] Check failed: zsock_connect
+  * [SINGA-5] Server early terminate when zookeeper singa folder is not initially empty
+  * [SINGA-15] Fixg a bug from ConnectStub function which gets stuck for connecting layer_dealer_
+  * [SINGA-22] Cannot find openblas library when it is installed in default path
+  * [SINGA-23] Libtool version mismatch error.
+  * [SINGA-28] Fix a bug from topology sort of Graph
+  * [SINGA-42] Issue when loading checkpoints
+  * [SINGA-44] A bug when reseting metric values
+  * [SINGA-46] Fix a bug in updater.cc to scale the gradients
+  * [SINGA-47] Fix a bug in data layers that leads to out-of-memory when group size is too large
+  * [SINGA-48] Fix a bug in trainer.cc that assigns the same NeuralNet instance to workers from diff groups
+  * [SINGA-49] Fix a bug in HandlePutMsg func that sets param fields to invalid values
+  * [SINGA-66] Fix bugs in Worker::RunOneBatch function and ClusterProto
+
+Some tasks should be done in the next release
+  * [SINGA-11] Start SINGA using Mesos
+  * [SINGA-31] Extend Blob to support xpu (cpu or gpu)
+  * [SINGA-35] Add random number generators
+  * [SINGA-40] Support sparse Param update
+  * [SINGA-41] Support single node single GPU training
+
+The current code depends on the following external libraries:
+  * glog (New BSD)
+  * google-protobuf (New BSD)
+  * openblas (New BSD)
+  * zeromq (LGPLv3 + static link exception)
+  * czmq (Mozilla Public License Version 2.0)
+  * zookeeper (Apache 2.0)
+  * lmdb (OpenLDAP)
+
+Some source files/folders include third-party code:
+  * include/gtest (New BSD)
+  * include/mshadow (Apache 2.0)
+  * include/utils/tinydir.h (BSD 2-clause)
+  * caffe <include/utils/blob.h, src/utils/blob.cc, include/utils/common.h, src/utils/common.cc> (BSD 2-clause)
