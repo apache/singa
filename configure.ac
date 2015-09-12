@@ -8,7 +8,7 @@ AC_CONFIG_MACRO_DIR(config)
 AC_CONFIG_SRCDIR([src/utils/common.cc])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([subdir-objects foreign])
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+#m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 ACLOCAL_AMFLAGS = -I m4 --install
 
 # Checks for programs.
@@ -43,6 +43,31 @@ if test x"$enable_lmdb" = x"yes"; then
 	  ])
 	AC_DEFINE(LMDB, 1, [Enable Option layer])
 fi
+
+AC_ARG_ENABLE(singatest,
+	AS_HELP_STRING([--enable-singatest],[enable singa test]),
+	[enable_singatest=yes],[enable_singatest=no])
+AM_CONDITIONAL(SINGATEST, test "$enable_singatest" = yes)
+if test x"$enable_singatest" != x"no"; then
+	PROGS='singatest'
+	LTLIBS='libgtest.la'
+else
+	PROGS=''
+	LTLIBS=''
+fi
+AC_SUBST([PROGS])
+AC_SUBST([LTLIBS])
+
+AC_ARG_ENABLE(debug,
+	AS_HELP_STRING([--enable-debug],[enable debug mode]),
+	[enable_debug=yes],[enable_debug=no])
+AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
+if test x"$enable_debug" != x"no"; then
+	DEBUG='-g'
+else
+	DEBUG=''
+fi
+AC_SUBST([DEBUG])
 
 #AC_CHECK_LIB([opencv_imgproc], [main], [], [
 #  AC_MSG_ERROR([unable to find opencv_imgproc lib])
