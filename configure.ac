@@ -8,7 +8,7 @@ AC_CONFIG_MACRO_DIR(config)
 AC_CONFIG_SRCDIR([src/utils/common.cc])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([subdir-objects foreign])
-#m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 ACLOCAL_AMFLAGS = -I m4 --install
 
 # Checks for programs.
@@ -44,11 +44,11 @@ if test x"$enable_lmdb" = x"yes"; then
 	AC_DEFINE(LMDB, 1, [Enable Option layer])
 fi
 
-AC_ARG_ENABLE(singatest,
-	AS_HELP_STRING([--enable-singatest],[enable singa test]),
-	[enable_singatest=yes],[enable_singatest=no])
-AM_CONDITIONAL(SINGATEST, test "$enable_singatest" = yes)
-if test x"$enable_singatest" != x"no"; then
+AC_ARG_ENABLE(test,
+	AS_HELP_STRING([--enable-test],[enable singa test]),
+	[enable_test=yes],[enable_test=no])
+AM_CONDITIONAL(SINGATEST, test "$enable_test" = yes)
+if test x"$enable_test" != x"no"; then
 	PROGS='singatest'
 	LTLIBS='libgtest.la'
 else
