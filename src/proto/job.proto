@@ -389,7 +389,7 @@ message PoolingProto {
   required int32 kernel= 1;
   enum PoolMethod {
     MAX = 0;
-    AVE = 1;
+    AVG = 1;
   }
   // The pooling method
   optional PoolMethod pool = 30 [default = MAX];
@@ -514,6 +514,8 @@ enum LayerType {
   // Neuron layers
   //  - Feature transformation
   kConvolution = 1;
+  kCConvolution = 27;
+  kCPooling = 28;
   kDropout = 4;
   kInnerProduct = 5;
   kLRN = 6;
@@ -534,6 +536,7 @@ enum LayerType {
   kConcate = 2;
   kSlice = 12;
   kSplit = 13;
+
 
   // Indicate the user defined layer. Users should configure user_type
   kUserLayer = 102;

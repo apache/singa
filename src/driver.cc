@@ -32,6 +32,8 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
   RegisterLayer<BridgeSrcLayer, int>(kBridgeSrc);
   RegisterLayer<ConvolutionLayer, int>(kConvolution);
+  RegisterLayer<CConvolutionLayer, int>(kCConvolution);
+  RegisterLayer<CPoolingLayer, int>(kCPooling);
   RegisterLayer<ConcateLayer, int>(kConcate);
   RegisterLayer<DropoutLayer, int>(kDropout);
   RegisterLayer<EuclideanLossLayer, int>(kEuclideanLoss);

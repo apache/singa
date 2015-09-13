@@ -1,32 +1,70 @@
+/**
+ * The some functions in this file are adapted from Caffe whose license
+ * is attached.
+ *
+ * COPYRIGHT
+ * All contributions by the University of California:
+ * Copyright (c) 2014, The Regents of the University of California (Regents)
+ * All rights reserved.
+ * All other contributions:
+ * Copyright (c) 2014, the respective contributors
+ * All rights reserved.
+ * Caffe uses a shared copyright model: each contributor holds copyright over
+ * their contributions to Caffe. The project versioning records all such
+ * contribution and copyright details. If a contributor wants to further mark
+ * their specific copyright on a particular contribution, they should indicate
+ * their copyright solely in the commit message of the change when it is
+ * committed.
+ * LICENSE
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * CONTRIBUTION AGREEMENT
+ * By contributing to the BVLC/caffe repository through pull-request, comment,
+ * or otherwise, the contributor releases their content to the
+ * license and copyright terms herein.
+ */
 #include "utils/common.h"
 
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <glog/logging.h>
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/text_format.h>
-#include <stdarg.h>
-#include <stdio.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
 #include <netinet/in.h>
 #include <net/if.h>
+#include <arpa/inet.h>
+
+#include <stdarg.h>
+#include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <cfloat>
+
+#include <glog/logging.h>
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/text_format.h>
 
 namespace singa {
 
 using std::string;
 using std::vector;
-using google::protobuf::io::CodedInputStream;
-using google::protobuf::io::FileInputStream;
-using google::protobuf::io::FileOutputStream;
-using google::protobuf::io::ZeroCopyInputStream;
-using google::protobuf::Message;
-
 const int kBufLen = 1024;
 
 string IntVecToString(const vector<int>& vec) {
@@ -56,42 +94,7 @@ string StringPrintf(string fmt, ...) {
   return result;
 }
 
-// the proto related functions are from Caffe.
-void ReadProtoFromTextFile(const char* filename, Message* proto) {
-  int fd = open(filename, O_RDONLY);
-  CHECK_NE(fd, -1) << "File not found: " << filename;
-  FileInputStream* input = new FileInputStream(fd);
-  CHECK(google::protobuf::TextFormat::Parse(input, proto));
-  delete input;
-  close(fd);
-}
 
-void WriteProtoToTextFile(const Message& proto, const char* filename) {
-  int fd = open(filename, O_WRONLY | O_CREAT, 0644);
-  FileOutputStream* output = new FileOutputStream(fd);
-  CHECK(google::protobuf::TextFormat::Print(proto, output));
-  delete output;
-  close(fd);
-}
-
-void ReadProtoFromBinaryFile(const char* filename, Message* proto) {
-  int fd = open(filename, O_RDONLY);
-  CHECK_NE(fd, -1) << "File not found: " << filename;
-  ZeroCopyInputStream* raw_input = new FileInputStream(fd);
-  CodedInputStream* coded_input = new CodedInputStream(raw_input);
-  // upper limit 512MB, warning threshold 256MB
-  coded_input->SetTotalBytesLimit(536870912, 268435456);
-  CHECK(proto->ParseFromCodedStream(coded_input));
-  delete coded_input;
-  delete raw_input;
-  close(fd);
-}
-
-void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
-  int fd = open(filename, O_CREAT|O_WRONLY|O_TRUNC, 0644);
-  CHECK_NE(fd, -1) << "File cannot open: " << filename;
-  CHECK(proto.SerializeToFileDescriptor(fd));
-}
 
 int ArgPos(int argc, char** arglist, const char* arg) {
   for (int i = 0; i < argc; i++) {
@@ -293,4 +296,247 @@ void Metric::ParseFrom(const string& msg) {
   }
 }
 
+
+/*************Below functions are adapted from Caffe ************/
+using google::protobuf::io::CodedInputStream;
+using google::protobuf::io::FileInputStream;
+using google::protobuf::io::FileOutputStream;
+using google::protobuf::io::ZeroCopyInputStream;
+
+
+void Im2col(const float* data_im, const int channels,
+    const int height, const int width, const int kernel_h, const int kernel_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* data_col) {
+  int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+  int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+  int channels_col = channels * kernel_h * kernel_w;
+  for (int c = 0; c < channels_col; ++c) {
+    int w_offset = c % kernel_w;
+    int h_offset = (c / kernel_w) % kernel_h;
+    int c_im = c / kernel_h / kernel_w;
+    for (int h = 0; h < height_col; ++h) {
+      for (int w = 0; w < width_col; ++w) {
+        int h_pad = h * stride_h - pad_h + h_offset;
+        int w_pad = w * stride_w - pad_w + w_offset;
+        if (h_pad >= 0 && h_pad < height && w_pad >= 0 && w_pad < width)
+          data_col[(c * height_col + h) * width_col + w] =
+            data_im[(c_im * height + h_pad) * width + w_pad];
+        else
+          data_col[(c * height_col + h) * width_col + w] = 0;
+      }
+    }
+  }
+}
+
+void Col2im(const float* data_col, const int channels,
+    const int height, const int width, const int patch_h, const int patch_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* data_im) {
+  memset(data_im, 0, height * width * channels * sizeof(float));
+  int height_col = (height + 2 * pad_h - patch_h) / stride_h + 1;
+  int width_col = (width + 2 * pad_w - patch_w) / stride_w + 1;
+  int channels_col = channels * patch_h * patch_w;
+  for (int c = 0; c < channels_col; ++c) {
+    int w_offset = c % patch_w;
+    int h_offset = (c / patch_w) % patch_h;
+    int c_im = c / patch_h / patch_w;
+    for (int h = 0; h < height_col; ++h) {
+      for (int w = 0; w < width_col; ++w) {
+        int h_pad = h * stride_h - pad_h + h_offset;
+        int w_pad = w * stride_w - pad_w + w_offset;
+        if (h_pad >= 0 && h_pad < height && w_pad >= 0 && w_pad < width)
+          data_im[(c_im * height + h_pad) * width + w_pad] +=
+            data_col[(c * height_col + h) * width_col + w];
+      }
+    }
+  }
+}
+
+void ForwardMaxPooling(const float* bottom, const int num, const int channels,
+    const int height, const int width, const int kernel_h, const int kernel_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* top, float* mask) {
+  int top_height = (height + pad_h * 2 -kernel_h ) / stride_h + 1;
+  int top_width = (width + pad_w * 2 -kernel_w ) / stride_w + 1;
+  int top_count = num * top_height * top_width * channels;
+  for (int i = 0; i < top_count; i++) {
+    mask[i] = -1;
+    top[i] = -FLT_MAX;
+  }
+  const int bottom_offset =  height * width;
+  const int top_offset = top_height * top_width;
+  // The main loop
+  for (int n = 0; n < num; ++n) {
+    for (int c = 0; c < channels; ++c) {
+      for (int ph = 0; ph < top_height; ++ph) {
+        for (int pw = 0; pw < top_width; ++pw) {
+          int hstart = ph * stride_h - pad_h;
+          int wstart = pw * stride_w - pad_w;
+          int hend = std::min(hstart + kernel_h, height);
+          int wend = std::min(wstart + kernel_w, width);
+          hstart = std::max(hstart, 0);
+          wstart = std::max(wstart, 0);
+          const int top_index = ph * top_width + pw;
+          for (int h = hstart; h < hend; ++h) {
+            for (int w = wstart; w < wend; ++w) {
+              const int index = h * width + w;
+              if (bottom[index] > top[top_index]) {
+                top[top_index] = bottom[index];
+                mask[top_index] = index;
+              }
+            }
+          }
+        }
+      }
+      // compute offset
+      bottom += bottom_offset;
+      top += top_offset;
+      mask += top_offset;
+    }
+  }
+}
+
+void BackwardMaxPooling(const float* top, const float* mask, const int num,
+    const int channels, const int height, const int width,
+    const int kernel_h, const int kernel_w, const int pad_h, const int pad_w,
+    const int stride_h, const int stride_w,
+    float* bottom) {
+  int top_height = (height + pad_h * 2 -kernel_h ) / stride_h + 1;
+  int top_width = (width + pad_w * 2 -kernel_w ) / stride_w + 1;
+  const int top_offset = top_height * top_width;
+  const int bottom_offset = height * width;
+  memset(bottom, 0, sizeof(float) * num * channels * bottom_offset);
+  for (int n = 0; n < num; ++n) {
+    for (int c = 0; c < channels; ++c) {
+      for (int ph = 0; ph < top_height; ++ph) {
+        for (int pw = 0; pw < top_width; ++pw) {
+          const int top_idx = ph * top_width + pw;
+          const int bottom_idx = static_cast<int>(mask[top_idx]);
+          bottom[bottom_idx] += top[top_idx];
+        }
+      }
+      top += top_offset;
+      mask += top_offset;
+      bottom += bottom_offset;
+    }
+  }
+}
+
+void ForwardAvgPooling(const float* bottom, const int num, const int channels,
+    const int height, const int width, const int kernel_h, const int kernel_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* top) {
+  int top_height = (height + pad_h * 2 -kernel_h ) / stride_h + 1;
+  int top_width = (width + pad_w * 2 -kernel_w ) / stride_w + 1;
+  int top_count = num * top_height * top_width * channels;
+  for (int i = 0; i < top_count; i++) {
+    top[i] = 0;
+  }
+  const int bottom_offset =  height * width;
+  const int top_offset = top_height * top_width;
+  // The main loop
+  for (int n = 0; n < num; ++n) {
+    for (int c = 0; c < channels; ++c) {
+      for (int ph = 0; ph < top_height; ++ph) {
+        for (int pw = 0; pw < top_width; ++pw) {
+          int hstart = ph * stride_h - pad_h;
+          int wstart = pw * stride_w - pad_w;
+          int hend = std::min(hstart + kernel_h, height+pad_h);
+          int wend = std::min(wstart + kernel_w, width+pad_w);
+          int pool_size = (hend-hstart) * (wend-wstart);
+          hstart = std::max(hstart, 0);
+          wstart = std::max(wstart, 0);
+          hend = std::min(hend, height);
+          wend = std::min(wend, width);
+          const int top_index = ph * top_width + pw;
+          for (int h = hstart; h < hend; ++h) {
+            for (int w = wstart; w < wend; ++w) {
+              const int index = h * width + w;
+              top[top_index] += bottom[index];
+            }
+          }
+          top[top_index] /= pool_size;
+        }
+      }
+      // compute offset
+      bottom += bottom_offset;
+      top += top_offset;
+    }
+  }
+}
+
+void BackwardAvgPooling(const float* top, const int num, const int channels,
+    const int height, const int width, const int kernel_h, const int kernel_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* bottom) {
+  int top_height = (height + pad_h * 2 -kernel_h ) / stride_h + 1;
+  int top_width = (width + pad_w * 2 -kernel_w ) / stride_w + 1;
+  const int top_offset = top_height * top_width;
+  const int bottom_offset = height * width;
+  memset(bottom, 0, sizeof(float) * num * channels * bottom_offset);
+  for (int n = 0; n < num; ++n) {
+    for (int c = 0; c < channels; ++c) {
+      for (int ph = 0; ph < top_height; ++ph) {
+        for (int pw = 0; pw < top_width; ++pw) {
+          int hstart = ph * stride_h - pad_h;
+          int wstart = pw * stride_w - pad_w;
+          int hend = std::min(hstart + kernel_h, height+pad_h);
+          int wend = std::min(wstart + kernel_w, width+pad_w);
+          int pool_size = (hend-hstart) * (wend-wstart);
+          hstart = std::max(hstart, 0);
+          wstart = std::max(wstart, 0);
+          hend = std::min(hend, height);
+          wend = std::min(wend, width);
+          const int top_index = ph * top_width + pw;
+          for (int h = hstart; h < hend; ++h) {
+            for (int w = wstart; w < wend; ++w) {
+              const int index = h * width + w;
+              bottom[index] += top[top_index] / pool_size;
+            }
+          }
+
+        }
+      }
+      top += top_offset;
+      bottom += bottom_offset;
+    }
+  }
+}
+
+void ReadProtoFromTextFile(const char* filename, Message* proto) {
+  int fd = open(filename, O_RDONLY);
+  CHECK_NE(fd, -1) << "File not found: " << filename;
+  FileInputStream* input = new FileInputStream(fd);
+  CHECK(google::protobuf::TextFormat::Parse(input, proto));
+  delete input;
+  close(fd);
+}
+
+void WriteProtoToTextFile(const Message& proto, const char* filename) {
+  int fd = open(filename, O_WRONLY | O_CREAT, 0644);
+  FileOutputStream* output = new FileOutputStream(fd);
+  CHECK(google::protobuf::TextFormat::Print(proto, output));
+  delete output;
+  close(fd);
+}
+
+void ReadProtoFromBinaryFile(const char* filename, Message* proto) {
+  int fd = open(filename, O_RDONLY);
+  CHECK_NE(fd, -1) << "File not found: " << filename;
+  ZeroCopyInputStream* raw_input = new FileInputStream(fd);
+  CodedInputStream* coded_input = new CodedInputStream(raw_input);
+  // upper limit 512MB, warning threshold 256MB
+  coded_input->SetTotalBytesLimit(536870912, 268435456);
+  CHECK(proto->ParseFromCodedStream(coded_input));
+  delete coded_input;
+  delete raw_input;
+  close(fd);
+}
+
+void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
+  int fd = open(filename, O_CREAT|O_WRONLY|O_TRUNC, 0644);
+  CHECK_NE(fd, -1) << "File cannot open: " << filename;
+  CHECK(proto.SerializeToFileDescriptor(fd));
+}
 }  // namespace singa

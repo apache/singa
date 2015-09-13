@@ -481,7 +481,6 @@ const vector<Msg*> Trainer::HandleUpdate(ParamEntry *entry, Msg** msg) {
         mshadow::Tensor<mshadow::cpu,1> grad((*it)->mutable_cpu_grad(), shape);
         sum += grad;
       }
-      sum /= entry->num_total;
     }
     int step = (*msg)->trgt_version();
     GenMsgs(kUpdate, step, entry, *msg, &ret);

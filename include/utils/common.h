@@ -14,14 +14,7 @@ namespace singa {
 std::string IntVecToString(const std::vector<int>& vec);
 std::string VStringPrintf(std::string fmt, va_list l);
 std::string StringPrintf(std::string fmt, ...);
-void ReadProtoFromTextFile(const char* filename,
-                           google::protobuf::Message* proto);
-void WriteProtoToTextFile(const google::protobuf::Message& proto,
-                          const char* filename);
-void ReadProtoFromBinaryFile(const char* filename,
-                             google::protobuf::Message* proto);
-void WriteProtoToBinaryFile(const google::protobuf::Message& proto,
-                            const char* filename);
+
 /**
  * Locate the position of the arg in arglist.
  *
@@ -101,6 +94,39 @@ class Metric {
  private:
   std::unordered_map<std::string, std::pair<int, float>> entry_;
 };
+
+using google::protobuf::Message;
+void Im2col(const float* data_im, const int channels,
+    const int height, const int width, const int kernel_h, const int kernel_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* data_col);
+void Col2im(const float* data_col, const int channels,
+    const int height, const int width, const int patch_h, const int patch_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* data_im);
+void ForwardMaxPooling(const float* bottom, const int num, const int channels,
+    const int height, const int width, const int kernel_h, const int kernel_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* top, float* mask);
+void BackwardMaxPooling(const float* top, const float* mask, const int num,
+    const int channels, const int height, const int width,
+    const int kernel_h, const int kernel_w, const int pad_h, const int pad_w,
+    const int stride_h, const int stride_w,
+    float* bottom);
+void ForwardAvgPooling(const float* bottom, const int num, const int channels,
+    const int height, const int width, const int kernel_h, const int kernel_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* top);
+void BackwardAvgPooling(const float* top, const int num, const int channels,
+    const int height, const int width, const int kernel_h, const int kernel_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    float* bottom);
+
+void ReadProtoFromTextFile(const char* filename, Message* proto);
+void WriteProtoToTextFile(const Message& proto, const char* filename);
+void ReadProtoFromBinaryFile(const char* filename, Message* proto);
+void WriteProtoToBinaryFile(const Message& proto, const char* filename);
+
 
 }  // namespace singa
 

@@ -36,6 +36,15 @@ class ConvolutionLayer : public NeuronLayer {
   Blob<float> col_data_, col_grad_;
 };
 
+/**
+ * Use im2col from Caffe
+ */
+class CConvolutionLayer : public ConvolutionLayer {
+ public:
+  void ComputeFeature(int flag, Metric* perf) override;
+  void ComputeGradient(int flag, Metric* perf) override;
+};
+
 class DropoutLayer : public NeuronLayer {
  public:
   void Setup(const LayerProto& proto, int npartitions) override;
@@ -83,6 +92,18 @@ class PoolingLayer : public NeuronLayer {
   int kernel_, pad_, stride_;
   int batchsize_, channels_, height_, width_, pooled_height_, pooled_width_;
   PoolingProto_PoolMethod pool_;
+};
+
+/**
+ * Use book-keeping for BP following Caffe's pooling implementation
+ */
+class CPoolingLayer : public PoolingLayer {
+ public:
+  void Setup(const LayerProto& proto, int npartitions);
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag, Metric* perf) override;
+ private:
+  Blob<float> mask_;
 };
 
 class ReLULayer : public NeuronLayer {

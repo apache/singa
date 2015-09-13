@@ -134,6 +134,49 @@ void ConvolutionLayer::ComputeGradient(int flag, Metric* perf) {
   }
 }
 
+/******************* Implementation for CConvolutionLayer *********/
+void CConvolutionLayer::ComputeFeature(int flag, Metric* perf) {
+  auto src = Tensor4(srclayers_[0]->mutable_data(this));
+  auto data = Tensor3(&data_);
+  auto col = Tensor2(&col_data_);
+  auto weight = Tensor2(weight_->mutable_data());
+  auto bias = Tensor1(bias_->mutable_data());
+
+  for (int n = 0; n < batchsize_; n++) {
+    Im2col(src[n].dptr, channels_, height_, width_,
+        kernel_, kernel_, pad_, pad_, stride_, stride_, col.dptr);
+    data[n] = dot(weight, col);
+  }
+  data += expr::broadcast<1>(bias, data.shape);
+}
+
+void CConvolutionLayer::ComputeGradient(int flag, Metric* perf) {
+  auto src = Tensor4(srclayers_[0]->mutable_data(this));
+  auto col = Tensor2(&col_data_);
+  auto weight = Tensor2(weight_->mutable_data());
+
+  auto grad = Tensor3(&grad_);
+  auto gcol = Tensor2(&col_grad_);
+  auto gweight = Tensor2(weight_->mutable_grad());
+  auto gbias = Tensor1(bias_->mutable_grad());
+  gweight = 0.f;
+  Blob<float>* gsrcblob = srclayers_[0]->mutable_grad(this);
+  Tensor<cpu, 4> gsrc(nullptr, Shape4(batchsize_, channels_, height_, width_));
+  if (gsrcblob != nullptr)
+    gsrc.dptr = gsrcblob->mutable_cpu_data();
+  gbias = expr::sumall_except_dim<1>(grad);
+  for(int n = 0; n < batchsize_; n++) {
+    Im2col(src[n].dptr, channels_, height_, width_,
+        kernel_, kernel_, pad_, pad_, stride_, stride_, col.dptr);
+    gweight += dot(grad[n], col.T());
+    if (gsrcblob != nullptr) {
+      gcol = dot(weight.T(), grad[n]);
+      Col2im(gcol.dptr, channels_, height_, width_,
+          kernel_, kernel_, pad_, pad_, stride_, stride_, gsrc[n].dptr);
+    }
+  }
+}
+
 /****************** Implementation for DropoutLayer ***********************/
 void DropoutLayer::Setup(const LayerProto& proto, int npartitions) {
   Layer::Setup(proto, npartitions);
@@ -430,7 +473,7 @@ void PoolingLayer::Setup(const LayerProto& proto, int npartitions) {
   stride_ = pool_conf.stride();
   CHECK_LT(pad_, kernel_);
   pool_ = proto.pooling_conf().pool();
-  CHECK(pool_ == PoolingProto_PoolMethod_AVE
+  CHECK(pool_ == PoolingProto_PoolMethod_AVG
         || pool_ == PoolingProto_PoolMethod_MAX)
         << "Padding implemented only for average and max pooling.";
   const auto& srcshape = srclayers_[0]->data(this).shape();
@@ -455,7 +498,7 @@ void PoolingLayer::ComputeFeature(int flag, Metric* perf) {
   auto data = Tensor4(&data_);
   if (pool_ == PoolingProto_PoolMethod_MAX)
     data = expr::pool<red::maximum>(src, kernel_, stride_);
-  else if (pool_ == PoolingProto_PoolMethod_AVE)
+  else if (pool_ == PoolingProto_PoolMethod_AVG)
     data = expr::pool<red::sum>(src, kernel_, stride_)
       * (1.0f / (kernel_ * kernel_));
 }
@@ -471,9 +514,42 @@ void PoolingLayer::ComputeGradient(int flag, Metric* perf) {
   auto grad = Tensor4(&grad_);
   if (pool_ == PoolingProto_PoolMethod_MAX)
     gsrc = expr::unpool<red::maximum>(src, data, grad, kernel_, stride_);
-  else if (pool_ == PoolingProto_PoolMethod_AVE)
+  else if (pool_ == PoolingProto_PoolMethod_AVG)
     gsrc = expr::unpool<red::sum>(src, data, grad, kernel_, stride_)
            * (1.0f / (kernel_ * kernel_));
+}
+
+/***************** Implementation of CPoolingLayer ***************/
+
+void CPoolingLayer::Setup(const LayerProto& proto, int npartitions) {
+  PoolingLayer::Setup(proto, npartitions);
+  if(pool_ == PoolingProto_PoolMethod_MAX)
+    mask_.ReshapeLike(data_);
+}
+void CPoolingLayer::ComputeFeature(int flag, Metric* perf) {
+  if(pool_ == PoolingProto_PoolMethod_MAX)
+    ForwardMaxPooling(srclayers_[0]->mutable_data(this)->mutable_cpu_data(),
+        batchsize_, channels_, height_, width_, kernel_, kernel_, pad_, pad_,
+        stride_, stride_, data_.mutable_cpu_data(), mask_.mutable_cpu_data());
+  else if(pool_ == PoolingProto_PoolMethod_AVG)
+    ForwardAvgPooling(srclayers_[0]->mutable_data(this)->mutable_cpu_data(),
+        batchsize_, channels_, height_, width_, kernel_, kernel_, pad_, pad_,
+        stride_, stride_, data_.mutable_cpu_data());
+  else
+    LOG(FATAL) << "unknow pooling method";
+}
+
+void CPoolingLayer::ComputeGradient(int flag, Metric* perf) {
+  if(pool_ == PoolingProto_PoolMethod_MAX)
+    BackwardMaxPooling(grad_.cpu_data(), mask_.cpu_data(), batchsize_,
+        channels_, height_, width_, kernel_, kernel_, pad_, pad_,
+        stride_, stride_,srclayers_[0]->mutable_grad(this)->mutable_cpu_data());
+  else if(pool_ == PoolingProto_PoolMethod_AVG)
+    BackwardAvgPooling(grad_.cpu_data(), batchsize_,
+        channels_, height_, width_, kernel_, kernel_, pad_, pad_,
+        stride_, stride_,srclayers_[0]->mutable_grad(this)->mutable_cpu_data());
+  else
+    LOG(FATAL) << "unknow pooling method";
 }
 
 /***************** Implementation for ReLULayer *****************************/

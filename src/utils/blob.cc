@@ -1,5 +1,5 @@
 /**
- * The code is adapted from that of Caffe whose license is attached.
+ * The code is adapted from Caffe whose license is attached.
  *
  * COPYRIGHT
  * All contributions by the University of California:
