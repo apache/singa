@@ -1,0 +1,7 @@
+MSHADOW_FLAGS :=-DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
+
+all:
+	protoc --proto_path=../../src/proto --proto_path=. --cpp_out=. rnnlm.proto
+	$(CXX) main.cc rnnlm.cc rnnlm.pb.cc $(MSHADOW_FLAGS) -std=c++11 -lsinga -lglog -lprotobuf -lopenblas -I../../include\
+		-I../../include/proto/ -L../../.libs/ -L/usr/local  -Wl,-unresolved-symbols=ignore-in-shared-libs -Wl,-rpath=../../.libs/\
+		-o rnnlm.bin

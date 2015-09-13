@@ -267,11 +267,14 @@ Metric::Metric(const string& str) {
 }
 
 void Metric::Add(const string& name, float value) {
+  Add( name, value, 1);
+}
+void Metric::Add(const string& name, float value, int count) {
   if (entry_.find(name) == entry_.end()) {
     entry_[name] = std::make_pair(1, value);
   } else {
     auto& e = entry_.at(name);
-    e.first += 1;
+    e.first += count;
     e.second += value;
   }
 }

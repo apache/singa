@@ -95,6 +95,7 @@ class Metric {
    * @param value metric value
    */
   void Add(const std::string& name, float value);
+  void Add(const std::string& name, float value, int count);
   /**
    * reset all metric counter and value to 0
    */

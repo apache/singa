@@ -1,0 +1,18 @@
+package singa;
+import "job.proto";
+
+
+message EmbeddingProto {
+  optional int32 word_dim = 1;
+  optional int32 vocab_size = 2;
+}
+
+message OutputProto {
+  optional int32 nclass = 1;
+  optional int32 vocab_size = 2;
+}
+
+extend LayerProto {
+  optional EmbeddingProto embedding_conf = 101;
+  optional OutputProto output_conf = 102;
+}
