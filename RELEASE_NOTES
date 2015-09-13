@@ -1,6 +1,11 @@
 Release Notes - SINGA - Version singa-incubating-0.1-rc0
 -----------------------------------------
-This release includes these features:
+
+SINGA is a general distributed deep learning platform for training big deep learning models over large datasets. It is
+designed with an intuitive programming model based on the layer abstraction. SINGA supports a wide variety of popular
+deep learning models. 
+
+This release includes following features:
 
   * Job management
     * [SINGA-3] - Use Zookeeper to check stopping (finish) time of the system
@@ -70,24 +75,10 @@ Some bugs are fixed during the development of this release
   * [SINGA-49] Fix a bug in HandlePutMsg func that sets param fields to invalid values
   * [SINGA-66] Fix bugs in Worker::RunOneBatch function and ClusterProto
 
-Some tasks should be done in the next release
+Features planned for the next release 
   * [SINGA-11] Start SINGA using Mesos
   * [SINGA-31] Extend Blob to support xpu (cpu or gpu)
   * [SINGA-35] Add random number generators
   * [SINGA-40] Support sparse Param update
   * [SINGA-41] Support single node single GPU training
 
-The current code depends on the following external libraries:
-  * glog (New BSD)
-  * google-protobuf (New BSD)
-  * openblas (New BSD)
-  * zeromq (LGPLv3 + static link exception)
-  * czmq (Mozilla Public License Version 2.0)
-  * zookeeper (Apache 2.0)
-  * lmdb (OpenLDAP)
-
-Some source files/folders include third-party code:
-  * include/gtest (New BSD)
-  * include/mshadow (Apache 2.0)
-  * include/utils/tinydir.h (BSD 2-clause)
-  * caffe <include/utils/blob.h, src/utils/blob.cc, include/utils/common.h, src/utils/common.cc> (BSD 2-clause)

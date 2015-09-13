@@ -7,6 +7,8 @@ The Apache Software Foundation (http://www.apache.org/).
 Portions of this software were developed at the National University of
 Singapore.
 
-The software uses thridpart libaries including czmq, glog, google protobuf, OpenCV and Openblas. 
-This software also contains code derived from the caffe project (https://github.com/BVLC/caffe) 
-and tinydir from Cong Xu.
+This software contains codes from the other projects: Caffe (https://github.com/BVLC/caffe), tinydir
+(https://github.com/cxong/tinydir), mshadow (https://github.com/dmlc/mshadow) and gtest
+(https://code.google.com/p/googletest/).
+
+The software uses external libraries including czmq, glog, google protobuf, OpenCV and Openblas. 
