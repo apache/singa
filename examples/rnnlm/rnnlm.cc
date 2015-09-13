@@ -25,6 +25,83 @@ inline Tensor<cpu, 1> RTensor1(Blob<float>* blob) {
   return tensor;
 }
 
+
+/*******InputLayer**************/
+RnnDataLayer::~RnnDataLayer() {
+  if (shard_ != nullptr)
+    delete shard_;
+  shard_ = nullptr;
+}
+
+void RnnDataLayer::Setup(const LayerProto& proto, int npartitions) {
+  Layer::Setup(proto, npartitions);
+  shard_ = new DataShard(proto.GetExtension(input_conf).path(), DataShard::kRead);
+  string key;
+  max_window_ = proto.GetExtension(input_conf).max_window();
+  records_.resize(max_window_ + 1);  // # of records in data layer is max_window_ + 1
+  window_ = 0;
+  shard_->Next(&key, &records_[window_]);
+}
+
+void RnnDataLayer::ComputeFeature(int flag, Metric *perf) {
+  CHECK(records_.size() <= shard_->Count());
+  records_[0] = records_[window_];
+  window_ = max_window_;
+  singa::WordRecord wr;
+  for (int i = 1; i <= max_window_; i++) {
+    string key;
+    if (shard_->Next(&key, &records_[i])) {
+      wr = records_[i];
+      if(wr.word_index() == 0) {
+        window_ = i;
+        break;
+      }
+    }
+    else{
+      shard_->SeekToFirst();
+      CHECK(shard_->Next(&key, &records_[i]));
+    }
+  }
+}
+
+/*******WordLayer**************/
+void WordLayer::Setup(const LayerProto& proto, int npartitions) {
+  Layer::Setup(proto, npartitions);
+  CHECK_EQ(srclayers_.size(), 1);
+  int max_window = static_cast<RnnDataLayer*>(srclayers_[0])->max_window();
+  data_.Reshape(vector<int>{max_window});
+}
+
+void WordLayer::ComputeFeature(int flag, Metric *perf) {
+  auto records = static_cast<RnnDataLayer*>(srclayers_[0])->records();
+  float *word = data_.mutable_cpu_data();
+  window_ = static_cast<RNNLayer*>(srclayers_[0])->window();
+  for(int i = 0; i < window_; i++) {
+    word[i] = records[i].word_index();
+  }
+}
+
+
+/*******LabelLayer**************/
+void RnnLabelLayer::Setup(const LayerProto& proto, int npartitions) {
+  Layer::Setup(proto, npartitions);
+  CHECK_EQ(srclayers_.size(), 1);
+  int max_window = static_cast<RnnDataLayer*>(srclayers_[0])->max_window();
+  data_.Reshape(vector<int>{max_window, 4});
+}
+
+void RnnLabelLayer::ComputeFeature(int flag, Metric *perf) {
+  auto records = static_cast<RnnDataLayer*>(srclayers_[0])->records();
+  float *label = data_.mutable_cpu_data();
+  window_ = static_cast<RNNLayer*>(srclayers_[0])->window();
+  for (int i = 0; i < window_; i++) {
+    label[4 * i + 0] = records[i + 1].class_start();
+    label[4 * i + 1] = records[i + 1].class_end();
+    label[4 * i + 2] = records[i + 1].word_index();
+    label[4 * i + 3] = records[i + 1].class_index();
+  }
+}
+
 /*******EmbeddingLayer**************/
 EmbeddingLayer::~EmbeddingLayer() {
   delete embed_;

@@ -1,4 +1,5 @@
 #include "singa.h"
+#include "rnnlm.pb.h"
 namespace singa {
 
 /**
@@ -21,6 +22,52 @@ class RNNLayer : public NeuronLayer {
   //!< effect window size for BPTT
   int window_;
 };
+
+/**
+ * Input layer that get read records from data shard
+ */
+class RnnDataLayer : public RNNLayer {
+ public:
+  ~RnnDataLayer();
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag, Metric* perf) override {}
+  int max_window() const {
+    return max_window_;
+  }
+
+  const std::vector<singa::WordRecord>& records() const {
+    return records_;
+  }
+
+ private:
+  int max_window_;
+  DataShard* shard_;
+  std::vector<singa::WordRecord> records_;
+};
+
+
+/**
+ * WordLayer that read records_[0] to records_[window_ - 1] from RnnDataLayer to offer data for computation
+ */
+class WordLayer : public RNNLayer {
+ public:
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag, Metric* perf) override {}
+};
+
+
+/**
+ * LabelLayer that read records_[1] to records_[window_] from RnnDataLayer to offer label information
+ */
+class RnnLabelLayer : public RNNLayer {
+ public:
+  void Setup(const LayerProto& proto, int npartitions) override;
+  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeGradient(int flag, Metric* perf) override {}
+};
+
 
 /**
  * Word embedding layer that get one row from the embedding matrix for each

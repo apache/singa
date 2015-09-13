@@ -1,5 +1,6 @@
 package singa;
 import "job.proto";
+import "common.proto";
 
 
 message EmbeddingProto {
@@ -12,7 +13,21 @@ message OutputProto {
   optional int32 vocab_size = 2;
 }
 
+message InputProto {
+  required string path = 1;
+  optional int32 max_window = 2;
+}
+
 extend LayerProto {
   optional EmbeddingProto embedding_conf = 101;
   optional OutputProto output_conf = 102;
+  optional InputProto input_conf = 103;
+}
+
+message WordRecord {
+  optional string word = 1;
+  optional int32 word_index = 2;
+  optional int32 class_index = 3;
+  optional int32 class_start = 4;
+  optional int32 class_end = 5;
 }

@@ -1,5 +1,31 @@
 MSHADOW_FLAGS :=-DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 
+libs :=singa glog protobuf
+filename = rnnlm-0.4b.tgz
+# note: filelink for rnnlm-0.4b may change
+filelink = https://f25ea9ccb7d3346ce6891573d543960492b92c30.googledrive.com/host/0ByxdPXuxLPS5RFM5dVNvWVhTd0U
+dirname = $(patsubst %.tgz,%, $(filename))
+numclass = 100
+dirshards = train_shard valid_shard test_shard
+
+
+.PHONY: all download create
+
+download: rnnlm
+
+rnnlm:
+	wget $(filelink)/$(filename)
+	tar zxf $(filename)
+	rm $(filename)
+
+create:
+	$(CXX) create_shard.cc -std=c++11 -lsinga -lprotobuf -lzookeeper_mt -lglog -I../../include \
+		-L../../.libs/ -L/usr/local/lib -Wl,-unresolved-symbols=ignore-in-shared-libs -Wl,-rpath=../../.libs/ \
+		-o create_shard.bin
+	for d in $(dirshards); do mkdir -p $${d}; done
+	./create_shard.bin -train $(dirname)/train -class_size $(numclass) -test $(dirname)/test
+
+
 all:
 	protoc --proto_path=../../src/proto --proto_path=. --cpp_out=. rnnlm.proto
 	$(CXX) main.cc rnnlm.cc rnnlm.pb.cc $(MSHADOW_FLAGS) -std=c++11 -lsinga -lglog -lprotobuf -lopenblas -I../../include\
