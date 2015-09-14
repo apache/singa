@@ -41,6 +41,7 @@ class SoftmaxLossLayer : public LossLayer {
   float scale_;
   int topk_;
 };
-}
-//  namespace singa
+
+}  // namespace singa
+
 #endif  // SINGA_NEURALNET_LOSS_LAYER_H_

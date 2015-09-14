@@ -1,5 +1,6 @@
 #ifndef SINGA_DRIVER_H_
 #define SINGA_DRIVER_H_
+
 #include "singa.h"
 
 namespace singa {
@@ -110,24 +111,28 @@ int Driver::RegisterParam(const Type& type) {
   factory->Register(type, CreateInstance(Subclass, Param));
   return 1;
 }
+
 template<typename Subclass, typename Type>
 int Driver::RegisterParamGenerator(const Type& type) {
   auto factory = Singleton<Factory<singa::ParamGenerator>>::Instance();
   factory->Register(type, CreateInstance(Subclass, ParamGenerator));
   return 1;
 }
+
 template<typename Subclass, typename Type>
 int Driver::RegisterUpdater(const Type& type) {
   auto factory = Singleton<Factory<singa::Updater>>::Instance();
   factory->Register(type, CreateInstance(Subclass, Updater));
   return 1;
 }
+
 template<typename Subclass, typename Type>
 int Driver::RegisterLRGenerator(const Type& type) {
   auto factory = Singleton<Factory<singa::LRGenerator>>::Instance();
   factory->Register(type, CreateInstance(Subclass, LRGenerator));
   return 1;
 }
+
 template<typename Subclass, typename Type>
 int Driver::RegisterWorker(const Type& type) {
   auto factory = Singleton<Factory<singa::Worker>>::Instance();
@@ -135,8 +140,6 @@ int Driver::RegisterWorker(const Type& type) {
   return 1;
 }
 
-
 }  // namespace singa
+
 #endif  // SINGA_DRIVER_H_
-
-

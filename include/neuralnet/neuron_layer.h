@@ -1,9 +1,10 @@
 #ifndef SINGA_NEURALNET_NEURON_LAYER_H_
 #define SINGA_NEURALNET_NEURON_LAYER_H_
-#include <vector>
 
+#include <vector>
 #include "neuralnet/layer.h"
 #include "proto/job.pb.h"
+
 /**
  * \file this file includes the declarations neuron layer classes that conduct
  * the transformation of features.
@@ -220,7 +221,6 @@ class RBMHidLayer: public RBMLayer {
  private:
   RBMLayer *vis_layer_;
 };
-
 
 }  // namespace singa
 

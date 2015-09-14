@@ -1,10 +1,8 @@
+#include "driver.h"
 
 #include <cblas.h>
 #include <glog/logging.h>
 #include <string>
-
-#include "singa.h"
-
 #include "utils/tinydir.h"
 
 namespace singa {

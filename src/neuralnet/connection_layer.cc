@@ -1,7 +1,9 @@
-#include <vector>
-#include "neuralnet/layer.h"
+#include "neuralnet/connection_layer.h"
 
 namespace singa {
+
+using std::vector;
+
 /************* Implementation for ConcateLayer ***********/
 void ConcateLayer::Setup(const LayerProto& proto, int npartitions) {
   // CHECK_EQ(npartitions, 1);

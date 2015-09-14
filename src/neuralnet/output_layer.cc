@@ -2,5 +2,4 @@
 
 namespace singa {
 
-
-}
+}  // namespace singa

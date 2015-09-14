@@ -1,8 +1,7 @@
-#include <vector>
-#include <string>
+#include "neuralnet/input_layer.h"
 
-#include "neuralnet/layer.h"
 #include "mshadow/tensor.h"
+
 namespace singa {
 
 using namespace mshadow;
@@ -10,6 +9,8 @@ using mshadow::cpu;
 using mshadow::Shape4;
 using mshadow::Tensor;
 
+using std::string;
+using std::vector;
 
 /************* Implementation for ParserLayer ***********/
 void ParserLayer::ComputeFeature(int flag, Metric *perf) {

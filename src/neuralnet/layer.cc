@@ -9,6 +9,8 @@
 
 namespace singa {
 
+using std::string;
+
 Layer* Layer::Create(const LayerProto& proto) {
   auto* factory = Singleton<Factory<Layer>>::Instance();
   Layer* layer = nullptr;

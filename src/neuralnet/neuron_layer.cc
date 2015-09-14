@@ -1,10 +1,11 @@
+#include "neuralnet/neuron_layer.h"
+
 #include <glog/logging.h>
 #include <algorithm>
-
-#include "neuralnet/layer.h"
 #include "utils/singleton.h"
 #include "mshadow/tensor.h"
 #include "mshadow/cxxnet_op.h"
+
 namespace singa {
 
 using namespace mshadow;
@@ -165,7 +166,7 @@ void CConvolutionLayer::ComputeGradient(int flag, Metric* perf) {
   if (gsrcblob != nullptr)
     gsrc.dptr = gsrcblob->mutable_cpu_data();
   gbias = expr::sumall_except_dim<1>(grad);
-  for(int n = 0; n < batchsize_; n++) {
+  for (int n = 0; n < batchsize_; n++) {
     Im2col(src[n].dptr, channels_, height_, width_,
         kernel_, kernel_, pad_, pad_, stride_, stride_, col.dptr);
     gweight += dot(grad[n], col.T());
@@ -230,7 +231,7 @@ Blob<float>* RBMLayer::Sample(int flag) {
     &sample_ : &neg_sample_;
 }
 void RBMLayer::Setup(const LayerProto& proto, int npartitions) {
-  CHECK_EQ(npartitions, 1);  //  TODO test for npartitions > 1
+  CHECK_EQ(npartitions, 1);  // TODO(wangwei) test for npartitions > 1
   Layer::Setup(proto, npartitions);
   hdim_ = proto.rbm_conf().hdim();
   gaussian_ = proto.rbm_conf().gaussian();
@@ -523,15 +524,15 @@ void PoolingLayer::ComputeGradient(int flag, Metric* perf) {
 
 void CPoolingLayer::Setup(const LayerProto& proto, int npartitions) {
   PoolingLayer::Setup(proto, npartitions);
-  if(pool_ == PoolingProto_PoolMethod_MAX)
-    mask_.ReshapeLike(data_);
+  if (pool_ == PoolingProto_PoolMethod_MAX)
+      mask_.ReshapeLike(data_);
 }
 void CPoolingLayer::ComputeFeature(int flag, Metric* perf) {
-  if(pool_ == PoolingProto_PoolMethod_MAX)
+  if (pool_ == PoolingProto_PoolMethod_MAX)
     ForwardMaxPooling(srclayers_[0]->mutable_data(this)->mutable_cpu_data(),
         batchsize_, channels_, height_, width_, kernel_, kernel_, pad_, pad_,
         stride_, stride_, data_.mutable_cpu_data(), mask_.mutable_cpu_data());
-  else if(pool_ == PoolingProto_PoolMethod_AVG)
+  else if (pool_ == PoolingProto_PoolMethod_AVG)
     ForwardAvgPooling(srclayers_[0]->mutable_data(this)->mutable_cpu_data(),
         batchsize_, channels_, height_, width_, kernel_, kernel_, pad_, pad_,
         stride_, stride_, data_.mutable_cpu_data());
@@ -540,11 +541,11 @@ void CPoolingLayer::ComputeFeature(int flag, Metric* perf) {
 }
 
 void CPoolingLayer::ComputeGradient(int flag, Metric* perf) {
-  if(pool_ == PoolingProto_PoolMethod_MAX)
+  if (pool_ == PoolingProto_PoolMethod_MAX)
     BackwardMaxPooling(grad_.cpu_data(), mask_.cpu_data(), batchsize_,
         channels_, height_, width_, kernel_, kernel_, pad_, pad_,
         stride_, stride_,srclayers_[0]->mutable_grad(this)->mutable_cpu_data());
-  else if(pool_ == PoolingProto_PoolMethod_AVG)
+  else if (pool_ == PoolingProto_PoolMethod_AVG)
     BackwardAvgPooling(grad_.cpu_data(), batchsize_,
         channels_, height_, width_, kernel_, kernel_, pad_, pad_,
         stride_, stride_,srclayers_[0]->mutable_grad(this)->mutable_cpu_data());

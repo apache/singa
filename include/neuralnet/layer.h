@@ -5,7 +5,6 @@
 #include <string>
 #include <thread>
 #include <vector>
-
 #include "proto/common.pb.h"
 #include "proto/job.pb.h"
 #include "utils/common.h"
@@ -13,8 +12,6 @@
 #include "utils/param.h"
 
 namespace singa {
-using std::vector;
-using std::string;
 
 /**
  * Base layer class.
@@ -207,10 +204,11 @@ class LossLayer : public Layer {
 };
 
 }  // namespace singa
+
 #include "neuralnet/connection_layer.h"
 #include "neuralnet/input_layer.h"
 #include "neuralnet/loss_layer.h"
 #include "neuralnet/neuron_layer.h"
 #include "neuralnet/output_layer.h"
 
-#endif  // SINGA_NEURALNET_BASE_LAYER_H_
+#endif  // SINGA_NEURALNET_LAYER_H_

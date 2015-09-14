@@ -1,9 +1,10 @@
+#include "neuralnet/loss_layer.h"
+
 #include <glog/logging.h>
-#include "neuralnet/layer.h"
 #include "mshadow/tensor.h"
 
-
 namespace singa {
+
 using namespace mshadow;
 using mshadow::cpu;
 
@@ -14,6 +15,8 @@ using mshadow::Shape3;
 using mshadow::Shape4;
 using mshadow::Tensor;
 
+using std::string;
+using std::vector;
 
 /********** * Implementation for EuclideanLossLayer*************************/
 void EuclideanLossLayer::ComputeFeature(int flag, Metric* perf) {

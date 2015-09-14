@@ -357,8 +357,8 @@ void ForwardMaxPooling(const float* bottom, const int num, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h, const int stride_w,
     float* top, float* mask) {
-  int top_height = (height + pad_h * 2 -kernel_h ) / stride_h + 1;
-  int top_width = (width + pad_w * 2 -kernel_w ) / stride_w + 1;
+  int top_height = (height + pad_h * 2 -kernel_h) / stride_h + 1;
+  int top_width = (width + pad_w * 2 -kernel_w) / stride_w + 1;
   int top_count = num * top_height * top_width * channels;
   for (int i = 0; i < top_count; i++) {
     mask[i] = -1;
@@ -402,8 +402,8 @@ void BackwardMaxPooling(const float* top, const float* mask, const int num,
     const int kernel_h, const int kernel_w, const int pad_h, const int pad_w,
     const int stride_h, const int stride_w,
     float* bottom) {
-  int top_height = (height + pad_h * 2 -kernel_h ) / stride_h + 1;
-  int top_width = (width + pad_w * 2 -kernel_w ) / stride_w + 1;
+  int top_height = (height + pad_h * 2 -kernel_h) / stride_h + 1;
+  int top_width = (width + pad_w * 2 -kernel_w) / stride_w + 1;
   const int top_offset = top_height * top_width;
   const int bottom_offset = height * width;
   memset(bottom, 0, sizeof(float) * num * channels * bottom_offset);
@@ -427,8 +427,8 @@ void ForwardAvgPooling(const float* bottom, const int num, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h, const int stride_w,
     float* top) {
-  int top_height = (height + pad_h * 2 -kernel_h ) / stride_h + 1;
-  int top_width = (width + pad_w * 2 -kernel_w ) / stride_w + 1;
+  int top_height = (height + pad_h * 2 -kernel_h) / stride_h + 1;
+  int top_width = (width + pad_w * 2 -kernel_w) / stride_w + 1;
   int top_count = num * top_height * top_width * channels;
   for (int i = 0; i < top_count; i++) {
     top[i] = 0;
@@ -470,8 +470,8 @@ void BackwardAvgPooling(const float* top, const int num, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h, const int stride_w,
     float* bottom) {
-  int top_height = (height + pad_h * 2 -kernel_h ) / stride_h + 1;
-  int top_width = (width + pad_w * 2 -kernel_w ) / stride_w + 1;
+  int top_height = (height + pad_h * 2 -kernel_h) / stride_h + 1;
+  int top_width = (width + pad_w * 2 -kernel_w) / stride_w + 1;
   const int top_offset = top_height * top_width;
   const int bottom_offset = height * width;
   memset(bottom, 0, sizeof(float) * num * channels * bottom_offset);
@@ -495,7 +495,6 @@ void BackwardAvgPooling(const float* top, const int num, const int channels,
               bottom[index] += top[top_index] / pool_size;
             }
           }
-
         }
       }
       top += top_offset;

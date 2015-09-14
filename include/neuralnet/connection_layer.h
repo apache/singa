@@ -1,5 +1,7 @@
 #ifndef SINGA_NEURALNET_CONNECTION_LAYER_H_
 #define SINGA_NEURALNET_CONNECTION_LAYER_H_
+
+#include <vector>
 #include "neuralnet/layer.h"
 
 /**
@@ -120,6 +122,7 @@ class SplitLayer : public ConnectionLayer {
  protected:
   Blob<float> grads_;
 };
-}
-//  namespace singa
+
+}  // namespace singa
+
 #endif  // SINGA_NEURALNET_CONNECTION_LAYER_H_

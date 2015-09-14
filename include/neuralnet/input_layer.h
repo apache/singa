@@ -1,6 +1,7 @@
 #ifndef SINGA_NEURALNET_INPUT_LAYER_H_
 #define SINGA_NEURALNET_INPUT_LAYER_H_
 
+#include <string>
 #include <vector>
 #include "neuralnet/layer.h"
 #include "utils/data_shard.h"
@@ -165,6 +166,7 @@ class PrefetchLayer : public Layer {
  protected:
   std::thread thread_;
 };
+
 }  // namespace singa
 
 #endif  // SINGA_NEURALNET_INPUT_LAYER_H_
