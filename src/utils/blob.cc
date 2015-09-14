@@ -40,8 +40,10 @@
 #include "utils/blob.h"
 
 #include <cblas.h>
+#include <cuda_runtime.h>
 #include <math.h>
 #include <utility>
+
 
 #define NOT_IMPLEMENTED LOG(FATAL) << "Not implemented function"
 #define NO_GPU LOG(FATAL) << "CPU-only Mode: cannot make GPU call."
@@ -166,7 +168,9 @@ void SyncedMemory::to_gpu() {
   switch (head_) {
   case UNINITIALIZED:
     CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
-    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, N));
+    //CUDA_CHECK(cudaMemset(gpu_ptr_, 0, N));
+	//
+    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, size_));
     head_ = HEAD_AT_GPU;
     break;
   case HEAD_AT_CPU:

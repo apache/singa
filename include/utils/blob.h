@@ -160,6 +160,14 @@ class Blob {
     CHECK(data_);
     return static_cast<Dtype*>(data_->mutable_gpu_data());
   }
+  inline Dtype* mutable_xpu_data() {
+    CHECK(data_);
+	#ifndef CPU_ONLY
+		return static_cast<Dtype*>(data_->mutable_gpu_data());
+	#else
+	    return static_cast<Dtype*>(data_->mutable_cpu_data());
+	#endif
+  }
   /// @brief Compute the sum of absolute values (L1 norm) of the data.
   Dtype asum_data() const;
   Dtype sum_data() const;

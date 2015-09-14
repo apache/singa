@@ -1,0 +1,132 @@
+###################User Config Varaibles #############################
+# third-party library installation folder
+HOME_DIR := /usr
+#Cuda installation folder
+CUDA_DIR := /usr/local/cuda
+# Lib folder for system and external libs. You may need to change it.
+LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(HOME_DIR)/local/lib $(CUDA_DIR)/lib $(CUDA_DIR)/lib64
+# Header folder for system and external libs. You may need to change it.
+INCLUDE_DIRS := $(HOME_DIR)/include ./include $(HOME_DIR)/local/include/zookeeper $(HOME_DIR)/local/include $(CUDA_DIR)/include
+# g++ location, should support c++11, tested with 4.8.1
+CXX := g++
+CUCXX := nvcc
+
+######################Setting Varialbes#######################################
+LIBRARIES := glog protobuf openblas zmq czmq zookeeper_mt
+
+# Add CUDA library
+ifneq ($(CUDA_DIR),)
+	LIBRARIES := $(LIBRARIES) cublas cudart curand
+endif
+
+LDFLAGS := $(foreach librarydir, $(LIBRARY_DIRS), -L$(librarydir))\
+	$(foreach library, $(LIBRARIES), -l$(library))
+# Folder to store compiled files
+BUILD_DIR := .libs
+MSHADOW_FLAGS :=-DMSHADOW_USE_CUDA=1 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
+ZK_FLAGS :=-DTHREADED -fpermissive
+CXXFLAGS := -O2 -msse3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
+	$(MSHADOW_FLAGS) $(ZK_FLAGS)\
+	-funroll-loops $(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
+CUCXXFLAGS := $(MSHADOW_FLAGS) -std=c++11 \
+	$(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
+
+# Add device compile option
+ifeq ($(CUDA_DIR),)
+	MSHADOW_FLAGS := $(MSHADOW_FLAGS) -DCPU_ONLY
+	CXXFLAGS := $(CXXFLAGS) -DCPU_ONLY
+endif
+
+# find user defined .proto file, and then compute the corresponding .h, .cc
+# files, which cannot be found by shell find, because they haven't been
+# generated currently
+PROTOS := $(shell find src/proto/ -name "*.proto")
+PROTO_SRCS :=$(PROTOS:.proto=.pb.cc)
+PROTO_HDRS :=$(patsubst src%, include%, $(PROTOS:.proto=.pb.h))
+PROTO_OBJS :=$(addprefix $(BUILD_DIR)/, $(PROTO_SRCS:.cc=.o))
+
+# each singa src file will generate a .o file
+SINGA_SRCS := $(shell find src/ \( -path "src/test" -o -path "src/main.cc" -o -path "src/utils/tool.cc" \) \
+	-prune -o \( -name "*.cc" -type f \) -print )
+SINGA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(SINGA_SRCS:.cc=.o)) \
+	$(PROTO_OBJS) )
+-include $(SINGA_OBJS:%.o=%.P)
+
+TEST_SRCS :=$(shell find src/test/ -maxdepth 1 -name "*.cc")
+TEST_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_SRCS:.cc=.o)))
+-include $(TEST_OBJS:%.o=%.P)
+
+TEST_CUDA_SRCS :=$(shell find src/test/ -maxdepth 1 -name "*.cu")
+TEST_CUDA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_CUDA_SRCS:.cu=.o)))
+-include $(TEST_CUDA_OBJS:%.o=%.P)
+
+
+SINGA_CUDA_SRCS :=$(shell find src/neuralnet/ -maxdepth 1 -name "*.cu")
+SINGA_CUDA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(SINGA_CUDA_SRCS:.cu=.o)))
+-include $(SINGA_CUDA_OBJS:%.o=%.P)
+
+GTEST_SRC := include/gtest/gtest-all.cc
+GTEST_HDR := include/gtest/gtest.h
+GTEST_LIB := $(BUILD_DIR)/libgtest.a
+
+OBJS := $(sort $(SINGA_OBJS) $(TEST_OBJS) )
+CUOBJS := $(sort $(SINGA_CUDA_OBJS) $(TEST_CUDA_OBJS) )
+
+########################Compilation Section###################################
+.PHONY: singa test
+
+singa: $(PROTO_OBJS) $(SINGA_OBJS) $(SINGA_CUDA_OBJS)
+	$(CXX) -shared -o $(BUILD_DIR)/libsinga.so $(SINGA_OBJS)
+	$(CXX) $(SINGA_OBJS) $(SINGA_CUDA_OBJS) src/main.cc -o singa $(CXXFLAGS) $(LDFLAGS)
+	@echo
+	$(CXX) $(SINGA_OBJS) $(SINGA_CUDA_OBJS) src/utils/tool.cc -o singatool $(CXXFLAGS) $(LDFLAGS)
+	@echo
+
+loader: proto $(LOADER_OBJS)
+	$(CXX) $(LOADER_OBJS) -o $(BUILD_DIR)/loader $(CXXFLAGS) $(LDFLAGS)
+	@echo
+
+test:  proto $(GTEST_LIB) $(TEST_OBJS) $(TEST_CUDA_OBJS) $(SINGA_OBJS) $(SINGA_CUDA_OBJS)
+	$(CXX) $(TEST_OBJS) $(TEST_CUDA_OBJS) include/gtest/gtest_main.cc $(GTEST_LIB) \
+		$(SINGA_OBJS) $(SINGA_CUDA_OBJS) -o $(BUILD_DIR)/test $(CXXFLAGS) $(LDFLAGS)
+	@echo
+
+$(GTEST_LIB): $(GTEST_HDR) $(GTEST_SRC)
+	$(CXX) $(GTEST_SRC) -c -o $(BUILD_DIR)/gtest-all.o $(CXXFLAGS)
+	ar -rv $(GTEST_LIB) $(BUILD_DIR)/gtest-all.o
+
+# compile all files
+$(OBJS):$(BUILD_DIR)/%.o : %.cc
+	@mkdir -p $(dir $@)
+	$(CXX) $<  $(CXXFLAGS) -MMD -c -o $@
+	cp $(BUILD_DIR)/$*.d $(BUILD_DIR)/$*.P; \
+	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+		-e '/^$$/ d' -e 's/$$/ :/' < $(BUILD_DIR)/$*.d >> $(BUILD_DIR)/$*.P; \
+	rm -f $*.d
+
+$(CUOBJS):$(BUILD_DIR)/%.o : %.cu
+	@mkdir -p $(dir $@)
+	$(CUCXX) $< -c -o $@ $(CUCXXFLAGS)
+	cp $(BUILD_DIR)/$*.d $(BUILD_DIR)/$*.P; \
+	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	-e '/^$$/ d' -e 's/$$/ :/' < $(BUILD_DIR)/$*.d >> $(BUILD_DIR)/$*.P; \
+	rm -f $*.d
+
+proto: $(PROTO_OBJS)
+
+$(PROTO_SRCS): $(PROTOS)
+	protoc --proto_path=src/proto --cpp_out=src/proto $(PROTOS)
+	mkdir -p include/proto/
+	cp src/proto/*.pb.h include/proto/
+	mkdir -p tool/pb2/
+	touch tool/pb2/__init__.py
+	protoc --proto_path=src/proto --python_out=tool/pb2/ $(PROTOS)
+	@echo
+
+clean:
+	rm -rf *.a *.so
+	rm -rf include/proto/*
+	rm -rf src/proto/*.pb.h src/proto/*.pb.cc
+	rm -rf tool/pb2/*
+	rm -rf $(BUILD_DIR)
+	@echo
