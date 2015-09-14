@@ -440,12 +440,15 @@ void Trainer::GenMsgs(int type, int version, ParamEntry* entry,
     Msg* new_msg = nullptr;
     if (type == kPut) {
       CHECK_GT(entry->num_total, 0);
-      new_msg = param->GenPutMsg(procs != procs_id_, idx);
+      //new_msg = param->GenPutMsg(procs != procs_id_, idx);
+      new_msg = param->GenPutMsg(true, idx);
       new_msg->AddFormatFrame("i", entry->num_total);
     } else if (type == kGet) {
-      new_msg = param->GenGetMsg(procs != procs_id_, idx);
+      //new_msg = param->GenGetMsg(procs != procs_id_, idx);
+      new_msg = param->GenGetMsg(true, idx);
     } else if (type == kUpdate) {
-      new_msg = param->GenUpdateMsg(procs != procs_id_, idx);
+      //new_msg = param->GenUpdateMsg(procs != procs_id_, idx);
+      new_msg = param->GenUpdateMsg(true, idx);
       new_msg->AddFormatFrame("i", entry->num_local);
     } else {
       LOG(FATAL) << "Wrong type";
