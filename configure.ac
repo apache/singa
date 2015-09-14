@@ -44,6 +44,31 @@ if test x"$enable_lmdb" = x"yes"; then
 	AC_DEFINE(LMDB, 1, [Enable Option layer])
 fi
 
+AC_ARG_ENABLE(test,
+	AS_HELP_STRING([--enable-test],[enable singa test]),
+	[enable_test=yes],[enable_test=no])
+AM_CONDITIONAL(SINGATEST, test "$enable_test" = yes)
+if test x"$enable_test" != x"no"; then
+	PROGS='singatest'
+	LTLIBS='libgtest.la'
+else
+	PROGS=''
+	LTLIBS=''
+fi
+AC_SUBST([PROGS])
+AC_SUBST([LTLIBS])
+
+AC_ARG_ENABLE(debug,
+	AS_HELP_STRING([--enable-debug],[enable debug mode]),
+	[enable_debug=yes],[enable_debug=no])
+AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
+if test x"$enable_debug" != x"no"; then
+	DEBUG='-g'
+else
+	DEBUG=''
+fi
+AC_SUBST([DEBUG])
+
 #AC_CHECK_LIB([opencv_imgproc], [main], [], [
 #  AC_MSG_ERROR([unable to find opencv_imgproc lib])
 #  ])
