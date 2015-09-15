@@ -224,7 +224,7 @@ Msg* Server::HandleSyncRequest(Msg **msg) {
   auto shape=Shape1(param->size());
   CHECK_EQ(msgg->FrameSize(), param->size()*sizeof(float));
   Tensor<cpu, 1> tmp(static_cast<float*>(msgg->FrameData()), shape);
-  Tensor<cpu, 1> cur(param->mutable_cpu_data(), shape);
+  Tensor<cpu, 1> cur(param->mutable_data()->mutable_cpu_data(), shape);
   //LOG(ERROR)<<"Recv sync for "<<param->id();
   if (slice2group_[slice] == grp_id_) {
     // recv sync msg on slice I am mastering

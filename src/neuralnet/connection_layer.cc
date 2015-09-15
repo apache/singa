@@ -2,6 +2,13 @@
 #include "neuralnet/layer.h"
 
 namespace singa {
+/********* Implementation for BridgeDstLayer **************/
+void BridgeDstLayer::Setup(const LayerProto& proto, int npartitions) {
+  Layer::Setup(proto, npartitions);
+  CHECK_EQ(srclayers_.size(), 1);
+  data_.Reshape(srclayers_[0]->data(this).shape());
+  grad_.ReshapeLike(data_);
+}
 /************* Implementation for ConcateLayer ***********/
 void ConcateLayer::Setup(const LayerProto& proto, int npartitions) {
   // CHECK_EQ(npartitions, 1);

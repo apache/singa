@@ -40,7 +40,9 @@
 #include "utils/blob.h"
 
 #include <cblas.h>
+#ifndef CPU_ONLY
 #include <cuda_runtime.h>
+#endif
 #include <math.h>
 #include <utility>
 

@@ -170,6 +170,10 @@ Msg* Param::GenUpdateMsg(bool copy, int idx) {
   msg->set_type(kUpdate);
   msg->AddFormatFrame("i", copy);
   void* ptr = grad_.mutable_cpu_data() + slice_offset_[idx];
+  // to change the head of SyncMem to cpu; otherwise, the updated parameter
+  // values would not be synced to gpu (since the head is at gpu).
+  mutable_cpu_data();
+  // LOG(ERROR) << id() << ptr;
   if (copy) {
     msg->AddFrame(ptr, slice_size_[idx]*sizeof(float));
   } else {
@@ -274,6 +278,7 @@ void Param::ParseUpdateMsgs(const vector<Msg*>& msgs) {
       }
     }
   }
+  // LOG(ERROR) << id() << server_grad;
   grad_.set_cpu_data(server_grad);
 }
 

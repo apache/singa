@@ -13,4 +13,10 @@
 #include "utils/factory.h"
 #include "driver.h"
 
+#ifndef CPU_ONLY
+    #define xpu mshadow::gpu
+#else
+    #define xpu mshadow::cpu
+#endif
+
 #endif  // SINGA_SINGA_H_

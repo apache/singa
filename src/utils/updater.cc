@@ -7,15 +7,21 @@
 
 namespace singa {
 
-using mshadow::cpu;
 using mshadow::expr::F;
 using mshadow::op::sqrtop;
 using mshadow::op::square;
-using mshadow::Shape;
-using mshadow::Shape1;
 using mshadow::Tensor;
 using mshadow::TensorContainer;
 
+using mshadow::cpu;
+using mshadow::Shape1;
+
+inline Tensor<cpu, 1> UTensor1(Blob<float>* blob){
+  Tensor<cpu, 1> tensor(blob->mutable_cpu_data(), Shape1(blob->count()));
+  return tensor;
+}
+
+/*******************************************************/
 LRGenerator* LRGenerator::Create(const LRGenProto& proto) {
   auto factory = Singleton<Factory<LRGenerator>>::Instance();
   LRGenerator* gen = nullptr;
@@ -80,9 +86,8 @@ void Updater::Init(const UpdaterProto& proto) {
 }
 
 void SGDUpdater::Update(int step, Param* param, float grad_scale) {
-  Shape<1> s = Shape1(param->size());
-  Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
-  Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
+  auto data = UTensor1(param->mutable_data());
+  auto grad = UTensor1(param->mutable_grad());
   float lr = lr_gen_->Get(step) * param->lr_scale();
   float wd = weight_decay_ * param->wd_scale();
   if (grad_scale != 1.f)
@@ -90,7 +95,7 @@ void SGDUpdater::Update(int step, Param* param, float grad_scale) {
   if (wd > 0)  // L2 regularization, should be done after timing grad_scale
     grad += data * wd;
   if (momentum_ > 0) {
-    Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
+    auto history = UTensor1(param->mutable_history());
     history = history * momentum_ - lr * grad;
     data += history;
   } else {
@@ -99,13 +104,14 @@ void SGDUpdater::Update(int step, Param* param, float grad_scale) {
   }
 }
 
+
+
 /***********************Nesterov******************************/
 void NesterovUpdater::Update(int step, Param* param, float grad_scale) {
-  Shape<1> s = Shape1(param->size());
-  Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
-  Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
-  Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
-  TensorContainer<cpu, 1> tmp(s);
+  auto data = UTensor1(param->mutable_data());
+  auto grad = UTensor1(param->mutable_grad());
+  auto history = UTensor1(param->mutable_history());
+  TensorContainer<cpu, 1> tmp(data.shape);
   float lr = lr_gen_->Get(step)*param->lr_scale();
   float wd = weight_decay_*param->wd_scale();
   if (grad_scale != 1.f)
@@ -119,10 +125,10 @@ void NesterovUpdater::Update(int step, Param* param, float grad_scale) {
 }
 /***********************AdaGrad******************************/
 void AdaGradUpdater::Update(int step, Param* param, float grad_scale) {
-  Shape<1> s = Shape1(param->size());
-  Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
-  Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
-  Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
+  auto data = UTensor1(param->mutable_data());
+  auto grad = UTensor1(param->mutable_grad());
+  auto history = UTensor1(param->mutable_history());
+
   float lr = lr_gen_->Get(step)*param->lr_scale();
   float wd = weight_decay_*param->wd_scale();
   if (grad_scale != 1.f)

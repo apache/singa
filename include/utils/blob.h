@@ -148,6 +148,7 @@ class Blob {
     CHECK(data);
     data_->set_cpu_data(data);
   }
+
   inline const Dtype* gpu_data() const {
     CHECK(data_);
     return static_cast<const Dtype*>(data_->gpu_data());

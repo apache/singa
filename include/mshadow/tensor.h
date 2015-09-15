@@ -196,6 +196,13 @@ namespace mshadow {
         const static int kDevMask = 1<<1;
     };
 
+#ifndef CPU_ONLY
+    #define xpu gpu
+#else
+    #define xpu cpu
+#endif
+
+
     // more compact template
     /*!
      * \brief general tensor
@@ -463,7 +470,7 @@ namespace mshadow{
 #include "tensor_gpu-inl.hpp"
 // extension of expressions
 #include "tensor_expr_ext.h"
-// io 
+// io
 #include "tensor_io.h"
 // container
 #include "tensor_container.h"

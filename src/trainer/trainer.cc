@@ -9,7 +9,6 @@
 #include "utils/common.h"
 #include "proto/common.pb.h"
 #include "trainer/trainer.h"
-#include "mshadow/tensor.h"
 
 
 namespace singa {
@@ -440,15 +439,15 @@ void Trainer::GenMsgs(int type, int version, ParamEntry* entry,
     Msg* new_msg = nullptr;
     if (type == kPut) {
       CHECK_GT(entry->num_total, 0);
-      //new_msg = param->GenPutMsg(procs != procs_id_, idx);
-      new_msg = param->GenPutMsg(true, idx);
+      new_msg = param->GenPutMsg(procs != procs_id_, idx);
+      // new_msg = param->GenPutMsg(true, idx);
       new_msg->AddFormatFrame("i", entry->num_total);
     } else if (type == kGet) {
-      //new_msg = param->GenGetMsg(procs != procs_id_, idx);
-      new_msg = param->GenGetMsg(true, idx);
+      new_msg = param->GenGetMsg(procs != procs_id_, idx);
+      // new_msg = param->GenGetMsg(true, idx);
     } else if (type == kUpdate) {
-      //new_msg = param->GenUpdateMsg(procs != procs_id_, idx);
-      new_msg = param->GenUpdateMsg(true, idx);
+      new_msg = param->GenUpdateMsg(procs != procs_id_, idx);
+      // new_msg = param->GenUpdateMsg(true, idx);
       new_msg->AddFormatFrame("i", entry->num_local);
     } else {
       LOG(FATAL) << "Wrong type";
@@ -478,13 +477,13 @@ const vector<Msg*> Trainer::HandleUpdate(ParamEntry *entry, Msg** msg) {
     // average local gradient
     if (entry->num_local > 1) {
       auto it = entry->shares.begin();
-      auto shape=mshadow::Shape1((*it)->size());
-      mshadow::Tensor<mshadow::cpu,1> sum((*it)->mutable_cpu_grad(), shape);
+      float* sum = (*it)->mutable_grad()->mutable_cpu_data();
       for (++it; it != entry->shares.end(); it++) {
-        mshadow::Tensor<mshadow::cpu,1> grad((*it)->mutable_cpu_grad(), shape);
-        sum += grad;
+        float* grad = (*it)->mutable_grad()->mutable_cpu_data();
+        for (int i = 0; i < (*it)->size(); i++) {
+          sum[i] += grad[i];
+        }
       }
-      sum /= entry->num_total;
     }
     int step = (*msg)->trgt_version();
     GenMsgs(kUpdate, step, entry, *msg, &ret);

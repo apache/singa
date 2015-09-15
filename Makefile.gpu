@@ -61,7 +61,7 @@ TEST_CUDA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_CUDA_SRCS:.cu=.o)))
 -include $(TEST_CUDA_OBJS:%.o=%.P)
 
 
-SINGA_CUDA_SRCS :=$(shell find src/neuralnet/ -maxdepth 1 -name "*.cu")
+SINGA_CUDA_SRCS :=$(shell find src/ -maxdepth 2 -name "*.cu")
 SINGA_CUDA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(SINGA_CUDA_SRCS:.cu=.o)))
 -include $(SINGA_CUDA_OBJS:%.o=%.P)
 

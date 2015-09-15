@@ -10,6 +10,7 @@ namespace singa {
 using namespace mshadow;
 using namespace mshadow::expr;
 using mshadow::cpu;
+using mshadow::xpu;
 
 using mshadow::Shape;
 using mshadow::Shape1;
@@ -21,58 +22,52 @@ using mshadow::Tensor;
 using std::string;
 using std::vector;
 
-#ifndef CPU_ONLY
-    #define xpu mshadow::gpu
-#else
-    #define xpu mshadow::cpu
-#endif
-
-inline Tensor<cpu, 4> Tensor4(Blob<float>* blob) {
+inline Tensor<cpu, 4> Tensor4CPU(Blob<float>* blob) {
   const vector<int>& shape = blob->shape();
   Tensor<cpu, 4> tensor(blob->mutable_cpu_data(),
       Shape4(shape[0], shape[1], shape[2], shape[3]));
   return tensor;
 }
 
-inline Tensor<cpu, 3> Tensor3(Blob<float>* blob) {
+inline Tensor<cpu, 3> Tensor3CPU(Blob<float>* blob) {
   const vector<int>& shape = blob->shape();
   Tensor<cpu, 3> tensor(blob->mutable_cpu_data(),
       Shape3(shape[0], shape[1], blob->count() / shape[0] / shape[1]));
   return tensor;
 }
 
-inline Tensor<cpu, 2> Tensor2(Blob<float>* blob) {
+inline Tensor<cpu, 2> Tensor2CPU(Blob<float>* blob) {
   const vector<int>& shape = blob->shape();
   Tensor<cpu, 2> tensor(blob->mutable_cpu_data(),
       Shape2(shape[0], blob->count() / shape[0]));
   return tensor;
 }
 
-inline Tensor<cpu, 1> Tensor1(Blob<float>* blob) {
+inline Tensor<cpu, 1> Tensor1CPU(Blob<float>* blob) {
   Tensor<cpu, 1> tensor(blob->mutable_cpu_data(), Shape1(blob->count()));
   return tensor;
 }
 
-inline Tensor<xpu, 4> Tensor4XPU(Blob<float>* blob) {
+inline Tensor<xpu, 4> Tensor4(Blob<float>* blob) {
   const vector<int>& shape = blob->shape();
   Tensor<xpu, 4> tensor(blob->mutable_xpu_data(),
 	  Shape4(shape[0], shape[1], shape[2], shape[3]));
   return tensor;
 }
 
-inline Tensor<xpu, 3> Tensor3XPU(Blob<float>* blob){
+inline Tensor<xpu, 3> Tensor3(Blob<float>* blob){
   const vector<int>& shape = blob->shape();
   Tensor<xpu, 3> tensor(blob->mutable_xpu_data(),
 	  Shape3(shape[0], shape[1], blob->count() / shape[0] / shape[1]));
   return tensor;
 }
-inline Tensor<xpu, 2> Tensor2XPU(Blob<float>* blob){
+inline Tensor<xpu, 2> Tensor2(Blob<float>* blob){
   const vector<int>& shape = blob->shape();
   Tensor<xpu, 2> tensor(blob->mutable_xpu_data(),
 	  Shape2(shape[0], blob->count() / shape[0]));
   return tensor;
 }
-inline Tensor<xpu, 1> Tensor1XPU(Blob<float>* blob){
+inline Tensor<xpu, 1> Tensor1(Blob<float>* blob){
   Tensor<xpu, 1> tensor(blob->mutable_xpu_data(), Shape1(blob->count()));
   return tensor;
 }
@@ -118,11 +113,11 @@ void ConvolutionLayer::Setup(const LayerProto& proto, int npartitions) {
 }
 
 void ConvolutionLayer::ComputeFeature(int flag, Metric* perf) {
-  auto src = Tensor4XPU(srclayers_[0]->mutable_data(this));
-  auto data = Tensor3XPU(&data_);
-  auto col = Tensor2XPU(&col_data_);
-  auto weight = Tensor2XPU(weight_->mutable_data());
-  auto bias = Tensor1XPU(bias_->mutable_data());
+  auto src = Tensor4(srclayers_[0]->mutable_data(this));
+  auto data = Tensor3(&data_);
+  auto col = Tensor2(&col_data_);
+  auto weight = Tensor2(weight_->mutable_data());
+  auto bias = Tensor1(bias_->mutable_data());
   for (int n = 0; n < batchsize_; n++) {
     if (pad_ > 0)
       col = expr::unpack_patch2col(pad(src[n], pad_), kernel_, stride_);
@@ -134,13 +129,13 @@ void ConvolutionLayer::ComputeFeature(int flag, Metric* perf) {
 }
 
 void ConvolutionLayer::ComputeGradient(int flag, Metric* perf) {
-  auto src = Tensor4XPU(srclayers_[0]->mutable_data(this));
-  auto col = Tensor2XPU(&col_data_);
-  auto weight = Tensor2XPU(weight_->mutable_data());
-  auto grad = Tensor3XPU(&grad_);
-  auto gcol = Tensor2XPU(&col_grad_);
-  auto gweight = Tensor2XPU(weight_->mutable_grad());
-  auto gbias = Tensor1XPU(bias_->mutable_grad());
+  auto src = Tensor4(srclayers_[0]->mutable_data(this));
+  auto col = Tensor2(&col_data_);
+  auto weight = Tensor2(weight_->mutable_data());
+  auto grad = Tensor3(&grad_);
+  auto gcol = Tensor2(&col_grad_);
+  auto gweight = Tensor2(weight_->mutable_grad());
+  auto gbias = Tensor1(bias_->mutable_grad());
   Blob<float>* gsrcblob = srclayers_[0]->mutable_grad(this);
   Tensor<xpu, 4> gsrc(nullptr, Shape4(batchsize_, channels_, height_, width_));
   if (gsrcblob != nullptr)
@@ -183,7 +178,7 @@ void DropoutLayer::ComputeFeature(int flag, Metric* perf) {
   }
   float pkeep = 1 - pdrop_;
   auto mask = Tensor1(&mask_);
-  mask = expr::F<op::threshold>(TSingleton<Random<cpu>>::Instance() \
+  mask = expr::F<op::threshold>(TSingleton<Random<xpu>>::Instance() \
                       ->uniform(mask.shape), pkeep) * (1.0f/pkeep);
   auto data = Tensor1(&data_);
   auto src = Tensor1(srclayers_[0]->mutable_data(this));
@@ -202,11 +197,11 @@ void DropoutLayer::ComputeGradient(int flag, Metric* perf)  {
 Blob<float>* RBMLayer::Sample(int flag) {
   Tensor<cpu, 2> sample, data;
   if ((flag & kPositive) == kPositive || first_gibbs_) {
-    data = Tensor2(&data_);
-    sample = Tensor2(&sample_);
+    data = Tensor2CPU(&data_);
+    sample = Tensor2CPU(&sample_);
   } else {
-    data = Tensor2(&neg_data_);
-    sample = Tensor2(&neg_sample_);
+    data = Tensor2CPU(&neg_data_);
+    sample = Tensor2CPU(&neg_sample_);
   }
   auto random = TSingleton<Random<cpu>>::Instance();
   if (gaussian_) {
@@ -262,10 +257,10 @@ void RBMVisLayer::ComputeFeature(int flag, Metric* perf) {
     first_gibbs_ = true;
   } else if ((flag & kNegative) == kNegative) {
     // fetch sampling results from hidden layer
-    auto hid_sample = Tensor2(hid_layer_->Sample(flag));
-    auto data = Tensor2(&neg_data_);
-    auto weight = Tensor2(weight_->mutable_data());
-    auto bias = Tensor1(bias_->mutable_data());
+    auto hid_sample = Tensor2CPU(hid_layer_->Sample(flag));
+    auto data = Tensor2CPU(&neg_data_);
+    auto weight = Tensor2CPU(weight_->mutable_data());
+    auto bias = Tensor1CPU(bias_->mutable_data());
     data = dot(hid_sample, weight);
     data += expr::repmat(bias, batchsize_);
     data = expr::F<op::sigmoid>(data);
@@ -282,17 +277,17 @@ void RBMVisLayer::ComputeFeature(int flag, Metric* perf) {
 }
 
 void RBMVisLayer::ComputeGradient(int flag, Metric* perf) {
-  auto vis_pos = Tensor2(&data_);
-  auto vis_neg = Tensor2(&neg_data_);
-  auto hid_pos = Tensor2(hid_layer_->mutable_data(this));
-  auto hid_neg = Tensor2(hid_layer_->mutable_neg_data(this));
+  auto vis_pos = Tensor2CPU(&data_);
+  auto vis_neg = Tensor2CPU(&neg_data_);
+  auto hid_pos = Tensor2CPU(hid_layer_->mutable_data(this));
+  auto hid_neg = Tensor2CPU(hid_layer_->mutable_neg_data(this));
 
-  auto gbias = Tensor1(bias_->mutable_grad());
+  auto gbias = Tensor1CPU(bias_->mutable_grad());
   gbias = expr::sum_rows(vis_neg);
   gbias -= expr::sum_rows(vis_pos);
   gbias /= batchsize_;
 
-  auto gweight = Tensor2(weight_->mutable_grad());
+  auto gweight = Tensor2CPU(weight_->mutable_grad());
   gweight = dot(hid_neg.T(), vis_neg);
   gweight -= dot(hid_pos.T(), vis_pos);
   gweight /= batchsize_;
@@ -322,18 +317,18 @@ void RBMHidLayer::Setup(const LayerProto& proto,
 }
 
 void RBMHidLayer::ComputeFeature(int flag, Metric* perf) {
-  auto weight = Tensor2(weight_->mutable_data());
-  auto bias = Tensor1(bias_->mutable_data());
+  auto weight = Tensor2CPU(weight_->mutable_data());
+  auto bias = Tensor1CPU(bias_->mutable_data());
 
   Tensor<cpu, 2> data, src;
   if ((flag & kPositive) == kPositive) {
-    data = Tensor2(&data_);
-    src = Tensor2(vis_layer_->mutable_data(this));
+    data = Tensor2CPU(&data_);
+    src = Tensor2CPU(vis_layer_->mutable_data(this));
     first_gibbs_ = true;
   } else {
-    data = Tensor2(&neg_data_);
+    data = Tensor2CPU(&neg_data_);
     // hinton's science paper does not sample the vis layer
-    src = Tensor2(vis_layer_->mutable_neg_data(this));
+    src = Tensor2CPU(vis_layer_->mutable_neg_data(this));
     first_gibbs_ = false;
   }
   data = dot(src, weight.T());
@@ -344,9 +339,9 @@ void RBMHidLayer::ComputeFeature(int flag, Metric* perf) {
 }
 
 void RBMHidLayer::ComputeGradient(int flag, Metric* perf) {
-  auto hid_pos = Tensor2(&data_);
-  auto hid_neg = Tensor2(&neg_data_);
-  auto gbias = Tensor1(bias_->mutable_grad());
+  auto hid_pos = Tensor2CPU(&data_);
+  auto hid_neg = Tensor2CPU(&neg_data_);
+  auto gbias = Tensor1CPU(bias_->mutable_grad());
   gbias = expr::sum_rows(hid_neg);
   gbias -= expr::sum_rows(hid_pos);
   gbias /= batchsize_;
@@ -379,10 +374,10 @@ void InnerProductLayer::Setup(const LayerProto& proto, int npartitions) {
 }
 
 void InnerProductLayer::ComputeFeature(int flag, Metric* perf) {
-  auto data = Tensor2XPU(&data_);
-  auto src = Tensor2XPU(srclayers_[0]->mutable_data(this));
-  auto weight = Tensor2XPU(weight_->mutable_data());
-  auto bias = Tensor1XPU(bias_->mutable_data());
+  auto data = Tensor2(&data_);
+  auto src = Tensor2(srclayers_[0]->mutable_data(this));
+  auto weight = Tensor2(weight_->mutable_data());
+  auto bias = Tensor1(bias_->mutable_data());
   if (transpose_)
     data = dot(src, weight);
   else
@@ -392,11 +387,11 @@ void InnerProductLayer::ComputeFeature(int flag, Metric* perf) {
 }
 
 void InnerProductLayer::ComputeGradient(int flag, Metric* perf) {
-  auto src = Tensor2XPU(srclayers_[0]->mutable_data(this));
-  auto grad = Tensor2XPU(&grad_);
-  auto weight = Tensor2XPU(weight_->mutable_data());
-  auto gweight = Tensor2XPU(weight_->mutable_grad());
-  auto gbias = Tensor1XPU(bias_->mutable_grad());
+  auto src = Tensor2(srclayers_[0]->mutable_data(this));
+  auto grad = Tensor2(&grad_);
+  auto weight = Tensor2(weight_->mutable_data());
+  auto gweight = Tensor2(weight_->mutable_grad());
+  auto gbias = Tensor1(bias_->mutable_grad());
 
   gbias = expr::sum_rows(grad);
   if (transpose_)
@@ -404,7 +399,7 @@ void InnerProductLayer::ComputeGradient(int flag, Metric* perf) {
   else
     gweight = dot(grad.T(), src);
   if (srclayers_[0]->mutable_grad(this) != nullptr) {
-    auto gsrc = Tensor2XPU(srclayers_[0]->mutable_grad(this));
+    auto gsrc = Tensor2(srclayers_[0]->mutable_grad(this));
     if (transpose_)
       gsrc = dot(grad, weight.T());
     else
@@ -565,13 +560,6 @@ void STanhLayer::ComputeGradient(int flag, Metric* perf) {
   auto grad = Tensor1(&grad_);
   auto gsrc = Tensor1(srclayers_[0]->mutable_grad(this));
   gsrc = expr::F<op::stanh_grad>(data) * grad;
-}
-/********* Implementation for BridgeDstLayer **************/
-void BridgeDstLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
-  CHECK_EQ(srclayers_.size(), 1);
-  data_.Reshape(srclayers_[0]->data(this).shape());
-  grad_.ReshapeLike(data_);
 }
 
 }  // namespace singa
