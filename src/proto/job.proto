@@ -129,15 +129,14 @@ message ClusterProto {
   // servers and workers in different processes?
   optional bool server_worker_separate = 20 [default = false];
 
+  // sync frequency between server groups
+  optional int32 sync_freq = 21 [default = 1];
+
   // port number used by ZeroMQ
   optional int32 start_port = 60 [default = 6723];
-  // conduct updates at server side; otherwise do it at worker side
-  optional bool server_update = 61 [default = true];
   // share memory space between worker groups in one procs
   optional bool share_memory = 62 [default = true];
 
-  // bandwidth of ethernet, Bytes per second, default is 1 Gbps
-  optional int32 bandwidth = 80 [default = 134217728];
   // poll time in milliseconds
   optional int32 poll_time = 81 [default = 100];
 }

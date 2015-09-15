@@ -90,12 +90,8 @@ class Cluster {
   const int worker_timeout() const { return cluster_.worker_timeout(); }
   const int server_timeout() const { return cluster_.server_timeout(); }
   */
-  inline bool server_update() const { return cluster_.server_update(); }
   inline bool share_memory() const { return cluster_.share_memory(); }
-  /**
-   * bandwidth Bytes/s
-   */
-  inline int bandwidth() const { return cluster_.bandwidth(); }
+  inline int sync_freq() const { return cluster_.sync_freq(); }
   inline int poll_time() const { return cluster_.poll_time(); }
   ClusterRuntime* runtime() const { return cluster_rt_; }
 
@@ -106,6 +102,16 @@ class Cluster {
     return procs_ids_.at(Hash(group_id, id, flag));
   }
   inline std::string hostip() const { return hostip_; }
+
+  /**
+   * @param pid, processs ID
+   * @param group_size, num of executors in a group
+   * @param procs_size, num of executors in a procs
+   *
+   * @return a vector with 4 integers:
+   * [group start, group end), [start executor, end executor)
+   */
+  const std::vector<int> ExecutorRng(int pid, int group_size, int procs_size);
   /**
    * Register this process.
    *

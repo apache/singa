@@ -6,6 +6,7 @@
 #include <fstream>
 
 namespace singa {
+using std::vector;
 
 Cluster* Cluster::Setup(int job, const SingaProto& singaConf,
                         const ClusterProto& clusterConf) {
@@ -69,6 +70,26 @@ void Cluster::SetupFolders(const ClusterProto &cluster) {
   mkdir(vis_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   // create checkpoint folder
   mkdir(checkpoint_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
+
+const vector<int> Cluster::ExecutorRng(int pid, int grp_size, int procs_size) {
+  int gstart, gend, start, end;
+  if (grp_size >= procs_size) {
+    // all workers in this procs are from the same group
+    gstart = pid * procs_size / grp_size;
+    gend = gstart + 1;
+    start = pid * procs_size % grp_size;
+    end = start + procs_size;
+  } else {
+    // there are multiple (complete) groups in this procs.
+    CHECK_EQ(procs_size % grp_size, 0);
+    int groups_per_procs = procs_size / grp_size;
+    gstart = pid * groups_per_procs;
+    gend = (pid+1) * groups_per_procs;
+    start = 0;
+    end = grp_size;
+  }
+  return vector<int>{gstart, gend, start, end};
 }
 
 int Cluster::Hash(int gid, int id, int flag) {

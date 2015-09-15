@@ -23,8 +23,8 @@ class Server{
   Server(int thread_id, int group_id, int server_id);
   virtual ~Server();
   void Setup(const UpdaterProto& proto,
-      std::unordered_map<int, ParamEntry*>* shard,
-      const std::vector<int>& slice2group);
+      const std::vector<int>& slice2group,
+      const std::vector<int>& slice2server);
   void Run();
   const int grp_id() const {
     return grp_id_;
@@ -38,12 +38,29 @@ class Server{
  	/**
 	 * Process GET request.
    *
-   * @return the orignal message or response message
+   * @return the orignal message or a response message which contains the values
+   * of the Param with the request version.
    */
 	virtual Msg* HandleGet(Msg** msg);
 
 	/**
 	 * Process Update request.
+   *
+   * It waits until received the gradients from all workers from the same worker
+   * group. After updating, it responses to each sender with the new Param
+   * values. It may generate a sync message to the server group that maintains
+   * the global version of the updated Param (slice).
+   *
+   * Note: there is no counter for each worker group on the number of received
+   * update requests. Hence it is possible that the server would conduct the
+   * update when it receives x requests from group a and y requests from group
+   * b where x + y = group size. To avoid this problem, we can
+   * 1. maintain request list for each group for each Param at the server side
+   * 2. do not span a worker group among multiple nodes. then the updates from
+   * the same group would be locally aggregated on the worker node. And the
+   * server would conduct the update immediately after receiving the aggregated
+   * request.
+   * 3. launch only one worker group.
    *
    * @return the orignal message or response message
    */
@@ -52,30 +69,47 @@ class Server{
 	/**
 	 * Process PUT request.
    *
-   * @return the original message or response message. If we don't want need to
+   * @return the original message or response message. If we don't want to
    * acknowledge the put request, then return nullptr.
 	 */
 	virtual Msg* HandlePut(Msg **msg);
 
 	/**
-   * TODO Process SYNC request.
-	 */
+   * Handle sync request from other server groups.
+   *
+   * It adds updates of Param (slice) from other server groups directly to
+   * local Param (slice). Currently, each Param (slice) has a master group,
+   * i.e., slice2group_[sliceid], which would receive such requests from all
+   * other server groups for the Param object.
+   *
+   * @param msg request msg containing the parameter updates
+   * @return response msg that contains the fresh parameter values.
+   */
 	virtual Msg* HandleSyncRequest(Msg** msg);
 
   /**
-   * Generate sync message which sends local mastered Param slice to other
-   * server groups
-   * @param param slice to be sync with others
-   * @return sync messages
+   * Handle sync response.
+   *
+   * The response msg includes the latest values of a Param object, for which
+   * this server sent the sync request to the master/maintainer group.
+   * The local Param values are replaced with the addition result of local
+   * udpates since the sync request was sent and the received Param values.
+   *
+   * @param response message
    */
-  const std::vector<Msg*> GenSyncMsgs(Param* param);
+  void HandleSyncResponse(Msg** msg);
 
  protected:
   int thread_id_,grp_id_, id_;
   Updater* updater_;
-  std::unordered_map<int, ParamEntry*> *shard_;
-  std::vector<int> slice2group_;
-  std::unordered_map<int, std::shared_ptr<Blob<float>>> last_data_;
+  //!< map from slice ID to slice and deleted in the destructor
+  std::unordered_map<int, ParamEntry*> shard_;
+  std::vector<int> slice2group_, slice2server_;
+  //!< num of updates from last sync with master server group for a param/slice
+  std::vector<int> nUpdates_;
+  //!< num of sync requests that have not been responded
+  std::vector<int> nPendingSync_;
+  std::vector<Blob<float>> last_sync_;
   std::unordered_map<int, std::vector<Msg*>> buffer_requests_;
 };
 } /* Server */

@@ -80,14 +80,6 @@ class Trainer{
 
   void Run(const vector<Worker*>& workers, const vector<Server*>& servers);
   /**
-   * Generate msg to trigger synchronization with other server groups.
-   *
-   * @param server the local server index whom the message is sent to
-   * @param servers all local servers
-   * @return sync msg
-   */
-  Msg* GenSyncReminderMsg(int server, const vector<Server*>& servers);
-  /**
    * Display metrics to log (standard output)
    */
   void DisplayMetric(Msg** msg);
@@ -143,8 +135,6 @@ class Trainer{
   int procs_id_;
   Router *router_;
   std::unordered_map<int, ParamEntry*> worker_shard_;
-  //!< map from slice ID to slice, used by servers and deleted in the destructor
-  std::unordered_map<int, ParamEntry*> server_shard_;
   //!< map from slice to the server that updates it
   vector<int> slice2server_;
 };

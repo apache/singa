@@ -21,10 +21,6 @@ using std::make_shared;
 
 /***********************Trainer****************************/
 Trainer::~Trainer() {
-  // free Params (i.e., slices) in server shard
-  for (auto entry : server_shard_)
-    for (auto param : entry.second->shares)
-      delete param;
   delete router_;
 }
 
@@ -120,10 +116,11 @@ void Trainer::SetupWorkerServer(
 
   //  partition among server groups, each group maintains one sub-set for sync
   auto slice2group = PartitionSlices(cluster->nserver_groups(), slices);
-  for (auto server : servers)
-    server->Setup(job_conf.updater(), &server_shard_, slice2group);
   //  partition within one server group, each server updates for one sub-set
   slice2server_ = PartitionSlices(cluster->nservers_per_group(), slices);
+
+  for (auto server : servers)
+    server->Setup(job_conf.updater(), slice2group, slice2server_);
 }
 
 vector<Server*> Trainer::CreateServers(int nthreads, const JobProto& job) {
@@ -132,46 +129,33 @@ vector<Server*> Trainer::CreateServers(int nthreads, const JobProto& job) {
   if (!cluster->has_server())
     return servers;
 
-  int pid = cluster->procs_id();
+  int server_procs = cluster->procs_id();
   // if true, server procs (logical) id starts after worker procs
   if (cluster->server_worker_separate())
-    pid -= cluster->nworker_procs();
-  int procs_size = cluster->nservers_per_procs();
-  int grp_size = cluster->nservers_per_group();
-  int gid = pid *  procs_size / grp_size;
-  int start = pid * procs_size % grp_size;
-  int end = start + procs_size;
-  for (int sid = start; sid < end; sid++) {
-    auto server = new Server(nthreads++, gid, sid);
-    servers.push_back(server);
+    server_procs -= cluster->nworker_procs();
+  const vector<int> rng = cluster->ExecutorRng(server_procs,
+      cluster->nservers_per_group(),
+      cluster->nservers_per_procs());
+  int gstart = rng[0], gend = rng[1], start = rng[2], end = rng[3];
+  for (int gid = gstart; gid < gend; gid++) {
+    for (int sid = start; sid < end; sid++) {
+      auto server = new Server(nthreads++, gid, sid);
+      servers.push_back(server);
+    }
   }
   return servers;
 }
+
 
 vector<Worker*> Trainer::CreateWorkers(int nthreads, const JobProto& job) {
   auto cluster=Cluster::Get();
   vector<Worker*> workers;
   if(!cluster->has_worker())
     return workers;
-  int pid = cluster->procs_id();
-  int grp_size = cluster->nworkers_per_group();
-  int procs_size = cluster->nworkers_per_procs();
-  int gstart, gend, wstart, wend;
-  if (grp_size >= procs_size) {
-    // all workers in this procs are from the same group
-    gstart = pid * procs_size / grp_size;
-    gend = gstart + 1;
-    wstart = pid * procs_size % grp_size;
-    wend = wstart + procs_size;
-  } else {
-    // there are multiple (complete) groups in this procs.
-    CHECK_EQ(procs_size % grp_size, 0);
-    int groups_per_procs = procs_size / grp_size;
-    gstart = pid * groups_per_procs;
-    gend = (pid+1) * groups_per_procs;
-    wstart = 0;
-    wend = grp_size;
-  }
+  const vector<int> rng = cluster->ExecutorRng(cluster->procs_id(),
+      cluster->nworkers_per_group(),
+      cluster->nworkers_per_procs());
+  int gstart = rng[0], gend = rng[1], wstart = rng[2], wend = rng[3];
   for (int gid = gstart; gid < gend; gid++) {
     for (int wid = wstart; wid < wend; wid++) {
       auto *worker = Worker::Create(job);
@@ -260,12 +244,6 @@ void Trainer::Start(bool resume, const SingaProto& singaConf, JobProto* job) {
     delete worker;
 }
 
-inline int bandwidth(int bytes, system_clock::time_point start) {
-  auto now=system_clock::now();
-  auto duration=duration_cast<std::chrono::milliseconds> (now - start);
-  return static_cast<int>(bytes*1000.f/duration.count());
-}
-
 void Trainer::Run(
     const vector<Worker*>& workers,
     const vector<Server*>& servers) {
@@ -274,42 +252,20 @@ void Trainer::Run(
   procs_id_ = cluster->procs_id();
   LOG(INFO) << "Stub in process " << procs_id_ << " starts";
 
-  // for sync among server groups
-  auto start = std::chrono::system_clock::now();
-  float trans_size = 0.f;  // total size of msg transferred since start time
-  int sync_server_id = 0;
-  int max_bandwidth = cluster->bandwidth();
-  int nserver_grps = cluster->nserver_groups();
-
   map<int, Dealer*> inter_dealers;  // for sending msg to other procs
 
   std::queue<Msg*> msg_queue;
-  Poller poll(router_);
-  bool stop=false;
-  while (!stop || !msg_queue.empty()) {
+  while (true) {
+    Msg* msg = nullptr;
     if (msg_queue.empty()) {
-      // if the poll time is large, then the poller may not expire
-      // if it is small, then many reminder messages will be sent which may
-      // slow done the process of other request. TODO tune it.
-      auto *sock = poll.Wait(cluster->poll_time());
-      if (poll.Terminated()) {
-        LOG(ERROR) << "Connection broken!";
-        exit(0);
-      } else if (sock == nullptr) {
-        if (nserver_grps > 1 && bandwidth(trans_size, start) < max_bandwidth) {
-          Msg* msg = GenSyncReminderMsg(sync_server_id, servers);
-          router_->Send(&msg) ;
-          sync_server_id = (sync_server_id + 1) % nservers;
-        }
-        continue;
-      }
-      Msg* msg = router_->Receive();
-      msg_queue.push(msg);
+      msg = router_->Receive();
+    } else {
+      msg = msg_queue.front();
+      msg_queue.pop();
     }
-    Msg* msg = msg_queue.front();
-    msg_queue.pop();
     int type = msg->type(), dst = msg->dst(), flag = AddrType(dst);
     if (flag == kStub && (AddrProc(dst) == procs_id_ || AddrGrp(dst) == -1)) {
+      //  the following statements are ordered!
       if (type == kConnect) {
         DeleteMsg(&msg);
       } else if (type == kMetric) {
@@ -320,28 +276,18 @@ void Trainer::Run(
         else if (src_flag == kWorkerParam) nworkers--;
         DeleteMsg(&msg);
         if (nworkers == 0 && nservers == 0) break;
-      } else if (nserver_grps > 0) {
-        HandleLocalMsg(&msg_queue, &msg);
       } else {
-        DeleteMsg(&msg);
+        HandleLocalMsg(&msg_queue, &msg);
       }
     } else {
       int dst_procs = AddrProc(dst);
       if (flag != kStub)
         dst_procs = cluster->ProcsIDOf(AddrGrp(dst), AddrID(dst), flag);
       if (dst_procs != procs_id_) {
-        if (bandwidth(trans_size, start) <= cluster->bandwidth()) {
-          start = std::chrono::system_clock::now();
-          trans_size = 0;
-        }
-        trans_size += msg->size();
-
         if (inter_dealers.find(dst_procs) == inter_dealers.end())
           inter_dealers[dst_procs] = CreateInterProcsDealer(dst_procs);
         inter_dealers[dst_procs]->Send(&msg);
       } else {
-        if (type == kSyncRequest)
-          msg->AddFormatFrame("i", max_bandwidth - bandwidth(trans_size, start));
         router_->Send(&msg);
       }
     }
@@ -349,14 +295,6 @@ void Trainer::Run(
   LOG(ERROR) << "Stub in process " << procs_id_ << " stops";
   for (auto& entry : inter_dealers)
     delete entry.second;
-}
-
-Msg* Trainer::GenSyncReminderMsg(int server, const vector<Server*>& servers ) {
-  Msg* msg = new Msg();
-  msg->set_src(Addr(-1,-1, kStub));
-  msg->set_dst(Addr(servers[server]->grp_id(), servers[server]->id(), kServer));
-  msg->set_type(kSyncReminder);
-  return msg;
 }
 
 void Trainer::DisplayMetric(Msg** msg) {
@@ -436,16 +374,16 @@ void Trainer::GenMsgs(int type, int version, ParamEntry* entry,
   for (int idx = 0 ; idx < param->num_slices(); idx++) {
     int slice_id =param->slice_start() + idx;
     int server = slice2server_[slice_id];
-    int procs = Cluster::Get()->ProcsIDOf(dst_grp, server, kServer);
+    int dst_procs = Cluster::Get()->ProcsIDOf(dst_grp, server, kServer);
     Msg* new_msg = nullptr;
     if (type == kPut) {
       CHECK_GT(entry->num_total, 0);
-      new_msg = param->GenPutMsg(procs != procs_id_, idx);
+      new_msg = param->GenPutMsg(dst_procs != procs_id_, idx);
       new_msg->AddFormatFrame("i", entry->num_total);
     } else if (type == kGet) {
-      new_msg = param->GenGetMsg(procs != procs_id_, idx);
+      new_msg = param->GenGetMsg(dst_procs != procs_id_, idx);
     } else if (type == kUpdate) {
-      new_msg = param->GenUpdateMsg(procs != procs_id_, idx);
+      new_msg = param->GenUpdateMsg(dst_procs != procs_id_, idx);
       new_msg->AddFormatFrame("i", entry->num_local);
     } else {
       LOG(FATAL) << "Wrong type";

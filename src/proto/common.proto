@@ -13,7 +13,6 @@ enum MsgType {
   kRUpdate = 9;
   kConnect = 10;
   kMetric = 11;
-  kSyncReminder = 12;
 };
 
 enum EntityType {
