@@ -1,15 +1,44 @@
+/*
+ * This file include code from rnnlmlib-0.4 whose licence is as follows:
+Copyright (c) 2010-2012 Tomas Mikolov
+Copyright (c) 2013 Cantab Research Ltd
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+3. Neither name of copyright holders nor the names of its contributors
+may be used to endorse or promote products derived from this software
+without specific prior written permission.
+
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 //
 // This code creates DataShard for RNNLM dataset.
-// It is adapted from the convert_mnist_data from Caffe
 // The RNNLM dataset could be downloaded at
 //    http://www.rnnlm.org/
 //
 // Usage:
 //    create_shard.bin -train train_file -class_size [-debug] [-valid valid_file] [-test test_file]
-
-#include <gflags/gflags.h>
-#include <glog/logging.h>
-
 
 #include "utils/data_shard.h"
 #include "utils/common.h"
@@ -255,14 +284,15 @@ int init_class() {
     return 0;
 }
 
-int create_shard(char *input_file, char *output_file) {
+int create_shard(const char *input_file, const char *output_file) {
     DataShard dataShard(output_file, DataShard::kCreate);
     singa::WordRecord wordRecord;
 
-    char word[MAX_STRING];
+    char word[MAX_STRING], str_buffer[32];
     FILE *fin;
     int a, i;
     fin = fopen(input_file, "rb");
+    int wcnt = 0;
     while (1) {
         readWord(word, fin);
         if (feof(fin)) break;
@@ -276,7 +306,8 @@ int create_shard(char *input_file, char *output_file) {
             wordRecord.set_class_index(class_idx);
             wordRecord.set_class_start(class_start[class_idx]);
             wordRecord.set_class_end(class_end[class_idx]);
-            dataShard.Insert(word, wordRecord);
+            int length = snprintf(str_buffer, 32, "%05d", wcnt++);
+            dataShard.Insert(string(str_buffer, length), wordRecord);
         }
     }
 

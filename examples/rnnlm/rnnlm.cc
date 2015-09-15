@@ -47,17 +47,14 @@ void RnnDataLayer::ComputeFeature(int flag, Metric *perf) {
   CHECK(records_.size() <= shard_->Count());
   records_[0] = records_[window_];
   window_ = max_window_;
-  singa::WordRecord wr;
   for (int i = 1; i <= max_window_; i++) {
     string key;
     if (shard_->Next(&key, &records_[i])) {
-      wr = records_[i];
-      if(wr.word_index() == 0) {
-        window_ = i;
+      if(records_[i].word_index() == 0) {
+        window_ = i;  // +1 ??
         break;
       }
-    }
-    else{
+    } else{
       shard_->SeekToFirst();
       CHECK(shard_->Next(&key, &records_[i]));
     }
@@ -68,6 +65,7 @@ void RnnDataLayer::ComputeFeature(int flag, Metric *perf) {
 void WordLayer::Setup(const LayerProto& proto, int npartitions) {
   Layer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
+  LOG(ERROR) << srclayers_[0]->name();
   int max_window = static_cast<RnnDataLayer*>(srclayers_[0])->max_window();
   LOG(ERROR) << "clee " << max_window;
   data_.Reshape(vector<int>{max_window});
@@ -213,7 +211,7 @@ void OutputLayer::Setup(const LayerProto& proto, int npartitions) {
   int nclass = proto.GetExtension(output_conf).nclass();
   word_weight_ = Param::Create(proto.param(0));
   word_weight_->Setup(vector<int>{vocab_size, vdim});
-  class_weight_ = Param::Create(proto.param(0));
+  class_weight_ = Param::Create(proto.param(1));
   class_weight_->Setup(vector<int>{nclass, vdim});
 
   pword_.resize(max_window);
@@ -234,6 +232,7 @@ void OutputLayer::ComputeFeature(int flag, Metric* perf) {
     int end = static_cast<int>(label[t * 4 + 1]);
 
     auto wordWeight = word_weight.Slice(start, end);
+    CHECK_GT(end, start);
     pword_[t].Reshape(vector<int>{end-start});
     auto pword = RTensor1(&pword_[t]);
     pword = dot(src[t], wordWeight.T());
@@ -244,6 +243,8 @@ void OutputLayer::ComputeFeature(int flag, Metric* perf) {
 
     int wid = static_cast<int>(label[t * 4 + 2]);
     int cid = static_cast<int>(label[t * 4 + 3]);
+    CHECK_GT(end, wid);
+    CHECK_GE(wid, start);
     loss += -log(std::max(pword[wid - start] * pclass[t][cid], FLT_MIN));
     ppl += log10(std::max(pword[wid - start] * pclass[t][cid], FLT_MIN));
   }
@@ -269,11 +270,13 @@ void OutputLayer::ComputeGradient(int flag, Metric* perf) {
     int wid = static_cast<int>(label[t * 4 + 2]);
     int cid = static_cast<int>(label[t * 4 + 3]);
     auto pword = RTensor1(&pword_[t]);
+    CHECK_GT(end, wid);
+    CHECK_GE(wid, start);
 
     // gL/gclass_act
     pclass[t][cid] -= 1.0;
     // gL/gword_act
-    pword[wid] -= 1.0;
+    pword[wid - start] -= 1.0;
 
     // gL/gword_weight
     gword_weight.Slice(start, end) += dot(pword.FlatTo2D().T(), src[t].FlatTo2D());

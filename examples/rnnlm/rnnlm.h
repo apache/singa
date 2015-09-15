@@ -32,10 +32,12 @@ class RnnDataLayer : public RNNLayer {
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(int flag, Metric *perf) override;
   void ComputeGradient(int flag, Metric* perf) override {}
+  ConnectionType dst_layer_connection() const override {
+    return kOneToMany;
+  }
   int max_window() const {
     return max_window_;
   }
-
   const std::vector<singa::WordRecord>& records() const {
     return records_;
   }
