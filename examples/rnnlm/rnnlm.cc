@@ -69,6 +69,7 @@ void WordLayer::Setup(const LayerProto& proto, int npartitions) {
   Layer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
   int max_window = static_cast<RnnDataLayer*>(srclayers_[0])->max_window();
+  LOG(ERROR) << "clee " << max_window;
   data_.Reshape(vector<int>{max_window});
 }
 

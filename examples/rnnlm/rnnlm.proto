@@ -1,6 +1,5 @@
 package singa;
 import "job.proto";
-import "common.proto";
 
 
 message EmbeddingProto {
