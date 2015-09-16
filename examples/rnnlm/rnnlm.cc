@@ -1,7 +1,31 @@
+/************************************************************
+*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*
+*************************************************************/
+#include <string>
+#include <algorithm>
+#include <vector>
+#include "mshadow/tensor.h"
+#include "mshadow/tensor_expr.h"
+#include "mshadow/cxxnet_op.h"
 #include "rnnlm.h"
 #include "rnnlm.pb.h"
-#include "mshadow/tensor.h"
-#include "mshadow/cxxnet_op.h"
 
 namespace singa {
 using namespace mshadow;
@@ -11,7 +35,7 @@ using mshadow::Shape;
 using mshadow::Shape1;
 using mshadow::Shape2;
 using mshadow::Tensor;
-
+// using mshadow::TensorContainer;
 
 inline Tensor<cpu, 2> RTensor2(Blob<float>* blob) {
   const vector<int>& shape = blob->shape();
@@ -35,10 +59,12 @@ RnnDataLayer::~RnnDataLayer() {
 
 void RnnDataLayer::Setup(const LayerProto& proto, int npartitions) {
   Layer::Setup(proto, npartitions);
-  shard_ = new DataShard(proto.GetExtension(input_conf).path(), DataShard::kRead);
+  shard_ = new DataShard(
+               proto.GetExtension(input_conf).path(),
+               DataShard::kRead);
   string key;
   max_window_ = proto.GetExtension(input_conf).max_window();
-  records_.resize(max_window_ + 1);  // # of records in data layer is max_window_ + 1
+  records_.resize(max_window_ + 1);  // resize to # of records in data layer
   window_ = 0;
   shard_->Next(&key, &records_[window_]);
 }
@@ -50,11 +76,11 @@ void RnnDataLayer::ComputeFeature(int flag, Metric *perf) {
   for (int i = 1; i <= max_window_; i++) {
     string key;
     if (shard_->Next(&key, &records_[i])) {
-      if(records_[i].word_index() == 0) {
+      if (records_[i].word_index() == 0) {
         window_ = i;  // +1 ??
         break;
       }
-    } else{
+    } else {
       shard_->SeekToFirst();
       CHECK(shard_->Next(&key, &records_[i]));
     }
@@ -65,9 +91,7 @@ void RnnDataLayer::ComputeFeature(int flag, Metric *perf) {
 void WordLayer::Setup(const LayerProto& proto, int npartitions) {
   Layer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
-  LOG(ERROR) << srclayers_[0]->name();
   int max_window = static_cast<RnnDataLayer*>(srclayers_[0])->max_window();
-  LOG(ERROR) << "clee " << max_window;
   data_.Reshape(vector<int>{max_window});
 }
 
@@ -75,7 +99,7 @@ void WordLayer::ComputeFeature(int flag, Metric *perf) {
   auto records = static_cast<RnnDataLayer*>(srclayers_[0])->records();
   float *word = data_.mutable_cpu_data();
   window_ = static_cast<RNNLayer*>(srclayers_[0])->window();
-  for(int i = 0; i < window_; i++) {
+  for (int i = 0; i < window_; i++) {
     word[i] = records[i].word_index();
   }
 }
@@ -226,14 +250,14 @@ void OutputLayer::ComputeFeature(int flag, Metric* perf) {
   auto class_weight = RTensor2(class_weight_->mutable_data());
   const float * label = srclayers_[1]->data(this).cpu_data();
 
-  float loss = 0.f, ppl =0.f;
+  float loss = 0.f, ppl = 0.f;
   for (int t = 0; t < window_; t++) {
     int start = static_cast<int>(label[t * 4 + 0]);
     int end = static_cast<int>(label[t * 4 + 1]);
 
     auto wordWeight = word_weight.Slice(start, end);
     CHECK_GT(end, start);
-    pword_[t].Reshape(vector<int>{end-start});
+    pword_[t].Reshape(std::vector<int>{end-start});
     auto pword = RTensor1(&pword_[t]);
     pword = dot(src[t], wordWeight.T());
     Softmax(pword, pword);
@@ -279,12 +303,14 @@ void OutputLayer::ComputeGradient(int flag, Metric* perf) {
     pword[wid - start] -= 1.0;
 
     // gL/gword_weight
-    gword_weight.Slice(start, end) += dot(pword.FlatTo2D().T(), src[t].FlatTo2D());
+    gword_weight.Slice(start, end) += dot(pword.FlatTo2D().T(),
+                                          src[t].FlatTo2D());
     // gL/gclass_weight
-    gclass_weight += dot(pclass[t].FlatTo2D().T(), src[t].FlatTo2D());
+    gclass_weight += dot(pclass[t].FlatTo2D().T(),
+                         src[t].FlatTo2D());
 
     gsrc[t] = dot(pword, word_weight.Slice(start, end));
     gsrc[t] += dot(pclass[t], class_weight);
   }
 }
-}
+}   // end of namespace singa
