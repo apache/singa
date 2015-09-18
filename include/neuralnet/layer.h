@@ -190,7 +190,7 @@ class Layer {
 /**
  * Base layer for connecting layers when neural net is partitioned.
  */
-class ConnectionLayer : public Layer {
+class ConnectionLayer : virtual public Layer {
   // defined as a layer category
 };
 
@@ -198,19 +198,19 @@ class ConnectionLayer : public Layer {
  * Base layer for getting input data. May include layers for loading records,
  * parsing records.
  */
-class InputLayer : public Layer {
+class InputLayer : virtual public Layer {
   // defined as a layer category
 };
 
 
-class NeuronLayer : public Layer {
+class NeuronLayer : virtual public Layer {
   // defined as a layer category
 };
 
 /**
  * Base layer for calculating loss and other metrics, e.g., precison.
  */
-class LossLayer : public Layer {
+class LossLayer : virtual public Layer {
  public:
   Blob<float>* mutable_grad(const Layer* layer) override {
     return nullptr;

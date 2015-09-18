@@ -20,22 +20,22 @@
 *************************************************************/
 #include <string>
 #include <algorithm>
-#include <vector>
 #include "mshadow/tensor.h"
 #include "mshadow/tensor_expr.h"
 #include "mshadow/cxxnet_op.h"
-#include "rnnlm.h"
-#include "rnnlm.pb.h"
+#include "./rnnlm.h"
+#include "./rnnlm.pb.h"
 
-namespace singa {
+namespace rnnlm {
+using std::vector;
+using std::string;
+
 using namespace mshadow;
 using mshadow::cpu;
-
 using mshadow::Shape;
 using mshadow::Shape1;
 using mshadow::Shape2;
 using mshadow::Tensor;
-// using mshadow::TensorContainer;
 
 inline Tensor<cpu, 2> RTensor2(Blob<float>* blob) {
   const vector<int>& shape = blob->shape();
@@ -50,34 +50,34 @@ inline Tensor<cpu, 1> RTensor1(Blob<float>* blob) {
 }
 
 
-/*******InputLayer**************/
-RnnDataLayer::~RnnDataLayer() {
+/*******DataLayer**************/
+DataLayer::~DataLayer() {
   if (shard_ != nullptr)
     delete shard_;
   shard_ = nullptr;
 }
 
-void RnnDataLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
-  shard_ = new DataShard(
-               proto.GetExtension(input_conf).path(),
-               DataShard::kRead);
+void DataLayer::Setup(const LayerProto& proto, int npartitions) {
+  RNNLayer::Setup(proto, npartitions);
+  shard_ = new singa::DataShard(
+               proto.GetExtension(data_conf).path(),
+               singa::DataShard::kRead);
   string key;
-  max_window_ = proto.GetExtension(input_conf).max_window();
+  max_window_ = proto.GetExtension(data_conf).max_window();
   records_.resize(max_window_ + 1);  // resize to # of records in data layer
   window_ = 0;
   shard_->Next(&key, &records_[window_]);
 }
 
-void RnnDataLayer::ComputeFeature(int flag, Metric *perf) {
+void DataLayer::ComputeFeature(int flag, Metric *perf) {
   CHECK(records_.size() <= shard_->Count());
   records_[0] = records_[window_];
   window_ = max_window_;
   for (int i = 1; i <= max_window_; i++) {
     string key;
     if (shard_->Next(&key, &records_[i])) {
-      if (records_[i].word_index() == 0) {
-        window_ = i;  // +1 ??
+      if (records_[i].GetExtension(word).word_index() == 0) {
+        window_ = i;
         break;
       }
     } else {
@@ -87,41 +87,24 @@ void RnnDataLayer::ComputeFeature(int flag, Metric *perf) {
   }
 }
 
-/*******WordLayer**************/
-void WordLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
-  CHECK_EQ(srclayers_.size(), 1);
-  int max_window = static_cast<RnnDataLayer*>(srclayers_[0])->max_window();
-  data_.Reshape(vector<int>{max_window});
-}
-
-void WordLayer::ComputeFeature(int flag, Metric *perf) {
-  auto records = static_cast<RnnDataLayer*>(srclayers_[0])->records();
-  float *word = data_.mutable_cpu_data();
-  window_ = static_cast<RNNLayer*>(srclayers_[0])->window();
-  for (int i = 0; i < window_; i++) {
-    word[i] = records[i].word_index();
-  }
-}
-
-
 /*******LabelLayer**************/
-void RnnLabelLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
+void LabelLayer::Setup(const LayerProto& proto, int npartitions) {
+  RNNLayer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
-  int max_window = static_cast<RnnDataLayer*>(srclayers_[0])->max_window();
+  int max_window = dynamic_cast<DataLayer*>(srclayers_[0])->max_window();
   data_.Reshape(vector<int>{max_window, 4});
 }
 
-void RnnLabelLayer::ComputeFeature(int flag, Metric *perf) {
-  auto records = static_cast<RnnDataLayer*>(srclayers_[0])->records();
+void LabelLayer::ComputeFeature(int flag, Metric *perf) {
+  const auto& records = dynamic_cast<DataLayer*>(srclayers_[0])->records();
   float *label = data_.mutable_cpu_data();
-  window_ = static_cast<RNNLayer*>(srclayers_[0])->window();
+  window_ = dynamic_cast<RNNLayer*>(srclayers_[0])->window();
   for (int i = 0; i < window_; i++) {
-    label[4 * i + 0] = records[i + 1].class_start();
-    label[4 * i + 1] = records[i + 1].class_end();
-    label[4 * i + 2] = records[i + 1].word_index();
-    label[4 * i + 3] = records[i + 1].class_index();
+    WordRecord wordrecord = records[i + 1].GetExtension(word);
+    label[4 * i + 0] = wordrecord.class_start();
+    label[4 * i + 1] = wordrecord.class_end();
+    label[4 * i + 2] = wordrecord.word_index();
+    label[4 * i + 3] = wordrecord.class_index();
   }
 }
 
@@ -131,9 +114,9 @@ EmbeddingLayer::~EmbeddingLayer() {
 }
 
 void EmbeddingLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
+  RNNLayer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
-  int max_window = srclayers_[0]->data(this).shape()[0];
+  int max_window = dynamic_cast<DataLayer*>(srclayers_[0])->max_window();
   word_dim_ = proto.GetExtension(embedding_conf).word_dim();
   data_.Reshape(vector<int>{max_window, word_dim_});
   grad_.ReshapeLike(data_);
@@ -143,13 +126,14 @@ void EmbeddingLayer::Setup(const LayerProto& proto, int npartitions) {
 }
 
 void EmbeddingLayer::ComputeFeature(int flag, Metric* perf) {
-  window_ = static_cast<RNNLayer*>(srclayers_[0])->window();
+  auto datalayer = dynamic_cast<DataLayer*>(srclayers_[0]);
+  window_ = datalayer->window();
+  auto records = datalayer->records();
   auto words = RTensor2(&data_);
   auto embed = RTensor2(embed_->mutable_data());
-  auto word_idx = RTensor1(srclayers_[0]->mutable_data(this));
 
   for (int t = 0; t < window_; t++) {
-    int idx = static_cast<int>(word_idx[t]);
+    int idx = static_cast<int>(records[t].GetExtension(word).word_index());
     CHECK_GE(idx, 0);
     CHECK_LT(idx, vocab_size_);
     Copy(words[t], embed[idx]);
@@ -159,10 +143,11 @@ void EmbeddingLayer::ComputeFeature(int flag, Metric* perf) {
 void EmbeddingLayer::ComputeGradient(int flag, Metric* perf) {
   auto grad = RTensor2(&grad_);
   auto gembed = RTensor2(embed_->mutable_grad());
-  auto word_idx = RTensor1(srclayers_[0]->mutable_data(this));
+  auto datalayer = dynamic_cast<DataLayer*>(srclayers_[0]);
+  auto records = datalayer->records();
   gembed = 0;
   for (int t = 0; t < window_; t++) {
-    int idx = static_cast<int>(word_idx[t]);
+    int idx = static_cast<int>(records[t].GetExtension(word).word_index());
     Copy(gembed[idx], grad[t]);
   }
 }
@@ -172,7 +157,7 @@ HiddenLayer::~HiddenLayer() {
 }
 
 void HiddenLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
+  RNNLayer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
   const auto& innerproductData = srclayers_[0]->data(this);
   data_.ReshapeLike(srclayers_[0]->data(this));
@@ -184,7 +169,7 @@ void HiddenLayer::Setup(const LayerProto& proto, int npartitions) {
 
 // hid[t] = sigmoid(hid[t-1] * W + src[t])
 void HiddenLayer::ComputeFeature(int flag, Metric* perf) {
-  window_ = static_cast<RNNLayer*>(srclayers_[0])->window();
+  window_ = dynamic_cast<RNNLayer*>(srclayers_[0])->window();
   auto data = RTensor2(&data_);
   auto src = RTensor2(srclayers_[0]->mutable_data(this));
   auto weight = RTensor2(weight_->mutable_data());
@@ -219,20 +204,20 @@ void HiddenLayer::ComputeGradient(int flag, Metric* perf) {
   Copy(gsrc, grad);
 }
 
-/*********** 1-Implementation for OutputLayer **********/
-OutputLayer::~OutputLayer() {
+/*********** Implementation for LossLayer **********/
+LossLayer::~LossLayer() {
   delete word_weight_;
   delete class_weight_;
 }
 
-void OutputLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
+void LossLayer::Setup(const LayerProto& proto, int npartitions) {
+  RNNLayer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 2);
   const auto& src = srclayers_[0]->data(this);
   int max_window = src.shape()[0];
   int vdim = src.count() / max_window;   // Dimension of input
-  int vocab_size = proto.GetExtension(output_conf).vocab_size();
-  int nclass = proto.GetExtension(output_conf).nclass();
+  int vocab_size = proto.GetExtension(loss_conf).vocab_size();
+  int nclass = proto.GetExtension(loss_conf).nclass();
   word_weight_ = Param::Create(proto.param(0));
   word_weight_->Setup(vector<int>{vocab_size, vdim});
   class_weight_ = Param::Create(proto.param(1));
@@ -242,8 +227,8 @@ void OutputLayer::Setup(const LayerProto& proto, int npartitions) {
   pclass_.Reshape(vector<int>{max_window, nclass});
 }
 
-void OutputLayer::ComputeFeature(int flag, Metric* perf) {
-  window_ = static_cast<RNNLayer*>(srclayers_[0])->window();
+void LossLayer::ComputeFeature(int flag, Metric* perf) {
+  window_ = dynamic_cast<RNNLayer*>(srclayers_[0])->window();
   auto pclass = RTensor2(&pclass_);
   auto src = RTensor2(srclayers_[0]->mutable_data(this));
   auto word_weight = RTensor2(word_weight_->mutable_data());
@@ -274,10 +259,11 @@ void OutputLayer::ComputeFeature(int flag, Metric* perf) {
   }
 
   perf->Add("loss", loss, window_);
+  // users can compute the PPL value by 10^(ppl before exp)
   perf->Add("ppl before exp", ppl, window_);
 }
 
-void OutputLayer::ComputeGradient(int flag, Metric* perf) {
+void LossLayer::ComputeGradient(int flag, Metric* perf) {
   auto pclass = RTensor2(&pclass_);
   auto src = RTensor2(srclayers_[0]->mutable_data(this));
   auto gsrc = RTensor2(srclayers_[0]->mutable_grad(this));
@@ -313,4 +299,4 @@ void OutputLayer::ComputeGradient(int flag, Metric* perf) {
     gsrc[t] += dot(pclass[t], class_weight);
   }
 }
-}   // end of namespace singa
+}   // end of namespace rnnlm

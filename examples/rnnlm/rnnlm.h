@@ -23,12 +23,17 @@
 #include <vector>
 #include "./singa.h"
 #include "./rnnlm.pb.h"
-namespace singa {
 
+namespace rnnlm {
+using singa::LayerProto;
+using singa::Layer;
+using singa::Param;
+using singa::Blob;
+using singa::Metric;
 /**
  * Base RNN layer. May make it a base layer of SINGA.
  */
-class RNNLayer : public NeuronLayer {
+class RNNLayer : virtual public Layer {
  public:
   /**
    * The recurrent layers may be unrolled different times for different
@@ -49,44 +54,26 @@ class RNNLayer : public NeuronLayer {
 /**
  * Input layer that get read records from data shard
  */
-class RnnDataLayer : public RNNLayer {
+class DataLayer : public RNNLayer, public singa::DataLayer {
  public:
-  ~RnnDataLayer();
+  ~DataLayer();
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override {}
-  ConnectionType dst_layer_connection() const override {
-    return kOneToMany;
-  }
   int max_window() const {
     return max_window_;
-  }
-  const std::vector<singa::WordRecord>& records() const {
-    return records_;
   }
 
  private:
   int max_window_;
-  DataShard* shard_;
-  std::vector<singa::WordRecord> records_;
+  singa::DataShard* shard_;
 };
 
 
 /**
- * WordLayer that read records_[0] to records_[window_ - 1] from RnnDataLayer to offer data for computation
+ * LabelLayer that read records_[1] to records_[window_] from DataLayer to
+ * offer label information
  */
-class WordLayer : public RNNLayer {
- public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override {}
-};
-
-
-/**
- * LabelLayer that read records_[1] to records_[window_] from RnnDataLayer to offer label information
- */
-class RnnLabelLayer : public RNNLayer {
+class LabelLayer : public RNNLayer {
  public:
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(int flag, Metric *perf) override;
@@ -142,9 +129,9 @@ class HiddenLayer : public RNNLayer {
  * p(w|c) = softmax(src[t]*Ww[Start(c):End(c)])
  * p(word at t+1 is w)=p(word at t+1 is from class c)*p(w|c)
  */
-class OutputLayer : public RNNLayer {
+class LossLayer : public RNNLayer {
  public:
-  ~OutputLayer();
+  ~LossLayer();
   void Setup(const LayerProto& proto, int npartitions) override;
   void ComputeFeature(int flag, Metric *perf) override;
   void ComputeGradient(int flag, Metric* perf) override;

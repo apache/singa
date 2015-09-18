@@ -95,6 +95,8 @@ message Record {
   optional string user_type =2;
   // configuration for
   optional SingleLabelImageRecord image = 5;
+
+  extensions 101 to 200;
 }
 
 message SingleLabelImageRecord {

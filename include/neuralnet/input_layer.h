@@ -43,7 +43,7 @@ namespace singa {
 /**
  * Base layer for reading records from local Shard, HDFS, lmdb, etc.
  */
-class DataLayer: public InputLayer {
+class DataLayer: virtual public InputLayer {
  public:
   void ComputeGradient(int flag, Metric* perf) override {}
   Blob<float>* mutable_data(const Layer* layer) override {

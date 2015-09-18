@@ -285,7 +285,7 @@ void Worker::ReceiveBlobs(
     auto data = receive_layer->mutable_data(nullptr);
     msg->NextFrame();
     memcpy(data->mutable_cpu_data(), msg->FrameData(), msg->FrameSize());
-    static_cast<BridgeLayer*>(receive_layer)->set_ready(true);
+    dynamic_cast<BridgeLayer*>(receive_layer)->set_ready(true);
     delete msg;
   }
 }
@@ -360,7 +360,7 @@ void BPWorker::Forward(
   for (auto& layer : net->layers()) {
     if (layer->partition_id() == id_) {
       if (typeid(*layer) == typeid(BridgeDstLayer))  // recv data from other workers
-        ReceiveBlobs(true, false, static_cast<BridgeLayer*>(layer), net);
+        ReceiveBlobs(true, false, dynamic_cast<BridgeLayer*>(layer), net);
       if (phase == kTrain) {
         for (Param* p : layer->GetParams()) {  // wait until param is updated
           Collect(p, step);
@@ -368,7 +368,7 @@ void BPWorker::Forward(
       }
       layer->ComputeFeature(phase | kForward, perf);
       if (typeid(*layer) == typeid(BridgeSrcLayer))  // send data to other workers
-        SendBlobs(true, false, static_cast<BridgeLayer*>(layer), net);
+        SendBlobs(true, false, dynamic_cast<BridgeLayer*>(layer), net);
       if (DisplayDebugInfo(step))
         LOG(INFO) << layer->DebugString(step, phase | kForward);
     }
@@ -388,7 +388,7 @@ void BPWorker::Backward(int step, shared_ptr<NeuralNet> net) {
       for (Param* p : layer->GetParams())
         Update(p, step);
       if (typeid(layer) == typeid(BridgeDstLayer))  // recv data from other workers
-        SendBlobs(false, true, static_cast<BridgeDstLayer*>(layer), net);
+        SendBlobs(false, true, dynamic_cast<BridgeDstLayer*>(layer), net);
     }
   }
 }

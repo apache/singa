@@ -30,7 +30,7 @@
  * base ConnectionLayer.
  */
 namespace singa {
-class BridgeLayer : public ConnectionLayer {
+class BridgeLayer : virtual public ConnectionLayer {
  public:
   void set_ready(bool a) {
     ready_ = a;

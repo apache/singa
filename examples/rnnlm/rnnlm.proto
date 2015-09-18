@@ -19,29 +19,28 @@
 *
 *************************************************************/
 
-package singa;
 import "job.proto";
-
+import "common.proto";
 
 message EmbeddingProto {
   optional int32 word_dim = 1;
   optional int32 vocab_size = 2;
 }
 
-message OutputProto {
+message LossProto {
   optional int32 nclass = 1;
   optional int32 vocab_size = 2;
 }
 
-message InputProto {
+message DataProto {
   required string path = 1;
   optional int32 max_window = 2;
 }
 
-extend LayerProto {
+extend singa.LayerProto {
   optional EmbeddingProto embedding_conf = 101;
-  optional OutputProto output_conf = 102;
-  optional InputProto input_conf = 103;
+  optional LossProto loss_conf = 102;
+  optional DataProto data_conf = 103;
 }
 
 message WordRecord {
@@ -50,4 +49,8 @@ message WordRecord {
   optional int32 class_index = 3;
   optional int32 class_start = 4;
   optional int32 class_end = 5;
+}
+
+extend singa.Record {
+  optional WordRecord word = 101;
 }

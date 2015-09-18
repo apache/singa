@@ -36,7 +36,7 @@ using std::vector;
 /************* Implementation for ParserLayer ***********/
 void ParserLayer::ComputeFeature(int flag, Metric *perf) {
   CHECK_EQ(srclayers_.size(), 1);
-  auto datalayer = static_cast<DataLayer*>(*srclayers_.begin());
+  auto datalayer = dynamic_cast<DataLayer*>(*srclayers_.begin());
   ParseRecords(flag, datalayer->records(), &data_);
 }
 
@@ -196,7 +196,7 @@ void ShardDataLayer::ComputeFeature(int flag, Metric* perf) {
 void LabelLayer::Setup(const LayerProto& proto, int npartitions) {
   Layer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
-  int batchsize = static_cast<DataLayer*>(srclayers_[0])->batchsize();
+  int batchsize = dynamic_cast<DataLayer*>(srclayers_[0])->batchsize();
   data_.Reshape(vector<int>{batchsize});
 }
 
@@ -249,8 +249,8 @@ void MnistLayer::ParseRecords(int flag,
 void MnistLayer::Setup(const LayerProto& proto, int npartitions) {
   Layer::Setup(proto, npartitions);
   CHECK_EQ(srclayers_.size(), 1);
-  int batchsize = static_cast<DataLayer*>(srclayers_[0])->batchsize();
-  Record sample = static_cast<DataLayer*>(srclayers_[0])->sample();
+  int batchsize = dynamic_cast<DataLayer*>(srclayers_[0])->batchsize();
+  Record sample = dynamic_cast<DataLayer*>(srclayers_[0])->sample();
   norm_a_ = proto.mnist_conf().norm_a();
   norm_b_ = proto.mnist_conf().norm_b();
   int ndim = sample.image().shape_size();
@@ -321,8 +321,8 @@ void RGBImageLayer::Setup(const LayerProto& proto, int npartitions) {
   scale_ = proto.rgbimage_conf().scale();
   cropsize_ = proto.rgbimage_conf().cropsize();
   mirror_ = proto.rgbimage_conf().mirror();
-  int batchsize = static_cast<DataLayer*>(srclayers_[0])->batchsize();
-  Record sample = static_cast<DataLayer*>(srclayers_[0])->sample();
+  int batchsize = dynamic_cast<DataLayer*>(srclayers_[0])->batchsize();
+  Record sample = dynamic_cast<DataLayer*>(srclayers_[0])->sample();
   vector<int> shape;
   shape.push_back(batchsize);
   for (int x : sample.image().shape()) {
