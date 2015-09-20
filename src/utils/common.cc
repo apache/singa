@@ -267,7 +267,7 @@ Metric::Metric(const string& str) {
 }
 
 void Metric::Add(const string& name, float value) {
-  Add( name, value, 1);
+  Add(name, value, 1);
 }
 void Metric::Add(const string& name, float value, int count) {
   if (entry_.find(name) == entry_.end()) {

@@ -53,40 +53,37 @@ int create() {
 }
 
 // extract cluster configuration part from the job config file
-// TODO improve this function to make it robust
+// TODO(wangsh) improve this function to make it robust
 const std::string extract_cluster(const char* jobfile) {
   std::ifstream fin;
   fin.open(jobfile, std::ifstream::in);
   CHECK(fin.is_open()) << "cannot open job conf file " << jobfile;
   std::string line;
   std::string cluster;
+  bool in_cluster = false;
   while (std::getline(fin, line)) {
-    // end of extraction (cluster config has not nested messages)
-    if (line.find("}") != std::string::npos && cluster.length()) {
-      cluster += line.substr(0, line.find("}"));
-      break;
+    if (in_cluster == false) {
+      size_t pos = line.find("cluster");
+      if (pos == std::string::npos) continue;
+      in_cluster = true;
+      line = line.substr(pos);
+      cluster = "";
     }
-    unsigned int pos = 0;
-    while (pos < line.length() && line.at(pos) == ' ' ) pos++;
-    if (line.find("cluster", pos) == pos) {  // start with <whitespace> cluster
-      pos += 7;
-      do {  // looking for the first '{', which may be in the next lines
-        while (pos < line.length() &&
-            (line.at(pos) == ' ' || line.at(pos) =='\t')) pos++;
-        if (pos < line.length()) {
-          CHECK_EQ(line.at(pos), '{') << "error around 'cluster' field";
-          cluster =  " ";  // start extraction
-          break;
-        } else
-          pos = 0;
-      }while(std::getline(fin, line));
-    } else if (cluster.length()) {
-        cluster += line + "\n";
+    if (in_cluster == true) {
+      cluster += line + "\n";
+      if (line.find("}") != std::string::npos)
+        in_cluster = false;
     }
   }
-  return cluster;
+  LOG(INFO) << "cluster configure: " << cluster;
+  size_t s_pos = cluster.find("{");
+  size_t e_pos = cluster.find("}");
+  if (s_pos == std::string::npos || e_pos == std::string::npos) {
+    LOG(FATAL) << "cannot extract valid cluster configuration in file: "
+               << jobfile;
+  }
+  return cluster.substr(s_pos+1, e_pos-s_pos-1);
 }
-
 
 // generate a host list
 int genhost(char* job_conf) {

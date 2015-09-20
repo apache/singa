@@ -145,5 +145,5 @@ class LossLayer : public RNNLayer {
   Blob<float> pclass_;
   Param* word_weight_, *class_weight_;
 };
-}  // namespace singa
+}  // namespace rnnlm
 #endif  // EXAMPLES_RNNLM_RNNLM_H_
