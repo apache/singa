@@ -26,10 +26,14 @@
 #include "utils/singleton.h"
 
 namespace singa {
-shared_ptr<NeuralNet> NeuralNet::Create(
-    const NetProto& net_conf,
-    Phase phase,
-    int npartitions) {
+
+using std::map;
+using std::shared_ptr;
+using std::string;
+using std::vector;
+
+shared_ptr<NeuralNet> NeuralNet::Create(const NetProto& net_conf, Phase phase,
+                                        int npartitions) {
   NetProto conf;
   conf.CopyFrom(net_conf);
   conf.clear_layer();
@@ -43,22 +47,21 @@ shared_ptr<NeuralNet> NeuralNet::Create(
       if (p == phase)
         include = false;
     }
-    if (include) {
-      LayerProto* layer_conf = conf.add_layer();
-      layer_conf->CopyFrom(layer);
-      // using net partition if layer partition is not set
-      if (!layer_conf->has_partition_dim())
-        layer_conf->set_partition_dim(net_conf.partition_dim());
-      for (int i = 0; i < layer_conf->param_size(); i++) {
-        ParamProto* param = layer_conf->mutable_param(i);
-        if (param->has_name() && param->name() != "") {
-          CHECK(name2param.find(param->name()) == name2param.end())
-            << "param name is repeated: " << param->name();
-          name2param[param->name()] = param;
-        }
-        if (param->has_share_from() && param->share_from() != "")
-          shares.push_back(param);
+    if (include == false) continue;
+    LayerProto* layer_conf = conf.add_layer();
+    layer_conf->CopyFrom(layer);
+    // using net partition if layer partition is not set
+    if (!layer_conf->has_partition_dim())
+      layer_conf->set_partition_dim(net_conf.partition_dim());
+    for (int i = 0; i < layer_conf->param_size(); i++) {
+      ParamProto* param = layer_conf->mutable_param(i);
+      if (param->has_name() && param->name() != "") {
+        CHECK(name2param.find(param->name()) == name2param.end())
+          << "param name is repeated: " << param->name();
+        name2param[param->name()] = param;
       }
+      if (param->has_share_from() && param->share_from() != "")
+        shares.push_back(param);
     }
   }
   for (auto param : shares) {
@@ -71,17 +74,10 @@ shared_ptr<NeuralNet> NeuralNet::Create(
     param->set_name(name);
     param->set_share_from(from);
   }
-
   LOG(INFO) << "NeuralNet config is\n" << conf.DebugString();
-
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc
   auto net = std::make_shared<NeuralNet>(conf, npartitions);
   return net;
-}
-
-NeuralNet::~NeuralNet() {
-  for (auto layer : layers_)
-    delete layer;
 }
 
 NeuralNet::NeuralNet(NetProto netproto, int npartitions) {
@@ -95,80 +91,32 @@ NeuralNet::NeuralNet(NetProto netproto, int npartitions) {
   LOG(INFO) << "Neural net constructed";
 }
 
-void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
-  // create one layer per node
-  for (Node* node : graph->nodes()) {
-    auto proto_ptr =  static_cast<LayerProto*>(node->proto);
-    auto layer = Layer::Create(*proto_ptr);
-    layers_.push_back(layer);
-    name2layer_[node->name] = layer;
-  }
-  // connect layers
-  for (Node* node : graph->nodes()) {
-    auto layer = name2layer_[node->name];
-    layer->clear_dstlayers();
-    for (Node* dst : node->dstnodes)
-      layer->add_dstlayer(name2layer_[dst->name]);
-    layer->clear_srclayers();
-    for (Node* src : node->srcnodes)
-      layer->add_srclayer(name2layer_[src->name]);
-  }
-  // setup layers
-  int paramid = 0;
-  map<string, string> layerinfo;
-  map<string, vector<Layer*>> share_param_layers;
-  for (Node* node : graph->nodes()) {
-    auto layer = name2layer_[node->name];
-    layer->Setup(*(static_cast<LayerProto*>(node->proto)), npartitions);
-    LOG(INFO) << "constructing graph: " << layer->name();
-    layerinfo[layer->name()] = IntVecToString(layer->data(nullptr).shape());
-    string param_name = "$";
-    for (auto param : layer->GetParams()) {
-      param->set_id(paramid++);
-      // if user does not name the param, then name it based on layer name.
-      if (param->name() == "") {
-        param->set_name(layer->name() + param_name);
-        param_name += "$";
-      }
-    }
-    if (layer->partition_dim() == 0)
-      share_param_layers[node->origin].push_back(layer);
-  }
-  LOG(INFO) << "Neural net structure\n"  << graph->ToJson(layerinfo);
+NeuralNet::~NeuralNet() {
+  for (auto layer : layers_)
+    delete layer;
+}
 
-  // create map from param name to param ptr
-  std::unordered_map<string, Param*> name2param;
-  for (auto layer : layers_) {
-    for (auto param : layer->GetParams()) {
-      name2param[param->name()] = param;
-    }
+std::string NeuralNet::ToAdjacency() {
+  string disp = "";
+  for (auto& layer : layers_) {
+    disp += layer->name()+": ";
+    for (const auto& dst : layer->dstlayers())
+      disp += dst->name()+", ";
+    disp += "\n";
   }
-  for (auto & entry : share_param_layers) {
-    // overwrite entries for replicated params due to layer partition (dim 0).
-    for (auto *param : entry.second.front()->GetParams())
-      name2param.at(param->name()) = param;
-  }
-  // share params based on share_from field
-  for (auto & entry : name2param) {
-    Param* param = entry.second;
-    const string share_from = param->share_from();
-    if (param->share_from() != "") {
-      if(name2param.find(share_from) != name2param.end()) {
-        param->ShareFrom(*name2param.at(param->share_from()));
-      } else {
-        LOG(FATAL) << "No param with the name (share_from) " << share_from;
+  return disp;
+}
+
+void NeuralNet::ShareParamsFrom(shared_ptr<NeuralNet> other) {
+  for (auto& layer : layers_) {
+    auto otherlayer = other->name2layer(layer->name());
+    if (otherlayer != nullptr) {
+      const auto& otherparams = otherlayer->GetParams();
+      const auto& params = layer->GetParams();
+      CHECK_EQ(params.size(), otherparams.size());
+      for (size_t i = 0; i < params.size(); i++) {
+        params[i]->ShareFrom(*otherparams[i]);
       }
-    }
-  }
-  // share Params for layers generated (partitioned) from the same origin layer
-  for (auto & entry : share_param_layers) {
-    const auto& owner = entry.second.begin();
-    const auto& owner_params = (*owner)->GetParams();
-    for (auto it = owner + 1; it != entry.second.end(); it++) {
-      auto params = (*it)->GetParams();
-      CHECK_EQ(params.size(), owner_params.size());
-      for (size_t i = 0; i < params.size(); i++)
-        params.at(i)->ShareFrom(*owner_params.at(i));
     }
   }
 }
@@ -314,23 +262,26 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
         for (Node* node : nodes)
           ConcateNodes(graph, srcnodes, node);
       } else if ((src_pdim == 1 && pdim == 0) || (src_pdim == 0 && pdim == 1)) {
+        // TODO(wangwei) rewrite the whole src-dst construction in a clear way
+        LOG(FATAL) << "not implemented";
         // the most complext scenario
-        vector<Node*> nodes;
-        for (Node* srcnode : srcnodes)
-          nodes.push_back(SliceNode(graph, srcnode, nodes, false));
-        for (Node* node : nodes)
-          ConcateNodes(graph, nodes, node);
+        // vector<Node*> nodes;
+        // for (Node* srcnode : srcnodes)
+        //   nodes.push_back(SliceNode(graph, srcnode, nodes, false));
+        // for (Node* node : nodes)
+        //   ConcateNodes(graph, nodes, node);
       } else if ((src_pdim == 0 && pdim == 0)||
           (src_pdim == 1 && pdim == 1 && connection == kOneToOne)) {
         CHECK_EQ(srcnodes.size(), nodes.size());
         for (size_t i = 0; i < srcnodes.size(); i++)
           graph->AddEdge(srcnodes[i], nodes[i]);
+      } else {
+        LOG(FATAL) << "in wrong branch, not implemented";
       }
     }
   }
   // must do topology sort, because we have added new nodes.
   graph->Sort();
-
   // add nodes for SplitLayer
   vector<Node*> oldnodes = graph->nodes();
   for (Node* node : oldnodes) {
@@ -344,7 +295,6 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
     }
     delete layer;
   }
-
   // add nodes for bridge layers
   for (Node* node : oldnodes) {
     vector<Node*> dstnodes = node->dstnodes;
@@ -363,52 +313,92 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
   return graph;
 }
 
-
-void NeuralNet::PrepareDataStructures() {
-  parserlayers_.clear();
-  losslayers_.clear();
-  datalayers_.clear();
-  params_.clear();
-  paramid2param_.clear();
-  name2layer_.clear();
-
-  for (auto& layer : layers_) {
-    name2layer_[layer->name()] = layer;
-    /*
-    if (layer->is_parserlayer())
-      parserlayers_.push_back(static_cast<ParserLayer*>(layer));
-    if (layer->is_losslayer())
-      losslayers_.push_back(static_cast<LossLayer*>(layer));
-    if (layer->is_datalayer())
-      datalayers_.push_back(static_cast<DataLayer*>(layer));
-      */
-    for (Param* p : layer->GetParams()) {
-      paramid2param_[p->id()] = p;
-      params_.push_back(p);
+void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
+  // create one layer per node
+  for (Node* node : graph->nodes()) {
+    auto proto_ptr = static_cast<LayerProto*>(node->proto);
+    auto layer = Layer::Create(*proto_ptr);
+    layers_.push_back(layer);
+    name2layer_[node->name] = layer;
+  }
+  // connect layers
+  for (Node* node : graph->nodes()) {
+    auto layer = name2layer_[node->name];
+    layer->clear_dstlayers();
+    for (Node* dst : node->dstnodes)
+      layer->add_dstlayer(name2layer_[dst->name]);
+    layer->clear_srclayers();
+    for (Node* src : node->srcnodes)
+      layer->add_srclayer(name2layer_[src->name]);
+  }
+  // setup layers
+  int paramid = 0;
+  map<string, string> layerinfo;
+  map<string, vector<Layer*>> share_param_layers;
+  for (Node* node : graph->nodes()) {
+    auto layer = name2layer_[node->name];
+    layer->Setup(*(static_cast<LayerProto*>(node->proto)), npartitions);
+    LOG(INFO) << "constructing graph: " << layer->name();
+    layerinfo[layer->name()] = IntVecToString(layer->data(nullptr).shape());
+    string param_name = "$";
+    for (auto param : layer->GetParams()) {
+      param->set_id(paramid++);
+      // if user does not name the param, then name it based on layer name.
+      if (param->name() == "") {
+        param->set_name(layer->name() + param_name);
+        param_name += "$";
+      }
+    }
+    if (layer->partition_dim() == 0)
+      share_param_layers[node->origin].push_back(layer);
+  }
+  LOG(INFO) << "Neural net structure\n"  << graph->ToJson(layerinfo);
+  // create map from param name to param ptr
+  std::unordered_map<string, Param*> name2param;
+  for (auto layer : layers_) {
+    for (auto param : layer->GetParams()) {
+      name2param[param->name()] = param;
+    }
+  }
+  for (auto & entry : share_param_layers) {
+    // overwrite entries for replicated params due to layer partition (dim 0).
+    for (auto *param : entry.second.front()->GetParams())
+      name2param.at(param->name()) = param;
+  }
+  // share params based on share_from field
+  for (auto & entry : name2param) {
+    Param* param = entry.second;
+    const string share_from = param->share_from();
+    if (param->share_from() != "") {
+      if (name2param.find(share_from) != name2param.end()) {
+        param->ShareFrom(*name2param.at(param->share_from()));
+      } else {
+        LOG(FATAL) << "No param with the name (share_from) " << share_from;
+      }
+    }
+  }
+  // share Params for layers generated (partitioned) from the same origin layer
+  for (auto & entry : share_param_layers) {
+    const auto& owner = entry.second.begin();
+    const auto& owner_params = (*owner)->GetParams();
+    for (auto it = owner + 1; it != entry.second.end(); it++) {
+      auto params = (*it)->GetParams();
+      CHECK_EQ(params.size(), owner_params.size());
+      for (size_t i = 0; i < params.size(); i++)
+        params.at(i)->ShareFrom(*owner_params.at(i));
     }
   }
 }
-std::string NeuralNet::ToAdjacency() {
-  string disp = "";
-  for (auto& layer : layers_) {
-    disp += layer->name()+": ";
-    for (const auto& dst : layer->dstlayers())
-      disp += dst->name()+", ";
-    disp += "\n";
-  }
-  return disp;
-}
 
-void NeuralNet::ShareParamsFrom(shared_ptr<NeuralNet> other) {
+void NeuralNet::PrepareDataStructures() {
+  params_.clear();
+  paramid2param_.clear();
+  name2layer_.clear();
   for (auto& layer : layers_) {
-    auto otherlayer = other->name2layer(layer->name());
-    if (otherlayer != nullptr) {
-      const auto& otherparams = otherlayer->GetParams();
-      const auto& params = layer->GetParams();
-      CHECK_EQ(params.size(), otherparams.size());
-      for (size_t i = 0; i < params.size(); i++) {
-        params[i]->ShareFrom(*otherparams[i]);
-      }
+    name2layer_[layer->name()] = layer;
+    for (Param* p : layer->GetParams()) {
+      paramid2param_[p->id()] = p;
+      params_.push_back(p);
     }
   }
 }

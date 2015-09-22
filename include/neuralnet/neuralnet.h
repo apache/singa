@@ -22,28 +22,24 @@
 #ifndef SINGA_NEURALNET_NEURALNET_H_
 #define SINGA_NEURALNET_NEURALNET_H_
 
-#include <vector>
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
-#include "proto/job.pb.h"
 #include "neuralnet/layer.h"
+#include "proto/job.pb.h"
 #include "utils/factory.h"
 #include "utils/graph.h"
 
 namespace singa {
-using std::vector;
-using std::string;
-using std::map;
-using std::shared_ptr;
 
 /**
  * The neural network is constructed from user configurations in NetProto.
  *
  * Some layers, e.g., SplitLayer and BridgeSrcLayer/BridgeDstLayer
  * will be added implicitly to partition the neural network.
- * TODO create wrappers for popular models, e.g., MLP, CNN.
+ * TODO(wangwei) create wrappers for popular models, e.g., MLP, CNN.
  */
 class NeuralNet {
  public:
@@ -53,20 +49,20 @@ class NeuralNet {
    * Parameters for test/validation net can share those from training after
    * setup (done outside of this funcion).
    *
-   * @param np proto for the neural network
+   * @param net_conf proto for the neural network
    * @param phase test/training/validation
-   * @param num num of partitions, do partitioning if num > 1
+   * @param npartitions num of partitions, do partitioning if num > 1
    * @return shared pointer to a neural net
    */
-  static shared_ptr<NeuralNet> Create(const NetProto& np, Phase phase, int num);
+  static std::shared_ptr<NeuralNet> Create(const NetProto& net_conf,
+                                           Phase phase, int npartitions);
 
- public:
   /**
    * construct the net structure from protocol buffer.
    * @param netproto neural net config
    * @param npartitions num of partitions. 1 for no partitioning.
    */
-  explicit NeuralNet(NetProto netproto, int npartitions = 1);
+  NeuralNet(NetProto netproto, int npartitions);
   ~NeuralNet();
   /**
    * To display the adjacency layers
@@ -75,35 +71,16 @@ class NeuralNet {
   /**
    * Share memory of parameter values from other neuralnet
    */
-  void ShareParamsFrom(shared_ptr<NeuralNet> other);
-
-  const std::vector<Layer*>& layers() {
-    return layers_;
-  }
-  const std::vector<ParserLayer*>& parserlayers() const {
-    LOG(FATAL)<< " not implemented";
-    return parserlayers_;
-  }
-  const std::vector<LossLayer*>& losslayers() const {
-    LOG(FATAL)<< " not implemented";
-    return losslayers_;
-  }
-  const std::vector<DataLayer*>& datalayers() const {
-    LOG(FATAL)<< " not implemented";
-    return datalayers_;
-  }
-  const std::vector<Param*>& params() const {
-    return params_;
-  }
-  Layer* name2layer(string name) const {
+  void ShareParamsFrom(std::shared_ptr<NeuralNet> other);
+  inline const std::vector<Layer*>& layers() { return layers_; }
+  inline const std::vector<Param*>& params() const { return params_; }
+  inline Layer* name2layer(std::string name) const {
     if (name2layer_.find(name) != name2layer_.end())
       return name2layer_.at(name);
     else
       return nullptr;
   }
-  Param* paramid2param(int id) const {
-    return paramid2param_.at(id);
-  }
+  inline Param* paramid2param(int id) const { return paramid2param_.at(id); }
 
  protected:
   /**
@@ -126,14 +103,13 @@ class NeuralNet {
   void PrepareDataStructures();
 
  protected:
-  vector<Layer*> layers_;
-  vector<ParserLayer*> parserlayers_;
-  vector<LossLayer*> losslayers_;
-  vector<DataLayer*> datalayers_;
-  vector<Param*> params_;
+  std::vector<Layer*> layers_;
+  std::vector<Param*> params_;
 
-  map<string, Layer*> name2layer_;
-  map<int, Param*> paramid2param_;
+  std::map<std::string, Layer*> name2layer_;
+  std::map<int, Param*> paramid2param_;
 };
+
 }  // namespace singa
+
 #endif  // SINGA_NEURALNET_NEURALNET_H_

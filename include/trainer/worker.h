@@ -26,6 +26,12 @@
 #include "communication/socket.h"
 
 namespace singa {
+
+using std::map;
+using std::shared_ptr;
+using std::string;
+using std::vector;
+  
 //!< sleep 5 milliseconds if the Param is not updated to the expected version
 const int kCollectSleepTime=5;
 /**
