@@ -361,27 +361,27 @@ cd $BIN
 while [ $# != 0 ]
 do
 	case $1 in
-	"cmake")
-		echo "install cmake";
-		if [[ $2 == */* ]];then
-			install_cmake $2;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during cmake installation" ;
-		        exit;
-		    fi  
-			shift
-			shift
-		else
-			install_cmake;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during cmake installation" ;
-		        exit;
-		    fi  
-			shift
-		fi
-		;;
+#	"cmake")
+#		echo "install cmake";
+#		if [[ $2 == */* ]];then
+#			install_cmake $2;
+#		    if [ $? -ne 0 ] 
+#		    then
+#		        echo "ERROR during cmake installation" ;
+#		        exit;
+#		    fi  
+#			shift
+#			shift
+#		else
+#			install_cmake;
+#		    if [ $? -ne 0 ] 
+#		    then
+#		        echo "ERROR during cmake installation" ;
+#		        exit;
+#		    fi  
+#			shift
+#		fi
+#		;;
 	"czmq")
 		echo "install czmq";
 		if [ $2 == "-f" ]
@@ -496,27 +496,27 @@ do
 			shift
 		fi
 		;;
-	"opencv")
-		echo "install opencv";
-		if [[ $2 == */* ]];then
-			install_opencv $2;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during opencv installation" ;
-		        exit;
-		    fi  
-			shift
-			shift
-		else
-			install_opencv;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during opencv installation" ;
-		        exit;
-		    fi  
-			shift
-		fi
-		;;
+#	"opencv")
+#		echo "install opencv";
+#		if [[ $2 == */* ]];then
+#			install_opencv $2;
+#		    if [ $? -ne 0 ] 
+#		    then
+#		        echo "ERROR during opencv installation" ;
+#		        exit;
+#		    fi  
+#			shift
+#			shift
+#		else
+#			install_opencv;
+#		    if [ $? -ne 0 ] 
+#		    then
+#		        echo "ERROR during opencv installation" ;
+#		        exit;
+#		    fi  
+#			shift
+#		fi
+#		;;
 	 "protobuf")
 		echo "install protobuf";
 		if [[ $2 == */* ]];then
@@ -583,12 +583,12 @@ do
 	"all")
 		echo "install all dependencies";
 		if [[ $2 == */* ]];then
-			install_cmake $2;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during cmake installation" ;
-		        exit;
-		    fi  
+#			install_cmake $2;
+#		    if [ $? -ne 0 ] 
+#		    then
+#		        echo "ERROR during cmake installation" ;
+#		        exit;
+#		    fi  
 			install_zeromq $2;
 		    if [ $? -ne 0 ] 
 		    then
@@ -619,12 +619,12 @@ do
 		        echo "ERROR during openblas installation" ;
 		        exit;
 		    fi  
-			install_opencv $2;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during opencv installation" ;
-		        exit;
-		    fi  
+#			install_opencv $2;
+#		    if [ $? -ne 0 ] 
+#		    then
+#		        echo "ERROR during opencv installation" ;
+#		        exit;
+#		    fi  
 			install_protobuf $2;
 		    if [ $? -ne 0 ] 
 		    then
@@ -640,12 +640,12 @@ do
 			shift
 			shift
 		else
-			install_cmake;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during cmake installation" ;
-		        exit;
-		    fi  
+#			install_cmake;
+#		    if [ $? -ne 0 ] 
+#		    then
+#		        echo "ERROR during cmake installation" ;
+#		        exit;
+#		    fi  
 			install_zeromq;
 		    if [ $? -ne 0 ] 
 		    then
@@ -676,12 +676,12 @@ do
 		        echo "ERROR during openblas installation" ;
 		        exit;
 		    fi  
-			install_opencv;
-		    if [ $? -ne 0 ] 
-		    then
-		        echo "ERROR during opencv installation" ;
-		        exit;
-		    fi  
+#			install_opencv;
+#		    if [ $? -ne 0 ] 
+#		    then
+#		        echo "ERROR during opencv installation" ;
+#		        exit;
+#		    fi  
 			install_protobuf;
 		    if [ $? -ne 0 ] 
 		    then
@@ -700,12 +700,12 @@ do
 	*)
 		echo "USAGE: ./install.sh [MISSING_LIBRARY_NAME1] [YOUR_INSTALL_PATH1] [MISSING_LIBRARY_NAME2] [YOUR_INSTALL_PATH2] ...";
 		echo " MISSING_LIBRARY_NAME can be:	"
-		echo "	cmake"
+#		echo "	cmake"
 		echo "	czmq"
 		echo "	glog"
 		echo "	lmdb"
 		echo "	OpenBLAS"
-		echo "	opencv"
+#		echo "	opencv"
 		echo "	protobuf"
 		echo "	zeromq"
 		echo "	zookeeper"
