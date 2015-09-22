@@ -144,7 +144,7 @@ void Trainer::SetupWorkerServer(
     server->Setup(job_conf.updater(), slice2group, slice2server_);
 }
 
-vector<Server*> Trainer::CreateServers(int nthreads, const JobProto& job) {
+vector<Server*> Trainer::CreateServers(const JobProto& job) {
   auto cluster = Cluster::Get();
   vector<Server*> servers;
   if (!cluster->has_server())
@@ -160,7 +160,7 @@ vector<Server*> Trainer::CreateServers(int nthreads, const JobProto& job) {
   int gstart = rng[0], gend = rng[1], start = rng[2], end = rng[3];
   for (int gid = gstart; gid < gend; gid++) {
     for (int sid = start; sid < end; sid++) {
-      auto server = new Server(nthreads++, gid, sid);
+      auto server = new Server(gid, sid);
       servers.push_back(server);
     }
   }
@@ -244,7 +244,7 @@ void Trainer::Start(bool resume, const SingaProto& singaConf, JobProto* job) {
   int nthreads = 1;
   const vector<Worker*> workers = CreateWorkers(nthreads, *job);
   nthreads += workers.size();
-  const vector<Server*> servers = CreateServers(nthreads, *job);
+  const vector<Server*> servers = CreateServers(*job);
   SetupWorkerServer(*job, workers, servers);
 
 #ifdef USE_MPI

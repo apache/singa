@@ -19,17 +19,20 @@
 *
 *************************************************************/
 
-#ifndef INCLUDE_TRAINER_SERVER_H_
-#define INCLUDE_TRAINER_SERVER_H_
+#ifndef SINGA_TRAINER_SERVER_H_
+#define SINGA_TRAINER_SERVER_H_
+
 #include <memory>
 #include <unordered_map>
-#include <utils/param.h>
-#include <utils/updater.h>
-#include "proto/job.pb.h"
+#include <vector>
 #include "communication/socket.h"
+#include "proto/job.pb.h"
+#include "utils/param.h"
+#include "utils/updater.h"
 
 namespace singa {
-/* Repsond to worker's get/put/udpate request, and periodically syncing with
+
+ /* Repsond to worker's get/put/udpate request, and periodically syncing with
   * other servers.
   *
   * Normally, the Server creates a response message for each request which
@@ -39,33 +42,26 @@ namespace singa {
   * it just sends it to the router. The router will decide to re-send the
   * request to the server or send it to the worker.
   */
-class Server{
+class Server {
  public:
-  Server(int thread_id, int group_id, int server_id);
+  Server(int group_id, int server_id);
   virtual ~Server();
-  void Setup(const UpdaterProto& proto,
-      const std::vector<int>& slice2group,
-      const std::vector<int>& slice2server);
+  void Setup(const UpdaterProto& proto, const std::vector<int>& slice2group,
+             const std::vector<int>& slice2server);
   void Run();
-  const int grp_id() const {
-    return grp_id_;
-  }
-  const int id() const {
-    return id_;
-  }
+  inline int grp_id() const { return grp_id_; }
+  inline int id() const { return id_; }
 
  protected:
-
- 	/**
-	 * Process GET request.
+  /**
+   * Process GET request.
    *
    * @return the orignal message or a response message which contains the values
    * of the Param with the request version.
    */
-	virtual Msg* HandleGet(Msg** msg);
-
-	/**
-	 * Process Update request.
+  virtual Msg* HandleGet(Msg** msg);
+  /**
+   * Process Update request.
    *
    * It waits until received the gradients from all workers from the same worker
    * group. After updating, it responses to each sender with the new Param
@@ -86,16 +82,14 @@ class Server{
    * @return the orignal message or response message
    */
   const std::vector<Msg*> HandleUpdate(Msg **msg);
-
-	/**
-	 * Process PUT request.
+  /**
+   * Process PUT request.
    *
    * @return the original message or response message. If we don't want to
    * acknowledge the put request, then return nullptr.
-	 */
-	virtual Msg* HandlePut(Msg **msg);
-
-	/**
+   */
+  virtual Msg* HandlePut(Msg **msg);
+  /**
    * Handle sync request from other server groups.
    *
    * It adds updates of Param (slice) from other server groups directly to
@@ -106,8 +100,7 @@ class Server{
    * @param msg request msg containing the parameter updates
    * @return response msg that contains the fresh parameter values.
    */
-	virtual Msg* HandleSyncRequest(Msg** msg);
-
+  virtual Msg* HandleSyncRequest(Msg** msg);
   /**
    * Handle sync response.
    *
@@ -121,17 +114,20 @@ class Server{
   void HandleSyncResponse(Msg** msg);
 
  protected:
-  int thread_id_,grp_id_, id_;
-  Updater* updater_;
+  int grp_id_ = -1;
+  int id_ = -1;
+  Updater* updater_ = nullptr;
   //!< map from slice ID to slice and deleted in the destructor
   std::unordered_map<int, ParamEntry*> shard_;
   std::vector<int> slice2group_, slice2server_;
   //!< num of updates from last sync with master server group for a param/slice
-  std::vector<int> nUpdates_;
+  std::vector<int> n_updates_;
   //!< num of sync requests that have not been responded
-  std::vector<int> nPendingSync_;
+  std::vector<int> n_pending_sync_;
   std::vector<Blob<float>> last_sync_;
   std::unordered_map<int, std::vector<Msg*>> buffer_requests_;
 };
-} /* Server */
-#endif //INCLUDE_TRAINER_SERVER_H_
+
+}  // namespace singa
+
+#endif  // SINGA_TRAINER_SERVER_H_

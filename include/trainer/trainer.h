@@ -73,7 +73,7 @@ class Trainer{
    * @param jobConf
    * @return server instances
    */
-  vector<Server*> CreateServers(int nthread, const JobProto& jobConf);
+  vector<Server*> CreateServers(const JobProto& jobConf);
   /**
    * Create workers instances.
    * @param nthread total num of threads in current procs which is used to
