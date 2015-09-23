@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -24,12 +24,9 @@
 #include <cblas.h>
 #include <glog/logging.h>
 #include <string>
-#include "neuralnet/neuralnet.h"
 #include "neuralnet/layer.h"
 #include "trainer/trainer.h"
 #include "utils/common.h"
-#include "utils/factory.h"
-#include "utils/singleton.h"
 #include "utils/tinydir.h"
 
 namespace singa {
@@ -110,47 +107,6 @@ void Driver::Init(int argc, char **argv) {
   RegisterParamGenerator<UniformSqrtFanInOutGen>(kUniformSqrtFanInOut);
 }
 
-template<typename Subclass, typename Type>
-int Driver::RegisterLayer(const Type& type) {
-  auto factory = Singleton<Factory<singa::Layer>>::Instance();
-  factory->Register(type, CreateInstance(Subclass, Layer));
-  return 1;
-}
-
-template<typename Subclass, typename Type>
-int Driver::RegisterParam(const Type& type) {
-  auto factory = Singleton<Factory<singa::Param>>::Instance();
-  factory->Register(type, CreateInstance(Subclass, Param));
-  return 1;
-}
-
-template<typename Subclass, typename Type>
-int Driver::RegisterParamGenerator(const Type& type) {
-  auto factory = Singleton<Factory<singa::ParamGenerator>>::Instance();
-  factory->Register(type, CreateInstance(Subclass, ParamGenerator));
-  return 1;
-}
-
-template<typename Subclass, typename Type>
-int Driver::RegisterUpdater(const Type& type) {
-  auto factory = Singleton<Factory<singa::Updater>>::Instance();
-  factory->Register(type, CreateInstance(Subclass, Updater));
-  return 1;
-}
-
-template<typename Subclass, typename Type>
-int Driver::RegisterLRGenerator(const Type& type) {
-  auto factory = Singleton<Factory<singa::LRGenerator>>::Instance();
-  factory->Register(type, CreateInstance(Subclass, LRGenerator));
-  return 1;
-}
-
-template<typename Subclass, typename Type>
-int Driver::RegisterWorker(const Type& type) {
-  auto factory = Singleton<Factory<singa::Worker>>::Instance();
-  factory->Register(type, CreateInstance(Subclass, Worker));
-  return 1;
-}
 
 void Driver::Submit(bool resume, const JobProto& jobConf) {
   if (singa_conf_.has_log_dir())
