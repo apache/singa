@@ -19,26 +19,24 @@
 *
 *************************************************************/
 
-#ifndef INCLUDE_TRAINER_TRAINER_H_
-#define INCLUDE_TRAINER_TRAINER_H_
+#ifndef SINGA_TRAINER_TRAINER_H_
+#define SINGA_TRAINER_TRAINER_H_
 
 #include <queue>
-#include <vector>
 #include <unordered_map>
+#include <vector>
+#include "communication/socket.h"
+#include "neuralnet/neuralnet.h"
 #include "proto/job.pb.h"
 #include "proto/singa.pb.h"
+#include "trainer/server.h"
+#include "trainer/worker.h"
+#include "utils/factory.h"
 #include "utils/param.h"
 #include "utils/singleton.h"
-#include "utils/factory.h"
-#include "neuralnet/neuralnet.h"
-#include "trainer/worker.h"
-#include "trainer/server.h"
-#include "communication/socket.h"
 
 namespace singa {
 
-using std::vector;
-  
 /**
  * Every running process has a training object which launches one or more
  * worker (and server) threads.
@@ -77,7 +75,7 @@ class Trainer{
    * @param jobConf
    * @return server instances
    */
-  vector<Server*> CreateServers(const JobProto& jobConf);
+  std::vector<Server*> CreateServers(const JobProto& jobConf);
   /**
    * Create workers instances.
    * @param nthread total num of threads in current procs which is used to
@@ -86,8 +84,7 @@ class Trainer{
    * @param jobConf
    * @return worker instances
    */
-  vector<Worker*> CreateWorkers(const JobProto& jobConf);
-
+  std::vector<Worker*> CreateWorkers(const JobProto& jobConf);
   /**
    * Setup workers and servers.
    *
@@ -98,12 +95,11 @@ class Trainer{
    * @param workers
    * @param servers
    */
-  void SetupWorkerServer(
-    const JobProto& jobConf,
-    const vector<Worker*>& workers,
-    const vector<Server*>& servers);
-
-  void Run(const vector<Worker*>& workers, const vector<Server*>& servers);
+  void SetupWorkerServer(const JobProto& jobConf,
+                         const std::vector<Worker*>& workers,
+                         const std::vector<Server*>& servers);
+  void Run(const std::vector<Worker*>& workers,
+           const std::vector<Server*>& servers);
   /**
    * Display metrics to log (standard output)
    */
@@ -118,24 +114,20 @@ class Trainer{
    * Handle messages to local servers and local stub
    */
   void HandleLocalMsg(std::queue<Msg*>* msg_queue, Msg** msg);
-
-	/**
-	 * Generate a request message to Get the parameter object.
-	 */
-	const vector<Msg*> HandleGet(ParamEntry* entry, Msg** msg);
-	void HandleGetResponse(ParamEntry* entry, Msg** msg);
-
-	/**
-	 * Generate a request message to Update the parameter object.
-	 */
-	const vector<Msg*> HandleUpdate(ParamEntry* entry, Msg** msg);
-  void HandleUpdateResponse(ParamEntry* entry, Msg** msg);
-
   /**
-	 * Generate a request message to Put the parameter object.
-	 */
-	const vector<Msg*> HandlePut(ParamEntry* entry, Msg** msg);
-
+   * Generate a request message to Get the parameter object.
+   */
+  const std::vector<Msg*> HandleGet(ParamEntry* entry, Msg** msg);
+  void HandleGetResponse(ParamEntry* entry, Msg** msg);
+  /**
+   * Generate a request message to Update the parameter object.
+   */
+  const std::vector<Msg*> HandleUpdate(ParamEntry* entry, Msg** msg);
+  void HandleUpdateResponse(ParamEntry* entry, Msg** msg);
+  /**
+   * Generate a request message to Put the parameter object.
+   */
+  const std::vector<Msg*> HandlePut(ParamEntry* entry, Msg** msg);
   /**
    * Called by HandlePut, HandleUpdate and HandleGet functions
    * @param type message type
@@ -145,7 +137,7 @@ class Trainer{
    * @param ret generated messages
    */
   void GenMsgs(int type, int version, ParamEntry* entry,
-    Msg* msg, vector<Msg*> *ret);
+    Msg* msg, std::vector<Msg*> *ret);
   /**
    * Get a hash id for a Param object from a group.
    *
@@ -157,13 +149,15 @@ class Trainer{
   }
 
  protected:
-  int procs_id_;
-  Router *router_;
+  int procs_id_ = -1;
+  Router *router_ = nullptr;
   std::unordered_map<int, ParamEntry*> worker_shard_;
   //!< map from slice to the server that updates it
-  vector<int> slice2server_;
-  //stub will destroy all neuralnets in the end
-  vector<NeuralNet*> nets_;
+  std::vector<int> slice2server_;
+  // a buffer of created nets, will destroy them all in destructor
+  std::vector<NeuralNet*> nets_;
 };
-} /* singa */
-#endif // INCLUDE_TRAINER_TRAINER_H_
+
+}  // namespace singa
+
+#endif  // SINGA_TRAINER_TRAINER_H_

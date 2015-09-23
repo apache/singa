@@ -45,20 +45,20 @@
  */
 
 int main(int argc, char **argv) {
-  //  must create driver at the beginning and call its Init method.
+  // must create driver at the beginning and call its Init method.
   singa::Driver driver;
   driver.Init(argc, argv);
 
-  //  if -resume in argument list, set resume to true; otherwise false
+  // if -resume in argument list, set resume to true; otherwise false
   int resume_pos = singa::ArgPos(argc, argv, "-resume");
   bool resume = (resume_pos != -1);
 
-  //  users can register new subclasses of layer, updater, etc.
+  // users can register new subclasses of layer, updater, etc.
 
-  //  get the job conf, and custmize it if need
+  // get the job conf, and custmize it if need
   singa::JobProto jobConf = driver.job_conf();
 
-  //  submit the job
+  // submit the job
   driver.Submit(resume, jobConf);
   return 0;
 }

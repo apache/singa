@@ -24,24 +24,27 @@
 #include <cblas.h>
 #include <glog/logging.h>
 #include <string>
+#include "neuralnet/neuralnet.h"
+#include "neuralnet/layer.h"
+#include "trainer/trainer.h"
+#include "utils/common.h"
+#include "utils/factory.h"
+#include "utils/singleton.h"
 #include "utils/tinydir.h"
 
 namespace singa {
 
 void Driver::Init(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-
   //  unique job ID generated from singa-run.sh, passed in as "-singa_job <id>"
   int arg_pos = ArgPos(argc, argv, "-singa_job");
   job_id_ = (arg_pos != -1) ? atoi(argv[arg_pos+1]) : -1;
-
   //  global signa conf passed by singa-run.sh as "-singa_conf <path>"
   arg_pos = ArgPos(argc, argv, "-singa_conf");
   if (arg_pos != -1)
     ReadProtoFromTextFile(argv[arg_pos+1], &singa_conf_);
   else
     ReadProtoFromTextFile("conf/singa.conf", &singa_conf_);
-
   //  job conf passed by users as "-conf <path>"
   arg_pos = ArgPos(argc, argv, "-conf");
   CHECK_NE(arg_pos, -1);
@@ -107,7 +110,47 @@ void Driver::Init(int argc, char **argv) {
   RegisterParamGenerator<UniformSqrtFanInOutGen>(kUniformSqrtFanInOut);
 }
 
+template<typename Subclass, typename Type>
+int Driver::RegisterLayer(const Type& type) {
+  auto factory = Singleton<Factory<singa::Layer>>::Instance();
+  factory->Register(type, CreateInstance(Subclass, Layer));
+  return 1;
+}
 
+template<typename Subclass, typename Type>
+int Driver::RegisterParam(const Type& type) {
+  auto factory = Singleton<Factory<singa::Param>>::Instance();
+  factory->Register(type, CreateInstance(Subclass, Param));
+  return 1;
+}
+
+template<typename Subclass, typename Type>
+int Driver::RegisterParamGenerator(const Type& type) {
+  auto factory = Singleton<Factory<singa::ParamGenerator>>::Instance();
+  factory->Register(type, CreateInstance(Subclass, ParamGenerator));
+  return 1;
+}
+
+template<typename Subclass, typename Type>
+int Driver::RegisterUpdater(const Type& type) {
+  auto factory = Singleton<Factory<singa::Updater>>::Instance();
+  factory->Register(type, CreateInstance(Subclass, Updater));
+  return 1;
+}
+
+template<typename Subclass, typename Type>
+int Driver::RegisterLRGenerator(const Type& type) {
+  auto factory = Singleton<Factory<singa::LRGenerator>>::Instance();
+  factory->Register(type, CreateInstance(Subclass, LRGenerator));
+  return 1;
+}
+
+template<typename Subclass, typename Type>
+int Driver::RegisterWorker(const Type& type) {
+  auto factory = Singleton<Factory<singa::Worker>>::Instance();
+  factory->Register(type, CreateInstance(Subclass, Worker));
+  return 1;
+}
 
 void Driver::Submit(bool resume, const JobProto& jobConf) {
   if (singa_conf_.has_log_dir())
@@ -118,9 +161,8 @@ void Driver::Submit(bool resume, const JobProto& jobConf) {
     LOG(FATAL) << "workspace does not exist: " << jobConf.cluster().workspace();
   if (jobConf.num_openblas_threads() != 1)
     LOG(WARNING) << "openblas with "
-      << jobConf.num_openblas_threads() << " threads";
+                 << jobConf.num_openblas_threads() << " threads";
   openblas_set_num_threads(jobConf.num_openblas_threads());
-
   JobProto job;
   job.CopyFrom(jobConf);
   job.set_id(job_id_);
