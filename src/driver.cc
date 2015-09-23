@@ -21,13 +21,14 @@
 
 #include "driver.h"
 
-#include <cblas.h>
 #include <glog/logging.h>
 #include <string>
 #include "neuralnet/layer.h"
 #include "trainer/trainer.h"
 #include "utils/common.h"
 #include "utils/tinydir.h"
+
+extern "C" void openblas_set_num_threads(int);
 
 namespace singa {
 

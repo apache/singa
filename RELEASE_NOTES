@@ -1,9 +1,9 @@
-Release Notes - SINGA - Version singa-incubating-0.1-rc0
+Release Notes - SINGA - Version singa-incubating-0.1-rc1
 -----------------------------------------
 
 SINGA is a general distributed deep learning platform for training big deep learning models over large datasets. It is
 designed with an intuitive programming model based on the layer abstraction. SINGA supports a wide variety of popular
-deep learning models. 
+deep learning models.
 
 This release includes following features:
 
@@ -75,7 +75,7 @@ Some bugs are fixed during the development of this release
   * [SINGA-49] Fix a bug in HandlePutMsg func that sets param fields to invalid values
   * [SINGA-66] Fix bugs in Worker::RunOneBatch function and ClusterProto
 
-Features planned for the next release 
+Features planned for the next release
   * [SINGA-11] Start SINGA using Mesos
   * [SINGA-31] Extend Blob to support xpu (cpu or gpu)
   * [SINGA-35] Add random number generators
