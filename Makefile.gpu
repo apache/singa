@@ -28,7 +28,7 @@ ZK_FLAGS :=-DTHREADED -fpermissive
 CXXFLAGS := -O2 -msse3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
 	$(MSHADOW_FLAGS) $(ZK_FLAGS)\
 	-funroll-loops $(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
-CUCXXFLAGS := $(MSHADOW_FLAGS) -std=c++11 \
+CUCXXFLAGS := $(MSHADOW_FLAGS) -std=c++11 -G $(CUDA_ARCH) \
 	$(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
 
 # Add device compile option
