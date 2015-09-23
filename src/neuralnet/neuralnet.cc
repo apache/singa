@@ -28,11 +28,10 @@
 namespace singa {
 
 using std::map;
-using std::shared_ptr;
 using std::string;
 using std::vector;
 
-shared_ptr<NeuralNet> NeuralNet::Create(const NetProto& net_conf, Phase phase,
+NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
                                         int npartitions) {
   NetProto conf;
   conf.CopyFrom(net_conf);
@@ -76,8 +75,7 @@ shared_ptr<NeuralNet> NeuralNet::Create(const NetProto& net_conf, Phase phase,
   }
   LOG(INFO) << "NeuralNet config is\n" << conf.DebugString();
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc
-  auto net = std::make_shared<NeuralNet>(conf, npartitions);
-  return net;
+  return new NeuralNet(conf, npartitions);
 }
 
 NeuralNet::NeuralNet(NetProto netproto, int npartitions) {
@@ -107,7 +105,7 @@ std::string NeuralNet::ToAdjacency() {
   return disp;
 }
 
-void NeuralNet::ShareParamsFrom(shared_ptr<NeuralNet> other) {
+void NeuralNet::ShareParamsFrom(NeuralNet* other) {
   for (auto& layer : layers_) {
     auto otherlayer = other->name2layer(layer->name());
     if (otherlayer != nullptr) {

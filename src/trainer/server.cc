@@ -19,11 +19,12 @@
 *
 *************************************************************/
 
+#include "trainer/server.h"
+
 #include <thread>
 #include <chrono>
 #include "mshadow/tensor.h"
 #include "proto/common.pb.h"
-#include "trainer/server.h"
 #include "utils/param.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"

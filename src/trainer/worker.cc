@@ -19,18 +19,19 @@
 *
 *************************************************************/
 
+#include "trainer/worker.h"
+
 #include <glog/logging.h>
-#include <thread>
 #include <chrono>
 #include <thread>
 #include <typeinfo>
-#include "utils/singleton.h"
 #include "utils/cluster.h"
 #include "utils/factory.h"
-#include "trainer/worker.h"
+#include "utils/singleton.h"
 
 namespace singa {
-using std::thread;
+
+using std::string;
 
 Worker* Worker::Create(const JobProto& proto) {
   auto factory = Singleton<Factory<singa::Worker>>::Instance();
@@ -43,20 +44,10 @@ Worker* Worker::Create(const JobProto& proto) {
   return worker;
 }
 
-void Worker::Init(int thread_id, int grp_id, int id) {
-  thread_id_ = thread_id;
+void Worker::Init(int grp_id, int id) {
   grp_id_ = grp_id;
   id_ = id;
   layer_dealer_ = dealer_ = nullptr;
-}
-
-void Worker::Setup(
-    const JobProto& job, shared_ptr<NeuralNet> train_net,
-    shared_ptr<NeuralNet> valid_net, shared_ptr<NeuralNet> test_net) {
-  job_conf_.CopyFrom(job);
-  train_net_ = train_net;
-  validation_net_ = valid_net;
-  test_net_ = test_net;
 }
 
 Worker::~Worker() {
@@ -66,17 +57,25 @@ Worker::~Worker() {
     delete dealer_;
 }
 
+void Worker::Setup(const JobProto& job, NeuralNet* train_net,
+                   NeuralNet* valid_net, NeuralNet* test_net) {
+  job_conf_.CopyFrom(job);
+  train_net_ = train_net;
+  validation_net_ = valid_net;
+  test_net_ = test_net;
+}
+
 void Worker::InitLocalParams() {
   // for each server grp, its first subscriber worker grp does the param init
   if (grp_id_ % Cluster::Get()->nworker_groups_per_server_group() == 0) {
     // extract params that should be initialized by this worker
     // must gen a name for each param if the user doesn't config it
     std::unordered_map<string, Param*> name2param;
-    for (auto layer: train_net_->layers()){
+    for (auto layer : train_net_->layers()) {
       if (layer->partition_id() == id_) {
         for (auto param : layer->GetParams()) {
           // only owners fill the memory of parameter values.
-          if(param->owner() == param->id()) {
+          if (param->owner() == param->id()) {
             CHECK(name2param.find(param->name()) == name2param.end());
             name2param[param->name()] = param;
           }
@@ -94,7 +93,7 @@ void Worker::InitLocalParams() {
         if (name2param.find(bps.name(i)) != name2param.end()) {
           name2param.at(bps.name(i))->FromProto(bps.blob(i));
           //  if load from pre-training params, reset version to start step
-          if(job_conf_.reset_param_version())
+          if (job_conf_.reset_param_version())
             name2param.at(bps.name(i))->set_version(job_conf_.step());
           else  // if resume training, use the same version as last checkpoint
             name2param.at(bps.name(i))->set_version(bps.version(i));
@@ -130,30 +129,6 @@ void Worker::InitLocalParams() {
   }
 }
 
-void Worker::Checkpoint(int step, shared_ptr<NeuralNet> net) {
-  if (grp_id_ == 0) {
-    BlobProtos bps;
-    for (auto layer: net->layers()){
-      if (layer->partition_id() == id_) {
-        for (auto param : layer->GetParams()) {
-          // only owners fill the memory of parameter values.
-          if(param->owner() == param->id()) {
-            auto *blob = bps.add_blob();
-            param->ToProto(blob);
-            bps.add_version(param->version());
-            bps.add_name(param->name());
-          }
-        }
-      }
-    }
-    char buf[256];
-    snprintf(buf, sizeof(buf), "%s/step%d-worker%d.bin",
-         Cluster::Get()->checkpoint_folder().c_str(), step, id_);
-    LOG(INFO) << "checkpoint to " << buf;
-    WriteProtoToBinaryFile(bps, buf);
-  }
-}
-
 void ConnectStub(int grp, int id, Dealer* dealer, EntityType entity) {
   dealer->Connect(kInprocRouterEndpoint);
   Msg* ping = new Msg(Addr(grp, id, entity), Addr(-1, -1, kStub));
@@ -166,13 +141,15 @@ void Worker::Run() {
   auto cluster = Cluster::Get();
   int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
   CHECK(cluster->runtime()->JoinSGroup(grp_id_, id_, svr_grp));
-  dealer_ = new Dealer(2*thread_id_);
+  // TODO(wangsh): provide a unique sock id from cluster
+  dealer_ = new Dealer(0);
   ConnectStub(grp_id_, id_, dealer_, kWorkerParam);
   for (auto layer : train_net_->layers()) {
     if (layer->partition_id() == id_) {
       if (typeid(layer) == typeid(BridgeDstLayer)
           || typeid(layer) == typeid(BridgeSrcLayer)) {
-        layer_dealer_ = new Dealer(2*thread_id_+1);
+        // TODO(wangsh): provide a unique socket id from cluster
+        layer_dealer_ = new Dealer(1);
         ConnectStub(grp_id_, id_, layer_dealer_, kWorkerLayer);
         break;
       }
@@ -184,16 +161,15 @@ void Worker::Run() {
   Metric perf;
   while (!StopNow(step_)) {
     if (ValidateNow(step_) && validation_net_ != nullptr) {
-      //LOG(ERROR)<<"Validation at step "<<step;
+      // LOG(ERROR)<<"Validation at step "<<step;
       CollectAll(validation_net_, step_);
       Test(job_conf_.valid_steps(), kValidation, validation_net_);
     }
     if (TestNow(step_) && test_net_ != nullptr) {
-      //LOG(ERROR)<<"Test at step "<<step;
+      // LOG(ERROR)<<"Test at step "<<step;
       CollectAll(test_net_, step_);
       Test(job_conf_.test_steps(), kTest, test_net_);
     }
-
     if (CheckpointNow(step_)) {
       CollectAll(train_net_, step_);
       Checkpoint(step_, train_net_);
@@ -210,21 +186,41 @@ void Worker::Run() {
 
   // save the model
   Checkpoint(step_, train_net_);
-
   // clean up
   cluster->runtime()->LeaveSGroup(grp_id_, id_, svr_grp);
   // notify the stub on worker stop
-  Msg* msg=new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1,-1, kStub));
+  Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
   msg->set_type(kStop);
   dealer_->Send(&msg);  // use param dealer to send the stop msg
-
   LOG(ERROR) << "Worker (group = " <<grp_id_ << ", id = " << id_ << ") stops";
 }
 
-
+void Worker::Checkpoint(int step, NeuralNet* net) {
+  if (grp_id_ == 0) {
+    BlobProtos bps;
+    for (auto layer : net->layers()) {
+      if (layer->partition_id() == id_) {
+        for (auto param : layer->GetParams()) {
+          // only owners fill the memory of parameter values.
+          if (param->owner() == param->id()) {
+            auto *blob = bps.add_blob();
+            param->ToProto(blob);
+            bps.add_version(param->version());
+            bps.add_name(param->name());
+          }
+        }
+      }
+    }
+    char buf[256];
+    snprintf(buf, sizeof(buf), "%s/step%d-worker%d.bin",
+             Cluster::Get()->checkpoint_folder().c_str(), step, id_);
+    LOG(INFO) << "checkpoint to " << buf;
+    WriteProtoToBinaryFile(bps, buf);
+  }
+}
 
 int Worker::Put(Param* param, int step) {
-  Msg* msg=new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
+  Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
   msg->set_trgt(ParamTrgt(param->owner(), 0), step);
   msg->set_type(kPut);
   dealer_->Send(&msg);
@@ -234,7 +230,7 @@ int Worker::Put(Param* param, int step) {
 int Worker::Get(Param* param, int step) {
   if (param->version() >= step)
     return 1;
-  Msg* msg=new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
+  Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
   msg->set_trgt(ParamTrgt(param->owner(), 0), step);
   msg->set_type(kGet);
   dealer_->Send(&msg);
@@ -243,28 +239,31 @@ int Worker::Get(Param* param, int step) {
 
 int Worker::Update(Param* param, int step) {
   param->set_local_version(param->version());
-  Msg* msg=new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
+  Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
   msg->set_trgt(ParamTrgt(param->owner(), 0), step);
   msg->set_type(kUpdate);
   dealer_->Send(&msg);
   return 1;
 }
 
-int Worker::CollectAll(shared_ptr<NeuralNet> net, int step) {
+int Worker::CollectAll(NeuralNet* net, int step) {
   auto& layers = net->layers();
-  for (auto& layer : layers){
-    if (layer->partition_id() == id_)
-      for (Param* p: layer->GetParams()) {
+  for (auto& layer : layers) {
+    if (layer->partition_id() == id_) {
+      for (Param* p : layer->GetParams()) {
         Collect(p, step);
       }
+    }
   }
   return 1;
 }
+
 int Worker::Collect(Param* param, int step) {
   while (param->version() <= param->local_version())
     std::this_thread::sleep_for(std::chrono::milliseconds(kCollectSleepTime));
   return 1;
 }
+
 void Worker::Report(const string& prefix, const Metric & perf) {
   Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
   msg->set_trgt(0, step_);
@@ -275,8 +274,8 @@ void Worker::Report(const string& prefix, const Metric & perf) {
   dealer_->Send(&msg);
 }
 
-void Worker::ReceiveBlobs(
-    bool data, bool grad, BridgeLayer* layer, shared_ptr<NeuralNet> net) {
+void Worker::ReceiveBlobs(bool data, bool grad, BridgeLayer* layer,
+                          NeuralNet* net) {
   while (!layer->ready()) {
     auto msg = layer_dealer_->Receive();
     CHECK_EQ(AddrGrp(msg->src()), grp_id_);
@@ -290,19 +289,19 @@ void Worker::ReceiveBlobs(
   }
 }
 
-void Worker::SendBlobs(
-    bool data, bool grad, BridgeLayer* layer, shared_ptr<NeuralNet> net) {
-  auto dst=layer->dstlayers().at(0);
-  Msg *msg=new Msg();
+void Worker::SendBlobs(bool data, bool grad, BridgeLayer* layer,
+                       NeuralNet* net) {
+  auto dst = layer->dstlayers().at(0);
+  Msg *msg = new Msg();
   msg->set_src(Addr(grp_id_, id_, kWorkerLayer));
   msg->set_dst(Addr(grp_id_, dst->partition_id(), kWorkerLayer));
   msg->AddFrame(dst->name().c_str(), dst->name().length());
-  auto const & blob=layer->data(nullptr);
-  msg->AddFrame(blob.cpu_data(), blob.count()*sizeof(float));
+  auto const & blob = layer->data(nullptr);
+  msg->AddFrame(blob.cpu_data(), blob.count() * sizeof(float));
   layer_dealer_->Send(&msg);
 }
 
-void Worker::Test(int nsteps, Phase phase, shared_ptr<NeuralNet> net) {
+void Worker::Test(int nsteps, Phase phase, NeuralNet* net) {
   Metric perf;
   for (int step = 0; step < nsteps; step++)
     TestOneBatch(step, phase, net, &perf);
@@ -312,96 +311,63 @@ void Worker::Test(int nsteps, Phase phase, shared_ptr<NeuralNet> net) {
     Report("Test", perf);
 }
 
-bool Worker::DisplayNow(int step) const {
-  return (job_conf_.disp_freq() > 0
-      && step >= job_conf_.disp_after()
-      && ((step - job_conf_.disp_after())
-        % job_conf_.disp_freq() == 0));
-}
-
-bool Worker::DisplayDebugInfo(int step) const {
-  return DisplayNow(step) && job_conf_.debug() && grp_id_ == 0;
-}
-bool Worker::StopNow(int step) const {
-  return step >= job_conf_.train_steps();
-}
-bool Worker::CheckpointNow(int step) const {
-  return (grp_id_ == 0
-      && job_conf_.checkpoint_freq() > 0
-      && step >= job_conf_.checkpoint_after()
-      && ((step - job_conf_.checkpoint_after())
-        % job_conf_.checkpoint_freq() == 0));
-}
-bool Worker::TestNow(const int step) const {
-  return (grp_id_ == 0
-      && job_conf_.test_freq() > 0
-      && job_conf_.test_steps() > 0
-      && step >= job_conf_.test_after()
-      && ((step - job_conf_.test_after())
-        % job_conf_.test_freq() == 0));
-}
-bool Worker::ValidateNow(const int step) const {
-  return (grp_id_ == 0
-      && job_conf_.valid_freq() > 0
-      && job_conf_.valid_steps() > 0
-      && step >= job_conf_.valid_after()
-      && ((step - job_conf_.valid_after())
-        % job_conf_.valid_freq() == 0));
-}
-
-
 /****************************BPWorker**********************************/
-void BPWorker::Init(int thread_id, int group_id, int worker_id) {
-  Worker::Init(thread_id, group_id, worker_id);
+void BPWorker::TrainOneBatch(int step, Metric* perf) {
+  Forward(step, kTrain, train_net_, perf);
+  Backward(step, train_net_);
 }
 
-void BPWorker::Forward(
-    int step, Phase phase, shared_ptr<NeuralNet> net, Metric* perf) {
+void BPWorker::TestOneBatch(int step, Phase phase, NeuralNet* net,
+                            Metric* perf) {
+  Forward(step, phase, net, perf);
+}
+
+void BPWorker::Forward(int step, Phase phase, NeuralNet* net, Metric* perf) {
   for (auto& layer : net->layers()) {
     if (layer->partition_id() == id_) {
-      if (typeid(*layer) == typeid(BridgeDstLayer))  // recv data from other workers
-        ReceiveBlobs(true, false, dynamic_cast<BridgeLayer*>(layer), net);
+      // TODO(wangwei): enable this for model partition
+      // recv data from other workers
+      // if (typeid(*layer) == typeid(BridgeDstLayer))
+      //   ReceiveBlobs(true, false, dynamic_cast<BridgeLayer*>(layer), net);
       if (phase == kTrain) {
-        for (Param* p : layer->GetParams()) {  // wait until param is updated
+        // wait until param is updated
+        for (Param* p : layer->GetParams()) {
           Collect(p, step);
         }
       }
       layer->ComputeFeature(phase | kForward, perf);
-      if (typeid(*layer) == typeid(BridgeSrcLayer))  // send data to other workers
-        SendBlobs(true, false, dynamic_cast<BridgeLayer*>(layer), net);
+      // TODO(wangwei): enable this for model partition
+      // send data to other workers
+      // if (typeid(*layer) == typeid(BridgeSrcLayer))
+      //   SendBlobs(true, false, dynamic_cast<BridgeLayer*>(layer), net);
       if (DisplayDebugInfo(step))
         LOG(INFO) << layer->DebugString(step, phase | kForward);
     }
   }
 }
 
-void BPWorker::Backward(int step, shared_ptr<NeuralNet> net) {
-  auto& layers=net->layers();
-  for (auto it = layers.rbegin(); it != layers.rend(); it++){
+void BPWorker::Backward(int step, NeuralNet* net) {
+  auto& layers = net->layers();
+  for (auto it = layers.rbegin(); it != layers.rend(); it++) {
     Layer* layer = *it;
     if (layer->partition_id() == id_) {
-      // if (typeid(layer) == typeid(BridgeSrcLayer))  // send data to other workers
-      // ReceiveBlobs(false, true, layer, net);
+      // TODO(wangwei): enable this for model partition
+      // send data to other workers
+      // if (typeid(layer) == typeid(BridgeSrcLayer))
+      //   ReceiveBlobs(false, true, layer, net);
       layer->ComputeGradient(kTrain | kBackward, nullptr);
       if (DisplayDebugInfo(step))
         LOG(INFO) << layer->DebugString(step, kTrain | kBackward);
       for (Param* p : layer->GetParams())
         Update(p, step);
-      if (typeid(layer) == typeid(BridgeDstLayer))  // recv data from other workers
-        SendBlobs(false, true, dynamic_cast<BridgeDstLayer*>(layer), net);
+      // TODO(wangwei): enable this for model partition
+      // recv data from other workers
+      // if (typeid(layer) == typeid(BridgeDstLayer))
+      //   SendBlobs(false, true, dynamic_cast<BridgeDstLayer*>(layer), net);
     }
   }
 }
 
-void BPWorker::TrainOneBatch(int step, Metric* perf) {
-  Forward(step, kTrain, train_net_, perf);
-  Backward(step, train_net_);
-}
-
-void BPWorker::TestOneBatch(int step, Phase phase,
-    shared_ptr<NeuralNet> net, Metric* perf) {
-  Forward(step, phase, net, perf);
-}
 /****************************CDWorker**********************************/
 void CDWorker::TrainOneBatch(int step, Metric* perf) {
   const auto& layers = train_net_->layers();
@@ -432,8 +398,8 @@ void CDWorker::TrainOneBatch(int step, Metric* perf) {
   }
 }
 
-void CDWorker::TestOneBatch(int step, Phase phase,
-    shared_ptr<NeuralNet> net, Metric* perf) {
+void CDWorker::TestOneBatch(int step, Phase phase, NeuralNet* net,
+                            Metric* perf) {
   auto& layers = net->layers();
   for (auto *layer : layers)
     layer->ComputeFeature(kPositive, perf);
@@ -441,4 +407,5 @@ void CDWorker::TestOneBatch(int step, Phase phase,
     if (typeid(*layer) == typeid(RBMVisLayer))
       layer->ComputeFeature(kNegative | kTest, perf);
 }
+
 }  // namespace singa

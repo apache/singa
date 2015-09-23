@@ -22,8 +22,6 @@
 #ifndef SINGA_NEURALNET_NEURALNET_H_
 #define SINGA_NEURALNET_NEURALNET_H_
 
-#include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -52,10 +50,10 @@ class NeuralNet {
    * @param net_conf proto for the neural network
    * @param phase test/training/validation
    * @param npartitions num of partitions, do partitioning if num > 1
-   * @return shared pointer to a neural net
+   * @return pointer to a neural net
    */
-  static std::shared_ptr<NeuralNet> Create(const NetProto& net_conf,
-                                           Phase phase, int npartitions);
+  static NeuralNet* Create(const NetProto& net_conf, Phase phase,
+                           int npartitions);
 
   /**
    * construct the net structure from protocol buffer.
@@ -71,7 +69,7 @@ class NeuralNet {
   /**
    * Share memory of parameter values from other neuralnet
    */
-  void ShareParamsFrom(std::shared_ptr<NeuralNet> other);
+  void ShareParamsFrom(NeuralNet* other);
   inline const std::vector<Layer*>& layers() { return layers_; }
   inline const std::vector<Param*>& params() const { return params_; }
   inline Layer* name2layer(std::string name) const {

@@ -38,11 +38,13 @@ using std::vector;
 using std::map;
 using std::queue;
 using namespace std::chrono;
-using std::make_shared;
+using std::string;
 
 /***********************Trainer****************************/
 Trainer::~Trainer() {
   delete router_;
+  for (NeuralNet* p : nets_)
+    delete p;
 }
 
 const vector<int> SliceParams(const vector<Param*>& params) {
@@ -92,30 +94,35 @@ void Trainer::SetupWorkerServer(
   int grp_size = cluster->nworkers_per_group();
   const auto& net_conf = job_conf.neuralnet();
   auto net = NeuralNet::Create(net_conf, kTrain, grp_size);
+  nets_.push_back(net);
   // MUST do SliceParam before share param/net with others
   auto slices = SliceParams(net->params());
 
-  std::unordered_map<int, shared_ptr<NeuralNet>> grp_net;
+  std::unordered_map<int, NeuralNet*> grp_net;
   int first_grp = workers.size() ? workers.at(0)->grp_id() : -1;
   for (auto worker : workers) {
     int grp_id = worker->grp_id();
     int worker_id = worker->id();
-    shared_ptr<NeuralNet> test_net = nullptr, valid_net = nullptr;
+    NeuralNet* test_net = nullptr;
+    NeuralNet* valid_net = nullptr;
     if (grp_net.find(grp_id) == grp_net.end()) {
       if (grp_id == first_grp) {
         //  test are performed only by the first group now. TODO update.
         if (first_grp == 0 && job_conf.test_steps() && worker_id == 0) {
           test_net = NeuralNet::Create(net_conf, kTest, 1); // hard code for exp
           test_net->ShareParamsFrom(net);
+          nets_.push_back(test_net);
         }
         //  validation are performed only by the first group. TODO update.
         if (first_grp == 0 && job_conf.valid_steps() && worker_id == 0) {
           valid_net = NeuralNet::Create(net_conf, kValidation, 1);
           valid_net->ShareParamsFrom(net);
+          nets_.push_back(valid_net);
         }
         grp_net[grp_id] = net;
       } else {
         grp_net[grp_id] = NeuralNet::Create(net_conf, kTrain, grp_size);
+        nets_.push_back(grp_net[grp_id]);
         if(cluster->share_memory())
           grp_net[grp_id]->ShareParamsFrom(net);
       }
@@ -131,7 +138,7 @@ void Trainer::SetupWorkerServer(
       }
     }
     LOG(INFO) << "grp " << worker->grp_id() << ", worker "
-      << worker->id() << " net " << grp_net[grp_id].get();
+              << worker->id() << " net " << grp_net[grp_id];
     worker->Setup(job_conf, grp_net[grp_id], valid_net, test_net);
   }
 
@@ -168,7 +175,7 @@ vector<Server*> Trainer::CreateServers(const JobProto& job) {
 }
 
 
-vector<Worker*> Trainer::CreateWorkers(int nthreads, const JobProto& job) {
+vector<Worker*> Trainer::CreateWorkers(const JobProto& job) {
   auto cluster=Cluster::Get();
   vector<Worker*> workers;
   if(!cluster->has_worker())
@@ -180,7 +187,7 @@ vector<Worker*> Trainer::CreateWorkers(int nthreads, const JobProto& job) {
   for (int gid = gstart; gid < gend; gid++) {
     for (int wid = wstart; wid < wend; wid++) {
       auto *worker = Worker::Create(job);
-      worker->Init(nthreads++,gid, wid);
+      worker->Init(gid, wid);
       workers.push_back(worker);
     }
   }
@@ -241,13 +248,12 @@ void Trainer::Start(bool resume, const SingaProto& singaConf, JobProto* job) {
   // register endpoint to zookeeper
   cluster->Register(getpid(), hostip + ":" + std::to_string(port));
 
-  int nthreads = 1;
-  const vector<Worker*> workers = CreateWorkers(nthreads, *job);
-  nthreads += workers.size();
+  const vector<Worker*> workers = CreateWorkers(*job);
   const vector<Server*> servers = CreateServers(*job);
   SetupWorkerServer(*job, workers, servers);
 
 #ifdef USE_MPI
+  int nthreads = workers.size() + servers.size();
   for (int i = 0; i < nthreads; i++)
     MPIQueues.push_back(make_shared<SafeQueue>());
 #endif

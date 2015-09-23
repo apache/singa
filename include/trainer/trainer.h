@@ -21,8 +21,10 @@
 
 #ifndef INCLUDE_TRAINER_TRAINER_H_
 #define INCLUDE_TRAINER_TRAINER_H_
-#include <unordered_map>
+
 #include <queue>
+#include <vector>
+#include <unordered_map>
 #include "proto/job.pb.h"
 #include "proto/singa.pb.h"
 #include "utils/param.h"
@@ -34,13 +36,15 @@
 #include "communication/socket.h"
 
 namespace singa {
+
+using std::vector;
+  
 /**
  * Every running process has a training object which launches one or more
  * worker (and server) threads.
  *
  * The main thread runs a loop to forward messages between workers and servers.
  */
-
 class Trainer{
  public:
   ~Trainer();
@@ -82,7 +86,7 @@ class Trainer{
    * @param jobConf
    * @return worker instances
    */
-  vector<Worker*> CreateWorkers(int nthread, const JobProto& jobConf);
+  vector<Worker*> CreateWorkers(const JobProto& jobConf);
 
   /**
    * Setup workers and servers.
@@ -158,6 +162,8 @@ class Trainer{
   std::unordered_map<int, ParamEntry*> worker_shard_;
   //!< map from slice to the server that updates it
   vector<int> slice2server_;
+  //stub will destroy all neuralnets in the end
+  vector<NeuralNet*> nets_;
 };
 } /* singa */
 #endif // INCLUDE_TRAINER_TRAINER_H_

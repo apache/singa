@@ -22,7 +22,6 @@
 #ifndef SINGA_TRAINER_SERVER_H_
 #define SINGA_TRAINER_SERVER_H_
 
-#include <memory>
 #include <unordered_map>
 #include <vector>
 #include "communication/socket.h"
@@ -45,7 +44,7 @@ namespace singa {
 class Server {
  public:
   Server(int group_id, int server_id);
-  virtual ~Server();
+  ~Server();
   void Setup(const UpdaterProto& proto, const std::vector<int>& slice2group,
              const std::vector<int>& slice2server);
   void Run();
@@ -59,7 +58,7 @@ class Server {
    * @return the orignal message or a response message which contains the values
    * of the Param with the request version.
    */
-  virtual Msg* HandleGet(Msg** msg);
+  Msg* HandleGet(Msg** msg);
   /**
    * Process Update request.
    *
@@ -88,7 +87,7 @@ class Server {
    * @return the original message or response message. If we don't want to
    * acknowledge the put request, then return nullptr.
    */
-  virtual Msg* HandlePut(Msg **msg);
+  Msg* HandlePut(Msg **msg);
   /**
    * Handle sync request from other server groups.
    *
@@ -100,7 +99,7 @@ class Server {
    * @param msg request msg containing the parameter updates
    * @return response msg that contains the fresh parameter values.
    */
-  virtual Msg* HandleSyncRequest(Msg** msg);
+  Msg* HandleSyncRequest(Msg** msg);
   /**
    * Handle sync response.
    *
