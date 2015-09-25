@@ -35,6 +35,7 @@ const int kZKBufSize = 100;
 const std::string kZKPathSinga = "/singa";
 const std::string kZKPathSys =   "/singa/sys";
 const std::string kZKPathJLock = "/singa/sys/job-lock";
+const std::string kZKPathHostIdx = "/singa/sys/host-idx";
 const std::string kZKPathApp =   "/singa/app";
 const std::string kZKPathJob =   "/singa/app/job-";
 // following paths are local under /singa/app/job-X
@@ -72,6 +73,7 @@ class ZKService {
   bool CreateNode(const char* path, const char* val, int flag, char* output);
   bool DeleteNode(const char* path);
   bool Exist(const char* path);
+  bool UpdateNode(const char* path, const char* val);
   bool GetNode(const char* path, char* output);
   bool GetChild(const char* path, std::vector<std::string>* vt);
   bool WGetChild(const char* path, std::vector<std::string>* vt,
@@ -154,6 +156,7 @@ class JobManager {
 
   bool Init();
   bool GenerateJobID(int* id);
+  bool GenerateHostList(const char* job_file, std::vector<std::string>* list);
   bool ListJobs(std::vector<JobInfo>* jobs);
   bool ListJobProcs(int job, std::vector<std::string>* procs);
   bool Remove(int job);
@@ -164,6 +167,7 @@ class JobManager {
   const int kJobsNotRemoved = 10;
 
   bool CleanPath(const std::string& path, bool remove);
+  std::string ExtractClusterConf(const char* job_file);
 
   int timeout_ = 30000;
   std::string host_ = "";

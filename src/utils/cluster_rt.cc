@@ -22,7 +22,12 @@
 #include "utils/cluster_rt.h"
 
 #include <glog/logging.h>
+#include <google/protobuf/text_format.h>
+#include <stdlib.h>
 #include <algorithm>
+#include <fstream>
+#include <iostream>
+#include "proto/job.pb.h"
 
 using std::string;
 using std::to_string;
@@ -94,9 +99,11 @@ bool ZKService::CreateNode(const char* path, const char* val, int flag,
     }
     sleep(kSleepSec);
   }
-  // copy the node name ot output
+  // copy the node name to output
   if (output != nullptr && (ret == ZOK || ret == ZNODEEXISTS)) {
-    strcpy(output, buf);
+    snprintf(output, kZKBufSize, "%s", buf);
+    // use snprintf instead of strcpy
+    // strcpy(output, buf);
   }
   if (ret == ZOK) {
     LOG(INFO) << "created zookeeper node " << buf
@@ -141,6 +148,20 @@ bool ZKService::Exist(const char* path) {
   return false;
 }
 
+bool ZKService::UpdateNode(const char* path, const char* val) {
+  // set version = -1, do not check content version
+  int ret = zoo_set(zkhandle_, path, val, strlen(val), -1);
+  if (ret == ZOK) {
+    return true;
+  } else if (ret == ZNONODE) {
+    LOG(ERROR) << "zk node " << path << " does not exist";
+    return false;
+  }
+  LOG(FATAL) << "Unhandled ZK error code: " << ret
+             << " (zoo_get " << path << ")";
+  return false;
+}
+
 bool ZKService::GetNode(const char* path, char* output) {
   struct Stat stat;
   int val_len = kZKBufSize;
@@ -153,7 +174,7 @@ bool ZKService::GetNode(const char* path, char* output) {
     return false;
   }
   LOG(FATAL) << "Unhandled ZK error code: " << ret
-            << " (zoo_get " << path << ")";
+             << " (zoo_get " << path << ")";
   return false;
 }
 
@@ -282,12 +303,11 @@ bool ClusterRuntime::WatchSGroup(int gid, int sid, rt_callback fn, void *ctx) {
 }
 
 std::string ClusterRuntime::GetProcHost(int proc_id) {
-  // char buf[kZKBufSize];
   char val[kZKBufSize];
   // construct file name
-  string path = proc_path_+"/proc-"+to_string(proc_id);
+  string path = proc_path_ + "/proc-" + to_string(proc_id);
   if (!zk_.GetNode(path.c_str(), val)) return "";
-  int len = strlen(val)-1;
+  int len = strlen(val) - 1;
   while (len && val[len] != '|') --len;
   CHECK(len);
   val[len] = '\0';
@@ -320,6 +340,8 @@ bool JobManager::Init() {
     return false;
   if (!zk_.CreateNode(kZKPathJLock.c_str(), nullptr, 0, nullptr))
     return false;
+  if (!zk_.CreateNode(kZKPathHostIdx.c_str(), "0", 0, nullptr))
+    return false;
   if (!zk_.CreateNode(kZKPathApp.c_str(), nullptr, 0, nullptr))
     return false;
   return true;
@@ -332,7 +354,52 @@ bool JobManager::GenerateJobID(int* id) {
                         ZOO_EPHEMERAL | ZOO_SEQUENCE, buf)) {
     return false;
   }
-  *id = atoi(buf+strlen(buf)-10);
+  *id = atoi(buf + strlen(buf) - 10);
+  return true;
+}
+
+bool JobManager::GenerateHostList(const char* job_file, vector<string>* list) {
+  // compute required #process from job conf
+  ClusterProto cluster;
+  google::protobuf::TextFormat::ParseFromString(ExtractClusterConf(job_file),
+                                                &cluster);
+  int nworker_procs = cluster.nworker_groups() * cluster.nworkers_per_group()
+                      / cluster.nworkers_per_procs();
+  int nserver_procs = cluster.nserver_groups() * cluster.nservers_per_group()
+                      / cluster.nservers_per_procs();
+  int nprocs = 0;
+  if (cluster.server_worker_separate())
+    nprocs = nworker_procs + nserver_procs;
+  else
+    nprocs = std::max(nworker_procs, nserver_procs);
+  // get available host list from global conf
+  std::ifstream hostfile("conf/hostfile");
+  if (!hostfile.is_open()) {
+    LOG(FATAL) << "Cannot open file: " << "conf/hostfile";
+  }
+  vector<string> hosts;
+  string host;
+  while (!hostfile.eof()) {
+    getline(hostfile, host);
+    if (!host.length() || host[0] == '#') continue;
+    hosts.push_back(host);
+  }
+  if (!hosts.size()) {
+    LOG(FATAL) << "Empty host file";
+  }
+  // read next host index
+  char val[kZKBufSize];
+  if (!zk_.GetNode(kZKPathHostIdx.c_str(), val)) return false;
+  int next = atoi(val);
+  // generate host list
+  list->clear();
+  for (int i = 0; i < nprocs; ++i) {
+    list->push_back(hosts[(next + i) % hosts.size()]);
+  }
+  // write next host index
+  next = (next + nprocs) % hosts.size();
+  snprintf(val, kZKBufSize, "%d", next);
+  if (!zk_.UpdateNode(kZKPathHostIdx.c_str(), val)) return false;
   return true;
 }
 
@@ -424,6 +491,39 @@ bool JobManager::CleanPath(const string& path, bool remove) {
   }
   if (remove) return zk_.DeleteNode(path.c_str());
   return true;
+}
+
+// extract cluster configuration part from the job config file
+// TODO(wangsh) improve this function to make it robust
+string JobManager::ExtractClusterConf(const char* job_file) {
+  std::ifstream fin(job_file);
+  CHECK(fin.is_open()) << "cannot open job conf file " << job_file;
+  string line;
+  string cluster;
+  bool in_cluster = false;
+  while (!fin.eof()) {
+    std::getline(fin, line);
+    if (in_cluster == false) {
+      size_t pos = line.find("cluster");
+      if (pos == std::string::npos) continue;
+      in_cluster = true;
+      line = line.substr(pos);
+      cluster = "";
+    }
+    if (in_cluster == true) {
+      cluster += line + "\n";
+      if (line.find("}") != std::string::npos)
+        in_cluster = false;
+    }
+  }
+  LOG(INFO) << "cluster configure: " << cluster;
+  size_t s_pos = cluster.find("{");
+  size_t e_pos = cluster.find("}");
+  if (s_pos == std::string::npos || e_pos == std::string::npos) {
+    LOG(FATAL) << "cannot extract valid cluster configuration in file: "
+               << job_file;
+  }
+  return cluster.substr(s_pos + 1, e_pos - s_pos-1);
 }
 
 }  // namespace singa

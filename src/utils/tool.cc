@@ -20,11 +20,9 @@
 *************************************************************/
 
 #include <glog/logging.h>
-#include <google/protobuf/text_format.h>
 #include <algorithm>
-#include <fstream>
-#include <iostream>
-#include "proto/job.pb.h"
+#include <string>
+#include <vector>
 #include "proto/singa.pb.h"
 #include "utils/cluster_rt.h"
 #include "utils/common.h"
@@ -52,75 +50,15 @@ int create() {
   return SUCCESS;
 }
 
-// extract cluster configuration part from the job config file
-// TODO(wangsh) improve this function to make it robust
-const std::string extract_cluster(const char* jobfile) {
-  std::ifstream fin;
-  fin.open(jobfile, std::ifstream::in);
-  CHECK(fin.is_open()) << "cannot open job conf file " << jobfile;
-  std::string line;
-  std::string cluster;
-  bool in_cluster = false;
-  while (std::getline(fin, line)) {
-    if (in_cluster == false) {
-      size_t pos = line.find("cluster");
-      if (pos == std::string::npos) continue;
-      in_cluster = true;
-      line = line.substr(pos);
-      cluster = "";
-    }
-    if (in_cluster == true) {
-      cluster += line + "\n";
-      if (line.find("}") != std::string::npos)
-        in_cluster = false;
-    }
-  }
-  LOG(INFO) << "cluster configure: " << cluster;
-  size_t s_pos = cluster.find("{");
-  size_t e_pos = cluster.find("}");
-  if (s_pos == std::string::npos || e_pos == std::string::npos) {
-    LOG(FATAL) << "cannot extract valid cluster configuration in file: "
-               << jobfile;
-  }
-  return cluster.substr(s_pos+1, e_pos-s_pos-1);
-}
-
 // generate a host list
 int genhost(char* job_conf) {
-  // compute required #process from job conf
-  singa::ClusterProto cluster;
-  google::protobuf::TextFormat::ParseFromString(extract_cluster(job_conf),
-      &cluster);
-  int nworker_procs = cluster.nworker_groups() * cluster.nworkers_per_group()
-                      / cluster.nworkers_per_procs();
-  int nserver_procs = cluster.nserver_groups() * cluster.nservers_per_group()
-                      / cluster.nservers_per_procs();
-  int nprocs = 0;
-  if (cluster.server_worker_separate())
-    nprocs = nworker_procs + nserver_procs;
-  else
-    nprocs = std::max(nworker_procs, nserver_procs);
-
-  // get available host list from global conf
-  std::fstream hostfile("conf/hostfile");
-  if (!hostfile.is_open()) {
-    LOG(ERROR) << "Cannot open file: " << "conf/hostfile";
-    return RUN_ERR;
-  }
-  std::vector<std::string> hosts;
-  std::string host;
-  while (!hostfile.eof()) {
-    getline(hostfile, host);
-    if (!host.length() || host[0] == '#') continue;
-    hosts.push_back(host);
-  }
-  if (!hosts.size()) {
-    LOG(ERROR) << "Empty host file";
-    return RUN_ERR;
-  }
+  singa::JobManager mngr(global.zookeeper_host());
+  if (!mngr.Init()) return RUN_ERR;
+  std::vector<std::string> list;
+  if (!mngr.GenerateHostList(job_conf, &list)) return RUN_ERR;
   // output selected hosts
-  for (int i = 0; i < nprocs; ++i)
-    printf("%s\n", hosts[i % hosts.size()].c_str());
+  for (std::string host : list)
+    printf("%s\n", host.c_str());
   return SUCCESS;
 }
 
