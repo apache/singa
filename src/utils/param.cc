@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -24,9 +24,11 @@
 #include <glog/logging.h>
 #include <cmath>
 #include <random>
+#include <unordered_map>
 #include "mshadow/tensor.h"
 #include "utils/factory.h"
 #include "utils/singleton.h"
+#include "utils/common.h"
 
 namespace singa {
 
@@ -93,6 +95,7 @@ void UniformSqrtFanInOutGen::Fill(Blob<float>* blob) {
   data /= sqrt(blob->shape()[0] + blob->shape()[1]);
 }
 
+/****************** Param functions *********************************/
 Param* Param::Create(const ParamProto& proto) {
   Factory<Param>* factory = Singleton<Factory<Param>>::Instance();
   Param* p = nullptr;
@@ -102,6 +105,49 @@ Param* Param::Create(const ParamProto& proto) {
     p = factory->Create(proto.type());
   p->Init(proto);
   return p;
+}
+
+const vector<int> Param::ComputeSlices(int num, const vector<Param*>& params) {
+  // collect sizes of unique Params
+  std::vector<int> paramsize;
+  for (auto param : params)
+    if (param->id() == param->owner())
+      paramsize.push_back(param->size());
+  // slice into lcm pieces to achieve good load-balance for both intra-group
+  // partition (among servers in a group) and inter-group partition (each group
+  // is assgined a sub-set of slices)
+  auto param_slice = Slice(num, paramsize);
+  vector<int> slices;
+  for (auto const vec: param_slice)
+    for (int len : vec)
+      slices.push_back(len);
+  return slices;
+}
+
+void Param::SliceParams(int num, const vector<Param*>& params) {
+  auto slices = ComputeSlices(num, params);
+  // construct map from Param ID to its slices <slice id, len>
+  std::unordered_map<int, vector<std::pair<int, int>>> paramid2slices;
+  int slice_id = 0;
+  auto it = slices.begin();
+  for (auto param : params) {
+    if (param->id() == param->owner()) {
+      int len = 0;
+      while (len < param->size() && it != slices.end()) {
+        paramid2slices[param->id()].push_back(std::make_pair(slice_id++, *it));
+        len += *it;
+        it++;
+      }
+      CHECK_EQ(param->size(), len) << "length misamtch for ID=" << param->id();
+    }
+  }
+  for (auto param : params) {
+    for (auto entry : paramid2slices[param->owner()]) {
+      param->AddSlice(entry.first, entry.second);
+      LOG(INFO) << "param id " << param->id() << " owner=" << param->owner()
+        << ", slice id = " << entry.first << ", size = " << entry.second;
+    }
+  }
 }
 
 void Param::Setup(const vector<int>& shape) {
@@ -329,14 +375,14 @@ Msg* Param::HandleSyncMsg(Msg** msg, bool reserve) {
 }
 
 int Param::ParseGetResponseMsg(Msg *msg, int slice_idx) {
-  CHECK_EQ(pending_get_[slice_idx], true);
+  CHECK(pending_get_[slice_idx]) << slice_idx;
   pending_get_[slice_idx] = false;
   ParseResponseMsg(msg, slice_idx);
   return (--num_pending_requests_) % num_slices_ == 0;
 }
 
 int Param::ParseUpdateResponseMsg(Msg *msg, int slice_idx) {
-  CHECK_EQ(pending_update_[slice_idx], true);
+  CHECK(pending_update_[slice_idx]) << id() << " " << slice_idx;
   pending_update_[slice_idx] = false;
   ParseResponseMsg(msg, slice_idx);
   return (--num_pending_requests_) % num_slices_ == 0;

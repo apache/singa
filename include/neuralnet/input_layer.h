@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -32,8 +32,8 @@
  *
  * The feature loading phase can be implemented using a single layer or
  * separated into DataLayer (for loading features as records) and ParserLayer
- * (for parsing features from records). SINGA has provided some built-in layers
- * for DataLayer and ParserLayer.
+ * (for parsing features from records). SINGA has provided some subclasses of
+ * DataLayer and ParserLayer.
  *
  * Data prefetching can be implemented as a sub-class of InputLayer.
  * SINGA provides a built-in PrefetchLayer which embeds DataLayer and
@@ -41,20 +41,15 @@
  */
 namespace singa {
 /**
- * Base layer for reading records from local Shard, HDFS, lmdb, etc.
+ * Base layer for reading ::Record  from local Shard, HDFS, lmdb, etc.
  */
 class DataLayer: virtual public InputLayer {
  public:
-  void ComputeGradient(int flag, Metric* perf) override {}
-  Blob<float>* mutable_data(const Layer* layer) override {
-    return nullptr;
-  }
-  Blob<float>* mutable_grad(const Layer* layer) override {
-    return nullptr;
-  }
+  Blob<float>* mutable_data(const Layer* layer) override { return nullptr; }
   ConnectionType dst_layer_connection() const override {
     return kOneToMany;
   }
+
   inline int batchsize() const { return batchsize_; }
   virtual const Record& sample() const {
     return sample_;
@@ -81,8 +76,8 @@ class ShardDataLayer : public DataLayer {
  public:
   ~ShardDataLayer();
 
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
  private:
   DataShard* shard_;
@@ -94,9 +89,9 @@ class LMDBDataLayer : public DataLayer {
  public:
   ~LMDBDataLayer();
 
-  void Setup(const LayerProto& proto, int npartitions) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void OpenLMDB(const std::string& path);
-  void ComputeFeature(int flag, Metric *perf) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ConvertCaffeDatumToRecord(const CaffeDatum& datum,
                                  SingleLabelImageRecord* record);
 
@@ -114,8 +109,8 @@ class LMDBDataLayer : public DataLayer {
  */
 class ParserLayer : public InputLayer {
  public:
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override {}
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
   ConnectionType dst_layer_connection() const override {
     return kOneToMany;
   }
@@ -124,13 +119,6 @@ class ParserLayer : public InputLayer {
    */
   virtual void ParseRecords(int flag, const std::vector<Record>& records,
       Blob<float>* blob) = 0;
-  Blob<float>* mutable_grad(const Layer* layer) override {
-    return nullptr;
-  }
-  const Blob<float>& grad(const Layer* from) const  override {
-    CHECK(false) << "Parser layer has not gradient blob";
-    return grad_;
-  }
 };
 
 /**
@@ -138,7 +126,7 @@ class ParserLayer : public InputLayer {
  */
 class LabelLayer : public ParserLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ParseRecords(int flag, const std::vector<Record>& records,
                     Blob<float>* blob) override;
 };
@@ -148,7 +136,7 @@ class LabelLayer : public ParserLayer {
  */
 class MnistLayer : public ParserLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ParseRecords(int flag, const std::vector<Record>& records,
                     Blob<float>* blob) override;
 
@@ -161,7 +149,7 @@ class MnistLayer : public ParserLayer {
  */
 class RGBImageLayer : public ParserLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ParseRecords(int flag, const std::vector<Record>& records,
                     Blob<float>* blob) override;
 
@@ -181,8 +169,8 @@ class RGBImageLayer : public ParserLayer {
 class PrefetchLayer : public Layer {
  public:
   ~PrefetchLayer();
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override {}
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
 
  protected:
   std::thread thread_;

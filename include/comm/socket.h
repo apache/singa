@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#ifndef SINGA_COMMUNICATION_SOCKET_H_
-#define SINGA_COMMUNICATION_SOCKET_H_
+#ifndef SINGA_COMM_SOCKET_H_
+#define SINGA_COMM_SOCKET_H_
 
 #ifdef USE_ZMQ
 #include <czmq.h>
@@ -28,7 +28,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "communication/msg.h"
+#include "comm/msg.h"
 
 namespace singa {
 
@@ -171,4 +171,4 @@ std::vector<SafeQueue*> MPIQueues;
 
 }  // namespace singa
 
-#endif  // SINGA_COMMUNICATION_SOCKET_H_
+#endif  // SINGA_COMM_SOCKET_H_

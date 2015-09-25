@@ -40,6 +40,6 @@ int main(int argc, char **argv) {
 
   singa::JobProto jobConf = driver.job_conf();
 
-  driver.Submit(resume, jobConf);
+  driver.Train(resume, jobConf);
   return 0;
 }

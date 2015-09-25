@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -42,7 +42,9 @@ Layer* Layer::Create(const LayerProto& proto) {
   return layer;
 }
 
-const string Layer::DebugString(int step, int flag) {
+const std::string Layer::ToString(bool debug, int flag) {
+  if (!debug)
+    return "";
   string ret = StringPrintf("Layer %10s ", name().c_str());
   if ((flag & kForward) == kForward && data_.count() !=0) {
     ret += StringPrintf("data norm1 %13.9f", data_.asum_data());
@@ -59,5 +61,16 @@ const string Layer::DebugString(int step, int flag) {
     }
   }
   return ret;
+}
+
+const std::string LossLayer::ToString(bool debug, int flag) {
+  std::string disp;
+  if (debug) {
+    disp = Layer::ToString(debug, flag);
+  } else {
+    disp = metric_.ToLogString();
+    metric_.Reset();
+  }
+  return disp;
 }
 }  // namespace singa

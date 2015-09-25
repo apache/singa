@@ -42,10 +42,10 @@ stamp-h1
 *.status
 config.h
 Makefile
-thirdparty/*
 config/*
 config.h.in
 configure
 aclocal.m4
 Makefile.in
-!thirdpary/install.sh
+thirdparty/*
+!thirdparty/install.sh

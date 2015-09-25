@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -38,9 +38,9 @@ class ConvolutionLayer : public NeuronLayer {
  public:
   ~ConvolutionLayer();
 
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
   const std::vector<Param*> GetParams() const override {
     std::vector<Param*> params{weight_, bias_};
     return params;
@@ -63,15 +63,15 @@ class ConvolutionLayer : public NeuronLayer {
  */
 class CConvolutionLayer : public ConvolutionLayer {
  public:
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
 
 class DropoutLayer : public NeuronLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
  protected:
   // drop probability
   float pdrop_;
@@ -90,9 +90,9 @@ class DropoutLayer : public NeuronLayer {
  * b_i, the neuron after normalization, N is the total num of kernels
  */
 class LRNLayer : public NeuronLayer {
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
  protected:
   //! shape of the bottom layer feature
@@ -106,9 +106,9 @@ class LRNLayer : public NeuronLayer {
 
 class PoolingLayer : public NeuronLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
  protected:
   int kernel_, pad_, stride_;
@@ -121,26 +121,26 @@ class PoolingLayer : public NeuronLayer {
  */
 class CPoolingLayer : public PoolingLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions);
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers);
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
  private:
   Blob<float> mask_;
 };
 
 class ReLULayer : public NeuronLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
 
 class InnerProductLayer : public NeuronLayer {
  public:
   ~InnerProductLayer();
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
   const std::vector<Param*> GetParams() const override {
     std::vector<Param*> params{weight_, bias_};
     return params;
@@ -159,9 +159,9 @@ class InnerProductLayer : public NeuronLayer {
  */
 class STanhLayer : public NeuronLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
 
 /**
@@ -174,19 +174,19 @@ class SigmoidLayer: public Layer {
   using Layer::ComputeFeature;
   using Layer::ComputeGradient;
 
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
 
 
 /**
  * Base layer for RBM models.
  */
-class RBMLayer: public Layer {
+class RBMLayer: virtual public Layer {
  public:
   virtual ~RBMLayer() {}
-  void Setup(const LayerProto& proto, int npartitions) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   const Blob<float>& neg_data(const Layer* layer) {
     return neg_data_;
   }
@@ -218,12 +218,12 @@ class RBMLayer: public Layer {
 /**
  * RBM visible layer
  */
-class RBMVisLayer: public RBMLayer {
+class RBMVisLayer: public RBMLayer, public LossLayer {
  public:
   ~RBMVisLayer();
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
  private:
   RBMLayer* hid_layer_;
@@ -235,9 +235,9 @@ class RBMVisLayer: public RBMLayer {
 class RBMHidLayer: public RBMLayer {
  public:
   ~RBMHidLayer();
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
  private:
   RBMLayer *vis_layer_;

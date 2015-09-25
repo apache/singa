@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -56,12 +56,12 @@ class BridgeLayer : virtual public ConnectionLayer {
  */
 class BridgeDstLayer : public BridgeLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override {
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override {
     // reset ready_ for next iteration.
     ready_ = false;
   }
-  void ComputeGradient(int flag, Metric* perf) override {}
+  void ComputeGradient(int flag,  const vector<Layer*>& srclayers) override {}
   bool is_bridgedstlayer() const {
     return true;
   }
@@ -73,25 +73,32 @@ class BridgeDstLayer : public BridgeLayer {
  */
 class BridgeSrcLayer : public BridgeLayer {
  public:
-  void ComputeFeature(int flag, Metric* perf) override {}
-  void ComputeGradient(int flag, Metric* perf) override {
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override {
+    CHECK_GE(srclayers.size(), 1);
+    srclayer_ = srclayers.at(0);
+  }
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override {}
+  void ComputeGradient(int flag,  const vector<Layer*>& srclayers) override {
     ready_ = false;
   }
   const Blob<float>& data(const Layer* from) const override {
-    return srclayers_[0]->data(this);
+    return srclayer_->data(this);
   }
   Blob<float>* mutable_data(const Layer* from) override {
-    return srclayers_[0]->mutable_data(this);
+    return srclayer_->mutable_data(this);
   }
   const Blob<float>& grad(const Layer* from) const override {
-    return srclayers_[0]->grad(this);
+    return srclayer_->grad(this);
   }
   Blob<float>* mutable_grad(const Layer* from) override {
-    return srclayers_[0]->mutable_grad(this);
+    return srclayer_->mutable_grad(this);
   }
   bool is_bridgesrclayer() const override {
     return true;
   }
+
+ private:
+  Layer* srclayer_;
 };
 
 
@@ -103,9 +110,9 @@ class BridgeSrcLayer : public BridgeLayer {
  */
 class ConcateLayer : public ConnectionLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
 
 /**
@@ -116,9 +123,9 @@ class ConcateLayer : public ConnectionLayer {
  */
 class SliceLayer : public ConnectionLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
  private:
   std::vector<Blob<float>> datavec_;
@@ -136,9 +143,9 @@ class SliceLayer : public ConnectionLayer {
  */
 class SplitLayer : public ConnectionLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric* perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
  protected:
   Blob<float> grads_;

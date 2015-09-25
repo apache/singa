@@ -8,7 +8,7 @@ DEFAULT_FLAGS = -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
               $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED
 
 CFLAGS = $(DEBUG)
-CXXFLAGS = $(DEBUG) 
+CXXFLAGS = $(DEBUG)
 AC_CXXFLAGS = $(DEBUG)
 
 INCLUDES = -I$(top_srcdir)/include
@@ -35,9 +35,9 @@ SINGA_SRCS := src/driver.cc \
               src/utils/updater.cc \
               src/utils/data_shard.cc \
               src/utils/blob.cc \
-              src/trainer/server.cc \
-              src/trainer/worker.cc \
-              src/trainer/trainer.cc \
+              src/server.cc \
+              src/worker.cc \
+              src/stub.cc \
               src/neuralnet/layer.cc \
               src/neuralnet/connection_layer.cc \
               src/neuralnet/input_layer.cc \
@@ -45,8 +45,8 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/neuron_layer.cc \
               src/neuralnet/output_layer.cc \
               src/neuralnet/neuralnet.cc \
-              src/communication/socket.cc \
-              src/communication/msg.cc
+              src/comm/socket.cc \
+              src/comm/msg.cc
 
 SINGA_HDRS := include/singa.h \
               include/utils/cluster.h \
@@ -60,9 +60,9 @@ SINGA_HDRS := include/singa.h \
               include/utils/blob.h \
               include/utils/updater.h \
               include/utils/tinydir.h \
-              include/trainer/server.h \
-              include/trainer/worker.h \
-              include/trainer/trainer.h \
+              include/server.h \
+              include/worker.h \
+              include/stub.h \
               include/neuralnet/layer.h \
               include/neuralnet/connection_layer.h \
               include/neuralnet/input_layer.h \
@@ -78,8 +78,8 @@ SINGA_HDRS := include/singa.h \
               include/mshadow/cxxnet_op.h \
               include/mshadow/tensor_base.h \
               include/mshadow/tensor_random.h \
-              include/communication/msg.h \
-              include/communication/socket.h
+              include/comm/msg.h \
+              include/comm/socket.h
 
 GTEST_SRCS := include/gtest/gtest-all.cc
 GTEST_HRDS := include/gtest/gtest.h
@@ -108,10 +108,9 @@ endif
 libsinga_la_LDFLAGS = -I./include
 
 
-
 #bin_PROGRAMS = singa
 singa_SOURCES = src/main.cc
-singa_CXXFLAGS = $(DEFAULT_FLAGS) -MMD 
+singa_CXXFLAGS = $(DEFAULT_FLAGS) -MMD
 singa_LDFLAGS = -I./include \
                 -lsinga \
                 -lglog  \
@@ -146,7 +145,7 @@ libgtest_la_LDFLAGS = -I./include
 #bin_PROGRAMS += singatest
 
 singatest_SOURCES = $(GTEST_HDRS) $(TEST_SRCS)
-singatest_CXXFLAGS = $(DEFAULT_FLAGS) 
+singatest_CXXFLAGS = $(DEFAULT_FLAGS)
 singatest_LDFLAGS = -I./include \
                 -lsinga \
                 -lglog  \

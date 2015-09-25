@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -33,16 +33,22 @@
 #include "utils/param.h"
 
 namespace singa {
-
+using std::vector;
 /**
  * Base layer class.
  *
- * Children should implement at least
+ * Subclasses should implement at least
  * Layer::ComputeFeature() and Layer::ComputGradient()
- * functions for contrastive-divergence/back-propagation algorithm.
+ * functions in accordance with the NeuralNet::TrainOneBatch function.
  */
 class Layer {
  public:
+  /**
+   * Create a sub-layer instance based on proto.type();
+   *
+   * @param proto configuration of the layer instance.
+   * @return pointer to the newly created layer instance.
+   */
   static Layer* Create(const LayerProto& proto);
 
   Layer() {}
@@ -50,49 +56,51 @@ class Layer {
   /**
    * Setup layer properties.
    *
-   * Setup the shapes for data and parameters, also setup some properties
-   * based on the layer configuration and connected layers.
+   * Setup members e.g., shapes of Param objects based on the layer
+   * configuration and connected layers.
+   * It should check the partition setting when setup the properties.
    *
-   * @param proto layer configuration.
-   * @param npartitions num of total partitions of the original layer. This
-   * layer should be setup as one partition.
+   * @param conf layer configuration.
+   * @param srclayers source layers that connect to this layer.
    */
-  virtual void Setup(const LayerProto& proto, int npartitions = 1) {
-    CHECK_GE(npartitions, 1);
-    layer_proto_ = proto;
+  virtual void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
+    layer_conf_ = conf;
   }
   /**
    * Compute features of this layer based on connected layers.
    *
-   * @param perf pointer to Metric obj for collect and aggregate performance
+   * @param[in] flag set by the TrainOneBatch function, e.g., to indicate the
+   * running phase (kForward|kTrain, kForward|kTest, etc).
+   * @param[in] srclayers source layers that connect to this layer.
    */
-  virtual void ComputeFeature(int flag, Metric* perf) = 0;
+  virtual void ComputeFeature(int flag, const vector<Layer*>& srclayers) = 0;
   /**
-   * Compute gradients for parameters and connected layers.
-   * @param flag used to get the calling phase, e.g., forward of training
-   * (kForward | kTrain)
-   * @param flag used to get the calling phase, e.g., forward of training
+   * Compute gradients for parameters associated with this layer.
+   * It may also compute the gradients of the loss w.r.t the source layers.
+   *
+   * \copydetails ComputeFeature().
    */
-  virtual void ComputeGradient(int flag, Metric* perf) = 0;
+  virtual void ComputeGradient(int flag, const vector<Layer*>& srclayers) = 0;
   /**
-   * Layers that have paramters must override this function.
-   * @param flag used to get the calling phase, e.g., forward of training
-   * (kForward | kTrain)
-   * @return parameters associated with this layer
+   * Layers that have paramters must override this function to return all Param
+   * objects associated with this layer.
+   *
+   * @return parameters associated with this layer.
    */
   virtual const std::vector<Param*> GetParams() const {
     return std::vector<Param*> {};
   }
   /**
-   * Return the connection type between one neuron of this layer and
-   * its source layer.
+   * Return the connection type between one neuron of this layer and its source
+   * layer.
+   *
    * Currently support two connection types: kOneToOne, and kOneToAll.
-   * kOneToOne indicates the neuron depends on only one neuron from src layer.
-   * kOneToAll indicates the neuron depends on all neurons from src layer.
+   * - kOneToOne indicates the neuron depends on only one neuron from src layer.
+   * - kOneToAll indicates the neuron depends on all neurons from src layer.
    * TODO(wangwei) support kOneToMany.
    *
-   * @param k index of source layer (current only support k = 0.
-   * @param connection type.
+   * @param[in] k index of source layer, current only support k = 0.
+   * @return connection type.
    */
   virtual ConnectionType src_neuron_connection(int k) const {
     // CHECK_LT(k, srclayers_.size());
@@ -102,89 +110,101 @@ class Layer {
    * Return the connection type of this layer and all dst layers.
    *
    * Currently support two connection types: kOneToOne, and kOneToMany.
-   * kOneToOne indicates the users implement the ComputeFeature and
-   * ComputeGradient function considering only one dest layer. In this case,
+   * - kOneToOne indicates the users implement the ComputeFeature and
+   * ComputeGradient function considering only one dst layer. In this case,
    * a SplitLayer will be added automatically to connect this layer with all
    * dest layer.
-   * kOneToMany indicates the users has already considered multiple dest layers
-   * in the implementation.
+   * - kOneToMany indicates this layer has already considered multiple dst
+   *   layers in the implementation.
+   *
    * @return connection type default is kOneToOne.
    */
   virtual ConnectionType dst_layer_connection() const {
     return kOneToOne;
   }
   /**
-   * For print debug info about each layer, e.g., norm of feature vector,
-   * norm of parameters.
+   * To display layer info, e.g., aggreated loss/accuracy, or norm of feature
+   * vector and norm of parameters.
    *
-   * @param step training/test/validation step
-   * @param flag used to get the calling phase, e.g., forward of training
-   * (kForward | kTrain)
-   * @return debug info about this layer.
+   * @param[in] debug whether print the debug info
+   * @param[in] flag used to get the calling phase, e.g., forward of training
+   * (kForward | kTrain).
+   * @return info string about this layer, which is printed into the log.
    */
-  virtual const std::string DebugString(int step, int flag);
+  virtual const std::string ToString(bool debug, int flag);
   /**
-   * @return partition dimension of this layer.
-   * -1 for no partition;
-   *  0 for partition the mini-batch into sub-mini-batch.
-   *  1 for partition the layer feature vector into sub-vector.
+   * @return partition dimension of this layer,
+   * - -1 for no partition.
+   * -  0 for partition on the data dimension, i.e., partitioning the mini-batch
+   *    into sub-mini-batches.
+   * -  1 for partition this layer on feature dimension, i.e., the feature
+   *    vector of each instance is partitioned into sub-vectors.
    */
   inline int partition_dim() const {
-    CHECK_LE(layer_proto_.partition_dim(), 1);
-    return layer_proto_.partition_dim();
+    CHECK_LE(layer_conf_.partition_dim(), 1);
+    return layer_conf_.partition_dim();
   }
-  inline int partition_id() const { return layer_proto_.partition_id(); }
-  inline int type() const { return layer_proto_.type(); }
+  /**
+   * @return the partition ID (i.e., the worker ID to whom is layer is
+   * dispatched) of this layer, which is a sublayer partitioned from the
+   * original layer.
+   */
+  inline int partition_id() const { return layer_conf_.partition_id(); }
+  /**
+   * @return total number of partitions (i.e., sub-layers) of the original
+   * layer of this layer.
+   */
+  inline int num_partitions() const { return layer_conf_.num_partitions(); }
+  /**
+   * @return the type of this layer, only valid for built-in layer (types).
+   */
+  inline LayerType type() const { return layer_conf_.type(); }
+  /**
+   * @return user-defined layer type.
+   */
+  inline const std::string& user_type() const {
+    return layer_conf_.user_type();
+  }
   /**
    * Return name of this layer
    */
-  inline const std::string &name() const { return layer_proto_.name(); }
+  inline const std::string& name() const { return layer_conf_.name(); }
   /**
-   * @return name of src data blob, used by prefetch layer to locate the data
-   * blob in parser layers; The default value is "unknown"; If the
-   * src layer is the prefetch layer and there are more than one parser layers,
-   * this value be set.
-  const std::string &datablob() const {
-    return layer_proto_.datablob();
-  }
-   */
-  /**
-   * @return a const ref for Blob storing neuron values of this layer for BP
+   * @param[in] from pointer to one of the dst layer. For some layers, they have
+   * more than one data Blob. In this case, this argument identifies the layer
+   * that is requesting the data Blob.
+   * @return a const ref for Blob storing feature values of this layer.
    */
   virtual const Blob<float>& data(const Layer* from) const {
     return data_;
   }
+  /**
+   * @see data().
+   * @return the pointer to the Blob storing feature values of this layer.
+   */
   virtual Blob<float>* mutable_data(const Layer* from) {
     return &data_;
   }
+  /**
+   * @see data().
+   * @return the const ref of the Blob for the gradient of this layer, mainly
+   * used in BP algorithm.
+   */
   virtual const Blob<float>& grad(const Layer* from) const {
     return grad_;
   }
   /**
-   * @return a pointer to storing neuron grads of this layer for BP
+   * @see data().
+   * @return a pointer to the Blob storing gradients of this layer, mainly
+   * used in BP algorithm.
    */
   virtual Blob<float>* mutable_grad(const Layer* from) {
     return &grad_;
   }
-  /**
-   * return LayerS that connected to this layer
-   */
-  inline const std::vector<Layer*> srclayers() const { return srclayers_; }
-  /**
-   * return LayerS that this layer connected to
-   */
-  inline const std::vector<Layer*> dstlayers() const { return dstlayers_; }
-  inline int srclayers_size() const { return srclayers_.size(); }
-  inline int dstlayers_size() const { return dstlayers_.size(); }
-  inline void clear_dstlayers() { dstlayers_.clear(); }
-  inline void clear_srclayers() { srclayers_.clear(); }
-  inline void add_srclayer(Layer* src) { srclayers_.push_back(src); }
-  inline void add_dstlayer(Layer* dst) { dstlayers_.push_back(dst); }
 
  protected:
-  LayerProto layer_proto_;
+  LayerProto layer_conf_;
   Blob<float> data_, grad_;
-  std::vector<Layer*> srclayers_, dstlayers_;
 };
 
 /**
@@ -199,29 +219,59 @@ class ConnectionLayer : virtual public Layer {
  * parsing records.
  */
 class InputLayer : virtual public Layer {
-  // defined as a layer category
+ public:
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
+  Blob<float>* mutable_grad(const Layer* layer) override {
+    // LOG(FATAL) << "Loss layer has no gradient blob";
+    return nullptr;
+  }
+  const Blob<float>& grad(const Layer* from) const override {
+    // LOG(FATAL) << "Loss layer has no gradient blob";
+    return grad_;
+  }
 };
 
-
-class NeuronLayer : virtual public Layer {
-  // defined as a layer category
-};
 
 /**
- * Base layer for calculating loss and other metrics, e.g., precison.
+ * Base layer for calculating loss and doing BackPropagation.
  */
 class LossLayer : virtual public Layer {
  public:
+  const std::string ToString(bool debug, int flag) override;
   Blob<float>* mutable_grad(const Layer* layer) override {
+    LOG(FATAL) << "Loss layer has no gradient blob";
     return nullptr;
   }
   const Blob<float>& grad(const Layer* from) const override {
     LOG(FATAL) << "Loss layer has no gradient blob";
     return grad_;
   }
-
  protected:
-  Blob<float> metric_;
+  Metric metric_;
+};
+
+/**
+ * Base layer for feature transformation, e.g., ConvolutionLayer, PoolingLayer,
+ * etc.
+ */
+class NeuronLayer : virtual public Layer {
+  // defined as a layer category
+};
+
+/**
+ * Base layer for collecting features into disk file, HTTP stream, etc.
+ */
+class OutpuLayer : virtual public Layer {
+ public:
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
+  Blob<float>* mutable_grad(const Layer* layer) override {
+    LOG(FATAL) << "Loss layer has no gradient blob";
+    return nullptr;
+  }
+  const Blob<float>& grad(const Layer* from) const override {
+    LOG(FATAL) << "Loss layer has no gradient blob";
+    return grad_;
+  }
 };
 
 }  // namespace singa

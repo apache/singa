@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -59,9 +59,9 @@ message JobProto {
   // TODO(wangwei): set -1 for test forever
   optional int32 test_steps =  21 [default = 0];
   // frequency of validation, e.g., do validation every 100 training steps
-  optional int32 valid_freq = 25 [default = 0];
+  optional int32 validate_freq = 25 [default = 0];
   // total num of steps for validating all validation data
-  optional int32 valid_steps = 26 [default = 0];
+  optional int32 validate_steps = 26 [default = 0];
   // frequency of checkpoint
   optional int32 checkpoint_freq = 30 [default = 0];
 
@@ -83,7 +83,7 @@ message JobProto {
   // start test after this num steps
   optional int32 test_after = 82 [default = 0];
   // start validation after this num steps
-  optional int32 valid_after = 83 [default = 0];
+  optional int32 validate_after = 83 [default = 0];
 
   // for internal use
   // users typically do not touch following fields
@@ -224,6 +224,8 @@ message LayerProto {
   optional int32 partition_dim = 60 [default = -1];
   // names of parameters shared from other layers
   optional int32 partition_id = 90 [default = 0];
+  // num of partitions for this layer
+  optional int32 num_partitions = 91 [default = 1];
 
   extensions 101 to 200;
 }
@@ -571,7 +573,7 @@ enum PartitionType {
 enum Phase {
   kUnknown = 0;
   kTrain = 1;
-  kValidation = 2;
+  kVal = 2;
   kTest= 4;
   // postivie phase for contrastive divergence algorithm
   kPositive = 8;

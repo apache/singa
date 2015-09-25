@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "trainer/server.h"
+#include "./server.h"
 
 #include <thread>
 #include <chrono>
@@ -35,19 +35,15 @@ namespace singa {
 using namespace mshadow;
 using std::vector;
 
-Server::Server(int group_id, int server_id) {
+Server::Server(int group_id, int server_id,
+    const JobProto& job_conf,
+    const vector<int>& slice2group,
+    const vector<int>& slice2server) {
   grp_id_ = group_id;
   id_ = server_id;
-}
-
-void Server::Setup(const UpdaterProto& proto, const vector<int>& slice2group,
-                   const vector<int>& slice2server) {
-  updater_ = Updater::Create(proto);
+  updater_ = Updater::Create(job_conf.updater());
   slice2group_ = slice2group;
   slice2server_ = slice2server;
-  n_updates_.resize(slice2group_.size(), 0);
-  n_pending_sync_.resize(slice2group_.size(), 0);
-  last_sync_.resize(slice2group_.size());
 }
 
 Server::~Server() {
@@ -64,6 +60,17 @@ void Stop(void* running) {
 
 void Server::Run() {
   LOG(ERROR) << "Server (group = " << grp_id_ <<", id = " << id_ << ") start";
+  auto cluster = Cluster::Get();
+  if (cluster->nserver_groups()) {
+    CHECK_GT(slice2group_.size(), 0);
+    if (cluster->nservers_per_group()) {
+      CHECK_GT(slice2server_.size(), 0);
+    }
+  }
+  n_updates_.resize(slice2group_.size(), 0);
+  n_pending_sync_.resize(slice2group_.size(), 0);
+  last_sync_.resize(slice2group_.size());
+
   // TODO(wangsh): give each dealer a unique id
   auto dealer = new Dealer(0);
   CHECK(dealer->Connect(kInprocRouterEndpoint));
@@ -71,7 +78,6 @@ void Server::Run() {
   ping->set_type(kConnect);
   dealer->Send(&ping);
 
-  auto cluster = Cluster::Get();
   bool running = true;
   CHECK(cluster->runtime()->WatchSGroup(grp_id_, id_, Stop, &running));
   Poller poll(dealer);

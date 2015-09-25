@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -40,50 +40,59 @@ using std::string;
 using std::vector;
 
 /********** * Implementation for EuclideanLossLayer*************************/
-void EuclideanLossLayer::ComputeFeature(int flag, Metric* perf) {
-  int count = srclayers_[0]->data(this).count();
-  CHECK_EQ(count, srclayers_[1]->data(this).count());
-  const float* reconstruct_dptr = srclayers_[0]->data(this).cpu_data();
-  const float* input_dptr = srclayers_[1]->data(this).cpu_data();
+void EuclideanLossLayer::Setup(const LayerProto& conf,
+    const vector<Layer*>& srclayers) {
+  CHECK_EQ(srclayers.size(), 2);
+  Layer::Setup(conf, srclayers);
+}
+
+void EuclideanLossLayer::ComputeFeature(int flag,
+    const vector<Layer*>& srclayers) {
+  int count = srclayers[0]->data(this).count();
+  CHECK_EQ(count, srclayers[1]->data(this).count());
+  const float* reconstruct_dptr = srclayers[0]->data(this).cpu_data();
+  const float* input_dptr = srclayers[1]->data(this).cpu_data();
   float loss = 0;
   for (int i = 0; i < count; i++) {
       loss += (input_dptr[i] - reconstruct_dptr[i]) *
         (input_dptr[i] - reconstruct_dptr[i]);
   }
-  perf->Add("loss", loss / srclayers_[0]->data(this).shape()[0]);
+  metric_.Add("loss", loss / srclayers[0]->data(this).shape()[0]);
 }
-void EuclideanLossLayer::ComputeGradient(int flag, Metric* perf) {
-  int count = srclayers_[0]->data(this).count();
-  CHECK_EQ(count, srclayers_[1]->data(this).count());
-  const float* reconstruct_dptr = srclayers_[0]->data(this).cpu_data();
-  const float* input_dptr = srclayers_[1]->data(this).cpu_data();
-  Blob<float>* gsrcblob = srclayers_[0]->mutable_grad(this);
+
+void EuclideanLossLayer::ComputeGradient(int flag,
+    const vector<Layer*>& srclayers) {
+  int count = srclayers[0]->data(this).count();
+  CHECK_EQ(count, srclayers[1]->data(this).count());
+  const float* reconstruct_dptr = srclayers[0]->data(this).cpu_data();
+  const float* input_dptr = srclayers[1]->data(this).cpu_data();
+  Blob<float>* gsrcblob = srclayers[0]->mutable_grad(this);
   float* gsrcptr = gsrcblob->mutable_cpu_data();
   for (int i = 0; i < count; i++) {
     gsrcptr[i] = reconstruct_dptr[i]-input_dptr[i];
   }
   Tensor<cpu, 1> gsrc(gsrcptr, Shape1(gsrcblob->count()));
-  gsrc /= srclayers_[0]->data(this).shape()[0];
+  gsrc /= srclayers[0]->data(this).shape()[0];
 }
 
-
 /********** * Implementation for SoftmaxLossLayer*************************/
-void SoftmaxLossLayer::Setup(const LayerProto& proto, int npartitions) {
-  LossLayer::Setup(proto, npartitions);
-  CHECK_EQ(srclayers_.size(), 2);
-  data_.Reshape(srclayers_[0]->data(this).shape());
+void SoftmaxLossLayer::Setup(const LayerProto& proto,
+    const vector<Layer*>& srclayers) {
+  CHECK_EQ(srclayers.size(), 2);
+  LossLayer::Setup(proto, srclayers);
+  data_.Reshape(srclayers[0]->data(this).shape());
   batchsize_ = data_.shape()[0];
   dim_ = data_.count() / batchsize_;
   topk_ = proto.softmaxloss_conf().topk();
-  metric_.Reshape(vector<int>{2});
   scale_ = proto.softmaxloss_conf().scale();
 }
-void SoftmaxLossLayer::ComputeFeature(int flag, Metric* perf) {
+void SoftmaxLossLayer::ComputeFeature(int flag,
+    const vector<Layer*>& srclayers) {
   Shape<2> s = Shape2(batchsize_, dim_);
   Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);
-  Tensor<cpu, 2> src(srclayers_[0]->mutable_data(this)->mutable_cpu_data(), s);
+  Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
   Softmax(prob, src);
-  const float* label = srclayers_[1]->data(this).cpu_data();
+  const float* label = srclayers[1]->data(this).cpu_data();
   const float* probptr = prob.dptr;
   float loss = 0, precision = 0;
   for (int n = 0; n < batchsize_; n++) {
@@ -108,13 +117,14 @@ void SoftmaxLossLayer::ComputeFeature(int flag, Metric* perf) {
     probptr += dim_;
   }
   CHECK_EQ(probptr, prob.dptr + prob.shape.Size());
-  perf->Add("loss", loss * scale_ / (1.0f * batchsize_));
-  perf->Add("accuracy", precision * scale_ / (1.0f * batchsize_));
+  metric_.Add("loss", loss * scale_ / (1.0f * batchsize_));
+  metric_.Add("accuracy", precision * scale_ / (1.0f * batchsize_));
 }
 
-void SoftmaxLossLayer::ComputeGradient(int flag, Metric* perf) {
-  const float* label = srclayers_[1]->data(this).cpu_data();
-  Blob<float>* gsrcblob = srclayers_[0]->mutable_grad(this);
+void SoftmaxLossLayer::ComputeGradient(int flag,
+    const vector<Layer*>& srclayers) {
+  const float* label = srclayers[1]->data(this).cpu_data();
+  Blob<float>* gsrcblob = srclayers[0]->mutable_grad(this);
   gsrcblob->CopyFrom(data_);
   float* gsrcptr = gsrcblob->mutable_cpu_data();
   for (int n = 0; n < batchsize_; n++) {

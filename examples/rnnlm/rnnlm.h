@@ -25,6 +25,7 @@
 #include "./rnnlm.pb.h"
 
 namespace rnnlm {
+using std::vector;
 using singa::LayerProto;
 using singa::Layer;
 using singa::Param;
@@ -57,8 +58,8 @@ class RNNLayer : virtual public Layer {
 class DataLayer : public RNNLayer, public singa::DataLayer {
  public:
   ~DataLayer();
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   int max_window() const {
     return max_window_;
   }
@@ -75,9 +76,9 @@ class DataLayer : public RNNLayer, public singa::DataLayer {
  */
 class LabelLayer : public RNNLayer {
  public:
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override {}
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
 };
 
 
@@ -88,9 +89,9 @@ class LabelLayer : public RNNLayer {
 class EmbeddingLayer : public RNNLayer {
  public:
   ~EmbeddingLayer();
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
   const std::vector<Param*> GetParams() const override {
     std::vector<Param*> params{embed_};
     return params;
@@ -111,9 +112,10 @@ class EmbeddingLayer : public RNNLayer {
 class HiddenLayer : public RNNLayer {
  public:
   ~HiddenLayer();
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+
   const std::vector<Param*> GetParams() const override {
     std::vector<Param*> params{weight_};
     return params;
@@ -132,9 +134,11 @@ class HiddenLayer : public RNNLayer {
 class LossLayer : public RNNLayer {
  public:
   ~LossLayer();
-  void Setup(const LayerProto& proto, int npartitions) override;
-  void ComputeFeature(int flag, Metric *perf) override;
-  void ComputeGradient(int flag, Metric* perf) override;
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+
+  const std::string ToString(bool debug, int flag) override;
   const std::vector<Param*> GetParams() const override {
     std::vector<Param*> params{word_weight_, class_weight_};
     return params;
@@ -144,6 +148,8 @@ class LossLayer : public RNNLayer {
   std::vector<Blob<float>> pword_;
   Blob<float> pclass_;
   Param* word_weight_, *class_weight_;
+  float loss_, ppl_;
+  int num_;
 };
 }  // namespace rnnlm
 #endif  // EXAMPLES_RNNLM_RNNLM_H_

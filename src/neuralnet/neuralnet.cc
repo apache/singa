@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -94,6 +94,7 @@ NeuralNet::~NeuralNet() {
     delete layer;
 }
 
+/*
 std::string NeuralNet::ToAdjacency() {
   string disp = "";
   for (auto& layer : layers_) {
@@ -104,6 +105,7 @@ std::string NeuralNet::ToAdjacency() {
   }
   return disp;
 }
+*/
 
 void NeuralNet::ShareParamsFrom(NeuralNet* other) {
   for (auto& layer : layers_) {
@@ -215,6 +217,7 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
         // differentiate partitions
         string nodename = layer.name() + "@" + string(suffix);
         proto->set_partition_id(i);
+        proto->set_num_partitions(npartitions);
         proto->set_name(nodename);
         auto node = new Node(nodename, layer.name(), i, proto);
         graph->AddNode(node);
@@ -321,21 +324,19 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
   }
   // connect layers
   for (Node* node : graph->nodes()) {
-    auto layer = name2layer_[node->name];
-    layer->clear_dstlayers();
-    for (Node* dst : node->dstnodes)
-      layer->add_dstlayer(name2layer_[dst->name]);
-    layer->clear_srclayers();
+    auto layer = name2layer(node->name);
+    src_map_[layer] = vector<Layer*>{};
     for (Node* src : node->srcnodes)
-      layer->add_srclayer(name2layer_[src->name]);
+      src_map_[layer].push_back(name2layer(src->name));
   }
+
   // setup layers
   int paramid = 0;
   map<string, string> layerinfo;
   map<string, vector<Layer*>> share_param_layers;
   for (Node* node : graph->nodes()) {
-    auto layer = name2layer_[node->name];
-    layer->Setup(*(static_cast<LayerProto*>(node->proto)), npartitions);
+    auto layer = name2layer(node->name);
+    layer->Setup(*(static_cast<LayerProto*>(node->proto)), srclayers(layer));
     LOG(INFO) << "constructing graph: " << layer->name();
     layerinfo[layer->name()] = IntVecToString(layer->data(nullptr).shape());
     string param_name = "$";

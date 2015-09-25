@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -24,6 +24,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "neuralnet/layer.h"
 #include "proto/job.pb.h"
@@ -31,7 +32,6 @@
 #include "utils/graph.h"
 
 namespace singa {
-
 /**
  * The neural network is constructed from user configurations in NetProto.
  *
@@ -60,23 +60,27 @@ class NeuralNet {
    * @param netproto neural net config
    * @param npartitions num of partitions. 1 for no partitioning.
    */
-  NeuralNet(NetProto netproto, int npartitions);
+  NeuralNet(NetProto net_conf, int num_partitions);
   ~NeuralNet();
   /**
    * To display the adjacency layers
-   */
   std::string ToAdjacency();
+   */
   /**
    * Share memory of parameter values from other neuralnet
    */
   void ShareParamsFrom(NeuralNet* other);
-  inline const std::vector<Layer*>& layers() { return layers_; }
+  inline const std::vector<Layer*>& layers() const { return layers_; }
   inline const std::vector<Param*>& params() const { return params_; }
   inline Layer* name2layer(std::string name) const {
-    if (name2layer_.find(name) != name2layer_.end())
-      return name2layer_.at(name);
-    else
-      return nullptr;
+    CHECK(name2layer_.find(name) != name2layer_.end())
+      << "No layer with name " << name;
+    return name2layer_.at(name);
+  }
+  inline const std::vector<Layer*>& srclayers(const Layer* layer) const {
+    CHECK(src_map_.find(layer) != src_map_.end())
+      << "layer (" << layer->name() << " ) has no source layers";
+    return src_map_.at(layer);
   }
   inline Param* paramid2param(int id) const { return paramid2param_.at(id); }
 
@@ -90,11 +94,11 @@ class NeuralNet {
    * @npartitions
    * @return neural net graph
    */
-  Graph* CreateGraph(const NetProto& netproto, int npartitions);
+  Graph* CreateGraph(const NetProto& netproto, int num_partitions);
   /**
    * Create neural net from graph, one layer per node.
    */
-  void CreateNetFromGraph(Graph* graph, int npartitions);
+  void CreateNetFromGraph(Graph* graph, int num_partitions);
   /**
    * prepare data structures, e.g., params_, layers_, etc.
    */
@@ -104,8 +108,9 @@ class NeuralNet {
   std::vector<Layer*> layers_;
   std::vector<Param*> params_;
 
-  std::map<std::string, Layer*> name2layer_;
-  std::map<int, Param*> paramid2param_;
+  std::unordered_map<std::string, Layer*> name2layer_;
+  std::unordered_map<int, Param*> paramid2param_;
+  std::unordered_map<const Layer*, std::vector<Layer*>> src_map_;
 };
 
 }  // namespace singa

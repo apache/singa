@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -24,17 +24,24 @@
 namespace singa {
 
 using std::vector;
-
+/********* Implementation for BridgeDstLayer **************/
+void BridgeDstLayer::Setup(const LayerProto& proto,
+    const vector<Layer*>& srclayers) {
+  Layer::Setup(proto, srclayers);
+  CHECK_EQ(srclayers.size(), 1);
+  data_.Reshape(srclayers[0]->data(this).shape());
+  grad_.ReshapeLike(data_);
+}
 /************* Implementation for ConcateLayer ***********/
-void ConcateLayer::Setup(const LayerProto& proto, int npartitions) {
-  // CHECK_EQ(npartitions, 1);
-  Layer::Setup(proto, npartitions);
-  size_t concate_dim = proto.concate_conf().concate_dim();
+void ConcateLayer::Setup(const LayerProto& conf,
+    const vector<Layer*>& srclayers) {
+  Layer::Setup(conf, srclayers);
+  size_t concate_dim = conf.concate_conf().concate_dim();
   CHECK_GE(concate_dim, 0);
-  CHECK_GT(srclayers_.size(), 1);
-  vector<int> shape = srclayers_[0]->data(this).shape();
-  for (size_t i = 1; i < srclayers_.size(); i++) {
-    const vector<int>& srcshape = srclayers_[i]->data(this).shape();
+  CHECK_GT(srclayers.size(), 1);
+  vector<int> shape = srclayers[0]->data(this).shape();
+  for (size_t i = 1; i < srclayers.size(); i++) {
+    const vector<int>& srcshape = srclayers[i]->data(this).shape();
     for (size_t j = 0; j < shape.size(); j++)
       if (j == concate_dim)
         shape[j] += srcshape[j];
@@ -45,23 +52,24 @@ void ConcateLayer::Setup(const LayerProto& proto, int npartitions) {
   grad_.Reshape(shape);
 }
 
-void ConcateLayer::ComputeFeature(int flag, Metric *perf) {
+void ConcateLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   LOG(FATAL) << "Not implemented for Concate Layer";
 }
 
-void ConcateLayer::ComputeGradient(int flag, Metric* perf) {
+void ConcateLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   LOG(FATAL) << "Not implemented for Concate Layer";
 }
 
 /************* Implementation for SliceLayer****************/
-void SliceLayer::Setup(const LayerProto& proto, int npartitions) {
+void SliceLayer::Setup(const LayerProto& conf,
+    const vector<Layer*>& srclayers) {
   /*
-  Layer::Setup(proto, npartitions);
-  slice_dim_ = proto.slice_conf().slice_dim();
+  Layer::Setup(conf, npartitions);
+  slice_dim_ = conf.slice_conf().slice_dim();
   slice_num_ = npartitions;
   CHECK_GE(slice_dim_, 0);
   CHECK_EQ(slice_num_, dstlayers_.size());
-  data_.Reshape(srclayers_[0]->data(this).shape());
+  data_.Reshape(srclayers[0]->data(this).shape());
   grad_.ReshapeLike(data_);
   datavec_.resize(slice_num_);
   gradvec_.resize(slice_num_);
@@ -79,11 +87,11 @@ void SliceLayer::Setup(const LayerProto& proto, int npartitions) {
   LOG(FATAL) << "Not implemented";
 }
 
-void SliceLayer::ComputeFeature(int flag, Metric *perf) {
+void SliceLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   /*
-  CHECK_EQ(srclayers_.size(), 1);
+  CHECK_EQ(srclayers.size(), 1);
   if (slice_dim_ == 0) {
-    const auto& blob = srclayers_.at(0)->data(this);
+    const auto& blob = srclayers.at(0)->data(this);
     int size = blob.count() / slice_num_;
     for (int i = 0; i < slice_num_; i++) {
       float* dst = datavec_[i].mutable_cpu_data();
@@ -95,7 +103,7 @@ void SliceLayer::ComputeFeature(int flag, Metric *perf) {
   LOG(FATAL) << "Not implemented";
 }
 
-void SliceLayer::ComputeGradient(int flag, Metric* perf) {
+void SliceLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   LOG(FATAL) << "Not implemented";
 }
 
@@ -112,19 +120,19 @@ int SliceLayer::SliceID(const Layer* layer) const {
 }*/
 
 /************* Implementation for SplitLayer****************/
-void SplitLayer::Setup(const LayerProto& proto, int npartitions) {
-  // CHECK_EQ(npartitions, 1);
-  Layer::Setup(proto, npartitions);
-  CHECK_EQ(srclayers_.size(), 1);
-  data_.Reshape(srclayers_[0]->data(this).shape());
-  grad_.Reshape(srclayers_[0]->data(this).shape());
+void SplitLayer::Setup(const LayerProto& conf,
+    const vector<Layer*>& srclayers) {
+  Layer::Setup(conf, srclayers);
+  CHECK_EQ(srclayers.size(), 1);
+  data_.Reshape(srclayers[0]->data(this).shape());
+  grad_.Reshape(srclayers[0]->data(this).shape());
 }
 
-void SplitLayer::ComputeFeature(int flag, Metric *perf) {
+void SplitLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   LOG(FATAL) << "Not implemented";
 }
 
-void SplitLayer::ComputeGradient(int flag, Metric* perf) {
+void SplitLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   LOG(FATAL) << "Not implemented";
 }
 }  // namespace singa

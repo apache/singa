@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -22,16 +22,15 @@
 #ifndef SINGA_SINGA_H_
 #define SINGA_SINGA_H_
 
-#include "communication/socket.h"
+#include "comm/socket.h"
 #include "neuralnet/neuralnet.h"
 #include "neuralnet/layer.h"
 #include "proto/job.pb.h"
 #include "proto/singa.pb.h"
-#include "trainer/trainer.h"
 #include "utils/common.h"
 #include "utils/param.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"
-#include "driver.h"
+#include "./driver.h"
 
 #endif  // SINGA_SINGA_H_

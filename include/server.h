@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,12 +19,12 @@
 *
 *************************************************************/
 
-#ifndef SINGA_TRAINER_SERVER_H_
-#define SINGA_TRAINER_SERVER_H_
+#ifndef SINGA_SERVER_H_
+#define SINGA_SERVER_H_
 
 #include <unordered_map>
 #include <vector>
-#include "communication/socket.h"
+#include "comm/socket.h"
 #include "proto/job.pb.h"
 #include "utils/param.h"
 #include "utils/updater.h"
@@ -37,16 +37,17 @@ namespace singa {
   * Normally, the Server creates a response message for each request which
   * will be sent back to the one who issued the request. However, if the request
   * are not processed successfully, the original message will be returned. The
-  * sever does not know the returned message (response or the original message),
-  * it just sends it to the router. The router will decide to re-send the
-  * request to the server or send it to the worker.
+  * sever does not know the returned message is a response or the original
+  * message. It just sends it to the router. The router will decided to
+  * re-send the request to the server or send it to the worker.
   */
 class Server {
  public:
-  Server(int group_id, int server_id);
   ~Server();
-  void Setup(const UpdaterProto& proto, const std::vector<int>& slice2group,
-             const std::vector<int>& slice2server);
+  Server(int group_id, int server_id,
+      const JobProto& job_conf,
+      const std::vector<int>& slice2group,
+      const std::vector<int>& slice2server);
   void Run();
   inline int grp_id() const { return grp_id_; }
   inline int id() const { return id_; }
@@ -71,12 +72,12 @@ class Server {
    * update requests. Hence it is possible that the server would conduct the
    * update when it receives x requests from group a and y requests from group
    * b where x + y = group size. To avoid this problem, we can
-   * 1. maintain request list for each group for each Param at the server side
-   * 2. do not span a worker group among multiple nodes. then the updates from
+   * -# maintain request list for each group for each Param at the server side
+   * -# do not span a worker group among multiple nodes. then the updates from
    * the same group would be locally aggregated on the worker node. And the
    * server would conduct the update immediately after receiving the aggregated
    * request.
-   * 3. launch only one worker group.
+   * -# launch only one worker group.
    *
    * @return the orignal message or response message
    */
@@ -103,8 +104,8 @@ class Server {
   /**
    * Handle sync response.
    *
-   * The response msg includes the latest values of a Param object, for which
-   * this server sent the sync request to the master/maintainer group.
+   * The response msg includes the latest values of a Param object from the
+   * server group that maintainers this Param object.
    * The local Param values are replaced with the addition result of local
    * udpates since the sync request was sent and the received Param values.
    *
@@ -129,4 +130,4 @@ class Server {
 
 }  // namespace singa
 
-#endif  // SINGA_TRAINER_SERVER_H_
+#endif  // SINGA_SERVER_H_

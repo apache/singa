@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -34,9 +34,9 @@ using std::string;
 using std::vector;
 
 /************* Implementation for ParserLayer ***********/
-void ParserLayer::ComputeFeature(int flag, Metric *perf) {
-  CHECK_EQ(srclayers_.size(), 1);
-  auto datalayer = dynamic_cast<DataLayer*>(*srclayers_.begin());
+void ParserLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
+  CHECK_EQ(srclayers.size(), 1);
+  auto datalayer = dynamic_cast<DataLayer*>(*srclayers.begin());
   ParseRecords(flag, datalayer->records(), &data_);
 }
 
@@ -48,8 +48,9 @@ LMDBDataLayer::~LMDBDataLayer() {
   mdb_cursor_ = nullptr;
 }
 
-void LMDBDataLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
+void LMDBDataLayer::Setup(const LayerProto& proto,
+    const vector<Layer*>& srclayers) {
+  Layer::Setup(proto, srclayers);
   OpenLMDB(proto.lmdbdata_conf().path());
   CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, MDB_NEXT),
            MDB_SUCCESS);
@@ -62,7 +63,7 @@ void LMDBDataLayer::Setup(const LayerProto& proto, int npartitions) {
   ConvertCaffeDatumToRecord(datum, record);
   batchsize_ = proto.lmdbdata_conf().batchsize();
   if (partition_dim() == 0)
-    batchsize_ /= npartitions;
+    batchsize_ /= proto.num_partitions();
   records_.resize(batchsize_);
   random_skip_ = proto.lmdbdata_conf().random_skip();
 }
@@ -83,9 +84,9 @@ void LMDBDataLayer::OpenLMDB(const std::string& path) {
            MDB_SUCCESS) << "mdb_cursor_get failed";
 }
 
-void LMDBDataLayer::ComputeFeature(int flag, Metric* perf) {
+void LMDBDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (mdb_cursor_ == nullptr)
-    OpenLMDB(layer_proto_.lmdbdata_conf().path());
+    OpenLMDB(layer_conf_.lmdbdata_conf().path());
   if (random_skip_) {
     int nskip = rand() % random_skip_;
     int n = 0;
@@ -155,8 +156,9 @@ ShardDataLayer::~ShardDataLayer() {
   shard_ = nullptr;
 }
 
-void ShardDataLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
+void ShardDataLayer::Setup(const LayerProto& proto,
+    const vector<Layer*>& srclayers) {
+  Layer::Setup(proto, srclayers);
   shard_ = new DataShard(proto.sharddata_conf().path(), DataShard::kRead);
   string key;
   shard_->Next(&key, &sample_);
@@ -164,14 +166,14 @@ void ShardDataLayer::Setup(const LayerProto& proto, int npartitions) {
   shard_ = nullptr;
   batchsize_ = proto.sharddata_conf().batchsize();
   if (partition_dim() == 0)
-    batchsize_ /= npartitions;
+    batchsize_ /= proto.num_partitions();
   records_.resize(batchsize_);
   random_skip_ = proto.sharddata_conf().random_skip();
 }
 
-void ShardDataLayer::ComputeFeature(int flag, Metric* perf) {
+void ShardDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (shard_ == nullptr)
-    shard_ = new DataShard(layer_proto_.sharddata_conf().path(),
+    shard_ = new DataShard(layer_conf_.sharddata_conf().path(),
                            DataShard::kRead);
   if (random_skip_) {
     int nskip = rand() % random_skip_;
@@ -193,15 +195,16 @@ void ShardDataLayer::ComputeFeature(int flag, Metric* perf) {
 }
 
 /********* Implementation for LabelLayer **************/
-void LabelLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
-  CHECK_EQ(srclayers_.size(), 1);
-  int batchsize = dynamic_cast<DataLayer*>(srclayers_[0])->batchsize();
+void LabelLayer::Setup(const LayerProto& proto,
+    const vector<Layer*>& srclayers) {
+  Layer::Setup(proto, srclayers);
+  CHECK_EQ(srclayers.size(), 1);
+  int batchsize = dynamic_cast<DataLayer*>(srclayers[0])->batchsize();
   data_.Reshape(vector<int>{batchsize});
 }
 
 void LabelLayer::ParseRecords(int flag, const vector<Record>& records,
-                              Blob<float>* blob) {
+    Blob<float>* blob) {
   int rid = 0;
   float *label = blob->mutable_cpu_data();
   for (const Record& record : records) {
@@ -212,8 +215,8 @@ void LabelLayer::ParseRecords(int flag, const vector<Record>& records,
 }
 
 /**************** Implementation for MnistLayer ******************/
-void MnistLayer::ParseRecords(int flag,
-    const vector<Record>& records, Blob<float>* blob) {
+void MnistLayer::ParseRecords(int flag, const vector<Record>& records,
+    Blob<float>* blob) {
   LOG_IF(ERROR, records.size() == 0) << "Empty records to parse";
   int ndim = records.at(0).image().shape_size();
   int inputsize = records.at(0).image().shape(ndim-1);
@@ -246,11 +249,12 @@ void MnistLayer::ParseRecords(int flag,
   CHECK_EQ(dptr, blob->mutable_cpu_data() + blob->count());
 }
 
-void MnistLayer::Setup(const LayerProto& proto, int npartitions) {
-  Layer::Setup(proto, npartitions);
-  CHECK_EQ(srclayers_.size(), 1);
-  int batchsize = dynamic_cast<DataLayer*>(srclayers_[0])->batchsize();
-  Record sample = dynamic_cast<DataLayer*>(srclayers_[0])->sample();
+void MnistLayer::Setup(const LayerProto& proto,
+    const vector<Layer*>& srclayers) {
+  Layer::Setup(proto, srclayers);
+  CHECK_EQ(srclayers.size(), 1);
+  int batchsize = dynamic_cast<DataLayer*>(srclayers[0])->batchsize();
+  Record sample = dynamic_cast<DataLayer*>(srclayers[0])->sample();
   norm_a_ = proto.mnist_conf().norm_a();
   norm_b_ = proto.mnist_conf().norm_b();
   int ndim = sample.image().shape_size();
@@ -261,8 +265,8 @@ void MnistLayer::Setup(const LayerProto& proto, int npartitions) {
 }
 
 /*************** Implementation for RGBImageLayer *************************/
-void RGBImageLayer::ParseRecords(int flag,
-    const vector<Record>& records, Blob<float>* blob) {
+void RGBImageLayer::ParseRecords(int flag, const vector<Record>& records,
+    Blob<float>* blob) {
   const vector<int>& s = blob->shape();
   Tensor<cpu, 4> images(data_.mutable_cpu_data(),
       Shape4(s[0], s[1], s[2], s[3]));
@@ -315,14 +319,15 @@ void RGBImageLayer::ParseRecords(int flag,
     FreeSpace(croped_image);
 }
 
-void RGBImageLayer::Setup(const LayerProto& proto, int npartitions) {
-  ParserLayer::Setup(proto, npartitions);
-  CHECK_EQ(srclayers_.size(), 1);
+void RGBImageLayer::Setup(const LayerProto& proto,
+    const vector<Layer*>& srclayers) {
+  ParserLayer::Setup(proto, srclayers);
+  CHECK_EQ(srclayers.size(), 1);
   scale_ = proto.rgbimage_conf().scale();
   cropsize_ = proto.rgbimage_conf().cropsize();
   mirror_ = proto.rgbimage_conf().mirror();
-  int batchsize = dynamic_cast<DataLayer*>(srclayers_[0])->batchsize();
-  Record sample = dynamic_cast<DataLayer*>(srclayers_[0])->sample();
+  int batchsize = dynamic_cast<DataLayer*>(srclayers[0])->batchsize();
+  Record sample = dynamic_cast<DataLayer*>(srclayers[0])->sample();
   vector<int> shape;
   shape.push_back(batchsize);
   for (int x : sample.image().shape()) {
@@ -361,7 +366,7 @@ PrefetchLayer::~PrefetchLayer() {
 }
 
 
-void PrefetchLayer::ComputeFeature(int flag, Metric* perf) {
+void PrefetchLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   LOG(FATAL) << "Not implemented";
 }
 

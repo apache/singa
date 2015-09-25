@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -25,12 +25,13 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "communication/msg.h"
+
+#include "comm/msg.h"
 #include "proto/job.pb.h"
 #include "utils/blob.h"
 
 namespace singa {
-
+using std::vector;
 /**
  * Base parameter generator which intializes parameter values.
  */
@@ -92,7 +93,34 @@ class UniformSqrtFanInOutGen : public UniformGen {
  */
 class Param {
  public:
-  static Param* Create(const ParamProto& proto);
+  /**
+   * Create an instance of (sub) Param class based on the type from the
+   * configuration.
+   *
+   * @param[in] conf configuration
+   * @param a pointer to an instance
+   */
+  static Param* Create(const ParamProto& conf);
+
+  /**
+   * Try to slice the Param objects (from a neural net) into a given number of
+   * servers (groups) evenly. This is to achieve load-balance among servers.
+   *
+   * It does not change the Param objects, but just computes the length of each
+   * slice.
+   *
+   * @param num number of servers (groups) for maintaining the Param objects.
+   * @param params all Param objects from a neural net.
+   * @return the length of each slice.
+   */
+  static const vector<int> ComputeSlices(int num, const vector<Param*>& params);
+  /**
+   * It computes the length of each slice and slices the Param objects by adding
+   * the slicing information into every Param object.
+   *
+   * @copydetails ComputeSlices()
+   */
+  static void SliceParams(int num, const vector<Param*>& params);
 
   Param() {}
   virtual ~Param() {}
