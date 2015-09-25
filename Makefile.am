@@ -1,15 +1,15 @@
 ACLOCAL_AMFLAGS = -I config
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
-AM_CPPFLAGS = -I$(top_srcdir)/src
+#AM_CPPFLAGS = -I$(top_srcdir)/src
 
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 DEFAULT_FLAGS = -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
               $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED
 
-CFLAGS = -O2 $(DEBUG)
-CXXFLAGS = -O2 $(DEBUG) 
-AC_CXXFLAGS = -O2 $(DEBUG)
+CFLAGS = $(DEBUG)
+CXXFLAGS = $(DEBUG) 
+AC_CXXFLAGS = $(DEBUG)
 
 INCLUDES = -I$(top_srcdir)/include
 
@@ -101,8 +101,7 @@ bin_PROGRAMS = singa singatool $(PROGS)
 
 #lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_HDRS) $(SINGA_SRCS)
-libsinga_la_CXXFLAGS = $(DEFAULT_FLAGS) -gdwarf-2 -msse3 \
-                       -gstrict-dwarf -Woverloaded-virtual -fpermissive
+libsinga_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive
 if LMDB
 libsinga_la_CXXFLAGS += -DUSE_LMDB
 endif
@@ -138,8 +137,7 @@ singatool_LDFLAGS = -I./include \
 
 #lib_LTLIBRARIES += libgtest.la
 libgtest_la_SOURCES = $(GTEST_HDRS) $(GTEST_SRCS)
-libgtest_la_CXXFLAGS = $(DEFAULT_FLAGS) -gdwarf-2 -msse3 \
-					-gstrict-dwarf -Woverloaded-virtual -fpermissive
+libgtest_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive
 if LMDB
 libgtest_la_CXXFLAGS += -DUSE_LMDB
 endif
