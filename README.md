@@ -22,6 +22,8 @@ The current code depends on the following external libraries:
   * czmq (Mozilla Public License Version 2.0)
   * zookeeper (Apache 2.0)
 
+To install openblas, you need a fortran compiler.
+
 ##Documentation
 
 Full documentation is available online at [Official Documentation](https://singa.incubator.apache.org/docs/overview.html#).
@@ -142,3 +144,15 @@ google.protobuf.internal when I try to import .py files.
   check it by
 
       $ java --version
+
+* Q8: When I build OpenBLAS from source, I am told that I need a fortran compiler.
+
+  A8: Since OpenBLAS use fortran compiler to build the library, you need a compiler with fortran support. As an alternative, you can build OpenBLAS from system tools. For example, if you have APT, just run:
+	 
+	  $ sudo apt-get install openblas
+
+  or you can also run the following command if you have yum:
+
+	  $ sudo yum install openblas-devel
+
+  It is worth noting that you need root access to run the aforementioned commands.
