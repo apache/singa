@@ -21,7 +21,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(singa, 0.1, dev@singa.incubator.apache.org)
+AC_INIT(singa, 0.1.0, dev@singa.incubator.apache.org)
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR(config)
 AC_CONFIG_SRCDIR([src/utils/common.cc])
@@ -84,7 +84,7 @@ AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 if test x"$enable_debug" != x"no"; then
 	DEBUG='-g'
 else
-	DEBUG=''
+	DEBUG='-O2'
 fi
 AC_SUBST([DEBUG])
 

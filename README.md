@@ -14,13 +14,15 @@ All the details can be found in [Project Website](http://singa.incubator.apache.
 
 ##Dependencies
 The current code depends on the following external libraries:
+
   * glog (New BSD)
   * google-protobuf (New BSD)
   * openblas (New BSD)
   * zeromq (LGPLv3 + static link exception)
   * czmq (Mozilla Public License Version 2.0)
   * zookeeper (Apache 2.0)
-  * lmdb (OpenLDAP)
+
+To install openblas, you need a fortran compiler.
 
 ##Documentation
 
@@ -28,10 +30,11 @@ Full documentation is available online at [Official Documentation](https://singa
 
 
 ##Building SINGA
-	
-	$ ./autogen.sh
-	$ ./configure
-	$ make
+
+    $ ./autogen.sh (optional)
+    # pls refer to FAQ for solutions of errors
+    $ ./configure
+    $ make
 
 ##Running Examples
 
@@ -43,19 +46,113 @@ at [CNN example](http://singa.incubator.apache.org/docs/cnn).
 
 First, download the dataset and create data shards:
 
-	$ cd examples/cifar10/
-	$ make download
-	$ make create
+    $ cd examples/cifar10/
+    $ cp Makefile.example Makefile
+    $ make download
+    $ make create
 
-Next, start the training: 
+If it reports errors due to libopenblas.so missing, then include the
+lib folder of OpenBLAS in LD_LIBRARY_PATH
 
-	$ cd ../../
-    	$ ./bin/singa-run.sh -conf examples/cifar10/job.conf
+    $ export LD_LIBRARY_PATH= OPENBLAS_FOLDER/lib:$LD_LIBRARY_PATH
+    # delete the newly created folders
+    $ rm -rf cifar10_t*
+    $ make create
 
-Now we just need to wait until it is done! 
+Next, start the training:
+
+    $ cd ../../
+    $ ./bin/zk-service.sh start
+    $ ./bin/singa-run.sh -conf examples/cifar10/job.conf
+
+Now we just need to wait until it is done!
 
 ##LICENSE
 
 Apache Singa is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
 For additional information, see the LICENSE and NOTICE files.
+
+## FAQ
+
+* Q1:I get error `./configure --> cannot find blas_segmm() function` even I
+run `install.sh OpenBLAS`.
+
+  A1: `OpenBLAS` library is installed in `/opt` folder by default or
+  other folders if you use `sudo apt-get install`.
+  You need to include the OpenBLAS library folder in the LDFLAGS.
+
+      $ export LDFLAGS=-L/opt/OpenBLAS/lib
+
+  Alternatively, you can include the path in LIBRARY_PATH.
+
+
+* Q2: I get error `cblas.h not such file or directory exists`.
+
+  Q2: You need to include the folder of the cblas.h (e.g., /opt/OpenBLAS/include)
+  into CPLUS_INCLUDE_PATH
+
+      $ export CPLUS_INCLUDE_PATH=/opt/OpenBLAS/include:$CPLUS_INCLUDE_PATH
+      # reconfigure and make
+      $ ./configure
+      $ make
+
+
+* Q3:While compiling SINGA, I get error `SSE2 instruction set not enabled`
+
+  A3:You can try following command:
+
+      $ make CFLAGS='-msse2' CXXFLAGS='-msse2'
+
+
+* Q4:I get `ImportError: cannot import name enum_type_wrapper` from
+google.protobuf.internal when I try to import .py files.
+
+  A4:After install google protobuf by `make install`, we should install python
+  runtime libraries. Go to protobuf source directory, run:
+
+      $ cd /PROTOBUF/SOURCE/FOLDER
+      $ cd python
+      $ python setup.py build
+      $ python setup.py install
+
+  You may need `sudo` when you try to install python runtime libraries in
+  the system folder.
+
+
+* Q5: I get a linking error caused by gflags.
+
+  A5: SINGA does not depend on gflags. But you may have installed the glog with
+  gflags. In that case you can reinstall glog using *thirdparty/install.sh* into
+  a another folder and export the LDFLAGS and CPPFLAGS to include that folder.
+
+
+* Q6: While compiling SINGA and installing `glog` on mac OS X, I get fatal error
+`'ext/slist' file not found`
+
+  A6:Please install `glog` individually and try :
+
+      $ make CFLAGS='-stdlib=libstdc++' CXXFLAGS='stdlib=libstdc++'
+
+* Q7: When I start a training job, it reports error related with "ZOO_ERROR...zk retcode=-4...".
+
+  A7: This is because the zookeeper is not started. Please start the zookeeper service
+
+      $ ./bin/zk-service start
+
+  If the error still exists, probably that you do not have java. You can simple
+  check it by
+
+      $ java --version
+
+* Q8: When I build OpenBLAS from source, I am told that I need a fortran compiler.
+
+  A8: Since OpenBLAS use fortran compiler to build the library, you need a compiler with fortran support. As an alternative, you can build OpenBLAS from system tools. For example, if you have APT, just run:
+	 
+	  $ sudo apt-get install openblas
+
+  or you can also run the following command if you have yum:
+
+	  $ sudo yum install openblas-devel
+
+  It is worth noting that you need root access to run the aforementioned commands.
