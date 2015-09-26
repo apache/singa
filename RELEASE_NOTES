@@ -1,4 +1,4 @@
-Release Notes - SINGA - Version singa-incubating-0.1-rc1
+Release Notes - SINGA - Version singa-incubating-0.1.0-rc1
 -----------------------------------------
 
 SINGA is a general distributed deep learning platform for training big deep learning models over large datasets. It is
@@ -19,6 +19,7 @@ This release includes following features:
     * [SINGA-39] - Avoid ssh in scripts for single node environment
     * [SINGA-43] - Remove Job-related output from workspace
     * [SINGA-56] - No automatic launching of zookeeper service
+    * [SINGA-73] - Refine the selection of available hosts from host list
 
   * Installation with GNU Auto tool
     * [SINGA-4] - Refine thirdparty-dependency installation

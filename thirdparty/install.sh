@@ -64,7 +64,7 @@ function install_czmq()
 	fi
 	rm -rf czmq-3.0.0;
 	tar zxvf czmq-3.0.0-rc1.tar.gz && cd czmq-3.0.0;
-	
+
 	if [ $# == 2 ]
 	then
 		if [ $1 == "null" ]
@@ -109,7 +109,7 @@ function install_glog()
 	then
 		wget http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/thirdparty/glog-0.3.3.tar.gz;
 	fi
-	
+
 	rm -rf glog-0.3.3;
 	tar zxvf glog-0.3.3.tar.gz && cd glog-0.3.3;
 
@@ -178,7 +178,7 @@ function install_openblas()
 	rm -rf OpenBLAS-develop;
 	unzip OpenBLAS.zip && cd OpenBLAS-develop;
 
-	make;
+	make ONLY_CBLAS=1;
 	if [ $? -ne 0 ]
 	then
 		cd ..;
@@ -195,7 +195,7 @@ function install_openblas()
 			fi
 		elif [ $# == 0 ]
 		then
-			echo "install OpenBLAS in default path" 
+			echo "install OpenBLAS in default path"
 			sudo make install;
 			if [ $? -ne 0 ]
 			then
@@ -219,7 +219,7 @@ function install_opencv()
 
 	rm -rf opencv-2.4.10;
 	unzip opencv-2.4.10.zip && cd opencv-2.4.10;
-	
+
 	if [ $# == 1 ]
 		then
 			echo "install opencv in $1";
@@ -239,7 +239,7 @@ function install_opencv()
 		cd ..;
 		return -1;
 	fi
-	cd ..;	
+	cd ..;
 	return 0;
 }
 
@@ -307,7 +307,7 @@ function install_zeromq()
 		else
 			echo "wrong commands";
 	fi
-	
+
 	if [ $? -ne 0 ]
 	then
 		cd ..;
@@ -338,7 +338,7 @@ function install_zookeeper()
 			echo "install zookeeper in default path";
 			./configure;
 			make && sudo make install;
-		else 
+		else
 			echo "wrong commands";
 	fi
 
@@ -365,20 +365,20 @@ do
 #		echo "install cmake";
 #		if [[ $2 == */* ]];then
 #			install_cmake $2;
-#		    if [ $? -ne 0 ] 
+#		    if [ $? -ne 0 ]
 #		    then
 #		        echo "ERROR during cmake installation" ;
 #		        exit;
-#		    fi  
+#		    fi
 #			shift
 #			shift
 #		else
 #			install_cmake;
-#		    if [ $? -ne 0 ] 
+#		    if [ $? -ne 0 ]
 #		    then
 #		        echo "ERROR during cmake installation" ;
 #		        exit;
-#		    fi  
+#		    fi
 #			shift
 #		fi
 #		;;
@@ -392,7 +392,7 @@ do
 			else
 				install_czmq null $3;
 			fi
-			if [ $? -ne 0 ] 
+			if [ $? -ne 0 ]
 			then
 				echo "ERROR during czmq installation" ;
 				exit;
@@ -404,7 +404,7 @@ do
 		elif [ $3 == "-f" ]
 		then
 			install_czmq $2 $4;
-			if [ $? -ne 0 ] 
+			if [ $? -ne 0 ]
 			then
 				echo "ERROR during czmq installation" ;
 				exit;
@@ -416,7 +416,7 @@ do
 		elif [[ $2 == */* ]]
 		then
 			install_czmq $2;
-			if [ $? -ne 0 ] 
+			if [ $? -ne 0 ]
 			then
 				echo "ERROR during czmq installation" ;
 				exit;
@@ -425,11 +425,11 @@ do
 			shift
 		else
 			install_czmq null;
-			if [ $? -ne 0 ] 
+			if [ $? -ne 0 ]
 			then
 			    echo "ERROR during czmq installation" ;
 			    exit;
-			fi  
+			fi
 			shift
 		fi
 		;;
@@ -437,20 +437,20 @@ do
 		echo "install glog";
 		if [[ $2 == */* ]];then
 			install_glog $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during glog installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 			shift
 		else
 			install_glog;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during glog installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 		fi
 		;;
@@ -458,20 +458,20 @@ do
 		echo "install lmdb";
 		if [[ $2 == */* ]];then
 			install_lmdb $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during lmdb installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 			shift
 		else
 			install_lmdb;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during lmdb installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 		fi
 		;;
@@ -479,20 +479,20 @@ do
 		echo "install OpenBLAS";
 		if [[ $2 == */* ]];then
 			install_openblas $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during openblas installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 			shift
 		else
 			install_openblas;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during openblas installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 		fi
 		;;
@@ -500,20 +500,20 @@ do
 #		echo "install opencv";
 #		if [[ $2 == */* ]];then
 #			install_opencv $2;
-#		    if [ $? -ne 0 ] 
+#		    if [ $? -ne 0 ]
 #		    then
 #		        echo "ERROR during opencv installation" ;
 #		        exit;
-#		    fi  
+#		    fi
 #			shift
 #			shift
 #		else
 #			install_opencv;
-#		    if [ $? -ne 0 ] 
+#		    if [ $? -ne 0 ]
 #		    then
 #		        echo "ERROR during opencv installation" ;
 #		        exit;
-#		    fi  
+#		    fi
 #			shift
 #		fi
 #		;;
@@ -521,20 +521,20 @@ do
 		echo "install protobuf";
 		if [[ $2 == */* ]];then
 			install_protobuf $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during protobuf installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 			shift
 		else
 			install_protobuf;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during protobuf installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 		fi
 		;;
@@ -542,20 +542,20 @@ do
 		echo "install zeromq";
 		if [[ $2 == */* ]];then
 			install_zeromq $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during zeromq installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 			shift
 		else
 			install_zeromq;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during zeromq installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 		fi
 		;;
@@ -563,20 +563,20 @@ do
 		echo "install zookeeper";
 		if [[ $2 == */* ]];then
 			install_zookeeper $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during zookeeper installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 			shift
 		else
 			install_zookeeper;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during zookeeper installation" ;
 		        exit;
-		    fi  
+		    fi
 			shift
 		fi
 		;;
@@ -584,53 +584,53 @@ do
 		echo "install all dependencies";
 		if [[ $2 == */* ]];then
 #			install_cmake $2;
-#		    if [ $? -ne 0 ] 
+#		    if [ $? -ne 0 ]
 #		    then
 #		        echo "ERROR during cmake installation" ;
 #		        exit;
-#		    fi  
+#		    fi
 			install_zeromq $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during zeromq installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_czmq $2 $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during czmq installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_glog $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during glog installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_lmdb $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during lmdb installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_openblas $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during openblas installation" ;
 		        exit;
-		    fi  
+		    fi
 #			install_opencv $2;
-#		    if [ $? -ne 0 ] 
+#		    if [ $? -ne 0 ]
 #		    then
 #		        echo "ERROR during opencv installation" ;
 #		        exit;
-#		    fi  
+#		    fi
 			install_protobuf $2;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during protobuf installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_zookeeper $2;
 			if [ $? -ne 0 ]
 			then
@@ -641,53 +641,53 @@ do
 			shift
 		else
 #			install_cmake;
-#		    if [ $? -ne 0 ] 
+#		    if [ $? -ne 0 ]
 #		    then
 #		        echo "ERROR during cmake installation" ;
 #		        exit;
-#		    fi  
+#		    fi
 			install_zeromq;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during zeromq installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_czmq null;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during czmq installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_glog;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during glog installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_lmdb;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during lmdb installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_openblas;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during openblas installation" ;
 		        exit;
-		    fi  
+		    fi
 #			install_opencv;
-#		    if [ $? -ne 0 ] 
+#		    if [ $? -ne 0 ]
 #		    then
 #		        echo "ERROR during opencv installation" ;
 #		        exit;
-#		    fi  
+#		    fi
 			install_protobuf;
-		    if [ $? -ne 0 ] 
+		    if [ $? -ne 0 ]
 		    then
 		        echo "ERROR during protobuf installation" ;
 		        exit;
-		    fi  
+		    fi
 			install_zookeeper;
 			if [ $? -ne 0 ]
 			then
@@ -712,5 +712,5 @@ do
 		echo " To install all dependencies, you can run:	"
 		echo "	./install.sh all"
 		exit;
-	esac	
+	esac
 done

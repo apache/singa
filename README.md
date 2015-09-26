@@ -1,4 +1,3 @@
-
 #Apache SINGA
 
 Distributed deep learning system
@@ -22,12 +21,19 @@ The current code depends on the following external libraries:
   * czmq (Mozilla Public License Version 2.0)
   * zookeeper (Apache 2.0)
 
-To install openblas, you need a fortran compiler.
+You can install all dependencies into $PREFIX folder by
+
+    ./thirdparty/install.sh all $PREFIX
+
+If $PREFIX is not a system path (e.g., /usr/local/), you have to export some
+environment variables,
+
+    export LD_LIBRARY_PATH=$PREFIX/lib:$LD_LIBRARY_PATH
+    export CPLUS_INCLUDE_PATH=$PREFIX/include
 
 ##Documentation
 
 Full documentation is available online at [Official Documentation](https://singa.incubator.apache.org/docs/overview.html#).
-
 
 ##Building SINGA
 
@@ -38,8 +44,7 @@ Full documentation is available online at [Official Documentation](https://singa
 
 ##Running Examples
 
-Let us train the [CNN
-model](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks) over the
+Let us train the [CNN model](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks) over the
 [CIFAR-10](http://www.cs.toronto.edu/~kriz/cifar.html) dataset without parallelism as an example. The hyper-parameters
 are set following [cuda-convnet](https://code.google.com/p/cuda-convnet/). More details about this example are available
 at [CNN example](http://singa.incubator.apache.org/docs/cnn).
@@ -54,7 +59,7 @@ First, download the dataset and create data shards:
 If it reports errors due to libopenblas.so missing, then include the
 lib folder of OpenBLAS in LD_LIBRARY_PATH
 
-    $ export LD_LIBRARY_PATH= OPENBLAS_FOLDER/lib:$LD_LIBRARY_PATH
+    $ export LD_LIBRARY_PATH=$OPENBLAS_FOLDER/lib:$LD_LIBRARY_PATH
     # delete the newly created folders
     $ rm -rf cifar10_t*
     $ make create
@@ -69,7 +74,7 @@ Now we just need to wait until it is done!
 
 ##LICENSE
 
-Apache Singa is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
+Apache SINGA is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
 For additional information, see the LICENSE and NOTICE files.
 
@@ -80,20 +85,20 @@ run `install.sh OpenBLAS`.
 
   A1: `OpenBLAS` library is installed in `/opt` folder by default or
   other folders if you use `sudo apt-get install`.
-  You need to include the OpenBLAS library folder in the LDFLAGS.
+  You need to include the OpenBLAS library folder in the LDFLAGS, e.g.,
 
-      $ export LDFLAGS=-L/opt/OpenBLAS/lib
+      $ export LDFLAGS=-L/opt/OpenBLAS
 
   Alternatively, you can include the path in LIBRARY_PATH.
 
 
-* Q2: I get error `cblas.h not such file or directory exists`.
+* Q2: I get error `cblas.h no such file or directory exists`.
 
-  Q2: You need to include the folder of the cblas.h (e.g., /opt/OpenBLAS/include)
-  into CPLUS_INCLUDE_PATH
+  Q2: You need to include the folder of the cblas.h into CPLUS_INCLUDE_PATH,
+  e.g.,
 
       $ export CPLUS_INCLUDE_PATH=/opt/OpenBLAS/include:$CPLUS_INCLUDE_PATH
-      # reconfigure and make
+      # reconfigure and make SINGA
       $ ./configure
       $ make
 
@@ -147,12 +152,16 @@ google.protobuf.internal when I try to import .py files.
 
 * Q8: When I build OpenBLAS from source, I am told that I need a fortran compiler.
 
-  A8: Since OpenBLAS use fortran compiler to build the library, you need a compiler with fortran support. As an alternative, you can build OpenBLAS from system tools. For example, if you have APT, just run:
-	 
+  A8: You can compile OpenBLAS by
+
+      $ make ONLY_CBLAS=1
+
+  or install it using
+
 	  $ sudo apt-get install openblas
 
-  or you can also run the following command if you have yum:
+  or
 
 	  $ sudo yum install openblas-devel
 
-  It is worth noting that you need root access to run the aforementioned commands.
+  It is worth noting that you need root access to run the last two commands.
