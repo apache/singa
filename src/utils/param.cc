@@ -118,7 +118,7 @@ const vector<int> Param::ComputeSlices(int num, const vector<Param*>& params) {
   // is assgined a sub-set of slices)
   auto param_slice = Slice(num, paramsize);
   vector<int> slices;
-  for (auto const vec: param_slice)
+  for (auto const vec : param_slice)
     for (int len : vec)
       slices.push_back(len);
   return slices;

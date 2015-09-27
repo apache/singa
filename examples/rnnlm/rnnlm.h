@@ -18,8 +18,11 @@
 * under the License.
 *
 *************************************************************/
+
 #ifndef EXAMPLES_RNNLM_RNNLM_H_
 #define EXAMPLES_RNNLM_RNNLM_H_
+
+#include <string>
 #include <vector>
 #include "./singa.h"
 #include "./rnnlm.pb.h"

@@ -19,15 +19,19 @@
 *
 *************************************************************/
 
+#include "./driver.h"
+
 #include <glog/logging.h>
 #include <set>
 #include <string>
+#include <vector>
 #include "neuralnet/layer.h"
 #include "utils/common.h"
 #include "utils/tinydir.h"
 #include "utils/cluster.h"
+#include "./server.h"
 #include "./stub.h"
-#include "./driver.h"
+#include "./worker.h"
 
 extern "C" void openblas_set_num_threads(int num);
 
@@ -108,7 +112,6 @@ void Driver::Init(int argc, char **argv) {
   RegisterParamGenerator<UniformSqrtFanInGen>(kUniformSqrtFanIn);
   RegisterParamGenerator<UniformSqrtFanInOutGen>(kUniformSqrtFanInOut);
 }
-
 
 void Driver::Train(bool resume, const JobProto& job_conf) {
   Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
