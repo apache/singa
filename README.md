@@ -25,11 +25,17 @@ You can install all dependencies into $PREFIX folder by
 
     ./thirdparty/install.sh all $PREFIX
 
+You can also install these libraries one by one. The usage is listed by
+
+    ./thidparty/install.sh
+
 If $PREFIX is not a system path (e.g., /usr/local/), you have to export some
 environment variables,
 
     export LD_LIBRARY_PATH=$PREFIX/lib:$LD_LIBRARY_PATH
-    export CPLUS_INCLUDE_PATH=$PREFIX/include
+    export CPLUS_INCLUDE_PATH=$PREFIX/include:$CPLUS_INCLUDE_PATH
+    export LIBRARY_PATH=$PREFIX/lib:$LIBRARY_PATH
+    export PATH=$PREFIX/bin:$PATH
 
 ##Documentation
 
@@ -81,15 +87,15 @@ For additional information, see the LICENSE and NOTICE files.
 ## FAQ
 
 * Q1:I get error `./configure --> cannot find blas_segmm() function` even I
-run `install.sh OpenBLAS`.
+have installed OpenBLAS.
 
-  A1: `OpenBLAS` library is installed in `/opt` folder by default or
+  A1: `OpenBLAS` library is installed in `/opt` folder by default or $PREFIX or
   other folders if you use `sudo apt-get install`.
-  You need to include the OpenBLAS library folder in the LDFLAGS, e.g.,
+  You need to export the OpenBLAS library folder, e.g.,
 
-      $ export LDFLAGS=-L/opt/OpenBLAS
-
-  Alternatively, you can include the path in LIBRARY_PATH.
+      $ export LIBRARY_PATH=$PREFIX/lib:$LIBRARY_PATH
+      # or
+      $ export LIBRARY_PATH=/opt/OpenBLAS/lib:$LIBRARY_PATH
 
 
 * Q2: I get error `cblas.h no such file or directory exists`.
@@ -98,6 +104,8 @@ run `install.sh OpenBLAS`.
   e.g.,
 
       $ export CPLUS_INCLUDE_PATH=/opt/OpenBLAS/include:$CPLUS_INCLUDE_PATH
+      # or
+      $ export CPLUS_INCLUDE_PATH=$PREFIX/include:$CPLUS_INCLUDE_PATH
       # reconfigure and make SINGA
       $ ./configure
       $ make
@@ -158,10 +166,27 @@ google.protobuf.internal when I try to import .py files.
 
   or install it using
 
-	  $ sudo apt-get install openblas
+	    $ sudo apt-get install openblas
 
   or
 
-	  $ sudo yum install openblas-devel
+	    $ sudo yum install openblas-devel
 
   It is worth noting that you need root access to run the last two commands.
+
+* Q9: When I build protocol buffer, it reports that GLIBC++_3.4.20 not found in /usr/lib64/libstdc++.so.6.
+
+  A9: This means the linker found libstdc++.so.6 but that library
+  belongs to an older version of GCC than was used to compile and link the
+  program. The program depends on code defined in
+  the newer libstdc++ that belongs to the newer version of GCC, so the linker
+  must be told how to find the newer libstdc++ shared library.
+  The simplest way to fix this is to find the correct libstdc++ and export it to
+  LD_LIBRARY_PATH. For example, if GLIBC++_3.4.20 is listed in the output of the
+  following command,
+
+      $ strings /usr/local/lib64/libstdc++.so.6|grep GLIBC++
+
+  then you just set your environment variable as
+
+      $ export LD_LIBRARY_PATH=/usr/local/lib64:$LD_LIBRARY_PATH
