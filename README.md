@@ -25,12 +25,8 @@ You can install all dependencies into $PREFIX folder by
 
     ./thirdparty/install.sh all $PREFIX
 
-You can also install these libraries one by one. The usage is listed by
-
-    ./thidparty/install.sh
-
-If $PREFIX is not a system path (e.g., /usr/local/), you have to export some
-environment variables,
+If $PREFIX is not a system path (e.g., /usr/local/), please export the following
+variables to continue the building instructions,
 
     export LD_LIBRARY_PATH=$PREFIX/lib:$LD_LIBRARY_PATH
     export CPLUS_INCLUDE_PATH=$PREFIX/include:$CPLUS_INCLUDE_PATH
@@ -42,6 +38,8 @@ environment variables,
 Full documentation is available online at [Official Documentation](https://singa.incubator.apache.org/docs/overview.html#).
 
 ##Building SINGA
+
+Please make sure your g++ >= 4.8.1 before building SINGA.
 
     $ ./autogen.sh (optional)
     # pls refer to FAQ for solutions of errors
@@ -62,10 +60,10 @@ First, download the dataset and create data shards:
     $ make download
     $ make create
 
-If it reports errors due to libopenblas.so missing, then include the
-lib folder of OpenBLAS in LD_LIBRARY_PATH
+If it reports errors due to library missing, e.g., libopenblas.so or libprotobuf,
+please export the environment variables shown in the Dependencies section and
+continue with the following instructions,
 
-    $ export LD_LIBRARY_PATH=$OPENBLAS_FOLDER/lib:$LD_LIBRARY_PATH
     # delete the newly created folders
     $ rm -rf cifar10_t*
     $ make create
@@ -89,12 +87,11 @@ For additional information, see the LICENSE and NOTICE files.
 * Q1:I get error `./configure --> cannot find blas_segmm() function` even I
 have installed OpenBLAS.
 
-  A1: `OpenBLAS` library is installed in `/opt` folder by default or $PREFIX or
-  other folders if you use `sudo apt-get install`.
-  You need to export the OpenBLAS library folder, e.g.,
+  A1: This means the compiler cannot find the `OpenBLAS` library. If you installed
+  it to $PREFIX (e.g., /opt/OpenBLAS), then you need to export it as
 
       $ export LIBRARY_PATH=$PREFIX/lib:$LIBRARY_PATH
-      # or
+      # e.g.,
       $ export LIBRARY_PATH=/opt/OpenBLAS/lib:$LIBRARY_PATH
 
 
@@ -103,10 +100,10 @@ have installed OpenBLAS.
   Q2: You need to include the folder of the cblas.h into CPLUS_INCLUDE_PATH,
   e.g.,
 
-      $ export CPLUS_INCLUDE_PATH=/opt/OpenBLAS/include:$CPLUS_INCLUDE_PATH
-      # or
       $ export CPLUS_INCLUDE_PATH=$PREFIX/include:$CPLUS_INCLUDE_PATH
-      # reconfigure and make SINGA
+      # e.g.,
+      $ export CPLUS_INCLUDE_PATH=/opt/OpenBLAS/include:$CPLUS_INCLUDE_PATH
+      # then reconfigure and make SINGA
       $ ./configure
       $ make
 
@@ -166,13 +163,15 @@ google.protobuf.internal when I try to import .py files.
 
   or install it using
 
-	    $ sudo apt-get install openblas
+	    $ sudo apt-get install openblas-dev
 
   or
 
 	    $ sudo yum install openblas-devel
 
   It is worth noting that you need root access to run the last two commands.
+  Remember to set the environment variables to include the header and library
+  paths of OpenBLAS after installation (please refer to the Dependencies section).
 
 * Q9: When I build protocol buffer, it reports that GLIBC++_3.4.20 not found in /usr/lib64/libstdc++.so.6.
 

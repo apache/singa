@@ -607,12 +607,12 @@ do
 		        echo "ERROR during glog installation" ;
 		        exit;
 		    fi
-			install_lmdb $2;
-		    if [ $? -ne 0 ]
-		    then
-		        echo "ERROR during lmdb installation" ;
-		        exit;
-		    fi
+#			install_lmdb $2;
+#		    if [ $? -ne 0 ]
+#		    then
+#		        echo "ERROR during lmdb installation" ;
+#		        exit;
+#		    fi
 			install_openblas $2;
 		    if [ $? -ne 0 ]
 		    then
@@ -664,12 +664,12 @@ do
 		        echo "ERROR during glog installation" ;
 		        exit;
 		    fi
-			install_lmdb;
-		    if [ $? -ne 0 ]
-		    then
-		        echo "ERROR during lmdb installation" ;
-		        exit;
-		    fi
+#			install_lmdb;
+#		    if [ $? -ne 0 ]
+#		    then
+#		        echo "ERROR during lmdb installation" ;
+#		        exit;
+#		    fi
 			install_openblas;
 		    if [ $? -ne 0 ]
 		    then
