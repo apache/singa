@@ -28,10 +28,10 @@ You can install all dependencies into $PREFIX folder by
 If $PREFIX is not a system path (e.g., /usr/local/), please export the following
 variables to continue the building instructions,
 
-    export LD_LIBRARY_PATH=$PREFIX/lib:$LD_LIBRARY_PATH
-    export CPLUS_INCLUDE_PATH=$PREFIX/include:$CPLUS_INCLUDE_PATH
-    export LIBRARY_PATH=$PREFIX/lib:$LIBRARY_PATH
-    export PATH=$PREFIX/bin:$PATH
+    $ export LD_LIBRARY_PATH=$PREFIX/lib:$LD_LIBRARY_PATH
+    $ export CPLUS_INCLUDE_PATH=$PREFIX/include:$CPLUS_INCLUDE_PATH
+    $ export LIBRARY_PATH=$PREFIX/lib:$LIBRARY_PATH
+    $ export PATH=$PREFIX/bin:$PATH
 
 ##Documentation
 
@@ -39,12 +39,11 @@ Full documentation is available online at [Official Documentation](https://singa
 
 ##Building SINGA
 
-Please make sure your g++ >= 4.8.1 before building SINGA.
+Please make sure you have g++ >= 4.8.1 before building SINGA.
 
     $ ./autogen.sh (optional)
-    # pls refer to FAQ for solutions of errors
-    $ ./configure
-    $ make
+    $ ./configure #refer to the FAQs below for errors during this step, including blas_segmm() function error. 
+    $ make 	  #refer to the FAQs when encountering errors during this step. 
 
 ##Running Examples
 
@@ -87,11 +86,14 @@ For additional information, see the LICENSE and NOTICE files.
 * Q1:I get error `./configure --> cannot find blas_segmm() function` even I
 have installed OpenBLAS.
 
-  A1: This means the compiler cannot find the `OpenBLAS` library. If you installed
-  it to $PREFIX (e.g., /opt/OpenBLAS), then you need to export it as
+  A1: This means the compiler cannot find the `OpenBLAS` library. If you have installed OpenBLAS via `apt-get install`,
+  then export the path to $LD_LIBRARY_PATH (e.g. /usr/lib/openblas-base). If you installed it with
+  `./thirdparty/install.sh`, then export the corret path based on $PREFIX (e.g. /opt/OpenBLAS/lib): 
 
-      $ export LIBRARY_PATH=$PREFIX/lib:$LIBRARY_PATH
-      # e.g.,
+      # using apt-get install for openblas	
+      $ export LIBRARY_PATH=$PATH_TO_OPENBLAS_LIB:$LIBRARY_PATH
+
+      # using ./thirdparty/install.sh for openblas:
       $ export LIBRARY_PATH=/opt/OpenBLAS/lib:$LIBRARY_PATH
 
 
@@ -163,11 +165,11 @@ google.protobuf.internal when I try to import .py files.
 
   or install it using
 
-	    $ sudo apt-get install openblas-dev
+      $ sudo apt-get install openblas-dev
 
   or
 
-	    $ sudo yum install openblas-devel
+      $ sudo yum install openblas-devel
 
   It is worth noting that you need root access to run the last two commands.
   Remember to set the environment variables to include the header and library
