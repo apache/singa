@@ -169,10 +169,10 @@ clean-local:
 rat:
 	@if test ! -z '$(shell command -v java 2>/dev/null)'; then \
 		if test ! -z '$(shell echo $$RAT_PATH)'; then \
-			make clean;\
+			make distclean;\
 			java -jar $(RAT_PATH) -E rat-excludes -d . > rat_check; \
 		else \
-			echo "RAT_PATH is not set to correct jar file"; \
+			echo "RAT_PATH is not set to correct jar file. Apache RAT can be downloaded at http://creadur.apache.org/rat/download_rat.cgi"; \
 		fi \
 	else \
 		echo "java is not found"; \
