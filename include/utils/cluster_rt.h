@@ -151,16 +151,27 @@ class ClusterRuntime {
 
 class JobManager {
  public:
+  // host is comma separated host:port pairs, each corresponding to a zk server.
+  // e.g. "127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002"
   explicit JobManager(const std::string& host);
   JobManager(const std::string& host, int timeout);
 
+  // NOTICE: Init must be called once, before start to use other functions
   bool Init();
+  // generate a unique job id
   bool GenerateJobID(int* id);
-  bool GenerateHostList(const char* job_file, std::vector<std::string>* list);
+  // generate a list of hosts for a job conf
+  bool GenerateHostList(const char* host_file, const char* job_file,
+                        std::vector<std::string>* list);
+  // list all jobs recorded in zk
   bool ListJobs(std::vector<JobInfo>* jobs);
+  // list running processes for a job
   bool ListJobProcs(int job, std::vector<std::string>* procs);
+  // remove a job path in zk
   bool Remove(int job);
+  // remove all job paths in zk
   bool RemoveAllJobs();
+  // remove all singa related paths in zk
   bool CleanUp();
 
  private:

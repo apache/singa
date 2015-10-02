@@ -27,6 +27,7 @@
 #include "utils/cluster_rt.h"
 #include "utils/common.h"
 
+std::string conf_dir;
 singa::SingaProto global;
 const int SUCCESS = 0;
 const int ARG_ERR = 1;
@@ -55,7 +56,8 @@ int genhost(char* job_conf) {
   singa::JobManager mngr(global.zookeeper_host());
   if (!mngr.Init()) return RUN_ERR;
   std::vector<std::string> list;
-  if (!mngr.GenerateHostList(job_conf, &list)) return RUN_ERR;
+  if (!mngr.GenerateHostList((conf_dir+"/hostfile").c_str(), job_conf, &list))
+    return RUN_ERR;
   // output selected hosts
   for (std::string host : list)
     printf("%s\n", host.c_str());
@@ -123,12 +125,19 @@ int main(int argc, char **argv) {
       " view <job id>      :  view procs of a singa job\n"
       " remove <job id>    :  remove a job path in zookeeper\n"
       " removeall          :  remova all job paths in zookeeper\n"
-      " cleanup            :  clean all singa data in zookeeper\n";
+      " cleanup            :  clean all singa data in zookeeper\n"
+      "[optional arguments] NOTICE: must put at end of a command\n"
+      " -confdir <dir>     :  path to singa global conf dir";
+
   // set logging level to ERROR and log to STDERR only
   google::LogToStderr();
   google::SetStderrLogging(google::ERROR);
   google::InitGoogleLogging(argv[0]);
-  singa::ReadProtoFromTextFile("conf/singa.conf", &global);
+  // parse -confdir argument
+  int arg_pos = singa::ArgPos(argc, argv, "-confdir");
+  conf_dir = arg_pos == -1 ? "conf" : argv[arg_pos+1];
+  if (arg_pos != -1) argc -= 2;
+  singa::ReadProtoFromTextFile((conf_dir+"/singa.conf").c_str(), &global);
 
   // stat code: ARG_ERR for wrong argument, RUN_ERR for runtime error
   int stat = (argc <= 1) ? ARG_ERR : SUCCESS;

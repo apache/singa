@@ -83,6 +83,7 @@ bool ZKService::Init(const string& host, int timeout) {
 
 bool ZKService::CreateNode(const char* path, const char* val, int flag,
                                char* output) {
+  CHECK(zkhandle_) << "zk handler not initialized";
   char buf[kZKBufSize];
   int ret = 0;
   // send the zk request
@@ -126,6 +127,7 @@ bool ZKService::CreateNode(const char* path, const char* val, int flag,
 }
 
 bool ZKService::DeleteNode(const char* path) {
+  CHECK(zkhandle_) << "zk handler not initialized";
   int ret = zoo_delete(zkhandle_, path, -1);
   if (ret == ZOK) {
     LOG(INFO) << "deleted zookeeper node " << path;
@@ -140,6 +142,7 @@ bool ZKService::DeleteNode(const char* path) {
 }
 
 bool ZKService::Exist(const char* path) {
+  CHECK(zkhandle_) << "zk handler not initialized";
   struct Stat stat;
   int ret = zoo_exists(zkhandle_, path, 0, &stat);
   if (ret == ZOK) return true;
@@ -149,6 +152,7 @@ bool ZKService::Exist(const char* path) {
 }
 
 bool ZKService::UpdateNode(const char* path, const char* val) {
+  CHECK(zkhandle_) << "zk handler not initialized";
   // set version = -1, do not check content version
   int ret = zoo_set(zkhandle_, path, val, strlen(val), -1);
   if (ret == ZOK) {
@@ -163,6 +167,7 @@ bool ZKService::UpdateNode(const char* path, const char* val) {
 }
 
 bool ZKService::GetNode(const char* path, char* output) {
+  CHECK(zkhandle_) << "zk handler not initialized";
   struct Stat stat;
   int val_len = kZKBufSize;
   int ret = zoo_get(zkhandle_, path, 0, output, &val_len, &stat);
@@ -179,6 +184,7 @@ bool ZKService::GetNode(const char* path, char* output) {
 }
 
 bool ZKService::GetChild(const char* path, vector<string>* vt) {
+  CHECK(zkhandle_) << "zk handler not initialized";
   struct String_vector child;
   int ret = zoo_get_children(zkhandle_, path, 0, &child);
   if (ret == ZOK) {
@@ -193,6 +199,7 @@ bool ZKService::GetChild(const char* path, vector<string>* vt) {
 
 bool ZKService::WGetChild(const char* path, vector<string>* vt,
                             RTCallback *cb) {
+  CHECK(zkhandle_) << "zk handler not initialized";
   struct String_vector child;
   int ret = zoo_wget_children(zkhandle_, path, ChildChanges, cb, &child);
   if (ret == ZOK) {
@@ -358,7 +365,8 @@ bool JobManager::GenerateJobID(int* id) {
   return true;
 }
 
-bool JobManager::GenerateHostList(const char* job_file, vector<string>* list) {
+bool JobManager::GenerateHostList(const char* host_file, const char* job_file,
+                                  vector<string>* list) {
   // compute required #process from job conf
   ClusterProto cluster;
   google::protobuf::TextFormat::ParseFromString(ExtractClusterConf(job_file),
@@ -373,9 +381,9 @@ bool JobManager::GenerateHostList(const char* job_file, vector<string>* list) {
   else
     nprocs = std::max(nworker_procs, nserver_procs);
   // get available host list from global conf
-  std::ifstream hostfile("conf/hostfile");
+  std::ifstream hostfile(host_file);
   if (!hostfile.is_open()) {
-    LOG(FATAL) << "Cannot open file: " << "conf/hostfile";
+    LOG(FATAL) << "Cannot open file: " << host_file;
   }
   vector<string> hosts;
   string host;
