@@ -40,6 +40,7 @@ void TextFileStore::Close() {
       fs_->close();
     }
     delete fs_;
+    fs_ = nullptr;
   }
 }
 

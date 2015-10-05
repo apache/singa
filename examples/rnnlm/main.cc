@@ -36,7 +36,6 @@ int main(int argc, char **argv) {
   driver.RegisterLayer<rnnlm::HiddenLayer, std::string>("kHidden");
   driver.RegisterLayer<rnnlm::LossLayer, std::string>("kLoss");
   driver.RegisterLayer<rnnlm::DataLayer, std::string>("kData");
-  driver.RegisterLayer<rnnlm::LabelLayer, std::string>("kLabel");
 
   singa::JobProto jobConf = driver.job_conf();
 

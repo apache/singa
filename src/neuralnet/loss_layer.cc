@@ -92,7 +92,7 @@ void SoftmaxLossLayer::ComputeFeature(int flag,
   Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);
   Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
   Softmax(prob, src);
-  const float* label = srclayers[1]->data(this).cpu_data();
+  const auto& label = srclayers[1]->aux_data(this);
   const float* probptr = prob.dptr;
   float loss = 0, precision = 0;
   for (int n = 0; n < batchsize_; n++) {
@@ -123,7 +123,7 @@ void SoftmaxLossLayer::ComputeFeature(int flag,
 
 void SoftmaxLossLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
-  const float* label = srclayers[1]->data(this).cpu_data();
+  const auto& label = srclayers[1]->aux_data();
   Blob<float>* gsrcblob = srclayers[0]->mutable_grad(this);
   gsrcblob->CopyFrom(data_);
   float* gsrcptr = gsrcblob->mutable_cpu_data();

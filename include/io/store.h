@@ -38,6 +38,10 @@ enum Mode { kCreate, kRead, kAppend };
 class Store {
  public:
   Store() { }
+  /**
+   * In case that users forget to call Close() to release resources, e.g.,
+   * memory, you can release them here.
+   */
   virtual ~Store() { }
   /**
    * @param[in] source path to the storage, could be a file path, folder path
@@ -46,6 +50,9 @@ class Store {
    * @return true if open successfully, otherwise false.
    */
   virtual bool Open(const std::string& source, Mode mode) = 0;
+  /**
+   * Release resources.
+   */
   virtual void Close() = 0;
   /**
    * Read a tuple.
@@ -73,7 +80,22 @@ class Store {
   virtual void Flush() {}
 };
 
-Store* CreateStore(const std::string& store);
+/**
+ * Create a Store object.
+ *
+ * @param[in] backend identifier for a specific backend. Two backends are
+ * inluced currently, i.e., "kvfile", "textfile"
+ * @return a pointer to the newly created Store.
+ */
+Store* CreateStore(const string& backend);
+/**
+ * Create and open a Store object.
+ *
+ * @param[in] backend, @see CreateStore().
+ * @param[in] path
+ * @param[in] mode kRead or kCreate or kAppend
+ */
+Store* OpenStore(const string& backend, const string& path, Mode mode);
 } // namespace io
 } /* singa */
 #endif  // SINGA_IO_STORE_H_

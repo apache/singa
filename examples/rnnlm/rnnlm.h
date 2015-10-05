@@ -69,20 +69,20 @@ class DataLayer : public RNNLayer, public singa::DataLayer {
 
  private:
   int max_window_;
-  singa::DataShard* shard_;
+  singa::io::Store* store_ = nullptr;
 };
 
 
 /**
  * LabelLayer that read records_[1] to records_[window_] from DataLayer to
  * offer label information
- */
 class LabelLayer : public RNNLayer {
  public:
   void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
 };
+ */
 
 
 /**

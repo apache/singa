@@ -18,45 +18,39 @@
 * under the License.
 *
 *************************************************************/
+#include "utils/image_transform.h"
 
-#include "io/store.h"
-#include "io/kvfile_store.h"
-#include "io/textfile_store.h"
+namespace singa {
 
-namespace singa { namespace io {
-Store* CreateStore(const std::string& backend) {
-  Store *store = nullptr;
-  if (backend.compare("textfile") == 0) {
-    store = new TextFileStore();
-  } else if (backend.compare("kvfile") == 0) {
-    store = new KVFileStore();
+void ImageTransform(const float* in, const float* mean, bool mirror, int h_crop,
+    int w_crop, int h_offset, int w_offset, int channel, int height, int width,
+    float scale, float* out) {
+  if (h_crop == 0) {
+    CHECK_NE(h_offset, 0);
+    h_crop = height;
   }
-
-#ifdef USE_LMDB
-  if (backend == "lmdb") {
-    return new LMDBStore();
+  if (w_crop ==0) {
+    CHECK_NE(w_offset, 0);
+    w_crop = width;
   }
-#endif
+  CHECK_NE(scale, 0);
 
-#ifdef USE_OPENCV
-  if (backend == "imagefolder") {
-    return new ImageFolderStore();
+  int out_idx = 0, in_idx = 0;
+  for (int c = 0; c < channel; c++) {
+    for (int h = 0; h < h_crop; h++) {
+      for (int w = 0; w < w_crop; w++) {
+        in_idx = (c * height + h_offset + h) * width + w_offset + w;
+        if (mirror) {
+          out_idx = (c * h_crop + h) * w_crop + (w_crop - 1 - w);
+        } else {
+          out_idx = (c * h_crop + h) * w_crop + w;
+        }
+        out[out_idx] = in[in_idx];
+        if (mean != nullptr)
+          out[out_idx] -= mean[in_idx];
+        out[out_idx] *= scale;
+      }
+    }
   }
-#endif
-
-#ifdef USE_HDFS
-  if (backend == "hdfs") {
-    return new HDFSStore();
-  }
-#endif
-  return store;
 }
-
-Store* OpenStore(const string& backend, const string& path, Mode mode) {
-  auto store = CreateStore(backend);
-  store->Open(path, mode);
-  return store;
-}
-} /* io */
-
 } /* singa */

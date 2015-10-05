@@ -18,33 +18,42 @@
 * under the License.
 *
 *************************************************************/
-
-
-#include <fstream>
-#include "io/store.h"
-
-namespace singa { namespace io {
+#ifndef SINGA_UTILS_TOKENIER_H_
+#define SINGA_UTILS_TOKENIER_H_
+#include <string>
+#include <glog/logging.h>
+namespace singa {
 /**
- * Use text file as the data storage, one line per tuple.
+ * Tokenize a string.
  *
- * It is used for storeing CSV format data where the key is the line No. and
- * the value is the line.
+ * example:
+ * Tokenizer t("assa,asf;wes", ",;");
+ * string x;
+ * t >> x; // x is assa
+ * t >> x; // x is asf
+ * t >> x; // x is wes
+ * cout << (t >> x); // print 0.
  */
-class TextFileStore : public Store {
+class Tokenizer {
  public:
-  ~TextFileStore() { Close(); }
-  bool Open(const std::string& source, Mode mode) override;
-  void Close() override;
-  bool Read(std::string* key, std::string* value) override;
-  void SeekToFirst() override;
-  bool Write(const std::string& key, const std::string& value) override;
-  void Flush() override;
+  Tokenizer(const std::string& str, const std::string& sep): start_(0),
+  sep_(sep), buf_(str) {}
+  Tokenizer & operator>>(std::string& out) {
+    CHECK_LT(start_, buf_.length());
+    int start = start_;
+    auto pos = buf_.find_first_of(sep_, start);
+    if (pos == std::string::npos)
+      pos = buf_.length();
+    start_ = pos + 1;
+    out = buf_.substr(start, pos);
+    return *this;
+  }
 
- private:
-  int lineNo_ = 0;
-  std::fstream* fs_ = nullptr;
-  Mode mode_;
+  bool Valid() { return start_ < buf_.length(); }
+  private:
+   unsigned start_;
+   std::string sep_;
+   const std::string& buf_;
 };
-} /* io */
-
 } /* singa */
+#endif // SINGA_UTILS_TOKENIER_H_

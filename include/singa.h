@@ -31,6 +31,7 @@
 #include "utils/param.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"
+#include "io/store.h"
 #include "./driver.h"
 
 #endif  // SINGA_SINGA_H_

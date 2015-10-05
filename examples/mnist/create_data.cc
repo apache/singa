@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -35,12 +35,10 @@
 #include <fstream>
 #include <string>
 
-#include "utils/data_shard.h"
+#include "io/store.h"
 #include "utils/common.h"
 #include "proto/common.pb.h"
 
-using singa::DataShard;
-using singa::WriteProtoToBinaryFile;
 using std::string;
 
 uint32_t swap_endian(uint32_t val) {
@@ -48,7 +46,7 @@ uint32_t swap_endian(uint32_t val) {
     return (val << 16) | (val >> 16);
 }
 
-void create_shard(const char* image_filename, const char* label_filename,
+void create_data(const char* image_filename, const char* label_filename,
         const char* output) {
   // Open files
   std::ifstream image_file(image_filename, std::ios::in | std::ios::binary);
@@ -78,7 +76,7 @@ void create_shard(const char* image_filename, const char* label_filename,
   image_file.read(reinterpret_cast<char*>(&cols), 4);
   cols = swap_endian(cols);
 
-  DataShard shard(output, DataShard::kCreate);
+  auto store = singa::io::OpenStore("kvfile", output, singa::io::kCreate);
   char label;
   char* pixels = new char[rows * cols];
   int count = 0;
@@ -86,22 +84,23 @@ void create_shard(const char* image_filename, const char* label_filename,
   char key[kMaxKeyLength];
   string value;
 
-  singa::Record record;
-  singa::SingleLabelImageRecord* image=record.mutable_image();
-  image->add_shape(rows);
-  image->add_shape(cols);
+  singa::SingleLabelImageRecord image;
+  image.add_shape(rows);
+  image.add_shape(cols);
   LOG(INFO) << "A total of " << num_items << " items.";
   LOG(INFO) << "Rows: " << rows << " Cols: " << cols;
   for (int item_id = 0; item_id < num_items; ++item_id) {
     image_file.read(pixels, rows * cols);
     label_file.read(&label, 1);
-    image->set_pixel(pixels, rows*cols);
-    image->set_label(label);
+    image.set_pixel(pixels, rows*cols);
+    image.set_label(label);
     snprintf(key, kMaxKeyLength, "%08d", item_id);
-    shard.Insert(string(key), record);
+    image.SerializeToString(&value);
+    store->Write(string(key), value);
   }
   delete pixels;
-  shard.Flush();
+  store->Flush();
+  delete store;
 }
 
 int main(int argc, char** argv) {
@@ -114,7 +113,7 @@ int main(int argc, char** argv) {
         "You should gunzip them after downloading.";
   } else {
     google::InitGoogleLogging(argv[0]);
-    create_shard(argv[1], argv[2], argv[3]);
+    create_data(argv[1], argv[2], argv[3]);
   }
   return 0;
 }

@@ -20,9 +20,9 @@
 *************************************************************/
 
 #include "neuralnet/input_layer.h"
-
 #include "mshadow/tensor.h"
-
+#include "utils/image_transform.h"
+#include "utils/tokenizer.h"
 namespace singa {
 
 using namespace mshadow;
@@ -32,6 +32,219 @@ using mshadow::Tensor;
 
 using std::string;
 using std::vector;
+
+/*****************ImagePreprocess**************************************/
+void ImagePreprocessLayer::Setup(const LayerProto& conf,
+    const vector<Layer*>& srclayers) {
+  CHECK_EQ(srclayers.size(), 1);
+  InputLayer::Setup(conf, srclayers);
+  scale_ = conf.rgbimage_conf().scale();
+  cropsize_ = conf.rgbimage_conf().cropsize();
+  mirror_ = conf.rgbimage_conf().mirror();
+  const auto& src = srclayers.at(0)->data(this);
+  const auto& shape = src.shape();
+  CHECK_EQ(shape.size(), 4);
+  CHECK_EQ(shape.at(2), shape.at(3));
+  if (cropsize_ != 0 && cropsize_ != shape.at(2)) {
+    data_.Reshape(vector<int>{shape.at(0), shape.at(1), cropsize_, cropsize_});
+  } else {
+    data_ = src;
+  }
+}
+
+void ImagePreprocessLayer::ComputeFeature(int flag,
+    const vector<Layer*>& srclayers) {
+  const auto& srcdata = srclayers.at(0)->data(this);
+  int batchsize = srcdata.shape()[0], channel = srcdata.shape()[1];
+  int height = srcdata.shape()[2], width = srcdata.shape()[3];
+  const float* srcdptr = srcdata.cpu_data();
+  float* dptr = data_.mutable_cpu_data();
+  int srcimage_size = channel * height * width;
+  int image_size = channel * data_.shape()[2] * data_.shape()[3];
+  for (int k = 0; k < batchsize; k++) {
+    int h_offset = 0, w_offset = 0;
+    if (cropsize_> 0 && ((flag & kTrain) == kTrain)) {
+      h_offset = rand() % (srcdata.shape()[1] - cropsize_);
+      w_offset = rand() % (srcdata.shape()[2] - cropsize_);
+    }
+    bool do_mirror = mirror_ && rand() % 2 && ((flag & kTrain) == kTrain);
+    ImageTransform(srcdptr + k * srcimage_size, nullptr, do_mirror, cropsize_,
+        cropsize_, h_offset, w_offset, srcdata.shape()[1], height, width,
+        scale_, dptr + image_size);
+  }
+}
+
+/*************StoreInputLayer******************/
+StoreInputLayer::~StoreInputLayer() {
+  if (store_ != nullptr) {
+    delete store_;
+  }
+}
+
+void StoreInputLayer::Setup(const LayerProto& conf,
+    const vector<Layer*>& srclayers) {
+  InputLayer::Setup(conf, srclayers);
+  batchsize_ = conf.store_conf().batchsize();
+}
+
+void StoreInputLayer::ComputeFeature(int flag,
+    const vector<Layer*>& srclayers) {
+  string key, val;
+  if (store_ == nullptr) {
+    store_ = io::OpenStore(layer_conf_.store_conf().backend(),
+                             layer_conf_.store_conf().path(),
+                             io::kRead);
+  }
+  for (int k = 0; k < batchsize_; k++){
+    if (!store_->Read(&key, &val)) {
+      store_->SeekToFirst();
+      CHECK(store_->Read(&key, &val));
+    }
+    // TODO(wangwei) random skip and shuffle among this mini-batch
+    Parse(k, flag, key, val);
+  }
+}
+/*********SingleLabelRecordLayer******************/
+void SingleLabelRecordLayer::Setup(const LayerProto& conf,
+    const vector<Layer*>& srclayers) {
+  StoreInputLayer::Setup(conf, srclayers);
+
+  vector<int> shape {batchsize_};
+  for (int s : conf.store_conf().shape())
+    shape.push_back(s);
+  data_.Reshape(shape);
+  aux_data_.resize(batchsize_);
+}
+void SingleLabelRecordLayer::ComputeFeature(int flag,
+    const vector<Layer*>& srclayers) {
+  StoreInputLayer::ComputeFeature(flag, srclayers);
+
+  auto& store_conf = layer_conf_.store_conf();
+  if (store_conf.has_mean_file() && mean_.count() == 0) {
+    mean_.Reshape(vector<int>{data_.count() / batchsize_});
+    LoadRecord(store_conf.backend(), store_conf.mean_file(), &mean_);
+  } else if (store_conf.has_mean_value() && mean_.count() == 0) {
+    mean_.Reshape(vector<int>{data_.count() / batchsize_});
+    for (int i = 0; i < data_.count() / batchsize_; i++)
+      mean_.mutable_cpu_data()[i] = store_conf.mean_value();
+  }
+  if (store_conf.has_std_file() && std_.count() == 0) {
+    std_.Reshape(vector<int>{data_.count() / batchsize_});
+    LoadRecord(store_conf.backend(), store_conf.std_file(), &std_);
+    // TODO(wangwei) check std[i] != 0
+  } else if (store_conf.has_std_value() && std_.count() == 0) {
+    std_.Reshape(vector<int>{data_.count() / batchsize_});
+    CHECK_NE(store_conf.std_value(), 0);
+    for (int i = 0; i < data_.count() / batchsize_; i++)
+      std_.mutable_cpu_data()[i] = store_conf.std_value();
+  }
+
+  if (mean_.count()) {
+    const float* mean = mean_.cpu_data();
+    for (int k = 0; k < batchsize_; k++){
+      float* dptr = data_.mutable_cpu_data() + k * mean_.count();
+      for (int i = 0; i < mean_.count(); i++) {
+        dptr[i] -= mean[i];
+      }
+    }
+  }
+  if (std_.count()) {
+    const float* std = std_.cpu_data();
+    for (int k = 0; k < batchsize_; k++){
+      float* dptr = data_.mutable_cpu_data() + k * std_.count();
+      for (int i = 0; i < std_.count(); i++) {
+        dptr[i] /= std[i];
+      }
+    }
+  }
+}
+/*****************CSVRecordLayer*******************/
+void CSVRecordLayer::Setup(const LayerProto& conf,
+    const vector<Layer*>& srclayers) {
+  SingleLabelRecordLayer::Setup(conf, srclayers);
+  sep_ = conf.store_conf().separator();
+}
+
+void CSVRecordLayer::LoadRecord(const string& backend,
+    const string&path, Blob<float>* to) {
+  io::Store* store = io::OpenStore(backend, path, io::kRead);
+  string key, val;
+  CHECK(store->Read(&key, &val));
+  float* ptr = to->mutable_cpu_data();
+  Tokenizer t(val, sep_);
+  string x;
+  for (int i = 0; i< to->count(); i++) {
+    t >> x;
+    ptr[i] = stof(x);
+  }
+  CHECK(!t.Valid());
+  delete store;
+}
+
+bool CSVRecordLayer::Parse(int k, int flag, const string& key,
+    const string& value) {
+  float* ptr = data_.mutable_cpu_data() + k * data_.count() / batchsize_;
+  Tokenizer t(value, sep_);
+  string x;
+  // parse label if not deploy phase and has_label is set.
+  if ((flag & kDeploy) == 0 && layer_conf_.store_conf().has_label()) {
+    t >> x;
+    aux_data_[k] = stoi(x);
+  }
+  for (int i = 0; i< data_.count() / batchsize_; i++) {
+    t >> x;
+    ptr[i] = stof(x);
+  }
+  CHECK(!t.Valid());
+  return true;
+}
+
+
+/*********ProtoRecordLayer******************/
+void ProtoRecordLayer::Setup(const LayerProto& conf,
+    const vector<Layer*>& srclayers) {
+  SingleLabelRecordLayer::Setup(conf, srclayers);
+  encoded_ = conf.store_conf().encoded();
+}
+
+void ProtoRecordLayer::LoadRecord(const string& backend,
+    const string&path, Blob<float>* to) {
+  io::Store* store = io::OpenStore(backend, path, io::kRead);
+  string key, val;
+  CHECK(store->Read(&key, &val));
+  SingleLabelImageRecord image;
+  image.ParseFromString(val);
+  CHECK_EQ(to->count(), image.data_size());
+  float* ptr = to->mutable_cpu_data();
+  for (int i = 0; i< to->count(); i++)
+    ptr[i] = image.data(i);
+  delete store;
+}
+
+bool ProtoRecordLayer::Parse(int k, int flag, const string& key,
+    const string& value) {
+  SingleLabelImageRecord image;
+  image.ParseFromString(value);
+  int size = data_.count() / batchsize_;
+  if (image.data_size()) {
+    CHECK_EQ(size, image.data_size());
+    float* ptr = data_.mutable_cpu_data() + k * size;
+    for (int i = 0; i< size; i++)
+      ptr[i] = image.data(i);
+  } else if (image.pixel().size()) {
+    CHECK_EQ(size, image.pixel().size());
+    float* ptr = data_.mutable_cpu_data() + k * size;
+    string pixel = image.pixel();
+    for (int i = 0; i < size; i++)
+      ptr[i] =  static_cast<float>(static_cast<uint8_t>(pixel[i]));
+  } else {
+    LOG(ERROR) << "not pixel nor pixel";
+  }
+  if ((flag & kDeploy) == 0) {  // deploy mode does not have label
+    aux_data_.at(k) = image.label();
+  }
+  return true;
+}
 
 /************* Implementation for ParserLayer ***********/
 void ParserLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
@@ -213,7 +426,6 @@ void LabelLayer::ParseRecords(int flag, const vector<Record>& records,
   }
   CHECK_EQ(rid, blob->shape()[0]);
 }
-
 /**************** Implementation for MnistLayer ******************/
 void MnistLayer::ParseRecords(int flag, const vector<Record>& records,
     Blob<float>* blob) {

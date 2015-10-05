@@ -38,11 +38,11 @@ download:
 
 create:
 	protoc --proto_path=../../src/proto --proto_path=. --cpp_out=. rnnlm.proto
-	$(CXX) create_shard.cc rnnlm.pb.cc -std=c++11 -lsinga -lprotobuf -lzookeeper_mt -lglog -I../../include -I../../include/proto \
+	$(CXX) create_data.cc rnnlm.pb.cc -std=c++11 -lsinga -lprotobuf -lzookeeper_mt -lglog -I../../include -I../../include/proto \
 		-L../../.libs/ -L/usr/local/lib -Wl,-unresolved-symbols=ignore-in-shared-libs -Wl,-rpath=../../.libs/ \
-		-o create_shard.bin
+		-o create_data.bin
 	for d in $(dirshards); do mkdir -p $${d}; done
-	./create_shard.bin -train $(dirname)/train -test $(dirname)/test -valid $(dirname)/valid -class_size $(numclass)
+	./create_data.bin -train $(dirname)/train -test $(dirname)/test -valid $(dirname)/valid -class_size $(numclass)
 
 
 rnnlm:

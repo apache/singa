@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -30,19 +30,15 @@
 //    http://www.cs.toronto.edu/~kriz/cifar.html
 //
 
+#include <glog/logging.h>
 #include <fstream>
 #include <string>
-
-#include <glog/logging.h>
 #include <cstdint>
 #include <iostream>
 
-#include "singa.h"
+#include "./singa.h"
 
 using std::string;
-
-using singa::DataShard;
-using singa::WriteProtoToBinaryFile;
 
 const int kCIFARSize = 32;
 const int kCIFARImageNBytes = 3072;
@@ -57,75 +53,83 @@ void read_image(std::ifstream* file, int* label, char* buffer) {
   return;
 }
 
-void create_shard(const string& input_folder, const string& output_folder) {
+void create_data(const string& input_folder, const string& output_folder) {
   int label;
-  // Data buffer
   char str_buffer[kCIFARImageNBytes];
-  singa::Record record;
-  singa::SingleLabelImageRecord* image=record.mutable_image();;
-  image->add_shape(3);
-  image->add_shape(kCIFARSize);
-  image->add_shape(kCIFARSize);
+  string rec_buf;
+
+  singa::SingleLabelImageRecord image;;
+  image.add_shape(3);
+  image.add_shape(kCIFARSize);
+  image.add_shape(kCIFARSize);
 
   singa::SingleLabelImageRecord mean;
-  mean.CopyFrom(*image);
-  for(int i=0;i<kCIFARImageNBytes;i++)
-    mean.add_data(0.);
+  mean.CopyFrom(image);
+  for (int i = 0; i < kCIFARImageNBytes; i++)
+    mean.add_data(0.f);
 
-  DataShard train_shard(output_folder+"/cifar10_train_shard",DataShard::kCreate);
-  LOG(INFO) << "Writing Training data";
-  int count=0;
+  auto store = singa::io::CreateStore("kvfile");
+  CHECK(store->Open(output_folder + "/train_data.bin", singa::io::kCreate));
+  LOG(INFO) << "Preparing training data";
+  int count = 0;
   for (int fileid = 0; fileid < kCIFARTrainBatches; ++fileid) {
-    // Open files
     LOG(INFO) << "Training Batch " << fileid + 1;
     snprintf(str_buffer, kCIFARImageNBytes, "/data_batch_%d.bin", fileid + 1);
     std::ifstream data_file((input_folder + str_buffer).c_str(),
         std::ios::in | std::ios::binary);
-    CHECK(data_file) << "Unable to open train file #" << fileid + 1;
+    CHECK(data_file.is_open()) << "Unable to open train file #" << fileid + 1;
     for (int itemid = 0; itemid < kCIFARBatchSize; ++itemid) {
       read_image(&data_file, &label, str_buffer);
-      image->set_label(label);
-      image->set_pixel(str_buffer, kCIFARImageNBytes);
-      int length = snprintf(str_buffer, kCIFARImageNBytes, "%05d",
-          fileid * kCIFARBatchSize + itemid);
-      CHECK(train_shard.Insert(string(str_buffer, length), record));
+      image.set_label(label);
+      image.set_pixel(str_buffer, kCIFARImageNBytes);
+      image.SerializeToString(&rec_buf);
+      int length = snprintf(str_buffer, kCIFARImageNBytes, "%05d", count);
+      CHECK(store->Write(string(str_buffer, length), rec_buf));
 
-      const string& pixels=image->pixel();
-      for(int i=0;i<kCIFARImageNBytes;i++)
-        mean.set_data(i, mean.data(i)+static_cast<uint8_t>(pixels[i]));
-      count+=1;
+      const string& pixels = image.pixel();
+      for (int i = 0; i < kCIFARImageNBytes; i++)
+        mean.set_data(i, mean.data(i) + static_cast<uint8_t>(pixels[i]));
+      count += 1;
     }
   }
-  train_shard.Flush();
-  for(int i=0;i<kCIFARImageNBytes;i++)
-    mean.set_data(i, mean.data(i)/count);
-  WriteProtoToBinaryFile(mean, (output_folder+"/image_mean.bin").c_str());
+  store->Flush();
+  store->Close();
 
-  LOG(INFO) << "Writing Testing data";
-  DataShard test_shard(output_folder+"/cifar10_test_shard",DataShard::kCreate);
-  // Open files
+  LOG(INFO) << "Create image mean";
+  store->Open(output_folder + "/image_mean.bin", singa::io::kCreate);
+  for (int i = 0; i < kCIFARImageNBytes; i++)
+    mean.set_data(i, mean.data(i) / count);
+  mean.SerializeToString(&rec_buf);
+  store->Write("mean", rec_buf);
+  store->Flush();
+  store->Close();
+
+  LOG(INFO) << "Create test data";
+  store->Open(output_folder + "/test_data.bin", singa::io::kCreate);
   std::ifstream data_file((input_folder + "/test_batch.bin").c_str(),
       std::ios::in | std::ios::binary);
-  CHECK(data_file) << "Unable to open test file.";
+  CHECK(data_file.is_open()) << "Unable to open test file.";
   for (int itemid = 0; itemid < kCIFARBatchSize; ++itemid) {
     read_image(&data_file, &label, str_buffer);
-    image->set_label(label);
-    image->set_pixel(str_buffer, kCIFARImageNBytes);
+    image.set_label(label);
+    image.set_pixel(str_buffer, kCIFARImageNBytes);
+    image.SerializeToString(&rec_buf);
     int length = snprintf(str_buffer, kCIFARImageNBytes, "%05d", itemid);
-    CHECK(test_shard.Insert(string(str_buffer, length), record));
+    CHECK(store->Write(string(str_buffer, length), rec_buf));
   }
-  test_shard.Flush();
+  store->Flush();
+  store->Close();
 }
 
 int main(int argc, char** argv) {
   if (argc != 3) {
-  std::cout<<"Create train and test DataShard for Cifar dataset.\n"
-           <<"Usage:\n"
-           <<"    create_shard.bin input_folder output_folder\n"
-           <<"Where the input folder should contain the binary batch files.\n";
+    std::cout <<"Create train and test DataShard for Cifar dataset.\n"
+      << "Usage:\n"
+      << "    create_data.bin input_folder output_folder\n"
+      << "Where the input folder should contain the binary batch files.\n";
   } else {
     google::InitGoogleLogging(argv[0]);
-    create_shard(string(argv[1]), string(argv[2]));
+    create_data(string(argv[1]), string(argv[2]));
   }
   return 0;
 }

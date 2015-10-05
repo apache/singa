@@ -34,6 +34,8 @@
 
 namespace singa {
 using std::vector;
+// TODO(wangwei) make AuxType a template argument for Layer.
+using AuxType = int;
 /**
  * Base layer class.
  *
@@ -186,6 +188,12 @@ class Layer {
     return &data_;
   }
   /**
+   * @return auxiliary data, e.g., image label.
+   */
+  virtual const vector<AuxType>& aux_data(const Layer* from = nullptr) const {
+    return aux_data_;
+  }
+  /**
    * @see data().
    * @return the const ref of the Blob for the gradient of this layer, mainly
    * used in BP algorithm.
@@ -205,6 +213,7 @@ class Layer {
  protected:
   LayerProto layer_conf_;
   Blob<float> data_, grad_;
+  vector<AuxType> aux_data_;
 };
 
 /**

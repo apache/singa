@@ -26,6 +26,7 @@
 #include <vector>
 #include "neuralnet/layer.h"
 #include "utils/data_shard.h"
+#include "io/store.h"
 /**
  * \file this file includes the declarations of input layers that inherit the
  * base InputLayer to load input features.
@@ -40,6 +41,126 @@
  * ParserLayer.
  */
 namespace singa {
+using std::string;
+using std::vector;
+
+/************************Start of new input layers***************************/
+/**
+ * Base class for loading data from Store.
+ */
+class StoreInputLayer : virtual public InputLayer {
+ public:
+  ~StoreInputLayer();
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+
+  ConnectionType dst_layer_connection() const override { return kOneToMany; }
+
+ protected:
+  /**
+   * Parsing the (key, val) tuple to get feature (and label).
+   * Subclasses must implment this function.
+   * @param[in] k parse this tuple as the k-th instance of one mini-batch.
+   * @param[in] flag used to guide the parsing, e.g., kDeploy phase should not
+   * parse labels from the tuple.
+   * @param[in] key
+   * @param[in] val
+   */
+  virtual bool Parse(int k, int flag, const string& key, const string& val) = 0;
+
+ protected:
+  int batchsize_;
+  io::Store* store_ = nullptr;
+};
+
+/**
+ * Base layer for parsing a key-value tuple as a feature vector with fixed
+ * length. The feature shape is indicated by users in the configuration.
+ * Each tuple may has a label.
+ */
+class SingleLabelRecordLayer : public StoreInputLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+
+ protected:
+  /**
+   * Load a single record (tuple), e.g., the mean or standard variance vector.
+   */
+  virtual void LoadRecord(const string& backend, const string& path,
+      Blob<float>* to) = 0;
+
+ protected:
+  /**
+   * Feature standardization by processing each feature dimension via
+   * @f$ y = (x - mu)/ std @f$
+   * <a href= "http://ufldl.stanford.edu/wiki/index.php/Data_Preprocessing">
+   * UFLDL</a>
+   */
+  Blob<float> mean_, std_;
+};
+
+/**
+ * Specific layer that parses the value string loaded by Store into a
+ * SingleLabelImageRecord.
+ */
+class ProtoRecordLayer : public SingleLabelRecordLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+
+ protected:
+  /**
+   * Parse key as instance ID and val into SingleLabelImageRecord.
+   * @copydetails StoreInputLayer::Parse()
+   */
+  bool Parse(int k, int flag, const string& key, const string& val) override;
+  void LoadRecord(const string& backend,
+                  const string& path,
+                  Blob<float>* to) override;
+
+ private:
+  // TODO(wangwei) decode the image
+  bool encoded_;
+};
+
+/**
+ * Specific layer that parses the value string loaded by Store as a line from
+ * a CSV file.
+ *
+ * It assumes the first column is the label except that has_label_ is configured
+ * to false. Or the data is used in deploy mode.
+ */
+class CSVRecordLayer : public SingleLabelRecordLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+
+ protected:
+  bool Parse(int k, int flag, const string& key, const string& val) override;
+  void LoadRecord(const string& backend,
+                  const string& path,
+                  Blob<float>* to) override;
+
+ private:
+  std::string sep_;
+  bool has_label_;
+};
+
+/**
+ * Do preprocessing for images, including cropping, mirroring, resizing.
+ */
+class ImagePreprocessLayer : public InputLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers);
+
+ private:
+  bool mirror_ = false;
+  int cropsize_ = 0;
+  int resize_ = 0;
+  float scale_ = 1;
+};
+
+/************************End of new input layers***************************/
 /**
  * Base layer for reading ::Record  from local Shard, HDFS, lmdb, etc.
  */

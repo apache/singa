@@ -52,42 +52,62 @@ inline Tensor<cpu, 1> RTensor1(Blob<float>* blob) {
 
 /*******DataLayer**************/
 DataLayer::~DataLayer() {
-  if (shard_ != nullptr)
-    delete shard_;
-  shard_ = nullptr;
+  if (store_ != nullptr)
+    delete store_;
 }
 
 void DataLayer::Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
   RNNLayer::Setup(conf, srclayers);
-  shard_ = new singa::DataShard(
-               conf.GetExtension(data_conf).path(),
-               singa::DataShard::kRead);
   string key;
   max_window_ = conf.GetExtension(data_conf).max_window();
-  records_.resize(max_window_ + 1);  // resize to # of records in data layer
+  data_.Reshape(vector<int>{max_window_ + 1, 4});
   window_ = 0;
-  shard_->Next(&key, &records_[window_]);
+}
+
+void SetInst(int k, WordRecord& word, Blob<float>* to) {
+  float* dptr = to->mutable_cpu_data() + k * 4;
+  dptr[0] = static_cast<float>(word.word_index());
+  dptr[1] = static_cast<float>(word.class_index());
+  dptr[2] = static_cast<float>(word.class_start());
+  dptr[3] = static_cast<float>(word.class_end());
+}
+
+void ShiftInst(int from, int to,  Blob<float>* data) {
+  const float* f = data->cpu_data() + from * 4;
+  float* t = data->mutable_cpu_data() + to * 4;
+  // hard code the feature dim to be 4;
+  t[0] = f[0]; t[1] = f[1]; t[2] = f[2]; t[3] = f[3];
 }
 
 void DataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
-  CHECK(records_.size() <= shard_->Count());
-  records_[0] = records_[window_];
+  string key, value;
+  WordRecord word;
+  if (store_ == nullptr) {
+    store_ = singa::io::OpenStore(
+        layer_conf_.GetExtension(data_conf).backend(),
+        layer_conf_.GetExtension(data_conf).path(),
+        singa::io::kRead);
+    store_->Read(&key, &value);
+    word.ParseFromString(value);
+    SetInst(0, word, &data_);
+  }
+  ShiftInst(window_, 0, &data_);
   window_ = max_window_;
   for (int i = 1; i <= max_window_; i++) {
-    string key;
-    if (shard_->Next(&key, &records_[i])) {
-      if (records_[i].GetExtension(word).word_index() == 0) {
-        window_ = i;
-        break;
-      }
-    } else {
-      shard_->SeekToFirst();
-      CHECK(shard_->Next(&key, &records_[i]));
+    if (!store_->Read(&key, &value)) {
+      store_->SeekToFirst();
+      CHECK(store_->Read(&key, &value));
+    }
+    word.ParseFromString(value);
+    SetInst(i, word, &data_);
+    if (word.word_index() == 0) {
+      window_ = i;
+      break;
     }
   }
 }
 
-/*******LabelLayer**************/
+/*******LabelLayer**************
 void LabelLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   RNNLayer::Setup(conf, srclayers);
@@ -108,6 +128,7 @@ void LabelLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     label[4 * i + 3] = wordrecord.class_index();
   }
 }
+*/
 
 /*******EmbeddingLayer**************/
 EmbeddingLayer::~EmbeddingLayer() {
@@ -118,7 +139,7 @@ void EmbeddingLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   RNNLayer::Setup(conf, srclayers);
   CHECK_EQ(srclayers.size(), 1);
-  int max_window = dynamic_cast<DataLayer*>(srclayers[0])->max_window();
+  int max_window = srclayers[0]->data(this).shape()[0];
   word_dim_ = conf.GetExtension(embedding_conf).word_dim();
   data_.Reshape(vector<int>{max_window, word_dim_});
   grad_.ReshapeLike(data_);
@@ -130,12 +151,12 @@ void EmbeddingLayer::Setup(const LayerProto& conf,
 void EmbeddingLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   auto datalayer = dynamic_cast<DataLayer*>(srclayers[0]);
   window_ = datalayer->window();
-  auto records = datalayer->records();
   auto words = RTensor2(&data_);
   auto embed = RTensor2(embed_->mutable_data());
 
+  const float* idxptr = datalayer->data(this).cpu_data();
   for (int t = 0; t < window_; t++) {
-    int idx = static_cast<int>(records[t].GetExtension(word).word_index());
+    int idx = static_cast<int>(idxptr[t * 4]);
     CHECK_GE(idx, 0);
     CHECK_LT(idx, vocab_size_);
     Copy(words[t], embed[idx]);
@@ -147,10 +168,10 @@ void EmbeddingLayer::ComputeGradient(int flag,
   auto grad = RTensor2(&grad_);
   auto gembed = RTensor2(embed_->mutable_grad());
   auto datalayer = dynamic_cast<DataLayer*>(srclayers[0]);
-  auto records = datalayer->records();
   gembed = 0;
+  const float* idxptr = datalayer->data(this).cpu_data();
   for (int t = 0; t < window_; t++) {
-    int idx = static_cast<int>(records[t].GetExtension(word).word_index());
+    int idx = static_cast<int>(idxptr[t * 4]);
     Copy(gembed[idx], grad[t]);
   }
 }
@@ -241,8 +262,9 @@ void LossLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
 
   float loss = 0.f, ppl = 0.f;
   for (int t = 0; t < window_; t++) {
-    int start = static_cast<int>(label[t * 4 + 0]);
-    int end = static_cast<int>(label[t * 4 + 1]);
+    // label is the next word
+    int start = static_cast<int>(label[(t + 1) * 4 + 2]);
+    int end = static_cast<int>(label[(t + 1) * 4 + 3]);
 
     auto wordWeight = word_weight.Slice(start, end);
     CHECK_GT(end, start);
@@ -254,8 +276,8 @@ void LossLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     pclass[t] = dot(src[t], class_weight.T());
     Softmax(pclass[t], pclass[t]);
 
-    int wid = static_cast<int>(label[t * 4 + 2]);
-    int cid = static_cast<int>(label[t * 4 + 3]);
+    int wid = static_cast<int>(label[(t + 1) * 4 + 0]);
+    int cid = static_cast<int>(label[(t + 1) * 4 + 1]);
     CHECK_GT(end, wid);
     CHECK_GE(wid, start);
     loss_ += -log(std::max(pword[wid - start] * pclass[t][cid], FLT_MIN));
@@ -276,10 +298,10 @@ void LossLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   gclass_weight = 0;
   gword_weight = 0;
   for (int t = 0; t < window_; t++) {
-    int start = static_cast<int>(label[t * 4 + 0]);
-    int end = static_cast<int>(label[t * 4 + 1]);
-    int wid = static_cast<int>(label[t * 4 + 2]);
-    int cid = static_cast<int>(label[t * 4 + 3]);
+    int start = static_cast<int>(label[(t + 1) * 4 + 2]);
+    int end = static_cast<int>(label[(t + 1) * 4 + 3]);
+    int wid = static_cast<int>(label[(t + 1) * 4 + 0]);
+    int cid = static_cast<int>(label[(t + 1) * 4 + 1]);
     auto pword = RTensor1(&pword_[t]);
     CHECK_GT(end, wid);
     CHECK_GE(wid, start);
@@ -304,6 +326,9 @@ void LossLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
 const std::string LossLayer::ToString(bool debug, int flag) {
   float loss = loss_ / num_;
   float ppl = exp10(- ppl_ / num_);
+  loss_ = 0;
+  num_ = 0;
+  ppl_ = 0;
   return "loss = " + std::to_string(loss) + ", ppl = " + std::to_string(ppl);
 }
 }   // end of namespace rnnlm

@@ -35,6 +35,7 @@ SINGA_SRCS := src/driver.cc \
               src/utils/updater.cc \
               src/utils/data_shard.cc \
               src/utils/blob.cc \
+              src/utils/image_transform.cc \
               src/server.cc \
               src/worker.cc \
               src/stub.cc \
@@ -64,6 +65,8 @@ SINGA_HDRS := include/singa.h \
               include/utils/blob.h \
               include/utils/updater.h \
               include/utils/tinydir.h \
+              include/utils/tokenizer.h \
+              include/utils/image_transform.h \
               include/server.h \
               include/worker.h \
               include/stub.h \
@@ -84,10 +87,10 @@ SINGA_HDRS := include/singa.h \
               include/mshadow/tensor_random.h \
               include/comm/msg.h \
               include/comm/socket.h
-							src/io/store.h \
-							src/io/kvfile.h \
-							src/io/kvfile_store.h \
-							src/io/textfile_store.h
+							include/io/store.h \
+							include/io/kvfile.h \
+							include/io/kvfile_store.h \
+							include/io/textfile_store.h
 
 GTEST_SRCS := include/gtest/gtest-all.cc
 GTEST_HRDS := include/gtest/gtest.h
@@ -98,7 +101,9 @@ TEST_SRCS := include/gtest/gtest_main.cc \
 			 src/test/test_neuralnet.cc \
 			 src/test/test_paramslicer.cc \
 			 src/test/test_shard.cc \
-			 src/test/test_store.cc
+			 src/test/test_store.cc \
+			 src/test/test_proto_record_layer.cc \
+			 src/test/test_csv_record_layer.cc
 
 #EXTRA_PROGRAMS = $(PROGS)
 EXTRA_PROGRAMS = singatest

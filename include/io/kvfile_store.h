@@ -36,6 +36,7 @@ namespace singa { namespace io {
  */
 class KVFileStore : public Store {
  public:
+  ~KVFileStore() { Close();}
   bool Open(const std::string& source, Mode mode) override;
   void Close() override;
   bool Read(std::string* key, std::string* value) override;

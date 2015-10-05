@@ -54,6 +54,11 @@ void Driver::Init(int argc, char **argv) {
   ReadProtoFromTextFile(argv[arg_pos+1], &job_conf_);
 
   // register layers
+
+  RegisterLayer<ProtoRecordLayer, int>(kProtoRecord);
+  RegisterLayer<CSVRecordLayer, int>(kCSVRecord);
+  RegisterLayer<ImagePreprocessLayer, int>(kImagePreprocess);
+
   RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
   RegisterLayer<BridgeSrcLayer, int>(kBridgeSrc);
   RegisterLayer<ConvolutionLayer, int>(kConvolution);

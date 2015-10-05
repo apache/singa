@@ -70,7 +70,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include <fstream>
 
-#include "utils/data_shard.h"
+#include "io/store.h"
 #include "utils/common.h"
 #include "proto/common.pb.h"
 #include "./rnnlm.pb.h"
@@ -82,7 +82,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using std::string;
 using std::max;
 using std::min;
-using singa::DataShard;
 
 struct vocab_word {
   int cn;
@@ -319,10 +318,9 @@ int init_class() {
   return 0;
 }
 
-int create_shard(const char *input_file, const char *output) {
-  DataShard dataShard(output, DataShard::kCreate);
-  singa::Record record;
-  auto* wordRecord = record.MutableExtension(word);
+int create_data(const char *input_file, const char *output) {
+  auto* store = singa::io::OpenStore("kvfile", output, singa::io::kCreate);
+  WordRecord wordRecord;
 
   FILE *fin;
   int a, i;
@@ -331,6 +329,7 @@ int create_shard(const char *input_file, const char *output) {
   int wcnt = 0;
   char key[BUFFER_LEN];
   char wordstr[MAX_STRING];
+  string value;
   while (1) {
     readWord(wordstr, fin);
     if (feof(fin)) break;
@@ -338,19 +337,21 @@ int create_shard(const char *input_file, const char *output) {
     if (i == -1) {
       if (debug_mode) printf("unknown word [%s] detected!", wordstr);
     } else {
-      wordRecord->set_word(string(wordstr));
-      wordRecord->set_word_index(i);
+      wordRecord.set_word(string(wordstr));
+      wordRecord.set_word_index(i);
       int class_idx = vocab[i].class_index;
-      wordRecord->set_class_index(class_idx);
-      wordRecord->set_class_start(class_start[class_idx]);
-      wordRecord->set_class_end(class_end[class_idx]);
+      wordRecord.set_class_index(class_idx);
+      wordRecord.set_class_start(class_start[class_idx]);
+      wordRecord.set_class_end(class_end[class_idx]);
       int length = snprintf(key, BUFFER_LEN, "%05d", wcnt++);
-      dataShard.Insert(string(key, length), record);
+      wordRecord.SerializeToString(&value);
+      store->Write(string(key, length), value);
     }
   }
 
-  dataShard.Flush();
   fclose(fin);
+  store->Flush();
+  delete store;
   return 0;
 }
 
@@ -463,9 +464,9 @@ int main(int argc, char **argv) {
 
   init_class();
 
-  create_shard(train_file, "train_shard");
-  if (valid_mode) create_shard(valid_file, "valid_shard");
-  if (test_mode) create_shard(test_file, "test_shard");
+  create_data(train_file, "train_data.bin");
+  if (valid_mode) create_data(valid_file, "valid_data.bin");
+  if (test_mode) create_data(test_file, "test_data.bin");
 
   return 0;
 }

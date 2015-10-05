@@ -29,12 +29,7 @@ cifar-10-binary-bin:
 	tar xf cifar-10-binary.tar.gz
 
 create:
-	$(CXX) create_shard.cc -std=c++11 -lsinga -lprotobuf -lglog \
+	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog \
 		-I../../include -L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs \
-		-Wl,-rpath=../../.libs/  -o create_shard.bin
-	mkdir cifar10_train_shard
-	mkdir cifar10_test_shard
-	./create_shard.bin cifar-10-batches-bin .
-
-
-
+		-Wl,-rpath=../../.libs/  -o create_data.bin
+	./create_data.bin cifar-10-batches-bin .

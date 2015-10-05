@@ -35,6 +35,7 @@ message LossProto {
 message DataProto {
   required string path = 1;
   optional int32 max_window = 2;
+  optional string backend = 3 [default = "kvfile"];
 }
 
 extend singa.LayerProto {
@@ -49,8 +50,4 @@ message WordRecord {
   optional int32 class_index = 3;
   optional int32 class_start = 4;
   optional int32 class_end = 5;
-}
-
-extend singa.Record {
-  optional WordRecord word = 101;
 }
