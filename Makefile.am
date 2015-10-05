@@ -46,7 +46,11 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/output_layer.cc \
               src/neuralnet/neuralnet.cc \
               src/comm/socket.cc \
-              src/comm/msg.cc
+              src/comm/msg.cc \
+							src/io/kvfile.cc \
+							src/io/kvfile_store.cc \
+							src/io/textfile_store.cc \
+							src/io/store.cc
 
 SINGA_HDRS := include/singa.h \
               include/utils/cluster.h \
@@ -80,6 +84,10 @@ SINGA_HDRS := include/singa.h \
               include/mshadow/tensor_random.h \
               include/comm/msg.h \
               include/comm/socket.h
+							src/io/store.h \
+							src/io/kvfile.h \
+							src/io/kvfile_store.h \
+							src/io/textfile_store.h
 
 GTEST_SRCS := include/gtest/gtest-all.cc
 GTEST_HRDS := include/gtest/gtest.h
@@ -89,7 +97,8 @@ TEST_SRCS := include/gtest/gtest_main.cc \
 			 src/test/test_msg.cc \
 			 src/test/test_neuralnet.cc \
 			 src/test/test_paramslicer.cc \
-			 src/test/test_shard.cc
+			 src/test/test_shard.cc \
+			 src/test/test_store.cc
 
 #EXTRA_PROGRAMS = $(PROGS)
 EXTRA_PROGRAMS = singatest
