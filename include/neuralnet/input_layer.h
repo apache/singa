@@ -69,7 +69,8 @@ class StoreInputLayer : virtual public InputLayer {
   virtual bool Parse(int k, int flag, const string& key, const string& val) = 0;
 
  protected:
-  int batchsize_;
+  int batchsize_ = 1;
+  int random_skip_ = 0;
   io::Store* store_ = nullptr;
 };
 

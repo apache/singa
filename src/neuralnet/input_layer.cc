@@ -85,6 +85,11 @@ void StoreInputLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   InputLayer::Setup(conf, srclayers);
   batchsize_ = conf.store_conf().batchsize();
+  if (conf.partition_dim() == 0) {
+    batchsize_ /= conf.num_partitions();
+  }
+  if (conf.store_conf().random_skip() > 0)
+    random_skip_ = rand() % conf.store_conf().random_skip();
 }
 
 void StoreInputLayer::ComputeFeature(int flag,
@@ -94,6 +99,13 @@ void StoreInputLayer::ComputeFeature(int flag,
     store_ = io::OpenStore(layer_conf_.store_conf().backend(),
                              layer_conf_.store_conf().path(),
                              io::kRead);
+    while (random_skip_ > 0) {
+      if (!store_->Read(&key, &val)) {
+        store_->SeekToFirst();
+        CHECK(store_->Read(&key, &val));
+      }
+      random_skip_ --;
+    }
   }
   for (int k = 0; k < batchsize_; k++){
     if (!store_->Read(&key, &val)) {
