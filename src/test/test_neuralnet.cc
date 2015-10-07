@@ -20,7 +20,7 @@
 *************************************************************/
 
 #include "gtest/gtest.h"
-#include "neuralnet/neuralnet.h"
+#include "singa/neuralnet/neuralnet.h"
 using namespace singa;
 
 TEST(NeuralNet, ParamShareFrom) {

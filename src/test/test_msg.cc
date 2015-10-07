@@ -20,7 +20,7 @@
 *************************************************************/
 
 #include "gtest/gtest.h"
-#include "comm/msg.h"
+#include "singa/comm/msg.h"
 using namespace singa;
 TEST(MsgTest, AddrTest) {
   int src_grp = 1, src_worker = 2;

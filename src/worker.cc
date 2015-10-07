@@ -19,15 +19,15 @@
 *
 *************************************************************/
 
-#include "./worker.h"
+#include "singa/worker.h"
 
 #include <glog/logging.h>
 #include <chrono>
 #include <thread>
 #include <typeinfo>
-#include "utils/cluster.h"
-#include "utils/factory.h"
-#include "utils/singleton.h"
+#include "singa/utils/cluster.h"
+#include "singa/utils/factory.h"
+#include "singa/utils/singleton.h"
 
 namespace singa {
 

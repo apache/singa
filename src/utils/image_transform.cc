@@ -18,7 +18,7 @@
 * under the License.
 *
 *************************************************************/
-#include "utils/image_transform.h"
+#include "singa/utils/image_transform.h"
 
 namespace singa {
 

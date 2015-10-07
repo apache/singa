@@ -19,11 +19,11 @@
 *
 *************************************************************/
 
-#include "neuralnet/neuralnet.h"
+#include "singa/neuralnet/neuralnet.h"
 
 #include <algorithm>
 #include <queue>
-#include "utils/singleton.h"
+#include "singa/utils/singleton.h"
 
 namespace singa {
 

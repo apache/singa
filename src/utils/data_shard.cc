@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "utils/data_shard.h"
+#include "singa/utils/data_shard.h"
 
 #include <glog/logging.h>
 #include <sys/stat.h>

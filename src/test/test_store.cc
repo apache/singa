@@ -20,7 +20,7 @@
 *************************************************************/
 #include <string>
 #include "gtest/gtest.h"
-#include "io/store.h"
+#include "singa/io/store.h"
 
 TEST(TextFileStore, Open) {
   auto store = singa::io::CreateStore("textfile");

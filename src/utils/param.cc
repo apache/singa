@@ -19,16 +19,16 @@
 *
 *************************************************************/
 
-#include "utils/param.h"
+#include "singa/utils/param.h"
 
 #include <glog/logging.h>
 #include <cmath>
 #include <random>
 #include <unordered_map>
 #include "mshadow/tensor.h"
-#include "utils/factory.h"
-#include "utils/singleton.h"
-#include "utils/common.h"
+#include "singa/utils/factory.h"
+#include "singa/utils/singleton.h"
+#include "singa/utils/common.h"
 
 namespace singa {
 

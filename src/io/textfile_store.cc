@@ -20,7 +20,7 @@
 *************************************************************/
 
 
-#include "io/textfile_store.h"
+#include "singa/io/textfile_store.h"
 #include <glog/logging.h>
 
 namespace singa {

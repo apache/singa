@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "./singa.h"
+#include "singa/singa.h"
 /**
  * \file main.cc provides an example main function.
  *

@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 
 #include "gtest/gtest.h"
-#include "utils/data_shard.h"
+#include "singa/utils/data_shard.h"
 
 std::string key[] = {"firstkey",
                      "secondkey",

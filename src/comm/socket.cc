@@ -18,7 +18,7 @@
 * under the License.
 *
 *************************************************************/
-#include "comm/socket.h"
+#include "singa/comm/socket.h"
 
 #include <glog/logging.h>
 

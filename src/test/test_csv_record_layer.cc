@@ -23,8 +23,8 @@
 #include <fstream>
 
 #include "gtest/gtest.h"
-#include "neuralnet/input_layer.h"
-#include "proto/job.pb.h"
+#include "singa/neuralnet/input_layer/csv_record.h"
+#include "singa/proto/job.pb.h"
 
 class CSVRecordLayerTest : public ::testing::Test {
  protected:

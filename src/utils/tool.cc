@@ -23,9 +23,9 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-#include "proto/singa.pb.h"
-#include "utils/cluster_rt.h"
-#include "utils/common.h"
+#include "singa/proto/singa.pb.h"
+#include "singa/utils/cluster_rt.h"
+#include "singa/utils/common.h"
 
 std::string conf_dir;
 singa::SingaProto global;
