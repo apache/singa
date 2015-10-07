@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "io/kvfile_store.h"
+#include "singa/io/kvfile_store.h"
 
 #include <glog/logging.h>
 

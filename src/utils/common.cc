@@ -60,7 +60,7 @@
  * license and copyright terms herein.
  */
 
-#include "utils/common.h"
+#include "singa/utils/common.h"
 
 #include <sys/ioctl.h>
 #include <sys/socket.h>

@@ -40,43 +40,64 @@ SINGA_SRCS := src/driver.cc \
               src/worker.cc \
               src/stub.cc \
               src/neuralnet/layer.cc \
-              src/neuralnet/connection_layer.cc \
-              src/neuralnet/input_layer.cc \
-              src/neuralnet/loss_layer.cc \
-              src/neuralnet/neuron_layer.cc \
-              src/neuralnet/output_layer.cc \
+              src/neuralnet/connection_layer/bridge.cc \
+              src/neuralnet/connection_layer/concate.cc \
+              src/neuralnet/connection_layer/slice.cc \
+              src/neuralnet/connection_layer/split.cc \
+              src/neuralnet/input_layer/parser.cc \
+              src/neuralnet/input_layer/csv_record.cc \
+              src/neuralnet/input_layer/image_preprocess.cc \
+              src/neuralnet/input_layer/label.cc \
+              src/neuralnet/input_layer/lmdb_data.cc \
+              src/neuralnet/input_layer/mnist.cc \
+              src/neuralnet/input_layer/prefetch.cc \
+              src/neuralnet/input_layer/proto_record.cc \
+              src/neuralnet/input_layer/rgb_image.cc \
+              src/neuralnet/input_layer/shard_data.cc \
+              src/neuralnet/input_layer/store_input.cc \
+              src/neuralnet/loss_layer/euclidean.cc \
+              src/neuralnet/loss_layer/softmax.cc \
+              src/neuralnet/neuron_layer/convolution.cc \
+              src/neuralnet/neuron_layer/dropout.cc \
+              src/neuralnet/neuron_layer/inner_product.cc \
+              src/neuralnet/neuron_layer/lrn.cc \
+              src/neuralnet/neuron_layer/pooling.cc \
+              src/neuralnet/neuron_layer/rbm.cc \
+              src/neuralnet/neuron_layer/relu.cc \
+              src/neuralnet/neuron_layer/sigmoid.cc \
+              src/neuralnet/neuron_layer/stanh.cc \
               src/neuralnet/neuralnet.cc \
               src/comm/socket.cc \
               src/comm/msg.cc \
-							src/io/kvfile.cc \
-							src/io/kvfile_store.cc \
-							src/io/textfile_store.cc \
-							src/io/store.cc
+              src/io/kvfile.cc \
+              src/io/kvfile_store.cc \
+              src/io/textfile_store.cc \
+              src/io/store.cc
 
-SINGA_HDRS := include/singa.h \
-              include/utils/cluster.h \
-              include/utils/cluster_rt.h \
-              include/utils/param.h \
-              include/utils/common.h \
-              include/utils/factory.h \
-              include/utils/data_shard.h \
-              include/utils/singleton.h \
-              include/utils/graph.h \
-              include/utils/blob.h \
-              include/utils/updater.h \
-              include/utils/tinydir.h \
-              include/utils/tokenizer.h \
-              include/utils/image_transform.h \
-              include/server.h \
-              include/worker.h \
-              include/stub.h \
-              include/neuralnet/layer.h \
-              include/neuralnet/connection_layer.h \
-              include/neuralnet/input_layer.h \
-              include/neuralnet/loss_layer.h \
-              include/neuralnet/neuron_layer.h \
-              include/neuralnet/output_layer.h \
-              include/neuralnet/neuralnet.h \
+SINGA_HDRS := include/singa/singa.h \
+              include/singa/utils/cluster.h \
+              include/singa/utils/cluster_rt.h \
+              include/singa/utils/param.h \
+              include/singa/utils/common.h \
+              include/singa/utils/factory.h \
+              include/singa/utils/data_shard.h \
+              include/singa/utils/singleton.h \
+              include/singa/utils/graph.h \
+              include/singa/utils/blob.h \
+              include/singa/utils/updater.h \
+              include/singa/utils/tinydir.h \
+              include/singa/utils/tokenizer.h \
+              include/singa/utils/image_transform.h \
+              include/singa/server.h \
+              include/singa/worker.h \
+              include/singa/stub.h \
+              include/singa/neuralnet/layer.h \
+              include/singa/neuralnet/connection_layer.h \
+              include/singa/neuralnet/input_layer.h \
+              include/singa/neuralnet/loss_layer.h \
+              include/singa/neuralnet/neuron_layer.h \
+              include/singa/neuralnet/output_layer.h \
+              include/singa/neuralnet/neuralnet.h \
               include/mshadow/tensor_expr.h \
               include/mshadow/tensor_container.h \
               include/mshadow/tensor_expr_ext.h \
@@ -85,12 +106,12 @@ SINGA_HDRS := include/singa.h \
               include/mshadow/cxxnet_op.h \
               include/mshadow/tensor_base.h \
               include/mshadow/tensor_random.h \
-              include/comm/msg.h \
-              include/comm/socket.h
-							include/io/store.h \
-							include/io/kvfile.h \
-							include/io/kvfile_store.h \
-							include/io/textfile_store.h
+              include/singa/comm/msg.h \
+              include/singa/comm/socket.h \
+              include/singa/io/store.h \
+              include/singa/io/kvfile.h \
+              include/singa/io/kvfile_store.h \
+              include/singa/io/textfile_store.h
 
 GTEST_SRCS := include/gtest/gtest-all.cc
 GTEST_HRDS := include/gtest/gtest.h
@@ -197,6 +218,6 @@ $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
 	mkdir -p $(top_srcdir)/tool/pb2/
 	touch $(top_srcdir)/tool/pb2/__init__.py
 	protoc --proto_path=$(top_srcdir)/src/proto --python_out=$(top_srcdir)/tool/pb2 $(PROTOS)
-	mkdir -p $(top_srcdir)/include/proto/
-	cp $(top_srcdir)/src/proto/*.pb.h $(top_srcdir)/include/proto/
+	mkdir -p $(top_srcdir)/include/singa/proto/
+	cp $(top_srcdir)/src/proto/*.pb.h $(top_srcdir)/include/singa/proto/
 	@echo

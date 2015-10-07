@@ -19,9 +19,9 @@
 *
 *************************************************************/
 
-#include "io/store.h"
-#include "io/kvfile_store.h"
-#include "io/textfile_store.h"
+#include "singa/io/store.h"
+#include "singa/io/kvfile_store.h"
+#include "singa/io/textfile_store.h"
 
 namespace singa { namespace io {
 Store* CreateStore(const std::string& backend) {

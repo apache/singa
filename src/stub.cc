@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "./stub.h"
+#include "singa/stub.h"
 
 #include <glog/logging.h>
 #include <unistd.h>
@@ -27,10 +27,10 @@
 #include <thread>
 #include <set>
 #include "mshadow/tensor.h"
-#include "proto/common.pb.h"
-#include "utils/cluster.h"
-#include "utils/common.h"
-#include "utils/tinydir.h"
+#include "singa/proto/common.pb.h"
+#include "singa/utils/cluster.h"
+#include "singa/utils/common.h"
+#include "singa/utils/tinydir.h"
 
 namespace singa {
 

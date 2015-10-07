@@ -22,9 +22,9 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "neuralnet/input_layer.h"
-#include "proto/job.pb.h"
-#include "proto/common.pb.h"
+#include "singa/neuralnet/input_layer/proto_record.h"
+#include "singa/proto/job.pb.h"
+#include "singa/proto/common.pb.h"
 
 class ProtoRecordLayerTest : public ::testing::Test {
  protected:

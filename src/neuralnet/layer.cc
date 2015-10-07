@@ -19,14 +19,14 @@
 *
 *************************************************************/
 
-#include "neuralnet/layer.h"
+#include "singa/neuralnet/layer.h"
 
 #include <cblas.h>
 #include <glog/logging.h>
 #include <math.h>
 #include <cfloat>
-#include "utils/factory.h"
-#include "utils/singleton.h"
+#include "singa/utils/factory.h"
+#include "singa/utils/singleton.h"
 
 namespace singa {
 
