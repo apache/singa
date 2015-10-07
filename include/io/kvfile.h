@@ -32,8 +32,8 @@
 #include <google/protobuf/message.h>
 #endif
 
-namespace singa { namespace io {
-
+namespace singa {
+namespace io {
 
 /**
  * KVFile stores training/validation/test tuples.
@@ -171,7 +171,7 @@ class KVFile {
   //!< bytes in buf_, used in reading
   int bufsize_ = 0;
 };
-} /* io */
+}  // namespace io
 
 /**
  * @deprecated {ShardData is deprecated! Use KVFile}.

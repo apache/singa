@@ -104,10 +104,10 @@ void StoreInputLayer::ComputeFeature(int flag,
         store_->SeekToFirst();
         CHECK(store_->Read(&key, &val));
       }
-      random_skip_ --;
+      random_skip_--;
     }
   }
-  for (int k = 0; k < batchsize_; k++){
+  for (int k = 0; k < batchsize_; k++) {
     if (!store_->Read(&key, &val)) {
       store_->SeekToFirst();
       CHECK(store_->Read(&key, &val));
@@ -153,7 +153,7 @@ void SingleLabelRecordLayer::ComputeFeature(int flag,
 
   if (mean_.count()) {
     const float* mean = mean_.cpu_data();
-    for (int k = 0; k < batchsize_; k++){
+    for (int k = 0; k < batchsize_; k++) {
       float* dptr = data_.mutable_cpu_data() + k * mean_.count();
       for (int i = 0; i < mean_.count(); i++) {
         dptr[i] -= mean[i];
@@ -162,7 +162,7 @@ void SingleLabelRecordLayer::ComputeFeature(int flag,
   }
   if (std_.count()) {
     const float* std = std_.cpu_data();
-    for (int k = 0; k < batchsize_; k++){
+    for (int k = 0; k < batchsize_; k++) {
       float* dptr = data_.mutable_cpu_data() + k * std_.count();
       for (int i = 0; i < std_.count(); i++) {
         dptr[i] /= std[i];

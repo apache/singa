@@ -24,7 +24,9 @@
 
 #include <string>
 
-namespace singa { namespace io {
+namespace singa {
+namespace io {
+
 using std::string;
 enum Mode { kCreate, kRead, kAppend };
 
@@ -96,6 +98,8 @@ Store* CreateStore(const string& backend);
  * @param[in] mode kRead or kCreate or kAppend
  */
 Store* OpenStore(const string& backend, const string& path, Mode mode);
-} // namespace io
-} /* singa */
+
+}  // namespace io
+}  // namespace singa
+
 #endif  // SINGA_IO_STORE_H_

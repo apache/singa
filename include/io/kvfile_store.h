@@ -19,7 +19,6 @@
 *
 *************************************************************/
 
-
 #ifndef SINGA_IO_KVFILE_STORE_H_
 #define SINGA_IO_KVFILE_STORE_H_
 
@@ -27,7 +26,8 @@
 #include "io/store.h"
 #include "io/kvfile.h"
 
-namespace singa { namespace io {
+namespace singa {
+namespace io {
 
 /**
  * Use the KVFile as the data storage.
@@ -49,6 +49,7 @@ class KVFileStore : public Store {
   Mode mode_;
 };
 
-} /* io */
-} /* singa */
+}  // namespace io
+}  // namespace singa
+
 #endif  // SINGA_IO_KVFILE_STORE_H_

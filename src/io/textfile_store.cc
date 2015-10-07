@@ -23,13 +23,14 @@
 #include "io/textfile_store.h"
 #include <glog/logging.h>
 
-namespace singa { namespace io {
+namespace singa {
+namespace io {
+
 bool TextFileStore::Open(const std::string& source, Mode mode) {
   if (mode == kRead)
     fs_ = new std::fstream(source, std::fstream::in);
-  else if (mode == kCreate) {
+  else if (mode == kCreate)
     fs_ = new std::fstream(source, std::fstream::out);
-  }
   mode_ = mode;
   return fs_->is_open();
 }
@@ -79,6 +80,5 @@ void TextFileStore::Flush() {
   fs_->flush();
 }
 
-} /* io */
-
-} /* singa */
+}  // namespace io
+}  // namespace singa

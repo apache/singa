@@ -24,9 +24,9 @@
 
 #include <string>
 #include <vector>
+#include "io/store.h"
 #include "neuralnet/layer.h"
 #include "utils/data_shard.h"
-#include "io/store.h"
 /**
  * \file this file includes the declarations of input layers that inherit the
  * base InputLayer to load input features.

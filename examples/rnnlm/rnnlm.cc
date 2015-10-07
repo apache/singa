@@ -18,12 +18,13 @@
 * under the License.
 *
 *************************************************************/
+#include "./rnnlm.h"
+
 #include <string>
 #include <algorithm>
 #include "mshadow/tensor.h"
 #include "mshadow/tensor_expr.h"
 #include "mshadow/cxxnet_op.h"
-#include "./rnnlm.h"
 #include "./rnnlm.pb.h"
 
 namespace rnnlm {
@@ -64,7 +65,7 @@ void DataLayer::Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
   window_ = 0;
 }
 
-void SetInst(int k, WordRecord& word, Blob<float>* to) {
+void SetInst(int k, const WordRecord& word, Blob<float>* to) {
   float* dptr = to->mutable_cpu_data() + k * 4;
   dptr[0] = static_cast<float>(word.word_index());
   dptr[1] = static_cast<float>(word.class_index());

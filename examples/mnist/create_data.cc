@@ -105,9 +105,10 @@ void create_data(const char* image_filename, const char* label_filename,
 
 int main(int argc, char** argv) {
   if (argc != 4) {
-    std::cout<<"This program create a DataShard for a MNIST dataset\n"
+    std::cout << "This program create a DataShard for a MNIST dataset\n"
         "Usage:\n"
-        "    create_shard.bin  input_image_file input_label_file output_db_file\n"
+        "    create_shard.bin  input_image_file input_label_file"
+        " output_db_file\n"
         "The MNIST dataset could be downloaded at\n"
         "    http://yann.lecun.com/exdb/mnist/\n"
         "You should gunzip them after downloading.";

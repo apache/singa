@@ -19,11 +19,15 @@
 *
 *************************************************************/
 
+#ifndef SINGA_IO_TEXTFILE_STORE_H_
+#define SINGA_IO_TEXTFILE_STORE_H_
 
 #include <fstream>
+#include <string>
 #include "io/store.h"
 
-namespace singa { namespace io {
+namespace singa {
+namespace io {
 /**
  * Use text file as the data storage, one line per tuple.
  *
@@ -45,6 +49,8 @@ class TextFileStore : public Store {
   std::fstream* fs_ = nullptr;
   Mode mode_;
 };
-} /* io */
 
-} /* singa */
+}  // namespace io
+}  // namespace singa
+
+#endif  // SINGA_IO_TEXTFILE_STORE_H_

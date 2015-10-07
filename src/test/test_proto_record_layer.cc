@@ -79,7 +79,7 @@ class ProtoRecordLayerTest : public ::testing::Test {
 TEST_F(ProtoRecordLayerTest, Setup) {
   singa::ProtoRecordLayer layer;
   layer.Setup(image_conf, std::vector<singa::Layer*>{});
-  EXPECT_EQ(2, layer.aux_data().size());
+  EXPECT_EQ(2, static_cast<int>(layer.aux_data().size()));
   EXPECT_EQ(6, layer.data(nullptr).count());
 }
 

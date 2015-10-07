@@ -48,7 +48,7 @@ class CSVRecordLayerTest : public ::testing::Test {
 TEST_F(CSVRecordLayerTest, Setup) {
   singa::CSVRecordLayer layer;
   layer.Setup(csv_conf, std::vector<singa::Layer*>{});
-  EXPECT_EQ(2, layer.aux_data().size());
+  EXPECT_EQ(2, static_cast<int>(layer.aux_data().size()));
   EXPECT_EQ(6, layer.data(nullptr).count());
 }
 

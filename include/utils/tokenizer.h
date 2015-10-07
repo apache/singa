@@ -18,10 +18,13 @@
 * under the License.
 *
 *************************************************************/
-#ifndef SINGA_UTILS_TOKENIER_H_
-#define SINGA_UTILS_TOKENIER_H_
-#include <string>
+
+#ifndef SINGA_UTILS_TOKENIZER_H_
+#define SINGA_UTILS_TOKENIZER_H_
+
 #include <glog/logging.h>
+#include <string>
+
 namespace singa {
 /**
  * Tokenize a string.
@@ -48,12 +51,14 @@ class Tokenizer {
     out = buf_.substr(start, pos);
     return *this;
   }
-
   bool Valid() { return start_ < buf_.length(); }
-  private:
-   unsigned start_;
-   std::string sep_;
-   const std::string& buf_;
+
+ private:
+  unsigned start_;
+  std::string sep_;
+  const std::string& buf_;
 };
-} /* singa */
-#endif // SINGA_UTILS_TOKENIER_H_
+
+}  // namespace singa
+
+#endif  // SINGA_UTILS_TOKENIZER_H_

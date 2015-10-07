@@ -22,9 +22,10 @@
 #include "io/kvfile.h"
 
 #include <glog/logging.h>
-#include <string>
 
-namespace singa { namespace io {
+namespace singa {
+namespace io {
+
 KVFile::KVFile(const std::string& path, Mode mode, int capacity) :
 path_(path), mode_(mode), capacity_(capacity) {
   buf_ = new char[capacity];
@@ -213,5 +214,5 @@ bool KVFile::PrepareNextField(int size) {
   return true;
 }
 
-} /* io */
+}  // namespace io
 }  // namespace singa

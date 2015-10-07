@@ -19,11 +19,12 @@
 *
 *************************************************************/
 
-
 #include "io/kvfile_store.h"
+
 #include <glog/logging.h>
 
-namespace singa { namespace io {
+namespace singa {
+namespace io {
 
 bool KVFileStore::Open(const std::string& source, Mode mode) {
   CHECK(file_ == nullptr);
@@ -66,6 +67,5 @@ void KVFileStore::Flush() {
   file_->Flush();
 }
 
-} /* io */
-
-} /* singa */
+}  // namespace io
+}  // namespace singa

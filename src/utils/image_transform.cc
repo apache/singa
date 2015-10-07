@@ -53,4 +53,5 @@ void ImageTransform(const float* in, const float* mean, bool mirror, int h_crop,
     }
   }
 }
-} /* singa */
+
+}  // namespace singa
