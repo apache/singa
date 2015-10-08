@@ -19,7 +19,7 @@
 *
 *************************************************************/
 #include <string>
-#include "singa.h"
+#include "singa/singa.h"
 #include "rnnlm.h"
 #include "rnnlm.pb.h"
 

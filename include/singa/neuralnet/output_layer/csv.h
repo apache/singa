@@ -18,41 +18,24 @@
 * under the License.
 *
 *************************************************************/
+#ifndef SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
+#define SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
 
-#ifndef SINGA_NEURALNET_INPUT_LAYER_PROTO_RECORD_H_
-#define SINGA_NEURALNET_INPUT_LAYER_PROTO_RECORD_H_
-
-#include <string>
-#include <vector>
+#include "singa/neuralnet/layer.h"
 #include "singa/io/store.h"
-#include "singa/neuralnet/input_layer/store_input.h"
 namespace singa {
-using std::string;
-using std::vector;
-
 /**
- * Specific layer that parses the value string loaded by Store into a
- * SingleLabelImageRecord.
+ * Output data (and label) for its source layer.
  */
-class ProtoRecordLayer : public SingleLabelRecordLayer {
+class CSVOutputLayer : public OutputLayer {
  public:
+  ~CSVOutputLayer() { delete store_; }
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
-
- protected:
-  /**
-   * Parse key as instance ID and val into SingleLabelImageRecord.
-   * @copydetails StoreInputLayer::Parse()
-   */
-  bool Parse(int k, int flag, const string& key, const string& val) override;
-  void LoadRecord(const string& backend,
-                  const string& path,
-                  Blob<float>* to) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
  private:
-  // TODO(wangwei) decode the image
-  bool encoded_;
+  int inst_ = 0;
+  io::Store* store_;
 };
-
-}  // namespace singa
-
-#endif  // SINGA_NEURALNET_INPUT_LAYER_PROTO_RECORD_H_
+} /* singa */
+#endif  // SINGA_NEURALNET_OUTPUT_LAYER_CSV_OUTPUT_H_

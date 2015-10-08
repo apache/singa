@@ -38,11 +38,11 @@
 #include "singa/neuralnet/connection_layer/slice.h"
 #include "singa/neuralnet/connection_layer/split.h"
 #include "singa/neuralnet/input_layer/deprecated.h"
-#include "singa/neuralnet/input_layer/csv_record.h"
+#include "singa/neuralnet/input_layer/csv.h"
 #include "singa/neuralnet/input_layer/image_preprocess.h"
 #include "singa/neuralnet/input_layer/prefetch.h"
-#include "singa/neuralnet/input_layer/proto_record.h"
-#include "singa/neuralnet/input_layer/store_input.h"
+#include "singa/neuralnet/input_layer/record.h"
+#include "singa/neuralnet/input_layer/store.h"
 #include "singa/neuralnet/loss_layer/euclidean.h"
 #include "singa/neuralnet/loss_layer/softmax.h"
 #include "singa/neuralnet/neuron_layer/convolution.h"
@@ -54,8 +54,8 @@
 #include "singa/neuralnet/neuron_layer/relu.h"
 #include "singa/neuralnet/neuron_layer/sigmoid.h"
 #include "singa/neuralnet/neuron_layer/stanh.h"
-#include "singa/neuralnet/output_layer/output_layer.h"
-
+#include "singa/neuralnet/output_layer/record.h"
+#include "singa/neuralnet/output_layer/csv.h"
 
 extern "C" void openblas_set_num_threads(int num);
 
@@ -79,9 +79,12 @@ void Driver::Init(int argc, char **argv) {
 
   // register layers
 
-  RegisterLayer<ProtoRecordLayer, int>(kProtoRecord);
-  RegisterLayer<CSVRecordLayer, int>(kCSVRecord);
+  // input and output layers
+  RegisterLayer<RecordInputLayer, int>(kRecordInput);
+  RegisterLayer<CSVInputLayer, int>(kCSVInput);
   RegisterLayer<ImagePreprocessLayer, int>(kImagePreprocess);
+  RegisterLayer<RecordOutputLayer, int>(kRecordOutput);
+  RegisterLayer<CSVOutputLayer, int>(kCSVOutput);
 
   RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
   RegisterLayer<BridgeSrcLayer, int>(kBridgeSrc);
@@ -161,6 +164,20 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
     SetupForResume(&job);
   job.set_id(job_id_);
   Train(job);
+}
+
+void Driver::Test(const JobProto& job_conf) {
+  Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
+  Cluster::Get()->Register(getpid(), "localhost");
+  // TODO(wangwei) extend to a group with multiple workers
+  auto worker = Worker::Create(job_conf.train_one_batch());
+  worker->Setup(0, 0, job_conf, nullptr, nullptr, nullptr);
+  auto net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
+  vector<string> paths;
+  for (const auto& p : job_conf.checkpoint_path())
+    paths.push_back(p);
+  net->Load(paths);
+  worker->Test(job_conf.test_steps(), kTest,  net);
 }
 
 void Driver::Train(const JobProto& job_conf) {
@@ -330,4 +347,5 @@ const vector<Server*> Driver::CreateServers(const JobProto& job_conf,
   }
   return servers;
 }
+
 }  // namespace singa

@@ -32,6 +32,9 @@
 #include "singa/utils/graph.h"
 
 namespace singa {
+using std::unordered_map;
+using std::string;
+using std::vector;
 /**
  * The neural network is constructed from user configurations in NetProto.
  *
@@ -62,6 +65,25 @@ class NeuralNet {
    */
   NeuralNet(NetProto net_conf, int num_partitions);
   ~NeuralNet();
+  /**
+   * Load net params from checkpoint fiels.
+   * @param path checkpoint files
+   */
+  void Load(const vector<string>& path);
+  /**
+   * load specified Param objects from from checkpoint files.
+   *
+   * Param objects and blobs are matched based on name.
+   * The param from previous checkpoint files will be overwritten by
+   * the param with the same name in later checkpoint files.
+   *
+   * @param[in] path
+   * @param[in,out] params load Blobs with the same name as the Params in this
+   * this dictionary. The Param values are copied into the corresponding Param
+   * objects.
+   */
+  static void Load(const vector<string>& path,
+                   const unordered_map<string, Param*>& params);
   /**
    * To display the adjacency layers
   std::string ToAdjacency();
@@ -108,9 +130,9 @@ class NeuralNet {
   std::vector<Layer*> layers_;
   std::vector<Param*> params_;
 
-  std::unordered_map<std::string, Layer*> name2layer_;
-  std::unordered_map<int, Param*> paramid2param_;
-  std::unordered_map<const Layer*, std::vector<Layer*>> src_map_;
+  unordered_map<std::string, Layer*> name2layer_;
+  unordered_map<int, Param*> paramid2param_;
+  unordered_map<const Layer*, std::vector<Layer*>> src_map_;
 };
 
 }  // namespace singa

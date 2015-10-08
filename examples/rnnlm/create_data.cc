@@ -70,9 +70,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include <fstream>
 
-#include "io/store.h"
-#include "utils/common.h"
-#include "proto/common.pb.h"
+#include "singa/io/store.h"
+#include "singa/utils/common.h"
+#include "singa/proto/common.pb.h"
 #include "./rnnlm.pb.h"
 
 #define MAX_STRING 100

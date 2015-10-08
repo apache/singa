@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,8 +19,36 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/output_layer/output_layer.h"
+#ifndef SINGA_NEURALNET_INPUT_LAYER_PROTO_H_
+#define SINGA_NEURALNET_INPUT_LAYER_PROTO_H_
+
+#include "./store.h"
 
 namespace singa {
 
+/**
+ * Specific layer that parses the value string loaded by Store into a
+ * RecordProto.
+ */
+class RecordInputLayer : public SingleLabelRecordLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+
+ protected:
+  /**
+   * Parse key as instance ID and val into RecordProto.
+   * @copydetails StoreInputLayer::Parse()
+   */
+  bool Parse(int k, int flag, const string& key, const string& val) override;
+  void LoadRecord(const string& backend,
+                  const string& path,
+                  Blob<float>* to) override;
+
+ private:
+  // TODO(wangwei) decode the image
+  bool encoded_;
+};
+
 }  // namespace singa
+
+#endif  // SINGA_NEURALNET_INPUT_LAYER_PROTO_RECORD_H_

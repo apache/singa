@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#ifndef SINGA_WORKER_H_
-#define SINGA_WORKER_H_
+#ifndef SINGA_SINGA_WORKER_H_
+#define SINGA_SINGA_WORKER_H_
 
 #include <string>
 #include <vector>
@@ -85,7 +85,14 @@ class Worker {
    * Train the neuralnet step by step, test/validation is done periodically.
    */
   void Run();
-
+  /**
+   * Run TestOneBatch() over the a neural net for a total number of steps.
+   *
+   * @param[in] steps total number of test iterations.
+   * @param[in] phase kVal or kTest
+   * @param[in] net run test over the passed in neural net
+   */
+  void Test(int steps, Phase phase, NeuralNet* net);
   /**
    * Init values of Param instances assocaited with local layers (i.e., layers
    * dispatched to this worker).
@@ -310,4 +317,4 @@ inline int BlobLayer(int blob_trgt) {
 
 }  // namespace singa
 
-#endif  // SINGA_WORKER_H_
+#endif  // SINGA_SINGA_WORKER_H_

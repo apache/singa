@@ -19,24 +19,24 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/proto_record.h"
+#include "singa/neuralnet/input_layer/record.h"
 namespace singa {
 
 using std::string;
 using std::vector;
 
-void ProtoRecordLayer::Setup(const LayerProto& conf,
+void RecordInputLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   SingleLabelRecordLayer::Setup(conf, srclayers);
   encoded_ = conf.store_conf().encoded();
 }
 
-void ProtoRecordLayer::LoadRecord(const string& backend,
+void RecordInputLayer::LoadRecord(const string& backend,
     const string&path, Blob<float>* to) {
   io::Store* store = io::OpenStore(backend, path, io::kRead);
   string key, val;
   CHECK(store->Read(&key, &val));
-  SingleLabelImageRecord image;
+  RecordProto image;
   image.ParseFromString(val);
   CHECK_EQ(to->count(), image.data_size());
   float* ptr = to->mutable_cpu_data();
@@ -45,9 +45,9 @@ void ProtoRecordLayer::LoadRecord(const string& backend,
   delete store;
 }
 
-bool ProtoRecordLayer::Parse(int k, int flag, const string& key,
+bool RecordInputLayer::Parse(int k, int flag, const string& key,
     const string& value) {
-  SingleLabelImageRecord image;
+  RecordProto image;
   image.ParseFromString(value);
   int size = data_.count() / batchsize_;
   if (image.data_size()) {

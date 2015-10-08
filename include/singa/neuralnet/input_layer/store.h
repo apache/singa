@@ -19,16 +19,12 @@
 *
 *************************************************************/
 
-#ifndef SINGA_NEURALNET_INPUT_LAYER_STORE_INPUT_H_
-#define SINGA_NEURALNET_INPUT_LAYER_STORE_INPUT_H_
+#ifndef SINGA_NEURALNET_INPUT_LAYER_STORE_H_
+#define SINGA_NEURALNET_INPUT_LAYER_STORE_H_
 
-#include <string>
-#include <vector>
 #include "singa/io/store.h"
 #include "singa/neuralnet/layer.h"
 namespace singa {
-using std::string;
-using std::vector;
 
 /**
  * Base class for loading data from Store.
@@ -39,7 +35,6 @@ class StoreInputLayer : virtual public InputLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
-  ConnectionType dst_layer_connection() const override { return kOneToMany; }
 
  protected:
   /**

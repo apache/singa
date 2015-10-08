@@ -22,18 +22,18 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "singa/neuralnet/input_layer/proto_record.h"
+#include "singa/neuralnet/input_layer/record.h"
 #include "singa/proto/job.pb.h"
 #include "singa/proto/common.pb.h"
 
-class ProtoRecordLayerTest : public ::testing::Test {
+class RecordInputLayerTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     std::string path ="src/test/test.bin";
     auto* store = singa::io::CreateStore("kvfile");
     store->Open(path, singa::io::kCreate);
     {
-    singa::SingleLabelImageRecord image;
+    singa::RecordProto image;
     image.add_data(3.2);
     image.add_data(1);
     image.add_data(14.1);
@@ -76,15 +76,15 @@ class ProtoRecordLayerTest : public ::testing::Test {
   singa::LayerProto image_conf;
 };
 
-TEST_F(ProtoRecordLayerTest, Setup) {
-  singa::ProtoRecordLayer layer;
+TEST_F(RecordInputLayerTest, Setup) {
+  singa::RecordInputLayer layer;
   layer.Setup(image_conf, std::vector<singa::Layer*>{});
   EXPECT_EQ(2, static_cast<int>(layer.aux_data().size()));
   EXPECT_EQ(6, layer.data(nullptr).count());
 }
 
-TEST_F(ProtoRecordLayerTest, ComputeFeature) {
-  singa::ProtoRecordLayer image;
+TEST_F(RecordInputLayerTest, ComputeFeature) {
+  singa::RecordInputLayer image;
   image.Setup(image_conf, std::vector<singa::Layer*>{});
   image.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{});
 
@@ -96,8 +96,8 @@ TEST_F(ProtoRecordLayerTest, ComputeFeature) {
   EXPECT_EQ(0.2f, data.cpu_data()[3]);
   EXPECT_EQ(1.1f, data.cpu_data()[5]);
 }
-TEST_F(ProtoRecordLayerTest, ComputeFeatureDeploy) {
-  singa::ProtoRecordLayer image;
+TEST_F(RecordInputLayerTest, ComputeFeatureDeploy) {
+  singa::RecordInputLayer image;
   image.Setup(image_conf, std::vector<singa::Layer*>{});
   image.ComputeFeature(singa::kDeploy, std::vector<singa::Layer*>{});
 
@@ -108,8 +108,8 @@ TEST_F(ProtoRecordLayerTest, ComputeFeatureDeploy) {
   EXPECT_EQ(1.1f, data.cpu_data()[5]);
 }
 
-TEST_F(ProtoRecordLayerTest, SeekToFirst) {
-  singa::ProtoRecordLayer image;
+TEST_F(RecordInputLayerTest, SeekToFirst) {
+  singa::RecordInputLayer image;
   image.Setup(image_conf, std::vector<singa::Layer*>{});
   image.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{});
   image.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{});

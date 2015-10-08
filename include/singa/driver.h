@@ -18,9 +18,8 @@
 * under the License.
 *
 *************************************************************/
-
-#ifndef SINGA_DRIVER_H_ 
-#define SINGA_DRIVER_H_
+#ifndef SINGA_SINGA_DRIVER_H_
+#define SINGA_SINGA_DRIVER_H_
 
 #include <vector>
 #include "singa/proto/job.pb.h"
@@ -65,6 +64,16 @@ class Driver {
    * by Train(bool, const JobProto&).
    */
   void Train(const JobProto& job_conf);
+  /**
+   * Test the pre-trained model by loading parameters from checkpoint files.
+   *
+   * It can be used for both computing accuracy of test data, and extracting
+   * features (predicting label) of new data.
+   * @param[in] job_conf job configuration, which should include the checkpoint
+   * files and test settings (e.g., test steps). To extract features, the output
+   * layers should be added.
+   */
+  void Test(const JobProto& job_conf);
   /**
    * Setting the checkpoint field of the job configuration to resume training.
    *
@@ -223,4 +232,4 @@ int Driver::RegisterWorker(const Type& type) {
 
 }  // namespace singa
 
-#endif  // SINGA_DRIVER_H_
+#endif  // SINGA_SINGA_DRIVER_H_

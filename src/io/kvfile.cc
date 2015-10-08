@@ -51,6 +51,7 @@ path_(path), mode_(mode), capacity_(capacity) {
         fdat_.open(path_, std::ios::in | std::ios::binary);
       }
       CHECK(fdat_.is_open()) << "Cannot open file " << path_;
+      fdat_.close();
       {
         int last_tuple = PrepareForAppend(path_);
         fdat_.open(path_, std::ios::binary | std::ios::out

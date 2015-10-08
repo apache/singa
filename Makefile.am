@@ -27,14 +27,6 @@ PROTO_PYS := tool/pb2/singa_pb2.py \
              tool/pb2/common_pb2.py
 
 SINGA_SRCS := src/driver.cc \
-              src/utils/cluster.cc \
-              src/utils/cluster_rt.cc \
-              src/utils/graph.cc \
-              src/utils/common.cc \
-              src/utils/param.cc \
-              src/utils/updater.cc \
-              src/utils/blob.cc \
-              src/utils/image_transform.cc \
               src/server.cc \
               src/worker.cc \
               src/stub.cc \
@@ -43,12 +35,14 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/connection_layer/concate.cc \
               src/neuralnet/connection_layer/slice.cc \
               src/neuralnet/connection_layer/split.cc \
-              src/neuralnet/input_layer/csv_record.cc \
+              src/neuralnet/input_layer/csv.cc \
               src/neuralnet/input_layer/image_preprocess.cc \
               src/neuralnet/input_layer/prefetch.cc \
-              src/neuralnet/input_layer/proto_record.cc \
+              src/neuralnet/input_layer/record.cc \
               src/neuralnet/input_layer/deprecated.cc \
-              src/neuralnet/input_layer/store_input.cc \
+              src/neuralnet/input_layer/store.cc \
+              src/neuralnet/output_layer/csv.cc \
+              src/neuralnet/output_layer/record.cc \
               src/neuralnet/loss_layer/euclidean.cc \
               src/neuralnet/loss_layer/softmax.cc \
               src/neuralnet/neuron_layer/convolution.cc \
@@ -66,31 +60,43 @@ SINGA_SRCS := src/driver.cc \
               src/io/kvfile.cc \
               src/io/kvfile_store.cc \
               src/io/textfile_store.cc \
-              src/io/store.cc
+              src/io/store.cc \
+              src/utils/cluster.cc \
+              src/utils/cluster_rt.cc \
+              src/utils/graph.cc \
+              src/utils/common.cc \
+              src/utils/param.cc \
+              src/utils/updater.cc \
+              src/utils/blob.cc \
+              src/utils/image_transform.cc
 
-SINGA_HDRS := include/singa/singa.h \
-              include/singa/utils/cluster.h \
-              include/singa/utils/cluster_rt.h \
-              include/singa/utils/param.h \
-              include/singa/utils/common.h \
-              include/singa/utils/factory.h \
-              include/singa/utils/singleton.h \
-              include/singa/utils/graph.h \
-              include/singa/utils/blob.h \
-              include/singa/utils/updater.h \
-              include/singa/utils/tinydir.h \
-              include/singa/utils/tokenizer.h \
-              include/singa/utils/image_transform.h \
-              include/singa/server.h \
-              include/singa/worker.h \
-              include/singa/stub.h \
-              include/singa/neuralnet/layer.h \
-              include/singa/neuralnet/connection_layer.h \
-              include/singa/neuralnet/input_layer.h \
-              include/singa/neuralnet/loss_layer.h \
-              include/singa/neuralnet/neuron_layer.h \
-              include/singa/neuralnet/output_layer.h \
-              include/singa/neuralnet/neuralnet.h \
+SINGA_HDRS := include/singa.h \
+              include/utils/cluster.h \
+              include/utils/cluster_rt.h \
+              include/utils/param.h \
+              include/utils/common.h \
+              include/utils/factory.h \
+              include/utils/data_shard.h \
+              include/utils/singleton.h \
+              include/utils/graph.h \
+              include/utils/blob.h \
+              include/utils/updater.h \
+              include/utils/tinydir.h \
+              include/utils/tokenizer.h \
+              include/utils/image_transform.h \
+              include/server.h \
+              include/worker.h \
+              include/stub.h \
+              include/neuralnet/layer.h \
+              include/neuralnet/output_layer/csv.h \
+              include/neuralnet/output_layer/record.h \
+              include/neuralnet/neuralnet.h \
+              include/singa/comm/msg.h \
+              include/singa/comm/socket.h \
+              include/singa/io/store.h \
+              include/singa/io/kvfile.h \
+              include/singa/io/kvfile_store.h \
+              include/singa/io/textfile_store.h \
               include/mshadow/tensor_expr.h \
               include/mshadow/tensor_container.h \
               include/mshadow/tensor_expr_ext.h \
@@ -98,26 +104,20 @@ SINGA_HDRS := include/singa/singa.h \
               include/mshadow/tensor_io.h \
               include/mshadow/cxxnet_op.h \
               include/mshadow/tensor_base.h \
-              include/mshadow/tensor_random.h \
-              include/singa/comm/msg.h \
-              include/singa/comm/socket.h \
-              include/singa/io/store.h \
-              include/singa/io/kvfile.h \
-              include/singa/io/kvfile_store.h \
-              include/singa/io/textfile_store.h
+              include/mshadow/tensor_random.h
 
 GTEST_SRCS := include/gtest/gtest-all.cc
 GTEST_HRDS := include/gtest/gtest.h
 TEST_SRCS := include/gtest/gtest_main.cc \
-			 src/test/test_cluster.cc \
-             src/test/test_common.cc \
-			 src/test/test_msg.cc \
-			 src/test/test_neuralnet.cc \
-			 src/test/test_paramslicer.cc \
-			 src/test/test_kvfile.cc \
-			 src/test/test_store.cc \
-			 src/test/test_proto_record_layer.cc \
-			 src/test/test_csv_record_layer.cc
+						 src/test/test_cluster.cc \
+						 src/test/test_common.cc \
+						 src/test/test_msg.cc \
+						 src/test/test_neuralnet.cc \
+						 src/test/test_paramslicer.cc \
+						 src/test/test_kvfile.cc \
+						 src/test/test_store.cc \
+						 src/test/test_record_input_layer.cc \
+						 src/test/test_csv_input_layer.cc
 
 #EXTRA_PROGRAMS = $(PROGS)
 EXTRA_PROGRAMS = singatest
@@ -128,7 +128,7 @@ lib_LTLIBRARIES = libsinga.la $(LTLIBS)
 bin_PROGRAMS = singa singatool $(PROGS)
 
 #lib_LTLIBRARIES = libsinga.la
-libsinga_la_SOURCES = $(PROTO_HDRS) $(PROTO_SRCS) $(SINGA_HDRS) $(SINGA_SRCS)
+libsinga_la_SOURCES = $(PROTO_SRCS) $(SINGA_SRCS)
 libsinga_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive
 if LMDB
 libsinga_la_CXXFLAGS += -DUSE_LMDB
@@ -183,7 +183,7 @@ singatest_LDFLAGS = -I./include \
                 -lzmq \
                 -lczmq \
                 -lzookeeper_mt \
-				-lgtest
+								-lgtest
 if LMDB
 singatest_LDFLAGS += -llmdb
 endif

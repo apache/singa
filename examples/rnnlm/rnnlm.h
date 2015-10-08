@@ -24,7 +24,7 @@
 
 #include <string>
 #include <vector>
-#include "./singa.h"
+#include "singa/singa.h"
 #include "./rnnlm.pb.h"
 
 namespace rnnlm {
@@ -37,7 +37,7 @@ using singa::Metric;
 /**
  * Base RNN layer. May make it a base layer of SINGA.
  */
-class RNNLayer : virtual public Layer {
+class RNNLayer : virtual public singa::Layer {
  public:
   /**
    * The recurrent layers may be unrolled different times for different
@@ -58,7 +58,7 @@ class RNNLayer : virtual public Layer {
 /**
  * Input layer that get read records from data shard
  */
-class DataLayer : public RNNLayer, public singa::DataLayer {
+class DataLayer : public RNNLayer, public singa::InputLayer {
  public:
   ~DataLayer();
   void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;

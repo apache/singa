@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#ifndef SINGA_SERVER_H_
-#define SINGA_SERVER_H_
+#ifndef SINGA_SINGA_SERVER_H_
+#define SINGA_SINGA_SERVER_H_
 
 #include <unordered_map>
 #include <vector>
@@ -130,4 +130,4 @@ class Server {
 
 }  // namespace singa
 
-#endif  // SINGA_SERVER_H_
+#endif  // SINGA_SINGA_SERVER_H_

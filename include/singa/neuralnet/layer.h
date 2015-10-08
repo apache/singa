@@ -34,6 +34,8 @@
 
 namespace singa {
 using std::vector;
+using std::string;
+
 // TODO(wangwei) make AuxType a template argument for Layer.
 using AuxType = int;
 /**
@@ -230,6 +232,7 @@ class ConnectionLayer : virtual public Layer {
 class InputLayer : virtual public Layer {
  public:
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
+  ConnectionType dst_layer_connection() const override { return kOneToMany; }
   Blob<float>* mutable_grad(const Layer* layer) override {
     // LOG(FATAL) << "Loss layer has no gradient blob";
     return nullptr;
@@ -239,6 +242,8 @@ class InputLayer : virtual public Layer {
     return grad_;
   }
 };
+
+using SingleLabelImageRecord = RecordProto;
 
 
 /**
@@ -270,7 +275,7 @@ class NeuronLayer : virtual public Layer {
 /**
  * Base layer for collecting features into disk file, HTTP stream, etc.
  */
-class OutpuLayer : virtual public Layer {
+class OutputLayer : virtual public Layer {
  public:
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
   Blob<float>* mutable_grad(const Layer* layer) override {
@@ -284,5 +289,4 @@ class OutpuLayer : virtual public Layer {
 };
 
 }  // namespace singa
-
 #endif  // SINGA_NEURALNET_LAYER_H_

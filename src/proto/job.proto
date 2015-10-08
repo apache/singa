@@ -318,7 +318,7 @@ message SplitProto {
 }
 
 message StoreProto {
-  required string backend = 1;
+  optional string backend = 1;
   optional string path = 2;
   optional string separator = 3 [default = ","];
   optional string mean_file = 4;
@@ -535,13 +535,17 @@ enum InitMethod {
 }
 
 enum LayerType {
-  // Data layers
+  // Input/Output layers
   //  - Load records from file, database
-  kProtoRecord = 29;
-  kCSVRecord = 30;
+  kRecordInput = 29;
+  kCSVInput = 30;
+  kCSVOutput = 32;
+  kRecordOutput = 33;
   kImagePreprocess = 31;
-  kLMDBData = 17;
   kPrefetch = 19;
+
+  // deprecated input layers
+  kLMDBData = 17;
   kShardData = 3;
   kLabel = 18;
   kMnist = 7;

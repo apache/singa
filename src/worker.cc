@@ -78,32 +78,24 @@ void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
         }
       }
     }
-    // load from checkpoints. get param blob based on param name.
-    // the param from previous checkpoint files will be overwritten by
-    // the param with the same name in later checkpoint files.
-    for (const auto path : job_conf.checkpoint_path()) {
-      LOG(ERROR) << "Load from checkpoint file " << path;
-      BlobProtos bps;
-      ReadProtoFromBinaryFile(path.c_str(), &bps);
-      for (int i = 0; i < bps.name_size(); i++) {
-        if (name2param.find(bps.name(i)) != name2param.end()) {
-          name2param.at(bps.name(i))->FromProto(bps.blob(i));
-          //  if load from pre-training params, reset version to start step
-          if (job_conf.reset_param_version())
-            name2param.at(bps.name(i))->set_version(job_conf.step());
-          else  // if resume training, use the same version as last checkpoint
-            name2param.at(bps.name(i))->set_version(bps.version(i));
-        }
-      }
-    }
+    vector<string> paths;
+    for (const auto& p : job_conf_.checkpoint_path())
+      paths.push_back(p);
+    net->Load(paths, name2param);
     // init other params who do not have checkpoint version
-    for (auto entry : name2param)
-      if (entry.second->version() < 0) {
+    for (auto entry : name2param) {
+      if (entry.second->version() > 0) {
+        //  if load from pre-training params, reset version to start step
+        if (job_conf.reset_param_version()) {
+          entry.second->set_version(job_conf.step());
+        }
+      } else {
         entry.second->InitValues(job_conf.step());
         if (!job_conf.reset_param_version())
           LOG(ERROR) << "better reset version of params from checkpoints "
             << "to the same as other newly initialized params!";
       }
+    }
 
     // warmup training before put params to servers
     for (; step_ < job_conf.warmup_steps(); step_++)
@@ -131,6 +123,12 @@ void ConnectStub(int grp, int id, Dealer* dealer, EntityType entity) {
   dealer->Send(&ping);
 }
 
+void Worker::Test(int steps, Phase phase, NeuralNet* net) {
+  for (int step = 0; step < steps; step++)
+    TestOneBatch(step, phase, net);
+  Display(phase, " ", net);
+}
+
 void Worker::Run() {
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") start";
   auto cluster = Cluster::Get();
@@ -156,15 +154,13 @@ void Worker::Run() {
   while (!StopNow(step_)) {
     if (ValidateNow(step_) && val_net_ != nullptr) {
       CollectAll(step_, val_net_);
-      for (int step = 0; step < job_conf_.validate_steps(); step++)
-        TestOneBatch(step, kVal, val_net_);
-      Display(kVal, "Validation @ step " + std::to_string(step_), val_net_);
+      LOG(ERROR) << "Validation @ step " + std::to_string(step_);
+      Test(job_conf_.validate_steps(), kVal, val_net_);
     }
     if (TestNow(step_) && test_net_ != nullptr) {
       CollectAll(step_, test_net_);
-      for (int step = 0; step < job_conf_.test_steps(); step++)
-        TestOneBatch(step, kTest, test_net_);
-      Display(kTest, "Test @ step " + std::to_string(step_), test_net_);
+      LOG(ERROR) << "Test @ step " + std::to_string(step_);
+      Test(job_conf_.test_steps(), kTest, test_net_);
     }
     if (CheckpointNow(step_) && grp_id_ == 0) {
       CollectAll(step_, train_net_);
@@ -212,7 +208,7 @@ void Worker::Checkpoint(int step, const std::string& folder, NeuralNet* net) {
 
 int Worker::Put(int step, Param* param) {
   if (dealer_ == nullptr) {
-    LOG(ERROR) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
+    LOG(WARNING) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
     return 1;
   }
   Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
@@ -226,7 +222,7 @@ int Worker::Get(int step, Param* param) {
   if (param->version() >= step)
     return 1;
   if (dealer_ == nullptr) {
-    LOG(ERROR) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
+    LOG(WARNING) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
     return 1;
   }
   Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
@@ -239,7 +235,7 @@ int Worker::Get(int step, Param* param) {
 int Worker::Update(int step, Param* param) {
   param->set_local_version(param->version());
   if (dealer_ == nullptr) {
-    LOG(ERROR) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
+    LOG(WARNING) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
     return 1;
   }
   Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
@@ -272,7 +268,7 @@ void Worker::Display(int flag, const std::string& prefix, NeuralNet* net) {
     if (layer->partition_id() == id_) {
       const string& disp = layer->ToString(false, flag);
       if (disp.length())
-        LOG(ERROR) << prefix << ": " << disp;
+        LOG(ERROR) << prefix << "  " << disp;
       if (job_conf_.debug()) {
         const string& info = layer->ToString(true, flag);
         if (info.length()) {

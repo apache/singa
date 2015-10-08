@@ -19,11 +19,8 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/store_input.h"
+#include "singa/neuralnet/input_layer/store.h"
 namespace singa {
-
-using std::string;
-using std::vector;
 
 StoreInputLayer::~StoreInputLayer() {
   if (store_ != nullptr) {

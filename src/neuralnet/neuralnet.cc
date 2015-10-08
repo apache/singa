@@ -93,6 +93,28 @@ NeuralNet::~NeuralNet() {
   for (auto layer : layers_)
     delete layer;
 }
+void NeuralNet::Load(const vector<string>& paths) {
+  unordered_map<string, Param*> params;
+  for (auto p : params_) {
+    params[p->name()] = p;
+  }
+  Load(paths, params);
+}
+void NeuralNet::Load(const vector<string>& paths,
+    const unordered_map<string, Param*>& params) {
+  for (const auto path : paths) {
+    LOG(ERROR) << "Load from checkpoint file " << path;
+    BlobProtos bps;
+    // TODO(wangwei) extend to read checkpoint from HDFS
+    ReadProtoFromBinaryFile(path.c_str(), &bps);
+    for (int i = 0; i < bps.name_size(); i++) {
+      if (params.find(bps.name(i)) != params.end()) {
+        params.at(bps.name(i))->FromProto(bps.blob(i));
+        params.at(bps.name(i))->set_version(bps.version(i));
+      }
+    }
+  }
+}
 
 /*
 std::string NeuralNet::ToAdjacency() {

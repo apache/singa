@@ -19,6 +19,7 @@
 *
 *************************************************************/
 
+#include <iostream>
 #include "singa/singa.h"
 /**
  * \file main.cc provides an example main function.
@@ -43,20 +44,30 @@
  * easily, e.g., MLP(layer1_size, layer2_size, tanh, loss);
  */
 int main(int argc, char **argv) {
+  if (argc < 4) {
+    std::cout << "Args: -conf JOB_CONF -singa SINGA_CONF -job_id JOB_ID "
+              << " [-resume|-test]\n"
+              << "-resume\t resume training from latest checkpoint files\n"
+              << "-test\t test performance or extract features\n";
+    return 0;
+  }
   // must create driver at the beginning and call its Init method.
   singa::Driver driver;
   driver.Init(argc, argv);
-
-  // if -resume in argument list, set resume to true; otherwise false
-  int resume_pos = singa::ArgPos(argc, argv, "-resume");
-  bool resume = (resume_pos != -1);
 
   // users can register new subclasses of layer, updater, etc.
 
   // get the job conf, and custmize it if need
   singa::JobProto jobConf = driver.job_conf();
 
-  // submit the job for training
-  driver.Train(resume, jobConf);
+  if (singa::ArgPos(argc, argv, "-test") != -1) {
+    driver.Test(jobConf);
+  } else {
+    // if -resume in argument list, set resume to true; otherwise false
+    int resume_pos = singa::ArgPos(argc, argv, "-resume");
+    bool resume = (resume_pos != -1);
+    // submit the job for training
+    driver.Train(resume, jobConf);
+  }
   return 0;
 }

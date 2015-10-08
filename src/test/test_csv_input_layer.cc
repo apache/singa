@@ -23,10 +23,10 @@
 #include <fstream>
 
 #include "gtest/gtest.h"
-#include "singa/neuralnet/input_layer/csv_record.h"
+#include "singa/neuralnet/input_layer/csv.h"
 #include "singa/proto/job.pb.h"
 
-class CSVRecordLayerTest : public ::testing::Test {
+class CSVInputLayerTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     std::string path ="src/test/test.csv";
@@ -45,15 +45,15 @@ class CSVRecordLayerTest : public ::testing::Test {
   singa::LayerProto csv_conf;
 };
 
-TEST_F(CSVRecordLayerTest, Setup) {
-  singa::CSVRecordLayer layer;
+TEST_F(CSVInputLayerTest, Setup) {
+  singa::CSVInputLayer layer;
   layer.Setup(csv_conf, std::vector<singa::Layer*>{});
   EXPECT_EQ(2, static_cast<int>(layer.aux_data().size()));
   EXPECT_EQ(6, layer.data(nullptr).count());
 }
 
-TEST_F(CSVRecordLayerTest, ComputeFeature) {
-  singa::CSVRecordLayer csv;
+TEST_F(CSVInputLayerTest, ComputeFeature) {
+  singa::CSVInputLayer csv;
   csv.Setup(csv_conf, std::vector<singa::Layer*>{});
   csv.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{});
 
@@ -65,8 +65,8 @@ TEST_F(CSVRecordLayerTest, ComputeFeature) {
   EXPECT_EQ(0.2f, data.cpu_data()[3]);
   EXPECT_EQ(1.1f, data.cpu_data()[5]);
 }
-TEST_F(CSVRecordLayerTest, ComputeFeatureDeploy) {
-  singa::CSVRecordLayer csv;
+TEST_F(CSVInputLayerTest, ComputeFeatureDeploy) {
+  singa::CSVInputLayer csv;
   csv_conf.mutable_store_conf()->set_shape(0, 4);
   csv.Setup(csv_conf, std::vector<singa::Layer*>{});
   csv.ComputeFeature(singa::kDeploy, std::vector<singa::Layer*>{});
@@ -78,8 +78,8 @@ TEST_F(CSVRecordLayerTest, ComputeFeatureDeploy) {
   EXPECT_EQ(0.2f, data.cpu_data()[5]);
 }
 
-TEST_F(CSVRecordLayerTest, SeekToFirst) {
-  singa::CSVRecordLayer csv;
+TEST_F(CSVInputLayerTest, SeekToFirst) {
+  singa::CSVInputLayer csv;
   csv.Setup(csv_conf, std::vector<singa::Layer*>{});
   csv.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{});
   csv.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{});

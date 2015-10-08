@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -94,12 +94,13 @@ message Record {
   optional Type type = 1 [default = kSingleLabelImage];
   optional string user_type =2;
   // configuration for
-  optional SingleLabelImageRecord image = 5;
+  optional RecordProto image = 5;
 
   extensions 101 to 200;
 }
 
-message SingleLabelImageRecord {
+// rename SingleLabelImageRecord to RecordProto
+message RecordProto {
   repeated int32 shape = 1;
   optional int32 label = 2;
   optional bytes pixel = 3;

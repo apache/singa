@@ -18,40 +18,21 @@
 * under the License.
 *
 *************************************************************/
-
-#ifndef SINGA_NEURALNET_INPUT_LAYER_CSV_RECORD_H_
-#define SINGA_NEURALNET_INPUT_LAYER_CSV_RECORD_H_
-
-#include <string>
-#include <vector>
-#include "singa/neuralnet/input_layer/store_input.h"
-
+#ifndef SINGA_NEURALNET_OUTPUT_LAYER_RECORD_H_
+#define SINGA_NEURALNET_OUTPUT_LAYER_RECORD_H_
+#include "singa/neuralnet/layer.h"
+#include "singa/io/store.h"
 namespace singa {
-using std::string;
-using std::vector;
 
-/**
- * Specific layer that parses the value string loaded by Store as a line from
- * a CSV file.
- *
- * It assumes the first column is the label except that has_label_ is configured
- * to false. Or the data is used in deploy mode.
- */
-class CSVRecordLayer : public SingleLabelRecordLayer {
+class RecordOutputLayer : public OutputLayer {
  public:
+  ~RecordOutputLayer() { delete store_; }
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
-
- protected:
-  bool Parse(int k, int flag, const string& key, const string& val) override;
-  void LoadRecord(const string& backend,
-                  const string& path,
-                  Blob<float>* to) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
  private:
-  std::string sep_;
-  bool has_label_;
+  io::Store* store_;
+  int inst_ = 0;  //!< instance No.
 };
-
-}  // namespace singa
-
-#endif  // SINGA_NEURALNET_INPUT_LAYER_CSV_RECORD_H_
+} /* singa */
+#endif  // SINGA_NEURALNET_OUTPUT_LAYER_RECORD_H_

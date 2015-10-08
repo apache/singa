@@ -19,20 +19,18 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/csv_record.h"
+#include "singa/neuralnet/input_layer/csv.h"
 #include "singa/utils/tokenizer.h"
+
 namespace singa {
 
-using std::string;
-using std::vector;
-
-void CSVRecordLayer::Setup(const LayerProto& conf,
+void CSVInputLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   SingleLabelRecordLayer::Setup(conf, srclayers);
   sep_ = conf.store_conf().separator();
 }
 
-void CSVRecordLayer::LoadRecord(const string& backend,
+void CSVInputLayer::LoadRecord(const string& backend,
     const string&path, Blob<float>* to) {
   io::Store* store = io::OpenStore(backend, path, io::kRead);
   string key, val;
@@ -48,7 +46,7 @@ void CSVRecordLayer::LoadRecord(const string& backend,
   delete store;
 }
 
-bool CSVRecordLayer::Parse(int k, int flag, const string& key,
+bool CSVInputLayer::Parse(int k, int flag, const string& key,
     const string& value) {
   float* ptr = data_.mutable_cpu_data() + k * data_.count() / batchsize_;
   Tokenizer t(value, sep_);
