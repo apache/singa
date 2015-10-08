@@ -25,10 +25,6 @@
 #include <vector>
 #include "singa/neuralnet/layer.h"
 
-/**
- * \file this file includes the declarations of layers that inherit the
- * base ConnectionLayer.
- */
 namespace singa {
 class BridgeLayer : virtual public ConnectionLayer {
  public:

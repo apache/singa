@@ -24,12 +24,7 @@
 
 #include <vector>
 #include "singa/neuralnet/layer.h"
-#include "singa/proto/job.pb.h"
 
-/**
- * \file this file includes the declarations neuron layer classes that conduct
- * the transformation of features.
- */
 namespace singa {
 
 class DropoutLayer : public NeuronLayer {

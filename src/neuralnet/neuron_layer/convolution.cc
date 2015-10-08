@@ -26,7 +26,6 @@
 #include "singa/utils/singleton.h"
 
 namespace singa {
-using std::string;
 using std::vector;
 
 /************ Implementation for ConvolutionLayer*************************/

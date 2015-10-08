@@ -25,10 +25,6 @@
 #include <vector>
 #include "singa/neuralnet/layer.h"
 
-/**
- * @file this file includes the declarations of layers that inherit the base
- * LossLayer for measuring the objective training loss.
- */
 namespace singa {
 using std::vector;
 /**
@@ -43,7 +39,7 @@ class SoftmaxLossLayer : public LossLayer {
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
   /**
-   * softmax is not recommendeded for partition because it requires the whole
+   * This layer is not recommendeded for partition because it requires the whole
    * src layer for normalization.
    */
   ConnectionType src_neuron_connection(int k) const override {

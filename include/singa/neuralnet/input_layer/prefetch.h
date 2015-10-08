@@ -24,30 +24,14 @@
 
 #include <string>
 #include <vector>
-#include "singa/io/store.h"
+#include <thread>
 #include "singa/neuralnet/layer.h"
-#include "singa/utils/data_shard.h"
-/**
- * \file this file includes the declarations of input layers that inherit the
- * base InputLayer to load input features.
- *
- * The feature loading phase can be implemented using a single layer or
- * separated into DataLayer (for loading features as records) and ParserLayer
- * (for parsing features from records). SINGA has provided some subclasses of
- * DataLayer and ParserLayer.
- *
- * Data prefetching can be implemented as a sub-class of InputLayer.
- * SINGA provides a built-in PrefetchLayer which embeds DataLayer and
- * ParserLayer.
- */
 namespace singa {
-using std::string;
 using std::vector;
 /**
- * Layer for prefetching data records and parsing them.
+ * TODO(wangwei) Layer for prefetching data records and parsing them.
  *
- * The data loading and parsing work is done by internal DataLayer and
- * ParserLayer respectively. This layer controls the prefetching thread, i.e.,
+ * This layer controls the prefetching thread, i.e.,
  * creating and joining the prefetching thread.
  */
 class PrefetchLayer : public Layer {

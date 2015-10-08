@@ -25,15 +25,11 @@
 #include <vector>
 #include "singa/neuralnet/layer.h"
 
-/**
- * @file this file includes the declarations of layers that inherit the base
- * LossLayer for measuring the objective training loss.
- */
 namespace singa {
 using std::vector;
 /**
- * Squared Euclidean loss as @f$0.5 ||p - t||^2@f$, where p is for prediction
- * t is for ground truth.
+ * Squared Euclidean loss as @f$0.5 ||p - t||^2@f$, where p is prediction
+ * result, t is the ground truth.
  */
 class EuclideanLossLayer : public LossLayer {
  public:

@@ -25,22 +25,7 @@
 #include <string>
 #include <vector>
 #include "singa/io/store.h"
-#include "singa/neuralnet/layer.h"
 #include "singa/neuralnet/input_layer/store_input.h"
-#include "singa/utils/data_shard.h"
-/**
- * \file this file includes the declarations of input layers that inherit the
- * base InputLayer to load input features.
- *
- * The feature loading phase can be implemented using a single layer or
- * separated into DataLayer (for loading features as records) and ParserLayer
- * (for parsing features from records). SINGA has provided some subclasses of
- * DataLayer and ParserLayer.
- *
- * Data prefetching can be implemented as a sub-class of InputLayer.
- * SINGA provides a built-in PrefetchLayer which embeds DataLayer and
- * ParserLayer.
- */
 namespace singa {
 using std::string;
 using std::vector;

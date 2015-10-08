@@ -175,8 +175,8 @@ class KVFile {
 
 /**
  * @deprecated {ShardData is deprecated! Use KVFile}.
-using ShardData = KVFile;
-*/
+ */
+using DataShard = io::KVFile;
 }  // namespace singa
 
 #endif  // SINGA_IO_KVFILE_H_

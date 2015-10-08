@@ -33,7 +33,6 @@ SINGA_SRCS := src/driver.cc \
               src/utils/common.cc \
               src/utils/param.cc \
               src/utils/updater.cc \
-              src/utils/data_shard.cc \
               src/utils/blob.cc \
               src/utils/image_transform.cc \
               src/server.cc \
@@ -44,16 +43,11 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/connection_layer/concate.cc \
               src/neuralnet/connection_layer/slice.cc \
               src/neuralnet/connection_layer/split.cc \
-              src/neuralnet/input_layer/parser.cc \
               src/neuralnet/input_layer/csv_record.cc \
               src/neuralnet/input_layer/image_preprocess.cc \
-              src/neuralnet/input_layer/label.cc \
-              src/neuralnet/input_layer/lmdb_data.cc \
-              src/neuralnet/input_layer/mnist.cc \
               src/neuralnet/input_layer/prefetch.cc \
               src/neuralnet/input_layer/proto_record.cc \
-              src/neuralnet/input_layer/rgb_image.cc \
-              src/neuralnet/input_layer/shard_data.cc \
+              src/neuralnet/input_layer/deprecated.cc \
               src/neuralnet/input_layer/store_input.cc \
               src/neuralnet/loss_layer/euclidean.cc \
               src/neuralnet/loss_layer/softmax.cc \
@@ -80,7 +74,6 @@ SINGA_HDRS := include/singa/singa.h \
               include/singa/utils/param.h \
               include/singa/utils/common.h \
               include/singa/utils/factory.h \
-              include/singa/utils/data_shard.h \
               include/singa/utils/singleton.h \
               include/singa/utils/graph.h \
               include/singa/utils/blob.h \

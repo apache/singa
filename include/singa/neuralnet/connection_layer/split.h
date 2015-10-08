@@ -25,10 +25,6 @@
 #include <vector>
 #include "singa/neuralnet/layer.h"
 
-/**
- * \file this file includes the declarations of layers that inherit the
- * base ConnectionLayer.
- */
 namespace singa {
 /**
  * Connect a single (src) layer with multiple dst layers.

@@ -21,8 +21,6 @@
 
 #include "singa/neuralnet/input_layer/prefetch.h"
 #include "mshadow/tensor.h"
-#include "singa/utils/image_transform.h"
-#include "singa/utils/tokenizer.h"
 namespace singa {
 
 using namespace mshadow;
