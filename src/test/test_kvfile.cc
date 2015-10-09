@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 
 #include "gtest/gtest.h"
-#include "singa/utils/data_shard.h"
+#include "singa/io/kvfile.h"
 
 std::string key[] = {"firstkey",
                      "secondkey",
@@ -34,37 +34,36 @@ std::string tuple[] = {"firsttuple",
                        "thridtuple",
                        "tuple4",
                        "tuple5"};
-
-using namespace singa;
-
-TEST(DataShardTest, CreateDataShard) {
+namespace singa {
+namespace io {
+TEST(KVFileTest, CreateKVFile) {
   std::string path = "src/test/shard_test";
   mkdir(path.c_str(), 0755);
-  DataShard shard(path, DataShard::kCreate, 50);
+  KVFile shard(path, KVFile::kCreate, 50);
   shard.Insert(key[0], tuple[0]);
   shard.Insert(key[1], tuple[1]);
   shard.Insert(key[2], tuple[2]);
   shard.Flush();
 }
 
-TEST(DataShardTest, AppendDataShard) {
+TEST(KVFileTest, AppendKVFile) {
   std::string path = "src/test/shard_test";
-  DataShard shard(path, DataShard::kAppend, 50);
+  KVFile shard(path, KVFile::kAppend, 50);
   shard.Insert(key[3], tuple[3]);
   shard.Insert(key[4], tuple[4]);
   shard.Flush();
 }
 
-TEST(DataShardTest, CountDataShard) {
+TEST(KVFileTest, CountKVFile) {
   std::string path = "src/test/shard_test";
-  DataShard shard(path, DataShard::kRead, 50);
+  KVFile shard(path, KVFile::kRead, 50);
   int count = shard.Count();
   ASSERT_EQ(5, count);
 }
 
-TEST(DataShardTest, ReadDataShard) {
+TEST(KVFileTest, ReadKVFile) {
   std::string path = "src/test/shard_test";
-  DataShard shard(path, DataShard::kRead, 50);
+  KVFile shard(path, KVFile::kRead, 50);
   std::string k, t;
   ASSERT_TRUE(shard.Next(&k, &t));
   ASSERT_STREQ(key[0].c_str(), k.c_str());
@@ -83,3 +82,5 @@ TEST(DataShardTest, ReadDataShard) {
   ASSERT_STREQ(key[0].c_str(), k.c_str());
   ASSERT_STREQ(tuple[0].c_str(), t.c_str());
 }
+}  // namespace io
+}  // namespace singa

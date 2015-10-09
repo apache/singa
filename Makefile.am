@@ -114,7 +114,7 @@ TEST_SRCS := include/gtest/gtest_main.cc \
 			 src/test/test_msg.cc \
 			 src/test/test_neuralnet.cc \
 			 src/test/test_paramslicer.cc \
-			 src/test/test_shard.cc \
+			 src/test/test_kvfile.cc \
 			 src/test/test_store.cc \
 			 src/test/test_proto_record_layer.cc \
 			 src/test/test_csv_record_layer.cc

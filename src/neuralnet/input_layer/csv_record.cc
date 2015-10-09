@@ -20,19 +20,11 @@
 *************************************************************/
 
 #include "singa/neuralnet/input_layer/csv_record.h"
-#include "mshadow/tensor.h"
-#include "singa/utils/image_transform.h"
 #include "singa/utils/tokenizer.h"
 namespace singa {
 
-using namespace mshadow;
-using mshadow::cpu;
-using mshadow::Shape4;
-using mshadow::Tensor;
-
 using std::string;
 using std::vector;
-
 
 void CSVRecordLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {

@@ -20,15 +20,8 @@
 *************************************************************/
 
 #include "singa/neuralnet/input_layer/prefetch.h"
-#include "mshadow/tensor.h"
 namespace singa {
 
-using namespace mshadow;
-using mshadow::cpu;
-using mshadow::Shape4;
-using mshadow::Tensor;
-
-using std::string;
 using std::vector;
 
 PrefetchLayer::~PrefetchLayer() {

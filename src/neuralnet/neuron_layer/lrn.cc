@@ -22,12 +22,10 @@
 #include "singa/neuralnet/neuron_layer/lrn.h"
 
 #include <glog/logging.h>
-#include <algorithm>
 #include "singa/utils/singleton.h"
 
 namespace singa {
 
-using std::string;
 using std::vector;
 
 void LRNLayer::Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {

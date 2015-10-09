@@ -21,6 +21,7 @@
 
 #include "singa/neuralnet/loss_layer/softmax.h"
 
+#include <algorithm>
 #include <glog/logging.h>
 #include "mshadow/tensor.h"
 
@@ -32,11 +33,8 @@ using mshadow::cpu;
 using mshadow::Shape;
 using mshadow::Shape1;
 using mshadow::Shape2;
-using mshadow::Shape3;
-using mshadow::Shape4;
 using mshadow::Tensor;
 
-using std::string;
 using std::vector;
 
 void SoftmaxLossLayer::Setup(const LayerProto& proto,

@@ -22,7 +22,6 @@
 #include "singa/neuralnet/neuron_layer/convolution.h"
 
 #include <glog/logging.h>
-#include <algorithm>
 #include "singa/utils/singleton.h"
 
 namespace singa {

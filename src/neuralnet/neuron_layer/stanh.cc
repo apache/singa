@@ -22,12 +22,10 @@
 #include "singa/neuralnet/neuron_layer/stanh.h"
 
 #include <glog/logging.h>
-#include <algorithm>
 #include "singa/utils/singleton.h"
 
 namespace singa {
 
-using std::string;
 using std::vector;
 
 void STanhLayer::Setup(const LayerProto& conf,
