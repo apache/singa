@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "utils/graph.h"
+#include "singa/utils/graph.h"
 
 #include <glog/logging.h>
 #include <algorithm>

@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "utils/param.h"
+#include "singa/utils/param.h"
 #include "gtest/gtest.h"
 
 

@@ -36,7 +36,8 @@
 #include <cstdint>
 #include <iostream>
 
-#include "./singa.h"
+#include "singa/io/store.h"
+#include "singa/proto/common.pb.h"
 
 using std::string;
 

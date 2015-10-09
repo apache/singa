@@ -19,19 +19,43 @@
 *
 *************************************************************/
 
-#include "./driver.h"
+#include "singa/driver.h"
 
 #include <glog/logging.h>
 #include <set>
 #include <string>
 #include <vector>
-#include "neuralnet/layer.h"
-#include "utils/common.h"
-#include "utils/tinydir.h"
-#include "utils/cluster.h"
-#include "./server.h"
-#include "./stub.h"
-#include "./worker.h"
+#include "singa/neuralnet/layer.h"
+#include "singa/utils/common.h"
+#include "singa/utils/tinydir.h"
+#include "singa/utils/cluster.h"
+#include "singa/server.h"
+#include "singa/stub.h"
+#include "singa/worker.h"
+
+#include "singa/neuralnet/connection_layer/bridge.h"
+#include "singa/neuralnet/connection_layer/concate.h"
+#include "singa/neuralnet/connection_layer/slice.h"
+#include "singa/neuralnet/connection_layer/split.h"
+#include "singa/neuralnet/input_layer/deprecated.h"
+#include "singa/neuralnet/input_layer/csv_record.h"
+#include "singa/neuralnet/input_layer/image_preprocess.h"
+#include "singa/neuralnet/input_layer/prefetch.h"
+#include "singa/neuralnet/input_layer/proto_record.h"
+#include "singa/neuralnet/input_layer/store_input.h"
+#include "singa/neuralnet/loss_layer/euclidean.h"
+#include "singa/neuralnet/loss_layer/softmax.h"
+#include "singa/neuralnet/neuron_layer/convolution.h"
+#include "singa/neuralnet/neuron_layer/dropout.h"
+#include "singa/neuralnet/neuron_layer/inner_product.h"
+#include "singa/neuralnet/neuron_layer/lrn.h"
+#include "singa/neuralnet/neuron_layer/pooling.h"
+#include "singa/neuralnet/neuron_layer/rbm.h"
+#include "singa/neuralnet/neuron_layer/relu.h"
+#include "singa/neuralnet/neuron_layer/sigmoid.h"
+#include "singa/neuralnet/neuron_layer/stanh.h"
+#include "singa/neuralnet/output_layer/output_layer.h"
+
 
 extern "C" void openblas_set_num_threads(int num);
 

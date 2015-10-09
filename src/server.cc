@@ -19,16 +19,16 @@
 *
 *************************************************************/
 
-#include "./server.h"
+#include "singa/server.h"
 
 #include <thread>
 #include <chrono>
 #include "mshadow/tensor.h"
-#include "proto/common.pb.h"
-#include "utils/param.h"
-#include "utils/singleton.h"
-#include "utils/factory.h"
-#include "utils/cluster.h"
+#include "singa/proto/common.pb.h"
+#include "singa/utils/param.h"
+#include "singa/utils/singleton.h"
+#include "singa/utils/factory.h"
+#include "singa/utils/cluster.h"
 
 namespace singa {
 

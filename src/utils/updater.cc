@@ -19,12 +19,12 @@
 *
 *************************************************************/
 
-#include "utils/updater.h"
+#include "singa/utils/updater.h"
 
 #include "mshadow/cxxnet_op.h"
 #include "mshadow/tensor.h"
-#include "utils/singleton.h"
-#include "utils/factory.h"
+#include "singa/utils/singleton.h"
+#include "singa/utils/factory.h"
 
 namespace singa {
 

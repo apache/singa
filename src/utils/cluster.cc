@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "utils/cluster.h"
+#include "singa/utils/cluster.h"
 
 #include <sys/stat.h>
 #include <sys/types.h>

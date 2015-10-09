@@ -49,3 +49,4 @@ aclocal.m4
 Makefile.in
 thirdparty/*
 !thirdparty/install.sh
+!include/singa

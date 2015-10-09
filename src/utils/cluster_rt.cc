@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "utils/cluster_rt.h"
+#include "singa/utils/cluster_rt.h"
 
 #include <glog/logging.h>
 #include <google/protobuf/text_format.h>
@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
-#include "proto/job.pb.h"
+#include "singa/proto/job.pb.h"
 
 using std::string;
 using std::to_string;

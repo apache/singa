@@ -58,7 +58,7 @@
  * or otherwise, the contributor releases their content to the
  * license and copyright terms herein.
  */
-#include "utils/blob.h"
+#include "singa/utils/blob.h"
 
 #include <cblas.h>
 #include <math.h>

@@ -20,7 +20,7 @@
 *************************************************************/
 
 #include "gtest/gtest.h"
-#include "utils/cluster.h"
+#include "singa/utils/cluster.h"
 
 using namespace singa;
 

@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "comm/msg.h"
+#include "singa/comm/msg.h"
 
 #include <glog/logging.h>
 

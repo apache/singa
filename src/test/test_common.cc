@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <vector>
 #include "gtest/gtest.h"
-#include "utils/common.h"
+#include "singa/utils/common.h"
 
 using std::string;
 using std::vector;
