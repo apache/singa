@@ -32,6 +32,7 @@ tmp/
 *.binaryproto
 singa
 singatool
+singatest
 .libs
 *.la
 *.deps
