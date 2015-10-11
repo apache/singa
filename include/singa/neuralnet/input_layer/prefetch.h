@@ -26,6 +26,7 @@
 #include <vector>
 #include <thread>
 #include "singa/neuralnet/layer.h"
+
 namespace singa {
 using std::vector;
 /**

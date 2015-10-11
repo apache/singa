@@ -18,11 +18,14 @@
 * under the License.
 *
 *************************************************************/
+
 #ifndef SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
 #define SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
 
+#include <vector>
 #include "singa/neuralnet/layer.h"
 #include "singa/io/store.h"
+
 namespace singa {
 /**
  * Output data (and label) for its source layer.
@@ -37,5 +40,5 @@ class CSVOutputLayer : public OutputLayer {
   int inst_ = 0;
   io::Store* store_;
 };
-} /* singa */
-#endif  // SINGA_NEURALNET_OUTPUT_LAYER_CSV_OUTPUT_H_
+}  // namespace singa
+#endif  // SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_

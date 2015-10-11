@@ -40,7 +40,7 @@ void RecordOutputLayer::ComputeFeature(int flag,
   int dim = data.count() / batchsize;
   if (label.size())
     CHECK_EQ(label.size(), batchsize);
-  for (int k = 0; k < batchsize; k++){
+  for (int k = 0; k < batchsize; k++) {
     SingleLabelImageRecord image;
     if (label.size())
       image.set_label(label[k]);
@@ -53,4 +53,4 @@ void RecordOutputLayer::ComputeFeature(int flag,
   }
   store_->Flush();
 }
-} /* singa */
+}  // namespace singa

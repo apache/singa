@@ -22,8 +22,11 @@
 #ifndef SINGA_NEURALNET_INPUT_LAYER_STORE_H_
 #define SINGA_NEURALNET_INPUT_LAYER_STORE_H_
 
+#include <string>
+#include <vector>
 #include "singa/io/store.h"
 #include "singa/neuralnet/layer.h"
+
 namespace singa {
 
 /**
@@ -83,4 +86,4 @@ class SingleLabelRecordLayer : public StoreInputLayer {
 
 }  // namespace singa
 
-#endif  // SINGA_NEURALNET_INPUT_LAYER_STORE_INPUT_H_
+#endif  // SINGA_NEURALNET_INPUT_LAYER_STORE_H_

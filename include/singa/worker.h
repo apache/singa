@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#ifndef SINGA_SINGA_WORKER_H_
-#define SINGA_SINGA_WORKER_H_
+#ifndef SINGA_WORKER_H_
+#define SINGA_WORKER_H_
 
 #include <string>
 #include <vector>
@@ -317,4 +317,4 @@ inline int BlobLayer(int blob_trgt) {
 
 }  // namespace singa
 
-#endif  // SINGA_SINGA_WORKER_H_
+#endif  // SINGA_WORKER_H_

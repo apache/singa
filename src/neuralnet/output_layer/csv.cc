@@ -55,4 +55,4 @@ void CSVOutputLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     store_->Write(std::to_string(inst_++), record.str());
   }
 }
-} /* singa */
+}  // namespace singa

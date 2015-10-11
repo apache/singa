@@ -18,10 +18,14 @@
 * under the License.
 *
 *************************************************************/
+
 #ifndef SINGA_NEURALNET_OUTPUT_LAYER_RECORD_H_
 #define SINGA_NEURALNET_OUTPUT_LAYER_RECORD_H_
+
+#include <vector>
 #include "singa/neuralnet/layer.h"
 #include "singa/io/store.h"
+
 namespace singa {
 
 class RecordOutputLayer : public OutputLayer {
@@ -34,5 +38,5 @@ class RecordOutputLayer : public OutputLayer {
   io::Store* store_;
   int inst_ = 0;  //!< instance No.
 };
-} /* singa */
+}  // namespace singa
 #endif  // SINGA_NEURALNET_OUTPUT_LAYER_RECORD_H_

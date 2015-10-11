@@ -1675,7 +1675,7 @@ def GetHeaderGuardCPPVariable(filename):
 
   # wangsheng@singa.apache: change INCLUDE to SINGA
   singa_path = re.sub(r'[^a-zA-Z0-9]', '_', file_path_from_root).upper() + '_'
-  return singa_path.replace("INCLUDE", "SINGA")
+  return singa_path.replace("INCLUDE_", "")
 
 
 def CheckForHeaderGuard(filename, clean_lines, error):

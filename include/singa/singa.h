@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#ifndef SINGA_SINGA_SINGA_H_
-#define SINGA_SINGA_SINGA_H_
+#ifndef SINGA_SINGA_H_
+#define SINGA_SINGA_H_
 
 #include "singa/comm/socket.h"
 #include "singa/io/store.h"
@@ -34,4 +34,4 @@
 #include "singa/utils/factory.h"
 #include "singa/driver.h"
 
-#endif  // SINGA_SINGA_SINGA_H_
+#endif  // SINGA_SINGA_H_

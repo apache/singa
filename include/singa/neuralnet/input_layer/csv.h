@@ -22,7 +22,9 @@
 #ifndef SINGA_NEURALNET_INPUT_LAYER_CSV_H_
 #define SINGA_NEURALNET_INPUT_LAYER_CSV_H_
 
-#include "./store.h"
+#include <string>
+#include <vector>
+#include "singa/neuralnet/input_layer/store.h"
 
 namespace singa {
 
@@ -50,4 +52,4 @@ class CSVInputLayer : public SingleLabelRecordLayer {
 
 }  // namespace singa
 
-#endif  // SINGA_NEURALNET_INPUT_LAYER_CSV_RECORD_H_
+#endif  // SINGA_NEURALNET_INPUT_LAYER_CSV_H_

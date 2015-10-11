@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#ifndef SINGA_SINGA_STUB_H_
-#define SINGA_SINGA_STUB_H_
+#ifndef SINGA_STUB_H_
+#define SINGA_STUB_H_
 
 #include <queue>
 #include <unordered_map>
@@ -106,4 +106,4 @@ class Stub {
 
 }  // namespace singa
 
-#endif  // SINGA_SINGA_STUB_H_
+#endif  // SINGA_STUB_H_

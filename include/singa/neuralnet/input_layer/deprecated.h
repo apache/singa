@@ -22,8 +22,11 @@
 #ifndef SINGA_NEURALNET_INPUT_LAYER_DEPRECATED_H_
 #define SINGA_NEURALNET_INPUT_LAYER_DEPRECATED_H_
 
+#include <string>
+#include <vector>
 #include "singa/neuralnet/layer.h"
 #include "singa/io/kvfile.h"
+
 namespace singa {
 /**
  * @deprecated please use the StoreInputLayer.

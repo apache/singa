@@ -19,10 +19,12 @@
 *
 *************************************************************/
 
-#ifndef SINGA_NEURALNET_INPUT_LAYER_PROTO_H_
-#define SINGA_NEURALNET_INPUT_LAYER_PROTO_H_
+#ifndef SINGA_NEURALNET_INPUT_LAYER_RECORD_H_
+#define SINGA_NEURALNET_INPUT_LAYER_RECORD_H_
 
-#include "./store.h"
+#include <string>
+#include <vector>
+#include "singa/neuralnet/input_layer/store.h"
 
 namespace singa {
 
@@ -51,4 +53,4 @@ class RecordInputLayer : public SingleLabelRecordLayer {
 
 }  // namespace singa
 
-#endif  // SINGA_NEURALNET_INPUT_LAYER_PROTO_RECORD_H_
+#endif  // SINGA_NEURALNET_INPUT_LAYER_RECORD_H_
