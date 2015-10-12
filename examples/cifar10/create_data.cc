@@ -59,12 +59,12 @@ void create_data(const string& input_folder, const string& output_folder) {
   char str_buffer[kCIFARImageNBytes];
   string rec_buf;
 
-  singa::SingleLabelImageRecord image;;
+  singa::RecordProto image;
   image.add_shape(3);
   image.add_shape(kCIFARSize);
   image.add_shape(kCIFARSize);
 
-  singa::SingleLabelImageRecord mean;
+  singa::RecordProto mean;
   mean.CopyFrom(image);
   for (int i = 0; i < kCIFARImageNBytes; i++)
     mean.add_data(0.f);

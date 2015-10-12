@@ -35,9 +35,9 @@
 #include <fstream>
 #include <string>
 
-#include "io/store.h"
-#include "utils/common.h"
-#include "proto/common.pb.h"
+#include "singa/io/store.h"
+#include "singa/utils/common.h"
+#include "singa/proto/common.pb.h"
 
 using std::string;
 
@@ -84,7 +84,7 @@ void create_data(const char* image_filename, const char* label_filename,
   char key[kMaxKeyLength];
   string value;
 
-  singa::SingleLabelImageRecord image;
+  singa::RecordProto image;
   image.add_shape(rows);
   image.add_shape(cols);
   LOG(INFO) << "A total of " << num_items << " items.";
