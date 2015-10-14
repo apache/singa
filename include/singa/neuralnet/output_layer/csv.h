@@ -37,8 +37,8 @@ class CSVOutputLayer : public OutputLayer {
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
  private:
+  io::Store* store_ = nullptr;
   int inst_ = 0;
-  io::Store* store_;
 };
 }  // namespace singa
 #endif  // SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_

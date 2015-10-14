@@ -35,7 +35,7 @@ class RecordOutputLayer : public OutputLayer {
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
  private:
-  io::Store* store_;
+  io::Store* store_ = nullptr;
   int inst_ = 0;  //!< instance No.
 };
 }  // namespace singa
