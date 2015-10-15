@@ -68,7 +68,7 @@ path_(path), mode_(mode), capacity_(capacity) {
 KVFile::~KVFile() {
   if (mode_ != kRead)
     Flush();
-  delete buf_;
+  delete[] buf_;
   fdat_.close();
 }
 #ifdef USE_PROTOBUF
