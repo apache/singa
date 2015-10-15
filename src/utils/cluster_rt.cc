@@ -118,7 +118,7 @@ bool ZKService::CreateNode(const char* path, const char* val, int flag,
                << "please ensure it is running properly...\n"
                << "If want to use zookeeper in our thirdparty folder, "
                << "you can start it by:\n"
-               << "$ ./bin/zk-service start";
+               << "$ ./bin/zk-service.sh start";
     return false;
   }
   LOG(FATAL) << "Unhandled ZK error code: " << ret
