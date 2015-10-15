@@ -45,6 +45,7 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/output_layer/record.cc \
               src/neuralnet/loss_layer/euclidean.cc \
               src/neuralnet/loss_layer/softmax.cc \
+              src/neuralnet/neuron_layer/argsort.cc \
               src/neuralnet/neuron_layer/convolution.cc \
               src/neuralnet/neuron_layer/dropout.cc \
               src/neuralnet/neuron_layer/inner_product.cc \
@@ -54,6 +55,7 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/neuron_layer/relu.cc \
               src/neuralnet/neuron_layer/sigmoid.cc \
               src/neuralnet/neuron_layer/stanh.cc \
+              src/neuralnet/neuron_layer/softmax.cc \
               src/neuralnet/neuralnet.cc \
               src/comm/socket.cc \
               src/comm/msg.cc \

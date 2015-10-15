@@ -47,6 +47,7 @@ void SoftmaxLossLayer::Setup(const LayerProto& proto,
   topk_ = proto.softmaxloss_conf().topk();
   scale_ = proto.softmaxloss_conf().scale();
 }
+
 void SoftmaxLossLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   Shape<2> s = Shape2(batchsize_, dim_);

@@ -184,6 +184,8 @@ message LayerProto {
   optional string user_type =21;
 
   // proto for the specific layer
+  // configuration for argsort layer
+  optional ArgSortProto argsort_conf = 52;
   // configuration for convolution layer
   optional ConvolutionProto convolution_conf = 30;
   // configuration for concatenation layer
@@ -218,8 +220,6 @@ message LayerProto {
   optional SplitProto split_conf = 42;
   // configuration for store input layers
   optional StoreProto store_conf = 51;
-
-
 
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
@@ -336,6 +336,11 @@ message SoftmaxLossProto {
   optional int32 topk = 1 [default = 1];
   // loss scale factor
   optional float scale = 30 [default = 1];
+}
+
+message ArgSortProto {
+  // keep labels with topk scores
+  optional int32 topk = 1 [default = 1];
 }
 
 message ConvolutionProto {
@@ -552,6 +557,7 @@ enum LayerType {
   kRGBImage = 10;
   // Neuron layers
   //  - Feature transformation
+  kArgSort = 35;
   kConvolution = 1;
   kCConvolution = 27;
   kCPooling = 28;
@@ -564,6 +570,7 @@ enum LayerType {
   kRBMHid = 24;
   kSigmoid = 26;
   kSTanh = 14;
+  kSoftmax = 34;
   // Loss layers
   //  - Compute objective loss
   kSoftmaxLoss = 11;

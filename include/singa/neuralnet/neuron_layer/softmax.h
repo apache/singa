@@ -19,26 +19,22 @@
 *
 *************************************************************/
 
-#ifndef SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
-#define SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
+#ifndef SINGA_NEURALNET_NEURON_LAYER_SOFTMAX_H_
+#define SINGA_NEURALNET_NEURON_LAYER_SOFTMAX_H_
 
 #include <vector>
 #include "singa/neuralnet/layer.h"
-#include "singa/io/store.h"
-
+#include "singa/proto/job.pb.h"
 namespace singa {
+
 /**
- * Output data (and label) for its source layer.
+ * Softmax layer.
  */
-class CSVOutputLayer : public OutputLayer {
+class SoftmaxLayer : public NeuronLayer {
  public:
-  ~CSVOutputLayer() { delete store_; }
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
-
- private:
-  int inst_ = 0;
-  io::Store* store_ = nullptr;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
-}  // namespace singa
-#endif  // SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
+} /* singa */
+#endif  // SINGA_NEURALNET_NEURON_LAYER_SOFTMAX_H_

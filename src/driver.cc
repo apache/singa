@@ -45,6 +45,7 @@
 #include "singa/neuralnet/input_layer/store.h"
 #include "singa/neuralnet/loss_layer/euclidean.h"
 #include "singa/neuralnet/loss_layer/softmax.h"
+#include "singa/neuralnet/neuron_layer/argsort.h"
 #include "singa/neuralnet/neuron_layer/convolution.h"
 #include "singa/neuralnet/neuron_layer/dropout.h"
 #include "singa/neuralnet/neuron_layer/inner_product.h"
@@ -54,6 +55,7 @@
 #include "singa/neuralnet/neuron_layer/relu.h"
 #include "singa/neuralnet/neuron_layer/sigmoid.h"
 #include "singa/neuralnet/neuron_layer/stanh.h"
+#include "singa/neuralnet/neuron_layer/softmax.h"
 #include "singa/neuralnet/output_layer/record.h"
 #include "singa/neuralnet/output_layer/csv.h"
 
@@ -88,6 +90,8 @@ void Driver::Init(int argc, char **argv) {
 
   RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
   RegisterLayer<BridgeSrcLayer, int>(kBridgeSrc);
+
+  RegisterLayer<ArgSortLayer, int>(kArgSort);
   RegisterLayer<ConvolutionLayer, int>(kConvolution);
   RegisterLayer<CConvolutionLayer, int>(kCConvolution);
   RegisterLayer<CPoolingLayer, int>(kCPooling);
@@ -110,6 +114,8 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<SoftmaxLossLayer, int>(kSoftmaxLoss);
   RegisterLayer<SplitLayer, int>(kSplit);
   RegisterLayer<STanhLayer, int>(kSTanh);
+  RegisterLayer<SoftmaxLayer, int>(kSoftmax);
+
 #ifdef USE_LMDB
   RegisterLayer<LMDBDataLayer, int>(kLMDBData);
 #endif

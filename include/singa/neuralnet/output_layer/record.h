@@ -35,8 +35,8 @@ class RecordOutputLayer : public OutputLayer {
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
  private:
-  io::Store* store_ = nullptr;
   int inst_ = 0;  //!< instance No.
+  io::Store* store_ = nullptr;
 };
 }  // namespace singa
 #endif  // SINGA_NEURALNET_OUTPUT_LAYER_RECORD_H_

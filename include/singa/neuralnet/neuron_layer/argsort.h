@@ -19,26 +19,34 @@
 *
 *************************************************************/
 
-#ifndef SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
-#define SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
+#ifndef SINGA_NEURALNET_NEURON_LAYER_ARGSORT_H_
+#define SINGA_NEURALNET_NEURON_LAYER_ARGSORT_H_
 
+#include <glog/logging.h>
 #include <vector>
 #include "singa/neuralnet/layer.h"
-#include "singa/io/store.h"
-
+#include "singa/proto/job.pb.h"
 namespace singa {
+
 /**
- * Output data (and label) for its source layer.
+ * ArgSort layer used to get topk prediction labels.
+ *
+ * It sort the labels based on its score (e.g., probability) from large to
+ * small. Topk labels will be kepted in the data field. It should not be called
+ * during training because this layer does not implement ComputeGradient()
+ * function.
  */
-class CSVOutputLayer : public OutputLayer {
+class ArgSortLayer : public NeuronLayer {
  public:
-  ~CSVOutputLayer() { delete store_; }
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) {
+    LOG(FATAL) << "Not Implemented";
+  }
 
  private:
-  int inst_ = 0;
-  io::Store* store_ = nullptr;
+  int batchsize_, dim_;
+  int topk_;
 };
-}  // namespace singa
-#endif  // SINGA_NEURALNET_OUTPUT_LAYER_CSV_H_
+} /* singa */
+#endif  // SINGA_NEURALNET_NEURON_LAYER_ARGSORT_H_
