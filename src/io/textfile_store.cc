@@ -38,6 +38,8 @@ bool TextFileStore::Open(const std::string& source, Mode mode) {
 void TextFileStore::Close() {
   if (fs_ != nullptr) {
     if (fs_->is_open()) {
+      if (mode_ != kRead)
+        fs_->flush();
       fs_->close();
     }
     delete fs_;
