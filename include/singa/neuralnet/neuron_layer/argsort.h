@@ -48,5 +48,5 @@ class ArgSortLayer : public NeuronLayer {
   int batchsize_, dim_;
   int topk_;
 };
-} /* singa */
+}  // namespace singa
 #endif  // SINGA_NEURALNET_NEURON_LAYER_ARGSORT_H_

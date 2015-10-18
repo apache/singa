@@ -36,5 +36,5 @@ class SoftmaxLayer : public NeuronLayer {
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
-} /* singa */
+}  // namespace singa
 #endif  // SINGA_NEURALNET_NEURON_LAYER_SOFTMAX_H_

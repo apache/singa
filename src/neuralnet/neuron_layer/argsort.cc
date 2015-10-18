@@ -19,7 +19,6 @@
 *
 *************************************************************/
 
-
 #include "singa/neuralnet/neuron_layer/argsort.h"
 #include <algorithm>
 
@@ -54,4 +53,4 @@ void ArgSortLayer::ComputeFeature(int flag,
   }
 }
 
-}  /* singa */
+}  // namespace singa
