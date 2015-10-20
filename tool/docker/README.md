@@ -3,7 +3,7 @@ This guide explains how to set up a development environment for SINGA. A cluster
 1. [Build SINGA base](#build_base)
 2. [Build SINGA with Mesos and Hadoop](#build_mesos)
 3. [Pre-built images](#pre_built)
-4. [Launch stand-alone SINGA](#launch_stand_alone)
+4. [Launch and stop SINGA (stand alone mode)](#launch_stand_alone)
 5. [Launch pseudo-distributed SINGA on one node](#launch_pseudo)
 6. [Launch fully distributed SINGA on multiple nodes](#launch_distributed)
 
@@ -14,7 +14,7 @@ This guide explains how to set up a development environment for SINGA. A cluster
  
 ````
 $ cd tool/docker/singa
-$ sudo docker built -t singa/base . 
+$ sudo docker build -t singa/base . 
 $ sudo docker images
 REPOSITORY             TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
 singa/base             latest              XXXX                XXX                 2.01 GB
@@ -42,6 +42,8 @@ singa/mesos             latest              XXXX                XXX             
    *Figure 2. singa/mesos Docker image, containing Hadoop and Mesos built on
 top of SINGA. The default namenode address for Hadoop is `node0:9000`*
 
+**Notes** A common failure observed during the build process is caused by network failure occuring when downloading dependencies. Simply re-run the build command. 
+
 --
 
 <a name="pre_built"></a>
@@ -63,9 +65,8 @@ weaveworks/weave       1.1.1               XXXX                11 days ago      
 --
 
 <a name="launch_stand_alone"></a>
-#### Launch stand-alone SINGA
-To launch a test environment for a single-node SINGA training, simply start a
-container from `singa/base` image. The following starts a container called
+#### Launch and stop SINGA in stand-alone mode
+To launch a test environment for a single-node SINGA training, simply start a container from `singa/base` image. The following starts a container called
 `XYZ`, then launches a shell in the container: 
 
 ````
@@ -77,7 +78,14 @@ $ sudo docker exec -it XYZ /bin/bash
 
    *Figure 3. Launch SINGA in stand-alone mode: single node training*
 
-Inside the launched container, the SINGA source directory can be found at `/root/incubator-singa`
+Inside the launched container, the SINGA source directory can be found at `/root/incubator-singa`. 
+
+**Stopping the container**
+
+````
+$ sudo docker stop XYZ
+$ sudo docker rm ZYZ
+````
 
 --
 

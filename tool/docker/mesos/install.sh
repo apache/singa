@@ -1,5 +1,5 @@
 #!/bin/bash
-source ~/.bashrc
+source /root/.bashrc
 #download
 cd /opt
 wget -c http://archive.apache.org/dist/mesos/0.22.0/mesos-0.22.0.tar.gz
