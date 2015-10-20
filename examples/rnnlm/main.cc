@@ -18,12 +18,17 @@
 * under the License.
 *
 *************************************************************/
+
+#include <glog/logging.h>
 #include <string>
 #include "singa/singa.h"
 #include "rnnlm.h"
 #include "rnnlm.pb.h"
 
 int main(int argc, char **argv) {
+  // initialize glog before creating the driver
+  google::InitGoogleLogging(argv[0]);
+  
   singa::Driver driver;
   driver.Init(argc, argv);
 
