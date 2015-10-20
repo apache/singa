@@ -1,4 +1,4 @@
-CXX_FLAGS=-I ../include -std=c++11 -I /usr/local/include/hdfs -I /root/incubator-singa/include
+CXX_FLAGS=-I ../include -std=c++11 -I /usr/local/include/hdfs -I ../../include
 LD_FLAGS=-lmesos -lsinga -lhdfs3
 EXE=scheduler
 OBJS=singa_scheduler.o scheduler.pb.o
