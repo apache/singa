@@ -8,8 +8,8 @@ All the details can be found in [Project Website](http://singa.incubator.apache.
 
 ##Mailing Lists
 
-* [Development Mailing List](mailto:dev-subscribe@singa.incubator.apache.org)([Archive](http://mail-archives.apache.org/mod_mbox/singa-dev/))
-* [Commits Mailing List](mailto:commits-subscribe@singa.incubator.apache.org)([Archive](http://mail-archives.apache.org/mod_mbox/singa-commits/))
+* [Development Mailing List](mailto:dev-subscribe@singa.incubator.apache.org) ([Archive](http://mail-archives.apache.org/mod_mbox/singa-dev/))
+* [Commits Mailing List](mailto:commits-subscribe@singa.incubator.apache.org) ([Archive](http://mail-archives.apache.org/mod_mbox/singa-commits/))
 
 <a name="Dependencies"</a>
 ##Dependencies
@@ -36,16 +36,16 @@ variables to continue the building instructions,
 
 ##Documentation
 
-Full documentation is available online at [Official Documentation](https://singa.incubator.apache.org/docs/overview.html#).
+Full documentation is available online at [Official Documentation](https://singa.incubator.apache.org/docs/overview.html).
 
 ##Building SINGA
 
 Please make sure you have `g++ >= 4.8.1` before building SINGA.
 
-    $ ./autogen.sh (optional)
+    $ ./autogen.sh
     # refer to the FAQs below for errors during configure, including blas_segmm() error
-    $ ./configure 
-    # refer to the FAQs below for error during make 
+    $ ./configure
+    # refer to the FAQs below for error during make
     $ make
 
 ##Running Examples
@@ -90,9 +90,9 @@ For additional information, see the `LICENSE` and `NOTICE` files.
 have installed `OpenBLAS`.
 
   A1: This means the compiler cannot find the `OpenBLAS` library. If you have installed `OpenBLAS` via `apt-get install`, then export the path to `$LD_LIBRARY_PATH` (e.g. `/usr/lib/openblas-base`). If you installed it with
-  `./thirdparty/install.sh`, then export the correct path based on `$PREFIX` (e.g. `/opt/OpenBLAS/lib`): 
+  `./thirdparty/install.sh`, then export the correct path based on `$PREFIX` (e.g. `/opt/OpenBLAS/lib`):
 
-      # using apt-get install for openblas	
+      # using apt-get install for openblas
       $ export LIBRARY_PATH=$PATH_TO_OPENBLAS_LIB:$LIBRARY_PATH
 
       # using ./thirdparty/install.sh for openblas:
@@ -152,9 +152,9 @@ have installed `OpenBLAS`.
 
   A7: This is because `zookeeper` is not started. Please start the service
 
-      $ ./bin/zk-service start
+      $ ./bin/zk-service.sh start
 
-  If the error still exists, probably that you do not have `java`. You can simple
+  If the error still exists, probably that you do not have `java`. You can simply
   check it by
 
       $ java --version
