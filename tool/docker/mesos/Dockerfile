@@ -12,7 +12,9 @@ RUN apt-get -y install curl cmake libxml2 libxml2-dev uuid-dev protobuf-compiler
 RUN cd /opt && source /root/.bashrc && wget -c http://www.eu.apache.org/dist/hadoop/common/hadoop-2.6.0/hadoop-2.6.0.tar.gz && tar -zxvf hadoop-2.6.0.tar.gz && git clone https://github.com/PivotalRD/libhdfs3.git && cd libhdfs3 && mkdir build && cd build && cmake ../ && make && make install
 
 #to be removed after SINGA-11 is merged (pulling from Anh's branch instead of pulling from the master)
-RUN source ~/.bashrc && mkdir /root/mesos && cd /root/mesos && git clone https://github.com/ug93tad/incubator-singa && cd incubator-singa && git checkout SINGA-11 && cp -r tool/mesos /root/incubator-singa/tool/ && cd /root/incubator-singa/tool/mesos && make 
+#RUN source ~/.bashrc && mkdir /root/mesos && cd /root/mesos && git clone https://github.com/ug93tad/incubator-singa && cd incubator-singa && git checkout SINGA-11 && cp -r tool/mesos /root/incubator-singa/tool/ && cd /root/incubator-singa/tool/mesos && make 
+
+RUN source ~/.bashrc && cd /root/incubator-singa/tool/mesos && make
 
 COPY *.xml /opt/hadoop-2.6.0/etc/hadoop/
 
