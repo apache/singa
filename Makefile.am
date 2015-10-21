@@ -176,6 +176,7 @@ libgtest_la_LDFLAGS = -I./include
 
 singatest_SOURCES = $(GTEST_HDRS) $(TEST_SRCS)
 singatest_CXXFLAGS = $(DEFAULT_FLAGS)
+singatest_LDADD = ./libgtest.la
 singatest_LDFLAGS = -I./include \
                 -lsinga \
                 -lglog  \
