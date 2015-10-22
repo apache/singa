@@ -1,12 +1,18 @@
 #ifndef MATH_ADDR_H
 #define MATH_ADDR_H
 
+namespace singa{
+
+const float * cpu_uni_vec(const int n);
+
 void cpu_gemm(const float * A, const float * B, const int m, const int n, const int k, const float alpha, const float beta, const bool TranA, const bool TranB, float * C);
 
 void cpu_gemv(const float * A, const float * B, const int m, const int n, const float alpha, const float beta, const bool TranA, float * C);
 // should be very careful : m is the length of B, and n is the length of C , A is a n*m matrix
 
 void cpu_axpy(const float * A, const int n, const float alpha, float * B);
+
+float cpu_dot(const float * A, const float * B, const int n);
 
 /*
 //element-wise
@@ -87,4 +93,6 @@ template<typename Op> void gpu_reduce_f(const float * A,const int m, const int n
 template<typename Op> void gpu_expand_f(const float * A,const int m, const int n, float * B);
 //expand each element in A into a row of B
 
+
+}  // namespace singa
 #endif // MATH_ADDR_H

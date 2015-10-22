@@ -4,7 +4,12 @@
 #include<cmath>
 #include <algorithm>
 
-namespace op {
+namespace singa {
+	enum XPU { cpu, gpu, any};
+
+}
+
+namespace singa_op {
         struct Set {
             inline static void Map(float alpha, float & a) {
                 a= alpha;
@@ -97,8 +102,8 @@ namespace op {
         };
 
         struct Threshold {
-            inline static void Map(float alpha, float beta, const float & a, const float & b, float & c) {
-                c =  a < b ? 1.0f : 0.0f;
+            inline static void Map(float alpha, const float & a, float & b) {
+                b =  a < alpha ? 1.0f : 0.0f;
             }
         };
 
@@ -134,7 +139,16 @@ namespace op {
                             b += a[i];
                 }
             }
-            };
+        };
+
+        struct Expand_Div {
+            inline static void Map(const float & a, int n, float * b) {
+                for(int i = 0 ; i < n ; i++)
+                {
+                            b[i] /= a;
+                }
+            }
+        };
 
         struct Repmat {
             inline static void Map(const float & a, int n, float * b) {

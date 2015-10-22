@@ -186,6 +186,21 @@ class Blob {
   /// @brief Compute the sum of absolute values (L1 norm) of the data.
   Dtype asum_data() const;
   Dtype sum_data() const;
+  inline void setTranspose() {
+    isTranspose_ = !isTranspose_;
+  }
+  inline bool isTranspose() const {
+    return isTranspose_;
+  }
+  inline void Mirror(const Blob<Dtype> & other) {
+    data_ = other.data_;
+    shape_ = other.shape_;
+    count_ = other.count_;
+    capacity_ = other.capacity_;
+    version_ = other.version_;
+    isTranspose_ = other.isTranspose_;
+  }
+
 
  protected:
   std::shared_ptr<SyncedMemory> data_ = nullptr;
@@ -193,6 +208,7 @@ class Blob {
   int count_ = 0;
   int capacity_ = 0;
   int version_ = -1;
+  bool isTranspose_ = false;
 };  // class Blob
 
 using namespace mshadow;
