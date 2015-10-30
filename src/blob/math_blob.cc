@@ -1,4 +1,5 @@
 #include "singa/blob/math_blob.h"
+#include "singa/blob/math_kernel.h"
 
 namespace singa {
 
@@ -18,24 +19,26 @@ int get_size(const std::vector<int>& shape)
 
 void GEMM(XPU xpu, const Blob<float> & A, const Blob<float> & B, Blob<float> * C, float alpha, float beta)
 {
-	if(xpu == cpu)
+	if(check_shape_mmm(A, B, *C))
 	{
-	  if(check_shape_mmm(A, B, *C))
-	  {
-	    int m = C->shape().at(0);
+		int m = C->shape().at(0);
 	    int n = C->shape().at(1);
 	    int k = A.isTranspose() ? A.shape().at(0) : A.shape().at(1);
 	    bool TranA = A.isTranspose();
 	    bool TranB = B.isTranspose();
-	    cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, k, alpha, beta, TranA, TranB, C->mutable_cpu_data());
-	  }
-	  else{
-	  // report errors here
-	  }
+
+		if(xpu == cpu)
+		{
+			cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, k, alpha, beta, TranA, TranB, C->mutable_cpu_data());
+		}
+		if(xpu == gpu)
+		{
+			//gpu part
+			gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, k, alpha, beta, TranA, TranB, C->mutable_gpu_data());
+		}
 	}
-	if(xpu == gpu)
-	{
-	  //gpu part
+	else{
+	  // report errors here
 	}
 }
 //C = alpha*A*B+beta*C, A, B and C are matrix
@@ -50,22 +53,24 @@ void MMDot(XPU xpu, const Blob<float> & A, const Blob<float> & B, Blob<float> * 
 
 void MVDot(XPU xpu, const Blob<float> & A, const Blob<float> & B, Blob<float> * C)
 {
-	if(xpu == cpu)
+	if(check_shape_mvv(A, B, *C))
 	{
-		if(check_shape_mvv(A, B, *C))
+		int m = B.shape().at(0);
+		int n = C->shape().at(0);
+		bool TranA = A.isTranspose();
+
+		if(xpu == cpu)
 		{
-			int m = B.shape().at(0);
-			int n = C->shape().at(0);
-			bool TranA = A.isTranspose();
 			cpu_gemv(A.cpu_data(), B.cpu_data(), m, n, 1, 0, TranA, C->mutable_cpu_data());
 		}
-		else{
-			// report errors here
+		if(xpu == gpu)
+		{
+			//gpu part
+			gpu_gemv(A.gpu_data(), B.gpu_data(), m, n, 1, 0, TranA, C->mutable_gpu_data());
 		}
 	}
-	if(xpu == gpu)
-	{
-	  //gpu part
+	else{
+		// report errors here
 	}
 	
 }
@@ -74,21 +79,23 @@ void MVDot(XPU xpu, const Blob<float> & A, const Blob<float> & B, Blob<float> * 
  
 void VVDot(XPU xpu, const Blob<float> & A, const Blob<float> & B, Blob<float> * C)
 {
-	if(xpu == cpu)
+	if(check_shape_vvm(A, B, *C))
 	{
-		if(check_shape_vvm(A, B, *C))
+		int m = C->shape().at(0);
+		int n = C->shape().at(1);
+
+		if(xpu == cpu)
 		{
-			int m = C->shape().at(0);
-			int n = C->shape().at(1);
 			cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, 1, 1, 0, false, false, C->mutable_cpu_data());
 		}
-		else{
-		// report errors here
+		if(xpu == gpu)
+		{
+			//gpu part
+			gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, 1, 1, 0, false, false, C->mutable_gpu_data());
 		}
 	}
-	if(xpu == gpu)
-	{
-	  //gpu part
+	else{
+	// report errors here
 	}
 }
 // C is matrix,A and B are vector
@@ -97,20 +104,21 @@ void VVDot(XPU xpu, const Blob<float> & A, const Blob<float> & B, Blob<float> * 
 float VVdot(XPU xpu, const Blob<float> & A, const Blob<float> & B)
 {
 	float res = 0;
-	if(xpu == cpu)
+	if(check_shape_equal(A, B, B))
 	{
-		if(check_shape_equal(A, B, B))
-		{
-			int n = get_size(A.shape());
+		int n = get_size(A.shape());
+		if(xpu == cpu)
+		{	
 			res = cpu_dot(A.cpu_data(), B.cpu_data(), n);
 		}
-		else{
-		// report errors here
+		if(xpu == gpu)
+		{
+		//gpu part
+			res = gpu_dot(A.gpu_data(), B.gpu_data(), n);
 		}
 	}
-	if(xpu == gpu)
-	{
-	  //gpu part
+	else{
+	// report errors here
 	}
 	return res;
 }
@@ -118,19 +126,20 @@ float VVdot(XPU xpu, const Blob<float> & A, const Blob<float> & B)
 
 void AXPY(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha)
 {
-	if(xpu == cpu)
+	if(check_shape_equal(A, *B, *B))
 	{
-		if(check_shape_equal(A, *B, *B))
+
+		if(xpu == cpu)
 		{
 			cpu_axpy(A.cpu_data(), get_size(A.shape()), alpha, B->mutable_cpu_data());
 		}
-		else{
-		// report errors here
+		if(xpu == gpu)
+		{
+			gpu_axpy(A.gpu_data(), get_size(A.shape()), alpha, B->mutable_gpu_data());
 		}
 	}
-	if(xpu == gpu)
-	{
-	  //gpu part
+	else{
+	// report errors here
 	}
 }
 // element-wise operation: Bi = alpha*Ai+Bi  A and B should have the same size
@@ -143,47 +152,52 @@ inline void Repmat(XPU xpu, const Blob<float> & A, Blob<float> * B)
 
 void MVAdd(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha, float beta)
 {
-	if(xpu == cpu)
+	if(check_shape_mv(*B, A))
 	{
-		if(check_shape_mv(*B, A))
+		int m = get_size(A.shape());
+		int n = get_size(B->shape()) / m;
+
+		if(xpu == cpu)
 		{
-			int m = get_size(A.shape());
-			int n = get_size(B->shape()) / m;
 			const float * univ = cpu_uni_vec(n);
 			cpu_gemm(A.cpu_data(), univ, m, n, 1, alpha, beta, false, false, B->mutable_cpu_data());
 			delete univ;
 		}
-		else{
-		// report errors here
-		}
+
+		if(xpu == gpu)
+		{
+			singa_add_vec_row(B->gpu_data(),A.gpu_data(),A.gpu_data(),m,n,n);
+		//gpu part
+		}	
 	}
-	if(xpu == gpu)
-	{
-	  //gpu part
-	}	
+	else{
+	// report errors here
+	}
 }
 // A is a vector, B is a matrix , Bij = alpha*Ai+beta*Bij
 // will use gemm. faster than general expand_f
 
 void MVSum(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha, float beta)
 {
-	if(xpu == cpu)
+	if(check_shape_mv(A, *B))
 	{
-		if(check_shape_mv(A, *B))
+		int m = get_size(B->shape());
+		int n = get_size(A.shape()) / m;
+
+		if(xpu == cpu)
 		{
-			int m = get_size(B->shape());
-			int n = get_size(A.shape()) / m;
 			const float * univ = cpu_uni_vec(n);
 			cpu_gemm(A.cpu_data(), univ, m, 1, n, alpha, beta, false, false, B->mutable_cpu_data());
 			delete univ;
 		}
-		else{
-		// report errors here
+		if(xpu == gpu)
+		{
+			singa_sum_col(A.gpu_data(),B->gpu_data(),m,n,n);
+		//gpu part
 		}
 	}
-	if(xpu == gpu)
-	{
-	  //gpu part
+	else{
+	// report errors here
 	}
 }
 // B is a vector, A is a matrix , Bi = \sigma_j_{alpha*Aij}+beta*Bi

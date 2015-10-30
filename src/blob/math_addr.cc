@@ -3,6 +3,9 @@ extern "C"
    #include <cblas.h>
 }
 
+#include <cuda_runtime.h>
+#include "cublas_v2.h"
+
 #include "singa/blob/math_addr.h"
 #include "singa/blob/singa_op.h"
 
@@ -47,5 +50,66 @@ float cpu_dot(const float * A, const float * B, const int n)
 	return sum;
 }
 
+//Trick: swap A and B
+//
+void gpu_gemm(const float * A, const float * B, const int m, const int n, const int k, const float alpha, const float beta, const bool TranA, const bool TranB, float * C)
+{
+    int lda = TranA ? m : k;
+    int ldb = TranB ? k : n;
+    int ldc = n;
+
+    cublasOperation_t tA= (TranA==false) ? CUBLAS_OP_N : CUBLAS_OP_T;
+	cublasOperation_t tB= (TranB==false) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+    cublasHandle_t handle;
+    cublasCreate(&handle);
+
+    cublasSgemm(handle, tB, tA, n, m, k, &alpha, B, ldb, A, lda, &beta, C, ldc);
+
+    cublasDestroy(handle);
+}
+
+void gpu_gemv(const float * A, const float * B, const int m, const int n, const float alpha, const float beta, const bool TranA, float * C)
+{
+	int lda = n ;
+	cublasOperation_t tA= (TranA==true) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+	cublasHandle_t handle;
+	cublasCreate(&handle);
+
+	cublasSgemv(handle, tA , n , m ,&alpha , A , lda , B , 1 ,&beta , C , 1);
+
+	cublasDestroy(handle);
+
+}
+
+
+void gpu_axpy(const float * A, const int n, const float alpha, float * B)
+{
+
+	cublasHandle_t handle;
+	cublasCreate(&handle);
+
+	cublasSaxpy(handle,n,&alpha,A,1,B,1);
+
+	cublasDestroy(handle);
+
+}
+
+
+float gpu_dot(const float * A, const float * B, const int n)
+{
+	cublasHandle_t handle;
+	cublasCreate(&handle);
+
+	float result=0.0;
+
+	cublasSdot(handle,n,A,1,B,1,&result);
+
+	cublasDestroy(handle);
+
+	return result;
+
+}
 
 } // namespace singa
