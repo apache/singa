@@ -166,7 +166,7 @@ void MVAdd(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha, float b
 
 		if(xpu == gpu)
 		{
-			singa_add_vec_row(B->gpu_data(),A.gpu_data(),A.gpu_data(),m,n,n);
+			singa_gpu_add_vec_row(B->gpu_data(),A.gpu_data(),A.gpu_data(),m,n,n);
 		//gpu part
 		}	
 	}
@@ -192,7 +192,7 @@ void MVSum(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha, float b
 		}
 		if(xpu == gpu)
 		{
-			singa_sum_col(A.gpu_data(),B->gpu_data(),m,n,n);
+			singa_gpu_sum_col(A.gpu_data(),B->gpu_data(),m,n,n);
 		//gpu part
 		}
 	}

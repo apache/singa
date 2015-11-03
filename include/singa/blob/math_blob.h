@@ -207,46 +207,52 @@ void E_Func(XPU xpu, Blob<float> * A, float alpha)
 	if(xpu == gpu)
 	{
 		//gpu part
+		int n = get_size(A->shape());
+		gpu_e_f<Op>(n, alpha, A->mutable_gpu_data());
 	}
 }
 
 template<typename Op>
 void E_Func(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha)
 {
-	if(xpu == cpu)
+	if(check_shape_equal(A, *B, *B))
 	{
-		if(check_shape_equal(A, *B, *B))
-		{
 			int n = get_size(A.shape());
-			cpu_e_f<Op>(n, A.cpu_data(), alpha, B->mutable_cpu_data());
-		}
-		else{
+			if(xpu == cpu)
+			{
+				cpu_e_f<Op>(n, A.cpu_data(), alpha, B->mutable_cpu_data());
+			}
+
+			if(xpu == gpu)
+			{
+				//gpu part
+				gpu_e_f<Op>(n, A.gpu_data(), alpha, B->mutable_gpu_data());
+			}
+	}
+	else{
 			// report errors here
-		}	
-	}
-	if(xpu == gpu)
-	{
-		//gpu part
-	}
+	}	
 }
 
 template<typename Op>
 void E_Func(XPU xpu, const Blob<float> & A, const Blob<float> & B, Blob<float> * C, float alpha, float beta)
 {
-	if(xpu == cpu)
+	if(check_shape_equal(A, B, *C))
 	{
-		if(check_shape_equal(A, B, *C))
+		int n = get_size(A.shape());
+
+		if(xpu == cpu)
 		{
-			int n = get_size(A.shape());
 			cpu_e_f<Op>(n, A.cpu_data(), B.cpu_data(), alpha, beta, C->mutable_cpu_data());
 		}
-		else{
-			// report errors here
+		if(xpu == gpu)
+		{
+			//gpu part
+			gpu_e_f<Op>(n, A.gpu_data(), B.gpu_data(), alpha, beta, C->mutable_gpu_data());
 		}
 	}
-	if(xpu == gpu)
-	{
-		//gpu part
+	else{
+			// report errors here
 	}
 }
 
@@ -394,21 +400,23 @@ void Bernoulli(XPU xpu, Blob & A, float p, int n = 1);
 template<typename Op> 
 void Reduce_F(XPU xpu, const Blob<float> & A, Blob<float> * B)
 {
-	if(xpu == cpu)
+	if(check_shape_mv(A, *B))
 	{
-		if(check_shape_mv(A, *B))
+		int m = get_size(B->shape());
+		int n = get_size(A.shape()) / m;
+
+		if(xpu == cpu)
 		{
-			int m = get_size(B->shape());
-			int n = get_size(A.shape()) / m;
 			cpu_reduce_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
 		}
-		else{
-			// report errors here
+		if(xpu == gpu)
+		{
+			//gpu part
+			gpu_reduce_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
 		}
 	}
-	if(xpu == gpu)
-	{
-		//gpu part
+	else{
+		// report errors here
 	}
 }
 //reduce each row of A to an element of B e.g. the sum operation in softmax
@@ -416,21 +424,23 @@ void Reduce_F(XPU xpu, const Blob<float> & A, Blob<float> * B)
 template<typename Op> 
 void Expand_F(XPU xpu, const Blob<float> & A, Blob<float> * B)
 {
-	if(xpu == cpu)
+	if(check_shape_mv(*B, A))
 	{
-		if(check_shape_mv(*B, A))
+		int m = get_size(A.shape());
+		int n = get_size(B->shape()) / m;
+
+		if(xpu == cpu)
 		{
-			int m = get_size(A.shape());
-			int n = get_size(B->shape()) / m;
 			cpu_expand_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
 		}
-		else{
-			// report errors here
+		if(xpu == gpu)
+		{
+			//gpu part
+			gpu_expand_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
 		}
 	}
-	if(xpu == gpu)
-	{
-		//gpu part
+	else{
+		// report errors here
 	}
 }
 //expand each element in A into a row of B

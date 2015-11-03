@@ -79,18 +79,42 @@ template<typename Op> void cpu_expand_f(const float * A,const int m, const int n
 void gpu_gemm(const float * A, const float * B, const int m, const int n, const int k, const float alpha, const float beta, const bool TranA, const bool TranB, float * C);
 void gpu_gemv(const float * A, const float * B, const int m, const int n, const float alpha, const float beta, const bool TranA, float * C);
 void gpu_axpy(const float * A, const int n, const float alpha, float * B);
+float gpu_dot(const float * A, const float * B, const int n);
 
 //element-wise
-template<typename Op> void gpu_e_f(const int n, const float alpha, float * A);
-template<typename Op> void gpu_e_f(const int n,const float * A,const float alpha, const float beta,float * B);
-template<typename Op> void gpu_e_f(const int n,const float * A,const float * B,const float alpha, const float beta,float * C);
+template<typename Op> void gpu_e_f(const int n, const float alpha, float * A)
+{
+	Op::CudaMap(alpha, A, n);
+}
+
+template<typename Op> void gpu_e_f(const int n,const float * A,const float alpha, float * B)
+{
+	Op::CudaMap(alpha, A, B, n);
+}
+
+template<typename Op> void gpu_e_f(const int n,const float * A,const float * B,const float alpha, const float beta,float * C)
+{
+	Op::CudaMap(alpha, beta, A, B, C, n);
+}
 // element-wise generalized operation defined in Op
 
 //matrix/vector expand/reduce
 
-template<typename Op> void gpu_reduce_f(const float * A,const int m, const int n, float * B);
+template<typename Op> void gpu_reduce_f(const float * A,const int m, const int n, float * B)
+{
+                for(int i = 0 ; i < m ; i++)
+                {
+                                Op::CudaMap(A+i*n, n, B[i]);
+                }
+}
 //reduce each row of A to an element of B e.g. the sum operation in softmax
-template<typename Op> void gpu_expand_f(const float * A,const int m, const int n, float * B);
+template<typename Op> void gpu_expand_f(const float * A,const int m, const int n, float * B)
+{
+                for(int i = 0 ; i < m ; i++)
+                {
+                                Op::CudaMap(A[i], n, B+i*n);
+                }
+}
 //expand each element in A into a row of B
 
 
