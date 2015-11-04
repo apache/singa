@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/loss_layer/softmax.h"
+#include "singa/neuralnet/loss_layer.h"
 
 #include <algorithm>
 #include <glog/logging.h>

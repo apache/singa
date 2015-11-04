@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/image_preprocess.h"
+#include "singa/neuralnet/input_layer.h"
 #include "singa/utils/image_transform.h"
 namespace singa {
 

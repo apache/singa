@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/inner_product.h"
+#include "singa/neuralnet/neuron_layer.h"
 
 #include <glog/logging.h>
 #include "singa/utils/singleton.h"

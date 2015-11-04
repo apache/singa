@@ -349,8 +349,9 @@ message ConvolutionProto {
   optional int32 pad = 30 [default = 0];
   // the stride
   optional int32 stride = 31 [default = 1];
-  // whether to have bias terms
-  optional bool bias_term = 32 [default = true];
+
+  // cudnn workspace size in MB
+  optional int32 workspace_byte_limit = 33 [default = 512];
 }
 
 message DataProto {
@@ -441,6 +442,16 @@ message ReLUProto {
   // Rectifier nonlinearities improve neural network acoustic models.
   // In ICML Workshop on Deep Learning for Audio, Speech, and Language Processing.
   optional float negative_slope = 1 [default = 0];
+}
+
+message SliceProto {
+  required int32 slice_dim = 1;
+}
+
+message SoftmaxProto {
+  // Can be used to do softmax over each channel of one image by setting it to
+  // be the size of the second dimension (the first dimension is batchsize).
+  optional int32 num_softmax_per_instance = 1 [default = 1];
 }
 
 message RMSPropProto {

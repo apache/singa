@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/store.h"
+#include "singa/neuralnet/input_layer.h"
 namespace singa {
 
 StoreInputLayer::~StoreInputLayer() {

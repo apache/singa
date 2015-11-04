@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/softmax.h"
+#include "singa/neuralnet/neuron_layer.h"
 
 namespace singa {
 
@@ -37,12 +37,17 @@ void SoftmaxLayer::Setup(const LayerProto& proto,
     const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 1);
   NeuronLayer::Setup(proto, srclayers);
-  data_.Reshape(srclayers[0]->data(this).shape());
+  const auto& srcdata = srclayers[0]->data(this);
+  batchsize_ = data_.shape()[0];
+  num_softmax_per_instance_ = proto.softmax_conf().softmax_dim();
+  count_per_softmax_ = .count() / batchsize_ / num_softmax_per_instance_;
+  data_.Reshape(vector<int>{batchsize_, num_softmax_per_instance_,
+      count_per_softmax_});
+  grad_.ReshapeLike(data_);
 }
 
 void SoftmaxLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  int batchsize = data_.shape()[0];
   int dim = data_.count() / batchsize;
   Shape<2> s = Shape2(batchsize, dim);
   Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);

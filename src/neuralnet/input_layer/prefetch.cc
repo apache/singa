@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/prefetch.h"
+#include "singa/neuralnet/input_layer.h"
 namespace singa {
 
 using std::vector;

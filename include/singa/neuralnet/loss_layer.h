@@ -19,25 +19,38 @@
 *
 *************************************************************/
 
-#ifndef SINGA_NEURALNET_NEURON_LAYER_STANH_H_
-#define SINGA_NEURALNET_NEURON_LAYER_STANH_H_
+#ifndef SINGA_NEURALNET_LOSS_LAYER_H_
+#define SINGA_NEURALNET_LOSS_LAYER_H_
 
-#include <vector>
 #include "singa/neuralnet/layer.h"
-#include "singa/proto/job.pb.h"
-
+#include "singa/neuralnet/neuron_layer.h"
 namespace singa {
+using std::vector;
 /**
- * This layer apply scaled Tanh function to neuron activations.
- * f(x)=1.7159047  tanh(0.66666667 x)
+ * Squared Euclidean loss as @f$0.5 ||p - t||^2@f$, where p is prediction
+ * result, t is the ground truth.
  */
-class STanhLayer : public NeuronLayer {
+class EuclideanLossLayer : public LossLayer {
  public:
-  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
+/**
+ * Cross-entropy loss applied to the probabilities computed from Softmax.
+ * @f$ L_i = -log P_{t_i}, t_i\in [0, C] @f$ is the label for the i-th object,
+ * C is the total number of classes.
+ */
+class SoftmaxLossLayer : public LossLayer, public SoftmaxLayer {
+ public:
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
+ private:
+  float scale_;
+  int topk_;
+};
 }  // namespace singa
 
-#endif  // SINGA_NEURALNET_NEURON_LAYER_STANH_H_
+#endif  // SINGA_NEURALNET_LOSS_LAYER_H_

@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/deprecated.h"
+#include "singa/neuralnet/input_layer.h"
 #include "mshadow/tensor.h"
 namespace singa {
 

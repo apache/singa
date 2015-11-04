@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/argsort.h"
+#include "singa/neuralnet/output_layer.h"
 #include <algorithm>
 
 namespace singa {

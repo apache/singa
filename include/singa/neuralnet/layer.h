@@ -22,9 +22,7 @@
 #ifndef SINGA_NEURALNET_LAYER_H_
 #define SINGA_NEURALNET_LAYER_H_
 
-#include <map>
 #include <string>
-#include <thread>
 #include <vector>
 #include "singa/proto/common.pb.h"
 #include "singa/proto/job.pb.h"
@@ -267,13 +265,14 @@ class Layer {
   vector<AuxType> aux_data_;
   vector<Blob<float>*> datavec_, gradvec_;
 };
-
+/**************** Layer categories *****************/
 /**
  * Base layer for connecting layers when neural net is partitioned.
  */
 class ConnectionLayer : virtual public Layer {
   // defined as a layer category
 };
+
 
 /**
  * Base layer for getting input data. May include layers for loading records,
@@ -295,6 +294,14 @@ class InputLayer : virtual public Layer {
 
 using SingleLabelImageRecord = RecordProto;
 
+/**
+ * Base layer for feature transformation, e.g., ConvolutionLayer, PoolingLayer,
+ * etc.
+ */
+class NeuronLayer : virtual public Layer {
+  // defined as a layer category
+};
+
 
 /**
  * Base layer for calculating loss and doing BackPropagation.
@@ -315,14 +322,6 @@ class LossLayer : virtual public Layer {
 };
 
 /**
- * Base layer for feature transformation, e.g., ConvolutionLayer, PoolingLayer,
- * etc.
- */
-class NeuronLayer : virtual public Layer {
-  // defined as a layer category
-};
-
-/**
  * Base layer for collecting features into disk file, HTTP stream, etc.
  */
 class OutputLayer : virtual public Layer {
@@ -337,6 +336,7 @@ class OutputLayer : virtual public Layer {
     return grad_;
   }
 };
+
 
 }  // namespace singa
 #endif  // SINGA_NEURALNET_LAYER_H_

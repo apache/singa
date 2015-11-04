@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/csv.h"
+#include "singa/neuralnet/input_layer.h"
 #include "singa/utils/tokenizer.h"
 
 namespace singa {

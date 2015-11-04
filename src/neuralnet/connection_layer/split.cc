@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/connection_layer/split.h"
+#include "singa/neuralnet/connection_layer.h"
 
 namespace singa {
 

@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#ifndef SINGA_NEURALNET_CONNECTION_LAYER_BRIDGE_H_
-#define SINGA_NEURALNET_CONNECTION_LAYER_BRIDGE_H_
+#ifndef SINGA_NEURALNET_CONNECTION_LAYER_H_
+#define SINGA_NEURALNET_CONNECTION_LAYER_H_
 
 #include <string>
 #include <unordered_map>
@@ -72,7 +72,56 @@ class BridgeDstLayer : public BridgeLayer {
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
+/**
+ * Connect multiple (src) layers with a single (dst) layer.
+ *
+ * It concates feature Blobs (i.e., matrix) of src layers on one dimension.
+ * The concated feature Blob will be fed into the dst layer.
+ */
+class ConcateLayer : public ConnectionLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+};
+
+/**
+ * Connect a single (src) layer with multiple (dst) layers.
+ *
+ * It slices the feature Blob (i.e., matrix) of the src layer on one dimension.
+ * The sliced feature Blobs will be fed into dst layers.
+ */
+class SliceLayer : public ConnectionLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+
+ private:
+  std::vector<Blob<float>> datavec_;
+  std::vector<Blob<float>> gradvec_;
+  int slice_dim_;
+  int slice_num_;
+};
+
+/**
+ * Connect a single (src) layer with multiple dst layers.
+ *
+ * It replicates the feature Blob of the src layer.
+ * Each replicated feature Blob will be fed into one dst layer.
+ * It aggregates gradients set by all dst layers and set it to the src layer.
+ */
+class SplitLayer : public ConnectionLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+
+ protected:
+  Blob<float> grads_;
+};
+
 
 }  // namespace singa
 
-#endif  // SINGA_NEURALNET_CONNECTION_LAYER_BRIDGE_H_
+#endif  // SINGA_NEURALNET_CONNECTION_LAYER_H_

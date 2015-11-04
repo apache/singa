@@ -19,11 +19,9 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/connection_layer/concate.h"
+#include "singa/neuralnet/connection_layer.h"
 
 namespace singa {
-
-using std::vector;
 
 void ConcateLayer::Setup(const LayerProto& conf,
                          const vector<Layer*>& srclayers) {

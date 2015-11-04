@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/convolution.h"
+#include "singa/neuralnet/neuron_layer.h"
 
 #include <glog/logging.h>
 #include "singa/utils/singleton.h"
@@ -37,14 +37,40 @@ void ConvolutionLayer::Setup(const LayerProto& conf,
   CHECK_EQ(srclayers.size(), 1);
   Layer::Setup(conf, srclayers);
   ConvolutionProto conv_conf = conf.convolution_conf();
-  kernel_ = conv_conf.kernel();
-  CHECK_GT(kernel_, 0) << "Filter size cannot be zero.";
-  pad_ = conv_conf.pad();
-  stride_ = conv_conf.stride();
+  if (conv_conf.has_kernel()) {
+    kernel_x_ = kernel_y_ = conv_conf.kernel();
+  } else {
+    CHECK(conv_conf.has_kernel_x());
+    CHECK(conv_conf.has_kernel_y());
+    kernel_x_ = conv_conf.kernel_x();
+    kernel_y_ = conv_conf.kernel_y();
+  }
+
+  if (conv_conf.has_pad()) {
+    pad_x_ = pad_y_ = conv_conf.pad();
+  } else {
+    CHECK(conv_conf.has_pad_x());
+    CHECK(conv_conf.has_pad_y());
+    pad_x_ = conv_conf.pad_x();
+    pad_y_ = conv_conf.pad_y();
+  }
+
+  if (conv_conf.has_stride()) {
+    stride_x_ = stride_y_ = conv_conf.stride();
+  } else {
+    CHECK(conv_conf.has_stride_x());
+    CHECK(conv_conf.has_stride_y());
+    stride_x_ = conv_conf.stride_x();
+    stride_y_ = conv_conf.stride_y();
+  }
+
   num_filters_ = conv_conf.num_filters();
+  // partition filters
   if (partition_dim() > 0)
     num_filters_ /= srclayers.at(0)->num_partitions();
+
   const vector<int>& srcshape = srclayers[0]->data(this).shape();
+  batchsize_ = srcshape[0];
   int dim = srcshape.size();
   CHECK_GT(dim, 2);
   width_ = srcshape[dim - 1];
@@ -53,10 +79,10 @@ void ConvolutionLayer::Setup(const LayerProto& conf,
     channels_ = srcshape[dim - 3];
   else if (dim > 2)
     channels_ = 1;
-  batchsize_ = srcshape[0];
-  conv_height_ = (height_ + 2 * pad_ - kernel_) / stride_ + 1;
-  conv_width_ = (width_ + 2 * pad_ - kernel_) / stride_ + 1;
-  col_height_ = channels_ * kernel_ * kernel_;
+
+  conv_height_ = (height_ + 2 * pad_y_ - kernel_y_) / stride_y_ + 1;
+  conv_width_ = (width_ + 2 * pad_x_ - kernel_x_) / stride_x_ + 1;
+  col_height_ = channels_ * kernel_x_ * kernel_y_;
   col_width_ = conv_height_ * conv_width_;
   vector<int> shape{batchsize_, num_filters_, conv_height_, conv_width_};
   data_.Reshape(shape);
@@ -64,11 +90,14 @@ void ConvolutionLayer::Setup(const LayerProto& conf,
   col_data_.Reshape(vector<int>{col_height_, col_width_});
   col_grad_.Reshape(vector<int>{col_height_, col_width_});
   weight_ = Param::Create(conf.param(0));
-  bias_ = Param::Create(conf.param(1));
   weight_->Setup(vector<int>{num_filters_, col_height_});
-  bias_->Setup(vector<int>{num_filters_});
+  if (conf.param_size() > 1) {
+    bias_ = Param::Create(conf.param(1));
+    bias_->Setup(vector<int>{num_filters_});
+  }
 }
 
+// TODO(wangwei) remove mshadow's functions
 void ConvolutionLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   auto src = Tensor4(srclayers[0]->mutable_data(this));
@@ -78,9 +107,9 @@ void ConvolutionLayer::ComputeFeature(int flag,
   auto bias = Tensor1(bias_->mutable_data());
   for (int n = 0; n < batchsize_; n++) {
     if (pad_ > 0)
-      col = expr::unpack_patch2col(pad(src[n], pad_), kernel_, stride_);
+      col = expr::unpack_patch2col(pad(src[n], pad_x_), kernel_x_, stride_x_);
     else
-      col = expr::unpack_patch2col(src[n], kernel_, stride_);
+      col = expr::unpack_patch2col(src[n], kernel_x_, stride_x_);
     data[n] = dot(weight, col);
   }
   data += expr::broadcast<1>(bias, data.shape);
@@ -107,13 +136,13 @@ void ConvolutionLayer::ComputeGradient(int flag,
   Shape<2> imgshp = Shape2(height_, width_);
   for (int n = 0; n < batchsize_; n++) {
     if (pad_ > 0)
-      col = expr::unpack_patch2col(pad(src[n], pad_), kernel_, stride_);
+      col = expr::unpack_patch2col(pad(src[n], pad_x_), kernel_x_, stride_x_);
     else
-      col = expr::unpack_patch2col(src[n], kernel_, stride_);
+      col = expr::unpack_patch2col(src[n], kernel_x_, stride_x_);
     gweight += dot(grad[n], col.T());
     if (gsrcblob != nullptr) {
       gcol = dot(weight.T(), grad[n]);
-      gsrc[n] = crop(expr::pack_col2patch(gcol, padshp, kernel_, stride_),
+      gsrc[n] = crop(expr::pack_col2patch(gcol, padshp, kernel_x_, stride_x_),
           imgshp);
     }
   }
@@ -130,7 +159,7 @@ void CConvolutionLayer::ComputeFeature(int flag,
 
   for (int n = 0; n < batchsize_; n++) {
     Im2col(src[n].dptr, channels_, height_, width_,
-        kernel_, kernel_, pad_, pad_, stride_, stride_, col.dptr);
+        kernel_x_, kernel_y_, pad_x_, pad_y_, stride_x_, stride_y_, col.dptr);
     data[n] = dot(weight, col);
   }
   data += expr::broadcast<1>(bias, data.shape);
@@ -154,12 +183,13 @@ void CConvolutionLayer::ComputeGradient(int flag,
   gbias = expr::sumall_except_dim<1>(grad);
   for (int n = 0; n < batchsize_; n++) {
     Im2col(src[n].dptr, channels_, height_, width_,
-        kernel_, kernel_, pad_, pad_, stride_, stride_, col.dptr);
+        kernel_x_, kernel_y_, pad_x_, pad_y_, stride_x_, stride_y_, col.dptr);
     gweight += dot(grad[n], col.T());
     if (gsrcblob != nullptr) {
       gcol = dot(weight.T(), grad[n]);
       Col2im(gcol.dptr, channels_, height_, width_,
-          kernel_, kernel_, pad_, pad_, stride_, stride_, gsrc[n].dptr);
+          kernel_x_, kernel_y_, pad_x_, pad_y_, stride_x_, stride_y_,
+          gsrc[n].dptr);
     }
   }
 }

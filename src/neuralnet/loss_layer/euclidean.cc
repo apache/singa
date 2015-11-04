@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/loss_layer/euclidean.h"
+#include "singa/neuralnet/loss_layer.h"
 
 #include <glog/logging.h>
 #include "mshadow/tensor.h"

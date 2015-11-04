@@ -19,6 +19,7 @@
 *
 *************************************************************/
 
+<<<<<<< HEAD
 #include "singa/neuralnet/connection_layer/bridge.h"
 #include "singa/comm/msg.h"
 
