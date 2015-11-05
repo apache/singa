@@ -120,7 +120,7 @@ int Router::Bind(const std::string& endpoint) {
     port = zsock_bind(router_, "%s", endpoint.c_str());
   }
   CHECK_NE(port, -1) << endpoint;
-  LOG(INFO) << "bind successfully to " << endpoint + ":" + std::to_string(port);
+  LOG(INFO) << "bind successfully to " << zsock_endpoint(router_);
   return port;
 }
 

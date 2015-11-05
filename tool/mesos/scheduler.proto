@@ -19,31 +19,15 @@
 *
 *************************************************************/
 
-#include <glog/logging.h>
-#include <string>
-#include "singa/singa.h"
-#include "rnnlm.h"
-#include "rnnlm.pb.h"
-
-int main(int argc, char **argv) {
-  // initialize glog before creating the driver
-  google::InitGoogleLogging(argv[0]);
-  
-  singa::Driver driver;
-  driver.Init(argc, argv);
-
-  // if -resume in argument list, set resume to true; otherwise false
-  int resume_pos = singa::ArgPos(argc, argv, "-resume");
-  bool resume = (resume_pos != -1);
-
-  // register all layers for rnnlm
-  driver.RegisterLayer<rnnlm::EmbeddingLayer, std::string>("kEmbedding");
-  driver.RegisterLayer<rnnlm::HiddenLayer, std::string>("kHidden");
-  driver.RegisterLayer<rnnlm::LossLayer, std::string>("kLoss");
-  driver.RegisterLayer<rnnlm::DataLayer, std::string>("kData");
-
-  singa::JobProto jobConf = driver.job_conf();
-
-  driver.Train(resume, jobConf);
-  return 0;
+/**
+ * Protocol Buffer message containing global information for the 
+ * scheduler. 
+ */
+message SchedulerProto{
+	// HDFS namenode, for example node0:9000
+	required string namenode=1; 
+	// Mesos master node, for example node0:5050
+	required string master=2; 
+	// jobID, incremented at each run
+	required int32 job_counter=3; 
 }

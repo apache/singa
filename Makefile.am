@@ -122,7 +122,7 @@ TEST_SRCS := include/gtest/gtest_main.cc \
 						 src/test/test_csv_input_layer.cc
 
 #EXTRA_PROGRAMS = $(PROGS)
-EXTRA_PROGRAMS = singatest
+EXTRA_PROGRAMS = singatest test
 #EXTRA_LTLIBRARIES = $(LTLIBS)
 EXTRA_LTLIBRARIES = libgtest.la
 
@@ -172,10 +172,11 @@ libgtest_la_CXXFLAGS += -DUSE_LMDB
 endif
 libgtest_la_LDFLAGS = -I./include
 
-#bin_PROGRAMS += singatest
+#bin_PROGRAMS += test
 
 singatest_SOURCES = $(GTEST_HDRS) $(TEST_SRCS)
 singatest_CXXFLAGS = $(DEFAULT_FLAGS)
+singatest_LDADD = ./libgtest.la
 singatest_LDFLAGS = -I./include \
                 -lsinga \
                 -lglog  \
@@ -185,7 +186,7 @@ singatest_LDFLAGS = -I./include \
                 -lzmq \
                 -lczmq \
                 -lzookeeper_mt \
-								-lgtest
+			    -lgtest
 if LMDB
 singatest_LDFLAGS += -llmdb
 endif
@@ -207,6 +208,9 @@ rat:
 	else \
 		echo "java is not found"; \
 	fi
+
+test: singatest
+	@./singatest
 
 $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
 	protoc --proto_path=$(top_srcdir)/src/proto --cpp_out=$(top_srcdir)/src/proto $(PROTOS)

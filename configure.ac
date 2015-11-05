@@ -68,7 +68,7 @@ AC_ARG_ENABLE(test,
 	[enable_test=yes],[enable_test=no])
 AM_CONDITIONAL(SINGATEST, test "$enable_test" = yes)
 if test x"$enable_test" != x"no"; then
-	PROGS='singatest'
+	PROGS='singatest test'
 	LTLIBS='libgtest.la'
 else
 	PROGS=''

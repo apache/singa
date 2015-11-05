@@ -19,8 +19,10 @@
 *
 *************************************************************/
 
+#include <glog/logging.h>
 #include <iostream>
 #include "singa/singa.h"
+
 /**
  * \file main.cc provides an example main function.
  *
@@ -51,6 +53,10 @@ int main(int argc, char **argv) {
               << "-test\t test performance or extract features\n";
     return 0;
   }
+
+  // initialize glog before creating the driver
+  google::InitGoogleLogging(argv[0]);
+
   // must create driver at the beginning and call its Init method.
   singa::Driver driver;
   driver.Init(argc, argv);

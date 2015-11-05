@@ -64,17 +64,16 @@ extern "C" void openblas_set_num_threads(int num);
 namespace singa {
 
 void Driver::Init(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
-  //  unique job ID generated from singa-run.sh, passed in as "-singa_job <id>"
+  // unique job ID generated from singa-run.sh, passed in as "-singa_job <id>"
   int arg_pos = ArgPos(argc, argv, "-singa_job");
   job_id_ = (arg_pos != -1) ? atoi(argv[arg_pos+1]) : -1;
-  //  global signa conf passed by singa-run.sh as "-singa_conf <path>"
+  // global signa conf passed by singa-run.sh as "-singa_conf <path>"
   arg_pos = ArgPos(argc, argv, "-singa_conf");
   if (arg_pos != -1)
     ReadProtoFromTextFile(argv[arg_pos+1], &singa_conf_);
   else
     ReadProtoFromTextFile("conf/singa.conf", &singa_conf_);
-  //  job conf passed by users as "-conf <path>"
+  // job conf passed by users as "-conf <path>"
   arg_pos = ArgPos(argc, argv, "-conf");
   CHECK_NE(arg_pos, -1);
   ReadProtoFromTextFile(argv[arg_pos+1], &job_conf_);
