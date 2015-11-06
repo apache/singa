@@ -39,12 +39,38 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
   // for sharing param conf
   std::unordered_map<string, ParamProto*> name2param;
   std::vector<ParamProto*> shares;
+  // flag=0: neither exclude nor include field appears
+  // flag=1: exclude field appears
+  // flag=2: include field appears
+  int flag = 0;
   // exclude layers according to phase
+  // exclude field is deprecated
+  // please use include field instead
   for (const auto& layer : net_conf.layer()) {
     bool include = true;
     for (auto p : layer.exclude()) {
+      // check whether both exclude and include field
+      // appear in the same .conf file
+      CHECK(flag == 0 || flag == 1)
+        << "include and exclude field should not simultaneously"
+        << " appear in the same .conf file";
       if (p == phase)
         include = false;
+      flag = 1;
+    }
+    // neural net only include the specified layer in the include field
+    for (auto p : layer.include()) {
+      // check whether both exclude and include field
+      // appear in the same .conf file
+      CHECK(flag == 0 || flag == 2)
+        << "include and exclude field should not simultaneously"
+        << " appear in the same .conf file";
+      if (p == phase) {
+        include = true;
+        break;
+      }
+      include = false;
+      flag = 2;
     }
     if (include == false) continue;
     LayerProto* layer_conf = conf.add_layer();
