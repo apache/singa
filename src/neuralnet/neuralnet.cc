@@ -46,6 +46,16 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
       if (p == phase)
         include = false;
     }
+    // if layer.include contains multiple phases, 
+    // check whether the current phase is include 
+    for (auto p : layer.include()){
+      if (p == phase){
+        include = true;
+        break;
+      }
+      else
+        include = false;
+    }
     if (include == false) continue;
     LayerProto* layer_conf = conf.add_layer();
     layer_conf->CopyFrom(layer);

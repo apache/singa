@@ -178,6 +178,7 @@ message LayerProto {
   // some layers like data layer for loading test data are not used by training
   // phase should be removed by setting the exclude field.
   repeated Phase exclude = 15;
+  repeated Phase include = 14;
   // type of built-in layer
   optional LayerType type = 20 [default = kUserLayer];
   // type of user layer
