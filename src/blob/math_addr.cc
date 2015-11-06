@@ -23,11 +23,13 @@
 extern "C" {
     #include <cblas.h>
 }
+#ifdef SINGA_GPU
 #include <cuda_runtime.h>
+#endif
 #include "singa/blob/singa_op.h"
-// #include "cublas_v2.h"
-
-
+#ifdef SINGA_GPU
+#include "cublas_v2.h"
+#endif
 
 namespace singa {
 
@@ -69,8 +71,8 @@ float cpu_dot(const float * A, const float * B, const int n) {
     return sum;
 }
 
+#ifdef SINGA_GPU
 // Trick: swap A and B
-//
 void gpu_gemm(const float * A, const float * B, const int m, const int n,
 const int k, const float alpha, const float beta, const bool TranA,
 const bool TranB, float * C) {
@@ -113,5 +115,6 @@ float gpu_dot(const float * A, const float * B, const int n) {
     cublasDestroy(handle);
     return result;
 }
+#endif
 
 }  // namespace singa

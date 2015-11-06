@@ -20,7 +20,9 @@
 *************************************************************/
 
 #include "singa/blob/math_blob.h"
+#ifdef SINGA_GPU
 #include "singa/blob/math_kernel.h"
+#endif  // SINGA_GPU
 
 namespace singa {
 
@@ -49,11 +51,13 @@ Blob<float> * C, float alpha, float beta) {
             cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, k, alpha, beta,
             TranA, TranB, C->mutable_cpu_data());
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             // gpu part
             gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, k, alpha, beta,
             TranA, TranB, C->mutable_gpu_data());
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }
@@ -77,11 +81,13 @@ Blob<float> * C) {
             cpu_gemv(A.cpu_data(), B.cpu_data(), m, n, 1, 0, TranA,
             C->mutable_cpu_data());
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             // gpu part
             gpu_gemv(A.gpu_data(), B.gpu_data(), m, n, 1, 0, TranA,
             C->mutable_gpu_data());
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }
@@ -98,11 +104,13 @@ Blob<float> * C) {
             cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, 1, 1, 0,
             false, false, C->mutable_cpu_data());
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             // gpu part
             gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, 1, 1, 0,
             false, false, C->mutable_gpu_data());
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }
@@ -117,10 +125,12 @@ float VVdot(XPU xpu, const Blob<float> & A, const Blob<float> & B) {
         if (xpu == cpu) {
             res = cpu_dot(A.cpu_data(), B.cpu_data(), n);
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             // gpu part
             res = gpu_dot(A.gpu_data(), B.gpu_data(), n);
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }
@@ -134,10 +144,12 @@ void AXPY(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha) {
             cpu_axpy(A.cpu_data(), get_size(A.shape()),
             alpha, B->mutable_cpu_data());
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             gpu_axpy(A.gpu_data(), get_size(A.shape()),
             alpha, B->mutable_gpu_data());
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }
@@ -160,11 +172,13 @@ float alpha, float beta) {
             false, false, B->mutable_cpu_data());
             delete univ;
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             singa_gpu_add_vec_row(B->gpu_data(),
             A.gpu_data(), A.gpu_data(), m, n, n);
             // gpu part
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }
@@ -183,10 +197,12 @@ float alpha, float beta) {
             false, false, B->mutable_cpu_data());
             delete univ;
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             singa_gpu_sum_col(A.gpu_data(), B->gpu_data(), m, n, n);
             // gpu part
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }

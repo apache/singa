@@ -22,12 +22,15 @@
 #ifndef SINGA_BLOB_SINGA_OP_H_
 #define SINGA_BLOB_SINGA_OP_H_
 
+#ifdef SINGA_GPU
 #include <cuda_runtime.h>
+#endif  // SINGA_GPU
 #include <cmath>
 #include <algorithm>
-// #include "cublas_v2.h"
+#ifdef SINGA_GPU
+#include "cublas_v2.h"
 #include "singa/blob/math_kernel.h"
-
+#endif  // SINGA_GPU
 
 namespace singa {
     enum XPU { cpu, gpu, any};
@@ -37,38 +40,46 @@ struct Set {
     inline static void Map(float alpha, float * a) {
         *a = alpha;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha, float * a, int n) {
         singa::singa_gpu_set_value(a, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Scale {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = alpha * a;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_scale(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Scale_grad {
     inline static void Map(float alpha,  float * output) {
         *output = alpha;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  float * output, int n) {
         singa::singa_gpu_scale_grad(output, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Exp {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = pow(a, alpha);
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_exp(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Exp_grad {
@@ -76,130 +87,156 @@ struct Exp_grad {
         // log is the natrual log based on e
         *b = a * log(alpha);
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_exp_grad(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Gsigmoid {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = 1.0f / (1.0f + expf(-a * alpha));
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_sigmoid(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Gsigmoid_grad {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = alpha * a * (1.0f - a);
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_sigmoid_grad(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Grelu {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = (1 - alpha) * std::max(a, 0.0f) + alpha * a;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_relu(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Grelu_grad {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = a > 0.0f ? 1.0f : alpha;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_relu_grad(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Gtanh {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = tanhf(a * alpha);
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_tanh(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Gtanh_grad {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = alpha * (1.0f - a * a);
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_tanh_grad(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Softplus {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = logf(1 + expf(a));
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_softplus(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Softplus_grad {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = 1.0f / (1.0f + expf(-a));
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_softplus_grad(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Square {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = a * a;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_square(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Square_grad {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = 2 * sqrt(a);
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_square_grad(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Sqrt {
     inline static void Map(float alpha,  const float & a, float * b) {
         *b = sqrt(a);
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_sqrt(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Threshold {
     inline static void Map(float alpha, const float & a, float * b) {
         *b =  a < alpha ? 1.0f : 0.0f;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha,  const float * a,
     float * b, int n) {
         singa::singa_gpu_threshold(a, b, alpha, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Add {
@@ -207,10 +244,12 @@ struct Add {
     const float & b, float * c) {
         *c =  a + b;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha, float beta, const float * a,
     const float * b, float * c, int n) {
         singa::singa_gpu_add(a, b, c, alpha, beta, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Sub {
@@ -218,10 +257,12 @@ struct Sub {
     const float & b, float * c) {
         *c =  a - b;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha, float beta, const float * a,
     const float * b, float * c, int n) {
         singa::singa_gpu_sub(a, b, c, alpha, beta, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Mult {
@@ -229,10 +270,12 @@ struct Mult {
     const float & b, float * c) {
         *c =  a * b;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha, float beta, const float * a,
     const float * b, float * c, int n) {
         singa::singa_gpu_mult(a, b, c, alpha, beta, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Div {
@@ -240,10 +283,12 @@ struct Div {
     const float & b, float * c) {
         *c =  a / b;
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(float alpha, float beta, const float * a,
     const float * b, float * c, int n) {
         singa::singa_gpu_div(a, b, c, alpha, beta, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Sum {
@@ -253,7 +298,7 @@ struct Sum {
                     *b += a[i];
         }
     }
-
+    #ifdef SINGA_GPU
     inline static void CudaMap(const float * a, int n, float * b) {
         float *sum = NULL;
         cudaMalloc(<void**>(&sum), n*sizeof(float));
@@ -263,6 +308,7 @@ struct Sum {
         cudaMemcpyAsync(b, sum, sizeof(float), cudaMemcpyDeviceToDevice);
         cudaFree(sum);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Expand_Div {
@@ -271,9 +317,11 @@ struct Expand_Div {
                     b[i] /= a;
         }
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(const float & a, int n, float * b) {
         singa::singa_gpu_scale(b, b, a, n);
     }
+    #endif  // SINGA_GPU
 };
 
 struct Repmat {
@@ -282,9 +330,11 @@ struct Repmat {
                     b[i] = a;
         }
     }
+    #ifdef SINGA_GPU
     inline static void CudaMap(const float & a, int n, float * b) {
         singa::singa_gpu_set_value(b, a, n);
     }
+    #endif  // SINGA_GPU
 };
 
 };  // namespace op

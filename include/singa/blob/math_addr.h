@@ -81,6 +81,7 @@ void cpu_expand_f(const float * A, const int m, const int n, float * B) {
 }
 // expand each element in A into a row of B
 
+#ifdef SINGA_GPU
 void gpu_gemm(const float * A, const float * B,
 const int m, const int n, const int k, const float alpha, const float beta,
 const bool TranA, const bool TranB, float * C);
@@ -126,6 +127,7 @@ void gpu_expand_f(const float * A, const int m, const int n, float * B) {
                 }
 }
 // expand each element in A into a row of B
+#endif  // SINGA_GPU  
 
 }  // namespace singa
 #endif  // SINGA_BLOB_MATH_ADDR_H_

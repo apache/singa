@@ -24,7 +24,7 @@
 
 #include <vector>
 #include "singa/utils/blob.h"
-#include "singa/blob/singa::op.h"
+#include "singa/blob/singa_op.h"
 #include "singa/blob/math_addr.h"
 
 
@@ -218,11 +218,13 @@ void E_Func(XPU xpu, Blob<float> * A, float alpha) {
         int n = get_size(A->shape());
         cpu_e_f<Op>(n, alpha, A->mutable_cpu_data());
     }
+    #ifdef SINGA_GPU
     if (xpu == gpu) {
         // gpu part
         int n = get_size(A->shape());
         gpu_e_f<Op>(n, alpha, A->mutable_gpu_data());
     }
+    #endif  // SINGA_GPU
 }
 
 template<typename Op>
@@ -232,10 +234,12 @@ void E_Func(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha) {
         if (xpu == cpu) {
             cpu_e_f<Op>(n, A.cpu_data(), alpha, B->mutable_cpu_data());
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             // gpu part
             gpu_e_f<Op>(n, A.gpu_data(), alpha, B->mutable_gpu_data());
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }
@@ -250,11 +254,13 @@ Blob<float> * C, float alpha, float beta) {
             cpu_e_f<Op>(n, A.cpu_data(), B.cpu_data(), alpha, beta,
             C->mutable_cpu_data());
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             // gpu part
             gpu_e_f<Op>(n, A.gpu_data(), B.gpu_data(), alpha, beta,
             C->mutable_gpu_data());
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }
@@ -391,10 +397,12 @@ void Reduce_F(XPU xpu, const Blob<float> & A, Blob<float> * B) {
         if (xpu == cpu) {
             cpu_reduce_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             // gpu part
             gpu_reduce_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
         }
+        #endif  // SINGA_GPU
     } else {
         // report errors here
     }
@@ -409,10 +417,12 @@ void Expand_F(XPU xpu, const Blob<float> & A, Blob<float> * B) {
         if (xpu == cpu) {
             cpu_expand_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
         }
+        #ifdef SINGA_GPU
         if (xpu == gpu) {
             // gpu part
             gpu_expand_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
         }
+        #endif  // SINGA_GPU  
     } else {
         // report errors here
     }
