@@ -1,11 +1,11 @@
 #include <cmath>
-#include "singa/blob/math_kernel.h"
+#include "singa/utils/math_kernel.h"
 
 #define CU2DBLOCK_X 32
 #define CU2DBLOCK_Y 32
 
-#define CU1DBLOCK 1024 
-#define CU1DBLOCKF 1024.0 
+#define CU1DBLOCK 1024
+#define CU1DBLOCKF 1024.0
 
 
 //Cuda Kernel Functions
@@ -14,7 +14,7 @@ __global__
 void kernel_sum_vec(float *data, float *sum , long n)
 {
 	int THREADS = blockDim.x;
-	
+
 	__shared__ float aux[CU1DBLOCK];
 	int steps = (n - 1) / THREADS + 1;
 	aux[threadIdx.x] = data[threadIdx.x];
@@ -22,14 +22,14 @@ void kernel_sum_vec(float *data, float *sum , long n)
 	for(int i=1; i<steps; ++i) {
 		if(threadIdx.x+i*THREADS < n) {
 			aux[threadIdx.x] += data[threadIdx.x+i*THREADS];
-		}   
+		}
 	}
 
 	int total_threads = THREADS;
 	__syncthreads();
 
 	while(total_threads > 1) {
-		int half_point = ((1+total_threads) >> 1); 
+		int half_point = ((1+total_threads) >> 1);
 		if (threadIdx.x < half_point) {
 			if(threadIdx.x+half_point < total_threads) {
 				aux[threadIdx.x] += aux[threadIdx.x + half_point];
@@ -67,7 +67,7 @@ void kernel_sum_col(const float *src_mat_data, float *dst_vec_data, long rows, l
 			int half_point = ((1+total_threads) >> 1);
 			if (threadIdx.x < half_point) {
 				if(threadIdx.x+half_point < total_threads) {
-					aux[threadIdx.x] += aux[threadIdx.x + half_point];															            
+					aux[threadIdx.x] += aux[threadIdx.x + half_point];
 				}
 			}
 			__syncthreads();
@@ -78,7 +78,7 @@ void kernel_sum_col(const float *src_mat_data, float *dst_vec_data, long rows, l
 		dst_vec_data[j] = aux[0];
 }
 
-__global__ 
+__global__
 void kernel_add_vec_row(const float *src_vec_data, const float *src_mat_data, float* des_mat_data,long rows, long cols, long stride)
 {
 	long i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -99,7 +99,7 @@ void kernel_set_value(float *data, float value, long n)
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		data[index] = value;
-	}  
+	}
 }
 
 __global__
@@ -109,7 +109,7 @@ void kernel_scale(const float *src_data, float *des_data, float alpha, long n)
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data[index] * alpha;
-	}  
+	}
 }
 
 __global__
@@ -119,7 +119,7 @@ void kernel_scale_grad(float *data, float alpha, long n)
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		data[index] = alpha;
-	}  
+	}
 }
 
 __global__
@@ -129,7 +129,7 @@ void kernel_exp(const float *src_data, float *des_data, float alpha, long n)
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = pow(-src_data[index],alpha);
-	}  
+	}
 }
 
 __global__
@@ -139,7 +139,7 @@ void kernel_exp_grad(const float *src_data, float *des_data, float alpha, long n
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data[index] * log(alpha);
-	}  
+	}
 }
 
 __global__
@@ -149,7 +149,7 @@ void kernel_sigmoid(const float *src_data, float *des_data, float alpha, long n)
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = 1.0f / (1.0f + expf(-src_data[index]) * alpha);
-	}  
+	}
 }
 
 __global__
@@ -159,7 +159,7 @@ void kernel_sigmoid_grad(const float *src_data, float *des_data, float alpha, lo
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data[index] * (1.0f - src_data[index]) * alpha;
-	}  
+	}
 }
 
 __global__
@@ -169,7 +169,7 @@ void kernel_relu(const float *src_data, float *des_data, float alpha, long n)
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = 1.0f / ( 1 - alpha ) * max( src_data[index], 0.0f ) + alpha * src_data[index];
-	}  
+	}
 }
 
 __global__
@@ -179,7 +179,7 @@ void kernel_relu_grad(const float *src_data, float *des_data, float alpha, long 
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data[index] > 0.0f ? 1.0f : alpha;
-	}  
+	}
 }
 
 
@@ -190,7 +190,7 @@ void kernel_tanh(const float *src_data, float *des_data, float alpha, long n)
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = tanhf( src_data[index] * alpha );
-	}  
+	}
 }
 
 __global__
@@ -200,7 +200,7 @@ void kernel_tanh_grad(const float *src_data, float *des_data, float alpha, long 
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = alpha * (1.0f - src_data[index] * src_data[index] );
-	}  
+	}
 }
 
 __global__
@@ -210,7 +210,7 @@ void kernel_softplus(const float *src_data, float *des_data, float alpha, long n
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = logf(1 + expf(src_data[index]));
-	}  
+	}
 }
 
 __global__
@@ -220,7 +220,7 @@ void kernel_softplus_grad(const float *src_data, float *des_data, float alpha, l
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = 1.0f / (1.0f + expf(-src_data[index]));
-	}  
+	}
 }
 
 __global__
@@ -230,7 +230,7 @@ void kernel_square(const float *src_data, float *des_data, float alpha, long n)
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data[index] * src_data[index];
-	}  
+	}
 }
 
 __global__
@@ -240,7 +240,7 @@ void kernel_square_grad(const float *src_data, float *des_data, float alpha, lon
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = 2 * sqrt(src_data[index]);
-	}  
+	}
 }
 
 __global__
@@ -250,7 +250,7 @@ void kernel_sqrt(const float *src_data, float *des_data, float alpha, long n)
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = sqrt(src_data[index]);
-	}  
+	}
 }
 
 __global__
@@ -260,7 +260,7 @@ void kernel_threshold(const float *src_data, float *des_data, float alpha, long 
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data[index] < alpha ? 1.0f : 0.0f;
-	}  
+	}
 }
 
 __global__
@@ -270,7 +270,7 @@ void kernel_add(const float *src_data_a, const float *src_data_b, float *des_dat
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data_a[index] + src_data_b[index];
-	}  
+	}
 }
 
 __global__
@@ -280,7 +280,7 @@ void kernel_sub(const float *src_data_a, const float *src_data_b, float *des_dat
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data_a[index] - src_data_b[index];
-	}  
+	}
 }
 
 __global__
@@ -290,7 +290,7 @@ void kernel_mult(const float *src_data_a, const float *src_data_b, float *des_da
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data_a[index] * src_data_b[index];
-	}  
+	}
 }
 
 __global__
@@ -300,7 +300,7 @@ void kernel_div(const float *src_data_a, const float *src_data_b, float *des_dat
 	long num_threads = blockDim.x * gridDim.x;
 	for(; index<n; index+=num_threads) {
 		des_data[index] = src_data_a[index] / src_data_b[index];
-	}  
+	}
 }
 
 //

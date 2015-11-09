@@ -121,10 +121,12 @@ class Blob {
  public:
   Blob() {}
   explicit Blob(const std::vector<int>& shape) { Reshape(shape); }
-  explicit Blob(int count) { Reshape(count); }
-  explicit Blob(int a, int b) { Reshape(a, b); }
-  explicit Blob(int a, int b, int c) { Reshape(a, b, c); }
-  explicit Blob(int a, int b, int c, int d) { Reshape(a, b, c, d); }
+  explicit Blob(int dim0) { Reshape(dim0); }
+  explicit Blob(int dim0, int dim1) { Reshape(dim0, dim1); }
+  explicit Blob(int dim0, int dim1, int dim2) { Reshape(dim0, dim1, dim2); }
+  explicit Blob(int dim0, int dim1, int dim2, int dim3) {
+    Reshape(dim0, dim1, dim2, dim3);
+  }
   /**
    * Change the shape of the blob, re-allocat memory if Blob size() changes.
    *
@@ -136,34 +138,43 @@ class Blob {
    * Helper for Reshape(const std::vector<int>& shape) with shape.size() = 1.
    *
    * @see Reshape(const std::vector<int>&).
-   * @param[in] count total num of elements.
+   * @param[in] dim0 total num of elements.
    */
-  void Reshape(int count);
+  void Reshape(int dim0) {
+    Reshape(std::vector<int>{dim0});
+  }
   /**
    * Helper for Reshape(const std::vector<int>& shape) with shape.size() = 2.
    *
-   * @param a the highest dimension size, i.e., a = shape[0]. E.g., a could the
-   * batchsize.
-   * @param[in] b, b = shape[1], e.g., b could be the length of the feature vector.
+   * @param dim0 the highest dimension size, i.e., dim0 = shape[0]. E.g., dim0
+   * could the batchsize.
+   * @param[in] dim1, dim1 = shape[1], e.g., dim1 could be the length of the
+   * feature vector.
    */
-  void Reshape(int a, int b);
+  void Reshape(int dim0, int dim1) {
+    Reshape(std::vector<int>{dim0, dim1});
+  }
   /**
    * Helper for Reshape(const std::vector<int>& shape) with shape.size() = 3.
    *
-   * @param[in] a, a = shape[0]
-   * @param[in] b, b = shape[1]
-   * @param[in] c, c = shape[2]
+   * @param[in] dim0, dim0 = shape[0]
+   * @param[in] dim1, dim1 = shape[1]
+   * @param[in] dim2, dim2 = shape[2]
    */
-  void Reshape(int a, int b, int c);
+  void Reshape(int dim0, int dim1, int dim2) {
+    Reshape(std::vector<int>{dim0, dim1, dim2});
+  }
   /**
    * Helper for Reshape(const std::vector<int>& shape) with shape.size() = 4.
    *
-   * @param[in] a, a = shape[0]
-   * @param[in] b, b = shape[1]
-   * @param[in] c, c = shape[2]
-   * @param[in] d, d = shape[3]
+   * @param[in] dim0, dim0 = shape[0]
+   * @param[in] dim1, dim1 = shape[1]
+   * @param[in] dim2, dim2 = shape[2]
+   * @param[in] dim3, dim3 = shape[3]
    */
-  void Reshape(int a, int b, int c, int d);
+  void Reshape(int dim0, int dim1, int dim2, int dim3) {
+    Reshape(std::vector<int>{dim0, dim1, dim2, dim3});
+  }
   /**
    * Reshape as the shape of *other* Blob.
    * @param[in] other
@@ -274,7 +285,7 @@ Blob<Dtype>* Reshape(const Blob<Dtype> & A, const std::vector<int>& shape) {
 template <typename Dtype>
 Blob<Dtype>* Reshape(const Blob<Dtype> & A, int count) {
   std::vector<int> tmpshape;
-  tmpshape.push_back(dim1);
+  tmpshape.push_back(count);
   return Reshape(A, tmpshape);
 }
 /**
@@ -302,8 +313,8 @@ Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim0, int dim1, int dim2) {
  * Helper of Reshape(const Blob<Dtype>, const std::vector<int>*).
  */
 template <typename Dtype>
-Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim0, int dim1,
-    int dim2, int dim3) {
+Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim0, int dim1, int dim2,
+    int dim3) {
   std::vector<int> tmpshape;
   tmpshape.push_back(dim0);
   tmpshape.push_back(dim1);

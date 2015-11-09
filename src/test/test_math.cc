@@ -1,8 +1,7 @@
 #include "gtest/gtest.h"
-#include "singa/blob/math_addr.h"
-#include "singa/blob/math_blob.h"
-#include "singa/blob/math_kernel.h"
-#include "singa/blob/singa_op.h"
+#include "singa/utils/math_addr.h"
+#include "singa/utils/math_kernel.h"
+#include "singa/utils/singa_op.h"
 
 #include <cuda_runtime.h>
 #include "cublas_v2.h"
@@ -37,10 +36,10 @@ TEST(MathTest, TestGemmCPU) {
 }
 
 TEST(MathTest, TestGemvCPU) {
-	float A[4][3] = {}; 
-	float B[4]= {}; 
-	float C[3] = {}; 
-	float D[3] = {}; 
+	float A[4][3] = {};
+	float B[4]= {};
+	float C[3] = {};
+	float D[3] = {};
 
 	for(int i = 0; i < 4; i++)
 	{
@@ -51,8 +50,8 @@ TEST(MathTest, TestGemvCPU) {
 	}
 
 	for(int i = 0; i < 4; i++)B[i] = i;
-	for(int i = 0; i < 3; i++)C[i] = 10; 
-	cpu_gemv(A[0], B, 4, 3, 1, 1, true, C); 
+	for(int i = 0; i < 3; i++)C[i] = 10;
+	cpu_gemv(A[0], B, 4, 3, 1, 1, true, C);
 
 	for(int i = 0; i < 3; i++)
 	{
@@ -69,9 +68,9 @@ TEST(MathTest, TestGemvCPU) {
 
 
 TEST(MathTest, TestAxpyCPU) {
-	float A[4][3] = {}; 
-	float C[4][3] = {}; 
-	float B[3][4] = {}; 
+	float A[4][3] = {};
+	float C[4][3] = {};
+	float B[3][4] = {};
 	float D[3][4] = {};
 
 	for(int i = 0; i < 4; i++)
@@ -113,7 +112,7 @@ TEST(MathTest, TestEopCPU) {
 		A[i] = i;
 		B[i] = -i;
 		C[i] = i;
-	
+
 	}
 
 	cpu_e_f<singa_op::Set>(5, 15, O);
@@ -336,7 +335,7 @@ TEST(MathTest, TestSingaSumColGPU) {
 			A[i][j]=i+j;
 		}
 	}
-	
+
 	for(int i = 0; i < 4; i++)
 	{
 		B[i]=0.0f;
@@ -462,7 +461,7 @@ TEST(MathTest, TestEopGPU) {
 		B[i] = -i;
 		C[i] = i;
 		O[i] = 0.0f;
-	
+
 	}
 
 	float* A_gpu=NULL;

@@ -19,15 +19,15 @@
 *
 *************************************************************/
 
-#ifndef SINGA_BLOB_MATH_ADDR_H_
-#define SINGA_BLOB_MATH_ADDR_H_
+#ifndef SINGA_UTILS_MATH_ADDR_H_
+#define SINGA_UTILS_MATH_ADDR_H_
 extern "C" {
     #include <cblas.h>
 }
 #ifdef USE_GPU
 #include <cuda_runtime.h>
 #endif
-#include "singa/blob/singa_op.h"
+#include "singa/utils/singa_op.h"
 #ifdef USE_GPU
 #include "cublas_v2.h"
 #endif
@@ -203,4 +203,4 @@ void gpu_expand_f(const Dtype * A, const int m, const int n, Dtype * B) {
 #endif  // USE_GPU
 
 }  // namespace singa
-#endif  // SINGA_BLOB_MATH_ADDR_H_
+#endif  // SINGA_UTILS_MATH_ADDR_H_

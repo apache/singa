@@ -19,13 +19,13 @@
 *
 *************************************************************/
 
-#ifndef SINGA_BLOB_MATH_BLOB_H_
-#define SINGA_BLOB_MATH_BLOB_H_
+#ifndef SINGA_UTILS_MATH_BLOB_H_
+#define SINGA_UTILS_MATH_BLOB_H_
 
 #include <vector>
 #include "singa/utils/blob.h"
-#include "singa/blob/singa_op.h"
-#include "singa/blob/math_addr.h"
+#include "singa/utils/singa_op.h"
+#include "singa/utils/math_addr.h"
 
 
 namespace singa {
@@ -482,116 +482,6 @@ void Expand2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
 #endif  // SINGA_GPU
 }
 
-/***********************************************************/
-/**
- * Apply the function from Op for each element in A, Op(Ai).
- * @param A
- */
-template<typename Op, typename Dtype>
-void Map(XPU xpu, Blob<Dtype>* A) {
-  if (xpu == cpu) {
-    cpu_e_f<Op>(A->count(), A->mutable_cpu_data());
-  }
-#ifdef SINGA_GPU
-  if (xpu == gpu) {
-    // gpu part
-    gpu_e_f<Op>(A->count(), A->mutable_gpu_data());
-  }
-#endif  // SINGA_GPU
-}
-
-/**
- * B = e ^ A
- */
-template<typename Dtype>
-void Exp(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-  Map<singa::op::Exp>(xpu, A, B);
-}
-
-/**
- * element-wise operation: b = 1.0f / (1.0f + expf(-a));
- */
-template<typename Dtype>
-inline void Sigmoid(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::Sigmoid>(xpu, A, B);
-}
-
-/**
- * element-wise operation: b = a * ( 1.0f - a );
- */
-inline void SigmoidGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::SigmoidGrad>(xpu, A, B);
-}
-
-/**
- * element-wise operation: b = std::max( a, 0)
- */
-inline void Relu(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::Relu>(xpu, A, B);
-}
-
-/**
- * element-wise operation: b = a > 0 ? 1: 0;
- */
-template<typename Dtype>
-inline void ReluGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::ReluGrad>(xpu, A, B);
-}
-
-/**
- * element-wise operation: b = tanh(a);
- */
-template<typename Dtype>
-inline void Tanh(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::Tanh>(xpu, A, B);
-}
-
-/**
- * B = 1- A^2
- */
-template<typename Dtype>
-inline void TanhGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::TanhGrad>(xpu, A, B);
-}
-/**
- * B = log(1+exp(A))
- */
-template<typename Dtype>
-inline void Softplus(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::Softplus>(xpu, A, B);
-}
-
-/**
- * B = 1.0f / (1.0f + expf(-A));
- */
-template<typename Dtype>
-inline void SoftplusGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::SoftplusGrad>(xpu, A, B);
-}
-
-template<typename Dtype>
-inline void Square(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::Square>(xpu, A, B);
-}
-
-template<typename Dtype>
-inline void SquareGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::Square_grad>(xpu, A, B);
-}
-
-template<typename Dtype>
-inline void Sqrt(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-    Map<singa::op::Sqrt>(xpu, A, B);
-}
-
-/**
- * B = A < alpha ? 1:0;
- */
-template<typename Dtype>
-inline void Threshold(XPU xpu, Dtype alpha, const Blob<Dtype> & A,
-    Blob<Dtype> * B) {
-  Map<singa::op::Threshold>(xpu, alpha, A, B);
-}
 }  // end of namespace singa
 
 #endif  // SINGA_BLOB_MATH_BLOB_H_
