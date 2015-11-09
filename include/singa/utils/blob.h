@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -121,21 +121,53 @@ class Blob {
  public:
   Blob() {}
   explicit Blob(const std::vector<int>& shape) { Reshape(shape); }
+  explicit Blob(int count) { Reshape(count); }
+  explicit Blob(int a, int b) { Reshape(a, b); }
+  explicit Blob(int a, int b, int c) { Reshape(a, b, c); }
+  explicit Blob(int a, int b, int c, int d) { Reshape(a, b, c, d); }
   /**
-   * @brief Change the dimensions of the blob, allocating new memory if
-   *        necessary.
+   * Change the shape of the blob, re-allocat memory if Blob size() changes.
    *
-   * This function can be called both to create an initial allocation
-   * of memory, and to adjust the dimensions of a top blob during Layer::Reshape
-   * or Layer::Forward. When changing the size of blob, memory will only be
-   * reallocated if sufficient memory does not already exist, and excess memory
-   * will never be freed.
-   *
-   * Note that reshaping an input blob and immediately calling Net::Backward is
-   * an error; either Net::Forward or Net::Reshape need to be called to
-   * propagate the new input shape to higher layers.
+   * @param[in] shape specifies the size of each dimension, shape[0] is the highest
+   * dimension, i.e., stride[0] = shape[1] * shape[2] * ...
    */
   void Reshape(const std::vector<int>& shape);
+  /**
+   * Helper for Reshape(const std::vector<int>& shape) with shape.size() = 1.
+   *
+   * @see Reshape(const std::vector<int>&).
+   * @param[in] count total num of elements.
+   */
+  void Reshape(int count);
+  /**
+   * Helper for Reshape(const std::vector<int>& shape) with shape.size() = 2.
+   *
+   * @param a the highest dimension size, i.e., a = shape[0]. E.g., a could the
+   * batchsize.
+   * @param[in] b, b = shape[1], e.g., b could be the length of the feature vector.
+   */
+  void Reshape(int a, int b);
+  /**
+   * Helper for Reshape(const std::vector<int>& shape) with shape.size() = 3.
+   *
+   * @param[in] a, a = shape[0]
+   * @param[in] b, b = shape[1]
+   * @param[in] c, c = shape[2]
+   */
+  void Reshape(int a, int b, int c);
+  /**
+   * Helper for Reshape(const std::vector<int>& shape) with shape.size() = 4.
+   *
+   * @param[in] a, a = shape[0]
+   * @param[in] b, b = shape[1]
+   * @param[in] c, c = shape[2]
+   * @param[in] d, d = shape[3]
+   */
+  void Reshape(int a, int b, int c, int d);
+  /**
+   * Reshape as the shape of *other* Blob.
+   * @param[in] other
+   */
   void ReshapeLike(const Blob& other);
   /**
    * @brief Copy from a source Blob.
@@ -149,20 +181,45 @@ class Blob {
   void CopyFrom(const Blob<Dtype>& source, bool reshape);
   void FromProto(const singa::BlobProto& proto);
   void ToProto(singa::BlobProto* proto) const;
+  void SetValue(Dtype v);
   /**
-   * @brief Set the data_ shared_ptr to point to the SyncedMemory holding the
-   *        data_ of Blob other -- useful in Layer&s which simply perform a copy
-   *        in their Forward pass.
+   * Compute the sum of absolute values (L1 norm) of the data.
+   */
+  Dtype asum_data() const;
+  /**
+   * Sum all elements
+   */
+  Dtype sum_data() const;
+  /**
+   * Share data with the other Blob.
+   * Set the data_ shared_ptr to point to the SyncedMemory holding the data_
+   * of Blob other.
    *
-   * This deallocates the SyncedMemory holding this Blob's data_, as
+   * It may deallocate the SyncedMemory holding this Blob's data_, as
    * shared_ptr calls its destructor when reset with the "=" operator.
    */
   void ShareData(const Blob& other);
   void Swap(Blob& other);
+  /**
+   * @return the shape vector.
+   */
   inline const std::vector<int>& shape() const { return shape_; }
-  inline int count() const { return count_; }
-  inline const int version() const { return version_; }
-  inline void set_version(int v) { version_ = v; }
+  /**
+   * @return the size of the k-th dimension.
+   */
+  inline const int shape(int k) const {
+    CHECK_LT(k, shape_.size());
+    return shape_.at(k);
+  }
+  inline int count() const {
+    return count_;
+  }
+  inline const int version() const {
+    return version_;
+  }
+  inline void set_version(int v) {
+    version_ = v;
+  }
   inline const Dtype* cpu_data() const {
     CHECK(data_);
     return static_cast<const Dtype*>(data_->cpu_data());
@@ -183,24 +240,12 @@ class Blob {
     CHECK(data_);
     return static_cast<Dtype*>(data_->mutable_gpu_data());
   }
-  /// @brief Compute the sum of absolute values (L1 norm) of the data.
-  Dtype asum_data() const;
-  Dtype sum_data() const;
-  inline void setTranspose() {
-    isTranspose_ = !isTranspose_;
+  inline void set_transpose() {
+    transpose_ = true;
   }
-  inline bool isTranspose() const {
-    return isTranspose_;
+  inline bool transpose() const {
+    return transpose_;
   }
-  inline void Mirror(const Blob<Dtype> & other) {
-    data_ = other.data_;
-    shape_ = other.shape_;
-    count_ = other.count_;
-    capacity_ = other.capacity_;
-    version_ = other.version_;
-    isTranspose_ = other.isTranspose_;
-  }
-
 
  protected:
   std::shared_ptr<SyncedMemory> data_ = nullptr;
@@ -208,9 +253,77 @@ class Blob {
   int count_ = 0;
   int capacity_ = 0;
   int version_ = -1;
-  bool isTranspose_ = false;
+  bool transpose_ = false;
 };  // class Blob
 
+/**
+ * Reshape a Blob.
+ * @return a new Blob with the given shape, it shares the internal data_ with
+ * the original Blob, i.e., no memory copy and allocation.
+ */
+template <typename Dtype>
+Blob<Dtype>* Reshape(const Blob<Dtype> & A, const std::vector<int>& shape) {
+  Blob<Dtype>* res = new Blob<Dtype>(A);
+  res->Reshape(shape);
+  return res;
+}
+
+/**
+ * Helper of Reshape(const Blob<Dtype>, const std::vector<int>*).
+ */
+template <typename Dtype>
+Blob<Dtype>* Reshape(const Blob<Dtype> & A, int count) {
+  std::vector<int> tmpshape;
+  tmpshape.push_back(dim1);
+  return Reshape(A, tmpshape);
+}
+/**
+ * Helper of Reshape(const Blob<Dtype>, const std::vector<int>*).
+ */
+template <typename Dtype>
+Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim0, int dim1) {
+  std::vector<int> tmpshape;
+  tmpshape.push_back(dim0);
+  tmpshape.push_back(dim1);;
+  return Reshape(A, tmpshape);
+}
+/**
+ * Helper of Reshape(const Blob<Dtype>, const std::vector<int>*).
+ */
+template <typename Dtype>
+Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim0, int dim1, int dim2) {
+  std::vector<int> tmpshape;
+  tmpshape.push_back(dim0);
+  tmpshape.push_back(dim1);
+  tmpshape.push_back(dim2);
+  return Reshape(A, tmpshape);
+}
+/**
+ * Helper of Reshape(const Blob<Dtype>, const std::vector<int>*).
+ */
+template <typename Dtype>
+Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim0, int dim1,
+    int dim2, int dim3) {
+  std::vector<int> tmpshape;
+  tmpshape.push_back(dim0);
+  tmpshape.push_back(dim1);
+  tmpshape.push_back(dim2);
+  tmpshape.push_back(dim3);
+  return Reshape(A, tmpshape);
+}
+
+/**
+ * @return a new Blob which share all internal members with the input Blob
+ * except that the transpose_ field is set to true.
+ */
+template <typename Dtype>
+Blob<Dtype>* Transpose(const Blob<Dtype> & A) {
+  Blob<Dtype>* res = new Blob<Dtype>(A);
+  res->set_transpose();
+  return res;
+}
+
+// TODO(wangwei) remove mshadow functions.
 using namespace mshadow;
 using mshadow::cpu;
 
@@ -248,6 +361,7 @@ inline Tensor<cpu, 1> Tensor1(Blob<float>* blob) {
   Tensor<cpu, 1> tensor(blob->mutable_cpu_data(), Shape1(blob->count()));
   return tensor;
 }
+
 
 }  // namespace singa
 

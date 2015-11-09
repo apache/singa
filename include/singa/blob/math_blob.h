@@ -29,420 +29,569 @@
 
 
 namespace singa {
-/*********************Level-2 interface, called by user code*******************/
+enum XPU {cpu, gpu, any};
 
-int get_size(const std::vector<int>& shape);
+/************* BLAS level 1 *****************/
+/**
+ * Scale each element of A with alpha, and put the result into B.
+ * Bi = alpha*Ai
+ * Use blas scale internally.
+ */
+template<typename Dtype>
+void Scale(xpu xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
+  CHECK_EQ(A.count(), B->count());
+  if (xpu == cpu)
+    cpu_scale(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
+#ifdef USE_GPU
+#endif
+}
 
+/**
+ * Element-wise operation: Bi = alpha*Ai+Bi. A and B should have the same size
+ */
+template<typename Dtype>
+void AXPY(XPU xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
+  CHECK_EQ(A.count(), B.count());
+  if (xpu == cpu) {
+    cpu_axpy(A.cpu_data(), A.count(),
+        alpha, B->mutable_cpu_data());
+  }
+#ifdef USE_GPU
+  if (xpu == gpu) {
+    gpu_axpy(A.gpu_data(), A.count(),
+        alpha, B->mutable_gpu_data());
+  }
+#endif  // USE_GPU
+}
+
+/************* BLAS level 2 *****************/
+/**
+ * Matrix vector multiplication, C = alpha A(.T) * B + beta C.
+ * Strict shape checking:
+ * - dim of A ==2
+ *   columsn of A(.T) == B.count()
+ * - rows of A(.T) == C.count()
+ *
+ * @param[in] alpha
+ * @param[in] beta
+ * @param[in] A, matrix
+ * @param[in] B, vector
+ * @param[in, out] C, vector
+ */
+template<typename Dtype>
+void GEMV(XPU, xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
+    const Blob<Dtype>& B, Blob<Dtype>* C) {
+  CHECK_EQ(A.shape().size(), 2) << "A must be a matrix";
+  int a1, a2, m, n;
+  a1 = A.transpose() ? A.shape(1) : A.shape(0);
+  a2 = A.transpose() ? A.shape(0) : A.shape(1);
+  m = B.count();
+  n = C->count();
+  CHECK_EQ(a2, m) << "# columns of A(.T) must = length of B";
+  CHECK_EQ(a1, n) << "# rows of A(.T) must = length of C";
+
+  bool TranA = A.transpose();
+  if (xpu == cpu) {
+    cpu_gemv(A.cpu_data(), B.cpu_data(), m, n, alpha, beta, TranA,
+        C->mutable_cpu_data());
+  }
+#ifdef USE_GPU
+  if (xpu == gpu) {
+    // gpu part
+    gpu_gemv(A.gpu_data(), B.gpu_data(), m, n, alpha, beta, TranA,
+        C->mutable_gpu_data());
+  }
+#endif  // USE_GPU
+}
+/**
+ * Matrix vector multiplication, C = A(.T) * B, transpose is considered.
+ * Loose shape checking:
+ * - dim of A >=2
+ * - A.count() % B.count() == 0
+ * - B.count() == C.count()
+ *
+ * @param[in] A input matrix
+ * @param[in] B input vector
+ * @param[out] C output vector
+ */
 template <typename Dtype>
-bool check_shape_mv(const Blob<Dtype> & A, const Blob<Dtype> & B) {
-    if (A.shape().size() != 2) return false;
-    if (B.shape().size() != 1) return false;
-    if (A.shape().at(0) != B.shape().at(0)) return false;
-    return true;
+void MVDot(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B, Blob<Dtype>* C)
+{
+  GEMV(xpu, Dtype(1), Dtype(0), A, B, C);
 }
 
+/************* BLAS level 3 *****************/
+/**
+ * Matrix multiplication, C = alpha A*B + beta C, A, B and C are matrix.
+ *
+ * Tranpose is considered for A and B.
+ * Strict shape checking:
+ * - all are matrix
+ * - shapes match for matrix multiplication
+ *
+ * @param[in] alpha
+ * @param[in] beta
+ * @param[in] A, matrix
+ * @param[in] B, matrix
+ * @param[in, out] C, matrix
+ */
 template <typename Dtype>
-bool check_shape_equal(const Blob<Dtype> & A, const Blob<Dtype> & B,
-const Blob<Dtype> & C) {
-    int asize, bsize, csize;
-    asize = get_size(A.shape());
-    bsize = get_size(B.shape());
-    csize = get_size(C.shape());
-    if (asize != bsize) return false;
-    if (asize != csize) return false;
-    return true;
-}
+void GEMM(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
+    const Blob<Dtype> & B, Blob<Dtype> * C) {
+  CHECK_EQ(A.shape().size(), 2);
+  CHECK_EQ(B.shape().size(), 2);
+  CHECK_EQ(C.shape().size(), 2);
+  int a1, a2, b1, b2, m, n;
+  CHECK(!C->transpose());
+  a1 = A.transpose() ? A.shape(1) : A.shape(0);
+  a2 = A.transpose() ? A.shape(0) : A.shape(1);
+  b1 = B.transpose() ? B.shape(1) : B.shape(0);
+  b2 = B.transpose() ? B.shape(0) : B.shape(1);
+  m = C->shape(0);
+  n = C->shape(1);
+  CHECK__EQ(a2, b1);
+  CHECK__EQ(a1, m);
+  CHECK__EQ(b2, n);
 
+  int k = A.transpose() ? A.shape(0) : A.shape(1);
+  bool TranA = A.transpose();
+  bool TranB = B.transpose();
+  if (xpu == cpu) {
+    cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, k, alpha, beta,
+        TranA, TranB, C->mutable_cpu_data());
+  }
+#ifdef USE_GPU
+  if (xpu == gpu) {
+    // gpu part
+    gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, k, alpha, beta,
+        TranA, TranB, C->mutable_gpu_data());
+  }
+#endif  // USE_GPU
+}
+/**
+ * Matrix multiplication, C = A(.T) * B(.T), transpose is considered.
+ * Strict shape checking:
+ * - all are matrix
+ * - shapes match for matrix multiplication
+ *
+ * @param[in] A input matrix
+ * @param[in] B input matrix
+ * @param[out] C output matrix
+ */
 template <typename Dtype>
-bool check_shape_mmm(const Blob<Dtype> & A, const Blob<Dtype> & B,
-const Blob<Dtype> & C) {
-    if (A.shape().size() != 2) return false;
-    if (B.shape().size() != 2) return false;
-    if (C.shape().size() != 2) return false;
-    int a1, a2, b1, b2, c1, c2;
-    if (C.isTranspose()) return false;
-    a1 = A.isTranspose() ? A.shape().at(1) : A.shape().at(0);
-    a2 = A.isTranspose() ? A.shape().at(0) : A.shape().at(1);
-    b1 = B.isTranspose() ? B.shape().at(1) : B.shape().at(0);
-    b2 = B.isTranspose() ? B.shape().at(0) : B.shape().at(1);
-    c1 = C.shape().at(0);
-    c2 = C.shape().at(1);
-    if (a2 != b1) return false;
-    if (a1 != c1) return false;
-    if (b2 != c2) return false;
-    return true;
+void MMDot(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B, Blob<Dtype>* C)
+{
+  GEMM(xpu, Dtype(1), Dtype(0), A, B, C);
 }
 
+
+/*********************** Inner and Outer product****************************/
+/**
+ * Inner product for two vectors.
+ * Loose shape checking, A.count() == B.count.
+ *
+ * @param[in] A, input vector (shape checking using A.count()).
+ * @param[in] B, input vector (shape checking using B.count()).
+ * @return inner product value.
+ */
 template <typename Dtype>
-bool check_shape_vvm(const Blob<Dtype> & A, const Blob<Dtype> & B,
-const Blob<Dtype> & C) {
-    if (A.shape().size() != 1) return false;
-    if (B.shape().size() != 1) return false;
-    if (C.shape().size() != 2) return false;
-    int a1, b1, c1, c2;
-    if (C.isTranspose()) return false;
-    a1 = A.shape().at(0);
-    b1 = B.shape().at(0);
-    c1 = C.shape().at(0);
-    c2 = C.shape().at(1);
-    if (a1 != c2) return false;
-    if (b1 != c1) return false;
-    return true;
+Dtype VVDot(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B) {
+  Dtype res = 0;
+  CHECK_EQ(A.count(), B.count());
+  int n = A.count();
+  if (xpu == cpu) {
+    res = cpu_dot(A.cpu_data(), B.cpu_data(), n);
+  }
+#ifdef USE_GPU
+  if (xpu == gpu) {
+    // gpu part
+    res = gpu_dot(A.gpu_data(), B.gpu_data(), n);
+  }
+#endif  // USE_GPU
+  return res;
 }
 
+/**
+ * Outer product, C = A ** B, transpose is disabled.
+ * Loose shape checking, A.count() * B.count() == C.count()
+ *
+ * @param[in] A, input vector
+ * @param[in] B, input vector
+ * @param[out] C, output matrix
+ */
 template <typename Dtype>
-bool check_shape_mvv(const Blob<Dtype> & A, const Blob<Dtype> & B,
-const Blob<Dtype> & C) {
-    if (A.shape().size() != 2) return false;
-    if (B.shape().size() != 1) return false;
-    if (C.shape().size() != 1) return false;
-    int a1, a2, b1, c1;
-    a1 = A.isTranspose() ? A.shape().at(1) : A.shape().at(0);
-    a2 = A.isTranspose() ? A.shape().at(0) : A.shape().at(1);
-    b1 = B.shape().at(0);
-    c1 = C.shape().at(0);
-    if (a2 != b1) return false;
-    if (a1 != c1) return false;
-    return true;
+void OuterProduct(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B,
+    Blob<Dtype> * C) {
+  CHECK(!C.transpose());  // do not support C.T now.
+
+  int m = A.count();
+  int n = B.count();
+  CHECK_EQ(C->count(), m * n);
+
+  if (xpu == cpu) {
+    cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, 1, 1, 0,
+        false, false, C->mutable_cpu_data());
+  }
+#ifdef USE_GPU
+  if (xpu == gpu) {
+    // gpu part
+    gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, 1, 1, 0,
+        false, false, C->mutable_gpu_data());
+  }
+#endif  // USE_GPU
+}
+/*********************** Element-wise functions ***********************/
+/**
+ * Apply the function from Op for each element in A and put the result into B,
+ * i.e., Bi = Op(Ai).
+ * Loose shape checking, A.count() == B.count().
+ */
+template<typename Op, typename Dtype>
+void Map(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+  CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
+  if (xpu == cpu) {
+    cpu_e_f<Op>(A.count(), A.cpu_data(), B->mutable_cpu_data());
+  }
+#ifdef SINGA_GPU
+  if (xpu == gpu) {
+    // gpu part
+    gpu_e_f<Op>(A.count(), A.gpu_data(), B->mutable_gpu_data());
+  }
+#endif  // SINGA_GPU
 }
 
-/*****************************************************************************/
-// blob transformation
-
-template <typename Dtype>
-Blob<Dtype>* Reshape(const Blob<Dtype> & A, const std::vector<int>& shape) {
-    Blob<Dtype>* res = new Blob<Dtype>();
-    res->Mirror(A);
-    res->Reshape(shape);
-    return res;
+/**
+ * Apply the function from Op for each element in A and B, and put the result
+ * into C, i.e., Ci = Op(Ai, Bi).
+ * Loose shape checking, A, B and C are of the same size.
+ */
+template<typename Op, typename Dtype>
+void Map(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
+    Blob<Dtype> * C) {
+  CHECK_EQ(A.count(), B.count()) << "Blobs must have the same size";
+  CHECK_EQ(A.count(), C->count()) << "Blobs must have the same size";
+  if (xpu == cpu) {
+    cpu_e_f<Op>(A.count(), A.cpu_data(), B.cpu_data(), C->mutable_cpu_data());
+  }
+#ifdef SINGA_GPU
+  if (xpu == gpu) {
+    // gpu part
+    gpu_e_f<Op>(A.count(), A.gpu_data(), B.gpu_data(), C->mutable_gpu_data());
+  }
+#endif  // SINGA_GPU
 }
 
-// the current reshape in blob.h is:
-// void Reshape(const std::vector<int>& shape);
-
-template <typename Dtype>
-Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim1) {
-    std::vector<int> tmpshape;
-    tmpshape.push_back(dim1);
-    return Reshape(A, tmpshape);
+/**
+ * Bi = Op(alpha, Ai)
+ * Loose shape checking, A.count() == B.count().
+ */
+template<typename Op, typename Dtype>
+void Map(XPU xpu, Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>* B) {
+  CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
+  if (xpu == cpu) {
+    cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
+  }
+#ifdef SINGA_GPU
+#endif  // SINGA_GPU
+}
+/**
+ * Ci = Op(alpha, Ai, Bi)
+ * Loose shape checking, A, B and C are of the same size.
+ */
+template<typename Op, typename Dtype>
+void Map(XPU xpu, Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>& B,
+    Blob<Dtype>* C) {
+  CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
+  if (xpu == cpu) {
+    cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->cpu_data(),
+        C->mutable_cpu_data());
+  }
+#ifdef SINGA_GPU
+#endif  // SINGA_GPU
 }
 
-template <typename Dtype>
-Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim1, int dim2) {
-    std::vector<int> tmpshape;
-    tmpshape.push_back(dim1);
-    tmpshape.push_back(dim2);;
-    return Reshape(A, tmpshape);
+/**
+ * Currently use std::copy which has shown better performance than memcpy.
+ * http://stackoverflow.com/questions/4707012/c-memcpy-vs-stdcopy
+ * TODO(wangwei) test blas copy vs std::copy.
+ *
+ * Loose shape checking, A.count() == B.count().
+ */
+template<typename Dtype>
+void Copy(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>* B) {
+  CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
+  if (xpu == cpu)
+    std::copy(A.cpu_data(), A.cpu_data() + A.count(), B->mutable_cpu_data());
+  else {
+    LOG(FATAL) << "Not implemented";
+  }
 }
 
-template <typename Dtype>
-Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim1, int dim2, int dim3) {
-    std::vector<int> tmpshape;
-    tmpshape.push_back(dim1);
-    tmpshape.push_back(dim2);
-    tmpshape.push_back(dim3);
-    return Reshape(A, tmpshape);
+/**
+ * C = A + B
+ * Implemented using Copy and AXPY.
+ */
+template<typename Dtype>
+void Add(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
+    Blob<Dtype> * C) {
+  Copy(A, C);
+  AXPY(B, C, 1);
 }
 
-template <typename Dtype>
-Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim1, int dim2,
-int dim3, int dim4) {
-    std::vector<int> tmpshape;
-    tmpshape.push_back(dim1);
-    tmpshape.push_back(dim2);
-    tmpshape.push_back(dim3);
-    tmpshape.push_back(dim4);
-    return Reshape(A, tmpshape);
+/**
+ * C = A - B
+ * Implemented using Copy and AXPY.
+ */
+template<typename Dtype>
+void Sub(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
+    Blob<Dtype> * C) {
+  Copy(xpu, A, C);
+  AXPY(xpu, B, C, -1);
 }
 
-template <typename Dtype>
-Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim1, int dim2,
-int dim3, int dim4, int dim5) {
-    std::vector<int> tmpshape;
-    tmpshape.push_back(dim1);
-    tmpshape.push_back(dim2);
-    tmpshape.push_back(dim3);
-    tmpshape.push_back(dim4);
-    tmpshape.push_back(dim5);
-    return Reshape(A, tmpshape);
+/**
+ * C = A * B, implemented using
+ * Map(XPU, const Blob<Dtype>&, const Blob<Dtype>&, Blob<Dtype>*).
+ */
+template<typename Dtype>
+void Mult(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
+    Blob<Dtype> * C) {
+  Map<singa::op::Mult>(xpu, A, B, C);
+  // TODO(wangwei) use MKL's vector func
 }
 
-template <typename Dtype>
-Blob<Dtype>* Transpose(const Blob<Dtype> & A) {
-    Blob<Dtype>* res = new Blob<Dtype>();
-    res->Mirror(A);
-    res->setTranspose();
-    return res;
+/**
+ * C = A / B, implemented using
+ * Map(XPU, const Blob<Dtype>&, const Blob<Dtype>&, Blob<Dtype>*).
+ */
+template<typename Dtype>
+void Div(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
+    Blob<Dtype> * C) {
+  Map<singa::op::Div>(xpu, A, B, C);
+  // TODO(wangwei) use MKL's vector func
 }
-// return A^T
-
-
-/*****************************************************************************/
-// class1 matrix operation
-
-
-void MMDot(XPU xpu, const Blob<float> & A, const Blob<float> & B,
-Blob<float> * C);
-// A, B and C are matrix
-
-
-void MVDot(XPU xpu, const Blob<float> & A, const Blob<float> & B,
-Blob<float> * C);
-// A is matrix,B and C are vector
-
-
-void VVDot(XPU xpu, const Blob<float> & A, const Blob<float> & B,
-Blob<float> * C);
-// C is matrix,A and B are vector
-
-
-float VVdot(XPU xpu, const Blob<float> & A, const Blob<float> & B);
-// A and B are vectors
-
-
-void GEMM(XPU xpu, const Blob<float> & A, const Blob<float> & B,
-Blob<float> * C, float alpha = 1, float beta = 1);
-// C = alpha*A*B+beta*C, A, B and C are matrix
-
-
-
-/*****************************************************************************/
-// class2 element-wise operation
-
-// element-wise generalized operation defined in Op
-
-
-template<typename Op>
-void E_Func(XPU xpu, Blob<float> * A, float alpha) {
-    if (xpu == cpu) {
-        int n = get_size(A->shape());
-        cpu_e_f<Op>(n, alpha, A->mutable_cpu_data());
-    }
-    #ifdef SINGA_GPU
-    if (xpu == gpu) {
-        // gpu part
-        int n = get_size(A->shape());
-        gpu_e_f<Op>(n, alpha, A->mutable_gpu_data());
-    }
-    #endif  // SINGA_GPU
+/*************************1D<-->2D op/transform***************************/
+/**
+ * Add each row of B with A, i.e., Bij = alpha*Ai + beta*Bij
+ * Loose shape checking, B.count() % A.count() == 0.
+ * # rows of B = B.count() / A.count().
+ * Transpose is disabled.
+ */
+template<typename Dtype>
+void MVAdd(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
+    Blob<Dtype> * B) {
+  CHECK_EQ(B.count() % A.count(), 0) << "#col of B not match length of A";
+  int m = A.count(), n = B->count() / m;
+  if (xpu == cpu) {
+    Blob<Dtype> one(n);
+    one.SetValue(1);
+    cpu_gemm(A.cpu_data(), one.cpu_data(), m, n, 1, alpha, beta,
+        false, false, B->mutable_cpu_data());
+  }
+#ifdef USE_GPU
+  if (xpu == gpu) {
+    singa_gpu_add_vec_row(B->gpu_data(),
+        A.gpu_data(), A.gpu_data(), m, n, n);
+    // gpu part
+  }
+#endif  // USE_GPU
+}
+/**
+ * Add each row of B with A, i.e., Bij = Ai + Bij
+ * Loose shape checking, B.count() % A.count() == 0.
+ * # rows of B = B.count() / A.count().
+ * Transpose is disabled.
+ */
+template<typename Dtype>
+void MVAdd(XPU xpu, const Blob<Dtype> & A, Blob<Dtype>* B) {
+  MVAdd(xpu, Dtype(1), Dtype(1), A, B);
 }
 
-template<typename Op>
-void E_Func(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha) {
-    if (check_shape_equal(A, *B, *B)) {
-        int n = get_size(A.shape());
-        if (xpu == cpu) {
-            cpu_e_f<Op>(n, A.cpu_data(), alpha, B->mutable_cpu_data());
-        }
-        #ifdef SINGA_GPU
-        if (xpu == gpu) {
-            // gpu part
-            gpu_e_f<Op>(n, A.gpu_data(), alpha, B->mutable_gpu_data());
-        }
-        #endif  // SINGA_GPU
-    } else {
-        // report errors here
-    }
+/**
+ * Copy A to each row of B
+ * Loose shape checking, B.count() % A.count() == 0,
+ * # rows of B = B.count() / A.count().
+ * Transpose is disabled.
+ */
+template<typename Dtype>
+void Repmat(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+  MVAdd(xpu, Dtype(1), Dtype(0), A, B);
 }
 
-template<typename Op>
-void E_Func(XPU xpu, const Blob<float> & A, const Blob<float> & B,
-Blob<float> * C, float alpha, float beta) {
-    if (check_shape_equal(A, B, *C)) {
-        int n = get_size(A.shape());
-        if (xpu == cpu) {
-            cpu_e_f<Op>(n, A.cpu_data(), B.cpu_data(), alpha, beta,
-            C->mutable_cpu_data());
-        }
-        #ifdef SINGA_GPU
-        if (xpu == gpu) {
-            // gpu part
-            gpu_e_f<Op>(n, A.gpu_data(), B.gpu_data(), alpha, beta,
-            C->mutable_gpu_data());
-        }
-        #endif  // SINGA_GPU
-    } else {
-        // report errors here
-    }
+/**
+ * Add each col of matrix A to vector B, i.e., Bi = \sum_j {alpha*Aij}+beta*Bi
+ * Loose shape checking, A.count() % B.count() == 0.
+ * # rows of A = A.count() / B.count().
+ * Transpose is disabled.
+ */
+template<typename Dtype>
+void MVSum(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
+    Blob<Dtype> * B) {
+  CHECK_EQ(A.count() % B->count(), 0) << "length of B must = # of cols of A";
+
+  int m = B->count(), n = A.count() / m;
+  if (xpu == cpu) {
+    Blob<Dtype> one(n);
+    one.SetValue(1);
+    cpu_gemm(A.cpu_data(), one.cpu_data(), m, 1, n, alpha, beta,
+        false, false, B->mutable_cpu_data());
+  }
+#ifdef USE_GPU
+  if (xpu == gpu) {
+    singa_gpu_sum_col(A.gpu_data(), B->gpu_data(), m, n, n);
+    // gpu part
+  }
+#endif  // USE_GPU
+}
+/**
+ * Reduce each row of A to an element of B.
+ * Loose shape checking, A.count() % B.count() == 0.
+ * # rows of A = A.count() / B.count().
+ */
+template<typename Op, typename Dtype>
+void Reduce2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+  CHECK_EQ(A.count() % B.count(), 0) << "Row size not match B length";
+  int m = B->count(), n = A.count() / m;
+  if (xpu == cpu) {
+    cpu_reduce_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
+  }
+#ifdef SINGA_GPU
+  if (xpu == gpu) {
+    // gpu part
+    gpu_reduce_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
+  }
+#endif  // SINGA_GPU
+}
+/**
+ * Duplicate each element of A into a row of B.
+ * Loose shape checking, B.count() % A.count() == 0.
+ * # rows of B = B.count() / A.count().
+ */
+template<typename Op, typename Dtype>
+void Expand2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+  CHECK_EQ(B.count() % A.count(), 0) << "Row size of B not match length of A";
+  int m = A.count(), n = B->count() / m;
+  if (xpu == cpu) {
+    cpu_expand_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
+  }
+#ifdef SINGA_GPU
+  if (xpu == gpu) {
+    // gpu part
+    gpu_expand_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
+  }
+#endif  // SINGA_GPU
 }
 
-
-inline void Set(XPU xpu, Blob<float> * A, float alpha) {
-    E_Func<singa::op::Set>(xpu, A, alpha);
+/***********************************************************/
+/**
+ * Apply the function from Op for each element in A, Op(Ai).
+ * @param A
+ */
+template<typename Op, typename Dtype>
+void Map(XPU xpu, Blob<Dtype>* A) {
+  if (xpu == cpu) {
+    cpu_e_f<Op>(A->count(), A->mutable_cpu_data());
+  }
+#ifdef SINGA_GPU
+  if (xpu == gpu) {
+    // gpu part
+    gpu_e_f<Op>(A->count(), A->mutable_gpu_data());
+  }
+#endif  // SINGA_GPU
 }
-// element-wise operation: Ai = alpha
 
-
-inline void Scale(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha) {
-    E_Func<singa::op::Scale>(xpu, A, B, alpha);
+/**
+ * B = e ^ A
+ */
+template<typename Dtype>
+void Exp(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+  Map<singa::op::Exp>(xpu, A, B);
 }
-// element-wise operation: Bi = alpha*Ai
 
-inline void Exp(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha = 2.71) {
-    E_Func<singa::op::Exp>(xpu, A, B, alpha);
+/**
+ * element-wise operation: b = 1.0f / (1.0f + expf(-a));
+ */
+template<typename Dtype>
+inline void Sigmoid(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::Sigmoid>(xpu, A, B);
 }
-// element-wise operation: Bi = alpha^Ai
 
-inline void Exp_grad(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha = 2.71) {
-    E_Func<singa::op::Exp_grad>(xpu, A, B, alpha);
+/**
+ * element-wise operation: b = a * ( 1.0f - a );
+ */
+inline void SigmoidGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::SigmoidGrad>(xpu, A, B);
 }
-// element-wise operation: Bi = Ai*log(alpha)
 
-inline void Gsigmoid(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha) {
-    E_Func<singa::op::Gsigmoid>(xpu, A, B, alpha);
+/**
+ * element-wise operation: b = std::max( a, 0)
+ */
+inline void Relu(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::Relu>(xpu, A, B);
 }
-// element-wise operation: b = 1.0f / (1.0f + expf(-a * alpha));
 
-inline void Gsigmoid_grad(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha) {
-    E_Func<singa::op::Gsigmoid_grad>(xpu, A, B, alpha);
+/**
+ * element-wise operation: b = a > 0 ? 1: 0;
+ */
+template<typename Dtype>
+inline void ReluGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::ReluGrad>(xpu, A, B);
 }
-// element-wise operation: b = alpha * a * ( 1.0f - a );
 
-inline void Grelu(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha = 0) {
-    E_Func<singa::op::Grelu>(xpu, A, B, alpha);
+/**
+ * element-wise operation: b = tanh(a);
+ */
+template<typename Dtype>
+inline void Tanh(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::Tanh>(xpu, A, B);
 }
-// element-wise operation: b = ( 1 - alpha ) * std::max( a, 0.0f ) + alpha * a;
 
-inline void Grelu_grad(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha = 0) {
-    E_Func<singa::op::Grelu_grad>(xpu, A, B, alpha);
+/**
+ * B = 1- A^2
+ */
+template<typename Dtype>
+inline void TanhGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::TanhGrad>(xpu, A, B);
 }
-// element-wise operation: b = a > 0.0f ? 1.0f : alpha;
-
-inline void Gtanh(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha) {
-    E_Func<singa::op::Gtanh>(xpu, A, B, alpha);
+/**
+ * B = log(1+exp(A))
+ */
+template<typename Dtype>
+inline void Softplus(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::Softplus>(xpu, A, B);
 }
-// element-wise operation: b = tanhf( a * alpha );
 
-inline void Gtanh_grad(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha) {
-    E_Func<singa::op::Gtanh_grad>(xpu, A, B, alpha);
+/**
+ * B = 1.0f / (1.0f + expf(-A));
+ */
+template<typename Dtype>
+inline void SoftplusGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::SoftplusGrad>(xpu, A, B);
 }
-// element-wise operation: b = alpha * ( 1.0f - a * a );
 
-inline void Softplus(XPU xpu, const Blob<float> & A, Blob<float> * B) {
-    E_Func<singa::op::Softplus>(xpu, A, B, 0);
+template<typename Dtype>
+inline void Square(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::Square>(xpu, A, B);
 }
-// element-wise operation: b = logf(1 + expf(a));
 
-inline void Softplus_grad(XPU xpu, const Blob<float> & A, Blob<float> * B) {
-    E_Func<singa::op::Softplus_grad>(xpu, A, B, 0);
+template<typename Dtype>
+inline void SquareGrad(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::Square_grad>(xpu, A, B);
 }
-// element-wise operation: b = 1.0f / (1.0f + expf(-a));
 
-inline void Square(XPU xpu, const Blob<float> & A, Blob<float> * B) {
-    E_Func<singa::op::Square>(xpu, A, B, 0);
+template<typename Dtype>
+inline void Sqrt(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+    Map<singa::op::Sqrt>(xpu, A, B);
 }
-// element-wise operation: b = a * a;
 
-inline void Square_grad(XPU xpu, const Blob<float> & A, Blob<float> * B) {
-    E_Func<singa::op::Square_grad>(xpu, A, B, 0);
+/**
+ * B = A < alpha ? 1:0;
+ */
+template<typename Dtype>
+inline void Threshold(XPU xpu, Dtype alpha, const Blob<Dtype> & A,
+    Blob<Dtype> * B) {
+  Map<singa::op::Threshold>(xpu, alpha, A, B);
 }
-// element-wise operation: b = 2 * sqrt(a);
-
-inline void Sqrt(XPU xpu, const Blob<float> & A, Blob<float> * B) {
-    E_Func<singa::op::Sqrt>(xpu, A, B, 0);
-}
-// element-wise operation: b = sqrt(a);
-
-inline void Threshold(XPU xpu, const Blob<float> & A, float alpha,
-Blob<float> * B) {
-    E_Func<singa::op::Threshold>(xpu, A, B, alpha);
-}
-// element-wise operation: b =  a < alpha ? 1.0f : 0.0f;
-
-inline void Add(XPU xpu, const Blob<float> & A, const Blob<float> & B,
-Blob<float> * C) {
-    E_Func<singa::op::Add>(xpu, A, B, C, 0, 0);
-}
-// element-wise operation: Ci = Ai+Bi  A,B and C should have the same size
-
-inline void Sub(XPU xpu, const Blob<float> & A, const Blob<float> & B,
-Blob<float> * C) {
-    E_Func<singa::op::Sub>(xpu, A, B, C, 0, 0);
-}
-// element-wise operation: Ci = Ai-Bi  A,B and C should have the same size
-
-inline void Mult(XPU xpu, const Blob<float> & A, const Blob<float> & B,
-Blob<float> * C) {
-    E_Func<singa::op::Mult>(xpu, A, B, C, 0, 0);
-}
-// element-wise operation: Ci = Ai*Bi  A,B and C should have the same size
-
-inline void Div(XPU xpu, const Blob<float> & A, const Blob<float> & B,
-Blob<float> * C) {
-    E_Func<singa::op::Div>(xpu, A, B, C, 0, 0);
-}
-// element-wise operation: Ci = Ai/Bi  A,B and C should have the same size
-
-
-void AXPY(XPU xpu, const Blob<float> & A, Blob<float> * B, float alpha);
-// element-wise operation: Bi = alpha*Ai+Bi  A and B should have the same size
-
-/*****************************************************************************/
-// class3 matrix-vector expand/reduce operation
-
-template<typename Op>
-void Reduce_F(XPU xpu, const Blob<float> & A, Blob<float> * B) {
-    if (check_shape_mv(A, *B)) {
-        int m = get_size(B->shape());
-        int n = get_size(A.shape()) / m;
-        if (xpu == cpu) {
-            cpu_reduce_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
-        }
-        #ifdef SINGA_GPU
-        if (xpu == gpu) {
-            // gpu part
-            gpu_reduce_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
-        }
-        #endif  // SINGA_GPU
-    } else {
-        // report errors here
-    }
-}
-// reduce each row of A to an element of B e.g. the sum operation in softmax
-
-template<typename Op>
-void Expand_F(XPU xpu, const Blob<float> & A, Blob<float> * B) {
-    if (check_shape_mv(*B, A)) {
-        int m = get_size(A.shape());
-        int n = get_size(B->shape()) / m;
-        if (xpu == cpu) {
-            cpu_expand_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
-        }
-        #ifdef SINGA_GPU
-        if (xpu == gpu) {
-            // gpu part
-            gpu_expand_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
-        }
-        #endif  // SINGA_GPU  
-    } else {
-        // report errors here
-    }
-}
-// expand each element in A into a row of B
-
-void Repmat(XPU xpu, const Blob<float> & A, Blob<float> * B);
-// A is a vector, B is a matrix , let each row of B to be A
-
-void MVAdd(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha, float beta);
-// A is a vector, B is a matrix , Bij = alpha*Ai+beta*Bij
-// will use gemm. faster than general expand_f
-
-void MVSum(XPU xpu, const Blob<float> & A, Blob<float> * B,
-float alpha, float beta);
-// A is a vector, B is a matrix , Ai = \sigma_j_{alpha*Bij}+beta*Ai
-// will use gemm. faster than general reduce_f
-
-
 }  // end of namespace singa
 
 #endif  // SINGA_BLOB_MATH_BLOB_H_
