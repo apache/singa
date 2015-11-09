@@ -54,15 +54,9 @@ void cpu_gemm(const Dtype * A, const Dtype * B,
 template<typename Dtype>
 void cpu_gemv(const Dtype * A, const Dtype * B, const int m, const int n,
     const Dtype alpha, const Dtype beta, const bool TranA, Dtype * C) {
-  int lda, ldb;
-  CBLAS_TRANSPOSE tA, tB;
-  lda = TranA ? m : k;
-  ldb = TranB ? k : n;
+  CBLAS_TRANSPOSE tA;
   tA = TranA ? CblasTrans : CblasNoTrans;
-  tB = TranB ? CblasTrans : CblasNoTrans;
-  cblas_sgemm(CblasRowMajor, tA, tB, m, n, k, alpha, A, lda,
-      B, ldb, beta, C, n);
-
+  cblas_sgemv(CblasRowMajor, tA, m, n, alpha, A, n, B, 1, beta, C, 1);
 }
 
 template<typename Dtype>
@@ -80,24 +74,30 @@ Dtype cpu_dot(const Dtype * A, const Dtype * B, const int n) {
 
 // element-wise
 template<typename Op, typename Dtype>
-void cpu_e_f(const int n, const Dtype alpha, Dtype * A) {
+void cpu_e_f(const int n, Dtype * A, Dtype* B) {
   for (int i = 0 ; i < n ; i++) {
-    Op::Map(alpha, &A[i]);
+    Op::Map(A[i], &B[i]);
   }
 }
 
 template<typename Op, typename Dtype>
-void cpu_e_f(const int n, const Dtype * A, const Dtype alpha, Dtype * B) {
+void cpu_e_f(const int n, Dtype * A, Dtype* B, Dtype* C) {
+  for (int i = 0 ; i < n ; i++) {
+    Op::Map(A[i], B[i], &C[i]);
+  }
+}
+template<typename Op, typename Dtype>
+void cpu_e_f(const int n, const Dtype alpha, const Dtype * A, Dtype * B) {
   for (int i = 0 ; i < n ; i++) {
     Op::Map(alpha, A[i], &B[i]);
   }
 }
 
 template<typename Op, typename Dtype>
-void cpu_e_f(const int n, const Dtype * A, const Dtype * B,
-    const Dtype alpha, const Dtype beta, Dtype * C) {
+void cpu_e_f(const int n, const Dtype alpha, const Dtype * A, const Dtype * B,
+    Dtype * C) {
   for (int i = 0 ; i < n ; i++) {
-    Op::Map(alpha, beta, A[i], B[i], &C[i]);
+    Op::Map(alpha, A[i], B[i], &C[i]);
   }
 }
 // element-wise generalized operation defined in Op
