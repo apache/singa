@@ -251,8 +251,8 @@ class Blob {
     CHECK(data_);
     return static_cast<Dtype*>(data_->mutable_gpu_data());
   }
-  inline void set_transpose() {
-    transpose_ = true;
+  inline void set_transpose(bool val) {
+    transpose_ = val;
   }
   inline bool transpose() const {
     return transpose_;
@@ -325,12 +325,13 @@ Blob<Dtype>* Reshape(const Blob<Dtype> & A, int dim0, int dim1, int dim2,
 
 /**
  * @return a new Blob which share all internal members with the input Blob
- * except that the transpose_ field is set to true.
+ * except that the transpose_ field is set to the opposite value.
  */
 template <typename Dtype>
 Blob<Dtype>* Transpose(const Blob<Dtype> & A) {
   Blob<Dtype>* res = new Blob<Dtype>(A);
-  res->set_transpose();
+  bool origin = A.transpose();
+  res->set_transpose(!origin);
   return res;
 }
 
