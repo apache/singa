@@ -39,7 +39,7 @@ enum XPU {cpu, gpu, any};
  * Use blas scale internally.
  */
 template<typename Dtype>
-void Scale(xpu xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
+void Scale(XPU xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count(), B->count());
   if (xpu == cpu)
     cpu_scale(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
@@ -80,7 +80,7 @@ void AXPY(XPU xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
  * @param[in, out] C, vector
  */
 template<typename Dtype>
-void GEMV(XPU, xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
+void GEMV(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
     const Blob<Dtype>& B, Blob<Dtype>* C) {
   CHECK_EQ(A.shape().size(), 2) << "A must be a matrix";
   int a1, a2, m, n;
@@ -150,9 +150,9 @@ void GEMM(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
   b2 = B.transpose() ? B.shape(0) : B.shape(1);
   m = C->shape(0);
   n = C->shape(1);
-  CHECK__EQ(a2, b1);
-  CHECK__EQ(a1, m);
-  CHECK__EQ(b2, n);
+  CHECK_EQ(a2, b1);
+  CHECK_EQ(a1, m);
+  CHECK_EQ(b2, n);
 
   int k = A.transpose() ? A.shape(0) : A.shape(1);
   bool TranA = A.transpose();
@@ -559,6 +559,19 @@ void Expand2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
     gpu_expand_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
   }
 #endif  // SINGA_GPU
+}
+
+/**
+ * Average the absolute values.
+ */
+template <typename Dtype>
+Dtype Asum(XPU xpu, const Blob<Dtype>& A) {
+  if (A.count() == 0) return Dtype(0);
+  if (xpu == cpu)
+    return cpu_asum(A.count(), A.cpu_data(), 1) / A.count();
+  return Dtype(0); // avoid compile warning
+#ifdef USE_GPU
+#endif
 }
 
 }  // end of namespace singa

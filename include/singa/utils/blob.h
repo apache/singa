@@ -120,18 +120,45 @@ template <typename Dtype>
 class Blob {
  public:
   Blob() {}
+  /**
+   * Blob constructor with given shape.
+   * @param shape specifies the size of each dimension, shape[0] is the highest
+   * dimension, i.e., stride[0] = shape[1] * shape[2] * ...
+   */
   explicit Blob(const std::vector<int>& shape) { Reshape(shape); }
+  /**
+   * Blob constructor with given shape.
+   * @param[in] dim0 total num of elements.
+   */
   explicit Blob(int dim0) { Reshape(dim0); }
+  /**
+   * Blob constructor with given shape.
+   * @param[in] dim0 size of the highest dimension
+   * @param[in] dim1 size of the second highest dimension
+   */
   explicit Blob(int dim0, int dim1) { Reshape(dim0, dim1); }
+  /**
+   * Blob constructor with given shape.
+   * @param[in] dim0 size of the highest dimension
+   * @param[in] dim1
+   * @param[in] dim2
+   */
   explicit Blob(int dim0, int dim1, int dim2) { Reshape(dim0, dim1, dim2); }
+  /**
+   * Blob constructor with given shape.
+   * @param[in] dim0 size of the highest dimension
+   * @param[in] dim1
+   * @param[in] dim2
+   * @param[in] dim3
+   */
   explicit Blob(int dim0, int dim1, int dim2, int dim3) {
     Reshape(dim0, dim1, dim2, dim3);
   }
   /**
-   * Change the shape of the blob, re-allocat memory if Blob size() changes.
+   * Change the shape of the blob, re-allocate memory if Blob size() changes.
    *
-   * @param[in] shape specifies the size of each dimension, shape[0] is the highest
-   * dimension, i.e., stride[0] = shape[1] * shape[2] * ...
+   * @param[in] shape specifies the size of each dimension, shape[0] is the
+   * highest * dimension, i.e., stride[0] = shape[1] * shape[2] * ...
    */
   void Reshape(const std::vector<int>& shape);
   /**
@@ -185,22 +212,29 @@ class Blob {
    *
    * @param source the Blob to copy from
    * @param reshape if false, require this Blob to be pre-shaped to the shape
-   *        of other (and die otherwise); if true, Reshape this Blob to other's
-   *        shape if necessary
+   * of other (and die otherwise); if true, Reshape this Blob to other's
+   * shape if necessary
+   */
+  void CopyFrom(const Blob<Dtype>& source, bool reshape);
+  /**
+   * call CopyFrom(const Blob<Dtype>& source, bool reshape) with reshape = false
    */
   void CopyFrom(const Blob<Dtype>& source);
-  void CopyFrom(const Blob<Dtype>& source, bool reshape);
+
   void FromProto(const singa::BlobProto& proto);
   void ToProto(singa::BlobProto* proto) const;
+  /**
+   * Set each element to be v
+   */
   void SetValue(Dtype v);
   /**
    * Compute the sum of absolute values (L1 norm) of the data.
+  Dtype AsumData() const;
    */
-  Dtype asum_data() const;
   /**
    * Sum all elements
+  Dtype SumData() const;
    */
-  Dtype sum_data() const;
   /**
    * Share data with the other Blob.
    * Set the data_ shared_ptr to point to the SyncedMemory holding the data_
@@ -210,7 +244,10 @@ class Blob {
    * shared_ptr calls its destructor when reset with the "=" operator.
    */
   void ShareData(const Blob& other);
+
+  /*
   void Swap(Blob& other);
+  */
   /**
    * @return the shape vector.
    */

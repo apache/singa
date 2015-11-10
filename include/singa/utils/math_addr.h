@@ -34,6 +34,10 @@ extern "C" {
 
 
 namespace singa {
+template<typename Dtype>
+Dtype cpu_asum(int n, const Dtype* A, int inc) {
+  return cblas_sasum(n, A, inc);
+}
 
 template<typename Dtype>
 void cpu_gemm(const Dtype * A, const Dtype * B,

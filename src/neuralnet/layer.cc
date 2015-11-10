@@ -27,6 +27,7 @@
 #include <cfloat>
 #include "singa/utils/factory.h"
 #include "singa/utils/singleton.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -47,17 +48,17 @@ const std::string Layer::ToString(bool debug, int flag) {
     return "";
   string ret = StringPrintf("Layer %10s ", name().c_str());
   if ((flag & kForward) == kForward && data_.count() !=0) {
-    ret += StringPrintf("data norm1 %13.9f", data_.asum_data());
+    ret += StringPrintf("data norm1 %13.9f", Asum(cpu, data_));
   } else if ((flag & kBackward) == kBackward) {
     if (grad_.count() != 0)
-      ret += StringPrintf("grad norm1 %13.9f\n", grad_.asum_data());
+      ret += StringPrintf("grad norm1 %13.9f\n", Asum(cpu, grad_));
   }
   if ((flag & kTrain) == kTrain) {
     for (Param* p : GetParams()) {
       ret += StringPrintf(
           "param id %2d, name %10s, value norm1 %13.9f, grad norm1 %13.9f\n",
-          p->id(), p->name().c_str(), p->data().asum_data(),
-          p->grad().asum_data());
+          p->id(), p->name().c_str(), Asum(cpu, p->data()),
+          Asum(cpu, p->grad()));
     }
   }
   return ret;
