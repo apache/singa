@@ -74,14 +74,14 @@ Dtype cpu_dot(const Dtype * A, const Dtype * B, const int n) {
 
 // element-wise
 template<typename Op, typename Dtype>
-void cpu_e_f(const int n, Dtype * A, Dtype* B) {
+void cpu_e_f(const int n, Dtype * A, Dtype * B) {
   for (int i = 0 ; i < n ; i++) {
     Op::Map(A[i], &B[i]);
   }
 }
 
 template<typename Op, typename Dtype>
-void cpu_e_f(const int n, Dtype * A, Dtype* B, Dtype* C) {
+void cpu_e_f(const int n, Dtype * A, Dtype * B, Dtype * C) {
   for (int i = 0 ; i < n ; i++) {
     Op::Map(A[i], B[i], &C[i]);
   }

@@ -89,7 +89,7 @@ TEST(MathTest, TestAxpyCPU) {
 	cpu_axpy(A[0], 12, 2.0f, B[0]);
 	for(int i = 0; i < 12; i++)
 	{
-		D[0][i] += 2*C[0][i];
+		D[i / 4][i % 4] += 2*C[i / 3][i % 3];
 	}
 
 	for(int i = 0; i < 3; i++)
@@ -101,6 +101,7 @@ TEST(MathTest, TestAxpyCPU) {
 	}
 }
 
+/*
 TEST(MathTest, TestEopCPU) {
 
 	float A[10] = {};
@@ -115,7 +116,6 @@ TEST(MathTest, TestEopCPU) {
 		C[i] = i;
 
 	}
-/*
 	cpu_e_f<singa::op::Set>(5, 15.0f, O, O);
 	for(int i = 0; i < 5; i++)
 	{
@@ -125,8 +125,8 @@ TEST(MathTest, TestEopCPU) {
 	{
 		ASSERT_EQ(O[i],0);
 	}
-  */
 }
+*/
 
 #ifdef USE_GPU
 TEST(MathTest, TestGemmGPU) {
