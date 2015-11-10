@@ -52,7 +52,7 @@ void Scale(XPU xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
  */
 template<typename Dtype>
 void AXPY(XPU xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
-  CHECK_EQ(A.count(), B.count());
+  CHECK_EQ(A.count(), B->count());
   if (xpu == cpu) {
     cpu_axpy(A.cpu_data(), A.count(),
         alpha, B->mutable_cpu_data());
@@ -141,7 +141,7 @@ void GEMM(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
     const Blob<Dtype> & B, Blob<Dtype> * C) {
   CHECK_EQ(A.shape().size(), 2);
   CHECK_EQ(B.shape().size(), 2);
-  CHECK_EQ(C.shape().size(), 2);
+  CHECK_EQ(C->shape().size(), 2);
   int a1, a2, b1, b2, m, n;
   CHECK(!C->transpose());
   a1 = A.transpose() ? A.shape(1) : A.shape(0);
@@ -223,7 +223,7 @@ Dtype VVDot(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B) {
 template <typename Dtype>
 void OuterProduct(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B,
     Blob<Dtype> * C) {
-  CHECK(!C.transpose());  // do not support C.T now.
+  CHECK(!C->transpose());  // do not support C.T now.
 
   int m = A.count();
   int n = B.count();
@@ -287,7 +287,7 @@ void Map(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
  * Loose shape checking, A.count() == B.count().
  */
 template<typename Op, typename Dtype>
-void Map(XPU xpu, Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>* B) {
+void Map(XPU xpu, Dtype alpha, const Blob<Dtype>& A, Blob<Dtype>* B) {
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
   if (xpu == cpu) {
     cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
@@ -319,7 +319,7 @@ void Map(XPU xpu, Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>& B,
  * Loose shape checking, A.count() == B.count().
  */
 template<typename Dtype>
-void Copy(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>* B) {
+void Copy(XPU xpu, const Blob<Dtype>& A, Blob<Dtype>* B) {
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
   if (xpu == cpu) {
     std::copy(A.cpu_data(), A.cpu_data() + A.count(), B->mutable_cpu_data());
@@ -357,7 +357,7 @@ void Sub(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
 template<typename Dtype>
 void Mult(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
-  Map<singa::op::Mult>(xpu, A, B, C);
+  Map<singa::op::Mult<Dtype>>(xpu, A, B, C);
   // TODO(wangwei) use MKL's vector func
 }
 
@@ -368,7 +368,7 @@ void Mult(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
 template<typename Dtype>
 void Div(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
-  Map<singa::op::Div>(xpu, A, B, C);
+  Map<singa::op::Div<Dtype>>(xpu, A, B, C);
   // TODO(wangwei) use MKL's vector func
 }
 /*************************1D<-->2D op/transform***************************/
@@ -380,12 +380,12 @@ void Div(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
 template<typename Dtype>
 void MVAddCol(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
     Blob<Dtype> * B) {
-  if (B.transpose()) {
+  if (B->transpose()) {
     Blob<Dtype>* tmp = Transpose(* B);
     MVAddRow(xpu, alpha, beta, A, tmp);
     delete tmp;
   } else {
-    CHECK_EQ(B.count() % A.count(), 0) << "#col of B not match length of A";
+    CHECK_EQ(B->count() % A.count(), 0) << "#col of B not match length of A";
     int m = A.count(), n = B->count() / m;
     if (xpu == cpu) {
       Blob<Dtype> one(n);
@@ -420,12 +420,12 @@ void MVAddCol(XPU xpu, const Blob<Dtype> & A, Blob<Dtype>* B) {
 template<typename Dtype>
 void MVAddRow(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
     Blob<Dtype> * B) {
-  if (B.transpose()) {
+  if (B->transpose()) {
     Blob<Dtype>* tmp = Transpose(* B);
     MVAddCol(xpu, alpha, beta, A, tmp);
     delete tmp;
   } else {
-    CHECK_EQ(B.count() % A.count(), 0) << "#col of B not match length of A";
+    CHECK_EQ(B->count() % A.count(), 0) << "#col of B not match length of A";
     int m = A.count(), n = B->count() / m;
     if (xpu == cpu) {
       Blob<Dtype> one(n);
@@ -529,7 +529,7 @@ void MVSumRow(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
  */
 template<typename Op, typename Dtype>
 void Reduce2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-  CHECK_EQ(A.count() % B.count(), 0) << "Row size not match B length";
+  CHECK_EQ(A.count() % B->count(), 0) << "Row size not match B length";
   int m = B->count(), n = A.count() / m;
   if (xpu == cpu) {
     cpu_reduce_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
@@ -548,7 +548,7 @@ void Reduce2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
  */
 template<typename Op, typename Dtype>
 void Expand2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-  CHECK_EQ(B.count() % A.count(), 0) << "Row size of B not match length of A";
+  CHECK_EQ(B->count() % A.count(), 0) << "Row size of B not match length of A";
   int m = A.count(), n = B->count() / m;
   if (xpu == cpu) {
     cpu_expand_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
