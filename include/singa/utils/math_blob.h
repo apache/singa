@@ -436,6 +436,8 @@ void MVAddRow(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
 #ifdef USE_GPU
     if (xpu == gpu) {
       // gpu part
+      singa_gpu_add_vec_row(B->gpu_data(),
+          A.gpu_data(), A.gpu_data(), m, n, n);
     }
 #endif  // USE_GPU
   }
@@ -502,7 +504,7 @@ void MVSumCol(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
  * # rows of A = A.count() / B.count().
  */
 template<typename Dtype>
-void MVSumCol(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
+void MVSumRow(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
     Blob<Dtype> * B) {
   CHECK_EQ(A.count() % B->count(), 0) << "length of B must = # of cols of A";
   int m = B->count(), n = A.count() / m;
@@ -514,7 +516,7 @@ void MVSumCol(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
   }
 #ifdef USE_GPU
   if (xpu == gpu) {
-    singa_gpu_sum_col(A.gpu_data(), B->gpu_data(), m, n, n);
+    singa_gpu_sum_row(A.gpu_data(), B->gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
   }
 #endif  // USE_GPU
