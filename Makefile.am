@@ -55,6 +55,7 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/neuron_layer/relu.cc \
               src/neuralnet/neuron_layer/sigmoid.cc \
               src/neuralnet/neuron_layer/stanh.cc \
+              src/neuralnet/neuron_layer/batch_norm.cc \
               src/neuralnet/neuron_layer/softmax.cc \
               src/neuralnet/neuralnet.cc \
               src/comm/socket.cc \

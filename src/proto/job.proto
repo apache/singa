@@ -198,7 +198,7 @@ message LayerProto {
   optional DropoutProto dropout_conf = 33;
   // configuration for inner product layer
   optional InnerProductProto innerproduct_conf = 34;
-  // configuration for local response normalization layer
+  // configuration for LMDB data layer
   optional DataProto lmdbdata_conf = 35;
   // configuration for local response normalization layer
   optional LRNProto lrn_conf = 45;
@@ -334,6 +334,10 @@ message StoreProto {
   optional bool encoded = 10 [default = false];
   optional int32 random_skip = 11 [default = 0];
   optional bool has_label = 12 [default = true];
+  optional bool enable_shuffle = 13 [default = false];
+  // if enable shuffle among mini-batch then
+  //   the shuffle buffer size = shuffle_number*batchsize
+  optional int32 shuffle_number = 14 [default = 50];
 }
 message SoftmaxLossProto {
   // computing accuracy against topk results
@@ -575,6 +579,7 @@ enum LayerType {
   kSigmoid = 26;
   kSTanh = 14;
   kSoftmax = 34;
+  kBatchNorm = 36;
   // Loss layers
   //  - Compute objective loss
   kSoftmaxLoss = 11;

@@ -19,33 +19,29 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/relu.h"
+#ifndef SINGA_NEURALNET_NEURON_LAYER_BATCH_NORM_H_
+#define SINGA_NEURALNET_NEURON_LAYER_BATCH_NORM_H_
 
-#include <glog/logging.h>
-#include "singa/utils/singleton.h"
-
+#include <vector>
+#include "singa/neuralnet/layer.h"
+#include "singa/proto/job.pb.h"
 namespace singa {
+    
+class BatchNormLayer : public NeuronLayer {
+  public:
+    void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+    void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+    void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+    const std::vector<Param*> GetParams() const override {
+      std::vector<Param*> params {gamma_, beta_};
+      return params;
+    }
+  private: 
+    int batchsize_, dim_;
+    Blob<float> var_, mean_, xnorm_, gvar_, gmean_, gxnorm_, tmp_, tmpx_, tmptx_;
+    Param *gamma_, *beta_;
+};
+    
+}  // namespace singa
 
-using std::vector;
-
-void ReLULayer::Setup(const LayerProto& conf,
-    const vector<Layer*>& srclayers) {
-  Layer::Setup(conf, srclayers);
-  data_.ReshapeLike(srclayers[0]->data(this));
-  grad_.ReshapeLike(srclayers[0]->grad(this));
-}
-
-void ReLULayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
-  auto data = Tensor1(&data_);
-  auto src = Tensor1(srclayers[0]->mutable_data(this));
-  data = expr::F<op::relu>(src);
-}
-
-void ReLULayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
-  auto data = Tensor1(&data_);
-  auto grad = Tensor1(&grad_);
-  auto gsrc = Tensor1(srclayers[0]->mutable_grad(this));
-  gsrc = expr::F<op::relu_grad>(data)*grad;
-}
-
-}  //  namespace singa
+#endif  // SINGA_NEURALNET_NEURON_LAYER_BATCH_NORM_H_

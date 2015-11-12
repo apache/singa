@@ -24,6 +24,9 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <ctime>
+#include <cstdlib>
 #include "singa/io/store.h"
 #include "singa/neuralnet/layer.h"
 
@@ -55,6 +58,14 @@ class StoreInputLayer : virtual public InputLayer {
   int batchsize_ = 1;
   int random_skip_ = 0;
   io::Store* store_ = nullptr;
+  bool enable_shuffle_ = false;
+  bool buffer_shaped_ = false;
+  int shuffle_number_ = 0;
+  int buffer_pointer_ = 0;
+  int datasize_ = 0;
+  Blob<float> shuffle_buffer_;
+  vector<int> shuffle_index_;
+  vector<AuxType> aux_shuffle_buffer_;
 };
 
 /**
