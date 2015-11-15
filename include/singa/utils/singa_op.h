@@ -27,7 +27,7 @@
 
 #ifdef USE_GPU
 #include <cuda_runtime.h>
-#include "cublas_v2.h"
+#include <cublas_v2.h>
 #include "singa/utils/math_kernel.h"
 #endif  // USE_GPU
 
@@ -44,9 +44,8 @@ struct Exp {
     *b = exp(a);
   }
 #ifdef USE_GPU
-  inline static void CudaMap(Dtype alpha,  const Dtype * a,
-      Dtype * b, int n) {
-    singa::singa_gpu_exp(a, b, alpha, n);
+  inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
+    singa::singa_gpu_exp(a, b, n);
   }
 #endif  // USE_GPU
 };
@@ -59,6 +58,9 @@ struct Log {
     *b = log(a);
   }
 #ifdef USE_GPU
+  inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
+    singa::singa_gpu_log(a, b, n);
+  }
 #endif  // USE_GPU
 };
 
@@ -68,9 +70,8 @@ struct Sigmoid {
     *b = 1.0f / (1.0f + expf(-a));
   }
 #ifdef USE_GPU
-  inline static void CudaMap(const Dtype * a,
-      Dtype * b, int n) {
-    singa::singa_gpu_sigmoid(a, b, 1, n);
+  inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
+    singa::singa_gpu_sigmoid(a, b, n);
   }
 #endif  // USE_GPU
 };
@@ -80,8 +81,8 @@ struct SigmoidGrad {
     *b = a * (1.0f - a);
   }
 #ifdef USE_GPU
-  inline static void CudaMap(Dtype alpha,  const Dtype * a, Dtype * b, int n) {
-    singa::singa_gpu_sigmoid_grad(a, b, 1, n);
+  inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
+    singa::singa_gpu_sigmoid_grad(a, b, n);
   }
 #endif  // USE_GPU
 };
@@ -93,7 +94,7 @@ struct Relu {
   }
 #ifdef USE_GPU
   inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
-    singa::singa_gpu_relu(a, b, 1, n);
+    singa::singa_gpu_relu(a, b, n);
   }
 #endif  // USE_GPU
 };
@@ -105,7 +106,7 @@ struct ReluGrad {
   }
 #ifdef USE_GPU
   inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
-    singa::singa_gpu_relu_grad(a, b, 1, n);
+    singa::singa_gpu_relu_grad(a, b, n);
   }
 #endif  // USE_GPU
 };
@@ -117,7 +118,7 @@ struct Tanh {
   }
 #ifdef USE_GPU
   inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
-    singa::singa_gpu_tanh(a, b, 1, n);
+    singa::singa_gpu_tanh(a, b, n);
   }
 #endif  // USE_GPU
 };
@@ -129,7 +130,7 @@ struct TanhGrad {
   }
 #ifdef USE_GPU
   inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
-    singa::singa_gpu_tanh_grad(a, b, 1, n);
+    singa::singa_gpu_tanh_grad(a, b, n);
   }
 #endif  // USE_GPU
 };
@@ -141,7 +142,7 @@ struct Softplus {
   }
 #ifdef USE_GPU
   inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
-    singa::singa_gpu_softplus(a, b, 1, n);
+    singa::singa_gpu_softplus(a, b, n);
   }
 #endif  // USE_GPU
 };
@@ -152,8 +153,7 @@ struct SoftplusGrad {
     *b = 1.0f / (1.0f + expf(-a));
   }
 #ifdef USE_GPU
-  inline static void CudaMap(const Dtype * a,
-      Dtype * b, int n) {
+  inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
     singa::singa_gpu_softplus_grad(a, b, n);
   }
 #endif  // USE_GPU
@@ -165,8 +165,7 @@ struct Square {
     *b = a * a;
   }
 #ifdef USE_GPU
-  inline static void CudaMap(const Dtype * a,
-      Dtype * b, int n) {
+  inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
     singa::singa_gpu_square(a, b, n);
   }
 #endif  // USE_GPU
@@ -178,8 +177,7 @@ struct SquareGrad {
     *b = 2 * sqrt(a);
   }
 #ifdef USE_GPU
-  inline static void CudaMap(const Dtype * a,
-      Dtype * b, int n) {
+  inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
     singa::singa_gpu_square_grad(a, b, 1, n);
   }
 #endif  // USE_GPU
@@ -191,8 +189,7 @@ struct Sqrt {
     *b = sqrt(a);
   }
 #ifdef USE_GPU
-  inline static void CudaMap(const Dtype * a,
-      Dtype * b, int n) {
+  inline static void CudaMap(const Dtype * a, Dtype * b, int n) {
     singa::singa_gpu_sqrt(a, b, n);
   }
 #endif  // USE_GPU
@@ -207,6 +204,12 @@ struct Pow {
   inline static void Map(const Dtype & a, const Dtype &b, Dtype * c) {
     *c = pow(a, b);
   }
+#ifdef USE_GPU
+  inline static void CudaMap(const Dtype * a,
+      const Dtype * b, Dtype * c, int n) {
+    singa::singa_gpu_pow(a, b, c, n);
+  }
+#endif  // USE_GPU
 };
 template<typename Dtype>
 struct Mult {
@@ -214,8 +217,9 @@ struct Mult {
     *c =  a * b;
   }
 #ifdef USE_GPU
-  inline static void CudaMap(const Dtype* a, const Dtype* b, Dtype* c, int n) {
-    singa::singa_gpu_mult(a, b, c, 1, 1, n);
+  inline static void CudaMap(const Dtype * a,
+      const Dtype * b, Dtype * c, int n) {
+    singa::singa_gpu_mult(a, b, c, n);
   }
 #endif  // USE_GPU
 };
@@ -228,7 +232,7 @@ struct Div {
 #ifdef USE_GPU
   inline static void CudaMap(const Dtype * a,
       const Dtype * b, Dtype * c, int n) {
-    singa::singa_gpu_div(a, b, c, 1, 1, n);
+    singa::singa_gpu_div(a, b, c, n);
   }
 #endif  // USE_GPU
 };

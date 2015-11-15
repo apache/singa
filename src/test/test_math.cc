@@ -43,9 +43,9 @@ TEST(MathTest, TestGemvCPU) {
 	float C[3] = {};
 	float D[3] = {};
 
-	for(int i = 0; i < 4; i++)
+	for(int i = 0; i < 3; i++)
 	{
-		for(int j = 0; j < 3; j++)
+		for(int j = 0; j < 4; j++)
 		{
 			A[j][i] = i-j + i*j;
 		}
@@ -153,7 +153,7 @@ TEST(MathTest, TestGemmGPU) {
 	cudaMemcpy(A_gpu,A,3*2*sizeof(float),cudaMemcpyHostToDevice);
 	cudaMemcpy(B_gpu,B,3*2*sizeof(float),cudaMemcpyHostToDevice);
 
-	gpu_gemm(A_gpu, B_gpu, 2, 2, 3 , 1, 0, true, false, C_gpu);
+	gpu_gemm<float>(A_gpu, B_gpu, 2, 2, 3 , 1, 0, true, false, C_gpu);
 
 	cudaMemcpy(C,C_gpu,2*2*sizeof(float),cudaMemcpyDeviceToHost);
 
@@ -213,7 +213,7 @@ TEST(MathTest, TestGemvGPU) {
 	cudaMemcpy(B_gpu,B,4*sizeof(float),cudaMemcpyHostToDevice);
 	cudaMemcpy(C_gpu,C,3*sizeof(float),cudaMemcpyHostToDevice);
 
-	gpu_gemv(A_gpu, B_gpu, 4, 3, 1, 1, true, C_gpu);
+	gpu_gemv<float>(A_gpu, B_gpu, 4, 3, 1, 1, true, C_gpu);
 
 	cudaMemcpy(C,C_gpu,3*sizeof(float),cudaMemcpyDeviceToHost);
 
@@ -262,17 +262,18 @@ TEST(MathTest, TestAxpyGPU) {
 	cudaMemcpy(A_gpu,A,4*3*sizeof(float),cudaMemcpyHostToDevice);
 	cudaMemcpy(B_gpu,B,3*4*sizeof(float),cudaMemcpyHostToDevice);
 
-	gpu_axpy(A_gpu, 12, 2, B_gpu);
+	gpu_axpy<float>(A_gpu, 12, 2, B_gpu);
 
 	cudaMemcpy(A,A_gpu,4*3*sizeof(float),cudaMemcpyDeviceToHost);
 	cudaMemcpy(B,B_gpu,3*4*sizeof(float),cudaMemcpyDeviceToHost);
 
-	for(int i = 0; i < 12; i++)D[0][i] += 2*C[0][i];
+	//for(int i = 0; i < 12; i++)D[0][i] += 2*C[0][i];
 
-	for(int i = 0; i < 3; i++)
+	for(int i = 0; i < 4; i++)
 	{
-		for(int j = 0; j < 4; j++)
+		for(int j = 0; j < 3; j++)
 		{
+			D[i][j] += C[i][j];
 			ASSERT_EQ(B[i][j],D[i][j]);
 		}
 	}
@@ -300,7 +301,7 @@ TEST(MathTest, TestDotGPU) {
 
 	cudaMemcpy(A_gpu,A,12*sizeof(float),cudaMemcpyHostToDevice);
 	cudaMemcpy(B_gpu,B,12*sizeof(float),cudaMemcpyHostToDevice);
-	float gpu_ret=gpu_dot(A_gpu,B_gpu,12);
+	float gpu_ret=gpu_dot<float>(A_gpu,B_gpu,12);
 
 	float cpu_ret=0.0f;
 	for(int i = 0; i < 12; i++)
@@ -418,7 +419,6 @@ TEST(MathTest, TestSingaSetValueGPU) {
 	float A[3][4];
 
 	float* A_gpu=NULL;
-	float* B_gpu=NULL;
 
 	cudaMalloc((void**)&A_gpu, 3*4*sizeof(float));
 
@@ -444,59 +444,25 @@ TEST(MathTest, TestEopGPU) {
 
 	float A[10] = {};
 	float B[10] = {};
-	float C[10] = {};
-	float D[10] = {};
-	float O[10] = {};
 
 	for(int i = 0; i < 10; i++)
 	{
 		A[i] = i;
 		B[i] = -i;
-		C[i] = i;
-		O[i] = 0.0f;
-
 	}
 
 	float* A_gpu=NULL;
 	float* B_gpu=NULL;
-	float* C_gpu=NULL;
-	float* O_gpu=NULL;
 
 	cudaMalloc((void**)&A_gpu, 10*sizeof(float));
 	cudaMalloc((void**)&B_gpu, 10*sizeof(float));
-	cudaMalloc((void**)&C_gpu, 10*sizeof(float));
-	cudaMalloc((void**)&O_gpu, 10*sizeof(float));
 
 	cudaMemcpy(A_gpu,A,10*sizeof(float),cudaMemcpyHostToDevice);
 	cudaMemcpy(B_gpu,B,10*sizeof(float),cudaMemcpyHostToDevice);
-	cudaMemcpy(C_gpu,C,10*sizeof(float),cudaMemcpyHostToDevice);
-	cudaMemcpy(O_gpu,O,10*sizeof(float),cudaMemcpyHostToDevice);
 
-	gpu_e_f<singa::op::Set>(5, 15, O_gpu);
-	cudaMemcpy(O,O_gpu,10*sizeof(float),cudaMemcpyDeviceToHost);
+	gpu_e_f<singa::op::Sigmoid<float>, float>(10, A_gpu, B_gpu);
 
-	for(int i = 0; i < 5; i++)
-	{
-		ASSERT_EQ(O[i]-15,0);
-	}
-	for(int i = 5; i < 10; i++)
-	{
-		ASSERT_EQ(O[i],0);
-	}
-	gpu_e_f<singa::op::Scale>(10, C_gpu, 2, C_gpu);
-	cudaMemcpy(C,C_gpu,10*sizeof(float),cudaMemcpyDeviceToHost);
-
-	for(int i = 0; i < 10; i++)
-	{
-		ASSERT_EQ(C[i]-2*i,0);
-	}
-
-	gpu_e_f<singa::op::Add>(10, A_gpu, B_gpu, 0, 0, O_gpu);
-	cudaMemcpy(O,O_gpu,10*sizeof(float),cudaMemcpyDeviceToHost);
-
-	for(int i = 0; i < 10; i++)
-	{
-		ASSERT_EQ(O[i],0);
-	}
+	cudaFree(A_gpu);
+	cudaFree(B_gpu);
 }
 #endif  // USE_GPU

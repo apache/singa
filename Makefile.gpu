@@ -27,7 +27,7 @@ CUDA_DIR := /usr/local/cuda
 #CUDA_DIR :=
 
 # Lib folder for system and external libs. You may need to change it.
-LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(HOME_DIR)/local/lib $(CUDA_DIR)/lib $(CUDA_DIR)/lib64
+LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(HOME_DIR)/local/lib $(CUDA_DIR)/lib64 $(CUDA_DIR)/lib
 # Header folder for system and external libs. You may need to change it.
 INCLUDE_DIRS := $(HOME_DIR)/include ./include $(HOME_DIR)/local/include/zookeeper $(CUDA_DIR)/include
 # g++ location, should support c++11, tested with 4.8.1

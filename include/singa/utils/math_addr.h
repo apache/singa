@@ -29,7 +29,7 @@ extern "C" {
 #endif
 #include "singa/utils/singa_op.h"
 #ifdef USE_GPU
-#include "cublas_v2.h"
+#include <cublas_v2.h>
 #endif
 
 
@@ -174,6 +174,16 @@ Dtype gpu_dot(const Dtype * A, const Dtype * B, const int n) {
 template<typename Op, typename Dtype>
 void gpu_e_f(const int n, const Dtype alpha, Dtype * A) {
   Op::CudaMap(alpha, A, n);
+}
+
+template<typename Op, typename Dtype>
+void gpu_e_f(const int n, const Dtype * A, Dtype * B) {
+  Op::CudaMap(A, B, n);
+}
+
+template<typename Op, typename Dtype>
+void gpu_e_f(const int n, const Dtype * A, const Dtype * B, const Dtype * C) {
+  Op::CudaMap(A, B, C, n);
 }
 
 template<typename Op, typename Dtype>
