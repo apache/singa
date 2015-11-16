@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -277,11 +277,18 @@ void Blob<Dtype>::ToProto(singa::BlobProto* proto) const {
 }
 
 template <typename Dtype>
+void Blob<Dtype>::SetValue(Dtype v) {
+  Dtype* ptr = mutable_cpu_data();
+  for (int i =0; i < count(); i++)
+    ptr[i] = v;
+}
+template <typename Dtype>
 void Blob<Dtype>::ShareData(const Blob& other) {
   CHECK_EQ(count_, other.count());
   data_ = other.data_;
 }
 
+/*
 template <typename Dtype>
 void Blob<Dtype>::Swap(Blob& other) {
   CHECK_EQ(other.count(), count());
@@ -289,29 +296,7 @@ void Blob<Dtype>::Swap(Blob& other) {
   std::swap(data_, other.data_);
   std::swap(capacity_, other.capacity_);
 }
-
-template <> float Blob<float>::asum_data() const {
-  if (count() == 0) return 0.f;
-  return cblas_sasum(count(), cpu_data(), 1) / count();
-}
-template <> float Blob<float>::sum_data() const {
-  if (count() == 0) return 0.f;
-  float sum = 0.f;
-  const float* dptr = cpu_data();
-  for (int i = 0; i < count(); ++i)
-    sum += dptr[i];
-  return sum / count();
-}
-
-template <> unsigned int Blob<unsigned int>::asum_data() const {
-  NOT_IMPLEMENTED;
-  return 0;
-}
-
-template <> int Blob<int>::asum_data() const {
-  NOT_IMPLEMENTED;
-  return 0;
-}
+*/
 
 INSTANTIATE_CLASS(Blob);
 template class Blob<int>;
