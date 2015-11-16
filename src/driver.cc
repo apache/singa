@@ -52,6 +52,7 @@
 #include "singa/neuralnet/neuron_layer/lrn.h"
 #include "singa/neuralnet/neuron_layer/pooling.h"
 #include "singa/neuralnet/neuron_layer/rbm.h"
+#include "singa/neuralnet/neuron_layer/gru.h"
 #include "singa/neuralnet/neuron_layer/relu.h"
 #include "singa/neuralnet/neuron_layer/sigmoid.h"
 #include "singa/neuralnet/neuron_layer/stanh.h"
@@ -114,6 +115,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<SplitLayer, int>(kSplit);
   RegisterLayer<STanhLayer, int>(kSTanh);
   RegisterLayer<SoftmaxLayer, int>(kSoftmax);
+  RegisterLayer<GRULayer, int> (kGRU);
 
 #ifdef USE_LMDB
   RegisterLayer<LMDBDataLayer, int>(kLMDBData);

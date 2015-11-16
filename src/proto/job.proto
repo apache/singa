@@ -224,6 +224,8 @@ message LayerProto {
   optional SplitProto split_conf = 42;
   // configuration for store input layers
   optional StoreProto store_conf = 51;
+  // configuration for gru layer
+  optional GRUProto gru_conf = 53; 
 
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
@@ -406,6 +408,15 @@ message RBMProto {
   optional bool gaussian = 3 [default = false]; // use gaussian sampling or not
 }
 
+// Message that stores parameters used by GRULayer
+message GRUProto {
+  // dimension of hidden state for the layer
+  required int32 dim_hidden = 1;
+  // use bias vector or not
+  optional bool bias_term = 2 [default = true];
+}
+
+
 // Message that stores parameters used by InnerProductLayer
 message InnerProductProto {
   // number of outputs for the layer
@@ -575,6 +586,7 @@ enum LayerType {
   kSigmoid = 26;
   kSTanh = 14;
   kSoftmax = 34;
+  kGRU = 37;
   // Loss layers
   //  - Compute objective loss
   kSoftmaxLoss = 11;
