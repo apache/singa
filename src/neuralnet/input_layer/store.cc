@@ -62,7 +62,7 @@ void StoreInputLayer::ComputeFeature(int flag,
       random_skip_--;
     }
   }
-  if ((flag & kTrain) == kTrain) {
+  if ((flag & kTrain) == kTrain && enable_shuffle_) {
     if (!buffer_shaped_) {
       datasize_ = data_.count() / batchsize_;
       vector<int> shape {batchsize_*shuffle_number_, datasize_};
