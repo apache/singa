@@ -106,7 +106,7 @@ void ConvolutionLayer::ComputeFeature(int flag,
   auto weight = Tensor2(weight_->mutable_data());
   auto bias = Tensor1(bias_->mutable_data());
   for (int n = 0; n < batchsize_; n++) {
-    if (pad_ > 0)
+    if (pad_x_ > 0)
       col = expr::unpack_patch2col(pad(src[n], pad_x_), kernel_x_, stride_x_);
     else
       col = expr::unpack_patch2col(src[n], kernel_x_, stride_x_);
@@ -131,11 +131,11 @@ void ConvolutionLayer::ComputeGradient(int flag,
   gbias = expr::sumall_except_dim<1>(grad);
   gweight = 0.0f;
   Shape<3> padshp(gsrc.shape.SubShape());
-  padshp[0] += 2 * pad_;
-  padshp[1] += 2 * pad_;
+  padshp[0] += 2 * pad_y_;
+  padshp[1] += 2 * pad_x_;
   Shape<2> imgshp = Shape2(height_, width_);
   for (int n = 0; n < batchsize_; n++) {
-    if (pad_ > 0)
+    if (pad_x_ > 0)
       col = expr::unpack_patch2col(pad(src[n], pad_x_), kernel_x_, stride_x_);
     else
       col = expr::unpack_patch2col(src[n], kernel_x_, stride_x_);

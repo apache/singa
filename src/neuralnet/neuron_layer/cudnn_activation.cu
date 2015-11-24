@@ -27,14 +27,14 @@ void CudnnActivationLayer::InitCudnn() {
   CudnnLayer::InitCudnn();
 
   // TODO(wangwei) make the mode case insensitive
-  if (layer_conf_.activation_conf().mode() == "sigmoid")
+  if (layer_conf_.activation_conf().type() == SIGMOID)
     mode_ = CUDNN_ACTIVATION_SIGMOID;
-  else if (layer_conf_.activation_conf().mode() == "tanh")
+  else if (layer_conf_.activation_conf().type() == TANH)
     mode_ = CUDNN_ACTIVATION_TANH;
-  else if (layer_conf_.activation_conf().mode() == "relu")
+  else if (layer_conf_.activation_conf().type() == RELU)
     mode_ = CUDNN_ACTIVATION_RELU;
   else {
-    LOG(FATAL) << "Unkown activation: " << layer_conf_.activation_conf().mode();
+    LOG(FATAL) << "Unkown activation: " << layer_conf_.activation_conf().type();
   }
 
   const auto& shape = data_.shape();
@@ -48,7 +48,7 @@ void CudnnActivationLayer::InitCudnn() {
   stride[i] = 1;
   for (--i; i >= 0; i--) {
     sdim[i] = shape[i];
-    stride[i] = shape[i + 1] * stride[i + 1]
+    stride[i] = shape[i + 1] * stride[i + 1];
   }
   CHECK_CUDNN(cudnnSetTensorNdDescriptor(src_desc_,
         CUDNN_DATA_FLOAT,
@@ -75,7 +75,7 @@ void CudnnActivationLayer::ComputeFeature(int flag,
         mode_,
         &alpha,
         src_desc_,
-        srclayers[0].data(this)->gpu_data(),
+        srclayers[0]->data(this).gpu_data(),
         &beta,
         my_desc_,
         data_.mutable_gpu_data()));
@@ -88,13 +88,13 @@ void CudnnActivationLayer::ComputeGradient(int flag,
         mode_,
         &alpha,
         my_desc_,
-        data_.gpu_data()
+        data_.gpu_data(),
         my_desc_,
         grad_.gpu_data(),
         src_desc_,
-        srclayers[0].data(this)->gpu_data(),
+        srclayers[0]->data(this).gpu_data(),
         &beta,
         src_desc_,
-        srclayers[0].mutable_grad(this)->mutable_gpu_data()));
+        srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
 }
 }  // namespace singa

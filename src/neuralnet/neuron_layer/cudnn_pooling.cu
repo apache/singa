@@ -23,13 +23,13 @@
 
 namespace singa {
 
-CuDNNPoolLayer::~CuDNNPoolLayer() {
+CudnnPoolLayer::~CudnnPoolLayer() {
   if (has_init_cudnn_) {
-    CHECK_EQ(cudnnDestroyPoolingDescriptor(pool_desc_), CUDNN_STATUS_SUCCESS);
+    CHECK_CUDNN(cudnnDestroyPoolingDescriptor(pool_desc_));
   }
 }
 
-void CuDNNPoolLayer::InitCudnn() {
+void CudnnPoolLayer::InitCudnn() {
   CudnnLayer::InitCudnn();
   CHECK_CUDNN(cudnnCreatePoolingDescriptor(&pool_desc_));
   CHECK_CUDNN(cudnnSetTensor4dDescriptor(src_desc_,
@@ -57,9 +57,10 @@ void CuDNNPoolLayer::InitCudnn() {
         pad_x_,
         stride_y_,
         stride_x_));
+
 }
 
-void CuDNNPoolLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
+void CudnnPoolLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (!has_init_cudnn_)
     InitCudnn();
   float alpha = 1.0f, beta = 0.0f;
@@ -71,11 +72,11 @@ void CuDNNPoolLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
         src_desc_,
         srclayers[0]->data(this).gpu_data(),
         &beta,
-        data_desc_,
+        my_desc_,
         data_.mutable_gpu_data()));
 }
 
-void CuDNNPoolLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
+void CudnnPoolLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
 {
   float alpha = 1.0f, beta = 0.0f;
   CHECK_CUDNN(cudnnPoolingBackward(handle_,
@@ -89,7 +90,7 @@ void CuDNNPoolLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
         srclayers[0]->data(this).gpu_data(),
         &beta,
         src_desc_,
-        srclayers[0]->mutable_grad(this).mutable_gpu_data()));
+        srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
 }
 }  /* singa */
 

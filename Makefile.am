@@ -68,11 +68,11 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/input_layer/record.cc \
               src/neuralnet/input_layer/deprecated.cc \
               src/neuralnet/input_layer/store.cc \
+              src/neuralnet/output_layer/argsort.cc \
               src/neuralnet/output_layer/csv.cc \
               src/neuralnet/output_layer/record.cc \
               src/neuralnet/loss_layer/euclidean.cc \
               src/neuralnet/loss_layer/softmax.cc \
-              src/neuralnet/neuron_layer/argsort.cc \
               src/neuralnet/neuron_layer/convolution.cc \
               src/neuralnet/neuron_layer/dummy.cc \
               src/neuralnet/neuron_layer/dropout.cc \
@@ -118,8 +118,11 @@ SINGA_HDRS := include/singa.h \
               include/worker.h \
               include/stub.h \
               include/neuralnet/layer.h \
-              include/neuralnet/output_layer/csv.h \
-              include/neuralnet/output_layer/record.h \
+              include/neuralnet/output_layer.h \
+              include/neuralnet/input_layer.h \
+              include/neuralnet/loss_layer.h \
+              include/neuralnet/neuron_layer.h \
+              include/neuralnet/connection_layer.h \
               include/neuralnet/neuralnet.h \
               include/singa/comm/msg.h \
               include/singa/comm/socket.h \
@@ -127,12 +130,12 @@ SINGA_HDRS := include/singa.h \
               include/singa/io/kvfile.h \
               include/singa/io/kvfile_store.h \
               include/singa/io/textfile_store.h \
+              include/mshadow/cxxnet_op.h \
               include/mshadow/tensor_expr.h \
               include/mshadow/tensor_container.h \
               include/mshadow/tensor_expr_ext.h \
               include/mshadow/tensor.h \
               include/mshadow/tensor_io.h \
-              include/mshadow/cxxnet_op.h \
               include/mshadow/tensor_base.h \
               include/mshadow/tensor_random.h
 

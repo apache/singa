@@ -28,8 +28,8 @@
 #include "singa/comm/socket.h"
 #include "singa/neuralnet/neuralnet.h"
 #include "singa/proto/job.pb.h"
-#include "singa/neuralnet/connection_layer/bridge.h"
-#include "singa/neuralnet/neuron_layer/rbm.h"
+#include "singa/neuralnet/connection_layer.h"
+#include "singa/neuralnet/neuron_layer.h"
 
 namespace singa {
 

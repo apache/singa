@@ -24,12 +24,13 @@ HOME_DIR := /home/wangwei/local
 
 CUDA_DIR := /usr/local/cuda
 
-#CUDA_DIR :=
+# must config the cudnn folder if using cudnn
+CUDNN_DIR := /home/wangwei/local/cuda
 
 # Lib folder for system and external libs. You may need to change it.
-LIBRARY_DIRS := $(CUDA_DIR)/lib64 $(CUDA_DIR)/lib $(HOME_DIR)/lib64 $(HOME_DIR)/lib
+LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(HOME_DIR)/local/lib $(CUDA_DIR)/lib64 $(CUDA_DIR)/lib $(CUDNN_DIR)/lib64
 # Header folder for system and external libs. You may need to change it.
-INCLUDE_DIRS := $(CUDA_DIR)/include $(HOME_DIR)/include ./include
+INCLUDE_DIRS := $(HOME_DIR)/include ./include $(HOME_DIR)/local/include/zookeeper $(CUDA_DIR)/include $(CUDNN_DIR)/include
 # g++ location, should support c++11, tested with 4.8.1
 CXX := g++
 CUCXX := nvcc
@@ -38,7 +39,7 @@ CUCXX := nvcc
 LIBRARIES := glog protobuf openblas zmq czmq zookeeper_mt
 
 ifneq ($(CUDA_DIR),)
-	LIBRARIES := $(LIBRARIES) cublas cudart curand
+	LIBRARIES := $(LIBRARIES) cublas cudart curand cudnn
 endif
 
 LDFLAGS := $(foreach librarydir, $(LIBRARY_DIRS), -L$(librarydir))\
@@ -48,9 +49,9 @@ BUILD_DIR := .libs
 MSHADOW_FLAGS :=-DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 ZK_FLAGS :=-DTHREADED -fpermissive
 CXXFLAGS := -O2 -msse3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-	$(MSHADOW_FLAGS) -DCPU_ONLY=1 $(ZK_FLAGS)\
+	$(MSHADOW_FLAGS) $(ZK_FLAGS)\
 	-funroll-loops $(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
-CUCXXFLAGS := $(MSHADOW_FLAGS) -DUSE_GPU -std=c++11 -G $(CUDA_ARCH) \
+CUCXXFLAGS := -DUSE_CUDNN $(MSHADOW_FLAGS) -std=c++11 $(CUDA_ARCH) \
 	$(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
 
 #Add device compile option
@@ -84,7 +85,7 @@ TEST_CUDA_SRCS :=$(shell find src/test/ -maxdepth 1 -name "*.cu")
 TEST_CUDA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_CUDA_SRCS:.cu=.o)))
 -include $(TEST_CUDA_OBJS:%.o=%.P)
 
-SINGA_CUDA_SRCS := $(shell find src/ \( -path "src/test" \) -prune -o \( -name "*.cu" -type f \) -print )
+SINGA_CUDA_SRCS :=$(shell find src/ -name "*.cu")
 SINGA_CUDA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(SINGA_CUDA_SRCS:.cu=.o)))
 -include $(SINGA_CUDA_OBJS:%.o=%.P)
 
@@ -140,7 +141,7 @@ proto: $(PROTO_OBJS)
 $(PROTO_SRCS): $(PROTOS)
 	protoc --proto_path=src/proto --cpp_out=src/proto $(PROTOS)
 	mkdir -p include/proto/
-	cp src/proto/*.pb.h include/proto/
+	cp src/proto/*.pb.h include/singa/proto/
 	mkdir -p tool/pb2/
 	touch tool/pb2/__init__.py
 	protoc --proto_path=src/proto --python_out=tool/pb2/ $(PROTOS)

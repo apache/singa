@@ -249,8 +249,8 @@ namespace mshadow {
         std::mt19937 gen_;
     }; // class Random<cpu>
 
-#ifdef __CUDACC__
-
+#if MSHADOW_USE_CUDA
+// __CUDACC__
     /*! \brief GPU random number generator */
     template<>
     class Random<gpu> {

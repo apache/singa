@@ -27,7 +27,7 @@ namespace singa {
 void ArgSortLayer::Setup(const LayerProto& proto,
     const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 1);
-  NeuronLayer::Setup(proto, srclayers);
+  OutputLayer::Setup(proto, srclayers);
   batchsize_ = srclayers[0]->data(this).shape()[0];
   dim_ = srclayers[0]->data(this).count() / batchsize_;
   topk_ = proto.argsort_conf().topk();

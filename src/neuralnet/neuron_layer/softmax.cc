@@ -39,8 +39,8 @@ void SoftmaxLayer::Setup(const LayerProto& proto,
   NeuronLayer::Setup(proto, srclayers);
   const auto& srcdata = srclayers[0]->data(this);
   batchsize_ = data_.shape()[0];
-  num_softmax_per_instance_ = proto.softmax_conf().softmax_dim();
-  count_per_softmax_ = .count() / batchsize_ / num_softmax_per_instance_;
+  num_softmax_per_instance_ = proto.softmax_conf().num_softmax_per_instance();
+  count_per_softmax_ = data_.count() / batchsize_ / num_softmax_per_instance_;
   data_.Reshape(vector<int>{batchsize_, num_softmax_per_instance_,
       count_per_softmax_});
   grad_.ReshapeLike(data_);
@@ -48,8 +48,8 @@ void SoftmaxLayer::Setup(const LayerProto& proto,
 
 void SoftmaxLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  int dim = data_.count() / batchsize;
-  Shape<2> s = Shape2(batchsize, dim);
+  int dim = data_.count() / batchsize_;
+  Shape<2> s = Shape2(batchsize_, dim);
   Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);
   Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
   Softmax(prob, src);

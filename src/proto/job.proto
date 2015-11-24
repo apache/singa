@@ -188,6 +188,8 @@ message LayerProto {
   optional string user_type =21;
 
   // proto for the specific layer
+  // configuration for activation layer
+  optional ActivationProto activation_conf = 54;
   // configuration for argsort layer
   optional ArgSortProto argsort_conf = 52;
   // configuration for convolution layer
@@ -216,10 +218,15 @@ message LayerProto {
   optional RGBImageProto rgbimage_conf = 39;
   // configuration for data layer
   optional DataProto sharddata_conf = 32;
+  // configuration for slice layer
+  optional SliceProto slice_conf = 41;
+  // configuration for softmax layer
+  optional SoftmaxProto softmax_conf = 53;
   // configuration for softmax loss layer
   optional SoftmaxLossProto softmaxloss_conf = 40;
   // configuration for store input layers
   optional StoreProto store_conf = 51;
+
 
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
@@ -298,6 +305,17 @@ message ParamGenProto {
   extensions 101 to 200;
 }
 
+enum ActivationType {
+  RELU = 1;
+  SIGMOID = 2;
+  TANH = 3;
+  STANH = 4;
+}
+
+message ActivationProto {
+  optional ActivationType type = 1 [default = RELU];
+}
+
 message RGBImageProto {
   // scale factor for each pixel
   optional float scale = 1 [default = 1.0];
@@ -327,6 +345,7 @@ message StoreProto {
   optional int32 random_skip = 11 [default = 0];
   optional bool has_label = 12 [default = true];
 }
+
 message SoftmaxLossProto {
   // computing accuracy against topk results
   optional int32 topk = 1 [default = 1];
@@ -341,17 +360,26 @@ message ArgSortProto {
 
 message ConvolutionProto {
   // The number of outputs for the layer
-  required int32 num_filters = 1;
+  optional int32 num_filters = 1;
   // the kernel height/width
-  required int32 kernel = 2;
+  optional int32 kernel = 2;
 
   // The padding height/width
   optional int32 pad = 30 [default = 0];
   // the stride
   optional int32 stride = 31 [default = 1];
 
+  optional int32 kernel_x = 41;
+  optional int32 kernel_y = 42;
+
+  optional int32 pad_x = 44 [default = 0];
+  optional int32 pad_y = 45 [default = 0];
+
+  optional int32 stride_x = 47 [default = 1];
+  optional int32 stride_y = 48 [default = 1];
+
   // cudnn workspace size in MB
-  optional int32 workspace_byte_limit = 33 [default = 512];
+  optional int32 workspace_byte_limit = 50 [default = 512];
 }
 
 message DataProto {
@@ -384,9 +412,9 @@ message MnistProto {
 
 message DummyProto {
   // shape of data and grad blobs
-  optional bool input = 1 [default = false]; 
-  optional bool output = 2 [default = false]; 
-  repeated int32 shape = 3; 
+  optional bool input = 1 [default = false];
+  optional bool output = 2 [default = false];
+  repeated int32 shape = 3;
 }
 
 // Message that stores parameters used by DropoutLayer
@@ -424,7 +452,7 @@ message LRNProto {
 
 message PoolingProto {
   // The kernel size (square)
-  required int32 kernel= 1;
+  optional int32 kernel= 1;
   enum PoolMethod {
     MAX = 0;
     AVG = 1;
@@ -435,7 +463,18 @@ message PoolingProto {
   optional uint32 pad = 31 [default = 0];
   // The stride
   optional uint32 stride = 32 [default = 1];
+
+
+  optional int32 kernel_x = 41;
+  optional int32 kernel_y = 42;
+
+  optional int32 pad_x = 44 [default = 0];
+  optional int32 pad_y = 45 [default = 0];
+
+  optional int32 stride_x = 47 [default = 1];
+  optional int32 stride_y = 48 [default = 1];
 }
+
 
 message ReLUProto {
   // Ref. Maas, A. L., Hannun, A. Y., & Ng, A. Y. (2013).

@@ -70,7 +70,7 @@ void CudnnConvLayer::InitCudnn() {
         channels_,
         height_,
         width_));
-  CHECK_CUDNN(cudnnSetTensor4dDescriptor(data_desc_,
+  CHECK_CUDNN(cudnnSetTensor4dDescriptor(my_desc_,
         CUDNN_TENSOR_NCHW,
         CUDNN_DATA_FLOAT,
         batchsize_,
@@ -126,7 +126,7 @@ void CudnnConvLayer::InitCudnn() {
         filter_desc_,
         bp_filter_alg_,
         &bp_filter_byte));
-  workspace_count_ = std::max(std::max(fp_bypte, bp_data_byte), bp_filter_byte)
+  workspace_count_ = std::max(std::max(fp_byte, bp_data_byte), bp_filter_byte)
     / sizeof(float) + 1;
 }
 
@@ -134,30 +134,30 @@ void CudnnConvLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (!has_init_cudnn_)
     InitCudnn();
   float alpha = 1.f, beta = 0.f;
-  Blob<float> workspace(vector<int>{workspace_count_});
-  CUDNN_CHECK(cudnnConvolutionForward(handle_,
+  Blob<float> workspace(vector<int>{static_cast<int>(workspace_count_)});
+  CHECK_CUDNN(cudnnConvolutionForward(handle_,
         &alpha,
         src_desc_,
         srclayers[0]->data(this).gpu_data(),
         filter_desc_,
         weight_->data().gpu_data(),
-        conv_descs_,
+        conv_desc_,
         fp_alg_,
         workspace.mutable_gpu_data(),
         workspace_count_ * sizeof(float),
         &beta,
-        data_desc_,
+        my_desc_,
         data_.mutable_gpu_data()));
 
   if (bias_) {
     beta = 1.f;
-    CUDNN_CHECK(cudnnAddTensor(handle_,
+    CHECK_CUDNN(cudnnAddTensor(handle_,
           CUDNN_ADD_SAME_C,
           &alpha,
           bias_desc_,
           bias_->data().gpu_data(),
           &beta,
-          data_desc_,
+          my_desc_,
           data_.mutable_gpu_data()));
   }
 }
@@ -165,11 +165,11 @@ void CudnnConvLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
 void CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
 {
   float alpha = 1.f, beta = 0.f;
-  Blob<float> workspace(vector<int>{workspace_count_});
+  Blob<float> workspace(vector<int>{static_cast<int>(workspace_count_)});
   if (bias_) {
     CHECK_CUDNN(cudnnConvolutionBackwardBias(handle_,
           &alpha,
-          data_desc_,
+          my_desc_,
           grad_.gpu_data(),
           &beta,
           bias_desc_,
@@ -178,7 +178,7 @@ void CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
   CHECK_CUDNN(cudnnConvolutionBackwardFilter_v3(handle_,
         &alpha,
         src_desc_,
-        srclayers[0]->data(this)->gpu_data(),
+        srclayers[0]->data(this).gpu_data(),
         my_desc_,
         grad_.gpu_data(),
         conv_desc_,
@@ -191,7 +191,7 @@ void CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
   CHECK_CUDNN(cudnnConvolutionBackwardData_v3(handle_,
         &alpha,
         filter_desc_,
-        weight_->data()->gpu_data(),
+        weight_->data().gpu_data(),
         my_desc_,
         grad_.gpu_data(),
         conv_desc_,

@@ -26,6 +26,7 @@
 #include <vector>
 #include <thread>
 #include "singa/io/store.h"
+#include "singa/io/kvfile.h"
 #include "singa/neuralnet/layer.h"
 
 namespace singa {

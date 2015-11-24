@@ -249,6 +249,7 @@ class STanhLayer : public NeuronLayer {
 
 /*************** Layers implemented using cudnn v3 ***************/
 #ifdef USE_CUDNN
+#include <cudnn.h>
 #define CHECK_CUDNN(x) CHECK_EQ(x, CUDNN_STATUS_SUCCESS)
 
 class CudnnLayer : virtual public NeuronLayer {
@@ -289,9 +290,9 @@ class CudnnActivationLayer : public ActivationLayer, public CudnnLayer {
 /**
  * Convolution layer implemeneted using cudnn (v3 version backward functions).
  */
-class CuDNNConvLayer : public ConvolutionLayer, public CudnnLayer {
+class CudnnConvLayer : public ConvolutionLayer, public CudnnLayer {
  public:
-  ~CuDNNConvLayer();
+  ~CudnnConvLayer();
   void InitCudnn() override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
@@ -306,7 +307,7 @@ class CuDNNConvLayer : public ConvolutionLayer, public CudnnLayer {
   size_t workspace_byte_limit_, workspace_count_;
 };
 
-class CudnnLRNLayer : public LRNLayer {
+class CudnnLRNLayer : public LRNLayer, public CudnnLayer {
  public:
   ~CudnnLRNLayer();
   void InitCudnn() override;
@@ -320,9 +321,9 @@ class CudnnLRNLayer : public LRNLayer {
 /**
  * Pooling layer implemented using cudnn.
  */
-class CuDNNPoolLayer : public PoolingLayer, public CudnnLayer {
+class CudnnPoolLayer : public PoolingLayer, public CudnnLayer {
  public:
-  ~CuDNNPoolLayer();
+  ~CudnnPoolLayer();
   void InitCudnn() override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
@@ -407,4 +408,4 @@ class RBMHidLayer: public RBMLayer {
 };
 
 }  // namespace singa
-#define SINGA_NEURALNET_NEURON_LAYER_H_
+#endif  // SINGA_NEURALNET_NEURON_LAYER_H_

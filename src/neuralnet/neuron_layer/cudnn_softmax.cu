@@ -32,7 +32,7 @@ void CudnnSoftmaxLayer::InitCudnn() {
         num_softmax_per_instance_,
         count_per_softmax_,
         1));
-  CHECK_EQ(cudnnSetTensor4dDescriptor(my_desc_,
+  CHECK_CUDNN(cudnnSetTensor4dDescriptor(my_desc_,
         CUDNN_TENSOR_NCHW,
         CUDNN_DATA_FLOAT,
         batchsize_,
@@ -45,10 +45,10 @@ void CudnnSoftmaxLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   if (!has_init_cudnn_)
     InitCudnn();
-  float alpha = 1.0f, beta = 0.0f;
-  CHECK_CUDNN(CudnnSoftmaxForward(handle_,
+  const float alpha = 1.0f, beta = 0.0f;
+  CHECK_CUDNN(cudnnSoftmaxForward(handle_,
         CUDNN_SOFTMAX_ACCURATE,
-        CUDNN_SOFTMAX_CHANNEL,
+        CUDNN_SOFTMAX_MODE_CHANNEL,
         &alpha,
         src_desc_,
         srclayers[0]->data(this).gpu_data(),
@@ -59,10 +59,10 @@ void CudnnSoftmaxLayer::ComputeFeature(int flag,
 
 void CudnnSoftmaxLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
-  float alpha = 1.f, beta = 0.f;
-  CHECK_CUDNN(CudnnSoftmaxForward(handle_,
+  const float alpha = 1.f, beta = 0.f;
+  CHECK_CUDNN(cudnnSoftmaxBackward(handle_,
         CUDNN_SOFTMAX_ACCURATE,
-        CUDNN_SOFTMAX_CHANNEL,
+        CUDNN_SOFTMAX_MODE_CHANNEL,
         &alpha,
         my_desc_,
         data_.gpu_data(),
@@ -70,6 +70,6 @@ void CudnnSoftmaxLayer::ComputeGradient(int flag,
         grad_.gpu_data(),
         &beta,
         src_desc_,
-        srclayers[0]->mutable_grad(this).mutable_gpu_data()));
+        srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
 }
 }  /* singa */

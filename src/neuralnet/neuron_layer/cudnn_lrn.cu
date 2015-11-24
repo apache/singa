@@ -23,72 +23,64 @@
 
 namespace singa {
 CudnnLRNLayer::~CudnnLRNLayer() {
-  if (!init_cudnn_) {
+  if (has_init_cudnn_) {
     cudnnDestroyLRNDescriptor(norm_desc_);
   }
 }
 
-void CudnnLRNLayer::Setup(const LayerProto& proto,
-    const vector<Layer*>& srclayers) {
-  LRNLayer::Setup(proto, srclayers);
-  mode_ = CUDNN_LRN_CROSS_CHANNEL_DIM1;
-}
-
 void CudnnLRNLayer::InitCudnn() {
-  CudnnLayer::InitCudnn(srclayers);
-  CHECK_EQ(cudnnCreateLRNDescriptor(&norm_desc_), CUDNN_STATUS_SUCCESS);
-  CHECK_EQ(cudnnSetLRNDescriptor(norm_desc_,
+  mode_ = CUDNN_LRN_CROSS_CHANNEL_DIM1;
+  CudnnLayer::InitCudnn();
+  CHECK_CUDNN(cudnnCreateLRNDescriptor(&norm_desc_));
+  CHECK_CUDNN(cudnnSetLRNDescriptor(norm_desc_,
         lsize_,
         alpha_,
         beta_,
-        knorm_), CUDNN_STATUS_SUCCESS);
-  CHECK_EQ(cudnnCreateTensorDescriptor(&src_desc_), CUDNN_STATUS_SUCCESS);
-  CHECK_EQ(cudnnSetTensor4dDescriptor(src_desc_,
+        knorm_));
+  CHECK_CUDNN(cudnnCreateTensorDescriptor(&src_desc_));
+  CHECK_CUDNN(cudnnSetTensor4dDescriptor(src_desc_,
       CUDNN_TENSOR_NCHW,
       CUDNN_DATA_FLOAT,
       batchsize_,
       channels_,
       height_,
-      width_), CUDNN_STATUS_SUCCESS);
-  CHECK_EQ(cudnnCreateTensorDescriptor(&my_desc_), CUDNN_STATUS_SUCCESS);
-  CHECK_EQ(cudnnSetTensor4dDescriptor(my_desc_,
+      width_));
+  CHECK_CUDNN(cudnnCreateTensorDescriptor(&my_desc_));
+  CHECK_CUDNN(cudnnSetTensor4dDescriptor(my_desc_,
       CUDNN_TENSOR_NCHW,
       CUDNN_DATA_FLOAT,
       batchsize_,
       channels_,
       height_,
-      width_), CUDNN_STATUS_SUCCESS);
+      width_));
 }
-void ComputeFeature(int flag, const vector<Layer*>& srclayers) {
-  if (init_cudnn_) {
+void CudnnLRNLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
+  if (!has_init_cudnn_)
     InitCudnn();
-    init_cudnn_ = false;
-  }
-  CHECK_EQ(cudnnLRNCrossChannelForward(handle_,
+  CHECK_CUDNN(cudnnLRNCrossChannelForward(handle_,
       norm_desc_,
       mode_,
-      &alpha,
+      &alpha_,
       src_desc_,
       srclayers[0]->data(this).gpu_data(),
-      &beta,
+      &beta_,
       my_desc_,
-      data_.mutable_gpu_data()), CUDNN_STATUS_SUCCESS);
+      data_.mutable_gpu_data()));
 }
-void ComputeGradient(int flag, const vector<Layer*>& srclayers) {
-  CHECK_EQ(cudnnLRNCrossChannelBackward(handle_,
+void CudnnLRNLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
+  CHECK_CUDNN(cudnnLRNCrossChannelBackward(handle_,
         norm_desc_,
         mode_,
-        &alpha,
+        &alpha_,
         my_desc_, // ???
         data_.gpu_data(),
         my_desc_,
-        grad_.gpu_data()
+        grad_.gpu_data(),
         src_desc_,
         srclayers[0]->data(this).gpu_data(),
-        &beta,
+        &beta_,
         src_desc_,
-        srclayers[0]->mutable_grad(this)->mutable_gpu_data()),
-      CUDNN_STATUS_SUCCESS);
+        srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
 }
 
 

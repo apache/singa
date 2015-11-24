@@ -124,6 +124,20 @@ void cpu_expand_f(const Dtype * A, const int m, const int n, Dtype * B) {
 }
 // expand each element in A into a row of B
 
+template<typename Dtype>
+void cpu_sample_uniform(int n, Dtype low, Dtype high, Dtype* A);
+
+template<>
+inline void cpu_sample_uniform<float>(int n, float low, float high, float* A) {
+
+}
+template<typename Dtype>
+void cpu_sample_gaussian(int n, Dtype mean, Dtype std, Dtype* A);
+
+template<>
+inline void cpu_sample_gaussian<float>(int n, float mean, float std, float* A) {
+
+}
 #ifdef USE_GPU
 template<typename Dtype>
 void gpu_gemm(const Dtype * A, const Dtype * B, const int m, const int n,
@@ -213,6 +227,18 @@ void gpu_expand_f(const Dtype * A, const int m, const int n, Dtype * B) {
     Op::CudaMap(A[i], n, B+i*n);
   }
 }
+
+
+template<typename Dtype>
+void gpu_sample_uniform(int n, Dtype low, Dtype high, Dtype* A) {
+
+}
+
+template<typename Dtype>
+void gpu_sample_gaussian(int n, Dtype mean, Dtype std, Dtype* A) {
+
+}
+
 // expand each element in A into a row of B
 #endif  // USE_GPU
 

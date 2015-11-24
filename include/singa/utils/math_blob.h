@@ -24,9 +24,12 @@
 
 #include <vector>
 #include <algorithm>
+#include <thread>
 #include "singa/utils/blob.h"
 #include "singa/utils/singa_op.h"
 #include "singa/utils/math_addr.h"
+#include "singa/utils/singleton.h"
+#include "singa/utils/context.h"
 
 
 namespace singa {
@@ -355,10 +358,21 @@ void Sub(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
  * Map(XPU, const Blob<Dtype>&, const Blob<Dtype>&, Blob<Dtype>*).
  */
 template<typename Dtype>
-void Mult(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
+void Mult(const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
-  Map<singa::op::Mult<Dtype>>(xpu, A, B, C);
+  //Map<singa::op::Mult<Dtype>>(xpu, A, B, C);
   // TODO(wangwei) use MKL's vector func
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1)
+    cpu_e_f<op::Mult<Dtype>>(C->count(), A.cpu_data(), B.cpu_data(),
+        C->mutable_cpu_data());
+  else {
+#ifdef USE_GPU
+  gpu_e_f<op::Mult<Dtype>>(C->count(), A.gpu_data(), B.gpu_data(),
+        C->mutable_gpu_data());
+#endif
+  }
 }
 
 /**
@@ -473,7 +487,7 @@ void RepmatRow(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
 }
 
 /**
- * Sum all columns of matrix A to a column vector B, 
+ * Sum all columns of matrix A to a column vector B,
  * i.e., Bi = \sum_j {alpha*Aij}+beta*Bi
  * Loose shape checking, A.count() % B.count() == 0.
  * # columns of A = A.count() / B.count().
@@ -498,7 +512,7 @@ void MVSumCol(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
 }
 
 /**
- * Sum all rows of matrix A to a row vector B, 
+ * Sum all rows of matrix A to a row vector B,
  * i.e., Bj = \sum_i {alpha*Aij}+beta*Bj
  * Loose shape checking, A.count() % B.count() == 0.
  * # rows of A = A.count() / B.count().
@@ -574,6 +588,51 @@ Dtype Asum(XPU xpu, const Blob<Dtype>& A) {
 #endif
 }
 
+/*************Random Sample***************/
+template<typename Dtype>
+void SampleUniform(Dtype low, Dtype high, Blob<Dtype>* A);
+
+template<>
+inline void SampleUniform<float>(float low, float high, Blob<float> *A) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1)
+    cpu_sample_uniform(A->count(), low, high, A->mutable_cpu_data());
+  else {
+#ifdef USE_GPU
+    gpu_sample_uniform(A->count(), low, high, A->mutable_gpu_data());
+#endif
+  }
+}
+
+template<typename Dtype>
+void SampleGaussian(Dtype mean, Dtype std, Blob<Dtype>* A);
+
+template<>
+inline void SampleGaussian<float>(float low, float high, Blob<float> *A) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1)
+    cpu_sample_gaussian(A->count(), low, high, A->mutable_cpu_data());
+  else {
+#ifdef USE_GPU
+    gpu_sample_gaussian(A->count(), low, high, A->mutable_gpu_data());
+#endif
+  }
+}
+
+/************** Other functions ****************/
+template<typename Dtype>
+void Softmax(int nb_rows, const Blob<Dtype>& A, Blob<Dtype>* B) {
+  CHECK_GT(nb_rows, 0);
+  CHECK_EQ(A.count() % nb_rows, 0);
+  CHECK_EQ(A.count(), B->count());
+
+#ifdef USE_GPU
+  cpu_softmax(nb_rows, A.count() / nb_rows, A.cpu_data(),
+      B->mutable_cpu_data());
+#endif  // USE_GPU
+}
 }  // end of namespace singa
 
 #endif  // SINGA_UTILS_MATH_BLOB_H_

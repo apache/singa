@@ -49,8 +49,25 @@ class SoftmaxLossLayer : public LossLayer, public SoftmaxLayer {
 
  private:
   float scale_;
-  int topk_;
+  int topk_, dim_;
 };
+
+#ifdef USE_CUDNN
+class CudnnSoftmaxLossLayer : public LossLayer, public CudnnSoftmaxLayer {
+ public:
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+  const std::string ToString(bool debug, int flag) override;
+
+ private:
+  int topk_;
+  int counter_;
+  float loss_, accuracy_;
+
+  CudnnSoftmaxLayer *softmax_;
+};
+#endif
 }  // namespace singa
 
 #endif  // SINGA_NEURALNET_LOSS_LAYER_H_

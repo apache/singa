@@ -255,14 +255,14 @@ class Blob {
   /**
    * @return the size of the k-th dimension.
    */
-  inline const int shape(int k) const {
+  inline int shape(int k) const {
     CHECK_LT(k, shape_.size());
     return shape_.at(k);
   }
   inline int count() const {
     return count_;
   }
-  inline const int version() const {
+  inline int version() const {
     return version_;
   }
   inline void set_version(int v) {
