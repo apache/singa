@@ -23,66 +23,64 @@
 #include "singa/utils/singleton.h"
 
 namespace singa {
-  
+
 Context::~Context() {
 #ifdef USE_GPU
-  for(int i = 0; i < kDefaultDevice; ++i) {
-	SetDevice(i);
-
-	if(handles_[i] != NULL) {
-	  cublasDestroy(handles_[i]);
-	}
-
-	if(gpu_rand_generators_[i] != NULL) {
-      curandDestroyGenerator(gpu_rand_generators_[i]);
-	}
+  for (auto& entry ： device_id_) {
+    if (entry.second != -1) {
+      cudaSetDevice(entry.second);
+      if (cublas_handle_[entry.first] != nullptr) {
+        cublasDestroy(cublas_handle_[entry.first]);
+        cublas_handle_[entry.first] = nullptr;
+      }
+      if(curand_generator_[entry.first] != nullptr) {
+        curandDestroyGenerator(curand_generator_[entry.first]);
+        curand_generator_[entry.first] = nullptr;
+      }
+    }
   }
 #endif
+  for (auto& entry : rand_generator_) {
+    if (entry.second != nullptr) {
+      delete entry.second;
+      entry.second = nullptr;
+    }
+  }
 }
 
-void Context::Setup() {
+Context::Context() { }
 
-  for(int i = 0; i < kDefaultDevice; ++i) {
-	//init device index
-	device_ids_.push_back(i);
-  }
+void Context::SetupDevice(const std::thread::id thread, const int did) {
+  SetupDevice(thread, did, -1);
+}
 
+void Context::SetupDevice(const std::thread::id thread, const int did,
+    long long seed) {
+  device_id_[thread] = did;
 #ifdef USE_GPU
-  for(int i = 0; i < kDefaultDevice; ++i) {
-	//init handle
-	cublasHandle_t handle = NULL;
-	handles_.push_back(handle);
-
-	curandGenerator_t gpu_rand_generator = NULL;
-	gpu_rand_generators_.push_back(gpu_rand_generator);
+  if (did > -1) {
+    cudaSetDevice(did);
+    cublasCreate(&handle_[thread]);
   }
 #endif
+  seed_[thread] = seed;
 }
 
+/*
 #ifdef USE_GPU
-void Context::CreateHandle(const int index) {
-  SetDevice(device_ids_[index]);
-  cublasCreate(&handles_[index]);
+void Context::DestoryHandle(const int thread::id) {
+  cudaSetDevice(device_id_[thread::id]);
+  cublasDestroy(handle_[thread::id]);
+  handle_[thread::id] = nullptr;
 }
 
-void Context::DestoryHandle(const int index) {
-  SetDevice(device_ids_[index]);
-  cublasDestroy(handles_[index]);
-  handles_[index] = NULL;
+void Context::DestoryGpuRandGenerator(const int thread::id) {
+  cudaSetDevice(device_id_[thread::id]);
+  curandDestroyGenerator(curand_generator_[thread::id]);
+  curand_generator_[thread::id] = nullptr;
 }
-
-void Context::CreateGpuRandGenerator(const int index) {
-  SetDevice(device_ids_[index]);
-  curandCreateGenerator(&gpu_rand_generators_[index], CURAND_RNG_PSEUDO_DEFAULT);
-}
-
-void Context::DestoryGpuRandGenerator(const int index) {
-  SetDevice(device_ids_[index]);
-  curandDestroyGenerator(gpu_rand_generators_[index]);
-  gpu_rand_generators_[index] = NULL;
-}
-
 #endif
+*/
 
 
 }  // namespace singa
