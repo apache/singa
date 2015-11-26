@@ -25,7 +25,7 @@
 
 using namespace singa;
 
-const int param_size[]={2400,32,25600,32, 51200,64,57600,10};
+const int param_size[] = {2400, 32, 25600, 32, 51200, 64, 57600, 10};
 
 /*
 class ParamSlicerTest : public ::testing::Test {

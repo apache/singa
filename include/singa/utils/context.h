@@ -22,21 +22,18 @@
 #ifndef SINGA_UTILS_CONTEXT_H_
 #define SINGA_UTILS_CONTEXT_H_
 
-#include <vector>
-#include <random>
+#include <glog/logging.h>
 #include <chrono>
+#include <random>
 #include <thread>
 #include <unordered_map>
-#include <glog/logging.h>
-
+#include <vector>
 
 #ifdef USE_GPU
 #include "singa/utils/cuda_utils.h"
 #endif
 
-
 namespace singa {
-
 
 /**
  * Context is used as a global singleton, which stores the mapping from CPU
@@ -52,30 +49,29 @@ class Context {
    /**
     * Destructor, release random generators and handlers.
     */
-   ~Context() {
+  ~Context() {
 #ifdef USE_GPU
-     for (auto& entry : device_id_) {
-       if (entry.second != -1) {
-         cudaSetDevice(entry.second);
-         if (cublas_handle_[entry.second] != nullptr) {
-           cublasDestroy(cublas_handle_[entry.second]);
-           cublas_handle_[entry.second] = nullptr;
-         }
-         if(curand_generator_[entry.second] != nullptr) {
-           curandDestroyGenerator(curand_generator_[entry.second]);
-           curand_generator_[entry.second] = nullptr;
-         }
-       }
-     }
+    for (auto& entry : device_id_) {
+      if (entry.second != -1) {
+        cudaSetDevice(entry.second);
+        if (cublas_handle_[entry.second] != nullptr) {
+          cublasDestroy(cublas_handle_[entry.second]);
+          cublas_handle_[entry.second] = nullptr;
+        }
+        if (curand_generator_[entry.second] != nullptr) {
+          curandDestroyGenerator(curand_generator_[entry.second]);
+          curand_generator_[entry.second] = nullptr;
+        }
+      }
+    }
 #endif
-     for (auto& entry : rand_generator_) {
-       if (entry.second != nullptr) {
-         delete entry.second;
-         entry.second = nullptr;
-       }
-     }
-
-   }
+    for (auto& entry : rand_generator_) {
+      if (entry.second != nullptr) {
+        delete entry.second;
+        entry.second = nullptr;
+      }
+    }
+  }
   /**
    * Constructor, init handlers and GPU rand generators to nullptr.
    */
@@ -90,12 +86,12 @@ class Context {
    * @return the ID of the device attached to a given CPU thread, or -1 if this
    * thread has not been attached GPU device.
    */
-	int device_id(const std::thread::id& tid) {
+  int device_id(const std::thread::id& tid) {
     if (device_id_.find(tid) != device_id_.end())
       return device_id_[tid];
     else
       return -1;
-	}
+  }
   /**
    * Setup the CPU thread, which may be assigned a GPU device.
    * If there is no GPU device, then set did to -1.
@@ -168,7 +164,7 @@ class Context {
   /**
    * Get the rand generator of the GPU device assigned to the given thread.
    */
-	curandGenerator_t curand_generator(const std::thread::id thread_id) {
+  curandGenerator_t curand_generator(const std::thread::id thread_id) {
     return curand_generator(device_id(thread_id));
   }
   /**
@@ -177,10 +173,10 @@ class Context {
    * @return random generator. If it does not exist, then create one.
    * The random seed will be set to CURAND_RNG_PSEUDO_DEFAULT if it is not set.
    */
-	curandGenerator_t curand_generator(const int device_id) {
+  curandGenerator_t curand_generator(const int device_id) {
     CHECK_GE(device_id, 0);
     if (curand_generator_.at(device_id) == nullptr) {
-      // TODO handle user set seed
+      // TODO(wangwei) handle user set seed
       /*
       CHECK(seed_.find(tid) != seed_.end());
       auto seed = seed_[tid];
@@ -189,8 +185,8 @@ class Context {
       curandCreateGenerator(&curand_generator_[device_id],
           CURAND_RNG_PSEUDO_DEFAULT);
     }
-	  return curand_generator_[device_id];
-	}
+    return curand_generator_[device_id];
+  }
 
 #endif
 
@@ -198,19 +194,19 @@ class Context {
   //!< max num of GPUs per process
   const int kMaxNumGPU = 64;
   //!< map from thread id to device id
-	std::unordered_map<std::thread::id, int> device_id_;
+  std::unordered_map<std::thread::id, int> device_id_;
   //!< map from thread id to cpu rand generator
   std::unordered_map<std::thread::id, std::mt19937 *> rand_generator_;
   //!< map from thread id to cpu rand generator seed
   std::unordered_map<std::thread::id, int> seed_;
 #ifdef USE_GPU
   //!< cublas handler indexed by GPU device ID
-	std::vector<cublasHandle_t> cublas_handle_;
+  std::vector<cublasHandle_t> cublas_handle_;
   //!< cublas rand generator indexed by GPU device ID
-	std::vector<curandGenerator_t> curand_generator_;
+  std::vector<curandGenerator_t> curand_generator_;
 #endif
 };
 
 }  // namespace singa
 
-#endif  // SINGA_UTILS_MATH_ADDR_H_
+#endif  // SINGA_UTILS_CONTEXT_H_
