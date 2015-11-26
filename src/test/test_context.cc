@@ -13,7 +13,7 @@ TEST(ContextTest, TestDevice) {
   auto id = std::this_thread::get_id();
   context->SetupDevice(id, 0);
   auto device_id = context->device_id(id);
-  ASSERT_EQ(1,device_id);
+  ASSERT_EQ(0, device_id);
 }
 
 TEST(ContextTest, TestHandle) {
