@@ -22,8 +22,12 @@
 #include "singa/io/store.h"
 #include "singa/io/kvfile_store.h"
 #include "singa/io/textfile_store.h"
+#include "singa/io/hdfs_store.h"
+
+#define USE_HDFS 1
 
 namespace singa { namespace io {
+
 Store* CreateStore(const std::string& backend) {
   Store *store = nullptr;
   if (backend.compare("textfile") == 0) {
@@ -40,13 +44,13 @@ Store* CreateStore(const std::string& backend) {
 
 #ifdef USE_OPENCV
   if (backend == "imagefolder") {
-    return new ImageFolderStore();
+    store =  new ImageFolderStore();
   }
 #endif
 
 #ifdef USE_HDFS
-  if (backend == "hdfs") {
-    return new HDFSStore();
+  if (backend == "hdfsfile") {
+    store =  new HDFSStore();
   }
 #endif
   return store;

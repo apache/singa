@@ -19,70 +19,56 @@
 *
 *************************************************************/
 
-
-#include "singa/io/textfile_store.h"
 #include <glog/logging.h>
+#include "singa/io/hdfs_store.h"
 
 namespace singa {
 namespace io {
 
-bool TextFileStore::Open(const std::string& source, Mode mode) {
+bool HDFSStore::Open(const std::string& source, Mode mode) {
+  CHECK(file_ == nullptr);
   if (mode == kRead)
-    fs_ = new std::fstream(source, std::fstream::in);
+    file_ = new HDFSFile(source, HDFSFile::kRead);
   else if (mode == kCreate)
-    fs_ = new std::fstream(source, std::fstream::out);
+    file_ = new HDFSFile(source, HDFSFile::kCreate);
+  else if (mode == kAppend)
+    file_ = new HDFSFile(source, HDFSFile::kAppend);
   mode_ = mode;
-  return fs_->is_open();
+  return file_ != nullptr;
 }
 
-void TextFileStore::Close() {
-  if (fs_ != nullptr) {
-    if (fs_->is_open()) {
-      if (mode_ != kRead)
-        fs_->flush();
-      fs_->close();
-    }
-    delete fs_;
-    fs_ = nullptr;
-  }
+void HDFSStore::Close() {
+  if (file_ != nullptr)
+    delete file_;
+  file_ = nullptr;
 }
 
-bool TextFileStore::Read(std::string* key, std::string* value) {
+bool HDFSStore::Read(std::string* key, std::string* value) {
   CHECK_EQ(mode_, kRead);
-  CHECK(fs_ != nullptr);
-  CHECK(value != nullptr);
-  CHECK(key != nullptr);
-  if (!std::getline(*fs_, *value)) {
-    if (fs_->eof())
-      return false;
-    else
-      LOG(FATAL) << "error in reading csv file";
-  }
-  *key = std::to_string(lineNo_++);
-  return true;
+  CHECK(file_ != nullptr);
+  return file_->Next(value);
 }
 
-void TextFileStore::SeekToFirst() {
+void HDFSStore::SeekToFirst() {
   CHECK_EQ(mode_, kRead);
-  CHECK(fs_ != nullptr);
-  lineNo_ = 0;
-  fs_->clear();
-  fs_->seekg(0);
+  CHECK(file_ != nullptr);
+  file_->Seek(0);
 }
 
-void TextFileStore::Seek(int offset) {
+void HDFSStore::Seek(int offset) {
+  file_->Seek(offset);
 }
 
-bool TextFileStore::Write(const std::string& key, const std::string& value) {
+bool HDFSStore::Write(const std::string& key, const std::string& value) {
   CHECK_NE(mode_, kRead);
-  CHECK(fs_ != nullptr);
-  // csv store does not write key
-  *fs_ << value << '\n';
-  return true;
+  CHECK(file_ != nullptr);
+  return file_->Insert(value);
 }
 
-void TextFileStore::Flush() {
-  fs_->flush();
+void HDFSStore::Flush() {
+  CHECK_NE(mode_, kRead);
+  CHECK(file_!= nullptr);
+  file_->Flush();
 }
 
 }  // namespace io

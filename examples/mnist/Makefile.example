@@ -33,6 +33,11 @@ mnist:
 	gunzip train-images-idx3-ubyte.gz && gunzip train-labels-idx1-ubyte.gz
 	gunzip t10k-images-idx3-ubyte.gz && gunzip t10k-labels-idx1-ubyte.gz
 
+compile:
+	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog -lhdfs3 -I../../include \
+		-L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs -Wl,-rpath=../../.libs/ \
+		-o create_data.bin
+
 create:
 	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog -I../../include \
 		-L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs -Wl,-rpath=../../.libs/ \

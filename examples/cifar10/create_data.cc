@@ -19,16 +19,16 @@
 *
 *************************************************************/
 
-//
-// This code creates training and test DataShard for CIFAR dataset.
-// It is adapted from the convert_cifar_data from Caffe
-//
-// Usage:
-//    create_shard.bin input_folder output_folder
-//
-// The CIFAR dataset could be downloaded at
-//    http://www.cs.toronto.edu/~kriz/cifar.html
-//
+
+/**
+ * Create training and test DataShard for CIFAR dataset. 
+ * It is adapted from convert_cifar_data from Caffe. 
+ *    create_shard.bin <input> <output_folder> 
+ * 
+ * Read from JobConf object the option to use KVfile, HDFS or other (1st layer
+ * store_conf object). 
+ * To load to HDFS, specify "hdfs://namenode/examples" as the output folder
+ */
 
 #include <glog/logging.h>
 #include <fstream>
@@ -38,6 +38,8 @@
 
 #include "singa/io/store.h"
 #include "singa/proto/common.pb.h"
+#include "singa/utils/common.h"
+#include "singa/proto/job.pb.h"
 
 using std::string;
 
@@ -45,6 +47,7 @@ const int kCIFARSize = 32;
 const int kCIFARImageNBytes = 3072;
 const int kCIFARBatchSize = 10000;
 const int kCIFARTrainBatches = 5;
+const char JOB_CONFIG[] = "job.conf";
 
 void read_image(std::ifstream* file, int* label, char* buffer) {
   char label_char;
@@ -58,7 +61,6 @@ void create_data(const string& input_folder, const string& output_folder) {
   int label;
   char str_buffer[kCIFARImageNBytes];
   string rec_buf;
-
   singa::RecordProto image;
   image.add_shape(3);
   image.add_shape(kCIFARSize);
@@ -69,7 +71,11 @@ void create_data(const string& input_folder, const string& output_folder) {
   for (int i = 0; i < kCIFARImageNBytes; i++)
     mean.add_data(0.f);
 
-  auto store = singa::io::CreateStore("kvfile");
+  singa::JobProto job_proto;
+  singa::ReadProtoFromTextFile(JOB_CONFIG, &job_proto);
+  string store_backend =
+        job_proto.neuralnet().layer(0).store_conf().backend();
+  auto store = singa::io::CreateStore(store_backend);
   CHECK(store->Open(output_folder + "/train_data.bin", singa::io::kCreate));
   LOG(INFO) << "Preparing training data";
   int count = 0;
