@@ -236,6 +236,7 @@ TEST(MathTest, TestGemvGPU) {
 }
 
 
+/*
 TEST(MathTest, TestAxpyGPU) {
 	float A[4][3] = {};
 	float C[4][3] = {};
@@ -281,6 +282,7 @@ TEST(MathTest, TestAxpyGPU) {
 	cudaFree(A_gpu);
 	cudaFree(B_gpu);
 }
+*/
 
 
 TEST(MathTest, TestDotGPU) {
