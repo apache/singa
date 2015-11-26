@@ -57,6 +57,8 @@ CUCXXFLAGS := $(MSHADOW_FLAGS) -std=c++11 -G $(CUDA_ARCH) \
 ifeq ($(CUDA_DIR),)
 	MSHADOW_FLAGS := $(MSHADOW_FLAGS) -DCPU_ONLY
 	CXXFLAGS := $(CXXFLAGS) -DCPU_ONLY
+else
+	CXXFLAGS := $(CXXFLAGS) -DUSE_GPU
 endif
 
 # find user defined .proto file, and then compute the corresponding .h, .cc
