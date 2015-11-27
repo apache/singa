@@ -77,8 +77,10 @@ class Context {
    */
   Context() {
     for (int i = 0; i < kMaxNumGPU; i++) {
+#ifdef USE_GPU
       cublas_handle_.push_back(nullptr);
       curand_generator_.push_back(nullptr);
+#endif
     }
   }
 

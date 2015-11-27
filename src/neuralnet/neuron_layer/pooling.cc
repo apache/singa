@@ -37,24 +37,22 @@ void PoolingLayer::Setup(const LayerProto& conf,
   if (pool_conf.has_kernel()) {
     kernel_x_ = kernel_y_ = pool_conf.kernel();
   } else {
-    CHECK(pool_conf.has_kernel_x());
-    CHECK(pool_conf.has_kernel_y());
     kernel_x_ = pool_conf.kernel_x();
     kernel_y_ = pool_conf.kernel_y();
   }
+  CHECK_NE(kernel_x_, 0);
+  CHECK_NE(kernel_y_, 0);
+
   if (pool_conf.has_pad()) {
     pad_x_ = pad_y_ = pool_conf.pad();
   } else {
-    CHECK(pool_conf.has_pad_x());
-    CHECK(pool_conf.has_pad_y());
     pad_x_ = pool_conf.pad_x();
     pad_y_ = pool_conf.pad_y();
   }
+
   if (pool_conf.has_stride()) {
     stride_x_ = stride_y_ = pool_conf.stride();
   } else {
-    CHECK(pool_conf.has_stride_x());
-    CHECK(pool_conf.has_stride_y());
     stride_x_ = pool_conf.stride_x();
     stride_y_ = pool_conf.stride_y();
   }

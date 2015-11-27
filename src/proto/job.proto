@@ -362,15 +362,14 @@ message ConvolutionProto {
   // The number of outputs for the layer
   optional int32 num_filters = 1;
   // the kernel height/width
-  optional int32 kernel = 2;
-
+  optional int32 kernel = 2 [default = 3];
   // The padding height/width
   optional int32 pad = 30 [default = 0];
   // the stride
   optional int32 stride = 31 [default = 1];
 
-  optional int32 kernel_x = 41;
-  optional int32 kernel_y = 42;
+  optional int32 kernel_x = 41 [default = 3];
+  optional int32 kernel_y = 42 [default = 3];
 
   optional int32 pad_x = 44 [default = 0];
   optional int32 pad_y = 45 [default = 0];
@@ -452,7 +451,7 @@ message LRNProto {
 
 message PoolingProto {
   // The kernel size (square)
-  optional int32 kernel= 1;
+  optional int32 kernel= 1 [default = 3];
   enum PoolMethod {
     MAX = 0;
     AVG = 1;
@@ -462,17 +461,16 @@ message PoolingProto {
   // The padding size
   optional uint32 pad = 31 [default = 0];
   // The stride
-  optional uint32 stride = 32 [default = 1];
+  optional uint32 stride = 32 [default = 2];
 
-
-  optional int32 kernel_x = 41;
-  optional int32 kernel_y = 42;
+  optional int32 kernel_x = 41 [default = 3];
+  optional int32 kernel_y = 42 [default = 3];
 
   optional int32 pad_x = 44 [default = 0];
   optional int32 pad_y = 45 [default = 0];
 
-  optional int32 stride_x = 47 [default = 1];
-  optional int32 stride_y = 48 [default = 1];
+  optional int32 stride_x = 47 [default = 2];
+  optional int32 stride_y = 48 [default = 2];
 }
 
 

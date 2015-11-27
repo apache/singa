@@ -49,8 +49,8 @@ void Scale(Dtype alpha, Blob<Dtype> * B) {
     cpu_scale(B->count(), alpha, B->mutable_cpu_data());
   else {
 #ifdef USE_GPU
-    // TODO(haibo) check it.
-    gpu_scale(B->count(), alpha, B->mutable_gpu_data());
+    gpu_scale(context->cublas_handle(device), B->count(), alpha,
+        B->mutable_gpu_data());
 #endif
   }
 }
@@ -67,7 +67,8 @@ void AXPY(Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
     cpu_axpy(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    gpu_axpy(A.count(), alpha, A.gpu_data(), B->mutable_gpu_data());
+    gpu_axpy(context->cublas_handle(device), A.count(), alpha, A.gpu_data(),
+        B->mutable_gpu_data());
 #endif  // USE_GPU
   }
 }
@@ -106,9 +107,8 @@ void GEMV(Dtype alpha, Dtype beta, const Blob<Dtype>& A,
         C->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    // gpu part
-    gpu_gemv(A.gpu_data(), B.gpu_data(), m, n, alpha, beta, TranA,
-        C->mutable_gpu_data());
+    gpu_gemv(context->cublas_handle(device), A.gpu_data(), B.gpu_data(), m, n,
+        alpha, beta, TranA, C->mutable_gpu_data());
 #endif  // USE_GPU
   }
 }
@@ -172,9 +172,8 @@ void GEMM( Dtype alpha, Dtype beta, const Blob<Dtype>& A,
         C->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    // gpu part
-    gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, k, alpha, beta,
-        TranA, TranB, C->mutable_gpu_data());
+    gpu_gemm(context->cublas_handle(device), A.gpu_data(), B.gpu_data(), m, n, k,
+        alpha, beta, TranA, TranB, C->mutable_gpu_data());
 #endif  // USE_GPU
   }
 }
@@ -216,7 +215,7 @@ Dtype VVDot(const Blob<Dtype> & A, const Blob<Dtype> & B) {
   } else {
 #ifdef USE_GPU
     // gpu part
-    res = gpu_dot(A.gpu_data(), B.gpu_data(), n);
+    res = gpu_dot(context->cublas_handle(device), A.gpu_data(), B.gpu_data(), n);
 #endif  // USE_GPU
   }
   return res;
@@ -244,8 +243,7 @@ void OuterProduct(const Blob<Dtype>& A, const Blob<Dtype>& B, Blob<Dtype> * C) {
         C->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    // gpu part
-    gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, 1, 1, 0,
+    gpu_gemm(context->cublas_handle(device), A.gpu_data(), B.gpu_data(), m, n, 1, 1, 0,
         false, false, C->mutable_gpu_data());
 #endif  // USE_GPU
   }
@@ -264,10 +262,9 @@ void Map(const Blob<Dtype> & A, Blob<Dtype> * B) {
   if (device == -1) {
     cpu_e_f<Op>(A.count(), A.cpu_data(), B->mutable_cpu_data());
   } else {
-#ifdef SINGA_GPU
-    // gpu part
+#ifdef USE_GPU
     gpu_e_f<Op>(A.count(), A.gpu_data(), B->mutable_gpu_data());
-#endif  // SINGA_GPU
+#endif  // USE_GPU
   }
 }
 
@@ -286,10 +283,10 @@ void Map(const Blob<Dtype> & A, const Blob<Dtype> & B, Blob<Dtype> * C) {
   if (device == -1) {
     cpu_e_f<Op>(A.count(), A.cpu_data(), B.cpu_data(), C->mutable_cpu_data());
   } else {
-#ifdef SINGA_GPU
+#ifdef USE_GPU
     // gpu part
     gpu_e_f<Op>(A.count(), A.gpu_data(), B.gpu_data(), C->mutable_gpu_data());
-#endif  // SINGA_GPU
+#endif  // USE_GPU
   }
 }
 
@@ -305,8 +302,8 @@ void Map(Dtype alpha, const Blob<Dtype>& A, Blob<Dtype>* B) {
   if (device == -1) {
     cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
   } else {
-#ifdef SINGA_GPU
-#endif  // SINGA_GPU
+#ifdef USE_GPU
+#endif  // USE_GPU
   }
 }
 /**
@@ -323,8 +320,8 @@ void Map(Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>& B,
     cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->cpu_data(),
         C->mutable_cpu_data());
   } else {
-#ifdef SINGA_GPU
-#endif  // SINGA_GPU
+#ifdef USE_GPU
+#endif  // USE_GPU
   }
 }
 
@@ -563,8 +560,8 @@ void MVSumCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
 #ifdef USE_GPU
     singa_gpu_sum_col(A.gpu_data(), B->gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
-  }
 #endif  // USE_GPU
+  }
 }
 
 /**
@@ -588,8 +585,8 @@ void MVSumRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
 #ifdef USE_GPU
     singa_gpu_sum_row(A.gpu_data(), B->gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
-  }
 #endif  // USE_GPU
+  }
 }
 
 /**
@@ -606,10 +603,10 @@ void Reduce2D(const Blob<Dtype> & A, Blob<Dtype> * B) {
   if (device == -1) {
     cpu_reduce_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
   } else {
-#ifdef SINGA_GPU
+#ifdef USE_GPU
     // gpu part
     gpu_reduce_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
-#endif  // SINGA_GPU
+#endif  // USE_GPU
   }
 }
 /**
@@ -626,9 +623,9 @@ void Expand2D(const Blob<Dtype> & A, Blob<Dtype> * B) {
   if (device == -1) {
     cpu_expand_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
   } else {
-#ifdef SINGA_GPU
+#ifdef USE_GPU
     gpu_expand_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
-#endif  // SINGA_GPU
+#endif  // USE_GPU
   }
 }
 
@@ -640,13 +637,16 @@ Dtype Asum(const Blob<Dtype>& A) {
   if (A.count() == 0) return Dtype(0);
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
+  Dtype ret = Dtype(0);
   if (device == -1) {
-    return cpu_asum(A.count(), A.cpu_data(), 1) / A.count();
+    ret = cpu_asum(A.count(), A.cpu_data(), 1) / A.count();
   } else {
 #ifdef USE_GPU
-    return gpu_asum(A.count(), A.cpu_data(), 1) / A.count(); // TODO(haibo)
+    ret = gpu_asum(context->cublas_handle(device), A.count(), A.cpu_data(), 1)
+      / A.count();
 #endif
   }
+  return ret;
 }
 
 
@@ -661,7 +661,6 @@ void SampleUniform(Dtype low, Dtype high, Blob<Dtype>* A) {
         A->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    // TODO(haibo) check
     gpu_sample_uniform(context->curand_generator(thread), A->count(), low, high,
 		A->mutable_gpu_data());
 #endif
@@ -678,9 +677,8 @@ void SampleGaussian(Dtype mean, Dtype std, Blob<Dtype>* A) {
         A->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    // TODO(haibo) check it.
-    gpu_sample_gaussian(context->curand_generator(thread), A->count(), mean, std,
-        A->mutable_gpu_data());
+    gpu_sample_gaussian(context->curand_generator(thread), A->count(),
+        mean, std, A->mutable_gpu_data());
 #endif
   }
 }

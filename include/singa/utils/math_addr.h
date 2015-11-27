@@ -171,65 +171,51 @@ void cpu_sample_gaussian(URNG& g, int n, Dtype mean, Dtype std, Dtype* A) {
 
 #ifdef USE_GPU
 template<typename Dtype>
-Dtype gpu_asum(int n, const Dtype* A, int inc) {
+Dtype gpu_asum(cublasHandle_t handle, int n, const Dtype* A, int inc) {
   Dtype result = 0.0;
-  cublasHandle_t handle;
-  cublasCreate(&handle);
   cublasSasum(handle, n, A, inc, &result);
-  cublasDestroy(handle);
   return result;
 }
 
 template<typename Dtype>
-void gpu_gemm(const Dtype * A, const Dtype * B, const int m, const int n,
-    const int k, const Dtype alpha, const Dtype beta, const bool TranA,
-    const bool TranB, Dtype * C) {
+void gpu_gemm(cublasHandle_t handle, const Dtype * A, const Dtype * B,
+    const int m, const int n, const int k, const Dtype alpha, const Dtype beta,
+    const bool TranA, const bool TranB, Dtype * C) {
   int lda = TranA ? m : k;
   int ldb = TranB ? k : n;
   int ldc = n;
   cublasOperation_t tA = (TranA == false) ? CUBLAS_OP_N : CUBLAS_OP_T;
   cublasOperation_t tB = (TranB == false) ? CUBLAS_OP_N : CUBLAS_OP_T;
-  cublasHandle_t handle;
-  cublasCreate(&handle);
   cublasSgemm(handle, tB, tA, n, m, k, &alpha, B, ldb,
       A, lda, &beta, C, ldc);
-  cublasDestroy(handle);
 }
 
 template<typename Dtype>
-void gpu_gemv(const Dtype * A, const Dtype * B, const int m, const int n,
-    const Dtype alpha, const Dtype beta, const bool TranA, Dtype * C) {
+void gpu_gemv(cublasHandle_t handle, const Dtype * A, const Dtype * B,
+    const int m, const int n, const Dtype alpha, const Dtype beta,
+    const bool TranA, Dtype * C) {
   int lda = n;
   cublasOperation_t tA = (TranA == true) ? CUBLAS_OP_N : CUBLAS_OP_T;
-  cublasHandle_t handle;
-  cublasCreate(&handle);
   cublasSgemv(handle, tA, n, m, &alpha , A, lda, B, 1, &beta, C, 1);
-  cublasDestroy(handle);
 }
 
 template<typename Dtype>
-void gpu_axpy(const Dtype * A, const int n, const Dtype alpha, Dtype * B) {
-  cublasHandle_t handle;
-  cublasCreate(&handle);
+void gpu_axpy(cublasHandle_t handle, const Dtype * A, const int n,
+    const Dtype alpha, Dtype * B) {
   cublasSaxpy(handle, n, &alpha, A, 1, B, 1);
-  cublasDestroy(handle);
 }
 
 template<typename Dtype>
-void gpu_scale(const int n, const Dtype alpha, Dtype * A) {
-  cublasHandle_t handle;
-  cublasCreate(&handle);
+void gpu_scale(cublasHandle_t handle, const int n, const Dtype alpha,
+    Dtype * A) {
   cublasSscal(handle, n, &alpha, A, 1);
-  cublasDestroy(handle);
 }
 
 template<typename Dtype>
-Dtype gpu_dot(const Dtype * A, const Dtype * B, const int n) {
-  cublasHandle_t handle;
-  cublasCreate(&handle);
+Dtype gpu_dot(cublasHandle_t handle, const Dtype * A, const Dtype * B,
+    const int n) {
   Dtype result = 0.0;
   cublasSdot(handle, n, A, 1, B, 1, &result);
-  cublasDestroy(handle);
   return result;
 }
 
@@ -280,16 +266,11 @@ void gpu_expand_f(const Dtype * A, const int m, const int n, Dtype * B) {
 
 template<typename Dtype, typename URNG>
 void gpu_sample_uniform(URNG g, int n, Dtype low, Dtype high, Dtype* A) {
-  //curandGenerator_t gen;
-  //curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
-  curandSetPseudoRandomGeneratorSeed(g, time(NULL));
   curandGenerateUniform(g, A, n);
-  //curandDestroyGenerator(gen);
 }
 
 template<typename Dtype, typename URNG>
 void gpu_sample_gaussian(URNG g, int n, Dtype mean, Dtype std, Dtype* A) {
-  curandSetPseudoRandomGeneratorSeed(g, time(NULL));
   curandGenerateNormal(g, A, n, mean, std);
 }
 
