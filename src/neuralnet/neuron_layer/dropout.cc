@@ -48,8 +48,8 @@ void DropoutLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   float pkeep = 1 - pdrop_;
   Blob<float> rand(data_.count());
   SampleUniform(0.0f, 1.0f, &rand);
-  // Threashold(pkeep, rand, &mask_);
-  // Scale(1.0f / pkeep, &mask_);
+  Map<op::Threshold<float>, float>(pkeep, rand, &mask_);
+  Scale(1.0f / pkeep, &mask_);
   Mult(srclayers[0]->data(this), mask_, &data_);
 }
 

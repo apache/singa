@@ -64,8 +64,18 @@ void cpu_gemv(const Dtype * A, const Dtype * B, const int m, const int n,
 }
 
 template<typename Dtype>
-void cpu_axpy(const Dtype * A, const int n, const Dtype alpha, Dtype * B) {
+void cpu_axpy(const int n, const Dtype alpha, const Dtype * A, Dtype * B) {
   cblas_saxpy(n, alpha, A, 1, B, 1);
+}
+
+template<typename Dtype>
+void cpu_scale(const int n, const Dtype alpha, Dtype * A) {
+  cblas_sscal(n, alpha, A, 1);
+}
+
+template<typename Dtype>
+void cpu_copy(const int n, const Dtype* A, Dtype *B) {
+  cblas_scopy(n, A, 1, B, 1);
 }
 
 template<typename Dtype>
@@ -122,22 +132,42 @@ void cpu_expand_f(const Dtype * A, const int m, const int n, Dtype * B) {
     Op::Map(A[i], n, B+i*n);
   }
 }
-// expand each element in A into a row of B
+
 
 template<typename Dtype>
-void cpu_sample_uniform(int n, Dtype low, Dtype high, Dtype* A);
-
-template<>
-inline void cpu_sample_uniform<float>(int n, float low, float high, float* A) {
-
+void cpu_softmax(int nb_rows, int nb_cols, const Dtype* A, Dtype* B) {
+  for (int i = 0; i < nb_rows; i++) {
+    const Dtype* dptr = A + i * nb_cols;
+    Dtype mmax = dptr[0];
+    for (int x = 1; x < nb_cols; ++x )
+      if (mmax < dptr[x]) mmax = dptr[x];
+    Dtype sum = 0.0f;
+    for(int x = 0; x < nb_cols; ++x ) {
+      dptr[x] = std::exp(dptr[x] - mmax );
+      sum += dptr[x];
+    }
+    for(int x = 0; x < nb_cols; ++x ) {
+      dptr[x] /= sum;
+    }
+  }
 }
-template<typename Dtype>
-void cpu_sample_gaussian(int n, Dtype mean, Dtype std, Dtype* A);
 
-template<>
-inline void cpu_sample_gaussian<float>(int n, float mean, float std, float* A) {
 
+
+template<typename Dtype, typename URNG>
+void cpu_sample_uniform(URNG& g, int n, Dtype low, Dtype high, Dtype* A) {
+  std::uniform_real_distribution<Dtype> distribution(low, high);
+  for (int i = 0; i < n; i++)
+    A[i] = distribution(g);
 }
+
+template<typename Dtype, typename URNG>
+void cpu_sample_gaussian(URNG& g, int n, Dtype mean, Dtype std, Dtype* A) {
+  std::normal_distribution<Dtype> distribution(mean, std);
+  for (int i = 0; i < n; i++)
+    A[i] = distribution(g);
+}
+
 #ifdef USE_GPU
 template<typename Dtype>
 void gpu_gemm(const Dtype * A, const Dtype * B, const int m, const int n,

@@ -42,30 +42,34 @@ enum XPU {cpu, gpu, any};
  * Use blas scale internally.
  */
 template<typename Dtype>
-void Scale(XPU xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
-  CHECK_EQ(A.count(), B->count());
-  if (xpu == cpu)
-    cpu_scale(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
+void Scale(Dtype alpha, Blob<Dtype> * B) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1)
+    cpu_scale(B->count(), alpha, B->mutable_cpu_data());
+  else {
 #ifdef USE_GPU
+    // TODO(haibo) check it.
+//    gpu_scale(B->count(), alpha, B->mutable_gpu_data());
 #endif
+  }
 }
 
 /**
  * Element-wise operation: Bi = alpha*Ai+Bi. A and B should have the same size
  */
 template<typename Dtype>
-void AXPY(XPU xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
+void AXPY(Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count(), B->count());
-  if (xpu == cpu) {
-    cpu_axpy(A.cpu_data(), A.count(),
-        alpha, B->mutable_cpu_data());
-  }
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
+    cpu_axpy(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
+  } else {
 #ifdef USE_GPU
-  if (xpu == gpu) {
-    gpu_axpy(A.gpu_data(), A.count(),
-        alpha, B->mutable_gpu_data());
-  }
+    gpu_axpy(A.count(), alpha, A.gpu_data(), B->mutable_gpu_data());
 #endif  // USE_GPU
+  }
 }
 
 /************* BLAS level 2 *****************/
@@ -83,7 +87,7 @@ void AXPY(XPU xpu, Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
  * @param[in, out] C, vector
  */
 template<typename Dtype>
-void GEMV(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
+void GEMV(Dtype alpha, Dtype beta, const Blob<Dtype>& A,
     const Blob<Dtype>& B, Blob<Dtype>* C) {
   CHECK_EQ(A.shape().size(), 2) << "A must be a matrix";
   int a1, a2, m, n;
@@ -95,17 +99,18 @@ void GEMV(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
   CHECK_EQ(a1, n) << "# rows of A(.T) must = length of C";
 
   bool TranA = A.transpose();
-  if (xpu == cpu) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     cpu_gemv(A.cpu_data(), B.cpu_data(), m, n, alpha, beta, TranA,
         C->mutable_cpu_data());
-  }
+  } else {
 #ifdef USE_GPU
-  if (xpu == gpu) {
     // gpu part
     gpu_gemv(A.gpu_data(), B.gpu_data(), m, n, alpha, beta, TranA,
         C->mutable_gpu_data());
-  }
 #endif  // USE_GPU
+  }
 }
 /**
  * Matrix vector multiplication, C = A(.T) * B, transpose is considered.
@@ -119,9 +124,9 @@ void GEMV(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
  * @param[out] C output vector
  */
 template <typename Dtype>
-void MVDot(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B,
+void MVDot(const Blob<Dtype>& A, const Blob<Dtype>& B,
     Blob<Dtype>* C) {
-  GEMV(xpu, Dtype(1), Dtype(0), A, B, C);
+  GEMV(Dtype(1), Dtype(0), A, B, C);
 }
 
 /************* BLAS level 3 *****************/
@@ -140,7 +145,7 @@ void MVDot(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B,
  * @param[in, out] C, matrix
  */
 template <typename Dtype>
-void GEMM(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
+void GEMM( Dtype alpha, Dtype beta, const Blob<Dtype>& A,
     const Blob<Dtype> & B, Blob<Dtype> * C) {
   CHECK_EQ(A.shape().size(), 2);
   CHECK_EQ(B.shape().size(), 2);
@@ -160,17 +165,18 @@ void GEMM(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
   int k = A.transpose() ? A.shape(0) : A.shape(1);
   bool TranA = A.transpose();
   bool TranB = B.transpose();
-  if (xpu == cpu) {
-    cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, k, alpha, beta,
-        TranA, TranB, C->mutable_cpu_data());
-  }
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
+    cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, k, alpha, beta, TranA, TranB,
+        C->mutable_cpu_data());
+  } else {
 #ifdef USE_GPU
-  if (xpu == gpu) {
     // gpu part
     gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, k, alpha, beta,
         TranA, TranB, C->mutable_gpu_data());
-  }
 #endif  // USE_GPU
+  }
 }
 /**
  * Matrix multiplication, C = A(.T) * B(.T), transpose is considered.
@@ -183,9 +189,9 @@ void GEMM(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype>& A,
  * @param[out] C output matrix
  */
 template <typename Dtype>
-void MMDot(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B,
+void MMDot(const Blob<Dtype>& A, const Blob<Dtype>& B,
     Blob<Dtype>* C) {
-  GEMM(xpu, Dtype(1), Dtype(0), A, B, C);
+  GEMM(Dtype(1), Dtype(0), A, B, C);
 }
 
 
@@ -199,19 +205,20 @@ void MMDot(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B,
  * @return inner product value.
  */
 template <typename Dtype>
-Dtype VVDot(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B) {
+Dtype VVDot(const Blob<Dtype> & A, const Blob<Dtype> & B) {
   Dtype res = 0;
   CHECK_EQ(A.count(), B.count());
   int n = A.count();
-  if (xpu == cpu) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     res = cpu_dot(A.cpu_data(), B.cpu_data(), n);
-  }
+  } else {
 #ifdef USE_GPU
-  if (xpu == gpu) {
     // gpu part
     res = gpu_dot(A.gpu_data(), B.gpu_data(), n);
-  }
 #endif  // USE_GPU
+  }
   return res;
 }
 
@@ -224,25 +231,24 @@ Dtype VVDot(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B) {
  * @param[out] C, output matrix
  */
 template <typename Dtype>
-void OuterProduct(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B,
-    Blob<Dtype> * C) {
+void OuterProduct(const Blob<Dtype>& A, const Blob<Dtype>& B, Blob<Dtype> * C) {
   CHECK(!C->transpose());  // do not support C.T now.
 
   int m = A.count();
   int n = B.count();
   CHECK_EQ(C->count(), m * n);
-
-  if (xpu == cpu) {
-    cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, 1, 1, 0,
-        false, false, C->mutable_cpu_data());
-  }
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
+    cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, 1, 1, 0, false, false,
+        C->mutable_cpu_data());
+  } else {
 #ifdef USE_GPU
-  if (xpu == gpu) {
     // gpu part
     gpu_gemm(A.gpu_data(), B.gpu_data(), m, n, 1, 1, 0,
         false, false, C->mutable_gpu_data());
-  }
 #endif  // USE_GPU
+  }
 }
 /*********************** Element-wise functions ***********************/
 /**
@@ -251,17 +257,18 @@ void OuterProduct(XPU xpu, const Blob<Dtype>& A, const Blob<Dtype>& B,
  * Loose shape checking, A.count() == B.count().
  */
 template<typename Op, typename Dtype>
-void Map(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+void Map(const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
-  if (xpu == cpu) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     cpu_e_f<Op>(A.count(), A.cpu_data(), B->mutable_cpu_data());
-  }
+  } else {
 #ifdef SINGA_GPU
-  if (xpu == gpu) {
     // gpu part
     gpu_e_f<Op>(A.count(), A.gpu_data(), B->mutable_gpu_data());
-  }
 #endif  // SINGA_GPU
+  }
 }
 
 /**
@@ -270,19 +277,20 @@ void Map(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
  * Loose shape checking, A, B and C are of the same size.
  */
 template<typename Op, typename Dtype>
-void Map(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
-    Blob<Dtype> * C) {
+void Map(const Blob<Dtype> & A, const Blob<Dtype> & B, Blob<Dtype> * C) {
   CHECK_EQ(A.count(), B.count()) << "Blobs must have the same size";
   CHECK_EQ(A.count(), C->count()) << "Blobs must have the same size";
-  if (xpu == cpu) {
+  cpu_e_f<Op>(A.count(), A.cpu_data(), B.cpu_data(), C->mutable_cpu_data());
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     cpu_e_f<Op>(A.count(), A.cpu_data(), B.cpu_data(), C->mutable_cpu_data());
-  }
+  } else {
 #ifdef SINGA_GPU
-  if (xpu == gpu) {
     // gpu part
     gpu_e_f<Op>(A.count(), A.gpu_data(), B.gpu_data(), C->mutable_gpu_data());
-  }
 #endif  // SINGA_GPU
+  }
 }
 
 /**
@@ -290,28 +298,34 @@ void Map(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
  * Loose shape checking, A.count() == B.count().
  */
 template<typename Op, typename Dtype>
-void Map(XPU xpu, Dtype alpha, const Blob<Dtype>& A, Blob<Dtype>* B) {
+void Map(Dtype alpha, const Blob<Dtype>& A, Blob<Dtype>* B) {
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
-  if (xpu == cpu) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
-  }
+  } else {
 #ifdef SINGA_GPU
 #endif  // SINGA_GPU
+  }
 }
 /**
  * Ci = Op(alpha, Ai, Bi)
  * Loose shape checking, A, B and C are of the same size.
  */
 template<typename Op, typename Dtype>
-void Map(XPU xpu, Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>& B,
+void Map(Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>& B,
     Blob<Dtype>* C) {
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
-  if (xpu == cpu) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->cpu_data(),
         C->mutable_cpu_data());
-  }
+  } else {
 #ifdef SINGA_GPU
 #endif  // SINGA_GPU
+  }
 }
 
 /**
@@ -322,13 +336,26 @@ void Map(XPU xpu, Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>& B,
  * Loose shape checking, A.count() == B.count().
  */
 template<typename Dtype>
-void Copy(XPU xpu, const Blob<Dtype>& A, Blob<Dtype>* B) {
+void Copy(const Blob<Dtype>& A, Blob<Dtype>* B) {
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
-  if (xpu == cpu) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     std::copy(A.cpu_data(), A.cpu_data() + A.count(), B->mutable_cpu_data());
   } else {
-    LOG(FATAL) << "Not implemented";
+#ifdef USE_GPU
+#endif
   }
+}
+
+
+/**
+ * B = alpha + A
+ * Implemented using Copy and AXPY.
+ */
+template<typename Dtype>
+void Add(Dtype alpha,  const Blob<Dtype> & A, Blob<Dtype> * B) {
+  Map<singa::op::Add<Dtype>>(alpha, A, B);
 }
 
 /**
@@ -336,10 +363,19 @@ void Copy(XPU xpu, const Blob<Dtype>& A, Blob<Dtype>* B) {
  * Implemented using Copy and AXPY.
  */
 template<typename Dtype>
-void Add(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
+void Add(const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
   Copy(A, C);
-  AXPY(B, C, 1);
+  AXPY(Dtype(1), B, C);
+}
+
+/**
+ * B = alpha - A
+ * Implemented using Copy and AXPY.
+ */
+template<typename Dtype>
+void Sub(Dtype alpha, const Blob<Dtype> & A, Blob<Dtype>* B) {
+  Map<singa::op::Sub<Dtype>>(alpha, A, B);
 }
 
 /**
@@ -347,10 +383,10 @@ void Add(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
  * Implemented using Copy and AXPY.
  */
 template<typename Dtype>
-void Sub(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
+void Sub(const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
-  Copy(xpu, A, C);
-  AXPY(xpu, B, C, -1);
+  Copy(A, C);
+  AXPY(Dtype(-1), B, C);
 }
 
 /**
@@ -360,19 +396,8 @@ void Sub(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
 template<typename Dtype>
 void Mult(const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
-  //Map<singa::op::Mult<Dtype>>(xpu, A, B, C);
+  Map<singa::op::Mult<Dtype>>(A, B, C);
   // TODO(wangwei) use MKL's vector func
-  auto context = Singleton<Context>::Instance();
-  int device = context->device_id(std::this_thread::get_id());
-  if (device == -1)
-    cpu_e_f<op::Mult<Dtype>>(C->count(), A.cpu_data(), B.cpu_data(),
-        C->mutable_cpu_data());
-  else {
-#ifdef USE_GPU
-  gpu_e_f<op::Mult<Dtype>>(C->count(), A.gpu_data(), B.gpu_data(),
-        C->mutable_gpu_data());
-#endif
-  }
 }
 
 /**
@@ -380,10 +405,45 @@ void Mult(const Blob<Dtype> & A, const Blob<Dtype> & B,
  * Map(XPU, const Blob<Dtype>&, const Blob<Dtype>&, Blob<Dtype>*).
  */
 template<typename Dtype>
-void Div(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
+void Div(const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
-  Map<singa::op::Div<Dtype>>(xpu, A, B, C);
+  Map<singa::op::Div<Dtype>>(A, B, C);
   // TODO(wangwei) use MKL's vector func
+}
+/**
+ * B = sqrt(A)
+ */
+template<typename Dtype>
+void Sqrt(const Blob<Dtype> & A, Blob<Dtype>* B) {
+  Map<singa::op::Sqrt<Dtype>, Dtype>(A, B);
+}
+/**
+ * B = square(A)
+ */
+template<typename Dtype>
+void Square(const Blob<Dtype> & A, Blob<Dtype>* B) {
+  Map<singa::op::Square<Dtype>, Dtype>(A, B);
+}
+/**
+ * B = exp(A)
+ */
+template<typename Dtype>
+void Exp(const Blob<Dtype> & A, Blob<Dtype>* B) {
+  Map<singa::op::Exp<Dtype>, Dtype>(A, B);
+}
+/**
+ * B = log(A)
+ */
+template<typename Dtype>
+void Log(const Blob<Dtype>& A, Blob<Dtype>* B) {
+  Map<singa::op::Log<Dtype>, Dtype>(A, B);
+}
+/**
+ * B = tanh(A)
+ */
+template<typename Dtype>
+void Tanh(const Blob<Dtype>& A, Blob<Dtype>* B) {
+  Map<singa::op::Tanh<Dtype>, Dtype>(A, B);
 }
 /*************************1D<-->2D op/transform***************************/
 /**
@@ -392,28 +452,26 @@ void Div(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
  * # columns of B = B.count() / A.count().
  */
 template<typename Dtype>
-void MVAddCol(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
-    Blob<Dtype> * B) {
+void MVAddCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
   if (B->transpose()) {
-    Blob<Dtype>* tmp = Transpose(* B);
-    MVAddRow(xpu, alpha, beta, A, tmp);
-    delete tmp;
+    B->set_transpose(false);
+    MVAddRow(alpha, beta, A, B);
+    B->set_transpose(true);
   } else {
     CHECK_EQ(B->count() % A.count(), 0) << "#col of B not match length of A";
     int m = A.count(), n = B->count() / m;
-    if (xpu == cpu) {
-      Blob<Dtype> one(n);
-      one.SetValue(1);
-      cpu_gemm(A.cpu_data(), one.cpu_data(), m, n, 1, alpha, beta,
-          false, false, B->mutable_cpu_data());
-    }
+    Blob<Dtype> one(n);
+    one.SetValue(1);
+    auto context = Singleton<Context>::Instance();
+    int device = context->device_id(std::this_thread::get_id());
+    if (device == -1) {
+      cpu_gemm(A.cpu_data(), one.cpu_data(), m, n, 1, alpha, beta, false, false,
+          B->mutable_cpu_data());
+    } else {
 #ifdef USE_GPU
-    if (xpu == gpu) {
-      singa_gpu_add_vec_row(B->gpu_data(),
-          A.gpu_data(), A.gpu_data(), m, n, n);
-      // gpu part
-    }
+      singa_gpu_add_vec_row(B->gpu_data(), A.gpu_data(), A.gpu_data(), m, n, n);
 #endif  // USE_GPU
+    }
   }
 }
 /**
@@ -422,8 +480,8 @@ void MVAddCol(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
  * # columns of B = B.count() / A.count().
  */
 template<typename Dtype>
-void MVAddCol(XPU xpu, const Blob<Dtype> & A, Blob<Dtype>* B) {
-  MVAddCol(xpu, Dtype(1), Dtype(1), A, B);
+void MVAddCol(const Blob<Dtype> & A, Blob<Dtype>* B) {
+  MVAddCol(Dtype(1), Dtype(1), A, B);
 }
 
 /**
@@ -432,28 +490,26 @@ void MVAddCol(XPU xpu, const Blob<Dtype> & A, Blob<Dtype>* B) {
  * # rows of B = B.count() / A.count().
  */
 template<typename Dtype>
-void MVAddRow(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
-    Blob<Dtype> * B) {
+void MVAddRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
   if (B->transpose()) {
-    Blob<Dtype>* tmp = Transpose(* B);
-    MVAddCol(xpu, alpha, beta, A, tmp);
-    delete tmp;
+    B->set_transpose(false);
+    MVAddCol(alpha, beta, A, B);
+    B->set_transpose(true);
   } else {
     CHECK_EQ(B->count() % A.count(), 0) << "#col of B not match length of A";
     int m = A.count(), n = B->count() / m;
-    if (xpu == cpu) {
-      Blob<Dtype> one(n);
-      one.SetValue(1);
+    Blob<Dtype> one(n);
+    one.SetValue(1);
+    auto context = Singleton<Context>::Instance();
+    int device = context->device_id(std::this_thread::get_id());
+    if (device == -1) {
       cpu_gemm(one.cpu_data(), A.cpu_data(), n, m, 1, alpha, beta,
           false, false, B->mutable_cpu_data());
-    }
+    } else {
 #ifdef USE_GPU
-    if (xpu == gpu) {
-      // gpu part
-      singa_gpu_add_vec_row(B->gpu_data(),
-          A.gpu_data(), A.gpu_data(), m, n, n);
-    }
+      singa_gpu_add_vec_row(B->gpu_data(), A.gpu_data(), A.gpu_data(), m, n, n);
 #endif  // USE_GPU
+    }
   }
 }
 /**
@@ -462,8 +518,8 @@ void MVAddRow(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
  * # rows of B = B.count() / A.count().
  */
 template<typename Dtype>
-void MVAddRow(XPU xpu, const Blob<Dtype> & A, Blob<Dtype>* B) {
-  MVAddRow(xpu, Dtype(1), Dtype(1), A, B);
+void MVAddRow(const Blob<Dtype> & A, Blob<Dtype>* B) {
+  MVAddRow(Dtype(1), Dtype(1), A, B);
 }
 
 /**
@@ -472,8 +528,8 @@ void MVAddRow(XPU xpu, const Blob<Dtype> & A, Blob<Dtype>* B) {
  * # columns of B = B.count() / A.count().
  */
 template<typename Dtype>
-void RepmatCol(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-  MVAddCol(xpu, Dtype(1), Dtype(0), A, B);
+void RepmatCol(const Blob<Dtype> & A, Blob<Dtype> * B) {
+  MVAddCol(Dtype(1), Dtype(0), A, B);
 }
 
 /**
@@ -482,8 +538,8 @@ void RepmatCol(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
  * # rows of B = B.count() / A.count().
  */
 template<typename Dtype>
-void RepmatRow(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
-  MVAddRow(xpu, Dtype(1), Dtype(0), A, B);
+void RepmatRow(const Blob<Dtype> & A, Blob<Dtype> * B) {
+  MVAddRow(Dtype(1), Dtype(0), A, B);
 }
 
 /**
@@ -493,18 +549,18 @@ void RepmatRow(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
  * # columns of A = A.count() / B.count().
  */
 template<typename Dtype>
-void MVSumCol(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
-    Blob<Dtype> * B) {
+void MVSumCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count() % B->count(), 0) << "length of B must = # of cols of A";
   int m = B->count(), n = A.count() / m;
-  if (xpu == cpu) {
-    Blob<Dtype> one(n);
-    one.SetValue(1);
+  Blob<Dtype> one(n);
+  one.SetValue(1);
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     cpu_gemm(A.cpu_data(), one.cpu_data(), m, 1, n, alpha, beta,
         A.transpose(), false, B->mutable_cpu_data());
-  }
+  } else {
 #ifdef USE_GPU
-  if (xpu == gpu) {
     singa_gpu_sum_col(A.gpu_data(), B->gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
   }
@@ -518,18 +574,18 @@ void MVSumCol(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
  * # rows of A = A.count() / B.count().
  */
 template<typename Dtype>
-void MVSumRow(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
-    Blob<Dtype> * B) {
+void MVSumRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count() % B->count(), 0) << "length of B must = # of cols of A";
   int m = B->count(), n = A.count() / m;
-  if (xpu == cpu) {
-    Blob<Dtype> one(n);
-    one.SetValue(1);
-    cpu_gemm(one.cpu_data(), A.cpu_data(), 1, m, n, alpha, beta,
-        A.transpose(), false, B->mutable_cpu_data());
-  }
+  Blob<Dtype> one(n);
+  one.SetValue(1);
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
+    cpu_gemm(one.cpu_data(), A.cpu_data(), 1, m, n, alpha, beta, A.transpose(),
+      false, B->mutable_cpu_data());
+  } else {
 #ifdef USE_GPU
-  if (xpu == gpu) {
     singa_gpu_sum_row(A.gpu_data(), B->gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
   }
@@ -542,18 +598,19 @@ void MVSumRow(XPU xpu, Dtype alpha, Dtype beta, const Blob<Dtype> & A,
  * # columns of A = A.count() / B.count().
  */
 template<typename Op, typename Dtype>
-void Reduce2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+void Reduce2D(const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count() % B->count(), 0) << "Row size not match B length";
   int m = B->count(), n = A.count() / m;
-  if (xpu == cpu) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     cpu_reduce_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
-  }
+  } else {
 #ifdef SINGA_GPU
-  if (xpu == gpu) {
     // gpu part
     gpu_reduce_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
-  }
 #endif  // SINGA_GPU
+  }
 }
 /**
  * Duplicate each element of A into a row of B.
@@ -561,62 +618,67 @@ void Reduce2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
  * # columns of B = B.count() / A.count().
  */
 template<typename Op, typename Dtype>
-void Expand2D(XPU xpu, const Blob<Dtype> & A, Blob<Dtype> * B) {
+void Expand2D(const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(B->count() % A.count(), 0) << "Row size of B not match length of A";
   int m = A.count(), n = B->count() / m;
-  if (xpu == cpu) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     cpu_expand_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
-  }
+  } else {
 #ifdef SINGA_GPU
-  if (xpu == gpu) {
-    // gpu part
     gpu_expand_f<Op>(A.gpu_data(), m, n, B->mutable_gpu_data());
-  }
 #endif  // SINGA_GPU
+  }
 }
 
 /**
  * Average the absolute values.
  */
-template <typename Dtype>
-Dtype Asum(XPU xpu, const Blob<Dtype>& A) {
+template<typename Dtype>
+Dtype Asum(const Blob<Dtype>& A) {
   if (A.count() == 0) return Dtype(0);
-  if (xpu == cpu)
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
     return cpu_asum(A.count(), A.cpu_data(), 1) / A.count();
-  return Dtype(0); // avoid compile warning
+  } else {
 #ifdef USE_GPU
+    return 0; // TODO(haibo)
 #endif
+  }
 }
+
 
 /*************Random Sample***************/
 template<typename Dtype>
-void SampleUniform(Dtype low, Dtype high, Blob<Dtype>* A);
-
-template<>
-inline void SampleUniform<float>(float low, float high, Blob<float> *A) {
+void SampleUniform(Dtype low, Dtype high, Blob<Dtype>* A) {
   auto context = Singleton<Context>::Instance();
-  int device = context->device_id(std::this_thread::get_id());
-  if (device == -1)
-    cpu_sample_uniform(A->count(), low, high, A->mutable_cpu_data());
-  else {
+  const auto& thread = std::this_thread::get_id();
+  int device = context->device_id(thread);
+  if (device == -1) {
+    cpu_sample_uniform(*context->rand_generator(thread), A->count(), low, high,
+        A->mutable_cpu_data());
+  } else {
 #ifdef USE_GPU
+    // TODO(haibo) check
     gpu_sample_uniform(A->count(), low, high, A->mutable_gpu_data());
 #endif
   }
 }
 
 template<typename Dtype>
-void SampleGaussian(Dtype mean, Dtype std, Blob<Dtype>* A);
-
-template<>
-inline void SampleGaussian<float>(float low, float high, Blob<float> *A) {
+void SampleGaussian(Dtype mean, Dtype std, Blob<Dtype>* A) {
   auto context = Singleton<Context>::Instance();
-  int device = context->device_id(std::this_thread::get_id());
-  if (device == -1)
-    cpu_sample_gaussian(A->count(), low, high, A->mutable_cpu_data());
-  else {
+  const auto& thread = std::this_thread::get_id();
+  int device = context->device_id(thread);
+  if (device == -1) {
+    cpu_sample_gaussian(*context->rand_generator(thread), A->count(), mean, std,
+        A->mutable_cpu_data());
+  } else {
 #ifdef USE_GPU
-    gpu_sample_gaussian(A->count(), low, high, A->mutable_gpu_data());
+    // TODO(haibo) check it.
+    gpu_sample_gaussian(A->count(), mean, std, A->mutable_gpu_data());
 #endif
   }
 }
@@ -627,11 +689,15 @@ void Softmax(int nb_rows, const Blob<Dtype>& A, Blob<Dtype>* B) {
   CHECK_GT(nb_rows, 0);
   CHECK_EQ(A.count() % nb_rows, 0);
   CHECK_EQ(A.count(), B->count());
-
-#ifdef USE_GPU
-  cpu_softmax(nb_rows, A.count() / nb_rows, A.cpu_data(),
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
+    cpu_softmax(nb_rows, A.count() / nb_rows, A.cpu_data(),
       B->mutable_cpu_data());
+  } else {
+#ifdef USE_GPU
 #endif  // USE_GPU
+  }
 }
 }  // end of namespace singa
 

@@ -211,6 +211,34 @@ struct Pow {
   }
 #endif  // USE_GPU
 };
+
+template<typename Dtype>
+struct Add {
+  inline static void Map(const Dtype & a, const Dtype & b, Dtype * c) {
+    *c =  a + b;
+  }
+#ifdef USE_GPU
+  inline static void CudaMap(const Dtype * a,
+      const Dtype * b, Dtype * c, int n) {
+//    singa::singa_gpu_add(a, b, c, n); // TODO(haibo)
+  }
+#endif  // USE_GPU
+};
+
+template<typename Dtype>
+struct Sub {
+  inline static void Map(const Dtype & a, const Dtype & b, Dtype * c) {
+    *c =  a - b;
+  }
+#ifdef USE_GPU
+  inline static void CudaMap(const Dtype * a,
+      const Dtype * b, Dtype * c, int n) {
+//    singa::singa_gpu_add(a, b, c, n);  // TODO(haibo)
+  }
+#endif  // USE_GPU
+};
+
+
 template<typename Dtype>
 struct Mult {
   inline static void Map(const Dtype & a, const Dtype & b, Dtype * c) {

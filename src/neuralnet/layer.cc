@@ -48,17 +48,16 @@ const std::string Layer::ToString(bool debug, int flag) {
     return "";
   string ret = StringPrintf("Layer %10s ", name().c_str());
   if ((flag & kForward) == kForward && data_.count() !=0) {
-    ret += StringPrintf("data norm1 %13.9f", Asum(cpu, data_));
+    ret += StringPrintf("data norm1 %13.9f", Asum(data_));
   } else if ((flag & kBackward) == kBackward) {
     if (grad_.count() != 0)
-      ret += StringPrintf("grad norm1 %13.9f\n", Asum(cpu, grad_));
+      ret += StringPrintf("grad norm1 %13.9f\n", Asum(grad_));
   }
   if ((flag & kTrain) == kTrain) {
     for (Param* p : GetParams()) {
       ret += StringPrintf(
           "param id %2d, name %10s, value norm1 %13.9f, grad norm1 %13.9f\n",
-          p->id(), p->name().c_str(), Asum(cpu, p->data()),
-          Asum(cpu, p->grad()));
+          p->id(), p->name().c_str(), Asum(p->data()), Asum(p->grad()));
     }
   }
   return ret;
