@@ -50,7 +50,7 @@ void Scale(Dtype alpha, Blob<Dtype> * B) {
   else {
 #ifdef USE_GPU
     // TODO(haibo) check it.
-//    gpu_scale(B->count(), alpha, B->mutable_gpu_data());
+    gpu_scale(B->count(), alpha, B->mutable_gpu_data());
 #endif
   }
 }
@@ -644,7 +644,7 @@ Dtype Asum(const Blob<Dtype>& A) {
     return cpu_asum(A.count(), A.cpu_data(), 1) / A.count();
   } else {
 #ifdef USE_GPU
-    return 0; // TODO(haibo)
+    return gpu_asum(A.count(), A.cpu_data(), 1) / A.count(); // TODO(haibo)
 #endif
   }
 }
@@ -662,7 +662,8 @@ void SampleUniform(Dtype low, Dtype high, Blob<Dtype>* A) {
   } else {
 #ifdef USE_GPU
     // TODO(haibo) check
-    gpu_sample_uniform(A->count(), low, high, A->mutable_gpu_data());
+    gpu_sample_uniform(context->curand_generator(thread), A->count(), low, high,
+		A->mutable_gpu_data());
 #endif
   }
 }
@@ -678,7 +679,8 @@ void SampleGaussian(Dtype mean, Dtype std, Blob<Dtype>* A) {
   } else {
 #ifdef USE_GPU
     // TODO(haibo) check it.
-    gpu_sample_gaussian(A->count(), mean, std, A->mutable_gpu_data());
+    gpu_sample_gaussian(context->curand_generator(thread), A->count(), mean, std,
+        A->mutable_gpu_data());
 #endif
   }
 }

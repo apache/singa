@@ -29,6 +29,7 @@ extern "C" {
 #endif
 #include "singa/utils/singa_op.h"
 #ifdef USE_GPU
+#include "cuda_utils.h"
 #include <cublas_v2.h>
 #endif
 
@@ -170,6 +171,16 @@ void cpu_sample_gaussian(URNG& g, int n, Dtype mean, Dtype std, Dtype* A) {
 
 #ifdef USE_GPU
 template<typename Dtype>
+Dtype gpu_asum(int n, const Dtype* A, int inc) {
+  Dtype result = 0.0;
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+  cublasSasum(handle, n, A, inc, &result);
+  cublasDestroy(handle);
+  return result;
+}
+
+template<typename Dtype>
 void gpu_gemm(const Dtype * A, const Dtype * B, const int m, const int n,
     const int k, const Dtype alpha, const Dtype beta, const bool TranA,
     const bool TranB, Dtype * C) {
@@ -201,6 +212,14 @@ void gpu_axpy(const Dtype * A, const int n, const Dtype alpha, Dtype * B) {
   cublasHandle_t handle;
   cublasCreate(&handle);
   cublasSaxpy(handle, n, &alpha, A, 1, B, 1);
+  cublasDestroy(handle);
+}
+
+template<typename Dtype>
+void gpu_scale(const int n, const Dtype alpha, Dtype * A) {
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+  cublasSscal(handle, n, &alpha, A, 1);
   cublasDestroy(handle);
 }
 
@@ -259,14 +278,19 @@ void gpu_expand_f(const Dtype * A, const int m, const int n, Dtype * B) {
 }
 
 
-template<typename Dtype>
-void gpu_sample_uniform(int n, Dtype low, Dtype high, Dtype* A) {
-
+template<typename Dtype, typename URNG>
+void gpu_sample_uniform(URNG g, int n, Dtype low, Dtype high, Dtype* A) {
+  //curandGenerator_t gen;
+  //curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
+  curandSetPseudoRandomGeneratorSeed(g, time(NULL));
+  curandGenerateUniform(g, A, n);
+  //curandDestroyGenerator(gen);
 }
 
-template<typename Dtype>
-void gpu_sample_gaussian(int n, Dtype mean, Dtype std, Dtype* A) {
-
+template<typename Dtype, typename URNG>
+void gpu_sample_gaussian(URNG g, int n, Dtype mean, Dtype std, Dtype* A) {
+  curandSetPseudoRandomGeneratorSeed(g, time(NULL));
+  curandGenerateNormal(g, A, n, mean, std);
 }
 
 // expand each element in A into a row of B
