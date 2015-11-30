@@ -25,6 +25,11 @@
 #include <vector>
 #include "singa/neuralnet/layer.h"
 #include "singa/proto/job.pb.h"
+
+#ifdef USE_CUDNN
+#include <cudnn.h>
+#endif
+
 namespace singa {
 
 /* Activation layer applies following activations,
@@ -249,7 +254,6 @@ class STanhLayer : public NeuronLayer {
 
 /*************** Layers implemented using cudnn v3 ***************/
 #ifdef USE_CUDNN
-#include <cudnn.h>
 #define CHECK_CUDNN(x) CHECK_EQ(x, CUDNN_STATUS_SUCCESS)
 
 class CudnnLayer : virtual public NeuronLayer {
@@ -273,9 +277,9 @@ class CudnnLayer : virtual public NeuronLayer {
 /**
  * Activation layer implemented using cudnn v3.
  * Activation methods including
- * - "sigmoid"
- * - "tanh"
- * - "relu"
+ * - SIGMOID
+ * - TANH
+ * - RELU
  */
 class CudnnActivationLayer : public ActivationLayer, public CudnnLayer {
  public:

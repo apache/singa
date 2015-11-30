@@ -23,6 +23,7 @@
 
 #include <glog/logging.h>
 #include "singa/utils/singleton.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -57,38 +58,17 @@ void InnerProductLayer::Setup(const LayerProto& conf,
 
 void InnerProductLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  auto data = Tensor2(&data_);
-  auto src = Tensor2(srclayers[0]->mutable_data(this));
-  auto weight = Tensor2(weight_->mutable_data());
-  auto bias = Tensor1(bias_->mutable_data());
-  if (transpose_)
-    data = dot(src, weight);
-  else
-    data = dot(src, weight.T());
-  // repmat: repeat bias vector into batchsize rows
-  data += expr::repmat(bias, batchsize_);
+  MMDot(srclayers[0]->data(this), weight_->data(), &data_);
+  MVAddRow(bias_->data(), &data_);
 }
 
 void InnerProductLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
-  auto src = Tensor2(srclayers[0]->mutable_data(this));
-  auto grad = Tensor2(&grad_);
-  auto weight = Tensor2(weight_->mutable_data());
-  auto gweight = Tensor2(weight_->mutable_grad());
-  auto gbias = Tensor1(bias_->mutable_grad());
 
-  gbias = expr::sum_rows(grad);
-  if (transpose_)
-    gweight = dot(src.T(), grad);
-  else
-    gweight = dot(grad.T(), src);
+  MVSumRow(1.0f, 0.0f, grad_, bias_->mutable_grad());
+  MVDot(grad_.T(), srclayers[0]->data(this), weight_->mutable_grad());
   if (srclayers[0]->mutable_grad(this) != nullptr) {
-    auto gsrc = Tensor2(srclayers[0]->mutable_grad(this));
-    if (transpose_)
-      gsrc = dot(grad, weight.T());
-    else
-      gsrc = dot(grad, weight);
+    MVDot(grad_, weight_->data(), srclayers[0]->mutable_grad(this));
   }
 }
-
 }  // namespace singa

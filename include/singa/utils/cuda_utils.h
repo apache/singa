@@ -74,18 +74,4 @@
     CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
   } while (0)
 
-#define CUBLAS_CHECK(condition) \
-  do { \
-    cublasStatus_t status = condition; \
-    CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " \
-      << caffe::cublasGetErrorString(status); \
-  } while (0)
-
-#define CURAND_CHECK(condition) \
-  do { \
-    curandStatus_t status = condition; \
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << " " \
-      << caffe::curandGetErrorString(status); \
-  } while (0)
-
 #endif  // SINGA_UTILS_CUDA_UTILS_H_

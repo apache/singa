@@ -294,6 +294,11 @@ class Blob {
   inline bool transpose() const {
     return transpose_;
   }
+  inline const Blob<Dtype> T() const {
+    Blob<Dtype> ret(*this);
+    ret.transpose_ = !transpose_;
+    return ret;
+  }
 
  protected:
   std::shared_ptr<SyncedMemory> data_ = nullptr;

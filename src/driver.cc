@@ -29,6 +29,8 @@
 #include "singa/utils/common.h"
 #include "singa/utils/tinydir.h"
 #include "singa/utils/cluster.h"
+#include "singa/utils/context.h"
+#include "singa/proto/job.pb.h"
 #include "singa/server.h"
 #include "singa/stub.h"
 #include "singa/worker.h"
@@ -75,7 +77,16 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<CConvolutionLayer, int>(kCConvolution);
   RegisterLayer<CPoolingLayer, int>(kCPooling);
   RegisterLayer<ConcateLayer, int>(kConcate);
-  RegisterLayer<DropoutLayer, int>(kDropout);
+
+#ifdef USE_CUDNN
+  RegisterLayer<CudnnActivationLayer, int>(kCudnnActivation);
+  RegisterLayer<CudnnConvLayer, int>(kCudnnConv);
+  RegisterLayer<CudnnPoolLayer, int>(kCudnnPool);
+  RegisterLayer<CudnnLRNLayer, int>(kCudnnLRN);
+  RegisterLayer<CudnnSoftmaxLayer, int>(kCudnnSoftmax);
+  RegisterLayer<CudnnSoftmaxLossLayer, int>(kCudnnSoftmaxLoss);
+#endif
+
   RegisterLayer<EuclideanLossLayer, int>(kEuclideanLoss);
   RegisterLayer<InnerProductLayer, int>(kInnerProduct);
   RegisterLayer<LabelLayer, int>(kLabel);
@@ -203,8 +214,16 @@ void Driver::Train(const JobProto& job_conf) {
   vector<std::thread> threads;
   for (auto server : servers)
     threads.push_back(std::thread(&Server::Run, server));
-  for (auto worker : workers)
+  int gpu = 0;
+  auto context = Singleton<Context>::Instance();
+  CHECK_LE(workers.size(), job_conf.gpu_size());
+  for (auto worker : workers) {
     threads.push_back(std::thread(&Worker::Run, worker));
+    if (gpu < job_conf.gpu_size()) {
+      int device_id = job_conf.gpu(gpu++);
+      context->SetupDevice(threads.back().get_id(), device_id);
+    }
+  }
   if (grp_size > 1 || nserver_grps > 0) {
     int nservers_per_grp = cluster->nservers_per_group();
     int lcm = LeastCommonMultiple(nservers_per_grp, nserver_grps);

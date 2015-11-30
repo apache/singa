@@ -466,7 +466,8 @@ void MVAddCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
           B->mutable_cpu_data());
     } else {
 #ifdef USE_GPU
-      singa_gpu_add_vec_row(B->gpu_data(), A.gpu_data(), A.gpu_data(), m, n, n);
+      singa_gpu_add_vec_row(A.gpu_data(), B->gpu_data(), B->mutable_gpu_data(),
+          m, n, n);
 #endif  // USE_GPU
     }
   }
@@ -504,7 +505,8 @@ void MVAddRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
           false, false, B->mutable_cpu_data());
     } else {
 #ifdef USE_GPU
-      singa_gpu_add_vec_row(B->gpu_data(), A.gpu_data(), A.gpu_data(), m, n, n);
+      singa_gpu_add_vec_row(A.gpu_data(), B->gpu_data(), B->mutable_gpu_data(),
+          m, n, n);
 #endif  // USE_GPU
     }
   }
@@ -583,7 +585,7 @@ void MVSumRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
       false, B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    singa_gpu_sum_row(A.gpu_data(), B->gpu_data(), m, n, n);
+    singa_gpu_sum_vec(A.gpu_data(), B->gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
 #endif  // USE_GPU
   }

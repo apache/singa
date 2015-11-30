@@ -52,6 +52,9 @@ message JobProto {
   required int32 train_steps = 16;
   // frequency of displaying training info
   optional int32 disp_freq = 17 [default = 0];
+  // GPU device IDs for use, if fewer than workers per procs, some workers run
+  // on GPU and the rest run on CPU.
+  repeated int32 gpu = 18;
 
   // frequency of test, e.g., do test every 100 training steps
   optional int32 test_freq = 20 [default = 0];
@@ -603,6 +606,12 @@ enum LayerType {
   kConvolution = 1;
   kCConvolution = 27;
   kCPooling = 28;
+  kCudnnConv = 50;
+  kCudnnPool = 51;
+  kCudnnLRN = 52;
+  kCudnnSoftmax = 53;
+  kCudnnActivation = 54;
+  kCudnnSoftmaxLoss = 55;
   kDropout = 4;
   kInnerProduct = 5;
   kLRN = 6;

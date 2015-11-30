@@ -231,7 +231,7 @@ void gpu_e_f(const int n, const Dtype * A, Dtype * B) {
 }
 
 template<typename Op, typename Dtype>
-void gpu_e_f(const int n, const Dtype * A, const Dtype * B, const Dtype * C) {
+void gpu_e_f(const int n, const Dtype * A, const Dtype * B, Dtype * C) {
   Op::CudaMap(A, B, C, n);
 }
 

@@ -28,6 +28,7 @@
 #include "singa/utils/cluster.h"
 #include "singa/utils/factory.h"
 #include "singa/utils/singleton.h"
+#include "singa/utils/context.h"
 
 namespace singa {
 
@@ -61,6 +62,11 @@ Worker::~Worker() {
 
 void Worker::Run() {
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") start";
+  // setup gpu device
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device > 0)
+    context->ActivateDevice(device);
   auto cluster = Cluster::Get();
   int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
   CHECK(cluster->runtime()->JoinSGroup(grp_id_, id_, svr_grp));

@@ -237,11 +237,15 @@ Msg* Param::GenUpdateMsg(bool copy, int idx) {
   msg->set_type(kUpdate);
   msg->AddFormatFrame("i", copy);
   void* ptr = grad_.mutable_cpu_data() + slice_offset_[idx];
+  // to change the head of SyncMem to cpu; otherwise, the updated parameter
+  //   // values would not be synced to gpu (since the head is at gpu).
+  data_->mutable_cpu_data();
   if (copy) {
     msg->AddFrame(ptr, slice_size_[idx]*sizeof(float));
   } else {
     msg->AddFormatFrame("p", ptr);  // to share values of grad blob
   }
+
   pending_update_[idx] = true;
   num_pending_requests_++;
   return msg;

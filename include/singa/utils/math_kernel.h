@@ -26,7 +26,10 @@ namespace singa {
 extern "C" {
   void singa_gpu_sum_vec(float *data, float *sum , int n);
 
-  void singa_gpu_sum_col(const float *src_mat_data, float *dst_vec_data,
+  void singa_gpu_sum_by_col(const float *src_mat_data, float *dst_vec_data,
+    int rows, int cols, int stride);
+
+  void singa_gpu_sum_by_row(const float *src_mat_data, float *dst_vec_data,
     int rows, int cols, int stride);
 
   void singa_gpu_add_vec_row(const float *src_vec_data,
