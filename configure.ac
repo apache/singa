@@ -35,6 +35,61 @@ AC_PROG_CXX([g++])
 AC_PROG_CC
 AC_PROG_LIBTOOL
 
+# Setup custom CUDA paths
+AC_ARG_ENABLE(cuda,
+	[AS_HELP_STRING(--enable-cuda,enable CUDA support)],
+    cudaval="yes",
+    cudaval="no")
+AM_CONDITIONAL(DCUDA, [test "$cudaval" = "yes"])
+
+AC_ARG_WITH([cuda],
+   [AS_HELP_STRING(
+        [--with-cuda=PATH],
+        [prefix where CUDA is installed])],
+   [cuda_prefix=$withval],
+   [cuda_prefix="/usr/local/cuda"])
+if test "$cuda_prefix" == "yes"; then
+    if test "$withval" == "yes"; then
+        cuda_prefix="/usr/local/cuda"
+    fi
+fi
+
+AC_MSG_CHECKING([nvcc in $cuda_prefix/bin])
+if test -x "$cuda_prefix/bin/nvcc"; then
+    AC_MSG_RESULT([found])
+    AC_DEFINE_UNQUOTED([NVCC_PATH], ["$cuda_prefix/bin/nvcc"], [Path to nvcc binary])
+else
+    AC_MSG_RESULT([not found!])
+    AC_MSG_FAILURE([nvcc was not found in $cuda_prefix/bin])
+fi
+
+if test x"$cudaval" = x"yes"; then
+    CUDA_CFLAGS="-I$cuda_prefix/include"
+    CUDA_LDFLAGS="-L$cuda_prefix/lib64 -L$cuda_prefix/lib"
+    CUDA_LIBS="-lcublas -lcudart -lcurand"
+    NVCC="nvcc"
+	DEBUG="-DUSE_GPU "
+    AC_DEFINE(DCUDA,[1],[Defined if CUDA should be used])
+	AC_CHECK_LIB([cuda], [main], [], [
+ 		AC_MSG_ERROR([unable to find cuda library])
+ 	 ])
+	AC_CHECK_LIB([cudart], [main], [], [
+	  	AC_MSG_ERROR([unable to find cudart library])
+  	])
+	AC_CHECK_LIB([curand], [main], [], [
+ 	 	AC_MSG_ERROR([unable to find curand library])
+  	])
+else
+    CUDA_CFLAGS=""
+    CUDA_LDFLAGS=""
+    CUDA_LIBS=""
+    NVCC=""
+fi
+AC_SUBST(NVCC)
+AC_SUBST(CUDA_LDFLAGS)
+AC_SUBST(CUDA_LIBS)
+AC_SUBST(CUDA_CFLAGS)
+
 # Checks for libraries.
 AC_SEARCH_LIBS([cblas_sgemm], [openblas], [], [
   AC_MSG_ERROR([unable to find cblas_sgemm() function])
@@ -82,9 +137,9 @@ AC_ARG_ENABLE(debug,
 	[enable_debug=yes],[enable_debug=no])
 AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 if test x"$enable_debug" != x"no"; then
-	DEBUG='-g'
+	DEBUG+='-g'
 else
-	DEBUG='-O2'
+	DEBUG+='-O2'
 fi
 AC_SUBST([DEBUG])
 
