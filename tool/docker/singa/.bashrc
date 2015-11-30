@@ -6,3 +6,7 @@ export JAVA_HOME=/opt/jdk1.8.0_60
 export SINGA_HOME=/root/incubator-singa
 export PATH=$PATH:$SINGA_HOME/bin
 alias ls="ls --color=always"
+# some more ls aliases
+alias ll="ls -alF"
+alias la="ls -A"
+alias l="ls -CF"
