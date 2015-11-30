@@ -6,5 +6,9 @@ export HADOOP_HOME=/opt/hadoop-2.6.0
 export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 export JAVA_HOME=/opt/jdk1.8.0_60
 alias ls="ls --color=always"
+# some more ls aliases
+alias ll="ls -alF"
+alias la="ls -A"
+alias l="ls -CF"
 export SINGA_HOME=/root/incubator-singa
 export PATH=$PATH:$SINGA_HOME/bin
