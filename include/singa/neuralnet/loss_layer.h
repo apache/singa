@@ -61,7 +61,8 @@ class CudnnSoftmaxLossLayer : public LossLayer, public CudnnSoftmaxLayer {
   const std::string ToString(bool debug, int flag) override;
 
  private:
-  int topk_;
+  float scale_;
+  int topk_, dim_;
   int counter_;
   float loss_, accuracy_;
 

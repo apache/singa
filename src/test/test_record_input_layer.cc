@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "singa/neuralnet/input_layer/record.h"
+#include "singa/neuralnet/input_layer.h"
 #include "singa/proto/job.pb.h"
 #include "singa/proto/common.pb.h"
 

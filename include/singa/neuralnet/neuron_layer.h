@@ -259,19 +259,24 @@ class STanhLayer : public NeuronLayer {
 class CudnnLayer : virtual public NeuronLayer {
  public:
   ~CudnnLayer() {
-    CHECK_CUDNN(cudnnDestroyTensorDescriptor(src_desc_));
-    CHECK_CUDNN(cudnnDestroyTensorDescriptor(my_desc_));
-    CHECK_CUDNN(cudnnDestroy(handle_));
+    if (handle_ != nullptr)
+      CHECK_CUDNN(cudnnDestroy(handle_));
+    if (src_desc_ != nullptr)
+      CHECK_CUDNN(cudnnDestroyTensorDescriptor(src_desc_));
+    if (my_desc_ != nullptr)
+      CHECK_CUDNN(cudnnDestroyTensorDescriptor(my_desc_));
   }
   void virtual InitCudnn() {
     CHECK(!has_init_cudnn_);
     CHECK_CUDNN(cudnnCreate(&handle_));
+    CHECK_CUDNN(cudnnCreateTensorDescriptor(&src_desc_));
+    CHECK_CUDNN(cudnnCreateTensorDescriptor(&my_desc_));
     has_init_cudnn_ = true;
   }
  protected:
   bool has_init_cudnn_ = false;
-  cudnnHandle_t handle_;
-  cudnnTensorDescriptor_t src_desc_, my_desc_;
+  cudnnHandle_t handle_ = nullptr;
+  cudnnTensorDescriptor_t src_desc_ = nullptr, my_desc_ = nullptr;
 };
 
 /**

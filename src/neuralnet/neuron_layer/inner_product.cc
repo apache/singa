@@ -58,7 +58,7 @@ void InnerProductLayer::Setup(const LayerProto& conf,
 
 void InnerProductLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  MMDot(srclayers[0]->data(this), weight_->data(), &data_);
+  MMDot(srclayers[0]->data(this), weight_->data().T(), &data_);
   MVAddRow(bias_->data(), &data_);
 }
 
@@ -66,9 +66,9 @@ void InnerProductLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
 
   MVSumRow(1.0f, 0.0f, grad_, bias_->mutable_grad());
-  MVDot(grad_.T(), srclayers[0]->data(this), weight_->mutable_grad());
+  MMDot(grad_.T(), srclayers[0]->data(this), weight_->mutable_grad());
   if (srclayers[0]->mutable_grad(this) != nullptr) {
-    MVDot(grad_, weight_->data(), srclayers[0]->mutable_grad(this));
+    MMDot(grad_, weight_->data(), srclayers[0]->mutable_grad(this));
   }
 }
 }  // namespace singa

@@ -23,7 +23,7 @@
 #include <fstream>
 
 #include "gtest/gtest.h"
-#include "singa/neuralnet/input_layer/csv.h"
+#include "singa/neuralnet/input_layer.h"
 #include "singa/proto/job.pb.h"
 
 class CSVInputLayerTest : public ::testing::Test {

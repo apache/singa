@@ -188,18 +188,20 @@ void CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
         &beta,
         filter_desc_,
         weight_->mutable_grad()->mutable_gpu_data()));
-  CHECK_CUDNN(cudnnConvolutionBackwardData_v3(handle_,
-        &alpha,
-        filter_desc_,
-        weight_->data().gpu_data(),
-        my_desc_,
-        grad_.gpu_data(),
-        conv_desc_,
-        bp_data_alg_,
-        workspace.mutable_gpu_data(),
-        workspace_count_ * sizeof(float),
-        &beta,
-        src_desc_,
-        srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
+  if (srclayers[0]->mutable_grad(this) != nullptr) {
+    CHECK_CUDNN(cudnnConvolutionBackwardData_v3(handle_,
+          &alpha,
+          filter_desc_,
+          weight_->data().gpu_data(),
+          my_desc_,
+          grad_.gpu_data(),
+          conv_desc_,
+          bp_data_alg_,
+          workspace.mutable_gpu_data(),
+          workspace_count_ * sizeof(float),
+          &beta,
+          src_desc_,
+          srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
+  }
 }
 }  /* singa */

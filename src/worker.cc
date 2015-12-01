@@ -91,7 +91,7 @@ void Worker::Run() {
     }
     TrainOneBatch(step_, train_net_);
     if (DisplayNow(step_) && grp_id_ == 0 && id_ == 0)
-      Display(kTrain, "Train @ step " + std::to_string(step_), train_net_);
+      Display(kTrain | kForward | kBackward, "Train @ step " + std::to_string(step_), train_net_);
     step_++;
   }
 
@@ -297,7 +297,7 @@ void Worker::Display(int flag, const std::string& prefix, NeuralNet* net) {
       if (job_conf_.debug()) {
         const string& info = layer->ToString(true, flag);
         if (info.length()) {
-          LOG(INFO) <<  prefix << info;
+          LOG(INFO) << prefix << info;
         }
       }
     }

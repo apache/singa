@@ -20,6 +20,8 @@
 *************************************************************/
 
 #include "singa/neuralnet/loss_layer.h"
+#include "singa/utils/blob.h"
+#include "singa/utils/math_kernel.h"
 
 namespace singa {
 void CudnnSoftmaxLossLayer::Setup(const LayerProto& conf,
@@ -33,13 +35,41 @@ void CudnnSoftmaxLossLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   CudnnSoftmaxLayer::ComputeFeature(flag, srclayers);
   // compute loss
+  float *prob = data_.mutable_gpu_data();
+  Blob<int> label(batchsize_);
+  int *labelptr = label.mutable_cpu_data();
+
+  //aux_data: vector<int>, convert vector to int array.
+  for(int i = 0; i < batchsize_; ++i) {
+	labelptr[i] = srclayers[1]->aux_data(this)[i];
+  }
+
+  Blob<float> loss(batchsize_);
+
+  singa_gpu_softmax_loss(prob , label.mutable_gpu_data() , loss.mutable_gpu_data(),
+	  batchsize_, dim_);
+
   counter_++;
-  // add loss and accuracy
+  // TODO add loss and accuracy
 }
 
 void CudnnSoftmaxLossLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
  // compute gradient
+  Blob<float>* gsrcblob = srclayers[0]->mutable_grad(this);
+  gsrcblob->CopyFrom(data_);
+  float* gsrcptr = gsrcblob->mutable_gpu_data();
+
+  Blob<int> label(batchsize_);
+  int *labelptr = label.mutable_cpu_data();
+
+  //aux_data: vector<int>, convert vector to int array.
+  for(int i = 0; i < batchsize_; ++i) { 
+	labelptr[i] = srclayers[1]->aux_data(this)[i];
+  }
+
+  singa_gpu_softmax_gradient(gsrcptr, label.mutable_gpu_data(), batchsize_, dim_, scale_);
+
 }
 
 const std::string CudnnSoftmaxLossLayer::ToString(bool debug, int flag) {

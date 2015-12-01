@@ -76,9 +76,10 @@ void AXPY(Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
 /************* BLAS level 2 *****************/
 /**
  * Matrix vector multiplication, C = alpha A(.T) * B + beta C.
- * Strict shape checking:
- * - dim of A ==2
- *   columsn of A(.T) == B.count()
+ * Loose shape checking:
+ * - dim of A >=2
+ * - row of A is shape(0) (no transpose)
+ * - column of A(.T) == B.count()
  * - rows of A(.T) == C.count()
  *
  * @param[in] alpha
@@ -90,10 +91,10 @@ void AXPY(Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
 template<typename Dtype>
 void GEMV(Dtype alpha, Dtype beta, const Blob<Dtype>& A,
     const Blob<Dtype>& B, Blob<Dtype>* C) {
-  CHECK_EQ(A.shape().size(), 2) << "A must be a matrix";
+  CHECK_EQ(A.shape().size(), 2);
   int a1, a2, m, n;
-  a1 = A.transpose() ? A.shape(1) : A.shape(0);
-  a2 = A.transpose() ? A.shape(0) : A.shape(1);
+  a1 = A.transpose() ? A.count() / A.shape(0) : A.shape(0);
+  a2 = A.transpose() ? A.shape(0) : A.count() / A.shape(0);
   m = B.count();
   n = C->count();
   CHECK_EQ(a2, m) << "# columns of A(.T) must = length of B";
@@ -134,8 +135,8 @@ void MVDot(const Blob<Dtype>& A, const Blob<Dtype>& B,
  * Matrix multiplication, C = alpha A*B + beta C, A, B and C are matrix.
  *
  * Tranpose is considered for A and B.
- * Strict shape checking:
- * - all are matrix
+ * Loose shape checking:
+ * - the first dimension is row (no transpose) or col (with transpose) size
  * - shapes match for matrix multiplication
  *
  * @param[in] alpha
@@ -147,17 +148,17 @@ void MVDot(const Blob<Dtype>& A, const Blob<Dtype>& B,
 template <typename Dtype>
 void GEMM( Dtype alpha, Dtype beta, const Blob<Dtype>& A,
     const Blob<Dtype> & B, Blob<Dtype> * C) {
-  CHECK_EQ(A.shape().size(), 2);
-  CHECK_EQ(B.shape().size(), 2);
-  CHECK_EQ(C->shape().size(), 2);
+  CHECK_GE(A.shape().size(), 2);
+  CHECK_GE(B.shape().size(), 2);
+  CHECK_GE(C->shape().size(), 2);
   int a1, a2, b1, b2, m, n;
   CHECK(!C->transpose());
-  a1 = A.transpose() ? A.shape(1) : A.shape(0);
-  a2 = A.transpose() ? A.shape(0) : A.shape(1);
-  b1 = B.transpose() ? B.shape(1) : B.shape(0);
-  b2 = B.transpose() ? B.shape(0) : B.shape(1);
+  a1 = A.transpose() ? A.count() / A.shape(0) : A.shape(0);
+  a2 = A.transpose() ? A.shape(0) : A.count() / A.shape(0);
+  b1 = B.transpose() ? B.count() /B.shape(0) : B.shape(0);
+  b2 = B.transpose() ? B.shape(0) : B.count() / B.shape(0);
   m = C->shape(0);
-  n = C->shape(1);
+  n = C->count() / C->shape(0);
   CHECK_EQ(a2, b1);
   CHECK_EQ(a1, m);
   CHECK_EQ(b2, n);
@@ -560,7 +561,7 @@ void MVSumCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
         A.transpose(), false, B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    singa_gpu_sum_col(A.gpu_data(), B->gpu_data(), m, n, n);
+    singa_gpu_sum_by_col(A.gpu_data(), B->gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
 #endif  // USE_GPU
   }
@@ -585,7 +586,7 @@ void MVSumRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
       false, B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    singa_gpu_sum_vec(A.gpu_data(), B->gpu_data(), m, n, n);
+    singa_gpu_sum_by_row(A.gpu_data(), B->gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
 #endif  // USE_GPU
   }

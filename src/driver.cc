@@ -216,7 +216,7 @@ void Driver::Train(const JobProto& job_conf) {
     threads.push_back(std::thread(&Server::Run, server));
   int gpu = 0;
   auto context = Singleton<Context>::Instance();
-  CHECK_LE(workers.size(), job_conf.gpu_size());
+  // CHECK_LE(workers.size(), job_conf.gpu_size());
   for (auto worker : workers) {
     threads.push_back(std::thread(&Worker::Run, worker));
     if (gpu < job_conf.gpu_size()) {

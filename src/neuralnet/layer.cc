@@ -49,8 +49,8 @@ const std::string Layer::ToString(bool debug, int flag) {
   string ret = StringPrintf("Layer %10s ", name().c_str());
   if ((flag & kForward) == kForward && data_.count() !=0) {
     ret += StringPrintf("data norm1 %13.9f", Asum(data_));
-  } else if ((flag & kBackward) == kBackward) {
-    if (grad_.count() != 0)
+  }
+  if ((flag & kBackward) == kBackward && grad_.count() != 0) {
       ret += StringPrintf("grad norm1 %13.9f\n", Asum(grad_));
   }
   if ((flag & kTrain) == kTrain) {

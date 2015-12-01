@@ -21,6 +21,7 @@
 #include <cmath>
 #include <algorithm>
 #include "singa/utils/math_kernel.h"
+#include "mshadow/tensor.h"  //FLT_MIN?
 
 #define CU2DBLOCK_X 32
 #define CU2DBLOCK_Y 32
@@ -29,6 +30,29 @@
 #define CU1DBLOCKF 1024.0
 
 // Cuda Kernel Functions
+
+__global__
+void kernel_softmax_loss(const float *prob, const int *label ,
+	float *loss, int n, int dim) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+  for (; index < n; index += num_threads) {
+	const int label_value = static_cast<int>(label[index]);
+	float prob_of_truth = prob[index * dim + label_value];
+	loss[index] -= log(max(prob_of_truth, FLT_MIN));
+  }
+}
+
+__global__
+void kernel_softmax_gradient(float *grad, const int *label ,
+	int n, int dim, float scale) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+  for (; index < n; index += num_threads) {
+	int pos = index * dim + static_cast<int>(label[index]);
+	grad[pos] = (grad[pos] - 1.0f) * scale / (1.0 * n);
+  }
+}
 
 __global__
 void kernel_sum_vec(float *data, float *sum , int n) {
@@ -292,6 +316,18 @@ void kernel_threshold(const float *src_data, float *des_data,
 
 //
 namespace singa {
+
+void singa_gpu_softmax_loss(const float *prob, const int *label,
+	float *loss, int n, int dim) {
+  kernel_softmax_loss<<<ceil(n/CU1DBLOCKF), CU1DBLOCKF>>>
+	(prob, label, loss, n, dim);
+}
+
+void singa_gpu_softmax_gradient(float *grad, const int *label,
+	int n, int dim, float scale) {
+  kernel_softmax_gradient<<<ceil(n/CU1DBLOCKF), CU1DBLOCKF>>>
+	(grad, label, n, dim, scale);
+}
 
 void singa_gpu_sum_vec(float *data, float *sum , int n) {
   int threads_per_block = n > CU1DBLOCK ? CU1DBLOCK : n;
