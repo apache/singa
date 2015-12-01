@@ -66,7 +66,7 @@ fi
 if test x"$cudaval" = x"yes"; then
     CUDA_CFLAGS="-I$cuda_prefix/include"
     CUDA_LDFLAGS="-L$cuda_prefix/lib64 -L$cuda_prefix/lib"
-    CUDA_LIBS="-lcuda -lcudart -lcurand"
+    CUDA_LIBS="-lcublas -lcudart -lcurand"
     NVCC="nvcc"
 	DEBUG="-DUSE_GPU "
     AC_DEFINE(DCUDA,[1],[Defined if CUDA should be used])
