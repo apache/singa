@@ -22,28 +22,44 @@
 #ifndef SINGA_NEURALNET_CONNECTION_LAYER_BRIDGE_H_
 #define SINGA_NEURALNET_CONNECTION_LAYER_BRIDGE_H_
 
+#include <string>
+#include <unordered_map>
 #include <vector>
+#include "singa/comm/socket.h"
 #include "singa/neuralnet/layer.h"
 
 namespace singa {
-class BridgeLayer : virtual public ConnectionLayer {
+
+class BridgeLayer : public ConnectionLayer {
  public:
-  void set_ready(bool a) {
-    ready_ = a;
-  }
-  bool ready() const {
-    return ready_;
-  }
-  virtual bool is_bridgesrclayer() const {
-    return false;
-  }
-  virtual bool is_bridgedstlayer() const {
-    return false;
-  }
+  void set_ready(bool a) { ready_ = a; }
+  bool ready() const { return ready_; }
+  // Bind the layer with dealer instance by worker at runtime
+  void MakePaired(Layer* pair, int grp_id, Dealer* dealer,
+                  std::unordered_map<std::string, Layer*>* name2bridge);
+  // Send blobs to other workers due to model partitions
+  void SendBlobs(bool handle_data);
+  // Receive blobs from other workers due to model partitions;
+  void ReceiveBlobs(bool handle_data);
 
  protected:
   //!< true if received grad from BridgeDstLayer
-  bool ready_;
+  bool ready_ = false;
+  int group_id_ = 0;
+  Layer* pair_ = nullptr;
+  Dealer* dealer_ = nullptr;
+  std::unordered_map<std::string, Layer*>* name2bridge_ = nullptr;
+};
+
+/**
+ * For sending data to layer on other threads which may resident on other nodes
+ * due to layer/data partition.
+ */
+class BridgeSrcLayer : public BridgeLayer {
+ public:
+  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
 
 /**
@@ -53,48 +69,8 @@ class BridgeLayer : virtual public ConnectionLayer {
 class BridgeDstLayer : public BridgeLayer {
  public:
   void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override;
-  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override {
-    // reset ready_ for next iteration.
-    ready_ = false;
-  }
-  void ComputeGradient(int flag,  const vector<Layer*>& srclayers) override {}
-  bool is_bridgedstlayer() const {
-    return true;
-  }
-};
-
-/**
- * For sending data to layer on other threads which may resident on other nodes
- * due to layer/data partition.
- */
-class BridgeSrcLayer : public BridgeLayer {
- public:
-  void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) override {
-    CHECK_GE(srclayers.size(), 1);
-    srclayer_ = srclayers.at(0);
-  }
-  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override {}
-  void ComputeGradient(int flag,  const vector<Layer*>& srclayers) override {
-    ready_ = false;
-  }
-  const Blob<float>& data(const Layer* from) const override {
-    return srclayer_->data(this);
-  }
-  Blob<float>* mutable_data(const Layer* from) override {
-    return srclayer_->mutable_data(this);
-  }
-  const Blob<float>& grad(const Layer* from) const override {
-    return srclayer_->grad(this);
-  }
-  Blob<float>* mutable_grad(const Layer* from) override {
-    return srclayer_->mutable_grad(this);
-  }
-  bool is_bridgesrclayer() const override {
-    return true;
-  }
-
- private:
-  Layer* srclayer_;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
 
 }  // namespace singa

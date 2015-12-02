@@ -69,4 +69,4 @@ void DummyLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   }
 }
 
-} // namespace singa
+}  // namespace singa
