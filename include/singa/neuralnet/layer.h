@@ -69,6 +69,8 @@ class Layer {
    */
   virtual void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
     layer_conf_ = conf;
+    datavec_.push_back(&data_);
+    gradvec_.push_back(&grad_);
   }
   /**
    * Compute features of this layer based on connected layers.
@@ -178,16 +180,39 @@ class Layer {
    * more than one data Blob. In this case, this argument identifies the layer
    * that is requesting the data Blob.
    * @return a const ref for Blob storing feature values of this layer.
+   * @deprecated {This function will be deleted, use
+   * virtual const vector<Blob<float>>& data() const or
+   * virtual const Blob<float>& data(int k) const instead}.
    */
   virtual const Blob<float>& data(const Layer* from) const {
     return data_;
   }
   /**
+   * @return a const ref for Blob vector storing feature values of this layer.
+   */
+  virtual const vector<Blob<float>*>& data() const {
+    return datavec_;
+  }
+  /**
+   * @return a const ref for the kth Blob.
+   */
+  virtual const Blob<float>& data(int k) const {
+    return *datavec_.at(k);
+  }
+  /**
    * @see data().
    * @return the pointer to the Blob storing feature values of this layer.
+   * @deprecated {This function will be deleted, use
+   * virtual Blob<float>* mutable_data(int k) instead}.
    */
   virtual Blob<float>* mutable_data(const Layer* from) {
     return &data_;
+  }
+  /**
+   * @return the pointer to the kth Blob.
+   */
+  virtual Blob<float>* mutable_data(int k) {
+    return datavec_.at(k);
   }
   /**
    * @return auxiliary data, e.g., image label.
@@ -199,9 +224,25 @@ class Layer {
    * @see data().
    * @return the const ref of the Blob for the gradient of this layer, mainly
    * used in BP algorithm.
+   * @deprecated {This function will be deleted, use
+   * virtual const vector<Blob<float>>& grad() const or
+   * virtual const Blob<float>& grad(int k) const instead}.
    */
   virtual const Blob<float>& grad(const Layer* from) const {
     return grad_;
+  }
+  /**
+   * @see data().
+   * @return the const ref of the Blob vector for the gradient of this layer.
+   */
+  virtual const vector<Blob<float>*>& grad() const {
+    return gradvec_;
+  }
+  /**
+   * @return the const ref of the kth Blob for the gradient of this layer.
+   */
+  virtual const Blob<float>& grad(int k) const {
+    return *gradvec_.at(k);
   }
   /**
    * @see data().
@@ -211,11 +252,20 @@ class Layer {
   virtual Blob<float>* mutable_grad(const Layer* from) {
     return &grad_;
   }
+  /**
+   * @see data().
+   * @return a pointer to the kth Blob storing gradients of this layer, mainly
+   * used in BP algorithm.
+   */
+  virtual Blob<float>* mutable_grad(int k) {
+    return gradvec_.at(k);
+  }
 
  protected:
   LayerProto layer_conf_;
   Blob<float> data_, grad_;
   vector<AuxType> aux_data_;
+  vector<Blob<float>*> datavec_, gradvec_;
 };
 
 /**
