@@ -51,14 +51,102 @@ void Worker::Setup(int grp_id, int id, const JobProto& conf,
   train_net_ = train_net;
   val_net_ = val_net;
   test_net_ = test_net;
-  layer_dealer_ = dealer_ = nullptr;
+  bridge_dealer_ = dealer_ = nullptr;
 }
 
 Worker::~Worker() {
-  if (layer_dealer_)
-    delete layer_dealer_;
-  if (dealer_)
-    delete dealer_;
+  if (dealer_) delete dealer_;
+  if (bridge_dealer_) delete bridge_dealer_;
+}
+
+void Worker::Run() {
+  LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") start";
+  auto cluster = Cluster::Get();
+  int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
+  CHECK(cluster->runtime()->JoinSGroup(grp_id_, id_, svr_grp));
+  step_ = job_conf_.step();
+  InitSockets(train_net_);
+  InitNetParams(job_conf_, train_net_);
+  while (!StopNow(step_)) {
+    if (ValidateNow(step_) && val_net_ != nullptr) {
+      CollectAll(step_, val_net_);
+      LOG(ERROR) << "Validation @ step " + std::to_string(step_);
+      Test(job_conf_.validate_steps(), kVal, val_net_);
+    }
+    if (TestNow(step_) && test_net_ != nullptr) {
+      CollectAll(step_, test_net_);
+      LOG(ERROR) << "Test @ step " + std::to_string(step_);
+      Test(job_conf_.test_steps(), kTest, test_net_);
+    }
+    if (CheckpointNow(step_) && grp_id_ == 0) {
+      CollectAll(step_, train_net_);
+      Checkpoint(step_, Cluster::Get()->checkpoint_folder(), train_net_);
+      job_conf_.set_step(step_);
+    }
+    TrainOneBatch(step_, train_net_);
+    if (DisplayNow(step_) && grp_id_ == 0 && id_ == 0)
+      Display(kTrain, "Train @ step " + std::to_string(step_), train_net_);
+    step_++;
+  }
+
+  // save the model
+  if (grp_id_ == 0)
+    Checkpoint(step_, Cluster::Get()->checkpoint_folder(), train_net_);
+  // clean up
+  cluster->runtime()->LeaveSGroup(grp_id_, id_, svr_grp);
+  // notify the stub on worker stop
+  Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
+  msg->set_type(kStop);
+  dealer_->Send(&msg);  // use param dealer to send the stop msg
+  LOG(ERROR) << "Worker (group = " <<grp_id_ << ", id = " << id_ << ") stops";
+}
+
+void Worker::Test(int steps, Phase phase, NeuralNet* net) {
+  for (int step = 0; step < steps; step++)
+    TestOneBatch(step, phase, net);
+  Display(phase, " ", net);
+}
+
+void ConnectStub(int grp, int id, Dealer* dealer, EntityType entity) {
+  dealer->Connect(kInprocRouterEndpoint);
+  Msg* ping = new Msg(Addr(grp, id, entity), Addr(-1, -1, kStub));
+  ping->set_type(kConnect);
+  dealer->Send(&ping);
+}
+
+void Worker::InitSockets(const NeuralNet* net) {
+  // TODO(wangsh): provide a unique sock id from cluster
+  dealer_ = new Dealer(0);
+  ConnectStub(grp_id_, id_, dealer_, kWorkerParam);
+  for (auto layer : net->layers()) {
+    if (layer->partition_id() == id_) {
+      if (typeid(layer) == typeid(BridgeDstLayer)
+          || typeid(layer) == typeid(BridgeSrcLayer)) {
+        // TODO(wangsh): provide a unique socket id from cluster
+        bridge_dealer_ = new Dealer(1);
+        ConnectStub(grp_id_, id_, bridge_dealer_, kWorkerLayer);
+        break;
+      }
+    }
+  }
+  // bind dealer to bridge layers
+  if (bridge_dealer_ != nullptr) {
+    for (auto dst : net->layers()) {
+      if (typeid(dst) == typeid(BridgeDstLayer)) {
+        auto src = net->srclayers(dst)[0];
+        name2bridge_[src->name()] = src;
+        name2bridge_[dst->name()] = dst;
+        if (src->partition_id() == id_) {
+          dynamic_cast<BridgeLayer*>(src)->MakePaired(dst, grp_id_,
+              bridge_dealer_, &name2bridge_);
+        }
+        if (dst->partition_id() == id_) {
+          dynamic_cast<BridgeLayer*>(dst)->MakePaired(src, grp_id_,
+              bridge_dealer_, &name2bridge_);
+        }
+      }
+    }
+  }
 }
 
 void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
@@ -114,75 +202,6 @@ void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
       for (auto param : layer->GetParams())
         Get(job_conf.warmup_steps(), param);
   }
-}
-
-void ConnectStub(int grp, int id, Dealer* dealer, EntityType entity) {
-  dealer->Connect(kInprocRouterEndpoint);
-  Msg* ping = new Msg(Addr(grp, id, entity), Addr(-1, -1, kStub));
-  ping->set_type(kConnect);
-  dealer->Send(&ping);
-}
-
-void Worker::Test(int steps, Phase phase, NeuralNet* net) {
-  for (int step = 0; step < steps; step++)
-    TestOneBatch(step, phase, net);
-  Display(phase, " ", net);
-}
-
-void Worker::Run() {
-  LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") start";
-  auto cluster = Cluster::Get();
-  int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
-  CHECK(cluster->runtime()->JoinSGroup(grp_id_, id_, svr_grp));
-  // TODO(wangsh): provide a unique sock id from cluster
-  dealer_ = new Dealer(0);
-  ConnectStub(grp_id_, id_, dealer_, kWorkerParam);
-  for (auto layer : train_net_->layers()) {
-    if (layer->partition_id() == id_) {
-      if (typeid(layer) == typeid(BridgeDstLayer)
-          || typeid(layer) == typeid(BridgeSrcLayer)) {
-        // TODO(wangsh): provide a unique socket id from cluster
-        layer_dealer_ = new Dealer(1);
-        ConnectStub(grp_id_, id_, layer_dealer_, kWorkerLayer);
-        break;
-      }
-    }
-  }
-
-  step_ = job_conf_.step();
-  InitNetParams(job_conf_, train_net_);
-  while (!StopNow(step_)) {
-    if (ValidateNow(step_) && val_net_ != nullptr) {
-      CollectAll(step_, val_net_);
-      LOG(ERROR) << "Validation @ step " + std::to_string(step_);
-      Test(job_conf_.validate_steps(), kVal, val_net_);
-    }
-    if (TestNow(step_) && test_net_ != nullptr) {
-      CollectAll(step_, test_net_);
-      LOG(ERROR) << "Test @ step " + std::to_string(step_);
-      Test(job_conf_.test_steps(), kTest, test_net_);
-    }
-    if (CheckpointNow(step_) && grp_id_ == 0) {
-      CollectAll(step_, train_net_);
-      Checkpoint(step_, Cluster::Get()->checkpoint_folder(), train_net_);
-      job_conf_.set_step(step_);
-    }
-    TrainOneBatch(step_, train_net_);
-    if (DisplayNow(step_) && grp_id_ == 0 && id_ == 0)
-      Display(kTrain, "Train @ step " + std::to_string(step_), train_net_);
-    step_++;
-  }
-
-  // save the model
-  if (grp_id_ == 0)
-    Checkpoint(step_, Cluster::Get()->checkpoint_folder(), train_net_);
-  // clean up
-  cluster->runtime()->LeaveSGroup(grp_id_, id_, svr_grp);
-  // notify the stub on worker stop
-  Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
-  msg->set_type(kStop);
-  dealer_->Send(&msg);  // use param dealer to send the stop msg
-  LOG(ERROR) << "Worker (group = " <<grp_id_ << ", id = " << id_ << ") stops";
 }
 
 void Worker::Checkpoint(int step, const std::string& folder, NeuralNet* net) {
@@ -277,39 +296,6 @@ void Worker::Display(int flag, const std::string& prefix, NeuralNet* net) {
       }
     }
   }
-}
-
-void Worker::ReceiveBlobs(bool data, bool grad, BridgeLayer* layer,
-                          NeuralNet* net) {
-  if (layer_dealer_ == nullptr) {
-    LOG(ERROR) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
-  }
-  while (!layer->ready()) {
-    auto msg = layer_dealer_->Receive();
-    CHECK_EQ(AddrGrp(msg->src()), grp_id_);
-    string name(static_cast<char*>(msg->FrameData()), msg->FrameSize());
-    auto receive_layer = net->name2layer(name);
-    auto data = receive_layer->mutable_data(nullptr);
-    msg->NextFrame();
-    memcpy(data->mutable_cpu_data(), msg->FrameData(), msg->FrameSize());
-    dynamic_cast<BridgeLayer*>(receive_layer)->set_ready(true);
-    delete msg;
-  }
-}
-
-void Worker::SendBlobs(bool data, bool grad, BridgeLayer* layer,
-                       NeuralNet* net) {
-  if (layer_dealer_ == nullptr) {
-    LOG(ERROR) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
-  }
-  auto dst = net->srclayers(layer).at(0);
-  Msg *msg = new Msg();
-  msg->set_src(Addr(grp_id_, id_, kWorkerLayer));
-  msg->set_dst(Addr(grp_id_, dst->partition_id(), kWorkerLayer));
-  msg->AddFrame(dst->name().c_str(), dst->name().length());
-  auto const & blob = layer->data(nullptr);
-  msg->AddFrame(blob.cpu_data(), blob.count() * sizeof(float));
-  layer_dealer_->Send(&msg);
 }
 
 /****************************BPWorker**********************************/

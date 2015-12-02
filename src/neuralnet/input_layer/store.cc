@@ -32,6 +32,7 @@ void StoreInputLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   InputLayer::Setup(conf, srclayers);
   batchsize_ = conf.store_conf().batchsize();
+  data_.resize(1);
   if (conf.partition_dim() == 0) {
     batchsize_ /= conf.num_partitions();
   }
@@ -69,9 +70,10 @@ void SingleLabelRecordLayer::Setup(const LayerProto& conf,
   StoreInputLayer::Setup(conf, srclayers);
 
   vector<int> shape {batchsize_};
+  data_.resize(1);
   for (int s : conf.store_conf().shape())
     shape.push_back(s);
-  data_.Reshape(shape);
+  data_.at(0).Reshape(shape);
   aux_data_.resize(batchsize_);
 }
 void SingleLabelRecordLayer::ComputeFeature(int flag,
@@ -80,28 +82,28 @@ void SingleLabelRecordLayer::ComputeFeature(int flag,
 
   auto& store_conf = layer_conf_.store_conf();
   if (store_conf.has_mean_file() && mean_.count() == 0) {
-    mean_.Reshape(vector<int>{data_.count() / batchsize_});
+    mean_.Reshape(vector<int>{data_.at(0).count() / batchsize_});
     LoadRecord(store_conf.backend(), store_conf.mean_file(), &mean_);
   } else if (store_conf.has_mean_value() && mean_.count() == 0) {
-    mean_.Reshape(vector<int>{data_.count() / batchsize_});
-    for (int i = 0; i < data_.count() / batchsize_; i++)
+    mean_.Reshape(vector<int>{data_.at(0).count() / batchsize_});
+    for (int i = 0; i < data_.at(0).count() / batchsize_; i++)
       mean_.mutable_cpu_data()[i] = store_conf.mean_value();
   }
   if (store_conf.has_std_file() && std_.count() == 0) {
-    std_.Reshape(vector<int>{data_.count() / batchsize_});
+    std_.Reshape(vector<int>{data_.at(0).count() / batchsize_});
     LoadRecord(store_conf.backend(), store_conf.std_file(), &std_);
     // TODO(wangwei) check std[i] != 0
   } else if (store_conf.has_std_value() && std_.count() == 0) {
-    std_.Reshape(vector<int>{data_.count() / batchsize_});
+    std_.Reshape(vector<int>{data_.at(0).count() / batchsize_});
     CHECK_NE(store_conf.std_value(), 0);
-    for (int i = 0; i < data_.count() / batchsize_; i++)
+    for (int i = 0; i < data_.at(0).count() / batchsize_; i++)
       std_.mutable_cpu_data()[i] = store_conf.std_value();
   }
 
   if (mean_.count()) {
     const float* mean = mean_.cpu_data();
     for (int k = 0; k < batchsize_; k++) {
-      float* dptr = data_.mutable_cpu_data() + k * mean_.count();
+      float* dptr = data_.at(0).mutable_cpu_data() + k * mean_.count();
       for (int i = 0; i < mean_.count(); i++) {
         dptr[i] -= mean[i];
       }
@@ -110,7 +112,7 @@ void SingleLabelRecordLayer::ComputeFeature(int flag,
   if (std_.count()) {
     const float* std = std_.cpu_data();
     for (int k = 0; k < batchsize_; k++) {
-      float* dptr = data_.mutable_cpu_data() + k * std_.count();
+      float* dptr = data_.at(0).mutable_cpu_data() + k * std_.count();
       for (int i = 0; i < std_.count(); i++) {
         dptr[i] /= std[i];
       }

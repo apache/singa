@@ -34,11 +34,14 @@ class RBMLayer: virtual public Layer {
  public:
   virtual ~RBMLayer() {}
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
-  const Blob<float>& neg_data(const Layer* layer) {
-    return neg_data_;
+  const vector<Blob<float>>& data() const override{
+    return data_;
   }
-  Blob<float>* mutable_neg_data(const Layer* layer) {
-    return &neg_data_;
+  const Blob<float>& data(int k) const override{
+    return data_.at(k);
+  }
+  Blob<float>* mutable_data(int k) override{
+    return &data_.at(k);
   }
   const std::vector<Param*> GetParams() const override {
     std::vector<Param*> params{weight_, bias_};
@@ -56,10 +59,6 @@ class RBMLayer: virtual public Layer {
   int batchsize_;
   bool first_gibbs_;
   Param* weight_, *bias_;
-
-  Blob<float> neg_data_;
-  Blob<float> neg_sample_;
-  Blob<float> sample_;
 };
 
 /**

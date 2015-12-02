@@ -31,18 +31,19 @@ using std::vector;
 void STanhLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   Layer::Setup(conf, srclayers);
-  data_.ReshapeLike(srclayers[0]->data(this));
+  data_.resize(1);
+  data_.at(0).ReshapeLike(srclayers[0]->data(this));
   grad_.ReshapeLike(srclayers[0]->grad(this));
 }
 
 void STanhLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
-  auto data = Tensor1(&data_);
+  auto data = Tensor1(&data_.at(0));
   auto src = Tensor1(srclayers[0]->mutable_data(this));
   data = expr::F<op::stanh>(src);
 }
 
 void STanhLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
-  auto data = Tensor1(&data_);
+  auto data = Tensor1(&data_.at(0));
   auto grad = Tensor1(&grad_);
   auto gsrc = Tensor1(srclayers[0]->mutable_grad(this));
   gsrc = expr::F<op::stanh_grad>(data) * grad;

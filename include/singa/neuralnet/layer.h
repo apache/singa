@@ -178,16 +178,38 @@ class Layer {
    * more than one data Blob. In this case, this argument identifies the layer
    * that is requesting the data Blob.
    * @return a const ref for Blob storing feature values of this layer.
+   * @deprecated {This function will be deleted, use
+   * virtual const Blob<float>& data(int k) const instead}.
    */
   virtual const Blob<float>& data(const Layer* from) const {
+    return data_.at(0);
+  }
+  /**
+   * @return a const ref for Blob vector storing feature values of this layer.
+   */
+  virtual const vector<Blob<float>>& data() const {
     return data_;
+  }
+  /**
+   * @return a const ref for the kth Blob.
+   */
+  virtual const Blob<float>& data(int k) const {
+    return data_.at(k);
   }
   /**
    * @see data().
    * @return the pointer to the Blob storing feature values of this layer.
+   * @deprecated {This function will be deleted, use
+   * virtual Blob<float>* mutable_data(const Layer* from) instead}.
    */
   virtual Blob<float>* mutable_data(const Layer* from) {
-    return &data_;
+    return &data_.at(0);
+  }
+  /**
+   * @return the pointer to the kth Blob.
+   */
+  virtual Blob<float>* mutable_data(int k) {
+    return &data_.at(k);
   }
   /**
    * @return auxiliary data, e.g., image label.
@@ -214,8 +236,9 @@ class Layer {
 
  protected:
   LayerProto layer_conf_;
-  Blob<float> data_, grad_;
+  Blob<float> grad_;
   vector<AuxType> aux_data_;
+  vector<Blob<float>> data_;
 };
 
 /**

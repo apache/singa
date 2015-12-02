@@ -42,6 +42,7 @@ void ShardDataLayer::Setup(const LayerProto& proto,
   Layer::Setup(proto, srclayers);
   shard_ = new DataShard(proto.sharddata_conf().path(), DataShard::kRead);
   string key;
+  data_.resize(1);
   shard_->Next(&key, &sample_);
   delete shard_;
   shard_ = nullptr;
@@ -97,6 +98,7 @@ void LMDBDataLayer::Setup(const LayerProto& proto,
   SingleLabelImageRecord* record = sample_.mutable_image();
   ConvertCaffeDatumToRecord(datum, record);
   batchsize_ = proto.lmdbdata_conf().batchsize();
+  data_.resize(1);
   if (partition_dim() == 0)
     batchsize_ /= proto.num_partitions();
   records_.resize(batchsize_);
@@ -187,7 +189,7 @@ void LMDBDataLayer::ConvertCaffeDatumToRecord(const CaffeDatum& datum,
 void ParserLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 1);
   auto datalayer = dynamic_cast<DataLayer*>(*srclayers.begin());
-  ParseRecords(flag, datalayer->records(), &data_);
+  ParseRecords(flag, datalayer->records(), &data_.at(0));
 }
 
 /**********Mnist Layer************/
@@ -237,14 +239,15 @@ void MnistLayer::Setup(const LayerProto& proto,
   CHECK_GE(ndim, 2);
   int s = sample.image().shape(ndim - 1);
   CHECK_EQ(s, sample.image().shape(ndim - 2));
-  data_.Reshape(vector<int>{batchsize, 1, s, s});
+  data_.resize(1);
+  data_.at(0).Reshape(vector<int>{batchsize, 1, s, s});
 }
 
 /**********RGB image layer****************/
 void RGBImageLayer::ParseRecords(int flag, const vector<Record>& records,
     Blob<float>* blob) {
   const vector<int>& s = blob->shape();
-  Tensor<cpu, 4> images(data_.mutable_cpu_data(),
+  Tensor<cpu, 4> images(data_.at(0).mutable_cpu_data(),
       Shape4(s[0], s[1], s[2], s[3]));
   const SingleLabelImageRecord& r = records.at(0).image();
   Tensor<cpu, 3> raw_image(Shape3(r.shape(0), r.shape(1), r.shape(2)));
@@ -314,7 +317,8 @@ void RGBImageLayer::Setup(const LayerProto& proto,
     shape[2] = cropsize_;
     shape[3] = cropsize_;
   }
-  data_.Reshape(shape);
+  data_.resize(1);
+  data_.at(0).Reshape(shape);
   mean_.Reshape({shape[1], shape[2], shape[3]});
   if (proto.rgbimage_conf().has_meanfile()) {
     if (proto.rgbimage_conf().meanfile().find("binaryproto") != string::npos) {
@@ -342,7 +346,8 @@ void LabelLayer::Setup(const LayerProto& proto,
   Layer::Setup(proto, srclayers);
   CHECK_EQ(srclayers.size(), 1);
   int batchsize = dynamic_cast<DataLayer*>(srclayers[0])->batchsize();
-  data_.Reshape(vector<int>{batchsize});
+  data_.resize(1);
+  data_.at(0).Reshape(vector<int>{batchsize});
 }
 
 void LabelLayer::ParseRecords(int flag, const vector<Record>& records,

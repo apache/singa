@@ -29,6 +29,7 @@ void RecordInputLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   SingleLabelRecordLayer::Setup(conf, srclayers);
   encoded_ = conf.store_conf().encoded();
+  data_.resize(1);
 }
 
 void RecordInputLayer::LoadRecord(const string& backend,
@@ -49,15 +50,15 @@ bool RecordInputLayer::Parse(int k, int flag, const string& key,
     const string& value) {
   RecordProto image;
   image.ParseFromString(value);
-  int size = data_.count() / batchsize_;
+  int size = data_.at(0).count() / batchsize_;
   if (image.data_size()) {
     CHECK_EQ(size, image.data_size());
-    float* ptr = data_.mutable_cpu_data() + k * size;
+    float* ptr = data_.at(0).mutable_cpu_data() + k * size;
     for (int i = 0; i< size; i++)
       ptr[i] = image.data(i);
   } else if (image.pixel().size()) {
     CHECK_EQ(size, image.pixel().size());
-    float* ptr = data_.mutable_cpu_data() + k * size;
+    float* ptr = data_.at(0).mutable_cpu_data() + k * size;
     string pixel = image.pixel();
     for (int i = 0; i < size; i++)
       ptr[i] =  static_cast<float>(static_cast<uint8_t>(pixel[i]));

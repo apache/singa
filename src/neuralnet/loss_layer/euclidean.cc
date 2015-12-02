@@ -38,6 +38,7 @@ void EuclideanLossLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 2);
   Layer::Setup(conf, srclayers);
+  data_.resize(1);
 }
 
 void EuclideanLossLayer::ComputeFeature(int flag,

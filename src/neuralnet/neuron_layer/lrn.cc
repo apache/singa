@@ -37,7 +37,8 @@ void LRNLayer::Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
   alpha_ = conf.lrn_conf().alpha();
   beta_ = conf.lrn_conf().beta();
   const vector<int>& s = srclayers[0]->data(this).shape();
-  data_.Reshape(s);
+  data_.resize(1);
+  data_.at(0).Reshape(s);
   grad_.Reshape(s);
   norm_.Reshape(s);
   batchsize_ = s[0];
@@ -49,7 +50,7 @@ void LRNLayer::Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
 void LRNLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   const float salpha = alpha_ / lsize_;
   auto src = Tensor4(srclayers[0]->mutable_data(this));
-  auto data = Tensor4(&data_);
+  auto data = Tensor4(&data_.at(0));
   auto norm = Tensor4(&norm_);
   // stores normalizer without power
   norm = expr::chpool<red::sum>(expr::F<op::square>(src), lsize_) * salpha

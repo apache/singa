@@ -31,14 +31,15 @@ void ArgSortLayer::Setup(const LayerProto& proto,
   batchsize_ = srclayers[0]->data(this).shape()[0];
   dim_ = srclayers[0]->data(this).count() / batchsize_;
   topk_ = proto.argsort_conf().topk();
-  data_.Reshape(vector<int>{batchsize_, topk_});
+  data_.resize(1);
+  data_.at(0).Reshape(vector<int>{batchsize_, topk_});
 }
 
 void ArgSortLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   // TODO(wangwei) check flag to ensure it is not called in training phase
   const float* srcptr = srclayers.at(0)->data(this).cpu_data();
-  float* ptr = data_.mutable_cpu_data();
+  float* ptr = data_.at(0).mutable_cpu_data();
   for (int n = 0; n < batchsize_; n++) {
     vector<std::pair<float, int> > vec;
     for (int j = 0; j < dim_; ++j)

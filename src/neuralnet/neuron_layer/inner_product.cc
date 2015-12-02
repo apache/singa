@@ -44,8 +44,9 @@ void InnerProductLayer::Setup(const LayerProto& conf,
   transpose_ = conf.innerproduct_conf().transpose();
   if (partition_dim() > 0)
     hdim_ /= srclayers.at(0)->num_partitions();
-  data_.Reshape(vector<int>{batchsize_, hdim_});
-  grad_.ReshapeLike(data_);
+  data_.resize(1);
+  data_.at(0).Reshape(vector<int>{batchsize_, hdim_});
+  grad_.ReshapeLike(data_.at(0));
   weight_ = Param::Create(conf.param(0));
   bias_ = Param::Create(conf.param(1));
   if (transpose_)
@@ -57,7 +58,7 @@ void InnerProductLayer::Setup(const LayerProto& conf,
 
 void InnerProductLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  auto data = Tensor2(&data_);
+  auto data = Tensor2(&data_.at(0));
   auto src = Tensor2(srclayers[0]->mutable_data(this));
   auto weight = Tensor2(weight_->mutable_data());
   auto bias = Tensor1(bias_->mutable_data());

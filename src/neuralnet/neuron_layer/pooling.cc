@@ -53,14 +53,15 @@ void PoolingLayer::Setup(const LayerProto& conf,
   batchsize_ = srcshape[0];
   pooled_height_ = static_cast<int>((height_ - kernel_) / stride_) + 1;
   pooled_width_ = static_cast<int>((width_ - kernel_) / stride_) + 1;
-  data_.Reshape(vector<int>{batchsize_, channels_, pooled_height_,
+  data_.resize(1);
+  data_.at(0).Reshape(vector<int>{batchsize_, channels_, pooled_height_,
                             pooled_width_});
-  grad_.ReshapeLike(data_);
+  grad_.ReshapeLike(data_.at(0));
 }
 
 void PoolingLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   auto src = Tensor4(srclayers[0]->mutable_data(this));
-  auto data = Tensor4(&data_);
+  auto data = Tensor4(&data_.at(0));
   if (pool_ == PoolingProto_PoolMethod_MAX)
     data = expr::pool<red::maximum>(src, kernel_, stride_);
   else if (pool_ == PoolingProto_PoolMethod_AVG)
@@ -75,7 +76,7 @@ void PoolingLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
 void PoolingLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   auto src = Tensor4(srclayers[0]->mutable_data(this));
   auto gsrc = Tensor4(srclayers[0]->mutable_grad(this));
-  auto data = Tensor4(&data_);
+  auto data = Tensor4(&data_.at(0));
   auto grad = Tensor4(&grad_);
   if (pool_ == PoolingProto_PoolMethod_MAX)
     gsrc = expr::unpool<red::maximum>(src, data, grad, kernel_, stride_);
@@ -90,17 +91,17 @@ void CPoolingLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   PoolingLayer::Setup(conf, srclayers);
   if (pool_ == PoolingProto_PoolMethod_MAX)
-      mask_.ReshapeLike(data_);
+      mask_.ReshapeLike(data_.at(0));
 }
 void CPoolingLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (pool_ == PoolingProto_PoolMethod_MAX)
     ForwardMaxPooling(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
         batchsize_, channels_, height_, width_, kernel_, kernel_, pad_, pad_,
-        stride_, stride_, data_.mutable_cpu_data(), mask_.mutable_cpu_data());
+        stride_, stride_, data_.at(0).mutable_cpu_data(), mask_.mutable_cpu_data());
   else if (pool_ == PoolingProto_PoolMethod_AVG)
     ForwardAvgPooling(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
         batchsize_, channels_, height_, width_, kernel_, kernel_, pad_, pad_,
-        stride_, stride_, data_.mutable_cpu_data());
+        stride_, stride_, data_.at(0).mutable_cpu_data());
   else
     LOG(FATAL) << "unknow pooling method";
 }

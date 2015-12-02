@@ -36,10 +36,11 @@ void ImagePreprocessLayer::Setup(const LayerProto& conf,
   const auto& shape = src.shape();
   CHECK_EQ(shape.size(), 4);
   CHECK_EQ(shape.at(2), shape.at(3));
+  data_.resize(1);
   if (cropsize_ != 0 && cropsize_ != shape.at(2)) {
-    data_.Reshape(vector<int>{shape.at(0), shape.at(1), cropsize_, cropsize_});
+    data_.at(0).Reshape(vector<int>{shape.at(0), shape.at(1), cropsize_, cropsize_});
   } else {
-    data_ = src;
+    data_.at(0) = src;
   }
 }
 
@@ -49,9 +50,9 @@ void ImagePreprocessLayer::ComputeFeature(int flag,
   int batchsize = srcdata.shape()[0], channel = srcdata.shape()[1];
   int height = srcdata.shape()[2], width = srcdata.shape()[3];
   const float* srcdptr = srcdata.cpu_data();
-  float* dptr = data_.mutable_cpu_data();
+  float* dptr = data_.at(0).mutable_cpu_data();
   int srcimage_size = channel * height * width;
-  int image_size = channel * data_.shape()[2] * data_.shape()[3];
+  int image_size = channel * data_.at(0).shape()[2] * data_.at(0).shape()[3];
   for (int k = 0; k < batchsize; k++) {
     int h_offset = 0, w_offset = 0;
     if (cropsize_> 0 && ((flag & kTrain) == kTrain)) {

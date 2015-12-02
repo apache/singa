@@ -61,7 +61,8 @@ void DataLayer::Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
   RNNLayer::Setup(conf, srclayers);
   string key;
   max_window_ = conf.GetExtension(data_conf).max_window();
-  data_.Reshape(vector<int>{max_window_ + 1, 4});
+  data_.resize(1);
+  data_.at(0).Reshape(vector<int>{max_window_ + 1, 4});
   window_ = 0;
 }
 
@@ -90,9 +91,9 @@ void DataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
         singa::io::kRead);
     store_->Read(&key, &value);
     word.ParseFromString(value);
-    SetInst(0, word, &data_);
+    SetInst(0, word, &data_.at(0));
   }
-  ShiftInst(window_, 0, &data_);
+  ShiftInst(window_, 0, &data_.at(0));
   window_ = max_window_;
   for (int i = 1; i <= max_window_; i++) {
     if (!store_->Read(&key, &value)) {
@@ -100,7 +101,7 @@ void DataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
       CHECK(store_->Read(&key, &value));
     }
     word.ParseFromString(value);
-    SetInst(i, word, &data_);
+    SetInst(i, word, &data_.at(0));
     if (word.word_index() == 0) {
       window_ = i;
       break;
@@ -142,8 +143,9 @@ void EmbeddingLayer::Setup(const LayerProto& conf,
   CHECK_EQ(srclayers.size(), 1);
   int max_window = srclayers[0]->data(this).shape()[0];
   word_dim_ = conf.GetExtension(embedding_conf).word_dim();
-  data_.Reshape(vector<int>{max_window, word_dim_});
-  grad_.ReshapeLike(data_);
+  data_.resize(1);
+  data_.at(0).Reshape(vector<int>{max_window, word_dim_});
+  grad_.ReshapeLike(data_.at(0));
   vocab_size_ = conf.GetExtension(embedding_conf).vocab_size();
   embed_ = Param::Create(conf.param(0));
   embed_->Setup(vector<int>{vocab_size_, word_dim_});
@@ -152,7 +154,7 @@ void EmbeddingLayer::Setup(const LayerProto& conf,
 void EmbeddingLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   auto datalayer = dynamic_cast<DataLayer*>(srclayers[0]);
   window_ = datalayer->window();
-  auto words = RTensor2(&data_);
+  auto words = RTensor2(&data_.at(0));
   auto embed = RTensor2(embed_->mutable_data());
 
   const float* idxptr = datalayer->data(this).cpu_data();
@@ -186,9 +188,10 @@ void HiddenLayer::Setup(const LayerProto& conf,
   RNNLayer::Setup(conf, srclayers);
   CHECK_EQ(srclayers.size(), 1);
   const auto& innerproductData = srclayers[0]->data(this);
-  data_.ReshapeLike(srclayers[0]->data(this));
+  data_.resize(1);
+  data_.at(0).ReshapeLike(srclayers[0]->data(this));
   grad_.ReshapeLike(srclayers[0]->grad(this));
-  int word_dim = data_.shape()[1];
+  int word_dim = data_.at(0).shape()[1];
   weight_ = Param::Create(conf.param(0));
   weight_->Setup(std::vector<int>{word_dim, word_dim});
 }
@@ -196,7 +199,7 @@ void HiddenLayer::Setup(const LayerProto& conf,
 // hid[t] = sigmoid(hid[t-1] * W + src[t])
 void HiddenLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   window_ = dynamic_cast<RNNLayer*>(srclayers[0])->window();
-  auto data = RTensor2(&data_);
+  auto data = RTensor2(&data_.at(0));
   auto src = RTensor2(srclayers[0]->mutable_data(this));
   auto weight = RTensor2(weight_->mutable_data());
   for (int t = 0; t < window_; t++) {  // Skip the 1st component
@@ -211,13 +214,13 @@ void HiddenLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
 }
 
 void HiddenLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
-  auto data = RTensor2(&data_);
+  auto data = RTensor2(&data_.at(0));
   auto grad = RTensor2(&grad_);
   auto weight = RTensor2(weight_->mutable_data());
   auto gweight = RTensor2(weight_->mutable_grad());
   auto gsrc = RTensor2(srclayers[0]->mutable_grad(this));
   gweight = 0;
-  TensorContainer<cpu, 1> tmp(Shape1(data_.shape()[1]));
+  TensorContainer<cpu, 1> tmp(Shape1(data_.at(0).shape()[1]));
   // Check!!
   for (int t = window_ - 1; t >= 0; t--) {
     if (t < window_ - 1) {
@@ -239,6 +242,7 @@ LossLayer::~LossLayer() {
 void LossLayer::Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
   RNNLayer::Setup(conf, srclayers);
   CHECK_EQ(srclayers.size(), 2);
+  data_.resize(1);
   const auto& src = srclayers[0]->data(this);
   int max_window = src.shape()[0];
   int vdim = src.count() / max_window;   // Dimension of input

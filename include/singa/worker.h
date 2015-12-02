@@ -23,6 +23,7 @@
 #define SINGA_WORKER_H_
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "singa/comm/socket.h"
 #include "singa/neuralnet/neuralnet.h"
@@ -78,7 +79,6 @@ class Worker {
    */
   virtual void Setup(int grp_id, int id, const JobProto& conf,
       NeuralNet* train_net, NeuralNet* val_net, NeuralNet* test_net);
-
   /**
    * Main function of Worker.
    *
@@ -93,6 +93,17 @@ class Worker {
    * @param[in] net run test over the passed in neural net
    */
   void Test(int steps, Phase phase, NeuralNet* net);
+  /**
+   * Init sockets in a worker, including:
+   * 1. a global socket communicates with stub
+   * 2. a bridge socket dedicated for bridge layer communications
+   *
+   * the bridge socket will be binded to each bridge layer
+   *
+   * @param[in] net pointer to a neural net whose bridge layer will be binded
+   * with a socket.
+   */
+  void InitSockets(const NeuralNet* net);
   /**
    * Init values of Param instances assocaited with local layers (i.e., layers
    * dispatched to this worker).
@@ -118,7 +129,6 @@ class Worker {
    * initialized.
    */
   void InitNetParams(const JobProto& job_conf, NeuralNet* net);
-
   /**
    * Checkpoint all Param objects owned by the worker onto disk.
    * The serialization is done using BlobProtos which includes the name, version
@@ -130,7 +140,6 @@ class Worker {
    * @param net the training net whose Param objects will be dumped.
    */
   void Checkpoint(int step, const std::string& folder, NeuralNet* net);
-
   /**
     * Train one mini-batch.
     * Test/Validation is done before training.
@@ -139,7 +148,6 @@ class Worker {
     * @param[in] net neural net to be trained.
     */
   virtual void TrainOneBatch(int step, NeuralNet* net) = 0;
-
   /**
    * Test/validate one mini-batch data.
    *
@@ -148,7 +156,6 @@ class Worker {
    * @param[in] net neural net for test
    */
   virtual void TestOneBatch(int step, Phase phase, NeuralNet* net) = 0;
-
   /**
    * Display infomation from layers.
    *
@@ -159,7 +166,6 @@ class Worker {
    * @param net display layers from this neural net.
    */
   void Display(int flag, const std::string& prefix, NeuralNet* net);
-
   /**
    * Put Param values to server.
    *
@@ -167,7 +173,6 @@ class Worker {
    * @param step used as current param version for the put request
    */
   int Put(int step, Param* param);
-
   /**
    * Get Param with specific version from server
    * If the current version >= the requested version, then return.
@@ -176,7 +181,6 @@ class Worker {
    * @param step requested param version
    */
   int Get(int step, Param* param);
-
   /**
    * Update Param.
    *
@@ -184,7 +188,6 @@ class Worker {
    * @param step training step used for updating (e.g., deciding learning rate).
    */
   int Update(int step, Param* param);
-
   /**
    * Wait for the response of the update/get requests.
    *
@@ -192,23 +195,10 @@ class Worker {
    * @param step not used now.
    */
   int Collect(int step, Param* param);
-
   /**
    * Call Collect() for every param of net
    */
   int CollectAll(int step, NeuralNet* net);
-
-  /**
-   * Receive blobs from other workers due to model partitions.
-   */
-  void ReceiveBlobs(bool data, bool grad, BridgeLayer* layer, NeuralNet* net);
-
-  /**
-   * Send blobs to other workers due to model partitions.
-   */
-  void SendBlobs(bool data, bool grad, BridgeLayer* layer, NeuralNet* net);
-
-
   /**
    * @param[in] step
    * @return true if it is time to display training info, e.g., loss; otherwise
@@ -284,8 +274,10 @@ class Worker {
   NeuralNet* train_net_ = nullptr;
   NeuralNet* test_net_ = nullptr;
   NeuralNet* val_net_ = nullptr;
-  Dealer* layer_dealer_ = nullptr;
   Dealer* dealer_ = nullptr;
+  // bridge layer related
+  Dealer* bridge_dealer_ = nullptr;
+  std::unordered_map<std::string, Layer*> name2bridge_;
 };
 
 class BPWorker: public Worker {

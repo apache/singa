@@ -26,6 +26,7 @@ void CSVOutputLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   OutputLayer::Setup(conf, srclayers);
   CHECK_EQ(srclayers.size(), 1);
+  data_.resize(1);
 }
 
 void CSVOutputLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {

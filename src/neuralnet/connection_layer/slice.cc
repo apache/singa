@@ -48,6 +48,7 @@ void SliceLayer::Setup(const LayerProto& conf,
     // LOG(ERROR)<<"slice "<<IntVecToString(newshape);
   }
   */
+  data_.resize(1);
   LOG(FATAL) << "Not implemented";
 }
 

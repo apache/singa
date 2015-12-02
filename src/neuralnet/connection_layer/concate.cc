@@ -40,7 +40,8 @@ void ConcateLayer::Setup(const LayerProto& conf,
       else
         CHECK_EQ(shape[j], srcshape[j]);
   }
-  data_.Reshape(shape);
+  data_.resize(1);
+  data_.at(0).Reshape(shape);
   grad_.Reshape(shape);
 }
 

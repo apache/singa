@@ -59,7 +59,8 @@ void ConvolutionLayer::Setup(const LayerProto& conf,
   col_height_ = channels_ * kernel_ * kernel_;
   col_width_ = conv_height_ * conv_width_;
   vector<int> shape{batchsize_, num_filters_, conv_height_, conv_width_};
-  data_.Reshape(shape);
+  data_.resize(1);
+  data_.at(0).Reshape(shape);
   grad_.Reshape(shape);
   col_data_.Reshape(vector<int>{col_height_, col_width_});
   col_grad_.Reshape(vector<int>{col_height_, col_width_});
@@ -72,7 +73,7 @@ void ConvolutionLayer::Setup(const LayerProto& conf,
 void ConvolutionLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   auto src = Tensor4(srclayers[0]->mutable_data(this));
-  auto data = Tensor3(&data_);
+  auto data = Tensor3(&data_.at(0));
   auto col = Tensor2(&col_data_);
   auto weight = Tensor2(weight_->mutable_data());
   auto bias = Tensor1(bias_->mutable_data());
@@ -123,7 +124,7 @@ void ConvolutionLayer::ComputeGradient(int flag,
 void CConvolutionLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   auto src = Tensor4(srclayers[0]->mutable_data(this));
-  auto data = Tensor3(&data_);
+  auto data = Tensor3(&data_.at(0));
   auto col = Tensor2(&col_data_);
   auto weight = Tensor2(weight_->mutable_data());
   auto bias = Tensor1(bias_->mutable_data());

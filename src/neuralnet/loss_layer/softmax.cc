@@ -41,9 +41,10 @@ void SoftmaxLossLayer::Setup(const LayerProto& proto,
     const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 2);
   LossLayer::Setup(proto, srclayers);
-  data_.Reshape(srclayers[0]->data(this).shape());
-  batchsize_ = data_.shape()[0];
-  dim_ = data_.count() / batchsize_;
+  data_.resize(1);
+  data_.at(0).Reshape(srclayers[0]->data(this).shape());
+  batchsize_ = data_.at(0).shape()[0];
+  dim_ = data_.at(0).count() / batchsize_;
   topk_ = proto.softmaxloss_conf().topk();
   scale_ = proto.softmaxloss_conf().scale();
 }
@@ -51,7 +52,7 @@ void SoftmaxLossLayer::Setup(const LayerProto& proto,
 void SoftmaxLossLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   Shape<2> s = Shape2(batchsize_, dim_);
-  Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);
+  Tensor<cpu, 2> prob(data_.at(0).mutable_cpu_data(), s);
   Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
   Softmax(prob, src);
   const auto& label = srclayers[1]->aux_data(this);
@@ -87,7 +88,7 @@ void SoftmaxLossLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
   const auto& label = srclayers[1]->aux_data();
   Blob<float>* gsrcblob = srclayers[0]->mutable_grad(this);
-  gsrcblob->CopyFrom(data_);
+  gsrcblob->CopyFrom(data_.at(0));
   float* gsrcptr = gsrcblob->mutable_cpu_data();
   for (int n = 0; n < batchsize_; n++) {
     gsrcptr[n*dim_ + static_cast<int>(label[n])] -= 1.0f;

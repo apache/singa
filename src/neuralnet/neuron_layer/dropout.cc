@@ -30,7 +30,8 @@ using std::vector;
 void DropoutLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   Layer::Setup(conf, srclayers);
-  data_.ReshapeLike(srclayers[0]->data(this));
+  data_.resize(1);
+  data_.at(0).ReshapeLike(srclayers[0]->data(this));
   grad_.ReshapeLike(*srclayers[0]->mutable_grad(this));
   mask_.Reshape(srclayers[0]->data(this).shape());
   pdrop_ = conf.dropout_conf().dropout_ratio();
@@ -39,14 +40,14 @@ void DropoutLayer::Setup(const LayerProto& conf,
 void DropoutLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   // check training
   if ((flag & kTrain) != kTrain) {
-    data_.CopyFrom(srclayers[0]->data(this));
+    data_.at(0).CopyFrom(srclayers[0]->data(this));
     return;
   }
   float pkeep = 1 - pdrop_;
   auto mask = Tensor1(&mask_);
   mask = expr::F<op::threshold>(TSingleton<Random<cpu>>::Instance() \
                       ->uniform(mask.shape), pkeep) * (1.0f/pkeep);
-  auto data = Tensor1(&data_);
+  auto data = Tensor1(&data_.at(0));
   auto src = Tensor1(srclayers[0]->mutable_data(this));
   data = src * mask;
 }

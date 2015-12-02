@@ -28,6 +28,7 @@ void CSVInputLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   SingleLabelRecordLayer::Setup(conf, srclayers);
   sep_ = conf.store_conf().separator();
+  data_.resize(1);
 }
 
 void CSVInputLayer::LoadRecord(const string& backend,
@@ -48,7 +49,7 @@ void CSVInputLayer::LoadRecord(const string& backend,
 
 bool CSVInputLayer::Parse(int k, int flag, const string& key,
     const string& value) {
-  float* ptr = data_.mutable_cpu_data() + k * data_.count() / batchsize_;
+  float* ptr = data_.at(0).mutable_cpu_data() + k * data_.at(0).count() / batchsize_;
   Tokenizer t(value, sep_);
   string x;
   // parse label if not deploy phase and has_label is set.
@@ -56,7 +57,7 @@ bool CSVInputLayer::Parse(int k, int flag, const string& key,
     t >> x;
     aux_data_[k] = stoi(x);
   }
-  for (int i = 0; i< data_.count() / batchsize_; i++) {
+  for (int i = 0; i< data_.at(0).count() / batchsize_; i++) {
     t >> x;
     ptr[i] = stof(x);
   }

@@ -37,22 +37,23 @@ void SoftmaxLayer::Setup(const LayerProto& proto,
     const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 1);
   NeuronLayer::Setup(proto, srclayers);
-  data_.Reshape(srclayers[0]->data(this).shape());
+  data_.resize(1);
+  data_.at(0).Reshape(srclayers[0]->data(this).shape());
 }
 
 void SoftmaxLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  int batchsize = data_.shape()[0];
-  int dim = data_.count() / batchsize;
+  int batchsize = data_.at(0).shape()[0];
+  int dim = data_.at(0).count() / batchsize;
   Shape<2> s = Shape2(batchsize, dim);
-  Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);
+  Tensor<cpu, 2> prob(data_.at(0).mutable_cpu_data(), s);
   Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
   Softmax(prob, src);
 }
 
 void SoftmaxLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
-  int batchsize = data_.shape()[0];
+  int batchsize = data_.at(0).shape()[0];
   for (int n = 0; n < batchsize; n++) {
     // TODO(wangwei) finish the code using new math API
     // gxi=[(gyi+gyi*yi)-\sum_k(gyk*yk)]*yi
