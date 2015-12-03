@@ -47,6 +47,7 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/loss_layer/softmax.cc \
               src/neuralnet/neuron_layer/argsort.cc \
               src/neuralnet/neuron_layer/convolution.cc \
+              src/neuralnet/neuron_layer/dummy.cc \
               src/neuralnet/neuron_layer/dropout.cc \
               src/neuralnet/neuron_layer/inner_product.cc \
               src/neuralnet/neuron_layer/lrn.cc \
@@ -120,6 +121,7 @@ TEST_SRCS := include/gtest/gtest_main.cc \
 						 src/test/test_paramslicer.cc \
 						 src/test/test_kvfile.cc \
 						 src/test/test_store.cc \
+						 src/test/test_connection_layers.cc \
 						 src/test/test_record_input_layer.cc \
 						 src/test/test_csv_input_layer.cc \
              					 src/test/test_gru_layer.cc \

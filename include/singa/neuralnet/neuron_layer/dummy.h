@@ -19,26 +19,33 @@
 *
 *************************************************************/
 
-#ifndef SINGA_NEURALNET_NEURON_LAYER_SIGMOID_H_
-#define SINGA_NEURALNET_NEURON_LAYER_SIGMOID_H_
+#ifndef SINGA_NEURALNET_NEURON_LAYER_DUMMY_H_
+#define SINGA_NEURALNET_NEURON_LAYER_DUMMY_H_
 
+#include <random>
 #include <vector>
 #include "singa/neuralnet/layer.h"
 #include "singa/proto/job.pb.h"
 
 namespace singa {
 /**
- * This layer apply Sigmoid function to neuron activations.
- * f(x)=1/(1+exp(-x))
- * f'(x)=f(x)*(1-f(x))
+ * This layer is dummy and do no real work.
+ * It is used for testing purpose only.
+ *
+ * Use it as input layer, it will generate random data;
+ * Use it as output layer, it will generate random grad;
+ * Use it as neuron layer, it will replicates data and grad.
  */
-class SigmoidLayer: public Layer {
+class DummyLayer: public Layer {
  public:
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+ private:
+  bool input_ = false;  // use as input layer
+  bool output_ = false;  // use as output layer
 };
 
 }  // namespace singa
 
-#endif  // SINGA_NEURALNET_NEURON_LAYER_SIGMOID_H_
+#endif  // SINGA_NEURALNET_NEURON_LAYER_DUMMY_H_
