@@ -194,6 +194,8 @@ message LayerProto {
   optional ConvolutionProto convolution_conf = 30;
   // configuration for concatenation layer
   optional ConcateProto concate_conf = 31;
+  // configuration for dummy layer
+  optional DummyProto dummy_conf = 53;
   // configuration for dropout layer
   optional DropoutProto dropout_conf = 33;
   // configuration for inner product layer
@@ -392,6 +394,13 @@ message MnistProto {
   // scale to this size as input for deformation
   optional int32 resize = 35 [default = 0] ;
   optional int32 elastic_freq = 36 [default = 0];
+}
+
+message DummyProto {
+  // shape of data and grad blobs
+  optional bool input = 1 [default = false]; 
+  optional bool output = 2 [default = false]; 
+  repeated int32 shape = 3; 
 }
 
 // Message that stores parameters used by DropoutLayer
