@@ -152,6 +152,13 @@ void Driver::Init(int argc, char **argv) {
   RegisterParamGenerator<UniformSqrtFanInOutGen>(kUniformSqrtFanInOut);
 }
 
+void Driver::Train(bool resume, const std::string str){
+  JobProto job_conf;
+  job_conf.ParseFromString(str);
+  Train(resume,job_conf);
+
+}
+
 void Driver::Train(bool resume, const JobProto& job_conf) {
   Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   if (singa_conf_.has_log_dir())

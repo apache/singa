@@ -56,6 +56,7 @@ class Driver {
    * files.
    * @param[in] job_conf job configuration.
    */
+  void Train(bool resume, const std::string str); 
   void Train(bool resume, const JobProto& job_conf);
   /**
    * Create workers and servers to conduct the training.
