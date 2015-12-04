@@ -33,6 +33,7 @@ ACLOCAL_AMFLAGS = -I m4 --install
 # Checks for programs.
 AC_PROG_CXX([g++])
 AC_PROG_CC
+AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
 # Setup custom CUDA paths
@@ -123,14 +124,12 @@ AC_ARG_ENABLE(test,
 	[enable_test=yes],[enable_test=no])
 AM_CONDITIONAL(SINGATEST, test "$enable_test" = yes)
 if test x"$enable_test" != x"no"; then
-	PROGS='singatest test'
-	LTLIBS='libgtest.la'
+	PROGS='singatest test '
+	LTLIBS='libgtest.la '
 else
 	PROGS=''
 	LTLIBS=''
 fi
-AC_SUBST([PROGS])
-AC_SUBST([LTLIBS])
 
 AC_ARG_ENABLE(debug,
 	AS_HELP_STRING([--enable-debug],[enable debug mode]),
@@ -141,7 +140,53 @@ if test x"$enable_debug" != x"no"; then
 else
 	DEBUG+='-O2'
 fi
+
+AC_ARG_ENABLE(python,
+    [AS_HELP_STRING([--enable-python],[enable python binding])],
+    [enable_python=yes],[enable_python=no])
+AM_CONDITIONAL([PY], [test "enable_python" = "yes"])
+if test x"$enable_python" != x"no"; then
+    AC_CHECK_PROG(PY_CHECK,python,yes)
+    if test x"$PY_CHECK" != x"yes"; then
+        AC_MSG_ERROR([Cannot find command "python". Please intall before make.])
+    else    
+        PYLIBS="-lpython`python -V 2>&1 | awk '{print substr($2,1,3)}'`"
+    fi
+fi        
+AC_SUBST(PYLIBS)
+
+AC_ARG_WITH([python],
+    [AS_HELP_STRING([--with-python=PATH],[prefix where python is installed])],
+    [python_prefix=$withval],[python_prefix="/usr/local"])
+if test "$python_prefix" == "yes"; then
+    if test "$withval" == "yes"; then
+        python_prefix="/usr/local"
+    fi
+fi
+
+AC_MSG_CHECKING([Python.h in $python_prefix])
+if test -f "$python_prefix/Python.h"; then
+    AC_MSG_RESULT([python found])
+    AC_DEFINE_UNQUOTED([PYTHON_PATH], ["$python_prefix"], [Path to python binary])
+else
+    AC_MSG_RESULT([python not found!])
+    AC_MSG_FAILURE([Python.h was not found in $py_prefix])
+fi
+
+if test x"$enable_python" != x"no"; then
+    #AC_DEFINE(PY,[1],[Defined if PY should be used])
+    PY_PROGS='_driver.la '
+    PYFLAGS="-I$python_prefix "
+else
+    PY_PROGS=''
+    PYFLAGS=''
+fi
+
+AC_SUBST([PROGS])
+AC_SUBST([LTLIBS])
 AC_SUBST([DEBUG])
+AC_SUBST([PYFLAGS])
+AC_SUBST([PY_PROGS])
 
 #AC_CHECK_LIB([opencv_imgproc], [main], [], [
 #  AC_MSG_ERROR([unable to find opencv_imgproc lib])
