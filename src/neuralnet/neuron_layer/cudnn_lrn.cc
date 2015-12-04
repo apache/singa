@@ -57,31 +57,33 @@ void CudnnLRNLayer::InitCudnn() {
 void CudnnLRNLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (!has_init_cudnn_)
     InitCudnn();
+  float alpha = 1.0f, beta = 0.0f;
   CHECK_CUDNN(cudnnLRNCrossChannelForward(handle_,
       norm_desc_,
       mode_,
-      &alpha_,
+      &alpha,
       src_desc_,
       srclayers[0]->data(this).gpu_data(),
-      &beta_,
+      &beta,
       my_desc_,
       data_.mutable_gpu_data()));
 }
 void CudnnLRNLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
+  float alpha = 1.0f, beta = 0.0f;
   CHECK_CUDNN(cudnnLRNCrossChannelBackward(handle_,
         norm_desc_,
         mode_,
-        &alpha_,
-        my_desc_, // ???
+        &alpha,
+        my_desc_,
         data_.gpu_data(),
         my_desc_,
         grad_.gpu_data(),
         src_desc_,
         srclayers[0]->data(this).gpu_data(),
-        &beta_,
+        &beta,
         src_desc_,
         srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
 }
 
 
-} /* singa */
+}  // namespace singa

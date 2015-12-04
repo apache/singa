@@ -30,8 +30,8 @@ void ActivationLayer::Setup(const LayerProto& conf,
   data_.ReshapeLike(srclayers[0]->data(this));
   grad_.ReshapeLike(*(srclayers[0]->mutable_grad(this)));
 }
-void ActivationLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers)
-{
+void
+ActivationLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   switch (layer_conf_.activation_conf().type()) {
     case RELU:
       Map<op::Relu<float>, float>(srclayers[0]->data(this), &data_);
@@ -52,8 +52,8 @@ void ActivationLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers)
         layer_conf_.activation_conf().type();
   }
 }
-void ActivationLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
-{
+void
+ActivationLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   Blob<float> * gsrc = srclayers[0]->mutable_grad(this);
   switch (layer_conf_.activation_conf().type()) {
     case RELU:

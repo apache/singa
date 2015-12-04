@@ -20,6 +20,9 @@
 *************************************************************/
 
 #include "singa/neuralnet/input_layer.h"
+#include "singa/utils/context.h"
+#include "singa/utils/singleton.h"
+
 namespace singa {
 
 StoreInputLayer::~StoreInputLayer() {
@@ -35,8 +38,13 @@ void StoreInputLayer::Setup(const LayerProto& conf,
   if (conf.partition_dim() == 0) {
     batchsize_ /= conf.num_partitions();
   }
-  if (conf.store_conf().random_skip() > 0)
-    random_skip_ = rand() % conf.store_conf().random_skip();
+  if (conf.store_conf().random_skip() > 0) {
+    std::uniform_int_distribution<int>
+      distribution(0, conf.store_conf().random_skip());
+    auto generator =
+      Singleton<Context>::Instance()->generator(std::this_thread::get_id());
+    random_skip_ = distribution(generator);
+  }
 }
 
 void StoreInputLayer::ComputeFeature(int flag,

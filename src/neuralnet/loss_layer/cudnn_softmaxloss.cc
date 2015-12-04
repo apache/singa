@@ -26,7 +26,7 @@
 namespace singa {
 void CudnnSoftmaxLossLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
-  CudnnSoftmaxLayer::Setup(conf, srclayers);
+  CudnnSoftmaxLayer::Setup(conf, vector<Layer*> {srclayers.at(0)});
   topk_ = conf.softmaxloss_conf().topk();
   loss_ = accuracy_ = 0.0f;
   counter_ = 0;
@@ -39,23 +39,21 @@ void CudnnSoftmaxLossLayer::ComputeFeature(int flag,
   Blob<int> label(batchsize_);
   int *labelptr = label.mutable_cpu_data();
 
-  //aux_data: vector<int>, convert vector to int array.
-  for(int i = 0; i < batchsize_; ++i) {
-	labelptr[i] = srclayers[1]->aux_data(this)[i];
+  // aux_data: vector<int>, convert vector to int array.
+  for (int i = 0; i < batchsize_; ++i) {
+    labelptr[i] = srclayers[1]->aux_data(this)[i];
   }
 
   Blob<float> loss(batchsize_);
 
-  singa_gpu_softmax_loss(prob , label.mutable_gpu_data() , loss.mutable_gpu_data(),
-	  batchsize_, dim_);
+  singa_gpu_softmaxloss_forward(batchsize_, dim_, prob, label.gpu_data(),
+      loss.mutable_gpu_data());
 
   counter_++;
-  // TODO add loss and accuracy
 }
 
 void CudnnSoftmaxLossLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
- // compute gradient
   Blob<float>* gsrcblob = srclayers[0]->mutable_grad(this);
   gsrcblob->CopyFrom(data_);
   float* gsrcptr = gsrcblob->mutable_gpu_data();
@@ -63,13 +61,13 @@ void CudnnSoftmaxLossLayer::ComputeGradient(int flag,
   Blob<int> label(batchsize_);
   int *labelptr = label.mutable_cpu_data();
 
-  //aux_data: vector<int>, convert vector to int array.
-  for(int i = 0; i < batchsize_; ++i) { 
-	labelptr[i] = srclayers[1]->aux_data(this)[i];
+  // aux_data: vector<int>, convert vector to int array.
+  for (int i = 0; i < batchsize_; ++i) {
+    labelptr[i] = srclayers[1]->aux_data(this)[i];
   }
 
-  singa_gpu_softmax_gradient(gsrcptr, label.mutable_gpu_data(), batchsize_, dim_, scale_);
-
+  singa_gpu_softmaxloss_backward(batchsize_, dim_, scale_, label.gpu_data(),
+      gsrcptr);
 }
 
 const std::string CudnnSoftmaxLossLayer::ToString(bool debug, int flag) {

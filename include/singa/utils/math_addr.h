@@ -21,18 +21,16 @@
 
 #ifndef SINGA_UTILS_MATH_ADDR_H_
 #define SINGA_UTILS_MATH_ADDR_H_
+
 extern "C" {
-    #include <cblas.h>
+#include <cblas.h>
 }
 #ifdef USE_GPU
 #include <cuda_runtime.h>
-#endif
-#include "singa/utils/singa_op.h"
-#ifdef USE_GPU
-#include "cuda_utils.h"
 #include <cublas_v2.h>
 #endif
 
+#include "singa/utils/singa_op.h"
 
 namespace singa {
 template<typename Dtype>
@@ -140,14 +138,14 @@ void cpu_softmax(int nb_rows, int nb_cols, const Dtype* A, Dtype* B) {
   for (int i = 0; i < nb_rows; i++) {
     const Dtype* dptr = A + i * nb_cols;
     Dtype mmax = dptr[0];
-    for (int x = 1; x < nb_cols; ++x )
+    for (int x = 1; x < nb_cols; ++x)
       if (mmax < dptr[x]) mmax = dptr[x];
     Dtype sum = 0.0f;
-    for(int x = 0; x < nb_cols; ++x ) {
-      dptr[x] = std::exp(dptr[x] - mmax );
+    for (int x = 0; x < nb_cols; ++x) {
+      dptr[x] = std::exp(dptr[x] - mmax);
       sum += dptr[x];
     }
-    for(int x = 0; x < nb_cols; ++x ) {
+    for (int x = 0; x < nb_cols; ++x) {
       dptr[x] /= sum;
     }
   }

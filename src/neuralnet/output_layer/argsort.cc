@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/output_layer.h"
 #include <algorithm>
+#include "singa/neuralnet/output_layer.h"
 
 namespace singa {
 

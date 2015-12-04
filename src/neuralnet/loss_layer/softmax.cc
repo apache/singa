@@ -19,10 +19,10 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/loss_layer.h"
 
-#include <algorithm>
 #include <glog/logging.h>
+#include <algorithm>
+#include "singa/neuralnet/loss_layer.h"
 #include "mshadow/tensor.h"
 
 namespace singa {

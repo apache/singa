@@ -33,14 +33,13 @@ void CudnnActivationLayer::InitCudnn() {
     mode_ = CUDNN_ACTIVATION_TANH;
   else if (layer_conf_.activation_conf().type() == RELU)
     mode_ = CUDNN_ACTIVATION_RELU;
-  else {
+  else
     LOG(FATAL) << "Unkown activation: " << layer_conf_.activation_conf().type();
-  }
 
   const auto& shape = data_.shape();
   CHECK_GT(shape.size(), 0);
   // size of each dimension
-  int* sdim= new int[shape.size()];
+  int* sdim = new int[shape.size()];
   int* stride = new int[shape.size()];
   stride[shape.size() -1] = 1;
   int i = shape.size() - 1;
@@ -97,4 +96,4 @@ void CudnnActivationLayer::ComputeGradient(int flag,
         src_desc_,
         srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
 }
-}  // namespace singa
+}   // namespace singa

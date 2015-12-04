@@ -24,11 +24,11 @@
 namespace singa {
 
 extern "C" {
-  void singa_gpu_softmax_loss(const float *prob, const int *label,
-	float *loss, int n, int dim);
+  void singa_gpu_softmaxloss_forward(int n, int dim, const float *prob,
+      const int *label, float *loss);
 
-  void singa_gpu_softmax_gradient(float *grad, const int *label ,
-    int n, int dim, float scale);
+  void singa_gpu_softmaxloss_backward(int n, int dim, float scale,
+      const int *label, float *grad);
 
   void singa_gpu_sum_vec(float *data, float *sum , int n);
 

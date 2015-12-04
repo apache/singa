@@ -21,6 +21,9 @@
 
 #include "singa/neuralnet/input_layer.h"
 #include "singa/utils/image_transform.h"
+#include "singa/utils/context.h"
+#include "singa/utils/singleton.h"
+
 namespace singa {
 
 using std::vector;
@@ -52,13 +55,20 @@ void ImagePreprocessLayer::ComputeFeature(int flag,
   float* dptr = data_.mutable_cpu_data();
   int srcimage_size = channel * height * width;
   int image_size = channel * data_.shape()[2] * data_.shape()[3];
+  std::uniform_int_distribution<int> rand1(0, srcdata.shape()[1] - cropsize_);
+  std::uniform_int_distribution<int> rand2(0, srcdata.shape()[2] - cropsize_);
+  auto generator =
+    Singleton<Context>::Instance()->generator(std::this_thread::get_id());
+
   for (int k = 0; k < batchsize; k++) {
     int h_offset = 0, w_offset = 0;
     if (cropsize_> 0 && ((flag & kTrain) == kTrain)) {
-      h_offset = rand() % (srcdata.shape()[1] - cropsize_);
-      w_offset = rand() % (srcdata.shape()[2] - cropsize_);
+      h_offset = rand1(generator);
+      w_offset = rand2(generator);
     }
-    bool do_mirror = mirror_ && rand() % 2 && ((flag & kTrain) == kTrain);
+    bool do_mirror = mirror_
+                    && (rand1(generator) % 2)
+                    && ((flag & kTrain) == kTrain);
     ImageTransform(srcdptr + k * srcimage_size, nullptr, do_mirror, cropsize_,
         cropsize_, h_offset, w_offset, srcdata.shape()[1], height, width,
         scale_, dptr + image_size);

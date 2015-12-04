@@ -31,10 +31,11 @@
 #include "singa/utils/singleton.h"
 #include "singa/utils/context.h"
 
-
 namespace singa {
-enum XPU {cpu, gpu, any};
-
+/**
+ * \file math_blob.h is not tested thorough.
+ * Only GEMM() and MMDot() MVSumRow() andMVAddRow() are used now.
+ */
 /************* BLAS level 1 *****************/
 /**
  * Scale each element of A with alpha, and put the result into B.
@@ -45,9 +46,9 @@ template<typename Dtype>
 void Scale(Dtype alpha, Blob<Dtype> * B) {
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1)
+  if (device == -1) {
     cpu_scale(B->count(), alpha, B->mutable_cpu_data());
-  else {
+  } else {
 #ifdef USE_GPU
     gpu_scale(context->cublas_handle(device), B->count(), alpha,
         B->mutable_gpu_data());
@@ -146,24 +147,24 @@ void MVDot(const Blob<Dtype>& A, const Blob<Dtype>& B,
  * @param[in, out] C, matrix
  */
 template <typename Dtype>
-void GEMM( Dtype alpha, Dtype beta, const Blob<Dtype>& A,
-    const Blob<Dtype> & B, Blob<Dtype> * C) {
+void GEMM(Dtype alpha, Dtype beta, const Blob<Dtype>& A, const Blob<Dtype>& B,
+    Blob<Dtype> * C) {
   CHECK_GE(A.shape().size(), 2);
   CHECK_GE(B.shape().size(), 2);
   CHECK_GE(C->shape().size(), 2);
   int a1, a2, b1, b2, m, n;
   CHECK(!C->transpose());
   a1 = A.transpose() ? A.count() / A.shape(0) : A.shape(0);
-  a2 = A.transpose() ? A.shape(0) : A.count() / A.shape(0);
+  a2 = A.count() / a1;
   b1 = B.transpose() ? B.count() /B.shape(0) : B.shape(0);
-  b2 = B.transpose() ? B.shape(0) : B.count() / B.shape(0);
+  b2 = B.count() / b1;
   m = C->shape(0);
-  n = C->count() / C->shape(0);
+  n = C->count() / m;
   CHECK_EQ(a2, b1);
   CHECK_EQ(a1, m);
   CHECK_EQ(b2, n);
 
-  int k = A.transpose() ? A.shape(0) : A.shape(1);
+  int k = a2;
   bool TranA = A.transpose();
   bool TranB = B.transpose();
   auto context = Singleton<Context>::Instance();
@@ -173,8 +174,8 @@ void GEMM( Dtype alpha, Dtype beta, const Blob<Dtype>& A,
         C->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    gpu_gemm(context->cublas_handle(device), A.gpu_data(), B.gpu_data(), m, n, k,
-        alpha, beta, TranA, TranB, C->mutable_gpu_data());
+    gpu_gemm(context->cublas_handle(device), A.gpu_data(), B.gpu_data(),
+        m, n, k, alpha, beta, TranA, TranB, C->mutable_gpu_data());
 #endif  // USE_GPU
   }
 }
@@ -216,7 +217,8 @@ Dtype VVDot(const Blob<Dtype> & A, const Blob<Dtype> & B) {
   } else {
 #ifdef USE_GPU
     // gpu part
-    res = gpu_dot(context->cublas_handle(device), A.gpu_data(), B.gpu_data(), n);
+    res = gpu_dot(context->cublas_handle(device), A.gpu_data(), B.gpu_data(),
+        n);
 #endif  // USE_GPU
   }
   return res;
@@ -244,8 +246,8 @@ void OuterProduct(const Blob<Dtype>& A, const Blob<Dtype>& B, Blob<Dtype> * C) {
         C->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    gpu_gemm(context->cublas_handle(device), A.gpu_data(), B.gpu_data(), m, n, 1, 1, 0,
-        false, false, C->mutable_gpu_data());
+    gpu_gemm(context->cublas_handle(device), A.gpu_data(), B.gpu_data(),
+        m, n, 1, 1, 0, false, false, C->mutable_gpu_data());
 #endif  // USE_GPU
   }
 }
@@ -389,7 +391,7 @@ void Sub(const Blob<Dtype> & A, const Blob<Dtype> & B,
 
 /**
  * C = A * B, implemented using
- * Map(XPU, const Blob<Dtype>&, const Blob<Dtype>&, Blob<Dtype>*).
+ * Map(const Blob<Dtype>&, const Blob<Dtype>&, Blob<Dtype>*).
  */
 template<typename Dtype>
 void Mult(const Blob<Dtype> & A, const Blob<Dtype> & B,
@@ -400,7 +402,7 @@ void Mult(const Blob<Dtype> & A, const Blob<Dtype> & B,
 
 /**
  * C = A / B, implemented using
- * Map(XPU, const Blob<Dtype>&, const Blob<Dtype>&, Blob<Dtype>*).
+ * Map(const Blob<Dtype>&, const Blob<Dtype>&, Blob<Dtype>*).
  */
 template<typename Dtype>
 void Div(const Blob<Dtype> & A, const Blob<Dtype> & B,
@@ -561,7 +563,7 @@ void MVSumCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
         A.transpose(), false, B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    singa_gpu_sum_by_col(A.gpu_data(), B->gpu_data(), m, n, n);
+    singa_gpu_sum_by_col(A.gpu_data(), B->mutable_gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
 #endif  // USE_GPU
   }
@@ -586,7 +588,7 @@ void MVSumRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
       false, B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    singa_gpu_sum_by_row(A.gpu_data(), B->gpu_data(), m, n, n);
+    singa_gpu_sum_by_row(A.gpu_data(), B->mutable_gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
 #endif  // USE_GPU
   }
@@ -645,7 +647,7 @@ Dtype Asum(const Blob<Dtype>& A) {
     ret = cpu_asum(A.count(), A.cpu_data(), 1) / A.count();
   } else {
 #ifdef USE_GPU
-    ret = gpu_asum(context->cublas_handle(device), A.count(), A.cpu_data(), 1)
+    ret = gpu_asum(context->cublas_handle(device), A.count(), A.gpu_data(), 1)
       / A.count();
 #endif
   }
@@ -665,7 +667,7 @@ void SampleUniform(Dtype low, Dtype high, Blob<Dtype>* A) {
   } else {
 #ifdef USE_GPU
     gpu_sample_uniform(context->curand_generator(thread), A->count(), low, high,
-		A->mutable_gpu_data());
+        A->mutable_gpu_data());
 #endif
   }
 }

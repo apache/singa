@@ -72,4 +72,4 @@ void CudnnSoftmaxLayer::ComputeGradient(int flag,
         src_desc_,
         srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
 }
-}  /* singa */
+}  // namespace singa

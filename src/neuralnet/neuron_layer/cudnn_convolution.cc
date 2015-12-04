@@ -34,7 +34,8 @@ CudnnConvLayer::~CudnnConvLayer() {
 void CudnnConvLayer::InitCudnn() {
   CudnnLayer::InitCudnn();
   // convert MB to bytes
-  workspace_byte_limit_ = layer_conf_.convolution_conf().workspace_byte_limit() << 20;
+  workspace_byte_limit_
+    = layer_conf_.convolution_conf().workspace_byte_limit() << 20;
 
   CHECK_CUDNN(cudnnCreateTensorDescriptor(&bias_desc_));
   CHECK_CUDNN(cudnnCreateFilterDescriptor(&filter_desc_));
@@ -162,8 +163,8 @@ void CudnnConvLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   }
 }
 
-void CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
-{
+void
+CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   float alpha = 1.f, beta = 0.f;
   Blob<float> workspace(vector<int>{static_cast<int>(workspace_count_)});
   if (bias_) {
@@ -204,4 +205,4 @@ void CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
           srclayers[0]->mutable_grad(this)->mutable_gpu_data()));
   }
 }
-}  /* singa */
+}  // namespace singa

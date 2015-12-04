@@ -61,11 +61,12 @@ Worker::~Worker() {
 }
 
 void Worker::Run() {
-  LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") start";
   // setup gpu device
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device > 0)
+  LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_
+    << ") start on device " << device;
+  if (device >= 0)
     context->ActivateDevice(device);
   auto cluster = Cluster::Get();
   int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
@@ -90,8 +91,10 @@ void Worker::Run() {
       job_conf_.set_step(step_);
     }
     TrainOneBatch(step_, train_net_);
-    if (DisplayNow(step_) && grp_id_ == 0 && id_ == 0)
-      Display(kTrain | kForward | kBackward, "Train @ step " + std::to_string(step_), train_net_);
+    if (DisplayNow(step_) && grp_id_ == 0 && id_ == 0) {
+      Display(kTrain | kForward | kBackward,
+          "Train @ step " + std::to_string(step_), train_net_);
+    }
     step_++;
   }
 
