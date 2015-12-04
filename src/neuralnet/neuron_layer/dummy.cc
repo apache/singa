@@ -27,16 +27,17 @@ namespace singa {
 void DummyLayer::Setup(const LayerProto& proto,
                        const vector<Layer*>& srclayers) {
   Layer::Setup(proto, srclayers);
+  data_.resize(1);
   if (proto.dummy_conf().input()) {  // use as input layer
     CHECK_EQ(srclayers.size(), 0);
     input_ = true;
     vector<int> shape;
     for (int s : proto.dummy_conf().shape()) shape.push_back(s);
-    data_.Reshape(shape);
-    grad_.ReshapeLike(data_);
+    data_.at(0).Reshape(shape);
+    grad_.ReshapeLike(data_.at(0));
   } else {
     CHECK_EQ(srclayers.size(), 1);
-    data_.ReshapeLike(srclayers[0]->data(this));
+    data_.at(0).ReshapeLike(srclayers[0]->data(this));
     grad_.ReshapeLike(srclayers[0]->grad(this));
   }
   if (proto.dummy_conf().output()) {  // use as output layer
@@ -51,17 +52,17 @@ std::uniform_real_distribution<> dis(0, 1);
 void DummyLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (input_) {
     // randomly init data with [0,1] values
-    for (int i = 0; i < data_.count(); ++i)
-      data_.mutable_cpu_data()[i] = dis(gen);
+    for (int i = 0; i < data_.at(0).count(); ++i)
+      data_.at(0).mutable_cpu_data()[i] = dis(gen);
   }
   if (srclayers.size() > 0)
-    data_.CopyFrom(srclayers[0]->data(this));
+    data_.at(0).CopyFrom(srclayers[0]->data(this));
 }
 
 void DummyLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   if (output_) {
     // randomly init data with [0,1] values
-    for (int i = 0; i < data_.count(); ++i)
+    for (int i = 0; i < data_.at(0).count(); ++i)
       grad_.mutable_cpu_data()[i] = dis(gen);
   }
   if (srclayers.size() > 0) {

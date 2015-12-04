@@ -67,9 +67,10 @@ void BridgeSrcLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   CHECK_GE(srclayers.size(), 1);
   Layer::Setup(conf, srclayers);
-  data_.Reshape(srclayers[0]->data(this).shape());
-  grad_.ReshapeLike(data_);
-  data_.ShareData(srclayers[0]->data(this));
+  data_.resize(1);
+  data_.at(0).Reshape(srclayers[0]->data(this).shape());
+  grad_.ReshapeLike(data_.at(0));
+  data_.at(0).ShareData(srclayers[0]->data(this));
   grad_.ShareData(srclayers[0]->grad(this));
 }
 
