@@ -22,11 +22,14 @@ PROTO_SRCS := src/proto/singa.pb.cc \
 PROTO_HDRS := include/proto/singa.pb.h \
               include/proto/job.pb.h \
               include/proto/common.pb.h
-PROTO_PYS := tool/pb2/singa_pb2.py \
-             tool/pb2/job_pb2.py \
-             tool/pb2/common_pb2.py
+PROTO_PYS := tool/python/pb2/singa_pb2.py \
+             tool/python/pb2/job_pb2.py \
+             tool/python/pb2/common_pb2.py
 
 CUDA_SRCS := src/utils/math_kernel.cu
+
+PY_SRCS := tool/python/singa/driver_wrap.cxx
+		   src/driver.cc 	
 
 SINGA_SRCS := src/driver.cc \
               src/server.cc \
@@ -130,12 +133,15 @@ TEST_SRCS := include/gtest/gtest_main.cc \
 						 src/test/test_unrolling.cc
 
 #EXTRA_PROGRAMS = $(PROGS)
-EXTRA_PROGRAMS = singatest test
+EXTRA_PROGRAMS = singatest test 
 #EXTRA_LTLIBRARIES = $(LTLIBS)
-EXTRA_LTLIBRARIES = libgtest.la
+EXTRA_LTLIBRARIES = libgtest.la _driver.la
 
-lib_LTLIBRARIES = libsinga.la $(LTLIBS)
+lib_LTLIBRARIES = libsinga.la $(LTLIBS) 
 bin_PROGRAMS = singa singatool $(PROGS)
+pydir = $(CURDIR)/tool/python/singa/
+py_LTLIBRARIES = $(PY_PROGS)
+#py_LTLIBRARIES = $(PY_PROGS)
 
 #lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_SRCS) $(SINGA_SRCS)
@@ -212,6 +218,15 @@ singatest_CXXFLAGS += $(CUDA_CFLAGS)
 singatest_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
 
+_driver_la_SOURCES = $(PY_SRCS)
+_driver_la_CXXFLAGS = $(DEFAULT_FLAGS) $(MSHADOW_FLAGS) -I$(top_srcdir)/include $(PYFLAGS) 
+_driver_la_LDFLAGS = -lsinga -module -shared $(PYLIBS) -avoid-version -rpath $(pydir) 
+
+if DCUDA
+_driver_la_CXXFLAGS += $(CUDA_CFLAGS)
+_driver_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
+endif
+
 clean-local:
 	rm -rf $(PROTO_SRCS) $(PROTO_HDRS)
 	rm -rf $(PROTO_PYS)
@@ -233,14 +248,20 @@ rat:
 .cu.o: .cu
 	$(NVCC) $(MSHADOW_FLAGS) $(CUDA_CFLAGS) $(CUDA_LDFLAGS) $(CUDA_LIBS) -I$(top_srcdir)/include -std=c++11 -G -c -o $@ $<
 
+install-pyLTLIBRARIES: $(py_LTLIBRARIES)
+	cp -f .libs/_driver.so tool/python/singa/
+
+uninstall-pyLTLIBRARIES: 
+	rm -f tool/python/singa/_driver.so
+
 test: singatest
 	@./singatest
 
 $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
 	protoc --proto_path=$(top_srcdir)/src/proto --cpp_out=$(top_srcdir)/src/proto $(PROTOS)
-	mkdir -p $(top_srcdir)/tool/pb2/
-	touch $(top_srcdir)/tool/pb2/__init__.py
-	protoc --proto_path=$(top_srcdir)/src/proto --python_out=$(top_srcdir)/tool/pb2 $(PROTOS)
+	mkdir -p $(top_srcdir)/tool/python/pb2/
+	touch $(top_srcdir)/tool/python/pb2/__init__.py
+	protoc --proto_path=$(top_srcdir)/src/proto --python_out=$(top_srcdir)/tool/python/pb2 $(PROTOS)
 	mkdir -p $(top_srcdir)/include/singa/proto/
 	cp $(top_srcdir)/src/proto/*.pb.h $(top_srcdir)/include/singa/proto/
 	@echo
