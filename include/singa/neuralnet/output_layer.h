@@ -40,9 +40,20 @@ class ArgSortLayer : public OutputLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
- private:
+ protected:
   int batchsize_, dim_;
   int topk_;
+};
+
+class AccuracyLayer : public ArgSortLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  const std::string ToString(bool debug, int flag) override;
+
+ private:
+  int counter_ = 0;
+  float accuracy_ = 0.0f;
 };
 /**
  * Output data (and label) for its source layer.

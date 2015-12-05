@@ -19,6 +19,7 @@
 *
 *************************************************************/
 
+#include <random>
 #include "singa/neuralnet/input_layer.h"
 #include "singa/utils/context.h"
 #include "singa/utils/singleton.h"
@@ -59,12 +60,11 @@ void ShardDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     shard_ = new DataShard(layer_conf_.sharddata_conf().path(),
                            DataShard::kRead);
   if (random_skip_) {
-  std::uniform_int_distribution<int> distribution(0, random_skip_);
-  auto generator =
-    Singleton<Context>::Instance()->generator(std::this_thread::get_id());
-    int nskip = distribution(generator);
+    std::uniform_int_distribution<int> distribution(0, random_skip_);
+    auto generator = Singleton<Context>::Instance()->rand_generator();
+    int nskip = distribution(*generator);
     LOG(INFO) << "Random Skip " << nskip << " records, there are "
-              << shard_->Count() << " records in total";
+      << shard_->Count() << " records in total";
     string key;
     for (int i = 0; i < nskip; i++) {
       shard_->Next(&key, &sample_);
@@ -130,8 +130,8 @@ void LMDBDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (random_skip_) {
     std::uniform_int_distribution<int> distribution(0, random_skip_);
     auto generator =
-      Singleton<Context>::Instance()->generator(std::this_thread::get_id());
-    int nskip = distribution(generator);
+      Singleton<Context>::Instance()->rand_generator(std::this_thread::get_id());
+    int nskip = distribution(*generator);
 
     int n = 0;
     CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
@@ -266,12 +266,12 @@ void RGBImageLayer::ParseRecords(int flag, const vector<Record>& records,
 
   std::uniform_int_distribution<int> distribution(0, r.shape(0) - cropsize_);
   auto generator =
-    Singleton<Context>::Instance()->generator(std::this_thread::get_id());
+    Singleton<Context>::Instance()->rand_generator(std::this_thread::get_id());
   for (const Record& record : records) {
     auto image = images[rid];
     bool do_crop = cropsize_> 0 && ((flag & kTrain) == kTrain);
     bool do_mirror = mirror_
-                    && (distribution(generator) % 2)
+                    && (distribution(*generator) % 2)
                     && ((flag & kTrain) == kTrain);
     float* dptr = nullptr;
     if (do_crop || do_mirror)
@@ -289,8 +289,8 @@ void RGBImageLayer::ParseRecords(int flag, const vector<Record>& records,
     for (int i = 0; i < mean_.count(); i++)
       dptr[i] -= meandptr[i];
     if (do_crop) {
-      int hoff = distribution(generator);
-      int woff = distribution(generator);
+      int hoff = distribution(*generator);
+      int woff = distribution(*generator);
       Shape<2> cropshape = Shape2(cropsize_, cropsize_);
       if (do_mirror) {
         croped_image = expr::crop(raw_image, cropshape, hoff, woff);

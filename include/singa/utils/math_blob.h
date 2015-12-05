@@ -498,13 +498,13 @@ void MVAddRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
     B->set_transpose(true);
   } else {
     CHECK_EQ(B->count() % A.count(), 0) << "#col of B not match length of A";
-    int m = A.count(), n = B->count() / m;
-    Blob<Dtype> one(n);
-    one.SetValue(1);
+    int n = A.count(), m = B->count() / n;
     auto context = Singleton<Context>::Instance();
     int device = context->device_id(std::this_thread::get_id());
     if (device == -1) {
-      cpu_gemm(one.cpu_data(), A.cpu_data(), n, m, 1, alpha, beta,
+      Blob<Dtype> one(m);
+      one.SetValue(1);
+      cpu_gemm(one.cpu_data(), A.cpu_data(), m, n, 1, alpha, beta,
           false, false, B->mutable_cpu_data());
     } else {
 #ifdef USE_GPU
@@ -554,16 +554,16 @@ template<typename Dtype>
 void MVSumCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count() % B->count(), 0) << "length of B must = # of cols of A";
   int m = B->count(), n = A.count() / m;
-  Blob<Dtype> one(n);
-  one.SetValue(1);
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
   if (device == -1) {
+    Blob<Dtype> one(n);
+    one.SetValue(1);
     cpu_gemm(A.cpu_data(), one.cpu_data(), m, 1, n, alpha, beta,
         A.transpose(), false, B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    singa_gpu_sum_by_col(A.gpu_data(), B->mutable_gpu_data(), m, n, n);
+    singa_gpu_sum_col(A.gpu_data(), B->mutable_gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
 #endif  // USE_GPU
   }
@@ -578,17 +578,17 @@ void MVSumCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
 template<typename Dtype>
 void MVSumRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count() % B->count(), 0) << "length of B must = # of cols of A";
-  int m = B->count(), n = A.count() / m;
-  Blob<Dtype> one(n);
-  one.SetValue(1);
+  int n = B->count(), m = A.count() / n;
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
   if (device == -1) {
-    cpu_gemm(one.cpu_data(), A.cpu_data(), 1, m, n, alpha, beta, A.transpose(),
-      false, B->mutable_cpu_data());
+    Blob<Dtype> one(m);
+    one.SetValue(1);
+    cpu_gemm(one.cpu_data(), A.cpu_data(), 1, n, m, alpha, beta, false, A.transpose(),
+        B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    singa_gpu_sum_by_row(A.gpu_data(), B->mutable_gpu_data(), m, n, n);
+    singa_gpu_sum_row(A.gpu_data(), B->mutable_gpu_data(), m, n, n);
     // gpu part (TODO check transpose case)
 #endif  // USE_GPU
   }

@@ -90,14 +90,18 @@ class NeuralNet {
    */
   /**
    * Share memory of parameter values from other neuralnet
+   * @param[in] other the neural net from which to share the Params
+   * @param[in] cpu_only if true only share cpu memory; else, share both cpu
+   * and gpu memory.
    */
-  void ShareParamsFrom(NeuralNet* other);
+  void ShareParamsFrom(NeuralNet* other, bool cpu_only);
   inline const std::vector<Layer*>& layers() const { return layers_; }
   inline const std::vector<Param*>& params() const { return params_; }
   inline Layer* name2layer(std::string name) const {
-    CHECK(name2layer_.find(name) != name2layer_.end())
-      << "No layer with name " << name;
-    return name2layer_.at(name);
+    if (name2layer_.find(name) == name2layer_.end())
+      return nullptr;
+    else
+      return name2layer_.at(name);
   }
   inline const std::vector<Layer*>& srclayers(const Layer* layer) const {
     CHECK(src_map_.find(layer) != src_map_.end())

@@ -38,13 +38,6 @@ void StoreInputLayer::Setup(const LayerProto& conf,
   if (conf.partition_dim() == 0) {
     batchsize_ /= conf.num_partitions();
   }
-  if (conf.store_conf().random_skip() > 0) {
-    std::uniform_int_distribution<int>
-      distribution(0, conf.store_conf().random_skip());
-    auto generator =
-      Singleton<Context>::Instance()->generator(std::this_thread::get_id());
-    random_skip_ = distribution(generator);
-  }
 }
 
 void StoreInputLayer::ComputeFeature(int flag,
@@ -52,8 +45,16 @@ void StoreInputLayer::ComputeFeature(int flag,
   string key, val;
   if (store_ == nullptr) {
     store_ = io::OpenStore(layer_conf_.store_conf().backend(),
-                             layer_conf_.store_conf().path(),
-                             io::kRead);
+        layer_conf_.store_conf().path(),
+        io::kRead);
+    if (layer_conf_.store_conf().random_skip() > 0) {
+      std::uniform_int_distribution<int>
+        distribution(0, layer_conf_.store_conf().random_skip());
+      auto generator = Singleton<Context>::Instance()->rand_generator(
+          std::this_thread::get_id());
+      random_skip_ = distribution(*generator);
+    }
+
     while (random_skip_ > 0) {
       if (!store_->Read(&key, &val)) {
         store_->SeekToFirst();

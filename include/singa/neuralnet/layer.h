@@ -308,7 +308,6 @@ class NeuronLayer : virtual public Layer {
  */
 class LossLayer : virtual public Layer {
  public:
-  const std::string ToString(bool debug, int flag) override;
   Blob<float>* mutable_grad(const Layer* layer) override {
     LOG(FATAL) << "Loss layer has no gradient blob";
     return nullptr;
@@ -317,8 +316,6 @@ class LossLayer : virtual public Layer {
     LOG(FATAL) << "Loss layer has no gradient blob";
     return grad_;
   }
- protected:
-  Metric metric_;
 };
 
 /**

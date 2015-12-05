@@ -242,8 +242,12 @@ class Blob {
    *
    * It may deallocate the SyncedMemory holding this Blob's data_, as
    * shared_ptr calls its destructor when reset with the "=" operator.
+   * @param other the Blob who owns the data
+   * @param cpu_only if true, only share the cpu data; if false, share the whole
+   * data_ field. For training with multi-gpu cards, cpu_only must be true,
+   * becuase gpu memory cannot be shared among different devices.
    */
-  void ShareData(const Blob& other);
+  void ShareData(const Blob& other, bool cpu_only = true);
 
   /*
   void Swap(Blob& other);

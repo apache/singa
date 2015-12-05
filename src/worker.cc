@@ -64,10 +64,11 @@ void Worker::Run() {
   // setup gpu device
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_
-    << ") start on device " << device;
+  LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
+    << " start on " << (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
   if (device >= 0)
     context->ActivateDevice(device);
+
   auto cluster = Cluster::Get();
   int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
   CHECK(cluster->runtime()->JoinSGroup(grp_id_, id_, svr_grp));
@@ -76,12 +77,12 @@ void Worker::Run() {
   InitNetParams(job_conf_, train_net_);
   while (!StopNow(step_)) {
     if (ValidateNow(step_) && val_net_ != nullptr) {
-      CollectAll(step_, val_net_);
+      CollectAll(step_, train_net_);
       LOG(ERROR) << "Validation @ step " + std::to_string(step_);
       Test(job_conf_.validate_steps(), kVal, val_net_);
     }
     if (TestNow(step_) && test_net_ != nullptr) {
-      CollectAll(step_, test_net_);
+      CollectAll(step_, train_net_);
       LOG(ERROR) << "Test @ step " + std::to_string(step_);
       Test(job_conf_.test_steps(), kTest, test_net_);
     }
@@ -195,8 +196,8 @@ void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
     }
 
     // warmup training before put params to servers
-    for (; step_ < job_conf.warmup_steps(); step_++)
-      TrainOneBatch(step_, net);
+    // for (; step_ < job_conf.warmup_steps(); step_++)
+    //  TrainOneBatch(step_, net);
     for (auto layer : net->layers()) {
       if (layer->partition_id() == id_)
         for (auto param : layer->GetParams())
@@ -212,6 +213,7 @@ void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
         Get(job_conf.warmup_steps(), param);
   }
 }
+
 
 void Worker::Checkpoint(int step, const std::string& folder, NeuralNet* net) {
   BlobProtos bps;
@@ -261,7 +263,7 @@ int Worker::Get(int step, Param* param) {
 }
 
 int Worker::Update(int step, Param* param) {
-  param->set_local_version(param->version());
+  param->set_last_version(param->version());
   if (dealer_ == nullptr) {
     LOG(WARNING) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
     return 1;
@@ -286,7 +288,7 @@ int Worker::CollectAll(int step, NeuralNet* net) {
 }
 
 int Worker::Collect(int step, Param* param) {
-  while (param->version() <= param->local_version())
+  while (param->version() <= param->last_version())
     std::this_thread::sleep_for(std::chrono::milliseconds(kCollectSleepTime));
   return 1;
 }

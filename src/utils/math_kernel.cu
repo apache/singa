@@ -37,8 +37,7 @@ void kernel_softmax_loss(const float *prob, const int *label , float *loss,
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
-    const int label_value = static_cast<int>(label[index]);
-    float prob_of_truth = prob[index * dim + label_value];
+    float prob_of_truth = prob[index * dim + label[index]];
     loss[index] -= log(max(prob_of_truth, FLT_MIN));
   }
 }
@@ -49,8 +48,8 @@ void kernel_softmax_gradient(float *grad, const int *label ,
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
-    int pos = index * dim + static_cast<int>(label[index]);
-    grad[pos] = (grad[pos] - 1.0f) * scale / (1.0 * n);
+    int pos = index * dim + label[index];
+    grad[pos] = (grad[pos] - 1.0f) * scale;
   }
 }
 
@@ -87,7 +86,20 @@ void kernel_sum_vec(float *data, float *sum , int n) {
 }
 
 __global__
-void kernel_sum_by_col(const float *src_mat_data,
+void kernel_sum_col(const float *src_mat_data,
+    float *dst_vec_data, int rows, int cols, int stride) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+  for (; index < rows; index += num_threads) {
+    dst_vec_data[index] = 0.0f;
+    for (int k = 0; k < cols; k++) {
+      dst_vec_data[index] += src_mat_data[index * stride + k];
+    }
+  }
+}
+
+__global__
+void kernel_sum_row(const float *src_mat_data,
     float *dst_vec_data, int rows, int cols, int stride) {
   int j = blockIdx.x;
   int THREADS = blockDim.x;
@@ -119,19 +131,9 @@ void kernel_sum_by_col(const float *src_mat_data,
 
   __syncthreads();
   dst_vec_data[j] = aux[0];
-}
 
-__global__
-void kernel_sum_by_row(const float *src_mat_data,
-    float *dst_vec_data, int rows, int cols, int stride) {
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
-  int num_threads = blockDim.x * gridDim.x;
-  for (; index < rows; index += num_threads) {
-    dst_vec_data[index] = 0.0f;
-    for (int k = 0; k < cols; k++) {
-      dst_vec_data[index] += src_mat_data[index * stride + k];
-    }
-  }
+
+
 }
 
 __global__
@@ -337,21 +339,21 @@ void singa_gpu_sum_vec(float *data, float *sum , int n) {
   kernel_sum_vec<<<num_blocks, threads_per_block>>>(data, sum, n);
 }
 
-void singa_gpu_sum_by_col(const float *src_mat_data, float *dst_vec_data,
+void singa_gpu_sum_col(const float *src_mat_data, float *dst_vec_data,
     int rows, int cols, int stride) {
   int threads_per_block = rows > CU1DBLOCK ? CU1DBLOCK : rows;
   int num_blocks = cols;
 
-  kernel_sum_by_col<<<num_blocks, threads_per_block>>>(src_mat_data,
+  kernel_sum_col<<<num_blocks, threads_per_block>>>(src_mat_data,
       dst_vec_data, rows, cols, stride);
 }
 
-void singa_gpu_sum_by_row(const float *src_mat_data, float *dst_vec_data,
+void singa_gpu_sum_row(const float *src_mat_data, float *dst_vec_data,
     int rows, int cols, int stride) {
   int threads_per_block = cols > CU1DBLOCK ? CU1DBLOCK : cols;
   int num_blocks = rows;
 
-  kernel_sum_by_row<<<num_blocks, threads_per_block>>>(src_mat_data,
+  kernel_sum_row<<<num_blocks, threads_per_block>>>(src_mat_data,
       dst_vec_data, rows, cols, stride);
 }
 

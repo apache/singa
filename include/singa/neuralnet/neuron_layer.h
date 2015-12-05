@@ -217,11 +217,11 @@ class SoftmaxLayer : public NeuronLayer {
     return kOneToAll;
   }
  protected:
-  int batchsize_;
+  int batchsize_, dim_;
   //!< set by users (default is 1)
-  int num_softmax_per_instance_;
+  // int num_softmax_per_instance_;
   //!< size of the softmax area/length
-  int count_per_softmax_;
+  // int count_per_softmax_;
 };
 /**
  * @deprecated {please use ActivationLayer}
@@ -391,16 +391,20 @@ class RBMLayer: virtual public NeuronLayer {
 /**
  * RBM visible layer
  */
-class RBMVisLayer: public RBMLayer, public LossLayer {
+class RBMVisLayer: public RBMLayer {
  public:
   ~RBMVisLayer();
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+  const std::string ToString(bool debug, int flag) override;
 
  private:
   RBMLayer* hid_layer_;
   Layer* input_layer_;
+
+  float error_ = 0.0f;
+  int counter_ = 0;
 };
 /**
  * RBM hidden layer

@@ -21,21 +21,23 @@
 
 #include "singa/neuralnet/loss_layer.h"
 #include "singa/utils/blob.h"
+#include "singa/utils/math_blob.h"
 #include "singa/utils/math_kernel.h"
 
 namespace singa {
 void CudnnSoftmaxLossLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
-  CudnnSoftmaxLayer::Setup(conf, vector<Layer*> {srclayers.at(0)});
-  topk_ = conf.softmaxloss_conf().topk();
-  loss_ = accuracy_ = 0.0f;
-  counter_ = 0;
+  softmax_.Setup(conf, vector<Layer*> {srclayers.at(0)});
+  data_.Reshape(softmax_.data(this).shape());
+  data_.ShareData(*softmax_.mutable_data(this), false);
+  batchsize_ = data_.shape(0);
+  dim_ = data_.count() / batchsize_;
+  LOG(ERROR) << batchsize_ << " " << dim_;
 }
 void CudnnSoftmaxLossLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  CudnnSoftmaxLayer::ComputeFeature(flag, srclayers);
+  softmax_.ComputeFeature(flag, srclayers);
   // compute loss
-  float *prob = data_.mutable_gpu_data();
   Blob<int> label(batchsize_);
   int *labelptr = label.mutable_cpu_data();
 
@@ -46,9 +48,10 @@ void CudnnSoftmaxLossLayer::ComputeFeature(int flag,
 
   Blob<float> loss(batchsize_);
 
+  const float *prob = data_.gpu_data();
   singa_gpu_softmaxloss_forward(batchsize_, dim_, prob, label.gpu_data(),
       loss.mutable_gpu_data());
-
+  loss_ += Asum(loss);
   counter_++;
 }
 
@@ -66,15 +69,18 @@ void CudnnSoftmaxLossLayer::ComputeGradient(int flag,
     labelptr[i] = srclayers[1]->aux_data(this)[i];
   }
 
-  singa_gpu_softmaxloss_backward(batchsize_, dim_, scale_, label.gpu_data(),
+  singa_gpu_softmaxloss_backward(batchsize_, dim_, 1.0f, label.gpu_data(),
       gsrcptr);
+  Scale(1.0f / batchsize_, gsrcblob);
 }
 
 const std::string CudnnSoftmaxLossLayer::ToString(bool debug, int flag) {
-  string disp = "Loss = " + std::to_string(loss_ / counter_)
-    + ", accuracy = " + std::to_string(accuracy_ / counter_);
+  if (debug)
+    return Layer::ToString(debug, flag);
+
+  string disp = "Loss = " + std::to_string(loss_ / counter_);
   counter_ = 0;
-  loss_ = accuracy_ = 0;
+  loss_ = 0;
   return disp;
 }
 }  // namespace singa

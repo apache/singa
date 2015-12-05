@@ -124,6 +124,13 @@ class Context {
   }
 
   /**
+   * \copybreif rand_generator(const std::thread::id&);
+   * @return the CPU random generator for the calling thread.
+   */
+  std::mt19937* rand_generator() {
+    return rand_generator(std::this_thread::get_id());
+  }
+  /**
    * Get the CPU random generator.
    * If the generator does not exist, then create it now.
    * If the seed is not set, i.e., seed=-1, then get a seed from system time.
@@ -141,6 +148,13 @@ class Context {
     return rand_generator_[tid];
   }
 #ifdef USE_GPU
+  /**
+   * \copybreif cublas_handle_(const std::thread::id&);
+   * @return cublas handle for the calling thread.
+   */
+  cublasHandle_t cublas_handle() {
+    return cublas_handle(std::this_thread::get_id());
+  }
   /**
    * Get the handler of the GPU which is assigned to the given thread.
    * Calls cublas_handle(const int);

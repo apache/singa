@@ -72,6 +72,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
   RegisterLayer<BridgeSrcLayer, int>(kBridgeSrc);
 
+  RegisterLayer<AccuracyLayer, int>(kAccuracy);
   RegisterLayer<ArgSortLayer, int>(kArgSort);
   RegisterLayer<ConvolutionLayer, int>(kConvolution);
   RegisterLayer<CConvolutionLayer, int>(kCConvolution);
@@ -219,10 +220,11 @@ void Driver::Train(const JobProto& job_conf) {
   // CHECK_LE(workers.size(), job_conf.gpu_size());
   for (auto worker : workers) {
     threads.push_back(std::thread(&Worker::Run, worker));
+    int device_id  = -1;
     if (gpu < job_conf.gpu_size()) {
-      int device_id = job_conf.gpu(gpu++);
-      context->SetupDevice(threads.back().get_id(), device_id);
+      device_id = job_conf.gpu(gpu++);
     }
+    context->SetupDevice(threads.back().get_id(), device_id);
   }
   if (grp_size > 1 || nserver_grps > 0) {
     int nservers_per_grp = cluster->nservers_per_group();
@@ -307,16 +309,16 @@ const vector<Worker*> Driver::CreateWorkers(const JobProto& job_conf,
       // test and validation are performed by the 1st group.
       if (gid == 0 && job_conf.test_steps() > 0) {
         test_net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
-        test_net->ShareParamsFrom(train_net);
+        test_net->ShareParamsFrom(train_net, false);
       }
       if (gid == 0 && job_conf.validate_steps() > 0) {
         val_net = NeuralNet::Create(job_conf.neuralnet(), kVal, 1);
-        val_net->ShareParamsFrom(train_net);
+        val_net->ShareParamsFrom(train_net, false);
       }
     } else {
       train_net = NeuralNet::Create(job_conf.neuralnet(), kTrain, wgrp_size);
       if (cluster->share_memory()) {
-        train_net->ShareParamsFrom(net);
+        train_net->ShareParamsFrom(net, true);
       } else {
         Param::SliceParams(lcm, train_net->params());
       }

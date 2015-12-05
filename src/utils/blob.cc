@@ -187,12 +187,15 @@ void SyncedMemory::to_gpu() {
 
 template <typename Dtype>
 void Blob<Dtype>::Reshape(const std::vector<int>& shape) {
+  int count = count_;
   count_ = 1;
   shape_ = shape;
   for (size_t i = 0; i < shape.size(); ++i) {
     CHECK(shape[i]);
     count_ *= shape[i];
   }
+  if (count > 0)
+    CHECK_EQ(count, count_);
   if (count_ > capacity_) {
     capacity_ = count_;
     data_.reset(new SyncedMemory(capacity_ * sizeof(Dtype)));
@@ -262,9 +265,12 @@ void Blob<Dtype>::SetValue(Dtype v) {
     ptr[i] = v;
 }
 template <typename Dtype>
-void Blob<Dtype>::ShareData(const Blob& other) {
+void Blob<Dtype>::ShareData(const Blob& other, bool cpu_only) {
   CHECK_EQ(count_, other.count());
-  data_ = other.data_;
+  if (cpu_only)
+    data_->set_cpu_data(other.cpu_data());
+  else
+    data_ = other.data_;
 }
 
 /*

@@ -62,15 +62,4 @@ const std::string Layer::ToString(bool debug, int flag) {
   }
   return ret;
 }
-
-const std::string LossLayer::ToString(bool debug, int flag) {
-  std::string disp;
-  if (debug) {
-    disp = Layer::ToString(debug, flag);
-  } else {
-    disp = metric_.ToLogString();
-    metric_.Reset();
-  }
-  return disp;
-}
 }  // namespace singa

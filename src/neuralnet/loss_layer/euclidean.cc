@@ -50,7 +50,8 @@ void EuclideanLossLayer::ComputeFeature(int flag,
       loss += (input_dptr[i] - reconstruct_dptr[i]) *
         (input_dptr[i] - reconstruct_dptr[i]);
   }
-  metric_.Add("loss", loss / srclayers[0]->data(this).shape()[0]);
+  loss_ += loss / srclayers[0]->data(this).shape()[0];
+  counter_ ++;
 }
 
 void EuclideanLossLayer::ComputeGradient(int flag,
@@ -67,5 +68,13 @@ void EuclideanLossLayer::ComputeGradient(int flag,
   Tensor<cpu, 1> gsrc(gsrcptr, Shape1(gsrcblob->count()));
   gsrc /= srclayers[0]->data(this).shape()[0];
 }
+const std::string EuclideanLossLayer::ToString(bool debug, int flag) {
+  if (debug)
+    return Layer::ToString(debug, flag);
 
+  string disp = "Loss = " + std::to_string(loss_ / counter_);
+  counter_ = 0;
+  loss_ = 0;
+  return disp;
+}
 }  // namespace singa

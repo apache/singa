@@ -79,8 +79,9 @@ void SoftmaxLossLayer::ComputeFeature(int flag,
     probptr += dim_;
   }
   CHECK_EQ(probptr, prob.dptr + prob.shape.Size());
-  metric_.Add("loss", loss * scale_ / (1.0f * batchsize_));
-  metric_.Add("accuracy", precision * scale_ / (1.0f * batchsize_));
+  loss_ += loss * scale_ / (1.0f * batchsize_);
+  accuracy_ += precision * scale_ / (1.0f * batchsize_);
+  counter_ ++;
 }
 
 void SoftmaxLossLayer::ComputeGradient(int flag,
@@ -95,5 +96,14 @@ void SoftmaxLossLayer::ComputeGradient(int flag,
   Tensor<cpu, 1> gsrc(gsrcptr, Shape1(gsrcblob->count()));
   gsrc *= scale_ / (1.0f * batchsize_);
 }
+const std::string SoftmaxLossLayer::ToString(bool debug, int flag) {
+  if (debug)
+    return Layer::ToString(debug, flag);
 
+  string disp = "Loss = " + std::to_string(loss_ / counter_)
+    + ", accuracy = " + std::to_string(accuracy_ / counter_);
+  counter_ = 0;
+  loss_ = accuracy_ = 0;
+  return disp;
+}
 }  // namespace singa

@@ -602,6 +602,7 @@ enum LayerType {
   kRGBImage = 10;
   // Neuron layers
   //  - Feature transformation
+  kAccuracy = 36;
   kArgSort = 35;
   kConvolution = 1;
   kCConvolution = 27;
