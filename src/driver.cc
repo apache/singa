@@ -155,8 +155,6 @@ void Driver::Init(int argc, char **argv) {
 void Driver::Train(bool resume, const std::string str){
   JobProto job_conf;
   job_conf.ParseFromString(str);
-  printf("STR IS !@#!#!@# %s\n",str.c_str());
-  printf("!!!!!!!!!!!!!!!!%s\n",job_conf.cluster().workspace().c_str());
   Train(resume,job_conf);
 
 }
