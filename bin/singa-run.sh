@@ -33,8 +33,7 @@ usage="Usage: singa-run.sh -conf <job config file> [ other arguments ]\n
 
 # parse arguments
 # make sure we have '-conf' and remove '-exec'
-#exe=./singa
-exe=./src/singa.py
+exe=./singa
 while [ $# != 0 ]; do
   if [ $1 == "-exec" ]; then
     shift
@@ -82,12 +81,9 @@ host_file=$log_dir/job.hosts
 ./singatool genhost $job_conf 1>$host_file || exit 1
 
 # set command to run singa
-#singa_run="$exe $args -conf $job_conf \
-#            -singa_conf $SINGA_HOME/conf/singa.conf \
-#            -singa_job $job_id" 
-singa_run="python $exe $args -conf $job_conf \
+singa_run="$exe $args -conf $job_conf \
             -singa_conf $SINGA_HOME/conf/singa.conf \
-            -singa_job $job_id"
+            -singa_job $job_id" 
 singa_sshrun="cd $SINGA_HOME; $singa_run"
 
 # ssh and start singa processes

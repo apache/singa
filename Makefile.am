@@ -228,7 +228,7 @@ clean-local:
 	rm -rf $(PROTO_SRCS) $(PROTO_HDRS)
 	rm -rf $(PROTO_PYS)
 	rm -rf rat_check
-	rm -rf tool/pb2
+	rm -rf tool/python/pb2
 
 rat:
 	@if test ! -z '$(shell command -v java 2>/dev/null)'; then \
@@ -246,9 +246,11 @@ rat:
 	$(NVCC) $(MSHADOW_FLAGS) $(CUDA_CFLAGS) $(CUDA_LDFLAGS) $(CUDA_LIBS) -I$(top_srcdir)/include -std=c++11 -G -c -o $@ $<
 
 install-pyLTLIBRARIES: $(py_LTLIBRARIES)
+	touch tool/python/singa/__init__.py
 	cp -f .libs/_driver.so tool/python/singa/
 
 uninstall-pyLTLIBRARIES: 
+	rm -f tool/python/singa/__init__.py
 	rm -f tool/python/singa/_driver.so
 
 test: singatest
