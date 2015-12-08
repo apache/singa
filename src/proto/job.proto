@@ -453,6 +453,7 @@ message PoolingProto {
 
 message SliceProto {
   required int32 slice_dim = 1;
+  required int32 slice_num = 2;
 }
 
 message ReLUProto {
