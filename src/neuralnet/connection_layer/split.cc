@@ -26,19 +26,42 @@ namespace singa {
 using std::vector;
 
 void SplitLayer::Setup(const LayerProto& conf,
-    const vector<Layer*>& srclayers) {
-  Layer::Setup(conf, srclayers);
+                       const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 1);
+  Layer::Setup(conf, srclayers);
+  split_num_ = conf.split_conf().split_num();
   data_.Reshape(srclayers[0]->data(this).shape());
-  grad_.Reshape(srclayers[0]->data(this).shape());
+  data_.ShareData(srclayers[0]->data(this));
+  grads_.resize(split_num_);
+  for (int i = 0; i < split_num_; ++i)
+    grads_[i].Reshape(srclayers[0]->data(this).shape());
 }
 
 void SplitLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
-  LOG(FATAL) << "Not implemented";
+  // data is shared from its source,
+  // nothing to do in compute feature phase
 }
 
 void SplitLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
-  LOG(FATAL) << "Not implemented";
+  CHECK_EQ(srclayers.size(), 1);
+  // aggregate all gradients to grad_[0]
+  for (int i = 1; i < split_num_; ++i)
+    for (int j = 0; j < grads_[0].count(); ++j)
+      grads_[0].mutable_cpu_data()[j] += grads_[i].cpu_data()[j];
+  // copy grad_[0] to srclayer's grad
+  srclayers[0]->mutable_grad(this)->CopyFrom(grads_[0]);
+}
+
+const Blob<float>& SplitLayer::grad(const Layer* from) const {
+  CHECK(from);
+  CHECK_LT(from->partition_id(), grads_.size());
+  return grads_[from->partition_id()];
+}
+
+Blob<float>* SplitLayer::mutable_grad(const Layer* from) {
+  CHECK(from);
+  CHECK_LT(from->partition_id(), grads_.size());
+  return &grads_[from->partition_id()];
 }
 
 }  // namespace singa
