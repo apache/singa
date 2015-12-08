@@ -28,6 +28,7 @@
 #include "singa/neuralnet/connection_layer/bridge.h"
 #include "singa/neuralnet/connection_layer/concate.h"
 #include "singa/neuralnet/connection_layer/slice.h"
+#include "singa/neuralnet/connection_layer/split.h"
 #include "singa/neuralnet/neuron_layer/dummy.h"
 #include "singa/proto/job.pb.h"
 
@@ -394,5 +395,62 @@ TEST(ConnectionLayerTest, ModelConcateTest) {
     if (i && i % M == 0) offset += step;
     ASSERT_EQ(in[(i / step) % K].grad(nullptr).cpu_data()[offset + i % step],
               out.grad(nullptr).cpu_data()[i]);
+  }
+}
+
+TEST(ConnectionLayerTest, SplitTest) {
+  // use dummy as input layer
+  vector<Layer*> src_in;
+  LayerProto proto_in;
+  proto_in.set_name("dummy_input");
+  proto_in.mutable_dummy_conf()->set_input(true);
+  proto_in.mutable_dummy_conf()->add_shape(N);
+  proto_in.mutable_dummy_conf()->add_shape(M);
+  DummyLayer in;
+  in.Setup(proto_in, src_in);
+
+  // add split layer
+  vector<Layer*> src_split;
+  src_split.push_back(static_cast<Layer*>(&in));
+  LayerProto proto_split;
+  proto_split.set_name("split");
+  proto_split.mutable_split_conf()->set_split_num(K);
+  SplitLayer split;
+  split.Setup(proto_split, src_split);
+  ASSERT_EQ(split.data(static_cast<Layer*>(&split)).shape(0), N);
+  ASSERT_EQ(split.data(static_cast<Layer*>(&split)).shape(1), M);
+
+  // use dummy as output layers
+  LayerProto proto_out[K];
+  vector<Layer*> src_out[K];
+  DummyLayer out[K];
+  for (int i = 0; i < K; ++i) {
+    src_out[i].push_back(static_cast<Layer*>(&split));
+    proto_out[i].set_name("dummy_output_"+std::to_string(i));
+    proto_out[i].set_partition_id(i);
+    proto_out[i].mutable_dummy_conf()->set_output(true);
+    out[i].Setup(proto_out[i], src_out[i]);
+  }
+
+  // test for computing feature
+  in.ComputeFeature(0, src_in);
+  split.ComputeFeature(0, src_split);
+  for (int i = 0; i < K; ++i)
+    out[i].ComputeFeature(0, src_out[i]);
+  for (int i = 0; i < in.data(nullptr).count(); ++i) {
+    for (int k = 0; k < K; ++k)
+      ASSERT_EQ(in.data(nullptr).cpu_data()[i],
+                out[k].data(nullptr).cpu_data()[i]);
+  }
+
+  // test for computing gradient
+  for (int i = 0; i < K; ++i)
+    out[i].ComputeGradient(0, src_out[i]);
+  split.ComputeGradient(0, src_split);
+  in.ComputeGradient(0, src_in);
+  for (int i = 0; i < in.grad(nullptr).count(); ++i) {
+    float grad = 0;
+    for (int k = 0; k < K; ++k) grad += out[k].grad(nullptr).cpu_data()[i];
+    ASSERT_EQ(in.grad(nullptr).cpu_data()[i], grad);
   }
 }

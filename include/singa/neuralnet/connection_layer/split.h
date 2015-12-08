@@ -38,9 +38,12 @@ class SplitLayer : public ConnectionLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+  const Blob<float>& grad(const Layer* from) const override;
+  Blob<float>* mutable_grad(const Layer* from) override;
 
- protected:
-  Blob<float> grads_;
+ private:
+  std::vector<Blob<float>> grads_;
+  int split_num_;
 };
 
 }  // namespace singa
