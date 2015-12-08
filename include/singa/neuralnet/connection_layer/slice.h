@@ -37,6 +37,10 @@ class SliceLayer : public ConnectionLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+  const Blob<float>& data(const Layer* from) const override;
+  const Blob<float>& grad(const Layer* from) const override;
+  Blob<float>* mutable_data(const Layer* from) override;
+  Blob<float>* mutable_grad(const Layer* from) override;
 
  private:
   std::vector<Blob<float>> datavec_;
