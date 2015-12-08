@@ -26,6 +26,7 @@
 #include "singa/comm/msg.h"
 #include "singa/comm/socket.h"
 #include "singa/neuralnet/connection_layer/bridge.h"
+#include "singa/neuralnet/connection_layer/concate.h"
 #include "singa/neuralnet/connection_layer/slice.h"
 #include "singa/neuralnet/neuron_layer/dummy.h"
 #include "singa/proto/job.pb.h"
@@ -275,5 +276,123 @@ TEST(ConnectionLayerTest, ModelSliceTest) {
     if (i && i % M == 0) offset += step;
     ASSERT_EQ(in.grad(nullptr).cpu_data()[i],
               out[(i / step) % K].grad(nullptr).cpu_data()[offset + i % step]);
+  }
+}
+
+TEST(ConnectionLayerTest, DataConcateTest) {
+  // use dummy as input layers
+  LayerProto proto_in[K];
+  vector<Layer*> src_in[K];
+  DummyLayer in[K];
+  for (int i = 0; i < K; ++i) {
+    proto_in[i].set_name("dummy_input_"+std::to_string(i));
+    proto_in[i].set_partition_id(i);
+    proto_in[i].mutable_dummy_conf()->set_input(true);
+    proto_in[i].mutable_dummy_conf()->add_shape(N / K);
+    proto_in[i].mutable_dummy_conf()->add_shape(M);
+    in[i].Setup(proto_in[i], src_in[i]);
+  }
+
+  // add concate layer
+  vector<Layer*> src_concate;
+  for (int i = 0; i < K; ++i)
+    src_concate.push_back(static_cast<Layer*>(&in[i]));
+  LayerProto proto_concate;
+  proto_concate.set_name("concate");
+  proto_concate.mutable_concate_conf()->set_concate_dim(0);
+  ConcateLayer concate;
+  concate.Setup(proto_concate, src_concate);
+  ASSERT_EQ(concate.data(static_cast<Layer*>(&concate)).shape(0), N);
+  ASSERT_EQ(concate.data(static_cast<Layer*>(&concate)).shape(1), M);
+
+  // use dummy as output layer
+  vector<Layer*> src_out;
+  src_out.push_back(static_cast<Layer*>(&concate));
+  LayerProto proto_out;
+  proto_out.set_name("dummy_output");
+  proto_out.mutable_dummy_conf()->set_output(true);
+  DummyLayer out;
+  out.Setup(proto_out, src_out);
+
+  // test for computing feature
+  for (int i = 0; i < K; ++i)
+    in[i].ComputeFeature(0, src_in[i]);
+  concate.ComputeFeature(0, src_concate);
+  out.ComputeFeature(0, src_out);
+  int step = (N * M) / K;
+  for (int i = 0; i < out.data(nullptr).count(); ++i) {
+    ASSERT_EQ(in[i / step].data(nullptr).cpu_data()[i % step],
+              out.data(nullptr).cpu_data()[i]);
+  }
+
+  // test for computing gradient
+  out.ComputeGradient(0, src_out);
+  concate.ComputeGradient(0, src_concate);
+  for (int i = 0; i < K; ++i)
+    in[i].ComputeGradient(0, src_in[i]);
+  for (int i = 0; i < out.grad(nullptr).count(); ++i) {
+    ASSERT_EQ(in[i / step].grad(nullptr).cpu_data()[i % step],
+              out.grad(nullptr).cpu_data()[i]);
+  }
+}
+
+TEST(ConnectionLayerTest, ModelConcateTest) {
+  // use dummy as input layers
+  LayerProto proto_in[K];
+  vector<Layer*> src_in[K];
+  DummyLayer in[K];
+  for (int i = 0; i < K; ++i) {
+    proto_in[i].set_name("dummy_input_"+std::to_string(i));
+    proto_in[i].set_partition_id(i);
+    proto_in[i].mutable_dummy_conf()->set_input(true);
+    proto_in[i].mutable_dummy_conf()->add_shape(N);
+    proto_in[i].mutable_dummy_conf()->add_shape(M / K);
+    in[i].Setup(proto_in[i], src_in[i]);
+  }
+
+  // add concate layer
+  vector<Layer*> src_concate;
+  for (int i = 0; i < K; ++i)
+    src_concate.push_back(static_cast<Layer*>(&in[i]));
+  LayerProto proto_concate;
+  proto_concate.set_name("concate");
+  proto_concate.mutable_concate_conf()->set_concate_dim(1);
+  ConcateLayer concate;
+  concate.Setup(proto_concate, src_concate);
+  ASSERT_EQ(concate.data(static_cast<Layer*>(&concate)).shape(0), N);
+  ASSERT_EQ(concate.data(static_cast<Layer*>(&concate)).shape(1), M);
+
+  // use dummy as output layer
+  vector<Layer*> src_out;
+  src_out.push_back(static_cast<Layer*>(&concate));
+  LayerProto proto_out;
+  proto_out.set_name("dummy_output");
+  proto_out.mutable_dummy_conf()->set_output(true);
+  DummyLayer out;
+  out.Setup(proto_out, src_out);
+
+  // test for computing feature
+  for (int i = 0; i < K; ++i)
+    in[i].ComputeFeature(0, src_in[i]);
+  concate.ComputeFeature(0, src_concate);
+  out.ComputeFeature(0, src_out);
+  int step = M / K;
+  int offset = 0;
+  for (int i = 0; i < out.grad(nullptr).count(); ++i) {
+    if (i && i % M == 0) offset += step;
+    ASSERT_EQ(in[(i / step) % K].data(nullptr).cpu_data()[offset + i % step],
+              out.data(nullptr).cpu_data()[i]);
+  }
+
+  // test for computing gradient
+  out.ComputeGradient(0, src_out);
+  concate.ComputeGradient(0, src_concate);
+  for (int i = 0; i < K; ++i)
+    in[i].ComputeGradient(0, src_in[i]);
+  offset = 0;
+  for (int i = 0; i < out.grad(nullptr).count(); ++i) {
+    if (i && i % M == 0) offset += step;
+    ASSERT_EQ(in[(i / step) % K].grad(nullptr).cpu_data()[offset + i % step],
+              out.grad(nullptr).cpu_data()[i]);
   }
 }
