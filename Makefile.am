@@ -26,6 +26,8 @@ PROTO_PYS := tool/pb2/singa_pb2.py \
              tool/pb2/job_pb2.py \
              tool/pb2/common_pb2.py
 
+CUDA_SRCS := src/utils/math_kernel.cu
+
 SINGA_SRCS := src/driver.cc \
               src/server.cc \
               src/worker.cc \
@@ -134,18 +136,22 @@ bin_PROGRAMS = singa singatool $(PROGS)
 
 #lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_SRCS) $(SINGA_SRCS)
-libsinga_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive
+libsinga_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive -I$(top_srcdir)/include 
 if LMDB
 libsinga_la_CXXFLAGS += -DUSE_LMDB
 endif
-libsinga_la_LDFLAGS = -I./include
+#libsinga_la_LDFLAGS = -I$(top_srcdir)/include
+if DCUDA
+libsinga_la_SOURCES += $(CUDA_SRCS)
+libsinga_la_CXXFLAGS += $(CUDA_CFLAGS)
+libsinga_la_LDFLAGS = $(CUDA_LDFLAGS) $(CUDA_LIBS)
+endif
 
 
 #bin_PROGRAMS = singa
 singa_SOURCES = src/main.cc
-singa_CXXFLAGS = $(DEFAULT_FLAGS) -MMD
-singa_LDFLAGS = -I./include \
-                -lsinga \
+singa_CXXFLAGS = $(DEFAULT_FLAGS) -MMD -I$(top_srcdir)/include 
+singa_LDFLAGS = -lsinga \
                 -lglog  \
                 -lprotobuf \
                 -lrt \
@@ -157,31 +163,35 @@ if LMDB
 singa_LDFLAGS += -llmdb
 endif
 
+if DCUDA
+singa_SOURCES += $(CUDA_SRCS)
+singa_CXXFLAGS += $(CUDA_CFLAGS)
+singa_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
+endif
+
 #bin_PROGRAMS += singatool
 singatool_SOURCES = src/utils/tool.cc
 singatool_CXXFLAGS = -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
-                     -funroll-loops -DTHREADED
-singatool_LDFLAGS = -I./include \
-                    -lsinga \
+                     -funroll-loops -DTHREADED -I$(top_srcdir)/include 
+singatool_LDFLAGS = -lsinga \
                     -lglog  \
                     -lprotobuf \
                     -lzookeeper_mt
 
 #lib_LTLIBRARIES += libgtest.la
 libgtest_la_SOURCES = $(GTEST_HDRS) $(GTEST_SRCS)
-libgtest_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive
+libgtest_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive -I$(top_srcdir)/include
 if LMDB
 libgtest_la_CXXFLAGS += -DUSE_LMDB
 endif
-libgtest_la_LDFLAGS = -I./include
+#libgtest_la_LDFLAGS = -I$(top_srcdir)/include
 
 #bin_PROGRAMS += test
 
 singatest_SOURCES = $(GTEST_HDRS) $(TEST_SRCS)
-singatest_CXXFLAGS = $(DEFAULT_FLAGS)
+singatest_CXXFLAGS = $(DEFAULT_FLAGS) -I$(top_srcdir)/include 
 singatest_LDADD = ./libgtest.la
-singatest_LDFLAGS = -I./include \
-                -lsinga \
+singatest_LDFLAGS = -lsinga \
                 -lglog  \
                 -lprotobuf \
                 -lrt \
@@ -192,6 +202,11 @@ singatest_LDFLAGS = -I./include \
 			    -lgtest
 if LMDB
 singatest_LDFLAGS += -llmdb
+endif
+if DCUDA
+singatest_SOURCES += $(CUDA_SRCS)
+singatest_CXXFLAGS += $(CUDA_CFLAGS)
+singatest_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
 
 clean-local:
@@ -211,6 +226,9 @@ rat:
 	else \
 		echo "java is not found"; \
 	fi
+
+.cu.o: .cu
+	$(NVCC) $(MSHADOW_FLAGS) $(CUDA_CFLAGS) $(CUDA_LDFLAGS) $(CUDA_LIBS) -I$(top_srcdir)/include -std=c++11 -G -c -o $@ $<
 
 test: singatest
 	@./singatest
