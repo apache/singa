@@ -157,23 +157,23 @@ AC_SUBST(PYLIBS)
 
 AC_ARG_WITH([python],
     [AS_HELP_STRING([--with-python=PATH],[prefix where python is installed])],
-    [python_prefix=$withval],[python_prefix="/usr/local"])
+    [python_prefix=$withval],[python_prefix="/usr/include/python`python -V 2>&1 | awk '{print substr($2,1,3)}'`"])
 if test "$python_prefix" == "yes"; then
     if test "$withval" == "yes"; then
-        python_prefix="/usr/local"
+        python_prefix="/usr/include/python`python -V 2>&1 | awk '{print substr($2,1,3)}'`"
     fi
 fi
 
-AC_MSG_CHECKING([Python.h in $python_prefix])
-if test -f "$python_prefix/Python.h"; then
-    AC_MSG_RESULT([python found])
-    AC_DEFINE_UNQUOTED([PYTHON_PATH], ["$python_prefix"], [Path to python binary])
-else
-    AC_MSG_RESULT([python not found!])
-    AC_MSG_FAILURE([Python.h was not found in $py_prefix])
-fi
 
 if test x"$enable_python" != x"no"; then
+    AC_MSG_CHECKING([Python.h in $python_prefix])
+    if test -f "$python_prefix/Python.h"; then
+        AC_MSG_RESULT([Python.h found])
+        AC_DEFINE_UNQUOTED([PYTHON_PATH], ["$python_prefix"], [Path to python binary])
+    else
+        AC_MSG_RESULT([Python.h not found!])
+        AC_MSG_FAILURE([Python.h was not found in $python_prefix])
+    fi
     #AC_DEFINE(PY,[1],[Defined if PY should be used])
     PY_PROGS='_driver.la '
     PYFLAGS="-I$python_prefix "

@@ -255,6 +255,13 @@ clean-local:
 	rm -rf rat_check
 	rm -rf tool/python/pb2
 
+all-local:
+	@if [ -f ".libs/_driver.so" ]; then \
+		echo "Copy libs for python wrapper"; \
+		cp -f .libs/_driver.so tool/python/singa/; \
+		touch tool/python/singa/__init__.py; \
+	fi
+
 rat:
 	@if test ! -z '$(shell command -v java 2>/dev/null)'; then \
 		if test ! -z '$(shell echo $$RAT_PATH)'; then \
