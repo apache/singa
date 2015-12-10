@@ -46,6 +46,13 @@ class Driver {
    */
   void Init(int argc, char** argv);
   /**
+   * Init SINGA LOG
+   * Used for python binding. Users can also directly call it as a C++ API.
+   * - init glog with given parameters
+   *
+   */   
+  void InitLog(char *arg);
+  /**
    * Update job configuration and call Train(const JobProto&) to start the
    * training.
    *
