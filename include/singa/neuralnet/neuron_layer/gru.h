@@ -40,13 +40,11 @@ class GRULayer : public NeuronLayer {
     return params;
   }
 
-  int vdim() const { return vdim_;}
-  int hdim() const { return hdim_;}
-  int batchsize() const {return batchsize_;}
-
  private:
   int batchsize_; // batch size
   int vdim_, hdim_; // dimensions
+
+  Blob<float> *update_gate, *reset_gate, *new_memory;
 
   Param *weight_z_hx_, *weight_z_hh_, *bias_z_; // update gate
   Param *weight_r_hx_, *weight_r_hh_, *bias_r_; // reset gate

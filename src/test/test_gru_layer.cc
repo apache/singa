@@ -48,6 +48,8 @@ protected:
 		conf1->set_batchsize(2);
 		conf1->add_shape(4);
 		conf1->set_backend("textfile");
+		conf1->set_has_label(false);
+
 
 		// Initialize the settings for the second input-layer
 		std::string path2 = "src/test/gru-in-2.csv"; // path of a csv file
@@ -62,6 +64,8 @@ protected:
 		conf2->set_batchsize(2);
 		conf2->add_shape(4);
 		conf2->set_backend("textfile");
+		conf2->set_has_label(false);
+
 
 		gru1_conf.mutable_gru_conf() -> set_dim_hidden(2);
 		gru1_conf.mutable_gru_conf() -> set_bias_term(true);
@@ -75,80 +79,96 @@ protected:
 		gru1_conf.mutable_param(0)->mutable_init()->set_type(kConstant);
 		gru1_conf.mutable_param(0)->mutable_init()->set_value(0.5f);
 
-		gru1_conf.mutable_param(1)->set_name("wzhh1");
+		gru1_conf.mutable_param(1)->set_name("wrhx1");
 		gru1_conf.mutable_param(1)->set_type(kParam);
-		gru1_conf.mutable_param(1)->mutable_init()->set_type(kUniform);
-		gru1_conf.mutable_param(2)->set_name("bz1");
+		gru1_conf.mutable_param(1)->mutable_init()->set_type(kConstant);
+		gru1_conf.mutable_param(1)->mutable_init()->set_value(0.5f);
+
+		gru1_conf.mutable_param(2)->set_name("wchx1");
 		gru1_conf.mutable_param(2)->set_type(kParam);
-		gru1_conf.mutable_param(2)->mutable_init()->set_type(kUniform);
-		gru1_conf.mutable_param(3)->set_name("wrhx1");
+		gru1_conf.mutable_param(2)->mutable_init()->set_type(kConstant);
+		gru1_conf.mutable_param(2)->mutable_init()->set_value(0.5f);
+
+		gru1_conf.mutable_param(3)->set_name("wzhh1");
 		gru1_conf.mutable_param(3)->set_type(kParam);
-		gru1_conf.mutable_param(3)->mutable_init()->set_type(kUniform);
+		gru1_conf.mutable_param(3)->mutable_init()->set_type(kConstant);
+		gru1_conf.mutable_param(3)->mutable_init()->set_value(0.5f);
+
 		gru1_conf.mutable_param(4)->set_name("wrhh1");
 		gru1_conf.mutable_param(4)->set_type(kParam);
-		gru1_conf.mutable_param(4)->mutable_init()->set_type(kUniform);
-		gru1_conf.mutable_param(5)->set_name("br1");
+		gru1_conf.mutable_param(4)->mutable_init()->set_type(kConstant);
+		gru1_conf.mutable_param(4)->mutable_init()->set_value(0.5f);
+
+		gru1_conf.mutable_param(5)->set_name("wchh1");
 		gru1_conf.mutable_param(5)->set_type(kParam);
-		gru1_conf.mutable_param(5)->mutable_init()->set_type(kUniform);
-		gru1_conf.mutable_param(6)->set_name("wchx1");
+		gru1_conf.mutable_param(5)->mutable_init()->set_type(kConstant);
+		gru1_conf.mutable_param(5)->mutable_init()->set_value(0.5f);
+
+		gru1_conf.mutable_param(6)->set_name("bz1");
 		gru1_conf.mutable_param(6)->set_type(kParam);
-		gru1_conf.mutable_param(6)->mutable_init()->set_type(kUniform);
-		gru1_conf.mutable_param(7)->set_name("wchh1");
+		gru1_conf.mutable_param(6)->mutable_init()->set_type(kConstant);
+		gru1_conf.mutable_param(6)->mutable_init()->set_value(0.5f);
+
+		gru1_conf.mutable_param(7)->set_name("br1");
 		gru1_conf.mutable_param(7)->set_type(kParam);
-		gru1_conf.mutable_param(7)->mutable_init()->set_type(kUniform);
+		gru1_conf.mutable_param(7)->mutable_init()->set_type(kConstant);
+		gru1_conf.mutable_param(7)->mutable_init()->set_value(0.5f);
+
 		gru1_conf.mutable_param(8)->set_name("bc1");
 		gru1_conf.mutable_param(8)->set_type(kParam);
-		gru1_conf.mutable_param(8)->mutable_init()->set_type(kUniform);
+		gru1_conf.mutable_param(8)->mutable_init()->set_type(kConstant);
+		gru1_conf.mutable_param(8)->mutable_init()->set_value(0.5f);
 
 		gru2_conf.mutable_gru_conf() -> set_dim_hidden(2);
 		gru2_conf.mutable_gru_conf() -> set_bias_term(true);
 		for (int i = 0; i < 9; i ++) {
 			gru2_conf.add_param();
 		}
+
 		gru2_conf.mutable_param(0)->set_name("wzhx2");
-		gru2_conf.mutable_param(0)->set_share_from("wzhx1");
 		gru2_conf.mutable_param(0)->set_type(kParam);
-		gru2_conf.mutable_param(0)->mutable_init()->set_type(kUniform);
+		gru2_conf.mutable_param(0)->mutable_init()->set_type(kConstant);
+		gru2_conf.mutable_param(0)->mutable_init()->set_value(0.5f);
 
-		gru2_conf.mutable_param(1)->set_name("wzhh2");
-		gru2_conf.mutable_param(1)->set_share_from("wzhh1");
+		gru2_conf.mutable_param(1)->set_name("wrhx2");
 		gru2_conf.mutable_param(1)->set_type(kParam);
-		gru2_conf.mutable_param(1)->mutable_init()->set_type(kUniform);
+		gru2_conf.mutable_param(1)->mutable_init()->set_type(kConstant);
+		gru2_conf.mutable_param(1)->mutable_init()->set_value(0.5f);
 
-		gru2_conf.mutable_param(2)->set_name("bz2");
-		gru2_conf.mutable_param(2)->set_share_from("bz1");
+		gru2_conf.mutable_param(2)->set_name("wchx2");
 		gru2_conf.mutable_param(2)->set_type(kParam);
-		gru2_conf.mutable_param(2)->mutable_init()->set_type(kUniform);
+		gru2_conf.mutable_param(2)->mutable_init()->set_type(kConstant);
+		gru2_conf.mutable_param(2)->mutable_init()->set_value(0.5f);
 
-		gru2_conf.mutable_param(3)->set_name("wrhx2");
-		gru2_conf.mutable_param(3)->set_share_from("wrhx1");
+		gru2_conf.mutable_param(3)->set_name("wzhh2");
 		gru2_conf.mutable_param(3)->set_type(kParam);
-		gru2_conf.mutable_param(3)->mutable_init()->set_type(kUniform);
+		gru2_conf.mutable_param(3)->mutable_init()->set_type(kConstant);
+		gru2_conf.mutable_param(3)->mutable_init()->set_value(0.5f);
 
 		gru2_conf.mutable_param(4)->set_name("wrhh2");
-		gru2_conf.mutable_param(4)->set_share_from("wrhh1");
 		gru2_conf.mutable_param(4)->set_type(kParam);
-		gru2_conf.mutable_param(4)->mutable_init()->set_type(kUniform);
+		gru2_conf.mutable_param(4)->mutable_init()->set_type(kConstant);
+		gru2_conf.mutable_param(4)->mutable_init()->set_value(0.5f);
 
-		gru2_conf.mutable_param(5)->set_name("br2");
-		gru2_conf.mutable_param(5)->set_share_from("br1");
+		gru2_conf.mutable_param(5)->set_name("wchh2");
 		gru2_conf.mutable_param(5)->set_type(kParam);
-		gru2_conf.mutable_param(5)->mutable_init()->set_type(kUniform);
+		gru2_conf.mutable_param(5)->mutable_init()->set_type(kConstant);
+		gru2_conf.mutable_param(5)->mutable_init()->set_value(0.5f);
 
-		gru2_conf.mutable_param(6)->set_name("wchx2");
-		gru2_conf.mutable_param(6)->set_share_from("wchx1");
+		gru2_conf.mutable_param(6)->set_name("bz2");
 		gru2_conf.mutable_param(6)->set_type(kParam);
-		gru2_conf.mutable_param(6)->mutable_init()->set_type(kUniform);
+		gru2_conf.mutable_param(6)->mutable_init()->set_type(kConstant);
+		gru2_conf.mutable_param(6)->mutable_init()->set_value(0.5f);
 
-		gru2_conf.mutable_param(7)->set_name("wchh2");
-		gru2_conf.mutable_param(7)->set_share_from("wchh1");
+		gru2_conf.mutable_param(7)->set_name("br2");
 		gru2_conf.mutable_param(7)->set_type(kParam);
-		gru2_conf.mutable_param(7)->mutable_init()->set_type(kUniform);
+		gru2_conf.mutable_param(7)->mutable_init()->set_type(kConstant);
+		gru2_conf.mutable_param(7)->mutable_init()->set_value(0.5f);
 
 		gru2_conf.mutable_param(8)->set_name("bc2");
-		gru2_conf.mutable_param(8)->set_share_from("bc1");
 		gru2_conf.mutable_param(8)->set_type(kParam);
-		gru2_conf.mutable_param(8)->mutable_init()->set_type(kUniform);
+		gru2_conf.mutable_param(8)->mutable_init()->set_type(kConstant);
+		gru2_conf.mutable_param(8)->mutable_init()->set_value(0.5f);
 
 	}
 	singa::LayerProto in1_conf;
@@ -177,55 +197,89 @@ TEST_F(GRULayerTest, Setup) {
 
 	singa::GRULayer gru_layer_1;
 	gru_layer_1.Setup(gru1_conf, std::vector<singa::Layer*>{&in_layer_1});
-	EXPECT_EQ(2, gru_layer_1.hdim());
-	EXPECT_EQ(4, gru_layer_1.vdim());
-	gru_layer_1.GetParams()[0]->InitValues();
-	cout << "gru_layer_1: " << gru_layer_1.GetParams()[0]->data().cpu_data()[0] << endl;
+	//EXPECT_EQ(2, gru_layer_1.hdim());
+	//EXPECT_EQ(4, gru_layer_1.vdim());
 
-	//singa::GRULayer gru_layer_2;
-	//gru_layer_2.Setup(gru2_conf, std::vector<singa::Layer*>{&in_layer_2, &gru_layer_1});
+	for (unsigned int i = 0; i < gru_layer_1.GetParams().size(); i ++) {
+		gru_layer_1.GetParams()[i]->InitValues();
+	}
+	EXPECT_EQ (0.5, gru_layer_1.GetParams()[0]->data().cpu_data()[0]);
+	//cout << "gru_layer_1: " << gru_layer_1.GetParams()[0]->data().cpu_data()[0] << endl;
+
+	singa::GRULayer gru_layer_2;
+	gru_layer_2.Setup(gru2_conf, std::vector<singa::Layer*>{&in_layer_2, &gru_layer_1});
 	//EXPECT_EQ(2, gru_layer_2.hdim());
 	//EXPECT_EQ(4, gru_layer_2.vdim());
+	for (unsigned int i = 0; i < gru_layer_2.GetParams().size(); i ++) {
+		gru_layer_2.GetParams()[i]->InitValues();
+	}
+	EXPECT_EQ (0.5, gru_layer_2.GetParams()[0]->data().cpu_data()[0]);
 }
 
-/*
 
- TEST_F(CSVInputLayerTest, ComputeFeature) {
- singa::CSVInputLayer csv;
- csv.Setup(csv_conf, std::vector<singa::Layer*>{});
- csv.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{});
+TEST_F(GRULayerTest, ComputeFeature) {
+	singa::CSVInputLayer in_layer_1;
+	singa::CSVInputLayer in_layer_2;
 
- EXPECT_EQ(12, csv.aux_data()[0]);
- EXPECT_EQ(2, csv.aux_data()[1]);
- auto data = csv.data(nullptr);
- EXPECT_EQ(3.2f, data.cpu_data()[0]);
- EXPECT_EQ(14.1f, data.cpu_data()[2]);
- EXPECT_EQ(0.2f, data.cpu_data()[3]);
- EXPECT_EQ(1.1f, data.cpu_data()[5]);
- }
- TEST_F(CSVInputLayerTest, ComputeFeatureDeploy) {
- singa::CSVInputLayer csv;
- csv_conf.mutable_store_conf()->set_shape(0, 4);
- csv.Setup(csv_conf, std::vector<singa::Layer*>{});
- csv.ComputeFeature(singa::kDeploy, std::vector<singa::Layer*>{});
+	in_layer_1.Setup(in1_conf, std::vector<singa::Layer*> { });
+	in_layer_1.ComputeFeature(singa::kTrain, std::vector<singa::Layer*> { });
+	in_layer_2.Setup(in2_conf, std::vector<singa::Layer*>{ });
+	in_layer_2.ComputeFeature(singa::kTrain, std::vector<singa::Layer*> { });
 
- auto data = csv.data(nullptr);
- EXPECT_EQ(12.f, data.cpu_data()[0]);
- EXPECT_EQ(1.f, data.cpu_data()[2]);
- EXPECT_EQ(14.1f, data.cpu_data()[3]);
- EXPECT_EQ(0.2f, data.cpu_data()[5]);
- }
 
- TEST_F(CSVInputLayerTest, SeekToFirst) {
- singa::CSVInputLayer csv;
- csv.Setup(csv_conf, std::vector<singa::Layer*>{});
- csv.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{});
- csv.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{});
+	singa::GRULayer gru_layer_1;
+	gru_layer_1.Setup(gru1_conf, std::vector<singa::Layer*>{&in_layer_1});
+	for (unsigned int i = 0; i < gru_layer_1.GetParams().size(); i ++) {
+		gru_layer_1.GetParams()[i]->InitValues();
+	}
+	gru_layer_1.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{&in_layer_1});
+	for (int i = 0; i < gru_layer_1.data(nullptr).count(); i ++) {
+		EXPECT_GT(0.000001,abs(0.204824-gru_layer_1.data(nullptr).cpu_data()[i]));
+	}
 
- auto data = csv.data(nullptr);
- EXPECT_EQ(2.2f, data.cpu_data()[0]);
- EXPECT_EQ(4.1f, data.cpu_data()[2]);
- EXPECT_EQ(3.2f, data.cpu_data()[3]);
- EXPECT_EQ(14.1f, data.cpu_data()[5]);
- }
- */
+	singa::GRULayer gru_layer_2;
+	gru_layer_2.Setup(gru2_conf, std::vector<singa::Layer*>{&in_layer_2, &gru_layer_1});
+	for (unsigned int i = 0; i < gru_layer_2.GetParams().size(); i ++) {
+		gru_layer_2.GetParams()[i]->InitValues();
+	}
+	gru_layer_2.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{&in_layer_2, &gru_layer_1});
+	for (int i = 0; i < gru_layer_2.data(nullptr).count(); i ++) {
+		EXPECT_GT(0.000001,abs(0.346753-gru_layer_2.data(nullptr).cpu_data()[i]));
+	}
+}
+
+
+TEST_F(GRULayerTest, ComputeGradient) {
+	singa::CSVInputLayer in_layer_1;
+	singa::CSVInputLayer in_layer_2;
+
+	in_layer_1.Setup(in1_conf, std::vector<singa::Layer*> { });
+	in_layer_1.ComputeFeature(singa::kTrain, std::vector<singa::Layer*> { });
+	in_layer_2.Setup(in2_conf, std::vector<singa::Layer*>{ });
+	in_layer_2.ComputeFeature(singa::kTrain, std::vector<singa::Layer*> { });
+
+
+	singa::GRULayer gru_layer_1;
+	gru_layer_1.Setup(gru1_conf, std::vector<singa::Layer*>{&in_layer_1});
+	for (unsigned int i = 0; i < gru_layer_1.GetParams().size(); i ++) {
+		gru_layer_1.GetParams()[i]->InitValues();
+	}
+	gru_layer_1.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{&in_layer_1});
+
+
+	singa::GRULayer gru_layer_2;
+	gru_layer_2.Setup(gru2_conf, std::vector<singa::Layer*>{&in_layer_2, &gru_layer_1});
+	for (unsigned int i = 0; i < gru_layer_2.GetParams().size(); i ++) {
+		gru_layer_2.GetParams()[i]->InitValues();
+	}
+	gru_layer_2.ComputeFeature(singa::kTrain, std::vector<singa::Layer*>{&in_layer_2, &gru_layer_1});
+
+	// For test purpose, we set dummy values for gru_layer_2.grad_
+	for (int i = 0; i < gru_layer_2.grad(nullptr).count(); i ++) {
+		gru_layer_2.mutable_grad(nullptr)->mutable_cpu_data()[i] = 1.0f;
+	}
+	gru_layer_2.ComputeGradient(singa::kTrain, std::vector<singa::Layer*>{&in_layer_2, &gru_layer_1});
+
+	gru_layer_1.ComputeGradient(singa::kTrain, std::vector<singa::Layer*>{&in_layer_1});
+
+}

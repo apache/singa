@@ -335,8 +335,8 @@ void Copy(XPU xpu, const Blob<Dtype>& A, Blob<Dtype>* B) {
 template<typename Dtype>
 void Add(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
-  Copy(A, C);
-  AXPY(B, C, 1);
+  Copy(xpu, A, C);
+  AXPY(xpu, 1.0f, B, C);
 }
 
 /**
@@ -347,7 +347,7 @@ template<typename Dtype>
 void Sub(XPU xpu, const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
   Copy(xpu, A, C);
-  AXPY(xpu, B, C, -1);
+  AXPY(xpu, -1.0f, B, C);
 }
 
 /**
