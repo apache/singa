@@ -189,9 +189,8 @@ Node* SliceNode(Graph* graph, Node* srcnode,
   proto->set_type(LayerType::kSlice);
   proto->set_partition_id(
       static_cast<LayerProto*>(srcnode->proto)->partition_id());
-  auto conf = proto->mutable_slice_conf();
-  conf->set_slice_dim(
-      static_cast<LayerProto*>(dstnodes[0]->proto)->partition_dim());
+  proto->set_partition_dim(
+      static_cast<LayerProto*>(srcnode->proto)->partition_dim());
   Node* node = new Node(name, "##" + name, proto->partition_id(), proto);
   graph->AddNode(node);
   graph->AddEdge(srcnode, node);
@@ -209,8 +208,7 @@ Node* ConcateNodes(Graph* graph, const vector<Node*>& srcnodes, Node* dstnode) {
   proto->set_type(LayerType::kConcate);
   proto->set_partition_id(
       static_cast<LayerProto*>(dstnode->proto)->partition_id());
-  auto conf = proto->mutable_concate_conf();
-  conf->set_concate_dim(
+  proto->set_partition_dim(
       static_cast<LayerProto*>(srcnodes[0]->proto)->partition_dim());
   Node* node = new Node(name, "##" + name, proto->partition_id(), proto);
   graph->AddNode(node);

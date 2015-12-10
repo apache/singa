@@ -284,11 +284,11 @@ class InputLayer : virtual public Layer {
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
   ConnectionType dst_layer_connection() const override { return kOneToMany; }
   Blob<float>* mutable_grad(const Layer* layer) override {
-    // LOG(FATAL) << "Input layer has no gradient blob";
+    LOG(FATAL) << "Input layer has no gradient blob";
     return nullptr;
   }
   const Blob<float>& grad(const Layer* from) const override {
-    // LOG(FATAL) << "Input layer has no gradient blob";
+    LOG(FATAL) << "Input layer has no gradient blob";
     return grad_;
   }
 };

@@ -34,6 +34,7 @@ namespace singa {
  */
 class SliceLayer : public ConnectionLayer {
  public:
+  ~SliceLayer();
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
@@ -41,12 +42,6 @@ class SliceLayer : public ConnectionLayer {
   const Blob<float>& grad(const Layer* from) const override;
   Blob<float>* mutable_data(const Layer* from) override;
   Blob<float>* mutable_grad(const Layer* from) override;
-
- private:
-  std::vector<Blob<float>> datavec_;
-  std::vector<Blob<float>> gradvec_;
-  int slice_dim_;
-  int slice_num_;
 };
 
 }  // namespace singa
