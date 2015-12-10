@@ -38,5 +38,6 @@ if __name__ == '__main__':
     Merge(s,j)
     b = j.SerializeToString()
     d = driver.Driver()
+    d.InitLog(sys.argv[0])
     d.Init(sys.argv)
     d.Train(False,b)

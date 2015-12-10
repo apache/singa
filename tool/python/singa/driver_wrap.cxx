@@ -3413,7 +3413,7 @@ SWIG_AsVal_ptrdiff_t (PyObject * obj, ptrdiff_t *val)
 #include <vector>
 
 
-#include "../include/singa/driver.h"
+#include "singa/driver.h"
 
 
 SWIGINTERN int
@@ -3604,6 +3604,9 @@ SWIG_AsArgcArgv(PyObject *input,
     return SWIG_OK;
   }
 }
+
+
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -4543,6 +4546,39 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_Driver_InitLog(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  singa::Driver *arg1 = (singa::Driver *) 0 ;
+  char *arg2 = (char *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:Driver_InitLog",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_singa__Driver, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Driver_InitLog" "', argument " "1"" of type '" "singa::Driver *""'"); 
+  }
+  arg1 = reinterpret_cast< singa::Driver * >(argp1);
+  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Driver_InitLog" "', argument " "2"" of type '" "char *""'");
+  }
+  arg2 = reinterpret_cast< char * >(buf2);
+  (arg1)->InitLog(arg2);
+  resultobj = SWIG_Py_Void();
+  if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_new_Driver(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   singa::Driver *result = 0 ;
@@ -4606,6 +4642,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"SwigPyIterator_swigregister", SwigPyIterator_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Driver_Train", _wrap_Driver_Train, METH_VARARGS, NULL},
 	 { (char *)"Driver_Init", _wrap_Driver_Init, METH_VARARGS, NULL},
+	 { (char *)"Driver_InitLog", _wrap_Driver_InitLog, METH_VARARGS, NULL},
 	 { (char *)"new_Driver", _wrap_new_Driver, METH_VARARGS, NULL},
 	 { (char *)"delete_Driver", _wrap_delete_Driver, METH_VARARGS, NULL},
 	 { (char *)"Driver_swigregister", Driver_swigregister, METH_VARARGS, NULL},
