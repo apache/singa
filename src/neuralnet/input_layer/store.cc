@@ -32,6 +32,14 @@ void StoreInputLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   InputLayer::Setup(conf, srclayers);
   batchsize_ = conf.store_conf().batchsize();
+  bool enable_shuffle_ = conf.store_conf().enable_shuffle();
+  if (enable_shuffle_) {
+    shuffle_number_ = conf.store_conf().shuffle_number();
+    buffer_pointer_ = shuffle_number_*batchsize_;
+    buffer_shaped_ = false;
+    for (int i = 0; i < buffer_pointer_; ++i)
+      shuffle_index_.push_back(i);
+  }
   if (conf.partition_dim() == 0) {
     batchsize_ /= conf.num_partitions();
   }
@@ -54,20 +62,56 @@ void StoreInputLayer::ComputeFeature(int flag,
       random_skip_--;
     }
   }
-  for (int k = 0; k < batchsize_; k++) {
-    if (!store_->Read(&key, &val)) {
-      store_->SeekToFirst();
-      CHECK(store_->Read(&key, &val));
+  if ((flag & kTrain) == kTrain && enable_shuffle_) {
+    if (!buffer_shaped_) {
+      datasize_ = data_.count() / batchsize_;
+      vector<int> shape {batchsize_*shuffle_number_, datasize_};
+      shuffle_buffer_.Reshape(shape);
+      aux_shuffle_buffer_.resize(batchsize_*shuffle_number_);
+      std::srand(unsigned(std::time(0)));
+      buffer_shaped_ = true;
     }
-    // TODO(wangwei) random skip and shuffle among this mini-batch
-    Parse(k, flag, key, val);
+    if (buffer_pointer_ == shuffle_number_*batchsize_) {
+      for (int i = 0; i < shuffle_number_; i++) {
+        for (int k = 0; k < batchsize_; k++) {
+          if (!store_->Read(&key, &val)) {
+            store_->SeekToFirst();
+            CHECK(store_->Read(&key, &val));
+          }
+          Parse(k, flag, key, val);
+        }
+        std::copy(data_.mutable_cpu_data(),
+            data_.mutable_cpu_data()+batchsize_*datasize_,
+            shuffle_buffer_.mutable_cpu_data() + i * batchsize_*datasize_);
+        std::copy(aux_data_.begin(), aux_data_.end(),
+            aux_shuffle_buffer_.begin() + i * batchsize_);
+      }
+      std::random_shuffle(shuffle_index_.begin(), shuffle_index_.end());
+      buffer_pointer_ = 0;
+    }
+    for (int k = 0; k < batchsize_; ++k) {
+      std::copy(shuffle_buffer_.mutable_cpu_data()
+          +shuffle_index_[buffer_pointer_]*datasize_,
+          shuffle_buffer_.mutable_cpu_data()
+          +shuffle_index_[buffer_pointer_]*datasize_+datasize_,
+          data_.mutable_cpu_data()+k*datasize_);
+      aux_data_[k] = aux_shuffle_buffer_[shuffle_index_[buffer_pointer_]];
+      buffer_pointer_++;
+    }
+  } else {
+    for (int k = 0; k < batchsize_; k++) {
+      if (!store_->Read(&key, &val)) {
+        store_->SeekToFirst();
+        CHECK(store_->Read(&key, &val));
+      }
+      Parse(k, flag, key, val);
+    }
   }
 }
 
 void SingleLabelRecordLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   StoreInputLayer::Setup(conf, srclayers);
-
   vector<int> shape {batchsize_};
   for (int s : conf.store_conf().shape())
     shape.push_back(s);

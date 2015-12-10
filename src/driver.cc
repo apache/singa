@@ -56,6 +56,7 @@
 #include "singa/neuralnet/neuron_layer/sigmoid.h"
 #include "singa/neuralnet/neuron_layer/stanh.h"
 #include "singa/neuralnet/neuron_layer/softmax.h"
+#include "singa/neuralnet/neuron_layer/batch_norm.h"
 #include "singa/neuralnet/output_layer/record.h"
 #include "singa/neuralnet/output_layer/csv.h"
 
@@ -114,6 +115,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<SplitLayer, int>(kSplit);
   RegisterLayer<STanhLayer, int>(kSTanh);
   RegisterLayer<SoftmaxLayer, int>(kSoftmax);
+  RegisterLayer<BatchNormLayer, int>(kBatchNorm);
 
 #ifdef USE_LMDB
   RegisterLayer<LMDBDataLayer, int>(kLMDBData);

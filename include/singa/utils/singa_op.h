@@ -197,12 +197,12 @@ struct Sqrt {
 
 /*********************************************************************/
 /**
- * c = pow(a, b), i.e., c = a^b
+ * c = pow(b, a), i.e., c = b^a
  */
 template<typename Dtype>
 struct Pow {
   inline static void Map(const Dtype & a, const Dtype &b, Dtype * c) {
-    *c = pow(a, b);
+    *c = pow(b, a);
   }
 #ifdef USE_GPU
   inline static void CudaMap(const Dtype * a,
