@@ -33,7 +33,63 @@ ACLOCAL_AMFLAGS = -I m4 --install
 # Checks for programs.
 AC_PROG_CXX([g++])
 AC_PROG_CC
+AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
+
+# Setup custom CUDA paths
+AC_ARG_ENABLE(cuda,
+	[AS_HELP_STRING(--enable-cuda,enable CUDA support)],
+    cudaval="yes",
+    cudaval="no")
+AM_CONDITIONAL(DCUDA, [test "$cudaval" = "yes"])
+
+AC_ARG_WITH([cuda],
+   [AS_HELP_STRING(
+        [--with-cuda=PATH],
+        [prefix where CUDA is installed])],
+   [cuda_prefix=$withval],
+   [cuda_prefix="/usr/local/cuda"])
+if test "$cuda_prefix" == "yes"; then
+    if test "$withval" == "yes"; then
+        cuda_prefix="/usr/local/cuda"
+    fi
+fi
+
+AC_MSG_CHECKING([nvcc in $cuda_prefix/bin])
+if test -x "$cuda_prefix/bin/nvcc"; then
+    AC_MSG_RESULT([found])
+    AC_DEFINE_UNQUOTED([NVCC_PATH], ["$cuda_prefix/bin/nvcc"], [Path to nvcc binary])
+else
+    AC_MSG_RESULT([not found!])
+    AC_MSG_FAILURE([nvcc was not found in $cuda_prefix/bin])
+fi
+
+if test x"$cudaval" = x"yes"; then
+    CUDA_CFLAGS="-I$cuda_prefix/include"
+    CUDA_LDFLAGS="-L$cuda_prefix/lib64 -L$cuda_prefix/lib"
+    CUDA_LIBS="-lcublas -lcudart -lcurand"
+    NVCC="nvcc"
+	DEBUG="-DUSE_GPU "
+    AC_DEFINE(DCUDA,[1],[Defined if CUDA should be used])
+	AC_CHECK_LIB([cuda], [main], [], [
+ 		AC_MSG_ERROR([unable to find cuda library])
+ 	 ])
+	AC_CHECK_LIB([cudart], [main], [], [
+	  	AC_MSG_ERROR([unable to find cudart library])
+  	])
+	AC_CHECK_LIB([curand], [main], [], [
+ 	 	AC_MSG_ERROR([unable to find curand library])
+  	])
+else
+    CUDA_CFLAGS=""
+    CUDA_LDFLAGS=""
+    CUDA_LIBS=""
+    NVCC=""
+fi
+AC_SUBST(NVCC)
+AC_SUBST(CUDA_LDFLAGS)
+AC_SUBST(CUDA_LIBS)
+AC_SUBST(CUDA_CFLAGS)
 
 # Checks for libraries.
 AC_SEARCH_LIBS([cblas_sgemm], [openblas], [], [
@@ -68,25 +124,69 @@ AC_ARG_ENABLE(test,
 	[enable_test=yes],[enable_test=no])
 AM_CONDITIONAL(SINGATEST, test "$enable_test" = yes)
 if test x"$enable_test" != x"no"; then
-	PROGS='singatest test'
-	LTLIBS='libgtest.la'
+	PROGS='singatest test '
+	LTLIBS='libgtest.la '
 else
 	PROGS=''
 	LTLIBS=''
 fi
-AC_SUBST([PROGS])
-AC_SUBST([LTLIBS])
 
 AC_ARG_ENABLE(debug,
 	AS_HELP_STRING([--enable-debug],[enable debug mode]),
 	[enable_debug=yes],[enable_debug=no])
 AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 if test x"$enable_debug" != x"no"; then
-	DEBUG='-g'
+	DEBUG+='-g'
 else
-	DEBUG='-O2'
+	DEBUG+='-O2'
 fi
+
+AC_ARG_ENABLE(python,
+    [AS_HELP_STRING([--enable-python],[enable python binding])],
+    [enable_python=yes],[enable_python=no])
+AM_CONDITIONAL([PY], [test "enable_python" = "yes"])
+if test x"$enable_python" != x"no"; then
+    AC_CHECK_PROG(PY_CHECK,python,yes)
+    if test x"$PY_CHECK" != x"yes"; then
+        AC_MSG_ERROR([Cannot find command "python". Please intall before make.])
+    else    
+        PYLIBS="-lpython`python -V 2>&1 | awk '{print substr($2,1,3)}'`"
+    fi
+fi        
+AC_SUBST(PYLIBS)
+
+AC_ARG_WITH([python],
+    [AS_HELP_STRING([--with-python=PATH],[prefix where python is installed])],
+    [python_prefix=$withval],[python_prefix="/usr/include/python`python -V 2>&1 | awk '{print substr($2,1,3)}'`"])
+if test "$python_prefix" == "yes"; then
+    if test "$withval" == "yes"; then
+        python_prefix="/usr/include/python`python -V 2>&1 | awk '{print substr($2,1,3)}'`"
+    fi
+fi
+
+
+if test x"$enable_python" != x"no"; then
+    AC_MSG_CHECKING([Python.h in $python_prefix])
+    if test -f "$python_prefix/Python.h"; then
+        AC_MSG_RESULT([Python.h found])
+        AC_DEFINE_UNQUOTED([PYTHON_PATH], ["$python_prefix"], [Path to python binary])
+    else
+        AC_MSG_RESULT([Python.h not found!])
+        AC_MSG_FAILURE([Python.h was not found in $python_prefix])
+    fi
+    #AC_DEFINE(PY,[1],[Defined if PY should be used])
+    PY_PROGS='_driver.la '
+    PYFLAGS="-I$python_prefix "
+else
+    PY_PROGS=''
+    PYFLAGS=''
+fi
+
+AC_SUBST([PROGS])
+AC_SUBST([LTLIBS])
 AC_SUBST([DEBUG])
+AC_SUBST([PYFLAGS])
+AC_SUBST([PY_PROGS])
 
 #AC_CHECK_LIB([opencv_imgproc], [main], [], [
 #  AC_MSG_ERROR([unable to find opencv_imgproc lib])
