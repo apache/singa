@@ -29,14 +29,14 @@ void ConcateLayer::Setup(const LayerProto& conf,
                          const vector<Layer*>& srclayers) {
   CHECK_GT(srclayers.size(), 1);
   Layer::Setup(conf, srclayers);
-  concate_dim_ = conf.concate_conf().concate_dim();
   vector<int> shape = srclayers[0]->data(this).shape();
-  CHECK_GE(concate_dim_, 0);
-  CHECK_LT(concate_dim_, shape.size());
+  CHECK_GE(partition_dim(), 0);
+  CHECK_LT(partition_dim(), shape.size());
+  CHECK_EQ(num_partitions(), srclayers.size());
   for (size_t i = 1; i < srclayers.size(); i++) {
     const vector<int>& src_shape = srclayers[i]->data(this).shape();
     for (size_t j = 0; j < shape.size(); j++)
-      if (static_cast<int>(j) == concate_dim_)
+      if (static_cast<int>(j) == partition_dim())
         shape[j] += src_shape[j];
       else
         CHECK_EQ(shape[j], src_shape[j]);
@@ -47,9 +47,10 @@ void ConcateLayer::Setup(const LayerProto& conf,
 
 void ConcateLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   CHECK_GT(srclayers.size(), 1);
+  CHECK_EQ(num_partitions(), srclayers.size());
   // calculate step for each memcpy
-  int step = srclayers[0]->data(this).shape()[concate_dim_];
-  for (unsigned i = concate_dim_ + 1; i < data_.shape().size(); ++i)
+  int step = srclayers[0]->data(this).shape()[partition_dim()];
+  for (unsigned i = partition_dim() + 1; i < data_.shape().size(); ++i)
     step *= data_.shape()[i];
   int srclayer_offset = 0;
   int concate_offset = 0;
@@ -66,9 +67,10 @@ void ConcateLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
 
 void ConcateLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   CHECK_GT(srclayers.size(), 1);
+  CHECK_EQ(num_partitions(), srclayers.size());
   // calculate step for each memcpy
-  int step = srclayers[0]->grad(this).shape()[concate_dim_];
-  for (unsigned i = concate_dim_ + 1; i < grad_.shape().size(); ++i)
+  int step = srclayers[0]->grad(this).shape()[partition_dim()];
+  for (unsigned i = partition_dim() + 1; i < grad_.shape().size(); ++i)
     step *= grad_.shape()[i];
   int srclayer_offset = 0;
   int concate_offset = 0;
