@@ -313,14 +313,15 @@ TEST(MathTest, TestDotGPU) {
   cudaFree(B_gpu);
 }
 
-TEST(MathTest, TestSingaSumColGPU) {
+TEST(MathTest, TestSingaSumRowGPU) {
   float A[3][4];
   float B[4];
   float C[4];
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 4; j++) {
-      A[i][j] = i + j;
+      //A[i][j] = i + j;
+	  A[i][j] = 1.0f;
     }
   }
 
@@ -335,7 +336,7 @@ TEST(MathTest, TestSingaSumColGPU) {
   cudaMalloc(reinterpret_cast<void**>(&A_gpu), 12*sizeof(float));
   cudaMalloc(reinterpret_cast<void**>(&B_gpu), 4*sizeof(float));
   cudaMemcpy(A_gpu, A, 12*sizeof(float), cudaMemcpyHostToDevice);
-  //singa_gpu_sum_row(A_gpu, B_gpu, 3, 4, 4);
+  singa_gpu_sum_row(A_gpu, B_gpu, 3, 4, 4);
 
   cudaMemcpy(B, B_gpu, 4*sizeof(float), cudaMemcpyDeviceToHost);
 

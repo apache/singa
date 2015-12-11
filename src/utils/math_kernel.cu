@@ -339,21 +339,21 @@ void singa_gpu_sum_vec(float *data, float *sum , int n) {
   kernel_sum_vec<<<num_blocks, threads_per_block>>>(data, sum, n);
 }
 
-void singa_gpu_sum_col(const float *src_mat_data, float *dst_vec_data,
+void singa_gpu_sum_row(const float *src_mat_data, float *dst_vec_data,
     int rows, int cols, int stride) {
   int threads_per_block = rows > CU1DBLOCK ? CU1DBLOCK : rows;
   int num_blocks = cols;
 
-  kernel_sum_col<<<num_blocks, threads_per_block>>>(src_mat_data,
+  kernel_sum_row<<<num_blocks, threads_per_block>>>(src_mat_data,
       dst_vec_data, rows, cols, stride);
 }
 
-void singa_gpu_sum_row(const float *src_mat_data, float *dst_vec_data,
+void singa_gpu_sum_col(const float *src_mat_data, float *dst_vec_data,
     int rows, int cols, int stride) {
   int threads_per_block = cols > CU1DBLOCK ? CU1DBLOCK : cols;
   int num_blocks = rows;
 
-  kernel_sum_row<<<num_blocks, threads_per_block>>>(src_mat_data,
+  kernel_sum_col<<<num_blocks, threads_per_block>>>(src_mat_data,
       dst_vec_data, rows, cols, stride);
 }
 
