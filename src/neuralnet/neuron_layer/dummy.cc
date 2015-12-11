@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/dummy.h"
+#include "singa/neuralnet/neuron_layer.h"
 #include <glog/logging.h>
 
 namespace singa {

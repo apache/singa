@@ -166,21 +166,21 @@ void Param::InitValues(int version) {
   set_version(version);
 }
 
-void Param::ShareFrom(const Param& other, bool cpu_only) {
-  proto_.set_owner(other.owner());
-  CHECK(data_.shape() == other.data_.shape());
-  data_.ShareData(other.data_, cpu_only);
+void Param::ShareFrom(Param* other, bool cpu_only) {
+  proto_.set_owner(other->owner());
+  CHECK(data_.shape() == other->data_.shape());
+  data_.ShareData(&(other->data_), cpu_only);
   if (grad_.count() == 0)
     grad_.Reshape(data_.shape());
-  version_ = other.version_;
-  last_version_ = other.last_version_;
-  slice_start_ = other.slice_start_;
-  num_slices_ = other.num_slices_;
-  slice_offset_ = other.slice_offset_;
-  slice_size_ = other.slice_size_;
+  version_ = other->version_;
+  last_version_ = other->last_version_;
+  slice_start_ = other->slice_start_;
+  num_slices_ = other->num_slices_;
+  slice_offset_ = other->slice_offset_;
+  slice_size_ = other->slice_size_;
   // change pending list size equal to slice size
-  pending_get_.resize(other.pending_get_.size());
-  pending_update_.resize(other.pending_update_.size());
+  pending_get_.resize(other->pending_get_.size());
+  pending_update_.resize(other->pending_update_.size());
 }
 
 void Param::FromProto(const BlobProto& blob) {

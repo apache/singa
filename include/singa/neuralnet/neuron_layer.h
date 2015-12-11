@@ -109,6 +109,24 @@ class DropoutLayer : public NeuronLayer {
    */
   Blob<float> mask_;
 };
+/**
+ * This layer is dummy and do no real work.
+ * It is used for testing purpose only.
+ *
+ * Use it as input layer, it will generate random data;
+ * Use it as output layer, it will generate random grad;
+ * Use it as neuron layer, it will replicates data and grad.
+ */
+class DummyLayer: public Layer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+ private:
+  bool input_ = false;  // use as input layer
+  bool output_ = false;  // use as output layer
+};
+
 
 /**
  * Layer that applys linear transformations as
@@ -356,16 +374,10 @@ class CudnnSoftmaxLayer : public SoftmaxLayer, public CudnnLayer {
 /**
  * Base layer for RBM models.
  */
-class RBMLayer: virtual public NeuronLayer {
+class RBMLayer: virtual public Layer {
  public:
   virtual ~RBMLayer() {}
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
-  const Blob<float>& neg_data(const Layer* layer) {
-    return neg_data_;
-  }
-  Blob<float>* mutable_neg_data(const Layer* layer) {
-    return &neg_data_;
-  }
   const std::vector<Param*> GetParams() const override {
     std::vector<Param*> params{weight_, bias_};
     return params;
@@ -382,16 +394,16 @@ class RBMLayer: virtual public NeuronLayer {
   int batchsize_;
   bool first_gibbs_;
   Param* weight_, *bias_;
-
+  Blob<float> pos_data_;
   Blob<float> neg_data_;
   Blob<float> neg_sample_;
-  Blob<float> sample_;
+  Blob<float> pos_sample_;
 };
 
 /**
  * RBM visible layer
  */
-class RBMVisLayer: public RBMLayer {
+class RBMVisLayer: public RBMLayer, public LossLayer {
  public:
   ~RBMVisLayer();
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
@@ -402,9 +414,9 @@ class RBMVisLayer: public RBMLayer {
  private:
   RBMLayer* hid_layer_;
   Layer* input_layer_;
-
   float error_ = 0.0f;
   int counter_ = 0;
+
 };
 /**
  * RBM hidden layer

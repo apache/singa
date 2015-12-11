@@ -163,7 +163,7 @@ void NeuralNet::ShareParamsFrom(NeuralNet* other, bool cpu_only) {
       const auto& params = layer->GetParams();
       CHECK_EQ(params.size(), otherparams.size());
       for (size_t i = 0; i < params.size(); i++) {
-        params[i]->ShareFrom(*otherparams[i], cpu_only);
+        params[i]->ShareFrom(otherparams[i], cpu_only);
       }
     }
   }
@@ -416,7 +416,7 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
     const string share_from = param->share_from();
     if (param->share_from() != "") {
       if (name2param.find(share_from) != name2param.end()) {
-        param->ShareFrom(*name2param.at(param->share_from()), false);
+        param->ShareFrom(name2param.at(param->share_from()), false);
       } else {
         LOG(FATAL) << "No param with the name (share_from) " << share_from;
       }
@@ -430,7 +430,7 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
       auto params = (*it)->GetParams();
       CHECK_EQ(params.size(), owner_params.size());
       for (size_t i = 0; i < params.size(); i++)
-        params.at(i)->ShareFrom(*owner_params.at(i), true);
+        params.at(i)->ShareFrom(owner_params.at(i), true);
     }
   }
 }

@@ -191,14 +191,14 @@ message LayerProto {
   optional string user_type =21;
 
   // proto for the specific layer
-  // configuration for activation layer
+  // configuration for input layers
   optional ActivationProto activation_conf = 54;
   // configuration for argsort layer
   optional ArgSortProto argsort_conf = 52;
   // configuration for convolution layer
   optional ConvolutionProto convolution_conf = 30;
   // configuration for dummy layer
-  optional DummyProto dummy_conf = 53;
+  optional DummyProto dummy_conf = 55;
   // configuration for dropout layer
   optional DropoutProto dropout_conf = 33;
   // configuration for inner product layer

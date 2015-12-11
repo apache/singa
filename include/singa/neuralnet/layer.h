@@ -283,12 +283,12 @@ class InputLayer : virtual public Layer {
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
   ConnectionType dst_layer_connection() const override { return kOneToMany; }
   Blob<float>* mutable_grad(const Layer* layer) override {
-    LOG(FATAL) << "Input layer has no gradient blob";
     return nullptr;
+    // LOG(FATAL) << "Input layer has no gradient blob";
   }
   const Blob<float>& grad(const Layer* from) const override {
-    LOG(FATAL) << "Input layer has no gradient blob";
     return grad_;
+    // LOG(FATAL) << "Input layer has no gradient blob";
   }
 };
 
@@ -309,12 +309,12 @@ class NeuronLayer : virtual public Layer {
 class LossLayer : virtual public Layer {
  public:
   Blob<float>* mutable_grad(const Layer* layer) override {
-    LOG(FATAL) << "Loss layer has no gradient blob";
     return nullptr;
+    // LOG(FATAL) << "Loss layer has no gradient blob";
   }
   const Blob<float>& grad(const Layer* from) const override {
-    LOG(FATAL) << "Loss layer has no gradient blob";
     return grad_;
+    // LOG(FATAL) << "Loss layer has no gradient blob";
   }
 };
 
@@ -325,12 +325,12 @@ class OutputLayer : virtual public Layer {
  public:
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
   Blob<float>* mutable_grad(const Layer* layer) override {
-    LOG(FATAL) << "Output layer has no gradient blob";
     return nullptr;
+    // LOG(FATAL) << "Output layer has no gradient blob";
   }
   const Blob<float>& grad(const Layer* from) const override {
-    LOG(FATAL) << "Output layer has no gradient blob";
     return grad_;
+    // LOG(FATAL) << "Output layer has no gradient blob";
   }
 };
 

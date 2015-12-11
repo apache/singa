@@ -29,7 +29,7 @@ void CudnnSoftmaxLossLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   softmax_.Setup(conf, vector<Layer*> {srclayers.at(0)});
   data_.Reshape(softmax_.data(this).shape());
-  data_.ShareData(*softmax_.mutable_data(this), false);
+  data_.ShareData(softmax_.mutable_data(this), false);
   batchsize_ = data_.shape(0);
   dim_ = data_.count() / batchsize_;
   LOG(ERROR) << batchsize_ << " " << dim_;

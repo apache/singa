@@ -19,8 +19,7 @@
 *
 *************************************************************/
 
-<<<<<<< HEAD
-#include "singa/neuralnet/connection_layer/bridge.h"
+#include "singa/neuralnet/connection_layer.h"
 #include "singa/comm/msg.h"
 
 namespace singa {
@@ -70,8 +69,8 @@ void BridgeSrcLayer::Setup(const LayerProto& conf,
   Layer::Setup(conf, srclayers);
   data_.Reshape(srclayers[0]->data(this).shape());
   grad_.ReshapeLike(data_);
-  data_.ShareData(srclayers[0]->data(this));
-  grad_.ShareData(srclayers[0]->grad(this));
+  data_.ShareData(srclayers[0]->mutable_data(this));
+  grad_.ShareData(srclayers[0]->mutable_grad(this));
 }
 
 void BridgeSrcLayer::ComputeFeature(int flag, const vector<Layer*>& srcs) {

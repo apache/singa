@@ -247,7 +247,7 @@ class Blob {
    * data_ field. For training with multi-gpu cards, cpu_only must be true,
    * becuase gpu memory cannot be shared among different devices.
    */
-  void ShareData(const Blob& other, bool cpu_only = true);
+  void ShareData(Blob* other, bool cpu_only = true);
 
   /*
   void Swap(Blob& other);

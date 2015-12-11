@@ -18,7 +18,7 @@
 #* under the License.
 #*
 #*************************************************************/
-	
+
 
 ACLOCAL_AMFLAGS = -I config
 AUTOMAKE_OPTIONS = foreign subdir-objects
@@ -51,7 +51,7 @@ PROTO_PYS := tool/python/pb2/singa_pb2.py \
 CUDA_SRCS := src/utils/math_kernel.cu
 
 PY_SRCS := tool/python/singa/driver_wrap.cxx
-		   src/driver.cc 	
+		   src/driver.cc
 
 SINGA_SRCS := src/driver.cc \
               src/server.cc \
@@ -68,22 +68,24 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/input_layer/record.cc \
               src/neuralnet/input_layer/deprecated.cc \
               src/neuralnet/input_layer/store.cc \
+              src/neuralnet/output_layer/accuracy.cc \
               src/neuralnet/output_layer/argsort.cc \
               src/neuralnet/output_layer/csv.cc \
               src/neuralnet/output_layer/record.cc \
               src/neuralnet/loss_layer/euclidean.cc \
               src/neuralnet/loss_layer/softmax.cc \
+              src/neuralnet/neuron_layer/activation.cc \
               src/neuralnet/neuron_layer/convolution.cc \
-              src/neuralnet/neuron_layer/dummy.cc \
               src/neuralnet/neuron_layer/dropout.cc \
+              src/neuralnet/neuron_layer/dummy.cc \
               src/neuralnet/neuron_layer/inner_product.cc \
               src/neuralnet/neuron_layer/lrn.cc \
               src/neuralnet/neuron_layer/pooling.cc \
               src/neuralnet/neuron_layer/rbm.cc \
               src/neuralnet/neuron_layer/relu.cc \
               src/neuralnet/neuron_layer/sigmoid.cc \
-              src/neuralnet/neuron_layer/stanh.cc \
               src/neuralnet/neuron_layer/softmax.cc \
+              src/neuralnet/neuron_layer/stanh.cc \
               src/neuralnet/neuralnet.cc \
               src/comm/socket.cc \
               src/comm/msg.cc \
@@ -155,11 +157,11 @@ TEST_SRCS := include/gtest/gtest_main.cc \
 						 src/test/test_csv_input_layer.cc
 
 #EXTRA_PROGRAMS = $(PROGS)
-EXTRA_PROGRAMS = singatest test 
+EXTRA_PROGRAMS = singatest test
 #EXTRA_LTLIBRARIES = $(LTLIBS)
 EXTRA_LTLIBRARIES = libgtest.la _driver.la
 
-lib_LTLIBRARIES = libsinga.la $(LTLIBS) 
+lib_LTLIBRARIES = libsinga.la $(LTLIBS)
 bin_PROGRAMS = singa singatool $(PROGS)
 pydir = $(CURDIR)/tool/python/singa/
 py_LTLIBRARIES = $(PY_PROGS)
@@ -167,7 +169,7 @@ py_LTLIBRARIES = $(PY_PROGS)
 
 #lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_SRCS) $(SINGA_SRCS)
-libsinga_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive -I$(top_srcdir)/include 
+libsinga_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive -I$(top_srcdir)/include
 if LMDB
 libsinga_la_CXXFLAGS += -DUSE_LMDB
 endif
@@ -181,7 +183,7 @@ endif
 
 #bin_PROGRAMS = singa
 singa_SOURCES = src/main.cc
-singa_CXXFLAGS = $(DEFAULT_FLAGS) -MMD -I$(top_srcdir)/include 
+singa_CXXFLAGS = $(DEFAULT_FLAGS) -MMD -I$(top_srcdir)/include
 singa_LDFLAGS = -lsinga \
                 -lglog  \
                 -lprotobuf \
@@ -203,7 +205,7 @@ endif
 #bin_PROGRAMS += singatool
 singatool_SOURCES = src/utils/tool.cc
 singatool_CXXFLAGS = -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
-                     -funroll-loops -DTHREADED -I$(top_srcdir)/include 
+                     -funroll-loops -DTHREADED -I$(top_srcdir)/include
 singatool_LDFLAGS = -lsinga \
                     -lglog  \
                     -lprotobuf \
@@ -220,7 +222,7 @@ endif
 #bin_PROGRAMS += test
 
 singatest_SOURCES = $(GTEST_HDRS) $(TEST_SRCS)
-singatest_CXXFLAGS = $(DEFAULT_FLAGS) -I$(top_srcdir)/include 
+singatest_CXXFLAGS = $(DEFAULT_FLAGS) -I$(top_srcdir)/include
 singatest_LDADD = ./libgtest.la
 singatest_LDFLAGS = -lsinga \
                 -lglog  \
@@ -241,8 +243,8 @@ singatest_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
 
 _driver_la_SOURCES = $(PY_SRCS)
-_driver_la_CXXFLAGS = $(DEFAULT_FLAGS) $(MSHADOW_FLAGS) -I$(top_srcdir)/include $(PYFLAGS) 
-_driver_la_LDFLAGS = -lsinga -module -shared $(PYLIBS) -avoid-version -rpath $(pydir) 
+_driver_la_CXXFLAGS = $(DEFAULT_FLAGS) $(MSHADOW_FLAGS) -I$(top_srcdir)/include $(PYFLAGS)
+_driver_la_LDFLAGS = -lsinga -module -shared $(PYLIBS) -avoid-version -rpath $(pydir)
 
 if DCUDA
 _driver_la_CXXFLAGS += $(CUDA_CFLAGS)
@@ -281,7 +283,7 @@ install-pyLTLIBRARIES: $(py_LTLIBRARIES)
 	touch tool/python/singa/__init__.py
 	cp -f .libs/_driver.so tool/python/singa/
 
-uninstall-pyLTLIBRARIES: 
+uninstall-pyLTLIBRARIES:
 	rm -f tool/python/singa/__init__.py
 	rm -f tool/python/singa/_driver.so
 
@@ -296,3 +298,4 @@ $(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
 	mkdir -p $(top_srcdir)/include/singa/proto/
 	cp $(top_srcdir)/src/proto/*.pb.h $(top_srcdir)/include/singa/proto/
 	@echo
+

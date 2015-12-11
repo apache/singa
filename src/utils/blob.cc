@@ -265,12 +265,12 @@ void Blob<Dtype>::SetValue(Dtype v) {
     ptr[i] = v;
 }
 template <typename Dtype>
-void Blob<Dtype>::ShareData(const Blob& other, bool cpu_only) {
-  CHECK_EQ(count_, other.count());
+void Blob<Dtype>::ShareData(Blob* other, bool cpu_only) {
+  CHECK_EQ(count_, other->count());
   if (cpu_only)
-    data_->set_cpu_data(other.cpu_data());
+    data_->set_cpu_data(other->mutable_cpu_data());
   else
-    data_ = other.data_;
+    data_ = other->data_;
 }
 
 /*

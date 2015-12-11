@@ -93,15 +93,14 @@ class ConcateLayer : public ConnectionLayer {
  */
 class SliceLayer : public ConnectionLayer {
  public:
+  ~SliceLayer();
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
-
- private:
-  std::vector<Blob<float>> datavec_;
-  std::vector<Blob<float>> gradvec_;
-  int slice_dim_;
-  int slice_num_;
+  const Blob<float>& data(const Layer* from) const override;
+  const Blob<float>& grad(const Layer* from) const override;
+  Blob<float>* mutable_data(const Layer* from) override;
+  Blob<float>* mutable_grad(const Layer* from) override;
 };
 
 /**
@@ -113,12 +112,12 @@ class SliceLayer : public ConnectionLayer {
  */
 class SplitLayer : public ConnectionLayer {
  public:
+  ~SplitLayer();
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
-
- protected:
-  Blob<float> grads_;
+  const Blob<float>& grad(const Layer* from) const override;
+  Blob<float>* mutable_grad(const Layer* from) override;
 };
 
 

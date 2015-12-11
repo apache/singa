@@ -36,7 +36,7 @@ void SplitLayer::Setup(const LayerProto& conf,
   CHECK_EQ(srclayers.size(), 1);
   Layer::Setup(conf, srclayers);
   data_.Reshape(srclayers[0]->data(this).shape());
-  data_.ShareData(srclayers[0]->data(this));
+  data_.ShareData(srclayers[0]->mutable_data(this));
   CHECK_GT(num_partitions(), 0);
   // add num_partitions()-1 more grad blobs
   for (int i = 1; i < num_partitions(); ++i) {
