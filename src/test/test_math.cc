@@ -335,7 +335,7 @@ TEST(MathTest, TestSingaSumColGPU) {
   cudaMalloc(reinterpret_cast<void**>(&A_gpu), 12*sizeof(float));
   cudaMalloc(reinterpret_cast<void**>(&B_gpu), 4*sizeof(float));
   cudaMemcpy(A_gpu, A, 12*sizeof(float), cudaMemcpyHostToDevice);
-  singa_gpu_sum_by_col(A_gpu, B_gpu, 3, 4, 4);
+  //singa_gpu_sum_row(A_gpu, B_gpu, 3, 4, 4);
 
   cudaMemcpy(B, B_gpu, 4*sizeof(float), cudaMemcpyDeviceToHost);
 

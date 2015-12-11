@@ -55,16 +55,16 @@ if test "$cuda_prefix" == "yes"; then
     fi
 fi
 
-AC_MSG_CHECKING([nvcc in $cuda_prefix/bin])
-if test -x "$cuda_prefix/bin/nvcc"; then
-    AC_MSG_RESULT([found])
-    AC_DEFINE_UNQUOTED([NVCC_PATH], ["$cuda_prefix/bin/nvcc"], [Path to nvcc binary])
-else
-    AC_MSG_RESULT([not found!])
-    AC_MSG_FAILURE([nvcc was not found in $cuda_prefix/bin])
-fi
 
 if test x"$cudaval" = x"yes"; then
+    AC_MSG_CHECKING([nvcc in $cuda_prefix/bin])
+    if test -x "$cuda_prefix/bin/nvcc"; then
+        AC_MSG_RESULT([found])
+        AC_DEFINE_UNQUOTED([NVCC_PATH], ["$cuda_prefix/bin/nvcc"], [Path to nvcc binary])
+    else
+        AC_MSG_RESULT([not found!])
+        AC_MSG_FAILURE([nvcc was not found in $cuda_prefix/bin])
+    fi
     CUDA_CFLAGS="-I$cuda_prefix/include"
     CUDA_LDFLAGS="-L$cuda_prefix/lib64 -L$cuda_prefix/lib"
     CUDA_LIBS="-lcublas -lcudart -lcurand"
@@ -85,11 +85,46 @@ else
     CUDA_LDFLAGS=""
     CUDA_LIBS=""
     NVCC=""
+    DEBUG="-DCPU_ONLY"
 fi
 AC_SUBST(NVCC)
 AC_SUBST(CUDA_LDFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(CUDA_CFLAGS)
+
+# Setup custom CUDA paths
+AC_ARG_ENABLE([cudnn],
+    [AS_HELP_STRING(--enable-cudnn,enable CUDNN support)],
+    [enable_cudnn=yes], [enable_cudnn=no])
+AM_CONDITIONAL(DCUDNN, [test "$enable_cudnn" = "yes"])
+
+AC_ARG_WITH([cudnn],
+    [AS_HELP_STRING([--with-cudnn=PATH], [prefix where CUDNN is installed])],
+    [cudnn_prefix=$cudnnwithval], [cudnn_prefix="/usr/local/cuda"])
+if test "$cudnn_prefix" == "yes"; then
+    if test "$cudnnwithval" == "yes"; then
+        cudnn_prefix="/usr/local/cuda"
+    fi
+fi
+
+if test x"$enable_cudnn" == x"yes"; then
+    CUDNN_CFLAGS="-I$cudnn_prefix/include"
+    CUDNN_LDFLAGS="-L$cudnn_prefix/lib64 -L$cudnn_prefix/lib"
+    CUDNN_LIBS="-lcudnn"
+    DEBUG+=" -DUSE_CUDNN "
+    AC_DEFINE(DCUDNN,[1],[Defined if CUDNN should be used])
+    AC_CHECK_LIB([cudnn], [main], [], [
+        AC_MSG_ERROR([unable to find cudnn library])
+        ])
+else
+    CUDNN_CFLAGS=""
+    CUDNN_LDFLAGS=""
+    CUDNN_LIBS=""
+fi
+
+AC_SUBST(CUDNN_CFLAGS)
+AC_SUBST(CUDNN_LDFLAGS)
+AC_SUBST(CUDNN_LIBS)
 
 # Checks for libraries.
 AC_SEARCH_LIBS([cblas_sgemm], [openblas], [], [

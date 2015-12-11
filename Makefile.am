@@ -27,7 +27,7 @@ AUTOMAKE_OPTIONS = foreign subdir-objects
 
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 DEFAULT_FLAGS = -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-              $(MSHADOW_FLAGS) -DCPU_ONLY=1 -funroll-loops -DTHREADED
+              $(MSHADOW_FLAGS) -funroll-loops -DTHREADED
 
 CFLAGS = $(DEBUG)
 CXXFLAGS = $(DEBUG)
@@ -49,8 +49,17 @@ PROTO_PYS := tool/python/pb2/singa_pb2.py \
              tool/python/pb2/common_pb2.py
 
 CUDA_SRCS := src/utils/math_kernel.cu
+CUDA_HDRS := include/singa/utils/math_kernel.h 
 
-PY_SRCS := tool/python/singa/driver_wrap.cxx
+CUDNN_SRCS := src/neuralnet/loss_layer/cudnn_softmaxloss.cc \
+			  src/neuralnet/neuron_layer/cudnn_softmax.cc \
+			  src/neuralnet/neuron_layer/cudnn_pooling.cc \
+			  src/neuralnet/neuron_layer/cudnn_activation.cc \
+			  src/neuralnet/neuron_layer/cudnn_lrn.cc \
+			  src/neuralnet/neuron_layer/cudnn_convolution.cc
+
+
+PY_SRCS := tool/python/singa/driver_wrap.cxx \
 		   src/driver.cc
 
 SINGA_SRCS := src/driver.cc \
@@ -103,7 +112,9 @@ SINGA_SRCS := src/driver.cc \
               src/utils/image_transform.cc
 
 SINGA_HDRS := include/singa.h \
-              include/utils/cluster.h \
+			  include/singa/utils/math_blob.h \
+			  include/singa/utils/math_addr.h \
+			  include/singa/utils/cluster.h \
               include/utils/cluster_rt.h \
               include/utils/param.h \
               include/utils/common.h \
@@ -170,14 +181,20 @@ py_LTLIBRARIES = $(PY_PROGS)
 #lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_SRCS) $(SINGA_SRCS)
 libsinga_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive -I$(top_srcdir)/include
+libsinga_la_LDFLAGS =
 if LMDB
 libsinga_la_CXXFLAGS += -DUSE_LMDB
 endif
 #libsinga_la_LDFLAGS = -I$(top_srcdir)/include
 if DCUDA
-libsinga_la_SOURCES += $(CUDA_SRCS)
+libsinga_la_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 libsinga_la_CXXFLAGS += $(CUDA_CFLAGS)
-libsinga_la_LDFLAGS = $(CUDA_LDFLAGS) $(CUDA_LIBS)
+libsinga_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
+endif
+if DCUDNN
+libsinga_la_SOURCES += $(CUDNN_SRCS)
+libsinga_la_CXXFLAGS += $(CUDNN_CFLAGS)
+libsinga_la_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 endif
 
 
@@ -197,19 +214,34 @@ singa_LDFLAGS += -llmdb
 endif
 
 if DCUDA
-singa_SOURCES += $(CUDA_SRCS)
+singa_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 singa_CXXFLAGS += $(CUDA_CFLAGS)
 singa_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
+if DCUDNN
+singa_SOURCES += $(CUDNN_SRCS)
+singa_CXXFLAGS += $(CUDNN_CFLAGS)
+singa_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
+endif
 
 #bin_PROGRAMS += singatool
-singatool_SOURCES = src/utils/tool.cc
+singatool_SOURCES = src/utils/tool.cc #$(CUDA_SRCS) $(CUDA_HDRS) $(CUDNN_SRCS)
 singatool_CXXFLAGS = -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
-                     -funroll-loops -DTHREADED -I$(top_srcdir)/include
+					 -funroll-loops -DTHREADED -I$(top_srcdir)/include $(DEFAULT_FLAGS)
 singatool_LDFLAGS = -lsinga \
                     -lglog  \
                     -lprotobuf \
-                    -lzookeeper_mt
+                    -lzookeeper_mt 
+if DCUDA
+singatool_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
+singatool_CXXFLAGS += $(CUDA_CFLAGS)
+singatool_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
+endif
+if DCUDNN
+singatool_SOURCES += $(CUDNN_SRCS)
+singatool_CXXFLAGS += $(CUDNN_CFLAGS)
+singatool_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
+endif
 
 #lib_LTLIBRARIES += libgtest.la
 libgtest_la_SOURCES = $(GTEST_HDRS) $(GTEST_SRCS)
@@ -236,10 +268,15 @@ singatest_LDFLAGS = -lsinga \
 if LMDB
 singatest_LDFLAGS += -llmdb
 endif
-if DCUDA
-singatest_SOURCES += $(CUDA_SRCS)
+if DCUDA 
+singatest_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 singatest_CXXFLAGS += $(CUDA_CFLAGS)
 singatest_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
+endif
+if DCUDNN
+singatest_SOURCES += $(CUDNN_SRCS)
+singatest_CXXFLAGS += $(CUDNN_CFLAGS)
+singatest_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 endif
 
 _driver_la_SOURCES = $(PY_SRCS)
@@ -247,8 +284,13 @@ _driver_la_CXXFLAGS = $(DEFAULT_FLAGS) $(MSHADOW_FLAGS) -I$(top_srcdir)/include 
 _driver_la_LDFLAGS = -lsinga -module -shared $(PYLIBS) -avoid-version -rpath $(pydir)
 
 if DCUDA
-_driver_la_CXXFLAGS += $(CUDA_CFLAGS)
+_driver_la_CXXFLAGS += $(CUDA_CFLAGS) 
 _driver_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
+endif
+
+if DCUDNN
+_driver_la_CXXFLAGS += $(CUDNN_CFLAGS)
+_driver_la_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 endif
 
 clean-local:
