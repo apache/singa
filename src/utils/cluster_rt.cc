@@ -29,11 +29,13 @@
 #include <iostream>
 #include "singa/proto/job.pb.h"
 
+
+namespace singa {
 using std::string;
 using std::to_string;
 using std::vector;
 
-namespace singa {
+extern bool singa_verbose;
 
 void ZKService::ChildChanges(zhandle_t *zh, int type, int state,
                                const char *path, void *watcherCtx) {
@@ -46,7 +48,7 @@ void ZKService::ChildChanges(zhandle_t *zh, int type, int state,
     int ret = zoo_wget_children(zh, path, ChildChanges, watcherCtx, &child);
     if (ret == ZOK) {
       if (child.count == 0) {
-        LOG(INFO) << "child.count = 0 in path: " << path;
+        LOG_IF(INFO, singa_verbose) << "Child.count = 0 in path: " << path;
         // all workers leave, we do callback now
         (*cb->fn)(cb->ctx);
         cb->fn = nullptr;
@@ -91,10 +93,10 @@ bool ZKService::CreateNode(const char* path, const char* val, int flag,
     ret = zoo_create(zkhandle_, path, val, val == nullptr ? -1 : strlen(val),
                      &ZOO_OPEN_ACL_UNSAFE, flag, buf, kZKBufSize);
     if (ret == ZNONODE) {
-      LOG(WARNING) << "zookeeper parent node of " << path
+      LOG(WARNING) << "Zookeeper parent node of " << path
                   << " not exist, retry later";
     } else if (ret == ZCONNECTIONLOSS) {
-      LOG(WARNING) << "zookeeper disconnected, retry later";
+      LOG(WARNING) << "Zookeeper disconnected, retry later";
     } else {
       break;
     }
@@ -107,11 +109,11 @@ bool ZKService::CreateNode(const char* path, const char* val, int flag,
     // strcpy(output, buf);
   }
   if (ret == ZOK) {
-    LOG(INFO) << "created zookeeper node " << buf
+    LOG_IF(INFO, singa_verbose) << "Created zookeeper node " << buf
               << " (" << (val == nullptr ? "NULL" : val) << ")";
     return true;
   } else if (ret == ZNODEEXISTS) {
-    LOG(WARNING) << "zookeeper node " << path << " already exists";
+    LOG(WARNING) << "Zookeeper node " << path << " already exists";
     return true;
   } else if (ret == ZCONNECTIONLOSS) {
     LOG(ERROR) << "Cannot connect to zookeeper, "
@@ -130,10 +132,10 @@ bool ZKService::DeleteNode(const char* path) {
   CHECK(zkhandle_) << "zk handler not initialized";
   int ret = zoo_delete(zkhandle_, path, -1);
   if (ret == ZOK) {
-    LOG(INFO) << "deleted zookeeper node " << path;
+    LOG_IF(INFO, singa_verbose) << "Deleted zookeeper node " << path;
     return true;
   } else if (ret == ZNONODE) {
-    LOG(WARNING) << "try to delete an non-existing zookeeper node " << path;
+    LOG(WARNING) << "Try to delete an non-existing zookeeper node " << path;
     return true;
   }
   LOG(FATAL) << "Unhandled ZK error code: " << ret
@@ -158,7 +160,7 @@ bool ZKService::UpdateNode(const char* path, const char* val) {
   if (ret == ZOK) {
     return true;
   } else if (ret == ZNONODE) {
-    LOG(ERROR) << "zk node " << path << " does not exist";
+    LOG(ERROR) << "Zk node " << path << " does not exist";
     return false;
   }
   LOG(FATAL) << "Unhandled ZK error code: " << ret
@@ -175,7 +177,7 @@ bool ZKService::GetNode(const char* path, char* output) {
     output[val_len] = '\0';
     return true;
   } else if (ret == ZNONODE) {
-    LOG(ERROR) << "zk node " << path << " does not exist";
+    LOG(ERROR) << "Zk node " << path << " does not exist";
     return false;
   }
   LOG(FATAL) << "Unhandled ZK error code: " << ret
@@ -217,9 +219,9 @@ void ZKService::WatcherGlobal(zhandle_t * zh, int type, int state,
                                 const char *path, void *watcherCtx) {
   if (type == ZOO_SESSION_EVENT) {
     if (state == ZOO_CONNECTED_STATE)
-      LOG(INFO) << "GLOBAL_WATCHER connected to zookeeper successfully!";
+      LOG_IF(INFO, singa_verbose) << "GLOBAL_WATCHER connected to zookeeper successfully!";
     else if (state == ZOO_EXPIRED_SESSION_STATE)
-      LOG(INFO) << "GLOBAL_WATCHER zookeeper session expired!";
+      LOG_IF(INFO, singa_verbose) << "GLOBAL_WATCHER zookeeper session expired!";
   }
 }
 
@@ -281,7 +283,7 @@ int ClusterRuntime::RegistProc(const string& host_addr, int pid) {
     }
   }
   if (id == -1) {
-    LOG(ERROR) << "cannot find own node " << buf;
+    LOG(ERROR) << "Cannot find own node " << buf;
     return -1;
   }
   // create a new node in proc path
@@ -416,7 +418,7 @@ bool JobManager::ListJobProcs(int job, vector<string>* procs) {
   string job_path = GetZKJobWorkspace(job);
   // check job path
   if (!zk_.Exist(job_path.c_str())) {
-    LOG(ERROR) << "job " << job << " not exists";
+    LOG(ERROR) << "Job " << job << " not exists";
     return true;
   }
   string proc_path = job_path + kZKPathJobProc;
@@ -524,11 +526,11 @@ string JobManager::ExtractClusterConf(const char* job_file) {
         in_cluster = false;
     }
   }
-  LOG(INFO) << "cluster configure: " << cluster;
+  LOG_IF(INFO, singa_verbose) << "Cluster configure: " << cluster;
   size_t s_pos = cluster.find("{");
   size_t e_pos = cluster.find("}");
   if (s_pos == std::string::npos || e_pos == std::string::npos) {
-    LOG(FATAL) << "cannot extract valid cluster configuration in file: "
+    LOG(FATAL) << "Cannot extract valid cluster configuration in file: "
                << job_file;
   }
   return cluster.substr(s_pos + 1, e_pos - s_pos-1);

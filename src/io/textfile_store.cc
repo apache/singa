@@ -56,7 +56,7 @@ bool TextFileStore::Read(std::string* key, std::string* value) {
     if (fs_->eof())
       return false;
     else
-      LOG(FATAL) << "error in reading csv file";
+      LOG(FATAL) << "Error in reading csv file";
   }
   *key = std::to_string(lineNo_++);
   return true;

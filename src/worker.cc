@@ -33,6 +33,7 @@
 namespace singa {
 
 using std::string;
+extern bool singa_verbose;
 
 Worker* Worker::Create(const AlgProto& conf) {
   auto factory = Singleton<Factory<singa::Worker>>::Instance();
@@ -190,7 +191,7 @@ void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
       } else {
         entry.second->InitValues(job_conf.step());
         if (!job_conf.reset_param_version())
-          LOG(ERROR) << "better reset version of params from checkpoints "
+          LOG(ERROR) << "Better reset version of params from checkpoints "
             << "to the same as other newly initialized params!";
       }
     }
@@ -214,7 +215,6 @@ void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
   }
 }
 
-
 void Worker::Checkpoint(int step, const std::string& folder, NeuralNet* net) {
   BlobProtos bps;
   for (auto layer : net->layers()) {
@@ -232,7 +232,7 @@ void Worker::Checkpoint(int step, const std::string& folder, NeuralNet* net) {
   }
   char buf[256];
   snprintf(buf, sizeof(buf), "%s/step%d-worker%d", folder.c_str(), step, id_);
-  LOG(INFO) << "checkpoint to " << buf;
+  LOG_IF(INFO, singa_verbose) << "Checkpoint to " << buf;
   WriteProtoToBinaryFile(bps, buf);
 }
 

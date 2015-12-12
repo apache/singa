@@ -24,6 +24,8 @@
 
 namespace singa {
 
+extern bool singa_verbose;
+
 #ifdef USE_ZMQ
 Poller::Poller() {
   poller_ = zpoller_new(nullptr);
@@ -120,7 +122,7 @@ int Router::Bind(const std::string& endpoint) {
     port = zsock_bind(router_, "%s", endpoint.c_str());
   }
   CHECK_NE(port, -1) << endpoint;
-  LOG(INFO) << "bind successfully to " << zsock_endpoint(router_);
+  LOG_IF(INFO, singa_verbose) << "Bind successfully to " << zsock_endpoint(router_);
   return port;
 }
 
@@ -148,7 +150,7 @@ int Router::Send(Msg **msg) {
 Msg* Router::Receive() {
   zmsg_t* zmsg = zmsg_recv(router_);
   if (zmsg == nullptr) {
-    LOG(ERROR) << "Connection broken!";
+    LOG(FATAL) << "Connection broken!";
     exit(0);
   }
   zframe_t* dealer = zmsg_pop(zmsg);

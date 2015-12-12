@@ -47,7 +47,7 @@ void Cluster::Register(int pid, const std::string& endpoint) {
   procs_id_ = cluster_rt_->RegistProc(endpoint, pid);
   CHECK_GE(procs_id_, 0);
   CHECK_LT(procs_id_, nprocs());
-  LOG(ERROR) << "proc #" << procs_id_ << " -> " << endpoint
+  LOG(ERROR) << "Proc #" << procs_id_ << " -> " << endpoint
              << " (pid = " << pid << ")";
 }
 

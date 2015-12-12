@@ -46,6 +46,8 @@ const int kCIFARImageNBytes = 3072;
 const int kCIFARBatchSize = 10000;
 const int kCIFARTrainBatches = 5;
 
+static bool singa_verbose = false;
+
 void read_image(std::ifstream* file, int* label, char* buffer) {
   char label_char;
   file->read(&label_char, 1);
@@ -71,10 +73,10 @@ void create_data(const string& input_folder, const string& output_folder) {
 
   auto store = singa::io::CreateStore("kvfile");
   CHECK(store->Open(output_folder + "/train_data.bin", singa::io::kCreate));
-  LOG(INFO) << "Preparing training data";
+  LOG_IF(INFO, singa_verbose) << "Preparing training data";
   int count = 0;
   for (int fileid = 0; fileid < kCIFARTrainBatches; ++fileid) {
-    LOG(INFO) << "Training Batch " << fileid + 1;
+    LOG_IF(INFO, singa_verbose) << "Training Batch " << fileid + 1;
     snprintf(str_buffer, kCIFARImageNBytes, "/data_batch_%d.bin", fileid + 1);
     std::ifstream data_file((input_folder + str_buffer).c_str(),
         std::ios::in | std::ios::binary);
@@ -96,7 +98,7 @@ void create_data(const string& input_folder, const string& output_folder) {
   store->Flush();
   store->Close();
 
-  LOG(INFO) << "Create image mean";
+  LOG_IF(INFO, singa_verbose) << "Create image mean";
   store->Open(output_folder + "/image_mean.bin", singa::io::kCreate);
   for (int i = 0; i < kCIFARImageNBytes; i++)
     mean.set_data(i, mean.data(i) / count);
@@ -105,7 +107,7 @@ void create_data(const string& input_folder, const string& output_folder) {
   store->Flush();
   store->Close();
 
-  LOG(INFO) << "Create test data";
+  LOG_IF(INFO, singa_verbose) << "Create test data";
   store->Open(output_folder + "/test_data.bin", singa::io::kCreate);
   std::ifstream data_file((input_folder + "/test_batch.bin").c_str(),
       std::ios::in | std::ios::binary);

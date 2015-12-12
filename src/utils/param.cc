@@ -39,6 +39,8 @@ using mshadow::Tensor;
 using std::vector;
 using std::string;
 
+extern bool singa_verbose;
+
 ParamGenerator* ParamGenerator::Create(const ParamGenProto& proto) {
   auto factory = Singleton<Factory<ParamGenerator>>::Instance();
   ParamGenerator * gen = nullptr;
@@ -144,7 +146,7 @@ void Param::SliceParams(int num, const vector<Param*>& params) {
   for (auto param : params) {
     for (auto entry : paramid2slices[param->owner()]) {
       param->AddSlice(entry.first, entry.second);
-      LOG(INFO) << "param id " << param->id() << " owner=" << param->owner()
+      LOG_IF(INFO, singa_verbose) << "Param id " << param->id() << " owner=" << param->owner()
         << ", slice id = " << entry.first << ", size = " << entry.second;
     }
   }

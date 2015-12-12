@@ -23,6 +23,10 @@
 #include <iostream>
 #include "singa/singa.h"
 
+namespace singa{
+extern bool singa_verbose;
+}
+
 /**
  * \file main.cc provides an example main function.
  *
@@ -48,10 +52,15 @@
 int main(int argc, char **argv) {
   if (argc < 4) {
     std::cout << "Args: -conf JOB_CONF -singa SINGA_CONF -job_id JOB_ID "
+              << " [-verbose]\t print info-level logs\n"
               << " [-resume|-test]\n"
               << "-resume\t resume training from latest checkpoint files\n"
               << "-test\t test performance or extract features\n";
     return 0;
+  }
+
+  if (singa::ArgPos(argc, argv, "-verbose") != -1) {
+      singa::singa_verbose = true;
   }
 
   // initialize glog before creating the driver
