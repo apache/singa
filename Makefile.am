@@ -181,7 +181,7 @@ py_LTLIBRARIES = $(PY_PROGS)
 #lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_SRCS) $(SINGA_SRCS)
 libsinga_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive -I$(top_srcdir)/include
-libsinga_la_LDFLAGS =
+libsinga_la_LDFLAGS = 
 if LMDB
 libsinga_la_CXXFLAGS += -DUSE_LMDB
 endif
@@ -191,6 +191,7 @@ libsinga_la_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 libsinga_la_CXXFLAGS += $(CUDA_CFLAGS)
 libsinga_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
+
 if DCUDNN
 libsinga_la_SOURCES += $(CUDNN_SRCS)
 libsinga_la_CXXFLAGS += $(CUDNN_CFLAGS)
@@ -218,6 +219,7 @@ singa_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 singa_CXXFLAGS += $(CUDA_CFLAGS)
 singa_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
+
 if DCUDNN
 singa_SOURCES += $(CUDNN_SRCS)
 singa_CXXFLAGS += $(CUDNN_CFLAGS)
@@ -232,11 +234,13 @@ singatool_LDFLAGS = -lsinga \
                     -lglog  \
                     -lprotobuf \
                     -lzookeeper_mt 
+
 if DCUDA
 singatool_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 singatool_CXXFLAGS += $(CUDA_CFLAGS)
 singatool_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
+
 if DCUDNN
 singatool_SOURCES += $(CUDNN_SRCS)
 singatool_CXXFLAGS += $(CUDNN_CFLAGS)
@@ -268,11 +272,13 @@ singatest_LDFLAGS = -lsinga \
 if LMDB
 singatest_LDFLAGS += -llmdb
 endif
+
 if DCUDA 
 singatest_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 singatest_CXXFLAGS += $(CUDA_CFLAGS)
 singatest_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
+
 if DCUDNN
 singatest_SOURCES += $(CUDNN_SRCS)
 singatest_CXXFLAGS += $(CUDNN_CFLAGS)

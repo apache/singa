@@ -100,9 +100,9 @@ AM_CONDITIONAL(DCUDNN, [test "$enable_cudnn" = "yes"])
 
 AC_ARG_WITH([cudnn],
     [AS_HELP_STRING([--with-cudnn=PATH], [prefix where CUDNN is installed])],
-    [cudnn_prefix=$cudnnwithval], [cudnn_prefix="/usr/local/cuda"])
+    [cudnn_prefix=$withval], [cudnn_prefix="/usr/local/cuda"])
 if test "$cudnn_prefix" == "yes"; then
-    if test "$cudnnwithval" == "yes"; then
+    if test "$withval" == "yes"; then
         cudnn_prefix="/usr/local/cuda"
     fi
 fi
