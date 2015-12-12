@@ -69,15 +69,18 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<RecordOutputLayer, int>(kRecordOutput);
   RegisterLayer<CSVOutputLayer, int>(kCSVOutput);
 
+  // connection layers
   RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
   RegisterLayer<BridgeSrcLayer, int>(kBridgeSrc);
+  RegisterLayer<ConcateLayer, int>(kConcate);
+  RegisterLayer<SliceLayer, int>(kSlice);
+  RegisterLayer<SplitLayer, int>(kSplit);
 
   RegisterLayer<AccuracyLayer, int>(kAccuracy);
   RegisterLayer<ArgSortLayer, int>(kArgSort);
   RegisterLayer<ConvolutionLayer, int>(kConvolution);
   RegisterLayer<CConvolutionLayer, int>(kCConvolution);
   RegisterLayer<CPoolingLayer, int>(kCPooling);
-  RegisterLayer<ConcateLayer, int>(kConcate);
 
 #ifdef USE_CUDNN
   RegisterLayer<CudnnActivationLayer, int>(kCudnnActivation);
@@ -88,6 +91,8 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<CudnnSoftmaxLossLayer, int>(kCudnnSoftmaxLoss);
 #endif
 
+  RegisterLayer<DropoutLayer, int>(kDropout);
+  RegisterLayer<DummyLayer, int>(kDummy);
   RegisterLayer<EuclideanLossLayer, int>(kEuclideanLoss);
   RegisterLayer<InnerProductLayer, int>(kInnerProduct);
   RegisterLayer<LabelLayer, int>(kLabel);
@@ -101,9 +106,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<ReLULayer, int>(kReLU);
   RegisterLayer<ShardDataLayer, int>(kShardData);
   RegisterLayer<SigmoidLayer, int>(kSigmoid);
-  RegisterLayer<SliceLayer, int>(kSlice);
   RegisterLayer<SoftmaxLossLayer, int>(kSoftmaxLoss);
-  RegisterLayer<SplitLayer, int>(kSplit);
   RegisterLayer<STanhLayer, int>(kSTanh);
   RegisterLayer<SoftmaxLayer, int>(kSoftmax);
 

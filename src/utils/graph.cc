@@ -84,16 +84,13 @@ Graph::~Graph() {
     delete node;
 }
 
-void Graph::AddNode(Node* node) {
+Node* Graph::AddNode(const string& name, const string& origin, int id,
+                    void* proto) {
+  Node* node = new Node(name, origin, id, proto);
   nodes_.push_back(node);
   CHECK(name2node_.find(node->name) == name2node_.end())
     << "node " << node->name << " already exists";
   name2node_[node->name] = node;
-}
-
-Node* Graph::AddNode(const string& name) {
-  Node* node = new Node(name);
-  AddNode(node);
   return node;
 }
 
@@ -139,64 +136,6 @@ void Graph::RemoveEdge(const string &src, const string& dst) {
   CHECK(dstnode != name2node_.end()) << "can't find dst node " << dst;
   RemoveEdge(srcnode->second, dstnode->second);
 }
-
-string Graph::ToJson() const {
-  map<string, string> label;
-  return ToJson(label);
-}
-
-/*
-string Graph::ToJson(const map<string, string>& info) const {
-  map<string, int> nodeid;
-  string disp = "{\"directed\":1,\n";
-
-  // add nodes
-  disp += "\"nodes\":[\n";
-  bool first = true;
-  vector<string> colors = {"red", "blue", "black", "green"};
-
-  // see for more shapes at http://www.graphviz.org/doc/info/shapes.html
-  // vector<string> shapes = {"box", "ellipse"};
-  int id = 0;
-  for (auto node : nodes_) {
-    char str[1024];
-    string name = node->name;
-    string color = colors[(node->partition_id)%colors.size()];
-    string shape;
-    string origin = node->origin;
-    snprintf(str, sizeof(str),
-        "{\"id\":\"%s%s\", \"color\":\"%s\",\"shape\":\"%s\"}\n", name.c_str(),
-        info.find(name) != info.end() ? info.at(name).c_str() : "",
-        color.c_str(), "box");
-    if (!first)
-      disp += ",";
-    else
-      first = false;
-    disp += string(str);
-    nodeid[name] = id++;
-  }
-  disp += "]\n,";
-
-  // add edges
-  disp += "\"links\":[\n";
-  first = true;
-  for (auto src : nodes_) {
-    for (auto dst : src->dstnodes) {
-      char str[1024];
-      snprintf(str, sizeof(str),
-          "{\"source\":%d, \"target\":%d, \"color\":\"%s\"}\n",
-          nodeid[src->name], nodeid[dst->name], "black");
-      if (!first)
-        disp += ",";
-      else
-        first = false;
-      disp += string(str);
-    }
-  }
-  disp += "]\n";
-  return disp+"}";
-}
-*/
 
 // sort to make `bottom' nodes be placed in the front positions
 void Graph::Sort() {
@@ -271,6 +210,11 @@ const Graph Graph::Reverse() const {
     }
   return g;
 }
+string Graph::ToJson() const {
+  map<string, string> label;
+  return ToJson(label);
+}
+
 
 string Graph::ToJson(const map<string, string>& label) const {
   string disp = "{\"directed\":1,\n";

@@ -242,7 +242,7 @@ string GetHostIP() {
   close(fd);
   string ip(inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
   /* display result */
-  LOG(INFO) << "Host IP= " << ip;
+  LOG(INFO) << "Host IP = " << ip;
   return ip;
 }
 

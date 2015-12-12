@@ -99,20 +99,20 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
     param->set_name(name);
     param->set_share_from(from);
   }
-  LOG(INFO) << "NeuralNet config is\n" << conf.DebugString();
+  LOG(INFO) << "Initial NeuralNet Config is\n" << conf.DebugString();
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc
   return new NeuralNet(conf, npartitions);
 }
 
 NeuralNet::NeuralNet(NetProto netproto, int npartitions) {
-  LOG(INFO) << "Constructing Neural Net...";
+  LOG(INFO) << "Constructing NeuralNet...";
   auto graph = CreateGraph(netproto, npartitions);
-  CreateNetFromGraph(graph, npartitions);
+  CreateNetFromGraph(graph);
   PrepareDataStructures();
   for (Node* node : graph->nodes())
     delete static_cast<LayerProto*>(node->proto);
   delete graph;
-  LOG(INFO) << "Neural net constructed";
+  LOG(INFO) << "NeuralNet Constructed";
 }
 
 NeuralNet::~NeuralNet() {
@@ -142,20 +142,7 @@ void NeuralNet::Load(const vector<string>& paths,
   }
 }
 
-/*
-std::string NeuralNet::ToAdjacency() {
-  string disp = "";
-  for (auto& layer : layers_) {
-    disp += layer->name()+": ";
-    for (const auto& dst : layer->dstlayers())
-      disp += dst->name()+", ";
-    disp += "\n";
-  }
-  return disp;
-}
-*/
-
-void NeuralNet::ShareParamsFrom(NeuralNet* other, bool cpu_only) {
+void NeuralNet::ShareParamsFrom(NeuralNet* other) {
   for (auto& layer : layers_) {
     auto otherlayer = other->name2layer(layer->name());
     if (otherlayer != nullptr) {
@@ -169,189 +156,241 @@ void NeuralNet::ShareParamsFrom(NeuralNet* other, bool cpu_only) {
   }
 }
 
-// add a node for SliceLayer between srcnode and dstnodes
-Node* SliceNode(Graph* graph, Node* srcnode,
-    const vector<Node*>& dstnodes, bool connect_dst) {
-  string name = srcnode->name + "<";
-  LayerProto *proto = new LayerProto();
-  proto->set_name(name);
-  proto->set_type(LayerType::kSlice);
-  proto->set_partition_id(
-      static_cast<LayerProto*>(srcnode->proto)->partition_id());
-  proto->set_partition_dim(
-      static_cast<LayerProto*>(srcnode->proto)->partition_dim());
-  Node* node = new Node(name, "##" + name, proto->partition_id(), proto);
-  graph->AddNode(node);
-  graph->AddEdge(srcnode, node);
-  if (connect_dst)
-    for (Node* dst : dstnodes)
-      graph->AddEdge(node, dst);
-  return node;
+// name of connection layers
+string splitName(const string& layer) { return "split("+layer+")"; }
+string sliceName(const string& layer) { return "slice("+layer+")"; }
+string concateName(const string& layer) { return "concate("+layer+")"; }
+string bridgeName(const string& src, const string& dst) { return src+"->"+dst; }
+string bridgeSrcName(const string& src, const string& dst) {
+  return "bridge_src("+bridgeName(src, dst)+")";
+}
+string bridgeDstName(const string& src, const string& dst) {
+  return "bridge_dst("+bridgeName(src, dst)+")";
 }
 
-// add a node for ConcateLayer between srcnodes and dstnode
-Node* ConcateNodes(Graph* graph, const vector<Node*>& srcnodes, Node* dstnode) {
-  string name = ">" + dstnode->name;
-  LayerProto *proto = new LayerProto();
-  proto->set_name(name);
-  proto->set_type(LayerType::kConcate);
-  proto->set_partition_id(
-      static_cast<LayerProto*>(dstnode->proto)->partition_id());
-  proto->set_partition_dim(
-      static_cast<LayerProto*>(srcnodes[0]->proto)->partition_dim());
-  Node* node = new Node(name, "##" + name, proto->partition_id(), proto);
-  graph->AddNode(node);
-  graph->AddEdge(node, dstnode);
-  for (Node* src : srcnodes)
-    graph->AddEdge(src, node);
-  return node;
+ConnectionType dstLayerConnection(const LayerProto& proto) {
+  auto layer = Layer::Create(proto);
+  auto ret = layer->dst_layer_connection();
+  delete layer;
+  return ret;
 }
 
-// add a node for SplitLayer between srcnode and dstnodes
-Node* SplitNode(Graph* graph, Node* srcnode, const vector<Node*>& dstnodes) {
-  string name = srcnode->name + "+";
-  LayerProto *proto = new LayerProto();
-  proto->set_name(name);
-  proto->set_type(LayerType::kSplit);
-  proto->set_partition_id(
-      static_cast<LayerProto*>(srcnode->proto)->partition_id());
-  Node* node = new Node(name, "##" + name, proto->partition_id(), proto);
-  graph->AddNode(node);
-  graph->AddEdge(srcnode, node);
-  for (Node* dst : dstnodes)
-    graph->AddEdge(node, dst);
-  return node;
+ConnectionType srcNeuronConnection(const LayerProto& proto) {
+  auto layer = Layer::Create(proto);
+  auto ret = layer->src_neuron_connection(0);
+  delete layer;
+  return ret;
 }
 
-// add a pair of nodes for BridgeSrcLayer and BridgeDstLayer between srcnode
-// and dstnode
-void BridgeNodes(Graph* graph, Node* srcnode, Node* dstnode) {
-  string sname = srcnode->name + ":-";
-  LayerProto *sproto = new LayerProto();
-  sproto->set_name(sname);
-  sproto->set_type(LayerType::kBridgeSrc);
-  sproto->set_partition_id(
-      static_cast<LayerProto*>(srcnode->proto)->partition_id());
-  auto sbridge = new Node(sname, "##" + sname, sproto->partition_id(), sproto);
-  string dname = "-:" + dstnode->name;
-  LayerProto *dproto = new LayerProto();
-  dproto->set_name(dname);
-  dproto->set_type(LayerType::kBridgeDst);
-  dproto->set_partition_id(
-      static_cast<LayerProto*>(dstnode->proto)->partition_id());
-  auto dbridge = new Node(dname, "##" + dname, dproto->partition_id(), dproto);
-  graph->AddNode(sbridge);
-  graph->AddNode(dbridge);
-  graph->AddEdge(srcnode, sbridge);
-  graph->AddEdge(sbridge, dbridge);
-  graph->AddEdge(dbridge, dstnode);
+NetProto NeuralNet::AddModelSplitLayers(const NetProto& netproto) {
+  NetProto net_w_split;
+  net_w_split.CopyFrom(netproto);
+  net_w_split.clear_layer();
+  // calculate number of dst-layers for each layer
+  map<string, int> dst_count;
+  for (const LayerProto& layer : netproto.layer())
+    for (const string& src_name : layer.srclayers())
+      ++dst_count[src_name];
+  // tag to add split layer if:
+  // dst_count[] > 1 && dst_layer_connection() = OneToOne
+  for (const LayerProto& layer : netproto.layer())
+    if ((dst_count[layer.name()] > 1 && dstLayerConnection(layer) == kOneToOne))
+        dst_count[layer.name()] = -dst_count[layer.name()];
+  // add orginal layers and adjust srclayers
+  for (const LayerProto& layer : netproto.layer()) {
+    LayerProto* proto = net_w_split.add_layer();
+    proto->CopyFrom(layer);
+    proto->clear_srclayers();
+    for (const string& src_name : layer.srclayers())
+      if (dst_count[src_name] < 0)
+        proto->add_srclayers(splitName(src_name));
+      else
+        proto->add_srclayers(src_name);
+  }
+  // add split layers
+  for (const LayerProto& layer : netproto.layer()) {
+    if (dst_count[layer.name()] < 0) {
+      LayerProto* split_proto = net_w_split.add_layer();
+      split_proto->set_name(splitName(layer.name()));
+      split_proto->set_type(kSplit);
+      split_proto->set_partition_dim(layer.partition_dim());
+      split_proto->add_srclayers(layer.name());
+      split_proto->mutable_split_conf()
+                 ->set_num_splits(-dst_count[layer.name()]);
+    }
+  }
+  // LOG(INFO) << "NeuralNet Config After Model Split is\n"
+  //           << net_w_split.DebugString();
+  return net_w_split;
+}
+
+NetProto NeuralNet::AddPartitionConnectionLayers(const NetProto& netproto,
+                                                 int npartitions) {
+  CHECK_GT(npartitions, 0);
+  NetProto net_w_connection;
+  net_w_connection.CopyFrom(netproto);
+  // if npartitions is 1, no need to add connection layers
+  if (npartitions == 1) return net_w_connection;
+  // add original layers, but remove all edges first
+  net_w_connection.clear_layer();
+  map<string, LayerProto*> name2proto;
+  for (const LayerProto& layer : netproto.layer()) {
+    LayerProto* layer_proto = net_w_connection.add_layer();
+    layer_proto->CopyFrom(layer);
+    layer_proto->clear_srclayers();
+    name2proto[layer_proto->name()] = layer_proto;
+  }
+  /*
+   * Add Slice, Concate, Split Layers for Model Partition
+   *
+   * All cases are as follows:
+   * src_pdim | dst_pdim | connection_type | Action
+   *     0    |     0    |     OneToOne    | Direct Connection
+   *     1    |     1    |     OneToOne    | Direct Connection
+   *     0    |     0    |     OneToAll    | Direct Connection
+   *     1    |     0    |     OneToOne    | Slice -> Concate
+   *     0    |     1    |     OneToOne    | Slice -> Concate
+   *     1    |     0    |     OneToAll    | Slice -> Concate
+   *     0    |     1    |     OneToAll    | Split -> Concate
+   *     1    |     1    |     OneToAll    | Split -> Concate
+   *
+   * Logic:
+   * dst_pdim = 1 && OneToAll ?
+   *   (YES) Split -> Concate
+   *   (NO)  src_pdim = dst_pdim ?
+   *           (YES) Direct Connection
+   *           (NO)  Slice -> Concate
+   */
+   for (const LayerProto& origin_layer : netproto.layer()) {
+     LayerProto* dst_layer = name2proto[origin_layer.name()];
+     int dst_pdim = dst_layer->partition_dim();
+     ConnectionType connection = srcNeuronConnection(*dst_layer);
+     for (const string& src_name : origin_layer.srclayers()) {
+       LayerProto* src_layer = name2proto[src_name];
+       int src_pdim = src_layer->partition_dim();
+       // dst_pdim = 1 && OneToAll ?
+       if (dst_pdim == 1 && connection == kOneToAll) {
+         // add split layer
+         LayerProto* split_layer = net_w_connection.add_layer();
+         split_layer->set_name(splitName(src_layer->name()));
+         split_layer->set_type(kSplit);
+         split_layer->set_partition_dim(src_layer->partition_dim());
+         split_layer->add_srclayers(src_layer->name());
+         split_layer->mutable_split_conf()->set_num_splits(npartitions);
+        // add concate layer
+        LayerProto* concate_layer = net_w_connection.add_layer();
+        concate_layer->set_name(concateName(split_layer->name()));
+        concate_layer->set_type(kConcate);
+        // concate on src_pdim
+        concate_layer->set_partition_dim(split_layer->partition_dim());
+        concate_layer->add_srclayers(split_layer->name());
+        // connect dst_layer to concate layer
+        dst_layer->add_srclayers(concate_layer->name());
+       } else {
+         // src_pdim = dst_pdim ?
+         if (dst_pdim == src_pdim) {
+           // direct connection
+           dst_layer->add_srclayers(src_layer->name());
+         } else {
+           // add slice layer
+           LayerProto* slice_layer = net_w_connection.add_layer();
+           slice_layer->set_name(sliceName(src_layer->name()));
+           slice_layer->set_type(kSlice);
+           // slice on dst_pdim
+           slice_layer->set_partition_dim(dst_layer->partition_dim());
+           slice_layer->add_srclayers(src_layer->name());
+           // add concate layer
+           LayerProto* concate_layer = net_w_connection.add_layer();
+           concate_layer->set_name(concateName(slice_layer->name()));
+           concate_layer->set_type(kConcate);
+           // concate on src_pdim
+           concate_layer->set_partition_dim(src_layer->partition_dim());
+           concate_layer->add_srclayers(slice_layer->name());
+           // connect dst_layer to concate layer
+           dst_layer->add_srclayers(concate_layer->name());
+         }
+       }
+     }
+   }
+  LOG(INFO) << "NeuralNet Config After Adding Connection Layers is\n"
+            << net_w_connection.DebugString();
+  return net_w_connection;
 }
 
 Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
-  Graph *graph = new Graph();
-  // from name of original layer to nodes
+  NetProto net_w_split = AddModelSplitLayers(netproto);
+  NetProto net_w_connection =
+    AddPartitionConnectionLayers(net_w_split, npartitions);
+  // for each original layer proto, create #npartitions of nodes
+  Graph* graph = new Graph();
   map<string, vector<Node*>> name2nodes;
   map<string, const LayerProto*> name2proto;
-  for (const auto& layer : netproto.layer()) {
+  for (const LayerProto& layer : net_w_connection.layer()) {
     vector<Node*> nodes;
-    int pdim = layer.partition_dim();
-    if (pdim == 0 || pdim == 1) {
-      char suffix[4];
-      for (int i = 0; i < npartitions; i++) {
-        LayerProto *proto = new LayerProto(layer);
-        snprintf(suffix, sizeof(suffix), "%02d", i);
-        // differentiate partitions
-        string nodename = layer.name() + "@" + string(suffix);
-        proto->set_partition_id(i);
-        proto->set_num_partitions(npartitions);
-        proto->set_name(nodename);
-        auto node = new Node(nodename, layer.name(), i, proto);
-        graph->AddNode(node);
-        nodes.push_back(node);
-      }
-    } else if (pdim == -1) {
+    char suffix[4];
+    for (int i = 0; i < npartitions; i++) {
       LayerProto *proto = new LayerProto(layer);
-      auto node = new Node(layer.name(), layer.name(), 0, proto);
-      graph->AddNode(node);
+      snprintf(suffix, sizeof(suffix), "%02d", i);
+      // differentiate partitions
+      string nodename = layer.name() + "@" + string(suffix);
+      proto->set_name(nodename);
+      proto->set_type(layer.type());
+      proto->set_partition_dim(layer.partition_dim());
+      proto->set_partition_id(i);
+      proto->set_num_partitions(npartitions);
+      Node* node = graph->AddNode(nodename, layer.name(), i, proto);
       nodes.push_back(node);
-    } else {
-      LOG(FATAL) << "Cannot partition layer (" << layer.name() <<") on dim: "
-        << layer.partition_dim();
     }
     name2nodes[layer.name()] = nodes;
     name2proto[layer.name()] = &layer;
   }
-
-  // connect nodes, nodes for ConcateLayer, SliceLayer and SplitLayer are added.
-  for (const auto& layerproto : netproto.layer()) {
-    string name = layerproto.name();
-    int pdim = layerproto.partition_dim();
-    const vector<Node*>& nodes = name2nodes.at(name);
-    for (auto srcname : layerproto.srclayers()) {
-      const vector<Node*>& srcnodes = name2nodes.at(srcname);
-      // TODO(wangwei): consider the type of each connection
-      Layer *layer = Layer::Create(layerproto);
-      ConnectionType connection = layer->src_neuron_connection(0);
-      delete layer;
-      int src_pdim = name2proto[srcname]->partition_dim();
-      // no partition of src layer
-      if (src_pdim == -1) {
-        Node* srcnode = srcnodes[0];
-        if (pdim == 0 || (pdim == 1 && connection == kOneToOne))
-          SliceNode(graph, srcnode, nodes, true);
-        else if (pdim == -1)
-          graph->AddEdge(srcnode, nodes[0]);
-        else  // type==kLayerPartition&&connection==kOneToAll
-          SplitNode(graph, srcnode, nodes);
-      } else if ((pdim == -1 && (src_pdim == 0 || src_pdim == 1))
-          ||(pdim == 1 && connection == kOneToAll && src_pdim == 0)) {
-        // copy/concate the whole srclayer for every dst partition
-        for (Node* node : nodes)
-          ConcateNodes(graph, srcnodes, node);
-      } else if ((src_pdim == 1 && pdim == 0) || (src_pdim == 0 && pdim == 1)) {
-        // TODO(wangwei) rewrite the whole src-dst construction in a clear way
-        LOG(FATAL) << "not implemented";
-        // the most complext scenario
-        // vector<Node*> nodes;
-        // for (Node* srcnode : srcnodes)
-        //   nodes.push_back(SliceNode(graph, srcnode, nodes, false));
-        // for (Node* node : nodes)
-        //   ConcateNodes(graph, nodes, node);
-      } else if ((src_pdim == 0 && pdim == 0)||
-          (src_pdim == 1 && pdim == 1 && connection == kOneToOne)) {
-        CHECK_EQ(srcnodes.size(), nodes.size());
-        for (size_t i = 0; i < srcnodes.size(); i++)
-          graph->AddEdge(srcnodes[i], nodes[i]);
+  // connect layers, add bridge layers if partition id is different
+  for (const LayerProto& origin_layer : net_w_connection.layer()) {
+    vector<Node*> dst_nodes = name2nodes[origin_layer.name()];
+    for (const string& src_name : origin_layer.srclayers()) {
+      vector<Node*> src_nodes = name2nodes[src_name];
+      if (origin_layer.type() != kConcate) {
+        for (size_t i = 0; i < src_nodes.size(); ++i) {
+          CHECK_EQ(src_nodes[i]->partition_id, i);
+          CHECK_EQ(dst_nodes[i]->partition_id, i);
+          graph->AddEdge(src_nodes[i], dst_nodes[i]);
+        }
       } else {
-        LOG(FATAL) << "in wrong branch, not implemented";
-      }
-    }
-  }
-  // must do topology sort, because we have added new nodes.
-  graph->Sort();
-  // add nodes for SplitLayer
-  vector<Node*> oldnodes = graph->nodes();
-  for (Node* node : oldnodes) {
-    auto layer = Layer::Create(*static_cast<LayerProto*>(node->proto));
-    if (node->dstnodes.size() > 1
-        && layer->dst_layer_connection() == kOneToOne) {
-      vector<Node*> dstnodes = node->dstnodes;
-      for (Node* dst : dstnodes)
-        graph->RemoveEdge(node, dst);
-      SplitNode(graph, node, dstnodes);
-    }
-    delete layer;
-  }
-  // add nodes for bridge layers
-  for (Node* node : oldnodes) {
-    vector<Node*> dstnodes = node->dstnodes;
-    auto pid1 = static_cast<LayerProto*>(node->proto)->partition_id();
-    for (size_t i = 0; i < dstnodes.size(); i++) {
-      Node* dstnode = dstnodes.at(i);
-      auto pid2 = static_cast<LayerProto*>(node->proto)->partition_id();
-      if (pid1 != pid2) {
-        graph->RemoveEdge(node, dstnode);
-        BridgeNodes(graph, node, dstnode);
+        // need to add bridge layers
+        for (size_t i = 0; i < src_nodes.size(); ++i) {
+          CHECK_EQ(src_nodes[i]->partition_id, i);
+          for (size_t j = 0; j < dst_nodes.size(); ++j) {
+            CHECK_EQ(dst_nodes[j]->partition_id, j);
+            if (i == j) {  // in same partition, no bridge needed
+              graph->AddEdge(src_nodes[i], dst_nodes[j]);
+            } else {  // add bridges
+              // bridge src && dst layer
+              LayerProto *proto_bsrc = new LayerProto();
+              LayerProto *proto_bdst = new LayerProto();
+              string bsrc_name = bridgeSrcName(src_nodes[i]->name,
+                                               dst_nodes[j]->name);
+              string bdst_name = bridgeDstName(src_nodes[i]->name,
+                                               dst_nodes[j]->name);
+              proto_bsrc->set_name(bsrc_name);
+              proto_bdst->set_name(bdst_name);
+              proto_bsrc->set_type(kBridgeSrc);
+              proto_bdst->set_type(kBridgeDst);
+              proto_bsrc->set_partition_dim(origin_layer.partition_dim());
+              proto_bdst->set_partition_dim(origin_layer.partition_dim());
+              proto_bsrc->set_partition_id(src_nodes[i]->partition_id);
+              proto_bdst->set_partition_id(dst_nodes[j]->partition_id);
+              proto_bsrc->set_num_partitions(npartitions);
+              proto_bdst->set_num_partitions(npartitions);
+              Node* bsrc_node = graph->AddNode(bsrc_name, bsrc_name, i,
+                                               proto_bsrc);
+              Node* bdst_node = graph->AddNode(bdst_name, bdst_name, j,
+                                               proto_bdst);
+              graph->AddEdge(src_nodes[i], bsrc_node);
+              graph->AddEdge(bsrc_node, bdst_node);
+              graph->AddEdge(bdst_node, dst_nodes[j]);
+            }
+          }
+        }
       }
     }
   }
@@ -360,7 +399,7 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
   return graph;
 }
 
-void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
+void NeuralNet::CreateNetFromGraph(Graph* graph) {
   // create one layer per node
   for (Node* node : graph->nodes()) {
     auto proto_ptr = static_cast<LayerProto*>(node->proto);
@@ -375,12 +414,12 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
     for (Node* src : node->srcnodes)
       src_map_[layer].push_back(name2layer(src->name));
   }
-
   // setup layers
   int paramid = 0;
   map<string, string> layerinfo;
   map<string, vector<Layer*>> share_param_layers;
   for (Node* node : graph->nodes()) {
+    LOG(INFO) << "constructing graph: " << node->name;
     auto layer = name2layer(node->name);
     layer->Setup(*(static_cast<LayerProto*>(node->proto)), srclayers(layer));
     DLOG(INFO) << "constructing graph: " << layer->name();
@@ -397,7 +436,6 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
     if (layer->partition_dim() == 0)
       share_param_layers[node->origin].push_back(layer);
   }
-  // LOG(INFO) << "Neural net structure\n"  << graph->ToJson(layerinfo);
   // create map from param name to param ptr
   std::unordered_map<string, Param*> name2param;
   for (auto layer : layers_) {

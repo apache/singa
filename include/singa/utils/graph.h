@@ -122,6 +122,12 @@ class Graph {
    */
   Node* AddNode(const string& name, const std::map<string, string>& attrs);
   /**
+   * @deprecated {remove layer related info from node attrs}
+   * Add a node with given name and other info.
+   */
+  Node* AddNode(const std::string& name, const std::string& origin, int id,
+                void* proto);
+  /**
    * Add an edge connecting the two given nodes.
    */
   void AddEdge(Node* srcnode, Node* dstnode);

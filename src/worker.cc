@@ -130,8 +130,8 @@ void Worker::InitSockets(const NeuralNet* net) {
   ConnectStub(grp_id_, id_, dealer_, kWorkerParam);
   for (auto layer : net->layers()) {
     if (layer->partition_id() == id_) {
-      if (typeid(layer) == typeid(BridgeDstLayer)
-          || typeid(layer) == typeid(BridgeSrcLayer)) {
+      if (typeid(*layer) == typeid(BridgeDstLayer)
+          || typeid(*layer) == typeid(BridgeSrcLayer)) {
         // TODO(wangsh): provide a unique socket id from cluster
         bridge_dealer_ = new Dealer(1);
         ConnectStub(grp_id_, id_, bridge_dealer_, kWorkerLayer);
@@ -142,7 +142,7 @@ void Worker::InitSockets(const NeuralNet* net) {
   // bind dealer to bridge layers
   if (bridge_dealer_ != nullptr) {
     for (auto dst : net->layers()) {
-      if (typeid(dst) == typeid(BridgeDstLayer)) {
+      if (typeid(*dst) == typeid(BridgeDstLayer)) {
         auto src = net->srclayers(dst)[0];
         name2bridge_[src->name()] = src;
         name2bridge_[dst->name()] = dst;
@@ -338,10 +338,6 @@ void BPWorker::Forward(int step, Phase phase, NeuralNet* net) {
   map<string, string> label;
   for (auto& layer : net->layers()) {
     if (layer->partition_id() == id_) {
-      // TODO(wangwei): enable this for model partition
-      // recv data from other workers
-      // if (typeid(*layer) == typeid(BridgeDstLayer))
-      //   ReceiveBlobs(true, false, dynamic_cast<BridgeLayer*>(layer), net);
       if (phase == kTrain) {
         // wait until param is updated
         for (Param* p : layer->GetParams()) {
@@ -352,11 +348,6 @@ void BPWorker::Forward(int step, Phase phase, NeuralNet* net) {
       layer->ComputeFeature(phase | kForward, net->srclayers(layer));
       if (job_conf_.debug() && grp_id_ == 0)
         label[layer->name()] = layer->ToString(true, phase | kForward);
-
-      // TODO(wangwei): enable this for model partition
-      // send data to other workers
-      // if (typeid(*layer) == typeid(BridgeSrcLayer))
-      //   SendBlobs(true, false, dynamic_cast<BridgeLayer*>(layer), net);
     }
   }
   if (label.size()) {
@@ -372,20 +363,11 @@ void BPWorker::Backward(int step, NeuralNet* net) {
   for (auto it = layers.rbegin(); it != layers.rend(); it++) {
     Layer* layer = *it;
     if (layer->partition_id() == id_) {
-      // TODO(wangwei): enable this for model partition
-      // send data to other workers
-      // if (typeid(layer) == typeid(BridgeSrcLayer))
-      //   ReceiveBlobs(false, true, layer, net);
-      // LOG(ERROR) << layer->name() << " backward";
       layer->ComputeGradient(kTrain | kBackward, net->srclayers(layer));
       if (job_conf_.debug() && grp_id_ == 0)
         label[layer->name()] = layer->ToString(true, kTrain | kBackward);
       for (Param* p : layer->GetParams())
         Update(step, p);
-      // TODO(wangwei): enable this for model partition
-      // recv data from other workers
-      // if (typeid(layer) == typeid(BridgeDstLayer))
-      //   SendBlobs(false, true, dynamic_cast<BridgeDstLayer*>(layer), net);
     }
   }
   if (label.size()) {

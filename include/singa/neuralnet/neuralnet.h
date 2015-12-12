@@ -131,11 +131,21 @@ class NeuralNet {
   /**
    * Create neural net from graph, one layer per node.
    */
-  void CreateNetFromGraph(Graph* graph, int num_partitions);
+  void CreateNetFromGraph(Graph* graph);
   /**
    * prepare data structures, e.g., params_, layers_, etc.
    */
   void PrepareDataStructures();
+  /**
+   * add split layers, due to connections to multiple dst-layers
+   */
+  NetProto AddModelSplitLayers(const NetProto& netproto);
+  /**
+   * add connection layers, due to partition of the whole nerualnet
+   * this should be done after AddModelSplitLayers()
+   */
+  NetProto AddPartitionConnectionLayers(const NetProto& netproto,
+                                        int npartitions);
 
  protected:
   std::vector<Layer*> layers_;

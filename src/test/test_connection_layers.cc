@@ -413,7 +413,7 @@ TEST(ConnectionLayerTest, SplitTest) {
   src_split.push_back(static_cast<Layer*>(&in));
   LayerProto proto_split;
   proto_split.set_name("split");
-  proto_split.set_num_partitions(K);
+  proto_split.mutable_split_conf()->set_num_splits(K);
   SplitLayer split;
   split.Setup(proto_split, src_split);
   ASSERT_EQ(split.data(static_cast<Layer*>(&split)).shape(0), N);

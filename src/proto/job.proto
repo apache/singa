@@ -227,6 +227,8 @@ message LayerProto {
   optional SoftmaxProto softmax_conf = 53;
   // configuration for softmax loss layer
   optional SoftmaxLossProto softmaxloss_conf = 40;
+  // configuration for split layer
+  optional SplitProto split_conf = 42;
   // configuration for store input layers
   optional StoreProto store_conf = 51;
 
@@ -332,6 +334,10 @@ message RGBImageProto {
 
 message PrefetchProto {
   repeated LayerProto sublayers = 1;
+}
+
+message SplitProto {
+  optional int32 num_splits = 1 [default = 1];
 }
 
 message StoreProto {
@@ -614,6 +620,7 @@ enum LayerType {
   kCudnnActivation = 54;
   kCudnnSoftmaxLoss = 55;
   kDropout = 4;
+  kDummy = 20;
   kInnerProduct = 5;
   kLRN = 6;
   kPooling = 8;

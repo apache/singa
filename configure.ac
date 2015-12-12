@@ -38,7 +38,7 @@ AC_PROG_LIBTOOL
 
 # Setup custom CUDA paths
 AC_ARG_ENABLE(cuda,
-	[AS_HELP_STRING(--enable-cuda,enable CUDA support)],
+  [AS_HELP_STRING(--enable-cuda,enable CUDA support)],
     cudaval="yes",
     cudaval="no")
 AM_CONDITIONAL(DCUDA, [test "$cudaval" = "yes"])
@@ -71,17 +71,17 @@ if test x"$cudaval" = x"yes"; then
     LIBS="$LIBS $CUDA_LIBS"
     LDFLAGS="$LDFLAGS $CUDA_LDFLAGS"
     NVCC="nvcc"
-	DEBUG="-DUSE_GPU"
+  DEBUG="-DUSE_GPU"
     AC_DEFINE(DCUDA,[1],[Defined if CUDA should be used])
-	AC_CHECK_LIB([cuda], [main], [], [
- 		AC_MSG_ERROR([unable to find cuda library])
- 	 ])
-	AC_CHECK_LIB([cudart], [main], [], [
-	  	AC_MSG_ERROR([unable to find cudart library])
-  	])
-	AC_CHECK_LIB([curand], [main], [], [
- 	 	AC_MSG_ERROR([unable to find curand library])
-  	])
+  AC_CHECK_LIB([cuda], [main], [], [
+     AC_MSG_ERROR([unable to find cuda library])
+    ])
+  AC_CHECK_LIB([cudart], [main], [], [
+      AC_MSG_ERROR([unable to find cudart library])
+    ])
+  AC_CHECK_LIB([curand], [main], [], [
+      AC_MSG_ERROR([unable to find curand library])
+    ])
 else
     CUDA_CFLAGS=""
     CUDA_LDFLAGS=""
@@ -149,35 +149,35 @@ AC_CHECK_LIB([protobuf], [main], [], [
 
 AC_ARG_ENABLE(lmdb,
      AS_HELP_STRING([--enable-lmdb],[enable debug option]),
-	 [enable_lmdb=yes],[enable_lmdb=no])
+   [enable_lmdb=yes],[enable_lmdb=no])
 AM_CONDITIONAL(LMDB, test "$enable_lmdb" = yes)
 if test x"$enable_lmdb" = x"yes"; then
-	AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
-	  AC_MSG_ERROR([unable to find mdb_env_create() function])
-	  ])
-	AC_DEFINE(LMDB, 1, [Enable Option layer])
+  AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
+    AC_MSG_ERROR([unable to find mdb_env_create() function])
+    ])
+  AC_DEFINE(LMDB, 1, [Enable Option layer])
 fi
 
 AC_ARG_ENABLE(test,
-	AS_HELP_STRING([--enable-test],[enable singa test]),
-	[enable_test=yes],[enable_test=no])
+  AS_HELP_STRING([--enable-test],[enable singa test]),
+  [enable_test=yes],[enable_test=no])
 AM_CONDITIONAL(SINGATEST, test "$enable_test" = yes)
 if test x"$enable_test" != x"no"; then
-	PROGS='singatest test '
-	LTLIBS='libgtest.la '
+  PROGS='singatest test '
+  LTLIBS='libgtest.la '
 else
-	PROGS=''
-	LTLIBS=''
+  PROGS=''
+  LTLIBS=''
 fi
 
 AC_ARG_ENABLE(debug,
-	AS_HELP_STRING([--enable-debug],[enable debug mode]),
-	[enable_debug=yes],[enable_debug=no])
+  AS_HELP_STRING([--enable-debug],[enable debug mode]),
+  [enable_debug=yes],[enable_debug=no])
 AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 if test x"$enable_debug" != x"no"; then
-	DEBUG+=' -g'
+  DEBUG+=' -g'
 else
-	DEBUG+=' -O2'
+  DEBUG+=' -O2'
 fi
 
 AC_ARG_ENABLE(python,
