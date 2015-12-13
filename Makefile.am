@@ -29,8 +29,8 @@ MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 DEFAULT_FLAGS = -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
               $(MSHADOW_FLAGS) -funroll-loops -DTHREADED
 
-CFLAGS = $(DEBUG)
-CXXFLAGS = $(DEBUG)
+CFLAGS += $(DEBUG)
+CXXFLAGS += $(DEBUG)
 AC_CXXFLAGS = $(DEBUG)
 
 INCLUDES = -I$(top_srcdir)/include

@@ -68,6 +68,8 @@ if test x"$cudaval" = x"yes"; then
     CUDA_CFLAGS="-I$cuda_prefix/include"
     CUDA_LDFLAGS="-L$cuda_prefix/lib64 -L$cuda_prefix/lib"
     CUDA_LIBS="-lcublas -lcudart -lcurand"
+    LIBS="$LIBS $CUDA_LIBS"
+    LDFLAGS="$LDFLAGS $CUDA_LDFLAGS"
     NVCC="nvcc"
 	DEBUG="-DUSE_GPU "
     AC_DEFINE(DCUDA,[1],[Defined if CUDA should be used])
@@ -111,6 +113,8 @@ if test x"$enable_cudnn" == x"yes"; then
     CUDNN_CFLAGS="-I$cudnn_prefix/include"
     CUDNN_LDFLAGS="-L$cudnn_prefix/lib64 -L$cudnn_prefix/lib"
     CUDNN_LIBS="-lcudnn"
+    LIBS="$LIBS $CUDNN_LIBS"
+    LDFLAGS="$LDFLAGS $CUDNN_LDFLAGS"
     DEBUG+=" -DUSE_CUDNN "
     AC_DEFINE(DCUDNN,[1],[Defined if CUDNN should be used])
     AC_CHECK_LIB([cudnn], [main], [], [
