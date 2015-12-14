@@ -32,7 +32,7 @@ CudnnConvLayer::~CudnnConvLayer() {
 }
 
 void CudnnConvLayer::InitCudnn() {
-  CudnnLayer::InitCudnn();
+  CudnnBase::InitCudnn();
   // convert MB to bytes
   workspace_byte_limit_
     = layer_conf_.convolution_conf().workspace_byte_limit() << 20;
@@ -149,7 +149,6 @@ void CudnnConvLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
         &beta,
         my_desc_,
         data_.mutable_gpu_data()));
-
   if (bias_) {
     beta = 1.f;
     CHECK_CUDNN(cudnnAddTensor(handle_,
@@ -167,6 +166,7 @@ void
 CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   float alpha = 1.f, beta = 0.f;
   Blob<float> workspace(vector<int>{static_cast<int>(workspace_count_)});
+  // LOG(ERROR) << "backward bias";
   if (bias_) {
     CHECK_CUDNN(cudnnConvolutionBackwardBias(handle_,
           &alpha,
@@ -176,6 +176,7 @@ CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
           bias_desc_,
           bias_->mutable_grad()->mutable_gpu_data()));
   }
+  // LOG(ERROR) << "backward w";
   CHECK_CUDNN(cudnnConvolutionBackwardFilter_v3(handle_,
         &alpha,
         src_desc_,
@@ -189,6 +190,7 @@ CudnnConvLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
         &beta,
         filter_desc_,
         weight_->mutable_grad()->mutable_gpu_data()));
+  // LOG(ERROR) << "backward src";
   if (srclayers[0]->mutable_grad(this) != nullptr) {
     CHECK_CUDNN(cudnnConvolutionBackwardData_v3(handle_,
           &alpha,

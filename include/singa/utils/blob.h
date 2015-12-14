@@ -71,12 +71,15 @@
 
 namespace singa {
 
+// TODO(wangwei) use cudaMallocHost depending on Context::device.
 inline void MallocHost(void** ptr, size_t size) {
   *ptr = malloc(size);
+  // cudaMallocHost(ptr, size);
 }
 
 inline void FreeHost(void* ptr) {
   free(ptr);
+  // cudaFreeHost(ptr);
 }
 
 /**

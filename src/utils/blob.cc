@@ -213,13 +213,13 @@ void Blob<Dtype>::CopyFrom(const Blob& source) {
 }
 
 template <typename Dtype>
-void Blob<Dtype>::CopyFrom(const Blob& source, bool reshape) {
-  if (!std::equal(shape_.begin(), shape_.end(), source.shape_.begin())) {
-    if (reshape) {
-      Reshape(source.shape_);
-    } else {
+void Blob<Dtype>::CopyFrom(const Blob& source, bool shape_check) {
+  LOG(WARNING) << "Better use Copy(const Blob&, Blob*)";
+  CHECK_EQ (source.count(), count()) << " cp between blobs of diff size";
+
+  if (shape_check &&
+      !std::equal(shape_.begin(), shape_.end(), source.shape_.begin())) {
       LOG(FATAL) << "Trying to copy blobs of different sizes.";
-    }
   }
 #ifndef CPU_ONLY
   CUDA_CHECK(cudaMemcpy(static_cast<Dtype*>(data_->mutable_gpu_data()),

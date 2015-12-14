@@ -24,7 +24,7 @@
 namespace singa {
 
 void CudnnActivationLayer::InitCudnn() {
-  CudnnLayer::InitCudnn();
+  CudnnBase::InitCudnn();
 
   // TODO(wangwei) make the mode case insensitive
   if (layer_conf_.activation_conf().type() == SIGMOID)

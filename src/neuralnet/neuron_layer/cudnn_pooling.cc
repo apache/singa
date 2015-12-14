@@ -30,7 +30,7 @@ CudnnPoolLayer::~CudnnPoolLayer() {
 }
 
 void CudnnPoolLayer::InitCudnn() {
-  CudnnLayer::InitCudnn();
+  CudnnBase::InitCudnn();
   CHECK_CUDNN(cudnnCreatePoolingDescriptor(&pool_desc_));
   CHECK_CUDNN(cudnnSetTensor4dDescriptor(src_desc_,
         CUDNN_TENSOR_NCHW,

@@ -241,6 +241,9 @@ int Worker::Put(int step, Param* param) {
     LOG(WARNING) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
     return 1;
   }
+  // set Blob head to cpu to avoid calling cudaMemcpy by the stub thread, which
+  // would hang on some machines.
+  param->data().cpu_data();
   Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
   msg->set_trgt(ParamTrgt(param->owner(), 0), step);
   msg->set_type(kPut);
@@ -255,6 +258,10 @@ int Worker::Get(int step, Param* param) {
     LOG(WARNING) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
     return 1;
   }
+  // set Blob head to cpu to avoid calling cudaMemcpy by the stub thread, which
+  // would hang on some machines.
+  param->mutable_data()->mutable_cpu_data();
+
   Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
   msg->set_trgt(ParamTrgt(param->owner(), 0), step);
   msg->set_type(kGet);
@@ -268,6 +275,18 @@ int Worker::Update(int step, Param* param) {
     LOG(WARNING) << "Null dealer in worker (" << grp_id_ << ", " << id_ << ")";
     return 1;
   }
+  // head of data Blob (SyncMem) to cpu, because the stub thread may use
+  // cudaMemcpy copy gradients into msgs. cudaMemcpy hangs when called by the
+  // stub thread on some GPU machines.
+  // TODO(wangwei) fix this issue and remove the following line.
+  // optimize for training with single worker by removing stub and server, and
+  // updating parameters locally inside the worker GPU. Then we do not need to
+  // transfer gradients and parameter values between GPU-CPU.
+  param->grad().cpu_data();
+  // change the head of SyncMem to cpu; otherwise, the updated parameter
+  // values would not be synced to gpu (since the head is at gpu).
+  param->mutable_data()->mutable_cpu_data();
+
   Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
   msg->set_trgt(ParamTrgt(param->owner(), 0), step);
   msg->set_type(kUpdate);
@@ -288,8 +307,10 @@ int Worker::CollectAll(int step, NeuralNet* net) {
 }
 
 int Worker::Collect(int step, Param* param) {
-  while (param->version() <= param->last_version())
+  while (param->version() <= param->last_version()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(kCollectSleepTime));
+    // LOG(ERROR) << "wait  "<< param->id() << " at " << step << " by " <<id_;
+  }
   return 1;
 }
 
@@ -332,6 +353,7 @@ void BPWorker::Forward(int step, Phase phase, NeuralNet* net) {
           Collect(step, p);
         }
       }
+      // LOG(ERROR) << layer->name() << " forward";
       layer->ComputeFeature(phase | kForward, net->srclayers(layer));
       // TODO(wangwei): enable this for model partition
       // send data to other workers
@@ -350,6 +372,7 @@ void BPWorker::Backward(int step, NeuralNet* net) {
       // send data to other workers
       // if (typeid(layer) == typeid(BridgeSrcLayer))
       //   ReceiveBlobs(false, true, layer, net);
+      // LOG(ERROR) << layer->name() << " backward";
       layer->ComputeGradient(kTrain | kBackward, net->srclayers(layer));
       for (Param* p : layer->GetParams())
         Update(step, p);

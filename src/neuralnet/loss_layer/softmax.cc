@@ -24,6 +24,7 @@
 #include <algorithm>
 #include "singa/neuralnet/loss_layer.h"
 #include "mshadow/tensor.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -88,7 +89,8 @@ void SoftmaxLossLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
   const auto& label = srclayers[1]->aux_data();
   Blob<float>* gsrcblob = srclayers[0]->mutable_grad(this);
-  gsrcblob->CopyFrom(data_);
+  Copy(data_, gsrcblob);
+//  gsrcblob->CopyFrom(data_);
   float* gsrcptr = gsrcblob->mutable_cpu_data();
   for (int n = 0; n < batchsize_; n++) {
     gsrcptr[n*dim_ + static_cast<int>(label[n])] -= 1.0f;

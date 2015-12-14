@@ -30,7 +30,7 @@ CudnnLRNLayer::~CudnnLRNLayer() {
 
 void CudnnLRNLayer::InitCudnn() {
   mode_ = CUDNN_LRN_CROSS_CHANNEL_DIM1;
-  CudnnLayer::InitCudnn();
+  CudnnBase::InitCudnn();
   CHECK_CUDNN(cudnnCreateLRNDescriptor(&norm_desc_));
   CHECK_CUDNN(cudnnSetLRNDescriptor(norm_desc_,
         lsize_,

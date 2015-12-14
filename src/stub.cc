@@ -26,11 +26,11 @@
 #include <map>
 #include <thread>
 #include <set>
-#include "mshadow/tensor.h"
 #include "singa/proto/common.pb.h"
 #include "singa/utils/cluster.h"
 #include "singa/utils/common.h"
 #include "singa/utils/tinydir.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -242,11 +242,9 @@ const vector<Msg*> Stub::HandleUpdateRequest(ParamEntry *entry, Msg** msg) {
     // average local gradient
     if (entry->num_local > 1) {
       auto it = entry->shares.begin();
-      auto shape = mshadow::Shape1((*it)->size());
-      mshadow::Tensor<mshadow::cpu, 1> sum((*it)->mutable_cpu_grad(), shape);
+      auto sum = it;
       for (++it; it != entry->shares.end(); it++) {
-        mshadow::Tensor<mshadow::cpu, 1> grad((*it)->mutable_cpu_grad(), shape);
-        sum += grad;
+        AXPY(1.0f, (*it)->grad(), (*sum)->mutable_grad());
       }
     }
     int step = (*msg)->trgt_version();

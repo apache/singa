@@ -25,6 +25,8 @@
 #include <vector>
 #include "singa/neuralnet/layer.h"
 #include "singa/proto/job.pb.h"
+#include "singa/utils/context.h"
+#include "singa/utils/singleton.h"
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
@@ -274,11 +276,9 @@ class STanhLayer : public NeuronLayer {
 #ifdef USE_CUDNN
 #define CHECK_CUDNN(x) CHECK_EQ(x, CUDNN_STATUS_SUCCESS)
 
-class CudnnLayer : virtual public NeuronLayer {
+class CudnnBase : virtual public NeuronLayer {
  public:
-  ~CudnnLayer() {
-    if (handle_ != nullptr)
-      CHECK_CUDNN(cudnnDestroy(handle_));
+  ~CudnnBase() {
     if (src_desc_ != nullptr)
       CHECK_CUDNN(cudnnDestroyTensorDescriptor(src_desc_));
     if (my_desc_ != nullptr)
@@ -286,9 +286,9 @@ class CudnnLayer : virtual public NeuronLayer {
   }
   void virtual InitCudnn() {
     CHECK(!has_init_cudnn_);
-    CHECK_CUDNN(cudnnCreate(&handle_));
     CHECK_CUDNN(cudnnCreateTensorDescriptor(&src_desc_));
     CHECK_CUDNN(cudnnCreateTensorDescriptor(&my_desc_));
+    handle_ = Singleton<Context>::Instance()->cudnn_handle();
     has_init_cudnn_ = true;
   }
  protected:
@@ -304,7 +304,7 @@ class CudnnLayer : virtual public NeuronLayer {
  * - TANH
  * - RELU
  */
-class CudnnActivationLayer : public ActivationLayer, public CudnnLayer {
+class CudnnActivationLayer : public ActivationLayer, public CudnnBase {
  public:
   void InitCudnn() override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
@@ -317,7 +317,7 @@ class CudnnActivationLayer : public ActivationLayer, public CudnnLayer {
 /**
  * Convolution layer implemeneted using cudnn (v3 version backward functions).
  */
-class CudnnConvLayer : public ConvolutionLayer, public CudnnLayer {
+class CudnnConvLayer : public ConvolutionLayer, public CudnnBase {
  public:
   ~CudnnConvLayer();
   void InitCudnn() override;
@@ -334,7 +334,7 @@ class CudnnConvLayer : public ConvolutionLayer, public CudnnLayer {
   size_t workspace_byte_limit_, workspace_count_;
 };
 
-class CudnnLRNLayer : public LRNLayer, public CudnnLayer {
+class CudnnLRNLayer : public LRNLayer, public CudnnBase {
  public:
   ~CudnnLRNLayer();
   void InitCudnn() override;
@@ -348,7 +348,7 @@ class CudnnLRNLayer : public LRNLayer, public CudnnLayer {
 /**
  * Pooling layer implemented using cudnn.
  */
-class CudnnPoolLayer : public PoolingLayer, public CudnnLayer {
+class CudnnPoolLayer : public PoolingLayer, public CudnnBase {
  public:
   ~CudnnPoolLayer();
   void InitCudnn() override;
@@ -362,7 +362,7 @@ class CudnnPoolLayer : public PoolingLayer, public CudnnLayer {
 /**
  * Cudnn Softmax layer.
  */
-class CudnnSoftmaxLayer : public SoftmaxLayer, public CudnnLayer {
+class CudnnSoftmaxLayer : public SoftmaxLayer, public CudnnBase {
  public:
   void InitCudnn() override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;

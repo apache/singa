@@ -27,30 +27,26 @@
 namespace singa {
 void CudnnSoftmaxLossLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
+  LossLayer::Setup(conf, srclayers);
   softmax_.Setup(conf, vector<Layer*> {srclayers.at(0)});
   data_.Reshape(softmax_.data(this).shape());
   data_.ShareData(softmax_.mutable_data(this), false);
   batchsize_ = data_.shape(0);
   dim_ = data_.count() / batchsize_;
-  LOG(ERROR) << batchsize_ << " " << dim_;
 }
 void CudnnSoftmaxLossLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   softmax_.ComputeFeature(flag, srclayers);
-  // compute loss
   Blob<int> label(batchsize_);
   int *labelptr = label.mutable_cpu_data();
-
   // aux_data: vector<int>, convert vector to int array.
   for (int i = 0; i < batchsize_; ++i) {
     labelptr[i] = srclayers[1]->aux_data(this)[i];
   }
 
   Blob<float> loss(batchsize_);
-
-  const float *prob = data_.gpu_data();
-  singa_gpu_softmaxloss_forward(batchsize_, dim_, prob, label.gpu_data(),
-      loss.mutable_gpu_data());
+  singa_gpu_softmaxloss_forward(batchsize_, dim_, data_.gpu_data(),
+      label.gpu_data(), loss.mutable_gpu_data());
   loss_ += Asum(loss);
   counter_++;
 }
@@ -58,7 +54,8 @@ void CudnnSoftmaxLossLayer::ComputeFeature(int flag,
 void CudnnSoftmaxLossLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
   Blob<float>* gsrcblob = srclayers[0]->mutable_grad(this);
-  gsrcblob->CopyFrom(data_);
+  Copy(data_, gsrcblob);
+  // gsrcblob->CopyFrom(data_);
   float* gsrcptr = gsrcblob->mutable_gpu_data();
 
   Blob<int> label(batchsize_);

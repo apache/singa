@@ -198,8 +198,8 @@ void gpu_gemv(cublasHandle_t handle, const Dtype * A, const Dtype * B,
 }
 
 template<typename Dtype>
-void gpu_axpy(cublasHandle_t handle, const Dtype * A, const int n,
-    const Dtype alpha, Dtype * B) {
+void gpu_axpy(cublasHandle_t handle, const int n, const Dtype alpha,
+    const Dtype * A, Dtype * B) {
   cublasSaxpy(handle, n, &alpha, A, 1, B, 1);
 }
 

@@ -212,8 +212,8 @@ Msg* Param::GenPutMsg(bool copy, int idx) {
   CHECK_LT(idx, num_slices_);
   Msg* msg = new Msg();
   msg->set_type(kPut);
-  void* ptr = mutable_cpu_data() + slice_offset_[idx];
-  void* p = ptr;
+  const void* ptr = data_.cpu_data() + slice_offset_[idx];
+  const void* p = ptr;
   if (copy) p = nullptr;
   msg->AddFormatFrame("iffp", slice_size_[idx], lr_scale(), wd_scale(), p);
   if (copy) {
@@ -226,7 +226,8 @@ Msg* Param::GenGetMsg(bool copy, int idx) {
   CHECK_LT(idx, num_slices_);
   Msg* msg = new Msg();
   msg->set_type(kGet);
-  msg->AddFormatFrame("ip",  copy, data_.cpu_data() + slice_offset_[idx]);
+  msg->AddFormatFrame("ip",  copy, data_.mutable_cpu_data()
+      + slice_offset_[idx]);
   pending_get_[idx] = true;
   num_pending_requests_++;
   return msg;
@@ -237,10 +238,7 @@ Msg* Param::GenUpdateMsg(bool copy, int idx) {
   Msg* msg = new Msg();
   msg->set_type(kUpdate);
   msg->AddFormatFrame("i", copy);
-  void* ptr = grad_.mutable_cpu_data() + slice_offset_[idx];
-  // to change the head of SyncMem to cpu; otherwise, the updated parameter
-  //   // values would not be synced to gpu (since the head is at gpu).
-  data_.mutable_cpu_data();
+  const void* ptr = grad_.cpu_data() + slice_offset_[idx];
   if (copy) {
     msg->AddFrame(ptr, slice_size_[idx]*sizeof(float));
   } else {

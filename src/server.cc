@@ -200,6 +200,7 @@ const vector<Msg*> Server::HandleUpdate(Msg **msg) {
     auto param = entry->shares.at(0);
     // extract and aggregate gradients
     param->ParseUpdateMsgs(request);
+    // DLOG(ERROR) << "update param " << param->id() << " @ step " << step;
     updater_->Update(step, param, 1.0f / entry->num_total);
     param->set_version(param->version() + 1);
     // response to all shares of this param

@@ -344,6 +344,8 @@ void Copy(const Blob<Dtype>& A, Blob<Dtype>* B) {
     std::copy(A.cpu_data(), A.cpu_data() + A.count(), B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
+  CUDA_CHECK(cudaMemcpy(static_cast<Dtype*>(B->mutable_gpu_data()),
+             A.gpu_data(), sizeof(Dtype) * A.count(), cudaMemcpyDefault));
 #endif
   }
 }

@@ -24,7 +24,7 @@
 namespace singa {
 
 void CudnnSoftmaxLayer::InitCudnn() {
-  CudnnLayer::InitCudnn();
+  CudnnBase::InitCudnn();
   CHECK_CUDNN(cudnnSetTensor4dDescriptor(src_desc_,
         CUDNN_TENSOR_NCHW,
         CUDNN_DATA_FLOAT,

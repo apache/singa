@@ -20,17 +20,17 @@
 
 ###################User Config Varaibles #############################
 # third-party library installation folder
-HOME_DIR := /home/wangwei/local
+HOME_DIR := /media/hd1/home/wangwei/local
+
+# must config the cudnn folder if using cudnn
+CUDNN_DIR := $(HOME_DIR)/cudnn
 
 CUDA_DIR := /usr/local/cuda
 
-# must config the cudnn folder if using cudnn
-CUDNN_DIR := /home/wangwei/local/cuda
-
 # Lib folder for system and external libs. You may need to change it.
-LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(HOME_DIR)/local/lib $(CUDA_DIR)/lib64 $(CUDA_DIR)/lib $(CUDNN_DIR)/lib64
+LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(CUDNN_DIR)/lib64 $(CUDA_DIR)/lib64 $(CUDA_DIR)/lib
 # Header folder for system and external libs. You may need to change it.
-INCLUDE_DIRS := $(HOME_DIR)/include ./include $(HOME_DIR)/local/include/zookeeper $(CUDA_DIR)/include $(CUDNN_DIR)/include
+INCLUDE_DIRS := ./include $(HOME_DIR)/include $(CUDNN_DIR)/include $(CUDA_DIR)/include 
 # g++ location, should support c++11, tested with 4.8.1
 CXX := g++
 CUCXX := nvcc
@@ -49,7 +49,7 @@ BUILD_DIR := .libs
 MSHADOW_FLAGS :=-DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 ZK_FLAGS :=-DTHREADED -fpermissive
 CXXFLAGS := -O2 -msse3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-	$(MSHADOW_FLAGS) $(ZK_FLAGS)\
+	$(MSHADOW_FLAGS) -DUSE_CUDNN $(ZK_FLAGS)\
 	-funroll-loops $(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
 CUCXXFLAGS := -DUSE_CUDNN $(MSHADOW_FLAGS) -std=c++11 $(CUDA_ARCH) \
 	$(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
@@ -103,7 +103,7 @@ singa: $(PROTO_OBJS) $(SINGA_OBJS) $(SINGA_CUDA_OBJS)
 	$(CXX) -shared -o $(BUILD_DIR)/libsinga.so $(SINGA_OBJS)
 	$(CXX) $(SINGA_OBJS) $(SINGA_CUDA_OBJS) src/main.cc -o singa $(CXXFLAGS) $(LDFLAGS)
 	@echo
-	$(CXX) $(SINGA_OBJS) $(SINGA_CUDA_OBJS) src/utils/tool.cc -o singatool $(CXXFLAGS) $(LDFLAGS)
+	$(CXX) $(BUILD_DIR)/libsinga.so src/utils/tool.cc -o singatool $(CXXFLAGS) $(LDFLAGS) -Wl,-unresolved-symbols=ignore-in-shared-libs
 	@echo
 
 loader: proto $(LOADER_OBJS)
