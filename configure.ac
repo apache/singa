@@ -71,7 +71,7 @@ if test x"$cudaval" = x"yes"; then
     LIBS="$LIBS $CUDA_LIBS"
     LDFLAGS="$LDFLAGS $CUDA_LDFLAGS"
     NVCC="nvcc"
-	DEBUG="-DUSE_GPU "
+	DEBUG="-DUSE_GPU"
     AC_DEFINE(DCUDA,[1],[Defined if CUDA should be used])
 	AC_CHECK_LIB([cuda], [main], [], [
  		AC_MSG_ERROR([unable to find cuda library])
@@ -115,7 +115,7 @@ if test x"$enable_cudnn" == x"yes"; then
     CUDNN_LIBS="-lcudnn"
     LIBS="$LIBS $CUDNN_LIBS"
     LDFLAGS="$LDFLAGS $CUDNN_LDFLAGS"
-    DEBUG+=" -DUSE_CUDNN "
+    DEBUG+=" -DUSE_CUDNN"
     AC_DEFINE(DCUDNN,[1],[Defined if CUDNN should be used])
     AC_CHECK_LIB([cudnn], [main], [], [
         AC_MSG_ERROR([unable to find cudnn library])
@@ -175,9 +175,9 @@ AC_ARG_ENABLE(debug,
 	[enable_debug=yes],[enable_debug=no])
 AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 if test x"$enable_debug" != x"no"; then
-	DEBUG+='-g'
+	DEBUG+=' -g'
 else
-	DEBUG+='-O2'
+	DEBUG+=' -O2'
 fi
 
 AC_ARG_ENABLE(python,
