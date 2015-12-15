@@ -89,6 +89,9 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
         shares.push_back(param);
     }
   }
+  LOG(INFO) << "Before unrolling: \n" << conf.DebugString();
+  conf = Unrolling (conf);
+  LOG(INFO) << "After rolling: \n" << conf.DebugString();
   for (auto param : shares) {
     const std::string from = param->share_from();
     const std::string name = param->name();
@@ -103,6 +106,14 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc
   return new NeuralNet(conf, npartitions);
 }
+
+NetProto NeuralNet::Unrolling(const NetProto& net_conf) {
+	NetProto conf;
+	conf.CopyFrom(net_conf);
+	//conf.Clear();
+	return conf;
+}
+
 
 NeuralNet::NeuralNet(NetProto netproto, int npartitions) {
   LOG(INFO) << "Constructing Neural Net...";
