@@ -122,7 +122,8 @@ TEST_SRCS := include/gtest/gtest_main.cc \
 						 src/test/test_store.cc \
 						 src/test/test_record_input_layer.cc \
 						 src/test/test_csv_input_layer.cc \
-             src/test/test_gru_layer.cc
+             					 src/test/test_gru_layer.cc \
+						 src/test/test_unrolling.cc
 
 #EXTRA_PROGRAMS = $(PROGS)
 EXTRA_PROGRAMS = singatest test

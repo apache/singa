@@ -186,6 +186,11 @@ message LayerProto {
   optional LayerType type = 20 [default = kUserLayer];
   // type of user layer
   optional string user_type =21;
+  
+  optional int32 unroll_len = 22;
+  optional UnrollConnType unroll_conn_type = 23 [default = kUnrollOneToOne];
+  optional int32 shift = 24 [default = 0];
+  repeated int32 unroll_src_conn = 25;
 
   // proto for the specific layer
   // configuration for argsort layer
@@ -652,4 +657,15 @@ enum UpdaterType {
   kNesterov = 4;
   // For user defined updater
   kUserUpdater = 105;
+}
+
+enum UnrollConnType {
+  // i-th unrolled layer <- (i - shift)-th src unrolled layer
+  kUnrollOneToOne = 1;
+  // i-th unrolled layer <- all src unrolled layers
+  kUnrollOneToAll = 2; 
+  // i-th unrolled layer <- last unrolled src layer
+  kUnrollOneToLast = 3;
+  // customized connection type defined by src_conn
+  kUnrollCustomized = 4;
 }
