@@ -30,7 +30,10 @@ using namespace std;
 #include "singa/neuralnet/input_layer/record.h"
 #include "singa/neuralnet/neuron_layer/inner_product.h"
 #include "singa/neuralnet/neuron_layer/sigmoid.h"
+#include "singa/neuralnet/neuron_layer/softmax.h"
+#include "singa/neuralnet/neuron_layer/dummy.h"
 #include "singa/neuralnet/loss_layer/euclidean.h"
+#include "singa/neuralnet/loss_layer/softmax.h"
 #include "singa/neuralnet/neuralnet.h"
 #include "singa/neuralnet/input_layer/csv.h"
 #include "singa/driver.h"
@@ -53,8 +56,15 @@ TEST_F(UnrollingTest, Train) {
 	driver.RegisterLayer<GRULayer, int> (kGRU);
 	driver.RegisterLayer<RecordInputLayer,int>(kRecordInput);
 	driver.RegisterLayer<InnerProductLayer,int>(kInnerProduct);
-	driver.RegisterLayer<SigmoidLayer,int>(kSigmoid);
+	driver.RegisterLayer<DummyLayer,int>(kDummy);
+	driver.RegisterLayer<SoftmaxLayer,int>(kSoftmax);
+
+
+	driver.RegisterLayer<SoftmaxLossLayer, int>(kSoftmaxLoss);
 	driver.RegisterLayer<EuclideanLossLayer,int>(kEuclideanLoss);
+
+	//driver.RegisterParam<Param>(0);
+	//driver.RegisterParamGenerator<UniformGen>(kUniform);
 
 	JobProto job;
 	job.CopyFrom(job_conf);

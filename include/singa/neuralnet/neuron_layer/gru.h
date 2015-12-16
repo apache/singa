@@ -34,10 +34,16 @@ class GRULayer : public NeuronLayer {
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
   const std::vector<Param*> GetParams() const override {
-    std::vector<Param*> params{weight_z_hx_, weight_z_hh_, bias_z_,
-                               weight_r_hx_, weight_r_hh_, bias_r_,
-                               weight_c_hx_, weight_c_hh_, bias_c_};
-    return params;
+	if (bias_z_ != nullptr && bias_r_ != nullptr && bias_c_ != nullptr) {
+		std::vector<Param*> params{weight_z_hx_, weight_r_hx_,weight_c_hx_,
+			weight_z_hh_, weight_r_hh_, weight_c_hh_,
+			bias_z_, bias_r_, bias_c_};
+		return params;
+	} else {
+		std::vector<Param*> params{weight_z_hx_, weight_r_hx_,weight_c_hx_,
+			weight_z_hh_, weight_r_hh_, weight_c_hh_};
+		return params;
+	}
   }
 
  private:

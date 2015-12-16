@@ -24,6 +24,8 @@
 #include <algorithm>
 #include <queue>
 #include "singa/utils/singleton.h"
+#include <unordered_map>
+using namespace std;
 
 namespace singa {
 
@@ -36,9 +38,6 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
   NetProto conf;
   conf.CopyFrom(net_conf);
   conf.clear_layer();
-  // for sharing param conf
-  std::unordered_map<string, ParamProto*> name2param;
-  std::vector<ParamProto*> shares;
   // flag=0: neither exclude nor include field appears
   // flag=1: exclude field appears
   // flag=2: include field appears
@@ -78,20 +77,26 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
     // using net partition if layer partition is not set
     if (!layer_conf->has_partition_dim())
       layer_conf->set_partition_dim(net_conf.partition_dim());
-    for (int i = 0; i < layer_conf->param_size(); i++) {
-      ParamProto* param = layer_conf->mutable_param(i);
-      if (param->has_name() && param->name() != "") {
-        CHECK(name2param.find(param->name()) == name2param.end())
-          << "param name is repeated: " << param->name();
-        name2param[param->name()] = param;
-      }
-      if (param->has_share_from() && param->share_from() != "")
-        shares.push_back(param);
-    }
   }
-  LOG(INFO) << "Before unrolling: \n" << conf.DebugString();
+  //LOG(INFO) << "Before unrolling: \n" << conf.DebugString();
   conf = Unrolling (conf);
-  LOG(INFO) << "After rolling: \n" << conf.DebugString();
+
+  // Copy shared parameters for sharing param conf
+  std::unordered_map<string, ParamProto*> name2param;
+  std::vector<ParamProto*> shares;
+  for (int index = 0; index < conf.layer_size();index ++) {
+	  LayerProto* layer = conf.mutable_layer(index);
+	  for (int i = 0; i < layer->param_size(); i++) {
+		  ParamProto* param = layer->mutable_param(i);
+		  if (param->has_name() && param->name() != "") {
+			  CHECK(name2param.find(param->name()) == name2param.end())
+	        		  << "param name is repeated: " << param->name();
+			  name2param[param->name()] = param;
+		  }
+		  if (param->has_share_from() && param->share_from() != "")
+			  shares.push_back(param);
+	  }
+  }
   for (auto param : shares) {
     const std::string from = param->share_from();
     const std::string name = param->name();
@@ -102,15 +107,83 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
     param->set_name(name);
     param->set_share_from(from);
   }
+
   LOG(INFO) << "NeuralNet config is\n" << conf.DebugString();
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc
   return new NeuralNet(conf, npartitions);
 }
 
 NetProto NeuralNet::Unrolling(const NetProto& net_conf) {
+	// Step 1: Unroll each layer & set parameter sharing
 	NetProto conf;
 	conf.CopyFrom(net_conf);
-	//conf.Clear();
+	conf.Clear();
+
+	std::vector<std::vector<int>> layer_groups;
+	std::unordered_map<string,int> layer_names;
+	for (int index = 0; index < net_conf.layer_size(); index ++) {
+		const LayerProto& layer = net_conf.layer(index);
+		layer_names[layer.name()] = index; // layer_name -> index
+
+		std::vector<int> layer_group;
+		for (int i = 0; i < layer.unroll_len(); i ++) { // unroll
+			LayerProto* layer_conf = conf.add_layer();
+			layer_conf->CopyFrom(layer); // create a new layer conf
+			if (layer.unroll_len() > 1) {
+				// update layer names
+				std::stringstream sstm;
+				sstm << layer_conf->name() << "_" << i;
+				layer_conf->set_name(sstm.str());
+				// update layer parameter sharing
+				for (int j = 0; j < layer_conf->param_size(); j ++) {
+					ParamProto* param = layer_conf->mutable_param(j);
+					if (i == 0) continue; // no need to rename parameters in the i-th unrolled layer
+					if (!param->has_share_from() || param->share_from() == "") {// not shared from others
+						param->set_share_from(param->name());
+					}
+					std::stringstream sstm1;
+					sstm1 << param->name() << "_" << i;
+					param->set_name(sstm1.str());
+				}
+			}
+			// clear unrolling related fields
+			layer_conf->clear_unroll_len();
+			layer_conf->clear_unroll_conn_type();
+			layer_conf->clear_shift();
+			layer_conf->clear_srclayers();
+
+			layer_group.push_back(conf.layer_size() - 1);
+		}
+		layer_groups.push_back(layer_group);
+	}
+
+	// Step 2: Connect unrolled layers by setting `srclayers`
+	for (int index = 0; index < net_conf.layer_size(); index ++) {
+		const LayerProto& layer = net_conf.layer(index);
+		if (layer.srclayers_size() == 0) continue; // no src layer
+		for (int i = 0; i < layer.srclayers_size(); i ++) {
+			const string& srclayer_name = layer.srclayers(i);
+			const std::vector<int> srclayers = layer_groups[layer_names[srclayer_name]];
+			for (unsigned int j = 0; j < layer_groups[index].size(); j ++) {
+				LayerProto* layer_conf = conf.mutable_layer(layer_groups[index][j]);
+				// Update src layers of `layer_conf` by considering the types
+				if (layer.unroll_conn_type(i) == kUnrollOneToAll) {
+					for (int srclayer_index : srclayers) {
+						layer_conf->add_srclayers(conf.layer(srclayer_index).name());
+					}
+				} else if (layer.unroll_conn_type(i) == kUnrollOneToOne) {
+					const unsigned int shift = layer.shift(i);
+					if (j < shift) continue; // no need to connect with the src
+					int srclayer_index = srclayers[j - shift];
+					layer_conf->add_srclayers(conf.layer(srclayer_index).name());
+				} else if (layer.unroll_conn_type(i) == kUnrollFirstToLast) {
+					if (j > 0) break;
+					int srclayer_index = srclayers[srclayers.size() - 1];
+					layer_conf->add_srclayers(conf.layer(srclayer_index).name());
+				}
+			}
+		}
+	}
 	return conf;
 }
 
