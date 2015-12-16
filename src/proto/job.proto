@@ -188,8 +188,8 @@ message LayerProto {
   optional string user_type =21;
   
   optional int32 unroll_len = 22;
-  optional UnrollConnType unroll_conn_type = 23 [default = kUnrollOneToOne];
-  optional int32 shift = 24 [default = 0];
+  repeated UnrollConnType unroll_conn_type = 23;
+  repeated int32 shift = 24;
   repeated int32 unroll_src_conn = 25;
 
   // proto for the specific layer
@@ -226,7 +226,7 @@ message LayerProto {
   // configuration for store input layers
   optional StoreProto store_conf = 51;
   // configuration for gru layer
-  optional GRUProto gru_conf = 53; 
+  optional GRUProto gru_conf = 54; 
 
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
@@ -594,9 +594,11 @@ enum LayerType {
   kSlice = 12;
   kSplit = 13;
 
+  kDummy = 50;
 
   // Indicate the user defined layer. Users should configure user_type
   kUserLayer = 102;
+  
 }
 
 enum PartitionType {
