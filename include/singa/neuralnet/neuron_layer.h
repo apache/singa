@@ -23,6 +23,7 @@
 #define SINGA_NEURALNET_NEURON_LAYER_H_
 
 #include <vector>
+#include <string>
 #include "singa/neuralnet/layer.h"
 #include "singa/proto/job.pb.h"
 #include "singa/utils/context.h"
@@ -416,7 +417,6 @@ class RBMVisLayer: public RBMLayer, public LossLayer {
   Layer* input_layer_;
   float error_ = 0.0f;
   int counter_ = 0;
-
 };
 /**
  * RBM hidden layer

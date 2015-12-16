@@ -586,8 +586,8 @@ void MVSumRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
   if (device == -1) {
     Blob<Dtype> one(m);
     one.SetValue(1);
-    cpu_gemm(one.cpu_data(), A.cpu_data(), 1, n, m, alpha, beta, false, A.transpose(),
-        B->mutable_cpu_data());
+    cpu_gemm(one.cpu_data(), A.cpu_data(), 1, n, m, alpha, beta, false,
+             A.transpose(), B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
     singa_gpu_sum_row(A.gpu_data(), B->mutable_gpu_data(), m, n, n);

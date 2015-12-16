@@ -51,7 +51,7 @@ void EuclideanLossLayer::ComputeFeature(int flag,
         (input_dptr[i] - reconstruct_dptr[i]);
   }
   loss_ += loss / srclayers[0]->data(this).shape()[0];
-  counter_ ++;
+  counter_++;
 }
 
 void EuclideanLossLayer::ComputeGradient(int flag,

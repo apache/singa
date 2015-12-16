@@ -142,16 +142,14 @@ void Driver::Init(int argc, char **argv) {
   RegisterParamGenerator<UniformSqrtFanInOutGen>(kUniformSqrtFanInOut);
 }
 
-void Driver::InitLog(char* arg)
-{
+void Driver::InitLog(char* arg) {
     google::InitGoogleLogging(arg);
 }
 
-void Driver::Train(bool resume, const std::string str){
+void Driver::Train(bool resume, const std::string str) {
   JobProto job_conf;
   job_conf.ParseFromString(str);
-  Train(resume,job_conf);
-
+  Train(resume, job_conf);
 }
 
 void Driver::Train(bool resume, const JobProto& job_conf) {

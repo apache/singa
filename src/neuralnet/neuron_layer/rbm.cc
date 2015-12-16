@@ -52,7 +52,6 @@ void RBMLayer::Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
   hdim_ = conf.rbm_conf().hdim();
   gaussian_ = conf.rbm_conf().gaussian();
   first_gibbs_ = true;
-  //pos_data_, neg_data_, neg_sample_, pos_sample_
   datavec_.clear();
   datavec_.push_back(&pos_data_);
   datavec_.push_back(&neg_data_);

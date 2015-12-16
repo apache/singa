@@ -131,9 +131,6 @@ void kernel_sum_row(const float *src_mat_data,
 
   __syncthreads();
   dst_vec_data[j] = aux[0];
-
-
-
 }
 
 __global__

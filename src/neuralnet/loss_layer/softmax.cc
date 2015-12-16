@@ -82,7 +82,7 @@ void SoftmaxLossLayer::ComputeFeature(int flag,
   CHECK_EQ(probptr, prob.dptr + prob.shape.Size());
   loss_ += loss * scale_ / (1.0f * batchsize_);
   accuracy_ += precision * scale_ / (1.0f * batchsize_);
-  counter_ ++;
+  counter_++;
 }
 
 void SoftmaxLossLayer::ComputeGradient(int flag,

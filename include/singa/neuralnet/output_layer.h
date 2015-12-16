@@ -23,6 +23,7 @@
 #define SINGA_NEURALNET_OUTPUT_LAYER_H_
 
 #include <vector>
+#include <string>
 #include "singa/neuralnet/layer.h"
 #include "singa/io/store.h"
 

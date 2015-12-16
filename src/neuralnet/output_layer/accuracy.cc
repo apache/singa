@@ -46,7 +46,7 @@ void AccuracyLayer::ComputeFeature(int flag,
     }
   }
   accuracy_ += ncorrect * 1.0f / batchsize_;
-  counter_ ++;
+  counter_++;
 }
 
 const std::string AccuracyLayer::ToString(bool debug, int flag) {

@@ -215,7 +215,7 @@ void Blob<Dtype>::CopyFrom(const Blob& source) {
 template <typename Dtype>
 void Blob<Dtype>::CopyFrom(const Blob& source, bool shape_check) {
   LOG(WARNING) << "Better use Copy(const Blob&, Blob*)";
-  CHECK_EQ (source.count(), count()) << " cp between blobs of diff size";
+  CHECK_EQ(source.count(), count()) << " cp between blobs of diff size";
 
   if (shape_check &&
       !std::equal(shape_.begin(), shape_.end(), source.shape_.begin())) {

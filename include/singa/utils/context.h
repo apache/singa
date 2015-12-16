@@ -263,7 +263,6 @@ class Context {
   std::vector<cudnnHandle_t> cudnn_handle_;
 #endif
 #endif
-
 };
 
 }  // namespace singa

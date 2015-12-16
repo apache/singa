@@ -22,8 +22,11 @@
 #ifndef SINGA_NEURALNET_LOSS_LAYER_H_
 #define SINGA_NEURALNET_LOSS_LAYER_H_
 
+#include <vector>
+#include <string>
 #include "singa/neuralnet/layer.h"
 #include "singa/neuralnet/neuron_layer.h"
+
 namespace singa {
 using std::vector;
 /**

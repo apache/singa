@@ -130,7 +130,7 @@ void LMDBDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (random_skip_) {
     std::uniform_int_distribution<int> distribution(0, random_skip_);
     auto generator =
-      Singleton<Context>::Instance()->rand_generator(std::this_thread::get_id());
+     Singleton<Context>::Instance()->rand_generator(std::this_thread::get_id());
     int nskip = distribution(*generator);
 
     int n = 0;

@@ -26,9 +26,6 @@
 #include "singa/comm/msg.h"
 #include "singa/comm/socket.h"
 #include "singa/neuralnet/connection_layer.h"
-#include "singa/neuralnet/connection_layer.h"
-#include "singa/neuralnet/connection_layer.h"
-#include "singa/neuralnet/connection_layer.h"
 #include "singa/neuralnet/neuron_layer.h"
 #include "singa/proto/job.pb.h"
 

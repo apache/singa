@@ -158,7 +158,8 @@ TEST(MathTest, TestGemmGPU) {
   cudaMemcpy(B_gpu, B, 3*2*sizeof(float), cudaMemcpyHostToDevice);
   auto context = Singleton<Context>::Instance();
   context->SetupDevice(std::this_thread::get_id(), 0);
-  gpu_gemm<float>(context->cublas_handle(0), A_gpu, B_gpu, 2, 2, 3 , 1, 0, true, false, C_gpu);
+  gpu_gemm<float>(context->cublas_handle(0), A_gpu, B_gpu, 2, 2, 3 , 1, 0, true,
+                  false, C_gpu);
 
   cudaMemcpy(C, C_gpu, 2*2*sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -212,7 +213,8 @@ TEST(MathTest, TestGemvGPU) {
   cudaMemcpy(C_gpu, C, 3*sizeof(float), cudaMemcpyHostToDevice);
   auto context = Singleton<Context>::Instance();
   context->SetupDevice(std::this_thread::get_id(), 0);
-  gpu_gemv<float>(context->cublas_handle(0), A_gpu, B_gpu, 4, 3, 1.0f, 1.0f, true, C_gpu);
+  gpu_gemv<float>(context->cublas_handle(0), A_gpu, B_gpu, 4, 3, 1.0f, 1.0f,
+                  true, C_gpu);
 
   cudaMemcpy(C, C_gpu, 3*sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -320,8 +322,8 @@ TEST(MathTest, TestSingaSumRowGPU) {
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 4; j++) {
-      //A[i][j] = i + j;
-	  A[i][j] = 1.0f;
+      // A[i][j] = i + j;
+      A[i][j] = 1.0f;
     }
   }
 
