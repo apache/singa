@@ -21,6 +21,7 @@
 
 #include <glog/logging.h>
 #include "singa/neuralnet/neuron_layer.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -55,7 +56,7 @@ void DummyLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
       data_.mutable_cpu_data()[i] = dis(gen);
   }
   if (srclayers.size() > 0)
-    data_.CopyFrom(srclayers[0]->data(this));
+    Copy(srclayers[0]->data(this), &data_);
 }
 
 void DummyLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
@@ -64,9 +65,8 @@ void DummyLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
     for (int i = 0; i < data_.count(); ++i)
       grad_.mutable_cpu_data()[i] = dis(gen);
   }
-  if (srclayers.size() > 0) {
-    srclayers[0]->mutable_grad(this)->CopyFrom(grad_);
-  }
+  if (srclayers.size() > 0)
+    Copy(grad_, srclayers[0]->mutable_grad(this));
 }
 
 }  // namespace singa

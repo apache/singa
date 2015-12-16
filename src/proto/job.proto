@@ -195,6 +195,8 @@ message LayerProto {
   optional ActivationProto activation_conf = 54;
   // configuration for argsort layer
   optional ArgSortProto argsort_conf = 52;
+  // configuration for concate layer
+  optional ConcateProto concate_conf = 46;
   // configuration for convolution layer
   optional ConvolutionProto convolution_conf = 30;
   // configuration for dummy layer
@@ -367,6 +369,11 @@ message ArgSortProto {
   optional int32 topk = 1 [default = 1];
 }
 
+message ConcateProto {
+  optional int32 concate_dim = 1 [default = 0];
+  optional int32 num_concates = 2 [default = 1];
+} 
+
 message ConvolutionProto {
   // The number of outputs for the layer
   optional int32 num_filters = 1;
@@ -491,7 +498,8 @@ message ReLUProto {
 }
 
 message SliceProto {
-  required int32 slice_dim = 1;
+  optional int32 slice_dim = 1 [default = 0];
+  optional int32 num_slices = 2 [default = 1];
 }
 
 message SoftmaxProto {

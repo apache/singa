@@ -142,7 +142,7 @@ void NeuralNet::Load(const vector<string>& paths,
   }
 }
 
-void NeuralNet::ShareParamsFrom(NeuralNet* other) {
+void NeuralNet::ShareParamsFrom(NeuralNet* other, bool cpu_only) {
   for (auto& layer : layers_) {
     auto otherlayer = other->name2layer(layer->name());
     if (otherlayer != nullptr) {
@@ -281,8 +281,11 @@ NetProto NeuralNet::AddPartitionConnectionLayers(const NetProto& netproto,
         LayerProto* concate_layer = net_w_connection.add_layer();
         concate_layer->set_name(concateName(split_layer->name()));
         concate_layer->set_type(kConcate);
+        concate_layer->set_partition_dim(dst_layer->partition_dim());
         // concate on src_pdim
-        concate_layer->set_partition_dim(split_layer->partition_dim());
+        concate_layer->mutable_concate_conf()
+          ->set_concate_dim(src_layer->partition_dim());
+        concate_layer->mutable_concate_conf()->set_num_concates(npartitions);
         concate_layer->add_srclayers(split_layer->name());
         // connect dst_layer to concate layer
         dst_layer->add_srclayers(concate_layer->name());
@@ -296,15 +299,21 @@ NetProto NeuralNet::AddPartitionConnectionLayers(const NetProto& netproto,
            LayerProto* slice_layer = net_w_connection.add_layer();
            slice_layer->set_name(sliceName(src_layer->name()));
            slice_layer->set_type(kSlice);
+           slice_layer->set_partition_dim(src_layer->partition_dim());
            // slice on dst_pdim
-           slice_layer->set_partition_dim(dst_layer->partition_dim());
+           slice_layer->mutable_slice_conf()
+             ->set_slice_dim(dst_layer->partition_dim());
+           slice_layer->mutable_slice_conf()->set_num_slices(npartitions);
            slice_layer->add_srclayers(src_layer->name());
            // add concate layer
            LayerProto* concate_layer = net_w_connection.add_layer();
            concate_layer->set_name(concateName(slice_layer->name()));
            concate_layer->set_type(kConcate);
+           concate_layer->set_partition_dim(dst_layer->partition_dim());
            // concate on src_pdim
-           concate_layer->set_partition_dim(src_layer->partition_dim());
+           concate_layer->mutable_concate_conf()
+             ->set_concate_dim(src_layer->partition_dim());
+           concate_layer->mutable_concate_conf()->set_num_concates(npartitions);
            concate_layer->add_srclayers(slice_layer->name());
            // connect dst_layer to concate layer
            dst_layer->add_srclayers(concate_layer->name());

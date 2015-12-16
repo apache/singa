@@ -21,11 +21,9 @@
 
 #include "gtest/gtest.h"
 #include "singa/driver.h"
+#include "singa/neuralnet/connection_layer.h"
 #include "singa/neuralnet/neuralnet.h"
-#include "singa/neuralnet/neuron_layer/dummy.h"
-#include "singa/neuralnet/connection_layer/slice.h"
-#include "singa/neuralnet/connection_layer/split.h"
-#include "singa/neuralnet/connection_layer/concate.h"
+#include "singa/neuralnet/neuron_layer.h"
 
 using namespace singa;
 

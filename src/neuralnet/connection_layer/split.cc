@@ -57,12 +57,9 @@ void SplitLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 1);
   // aggregate all gradients to grad_[0]
   for (int i = 1; i < num_splits; ++i)
-    AXPY<float>(cpu, 1.0, *gradvec_[i], gradvec_[0]);
-//  for (int i = 1; i < num_splits; ++i)
-//    for (int j = 0; j < gradvec_[0]->count(); ++j)
-//      gradvec_[0]->mutable_cpu_data()[j] += gradvec_[i]->cpu_data()[j];
+    AXPY<float>(1.0, *gradvec_[i], gradvec_[0]);
   // copy grad_[0] to srclayer's grad
-  srclayers[0]->mutable_grad(this)->CopyFrom(*gradvec_[0]);
+  Copy(*gradvec_[0], srclayers[0]->mutable_grad(this));
 }
 
 const Blob<float>& SplitLayer::grad(const Layer* from) const {

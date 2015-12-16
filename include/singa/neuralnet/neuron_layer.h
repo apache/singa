@@ -141,6 +141,9 @@ class InnerProductLayer : public NeuronLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+  ConnectionType src_neuron_connection(int k) const override {
+    return kOneToAll;
+  }
   const std::vector<Param*> GetParams() const override {
     std::vector<Param*> params{weight_, bias_};
     return params;

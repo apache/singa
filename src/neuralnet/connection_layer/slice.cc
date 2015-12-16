@@ -38,19 +38,21 @@ void SliceLayer::Setup(const LayerProto& conf,
   CHECK_EQ(srclayers.size(), 1);
   Layer::Setup(conf, srclayers);
   vector<int> shape = srclayers[0]->data(this).shape();
-  CHECK_GE(partition_dim(), 0);
-  CHECK_LT(partition_dim(), shape.size());
-  CHECK_GT(num_partitions(), 0);
-  // add num_partitions()-1 more blobs
-  for (int i = 1; i < num_partitions(); ++i) {
+  slice_dim = conf.slice_conf().slice_dim();
+  num_slices = conf.slice_conf().num_slices();
+  CHECK_GE(slice_dim, 0);
+  CHECK_LT(slice_dim, shape.size());
+  CHECK_GT(num_slices, 0);
+  // add num_slices-1 more blobs
+  for (int i = 1; i < num_slices; ++i) {
     datavec_.push_back(new Blob<float>());
     gradvec_.push_back(new Blob<float>());
   }
   // TODO(wangsh): remove equal-size restrict later
-  CHECK_EQ(shape[partition_dim()] % num_partitions(), 0);
-  shape[partition_dim()] /= num_partitions();
-  for (int i = 0; i < num_partitions(); ++i) {
-    // if (i == slice_num - 1) shape[partition_dim()] += remain;
+  CHECK_EQ(shape[slice_dim] % num_slices, 0);
+  shape[slice_dim] /= num_slices;
+  for (int i = 0; i < num_slices; ++i) {
+    // if (i == slice_num - 1) shape[slice_dim] += remain;
     datavec_[i]->Reshape(shape);
     gradvec_[i]->Reshape(shape);
   }
@@ -60,13 +62,13 @@ void SliceLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 1);
   const Blob<float>& blob = srclayers[0]->data(this);
   // calculate step for each memcpy
-  int step = datavec_[0]->shape()[partition_dim()];
-  for (unsigned i = partition_dim() + 1; i < datavec_[0]->shape().size(); ++i)
+  int step = datavec_[0]->shape()[slice_dim];
+  for (unsigned i = slice_dim + 1; i < datavec_[0]->shape().size(); ++i)
     step *= datavec_[0]->shape()[i];
   int srclayer_offset = 0;
   int slice_offset = 0;
   while (srclayer_offset < blob.count()) {
-    for (int i = 0; i < num_partitions(); ++i) {
+    for (int i = 0; i < num_slices; ++i) {
       const float* src = blob.cpu_data() + srclayer_offset;
       float* dst = datavec_[i]->mutable_cpu_data() + slice_offset;
       memcpy(dst, src, step * sizeof(float));
@@ -80,13 +82,13 @@ void SliceLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 1);
   Blob<float>* blob = srclayers[0]->mutable_grad(this);
   // calculate step for each memcpy
-  int step = gradvec_[0]->shape()[partition_dim()];
-  for (size_t i = partition_dim() + 1; i < gradvec_[0]->shape().size(); ++i)
+  int step = gradvec_[0]->shape()[slice_dim];
+  for (size_t i = slice_dim + 1; i < gradvec_[0]->shape().size(); ++i)
     step *= gradvec_[0]->shape()[i];
   int srclayer_offset = 0;
   int slice_offset = 0;
   while (srclayer_offset < blob->count()) {
-    for (int i = 0; i < num_partitions(); ++i) {
+    for (int i = 0; i < num_slices; ++i) {
       const float* src = gradvec_[i]->cpu_data() + slice_offset;
       float* dst = blob->mutable_cpu_data() + srclayer_offset;
       memcpy(dst, src, step * sizeof(float));
@@ -98,26 +100,26 @@ void SliceLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
 
 const Blob<float>& SliceLayer::data(const Layer* from) const {
   int id = from ? from->partition_id() : 0;
-  CHECK_LT(id, num_partitions());
+  CHECK_LT(id, num_slices);
   return *datavec_[id];
 }
 
 const Blob<float>& SliceLayer::grad(const Layer* from) const {
   int id = from ? from->partition_id() : 0;
-  CHECK_LT(id, num_partitions());
+  CHECK_LT(id, num_slices);
   return *gradvec_[id];
 }
 
 Blob<float>* SliceLayer::mutable_data(const Layer* from) {
   int id = from ? from->partition_id() : 0;
   CHECK(from);
-  CHECK_LT(id, num_partitions());
+  CHECK_LT(id, num_slices);
   return datavec_[id];
 }
 
 Blob<float>* SliceLayer::mutable_grad(const Layer* from) {
   int id = from ? from->partition_id() : 0;
-  CHECK_LT(id, num_partitions());
+  CHECK_LT(id, num_slices);
   return gradvec_[id];
 }
 const std::string SliceLayer::ToString(bool debug, int flag) {
