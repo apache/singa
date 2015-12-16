@@ -187,10 +187,9 @@ message LayerProto {
   // type of user layer
   optional string user_type =21;
   
-  optional int32 unroll_len = 22;
+  optional int32 unroll_len = 22 [default = 1];
   repeated UnrollConnType unroll_conn_type = 23;
   repeated int32 shift = 24;
-  repeated int32 unroll_src_conn = 25;
 
   // proto for the specific layer
   // configuration for argsort layer
@@ -657,7 +656,7 @@ enum UnrollConnType {
   // i-th unrolled layer <- all src unrolled layers
   kUnrollOneToAll = 2; 
   // i-th unrolled layer <- last unrolled src layer
-  kUnrollOneToLast = 3;
+  kUnrollFirstToLast = 3;
   // customized connection type defined by src_conn
   kUnrollCustomized = 4;
 }

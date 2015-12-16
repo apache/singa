@@ -156,7 +156,6 @@ NetProto NeuralNet::Unrolling(const NetProto& net_conf) {
 		}
 		layer_groups.push_back(layer_group);
 	}
-
 	// Step 2: Connect unrolled layers by setting `srclayers`
 	for (int index = 0; index < net_conf.layer_size(); index ++) {
 		const LayerProto& layer = net_conf.layer(index);
@@ -167,16 +166,19 @@ NetProto NeuralNet::Unrolling(const NetProto& net_conf) {
 			for (unsigned int j = 0; j < layer_groups[index].size(); j ++) {
 				LayerProto* layer_conf = conf.mutable_layer(layer_groups[index][j]);
 				// Update src layers of `layer_conf` by considering the types
-				if (layer.unroll_conn_type(i) == kUnrollOneToAll) {
+				singa::UnrollConnType unroll_conn_type = kUnrollOneToOne;
+				if (i < layer.unroll_conn_type_size()) unroll_conn_type = layer.unroll_conn_type(i);
+				unsigned int shift = 0;
+				if (i < layer.shift_size()) shift = layer.shift(i);
+				if (unroll_conn_type == kUnrollOneToAll) {
 					for (int srclayer_index : srclayers) {
 						layer_conf->add_srclayers(conf.layer(srclayer_index).name());
 					}
-				} else if (layer.unroll_conn_type(i) == kUnrollOneToOne) {
-					const unsigned int shift = layer.shift(i);
+				} else if (unroll_conn_type == kUnrollOneToOne) {
 					if (j < shift) continue; // no need to connect with the src
 					int srclayer_index = srclayers[j - shift];
 					layer_conf->add_srclayers(conf.layer(srclayer_index).name());
-				} else if (layer.unroll_conn_type(i) == kUnrollFirstToLast) {
+				} else if (unroll_conn_type == kUnrollFirstToLast) {
 					if (j > 0) break;
 					int srclayer_index = srclayers[srclayers.size() - 1];
 					layer_conf->add_srclayers(conf.layer(srclayer_index).name());
