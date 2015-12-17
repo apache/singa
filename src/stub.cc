@@ -207,12 +207,12 @@ void Stub::GenMsgs(int type, int version, ParamEntry* entry, Msg* msg,
     Msg* new_msg = nullptr;
     if (type == kPut) {
       CHECK_GT(entry->num_total, 0);
-      new_msg = param->GenPutMsg(dst_procs == procs_id, idx);
+      new_msg = param->GenPutMsg(dst_procs != procs_id, idx);
       new_msg->AddFormatFrame("i", entry->num_total);
     } else if (type == kGet) {
-      new_msg = param->GenGetMsg(dst_procs == procs_id, idx);
+      new_msg = param->GenGetMsg(dst_procs != procs_id, idx);
     } else if (type == kUpdate) {
-      new_msg = param->GenUpdateMsg(dst_procs == procs_id, idx);
+      new_msg = param->GenUpdateMsg(dst_procs != procs_id, idx);
       new_msg->AddFormatFrame("i", entry->num_local);
     } else {
       LOG(FATAL) << "Wrong type";
