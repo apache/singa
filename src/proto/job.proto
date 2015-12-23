@@ -150,7 +150,8 @@ message ClusterProto {
   optional int32 nworkers_per_procs = 5 [default = 1];
   optional int32 nservers_per_procs = 6 [default = 1];
   // local workspace for checkpoint files and vis files
-  required string workspace = 10;
+  //required string workspace = 10;
+  optional string workspace = 10;
 
   // servers and workers in different processes?
   optional bool server_worker_separate = 20 [default = false];

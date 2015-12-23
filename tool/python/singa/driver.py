@@ -107,6 +107,7 @@ class Driver(_object):
     def Train(self, *args): return _driver.Driver_Train(self, *args)
     def Init(self, *args): return _driver.Driver_Init(self, *args)
     def InitLog(self, *args): return _driver.Driver_InitLog(self, *args)
+    def Test(self, *args): return _driver.Driver_Test(self, *args)
     def __init__(self): 
         this = _driver.new_Driver()
         try: self.this.append(this)

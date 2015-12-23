@@ -40,4 +40,5 @@ if __name__ == '__main__':
     d = driver.Driver()
     d.InitLog(sys.argv[0])
     d.Init(sys.argv)
-    d.Train(False,b)
+#    d.Train(False,b)
+    d.Test(b)

@@ -4579,6 +4579,38 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_Driver_Test(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  singa::Driver *arg1 = (singa::Driver *) 0 ;
+  std::string arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OO:Driver_Test",&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_singa__Driver, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Driver_Test" "', argument " "1"" of type '" "singa::Driver *""'"); 
+  }
+  arg1 = reinterpret_cast< singa::Driver * >(argp1);
+  {
+    std::string *ptr = (std::string *)0;
+    int res = SWIG_AsPtr_std_string(obj1, &ptr);
+    if (!SWIG_IsOK(res) || !ptr) {
+      SWIG_exception_fail(SWIG_ArgError((ptr ? res : SWIG_TypeError)), "in method '" "Driver_Test" "', argument " "2"" of type '" "std::string const""'"); 
+    }
+    arg2 = *ptr;
+    if (SWIG_IsNewObj(res)) delete ptr;
+  }
+  (arg1)->Test(arg2);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_new_Driver(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   singa::Driver *result = 0 ;
@@ -4643,6 +4675,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Driver_Train", _wrap_Driver_Train, METH_VARARGS, NULL},
 	 { (char *)"Driver_Init", _wrap_Driver_Init, METH_VARARGS, NULL},
 	 { (char *)"Driver_InitLog", _wrap_Driver_InitLog, METH_VARARGS, NULL},
+	 { (char *)"Driver_Test", _wrap_Driver_Test, METH_VARARGS, NULL},
 	 { (char *)"new_Driver", _wrap_new_Driver, METH_VARARGS, NULL},
 	 { (char *)"delete_Driver", _wrap_delete_Driver, METH_VARARGS, NULL},
 	 { (char *)"Driver_swigregister", Driver_swigregister, METH_VARARGS, NULL},

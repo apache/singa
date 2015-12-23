@@ -37,6 +37,7 @@ public:
 void Train(bool resume, const std::string job_conf);
 void Init(int argc, char **argv);
 void InitLog(char* arg);
+void Test(const std::string job_conf);
 };
 }
 
