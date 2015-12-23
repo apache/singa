@@ -55,6 +55,9 @@ void Driver::Init(int argc, char **argv) {
     ReadProtoFromTextFile(argv[arg_pos+1], &singa_conf_);
   else
     ReadProtoFromTextFile("conf/singa.conf", &singa_conf_);
+  // set log path
+  if (singa_conf_.has_log_dir())
+    SetupLog(singa_conf_.log_dir(), "driver");
   // job conf passed by users as "-conf <path>"
   arg_pos = ArgPos(argc, argv, "-conf");
   CHECK_NE(arg_pos, -1);
@@ -156,10 +159,10 @@ void Driver::Train(bool resume, const std::string str) {
 }
 
 void Driver::Train(bool resume, const JobProto& job_conf) {
-  Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   if (singa_conf_.has_log_dir())
     SetupLog(singa_conf_.log_dir(),
         std::to_string(job_id_) + "-" + job_conf.name());
+  Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   tinydir_dir workspace;
   if (tinydir_open(&workspace, job_conf.cluster().workspace().c_str()) == -1)
     LOG(FATAL) << "workspace not exist: " << job_conf.cluster().workspace();
