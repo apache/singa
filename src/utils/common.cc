@@ -78,6 +78,8 @@
 #include <fcntl.h>
 #include <cfloat>
 
+#include <fstream>
+
 #include <glog/logging.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
@@ -85,8 +87,6 @@
 
 namespace singa {
 
-using std::string;
-using std::vector;
 const int kBufLen = 1024;
 
 string IntVecToString(const vector<int>& vec) {
@@ -142,7 +142,7 @@ const vector<vector<int>> Slice(int num, const vector<int>& sizes) {
       avg += x;
   avg = avg / num + avg % num;
   int diff = avg / 10;
-  LOG(INFO) << "Slicer, param avg = " << avg << ", diff = " << diff;
+  // DLOG(INFO) << "Slicer, param avg = " << avg << ", diff = " << diff;
 
   int capacity = avg, nbox = 0;
   for (int x : sizes) {
@@ -172,7 +172,7 @@ const vector<vector<int>> Slice(int num, const vector<int>& sizes) {
         slicestr += ", " + std::to_string(size);
       }
     }
-    LOG(INFO) << slicestr;
+    // DLOG(INFO) << slicestr;
     slices.push_back(slice);
   }
   CHECK_LE(nbox, num);
@@ -213,8 +213,7 @@ const vector<int> PartitionSlices(int num, const vector<int>& slices) {
     }
     disp += " " + std::to_string(slices[i]);
   }
-  LOG(INFO) << "partition slice (avg = " << avg
-            << ", num = " << num << "):" << disp;
+  // DLOG(INFO) << "partition slice (avg = " << avg << ", num = " << num << "):" << disp;
   return slice2box;
 }
 
@@ -560,5 +559,16 @@ void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
   int fd = open(filename, O_CREAT|O_WRONLY|O_TRUNC, 0644);
   CHECK_NE(fd, -1) << "File cannot open: " << filename;
   CHECK(proto.SerializeToFileDescriptor(fd));
+}
+
+
+
+void WriteStringToTextFile(const string& filename, const string& context) {
+  std::ofstream ofs;
+  ofs.open(filename);
+  CHECK(ofs.is_open()) << "Can't write to file: " << filename;
+  ofs << context;
+  ofs.flush();
+  ofs.close();
 }
 }  // namespace singa

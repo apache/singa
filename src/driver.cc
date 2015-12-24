@@ -201,6 +201,8 @@ void Driver::Train(const JobProto& job_conf) {
   }
 
   NeuralNet* net = NeuralNet::Create(job_conf.neuralnet(), kTrain, grp_size);
+  WriteStringToTextFile(cluster->vis_folder() + "/train_net.json",
+      net->ToGraph(true).ToJson());
   const vector<Worker*> workers = CreateWorkers(job_conf, net);
   const vector<Server*> servers = CreateServers(job_conf, net);
 

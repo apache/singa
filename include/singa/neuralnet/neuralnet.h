@@ -110,6 +110,12 @@ class NeuralNet {
   }
   inline Param* paramid2param(int id) const { return paramid2param_.at(id); }
 
+  /**
+   * Conver the neural net into graph representation.
+   * Each layer is converted into a node.
+   * @param include_shape if true label the node with shape info
+   */
+  const Graph ToGraph(bool include_shape) const;
  protected:
   /**
    * Create a neural net graph, one node for each layer.

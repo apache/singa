@@ -46,19 +46,18 @@ Layer* Layer::Create(const LayerProto& proto) {
 const std::string Layer::ToString(bool debug, int flag) {
   if (!debug)
     return "";
-  string ret = StringPrintf("Layer %10s ", name().c_str());
+  string ret = "";
   if ((flag & kForward) == kForward && data_.count() !=0) {
-    ret += StringPrintf("data norm1 %13.9f", Asum(data_));
+    ret += StringPrintf("data:%13.9f ", Asum(data_));
+    for (Param* p : GetParams())
+      ret += StringPrintf("%s:%13.9f ",
+          p->name().c_str(), Asum(p->data()));
   }
   if ((flag & kBackward) == kBackward && grad_.count() != 0) {
-      ret += StringPrintf("grad norm1 %13.9f\n", Asum(grad_));
-  }
-  if ((flag & kTrain) == kTrain) {
-    for (Param* p : GetParams()) {
-      ret += StringPrintf(
-          "param id %2d, name %10s, value norm1 %13.9f, grad norm1 %13.9f\n",
-          p->id(), p->name().c_str(), Asum(p->data()), Asum(p->grad()));
-    }
+    ret += StringPrintf("grad:%13.9f ", Asum(grad_));
+    for (Param* p : GetParams())
+      ret += StringPrintf("%s:%13.9f ",
+          p->name().c_str(), Asum(p->grad()));
   }
   return ret;
 }

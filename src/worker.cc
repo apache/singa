@@ -320,12 +320,6 @@ void Worker::Display(int flag, const std::string& prefix, NeuralNet* net) {
       const string& disp = layer->ToString(false, flag);
       if (disp.length())
         LOG(ERROR) << prefix << "  " << disp;
-      if (job_conf_.debug()) {
-        const string& info = layer->ToString(true, flag);
-        if (info.length()) {
-          LOG(INFO) << prefix << info;
-        }
-      }
     }
   }
 }
@@ -341,6 +335,7 @@ void BPWorker::TestOneBatch(int step, Phase phase, NeuralNet* net) {
 }
 
 void BPWorker::Forward(int step, Phase phase, NeuralNet* net) {
+  map<string, string> label;
   for (auto& layer : net->layers()) {
     if (layer->partition_id() == id_) {
       // TODO(wangwei): enable this for model partition
@@ -355,15 +350,24 @@ void BPWorker::Forward(int step, Phase phase, NeuralNet* net) {
       }
       // LOG(ERROR) << layer->name() << " forward";
       layer->ComputeFeature(phase | kForward, net->srclayers(layer));
+      if (job_conf_.debug() && grp_id_ == 0)
+        label[layer->name()] = layer->ToString(true, phase | kForward);
+
       // TODO(wangwei): enable this for model partition
       // send data to other workers
       // if (typeid(*layer) == typeid(BridgeSrcLayer))
       //   SendBlobs(true, false, dynamic_cast<BridgeLayer*>(layer), net);
     }
   }
+  if (label.size()) {
+    const string path = Cluster::Get()->vis_folder() + "/fp-step"
+      + std::to_string(step) +"-loc" + std::to_string(id_) + ".json";
+    WriteStringToTextFile(path, net->ToGraph(false).ToJson(label));
+  }
 }
 
 void BPWorker::Backward(int step, NeuralNet* net) {
+  map<string, string> label;
   auto& layers = net->layers();
   for (auto it = layers.rbegin(); it != layers.rend(); it++) {
     Layer* layer = *it;
@@ -374,6 +378,8 @@ void BPWorker::Backward(int step, NeuralNet* net) {
       //   ReceiveBlobs(false, true, layer, net);
       // LOG(ERROR) << layer->name() << " backward";
       layer->ComputeGradient(kTrain | kBackward, net->srclayers(layer));
+      if (job_conf_.debug() && grp_id_ == 0)
+        label[layer->name()] = layer->ToString(true, kTrain | kBackward);
       for (Param* p : layer->GetParams())
         Update(step, p);
       // TODO(wangwei): enable this for model partition
@@ -381,6 +387,11 @@ void BPWorker::Backward(int step, NeuralNet* net) {
       // if (typeid(layer) == typeid(BridgeDstLayer))
       //   SendBlobs(false, true, dynamic_cast<BridgeDstLayer*>(layer), net);
     }
+  }
+  if (label.size()) {
+    const string path = Cluster::Get()->vis_folder() + "/bp-step"
+      + std::to_string(step) + "-loc" + std::to_string(id_) + ".json";
+    WriteStringToTextFile(path, net->ToGraph(false).Reverse().ToJson(label));
   }
 }
 

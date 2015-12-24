@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -20,6 +20,7 @@
 *************************************************************/
 
 #include "singa/utils/graph.h"
+#include "singa/utils/common.h"
 
 #include <glog/logging.h>
 #include <algorithm>
@@ -32,8 +33,15 @@ using std::map;
 using std::string;
 using std::vector;
 
+/**************************************************************************
+ * Implementation for Node class
+ *************************************************************************/
 Node::Node(string name) {
   this->name = name;
+}
+Node::Node(string name, const std::map<string, string>& attrs) {
+  this->name = name;
+  this->attrs = attrs;
 }
 
 Node::Node(const string& name, const string& origin, int id, void* proto) {
@@ -67,6 +75,10 @@ void Node::RemoveSrcNode(Node* src) {
   srcnodes.erase(iter);
 }
 
+/****************************************************************************
+ * Implementation for Graph class
+ ****************************************************************************/
+
 Graph::~Graph() {
   for (Node* node : nodes_)
     delete node;
@@ -85,6 +97,13 @@ Node* Graph::AddNode(const string& name) {
   return node;
 }
 
+Node* Graph::AddNode(const string& name, const std::map<string, string>& attrs)
+{
+  Node* node = new Node(name, attrs);
+  AddNode(node);
+  return node;
+}
+
 void Graph::AddEdge(Node* srcnode, Node* dstnode) {
   srcnode->AddDstNode(dstnode);
   dstnode->AddSrcNode(srcnode);
@@ -96,6 +115,16 @@ void Graph::AddEdge(const string& src, const string& dst) {
   auto dstnode = name2node_.find(dst);
   CHECK(dstnode != name2node_.end()) << "can't find dst node " << dst;
   AddEdge(srcnode->second, dstnode->second);
+}
+void Graph::AddEdge(Node* srcnode, Node* dstnode,
+      const std::map<string, string>& attrs) {
+  AddEdge(srcnode, dstnode);
+  edge_attrs_[GetEdgeName(srcnode->name, dstnode->name)] = attrs;
+}
+void Graph::AddEdge(const string& src, const std::string& dst,
+      const std::map<string, string>& attrs) {
+  AddEdge(src, dst);
+  edge_attrs_[GetEdgeName(src, dst)] = attrs;
 }
 
 void Graph::RemoveEdge(Node* src, Node* dst) {
@@ -112,10 +141,11 @@ void Graph::RemoveEdge(const string &src, const string& dst) {
 }
 
 string Graph::ToJson() const {
-  map<string, string> info;
-  return ToJson(info);
+  map<string, string> label;
+  return ToJson(label);
 }
 
+/*
 string Graph::ToJson(const map<string, string>& info) const {
   map<string, int> nodeid;
   string disp = "{\"directed\":1,\n";
@@ -126,7 +156,7 @@ string Graph::ToJson(const map<string, string>& info) const {
   vector<string> colors = {"red", "blue", "black", "green"};
 
   // see for more shapes at http://www.graphviz.org/doc/info/shapes.html
-  vector<string> shapes = {"box", "ellipse"};
+  // vector<string> shapes = {"box", "ellipse"};
   int id = 0;
   for (auto node : nodes_) {
     char str[1024];
@@ -134,14 +164,10 @@ string Graph::ToJson(const map<string, string>& info) const {
     string color = colors[(node->partition_id)%colors.size()];
     string shape;
     string origin = node->origin;
-    if (origin.find("##") != string::npos)
-      shape = shapes[1];
-    else
-      shape = shapes[0];
     snprintf(str, sizeof(str),
         "{\"id\":\"%s%s\", \"color\":\"%s\",\"shape\":\"%s\"}\n", name.c_str(),
         info.find(name) != info.end() ? info.at(name).c_str() : "",
-        color.c_str(), shape.c_str());
+        color.c_str(), "box");
     if (!first)
       disp += ",";
     else
@@ -170,6 +196,7 @@ string Graph::ToJson(const map<string, string>& info) const {
   disp += "]\n";
   return disp+"}";
 }
+*/
 
 // sort to make `bottom' nodes be placed in the front positions
 void Graph::Sort() {
@@ -227,11 +254,73 @@ void Graph::Sort() {
       visiting_nodes.push(node);
     }
   }
-  for (auto node : nodes_) {
-    LOG(INFO) << "nodes: " << node->name;
-  }
-  LOG(INFO) << "finish printing nodes ";
   CHECK_EQ(nodes_.size(), n);
 }
 
+const Graph Graph::Reverse() const {
+  Graph g;
+  for (Node* n : nodes_)
+    g.AddNode(n->name, n->attrs);
+  for (Node* src : nodes_)
+    for (Node* dst : src->dstnodes) {
+      map<string, string> attrs;
+      const string edge = GetEdgeName(src->name, dst->name);
+      if (edge_attrs_.find(edge) != edge_attrs_.end())
+        attrs = edge_attrs_.at(edge);
+      g.AddEdge(dst->name, src->name, attrs);
+    }
+  return g;
+}
+
+string Graph::ToJson(const map<string, string>& label) const {
+  string disp = "{\"directed\":1,\n";
+
+  // add nodes
+  disp += "\"nodes\":[\n";
+
+  bool first = true;
+  map<string, int> node_id;
+  int id = 0;
+  for (auto node : nodes_) {
+    string name = node->name;
+    string lbl = name + " -- ";
+    if (label.find(name) != label.end())
+      lbl += label.at(name);
+    if (node->attrs.find("label") != node->attrs.end())
+      lbl += node->attrs.at("label");
+    disp += StringPrintf("%c{\"id\":\"%s\", \"label\":\"%s\"",
+        !first ? ',' : ' ', name.c_str(), lbl.c_str());
+    for (const auto& attr : node->attrs)
+      if (attr.first != "label")
+        disp += StringPrintf(", \"%s\":\"%s\"",
+            attr.first.c_str(), attr.second.c_str());
+    disp += "}\n";
+    first = false;
+    node_id[name] = id++;
+  }
+  disp += "]\n,\n";
+
+  // add edges
+  disp += "\"links\":[\n";
+  first = true;
+  for (auto src : nodes_) {
+    for (auto dst : src->dstnodes) {
+      const string edge_name = GetEdgeName(src->name, dst->name);
+      string lbl = "";
+      if (label.find(edge_name) != label.end())
+        lbl = label.at(edge_name);
+      disp += StringPrintf("%c{\"source\":%d, \"target\":%d, \"label\": \"%s\"",
+          !first ? ',' : ' ', node_id[src->name], node_id[dst->name],
+          lbl.c_str());
+      if (edge_attrs_.find(edge_name) != edge_attrs_.end()) {
+        for (const auto& attr : edge_attrs_.at(edge_name))
+          disp += StringPrintf(", \"%s\":\"%s\"",
+              attr.first.c_str(), attr.second.c_str());
+      }
+      disp += "}\n";
+      first = false;
+    }
+  }
+  return disp + "]}";
+}
 }  // namespace singa

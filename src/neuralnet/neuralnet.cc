@@ -356,7 +356,7 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
     }
   }
   graph->Sort();
-  DLOG(INFO) << "Pure graph structure\n" << graph->ToJson();
+  // DLOG(INFO) << "Pure graph structure\n" << graph->ToJson();
   return graph;
 }
 
@@ -383,7 +383,7 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
   for (Node* node : graph->nodes()) {
     auto layer = name2layer(node->name);
     layer->Setup(*(static_cast<LayerProto*>(node->proto)), srclayers(layer));
-    LOG(INFO) << "constructing graph: " << layer->name();
+    DLOG(INFO) << "constructing graph: " << layer->name();
     layerinfo[layer->name()] = IntVecToString(layer->data(nullptr).shape());
     string param_name = "$";
     for (auto param : layer->GetParams()) {
@@ -397,7 +397,7 @@ void NeuralNet::CreateNetFromGraph(Graph* graph, int npartitions) {
     if (layer->partition_dim() == 0)
       share_param_layers[node->origin].push_back(layer);
   }
-  LOG(INFO) << "Neural net structure\n"  << graph->ToJson(layerinfo);
+  // LOG(INFO) << "Neural net structure\n"  << graph->ToJson(layerinfo);
   // create map from param name to param ptr
   std::unordered_map<string, Param*> name2param;
   for (auto layer : layers_) {
@@ -448,4 +448,26 @@ void NeuralNet::PrepareDataStructures() {
   }
 }
 
+const Graph NeuralNet::ToGraph(bool include_shape) const {
+  Graph g;
+  map<string, string> attrs;
+  attrs["shape"] = "box";
+  vector<string> colors {"black", "red", "yellow", "blue"};
+  for (auto layer : layers_) {
+    LOG_IF(WARNING, layer->partition_id() >= static_cast<int>(colors.size()))
+      << "Too many partitions for displaying";
+    attrs["color"] = colors[layer->partition_id() % colors.size()];
+    if (include_shape) {
+      attrs["label"] = "shape: ";
+      for (const auto& x : layer->data(nullptr).shape())
+        attrs["label"] += std::to_string(x) + " ";
+    }
+    g.AddNode(layer->name(), attrs);
+  }
+
+  for (auto layer : layers_)
+    for (auto src : src_map_.at(layer))
+      g.AddEdge(src->name(), layer->name());
+  return g;
+}
 }  // namespace singa
