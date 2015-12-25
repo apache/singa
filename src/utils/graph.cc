@@ -20,12 +20,12 @@
 *************************************************************/
 
 #include "singa/utils/graph.h"
-#include "singa/utils/common.h"
 
 #include <glog/logging.h>
 #include <algorithm>
 #include <queue>
 #include <unordered_set>
+#include "singa/utils/common.h"
 
 namespace singa {
 
@@ -97,8 +97,8 @@ Node* Graph::AddNode(const string& name) {
   return node;
 }
 
-Node* Graph::AddNode(const string& name, const std::map<string, string>& attrs)
-{
+Node* Graph::AddNode(const string& name,
+                     const std::map<string, string>& attrs) {
   Node* node = new Node(name, attrs);
   AddNode(node);
   return node;

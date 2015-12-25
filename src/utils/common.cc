@@ -213,7 +213,6 @@ const vector<int> PartitionSlices(int num, const vector<int>& slices) {
     }
     disp += " " + std::to_string(slices[i]);
   }
-  // DLOG(INFO) << "partition slice (avg = " << avg << ", num = " << num << "):" << disp;
   return slice2box;
 }
 

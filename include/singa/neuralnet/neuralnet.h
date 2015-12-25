@@ -116,6 +116,7 @@ class NeuralNet {
    * @param include_shape if true label the node with shape info
    */
   const Graph ToGraph(bool include_shape) const;
+
  protected:
   /**
    * Create a neural net graph, one node for each layer.
