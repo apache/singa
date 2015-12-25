@@ -69,8 +69,8 @@ void BridgeSrcLayer::Setup(const LayerProto& conf,
   Layer::Setup(conf, srclayers);
   data_.Reshape(srclayers[0]->data(this).shape());
   grad_.ReshapeLike(data_);
-  data_.ShareData(srclayers[0]->mutable_data(this));
-  grad_.ShareData(srclayers[0]->mutable_grad(this));
+  data_.ShareData(srclayers[0]->mutable_data(this), false);
+  grad_.ShareData(srclayers[0]->mutable_grad(this), false);
 }
 
 void BridgeSrcLayer::ComputeFeature(int flag, const vector<Layer*>& srcs) {

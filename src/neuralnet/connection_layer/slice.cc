@@ -98,29 +98,30 @@ void SliceLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   }
 }
 
-const Blob<float>& SliceLayer::data(const Layer* from) const {
-  int id = from ? from->partition_id() : 0;
-  CHECK_LT(id, num_slices);
-  return *datavec_[id];
+const Blob<float>& SliceLayer::data(const Layer* from) {
+  int idx = from ? layer_idx_.Get(from) : 0;
+  CHECK_LT(idx, num_slices);
+  return *datavec_[idx];
 }
 
-const Blob<float>& SliceLayer::grad(const Layer* from) const {
-  int id = from ? from->partition_id() : 0;
-  CHECK_LT(id, num_slices);
-  return *gradvec_[id];
+const Blob<float>& SliceLayer::grad(const Layer* from) {
+  int idx = from ? layer_idx_.Get(from) : 0;
+  CHECK_LT(idx, num_slices);
+  return *gradvec_[idx];
 }
 
 Blob<float>* SliceLayer::mutable_data(const Layer* from) {
-  int id = from ? from->partition_id() : 0;
   CHECK(from);
-  CHECK_LT(id, num_slices);
-  return datavec_[id];
+  int idx = layer_idx_.Get(from);
+  CHECK_LT(idx, num_slices);
+  return datavec_[idx];
 }
 
 Blob<float>* SliceLayer::mutable_grad(const Layer* from) {
-  int id = from ? from->partition_id() : 0;
-  CHECK_LT(id, num_slices);
-  return gradvec_[id];
+  CHECK(from);
+  int idx = layer_idx_.Get(from);
+  CHECK_LT(idx, num_slices);
+  return gradvec_[idx];
 }
 const std::string SliceLayer::ToString(bool debug, int flag) {
   if (!debug)

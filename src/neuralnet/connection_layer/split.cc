@@ -62,16 +62,18 @@ void SplitLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   Copy(*gradvec_[0], srclayers[0]->mutable_grad(this));
 }
 
-const Blob<float>& SplitLayer::grad(const Layer* from) const {
+const Blob<float>& SplitLayer::grad(const Layer* from) {
   CHECK(from);
-  CHECK_LT(from->partition_id(), num_splits);
-  return *gradvec_[from->partition_id()];
+  int idx = layer_idx_.Get(from);
+  CHECK_LT(idx, num_splits);
+  return *gradvec_[idx];
 }
 
 Blob<float>* SplitLayer::mutable_grad(const Layer* from) {
   CHECK(from);
-  CHECK_LT(from->partition_id(), num_splits);
-  return gradvec_[from->partition_id()];
+  int idx = layer_idx_.Get(from);
+  CHECK_LT(idx, num_splits);
+  return gradvec_[idx];
 }
 const std::string SplitLayer::ToString(bool debug, int flag) {
   if (!debug)

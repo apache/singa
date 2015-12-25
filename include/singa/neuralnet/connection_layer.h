@@ -29,6 +29,24 @@
 #include "singa/neuralnet/layer.h"
 
 namespace singa {
+/**
+ * Used inside SplitLayer and SliceLayer to locate the out-going connection
+ * index given the Layer pointer.
+ */
+class Layer2Index {
+ public:
+  int Get(const Layer* layer) {
+    if (layer2idx_.find(layer) == layer2idx_.end()) {
+      int idx =  layer2idx_.size();
+      layer2idx_[layer] = idx;
+    }
+    return layer2idx_[layer];
+  }
+
+ private:
+  std::unordered_map<const Layer*, int> layer2idx_;
+};
+
 
 class BridgeLayer : public ConnectionLayer {
  public:
@@ -102,14 +120,15 @@ class SliceLayer : public ConnectionLayer {
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
   const std::string ToString(bool debug, int flag) override;
-  const Blob<float>& data(const Layer* from) const override;
-  const Blob<float>& grad(const Layer* from) const override;
+  const Blob<float>& data(const Layer* from) override;
+  const Blob<float>& grad(const Layer* from) override;
   Blob<float>* mutable_data(const Layer* from) override;
   Blob<float>* mutable_grad(const Layer* from) override;
- 
+
  private:
   int num_slices = 0;
   int slice_dim = 0;
+  Layer2Index layer_idx_;
 };
 
 /**
@@ -126,11 +145,12 @@ class SplitLayer : public ConnectionLayer {
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
   const std::string ToString(bool debug, int flag) override;
-  const Blob<float>& grad(const Layer* from) const override;
+  const Blob<float>& grad(const Layer* from) override;
   Blob<float>* mutable_grad(const Layer* from) override;
 
  private:
   int num_splits = 0;
+  Layer2Index layer_idx_;
 };
 
 
