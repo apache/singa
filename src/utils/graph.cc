@@ -97,7 +97,10 @@ Node* Graph::AddNode(const string& name, const string& origin, int id,
 Node* Graph::AddNode(const string& name,
                      const std::map<string, string>& attrs) {
   Node* node = new Node(name, attrs);
-  AddNode(node);
+  nodes_.push_back(node);
+  CHECK(name2node_.find(node->name) == name2node_.end())
+    << "node " << node->name << " already exists";
+  name2node_[node->name] = node;
   return node;
 }
 

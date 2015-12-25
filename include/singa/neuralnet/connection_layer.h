@@ -103,8 +103,8 @@ class ConcateLayer : public ConnectionLayer {
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 
  private:
-  int num_concates = 0;
-  int concate_dim = 0;
+  int num_concates_ = 0;
+  int concate_dim_ = 0;
 };
 
 /**
@@ -126,8 +126,8 @@ class SliceLayer : public ConnectionLayer {
   Blob<float>* mutable_grad(const Layer* from) override;
 
  private:
-  int num_slices = 0;
-  int slice_dim = 0;
+  int num_slices_ = 0;
+  int slice_dim_ = 0;
   Layer2Index layer_idx_;
 };
 
@@ -149,7 +149,7 @@ class SplitLayer : public ConnectionLayer {
   Blob<float>* mutable_grad(const Layer* from) override;
 
  private:
-  int num_splits = 0;
+  int num_splits_ = 0;
   Layer2Index layer_idx_;
 };
 
