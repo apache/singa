@@ -20,6 +20,7 @@
 *************************************************************/
 
 #include "singa/neuralnet/connection_layer.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -118,5 +119,18 @@ Blob<float>* SliceLayer::mutable_grad(const Layer* from) {
   CHECK_LT(from->partition_id(), num_partitions());
   return gradvec_[from->partition_id()];
 }
-
+const std::string SliceLayer::ToString(bool debug, int flag) {
+  if (!debug)
+    return "";
+  string ret = "";
+  if ((flag & kForward) == kForward && data_.count() !=0) {
+    for (unsigned k = 0; k < datavec_.size(); k++)
+      ret += StringPrintf("data-%u :%13.9f ", k, Asum(*datavec_.at(k)));
+  }
+  if ((flag & kBackward) == kBackward && grad_.count() != 0) {
+    for (unsigned k = 0; k < gradvec_.size(); k++)
+    ret += StringPrintf("grad-%u:%13.9f ", k, Asum(*gradvec_.at(k)));
+  }
+  return ret;
+}
 }  // namespace singa
