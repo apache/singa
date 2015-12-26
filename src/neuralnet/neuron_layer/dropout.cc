@@ -48,12 +48,14 @@ void DropoutLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   Blob<float> rand(data_.count());
   SampleUniform(0.0f, 1.0f, &rand);
   Map<op::Threshold<float>, float>(pkeep, rand, &mask_);
+  // scale the mask to avoid scaling in ComputeGradient
   Scale(1.0f / pkeep, &mask_);
   Mult(srclayers[0]->data(this), mask_, &data_);
 }
 
 void DropoutLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)  {
   Mult(grad_, mask_, srclayers[0]->mutable_grad(this));
+  // no need to mult scale as mask is scaled already.
 }
 
 }  // namespace singa

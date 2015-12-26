@@ -48,15 +48,15 @@ const std::string Layer::ToString(bool debug, int flag) {
     return "";
   string ret = "";
   if ((flag & kForward) == kForward && data_.count() !=0) {
-    ret += StringPrintf("data:%13.9f ", Asum(data_));
+    ret += StringPrintf("data:%e ", Asum(data_));
     for (Param* p : GetParams())
       ret += StringPrintf("%s:%13.9f ",
           p->name().c_str(), Asum(p->data()));
   }
   if ((flag & kBackward) == kBackward && grad_.count() != 0) {
-    ret += StringPrintf("grad:%13.9f ", Asum(grad_));
+    ret += StringPrintf("grad:%e ", Asum(grad_));
     for (Param* p : GetParams())
-      ret += StringPrintf("%s:%13.9f ",
+      ret += StringPrintf("%13.9f ",
           p->name().c_str(), Asum(p->grad()));
   }
   return ret;
