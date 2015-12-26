@@ -192,7 +192,6 @@ message LayerProto {
   optional LayerType type = 20 [default = kUserLayer];
   // type of user layer
   optional string user_type = 21;
-
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
   // names of parameters shared from other layers

@@ -79,7 +79,8 @@ extern "C" {
 
   void singa_gpu_set_value(float *data, float value, int n);
 
-  void singa_gpu_threshold(const float *src_data, float *des_data, int n);
+  void singa_gpu_threshold(const float *src_data, float *des_data,
+      float alpha, int n);
 };
 
 }  // namespace singa

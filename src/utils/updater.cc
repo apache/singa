@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -59,7 +59,10 @@ float FixedStepLRGen::Get(int step) {
 float StepLRGen::Get(int step) {
   // do not cast int to float
   int freq = proto_.step_conf().change_freq();
-  return  proto_.base_lr() * pow(proto_.step_conf().gamma(), step / freq);
+  float lr = proto_.base_lr() * pow(proto_.step_conf().gamma(), step / freq);
+  LOG_IF(ERROR, step % freq == 0) << "Update learning rate to " << lr
+    << " @ step " << step;
+  return lr;
 }
 
 float LinearLRGen::Get(int step) {
