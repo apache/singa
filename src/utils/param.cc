@@ -168,7 +168,7 @@ void Param::InitValues(int version) {
 
 void Param::ShareFrom(Param* other, bool cpu_only) {
   proto_.set_owner(other->owner());
-  CHECK(data_.shape() == other->data_.shape());
+  CHECK_EQ(data_.count(), other->data_.count());
   data_.ShareData(&(other->data_), cpu_only);
   if (grad_.count() == 0)
     grad_.Reshape(data_.shape());
