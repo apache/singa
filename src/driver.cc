@@ -179,6 +179,12 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
   Train(job);
 }
 
+void Driver::Test(const std::string str) {
+  JobProto job_conf;
+  job_conf.ParseFromString(str);
+  Test(job_conf);
+}
+
 void Driver::Test(const JobProto& job_conf) {
   Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   Cluster::Get()->Register(getpid(), "localhost");
