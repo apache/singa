@@ -11,6 +11,7 @@ class Model(object):
     '''
     optional
       name  = (string) // name of model/job
+      argv             // pass sys.argv to source
       label = (bool)   // exist label layer (depreciated)
     '''
     self.jobconf = Message('Job', name=name).proto 
@@ -227,7 +228,7 @@ class Model(object):
     #filename = 'job.conf'
     #with open(filename, 'w') as f:
     #  f.write(text_format.MessageToString(self.jobconf.cluster))
-    self.display()
+    #self.display()
 
     #--- run singa --- 
     return SingaRun(jobproto=self.jobconf, argv=self.argv, execpath=execpath, testmode=is_testonly)
@@ -285,8 +286,8 @@ class Sequential(Model):
   def add(self, layer):
     if hasattr(layer, 'layer_type'):
       if layer.layer_type == 'AutoEncoder':
+        dim = 0 
         if layer.param_share == True:
-          dim = 0 
           # Encoding
           for i in range(1, len(layer.hid_dim)+1):
             parw = Parameter(name='w', init='none', level=i)
@@ -368,11 +369,13 @@ class SGD(Updater):
                step=(0), step_lr=(0.01), **fields):
     '''
     required
-       lr      = (float)  // base learning rate
+       lr       = (float)      // base learning rate
     optional
-       lr_type = (string) // type of learning rate, 'Fixed' at default
-       decay    = (float) // weight decay
-       momentum = (float) // momentum
+       lr_type  = (string)     // type of learning rate, 'Fixed' at default
+       decay    = (float)      // weight decay
+       momentum = (float)      // momentum
+       step     = (int/list)   // steps
+       step_lr  = (float/list) // learning rate after the steps
        **fields (KEY=VALUE)
 
     '''
@@ -388,13 +391,14 @@ class AdaGrad(Updater):
                step=(0), step_lr=(0.01), **fields):
     '''
     required
-       lr      = (float)  // base learning rate
+       lr       = (float)      // base learning rate
     optional
-       lr_type = (string) // type of learning rate, 'Fixed' at default
-       decay    = (float) // weight decay
-       momentum = (float) // momentum
+       lr_type  = (string)     // type of learning rate, 'Fixed' at default
+       decay    = (float)      // weight decay
+       momentum = (float)      // momentum
+       step     = (int/list)   // steps
+       step_lr  = (float/list) // learning rate after the steps
        **fields (KEY=VALUE)
-
     '''
     assert lr
     super(AdaGrad, self).__init__(upd_type=kAdaGrad,

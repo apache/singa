@@ -25,10 +25,10 @@ m.add(AvgPooling2D(pool_size=(3,3), stride=2))
 m.add(Dense(10, w_wd=250, b_lr=2, b_wd=0, activation='softmax'))
 
 sgd = SGD(decay=0.004, lr_type='fixed', step=(0,60000,65000), step_lr=(0.001,0.0001,0.00001))
-topo = Cluster(workspace)
+topo = Cluster(workspace, nworkers_per_group=2, nworkers_per_procs=2)
 m.compile(loss='categorical_crossentropy', optimizer=sgd, cluster=topo)
 
-gpu_id = [0]
-m.fit(X_train, nb_epoch=7000, with_test=True, device=gpu_id)
-result = m.evaluate(X_test, test_steps=100, test_freq=1000)
+gpu_id = [0,1]
+m.fit(X_train, nb_epoch=10000, with_test=True, device=gpu_id)
+result = m.evaluate(X_test, test_steps=0, test_freq=200)
 
