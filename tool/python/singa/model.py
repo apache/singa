@@ -19,6 +19,7 @@ class Model(object):
     self.argv = argv
     self.result = None
     self.last_checkpoint_path = None
+    self.cudnn = False
     
   def exist_datalayer(self, phase):
     for ly in self.layers:
@@ -104,18 +105,23 @@ class Model(object):
       else:
         getattr(lastly, 'srclayers').append(self.layers[0].layer.name)
 
+    # use of cudnn
+    if self.cudnn == True:
+      self.setCudnnLayerType(net) 
+
     setval(self.jobconf, neuralnet=net)
 
   def fit(self, data=None, alg='bp', nb_epoch=0,
-          with_test=False, execpath='', **fields):
+          with_test=False, execpath='', device=None, **fields):
     '''
     required
-      data        = (Data)   // Data class object for training data
-      alg         = (string) // algorithm, e.g., 'bp', 'cd'
-      nb_epoch    = (int)    // the number of training steps
+      data        = (Data)     // Data class object for training data
+      alg         = (string)   // algorithm, e.g., 'bp', 'cd'
+      nb_epoch    = (int)      // the number of training steps
     optional
-      with_test   = (bool)   // flag if singa runs for test data
-      execpath    = (string) // path to user own singa (executable file)
+      with_test   = (bool)     // flag if singa runs for test data
+      execpath    = (string)   // path to user own singa (executable file)
+      device      = (int/list) // a list of gpu ids
       **fields (KEY=VALUE)
         batch_size       = (int)    // batch size for training data
         train_steps      = (int)    // the number of steps for training, i.e., epoch
@@ -160,6 +166,11 @@ class Model(object):
     
     # set Train_one_batch component, using backprogapation at default
     setval(self.jobconf, train_one_batch=Algorithm(type=enumAlgType(alg)).proto)
+
+    # use of cudnn
+    if device != None:
+      setval(self.jobconf, gpu=device)
+      self.cudnn = True
 
     # start to run singa for training
     if with_test == False: 
@@ -216,7 +227,7 @@ class Model(object):
     #filename = 'job.conf'
     #with open(filename, 'w') as f:
     #  f.write(text_format.MessageToString(self.jobconf.cluster))
-    #self.display()
+    self.display()
 
     #--- run singa --- 
     return SingaRun(jobproto=self.jobconf, argv=self.argv, execpath=execpath, testmode=is_testonly)
@@ -224,7 +235,31 @@ class Model(object):
     
 
   def display(self):
+    ''' print out job proto
+    '''
     print text_format.MessageToString(self.jobconf)
+
+  def setCudnnLayerType(self, net):
+    ''' convert LayerType to CdunnLayerType
+    '''
+    for i in range(len(net.layer)):
+      ly_type = net.layer[i].type
+      cudnn_ly_type = ly_type
+      if ly_type == kCConvolution: cudnn_ly_type = kCudnnConv
+      elif ly_type == kCPooling: cudnn_ly_type = kCudnnPool
+      elif ly_type == kLRN: cudnn_ly_type = kCudnnLRN
+      elif ly_type == kSoftmax: cudnn_ly_type = kCudnnSoftmax
+      elif ly_type == kSoftmaxLoss: cudnn_ly_type = kCudnnSoftmaxLoss
+      elif ly_type == kSTanh:
+        cudnn_ly_type = kCudnnActivation
+        net.layer[i].activation_conf.type = STANH 
+      elif ly_type == kSigmoid:
+        cudnn_ly_type = kCudnnActivation
+        net.layer[i].activation_conf.type = SIGMOID 
+      elif ly_type == kReLU:
+        cudnn_ly_type = kCudnnActivation
+        net.layer[i].activation_conf.type = RELU 
+      net.layer[i].type = cudnn_ly_type
 
 
 class Energy(Model):
@@ -277,6 +312,8 @@ class Sequential(Model):
             if i == len(layer.hid_dim)+1: dim = layer.out_dim
             else: dim = layer.hid_dim[i-1]
             self.layers.append(Dense(dim, w_param=parw, b_param=parb, activation=layer.activation))
+      else:
+        self.layers.append(layer)
     else:
       self.layers.append(layer)
 
