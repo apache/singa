@@ -114,7 +114,7 @@ void RBMVisLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     }
     first_gibbs_ = false;
   }
-  counter_ += batchsize_;
+  counter_ += 1;
 }
 
 void RBMVisLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
