@@ -58,7 +58,7 @@ TEST(NeuralNet, AddModelSplitLayers) {
     proto_neuron->add_srclayers("dummy_input");
   }
   // use dummy as output layer
-  for (int i = 0; i < 2; ++i) { 
+  for (int i = 0; i < 2; ++i) {
     LayerProto* proto_out = proto.add_layer();
     proto_out->set_name("dummy_output" + std::to_string(i));
     proto_out->set_type(kDummy);

@@ -260,67 +260,67 @@ NetProto NeuralNet::AddPartitionConnectionLayers(const NetProto& netproto,
    *   (NO)  src_pdim = dst_pdim ?
    *           (YES) Direct Connection
    *           (NO)  Slice -> Concate
-   */
-   for (const LayerProto& origin_layer : netproto.layer()) {
-     LayerProto* dst_layer = name2proto[origin_layer.name()];
-     int dst_pdim = dst_layer->partition_dim();
-     ConnectionType connection = srcNeuronConnection(*dst_layer);
-     for (const string& src_name : origin_layer.srclayers()) {
-       LayerProto* src_layer = name2proto[src_name];
-       int src_pdim = src_layer->partition_dim();
-       // dst_pdim = 1 && OneToAll ?
-       if (dst_pdim == 1 && connection == kOneToAll) {
-         // add split layer
-         LayerProto* split_layer = net_w_connection.add_layer();
-         split_layer->set_name(splitName(src_layer->name()));
-         split_layer->set_type(kSplit);
-         split_layer->set_partition_dim(src_layer->partition_dim());
-         split_layer->add_srclayers(src_layer->name());
-         split_layer->mutable_split_conf()->set_num_splits(npartitions);
-        // add concate layer
-        LayerProto* concate_layer = net_w_connection.add_layer();
-        concate_layer->set_name(concateName(split_layer->name()));
-        concate_layer->set_type(kConcate);
-        concate_layer->set_partition_dim(dst_layer->partition_dim());
-        // concate on src_pdim
-        concate_layer->mutable_concate_conf()
-          ->set_concate_dim(src_layer->partition_dim());
-        concate_layer->mutable_concate_conf()->set_num_concates(npartitions);
-        concate_layer->add_srclayers(split_layer->name());
-        // connect dst_layer to concate layer
-        dst_layer->add_srclayers(concate_layer->name());
-       } else {
-         // src_pdim = dst_pdim ?
-         if (dst_pdim == src_pdim) {
-           // direct connection
-           dst_layer->add_srclayers(src_layer->name());
-         } else {
-           // add slice layer
-           LayerProto* slice_layer = net_w_connection.add_layer();
-           slice_layer->set_name(sliceName(src_layer->name()));
-           slice_layer->set_type(kSlice);
-           slice_layer->set_partition_dim(src_layer->partition_dim());
-           // slice on dst_pdim
-           slice_layer->mutable_slice_conf()
-             ->set_slice_dim(dst_layer->partition_dim());
-           slice_layer->mutable_slice_conf()->set_num_slices(npartitions);
-           slice_layer->add_srclayers(src_layer->name());
-           // add concate layer
-           LayerProto* concate_layer = net_w_connection.add_layer();
-           concate_layer->set_name(concateName(slice_layer->name()));
-           concate_layer->set_type(kConcate);
-           concate_layer->set_partition_dim(dst_layer->partition_dim());
-           // concate on src_pdim
-           concate_layer->mutable_concate_conf()
-             ->set_concate_dim(src_layer->partition_dim());
-           concate_layer->mutable_concate_conf()->set_num_concates(npartitions);
-           concate_layer->add_srclayers(slice_layer->name());
-           // connect dst_layer to concate layer
-           dst_layer->add_srclayers(concate_layer->name());
-         }
-       }
-     }
-   }
+   */ 
+  for (const LayerProto& origin_layer : netproto.layer()) {
+    LayerProto* dst_layer = name2proto[origin_layer.name()];
+    int dst_pdim = dst_layer->partition_dim();
+    ConnectionType connection = srcNeuronConnection(*dst_layer);
+    for (const string& src_name : origin_layer.srclayers()) {
+      LayerProto* src_layer = name2proto[src_name];
+      int src_pdim = src_layer->partition_dim();
+      // dst_pdim = 1 && OneToAll ?
+      if (dst_pdim == 1 && connection == kOneToAll) {
+        // add split layer
+        LayerProto* split_layer = net_w_connection.add_layer();
+        split_layer->set_name(splitName(src_layer->name()));
+        split_layer->set_type(kSplit);
+        split_layer->set_partition_dim(src_layer->partition_dim());
+        split_layer->add_srclayers(src_layer->name());
+        split_layer->mutable_split_conf()->set_num_splits(npartitions);
+       // add concate layer
+       LayerProto* concate_layer = net_w_connection.add_layer();
+       concate_layer->set_name(concateName(split_layer->name()));
+       concate_layer->set_type(kConcate);
+       concate_layer->set_partition_dim(dst_layer->partition_dim());
+       // concate on src_pdim
+       concate_layer->mutable_concate_conf()
+         ->set_concate_dim(src_layer->partition_dim());
+       concate_layer->mutable_concate_conf()->set_num_concates(npartitions);
+       concate_layer->add_srclayers(split_layer->name());
+       // connect dst_layer to concate layer
+       dst_layer->add_srclayers(concate_layer->name());
+      } else {
+        // src_pdim = dst_pdim ?
+        if (dst_pdim == src_pdim) {
+          // direct connection
+          dst_layer->add_srclayers(src_layer->name());
+        } else {
+          // add slice layer
+          LayerProto* slice_layer = net_w_connection.add_layer();
+          slice_layer->set_name(sliceName(src_layer->name()));
+          slice_layer->set_type(kSlice);
+          slice_layer->set_partition_dim(src_layer->partition_dim());
+          // slice on dst_pdim
+          slice_layer->mutable_slice_conf()
+            ->set_slice_dim(dst_layer->partition_dim());
+          slice_layer->mutable_slice_conf()->set_num_slices(npartitions);
+          slice_layer->add_srclayers(src_layer->name());
+          // add concate layer
+          LayerProto* concate_layer = net_w_connection.add_layer();
+          concate_layer->set_name(concateName(slice_layer->name()));
+          concate_layer->set_type(kConcate);
+          concate_layer->set_partition_dim(dst_layer->partition_dim());
+          // concate on src_pdim
+          concate_layer->mutable_concate_conf()
+            ->set_concate_dim(src_layer->partition_dim());
+          concate_layer->mutable_concate_conf()->set_num_concates(npartitions);
+          concate_layer->add_srclayers(slice_layer->name());
+          // connect dst_layer to concate layer
+          dst_layer->add_srclayers(concate_layer->name());
+        }
+      }
+    }
+  }
   LOG(INFO) << "NeuralNet Config After Adding Connection Layers is\n"
             << net_w_connection.DebugString();
   return net_w_connection;
