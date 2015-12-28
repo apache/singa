@@ -33,7 +33,7 @@ CFLAGS += $(DEBUG)
 CXXFLAGS += $(DEBUG)
 AC_CXXFLAGS = $(DEBUG)
 
-INCLUDES = -I$(top_srcdir)/include -I/usr/local/include/hdfs
+INCLUDES = -I$(top_srcdir)/include -I/usr/local/include
 
 PROTOS := $(top_srcdir)/src/proto/singa.proto \
           $(top_srcdir)/src/proto/job.proto \

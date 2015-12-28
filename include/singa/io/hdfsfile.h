@@ -33,7 +33,7 @@
 #include <google/protobuf/message.h>
 #endif
 
-#include <hdfs.h>
+#include <hdfs/hdfs.h>
 
 namespace singa {
 namespace io {
