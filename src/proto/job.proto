@@ -21,22 +21,24 @@
 
 package singa;
 
-// To start a training job, all we need is a JobProto object.
-// It should contain following fields
-//  - Job Name (name)
-//      the name to identify the job
-//  - NeuralNet (neuralnet)
-//      the neural network structure contains a set of layers
-//  - Train One Batch (alg)
-//      the training algorithm
-//  - Updater (updater)
-//      the protocol for updating parameters at server side
-//  - Cluster Topology (cluster)
-//      the distributed topology of workers/servers
-//  - Training Steps (train_steps)
-//      the number of training iteration
-//  All other fields/functions are optional, e.g., test, checkpoint
-//
+/*
+ * To start a training job, all we need is a JobProto object.
+ * It should contain following fields
+ *  - Job Name (name)
+ *      the name to identify the job
+ *  - NeuralNet (neuralnet)
+ *      the neural network structure contains a set of layers
+ *  - Train One Batch (alg)
+ *      the training algorithm
+ *  - Updater (updater)
+ *      the protocol for updating parameters at server side
+ *  - Cluster Topology (cluster)
+ *      the distributed topology of workers/servers
+ *  - Training Steps (train_steps)
+ *      the number of training iteration
+ *  All other fields/functions are optional, e.g., test, checkpoint
+ */
+
 message JobProto {
   // job name, e.g., "cifar10-dcnn", "mnist-mlp"
   required string name = 1;
@@ -188,52 +190,7 @@ message LayerProto {
   // type of built-in layer
   optional LayerType type = 20 [default = kUserLayer];
   // type of user layer
-  optional string user_type =21;
-
-  // proto for the specific layer
-  // configuration for input layers
-  optional ActivationProto activation_conf = 54;
-  // configuration for argsort layer
-  optional ArgSortProto argsort_conf = 52;
-  // configuration for concate layer
-  optional ConcateProto concate_conf = 46;
-  // configuration for convolution layer
-  optional ConvolutionProto convolution_conf = 30;
-  // configuration for dummy layer
-  optional DummyProto dummy_conf = 55;
-  // configuration for dropout layer
-  optional DropoutProto dropout_conf = 33;
-  // configuration for inner product layer
-  optional InnerProductProto innerproduct_conf = 34;
-  // configuration for local response normalization layer
-  optional DataProto lmdbdata_conf = 35;
-  // configuration for local response normalization layer
-  optional LRNProto lrn_conf = 45;
-  // configuration for mnist parser layer
-  optional MnistProto mnist_conf = 36;
-  // configuration for pooling layer
-  optional PoolingProto pooling_conf = 37;
-  // configuration for prefetch layer
-  optional PrefetchProto prefetch_conf = 44;
-  // configuration for rbmhid layer
-  optional RBMProto rbm_conf = 49;
-  // configuration for rectified linear unit layer
-  optional ReLUProto relu_conf = 38;
-  // configuration for rgb image parser layer
-  optional RGBImageProto rgbimage_conf = 39;
-  // configuration for data layer
-  optional DataProto sharddata_conf = 32;
-  // configuration for slice layer
-  optional SliceProto slice_conf = 41;
-  // configuration for softmax layer
-  optional SoftmaxProto softmax_conf = 53;
-  // configuration for softmax loss layer
-  optional SoftmaxLossProto softmaxloss_conf = 40;
-  // configuration for split layer
-  optional SplitProto split_conf = 42;
-  // configuration for store input layers
-  optional StoreProto store_conf = 51;
-
+  optional string user_type = 21;
 
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
@@ -242,7 +199,35 @@ message LayerProto {
   // num of partitions for this layer
   optional int32 num_partitions = 91 [default = 1];
 
-  extensions 101 to 200;
+  // proto for the specific layer
+  // configuration for input layers
+  optional StoreProto store_conf = 100;
+  optional PrefetchProto prefetch_conf = 102;
+  optional DataProto lmdbdata_conf = 190;
+  optional MnistProto mnist_conf = 192;
+  optional RGBImageProto rgbimage_conf = 193;
+  optional DataProto sharddata_conf = 194;
+  // configuration for neuron layers
+  optional ActivationProto activation_conf = 200;
+  optional ConvolutionProto convolution_conf = 201;
+  optional DropoutProto dropout_conf = 203;
+  optional DummyProto dummy_conf = 204;
+  optional InnerProductProto innerproduct_conf = 205;
+  optional LRNProto lrn_conf = 206;
+  optional PoolingProto pooling_conf = 207;
+  optional RBMProto rbm_conf = 209;
+  optional ReLUProto relu_conf = 211;
+  optional SoftmaxProto softmax_conf = 214;
+  // configuration for loss layers
+  optional SoftmaxLossProto softmaxloss_conf = 301;
+  // configuration for output layers
+  optional ArgSortProto argsort_conf = 401;
+  // configuration for connection layers
+  optional ConcateProto concate_conf = 502;
+  optional SliceProto slice_conf = 503;
+  optional SplitProto split_conf = 504;
+
+  extensions 1001 to 1100;
 }
 
 // weight matrix should be defined before bias vector
@@ -489,7 +474,6 @@ message PoolingProto {
   optional int32 stride_y = 48 [default = 2];
 }
 
-
 message ReLUProto {
   // Ref. Maas, A. L., Hannun, A. Y., & Ng, A. Y. (2013).
   // Rectifier nonlinearities improve neural network acoustic models.
@@ -557,10 +541,128 @@ message GaussianProto {
   optional float std = 2 [default = 1];
 }
 
-
 // --------------
 // All Enum Types
 // --------------
+
+enum AlgType {
+  // Back-propagation algorithm for feed-forward models, e.g., CNN and RNN
+  kBP = 1;
+  // Contrastive Divergence algorithm for RBM, DBM, etc.
+  kCD = 2;
+  // For user defined algorithm.
+  kUserAlg = 104;
+}
+
+enum LayerType {
+  /*
+   * Input layers
+   *  - Load records from file, database
+   */
+  kCSVInput = 100;
+  kImagePreprocess = 101;
+  kPrefetch = 102;
+  kRecordInput = 103;
+  kLMDBData = 190;  // deprecated
+  kLabel = 191;  // deprecated
+  kMnist = 192;  // deprecated
+  kRGBImage = 193;  // deprecated
+  kShardData = 194;  // deprecated
+  
+  /*
+   * Neuron layers
+   *  - Feature transformation
+   */
+  kConvolution = 201;
+  kCConvolution = 202;
+  kDropout = 203;
+  kDummy = 204;
+  kInnerProduct = 205;
+  kLRN = 206;
+  kPooling = 207;
+  kCPooling = 208;
+  kRBMHid = 209;
+  kRBMVis = 210;
+  kReLU = 211;
+  kSTanh = 212;
+  kSigmoid = 213;
+  kSoftmax = 214;
+  // cudnn v3
+  kCudnnConv = 250;
+  kCudnnPool = 251;
+  kCudnnLRN = 252;
+  kCudnnSoftmax = 253;
+  kCudnnActivation = 254;
+  
+  /*
+   * Loss layers
+   *  - Compute objective loss
+   */
+  kEuclideanLoss = 300;
+  kSoftmaxLoss = 301;
+  // cudnn v3
+  kCudnnSoftmaxLoss = 350;
+  
+  /*
+   * Output layers
+   *  - Write results to file, database
+   */
+  kAccuracy = 400;
+  kArgSort = 401;
+  kCSVOutput = 402;
+  kRecordOutput = 403;
+  
+  /* 
+   * Connection layers
+   *  - Connect layers when neural net is partitioned
+   */
+  kBridgeDst = 500;
+  kBridgeSrc = 501;
+  kConcate = 502;
+  kSlice = 503;
+  kSplit = 504;
+
+  /*
+   * User defined layer
+   *  - users should configure user_type
+   */
+  kUserLayer = 600;
+}
+
+enum UpdaterType {
+  // noraml SGD with momentum and weight decay
+  kSGD = 1;
+  // adaptive subgradient, http://www.magicbroom.info/Papers/DuchiHaSi10.pdf
+  kAdaGrad = 2;
+  // http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
+  kRMSProp = 3;
+  // Nesterov first optimal gradient method
+  kNesterov = 4;
+  // For user defined updater
+  kUserUpdater = 105;
+}
+
+enum Phase {
+  kUnknown = 0;
+  kTrain = 1;
+  kVal = 2;
+  kTest= 4;
+  // postivie phase for contrastive divergence algorithm
+  kPositive = 8;
+  // negative phase for contrastive divergence algorithm
+  kNegative = 16;
+  kForward = 32;
+  kBackward = 64;
+  kLoss = 128;
+  kDeploy = 256;
+}
+
+enum ParamType {
+  // built-in Param
+  kParam = 0;
+  // user-defined Param
+  kUser = 103;
+}
 
 enum ChangeMethod {
   kFixed = 0;
@@ -596,111 +698,4 @@ enum InitMethod {
 
   // For user defined init method
   kUserInit = 101;
-}
-
-enum LayerType {
-  // Input/Output layers
-  //  - Load records from file, database
-  kRecordInput = 29;
-  kCSVInput = 30;
-  kCSVOutput = 32;
-  kRecordOutput = 33;
-  kImagePreprocess = 31;
-  kPrefetch = 19;
-
-  // deprecated input layers
-  kLMDBData = 17;
-  kShardData = 3;
-  kLabel = 18;
-  kMnist = 7;
-  kRGBImage = 10;
-  // Neuron layers
-  //  - Feature transformation
-  kAccuracy = 36;
-  kArgSort = 35;
-  kConvolution = 1;
-  kCConvolution = 27;
-  kCPooling = 28;
-  kCudnnConv = 50;
-  kCudnnPool = 51;
-  kCudnnLRN = 52;
-  kCudnnSoftmax = 53;
-  kCudnnActivation = 54;
-  kCudnnSoftmaxLoss = 55;
-  kDropout = 4;
-  kDummy = 20;
-  kInnerProduct = 5;
-  kLRN = 6;
-  kPooling = 8;
-  kReLU = 9;
-  kRBMVis = 23;
-  kRBMHid = 24;
-  kSigmoid = 26;
-  kSTanh = 14;
-  kSoftmax = 34;
-  // Loss layers
-  //  - Compute objective loss
-  kSoftmaxLoss = 11;
-  kEuclideanLoss = 25;
-  // Connection layers
-  //  - Connect layers when neural net is partitioned
-  kBridgeDst = 16;
-  kBridgeSrc = 15;
-  kConcate = 2;
-  kSlice = 12;
-  kSplit = 13;
-
-
-  // Indicate the user defined layer. Users should configure user_type
-  kUserLayer = 102;
-}
-
-enum PartitionType {
-  kDataPartition = 0;
-  kLayerPartition = 1;
-  kNone = 2;
-}
-
-enum Phase {
-  kUnknown = 0;
-  kTrain = 1;
-  kVal = 2;
-  kTest= 4;
-  // postivie phase for contrastive divergence algorithm
-  kPositive = 8;
-  // negative phase for contrastive divergence algorithm
-  kNegative = 16;
-  kForward = 32;
-  kBackward = 64;
-  kLoss = 128;
-  kDeploy = 256;
-}
-
-enum ParamType {
-  // built-in Param
-  kParam = 0;
-  // user-defined Param
-  kUser = 103;
-}
-
-enum AlgType {
-  // Back-propagation algorithm for feed-forward models, e.g., CNN and RNN
-  kBP = 1;
-  // Contrastive Divergence algorithm for RBM, DBM, etc.
-  kCD = 2;
-  // For user defined algorithm.
-  kUserAlg = 104;
-}
-
-enum UpdaterType {
-  // noraml SGD with momentum and weight decay
-  kSGD = 1;
-  // adaptive subgradient, http://www.magicbroom.info/Papers/DuchiHaSi10.pdf
-  kAdaGrad = 2;
-  // http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
-  kRMSProp = 3;
-  // Nesterov first optimal gradient method
-  kNesterov = 4;
-  // For user defined updater
-  kUserUpdater = 105;
 }
