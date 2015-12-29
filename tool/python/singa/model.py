@@ -184,13 +184,15 @@ class Model(object):
 
 
   def evaluate(self, data=None, alg='bp',
-               checkpoint_path=None, execpath='', **fields):
+               checkpoint_path=None, execpath='', device=None, **fields):
     '''
     required
       data = (Data)   // Data class object for testing data
     optional
-      checkpoint_path = (list)   // checkpoint path is necessary only for testing
-      execpaths       = (string) // path to user's own executable 
+      alg             = (string)   // algorithm type, (backpropagation at default)
+      checkpoint_path = (list)     // checkpoint path is necessary only for testing
+      execpaths       = (string)   // path to user's own executable 
+      device          = (int/list) // a list of gpu ids
       **fields (KEY=VALUE)
         batch_size   = (int)  // batch size for testing data
         test_freq    = (int)  // frequency of testing
@@ -221,6 +223,11 @@ class Model(object):
     
     # set Train_one_batch component, using backprogapation at default
     setval(self.jobconf, train_one_batch=Algorithm(type=enumAlgType(alg)).proto)
+
+    # use of cudnn
+    if device != None:
+      setval(self.jobconf, gpu=device)
+      self.cudnn = True
 
     self.build()  # construct Nneuralnet Component
 
@@ -342,7 +349,13 @@ class Updater(object):
   def __init__(self, upd_type, lr, lr_type,
                decay, momentum,
                step, step_lr, **fields):
-
+    '''
+    required
+      upd_type = (enum)   // enum type of updater
+      lr       = (float)  // base learning rate
+    optional
+      lr_type  = (string) // type of the learning rate (Fixed at default)
+    '''
     upd = Message('Updater', type=upd_type, **fields).proto
     setval(upd.learning_rate, base_lr=lr) 
     if decay > 0:
@@ -355,13 +368,15 @@ class Updater(object):
     elif lr_type == 'step':
       cp = Message('Step', change_freq=60, gamma=0.997)
       setval(upd.learning_rate, type=kStep, step_conf=cp.proto) 
-    elif lr_type == 'fixed':
+    elif lr_type == 'fixedstep':
       cp = Message('FixedStep', step=step, step_lr=step_lr)
       setval(upd.learning_rate, type=kFixedStep, fixedstep_conf=cp.proto) 
     elif lr_type == 'linear':
       cp = Message('Linear', change_freq=10, final_lr=0.1)
       setval(upd.learning_rate, type=kLinear, linear_conf=cp.proto) 
+
     self.proto = upd
+
 
 class SGD(Updater):
   def __init__(self, lr=0.01, lr_type=None,
@@ -377,7 +392,6 @@ class SGD(Updater):
        step     = (int/list)   // steps
        step_lr  = (float/list) // learning rate after the steps
        **fields (KEY=VALUE)
-
     '''
     assert lr
     super(SGD, self).__init__(upd_type=kSGD,
