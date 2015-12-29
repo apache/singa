@@ -31,14 +31,18 @@ import singa.driver as driver
 from google.protobuf.text_format import Merge
 
 if __name__ == '__main__':
-    i =  sys.argv.index("-conf")
-    s = open(sys.argv[i+1], 'r').read()
-    s = str(s)
-    j = job_pb2.JobProto()  
-    Merge(s,j)
-    b = j.SerializeToString()
-    d = driver.Driver()
-    d.InitLog(sys.argv[0])
-    d.Init(sys.argv)
-#    d.Train(False,b)
-    d.Test(b)
+  """Invoke the training program using this python script.
+  ./bin/singa-run.sh -exec tool/python/singa.py -conf examples/cifar10/job.conf
+  """"
+
+  i =  sys.argv.index("-conf")
+  s = open(sys.argv[i+1], 'r').read()
+  s = str(s)
+  j = job_pb2.JobProto()
+  Merge(s,j)
+  b = j.SerializeToString()
+  d = driver.Driver()
+  d.InitLog(sys.argv[0])
+  d.Init(sys.argv)
+  d.Train(False,b)
+  #d.Test(b)

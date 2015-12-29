@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import sys, re, subprocess
 from layer import *
-from utils.utility import * 
-from utils.message import * 
+from utils.utility import *
+from utils.message import *
 from google.protobuf import text_format
 
 class Model(object):
@@ -14,14 +14,14 @@ class Model(object):
       argv             // pass sys.argv to source
       label = (bool)   // exist label layer (depreciated)
     '''
-    self.jobconf = Message('Job', name=name).proto 
+    self.jobconf = Message('Job', name=name).proto
     self.layers = []
     self.label = label
     self.argv = argv
     self.result = None
     self.last_checkpoint_path = None
     self.cudnn = False
-    
+
   def exist_datalayer(self, phase):
     for ly in self.layers:
       if enumPhase(phase) in ly.layer.include:
@@ -38,7 +38,7 @@ class Model(object):
       topk      = (int)     // the number of results considered to compute accuracy
     '''
     assert optimizer != None, 'optimizer (Updater component) should be set'
-    assert cluster != None, 'cluster (Cluster component) should be set'  
+    assert cluster != None, 'cluster (Cluster component) should be set'
     setval(self.jobconf, updater=optimizer.proto)
     setval(self.jobconf, cluster=cluster.proto)
 
@@ -56,7 +56,7 @@ class Model(object):
         # revise the last layer
         if loss == 'categorical_crossentropy':
           setval(ly, type=enumLayerType('softmaxloss'))
-          setval(ly.softmaxloss_conf, topk=topk) 
+          setval(ly.softmaxloss_conf, topk=topk)
         elif loss == 'mean_squared_error':
           setval(ly, type=enumLayerType('euclideanloss'))
       else:
@@ -72,7 +72,7 @@ class Model(object):
     '''
     construct neuralnet proto
     '''
-    net = NetProto() 
+    net = NetProto()
     slyname = self.layers[0].layer.name
     for i in range(len(self.layers)):
       ly = net.layer.add()
@@ -95,7 +95,7 @@ class Model(object):
 
     # deal with label layer (depreciated)
     if self.label == True:
-      label_layer = Layer(name='label', type=kLabel)      
+      label_layer = Layer(name='label', type=kLabel)
       ly = net.layer.add()
       ly.CopyFrom(label_layer.layer)
       getattr(ly, 'srclayers').append(self.layers[0].layer.name)
@@ -108,7 +108,7 @@ class Model(object):
 
     # use of cudnn
     if self.cudnn == True:
-      self.setCudnnLayerType(net) 
+      self.setCudnnLayerType(net)
 
     setval(self.jobconf, neuralnet=net)
 
@@ -127,7 +127,7 @@ class Model(object):
         batch_size       = (int)    // batch size for training data
         train_steps      = (int)    // the number of steps for training, i.e., epoch
         disp_freq        = (int)    // frequency to display training info
-        disp_after       = (int)    // display after this number 
+        disp_after       = (int)    // display after this number
         validate_data    = (Data)   // validation data, specified in load_data()
         validate_freq    = (int)    // frequency of validation
         validate_steps   = (int)    // total number of steps for validation
@@ -143,7 +143,7 @@ class Model(object):
       setval(data.layer.store_conf, batchsize=fields['batch_size'])
 
     # insert layer for training
-    if self.exist_datalayer('train') == False: 
+    if self.exist_datalayer('train') == False:
       self.layers.insert(0, data)
     setval(self.jobconf, train_steps=nb_epoch)
     setval(self.jobconf, disp_freq=nb_epoch/10)
@@ -163,8 +163,8 @@ class Model(object):
     # save model parameter (i.e., checkpoint_path)
     setval(self.jobconf, checkpoint_freq=nb_epoch)
     self.last_checkpoint_path = '{0}/step{1}-worker0'.format(
-                     self.jobconf.cluster.workspace, nb_epoch) 
-    
+                     self.jobconf.cluster.workspace, nb_epoch)
+
     # set Train_one_batch component, using backprogapation at default
     setval(self.jobconf, train_one_batch=Algorithm(type=enumAlgType(alg)).proto)
 
@@ -174,7 +174,7 @@ class Model(object):
       self.cudnn = True
 
     # start to run singa for training
-    if with_test == False: 
+    if with_test == False:
       self.build()  # construct Nneuralnet Component
       #self.display()
       return SingaRun(jobproto=self.jobconf, argv=self.argv, execpath=execpath)
@@ -191,13 +191,13 @@ class Model(object):
     optional
       alg             = (string)   // algorithm type, (backpropagation at default)
       checkpoint_path = (list)     // checkpoint path is necessary only for testing
-      execpaths       = (string)   // path to user's own executable 
+      execpaths       = (string)   // path to user's own executable
       device          = (int/list) // a list of gpu ids
       **fields (KEY=VALUE)
         batch_size   = (int)  // batch size for testing data
         test_freq    = (int)  // frequency of testing
-        test_steps   = (int)  // total number of steps for testing 
-        test_after   = (int)  // start testing after this number of steps 
+        test_steps   = (int)  // total number of steps for testing
+        test_after   = (int)  // start testing after this number of steps
     '''
     assert data != None, 'Testing data should be set'
     is_testonly = False
@@ -206,11 +206,11 @@ class Model(object):
       setval(data.layer.store_conf, batchsize=fields['batch_size'])
 
     # insert layer for testing
-    if self.exist_datalayer('test') == False: 
+    if self.exist_datalayer('test') == False:
       self.layers.insert(0, data)
 
     # loading checkpoint if singa runs only for testing
-    if self.exist_datalayer('train') == False: 
+    if self.exist_datalayer('train') == False:
       is_testonly = True
       if checkpoint_path == None:
         print 'checkpoint_path has not been specified'
@@ -220,7 +220,7 @@ class Model(object):
     steps = fields['test_steps'] if 'test_steps' in fields else 10
     setval(self.jobconf, test_steps=steps)
     setval(self.jobconf, **fields)
-    
+
     # set Train_one_batch component, using backprogapation at default
     setval(self.jobconf, train_one_batch=Algorithm(type=enumAlgType(alg)).proto)
 
@@ -231,16 +231,16 @@ class Model(object):
 
     self.build()  # construct Nneuralnet Component
 
-    #--- generate job.conf file for debug purpose 
+    #--- generate job.conf file for debug purpose
     #filename = 'job.conf'
     #with open(filename, 'w') as f:
     #  f.write(text_format.MessageToString(self.jobconf.cluster))
     #self.display()
 
-    #--- run singa --- 
+    #--- run singa ---
     return SingaRun(jobproto=self.jobconf, argv=self.argv, execpath=execpath, testmode=is_testonly)
     #return SingaRun_script(filename=filename, execpath=execpath)
-    
+
 
   def display(self):
     ''' print out job proto
@@ -260,13 +260,13 @@ class Model(object):
       elif ly_type == kSoftmaxLoss: cudnn_ly_type = kCudnnSoftmaxLoss
       elif ly_type == kSTanh:
         cudnn_ly_type = kCudnnActivation
-        net.layer[i].activation_conf.type = STANH 
+        net.layer[i].activation_conf.type = STANH
       elif ly_type == kSigmoid:
         cudnn_ly_type = kCudnnActivation
-        net.layer[i].activation_conf.type = SIGMOID 
+        net.layer[i].activation_conf.type = SIGMOID
       elif ly_type == kReLU:
         cudnn_ly_type = kCudnnActivation
-        net.layer[i].activation_conf.type = RELU 
+        net.layer[i].activation_conf.type = RELU
       net.layer[i].type = cudnn_ly_type
 
 
@@ -277,7 +277,7 @@ class Energy(Model):
   def add(self, layer):
     if hasattr(layer, 'layer_type'):
       if layer.layer_type == kRBMVis:
-        dim = 0 
+        dim = 0
         for i in range(1, len(layer.out_dim)):
           parw = Parameter(name='w', init='none', level=i)
           parb = Parameter(name='b', init='none', level=i)
@@ -293,7 +293,7 @@ class Sequential(Model):
   def add(self, layer):
     if hasattr(layer, 'layer_type'):
       if layer.layer_type == 'AutoEncoder':
-        dim = 0 
+        dim = 0
         if layer.param_share == True:
           # Encoding
           for i in range(1, len(layer.hid_dim)+1):
@@ -331,9 +331,9 @@ class Store(object):
     '''
     **kwargs
         path       = (string)  // path to dataset
-        backend    = (string)  // 
+        backend    = (string)  //
         batch_size = (int)     // batch size of dataset
-        shape      = (int)     // 
+        shape      = (int)     //
 
     '''
     self.proto = Message('Store', **kwargs).proto
@@ -357,23 +357,23 @@ class Updater(object):
       lr_type  = (string) // type of the learning rate (Fixed at default)
     '''
     upd = Message('Updater', type=upd_type, **fields).proto
-    setval(upd.learning_rate, base_lr=lr) 
+    setval(upd.learning_rate, base_lr=lr)
     if decay > 0:
-      setval(upd, weight_decay=decay) 
+      setval(upd, weight_decay=decay)
     if momentum > 0:
-      setval(upd, momentum=momentum) 
+      setval(upd, momentum=momentum)
 
-    if lr_type == None:
-      setval(upd.learning_rate, type=kFixed) 
+    if lr_type == None or lr_type == "fixed":
+      setval(upd.learning_rate, type=kFixed)
     elif lr_type == 'step':
       cp = Message('Step', change_freq=60, gamma=0.997)
-      setval(upd.learning_rate, type=kStep, step_conf=cp.proto) 
-    elif lr_type == 'fixedstep':
+      setval(upd.learning_rate, type=kStep, step_conf=cp.proto)
+    elif lr_type == 'manual':
       cp = Message('FixedStep', step=step, step_lr=step_lr)
-      setval(upd.learning_rate, type=kFixedStep, fixedstep_conf=cp.proto) 
+      setval(upd.learning_rate, type=kFixedStep, fixedstep_conf=cp.proto)
     elif lr_type == 'linear':
       cp = Message('Linear', change_freq=10, final_lr=0.1)
-      setval(upd.learning_rate, type=kLinear, linear_conf=cp.proto) 
+      setval(upd.learning_rate, type=kLinear, linear_conf=cp.proto)
 
     self.proto = upd
 
@@ -422,6 +422,15 @@ class AdaGrad(Updater):
 
 
 class Cluster(object):
+  """ Specify the cluster topology, e.g., number of workers/servers.
+
+  Currently we need to create this object in the .py file and also provide a
+  cluster configuration file to the command line. TODO(wangwei) update SINGA
+  code to eliminate the requirement of the cluster configuration file for
+  training on a single node or the cluster object in the pyfile for training
+  in a cluster.
+  """
+
   def __init__(self, workspace=None,
                nworker_groups=1, nserver_groups=1,
                nworkers_per_group=1, nservers_per_group=1,
@@ -443,65 +452,78 @@ class Cluster(object):
     assert workspace != None, 'need to set workspace'
     self.proto = Message('Cluster', workspace=workspace).proto
     # optional
-    self.proto.nworker_groups = nworker_groups 
-    self.proto.nserver_groups = nserver_groups 
-    self.proto.nworkers_per_group = nworkers_per_group 
-    self.proto.nservers_per_group = nservers_per_group 
-    self.proto.nworkers_per_procs = nworkers_per_procs 
-    self.proto.nservers_per_procs = nservers_per_procs 
+    self.proto.nworker_groups = nworker_groups
+    self.proto.nserver_groups = nserver_groups
+    self.proto.nworkers_per_group = nworkers_per_group
+    self.proto.nservers_per_group = nservers_per_group
+    self.proto.nworkers_per_procs = nworkers_per_procs
+    self.proto.nservers_per_procs = nservers_per_procs
     # other fields
     setval(self.proto, **fields)
 
 
 
 def StoreResults(lines):
+  """ Parsing metrics from each line in the log file.
 
-  resultDic = {} 
+  TODO(wangwei) format the log string to make them uniform for easy parsing
+  Another approach is creating a protobuf message for metrics, which can be
+  used for dumping metrics to string and loading perf string back to messages.
+  """
+
+  resultDic = {}
   for line in lines:
     line = re.findall(r'[\w|*.*]+', line)
     if 'Train' in line:
       step = line[line.index('step')+1]
       if 'accuracy' in line:
-        resultDic.setdefault(step,{})['acc'] = line[line.index('accuracy')+1] 
+        resultDic.setdefault(step,{})['acc'] = line[line.index('accuracy')+1]
       if 'loss' in line:
-        resultDic.setdefault(step,{})['loss'] = line[line.index('loss')+1] 
+        resultDic.setdefault(step,{})['loss'] = line[line.index('loss')+1]
       if 'ppl' in line:
-        resultDic.setdefault(step,{})['ppl'] = line[line.index('ppl')+1] 
+        resultDic.setdefault(step,{})['ppl'] = line[line.index('ppl')+1]
       if 'Squared' in line:
-        resultDic.setdefault(step,{})['se'] = line[line.index('Squared')+2] 
+        resultDic.setdefault(step,{})['se'] = line[line.index('Squared')+2]
   return resultDic
 
 def SingaRun(jobproto='', argv=[], execpath='', testmode=False):
 
   import singa.driver as driver
   d = driver.Driver()
-  d.InitLog(argv[0]) 
+  d.InitLog(argv[0])
   d.Init(argv)
   if testmode == True:
     d.Test(jobproto.SerializeToString())
   else:
     d.Train(False, jobproto.SerializeToString())
 
+  # Get the performance from the latest log file.
+  # TODO(wangwei) the log file would be overwritten by other running instance of
+  # the same program, e.g., lt-singa
   logfile = '/tmp/singa-log/{0}.ERROR'.format(argv[0].split('/')[-1])
   fin = open(logfile, 'r')
   result = StoreResults(fin.readlines())
- 
+
   return result
 
 def SingaRun_script(filename='', execpath=''):
+  """
+  Deprecated.
+  Generate the job conf file and run the shell command.
+  """
   SINGAROOT = '../../../'
   conf = 'examples/' + filename
   if execpath=='':
     cmd = SINGAROOT+'bin/singa-run.sh ' \
-        + '-conf %s ' % conf 
+        + '-conf %s ' % conf
   else:
     cmd = SINGAROOT+'bin/singa-run.sh ' \
         + '-conf %s ' % conf \
-        + '-exec %s ' % execpath 
+        + '-exec %s ' % execpath
 
   procs = subprocess.Popen(cmd.strip().split(' '), stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
 
-  resultDic = {} 
+  resultDic = {}
   outputlines = iter(procs.stdout.readline, '')
   resultDic = StoreResults(outputlines)
 
