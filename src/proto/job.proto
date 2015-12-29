@@ -41,17 +41,17 @@ package singa;
 
 message JobProto {
   // job name, e.g., "cifar10-dcnn", "mnist-mlp"
-  required string name = 1;
+  optional string name = 1;
   // neural net consits of a set of connected layers
-  required NetProto neuralnet = 3;
+  optional NetProto neuralnet = 3;
   // algorithm for computing gradients over one mini-batch
-  required AlgProto train_one_batch = 5;
+  optional AlgProto train_one_batch = 5;
   // configuration of SGD updater, including learning rate, etc.
-  required UpdaterProto updater = 7;
+  optional UpdaterProto updater = 7;
   // cluster toplogy conf
-  required ClusterProto cluster = 9;
+  optional ClusterProto cluster = 9;
   // total num of steps for training
-  required int32 train_steps = 16;
+  optional int32 train_steps = 16;
   // frequency of displaying training info
   optional int32 disp_freq = 17 [default = 0];
   // GPU device IDs for use, if fewer than workers per procs, some workers run
@@ -199,15 +199,16 @@ message LayerProto {
   // num of partitions for this layer
   optional int32 num_partitions = 91 [default = 1];
 
-  // proto for the specific layer
-  // configuration for input layers
+  // layer specific configuration
+  // configuration for input layers, id range [100, 200)
   optional StoreProto store_conf = 100;
   optional PrefetchProto prefetch_conf = 102;
   optional DataProto lmdbdata_conf = 190;
   optional MnistProto mnist_conf = 192;
   optional RGBImageProto rgbimage_conf = 193;
   optional DataProto sharddata_conf = 194;
-  // configuration for neuron layers
+
+  // configuration for neuron layers id range [200, 300)
   optional ActivationProto activation_conf = 200;
   optional ConvolutionProto convolution_conf = 201;
   optional DropoutProto dropout_conf = 203;
@@ -218,11 +219,14 @@ message LayerProto {
   optional RBMProto rbm_conf = 209;
   optional ReLUProto relu_conf = 211;
   optional SoftmaxProto softmax_conf = 214;
-  // configuration for loss layers
+
+  // configuration for loss layers, id range [300, 400)
   optional SoftmaxLossProto softmaxloss_conf = 301;
-  // configuration for output layers
+
+  // configuration for output layers id range [400, 500)
   optional ArgSortProto argsort_conf = 401;
-  // configuration for connection layers
+
+  // configuration for connection layers, id range [501, )
   optional ConcateProto concate_conf = 502;
   optional SliceProto slice_conf = 503;
   optional SplitProto split_conf = 504;
@@ -357,7 +361,7 @@ message ArgSortProto {
 message ConcateProto {
   optional int32 concate_dim = 1 [default = 0];
   optional int32 num_concates = 2 [default = 1];
-} 
+}
 
 message ConvolutionProto {
   // The number of outputs for the layer
@@ -568,7 +572,7 @@ enum LayerType {
   kMnist = 192;  // deprecated
   kRGBImage = 193;  // deprecated
   kShardData = 194;  // deprecated
-  
+
   /*
    * Neuron layers
    *  - Feature transformation
@@ -593,7 +597,7 @@ enum LayerType {
   kCudnnLRN = 252;
   kCudnnSoftmax = 253;
   kCudnnActivation = 254;
-  
+
   /*
    * Loss layers
    *  - Compute objective loss
@@ -602,7 +606,7 @@ enum LayerType {
   kSoftmaxLoss = 301;
   // cudnn v3
   kCudnnSoftmaxLoss = 350;
-  
+
   /*
    * Output layers
    *  - Write results to file, database
@@ -611,8 +615,8 @@ enum LayerType {
   kArgSort = 401;
   kCSVOutput = 402;
   kRecordOutput = 403;
-  
-  /* 
+
+  /*
    * Connection layers
    *  - Connect layers when neural net is partitioned
    */
