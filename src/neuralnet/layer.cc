@@ -56,7 +56,7 @@ const std::string Layer::ToString(bool debug, int flag) {
   if ((flag & kBackward) == kBackward && grad_.count() != 0) {
     ret += StringPrintf("grad:%e ", Asum(grad_));
     for (Param* p : GetParams())
-      ret += StringPrintf("%13.9f ",
+      ret += StringPrintf("%s:%13.9f ",
           p->name().c_str(), Asum(p->grad()));
   }
   return ret;

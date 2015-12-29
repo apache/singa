@@ -60,7 +60,7 @@ float StepLRGen::Get(int step) {
   // do not cast int to float
   int freq = proto_.step_conf().change_freq();
   float lr = proto_.base_lr() * pow(proto_.step_conf().gamma(), step / freq);
-  LOG_IF(ERROR, step % freq == 0) << "Update learning rate to " << lr
+  LOG_IF(INFO, step % freq == 0) << "Update learning rate to " << lr
     << " @ step " << step;
   return lr;
 }

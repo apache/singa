@@ -1,4 +1,27 @@
+/************************************************************
+*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*
+*************************************************************/
+
+
 #include <glog/logging.h>
+#include <opencv2/opencv.hpp>
 #include <algorithm>
 #include <random>
 #include <chrono>
@@ -7,7 +30,6 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
-#include <opencv2/opencv.hpp>
 
 #include "singa/io/store.h"
 #include "singa/proto/common.pb.h"
@@ -20,8 +42,7 @@ const int kImageNBytes = 256*256*3;
 void create_data(const string& image_list,
     const string& input_folder,
     const string& output_folder,
-    const string& backend = "kvfile")
-{
+    const string& backend = "kvfile") {
   singa::RecordProto image;
   image.add_shape(3);
   image.add_shape(kImageSize);
@@ -49,12 +70,12 @@ void create_data(const string& image_list,
   string rec_buf;
   cv::Mat img, res;
   std::vector<std::pair<string, int>> file_list;
-  while(image_list_file >> image_file_name >> label)
+  while (image_list_file >> image_file_name >> label)
     file_list.push_back(std::make_pair(image_file_name, label));
   LOG(INFO) << "Data Shuffling";
   unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::shuffle(file_list.begin(), file_list.end()
-      ,std::default_random_engine());
+      , std::default_random_engine());
   LOG(INFO) << "Total number of images is " << file_list.size();
   int ImageNum = file_list.size();
 
@@ -120,8 +141,8 @@ void create_data(const string& image_list,
 
 int main(int argc, char** argv) {
   if (argc < 4) {
-    std::cout << "Create Datashard for ImageNet dataset.\n"
-      << "Usage: <image_list> <input_folder> <output_folder>"
+    std::cout << "Create data stores for ImageNet dataset.\n"
+      << "Usage: <image_list_file> <input_image_folder> <output_folder>"
       << " <Optional: backend {lmdb, kvfile} default: kvfile>\n";
   } else {
     google::InitGoogleLogging(argv[0]);

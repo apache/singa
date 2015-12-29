@@ -1,4 +1,28 @@
+/************************************************************
+*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*
+*************************************************************/
+
+
 #include <glog/logging.h>
+#include <opencv2/opencv.hpp>
+
 #include <algorithm>
 #include <random>
 #include <chrono>
@@ -7,7 +31,6 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
-#include <opencv2/opencv.hpp>
 
 #include "singa/io/store.h"
 #include "singa/proto/common.pb.h"
@@ -19,8 +42,7 @@ const int kImageNBytes = 256*256*3;
 
 void generate_image(const string& output_folder,
     const string& key,
-    const string& val)
-{
+    const string& val) {
   float image_buf[kImageNBytes];
   singa::RecordProto image;
   image.ParseFromString(val);
@@ -38,6 +60,7 @@ void generate_image(const string& output_folder,
           static_cast<uchar>(
               static_cast<uint8_t>(
                 pixel[(c * kImageSize + h) * kImageSize + w]));
+    }
   }
 
   cv::imwrite(image_name, img);
@@ -45,8 +68,7 @@ void generate_image(const string& output_folder,
 
 void visualize(const string& input_file,
     const string& output_folder,
-    const string& id_list)
-{
+    const string& id_list) {
   auto store = singa::io::OpenStore("kvfile", input_file,
       singa::io::kRead);
 
@@ -55,7 +77,7 @@ void visualize(const string& input_file,
   std::ifstream id_list_file(id_list.c_str(), std::ios::in);
   CHECK(id_list_file.is_open()) << "Unable to open image id list";
   string id_;
-  while(id_list_file >> id_) {
+  while (id_list_file >> id_) {
     int x;
     x = std::stoi(id_);
     image_id_list.push_back(x);
@@ -80,10 +102,9 @@ void visualize(const string& input_file,
   }
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   if (argc != 4) {
-    std::cout << "Visualize images from binary kvfile record.\n"
+    std::cout << "Visualize images from binary kvfile records.\n"
       << "Usage: <input_file> <output_folder> <id_list>\n";
   } else {
     google::InitGoogleLogging(argv[0]);
