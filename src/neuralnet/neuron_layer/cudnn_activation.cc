@@ -38,25 +38,34 @@ void CudnnActivationLayer::InitCudnn() {
 
   const auto& shape = data_.shape();
   CHECK_GT(shape.size(), 0);
+  // TODO(wangwei) cudnnSetTensorNdDescriptor reports error if nbdim is < 4.
+  const int nbdim = 4;
   // size of each dimension
-  int* sdim = new int[shape.size()];
-  int* stride = new int[shape.size()];
-  stride[shape.size() -1] = 1;
+  int* sdim = new int[nbdim];
+  int* stride = new int[nbdim];
   int i = shape.size() - 1;
   sdim[i] = shape[i];
   stride[i] = 1;
+  // LOG(ERROR) << "layer " << name();
+  // LOG(ERROR) << sdim[i] << " " << stride[i];
   for (--i; i >= 0; i--) {
     sdim[i] = shape[i];
     stride[i] = shape[i + 1] * stride[i + 1];
+    // LOG(ERROR) << sdim[i] << " " << stride[i];
+  }
+  // padding sdim and stride to 4 dimensions
+  for (i = shape.size(); i < nbdim; i++) {
+    sdim[i] = 1;
+    stride[i] = 1;
   }
   CHECK_CUDNN(cudnnSetTensorNdDescriptor(src_desc_,
         CUDNN_DATA_FLOAT,
-        shape.size(),
+        nbdim,
         sdim,
         stride));
   CHECK_CUDNN(cudnnSetTensorNdDescriptor(my_desc_,
         CUDNN_DATA_FLOAT,
-        shape.size(),
+        nbdim,
         sdim,
         stride));
   delete[] sdim;

@@ -37,7 +37,6 @@ void CudnnLRNLayer::InitCudnn() {
         alpha_,
         beta_,
         knorm_));
-  CHECK_CUDNN(cudnnCreateTensorDescriptor(&src_desc_));
   CHECK_CUDNN(cudnnSetTensor4dDescriptor(src_desc_,
       CUDNN_TENSOR_NCHW,
       CUDNN_DATA_FLOAT,
@@ -45,7 +44,6 @@ void CudnnLRNLayer::InitCudnn() {
       channels_,
       height_,
       width_));
-  CHECK_CUDNN(cudnnCreateTensorDescriptor(&my_desc_));
   CHECK_CUDNN(cudnnSetTensor4dDescriptor(my_desc_,
       CUDNN_TENSOR_NCHW,
       CUDNN_DATA_FLOAT,

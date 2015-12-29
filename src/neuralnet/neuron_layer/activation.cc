@@ -28,7 +28,11 @@ void ActivationLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   NeuronLayer::Setup(conf, srclayers);
   data_.ReshapeLike(srclayers[0]->data(this));
-  grad_.ReshapeLike(*(srclayers[0]->mutable_grad(this)));
+  grad_.ReshapeLike(data_);
+  if (conf.share_src_blobs()) {
+    data_.ShareData(srclayers[0]->mutable_data(this), false);
+    grad_.ShareData(srclayers[0]->mutable_grad(this), false);
+  }
 }
 void
 ActivationLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
@@ -57,7 +61,7 @@ ActivationLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   Blob<float> * gsrc = srclayers[0]->mutable_grad(this);
   switch (layer_conf_.activation_conf().type()) {
     case RELU:
-      Map<op::Relu<float>, float>(data_, gsrc);
+      Map<op::ReluGrad<float>, float>(data_, gsrc);
       Mult(*gsrc, grad_, gsrc);
       break;
     case SIGMOID:
@@ -65,12 +69,12 @@ ActivationLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
       Mult(*gsrc, grad_, gsrc);
       break;
     case TANH:
-      Map<op::Tanh<float>, float>(data_, gsrc);
+      Map<op::TanhGrad<float>, float>(data_, gsrc);
       Mult(*gsrc, grad_, gsrc);
       break;
       /*
     case ActivationType_STANH:
-      Map<op::STanh<float>, float>(data_, gsrc);
+      Map<op::STanhGrad<float>, float>(data_, gsrc);
       Mult(*gsrc, grad_, gsrc);
       break;
       */

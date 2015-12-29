@@ -189,6 +189,9 @@ message LayerProto {
   optional LayerType type = 20 [default = kUserLayer];
   // type of user layer
   optional string user_type =21;
+  // share data and grad blob with the single src layer, e.g., relu layer can
+  // share blobs from conv layer. It is useful for saving memory space.
+  optional bool share_src_blobs = 22 [default = false];
 
   // proto for the specific layer
   // configuration for input layers

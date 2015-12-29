@@ -26,11 +26,11 @@ void ImageTransform(const float* in, const float* mean, bool mirror, int h_crop,
     int w_crop, int h_offset, int w_offset, int channel, int height, int width,
     float scale, float* out) {
   if (h_crop == 0) {
-    CHECK_NE(h_offset, 0);
+    CHECK_EQ(h_offset, 0);
     h_crop = height;
   }
   if (w_crop ==0) {
-    CHECK_NE(w_offset, 0);
+    CHECK_EQ(w_offset, 0);
     w_crop = width;
   }
   CHECK_NE(scale, 0);

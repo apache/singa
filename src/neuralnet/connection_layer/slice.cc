@@ -155,11 +155,11 @@ const std::string SliceLayer::ToString(bool debug, int flag) {
   string ret = "";
   if ((flag & kForward) == kForward && data_.count() !=0) {
     for (unsigned k = 0; k < datavec_.size(); k++)
-      ret += StringPrintf("data-%u :%13.9f ", k, Asum(*datavec_.at(k)));
+      ret += StringPrintf("data-%u :%e ", k, Asum(*datavec_.at(k)));
   }
   if ((flag & kBackward) == kBackward && grad_.count() != 0) {
     for (unsigned k = 0; k < gradvec_.size(); k++)
-    ret += StringPrintf("grad-%u:%13.9f ", k, Asum(*gradvec_.at(k)));
+    ret += StringPrintf("grad-%u:%e ", k, Asum(*gradvec_.at(k)));
   }
   return ret;
 }

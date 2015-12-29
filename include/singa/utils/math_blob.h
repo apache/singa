@@ -306,6 +306,9 @@ void Map(Dtype alpha, const Blob<Dtype>& A, Blob<Dtype>* B) {
     cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
+    gpu_e_f<Op>(A.count(), A.gpu_data(), alpha, B->mutable_gpu_data());
+#else
+    LOG(FATAL) << "Not implemented";
 #endif  // USE_GPU
   }
 }
@@ -324,6 +327,7 @@ void Map(Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>& B,
         C->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
+    LOG(ERROR) << "Not implemented";
 #endif  // USE_GPU
   }
 }
@@ -670,6 +674,8 @@ void SampleUniform(Dtype low, Dtype high, Blob<Dtype>* A) {
 #ifdef USE_GPU
     gpu_sample_uniform(context->curand_generator(thread), A->count(), low, high,
         A->mutable_gpu_data());
+#else
+    LOG(FATAL) << "Not implemented";
 #endif
   }
 }
