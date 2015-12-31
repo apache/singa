@@ -1,50 +1,84 @@
 #!/usr/bin/env python
 
-layerid = 0 
-paramid = 0 
+#/************************************************************
+#*
+#* Licensed to the Apache Software Foundation (ASF) under one
+#* or more contributor license agreements.  See the NOTICE file
+#* distributed with this work for additional information
+#* regarding copyright ownership.  The ASF licenses this file
+#* to you under the Apache License, Version 2.0 (the
+#* "License"); you may not use this file except in compliance
+#* with the License.  You may obtain a copy of the License at
+#*
+#*   http://www.apache.org/licenses/LICENSE-2.0
+#*
+#* Unless required by applicable law or agreed to in writing,
+#* software distributed under the License is distributed on an
+#* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+#* KIND, either express or implied.  See the License for the
+#* specific language governing permissions and limitations
+#* under the License.
+#*
+#*************************************************************/
 
-def generateName(label, op=0, withnumber=True):
-  global layerid, paramid
-  num = layerid
-  if label == 'layer':
-    if op ==1: layerid += 1
-    num = layerid
-  elif label == 'param':
-    if op ==1: paramid += 1
-    num = paramid
-  else:
-    if op ==1: layerid += 1
-    num = layerid
-    if op ==2:
-      num = layerid+1
+'''
+This script includes methods to
+(1) generate name of layer, parameter, etc.
+(2) set field values for proto.
+'''
 
-  if withnumber == False:
-    return '{0}'.format(label)
+LAYERID = 0
+PARAMID = 0
 
-  return '{0}{1}'.format(label, num)
+def generate_name(label, option=0, withnumber=True):
+    ''' This method returns name of layer or parameter with unique id.
+        option: 1 to increase id number
+        withnumber: True to concatenate number to name
+    '''
 
+    global LAYERID, PARAMID
+    num = LAYERID
+    if label == 'layer':
+        if option == 1: LAYERID += 1
+        num = LAYERID
+    elif label == 'param':
+        if option == 1: PARAMID += 1
+        num = PARAMID
+    else:
+        if option == 1: LAYERID += 1
+        num = LAYERID
+        if option == 2:
+            num = LAYERID+1
+
+    if withnumber == False:
+        return '{0}'.format(label)
+
+    return '{0}{1}'.format(label, num)
 
 def setval(proto, **kwargs):
-  for k,v in kwargs.items():
-    #print 'kv: ', k, ', ', v
-    if hasattr(proto, k):
-      flabel = proto.DESCRIPTOR.fields_by_name[k].label
-      ftype  = proto.DESCRIPTOR.fields_by_name[k].type
+    ''' This method sets field values for give proto.
+    '''
 
-      fattr  = getattr(proto, k) 
-      if flabel == 3: # repeated field
-        if ftype == 11: # message type 
-          fattr = fattr.add()
-          fattr.MergeFrom(v)
-        else:
-          if type(v) == list or type(v) == tuple:
-            for i in range(len(v)):
-              fattr.append(v[i])
-          else:
-            fattr.append(v)
-      else:
-        if ftype == 11: # message type 
-          fattr = getattr(proto,k)
-          fattr.MergeFrom(v)
-        else:
-          setattr(proto, k, v)
+    for key, val in kwargs.items():
+        #print 'kv: ', k, ', ', v
+        if hasattr(proto, key):
+            flabel = proto.DESCRIPTOR.fields_by_name[key].label
+            ftype = proto.DESCRIPTOR.fields_by_name[key].type
+
+            fattr = getattr(proto, key)
+            if flabel == 3: # repeated field
+                if ftype == 11: # message type
+                    fattr = fattr.add()
+                    fattr.MergeFrom(val)
+                else:
+                    if type(val) == list or type(val) == tuple:
+                        for i in range(len(val)):
+                            fattr.append(val[i])
+                    else:
+                        fattr.append(val)
+            else:
+                if ftype == 11: # message type
+                    fattr = getattr(proto, key)
+                    fattr.MergeFrom(val)
+                else:
+                    setattr(proto, key, val)

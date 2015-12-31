@@ -2,7 +2,7 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__),'..')) 
 from singa.model import *
-from singa.datasets import mnist 
+from examples.datasets import mnist
 
 # Sample parameter values for Autoencoder example
 rbmid = 4
@@ -17,7 +17,6 @@ m = Sequential('autoencoder', sys.argv)
 
 hid_dim = [1000, 500, 250, 30]
 m.add(Autoencoder(hid_dim, out_dim=784, activation='sigmoid', param_share=True))
-
 
 agd = AdaGrad(lr=0.01)
 topo = Cluster(workspace)

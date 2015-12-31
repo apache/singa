@@ -10,29 +10,29 @@
         |-- utils 
             |-- utility.py 
             |-- message.py 
+    |-- examples 
+        |-- cifar10_cnn.py, mnist_mlp.py, , mnist_rbm1.py, mnist_ae.py, etc. 
         |-- datasets 
             |-- cifar10.py 
             |-- mnist.py 
-            |-- rbm.py 
-            |-- ae.py 
-    |-- examples 
-        |-- cifar10_cnn.py, mnist_mlp.py, , mnist_rbm1.py, rnnlm_usermodel.py, etc. 
 
 ### How to Run
 ```
-bin/singa-run.sh -exe user_main.py -conf cluster.conf
+bin/singa-run.sh -exec user_main.py
 ```
-The python code, e.g., `user_main.py`, would create the JobProto object and pass it to Driver::Train.
-Currently, ./bin/singa-run.sh needs to get the cluster topology, hence we still need to pass a `cluster.conf` to it.
-The cluster.conf has the configuration for a JobProto with all other fields empty except the cluster field.
+The python code, e.g., user_main.py, would create the JobProto object and pass it to Driver::Train.
 
-Note that `workspace` field in ClusterProto can be set in either (i) cluster.conf or (ii) python code.
-
-#### Examples
+For example,
 ```
 cd SINGA_ROOT
-bin/singa-run.sh -exe tool/python/examples/cifar10_cnn.py -conf tool/python/examples/cluster.conf
+bin/singa-run.sh -exec tool/python/examples/cifar10_cnn.py 
 ```
+
+Note that, in order to use the Python Helper feature, users need to add the following option
+```
+./configure --enable-python --with-python=PYTHON_DIR
+```
+where PYTHON_DIR has Python.h
 
 ### Layer class (inherited)
 
@@ -46,15 +46,6 @@ bin/singa-run.sh -exe tool/python/examples/cifar10_cnn.py -conf tool/python/exam
 * Dropout
 * RBM
 * Autoencoder
-
-#### for user defined layers (IN PROGRESS) 
-
-The following classes are designed to construct user-defined layers for RNNLM example.
-
-* Embedding
-* RNNLM
-* UserLossRNNLM
-
 
 ### Model class
 
@@ -92,49 +83,6 @@ fit() and evaluate() return train/test results, a dictionary containing
 	* 'ppl' for ppl
 	* 'se' for squred error   
 
-<<<<<<< HEAD
-=======
-### Parameter class
-
-Users need to set parameter and initial values. For example,
-
-* Parameter
-        * lr = (float) // learning rate
-        * wd = (float) // weight decay
-
-* Parameter initialization
-        * init = (string) // one of the types, 'uniform', 'constant', 'gaussian'
-        * for uniform [default]
-                * high = (float)
-                * low = (float)
-        * for constant
-                * value = (float)
-        * for gaussian
-                * mean = (float)
-                * std = (float)
-
-* Weight (`w_param`) is 'gaussian' with mean=0, std=0.01 at default
-
-* Bias (`b_param`) is 'constant' with value=0 at default
-
-* How to update the parameter fields
-        * for updating Weight, put `w_` in front of field name
-        * for updating Bias, put `b_` in front of field name
-
-Several ways to set Parameter values
-```
-m.add(Dense(10, w_mean=1, w_std=0.1, w_lr=2, w_wd=10, ...)
-```
-```
-parw = Parameter(lr=2, wd=10, init='constant', value=0)
-m.add(Dense(10, w_param=parw, ...)
-```
-```
-parw = Parameter(init='constant', value=0)
-m.add(Dense(10, w_param=parw, w_lr=2, w_wd=10, ...)
-```
-
-
 #### To run Singa on GPU
 
 Users need to set a list of gpu ids to `device` field in fit() or evaluate(). 
@@ -145,7 +93,47 @@ gpu_id = [0]
 m.fit(X_train, nb_epoch=100, with_test=True, device=gpu_id)
 ```
 
->>>>>>> cb1ffb4... SINGA-81 Add Python Helper
+
+### Parameter class
+
+Users need to set parameter and initial values. For example,
+
+* Parameter (fields in Param proto)
+	* lr = (float) // learning rate multiplier, used to scale the learning rate when updating parameters.
+	* wd = (float) // weight decay multiplier, used to scale the weight decay when updating parameters. 
+
+* Parameter initialization (fields in ParamGen proto)
+	* init = (string) // one of the types, 'uniform', 'constant', 'gaussian'
+	* high = (float)  // for 'uniform'
+	* low = (float)   // for 'uniform'
+	* value = (float) // for 'constant'
+	* mean = (float)  // for 'gaussian'
+	* std = (float)   // for 'gaussian'
+
+* Weight (`w_param`) is 'gaussian' with mean=0, std=0.01 at default
+
+* Bias (`b_param`) is 'constant' with value=0 at default
+
+* How to update the parameter fields
+	* for updating Weight, put `w_` in front of field name
+	* for updating Bias, put `b_` in front of field name
+
+Several ways to set Parameter values
+```
+parw = Parameter(lr=2, wd=10, init='gaussian', std=0.1)
+parb = Parameter(lr=1, wd=0, init='constant', value=0)
+m.add(Convolution2D(10, w_param=parw, b_param=parb, ...)
+```
+```
+m.add(Dense(10, w_mean=1, w_std=0.1, w_lr=2, w_wd=10, ...)
+```
+```
+parw = Parameter(init='constant', mean=0)
+m.add(Dense(10, w_param=parw, w_lr=1, w_wd=1, b_value=1, ...)
+```
+
+
+
 #### Other classes
 
 * Store
@@ -311,48 +299,6 @@ store = Store(path='test.bin', batch_size=100, ...)        // parameter values a
 m.add(Data(load='recordinput', phase='test', conf=store))  // Data layer is added
 ```
 
-<<<<<<< HEAD
-### Parameter class
-
-Users need to set parameter and initial values. For example,
-
-* Parameter 
-	* lr = (float) // learning rate
-	* wd = (float) // weight decay
-
-* Parameter initialization
-	* init = (string) // one of the types, 'uniform', 'constant', 'gaussian' 
-	* for uniform [default]
-		* high = (float)
-		* low = (float)
-	* for constant
-		* value = (float)
-	* for gaussian
-		* mean = (float)
-		* std = (float)
-
-* Weight (w_param) is gaussian with mean=0, std=0.01 at default
-
-* Bias (b_param) is constant with value=0 at default
-
-* How to update the parameter fields
-	* for updating Weight, put 'w_' in front of field name
-	* for updating Bias, put 'b_' in front of field name
-
-Several ways to set Parameter values
-```
-m.add(Dense(10, w_mean=1, w_std=0.1, w_lr=2, w_wd=10, ...)
-```
-```
-parw = Parameter(lr=2, wd=10, init='constant', value=0)
-m.add(Dense(10, w_param=parw, ...)
-```
-```
-parw = Parameter(init='constant', value=0)
-m.add(Dense(10, w_param=parw, w_lr=2, w_wd=10, ...)
-```
-=======
->>>>>>> cb1ffb4... SINGA-81 Add Python Helper
 
 ### Cases to run singa
 

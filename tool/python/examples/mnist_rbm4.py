@@ -2,7 +2,7 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__),'..')) 
 from singa.model import *
-from singa.datasets import mnist 
+from examples.datasets import mnist 
 
 rbmid = 4
 pvalues = {'batchsize' : 100, 'shape' : 784, 'std_value' : 255}
