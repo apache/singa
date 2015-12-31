@@ -52,8 +52,10 @@ To compile with GPU support, you should run:
     
     $ ./configure --enable-cuda --with-cuda=/CUDA/PATH --enable-cudnn --with-cudnn=/CUDNN/PATH
 
---with-cuda and --with-cudnn is optional as by default the script will search
+--with-cuda and --with-cudnn are optional as by default the script will search
 system paths.
+Please kindly set proper environment parameters (LD_LIBRARY_PATH, LIBRARY_PATH,
+etc.) when you run the code.
 
 To compile with HDFS support, you should run:
 
