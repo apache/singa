@@ -48,6 +48,24 @@ Please make sure you have `g++ >= 4.8.1` before building SINGA.
     # refer to the FAQs below for error during make
     $ make
 
+To compile with GPU support, you should run:
+    
+    $ ./configure --enable-cuda --with-cuda=/CUDA/PATH --enable-cudnn --with-cudnn=/CUDNN/PATH
+
+--with-cuda and --with-cudnn is optional as by default the script will search
+system paths.
+
+To compile with HDFS support, you should run:
+
+    $ ./configure --enable-hdfs --with-libhdfs=/PATH/TO/HDFS3
+
+--with-libhdfs is optional as by default the path is /usr/local/.
+
+You can also run the following command for further configuration.
+
+    $ ./configure --help
+
+
 ##Running Examples
 
 Let us train the [CNN model](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks) over the
