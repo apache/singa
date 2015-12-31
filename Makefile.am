@@ -29,11 +29,11 @@ MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 DEFAULT_FLAGS = -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
               $(MSHADOW_FLAGS) -funroll-loops -DTHREADED
 
-CFLAGS += $(DEBUG)
-CXXFLAGS += $(DEBUG)
-AC_CXXFLAGS = $(DEBUG)
+CFLAGS = $(DEBUG)
+CXXFLAGS = $(DEBUG)
+#AC_CXXFLAGS = $(DEBUG)
 
-INCLUDES = -I$(top_srcdir)/include -I/usr/local/include
+INCLUDES = -I$(top_srcdir)/include 
 
 PROTOS := $(top_srcdir)/src/proto/singa.proto \
           $(top_srcdir)/src/proto/job.proto \
@@ -61,6 +61,11 @@ CUDNN_SRCS := src/neuralnet/loss_layer/cudnn_softmaxloss.cc \
 
 PY_SRCS := tool/python/singa/driver_wrap.cxx \
 		   src/driver.cc
+
+HDFS_SRCS := src/io/hdfsfile.cc \
+			 src/io/hdfsfile_store.cc 
+HDFS_HDRS := include/singa/io/hdfsfile.h \
+			 include/singa/io/hdfsfile_store.h 
 
 SINGA_SRCS := src/driver.cc \
               src/server.cc \
@@ -102,8 +107,6 @@ SINGA_SRCS := src/driver.cc \
               src/io/kvfile_store.cc \
               src/io/textfile_store.cc \
               src/io/store.cc \
-              src/io/hdfsfile.cc \
-              src/io/hdfsfile_store.cc \
               src/utils/cluster.cc \
               src/utils/cluster_rt.cc \
               src/utils/graph.cc \
@@ -202,6 +205,11 @@ libsinga_la_CXXFLAGS += $(CUDNN_CFLAGS)
 libsinga_la_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 endif
 
+if DHDFS
+libsinga_la_SOURCES += $(HDFS_SRCS)
+libsinga_la_CXXFLAGS += $(HDFS_CFLAGS)
+libsinga_la_LDFLAGS += $(HDFS_LDFLAGS) $(HDFS_LIBS)
+endif
 
 #bin_PROGRAMS = singa
 singa_SOURCES = src/main.cc
@@ -213,8 +221,7 @@ singa_LDFLAGS = -lsinga \
                 -lopenblas \
                 -lzmq \
                 -lczmq \
-                -lzookeeper_mt \
-                -lhdfs3
+                -lzookeeper_mt 
 if LMDB
 singa_LDFLAGS += -llmdb
 endif
@@ -231,6 +238,11 @@ singa_CXXFLAGS += $(CUDNN_CFLAGS)
 singa_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 endif
 
+if DHDFS
+singa_SOURCES += $(HDFS_SRCS)
+singa_CXXFLAGS += $(HDFS_CFLAGS)
+singa_LDFLAGS += $(HDFS_LDFLAGS) $(HDFS_LIBS)
+endif
 #bin_PROGRAMS += singatool
 singatool_SOURCES = src/utils/tool.cc #$(CUDA_SRCS) $(CUDA_HDRS) $(CUDNN_SRCS)
 singatool_CXXFLAGS = -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
@@ -238,8 +250,7 @@ singatool_CXXFLAGS = -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
 singatool_LDFLAGS = -lsinga \
                     -lglog  \
                     -lprotobuf \
-                    -lzookeeper_mt \
-                    -lhdfs3
+                    -lzookeeper_mt 
 
 #if DCUDA
 #singatool_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)  
@@ -253,6 +264,11 @@ singatool_LDFLAGS = -lsinga \
 #singatool_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 #endif
 
+if DHDFS
+singatool_SOURCES += $(HDFS_SRCS)
+singatool_CXXFLAGS += $(HDFS_CFLAGS)
+singatool_LDFLAGS += $(HDFS_LDFLAGS) $(HDFS_LIBS)
+endif
 #lib_LTLIBRARIES += libgtest.la
 libgtest_la_SOURCES = $(GTEST_HDRS) $(GTEST_SRCS)
 libgtest_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive -I$(top_srcdir)/include

@@ -55,7 +55,6 @@ if test "$cuda_prefix" == "yes"; then
     fi
 fi
 
-
 if test x"$cudaval" = x"yes"; then
     AC_MSG_CHECKING([nvcc in $cuda_prefix/bin])
     if test -x "$cuda_prefix/bin/nvcc"; then
@@ -158,23 +157,60 @@ if test x"$enable_lmdb" = x"yes"; then
   AC_DEFINE(LMDB, 1, [Enable Option layer])
 fi
 
+PROGS=''
+LTLIBS=''
+AC_ARG_ENABLE(hdfs,
+  AS_HELP_STRING([--enable-hdfs],[enable hdfs support]),
+  [enable_hdfs=yes],[enable_hdfs=no])
+AM_CONDITIONAL(DHDFS, test "$enable_hdfs" = yes)
+
+AC_ARG_WITH([libhdfs],
+    [AS_HELP_STRING([--with-libhdfs=PATH], [prefix where libhdfs is installed])],
+    [hdfs_prefix=$withval], [hdfs_prefix="/usr/local"])
+if test "$hdfs_prefix" == "yes"; then
+    if test "$withval" == "yes"; then
+        cudnn_prefix="/usr/local"
+    fi
+fi
+
+if test x"$enable_hdfs" != x"no"; then
+  HDFS_CFLAGS="-I$hdfs_prefix/include"
+  HDFS_LDFLAGS="-L$hdfs_prefix/lib"
+  HDFS_LIBS="-lhdfs3"
+  LIBS="$LIBS $HDFS_LIBS"
+  LDFLAGS="$LDFLAGS $HDFS_LDFLAGS"
+  DEBUG+=" -DUSE_HDFS"
+  AC_DEFINE(DHDFS,[1],[Defined if HDFS should be used])
+  AC_CHECK_LIB([hdfs3], [main], [], [
+      AC_MSG_ERROR([unable to find hdfs3 library])
+      ])
+else
+  HDFS_CFLAGS=""
+  HDFS_LDFLAGS=""
+  HDFS_LIBS=""
+fi
+
+AC_SUBST(HDFS_CFLAGS)
+AC_SUBST(HDFS_LDFLAGS)
+AC_SUBST(HDFS_LIBS)
+
 AC_ARG_ENABLE(test,
   AS_HELP_STRING([--enable-test],[enable singa test]),
   [enable_test=yes],[enable_test=no])
 AM_CONDITIONAL(SINGATEST, test "$enable_test" = yes)
 if test x"$enable_test" != x"no"; then
-  PROGS='singatest test '
-  LTLIBS='libgtest.la '
+  PROGS+='singatest test '
+  LTLIBS+='libgtest.la '
 else
-  PROGS=''
-  LTLIBS=''
+  PROGS+=''
+  LTLIBS+=''
 fi
 
 AC_ARG_ENABLE(debug,
   AS_HELP_STRING([--enable-debug],[enable debug mode]),
   [enable_debug=yes],[enable_debug=no])
-AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
-if test x"$enable_debug" != x"no"; then
+AM_CONDITIONAL(SINGADEBUG, [test "$enable_debug" = yes])
+if test x"$enable_debug" == x"yes"; then
   DEBUG+=' -g'
 else
   DEBUG+=' -O2'
