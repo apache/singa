@@ -2,7 +2,7 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__),'..')) 
 from singa.model import * 
-from singa.datasets import mnist 
+from examples.datasets import mnist
 
 # Sample parameter values for Mnist MLP example
 pvalues = {'batchsize' : 64, 'shape' : 784, 'random_skip' : 5000,

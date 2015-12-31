@@ -2,7 +2,7 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__),'..'))
 from singa.model import *
-from singa.datasets import cifar10
+from examples.datasets import cifar10
 
 X_train, X_test, workspace = cifar10.load_data()
 
