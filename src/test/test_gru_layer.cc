@@ -26,8 +26,8 @@ using namespace std;
 
 
 #include "gtest/gtest.h"
-#include "singa/neuralnet/neuron_layer/gru.h"
-#include "singa/neuralnet/input_layer/csv.h"
+#include "singa/neuralnet/neuron_layer.h"
+#include "singa/neuralnet/input_layer.h"
 #include "singa/driver.h"
 #include "singa/proto/job.pb.h"
 

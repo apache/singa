@@ -274,20 +274,6 @@ singatest_LDFLAGS = -lsinga \
 if LMDB
 singatest_LDFLAGS += -llmdb
 endif
-if DCUDA
-singatest_SOURCES += $(CUDA_SRCS)
-singatest_CXXFLAGS += $(CUDA_CFLAGS)
-singatest_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
-endif
-
-_driver_la_SOURCES = $(PY_SRCS)
-_driver_la_CXXFLAGS = $(DEFAULT_FLAGS) $(MSHADOW_FLAGS) -I$(top_srcdir)/include $(PYFLAGS)
-_driver_la_LDFLAGS = -lsinga -module -shared $(PYLIBS) -avoid-version -rpath $(pydir)
-
-if DCUDA
-_driver_la_CXXFLAGS += $(CUDA_CFLAGS)
-_driver_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
-endif
 
 if DCUDA
 singatest_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
