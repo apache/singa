@@ -38,7 +38,7 @@ AC_PROG_LIBTOOL
 
 # Setup custom CUDA paths
 AC_ARG_ENABLE(cuda,
-	[AS_HELP_STRING(--enable-cuda,enable CUDA support)],
+  [AS_HELP_STRING(--enable-cuda,enable CUDA support)],
     cudaval="yes",
     cudaval="no")
 AM_CONDITIONAL(DCUDA, [test "$cudaval" = "yes"])
@@ -55,41 +55,79 @@ if test "$cuda_prefix" == "yes"; then
     fi
 fi
 
-AC_MSG_CHECKING([nvcc in $cuda_prefix/bin])
-if test -x "$cuda_prefix/bin/nvcc"; then
-    AC_MSG_RESULT([found])
-    AC_DEFINE_UNQUOTED([NVCC_PATH], ["$cuda_prefix/bin/nvcc"], [Path to nvcc binary])
-else
-    AC_MSG_RESULT([not found!])
-    AC_MSG_FAILURE([nvcc was not found in $cuda_prefix/bin])
-fi
-
 if test x"$cudaval" = x"yes"; then
+    AC_MSG_CHECKING([nvcc in $cuda_prefix/bin])
+    if test -x "$cuda_prefix/bin/nvcc"; then
+        AC_MSG_RESULT([found])
+        AC_DEFINE_UNQUOTED([NVCC_PATH], ["$cuda_prefix/bin/nvcc"], [Path to nvcc binary])
+    else
+        AC_MSG_RESULT([not found!])
+        AC_MSG_FAILURE([nvcc was not found in $cuda_prefix/bin])
+    fi
     CUDA_CFLAGS="-I$cuda_prefix/include"
     CUDA_LDFLAGS="-L$cuda_prefix/lib64 -L$cuda_prefix/lib"
     CUDA_LIBS="-lcublas -lcudart -lcurand"
+    LIBS="$LIBS $CUDA_LIBS"
+    LDFLAGS="$LDFLAGS $CUDA_LDFLAGS"
     NVCC="nvcc"
-	DEBUG="-DUSE_GPU "
+  DEBUG="-DUSE_GPU"
     AC_DEFINE(DCUDA,[1],[Defined if CUDA should be used])
-	AC_CHECK_LIB([cuda], [main], [], [
- 		AC_MSG_ERROR([unable to find cuda library])
- 	 ])
-	AC_CHECK_LIB([cudart], [main], [], [
-	  	AC_MSG_ERROR([unable to find cudart library])
-  	])
-	AC_CHECK_LIB([curand], [main], [], [
- 	 	AC_MSG_ERROR([unable to find curand library])
-  	])
+  AC_CHECK_LIB([cuda], [main], [], [
+     AC_MSG_ERROR([unable to find cuda library])
+    ])
+  AC_CHECK_LIB([cudart], [main], [], [
+      AC_MSG_ERROR([unable to find cudart library])
+    ])
+  AC_CHECK_LIB([curand], [main], [], [
+      AC_MSG_ERROR([unable to find curand library])
+    ])
 else
     CUDA_CFLAGS=""
     CUDA_LDFLAGS=""
     CUDA_LIBS=""
     NVCC=""
+    DEBUG="-DCPU_ONLY"
 fi
 AC_SUBST(NVCC)
 AC_SUBST(CUDA_LDFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(CUDA_CFLAGS)
+
+# Setup custom CUDA paths
+AC_ARG_ENABLE([cudnn],
+    [AS_HELP_STRING(--enable-cudnn,enable CUDNN support)],
+    [enable_cudnn=yes], [enable_cudnn=no])
+AM_CONDITIONAL(DCUDNN, [test "$enable_cudnn" = "yes"])
+
+AC_ARG_WITH([cudnn],
+    [AS_HELP_STRING([--with-cudnn=PATH], [prefix where CUDNN is installed])],
+    [cudnn_prefix=$withval], [cudnn_prefix="/usr/local/cuda"])
+if test "$cudnn_prefix" == "yes"; then
+    if test "$withval" == "yes"; then
+        cudnn_prefix="/usr/local/cuda"
+    fi
+fi
+
+if test x"$enable_cudnn" == x"yes"; then
+    CUDNN_CFLAGS="-I$cudnn_prefix/include"
+    CUDNN_LDFLAGS="-L$cudnn_prefix/lib64 -L$cudnn_prefix/lib"
+    CUDNN_LIBS="-lcudnn"
+    LIBS="$LIBS $CUDNN_LIBS"
+    LDFLAGS="$LDFLAGS $CUDNN_LDFLAGS"
+    DEBUG+=" -DUSE_CUDNN"
+    AC_DEFINE(DCUDNN,[1],[Defined if CUDNN should be used])
+    AC_CHECK_LIB([cudnn], [main], [], [
+        AC_MSG_ERROR([unable to find cudnn library])
+        ])
+else
+    CUDNN_CFLAGS=""
+    CUDNN_LDFLAGS=""
+    CUDNN_LIBS=""
+fi
+
+AC_SUBST(CUDNN_CFLAGS)
+AC_SUBST(CUDNN_LDFLAGS)
+AC_SUBST(CUDNN_LIBS)
 
 # Checks for libraries.
 AC_SEARCH_LIBS([cblas_sgemm], [openblas], [], [
@@ -110,35 +148,35 @@ AC_CHECK_LIB([protobuf], [main], [], [
 
 AC_ARG_ENABLE(lmdb,
      AS_HELP_STRING([--enable-lmdb],[enable debug option]),
-	 [enable_lmdb=yes],[enable_lmdb=no])
+   [enable_lmdb=yes],[enable_lmdb=no])
 AM_CONDITIONAL(LMDB, test "$enable_lmdb" = yes)
 if test x"$enable_lmdb" = x"yes"; then
-	AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
-	  AC_MSG_ERROR([unable to find mdb_env_create() function])
-	  ])
-	AC_DEFINE(LMDB, 1, [Enable Option layer])
+  AC_SEARCH_LIBS([mdb_env_create], [lmdb], [], [
+    AC_MSG_ERROR([unable to find mdb_env_create() function])
+    ])
+  AC_DEFINE(LMDB, 1, [Enable Option layer])
 fi
 
 AC_ARG_ENABLE(test,
-	AS_HELP_STRING([--enable-test],[enable singa test]),
-	[enable_test=yes],[enable_test=no])
+  AS_HELP_STRING([--enable-test],[enable singa test]),
+  [enable_test=yes],[enable_test=no])
 AM_CONDITIONAL(SINGATEST, test "$enable_test" = yes)
 if test x"$enable_test" != x"no"; then
-	PROGS='singatest test '
-	LTLIBS='libgtest.la '
+  PROGS='singatest test '
+  LTLIBS='libgtest.la '
 else
-	PROGS=''
-	LTLIBS=''
+  PROGS=''
+  LTLIBS=''
 fi
 
 AC_ARG_ENABLE(debug,
-	AS_HELP_STRING([--enable-debug],[enable debug mode]),
-	[enable_debug=yes],[enable_debug=no])
+  AS_HELP_STRING([--enable-debug],[enable debug mode]),
+  [enable_debug=yes],[enable_debug=no])
 AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 if test x"$enable_debug" != x"no"; then
-	DEBUG+='-g'
+  DEBUG+=' -g'
 else
-	DEBUG+='-O2'
+  DEBUG+=' -O2'
 fi
 
 AC_ARG_ENABLE(python,
@@ -149,10 +187,10 @@ if test x"$enable_python" != x"no"; then
     AC_CHECK_PROG(PY_CHECK,python,yes)
     if test x"$PY_CHECK" != x"yes"; then
         AC_MSG_ERROR([Cannot find command "python". Please intall before make.])
-    else    
+    else
         PYLIBS="-lpython`python -V 2>&1 | awk '{print substr($2,1,3)}'`"
     fi
-fi        
+fi
 AC_SUBST(PYLIBS)
 
 AC_ARG_WITH([python],

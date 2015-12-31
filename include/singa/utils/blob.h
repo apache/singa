@@ -1,4 +1,4 @@
-/************************************************************
+/**************************************************************
 *
 * Licensed to the Apache Software Foundation (ASF) under one
 * or more contributor license agreements.  See the NOTICE file
@@ -71,12 +71,15 @@
 
 namespace singa {
 
+// TODO(wangwei) use cudaMallocHost depending on Context::device.
 inline void MallocHost(void** ptr, size_t size) {
   *ptr = malloc(size);
+  // cudaMallocHost(ptr, size);
 }
 
 inline void FreeHost(void* ptr) {
   free(ptr);
+  // cudaFreeHost(ptr);
 }
 
 /**
@@ -242,8 +245,12 @@ class Blob {
    *
    * It may deallocate the SyncedMemory holding this Blob's data_, as
    * shared_ptr calls its destructor when reset with the "=" operator.
+   * @param other the Blob who owns the data
+   * @param cpu_only if true, only share the cpu data; if false, share the whole
+   * data_ field. For training with multi-gpu cards, cpu_only must be true,
+   * becuase gpu memory cannot be shared among different devices.
    */
-  void ShareData(const Blob& other);
+  void ShareData(Blob* other, bool cpu_only = true);
 
   /*
   void Swap(Blob& other);
@@ -255,14 +262,14 @@ class Blob {
   /**
    * @return the size of the k-th dimension.
    */
-  inline const int shape(int k) const {
+  inline int shape(int k) const {
     CHECK_LT(k, shape_.size());
     return shape_.at(k);
   }
   inline int count() const {
     return count_;
   }
-  inline const int version() const {
+  inline int version() const {
     return version_;
   }
   inline void set_version(int v) {
@@ -293,6 +300,11 @@ class Blob {
   }
   inline bool transpose() const {
     return transpose_;
+  }
+  inline const Blob<Dtype> T() const {
+    Blob<Dtype> ret(*this);
+    ret.transpose_ = !transpose_;
+    return ret;
   }
 
  protected:

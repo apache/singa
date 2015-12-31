@@ -77,28 +77,7 @@ private:\
   classname& operator=(const classname&)
 
 #ifndef CPU_ONLY
-// CUDA: various checks for different function calls.
-#define CUDA_CHECK(condition) \
-  /* Code block avoids redefinition of cudaError_t error */ \
-  do { \
-    cudaError_t error = condition; \
-    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
-  } while (0)
-
-#define CUBLAS_CHECK(condition) \
-  do { \
-    cublasStatus_t status = condition; \
-    CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " \
-      << caffe::cublasGetErrorString(status); \
-  } while (0)
-
-#define CURAND_CHECK(condition) \
-  do { \
-    curandStatus_t status = condition; \
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << " " \
-      << caffe::curandGetErrorString(status); \
-  } while (0)
-
+#include "singa/utils/cuda_utils.h"
 #endif  // CPU_ONLY
 
 namespace singa {
@@ -187,7 +166,7 @@ void SyncedMemory::to_gpu() {
   switch (head_) {
   case UNINITIALIZED:
     CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
-    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, N));
+    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, size_));
     head_ = HEAD_AT_GPU;
     break;
   case HEAD_AT_CPU:
@@ -208,8 +187,8 @@ void SyncedMemory::to_gpu() {
 
 template <typename Dtype>
 void Blob<Dtype>::Reshape(const std::vector<int>& shape) {
-  count_ = 1;
   shape_ = shape;
+  count_ = shape.size() ? 1 : 0;
   for (size_t i = 0; i < shape.size(); ++i) {
     CHECK(shape[i]);
     count_ *= shape[i];
@@ -231,13 +210,13 @@ void Blob<Dtype>::CopyFrom(const Blob& source) {
 }
 
 template <typename Dtype>
-void Blob<Dtype>::CopyFrom(const Blob& source, bool reshape) {
-  if (!std::equal(shape_.begin(), shape_.end(), source.shape_.begin())) {
-    if (reshape) {
-      Reshape(source.shape_);
-    } else {
+void Blob<Dtype>::CopyFrom(const Blob& source, bool shape_check) {
+  LOG(WARNING) << "Better use Copy(const Blob&, Blob*)";
+  CHECK_EQ(source.count(), count()) << " cp between blobs of diff size";
+
+  if (shape_check &&
+      !std::equal(shape_.begin(), shape_.end(), source.shape_.begin())) {
       LOG(FATAL) << "Trying to copy blobs of different sizes.";
-    }
   }
 #ifndef CPU_ONLY
   CUDA_CHECK(cudaMemcpy(static_cast<Dtype*>(data_->mutable_gpu_data()),
@@ -283,9 +262,12 @@ void Blob<Dtype>::SetValue(Dtype v) {
     ptr[i] = v;
 }
 template <typename Dtype>
-void Blob<Dtype>::ShareData(const Blob& other) {
-  CHECK_EQ(count_, other.count());
-  data_ = other.data_;
+void Blob<Dtype>::ShareData(Blob* other, bool cpu_only) {
+  CHECK_EQ(count_, other->count());
+  if (cpu_only)
+    data_->set_cpu_data(other->mutable_cpu_data());
+  else
+    data_ = other->data_;
 }
 
 /*

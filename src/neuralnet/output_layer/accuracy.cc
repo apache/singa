@@ -19,38 +19,43 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/argsort.h"
 #include <algorithm>
+#include "singa/neuralnet/output_layer.h"
 
 namespace singa {
 
-void ArgSortLayer::Setup(const LayerProto& proto,
+void AccuracyLayer::Setup(const LayerProto& proto,
     const vector<Layer*>& srclayers) {
-  CHECK_EQ(srclayers.size(), 1);
-  NeuronLayer::Setup(proto, srclayers);
-  batchsize_ = srclayers[0]->data(this).shape()[0];
-  dim_ = srclayers[0]->data(this).count() / batchsize_;
-  topk_ = proto.argsort_conf().topk();
-  data_.Reshape(vector<int>{batchsize_, topk_});
+  CHECK_EQ(srclayers.size(), 2);
+  ArgSortLayer::Setup(proto, vector<Layer*>{srclayers.at(0)});
 }
 
-void ArgSortLayer::ComputeFeature(int flag,
+void AccuracyLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  // TODO(wangwei) check flag to ensure it is not called in training phase
-  const float* srcptr = srclayers.at(0)->data(this).cpu_data();
-  float* ptr = data_.mutable_cpu_data();
+  ArgSortLayer::ComputeFeature(flag, vector<Layer*>{srclayers.at(0)});
+  const auto& label = srclayers[1]->aux_data(this);
+  int ncorrect = 0;
   for (int n = 0; n < batchsize_; n++) {
-    vector<std::pair<float, int> > vec;
-    for (int j = 0; j < dim_; ++j)
-      vec.push_back(std::make_pair(srcptr[j], j));
-    std::partial_sort(vec.begin(), vec.begin() + topk_, vec.end(),
-                      std::greater<std::pair<float, int> >());
-
-    for (int j = 0; j < topk_; ++j)
-      ptr[j] = static_cast<float> (vec.at(j).second);
-    ptr += topk_;
-    srcptr += dim_;
+    const float* pos = data_.cpu_data() + topk_ * n;
+    // check if true label is in top k predictions
+    for (int k = 0; k < topk_; k++) {
+      if (pos[k] == label[n]) {
+        ncorrect++;
+        break;
+      }
+    }
   }
+  accuracy_ += ncorrect * 1.0f / batchsize_;
+  counter_++;
 }
 
+const std::string AccuracyLayer::ToString(bool debug, int flag) {
+  if (debug)
+    return Layer::ToString(debug, flag);
+
+  string disp = "accuracy = " + std::to_string(accuracy_ / counter_);
+  counter_ = 0;
+  accuracy_ = 0;
+  return disp;
+}
 }  // namespace singa

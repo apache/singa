@@ -18,39 +18,39 @@
 * under the License.
 *
 *************************************************************/
+
+#include <algorithm>
 #include "singa/neuralnet/output_layer.h"
-#include "singa/proto/common.pb.h"
+
 namespace singa {
 
-void RecordOutputLayer::Setup(const LayerProto& conf,
+void ArgSortLayer::Setup(const LayerProto& proto,
     const vector<Layer*>& srclayers) {
-  OutputLayer::Setup(conf, srclayers);
   CHECK_EQ(srclayers.size(), 1);
+  OutputLayer::Setup(proto, srclayers);
+  batchsize_ = srclayers[0]->data(this).shape()[0];
+  dim_ = srclayers[0]->data(this).count() / batchsize_;
+  topk_ = proto.argsort_conf().topk();
+  data_.Reshape(vector<int>{batchsize_, topk_});
 }
 
-void RecordOutputLayer::ComputeFeature(int flag,
+void ArgSortLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  if (store_ == nullptr)
-    store_ = io::OpenStore(layer_conf_.store_conf().backend(),
-        layer_conf_.store_conf().path(), io::kCreate);
-  const auto& data = srclayers.at(0)->data(this);
-  const auto& label = srclayers.at(0)->aux_data();
-  int batchsize = data.shape()[0];
-  CHECK_GT(batchsize, 0);
-  int dim = data.count() / batchsize;
-  if (label.size())
-    CHECK_EQ(label.size(), batchsize);
-  for (int k = 0; k < batchsize; k++) {
-    SingleLabelImageRecord image;
-    if (label.size())
-      image.set_label(label[k]);
-    auto* dptr = data.cpu_data() + k * dim;
-    for (int i = 0; i < dim; i++)
-      image.add_data(dptr[i]);
-    std::string val;
-    image.SerializeToString(&val);
-    store_->Write(std::to_string(inst_++), val);
+  // TODO(wangwei) check flag to ensure it is not called in training phase
+  const float* srcptr = srclayers.at(0)->data(this).cpu_data();
+  float* ptr = data_.mutable_cpu_data();
+  for (int n = 0; n < batchsize_; n++) {
+    vector<std::pair<float, int> > vec;
+    for (int j = 0; j < dim_; ++j)
+      vec.push_back(std::make_pair(srcptr[j], j));
+    std::partial_sort(vec.begin(), vec.begin() + topk_, vec.end(),
+                      std::greater<std::pair<float, int> >());
+
+    for (int j = 0; j < topk_; ++j)
+      ptr[j] = static_cast<float> (vec.at(j).second);
+    ptr += topk_;
+    srcptr += dim_;
   }
-  store_->Flush();
 }
+
 }  // namespace singa

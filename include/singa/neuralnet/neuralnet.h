@@ -58,6 +58,7 @@ class NeuralNet {
   static NeuralNet* Create(const NetProto& net_conf, Phase phase,
                            int npartitions);
 
+  static const NetProto Unrolling(const NetProto& net_conf);
   /**
    * construct the net structure from protocol buffer.
    * @param netproto neural net config
@@ -90,14 +91,18 @@ class NeuralNet {
    */
   /**
    * Share memory of parameter values from other neuralnet
+   * @param[in] other the neural net from which to share the Params
+   * @param[in] cpu_only if true only share cpu memory; else, share both cpu
+   * and gpu memory.
    */
-  void ShareParamsFrom(NeuralNet* other);
+  void ShareParamsFrom(NeuralNet* other, bool cpu_only);
   inline const std::vector<Layer*>& layers() const { return layers_; }
   inline const std::vector<Param*>& params() const { return params_; }
   inline Layer* name2layer(std::string name) const {
-    CHECK(name2layer_.find(name) != name2layer_.end())
-      << "No layer with name " << name;
-    return name2layer_.at(name);
+    if (name2layer_.find(name) == name2layer_.end())
+      return nullptr;
+    else
+      return name2layer_.at(name);
   }
   inline const std::vector<Layer*>& srclayers(const Layer* layer) const {
     CHECK(src_map_.find(layer) != src_map_.end())
@@ -105,6 +110,13 @@ class NeuralNet {
     return src_map_.at(layer);
   }
   inline Param* paramid2param(int id) const { return paramid2param_.at(id); }
+
+  /**
+   * Conver the neural net into graph representation.
+   * Each layer is converted into a node.
+   * @param include_shape if true label the node with shape info
+   */
+  const Graph ToGraph(bool include_shape) const;
 
  protected:
   /**
@@ -120,11 +132,21 @@ class NeuralNet {
   /**
    * Create neural net from graph, one layer per node.
    */
-  void CreateNetFromGraph(Graph* graph, int num_partitions);
+  void CreateNetFromGraph(Graph* graph);
   /**
    * prepare data structures, e.g., params_, layers_, etc.
    */
   void PrepareDataStructures();
+  /**
+   * add split layers, due to connections to multiple dst-layers
+   */
+  NetProto AddModelSplitLayers(const NetProto& netproto);
+  /**
+   * add connection layers, due to partition of the whole nerualnet
+   * this should be done after AddModelSplitLayers()
+   */
+  NetProto AddPartitionConnectionLayers(const NetProto& netproto,
+                                        int npartitions);
 
  protected:
   std::vector<Layer*> layers_;

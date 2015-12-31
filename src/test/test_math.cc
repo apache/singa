@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -18,11 +18,13 @@
 * under the License.
 *
 *************************************************************/
-
+#include <thread>
 #include "gtest/gtest.h"
 #include "singa/utils/math_addr.h"
 #include "singa/utils/math_kernel.h"
 #include "singa/utils/singa_op.h"
+#include "singa/utils/context.h"
+#include "singa/utils/singleton.h"
 
 #ifdef USE_GPU
 #include <cuda_runtime.h>
@@ -82,6 +84,7 @@ TEST(MathTest, TestGemvCPU) {
 }
 
 
+/*
 TEST(MathTest, TestAxpyCPU) {
   float A[4][3] = {};
   float C[4][3] = {};
@@ -109,7 +112,6 @@ TEST(MathTest, TestAxpyCPU) {
   }
 }
 
-/*
 TEST(MathTest, TestEopCPU) {
 
   float A[10] = {};
@@ -154,8 +156,10 @@ TEST(MathTest, TestGemmGPU) {
 
   cudaMemcpy(A_gpu, A, 3*2*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(B_gpu, B, 3*2*sizeof(float), cudaMemcpyHostToDevice);
-
-  gpu_gemm<float>(A_gpu, B_gpu, 2, 2, 3 , 1, 0, true, false, C_gpu);
+  auto context = Singleton<Context>::Instance();
+  context->SetupDevice(std::this_thread::get_id(), 0);
+  gpu_gemm<float>(context->cublas_handle(0), A_gpu, B_gpu, 2, 2, 3 , 1, 0, true,
+                  false, C_gpu);
 
   cudaMemcpy(C, C_gpu, 2*2*sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -207,8 +211,10 @@ TEST(MathTest, TestGemvGPU) {
   cudaMemcpy(A_gpu, A, 4*3*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(B_gpu, B, 4*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(C_gpu, C, 3*sizeof(float), cudaMemcpyHostToDevice);
-
-  gpu_gemv<float>(A_gpu, B_gpu, 4, 3, 1, 1, true, C_gpu);
+  auto context = Singleton<Context>::Instance();
+  context->SetupDevice(std::this_thread::get_id(), 0);
+  gpu_gemv<float>(context->cublas_handle(0), A_gpu, B_gpu, 4, 3, 1.0f, 1.0f,
+                  true, C_gpu);
 
   cudaMemcpy(C, C_gpu, 3*sizeof(float), cudaMemcpyDeviceToHost);
 
@@ -280,7 +286,6 @@ TEST(MathTest, TestAxpyGPU) {
 TEST(MathTest, TestDotGPU) {
   float A[12];
   float B[12];
-
   for (int i = 0; i < 12; i++) {
     A[i] = i - 1;
     B[i] = i + 1;
@@ -294,7 +299,9 @@ TEST(MathTest, TestDotGPU) {
 
   cudaMemcpy(A_gpu, A, 12*sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(B_gpu, B, 12*sizeof(float), cudaMemcpyHostToDevice);
-  float gpu_ret = gpu_dot<float>(A_gpu, B_gpu, 12);
+  auto context = Singleton<Context>::Instance();
+  context->SetupDevice(std::this_thread::get_id(), 0);
+  float gpu_ret = gpu_dot<float>(context->cublas_handle(0), A_gpu, B_gpu, 12);
 
   float cpu_ret = 0.0f;
   for (int i = 0; i < 12; i++) {
@@ -307,14 +314,15 @@ TEST(MathTest, TestDotGPU) {
   cudaFree(B_gpu);
 }
 
-TEST(MathTest, TestSingaSumColGPU) {
+TEST(MathTest, TestSingaSumRowGPU) {
   float A[3][4];
   float B[4];
   float C[4];
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 4; j++) {
-      A[i][j] = i + j;
+      // A[i][j] = i + j;
+      A[i][j] = 1.0f;
     }
   }
 
@@ -329,8 +337,7 @@ TEST(MathTest, TestSingaSumColGPU) {
   cudaMalloc(reinterpret_cast<void**>(&A_gpu), 12*sizeof(float));
   cudaMalloc(reinterpret_cast<void**>(&B_gpu), 4*sizeof(float));
   cudaMemcpy(A_gpu, A, 12*sizeof(float), cudaMemcpyHostToDevice);
-
-  singa_gpu_sum_col(A_gpu, B_gpu, 3, 4, 4);
+  singa_gpu_sum_row(A_gpu, B_gpu, 3, 4, 4);
 
   cudaMemcpy(B, B_gpu, 4*sizeof(float), cudaMemcpyDeviceToHost);
 

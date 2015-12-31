@@ -19,9 +19,8 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/rbm.h"
-
 #include <glog/logging.h>
+#include "singa/neuralnet/neuron_layer.h"
 #include "singa/utils/singleton.h"
 
 namespace singa {
@@ -53,7 +52,6 @@ void RBMLayer::Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
   hdim_ = conf.rbm_conf().hdim();
   gaussian_ = conf.rbm_conf().gaussian();
   first_gibbs_ = true;
-  //pos_data_, neg_data_, neg_sample_, pos_sample_
   datavec_.clear();
   datavec_.push_back(&pos_data_);
   datavec_.push_back(&neg_data_);
@@ -112,10 +110,11 @@ void RBMVisLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
       for (int i = 0; i < pos_data_.count(); i++) {
         err += (dptr[i] - rcns[i]) * (dptr[i] - rcns[i]);
       }
-      metric_.Add("Squared Error", err / batchsize_);
+      error_ += err / batchsize_;
     }
     first_gibbs_ = false;
   }
+  counter_ += 1;
 }
 
 void RBMVisLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
@@ -133,6 +132,15 @@ void RBMVisLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   gweight = dot(hid_neg.T(), vis_neg);
   gweight -= dot(hid_pos.T(), vis_pos);
   gweight /= batchsize_;
+}
+const std::string RBMVisLayer::ToString(bool debug, int flag) {
+  if (debug)
+    return Layer::ToString(debug, flag);
+
+  string disp = "Squared Error = " + std::to_string(error_ / counter_);
+  counter_ = 0;
+  error_ = 0;
+  return disp;
 }
 /**************** Implementation for RBMHidLayer********************/
 RBMHidLayer::~RBMHidLayer() {

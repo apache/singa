@@ -143,8 +143,10 @@ class Param {
    * Share the data blob from other Param objects.
    *
    * @param other the Param object whose owner owns the data blob
+   * @param cpu_only if true, share only cpu memory (used for training with
+   * multi-gpu cards); else, share both cpu and gpu memory.
    */
-  void ShareFrom(const Param& other);
+  void ShareFrom(Param* other, bool cpu_only);
   /**
    * Init param values from checkpoint blob.
    */
@@ -190,28 +192,27 @@ class Param {
     proto_.set_id(id);
     proto_.set_owner(id);
   }
+  inline int version() const { return version_; }
+  inline void set_version(int v) { version_ = v; }
   /**
-   * Param version is stored inside the data blob to enable all Param objs
-   * sharing the same values have the same version.
-   * @return the param version
+   * @return the version of the Param when the last Update request was issued.
    */
-  inline int version() const { return data_->version(); }
-  inline void set_version(int v) { data_->set_version(v); }
+  inline int last_version() const { return last_version_; }
+  inline void set_last_version(int v) { last_version_ = v; }
+
   /**
-   * @return the version of the parameter value local to a worker
+   * @return the sharing Param name which is configured by users in conf file.
    */
-  inline int local_version() const { return local_version_; }
-  inline void set_local_version(int v) { local_version_ = v; }
   inline const std::string& share_from() const { return proto_.share_from(); }
    /**
-    * @return num of floats.
+    * @return num of parameters in this Param obj.
     */
-  inline int size() const { return data_->count(); }
-  inline const Blob<float>& data() const { return *data_; }
-  inline Blob<float>* mutable_data() { return data_.get(); }
+  inline int size() const { return data_.count(); }
+  inline const Blob<float>& data() const { return data_; }
+  inline Blob<float>* mutable_data() { return &data_; }
   inline const Blob<float> &grad() const { return grad_; }
   inline Blob<float> *mutable_grad() { return &grad_; }
-  inline float* mutable_cpu_data() { return data_->mutable_cpu_data(); }
+  inline float* mutable_cpu_data() { return data_.mutable_cpu_data(); }
   inline float* mutable_cpu_grad() { return grad_.mutable_cpu_data(); }
   inline float* mutable_cpu_history() { return history_.mutable_cpu_data(); }
   /**
@@ -333,22 +334,24 @@ class Param {
   void ParseResponseMsg(Msg* msg, int slice_idx);
 
  protected:
-  int local_version_ = -1;
-  // the ID of the first slice
+  //!< param version updated by the Update/Sync/Get response
+  //!< only the owner param is initialized.
+  int version_ = -1;
+  //!< param version before last Update/Sync/Get request, set from version_
+  int last_version_ = -1;
+  //!< the global ID of the first slice
   int slice_start_ = 0;
+  //!< total num of slices for this Parm obj
   int num_slices_ = 0;
   // offset and size of each slice
   std::vector<int> slice_offset_;
   std::vector<int> slice_size_;
-  // for debug checking
-  // since put request has no feedback, we do not track its pending status
+  // for debug. Put request has no feedback, we do not track its pending status
   std::vector<bool> pending_get_;
   std::vector<bool> pending_update_;
   int num_pending_requests_ = 0;
-  // data field
-  std::shared_ptr<Blob<float>> data_ = nullptr;
-  // gradient, history gradient of this parameter
-  Blob<float> grad_, history_;
+  // data, gradient, history gradient of this parameter
+  Blob<float> data_, grad_, history_;
   ParamProto proto_;
 };
 

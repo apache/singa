@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/gru.h"
+#include "singa/neuralnet/neuron_layer.h"
 
 #include <glog/logging.h>
 #include "singa/utils/singleton.h"
@@ -36,15 +36,15 @@ using std::vector;
 GRULayer::~GRULayer() {
   delete weight_z_hx_;
   delete weight_z_hh_;
-  delete bias_z_; 
+  delete bias_z_;
 
   delete weight_r_hx_;
   delete weight_r_hh_;
   delete bias_r_;
 
-  delete weight_c_hx_; 
+  delete weight_c_hx_;
   delete weight_c_hh_;
-  delete bias_c_; 
+  delete bias_c_;
 
   delete update_gate;
   delete reset_gate;
@@ -56,7 +56,7 @@ void GRULayer::Setup(const LayerProto& conf,
   Layer::Setup(conf, srclayers);
   CHECK_LE(srclayers.size(), 2);
   const auto& src = srclayers[0]->data(this);
-  
+
   batchsize_ = src.shape()[0]; // size of batch
   vdim_ = src.count() / (batchsize_); // dimension of input
 
@@ -122,45 +122,45 @@ void GRULayer::ComputeFeature(int flag,
 	}
 
 	// Compute the update gate
-	GEMM(cpu, 1.0f, 0.0f, src,*w_z_hx_t,update_gate);
+	GEMM(1.0f, 0.0f, src,*w_z_hx_t,update_gate);
 	if (bias_z_ != nullptr)
-		MVAddRow(cpu,1.0f,1.0f,bias_z_->data(),update_gate);
+		MVAddRow(1.0f,1.0f,bias_z_->data(),update_gate);
 	Blob<float> zprev (batchsize_,hdim_);
-	GEMM(cpu, 1.0f, 0.0f, *context,*w_z_hh_t, &zprev);
-	Add<float>(cpu, *update_gate, zprev, update_gate);
-	Map<op::Sigmoid<float>,float>(cpu, *update_gate, update_gate);
+	GEMM(1.0f, 0.0f, *context,*w_z_hh_t, &zprev);
+	Add<float>(*update_gate, zprev, update_gate);
+	Map<op::Sigmoid<float>,float>(*update_gate, update_gate);
 
 	// Compute the reset gate
-	GEMM(cpu, 1.0f, 0.0f, src,*w_r_hx_t,reset_gate);
+	GEMM(1.0f, 0.0f, src,*w_r_hx_t,reset_gate);
 	if (bias_r_ != nullptr)
-		MVAddRow(cpu,1.0f,1.0f,bias_r_->data(),reset_gate);
+		MVAddRow(1.0f,1.0f,bias_r_->data(),reset_gate);
 	Blob<float> rprev (batchsize_, hdim_);
-	GEMM(cpu, 1.0f, 0.0f, *context, *w_r_hh_t, &rprev);
-	Add<float>(cpu, *reset_gate, rprev, reset_gate);
-	Map<op::Sigmoid<float>,float>(cpu, *reset_gate, reset_gate);
+	GEMM(1.0f, 0.0f, *context, *w_r_hh_t, &rprev);
+	Add<float>(*reset_gate, rprev, reset_gate);
+	Map<op::Sigmoid<float>,float>(*reset_gate, reset_gate);
 
 	// Compute the new memory
-	GEMM(cpu, 1.0f, 0.0f, src, *w_c_hx_t, new_memory);
+	GEMM(1.0f, 0.0f, src, *w_c_hx_t, new_memory);
 	if (bias_c_ != nullptr)
-		MVAddRow(cpu, 1.0f,1.0f,bias_c_->data(), new_memory);
+		MVAddRow(1.0f,1.0f,bias_c_->data(), new_memory);
 	Blob<float> cprev (batchsize_, hdim_);
-	GEMM(cpu, 1.0f, 0.0f, *context, *w_c_hh_t, &cprev);
-	Mult<float>(cpu, *reset_gate, cprev, &cprev);
-	Add<float>(cpu, *new_memory, cprev, new_memory);
-	Map<op::Tanh<float>,float>(cpu, *new_memory, new_memory);
+	GEMM(1.0f, 0.0f, *context, *w_c_hh_t, &cprev);
+	Mult<float>(*reset_gate, cprev, &cprev);
+	Add<float>(*new_memory, cprev, new_memory);
+	Map<op::Tanh<float>,float>(*new_memory, new_memory);
 
 	// Compute data - new memory part
 	Blob<float> z1 (batchsize_,hdim_);
 	for (int i = 0; i < z1.count(); i ++) {
 		z1.mutable_cpu_data()[i] = 1.0f; // generate a matrix with ones
 	}
-	AXPY<float>(cpu, -1.0f, *update_gate, &z1);
-	Mult<float>(cpu, z1, *new_memory, &data_);
+	AXPY<float>(-1.0f, *update_gate, &z1);
+	Mult<float>(z1, *new_memory, &data_);
 
 	// Compute data - context part
 	Blob<float> data_prev (batchsize_, hdim_);
-	Mult<float>(cpu,*update_gate,*context,&data_prev);
-	Add<float>(cpu, data_, data_prev, &data_);
+	Mult<float>(*update_gate,*context,&data_prev);
+	Add<float>(data_, data_prev, &data_);
 
 	// delete the pointers
 	if (srclayers.size() == 1) delete context;
@@ -192,78 +192,78 @@ void GRULayer::ComputeGradient(int flag,
 
 	// Compute intermediate gradients which are used for other computations
 	Blob<float> dugatedz (batchsize_, hdim_);
-	Map<singa::op::SigmoidGrad<float>, float>(cpu, *update_gate, &dugatedz);
+	Map<singa::op::SigmoidGrad<float>, float>(*update_gate, &dugatedz);
 	Blob<float> drgatedr (batchsize_, hdim_);
-	Map<singa::op::SigmoidGrad<float>, float>(cpu, *reset_gate, &drgatedr);
+	Map<singa::op::SigmoidGrad<float>, float>(*reset_gate, &drgatedr);
 	Blob<float> dnewmdc (batchsize_, hdim_);
-	Map<singa::op::TanhGrad<float>, float>(cpu, *new_memory,&dnewmdc);
+	Map<singa::op::TanhGrad<float>, float>(*new_memory,&dnewmdc);
 
 	Blob<float> dLdz (batchsize_, hdim_);
-	Sub<float>(cpu, *context, *new_memory, &dLdz);
-	Mult<float>(cpu,dLdz, grad_, &dLdz);
-	Mult<float>(cpu,dLdz, dugatedz, &dLdz);
+	Sub<float>(*context, *new_memory, &dLdz);
+	Mult<float>(dLdz, grad_, &dLdz);
+	Mult<float>(dLdz, dugatedz, &dLdz);
 
 	Blob<float> dLdc (batchsize_,hdim_);
 	Blob<float> z1 (batchsize_,hdim_);
 	for (int i = 0; i < z1.count(); i ++) {
 		z1.mutable_cpu_data()[i] = 1.0f; // generate a matrix with ones
 	}
-	AXPY<float>(cpu, -1.0f, *update_gate, &z1);
-	Mult(cpu,grad_,z1,&dLdc);
-	Mult(cpu,dLdc,dnewmdc,&dLdc);
+	AXPY<float>(-1.0f, *update_gate, &z1);
+	Mult(grad_,z1,&dLdc);
+	Mult(dLdc,dnewmdc,&dLdc);
 
 	Blob<float> reset_dLdc (batchsize_,hdim_);
-	Mult(cpu,dLdc, *reset_gate, &reset_dLdc);
+	Mult(dLdc, *reset_gate, &reset_dLdc);
 
 	Blob<float> dLdr (batchsize_, hdim_);
 	Blob<float> cprev (batchsize_, hdim_);
 	Blob<float> *w_c_hh_t = Transpose(weight_c_hh_->data());
-	GEMM(cpu,1.0f,0.0f,*context,*w_c_hh_t, &cprev);
+	GEMM(1.0f,0.0f,*context,*w_c_hh_t, &cprev);
 	delete w_c_hh_t;
-	Mult(cpu,dLdc,cprev,&dLdr);
-	Mult(cpu,dLdr,drgatedr,&dLdr);
+	Mult(dLdc,cprev,&dLdr);
+	Mult(dLdr,drgatedr,&dLdr);
 
 
 	// Compute gradients for parameters of update gate
 	Blob<float> *dLdz_t = Transpose(dLdz);
-	GEMM(cpu,1.0f,0.0f,*dLdz_t,src,weight_z_hx_->mutable_grad());
-	GEMM(cpu,1.0f,0.0f,*dLdz_t,*context,weight_z_hh_->mutable_grad());
+	GEMM(1.0f,0.0f,*dLdz_t,src,weight_z_hx_->mutable_grad());
+	GEMM(1.0f,0.0f,*dLdz_t,*context,weight_z_hh_->mutable_grad());
 	if (bias_z_ != nullptr)
-		MVSumRow<float>(cpu,1.0f,0.0f,dLdz,bias_z_->mutable_grad());
+		MVSumRow<float>(1.0f,0.0f,dLdz,bias_z_->mutable_grad());
 	delete dLdz_t;
 
 	// Compute gradients for parameters of reset gate
 	Blob<float> *dLdr_t = Transpose(dLdr);
-	GEMM(cpu,1.0f,0.0f,*dLdr_t,src,weight_r_hx_->mutable_grad());
-	GEMM(cpu,1.0f,0.0f,*dLdr_t,*context,weight_r_hh_->mutable_grad());
+	GEMM(1.0f,0.0f,*dLdr_t,src,weight_r_hx_->mutable_grad());
+	GEMM(1.0f,0.0f,*dLdr_t,*context,weight_r_hh_->mutable_grad());
 	if (bias_r_ != nullptr)
-		MVSumRow(cpu,1.0f,0.0f,dLdr,bias_r_->mutable_grad());
+		MVSumRow(1.0f,0.0f,dLdr,bias_r_->mutable_grad());
 	delete dLdr_t;
 
 	// Compute gradients for parameters of new memory
 	Blob<float> *dLdc_t = Transpose(dLdc);
-	GEMM(cpu,1.0f,0.0f,*dLdc_t,src,weight_c_hx_->mutable_grad());
+	GEMM(1.0f,0.0f,*dLdc_t,src,weight_c_hx_->mutable_grad());
 	if (bias_c_ != nullptr)
-		MVSumRow(cpu,1.0f,0.0f,dLdc,bias_c_->mutable_grad());
+		MVSumRow(1.0f,0.0f,dLdc,bias_c_->mutable_grad());
 	delete dLdc_t;
 
 	Blob<float> *reset_dLdc_t = Transpose(reset_dLdc);
-	GEMM(cpu,1.0f,0.0f,*reset_dLdc_t,*context,weight_c_hh_->mutable_grad());
+	GEMM(1.0f,0.0f,*reset_dLdc_t,*context,weight_c_hh_->mutable_grad());
 	delete reset_dLdc_t;
 
 	// Compute gradients for data input layer
 	if (srclayers[0]->mutable_grad(this) != nullptr) {
-		GEMM(cpu,1.0f,0.0f,dLdc,weight_c_hx_->data(),srclayers[0]->mutable_grad(this));
-		GEMM(cpu,1.0f,1.0f,dLdz,weight_z_hx_->data(),srclayers[0]->mutable_grad(this));
-		GEMM(cpu,1.0f,1.0f,dLdr,weight_r_hx_->data(), srclayers[0]->mutable_grad(this));
+		GEMM(1.0f,0.0f,dLdc,weight_c_hx_->data(),srclayers[0]->mutable_grad(this));
+		GEMM(1.0f,1.0f,dLdz,weight_z_hx_->data(),srclayers[0]->mutable_grad(this));
+		GEMM(1.0f,1.0f,dLdr,weight_r_hx_->data(), srclayers[0]->mutable_grad(this));
 	}
 
 	if (srclayers.size() > 1 && srclayers[1]->mutable_grad(this) != nullptr) {
 		// Compute gradients for context layer
-		GEMM(cpu,1.0f,0.0f,reset_dLdc,weight_c_hh_->data(), srclayers[1]->mutable_grad(this));
-		GEMM(cpu,1.0f,1.0f,dLdr, weight_r_hh_->data(), srclayers[1]->mutable_grad(this));
-		GEMM(cpu,1.0f,1.0f,dLdz,weight_z_hh_->data(), srclayers[1]->mutable_grad(this));
-		Add(cpu,srclayers[1]->grad(this), *update_gate, srclayers[1]->mutable_grad(this));
+		GEMM(1.0f,0.0f,reset_dLdc,weight_c_hh_->data(), srclayers[1]->mutable_grad(this));
+		GEMM(1.0f,1.0f,dLdr, weight_r_hh_->data(), srclayers[1]->mutable_grad(this));
+		GEMM(1.0f,1.0f,dLdz,weight_z_hh_->data(), srclayers[1]->mutable_grad(this));
+		Add(srclayers[1]->grad(this), *update_gate, srclayers[1]->mutable_grad(this));
 	}
 
 	if (srclayers.size() == 1) delete context;

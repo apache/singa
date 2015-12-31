@@ -22,14 +22,15 @@
 # third-party library installation folder
 HOME_DIR := /home/wangwei/local
 
+# must config the cudnn folder if using cudnn
+CUDNN_DIR := $(HOME_DIR)/cudnn
+
 CUDA_DIR := /usr/local/cuda
 
-#CUDA_DIR :=
-
 # Lib folder for system and external libs. You may need to change it.
-LIBRARY_DIRS := $(CUDA_DIR)/lib64 $(CUDA_DIR)/lib $(HOME_DIR)/lib64 $(HOME_DIR)/lib
+LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(CUDNN_DIR)/lib64 $(CUDA_DIR)/lib64 $(CUDA_DIR)/lib
 # Header folder for system and external libs. You may need to change it.
-INCLUDE_DIRS := $(CUDA_DIR)/include $(HOME_DIR)/include ./include
+INCLUDE_DIRS := ./include $(HOME_DIR)/include $(CUDNN_DIR)/include $(CUDA_DIR)/include
 # g++ location, should support c++11, tested with 4.8.1
 CXX := g++
 CUCXX := nvcc
@@ -38,7 +39,7 @@ CUCXX := nvcc
 LIBRARIES := glog protobuf openblas zmq czmq zookeeper_mt
 
 ifneq ($(CUDA_DIR),)
-	LIBRARIES := $(LIBRARIES) cublas cudart curand
+	LIBRARIES := $(LIBRARIES) cublas cudart curand cudnn
 endif
 
 LDFLAGS := $(foreach librarydir, $(LIBRARY_DIRS), -L$(librarydir))\
@@ -48,9 +49,9 @@ BUILD_DIR := .libs
 MSHADOW_FLAGS :=-DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 ZK_FLAGS :=-DTHREADED -fpermissive
 CXXFLAGS := -O2 -msse3 -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
-	$(MSHADOW_FLAGS) -DCPU_ONLY=1 $(ZK_FLAGS)\
+	$(MSHADOW_FLAGS) -DUSE_CUDNN $(ZK_FLAGS)\
 	-funroll-loops $(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
-CUCXXFLAGS := $(MSHADOW_FLAGS) -DUSE_GPU -std=c++11 -G $(CUDA_ARCH) \
+CUCXXFLAGS := -DUSE_CUDNN $(MSHADOW_FLAGS) -std=c++11 $(CUDA_ARCH) \
 	$(foreach includedir, $(INCLUDE_DIRS), -I$(includedir))
 
 #Add device compile option
@@ -102,7 +103,7 @@ singa: $(PROTO_OBJS) $(SINGA_OBJS) $(SINGA_CUDA_OBJS)
 	$(CXX) -shared -o $(BUILD_DIR)/libsinga.so $(SINGA_OBJS)
 	$(CXX) $(SINGA_OBJS) $(SINGA_CUDA_OBJS) src/main.cc -o singa $(CXXFLAGS) $(LDFLAGS)
 	@echo
-	$(CXX) $(SINGA_OBJS) $(SINGA_CUDA_OBJS) src/utils/tool.cc -o singatool $(CXXFLAGS) $(LDFLAGS)
+	$(CXX) $(BUILD_DIR)/libsinga.so src/utils/tool.cc -o singatool $(CXXFLAGS) $(LDFLAGS) -Wl,-unresolved-symbols=ignore-in-shared-libs
 	@echo
 
 loader: proto $(LOADER_OBJS)
@@ -140,7 +141,7 @@ proto: $(PROTO_OBJS)
 $(PROTO_SRCS): $(PROTOS)
 	protoc --proto_path=src/proto --cpp_out=src/proto $(PROTOS)
 	mkdir -p include/proto/
-	cp src/proto/*.pb.h include/proto/
+	cp src/proto/*.pb.h include/singa/proto/
 	mkdir -p tool/pb2/
 	touch tool/pb2/__init__.py
 	protoc --proto_path=src/proto --python_out=tool/pb2/ $(PROTOS)

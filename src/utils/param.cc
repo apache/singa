@@ -151,7 +151,7 @@ void Param::SliceParams(int num, const vector<Param*>& params) {
 }
 
 void Param::Setup(const vector<int>& shape) {
-  data_ = std::make_shared<Blob<float>>(shape);
+  data_.Reshape(shape);
   grad_.Reshape(shape);
   history_.Reshape(shape);
 }
@@ -162,32 +162,33 @@ void Param::InitValues() {
 
 void Param::InitValues(int version) {
   ParamGenerator* gen = ParamGenerator::Create(proto_.init());
-  gen->Fill(data_.get());
+  gen->Fill(&data_);
   set_version(version);
 }
 
-void Param::ShareFrom(const Param& other) {
-  proto_.set_owner(other.owner());
-  if (data_ != nullptr)
-    CHECK(data_->shape() == other.data_->shape());
-  data_ = other.data_;
+void Param::ShareFrom(Param* other, bool cpu_only) {
+  proto_.set_owner(other->owner());
+  CHECK_EQ(data_.count(), other->data_.count());
+  data_.ShareData(&(other->data_), cpu_only);
   if (grad_.count() == 0)
-    grad_.Reshape(data_->shape());
-  slice_start_ = other.slice_start_;
-  num_slices_ = other.num_slices_;
-  slice_offset_ = other.slice_offset_;
-  slice_size_ = other.slice_size_;
+    grad_.Reshape(data_.shape());
+  version_ = other->version_;
+  last_version_ = other->last_version_;
+  slice_start_ = other->slice_start_;
+  num_slices_ = other->num_slices_;
+  slice_offset_ = other->slice_offset_;
+  slice_size_ = other->slice_size_;
   // change pending list size equal to slice size
-  pending_get_.resize(other.pending_get_.size());
-  pending_update_.resize(other.pending_update_.size());
+  pending_get_.resize(other->pending_get_.size());
+  pending_update_.resize(other->pending_update_.size());
 }
 
 void Param::FromProto(const BlobProto& blob) {
-  data_->FromProto(blob);
+  data_.FromProto(blob);
 }
 
 void Param::ToProto(BlobProto* blob) {
-  data_->ToProto(blob);
+  data_.ToProto(blob);
 }
 
 void Param::AddSlice(int slice_id, int size) {
@@ -211,8 +212,8 @@ Msg* Param::GenPutMsg(bool copy, int idx) {
   CHECK_LT(idx, num_slices_);
   Msg* msg = new Msg();
   msg->set_type(kPut);
-  void* ptr = mutable_cpu_data() + slice_offset_[idx];
-  void* p = ptr;
+  const void* ptr = data_.cpu_data() + slice_offset_[idx];
+  const void* p = ptr;
   if (copy) p = nullptr;
   msg->AddFormatFrame("iffp", slice_size_[idx], lr_scale(), wd_scale(), p);
   if (copy) {
@@ -225,7 +226,8 @@ Msg* Param::GenGetMsg(bool copy, int idx) {
   CHECK_LT(idx, num_slices_);
   Msg* msg = new Msg();
   msg->set_type(kGet);
-  msg->AddFormatFrame("ip",  copy, data_->cpu_data() + slice_offset_[idx]);
+  msg->AddFormatFrame("ip",  copy, data_.mutable_cpu_data()
+      + slice_offset_[idx]);
   pending_get_[idx] = true;
   num_pending_requests_++;
   return msg;
@@ -236,12 +238,13 @@ Msg* Param::GenUpdateMsg(bool copy, int idx) {
   Msg* msg = new Msg();
   msg->set_type(kUpdate);
   msg->AddFormatFrame("i", copy);
-  void* ptr = grad_.mutable_cpu_data() + slice_offset_[idx];
+  const void* ptr = grad_.cpu_data() + slice_offset_[idx];
   if (copy) {
     msg->AddFrame(ptr, slice_size_[idx]*sizeof(float));
   } else {
     msg->AddFormatFrame("p", ptr);  // to share values of grad blob
   }
+
   pending_update_[idx] = true;
   num_pending_requests_++;
   return msg;
@@ -250,9 +253,9 @@ Msg* Param::GenUpdateMsg(bool copy, int idx) {
 Msg* Param::GenSyncMsg(int offset, int size) {
   Msg* msg = new Msg();
   msg->set_type(kSyncRequest);
-  msg->set_trgt(ParamTrgt(-1, id()), local_version());
+  msg->set_trgt(ParamTrgt(-1, id()), last_version());
   // always copy data because syn is between server groups in diff procs
-  msg->AddFrame(mutable_cpu_data(), data_->count()*sizeof(float));
+  msg->AddFrame(mutable_cpu_data(), data_.count()*sizeof(float));
   return msg;
 }
 
@@ -274,7 +277,7 @@ Msg* Param::HandlePutMsg(Msg** msg, bool reserve) {
     CHECK_EQ(size * sizeof(float), (*msg)->FrameSize());
     memcpy(mutable_cpu_data(), (*msg)->FrameData(), size * sizeof(float));
   } else {
-    data_->set_cpu_data(ptr);
+    data_.set_cpu_data(ptr);
   }
   if (!reserve) DeleteMsg(msg);
   return nullptr;
@@ -288,7 +291,7 @@ Msg* Param::HandleGetMsg(Msg** msg, bool reserve) {
   (*msg)->ParseFormatFrame("ip", &copy, &ptr);
   if (copy) {
     (*msg)->AddFrame(mutable_cpu_data(), sizeof(float) * size());
-  } else if (ptr != data_->cpu_data()) {
+  } else if (ptr != data_.cpu_data()) {
     // this case reflects following situation:
     // worker 0 and server are in the same process, while worker 1 is not.
     // worker 1 "put" data into server, so server need to allocate memory.
@@ -296,8 +299,8 @@ Msg* Param::HandleGetMsg(Msg** msg, bool reserve) {
     //  1. copy the data to the worker0 provided space
     //  2. change its own pointer to that space in order to share memory
     // in this case, the server always points to last worker's space
-    memcpy(ptr, data_->cpu_data(), sizeof(float) * size());
-    data_->set_cpu_data(ptr);
+    memcpy(ptr, data_.cpu_data(), sizeof(float) * size());
+    data_.set_cpu_data(ptr);
   }
   // else the mem space is shared among all worker and servers
   Msg* ret = nullptr;
