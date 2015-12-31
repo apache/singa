@@ -22,11 +22,11 @@
 ```
 bin/singa-run.sh -exe user_main.py -conf cluster.conf
 ```
-The python code, i.e., `user_main.py`, would create the JobProto object and pass it to Driver::Train.
+The python code, e.g., `user_main.py`, would create the JobProto object and pass it to Driver::Train.
 Currently, ./bin/singa-run.sh needs to get the cluster topology, hence we still need to pass a `cluster.conf` to it.
 The cluster.conf has the configuration for a JobProto with all other fields empty except the cluster field.
 
-Note that 'workspace' field in ClusterProto can be set in either (i) cluster.conf or (ii) python code.
+Note that `workspace` field in ClusterProto can be set in either (i) cluster.conf or (ii) python code.
 
 #### Examples
 ```
@@ -83,7 +83,7 @@ Methods in Model class
 
 #### Results
 
-fit() and evaluate() return `result`, a dictionary containing
+fit() and evaluate() return train/test results, a dictionary containing
 
 * [key]: step number
 * [value]: a list of dictionay
@@ -92,13 +92,67 @@ fit() and evaluate() return `result`, a dictionary containing
 	* 'ppl' for ppl
 	* 'se' for squred error   
 
+<<<<<<< HEAD
+=======
+### Parameter class
+
+Users need to set parameter and initial values. For example,
+
+* Parameter
+        * lr = (float) // learning rate
+        * wd = (float) // weight decay
+
+* Parameter initialization
+        * init = (string) // one of the types, 'uniform', 'constant', 'gaussian'
+        * for uniform [default]
+                * high = (float)
+                * low = (float)
+        * for constant
+                * value = (float)
+        * for gaussian
+                * mean = (float)
+                * std = (float)
+
+* Weight (`w_param`) is 'gaussian' with mean=0, std=0.01 at default
+
+* Bias (`b_param`) is 'constant' with value=0 at default
+
+* How to update the parameter fields
+        * for updating Weight, put `w_` in front of field name
+        * for updating Bias, put `b_` in front of field name
+
+Several ways to set Parameter values
+```
+m.add(Dense(10, w_mean=1, w_std=0.1, w_lr=2, w_wd=10, ...)
+```
+```
+parw = Parameter(lr=2, wd=10, init='constant', value=0)
+m.add(Dense(10, w_param=parw, ...)
+```
+```
+parw = Parameter(init='constant', value=0)
+m.add(Dense(10, w_param=parw, w_lr=2, w_wd=10, ...)
+```
+
+
+#### To run Singa on GPU
+
+Users need to set a list of gpu ids to `device` field in fit() or evaluate(). 
+
+For example,
+```
+gpu_id = [0]
+m.fit(X_train, nb_epoch=100, with_test=True, device=gpu_id)
+```
+
+>>>>>>> cb1ffb4... SINGA-81 Add Python Helper
 #### Other classes
 
 * Store
 * Algorithm
 * Updater
-* SGD (inherited)
-* AdaGrad (inherited)
+* SGD
+* AdaGrad
 * Cluster
 
 
@@ -150,7 +204,7 @@ m.add(AvgPooling2D(pool_size=(3,3), stride=2))
 
 m.add(Dense(10, w_wd=250, b_lr=2, b_wd=0, activation='softmax'))
 
-sgd = SGD(decay=0.004, lr_type='fixed', step=(0,60000,65000), step_lr=(0.001,0.0001,0.00001))
+sgd = SGD(decay=0.004, lr_type='manual', step=(0,60000,65000), step_lr=(0.001,0.0001,0.00001))
 topo = Cluster(workspace)
 m.compile(updater=sgd, cluster=topo)
 m.fit(X_train, nb_epoch=1000, with_test=True)
@@ -257,6 +311,7 @@ store = Store(path='test.bin', batch_size=100, ...)        // parameter values a
 m.add(Data(load='recordinput', phase='test', conf=store))  // Data layer is added
 ```
 
+<<<<<<< HEAD
 ### Parameter class
 
 Users need to set parameter and initial values. For example,
@@ -296,8 +351,10 @@ m.add(Dense(10, w_param=parw, ...)
 parw = Parameter(init='constant', value=0)
 m.add(Dense(10, w_param=parw, w_lr=2, w_wd=10, ...)
 ```
+=======
+>>>>>>> cb1ffb4... SINGA-81 Add Python Helper
 
-### Example to run singa
+### Cases to run singa
 
 (1) Run singa for training
 ```
