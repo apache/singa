@@ -1,4 +1,5 @@
 rat-excludes
+Doxyfile
 Makefile.*
 configure
 .gitignore
