@@ -12,3 +12,6 @@ This software contains codes from the other projects: Caffe (https://github.com/
 (https://code.google.com/p/googletest/).
 
 The software uses external libraries including czmq, glog, google protobuf, OpenCV and Openblas. 
+
+The software also has optional dependencies for advanced features, including cuda, cudnn, libhdf3 and Apache Mesos
+(vesion >= 2.0)
