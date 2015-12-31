@@ -34,6 +34,15 @@ variables to continue the building instructions,
     $ export LIBRARY_PATH=$PREFIX/lib:$LIBRARY_PATH
     $ export PATH=$PREFIX/bin:$PATH
 
+###Optional dependencies
+For advanced features, the following libraries are needed:
+
+  * `cuda` (NIVIDA CUDA Toolkit EUL)
+  * `cudnn` (NIVIDA CuDNN EULA)
+  * `Apache Mesos` (Apache 2.0)
+  * `Apache Hadoop` (Apache 2.0)
+  * `libhdfs3` (Apache 2.0)
+
 ##Documentation
 
 Full documentation is available online at [Official Documentation](https://singa.incubator.apache.org/docs/overview.html).

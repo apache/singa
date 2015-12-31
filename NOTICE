@@ -13,5 +13,4 @@ This software contains codes from the other projects: Caffe (https://github.com/
 
 The software uses external libraries including czmq, glog, google protobuf, OpenCV and Openblas. 
 
-The software also has optional dependencies for advanced features, including cuda, cudnn, libhdf3 and Apache Mesos
-(vesion >= 2.0)
+The software also has optional dependencies for advanced features, including cuda, cudnn, libhdf3, HDFS, Apache Mesos.

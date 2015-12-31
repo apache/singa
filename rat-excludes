@@ -3,6 +3,7 @@ Makefile.*
 configure
 .gitignore
 conf/*
+doc/*
 config/*
 \.dirstamp
 autom4te.cache/*
