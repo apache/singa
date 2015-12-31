@@ -112,6 +112,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<SoftmaxLossLayer, int>(kSoftmaxLoss);
   RegisterLayer<STanhLayer, int>(kSTanh);
   RegisterLayer<SoftmaxLayer, int>(kSoftmax);
+  RegisterLayer<GRULayer, int>(kGRU);
 
 #ifdef USE_LMDB
   RegisterLayer<LMDBDataLayer, int>(kLMDBData);

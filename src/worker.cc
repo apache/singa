@@ -214,7 +214,6 @@ void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
   }
 }
 
-
 void Worker::Checkpoint(int step, const std::string& folder, NeuralNet* net) {
   BlobProtos bps;
   for (auto layer : net->layers()) {

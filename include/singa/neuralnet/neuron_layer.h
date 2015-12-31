@@ -120,16 +120,47 @@ class DropoutLayer : public NeuronLayer {
  * Use it as output layer, it will generate random grad;
  * Use it as neuron layer, it will replicates data and grad.
  */
-class DummyLayer: public Layer {
+class DummyLayer: public NeuronLayer {
  public:
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+
  private:
   bool input_ = false;  // use as input layer
   bool output_ = false;  // use as output layer
 };
 
+class GRULayer : public NeuronLayer {
+ public:
+  ~GRULayer();
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+
+  const std::vector<Param*> GetParams() const override {
+    if (bias_z_ != nullptr && bias_r_ != nullptr && bias_c_ != nullptr) {
+      std::vector<Param*> params{weight_z_hx_, weight_r_hx_,weight_c_hx_,
+        weight_z_hh_, weight_r_hh_, weight_c_hh_,
+        bias_z_, bias_r_, bias_c_};
+      return params;
+    } else {
+      std::vector<Param*> params{weight_z_hx_, weight_r_hx_,weight_c_hx_,
+        weight_z_hh_, weight_r_hh_, weight_c_hh_};
+      return params;
+    }
+  }
+
+ private:
+  int batchsize_; // batch size
+  int vdim_, hdim_; // dimensions
+
+  Blob<float> *update_gate, *reset_gate, *new_memory;
+
+  Param *weight_z_hx_, *weight_z_hh_, *bias_z_; // update gate
+  Param *weight_r_hx_, *weight_r_hh_, *bias_r_; // reset gate
+  Param *weight_c_hx_, *weight_c_hh_, *bias_c_; // new memory
+};
 
 /**
  * Layer that applys linear transformations as
