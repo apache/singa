@@ -195,6 +195,11 @@ message LayerProto {
   // share data and grad blob with the single src layer, e.g., relu layer can
   // share blobs from conv layer. It is useful for saving memory space.
   optional bool share_src_blobs = 22 [default = false];
+
+  optional int32 unroll_len = 23 [default = 1];
+  repeated UnrollConnType unroll_conn_type = 24;
+  repeated int32 shift = 25;
+
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
   // names of parameters shared from other layers
@@ -222,6 +227,7 @@ message LayerProto {
   optional RBMProto rbm_conf = 209;
   optional ReLUProto relu_conf = 211;
   optional SoftmaxProto softmax_conf = 214;
+  optional GRUProto gru_conf = 215;
 
   // configuration for loss layers, id range [300, 400)
   optional SoftmaxLossProto softmaxloss_conf = 301;
@@ -436,6 +442,15 @@ message RBMProto {
   optional bool gaussian = 3 [default = false]; // use gaussian sampling or not
 }
 
+// Message that stores parameters used by GRULayer
+message GRUProto {
+  // dimension of hidden state for the layer
+  required int32 dim_hidden = 1;
+  // use bias vector or not
+  optional bool bias_term = 2 [default = true];
+}
+
+
 // Message that stores parameters used by InnerProductLayer
 message InnerProductProto {
   // number of outputs for the layer
@@ -594,6 +609,7 @@ enum LayerType {
   kSTanh = 212;
   kSigmoid = 213;
   kSoftmax = 214;
+  kGRU = 215;
   // cudnn v3
   kCudnnConv = 250;
   kCudnnPool = 251;
@@ -705,4 +721,15 @@ enum InitMethod {
 
   // For user defined init method
   kUserInit = 101;
+}
+
+enum UnrollConnType {
+  // i-th unrolled layer <- (i - shift)-th src unrolled layer
+  kUnrollOneToOne = 1;
+  // i-th unrolled layer <- all src unrolled layers
+  kUnrollOneToAll = 2;
+  // i-th unrolled layer <- last unrolled src layer
+  kUnrollFirstToLast = 3;
+  // customized connection type defined by src_conn
+  kUnrollCustomized = 4;
 }

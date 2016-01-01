@@ -224,10 +224,10 @@ if test x"$enable_python" != x"no"; then
     AC_CHECK_PROG(PY_CHECK,python,yes)
     if test x"$PY_CHECK" != x"yes"; then
         AC_MSG_ERROR([Cannot find command "python". Please intall before make.])
-    else    
+    else
         PYLIBS="-lpython`python -V 2>&1 | awk '{print substr($2,1,3)}'`"
     fi
-fi        
+fi
 AC_SUBST(PYLIBS)
 
 AC_ARG_WITH([python],
