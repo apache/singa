@@ -93,6 +93,15 @@ class Driver {
    */
   void Test(const JobProto& job_conf);
   /**
+   * Used for python binding. Users can also directly call it as a C++ API.
+   *
+   * It completes the functions as defined above but accept serialized string
+   * parameters.
+   *
+   * @param[in] str serialized string recorded job configuration.
+   */
+  void Test(const std::string str);
+  /**
    * Setting the checkpoint field of the job configuration to resume training.
    *
    * The checkpoint folder will be searched to get the files for the latest

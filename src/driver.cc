@@ -60,8 +60,8 @@ void Driver::Init(int argc, char **argv) {
     SetupLog(singa_conf_.log_dir(), "driver");
   // job conf passed by users as "-conf <path>"
   arg_pos = ArgPos(argc, argv, "-conf");
-  CHECK_NE(arg_pos, -1);
-  ReadProtoFromTextFile(argv[arg_pos+1], &job_conf_);
+  if (arg_pos != -1)
+    ReadProtoFromTextFile(argv[arg_pos+1], &job_conf_);
 
   // register layers
 
@@ -177,6 +177,12 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
     SetupForResume(&job);
   job.set_id(job_id_);
   Train(job);
+}
+
+void Driver::Test(const std::string str) {
+  JobProto job_conf;
+  job_conf.ParseFromString(str);
+  Test(job_conf);
 }
 
 void Driver::Test(const JobProto& job_conf) {

@@ -367,19 +367,21 @@ bool JobManager::GenerateJobID(int* id) {
 
 bool JobManager::GenerateHostList(const char* host_file, const char* job_file,
                                   vector<string>* list) {
+  int nprocs = 1;
   // compute required #process from job conf
-  ClusterProto cluster;
-  google::protobuf::TextFormat::ParseFromString(ExtractClusterConf(job_file),
-                                                &cluster);
-  int nworker_procs = cluster.nworker_groups() * cluster.nworkers_per_group()
-                      / cluster.nworkers_per_procs();
-  int nserver_procs = cluster.nserver_groups() * cluster.nservers_per_group()
-                      / cluster.nservers_per_procs();
-  int nprocs = 0;
-  if (cluster.server_worker_separate())
-    nprocs = nworker_procs + nserver_procs;
-  else
-    nprocs = std::max(nworker_procs, nserver_procs);
+  if (job_file != nullptr) {
+    ClusterProto cluster;
+    google::protobuf::TextFormat::ParseFromString(ExtractClusterConf(job_file),
+                                                  &cluster);
+    int nworker_procs = cluster.nworker_groups() * cluster.nworkers_per_group()
+                        / cluster.nworkers_per_procs();
+    int nserver_procs = cluster.nserver_groups() * cluster.nservers_per_group()
+                        / cluster.nservers_per_procs();
+    if (cluster.server_worker_separate())
+      nprocs = nworker_procs + nserver_procs;
+    else
+      nprocs = std::max(nworker_procs, nserver_procs);
+  }
   // get available host list from global conf
   std::ifstream hostfile(host_file);
   if (!hostfile.is_open()) {
