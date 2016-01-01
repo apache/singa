@@ -22,12 +22,14 @@
 #include <glog/logging.h>
 #include "singa/neuralnet/neuron_layer.h"
 #include "singa/utils/math_blob.h"
+#include "singa/utils/context.h"
+#include "singa/utils/singleton.h"
 
 namespace singa {
 
 void DummyLayer::Setup(const LayerProto& proto,
                        const vector<Layer*>& srclayers) {
-  Layer::Setup(proto, srclayers);
+  NeuronLayer::Setup(proto, srclayers);
   if (proto.dummy_conf().input()) {  // use as input layer
     CHECK_EQ(srclayers.size(), 0);
     input_ = true;
@@ -43,27 +45,28 @@ void DummyLayer::Setup(const LayerProto& proto,
   if (proto.dummy_conf().output()) {  // use as output layer
     output_ = true;
   }
+
 }
 
-std::random_device rd;
-std::mt19937 gen(rd());
-std::uniform_real_distribution<> dis(0, 1);
-
 void DummyLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
+  std::uniform_real_distribution<float> dis(0, 1);
+  auto gen = Singleton<Context>::Instance()->rand_generator();
   if (input_) {
     // randomly init data with [0,1] values
     for (int i = 0; i < data_.count(); ++i)
-      data_.mutable_cpu_data()[i] = dis(gen);
+      data_.mutable_cpu_data()[i] = dis(*gen);
   }
   if (srclayers.size() > 0)
     Copy(srclayers[0]->data(this), &data_);
 }
 
 void DummyLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
+  std::uniform_real_distribution<float> dis(0, 1);
+  auto gen = Singleton<Context>::Instance()->rand_generator();
   if (output_) {
     // randomly init data with [0,1] values
     for (int i = 0; i < data_.count(); ++i)
-      grad_.mutable_cpu_data()[i] = dis(gen);
+      grad_.mutable_cpu_data()[i] = dis(*gen);
   }
   if (srclayers.size() > 0)
     Copy(grad_, srclayers[0]->mutable_grad(this));
