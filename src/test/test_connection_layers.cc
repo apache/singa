@@ -179,8 +179,8 @@ TEST(ConnectionLayerTest, DataSliceTest) {
   proto_slice.mutable_slice_conf()->set_num_slices(K);
   SliceLayer slice;
   slice.Setup(proto_slice, src_slice);
-  ASSERT_EQ(slice.data(static_cast<Layer*>(&slice)).shape(0), N / K);
-  ASSERT_EQ(slice.data(static_cast<Layer*>(&slice)).shape(1), M);
+  ASSERT_EQ(slice.data(nullptr).shape(0), N / K);
+  ASSERT_EQ(slice.data(nullptr).shape(1), M);
 
   // use dummy as output layers
   LayerProto proto_out[K];
@@ -236,8 +236,8 @@ TEST(ConnectionLayerTest, ModelSliceTest) {
   proto_slice.mutable_slice_conf()->set_num_slices(K);
   SliceLayer slice;
   slice.Setup(proto_slice, src_slice);
-  ASSERT_EQ(slice.data(static_cast<Layer*>(&slice)).shape(0), N);
-  ASSERT_EQ(slice.data(static_cast<Layer*>(&slice)).shape(1), M / K);
+  ASSERT_EQ(slice.data(nullptr).shape(0), N);
+  ASSERT_EQ(slice.data(nullptr).shape(1), M / K);
 
   // use dummy as output layers
   LayerProto proto_out[K];
