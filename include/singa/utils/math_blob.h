@@ -280,7 +280,7 @@ template<typename Op, typename Dtype>
 void Map(const Blob<Dtype> & A, const Blob<Dtype> & B, Blob<Dtype> * C) {
   CHECK_EQ(A.count(), B.count()) << "Blobs must have the same size";
   CHECK_EQ(A.count(), C->count()) << "Blobs must have the same size";
-  cpu_e_f<Op>(A.count(), A.cpu_data(), B.cpu_data(), C->mutable_cpu_data());
+  //cpu_e_f<Op>(A.count(), A.cpu_data(), B.cpu_data(), C->mutable_cpu_data());
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
   if (device == -1) {
