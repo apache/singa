@@ -58,6 +58,7 @@ class NeuralNet {
   static NeuralNet* Create(const NetProto& net_conf, Phase phase,
                            int npartitions);
 
+  static const NetProto Unrolling(const NetProto& net_conf);
   /**
    * construct the net structure from protocol buffer.
    * @param netproto neural net config

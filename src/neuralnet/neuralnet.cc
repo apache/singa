@@ -24,6 +24,8 @@
 #include <algorithm>
 #include <queue>
 #include "singa/utils/singleton.h"
+#include <unordered_map>
+using namespace std;
 
 namespace singa {
 
@@ -36,9 +38,6 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
   NetProto conf;
   conf.CopyFrom(net_conf);
   conf.clear_layer();
-  // for sharing param conf
-  std::unordered_map<string, ParamProto*> name2param;
-  std::vector<ParamProto*> shares;
   // flag=0: neither exclude nor include field appears
   // flag=1: exclude field appears
   // flag=2: include field appears
@@ -78,16 +77,25 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
     // using net partition if layer partition is not set
     if (!layer_conf->has_partition_dim())
       layer_conf->set_partition_dim(net_conf.partition_dim());
-    for (int i = 0; i < layer_conf->param_size(); i++) {
-      ParamProto* param = layer_conf->mutable_param(i);
-      if (param->has_name() && param->name() != "") {
-        CHECK(name2param.find(param->name()) == name2param.end())
-          << "param name is repeated: " << param->name();
-        name2param[param->name()] = param;
-      }
-      if (param->has_share_from() && param->share_from() != "")
-        shares.push_back(param);
-    }
+  }
+  //LOG(INFO) << "Before unrolling: \n" << conf.DebugString();
+  conf = Unrolling (conf);
+
+  // Copy shared parameters for sharing param conf
+  std::unordered_map<string, ParamProto*> name2param;
+  std::vector<ParamProto*> shares;
+  for (int index = 0; index < conf.layer_size();index ++) {
+	  LayerProto* layer = conf.mutable_layer(index);
+	  for (int i = 0; i < layer->param_size(); i++) {
+		  ParamProto* param = layer->mutable_param(i);
+		  if (param->has_name() && param->name() != "") {
+			  CHECK(name2param.find(param->name()) == name2param.end())
+	        		  << "param name is repeated: " << param->name();
+			  name2param[param->name()] = param;
+		  }
+		  if (param->has_share_from() && param->share_from() != "")
+			  shares.push_back(param);
+	  }
   }
   for (auto param : shares) {
     const std::string from = param->share_from();
@@ -103,6 +111,91 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc
   return new NeuralNet(conf, npartitions);
 }
+
+const NetProto NeuralNet::Unrolling(const NetProto& net_conf) {
+	// Step 1: Unroll each layer & set parameter sharing
+	NetProto conf;
+
+	std::vector<std::vector<int>> layer_groups;
+	std::unordered_map<string,int> org_layer_names;
+	for (int index = 0; index < net_conf.layer_size(); index ++) {
+		const LayerProto& org_layer = net_conf.layer(index);
+		org_layer_names[org_layer.name()] = index; // layer_name -> index
+
+		std::vector<int> layer_group;
+		for (int i = 0; i < org_layer.unroll_len(); i ++) { // unroll
+			LayerProto* unroll_layer = conf.add_layer();
+			unroll_layer->CopyFrom(org_layer); // create a new layer conf
+			if (org_layer.unroll_len() > 1) {
+				// update layer names
+				std::stringstream sstm;
+				sstm << unroll_layer->name() << "_" << i;
+				unroll_layer->set_name(sstm.str());
+				// update layer parameter sharing
+				for (int j = 0; j < unroll_layer->param_size(); j ++) {
+					ParamProto* param = unroll_layer->mutable_param(j);
+					if (i == 0) continue; // no need to rename parameters in the i-th unrolled layer
+					if (!param->has_share_from() || param->share_from() == "") {// not shared from others
+						param->set_share_from(param->name());
+					}
+					std::stringstream sstm1;
+					sstm1 << param->name() << "_" << i;
+					param->set_name(sstm1.str());
+				}
+			}
+			// clear unrolling related fields
+			unroll_layer->clear_unroll_len();
+			unroll_layer->clear_unroll_conn_type();
+			unroll_layer->clear_shift();
+			unroll_layer->clear_srclayers();
+
+			layer_group.push_back(conf.layer_size() - 1);
+		}
+		layer_groups.push_back(layer_group);
+	}
+	// Step 2: Connect unrolled layers by setting `srclayers`
+	for (int index = 0; index < net_conf.layer_size(); index ++) {
+		const LayerProto& org_layer = net_conf.layer(index);
+		if (org_layer.srclayers_size() == 0) continue; // no src layer
+		//TODO(fanju): add LSTM when it is ready
+		if (org_layer.type() == kGRU) { // connect GRU layers
+			for (unsigned int j = 1; j < layer_groups[index].size(); j ++) {
+				LayerProto* unroll_layer = conf.mutable_layer(layer_groups[index][j]);
+				unroll_layer->add_srclayers(conf.layer(layer_groups[index][j-1]).name());
+			}
+		}
+		for (int i = 0; i < org_layer.srclayers_size(); i ++) {
+			const string& org_layer_src = org_layer.srclayers(i);
+
+			singa::UnrollConnType unroll_conn_type = kUnrollOneToOne; // Default value
+			if (i < org_layer.unroll_conn_type_size()) unroll_conn_type = org_layer.unroll_conn_type(i);
+			unsigned int shift = 0; // Default shift value
+			if (i < org_layer.shift_size()) shift = org_layer.shift(i);
+
+			const std::vector<int> unroll_layer_srcs = layer_groups[org_layer_names[org_layer_src]];
+
+			for (unsigned int j = 0; j < layer_groups[index].size(); j ++) {
+				LayerProto* unroll_layer = conf.mutable_layer(layer_groups[index][j]);
+				// Update src layers of `unroll_layer` by considering the types
+				if (unroll_conn_type == kUnrollOneToAll) {
+					for (int unroll_layer_src : unroll_layer_srcs) {
+						unroll_layer->add_srclayers(conf.layer(unroll_layer_src).name());
+					}
+				} else if (unroll_conn_type == kUnrollOneToOne) {
+					if (j < shift) continue; // no need to connect with the src
+					int unroll_layer_src = unroll_layer_srcs[j - shift];
+					unroll_layer->add_srclayers(conf.layer(unroll_layer_src).name());
+				} else if (unroll_conn_type == kUnrollFirstToLast) {
+					if (j > 0) break;
+					int unroll_layer_src = unroll_layer_srcs[unroll_layer_srcs.size() - 1];
+					unroll_layer->add_srclayers(conf.layer(unroll_layer_src).name());
+				}
+			}
+		}
+	}
+	return conf;
+}
+
 
 NeuralNet::NeuralNet(NetProto netproto, int npartitions) {
   LOG(INFO) << "Constructing NeuralNet...";
@@ -260,7 +353,7 @@ NetProto NeuralNet::AddPartitionConnectionLayers(const NetProto& netproto,
    *   (NO)  src_pdim = dst_pdim ?
    *           (YES) Direct Connection
    *           (NO)  Slice -> Concate
-   */ 
+   */
   for (const LayerProto& origin_layer : netproto.layer()) {
     LayerProto* dst_layer = name2proto[origin_layer.name()];
     int dst_pdim = dst_layer->partition_dim();

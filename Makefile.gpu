@@ -20,7 +20,7 @@
 
 ###################User Config Varaibles #############################
 # third-party library installation folder
-HOME_DIR := /media/hd1/home/wangwei/local
+HOME_DIR := /home/wangwei/local
 
 # must config the cudnn folder if using cudnn
 CUDNN_DIR := $(HOME_DIR)/cudnn
@@ -30,7 +30,7 @@ CUDA_DIR := /usr/local/cuda
 # Lib folder for system and external libs. You may need to change it.
 LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(CUDNN_DIR)/lib64 $(CUDA_DIR)/lib64 $(CUDA_DIR)/lib
 # Header folder for system and external libs. You may need to change it.
-INCLUDE_DIRS := ./include $(HOME_DIR)/include $(CUDNN_DIR)/include $(CUDA_DIR)/include 
+INCLUDE_DIRS := ./include $(HOME_DIR)/include $(CUDNN_DIR)/include $(CUDA_DIR)/include
 # g++ location, should support c++11, tested with 4.8.1
 CXX := g++
 CUCXX := nvcc
@@ -85,7 +85,7 @@ TEST_CUDA_SRCS :=$(shell find src/test/ -maxdepth 1 -name "*.cu")
 TEST_CUDA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_CUDA_SRCS:.cu=.o)))
 -include $(TEST_CUDA_OBJS:%.o=%.P)
 
-SINGA_CUDA_SRCS :=$(shell find src/ -name "*.cu")
+SINGA_CUDA_SRCS := $(shell find src/ \( -path "src/test" \) -prune -o \( -name "*.cu" -type f \) -print )
 SINGA_CUDA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(SINGA_CUDA_SRCS:.cu=.o)))
 -include $(SINGA_CUDA_OBJS:%.o=%.P)
 
