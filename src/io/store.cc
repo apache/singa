@@ -22,9 +22,9 @@
 #include "singa/io/store.h"
 #include "singa/io/kvfile_store.h"
 #include "singa/io/textfile_store.h"
+#ifdef USE_HDFS
 #include "singa/io/hdfs_store.h"
-
-#define USE_HDFS 1
+#endif
 
 namespace singa { namespace io {
 

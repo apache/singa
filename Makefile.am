@@ -149,8 +149,6 @@ SINGA_HDRS := include/singa.h \
               include/singa/io/kvfile_store.h \
               include/singa/io/textfile_store.h \
               include/mshadow/cxxnet_op.h \
-              include/singa/io/hdfsfile.h \
-              include/singa/io/hdfsfile_store.h \
               include/mshadow/tensor_expr.h \
               include/mshadow/tensor_container.h \
               include/mshadow/tensor_expr_ext.h \
