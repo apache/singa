@@ -131,12 +131,60 @@ class DummyLayer: public NeuronLayer {
   bool output_ = false;  // use as output layer
 };
 
+/**
+ * Embedding layer that converts an array of index ID into a matrix.
+ *
+ * Each index ID corresponds to a word (or feature) vector in the vocabulary
+ * matrix maintained by the embedding layer.
+ * The index ID ranges within [0, |D|), where |D| is the size of the vocabulary,
+ * i.e., the number of rows of the vocabulary matrix.
+ * If the index is -1, which means it is a padding word. A feature vector with
+ * all values 0 will be constructed and inserted into the feature Blob.
+ * Users handle special words by themseleves. For example, the index 0 could be
+ * the starting word/symbol of a sentence, the index 1 could be the ending
+ * word/symbol of a sentence.
+ */
+class EmbeddingLayer : public NeuronLayer {
+ public:
+  ~EmbeddingLayer() {
+    delete vocab_;
+  }
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+  const std::vector<Param*> GetParams() const override {
+    std::vector<Param*> params;
+    params.push_back(vocab_);
+    return params;
+  }
+
+ private:
+  int vocab_size_, feature_dim_, batchsize_;
+  //!< the vocabulary matrix to be learned
+  Param *vocab_;
+};
+
 class GRULayer : public NeuronLayer {
  public:
   ~GRULayer();
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+  ConnectionType dst_layer_connection() const override{
+    return kOneToMany;
+  }
+  Blob<float>* mutable_grad(const Layer* from) override {
+    if (typeid(*from) == typeid(GRULayer))
+      return gradvec_[1];
+    else
+      return gradvec_[0];
+  }
+  const Blob<float>& grad(const Layer* from) override{
+    if (typeid(*from) == typeid(GRULayer))
+      return *gradvec_[1];
+    else
+      return *gradvec_[0];
+  }
 
   const std::vector<Param*> GetParams() const override {
     if (bias_z_ != nullptr && bias_r_ != nullptr && bias_c_ != nullptr) {
@@ -156,6 +204,8 @@ class GRULayer : public NeuronLayer {
   int vdim_, hdim_; // dimensions
 
   Blob<float> *update_gate, *reset_gate, *new_memory;
+  //!< gru layer connect to two dst layers, hence need to grad blobs.
+  Blob<float> aux_grad_;
 
   Param *weight_z_hx_, *weight_z_hh_, *bias_z_; // update gate
   Param *weight_r_hx_, *weight_r_hh_, *bias_r_; // reset gate

@@ -100,6 +100,12 @@ class Context {
   }
 
   /**
+   * @return the device ID of the current thread.
+   */
+  int device_id() {
+    return device_id(std::this_thread::get_id());
+  }
+  /**
    * @return the ID of the device attached to a given CPU thread, or -1 if this
    * thread has not been attached GPU device.
    */

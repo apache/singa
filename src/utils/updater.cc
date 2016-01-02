@@ -101,9 +101,24 @@ void Updater::Init(const UpdaterProto& proto) {
   momentum_ = proto.momentum();
   weight_decay_ = proto.weight_decay();
   lr_gen_ = LRGenerator::Create(proto.learning_rate());
+  clip_low_ = proto.clip_low();
+  clip_high_ = proto.clip_high();
+}
+
+void Updater::Clip(const float low, const float high, Param* param) {
+  Blob<float>* grad = param->mutable_grad();
+  float* ptr = grad->mutable_cpu_data();
+  for (int i = 0; i < grad->count(); i++) {
+    if (ptr[i] > high)
+      ptr[i] = high;
+    else if (ptr[i] < low)
+      ptr[i] = low;
+  }
 }
 
 void SGDUpdater::Update(int step, Param* param, float grad_scale) {
+  if (clip_high_ > clip_low_)
+    Clip(clip_low_, clip_high_, param);
   Shape<1> s = Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
@@ -143,6 +158,8 @@ void NesterovUpdater::Update(int step, Param* param, float grad_scale) {
 }
 /***********************AdaGrad******************************/
 void AdaGradUpdater::Update(int step, Param* param, float grad_scale) {
+  if (clip_high_ > clip_low_)
+    Clip(clip_low_, clip_high_, param);
   Shape<1> s = Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);

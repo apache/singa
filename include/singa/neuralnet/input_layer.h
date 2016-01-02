@@ -162,6 +162,44 @@ class PrefetchLayer : public Layer {
   std::thread thread_;
 };
 
+class OneHotLayer : public InputLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers);
+
+ private:
+  int batchsize_, dim_;
+};
+
+/**
+ *  * Read the ASCII file as a large string used for RNN model where each character
+ *   * is a single input to the unrolled RNN layer.
+ *    * max string length is string::max_size();
+ *     */
+class CharRNNInputLayer : public InputLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers);
+
+ private:
+  int batchsize_ = 0, unroll_len_ = 1;
+  unsigned offset_ = 0;
+  string path_, vocab_path_;
+  string buf_;
+  vector<int> start_;
+  std::unordered_map<char, int> char2index_;
+};
+
+/**
+ * Label layer for fetching labels from the src input layer for RNN models.
+ * The i-th unrolled layer fetch label from the input layer via data(i+1).
+ * Particularly, it shares data_ Blob with data(i+1) of its src layer.
+ */
+class RNNLabelLayer : public InputLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers);
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers);
+};
 /****************Deprecated layers******************/
 /**
  * @deprecated please use the StoreInputLayer.

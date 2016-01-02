@@ -155,6 +155,11 @@ void WriteProtoToBinaryFile(const Message& proto, const char* filename);
  * Write a string (e.g., graph reprensetation of a net) into a text file.
  */
 void WriteStringToTextFile(const string& filename, const string& context);
+
+/**
+ * Parse metric pairs (key = value[, key = value]) from string
+ */
+const vector<std::pair<string, float>> GetMetricFromString(const string& disp);
 }  // namespace singa
 
 #endif  // SINGA_UTILS_COMMON_H_

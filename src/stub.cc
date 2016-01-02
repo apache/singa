@@ -83,6 +83,8 @@ const std::unordered_map<int, ParamEntry*>  CreateParamShard(
     int grp = entry.first;
     int wstart = grp2workers[grp].first, wend = grp2workers[grp].second;
     for (auto layer : entry.second->layers()) {
+      if (layer->unroll_index() > 0)
+        continue;
       int partition = layer->partition_id();
       bool local =  partition >= wstart && partition < wend;
       for (auto param : layer->GetParams()) {

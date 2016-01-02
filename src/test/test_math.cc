@@ -286,7 +286,6 @@ TEST(MathTest, TestAxpyGPU) {
 TEST(MathTest, TestDotGPU) {
   float A[12];
   float B[12];
-
   for (int i = 0; i < 12; i++) {
     A[i] = i - 1;
     B[i] = i + 1;

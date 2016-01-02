@@ -712,6 +712,21 @@ void Softmax(int nb_rows, const Blob<Dtype>& A, Blob<Dtype>* B) {
 #endif  // USE_GPU
   }
 }
+
+template<typename Dtype>
+void Zero(Blob<Dtype>* B) {
+  auto context = Singleton<Context>::Instance();
+  int device = context->device_id(std::this_thread::get_id());
+  if (device == -1) {
+    B->SetValue(0);
+  } else {
+#ifdef USE_GPU
+    cudaMemset(B->mutable_gpu_data(), 0, B->count() * sizeof(float));
+#else
+    LOG(FATAL) << "Not implemented";
+#endif  // USE_GPU
+  }
+}
 }  // end of namespace singa
 
 #endif  // SINGA_UTILS_MATH_BLOB_H_

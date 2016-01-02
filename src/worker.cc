@@ -29,6 +29,7 @@
 #include "singa/utils/factory.h"
 #include "singa/utils/singleton.h"
 #include "singa/utils/context.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -214,7 +215,6 @@ void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
   }
 }
 
-
 void Worker::Checkpoint(int step, const std::string& folder, NeuralNet* net) {
   BlobProtos bps;
   for (auto layer : net->layers()) {
@@ -338,7 +338,7 @@ void BPWorker::Forward(int step, Phase phase, NeuralNet* net) {
   map<string, string> label;
   for (auto& layer : net->layers()) {
     if (layer->partition_id() == id_) {
-      if (phase == kTrain) {
+      if (phase == kTrain && layer->unroll_index() == 0) {
         // wait until param is updated
         for (Param* p : layer->GetParams()) {
           Collect(step, p);
@@ -346,7 +346,7 @@ void BPWorker::Forward(int step, Phase phase, NeuralNet* net) {
       }
       // DLOG(ERROR) << "Forward " << layer->name();
       layer->ComputeFeature(phase | kForward, net->srclayers(layer));
-      if (job_conf_.debug() && grp_id_ == 0)
+      if (job_conf_.debug() && DisplayNow(step) && grp_id_ == 0)
         label[layer->name()] = layer->ToString(true, phase | kForward);
     }
   }
@@ -364,7 +364,7 @@ void BPWorker::Backward(int step, NeuralNet* net) {
     Layer* layer = *it;
     if (layer->partition_id() == id_) {
       layer->ComputeGradient(kTrain | kBackward, net->srclayers(layer));
-      if (job_conf_.debug() && grp_id_ == 0)
+      if (job_conf_.debug() && DisplayNow(step) && grp_id_ == 0)
         label[layer->name()] = layer->ToString(true, kTrain | kBackward);
       for (Param* p : layer->GetParams())
         Update(step, p);
@@ -377,6 +377,82 @@ void BPWorker::Backward(int step, NeuralNet* net) {
   }
 }
 
+/***************************BPTTWorker*********************************/
+void BPTTWorker::Forward(int step, Phase phase, NeuralNet* net) {
+  map<string, string> label;
+  for (auto& layer : net->layers()) {
+    if (layer->partition_id() == id_) {
+      if (phase == kTrain && layer->unroll_index() == 0) {
+        // wait until param is updated
+        for (Param* p : layer->GetParams()) {
+          Collect(step, p);
+          Zero(p->mutable_grad());
+        }
+      }
+      vector<Layer*> src = net->srclayers(layer);
+      // if full state rnn and not the starting of a new passing of the dataset,
+      // feed the hidden state of the last unit to the first unit.
+      if (layer->unroll_index() == 0 && full_state_ && !begin_) {
+        Layer* last = net->last_unroll_layer(layer);
+        if (last != layer) {
+          src.push_back(last);
+        }
+      }
+      // LOG(ERROR) << layer->name() << " forward";
+      // int ret =
+      layer->ComputeFeature(phase | kForward, src);
+      /*
+      if ((phase & Phase::kTrain) && ret == Status::kEnd)
+        begin_ = true;
+      */
+
+      if (job_conf_.debug() && DisplayNow(step) && grp_id_ == 0)
+        label[layer->name()] = layer->ToString(true, phase | kForward);
+    }
+  }
+  if (label.size()) {
+    const string path = Cluster::Get()->vis_folder() + "/fp-step"
+      + std::to_string(step) +"-loc" + std::to_string(id_) + ".json";
+    WriteStringToTextFile(path, net->ToGraph(false).ToJson(label));
+  }
+}
+
+void BPTTWorker::Backward(int step, NeuralNet* net) {
+  map<string, string> label;
+  auto& layers = net->layers();
+  for (auto it = layers.rbegin(); it != layers.rend(); it++) {
+    Layer* layer = *it;
+    if (layer->partition_id() == id_) {
+      layer->ComputeGradient(kTrain | kBackward | kAggGrad, net->srclayers(layer));
+      // LOG(ERROR) << layer->name() << " backward";
+      if (job_conf_.debug() && DisplayNow(step) && grp_id_ == 0)
+        label[layer->name()] = layer->ToString(true, kTrain | kBackward);
+      // unrolled layers share parameter data and grad, just update the 1st one
+      if (layer->unroll_index() == 0)
+        for (Param* p : layer->GetParams())
+          Update(step, p);
+    }
+  }
+  if (label.size()) {
+    const string path = Cluster::Get()->vis_folder() + "/bp-step"
+      + std::to_string(step) + "-loc" + std::to_string(id_) + ".json";
+    WriteStringToTextFile(path, net->ToGraph(false).Reverse().ToJson(label));
+  }
+}
+void BPTTWorker::Display(int flag, const std::string& prefix, NeuralNet* net) {
+  std::unordered_map<string, float> perf;
+  for (auto layer : net->layers()) {
+    if (layer->partition_id() == id_) {
+      const string& disp = layer->ToString(false, flag);
+      for (const auto& entry : GetMetricFromString(disp))
+        perf[entry.first] += entry.second;
+    }
+  }
+  string disp = prefix + " ";
+  for (const auto& entry : perf)
+    disp += entry.first + " = " + std::to_string(entry.second) + ", ";
+  LOG(ERROR) << disp;
+}
 /****************************CDWorker**********************************/
 void CDWorker::TrainOneBatch(int step, NeuralNet* net) {
   const auto& layers = net->layers();

@@ -146,7 +146,11 @@ class Param {
    * @param cpu_only if true, share only cpu memory (used for training with
    * multi-gpu cards); else, share both cpu and gpu memory.
    */
-  void ShareFrom(Param* other, bool cpu_only);
+  void ShareDataFrom(Param* other, bool cpu_only);
+  /**
+   * Share both data and grad from other param
+   */
+  void ShareFrom(Param* other);
   /**
    * Init param values from checkpoint blob.
    */

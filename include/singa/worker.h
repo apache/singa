@@ -165,7 +165,7 @@ class Worker {
    * @param prefix display prefix, e.g., 'Train step 100', 'Test step 90'.
    * @param net display layers from this neural net.
    */
-  void Display(int flag, const std::string& prefix, NeuralNet* net);
+  virtual void Display(int flag, const std::string& prefix, NeuralNet* net);
   /**
    * Put Param values to server.
    *
@@ -284,10 +284,35 @@ class BPWorker: public Worker {
  public:
   void TrainOneBatch(int step, NeuralNet* net) override;
   void TestOneBatch(int step, Phase phase, NeuralNet* net) override;
-  void Forward(int step, Phase phase, NeuralNet* net);
-  void Backward(int step, NeuralNet* net);
+  virtual void Forward(int step, Phase phase, NeuralNet* net);
+  virtual void Backward(int step, NeuralNet* net);
 };
 
+/**
+ * Subclass of Worker that implements BPTT (Backpropagation through time)
+ * algorithm for computing gradients of RNN models.
+ * Max BPTT/unrolling length is configured by users.
+ */
+class BPTTWorker: public BPWorker {
+ public:
+  void Forward(int step, Phase phase, NeuralNet* net) override;
+  void Backward(int step, NeuralNet* net) override;
+  void Display(int flag, const std::string& prefix, NeuralNet* net) override;
+
+ private:
+  /*
+   * indicator used in truncted BPTT, which feeds the hidden state of the last
+   * unrolled unit to the first unit in Forward() for the next iteration.
+   * currently always feed the last hidden state to the first.
+   */
+  bool full_state_ = false;
+  //!< indicator used for the starting of a new pass of the dataset.
+  bool begin_ = false;
+};
+/**
+ * Subclass of Worker that implements the Contrastive Divergence algorithm for
+ * computing the gradients of paramters of energy models.
+ */
 class CDWorker: public Worker {
  public:
   void TrainOneBatch(int step, NeuralNet* net) override;

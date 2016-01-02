@@ -239,7 +239,6 @@ TEST_F(GRULayerTest, ComputeFeature) {
 
 	singa::GRULayer gru_layer_2;
 	gru_layer_2.Setup(gru2_conf, std::vector<singa::Layer*>{&in_layer_2, &gru_layer_1});
-
 	for (unsigned int i = 0; i < gru_layer_2.GetParams().size(); i ++) {
 		gru_layer_2.GetParams()[i]->InitValues();
 	}
