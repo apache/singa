@@ -79,8 +79,8 @@ void create_data(const char* image_filename, const char* label_filename,
   cols = swap_endian(cols);
 
   // read backend from the job.conf
-  string store_backend = (output_folder.find("hdfs")!=-1) ? "hdfsfile" : "kvfile";  
-  auto store = singa::io::CreateStore(store_backend);
+  string store_backend = (string(output).find("hdfs")!=-1) ? "hdfsfile" : "kvfile";  
+	auto store = singa::io::OpenStore(store_backend, output, singa::io::kCreate);
   char label;
   char* pixels = new char[rows * cols];
   int count = 0;
