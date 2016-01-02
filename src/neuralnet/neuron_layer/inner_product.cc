@@ -66,12 +66,17 @@ void InnerProductLayer::ComputeFeature(int flag,
 
 void InnerProductLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
-
-  MVSumRow(1.0f, 0.0f, grad_, bias_->mutable_grad());
+  float beta = 0.0f;
+  if (flag & kAggGrad)
+    beta = 1.0f;
+  MVSumRow(1.0f, beta, grad_, bias_->mutable_grad());
   if (transpose_)
-    MMDot(srclayers[0]->data(this).T(), grad_, weight_->mutable_grad());
+    GEMM(1.0f, beta, srclayers[0]->data(this).T(), grad_,
+        weight_->mutable_grad());
   else
-    MMDot(grad_.T(), srclayers[0]->data(this), weight_->mutable_grad());
+    GEMM(1.0f, beta, grad_.T(), srclayers[0]->data(this),
+        weight_->mutable_grad());
+
   if (srclayers[0]->mutable_grad(this) != nullptr) {
     if (transpose_)
       MMDot(grad_, weight_->data().T(), srclayers[0]->mutable_grad(this));

@@ -174,7 +174,7 @@ AC_ARG_ENABLE(debug,
   [enable_debug=yes],[enable_debug=no])
 AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 if test x"$enable_debug" != x"no"; then
-  DEBUG+=' -g'
+  DEBUG+=' '
 else
   DEBUG+=' -O2'
 fi

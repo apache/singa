@@ -174,6 +174,12 @@ class Layer {
    */
   inline const std::string& name() const { return layer_conf_.name(); }
   /**
+   * Return the index of the unrolled layer within the unrolling group, which
+   * should be [0, max_unrolling_length)
+   */
+  inline const int unroll_index() const { return layer_conf_.unroll_index(); }
+
+  /**
    * @return a const ref for Blob vector storing feature values of this layer.
    */
   virtual const vector<Blob<float>*>& data() const {

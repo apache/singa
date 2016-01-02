@@ -71,6 +71,9 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<ImagePreprocessLayer, int>(kImagePreprocess);
   RegisterLayer<RecordOutputLayer, int>(kRecordOutput);
   RegisterLayer<CSVOutputLayer, int>(kCSVOutput);
+  RegisterLayer<CharRNNInputLayer, int>(kCharRNN);
+  RegisterLayer<RNNLabelLayer, int>(kRNNLabel);
+  RegisterLayer<OneHotLayer, int>(kOneHot);
 
   // connection layers
   RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
@@ -84,6 +87,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<ConvolutionLayer, int>(kConvolution);
   RegisterLayer<CConvolutionLayer, int>(kCConvolution);
   RegisterLayer<CPoolingLayer, int>(kCPooling);
+  RegisterLayer<EmbeddingLayer, int>(kEmbedding);
 
 #ifdef USE_CUDNN
   RegisterLayer<CudnnActivationLayer, int>(kCudnnActivation);
@@ -135,6 +139,7 @@ void Driver::Init(int argc, char **argv) {
 
   // register workers
   RegisterWorker<BPWorker>(kBP);
+  RegisterWorker<BPTTWorker>(kBPTT);
   RegisterWorker<CDWorker>(kCD);
 
   // register params

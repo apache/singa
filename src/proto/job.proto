@@ -120,6 +120,14 @@ message NetProto {
   repeated LayerProto layer = 1;
   // partitioning type for parallelism
   optional int32 partition_dim = 20 [default = 0];
+  // Each layer corresponds to a group of unrolled layers, used in RNN models
+  repeated LayerGroupProto layer_group = 21;
+  optional int32 unroll_len = 22 [default = 1];
+}
+
+message LayerGroupProto {
+  // name of the layers belong to the same group
+  repeated string layer = 1;
 }
 
 message UpdaterProto {
@@ -138,6 +146,9 @@ message UpdaterProto {
 
   // used to avoid divide by 0, i.e. x/(y+delta)
   optional float delta = 35 [default = 0.00000001];
+
+  optional float clip_low = 36 [default = 0];
+  optional float clip_high = 37 [default = 0];
 
   extensions 101 to 200;
 }
@@ -193,8 +204,9 @@ message LayerProto {
   optional string user_type =21;
 
   optional int32 unroll_len = 22 [default = 1];
-  repeated UnrollConnType unroll_conn_type = 23;
-  repeated int32 shift = 24;
+  optional int32 unroll_index = 23 [default = 0];
+  repeated UnrollConnType unroll_conn_type = 24;
+  repeated int32 shift = 25;
 
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
@@ -211,6 +223,7 @@ message LayerProto {
   optional MnistProto mnist_conf = 192;
   optional RGBImageProto rgbimage_conf = 193;
   optional DataProto sharddata_conf = 194;
+  optional CharRNNProto char_rnn_conf = 195;
 
   // configuration for neuron layers id range [200, 300)
   optional ActivationProto activation_conf = 200;
@@ -224,6 +237,7 @@ message LayerProto {
   optional ReLUProto relu_conf = 211;
   optional SoftmaxProto softmax_conf = 214;
   optional GRUProto gru_conf = 215;
+  optional EmbeddingProto embedding_conf = 216;
 
   // configuration for loss layers, id range [300, 400)
   optional SoftmaxLossProto softmaxloss_conf = 301;
@@ -350,7 +364,19 @@ message StoreProto {
   optional int32 random_skip = 11 [default = 0];
   optional bool has_label = 12 [default = true];
 }
+message CharRNNProto {
+  optional string path = 1;
+  optional string vocab_path = 2;
+  // num of chars to read per instance,  should = NetProto::unroll_len
+  optional int32 unroll_len = 3 [default = 50];
+  optional int32 batchsize = 4 [default = 1];
+}
 
+message EmbeddingProto {
+  optional int32 vocab_size = 1 [default = 0];
+  optional int32 feature_dim = 2 [default = 100];
+
+}
 message SoftmaxLossProto {
   // computing accuracy against topk results
   optional int32 topk = 1 [default = 1];
@@ -568,6 +594,8 @@ enum AlgType {
   kBP = 1;
   // Contrastive Divergence algorithm for RBM, DBM, etc.
   kCD = 2;
+  // BPTT for training RNN models
+  kBPTT = 3;
   // For user defined algorithm.
   kUserAlg = 104;
 }
@@ -586,6 +614,9 @@ enum LayerType {
   kMnist = 192;  // deprecated
   kRGBImage = 193;  // deprecated
   kShardData = 194;  // deprecated
+  kCharRNN = 195;
+  kRNNLabel = 196;
+  kOneHot = 197;
 
   /*
    * Neuron layers
@@ -606,6 +637,8 @@ enum LayerType {
   kSigmoid = 213;
   kSoftmax = 214;
   kGRU = 215;
+  kEmbedding = 216;
+
   // cudnn v3
   kCudnnConv = 250;
   kCudnnPool = 251;
@@ -674,6 +707,9 @@ enum Phase {
   kBackward = 64;
   kLoss = 128;
   kDeploy = 256;
+
+  // used for aggregate parameter gradients when Param is shared
+  kAggGrad = 512;
 }
 
 enum ParamType {

@@ -570,4 +570,30 @@ void WriteStringToTextFile(const string& filename, const string& context) {
   ofs.flush();
   ofs.close();
 }
+
+
+const vector<std::pair<string, float>> GetMetricFromString(const string& disp) {
+  size_t pos = 0;
+  vector<string> terms;
+  while (pos != string::npos) {
+    auto next = disp.find_first_of(" ,", pos);  // delimiter: space or comma
+    if (next != string::npos) {
+      terms.push_back(disp.substr(pos, next - pos));
+      pos = disp.find_first_not_of(" ,", next + 1);
+    } else {
+      break;
+    }
+  }
+  if (pos != string::npos)
+    terms.push_back(disp.substr(pos));
+  vector<std::pair<string, float>> ret;
+  for (unsigned i = 0; i < terms.size(); i++) {
+    if (terms[i] == "=") {
+      CHECK_GE(i, 1);
+      CHECK_LT(i, terms.size() - 1) << "terms[i] = " << terms[i];
+      ret.push_back(std::make_pair(terms[i-1], std::stof(terms[i + 1])));
+    }
+  }
+  return ret;
+}
 }  // namespace singa
