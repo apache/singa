@@ -56,7 +56,7 @@ void KVFileStore::SeekToFirst() {
   file_->SeekToFirst();
 }
 
-void KVFileStore::Seek(int offset){
+void KVFileStore::Seek(int offset) {
   LOG(FATAL) << "Operation not supported.";
 }
 

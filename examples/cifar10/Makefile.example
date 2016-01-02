@@ -30,11 +30,6 @@ cifar-10-binary-bin:
 	wget http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz
 	tar xf cifar-10-binary.tar.gz
 
-compile:
-	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog -lhdfs3 \
-		-I../../include -L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs \
-		-Wl,-rpath=../../.libs/  -o create_data.bin
-
 create:
 	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog \
 		-I../../include -L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs \
@@ -42,8 +37,7 @@ create:
 	./create_data.bin cifar-10-batches-bin .
 
 create_hdfs:
-	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog \
+	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog -lhdfs3 \
 		-I../../include -L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs \
 		-Wl,-rpath=../../.libs/  -o create_data.bin
 	./create_data.bin cifar-10-batches-bin $(HDFS_DIR) 
-

@@ -69,7 +69,8 @@ void create_data(const string& input_folder, const string& output_folder) {
   for (int i = 0; i < kCIFARImageNBytes; i++)
     mean.add_data(0.f);
 
-  string store_backend = (output_folder.find("hdfs")!=-1) ? "hdfsfile" : "kvfile";  
+  string store_backend = output_folder.find("hdfs") !=-1 ?
+                         "hdfsfile" : "kvfile";
   auto store = singa::io::CreateStore(store_backend);
   CHECK(store->Open(output_folder + "/train_data.bin", singa::io::kCreate));
   LOG(INFO) << "Preparing training data";
