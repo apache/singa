@@ -69,6 +69,7 @@ void CharRNNInputLayer::ComputeFeature(int flag,
     // decide the start pos of each instance in one mini-batch
     int max_offset = buf_.length() / batchsize_;
     CHECK_GT(max_offset, unroll_len_);
+    LOG(ERROR) << "Max iteration per epoch = " << max_offset / unroll_len_;
     for (int i = 0; i < batchsize_; i ++) {
       start_.push_back(i * max_offset);
     }
@@ -77,7 +78,7 @@ void CharRNNInputLayer::ComputeFeature(int flag,
   for (int l = 0; l < unroll_len_ + 1; l++) {
     float* ptr = datavec_[l]->mutable_cpu_data();
     for (int i = 0; i < batchsize_; i++) {
-      ptr[i] = static_cast<float>(char2index_.at(buf_[start_[i] + l]));
+      ptr[i] = static_cast<float>(char2index_.at(buf_[start_[i] + offset_ + l]));
     }
   }
   offset_ += unroll_len_;
@@ -87,9 +88,6 @@ void CharRNNInputLayer::ComputeFeature(int flag,
 //  std::shuffle(start_.begin(), start_.end(), g);
     offset_ = 0;
     // return -1;
-  } else {
-    // return 0;
   }
 }
-
 }  // namespace singa
