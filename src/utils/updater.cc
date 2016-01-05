@@ -140,6 +140,9 @@ void SGDUpdater::Update(int step, Param* param, float grad_scale) {
 
 /***********************Nesterov******************************/
 void NesterovUpdater::Update(int step, Param* param, float grad_scale) {
+ if (clip_high_ > clip_low_)
+    Clip(clip_low_, clip_high_, param);
+
   Shape<1> s = Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
@@ -181,6 +184,9 @@ void RMSPropUpdater::Init(const UpdaterProto& proto) {
 }
 
 void RMSPropUpdater::Update(int step, Param* param, float grad_scale) {
+ if (clip_high_ > clip_low_)
+    Clip(clip_low_, clip_high_, param);
+
   Shape<1> s=Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);

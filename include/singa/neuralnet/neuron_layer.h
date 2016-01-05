@@ -187,16 +187,15 @@ class GRULayer : public NeuronLayer {
   }
 
   const std::vector<Param*> GetParams() const override {
+    std::vector<Param*> params{weight_z_hx_, weight_r_hx_,weight_c_hx_,
+      weight_z_hh_, weight_r_hh_, weight_c_hh_};
+
     if (bias_z_ != nullptr && bias_r_ != nullptr && bias_c_ != nullptr) {
-      std::vector<Param*> params{weight_z_hx_, weight_r_hx_,weight_c_hx_,
-        weight_z_hh_, weight_r_hh_, weight_c_hh_,
-        bias_z_, bias_r_, bias_c_};
-      return params;
-    } else {
-      std::vector<Param*> params{weight_z_hx_, weight_r_hx_,weight_c_hx_,
-        weight_z_hh_, weight_r_hh_, weight_c_hh_};
-      return params;
+      params.push_back(bias_z_);
+      params.push_back(bias_r_);
+      params.push_back(bias_c_);
     }
+    return params;
   }
 
  private:

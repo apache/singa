@@ -45,7 +45,6 @@ void DummyLayer::Setup(const LayerProto& proto,
   if (proto.dummy_conf().output()) {  // use as output layer
     output_ = true;
   }
-
 }
 
 void DummyLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {

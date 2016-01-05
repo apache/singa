@@ -65,8 +65,8 @@ void EmbeddingLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   }
 }
 
-void EmbeddingLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)
-{
+void EmbeddingLayer::ComputeGradient(int flag,
+    const vector<Layer*>& srclayers) {
   const float* word_idx = srclayers.at(0)->data(unroll_index()).cpu_data();
   auto context = Singleton<Context>::Instance();
   if ((flag & kAggGrad) == 0)

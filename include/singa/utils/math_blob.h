@@ -267,6 +267,8 @@ void Map(const Blob<Dtype> & A, Blob<Dtype> * B) {
   } else {
 #ifdef USE_GPU
     gpu_e_f<Op>(A.count(), A.gpu_data(), B->mutable_gpu_data());
+#else
+    LOG(ERROR) << "Not implemented";
 #endif  // USE_GPU
   }
 }

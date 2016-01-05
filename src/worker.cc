@@ -433,7 +433,8 @@ void BPTTWorker::Backward(int step, NeuralNet* net) {
   for (auto it = layers.rbegin(); it != layers.rend(); it++) {
     Layer* layer = *it;
     if (layer->partition_id() == id_) {
-      layer->ComputeGradient(kTrain | kBackward | kAggGrad, net->srclayers(layer));
+      layer->ComputeGradient(kTrain | kBackward | kAggGrad,
+          net->srclayers(layer));
       // LOG(ERROR) << layer->name() << " backward";
       if (job_conf_.debug() && DisplayNow(step) && grp_id_ == 0)
         label[layer->name()] = layer->ToString(true, kTrain | kBackward);
