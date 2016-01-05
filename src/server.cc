@@ -25,10 +25,11 @@
 #include <chrono>
 #include "mshadow/tensor.h"
 #include "singa/proto/common.pb.h"
+#include "singa/utils/cluster.h"
+#include "singa/utils/factory.h"
+#include "singa/utils/log.h"
 #include "singa/utils/param.h"
 #include "singa/utils/singleton.h"
-#include "singa/utils/factory.h"
-#include "singa/utils/cluster.h"
 
 namespace singa {
 
@@ -59,7 +60,10 @@ void Stop(void* running) {
 }
 
 void Server::Run() {
-  LOG(ERROR) << "Server (group = " << grp_id_ <<", id = " << id_ << ") start";
+  string display = "Server (group = " + std::to_string(grp_id_) + ", id = "
+                   + std::to_string(id_) + ") start";
+  LOG(INFO) << display;
+  DISPLAY(display);
   auto cluster = Cluster::Get();
   if (cluster->nserver_groups()) {
     CHECK_GT(slice2group_.size(), 0);
@@ -132,7 +136,10 @@ void Server::Run() {
   msg->set_type(kStop);
   dealer->Send(&msg);
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  LOG(ERROR) << "Server (group = " << grp_id_ << ", id = " << id_ << ") stops";
+  string displaly = "Server (group = " + std::to_string(grp_id_) + ", id = "
+                    + std::to_string(id_) + ") stops";
+  LOG(INFO) << display;
+  DISPLAY(display);
   delete dealer;
 }
 

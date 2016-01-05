@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fstream>
+#include "singa/utils/log.h"
 
 namespace singa {
 using std::vector;
@@ -47,8 +48,10 @@ void Cluster::Register(int pid, const std::string& endpoint) {
   procs_id_ = cluster_rt_->RegistProc(endpoint, pid);
   CHECK_GE(procs_id_, 0);
   CHECK_LT(procs_id_, nprocs());
-  LOG(ERROR) << "proc #" << procs_id_ << " -> " << endpoint
-             << " (pid = " << pid << ")";
+  string display = "proc #" + std::to_string(procs_id_) + " -> " + endpoint
+                   + " (pid = " + std::to_string(pid) + ")";
+  LOG(INFO) << display;
+  DISPLAY(display);
 }
 
 void Cluster::Init(int job, const SingaProto& singaConf,
