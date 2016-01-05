@@ -153,6 +153,34 @@ class SplitLayer : public ConnectionLayer {
   Layer2Index layer_idx_;
 };
 
+/**
+ * Dummy layer for RNN models, which provides input for other layers.
+ *
+ * Particularly, it is used in the test phase of RNN models to connect other
+ * layers and avoid cycles in the neural net config.
+ */
+class RNNDummyLayer : public ConnectionLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) {
+    LOG(FATAL) << "Not implemented";
+  }
+
+  const string srclayer(int step) const {
+    if (step > 0)
+      return dynamic_src_;
+    else
+      return "";
+  }
+
+ private:
+  string dynamic_src_;
+  float low_, high_;
+  bool integer_;
+  Layer* srclayer_;
+};
+
 
 }  // namespace singa
 

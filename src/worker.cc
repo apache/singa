@@ -390,13 +390,24 @@ void BPTTWorker::Forward(int step, Phase phase, NeuralNet* net) {
         }
       }
       vector<Layer*> src = net->srclayers(layer);
+      if ((phase & kTest) && typeid(*layer) == typeid(RNNDummyLayer)) {
+        CHECK_LE(src.size(), 1);
+        auto dummy = dynamic_cast<RNNDummyLayer*>(layer);
+        Layer* srclayer = net->name2layer(dummy->srclayer(step));
+        if (step > 0)
+          CHECK(srclayer != nullptr);
+        if (srclayer != nullptr) {
+          src.clear();
+          src.push_back(srclayer);
+        }
+      }
       // if full state rnn and not the starting of a new passing of the dataset,
       // feed the hidden state of the last unit to the first unit.
       if (layer->unroll_index() == 0 && full_state_ && !begin_) {
         Layer* last = net->last_unroll_layer(layer);
-        if (last != layer) {
+        CHECK(last != nullptr);
+        if (last != layer || (phase & kTest))
           src.push_back(last);
-        }
       }
       // LOG(ERROR) << layer->name() << " forward";
       // int ret =
@@ -405,7 +416,6 @@ void BPTTWorker::Forward(int step, Phase phase, NeuralNet* net) {
       if ((phase & Phase::kTrain) && ret == Status::kEnd)
         begin_ = true;
       */
-
       if (job_conf_.debug() && DisplayNow(step) && grp_id_ == 0)
         label[layer->name()] = layer->ToString(true, phase | kForward);
     }

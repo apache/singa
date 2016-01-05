@@ -171,31 +171,27 @@ void AdaGradUpdater::Update(int step, Param* param, float grad_scale) {
   data -= lr * grad / (F<sqrtop>(history, proto_.delta()));
 }
 
-/***********************RMSProp******************************
-void RMSPropUpdater::Init(const UpdaterProto& proto){
+/***********************RMSProp******************************/
+void RMSPropUpdater::Init(const UpdaterProto& proto) {
   Updater::Init(proto);
-  base_lr_ = proto.base_lr();
-  CHECK_GT(base_lr_, 0);
-  delta_ = proto.delta();
   rho_ = proto.rmsprop_conf().rho();
-  weight_decay_ = proto.weight_decay();
 }
 
-void RMSPropUpdater::Update(int step, Param* param, float grad_scale){
+void RMSPropUpdater::Update(int step, Param* param, float grad_scale) {
   Shape<1> s=Shape1(param->size());
   Tensor<cpu, 1> data(param->mutable_cpu_data(), s);
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
   Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
-  history=history*rho_+(1-rho_)*F<op::square>(grad*grad_scale);
-  float lr=GetLearningRate(step)*param->lr_scale();
-  float wd=weight_decay_*param->wd_scale();
-  if(wd>0){ // L2 regularization
-    grad+=data*wd;
-  }
-  data-=lr*grad/(F<op::sqrtop>(history,delta_));
+  float lr = lr_gen_->Get(step) * param->lr_scale();
+  float wd = weight_decay_ * param->wd_scale();
+  if (grad_scale != 1.f)
+    grad *= grad_scale;
+  if (wd > 0)  //  L2 regularization, should be done after timing grad_scale
+    grad += data * wd;
+  history = history * rho_ + (1 - rho_) * F<square>(grad);
+  data -= lr * grad / (F<sqrtop>(history, proto_.delta()));
 }
-
-***********************AdaDelta******************************
+/***********************AdaDelta******************************
 void AdaDeltaUpdater::Init(const UpdaterProto& proto){
   Updater::Init(proto);
   delta_=proto.delta();

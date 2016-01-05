@@ -80,5 +80,20 @@ class RecordOutputLayer : public OutputLayer {
   int inst_ = 0;  //!< instance No.
   io::Store* store_ = nullptr;
 };
+
+/**
+ * Output layer for char rnn model, which convert sample id back to char and
+ * dump to stdout.
+ */
+class CharRNNOutputLayer : public OutputLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+
+ private:
+  string vocab_;
+};
+
 }  // namespace singa
 #endif  // SINGA_NEURALNET_OUTPUT_LAYER_H_

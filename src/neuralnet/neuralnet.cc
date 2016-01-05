@@ -144,7 +144,7 @@ const NetProto NeuralNet::Unrolling(const NetProto& net_conf) {
     for (int i = 0; i < org_layer.unroll_len(); i ++) { // unroll
       LayerProto* unroll_layer = conf.add_layer();
       unroll_layer->CopyFrom(org_layer); // create a new layer conf
-      if (org_layer.unroll_len() > 1) {
+      // if (org_layer.unroll_len() > 1) {
         // update layer names
         std::stringstream sstm;
         sstm << i << '#' << unroll_layer->name();
@@ -160,7 +160,7 @@ const NetProto NeuralNet::Unrolling(const NetProto& net_conf) {
           sstm1 << i << '#' << param->name();
           param->set_name(sstm1.str());
         }
-      }
+      // }
       // clear unrolling related fields
       unroll_layer->clear_unroll_len();
       unroll_layer->clear_unroll_conn_type();
@@ -257,6 +257,7 @@ void NeuralNet::Load(const vector<string>& paths,
     ReadProtoFromBinaryFile(path.c_str(), &bps);
     for (int i = 0; i < bps.name_size(); i++) {
       if (params.find(bps.name(i)) != params.end()) {
+        // LOG(ERROR) << "Loading param = " << bps.name(i);
         params.at(bps.name(i))->FromProto(bps.blob(i));
         params.at(bps.name(i))->set_version(bps.version(i));
       }
@@ -458,12 +459,10 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
   map<string, const LayerProto*> name2proto;
   for (const LayerProto& layer : net_w_connection.layer()) {
     vector<Node*> nodes;
-    char suffix[4];
     for (int i = 0; i < npartitions; i++) {
       LayerProto *proto = new LayerProto(layer);
-      snprintf(suffix, sizeof(suffix), "%02d", i);
       // differentiate partitions
-      string nodename = layer.name() + "@" + string(suffix);
+      string nodename = layer.name() + "@" + std::to_string(i);
       proto->set_name(nodename);
       proto->set_type(layer.type());
       proto->set_partition_dim(layer.partition_dim());

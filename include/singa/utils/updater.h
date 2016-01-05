@@ -118,18 +118,16 @@ class NesterovUpdater : public Updater {
   void Update(int step, Param* param, float grad_scale) override;
 };
 
-/*
 class RMSPropUpdater : public Updater {
  public:
-  virtual void Update(int step, Param* param, float grad_scale);
+  void Init(const UpdaterProto &proto) override;
+  void Update(int step, Param* param, float grad_scale) override;
 
  protected:
-  float base_lr_;
-  float delta_;
   float rho_;
-  float weight_decay_;
 };
 
+/*
 class AdaDeltaUpdater : public Updater {
  public:
   virtual void Update(int step, Param* param, float grad_scale);

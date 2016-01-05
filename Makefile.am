@@ -70,6 +70,7 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/connection_layer/concate.cc \
               src/neuralnet/connection_layer/slice.cc \
               src/neuralnet/connection_layer/split.cc \
+              src/neuralnet/connection_layer/rnn_dummy.cc \
               src/neuralnet/input_layer/char_rnn.cc \
               src/neuralnet/input_layer/onehot.cc \
               src/neuralnet/input_layer/csv.cc \
@@ -83,6 +84,7 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/output_layer/argsort.cc \
               src/neuralnet/output_layer/csv.cc \
               src/neuralnet/output_layer/record.cc \
+              src/neuralnet/output_layer/char_rnn.cc \
               src/neuralnet/loss_layer/euclidean.cc \
               src/neuralnet/loss_layer/softmax.cc \
               src/neuralnet/neuron_layer/activation.cc \
