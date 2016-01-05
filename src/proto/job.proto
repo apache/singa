@@ -253,6 +253,7 @@ message LayerProto {
   optional ConcateProto concate_conf = 502;
   optional SliceProto slice_conf = 503;
   optional SplitProto split_conf = 504;
+  optional RNNDummyProto rnn_dummy_conf = 505;
 
   extensions 1001 to 1100;
 }
@@ -454,6 +455,17 @@ message DummyProto {
   optional bool input = 1 [default = false];
   optional bool output = 2 [default = false];
   repeated int32 shape = 3;
+}
+
+message RNNDummyProto {
+  optional string dynamic_srclayer = 1;
+  // if shape set, random generate the data blob
+  repeated int32 shape = 2;
+  // if integer is true, generate integer data
+  optional bool integer = 3 [default = false];
+  // range of the random generation
+  optional float low = 4 [default = 0];
+  optional float high = 5 [default = 0];
 }
 
 // Message that stores parameters used by DropoutLayer
@@ -667,6 +679,7 @@ enum LayerType {
   kArgSort = 401;
   kCSVOutput = 402;
   kRecordOutput = 403;
+  kCharRNNOutput = 404;
 
   /*
    * Connection layers
@@ -677,6 +690,7 @@ enum LayerType {
   kConcate = 502;
   kSlice = 503;
   kSplit = 504;
+  kRNNDummy = 505;
 
   /*
    * User defined layer

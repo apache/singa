@@ -36,6 +36,20 @@ using std::string;
 
 // TODO(wangwei) make AuxType a template argument for Layer.
 using AuxType = int;
+
+inline const string AddUnrollingPrefix(int unroll_idx, const string& name) {
+  return std::to_string(unroll_idx) + "#" + name;
+}
+inline const string AddPartitionSuffix(int partition_idx, const string& name) {
+  return name + "@" + std::to_string(partition_idx);
+}
+
+
+inline const string AddPrefixSuffix(int unroll_idx, int partition_idx,
+    const string& name) {
+  return std::to_string(unroll_idx) + "#" + name + "@" +
+    std::to_string(partition_idx);
+}
 /**
  * Base layer class.
  *

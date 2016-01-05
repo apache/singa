@@ -74,6 +74,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<CharRNNInputLayer, int>(kCharRNN);
   RegisterLayer<RNNLabelLayer, int>(kRNNLabel);
   RegisterLayer<OneHotLayer, int>(kOneHot);
+  RegisterLayer<CharRNNOutputLayer, int>(kCharRNNOutput);
 
   // connection layers
   RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
@@ -81,6 +82,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<ConcateLayer, int>(kConcate);
   RegisterLayer<SliceLayer, int>(kSlice);
   RegisterLayer<SplitLayer, int>(kSplit);
+  RegisterLayer<RNNDummyLayer, int>(kRNNDummy);
 
   RegisterLayer<AccuracyLayer, int>(kAccuracy);
   RegisterLayer<ArgSortLayer, int>(kArgSort);
@@ -125,7 +127,7 @@ void Driver::Init(int argc, char **argv) {
   // register updaters
   RegisterUpdater<AdaGradUpdater>(kAdaGrad);
   RegisterUpdater<NesterovUpdater>(kNesterov);
-  // TODO(wangwei) RegisterUpdater<kRMSPropUpdater>(kRMSProp);
+  RegisterUpdater<RMSPropUpdater>(kRMSProp);
   RegisterUpdater<SGDUpdater>(kSGD);
 
   // register learning rate change methods
@@ -198,6 +200,8 @@ void Driver::Test(const JobProto& job_conf) {
   auto worker = Worker::Create(job_conf.train_one_batch());
   worker->Setup(0, 0, job_conf, nullptr, nullptr, nullptr);
   auto net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
+  WriteStringToTextFile(Cluster::Get()->vis_folder() + "/test_net.json",
+      net->ToGraph(true).ToJson());
   vector<string> paths;
   for (const auto& p : job_conf.checkpoint_path())
     paths.push_back(p);
