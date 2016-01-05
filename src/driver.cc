@@ -120,7 +120,7 @@ void Driver::Init(int argc, char **argv) {
   // register updaters
   RegisterUpdater<AdaGradUpdater>(kAdaGrad);
   RegisterUpdater<NesterovUpdater>(kNesterov);
-  // TODO(wangwei) RegisterUpdater<kRMSPropUpdater>(kRMSProp);
+  RegisterUpdater<RMSPropUpdater>(kRMSProp);
   RegisterUpdater<SGDUpdater>(kSGD);
 
   // register learning rate change methods
