@@ -41,6 +41,8 @@
 
 using std::string;
 
+static bool singa_verbose = false;
+
 uint32_t swap_endian(uint32_t val) {
     val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
     return (val << 16) | (val >> 16);
@@ -92,8 +94,8 @@ void create_data(const char* image_filename, const char* label_filename,
   singa::RecordProto image;
   image.add_shape(rows);
   image.add_shape(cols);
-  LOG(INFO) << "A total of " << num_items << " items.";
-  LOG(INFO) << "Rows: " << rows << " Cols: " << cols;
+  LOG_IF(INFO, singa_verbose) << "A total of " << num_items << " items.";
+  LOG_IF(INFO, singa_verbose) << "Rows: " << rows << " Cols: " << cols;
   for (int item_id = 0; item_id < num_items; ++item_id) {
     image_file.read(pixels, rows * cols);
     label_file.read(&label, 1);

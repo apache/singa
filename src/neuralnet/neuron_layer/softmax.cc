@@ -60,7 +60,7 @@ void SoftmaxLayer::ComputeFeature(int flag,
 void SoftmaxLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
   int batchsize = data_.shape()[0];
-  LOG(FATAL) << "not implemented";
+  LOG(FATAL) << "Not implemented";
   for (int n = 0; n < batchsize; n++) {
     // TODO(wangwei) finish the code using new math API
     // gxi=[(gyi+gyi*yi)-\sum_k(gyk*yk)]*yi

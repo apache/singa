@@ -26,8 +26,10 @@ using namespace singa;
 
 std::string host = "localhost:2181";
 
+static bool singa_verbose = false;
+
 void zk_cb(void *contest) {
-  LOG(INFO) << "zk callback: " << static_cast<char *>(contest);
+  LOG_IF(INFO, singa_verbose) << "Zk callback: " << static_cast<char *>(contest);
 }
 /*
 TEST(CluserRuntimeTest, GroupManagement) {

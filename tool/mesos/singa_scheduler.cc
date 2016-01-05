@@ -69,6 +69,8 @@ using mesos::SchedulerDriver;
 using std::vector;
 using std::map;
 
+static bool singa_verbose = false;
+
 const char usage[] = " singa_scheduler <job_conf> [-scheduler_conf global_config] [-singa_conf singa_config] \n"
                       " job_conf: job configuration file\n"
                       " -scheduler_conf: optional, system-wide configuration file\n"
@@ -185,7 +187,7 @@ class SingaScheduler: public mesos::Scheduler {
       }
 
       if (nhosts_>= job_conf_.cluster().nworker_groups()) {
-        LOG(INFO) << "Acquired enough resources: "
+        LOG_IF(INFO, singa_verbose) << "Acquired enough resources: "
           << job_conf_.cluster().nworker_groups()*job_conf_.cluster().nworkers_per_group()
           << " CPUs over " << job_conf_.cluster().nworker_groups() << " hosts. Launching tasks ... ";
 
@@ -200,7 +202,7 @@ class SingaScheduler: public mesos::Scheduler {
           prepare_tasks(it->second, job_counter_, path);
           mesos::OfferID newId;
           newId.set_value(it->first);
-          LOG(INFO) << "Launching task with offer ID = " << newId.value();
+          LOG_IF(INFO, singa_verbose) << "Launching task with offer ID = " << newId.value();
           driver->launchTasks(newId, *(it->second));
           task_counter_++;
           if (task_counter_>= job_conf_.cluster().nworker_groups())
@@ -353,7 +355,7 @@ class SingaScheduler: public mesos::Scheduler {
     bool check_resources(int ncpus) {
       int n1 = job_conf_.cluster().nworkers_per_procs();
       int n2 = job_conf_.cluster().nservers_per_procs();
-      LOG(INFO) << "n1 = " << n1 << " n2 = " << n2 << " ncpus = " << ncpus;
+      LOG_IF(INFO, singa_verbose) << "n1 = " << n1 << " n2 = " << n2 << " ncpus = " << ncpus;
       return job_conf_.cluster().server_worker_separate()? ncpus >= (n1+n2) : ncpus >= (n1 > n2 ? n1 : n2);
     }
 
@@ -410,16 +412,16 @@ int main(int argc, char** argv) {
   else
     singa::WriteProtoToTextFile(msg, DEFAULT_SCHEDULER_CONF);
 
-  LOG(INFO) << "Scheduler initialized";
+  LOG_IF(INFO, singa_verbose) << "Scheduler initialized";
   mesos::FrameworkInfo framework;
   framework.set_user("");
   framework.set_name("SINGA");
 
   SchedulerDriver *driver = new mesos::MesosSchedulerDriver(scheduler, framework, msg.master().c_str());
-  LOG(INFO) << "Starting SINGA framework...";
+  LOG_IF(INFO, singa_verbose) << "Starting SINGA framework...";
   status = driver->run();
   driver->stop();
-  LOG(INFO) << "Stoping SINGA framework...";
+  LOG_IF(INFO, singa_verbose) << "Stoping SINGA framework...";
 
   return status == mesos::DRIVER_STOPPED ? 0 : 1;
 }

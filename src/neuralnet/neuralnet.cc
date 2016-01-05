@@ -31,6 +31,8 @@ using std::map;
 using std::string;
 using std::vector;
 
+extern bool singa_verbose;
+
 NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
                                         int npartitions) {
   NetProto conf;
@@ -99,20 +101,20 @@ NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
     param->set_name(name);
     param->set_share_from(from);
   }
-  LOG(INFO) << "Initial NeuralNet Config is\n" << conf.DebugString();
+  LOG_IF(INFO, singa_verbose) << "Initial NeuralNet Config is\n" << conf.DebugString();
   // TODO(wangwei) create net based on net type, e.g., directed, undirected, etc
   return new NeuralNet(conf, npartitions);
 }
 
 NeuralNet::NeuralNet(NetProto netproto, int npartitions) {
-  LOG(INFO) << "Constructing NeuralNet...";
+  LOG_IF(INFO, singa_verbose) << "Constructing NeuralNet...";
   auto graph = CreateGraph(netproto, npartitions);
   CreateNetFromGraph(graph);
   PrepareDataStructures();
   for (Node* node : graph->nodes())
     delete static_cast<LayerProto*>(node->proto);
   delete graph;
-  LOG(INFO) << "NeuralNet Constructed";
+  LOG_IF(INFO, singa_verbose) << "NeuralNet constructed";
 }
 
 NeuralNet::~NeuralNet() {
@@ -129,7 +131,7 @@ void NeuralNet::Load(const vector<string>& paths) {
 void NeuralNet::Load(const vector<string>& paths,
     const unordered_map<string, Param*>& params) {
   for (const auto path : paths) {
-    LOG(ERROR) << "Load from checkpoint file " << path;
+    LOG_IF(INFO, singa_verbose) << "Load from checkpoint file " << path;
     BlobProtos bps;
     // TODO(wangwei) extend to read checkpoint from HDFS
     ReadProtoFromBinaryFile(path.c_str(), &bps);
@@ -219,7 +221,7 @@ NetProto NeuralNet::AddModelSplitLayers(const NetProto& netproto) {
                  ->set_num_splits(-dst_count[layer.name()]);
     }
   }
-  // LOG(INFO) << "NeuralNet Config After Model Split is\n"
+  // LOG_IF(INFO, singa_verbose) << "NeuralNet Config After Model Split is\n"
   //           << net_w_split.DebugString();
   return net_w_split;
 }
@@ -321,7 +323,7 @@ NetProto NeuralNet::AddPartitionConnectionLayers(const NetProto& netproto,
       }
     }
   }
-  LOG(INFO) << "NeuralNet Config After Adding Connection Layers is\n"
+  LOG_IF(INFO, singa_verbose) << "NeuralNet Config After Adding Connection Layers is\n"
             << net_w_connection.DebugString();
   return net_w_connection;
 }
@@ -404,7 +406,7 @@ Graph* NeuralNet::CreateGraph(const NetProto& netproto, int npartitions) {
     }
   }
   graph->Sort();
-  // DLOG(INFO) << "Pure graph structure\n" << graph->ToJson();
+  //LOG_IF(INFO, singa_verbose) << "Pure graph structure\n" << graph->ToJson();
   return graph;
 }
 
@@ -428,10 +430,10 @@ void NeuralNet::CreateNetFromGraph(Graph* graph) {
   map<string, string> layerinfo;
   map<string, vector<Layer*>> share_param_layers;
   for (Node* node : graph->nodes()) {
-    LOG(INFO) << "constructing graph: " << node->name;
+    LOG_IF(INFO, singa_verbose) << "constructing graph: " << node->name;
     auto layer = name2layer(node->name);
     layer->Setup(*(static_cast<LayerProto*>(node->proto)), srclayers(layer));
-    DLOG(INFO) << "constructing graph: " << layer->name();
+    LOG_IF(INFO, singa_verbose) << "Constructing graph: " << layer->name();
     layerinfo[layer->name()] = IntVecToString(layer->data(nullptr).shape());
     string param_name = "$";
     for (auto param : layer->GetParams()) {

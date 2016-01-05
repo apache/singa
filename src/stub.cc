@@ -37,6 +37,8 @@ namespace singa {
 using std::vector;
 using std::string;
 
+extern bool singa_verbose;
+
 /***********************Stub****************************/
 Stub::~Stub() {
   delete router_;
@@ -102,7 +104,7 @@ void Stub::Run(const vector<int>& slice2server,
   int nworkers = workers.size(), nservers = servers.size();
   auto cluster = Cluster::Get();
   int procs_id = cluster->procs_id();
-  LOG(INFO) << "Stub in process " << procs_id << " starts";
+  LOG_IF(INFO, singa_verbose) << "Stub in process " << procs_id << " starts";
   auto shard = CreateParamShard(workers);
   std::map<int, Dealer*> inter_dealers;  // for sending msg to other procs
   std::queue<Msg*> msg_queue;
@@ -159,7 +161,7 @@ void Stub::Run(const vector<int>& slice2server,
               msg_queue.push(put_msg);
             break;
           default:
-            LOG(ERROR) << "Unknow message type:" << type;
+            LOG(ERROR) << "Unknown message type:" << type;
             break;
         }
       }
@@ -176,7 +178,7 @@ void Stub::Run(const vector<int>& slice2server,
       }
     }
   }
-  LOG(ERROR) << "Stub in process " << procs_id << " stops";
+  LOG_IF(INFO, singa_verbose) << "Stub in process " << procs_id << " stops";
   for (auto& entry : inter_dealers)
     delete entry.second;
 }
@@ -188,7 +190,7 @@ Dealer* Stub::CreateInterProcsDealer(int dst_procs) {
   while (cluster->endpoint(dst_procs) == "") {
     // kCollectSleepTime));
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-    LOG(ERROR) << "waiting for procs " << dst_procs << " to register";
+    LOG_IF(INFO, singa_verbose) << "Waiting for procs " << dst_procs << " to register";
   }
   dealer->Connect("tcp://"+cluster->endpoint(dst_procs));
   return dealer;

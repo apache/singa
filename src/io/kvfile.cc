@@ -60,7 +60,7 @@ path_(path), mode_(mode), capacity_(capacity) {
       }
       break;
     default:
-      LOG(FATAL) << "unknown model to open KVFile " << mode;
+      LOG(FATAL) << "Unknown model to open KVFile " << mode;
       break;
   }
 }

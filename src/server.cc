@@ -35,6 +35,8 @@ namespace singa {
 using namespace mshadow;
 using std::vector;
 
+extern bool singa_verbose;
+
 Server::Server(int group_id, int server_id,
     const JobProto& job_conf,
     const vector<int>& slice2group,
@@ -59,7 +61,7 @@ void Stop(void* running) {
 }
 
 void Server::Run() {
-  LOG(ERROR) << "Server (group = " << grp_id_ <<", id = " << id_ << ") start";
+  LOG_IF(INFO, singa_verbose) << "Server (group = " << grp_id_ <<", id = " << id_ << ") start";
   auto cluster = Cluster::Get();
   if (cluster->nserver_groups()) {
     CHECK_GT(slice2group_.size(), 0);
@@ -132,7 +134,7 @@ void Server::Run() {
   msg->set_type(kStop);
   dealer->Send(&msg);
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  LOG(ERROR) << "Server (group = " << grp_id_ << ", id = " << id_ << ") stops";
+  LOG_IF(INFO, singa_verbose) << "Server (group = " << grp_id_ << ", id = " << id_ << ") stops";
   delete dealer;
 }
 
@@ -160,7 +162,7 @@ Msg* Server::HandlePut(Msg **msg) {
     last_sync_[slice_id].ReshapeLike(param->data());
     last_sync_[slice_id].CopyFrom(param->data());
   }
-  LOG(INFO) << "server (group = " << grp_id_ << ", id = " << id_
+  LOG_IF(INFO, singa_verbose) << "Server (group = " << grp_id_ << ", id = " << id_
             <<") put slice=" << slice_id << " size=" << param->size();
   return response;
 }

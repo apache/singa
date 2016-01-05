@@ -88,6 +88,7 @@
 namespace singa {
 
 const int kBufLen = 1024;
+bool singa_verbose = false;
 
 string IntVecToString(const vector<int>& vec) {
   string disp = "(";
@@ -142,7 +143,7 @@ const vector<vector<int>> Slice(int num, const vector<int>& sizes) {
       avg += x;
   avg = avg / num + avg % num;
   int diff = avg / 10;
-  // DLOG(INFO) << "Slicer, param avg = " << avg << ", diff = " << diff;
+  //LOG_IF(INFO, singa_verbose) << "Slicer, param avg = " << avg << ", diff = " << diff;
 
   int capacity = avg, nbox = 0;
   for (int x : sizes) {
@@ -169,10 +170,10 @@ const vector<vector<int>> Slice(int num, const vector<int>& sizes) {
       }
       if (size) {
         slice.push_back(size);
-        slicestr += ", " + std::to_string(size);
+        slicestr += std::to_string(size) + ", ";
       }
     }
-    // DLOG(INFO) << slicestr;
+    //LOG_IF(INFO, singa_verbose) << "Slices = "<< slicestr;
     slices.push_back(slice);
   }
   CHECK_LE(nbox, num);
@@ -242,7 +243,7 @@ string GetHostIP() {
   close(fd);
   string ip(inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
   /* display result */
-  LOG(INFO) << "Host IP = " << ip;
+  LOG_IF(INFO, singa_verbose) << "Host IP = " << ip;
   return ip;
 }
 

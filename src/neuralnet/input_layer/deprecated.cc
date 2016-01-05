@@ -34,6 +34,8 @@ using mshadow::Tensor;
 using std::string;
 using std::vector;
 
+extern bool singa_verbose;
+
 ShardDataLayer::~ShardDataLayer() {
   if (shard_ != nullptr)
     delete shard_;
@@ -63,7 +65,7 @@ void ShardDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     std::uniform_int_distribution<int> distribution(0, random_skip_);
     auto generator = Singleton<Context>::Instance()->rand_generator();
     int nskip = distribution(*generator);
-    LOG(INFO) << "Random Skip " << nskip << " records, there are "
+    LOG_IF(INFO, singa_verbose) << "Random Skip " << nskip << " records, there are "
       << shard_->Count() << " records in total";
     string key;
     for (int i = 0; i < nskip; i++) {
@@ -119,7 +121,7 @@ void LMDBDataLayer::OpenLMDB(const std::string& path) {
       << "mdb_open failed";
   CHECK_EQ(mdb_cursor_open(mdb_txn_, mdb_dbi_, &mdb_cursor_), MDB_SUCCESS)
       << "mdb_cursor_open failed";
-  LOG(INFO) << "Opening lmdb " << path;
+  LOG_IF(INFO, singa_verbose) << "Opening lmdb " << path;
   CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, MDB_FIRST),
            MDB_SUCCESS) << "mdb_cursor_get failed";
 }
@@ -139,7 +141,7 @@ void LMDBDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     while (mdb_cursor_get(mdb_cursor_, &mdb_key_,
           &mdb_value_, MDB_NEXT) == MDB_SUCCESS)
       n++;
-    LOG(INFO) << "Random Skip " << nskip << " records of total "
+    LOG_IF(INFO, singa_verbose) << "Random Skip " << nskip << " records of total "
       << n << "records";
     // We have reached the end. Restart from the first.
     CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
@@ -148,7 +150,7 @@ void LMDBDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
       if (mdb_cursor_get(mdb_cursor_, &mdb_key_,
             &mdb_value_, MDB_NEXT) != MDB_SUCCESS) {
         // We have reached the end. Restart from the first.
-        DLOG(INFO) << "Restarting data prefetching from start.";
+        LOG_IF(INFO, singa_verbose) << "Restarting data prefetching from start.";
         CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
               &mdb_value_, MDB_FIRST), MDB_SUCCESS);
       }
@@ -165,7 +167,7 @@ void LMDBDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     if (mdb_cursor_get(mdb_cursor_, &mdb_key_,
         &mdb_value_, MDB_NEXT) != MDB_SUCCESS) {
       // We have reached the end. Restart from the first.
-      DLOG(INFO) << "Restarting data prefetching from start.";
+      LOG_IF(INFO, singa_verbose) << "Restarting data prefetching from start.";
       CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
                &mdb_value_, MDB_FIRST), MDB_SUCCESS);
     }

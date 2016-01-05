@@ -52,7 +52,7 @@ ActivationLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
       break;
       */
     default:
-      LOG(ERROR) << "Unknow activation type " <<
+      LOG(ERROR) << "Unknown activation type " <<
         layer_conf_.activation_conf().type();
   }
 }
@@ -79,7 +79,7 @@ ActivationLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
       break;
       */
     default:
-      LOG(ERROR) << "Unknow activation type " <<
+      LOG(ERROR) << "Unknown activation type " <<
         layer_conf_.activation_conf().type();
   }
 }

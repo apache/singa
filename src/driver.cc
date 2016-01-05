@@ -45,6 +45,8 @@ extern "C" void openblas_set_num_threads(int num);
 
 namespace singa {
 
+extern bool singa_verbose;
+
 void Driver::Init(int argc, char **argv) {
   // unique job ID generated from singa-run.sh, passed in as "-singa_job <id>"
   int arg_pos = ArgPos(argc, argv, "-singa_job");
@@ -165,9 +167,9 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
   Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   tinydir_dir workspace;
   if (tinydir_open(&workspace, job_conf.cluster().workspace().c_str()) == -1)
-    LOG(FATAL) << "workspace not exist: " << job_conf.cluster().workspace();
+    LOG(FATAL) << "Workspace not exist: " << job_conf.cluster().workspace();
   if (job_conf.num_openblas_threads() != 1)
-    LOG(WARNING) << "openblas luanches "
+    LOG(WARNING) << "Openblas luanches "
                  << job_conf.num_openblas_threads() << " threads";
   openblas_set_num_threads(job_conf.num_openblas_threads());
 
@@ -277,10 +279,10 @@ void Driver::SetupForResume(JobProto* job_conf) {
     char* ch = strstr(file.name, "step");
     if (ch == nullptr) {
       if (file.name[0] != '.')
-        LOG(INFO) << "Irregular file in checkpoint folder: " << file.name;
+        LOG(WARNING) << "Irregular file in checkpoint folder: " << file.name;
       continue;
     }
-    LOG(INFO) << "Add checkpoint file for resume: " << ch;
+    LOG_IF(INFO, singa_verbose) << "Add checkpoint file for resume: " << ch;
     int step = atoi(ch+4);
     if (step == latest_step) {
       ck_files.push_back(file.name);
