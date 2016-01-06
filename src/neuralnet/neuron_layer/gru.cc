@@ -47,7 +47,7 @@ GRULayer::~GRULayer() {
   delete update_gate_;
   delete reset_gate_;
   delete new_memory_;
-  //delete reset_context_;
+  // delete reset_context_;
 }
 
 void GRULayer::Setup(const LayerProto& conf,
@@ -127,14 +127,14 @@ void GRULayer::ComputeFeature(int flag,
     MVAddRow(1.0f, 1.0f, bias_z_->data(), update_gate_);
   GEMM(1.0f, 1.0f, *context, *w_z_hh_t, update_gate_);
   Map<op::Sigmoid<float>, float>(*update_gate_, update_gate_);
-  //LOG(ERROR) << "Update Gate: " << update_gate_->cpu_data()[0];
+  // LOG(ERROR) << "Update Gate: " << update_gate_->cpu_data()[0];
   // Compute the reset gate
   GEMM(1.0f, 0.0f, src, *w_r_hx_t, reset_gate_);
   if (bias_r_ != nullptr)
     MVAddRow(1.0f, 1.0f, bias_r_->data(), reset_gate_);
   GEMM(1.0f, 1.0f, *context, *w_r_hh_t, reset_gate_);
   Map<op::Sigmoid<float>, float>(*reset_gate_, reset_gate_);
-  //LOG(ERROR) << "Reset Gate: " << reset_gate_->cpu_data()[0];
+  // LOG(ERROR) << "Reset Gate: " << reset_gate_->cpu_data()[0];
   // Compute the new memory
   GEMM(1.0f, 0.0f, *context, *w_c_hh_t, new_memory_);
   Mult<float>(*reset_gate_, *new_memory_, new_memory_);
