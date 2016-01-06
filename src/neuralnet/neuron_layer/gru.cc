@@ -136,16 +136,12 @@ void GRULayer::ComputeFeature(int flag,
   Map<op::Sigmoid<float>, float>(*reset_gate_, reset_gate_);
   //LOG(ERROR) << "Reset Gate: " << reset_gate_->cpu_data()[0];
   // Compute the new memory
+  GEMM(1.0f, 0.0f, *context, *w_c_hh_t, new_memory_);
+  Mult<float>(*reset_gate_, *new_memory_, new_memory_);
   GEMM(1.0f, 1.0f, src, *w_c_hx_t, new_memory_);
   if (bias_c_ != nullptr)
-	  MVAddRow(1.0f, 1.0f, bias_c_->data(), new_memory_);
-
-  Blob<float> cprev (batchsize_, hdim_);
-  GEMM(1.0f, 0.0f, *context, *w_c_hh_t, &cprev);
-  Mult<float>(*reset_gate_, cprev, &cprev);
-  Add<float>(*new_memory_, cprev, new_memory_);
+    MVAddRow(1.0f, 1.0f, bias_c_->data(), new_memory_);
   Map<op::Tanh<float>, float>(*new_memory_, new_memory_);
-  //LOG(ERROR) << "New Memory: " << new_memory_->cpu_data()[0];
 
   Sub(*context, *new_memory_, &data_);
   Mult(data_, *update_gate_, &data_);

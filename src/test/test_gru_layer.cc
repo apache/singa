@@ -217,6 +217,7 @@ TEST_F(GRULayerTest, Setup) {
 }
 
 
+/*
 TEST_F(GRULayerTest, ComputeFeature) {
 	singa::CSVInputLayer in_layer_1;
 	singa::CSVInputLayer in_layer_2;
