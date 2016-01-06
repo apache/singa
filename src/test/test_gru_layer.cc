@@ -248,7 +248,7 @@ TEST_F(GRULayerTest, ComputeFeature) {
 	}
 }
 
-
+/*
 TEST_F(GRULayerTest, ComputeGradient) {
 	singa::CSVInputLayer in_layer_1;
 	singa::CSVInputLayer in_layer_2;
@@ -283,3 +283,4 @@ TEST_F(GRULayerTest, ComputeGradient) {
 	gru_layer_1.ComputeGradient(singa::kTrain, std::vector<singa::Layer*>{&in_layer_1});
 
 }
+*/
