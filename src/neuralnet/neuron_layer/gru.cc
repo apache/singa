@@ -34,20 +34,22 @@ using std::vector;
 GRULayer::~GRULayer() {
   delete weight_z_hx_;
   delete weight_z_hh_;
-  delete bias_z_;
+  if (bias_z_ != nullptr)
+    delete bias_z_;
 
   delete weight_r_hx_;
   delete weight_r_hh_;
+  if (bias_r_ != nullptr)
   delete bias_r_;
 
   delete weight_c_hx_;
   delete weight_c_hh_;
-  delete bias_c_;
+  if (bias_c_ != nullptr)
+    delete bias_c_;
 
   delete update_gate_;
   delete reset_gate_;
   delete new_memory_;
-  delete reset_context_;
 }
 
 void GRULayer::Setup(const LayerProto& conf,

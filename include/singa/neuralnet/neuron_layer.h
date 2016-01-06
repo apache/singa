@@ -202,9 +202,7 @@ class GRULayer : public NeuronLayer {
   int batchsize_; // batch size
   int vdim_, hdim_; // dimensions
 
-  Blob<float> *update_gate_, *reset_gate_, *new_memory_, *reset_context_;
-  //!< gru layer connect to two dst layers, hence need to grad blobs.
-  Blob<float> aux_grad_;
+  Blob<float> *update_gate_, *reset_gate_, *new_memory_;
 
   Param *weight_z_hx_, *weight_z_hh_, *bias_z_; // update gate
   Param *weight_r_hx_, *weight_r_hh_, *bias_r_; // reset gate

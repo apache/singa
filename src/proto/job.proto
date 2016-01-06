@@ -228,6 +228,7 @@ message LayerProto {
   optional RGBImageProto rgbimage_conf = 193;
   optional DataProto sharddata_conf = 194;
   optional CharRNNProto char_rnn_conf = 195;
+  optional OnehotProto onehot_conf = 196;
 
   // configuration for neuron layers id range [200, 300)
   optional ActivationProto activation_conf = 200;
@@ -334,6 +335,10 @@ enum ActivationType {
 
 message ActivationProto {
   optional ActivationType type = 1 [default = RELU];
+}
+
+message OnehotProto {
+  optional int32 vocab_size = 1 [default = 0];
 }
 
 message RGBImageProto {
