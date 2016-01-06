@@ -44,9 +44,10 @@ GRULayer::~GRULayer() {
   delete weight_c_hh_;
   delete bias_c_;
 
-  delete update_gate;
-  delete reset_gate;
-  delete new_memory;
+  delete update_gate_;
+  delete reset_gate_;
+  delete new_memory_;
+  delete reset_context_;
 }
 
 void GRULayer::Setup(const LayerProto& conf,
@@ -94,9 +95,9 @@ void GRULayer::Setup(const LayerProto& conf,
     bias_c_->Setup(vector<int>{hdim_});
   }
 
-  update_gate = new Blob<float>(batchsize_, hdim_);
-  reset_gate = new Blob<float>(batchsize_, hdim_);
-  new_memory = new Blob<float>(batchsize_, hdim_);
+  update_gate_ = new Blob<float>(batchsize_, hdim_);
+  reset_gate_ = new Blob<float>(batchsize_, hdim_);
+  new_memory_ = new Blob<float>(batchsize_, hdim_);
 }
 
 void GRULayer::ComputeFeature(int flag,
@@ -121,31 +122,31 @@ void GRULayer::ComputeFeature(int flag,
   }
 
   // Compute the update gate
-  GEMM(1.0f, 0.0f, src, *w_z_hx_t, update_gate);
+  GEMM(1.0f, 0.0f, src, *w_z_hx_t, update_gate_);
   if (bias_z_ != nullptr)
-    MVAddRow(1.0f, 1.0f, bias_z_->data(), update_gate);
-  GEMM(1.0f, 1.0f, *context, *w_z_hh_t, update_gate);
-  Map<op::Sigmoid<float>, float>(*update_gate, update_gate);
+    MVAddRow(1.0f, 1.0f, bias_z_->data(), update_gate_);
+  GEMM(1.0f, 1.0f, *context, *w_z_hh_t, update_gate_);
+  Map<op::Sigmoid<float>, float>(*update_gate_, update_gate_);
 
   // Compute the reset gate
-  GEMM(1.0f, 0.0f, src, *w_r_hx_t, reset_gate);
+  GEMM(1.0f, 0.0f, src, *w_r_hx_t, reset_gate_);
   if (bias_r_ != nullptr)
-    MVAddRow(1.0f, 1.0f, bias_r_->data(), reset_gate);
-  GEMM(1.0f, 1.0f, *context, *w_r_hh_t, reset_gate);
-  Map<op::Sigmoid<float>, float>(*reset_gate, reset_gate);
+    MVAddRow(1.0f, 1.0f, bias_r_->data(), reset_gate_);
+  GEMM(1.0f, 1.0f, *context, *w_r_hh_t, reset_gate_);
+  Map<op::Sigmoid<float>, float>(*reset_gate_, reset_gate_);
 
   // Compute the new memory
-  GEMM(1.0f, 0.0f, src, *w_c_hx_t, new_memory);
+  GEMM(1.0f, 0.0f, src, *w_c_hx_t, new_memory_);
   if (bias_c_ != nullptr)
-    MVAddRow(1.0f, 1.0f, bias_c_->data(), new_memory);
-  Mult<float>(*reset_gate, *new_memory, new_memory);
-  GEMM(1.0f, 1.0f, *context, *w_c_hh_t, new_memory);
-  Map<op::Tanh<float>, float>(*new_memory, new_memory);
+    MVAddRow(1.0f, 1.0f, bias_c_->data(), new_memory_);
+  Mult<float>(*reset_gate_, *new_memory_, new_memory_);
+  GEMM(1.0f, 1.0f, *context, *w_c_hh_t, new_memory_);
+  Map<op::Tanh<float>, float>(*new_memory_, new_memory_);
 
 
-  Sub(*context, *new_memory, &data_);
-  Mult(data_, *update_gate, &data_);
-  Add(data_, *new_memory, &data_);
+  Sub(*context, *new_memory_, &data_);
+  Mult(data_, *update_gate_, &data_);
+  Add(data_, *new_memory_, &data_);
 
   // delete the pointers
   if (srclayers.size() == 1)
@@ -180,26 +181,26 @@ void GRULayer::ComputeGradient(int flag,
 
   // Compute intermediate gradients which are used for other computations
   Blob<float> dugatedz(batchsize_, hdim_);
-  Map<singa::op::SigmoidGrad<float>, float>(*update_gate, &dugatedz);
+  Map<singa::op::SigmoidGrad<float>, float>(*update_gate_, &dugatedz);
   Blob<float> drgatedr(batchsize_, hdim_);
-  Map<singa::op::SigmoidGrad<float>, float>(*reset_gate, &drgatedr);
+  Map<singa::op::SigmoidGrad<float>, float>(*reset_gate_, &drgatedr);
   Blob<float> dnewmdc(batchsize_, hdim_);
-  Map<singa::op::TanhGrad<float>, float>(*new_memory, &dnewmdc);
+  Map<singa::op::TanhGrad<float>, float>(*new_memory_, &dnewmdc);
 
   Blob<float> dLdz(batchsize_, hdim_);
-  Sub<float>(*context, *new_memory, &dLdz);
+  Sub<float>(*context, *new_memory_, &dLdz);
   Mult<float>(dLdz, grad_, &dLdz);
   Mult<float>(dLdz, dugatedz, &dLdz);
 
   Blob<float> dLdc(batchsize_, hdim_);
   Blob<float> z1(batchsize_, hdim_);
   z1.SetValue(1.0f);
-  AXPY<float>(-1.0f, *update_gate, &z1);
+  AXPY<float>(-1.0f, *update_gate_, &z1);
   Mult(grad_, z1, &dLdc);
   Mult(dLdc, dnewmdc, &dLdc);
 
   Blob<float> reset_dLdc(batchsize_, hdim_);
-  Mult(dLdc, *reset_gate, &reset_dLdc);
+  Mult(dLdc, *reset_gate_, &reset_dLdc);
 
   Blob<float> dLdr(batchsize_, hdim_);
   Blob<float> cprev(batchsize_, hdim_);
@@ -247,7 +248,7 @@ void GRULayer::ComputeGradient(int flag,
         clayer->mutable_grad(this));
     GEMM(1.0f, 1.0f, dLdr, weight_r_hh_->data(), clayer->mutable_grad(this));
     GEMM(1.0f, 1.0f, dLdz, weight_z_hh_->data(), clayer->mutable_grad(this));
-    Add(clayer->grad(this), *update_gate, clayer->mutable_grad(this));
+    Add(clayer->grad(this), *update_gate_, clayer->mutable_grad(this));
     // LOG(ERROR) << "grad to prev gru " << Asum(clayer->grad(this));
   }
 
