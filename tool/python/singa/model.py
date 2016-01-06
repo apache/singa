@@ -55,6 +55,7 @@ class Model(object):
         self.result = None
         self.last_checkpoint_path = None
         self.cudnn = False
+        self.accuracy = False
 
     def add(self, layer):
         '''
@@ -151,6 +152,17 @@ class Model(object):
             else:
                 getattr(lastly, 'srclayers').append(self.layers[0].layer.name)
 
+        if self.accuracy == True:
+            smly = net.layer.add()
+            smly.CopyFrom(Layer(name='softmax', type=kSoftmax).layer)
+            setval(smly, include=kTest)
+            getattr(smly, 'srclayers').append(self.layers[-1].layer.name)
+            aly = net.layer.add()
+            aly.CopyFrom(Accuracy().layer)
+            setval(aly, include=kTest)
+            getattr(aly, 'srclayers').append('softmax')
+            getattr(aly, 'srclayers').append(self.layers[0].layer.name)
+
         # use of cudnn
         if self.cudnn == True:
             self.set_cudnn_layer_type(net)
@@ -230,7 +242,8 @@ class Model(object):
             pass
 
     def evaluate(self, data=None, alg='bp',
-                 checkpoint_path=None, execpath='', device=None, **fields):
+                 checkpoint_path=None, execpath='',
+                 device=None, show_acc=False, **fields):
         '''
         required
           data = (Data)   // Data class object for testing data
@@ -239,6 +252,7 @@ class Model(object):
           checkpoint_path = (list)     // checkpoint path
           execpaths       = (string)   // path to user's own executable
           device          = (int/list) // a list of gpu ids
+          show_acc        = (bool)     // compute and the accuacy
           **fields (KEY=VALUE)
             batch_size   = (int)  // batch size for testing data
             test_freq    = (int)  // frequency of testing
@@ -275,6 +289,9 @@ class Model(object):
         if device != None:
             setval(self.jobconf, gpu=device)
             self.cudnn = True
+
+        # set True if showing the accuracy
+        self.accuracy = show_acc
 
         self.build()  # construct Nneuralnet Component
 

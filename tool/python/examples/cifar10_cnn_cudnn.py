@@ -47,7 +47,7 @@ m.add(AvgPooling2D(pool_size=(3,3), stride=2))
 
 m.add(Dense(10, w_wd=250, b_lr=2, b_wd=0, activation='softmax'))
 
-sgd = SGD(decay=0.004, lr_type='manual', step=(0,60000,65000), step_lr=(0.001,0.0001,0.00001))
+sgd = SGD(decay=0.004, momentum=0.9, lr_type='manual', step=(0,60000,65000), step_lr=(0.001,0.0001,0.00001))
 topo = Cluster(workspace)
 m.compile(loss='categorical_crossentropy', optimizer=sgd, cluster=topo)
 

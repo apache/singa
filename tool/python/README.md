@@ -1,6 +1,8 @@
-## SINGA-81 Add Python Helper, which enables users to construct a model (JobProto) and run Singa in Python
+# Python Helper
 
-    SINGAROOT/tool/python
+Users can construct a model and run SINGA using Python. Specifically, the Python helper enables users to generate JobProto for the model and run Driver::Train or Driver::Test using Python. The Python Helper tool can be found in `SINGA_ROOT/tool/python` consisting of the following directories.
+
+	SINGAROOT/tool/python	
     |-- pb2 (has job_pb2.py)
     |-- singa 
         |-- model.py 
@@ -11,79 +13,83 @@
             |-- utility.py 
             |-- message.py 
     |-- examples 
-        |-- cifar10_cnn.py, mnist_mlp.py, , mnist_rbm1.py, mnist_ae.py, etc. 
+        |-- cifar10_cnn.py, mnist_mlp.py, mnist_rbm1.py, mnist_ae.py, etc. 
         |-- datasets 
             |-- cifar10.py 
             |-- mnist.py 
 
-### How to Run
+##1. Basic User Guide
+
+In order to use the Python Helper features, users need to add the following option when building SINGA as follows.
+```
+./configure --enable-python --with-python=PYTHON_DIR
+```
+where `PYTHON_DIR` has `Python.h`
+
+### (a) How to Run
 ```
 bin/singa-run.sh -exec user_main.py
 ```
-The python code, e.g., user_main.py, would create the JobProto object and pass it to Driver::Train.
+The python code, e.g., `user_main.py`, would create the JobProto object and pass it to Driver::Train or Driver:Test.
 
-For example,
+For running CIFAR10 example,  
 ```
 cd SINGA_ROOT
 bin/singa-run.sh -exec tool/python/examples/cifar10_cnn.py 
 ```
-
-Note that, in order to use the Python Helper feature, users need to add the following option
+For running MNIST example,  
 ```
-./configure --enable-python --with-python=PYTHON_DIR
+cd SINGA_ROOT
+bin/singa-run.sh -exec tool/python/examples/mnist_mlp.py 
 ```
-where PYTHON_DIR has Python.h
 
-### Layer class (inherited)
+### (b) Class Description
 
-* Data
-* Dense
-* Activation
-* Convolution2D
-* MaxPooling2D
-* AvgPooling2D
-* LRN2D 
-* Dropout
-* RBM
-* Autoencoder
+#### Layer class
 
-### Model class
+The following classes configure field values for a particular layer and generate its LayerProto.
 
-* Model class has `jobconf` (JobProto) and `layers` (layer list)
+* `Data` for a data layer.
+* `Dense` for an innerproduct layer.
+* `Activation` for an activation layer.
+* `Convolution2D` for a convolution layer.
+* `MaxPooling2D` for a max pooling layer.
+* `AvgPooling2D` for an average pooling layer.
+* `LRN2D` for a normalization (or local response normalization) layer. 
+* `Dropout` for a dropout layer.
+
+In addition, the following classes generate multiple layers for particular models.
+
+* `RBM` for constructing layers of RBM.
+* `Autoencoder` for constructing layers of Autoencoder
+
+
+#### Model class
+
+Model class has `jobconf` (JobProto) and `layers` (a layer list).
 
 Methods in Model class
 
-* add
-	* add Layer into Model
-	* 2 subclasses: Sequential model and Energy model
+* `add` to add Layer into the model
+	* 2 subclasses: `Sequential` model and `Energy` model
 
-* compile	
-	* set Updater (i.e., optimizer) and Cluster (i.e., topology) components
+* `compile` to configure an optimizer and topology for training.	
+	* set `Updater` (i.e., optimizer) and `Cluster` (i.e., topology) components
 
-* fit 
+* `fit` to configure field values for training. 
 	* set Training data and parameter values for the training
 		* (optional) set Validatiaon data and parameter values
-	* set Train_one_batch component
-	* specify `with_test` field if a user wants to run singa with test data simultaneously.
-	* [TODO] recieve train/validation results, e.g., accuracy, loss, ppl, etc. 
+	* set `Train_one_batch` component
+	* set `with_test` argument `True` if users want to run SINGA with test data simultaneously.
+	* return train/validation results, e.g., accuracy, loss, ppl, etc. 
 
-* evaluate
-	* set Testing data and parameter values for the testing
-	* specify `checkpoint_path` field if a user want to run singa only for testing.
-	* [TODO] recieve test results, e.g., accuracy, loss, ppl, etc. 
+* `evaluate` to configure field values for test.
+	* set Testing data and parameter values for the test
+	* specify `checkpoint_path` field if users want to run SINGA only for test.
+	* return test results, e.g., accuracy, loss, ppl, etc. 
 
-#### Results
 
-fit() and evaluate() return train/test results, a dictionary containing
-
-* [key]: step number
-* [value]: a list of dictionay
-	* 'acc' for accuracy
-	* 'loss' for loss
-	* 'ppl' for ppl
-	* 'se' for squred error   
-
-#### To run Singa on GPU
+### (c) To Run Singa on GPU
 
 Users need to set a list of gpu ids to `device` field in fit() or evaluate(). 
 
@@ -94,60 +100,53 @@ m.fit(X_train, nb_epoch=100, with_test=True, device=gpu_id)
 ```
 
 
-### Parameter class
+### (d) How to set/update parameter values
 
-Users need to set parameter and initial values. For example,
+Users may need to set/update parameter field values.
 
-* Parameter (fields in Param proto)
-	* lr = (float) // learning rate multiplier, used to scale the learning rate when updating parameters.
-	* wd = (float) // weight decay multiplier, used to scale the weight decay when updating parameters. 
+* Parameter fields for both Weight and Bias (i.e., fields of ParamProto)
+	* `lr` = (float) : learning rate multiplier, used to scale the learning rate when updating parameters.
+	* `wd` = (float) : weight decay multiplier, used to scale the weight decay when updating parameters. 
 
-* Parameter initialization (fields in ParamGen proto)
-	* init = (string) // one of the types, 'uniform', 'constant', 'gaussian'
-	* high = (float)  // for 'uniform'
-	* low = (float)   // for 'uniform'
-	* value = (float) // for 'constant'
-	* mean = (float)  // for 'gaussian'
-	* std = (float)   // for 'gaussian'
+* Parameter initialization (fields of ParamGenProto)
+	* `init` = (string) : one of the types, 'uniform', 'constant', 'gaussian'
+	* `scale` = (float)  : for 'uniform', it is used to set `low`=-scale and `high`=+scale
+	* `high` = (float)  : for 'uniform'
+	* `low` = (float)   : for 'uniform'
+	* `value` = (float) : for 'constant'
+	* `mean` = (float)  : for 'gaussian'
+	* `std` = (float)   : for 'gaussian'
 
-* Weight (`w_param`) is 'gaussian' with mean=0, std=0.01 at default
+* Weight (`w_param`) is set as 'gaussian' with `mean`=0 and `std`=0.01 at default.
 
-* Bias (`b_param`) is 'constant' with value=0 at default
+* Bias (`b_param`) is set as 'constant' with `value`=0 at default.
 
-* How to update the parameter fields
-	* for updating Weight, put `w_` in front of field name
-	* for updating Bias, put `b_` in front of field name
+* In order to set/update the parameter fields of either Weight or Bias
+	* for Weight, put `w_` in front of field name
+	* for Bias, put `b_` in front of field name
 
-Several ways to set Parameter values
-```
-parw = Parameter(lr=2, wd=10, init='gaussian', std=0.1)
-parb = Parameter(lr=1, wd=0, init='constant', value=0)
-m.add(Convolution2D(10, w_param=parw, b_param=parb, ...)
-```
-```
-m.add(Dense(10, w_mean=1, w_std=0.1, w_lr=2, w_wd=10, ...)
-```
-```
-parw = Parameter(init='constant', mean=0)
-m.add(Dense(10, w_param=parw, w_lr=1, w_wd=1, b_value=1, ...)
-```
+	For example, 
+	```
+	m.add(Dense(10, w_mean=1, w_std=0.1, w_lr=2, w_wd=10, ...)
+	```
 
 
+### (e) Results
 
-#### Other classes
+fit() and evaluate() return training/test results, i.e., a dictionary containing
 
-* Store
-* Algorithm
-* Updater
-* SGD
-* AdaGrad
-* Cluster
+* [key]: step number
+* [value]: a list of dictionay
+	* 'acc' for accuracy
+	* 'loss' for loss
+	* 'ppl' for ppl
+	* 'se' for squred error   
 
 
-## MLP Example
 
-An example (to generate job.conf for mnist)
+## 2. Examples
 
+### MLP example (to generate job.conf for MNIST)
 ```
 X_train, X_test, workspace = mnist.load_data()
 
@@ -167,10 +166,7 @@ m.fit(X_train, nb_epoch=1000, with_test=True)
 result = m.evaluate(X_test, batch_size=100, test_steps=10, test_freq=60)
 ```
 
-## CNN Example
-
-An example (to generate job.conf for cifar10)
-
+### CNN example (to generate job.conf for cifar10)
 ```
 X_train, X_test, workspace = cifar10.load_data()
 
@@ -199,8 +195,7 @@ m.fit(X_train, nb_epoch=1000, with_test=True)
 result = m.evaluate(X_test, 1000, test_steps=30, test_freq=300)
 ```
 
-
-## RBM Example
+### RBM Example
 ```
 rbmid = 3                                                                                           
 X_train, X_test, workspace = mnist.load_data(nb_rbm=rbmid)                                               
@@ -215,7 +210,7 @@ m.compile(optimizer=sgd, cluster=topo)
 m.fit(X_train, alg='cd', nb_epoch=6000)                            
 ```
 
-## AutoEncoder Example
+### AutoEncoder Example
 ```
 rbmid = 4
 X_train, X_test, workspace = mnist.load_data(nb_rbm=rbmid+1)                                               
@@ -230,7 +225,47 @@ m.compile(loss='mean_squared_error', optimizer=agd, cluster=topo)
 m.fit(X_train, alg='bp', nb_epoch=12200)
 ```
 
-### TIPS
+
+## 3. Advanced User Guide
+
+### Parameter class
+
+Users can explicitly set/update parameter. There are several ways to set Parameter values
+```
+parw = Parameter(lr=2, wd=10, init='gaussian', std=0.1)
+parb = Parameter(lr=1, wd=0, init='constant', value=0)
+m.add(Convolution2D(10, w_param=parw, b_param=parb, ...)
+```
+```
+m.add(Dense(10, w_mean=1, w_std=0.1, w_lr=2, w_wd=10, ...)
+```
+```
+parw = Parameter(init='constant', mean=0)
+m.add(Dense(10, w_param=parw, w_lr=1, w_wd=1, b_value=1, ...)
+```
+
+### Data layer
+
+There are alternative ways to add Data layer. In addition, users can write your own `load_data` method of `cifar10.py` and `mnist.py` in `examples/dataset`. 
+```
+X_train, X_test = mnist.load_data()  // parameter values are set in load_data() 
+m.fit(X_train, ...)                  // Data layer for training is added
+m.evaluate(X_test, ...)              // Data layer for testing is added
+```
+```
+X_train, X_test = mnist.load_data()  // parameter values are set in load_data() 
+m.add(X_train)                       // explicitly add Data layer
+m.add(X_test)                        // explicitly add Data layer
+```
+```
+store = Store(path='train.bin', batch_size=64, ...)        // parameter values are set explicitly 
+m.add(Data(load='recordinput', phase='train', conf=store)) // Data layer is added
+store = Store(path='test.bin', batch_size=100, ...)        // parameter values are set explicitly 
+m.add(Data(load='recordinput', phase='test', conf=store))  // Data layer is added
+```
+
+
+### Other TIPS
 
 Hidden layers for MLP can be written as
 ```
@@ -281,26 +316,9 @@ m.add(Dense(10, w_param=parw, w_wd=250, b_param=parb, b_lr=2, b_wd=0, activation
 ```
 
 
-Alternative ways to add Data layer
-```
-X_train, X_test = mnist.load_data()  // parameter values are set in load_data() 
-m.fit(X_train, ...)                  // Data layer for training is added
-m.evaluate(X_test, ...)              // Data layer for testing is added
-```
-```
-X_train, X_test = mnist.load_data()  // parameter values are set in load_data() 
-m.add(X_train)                       // explicitly add Data layer
-m.add(X_test)                        // explicitly add Data layer
-```
-```
-store = Store(path='train.bin', batch_size=64, ...)        // parameter values are set explicitly 
-m.add(Data(load='recordinput', phase='train', conf=store)) // Data layer is added
-store = Store(path='test.bin', batch_size=100, ...)        // parameter values are set explicitly 
-m.add(Data(load='recordinput', phase='test', conf=store))  // Data layer is added
-```
 
 
-### Cases to run singa
+### Different Cases to Run SINGA
 
 (1) Run singa for training
 ```

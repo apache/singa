@@ -95,12 +95,12 @@ class Convolution2D(Layer):
                  activation=None, **kwargs):
         '''
         required
-          nb_filter = (int)  // the number of filters
-          kernel    = (int)  // the size of filter
+          nb_filter = (int)        // the number of filters
+          kernel    = (int/tuple)  // the size of filter
         optional
-          stride    = (int)  // the size of stride
-          pad       = (int)  // the size of padding
-          init      = (string)     // 'unirom', 'gaussian', 'constant'
+          stride    = (int/tuple)  // the size of stride
+          pad       = (int/tuple)  // the size of padding
+          init      = (string)     // 'uniform', 'gaussian', 'constant'
           w_param   = (Parameter)  // Parameter object for weight
           b_param   = (Parameter)  // Parameter object for bias
           **kwargs (KEY=VALUE)
@@ -112,13 +112,29 @@ class Convolution2D(Layer):
             b_wd = (float) // weight decay multiplier for bias
         '''
 
-        assert nb_filter > 0 and kernel > 0, 'should be set as positive int'
+        assert nb_filter > 0, 'nb_filter should be set as positive int'
         super(Convolution2D, self).__init__(name=generate_name('conv', 1),
                                             type=kCConvolution)
-        fields = {'num_filters' : nb_filter,
-                  'kernel' : kernel,
-                  'stride' : stride,
-                  'pad' : pad}
+        fields = {}
+        # for kernel
+        if type(kernel) == int:
+          fields['kernel'] = kernel
+        else:
+          fields['kernel_x'] = kernel[0]
+          fields['kernel_y'] = kernel[1]
+        # for stride 
+        if type(stride) == int:
+          fields['stride'] = stride
+        else:
+          fields['stride_x'] = stride[0]
+          fields['stride_y'] = stride[1]
+        # for pad 
+        if type(pad) == int:
+          fields['pad'] = pad 
+        else:
+          fields['pad_x'] = pad[0]
+          fields['pad_y'] = pad[1]
+
         setval(self.layer.convolution_conf, **fields)
 
         # parameter w
@@ -158,7 +174,7 @@ class MaxPooling2D(Layer):
         if type(pool_size) == int:
             pool_size = (pool_size, pool_size)
         assert type(pool_size) == tuple and pool_size[0] == pool_size[1], \
-               'pool size should be square in Singa'
+               'currently pool size should be square in Singa'
         super(MaxPooling2D, self).__init__(name=generate_name('pool'),
                                            type=kCPooling, **kwargs)
         fields = {'pool' : PoolingProto().MAX,
@@ -184,7 +200,7 @@ class AvgPooling2D(Layer):
         if type(pool_size) == int:
             pool_size = (pool_size, pool_size)
         assert type(pool_size) == tuple and pool_size[0] == pool_size[1], \
-               'pool size should be square in Singa'
+               'currently pool size should be square in Singa'
         super(AvgPooling2D, self).__init__(name=generate_name('pool'),
                                            type=kCPooling, **kwargs)
         self.layer.pooling_conf.pool = PoolingProto().AVG
@@ -242,6 +258,16 @@ class Dropout(Layer):
                                       type=self.layer_type)
         self.layer.dropout_conf.dropout_ratio = ratio
 
+class Accuracy(Layer):
+
+    def __init__(self):
+        '''
+        '''
+
+        self.name = 'accuracy'
+        self.layer_type = enumLayerType(self.name)
+        super(Accuracy, self).__init__(name=generate_name(self.name),
+                                       type=self.layer_type)
 
 class RGB(Layer):
 
@@ -268,7 +294,7 @@ class Dense(Layer):
           output_dim = (int)
         optional
           activation = (string)
-          init       = (string)     // 'unirom', 'gaussian', 'constant'
+          init       = (string)     // 'uniform', 'gaussian', 'constant'
           w_param    = (Parameter)  // Parameter object for weight
           b_param    = (Parameter)  // Parameter object for bias
           **kwargs
