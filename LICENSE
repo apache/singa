@@ -206,16 +206,17 @@ subcomponents is subject to the terms and conditions of the following
 licenses.
 
 ============================================================================
-SINGA bundles the following under BSD 2-clause license: include/utils/blob.h,
-src/utils/blob.cc, include/utils/common.h, src/utils/common.cc
+SINGA bundles the following under BSD 2-clause license: include/singa/utils/blob.h,
+src/utils/blob.cc, include/singa/utils/common.h, src/utils/common.cc, include/singa/utils/cuda_utils.h
 
 Copyright (c) 2014, 2015, The Regents of the University of California (Regents)
+Copyright (c) 2014, the respective contributors
 https://github.com/BVLC/caffe/blob/master/LICENSE
 
 =====================================================================
-SINGA bundles the following under BSD 2-clause license: include/utils/tinydir.h
+SINGA bundles the following under BSD 2-clause license: include/singa/utils/tinydir.h
 
-Copyright (c) 2013, Cong Xu
+Copyright (c) 2013, Cong Xu, Baudouin Feildel
 https://github.com/cxong/tinydir/blob/master/COPYING
 
 =====================================================================
@@ -231,7 +232,15 @@ Copyright 2008, Google Inc.
 https://code.google.com/p/googletest/source/browse/trunk/LICENSE
 
 =====================================================================
-SINGA bundles the following under New BSD license: tool/cppling.py
+SINGA bundles the following under New BSD license: tool/cpplint.py
 
 Copyright (c) 2009 Google Inc. All rights reserved.
 https://github.com/google/styleguide/tree/gh-pages/cpplint
+
+=====================================================================
+SINGA bundles the following under New BSD license: examples/rnnlm/create_data.cc
+
+Copyright (c) 2010-2012 Tomas Mikolov
+Copyright (c) 2013 Cantab Research Ltd
+All rights reserved.
+http://www.fit.vutbr.cz/~imikolov/rnnlm/

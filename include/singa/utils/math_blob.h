@@ -352,6 +352,8 @@ void Copy(const Blob<Dtype>& A, Blob<Dtype>* B) {
 #ifdef USE_GPU
   CUDA_CHECK(cudaMemcpy(static_cast<Dtype*>(B->mutable_gpu_data()),
              A.gpu_data(), sizeof(Dtype) * A.count(), cudaMemcpyDefault));
+#else
+  LOG(FATAL) << "Not implemented";
 #endif
   }
 }
