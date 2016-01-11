@@ -22,6 +22,7 @@ The current code depends on the following external libraries:
   * `czmq` (Mozilla Public License Version 2.0)
   * `zookeeper` (Apache 2.0)
 
+We have tested SINGA on Ubuntu 12.04, Ubuntu 14.01 and CentOS 6.
 You can install all dependencies into `$PREFIX` folder by
 
     ./thirdparty/install.sh all $PREFIX
