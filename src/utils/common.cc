@@ -20,6 +20,7 @@
 *************************************************************/
 
 /**
+ * The code is adapted from Caffe under BSD 2 Clause license.
  * All contributions by the University of California:
  * Copyright (c) 2014, The Regents of the University of California (Regents)
  * All rights reserved.
