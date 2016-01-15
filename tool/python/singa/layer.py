@@ -115,7 +115,7 @@ class Convolution2D(Layer):
         assert nb_filter > 0, 'nb_filter should be set as positive int'
         super(Convolution2D, self).__init__(name=generate_name('conv', 1),
                                             type=kCConvolution)
-        fields = {}
+        fields = {"num_filter":nb_filter}
         # for kernel
         if type(kernel) == int:
           fields['kernel'] = kernel
