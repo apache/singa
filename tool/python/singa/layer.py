@@ -228,21 +228,20 @@ class LRN2D(Layer):
 
 class Activation(Layer):
 
-    def __init__(self, activation='stanh', topk=1):
+    def __init__(self, activation='stanh'):
         '''
         required
-          activation = (string)
-        optional
-          topk       = (int)  // the number of results
+          activation = (string) // relu, sigmoid, tanh, stanh, softmax.
         '''
 
+        if activation == 'tanh':
+          print 'Warning: Tanh layer is not supported for CPU'
+
         self.name = activation
-        if activation == 'tanh': activation = 'stanh' # <-- better way to set?
         self.layer_type = enumLayerType(activation)
         super(Activation, self).__init__(name=generate_name(self.name),
                                          type=self.layer_type)
-        if activation == 'softmaxloss':
-            self.layer.softmaxloss_conf.topk = topk
+
 
 class Dropout(Layer):
 

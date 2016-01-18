@@ -33,11 +33,11 @@ X_train, X_test, workspace = mnist.load_data(**pvalues)
 
 m = Sequential('mlp', argv=sys.argv)
 
-m.add(Dense(2500, init='uniform', activation='tanh'))
-m.add(Dense(2000, init='uniform', activation='tanh'))
-m.add(Dense(1500, init='uniform', activation='tanh'))
-m.add(Dense(1000, init='uniform', activation='tanh'))
-m.add(Dense(500,  init='uniform', activation='tanh'))
+m.add(Dense(2500, init='uniform', activation='stanh'))
+m.add(Dense(2000, init='uniform', activation='stanh'))
+m.add(Dense(1500, init='uniform', activation='stanh'))
+m.add(Dense(1000, init='uniform', activation='stanh'))
+m.add(Dense(500,  init='uniform', activation='stanh'))
 m.add(Dense(10, init='uniform', activation='softmax'))
 
 sgd = SGD(lr=0.001, lr_type='step')
