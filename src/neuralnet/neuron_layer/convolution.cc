@@ -154,7 +154,7 @@ void CConvolutionLayer::ComputeFeature(int flag,
 
   for (int n = 0; n < batchsize_; n++) {
     Im2col(src[n].dptr, channels_, height_, width_,
-        kernel_x_, kernel_y_, pad_x_, pad_y_, stride_x_, stride_y_, col.dptr);
+        kernel_y_, kernel_x_, pad_y_, pad_x_, stride_y_, stride_x_, col.dptr);
     data[n] = dot(weight, col);
   }
   data += expr::broadcast<1>(bias, data.shape);
@@ -178,12 +178,12 @@ void CConvolutionLayer::ComputeGradient(int flag,
   gbias = expr::sumall_except_dim<1>(grad);
   for (int n = 0; n < batchsize_; n++) {
     Im2col(src[n].dptr, channels_, height_, width_,
-        kernel_x_, kernel_y_, pad_x_, pad_y_, stride_x_, stride_y_, col.dptr);
+        kernel_y_, kernel_x_, pad_y_, pad_x_, stride_y_, stride_x_, col.dptr);
     gweight += dot(grad[n], col.T());
     if (gsrcblob != nullptr) {
       gcol = dot(weight.T(), grad[n]);
       Col2im(gcol.dptr, channels_, height_, width_,
-          kernel_x_, kernel_y_, pad_x_, pad_y_, stride_x_, stride_y_,
+          kernel_y_, kernel_x_, pad_y_, pad_x_, stride_y_, stride_x_,
           gsrc[n].dptr);
     }
   }
