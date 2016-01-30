@@ -93,7 +93,7 @@ AC_SUBST(CUDA_LDFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(CUDA_CFLAGS)
 
-# Setup custom CUDA paths
+# Setup custom CUDNN paths
 AC_ARG_ENABLE([cudnn],
     [AS_HELP_STRING(--enable-cudnn,enable CUDNN support)],
     [enable_cudnn=yes], [enable_cudnn=no])
@@ -146,6 +146,7 @@ AC_CHECK_LIB([protobuf], [main], [], [
   AC_MSG_ERROR([unable to find protobuf library])
   ])
 
+# Setup custom lmdb paths 
 AC_ARG_ENABLE(lmdb,
      AS_HELP_STRING([--enable-lmdb],[enable debug option]),
    [enable_lmdb=yes],[enable_lmdb=no])
@@ -159,6 +160,7 @@ fi
 
 PROGS=''
 LTLIBS=''
+# Setup custom libhdfs paths 
 AC_ARG_ENABLE(hdfs,
   AS_HELP_STRING([--enable-hdfs],[enable hdfs support]),
   [enable_hdfs=yes],[enable_hdfs=no])
@@ -194,6 +196,7 @@ AC_SUBST(HDFS_CFLAGS)
 AC_SUBST(HDFS_LDFLAGS)
 AC_SUBST(HDFS_LIBS)
 
+# Setup for test args 
 AC_ARG_ENABLE(test,
   AS_HELP_STRING([--enable-test],[enable singa test]),
   [enable_test=yes],[enable_test=no])
@@ -206,6 +209,7 @@ else
   LTLIBS+=''
 fi
 
+# Setup for debug args
 AC_ARG_ENABLE(debug,
   AS_HELP_STRING([--enable-debug],[enable debug mode]),
   [enable_debug=yes],[enable_debug=no])
@@ -216,6 +220,7 @@ else
   DEBUG+=' -O2'
 fi
 
+# Setup for python args
 AC_ARG_ENABLE(python,
     [AS_HELP_STRING([--enable-python],[enable python binding])],
     [enable_python=yes],[enable_python=no])
@@ -230,6 +235,7 @@ if test x"$enable_python" != x"no"; then
 fi
 AC_SUBST(PYLIBS)
 
+# Setup for python paths
 AC_ARG_WITH([python],
     [AS_HELP_STRING([--with-python=PATH],[prefix where python is installed])],
     [python_prefix=$withval],[python_prefix="/usr/include/python`python -V 2>&1 | awk '{print substr($2,1,3)}'`"])
@@ -263,6 +269,7 @@ AC_SUBST([DEBUG])
 AC_SUBST([PYFLAGS])
 AC_SUBST([PY_PROGS])
 
+# Setup for opencv libs
 #AC_CHECK_LIB([opencv_imgproc], [main], [], [
 #  AC_MSG_ERROR([unable to find opencv_imgproc lib])
 #  ])

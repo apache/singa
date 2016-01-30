@@ -1,3 +1,4 @@
+#!/bin/sh
 #/**
 # * Copyright 2015 The Apache Software Foundation
 # *
@@ -17,7 +18,6 @@
 # * See the License for the specific language governing permissions and
 # * limitations under the License.
 # */
-#!/bin/sh
 
 mkdir -p ./config;
 aclocal;

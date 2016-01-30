@@ -43,6 +43,7 @@ For advanced features, the following libraries are needed:
   * `Apache Mesos` (Apache 2.0)
   * `Apache Hadoop` (Apache 2.0)
   * `libhdfs3` (Apache 2.0)
+  * `swig` (GPL)
 
 ##Documentation
 
@@ -71,10 +72,16 @@ To compile with HDFS support, you should run:
 
 --with-libhdfs is optional as by default the path is /usr/local/.
 
+To compile with python wrappers, you should run:
+
+	$ ./tool/python/singa/generatepy.sh
+	$ ./configure --enable-python --with-python=/PATH/TO/Python.h
+
+--with-python is optinal as by default the path is /usr/local/include.
+
 You can also run the following command for further configuration.
 
     $ ./configure --help
-
 
 ##Running Examples
 

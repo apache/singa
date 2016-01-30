@@ -168,7 +168,6 @@ lib_LTLIBRARIES = libsinga.la $(LTLIBS)
 bin_PROGRAMS = singa singatool $(PROGS)
 pydir = $(CURDIR)/tool/python/singa/
 py_LTLIBRARIES = $(PY_PROGS)
-#py_LTLIBRARIES = $(PY_PROGS)
 
 #lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_SRCS) $(SINGA_SRCS)
@@ -202,7 +201,6 @@ singa_CXXFLAGS = $(DEFAULT_FLAGS) -MMD -I$(top_srcdir)/include
 singa_LDFLAGS = -lsinga \
                 -lglog  \
                 -lprotobuf \
-                #-lrt \
                 -lopenblas \
                 -lzmq \
                 -lczmq \
@@ -237,18 +235,6 @@ singatool_LDFLAGS = -lsinga \
                     -lprotobuf \
                     -lzookeeper_mt
 
-#if DCUDA
-#singatool_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
-#singatool_CXXFLAGS += $(CUDA_CFLAGS)
-#singatool_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
-#endif
-
-#if DCUDNN
-#singatool_SOURCES += $(CUDNN_SRCS)
-#singatool_CXXFLAGS += $(CUDNN_CFLAGS)
-#singatool_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
-#endif
-
 if DHDFS
 singatool_SOURCES += $(HDFS_SRCS)
 singatool_CXXFLAGS += $(HDFS_CFLAGS)
@@ -270,7 +256,6 @@ singatest_LDADD = ./libgtest.la
 singatest_LDFLAGS = -lsinga \
                 -lglog  \
                 -lprotobuf \
-                #-lrt \
                 -lopenblas \
                 -lzmq \
                 -lczmq \
@@ -309,9 +294,12 @@ endif
 clean-local:
 	rm -rf $(PROTO_SRCS) $(PROTO_HDRS)
 	rm -rf $(PROTO_PYS)
+	rm -rf neuralnet/neuron_layer/*.o
+	rm -rf src/utils/math_kernel.o
 	rm -rf rat_check
 	rm -rf tool/python/pb2
 
+# Add scrips for py driver installation
 all-local:
 	@if [ -f ".libs/_driver.so" ]; then \
 		echo "Copy libs for python wrapper"; \
@@ -319,6 +307,7 @@ all-local:
 		touch tool/python/singa/__init__.py; \
 	fi
 
+# For rat check
 rat:
 	@if test ! -z '$(shell command -v java 2>/dev/null)'; then \
 		if test ! -z '$(shell echo $$RAT_PATH)'; then \
@@ -334,9 +323,11 @@ rat:
 .cu.o: .cu
 	$(NVCC) $(MSHADOW_FLAGS) --shared -Xcompiler -fPIC $(CUDA_CFLAGS) $(CUDA_LDFLAGS) $(CUDA_LIBS) -I$(top_srcdir)/include -std=c++11 -G -c -o $@ $<
 
+# Generate gpu libs for singa
 libsingagpu.so: $(CUDA_OBJS)
 	$(NVCC)  -o libsingagpu.so -shared -Xcompiler -fPIC $(CUDA_OBJS)  $(CUDA_CFLAGS) $(CUDA_LDFLAGS) $(CUDA_LIBS) -I$(top_srcdir)/include -std=c++11 -G
 
+# Create python class files
 install-pyLTLIBRARIES: $(py_LTLIBRARIES)
 	touch tool/python/singa/__init__.py
 	cp -f .libs/_driver.so tool/python/singa/
@@ -345,6 +336,7 @@ uninstall-pyLTLIBRARIES:
 	rm -f tool/python/singa/__init__.py
 	rm -f tool/python/singa/_driver.so
 
+# For autorun singatest
 test: singatest
 	@./singatest
 
