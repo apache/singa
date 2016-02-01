@@ -2,6 +2,7 @@ ACLOCAL_AMFLAGS = -I config
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #AM_CPPFLAGS = -I$(top_srcdir)/src
+#AM_LDFLAGS = $(LD_FLAGS) 
 
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 DEFAULT_FLAGS = -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
@@ -179,7 +180,7 @@ endif
 if DCUDA
 libsinga_la_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 libsinga_la_CXXFLAGS += $(CUDA_CFLAGS)
-libsinga_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS) -lsingagpu
+libsinga_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS) -L./ -lsingagpu -Wl,-rpath=.
 libsinga_la_LIBADD = libsingagpu.so
 endif
 
@@ -298,6 +299,7 @@ clean-local:
 	rm -rf src/utils/math_kernel.o
 	rm -rf rat_check
 	rm -rf tool/python/pb2
+	rm -rf libsingagpu.so
 
 # Add scrips for py driver installation
 all-local:
@@ -325,7 +327,7 @@ rat:
 
 # Generate gpu libs for singa
 libsingagpu.so: $(CUDA_OBJS)
-	$(NVCC)  -o libsingagpu.so -shared -Xcompiler -fPIC $(CUDA_OBJS)  $(CUDA_CFLAGS) $(CUDA_LDFLAGS) $(CUDA_LIBS) -I$(top_srcdir)/include -std=c++11 -G
+	$(NVCC) -o libsingagpu.so -shared -Xcompiler -fPIC $(CUDA_OBJS)  $(CUDA_CFLAGS) $(CUDA_LDFLAGS) $(CUDA_LIBS) -I$(top_srcdir)/include -std=c++11 -G
 
 # Create python class files
 install-pyLTLIBRARIES: $(py_LTLIBRARIES)

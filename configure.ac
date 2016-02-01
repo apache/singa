@@ -68,11 +68,12 @@ if test x"$cudaval" = x"yes"; then
     CUDA_LDFLAGS="-L$cuda_prefix/lib64 -L$cuda_prefix/lib"
     CUDA_LIBS="-lcublas -lcudart -lcurand"
     LIBS="$LIBS $CUDA_LIBS"
-    LDFLAGS="$LDFLAGS $CUDA_LDFLAGS"
+    LDFLAGS="$LDFLAGS $CUDA_LDFLAGS -L./"
+    LIBTOOL='LD_LIBRARY_PATH=$(PWD) $(SHELL) $(top_builddir)/libtool'
     NVCC="nvcc"
   DEBUG="-DUSE_GPU"
     AC_DEFINE(DCUDA,[1],[Defined if CUDA should be used])
-  AC_CHECK_LIB([cuda], [main], [], [
+  AC_CHECK_LIB([cublas], [main], [], [
      AC_MSG_ERROR([unable to find cuda library])
     ])
   AC_CHECK_LIB([cudart], [main], [], [
@@ -88,6 +89,7 @@ else
     NVCC=""
     DEBUG="-DCPU_ONLY"
 fi
+AC_SUBST(LIBTOOL)
 AC_SUBST(NVCC)
 AC_SUBST(CUDA_LDFLAGS)
 AC_SUBST(CUDA_LIBS)
