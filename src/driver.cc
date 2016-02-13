@@ -90,6 +90,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<CConvolutionLayer, int>(kCConvolution);
   RegisterLayer<CPoolingLayer, int>(kCPooling);
   RegisterLayer<EmbeddingLayer, int>(kEmbedding);
+  RegisterLayer<ActivationLayer, int>(kActivation);
 
 #ifdef USE_CUDNN
   RegisterLayer<CudnnActivationLayer, int>(kCudnnActivation);
