@@ -219,6 +219,7 @@ class Param {
   inline float* mutable_cpu_data() { return data_.mutable_cpu_data(); }
   inline float* mutable_cpu_grad() { return grad_.mutable_cpu_data(); }
   inline float* mutable_cpu_history() { return history_.mutable_cpu_data(); }
+  inline float* mutable_cpu_update() { return update_.mutable_cpu_data(); }
   /**
    * @return slice start ID
    */
@@ -355,7 +356,7 @@ class Param {
   std::vector<bool> pending_update_;
   int num_pending_requests_ = 0;
   // data, gradient, history gradient of this parameter
-  Blob<float> data_, grad_, history_;
+  Blob<float> data_, grad_, history_, update_;
   ParamProto proto_;
 };
 

@@ -128,6 +128,10 @@ void Driver::Init(int argc, char **argv) {
   RegisterUpdater<AdaGradUpdater>(kAdaGrad);
   RegisterUpdater<NesterovUpdater>(kNesterov);
   RegisterUpdater<RMSPropUpdater>(kRMSProp);
+  RegisterUpdater<AdaDeltaUpdater>(kAdaDelta);
+  RegisterUpdater<AdamUpdater>(kAdam);
+  RegisterUpdater<AdamMaxUpdater>(kAdamMax);
+
   RegisterUpdater<SGDUpdater>(kSGD);
 
   // register learning rate change methods

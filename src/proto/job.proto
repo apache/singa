@@ -138,6 +138,12 @@ message UpdaterProto {
 
   // configuration for RMSProp algorithm
   optional RMSPropProto rmsprop_conf = 3;
+  // congiguration for AdaDelta algorithm
+  optional AdaDeltaProto adadelta_conf = 4;
+  // congiguration for Adam algorithm
+  optional AdamProto adam_conf = 5;
+  // congiguration for AdamMax algorithm
+  optional AdamMaxProto adammax_conf = 6;
 
   // learning rate generator
   optional LRGenProto learning_rate = 11;
@@ -561,6 +567,17 @@ message RMSPropProto {
  // history=history*rho_+(1-rho_)*(grad*grad_scale);
   required float rho = 1;
 }
+message AdaDeltaProto {
+  required float rho = 1 [default = 0.9];
+}
+message AdamProto {
+  required float beta1 = 1 [default = 0.9];
+  required float beta2 = 2 [default = 0.999];
+}
+message AdamMaxProto {
+  required float beta1 = 1 [default = 0.9];
+  required float beta2 = 2 [default = 0.999];
+}
 
 message FixedStepProto {
   repeated int32 step = 28;
@@ -713,6 +730,12 @@ enum UpdaterType {
   kRMSProp = 3;
   // Nesterov first optimal gradient method
   kNesterov = 4;
+  // AdaDelta
+  kAdaDelta = 5;
+  // Adam
+  kAdam = 6;
+  // AdamMax
+  kAdamMax = 7;
   // For user defined updater
   kUserUpdater = 105;
 }

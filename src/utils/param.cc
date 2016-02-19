@@ -154,6 +154,7 @@ void Param::Setup(const vector<int>& shape) {
   data_.Reshape(shape);
   grad_.Reshape(shape);
   history_.Reshape(shape);
+  update_.Reshape(shape);
 }
 
 void Param::InitValues() {
