@@ -124,8 +124,7 @@ void SGDUpdater::Update(int step, Param* param, float grad_scale) {
   Tensor<cpu, 1> grad(param->mutable_cpu_grad(), s);
   float lr = lr_gen_->Get(step) * param->lr_scale();
   float wd = weight_decay_ * param->wd_scale();
-  if (grad_scale != 1.f)
-    grad *= grad_scale;
+  grad *= grad_scale;
   if (wd > 0)  // L2 regularization, should be done after timing grad_scale
     grad += data * wd;
   if (momentum_ > 0) {
@@ -150,8 +149,7 @@ void NesterovUpdater::Update(int step, Param* param, float grad_scale) {
   TensorContainer<cpu, 1> tmp(s);
   float lr = lr_gen_->Get(step)*param->lr_scale();
   float wd = weight_decay_*param->wd_scale();
-  if (grad_scale != 1.f)
-    grad *= grad_scale;
+  grad *= grad_scale;
   if (wd > 0)  // L2 regularization, should be done after timing grad_scale
     grad += data * wd;
   Copy(tmp, history);
@@ -169,8 +167,7 @@ void AdaGradUpdater::Update(int step, Param* param, float grad_scale) {
   Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
   float lr = lr_gen_->Get(step)*param->lr_scale();
   float wd = weight_decay_*param->wd_scale();
-  if (grad_scale != 1.f)
-    grad *= grad_scale;
+  grad *= grad_scale;
   if (wd > 0)  //  L2 regularization, should be done after timing grad_scale
     grad += data * wd;
   history += F<square>(grad);
@@ -194,8 +191,7 @@ void RMSPropUpdater::Update(int step, Param* param, float grad_scale) {
   Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
   float lr = lr_gen_->Get(step) * param->lr_scale();
   float wd = weight_decay_ * param->wd_scale();
-  if (grad_scale != 1.f)
-    grad *= grad_scale;
+  grad *= grad_scale;
   if (wd > 0)  //  L2 regularization, should be done after timing grad_scale
     grad += data * wd;
   history = history * rho_ + (1 - rho_) * F<square>(grad);
@@ -217,17 +213,13 @@ void AdaDeltaUpdater::Update(int step, Param* param, float grad_scale){
   TensorContainer<cpu, 1> tmp(s);
   float wd = weight_decay_*param->wd_scale();
   float lr = lr_gen_->Get(step) * param->lr_scale();
-  if (grad_scale != 1.f)
-    grad *= grad_scale;
+  grad *= grad_scale;
   if (wd > 0)  //  L2 regularization, should be done after timing grad_scale
     grad += data * wd;
   history = history * rho_ + (1 - rho_) * F<op::square>(grad);
   tmp = grad * F<op::sqrtop>(update, delta_) / F<op::sqrtop>(history, delta_);
   update = rho_ * update + (1 - rho_) * F<op::square>(tmp);
-  if (lr != 1.f)
-    data -= lr * tmp;
-  else 
-    data -= tmp;
+  data -= lr * tmp;
 }
 
 /***********************Adam******************************/
@@ -246,8 +238,7 @@ void AdamUpdater::Update(int step, Param* param, float grad_scale) {
   Tensor<cpu, 1> update(param->mutable_cpu_update(), s);
   float wd = weight_decay_*param->wd_scale();
   float lr = lr_gen_->Get(step) * param->lr_scale();
-  if (grad_scale != 1.f)
-    grad *= grad_scale;
+  grad *= grad_scale;
   if (wd > 0)  //  L2 regularization, should be done after timing grad_scale
     grad += data * wd;
   history = history * beta1_ + (1 - beta1_) * grad;
@@ -271,8 +262,7 @@ void AdamMaxUpdater::Update(int step, Param* param, float grad_scale) {
   Tensor<cpu, 1> update(param->mutable_cpu_update(), s);
   float wd = weight_decay_*param->wd_scale();
   float lr = lr_gen_->Get(step) * param->lr_scale();
-  if (grad_scale != 1.f)
-    grad *= grad_scale;
+  grad *= grad_scale;
   if (wd > 0)  //  L2 regularization, should be done after timing grad_scale
     grad += data * wd;
   history = history * beta1_ + (1 - beta1_) * grad;
