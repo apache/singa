@@ -39,9 +39,9 @@ message DataProto {
 }
 
 extend singa.LayerProto {
-  optional EmbeddingProto embedding_conf = 101;
-  optional LossProto loss_conf = 102;
-  optional DataProto data_conf = 103;
+  optional EmbeddingProto embedding_conf = 1001;
+  optional LossProto loss_conf = 1002;
+  optional DataProto data_conf = 1003;
 }
 
 message WordRecord {
