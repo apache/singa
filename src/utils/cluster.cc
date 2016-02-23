@@ -116,8 +116,10 @@ const vector<int> Cluster::ExecutorRng(int pid, int grp_size, int procs_size) {
 int Cluster::Hash(int gid, int id, int flag) {
   int ret = -1;
   if (flag == kServer) {
-    ret = (flag * cluster_.nserver_groups() + gid)
-          * cluster_.nservers_per_group() + id;
+    ret = kServer * cluster_.nworker_groups()
+      * cluster_.nworkers_per_group()
+      + (cluster_.nserver_groups() + gid)
+      * cluster_.nservers_per_group() + id;
   } else {
     ret = (flag * cluster_.nworker_groups() + gid)
           * cluster_.nworkers_per_group() + id;
