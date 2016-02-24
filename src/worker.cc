@@ -62,6 +62,7 @@ Worker::~Worker() {
 }
 
 void Worker::Run() {
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   // setup gpu device
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());

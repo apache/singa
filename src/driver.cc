@@ -244,6 +244,7 @@ void Driver::Train(const JobProto& job_conf) {
     threads.push_back(std::thread(&Worker::Run, worker));
     int device_id  = -1;
     if (gpu < job_conf.gpu_size()) {
+      LOG(ERROR) << "Creating GPU...";
       device_id = job_conf.gpu(gpu++);
     }
     context->SetupDevice(threads.back().get_id(), device_id);
