@@ -125,19 +125,40 @@ class RMSPropUpdater : public Updater {
 
  protected:
   float rho_;
+  float delta_;
 };
 
-/*
 class AdaDeltaUpdater : public Updater {
  public:
-  virtual void Update(int step, Param* param, float grad_scale);
+  void Init(const UpdaterProto &proto) override;
+  void Update(int step, Param* param, float grad_scale) override;
 
  protected:
   float rho_;
   float delta_;
-  float weight_decay_;
 };
-*/
+
+class AdamUpdater : public Updater {
+  public:
+   void Init(const UpdaterProto &proto) override;
+   void Update(int step, Param* param, float grad_scale) override;
+
+  protected:
+   float beta1_;
+   float beta2_;
+   float delta_;
+};
+
+class AdamMaxUpdater : public Updater {
+  public:
+   void Init(const UpdaterProto &proto) override;
+   void Update(int step, Param* param, float grad_scale) override;
+
+  protected:
+   float beta1_;
+   float beta2_;
+   float delta_;
+};
 
 }  // namespace singa
 

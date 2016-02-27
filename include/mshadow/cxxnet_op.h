@@ -86,6 +86,12 @@ namespace mshadow {
             }
         };
 
+        struct abs{
+            MSHADOW_XINLINE static real_t Map(real_t a) {
+                return a < 0 ? -a : a;
+            }
+        };
+
     }; //namespace op
 
 }; //namespace mshadow
@@ -108,6 +114,11 @@ namespace mshadow {
         struct sqrtop {
             MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
                 return sqrt(a+b);
+            }
+        };
+        struct max {
+            MSHADOW_XINLINE static real_t Map(real_t a, real_t b) {
+                return a > b ? a : b;
             }
         };
     }; // namespace op
