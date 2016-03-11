@@ -50,6 +50,12 @@ enum ConnectionType {
   kOneToMany = 2;
 }
 
+enum DeviceType {
+  kCPU = 0;
+  kGPU = 1;
+  kOther = 2;
+}
+
 // to import caffe's lmdb dataset
 message CaffeDatum {
   optional int32 channels = 1;
