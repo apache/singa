@@ -151,7 +151,17 @@ void CudnnConvLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
         data_.mutable_gpu_data()));
   if (bias_) {
     beta = 1.f;
-    CHECK_CUDNN(cudnnAddTensor(handle_,
+
+#if CUDNN_MAJOR == 4
+      CHECK_CUDNN(cudnnAddTensor(handle_,
+          &alpha,
+          bias_desc_,
+          bias_->data().gpu_data(),
+          &beta,
+          my_desc_,
+          data_.mutable_gpu_data()));
+#else
+      CHECK_CUDNN(cudnnAddTensor(handle_,
           CUDNN_ADD_SAME_C,
           &alpha,
           bias_desc_,
@@ -159,6 +169,8 @@ void CudnnConvLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
           &beta,
           my_desc_,
           data_.mutable_gpu_data()));
+#endif
+
   }
 }
 
