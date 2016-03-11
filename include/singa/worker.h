@@ -263,7 +263,7 @@ class Worker {
    */
   inline int grp_id() const { return grp_id_; }
   /**
-   * @reutrn worker ID within the worker group.
+   * @return worker ID within the worker group.
    */
   inline int id() const { return id_; }
 
@@ -271,6 +271,7 @@ class Worker {
   int grp_id_ = -1, id_ = -1;
   int step_ = 0;
   JobProto job_conf_;
+  DeviceType device_type;
   NeuralNet* train_net_ = nullptr;
   NeuralNet* test_net_ = nullptr;
   NeuralNet* val_net_ = nullptr;
