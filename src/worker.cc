@@ -22,8 +22,6 @@
 #include "singa/worker.h"
 
 #include <glog/logging.h>
-#include <chrono>
-#include <thread>
 #include <typeinfo>
 #include "singa/utils/cluster.h"
 #include "singa/utils/factory.h"
