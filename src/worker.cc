@@ -36,12 +36,17 @@ namespace singa {
 using std::string;
 
 Worker* Worker::Create(const AlgProto& conf) {
+  return Create(conf, DeviceType::kCPU);
+}
+
+Worker* Worker::Create(const AlgProto& conf, DeviceType devtype) {
   auto factory = Singleton<Factory<singa::Worker>>::Instance();
   Worker* worker = nullptr;
   if (conf.has_user_alg())
     worker = factory->Create(conf.user_alg());
   else
     worker = factory->Create(conf.alg());
+  worker->device_type(devtype);
   return worker;
 }
 
@@ -68,8 +73,10 @@ void Worker::Run() {
   int device = context->device_id(std::this_thread::get_id());
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
     << " start on " << (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
-  if (device >= 0)
+  LOG(ERROR) << "Device ID: " << device << " DeviceType: " << this->device_type();
+  if (this->device_type_ == DeviceType::kGPU) {
     context->ActivateDevice(device);
+  }
 
   auto cluster = Cluster::Get();
   int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();

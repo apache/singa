@@ -145,7 +145,7 @@ class Context {
   }
 
   /**
-   * \copybreif rand_generator(const std::thread::id&);
+   * \copybrief rand_generator(const std::thread::id&);
    * @return the CPU random generator for the calling thread.
    */
   std::mt19937* rand_generator() {
@@ -170,7 +170,7 @@ class Context {
   }
 #ifdef USE_GPU
   /**
-   * \copybreif cublas_handle_(const std::thread::id&);
+   * \copybrief cublas_handle_(const std::thread::id&);
    * @return cublas handle for the calling thread.
    */
   cublasHandle_t cublas_handle() {

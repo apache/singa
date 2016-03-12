@@ -166,7 +166,8 @@ message ClusterProto {
   optional int32 nservers_per_group = 4 [default = 1];
   optional int32 nworkers_per_procs = 5 [default = 1];
   optional int32 nservers_per_procs = 6 [default = 1];
-  optional int32 ngpu_per_group = 7 [default=0];
+  optional int32 ngpu_per_group = 7 [default = 0];
+
   // local workspace for checkpoint files and vis files
   //required string workspace = 10;
   optional string workspace = 10;
@@ -380,6 +381,7 @@ message StoreProto {
   optional bool encoded = 10 [default = false];
   optional int32 random_skip = 11 [default = 0];
   optional bool has_label = 12 [default = true];
+  optional int32 ratio = 13 [default = 1];
 }
 message CharRNNProto {
   optional string path = 1;

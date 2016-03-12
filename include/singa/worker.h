@@ -62,6 +62,12 @@ class Worker {
    * @return a pointer to the instance of the Worker subclass.
    */
   static Worker* Create(const AlgProto& conf);
+  /**
+   * Create an instance of the subclass of Worker
+   * with the specified device type.
+   */
+  static Worker* Create(const AlgProto& conf, DeviceType devtype);
+
   virtual ~Worker();
   /**
    * @param[in] grp_id global worker group ID
@@ -267,11 +273,21 @@ class Worker {
    */
   inline int id() const { return id_; }
 
+  /**
+   * @return The type of device this thread currently is assigned to.
+   */
+  inline DeviceType device_type() { return device_type_; }
+
+  inline DeviceType device_type(DeviceType devtype) { 
+    device_type_ = devtype;
+    return device_type_;
+  }
+
  protected:
   int grp_id_ = -1, id_ = -1;
   int step_ = 0;
   JobProto job_conf_;
-  DeviceType device_type;
+  DeviceType device_type_;
   NeuralNet* train_net_ = nullptr;
   NeuralNet* test_net_ = nullptr;
   NeuralNet* val_net_ = nullptr;
