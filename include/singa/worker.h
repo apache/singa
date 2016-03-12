@@ -66,7 +66,7 @@ class Worker {
    * Create an instance of the subclass of Worker
    * with the specified device type.
    */
-  static Worker* Create(const AlgProto& conf, DeviceType devtype);
+  static Worker* Create(const AlgProto& conf, int devid);
 
   virtual ~Worker();
   /**
@@ -274,20 +274,21 @@ class Worker {
   inline int id() const { return id_; }
 
   /**
-   * @return The type of device this thread currently is assigned to.
+   * @return The device ID of this worker. It is -1 for CPU and >-1 for GPU.
    */
-  inline DeviceType device_type() { return device_type_; }
+  inline int device_id() { return device_id_; }
 
-  inline DeviceType device_type(DeviceType devtype) { 
-    device_type_ = devtype;
-    return device_type_;
-  }
+  /**
+   * @param devid The ID value to assign to this worker.
+   */
+  inline void device_id(int devid) { device_id_ = devid; }
 
  protected:
   int grp_id_ = -1, id_ = -1;
   int step_ = 0;
+  bool execute_;
   JobProto job_conf_;
-  DeviceType device_type_;
+  int device_id_;
   NeuralNet* train_net_ = nullptr;
   NeuralNet* test_net_ = nullptr;
   NeuralNet* val_net_ = nullptr;

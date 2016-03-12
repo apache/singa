@@ -164,6 +164,9 @@ void Driver::InitLog(char* arg) {
     google::InitGoogleLogging(arg);
 }
 
+//////////
+// TRAIN
+//////////
 void Driver::Train(bool resume, const std::string str) {
   JobProto job_conf;
   job_conf.ParseFromString(str);
@@ -177,9 +180,9 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
   Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   tinydir_dir workspace;
   if (tinydir_open(&workspace, job_conf.cluster().workspace().c_str()) == -1)
-    LOG(FATAL) << "workspace not exist: " << job_conf.cluster().workspace();
+    LOG(FATAL) << "Workspace does not exist: " << job_conf.cluster().workspace();
   if (job_conf.num_openblas_threads() != 1)
-    LOG(WARNING) << "openblas luanches "
+    LOG(WARNING) << "Openblas launched "
                  << job_conf.num_openblas_threads() << " threads";
   openblas_set_num_threads(job_conf.num_openblas_threads());
 
@@ -191,31 +194,6 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
   Train(job);
 }
 
-void Driver::Test(const std::string str) {
-  JobProto job_conf;
-  job_conf.ParseFromString(str);
-  Test(job_conf);
-}
-
-void Driver::Test(const JobProto& job_conf) {
-  Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
-  Cluster::Get()->Register(getpid(), "localhost");
-  // TODO(wangwei) extend to a group with multiple workers
-  auto worker = Worker::Create(job_conf.train_one_batch());
-  worker->Setup(0, 0, job_conf, nullptr, nullptr, nullptr);
-  auto net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
-  WriteStringToTextFile(Cluster::Get()->vis_folder() + "/test_net.json",
-      net->ToGraph(true).ToJson());
-  vector<string> paths;
-  for (const auto& p : job_conf.checkpoint_path())
-    paths.push_back(p);
-  net->Load(paths);
-  worker->Test(job_conf.test_steps(), kTest,  net);
-}
-
-//////////
-// Main training function
-//////////
 void Driver::Train(const JobProto& job_conf) {
   auto cluster = Cluster::Get();
   int nserver_grps = cluster->nserver_groups();
@@ -244,22 +222,15 @@ void Driver::Train(const JobProto& job_conf) {
   vector<std::thread> threads;
   for (auto server : servers)
     threads.push_back(std::thread(&Server::Run, server));
-  int gpu = 0;
-  auto context = Singleton<Context>::Instance();
-  // CHECK_LE(workers.size(), job_conf.gpu_size());
-  for (auto worker : workers) {
+  for (auto worker : workers)
     threads.push_back(std::thread(&Worker::Run, worker));
-    if (worker->device_type() == DeviceType::kGPU) {
-      context->SetupDevice(threads.back().get_id(), gpu++);
-    } else {
-      context->SetupDevice(threads.back().get_id(), -1);
-    }
-  }
+
   if (grp_size > 1 || nserver_grps > 0) {
     int nservers_per_grp = cluster->nservers_per_group();
     int lcm = LeastCommonMultiple(nservers_per_grp, nserver_grps);
     auto slices = Param::ComputeSlices(lcm, net->params());
     auto slice2server = PartitionSlices(nservers_per_grp, slices);
+
     stub.Run(slice2server, workers, servers);
   }
 
@@ -277,6 +248,34 @@ void Driver::Train(const JobProto& job_conf) {
     }
     delete worker;
   }
+}
+
+//////////
+// TEST
+//////////
+void Driver::Test(const std::string str) {
+  JobProto job_conf;
+  job_conf.ParseFromString(str);
+  Test(job_conf);
+}
+
+void Driver::Test(const JobProto& job_conf) {
+  Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
+  Cluster::Get()->Register(getpid(), "localhost");
+
+  // TODO(wangwei) extend to a group with multiple workers
+  auto worker = Worker::Create(job_conf.train_one_batch());
+  worker->Setup(0, 0, job_conf, nullptr, nullptr, nullptr);
+
+  auto net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
+  WriteStringToTextFile(Cluster::Get()->vis_folder() + "/test_net.json",
+      net->ToGraph(true).ToJson());
+
+  vector<string> paths;
+  for (const auto& p : job_conf.checkpoint_path())
+    paths.push_back(p);
+  net->Load(paths);
+  worker->Test(job_conf.test_steps(), kTest,  net);
 }
 
 void Driver::SetupForResume(JobProto* job_conf) {
@@ -363,8 +362,8 @@ const vector<Worker*> Driver::CreateWorkers(const JobProto& job_conf,
     for (int wid = wstart; wid < wend; wid++) {
       // Set DeviceType to CPU or GPU here.
       auto *worker = Worker::Create(job_conf.train_one_batch(),
-        (ngpu_per_group-- < 1)? DeviceType::kCPU : DeviceType::kGPU);
-
+        (ngpu_per_group > 0) ? job_conf.gpu(ngpu_per_group-1) : -1);
+      ngpu_per_group--;
       // TODO(wangwei) extend to test among workers in a grp
       if (wid == 0)
         worker->Setup(gid, wid, job_conf, train_net, val_net, test_net);
