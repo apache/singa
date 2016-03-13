@@ -23,6 +23,7 @@
 #define SINGA_UTILS_CONTEXT_H_
 
 #include <glog/logging.h>
+#include <atomic>
 #include <chrono>
 #include <random>
 #include <thread>
@@ -132,10 +133,16 @@ class Context {
   void SetupDevice(const std::thread::id& tid, const int did, const int seed) {
     device_id_[tid] = did;
     seed_[tid] = seed;
+#ifdef USE_GPU
+    if (did > -1) {
+      cudaSetDevice(did);
+    }
+#endif
   }
 
   /**
    * Activate the GPU device by calling cudaSetDevice.
+   * TODO: Deprecate? No longer needed.
    */
   void ActivateDevice(const int device_id) {
     CHECK_GE(device_id, 0);
@@ -254,7 +261,7 @@ class Context {
   //!< max num of GPUs per process
   const int kMaxNumGPU = 64;
   //!< map from thread id to device id
-  std::unordered_map<std::thread::id, int> device_id_;
+  std::unordered_map<std::thread::id, std::atomic_int> device_id_;
   //!< map from thread id to cpu rand generator
   std::unordered_map<std::thread::id, std::mt19937 *> rand_generator_;
   //!< map from thread id to cpu rand generator seed

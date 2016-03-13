@@ -30,6 +30,7 @@
 #include "singa/utils/tinydir.h"
 #include "singa/utils/cluster.h"
 #include "singa/utils/context.h"
+#include "singa/utils/threadpool.h"
 #include "singa/proto/job.pb.h"
 #include "singa/server.h"
 #include "singa/stub.h"
@@ -196,6 +197,10 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
 
 void Driver::Train(const JobProto& job_conf) {
   auto cluster = Cluster::Get();
+
+  Threadpool threadpool(cluster->nserver_groups() * cluster->nservers_per_group()
+    + cluster->nworker_groups() * cluster->nworkers_per_group());
+
   int nserver_grps = cluster->nserver_groups();
   int grp_size = cluster->nworkers_per_group();
   Stub stub;
@@ -219,11 +224,13 @@ void Driver::Train(const JobProto& job_conf) {
     MPIQueues.push_back(make_shared<SafeQueue>());
 #endif
 
-  vector<std::thread> threads;
+//  vector<std::thread> threads;
   for (auto server : servers)
-    threads.push_back(std::thread(&Server::Run, server));
+    threadpool.enqueue(&Server::Run, server);
+//    threads.push_back(std::thread(&Server::Run, server));
   for (auto worker : workers)
-    threads.push_back(std::thread(&Worker::Run, worker));
+    threadpool.enqueue(&Worker::Run, worker);
+//    threads.push_back(std::thread(&Worker::Run, worker));
 
   if (grp_size > 1 || nserver_grps > 0) {
     int nservers_per_grp = cluster->nservers_per_group();
@@ -234,8 +241,8 @@ void Driver::Train(const JobProto& job_conf) {
     stub.Run(slice2server, workers, servers);
   }
 
-  for (auto& thread : threads)
-    thread.join();
+//  for (auto& thread : threads)
+//    thread.join();
   for (auto server : servers)
     delete server;
   delete net;

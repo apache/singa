@@ -38,7 +38,7 @@ void StoreInputLayer::Setup(const LayerProto& conf,
   if (conf.partition_dim() == 0) {
     batchsize_ /= conf.num_partitions();
   }
-  LOG(ERROR) << "Ratio: " << layer_conf_.store_conf().ratio();
+  //LOG(ERROR) << "Ratio: " << layer_conf_.store_conf().ratio();
 }
 
 void StoreInputLayer::ComputeFeature(int flag,

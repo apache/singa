@@ -66,13 +66,10 @@ Worker::~Worker() {
 
 void Worker::Run() {
   auto context = Singleton<Context>::Instance();
-  context->SetupDevice(std::this_thread::get_id(), device_id_);
+  context->SetupDevice(std::this_thread::get_id(), this->device_id_);
 
-  int device = context->device_id(std::this_thread::get_id());
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
-    << " start on " << (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
-  if (this->device_id_ > -1)
-    context->ActivateDevice(device);
+    << " start on " << (device_id_ >= 0 ? "GPU " + std::to_string(device_id_) : "CPU");
 
   auto cluster = Cluster::Get();
   int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();
