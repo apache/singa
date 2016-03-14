@@ -41,6 +41,7 @@ class KVFileStore : public Store {
   void Close() override;
   bool Read(std::string* key, std::string* value) override;
   void SeekToFirst() override;
+  void Seek(int offset) override;
   bool Write(const std::string& key, const std::string& value) override;
   void Flush() override;
 

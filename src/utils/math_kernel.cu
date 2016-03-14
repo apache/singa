@@ -21,6 +21,7 @@
 #include <cmath>
 #include <algorithm>
 #include "singa/utils/math_kernel.h"
+#include "mshadow/tensor.h"  // FLT_MIN?
 
 #define CU2DBLOCK_X 32
 #define CU2DBLOCK_Y 32
@@ -29,6 +30,28 @@
 #define CU1DBLOCKF 1024.0
 
 // Cuda Kernel Functions
+
+__global__
+void kernel_softmax_loss(const float *prob, const int *label , float *loss,
+    int n, int dim) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+  for (; index < n; index += num_threads) {
+    float prob_of_truth = prob[index * dim + label[index]];
+    loss[index] -= log(max(prob_of_truth, FLT_MIN));
+  }
+}
+
+__global__
+void kernel_softmax_gradient(float *grad, const int *label ,
+    int n, int dim, float scale) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+  for (; index < n; index += num_threads) {
+    int pos = index * dim + label[index];
+    grad[pos] = (grad[pos] - 1.0f) * scale;
+  }
+}
 
 __global__
 void kernel_sum_vec(float *data, float *sum , int n) {
@@ -64,6 +87,19 @@ void kernel_sum_vec(float *data, float *sum , int n) {
 
 __global__
 void kernel_sum_col(const float *src_mat_data,
+    float *dst_vec_data, int rows, int cols, int stride) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+  for (; index < rows; index += num_threads) {
+    dst_vec_data[index] = 0.0f;
+    for (int k = 0; k < cols; k++) {
+      dst_vec_data[index] += src_mat_data[index * stride + k];
+    }
+  }
+}
+
+__global__
+void kernel_sum_row(const float *src_mat_data,
     float *dst_vec_data, int rows, int cols, int stride) {
   int j = blockIdx.x;
   int THREADS = blockDim.x;
@@ -143,7 +179,7 @@ void kernel_sigmoid_grad(const float *src_data, float *des_data, int n) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
-  des_data[index] = src_data[index] * (1.0f - src_data[index]);
+    des_data[index] = src_data[index] * (1.0f - src_data[index]);
   }
 }
 
@@ -280,6 +316,18 @@ void kernel_threshold(const float *src_data, float *des_data,
 //
 namespace singa {
 
+void singa_gpu_softmaxloss_forward(int n, int dim, const float *prob,
+    const int *label, float *loss) {
+  kernel_softmax_loss<<<ceil(n/CU1DBLOCKF), CU1DBLOCKF>>>(prob, label, loss, n,
+      dim);
+}
+
+void singa_gpu_softmaxloss_backward(int n, int dim, float scale,
+    const int *label, float *grad) {
+  kernel_softmax_gradient<<<ceil(n/CU1DBLOCKF), CU1DBLOCKF>>>(grad, label, n,
+      dim, scale);
+}
+
 void singa_gpu_sum_vec(float *data, float *sum , int n) {
   int threads_per_block = n > CU1DBLOCK ? CU1DBLOCK : n;
   //  here, we only need one block
@@ -288,13 +336,22 @@ void singa_gpu_sum_vec(float *data, float *sum , int n) {
   kernel_sum_vec<<<num_blocks, threads_per_block>>>(data, sum, n);
 }
 
-void singa_gpu_sum_col(const float *src_mat_data, float *dst_vec_data,
+void singa_gpu_sum_row(const float *src_mat_data, float *dst_vec_data,
     int rows, int cols, int stride) {
   int threads_per_block = rows > CU1DBLOCK ? CU1DBLOCK : rows;
   int num_blocks = cols;
 
-  kernel_sum_col<<<num_blocks, threads_per_block>>>(src_mat_data, dst_vec_data,
-      rows, cols, stride);
+  kernel_sum_row<<<num_blocks, threads_per_block>>>(src_mat_data,
+      dst_vec_data, rows, cols, stride);
+}
+
+void singa_gpu_sum_col(const float *src_mat_data, float *dst_vec_data,
+    int rows, int cols, int stride) {
+  int threads_per_block = cols > CU1DBLOCK ? CU1DBLOCK : cols;
+  int num_blocks = rows;
+
+  kernel_sum_col<<<num_blocks, threads_per_block>>>(src_mat_data,
+      dst_vec_data, rows, cols, stride);
 }
 
 void singa_gpu_add_vec_row(const float *src_vec_data, const float *src_mat_data,

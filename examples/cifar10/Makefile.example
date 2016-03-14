@@ -22,6 +22,8 @@ libs :=singa glog protobuf
 
 .PHONY: all download create
 
+HDFS_DIR := hdfs://node0:9000/examples/cifar10
+
 download: cifar-10-binary-bin
 
 cifar-10-binary-bin:
@@ -33,3 +35,9 @@ create:
 		-I../../include -L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs \
 		-Wl,-rpath=../../.libs/  -o create_data.bin
 	./create_data.bin cifar-10-batches-bin .
+
+create_hdfs:
+	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog -lhdfs3 \
+		-I../../include -L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs \
+		-Wl,-rpath=../../.libs/  -o create_data.bin
+	./create_data.bin cifar-10-batches-bin $(HDFS_DIR) 

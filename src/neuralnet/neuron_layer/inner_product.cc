@@ -19,10 +19,10 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/inner_product.h"
-
 #include <glog/logging.h>
+#include "singa/neuralnet/neuron_layer.h"
 #include "singa/utils/singleton.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -57,38 +57,31 @@ void InnerProductLayer::Setup(const LayerProto& conf,
 
 void InnerProductLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  auto data = Tensor2(&data_);
-  auto src = Tensor2(srclayers[0]->mutable_data(this));
-  auto weight = Tensor2(weight_->mutable_data());
-  auto bias = Tensor1(bias_->mutable_data());
   if (transpose_)
-    data = dot(src, weight);
+    MMDot(srclayers[0]->data(this), weight_->data(), &data_);
   else
-    data = dot(src, weight.T());
-  // repmat: repeat bias vector into batchsize rows
-  data += expr::repmat(bias, batchsize_);
+    MMDot(srclayers[0]->data(this), weight_->data().T(), &data_);
+  MVAddRow(bias_->data(), &data_);
 }
 
 void InnerProductLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
-  auto src = Tensor2(srclayers[0]->mutable_data(this));
-  auto grad = Tensor2(&grad_);
-  auto weight = Tensor2(weight_->mutable_data());
-  auto gweight = Tensor2(weight_->mutable_grad());
-  auto gbias = Tensor1(bias_->mutable_grad());
-
-  gbias = expr::sum_rows(grad);
+  float beta = 0.0f;
+  if (flag & kAggGrad)
+    beta = 1.0f;
+  MVSumRow(1.0f, beta, grad_, bias_->mutable_grad());
   if (transpose_)
-    gweight = dot(src.T(), grad);
+    GEMM(1.0f, beta, srclayers[0]->data(this).T(), grad_,
+        weight_->mutable_grad());
   else
-    gweight = dot(grad.T(), src);
+    GEMM(1.0f, beta, grad_.T(), srclayers[0]->data(this),
+        weight_->mutable_grad());
+
   if (srclayers[0]->mutable_grad(this) != nullptr) {
-    auto gsrc = Tensor2(srclayers[0]->mutable_grad(this));
     if (transpose_)
-      gsrc = dot(grad, weight.T());
+      MMDot(grad_, weight_->data().T(), srclayers[0]->mutable_grad(this));
     else
-      gsrc = dot(grad, weight);
+      MMDot(grad_, weight_->data(), srclayers[0]->mutable_grad(this));
   }
 }
-
 }  // namespace singa

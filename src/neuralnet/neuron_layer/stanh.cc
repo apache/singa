@@ -19,10 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/stanh.h"
-
-#include <glog/logging.h>
-#include "singa/utils/singleton.h"
+#include "singa/neuralnet/neuron_layer.h"
 
 namespace singa {
 

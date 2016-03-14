@@ -18,7 +18,7 @@
 * under the License.
 *
 *************************************************************/
-#include "singa/neuralnet/output_layer/record.h"
+#include "singa/neuralnet/output_layer.h"
 #include "singa/proto/common.pb.h"
 namespace singa {
 

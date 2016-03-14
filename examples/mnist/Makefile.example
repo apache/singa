@@ -23,6 +23,9 @@ libs :=singa glog protobuf
 
 .PHONY: all download create
 
+HDFS_MNIST_TRAIN := hdfs://node0:9000/examples/mnist/train_data.bin
+HDFS_MNIST_TEST := hdfs://node0:9000/examples/mnist/test_data.bin
+
 download: mnist
 
 mnist:
@@ -39,3 +42,10 @@ create:
 		-o create_data.bin
 	./create_data.bin train-images-idx3-ubyte train-labels-idx1-ubyte train_data.bin
 	./create_data.bin t10k-images-idx3-ubyte t10k-labels-idx1-ubyte test_data.bin
+
+create_hdfs:
+	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog -lhdfs3 -I../../include \
+		-L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs -Wl,-rpath=../../.libs/ \
+		-o create_data.bin
+	./create_data.bin train-images-idx3-ubyte train-labels-idx1-ubyte $(HDFS_MNIST_TRAIN)
+	./create_data.bin t10k-images-idx3-ubyte t10k-labels-idx1-ubyte $(HDFS_MNIST_TEST)

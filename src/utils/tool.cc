@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[1], "create"))
       stat = create();
     else if (!strcmp(argv[1], "genhost"))
-      stat = (argc > 2) ? genhost(argv[2]) : ARG_ERR;
+      stat = (argc > 2) ? genhost(argv[2]) : genhost(nullptr);
     else if (!strcmp(argv[1], "list"))
       stat = list(false);
     else if (!strcmp(argv[1], "listall"))

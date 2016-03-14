@@ -19,10 +19,11 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/dropout.h"
-
 #include <glog/logging.h>
+#include "singa/neuralnet/neuron_layer.h"
 #include "singa/utils/singleton.h"
+#include "singa/utils/singa_op.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 using std::vector;
@@ -42,20 +43,19 @@ void DropoutLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     data_.CopyFrom(srclayers[0]->data(this));
     return;
   }
+
   float pkeep = 1 - pdrop_;
-  auto mask = Tensor1(&mask_);
-  mask = expr::F<op::threshold>(TSingleton<Random<cpu>>::Instance() \
-                      ->uniform(mask.shape), pkeep) * (1.0f/pkeep);
-  auto data = Tensor1(&data_);
-  auto src = Tensor1(srclayers[0]->mutable_data(this));
-  data = src * mask;
+  Blob<float> rand(data_.count());
+  SampleUniform(0.0f, 1.0f, &rand);
+  Map<op::Threshold<float>, float>(pkeep, rand, &mask_);
+  // scale the mask to avoid scaling in ComputeGradient
+  Scale(1.0f / pkeep, &mask_);
+  Mult(srclayers[0]->data(this), mask_, &data_);
 }
 
 void DropoutLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers)  {
-  auto mask = Tensor1(&mask_);
-  auto grad = Tensor1(&grad_);
-  auto gsrc = Tensor1(srclayers[0]->mutable_grad(this));
-  gsrc = grad * mask;
+  Mult(grad_, mask_, srclayers[0]->mutable_grad(this));
+  // no need to mult scale as mask is scaled already.
 }
 
 }  // namespace singa

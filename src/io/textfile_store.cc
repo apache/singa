@@ -70,6 +70,9 @@ void TextFileStore::SeekToFirst() {
   fs_->seekg(0);
 }
 
+void TextFileStore::Seek(int offset) {
+}
+
 bool TextFileStore::Write(const std::string& key, const std::string& value) {
   CHECK_NE(mode_, kRead);
   CHECK(fs_ != nullptr);

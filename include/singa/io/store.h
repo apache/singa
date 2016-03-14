@@ -68,6 +68,12 @@ class Store {
    * Seek the read header to the first tuple.
    */
   virtual void SeekToFirst() = 0;
+
+  /**
+   * Seek to an offset. This allows concurrent workers to start reading from
+   * different positions (HDFS). 
+   */
+  virtual void Seek(int offset) = 0; 
   /**
    * Write a tuple.
    *

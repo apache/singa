@@ -29,35 +29,17 @@
 #include "singa/utils/common.h"
 #include "singa/utils/tinydir.h"
 #include "singa/utils/cluster.h"
+#include "singa/utils/context.h"
+#include "singa/proto/job.pb.h"
 #include "singa/server.h"
 #include "singa/stub.h"
 #include "singa/worker.h"
 
-#include "singa/neuralnet/connection_layer/bridge.h"
-#include "singa/neuralnet/connection_layer/concate.h"
-#include "singa/neuralnet/connection_layer/slice.h"
-#include "singa/neuralnet/connection_layer/split.h"
-#include "singa/neuralnet/input_layer/deprecated.h"
-#include "singa/neuralnet/input_layer/csv.h"
-#include "singa/neuralnet/input_layer/image_preprocess.h"
-#include "singa/neuralnet/input_layer/prefetch.h"
-#include "singa/neuralnet/input_layer/record.h"
-#include "singa/neuralnet/input_layer/store.h"
-#include "singa/neuralnet/loss_layer/euclidean.h"
-#include "singa/neuralnet/loss_layer/softmax.h"
-#include "singa/neuralnet/neuron_layer/argsort.h"
-#include "singa/neuralnet/neuron_layer/convolution.h"
-#include "singa/neuralnet/neuron_layer/dropout.h"
-#include "singa/neuralnet/neuron_layer/inner_product.h"
-#include "singa/neuralnet/neuron_layer/lrn.h"
-#include "singa/neuralnet/neuron_layer/pooling.h"
-#include "singa/neuralnet/neuron_layer/rbm.h"
-#include "singa/neuralnet/neuron_layer/relu.h"
-#include "singa/neuralnet/neuron_layer/sigmoid.h"
-#include "singa/neuralnet/neuron_layer/stanh.h"
-#include "singa/neuralnet/neuron_layer/softmax.h"
-#include "singa/neuralnet/output_layer/record.h"
-#include "singa/neuralnet/output_layer/csv.h"
+#include "singa/neuralnet/connection_layer.h"
+#include "singa/neuralnet/input_layer.h"
+#include "singa/neuralnet/loss_layer.h"
+#include "singa/neuralnet/neuron_layer.h"
+#include "singa/neuralnet/output_layer.h"
 
 extern "C" void openblas_set_num_threads(int num);
 
@@ -73,10 +55,13 @@ void Driver::Init(int argc, char **argv) {
     ReadProtoFromTextFile(argv[arg_pos+1], &singa_conf_);
   else
     ReadProtoFromTextFile("conf/singa.conf", &singa_conf_);
+  // set log path
+  if (singa_conf_.has_log_dir())
+    SetupLog(singa_conf_.log_dir(), "driver");
   // job conf passed by users as "-conf <path>"
   arg_pos = ArgPos(argc, argv, "-conf");
-  CHECK_NE(arg_pos, -1);
-  ReadProtoFromTextFile(argv[arg_pos+1], &job_conf_);
+  if (arg_pos != -1)
+    ReadProtoFromTextFile(argv[arg_pos+1], &job_conf_);
 
   // register layers
 
@@ -86,16 +71,37 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<ImagePreprocessLayer, int>(kImagePreprocess);
   RegisterLayer<RecordOutputLayer, int>(kRecordOutput);
   RegisterLayer<CSVOutputLayer, int>(kCSVOutput);
+  RegisterLayer<CharRNNInputLayer, int>(kCharRNN);
+  RegisterLayer<RNNLabelLayer, int>(kRNNLabel);
+  RegisterLayer<OneHotLayer, int>(kOneHot);
+  RegisterLayer<CharRNNOutputLayer, int>(kCharRNNOutput);
 
+  // connection layers
   RegisterLayer<BridgeDstLayer, int>(kBridgeDst);
   RegisterLayer<BridgeSrcLayer, int>(kBridgeSrc);
+  RegisterLayer<ConcateLayer, int>(kConcate);
+  RegisterLayer<SliceLayer, int>(kSlice);
+  RegisterLayer<SplitLayer, int>(kSplit);
+  RegisterLayer<RNNDummyLayer, int>(kRNNDummy);
 
+  RegisterLayer<AccuracyLayer, int>(kAccuracy);
   RegisterLayer<ArgSortLayer, int>(kArgSort);
   RegisterLayer<ConvolutionLayer, int>(kConvolution);
   RegisterLayer<CConvolutionLayer, int>(kCConvolution);
   RegisterLayer<CPoolingLayer, int>(kCPooling);
-  RegisterLayer<ConcateLayer, int>(kConcate);
+  RegisterLayer<EmbeddingLayer, int>(kEmbedding);
+
+#ifdef USE_CUDNN
+  RegisterLayer<CudnnActivationLayer, int>(kCudnnActivation);
+  RegisterLayer<CudnnConvLayer, int>(kCudnnConv);
+  RegisterLayer<CudnnPoolLayer, int>(kCudnnPool);
+  RegisterLayer<CudnnLRNLayer, int>(kCudnnLRN);
+  RegisterLayer<CudnnSoftmaxLayer, int>(kCudnnSoftmax);
+  RegisterLayer<CudnnSoftmaxLossLayer, int>(kCudnnSoftmaxLoss);
+#endif
+
   RegisterLayer<DropoutLayer, int>(kDropout);
+  RegisterLayer<DummyLayer, int>(kDummy);
   RegisterLayer<EuclideanLossLayer, int>(kEuclideanLoss);
   RegisterLayer<InnerProductLayer, int>(kInnerProduct);
   RegisterLayer<LabelLayer, int>(kLabel);
@@ -109,11 +115,10 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<ReLULayer, int>(kReLU);
   RegisterLayer<ShardDataLayer, int>(kShardData);
   RegisterLayer<SigmoidLayer, int>(kSigmoid);
-  RegisterLayer<SliceLayer, int>(kSlice);
   RegisterLayer<SoftmaxLossLayer, int>(kSoftmaxLoss);
-  RegisterLayer<SplitLayer, int>(kSplit);
   RegisterLayer<STanhLayer, int>(kSTanh);
   RegisterLayer<SoftmaxLayer, int>(kSoftmax);
+  RegisterLayer<GRULayer, int>(kGRU);
 
 #ifdef USE_LMDB
   RegisterLayer<LMDBDataLayer, int>(kLMDBData);
@@ -122,7 +127,11 @@ void Driver::Init(int argc, char **argv) {
   // register updaters
   RegisterUpdater<AdaGradUpdater>(kAdaGrad);
   RegisterUpdater<NesterovUpdater>(kNesterov);
-  // TODO(wangwei) RegisterUpdater<kRMSPropUpdater>(kRMSProp);
+  RegisterUpdater<RMSPropUpdater>(kRMSProp);
+  RegisterUpdater<AdaDeltaUpdater>(kAdaDelta);
+  RegisterUpdater<AdamUpdater>(kAdam);
+  RegisterUpdater<AdamMaxUpdater>(kAdamMax);
+
   RegisterUpdater<SGDUpdater>(kSGD);
 
   // register learning rate change methods
@@ -136,6 +145,7 @@ void Driver::Init(int argc, char **argv) {
 
   // register workers
   RegisterWorker<BPWorker>(kBP);
+  RegisterWorker<BPTTWorker>(kBPTT);
   RegisterWorker<CDWorker>(kCD);
 
   // register params
@@ -150,11 +160,21 @@ void Driver::Init(int argc, char **argv) {
   RegisterParamGenerator<UniformSqrtFanInOutGen>(kUniformSqrtFanInOut);
 }
 
+void Driver::InitLog(char* arg) {
+    google::InitGoogleLogging(arg);
+}
+
+void Driver::Train(bool resume, const std::string str) {
+  JobProto job_conf;
+  job_conf.ParseFromString(str);
+  Train(resume, job_conf);
+}
+
 void Driver::Train(bool resume, const JobProto& job_conf) {
-  Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   if (singa_conf_.has_log_dir())
     SetupLog(singa_conf_.log_dir(),
         std::to_string(job_id_) + "-" + job_conf.name());
+  Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   tinydir_dir workspace;
   if (tinydir_open(&workspace, job_conf.cluster().workspace().c_str()) == -1)
     LOG(FATAL) << "workspace not exist: " << job_conf.cluster().workspace();
@@ -171,6 +191,12 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
   Train(job);
 }
 
+void Driver::Test(const std::string str) {
+  JobProto job_conf;
+  job_conf.ParseFromString(str);
+  Test(job_conf);
+}
+
 void Driver::Test(const JobProto& job_conf) {
   Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   Cluster::Get()->Register(getpid(), "localhost");
@@ -178,6 +204,8 @@ void Driver::Test(const JobProto& job_conf) {
   auto worker = Worker::Create(job_conf.train_one_batch());
   worker->Setup(0, 0, job_conf, nullptr, nullptr, nullptr);
   auto net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
+  WriteStringToTextFile(Cluster::Get()->vis_folder() + "/test_net.json",
+      net->ToGraph(true).ToJson());
   vector<string> paths;
   for (const auto& p : job_conf.checkpoint_path())
     paths.push_back(p);
@@ -199,6 +227,8 @@ void Driver::Train(const JobProto& job_conf) {
   }
 
   NeuralNet* net = NeuralNet::Create(job_conf.neuralnet(), kTrain, grp_size);
+  WriteStringToTextFile(cluster->vis_folder() + "/train_net.json",
+      net->ToGraph(true).ToJson());
   const vector<Worker*> workers = CreateWorkers(job_conf, net);
   const vector<Server*> servers = CreateServers(job_conf, net);
 
@@ -211,8 +241,17 @@ void Driver::Train(const JobProto& job_conf) {
   vector<std::thread> threads;
   for (auto server : servers)
     threads.push_back(std::thread(&Server::Run, server));
-  for (auto worker : workers)
+  int gpu = 0;
+  auto context = Singleton<Context>::Instance();
+  // CHECK_LE(workers.size(), job_conf.gpu_size());
+  for (auto worker : workers) {
     threads.push_back(std::thread(&Worker::Run, worker));
+    int device_id  = -1;
+    if (gpu < job_conf.gpu_size()) {
+      device_id = job_conf.gpu(gpu++);
+    }
+    context->SetupDevice(threads.back().get_id(), device_id);
+  }
   if (grp_size > 1 || nserver_grps > 0) {
     int nservers_per_grp = cluster->nservers_per_group();
     int lcm = LeastCommonMultiple(nservers_per_grp, nserver_grps);
@@ -296,16 +335,16 @@ const vector<Worker*> Driver::CreateWorkers(const JobProto& job_conf,
       // test and validation are performed by the 1st group.
       if (gid == 0 && job_conf.test_steps() > 0) {
         test_net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
-        test_net->ShareParamsFrom(train_net);
+        test_net->ShareParamsFrom(train_net, false);
       }
       if (gid == 0 && job_conf.validate_steps() > 0) {
         val_net = NeuralNet::Create(job_conf.neuralnet(), kVal, 1);
-        val_net->ShareParamsFrom(train_net);
+        val_net->ShareParamsFrom(train_net, false);
       }
     } else {
       train_net = NeuralNet::Create(job_conf.neuralnet(), kTrain, wgrp_size);
       if (cluster->share_memory()) {
-        train_net->ShareParamsFrom(net);
+        train_net->ShareParamsFrom(net, true);
       } else {
         Param::SliceParams(lcm, train_net->params());
       }

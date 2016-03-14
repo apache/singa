@@ -42,7 +42,7 @@ TEST(MsgTest, AddrTest) {
 }
 
 TEST(MsgTest, AddFrameTest) {
-  int buf[5]={1,2,3,4,5};
+  int buf[5] = {1, 2, 3, 4, 5};
   Msg msg;
   msg.AddFrame("abcdefg", 7);
   msg.AddFrame(buf, sizeof(int) * 5);

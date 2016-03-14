@@ -19,11 +19,12 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/loss_layer/softmax.h"
 
-#include <algorithm>
 #include <glog/logging.h>
+#include <algorithm>
+#include "singa/neuralnet/loss_layer.h"
 #include "mshadow/tensor.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -79,15 +80,17 @@ void SoftmaxLossLayer::ComputeFeature(int flag,
     probptr += dim_;
   }
   CHECK_EQ(probptr, prob.dptr + prob.shape.Size());
-  metric_.Add("loss", loss * scale_ / (1.0f * batchsize_));
-  metric_.Add("accuracy", precision * scale_ / (1.0f * batchsize_));
+  loss_ += loss * scale_ / (1.0f * batchsize_);
+  accuracy_ += precision * scale_ / (1.0f * batchsize_);
+  counter_++;
 }
 
 void SoftmaxLossLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
   const auto& label = srclayers[1]->aux_data();
   Blob<float>* gsrcblob = srclayers[0]->mutable_grad(this);
-  gsrcblob->CopyFrom(data_);
+  Copy(data_, gsrcblob);
+//  gsrcblob->CopyFrom(data_);
   float* gsrcptr = gsrcblob->mutable_cpu_data();
   for (int n = 0; n < batchsize_; n++) {
     gsrcptr[n*dim_ + static_cast<int>(label[n])] -= 1.0f;
@@ -95,5 +98,14 @@ void SoftmaxLossLayer::ComputeGradient(int flag,
   Tensor<cpu, 1> gsrc(gsrcptr, Shape1(gsrcblob->count()));
   gsrc *= scale_ / (1.0f * batchsize_);
 }
+const std::string SoftmaxLossLayer::ToString(bool debug, int flag) {
+  if (debug)
+    return Layer::ToString(debug, flag);
 
+  string disp = "Loss = " + std::to_string(loss_ / counter_)
+    + ", accuracy = " + std::to_string(accuracy_ / counter_);
+  counter_ = 0;
+  loss_ = accuracy_ = 0;
+  return disp;
+}
 }  // namespace singa

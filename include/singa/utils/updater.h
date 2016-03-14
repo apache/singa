@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -93,12 +93,13 @@ class Updater {
 
   virtual void Init(const UpdaterProto &proto);
   virtual void Update(int step, Param* param, float grad_scale) = 0;
-
+  void Clip(const float low, const float high, Param* param);
  protected:
   UpdaterProto proto_;
   LRGenerator* lr_gen_;
   float weight_decay_;
   float momentum_;
+  float clip_low_, clip_high_;
 };
 
 class SGDUpdater : public Updater {
@@ -117,28 +118,47 @@ class NesterovUpdater : public Updater {
   void Update(int step, Param* param, float grad_scale) override;
 };
 
-/*
 class RMSPropUpdater : public Updater {
  public:
-  virtual void Update(int step, Param* param, float grad_scale);
+  void Init(const UpdaterProto &proto) override;
+  void Update(int step, Param* param, float grad_scale) override;
 
  protected:
-  float base_lr_;
-  float delta_;
   float rho_;
-  float weight_decay_;
+  float delta_;
 };
 
 class AdaDeltaUpdater : public Updater {
  public:
-  virtual void Update(int step, Param* param, float grad_scale);
+  void Init(const UpdaterProto &proto) override;
+  void Update(int step, Param* param, float grad_scale) override;
 
  protected:
   float rho_;
   float delta_;
-  float weight_decay_;
 };
-*/
+
+class AdamUpdater : public Updater {
+  public:
+   void Init(const UpdaterProto &proto) override;
+   void Update(int step, Param* param, float grad_scale) override;
+
+  protected:
+   float beta1_;
+   float beta2_;
+   float delta_;
+};
+
+class AdamMaxUpdater : public Updater {
+  public:
+   void Init(const UpdaterProto &proto) override;
+   void Update(int step, Param* param, float grad_scale) override;
+
+  protected:
+   float beta1_;
+   float beta2_;
+   float delta_;
+};
 
 }  // namespace singa
 

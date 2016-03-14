@@ -26,11 +26,11 @@
 #include <map>
 #include <thread>
 #include <set>
-#include "mshadow/tensor.h"
 #include "singa/proto/common.pb.h"
 #include "singa/utils/cluster.h"
 #include "singa/utils/common.h"
 #include "singa/utils/tinydir.h"
+#include "singa/utils/math_blob.h"
 
 namespace singa {
 
@@ -83,6 +83,8 @@ const std::unordered_map<int, ParamEntry*>  CreateParamShard(
     int grp = entry.first;
     int wstart = grp2workers[grp].first, wend = grp2workers[grp].second;
     for (auto layer : entry.second->layers()) {
+      if (layer->unroll_index() > 0)
+        continue;
       int partition = layer->partition_id();
       bool local =  partition >= wstart && partition < wend;
       for (auto param : layer->GetParams()) {
@@ -242,11 +244,9 @@ const vector<Msg*> Stub::HandleUpdateRequest(ParamEntry *entry, Msg** msg) {
     // average local gradient
     if (entry->num_local > 1) {
       auto it = entry->shares.begin();
-      auto shape = mshadow::Shape1((*it)->size());
-      mshadow::Tensor<mshadow::cpu, 1> sum((*it)->mutable_cpu_grad(), shape);
+      auto sum = it;
       for (++it; it != entry->shares.end(); it++) {
-        mshadow::Tensor<mshadow::cpu, 1> grad((*it)->mutable_cpu_grad(), shape);
-        sum += grad;
+        AXPY(1.0f, (*it)->grad(), (*sum)->mutable_grad());
       }
     }
     int step = (*msg)->trgt_version();
@@ -270,7 +270,8 @@ void Stub::HandleGetResponse(ParamEntry* entry, Msg** msg) {
   int sliceid = SliceID((*msg)->trgt_val());
   auto param = entry->shares.at(0);
   if (param->ParseGetResponseMsg(*msg, sliceid-param->slice_start()))
-    param->set_version(version);
+    for (auto *p : entry->shares)
+      p->set_version(version);
   DeleteMsg(msg);
 }
 
@@ -279,7 +280,8 @@ void Stub::HandleUpdateResponse(ParamEntry* entry, Msg** msg) {
   int sliceid = SliceID((*msg)->trgt_val());
   auto param = entry->shares.at(0);
   if (param->ParseUpdateResponseMsg(*msg, sliceid-param->slice_start()))
-    param->set_version(version);
+    for (auto *p : entry->shares)
+      p->set_version(version);
   DeleteMsg(msg);
 }
 }  // namespace singa

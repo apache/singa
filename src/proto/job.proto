@@ -21,37 +21,42 @@
 
 package singa;
 
-// To start a training job, all we need is a JobProto object.
-// It should contain following fields
-//  - Job Name (name)
-//      the name to identify the job
-//  - NeuralNet (neuralnet)
-//      the neural network structure contains a set of layers
-//  - Train One Batch (alg)
-//      the training algorithm
-//  - Updater (updater)
-//      the protocol for updating parameters at server side
-//  - Cluster Topology (cluster)
-//      the distributed topology of workers/servers
-//  - Training Steps (train_steps)
-//      the number of training iteration
-//  All other fields/functions are optional, e.g., test, checkpoint
-//
+/*
+ * To start a training job, all we need is a JobProto object.
+ * It should contain following fields
+ *  - Job Name (name)
+ *      the name to identify the job
+ *  - NeuralNet (neuralnet)
+ *      the neural network structure contains a set of layers
+ *  - Train One Batch (alg)
+ *      the training algorithm
+ *  - Updater (updater)
+ *      the protocol for updating parameters at server side
+ *  - Cluster Topology (cluster)
+ *      the distributed topology of workers/servers
+ *  - Training Steps (train_steps)
+ *      the number of training iteration
+ *  All other fields/functions are optional, e.g., test, checkpoint
+ */
+
 message JobProto {
   // job name, e.g., "cifar10-dcnn", "mnist-mlp"
-  required string name = 1;
+  optional string name = 1;
   // neural net consits of a set of connected layers
-  required NetProto neuralnet = 3;
+  optional NetProto neuralnet = 3;
   // algorithm for computing gradients over one mini-batch
-  required AlgProto train_one_batch = 5;
+  optional AlgProto train_one_batch = 5;
   // configuration of SGD updater, including learning rate, etc.
-  required UpdaterProto updater = 7;
+  optional UpdaterProto updater = 7;
   // cluster toplogy conf
-  required ClusterProto cluster = 9;
+  optional ClusterProto cluster = 9;
   // total num of steps for training
-  required int32 train_steps = 16;
+  optional int32 train_steps = 16;
   // frequency of displaying training info
   optional int32 disp_freq = 17 [default = 0];
+  // GPU device IDs for use, if fewer than workers per procs, some workers run
+  // on GPU and the rest run on CPU.
+  repeated int32 gpu = 18;
 
   // frequency of test, e.g., do test every 100 training steps
   optional int32 test_freq = 20 [default = 0];
@@ -115,6 +120,14 @@ message NetProto {
   repeated LayerProto layer = 1;
   // partitioning type for parallelism
   optional int32 partition_dim = 20 [default = 0];
+  // Each layer corresponds to a group of unrolled layers, used in RNN models
+  repeated LayerGroupProto layer_group = 21;
+  optional int32 unroll_len = 22 [default = 1];
+}
+
+message LayerGroupProto {
+  // name of the layers belong to the same group
+  repeated string layer = 1;
 }
 
 message UpdaterProto {
@@ -125,6 +138,12 @@ message UpdaterProto {
 
   // configuration for RMSProp algorithm
   optional RMSPropProto rmsprop_conf = 3;
+  // congiguration for AdaDelta algorithm
+  optional AdaDeltaProto adadelta_conf = 4;
+  // congiguration for Adam algorithm
+  optional AdamProto adam_conf = 5;
+  // congiguration for AdamMax algorithm
+  optional AdamMaxProto adammax_conf = 6;
 
   // learning rate generator
   optional LRGenProto learning_rate = 11;
@@ -133,6 +152,9 @@ message UpdaterProto {
 
   // used to avoid divide by 0, i.e. x/(y+delta)
   optional float delta = 35 [default = 0.00000001];
+
+  optional float clip_low = 36 [default = 0];
+  optional float clip_high = 37 [default = 0];
 
   extensions 101 to 200;
 }
@@ -145,7 +167,8 @@ message ClusterProto {
   optional int32 nworkers_per_procs = 5 [default = 1];
   optional int32 nservers_per_procs = 6 [default = 1];
   // local workspace for checkpoint files and vis files
-  required string workspace = 10;
+  //required string workspace = 10;
+  optional string workspace = 10;
 
   // servers and workers in different processes?
   optional bool server_worker_separate = 20 [default = false];
@@ -178,48 +201,22 @@ message LayerProto {
   // some layers like data layer for loading test data are not used by training
   // phase should be removed by setting the exclude field.
   repeated Phase exclude = 15;
+  // exclude field is deprecated, please use include field instead!!!
+  // some layers like data layer for loading test data are not used by training
+  // in this case, only test phase should be included by setting the include field.
+  repeated Phase include = 14;
   // type of built-in layer
   optional LayerType type = 20 [default = kUserLayer];
   // type of user layer
-  optional string user_type =21;
-
-  // proto for the specific layer
-  // configuration for argsort layer
-  optional ArgSortProto argsort_conf = 52;
-  // configuration for convolution layer
-  optional ConvolutionProto convolution_conf = 30;
-  // configuration for concatenation layer
-  optional ConcateProto concate_conf = 31;
-  // configuration for dropout layer
-  optional DropoutProto dropout_conf = 33;
-  // configuration for inner product layer
-  optional InnerProductProto innerproduct_conf = 34;
-  // configuration for local response normalization layer
-  optional DataProto lmdbdata_conf = 35;
-  // configuration for local response normalization layer
-  optional LRNProto lrn_conf = 45;
-  // configuration for mnist parser layer
-  optional MnistProto mnist_conf = 36;
-  // configuration for pooling layer
-  optional PoolingProto pooling_conf = 37;
-  // configuration for prefetch layer
-  optional PrefetchProto prefetch_conf = 44;
-  // configuration for rbmhid layer
-  optional RBMProto rbm_conf = 49;
-  // configuration for rectified linear unit layer
-  optional ReLUProto relu_conf = 38;
-  // configuration for rgb image parser layer
-  optional RGBImageProto rgbimage_conf = 39;
-  // configuration for data layer
-  optional DataProto sharddata_conf = 32;
-  // configuration for slice layer
-  optional SliceProto slice_conf = 41;
-  // configuration for softmax loss layer
-  optional SoftmaxLossProto softmaxloss_conf = 40;
-  // configuration for split layer
-  optional SplitProto split_conf = 42;
-  // configuration for store input layers
-  optional StoreProto store_conf = 51;
+  optional string user_type = 21;
+  // share data and grad blob with the single src layer, e.g., relu layer can
+  // share blobs from conv layer. It is useful for saving memory space.
+  optional bool share_src_blobs = 22 [default = false];
+  // for unrolling layers in RNN model
+  optional int32 unroll_len = 23 [default = 1];
+  optional int32 unroll_index = 24 [default = 0];
+  repeated UnrollConnType unroll_conn_type = 25;
+  repeated int32 shift = 26;
 
   // overrides the partition dimension for neural net
   optional int32 partition_dim = 60 [default = -1];
@@ -228,7 +225,44 @@ message LayerProto {
   // num of partitions for this layer
   optional int32 num_partitions = 91 [default = 1];
 
-  extensions 101 to 200;
+  // layer specific configuration
+  // configuration for input layers, id range [100, 200)
+  optional StoreProto store_conf = 100;
+  optional PrefetchProto prefetch_conf = 102;
+  optional DataProto lmdbdata_conf = 190;
+  optional MnistProto mnist_conf = 192;
+  optional RGBImageProto rgbimage_conf = 193;
+  optional DataProto sharddata_conf = 194;
+  optional CharRNNProto char_rnn_conf = 195;
+  optional OnehotProto onehot_conf = 196;
+
+  // configuration for neuron layers id range [200, 300)
+  optional ActivationProto activation_conf = 200;
+  optional ConvolutionProto convolution_conf = 201;
+  optional DropoutProto dropout_conf = 203;
+  optional DummyProto dummy_conf = 204;
+  optional InnerProductProto innerproduct_conf = 205;
+  optional LRNProto lrn_conf = 206;
+  optional PoolingProto pooling_conf = 207;
+  optional RBMProto rbm_conf = 209;
+  optional ReLUProto relu_conf = 211;
+  optional SoftmaxProto softmax_conf = 214;
+  optional GRUProto gru_conf = 215;
+  optional EmbeddingProto embedding_conf = 216;
+
+  // configuration for loss layers, id range [300, 400)
+  optional SoftmaxLossProto softmaxloss_conf = 301;
+
+  // configuration for output layers id range [400, 500)
+  optional ArgSortProto argsort_conf = 401;
+
+  // configuration for connection layers, id range [501, )
+  optional ConcateProto concate_conf = 502;
+  optional SliceProto slice_conf = 503;
+  optional SplitProto split_conf = 504;
+  optional RNNDummyProto rnn_dummy_conf = 505;
+
+  extensions 1001 to 1100;
 }
 
 // weight matrix should be defined before bias vector
@@ -298,6 +332,21 @@ message ParamGenProto {
   extensions 101 to 200;
 }
 
+enum ActivationType {
+  RELU = 1;
+  SIGMOID = 2;
+  TANH = 3;
+  STANH = 4;
+}
+
+message ActivationProto {
+  optional ActivationType type = 1 [default = RELU];
+}
+
+message OnehotProto {
+  optional int32 vocab_size = 1 [default = 0];
+}
+
 message RGBImageProto {
   // scale factor for each pixel
   optional float scale = 1 [default = 1.0];
@@ -331,6 +380,19 @@ message StoreProto {
   optional int32 random_skip = 11 [default = 0];
   optional bool has_label = 12 [default = true];
 }
+message CharRNNProto {
+  optional string path = 1;
+  optional string vocab_path = 2;
+  // num of chars to read per instance,  should = NetProto::unroll_len
+  optional int32 unroll_len = 3 [default = 50];
+  optional int32 batchsize = 4 [default = 1];
+}
+
+message EmbeddingProto {
+  optional int32 vocab_size = 1 [default = 0];
+  optional int32 feature_dim = 2 [default = 100];
+
+}
 message SoftmaxLossProto {
   // computing accuracy against topk results
   optional int32 topk = 1 [default = 1];
@@ -343,23 +405,32 @@ message ArgSortProto {
   optional int32 topk = 1 [default = 1];
 }
 
+message ConcateProto {
+  optional int32 concate_dim = 1 [default = 0];
+  optional int32 num_concates = 2 [default = 1];
+}
+
 message ConvolutionProto {
   // The number of outputs for the layer
-  required int32 num_filters = 1;
+  optional int32 num_filters = 1;
   // the kernel height/width
-  required int32 kernel = 2;
-
+  optional int32 kernel = 2 [default = 3];
   // The padding height/width
   optional int32 pad = 30 [default = 0];
   // the stride
   optional int32 stride = 31 [default = 1];
-  // whether to have bias terms
-  optional bool bias_term = 32 [default = true];
-}
 
-message ConcateProto {
-  // on which dimension, starts from 0
-  required int32 concate_dim = 1;
+  optional int32 kernel_x = 41 [default = 3];
+  optional int32 kernel_y = 42 [default = 3];
+
+  optional int32 pad_x = 44 [default = 0];
+  optional int32 pad_y = 45 [default = 0];
+
+  optional int32 stride_x = 47 [default = 1];
+  optional int32 stride_y = 48 [default = 1];
+
+  // cudnn workspace size in MB
+  optional int32 workspace_byte_limit = 50 [default = 512];
 }
 
 message DataProto {
@@ -390,6 +461,24 @@ message MnistProto {
   optional int32 elastic_freq = 36 [default = 0];
 }
 
+message DummyProto {
+  // shape of data and grad blobs
+  optional bool input = 1 [default = false];
+  optional bool output = 2 [default = false];
+  repeated int32 shape = 3;
+}
+
+message RNNDummyProto {
+  optional string dynamic_srclayer = 1;
+  // if shape set, random generate the data blob
+  repeated int32 shape = 2;
+  // if integer is true, generate integer data
+  optional bool integer = 3 [default = false];
+  // range of the random generation
+  optional float low = 4 [default = 0];
+  optional float high = 5 [default = 0];
+}
+
 // Message that stores parameters used by DropoutLayer
 message DropoutProto {
   // dropout ratio
@@ -401,6 +490,15 @@ message RBMProto {
   optional bool bias_term = 2 [default = true]; // whether to have bias terms
   optional bool gaussian = 3 [default = false]; // use gaussian sampling or not
 }
+
+// Message that stores parameters used by GRULayer
+message GRUProto {
+  // dimension of hidden state for the layer
+  required int32 dim_hidden = 1;
+  // use bias vector or not
+  optional bool bias_term = 2 [default = true];
+}
+
 
 // Message that stores parameters used by InnerProductLayer
 message InnerProductProto {
@@ -425,7 +523,7 @@ message LRNProto {
 
 message PoolingProto {
   // The kernel size (square)
-  required int32 kernel= 1;
+  optional int32 kernel= 1 [default = 3];
   enum PoolMethod {
     MAX = 0;
     AVG = 1;
@@ -435,11 +533,16 @@ message PoolingProto {
   // The padding size
   optional uint32 pad = 31 [default = 0];
   // The stride
-  optional uint32 stride = 32 [default = 1];
-}
+  optional uint32 stride = 32 [default = 2];
 
-message SliceProto {
-  required int32 slice_dim = 1;
+  optional int32 kernel_x = 41 [default = 3];
+  optional int32 kernel_y = 42 [default = 3];
+
+  optional int32 pad_x = 44 [default = 0];
+  optional int32 pad_y = 45 [default = 0];
+
+  optional int32 stride_x = 47 [default = 2];
+  optional int32 stride_y = 48 [default = 2];
 }
 
 message ReLUProto {
@@ -449,9 +552,31 @@ message ReLUProto {
   optional float negative_slope = 1 [default = 0];
 }
 
+message SliceProto {
+  optional int32 slice_dim = 1 [default = 0];
+  optional int32 num_slices = 2 [default = 1];
+}
+
+message SoftmaxProto {
+  // Can be used to do softmax over each channel of one image by setting it to
+  // be the size of the second dimension (the first dimension is batchsize).
+  optional int32 num_softmax_per_instance = 1 [default = 1];
+}
+
 message RMSPropProto {
  // history=history*rho_+(1-rho_)*(grad*grad_scale);
   required float rho = 1;
+}
+message AdaDeltaProto {
+  required float rho = 1 [default = 0.9];
+}
+message AdamProto {
+  required float beta1 = 1 [default = 0.9];
+  required float beta2 = 2 [default = 0.999];
+}
+message AdamMaxProto {
+  required float beta1 = 1 [default = 0.9];
+  required float beta2 = 2 [default = 0.999];
 }
 
 message FixedStepProto {
@@ -498,10 +623,147 @@ message GaussianProto {
   optional float std = 2 [default = 1];
 }
 
-
 // --------------
 // All Enum Types
 // --------------
+
+enum AlgType {
+  // Back-propagation algorithm for feed-forward models, e.g., CNN and RNN
+  kBP = 1;
+  // Contrastive Divergence algorithm for RBM, DBM, etc.
+  kCD = 2;
+  // BPTT for training RNN models
+  kBPTT = 3;
+  // For user defined algorithm.
+  kUserAlg = 104;
+}
+
+enum LayerType {
+  /*
+   * Input layers
+   *  - Load records from file, database
+   */
+  kCSVInput = 100;
+  kImagePreprocess = 101;
+  kPrefetch = 102;
+  kRecordInput = 103;
+  kLMDBData = 190;  // deprecated
+  kLabel = 191;  // deprecated
+  kMnist = 192;  // deprecated
+  kRGBImage = 193;  // deprecated
+  kShardData = 194;  // deprecated
+  kCharRNN = 195;
+  kRNNLabel = 196;
+  kOneHot = 197;
+
+  /*
+   * Neuron layers
+   *  - Feature transformation
+   */
+  kConvolution = 201;
+  kCConvolution = 202;
+  kDropout = 203;
+  kDummy = 204;
+  kInnerProduct = 205;
+  kLRN = 206;
+  kPooling = 207;
+  kCPooling = 208;
+  kRBMHid = 209;
+  kRBMVis = 210;
+  kReLU = 211;
+  kSTanh = 212;
+  kSigmoid = 213;
+  kSoftmax = 214;
+  kGRU = 215;
+  kEmbedding = 216;
+
+  // cudnn v3
+  kCudnnConv = 250;
+  kCudnnPool = 251;
+  kCudnnLRN = 252;
+  kCudnnSoftmax = 253;
+  kCudnnActivation = 254;
+
+  /*
+   * Loss layers
+   *  - Compute objective loss
+   */
+  kEuclideanLoss = 300;
+  kSoftmaxLoss = 301;
+  // cudnn v3
+  kCudnnSoftmaxLoss = 350;
+
+  /*
+   * Output layers
+   *  - Write results to file, database
+   */
+  kAccuracy = 400;
+  kArgSort = 401;
+  kCSVOutput = 402;
+  kRecordOutput = 403;
+  kCharRNNOutput = 404;
+
+  /*
+   * Connection layers
+   *  - Connect layers when neural net is partitioned
+   */
+  kBridgeDst = 500;
+  kBridgeSrc = 501;
+  kConcate = 502;
+  kSlice = 503;
+  kSplit = 504;
+  kRNNDummy = 505;
+
+  /*
+   * User defined layer
+   *  - users should configure user_type
+   */
+  kUserLayer = 600;
+}
+
+enum UpdaterType {
+  // noraml SGD with momentum and weight decay
+  kSGD = 1;
+  // adaptive subgradient, http://www.magicbroom.info/Papers/DuchiHaSi10.pdf
+  kAdaGrad = 2;
+  // http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
+  kRMSProp = 3;
+  // Nesterov first optimal gradient method
+  kNesterov = 4;
+  // AdaDelta
+  kAdaDelta = 5;
+  // Adam
+  kAdam = 6;
+  // AdamMax
+  kAdamMax = 7;
+  // For user defined updater
+  kUserUpdater = 105;
+}
+
+enum Phase {
+  kUnknown = 0;
+  kTrain = 1;
+  kVal = 2;
+  kTest= 4;
+  // postivie phase for contrastive divergence algorithm
+  kPositive = 8;
+  // negative phase for contrastive divergence algorithm
+  kNegative = 16;
+  kForward = 32;
+  kBackward = 64;
+  kLoss = 128;
+  kDeploy = 256;
+
+  // used for aggregate parameter gradients when Param is shared
+  kAggGrad = 512;
+}
+
+enum ParamType {
+  // built-in Param
+  kParam = 0;
+  // user-defined Param
+  kUser = 103;
+}
 
 enum ChangeMethod {
   kFixed = 0;
@@ -539,101 +801,13 @@ enum InitMethod {
   kUserInit = 101;
 }
 
-enum LayerType {
-  // Input/Output layers
-  //  - Load records from file, database
-  kRecordInput = 29;
-  kCSVInput = 30;
-  kCSVOutput = 32;
-  kRecordOutput = 33;
-  kImagePreprocess = 31;
-  kPrefetch = 19;
-
-  // deprecated input layers
-  kLMDBData = 17;
-  kShardData = 3;
-  kLabel = 18;
-  kMnist = 7;
-  kRGBImage = 10;
-  // Neuron layers
-  //  - Feature transformation
-  kArgSort = 35;
-  kConvolution = 1;
-  kCConvolution = 27;
-  kCPooling = 28;
-  kDropout = 4;
-  kInnerProduct = 5;
-  kLRN = 6;
-  kPooling = 8;
-  kReLU = 9;
-  kRBMVis = 23;
-  kRBMHid = 24;
-  kSigmoid = 26;
-  kSTanh = 14;
-  kSoftmax = 34;
-  // Loss layers
-  //  - Compute objective loss
-  kSoftmaxLoss = 11;
-  kEuclideanLoss = 25;
-  // Connection layers
-  //  - Connect layers when neural net is partitioned
-  kBridgeDst = 16;
-  kBridgeSrc = 15;
-  kConcate = 2;
-  kSlice = 12;
-  kSplit = 13;
-
-
-  // Indicate the user defined layer. Users should configure user_type
-  kUserLayer = 102;
-}
-
-enum PartitionType {
-  kDataPartition = 0;
-  kLayerPartition = 1;
-  kNone = 2;
-}
-
-enum Phase {
-  kUnknown = 0;
-  kTrain = 1;
-  kVal = 2;
-  kTest= 4;
-  // postivie phase for contrastive divergence algorithm
-  kPositive = 8;
-  // negative phase for contrastive divergence algorithm
-  kNegative = 16;
-  kForward = 32;
-  kBackward = 64;
-  kLoss = 128;
-  kDeploy = 256;
-}
-
-enum ParamType {
-  // built-in Param
-  kParam = 0;
-  // user-defined Param
-  kUser = 103;
-}
-
-enum AlgType {
-  // Back-propagation algorithm for feed-forward models, e.g., CNN and RNN
-  kBP = 1;
-  // Contrastive Divergence algorithm for RBM, DBM, etc.
-  kCD = 2;
-  // For user defined algorithm.
-  kUserAlg = 104;
-}
-
-enum UpdaterType {
-  // noraml SGD with momentum and weight decay
-  kSGD = 1;
-  // adaptive subgradient, http://www.magicbroom.info/Papers/DuchiHaSi10.pdf
-  kAdaGrad = 2;
-  // http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
-  kRMSProp = 3;
-  // Nesterov first optimal gradient method
-  kNesterov = 4;
-  // For user defined updater
-  kUserUpdater = 105;
+enum UnrollConnType {
+  // i-th unrolled layer <- (i - shift)-th src unrolled layer
+  kUnrollOneToOne = 1;
+  // i-th unrolled layer <- all src unrolled layers
+  kUnrollOneToAll = 2;
+  // i-th unrolled layer <- last unrolled src layer
+  kUnrollFirstToLast = 3;
+  // customized connection type defined by src_conn
+  kUnrollCustomized = 4;
 }

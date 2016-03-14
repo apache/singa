@@ -24,9 +24,18 @@
 namespace singa {
 
 extern "C" {
+  void singa_gpu_softmaxloss_forward(int n, int dim, const float *prob,
+      const int *label, float *loss);
+
+  void singa_gpu_softmaxloss_backward(int n, int dim, float scale,
+      const int *label, float *grad);
+
   void singa_gpu_sum_vec(float *data, float *sum , int n);
 
   void singa_gpu_sum_col(const float *src_mat_data, float *dst_vec_data,
+    int rows, int cols, int stride);
+
+  void singa_gpu_sum_row(const float *src_mat_data, float *dst_vec_data,
     int rows, int cols, int stride);
 
   void singa_gpu_add_vec_row(const float *src_vec_data,
@@ -70,7 +79,8 @@ extern "C" {
 
   void singa_gpu_set_value(float *data, float value, int n);
 
-  void singa_gpu_threshold(const float *src_data, float *des_data, int n);
+  void singa_gpu_threshold(const float *src_data, float *des_data,
+      float alpha, int n);
 };
 
 }  // namespace singa

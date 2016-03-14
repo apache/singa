@@ -19,10 +19,10 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/lrn.h"
-
 #include <glog/logging.h>
+#include "singa/neuralnet/neuron_layer.h"
 #include "singa/utils/singleton.h"
+
 
 namespace singa {
 
@@ -65,8 +65,11 @@ void LRNLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   auto gsrc = Tensor4(srclayers[0]->mutable_grad(this));
 
   gsrc = grad * expr::F<op::power>(norm, -beta_);
-  gsrc += (- 2.0f * beta_ * salpha) * expr::chpool<red::sum>(
-      grad * src * expr::F<op::power>(norm, -beta_ - 1.0f), lsize_)  * src;
+  Tensor<cpu, 4> tmp(gsrc.shape);
+  AllocSpace(tmp);
+  tmp = gsrc * src / norm;
+  gsrc += (- 2.0f * beta_ * salpha) * expr::chpool<red::sum>(tmp, lsize_) * src;
+  FreeSpace(tmp);
 }
 
 }  // namespace singa

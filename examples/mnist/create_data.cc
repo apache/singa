@@ -46,6 +46,8 @@ uint32_t swap_endian(uint32_t val) {
     return (val << 16) | (val >> 16);
 }
 
+// output is the full path, unlike create_data in CIFAR with only
+// specifies the directory
 void create_data(const char* image_filename, const char* label_filename,
         const char* output) {
   // Open files
@@ -76,7 +78,10 @@ void create_data(const char* image_filename, const char* label_filename,
   image_file.read(reinterpret_cast<char*>(&cols), 4);
   cols = swap_endian(cols);
 
-  auto store = singa::io::OpenStore("kvfile", output, singa::io::kCreate);
+  // read backend from the job.conf
+  string store_backend = string(output).find("hdfs") != -1 ?
+                         "hdfsfile" : "kvfile";
+  auto store = singa::io::OpenStore(store_backend, output, singa::io::kCreate);
   char label;
   char* pixels = new char[rows * cols];
   int count = 0;

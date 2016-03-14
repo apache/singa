@@ -23,16 +23,14 @@
 # run a singa job
 #
 
-usage="Usage: singa-run.sh -conf <job config file> [ other arguments ]\n
-        -resume                 : if want to recover a job\n
-        -exec <path to mysinga> : if want to use own singa driver\n
-       ### NOTICE ###\n
-        if you are using model.conf + cluster.conf,\n
-        please see how to combine them to a job.conf:\n
-        http://singa.incubator.apache.org/quick-start.html"
+usage="Usage: singa-run.sh [ arguments ]\n
+        -exec <binary or python script> : if want to use own singa driver\n
+        -conf <job config file> : need cluster conf if train in a cluster
+        -resume                 : if want to recover a job"
 
 # parse arguments
-# make sure we have '-conf' and remove '-exec'
+#  extract and remove '-exec' and '-conf'
+#  other arguments remain untouched
 exe=./singa
 while [ $# != 0 ]; do
   if [ $1 == "-exec" ]; then
@@ -46,23 +44,23 @@ while [ $# != 0 ]; do
   fi
   shift
 done
-if [ -z $conf ]; then
-  echo -e $usage
-  exit 1
-fi
 
 # get environment variables
 . `dirname "${BASH_SOURCE-$0}"`/singa-env.sh
 
 # change conf to an absolute path
-conf_dir=`dirname "$conf"`
-conf_dir=`cd "$conf_dir">/dev/null; pwd`
-conf_base=`basename "$conf"`
-job_conf=$conf_dir/$conf_base
-if [ ! -f $job_conf ]; then
-  echo $job_conf not exists
-  exit 1
+if [ ! -z $conf ]; then
+  conf_dir=`dirname "$conf"`
+  conf_dir=`cd "$conf_dir">/dev/null; pwd`
+  conf_base=`basename "$conf"`
+  job_conf=$conf_dir/$conf_base
+  if [ ! -f $job_conf ]; then
+    echo $job_conf not exists
+    exit 1
+  fi
 fi
+
+# go to singa home to execute binary
 cd $SINGA_HOME
 
 # generate unique job id
@@ -81,9 +79,13 @@ host_file=$log_dir/job.hosts
 ./singatool genhost $job_conf 1>$host_file || exit 1
 
 # set command to run singa
-singa_run="$exe $args -conf $job_conf \
+singa_run="$exe $args \
             -singa_conf $SINGA_HOME/conf/singa.conf \
-            -singa_job $job_id" 
+            -singa_job $job_id"
+# add -conf if exists
+if [ ! -z $job_conf ]; then
+  singa_run="$singa_run -conf $job_conf"
+fi
 singa_sshrun="cd $SINGA_HOME; $singa_run"
 
 # ssh and start singa processes

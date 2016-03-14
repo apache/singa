@@ -55,6 +55,11 @@ void KVFileStore::SeekToFirst() {
   CHECK(file_ != nullptr);
   file_->SeekToFirst();
 }
+
+void KVFileStore::Seek(int offset) {
+  LOG(FATAL) << "Operation not supported.";
+}
+
 bool KVFileStore::Write(const std::string& key, const std::string& value) {
   CHECK_NE(mode_, kRead);
   CHECK(file_ != nullptr);

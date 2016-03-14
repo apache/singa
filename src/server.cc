@@ -153,7 +153,7 @@ Msg* Server::HandlePut(Msg **msg) {
   shard_[slice_id] = new ParamEntry(num_shares, param);
   // must set version after HandlePutMsg which allocates the memory
   param->set_version(version);
-  param->set_local_version(version);
+  param->set_last_version(version);
   param->set_id(slice_id);
   // allocate blob for param sync between groups.
   if (slice2group_[slice_id] != grp_id_) {
@@ -200,17 +200,20 @@ const vector<Msg*> Server::HandleUpdate(Msg **msg) {
     auto param = entry->shares.at(0);
     // extract and aggregate gradients
     param->ParseUpdateMsgs(request);
+    // DLOG(ERROR) << "update param " << param->id() << " @ step " << step;
     updater_->Update(step, param, 1.0f / entry->num_total);
-    param->set_local_version(param->local_version() + 1);
+    param->set_version(param->version() + 1);
     // response to all shares of this param
     for (auto response : param->GenUpdateResponseMsgs(&request, false)) {
-      response->set_trgt(trgt_val, param->local_version());
+      response->set_trgt(trgt_val, param->version());
       ret.push_back(response);
     }
     entry->num_update = 0;
     n_updates_[sliceid]++;
     // sync with master group after at least sync_freq local updates
     // the last check is to avoid sending msg to stopped servers
+    // may send the update steps on this server since last sync, i.e.,
+    // version-last_version
     if (slice2group_[sliceid] != grp_id_
         && n_updates_[sliceid] >= Cluster::Get()->sync_freq()
         && n_pending_sync_[sliceid] <= Cluster::Get()->sync_freq()) {
@@ -221,7 +224,7 @@ const vector<Msg*> Server::HandleUpdate(Msg **msg) {
       int addr = Addr(slice2group_[sliceid], slice2server_[sliceid], kServer);
       Msg* sync = new Msg(Addr(grp_id_, id_, kServer), addr);
       sync->set_type(kSyncRequest);
-      sync->set_trgt(trgt_val, param->local_version());
+      sync->set_trgt(trgt_val, param->version());
       sync->AddFrame(tmp.dptr, param->size() * sizeof(float));
       Copy(tmp, cur);
       ret.push_back(sync);

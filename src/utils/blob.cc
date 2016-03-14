@@ -20,7 +20,7 @@
 *************************************************************/
 
 /**
- * The code is adapted from Caffe whose license is attached.
+ * The code is adapted from Caffe under BSD 2 Clause license.
  *
  * COPYRIGHT
  * All contributions by the University of California:
@@ -29,34 +29,6 @@
  * All other contributions:
  * Copyright (c) 2014, the respective contributors
  * All rights reserved.
- * Caffe uses a shared copyright model: each contributor holds copyright over
- * their contributions to Caffe. The project versioning records all such
- * contribution and copyright details. If a contributor wants to further mark
- * their specific copyright on a particular contribution, they should indicate
- * their copyright solely in the commit message of the change when it is
- * committed.
- * LICENSE
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * CONTRIBUTION AGREEMENT
- * By contributing to the BVLC/caffe repository through pull-request, comment,
- * or otherwise, the contributor releases their content to the
- * license and copyright terms herein.
  */
 #include "singa/utils/blob.h"
 
@@ -77,28 +49,7 @@ private:\
   classname& operator=(const classname&)
 
 #ifndef CPU_ONLY
-// CUDA: various checks for different function calls.
-#define CUDA_CHECK(condition) \
-  /* Code block avoids redefinition of cudaError_t error */ \
-  do { \
-    cudaError_t error = condition; \
-    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
-  } while (0)
-
-#define CUBLAS_CHECK(condition) \
-  do { \
-    cublasStatus_t status = condition; \
-    CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " \
-      << caffe::cublasGetErrorString(status); \
-  } while (0)
-
-#define CURAND_CHECK(condition) \
-  do { \
-    curandStatus_t status = condition; \
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << " " \
-      << caffe::curandGetErrorString(status); \
-  } while (0)
-
+#include "singa/utils/cuda_utils.h"
 #endif  // CPU_ONLY
 
 namespace singa {
@@ -187,7 +138,7 @@ void SyncedMemory::to_gpu() {
   switch (head_) {
   case UNINITIALIZED:
     CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
-    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, N));
+    CUDA_CHECK(cudaMemset(gpu_ptr_, 0, size_));
     head_ = HEAD_AT_GPU;
     break;
   case HEAD_AT_CPU:
@@ -208,8 +159,8 @@ void SyncedMemory::to_gpu() {
 
 template <typename Dtype>
 void Blob<Dtype>::Reshape(const std::vector<int>& shape) {
-  count_ = 1;
   shape_ = shape;
+  count_ = shape.size() ? 1 : 0;
   for (size_t i = 0; i < shape.size(); ++i) {
     CHECK(shape[i]);
     count_ *= shape[i];
@@ -231,13 +182,13 @@ void Blob<Dtype>::CopyFrom(const Blob& source) {
 }
 
 template <typename Dtype>
-void Blob<Dtype>::CopyFrom(const Blob& source, bool reshape) {
-  if (!std::equal(shape_.begin(), shape_.end(), source.shape_.begin())) {
-    if (reshape) {
-      Reshape(source.shape_);
-    } else {
+void Blob<Dtype>::CopyFrom(const Blob& source, bool shape_check) {
+  LOG(WARNING) << "Better use Copy(const Blob&, Blob*)";
+  CHECK_EQ(source.count(), count()) << " cp between blobs of diff size";
+
+  if (shape_check &&
+      !std::equal(shape_.begin(), shape_.end(), source.shape_.begin())) {
       LOG(FATAL) << "Trying to copy blobs of different sizes.";
-    }
   }
 #ifndef CPU_ONLY
   CUDA_CHECK(cudaMemcpy(static_cast<Dtype*>(data_->mutable_gpu_data()),
@@ -283,9 +234,12 @@ void Blob<Dtype>::SetValue(Dtype v) {
     ptr[i] = v;
 }
 template <typename Dtype>
-void Blob<Dtype>::ShareData(const Blob& other) {
-  CHECK_EQ(count_, other.count());
-  data_ = other.data_;
+void Blob<Dtype>::ShareData(Blob* other, bool cpu_only) {
+  CHECK_EQ(count_, other->count());
+  if (cpu_only)
+    data_->set_cpu_data(other->mutable_cpu_data());
+  else
+    data_ = other->data_;
 }
 
 /*

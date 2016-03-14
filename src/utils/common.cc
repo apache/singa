@@ -20,10 +20,7 @@
 *************************************************************/
 
 /**
- * The some functions in this file are adapted from Caffe whose license
- * is attached.
- *
- * COPYRIGHT
+ * The code is adapted from Caffe under BSD 2 Clause license.
  * All contributions by the University of California:
  * Copyright (c) 2014, The Regents of the University of California (Regents)
  * All rights reserved.
@@ -36,28 +33,6 @@
  * their specific copyright on a particular contribution, they should indicate
  * their copyright solely in the commit message of the change when it is
  * committed.
- * LICENSE
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * CONTRIBUTION AGREEMENT
- * By contributing to the BVLC/caffe repository through pull-request, comment,
- * or otherwise, the contributor releases their content to the
- * license and copyright terms herein.
  */
 
 #include "singa/utils/common.h"
@@ -78,6 +53,8 @@
 #include <fcntl.h>
 #include <cfloat>
 
+#include <fstream>
+
 #include <glog/logging.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
@@ -85,8 +62,6 @@
 
 namespace singa {
 
-using std::string;
-using std::vector;
 const int kBufLen = 1024;
 
 string IntVecToString(const vector<int>& vec) {
@@ -142,7 +117,7 @@ const vector<vector<int>> Slice(int num, const vector<int>& sizes) {
       avg += x;
   avg = avg / num + avg % num;
   int diff = avg / 10;
-  LOG(INFO) << "Slicer, param avg = " << avg << ", diff = " << diff;
+  // DLOG(INFO) << "Slicer, param avg = " << avg << ", diff = " << diff;
 
   int capacity = avg, nbox = 0;
   for (int x : sizes) {
@@ -172,7 +147,7 @@ const vector<vector<int>> Slice(int num, const vector<int>& sizes) {
         slicestr += ", " + std::to_string(size);
       }
     }
-    LOG(INFO) << slicestr;
+    // DLOG(INFO) << slicestr;
     slices.push_back(slice);
   }
   CHECK_LE(nbox, num);
@@ -213,8 +188,6 @@ const vector<int> PartitionSlices(int num, const vector<int>& slices) {
     }
     disp += " " + std::to_string(slices[i]);
   }
-  LOG(INFO) << "partition slice (avg = " << avg
-            << ", num = " << num << "):" << disp;
   return slice2box;
 }
 
@@ -244,7 +217,7 @@ string GetHostIP() {
   close(fd);
   string ip(inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
   /* display result */
-  LOG(INFO) << "Host IP= " << ip;
+  LOG(INFO) << "Host IP = " << ip;
   return ip;
 }
 
@@ -560,5 +533,42 @@ void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
   int fd = open(filename, O_CREAT|O_WRONLY|O_TRUNC, 0644);
   CHECK_NE(fd, -1) << "File cannot open: " << filename;
   CHECK(proto.SerializeToFileDescriptor(fd));
+}
+
+
+
+void WriteStringToTextFile(const string& filename, const string& context) {
+  std::ofstream ofs;
+  ofs.open(filename);
+  CHECK(ofs.is_open()) << "Can't write to file: " << filename;
+  ofs << context;
+  ofs.flush();
+  ofs.close();
+}
+
+
+const vector<std::pair<string, float>> GetMetricFromString(const string& disp) {
+  size_t pos = 0;
+  vector<string> terms;
+  while (pos != string::npos) {
+    auto next = disp.find_first_of(" ,", pos);  // delimiter: space or comma
+    if (next != string::npos) {
+      terms.push_back(disp.substr(pos, next - pos));
+      pos = disp.find_first_not_of(" ,", next + 1);
+    } else {
+      break;
+    }
+  }
+  if (pos != string::npos)
+    terms.push_back(disp.substr(pos));
+  vector<std::pair<string, float>> ret;
+  for (unsigned i = 0; i < terms.size(); i++) {
+    if (terms[i] == "=") {
+      CHECK_GE(i, 1);
+      CHECK_LT(i, terms.size() - 1) << "terms[i] = " << terms[i];
+      ret.push_back(std::make_pair(terms[i-1], std::stof(terms[i + 1])));
+    }
+  }
+  return ret;
 }
 }  // namespace singa

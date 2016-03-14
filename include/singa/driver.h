@@ -46,6 +46,13 @@ class Driver {
    */
   void Init(int argc, char** argv);
   /**
+   * Init SINGA LOG
+   * Used for python binding. Users can also directly call it as a C++ API.
+   * - init glog with given parameters
+   *
+   */   
+  void InitLog(char *arg);
+  /**
    * Update job configuration and call Train(const JobProto&) to start the
    * training.
    *
@@ -57,6 +64,17 @@ class Driver {
    * @param[in] job_conf job configuration.
    */
   void Train(bool resume, const JobProto& job_conf);
+  /**
+   * Used for python binding. Users can also directly call it as a C++ API.
+   *
+   * It completes the functions as defined above but accept serialized string
+   * parameters.
+   *
+   * @param[in] resume if true resume the training from the latest checkpoint
+   * files.
+   * @param[in] str serialized string recorded job configuration.
+   */
+  void Train(bool resume, const std::string str); 
   /**
    * Create workers and servers to conduct the training.
    *
@@ -74,6 +92,15 @@ class Driver {
    * layers should be added.
    */
   void Test(const JobProto& job_conf);
+  /**
+   * Used for python binding. Users can also directly call it as a C++ API.
+   *
+   * It completes the functions as defined above but accept serialized string
+   * parameters.
+   *
+   * @param[in] str serialized string recorded job configuration.
+   */
+  void Test(const std::string str);
   /**
    * Setting the checkpoint field of the job configuration to resume training.
    *

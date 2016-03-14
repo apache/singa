@@ -19,7 +19,10 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/deprecated.h"
+#include <random>
+#include "singa/neuralnet/input_layer.h"
+#include "singa/utils/context.h"
+#include "singa/utils/singleton.h"
 #include "mshadow/tensor.h"
 namespace singa {
 
@@ -57,9 +60,11 @@ void ShardDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
     shard_ = new DataShard(layer_conf_.sharddata_conf().path(),
                            DataShard::kRead);
   if (random_skip_) {
-    int nskip = rand() % random_skip_;
+    std::uniform_int_distribution<int> distribution(0, random_skip_);
+    auto generator = Singleton<Context>::Instance()->rand_generator();
+    int nskip = distribution(*generator);
     LOG(INFO) << "Random Skip " << nskip << " records, there are "
-              << shard_->Count() << " records in total";
+      << shard_->Count() << " records in total";
     string key;
     for (int i = 0; i < nskip; i++) {
       shard_->Next(&key, &sample_);
@@ -123,25 +128,29 @@ void LMDBDataLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   if (mdb_cursor_ == nullptr)
     OpenLMDB(layer_conf_.lmdbdata_conf().path());
   if (random_skip_) {
-    int nskip = rand() % random_skip_;
+    std::uniform_int_distribution<int> distribution(0, random_skip_);
+    auto generator =
+     Singleton<Context>::Instance()->rand_generator(std::this_thread::get_id());
+    int nskip = distribution(*generator);
+
     int n = 0;
     CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
-             &mdb_value_, MDB_FIRST), MDB_SUCCESS);
+          &mdb_value_, MDB_FIRST), MDB_SUCCESS);
     while (mdb_cursor_get(mdb_cursor_, &mdb_key_,
-           &mdb_value_, MDB_NEXT) == MDB_SUCCESS)
+          &mdb_value_, MDB_NEXT) == MDB_SUCCESS)
       n++;
     LOG(INFO) << "Random Skip " << nskip << " records of total "
-              << n << "records";
+      << n << "records";
     // We have reached the end. Restart from the first.
     CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
-             &mdb_value_, MDB_FIRST), MDB_SUCCESS);
+          &mdb_value_, MDB_FIRST), MDB_SUCCESS);
     for (int i = 0; i < nskip; i++) {
       if (mdb_cursor_get(mdb_cursor_, &mdb_key_,
-          &mdb_value_, MDB_NEXT) != MDB_SUCCESS) {
+            &mdb_value_, MDB_NEXT) != MDB_SUCCESS) {
         // We have reached the end. Restart from the first.
         DLOG(INFO) << "Restarting data prefetching from start.";
         CHECK_EQ(mdb_cursor_get(mdb_cursor_, &mdb_key_,
-                 &mdb_value_, MDB_FIRST), MDB_SUCCESS);
+              &mdb_value_, MDB_FIRST), MDB_SUCCESS);
       }
     }
     random_skip_ = 0;
@@ -254,10 +263,16 @@ void RGBImageLayer::ParseRecords(int flag, const vector<Record>& records,
     AllocSpace(croped_image);
   int rid = 0;
   const float* meandptr = mean_.cpu_data();
+
+  std::uniform_int_distribution<int> distribution(0, r.shape(0) - cropsize_);
+  auto generator =
+    Singleton<Context>::Instance()->rand_generator(std::this_thread::get_id());
   for (const Record& record : records) {
     auto image = images[rid];
     bool do_crop = cropsize_> 0 && ((flag & kTrain) == kTrain);
-    bool do_mirror = mirror_ && rand() % 2 && ((flag & kTrain) == kTrain);
+    bool do_mirror = mirror_
+                    && (distribution(*generator) % 2)
+                    && ((flag & kTrain) == kTrain);
     float* dptr = nullptr;
     if (do_crop || do_mirror)
       dptr = raw_image.dptr;
@@ -274,8 +289,8 @@ void RGBImageLayer::ParseRecords(int flag, const vector<Record>& records,
     for (int i = 0; i < mean_.count(); i++)
       dptr[i] -= meandptr[i];
     if (do_crop) {
-      int hoff = rand() % (r.shape(1) - cropsize_);
-      int woff = rand() % (r.shape(2) - cropsize_);
+      int hoff = distribution(*generator);
+      int woff = distribution(*generator);
       Shape<2> cropshape = Shape2(cropsize_, cropsize_);
       if (do_mirror) {
         croped_image = expr::crop(raw_image, cropshape, hoff, woff);
@@ -355,6 +370,4 @@ void LabelLayer::ParseRecords(int flag, const vector<Record>& records,
   }
   CHECK_EQ(rid, blob->shape()[0]);
 }
-
-
-} // namespace singa
+}  // namespace singa

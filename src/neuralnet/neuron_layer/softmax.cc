@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/neuron_layer/softmax.h"
+#include "singa/neuralnet/neuron_layer.h"
 
 namespace singa {
 
@@ -37,14 +37,21 @@ void SoftmaxLayer::Setup(const LayerProto& proto,
     const vector<Layer*>& srclayers) {
   CHECK_EQ(srclayers.size(), 1);
   NeuronLayer::Setup(proto, srclayers);
-  data_.Reshape(srclayers[0]->data(this).shape());
+  const auto& srcdata = srclayers[0]->data(this);
+  batchsize_ = srcdata.shape()[0];
+  dim_ = srcdata.count() / batchsize_;
+  /*
+  num_softmax_per_instance_ = proto.softmax_conf().num_softmax_per_instance();
+  count_per_softmax_ = srcdata.count() / batchsize_ / num_softmax_per_instance_;
+  */
+  data_.Reshape(batchsize_, dim_);
+  grad_.ReshapeLike(data_);
 }
 
 void SoftmaxLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  int batchsize = data_.shape()[0];
-  int dim = data_.count() / batchsize;
-  Shape<2> s = Shape2(batchsize, dim);
+  int dim = data_.count() / batchsize_;
+  Shape<2> s = Shape2(batchsize_, dim);
   Tensor<cpu, 2> prob(data_.mutable_cpu_data(), s);
   Tensor<cpu, 2> src(srclayers[0]->mutable_data(this)->mutable_cpu_data(), s);
   Softmax(prob, src);
@@ -53,6 +60,7 @@ void SoftmaxLayer::ComputeFeature(int flag,
 void SoftmaxLayer::ComputeGradient(int flag,
     const vector<Layer*>& srclayers) {
   int batchsize = data_.shape()[0];
+  LOG(FATAL) << "not implemented";
   for (int n = 0; n < batchsize; n++) {
     // TODO(wangwei) finish the code using new math API
     // gxi=[(gyi+gyi*yi)-\sum_k(gyk*yk)]*yi

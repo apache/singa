@@ -22,6 +22,7 @@
 *.tmp
 *.out
 tool/pb2/*
+tool/python/pb2/*
 src/test/data/*
 tmp
 log*

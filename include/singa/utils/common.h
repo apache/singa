@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -32,6 +32,8 @@
 
 namespace singa {
 
+using std::vector;
+using std::string;
 std::string IntVecToString(const std::vector<int>& vec);
 std::string VStringPrintf(std::string fmt, va_list l);
 std::string StringPrintf(std::string fmt, ...);
@@ -149,7 +151,15 @@ void WriteProtoToTextFile(const Message& proto, const char* filename);
 void ReadProtoFromBinaryFile(const char* filename, Message* proto);
 void WriteProtoToBinaryFile(const Message& proto, const char* filename);
 
+/**
+ * Write a string (e.g., graph reprensetation of a net) into a text file.
+ */
+void WriteStringToTextFile(const string& filename, const string& context);
 
+/**
+ * Parse metric pairs (key = value[, key = value]) from string
+ */
+const vector<std::pair<string, float>> GetMetricFromString(const string& disp);
 }  // namespace singa
 
 #endif  // SINGA_UTILS_COMMON_H_

@@ -19,8 +19,11 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/image_preprocess.h"
+#include "singa/neuralnet/input_layer.h"
 #include "singa/utils/image_transform.h"
+#include "singa/utils/context.h"
+#include "singa/utils/singleton.h"
+
 namespace singa {
 
 using std::vector;
@@ -36,7 +39,7 @@ void ImagePreprocessLayer::Setup(const LayerProto& conf,
   const auto& shape = src.shape();
   CHECK_EQ(shape.size(), 4);
   CHECK_EQ(shape.at(2), shape.at(3));
-  if (cropsize_ != 0 && cropsize_ != shape.at(2)) {
+  if (cropsize_ && (cropsize_ != shape.at(2) || cropsize_ != shape.at(3))) {
     data_.Reshape(vector<int>{shape.at(0), shape.at(1), cropsize_, cropsize_});
   } else {
     data_ = src;
@@ -46,22 +49,29 @@ void ImagePreprocessLayer::Setup(const LayerProto& conf,
 void ImagePreprocessLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   const auto& srcdata = srclayers.at(0)->data(this);
-  int batchsize = srcdata.shape()[0], channel = srcdata.shape()[1];
-  int height = srcdata.shape()[2], width = srcdata.shape()[3];
+  int batchsize = srcdata.shape(0), channel = srcdata.shape(1);
+  int height = srcdata.shape(2), width = srcdata.shape(3);
+  int srcimage_size = channel * height * width;
+  int image_size = channel * data_.shape(2) * data_.shape(3);
+  std::uniform_int_distribution<int> rand1(0, height - cropsize_);
+  std::uniform_int_distribution<int> rand2(0, width - cropsize_);
+  auto generator = Singleton<Context>::Instance()->rand_generator();
+
   const float* srcdptr = srcdata.cpu_data();
   float* dptr = data_.mutable_cpu_data();
-  int srcimage_size = channel * height * width;
-  int image_size = channel * data_.shape()[2] * data_.shape()[3];
+
   for (int k = 0; k < batchsize; k++) {
     int h_offset = 0, w_offset = 0;
-    if (cropsize_> 0 && ((flag & kTrain) == kTrain)) {
-      h_offset = rand() % (srcdata.shape()[1] - cropsize_);
-      w_offset = rand() % (srcdata.shape()[2] - cropsize_);
+    if (cropsize_> 0 && (flag & kTrain)) {
+      h_offset = rand1(*generator);
+      w_offset = rand2(*generator);
     }
-    bool do_mirror = mirror_ && rand() % 2 && ((flag & kTrain) == kTrain);
+    bool do_mirror = mirror_
+                    && (rand1(*generator) % 2)
+                    && (flag & kTrain);
     ImageTransform(srcdptr + k * srcimage_size, nullptr, do_mirror, cropsize_,
-        cropsize_, h_offset, w_offset, srcdata.shape()[1], height, width,
-        scale_, dptr + image_size);
+        cropsize_, h_offset, w_offset, channel, height, width,
+        scale_, dptr + k * image_size);
   }
 }
 

@@ -4,11 +4,4 @@ Copyright 2015 The Apache Software Foundation
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 
-Portions of this software were developed at the National University of
-Singapore.
-
-This software contains codes from the other projects: Caffe (https://github.com/BVLC/caffe), tinydir
-(https://github.com/cxong/tinydir), mshadow (https://github.com/dmlc/mshadow) and gtest
-(https://code.google.com/p/googletest/).
-
-The software uses external libraries including czmq, glog, google protobuf, OpenCV and Openblas. 
+Portions of this software were developed at the National University of Singapore.

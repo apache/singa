@@ -22,9 +22,7 @@
 #ifndef SINGA_NEURALNET_LAYER_H_
 #define SINGA_NEURALNET_LAYER_H_
 
-#include <map>
 #include <string>
-#include <thread>
 #include <vector>
 #include "singa/proto/common.pb.h"
 #include "singa/proto/job.pb.h"
@@ -38,6 +36,20 @@ using std::string;
 
 // TODO(wangwei) make AuxType a template argument for Layer.
 using AuxType = int;
+
+inline const string AddUnrollingPrefix(int unroll_idx, const string& name) {
+  return std::to_string(unroll_idx) + "#" + name;
+}
+inline const string AddPartitionSuffix(int partition_idx, const string& name) {
+  return name + "@" + std::to_string(partition_idx);
+}
+
+
+inline const string AddPrefixSuffix(int unroll_idx, int partition_idx,
+    const string& name) {
+  return std::to_string(unroll_idx) + "#" + name + "@" +
+    std::to_string(partition_idx);
+}
 /**
  * Base layer class.
  *
@@ -69,6 +81,8 @@ class Layer {
    */
   virtual void Setup(const LayerProto& conf, const vector<Layer*>& srclayers) {
     layer_conf_ = conf;
+    datavec_.push_back(&data_);
+    gradvec_.push_back(&grad_);
   }
   /**
    * Compute features of this layer based on connected layers.
@@ -174,20 +188,54 @@ class Layer {
    */
   inline const std::string& name() const { return layer_conf_.name(); }
   /**
+   * Return the index of the unrolled layer within the unrolling group, which
+   * should be [0, max_unrolling_length)
+   */
+  inline const int unroll_index() const { return layer_conf_.unroll_index(); }
+
+  /**
+   * @return a const ref for Blob vector storing feature values of this layer.
+   */
+  virtual const vector<Blob<float>*>& data() const {
+    return datavec_;
+  }
+
+  /**
    * @param[in] from pointer to one of the dst layer. For some layers, they have
    * more than one data Blob. In this case, this argument identifies the layer
    * that is requesting the data Blob.
    * @return a const ref for Blob storing feature values of this layer.
+   * @deprecated {This function will be deleted, use
+   * virtual const vector<Blob<float>>& data() const or
+   * virtual const Blob<float>& data(int k) const instead}.
    */
-  virtual const Blob<float>& data(const Layer* from) const {
+  virtual const Blob<float>& data(const Layer* from) {
     return data_;
   }
   /**
+   * @return a const ref for the kth Blob.
+   * TODO(wangwei) if make this function const, there will be a warning
+   * indicating that data(const Layer*) and this function are ambiguous for
+   * data(0).
+   */
+  virtual const Blob<float>& data(int k) {
+    return *datavec_.at(k);
+  }
+
+  /**
    * @see data().
    * @return the pointer to the Blob storing feature values of this layer.
+   * @deprecated {This function will be deleted, use
+   * virtual Blob<float>* mutable_data(int k) instead}.
    */
   virtual Blob<float>* mutable_data(const Layer* from) {
     return &data_;
+  }
+  /**
+   * @return the pointer to the kth Blob.
+   */
+  virtual Blob<float>* mutable_data(int k) {
+    return datavec_.at(k);
   }
   /**
    * @return auxiliary data, e.g., image label.
@@ -199,9 +247,25 @@ class Layer {
    * @see data().
    * @return the const ref of the Blob for the gradient of this layer, mainly
    * used in BP algorithm.
+   * @deprecated {This function will be deleted, use
+   * virtual const vector<Blob<float>>& grad() const or
+   * virtual const Blob<float>& grad(int k) const instead}.
    */
-  virtual const Blob<float>& grad(const Layer* from) const {
+  virtual const Blob<float>& grad(const Layer* from) {
     return grad_;
+  }
+  /**
+   * @see data().
+   * @return the const ref of the Blob vector for the gradient of this layer.
+   */
+  virtual const vector<Blob<float>*>& grad() const {
+    return gradvec_;
+  }
+  /**
+   * @return the const ref of the kth Blob for the gradient of this layer.
+   */
+  virtual const Blob<float>& grad(int k) const {
+    return *gradvec_.at(k);
   }
   /**
    * @see data().
@@ -211,19 +275,29 @@ class Layer {
   virtual Blob<float>* mutable_grad(const Layer* from) {
     return &grad_;
   }
+  /**
+   * @see data().
+   * @return a pointer to the kth Blob storing gradients of this layer, mainly
+   * used in BP algorithm.
+   */
+  virtual Blob<float>* mutable_grad(int k) {
+    return gradvec_.at(k);
+  }
 
  protected:
   LayerProto layer_conf_;
   Blob<float> data_, grad_;
   vector<AuxType> aux_data_;
+  vector<Blob<float>*> datavec_, gradvec_;
 };
-
+/**************** Layer categories *****************/
 /**
  * Base layer for connecting layers when neural net is partitioned.
  */
 class ConnectionLayer : virtual public Layer {
   // defined as a layer category
 };
+
 
 /**
  * Base layer for getting input data. May include layers for loading records,
@@ -234,35 +308,16 @@ class InputLayer : virtual public Layer {
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
   ConnectionType dst_layer_connection() const override { return kOneToMany; }
   Blob<float>* mutable_grad(const Layer* layer) override {
-    // LOG(FATAL) << "Input layer has no gradient blob";
     return nullptr;
-  }
-  const Blob<float>& grad(const Layer* from) const override {
     // LOG(FATAL) << "Input layer has no gradient blob";
+  }
+  const Blob<float>& grad(const Layer* from) override {
     return grad_;
+    // LOG(FATAL) << "Input layer has no gradient blob";
   }
 };
 
 using SingleLabelImageRecord = RecordProto;
-
-
-/**
- * Base layer for calculating loss and doing BackPropagation.
- */
-class LossLayer : virtual public Layer {
- public:
-  const std::string ToString(bool debug, int flag) override;
-  Blob<float>* mutable_grad(const Layer* layer) override {
-    LOG(FATAL) << "Loss layer has no gradient blob";
-    return nullptr;
-  }
-  const Blob<float>& grad(const Layer* from) const override {
-    LOG(FATAL) << "Loss layer has no gradient blob";
-    return grad_;
-  }
- protected:
-  Metric metric_;
-};
 
 /**
  * Base layer for feature transformation, e.g., ConvolutionLayer, PoolingLayer,
@@ -272,6 +327,22 @@ class NeuronLayer : virtual public Layer {
   // defined as a layer category
 };
 
+
+/**
+ * Base layer for calculating loss and doing BackPropagation.
+ */
+class LossLayer : virtual public Layer {
+ public:
+  Blob<float>* mutable_grad(const Layer* layer) override {
+    return nullptr;
+    // LOG(FATAL) << "Loss layer has no gradient blob";
+  }
+  const Blob<float>& grad(const Layer* from) override {
+    return grad_;
+    // LOG(FATAL) << "Loss layer has no gradient blob";
+  }
+};
+
 /**
  * Base layer for collecting features into disk file, HTTP stream, etc.
  */
@@ -279,14 +350,15 @@ class OutputLayer : virtual public Layer {
  public:
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
   Blob<float>* mutable_grad(const Layer* layer) override {
-    LOG(FATAL) << "Output layer has no gradient blob";
     return nullptr;
+    // LOG(FATAL) << "Output layer has no gradient blob";
   }
-  const Blob<float>& grad(const Layer* from) const override {
-    LOG(FATAL) << "Output layer has no gradient blob";
+  const Blob<float>& grad(const Layer* from) override {
     return grad_;
+    // LOG(FATAL) << "Output layer has no gradient blob";
   }
 };
+
 
 }  // namespace singa
 #endif  // SINGA_NEURALNET_LAYER_H_

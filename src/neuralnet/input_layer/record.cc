@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa/neuralnet/input_layer/record.h"
+#include "singa/neuralnet/input_layer.h"
 namespace singa {
 
 using std::string;
@@ -32,7 +32,7 @@ void RecordInputLayer::Setup(const LayerProto& conf,
 }
 
 void RecordInputLayer::LoadRecord(const string& backend,
-    const string&path, Blob<float>* to) {
+    const string& path, Blob<float>* to) {
   io::Store* store = io::OpenStore(backend, path, io::kRead);
   string key, val;
   CHECK(store->Read(&key, &val));

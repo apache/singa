@@ -1,4 +1,4 @@
-/************************************************************
+/**************************************************************
 *
 * Licensed to the Apache Software Foundation (ASF) under one
 * or more contributor license agreements.  See the NOTICE file
@@ -20,8 +20,7 @@
 *************************************************************/
 
 /**
- * The code is adapted from that of Caffe whose license is attached.
- *
+ * The code is adapted from that of Caffe which is under BSD 2 Clause License.
  * COPYRIGHT
  * All contributions by the University of California:
  * Copyright (c) 2014, The Regents of the University of California (Regents)
@@ -29,35 +28,6 @@
  * All other contributions:
  * Copyright (c) 2014, the respective contributors
  * All rights reserved.
- * Caffe uses a shared copyright model: each contributor holds copyright over
- * their contributions to Caffe. The project versioning records all such
- * contribution and copyright details. If a contributor wants to further mark
- * their specific copyright on a particular contribution, they should indicate
- * their copyright solely in the commit message of the change when it is
- * committed.
- * LICENSE
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * CONTRIBUTION AGREEMENT
- * By contributing to the BVLC/caffe repository through pull-request, comment,
- * or otherwise, the contributor releases their content to the
- * license and copyright terms herein.
- *
  */
 #ifndef SINGA_UTILS_BLOB_H_
 #define SINGA_UTILS_BLOB_H_
@@ -71,12 +41,15 @@
 
 namespace singa {
 
+// TODO(wangwei) use cudaMallocHost depending on Context::device.
 inline void MallocHost(void** ptr, size_t size) {
   *ptr = malloc(size);
+  // cudaMallocHost(ptr, size);
 }
 
 inline void FreeHost(void* ptr) {
   free(ptr);
+  // cudaFreeHost(ptr);
 }
 
 /**
@@ -242,8 +215,12 @@ class Blob {
    *
    * It may deallocate the SyncedMemory holding this Blob's data_, as
    * shared_ptr calls its destructor when reset with the "=" operator.
+   * @param other the Blob who owns the data
+   * @param cpu_only if true, only share the cpu data; if false, share the whole
+   * data_ field. For training with multi-gpu cards, cpu_only must be true,
+   * becuase gpu memory cannot be shared among different devices.
    */
-  void ShareData(const Blob& other);
+  void ShareData(Blob* other, bool cpu_only = true);
 
   /*
   void Swap(Blob& other);
@@ -255,14 +232,14 @@ class Blob {
   /**
    * @return the size of the k-th dimension.
    */
-  inline const int shape(int k) const {
+  inline int shape(int k) const {
     CHECK_LT(k, shape_.size());
     return shape_.at(k);
   }
   inline int count() const {
     return count_;
   }
-  inline const int version() const {
+  inline int version() const {
     return version_;
   }
   inline void set_version(int v) {
@@ -293,6 +270,11 @@ class Blob {
   }
   inline bool transpose() const {
     return transpose_;
+  }
+  inline const Blob<Dtype> T() const {
+    Blob<Dtype> ret(*this);
+    ret.transpose_ = !transpose_;
+    return ret;
   }
 
  protected:

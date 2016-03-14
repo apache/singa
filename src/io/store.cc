@@ -20,10 +20,16 @@
 *************************************************************/
 
 #include "singa/io/store.h"
+#include <glog/logging.h>
 #include "singa/io/kvfile_store.h"
 #include "singa/io/textfile_store.h"
+#ifdef USE_HDFS
+#include "singa/io/hdfs_store.h"
+#endif
 
-namespace singa { namespace io {
+namespace singa {
+namespace io {
+
 Store* CreateStore(const std::string& backend) {
   Store *store = nullptr;
   if (backend.compare("textfile") == 0) {
@@ -34,21 +40,23 @@ Store* CreateStore(const std::string& backend) {
 
 #ifdef USE_LMDB
   if (backend == "lmdb") {
-    return new LMDBStore();
+    store = new LMDBStore();
   }
 #endif
 
 #ifdef USE_OPENCV
   if (backend == "imagefolder") {
-    return new ImageFolderStore();
+    store = new ImageFolderStore();
   }
 #endif
 
 #ifdef USE_HDFS
-  if (backend == "hdfs") {
-    return new HDFSStore();
+  if (backend == "hdfsfile") {
+    store = new HDFSStore();
   }
 #endif
+
+  CHECK(store) << "Backend type (" << backend << ") not recognized";
   return store;
 }
 
@@ -57,6 +65,6 @@ Store* OpenStore(const string& backend, const string& path, Mode mode) {
   store->Open(path, mode);
   return store;
 }
-} /* io */
 
-} /* singa */
+}  // namespace io
+}  // namespace singa

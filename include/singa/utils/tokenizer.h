@@ -37,6 +37,7 @@ namespace singa {
  * t >> x; // x is wes
  * cout << (t >> x); // print 0.
  */
+
 class Tokenizer {
  public:
   Tokenizer(const std::string& str, const std::string& sep): start_(0),

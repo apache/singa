@@ -46,32 +46,19 @@ Layer* Layer::Create(const LayerProto& proto) {
 const std::string Layer::ToString(bool debug, int flag) {
   if (!debug)
     return "";
-  string ret = StringPrintf("Layer %10s ", name().c_str());
+  string ret = "";
   if ((flag & kForward) == kForward && data_.count() !=0) {
-    ret += StringPrintf("data norm1 %13.9f", Asum(cpu, data_));
-  } else if ((flag & kBackward) == kBackward) {
-    if (grad_.count() != 0)
-      ret += StringPrintf("grad norm1 %13.9f\n", Asum(cpu, grad_));
+    ret += StringPrintf("data:%e ", Asum(data_));
+    for (Param* p : GetParams())
+      ret += StringPrintf("%s:%13.9f ",
+          p->name().c_str(), Asum(p->data()));
   }
-  if ((flag & kTrain) == kTrain) {
-    for (Param* p : GetParams()) {
-      ret += StringPrintf(
-          "param id %2d, name %10s, value norm1 %13.9f, grad norm1 %13.9f\n",
-          p->id(), p->name().c_str(), Asum(cpu, p->data()),
-          Asum(cpu, p->grad()));
-    }
+  if ((flag & kBackward) == kBackward && grad_.count() != 0) {
+    ret += StringPrintf("grad:%e ", Asum(grad_));
+    for (Param* p : GetParams())
+      ret += StringPrintf("%s:%13.9f ",
+          p->name().c_str(), Asum(p->grad()));
   }
   return ret;
-}
-
-const std::string LossLayer::ToString(bool debug, int flag) {
-  std::string disp;
-  if (debug) {
-    disp = Layer::ToString(debug, flag);
-  } else {
-    disp = metric_.ToLogString();
-    metric_.Reset();
-  }
-  return disp;
 }
 }  // namespace singa
