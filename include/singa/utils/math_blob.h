@@ -365,7 +365,7 @@ void Copy(const Blob<Dtype>& A, Blob<Dtype>* B) {
  */
 template<typename Dtype>
 void Add(Dtype alpha,  const Blob<Dtype> & A, Blob<Dtype> * B) {
-  Map<singa::op::Add<Dtype>>(alpha, A, B);
+  Map<singa::op::Add<Dtype>, Dtype>(alpha, A, B);
 }
 
 /**
@@ -385,7 +385,7 @@ void Add(const Blob<Dtype> & A, const Blob<Dtype> & B,
  */
 template<typename Dtype>
 void Sub(Dtype alpha, const Blob<Dtype> & A, Blob<Dtype>* B) {
-  Map<singa::op::Sub<Dtype>>(alpha, A, B);
+  Map<singa::op::Sub<Dtype>, Dtype>(alpha, A, B);
 }
 
 /**
@@ -406,7 +406,7 @@ void Sub(const Blob<Dtype> & A, const Blob<Dtype> & B,
 template<typename Dtype>
 void Mult(const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
-  Map<singa::op::Mult<Dtype>>(A, B, C);
+  Map<singa::op::Mult<Dtype>, Dtype>(A, B, C);
   // TODO(wangwei) use MKL's vector func
 }
 
@@ -417,7 +417,7 @@ void Mult(const Blob<Dtype> & A, const Blob<Dtype> & B,
 template<typename Dtype>
 void Div(const Blob<Dtype> & A, const Blob<Dtype> & B,
     Blob<Dtype> * C) {
-  Map<singa::op::Div<Dtype>>(A, B, C);
+  Map<singa::op::Div<Dtype>, Dtype>(A, B, C);
   // TODO(wangwei) use MKL's vector func
 }
 /**

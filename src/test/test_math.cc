@@ -310,6 +310,317 @@ TEST(MathBlobTest, TestOuterProduct) {
   ASSERT_EQ(BlobAB->check_equal(BlobRes), true);
 }
 
+TEST(MathBlobTest, TestMapAB) {
+  float A[10] = {};
+  float Res[10] = {};
+  for (int i = 0; i < 10; i++) {
+    A[i] = i * i - 5* (i%2);
+    Res[i] = A[i] * A[i];
+  }
+  Blob<float> * BlobA = new Blob<float>(10);
+  BlobA->set_cpu_data(A);
+  Blob<float> * BlobB = new Blob<float>(10);
+  Blob<float> * BlobRes = new Blob<float>(10);
+  BlobRes->set_cpu_data(Res);
+  Map<singa::op::Square<float>, float>(*BlobA, BlobB);
+  ASSERT_EQ(BlobB->check_equal(BlobRes), true);
+}
+
+TEST(MathBlobTest, TestMapABC) {
+  float A[10] = {};
+  float B[10] = {};
+  float Res[10] = {};
+  for (int i = 0; i < 10; i++) {
+    A[i] = i * i - 5* (i%2);
+    B[i] = 2* i * i - 3* (i%4);
+    Res[i] = A[i] * B[i];
+  }
+  Blob<float> * BlobA = new Blob<float>(10);
+  BlobA->set_cpu_data(A);
+  Blob<float> * BlobB = new Blob<float>(10);
+  BlobB->set_cpu_data(B);
+  Blob<float> * BlobC = new Blob<float>(10);
+  Blob<float> * BlobRes = new Blob<float>(10);
+  BlobRes->set_cpu_data(Res);
+  Map<singa::op::Mult<float>, float>(*BlobA, *BlobB, BlobC);
+  ASSERT_EQ(BlobC->check_equal(BlobRes), true);
+}
+
+TEST(MathBlobTest, TestCopy) {
+  Blob<float> *BlobA = new Blob<float>(10);
+  Blob<float> *BlobB = new Blob<float>(10);
+  float A[10] = {};
+  for (int i = 0; i < 10; i++) {
+    A[i] = i * i - 5* (i%2);
+  }
+  BlobA->set_cpu_data(A);
+  Copy<float>(*BlobA, BlobB);
+  ASSERT_EQ(BlobA->check_equal(BlobB), true);
+}
+
+TEST(MathBlobTest, TestAdd) {
+  Blob<float> *A = new Blob<float>(10);
+  Blob<float> *B = new Blob<float>(10);
+  Blob<float> *C = new Blob<float>(10);
+  Blob<float> *D = new Blob<float>(10);
+  A->SetValue(5);
+  B->SetValue(6);
+  D->SetValue(11);
+  Add<float>(*A, *B, C);
+  ASSERT_EQ(C->check_equal(D), true);
+}
+
+TEST(MathBlobTest, TestSub) {
+  Blob<float> *A = new Blob<float>(10);
+  Blob<float> *B = new Blob<float>(10);
+  Blob<float> *C = new Blob<float>(10);
+  Blob<float> *D = new Blob<float>(10);
+  A->SetValue(5);
+  B->SetValue(6);
+  D->SetValue(-1);
+  Sub<float>(*A, *B, C);
+  ASSERT_EQ(C->check_equal(D), true);
+}
+
+TEST(MathBlobTest, TestMVAddCol) {
+  Blob<float> *BlobA = new Blob<float>(10);
+  Blob<float> *BlobB = new Blob<float>(10, 10);
+  Blob<float> *BlobBT = new Blob<float>(10, 10);
+  Blob<float> *BlobRes = new Blob<float>(10, 10);
+  Blob<float> *BlobResT = new Blob<float>(10, 10);
+
+  float A[10] = {};
+  float B[10][10] = {};
+  float BT[10][10] = {};
+  for(int i = 0; i < 10; i++) {
+    A[i] = 5*i -2;
+    for(int j = 0; j < 10; j++) {
+      B[i][j] = i * j + i - j;
+      BT[j][i] = i * j + i - j;
+    }
+  }
+
+  BlobA->set_cpu_data(A);
+  BlobB->set_cpu_data(B[0]);
+  BlobBT->set_cpu_data(BT[0]);
+  BlobBT->set_transpose(true);
+
+  for(int i = 0; i < 10; i++) {
+    for(int j = 0; j < 10; j++) {
+      B[i][j] = 2.0 * A[i] + 3.0 * B[i][j];
+      BT[j][i] = 2.0 * A[i] + 3.0 * BT[j][i];
+    }
+  }
+
+  BlobRes->set_cpu_data(B[0]);
+  BlobResT->set_cpu_data(BT[0]);
+  BlobResT->set_transpose(true);
+
+  MVAddCol<float>(2.0, 3.0, *BlobA, BlobB);
+  MVAddCol<float>(2.0, 3.0, *BlobA, BlobBT);
+
+  ASSERT_EQ(BlobB->check_equal(BlobRes), true);
+  ASSERT_EQ(BlobBT->check_equal(BlobResT), true);
+}
+
+TEST(MathBlobTest, TestMVAddRow) {
+  Blob<float> *BlobA = new Blob<float>(10);
+  Blob<float> *BlobB = new Blob<float>(10, 10);
+  Blob<float> *BlobBT = new Blob<float>(10, 10);
+  Blob<float> *BlobRes = new Blob<float>(10, 10);
+  Blob<float> *BlobResT = new Blob<float>(10, 10);
+
+  float A[10] = {};
+  float B[10][10] = {};
+  float BT[10][10] = {};
+  for(int i = 0; i < 10; i++) {
+    A[i] = 5*i -2;
+    for(int j = 0; j < 10; j++) {
+      B[i][j] = i * j + i - j;
+      BT[j][i] = i * j + i - j;
+    }
+  }
+
+  BlobA->set_cpu_data(A);
+  BlobB->set_cpu_data(B[0]);
+  BlobBT->set_cpu_data(BT[0]);
+  BlobBT->set_transpose(true);
+
+  for(int i = 0; i < 10; i++) {
+    for(int j = 0; j < 10; j++) {
+      B[j][i] = 2.0 * A[i] + 3.0 * B[j][i];
+      BT[i][j] = 2.0 * A[i] + 3.0 * BT[i][j];
+    }
+  }
+
+  BlobRes->set_cpu_data(B[0]);
+  BlobResT->set_cpu_data(BT[0]);
+  BlobResT->set_transpose(true);
+
+  MVAddRow<float>(2.0, 3.0, *BlobA, BlobB);
+  MVAddRow<float>(2.0, 3.0, *BlobA, BlobBT);
+
+  ASSERT_EQ(BlobB->check_equal(BlobRes), true);
+  ASSERT_EQ(BlobBT->check_equal(BlobResT), true);
+}
+
+TEST(MathBlobTest, TestRepmatCol) {
+  Blob<float> *BlobA = new Blob<float>(10);
+  Blob<float> *BlobB = new Blob<float>(10, 10);
+  Blob<float> *BlobBT = new Blob<float>(10, 10);
+  Blob<float> *BlobRes = new Blob<float>(10, 10);
+  Blob<float> *BlobResT = new Blob<float>(10, 10);
+
+  float A[10] = {};
+  float B[10][10] = {};
+  float BT[10][10] = {};
+  for(int i = 0; i < 10; i++) {
+    A[i] = 5*i -2;
+    for(int j = 0; j < 10; j++) {
+      B[i][j] = A[i];
+      BT[j][i] = A[i];
+    }
+  }
+
+  BlobA->set_cpu_data(A);
+  BlobBT->set_transpose(true);
+
+  BlobRes->set_cpu_data(B[0]);
+  BlobResT->set_cpu_data(BT[0]);
+  BlobResT->set_transpose(true);
+
+  RepmatCol<float>(*BlobA, BlobB);
+  RepmatCol<float>(*BlobA, BlobBT);
+
+  ASSERT_EQ(BlobB->check_equal(BlobRes), true);
+  ASSERT_EQ(BlobBT->check_equal(BlobResT), true);
+}
+
+TEST(MathBlobTest, TestRepmatRow) {
+  Blob<float> *BlobA = new Blob<float>(10);
+  Blob<float> *BlobB = new Blob<float>(10, 10);
+  Blob<float> *BlobBT = new Blob<float>(10, 10);
+  Blob<float> *BlobRes = new Blob<float>(10, 10);
+  Blob<float> *BlobResT = new Blob<float>(10, 10);
+
+  float A[10] = {};
+  float B[10][10] = {};
+  float BT[10][10] = {};
+  for(int i = 0; i < 10; i++) {
+    A[i] = 5*i -2;
+    for(int j = 0; j < 10; j++) {
+      B[j][i] = A[i];
+      BT[i][j] = A[i];
+    }
+  }
+
+  BlobA->set_cpu_data(A);
+  BlobBT->set_transpose(true);
+
+  BlobRes->set_cpu_data(B[0]);
+  BlobResT->set_cpu_data(BT[0]);
+  BlobResT->set_transpose(true);
+
+  RepmatRow<float>(*BlobA, BlobB);
+  RepmatRow<float>(*BlobA, BlobBT);
+
+  ASSERT_EQ(BlobB->check_equal(BlobRes), true);
+  ASSERT_EQ(BlobBT->check_equal(BlobResT), true);
+}
+
+TEST(MathBlobTest, TestMVSumCol) {
+  Blob<float> *BlobA = new Blob<float>(10);
+  Blob<float> *BlobACopy = new Blob<float>(10);
+  Blob<float> *BlobB = new Blob<float>(10, 10);
+  Blob<float> *BlobBT = new Blob<float>(10, 10);
+  Blob<float> *BlobRes = new Blob<float>(10);
+
+  float A[10] = {};
+  float B[10][10] = {};
+  float BT[10][10] = {};
+  for(int i = 0; i < 10; i++) {
+    A[i] = 5*i -2;
+    for(int j = 0; j < 10; j++) {
+      B[i][j] = i * j + i - j;
+      BT[j][i] = i * j + i - j;
+    }
+  }
+
+  BlobA->set_cpu_data(A);
+  BlobACopy->set_cpu_data(A);
+  BlobB->set_cpu_data(B[0]);
+  BlobBT->set_cpu_data(BT[0]);
+  BlobBT->set_transpose(true);
+
+  for(int i = 0; i < 10; i++) {
+    A[i] *= 2.0;
+    for(int j = 0; j < 10; j++) {
+      A[i] += 3.0 * B[i][j];
+    }
+  }
+  BlobRes->set_cpu_data(A);
+
+  MVSumCol<float>(2.0, 3.0, *BlobB, BlobA);
+  MVSumCol<float>(2.0, 3.0, *BlobBT, BlobACopy);
+
+  ASSERT_EQ(BlobA->check_equal(BlobRes), true);
+  ASSERT_EQ(BlobACopy->check_equal(BlobRes), true);
+}
+
+TEST(MathBlobTest, TestMVSumRow) {
+  Blob<float> *BlobA = new Blob<float>(10);
+  Blob<float> *BlobACopy = new Blob<float>(10);
+  Blob<float> *BlobB = new Blob<float>(10, 10);
+  Blob<float> *BlobBT = new Blob<float>(10, 10);
+  Blob<float> *BlobRes = new Blob<float>(10);
+
+  float A[10] = {};
+  float B[10][10] = {};
+  float BT[10][10] = {};
+  for(int i = 0; i < 10; i++) {
+    A[i] = 5*i -2;
+    for(int j = 0; j < 10; j++) {
+      B[j][i] = i * j + i - j;
+      BT[i][j] = i * j + i - j;
+    }
+  }
+
+  BlobA->set_cpu_data(A);
+  BlobACopy->set_cpu_data(A);
+  BlobB->set_cpu_data(B[0]);
+  BlobBT->set_cpu_data(BT[0]);
+  BlobBT->set_transpose(true);
+
+  for(int i = 0; i < 10; i++) {
+    A[i] *= 2.0;
+    for(int j = 0; j < 10; j++) {
+      A[i] += 3.0 * B[j][i];
+    }
+  }
+  BlobRes->set_cpu_data(A);
+
+  MVSumRow<float>(2.0, 3.0, *BlobB, BlobA);
+  MVSumRow<float>(2.0, 3.0, *BlobBT, BlobACopy);
+
+  ASSERT_EQ(BlobA->check_equal(BlobRes), true);
+  ASSERT_EQ(BlobACopy->check_equal(BlobRes), true);
+}
+
+TEST(MathBlobTest, TestASum) {
+  float A[10] = {};
+  for(int i = 0; i < 10; i++) {
+    A[i] = ((i % 3) -1) * i;
+  }
+
+  Blob<float> *BlobA = new Blob<float>(10);
+  BlobA->set_cpu_data(A);
+
+  float BlobRes = Asum<float>(*BlobA);
+  float res = cblas_sasum(10, A, 1) / 10;
+
+  ASSERT_EQ(BlobRes, res);
+}
+
 TEST(MathTest, TestGemmCPU) {
   float A[3][2] = {};
   float B[3][2] = {};
