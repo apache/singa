@@ -38,8 +38,8 @@ namespace singa {
  */
 /************* BLAS level 1 *****************/
 /**
- * Scale each element of A with alpha, and put the result into B.
- * Bi = alpha*Ai
+ * Scale each element of A with alpha, and put the result into A.
+ * Ai = alpha*Ai
  * Use blas scale internally.
  */
 template<typename Dtype>
@@ -242,7 +242,7 @@ void OuterProduct(const Blob<Dtype>& A, const Blob<Dtype>& B, Blob<Dtype> * C) {
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
   if (device == -1) {
-    cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, 1, 1, 0, false, false,
+    cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, 1, Dtype(1), Dtype(0), false, false,
         C->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
