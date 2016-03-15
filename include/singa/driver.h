@@ -125,7 +125,8 @@ class Driver {
    * @param[in] net training neural network.
    * @return worker instances
    */
-  const vector<Worker*> CreateWorkers(const JobProto& job_conf, NeuralNet* net);
+//  const vector<Worker*> CreateWorkers(const JobProto& job_conf, NeuralNet* net);
+  const vector<Worker*> CreateWorkers(const JobProto& job_conf);
 
 
   /*********** Subclasses registers *************************/

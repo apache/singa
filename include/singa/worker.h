@@ -58,20 +58,13 @@ class Worker {
    * -# Back-propagation for the feed-forward models, e.g., CNN and MLP, and the
    *  recurrent neural networks.
    * -# Contrastive divergence for the energy models, e.g., RBM.
-   *
+   * TODO: Update this when it works.
    * @return a pointer to the instance of the Worker subclass.
    */
-  static Worker* Create(const AlgProto& conf);
-  /**
-   * Create an instance of the subclass of Worker
-   * with the specified device type.
-   */
-  static Worker* Create(const AlgProto& conf, int devid);
+  static Worker* Create(const AlgProto& conf, int grp_id, int dev_id, int dev_type);
 
   virtual ~Worker();
   /**
-   * @param[in] grp_id global worker group ID
-   * @param[in] id worker ID within the group
    * @param[in] conf job configuration
    * @param[in] train_net pointer to the training neural net, which could be
    * shared with other workers from the same group. Different workers run over
@@ -83,8 +76,7 @@ class Worker {
    * first worker from the first group would have test neural net. All other
    * workers receive nullptr for this argument.
    */
-  virtual void Setup(int grp_id, int id, const JobProto& conf,
-      NeuralNet* train_net, NeuralNet* val_net, NeuralNet* test_net);
+  virtual void Setup(const JobProto& conf);
   /**
    * Main function of Worker.
    *
@@ -267,28 +259,30 @@ class Worker {
   /**
    * @return group ID
    */
-  inline int grp_id() const { return grp_id_; }
+  inline int grp_id() const { return this->grp_id_; }
+  inline void grp_id(int grp_id) { this->grp_id_ = grp_id; }
   /**
    * @return worker ID within the worker group.
    */
-  inline int id() const { return id_; }
+  inline int dev_id() const { return this->id_; }
+  inline void dev_id(int id) { this->id_ = id; }
 
   /**
-   * @return The device ID of this worker. It is -1 for CPU and >-1 for GPU.
+   * @return The device type of this worker. It is -1 for CPU and >-1 for GPU.
    */
-  inline int device_id() { return device_id_; }
+  inline int dev_type() const { return this->device_type_; }
 
   /**
-   * @param devid The ID value to assign to this worker.
+   * @param devid The type value to assign to this worker.
    */
-  inline void device_id(int devid) { device_id_ = devid; }
+  inline void dev_type(int dev_type) { this->device_type_ = dev_type; }
 
  protected:
   int grp_id_ = -1, id_ = -1;
   int step_ = 0;
   bool execute_;
   JobProto job_conf_;
-  int device_id_;
+  int device_type_;
   NeuralNet* train_net_ = nullptr;
   NeuralNet* test_net_ = nullptr;
   NeuralNet* val_net_ = nullptr;

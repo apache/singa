@@ -215,7 +215,8 @@ void Driver::Train(const JobProto& job_conf) {
   NeuralNet* net = NeuralNet::Create(job_conf.neuralnet(), kTrain, grp_size);
   WriteStringToTextFile(cluster->vis_folder() + "/train_net.json",
       net->ToGraph(true).ToJson());
-  const vector<Worker*> workers = CreateWorkers(job_conf, net);
+//  const vector<Worker*> workers = CreateWorkers(job_conf, net);
+  const vector<Worker*> workers = CreateWorkers(job_conf);
   const vector<Server*> servers = CreateServers(job_conf, net);
 
 #ifdef USE_MPI
@@ -224,6 +225,11 @@ void Driver::Train(const JobProto& job_conf) {
     MPIQueues.push_back(make_shared<SafeQueue>());
 #endif
 
+  // Setup the workers
+  for (auto worker: workers)
+    worker->Setup(job_conf);
+
+  // Actual running
   for (auto server : servers)
     threadpool.enqueue(&Server::Run, server);
   for (auto worker : workers)
@@ -266,8 +272,8 @@ void Driver::Test(const JobProto& job_conf) {
   Cluster::Get()->Register(getpid(), "localhost");
 
   // TODO(wangwei) extend to a group with multiple workers
-  auto worker = Worker::Create(job_conf.train_one_batch());
-  worker->Setup(0, 0, job_conf, nullptr, nullptr, nullptr);
+  auto worker = Worker::Create(job_conf.train_one_batch(), 0, 0, -1);
+  worker->Setup(job_conf);
 
   auto net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
   WriteStringToTextFile(Cluster::Get()->vis_folder() + "/test_net.json",
@@ -319,6 +325,7 @@ void Driver::SetupForResume(JobProto* job_conf) {
   tinydir_close(&dir);
 }
 
+/*
 const vector<Worker*> Driver::CreateWorkers(const JobProto& job_conf,
     NeuralNet* net) {
   auto cluster = Cluster::Get();
@@ -363,14 +370,35 @@ const vector<Worker*> Driver::CreateWorkers(const JobProto& job_conf,
 
     for (int wid = wstart; wid < wend; wid++) {
       // Set DeviceType to CPU or GPU here.
-      auto *worker = Worker::Create(job_conf.train_one_batch(),
+      auto *worker = Worker::Create(job_conf.train_one_batch(), gid, wid,
         (ngpu_per_group > 0) ? job_conf.gpu(ngpu_per_group-1) : -1);
       ngpu_per_group--;
       // TODO(wangwei) extend to test among workers in a grp
       if (wid == 0)
-        worker->Setup(gid, wid, job_conf, train_net, val_net, test_net);
+        worker->Setup(job_conf, train_net, val_net, test_net);
       else
-        worker->Setup(gid, wid, job_conf, train_net, nullptr, nullptr);
+        worker->Setup(job_conf, train_net, nullptr, nullptr);
+      workers.push_back(worker);
+    }
+  }
+  return workers;
+}*/
+
+const vector<Worker*> Driver::CreateWorkers(const JobProto& job_conf) {
+  auto cluster = Cluster::Get();
+  vector<Worker*> workers;
+  int ngpu_per_group = cluster->ngpu_per_group();
+
+  const vector<int> rng = cluster->ExecutorRng(cluster->procs_id(),
+      cluster->nworkers_per_group(), cluster->nworkers_per_procs());
+  int gstart = rng[0], gend = rng[1], wstart = rng[2], wend = rng[3];
+
+  for (int gid = gstart; gid < gend; gid++) {
+    for (int wid = wstart; wid < wend; wid++) {
+      auto *worker = Worker::Create(job_conf.train_one_batch(), gid, wid,
+        (ngpu_per_group > 0) ? job_conf.gpu(ngpu_per_group-1) : -1);
+
+      ngpu_per_group--;
       workers.push_back(worker);
     }
   }

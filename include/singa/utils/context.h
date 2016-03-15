@@ -134,22 +134,12 @@ class Context {
     device_id_[tid] = did;
     seed_[tid] = seed;
     
-    ActivateDevice(did);
+    if (did > -1 )
+      ActivateDevice(did);
   }
 
   /**
    * Activate the GPU device by calling cudaSetDevice.
-   */
-  void ActivateDevice(const int device_id) {
-    CHECK_GE(device_id, 0);
-#ifdef USE_GPU
-    cudaSetDevice(device_id);
-#endif
-  }
-
-  /**
-   * Activate the GPU device by calling cudaSetDevice.
-   * TODO: Deprecate? No longer needed.
    */
   void ActivateDevice(const int device_id) {
     CHECK_GE(device_id, 0);
