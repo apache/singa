@@ -133,10 +133,17 @@ class Context {
   void SetupDevice(const std::thread::id& tid, const int did, const int seed) {
     device_id_[tid] = did;
     seed_[tid] = seed;
+    
+    ActivateDevice(did);
+  }
+
+  /**
+   * Activate the GPU device by calling cudaSetDevice.
+   */
+  void ActivateDevice(const int device_id) {
+    CHECK_GE(device_id, 0);
 #ifdef USE_GPU
-    if (did > -1) {
-      cudaSetDevice(did);
-    }
+    cudaSetDevice(device_id);
 #endif
   }
 

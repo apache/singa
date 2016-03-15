@@ -1,3 +1,24 @@
+/************************************************************
+*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*
+*************************************************************/
+
 #ifndef SINGA_THREADPOOL_H_
 #define SINGA_THREADPOOL_H_
 
@@ -52,7 +73,6 @@ public:
 private:
   // Type of a task.
   using task_t = std::function<void()>;
-
   // A list of worker threads.
   std::vector<std::thread> threads_;
   // A queue of tasks to be distributed and invoked.
@@ -69,10 +89,10 @@ private:
   // State of the thread pool.
   bool stop;
 
-  Threadpool( const Threadpool & ) = delete;            // Copy constructor disabled.
-  Threadpool( Threadpool && ) = delete;                 // Move constructor disabled.
-  Threadpool &operator=( const Threadpool & ) = delete; // Copy assignment operator disabled.
-  Threadpool &operator=( Threadpool && ) = delete;      // Move assignment operator disabled.
+  Threadpool( const Threadpool & ) = delete;            // Disabled copy constructor.
+  Threadpool( Threadpool && ) = delete;                 // Disabled move constructor.
+  Threadpool &operator=( const Threadpool & ) = delete; // Disabled copy assignment.
+  Threadpool &operator=( Threadpool && ) = delete;      // Disabled move assignment.
 };
 
 // Constructor
