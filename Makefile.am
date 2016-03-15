@@ -100,7 +100,8 @@ SINGA_SRCS := src/driver.cc \
               src/utils/param.cc \
               src/utils/updater.cc \
               src/utils/blob.cc \
-              src/utils/image_transform.cc
+              src/utils/image_transform.cc \
+              src/utils/clock.cc
 
 SINGA_HDRS := include/singa.h \
 			  include/singa/utils/math_blob.h \
@@ -118,6 +119,7 @@ SINGA_HDRS := include/singa.h \
               include/utils/tinydir.h \
               include/utils/tokenizer.h \
               include/utils/image_transform.h \
+              include/utils/clock.h \
               include/server.h \
               include/worker.h \
               include/stub.h \
