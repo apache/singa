@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#ifndef SINGA_CLOCK_H_
-#define SINGA_CLOCK_H_
+#ifndef _SINGA_UTILS_CLOCK_H_
+#define _SINGA_UTILS_CLOCK_H_
 
 #include <string>
 
@@ -28,21 +28,28 @@ namespace singa {
 
 class Clock {
  public:
-  void start();
+  Clock();
 
-  double end();
-  double end(int iteration_num, std::string content);
-  void endWithLog(std::string content);
-  void endWithLog(int iteration_num, std::string content);
+  void Start();
+
+  double End();
+  double End(int iteration_num, std::string content);
+  void EndWithLog(std::string content);
+  void EndWithLog(int iteration_num, std::string content);
+
+  double Elapse();
+  double Elapse(int iteration_num, std::string content);
+  void ElapseWithLog(std::string content);
+  void ElapseWithLog(int iteration_num, std::string content);
 
  protected:
   int start_t = -1, end_t = -1;
 };
 
 
-}
+}  // namespace singa
 
 
 
 
-#endif
+#endif  // SINGA_UTILS_CLOCK_H_

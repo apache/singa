@@ -337,7 +337,7 @@ void BPWorker::TestOneBatch(int step, Phase phase, NeuralNet* net) {
 
 void BPWorker::Forward(int step, Phase phase, NeuralNet* net) {
   Clock c;
- c.start();
+  c.start();
   map<string, string> label;
   for (auto& layer : net->layers()) {
     if (layer->partition_id() == id_) {
@@ -358,12 +358,12 @@ void BPWorker::Forward(int step, Phase phase, NeuralNet* net) {
       + std::to_string(step) +"-loc" + std::to_string(id_) + ".json";
     WriteStringToTextFile(path, net->ToGraph(false).ToJson(label));
   }
- c.endWithLog("BPWorker::Forward");
+  c.endWithLog("BPWorker::Forward");
 }
 
 void BPWorker::Backward(int step, NeuralNet* net) {
   Clock c;
- c.start();
+  c.start();
   map<string, string> label;
   auto& layers = net->layers();
   for (auto it = layers.rbegin(); it != layers.rend(); it++) {
@@ -387,7 +387,7 @@ void BPWorker::Backward(int step, NeuralNet* net) {
 /***************************BPTTWorker*********************************/
 void BPTTWorker::Forward(int step, Phase phase, NeuralNet* net) {
   Clock c;
- c.start();
+  c.start();
   map<string, string> label;
   for (auto& layer : net->layers()) {
     if (layer->partition_id() == id_) {
@@ -434,12 +434,12 @@ void BPTTWorker::Forward(int step, Phase phase, NeuralNet* net) {
       + std::to_string(step) +"-loc" + std::to_string(id_) + ".json";
     WriteStringToTextFile(path, net->ToGraph(false).ToJson(label));
   }
-c.endWithLog("BPTTWorker::Forward");
+  c.endWithLog("BPTTWorker::Forward");
 }
 
 void BPTTWorker::Backward(int step, NeuralNet* net) {
   Clock c;
- c.start();
+  c.start();
   map<string, string> label;
   auto& layers = net->layers();
   for (auto it = layers.rbegin(); it != layers.rend(); it++) {
@@ -461,7 +461,7 @@ void BPTTWorker::Backward(int step, NeuralNet* net) {
       + std::to_string(step) + "-loc" + std::to_string(id_) + ".json";
     WriteStringToTextFile(path, net->ToGraph(false).Reverse().ToJson(label));
   }
-c.endWithLog("BPTTWorker::Backward");
+  c.endWithLog("BPTTWorker::Backward");
 }
 void BPTTWorker::Display(int flag, const std::string& prefix, NeuralNet* net) {
   std::unordered_map<string, float> perf;

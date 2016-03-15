@@ -31,31 +31,62 @@
 
 namespace singa {
 
-void Clock::start() {
-	start_t = clock();
+Clock::Clock() {
+  start_t = clock();
 }
 
-double Clock::end() {
-	end_t=clock();
-	double runtime = (end_t-start_t)/double(CLOCKS_PER_SEC)*1000;
-	return runtime;
+
+
+void Clock::Start() {
+  start_t = clock();
 }
 
-double Clock::end(int iteration_num, std::string content) {
- end_t=clock();
- double runtime=(end_t-start_t)/(double(CLOCKS_PER_SEC)*1000*iteration_num);
- return runtime;
+double Clock::End() {
+  end_t = clock();
+  double runtime = (end_t-start_t)/static_cast<double>(CLOCKS_PER_SEC)*1000;
+  return runtime;
 }
 
-void Clock::endWithLog( std::string content) {
- double runtime=end();
- DLOG(ERROR)<<"Running time of "<<content<< " is "<<runtime<<" ms";
+double Clock::End(int iteration_num, std::string content) {
+  end_t = clock();
+  double runtime = (end_t-start_t);
+  runtime = runtime/(static_cast<double>(CLOCKS_PER_SEC)*1000*iteration_num);
+  return runtime;
 }
 
-void Clock::endWithLog( int iteration_num, std::string content) {
-  
-  double runtime=end(iteration_num,content);
-  DLOG(ERROR)<<"Average Running time of "<<iteration_num<<" iterations in "<<content<< " is "<<runtime<<" ms";
+void Clock::EndWithLog(std::string content) {
+  double runtime = end();
+  DLOG(ERROR) << "Running time of " << content<< " is " << runtime << " ms";
 }
 
+void Clock::EndWithLog(int iteration_num, std::string content) {
+  double runtime = end(iteration_num, content);
+  DLOG(ERROR)<< "Average Running time of " << iteration_num;
+  DLOG(ERROR)<< " iterations in " << content << " is " << runtime << " ms";
 }
+
+double Clock::Elapse() {
+  end_t = clock();
+  double runtime = (end_t-start_t)/static_cast<double>(CLOCKS_PER_SEC)*1000;
+  return runtime;
+}
+
+double Clock::Elapse(int iteration_num, std::string content) {
+  end_t = clock();
+  double runtime = (end_t-start_t);
+  runtime = runtime/(static_cast<double>(CLOCKS_PER_SEC)*1000*iteration_num);
+  return runtime;
+}
+
+void Clock::ElapseWithLog(std::string content) {
+  double runtime = end();
+  DLOG(ERROR)<< "Running time of " <<content << " is " << runtime << " ms";
+}
+
+void Clock::ElapseWithLog(int iteration_num, std::string content) {
+  double runtime = end(iteration_num, content);
+  DLOG(ERROR) << "Average Running time of " << iteration_num;
+  DLOG(ERROR) << " iterations in " << content << " is " << runtime << " ms";
+}
+
+}  // namespace singa
