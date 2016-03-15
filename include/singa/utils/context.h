@@ -148,6 +148,17 @@ class Context {
   }
 
   /**
+   * Activate the GPU device by calling cudaSetDevice.
+   * TODO: Deprecate? No longer needed.
+   */
+  void ActivateDevice(const int device_id) {
+    CHECK_GE(device_id, 0);
+#ifdef USE_GPU
+    cudaSetDevice(device_id);
+#endif
+  }
+
+  /**
    * \copybrief rand_generator(const std::thread::id&);
    * @return the CPU random generator for the calling thread.
    */
