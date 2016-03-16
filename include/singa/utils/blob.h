@@ -276,21 +276,6 @@ class Blob {
     ret.transpose_ = !transpose_;
     return ret;
   }
-  // to check if two blob has the exact same content
-  bool check_equal(Blob* other) const {
-    if (transpose() != other->transpose()) return false;
-    if (count() != other->count()) return false;
-    if (shape().size() != other->shape().size()) return false;
-    for (int i = 0; i < shape().size(); i++) {
-      if (shape(i) != other->shape(i)) return false;
-    }
-    const Dtype * a = cpu_data();
-    const Dtype * b = other->cpu_data();
-    for (int i = 0; i < count(); i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
 
  protected:
   std::shared_ptr<SyncedMemory> data_ = nullptr;
