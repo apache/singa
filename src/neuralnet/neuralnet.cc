@@ -58,6 +58,12 @@ const NetProto NetConfPreprocess(const NetProto& conf) {
   return proto;
 }
 
+NeuralNet* NeuralNet::CreateNeuralNet(const string str) {
+  NetProto net_conf;
+  net_conf.ParseFromString(str);
+  return NeuralNet::Create(net_conf,singa::kTest,1);
+}
+
 NeuralNet* NeuralNet::Create(const NetProto& net_conf, Phase phase,
     int npartitions) {
   const NetProto& full_net_conf = NetConfPreprocess(net_conf);

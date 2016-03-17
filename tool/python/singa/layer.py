@@ -25,14 +25,20 @@
 This script includes Layer class and its subclasses that
 users can configure different types of layers for their model.
 '''
-
+import numpy as np
 from singa.parameter import Parameter, set_param_field
 from singa.initializations import get_init_values
 from singa.utils.utility import setval, generate_name
 from singa.utils.message import *
 from google.protobuf import text_format
 
+from singa.driver import Layer as SingaLayer, Updater as SingaUpdater,\
+                         intVector, floatVector, layerVector,\
+                         paramVector, floatArray_frompointer, DummyLayer
+
 class Layer(object):
+
+    singaupdater = None
 
     def __init__(self, **kwargs):
         '''
@@ -41,12 +47,314 @@ class Layer(object):
         '''
 
         self.layer = Message('Layer', **kwargs).proto
-        # required
+        # required field
         if not 'name' in kwargs:
             setval(self.layer, name=generate_name('layer', 1))
 
-        # srclayers are set in Model.build()
+        # layer connectivity is set in Model.build()
         self.is_datalayer = False
+        self.singalayer = None
+        self.srclayers = []
+
+        # set src for Rafiki
+        if 'src' in kwargs:
+            self.src = kwargs['src']
+        else:
+            self.src = None
+
+    def setup(self, srclys):
+        ''' Create singa::Layer and store srclayers
+        '''
+        if self.singalayer == None:
+            self.singalayer = SingaLayer.CreateLayer(
+                                    self.layer.SerializeToString())
+            self.singaSrclayerVector = layerVector(len(srclys))
+            for i in range(len(srclys)):
+                self.srclayers.append(srclys[i])
+                self.singaSrclayerVector[i] = srclys[i].get_singalayer()
+            # set up the layer
+            SingaLayer.SetupLayer(self.singalayer,
+                                  self.layer.SerializeToString(),
+                                  self.singaSrclayerVector)
+
+    def ComputeFeature(self, *srclys):
+        ''' The method creates and sets up singa::Layer
+            and maintains its source layers
+            then call ComputeFeature for data transformation.
+
+            *srclys = (list)  // a list of source layers
+        '''
+        # create singa::Layer and store srclayers
+        if self.singalayer == None:
+            if self.src != None:
+                srclys = self.src
+            self.singalayer = SingaLayer.CreateLayer(
+                                    self.layer.SerializeToString())
+            self.singaSrclayerVector = layerVector(len(srclys))
+            for i in range(len(srclys)):
+                self.srclayers.append(srclys[i])
+                self.singaSrclayerVector[i] = srclys[i].get_singalayer()
+            # set up the layer
+            SingaLayer.SetupLayer(self.singalayer,
+                                  self.layer.SerializeToString(),
+                                  self.singaSrclayerVector)
+
+        self.singalayer.ComputeFeature(1, self.singaSrclayerVector)
+
+    def ComputeGradient(self, step, upd=None):
+        ''' The method creates singa::Updater
+            and calls ComputeGradient for gradient computation
+            then updates the parameters.
+
+            step = (int)    // a training step
+            upd = (object)  // Updater object
+        '''
+        # create singa::Updater
+        assert upd != None, 'required Updater (see model.py)'
+        if Layer.singaupdater == None:
+            Layer.singaupdater = SingaUpdater.CreateUpdater(
+                                          upd.proto.SerializeToString())
+
+        # call ComputeGradient of Singa
+        self.singalayer.ComputeGradient(1, self.singaSrclayerVector)
+
+        # update parameters
+        singaParams = self.singalayer.GetParams()
+        for par in singaParams:
+            Layer.singaupdater.Update(step, par, 1.0)
+
+        # recursively call ComputeGradient of srclayers
+        #(TODO) what if there are multiple source layers?
+        for sly in self.srclayers:
+            if sly.srclayers != None:
+                sly.ComputeGradient(step, upd)
+
+    def GetParams(self):
+        ''' The method gets parameter values
+            singaParams[0] for weight
+            singaParams[1] for bias
+        '''
+        singaParams = self.singalayer.GetParams()
+        assert len(singaParams) == 2, 'weight and bias'
+        # for weight
+        weight_array = floatArray_frompointer(singaParams[0].mutable_cpu_data())
+        weight = [weight_array[i] for i in range(singaParams[0].size())]
+        weight = np.array(weight).reshape(singaParams[0].shape())
+        # for bias
+        bias_array = floatArray_frompointer(singaParams[1].mutable_cpu_data())
+        bias = [bias_array[i] for i in range(singaParams[1].size())]
+        bias = np.array(bias).reshape(singaParams[1].shape()[0], 1)
+
+        return weight, bias
+
+    def SetParams(self, *params):
+        ''' The method sets parameter values
+            params[0] for weight
+            params[1] for bias
+        '''
+        singaParams = self.singalayer.GetParams()
+        import pb2.common_pb2 as cm
+        for k in range(len(params)):
+            bp = cm.BlobProto()
+            bp.shape.append(int(params[k].shape[0]))
+            bp.shape.append(int(params[k].shape[1]))
+            for i in range(params[k].shape[0]):
+                for j in range(params[k].shape[1]):
+                    bp.data.append(params[k][i, j])
+            singaParams[k].FromProto(bp.SerializeToString())
+
+    def GetData(self):
+        ''' The method gets layer data values
+        '''
+        blobptr = self.singalayer.data(self.singalayer)
+        data_array = floatArray_frompointer(blobptr.mutable_cpu_data())
+        data = [data_array[i] for i in range(blobptr.count())]
+        return data
+
+    def display(self):
+        debug, flag = 0, 0
+        print self.singalayer.ToString(debug, flag)
+
+    def get_singalayer(self):
+        return self.singalayer
+
+
+class Dummy(object):
+
+    def __init__(self, shape=[], path='', dtype='', src=[], **kwargs):
+        ''' Dummy layer is used for data layer to feed/fetch input data
+            shape = (list)   // [# of samples, # of channels, img h, img w]
+            path  = (string) // path to dataset
+        '''
+        self.is_datalayer = True
+        self.srclayers = None
+        self.singalayer = None
+        if 'is_label' in kwargs: self.is_label = kwargs['is_label']
+
+        # create layer proto for Dummy layer
+        kwargs = {'name':'dummy', 'type':kDummy}
+        self.layer = Message('Layer', **kwargs).proto
+
+    def setup(self, data_shape):
+        ''' Create and Setup singa Dummy layer
+            called by load_model_parameter
+        '''
+        if self.singalayer == None:
+            setval(self.layer.dummy_conf, input=True)
+            setval(self.layer.dummy_conf, shape=data_shape)
+            self.singalayer = DummyLayer()
+            self.singalayer.Setup(self.layer.SerializeToString(),
+                                  layerVector(0))
+
+    def Feed(self, data, nb_channel=1, is_label=0):
+        ''' Create and Setup singa::DummyLayer for input data
+            Insert data using Feed()
+        '''
+        batchsize, hdim = data.shape
+        datasize = batchsize * hdim
+
+        # create and setup the dummy layer
+        if self.singalayer == None:
+            imgsize = int(np.sqrt(hdim/nb_channel))
+            shapeVector = [batchsize, nb_channel, imgsize, imgsize]
+            self.setup(shapeVector)
+
+        data = data.astype(np.float)
+        dataVector = floatVector(datasize)
+        k = 0
+        for i in range(batchsize):
+            for j in range(hdim):
+                dataVector[k] = data[i, j]
+                k += 1
+        self.singalayer.Feed(batchsize, dataVector, is_label)
+
+    def FetchData(self, batchsize):
+        sidx = self.batch_index * batchsize
+        eidx = sidx + batchsize
+        batch = self.data[sidx:eidx, :]
+
+        self.Feed(batch, self.shape[1], self.is_label)
+
+        self.batch_index += 1
+        if eidx > self.data.shape[0]:
+            self.batch_index = 0
+
+    def get_singalayer(self):
+        return self.singalayer.ToLayer()
+
+class ImageData(Dummy):
+    ''' This class will be used for Rafiki, dlaas
+    '''
+    def __init__(self, shape=[], data_path='', data_type='byte', src=[],
+                 mean_path='', mean_type='float'):
+        ''' Dummy layer is used for data layer
+            shape = (list)   // [# of samples, # of channels, img h, img w]
+            data_path  = (string) // path to dataset
+            mean_path
+        '''
+        is_label = False
+        super(ImageData, self).__init__(shape, data_path, data_type, src,
+                                    is_label=is_label,
+                                    mean_path=mean_path,
+                                    mean_type=mean_type)
+
+        # if dataset path is not specified, skip
+        # otherwise, load dataset
+        if data_path == '' or mean_path == '':
+            return
+
+        self.shape = shape
+        self.data_path = data_path
+        self.mean_path = mean_path
+        self.src = None
+        self.batch_index = 0
+
+        nb_samples = shape[0]
+        nb_pixels = shape[1]
+        for i in range(len(shape)-2):
+            nb_pixels *= shape[i+2]
+
+        if data_type == 'byte':
+            d = np.fromfile(data_path, dtype=np.uint8)
+        elif data_type == 'int':
+            d = np.fromfile(data_path, dtype=np.int)
+        self.data = d.reshape(nb_samples, nb_pixels)
+
+        if mean_type == 'float':
+            d = np.fromfile(mean_path, dtype=np.float32)
+        self.mean = d.reshape(1, nb_pixels)
+
+    def Feed(self, data, nb_channel=1, is_label=0):
+        ''' Create and Setup singa::DummyLayer for input data
+            Insert data using Feed()
+            Need to minus the mean file
+        '''
+        batchsize, hdim = data.shape
+        datasize = batchsize * hdim
+
+        # create and setup the dummy layer
+        if self.singalayer == None:
+            imgsize = int(np.sqrt(hdim/nb_channel))
+            shapeVector = [batchsize, nb_channel, imgsize, imgsize]
+            self.setup(shapeVector)
+
+        # feed input data and minus mean
+        data = data.astype(np.float)
+        dataVector = floatVector(datasize)
+        k = 0
+        for i in range(batchsize):
+            for j in range(hdim):
+                dataVector[k] = data[i, j]-self.mean[0, j]
+                k += 1
+        self.singalayer.Feed(batchsize, dataVector, is_label)
+
+class LabelData(Dummy):
+    ''' This class will be used for Rafiki, dlaas
+    '''
+    def __init__(self, shape=[], label_path='', label_type='int', src=[]):
+        ''' Dummy layer is used for label data layer
+            shape = (list)   // [# of samples, # of channels, img h, img w]
+            data_path  = (string) // path to dataset
+            mean_path
+        '''
+        is_label = True
+        super(LabelData, self).__init__(shape, label_path, label_type, src,
+                                    is_label=is_label)
+
+        # if dataset path is not specified, skip
+        # otherwise, load dataset
+        if label_path == '':
+            return
+
+        self.shape = shape
+        self.label_path = label_path
+        self.src = None
+        self.batch_index = 0
+
+        nb_samples = shape[0]
+
+        if label_type == 'int':
+            d = np.fromfile(label_path, dtype=np.int)
+        self.data = d.reshape(nb_samples, 1)
+
+    def Feed(self, data, nb_chanel=1, is_label=1):
+        ''' Create and Setup singa::DummyLayer for input data
+            Insert data using Feed()
+            Need to minus the mean file
+        '''
+        batchsize = data.shape[0]
+
+        # create and setup the dummy layer
+        if self.singalayer == None:
+            shapeVector = [batchsize, 1]
+            self.setup(shapeVector)
+
+        data = data.astype(np.float)
+        dataVector = floatVector(batchsize)
+        for i in range(batchsize):
+            dataVector[i] = data[i, 0]
+        self.singalayer.Feed(batchsize, dataVector, 1)
+
 
 class Data(Layer):
 
@@ -66,11 +374,11 @@ class Data(Layer):
         assert load != None, 'data type should be specified'
         if load == 'kData':
             super(Data, self).__init__(name=generate_name('data'),
-                                       user_type=load)
+                                       user_type=load, **kwargs)
         else:
             self.layer_type = enumLayerType(load)
             super(Data, self).__init__(name=generate_name('data'),
-                                       type=self.layer_type)
+                                       type=self.layer_type, **kwargs)
         self.is_datalayer = True
 
         # include/exclude
@@ -108,32 +416,32 @@ class Convolution2D(Layer):
                            // scale the learning rate when updating parameters.
             w_wd = (float) // weight decay multiplier for weight, used to
                            // scale the weight decay when updating parameters.
-            b_lr = (float) // learning rate multiplier for bias 
+            b_lr = (float) // learning rate multiplier for bias
             b_wd = (float) // weight decay multiplier for bias
         '''
 
         assert nb_filter > 0, 'nb_filter should be set as positive int'
         super(Convolution2D, self).__init__(name=generate_name('conv', 1),
-                                            type=kCConvolution)
+                                            type=kCConvolution, **kwargs)
         fields = {"num_filters":nb_filter}
         # for kernel
         if type(kernel) == int:
-          fields['kernel'] = kernel
+            fields['kernel'] = kernel
         else:
-          fields['kernel_x'] = kernel[0]
-          fields['kernel_y'] = kernel[1]
-        # for stride 
+            fields['kernel_x'] = kernel[0]
+            fields['kernel_y'] = kernel[1]
+        # for stride
         if type(stride) == int:
-          fields['stride'] = stride
+            fields['stride'] = stride
         else:
-          fields['stride_x'] = stride[0]
-          fields['stride_y'] = stride[1]
-        # for pad 
+            fields['stride_x'] = stride[0]
+            fields['stride_y'] = stride[1]
+        # for pad
         if type(pad) == int:
-          fields['pad'] = pad 
+            fields['pad'] = pad
         else:
-          fields['pad_x'] = pad[0]
-          fields['pad_y'] = pad[1]
+            fields['pad_x'] = pad[0]
+            fields['pad_y'] = pad[1]
 
         setval(self.layer.convolution_conf, **fields)
 
@@ -154,6 +462,7 @@ class Convolution2D(Layer):
         # following layers: e.g., activation, dropout, etc.
         if activation:
             self.mask = Activation(activation=activation).layer
+
 
 class MaxPooling2D(Layer):
 
@@ -218,31 +527,53 @@ class LRN2D(Layer):
           size = (int)  // local size
         '''
 
-        super(LRN2D, self).__init__(name=generate_name('norm'), type=kLRN)
+        super(LRN2D, self).__init__(name=generate_name('norm'), type=kLRN, **kwargs)
         # required
         assert size != 0, 'local size should be set'
         self.layer.lrn_conf.local_size = size
         init_values = get_init_values('lrn2d', **kwargs)
         setval(self.layer.lrn_conf, **init_values)
 
+class Loss(Layer):
+
+    def __init__(self, lossname, topk=1, **kwargs):
+        '''
+        required
+          lossname = (string) // softmaxloss, euclideanloss
+        '''
+        self.layer_type = enumLayerType(lossname)
+        super(Loss, self).__init__(name=generate_name(lossname),
+                                         type=self.layer_type, **kwargs)
+        if lossname == 'softmaxloss':
+            self.layer.softmaxloss_conf.topk = topk
 
 class Activation(Layer):
 
-    def __init__(self, activation='stanh', topk=1):
+    def __init__(self, activation='stanh', **kwargs):
         '''
         required
-          activation = (string)
-        optional
-          topk       = (int)  // the number of results
+          activation = (string) // relu, sigmoid, tanh, stanh, softmax.
         '''
+        if activation == 'tanh':
+            print 'Warning: Tanh layer is not supported for CPU'
 
         self.name = activation
-        if activation == 'tanh': activation = 'stanh' # <-- better way to set?
-        self.layer_type = enumLayerType(activation)
+        self.layer_type = kActivation
+        if activation == 'stanh':
+            self.layer_type = kSTanh
+        elif activation == 'softmax':
+            self.layer_type = kSoftmax
         super(Activation, self).__init__(name=generate_name(self.name),
-                                         type=self.layer_type)
-        if activation == 'softmaxloss':
-            self.layer.softmaxloss_conf.topk = topk
+                                         type=self.layer_type, **kwargs)
+        if activation == 'relu':
+            self.layer.activation_conf.type = RELU
+        elif activation == 'sigmoid':
+            self.layer.activation_conf.type = SIGMOID
+        elif activation == 'tanh':
+            self.layer.activation_conf.type = TANH # for GPU
+        #elif activation == 'stanh':
+        #    self.layer.activation_conf.type = STANH
+
 
 class Dropout(Layer):
 
@@ -255,19 +586,19 @@ class Dropout(Layer):
         self.name = 'dropout'
         self.layer_type = enumLayerType(self.name)
         super(Dropout, self).__init__(name=generate_name(self.name),
-                                      type=self.layer_type)
+                                      type=self.layer_type, **kwargs)
         self.layer.dropout_conf.dropout_ratio = ratio
 
 class Accuracy(Layer):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         '''
         '''
 
         self.name = 'accuracy'
         self.layer_type = enumLayerType(self.name)
         super(Accuracy, self).__init__(name=generate_name(self.name),
-                                       type=self.layer_type)
+                                       type=self.layer_type, **kwargs)
 
 class RGB(Layer):
 
@@ -302,7 +633,7 @@ class Dense(Layer):
                            // scale the learning rate when updating parameters.
             w_wd = (float) // weight decay multiplier for weight, used to
                            // scale the weight decay when updating parameters.
-            b_lr = (float) // learning rate multiplier for bias 
+            b_lr = (float) // learning rate multiplier for bias
             b_wd = (float) // weight decay multiplier for bias
         '''
         # required
@@ -344,7 +675,7 @@ class Autoencoder(object):
         required
           hid_dim     = (int/list) // the number of nodes in hidden layers
           out_dim     = (int)      // the number of nodes in the top layer
-        optional 
+        optional
           activation  = (string)
           param_share = (bool)     // to share params in encoder and decoder
         '''
@@ -383,7 +714,8 @@ class RBM(Layer):
         self.name = kwargs['name'] if 'name' in kwargs else 'RBMVis'
         self.layer_type = kwargs['type'] if 'type' in kwargs else kRBMVis
         super(RBM, self).__init__(name=generate_name(self.name,
-                                  withnumber=False), type=self.layer_type)
+                                                     withnumber=False),
+                                  type=self.layer_type, **kwargs)
         setval(self.layer.rbm_conf, hdim=self.out_dim[-1])
         if self.layer_type == kRBMHid and sampling != None:
             if sampling == 'gaussian':

@@ -200,6 +200,8 @@ class RNNLabelLayer : public InputLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers);
   void ComputeFeature(int flag, const vector<Layer*>& srclayers);
 };
+
+
 /****************Deprecated layers******************/
 /**
  * @deprecated please use the StoreInputLayer.

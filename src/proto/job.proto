@@ -676,6 +676,7 @@ enum LayerType {
   kSoftmax = 214;
   kGRU = 215;
   kEmbedding = 216;
+  kActivation = 217;
 
   // cudnn v3
   kCudnnConv = 250;

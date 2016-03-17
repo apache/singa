@@ -83,5 +83,7 @@ void InnerProductLayer::ComputeGradient(int flag,
     else
       MMDot(grad_, weight_->data(), srclayers[0]->mutable_grad(this));
   }
+  //clee auto w = weight_->mutable_cpu_data();
+  //LOG(ERROR) << srclayers[0]->name() << " " << w[0];
 }
 }  // namespace singa

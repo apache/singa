@@ -107,9 +107,9 @@ class Model(object):
             else:
                 # add new layer
                 if loss == 'categorical_crossentropy':
-                    self.add(Activation('softmaxloss', topk=topk))
+                    self.add(Loss('softmaxloss', topk=topk))
                 elif loss == 'mean_squared_error':
-                    self.add(Activation('euclideanloss'))
+                    self.add(Loss('euclideanloss'))
                 elif loss == 'user_loss_rnnlm': # user-defined loss layer
                     self.add(UserLossRNNLM(nclass=kwargs['nclass'],
                                            vocab_size=kwargs['in_dim']))
@@ -323,16 +323,39 @@ class Model(object):
             elif ly_type == kLRN: cudnn_ly_type = kCudnnLRN
             elif ly_type == kSoftmax: cudnn_ly_type = kCudnnSoftmax
             elif ly_type == kSoftmaxLoss: cudnn_ly_type = kCudnnSoftmaxLoss
+            elif ly_type == kActivation:
+                cudnn_ly_type = kCudnnActivation
             elif ly_type == kSTanh:
-                cudnn_ly_type = kCudnnActivation
-                net.layer[i].activation_conf.type = STANH
-            elif ly_type == kSigmoid:
-                cudnn_ly_type = kCudnnActivation
-                net.layer[i].activation_conf.type = SIGMOID
+                print 'Error report: STanh layer is not supported for GPU'
+            '''
             elif ly_type == kReLU:
                 cudnn_ly_type = kCudnnActivation
                 net.layer[i].activation_conf.type = RELU
+            elif ly_type == kSigmoid:
+                cudnn_ly_type = kCudnnActivation
+                net.layer[i].activation_conf.type = SIGMOID
+            elif ly_type == kTanh:
+                cudnn_ly_type = kCudnnActivation
+                net.layer[i].activation_conf.type = TANH
+            '''
+            #elif ly_type == kSTanh:
+            #    print 'Error report: STanh layer is not supported for GPU'
+                #cudnn_ly_type = kCudnnActivation
+                #net.layer[i].activation_conf.type = STANH
             net.layer[i].type = cudnn_ly_type
+
+    def show(self):
+        for ly in self.jobconf.neuralnet.layer:
+            print layer(ly.name)
+
+    def layer_by_id(self, k):
+        return self.jobconf.neuralnet.layer[k]
+
+    def layer_by_name(self, name):
+        return self.layers[k]
+
+    def size(self):
+        return len(self.jobconf.neuralnet.layer)
 
 class Energy(Model):
     ''' energy model
@@ -626,4 +649,52 @@ def SingaRun_script(filename='', execpath=''):
 
     #TODO better format to store the result??
     return resultDic
+
+def load_model_parameter(fin, neuralnet, batchsize=1, data_shape=None):
+    """
+    this method loads model parameter
+    """
+    hly_idx = 0
+    for i in range(len(neuralnet)): 
+        if neuralnet[i].is_datalayer:
+            if data_shape == None:
+                shape = neuralnet[i].shape
+                shape[0] = batchsize
+                neuralnet[i].setup(shape)
+            else:
+                neuralnet[i].setup(data_shape)
+        else:
+            hly_idx = i
+            break
+
+    net = layerVector(len(neuralnet)-hly_idx)
+    for i in range(hly_idx, len(neuralnet)): 
+        if neuralnet[i].src==None:
+            neuralnet[i].setup(neuralnet[i-1])
+        else:
+            neuralnet[i].setup(neuralnet[i].src)
+        net[i-hly_idx] = neuralnet[i].singalayer
+
+    from singa.driver import Worker
+    alg = Algorithm(type=enumAlgType('bp')).proto
+    w = Worker.CreateWorker(alg.SerializeToString())
+    w.InitNetParams(fin, net)
+
+def save_model_parameter(step, fout, neuralnet):
+    """
+    this method saves model parameter
+    """
+    hly_idx = 0
+    for i in range(len(neuralnet)): 
+        if not neuralnet[i].is_datalayer:
+            hly_idx = i
+            break
+
+    from singa.driver import Worker
+    net = layerVector(len(neuralnet)-hly_idx)
+    for i in range(hly_idx, len(neuralnet)): 
+        net[i-hly_idx] = neuralnet[i].singalayer
+    alg = Algorithm(type=enumAlgType('bp')).proto
+    w = Worker.CreateWorker(alg.SerializeToString())
+    w.Checkpoint(step, fout, net)
 

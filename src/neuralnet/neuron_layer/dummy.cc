@@ -27,6 +27,13 @@
 
 namespace singa {
 
+void DummyLayer::Setup(const std::string str,
+                       const vector<Layer*>& srclayers) {
+  LayerProto conf;
+  conf.ParseFromString(str);
+  DummyLayer::Setup(conf, srclayers);
+}
+
 void DummyLayer::Setup(const LayerProto& proto,
                        const vector<Layer*>& srclayers) {
   NeuronLayer::Setup(proto, srclayers);
@@ -69,6 +76,27 @@ void DummyLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   }
   if (srclayers.size() > 0)
     Copy(grad_, srclayers[0]->mutable_grad(this));
+}
+
+void DummyLayer::Feed(int batchsize, vector<float>& data, int is_aux){
+
+    batchsize_ = batchsize;
+    // input data
+    if (is_aux == 0) {
+      int size = data.size();
+      float* ptr = data_.mutable_cpu_data();
+      for (int i = 0; i< size; i++) { 
+          ptr[i] = data.at(i);
+      }
+    }
+    // label
+    else {
+      aux_data_.resize(batchsize_);
+      for (int i = 0; i< batchsize_; i++) {
+          aux_data_[i] = static_cast<int>(data.at(i));
+      }
+    }
+    return;
 }
 
 }  // namespace singa

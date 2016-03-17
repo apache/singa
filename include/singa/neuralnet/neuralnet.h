@@ -58,6 +58,13 @@ class NeuralNet {
   static NeuralNet* Create(const NetProto& net_conf, Phase phase,
                            int npartitions);
 
+  /**
+   * Create for python binding, production test mode
+   *
+   */
+  static NeuralNet* CreateNeuralNet(const string str);
+  NeuralNet() {};
+  
   static const NetProto Unrolling(const NetProto& net_conf);
   /**
    * construct the net structure from protocol buffer.

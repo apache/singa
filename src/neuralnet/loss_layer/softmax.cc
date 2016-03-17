@@ -98,6 +98,7 @@ void SoftmaxLossLayer::ComputeGradient(int flag,
   Tensor<cpu, 1> gsrc(gsrcptr, Shape1(gsrcblob->count()));
   gsrc *= scale_ / (1.0f * batchsize_);
 }
+
 const std::string SoftmaxLossLayer::ToString(bool debug, int flag) {
   if (debug)
     return Layer::ToString(debug, flag);

@@ -22,10 +22,13 @@
 #ifndef SINGA_UTILS_UPDATER_H_
 #define SINGA_UTILS_UPDATER_H_
 
+#include <string>
 #include "singa/proto/job.pb.h"
 #include "singa/utils/param.h"
+#include "singa/neuralnet/layer.h"
 
 namespace singa {
+using std::string;
 /**
  * Base learning rate generator.
  *
@@ -87,6 +90,11 @@ class InvTLRGen : public LRGenerator {
  */
 class Updater {
  public:
+
+  /* added for python binding */
+  static Updater* CreateUpdater(const string str);
+  /* ------------------------ */
+
   static Updater* Create(const UpdaterProto& proto);
 
   virtual ~Updater() {}

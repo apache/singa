@@ -19,7 +19,11 @@
 *
 *************************************************************/
 
+#include "singa/worker.h"
 #include "singa/neuralnet/layer.h"
+#include "singa/neuralnet/input_layer.h"
+#include "singa/neuralnet/neuron_layer.h"
+#include "singa/neuralnet/loss_layer.h"
 
 #include <cblas.h>
 #include <glog/logging.h>
@@ -32,6 +36,20 @@
 namespace singa {
 
 using std::string;
+
+void Layer::SetupLayer(Layer* layer, const string str, const vector<Layer*>& srclayers) {
+  LayerProto layer_conf;
+  layer_conf.ParseFromString(str);
+  layer->Setup(layer_conf, srclayers);
+  for (auto param : layer->GetParams())
+      param->InitValues();
+}
+
+Layer* Layer::CreateLayer(const string str) {
+  LayerProto layer_conf;
+  layer_conf.ParseFromString(str);
+  return Layer::Create(layer_conf);
+}
 
 Layer* Layer::Create(const LayerProto& proto) {
   auto* factory = Singleton<Factory<Layer>>::Instance();

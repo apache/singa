@@ -155,6 +155,7 @@ class Param {
    * Init param values from checkpoint blob.
    */
   void FromProto(const BlobProto& blob);
+  void FromProto(const std::string str);
   /**
    * Dump param values to blob.
    */
@@ -211,6 +212,7 @@ class Param {
    /**
     * @return num of parameters in this Param obj.
     */
+  inline const std::vector<int>& shape() const { return data_.shape(); }
   inline int size() const { return data_.count(); }
   inline const Blob<float>& data() const { return data_; }
   inline Blob<float>* mutable_data() { return &data_; }

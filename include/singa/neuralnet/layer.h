@@ -57,6 +57,7 @@ inline const string AddPrefixSuffix(int unroll_idx, int partition_idx,
  * Layer::ComputeFeature() and Layer::ComputGradient()
  * functions in accordance with the NeuralNet::TrainOneBatch function.
  */
+
 class Layer {
  public:
   /**
@@ -69,6 +70,14 @@ class Layer {
 
   Layer() {}
   virtual ~Layer() {}
+
+  /**
+   * Create for python binding, production test mode
+   *
+   */
+  static Layer* CreateLayer(const string str);
+  static void SetupLayer(Layer* layer, const string str, const vector<Layer*>& srclayers);
+
   /**
    * Setup layer properties.
    *
@@ -84,6 +93,8 @@ class Layer {
     datavec_.push_back(&data_);
     gradvec_.push_back(&grad_);
   }
+
+
   /**
    * Compute features of this layer based on connected layers.
    *
@@ -108,6 +119,7 @@ class Layer {
   virtual const std::vector<Param*> GetParams() const {
     return std::vector<Param*> {};
   }
+  virtual void SetParams(std::vector<Param*>) {}
   /**
    * Return the connection type between one neuron of this layer and its source
    * layer.

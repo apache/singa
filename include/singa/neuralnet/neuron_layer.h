@@ -122,13 +122,17 @@ class DropoutLayer : public NeuronLayer {
  */
 class DummyLayer: public NeuronLayer {
  public:
+  void Setup(const std::string str, const vector<Layer*>& srclayers);
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+  void Feed(int batchsize, vector<float>& data, int is_aux);
+  Layer* ToLayer() { return this;}
 
  private:
   bool input_ = false;  // use as input layer
   bool output_ = false;  // use as output layer
+  int batchsize_ = 1;  // use for input layer
 };
 
 /**
@@ -222,6 +226,11 @@ class InnerProductLayer : public NeuronLayer {
   const std::vector<Param*> GetParams() const override {
     std::vector<Param*> params{weight_, bias_};
     return params;
+  }
+
+  void SetParams(std::vector<Param*> params) {
+    weight_ = params.at(0);
+    bias_ = params.at(1);
   }
 
  private:

@@ -61,6 +61,7 @@ class Worker {
    *
    * @return a pointer to the instance of the Worker subclass.
    */
+  static Worker* CreateWorker(const std::string str);
   static Worker* Create(const AlgProto& conf);
   virtual ~Worker();
   /**
@@ -129,6 +130,7 @@ class Worker {
    * initialized.
    */
   void InitNetParams(const JobProto& job_conf, NeuralNet* net);
+  void InitNetParams(const std::string& folder, vector<Layer*> net);
   /**
    * Checkpoint all Param objects owned by the worker onto disk.
    * The serialization is done using BlobProtos which includes the name, version
@@ -140,6 +142,7 @@ class Worker {
    * @param net the training net whose Param objects will be dumped.
    */
   void Checkpoint(int step, const std::string& folder, NeuralNet* net);
+  void Checkpoint(int step, const std::string& folder, vector<Layer*> net);
   /**
     * Train one mini-batch.
     * Test/Validation is done before training.

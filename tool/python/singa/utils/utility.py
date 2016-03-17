@@ -25,6 +25,7 @@
 This script includes methods to
 (1) generate name of layer, parameter, etc.
 (2) set field values for proto.
+(3) swap bits
 '''
 
 LAYERID = 0
@@ -82,3 +83,9 @@ def setval(proto, **kwargs):
                     fattr.MergeFrom(val)
                 else:
                     setattr(proto, key, val)
+
+def swap32(x):
+    return (((x << 24) & 0xFF000000) |
+            ((x <<  8) & 0x00FF0000) |
+            ((x >>  8) & 0x0000FF00) |
+            ((x >> 24) & 0x000000FF))

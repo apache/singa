@@ -199,6 +199,12 @@ void Param::ShareFrom(Param* other) {
   grad_.ShareData(&(other->grad_), false);
 }
 
+void Param::FromProto(const string str) {
+  BlobProto blob;
+  blob.ParseFromString(str);
+  data_.FromProto(blob);
+}
+
 void Param::FromProto(const BlobProto& blob) {
   data_.FromProto(blob);
 }

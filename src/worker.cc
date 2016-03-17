@@ -35,6 +35,12 @@ namespace singa {
 
 using std::string;
 
+Worker* Worker::CreateWorker(const string str) {
+  AlgProto alg_proto;
+  alg_proto.ParseFromString(str);
+  return Worker::Create(alg_proto);
+}
+
 Worker* Worker::Create(const AlgProto& conf) {
   auto factory = Singleton<Factory<singa::Worker>>::Instance();
   Worker* worker = nullptr;
@@ -154,6 +160,23 @@ void Worker::InitSockets(const NeuralNet* net) {
   }
 }
 
+void Worker::InitNetParams(const std::string& folder, vector<Layer*> net) {
+
+    std::unordered_map<string, Param*> name2param;
+    for (auto layer : net) {
+        for (auto param : layer->GetParams()) {
+          // only owners fill the memory of parameter values.
+          //if (param->owner() == param->id()) {
+            CHECK(name2param.find(param->name()) == name2param.end());
+            name2param[param->name()] = param;
+          //}
+        }
+    }
+    vector<string> paths;
+    paths.push_back(folder);
+    NeuralNet::Load(paths, name2param);
+}
+
 void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
   // for each server grp, its first subscriber worker grp does the param init
   if (grp_id_ % Cluster::Get()->nworker_groups_per_server_group() == 0) {
@@ -207,6 +230,27 @@ void Worker::InitNetParams(const JobProto& job_conf, NeuralNet* net) {
       for (auto param : layer->GetParams())
         Get(job_conf.warmup_steps(), param);
   }
+}
+
+void Worker::Checkpoint(int step, const std::string& folder, vector<Layer*> net) {
+  BlobProtos bps;
+  for (auto layer : net) {
+    //if (layer->partition_id() == id_) {
+      for (auto param : layer->GetParams()) {
+        // only owners fill the memory of parameter values.
+        //if (param->owner() == param->id()) {
+          auto *blob = bps.add_blob();
+          param->ToProto(blob);
+          bps.add_version(param->version());
+          bps.add_name(param->name());
+        //}
+      }
+    //}
+  }
+  char buf[256];
+  snprintf(buf, sizeof(buf), "%s/step%d-worker0", folder.c_str(), step);
+  LOG(INFO) << "checkpoint to " << buf;
+  WriteProtoToBinaryFile(bps, buf);
 }
 
 void Worker::Checkpoint(int step, const std::string& folder, NeuralNet* net) {
