@@ -258,7 +258,7 @@ void OuterProduct(const Blob<Dtype>& A, const Blob<Dtype>& B, Blob<Dtype> * C) {
   } else {
 #ifdef USE_GPU
     gpu_gemm(context->cublas_handle(device), A.gpu_data(), B.gpu_data(),
-        m, n, 1, 1, 0, false, false, C->mutable_gpu_data());
+        m, n, 1, Dtype(1), Dtype(0), false, false, C->mutable_gpu_data());
 #else
     NO_GPU;
 #endif  // USE_GPU
@@ -321,7 +321,7 @@ void Map(Dtype alpha, const Blob<Dtype>& A, Blob<Dtype>* B) {
     cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    gpu_e_f<Op>(A.count(), A.gpu_data(), alpha, B->mutable_gpu_data());
+    gpu_e_f<Op>(A.count(), alpha, A.gpu_data(), B->mutable_gpu_data());
 #else
     NO_GPU;
 #endif  // USE_GPU
@@ -491,8 +491,8 @@ void MVAddCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
           B->mutable_cpu_data());
     } else {
 #ifdef USE_GPU
-      singa_gpu_add_vec_row(A.gpu_data(), B->gpu_data(), B->mutable_gpu_data(),
-          m, n, n);
+      gpu_gemm(context->cublas_handle(device), A.gpu_data(), one.gpu_data(), m, n, 1,
+		  alpha, beta, false, false, B->mutable_gpu_data());
 #else
       NO_GPU;
 #endif  // USE_GPU

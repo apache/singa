@@ -234,13 +234,13 @@ void gpu_e_f(const int n, const Dtype * A, const Dtype * B, Dtype * C) {
 }
 
 template<typename Op, typename Dtype>
-void gpu_e_f(const int n, const Dtype * A, const Dtype alpha, Dtype * B) {
+void gpu_e_f(const int n, const Dtype alpha, const Dtype * A, Dtype * B) {
   Op::CudaMap(alpha, A, B, n);
 }
 
 template<typename Op, typename Dtype>
-void gpu_e_f(const int n, const Dtype * A, const Dtype * B,
-    const Dtype alpha, const Dtype beta, Dtype * C) {
+void gpu_e_f(const int n, const Dtype alpha, const Dtype beta,
+	const Dtype * A, const Dtype * B, Dtype * C) {
   Op::CudaMap(alpha, beta, A, B, C, n);
 }
 // element-wise generalized operation defined in Op
