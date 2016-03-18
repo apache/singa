@@ -376,7 +376,6 @@ class SingaScheduler: public mesos::Scheduler {
 
 int main(int argc, char** argv) {
   FLAGS_logtostderr = 1;
-  google::InitGoogleLogging(argv[0]); 
   int status = mesos::DRIVER_RUNNING;
   SingaScheduler *scheduler;
   if (!(argc == 2 || argc == 4 || argc == 6)) {
