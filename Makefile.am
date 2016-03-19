@@ -332,7 +332,9 @@ libsingagpu.so: $(CUDA_OBJS)
 # Create python class files
 install-pyLTLIBRARIES: $(py_LTLIBRARIES)
 	touch tool/python/singa/__init__.py
-	cp -f .libs/_driver.so tool/python/singa/
+	@if [ -f ".libs/_driver.so" ]; then \
+	  cp -f .libs/_driver.so tool/python/singa/;\
+	fi
 
 uninstall-pyLTLIBRARIES:
 	rm -f tool/python/singa/__init__.py
