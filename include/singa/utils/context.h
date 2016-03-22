@@ -133,9 +133,6 @@ class Context {
   void SetupDevice(const std::thread::id& tid, const int did, const int seed) {
     device_id_[tid] = did;
     seed_[tid] = seed;
-    
-    if (did > -1 )
-      ActivateDevice(did);
   }
 
   /**

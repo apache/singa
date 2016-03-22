@@ -48,11 +48,7 @@ Worker* Worker::Create(const AlgProto& conf, int grp_id, int dev_id, int dev_typ
 
 void Worker::Setup(const JobProto& job_conf) {
 
-  LOG(ERROR) << "Setting up worker.";
-
   auto cluster = Cluster::Get();
-  auto context = Singleton<Context>::Instance();
-  context->SetupDevice(std::this_thread::get_id(), this->device_type_);
 
   int grp_size = cluster->nworkers_per_group();
   int nservers_per_grp = cluster->nservers_per_group();
@@ -91,7 +87,6 @@ void Worker::Setup(const JobProto& job_conf) {
 
   this->job_conf_ = job_conf;
   this->bridge_dealer_ = dealer_ = nullptr;
-  LOG(ERROR) << "Done setting up worker.";
 }
 
 Worker::~Worker() {
@@ -101,7 +96,12 @@ Worker::~Worker() {
 
 void Worker::Run() {
   auto context = Singleton<Context>::Instance();
-  context->SetupDevice(std::this_thread::get_id(), this->dev_type());
+  LOG(ERROR) << "Thread ID: " << std::this_thread::get_id() << " Type: " << this->dev_type()
+    << " Map: " << context->device_id(std::this_thread::get_id());
+  if (this->dev_type() > -1) {
+    LOG(ERROR) << "Activating device.";
+    context->ActivateDevice(this->dev_type());
+  }
 
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
     << " start on " << (device_type_ >= 0 ? "GPU " + std::to_string(device_type_) : "CPU");
