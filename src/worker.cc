@@ -100,8 +100,8 @@ Worker::~Worker() {
 }
 
 void Worker::Run() {
-  //auto context = Singleton<Context>::Instance();
-  //context->SetupDevice(std::this_thread::get_id(), this->device_id_);
+  auto context = Singleton<Context>::Instance();
+  context->SetupDevice(std::this_thread::get_id(), this->dev_type());
 
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
     << " start on " << (device_type_ >= 0 ? "GPU " + std::to_string(device_type_) : "CPU");
