@@ -22,8 +22,6 @@
 #include "singa/worker.h"
 
 #include <glog/logging.h>
-#include <chrono>
-#include <thread>
 #include <typeinfo>
 #include "singa/utils/cluster.h"
 #include "singa/utils/factory.h"
@@ -35,25 +33,60 @@ namespace singa {
 
 using std::string;
 
-Worker* Worker::Create(const AlgProto& conf) {
+Worker* Worker::Create(const AlgProto& conf, int grp_id, int dev_id, int dev_type) {
   auto factory = Singleton<Factory<singa::Worker>>::Instance();
   Worker* worker = nullptr;
   if (conf.has_user_alg())
     worker = factory->Create(conf.user_alg());
   else
     worker = factory->Create(conf.alg());
+  worker->grp_id(grp_id);
+  worker->dev_id(dev_id);
+  worker->dev_type(dev_type);
   return worker;
 }
 
-void Worker::Setup(int grp_id, int id, const JobProto& conf,
-    NeuralNet* train_net, NeuralNet* val_net, NeuralNet* test_net) {
-  grp_id_ = grp_id;
-  id_ = id;
-  job_conf_ = conf;
-  train_net_ = train_net;
-  val_net_ = val_net;
-  test_net_ = test_net;
-  bridge_dealer_ = dealer_ = nullptr;
+void Worker::Setup(const JobProto& job_conf) {
+
+  auto cluster = Cluster::Get();
+
+  int grp_size = cluster->nworkers_per_group();
+  int nservers_per_grp = cluster->nservers_per_group();
+  int nserver_grps = cluster->nserver_groups();
+
+  this->train_net_ = NeuralNet::Create(job_conf.neuralnet(), kTrain, grp_size);
+  this->test_net_ = nullptr;
+  this->val_net_ = nullptr;
+
+  int lcm = LeastCommonMultiple(nserver_grps, nservers_per_grp);
+
+  const vector<int> rng = cluster->ExecutorRng(cluster->procs_id(),
+      cluster->nworkers_per_group(), cluster->nworkers_per_procs());
+
+  if (this->grp_id_ == rng[0]) {
+    Param::SliceParams(lcm, this->train_net_->params());
+
+    if (this->grp_id_ == 0 && this->id_ == 0) {
+      if (job_conf.test_steps() > 0) {
+        this->test_net_ = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
+        this->test_net_->ShareParamsFrom(this->train_net_, false);
+      }
+
+      if (job_conf.validate_steps() > 0) {
+        this->val_net_ = NeuralNet::Create(job_conf.neuralnet(), kVal, 1);
+        this->val_net_->ShareParamsFrom(this->train_net_, false);
+      }
+    }
+  } else {
+    if (cluster->share_memory()) {
+      this->train_net_->ShareParamsFrom(this->train_net_, true);
+    } else {
+      Param::SliceParams(lcm, this->train_net_->params());
+    }
+  }
+
+  this->job_conf_ = job_conf;
+  this->bridge_dealer_ = dealer_ = nullptr;
 }
 
 Worker::~Worker() {
@@ -62,13 +95,16 @@ Worker::~Worker() {
 }
 
 void Worker::Run() {
-  // setup gpu device
   auto context = Singleton<Context>::Instance();
-  int device = context->device_id(std::this_thread::get_id());
+  LOG(ERROR) << "Thread ID: " << std::this_thread::get_id() << " Type: " << this->dev_type()
+    << " Map: " << context->device_id(std::this_thread::get_id());
+  if (this->dev_type() > -1) {
+    LOG(ERROR) << "Activating device.";
+    context->ActivateDevice(this->dev_type());
+  }
+
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
-    << " start on " << (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
-  if (device >= 0)
-    context->ActivateDevice(device);
+    << " start on " << (device_type_ >= 0 ? "GPU " + std::to_string(device_type_) : "CPU");
 
   auto cluster = Cluster::Get();
   int svr_grp = grp_id_ / cluster->nworker_groups_per_server_group();

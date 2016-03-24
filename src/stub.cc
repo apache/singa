@@ -66,7 +66,7 @@ const std::unordered_map<int, ParamEntry*>  CreateParamShard(
   // grp id -> worker id range
   std::unordered_map<int, std::pair<int, int>> grp2workers;
   for (auto worker : workers) {
-    int grp = worker->grp_id(), id = worker->id();
+    int grp = worker->grp_id(), id = worker->dev_id();
     if (grp2net.find(grp) == grp2net.end()) {
       grp2net[grp] = worker->train_net();
       grp2workers[grp] = std::make_pair(id, id + 1);

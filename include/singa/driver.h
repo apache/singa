@@ -18,8 +18,8 @@
 * under the License.
 *
 *************************************************************/
-#ifndef SINGA_SINGA_DRIVER_H_
-#define SINGA_SINGA_DRIVER_H_
+#ifndef SINGA_DRIVER_H_
+#define SINGA_DRIVER_H_
 
 #include <vector>
 #include "singa/proto/job.pb.h"
@@ -74,7 +74,7 @@ class Driver {
    * files.
    * @param[in] str serialized string recorded job configuration.
    */
-  void Train(bool resume, const std::string str); 
+  void Train(bool resume, const std::string str);
   /**
    * Create workers and servers to conduct the training.
    *
@@ -125,7 +125,8 @@ class Driver {
    * @param[in] net training neural network.
    * @return worker instances
    */
-  const vector<Worker*> CreateWorkers(const JobProto& job_conf, NeuralNet* net);
+//  const vector<Worker*> CreateWorkers(const JobProto& job_conf, NeuralNet* net);
+  const vector<Worker*> CreateWorkers(const JobProto& job_conf);
 
 
   /*********** Subclasses registers *************************/
@@ -259,4 +260,4 @@ int Driver::RegisterWorker(const Type& type) {
 
 }  // namespace singa
 
-#endif  // SINGA_SINGA_DRIVER_H_
+#endif  // SINGA_DRIVER_H_

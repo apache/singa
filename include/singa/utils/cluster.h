@@ -53,6 +53,7 @@ class Cluster {
   inline int nservers_per_group() const { return cluster_.nservers_per_group();}
   inline int nworkers_per_procs() const { return cluster_.nworkers_per_procs();}
   inline int nservers_per_procs() const { return cluster_.nservers_per_procs();}
+  inline int ngpu_per_group() const { return cluster_.ngpu_per_group();}
   inline int nworker_groups_per_server_group() const {
     if (nserver_groups() == 0 || nservers_per_group() == 0)
       return 1;

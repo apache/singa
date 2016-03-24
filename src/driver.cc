@@ -30,6 +30,7 @@
 #include "singa/utils/tinydir.h"
 #include "singa/utils/cluster.h"
 #include "singa/utils/context.h"
+#include "singa/utils/threadpool.h"
 #include "singa/proto/job.pb.h"
 #include "singa/server.h"
 #include "singa/stub.h"
@@ -164,6 +165,9 @@ void Driver::InitLog(char* arg) {
     google::InitGoogleLogging(arg);
 }
 
+//////////
+// TRAIN
+//////////
 void Driver::Train(bool resume, const std::string str) {
   JobProto job_conf;
   job_conf.ParseFromString(str);
@@ -177,9 +181,9 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
   Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
   tinydir_dir workspace;
   if (tinydir_open(&workspace, job_conf.cluster().workspace().c_str()) == -1)
-    LOG(FATAL) << "workspace not exist: " << job_conf.cluster().workspace();
+    LOG(FATAL) << "Workspace does not exist: " << job_conf.cluster().workspace();
   if (job_conf.num_openblas_threads() != 1)
-    LOG(WARNING) << "openblas luanches "
+    LOG(WARNING) << "Openblas launched "
                  << job_conf.num_openblas_threads() << " threads";
   openblas_set_num_threads(job_conf.num_openblas_threads());
 
@@ -191,30 +195,12 @@ void Driver::Train(bool resume, const JobProto& job_conf) {
   Train(job);
 }
 
-void Driver::Test(const std::string str) {
-  JobProto job_conf;
-  job_conf.ParseFromString(str);
-  Test(job_conf);
-}
-
-void Driver::Test(const JobProto& job_conf) {
-  Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
-  Cluster::Get()->Register(getpid(), "localhost");
-  // TODO(wangwei) extend to a group with multiple workers
-  auto worker = Worker::Create(job_conf.train_one_batch());
-  worker->Setup(0, 0, job_conf, nullptr, nullptr, nullptr);
-  auto net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
-  WriteStringToTextFile(Cluster::Get()->vis_folder() + "/test_net.json",
-      net->ToGraph(true).ToJson());
-  vector<string> paths;
-  for (const auto& p : job_conf.checkpoint_path())
-    paths.push_back(p);
-  net->Load(paths);
-  worker->Test(job_conf.test_steps(), kTest,  net);
-}
-
 void Driver::Train(const JobProto& job_conf) {
   auto cluster = Cluster::Get();
+
+  Threadpool threadpool(cluster->nserver_groups() * cluster->nservers_per_group()
+    + cluster->nworker_groups() * cluster->nworkers_per_group());
+
   int nserver_grps = cluster->nserver_groups();
   int grp_size = cluster->nworkers_per_group();
   Stub stub;
@@ -229,7 +215,8 @@ void Driver::Train(const JobProto& job_conf) {
   NeuralNet* net = NeuralNet::Create(job_conf.neuralnet(), kTrain, grp_size);
   WriteStringToTextFile(cluster->vis_folder() + "/train_net.json",
       net->ToGraph(true).ToJson());
-  const vector<Worker*> workers = CreateWorkers(job_conf, net);
+//  const vector<Worker*> workers = CreateWorkers(job_conf, net);
+  const vector<Worker*> workers = CreateWorkers(job_conf);
   const vector<Server*> servers = CreateServers(job_conf, net);
 
 #ifdef USE_MPI
@@ -238,30 +225,25 @@ void Driver::Train(const JobProto& job_conf) {
     MPIQueues.push_back(make_shared<SafeQueue>());
 #endif
 
-  vector<std::thread> threads;
+  // Setup the workers
+  for (auto worker: workers)
+    worker->Setup(job_conf);
+
+  // Actual running
   for (auto server : servers)
-    threads.push_back(std::thread(&Server::Run, server));
-  int gpu = 0;
-  auto context = Singleton<Context>::Instance();
-  // CHECK_LE(workers.size(), job_conf.gpu_size());
-  for (auto worker : workers) {
-    threads.push_back(std::thread(&Worker::Run, worker));
-    int device_id  = -1;
-    if (gpu < job_conf.gpu_size()) {
-      device_id = job_conf.gpu(gpu++);
-    }
-    context->SetupDevice(threads.back().get_id(), device_id);
-  }
+    threadpool.enqueue(&Server::Run, server);
+  for (auto worker : workers)
+    threadpool.enqueue(&Worker::Run, worker);
+
   if (grp_size > 1 || nserver_grps > 0) {
     int nservers_per_grp = cluster->nservers_per_group();
     int lcm = LeastCommonMultiple(nservers_per_grp, nserver_grps);
     auto slices = Param::ComputeSlices(lcm, net->params());
     auto slice2server = PartitionSlices(nservers_per_grp, slices);
+
     stub.Run(slice2server, workers, servers);
   }
 
-  for (auto& thread : threads)
-    thread.join();
   for (auto server : servers)
     delete server;
   delete net;
@@ -274,6 +256,34 @@ void Driver::Train(const JobProto& job_conf) {
     }
     delete worker;
   }
+}
+
+//////////
+// TEST
+//////////
+void Driver::Test(const std::string str) {
+  JobProto job_conf;
+  job_conf.ParseFromString(str);
+  Test(job_conf);
+}
+
+void Driver::Test(const JobProto& job_conf) {
+  Cluster::Setup(job_id_, singa_conf_, job_conf.cluster());
+  Cluster::Get()->Register(getpid(), "localhost");
+
+  // TODO(wangwei) extend to a group with multiple workers
+  auto worker = Worker::Create(job_conf.train_one_batch(), 0, 0, -1);
+  worker->Setup(job_conf);
+
+  auto net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
+  WriteStringToTextFile(Cluster::Get()->vis_folder() + "/test_net.json",
+      net->ToGraph(true).ToJson());
+
+  vector<string> paths;
+  for (const auto& p : job_conf.checkpoint_path())
+    paths.push_back(p);
+  net->Load(paths);
+  worker->Test(job_conf.test_steps(), kTest,  net);
 }
 
 void Driver::SetupForResume(JobProto* job_conf) {
@@ -315,23 +325,31 @@ void Driver::SetupForResume(JobProto* job_conf) {
   tinydir_close(&dir);
 }
 
+/*
 const vector<Worker*> Driver::CreateWorkers(const JobProto& job_conf,
     NeuralNet* net) {
   auto cluster = Cluster::Get();
   vector<Worker*> workers;
-  if (!cluster->has_worker()) return workers;
-  int wgrp_size = cluster->nworkers_per_group();
-  int nservers_per_grp = cluster->nservers_per_group();
-  int nserver_grps = cluster->nserver_groups();
+
+  if (!cluster->has_worker())
+    return workers;
+
+  int nservers_per_grp = cluster->nservers_per_group(),
+          nserver_grps = cluster->nserver_groups(),
+        ngpu_per_group = cluster->ngpu_per_group();
   int lcm = LeastCommonMultiple(nserver_grps, nservers_per_grp);
+
   const vector<int> rng = cluster->ExecutorRng(cluster->procs_id(),
       cluster->nworkers_per_group(), cluster->nworkers_per_procs());
   int gstart = rng[0], gend = rng[1], wstart = rng[2], wend = rng[3];
+  LOG(ERROR) << "gstart: " << gstart << " gend: " << gend
+    << " wstart: " << wstart << " wend: " << wend;
+
   for (int gid = gstart; gid < gend; gid++) {
-    NeuralNet* train_net = nullptr, *test_net = nullptr, *val_net = nullptr;
+    NeuralNet* train_net = net, *test_net = nullptr, *val_net = nullptr;
     if (gid == gstart) {
-      train_net = net;
       Param::SliceParams(lcm, train_net->params());
+
       // test and validation are performed by the 1st group.
       if (gid == 0 && job_conf.test_steps() > 0) {
         test_net = NeuralNet::Create(job_conf.neuralnet(), kTest, 1);
@@ -341,21 +359,46 @@ const vector<Worker*> Driver::CreateWorkers(const JobProto& job_conf,
         val_net = NeuralNet::Create(job_conf.neuralnet(), kVal, 1);
         val_net->ShareParamsFrom(train_net, false);
       }
+
     } else {
-      train_net = NeuralNet::Create(job_conf.neuralnet(), kTrain, wgrp_size);
       if (cluster->share_memory()) {
         train_net->ShareParamsFrom(net, true);
       } else {
         Param::SliceParams(lcm, train_net->params());
       }
     }
+
     for (int wid = wstart; wid < wend; wid++) {
-      auto *worker = Worker::Create(job_conf.train_one_batch());
+      // Set DeviceType to CPU or GPU here.
+      auto *worker = Worker::Create(job_conf.train_one_batch(), gid, wid,
+        (ngpu_per_group > 0) ? job_conf.gpu(ngpu_per_group-1) : -1);
+      ngpu_per_group--;
       // TODO(wangwei) extend to test among workers in a grp
       if (wid == 0)
-        worker->Setup(gid, wid, job_conf, train_net, val_net, test_net);
+        worker->Setup(job_conf, train_net, val_net, test_net);
       else
-        worker->Setup(gid, wid, job_conf, train_net, nullptr, nullptr);
+        worker->Setup(job_conf, train_net, nullptr, nullptr);
+      workers.push_back(worker);
+    }
+  }
+  return workers;
+}*/
+
+const vector<Worker*> Driver::CreateWorkers(const JobProto& job_conf) {
+  auto cluster = Cluster::Get();
+  vector<Worker*> workers;
+  int ngpu_per_group = cluster->ngpu_per_group();
+
+  const vector<int> rng = cluster->ExecutorRng(cluster->procs_id(),
+      cluster->nworkers_per_group(), cluster->nworkers_per_procs());
+  int gstart = rng[0], gend = rng[1], wstart = rng[2], wend = rng[3];
+
+  for (int gid = gstart; gid < gend; gid++) {
+    for (int wid = wstart; wid < wend; wid++) {
+      auto *worker = Worker::Create(job_conf.train_one_batch(), gid, wid,
+        (ngpu_per_group > 0) ? job_conf.gpu(ngpu_per_group-1) : -1);
+
+      ngpu_per_group--;
       workers.push_back(worker);
     }
   }
@@ -383,6 +426,7 @@ const vector<Server*> Driver::CreateServers(const JobProto& job_conf,
   const vector<int> rng = cluster->ExecutorRng(server_procs,
       cluster->nservers_per_group(), cluster->nservers_per_procs());
   int gstart = rng[0], gend = rng[1], start = rng[2], end = rng[3];
+
   for (int gid = gstart; gid < gend; gid++) {
     for (int sid = start; sid < end; sid++) {
       auto server = new Server(gid, sid, job_conf, slice2group, slice2server);

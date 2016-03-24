@@ -23,6 +23,7 @@
 #define SINGA_UTILS_CONTEXT_H_
 
 #include <glog/logging.h>
+#include <atomic>
 #include <chrono>
 #include <random>
 #include <thread>
@@ -145,7 +146,7 @@ class Context {
   }
 
   /**
-   * \copybreif rand_generator(const std::thread::id&);
+   * \copybrief rand_generator(const std::thread::id&);
    * @return the CPU random generator for the calling thread.
    */
   std::mt19937* rand_generator() {
@@ -170,7 +171,7 @@ class Context {
   }
 #ifdef USE_GPU
   /**
-   * \copybreif cublas_handle_(const std::thread::id&);
+   * \copybrief cublas_handle_(const std::thread::id&);
    * @return cublas handle for the calling thread.
    */
   cublasHandle_t cublas_handle() {
@@ -254,7 +255,7 @@ class Context {
   //!< max num of GPUs per process
   const int kMaxNumGPU = 64;
   //!< map from thread id to device id
-  std::unordered_map<std::thread::id, int> device_id_;
+  std::unordered_map<std::thread::id, std::atomic_int> device_id_;
   //!< map from thread id to cpu rand generator
   std::unordered_map<std::thread::id, std::mt19937 *> rand_generator_;
   //!< map from thread id to cpu rand generator seed
