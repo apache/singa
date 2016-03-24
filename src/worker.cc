@@ -22,8 +22,6 @@
 #include "singa/worker.h"
 
 #include <glog/logging.h>
-#include <chrono>
-#include <thread>
 #include <typeinfo>
 #include "singa/utils/cluster.h"
 #include "singa/utils/factory.h"
@@ -36,12 +34,17 @@ namespace singa {
 using std::string;
 
 Worker* Worker::Create(const AlgProto& conf) {
+  return Create(conf, -1);
+}
+
+Worker* Worker::Create(const AlgProto& conf, int devid) {
   auto factory = Singleton<Factory<singa::Worker>>::Instance();
   Worker* worker = nullptr;
   if (conf.has_user_alg())
     worker = factory->Create(conf.user_alg());
   else
     worker = factory->Create(conf.alg());
+  worker->device_id(devid);
   return worker;
 }
 
@@ -62,12 +65,13 @@ Worker::~Worker() {
 }
 
 void Worker::Run() {
-  // setup gpu device
   auto context = Singleton<Context>::Instance();
+  context->SetupDevice(std::this_thread::get_id(), device_id_);
+
   int device = context->device_id(std::this_thread::get_id());
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
     << " start on " << (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
-  if (device >= 0)
+  if (this->device_id_ > -1)
     context->ActivateDevice(device);
 
   auto cluster = Cluster::Get();
