@@ -113,7 +113,7 @@ class Context {
     if (device_id_.find(tid) != device_id_.end())
       return device_id_[tid];
     else
-      return -1;
+      return -2;
   }
   /**
    * Setup the CPU thread, which may be assigned a GPU device.
