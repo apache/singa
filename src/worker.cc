@@ -27,6 +27,7 @@
 #include <typeinfo>
 #include "singa/utils/cluster.h"
 #include "singa/utils/factory.h"
+#include "singa/utils/log.h"
 #include "singa/utils/singleton.h"
 #include "singa/utils/context.h"
 #include "singa/utils/math_blob.h"
@@ -65,8 +66,11 @@ void Worker::Run() {
   // setup gpu device
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
-    << " start on " << (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
+  string display = "Worker (group = " + std::to_string(grp_id_) + ", id = "
+                   + std::to_string(id_) + ") start on "
+                   + (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
+  LOG(INFO) << display;
+  DISPLAY(display);
   if (device >= 0)
     context->ActivateDevice(device);
 
@@ -84,7 +88,9 @@ void Worker::Run() {
     }
     if (TestNow(step_) && test_net_ != nullptr) {
       CollectAll(step_, train_net_);
-      LOG(ERROR) << "Test @ step " + std::to_string(step_);
+      string display = "Test @ step " + std::to_string(step_);
+      LOG(INFO) << display;
+      DISPLAY(display);
       Test(job_conf_.test_steps(), kTest, test_net_);
     }
     if (CheckpointNow(step_) && grp_id_ == 0) {
@@ -109,7 +115,10 @@ void Worker::Run() {
   Msg* msg = new Msg(Addr(grp_id_, id_, kWorkerParam), Addr(-1, -1, kStub));
   msg->set_type(kStop);
   dealer_->Send(&msg);  // use param dealer to send the stop msg
-  LOG(ERROR) << "Worker (group = " <<grp_id_ << ", id = " << id_ << ") stops";
+  display = "Worker (group = " + std::to_string(grp_id_) + ", id = "
+                   + std::to_string(id_) + ") stops";
+  LOG(INFO) << display;
+  DISPLAY(display);
 }
 
 void Worker::Test(int steps, Phase phase, NeuralNet* net) {
@@ -318,8 +327,11 @@ void Worker::Display(int flag, const std::string& prefix, NeuralNet* net) {
   for (auto layer : net->layers()) {
     if (layer->partition_id() == id_) {
       const string& disp = layer->ToString(false, flag);
-      if (disp.length())
-        LOG(ERROR) << prefix << "  " << disp;
+      if (disp.length()) {
+        string display = prefix + "   " + disp;
+        LOG(INFO) << display;
+        DISPLAY(display);
+      }
     }
   }
 }

@@ -29,6 +29,7 @@
 #include "singa/proto/common.pb.h"
 #include "singa/utils/cluster.h"
 #include "singa/utils/common.h"
+#include "singa/utils/log.h"
 #include "singa/utils/tinydir.h"
 #include "singa/utils/math_blob.h"
 
@@ -178,7 +179,9 @@ void Stub::Run(const vector<int>& slice2server,
       }
     }
   }
-  LOG(ERROR) << "Stub in process " << procs_id << " stops";
+  string display = "Stub in process " + std::to_string(procs_id) + " stops";
+  LOG(INFO) << display;
+  DISPLAY(display);
   for (auto& entry : inter_dealers)
     delete entry.second;
 }
