@@ -22,8 +22,9 @@
 FROM singa/base
 MAINTAINER Anh Dinh<ug93tad@gmail.com>
 
-COPY .bashrc /root/.bashrc
-COPY install.sh /opt/install.sh
+COPY incubator-singa/tool/docker/mesos/.bashrc /root/.bashrc
+COPY incubator-singa/tool/docker/mesos/install.sh /opt/install.sh
+COPY incubator-singa/tool/mesos/* /root/incubator-singa/tool/mesos/
 
 RUN cd /opt && source ./install.sh
 
@@ -34,8 +35,8 @@ RUN cd /opt && source /root/.bashrc && wget -c http://www.eu.apache.org/dist/had
 #to be removed after SINGA-11 is merged (pulling from Anh's branch instead of pulling from the master)
 #RUN source ~/.bashrc && mkdir /root/mesos && cd /root/mesos && git clone https://github.com/ug93tad/incubator-singa && cd incubator-singa && git checkout SINGA-11 && cp -r tool/mesos /root/incubator-singa/tool/ && cd /root/incubator-singa/tool/mesos && make 
 
+# update SINGA, but keep the examples directory 
 RUN source ~/.bashrc && cd /root/incubator-singa/tool/mesos && make
 
-COPY *.xml /opt/hadoop-2.6.0/etc/hadoop/
-
+COPY incubator-singa/tool/docker/mesos/*.xml /opt/hadoop-2.6.0/etc/hadoop/
 RUN ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa && cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys && echo 'StrictHostKeyChecking no' >> ~/.ssh/config

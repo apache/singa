@@ -1,0 +1,62 @@
+FROM singa/base
+MAINTAINER NVIDIA CORPORATION <digits@nvidia.com>
+
+LABEL com.nvidia.volumes.needed="nvidia_driver"
+
+ENV NVIDIA_GPGKEY_SUM bd841d59a27a406e513db7d405550894188a4c1cd96bf8aa4f82f1b39e0b5c1c
+ENV NVIDIA_GPGKEY_FPR 889bee522da690103c4b085ed88c3d385c37d3be
+
+RUN apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/GPGKEY && \
+    apt-key adv --export --no-emit-version -a $NVIDIA_GPGKEY_FPR | tail -n +2 > cudasign.pub && \
+    echo "$NVIDIA_GPGKEY_SUM  cudasign.pub" | sha256sum -c --strict - && rm cudasign.pub && \
+    echo "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64 /" > /etc/apt/sources.list.d/cuda.list
+
+ENV CUDA_VERSION 7.0
+LABEL com.nvidia.cuda.version="7.0"
+
+ENV CUDA_PKG_VERSION 7-0=7.0-28
+RUN apt-get update && apt-get install -y --no-install-recommends --force-yes curl \
+        cuda-nvrtc-$CUDA_PKG_VERSION \
+        cuda-cusolver-$CUDA_PKG_VERSION \
+        cuda-cublas-$CUDA_PKG_VERSION \
+        cuda-cufft-$CUDA_PKG_VERSION \
+        cuda-curand-$CUDA_PKG_VERSION \
+        cuda-cusparse-$CUDA_PKG_VERSION \
+        cuda-npp-$CUDA_PKG_VERSION \
+        cuda-cudart-$CUDA_PKG_VERSION && \
+    ln -s cuda-$CUDA_VERSION /usr/local/cuda 
+
+RUN apt-get install -y --no-install-recommends --force-yes \
+        cuda-core-$CUDA_PKG_VERSION \
+        cuda-misc-headers-$CUDA_PKG_VERSION \
+        cuda-command-line-tools-$CUDA_PKG_VERSION \
+        cuda-license-$CUDA_PKG_VERSION \
+        cuda-nvrtc-dev-$CUDA_PKG_VERSION \
+        cuda-cusolver-dev-$CUDA_PKG_VERSION \
+        cuda-cublas-dev-$CUDA_PKG_VERSION \
+        cuda-cufft-dev-$CUDA_PKG_VERSION \
+        cuda-curand-dev-$CUDA_PKG_VERSION \
+        cuda-cusparse-dev-$CUDA_PKG_VERSION \
+        cuda-npp-dev-$CUDA_PKG_VERSION \
+        cuda-cudart-dev-$CUDA_PKG_VERSION \
+        cuda-driver-dev-$CUDA_PKG_VERSION 
+
+RUN echo "/usr/local/cuda/lib" >> /etc/ld.so.conf.d/cuda.conf && \
+    echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/cuda.conf && \
+    ldconfig
+
+ENV CUDNN_DOWNLOAD_SUM 98679d5ec039acfd4d81b8bfdc6a6352d6439e921523ff9909d364e706275c2b
+
+RUN curl -fsSL http://developer.download.nvidia.com/compute/redist/cudnn/v3/cudnn-7.0-linux-x64-v3.0-prod.tgz -O && \
+    echo "$CUDNN_DOWNLOAD_SUM  cudnn-7.0-linux-x64-v3.0-prod.tgz" | sha256sum -c --strict - && \
+    tar -xzf cudnn-7.0-linux-x64-v3.0-prod.tgz -C /usr/local && \
+    rm cudnn-7.0-linux-x64-v3.0-prod.tgz && \
+    ldconfig
+
+RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
+    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
+
+ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
+ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}
+
+RUN cd && source /root/.bashrc && cd incubator-singa && ./configure --enable-cuda --with-cuda=/usr/local/cuda --enable-cudnn --with-cudnn=/usr/local/cuda && make && make install 
