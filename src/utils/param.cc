@@ -235,6 +235,7 @@ Msg* Param::GenPutMsg(bool copy, int idx) {
   if (copy) {
     msg->AddFrame(ptr, slice_size_[idx] * sizeof(float));
   }
+//  LOG(ERROR) << "gen put msg: " << msg;
   return msg;
 }
 
@@ -281,6 +282,7 @@ Msg* Param::HandlePutMsg(Msg** msg, bool reserve) {
   int size;
   float lr, wc;
   float* ptr;
+//  LOG(ERROR) << "handle put msg:" << *msg;
   (*msg)->ParseFormatFrame("iffp", &size, &lr, &wc, &ptr);
   ParamProto proto;
   proto.set_lr_scale(lr);

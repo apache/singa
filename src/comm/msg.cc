@@ -22,18 +22,25 @@
 #include "singa/comm/msg.h"
 
 #include <glog/logging.h>
+#include <stdarg.h>
 
 namespace singa {
 
-#ifdef USE_ZMQ
 Msg::~Msg() {
+#ifdef USE_ZMQ
   if (msg_ != nullptr)
     zmsg_destroy(&msg_);
   frame_ = nullptr;
+#else
+  for (auto& frame : frames_)
+    delete static_cast<char*>(frame.first);
+#endif
 }
 
 Msg::Msg() {
+#ifdef USE_ZMQ
   msg_ = zmsg_new();
+#endif
 }
 
 Msg::Msg(const Msg& msg) {
@@ -42,51 +49,49 @@ Msg::Msg(const Msg& msg) {
   type_ = msg.type_;
   trgt_val_ = msg.trgt_val_;
   trgt_version_ = msg.trgt_version_;
+#ifdef USE_ZMQ
   msg_ = zmsg_dup(msg.msg_);
+#endif
 }
 
 Msg::Msg(int src, int dst) {
   src_ = src;
   dst_ = dst;
+#ifdef USE_ZMQ
   msg_ = zmsg_new();
+#endif
 }
 
 void Msg::SwapAddr() {
   std::swap(src_, dst_);
 }
 
+#ifdef USE_ZMQ
 int Msg::size() const {
   return zmsg_content_size(msg_);
 }
-
 void Msg::AddFrame(const void* addr, int nBytes) {
   zmsg_addmem(msg_, addr, nBytes);
 }
-
 int Msg::FrameSize() {
   return zframe_size(frame_);
 }
-
-void* Msg::FrameData() {
-  return zframe_data(frame_);
-}
-
 char* Msg::FrameStr() {
   return zframe_strdup(frame_);
+}
+void* Msg::FrameData() {
+  return zframe_data(frame_);
 }
 bool Msg::NextFrame() {
   frame_ = zmsg_next(msg_);
   return frame_ != nullptr;
 }
-
 void Msg::FirstFrame() {
   frame_ = zmsg_first(msg_);
 }
-
 void Msg::LastFrame() {
   frame_ = zmsg_last(msg_);
 }
-
 void Msg::ParseFromZmsg(zmsg_t* msg) {
   char* tmp = zmsg_popstr(msg);
   sscanf(tmp, "%d %d %d %d %d",
@@ -102,6 +107,49 @@ zmsg_t* Msg::DumpToZmsg() {
   msg_ = nullptr;
   return tmp;
 }
+
+#else
+
+int Msg::size() const {
+  int s = 0;
+  for (auto& entry : frames_)
+    s += entry.second;
+  return s;
+}
+
+void Msg::AddFrame(const void* addr, int nBytes) {
+  char* tmp = new char[nBytes];
+  memcpy(tmp, addr, nBytes);
+  frames_.push_back(std::make_pair(tmp, nBytes));
+}
+
+int Msg::FrameSize() {
+  return frames_.at(idx_).second;
+}
+
+char* Msg::FrameStr() {
+  return static_cast<char*>(frames_.at(idx_).first);
+}
+
+void* Msg::FrameData() {
+  return frames_.at(idx_).first;
+}
+
+bool Msg::NextFrame() {
+  idx_++;
+//  LOG(ERROR) << "idx " << idx_ << " vs size " << frames_.size();
+  return idx_ < frames_.size();
+}
+
+void Msg::FirstFrame() {
+  idx_ = 0;
+}
+
+void Msg::LastFrame() {
+  idx_ = frames_.size() - 1;
+}
+
+#endif
 
 // frame marker indicating this frame is serialize like printf
 #define FMARKER "*singa*"
@@ -156,14 +204,14 @@ int Msg::AddFormatFrame(const char *format, ...) {
     CHECK_LE(size, kMaxFrameLen);
   }
   va_end(argptr);
-  zmsg_addmem(msg_, dst, size);
+  AddFrame(dst, size);
   return size;
 }
 
 int Msg::ParseFormatFrame(const char *format, ...) {
   va_list argptr;
   va_start(argptr, format);
-  char* src = zframe_strdup(frame_);
+  char* src = FrameStr();
   CHECK_STREQ(FMARKER, src);
   int size = strlen(FMARKER) + 1;
   while (*format) {
@@ -207,9 +255,8 @@ int Msg::ParseFormatFrame(const char *format, ...) {
     format++;
   }
   va_end(argptr);
-  delete src;
+  //  delete src;
   return size;
 }
-#endif
 
 }  // namespace singa

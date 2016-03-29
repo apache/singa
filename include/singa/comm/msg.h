@@ -22,10 +22,12 @@
 #ifndef SINGA_COMM_MSG_H_
 #define SINGA_COMM_MSG_H_
 
+#include <utility>
+
 // TODO(wangwei): make it a compiler argument
 #define USE_ZMQ
 
-#include <utility>
+#include <vector>
 #ifdef USE_ZMQ
 #include <czmq.h>
 #endif
@@ -79,7 +81,7 @@ inline int AddrType(int addr) {
 }
 
 /**
- * Msg used to transfer Param info (gradient or value), feature blob, etc
+ * Msg used to transfer Param info (gradient or value), feature blob, etc.
  * between workers, stubs and servers.
  *
  * Each msg has a source addr and dest addr identified by a unique integer.
@@ -225,6 +227,9 @@ class Msg {
 #ifdef USE_ZMQ
   zmsg_t* msg_ = nullptr;
   zframe_t *frame_ = nullptr;
+#else
+  std::vector<std::pair<void*, int>> frames_;
+  unsigned idx_ = 0;
 #endif
 };
 

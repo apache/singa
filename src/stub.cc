@@ -43,11 +43,13 @@ Stub::~Stub() {
 }
 void Stub::Setup() {
   router_ = new Router();
-  router_->Bind(kInprocRouterEndpoint);
   auto cluster = Cluster::Get();
-  const string hostip = cluster->hostip();
-  int port = router_->Bind("tcp://" + hostip + ":*");
-  endpoint_ = hostip + ":" + std::to_string(port);
+  if (cluster->nprocs() > 1) {
+    const string hostip = cluster->hostip();
+    int port = router_->Bind("tcp://" + hostip + ":*");
+    endpoint_ = hostip + ":" + std::to_string(port);
+  } else
+    endpoint_ = "localhost";
 }
 /**
  * Get a hash id for a Param object from a group.
@@ -116,6 +118,7 @@ void Stub::Run(const vector<int>& slice2server,
       msg = msg_queue.front();
       msg_queue.pop();
     }
+//    LOG(ERROR) << "stub recv msg " << msg;
     int type = msg->type(), dst = msg->dst(), flag = AddrType(dst);
     if (flag == kStub && (AddrProc(dst) == procs_id || AddrGrp(dst) == -1)) {
       //  the following statements are ordered!
@@ -174,6 +177,7 @@ void Stub::Run(const vector<int>& slice2server,
           inter_dealers[dst_procs] = CreateInterProcsDealer(dst_procs);
         inter_dealers[dst_procs]->Send(&msg);
       } else {
+//        LOG(ERROR) << "router send msg " << msg;
         router_->Send(&msg);
       }
     }
@@ -186,7 +190,7 @@ void Stub::Run(const vector<int>& slice2server,
 Dealer* Stub::CreateInterProcsDealer(int dst_procs) {
   // forward to other procs
   auto cluster = Cluster::Get();
-  auto dealer = new Dealer();
+  auto dealer = new Dealer(-2);
   while (cluster->endpoint(dst_procs) == "") {
     // kCollectSleepTime));
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
@@ -223,6 +227,7 @@ void Stub::GenMsgs(int type, int version, ParamEntry* entry, Msg* msg,
     new_msg->set_src(Addr(src_grp, procs_id, kStub));
     new_msg->set_dst(Addr(dst_grp, server, kServer));
     ret->push_back(new_msg);
+//    LOG(ERROR) << "stub gen msg " << new_msg;
   }
 }
 

@@ -71,28 +71,15 @@ void Server::Run() {
   n_pending_sync_.resize(slice2group_.size(), 0);
   last_sync_.resize(slice2group_.size());
 
-  // TODO(wangsh): give each dealer a unique id
-  auto dealer = new Dealer(0);
-  CHECK(dealer->Connect(kInprocRouterEndpoint));
-  Msg* ping = new Msg(Addr(grp_id_, id_, kServer), Addr(-1, -1, kStub));
-  ping->set_type(kConnect);
-  dealer->Send(&ping);
-
   bool running = true;
   CHECK(cluster->runtime()->WatchSGroup(grp_id_, id_, Stop, &running));
-  Poller poll(dealer);
+  auto dealer = new Dealer(Addr(grp_id_, id_, kServer));
   // start recv loop and process requests
   while (running) {
-    // must use poller here; otherwise Receive() gets stuck after workers stop.
-    auto* sock = poll.Wait(cluster->poll_time());
-    if (poll.Terminated()) {
-      LOG(ERROR) << "Connection broken!";
-      exit(0);
-    } else if (sock == nullptr) {
+    // cannot use blocking Receive() here, it will get stuck after workers stop.
+    Msg* msg = dealer->Receive(cluster->poll_time());
+    if (msg == nullptr)
       continue;
-    }
-    Msg* msg = dealer->Receive();
-    if (msg == nullptr) break;  // interrupted
     Msg* response = nullptr;
     int type = msg->type();
     int slice_id = SliceID(msg->trgt_val());

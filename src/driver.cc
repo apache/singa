@@ -25,6 +25,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "singa/comm/socket.h"
 #include "singa/neuralnet/layer.h"
 #include "singa/utils/common.h"
 #include "singa/utils/tinydir.h"
@@ -231,12 +232,18 @@ void Driver::Train(const JobProto& job_conf) {
       net->ToGraph(true).ToJson());
   const vector<Worker*> workers = CreateWorkers(job_conf, net);
   const vector<Server*> servers = CreateServers(job_conf, net);
-
-#ifdef USE_MPI
-  int nthreads = workers.size() + servers.size() + 1;
-  for (int i = 0; i < nthreads; i++)
-    MPIQueues.push_back(make_shared<SafeQueue>());
-#endif
+  // Add msg queues for each socket
+  for (auto worker : workers) {
+    msgQueues[Addr(worker->grp_id(), worker->id(), kWorkerParam)];
+    msgQueues[Addr(worker->grp_id(), worker->id(), kWorkerLayer)];
+//    LOG(ERROR) << "worker addr " << Addr(worker->grp_id(), worker->id(), kWorkerParam);
+//    LOG(ERROR) << "worker addr " << Addr(worker->grp_id(), worker->id(), kWorkerLayer);
+  }
+  for (auto server : servers) {
+    msgQueues[Addr(server->grp_id(), server->id(), kServer)];
+//    LOG(ERROR) << "server addr " << Addr(server->grp_id(), server->id(), kServer);
+  }
+  msgQueues[-1];
 
   vector<std::thread> threads;
   for (auto server : servers)

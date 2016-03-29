@@ -123,24 +123,13 @@ void Worker::Test(int steps, Phase phase, NeuralNet* net) {
   Display(phase, " ", net);
 }
 
-void ConnectStub(int grp, int id, Dealer* dealer, EntityType entity) {
-  dealer->Connect(kInprocRouterEndpoint);
-  Msg* ping = new Msg(Addr(grp, id, entity), Addr(-1, -1, kStub));
-  ping->set_type(kConnect);
-  dealer->Send(&ping);
-}
-
 void Worker::InitSockets(const NeuralNet* net) {
-  // TODO(wangsh): provide a unique sock id from cluster
-  dealer_ = new Dealer(0);
-  ConnectStub(grp_id_, id_, dealer_, kWorkerParam);
+  dealer_ = new Dealer(Addr(grp_id_, id_, kWorkerParam));
   for (auto layer : net->layers()) {
     if (layer->partition_id() == id_) {
       if (typeid(*layer) == typeid(BridgeDstLayer)
           || typeid(*layer) == typeid(BridgeSrcLayer)) {
-        // TODO(wangsh): provide a unique socket id from cluster
-        bridge_dealer_ = new Dealer(1);
-        ConnectStub(grp_id_, id_, bridge_dealer_, kWorkerLayer);
+        bridge_dealer_ = new Dealer(Addr(grp_id_, id_, kWorkerLayer));
         break;
       }
     }
@@ -253,6 +242,7 @@ int Worker::Put(int step, Param* param) {
   msg->set_trgt(ParamTrgt(param->owner(), 0), step);
   msg->set_type(kPut);
   dealer_->Send(&msg);
+//  LOG(ERROR) << "worker msg " << msg;
   return 1;
 }
 
