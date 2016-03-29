@@ -64,7 +64,12 @@ Worker::~Worker() {
 void Worker::Run() {
   // setup gpu device
   auto context = Singleton<Context>::Instance();
-  int device = context->device_id(std::this_thread::get_id());
+  // TODO(wangwei) -2 for uninitial device; -1 for CPU; >=0 for GPU now.
+  int device = -2;
+  while (device == -2) {
+    device = context->device_id(std::this_thread::get_id());
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  }
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
     << " start on " << (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
   if (device >= 0)

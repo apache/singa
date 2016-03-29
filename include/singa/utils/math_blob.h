@@ -46,7 +46,7 @@ template<typename Dtype>
 void Scale(Dtype alpha, Blob<Dtype> * B) {
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_scale(B->count(), alpha, B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
@@ -64,7 +64,7 @@ void AXPY(Dtype alpha, const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count(), B->count());
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_axpy(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
@@ -104,7 +104,7 @@ void GEMV(Dtype alpha, Dtype beta, const Blob<Dtype>& A,
   bool TranA = A.transpose();
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_gemv(A.cpu_data(), B.cpu_data(), m, n, alpha, beta, TranA,
         C->mutable_cpu_data());
   } else {
@@ -169,7 +169,7 @@ void GEMM(Dtype alpha, Dtype beta, const Blob<Dtype>& A, const Blob<Dtype>& B,
   bool TranB = B.transpose();
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, k, alpha, beta, TranA, TranB,
         C->mutable_cpu_data());
   } else {
@@ -212,7 +212,7 @@ Dtype VVDot(const Blob<Dtype> & A, const Blob<Dtype> & B) {
   int n = A.count();
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     res = cpu_dot(A.cpu_data(), B.cpu_data(), n);
   } else {
 #ifdef USE_GPU
@@ -241,7 +241,7 @@ void OuterProduct(const Blob<Dtype>& A, const Blob<Dtype>& B, Blob<Dtype> * C) {
   CHECK_EQ(C->count(), m * n);
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_gemm(A.cpu_data(), B.cpu_data(), m, n, 1, 1, 0, false, false,
         C->mutable_cpu_data());
   } else {
@@ -262,7 +262,7 @@ void Map(const Blob<Dtype> & A, Blob<Dtype> * B) {
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_e_f<Op>(A.count(), A.cpu_data(), B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
@@ -285,7 +285,7 @@ void Map(const Blob<Dtype> & A, const Blob<Dtype> & B, Blob<Dtype> * C) {
   //cpu_e_f<Op>(A.count(), A.cpu_data(), B.cpu_data(), C->mutable_cpu_data());
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_e_f<Op>(A.count(), A.cpu_data(), B.cpu_data(), C->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
@@ -304,7 +304,7 @@ void Map(Dtype alpha, const Blob<Dtype>& A, Blob<Dtype>* B) {
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
@@ -324,7 +324,7 @@ void Map(Dtype alpha, const Blob<Dtype>& A, const Blob<Dtype>& B,
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_e_f<Op>(A.count(), alpha, A.cpu_data(), B->cpu_data(),
         C->mutable_cpu_data());
   } else {
@@ -346,7 +346,7 @@ void Copy(const Blob<Dtype>& A, Blob<Dtype>* B) {
   CHECK_EQ(A.count(), B->count()) << "Blobs must have the same size";
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     std::copy(A.cpu_data(), A.cpu_data() + A.count(), B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
@@ -474,7 +474,7 @@ void MVAddCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
     one.SetValue(1);
     auto context = Singleton<Context>::Instance();
     int device = context->device_id(std::this_thread::get_id());
-    if (device == -1) {
+    if (device < 0) {
       cpu_gemm(A.cpu_data(), one.cpu_data(), m, n, 1, alpha, beta, false, false,
           B->mutable_cpu_data());
     } else {
@@ -511,7 +511,7 @@ void MVAddRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
     int n = A.count(), m = B->count() / n;
     auto context = Singleton<Context>::Instance();
     int device = context->device_id(std::this_thread::get_id());
-    if (device == -1) {
+    if (device < 0) {
       Blob<Dtype> one(m);
       one.SetValue(1);
       cpu_gemm(one.cpu_data(), A.cpu_data(), m, n, 1, alpha, beta,
@@ -566,7 +566,7 @@ void MVSumCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
   int m = B->count(), n = A.count() / m;
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     Blob<Dtype> one(n);
     one.SetValue(1);
     cpu_gemm(A.cpu_data(), one.cpu_data(), m, 1, n, alpha, beta,
@@ -591,7 +591,7 @@ void MVSumRow(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
   int n = B->count(), m = A.count() / n;
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     Blob<Dtype> one(m);
     one.SetValue(1);
     cpu_gemm(one.cpu_data(), A.cpu_data(), 1, n, m, alpha, beta, false,
@@ -615,7 +615,7 @@ void Reduce2D(const Blob<Dtype> & A, Blob<Dtype> * B) {
   int m = B->count(), n = A.count() / m;
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_reduce_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
@@ -635,7 +635,7 @@ void Expand2D(const Blob<Dtype> & A, Blob<Dtype> * B) {
   int m = A.count(), n = B->count() / m;
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_expand_f<Op>(A.cpu_data(), m, n, B->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
@@ -653,7 +653,7 @@ Dtype Asum(const Blob<Dtype>& A) {
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
   Dtype ret = Dtype(0);
-  if (device == -1) {
+  if (device < 0) {
     ret = cpu_asum(A.count(), A.cpu_data(), 1) / A.count();
   } else {
 #ifdef USE_GPU
@@ -671,7 +671,7 @@ void SampleUniform(Dtype low, Dtype high, Blob<Dtype>* A) {
   auto context = Singleton<Context>::Instance();
   const auto& thread = std::this_thread::get_id();
   int device = context->device_id(thread);
-  if (device == -1) {
+  if (device < 0) {
     cpu_sample_uniform(*context->rand_generator(thread), A->count(), low, high,
         A->mutable_cpu_data());
   } else {
@@ -689,7 +689,7 @@ void SampleGaussian(Dtype mean, Dtype std, Blob<Dtype>* A) {
   auto context = Singleton<Context>::Instance();
   const auto& thread = std::this_thread::get_id();
   int device = context->device_id(thread);
-  if (device == -1) {
+  if (device < 0) {
     cpu_sample_gaussian(*context->rand_generator(thread), A->count(), mean, std,
         A->mutable_cpu_data());
   } else {
@@ -708,7 +708,7 @@ void Softmax(int nb_rows, const Blob<Dtype>& A, Blob<Dtype>* B) {
   CHECK_EQ(A.count(), B->count());
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     cpu_softmax(nb_rows, A.count() / nb_rows, A.cpu_data(),
       B->mutable_cpu_data());
   } else {
@@ -721,7 +721,7 @@ template<typename Dtype>
 void Zero(Blob<Dtype>* B) {
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
-  if (device == -1) {
+  if (device < 0) {
     B->SetValue(0);
   } else {
 #ifdef USE_GPU
