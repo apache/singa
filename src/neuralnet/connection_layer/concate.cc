@@ -60,7 +60,7 @@ void ConcateLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   int device = context->device_id(std::this_thread::get_id());
   while (concate_offset < data_.count()) {
     for (size_t i = 0; i < srclayers.size(); ++i) {
-      if (device == -1) {
+      if (device < 0) {
         const float* src = srclayers[i]->data(this).cpu_data()
           + srclayer_offset;
         float* dst = data_.mutable_cpu_data() + concate_offset;
@@ -72,7 +72,7 @@ void ConcateLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
         float* dst = data_.mutable_gpu_data() + concate_offset;
         cudaMemcpy(dst, src, step * sizeof(float), cudaMemcpyDefault);
 #else
-        LOG(FATAL) << "GPU is supported";
+        LOG(FATAL) << "GPU is not supported";
 #endif
       }
       concate_offset += step;
@@ -94,7 +94,7 @@ void ConcateLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   int device = context->device_id(std::this_thread::get_id());
   while (concate_offset < grad_.count()) {
     for (size_t i = 0; i < srclayers.size(); ++i) {
-      if (device == -1) {
+      if (device < 0) {
         const float* src = grad_.cpu_data() + concate_offset;
         float* dst = srclayers[i]->mutable_grad(this)->mutable_cpu_data()
           + srclayer_offset;
@@ -106,7 +106,7 @@ void ConcateLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
           + srclayer_offset;
         cudaMemcpy(dst, src, step * sizeof(float), cudaMemcpyDefault);
 #else
-        LOG(FATAL) << "GPU is supported";
+        LOG(FATAL) << "GPU is not supported";
 #endif
       }
       concate_offset += step;

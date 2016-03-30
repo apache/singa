@@ -73,7 +73,7 @@ void SliceLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   int device = context->device_id(std::this_thread::get_id());
   while (srclayer_offset < blob.count()) {
     for (int i = 0; i < num_slices_; ++i) {
-      if (device == -1) {
+      if (device < 0) {
         const float* src = blob.cpu_data() + srclayer_offset;
         float* dst = datavec_[i]->mutable_cpu_data() + slice_offset;
         memcpy(dst, src, step * sizeof(float));
@@ -83,7 +83,7 @@ void SliceLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
         float* dst = datavec_[i]->mutable_gpu_data() + slice_offset;
         cudaMemcpy(dst, src, step * sizeof(float), cudaMemcpyDefault);
 #else
-        LOG(FATAL) << "GPU is supported";
+        LOG(FATAL) << "GPU is not supported";
 #endif
       }
       srclayer_offset += step;
@@ -105,7 +105,7 @@ void SliceLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   int device = context->device_id(std::this_thread::get_id());
   while (srclayer_offset < blob->count()) {
     for (int i = 0; i < num_slices_; ++i) {
-      if (device == -1) {
+      if (device < 0) {
         const float* src = gradvec_[i]->cpu_data() + slice_offset;
         float* dst = blob->mutable_cpu_data() + srclayer_offset;
         memcpy(dst, src, step * sizeof(float));
@@ -115,7 +115,7 @@ void SliceLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
         float* dst = blob->mutable_gpu_data() + srclayer_offset;
         cudaMemcpy(dst, src, step * sizeof(float), cudaMemcpyDefault);
 #else
-        LOG(FATAL) << "GPU is supported";
+        LOG(FATAL) << "GPU is not supported";
 #endif
       }
       srclayer_offset += step;
