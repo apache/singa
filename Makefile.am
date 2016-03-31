@@ -32,19 +32,22 @@ CUDA_OBJS := src/utils/math_kernel.o
 CUDA_HDRS := include/singa/utils/math_kernel.h
 
 CUDNN_SRCS := src/neuralnet/loss_layer/cudnn_softmaxloss.cc \
-			  src/neuralnet/neuron_layer/cudnn_softmax.cc \
-			  src/neuralnet/neuron_layer/cudnn_pooling.cc \
-			  src/neuralnet/neuron_layer/cudnn_activation.cc \
-			  src/neuralnet/neuron_layer/cudnn_lrn.cc \
-			  src/neuralnet/neuron_layer/cudnn_convolution.cc
+              src/neuralnet/neuron_layer/cudnn_softmax.cc \
+              src/neuralnet/neuron_layer/cudnn_pooling.cc \
+              src/neuralnet/neuron_layer/cudnn_activation.cc \
+              src/neuralnet/neuron_layer/cudnn_lrn.cc \
+              src/neuralnet/neuron_layer/cudnn_convolution.cc
 
 PY_SRCS := tool/python/singa/driver_wrap.cxx \
-		   src/driver.cc
+           src/driver.cc
+
+ZOOKEEPER_SRCS := src/utils/zk_service.cc
+ZOOKEEPER_HDRS := include/singa/utils/zk_service.h
 
 HDFS_SRCS := src/io/hdfsfile.cc \
-			 src/io/hdfsfile_store.cc
+             src/io/hdfsfile_store.cc
 HDFS_HDRS := include/singa/io/hdfsfile.h \
-			 include/singa/io/hdfsfile_store.h
+             include/singa/io/hdfsfile_store.h
 
 SINGA_SRCS := src/driver.cc \
               src/server.cc \
@@ -101,14 +104,13 @@ SINGA_SRCS := src/driver.cc \
               src/utils/updater.cc \
               src/utils/blob.cc \
               src/utils/image_transform.cc \
-              src/utils/job_manager.cc \
-              src/utils/zk_service.cc 
+              src/utils/job_manager.cc 
 
 
 SINGA_HDRS := include/singa.h \
-			  include/singa/utils/math_blob.h \
-			  include/singa/utils/math_addr.h \
-			  include/singa/utils/cluster.h \
+              include/singa/utils/math_blob.h \
+              include/singa/utils/math_addr.h \
+              include/singa/utils/cluster.h \
               include/utils/cluster_rt.h \
               include/utils/param.h \
               include/utils/common.h \
@@ -121,8 +123,7 @@ SINGA_HDRS := include/singa.h \
               include/utils/tinydir.h \
               include/utils/tokenizer.h \
               include/utils/image_transform.h \
-              include/utils/job_manager.cc \
-              include/utils/zk_service.cc \
+              include/utils/job_manager.h \
               include/server.h \
               include/worker.h \
               include/stub.h \
@@ -151,19 +152,19 @@ SINGA_HDRS := include/singa.h \
 GTEST_SRCS := include/gtest/gtest-all.cc
 GTEST_HRDS := include/gtest/gtest.h
 TEST_SRCS := include/gtest/gtest_main.cc \
-						 src/test/test_cluster.cc \
-						 src/test/test_common.cc \
-						 src/test/test_msg.cc \
-						 src/test/test_math.cc \
-						 src/test/test_neuralnet.cc \
-						 src/test/test_paramslicer.cc \
-						 src/test/test_kvfile.cc \
-						 src/test/test_store.cc \
-						 src/test/test_connection_layers.cc \
-						 src/test/test_record_input_layer.cc \
-						 src/test/test_csv_input_layer.cc \
-             					 src/test/test_gru_layer.cc \
-						 src/test/test_unrolling.cc
+             src/test/test_cluster.cc \
+             src/test/test_common.cc \
+             src/test/test_msg.cc \
+             src/test/test_math.cc \
+             src/test/test_neuralnet.cc \
+             src/test/test_paramslicer.cc \
+             src/test/test_kvfile.cc \
+             src/test/test_store.cc \
+             src/test/test_connection_layers.cc \
+             src/test/test_record_input_layer.cc \
+             src/test/test_csv_input_layer.cc \
+             src/test/test_gru_layer.cc \
+             src/test/test_unrolling.cc
 
 #EXTRA_PROGRAMS = $(PROGS)
 EXTRA_PROGRAMS = singatest test
@@ -194,6 +195,11 @@ libsinga_la_SOURCES += $(CUDNN_SRCS)
 libsinga_la_CXXFLAGS += $(CUDNN_CFLAGS)
 libsinga_la_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 endif
+if DZOOKEEPER
+libsinga_la_SOURCES += $(ZOOKEEPER_SRCS)
+libsinga_la_CXXFLAGS += $(ZOOKEEPER_CFLAGS)
+libsinga_la_LDFLAGS += $(ZOOKEEPER_LDFLAGS) $(ZOOKEEPER_LIBS)
+endif
 
 if DHDFS
 libsinga_la_SOURCES += $(HDFS_SRCS)
@@ -209,8 +215,7 @@ singa_LDFLAGS = -lsinga \
                 -lprotobuf \
                 -lopenblas \
                 -lzmq \
-                -lczmq \
-                -lzookeeper_mt
+                -lczmq 
 if LMDB
 singa_LDFLAGS += -llmdb
 endif
@@ -219,6 +224,12 @@ if DCUDA
 singa_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 singa_CXXFLAGS += $(CUDA_CFLAGS)
 singa_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
+endif
+
+if DZOOKEEPER
+singa_SOURCES += $(ZOOKEEPER_SRCS)
+singa_CXXFLAGS += $(ZOOKEEPER_CFLAGS)
+singa_LDFLAGS += $(ZOOKEEPER_LDFLAGS) $(ZOOKEEPER_LIBS)
 endif
 
 if DCUDNN
@@ -235,17 +246,17 @@ endif
 #bin_PROGRAMS += singatool
 singatool_SOURCES = src/utils/tool.cc #$(CUDA_SRCS) $(CUDA_HDRS) $(CUDNN_SRCS)
 singatool_CXXFLAGS = -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
-					 -funroll-loops -DTHREADED -I$(top_srcdir)/include $(DEFAULT_FLAGS)
+              -funroll-loops -DTHREADED -I$(top_srcdir)/include $(DEFAULT_FLAGS)
 singatool_LDFLAGS = -lsinga \
                     -lglog  \
-                    -lprotobuf \
-                    -lzookeeper_mt
+                    -lprotobuf 
 
-if DHDFS
-singatool_SOURCES += $(HDFS_SRCS)
-singatool_CXXFLAGS += $(HDFS_CFLAGS)
-singatool_LDFLAGS += $(HDFS_LDFLAGS) $(HDFS_LIBS)
+if DZOOKEEPER
+singatool_SOURCES += $(ZOOKEEPER_SRCS)
+singatool_CXXFLAGS += $(ZOOKEEPER_CFLAGS)
+singatool_LDFLAGS += $(ZOOKEEPER_LDFLAGS) $(ZOOKEEPER_LIBS)
 endif
+
 #lib_LTLIBRARIES += libgtest.la
 libgtest_la_SOURCES = $(GTEST_HDRS) $(GTEST_SRCS)
 libgtest_la_CXXFLAGS = $(DEFAULT_FLAGS) -msse3 -fpermissive -I$(top_srcdir)/include
@@ -265,8 +276,7 @@ singatest_LDFLAGS = -lsinga \
                 -lopenblas \
                 -lzmq \
                 -lczmq \
-                -lzookeeper_mt \
-			    -lgtest
+                -lgtest
 if LMDB
 singatest_LDFLAGS += -llmdb
 endif
@@ -281,6 +291,12 @@ if DCUDNN
 singatest_SOURCES += $(CUDNN_SRCS)
 singatest_CXXFLAGS += $(CUDNN_CFLAGS)
 singatest_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
+endif
+
+if DZOOKEEPER
+singatest_SOURCES += $(ZOOKEEPER_SRCS)
+singatest_CXXFLAGS += $(ZOOKEEPER_CFLAGS)
+singatest_LDFLAGS += $(ZOOKEEPER_LDFLAGS) $(ZOOKEEPER_LIBS)
 endif
 
 _driver_la_SOURCES = $(PY_SRCS)

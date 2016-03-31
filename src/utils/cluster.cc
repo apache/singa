@@ -82,7 +82,8 @@ void Cluster::Init(int job, const SingaProto& singaConf,
     }
   }
   // cluster_rt_ = new ZKClusterRT(singa_.zookeeper_host(), job);
-  cluster_rt_ = new SPClusterRT();
+  // cluster_rt_ = new SPClusterRT();
+  cluster_rt_ = ClusterRuntime::Create(singa_.zookeeper_host(), job);
   cluster_rt_->Init();
   hostip_ = GetHostIP();
 }

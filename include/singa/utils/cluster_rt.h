@@ -44,6 +44,9 @@ struct RTCallback {
  */
 class ClusterRuntime {
  public:
+  // ClusterRuntime have different implementation determined when compiling
+  static ClusterRuntime* Create(const std::string&host, int job_id);
+
   virtual ~ClusterRuntime() {}
   /**
    * Initialize the runtime instance

@@ -36,13 +36,32 @@ AC_PROG_CC
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
+# Checks for libraries.
+AC_SEARCH_LIBS([cblas_sgemm], [openblas], [], [
+  AC_MSG_ERROR([unable to find cblas_sgemm() function])
+  ])
+AC_SEARCH_LIBS([zmq_ctx_new], [zmq], [], [
+  AC_MSG_ERROR([unable to find zmq_ctx_new() function])
+    ])
+AC_SEARCH_LIBS([zmsg_new], [czmq], [], [
+  AC_MSG_ERROR([unable to find zmsg_new() function])
+  ])
+AC_CHECK_LIB([glog], [main], [], [
+  AC_MSG_ERROR([unable to find glog library])
+  ])
+AC_CHECK_LIB([protobuf], [main], [], [
+  AC_MSG_ERROR([unable to find protobuf library])
+  ])
+
+PROGS=''
+LTLIBS=''
+
 # Setup custom CUDA paths
 AC_ARG_ENABLE(cuda,
   [AS_HELP_STRING(--enable-cuda,enable CUDA support)],
     cudaval="yes",
     cudaval="no")
 AM_CONDITIONAL(DCUDA, [test "$cudaval" = "yes"])
-
 AC_ARG_WITH([cuda],
    [AS_HELP_STRING(
         [--with-cuda=PATH],
@@ -54,7 +73,6 @@ if test "$cuda_prefix" == "yes"; then
         cuda_prefix="/usr/local/cuda"
     fi
 fi
-
 if test x"$cudaval" = x"yes"; then
     AC_MSG_CHECKING([nvcc in $cuda_prefix/bin])
     if test -x "$cuda_prefix/bin/nvcc"; then
@@ -100,7 +118,6 @@ AC_ARG_ENABLE([cudnn],
     [AS_HELP_STRING(--enable-cudnn,enable CUDNN support)],
     [enable_cudnn=yes], [enable_cudnn=no])
 AM_CONDITIONAL(DCUDNN, [test "$enable_cudnn" = "yes"])
-
 AC_ARG_WITH([cudnn],
     [AS_HELP_STRING([--with-cudnn=PATH], [prefix where CUDNN is installed])],
     [cudnn_prefix=$withval], [cudnn_prefix="/usr/local/cuda"])
@@ -109,7 +126,6 @@ if test "$cudnn_prefix" == "yes"; then
         cudnn_prefix="/usr/local/cuda"
     fi
 fi
-
 if test x"$enable_cudnn" == x"yes"; then
     CUDNN_CFLAGS="-I$cudnn_prefix/include"
     CUDNN_LDFLAGS="-L$cudnn_prefix/lib64 -L$cudnn_prefix/lib"
@@ -126,27 +142,42 @@ else
     CUDNN_LDFLAGS=""
     CUDNN_LIBS=""
 fi
-
 AC_SUBST(CUDNN_CFLAGS)
 AC_SUBST(CUDNN_LDFLAGS)
 AC_SUBST(CUDNN_LIBS)
 
-# Checks for libraries.
-AC_SEARCH_LIBS([cblas_sgemm], [openblas], [], [
-  AC_MSG_ERROR([unable to find cblas_sgemm() function])
-  ])
-AC_SEARCH_LIBS([zmq_ctx_new], [zmq], [], [
-  AC_MSG_ERROR([unable to find zmq_ctx_new() function])
-    ])
-AC_SEARCH_LIBS([zmsg_new], [czmq], [], [
-  AC_MSG_ERROR([unable to find zmsg_new() function])
-  ])
-AC_CHECK_LIB([glog], [main], [], [
-  AC_MSG_ERROR([unable to find glog library])
-  ])
-AC_CHECK_LIB([protobuf], [main], [], [
-  AC_MSG_ERROR([unable to find protobuf library])
-  ])
+# Setup custom zookeeper paths 
+AC_ARG_ENABLE(zookeeper,
+  AS_HELP_STRING([--enable-zookeeper],[enable zookeeper support]),
+  [enable_zookeeper=yes],[enable_zookeeper=no])
+AM_CONDITIONAL(DZOOKEEPER, test "$enable_zookeeper" = yes)
+AC_ARG_WITH([zookeeper],
+    [AS_HELP_STRING([--with-zookeeper=PATH], [prefix where zookeeper is installed])],
+    [zookeeper_prefix=$withval], [zookeeper_prefix="/usr/local"])
+if test "$zookeeper_prefix" == "yes"; then
+    if test "$withval" == "yes"; then
+        cudnn_prefix="/usr/local"
+    fi
+fi
+if test x"$enable_zookeeper" != x"no"; then
+  ZOOKEEPER_CFLAGS="-I$zookeeper_prefix/include"
+  ZOOKEEPER_LDFLAGS="-L$zookeeper_prefix/lib"
+  ZOOKEEPER_LIBS="-lzookeeper_mt"
+  LIBS="$LIBS $ZOOKEEPER_LIBS"
+  LDFLAGS="$LDFLAGS $ZOOKEEPER_LDFLAGS"
+  DEBUG+=" -DUSE_ZOOKEEPER"
+  AC_DEFINE(DZOOKEEPER,[1],[Defined if zookeeper should be used])
+  AC_CHECK_LIB([zookeeper_mt], [main], [], [
+      AC_MSG_ERROR([unable to find zookeeper library])
+      ])
+else
+  ZOOKEEPER_CFLAGS=""
+  ZOOKEEPER_LDFLAGS=""
+  ZOOKEEPER_LIBS=""
+fi
+AC_SUBST(ZOOKEEPER_CFLAGS)
+AC_SUBST(ZOOKEEPER_LDFLAGS)
+AC_SUBST(ZOOKEEPER_LIBS)
 
 # Setup custom lmdb paths 
 AC_ARG_ENABLE(lmdb,
@@ -160,14 +191,11 @@ if test x"$enable_lmdb" = x"yes"; then
   AC_DEFINE(LMDB, 1, [Enable Option layer])
 fi
 
-PROGS=''
-LTLIBS=''
 # Setup custom libhdfs paths 
 AC_ARG_ENABLE(hdfs,
   AS_HELP_STRING([--enable-hdfs],[enable hdfs support]),
   [enable_hdfs=yes],[enable_hdfs=no])
 AM_CONDITIONAL(DHDFS, test "$enable_hdfs" = yes)
-
 AC_ARG_WITH([libhdfs],
     [AS_HELP_STRING([--with-libhdfs=PATH], [prefix where libhdfs is installed])],
     [hdfs_prefix=$withval], [hdfs_prefix="/usr/local"])
@@ -176,7 +204,6 @@ if test "$hdfs_prefix" == "yes"; then
         cudnn_prefix="/usr/local"
     fi
 fi
-
 if test x"$enable_hdfs" != x"no"; then
   HDFS_CFLAGS="-I$hdfs_prefix/include"
   HDFS_LDFLAGS="-L$hdfs_prefix/lib"
@@ -193,7 +220,6 @@ else
   HDFS_LDFLAGS=""
   HDFS_LIBS=""
 fi
-
 AC_SUBST(HDFS_CFLAGS)
 AC_SUBST(HDFS_LDFLAGS)
 AC_SUBST(HDFS_LIBS)
@@ -246,8 +272,6 @@ if test "$python_prefix" == "yes"; then
         python_prefix="/usr/include/python`python -V 2>&1 | awk '{print substr($2,1,3)}'`"
     fi
 fi
-
-
 if test x"$enable_python" != x"no"; then
     AC_MSG_CHECKING([Python.h in $python_prefix])
     if test -f "$python_prefix/Python.h"; then
@@ -264,26 +288,11 @@ else
     PY_PROGS=''
     PYFLAGS=''
 fi
-
 AC_SUBST([PROGS])
 AC_SUBST([LTLIBS])
 AC_SUBST([DEBUG])
 AC_SUBST([PYFLAGS])
 AC_SUBST([PY_PROGS])
-
-# Setup for opencv libs
-#AC_CHECK_LIB([opencv_imgproc], [main], [], [
-#  AC_MSG_ERROR([unable to find opencv_imgproc lib])
-#  ])
-#AC_CHECK_LIB([opencv_highgui], [main], [], [
-#  AC_MSG_ERROR([unable to find opencv_highgui lib])
-#  ])
-#AC_CHECK_LIB([opencv_core], [main], [], [
-#  AC_MSG_ERROR([unable to find opencv_core lib])
-#  ])
-AC_CHECK_LIB([zookeeper_mt], [main], [], [
-  AC_MSG_ERROR([unable to find zookeeper])
-  ])
 
 # Checks for header files.
 AC_HEADER_STDC

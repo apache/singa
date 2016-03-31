@@ -29,11 +29,23 @@
 #include <iostream>
 #include "singa/proto/job.pb.h"
 
+#ifdef USE_ZOOKEEPER
+#include "singa/utils/zk_service.h"
+#endif
+
 using std::string;
 using std::to_string;
 using std::vector;
 
 namespace singa {
+
+ClusterRuntime* ClusterRuntime::Create(const std::string&host, int job_id) {
+#ifdef USE_ZOOKEEPER
+  return new ZKClusterRT(host, job_id);
+#else
+  return new SPClusterRT();
+#endif
+}
 
 SPClusterRT::~SPClusterRT() {
   // release callback vector
