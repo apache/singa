@@ -24,8 +24,8 @@
 #include <string>
 #include <vector>
 #include "singa/proto/singa.pb.h"
-#include "singa/utils/cluster_rt.h"
 #include "singa/utils/common.h"
+#include "singa/utils/job_manager.h"
 
 std::string conf_dir;
 singa::SingaProto global;

@@ -22,7 +22,8 @@
 #ifndef SINGA_UTILS_CLUSTER_RT_H_
 #define SINGA_UTILS_CLUSTER_RT_H_
 
-#include <zookeeper/zookeeper.h>
+#include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -30,63 +31,9 @@ namespace singa {
 
 typedef void (*rt_callback)(void *contest);
 
-const int kZKBufSize = 100;
-// following paths are global
-const std::string kZKPathSinga = "/singa";
-const std::string kZKPathSys =   "/singa/sys";
-const std::string kZKPathJLock = "/singa/sys/job-lock";
-const std::string kZKPathHostIdx = "/singa/sys/host-idx";
-const std::string kZKPathApp =   "/singa/app";
-const std::string kZKPathJob =   "/singa/app/job-";
-// following paths are local under /singa/app/job-X
-const std::string kZKPathJobGroup = "/group";
-const std::string kZKPathJobProc =  "/proc";
-const std::string kZKPathJobPLock = "/proc-lock";
-
-inline std::string GetZKJobWorkspace(int job_id) {
-  char buf[kZKBufSize];
-  snprintf(buf, kZKBufSize, "%010d", job_id);
-  return kZKPathJob + buf;
-}
-
 struct RTCallback {
   rt_callback fn;
   void* ctx;
-};
-
-struct JobInfo {
-  int id;
-  int procs;
-  std::string name;
-};
-
-/*
- * A wrapper for zookeeper service which handles error code and reconnections
- */
-class ZKService {
- public:
-  static void ChildChanges(zhandle_t* zh, int type, int state,
-                           const char *path, void* watcherCtx);
-
-  ~ZKService();
-  bool Init(const std::string& host, int timeout);
-  bool CreateNode(const char* path, const char* val, int flag, char* output);
-  bool DeleteNode(const char* path);
-  bool Exist(const char* path);
-  bool UpdateNode(const char* path, const char* val);
-  bool GetNode(const char* path, char* output);
-  bool GetChild(const char* path, std::vector<std::string>* vt);
-  bool WGetChild(const char* path, std::vector<std::string>* vt,
-                   RTCallback *cb);
-
- private:
-  const int kNumRetry = 5;
-  const int kSleepSec = 1;
-
-  static void WatcherGlobal(zhandle_t* zh, int type, int state,
-                            const char *path, void* watcherCtx);
-
-  zhandle_t* zkhandle_ = nullptr;
 };
 
 /**
@@ -97,92 +44,57 @@ class ZKService {
  */
 class ClusterRuntime {
  public:
-  ClusterRuntime(const std::string& host, int job_id);
-  ClusterRuntime(const std::string& host, int job_id, int timeout);
-  ~ClusterRuntime();
-
+  virtual ~ClusterRuntime() {}
   /**
    * Initialize the runtime instance
    */
-  bool Init();
+  virtual bool Init() = 0;
   /**
    * register the process, and get a unique process id
    *
    * \return the process id, -1 if failed
    */
-  int RegistProc(const std::string& host_addr, int pid);
+  virtual int RegistProc(const std::string& host_addr, int pid) = 0;
   /**
    * translate the process id to host address
    *
    * \return the host and port, "" if no such proc id 
    */
-  std::string GetProcHost(int proc_id);
+  virtual std::string GetProcHost(int proc_id) = 0;
   /**
    * Server: watch all workers in a server group,
    * will be notified when all workers have left
    */
-  bool WatchSGroup(int gid, int sid, rt_callback fn, void* ctx);
+  virtual bool WatchSGroup(int gid, int sid, rt_callback fn, void* ctx) = 0;
   /**
    * Worker: join a server group (i.e. start to read/update these servers)
    */
-  bool JoinSGroup(int gid, int wid, int s_group);
+  virtual bool JoinSGroup(int gid, int wid, int s_group) = 0;
   /**
    * Worker: leave a server group (i.e. finish its all work)
    */
-  bool LeaveSGroup(int gid, int wid, int s_group);
-
- private:
-  inline std::string groupPath(int gid) {
-    return group_path_ + "/sg" + std::to_string(gid);
-  }
-  inline std::string workerPath(int gid, int wid) {
-    return "/g" + std::to_string(gid) + "_w" + std::to_string(wid);
-  }
-
-  int timeout_ = 30000;
-  std::string host_ = "";
-  ZKService zk_;
-  std::string workspace_ = "";
-  std::string group_path_ = "";
-  std::string proc_path_ = "";
-  std::string proc_lock_path_ = "";
-  std::vector<RTCallback*> cb_vec_;
+  virtual bool LeaveSGroup(int gid, int wid, int s_group) = 0;
 };
 
-class JobManager {
+/*
+ * A ClusterRuntime implementation for single-process environment
+ */
+class SPClusterRT : public ClusterRuntime {
  public:
-  // host is comma separated host:port pairs, each corresponding to a zk server.
-  // e.g. "127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002"
-  explicit JobManager(const std::string& host);
-  JobManager(const std::string& host, int timeout);
+  ~SPClusterRT();
 
-  // NOTICE: Init must be called once, before start to use other functions
-  bool Init();
-  // generate a unique job id
-  bool GenerateJobID(int* id);
-  // generate a list of hosts for a job conf
-  bool GenerateHostList(const char* host_file, const char* job_file,
-                        std::vector<std::string>* list);
-  // list all jobs recorded in zk
-  bool ListJobs(std::vector<JobInfo>* jobs);
-  // list running processes for a job
-  bool ListJobProcs(int job, std::vector<std::string>* procs);
-  // remove a job path in zk
-  bool Remove(int job);
-  // remove all job paths in zk
-  bool RemoveAllJobs();
-  // remove all singa related paths in zk
-  bool CleanUp();
+  bool Init() override;
+  int RegistProc(const std::string& host_addr, int pid) override;
+  std::string GetProcHost(int proc_id) override;
+  bool WatchSGroup(int gid, int sid, rt_callback fn, void* ctx) override;
+  bool JoinSGroup(int gid, int wid, int s_group) override;
+  bool LeaveSGroup(int gid, int wid, int s_group) override;
 
  private:
-  const int kJobsNotRemoved = 10;
-
-  bool CleanPath(const std::string& path, bool remove);
-  std::string ExtractClusterConf(const char* job_file);
-
-  int timeout_ = 30000;
-  std::string host_ = "";
-  ZKService zk_;
+  std::vector<std::string> proc_list_;
+  std::map<int, std::vector<RTCallback*>> grp_callbacks_;
+  std::map<int, int> grp_count_;
+  std::mutex lock_;
 };
 
 }  // namespace singa
