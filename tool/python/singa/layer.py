@@ -101,33 +101,21 @@ class Layer(object):
 
         self.singalayer.ComputeFeature(1, self.singaSrclayerVector)
 
-    def ComputeGradient(self, step, upd=None):
+    def ComputeGradient(self):
         ''' The method creates singa::Updater
             and calls ComputeGradient for gradient computation
             then updates the parameters.
-
-            step = (int)    // a training step
-            upd = (object)  // Updater object
         '''
-        # create singa::Updater
-        assert upd != None, 'required Updater (see model.py)'
-        if Layer.singaupdater == None:
-            Layer.singaupdater = SingaUpdater.CreateUpdater(
-                                          upd.proto.SerializeToString())
-
         # call ComputeGradient of Singa
         self.singalayer.ComputeGradient(1, self.singaSrclayerVector)
 
+    def UpdateParams(self, step, upd):
+        ''' The method updates parameter values
+        '''
         # update parameters
         singaParams = self.singalayer.GetParams()
         for par in singaParams:
-            Layer.singaupdater.Update(step, par, 1.0)
-
-        # recursively call ComputeGradient of srclayers
-        #(TODO) what if there are multiple source layers?
-        for sly in self.srclayers:
-            if sly.srclayers != None:
-                sly.ComputeGradient(step, upd)
+            upd.singaupdater.Update(step, par, 1.0)
 
     def GetParams(self):
         ''' The method gets parameter values
@@ -181,15 +169,13 @@ class Layer(object):
 
 class Dummy(object):
 
-    def __init__(self, shape=[], path='', dtype='', src=[], **kwargs):
+    def __init__(self, **kwargs):
         ''' Dummy layer is used for data layer to feed/fetch input data
-            shape = (list)   // [# of samples, # of channels, img h, img w]
-            path  = (string) // path to dataset
+            or label information
         '''
         self.is_datalayer = True
         self.srclayers = None
         self.singalayer = None
-        if 'is_label' in kwargs: self.is_label = kwargs['is_label']
 
         # create layer proto for Dummy layer
         kwargs = {'name':'dummy', 'type':kDummy}
@@ -206,155 +192,64 @@ class Dummy(object):
             self.singalayer.Setup(self.layer.SerializeToString(),
                                   layerVector(0))
 
-    def Feed(self, data, nb_channel=1, is_label=0):
+    def Feed(self, shape, data, aux_data):
         ''' Create and Setup singa::DummyLayer for input data
             Insert data using Feed()
         '''
-        batchsize, hdim = data.shape
+        batchsize = shape[0]
+        hdim = reduce(lambda x, y: x*y, shape[1:])
         datasize = batchsize * hdim
 
         # create and setup the dummy layer
         if self.singalayer == None:
-            imgsize = int(np.sqrt(hdim/nb_channel))
-            shapeVector = [batchsize, nb_channel, imgsize, imgsize]
-            self.setup(shapeVector)
+            self.setup(shape)
 
-        data = data.astype(np.float)
-        dataVector = floatVector(datasize)
-        k = 0
-        for i in range(batchsize):
-            for j in range(hdim):
-                dataVector[k] = data[i, j]
-                k += 1
-        self.singalayer.Feed(batchsize, dataVector, is_label)
+        if data != None:
+            data = data.astype(np.float)
+            dataVector = floatVector(datasize)
+            for i in range(batchsize):
+                for j in range(hdim):
+                    dataVector[i*hdim+j] = data[i, j]
+            labelVector = intVector(0)
 
-    def FetchData(self, batchsize):
-        sidx = self.batch_index * batchsize
-        eidx = sidx + batchsize
-        batch = self.data[sidx:eidx, :]
+        if aux_data != None:
+            aux_data = aux_data.astype(np.int)
+            labelVector = intVector(datasize)
+            for i in range(batchsize):
+                labelVector[i] = aux_data[i, 0]
+            dataVector = floatVector(0)
 
-        self.Feed(batch, self.shape[1], self.is_label)
-
-        self.batch_index += 1
-        if eidx > self.data.shape[0]:
-            self.batch_index = 0
+        self.singalayer.Feed(batchsize, dataVector, labelVector)
 
     def get_singalayer(self):
         return self.singalayer.ToLayer()
 
-class ImageData(Dummy):
-    ''' This class will be used for Rafiki, dlaas
+class ImageInput(Dummy):
+    ''' This class is used to feed image data
     '''
-    def __init__(self, shape=[], data_path='', data_type='byte', src=[],
-                 mean_path='', mean_type='float'):
-        ''' Dummy layer is used for data layer
-            shape = (list)   // [# of samples, # of channels, img h, img w]
-            data_path  = (string) // path to dataset
-            mean_path
-        '''
-        is_label = False
-        super(ImageData, self).__init__(shape, data_path, data_type, src,
-                                    is_label=is_label,
-                                    mean_path=mean_path,
-                                    mean_type=mean_type)
+    def __init__(self, width=None, height=None, nb_channel=1):
+        super(ImageInput, self).__init__()
+        self.width = width
+        self.height = height
+        self.nb_channel = nb_channel
 
-        # if dataset path is not specified, skip
-        # otherwise, load dataset
-        if data_path == '' or mean_path == '':
-            return
+    def Feed(self, image_data):
+        batchsize = image_data.shape[0]
+        if self.width == None or self.height == None:
+            hdim = image_data.shape[1]
+            imgsize = int(np.sqrt(hdim/self.nb_channel))
+        shape = [batchsize, self.nb_channel, self.width, self.height]
+        Dummy.Feed(self, shape, image_data, None)
 
-        self.shape = shape
-        self.data_path = data_path
-        self.mean_path = mean_path
-        self.src = None
-        self.batch_index = 0
-
-        nb_samples = shape[0]
-        nb_pixels = shape[1]
-        for i in range(len(shape)-2):
-            nb_pixels *= shape[i+2]
-
-        if data_type == 'byte':
-            d = np.fromfile(data_path, dtype=np.uint8)
-        elif data_type == 'int':
-            d = np.fromfile(data_path, dtype=np.int)
-        self.data = d.reshape(nb_samples, nb_pixels)
-
-        if mean_type == 'float':
-            d = np.fromfile(mean_path, dtype=np.float32)
-        self.mean = d.reshape(1, nb_pixels)
-
-    def Feed(self, data, nb_channel=1, is_label=0):
-        ''' Create and Setup singa::DummyLayer for input data
-            Insert data using Feed()
-            Need to minus the mean file
-        '''
-        batchsize, hdim = data.shape
-        datasize = batchsize * hdim
-
-        # create and setup the dummy layer
-        if self.singalayer == None:
-            imgsize = int(np.sqrt(hdim/nb_channel))
-            shapeVector = [batchsize, nb_channel, imgsize, imgsize]
-            self.setup(shapeVector)
-
-        # feed input data and minus mean
-        data = data.astype(np.float)
-        dataVector = floatVector(datasize)
-        k = 0
-        for i in range(batchsize):
-            for j in range(hdim):
-                dataVector[k] = data[i, j]-self.mean[0, j]
-                k += 1
-        self.singalayer.Feed(batchsize, dataVector, is_label)
-
-class LabelData(Dummy):
-    ''' This class will be used for Rafiki, dlaas
+class LabelInput(Dummy):
+    ''' This class is used to feed label data
     '''
-    def __init__(self, shape=[], label_path='', label_type='int', src=[]):
-        ''' Dummy layer is used for label data layer
-            shape = (list)   // [# of samples, # of channels, img h, img w]
-            data_path  = (string) // path to dataset
-            mean_path
-        '''
-        is_label = True
-        super(LabelData, self).__init__(shape, label_path, label_type, src,
-                                    is_label=is_label)
+    def __init__(self):
+        super(LabelInput, self).__init__()
 
-        # if dataset path is not specified, skip
-        # otherwise, load dataset
-        if label_path == '':
-            return
-
-        self.shape = shape
-        self.label_path = label_path
-        self.src = None
-        self.batch_index = 0
-
-        nb_samples = shape[0]
-
-        if label_type == 'int':
-            d = np.fromfile(label_path, dtype=np.int)
-        self.data = d.reshape(nb_samples, 1)
-
-    def Feed(self, data, nb_chanel=1, is_label=1):
-        ''' Create and Setup singa::DummyLayer for input data
-            Insert data using Feed()
-            Need to minus the mean file
-        '''
-        batchsize = data.shape[0]
-
-        # create and setup the dummy layer
-        if self.singalayer == None:
-            shapeVector = [batchsize, 1]
-            self.setup(shapeVector)
-
-        data = data.astype(np.float)
-        dataVector = floatVector(batchsize)
-        for i in range(batchsize):
-            dataVector[i] = data[i, 0]
-        self.singalayer.Feed(batchsize, dataVector, 1)
-
+    def Feed(self, label_data):
+        Dummy.Feed(self, label_data.shape, None, label_data)
+    
 
 class Data(Layer):
 

@@ -79,7 +79,7 @@ namespace singa{
   class DummyLayer{
     public:
       void Setup(const std::string str, const std::vector<singa::Layer*>& srclayers);
-      void Feed(int batchsize, std::vector<float>& data, int is_aux);
+      void Feed(int batchsize, std::vector<float>& data, std::vector<int>& aux_data);
       singa::Layer* ToLayer();
   };
 

@@ -32,6 +32,8 @@ from singa.utils.utility import *
 from singa.utils.message import *
 from google.protobuf import text_format
 
+from singa.driver import Updater as SingaUpdater
+
 class Model(object):
     ''' Configure model parameter
         - add(): add layer
@@ -487,7 +489,21 @@ class Updater(object):
             setval(upd.learning_rate, type=kLinear, linear_conf=cp.proto)
 
         self.proto = upd
+        self.singaupdater = None
 
+    def Update(self, step, layer):
+        ''' This method updates parameters of layer
+            step = (int)  // training step, i.e., param version
+        '''
+        if self.singaupdater == None:
+            self.singaupdater = SingaUpdater.CreateUpdater(
+                                  self.proto.SerializeToString())
+
+        # update parameters
+        singaParams = layer.singalayer.GetParams()
+        for par in singaParams:
+            self.singaupdater.Update(step, par, 1.0)
+    
 
 class SGD(Updater):
 

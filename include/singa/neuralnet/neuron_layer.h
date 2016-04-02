@@ -126,7 +126,7 @@ class DummyLayer: public NeuronLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
-  void Feed(int batchsize, vector<float>& data, int is_aux);
+  void Feed(int batchsize, vector<float>& data, vector<int>& aux_data);
   Layer* ToLayer() { return this;}
 
  private:

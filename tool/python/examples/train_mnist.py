@@ -34,7 +34,12 @@ sys.path.append(os.path.join(singa_root_,'tool','python'))
 from singa.driver import Driver
 from singa.layer import *
 from singa.model import *
-from singa.utils.utility import swap32
+
+def swap32(x):
+    return (((x << 24) & 0xFF000000) |
+            ((x <<  8) & 0x00FF0000) |
+            ((x >>  8) & 0x0000FF00) |
+            ((x >> 24) & 0x000000FF))
 
 def load_dataset():
     ''' MNIST dataset
@@ -66,8 +71,8 @@ print '[Layer registration/declaration]'
 d = Driver()
 d.Init(sys.argv)
 
-input = Dummy()
-label = Dummy()
+input = ImageInput(28, 28)
+label = LabelInput()
 
 nn = []
 nn.append(input)
@@ -97,11 +102,16 @@ print '[Start training]'
 for i in range(x.shape[0] / batchsize):
     xb, yb = x[i*batchsize:(i+1)*batchsize,:], y[i*batchsize:(i+1)*batchsize,:]
     nn[0].Feed(xb)
-    label.Feed(yb, is_label=1)
+    label.Feed(yb)
     for h in range(1, len(nn)):
         nn[h].ComputeFeature(nn[h-1])
     loss.ComputeFeature(nn[-1], label)
     if (i+1)%disp_freq == 0:
         print '  Step {:>3}: '.format(i+1),
         loss.display()
-    loss.ComputeGradient(i+1, sgd)
+
+    loss.ComputeGradient()
+    for h in range(len(nn)-1, 0, -1):
+        nn[h].ComputeGradient()
+        sgd.Update(i+1, nn[h])
+

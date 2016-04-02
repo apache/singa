@@ -78,22 +78,22 @@ void DummyLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
     Copy(grad_, srclayers[0]->mutable_grad(this));
 }
 
-void DummyLayer::Feed(int batchsize, vector<float>& data, int is_aux){
+void DummyLayer::Feed(int batchsize, vector<float>& data, vector<int>& aux_data){
 
     batchsize_ = batchsize;
     // input data
-    if (is_aux == 0) {
+    if (data.size() > 0) {
       int size = data.size();
       float* ptr = data_.mutable_cpu_data();
       for (int i = 0; i< size; i++) { 
           ptr[i] = data.at(i);
       }
     }
-    // label
-    else {
+    // auxiliary data, e.g., label
+    if (aux_data.size() > 0) {
       aux_data_.resize(batchsize_);
       for (int i = 0; i< batchsize_; i++) {
-          aux_data_[i] = static_cast<int>(data.at(i));
+          aux_data_[i] = static_cast<int>(aux_data.at(i));
       }
     }
     return;
