@@ -40,9 +40,6 @@ AC_PROG_LIBTOOL
 AC_SEARCH_LIBS([cblas_sgemm], [openblas], [], [
   AC_MSG_ERROR([unable to find cblas_sgemm() function])
   ])
-AC_SEARCH_LIBS([zmq_ctx_new], [zmq], [], [
-  AC_MSG_ERROR([unable to find zmq_ctx_new() function])
-    ])
 AC_SEARCH_LIBS([zmsg_new], [czmq], [], [
   AC_MSG_ERROR([unable to find zmsg_new() function])
   ])
@@ -116,7 +113,7 @@ AC_SUBST(CUDA_CFLAGS)
 # Setup custom CUDNN paths
 AC_ARG_ENABLE([cudnn],
     [AS_HELP_STRING(--enable-cudnn,enable CUDNN support)],
-    [enable_cudnn=yes], [enable_cudnn=no])
+    [enable_cudnn="yes"], [enable_cudnn="no"])
 AM_CONDITIONAL(DCUDNN, [test "$enable_cudnn" = "yes"])
 AC_ARG_WITH([cudnn],
     [AS_HELP_STRING([--with-cudnn=PATH], [prefix where CUDNN is installed])],
@@ -147,37 +144,41 @@ AC_SUBST(CUDNN_LDFLAGS)
 AC_SUBST(CUDNN_LIBS)
 
 # Setup custom zookeeper paths 
-AC_ARG_ENABLE(zookeeper,
-  AS_HELP_STRING([--enable-zookeeper],[enable zookeeper support]),
-  [enable_zookeeper=yes],[enable_zookeeper=no])
-AM_CONDITIONAL(DZOOKEEPER, test "$enable_zookeeper" = yes)
-AC_ARG_WITH([zookeeper],
-    [AS_HELP_STRING([--with-zookeeper=PATH], [prefix where zookeeper is installed])],
-    [zookeeper_prefix=$withval], [zookeeper_prefix="/usr/local"])
-if test "$zookeeper_prefix" == "yes"; then
+AC_ARG_ENABLE(dist,
+  AS_HELP_STRING([--enable-dist],[enable dist support]),
+  [enable_dist="yes"],[enable_dist="no"])
+AM_CONDITIONAL(DDIST, test "$enable_dist" = "yes")
+AC_ARG_WITH([dist],
+    [AS_HELP_STRING([--with-dist=PATH], [prefix where dist libraries,i.e.
+     zookeeper/zmq is installed])],
+    [dist_prefix=$withval], [dist_prefix="/usr/local"])
+if test "$dist_prefix" == "yes"; then
     if test "$withval" == "yes"; then
-        cudnn_prefix="/usr/local"
+        dist_prefix="/usr/local"
     fi
 fi
-if test x"$enable_zookeeper" != x"no"; then
-  ZOOKEEPER_CFLAGS="-I$zookeeper_prefix/include"
-  ZOOKEEPER_LDFLAGS="-L$zookeeper_prefix/lib"
-  ZOOKEEPER_LIBS="-lzookeeper_mt"
-  LIBS="$LIBS $ZOOKEEPER_LIBS"
-  LDFLAGS="$LDFLAGS $ZOOKEEPER_LDFLAGS"
-  DEBUG+=" -DUSE_ZOOKEEPER"
-  AC_DEFINE(DZOOKEEPER,[1],[Defined if zookeeper should be used])
-  AC_CHECK_LIB([zookeeper_mt], [main], [], [
-      AC_MSG_ERROR([unable to find zookeeper library])
-      ])
+if test x"$enable_dist" == x"yes"; then
+  AC_CHECK_LIB([zookeeper_mt], [main], [], [ 
+                AC_MSG_ERROR([unable to find zookeeper library])
+        ])
+  AC_SEARCH_LIBS([zmq_ctx_new], [zmq], [], [ 
+                  AC_MSG_ERROR([unable to find zmq_ctx_new() function])
+        ])
+  DIST_CFLAGS="-I$dist_prefix/include"
+  DIST_LDFLAGS="-L$dist_prefix/lib"
+  DIST_LIBS="-lzookeeper_mt -lzmq"
+  LIBS="$LIBS $DIST_LIBS"
+  LDFLAGS="$LDFLAGS $DIST_LDFLAGS"
+  DEBUG+=" -DUSE_ZOOKEEPER -DUSE_ZMQ"
+  AC_DEFINE(DDIST,[1],[Defined if dist should be used])
 else
-  ZOOKEEPER_CFLAGS=""
-  ZOOKEEPER_LDFLAGS=""
-  ZOOKEEPER_LIBS=""
+  DIST_CFLAGS=""
+  DIST_LDFLAGS=""
+  DIST_LIBS=""
 fi
-AC_SUBST(ZOOKEEPER_CFLAGS)
-AC_SUBST(ZOOKEEPER_LDFLAGS)
-AC_SUBST(ZOOKEEPER_LIBS)
+AC_SUBST(DIST_CFLAGS)
+AC_SUBST(DIST_LDFLAGS)
+AC_SUBST(DIST_LIBS)
 
 # Setup custom lmdb paths 
 AC_ARG_ENABLE(lmdb,

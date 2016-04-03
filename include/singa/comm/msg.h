@@ -25,7 +25,7 @@
 #include <utility>
 
 // TODO(wangwei): make it a compiler argument
-#define USE_ZMQ
+// #define USE_ZMQ
 
 #include <vector>
 #ifdef USE_ZMQ

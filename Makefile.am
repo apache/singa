@@ -195,10 +195,10 @@ libsinga_la_SOURCES += $(CUDNN_SRCS)
 libsinga_la_CXXFLAGS += $(CUDNN_CFLAGS)
 libsinga_la_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 endif
-if DZOOKEEPER
+if DDIST
 libsinga_la_SOURCES += $(ZOOKEEPER_SRCS)
-libsinga_la_CXXFLAGS += $(ZOOKEEPER_CFLAGS)
-libsinga_la_LDFLAGS += $(ZOOKEEPER_LDFLAGS) $(ZOOKEEPER_LIBS)
+libsinga_la_CXXFLAGS += $(DIST_CFLAGS)
+libsinga_la_LDFLAGS += $(DIST_LDFLAGS) $(DIST_LIBS)
 endif
 
 if DHDFS
@@ -214,7 +214,6 @@ singa_LDFLAGS = -lsinga \
                 -lglog  \
                 -lprotobuf \
                 -lopenblas \
-                -lzmq \
                 -lczmq 
 if LMDB
 singa_LDFLAGS += -llmdb
@@ -226,10 +225,10 @@ singa_CXXFLAGS += $(CUDA_CFLAGS)
 singa_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
 
-if DZOOKEEPER
+if DDIST
 singa_SOURCES += $(ZOOKEEPER_SRCS)
-singa_CXXFLAGS += $(ZOOKEEPER_CFLAGS)
-singa_LDFLAGS += $(ZOOKEEPER_LDFLAGS) $(ZOOKEEPER_LIBS)
+singa_CXXFLAGS += $(DIST_CFLAGS)
+singa_LDFLAGS += $(DIST_LDFLAGS) $(DIST_LIBS)
 endif
 
 if DCUDNN
@@ -251,10 +250,10 @@ singatool_LDFLAGS = -lsinga \
                     -lglog  \
                     -lprotobuf 
 
-if DZOOKEEPER
+if DDIST
 singatool_SOURCES += $(ZOOKEEPER_SRCS)
-singatool_CXXFLAGS += $(ZOOKEEPER_CFLAGS)
-singatool_LDFLAGS += $(ZOOKEEPER_LDFLAGS) $(ZOOKEEPER_LIBS)
+singatool_CXXFLAGS += $(DIST_CFLAGS)
+singatool_LDFLAGS += $(DIST_LDFLAGS) $(DIST_LIBS)
 endif
 
 #lib_LTLIBRARIES += libgtest.la
@@ -274,7 +273,6 @@ singatest_LDFLAGS = -lsinga \
                 -lglog  \
                 -lprotobuf \
                 -lopenblas \
-                -lzmq \
                 -lczmq \
                 -lgtest
 if LMDB
@@ -293,10 +291,10 @@ singatest_CXXFLAGS += $(CUDNN_CFLAGS)
 singatest_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 endif
 
-if DZOOKEEPER
+if DDIST
 singatest_SOURCES += $(ZOOKEEPER_SRCS)
-singatest_CXXFLAGS += $(ZOOKEEPER_CFLAGS)
-singatest_LDFLAGS += $(ZOOKEEPER_LDFLAGS) $(ZOOKEEPER_LIBS)
+singatest_CXXFLAGS += $(DIST_CFLAGS)
+singatest_LDFLAGS += $(DIST_LDFLAGS) $(DIST_LIBS)
 endif
 
 _driver_la_SOURCES = $(PY_SRCS)
