@@ -18,10 +18,11 @@
 * under the License.
 *
 *************************************************************/
-#ifndef SINGA_SINGA_DRIVER_H_
-#define SINGA_SINGA_DRIVER_H_
+#ifndef SINGA_DRIVER_H_
+#define SINGA_DRIVER_H_
 
 #include <vector>
+#include <string>
 #include "singa/proto/job.pb.h"
 #include "singa/proto/singa.pb.h"
 #include "singa/utils/factory.h"
@@ -50,7 +51,7 @@ class Driver {
    * Used for python binding. Users can also directly call it as a C++ API.
    * - init glog with given parameters
    *
-   */   
+   */
   void InitLog(char *arg);
   /**
    * Update job configuration and call Train(const JobProto&) to start the
@@ -74,7 +75,7 @@ class Driver {
    * files.
    * @param[in] str serialized string recorded job configuration.
    */
-  void Train(bool resume, const std::string str); 
+  void Train(bool resume, const std::string str);
   /**
    * Create workers and servers to conduct the training.
    *
@@ -204,6 +205,7 @@ class Driver {
 
  private:
   int job_id_;
+  std::string hostip_;
   JobProto job_conf_;
   SingaProto singa_conf_;
 };
@@ -259,4 +261,4 @@ int Driver::RegisterWorker(const Type& type) {
 
 }  // namespace singa
 
-#endif  // SINGA_SINGA_DRIVER_H_
+#endif  // SINGA_DRIVER_H_

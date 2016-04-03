@@ -58,8 +58,8 @@ class Stub {
       const std::vector<Worker*>& workers,
       const std::vector<Server*>& servers);
 
-  const std::string& endpoint() const {
-    return endpoint_;
+  void set_router(Router* router) {
+    router_ = router;
   }
 
  protected:
@@ -100,7 +100,6 @@ class Stub {
 
  protected:
   Router *router_ = nullptr;
-  std::string endpoint_;
   std::vector<int> slice2server_;
 };
 

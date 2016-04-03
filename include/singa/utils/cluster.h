@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -122,7 +122,6 @@ class Cluster {
   inline int ProcsIDOf(int group_id, int id, int flag) {
     return procs_ids_.at(Hash(group_id, id, flag));
   }
-  inline std::string hostip() const { return hostip_; }
 
   /**
    * @param pid, processs ID
@@ -150,7 +149,6 @@ class Cluster {
 
   int procs_id_ = -1;
   int nprocs_ = 0;
-  std::string hostip_ = "";
   // cluster config proto
   ClusterProto cluster_;
   SingaProto singa_;

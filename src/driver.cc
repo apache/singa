@@ -49,11 +49,11 @@ namespace singa {
 void Driver::Init(int argc, char **argv) {
   // unique job ID generated from singa-run.sh, passed in as "-singa_job <id>"
   int arg_pos = ArgPos(argc, argv, "-singa_job");
-  job_id_ = (arg_pos != -1) ? atoi(argv[arg_pos+1]) : -1;
+  job_id_ = (arg_pos != -1) ? atoi(argv[arg_pos + 1]) : -1;
   // global signa conf passed by singa-run.sh as "-singa_conf <path>"
   arg_pos = ArgPos(argc, argv, "-singa_conf");
   if (arg_pos != -1)
-    ReadProtoFromTextFile(argv[arg_pos+1], &singa_conf_);
+    ReadProtoFromTextFile(argv[arg_pos + 1], &singa_conf_);
   else
     ReadProtoFromTextFile("conf/singa.conf", &singa_conf_);
   // set log path
@@ -62,7 +62,12 @@ void Driver::Init(int argc, char **argv) {
   // job conf passed by users as "-conf <path>"
   arg_pos = ArgPos(argc, argv, "-conf");
   if (arg_pos != -1)
-    ReadProtoFromTextFile(argv[arg_pos+1], &job_conf_);
+    ReadProtoFromTextFile(argv[arg_pos + 1], &job_conf_);
+  arg_pos = ArgPos(argc, argv, "-host");
+  if (arg_pos != -1)
+    hostip_ = argv[arg_pos + 1];
+  else
+    hostip_ = "localhost";
 
   // register layers
 
@@ -222,9 +227,14 @@ void Driver::Train(const JobProto& job_conf) {
   // no need to create Stub if there is only a single worker without servers,
   // i.e., the training will be conducted by the single worker.
   if (grp_size > 1 || nserver_grps > 0) {
-    stub.Setup();
-    // TODO(wangwei)  register endpoint to zookeeper if > 1 procs;
-    cluster->Register(getpid(), stub.endpoint());  // getpid() is from unistd.h
+    auto router = new Router();
+    if (cluster->nprocs() > 1) {
+      int binding_port = router->Bind("tcp://" + hostip_ + ":*");
+      cluster->Register(getpid(), hostip_ + ":" + std::to_string(binding_port));
+    } else {
+      cluster->Register(getpid(), hostip_ + ":0");  // fake endpoint
+    }
+    stub.set_router(router);
   }
 
   NeuralNet* net = NeuralNet::Create(job_conf.neuralnet(), kTrain, grp_size);
