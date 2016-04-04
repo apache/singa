@@ -128,7 +128,10 @@ int Msg::FrameSize() {
 }
 
 char* Msg::FrameStr() {
-  return static_cast<char*>(frames_.at(idx_).first);
+  char* ret = new char[frames_.at(idx_).second];
+  memcpy(ret, static_cast<char*>(frames_.at(idx_).first), 
+        frames_.at(idx_).second);
+  return ret;
 }
 
 void* Msg::FrameData() {

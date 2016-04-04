@@ -48,8 +48,9 @@ void Stub::Setup() {
     const string hostip = cluster->hostip();
     int port = router_->Bind("tcp://" + hostip + ":*");
     endpoint_ = hostip + ":" + std::to_string(port);
-  } else
+  } else {
     endpoint_ = "localhost";
+  }
 }
 /**
  * Get a hash id for a Param object from a group.

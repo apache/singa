@@ -23,7 +23,7 @@
 #include <glog/logging.h>
 
 namespace singa {
-const int TIME_OUT = 2; // max blocking time in milliseconds.
+const int TIME_OUT = 2;  // max blocking time in milliseconds.
 std::unordered_map<int, SafeQueue<Msg*>> msgQueues;
 Dealer::~Dealer() {
 #ifdef USE_ZMQ
@@ -68,7 +68,7 @@ int Dealer::Send(Msg** msg) {
 Msg* Dealer::Receive(int timeout) {
   Msg* msg = nullptr;
   if (timeout > 0) {
-    if(!msgQueues.at(id_).timeout_pop(msg, timeout))
+    if (!msgQueues.at(id_).timeout_pop(msg, timeout))
       return nullptr;
   } else {
     msgQueues.at(id_).pop(msg);

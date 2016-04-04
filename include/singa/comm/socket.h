@@ -43,17 +43,17 @@ class Dealer {
    /**
     * @param id used for identifying the msg queue of this dealer.
     */
-   Dealer(int id);
+   explicit Dealer(int id);
   ~Dealer();
   /**
-    * Setup the connection with the remote router.
-    *
-    * For local router, there is no need to connect it.
-    *
-    * @param endpoint Identifier of the remote router to connect. It follows
-    * ZeroMQ's format, i.e., IP:port, where IP is the connected process.
-    * @return 1 connection sets up successfully; 0 otherwise
-    */
+   * Setup the connection with the remote router.
+   *
+   * For local router, there is no need to connect it.
+   *
+   * @param endpoint Identifier of the remote router to connect. It follows
+   * ZeroMQ's format, i.e., IP:port, where IP is the connected process.
+   * @return 1 connection sets up successfully; 0 otherwise
+   */
   int Connect(const std::string& endpoint);
   /**
    * Send a message to the local router (id=-1) or remote outer. It is

@@ -118,11 +118,15 @@ TEST(ConnectionLayerTest, BridgeTest) {
   ASSERT_EQ(dst.data(nullptr).shape(0), N);
   ASSERT_EQ(dst.data(nullptr).shape(1), M);
 
+  msgQueues[-1];
+  msgQueues[Addr(0, 0, kWorkerLayer)];
+
   // bind bridges to socket
-  Router router(N);
-  router.Bind("inproc://router");
-  Dealer dealer(0);
-  dealer.Connect("inproc://router");
+  // Router router(N);
+  Router router;
+  // router.Bind("inproc://router");
+  Dealer dealer(Addr(0, 0, kWorkerLayer));
+  // dealer.Connect("inproc://router");
   std::unordered_map<std::string, Layer*> name2bridge;
   name2bridge[src.name()] = &src;
   name2bridge[dst.name()] = &dst;
