@@ -34,10 +34,15 @@ StoreInputLayer::~StoreInputLayer() {
 void StoreInputLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   InputLayer::Setup(conf, srclayers);
-  batchsize_ = conf.store_conf().batchsize();
+  const auto& batchsize = conf.store_conf().batchsize();
+  CHECK(batchsize.size());
   if (conf.partition_dim() == 0) {
-    batchsize_ /= conf.num_partitions();
-  }
+    if (batchsize.size() == 1)  // equal partition
+      batchsize_ = batchsize.Get(0) / conf.num_partitions();
+    else  // manual partition
+      batchsize_ = batchsize.Get(conf.partition_id());
+  } else
+    batchsize_ = conf.store_conf().batchsize(0);
 }
 
 void StoreInputLayer::ComputeFeature(int flag,

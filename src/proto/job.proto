@@ -374,7 +374,7 @@ message StoreProto {
   optional string std_file = 5;
   optional float mean_value = 6;
   optional float std_value = 7;
-  optional int32 batchsize = 8 [default = 1];
+  repeated int32 batchsize = 8;
   repeated int32 shape = 9;
   optional bool encoded = 10 [default = false];
   optional int32 random_skip = 11 [default = 0];
