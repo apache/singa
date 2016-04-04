@@ -281,7 +281,7 @@ class Blob {
     if (transpose() != other->transpose()) return false;
     if (count() != other->count()) return false;
     if (shape().size() != other->shape().size()) return false;
-    for (int i = 0; i < shape().size(); i++) {
+    for (unsigned int i = 0; i < shape().size(); i++) {
       if (shape(i) != other->shape(i)) return false;
     }
     const Dtype * a = cpu_data();

@@ -30,7 +30,7 @@
 
 #ifdef USE_GPU
 #include <cuda_runtime.h>
-#include "cublas_v2.h"
+#include <cublas_v2.h>
 #endif
 
 using namespace singa;
@@ -64,8 +64,8 @@ TEST(MathBlobTest, TestGEMV) {
   float AT[5][5] = {};
   float B[5] = {};
   float Res[5] = {};
-  for(int i = 0; i < 5; i++) {
-    for(int j = 0; j < 5; j++) {
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
       A[i][j] = i * j + i - j;
       AT[j][i] = i * j + i - j;
     }
@@ -88,7 +88,7 @@ TEST(MathBlobTest, TestGEMV) {
   BlobATB->set_cpu_data(Res);
 
   for (int i = 0; i < 5; i++) {
-    for(int j = 0; j < 5; j++) {
+    for (int j = 0; j < 5; j++) {
       Res[i] += 2*A[i][j] * B[j];
     }
   }
@@ -107,8 +107,8 @@ TEST(MathBlobTest, TestMVDot) {
   float AT[5][5] = {};
   float B[5] = {};
   float Res[5] = {};
-  for(int i = 0; i < 5; i++) {
-    for(int j = 0; j < 5; j++) {
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
       A[i][j] = i * j + i - j;
       AT[j][i] = i * j + i - j;
     }
@@ -131,7 +131,7 @@ TEST(MathBlobTest, TestMVDot) {
   BlobATB->set_cpu_data(Res);
 
   for (int i = 0; i < 5; i++) {
-    for(int j = 0; j < 5; j++) {
+    for (int j = 0; j < 5; j++) {
       Res[i] += A[i][j] * B[j];
     }
   }
@@ -156,8 +156,8 @@ TEST(MathBlobTest, TestGEMM) {
   float B[5][5]= {};
   float BT[5][5]= {};
   float Res[5][5]= {};
-  for(int i = 0; i < 5; i++) {
-    for(int j = 0; j < 5; j++) {
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
       A[i][j] = i * j + i - j;
       AT[j][i] = i * j + i - j;
       B[i][j] = - i * j + i * i - j * j;
@@ -214,8 +214,8 @@ TEST(MathBlobTest, TestMMDot) {
   float B[5][5]= {};
   float BT[5][5]= {};
   float Res[5][5]= {};
-  for(int i = 0; i < 5; i++) {
-    for(int j = 0; j < 5; j++) {
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
       A[i][j] = i * j + i - j;
       AT[j][i] = i * j + i - j;
       B[i][j] = - i * j + i * i - j * j;
@@ -292,8 +292,8 @@ TEST(MathBlobTest, TestOuterProduct) {
     A[i] = i * i - 5* (i%2);
     B[i] = 2* i * i - 3* (i%4);
   }
-  for(int i = 0; i < 10; i++) {
-    for(int j = 0; j < 10; j++) {
+  for (int i = 0; i < 10; i++) {
+    for (int j = 0; j < 10; j++) {
       AB[i][j] = A[i]*B[j];
     }
   }
@@ -392,9 +392,9 @@ TEST(MathBlobTest, TestMVAddCol) {
   float A[10] = {};
   float B[10][10] = {};
   float BT[10][10] = {};
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     A[i] = 5*i -2;
-    for(int j = 0; j < 10; j++) {
+    for (int j = 0; j < 10; j++) {
       B[i][j] = i * j + i - j;
       BT[j][i] = i * j + i - j;
     }
@@ -405,8 +405,8 @@ TEST(MathBlobTest, TestMVAddCol) {
   BlobBT->set_cpu_data(BT[0]);
   BlobBT->set_transpose(true);
 
-  for(int i = 0; i < 10; i++) {
-    for(int j = 0; j < 10; j++) {
+  for (int i = 0; i < 10; i++) {
+    for (int j = 0; j < 10; j++) {
       B[i][j] = 2.0 * A[i] + 3.0 * B[i][j];
       BT[j][i] = 2.0 * A[i] + 3.0 * BT[j][i];
     }
@@ -433,9 +433,9 @@ TEST(MathBlobTest, TestMVAddRow) {
   float A[10] = {};
   float B[10][10] = {};
   float BT[10][10] = {};
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     A[i] = 5*i -2;
-    for(int j = 0; j < 10; j++) {
+    for (int j = 0; j < 10; j++) {
       B[i][j] = i * j + i - j;
       BT[j][i] = i * j + i - j;
     }
@@ -446,8 +446,8 @@ TEST(MathBlobTest, TestMVAddRow) {
   BlobBT->set_cpu_data(BT[0]);
   BlobBT->set_transpose(true);
 
-  for(int i = 0; i < 10; i++) {
-    for(int j = 0; j < 10; j++) {
+  for (int i = 0; i < 10; i++) {
+    for (int j = 0; j < 10; j++) {
       B[j][i] = 2.0 * A[i] + 3.0 * B[j][i];
       BT[i][j] = 2.0 * A[i] + 3.0 * BT[i][j];
     }
@@ -474,9 +474,9 @@ TEST(MathBlobTest, TestRepmatCol) {
   float A[10] = {};
   float B[10][10] = {};
   float BT[10][10] = {};
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     A[i] = 5*i -2;
-    for(int j = 0; j < 10; j++) {
+    for (int j = 0; j < 10; j++) {
       B[i][j] = A[i];
       BT[j][i] = A[i];
     }
@@ -506,9 +506,9 @@ TEST(MathBlobTest, TestRepmatRow) {
   float A[10] = {};
   float B[10][10] = {};
   float BT[10][10] = {};
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     A[i] = 5*i -2;
-    for(int j = 0; j < 10; j++) {
+    for (int j = 0; j < 10; j++) {
       B[j][i] = A[i];
       BT[i][j] = A[i];
     }
@@ -538,9 +538,9 @@ TEST(MathBlobTest, TestMVSumCol) {
   float A[10] = {};
   float B[10][10] = {};
   float BT[10][10] = {};
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     A[i] = 5*i -2;
-    for(int j = 0; j < 10; j++) {
+    for (int j = 0; j < 10; j++) {
       B[i][j] = i * j + i - j;
       BT[j][i] = i * j + i - j;
     }
@@ -552,9 +552,9 @@ TEST(MathBlobTest, TestMVSumCol) {
   BlobBT->set_cpu_data(BT[0]);
   BlobBT->set_transpose(true);
 
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     A[i] *= 2.0;
-    for(int j = 0; j < 10; j++) {
+    for (int j = 0; j < 10; j++) {
       A[i] += 3.0 * B[i][j];
     }
   }
@@ -577,9 +577,9 @@ TEST(MathBlobTest, TestMVSumRow) {
   float A[10] = {};
   float B[10][10] = {};
   float BT[10][10] = {};
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     A[i] = 5*i -2;
-    for(int j = 0; j < 10; j++) {
+    for (int j = 0; j < 10; j++) {
       B[j][i] = i * j + i - j;
       BT[i][j] = i * j + i - j;
     }
@@ -591,9 +591,9 @@ TEST(MathBlobTest, TestMVSumRow) {
   BlobBT->set_cpu_data(BT[0]);
   BlobBT->set_transpose(true);
 
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     A[i] *= 2.0;
-    for(int j = 0; j < 10; j++) {
+    for (int j = 0; j < 10; j++) {
       A[i] += 3.0 * B[j][i];
     }
   }
@@ -608,7 +608,7 @@ TEST(MathBlobTest, TestMVSumRow) {
 
 TEST(MathBlobTest, TestASum) {
   float A[10] = {};
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     A[i] = ((i % 3) -1) * i;
   }
 
@@ -888,7 +888,7 @@ TEST(MathTest, TestDotGPU) {
   cudaMemcpy(B_gpu, B, 12*sizeof(float), cudaMemcpyHostToDevice);
   auto context = Singleton<Context>::Instance();
   context->SetupDevice(std::this_thread::get_id(), 0);
-  float gpu_ret = gpu_dot<float>(context->cublas_handle(0), A_gpu, B_gpu, 12);
+  float gpu_ret = gpu_dot<float>(context->cublas_handle(0), 12, A_gpu, B_gpu);
 
   float cpu_ret = 0.0f;
   for (int i = 0; i < 12; i++) {

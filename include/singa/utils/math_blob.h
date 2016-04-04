@@ -223,11 +223,11 @@ Dtype VVDot(const Blob<Dtype> & A, const Blob<Dtype> & B) {
   auto context = Singleton<Context>::Instance();
   int device = context->device_id(std::this_thread::get_id());
   if (device < 0) {
-    res = cpu_dot(A.cpu_data(), B.cpu_data(), n);
+    res = cpu_dot(n, A.cpu_data(), B.cpu_data());
   } else {
 #ifdef USE_GPU
-    res = gpu_dot(context->cublas_handle(device), A.gpu_data(), B.gpu_data(),
-        n);
+    res = gpu_dot(context->cublas_handle(device), n, A.gpu_data(),
+        B.gpu_data());
 #else
     NO_GPU;
 #endif  // USE_GPU
@@ -302,8 +302,9 @@ void Map(const Blob<Dtype> & A, const Blob<Dtype> & B, Blob<Dtype> * C) {
     cpu_e_f<Op>(A.count(), A.cpu_data(), B.cpu_data(), C->mutable_cpu_data());
   } else {
 #ifdef USE_GPU
-    // gpu part
     gpu_e_f<Op>(A.count(), A.gpu_data(), B.gpu_data(), C->mutable_gpu_data());
+#else
+    NO_GPU;
 #endif  // USE_GPU
   }
 }
@@ -491,8 +492,8 @@ void MVAddCol(Dtype alpha, Dtype beta, const Blob<Dtype> & A, Blob<Dtype> * B) {
           B->mutable_cpu_data());
     } else {
 #ifdef USE_GPU
-      gpu_gemm(context->cublas_handle(device), A.gpu_data(), one.gpu_data(), m, n, 1,
-		  alpha, beta, false, false, B->mutable_gpu_data());
+      gpu_gemm(context->cublas_handle(device), A.gpu_data(), one.gpu_data(), m,
+          n, 1, alpha, beta, false, false, B->mutable_gpu_data());
 #else
       NO_GPU;
 #endif  // USE_GPU
@@ -737,6 +738,7 @@ void Softmax(int nb_rows, const Blob<Dtype>& A, Blob<Dtype>* B) {
     cpu_softmax(nb_rows, A.count() / nb_rows, A.cpu_data(),
       B->mutable_cpu_data());
   } else {
+    // TODO(wangwei) implement the GPU version.
     NO_GPU;
   }
 }
