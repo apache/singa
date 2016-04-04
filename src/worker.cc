@@ -53,7 +53,7 @@ void Worker::Setup(int grp_id, int id, const JobProto& conf,
   train_net_ = train_net;
   val_net_ = val_net;
   test_net_ = test_net;
-  bridge_dealer_ = dealer_ = nullptr;
+  InitSockets(train_net);
 }
 
 Worker::~Worker() {

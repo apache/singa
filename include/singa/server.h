@@ -126,6 +126,8 @@ class Server {
   std::vector<int> n_pending_sync_;
   std::vector<Blob<float>> last_sync_;
   std::unordered_map<int, std::vector<Msg*>> buffer_requests_;
+
+  Dealer* dealer_;
 };
 
 }  // namespace singa

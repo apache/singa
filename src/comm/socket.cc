@@ -31,6 +31,10 @@ Dealer::~Dealer() {
 #endif
 }
 
+Dealer::Dealer(int id) : id_ (id) {
+  msgQueues[id];
+}
+
 int Dealer::Connect(const std::string& endpoint) {
   if (endpoint.length() > 0) {
 #ifdef USE_ZMQ
@@ -77,6 +81,10 @@ Router::~Router() {
 #ifdef USE_ZMQ
   zsock_destroy(&router_);
 #endif
+}
+
+Router::Router() {
+  msgQueues[-1];
 }
 
 int Router::Bind(const std::string& endpoint) {

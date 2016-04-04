@@ -44,6 +44,7 @@ Server::Server(int group_id, int server_id,
   updater_ = Updater::Create(job_conf.updater());
   slice2group_ = slice2group;
   slice2server_ = slice2server;
+  dealer_ = new Dealer(Addr(grp_id_, id_, kServer));
 }
 
 Server::~Server() {
@@ -52,6 +53,7 @@ Server::~Server() {
   for (auto entry : shard_)
     for (auto param : entry.second->shares)
       delete param;
+  delete dealer_;
 }
 
 void Stop(void* running) {
@@ -73,11 +75,10 @@ void Server::Run() {
 
   bool running = true;
   CHECK(cluster->runtime()->WatchSGroup(grp_id_, id_, Stop, &running));
-  auto dealer = new Dealer(Addr(grp_id_, id_, kServer));
   // start recv loop and process requests
   while (running) {
     // cannot use blocking Receive() here, it will get stuck after workers stop.
-    Msg* msg = dealer->Receive(cluster->poll_time());
+    Msg* msg = dealer_->Receive(cluster->poll_time());
     if (msg == nullptr)
       continue;
     Msg* response = nullptr;
@@ -97,7 +98,7 @@ void Server::Run() {
           break;
         case kUpdate:
           for (auto reply : HandleUpdate(&msg))
-            dealer->Send(&reply);
+            dealer_->Send(&reply);
           break;
         case kSyncRequest:
           response = HandleSyncRequest(&msg);
@@ -111,16 +112,15 @@ void Server::Run() {
       }
     }
     if (response != nullptr)
-      dealer->Send(&response);
+      dealer_->Send(&response);
   }
 
   // send stop msg to stub
   Msg* msg = new Msg(Addr(grp_id_, id_, kServer), Addr(-1, -1, kStub));
   msg->set_type(kStop);
-  dealer->Send(&msg);
+  dealer_->Send(&msg);
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   LOG(ERROR) << "Server (group = " << grp_id_ << ", id = " << id_ << ") stops";
-  delete dealer;
 }
 
 Msg* Server::HandlePut(Msg **msg) {

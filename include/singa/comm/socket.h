@@ -43,7 +43,7 @@ class Dealer {
    /**
     * @param id used for identifying the msg queue of this dealer.
     */
-   Dealer(int id) : id_(id) {}
+   Dealer(int id);
   ~Dealer();
   /**
     * Setup the connection with the remote router.
@@ -83,6 +83,7 @@ class Dealer {
 class Router {
  public:
   ~Router();
+  Router();
   /**
    * Bind the router to an endpoint for recv msg from remote dealer.
    * If the router is used for intra-communication only, then no need to call
