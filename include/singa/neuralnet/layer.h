@@ -196,7 +196,7 @@ class Layer {
   /**
    * @return a const ref for Blob vector storing feature values of this layer.
    */
-  virtual const vector<Blob<float>*>& data() const {
+  virtual const vector<Blob<float>*>& data() {
     return datavec_;
   }
 
@@ -240,7 +240,7 @@ class Layer {
   /**
    * @return auxiliary data, e.g., image label.
    */
-  virtual const vector<AuxType>& aux_data(const Layer* from = nullptr) const {
+  virtual const vector<AuxType>& aux_data(const Layer* from = nullptr) {
     return aux_data_;
   }
   /**

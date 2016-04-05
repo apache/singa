@@ -379,7 +379,9 @@ message StoreProto {
   optional bool encoded = 10 [default = false];
   optional int32 random_skip = 11 [default = 0];
   optional bool has_label = 12 [default = true];
+  optional bool prefetching = 13 [default = true];
 }
+
 message CharRNNProto {
   optional string path = 1;
   optional string vocab_path = 2;
