@@ -86,7 +86,7 @@ singa_run="$exe $args \
 if [ ! -z $job_conf ]; then
   singa_run="$singa_run -conf $job_conf"
 fi
-singa_sshrun="source ~/.profile; cd $SINGA_HOME; $singa_run"
+singa_sshrun="cd $SINGA_HOME; source $SINGA_HOME/conf/profile; $singa_run"
 
 # ssh and start singa processes
 ssh_options="-oStrictHostKeyChecking=no \
