@@ -66,11 +66,11 @@ X_train, X_test, workspace = mnist.load_data()
 
 m = Sequential('mlp', sys.argv)
 
-m.add(Dense(2500, init='uniform', activation='tanh'))
-m.add(Dense(2000, init='uniform', activation='tanh'))
-m.add(Dense(1500, init='uniform', activation='tanh'))
-m.add(Dense(1000, init='uniform', activation='tanh'))
-m.add(Dense(500,  init='uniform', activation='tanh'))
+m.add(Dense(2500, init='uniform', activation='stanh'))
+m.add(Dense(2000, init='uniform', activation='stanh'))
+m.add(Dense(1500, init='uniform', activation='stanh'))
+m.add(Dense(1000, init='uniform', activation='stanh'))
+m.add(Dense(500,  init='uniform', activation='stanh'))
 m.add(Dense(10, init='uniform', activation='softmax'))
 
 sgd = SGD(lr=0.001, lr_type='step')
@@ -172,7 +172,7 @@ Hidden layers for MLP can be configured as
 
 ```
 for n in [2500, 2000, 1500, 1000, 500]:
-  m.add(Dense(n, init='uniform', activation='tanh'))
+  m.add(Dense(n, init='uniform', activation='stanh'))
 m.add(Dense(10, init='uniform', activation='softmax'))
 ```
 
@@ -180,18 +180,18 @@ Activation layer can be specified separately
 
 ```
 m.add(Dense(2500, init='uniform'))
-m.add(Activation('tanh'))
+m.add(Activation('stanh'))
 ```
 
 Users can explicitly specify hyper-parameters of weight and bias
 
 ```
 par = Parameter(init='uniform', scale=0.05)
-m.add(Dense(2500, w_param=par, b_param=par, activation='tanh'))
-m.add(Dense(2000, w_param=par, b_param=par, activation='tanh'))
-m.add(Dense(1500, w_param=par, b_param=par, activation='tanh'))
-m.add(Dense(1000, w_param=par, b_param=par, activation='tanh'))
-m.add(Dense(500, w_param=par, b_param=par, activation='tanh'))
+m.add(Dense(2500, w_param=par, b_param=par, activation='stanh'))
+m.add(Dense(2000, w_param=par, b_param=par, activation='stanh'))
+m.add(Dense(1500, w_param=par, b_param=par, activation='stanh'))
+m.add(Dense(1000, w_param=par, b_param=par, activation='stanh'))
+m.add(Dense(500, w_param=par, b_param=par, activation='stanh'))
 m.add(Dense(10, w_param=par, b_param=par, activation='softmax'))
 ```
 

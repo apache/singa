@@ -107,9 +107,9 @@ class Model(object):
             else:
                 # add new layer
                 if loss == 'categorical_crossentropy':
-                    self.add(Activation('softmaxloss', topk=topk))
+                    self.add(Loss('softmaxloss', topk=topk))
                 elif loss == 'mean_squared_error':
-                    self.add(Activation('euclideanloss'))
+                    self.add(Loss('euclideanloss'))
                 elif loss == 'user_loss_rnnlm': # user-defined loss layer
                     self.add(UserLossRNNLM(nclass=kwargs['nclass'],
                                            vocab_size=kwargs['in_dim']))
@@ -323,15 +323,25 @@ class Model(object):
             elif ly_type == kLRN: cudnn_ly_type = kCudnnLRN
             elif ly_type == kSoftmax: cudnn_ly_type = kCudnnSoftmax
             elif ly_type == kSoftmaxLoss: cudnn_ly_type = kCudnnSoftmaxLoss
+            elif ly_type == kActivation:
+                cudnn_ly_type = kCudnnActivation
             elif ly_type == kSTanh:
-                cudnn_ly_type = kCudnnActivation
-                net.layer[i].activation_conf.type = STANH
-            elif ly_type == kSigmoid:
-                cudnn_ly_type = kCudnnActivation
-                net.layer[i].activation_conf.type = SIGMOID
+                print 'Error report: STanh layer is not supported for GPU'
+            '''
             elif ly_type == kReLU:
                 cudnn_ly_type = kCudnnActivation
                 net.layer[i].activation_conf.type = RELU
+            elif ly_type == kSigmoid:
+                cudnn_ly_type = kCudnnActivation
+                net.layer[i].activation_conf.type = SIGMOID
+            elif ly_type == kTanh:
+                cudnn_ly_type = kCudnnActivation
+                net.layer[i].activation_conf.type = TANH
+            '''
+            #elif ly_type == kSTanh:
+            #    print 'Error report: STanh layer is not supported for GPU'
+                #cudnn_ly_type = kCudnnActivation
+                #net.layer[i].activation_conf.type = STANH
             net.layer[i].type = cudnn_ly_type
 
 class Energy(Model):

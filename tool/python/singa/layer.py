@@ -225,24 +225,47 @@ class LRN2D(Layer):
         init_values = get_init_values('lrn2d', **kwargs)
         setval(self.layer.lrn_conf, **init_values)
 
+class Loss(Layer):
+
+    def __init__(self, lossname, topk=1):
+        '''
+        required
+          lossname = (string) // softmaxloss, euclideanloss
+        '''
+        self.layer_type = enumLayerType(lossname)
+        super(Loss, self).__init__(name=generate_name(lossname),
+                                         type=self.layer_type)
+        if lossname == 'softmaxloss':
+            self.layer.softmaxloss_conf.topk = topk
 
 class Activation(Layer):
 
-    def __init__(self, activation='stanh', topk=1):
+    def __init__(self, activation='stanh'):
         '''
         required
-          activation = (string)
-        optional
-          topk       = (int)  // the number of results
+          activation = (string) // relu, sigmoid, tanh, stanh, softmax.
         '''
+        if activation == 'tanh':
+          print 'Warning: Tanh layer is not supported for CPU'
 
         self.name = activation
-        if activation == 'tanh': activation = 'stanh' # <-- better way to set?
-        self.layer_type = enumLayerType(activation)
+        self.layer_type = kActivation
+        if activation == 'stanh':
+            self.layer_type = kSTanh
+        elif activation == 'softmax':
+            self.layer_type = kSoftmax
         super(Activation, self).__init__(name=generate_name(self.name),
                                          type=self.layer_type)
-        if activation == 'softmaxloss':
-            self.layer.softmaxloss_conf.topk = topk
+        if activation == 'relu':
+            self.layer.activation_conf.type = RELU
+        elif activation == 'sigmoid':
+            self.layer.activation_conf.type = SIGMOID
+        elif activation == 'tanh':
+            self.layer.activation_conf.type = TANH # for GPU
+        #elif activation == 'stanh':
+        #    self.layer.activation_conf.type = STANH
+        
+
 
 class Dropout(Layer):
 
