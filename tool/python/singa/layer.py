@@ -160,7 +160,7 @@ class Layer(object):
         return data
 
     def display(self):
-        debug, flag = 0, 0
+        debug, flag = False, 0
         print self.singalayer.ToString(debug, flag)
 
     def get_singalayer(self):
@@ -204,7 +204,7 @@ class Dummy(object):
         if self.singalayer == None:
             self.setup(shape)
 
-        if data != None:
+        if data is not None:
             data = data.astype(np.float)
             dataVector = floatVector(datasize)
             for i in range(batchsize):
@@ -212,7 +212,7 @@ class Dummy(object):
                     dataVector[i*hdim+j] = data[i, j]
             labelVector = intVector(0)
 
-        if aux_data != None:
+        if aux_data is not None:
             aux_data = aux_data.astype(np.int)
             labelVector = intVector(datasize)
             for i in range(batchsize):
@@ -249,7 +249,7 @@ class LabelInput(Dummy):
 
     def Feed(self, label_data):
         Dummy.Feed(self, label_data.shape, None, label_data)
-    
+
 
 class Data(Layer):
 

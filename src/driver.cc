@@ -54,8 +54,6 @@ void Driver::Init(int argc, char **argv) {
   arg_pos = ArgPos(argc, argv, "-singa_conf");
   if (arg_pos != -1)
     ReadProtoFromTextFile(argv[arg_pos + 1], &singa_conf_);
-  else
-    ReadProtoFromTextFile("conf/singa.conf", &singa_conf_);
   // set log path
   if (singa_conf_.has_log_dir())
     SetupLog(singa_conf_.log_dir(), "driver");

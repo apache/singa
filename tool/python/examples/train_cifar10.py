@@ -38,7 +38,7 @@ from singa.model import *
 
 '''
 CIFAR10 dataset can be downloaded at [https://www.cs.toronto.edu/~kriz/cifar.html]
-- please specify dataset_dir 
+- please specify dataset_dir
 '''
 dataset_dir_ = singa_root_ + "/tool/python/examples/datasets/cifar-10-batches-py"
 mean_image = None
@@ -73,7 +73,7 @@ def load_dataset(did=1):
         1 row (1 image) includes 1 label & 3072 pixels
         3072 pixels are  3 channels of a 32x32 image
     '''
-    assert mean_image != None, 'mean_image is required'
+    assert mean_image is not None, 'mean_image is required'
     print '[Load CIFAR10 dataset {}]'.format(did)
     fname_train_data = dataset_dir_ + "/data_batch_{}".format(did)
     cifar10 = unpickle(fname_train_data)
@@ -81,7 +81,7 @@ def load_dataset(did=1):
     image = image - mean_image
     print '  image x:', image.shape
     label = np.asarray(cifar10['labels'], dtype=np.uint8)
-    label = label.reshape(label.size, 1) 
+    label = label.reshape(label.size, 1)
     print '  label y:', label.shape
     return image, label
 
@@ -116,7 +116,7 @@ loss = Loss('softmaxloss')
 sgd = SGD(decay=0.004, momentum=0.9, lr_type='manual', step=(0,60000,65000), step_lr=(0.001,0.0001,0.00001))
 
 #-------------------------------------------------------------------
-batchsize = 100 
+batchsize = 100
 disp_freq = 50
 train_step = 1000
 
