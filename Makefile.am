@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I config
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #AM_CPPFLAGS = -I$(top_srcdir)/src
-#AM_LDFLAGS = $(LD_FLAGS) 
+#AM_LDFLAGS = $(LD_FLAGS)
 
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 DEFAULT_FLAGS = -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
@@ -32,11 +32,12 @@ CUDA_OBJS := src/utils/math_kernel.o
 CUDA_HDRS := include/singa/utils/math_kernel.h
 
 CUDNN_SRCS := src/neuralnet/loss_layer/cudnn_softmaxloss.cc \
-              src/neuralnet/neuron_layer/cudnn_softmax.cc \
-              src/neuralnet/neuron_layer/cudnn_pooling.cc \
-              src/neuralnet/neuron_layer/cudnn_activation.cc \
-              src/neuralnet/neuron_layer/cudnn_lrn.cc \
-              src/neuralnet/neuron_layer/cudnn_convolution.cc
+			  src/neuralnet/neuron_layer/cudnn_softmax.cc \
+			  src/neuralnet/neuron_layer/cudnn_pooling.cc \
+			  src/neuralnet/neuron_layer/cudnn_activation.cc \
+			  src/neuralnet/neuron_layer/cudnn_lrn.cc \
+			  src/neuralnet/neuron_layer/cudnn_convolution.cc \
+			  src/neuralnet/neuron_layer/cudnn_bm.cc
 
 PY_SRCS := tool/python/singa/driver_wrap.cxx \
            src/driver.cc
@@ -76,6 +77,7 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/loss_layer/euclidean.cc \
               src/neuralnet/loss_layer/softmax.cc \
               src/neuralnet/neuron_layer/activation.cc \
+              src/neuralnet/neuron_layer/bm.cc \
               src/neuralnet/neuron_layer/convolution.cc \
               src/neuralnet/neuron_layer/dropout.cc \
               src/neuralnet/neuron_layer/dummy.cc \
@@ -104,7 +106,7 @@ SINGA_SRCS := src/driver.cc \
               src/utils/updater.cc \
               src/utils/blob.cc \
               src/utils/image_transform.cc \
-              src/utils/job_manager.cc 
+              src/utils/job_manager.cc
 
 
 SINGA_HDRS := include/singa.h \
@@ -214,7 +216,7 @@ singa_LDFLAGS = -lsinga \
                 -lglog  \
                 -lprotobuf \
                 -lopenblas \
-                -lczmq 
+                -lczmq
 if LMDB
 singa_LDFLAGS += -llmdb
 endif
@@ -248,7 +250,7 @@ singatool_CXXFLAGS = -Wall -pthread -fPIC -std=c++11 -MMD -Wno-unknown-pragmas \
               -funroll-loops -DTHREADED -I$(top_srcdir)/include $(DEFAULT_FLAGS)
 singatool_LDFLAGS = -lsinga \
                     -lglog  \
-                    -lprotobuf 
+                    -lprotobuf
 
 if DDIST
 singatool_SOURCES += $(ZOOKEEPER_SRCS)

@@ -103,6 +103,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<CudnnLRNLayer, int>(kCudnnLRN);
   RegisterLayer<CudnnSoftmaxLayer, int>(kCudnnSoftmax);
   RegisterLayer<CudnnSoftmaxLossLayer, int>(kCudnnSoftmaxLoss);
+  RegisterLayer<CudnnBMLayer, int>(kCudnnBM);
 #endif
 
   RegisterLayer<DropoutLayer, int>(kDropout);
@@ -124,6 +125,7 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<STanhLayer, int>(kSTanh);
   RegisterLayer<SoftmaxLayer, int>(kSoftmax);
   RegisterLayer<GRULayer, int>(kGRU);
+  RegisterLayer<BMLayer, int>(kBM);
 
 #ifdef USE_LMDB
   RegisterLayer<LMDBDataLayer, int>(kLMDBData);
