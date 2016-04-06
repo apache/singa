@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I config
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #AM_CPPFLAGS = -I$(top_srcdir)/src
-#AM_LDFLAGS = $(LD_FLAGS) 
+#AM_LDFLAGS = $(LD_FLAGS)
 
 MSHADOW_FLAGS = -DMSHADOW_USE_CUDA=0 -DMSHADOW_USE_CBLAS=1 -DMSHADOW_USE_MKL=0
 DEFAULT_FLAGS = -Wall -pthread -fPIC -std=c++11 -Wno-unknown-pragmas \
@@ -36,7 +36,8 @@ CUDNN_SRCS := src/neuralnet/loss_layer/cudnn_softmaxloss.cc \
 			  src/neuralnet/neuron_layer/cudnn_pooling.cc \
 			  src/neuralnet/neuron_layer/cudnn_activation.cc \
 			  src/neuralnet/neuron_layer/cudnn_lrn.cc \
-			  src/neuralnet/neuron_layer/cudnn_convolution.cc
+			  src/neuralnet/neuron_layer/cudnn_convolution.cc \
+			  src/neuralnet/neuron_layer/cudnn_bm.cc
 
 PY_SRCS := tool/python/singa/driver_wrap.cxx \
 		   src/driver.cc
@@ -73,6 +74,7 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/loss_layer/euclidean.cc \
               src/neuralnet/loss_layer/softmax.cc \
               src/neuralnet/neuron_layer/activation.cc \
+              src/neuralnet/neuron_layer/bm.cc \
               src/neuralnet/neuron_layer/convolution.cc \
               src/neuralnet/neuron_layer/dropout.cc \
               src/neuralnet/neuron_layer/dummy.cc \
