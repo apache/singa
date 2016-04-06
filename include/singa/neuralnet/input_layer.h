@@ -41,14 +41,12 @@ class StoreInputLayer : virtual public InputLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
-  
  protected:
   /**
    * Helper method for doing the prefetching, basically read (key,value) pairs
    * to buf_keys and buf_vals_ vector of size batchsize_. 
    */
-  void fetch_data(); 
-
+  void fetch_data();
   /**
    * Parsing the (key, val) tuple to get feature (and label).
    * Subclasses must implment this function.
@@ -61,13 +59,11 @@ class StoreInputLayer : virtual public InputLayer {
   virtual bool Parse(int k, int flag, const string& key, const string& val) = 0;
 
  protected:
-  
   int batchsize_ = 1;
   int random_skip_ = 0;
   io::Store* store_ = nullptr;
- 
-  vector<std::string> buf_keys_, buf_vals_; 
-  std::deque<std::thread> threads_; // prefetching thread
+  vector<std::string> buf_keys_, buf_vals_;
+  std::deque<std::thread> threads_;  // prefetching thread
 };
 
 /**
@@ -79,8 +75,8 @@ class SingleLabelRecordLayer : public StoreInputLayer {
  public:
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
-  protected:
-  
+
+ protected:
   /**
    * Load a single record (tuple), e.g., the mean or standard variance vector.
    */
@@ -95,7 +91,6 @@ class SingleLabelRecordLayer : public StoreInputLayer {
    * UFLDL</a>
    */
   Blob<float> mean_, std_;
-  
 };
 /**
  * Specific layer that parses the value string loaded by Store as a line from
