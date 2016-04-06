@@ -69,7 +69,7 @@ class RecordInputLayerTest : public ::testing::Test {
 
     auto conf = image_conf.mutable_store_conf();
     conf->set_path(path);
-    conf->set_batchsize(2);
+    conf->add_batchsize(2);
     conf->add_shape(3);
     conf->set_backend("kvfile");
   }

@@ -45,7 +45,7 @@ class GRULayerTest: public ::testing::Test {
     ofs1.close();
     auto conf1 = in1_conf.mutable_store_conf();
     conf1->set_path(path1);
-    conf1->set_batchsize(2);
+    conf1->add_batchsize(2);
     conf1->add_shape(4);
     conf1->set_backend("textfile");
     conf1->set_has_label(false);
@@ -61,7 +61,7 @@ class GRULayerTest: public ::testing::Test {
     auto conf2 = in2_conf.mutable_store_conf();
     conf2->set_path(path2);
 
-    conf2->set_batchsize(2);
+    conf2->add_batchsize(2);
     conf2->add_shape(4);
     conf2->set_backend("textfile");
     conf2->set_has_label(false);

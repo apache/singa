@@ -41,8 +41,9 @@ void StoreInputLayer::Setup(const LayerProto& conf,
       batchsize_ = batchsize.Get(0) / conf.num_partitions();
     else  // manual partition
       batchsize_ = batchsize.Get(conf.partition_id());
-  } else
+  } else {
     batchsize_ = conf.store_conf().batchsize(0);
+  }
 }
 
 void StoreInputLayer::ComputeFeature(int flag,
