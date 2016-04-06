@@ -244,3 +244,12 @@ Copyright (c) 2010-2012 Tomas Mikolov
 Copyright (c) 2013 Cantab Research Ltd
 All rights reserved.
 http://www.fit.vutbr.cz/~imikolov/rnnlm/
+
+======================================================================
+SINGA bundles the following under CC BY 4.0: include/singa/utils/safe_queue.h
+
+======================================================================
+SINGA bundles the following under Creative Commons Attribution 4.0 International
+Public License: include/singa/utils/safe_queue.h
+
+http://gnodebian.blogspot.sg/2013/07/a-thread-safe-asynchronous-queue-in-c11.html

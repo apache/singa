@@ -38,8 +38,8 @@ variables to continue the building instructions,
 ###Optional dependencies
 For advanced features, the following libraries are needed:
 
-  * `cuda` (NIVIDA CUDA Toolkit EUL)
-  * `cudnn` (NIVIDA CuDNN EULA)
+  * `cuda` (NVIDA CUDA Toolkit EUL)
+  * `cudnn` (NVIDA CuDNN EULA)
   * `Apache Mesos` (Apache 2.0)
   * `Apache Hadoop` (Apache 2.0)
   * `libhdfs3` (Apache 2.0)
