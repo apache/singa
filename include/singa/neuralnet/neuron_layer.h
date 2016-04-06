@@ -351,6 +351,17 @@ class STanhLayer : public NeuronLayer {
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
 
+
+class BMLayer : public NeuronLayer {
+ public:
+  void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+ protected:
+  Param *bnScale_, *bnBias_;
+  int batchsize_,  channels_, height_, width_;
+};
+
 /*************** Layers implemented using cudnn v3 ***************/
 #ifdef USE_CUDNN
 #define CHECK_CUDNN(x) CHECK_EQ(x, CUDNN_STATUS_SUCCESS)
@@ -446,6 +457,25 @@ class CudnnSoftmaxLayer : public SoftmaxLayer, public CudnnBase {
   void InitCudnn() override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+};
+
+/**
+ * Cudnn Batch Normalization layer
+ */
+class CudnnBMLayer : public BMLayer, public CudnnBase {
+ public:
+  ~CudnnBMLayer();
+  void InitCudnn() override;
+  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
+  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+ protected:
+  cudnnBatchNormMode_t mode_;
+  cudnnTensorDescriptor_t bnScaleBiasMeanVar_desc_;
+  cudnnTensorDescriptor_t bnScaleBiasDiff_desc_;
+  Blob<float> resultSaveMean_;
+  Blob<float> resultSaveInvVariance_;
+  Blob<float> resultRunningMean_;
+  Blob<float> resultRunningInvVariance_;
 };
 #endif  // USE_CUDNN
 

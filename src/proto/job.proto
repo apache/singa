@@ -249,6 +249,7 @@ message LayerProto {
   optional SoftmaxProto softmax_conf = 214;
   optional GRUProto gru_conf = 215;
   optional EmbeddingProto embedding_conf = 216;
+  optional BMProto bm_conf = 217;
 
   // configuration for loss layers, id range [300, 400)
   optional SoftmaxLossProto softmaxloss_conf = 301;
@@ -393,6 +394,10 @@ message EmbeddingProto {
   optional int32 feature_dim = 2 [default = 100];
 
 }
+
+message BMProto {
+}
+
 message SoftmaxLossProto {
   // computing accuracy against topk results
   optional int32 topk = 1 [default = 1];
@@ -676,6 +681,7 @@ enum LayerType {
   kSoftmax = 214;
   kGRU = 215;
   kEmbedding = 216;
+  kBM = 217;
 
   // cudnn v3
   kCudnnConv = 250;
@@ -683,6 +689,7 @@ enum LayerType {
   kCudnnLRN = 252;
   kCudnnSoftmax = 253;
   kCudnnActivation = 254;
+  kCudnnBM = 255;
 
   /*
    * Loss layers
