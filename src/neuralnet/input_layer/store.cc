@@ -22,7 +22,6 @@
 #include "singa/neuralnet/input_layer.h"
 #include "singa/utils/context.h"
 #include "singa/utils/singleton.h"
-#include <time.h>
 namespace singa {
 
 using std::thread;
@@ -46,15 +45,15 @@ void StoreInputLayer::Setup(const LayerProto& conf,
     shape.push_back(s);
   data_.Reshape(shape);
   aux_data_.resize(batchsize_);
-  buf_keys_.resize(batchsize_); 
-  buf_vals_.resize(batchsize_); 
+  buf_keys_.resize(batchsize_);
+  buf_vals_.resize(batchsize_);
 
   // initialize prefetch buffer and start the thread
   if (conf.store_conf().prefetching())
     threads_.push_back(thread(&StoreInputLayer::fetch_data, this));
 }
 
-void StoreInputLayer::fetch_data(){
+void StoreInputLayer::fetch_data() {
   if (store_ == nullptr) {
     store_ = io::OpenStore(layer_conf_.store_conf().backend(),
         layer_conf_.store_conf().path(),
@@ -87,16 +86,14 @@ void StoreInputLayer::fetch_data(){
 void StoreInputLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   // if prefetching, wait for the thread to finish
-  if (layer_conf_.store_conf().prefetching()){
-    threads_.front().join(); 
-    threads_.pop_front(); 
+  if (layer_conf_.store_conf().prefetching()) {
+    threads_.front().join();
+    threads_.pop_front();
+  } else {
+    fetch_data();
   }
-  else
-    fetch_data(); 
-
-  for (int k = 0; k < batchsize_; k++) 
+  for (int k = 0; k < batchsize_; k++)
     Parse(k, flag, buf_keys_[k], buf_vals_[k]);
-  
   if (layer_conf_.store_conf().prefetching())
     threads_.push_back(thread(&StoreInputLayer::fetch_data, this));
 }
@@ -105,7 +102,6 @@ void StoreInputLayer::ComputeFeature(int flag,
 void SingleLabelRecordLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   StoreInputLayer::Setup(conf, srclayers);
-
 }
 
 void SingleLabelRecordLayer::ComputeFeature(int flag,
@@ -145,7 +141,7 @@ void SingleLabelRecordLayer::ComputeFeature(int flag,
   if (std_.count()) {
     const float* std = std_.cpu_data();
     for (int k = 0; k < batchsize_; k++) {
-      float* dptr = data_.mutable_cpu_data() + k * std_.count();  
+      float* dptr = data_.mutable_cpu_data() + k * std_.count();
       for (int i = 0; i < std_.count(); i++) {
         dptr[i] /= std[i];
       }

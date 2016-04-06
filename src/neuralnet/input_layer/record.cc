@@ -52,7 +52,7 @@ bool RecordInputLayer::Parse(int k, int flag, const string& key,
   int size = data_.count() / batchsize_;
   if (image.data_size()) {
     CHECK_EQ(size, image.data_size());
-    float* ptr = data_.mutable_cpu_data() + k * size; 
+    float* ptr = data_.mutable_cpu_data() + k * size;
     for (int i = 0; i< size; i++)
       ptr[i] = image.data(i);
   } else if (image.pixel().size()) {
