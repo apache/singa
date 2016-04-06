@@ -32,7 +32,6 @@
 %{
 #include "singa/driver.h"
 #include "singa/worker.h"
-#include "singa/neuralnet/neuralnet.h"
 #include "singa/neuralnet/layer.h"
 #include "singa/neuralnet/neuron_layer.h"
 #include "singa/neuralnet/loss_layer.h"
@@ -58,14 +57,6 @@ namespace singa{
     void Init(int argc, char **argv);
     void InitLog(char* arg);
     void Test(const std::string job_conf);
-  };
-
-  class NeuralNet{
-    public:
-     static NeuralNet* CreateNeuralNet(const std::string str);
-     void Load(const std::vector<std::string>& paths);
-     inline const std::vector<singa::Layer*>& layers();
-     inline const std::vector<singa::Layer*>& srclayers(const singa::Layer* layer);
   };
 
   %nodefault Worker;
