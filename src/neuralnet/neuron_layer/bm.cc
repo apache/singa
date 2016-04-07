@@ -45,16 +45,12 @@ void BMLayer::Setup(const LayerProto& conf,
 
   bnBias_ = Param::Create(conf.param(1));
   bnBias_->Setup(vector<int>{1, channels_, 1, 1});
-  bnScale_->InitValues(1);
 
- /* float* p = bnScale_->data().mutable_cpu_data();
+  resultRunningMean_ = Param::Create(conf.param(2));
+  resultRunningMean_->Setup(vector<int>{1, channels_, 1, 1});
 
-  cout<<"inite param"<<endl;
-  for(int i=0;i<3;++i) {
-//	p[i]=1.0;
-	cout<<p[i]<<" ";
-  }
-  cout<<endl;*/
+  resultRunningInvVariance_ = Param::Create(conf.param(3));
+  resultRunningInvVariance_->Setup(vector<int>{1, channels_, 1, 1});
 }
 
 void BMLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {

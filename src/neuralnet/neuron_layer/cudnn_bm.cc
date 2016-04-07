@@ -69,8 +69,6 @@ void CudnnBMLayer::InitCudnn() {
 
   resultSaveMean_.Reshape(shape);
   resultSaveInvVariance_.Reshape(shape);
-  resultRunningMean_.Reshape(shape);
-  resultRunningInvVariance_.Reshape(shape);
 
   mode_ = CUDNN_BATCHNORM_SPATIAL;
 }
@@ -97,8 +95,8 @@ void CudnnBMLayer::ComputeFeature(int flag,
           bnScaleBiasMeanVar_desc_,
           bnScale_->data().gpu_data(),
           bnBias_->data().gpu_data(),
-          resultRunningMean_.gpu_data(),
-          resultRunningInvVariance_.gpu_data(),
+          resultRunningMean_->data().gpu_data(),
+          resultRunningInvVariance_->data().gpu_data(),
           epsilon));
   } else {
     CHECK_CUDNN(cudnnBatchNormalizationForwardTraining(handle_,
@@ -113,8 +111,8 @@ void CudnnBMLayer::ComputeFeature(int flag,
           bnScale_->data().gpu_data(),
           bnBias_->data().gpu_data(),
           exponentialAverageFactor,
-          resultRunningMean_.mutable_gpu_data(),
-          resultRunningInvVariance_.mutable_gpu_data(),
+          resultRunningMean_->data().mutable_gpu_data(),
+          resultRunningInvVariance_->data().mutable_gpu_data(),
           epsilon,
           resultSaveMean_.mutable_gpu_data(),
           resultSaveInvVariance_.mutable_gpu_data()));
