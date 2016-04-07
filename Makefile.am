@@ -333,7 +333,9 @@ all-local:
 		cp -f .libs/_driver.so tool/python/singa/; \
 		touch tool/python/singa/__init__.py; \
 	fi
-	cp libsingagpu.so .libs/
+	@if [ -f "libsingagpu.so" ]; then \
+		cp libsingagpu.so .libs/; \
+	fi
 
 # For rat check
 rat:

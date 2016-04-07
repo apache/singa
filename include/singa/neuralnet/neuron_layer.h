@@ -468,8 +468,10 @@ class CudnnSoftmaxLayer : public SoftmaxLayer, public CudnnBase {
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
 };
 
+
+#if CUDNN_MAJOR == 4
 /**
- * Cudnn Batch Normalization layer
+ * Cudnn Batch Normalization layer -- supported by cudnn_v4
  */
 class CudnnBMLayer : public BMLayer, public CudnnBase {
  public:
@@ -478,9 +480,7 @@ class CudnnBMLayer : public BMLayer, public CudnnBase {
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
  protected:
-#if CUDNN_MAJOR == 4
   cudnnBatchNormMode_t mode_;
-#endif
   cudnnTensorDescriptor_t bnScaleBiasMeanVar_desc_;
   cudnnTensorDescriptor_t bnScaleBiasDiff_desc_;
   Blob<float> resultSaveMean_;
@@ -488,6 +488,7 @@ class CudnnBMLayer : public BMLayer, public CudnnBase {
   Blob<float> resultRunningMean_;
   Blob<float> resultRunningInvVariance_;
 };
+#endif
 #endif  // USE_CUDNN
 
 /******************** RBM layers *****************/
