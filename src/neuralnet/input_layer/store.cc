@@ -103,7 +103,6 @@ void StoreInputLayer::ComputeFeature(int flag,
     thread_ = new thread(&StoreInputLayer::fetch_data, this);
 }
 
-
 void SingleLabelRecordLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   StoreInputLayer::Setup(conf, srclayers);

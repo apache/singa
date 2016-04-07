@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 #include <thread>
+#include <deque>
 #include "singa/io/store.h"
 #include "singa/io/kvfile.h"
 #include "singa/neuralnet/layer.h"
