@@ -18,9 +18,6 @@ The current code depends on the following external libraries:
   * `glog` (New BSD)
   * `google-protobuf` (New BSD)
   * `openblas` (New BSD)
-  * `zeromq` (LGPLv3 + static link exception)
-  * `czmq` (Mozilla Public License Version 2.0)
-  * `zookeeper` (Apache 2.0)
 
 We have tested SINGA on Ubuntu 12.04, Ubuntu 14.01 and CentOS 6.
 You can install all dependencies into `$PREFIX` folder by
@@ -38,12 +35,14 @@ variables to continue the building instructions,
 ###Optional dependencies
 For advanced features, the following libraries are needed:
 
-  * `cuda` (NIVIDA CUDA Toolkit EUL)
-  * `cudnn` (NIVIDA CuDNN EULA)
+  * `zeromq` (LGPLv3 + static link exception),`czmq` (Mozilla Public License Version 2.0) and `zookeeper` (Apache 2.0), for distributed training with multiple processes. Compile SINGA with `--enable-dist`
+  * `cuda` (NVIDIA CUDA Toolkit EUL) for training using NVIDIA GPUs.
+  * `cudnn` (NVIDIA CuDNN EULA) for training using NVIDIA's CUDNN library.
   * `Apache Mesos` (Apache 2.0)
   * `Apache Hadoop` (Apache 2.0)
   * `libhdfs3` (Apache 2.0)
-  * `swig` (GPL)
+  * `swig` (GPL) for using Python Binding.
+
 
 ##Documentation
 
@@ -63,7 +62,7 @@ To compile with GPU support, you should run:
 
     $ ./configure --enable-cuda --with-cuda=/CUDA/PATH --enable-cudnn --with-cudnn=/CUDNN/PATH
 
---with-cuda and --with-cudnn are optional as by default the script will search system paths.
+--with-cuda and --with-cudnn are optional as by default the script will search system paths. We have tested with CUDA V7.0 and V7.5, CUDNN V3 and V4.
 Please kindly set proper environment parameters (LD_LIBRARY_PATH, LIBRARY_PATH, etc.) when you run the code.
 
 To compile with HDFS support, you should run:
@@ -179,7 +178,7 @@ have installed `OpenBLAS`.
 * Q6: While compiling SINGA and installing `glog` on mac OS X, I get fatal error
 `'ext/slist' file not found`
 
-  A6: Please install `glog` individually and try :
+  A6: We have not done thorough test on Mac OS. If you want to install `glog`, please goto glog folder and try:
 
       $ make CFLAGS='-stdlib=libstdc++' CXXFLAGS='stdlib=libstdc++'
 
