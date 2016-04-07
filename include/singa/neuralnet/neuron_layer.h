@@ -368,6 +368,7 @@ class BMLayer : public NeuronLayer {
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
  protected:
   Param *bnScale_, *bnBias_;
+  Param *resultRunningMean_, *resultRunningInvVariance_;
   int batchsize_,  channels_, height_, width_;
 };
 
@@ -479,14 +480,17 @@ class CudnnBMLayer : public BMLayer, public CudnnBase {
   void InitCudnn() override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
+  const std::vector<Param*> GetParams() const override {
+    std::vector<Param*> params{bnScale_, bnBias_,
+        resultRunningMean_, resultRunningInvVariance_};
+    return params;
+  }
  protected:
   cudnnBatchNormMode_t mode_;
   cudnnTensorDescriptor_t bnScaleBiasMeanVar_desc_;
   cudnnTensorDescriptor_t bnScaleBiasDiff_desc_;
   Blob<float> resultSaveMean_;
   Blob<float> resultSaveInvVariance_;
-  Blob<float> resultRunningMean_;
-  Blob<float> resultRunningInvVariance_;
 };
 #endif
 #endif  // USE_CUDNN
