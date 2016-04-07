@@ -103,7 +103,9 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<CudnnLRNLayer, int>(kCudnnLRN);
   RegisterLayer<CudnnSoftmaxLayer, int>(kCudnnSoftmax);
   RegisterLayer<CudnnSoftmaxLossLayer, int>(kCudnnSoftmaxLoss);
+#if CUDNN_MAJOR == 4
   RegisterLayer<CudnnBMLayer, int>(kCudnnBM);
+#endif
 #endif
 
   RegisterLayer<DropoutLayer, int>(kDropout);

@@ -478,7 +478,9 @@ class CudnnBMLayer : public BMLayer, public CudnnBase {
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
  protected:
+#if CUDNN_MAJOR == 4
   cudnnBatchNormMode_t mode_;
+#endif
   cudnnTensorDescriptor_t bnScaleBiasMeanVar_desc_;
   cudnnTensorDescriptor_t bnScaleBiasDiff_desc_;
   Blob<float> resultSaveMean_;

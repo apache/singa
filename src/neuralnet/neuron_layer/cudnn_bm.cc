@@ -18,7 +18,7 @@
 * under the License.
 *
 *************************************************************/
-
+#if CUDNN_MAJOR == 4
 #include "singa/neuralnet/neuron_layer.h"
 
 namespace singa {
@@ -148,3 +148,4 @@ void CudnnBMLayer::ComputeGradient(int flag,
       resultSaveInvVariance_.gpu_data()));
 }
 }  // namespace singa
+#endif

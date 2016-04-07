@@ -53,6 +53,39 @@ AC_CHECK_LIB([protobuf], [main], [], [
 PROGS=''
 LTLIBS=''
 
+# Setup custom CUDNN paths
+AC_ARG_ENABLE([cudnn],
+    [AS_HELP_STRING(--enable-cudnn,enable CUDNN support)],
+    [enable_cudnn="yes"], [enable_cudnn="no"])
+AM_CONDITIONAL(DCUDNN, [test "$enable_cudnn" = "yes"])
+AC_ARG_WITH([cudnn],
+    [AS_HELP_STRING([--with-cudnn=PATH], [prefix where CUDNN is installed])],
+    [cudnn_prefix=$withval], [cudnn_prefix="/usr/local/cudnn"])
+if test "$cudnn_prefix" == "yes"; then
+    if test "$withval" == "yes"; then
+        cudnn_prefix="/usr/local/cudnn"
+    fi
+fi
+if test x"$enable_cudnn" == x"yes"; then
+    CUDNN_CFLAGS="-I$cudnn_prefix/include"
+    CUDNN_LDFLAGS="-L$cudnn_prefix/lib64 -L$cudnn_prefix/lib"
+    CUDNN_LIBS="-lcudnn"
+    LIBS="$LIBS $CUDNN_LIBS"
+    LDFLAGS="$LDFLAGS $CUDNN_LDFLAGS"
+    DEBUG="-DUSE_CUDNN"
+    AC_DEFINE(DCUDNN,[1],[Defined if CUDNN should be used])
+    AC_CHECK_LIB([cudnn], [main], [], [
+        AC_MSG_ERROR([unable to find cudnn library])
+        ])
+else
+    CUDNN_CFLAGS=""
+    CUDNN_LDFLAGS=""
+    CUDNN_LIBS=""
+fi
+AC_SUBST(CUDNN_CFLAGS)
+AC_SUBST(CUDNN_LDFLAGS)
+AC_SUBST(CUDNN_LIBS)
+
 # Setup custom CUDA paths
 AC_ARG_ENABLE(cuda,
   [AS_HELP_STRING(--enable-cuda,enable CUDA support)],
@@ -86,7 +119,7 @@ if test x"$cudaval" = x"yes"; then
     LDFLAGS="$LDFLAGS $CUDA_LDFLAGS -L./"
     LIBTOOL='LD_LIBRARY_PATH=$(PWD) $(SHELL) $(top_builddir)/libtool'
     NVCC="nvcc"
-  DEBUG="-DUSE_GPU"
+  DEBUG+=" -DUSE_GPU"
     AC_DEFINE(DCUDA,[1],[Defined if CUDA should be used])
   AC_CHECK_LIB([cublas], [main], [], [
      AC_MSG_ERROR([unable to find cuda library])
@@ -110,40 +143,7 @@ AC_SUBST(CUDA_LDFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(CUDA_CFLAGS)
 
-# Setup custom CUDNN paths
-AC_ARG_ENABLE([cudnn],
-    [AS_HELP_STRING(--enable-cudnn,enable CUDNN support)],
-    [enable_cudnn="yes"], [enable_cudnn="no"])
-AM_CONDITIONAL(DCUDNN, [test "$enable_cudnn" = "yes"])
-AC_ARG_WITH([cudnn],
-    [AS_HELP_STRING([--with-cudnn=PATH], [prefix where CUDNN is installed])],
-    [cudnn_prefix=$withval], [cudnn_prefix="/usr/local/cuda"])
-if test "$cudnn_prefix" == "yes"; then
-    if test "$withval" == "yes"; then
-        cudnn_prefix="/usr/local/cuda"
-    fi
-fi
-if test x"$enable_cudnn" == x"yes"; then
-    CUDNN_CFLAGS="-I$cudnn_prefix/include"
-    CUDNN_LDFLAGS="-L$cudnn_prefix/lib64 -L$cudnn_prefix/lib"
-    CUDNN_LIBS="-lcudnn"
-    LIBS="$LIBS $CUDNN_LIBS"
-    LDFLAGS="$LDFLAGS $CUDNN_LDFLAGS"
-    DEBUG+=" -DUSE_CUDNN"
-    AC_DEFINE(DCUDNN,[1],[Defined if CUDNN should be used])
-    AC_CHECK_LIB([cudnn], [main], [], [
-        AC_MSG_ERROR([unable to find cudnn library])
-        ])
-else
-    CUDNN_CFLAGS=""
-    CUDNN_LDFLAGS=""
-    CUDNN_LIBS=""
-fi
-AC_SUBST(CUDNN_CFLAGS)
-AC_SUBST(CUDNN_LDFLAGS)
-AC_SUBST(CUDNN_LIBS)
-
-# Setup custom zookeeper paths 
+# Setup custom zookeeper and zmq paths 
 AC_ARG_ENABLE(dist,
   AS_HELP_STRING([--enable-dist],[enable dist support]),
   [enable_dist="yes"],[enable_dist="no"])

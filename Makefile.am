@@ -177,6 +177,8 @@ lib_LTLIBRARIES = libsinga.la $(LTLIBS)
 bin_PROGRAMS = singa singatool $(PROGS)
 pydir = $(CURDIR)/tool/python/singa/
 py_LTLIBRARIES = $(PY_PROGS)
+#gpudir = $(CURDIR)/.libs
+#gpu_LTLIBRARIES = libsingagpu.so 
 
 #lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_SRCS) $(SINGA_SRCS)
@@ -185,6 +187,13 @@ libsinga_la_LDFLAGS =
 if LMDB
 libsinga_la_CXXFLAGS += -DUSE_LMDB
 endif
+
+if DCUDNN
+libsinga_la_SOURCES += $(CUDNN_SRCS)
+libsinga_la_CXXFLAGS += $(CUDNN_CFLAGS)
+libsinga_la_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
+endif
+
 if DCUDA
 libsinga_la_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 libsinga_la_CXXFLAGS += $(CUDA_CFLAGS)
@@ -192,11 +201,6 @@ libsinga_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS) -L./ -lsingagpu -Wl,-rpath=.
 libsinga_la_LIBADD = libsingagpu.so
 endif
 
-if DCUDNN
-libsinga_la_SOURCES += $(CUDNN_SRCS)
-libsinga_la_CXXFLAGS += $(CUDNN_CFLAGS)
-libsinga_la_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
-endif
 if DDIST
 libsinga_la_SOURCES += $(ZOOKEEPER_SRCS)
 libsinga_la_CXXFLAGS += $(DIST_CFLAGS)
@@ -221,6 +225,12 @@ if LMDB
 singa_LDFLAGS += -llmdb
 endif
 
+if DCUDNN
+singa_SOURCES += $(CUDNN_SRCS)
+singa_CXXFLAGS += $(CUDNN_CFLAGS)
+singa_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
+endif
+
 if DCUDA
 singa_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
 singa_CXXFLAGS += $(CUDA_CFLAGS)
@@ -231,12 +241,6 @@ if DDIST
 singa_SOURCES += $(ZOOKEEPER_SRCS)
 singa_CXXFLAGS += $(DIST_CFLAGS)
 singa_LDFLAGS += $(DIST_LDFLAGS) $(DIST_LIBS)
-endif
-
-if DCUDNN
-singa_SOURCES += $(CUDNN_SRCS)
-singa_CXXFLAGS += $(CUDNN_CFLAGS)
-singa_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
 endif
 
 if DHDFS
@@ -281,16 +285,16 @@ if LMDB
 singatest_LDFLAGS += -llmdb
 endif
 
-if DCUDA
-singatest_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
-singatest_CXXFLAGS += $(CUDA_CFLAGS)
-singatest_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
-endif
-
 if DCUDNN
 singatest_SOURCES += $(CUDNN_SRCS)
 singatest_CXXFLAGS += $(CUDNN_CFLAGS)
 singatest_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
+endif
+
+if DCUDA
+singatest_SOURCES += $(CUDA_SRCS) $(CUDA_HDRS)
+singatest_CXXFLAGS += $(CUDA_CFLAGS)
+singatest_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
 
 if DDIST
@@ -303,14 +307,14 @@ _driver_la_SOURCES = $(PY_SRCS)
 _driver_la_CXXFLAGS = $(DEFAULT_FLAGS) $(MSHADOW_FLAGS) -I$(top_srcdir)/include $(PYFLAGS)
 _driver_la_LDFLAGS = -lsinga -module -shared $(PYLIBS) -avoid-version -rpath $(pydir)
 
-if DCUDA
-_driver_la_CXXFLAGS += $(CUDA_CFLAGS)
-_driver_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
-endif
-
 if DCUDNN
 _driver_la_CXXFLAGS += $(CUDNN_CFLAGS)
 _driver_la_LDFLAGS += $(CUDNN_LDFLAGS) $(CUDNN_LIBS)
+endif
+
+if DCUDA
+_driver_la_CXXFLAGS += $(CUDA_CFLAGS)
+_driver_la_LDFLAGS += $(CUDA_LDFLAGS) $(CUDA_LIBS)
 endif
 
 clean-local:
@@ -329,6 +333,7 @@ all-local:
 		cp -f .libs/_driver.so tool/python/singa/; \
 		touch tool/python/singa/__init__.py; \
 	fi
+	cp libsingagpu.so .libs/
 
 # For rat check
 rat:
