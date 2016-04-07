@@ -27,9 +27,14 @@ namespace singa {
 using std::thread;
 
 StoreInputLayer::~StoreInputLayer() {
+  if (thread_ != nullptr) {
+    thread_->join();
+    delete thread_;
+  }
   if (store_ != nullptr) {
     delete store_;
   }
+
 }
 
 void StoreInputLayer::Setup(const LayerProto& conf,
@@ -74,6 +79,8 @@ void StoreInputLayer::fetch_data() {
       }
       random_skip_--;
     }
+    buf_keys_.resize(batchsize_);
+    buf_vals_.resize(batchsize_);
   }
   for (int k = 0; k < batchsize_; k++) {
     if (!store_->Read(&buf_keys_[k], &buf_vals_[k])) {
@@ -85,20 +92,22 @@ void StoreInputLayer::fetch_data() {
 
 void StoreInputLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
+
   // if prefetching, wait for the thread to finish
   if (layer_conf_.store_conf().prefetching()) {
     if (thread_ == nullptr) {
-      buf_keys_.resize(batchsize_);
-      buf_vals_.resize(batchsize_);
       thread_ = new thread(&StoreInputLayer::fetch_data, this);
     }
     thread_->join();
     delete thread_;
+    thread_ = nullptr;
   } else {
     fetch_data();
   }
+  LOG(ERROR) << "batchsize << " << batchsize_;
   for (int k = 0; k < batchsize_; k++)
     Parse(k, flag, buf_keys_[k], buf_vals_[k]);
+  LOG(ERROR) << "after parse ";
   if (layer_conf_.store_conf().prefetching())
     thread_ = new thread(&StoreInputLayer::fetch_data, this);
 }

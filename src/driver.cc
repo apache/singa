@@ -115,7 +115,6 @@ void Driver::Init(int argc, char **argv) {
   RegisterLayer<LabelLayer, int>(kLabel);
   RegisterLayer<LRNLayer, int>(kLRN);
   RegisterLayer<MnistLayer, int>(kMnist);
-  RegisterLayer<PrefetchLayer, int>(kPrefetch);
   RegisterLayer<PoolingLayer, int>(kPooling);
   RegisterLayer<RBMHidLayer, int>(kRBMHid);
   RegisterLayer<RBMVisLayer, int>(kRBMVis);

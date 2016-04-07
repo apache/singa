@@ -228,7 +228,6 @@ message LayerProto {
   // layer specific configuration
   // configuration for input layers, id range [100, 200)
   optional StoreProto store_conf = 100;
-  optional PrefetchProto prefetch_conf = 102;
   optional DataProto lmdbdata_conf = 190;
   optional MnistProto mnist_conf = 192;
   optional RGBImageProto rgbimage_conf = 193;
@@ -359,10 +358,6 @@ message RGBImageProto {
   optional string meanfile = 4 [default = ""];
 }
 
-message PrefetchProto {
-  repeated LayerProto sublayers = 1;
-}
-
 message SplitProto {
   optional int32 num_splits = 1 [default = 1];
 }
@@ -380,7 +375,7 @@ message StoreProto {
   optional bool encoded = 10 [default = false];
   optional int32 random_skip = 11 [default = 0];
   optional bool has_label = 12 [default = true];
-  optional bool prefetching = 13 [default = true];
+  optional bool prefetching = 13 [default = false];
 }
 
 message CharRNNProto {
@@ -652,7 +647,6 @@ enum LayerType {
    */
   kCSVInput = 100;
   kImagePreprocess = 101;
-  kPrefetch = 102;
   kRecordInput = 103;
   kLMDBData = 190;  // deprecated
   kLabel = 191;  // deprecated

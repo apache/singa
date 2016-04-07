@@ -43,7 +43,7 @@ class StoreInputLayer : virtual public InputLayer {
  protected:
   /**
    * Helper method for doing the prefetching, basically read (key,value) pairs
-   * to buf_keys and buf_vals_ vector of size batchsize_. 
+   * to buf_keys and buf_vals_ vector of size batchsize_.
    */
   void fetch_data();
   /**
@@ -150,22 +150,6 @@ class ImagePreprocessLayer : public InputLayer {
   int cropsize_ = 0;
   int resize_ = 0;
   float scale_ = 1;
-};
-
-/**
- * TODO(wangwei) Layer for prefetching data records and parsing them.
- *
- * This layer controls the prefetching thread, i.e.,
- * creating and joining the prefetching thread.
- */
-class PrefetchLayer : public Layer {
- public:
-  ~PrefetchLayer();
-  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
-  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
-
- protected:
-  std::thread thread_;
 };
 
 class OneHotLayer : public InputLayer {
