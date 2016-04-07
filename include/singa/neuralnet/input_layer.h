@@ -25,7 +25,6 @@
 #include <string>
 #include <vector>
 #include <thread>
-#include <deque>
 #include "singa/io/store.h"
 #include "singa/io/kvfile.h"
 #include "singa/neuralnet/layer.h"
@@ -63,7 +62,7 @@ class StoreInputLayer : virtual public InputLayer {
   int random_skip_ = 0;
   io::Store* store_ = nullptr;
   vector<std::string> buf_keys_, buf_vals_;
-  std::deque<std::thread> threads_;  // prefetching thread
+  std::thread *thread_ = nullptr;  // prefetching thread
 };
 
 /**

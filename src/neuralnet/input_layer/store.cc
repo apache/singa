@@ -51,12 +51,6 @@ void StoreInputLayer::Setup(const LayerProto& conf,
     shape.push_back(s);
   data_.Reshape(shape);
   aux_data_.resize(batchsize_);
-  buf_keys_.resize(batchsize_);
-  buf_vals_.resize(batchsize_);
-
-  // initialize prefetch buffer and start the thread
-  if (conf.store_conf().prefetching())
-    threads_.push_back(thread(&StoreInputLayer::fetch_data, this));
 }
 
 void StoreInputLayer::fetch_data() {
@@ -93,15 +87,20 @@ void StoreInputLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
   // if prefetching, wait for the thread to finish
   if (layer_conf_.store_conf().prefetching()) {
-    threads_.front().join();
-    threads_.pop_front();
+    if (thread_ == nullptr) {
+      buf_keys_.resize(batchsize_);
+      buf_vals_.resize(batchsize_);
+      thread_ = new thread(&StoreInputLayer::fetch_data, this);
+    }
+    thread_->join();
+    delete thread_;
   } else {
     fetch_data();
   }
   for (int k = 0; k < batchsize_; k++)
     Parse(k, flag, buf_keys_[k], buf_vals_[k]);
   if (layer_conf_.store_conf().prefetching())
-    threads_.push_back(thread(&StoreInputLayer::fetch_data, this));
+    thread_ = new thread(&StoreInputLayer::fetch_data, this);
 }
 
 
