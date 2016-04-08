@@ -40,8 +40,12 @@ class StoreInputLayer : virtual public InputLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
 
-
  protected:
+  /**
+   * Helper method for doing the prefetching, basically read (key,value) pairs
+   * to buf_keys and buf_vals_ vector of size batchsize_.
+   */
+  void fetch_data();
   /**
    * Parsing the (key, val) tuple to get feature (and label).
    * Subclasses must implment this function.
@@ -57,6 +61,8 @@ class StoreInputLayer : virtual public InputLayer {
   int batchsize_ = 1;
   int random_skip_ = 0;
   io::Store* store_ = nullptr;
+  vector<std::string> buf_keys_, buf_vals_;
+  std::thread *thread_ = nullptr;  // prefetching thread
 };
 
 /**
@@ -144,22 +150,6 @@ class ImagePreprocessLayer : public InputLayer {
   int cropsize_ = 0;
   int resize_ = 0;
   float scale_ = 1;
-};
-
-/**
- * TODO(wangwei) Layer for prefetching data records and parsing them.
- *
- * This layer controls the prefetching thread, i.e.,
- * creating and joining the prefetching thread.
- */
-class PrefetchLayer : public Layer {
- public:
-  ~PrefetchLayer();
-  void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
-  void ComputeGradient(int flag, const vector<Layer*>& srclayers) override {}
-
- protected:
-  std::thread thread_;
 };
 
 class OneHotLayer : public InputLayer {

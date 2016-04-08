@@ -64,7 +64,6 @@ SINGA_SRCS := src/driver.cc \
               src/neuralnet/input_layer/onehot.cc \
               src/neuralnet/input_layer/csv.cc \
               src/neuralnet/input_layer/image_preprocess.cc \
-              src/neuralnet/input_layer/prefetch.cc \
               src/neuralnet/input_layer/record.cc \
               src/neuralnet/input_layer/deprecated.cc \
               src/neuralnet/input_layer/store.cc \
@@ -178,7 +177,7 @@ bin_PROGRAMS = singa singatool $(PROGS)
 pydir = $(CURDIR)/tool/python/singa/
 py_LTLIBRARIES = $(PY_PROGS)
 #gpudir = $(CURDIR)/.libs
-#gpu_LTLIBRARIES = libsingagpu.so 
+#gpu_LTLIBRARIES = libsingagpu.so
 
 #lib_LTLIBRARIES = libsinga.la
 libsinga_la_SOURCES = $(PROTO_SRCS) $(SINGA_SRCS)

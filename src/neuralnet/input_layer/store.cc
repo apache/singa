@@ -22,13 +22,19 @@
 #include "singa/neuralnet/input_layer.h"
 #include "singa/utils/context.h"
 #include "singa/utils/singleton.h"
-
 namespace singa {
 
+using std::thread;
+
 StoreInputLayer::~StoreInputLayer() {
+  if (thread_ != nullptr) {
+    thread_->join();
+    delete thread_;
+  }
   if (store_ != nullptr) {
     delete store_;
   }
+
 }
 
 void StoreInputLayer::Setup(const LayerProto& conf,
@@ -44,11 +50,15 @@ void StoreInputLayer::Setup(const LayerProto& conf,
   } else {
     batchsize_ = conf.store_conf().batchsize(0);
   }
+
+  vector<int> shape {batchsize_};
+  for (int s : conf.store_conf().shape())
+    shape.push_back(s);
+  data_.Reshape(shape);
+  aux_data_.resize(batchsize_);
 }
 
-void StoreInputLayer::ComputeFeature(int flag,
-    const vector<Layer*>& srclayers) {
-  string key, val;
+void StoreInputLayer::fetch_data() {
   if (store_ == nullptr) {
     store_ = io::OpenStore(layer_conf_.store_conf().backend(),
         layer_conf_.store_conf().path(),
@@ -61,6 +71,7 @@ void StoreInputLayer::ComputeFeature(int flag,
       random_skip_ = distribution(*generator);
     }
 
+    string key, val;
     while (random_skip_ > 0) {
       if (!store_->Read(&key, &val)) {
         store_->SeekToFirst();
@@ -68,32 +79,50 @@ void StoreInputLayer::ComputeFeature(int flag,
       }
       random_skip_--;
     }
+    buf_keys_.resize(batchsize_);
+    buf_vals_.resize(batchsize_);
   }
   for (int k = 0; k < batchsize_; k++) {
-    if (!store_->Read(&key, &val)) {
+    if (!store_->Read(&buf_keys_[k], &buf_vals_[k])) {
       store_->SeekToFirst();
-      CHECK(store_->Read(&key, &val));
+      CHECK(store_->Read(&buf_keys_[k], &buf_vals_[k]));
     }
-    // TODO(wangwei) random skip and shuffle among this mini-batch
-    Parse(k, flag, key, val);
   }
+}
+
+void StoreInputLayer::ComputeFeature(int flag,
+    const vector<Layer*>& srclayers) {
+
+  // if prefetching, wait for the thread to finish
+  if (layer_conf_.store_conf().prefetching()) {
+    if (thread_ == nullptr) {
+      thread_ = new thread(&StoreInputLayer::fetch_data, this);
+    }
+    thread_->join();
+    delete thread_;
+    thread_ = nullptr;
+  } else {
+    fetch_data();
+  }
+  LOG(ERROR) << "batchsize << " << batchsize_;
+  for (int k = 0; k < batchsize_; k++)
+    Parse(k, flag, buf_keys_[k], buf_vals_[k]);
+  LOG(ERROR) << "after parse ";
+  if (layer_conf_.store_conf().prefetching())
+    thread_ = new thread(&StoreInputLayer::fetch_data, this);
 }
 
 void SingleLabelRecordLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   StoreInputLayer::Setup(conf, srclayers);
-
-  vector<int> shape {batchsize_};
-  for (int s : conf.store_conf().shape())
-    shape.push_back(s);
-  data_.Reshape(shape);
-  aux_data_.resize(batchsize_);
 }
+
 void SingleLabelRecordLayer::ComputeFeature(int flag,
     const vector<Layer*>& srclayers) {
-  StoreInputLayer::ComputeFeature(flag, srclayers);
 
+  StoreInputLayer::ComputeFeature(flag, srclayers);
   auto& store_conf = layer_conf_.store_conf();
+
   if (store_conf.has_mean_file() && mean_.count() == 0) {
     mean_.Reshape(vector<int>{data_.count() / batchsize_});
     LoadRecord(store_conf.backend(), store_conf.mean_file(), &mean_);
@@ -132,6 +161,5 @@ void SingleLabelRecordLayer::ComputeFeature(int flag,
     }
   }
 }
-
 
 }  // namespace singa
