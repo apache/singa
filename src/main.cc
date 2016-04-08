@@ -46,8 +46,8 @@
  * easily, e.g., MLP(layer1_size, layer2_size, tanh, loss);
  */
 int main(int argc, char **argv) {
-  if (argc < 4) {
-    std::cout << "Args: -conf JOB_CONF -singa SINGA_CONF -job_id JOB_ID "
+  if (argc < 2) {
+    std::cout << "Args: -conf JOB_CONF [-singa SINGA_CONF] [-job_id JOB_ID] "
               << " [-resume|-test]\n"
               << "-resume\t resume training from latest checkpoint files\n"
               << "-test\t test performance or extract features\n";

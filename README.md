@@ -19,8 +19,19 @@ The current code depends on the following external libraries:
   * `google-protobuf` (New BSD)
   * `openblas` (New BSD)
 
+###Optional dependencies
+For advanced features, the following libraries are needed:
+
+  * `zeromq` (LGPLv3 + static link exception),`czmq` (Mozilla Public License Version 2.0) and `zookeeper` (Apache 2.0), for distributed training with multiple processes. Compile SINGA with `--enable-dist`
+  * `cuda` (NVIDIA CUDA Toolkit EUL) for training using NVIDIA GPUs.
+  * `cudnn` (NVIDIA CuDNN EULA) for training using NVIDIA's CuDNN library.
+  * `Apache Mesos` (Apache 2.0)
+  * `Apache Hadoop` (Apache 2.0)
+  * `libhdfs3` (Apache 2.0)
+  * `swig` (GPL) for using Python Binding.
+
 We have tested SINGA on Ubuntu 12.04, Ubuntu 14.01 and CentOS 6.
-You can install all dependencies into `$PREFIX` folder by
+You can install all dependencies (including optional dependencies) into `$PREFIX` folder by
 
     ./thirdparty/install.sh all $PREFIX
 
@@ -31,17 +42,6 @@ variables to continue the building instructions,
     $ export CPLUS_INCLUDE_PATH=$PREFIX/include:$CPLUS_INCLUDE_PATH
     $ export LIBRARY_PATH=$PREFIX/lib:$LIBRARY_PATH
     $ export PATH=$PREFIX/bin:$PATH
-
-###Optional dependencies
-For advanced features, the following libraries are needed:
-
-  * `zeromq` (LGPLv3 + static link exception),`czmq` (Mozilla Public License Version 2.0) and `zookeeper` (Apache 2.0), for distributed training with multiple processes. Compile SINGA with `--enable-dist`
-  * `cuda` (NVIDIA CUDA Toolkit EUL) for training using NVIDIA GPUs.
-  * `cudnn` (NVIDIA CuDNN EULA) for training using NVIDIA's CUDNN library.
-  * `Apache Mesos` (Apache 2.0)
-  * `Apache Hadoop` (Apache 2.0)
-  * `libhdfs3` (Apache 2.0)
-  * `swig` (GPL) for using Python Binding.
 
 
 ##Documentation
@@ -76,7 +76,7 @@ To compile with python wrappers, you should run:
 	$ ./tool/python/singa/generatepy.sh
 	$ ./configure --enable-python --with-python=/PATH/TO/Python.h
 
---with-python is optinal as by default the path is /usr/local/include.
+--with-python is optional as by default the path is /usr/local/include.
 
 You can also run the following command for further configuration.
 
@@ -107,10 +107,9 @@ continue with the following instructions,
 Next, start the training:
 
     $ cd ../../
-    $ ./bin/zk-service.sh start
-    $ ./bin/singa-run.sh -conf examples/cifar10/job.conf
+    $ ./singa -conf examples/cifar10/job.conf
 
-Now we just need to wait until it is done!
+For GPU training or distributed training, please refer to the [online guide](http://singa.apache.org/docs).
 
 ##LICENSE
 

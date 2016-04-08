@@ -34,7 +34,6 @@ StoreInputLayer::~StoreInputLayer() {
   if (store_ != nullptr) {
     delete store_;
   }
-
 }
 
 void StoreInputLayer::Setup(const LayerProto& conf,
@@ -104,10 +103,8 @@ void StoreInputLayer::ComputeFeature(int flag,
   } else {
     fetch_data();
   }
-  LOG(ERROR) << "batchsize << " << batchsize_;
   for (int k = 0; k < batchsize_; k++)
     Parse(k, flag, buf_keys_[k], buf_vals_[k]);
-  LOG(ERROR) << "after parse ";
   if (layer_conf_.store_conf().prefetching())
     thread_ = new thread(&StoreInputLayer::fetch_data, this);
 }
