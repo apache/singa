@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 #
 #/**
-# * Copyright 2015 The Apache Software Foundation
-# *
 # * Licensed to the Apache Software Foundation (ASF) under one
 # * or more contributor license agreements.  See the NOTICE file
 # * distributed with this work for additional information
@@ -19,7 +17,7 @@
 # * See the License for the specific language governing permissions and
 # * limitations under the License.
 # */
-# 
+#
 # manage ZooKeeper service
 #
 
@@ -66,7 +64,7 @@ case $1 in
     # stop zk service
     $ZK_HOME/bin/zkServer.sh stop
     ;;
-  
+
   *)
     echo $usage
     exit 1

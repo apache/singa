@@ -1,6 +1,4 @@
 #/**
-# * Copyright 2015 The Apache Software Foundation
-# *
 # * Licensed to the Apache Software Foundation (ASF) under one
 # * or more contributor license agreements.  See the NOTICE file
 # * distributed with this work for additional information
@@ -40,4 +38,4 @@ create_hdfs:
 	$(CXX) create_data.cc -std=c++11 -lsinga -lprotobuf -lglog -lhdfs3 \
 		-I../../include -L../../.libs/ -Wl,-unresolved-symbols=ignore-in-shared-libs \
 		-Wl,-rpath=../../.libs/  -o create_data.bin
-	./create_data.bin cifar-10-batches-bin $(HDFS_DIR) 
+	./create_data.bin cifar-10-batches-bin $(HDFS_DIR)

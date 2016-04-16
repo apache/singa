@@ -1,6 +1,4 @@
 #/**
-# * Copyright 2015 The Apache Software Foundation
-# *
 # * Licensed to the Apache Software Foundation (ASF) under one
 # * or more contributor license agreements.  See the NOTICE file
 # * distributed with this work for additional information
@@ -44,7 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends --force-yes cur
         cuda-cusparse-$CUDA_PKG_VERSION \
         cuda-npp-$CUDA_PKG_VERSION \
         cuda-cudart-$CUDA_PKG_VERSION && \
-    ln -s cuda-$CUDA_VERSION /usr/local/cuda 
+    ln -s cuda-$CUDA_VERSION /usr/local/cuda
 
 RUN apt-get install -y --no-install-recommends --force-yes \
         cuda-core-$CUDA_PKG_VERSION \
@@ -59,7 +57,7 @@ RUN apt-get install -y --no-install-recommends --force-yes \
         cuda-cusparse-dev-$CUDA_PKG_VERSION \
         cuda-npp-dev-$CUDA_PKG_VERSION \
         cuda-cudart-dev-$CUDA_PKG_VERSION \
-        cuda-driver-dev-$CUDA_PKG_VERSION 
+        cuda-driver-dev-$CUDA_PKG_VERSION
 
 RUN echo "/usr/local/cuda/lib" >> /etc/ld.so.conf.d/cuda.conf && \
     echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/cuda.conf && \
@@ -79,4 +77,4 @@ RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
 ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}
 
-RUN cd && source /root/.bashrc && cd incubator-singa && ./configure --enable-cuda --with-cuda=/usr/local/cuda --enable-cudnn --with-cudnn=/usr/local/cuda && make && make install 
+RUN cd && source /root/.bashrc && cd incubator-singa && ./configure --enable-cuda --with-cuda=/usr/local/cuda --enable-cudnn --with-cudnn=/usr/local/cuda && make && make install

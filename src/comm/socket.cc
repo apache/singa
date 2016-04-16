@@ -60,7 +60,7 @@ int Dealer::Send(Msg** msg) {
     delete *msg;
     *msg = nullptr;
   } else {
-    msgQueues.at(-1).push(*msg);
+    msgQueues.at(-1).Push(*msg);
   }
   return 1;
 }
@@ -68,10 +68,10 @@ int Dealer::Send(Msg** msg) {
 Msg* Dealer::Receive(int timeout) {
   Msg* msg = nullptr;
   if (timeout > 0) {
-    if (!msgQueues.at(id_).timeout_pop(msg, timeout))
+    if (!msgQueues.at(id_).Pop(msg, timeout))
       return nullptr;
   } else {
-    msgQueues.at(id_).pop(msg);
+    msgQueues.at(id_).Pop(msg);
   }
   msg->FirstFrame();
   return msg;
@@ -108,7 +108,7 @@ int Router::Bind(const std::string& endpoint) {
 int Router::Send(Msg **msg) {
   int dstid = (*msg)->dst();
   if (msgQueues.find(dstid) != msgQueues.end()) {
-    msgQueues.at(dstid).push(*msg);
+    msgQueues.at(dstid).Push(*msg);
   } else {
     LOG(FATAL) << "The dst queue not exist for dstid = " << dstid;
   }
@@ -133,11 +133,11 @@ Msg* Router::Receive(int timeout) {
         zframe_destroy(&dealer);
         Msg* remote_msg = new Msg();
         remote_msg->ParseFromZmsg(zmsg);
-        msgQueues.at(-1).push(remote_msg);
+        msgQueues.at(-1).Push(remote_msg);
       }
     }
 #endif
-    msgQueues.at(-1).timeout_pop(msg, timeout * 10);
+    msgQueues.at(-1).Pop(msg, timeout * 10);
   }
   msg->FirstFrame();
   return msg;

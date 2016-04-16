@@ -1,6 +1,4 @@
 #/**
-# * Copyright 2015 The Apache Software Foundation
-# *
 # * Licensed to the Apache Software Foundation (ASF) under one
 # * or more contributor license agreements.  See the NOTICE file
 # * distributed with this work for additional information
@@ -143,7 +141,7 @@ AC_SUBST(CUDA_LDFLAGS)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(CUDA_CFLAGS)
 
-# Setup custom zookeeper and zmq paths 
+# Setup custom zookeeper and zmq paths
 AC_ARG_ENABLE(dist,
   AS_HELP_STRING([--enable-dist],[enable dist support]),
   [enable_dist="yes"],[enable_dist="no"])
@@ -158,10 +156,10 @@ if test "$dist_prefix" == "yes"; then
     fi
 fi
 if test x"$enable_dist" == x"yes"; then
-  AC_CHECK_LIB([zookeeper_mt], [main], [], [ 
+  AC_CHECK_LIB([zookeeper_mt], [main], [], [
                 AC_MSG_ERROR([unable to find zookeeper library])
         ])
-  AC_SEARCH_LIBS([zmq_ctx_new], [zmq], [], [ 
+  AC_SEARCH_LIBS([zmq_ctx_new], [zmq], [], [
                   AC_MSG_ERROR([unable to find zmq_ctx_new() function])
         ])
   DIST_CFLAGS="-I$dist_prefix/include"
@@ -180,7 +178,7 @@ AC_SUBST(DIST_CFLAGS)
 AC_SUBST(DIST_LDFLAGS)
 AC_SUBST(DIST_LIBS)
 
-# Setup custom lmdb paths 
+# Setup custom lmdb paths
 AC_ARG_ENABLE(lmdb,
      AS_HELP_STRING([--enable-lmdb],[enable debug option]),
    [enable_lmdb=yes],[enable_lmdb=no])
@@ -192,7 +190,7 @@ if test x"$enable_lmdb" = x"yes"; then
   AC_DEFINE(LMDB, 1, [Enable Option layer])
 fi
 
-# Setup custom libhdfs paths 
+# Setup custom libhdfs paths
 AC_ARG_ENABLE(hdfs,
   AS_HELP_STRING([--enable-hdfs],[enable hdfs support]),
   [enable_hdfs=yes],[enable_hdfs=no])
@@ -225,7 +223,7 @@ AC_SUBST(HDFS_CFLAGS)
 AC_SUBST(HDFS_LDFLAGS)
 AC_SUBST(HDFS_LIBS)
 
-# Setup for test args 
+# Setup for test args
 AC_ARG_ENABLE(test,
   AS_HELP_STRING([--enable-test],[enable singa test]),
   [enable_test=yes],[enable_test=no])

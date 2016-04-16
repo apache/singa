@@ -19,268 +19,175 @@
 *
 *************************************************************/
 
-/**
- * The code is adapted from following source:
- * http://gnodebian.blogspot.sg/2013/07/a-thread-safe-asynchronous-queue-in-c11.html
- * under Creative Commons Attribution 4.0 International Public License
- */
-
 #ifndef SINGA_UTILS_SAFE_QUEUE_H_
 #define SINGA_UTILS_SAFE_QUEUE_H_
 
-// source: http://gnodebian.blogspot.sg/2013/07/a-thread-safe-asynchronous-queue-in-c11.html
 #include <algorithm>
 #include <queue>
 #include <list>
 #include <mutex>
-#include <thread>
-#include <cstdint>
 #include <condition_variable>
+#include <thread>
 
-/** A thread-safe asynchronous queue */
-template <class T, class Container = std::list<T>>
+/**
+ * Thread-safe queue.
+ */
+template <typename T, class Container = std::queue<T>>
 class SafeQueue {
-  typedef typename Container::value_type value_type;
-  typedef typename Container::size_type size_type;
-  typedef Container container_type;
-
  public:
-  /*! Create safe queue. */
   SafeQueue() = default;
-  SafeQueue(SafeQueue&& sq) {
-    m_queue = std::move(sq.m_queue);
-  }
-  SafeQueue(const SafeQueue& sq) {
-    std::lock_guard<std::mutex> lock(sq.m_mutex);
-    m_queue = sq.m_queue;
-  }
-
-  /*! Destroy safe queue. */
   ~SafeQueue() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(mutex_);
   }
 
   /**
-   * Sets the maximum number of items in the queue. Defaults is 0: No limit
-   * \param[in] item An item.
+   * Push an element into the queue. Blocking operation.
+   * @return true if success;
    */
-  void set_max_num_items(unsigned int max_num_items) {
-    m_max_num_items = max_num_items;
-  }
-
-  /**
-   *  Pushes the item into the queue.
-   * \param[in] item An item.
-   * \return true if an item was pushed into the queue
-   */
-  bool push(const value_type& item) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (m_max_num_items > 0 && m_queue.size() > m_max_num_items)
-      return false;
-
-    m_queue.push(item);
-    m_condition.notify_one();
+  bool Push(const T& e) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    queue_.push(e);
+    condition_.notify_one();
     return true;
   }
 
   /**
-   *  Pushes the item into the queue.
-   * \param[in] item An item.
-   * \return true if an item was pushed into the queue
+   * Pop an element from the queue.
+   * It will be blocked until one element is poped.
    */
-  bool push(const value_type&& item) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (m_max_num_items > 0 && m_queue.size() > m_max_num_items)
-      return false;
-
-    m_queue.push(item);
-    m_condition.notify_one();
-    return true;
+  void Pop(T& e) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    condition_.wait(lock, [this]() { return !queue_.empty(); });
+    e = queue_.front();
+    queue_.pop();
   }
-
   /**
-   *  Pops item from the queue. If queue is empty, this function blocks until item becomes available.
-   * \param[out] item The item.
+   * Pop an item from the queue until one element is poped or timout.
+   * @param[in] timeout, return false after waiting this number of microseconds
    */
-  void pop(value_type& item) {
-    std::unique_lock<std::mutex> lock(m_mutex);
-    m_condition.wait(lock, [this]() {  // Lambda funct
-        return !m_queue.empty();
-      });
-    item = m_queue.front();
-    m_queue.pop();
-  }
+  bool Pop(T& item, std::uint64_t timeout) {
+    std::unique_lock<std::mutex> lock(mutex_);
 
-  /**
-   *  Pops item from the queue using the contained type's move assignment operator, if it has one..
-   *  This method is identical to the pop() method if that type has no move assignment operator.
-   *  If queue is empty, this function blocks until item becomes available.
-   * \param[out] item The item.
-   */
-  void move_pop(value_type& item) {
-    std::unique_lock<std::mutex> lock(m_mutex);
-    m_condition.wait(lock, [this]() {  // Lambda funct
-        return !m_queue.empty();
-      });
-    item = std::move(m_queue.front());
-    m_queue.pop();
-  }
-
-  /**
-   *  Tries to pop item from the queue.
-   * \param[out] item The item.
-   * \return False is returned if no item is available.
-   */
-  bool try_pop(value_type& item) {
-    std::unique_lock<std::mutex> lock(m_mutex);
-
-    if (m_queue.empty())
-      return false;
-
-    item = m_queue.front();
-    m_queue.pop();
-    return true;
-  }
-
-  /**
-   *  Tries to pop item from the queue using the contained type's move assignment operator, if it has one..
-   *  This method is identical to the try_pop() method if that type has no move assignment operator.
-   * \param[out] item The item.
-   * \return False is returned if no item is available.
-   */
-  bool try_move_pop(value_type& item) {
-    std::unique_lock<std::mutex> lock(m_mutex);
-
-    if (m_queue.empty())
-      return false;
-
-    item = std::move(m_queue.front());
-    m_queue.pop();
-    return true;
-  }
-
-  /**
-   *  Pops item from the queue. If the queue is empty, blocks for timeout microseconds, or until item becomes available.
-   * \param[out] t An item.
-   * \param[in] timeout The number of microseconds to wait.
-   * \return true if get an item from the queue, false if no item is received before the timeout.
-   */
-  bool timeout_pop(value_type& item, std::uint64_t timeout) {
-    std::unique_lock<std::mutex> lock(m_mutex);
-
-    if (m_queue.empty()) {
+    if (queue_.empty()) {
       if (timeout == 0)
         return false;
 
-      if (m_condition.wait_for(lock, std::chrono::microseconds(timeout))
+      if (condition_.wait_for(lock, std::chrono::microseconds(timeout))
           == std::cv_status::timeout)
         return false;
     }
 
-    item = m_queue.front();
-    m_queue.pop();
+    item = queue_.front();
+    queue_.pop();
     return true;
   }
 
   /**
-   *  Pops item from the queue using the contained type's move assignment operator, if it has one..
-   *  If the queue is empty, blocks for timeout microseconds, or until item becomes available.
-   *  This method is identical to the try_pop() method if that type has no move assignment operator.
-   * \param[out] t An item.
-   * \param[in] timeout The number of microseconds to wait.
-   * \return true if get an item from the queue, false if no item is received before the timeout.
+   *  Try to pop an element from the queue.
+   * \return false the queue is empty now.
    */
-  bool timeout_move_pop(value_type& item, std::uint64_t timeout) {
-    std::unique_lock<std::mutex> lock(m_mutex);
+  bool TryPop(T& e) {
+    std::unique_lock<std::mutex> lock(mutex_);
 
-    if (m_queue.empty()) {
-      if (timeout == 0)
-        return false;
+    if (queue_.empty())
+      return false;
 
-      if (m_condition.wait_for(lock, std::chrono::microseconds(timeout))
-          == std::cv_status::timeout)
-        return false;
-    }
-
-    item = std::move(m_queue.front());
-    m_queue.pop();
+    e = queue_.front();
+    queue_.pop();
     return true;
   }
 
-  /**
-   *  Gets the number of items in the queue.
-   * \return Number of items in the queue.
-   */
-  size_type size() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_queue.size();
-  }
 
   /**
-   *  Check if the queue is empty.
-   * \return true if queue is empty.
+   * @return Number of elements in the queue.
    */
-  bool empty() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_queue.empty();
-  }
-
-  /**
-   *  Swaps the contents.
-   * \param[out] sq The SafeQueue to swap with 'this'.
-   */
-  void swap(SafeQueue& sq) {
-    if (this != &sq) {
-      std::lock_guard<std::mutex> lock1(m_mutex);
-      std::lock_guard<std::mutex> lock2(sq.m_mutex);
-      m_queue.swap(sq.m_queue);
-
-      if (!m_queue.empty())
-        m_condition.notify_all();
-
-      if (!sq.m_queue.empty())
-        sq.m_condition.notify_all();
-    }
-  }
-
-  /*! The copy assignment operator */
-  SafeQueue& operator= (const SafeQueue& sq) {
-    if (this != &sq) {
-      std::lock_guard<std::mutex> lock1(m_mutex);
-      std::lock_guard<std::mutex> lock2(sq.m_mutex);
-      std::queue<T, Container> temp{sq.m_queue};
-      m_queue.swap(temp);
-
-      if (!m_queue.empty())
-        m_condition.notify_all();
-    }
-
-    return *this;
-  }
-
-  /*! The move assignment operator */
-  SafeQueue& operator= (SafeQueue && sq) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_queue = std::move(sq.m_queue);
-
-    if (!m_queue.empty()) m_condition.notify_all();
-
-    return *this;
+  unsigned int Size() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return queue_.size();
   }
 
  private:
-  std::queue<T, Container> m_queue;
-  mutable std::mutex m_mutex;
-  std::condition_variable m_condition;
-  unsigned int m_max_num_items = 0;
+  Container queue_;
+  mutable std::mutex mutex_;
+  std::condition_variable condition_;
 };
 
-/*! Swaps the contents of two SafeQueue objects. */
-template <class T, class Container>
-void swap(SafeQueue<T, Container>& q1, SafeQueue<T, Container>& q2) {
-  q1.swap(q2);
-}
+/**
+ * Thread safe priority queue.
+ */
+template<typename T>
+class PriorityQueue {
+ public:
+  PriorityQueue() = default;
+  /**
+   * Push an element into the queue with a given priority.
+   * The queue should not be a priority queue.
+   * @return true if success; otherwise false, e.g., due to capacity constraint.
+   */
+  bool Push(const T& e, int priority) {
+    Element ele;
+    ele.data = e;
+    ele.priority = priority;
+    queue_.push(ele);
+    return true;
+  }
+
+  /**
+   * Pop an element from the queue with the highest priority.
+   * It blocks until one element is poped.
+   */
+  void Pop(T& e) {
+    Element ele;
+    queue_.pop(ele);
+    e = ele.data;
+  }
+  /**
+   * Pop the item with the highest priority from the queue until one element is
+   * poped or timeout.
+   * @param[in] timeout, return false if no element is poped after this number
+   * of microseconds.
+   */
+  bool Pop(T& e, std::uint64_t timeout) {
+    Element ele;
+    if (queue_.pop(ele, timeout)) {
+      e = ele.data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Try to pop an element from the queue.
+   * @return false if the queue is empty now.
+   */
+  bool TryPop(T& e) {
+    Element ele;
+    if (queue_.TryPop(ele)) {
+      e = ele.data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * @return Number of elements in the queue.
+   */
+  unsigned int Size() const {
+    return queue_.Size();
+  }
+
+ private:
+  struct Element {
+    T data;
+    int priority;
+    inline bool operator<(const Element &other) const {
+      return priority < other.priority;
+    }
+  };
+
+  SafeQueue<Element, std::priority_queue<Element>> queue_;
+};
 
 #endif  // SINGA_UTILS_SAFE_QUEUE_H_

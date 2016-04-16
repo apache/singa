@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 #
 #/**
-# * Copyright 2015 The Apache Software Foundation
-# *
 # * Licensed to the Apache Software Foundation (ASF) under one
 # * or more contributor license agreements.  See the NOTICE file
 # * distributed with this work for additional information
@@ -52,7 +50,7 @@ fi
 if [ -z $SINGA_LOG ]; then
   # add -confdir arg, so no need to run under SINGA_HOME
   SINGA_LOG=`"$SINGA_HOME"/singatool getlogdir -confdir "$SINGA_CONF"`
-  [ $? == 0 ] || exit 1 
+  [ $? == 0 ] || exit 1
 fi
 
 # set ZK_HOME

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 #
 #/**
-# * Copyright 2015 The Apache Software Foundation
-# *
 # * Licensed to the Apache Software Foundation (ASF) under one
 # * or more contributor license agreements.  See the NOTICE file
 # * distributed with this work for additional information
@@ -19,7 +17,7 @@
 # * See the License for the specific language governing permissions and
 # * limitations under the License.
 # */
-# 
+#
 # console to list/view/kill singa jobs
 #
 
@@ -80,7 +78,7 @@ case $1 in
     done
     ./singatool remove $2 || exit 1
     ;;
-  
+
   *)
     echo -e $usage
     exit 1

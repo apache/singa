@@ -1,8 +1,6 @@
 #!/bin/bash
 
 #/**
-# * Copyright 2015 The Apache Software Foundation
-# *
 # * Licensed to the Apache Software Foundation (ASF) under one
 # * or more contributor license agreements.  See the NOTICE file
 # * distributed with this work for additional information
@@ -24,7 +22,7 @@ source /root/.bashrc
 #download
 cd /opt
 wget -c http://archive.apache.org/dist/mesos/0.22.0/mesos-0.22.0.tar.gz
-wget https://www.comp.nus.edu.sg/~dinhtta/files/mesos_patch 
+wget https://www.comp.nus.edu.sg/~dinhtta/files/mesos_patch
 tar -zxvf mesos-0.22.0.tar.gz
 
 #patch and install mesos
