@@ -2,7 +2,7 @@ Release Notes - SINGA - Version singa-incubating-0.3.0
 
 SINGA is a general distributed deep learning platform for training big deep learning models over large datasets.
 
-This release incldues following features:
+This release includes following features:
 
   * GPU Support
     * [SINGA-131] Implement and optimize hybrid training using both CPU and GPU
@@ -10,7 +10,7 @@ This release incldues following features:
     * [SINGA-134] Extend SINGA to run over a GPU cluster
     * [Singa-157] Change the priority of cudnn library and install libsingagpu.so
 
-  * Remove Dependences
+  * Remove Dependencies
     * [SINGA-156] Remove the dependency on ZMQ for single process training
     * [SINGA-155] Remove zookeeper for single-process training
 
