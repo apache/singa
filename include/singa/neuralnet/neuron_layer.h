@@ -112,6 +112,7 @@ class DropoutLayer : public NeuronLayer {
    */
   Blob<float> mask_;
 };
+
 /**
  * This layer is dummy and do no real work.
  * It is used for testing purpose only.
@@ -126,7 +127,7 @@ class DummyLayer: public NeuronLayer {
   void Setup(const LayerProto& proto, const vector<Layer*>& srclayers) override;
   void ComputeFeature(int flag, const vector<Layer*>& srclayers) override;
   void ComputeGradient(int flag, const vector<Layer*>& srclayers) override;
-  void Feed(int batchsize, vector<float>& data, vector<int>& aux_data);
+  void Feed(vector<int> shape, vector<float>* data, int op);
   Layer* ToLayer() { return this;}
 
  private:
@@ -278,7 +279,7 @@ class PoolingLayer : public NeuronLayer {
   int kernel_x_, pad_x_, stride_x_;
   int kernel_y_, pad_y_, stride_y_;
   int batchsize_, channels_, height_, width_, pooled_height_, pooled_width_;
-  PoolingProto_PoolMethod pool_;
+  PoolMethod pool_;
 };
 /**
  * Use book-keeping for BP following Caffe's pooling implementation

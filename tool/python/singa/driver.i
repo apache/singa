@@ -66,14 +66,14 @@ namespace singa{
       void InitNetParams(const std::string& folder, std::vector<singa::Layer*> net);
       void Checkpoint(int step, const std::string& folder, std::vector<singa::Layer*> net);
   };
-    
   class DummyLayer{
     public:
+      /* void Setup(const singa::LayerProto& proto, const std::vector<singa::Layer*>& srclayers);
+      */
       void Setup(const std::string str, const std::vector<singa::Layer*>& srclayers);
-      void Feed(int batchsize, std::vector<float>& data, std::vector<int>& aux_data);
+      void Feed(std::vector<int> shape, std::vector<float>* data, int op);
       singa::Layer* ToLayer();
-  };
-
+  }; 
   %nodefault Layer;
   class Layer{
     public:
