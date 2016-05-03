@@ -19,9 +19,12 @@
 
 namespace singa {
 
+/// A multi-dimensional array resident on a device.
+class Tensor {
 
 
 
 
+};
 
 }  /* singa */

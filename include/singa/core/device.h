@@ -19,9 +19,12 @@
 
 namespace singa {
 
+/// Allocate memory for Tensor objects and execute Tensor operations.
+class Device {
 
 
 
 
+};
 
 }  /* singa */

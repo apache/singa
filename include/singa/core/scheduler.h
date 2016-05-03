@@ -19,9 +19,12 @@
 
 namespace singa {
 
+/// Scheduling Tensor operations with dependency detection.
+class Scheduler {
 
 
 
 
+};
 
 }  /* singa */

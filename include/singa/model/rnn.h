@@ -19,9 +19,11 @@
 
 namespace singa {
 
+class RNN {
 
 
 
 
+};
 
 }  /* singa */

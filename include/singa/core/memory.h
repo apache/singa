@@ -19,9 +19,12 @@
 
 namespace singa {
 
+/// Manage device memory pool including garbage collection, memory opt.
+class VirtualMemory {
 
 
 
 
+};
 
 }  /* singa */
