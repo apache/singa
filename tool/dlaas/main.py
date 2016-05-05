@@ -37,7 +37,7 @@ from singa.utils.utility import swap32
 
 from PIL import Image
 import glob,random, shutil, time
-from flask import Flask, request, redirect, url_for
+from flask import Flask, request, redirect, url_for, Response
 from singa.utils import kvstore, imgtool
 app = Flask(__name__)
 
@@ -141,9 +141,10 @@ def predict():
             print result
             response="" 
             for r in result:
-                response+=str(r[0])+":"+str(r[1]) 
-           
-            return response 
+                response+=str(r[0])+":"+str(r[1])+"\n" 
+            resp = Response(response)
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+            return resp 
     return "error"
 
     
