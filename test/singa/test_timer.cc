@@ -1,16 +1,12 @@
+#include "gtest/gtest.h"
 #include "singa/utils/timer.h"
-#include <iostream>
-#include <unistd.h>
 
-int main(){
-    singa::Timer t;
-    double t1 = t.elapsed();
-    std::cout << "t1 = " << t1 << std::endl;
-    sleep(1);
-    double t2 = t.elapsed();
-    std::cout << "t2 = " << t2 << std::endl;
-    std::cout << "delta = " << t2 - t1 << " ms" << std::endl;
-    
-    return 0;
+#include <chrono>
+#include <thread>
 
+TEST(TimerTest, TestTick) {
+  singa::Timer t;
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  int time = t.Elapsed<singa::Timer::Milliseconds>();
+  EXPECT_GE(time, 1000);
 }

@@ -1,0 +1,14 @@
+PROJECT(singa)
+#AUX_SOURCE_DIRECTORY(core CORE_SOURCE)
+#AUX_SOURCE_DIRECTORY(layer LAYER_SOURCE)
+#AUX_SOURCE_DIRECTORY(model MODEL_SOURCE)
+AUX_SOURCE_DIRECTORY(utils UTILS_SOURCE)
+
+#ADD_LIBRARY(singa_core SHARED ${CORE_SOURCE})
+#ADD_LIBRARY(singa_layer SHARED ${LAYER_SOURCE})
+#ADD_LIBRARY(singa_model SHARED ${MODEL_SOURCE})
+ADD_LIBRARY(singa_utils SHARED ${UTILS_SOURCE})
+
+#TARGET_LINK_LIBRARIES(singa_core singa_utils)
+#TARGET_LINK_LIBRARIES(singa_layer singa_core singa_utils)
+#TARGET_LINK_LIBRARIES(singa_model singa_layer singa_core singa_utils)

@@ -1,4 +1,0 @@
-PROJECT(timer)
-ADD_EXECUTABLE(timer test_timer.cc)
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include)
-
