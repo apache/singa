@@ -16,15 +16,13 @@
  * limitations under the License.
  */
 
+#ifndef SINGA_CORE_MEMORY_H_
+#define SINGA_CORE_MEMORY_H_
 
 namespace singa {
 
 /// Manage device memory pool including garbage collection, memory opt.
-class VirtualMemory {
+class VirtualMemory {};
 
-
-
-
-};
-
-}  /* singa */
+}  // namespace singa
+#endif  // SINGA_CORE_MEMORY_H_

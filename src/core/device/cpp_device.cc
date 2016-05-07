@@ -15,13 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SINGA_CORE_SCHEDULER_H_
-#define SINGA_CORE_SCHEDULER_H_
-
+#include "singa/core/device.h"
 namespace singa {
+CppDevice hostDeviceSingleton(-1, 1);
+CppDevice::CppDevice(int id, int num_executors) {
+  nn_lib_ = kCpp;
+  device_lib_ = kCpp;
+  host_ = &hostDeviceSingleton;
+}
 
-/// Scheduling Tensor operations with dependency detection.
-class Scheduler {};
+void CppDevice::Exec(int operation, int executor) {
+}
 
-}  // namespace singa
-#endif  // SINGA_CORE_SCHEDULER_H_
+void* CppDevice::Malloc(int size) {
+  return malloc(size);
+}
+
+void CppDevice::Free(void* ptr) {
+  free(ptr);
+}
+
+}

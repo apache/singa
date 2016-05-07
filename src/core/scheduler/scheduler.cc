@@ -16,12 +16,4 @@
  * limitations under the License.
  */
 
-
-namespace singa {
-
-
-
-
-
-
-}  /* singa */
+#include "singa/core/scheduler.h"

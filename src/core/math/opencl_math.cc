@@ -15,13 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SINGA_CORE_SCHEDULER_H_
-#define SINGA_CORE_SCHEDULER_H_
+
+#include "singa/core/math.h"
 
 namespace singa {
 
-/// Scheduling Tensor operations with dependency detection.
-class Scheduler {};
 
-}  // namespace singa
-#endif  // SINGA_CORE_SCHEDULER_H_
+}
