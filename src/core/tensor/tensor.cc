@@ -201,7 +201,6 @@ void Sub(const Tensor& lhs, const Tensor& rhs, Tensor *ret) {
         , {lhs.blob(), rhs.blob()}, {ret->blob()});
       });
 }
-*/
 
 // ================Blas operations============================================
 
@@ -218,5 +217,6 @@ void Conv(const OpConf* conf, const Tensor& input, const Tensor& W,
         {input.blob(), W.blob(), b.blob()}, {ret->blob()});
   });
 }
+*/
 
 }  // namespace singa

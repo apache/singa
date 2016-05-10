@@ -142,6 +142,7 @@ class Tensor {
   void operator=(Tensor&& t);
 
   void operator+=(const Tensor& t);
+  /*
   void operator+=(Tensor&& t);
   void operator-=(const Tensor& t);
   void operator-=(Tensor&& t);
@@ -156,7 +157,6 @@ class Tensor {
   template <typename T>
   void operator+=(const T x);
 
-  /*
   /// T is a scalar type
   template <typename T>
   void operator-=(const T x);
@@ -180,9 +180,9 @@ class Tensor {
   void Gaussian(float mean, float std);
 
   /// save Tensor into a proto msg
-  void ToProto(TensorProto* t);
+  // void ToProto(TensorProto* t);
   /// load Tensor from proto msg
-  void FromProto(const TensorProto& t);
+  // void FromProto(const TensorProto& t);
   */
  protected:
   bool transpose_ = false;
@@ -198,7 +198,6 @@ class Tensor {
 // class SparseTensor : public Tensor {};
 
 // ==================Simple Linear Algebra Operations=========================
-
 /*
 Tensor Tanh(const Tensor& t);
 Tensor Log(const Tensor& t);
@@ -216,9 +215,9 @@ void CopyData(Tensor* dst,
 
 Tensor operator+(const Tensor& lhs, const Tensor& rhs);
 void Add(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
+/*
 Tensor operator-(const Tensor& lhs, const Tensor& rhs);
 void Sub(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
-/*
 Tensor operator*(const Tensor& lhs, const Tensor& rhs);
 void operator*(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
 Tensor operator/(const Tensor& lhs, const Tensor& rhs);
@@ -258,7 +257,6 @@ void Conv(const OpConf* conf,
           const Tensor& W,
           const Tensor &b,
           Tensor* ret);
-
 
 //================Random operations==========================================
 Tensor Uniform(float low, float high, const Shape& shape, Device* dev);
