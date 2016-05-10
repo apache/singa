@@ -22,12 +22,13 @@
 #ifndef SINGA_UTILS_CONTEXT_H_
 #define SINGA_UTILS_CONTEXT_H_
 
-#include <glog/logging.h>
 #include <chrono>
 #include <random>
 #include <thread>
 #include <unordered_map>
 #include <vector>
+
+#include "singa/utils/logging.h"
 
 #ifdef USE_GPU
 #include <cublas_v2.h>

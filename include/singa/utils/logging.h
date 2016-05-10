@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-// adopted from google::tensorflow::logging
+// adapted from google::tensorflow::logging
 
 #ifndef SINGA_UTILS_LOGGING_H_
 #define SINGA_UTILS_LOGGING_H_
@@ -33,14 +33,14 @@
 
 namespace singa {
 
-// Global functions for both glog and buld-in log
+/// Global functions for both glog and built-in log
 void InitLogging(const char *argv);
-// Make it so that all log messages go only to stderr
+/// Make it so that all log messages go only to stderr
 void LogToStderr();
-// Make it so that all log messages of at least a particular severity are
-// logged to stderr (in addtion to logging to the usual log files)
+/// Make it so that all log messages of at least a particular severity are
+/// logged to stderr (in addtion to logging to the usual log files)
 void SetStderrLogging(int severity);
-// Set the file name for logging (and disable logging to stderr)
+/// Set the file name for logging (and disable logging to stderr)
 void SetLogDestination(int severity, const char* path);
 
 using std::string;
@@ -88,10 +88,10 @@ class LogMessageFatal : public LogMessage {
 
 #define LOG(severity) _SINGA_LOG_##severity
 
-// CHECK dies with a fatal error if condition is not true.  It is *not*
-// controlled by NDEBUG, so the check will be executed regardless of
-// compilation mode.  Therefore, it is safe to do things like:
-//    CHECK(fp->Write(x) == 4)
+/// CHECK dies with a fatal error if condition is not true.  It is *not*
+/// controlled by NDEBUG, so the check will be executed regardless of
+/// compilation mode.  Therefore, it is safe to do things like:
+///    CHECK(fp->Write(x) == 4)
 #define CHECK(condition)              \
   if (!(condition)) \
   LOG(FATAL) << "Check failed: " #condition " "
@@ -215,12 +215,12 @@ SINGA_DEFINE_CHECK_OP_IMPL(Check_GT, > )
 
 // In optimized mode, use CheckOpString to hint to compiler that
 // the while condition is unlikely.
-#define CHECK_OP_LOG(name, op, val1, val2)                       \
+#define CHECK_OP_LOG(name, op, val1, val2)                      \
   while (::singa::logging::CheckOpString _result =              \
              ::singa::logging::name##Impl(                      \
                  ::singa::logging::GetReferenceableValue(val1), \
                  ::singa::logging::GetReferenceableValue(val2), \
-                 #val1 " " #op " " #val2))                       \
+                 #val1 " " #op " " #val2))                      \
   ::singa::logging::LogMessageFatal(__FILE__, __LINE__) << *(_result.str_)
 
 #define CHECK_OP(name, op, val1, val2) CHECK_OP_LOG(name, op, val1, val2)

@@ -22,8 +22,8 @@
 #ifndef SINGA_UTILS_TOKENIZER_H_
 #define SINGA_UTILS_TOKENIZER_H_
 
-#include <glog/logging.h>
 #include <string>
+#include "singa/utils/logging.h"
 
 namespace singa {
 /**

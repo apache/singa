@@ -19,7 +19,7 @@
 #ifndef SINGA_CORE_COMMON_H_
 #define SINGA_CORE_COMMON_H_
 
-#include "glog/logging.h"
+#include "singa/utils/logging.h"
 
 namespace singa {
 namespace lib {

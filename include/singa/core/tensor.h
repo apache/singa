@@ -19,13 +19,13 @@
 #ifndef SINGA_CORE_TENSOR_H_
 #define SINGA_CORE_TENSOR_H_
 
-#include <glog/logging.h>
 #include <vector>
 
 #include "singa/core/common.h"
 #include "singa/core/device.h"
 #include "singa/core/math.h"
 #include "singa/proto/core.pb.h"
+#include "singa/utils/logging.h"
 
 using std::vector;
 namespace singa {

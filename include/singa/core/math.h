@@ -17,9 +17,9 @@
  */
 #ifndef SINGA_CORE_MATH_H_
 #define SINGA_CORE_MATH_H_
-#include <glog/logging.h>
 #include <type_traits>
 #include "singa/core/common.h"
+#include "singa/utils/logging.h"
 
 namespace singa {
 
