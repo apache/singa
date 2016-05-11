@@ -18,6 +18,7 @@
 
 package singa;
 
+// TODO(wangwei) check protobuf version to include the syntax
 //syntax = "proto2";
 
 enum DataType {
