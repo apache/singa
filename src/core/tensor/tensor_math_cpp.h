@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "singa/core/math.h"
+#ifndef SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_
+#define SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_
+#include "./tensor_math.h"
 #include "singa/core/common.h"
 
 #ifdef USE_CBLAS
@@ -52,3 +53,5 @@ void Dot<float, lib::Cpp>(int count,
 
 #endif
 }
+
+#endif  // SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_

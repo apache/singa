@@ -97,6 +97,10 @@ message ParamSpec {
 
   // The multiplier on the global weight decay for this parameter.
   optional float decay_mult = 4 [default = 1.0];
+
+  // SINGA field for creating diff Param, e.g. SparseParam or CompressableParam
+  // Curently only have a default param implementation.
+  optional string type = 20 [default = "default"];
 }
 
 // NOTE
@@ -154,27 +158,27 @@ message LayerConf {
   optional ConcatConf concat_conf = 104;
   optional ContrastiveLossConf contrastive_loss_conf = 105;
   optional ConvolutionConf convolution_conf = 106;
-  optional DataConf data_conf = 107;
+  // optional DataConf data_conf = 107;
   optional DropoutConf dropout_conf = 108;
-  optional DummyDataConf dummy_data_conf = 109;
+  // optional DummyDataConf dummy_data_conf = 109;
   optional EltwiseConf eltwise_conf = 110;
   optional EmbedConf embed_conf = 137;
   optional ExpConf exp_conf = 111;
   optional FlattenConf flatten_conf = 135;
-  optional HDF5DataConf hdf5_data_conf = 112;
-  optional HDF5OutputConf hdf5_output_conf = 113;
+  // optional HDF5DataConf hdf5_data_conf = 112;
+  // optional HDF5OutputConf hdf5_output_conf = 113;
   optional HingeLossConf hinge_loss_conf = 114;
-  optional ImageDataConf image_data_conf = 115;
+  // optional ImageDataConf image_data_conf = 115;
   optional InfogainLossConf infogain_loss_conf = 116;
   optional InnerProductConf inner_product_conf = 117;
   optional LogConf log_conf = 134;
   optional LRNConf lrn_conf = 118;
-  optional MemoryDataConf memory_data_conf = 119;
+  // optional MemoryDataConf memory_data_conf = 119;
   optional MVNConf mvn_conf = 120;
   optional PoolingConf pooling_conf = 121;
   optional PowerConf power_conf = 122;
   optional PReLUConf prelu_conf = 131;
-  optional PythonConf python_conf = 130;
+  // optional PythonConf python_conf = 130;
   optional ReductionConf reduction_conf = 136;
   optional ReLUConf relu_conf = 123;
   optional ReshapeConf reshape_conf = 133;
@@ -185,7 +189,7 @@ message LayerConf {
   optional TanHConf tanh_conf = 127;
   optional ThresholdConf threshold_conf = 128;
   optional TileConf tile_conf = 138;
-  optional WindowDataConf window_data_conf = 129;
+  //optional WindowDataConf window_data_conf = 129;
 }
 
 // Message that stores hyper-parameters used to apply transformation
@@ -835,7 +839,7 @@ message PReLUConf {
   // Surpassing Human-Level Performance on ImageNet Classification, 2015.
 
   // Initial value of a_i. Default is a_i=0.25 for all i.
-  optional FillerParameter filler = 1;
+  optional FillerConf filler = 1;
   // Whether or not slope paramters are shared across channels.
   optional bool channel_shared = 2 [default = false];
 }

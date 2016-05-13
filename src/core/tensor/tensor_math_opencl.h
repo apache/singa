@@ -16,33 +16,13 @@
  * limitations under the License.
  */
 
-#include "singa/core/math.h"
-#include "singa/core/common.h"
-
+#ifndef  SINGA_CORE_TENSOR_TENSOR_MATH_OPENCL_H_
+#include "./tensor_math.h"
 
 namespace singa {
 
-#ifdef USE_CUDA
-template<>
-void Add<float, lib::Cuda>(int count, const Blob* lhs, const Blob* rhs,
-                        Blob* ret, Context* ctx) {
-  cublasSetStream(ctx->handle, ctx->stream);
-  cublasScopy(ctx->handle, count, lhs->data(), 1, ret->mutable_data(), 1);
-  cublasSaxpy(ctx->handle, 1.0f, rhs->data(), 1, ret->mutable_data(), 1);
+
 }
 
-#ifdef USE_CUDNN
-template<>
-void Conv<float, lib::Cudnn>(const OpConf *conf,
-          const Blob* input,
-          const Blob* W,
-          const Blob* b,
-          Blob* ret,
-          Context* ctx) {
-  // auto conv_conf = conf->CastTo<ConvConf>();
-  // conv op
-}
 
-#endif
-#endif
-}
+#endif  // SINGA_CORE_TENSOR_TENSOR_MATH_OPENCL_H_

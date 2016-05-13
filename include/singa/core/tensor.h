@@ -20,23 +20,29 @@
 #define SINGA_CORE_TENSOR_H_
 
 #include <vector>
+#include <tuple>
 
 #include "singa/core/common.h"
 #include "singa/core/device.h"
-#include "singa/core/math.h"
 #include "singa/proto/core.pb.h"
 #include "singa/utils/logging.h"
 
 using std::vector;
+using std::tuple;
 namespace singa {
 
 typedef vector<int> Shape;
 inline int Product(Shape shape) {
   if (shape.size() == 0)
     return 0;
+  return Product(shape.begin(), shape.end());
+}
+
+inline int Product(vector<int>::iterator begin, vector<int>::iterator end) {
+  CHECK(begin != end);
   int v = 1;
-  for (auto s : shape)
-    v *= s;
+  for (auto it = being; it < end; it++)
+    v* = *it;
   return v;
 }
 
@@ -60,19 +66,20 @@ inline int SizeOf(DataType t) {
 class Tensor {
  public:
   ~Tensor();
-  Tensor() = default;
-  explicit Tensor(const Shape& shape, DataType dtype = kFloat32);
+  Tensor();
+  Tensor(Shape&& shape, DataType dtype = kFloat32);
+  Tensor(const Shape& shape, DataType dtype = kFloat32);
+  Tensor(Shape&& shape, Device* dev, DataType dtype = kFloat32);
   Tensor(const Shape& shape, Device* dev, DataType dtype = kFloat32);
 
   /// Copy Tensor to share the internal data.  No deep copy.
   Tensor(const Tensor& from);
-
   /// Copy Tensor to share the internal data.  No deep copy.
   Tensor(Tensor&& from);
 
   /// For functions in xx_math.cc to access the blob.
   /// Users should not operate against Blob directly.
-  /// It will malloc memory for the tensor if not allocated before.
+  /// blob_ is allocated in constructors.
   Blob* blob() const {
     return blob_;
   }
@@ -82,9 +89,9 @@ class Tensor {
   }
 
   /// Return immutable Tensor values with given type.
-  template <typename T>
-  const T* data() {
-    return static_cast<const T*> (blob()->data());
+  template <typename DType>
+  const DType* data() const {
+    return static_cast<const DType*> (blob()->data());
   }
 
   /// data type, including kFloat16, kFloat32, kInt
@@ -96,20 +103,28 @@ class Tensor {
     return shape_;
   }
 
+  int nDim() const {
+    return shape_.size();
+  }
+
   bool transpose() const {
     return transpose_;
   }
 
+  /// Return number of total elements
   int Size() const {
     return blob_->size() / SizeOf(data_type_);
   }
 
+  /// Return memory size (i.e., Bytes)
   int MemSize() const {
     return blob_->size();
   }
 
+  /// Reset the tensor shape, it may reallocate blob, if MemSize() changes.
   void ReShape(const Shape& shape);
 
+  /// Reset the data type, it would reallocate blob if type changes.
   void AsType(DataType type);
 
   /// Reset the device.
@@ -119,8 +134,9 @@ class Tensor {
   /// Equivalent to ToDevice(host_dev).
   void ToHost();
 
-  /// For init the tensor values, copy 'size' bytes data.
-  void CopyDataFromHostPtr(const void* src, size_t size);
+  /// For init the tensor values, copy 'num' elements.
+  template<typename DType>
+  void CopyDataFromHostPtr(const DType* src, int num);
 
   /// Copy data from another Tensor which may be on a diff device.
   /// Meta data would not be copied!
@@ -141,49 +157,39 @@ class Tensor {
   /// Copy the meta info with data blob shared.
   void operator=(Tensor&& t);
 
+
   void operator+=(const Tensor& t);
-  /*
-  void operator+=(Tensor&& t);
+  // void operator+=(Tensor&& t);
   void operator-=(const Tensor& t);
-  void operator-=(Tensor&& t);
+  // void operator-=(Tensor&& t);
   void operator*=(const Tensor& t);
-  void operator*=(Tensor&& t);
+  // void operator*=(Tensor&& t);
   void operator/=(const Tensor& t);
-  void operator/=(Tensor&& t);
+  // void operator/=(Tensor&& t);
 
   // Scalar operations.
 
   /// T is a scalar type
-  template <typename T>
-  void operator+=(const T x);
+  template<typename DType>
+  void operator+=(DType x);
 
   /// T is a scalar type
-  template <typename T>
-  void operator-=(const T x);
+  template <typename DType>
+  void operator-=(const DType x);
 
   /// T is a scalar type
-  template <typename T>
-  void operator*=(const T x);
+  template <typename DType>
+  void operator*=(const DType x);
 
   /// T is a scalar type
-  template <typename T>
-  void operator/=(const T x);
-
-  void Log(int base = 2);
-  void Tanh();
-  void Sigmoid();
-  void ReLU();
-
-  // random functions.
-  void Uniform(float low, float high);
-  template <typename T>
-  void Gaussian(float mean, float std);
+  template <typename DType>
+  void operator/=(const DType x);
 
   /// save Tensor into a proto msg
   // void ToProto(TensorProto* t);
   /// load Tensor from proto msg
   // void FromProto(const TensorProto& t);
-  */
+
  protected:
   bool transpose_ = false;
   DataType data_type_ = kFloat32;
@@ -194,142 +200,131 @@ class Tensor {
   Shape shape_;
 };
 
-/// For tensors with sparse content, e.g., missing columns or rows.
+// For tensors with sparse content, e.g., missing columns or rows.
 // class SparseTensor : public Tensor {};
 
-// ==================Simple Linear Algebra Operations=========================
-/*
-Tensor Tanh(const Tensor& t);
-Tensor Log(const Tensor& t);
-Tensor Sigmoid(const Tensor& t);
-Tensor ReLU(const Tensor& t);
-Tensor Softmax(const Tensor& t);
-*/
+/// Copy 'num' elements of src to dst.
+/// The first 'src_offset' ('dst_offset') elements will be skipped.
 void CopyData(Tensor* dst,
               const Tensor& src,
-              int msize,
+              int num,
               int src_offset = 0,
               int dst_offset = 0);
 
-// element-wise ops
+/// Copy 'nBytes' bytes of src data to dst.
+/// The first 'src_offset' ('dst_offset') bytes will be skipped.
+void CopyRawData(Tensor* dst,
+              const Tensor& src,
+              int nBytes,
+              int src_offset = 0,
+              int dst_offset = 0);
+
+// ==================Simple Linear Algebra Operations=========================
+Tensor Abs(const Tensor& t);
+Tensor Exp(const Tensor& t);
+Tensor Log(const Tensor& t);
+Tensor ReLU(const Tensor& t);
+Tensor Sigmoid(const Tensor& t);
+Tensor Sign(const Tensor& t);
+Tensor Sqrt(const Tensor& t);
+Tensor Tanh(const Tensor& t);
+
+/// Regarding the internal data as 2d, with shape_[0]*...*shape_[axis] rows,
+/// and shape_[axis+1]*...*shape_[nDim()] columns.
+/// and do softmax along each row.
+Tensor Softmax(const Tensor& t, int axis = -1);
+void Softmax(const Tensor& t, Tensor* ret, int axis = -1);
+
+/// Element-wise opeartion, ret[i]=t[i]^x
+template<typename DType>
+Tensor Pow(const Tensor& t, DType x);
+/// Element-wise opeartion, ret[i]=t[i]^x
+template<typename DType>
+void Pow(const Tensor& t, DType x, Tensor* ret);
+/// Element-wise opeartion, ret[i]=baes[i]^exp[i]
+Tensor Pow(const Tensor& base, Tensor exp);
+/// Element-wise opeartion, ret[i]=baes[i]^exp[i]
+void Pow(const Tensor& base, const Tensor& exp, Tensor* ret);
 
 Tensor operator+(const Tensor& lhs, const Tensor& rhs);
 void Add(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
-/*
 Tensor operator-(const Tensor& lhs, const Tensor& rhs);
 void Sub(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
 Tensor operator*(const Tensor& lhs, const Tensor& rhs);
-void operator*(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
+void EltwiseMult(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
 Tensor operator/(const Tensor& lhs, const Tensor& rhs);
-void operator/(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
+void Div(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
 
-template <typename T>
-Tensor operator+(const T x, const Tensor& t);
-template <typename T>
-void operator+(const T x, const Tensor& t, Tensor* ret);
+template <typename DType>
+Tensor operator+(const Tensor& t, DType x);
+template <typename DType>
+void Add(const Tensor& t, DType x, Tensor* ret);
 
-template <typename T>
-Tensor operator-(const T x, const Tensor& t);
-template <typename T>
-void operator-(const T x, const Tensor& t, Tensor* ret);
+template <typename DType>
+Tensor operator-(const Tensor& t, DType x);
+template <typename DType>
+void Sub(const Tensor& t, DType x, Tensor* ret);
 
-template <typename T>
-Tensor operator*(const T x, const Tensor& t);
-template <typename T>
-void operator*(const T x, const Tensor& t, Tensor* ret);
+template <typename DType>
+Tensor operator*(const Tensor& t, DType x);
+template <typename DType>
+void EltwiseMult(const Tensor& t, DType x, Tensor* ret);
 
-template <typename T>
-Tensor operator/(const T x, const Tensor& t);
-template <typename T>
-void operator/(const T x, const Tensor& t, Tensor* ret);
+template <typename DType>
+Tensor operator/(const Tensor& t, DType x);
+template <typename DType>
+void Div(const Tensor& t, DType x, Tensor* ret);
 
 //================Blas operations============================================
+// ===== Level 1
+// TODO(wangwei) make amax/amin/asum a member function of tensor
+// void Amax(Tensor, Context* ctx); Get the index of the max value in a vector
+// void Asum(Tensor Context* ctx);
+
+// template <typename DType>
+// void Axpy(DType x, const Blob& t, Blob* ret, Context* ctx);
+
+/// Do matrix vector multipication or matrix matrix multiplication depdending
+/// on the Tensor shape.  ret = lhs * rhs
+template <typename DType>
 Tensor Mult(const Tensor& lhs, const Tensor& rhs);
+/// Do matrix vector multipication or matrix matrix multiplication depdending
+/// on the Tensor shape.  ret = lhs * rhs
+template <typename DType>
 void Mult(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
 
-tempalte<typename T> T Dot(const Tensor& lhs, const Tensor& rhs);
+/// Do matrix vector multipication or matrix matrix multiplication depdending
+/// on the Tensor shape.  ret = alpha lhs * rhs + beta * ret
+template <typename DType>
+Tensor Mult(DType alpha, const Tensor& lhs, DType beta, const Tensor& rhs);
+/// Do matrix vector multipication or matrix matrix multiplication depdending
+/// on the Tensor shape. ret = alpha lhs * rhs + beta * ret
+template <typename DType>
+void Mult(DType alpha, const Tensor& lhs, DType beta, const Tensor& rhs,
+    Tensor* C);
 
-//================Neural Net operations======================================
-
-/// Convolution Op. 'Conf' is ConvConf;
-void Conv(const OpConf* conf,
-          const Tensor& input,
-          const Tensor& W,
-          const Tensor &b,
-          Tensor* ret);
+// tempalte<typename DType> T Dot(const Tensor& lhs, const Tensor& rhs);
 
 //================Random operations==========================================
-Tensor Uniform(float low, float high, const Shape& shape, Device* dev);
+/// For each element x set x = 0 if random() < p; otherwise x = 1.
+Tensor Bernoulli(float p, Blob* t);
+/// Fill in Tensor 't' following uniform distribution.
+Tensor Uniform(float low, DType high, Blob* t);
+/// Fill in Tensor 't' following Gaussian distribution.
+Tensor Gaussian(float mean, DType std, Blob* t);
 
-Tensor Gaussian(float mean, float std, const Shape& shape, Device* dev);
-*/
-//============================================================================
-/// typedef DType accroding to type value.
-/// DType would be used in the code block __VA_ARGS__.
-#define TYPE_SWITCH(type, DType, ...)                               \
-  do {                                                              \
-    switch (type) {                                                 \
-      case kFloat32: {                                              \
-        typedef float DType;                                        \
-        { __VA_ARGS__ }                                             \
-        break;                                                      \
-      }                                                             \
-      case kInt: {                                                  \
-        typedef int DType;                                          \
-        { __VA_ARGS__ }                                             \
-        break;                                                      \
-      }                                                             \
-      case kChar: {                                                 \
-        typedef char DType;                                         \
-        { __VA_ARGS__ }                                             \
-        break;                                                      \
-      }                                                             \
-      default:                                                      \
-        LOG(FATAL) << "Unknow data type = " << DataType_Name(type); \
-    }                                                               \
-  } while (0)
-
-/// typedef DType and Lib according to values of type and lib respectively.
-/// type is from DataType, and lib is from LibType.
-/// DType and Lib would be used in __VA_ARGS__.
-#define TYPE_LIB_SWITCH(dtype, DType, ltype, Lib, ...)                 \
-  do {                                                               \
-    const int _SwitchShift = 3;                                      \
-    int _SwitchHash = ((dtype) << _SwitchShift) + (ltype);                 \
-    switch (_SwitchHash) {                                           \
-      case ((kFloat32 << _SwitchShift) + kCuda): {                   \
-        typedef float DType;                                          \
-        typedef lib::Cuda Lib;                                            \
-        { __VA_ARGS__ }                                              \
-        break;                                                       \
-      }                                                              \
-      case ((kFloat32 << _SwitchShift) + kCudnn): {                  \
-        typedef float DType;                                          \
-        typedef lib::Cudnn Lib;                                           \
-        { __VA_ARGS__ }                                              \
-        break;                                                       \
-      }                                                              \
-      case ((kFloat32 << _SwitchShift) + kCpp): {                    \
-        typedef float DType;                                          \
-        typedef lib::Cpp Lib;                                             \
-        { __VA_ARGS__ }                                              \
-        break;                                                       \
-      }                                                              \
-      case ((kFloat32 << _SwitchShift) + kOpencl): {                \
-        typedef float DType;                                          \
-        typedef lib::Opencl Lib;                                          \
-        { __VA_ARGS__ }                                              \
-        break;                                                       \
-      }                                                              \
-      default:                                                       \
-        LOG(FATAL) << "Unknown combination of data type "            \
-                   << DataType_Name(dtype) << " and library "        \
-                   << LibType_Name(ltype);                             \
-    }                                                                \
-  } while (0)
-
-
-
+//================Neural Net operations======================================
+// following API of cudnn, e.g., conv, pool, lrn, batchnorm, softmax
+void ConvFwd(const ConvConf& conf, const Tensor& x, const Tensor& w, Tensor* y);
+void ConvBwdBias(const ConvConf& conf, const Tensor& dy, Tensor* db);
+void ConvBwdFilter(const ConvConf& conf, const Tensor& dy, const Tensor& x,
+                   Tensor* dw);
+void ConvBwdData(const ConvConf& conf, const Tensor& dy, const Tensor& w,
+                 Tensor* db);
+void PoolFwd(const PoolConf& conf, const Tensor& x, Tensor* y,
+             Tensor* mask = nullptr);
+void PoolBwd(const PoolConf& conf, const Tensor& y, const Tensor& dy,
+             const Tensor& x, Tensor* dx);
 }  // namespace singa
 
 #endif  // SINGA_CORE_TENSOR_H_

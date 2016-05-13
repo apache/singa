@@ -49,6 +49,7 @@ void Device::FreeBlob(Blob* blob) {
 
 void Device::CopyData(Blob* dst, const Blob& src, int len, int dst_offset,
                       int src_offset) {
+
   memcpy(reinterpret_cast<Byte*>(dst->mutable_data()) + dst_offset,
          (const Byte*)src.data() + src_offset, len);
 }

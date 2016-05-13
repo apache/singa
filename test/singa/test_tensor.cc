@@ -15,7 +15,7 @@ TEST(TensorTest, TestConstructor) {
 
   EXPECT_NE(float_t.device(), nullptr);
 
-  singa::Tensor float16_t(singa::Shape{2,3}, singa::kFloat16);
+  singa::Tensor float16_t(Shape{2,3}, singa::kFloat16);
   EXPECT_EQ(singa::kFloat16, float16_t.data_type());
   EXPECT_EQ(6, float16_t.Size());
   EXPECT_EQ(12, float16_t.blob()->size());
@@ -68,7 +68,7 @@ TEST(TensorClass, ToDevice) {
 TEST(TensorClass, CopyDataFromHostPtr) {
   float data[] = {1.0f, 2.0f, 3.0f};
   Tensor t(Shape{3});
-  t.CopyDataFromHostPtr(data, sizeof(float) * 3);
+  t.CopyDataFromHostPtr(data, 3);
   const float* dptr = static_cast<const float*>(t.blob()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(2.0f, dptr[1]);
@@ -78,7 +78,7 @@ TEST(TensorClass, CopyDataFromHostPtr) {
 TEST(TensorClass, CopyData) {
   float data[] = {1.0f, 2.0f, 3.0f};
   Tensor t(Shape{3});
-  t.CopyDataFromHostPtr(data, sizeof(float) * 3);
+  t.CopyDataFromHostPtr(data, 3);
 
   Tensor o(Shape{3});
   o.CopyData(t);
@@ -91,7 +91,7 @@ TEST(TensorClass, CopyData) {
 TEST(TensorClass, Clone) {
   float data[] = {1.0f, 2.0f, 3.0f};
   Tensor t(Shape{3});
-  t.CopyDataFromHostPtr(data, sizeof(float) * 3);
+  t.CopyDataFromHostPtr(data, 3);
 
   Tensor o = t.Clone();
   const float* dptr = static_cast<const float*>(o.blob()->data());
@@ -110,30 +110,5 @@ TEST(TensorClass, T) {
   EXPECT_TRUE((t.shape() ==  o.shape()));
 }
 
-TEST(TensorClass, Add) {
-  const float data[] = {1.0f, 2.0f, 3.0f, 1.1f, 2.1f, 3.1f};
-  Tensor t(Shape{3});
-  t.CopyDataFromHostPtr(data, sizeof(float) * 3);
 
-  Tensor o = t.Clone();
-  o += t;
-  const float* dptr = o.data<float>();
-  EXPECT_FLOAT_EQ(2.0f, dptr[0]);
-  EXPECT_FLOAT_EQ(4.0f, dptr[1]);
-  EXPECT_FLOAT_EQ(6.0f, dptr[2]);
 
-  Tensor p(Shape{3});
-  o += p;
-  const float* dptr1 = o.data<float>();
-  EXPECT_FLOAT_EQ(2.0f, dptr1[0]);
-  EXPECT_FLOAT_EQ(4.0f, dptr1[1]);
-  EXPECT_FLOAT_EQ(6.0f, dptr1[2]);
-
-  Tensor q(Shape{3});
-  q.CopyDataFromHostPtr(data + 3, sizeof(float) * 3);
-  t += q;
-  const float* dptr2 = t.data<float>();
-  EXPECT_FLOAT_EQ(2.1f, dptr2[0]);
-  EXPECT_FLOAT_EQ(4.1f, dptr2[1]);
-  EXPECT_FLOAT_EQ(6.1f, dptr2[2]);
-}

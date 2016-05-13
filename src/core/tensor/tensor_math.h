@@ -44,78 +44,98 @@ class OpConf {
 };
 
 // ================Linear algebra functions====================================
-template <typename DType, typename Lib>
-void Sum(int count, const Blob* input, DType* ret, Context* ctx) {
-  LOG(FATAL) << "Not Implemented";
-}
-
+/// ret[i] = |input[i]|
 template <typename DType, typename Lib>
 void Abs(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
+/// sum all elements of input into ret
+template <typename DType, typename Lib>
+void Sum(int count, const Blob* input, DType* ret, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
+/// ret[i] = sign(input[i])
 template <typename DType, typename Lib>
 void Sign(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
-/// Base is e, Neper number
+/// Base is e, Neper number. ret[i]=exp(input[i])
 template <typename DType, typename Lib>
 void Exp(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
-/// Natual logarithm, the base is e, Neper number.
+/// Natual logarithm, the base is e, Neper number ret[i]=log(input[i]).
 template <typename DType, typename Lib>
 void Log(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
+/// Element-wise operation, ret[i]=sqrt([input[i])
 template <typename DType, typename Lib>
 void Sqrt(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
+/// Element-wise operation, ret[i]=tanh([input[i])
 template <typename DType, typename Lib>
 void Tanh(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
-
+/// Element-wise operation, ret[i]=max(0, input[i])
+template <typename DType, typename Lib>
+void ReLU(int count, const Blob* input, Blob* ret, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+/// Element-wise operation, ret[i]=sigmoid([input[i])
 template <typename DType, typename Lib>
 void Sigmoid(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
-/// Do v^x for every v from the input tensor
+/// Element-wise operation, do v^x for every v from the input tensor
 template <typename DType, typename Lib>
-void Pow(int count, DType x, const Blob* input, Blob* ret, Context* ctx) {
+void Pow(int count, const Blob* input, DType x, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
-/// Do v^x for every v from the lhs and every x from rhs
+/// Element-wise operation, do v^x for every v from the lhs and every x from rhs
 template <typename DType, typename Lib>
 void Pow(int count, const Blob* lhs, const Blob* rhs, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
-/// Clamp every element into [low, high]
+/// Element-wise operation, clamp every element into [low, high]
+/// if x>high, then x=high; if x<low, then x=low.
 template <typename DType, typename Lib>
 void Clamp(int count, DType low, DType high, const Blob* input, Blob* ret,
            Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
-/// ret = x + input
+/// ret = input + x
 template <typename DType, typename Lib>
-void Add(int count, DType x, const Blob* input, Blob* ret, Context* ctx) {
+void Add(int count, const Blob* input, DType x, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
-
-/// ret = x * input
-/// div could be enabled by calling Mult with 1/x
+/// ret =  input - x
 template <typename DType, typename Lib>
-void Mult(int count, DType x, const Blob* input, Blob* ret, Context* ctx) {
+void Sub(int count, const Blob* input, DType x, Blob* ret, Context* ctx) {
+  Add<DType, Lib>(count, input, -x, ret, ctx);
+}
+/// ret = input * x
+template <typename DType, typename Lib>
+void EltwiseMult(int count, const Blob* input, DType x, Blob* ret, Context* ctx)
+{
   LOG(FATAL) << "Not Implemented";
+}
+/// ret = input / x
+template <typename DType, typename Lib>
+void Div(int count, const Blob* input, DType x, Blob* ret, Context* ctx) {
+  EltwiseMult<DType, Lib>(count, input, DType(1) / x, ret, ctx);
 }
 
 /// ret = lhs + rhs
@@ -132,7 +152,7 @@ void Sub(int count, const Blob* lhs, const Blob* rhs, Blob* ret, Context* ctx) {
 
 /// ret = lhs * rhs
 template <typename DType, typename Lib>
-void Mult(int count, const Blob* lhs, const Blob* rhs, Blob* ret,
+void EltwiseMult(int count, const Blob* lhs, const Blob* rhs, Blob* ret,
           Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
@@ -217,7 +237,7 @@ void Dot(int count, const Blob* lhs, const Blob* rhs, DType* ret,
 
 // ===== Level 2
 /// ret = alpha * op(A) * v + beta * ret.
-/// op(A) = A if trans = false; A^T otherwise; rows(A) = m, cols(A) = n.
+/// op(A) = A if trans = false; A^T otherwise; rows(op(A)) = m, cols(op(A)) = n.
 template <typename DType, typename Lib>
 void GEMV(bool trans, int m, int n, DType alpha, const Blob* A, const Blob* v,
           DType beta, Blob* ret, Context* ctx) {
@@ -226,48 +246,57 @@ void GEMV(bool trans, int m, int n, DType alpha, const Blob* A, const Blob* v,
 
 // ===== Level 3
 /// ret = alpha * op(A) * op(B) + beta * ret.
-/// op(A) = A if trans = false; A^T otherwise; rows(A) = m, cols(A) = n.
+/// op(A) = A if trans = false; A^T otherwise; rows(ret) = m, cols(ret) = n.
 template <typename DType, typename Lib>
-void GEMV(bool transA, bool transB, int m, int n, int k, DType alpha,
+void GEMM(bool transA, bool transB, int m, int n, int k, DType alpha,
           const Blob* A, const Blob* B, DType beta, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
 // ================Random functions===========================================
+/// Each element of ret would be 1 with prob p and 0 with 1-p. 0<= p <= 1
+// Get the random generator from 'ctx'
+// If DType is not float, then convert the threshold to DType
+template <typename DType, typename Lib>
+void Bernoulli(int count, float threshold, Blob* ret, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
 // The random generator should be extracted from ctx.
+// If DType is not float, then convert the low and high to DType
 template <typename DType, typename Lib>
-void Uniform(int count, DType low, DType high, Blob* ret, Context* ctx) {
+void Uniform(int count, float low, float high, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
-
+// The random generator should be extracted from ctx.
+// If DType is not float, then convert the mean and std to DType
 template <typename DType, typename Lib>
-void Gaussian(int count, DType mean, DType std, Blob* ret, Context* ctx) {
-  LOG(FATAL) << "Not Implemented";
-}
-
-/// each element of ret would be 1 with prob p and 0 with 1-p. 0<= p <= 1
-template <typename DType, typename Lib>
-void Bernoulli(int count, DType p, Blob* ret, Context* ctx) {
-  LOG(FATAL) << "Not Implemented";
-}
-
-/// ret[i] would be 1 with prob p[i] and 0 with 1-p[i]. 0<= p[i] <= 1
-template <typename DType, typename Lib>
-void Bernoulli(int count, const Blob* p, Blob* ret, Context* ctx) {
+void Gaussian(int count, float mean, float std, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
 // ================Neural net functions=======================================
-/// Do 2D conv.
-/// c is input image channel, w is input width, h is input height
-/// nb_kernel is output channel, kw, and kh are kenerl width and height
-/*
 template <typename DType, typename Lib>
-void Conv2D(int c, int w, int h, int nb_kernel, int kw, int kh,
-           const Blob* input, const Blob* kernel, Blob* ret, Context* ctx) {
+void ConvFwd(ConvConf* conf, const Blob* x, const Blob* w, Blob* y,
+             Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
-*/
+
+template <typename DType, typename Lib>
+void ConvBwdBias(const ConvConf* conf, const Blob* dy, Blob* db, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
+template <typename DType, typename Lib>
+void PoolFwd(const PoolConf* conf, const Blob* x, Blob* y, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
+template <typename DType, typename Lib>
+void PoolBwd(const PoolConf* conf, const Blob* y, const Blob* dy, const Blob* x,
+             Blob* dx, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
 }  // namespace singa
 
 #endif  // SINGA_CORE_MATH_H_

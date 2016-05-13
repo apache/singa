@@ -20,8 +20,6 @@
 *************************************************************/
 
 #include "gtest/gtest.h"
-#include "singa/core/math.h"
+#include "../src/core/tensor/tensor_math_cpp.h"
 
-TEST(CppMath, Add) {
 
-}

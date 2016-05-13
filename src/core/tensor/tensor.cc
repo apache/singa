@@ -15,15 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "singa/core/tensor.h"
-#include "singa/core/math.h"
+#include "./tensor_math.h"
+#include "./tensor_math_cpp.h"
+#include "./tensor_math_cuda.h"
+#include "./tensor_math_opencl.h"
 
 namespace singa {
+
 Tensor::~Tensor() {
   if (blob_ != nullptr && blob_->DecRefCount() == 0)
     device_->FreeBlob(blob_);
   blob_ = nullptr;
+}
+
+Tensor::Tensor() {
+  device_ = &hostDeviceSingleton;
 }
 
 Tensor::Tensor(const Shape& shape, DataType dtype)
@@ -31,12 +38,19 @@ Tensor::Tensor(const Shape& shape, DataType dtype)
   device_ = &hostDeviceSingleton;
   blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
 }
-
+Tensor::Tensor(Shape&& shape, DataType dtype)
+    : data_type_(dtype), device_(&hostDeviceSingleton), shape_(shape) {
+  device_ = &hostDeviceSingleton;
+  blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
+}
 Tensor::Tensor(const Shape& shape, Device* device, DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
   blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
 }
-
+Tensor::Tensor(Shape&& shape, Device* device, DataType dtype)
+    : data_type_(dtype), device_(device), shape_(shape) {
+  blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
+}
 Tensor::Tensor(const Tensor& t)
     : transpose_(t.transpose_),
       data_type_(t.data_type_),
@@ -50,7 +64,7 @@ Tensor::Tensor(Tensor&& t)
     : transpose_(t.transpose_),
       data_type_(t.data_type_),
       device_(t.device_),
-      shape_(t.shape_) {
+      shape_(std::move(t.shape_)) {
   blob_ = t.blob_;
   t.blob_ = nullptr;
 }
@@ -90,18 +104,26 @@ void Tensor::ToHost() {
   ToDevice(device_->host());
 }
 
-void Tensor::CopyDataFromHostPtr(const void* src, size_t size) {
+template<typename DType>
+void Tensor::CopyDataFromHostPtr(const DType* src, int num) {
+  CHECK_EQ(sizeof(DType), SizeOf(data_type_)) << "data_type is "
+                                              << DataType_Name(data_type_)
+                                              << " user given type is of size "
+                                              << sizeof(DType);
   if (src != nullptr)
-    device_->CopyDataFromHostPtr(blob(), src, size);
+    device_->CopyDataFromHostPtr(blob(), src, sizeof(DType) * num);
   else
     LOG(WARNING) << "Copy data from null host ptr";
 }
+template void Tensor::CopyDataFromHostPtr(const float* src, int num);
 
 void Tensor::CopyData(const Tensor& src) {
   CHECK_EQ(Size(), src.Size());
+  CHECK(blob_ != nullptr);
   // Do copy only if the src's blob is already initialized.
-  if (src.blob_ != nullptr)
-    singa::CopyData(this, src, Size() * SizeOf(data_type_), 0, 0);
+  if (src.blob_ != nullptr) {
+    singa::CopyData(this, src, Size(), 0, 0);
+  }
 }
 
 Tensor Tensor::Clone() {
@@ -112,8 +134,10 @@ Tensor Tensor::Clone() {
 }
 
 Tensor Tensor::T() const {
+  CHECK_EQ(shape_.size(), 2);
   Tensor t(*this);
   t.transpose_ = ~transpose_;
+  std::swap(shape_[0], shape_[1]);
   return t;
 }
 
@@ -132,80 +156,315 @@ void Tensor::operator=(Tensor&& t) {
   if (blob_ != nullptr && blob_->DecRefCount() == 0)
     device_->FreeBlob(blob_);
   transpose_ = t.transpose_;
-  shape_ = t.shape_;
+  shape_ = std::move(t.shape_);
   device_ = t.device_;
   blob_ = t.blob_;
   t.blob_ = nullptr;
 }
 
-void Tensor::operator+=(const Tensor& t) {
-  Add(*this, t, this);
-}
-// ====================Tensor Operations=======================================
+#define GenUnaryTensorArgMemberFunction(op, fn) \
+  void Tensor::op(const Tensor& t) { fn(*this, t, this); }
 
+GenUnaryTensorArgMemberFunction(operator+=, Add);
+GenUnaryTensorArgMemberFunction(operator-=, Sub);
+GenUnaryTensorArgMemberFunction(operator*=, EltwiseMult);
+GenUnaryTensorArgMemberFunction(operator/=, Div);
+
+#define GenUnaryScalarArgMemberFunction(op, fn) \
+  template <typename DType>                     \
+  void Tensor::op(DType x) {                    \
+    fn(*this, x, this);                         \
+  }                                             \
+  template void Tensor::op<float>(float x)
+
+GenUnaryScalarArgMemberFunction(operator-=, Sub);
+GenUnaryScalarArgMemberFunction(operator+=, Add);
+GenUnaryScalarArgMemberFunction(operator*=, EltwiseMult);
+GenUnaryScalarArgMemberFunction(operator/=, Div);
+
+// ====================Tensor Operations=======================================
 void CopyData(Tensor* dst,
               const Tensor& src,
-              int len,
+              int num,
               int dst_offset,
               int src_offset) {
-  CHECK_GE(src.MemSize(), src_offset + len);
-  CHECK_GE(dst->MemSize(), dst_offset + len);
+  CHECK_GE(src.Size(), src_offset + num);
+  CHECK_GE(dst->Size(), dst_offset + num);
+  int width = SizeOf(src.data_type());
+  CHECK_EQ(width, SizeOf(dst->data_type()));
+  CopyRawData(dst, src, num * width, dst_offset * width, src_offset * width);
+}
+
+void CopyRawData(Tensor* dst,
+              const Tensor& src,
+              int nBytes,
+              int dst_offset,
+              int src_offset) {
+  CHECK_GE(src.MemSize(), src_offset + nBytes);
+  CHECK_GE(dst->MemSize(), dst_offset + nBytes);
   Device* src_dev = src.device(), *dst_dev = dst->device();
   Blob* src_blob = src.blob(), *dst_blob = dst->blob();
   if (dst_dev->device_lib() != src_dev->device_lib()) {
     // let the none cpp device conduct copy op
     if (dst_dev->device_lib() == kCpp) {
-      src_dev->CopyData(dst_blob, *src_blob, len, dst_offset, src_offset);
+      src_dev->CopyData(dst_blob, *src_blob, nBytes, dst_offset, src_offset);
     } else if (src_dev->device_lib() == kCpp) {
-      dst_dev->CopyData(dst_blob, *src_blob, len, dst_offset, src_offset);
+      dst_dev->CopyData(dst_blob, *src_blob, nBytes, dst_offset, src_offset);
     } else {
       LOG(FATAL) << "Not support mem copy betwee Cuda and OpenCL device";
     }
   } else {
-    src_dev->CopyData(dst_blob, *src_blob, len, dst_offset, src_offset);
+    src_dev->CopyData(dst_blob, *src_blob, nBytes, dst_offset, src_offset);
   }
 }
+//============================================================================
+/// typedef DType accroding to type value.
+/// DType would be used in the code block __VA_ARGS__.
+#define TYPE_SWITCH(type, DType, ...)                               \
+  do {                                                              \
+    switch (type) {                                                 \
+      case kFloat32: {                                              \
+        typedef float DType;                                        \
+        { __VA_ARGS__ }                                             \
+        break;                                                      \
+      }                                                             \
+      case kInt: {                                                  \
+        typedef int DType;                                          \
+        { __VA_ARGS__ }                                             \
+        break;                                                      \
+      }                                                             \
+      case kChar: {                                                 \
+        typedef char DType;                                         \
+        { __VA_ARGS__ }                                             \
+        break;                                                      \
+      }                                                             \
+      default:                                                      \
+        LOG(FATAL) << "Unknow data type = " << DataType_Name(type); \
+    }                                                               \
+  } while (0)
 
-Tensor operator+(const Tensor& lhs, const Tensor& rhs) {
-  Tensor ret(lhs.shape(), lhs.device());
-  Add(lhs, rhs, &ret);
+/// typedef DType and Lib according to values of type and lib respectively.
+/// type is from DataType, and lib is from LibType.
+/// DType and Lib would be used in __VA_ARGS__.
+#define TYPE_LIB_SWITCH(dtype, DType, ltype, Lib, ...)        \
+  do {                                                        \
+    const int _SwitchShift = 3;                               \
+    int _SwitchHash = ((dtype) << _SwitchShift) + (ltype);    \
+    switch (_SwitchHash) {                                    \
+      case ((kFloat32 << _SwitchShift) + kCuda): {            \
+        typedef float DType;                                  \
+        typedef lib::Cuda Lib;                                \
+        { __VA_ARGS__ }                                       \
+        break;                                                \
+      }                                                       \
+      case ((kFloat32 << _SwitchShift) + kCudnn): {           \
+        typedef float DType;                                  \
+        typedef lib::Cudnn Lib;                               \
+        { __VA_ARGS__ }                                       \
+        break;                                                \
+      }                                                       \
+      case ((kFloat32 << _SwitchShift) + kCpp): {             \
+        typedef float DType;                                  \
+        typedef lib::Cpp Lib;                                 \
+        { __VA_ARGS__ }                                       \
+        break;                                                \
+      }                                                       \
+      case ((kFloat32 << _SwitchShift) + kOpencl): {          \
+        typedef float DType;                                  \
+        typedef lib::Opencl Lib;                              \
+        { __VA_ARGS__ }                                       \
+        break;                                                \
+      }                                                       \
+      default:                                                \
+        LOG(FATAL) << "Unknown combination of data type "     \
+                   << DataType_Name(dtype) << " and library " \
+                   << LibType_Name(ltype);                    \
+    }                                                         \
+  } while (0)
+
+
+#define EltwiseUnaryTensorFn(fn, t, ret)                                   \
+  do {                                                                     \
+    TYPE_LIB_SWITCH(t.data_type(), DType, t.device()->device_lib(), Lib, { \
+      ret->device()->Submit(                                               \
+          [t, ret](Context* ctx) {                                         \
+            fn<DType, Lib>(t.Size(), t.blob(), ret->blob(), ctx);          \
+          },                                                               \
+          {t.blob()}, {ret->blob()});                                      \
+    });                                                                    \
+  } while (0)
+
+#define GenUnaryTensorFunction(fn)                    \
+  Tensor fn(const Tensor& t) {                        \
+    Tensor ret(t.shape(), t.device(), t.data_type()); \
+    auto* retptr = &ret;                              \
+    EltwiseUnaryTensorFn(fn, t, retptr);              \
+    return ret;                                       \
+  }
+
+GenUnaryTensorFunction(Abs);
+GenUnaryTensorFunction(Exp);
+GenUnaryTensorFunction(Log);
+GenUnaryTensorFunction(ReLU);
+GenUnaryTensorFunction(Sigmoid);
+GenUnaryTensorFunction(Sign);
+GenUnaryTensorFunction(Sqrt);
+GenUnaryTensorFunction(Tanh);
+
+Tensor Softmax(const Tensor& t, int axis) {
+  Tensor ret(t.shape(), t.device(), t.data_type());
+  Softmax(t, &ret, axis);
   return ret;
 }
 
-void Add(const Tensor& lhs, const Tensor& rhs, Tensor* ret) {
-  TYPE_LIB_SWITCH(lhs.data_type(), DType, lhs.device()->device_lib(), Lib, {
+void Softmax(const Tensor& t, Tensor* ret, int axis) {
+  int nrow = 1, ncol = t.Size(), size = ncol;
+  CHECK_GE(axis, -1);
+  CHECK_GT(t.shape().size(), 0);
+  if (axis > -1) {
+    nrow = Product(t.shape().begin(), t.shape().begin() + axis + 1);
+    CHECK_EQ(size % nrow, 0) << "Size = " << size << " nrow = " << nrow;
+    ncol = size / nrow;
+  }
+  TYPE_LIB_SWITCH(t.data_type(), DType, t.device()->device_lib(), Lib, {
     ret->device()->Submit(
-        [lhs, rhs, ret](Context* ctx) {
-          Add<DType, Lib>(lhs.Size(), lhs.blob(), rhs.blob(), ret->blob(), ctx);
+        [nrow, ncol, t, ret](Context* ctx) {
+          Softmax<DType, Lib>(nrow, ncol, t.blob(), ret->blob(), ctx);
         },
-        {lhs.blob(), rhs.blob()}, {ret->blob()});
-  });
-}
-/*
-Tensor operator-(const Tensor& lhs, const Tensor& rhs) {
-  Tensor ret(lhs.shape(), lhs.device());
-  Sub(lhs, rhs, &ret);
-  return ret;
+        {t.blob()}, {ret->blob()});
+    });
 }
 
-void Sub(const Tensor& lhs, const Tensor& rhs, Tensor *ret) {
-  TYPE_LIB_SWITCH(lhs.data_type(), DType, lhs.device()->device_lib(), Lib, {
-      ret->device()->Submit(
-        [lhs, rhs, ret](Context* ctx) {
-          Sub<DType, Lib>(
-            lhs.Size(),
-            lhs.blob(),
-            rhs.blob(),
-            ret->blob(),
-            ctx);}
-        , {lhs.blob(), rhs.blob()}, {ret->blob()});
-      });
-}
+#define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                               \
+  do {                                                                         \
+    TYPE_LIB_SWITCH(lhs.data_type(), DType, lhs.device()->device_lib(), Lib, { \
+      ret->device()->Submit(                                                   \
+          CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                    \
+          [lhs, rhs, ret](Context* ctx) {                                      \
+            fn<DType, Lib>(lhs.Size(), lhs.blob(), rhs.blob(), ret->blob(),    \
+                           ctx);                                               \
+          },                                                                   \
+          {lhs.blob(), rhs.blob()}, {ret->blob()});                            \
+    });                                                                        \
+  } while (0)
+
+#define GenBinaryTensorFunction(op, fn)                        \
+  Tensor op(const Tensor& lhs, const Tensor& rhs) {            \
+    Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());    \
+    fn(lhs, rhs, &ret);                                        \
+    return ret;                                                \
+  }                                                            \
+  void fn(const Tensor& lhs, const Tensor& rhs, Tensor* ret) { \
+    EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                  \
+  }
+
+GenBinaryTensorFunction(operator+, Add);
+GenBinaryTensorFunction(operator-, Sub);
+GenBinaryTensorFunction(operator*, EltwiseMult);
+GenBinaryTensorFunction(operator/, Div);
+GenBinaryTensorFunction(Pow, Pow);
+
+#define EltwiseTensorScalarFn(fn, t, x, ret)                                \
+  do {                                                                      \
+    TYPE_LIB_SWITCH(t.data_type(), DType, t.device()->device_lib(), Lib, {  \
+      ret->device()->Submit(                                                \
+          static_assert(typeid(x) == typeid(DType),                         \
+                        "The Scalar type must match the Tensor data type"); \
+          [t, x, ret](Context* ctx) {                                       \
+            fn<DType, Lib>(t.Size(), t.blob(), x, ret->blob(), ctx);        \
+          },                                                                \
+          {t.blob()}, {ret->blob()});                                       \
+    });                                                                     \
+  } while (0)
+
+#define GenTensorScalarFunction(op, fn)                \
+  template <typename DType>                                \
+  Tensor op(const Tensor& t, DType x) {                    \
+    Tensor ret(t.shape(), t.device(), t.data_type());  \
+    fn(t, x, &ret);                                    \
+    return ret;                                        \
+  }                                                    \
+  template <typename DType>                                \
+  void fn(const Tensor& t, DType x, Tensor* ret) {   \
+    EltwiseTensorScalarFn(fn, t, x, ret);              \
+  }                                                    \
+  template Tensor op<float>(const Tensor& t, float x); \
+  template void fn<float>(const Tensor& t, const float x, Tensor* ret)
+
+GenTensorScalarFunction(operator+, Add);
+GenTensorScalarFunction(operator-, Sub);
+GenTensorScalarFunction(operator*, EltwiseMult);
+GenTensorScalarFunction(operator/, Div);
+GenTensorScalarFunction(Pow, Pow);
 
 // ================Blas operations============================================
+template <typename DType>
+Tensor Mult(const Tensor& lhs, const Tensor& rhs) {
+  Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());
+  Mult<DType>(lhs, rhs, &ret);
+  return ret;
+}
+template Tensor Mult<float>(const Tensor& lhs, const Tensor& rhs);
+
+template <typename DType>
+void Mult(const Tensor& lhs, const Tensor& rhs, Tensor* ret) {
+  Mult(DType(1), lhs, DType(1), rhs, ret);
+}
+template void Mult<float>(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
+
+template <typename DType>
+Tensor Mult(DType alpha, const Tensor& A, DType beta, const Tensor& B) {
+  Tensor ret(A.shape(), A.device(), A.data_type());
+  Mult<DType>(alpha, A, beta, B, &ret);
+  return ret;
+}
+template Tensor Mult<float>(float alpha, const Tensor& lhs, float beta,
+    const Tensor& rhs);
+
+template <typename SType>
+void Mult(SType alpha, const Tensor& A, SType beta, const Tensor& B, Tensor* C)
+{
+  CHECK_EQ(A.shape().size(), 2);
+  bool transA = A.transpose();
+  int m = transA ? A.shape()[1] : A.shape()[0], n = 0;
+  if (B.shape().size() == 1) {
+    n = C->Size();
+    TYPE_LIB_SWITCH(A.data_type(), DType, A.device()->device_lib(), Lib, {
+      static_assert(std::is_same<SType, DType>::value,
+        "The scalar type must be the same as the tensor data type");
+      C->device()->Submit(
+        [transA, m, n, alpha, A, beta, B, C](Context* ctx) {
+        GEMV<DType, Lib>(transA, m, n, alpha, A.blob(),
+          B.blob(), beta, C->blob(), ctx);
+        },
+        {A.blob(), B.blob()}, {C->blob()});
+      });
+  } else {
+    CHECK(!C->transpose());
+    bool transB = B.transpose();
+    int k = transB ? B.shape()[1] : B.shape()[0];
+    n = C->shape()[1];
+    CHECK_EQ(C->shape()[0], m);
+    CHECK_EQ(A.Size(), m * k);
+    CHECK_EQ(B.Size(), n * k);
+    TYPE_LIB_SWITCH(A.data_type(), DType, A.device()->device_lib(), Lib, {
+        static_assert(std::is_same<SType, DType>::value,
+          "The scalar type must be the same as the tensor data type");
+        C->device()->Submit(
+          [transA, transB, m, n, k, alpha, A, beta, B, C](Context* ctx) {
+          GEMM<DType, Lib>(transA, transB, m, n, k, alpha, A.blob(),
+            B.blob(), beta, C->blob(), ctx);
+          },
+          {A.blob(), B.blob()}, {C->blob()});
+        });
+  }
+}
+template void Mult<float>(float alpha, const Tensor& lhs, float beta,
+    const Tensor& rhs, Tensor* ret);
+
 
 // ================Neural Net operations======================================
-
+/*
 void Conv(const OpConf* conf, const Tensor& input, const Tensor& W,
           const Tensor& b, Tensor* ret) {
   TYPE_LIB_SWITCH(input.data_type(), DType, input.device()->nn_lib(), Lib, {
@@ -218,5 +477,33 @@ void Conv(const OpConf* conf, const Tensor& input, const Tensor& W,
   });
 }
 */
+void Bernoulli(float threshold, Tensor* t) {
+  TYPE_LIB_SWITCH(t->data_type(), DType, t->device()->nn_lib(), Lib, {
+    t->device()->Submit(
+        [threshold, t](Context* ctx) {
+          Bernoulli<DType, Lib>(t->Size(), threshold, t->blob(), ctx);
+        },
+        {}, {t->blob()});
+  });
+}
 
+void Uniform(float low, float high, Tensor* t) {
+  TYPE_LIB_SWITCH(t->data_type(), DType, t->device()->nn_lib(), Lib, {
+    t->device()->Submit(
+        [low, high, t](Context* ctx) {
+          Uniform<DType, Lib>(t->Size(), low, high, t->blob(), ctx);
+        },
+        {}, {t->blob()});
+  });
+}
+
+void Gaussian(float mean, float std, Tensor* t) {
+  TYPE_LIB_SWITCH(t->data_type(), DType, t->device()->nn_lib(), Lib, {
+    t->device()->Submit(
+        [mean, std, t](Context* ctx) {
+          Gaussian<DType, Lib>(t->Size(), mean, std, t->blob(), ctx);
+        },
+        {}, {t->blob()});
+  });
+}
 }  // namespace singa

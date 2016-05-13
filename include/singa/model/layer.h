@@ -45,7 +45,9 @@ class Layer {
   }
 
   /// Set meta data fields configured in 'conf' (a proto message).
-  virtual void Setup(const LayerConf& conf) {}
+  virtual void Setup(const LayerConf& conf) {
+    name_ = conf.name();
+  }
 
   /// Do feature transformation for given 'input' Tensor.
   /// It is the forward pass for feed-forward nets and rnn nets.
@@ -67,6 +69,7 @@ class Layer {
                                                const vector<Tensor>& input) {
     return vector<Tensor>{};
   }
+  // return <dx>  <dw (ParamGrad)>
 
   /// Move the layer (including its parameters and other Tensor) onto the given
   /// device
@@ -82,28 +85,26 @@ class Layer {
   }
 
   /// Serialize the layer info, including params)_, into a LayerConf message.
-  virtual std::string ToProto(LayerConf* param) const = 0;
+  virtual std::string ToProto(LayerConf* conf) const {
+    conf->set_name(name_);
+  }
 
   /// Serialize the layer info, including params_, into a string representing
   /// a LayerParameter message.
-  /*
-  std::string ToProtoStr() const {
-    std:: string str;
-    SerializeToString(&str);
-  }
-  */
+  std::string ToProtoStr() const;
 
   /// Return all Param instances of this layer.
-  const vector<void*> params() const { return params_; }
+  /// Each layer could cache the Param objects.
+  /// To save memory of , it can also create it when this function
+  /// is called
+  const vector<Param*> GetParam();
 
   /// Each layer instance would optionally have a name.
   /// Used for debugging and logging.
   const std::string name() const { return name_; }
 
-
  protected:
   std::string name_;
-  std::vector<void*> params_;
 };
 
 }  // namespace singa

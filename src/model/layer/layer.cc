@@ -18,5 +18,13 @@
 #include "singa/model/layer.h"
 
 namespace singa {
+const vector<Tensor> ComputeFeature(int flag, const vector<Tensor>& input) {
+  const vector<Blob*> input_blobs;
 
+}
+
+void ComputeFeature(int flag, const vector<Tensor>& input) {
+  const vector<Blob*> input_blobs;
+
+}
 }  // namespace singa
