@@ -15,7 +15,12 @@ FILE(GLOB_RECURSE core_source ${CMAKE_CURRENT_SOURCE_DIR}/core/ "*.cc")
 ADD_LIBRARY(singa_core SHARED ${core_source})
 TARGET_LINK_LIBRARIES(singa_core ${singa_linker_libs})
 list(APPEND singa_linker_libs singa_core)
-MESSAGE(STATUS "link libs " ${singa_linker_libs})
+#MESSAGE(STATUS "link libs " ${singa_linker_libs})
+
+FILE(GLOB_RECURSE model_source ${CMAKE_CURRENT_SOURCE_DIR}/model/ "*.cc")
+ADD_LIBRARY(singa_model SHARED ${model_source})
+TARGET_LINK_LIBRARIES(singa_model ${singa_linker_libs})
+list(APPEND singa_linker_libs singa_model)
 
 #ADD_LIBRARY(singa_layer SHARED ${LAYER_SOURCE})
 #ADD_LIBRARY(singa_model SHARED ${MODEL_SOURCE})

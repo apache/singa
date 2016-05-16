@@ -40,6 +40,35 @@ void Add<float, lib::Cpp>(int count,
   }
 }
 
+template <>
+void Bernoulli<float, lib::Cpp>(int count, float p, Blob* ret,
+                                 Context* ctx) {
+  std::bernoulli_distribution distribution(p);
+  float* ptr = static_cast<float*>(ret->mutable_data());
+  for (int i = 0; i < count; i ++) {
+    ptr[i] = static_cast<float>(distribution(ctx->random_generator));
+  }
+}
+
+template <>
+void Uniform<float, lib::Cpp>(int count, float low, float high, Blob* ret,
+                               Context* ctx) {
+  std::uniform_real_distribution<float> distribution(low, high);
+  float* ptr = static_cast<float*>(ret->mutable_data());
+  for (int i = 0; i < count; i ++) {
+    ptr[i] = static_cast<float>(distribution(ctx->random_generator));
+  }
+}
+
+template <>
+void Gaussian<float, lib::Cpp>(int count, float mean, float std, Blob* ret,
+                              Context* ctx) {
+  std::normal_distribution<float> distribution(mean, std);
+  float* ptr = static_cast<float*>(ret->mutable_data());
+  for (int i = 0; i < count; i++) {
+    ptr[i] = static_cast<float>(distribution(ctx->random_generator));
+  }
+}
 #ifdef USE_CBLAS
 template<>
 void Dot<float, lib::Cpp>(int count,

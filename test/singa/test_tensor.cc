@@ -6,19 +6,19 @@ using singa::Device;
 
 TEST(TensorTest, TestConstructor) {
   singa::Tensor float_t(singa::Shape{2,3});
-  EXPECT_EQ(6, float_t.Size());
+  EXPECT_EQ(6u, float_t.Size());
   EXPECT_EQ(sizeof(float) * 6, float_t.MemSize());
   EXPECT_EQ(singa::kFloat32, float_t.data_type());
   auto s = float_t.shape();
-  EXPECT_EQ(s[0], 2);
-  EXPECT_EQ(s[1], 3);
+  EXPECT_EQ(s[0], 2u);
+  EXPECT_EQ(s[1], 3u);
 
   EXPECT_NE(float_t.device(), nullptr);
 
   singa::Tensor float16_t(Shape{2,3}, singa::kFloat16);
   EXPECT_EQ(singa::kFloat16, float16_t.data_type());
-  EXPECT_EQ(6, float16_t.Size());
-  EXPECT_EQ(12, float16_t.blob()->size());
+  EXPECT_EQ(6u, float16_t.Size());
+  EXPECT_EQ(12u, float16_t.blob()->size());
 
   singa::Tensor x(float16_t);
   EXPECT_EQ(float16_t.Size(), x.Size());

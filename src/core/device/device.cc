@@ -25,8 +25,8 @@ Device::Device(int id, int num_executors, string scheduler, string vm)
   vm_ = nullptr;
 }
 
-void Device::Submit(function<void(Context*)> fn, const vector<Blob*> read_blobs,
-                    const vector<Blob*> write_blobs) {
+void Device::Exec(function<void(Context*)> fn, const vector<Blob*> read_blobs,
+                    const vector<Blob*> write_blobs, bool use_rand_generator) {
   fn(nullptr);
 }
 

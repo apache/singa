@@ -26,7 +26,8 @@ enum DataType {
   kFloat16 = 1;
   kInt = 2;
   kChar = 3;
-  kNumDataType = 4;
+  kDouble = 4;
+  kNumDataType = 5;
 }
 
 enum LibType {

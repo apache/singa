@@ -96,6 +96,12 @@ void Sigmoid(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
+/// Do softmax for each row invidually
+template <typename DType, typename Lib>
+void Softmax(int nrow, int ncol, const Blob* input, Blob* ret, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
 /// Element-wise operation, do v^x for every v from the input tensor
 template <typename DType, typename Lib>
 void Pow(int count, const Blob* input, DType x, Blob* ret, Context* ctx) {
@@ -258,7 +264,7 @@ void GEMM(bool transA, bool transB, int m, int n, int k, DType alpha,
 // Get the random generator from 'ctx'
 // If DType is not float, then convert the threshold to DType
 template <typename DType, typename Lib>
-void Bernoulli(int count, float threshold, Blob* ret, Context* ctx) {
+void Bernoulli(int count, float p, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 // The random generator should be extracted from ctx.
@@ -274,7 +280,7 @@ void Gaussian(int count, float mean, float std, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
-// ================Neural net functions=======================================
+/* ================Neural net functions=======================================
 template <typename DType, typename Lib>
 void ConvFwd(ConvConf* conf, const Blob* x, const Blob* w, Blob* y,
              Context* ctx) {
@@ -296,6 +302,7 @@ void PoolBwd(const PoolConf* conf, const Blob* y, const Blob* dy, const Blob* x,
              Blob* dx, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
+*/
 
 }  // namespace singa
 

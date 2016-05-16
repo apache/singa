@@ -98,11 +98,15 @@ message ParamSpec {
   // The multiplier on the global weight decay for this parameter.
   optional float decay_mult = 4 [default = 1.0];
 
-  // SINGA field for creating diff Param, e.g. SparseParam or CompressableParam
-  // Curently only have a default param implementation.
-  optional string type = 20 [default = "default"];
+  // SINGA uses this filed internally. Users just configure the fillers in
+  // Layer specific conf message as caffe (style).
+  optional FillerConf filler = 20;
 }
 
+enum Phase {
+  kTrain = 4;
+  kEval = 8;
+}
 // NOTE
 // Update the next available ID when you add a new LayerConf field.
 //

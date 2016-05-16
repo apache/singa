@@ -79,8 +79,8 @@ class Device {
   void CopyDataFromHostPtr(Blob* dst, const void* src, size_t size);
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
-  void Submit(function<void(Context*)> fn, const vector<Blob*> read_blobs,
-              const vector<Blob*> write_blobs);
+  void Exec(function<void(Context*)> fn, const vector<Blob*> read_blobs,
+              const vector<Blob*> write_blobs, bool use_rand_generator = false);
 
   // Wait for one event.
   // void WaitFor();

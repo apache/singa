@@ -18,8 +18,17 @@
 
 #ifndef SINGA_CORE_COMMON_H_
 #define SINGA_CORE_COMMON_H_
-
+#include <random>
+#include <chrono>
 #include "singa/utils/logging.h"
+
+#ifdef USE_CUDA
+#include <cuda_runtime.h>
+#include "cublas_v2.h"
+#ifdef USE_CUDNN
+#include <cudnn.h>
+#endif
+#endif
 
 namespace singa {
 namespace lib {
@@ -37,10 +46,10 @@ typedef unsigned char Byte;
 /// Blob reprent a chunk of memory (on device or host) managed by VirtualMemory.
 class Blob {
  public:
-  Blob(void* ptr, int size) : data_(ptr), size_(size), ref_count_(1) {}
+  Blob(void* ptr, size_t size) : data_(ptr), size_(size), ref_count_(1) {}
   void* mutable_data() const { return data_; }
   const void* data() const { return data_; }
-  int size() const { return size_; }
+  size_t size() const { return size_; }
   int IncRefCount() {
     ref_count_++;
     return ref_count_;
@@ -54,11 +63,21 @@ class Blob {
 
  private:
   void* data_ = nullptr;
-  int size_ = 0;
+  size_t size_ = 0;
   int ref_count_ = 0;
 };
 
-class Context {};
+typedef struct _Context {
+  std::mt19937 random_generator;
+  unsigned long long seed;
+#ifdef USE_CUDA
+  cublasHandle_t cublas_handle;
+  cudaStream_t stream;
+#ifdef USE_CUDNN
+  cudnnHandle_t cudnn_handle;
+#endif
+#endif
+} Context;
 
 }  // namespace singa
 #endif  // SINGA_CORE_COMMON_H_

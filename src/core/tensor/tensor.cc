@@ -20,6 +20,7 @@
 #include "./tensor_math_cpp.h"
 #include "./tensor_math_cuda.h"
 #include "./tensor_math_opencl.h"
+#include <utility>
 
 namespace singa {
 
@@ -69,6 +70,16 @@ Tensor::Tensor(Tensor&& t)
   t.blob_ = nullptr;
 }
 
+void Tensor::ResetLike(const Tensor& t) {
+  if (blob_->size() != t.MemSize()) {
+    if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
+    shape_ = t.shape_;
+    device_ = t.device_;
+    data_type_ = t.data_type_;
+    blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
+  }
+}
+
 void Tensor::ReShape(const Shape& shape) {
   if (shape_ != shape) {
     if (blob_ != nullptr && blob_->DecRefCount() == 0)
@@ -105,7 +116,7 @@ void Tensor::ToHost() {
 }
 
 template<typename DType>
-void Tensor::CopyDataFromHostPtr(const DType* src, int num) {
+void Tensor::CopyDataFromHostPtr(const DType* src, size_t num) {
   CHECK_EQ(sizeof(DType), SizeOf(data_type_)) << "data_type is "
                                               << DataType_Name(data_type_)
                                               << " user given type is of size "
@@ -115,7 +126,7 @@ void Tensor::CopyDataFromHostPtr(const DType* src, int num) {
   else
     LOG(WARNING) << "Copy data from null host ptr";
 }
-template void Tensor::CopyDataFromHostPtr(const float* src, int num);
+template void Tensor::CopyDataFromHostPtr(const float* src, size_t num);
 
 void Tensor::CopyData(const Tensor& src) {
   CHECK_EQ(Size(), src.Size());
@@ -134,10 +145,10 @@ Tensor Tensor::Clone() {
 }
 
 Tensor Tensor::T() const {
-  CHECK_EQ(shape_.size(), 2);
+  CHECK_EQ(shape_.size(), 2u);
   Tensor t(*this);
   t.transpose_ = ~transpose_;
-  std::swap(shape_[0], shape_[1]);
+  std::swap(t.shape_[0], t.shape_[1]);
   return t;
 }
 
@@ -185,21 +196,21 @@ GenUnaryScalarArgMemberFunction(operator/=, Div);
 // ====================Tensor Operations=======================================
 void CopyData(Tensor* dst,
               const Tensor& src,
-              int num,
-              int dst_offset,
-              int src_offset) {
+              size_t num,
+              size_t dst_offset,
+              size_t src_offset) {
   CHECK_GE(src.Size(), src_offset + num);
   CHECK_GE(dst->Size(), dst_offset + num);
-  int width = SizeOf(src.data_type());
+  auto width = SizeOf(src.data_type());
   CHECK_EQ(width, SizeOf(dst->data_type()));
   CopyRawData(dst, src, num * width, dst_offset * width, src_offset * width);
 }
 
 void CopyRawData(Tensor* dst,
               const Tensor& src,
-              int nBytes,
-              int dst_offset,
-              int src_offset) {
+              size_t nBytes,
+              size_t dst_offset,
+              size_t src_offset) {
   CHECK_GE(src.MemSize(), src_offset + nBytes);
   CHECK_GE(dst->MemSize(), dst_offset + nBytes);
   Device* src_dev = src.device(), *dst_dev = dst->device();
@@ -286,7 +297,7 @@ void CopyRawData(Tensor* dst,
 #define EltwiseUnaryTensorFn(fn, t, ret)                                   \
   do {                                                                     \
     TYPE_LIB_SWITCH(t.data_type(), DType, t.device()->device_lib(), Lib, { \
-      ret->device()->Submit(                                               \
+      ret->device()->Exec(                                               \
           [t, ret](Context* ctx) {                                         \
             fn<DType, Lib>(t.Size(), t.blob(), ret->blob(), ctx);          \
           },                                                               \
@@ -320,14 +331,14 @@ Tensor Softmax(const Tensor& t, int axis) {
 void Softmax(const Tensor& t, Tensor* ret, int axis) {
   int nrow = 1, ncol = t.Size(), size = ncol;
   CHECK_GE(axis, -1);
-  CHECK_GT(t.shape().size(), 0);
+  CHECK_GT(t.shape().size(), 0u);
   if (axis > -1) {
-    nrow = Product(t.shape().begin(), t.shape().begin() + axis + 1);
+    nrow = Product(t.shape(), 0, axis + 1);
     CHECK_EQ(size % nrow, 0) << "Size = " << size << " nrow = " << nrow;
     ncol = size / nrow;
   }
   TYPE_LIB_SWITCH(t.data_type(), DType, t.device()->device_lib(), Lib, {
-    ret->device()->Submit(
+    ret->device()->Exec(
         [nrow, ncol, t, ret](Context* ctx) {
           Softmax<DType, Lib>(nrow, ncol, t.blob(), ret->blob(), ctx);
         },
@@ -338,8 +349,8 @@ void Softmax(const Tensor& t, Tensor* ret, int axis) {
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                               \
   do {                                                                         \
     TYPE_LIB_SWITCH(lhs.data_type(), DType, lhs.device()->device_lib(), Lib, { \
-      ret->device()->Submit(                                                   \
-          CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                    \
+      CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                        \
+      ret->device()->Exec(                                                     \
           [lhs, rhs, ret](Context* ctx) {                                      \
             fn<DType, Lib>(lhs.Size(), lhs.blob(), rhs.blob(), ret->blob(),    \
                            ctx);                                               \
@@ -364,28 +375,28 @@ GenBinaryTensorFunction(operator*, EltwiseMult);
 GenBinaryTensorFunction(operator/, Div);
 GenBinaryTensorFunction(Pow, Pow);
 
-#define EltwiseTensorScalarFn(fn, t, x, ret)                                \
-  do {                                                                      \
-    TYPE_LIB_SWITCH(t.data_type(), DType, t.device()->device_lib(), Lib, {  \
-      ret->device()->Submit(                                                \
-          static_assert(typeid(x) == typeid(DType),                         \
-                        "The Scalar type must match the Tensor data type"); \
-          [t, x, ret](Context* ctx) {                                       \
-            fn<DType, Lib>(t.Size(), t.blob(), x, ret->blob(), ctx);        \
-          },                                                                \
-          {t.blob()}, {ret->blob()});                                       \
-    });                                                                     \
+#define EltwiseTensorScalarFn(fn, t, x, ret)                               \
+  do {                                                                     \
+    TYPE_LIB_SWITCH(t.data_type(), DType, t.device()->device_lib(), Lib, { \
+      static_assert(std::is_same<SType, DType>::value,                             \
+                    "The Scalar type must match the Tensor data type");    \
+      ret->device()->Exec(                                                 \
+          [t, x, ret](Context* ctx) {                                      \
+            fn<DType, Lib>(t.Size(), t.blob(), x, ret->blob(), ctx);       \
+          },                                                               \
+          {t.blob()}, {ret->blob()});                                      \
+    });                                                                    \
   } while (0)
 
 #define GenTensorScalarFunction(op, fn)                \
-  template <typename DType>                                \
-  Tensor op(const Tensor& t, DType x) {                    \
+  template <typename SType>                            \
+  Tensor op(const Tensor& t, SType x) {                \
     Tensor ret(t.shape(), t.device(), t.data_type());  \
     fn(t, x, &ret);                                    \
     return ret;                                        \
   }                                                    \
-  template <typename DType>                                \
-  void fn(const Tensor& t, DType x, Tensor* ret) {   \
+  template <typename SType>                            \
+  void fn(const Tensor& t, SType x, Tensor* ret) {     \
     EltwiseTensorScalarFn(fn, t, x, ret);              \
   }                                                    \
   template Tensor op<float>(const Tensor& t, float x); \
@@ -424,15 +435,15 @@ template Tensor Mult<float>(float alpha, const Tensor& lhs, float beta,
 template <typename SType>
 void Mult(SType alpha, const Tensor& A, SType beta, const Tensor& B, Tensor* C)
 {
-  CHECK_EQ(A.shape().size(), 2);
+  CHECK_EQ(A.shape().size(), 2u);
   bool transA = A.transpose();
-  int m = transA ? A.shape()[1] : A.shape()[0], n = 0;
-  if (B.shape().size() == 1) {
+  size_t m = transA ? A.shape()[1] : A.shape()[0], n = 0;
+  if (B.shape().size() == 1u) {
     n = C->Size();
     TYPE_LIB_SWITCH(A.data_type(), DType, A.device()->device_lib(), Lib, {
       static_assert(std::is_same<SType, DType>::value,
         "The scalar type must be the same as the tensor data type");
-      C->device()->Submit(
+      C->device()->Exec(
         [transA, m, n, alpha, A, beta, B, C](Context* ctx) {
         GEMV<DType, Lib>(transA, m, n, alpha, A.blob(),
           B.blob(), beta, C->blob(), ctx);
@@ -442,7 +453,7 @@ void Mult(SType alpha, const Tensor& A, SType beta, const Tensor& B, Tensor* C)
   } else {
     CHECK(!C->transpose());
     bool transB = B.transpose();
-    int k = transB ? B.shape()[1] : B.shape()[0];
+    size_t k = transB ? B.shape()[1] : B.shape()[0];
     n = C->shape()[1];
     CHECK_EQ(C->shape()[0], m);
     CHECK_EQ(A.Size(), m * k);
@@ -450,7 +461,7 @@ void Mult(SType alpha, const Tensor& A, SType beta, const Tensor& B, Tensor* C)
     TYPE_LIB_SWITCH(A.data_type(), DType, A.device()->device_lib(), Lib, {
         static_assert(std::is_same<SType, DType>::value,
           "The scalar type must be the same as the tensor data type");
-        C->device()->Submit(
+        C->device()->Exec(
           [transA, transB, m, n, k, alpha, A, beta, B, C](Context* ctx) {
           GEMM<DType, Lib>(transA, transB, m, n, k, alpha, A.blob(),
             B.blob(), beta, C->blob(), ctx);
@@ -468,7 +479,7 @@ template void Mult<float>(float alpha, const Tensor& lhs, float beta,
 void Conv(const OpConf* conf, const Tensor& input, const Tensor& W,
           const Tensor& b, Tensor* ret) {
   TYPE_LIB_SWITCH(input.data_type(), DType, input.device()->nn_lib(), Lib, {
-    ret->device()->Submit(
+    ret->device()->Exec(
         [conf, input, W, b, ret](Context* ctx) {
           Conv<DType, Lib>(conf, input.blob(), W.blob(), b.blob(), ret->blob(),
                            ctx);
@@ -477,33 +488,33 @@ void Conv(const OpConf* conf, const Tensor& input, const Tensor& W,
   });
 }
 */
-void Bernoulli(float threshold, Tensor* t) {
+void Bernoulli(float p, Tensor* t) {
   TYPE_LIB_SWITCH(t->data_type(), DType, t->device()->nn_lib(), Lib, {
-    t->device()->Submit(
-        [threshold, t](Context* ctx) {
-          Bernoulli<DType, Lib>(t->Size(), threshold, t->blob(), ctx);
+    t->device()->Exec(
+        [p, t](Context* ctx) {
+          Bernoulli<DType, Lib>(t->Size(), p, t->blob(), ctx);
         },
-        {}, {t->blob()});
+        {}, {t->blob()}, true);
   });
 }
 
 void Uniform(float low, float high, Tensor* t) {
   TYPE_LIB_SWITCH(t->data_type(), DType, t->device()->nn_lib(), Lib, {
-    t->device()->Submit(
+    t->device()->Exec(
         [low, high, t](Context* ctx) {
           Uniform<DType, Lib>(t->Size(), low, high, t->blob(), ctx);
         },
-        {}, {t->blob()});
+        {}, {t->blob()}, true);
   });
 }
 
 void Gaussian(float mean, float std, Tensor* t) {
   TYPE_LIB_SWITCH(t->data_type(), DType, t->device()->nn_lib(), Lib, {
-    t->device()->Submit(
+    t->device()->Exec(
         [mean, std, t](Context* ctx) {
           Gaussian<DType, Lib>(t->Size(), mean, std, t->blob(), ctx);
         },
-        {}, {t->blob()});
+        {}, {t->blob()}, true);
   });
 }
 }  // namespace singa

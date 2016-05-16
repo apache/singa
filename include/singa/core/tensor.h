@@ -31,25 +31,23 @@ using std::vector;
 using std::tuple;
 namespace singa {
 
-typedef vector<int> Shape;
-inline int Product(Shape shape) {
-  if (shape.size() == 0)
-    return 0;
-  return Product(shape.begin(), shape.end());
-}
-
-inline int Product(vector<int>::iterator begin, vector<int>::iterator end) {
-  CHECK(begin != end);
-  int v = 1;
-  for (auto it = being; it < end; it++)
-    v* = *it;
+typedef vector<size_t> Shape;
+typedef Shape::iterator ShapeIter;
+inline size_t Product(const Shape& shape, int start = 0, size_t len = 0) {
+  if (len == 0)
+    len = shape.size();
+  CHECK_LE(len, shape.size());
+  size_t v = 1;
+  for (unsigned int i = start; i < len; i ++)
+    v *= shape[i];
   return v;
 }
 
 /// hardcode the width of types defined in DataType
-const int kDataWidth[] = {4, 2, 4, 1};
-inline int SizeOf(DataType t) {
-  static_assert(kNumDataType == sizeof(kDataWidth) / sizeof(int),
+const size_t kDataWidth[] = {sizeof(float), sizeof(float) / 2, sizeof(int),
+                          sizeof(char), sizeof(double)};
+inline size_t SizeOf(DataType t) {
+  static_assert(kNumDataType == sizeof(kDataWidth) / sizeof(size_t),
       "Num of data types not match num of data width");
   CHECK_GT(kNumDataType, t);
   return kDataWidth[t];
@@ -112,17 +110,22 @@ class Tensor {
   }
 
   /// Return number of total elements
-  int Size() const {
+  size_t Size() const {
     return blob_->size() / SizeOf(data_type_);
   }
 
   /// Return memory size (i.e., Bytes)
-  int MemSize() const {
+  size_t MemSize() const {
     return blob_->size();
   }
 
   /// Reset the tensor shape, it may reallocate blob, if MemSize() changes.
   void ReShape(const Shape& shape);
+
+  /// Reset the shape, device, and data type as given tensor.
+  /// If blob size changes, then reallocate a new blob. The previous blob would
+  /// be deleted.
+  void ResetLike(const Tensor& t);
 
   /// Reset the data type, it would reallocate blob if type changes.
   void AsType(DataType type);
@@ -136,7 +139,7 @@ class Tensor {
 
   /// For init the tensor values, copy 'num' elements.
   template<typename DType>
-  void CopyDataFromHostPtr(const DType* src, int num);
+  void CopyDataFromHostPtr(const DType* src, size_t num);
 
   /// Copy data from another Tensor which may be on a diff device.
   /// Meta data would not be copied!
@@ -207,17 +210,17 @@ class Tensor {
 /// The first 'src_offset' ('dst_offset') elements will be skipped.
 void CopyData(Tensor* dst,
               const Tensor& src,
-              int num,
-              int src_offset = 0,
-              int dst_offset = 0);
+              size_t num,
+              size_t src_offset = 0,
+              size_t dst_offset = 0);
 
 /// Copy 'nBytes' bytes of src data to dst.
 /// The first 'src_offset' ('dst_offset') bytes will be skipped.
 void CopyRawData(Tensor* dst,
               const Tensor& src,
-              int nBytes,
-              int src_offset = 0,
-              int dst_offset = 0);
+              size_t nBytes,
+              size_t src_offset = 0,
+              size_t dst_offset = 0);
 
 // ==================Simple Linear Algebra Operations=========================
 Tensor Abs(const Tensor& t);
@@ -306,15 +309,15 @@ void Mult(DType alpha, const Tensor& lhs, DType beta, const Tensor& rhs,
 // tempalte<typename DType> T Dot(const Tensor& lhs, const Tensor& rhs);
 
 //================Random operations==========================================
-/// For each element x set x = 0 if random() < p; otherwise x = 1.
-Tensor Bernoulli(float p, Blob* t);
+/// For each element x set x = 1 if random() < p; otherwise x = 1.
+void Bernoulli(float p, Tensor* t);
 /// Fill in Tensor 't' following uniform distribution.
-Tensor Uniform(float low, DType high, Blob* t);
+void Uniform(float low, float high, Tensor* t);
 /// Fill in Tensor 't' following Gaussian distribution.
-Tensor Gaussian(float mean, DType std, Blob* t);
+void Gaussian(float mean, float std, Tensor* t);
 
 //================Neural Net operations======================================
-// following API of cudnn, e.g., conv, pool, lrn, batchnorm, softmax
+/* following API of cudnn, e.g., conv, pool, lrn, batchnorm, softmax
 void ConvFwd(const ConvConf& conf, const Tensor& x, const Tensor& w, Tensor* y);
 void ConvBwdBias(const ConvConf& conf, const Tensor& dy, Tensor* db);
 void ConvBwdFilter(const ConvConf& conf, const Tensor& dy, const Tensor& x,
@@ -325,6 +328,7 @@ void PoolFwd(const PoolConf& conf, const Tensor& x, Tensor* y,
              Tensor* mask = nullptr);
 void PoolBwd(const PoolConf& conf, const Tensor& y, const Tensor& dy,
              const Tensor& x, Tensor* dx);
+*/
 }  // namespace singa
 
 #endif  // SINGA_CORE_TENSOR_H_
