@@ -48,6 +48,8 @@ class CallbackArg {
 typedef function<void(CallbackArg*)> CallbackFn;
 
 /// Allocate memory and execute Tensor operations.
+/// There are three types of devices distinguished by their programming
+/// languages, namely cpp, cuda and opencl.
 class Device {
  public:
   /// Operation has a function, and read/write blobs.
@@ -63,8 +65,8 @@ class Device {
   /// max mem size to use (in MB), identifier of scheduler type (default
   /// scheduler run operations synchronously) and virtual memory type (default
   /// vm only provides garbage collection).
-  Device(int id, int num_executors = 16, string scheduler = "sync",
-         string vm = "gc-only");
+  Device(int id, int num_executors, string scheduler, string vm);
+  virtual void SetRandSeed(unsigned seed) = 0;
 
   /// Called by Tensor.
   Blob* NewBlob(int size);
@@ -73,14 +75,16 @@ class Device {
   void FreeBlob(Blob* blob);
 
   /// Copy data within or across devices.
-  void CopyData(Blob* dst, const Blob& src, int len, int dst_offset,
-                int src_offset);
+  void CopyDataToFrom(Blob* dst, Blob* src, size_t nBytes,
+                      CopyDirection direction, int dst_offset, int src_offset);
 
-  void CopyDataFromHostPtr(Blob* dst, const void* src, size_t size);
+  void CopyDataFromHostPtr(Blob* dst, const void* src, size_t nBytes,
+                           size_t dst_offset = 0);
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
-  void Exec(function<void(Context*)> fn, const vector<Blob*> read_blobs,
-              const vector<Blob*> write_blobs, bool use_rand_generator = false);
+  void Exec(function<void(Context*)>&& fn, const vector<Blob*> read_blobs,
+                    const vector<Blob*> write_blobs,
+                    bool use_rand_generator = false);
 
   // Wait for one event.
   // void WaitFor();
@@ -88,14 +92,19 @@ class Device {
   /// wait for all operations submitted to this device.
   void Sync();
 
-  LibType device_lib() const { return device_lib_; }
-  LibType nn_lib() const { return nn_lib_; }
+  DeviceType type() const {
+    return device_type_;
+  }
 
   Device* host() const { return host_; }
+  int id() const { return id_; }
 
  protected:
   /// Execute one operation on one executor.
-  virtual void Exec(int operation, int executor) = 0;
+  virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
+
+  virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                          CopyDirection direction, Context* ctx) = 0;
 
   /// Allocate device memory.
   virtual void* Malloc(int size) = 0;
@@ -105,31 +114,39 @@ class Device {
 
  protected:
   int id_ = 0;
-  Scheduler* scheduler_ = nullptr;
-  VirtualMemory* vm_ = nullptr;
-  /// could be kCudnn
-  LibType nn_lib_;
+  int num_executors_ = 0;
+  unsigned seed_ = 0;
+  // Scheduler* scheduler_ = nullptr;
+  // VirtualMemory* vm_ = nullptr;
   /// could be kCpp, kCuda, kOpencl
-  LibType device_lib_;
+  DeviceType device_type_;
   // SafeQueue<Operation> op_queue_;
   // SafeQueue<Operation> op_log_;
   /// The host device
-  Context ctx_;
   Device* host_;
 };
-// Implement Device using Cpp libs.
+
+// Implement Device functions using cpp.
 class CppDevice : public Device {
  public:
-  CppDevice(int id, int num_executors);
+  CppDevice(int id, int num_executors = 1,
+            string scheduler = "sync", string vm = "gc-only");
 
-  void Exec(int operation, int executor) override;
-
+  void SetRandSeed(unsigned seed) override;
  protected:
+  void DoExec(function<void(Context*)>&& fn, int executor) override;
+
+  void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                  CopyDirection direction, Context* ctx) override;
+
   /// Allocate cpu memory.
   void* Malloc(int size) override;
 
   /// Free cpu memory.
   void Free(void* ptr) override;
+
+ protected:
+  Context ctx_;
 };
 
 /// a singleton CppDevice as the host for all devices.
@@ -138,9 +155,56 @@ extern CppDevice hostDeviceSingleton;
 // Implement Device using OpenCL libs.
 // class OpenclDevice : public Device { };
 
-// Implement Device using Cuda libs for Nvidia GPUs.
-// class CudaDevice : public Device { };
+#ifdef USE_CUDA
+// Implement Device using cuda.
+class CudaDevice : public Device {
+ public:
+  ~CudaDevice();
+  CudaDevice(int id, int num_executors = 1, string scheduler = "sync",
+         string vm = "gc-only");
 
+  void SetRandSeed(unsigned seed) override;
+  static void DeviceQuery();
+  /// This function checks the availability of GPU #device_id.
+  /// It attempts to create a context on the device by calling cudaFree(0).
+  /// cudaSetDevice() alone is not sufficient to check the availability.
+  /// It lazily records device_id, however, does not initialize a
+  /// context. So it does not know if the host thread has the permission to use
+  /// the device or not.
+  ///
+  /// In a shared environment where the devices are set to EXCLUSIVE_PROCESS
+  /// or EXCLUSIVE_THREAD mode, cudaSetDevice() returns cudaSuccess
+  /// even if the device is exclusively occupied by another process or thread.
+  /// Cuda operations that initialize the context are needed to check
+  /// the permission. cudaFree(0) is one of those with no side effect,
+  /// except the context initialization.
+  static bool CheckDevice(const int device_id);
+  /// This function finds the first available device by checking devices with
+  /// ordinal from start_id to the highest available value. In the
+  /// EXCLUSIVE_PROCESS or EXCLUSIVE_THREAD mode, if it succeeds, it also
+  /// claims the device due to the initialization of the context.
+  static int FindDevice(const int start_id);
+ protected:
+  void DoExec(function<void(Context*)>&& fn, int executor) override;
+
+  void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                  CopyDirection direction, Context* ctx) override;
+
+  /// Allocate cpu memory.
+  void* Malloc(int size) override;
+
+  /// Free cpu memory.
+  void Free(void* ptr) override;
+
+ protected:
+  Context ctx_;
+};
+
+#endif  // USE_CUDA
+
+// Implement a CudaHost device, which used cuda functions for memory
+// malloc/free.
+// class CudaHost : public Device {}
 }  // namespace singa
 
 #endif  // SINGA_CORE_DEVICE_H_

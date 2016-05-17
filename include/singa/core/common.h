@@ -25,6 +25,7 @@
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
+#include <curand.h>
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #endif
@@ -36,8 +37,6 @@ namespace lib {
 typedef struct _Cpp { } Cpp;
 /// To implemente functions using cuda libraries
 typedef struct _Cuda { } Cuda;
-/// To implement function using cudnn
-typedef struct _Cudnn { } Cudnn;
 /// To implement function using opencl libraries
 typedef struct _Opencl { } Opencl;
 }  // namespace lib
@@ -69,10 +68,10 @@ class Blob {
 
 typedef struct _Context {
   std::mt19937 random_generator;
-  unsigned long long seed;
 #ifdef USE_CUDA
   cublasHandle_t cublas_handle;
   cudaStream_t stream;
+  curandGenerator_t curand_generator;
 #ifdef USE_CUDNN
   cudnnHandle_t cudnn_handle;
 #endif

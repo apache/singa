@@ -43,21 +43,7 @@ TEST_F(TestTensorMath, MemberAddTensor) {
   EXPECT_FLOAT_EQ(6.1f, dptr2[2]);
   EXPECT_FLOAT_EQ(12.1f, dptr2[5]);
 }
-/*
-TEST(TensorClass, SubTensor) {
-  Tensor a(Shape{2,3}), b(Shape{6});
-  float x[]={1.f, 2.f, 3.f, 4.f, 5.f, 6.f};
-  float y[]={1.1f, 2.1f, 3.1f, 4.1f, 5.1f, 6.1f};
-  a.CopyDataFromHostPtr(x, 6);
-  b.CopyDataFromHostPtr(y, 6);
-  b -= a;
-  const float* dptr = b.data<float>();
-  EXPECT_FLOAT_EQ(0.1f, dptr[0]);
-  EXPECT_FLOAT_EQ(0.1f, dptr[1]);
-  EXPECT_FLOAT_EQ(0.1f, dptr[2]);
-  EXPECT_FLOAT_EQ(0.1f, dptr[5]);
-}
-*/
+
 
 TEST_F(TestTensorMath, AddTensors) {
   Tensor ret(a.shape(), a.device(), a.data_type());

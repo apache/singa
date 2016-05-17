@@ -20,44 +20,53 @@
 
 namespace singa {
 Device::Device(int id, int num_executors, string scheduler, string vm)
-    : id_(id) {
-  scheduler_ = nullptr;
-  vm_ = nullptr;
-  ctx_.seed = 0;
-  ctx_.random_generator = std::mt19937(ctx_.seed);
+    : id_(id), num_executors_(num_executors) {
+      // TODO(wangwei) create scheduler and vm.
 }
 
-void Device::Exec(function<void(Context*)> fn, const vector<Blob*> read_blobs,
+void Device::Exec(function<void(Context*)>&& fn, const vector<Blob*> read_blobs,
                     const vector<Blob*> write_blobs, bool use_rand_generator) {
-  fn(&ctx_);
+  // TODO(wangwei) execute operations scheduled by the scheduler.
+  DoExec(std::move(fn), 0);
 }
 
+// TODO(wangwei) get Blob from the memory manager
 Blob* Device::NewBlob(int size) {
   if (size > 0) {
-    void* ptr = malloc(size);
-    memset(ptr, 0, size);
+    void* ptr = Malloc(size);
+    // memset(ptr, 0, size);
     return new Blob(ptr, size);
   } else {
     return nullptr;
   }
 }
 
+// TODO(wangwei) return Blob to the memory manager
 void Device::FreeBlob(Blob* blob) {
   if (blob != nullptr) {
-    free(blob->mutable_data());
+    Free(blob->mutable_data());
     delete blob;
   }
 }
 
-void Device::CopyData(Blob* dst, const Blob& src, int len, int dst_offset,
-                      int src_offset) {
-
-  memcpy(reinterpret_cast<Byte*>(dst->mutable_data()) + dst_offset,
-         (const Byte*)src.data() + src_offset, len);
+void Device::CopyDataToFrom(Blob* dst, Blob* src, size_t nBytes,
+                            CopyDirection direct, int dst_offset,
+                            int src_offset) {
+  this->Exec(
+      [this, dst, src, nBytes, direct, dst_offset, src_offset](Context* ctx) {
+        this->CopyToFrom((Byte*)dst->mutable_data() + dst_offset,
+                         (Byte*)src->data() + src_offset, nBytes, direct, ctx);
+      },
+      {src}, {dst});
 }
 
-void Device::CopyDataFromHostPtr(Blob* dst, const void* src, size_t size) {
-  memcpy(dst->mutable_data(), src, size);
+void Device::CopyDataFromHostPtr(Blob* dst, const void* src, size_t nBytes,
+                                 size_t dst_offset) {
+  auto direct = device_type_ == kCpp ? kHostToHost : kHostToDevice;
+  void* dstptr = (Byte*)dst->mutable_data() + dst_offset;
+  Exec([this, dstptr, src, nBytes,
+        direct](Context* ctx) { CopyToFrom(dstptr, src, nBytes, direct, ctx); },
+       {}, {dst});
 }
 void Device::Sync() {}
 }  // namespace singa

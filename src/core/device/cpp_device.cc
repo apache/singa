@@ -18,13 +18,18 @@
 #include "singa/core/device.h"
 namespace singa {
 CppDevice hostDeviceSingleton(-1, 1);
-CppDevice::CppDevice(int id, int num_executors) {
-  nn_lib_ = kCpp;
-  device_lib_ = kCpp;
-  host_ = &hostDeviceSingleton;
+CppDevice::CppDevice(int id, int num_executors, string scheduler,
+         string vm) : Device(id, num_executors, scheduler, vm) {
+  device_type_ = kCpp;
+  host_ = nullptr;
 }
 
-void CppDevice::Exec(int operation, int executor) {
+void CppDevice::SetRandSeed(unsigned seed) {
+  ctx_.random_generator.seed(seed);
+}
+void CppDevice::DoExec(function<void(Context*)>&& fn, int executor) {
+  CHECK_EQ(executor, 0);
+  fn(&ctx_);
 }
 
 void* CppDevice::Malloc(int size) {
@@ -35,4 +40,8 @@ void CppDevice::Free(void* ptr) {
   free(ptr);
 }
 
+void CppDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
+                           CopyDirection direction, Context* ctx) {
+  memcpy(dst, src, nBytes);
+}
 }

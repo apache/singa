@@ -30,10 +30,17 @@ enum DataType {
   kNumDataType = 5;
 }
 
-enum LibType {
+enum DeviceType {
   kCpp = 0;
   kCuda = 1;
   kOpencl = 2;
-  kCudnn = 3;
-  kNumLibType = 4;
+  kNumDeviceType = 4;
+}
+
+enum CopyDirection {
+  kHostToHost = 0;
+  kHostToDevice = 1;
+  kDeviceToHost = 2;
+  kDeviceToDevice = 3;
+  kNumDirection = 4;
 }

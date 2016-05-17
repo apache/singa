@@ -208,17 +208,9 @@ class Tensor {
 
 /// Copy 'num' elements of src to dst.
 /// The first 'src_offset' ('dst_offset') elements will be skipped.
-void CopyData(Tensor* dst,
+void CopyDataToFrom(Tensor* dst,
               const Tensor& src,
               size_t num,
-              size_t src_offset = 0,
-              size_t dst_offset = 0);
-
-/// Copy 'nBytes' bytes of src data to dst.
-/// The first 'src_offset' ('dst_offset') bytes will be skipped.
-void CopyRawData(Tensor* dst,
-              const Tensor& src,
-              size_t nBytes,
               size_t src_offset = 0,
               size_t dst_offset = 0);
 
@@ -279,6 +271,8 @@ template <typename DType>
 void Div(const Tensor& t, DType x, Tensor* ret);
 
 // ================Blas operations============================================
+// We fix the scalar argument type to be float.
+
 // ===== Level 1
 // TODO(wangwei) make amax/amin/asum a member function of tensor
 // void Amax(Tensor, Context* ctx); Get the index of the max value in a vector
@@ -289,24 +283,18 @@ void Div(const Tensor& t, DType x, Tensor* ret);
 
 /// Do matrix vector multipication or matrix matrix multiplication depdending
 /// on the Tensor shape.  ret = lhs * rhs
-template <typename DType>
 Tensor Mult(const Tensor& lhs, const Tensor& rhs);
 /// Do matrix vector multipication or matrix matrix multiplication depdending
 /// on the Tensor shape.  ret = lhs * rhs
-template <typename DType>
 void Mult(const Tensor& lhs, const Tensor& rhs, Tensor* ret);
 
 /// Do matrix vector multipication or matrix matrix multiplication depdending
 /// on the Tensor shape.  ret = alpha lhs * rhs + beta * ret
-template <typename DType>
-Tensor Mult(DType alpha, const Tensor& lhs, DType beta, const Tensor& rhs);
+Tensor Mult(float alpha, const Tensor& lhs, float beta, const Tensor& rhs);
 /// Do matrix vector multipication or matrix matrix multiplication depdending
 /// on the Tensor shape. ret = alpha lhs * rhs + beta * ret
-template <typename DType>
-void Mult(DType alpha, const Tensor& lhs, DType beta, const Tensor& rhs,
+void Mult(float alpha, const Tensor& lhs, float beta, const Tensor& rhs,
     Tensor* C);
-
-// tempalte<typename DType> T Dot(const Tensor& lhs, const Tensor& rhs);
 
 // ================Random operations==========================================
 /// For each element x set x = 1 if random() < p; otherwise x = 1.
@@ -316,19 +304,6 @@ void Uniform(float low, float high, Tensor* t);
 /// Fill in Tensor 't' following Gaussian distribution.
 void Gaussian(float mean, float std, Tensor* t);
 
-// ================Neural Net operations======================================
-/* following API of cudnn, e.g., conv, pool, lrn, batchnorm, softmax
-void ConvFwd(const ConvConf& conf, const Tensor& x, const Tensor& w, Tensor* y);
-void ConvBwdBias(const ConvConf& conf, const Tensor& dy, Tensor* db);
-void ConvBwdFilter(const ConvConf& conf, const Tensor& dy, const Tensor& x,
-                   Tensor* dw);
-void ConvBwdData(const ConvConf& conf, const Tensor& dy, const Tensor& w,
-                 Tensor* db);
-void PoolFwd(const PoolConf& conf, const Tensor& x, Tensor* y,
-             Tensor* mask = nullptr);
-void PoolBwd(const PoolConf& conf, const Tensor& y, const Tensor& dy,
-             const Tensor& x, Tensor* dx);
-*/
 }  // namespace singa
 
 #endif  // SINGA_CORE_TENSOR_H_
