@@ -42,9 +42,9 @@ class Layer {
   }
 
   // ============= Following Functions could be override =====================
-  /// Destruct the objecst created by this layer.
+  /// Destruct objects created by this layer.
   virtual ~Layer() {
-    for (Tensor * t : param_values_) {
+    for (Tensor* t : param_values_) {
       delete t;
     }
   }
@@ -56,19 +56,18 @@ class Layer {
   /// Set meta data fields configured in 'conf' (a proto message).
   virtual void Setup(const LayerConf& conf) {
     name_ = conf.name();
-    for (const auto& spec : conf.param())
-      param_specs_.push_back(spec);
+    for (const auto& spec : conf.param()) param_specs_.push_back(spec);
     // TODO(wangwei) load param values from checkpoint blobs.
   }
 
   /// Do feature transformation for the given 'input' tensor (denoted as x).
-  /// 'flag' is either kPhaseTrain or kPhaseTest for feed-forward nets, and
+  /// 'flag' is either kTrain or kEval for feed-forward nets, and
   /// would be used for other phases of training other nets. For example, when
   /// training RBM, we may create an alias of this function as ComputeFeature
-  /// where flag could be kPositivePhase and kNegativePhase.
+  /// where flag could be kPositive and kNegative.
   /// It will return a Tensor (denoted as y).
   /// If the 'input' or 'output' is required for computing the gradients in
-  /// Backward(), then push them into the states_ stack.
+  /// Backward(), then buffer them as internal data.
   virtual const Tensor Forward(int flag, const Tensor& input) {
     LOG(FATAL) << "Not implemented";
     Tensor t;
@@ -77,10 +76,12 @@ class Layer {
 
   /// \copydoc Forward(int flag, const Tensor& input)
   /// Accept multiple input tensors and generate multiple output tensors.
+  /// If there is only one input tensor, it will call Forward(int, const
+  /// Tensor&) by default. Users can override this function for layers who
+  /// generate more than one outputs.
   virtual const vector<Tensor> Forward(int flag, const vector<Tensor>& inputs) {
     vector<Tensor> ret;
-    if (inputs.size() == 1)
-      ret.push_back(Forward(flag, inputs.at(0)));
+    if (inputs.size() == 1) ret.push_back(Forward(flag, inputs.at(0)));
 
     LOG(FATAL) << "Not implemented";
     return ret;
@@ -88,19 +89,14 @@ class Layer {
 
   /// Compute gradients of this layer.
   /// Specifically, there are two types of gradients:
-  /// 1. gradients of preceding layers, i.e., dx.
-  /// 2. gradients of parameters of this layer.
-  /// 1 and 2 are returned as a pair of vector<Tensor>
+  /// 1. gradient of the preceding layer, i.e., dx.
+  /// 2. gradients of parameters of this layer, e.g., dw for weight matrix.
   /// 1 is an empty tensor if there is no preceding layer or there is no need to
-  /// compute dx (e.g., x is from a data layer); 2 is empty if this layer has no
-  /// parameters.
-  /// 'flag' is either kTrainPhase or kTestPhase for feed-forward nets, and
+  /// compute dx (e.g., x is from a data layer); 2 is an empty vector if this
+  // layer has no parameters.
+  /// 'flag' is either kTrain or kEval for feed-forward nets, and
   /// would be used for other phases when training other nets.
   /// 'grad' is a Tensor for gradient (dy) from the upper layer.
-  /// Some layer would use 'input' or 'output' from Forward to compute the
-  /// gradients of parameters. Backward() pop out the state data.
-  /// It is useful for RNN layers, where the same layer is used multiple
-  /// times just like unrolling the layer.
   virtual const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                            const Tensor& grad) {
     LOG(FATAL) << "Not implemented!";
@@ -117,7 +113,7 @@ class Layer {
       auto ret = Backward(flag, grads.at(0));
       input_grad.push_back(ret.first);
       param_grad = ret.second;
-    } else  {
+    } else {
       LOG(FATAL) << "Not implemented";
     }
     return std::make_pair(input_grad, param_grad);
@@ -137,7 +133,7 @@ class Layer {
   /// Serialize the layer info (including params) into a LayerConf proto message
   virtual void ToProto(LayerConf* conf) const {
     conf->set_name(name_);
-    for (const auto& spec: param_specs_) {
+    for (const auto& spec : param_specs_) {
       ParamSpec* p = conf->add_param();
       p->CopyFrom(spec);
     }
@@ -157,19 +153,13 @@ class Layer {
   }
   /// Return specs/configuration of all parameter instances of this layer.
   /// \ref ParamSpec.
-  const vector<ParamSpec> param_specs() {
-    return param_specs_;
-  }
+  const vector<ParamSpec> param_specs() { return param_specs_; }
 
   /// Return the i-th ParamSpec.
-  const ParamSpec& param_specs(int i) {
-    return param_specs_.at(i);
-  }
+  const ParamSpec& param_specs(int i) { return param_specs_.at(i); }
 
   /// Return pointers to parameter Tensor s.
-  const vector<Tensor*> param_values() {
-    return param_values_;
-  }
+  const vector<Tensor*> param_values() { return param_values_; }
 
   /// Return a pointer to the 'i'-th parameter Tensor.
   Tensor* param_value(size_t i) {
@@ -180,8 +170,7 @@ class Layer {
   /// Return names of all parmaeters.
   const vector<string> param_names() {
     vector<string> pname;
-    for (const auto& spec: param_specs_)
-      pname.push_back(spec.name());
+    for (const auto& spec : param_specs_) pname.push_back(spec.name());
     return pname;
   }
 
@@ -195,29 +184,11 @@ class Layer {
   /// Used for debugging and logging.
   const std::string name() const { return name_; }
 
-  /*
-  std::stack<Tensor> states() const {
-    return states_;
-  }
-  */
-
  protected:
   std::string name_;
   vector<Tensor*> param_values_;
   vector<ParamSpec> param_specs_;
-  /// Used to store input or output of Forward(), which would be used in
-  /// Backward.  Rules:
-  /// 1. push the 'input' or 'output' into states_ if the flag of Forward() is
-  ///    for training.
-  /// 2. pop data out in Backward().
-  /// TODO(wangwei) enable this feature for rnn layers.
-  // std::stack<Tensor*> states_;
 };
-
-// ===========================================================================
-// Order layer sub-classes based on alphabetical order of the first letter.
-// ===========================================================================
-
 
 }  // namespace singa
 #endif  // SINGA_LAYER_H_

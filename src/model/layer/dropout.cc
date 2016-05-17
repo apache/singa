@@ -30,7 +30,7 @@ const Tensor Dropout::Forward(int flag, const Tensor& input) {
   if (flag & kTrain) {
     mask_.ResetLike(input);
     // set mask_[i] = 1 with prob 1-dropout_rato_
-    Bernoulli(1 - dropout_ratio_, &mask_);
+    Bernoulli(1.0f - dropout_ratio_, &mask_);
     mask_ *= 1.0f / (1.0f - dropout_ratio_);
     out = input * mask_;
   } else {
@@ -39,8 +39,8 @@ const Tensor Dropout::Forward(int flag, const Tensor& input) {
   return out;
 }
 
-const std::pair<Tensor, vector<Tensor>> Dropout::Backward(
-    int flag, const Tensor& grad) {
+const std::pair<Tensor, vector<Tensor>> Dropout::Backward(int flag,
+                                                          const Tensor& grad) {
   vector<Tensor> param_grad;
   Tensor input_grad;
   if (flag & kTrain) {

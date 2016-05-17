@@ -17,18 +17,16 @@
  */
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
-//#if CUDNN_MAJOR_VERSION >= 5
-#include "./cudnn_utils.h"
+#if CUDNN_MAJOR_VERSION >= 5
 #include "./cudnn_dropout.h"
+#include "./cudnn_utils.h"
 #include "singa/utils/logging.h"
 namespace singa {
 CudnnDropout::~CudnnDropout() {
   if (drop_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyDropoutDescriptor(drop_desc_));
-  if (x_desc_ != nullptr)
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(x_desc_));
-  if (y_desc_ != nullptr)
-    CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_desc_));
+  if (x_desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(x_desc_));
+  if (y_desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_desc_));
 }
 
 void CudnnDropout::InitCudnn(int size, DataType dtype, Context* ctx) {
@@ -37,18 +35,16 @@ void CudnnDropout::InitCudnn(int size, DataType dtype, Context* ctx) {
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_desc_));
   CUDNN_CHECK(cudnnCreateDropoutDescriptor(&drop_desc_));
 
-  int dim[] = {size};
-  int stride[] = {1};
-  CUDNN_CHECK(cudnnSetTensorNdDescriptor(x_desc_, GetCudnnDataType(dtype), 1,
-      dim, stride));
-  CUDNN_CHECK(cudnnSetTensorNdDescriptor(y_desc_, GetCudnnDataType(dtype), 1,
-      dim, stride));
+  CUDNN_CHECK(cudnnSetTensor4dDescriptor(
+      x_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), 1, 1, 1, size));
+  CUDNN_CHECK(cudnnSetTensor4dDescriptor(
+      y_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), 1, 1, 1, size));
 
   cudnnDropoutGetStatesSize(ctx->cudnn_handle, &state_size_);
   cudnnDropoutGetReserveSpaceSize(x_desc_, &reserve_size_);
-  cudnnSetDropoutDescriptor(drop_desc_, ctx->cudnn_handle, dropout_ratio_,
-    state_.blob()->mutable_data(),
-    state_size_, ctx->seed);
+  cudnnSetDropoutDescriptor(drop_desc_, ctx->cudnn_handle, 1 - dropout_ratio_,
+                            state_.blob()->mutable_data(), state_size_,
+                            ctx->seed);
   has_init_cudnn_ = true;
 }
 
@@ -59,23 +55,27 @@ const Tensor CudnnDropout::Forward(int flag, const Tensor& input) {
     if (!has_init_cudnn_) {
       input.device()->Exec(
           [size, dtype, this](Context* ctx) {
-          this->InitCudnn(size, dtype, ctx);
+            this->InitCudnn(size, dtype, ctx);
           },
-          {}, {state_.blob()});
+          {}, {this->state_.blob()});
       mask_.ResetLike(input);
+      // TODO(wangwei) update for async running,
+      // where reserve_size_ may not available
       CHECK_EQ(reserve_size_, mask_.MemSize());
     }
-    Tensor out;
-    out.ResetLike(input);
-    Blob *inblob = input.blob(), *outblob = out.blob(), *mblob = mask_.blob();
-    out.device()->Exec(
-        [inblob, outblob, mblob, this](Context* ctx) {
-        cudnnDropoutForward(
-            ctx->cudnn_handle, this->drop_desc_, this->x_desc_, inblob->data(),
-            this->y_desc_, outblob->mutable_data(), mblob, this->reserve_size_);
+    Tensor output;
+    output.ResetLike(input);
+    output.device()->Exec(
+        [input, output, this](Context* ctx) {
+          Blob *inblob = input.blob(), *outblob = output.blob(),
+               *mblob = mask_.blob();
+          cudnnDropoutForward(ctx->cudnn_handle, this->drop_desc_,
+                              this->x_desc_, inblob->data(), this->y_desc_,
+                              outblob->mutable_data(), mblob,
+                              this->reserve_size_);
         },
-        {inblob}, {mblob, outblob});
-    return out;
+        {input.blob()}, {output.blob(), mask_.blob()});
+    return output;
   } else {
     return input;
   }
@@ -87,20 +87,21 @@ const std::pair<Tensor, vector<Tensor>> CudnnDropout::Backward(
   Tensor dx;
   if (flag & kTrain) {
     dx.ResetLike(grad);
-    Blob *dyblob = grad.blob(), *dxblob = dx.blob(), *mblob = mask_.blob();
     dx.device()->Exec(
-        [dyblob, dxblob, mblob, this](Context* ctx) {
-        cudnnDropoutBackward(ctx->cudnn_handle, this->drop_desc_,
-            this->y_desc_, dyblob->data(), this->x_desc_,
-            dxblob->mutable_data(), mblob,
-            this->reserve_size_);
+        [dx, grad, this](Context* ctx) {
+          Blob *dyblob = grad.blob(), *dxblob = dx.blob(),
+               *mblob = this->mask_.blob();
+          cudnnDropoutBackward(ctx->cudnn_handle, this->drop_desc_,
+                               this->y_desc_, dyblob->data(), this->x_desc_,
+                               dxblob->mutable_data(), mblob->mutable_data(),
+                               this->reserve_size_);
         },
-        {dyblob, mblob}, {dxblob});
+        {grad.blob(), mask_.blob()}, {dx.blob()});
   } else {
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }
   return std::make_pair(dx, param_grad);
 }
 }  // namespace singa
-//#endif  // CUDNN_VERSION_MAJOR>=5
+#endif  // CUDNN_VERSION_MAJOR>=5
 #endif  // USE_CUDNN

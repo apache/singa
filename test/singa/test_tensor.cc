@@ -107,7 +107,8 @@ TEST(TensorClass, T) {
   EXPECT_EQ(true, o.transpose());
   EXPECT_EQ(t.blob(), o.blob());
   EXPECT_EQ(t.data_type(), o.data_type());
-  EXPECT_TRUE((t.shape() ==  o.shape()));
+  EXPECT_EQ(t.shape()[0],  o.shape()[1]);
+  EXPECT_EQ(t.shape()[1],  o.shape()[0]);
 }
 
 

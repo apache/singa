@@ -39,6 +39,26 @@ void Add<float, lib::Cpp>(int count,
     dptr[i] = lptr[i] + rptr[i];
   }
 }
+template <>
+void EltwiseMult<float, lib::Cpp>(int count, const Blob* input, float x, Blob* ret, Context* ctx)
+{
+  float *dptr = static_cast<float*>(ret->mutable_data());
+  const float *lptr = static_cast<const float*>(input->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = lptr[i] * x;
+  }
+}
+
+template <>
+void EltwiseMult<float, lib::Cpp>(int count, const Blob* lhs, const Blob* rhs, Blob* ret, Context* ctx)
+{
+  float *dptr = static_cast<float*>(ret->mutable_data());
+  const float *lptr = static_cast<const float*>(lhs->data());
+  const float *rptr = static_cast<const float*>(rhs->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = lptr[i] * rptr[i];
+  }
+}
 
 template <>
 void Bernoulli<float, lib::Cpp>(int count, float p, Blob* ret,
@@ -46,7 +66,7 @@ void Bernoulli<float, lib::Cpp>(int count, float p, Blob* ret,
   std::bernoulli_distribution distribution(p);
   float* ptr = static_cast<float*>(ret->mutable_data());
   for (int i = 0; i < count; i ++) {
-    ptr[i] = static_cast<float>(distribution(ctx->random_generator));
+    ptr[i] = distribution(ctx->random_generator) ? 1.0f : 0.0f;
   }
 }
 
@@ -69,6 +89,8 @@ void Gaussian<float, lib::Cpp>(int count, float mean, float std, Blob* ret,
     ptr[i] = static_cast<float>(distribution(ctx->random_generator));
   }
 }
+
+
 #ifdef USE_CBLAS
 template<>
 void Dot<float, lib::Cpp>(int count,

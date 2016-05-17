@@ -114,6 +114,7 @@ class Device {
   // SafeQueue<Operation> op_queue_;
   // SafeQueue<Operation> op_log_;
   /// The host device
+  Context ctx_;
   Device* host_;
 };
 // Implement Device using Cpp libs.
@@ -129,6 +130,7 @@ class CppDevice : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
+
 };
 
 /// a singleton CppDevice as the host for all devices.

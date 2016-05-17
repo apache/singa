@@ -155,38 +155,38 @@ class Tensor {
   Tensor T() const;
 
   /// Copy the meta info with data blob shared.
-  void operator=(const Tensor& t);
+  Tensor& operator=(const Tensor& t);
 
   /// Copy the meta info with data blob shared.
-  void operator=(Tensor&& t);
+  Tensor& operator=(Tensor&& t);
 
 
-  void operator+=(const Tensor& t);
+  Tensor& operator+=(const Tensor& t);
   // void operator+=(Tensor&& t);
-  void operator-=(const Tensor& t);
+  Tensor& operator-=(const Tensor& t);
   // void operator-=(Tensor&& t);
-  void operator*=(const Tensor& t);
+  Tensor& operator*=(const Tensor& t);
   // void operator*=(Tensor&& t);
-  void operator/=(const Tensor& t);
+  Tensor& operator/=(const Tensor& t);
   // void operator/=(Tensor&& t);
 
   // Scalar operations.
 
   /// T is a scalar type
   template<typename DType>
-  void operator+=(DType x);
+  Tensor& operator+=(DType x);
 
   /// T is a scalar type
   template <typename DType>
-  void operator-=(const DType x);
+  Tensor& operator-=(const DType x);
 
   /// T is a scalar type
   template <typename DType>
-  void operator*=(const DType x);
+  Tensor& operator*=(const DType x);
 
   /// T is a scalar type
   template <typename DType>
-  void operator/=(const DType x);
+  Tensor& operator/=(const DType x);
 
   /// save Tensor into a proto msg
   // void ToProto(TensorProto* t);

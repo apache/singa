@@ -23,11 +23,13 @@ Device::Device(int id, int num_executors, string scheduler, string vm)
     : id_(id) {
   scheduler_ = nullptr;
   vm_ = nullptr;
+  ctx_.seed = 0;
+  ctx_.random_generator = std::mt19937(ctx_.seed);
 }
 
 void Device::Exec(function<void(Context*)> fn, const vector<Blob*> read_blobs,
                     const vector<Blob*> write_blobs, bool use_rand_generator) {
-  fn(nullptr);
+  fn(&ctx_);
 }
 
 Blob* Device::NewBlob(int size) {

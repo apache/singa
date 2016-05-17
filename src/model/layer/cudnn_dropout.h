@@ -20,12 +20,12 @@
 #define SINGA_MODEL_LAYER_CUDNN_DROPOUT_H_
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
-//#if CUDNN_MAJOR_VERSION >= 5
+#if CUDNN_MAJOR_VERSION >= 5
 
-#include "singa/model/layer.h"
-#include "singa/core/common.h"
-#include "singa/proto/core.pb.h"
 #include "./dropout.h"
+#include "singa/core/common.h"
+#include "singa/model/layer.h"
+#include "singa/proto/core.pb.h"
 
 namespace singa {
 class CudnnDropout : public Dropout {
@@ -35,8 +35,8 @@ class CudnnDropout : public Dropout {
   const std::string layer_type() const override { return "CudnnDropout"; }
 
   const Tensor Forward(int flag, const Tensor& input) override;
-  const std::pair<Tensor, vector<Tensor>> Backward(
-      int flag, const Tensor& grad) override;
+  const std::pair<Tensor, vector<Tensor>> Backward(int flag,
+                                                   const Tensor& grad) override;
 
   /// Init cudnn related data structures.
   void InitCudnn(int size, DataType dtype, Context* ctx);
@@ -49,6 +49,6 @@ class CudnnDropout : public Dropout {
   Tensor state_;
 };
 }  // namespace
-//#endif  // CUDNN_VERSION_MAJOR>=5
+#endif  // CUDNN_VERSION_MAJOR>=5
 #endif  // USE_CUDNN
-#endif // SINGA_MODEL_LAYER_CUDNN_DROPOUT_H_
+#endif  // SINGA_MODEL_LAYER_CUDNN_DROPOUT_H_

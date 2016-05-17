@@ -19,11 +19,82 @@
 *
 *************************************************************/
 
-#include "gtest/gtest.h"
 #include "../src/model/layer/dropout.h"
+#include "gtest/gtest.h"
 
+using singa::Dropout;
+TEST(DropoutLayer, Setup) {
+  Dropout drop;
+  EXPECT_EQ("Dropout", drop.layer_type());
 
-TEST(TestDropoutLayer, Setup) {
+  singa::LayerConf conf;
+  singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
+  dropconf->set_dropout_ratio(0.8);
 
+  drop.Setup(conf);
+  EXPECT_EQ(0.8f, drop.dropout_ratio());
+}
 
+TEST(DropoutLayer, Forward) {
+  const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+  size_t n = sizeof(x) / sizeof(float);
+  singa::Tensor in(singa::Shape{n});
+  in.CopyDataFromHostPtr(x, n);
+
+  float pdrop = 0.5;
+  Dropout drop;
+  singa::LayerConf conf;
+  singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
+  dropconf->set_dropout_ratio(pdrop);
+  drop.Setup(conf);
+  float scale = 1.0f / (1.0f - pdrop);
+
+  singa::Tensor out1 = drop.Forward(singa::kTrain, in);
+
+  const float* mptr = static_cast<const float*>(drop.mask().blob()->data());
+  for (size_t i = 0; i < n; i++)
+    EXPECT_FLOAT_EQ(0, mptr[i] * (mptr[i] - scale));
+
+  const float* outptr1 = static_cast<const float*>(out1.blob()->data());
+  EXPECT_EQ(n, out1.Size());
+  // the output value should be 0 or the same as the input
+  EXPECT_EQ(0.f, outptr1[0] * (outptr1[0] - scale * x[0]));
+  EXPECT_EQ(0.f, outptr1[1] * (outptr1[1] - scale * x[1]));
+  EXPECT_EQ(0.f, outptr1[7] * (outptr1[7] - scale * x[7]));
+
+  singa::Tensor out2 = drop.Forward(singa::kEval, in);
+  EXPECT_EQ(n, out2.Size());
+  const float* outptr2 = static_cast<const float*>(out2.blob()->data());
+  // the output value should be the same as the input
+  EXPECT_EQ(x[0], outptr2[0]);
+  EXPECT_EQ(x[1], outptr2[1]);
+  EXPECT_EQ(x[7], outptr2[7]);
+}
+
+TEST(DropoutLayer, Backward) {
+  const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+  size_t n = sizeof(x) / sizeof(float);
+  singa::Tensor in(singa::Shape{n});
+  in.CopyDataFromHostPtr(x, n);
+
+  float pdrop = 0.5;
+  float scale = 1.0f / (1.0f - pdrop);
+
+  Dropout drop;
+  singa::LayerConf conf;
+  singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
+  dropconf->set_dropout_ratio(pdrop);
+  drop.Setup(conf);
+  singa::Tensor out1 = drop.Forward(singa::kTrain, in);
+
+  const float dy[] = {4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 1.0f, 2.0f, 3.0f};
+  singa::Tensor grad(singa::Shape{n});
+  grad.CopyDataFromHostPtr(dy, n);
+
+  const float* mptr = static_cast<const float*>(drop.mask().blob()->data());
+  const auto ret = drop.Backward(singa::kTrain, grad);
+  const float* dx = static_cast<const float*>(ret.first.blob()->data());
+  EXPECT_FLOAT_EQ(dx[0], dy[0] * (mptr[0] > 0 ? 1.0f : 0.0f) * scale);
+  EXPECT_FLOAT_EQ(dx[1], dy[1] * (mptr[1] > 0) * scale);
+  EXPECT_FLOAT_EQ(dx[7], dy[7] * (mptr[7] > 0) * scale);
 }

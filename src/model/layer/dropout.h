@@ -31,7 +31,8 @@ class Dropout : public Layer {
   /// if flag is kTrain, then do dropout with given dropout_ratio;
   /// otherwise if it is kEval, copy input directly to the output
   /// TODO(wangwei) There are diff implementations, Caffe vs
-  /// <a href="https://github.com/nitishsrivastava/deepnet/blob/master/deepnet/fastdropoutnet.py">
+  /// <a
+  /// href="https://github.com/nitishsrivastava/deepnet/blob/master/deepnet/fastdropoutnet.py">
   const Tensor Forward(int flag, const Tensor& input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
@@ -39,6 +40,14 @@ class Dropout : public Layer {
                                                    const Tensor& grad) override;
 
   void ToDevice(Device* device) override;
+
+  float dropout_ratio() const {
+    return dropout_ratio_;
+  }
+
+  const Tensor& mask() const {
+    return mask_;
+  }
 
  protected:
   /// the proability to set each element to 0.

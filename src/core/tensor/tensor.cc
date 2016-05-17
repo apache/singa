@@ -71,7 +71,7 @@ Tensor::Tensor(Tensor&& t)
 }
 
 void Tensor::ResetLike(const Tensor& t) {
-  if (blob_->size() != t.MemSize()) {
+  if (blob_ == nullptr || blob_->size() != t.MemSize()) {
     if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
     shape_ = t.shape_;
     device_ = t.device_;
@@ -152,7 +152,7 @@ Tensor Tensor::T() const {
   return t;
 }
 
-void Tensor::operator=(const Tensor& t) {
+Tensor& Tensor::operator=(const Tensor& t) {
   if (blob_ != nullptr && blob_->DecRefCount() == 0)
     device_->FreeBlob(blob_);
   transpose_ = t.transpose_;
@@ -161,9 +161,10 @@ void Tensor::operator=(const Tensor& t) {
   device_ = t.device_;
   blob_ = t.blob();
   blob_->IncRefCount();
+  return *this;
 }
 
-void Tensor::operator=(Tensor&& t) {
+Tensor& Tensor::operator=(Tensor&& t) {
   if (blob_ != nullptr && blob_->DecRefCount() == 0)
     device_->FreeBlob(blob_);
   transpose_ = t.transpose_;
@@ -171,10 +172,11 @@ void Tensor::operator=(Tensor&& t) {
   device_ = t.device_;
   blob_ = t.blob_;
   t.blob_ = nullptr;
+  return *this;
 }
 
 #define GenUnaryTensorArgMemberFunction(op, fn) \
-  void Tensor::op(const Tensor& t) { fn(*this, t, this); }
+  Tensor& Tensor::op(const Tensor& t) { fn(*this, t, this); return *this; }
 
 GenUnaryTensorArgMemberFunction(operator+=, Add);
 GenUnaryTensorArgMemberFunction(operator-=, Sub);
@@ -183,10 +185,11 @@ GenUnaryTensorArgMemberFunction(operator/=, Div);
 
 #define GenUnaryScalarArgMemberFunction(op, fn) \
   template <typename DType>                     \
-  void Tensor::op(DType x) {                    \
+  Tensor& Tensor::op(DType x) {                 \
     fn(*this, x, this);                         \
+    return *this;                               \
   }                                             \
-  template void Tensor::op<float>(float x)
+  template Tensor& Tensor::op<float>(float x)
 
 GenUnaryScalarArgMemberFunction(operator-=, Sub);
 GenUnaryScalarArgMemberFunction(operator+=, Add);
