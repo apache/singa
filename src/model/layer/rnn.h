@@ -15,9 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SINGA_MODEL_LAYER_DROPOUT_H_
-#define SINGA_MODEL_LAYER_DROPOUT_H_
+#ifndef SRC_MODEL_LAYER_RNN_H_
+#define SRC_MODEL_LAYER_RNN_H_
+
+#include <utility>
+#include <string>
+#include <vector>
+#include <stack>
+
 #include "singa/model/layer.h"
+
 namespace singa {
 /// To enable use the same layer multiple times in one iteration in RNN,
 /// the Forward() function pushes the 'input' or 'output' that are
@@ -56,4 +63,4 @@ class RNN : public Layer {
   std::stack<Tensor*> states_;
 };
 }  // namespace singa
-#endif  // SINGA_MODEL_LAYER_DROPOUT_H_
+#endif  // SRC_MODEL_LAYER_RNN_H_

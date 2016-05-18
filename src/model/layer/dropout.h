@@ -15,9 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SINGA_MODEL_LAYER_DROPOUT_H_
-#define SINGA_MODEL_LAYER_DROPOUT_H_
+#ifndef SRC_MODEL_LAYER_DROPOUT_H_
+#define SRC_MODEL_LAYER_DROPOUT_H_
+#include <utility>
+#include <string>
+#include <vector>
 #include "singa/model/layer.h"
+
 namespace singa {
 class Dropout : public Layer {
  public:
@@ -55,4 +59,4 @@ class Dropout : public Layer {
   Tensor mask_;
 };
 }  // namespace singa
-#endif  // SINGA_MODEL_LAYER_DROPOUT_H_
+#endif  // SRC_MODEL_LAYER_DROPOUT_H_

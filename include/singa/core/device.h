@@ -130,7 +130,6 @@ class CppDevice : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-
 };
 
 /// a singleton CppDevice as the host for all devices.

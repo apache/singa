@@ -65,8 +65,8 @@ class Tensor {
  public:
   ~Tensor();
   Tensor();
-  Tensor(Shape&& shape, DataType dtype = kFloat32);
-  Tensor(const Shape& shape, DataType dtype = kFloat32);
+  explicit Tensor(Shape&& shape, DataType dtype = kFloat32);
+  explicit Tensor(const Shape& shape, DataType dtype = kFloat32);
   Tensor(Shape&& shape, Device* dev, DataType dtype = kFloat32);
   Tensor(const Shape& shape, Device* dev, DataType dtype = kFloat32);
 
@@ -278,7 +278,7 @@ Tensor operator/(const Tensor& t, DType x);
 template <typename DType>
 void Div(const Tensor& t, DType x, Tensor* ret);
 
-//================Blas operations============================================
+// ================Blas operations============================================
 // ===== Level 1
 // TODO(wangwei) make amax/amin/asum a member function of tensor
 // void Amax(Tensor, Context* ctx); Get the index of the max value in a vector
@@ -308,7 +308,7 @@ void Mult(DType alpha, const Tensor& lhs, DType beta, const Tensor& rhs,
 
 // tempalte<typename DType> T Dot(const Tensor& lhs, const Tensor& rhs);
 
-//================Random operations==========================================
+// ================Random operations==========================================
 /// For each element x set x = 1 if random() < p; otherwise x = 1.
 void Bernoulli(float p, Tensor* t);
 /// Fill in Tensor 't' following uniform distribution.
@@ -316,7 +316,7 @@ void Uniform(float low, float high, Tensor* t);
 /// Fill in Tensor 't' following Gaussian distribution.
 void Gaussian(float mean, float std, Tensor* t);
 
-//================Neural Net operations======================================
+// ================Neural Net operations======================================
 /* following API of cudnn, e.g., conv, pool, lrn, batchnorm, softmax
 void ConvFwd(const ConvConf& conf, const Tensor& x, const Tensor& w, Tensor* y);
 void ConvBwdBias(const ConvConf& conf, const Tensor& dy, Tensor* db);

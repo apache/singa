@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SINGA_MODEL_LAYER_CUDNN_BASE_H_
-#define SINGA_MODEL_LAYER_CUDNN_BASE_H_
+#ifndef SRC_MODEL_LAYER_CUDNN_UTILS_H_
+#define SRC_MODEL_LAYER_CUDNN_UTILS_H_
 
 #ifdef USE_CUDNN
 
@@ -82,4 +82,4 @@ inline const char* cudnnGetErrorString(cudnnStatus_t status) {
 
 }  // namespace singa
 #endif  // USE_CUDNN
-#endif  // SINGA_MODEL_LAYER_CUDNN_BASE_H_
+#endif  // SRC_MODEL_LAYER_CUDNN_UTILS_H_

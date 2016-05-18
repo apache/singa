@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
-#ifndef SINGA_MODEL_LAYER_CUDNN_DROPOUT_H_
-#define SINGA_MODEL_LAYER_CUDNN_DROPOUT_H_
+#ifndef SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
+#define SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
 #if CUDNN_MAJOR_VERSION >= 5
-
+#include <utility>
+#include <string>
+#include <vector>
 #include "./dropout.h"
 #include "singa/core/common.h"
 #include "singa/model/layer.h"
@@ -51,4 +53,4 @@ class CudnnDropout : public Dropout {
 }  // namespace
 #endif  // CUDNN_VERSION_MAJOR>=5
 #endif  // USE_CUDNN
-#endif  // SINGA_MODEL_LAYER_CUDNN_DROPOUT_H_
+#endif  // SRC_MODEL_LAYER_CUDNN_DROPOUT_H_

@@ -381,7 +381,7 @@ GenBinaryTensorFunction(Pow, Pow);
 #define EltwiseTensorScalarFn(fn, t, x, ret)                               \
   do {                                                                     \
     TYPE_LIB_SWITCH(t.data_type(), DType, t.device()->device_lib(), Lib, { \
-      static_assert(std::is_same<SType, DType>::value,                             \
+      static_assert(std::is_same<SType, DType>::value,                     \
                     "The Scalar type must match the Tensor data type");    \
       ret->device()->Exec(                                                 \
           [t, x, ret](Context* ctx) {                                      \
@@ -436,8 +436,8 @@ template Tensor Mult<float>(float alpha, const Tensor& lhs, float beta,
     const Tensor& rhs);
 
 template <typename SType>
-void Mult(SType alpha, const Tensor& A, SType beta, const Tensor& B, Tensor* C)
-{
+void Mult(SType alpha, const Tensor& A, SType beta, const Tensor& B,
+          Tensor* C) {
   CHECK_EQ(A.shape().size(), 2u);
   bool transA = A.transpose();
   size_t m = transA ? A.shape()[1] : A.shape()[0], n = 0;
@@ -445,14 +445,14 @@ void Mult(SType alpha, const Tensor& A, SType beta, const Tensor& B, Tensor* C)
     n = C->Size();
     TYPE_LIB_SWITCH(A.data_type(), DType, A.device()->device_lib(), Lib, {
       static_assert(std::is_same<SType, DType>::value,
-        "The scalar type must be the same as the tensor data type");
+                    "The scalar type must be the same as the tensor data type");
       C->device()->Exec(
-        [transA, m, n, alpha, A, beta, B, C](Context* ctx) {
-        GEMV<DType, Lib>(transA, m, n, alpha, A.blob(),
-          B.blob(), beta, C->blob(), ctx);
-        },
-        {A.blob(), B.blob()}, {C->blob()});
-      });
+          [transA, m, n, alpha, A, beta, B, C](Context* ctx) {
+            GEMV<DType, Lib>(transA, m, n, alpha, A.blob(), B.blob(), beta,
+                             C->blob(), ctx);
+          },
+          {A.blob(), B.blob()}, {C->blob()});
+    });
   } else {
     CHECK(!C->transpose());
     bool transB = B.transpose();
@@ -462,15 +462,15 @@ void Mult(SType alpha, const Tensor& A, SType beta, const Tensor& B, Tensor* C)
     CHECK_EQ(A.Size(), m * k);
     CHECK_EQ(B.Size(), n * k);
     TYPE_LIB_SWITCH(A.data_type(), DType, A.device()->device_lib(), Lib, {
-        static_assert(std::is_same<SType, DType>::value,
-          "The scalar type must be the same as the tensor data type");
-        C->device()->Exec(
+      static_assert(std::is_same<SType, DType>::value,
+                    "The scalar type must be the same as the tensor data type");
+      C->device()->Exec(
           [transA, transB, m, n, k, alpha, A, beta, B, C](Context* ctx) {
-          GEMM<DType, Lib>(transA, transB, m, n, k, alpha, A.blob(),
-            B.blob(), beta, C->blob(), ctx);
+            GEMM<DType, Lib>(transA, transB, m, n, k, alpha, A.blob(), B.blob(),
+                             beta, C->blob(), ctx);
           },
           {A.blob(), B.blob()}, {C->blob()});
-        });
+    });
   }
 }
 template void Mult<float>(float alpha, const Tensor& lhs, float beta,

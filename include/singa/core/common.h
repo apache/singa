@@ -24,7 +24,7 @@
 
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
-#include "cublas_v2.h"
+#include <cublas_v2.h>
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #endif
@@ -40,7 +40,7 @@ typedef struct _Cuda { } Cuda;
 typedef struct _Cudnn { } Cudnn;
 /// To implement function using opencl libraries
 typedef struct _Opencl { } Opencl;
-}  // namespace lib;
+}  // namespace lib
 
 typedef unsigned char Byte;
 /// Blob reprent a chunk of memory (on device or host) managed by VirtualMemory.
