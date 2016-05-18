@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-#ifndef SINGA_LAYER_H_
-#define SINGA_LAYER_H_
+#ifndef SINGA_MODEL_LAYER_H_
+#define SINGA_MODEL_LAYER_H_
 
 #include <vector>
 #include <string>
 #include <stack>
+#include <utility>
 #include "singa/core/tensor.h"
 #include "singa/proto/layer.pb.h"
 
@@ -191,4 +192,4 @@ class Layer {
 };
 
 }  // namespace singa
-#endif  // SINGA_LAYER_H_
+#endif  // SINGA_MODEL_LAYER_H_

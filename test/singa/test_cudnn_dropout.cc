@@ -18,14 +18,24 @@
 * under the License.
 *
 *************************************************************/
+#ifdef USE_CUDNN
+// cudnn dropout is added in cudnn 5
+//#if CUDNN_MAJOR_VERSION >= 5
 
-#include "../src/model/layer/dropout.h"
+#include "../src/model/layer/cudnn_dropout.h"
 #include "gtest/gtest.h"
 
-using singa::Dropout;
-TEST(Dropout, Setup) {
-  Dropout drop;
-  EXPECT_EQ("Dropout", drop.layer_type());
+bool inline GetBitValue(const char* x, int pos) {
+  const unsigned char BitMask[] = {1, 2, 4, 8, 16, 32, 64, 128};
+  int idx = pos / 8;
+  int offset = pos % 8;
+  return x[idx] & BitMask[offset];
+}
+
+using singa::CudnnDropout;
+TEST(CudnnDropout, Setup) {
+  CudnnDropout drop;
+  EXPECT_EQ("CudnnDropout", drop.layer_type());
 
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
@@ -35,34 +45,40 @@ TEST(Dropout, Setup) {
   EXPECT_EQ(0.8f, drop.dropout_ratio());
 }
 
-TEST(Dropout, Forward) {
+TEST(CudnnDropout, Forward) {
   const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
   size_t n = sizeof(x) / sizeof(float);
-  singa::Tensor in(singa::Shape{n});
+  singa::CudaDevice cuda(0, 1);
+  singa::Tensor in(singa::Shape{n}, &cuda);
   in.CopyDataFromHostPtr(x, n);
 
   float pdrop = 0.5;
-  Dropout drop;
+  CudnnDropout drop;
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
   drop.Setup(conf);
-  float scale = 1.0f / (1.0f - pdrop);
 
   singa::Tensor out1 = drop.Forward(singa::kTrain, in);
 
-  const float* mptr = drop.mask().data<const float*>();
+  singa::Tensor mask(drop.mask().shape(), drop.mask().data_type());
+  mask.CopyData(drop.mask());
+  const char* mptr = mask.data<const char*>();
   for (size_t i = 0; i < n; i++)
-    EXPECT_FLOAT_EQ(0, mptr[i] * (mptr[i] - scale));
+    EXPECT_FLOAT_EQ(0, GetBitValue(mptr, i) * (GetBitValue(mptr, i) - 1));
 
+  singa::CppDevice host(0, 1);
+  out1.ToDevice(&host);
   const float* outptr1 = out1.data<const float*>();
   EXPECT_EQ(n, out1.Size());
+  float scale = 1.0f / (1.0f - pdrop);
   // the output value should be 0 or the same as the input
   EXPECT_EQ(0.f, outptr1[0] * (outptr1[0] - scale * x[0]));
   EXPECT_EQ(0.f, outptr1[1] * (outptr1[1] - scale * x[1]));
   EXPECT_EQ(0.f, outptr1[7] * (outptr1[7] - scale * x[7]));
 
   singa::Tensor out2 = drop.Forward(singa::kEval, in);
+  out2.ToDevice(&host);
   EXPECT_EQ(n, out2.Size());
   const float* outptr2 = out2.data<const float*>();
   // the output value should be the same as the input
@@ -71,16 +87,17 @@ TEST(Dropout, Forward) {
   EXPECT_EQ(x[7], outptr2[7]);
 }
 
-TEST(Dropout, Backward) {
+TEST(CudnnDropout, Backward) {
   const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
   size_t n = sizeof(x) / sizeof(float);
-  singa::Tensor in(singa::Shape{n});
+  singa::CudaDevice cuda(0, 1);
+  singa::Tensor in(singa::Shape{n}, &cuda);
   in.CopyDataFromHostPtr(x, n);
 
   float pdrop = 0.5;
   float scale = 1.0f / (1.0f - pdrop);
 
-  Dropout drop;
+  CudnnDropout drop;
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
@@ -88,13 +105,23 @@ TEST(Dropout, Backward) {
   singa::Tensor out1 = drop.Forward(singa::kTrain, in);
 
   const float dy[] = {4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 1.0f, 2.0f, 3.0f};
-  singa::Tensor grad(singa::Shape{n});
+  singa::Tensor grad(singa::Shape{n}, &cuda);
   grad.CopyDataFromHostPtr(dy, n);
 
-  const float* mptr = drop.mask().data<const float*>();
   const auto ret = drop.Backward(singa::kTrain, grad);
-  const float* dx = ret.first.data<const float*>();
-  EXPECT_FLOAT_EQ(dx[0], dy[0] * (mptr[0] > 0 ? 1.0f : 0.0f) * scale);
-  EXPECT_FLOAT_EQ(dx[1], dy[1] * (mptr[1] > 0) * scale);
-  EXPECT_FLOAT_EQ(dx[7], dy[7] * (mptr[7] > 0) * scale);
+  singa::CppDevice host(0, 1);
+  singa::Tensor in_grad = ret.first;
+  in_grad.ToDevice(&host);
+  const float* dx = in_grad.data<const float*>();
+
+  singa::Tensor mask(drop.mask().shape(), drop.mask().data_type());
+  mask.CopyData(drop.mask());
+  const char* mptr = mask.data<const char*>();
+
+
+  EXPECT_FLOAT_EQ(dx[0], dy[0] * GetBitValue(mptr, 0) * scale);
+  EXPECT_FLOAT_EQ(dx[1], dy[1] * GetBitValue(mptr, 1) * scale);
+  EXPECT_FLOAT_EQ(dx[7], dy[7] * GetBitValue(mptr, 7) * scale);
 }
+//#endif  // CUDNN_VERSION_MAJOR>=5
+#endif  // USE_CUDNN

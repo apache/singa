@@ -88,8 +88,8 @@ class Tensor {
 
   /// Return immutable Tensor values with given type.
   template <typename DType>
-  const DType* data() const {
-    return static_cast<const DType*> (blob()->data());
+  DType data() const {
+    return static_cast<DType> (blob()->data());
   }
 
   /// data type, including kFloat16, kFloat32, kInt
@@ -111,6 +111,7 @@ class Tensor {
 
   /// Return number of total elements
   size_t Size() const {
+    CHECK_EQ(blob_->size() % SizeOf(data_type_), 0u);
     return blob_->size() / SizeOf(data_type_);
   }
 

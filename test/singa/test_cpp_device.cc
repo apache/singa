@@ -34,7 +34,7 @@ TEST(CppDevice, MemoryMallocFree) {
   CppDevice dev(0, 1);
   Blob* b = dev.NewBlob(4);
   EXPECT_NE(nullptr, b);
-  EXPECT_EQ(4, b->size());
+  EXPECT_EQ(4u, b->size());
   dev.FreeBlob(b);
 }
 

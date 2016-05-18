@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 #ifdef USE_CUDA
-#include <chrono>
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>
+#include <chrono>
 
 #include "singa/core/device.h"
 #include "singa/utils/cuda.h"
@@ -47,10 +47,10 @@ CudaDevice::CudaDevice(int id, int num_executors,
                        string scheduler, string vm)
     : Device(id, num_executors, scheduler, vm) {
   device_type_ = kCuda;
-  host_ = nullptr; // TODO(wangwei) add host device
-  ctx_.stream = NULL; // use the default sync stream
+  host_ = nullptr;  // TODO(wangwei) add host device
+  ctx_.stream = NULL;  // use the default sync stream
   // TODO(wangwei) create one handle for each steam?
-  CUBLAS_CHECK(cublasCreate(&ctx_.cublas_handle));
+  CUDA_CHECK(cudaSetDevice(FindDevice(0)));
   // use curandCreateGeneratorHost for CudaHost device
   CURAND_CHECK(
       curandCreateGenerator(&ctx_.curand_generator, CURAND_RNG_PSEUDO_DEFAULT));
@@ -58,6 +58,7 @@ CudaDevice::CudaDevice(int id, int num_executors,
   SetRandSeed(seed);
   // TODO(wangwei) if one generator per stream, then need diff offset per gen?
   CURAND_CHECK(curandSetGeneratorOffset(ctx_.curand_generator, 0));
+  CUBLAS_CHECK(cublasCreate(&(ctx_.cublas_handle)));
 
 #ifdef USE_CUDNN
   // TODO(wangwei) create one handle for each stream?
@@ -86,14 +87,14 @@ void CudaDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
 /// Allocate cpu memory.
 void* CudaDevice::Malloc(int size) {
   void* ptr = nullptr;
-  cudaMalloc(&ptr, size);
+  CUDA_CHECK(cudaMalloc(&ptr, size));
   return ptr;
 }
 
   /// Free cpu memory.
 void CudaDevice::Free(void* ptr) {
   CHECK_NE(ptr, nullptr);
-  cudaFree(ptr);
+  CUDA_CHECK(cudaFree(ptr));
 }
 
 
@@ -152,5 +153,5 @@ int CudaDevice::FindDevice(const int start_id) {
 }
 
 
-}
+}  // namespace singa
 #endif  // USE_CUDA

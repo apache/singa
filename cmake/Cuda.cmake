@@ -7,8 +7,9 @@ endif()
 
 set(HAVE_CUDA TRUE)
 message(STATUS "Found cuda_v${CUDA_VERSION}")
-include_directories(SYSTEM ${CUDA_INCLUDE_DIRS})
-list(APPEND SINGA_LINKER_LIBS ${CUDA_CUDART_LIBRARY} ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES})
+add_definitions(-DUSE_CUDA)
+#message(STATUS "linking: ${CUDA_CUDART_LIBRARY} ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES}")
+
 
 #if(USE_CUDNN)
 #include(cmake/Modules/Cudnn.cmake)
@@ -18,3 +19,5 @@ list(APPEND SINGA_LINKER_LIBS ${CUDA_CUDART_LIBRARY} ${CUDA_curand_LIBRARY} ${CU
     add_definitions(-DUSE_CUDNN)
 #endif()
 
+include_directories(SYSTEM ${CUDA_INCLUDE_DIRS})
+list(APPEND SINGA_LINKER_LIBS ${CUDA_CUDART_LIBRARY} ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES})

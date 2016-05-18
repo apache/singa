@@ -71,12 +71,12 @@ Tensor::Tensor(Tensor&& t)
 }
 
 void Tensor::ResetLike(const Tensor& t) {
-  if (blob_ == nullptr || blob_->size() != t.MemSize()) {
+  if (blob_ == nullptr || device_ != t.device_ || MemSize() != t.MemSize()) {
     if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
     shape_ = t.shape_;
     device_ = t.device_;
     data_type_ = t.data_type_;
-    blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
+    blob_ = device_->NewBlob(t.MemSize());
   }
 }
 
@@ -121,8 +121,7 @@ void Tensor::CopyDataFromHostPtr(const DType* src, size_t num) {
       << "data_type is " << DataType_Name(data_type_)
       << " user given type is of size " << sizeof(DType);
   if (src != nullptr) {
-    auto direction = device_->type() == kCpp ? kHostToHost : kHostToDevice;
-    device_->CopyDataFromHostPtr(blob(), src, sizeof(DType) * num, direction);
+    device_->CopyDataFromHostPtr(blob(), src, sizeof(DType) * num, 0);
   } else {
     LOG(WARNING) << "Copy data from null host ptr";
   }
@@ -169,6 +168,7 @@ Tensor& Tensor::operator=(Tensor&& t) {
   if (blob_ != nullptr && blob_->DecRefCount() == 0)
     device_->FreeBlob(blob_);
   transpose_ = t.transpose_;
+  data_type_ = t.data_type_;
   shape_ = std::move(t.shape_);
   device_ = t.device_;
   blob_ = t.blob_;

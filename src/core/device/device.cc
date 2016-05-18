@@ -54,8 +54,10 @@ void Device::CopyDataToFrom(Blob* dst, Blob* src, size_t nBytes,
                             int src_offset) {
   this->Exec(
       [this, dst, src, nBytes, direct, dst_offset, src_offset](Context* ctx) {
-        this->CopyToFrom((Byte*)dst->mutable_data() + dst_offset,
-                         (Byte*)src->data() + src_offset, nBytes, direct, ctx);
+        this->CopyToFrom(
+            reinterpret_cast<char*>(dst->mutable_data()) + dst_offset,
+            reinterpret_cast<char*>(src->data()) + src_offset, nBytes,
+            direct, ctx);
       },
       {src}, {dst});
 }
@@ -63,7 +65,7 @@ void Device::CopyDataToFrom(Blob* dst, Blob* src, size_t nBytes,
 void Device::CopyDataFromHostPtr(Blob* dst, const void* src, size_t nBytes,
                                  size_t dst_offset) {
   auto direct = device_type_ == kCpp ? kHostToHost : kHostToDevice;
-  void* dstptr = (Byte*)dst->mutable_data() + dst_offset;
+  void* dstptr = reinterpret_cast<char*>(dst->mutable_data()) + dst_offset;
   Exec([this, dstptr, src, nBytes,
         direct](Context* ctx) { CopyToFrom(dstptr, src, nBytes, direct, ctx); },
        {}, {dst});

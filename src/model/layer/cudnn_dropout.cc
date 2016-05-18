@@ -18,9 +18,14 @@
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
 #if CUDNN_MAJOR_VERSION >= 5
+
 #include "./cudnn_dropout.h"
+#include <cudnn.h>
+#include <chrono>
+
 #include "./cudnn_utils.h"
 #include "singa/utils/logging.h"
+
 namespace singa {
 CudnnDropout::~CudnnDropout() {
   if (drop_desc_ != nullptr)
@@ -29,7 +34,8 @@ CudnnDropout::~CudnnDropout() {
   if (y_desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_desc_));
 }
 
-void CudnnDropout::InitCudnn(int size, DataType dtype, Context* ctx) {
+void CudnnDropout::InitCudnn(int size, DataType dtype, Device* dev,
+                             Context* ctx) {
   CHECK(!has_init_cudnn_);
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_desc_));
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_desc_));
@@ -41,10 +47,17 @@ void CudnnDropout::InitCudnn(int size, DataType dtype, Context* ctx) {
       y_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), 1, 1, 1, size));
 
   cudnnDropoutGetStatesSize(ctx->cudnn_handle, &state_size_);
+  state_ = Tensor(Shape{state_size_}, dev, kChar);
   cudnnDropoutGetReserveSpaceSize(x_desc_, &reserve_size_);
+  mask_ = Tensor(Shape{reserve_size_}, dev, kChar);
+  // TODO(wangwei) update for async running,
+  // where reserve_size_ may not available
+  CHECK_EQ(reserve_size_, mask_.MemSize());
+
+  // TODO(wangwei) get seed from ctx or user config?
+  auto seed = std::chrono::system_clock::now().time_since_epoch().count();
   cudnnSetDropoutDescriptor(drop_desc_, ctx->cudnn_handle, 1 - dropout_ratio_,
-                            state_.blob()->mutable_data(), state_size_,
-                            ctx->seed);
+                            state_.blob()->mutable_data(), state_size_, seed);
   has_init_cudnn_ = true;
 }
 
@@ -52,16 +65,13 @@ const Tensor CudnnDropout::Forward(int flag, const Tensor& input) {
   if (flag & kTrain) {
     auto size = input.Size();
     DataType dtype = input.data_type();
+    Device* dev = input.device();
     if (!has_init_cudnn_) {
       input.device()->Exec(
-          [size, dtype, this](Context* ctx) {
-            this->InitCudnn(size, dtype, ctx);
+          [size, dtype, this, dev](Context* ctx) {
+            this->InitCudnn(size, dtype, dev, ctx);
           },
           {}, {this->state_.blob()});
-      mask_.ResetLike(input);
-      // TODO(wangwei) update for async running,
-      // where reserve_size_ may not available
-      CHECK_EQ(reserve_size_, mask_.MemSize());
     }
     Tensor output;
     output.ResetLike(input);
@@ -71,7 +81,7 @@ const Tensor CudnnDropout::Forward(int flag, const Tensor& input) {
                *mblob = mask_.blob();
           cudnnDropoutForward(ctx->cudnn_handle, this->drop_desc_,
                               this->x_desc_, inblob->data(), this->y_desc_,
-                              outblob->mutable_data(), mblob,
+                              outblob->mutable_data(), mblob->mutable_data(),
                               this->reserve_size_);
         },
         {input.blob()}, {output.blob(), mask_.blob()});

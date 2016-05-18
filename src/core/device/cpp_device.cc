@@ -44,4 +44,4 @@ void CppDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
                            CopyDirection direction, Context* ctx) {
   memcpy(dst, src, nBytes);
 }
-}
+}  // namespace singa

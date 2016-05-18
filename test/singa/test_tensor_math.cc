@@ -23,7 +23,7 @@ class TestTensorMath : public ::testing::Test {
 TEST_F(TestTensorMath, MemberAddTensor) {
   Tensor aa = a.Clone();
   aa += a;
-  const float* dptr = aa.data<float>();
+  const float* dptr = aa.data<const float*>();
   EXPECT_FLOAT_EQ(2.0f, dptr[0]);
   EXPECT_FLOAT_EQ(4.0f, dptr[1]);
   EXPECT_FLOAT_EQ(6.0f, dptr[2]);
@@ -31,13 +31,13 @@ TEST_F(TestTensorMath, MemberAddTensor) {
   // check p is initialized to 0
   Tensor p(Shape{6});
   p += aa;
-  const float* dptr1 = p.data<float>();
+  const float* dptr1 = p.data<const float*>();
   EXPECT_FLOAT_EQ(2.0f, dptr1[0]);
   EXPECT_FLOAT_EQ(4.0f, dptr1[1]);
   EXPECT_FLOAT_EQ(6.0f, dptr1[2]);
 
   a += b;
-  const float* dptr2 = a.data<float>();
+  const float* dptr2 = a.data<const float*>();
   EXPECT_FLOAT_EQ(2.1f, dptr2[0]);
   EXPECT_FLOAT_EQ(4.1f, dptr2[1]);
   EXPECT_FLOAT_EQ(6.1f, dptr2[2]);
@@ -48,21 +48,21 @@ TEST_F(TestTensorMath, MemberAddTensor) {
 TEST_F(TestTensorMath, AddTensors) {
   Tensor ret(a.shape(), a.device(), a.data_type());
   Add(a, b, &ret);
-  const float* dptr = ret.data<float>();
+  const float* dptr = ret.data<const float*>();
   EXPECT_FLOAT_EQ(2.1f, dptr[0]);
   EXPECT_FLOAT_EQ(4.1f, dptr[1]);
   EXPECT_FLOAT_EQ(6.1f, dptr[2]);
   EXPECT_FLOAT_EQ(12.1f, dptr[5]);
 
   const Tensor d = a + b;
-  const float* dptr2 = d.data<float>();
+  const float* dptr2 = d.data<const float*>();
   EXPECT_FLOAT_EQ(2.1f, dptr2[0]);
   EXPECT_FLOAT_EQ(4.1f, dptr2[1]);
   EXPECT_FLOAT_EQ(6.1f, dptr2[2]);
   EXPECT_FLOAT_EQ(12.1f, dptr2[5]);
 
   Add(a, b, &a);
-  const float* dptr1 = a.data<float>();
+  const float* dptr1 = a.data<const float*>();
   EXPECT_FLOAT_EQ(2.1f, dptr1[0]);
   EXPECT_FLOAT_EQ(4.1f, dptr1[1]);
   EXPECT_FLOAT_EQ(6.1f, dptr1[2]);

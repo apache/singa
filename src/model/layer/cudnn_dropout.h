@@ -21,9 +21,11 @@
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
 #if CUDNN_MAJOR_VERSION >= 5
+#include <cudnn.h>
 #include <utility>
 #include <string>
 #include <vector>
+
 #include "./dropout.h"
 #include "singa/core/common.h"
 #include "singa/model/layer.h"
@@ -41,12 +43,12 @@ class CudnnDropout : public Dropout {
                                                    const Tensor& grad) override;
 
   /// Init cudnn related data structures.
-  void InitCudnn(int size, DataType dtype, Context* ctx);
+  void InitCudnn(int size, DataType dtype, Device* dev, Context* ctx);
 
  private:
   bool has_init_cudnn_ = false;
-  cudnnDropoutDescriptor_t drop_desc_;
-  cudnnTensorDescriptor_t x_desc_, y_desc_;
+  cudnnDropoutDescriptor_t drop_desc_ = nullptr;
+  cudnnTensorDescriptor_t x_desc_ = nullptr, y_desc_ = nullptr;
   size_t state_size_, reserve_size_;
   Tensor state_;
 };
