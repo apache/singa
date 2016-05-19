@@ -33,33 +33,12 @@ using std::vector;
 using std::string;
 using std::function;
 namespace singa {
-/// The base type of callback argument structure.
-/// The specific arg should inherit from this one.
-class CallbackArg {
- public:
-  template <typename T>
-  T* CastTo() {
-    static_assert(std::is_base_of<CallbackArg, T>::value,
-                  "The casted type must be a sub-class of CallbackArg");
-    return static_cast<T*>(this);
-  }
-};
-/// Type of callback functions for executing tensor ops.
-typedef function<void(CallbackArg*)> CallbackFn;
 
 /// Allocate memory and execute Tensor operations.
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
 class Device {
- public:
-  /// Operation has a function, and read/write blobs.
-  typedef struct _Operation {
-    function<void(Context*)> fn;
-    const vector<Blob*> read_blobs;
-    const vector<Blob*> write_blobs;
-  } Operation;
-
- public:
+  public:
   Device() = default;
   /// Constructor with device ID, num of executors (e.g., cuda streams),
   /// max mem size to use (in MB), identifier of scheduler type (default
@@ -92,11 +71,14 @@ class Device {
   /// wait for all operations submitted to this device.
   void Sync();
 
-  DeviceType type() const {
-    return device_type_;
+  /// Return the programming language for this device.
+  LangType lang() const {
+    return lang_;
   }
 
+  /// TODO(wangwei) remove it?
   Device* host() const { return host_; }
+
   int id() const { return id_; }
 
  protected:
@@ -118,18 +100,19 @@ class Device {
   unsigned seed_ = 0;
   // Scheduler* scheduler_ = nullptr;
   // VirtualMemory* vm_ = nullptr;
-  /// could be kCpp, kCuda, kOpencl
-  DeviceType device_type_;
+  /// Programming language type, could be kCpp, kCuda, kOpencl
+  LangType lang_;
   // SafeQueue<Operation> op_queue_;
   // SafeQueue<Operation> op_log_;
   /// The host device
   Device* host_;
 };
 
-// Implement Device functions using cpp.
-class CppDevice : public Device {
+/// Represent a CPU device which may have multiple threads/executors.
+/// It runs cpp code.
+class CppCPU : public Device {
  public:
-  CppDevice(int id, int num_executors = 1,
+  CppCPU(int id = -1, int num_executors = 1,
             string scheduler = "sync", string vm = "gc-only");
 
   void SetRandSeed(unsigned seed) override;
@@ -150,17 +133,17 @@ class CppDevice : public Device {
 };
 
 /// a singleton CppDevice as the host for all devices.
-extern CppDevice hostDeviceSingleton;
+extern CppCPU defaultDevice;
 
 // Implement Device using OpenCL libs.
 // class OpenclDevice : public Device { };
 
 #ifdef USE_CUDA
-// Implement Device using cuda.
-class CudaDevice : public Device {
+// Represent a Nvidia GPU which runs cuda code.
+class CudaGPU : public Device {
  public:
-  ~CudaDevice();
-  CudaDevice(int id, int num_executors = 1, string scheduler = "sync",
+  ~CudaGPU();
+  CudaGPU(int id = -1, int num_executors = 1, string scheduler = "sync",
          string vm = "gc-only");
 
   void SetRandSeed(unsigned seed) override;
@@ -200,11 +183,37 @@ class CudaDevice : public Device {
   Context ctx_;
 };
 
+/// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
+
 #endif  // USE_CUDA
 
 // Implement a CudaHost device, which used cuda functions for memory
 // malloc/free.
 // class CudaHost : public Device {}
+//
+/// The base type of callback argument structure.
+/// The specific arg should inherit from this one.
+/*
+class CallbackArg {
+ public:
+  template <typename T>
+  T* CastTo() {
+    static_assert(std::is_base_of<CallbackArg, T>::value,
+                  "The casted type must be a sub-class of CallbackArg");
+    return static_cast<T*>(this);
+  }
+};
+/// Type of callback functions for executing tensor ops.
+typedef function<void(CallbackArg*)> CallbackFn;
+public:
+  /// Operation has a function, and read/write blobs.
+  typedef struct _Operation {
+    function<void(Context*)> fn;
+    const vector<Blob*> read_blobs;
+    const vector<Blob*> write_blobs;
+  } Operation;
+
+*/
 }  // namespace singa
 
 #endif  // SINGA_CORE_DEVICE_H_

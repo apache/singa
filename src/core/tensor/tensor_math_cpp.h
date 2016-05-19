@@ -25,64 +25,60 @@
 #endif
 
 namespace singa {
-template<>
-void Add<float, lib::Cpp>(int count,
-                     const Blob* lhs,
-                     const Blob* rhs,
-                     Blob* ret,
-                     Context* ctx) {
+template <>
+void Add<float, lang::Cpp>(int count, const Blob* lhs, const Blob* rhs,
+                           Blob* ret, Context* ctx) {
   // CHECK_EQ(ctx->stream, nullptr);
-  float *dptr = static_cast<float*>(ret->mutable_data());
-  const float *lptr = static_cast<const float*>(lhs->data());
-  const float *rptr = static_cast<const float*>(rhs->data());
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* lptr = static_cast<const float*>(lhs->data());
+  const float* rptr = static_cast<const float*>(rhs->data());
   for (int i = 0; i < count; i++) {
     dptr[i] = lptr[i] + rptr[i];
   }
 }
 template <>
-void EltwiseMult<float, lib::Cpp>(int count, const Blob* input, float x, Blob* ret, Context* ctx)
-{
-  float *dptr = static_cast<float*>(ret->mutable_data());
-  const float *lptr = static_cast<const float*>(input->data());
+void EltwiseMult<float, lang::Cpp>(int count, const Blob* input, float x,
+                                   Blob* ret, Context* ctx) {
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* lptr = static_cast<const float*>(input->data());
   for (int i = 0; i < count; i++) {
     dptr[i] = lptr[i] * x;
   }
 }
 
 template <>
-void EltwiseMult<float, lib::Cpp>(int count, const Blob* lhs, const Blob* rhs, Blob* ret, Context* ctx)
-{
-  float *dptr = static_cast<float*>(ret->mutable_data());
-  const float *lptr = static_cast<const float*>(lhs->data());
-  const float *rptr = static_cast<const float*>(rhs->data());
+void EltwiseMult<float, lang::Cpp>(int count, const Blob* lhs, const Blob* rhs,
+                                   Blob* ret, Context* ctx) {
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* lptr = static_cast<const float*>(lhs->data());
+  const float* rptr = static_cast<const float*>(rhs->data());
   for (int i = 0; i < count; i++) {
     dptr[i] = lptr[i] * rptr[i];
   }
 }
 
 template <>
-void Bernoulli<float, lib::Cpp>(int count, float p, Blob* ret,
-                                 Context* ctx) {
+void Bernoulli<float, lang::Cpp>(int count, float p, Blob* ret, Context* ctx) {
   std::bernoulli_distribution distribution(p);
   float* ptr = static_cast<float*>(ret->mutable_data());
-  for (int i = 0; i < count; i ++) {
+  for (int i = 0; i < count; i++) {
     ptr[i] = distribution(ctx->random_generator) ? 1.0f : 0.0f;
   }
 }
 
 template <>
-void Uniform<float, lib::Cpp>(int count, float low, float high, Blob* ret,
+void Uniform<float, lang::Cpp>(int count, float low, float high, Blob* ret,
                                Context* ctx) {
   std::uniform_real_distribution<float> distribution(low, high);
   float* ptr = static_cast<float*>(ret->mutable_data());
-  for (int i = 0; i < count; i ++) {
+  for (int i = 0; i < count; i++) {
     ptr[i] = static_cast<float>(distribution(ctx->random_generator));
   }
 }
 
 template <>
-void Gaussian<float, lib::Cpp>(int count, float mean, float std, Blob* ret,
-                              Context* ctx) {
+void Gaussian<float, lang::Cpp>(int count, float mean, float std, Blob* ret,
+                                Context* ctx) {
   std::normal_distribution<float> distribution(mean, std);
   float* ptr = static_cast<float*>(ret->mutable_data());
   for (int i = 0; i < count; i++) {
@@ -90,14 +86,10 @@ void Gaussian<float, lib::Cpp>(int count, float mean, float std, Blob* ret,
   }
 }
 
-
 #ifdef USE_CBLAS
-template<>
-void Dot<float, lib::Cpp>(int count,
-                     const Blob* lhs,
-                     const Blob* rhs,
-                     float* ret,
-                     Context* ctx) {
+template <>
+void Dot<float, lang::Cpp>(int count, const Blob* lhs, const Blob* rhs,
+                           float* ret, Context* ctx) {
   float dptr = ret->mutable_data(), lptr = lhs->data(), rptr = rhs->data();
   *ret = cblas_sdot(count, lptr, 1, rptr, 1);
 }

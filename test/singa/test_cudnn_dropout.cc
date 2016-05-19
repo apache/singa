@@ -48,7 +48,7 @@ TEST(CudnnDropout, Setup) {
 TEST(CudnnDropout, Forward) {
   const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
   size_t n = sizeof(x) / sizeof(float);
-  singa::CudaDevice cuda(0, 1);
+  singa::CudaGPU cuda(0, 1);
   singa::Tensor in(singa::Shape{n}, &cuda);
   in.CopyDataFromHostPtr(x, n);
 
@@ -67,7 +67,7 @@ TEST(CudnnDropout, Forward) {
   for (size_t i = 0; i < n; i++)
     EXPECT_FLOAT_EQ(0, GetBitValue(mptr, i) * (GetBitValue(mptr, i) - 1));
 
-  singa::CppDevice host(0, 1);
+  singa::CppCPU host(0, 1);
   out1.ToDevice(&host);
   const float* outptr1 = out1.data<const float*>();
   EXPECT_EQ(n, out1.Size());
@@ -90,7 +90,7 @@ TEST(CudnnDropout, Forward) {
 TEST(CudnnDropout, Backward) {
   const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
   size_t n = sizeof(x) / sizeof(float);
-  singa::CudaDevice cuda(0, 1);
+  singa::CudaGPU cuda(0, 1);
   singa::Tensor in(singa::Shape{n}, &cuda);
   in.CopyDataFromHostPtr(x, n);
 
@@ -109,7 +109,7 @@ TEST(CudnnDropout, Backward) {
   grad.CopyDataFromHostPtr(dy, n);
 
   const auto ret = drop.Backward(singa::kTrain, grad);
-  singa::CppDevice host(0, 1);
+  singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
   in_grad.ToDevice(&host);
   const float* dx = in_grad.data<const float*>();

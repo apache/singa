@@ -64,7 +64,7 @@ void Device::CopyDataToFrom(Blob* dst, Blob* src, size_t nBytes,
 
 void Device::CopyDataFromHostPtr(Blob* dst, const void* src, size_t nBytes,
                                  size_t dst_offset) {
-  auto direct = device_type_ == kCpp ? kHostToHost : kHostToDevice;
+  auto direct = lang_ == kCpp ? kHostToHost : kHostToDevice;
   void* dstptr = reinterpret_cast<char*>(dst->mutable_data()) + dst_offset;
   Exec([this, dstptr, src, nBytes,
         direct](Context* ctx) { CopyToFrom(dstptr, src, nBytes, direct, ctx); },

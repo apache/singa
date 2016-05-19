@@ -36,7 +36,7 @@ class Layer {
   Layer() = default;
 
   /// Set meta data fields from a string representing a proto message.
-  void Setup(const string& proto_str) {
+    void Setup(const string& proto_str) {
     LayerConf conf;
     conf.ParseFromString(proto_str);
     this->Setup(conf);
@@ -55,6 +55,13 @@ class Layer {
   virtual const std::string layer_type() const { return "Unknown"; }
 
   /// Set meta data fields configured in 'conf' (a proto message).
+  /// For some layers, which use input tensor shapes for setting its parameter
+  /// shapes (e.g, desen layer and convolution layer), users or wrapper
+  /// functions need to configure ncessary fields inside LayerConf.
+  /// After calling Setup, the shape info of parameters should be accssed
+  /// correctly. All other info that depends on input tensors (e.g., batchsize)
+  /// should be set inside Forward(). Internal buffer/fields are set assuming
+  /// batchsize is 1.
   virtual void Setup(const LayerConf& conf) {
     name_ = conf.name();
     for (const auto& spec : conf.param()) param_specs_.push_back(spec);

@@ -30,7 +30,7 @@ enum DataType {
   kNumDataType = 5;
 }
 
-enum DeviceType {
+enum LangType {
   kCpp = 0;
   kCuda = 1;
   kOpencl = 2;

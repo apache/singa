@@ -17,30 +17,30 @@
  */
 #include "singa/core/device.h"
 namespace singa {
-CppDevice hostDeviceSingleton(-1, 1);
-CppDevice::CppDevice(int id, int num_executors, string scheduler,
+CppCPU defaultDevice(-1, 1);
+CppCPU::CppCPU(int id, int num_executors, string scheduler,
          string vm) : Device(id, num_executors, scheduler, vm) {
-  device_type_ = kCpp;
+  lang_ = kCpp;
   host_ = nullptr;
 }
 
-void CppDevice::SetRandSeed(unsigned seed) {
+void CppCPU::SetRandSeed(unsigned seed) {
   ctx_.random_generator.seed(seed);
 }
-void CppDevice::DoExec(function<void(Context*)>&& fn, int executor) {
+void CppCPU::DoExec(function<void(Context*)>&& fn, int executor) {
   CHECK_EQ(executor, 0);
   fn(&ctx_);
 }
 
-void* CppDevice::Malloc(int size) {
+void* CppCPU::Malloc(int size) {
   return malloc(size);
 }
 
-void CppDevice::Free(void* ptr) {
+void CppCPU::Free(void* ptr) {
   free(ptr);
 }
 
-void CppDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
+void CppCPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
                            CopyDirection direction, Context* ctx) {
   memcpy(dst, src, nBytes);
 }

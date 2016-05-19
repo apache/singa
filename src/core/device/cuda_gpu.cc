@@ -23,14 +23,14 @@
 #include <chrono>
 
 #include "singa/core/device.h"
-#include "singa/utils/cuda.h"
+#include "singa/utils/cuda_utils.h"
 namespace singa {
 
 const cudaMemcpyKind copyKind[] = {cudaMemcpyHostToHost, cudaMemcpyHostToDevice,
                                    cudaMemcpyDeviceToHost,
                                    cudaMemcpyDeviceToDevice};
 
-CudaDevice::~CudaDevice() {
+CudaGPU::~CudaGPU() {
   if (ctx_.cublas_handle)
     CUBLAS_CHECK(cublasDestroy(ctx_.cublas_handle));
   if (ctx_.curand_generator)
@@ -43,10 +43,12 @@ CudaDevice::~CudaDevice() {
 #endif
 }
 
-CudaDevice::CudaDevice(int id, int num_executors,
+CudaGPU::CudaGPU(int id, int num_executors,
                        string scheduler, string vm)
     : Device(id, num_executors, scheduler, vm) {
-  device_type_ = kCuda;
+  if (id == -1)
+    id = FindDevice(0);
+  lang_ = kCuda;
   host_ = nullptr;  // TODO(wangwei) add host device
   ctx_.stream = NULL;  // use the default sync stream
   // TODO(wangwei) create one handle for each steam?
@@ -67,17 +69,17 @@ CudaDevice::CudaDevice(int id, int num_executors,
 #endif  // USE_CUDNN
 }
 
-void CudaDevice::SetRandSeed(unsigned seed) {
+void CudaGPU::SetRandSeed(unsigned seed) {
   CHECK(ctx_.curand_generator);
   CURAND_CHECK(
       curandSetPseudoRandomGeneratorSeed(ctx_.curand_generator, seed));
 }
 
-void CudaDevice::DoExec(function<void(Context*)>&& fn, int executor) {
+void CudaGPU::DoExec(function<void(Context*)>&& fn, int executor) {
   fn(&ctx_);
 }
 
-void CudaDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
+void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
                             CopyDirection direction, Context* ctx) {
   cudaMemcpy(dst, src, nBytes, copyKind[direction]);
   // TODO(wangwei) use async copy
@@ -85,14 +87,14 @@ void CudaDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
 }
 
 /// Allocate cpu memory.
-void* CudaDevice::Malloc(int size) {
+void* CudaGPU::Malloc(int size) {
   void* ptr = nullptr;
   CUDA_CHECK(cudaMalloc(&ptr, size));
   return ptr;
 }
 
   /// Free cpu memory.
-void CudaDevice::Free(void* ptr) {
+void CudaGPU::Free(void* ptr) {
   CHECK_NE(ptr, nullptr);
   CUDA_CHECK(cudaFree(ptr));
 }
@@ -100,7 +102,7 @@ void CudaDevice::Free(void* ptr) {
 
 // ==========Following code is from Caffe src/caffe/common.cpp=================
 
-void CudaDevice::DeviceQuery() {
+void CudaGPU::DeviceQuery() {
   cudaDeviceProp prop;
   int device;
   if (cudaSuccess != cudaGetDevice(&device)) {
@@ -135,7 +137,7 @@ void CudaDevice::DeviceQuery() {
   return;
 }
 
-bool CudaDevice::CheckDevice(const int device_id) {
+bool CudaGPU::CheckDevice(const int device_id) {
   bool r = ((cudaSuccess == cudaSetDevice(device_id)) &&
             (cudaSuccess == cudaFree(0)));
   // reset any error that may have occurred.
@@ -143,7 +145,7 @@ bool CudaDevice::CheckDevice(const int device_id) {
   return r;
 }
 
-int CudaDevice::FindDevice(const int start_id) {
+int CudaGPU::FindDevice(const int start_id) {
   int count = 0;
   CUDA_CHECK(cudaGetDeviceCount(&count));
   for (int i = start_id; i < count; i++) {

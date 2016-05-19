@@ -26,7 +26,7 @@ namespace singa {
 
 #ifdef USE_CUDA
 template<>
-void Add<float, lib::Cuda>(int count, const Blob* lhs, const Blob* rhs,
+void Add<float, lang::Cuda>(int count, const Blob* lhs, const Blob* rhs,
                         Blob* ret, Context* ctx) {
   /*
   cublasSetStream(ctx->cublas_handle, ctx->stream);

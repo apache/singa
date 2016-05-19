@@ -23,23 +23,23 @@
 #include  "singa/core/device.h"
 #include "singa/proto/core.pb.h"
 
-using singa::CppDevice;
+using singa::CppCPU;
 using singa::Blob;
-TEST(CppDevice, Constructor) {
-  CppDevice dev(0, 1);
+TEST(CppCPU, Constructor) {
+  CppCPU dev(0, 1);
   EXPECT_EQ(0, dev.id());
 }
 
-TEST(CppDevice, MemoryMallocFree) {
-  CppDevice dev(0, 1);
+TEST(CppCPU, MemoryMallocFree) {
+  CppCPU dev(0, 1);
   Blob* b = dev.NewBlob(4);
   EXPECT_NE(nullptr, b);
   EXPECT_EQ(4u, b->size());
   dev.FreeBlob(b);
 }
 
-TEST(CppDevice, Exec) {
-  CppDevice dev(0, 1);
+TEST(CppCPU, Exec) {
+  CppCPU dev(0, 1);
   Blob* b = dev.NewBlob(4);
   int x = 1, y =3, z = 0;
   dev.Exec([x, y, &z](singa::Context *ctx) {
@@ -48,8 +48,8 @@ TEST(CppDevice, Exec) {
   EXPECT_EQ(x + y, z);
 }
 
-TEST(CppDevice, CopyData) {
-  CppDevice dev(0, 1);
+TEST(CppCPU, CopyData) {
+  CppCPU dev(0, 1);
   Blob* b = dev.NewBlob(4);
   char s[] = {'a', 'b', 'c', 'x'};
   dev.CopyDataFromHostPtr(b, s, 4);

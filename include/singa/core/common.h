@@ -32,16 +32,15 @@
 #endif
 
 namespace singa {
-namespace lib {
+namespace lang {
 /// To implemente functions using cpp libraries
 typedef struct _Cpp { } Cpp;
 /// To implemente functions using cuda libraries
 typedef struct _Cuda { } Cuda;
 /// To implement function using opencl libraries
 typedef struct _Opencl { } Opencl;
-}  // namespace lib
+}  // namespace lang
 
-typedef unsigned char Byte;
 /// Blob reprent a chunk of memory (on device or host) managed by VirtualMemory.
 class Blob {
  public:
