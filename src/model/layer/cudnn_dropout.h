@@ -20,7 +20,7 @@
 #define SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
-#if CUDNN_MAJOR_VERSION >= 5
+ #if CUDNN_VERSION_MAJOR >= 5
 #include <cudnn.h>
 #include <utility>
 #include <string>

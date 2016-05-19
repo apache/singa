@@ -56,7 +56,7 @@ void Device::CopyDataToFrom(Blob* dst, Blob* src, size_t nBytes,
       [this, dst, src, nBytes, direct, dst_offset, src_offset](Context* ctx) {
         this->CopyToFrom(
             reinterpret_cast<char*>(dst->mutable_data()) + dst_offset,
-            reinterpret_cast<char*>(src->data()) + src_offset, nBytes,
+            reinterpret_cast<const char*>(src->data()) + src_offset, nBytes,
             direct, ctx);
       },
       {src}, {dst});

@@ -17,6 +17,7 @@ add_definitions(-DUSE_CUDA)
     include_directories(SYSTEM ${CUDNN_INCLUDE_DIR})
     list(APPEND SINGA_LINKER_LIBS ${CUDNN_LIBRARIES})
     add_definitions(-DUSE_CUDNN)
+    add_definitions(-DCUDNN_VERSION_MAJOR=${CUDNN_VERSION_MAJOR})
 #endif()
 
 include_directories(SYSTEM ${CUDA_INCLUDE_DIRS})
