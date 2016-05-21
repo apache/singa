@@ -1,9 +1,10 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
 PROJECT(singa)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 #message(STATUS "${CMAKE_CXX_FLAGS}")
 
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
+LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
 #message(STATUS "module path: ${CMAKE_MODULE_PATH}")
 
 # Flags
@@ -11,22 +12,28 @@ IF(UNIX OR APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall")
 ENDIF()
 
-INCLUDE(cmake/ProtoBuf.cmake)
-INCLUDE(cmake/Cuda.cmake)
-# Includes
-SET(SINGA_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-include_directories(${SINGA_INCLUDE_DIR})
-#INCLUDE_DIRECTORIES(${singa_include_dir} ${PROJECT_BINARY_DIR})
-#INCLUDE_DIRECTORIES("/home/wangwei/local/cudnn5/include" "/usr/local/cuda/include")
+SET(SINGA_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include;${PROJECT_BINARY_DIR}")
+#message(STATUS "include path: ${SINGA_INCLUDE_DIR}")
+INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
 
+#OPTION(CPU_ONLY "use GPU libs" OFF)
+OPTION(USE_CUDA "Use Cuda libs" ON)
+OPTION(USE_CUDNN "Use Cudnn libs" ON)
+OPTION(USE_OPENCV "Use opencv" OFF)
+OPTION(USE_LMDB "Use LMDB libs" OFF)
+
+INCLUDE("cmake/Dependencies.cmake")
+ADD_DEFINITIONS(-DUSE_CMAKE)
+
+CONFIGURE_FILE (
+    "${PROJECT_SOURCE_DIR}/cmake/Templates/singa_config.h.in"
+    "${PROJECT_BINARY_DIR}/singa_config.h")
+
+#set(SINGA_CONFIGURE_SRC "${PROJECT_BINARY_DIR}/singa_config.h")
+#LIST(APPEND SRCS ${SINGA_CONFIGURE_SRCS} ${PROJECT_BINARY_DIR}/singa_config.h)
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-#SET(singa_linker_lib cudnn)
-#LINK_DIRECTORIES(${LIBRARY_OUTPUT_PATH} "/home/wangwei/local/cudnn5/lib64/")
-
-#message(STATUS "include_dir: ${SINGA_INCLUDE_DIR}")
-
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(test)
