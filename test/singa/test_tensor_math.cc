@@ -9,10 +9,10 @@ class TestTensorMath : public ::testing::Test {
   virtual void SetUp() {
     const float dat1[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
     const float dat2[] = {1.1f, 2.1f, 3.1f, 4.1f, 5.1f, 6.1f};
-    a.ReShape(singa::Shape{6});
-    b.ReShape(singa::Shape{6});
-    c.ReShape(singa::Shape{6, 1});
-    d.ReShape(singa::Shape{3, 2});
+    a.Reshape(singa::Shape{6});
+    b.Reshape(singa::Shape{6});
+    c.Reshape(singa::Shape{6, 1});
+    d.Reshape(singa::Shape{3, 2});
 
     a.CopyDataFromHostPtr<float>(dat1, 6);
     b.CopyDataFromHostPtr<float>(dat2, 6);

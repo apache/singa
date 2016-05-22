@@ -50,6 +50,10 @@ void Abs(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
+template <typename DType, typename Lang>
+void Set(int count, DType x, Blob* ret, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
 /// sum all elements of input into ret
 template <typename DType, typename Lang>
 void Sum(int count, const Blob* input, DType* ret, Context* ctx) {
@@ -80,6 +84,12 @@ void Sqrt(int count, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
+/// Element-wise operation, ret[i]=square([input[i])
+template <typename DType, typename Lang>
+void Square(int count, const Blob* input, Blob* ret, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
 /// Element-wise operation, ret[i]=tanh([input[i])
 template <typename DType, typename Lang>
 void Tanh(int count, const Blob* input, Blob* ret, Context* ctx) {
@@ -101,6 +111,35 @@ template <typename DType, typename Lang>
 void Softmax(int nrow, int ncol, const Blob* input, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
+
+// TODO(wangwei) unify SumRow and SumCol.
+/// Sum the rows of the input matrix into a vector
+template <typename DType, typename Lang>
+void SumRows(int nrow, int ncol, const Blob* input, Blob* ret, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
+/// Sum the columns of the input matrix into a vector
+template <typename DType, typename Lang>
+void SumColumns(int nrow, int ncol, const Blob* input, Blob* ret, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
+// TODO(wangwei) unify AddRow and AddCol.
+/// Add the vector v to every row of A as the row of ret
+template <typename DType, typename Lang>
+void AddRow(int nrow, int ncol, const Blob* A, const Blob* v, Blob* ret,
+            Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
+/// Add the vector v to every column of A as the column of ret
+template <typename DType, typename Lang>
+void AddCol(int nrow, int ncol, const Blob* A, const Blob* v, Blob* ret,
+            Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
 
 /// Element-wise operation, do v^x for every v from the input tensor
 template <typename DType, typename Lang>
@@ -174,33 +213,6 @@ void Div(int count, const Blob* lhs, const Blob* rhs, Blob* ret, Context* ctx) {
 template <typename DType, typename Lang>
 void Outer(int m, int n, const Blob* lhs, const Blob* rhs, Blob* ret,
            Context* ctx) {
-  LOG(FATAL) << "Not Implemented";
-}
-
-// TODO(wangwei) unify SumRow and SumCol.
-/// Sum the rows of the input matrix into a vector
-template <typename DType, typename Lang>
-void SumRow(int nrow, int ncol, const Blob* input, Blob* ret, Context* ctx) {
-  LOG(FATAL) << "Not Implemented";
-}
-/// Sum the rows of the input matrix into a vector
-template <typename DType, typename Lang>
-void SumCol(int nrow, int ncol, const Blob* input, Blob* ret, Context* ctx) {
-  LOG(FATAL) << "Not Implemented";
-}
-
-// TODO(wangwei) unify AddRow and AddCol.
-/// Add the vector v to every row of A as the row of ret
-template <typename DType, typename Lang>
-void AddRow(int nrow, int ncol, const Blob* A, const Blob* v, Blob* ret,
-            Context* ctx) {
-  LOG(FATAL) << "Not Implemented";
-}
-
-/// Add the vector v to every column of A as the column of ret
-template <typename DType, typename Lang>
-void AddCol(int nrow, int ncol, const Blob* A, const Blob* v, Blob* ret,
-            Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 

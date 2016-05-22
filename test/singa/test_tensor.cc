@@ -35,18 +35,18 @@ TEST(TensorTest, TestConstructor) {
 
 TEST(TensorClass, Reshape) {
   Tensor t;
-  t.ReShape(Shape{2,3});
+  t.Reshape(Shape{2,3});
   EXPECT_TRUE((Shape{2,3} == t.shape()));
 
-  t.ReShape(Shape{3,3, 4});
+  t.Reshape(Shape{3,3, 4});
   EXPECT_TRUE((Shape{3,3, 4} == t.shape()));
 
-  t.ReShape(Shape{12});
+  t.Reshape(Shape{12});
   EXPECT_TRUE((Shape{12} == t.shape()));
 
   Tensor o;
   EXPECT_TRUE(o.shape() != t.shape());
-  o.ReShape(Shape{3, 3});
+  o.Reshape(Shape{3, 3});
   EXPECT_TRUE(o.shape() != t.shape());
 }
 

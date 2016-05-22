@@ -157,7 +157,7 @@ message LayerConf {
   // for their implementation. These layers include an Engine type and
   // engine parameter for selecting the implementation.
   // The default for the engine is set by the ENGINE switch at compile-time.
-  optional AccuracyConf accuracy_conf = 102;
+  //optional AccuracyConf accuracy_conf = 102;
   optional ArgMaxConf argmax_conf = 103;
   optional ConcatConf concat_conf = 104;
   optional ContrastiveLossConf contrastive_loss_conf = 105;
@@ -177,6 +177,8 @@ message LayerConf {
   optional InnerProductConf inner_product_conf = 117;
   optional LogConf log_conf = 134;
   optional LRNConf lrn_conf = 118;
+  // Used in SINGA
+  optional MetricConf metric_conf = 200;
   // optional MemoryDataConf memory_data_conf = 119;
   optional MVNConf mvn_conf = 120;
   optional PoolingConf pooling_conf = 121;
@@ -230,10 +232,7 @@ message LossConf {
   optional bool normalize = 2 [default = true];
 }
 
-// Messages that store hyper-parameters used by individual layer types follow, in
-// alphabetical order.
-
-message AccuracyConf {
+message MetricConf {
   // When computing accuracy, count as correct by comparing the true label to
   // the top k scoring classes.  By default, only compare to the top scoring
   // class (i.e. argmax).
@@ -249,6 +248,10 @@ message AccuracyConf {
   // If specified, ignore instances with the given label.
   optional int32 ignore_label = 3;
 }
+// Messages that store hyper-parameters used by individual layer types follow, in
+// alphabetical order.
+
+
 
 message ArgMaxConf {
   // If true produce pairs (argmax, maxval)

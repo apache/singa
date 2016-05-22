@@ -18,14 +18,14 @@
 
 #ifndef  SINGA_CORE_TENSOR_TENSOR_MATH_CUDA_H_
 #define  SINGA_CORE_TENSOR_TENSOR_MATH_CUDA_H_
-#include "./tensor_math.h"
 #include "singa_config.h"
+#ifdef USE_CUDA
+#include "./tensor_math.h"
+#include "./math_kernel.h"
 #include "singa/core/common.h"
-
 
 namespace singa {
 
-#ifdef USE_CUDA
 template<>
 void Add<float, lang::Cuda>(int count, const Blob* lhs, const Blob* rhs,
                         Blob* ret, Context* ctx) {
@@ -38,9 +38,35 @@ void Add<float, lang::Cuda>(int count, const Blob* lhs, const Blob* rhs,
   cublasSaxpy(ctx->cublas_handle, 1.0f, rptr, 1, ptr, 1);
   */
 }
+// sum all elements of input into ret
+// TODO(wangwei) optimize using stream
+template <>
+void Sum<float, lang::Cuda>(int count, const Blob* input, float* ret,
+                            Context* ctx) {
+  const float* in = static_cast<const float*>(input->data());
+  cuda::sum(count, in, ret);
+}
 
-#endif
+// TODO(wangwei) optimize using stream
+template <>
+void SumRows<float, lang::Cuda>(int nrow, int ncol, const Blob* input,
+                                Blob* ret, Context* ctx) {
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* in = static_cast<const float*>(input->data());
+  cuda::sum_row(nrow, ncol, ncol, in, dptr);
+}
+
+// Sum the rows of the input matrix into a vector
+// TODO(wangwei) optimize using stream
+template <>
+void SumColumns<float, lang::Cuda>(int nrow, int ncol, const Blob* input,
+                                   Blob* ret, Context* ctx) {
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* in = static_cast<const float*>(input->data());
+  cuda::sum_col(nrow, ncol, ncol, in, dptr);
+}
 }
 
 
+#endif  // USE_CUDA
 #endif  // SINGA_CORE_TENSOR_TENSOR_MATH_CUDA_H_

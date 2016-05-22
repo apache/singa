@@ -77,7 +77,7 @@ void Tensor::ResetLike(const Tensor& t) {
   }
 }
 
-void Tensor::ReShape(const Shape& shape) {
+void Tensor::Reshape(const Shape& shape) {
   if (shape_ != shape) {
     if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
     blob_ = device_->NewBlob(Product(shape) * SizeOf(data_type_));
@@ -119,6 +119,7 @@ void Tensor::CopyDataFromHostPtr(const DType* src, size_t num) {
   }
 }
 template void Tensor::CopyDataFromHostPtr(const float* src, size_t num);
+template void Tensor::CopyDataFromHostPtr(const int* src, size_t num);
 
 void Tensor::CopyData(const Tensor& src) {
   CHECK_EQ(Size(), src.Size());
@@ -279,6 +280,20 @@ void CopyDataToFrom(Tensor* dst, const Tensor& src, size_t num,
     }                                                          \
   } while (0)
 
+
+template <typename SType>
+void Tensor::SetValue(SType x) {
+  CHECK_EQ(sizeof(SType), SizeOf(data_type_));
+  auto size = Size();
+  auto ptr = blob_;
+  TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
+    device_->Exec(
+        [size, x, ptr](Context* ctx) { Set<DType, Lang>(size, x, ptr, ctx); },
+        {}, {ptr});
+  });
+}
+
+
 #define EltwiseUnaryTensorFn(fn, t, ret)                               \
   do {                                                                 \
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, { \
@@ -305,7 +320,86 @@ GenUnaryTensorFunction(ReLU);
 GenUnaryTensorFunction(Sigmoid);
 GenUnaryTensorFunction(Sign);
 GenUnaryTensorFunction(Sqrt);
+GenUnaryTensorFunction(Square);
 GenUnaryTensorFunction(Tanh);
+
+// TODO(wangwei) consider matrix transpose.
+Tensor SumRows(const Tensor& t) {
+  int ndim = t.shape().size();
+  CHECK_EQ(ndim, 2) << "Cannot do SumRows for Tensor with ndim = " << ndim;
+  size_t nrow = t.shape().at(0), ncol = t.shape().at(1);
+  Tensor ret(Shape{ncol}, t.device(), t.data_type());
+  TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {
+    ret.device()->Exec(
+        [nrow, ncol, t, ret](Context* ctx) {
+          SumRows<DType, Lang>(nrow, ncol, t.blob(), ret.blob(), ctx);
+        },
+        {t.blob()}, {ret.blob()});
+  });
+  return ret;
+}
+
+// TODO(wangwei) consider matrix transpose.
+Tensor SumColumns(const Tensor& t) {
+  int ndim = t.shape().size();
+  CHECK_EQ(ndim, 2) << "Cannot do SumColumns for Tensor with ndim = " << ndim;
+  CHECK(!t.transpose());  // TODO(wangwei) enable transpose
+  size_t nrow = t.shape().at(0), ncol = t.shape().at(1);
+  Tensor ret(Shape{nrow}, t.device(), t.data_type());
+  TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {
+    ret.device()->Exec(
+        [nrow, ncol, t, ret](Context* ctx) {
+          SumColumns<DType, Lang>(nrow, ncol, t.blob(), ret.blob(), ctx);
+        },
+        {t.blob()}, {ret.blob()});
+  });
+  return ret;
+}
+
+// TODO(wangwei) conside async exec
+template<>
+float Sum<float>(const Tensor& t)  {
+  float s = 0.0f;
+  TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {
+      t.device()->Exec(
+        [t, &s](Context* ctx) {
+        Sum<DType, Lang>(t.Size(), t.blob(), &s, ctx);
+        },
+        {t.blob()}, {});
+      });
+  return s;
+}
+
+Tensor Sum(const Tensor& t, int axis) {
+  if (axis == 0) {
+    return SumRows(t);
+  } else {
+    CHECK_EQ(axis, 1) << "Not support Sum over axis = " << axis;
+    return SumColumns(t);
+  }
+}
+
+Tensor Average(const Tensor& t, int axis) {
+  // operator/ only has implementation for float scalar type, hence it is
+  // necessary to cast the denominator to a float.
+  // TODO(wangwei) implement function for cast scalar type involved in Tensor
+  // functions. E.g.,
+  // template<S, D>
+  // D CastTo(S x) {
+  //   return D(x);
+  // }
+  // for speical types, e.g., fp16:
+  // tempalte<>
+  // fp16 CastType(float x) {
+  //    ....
+  // }
+  if (axis == 0) {
+    return Sum(t, 0) / (1.0f * t.shape().at(0));
+  } else {
+    CHECK_EQ(axis, 1);
+    return Sum(t, 1) / (1.0f * t.shape().at(1));
+  }
+}
 
 Tensor Softmax(const Tensor& t, int axis) {
   Tensor ret(t.shape(), t.device(), t.data_type());

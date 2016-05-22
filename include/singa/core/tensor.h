@@ -121,7 +121,7 @@ class Tensor {
   }
 
   /// Reset the tensor shape, it may reallocate blob, if MemSize() changes.
-  void ReShape(const Shape& shape);
+  void Reshape(const Shape& shape);
 
   /// Reset the shape, device, and data type as given tensor.
   /// If blob size changes, then reallocate a new blob. The previous blob would
@@ -137,6 +137,10 @@ class Tensor {
 
   /// Equivalent to ToDevice(host_dev).
   void ToHost();
+
+  /// Set each element of the tensor to be x
+  template<typename SType>
+  void SetValue(SType x);
 
   /// For init the tensor values, copy 'num' elements.
   template<typename DType>
@@ -223,8 +227,23 @@ Tensor ReLU(const Tensor& t);
 Tensor Sigmoid(const Tensor& t);
 Tensor Sign(const Tensor& t);
 Tensor Sqrt(const Tensor& t);
+Tensor Square(const Tensor& t);
 Tensor Tanh(const Tensor& t);
 
+
+template<typename SType>
+SType Sum(const Tensor& t);
+/// Sum elements in the Tensor, currently only support vector and matrix.
+/// if 'axis' is 0, sum all rows into a single row
+/// if 'axis' is 1, sum all columns into a single column
+/// TODO(wangwei) support arbitrary Tensor like numpy.sum
+Tensor Sum(const Tensor& t, int axis);
+
+/// Average elements in the Tensor, currently only support vector and matrix.
+/// if 'axis' is 0, average all rows into a single row
+/// if 'axis' is 1, average all columns into a single column
+/// TODO(wangwei) support arbitrary Tensor like numpy.average
+Tensor Average(const Tensor&t, int axis);
 /// Regarding the internal data as 2d, with shape_[0]*...*shape_[axis] rows,
 /// and shape_[axis+1]*...*shape_[nDim()] columns.
 /// and do softmax along each row.

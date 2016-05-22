@@ -26,6 +26,16 @@
 
 namespace singa {
 template <>
+void Square<float, lang::Cpp>(int count, const Blob* input,
+                           Blob* ret, Context* ctx) {
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* in = static_cast<const float*>(input->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = in[i] * in[i];
+  }
+}
+
+template <>
 void Add<float, lang::Cpp>(int count, const Blob* lhs, const Blob* rhs,
                            Blob* ret, Context* ctx) {
   // CHECK_EQ(ctx->stream, nullptr);
@@ -36,6 +46,50 @@ void Add<float, lang::Cpp>(int count, const Blob* lhs, const Blob* rhs,
     dptr[i] = lptr[i] + rptr[i];
   }
 }
+
+
+// sum all elements of input into ret
+// TODO(wangwei) optimize using omp
+template <>
+void Sum<float, lang::Cpp>(int count, const Blob* input, float* ret,
+    Context* ctx) {
+  float s = 0.f;
+  const float* in = static_cast<const float*>(input->data());
+  for (int i = 0; i < count; i++) {
+    s += in[i];
+  }
+  *ret = s;
+}
+
+// TODO(wangwei) optimize using omp
+template <>
+void SumRows<float, lang::Cpp>(int nrow, int ncol, const Blob* input, Blob* ret,
+    Context* ctx) {
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* in = static_cast<const float*>(input->data());
+  memset(dptr, 0, ncol * sizeof(float));
+  for (int r = 0; r < nrow; r++) {
+    for (int c = 0; c < ncol; c++) {
+      dptr[c] += in[r * ncol + c];
+    }
+  }
+}
+
+// Sum the rows of the input matrix into a vector
+// TODO(wangwei) optimize using omp
+template <>
+void SumColumns<float, lang::Cpp>(int nrow, int ncol, const Blob* input, Blob* ret,
+    Context* ctx) {
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* in = static_cast<const float*>(input->data());
+  memset(dptr, 0, ncol * sizeof(float));
+  for (int r = 0; r < nrow; r++) {
+    for (int c = 0; c < ncol; c++) {
+      dptr[r] += in[r * ncol + c];
+    }
+  }
+}
+
 template <>
 void EltwiseMult<float, lang::Cpp>(int count, const Blob* input, float x,
                                    Blob* ret, Context* ctx) {
