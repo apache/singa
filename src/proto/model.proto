@@ -231,6 +231,7 @@ message LayerConf {
   // Used in SINGA
   optional DenseConf dense_conf = 201;
   optional MetricConf metric_conf = 200;
+  optional BatchNormConf batchnorm_conf = 202;
 }
 
 // Message that stores hyper-parameters used to apply transformation
@@ -902,14 +903,12 @@ message SPPConf {
   }
   optional uint32 pyramid_height = 1;
   optional PoolMethod pool = 2 [default = MAX]; // The pooling method
-  /*
   enum Engine {
     DEFAULT = 0;
     CAFFE = 1;
     CUDNN = 2;
   }
   optional Engine engine = 6 [default = DEFAULT];
-  */
 }
 
 message PReLUConf {
@@ -920,4 +919,14 @@ message PReLUConf {
   optional FillerConf filler = 1;
   // Whether or not slope paramters are shared across channels.
   optional bool channel_shared = 2 [default = false];
+}
+
+message BatchNormConf {
+  // Used in the moving average computation runningMean =
+  // newMean*factor + runningMean*(1-factor).
+  optional double factor = 1 [default = 0.9];
+  // input shape
+  optional int32 channels = 2;
+  optional int32 height = 3;
+  optional int32 width = 4;
 }
