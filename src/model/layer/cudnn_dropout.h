@@ -18,16 +18,17 @@
 
 #ifndef SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
 #define SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
+#include "singa_config.h"
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
- #if CUDNN_VERSION_MAJOR >= 5
+#if CUDNN_VERSION_MAJOR >= 5
+#include "./dropout.h"
+
 #include <cudnn.h>
 #include <utility>
 #include <string>
 #include <vector>
 
-#include "./dropout.h"
-#include "singa/core/common.h"
 #include "singa/model/layer.h"
 #include "singa/proto/core.pb.h"
 

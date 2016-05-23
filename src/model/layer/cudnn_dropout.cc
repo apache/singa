@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "./cudnn_dropout.h"
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
 #if CUDNN_VERSION_MAJOR >= 5
 
-#include "./cudnn_dropout.h"
 #include <cudnn.h>
 #include <chrono>
 

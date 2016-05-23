@@ -20,6 +20,7 @@
 #define SINGA_CORE_COMMON_H_
 #include <random>
 #include <chrono>
+#include "./singa_config.h"
 #include "singa/utils/logging.h"
 
 #ifdef USE_CUDA

@@ -18,11 +18,11 @@
 * under the License.
 *
 *************************************************************/
+#include "../src/model/layer/cudnn_dropout.h"
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
 //#if CUDNN_MAJOR_VERSION >= 5
 
-#include "../src/model/layer/cudnn_dropout.h"
 #include "gtest/gtest.h"
 
 bool inline GetBitValue(const char* x, int pos) {

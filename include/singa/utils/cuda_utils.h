@@ -1,5 +1,9 @@
 // from caffe include/caffe/util/device_alternative.hpp
+#ifndef SINGA_UTILS_CUDA_UTILS_H_
+#define SINGA_UTILS_CUDA_UTILS_H_
 
+#include "singa_config.h"
+#ifdef USE_CUDA
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -91,4 +95,5 @@ const char* curandGetErrorString(curandStatus_t error) {
   }
   return "Unknown curand status";
 }
-
+#endif
+#endif  // SINGA_UTILS_CUDA_UTILS_H_

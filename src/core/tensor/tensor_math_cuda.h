@@ -19,6 +19,7 @@
 #ifndef  SINGA_CORE_TENSOR_TENSOR_MATH_CUDA_H_
 #define  SINGA_CORE_TENSOR_TENSOR_MATH_CUDA_H_
 #include "./tensor_math.h"
+#include "singa_config.h"
 #include "singa/core/common.h"
 
 
