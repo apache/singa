@@ -52,7 +52,7 @@ message BlobProto {
 }
 
 message FillerConf {
-  // The filler type.
+  // The filler type, case insensitive
   optional string type = 1 [default = 'constant'];
   optional float value = 2 [default = 0]; // the value in constant filler
   optional float min = 3 [default = 0]; // the min value in uniform filler
@@ -70,6 +70,37 @@ message FillerConf {
     AVERAGE = 2;
   }
   optional VarianceNorm variance_norm = 8 [default = FAN_IN];
+}
+
+/// SINGA message
+message OptimizerConf {
+  // case insensitive
+  optional string type = 1 [default = "sgd"];
+
+  // used by RMSprop and Adadelta
+  optional float rho = 2 [default = 0.001];
+
+  // used by Adam and AdamMax
+  optional float beta_1 = 3 [default = 0.9];
+  optional float beta_2 = 4 [default = 0.999];
+
+  // used by vanilla sgd and nesterov
+  optional float momentum = 5 [default = 0.9];
+}
+
+message ConstraintConf {
+  // case insensitive to limit the parameter value/gradient scale
+  optional string type = 1 [default = "l2"];
+  // e.g., the threshold for limiting the parameter scale.
+  optional float threshold = 2;
+}
+
+/// SINGA message
+message RegularizerConf {
+  // case insensitive to regularize the parameters, e.g., L2.
+  optional string type = 1 [default = "l2"];
+  // e.g., the weight decay for L2 regularizer
+  optional float coefficient = 2;
 }
 
 // Specifies training parameters (multipliers on global learning constants,
@@ -101,6 +132,8 @@ message ParamSpec {
   // SINGA uses this filed internally. Users just configure the fillers in
   // Layer specific conf message as caffe (style).
   optional FillerConf filler = 20;
+  optional ConstraintConf constraint = 21;
+  optional RegularizerConf regularizer = 22;
 }
 
 enum Phase {
