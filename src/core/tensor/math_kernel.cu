@@ -19,9 +19,11 @@
 *
 *************************************************************/
 
+#include "singa_config.h"
 #ifdef USE_CUDA
 #include <cmath>
 #include <algorithm>
+#include <cfloat>
 #include "./math_kernel.h"
 
 #define CU2DBLOCK_X 32
@@ -30,6 +32,7 @@
 #define CU1DBLOCK 1024
 #define CU1DBLOCKF 1024.0
 
+namespace singa{
 // Cuda Kernel Functions
 namespace cuda {
 __global__ void kernel_softmax_loss(const float *prob, const int *label,
@@ -38,7 +41,7 @@ __global__ void kernel_softmax_loss(const float *prob, const int *label,
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
     float prob_of_truth = prob[index * dim + label[index]];
-    loss[index] -= log(max(prob_of_truth, FLT_MIN));
+    loss[index] -= std::log(max(prob_of_truth, FLT_MIN));
   }
 }
 
@@ -52,7 +55,7 @@ __global__ void kernel_softmax_gradient(float *grad, const int *label, int n,
   }
 }
 
-__global__ void kernel_sum_vec(float *data, float *sum, int n) {
+__global__ void kernel_sum_vec(const float *data, float *sum, int n) {
   int THREADS = blockDim.x;
 
   __shared__ float aux[CU1DBLOCK];
@@ -149,7 +152,7 @@ __global__ void kernel_exp(const float *src_data, float *des_data, int n) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
-    des_data[index] = exp(src_data[index]);
+    des_data[index] = std::exp(src_data[index]);
   }
 }
 
@@ -157,7 +160,7 @@ __global__ void kernel_log(const float *src_data, float *des_data, int n) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
-    des_data[index] = log(src_data[index]);
+    des_data[index] = std::log(src_data[index]);
   }
 }
 
@@ -242,7 +245,7 @@ __global__ void kernel_square_grad(const float *src_data, float *des_data,
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
-    des_data[index] = 2 * sqrt(src_data[index]);
+    des_data[index] = 2 * src_data[index];
   }
 }
 
@@ -250,7 +253,7 @@ __global__ void kernel_sqrt(const float *src_data, float *des_data, int n) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
-    des_data[index] = sqrt(src_data[index]);
+    des_data[index] = std::sqrt(src_data[index]);
   }
 }
 
@@ -259,7 +262,7 @@ __global__ void kernel_pow(const float *src_data_a, const float *src_data_b,
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
-    des_data[index] = pow(src_data_a[index], src_data_b[index]);
+    des_data[index] = std::pow(src_data_a[index], src_data_b[index]);
   }
 }
 
@@ -331,7 +334,7 @@ void sum_col(int rows, int cols, int stride, const float *in, float *out) {
   int threads_per_block = cols > CU1DBLOCK ? CU1DBLOCK : cols;
   int num_blocks = rows;
 
-  kernel_sum_col<<<num_blocks, threads_per_block>>>(src_mat_data, dst_vec_data,
+  kernel_sum_col<<<num_blocks, threads_per_block>>>(in, out,
                                                     rows, cols, stride);
 }
 void add_row(int rows, int cols, int stride, const float *in_row,

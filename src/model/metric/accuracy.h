@@ -19,6 +19,7 @@
 #ifndef SINGA_MODEL_METRIC_ACCURACY_H_
 #define SINGA_MODEL_METRIC_ACCURACY_H_
 #include "singa/model/metric.h"
+#include <algorithm>
 namespace singa {
 
 /// Compute the accuray of the prediction, which is matched against the

@@ -21,8 +21,11 @@
 #ifndef SRC_CORE_TENSOR__MATH_KERNEL_H_
 #define SRC_CORE_TENSOR__MATH_KERNEL_H_
 
-namespace singa {
 
+#include "singa_config.h"
+#ifdef USE_CUDA
+
+namespace singa {
 /*
   void softmaxloss_forward(int n, int dim, const float *prob,
       const int *label, float *loss);
@@ -77,6 +80,8 @@ void set_value(int n, float v, float *out);
 
 void threshold(int n, float alpha, const float *in, float *out);
 }  // cuda
+
 }  // namespace singa
 
+#endif
 #endif  // SRC_CORE_TENSOR__MATH_KERNEL_H_
