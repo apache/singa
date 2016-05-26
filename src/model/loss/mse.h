@@ -51,13 +51,13 @@ Tensor MSE::Forward(const Tensor& prediction, const Tensor& target) {
   t.Reshape(Shape{batchsize, dim});
   buf_.push(t);
   // TODO(wangwei) use CastType for operator/
-  return Sum(Square(t), 1);
+  return Sum(Square(t), 1) * 0.5f;
 }
 
 Tensor MSE::Backward() {
-  const Tensor& ret = buf_.top();
+  Tensor ret = buf_.top();
   buf_.pop();
-  return ret / (1.0f * ret.shape().at(0));
+  return ret * (1.0f / ret.shape().at(0));
 }
 }  // namespace singa
 

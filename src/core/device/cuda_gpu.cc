@@ -50,7 +50,6 @@ CudaGPU::CudaGPU(int id, int num_executors,
   if (id == -1)
     id = FindDevice(0);
   lang_ = kCuda;
-  host_ = nullptr;  // TODO(wangwei) add host device
   ctx_.stream = NULL;  // use the default sync stream
   // TODO(wangwei) create one handle for each steam?
   CUDA_CHECK(cudaSetDevice(FindDevice(0)));
@@ -91,6 +90,7 @@ void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
 void* CudaGPU::Malloc(int size) {
   void* ptr = nullptr;
   CUDA_CHECK(cudaMalloc(&ptr, size));
+  CUDA_CHECK(cudaMemset(ptr, 0, size));
   return ptr;
 }
 

@@ -33,7 +33,6 @@ using std::vector;
 using std::string;
 using std::function;
 namespace singa {
-
 /// Allocate memory and execute Tensor operations.
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
@@ -76,8 +75,7 @@ class Device {
     return lang_;
   }
 
-  /// TODO(wangwei) remove it?
-  Device* host() const { return host_; }
+  Device* host() const { return host_;}
 
   int id() const { return id_; }
 
@@ -135,6 +133,7 @@ class CppCPU : public Device {
 /// a singleton CppDevice as the host for all devices.
 extern CppCPU defaultDevice;
 
+
 // Implement Device using OpenCL libs.
 // class OpenclDevice : public Device { };
 
@@ -143,7 +142,7 @@ extern CppCPU defaultDevice;
 class CudaGPU : public Device {
  public:
   ~CudaGPU();
-  CudaGPU(int id = -1, int num_executors = 1, string scheduler = "sync",
+  CudaGPU(int id = 0, int num_executors = 1, string scheduler = "sync",
          string vm = "gc-only");
 
   void SetRandSeed(unsigned seed) override;

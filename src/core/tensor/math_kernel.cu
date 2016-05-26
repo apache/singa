@@ -147,7 +147,21 @@ __global__ void kernel_add_vec_row(const float *src_vec_data,
     des_mat_data[index] = src_mat_data[index] + src_vec_data[i];
   }
 }
+__global__ void kernel_add(const float *src1, const float *src2, float*out, int n) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+  for (; index < n; index += num_threads) {
+    out[index] = src1[index] + src2[index];
+  }
+}
 
+__global__ void kernel_sub(const float *src1, const float *src2, float*out, int n) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+  for (; index < n; index += num_threads) {
+    out[index] = src1[index] - src2[index];
+  }
+}
 __global__ void kernel_exp(const float *src_data, float *des_data, int n) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
@@ -275,6 +289,15 @@ __global__ void kernel_mult(const float *src_data_a, const float *src_data_b,
   }
 }
 
+__global__ void kernel_mult(const float *src_data_a, const float x,
+                            float *des_data, int n) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+  for (; index < n; index += num_threads) {
+    des_data[index] = src_data_a[index] * x;
+  }
+}
+
 __global__ void kernel_div(const float *src_data_a, const float *src_data_b,
                            float *des_data, int n) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -346,7 +369,12 @@ void add_row(int rows, int cols, int stride, const float *in_row,
   kernel_add_vec_row<<<num_blocks, threads_per_block>>>(in_row, in_mat, out,
                                                         rows, cols, stride);
 }
-
+void add(int n, const float *a, const float *b, float *out) {
+  kernel_add<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, b, out, n);
+}
+void sub(int n, const float *a, const float *b, float *out) {
+  kernel_sub<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, b, out, n);
+}
 void exp(int n, const float *in, float *out) {
   kernel_exp<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
 }
@@ -405,6 +433,10 @@ void pow(int n, const float *a, const float *b, float *out) {
 
 void mult(int n, const float *a, const float *b, float *out) {
   kernel_mult<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, b, out, n);
+}
+
+void mult(int n, const float *a, const float x, float *out) {
+  kernel_mult<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, x, out, n);
 }
 
 void div(int n, const float *a, const float *b, float *out) {

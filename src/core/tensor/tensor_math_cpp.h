@@ -47,7 +47,17 @@ void Add<float, lang::Cpp>(int count, const Blob* lhs, const Blob* rhs,
   }
 }
 
-
+template <>
+void Sub<float, lang::Cpp>(int count, const Blob* lhs, const Blob* rhs,
+                           Blob* ret, Context* ctx) {
+  // CHECK_EQ(ctx->stream, nullptr);
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* lptr = static_cast<const float*>(lhs->data());
+  const float* rptr = static_cast<const float*>(rhs->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = lptr[i] - rptr[i];
+  }
+}
 // sum all elements of input into ret
 // TODO(wangwei) optimize using omp
 template <>

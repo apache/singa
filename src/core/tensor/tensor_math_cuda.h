@@ -26,17 +26,41 @@
 
 namespace singa {
 
+// TODO(wangwei) optimize using stream
 template<>
 void Add<float, lang::Cuda>(int count, const Blob* lhs, const Blob* rhs,
                         Blob* ret, Context* ctx) {
-  /*
-  cublasSetStream(ctx->cublas_handle, ctx->stream);
-  const float* lptr = static_cast<const float*>(lhs->data());
-  const float* rptr = static_cast<const float*>(rhs->data());
-  float* ptr = static_cast<float*>(ret->mutable_data());
-  cublasScopy(ctx->cublas_handle, count, lptr, 1, ptr, 1);
-  cublasSaxpy(ctx->cublas_handle, 1.0f, rptr, 1, ptr, 1);
-  */
+  const float* a = static_cast<const float*> (lhs->data());
+  const float* b = static_cast<const float*> (rhs->data());
+  float* c = static_cast<float*> (ret->mutable_data());
+  cuda::add(count, a, b, c);
+}
+
+// TODO(wangwei) optimize using stream
+template<>
+void Sub<float, lang::Cuda>(int count, const Blob* lhs, const Blob* rhs,
+                        Blob* ret, Context* ctx) {
+  const float* a = static_cast<const float*> (lhs->data());
+  const float* b = static_cast<const float*> (rhs->data());
+  float* c = static_cast<float*> (ret->mutable_data());
+  cuda::sub(count, a, b, c);
+}
+
+template <>
+void EltwiseMult<float, lang::Cuda>(int count, const Blob* input, float x,
+    Blob* ret, Context* ctx)
+{
+  float* dptr = static_cast<float*>(ret->mutable_data());
+  const float* lptr = static_cast<const float*>(input->data());
+  cuda::mult(count, lptr, x, dptr);
+}
+// TODO(wangwei) optimize using stream
+template <>
+void Square<float, lang::Cuda>(int count, const Blob* input, Blob* ret,
+                            Context* ctx) {
+  const float* in = static_cast<const float*>(input->data());
+  float* out = static_cast<float*>(ret->mutable_data());
+  cuda::square(count, in, out);
 }
 // sum all elements of input into ret
 // TODO(wangwei) optimize using stream

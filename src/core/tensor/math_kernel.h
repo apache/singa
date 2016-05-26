@@ -44,6 +44,10 @@ void sum_col(int rows, int cols, int stride, const float *in, float *out);
 void add_row(int rows, int cols, int stride, const float *in_row,
   const float *in_mat, float *out);
 
+void add(int n, const float *a, const float *b, float *out);
+
+void sub(int n, const float *a, const float *b, float *out);
+
 void exp(int n, const float *in, float *out);
 
 void log(int n, const float *in, float *out);
@@ -73,6 +77,8 @@ void sqrt(int n, const float *in, float *out);
 void pow(int n, const float *a, const float *b, float *out);
 
 void mult(int n, const float *a, const float *b, float *out);
+
+void mult(int n, const float *a, const float x, float *out);
 
 void div(int n, const float *a, const float *b, float *out);
 

@@ -44,8 +44,14 @@ TEST_F(TestMSE, CppForward) {
   const Tensor& loss = mse.Forward(p, t);
   auto ldat = loss.data<const float*>();
 
-  EXPECT_FLOAT_EQ(ldat[0], 0.005);
-  EXPECT_FLOAT_EQ(ldat[1], 0);
+  for (size_t i = 0, k = 0; i < loss.Size(); i++) {
+    float l = 0.f;
+    for (size_t j = 0; j < p.Size() / loss.Size(); j++) {
+      l += (pdat[k] - tdat[k]) * (pdat[k] - tdat[k]);
+      k++;
+    }
+    EXPECT_FLOAT_EQ(ldat[i], 0.5 * l);
+  }
 }
 
 TEST_F(TestMSE, CudaForward) {
@@ -58,8 +64,14 @@ TEST_F(TestMSE, CudaForward) {
   loss.ToHost();
   auto ldat = loss.data<const float*>();
 
-  for (size_t i = 0; i < loss.Size(); i++)
-    EXPECT_FLOAT_EQ(ldat[i], 0.5 * (pdat[i] - tdat[i]) * (pdat[i] - tdat[i]));
+  for (size_t i = 0, k = 0; i < loss.Size(); i++) {
+    float l = 0.f;
+    for (size_t j = 0; j < p.Size() / loss.Size(); j++) {
+      l += (pdat[k] - tdat[k]) * (pdat[k] - tdat[k]);
+      k++;
+    }
+    EXPECT_FLOAT_EQ(ldat[i], 0.5 * l);
+  }
 }
 
 TEST_F(TestMSE, CppBackward) {
@@ -70,7 +82,7 @@ TEST_F(TestMSE, CppBackward) {
   auto gdat = grad.data<const float*>();
 
   for (size_t i = 0; i < grad.Size(); i++)
-    EXPECT_FLOAT_EQ(gdat[i], pdat[i] - tdat[i]);
+    EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
 }
 
 TEST_F(TestMSE, CudaBackward) {
@@ -84,5 +96,5 @@ TEST_F(TestMSE, CudaBackward) {
   auto gdat = grad.data<const float*>();
 
   for (size_t i = 0; i < grad.Size(); i++)
-    EXPECT_FLOAT_EQ(gdat[i], pdat[i] - tdat[i]);
+    EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
 }
