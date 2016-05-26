@@ -25,6 +25,8 @@
 #include "singa_config.h"
 #ifdef USE_CUDA
 
+/// TODO(wangwei) Clean the function APIs as commented in tensor_math.h
+///  Add 'Context *ctx' as an argument of all cuda functions.
 namespace singa {
 /*
   void softmaxloss_forward(int n, int dim, const float *prob,

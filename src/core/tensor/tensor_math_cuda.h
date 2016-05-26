@@ -26,6 +26,7 @@
 
 namespace singa {
 
+// TODO(wangwei) Clean implementations following comments in tensor_math_cpp.h.
 // TODO(wangwei) optimize using stream
 template<>
 void Add<float, lang::Cuda>(int count, const Blob* lhs, const Blob* rhs,

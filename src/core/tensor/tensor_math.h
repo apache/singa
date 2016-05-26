@@ -27,21 +27,19 @@ namespace singa {
 /// operations.
 /// All functions have a template argument, DType for DataType, Lang for the
 /// device programming language, e.g., Langice::kCpp, Langice::kCuda
+///
+/// TODO(wangwei) Clean the functions to make the function APIs consistent:
+/// 1. All function names should be like XxxYyy or XY, i.e., capitablize the first
+///    letter.
+/// 2. Order functions based on function name in alphabetical order.
+/// 3. Function arguments order is [const basic type] [const Blob] [mutable Blob].
+/// 4. Function argument names, use 'num' for total number of elements in
+///    elementwise operations; use 'in1' 'in2' for input blobs; use 'out' for
+///    output blob or value. With exceptions for some functions, e.g.,
+///      Scale(const float alpha, const Blob* in, Blob* out);
+///    For such cases, use x, v, alpha, etc for scalar types.
+///    For blas functions, follow the blas style for argument names.
 
-/// Some operations would have many config/hyper-parameters, e.g., Conv, and
-/// these config vary among diff implementations, e.g., cuda/cudnn/opencl.
-/// To separate the modules, we pass a OpConf pointer to the Tensor Op function.
-/// The specific fields are implemented by inheriting OpConf, and casting the
-/// pointer between the base and the sub-class.
-class OpConf {
- public:
-  template <typename T>
-  T* CastTo() {
-    static_assert(std::is_base_of<OpConf, T>::value,
-                  "The cast type must be a sub-class of OpConf");
-    return static_cast<T*>(this);
-  }
-};
 
 // ================Linear algebra functions====================================
 /// ret[i] = |input[i]|
@@ -292,6 +290,21 @@ void Gaussian(int count, float mean, float std, Blob* ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
+/*Some operations would have many config/hyper-parameters, e.g., Conv, and
+these config vary among diff implementations, e.g., cuda/cudnn/opencl.
+To separate the modules, we pass a OpConf pointer to the Tensor Op function.
+The specific fields are implemented by inheriting OpConf, and casting the
+pointer between the base and the sub-class.
+class OpConf {
+ public:
+  template <typename T>
+  T* CastTo() {
+    static_assert(std::is_base_of<OpConf, T>::value,
+                  "The cast type must be a sub-class of OpConf");
+    return static_cast<T*>(this);
+  }
+};
+*/
 }  // namespace singa
 
 #endif  // SINGA_CORE_MATH_H_

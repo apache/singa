@@ -24,6 +24,9 @@
 #include <cblas.h>
 #endif
 
+/// TODO(wangwei) Clean the implementations following the comments in
+/// tensor_math.h.
+/// For Blob argument xxx, name its pointer as xxxPtr.
 namespace singa {
 template <>
 void Square<float, lang::Cpp>(int count, const Blob* input,
