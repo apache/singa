@@ -1,0 +1,141 @@
+/************************************************************
+*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*
+*************************************************************/
+#include "../src/model/layer/cudnn_pooling.h"
+#ifdef USE_CUDNN
+
+#include "gtest/gtest.h"
+
+using singa::CudnnPooling;
+TEST(CudnnPooling, Setup) {
+  CudnnPooling pool;
+  EXPECT_EQ("CudnnPooling", pool.layer_type());
+
+  singa::LayerConf conf;
+  singa::PoolingConf *poolconf = conf.mutable_pooling_conf();
+  poolconf->set_pool(singa::PoolingConf_PoolMethod_MAX);
+  poolconf->set_kernel_h(1);
+  poolconf->set_kernel_w(2);
+  poolconf->set_pad_h(1);
+  poolconf->set_pad_w(0);
+  poolconf->set_stride_h(2);
+  poolconf->set_stride_w(1);
+  poolconf->set_channels(1);
+  poolconf->set_height(3);
+  poolconf->set_width(3);
+  pool.Setup(conf);
+
+  EXPECT_EQ(singa::PoolingConf_PoolMethod_MAX, pool.pool_method());
+  EXPECT_EQ(1, pool.kernel_h());
+  EXPECT_EQ(2, pool.kernel_w());
+  EXPECT_EQ(1, pool.pad_h());
+  EXPECT_EQ(0, pool.pad_w());
+  EXPECT_EQ(2, pool.stride_h());
+  EXPECT_EQ(1, pool.stride_w());
+  EXPECT_EQ(1, pool.channels());
+  EXPECT_EQ(3, pool.height());
+  EXPECT_EQ(3, pool.width());
+}
+
+TEST(CudnnPooling, Forward) {
+  const size_t batchsize = 1, c = 1, h = 3, w = 3;
+  const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
+                                      6.0f, 7.0f, 8.0f, 9.0f};
+  singa::CudaGPU cuda(0, 1);
+  singa::Tensor in(singa::Shape{batchsize, c,  h, w}, &cuda);
+  in.CopyDataFromHostPtr(x, batchsize * c * h * w);
+
+  CudnnPooling pool;
+  singa::LayerConf conf;
+  singa::PoolingConf *poolconf = conf.mutable_pooling_conf();
+  poolconf->set_pool(singa::PoolingConf_PoolMethod_MAX);
+  poolconf->set_kernel_h(2);
+  poolconf->set_kernel_w(2);
+  poolconf->set_pad_h(0);
+  poolconf->set_pad_w(0);
+  poolconf->set_stride_h(1);
+  poolconf->set_stride_w(1);
+  poolconf->set_channels(1);
+  poolconf->set_height(3);
+  poolconf->set_width(3);
+  pool.Setup(conf);
+
+  // Parameter "flag" does not influence pooling
+  singa::Tensor out1 = pool.Forward(singa::kTrain, in);
+  singa::CppCPU host(0, 1);
+  out1.ToDevice(&host);
+  const float *outptr1 = out1.data<const float *>();
+  // Input: 3*3; kernel: 2*2; stride: 1*1; no padding.
+  EXPECT_EQ(4, out1.Size());
+  EXPECT_EQ(5.0f, outptr1[0]);
+  EXPECT_EQ(6.0f, outptr1[1]);
+  EXPECT_EQ(8.0f, outptr1[2]);
+  EXPECT_EQ(9.0f, outptr1[3]);
+}
+
+TEST(CudnnPooling, Backward) {
+  // src_data
+  const size_t batchsize = 1, c = 1, src_h = 3, src_w = 3;
+  const float x[batchsize * src_h * src_w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
+                                              6.0f, 7.0f, 8.0f, 9.0f};
+  singa::CudaGPU cuda(0, 1);
+  singa::Tensor in(singa::Shape{batchsize, c, src_h, src_w}, &cuda);
+  in.CopyDataFromHostPtr(x, batchsize * c * src_h * src_w);
+
+  CudnnPooling pool;
+  singa::LayerConf conf;
+  singa::PoolingConf *poolconf = conf.mutable_pooling_conf();
+  poolconf->set_pool(singa::PoolingConf_PoolMethod_MAX);
+  poolconf->set_kernel_h(2);
+  poolconf->set_kernel_w(2);
+  poolconf->set_pad_h(0);
+  poolconf->set_pad_w(0);
+  poolconf->set_stride_h(1);
+  poolconf->set_stride_w(1);
+  poolconf->set_channels(1);
+  poolconf->set_height(3);
+  poolconf->set_width(3);
+  pool.Setup(conf);
+
+  singa::Tensor out1 = pool.Forward(singa::kTrain, in);
+
+  // grad
+  const size_t grad_h = 2, grad_w = 2;
+  const float dy[batchsize * c * grad_h * grad_w] = {0.1f, 0.2f, 0.3f, 0.4f};
+  singa::Tensor grad(singa::Shape{batchsize, c, grad_h, grad_w}, &cuda);
+  grad.CopyDataFromHostPtr(dy, batchsize * c * grad_h * grad_w);
+
+  const auto ret = pool.Backward(singa::kTrain, grad);
+  singa::CppCPU host(0, 1);
+  singa::Tensor in_grad = ret.first;
+  in_grad.ToDevice(&host);
+  const float *dx = in_grad.data<const float *>();
+  EXPECT_EQ(9, in_grad.Size());
+  EXPECT_EQ(0.0f, dx[0]);
+  EXPECT_EQ(0.0f, dx[1]);
+  EXPECT_EQ(0.0f, dx[2]);
+  EXPECT_EQ(0.0f, dx[3]);
+  EXPECT_EQ(0.1f, dx[4]);
+  EXPECT_EQ(0.2f, dx[5]);
+  EXPECT_EQ(0.0f, dx[6]);
+  EXPECT_EQ(0.3f, dx[7]);
+  EXPECT_EQ(0.4f, dx[8]);
+}
+#endif  // USE_CUDNN

@@ -334,6 +334,16 @@ message ConvolutionConf {
   // implementation; for input blobs with num_axes != 2, this option is
   // ignored and the ND implementation will be used.)
   optional bool force_nd_im2col = 17 [default = false];
+  // add by xiangrui
+  // cudnn workspace size in MB
+  optional int32 workspace_byte_limit = 50 [default = 512];
+  // cudnn algorithm preference
+  // options: "fastest", "limited_workspace", "no_workspace"
+  optional string algo_pref = 51 [default = "fastest"];
+  // input shape
+  optional int32 channels = 52;
+  optional int32 height = 53;
+  optional int32 width = 54;
 }
 
 /*
@@ -595,6 +605,12 @@ message PoolingConf {
   // If global_pooling then it will pool over the size of the bottom by doing
   // kernel_h = bottom->height and kernel_w = bottom->width
   optional bool global_pooling = 12 [default = false];
+  // Shape of source
+  optional int32 channels = 50;
+  optional int32 height = 51;
+  optional int32 width = 52;
+  // whether to propagate nan
+  optional bool nan_prop = 53 [default = false];
 }
 
 message PowerConf {

@@ -44,11 +44,7 @@ class Layer {
 
   // ============= Following Functions could be override =====================
   /// Destruct objects created by this layer.
-  virtual ~Layer() {
-    for (Tensor* t : param_values_) {
-      delete t;
-    }
-  }
+  virtual ~Layer() {}; 
 
   /// Each layer sub-class would optionaly have a type name.
   /// Used for debugging and logging.
@@ -64,7 +60,7 @@ class Layer {
   /// batchsize is 1.
   virtual void Setup(const LayerConf& conf) {
     name_ = conf.name();
-    for (const auto& spec : conf.param()) param_specs_.push_back(spec);
+    // for (const auto& spec : conf.param()) param_specs_.push_back(spec);
     // TODO(wangwei) load param values from checkpoint blobs.
   }
 
@@ -130,21 +126,21 @@ class Layer {
   /// Move the layer (including its parameters and other internal Tensor) onto
   /// the given device
   virtual void ToDevice(Device* device) {
-    for (auto p : param_values_) p->ToDevice(device);
+    //for (auto p : param_values_) p->ToDevice(device);
   }
 
   /// Set the data type of Tensor in this layer.
   virtual void AsType(DataType dtype) {
-    for (auto p : param_values_) p->AsType(dtype);
+    //for (auto p : param_values_) p->AsType(dtype);
   }
 
   /// Serialize the layer info (including params) into a LayerConf proto message
   virtual void ToProto(LayerConf* conf) const {
-    conf->set_name(name_);
-    for (const auto& spec : param_specs_) {
-      ParamSpec* p = conf->add_param();
-      p->CopyFrom(spec);
-    }
+    //conf->set_name(name_);
+    //for (const auto& spec : param_specs_) {
+    //  ParamSpec* p = conf->add_param();
+    //  p->CopyFrom(spec);
+    //}
     // TODO(wangwei) add param values into conf;
   }
 
