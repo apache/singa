@@ -19,7 +19,7 @@
 #ifndef SINGA_MODEL_METRIC_H_
 #define SINGA_MODEL_METRIC_H_
 #include "singa/core/tensor.h"
-#include "singa/proto/layer.pb.h"
+#include "singa/proto/model.pb.h"
 namespace singa {
 
 /// The base metric class, which declares the APIs for computing the performance

@@ -30,7 +30,6 @@
 #include <vector>
 
 #include "singa/model/layer.h"
-#include "singa/proto/core.pb.h"
 
 namespace singa {
 class CudnnDropout : public Dropout {

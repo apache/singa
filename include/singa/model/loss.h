@@ -18,7 +18,7 @@
 
 #ifndef SINGA_MODEL_LOSS_H_
 #define SINGA_MODEL_LOSS_H_
-#include "singa/proto/layer.pb.h"
+#include "singa/proto/model.pb.h"
 #include "singa/core/tensor.h"
 namespace singa {
 

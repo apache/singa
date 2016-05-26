@@ -24,7 +24,7 @@
 #include <stack>
 #include <utility>
 #include "singa/core/tensor.h"
-#include "singa/proto/layer.pb.h"
+#include "singa/proto/model.pb.h"
 
 namespace singa {
 
