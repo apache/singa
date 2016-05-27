@@ -21,7 +21,7 @@
 #include "../src/model/layer/cudnn_dropout.h"
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
-#if CUDNN_MAJOR_VERSION >= 5
+#if CUDNN_VERSION_MAJOR >= 5
 
 #include "gtest/gtest.h"
 

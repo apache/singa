@@ -86,7 +86,11 @@ void threshold(int n, float alpha, const float *in, float *out);
 void Div(const size_t num, const float x, const float *in, float *out,
          cudaStream_t s);
 void Set(const size_t num, const float x, float *out, cudaStream_t s);
-} // cuda
+void GT(size_t num, const float *in, const float x, float *out, cudaStream_t s);
+void GE(size_t num, const float *in, const float x, float *out, cudaStream_t s);
+void LT(size_t num, const float *in, const float x, float *out, cudaStream_t s);
+void LE(size_t num, const float *in, const float x, float *out, cudaStream_t s);
+}  // cuda
 
 }  // namespace singa
 

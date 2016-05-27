@@ -220,6 +220,27 @@ void Outer(int m, int n, const Blob *lhs, const Blob *rhs, Blob *ret,
   LOG(FATAL) << "Not Implemented";
 }
 
+/// ret[i]=(input[i]<x)?1.f:0.f
+template <typename DType, typename Lang>
+void LT(int count, const Blob *input, float x, Blob *ret, Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+/// ret[i]=(input[i]<=x)?1.f:0.f
+template <typename DType, typename Lang>
+void LE(int count, const Blob *input, float x, Blob *ret, Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+/// ret[i]=(input[i]>x)?1.f:0.f
+template <typename DType, typename Lang>
+void GT(int count, const Blob *input, float x, Blob *ret, Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+/// ret[i]=(input[i]>x)?1.f:0.f
+template <typename DType, typename Lang>
+void GE(int count, const Blob *input, float x, Blob *ret, Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
 // ===== BLAS functions, ref to http://docs.nvidia.com/cuda/cublas
 // ===== Level 1
 /// return the index of the element with the max value.
@@ -319,6 +340,30 @@ void GEMM(const bool transA, const bool transB, const size_t nrowA,
           Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }
-} // namespace singa
+/// ret[i]=(input[i]<x)?1.f:0.f
+template <typename DType, typename Lang>
+void LT(const size_t num, const Blob *in, const DType x, Blob *out,
+        Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+/// ret[i]=(input[i]<=x)?1.f:0.f
+template <typename DType, typename Lang>
+void LE(const size_t num, const Blob *in, const DType x, Blob *out,
+        Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+/// ret[i]=(input[i]>x)?1.f:0.f
+template <typename DType, typename Lang>
+void GT(const size_t num, const Blob *in, const DType x, Blob *out,
+        Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+/// ret[i]=(input[i]>=x)?1.f:0.f
+template <typename DType, typename Lang>
+void GE(const size_t num, const Blob *in, const DType x, Blob *out,
+        Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
 
+}  // namespace singa
 #endif  // SINGA_CORE_MATH_H_

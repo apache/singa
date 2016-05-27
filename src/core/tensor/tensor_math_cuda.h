@@ -73,25 +73,6 @@ void Sum<float, lang::Cuda>(int count, const Blob *input, float *ret,
   cuda::sum(count, in, ret);
 }
 
-// TODO(wangwei) optimize using stream
-template <>
-void SumRows<float, lang::Cuda>(int nrow, int ncol, const Blob *input,
-                                Blob *ret, Context *ctx) {
-  float *dptr = static_cast<float *>(ret->mutable_data());
-  const float *in = static_cast<const float *>(input->data());
-  cuda::sum_row(nrow, ncol, ncol, in, dptr);
-}
-
-// Sum the rows of the input matrix into a vector
-// TODO(wangwei) optimize using stream
-template <>
-void SumColumns<float, lang::Cuda>(int nrow, int ncol, const Blob *input,
-                                   Blob *ret, Context *ctx) {
-  float *dptr = static_cast<float *>(ret->mutable_data());
-  const float *in = static_cast<const float *>(input->data());
-  cuda::sum_col(nrow, ncol, ncol, in, dptr);
-}
-
 // follow the consistency guide of math API
 template <>
 void Div<float, lang::Cuda>(const size_t num, const float alpha, const Blob *in,
@@ -144,7 +125,42 @@ void GEMM<float, lang::Cuda>(const bool transA, const bool transB,
   CUBLAS_CHECK(cublasSgemm(handle, transb, transa, ncolB, nrowA, ncolA, &alpha,
                            BPtr, ldb, APtr, lda, &beta, CPtr, ldc));
 }
+
+template <>
+void GE<float, lang::Cuda>(const size_t num, const Blob* in, const float x,
+                                   Blob* out, Context *ctx) {
+  float* outPtr = static_cast<float*>(out->mutable_data());
+  const float* inPtr = static_cast<const float*>(in->data());
+  cuda::GE(num, inPtr, x, outPtr, ctx->stream);
+}
+template <>
+void GT<float, lang::Cuda>(const size_t num, const Blob* in, const float x,
+                                   Blob* out,  Context *ctx) {
+  float* outPtr = static_cast<float*>(out->mutable_data());
+  const float* inPtr = static_cast<const float*>(in->data());
+  cuda::GT(num, inPtr, x, outPtr, ctx->stream);
+}
+template <>
+void LE<float, lang::Cuda>(const size_t num, const Blob* in, const float x,
+                                   Blob* out, Context *ctx) {
+  float* outPtr = static_cast<float*>(out->mutable_data());
+  const float* inPtr = static_cast<const float*>(in->data());
+  cuda::LE(num, inPtr, x, outPtr, ctx->stream);
+}
+template <>
+void LT<float, lang::Cuda>(const size_t num, const Blob* in, const float x,
+                                   Blob* out,  Context *ctx) {
+  float* outPtr = static_cast<float*>(out->mutable_data());
+  const float* inPtr = static_cast<const float*>(in->data());
+  cuda::LT(num, inPtr, x, outPtr, ctx->stream);
+}
+
+
+
+
+
 }  // namespace singa
 
 #endif  // USE_CUDA
 #endif  // SINGA_CORE_TENSOR_TENSOR_MATH_CUDA_H_
+

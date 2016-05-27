@@ -142,7 +142,7 @@ void Tensor::CopyData(const Tensor &src) {
   }
 }
 
-Tensor Tensor::Clone() {
+Tensor Tensor::Clone() const {
   Tensor t(shape_, device_, data_type_);
   t.transpose_ = transpose_;
   t.CopyData(*this);
@@ -200,28 +200,28 @@ Tensor Reshape(const Tensor &in, Shape &&s) {
   return out;
 }
 
-#define GenUnaryTensorArgMemberFunction(op, fn)                                \
+#define GenUnaryTensorArgMemberFn(op, fn)                                \
   Tensor &Tensor::op(const Tensor &t) {                                        \
     fn(*this, t, this);                                                        \
     return *this;                                                              \
   }
 
-GenUnaryTensorArgMemberFunction(operator+=, Add);
-GenUnaryTensorArgMemberFunction(operator-=, Sub);
-GenUnaryTensorArgMemberFunction(operator*=, EltwiseMult);
-GenUnaryTensorArgMemberFunction(operator/=, Div);
+GenUnaryTensorArgMemberFn(operator+=, Add);
+GenUnaryTensorArgMemberFn(operator-=, Sub);
+GenUnaryTensorArgMemberFn(operator*=, EltwiseMult);
+GenUnaryTensorArgMemberFn(operator/=, Div);
 
-#define GenUnaryScalarArgMemberFunction(op, fn)                                \
+#define GenUnaryScalarArgMemberFn(op, fn)                                \
   template <typename DType> Tensor &Tensor::op(DType x) {                      \
     fn(*this, x, this);                                                        \
     return *this;                                                              \
   }                                                                            \
   template Tensor &Tensor::op<float>(float x)
 
-GenUnaryScalarArgMemberFunction(operator-=, Sub);
-GenUnaryScalarArgMemberFunction(operator+=, Add);
-GenUnaryScalarArgMemberFunction(operator*=, EltwiseMult);
-GenUnaryScalarArgMemberFunction(operator/=, Div);
+GenUnaryScalarArgMemberFn(operator-=, Sub);
+GenUnaryScalarArgMemberFn(operator+=, Add);
+GenUnaryScalarArgMemberFn(operator*=, EltwiseMult);
+GenUnaryScalarArgMemberFn(operator/=, Div);
 
 // ====================Tensor Operations=======================================
 void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
@@ -325,34 +325,35 @@ template <typename SType> void Tensor::SetValue(const SType x) {
 }
 template void Tensor::SetValue<float>(const float x);
 
-#define EltwiseUnaryTensorFn(fn, t, ret)                                       \
-  do {                                                                         \
-    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {         \
-      ret->device()->Exec(                                                     \
-          [t, ret](Context *ctx) {                                             \
-            fn<DType, Lang>(t.Size(), t.blob(), ret->blob(), ctx);             \
-          },                                                                   \
-          {t.blob()}, {ret->blob()});                                          \
-    });                                                                        \
+#define EltwiseUnaryTensorFn(fn, t, ret)                               \
+  do {                                                                 \
+    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, { \
+      ret->device()->Exec(                                             \
+          [t, ret](Context* ctx) {                                     \
+            fn<DType, Lang>(t.Size(), t.blob(), ret->blob(), ctx);     \
+          },                                                           \
+          {t.blob()}, {ret->blob()});                                  \
+    });                                                                \
   } while (0)
 
-#define GenUnaryTensorFunction(fn)                                             \
-  Tensor fn(const Tensor &t) {                                                 \
-    Tensor ret(t.shape(), t.device(), t.data_type());                          \
-    auto *retptr = &ret;                                                       \
-    EltwiseUnaryTensorFn(fn, t, retptr);                                       \
-    return ret;                                                                \
-  }
+#define GenUnaryTensorFn(fn)                          \
+  Tensor fn(const Tensor &t) {                        \
+    Tensor ret(t.shape(), t.device(), t.data_type()); \
+    auto *retptr = &ret;                              \
+    EltwiseUnaryTensorFn(fn, t, retptr);              \
+    return ret;                                       \
+  }                                                   \
+  void fn(const Tensor &in, Tensor *out) { EltwiseUnaryTensorFn(fn, in, out); }
 
-GenUnaryTensorFunction(Abs);
-GenUnaryTensorFunction(Exp);
-GenUnaryTensorFunction(Log);
-GenUnaryTensorFunction(ReLU);
-GenUnaryTensorFunction(Sigmoid);
-GenUnaryTensorFunction(Sign);
-GenUnaryTensorFunction(Sqrt);
-GenUnaryTensorFunction(Square);
-GenUnaryTensorFunction(Tanh);
+GenUnaryTensorFn(Abs);
+GenUnaryTensorFn(Exp);
+GenUnaryTensorFn(Log);
+GenUnaryTensorFn(ReLU);
+GenUnaryTensorFn(Sigmoid);
+GenUnaryTensorFn(Sign);
+GenUnaryTensorFn(Sqrt);
+GenUnaryTensorFn(Square);
+GenUnaryTensorFn(Tanh);
 
 // TODO(wangwei) conside async exec
 template <> float Sum<float>(const Tensor &t) {
@@ -402,28 +403,25 @@ Tensor Average(const Tensor &t, int axis) {
   }
 }
 
-Tensor Softmax(const Tensor &t, int axis) {
-  Tensor ret(t.shape(), t.device(), t.data_type());
-  Softmax(t, &ret, axis);
-  return ret;
+Tensor SoftMax(const Tensor &in, int axis) {
+  Tensor out(in.shape(), in.device(), in.data_type());
+  SoftMax(in, axis, &out);
+  return out;
 }
 
-void Softmax(const Tensor &t, Tensor *ret, int axis) {
-  int nrow = 1, ncol = t.Size(), size = ncol;
-  CHECK_GE(axis, -1);
-  CHECK_GT(t.shape().size(), 0u);
-  if (axis > -1) {
-    nrow = Product(t.shape(), 0, axis + 1);
-    CHECK_EQ(size % nrow, 0) << "Size = " << size << " nrow = " << nrow;
+void SoftMax(const Tensor &in, int axis, Tensor *out) {
+  size_t nrow = 1, ncol = in.Size(), size = ncol;
+  CHECK_GE(axis, 0);
+  if (axis > 0) {
+    nrow = Product(in.shape(), 0, axis);
+    CHECK_EQ(size % nrow, 0u) << "Size = " << size << " nrow = " << nrow;
     ncol = size / nrow;
   }
-  TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {
-    ret->device()->Exec(
-        [nrow, ncol, t, ret](Context *ctx) {
-          Softmax<DType, Lang>(nrow, ncol, t.blob(), ret->blob(), ctx);
-        },
-        {t.blob()}, {ret->blob()});
-  });
+  Exp(in, out);
+  out->Reshape(Shape{nrow, ncol});
+  Tensor sum(Shape{nrow}, in.device(), in.data_type());
+  SumColumns(*out, &sum);
+  DivColumn(sum, out);
 }
 
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                               \
@@ -439,7 +437,7 @@ void Softmax(const Tensor &t, Tensor *ret, int axis) {
     });                                                                        \
   } while (0)
 
-#define GenBinaryTensorFunction(op, fn)                                        \
+#define GenBinaryTensorFn(op, fn)                                        \
   Tensor op(const Tensor &lhs, const Tensor &rhs) {                            \
     Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());                    \
     fn(lhs, rhs, &ret);                                                        \
@@ -449,11 +447,11 @@ void Softmax(const Tensor &t, Tensor *ret, int axis) {
     EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                                  \
   }
 
-GenBinaryTensorFunction(operator+, Add);
-GenBinaryTensorFunction(operator-, Sub);
-GenBinaryTensorFunction(operator*, EltwiseMult);
-GenBinaryTensorFunction(operator/, Div);
-GenBinaryTensorFunction(Pow, Pow);
+GenBinaryTensorFn(operator+, Add);
+GenBinaryTensorFn(operator-, Sub);
+GenBinaryTensorFn(operator*, EltwiseMult);
+GenBinaryTensorFn(operator/, Div);
+GenBinaryTensorFn(Pow, Pow);
 
 #define EltwiseTensorScalarFn(fn, t, x, ret)                                   \
   do {                                                                         \
@@ -468,7 +466,7 @@ GenBinaryTensorFunction(Pow, Pow);
     });                                                                        \
   } while (0)
 
-#define GenTensorScalarFunction(op, fn)                                        \
+#define GenTensorScalarFn(op, fn)                                        \
   template <typename SType> Tensor op(const Tensor &t, SType x) {              \
     Tensor ret(t.shape(), t.device(), t.data_type());                          \
     fn(t, x, &ret);                                                            \
@@ -480,11 +478,15 @@ GenBinaryTensorFunction(Pow, Pow);
   template Tensor op<float>(const Tensor &t, float x);                         \
   template void fn<float>(const Tensor &t, const float x, Tensor *ret)
 
-GenTensorScalarFunction(operator+, Add);
-GenTensorScalarFunction(operator-, Sub);
-GenTensorScalarFunction(operator*, EltwiseMult);
-GenTensorScalarFunction(operator/, Div);
-GenTensorScalarFunction(Pow, Pow);
+GenTensorScalarFn(operator+, Add);
+GenTensorScalarFn(operator-, Sub);
+GenTensorScalarFn(operator*, EltwiseMult);
+GenTensorScalarFn(operator/, Div);
+GenTensorScalarFn(Pow, Pow);
+GenTensorScalarFn(operator<, LT);
+GenTensorScalarFn(operator<=, LE);
+GenTensorScalarFn(operator>, GT);
+GenTensorScalarFn(operator>=, GE);
 
 // ================Blas operations============================================
 Tensor Mult(const Tensor &lhs, const Tensor &rhs) {
@@ -633,8 +635,8 @@ void DivRow(const Tensor &v, Tensor *M) {
 /// Multiply column 'v' and each column of matrix M; write results into 'out'
 void MultColumn(const Tensor &v, Tensor *M) {
   CHECK(!M->transpose()) << "Not supported yet";
-  CHECK_EQ(M->nDim(), 2);
-  CHECK_EQ(v.nDim(), 1);
+  CHECK_EQ(M->nDim(), 2u);
+  CHECK_EQ(v.nDim(), 1u);
   CHECK_EQ(v.Size(), M->shape(0));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
@@ -650,8 +652,8 @@ void MultColumn(const Tensor &v, Tensor *M) {
 /// Multiply row 'v' with each row of matrix M; write results into 'out'
 void MultRow(const Tensor &v, Tensor *M) {
   CHECK(!M->transpose()) << "Not supported yet";
-  CHECK_EQ(M->nDim(), 2);
-  CHECK_EQ(v.nDim(), 1);
+  CHECK_EQ(M->nDim(), 2u);
+  CHECK_EQ(v.nDim(), 1u);
   CHECK_EQ(v.Size(), M->shape(1));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
@@ -673,8 +675,8 @@ void SumColumns(const Tensor &M, Tensor *v) {
     Tensor X = M.T();
     SumRows(X, v);
   } else {
-    CHECK_EQ(M.nDim(), 2);
-    CHECK_EQ(v->nDim(), 1);
+    CHECK_EQ(M.nDim(), 2u);
+    CHECK_EQ(v->nDim(), 1u);
     size_t nb_row = M.shape().at(0), nb_col = M.shape().at(1);
     CHECK_EQ(nb_row, v->Size());
 
@@ -688,8 +690,8 @@ void SumRows(const Tensor &M, Tensor *v) {
     Tensor X = M.T();
     SumColumns(X, v);
   } else {
-    CHECK_EQ(M.nDim(), 2);
-    CHECK_EQ(v->nDim(), 1);
+    CHECK_EQ(M.nDim(), 2u);
+    CHECK_EQ(v->nDim(), 1u);
     size_t nb_row = M.shape(0), nb_col = M.shape(1);
     CHECK_EQ(nb_col, v->Size());
 

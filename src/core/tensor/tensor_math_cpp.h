@@ -19,6 +19,7 @@
 #define SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_
 #include "./tensor_math.h"
 #include "singa/core/common.h"
+#include <math.h>
 
 #ifdef USE_CBLAS
 #include <cblas.h>
@@ -51,6 +52,16 @@ void Add<float, lang::Cpp>(int count, const Blob *lhs, const Blob *rhs,
 }
 
 template <>
+void Add<float, lang::Cpp>(int count, const Blob *input, float x, Blob *ret,
+                           Context *ctx) {
+  float *dptr = static_cast<float *>(ret->mutable_data());
+  const float *lptr = static_cast<const float *>(input->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = lptr[i] + x;
+  }
+}
+
+template <>
 void Sub<float, lang::Cpp>(int count, const Blob *lhs, const Blob *rhs,
                            Blob *ret, Context *ctx) {
   // CHECK_EQ(ctx->stream, nullptr);
@@ -61,6 +72,7 @@ void Sub<float, lang::Cpp>(int count, const Blob *lhs, const Blob *rhs,
     dptr[i] = lptr[i] - rptr[i];
   }
 }
+
 // sum all elements of input into ret
 // TODO(wangwei) optimize using omp
 template <>
@@ -72,35 +84,6 @@ void Sum<float, lang::Cpp>(int count, const Blob *input, float *ret,
     s += in[i];
   }
   *ret = s;
-}
-
-// TODO(wangwei) optimize using omp
-template <>
-void SumRows<float, lang::Cpp>(int nrow, int ncol, const Blob *input, Blob *ret,
-                               Context *ctx) {
-  float *dptr = static_cast<float *>(ret->mutable_data());
-  const float *in = static_cast<const float *>(input->data());
-  memset(dptr, 0, ncol * sizeof(float));
-  for (int r = 0; r < nrow; r++) {
-    for (int c = 0; c < ncol; c++) {
-      dptr[c] += in[r * ncol + c];
-    }
-  }
-}
-
-// Sum the rows of the input matrix into a vector
-// TODO(wangwei) optimize using omp
-template <>
-void SumColumns<float, lang::Cpp>(int nrow, int ncol, const Blob *input,
-                                  Blob *ret, Context *ctx) {
-  float *dptr = static_cast<float *>(ret->mutable_data());
-  const float *in = static_cast<const float *>(input->data());
-  memset(dptr, 0, ncol * sizeof(float));
-  for (int r = 0; r < nrow; r++) {
-    for (int c = 0; c < ncol; c++) {
-      dptr[r] += in[r * ncol + c];
-    }
-  }
 }
 
 template <>
@@ -121,6 +104,78 @@ void EltwiseMult<float, lang::Cpp>(int count, const Blob *lhs, const Blob *rhs,
   const float *rptr = static_cast<const float *>(rhs->data());
   for (int i = 0; i < count; i++) {
     dptr[i] = lptr[i] * rptr[i];
+  }
+}
+
+template <>
+void Exp<float, lang::Cpp>(int count, const Blob *input, Blob *ret,
+                           Context *ctx) {
+  float *dptr = static_cast<float *>(ret->mutable_data());
+  const float *lptr = static_cast<const float *>(input->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = exp(lptr[i]);
+  }
+}
+
+template <>
+void Log<float, lang::Cpp>(int count, const Blob *input, Blob *ret,
+                           Context *ctx) {
+  float *dptr = static_cast<float *>(ret->mutable_data());
+  const float *lptr = static_cast<const float *>(input->data());
+  for (int i = 0; i < count; i++) {
+    CHECK_GT(lptr[i], 0.f);
+    dptr[i] = log(lptr[i]);
+  }
+}
+
+template <>
+void Tanh<float, lang::Cpp>(int count, const Blob *input, Blob *ret,
+                            Context *ctx) {
+  float *dptr = static_cast<float *>(ret->mutable_data());
+  const float *lptr = static_cast<const float *>(input->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = tanh(lptr[i]);
+  }
+}
+
+template <>
+void ReLU<float, lang::Cpp>(int count, const Blob *input, Blob *ret,
+                            Context *ctx) {
+  float *dptr = static_cast<float *>(ret->mutable_data());
+  const float *lptr = static_cast<const float *>(input->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = (lptr[i] >= 0.f) ? lptr[i] : 0.f;
+  }
+}
+
+template <>
+void Sigmoid<float, lang::Cpp>(int count, const Blob *input, Blob *ret,
+                               Context *ctx) {
+  float *dptr = static_cast<float *>(ret->mutable_data());
+  const float *lptr = static_cast<const float *>(input->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = 1.f / (1.f + exp(-lptr[i]));
+  }
+}
+
+template <>
+void Pow<float, lang::Cpp>(int count, const Blob *input, float x, Blob *ret,
+                           Context *ctx) {
+  float *dptr = static_cast<float *>(ret->mutable_data());
+  const float *lptr = static_cast<const float *>(input->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = pow(lptr[i], x);
+  }
+}
+
+template <>
+void Pow<float, lang::Cpp>(int count, const Blob *lhs, const Blob *rhs,
+                           Blob *ret, Context *ctx) {
+  float *dptr = static_cast<float *>(ret->mutable_data());
+  const float *lptr = static_cast<const float *>(lhs->data());
+  const float *rptr = static_cast<const float *>(rhs->data());
+  for (int i = 0; i < count; i++) {
+    dptr[i] = pow(lptr[i], rptr[i]);
   }
 }
 
@@ -159,8 +214,15 @@ void Div<float, lang::Cpp>(const size_t num, const float alpha, const Blob *in,
                            Blob *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
+  for (size_t i = 0; i < num; i++) outPtr[i] = alpha / inPtr[i];
+}
+template <>
+void LT<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
+                          Blob *out, Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
-    outPtr[i] = alpha / inPtr[i];
+    outPtr[i] = (inPtr[i] < x) ? 1.f : 0.f;
   }
 }
 
@@ -192,9 +254,38 @@ template <>
 void Set<float, lang::Cpp>(const size_t num, const float x, Blob *out,
                            Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
-  for (size_t i = 0; i < num; i++)
-    outPtr[i] = x;
+  for (size_t i = 0; i < num; i++) outPtr[i] = x;
 }
+template <>
+void LE<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
+                          Blob *out, Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *inPtr = static_cast<const float *>(in->data());
+  for (size_t i = 0; i < num; i++) {
+    outPtr[i] = (inPtr[i] <= x) ? 1.f : 0.f;
+  }
+}
+
+template <>
+void GT<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
+                          Blob *out, Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *inPtr = static_cast<const float *>(in->data());
+  for (size_t i = 0; i < num; i++) {
+    outPtr[i] = (inPtr[i] > x) ? 1.f : 0.f;
+  }
+}
+
+template <>
+void GE<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
+                          Blob *out, Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *inPtr = static_cast<const float *>(in->data());
+  for (size_t i = 0; i < num; i++) {
+    outPtr[i] = (inPtr[i] >= x) ? 1.f : 0.f;
+  }
+}
+
 #ifdef USE_CBLAS
 template <>
 void Dot<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
@@ -223,7 +314,6 @@ void GEMM<float, lang::Cpp>(const bool transA, const bool transB,
 }
 
 #endif  // USE_CBLAS
-
 
 }  // namespace singa
 

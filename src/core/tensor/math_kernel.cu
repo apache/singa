@@ -32,7 +32,7 @@
 #define CU1DBLOCK 1024
 #define CU1DBLOCKF 1024.0
 
-namespace singa{
+namespace singa {
 // Cuda Kernel Functions
 namespace cuda {
 __global__ void kernel_softmax_loss(const float *prob, const int *label,
@@ -147,7 +147,8 @@ __global__ void kernel_add_vec_row(const float *src_vec_data,
     des_mat_data[index] = src_mat_data[index] + src_vec_data[i];
   }
 }
-__global__ void kernel_add(const float *src1, const float *src2, float*out, int n) {
+__global__ void kernel_add(const float *src1, const float *src2, float *out,
+                           int n) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
@@ -155,7 +156,8 @@ __global__ void kernel_add(const float *src1, const float *src2, float*out, int 
   }
 }
 
-__global__ void kernel_sub(const float *src1, const float *src2, float*out, int n) {
+__global__ void kernel_sub(const float *src1, const float *src2, float *out,
+                           int n) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   for (; index < n; index += num_threads) {
@@ -323,42 +325,28 @@ __global__ void kernel_threshold(const float *src_data, float *des_data,
     des_data[index] = src_data[index] < alpha ? 1.0f : 0.0f;
   }
 }
-
-/*
-void softmaxloss_forward(int n, int dim, const float *prob,
-    const int *label, float *loss) {
-  kernel_softmax_loss<<<ceil(n/CU1DBLOCKF), CU1DBLOCKF>>>(prob, label, loss, n,
-      dim);
-}
-
-void softmaxloss_backward(int n, int dim, float scale,
-    const int *label, float *grad) {
-  kernel_softmax_gradient<<<ceil(n/CU1DBLOCKF), CU1DBLOCKF>>>(grad, label, n,
-      dim, scale);
-}
-*/
 void sum(int n, const float *in, float *out) {
   int threads_per_block = n > CU1DBLOCK ? CU1DBLOCK : n;
   //  here, we only need one block
   int num_blocks = 1;
 
-  kernel_sum_vec<<<num_blocks, threads_per_block>>>(in, out, n);
+  kernel_sum_vec << <num_blocks, threads_per_block>>> (in, out, n);
 }
 
 void sum_row(int rows, int cols, int stride, const float *in, float *out) {
   int threads_per_block = rows > CU1DBLOCK ? CU1DBLOCK : rows;
   int num_blocks = cols;
 
-  kernel_sum_row<<<num_blocks, threads_per_block>>>(in, out, rows, cols,
-                                                    stride);
+  kernel_sum_row << <num_blocks, threads_per_block>>>
+      (in, out, rows, cols, stride);
 }
 
 void sum_col(int rows, int cols, int stride, const float *in, float *out) {
   int threads_per_block = cols > CU1DBLOCK ? CU1DBLOCK : cols;
   int num_blocks = rows;
 
-  kernel_sum_col<<<num_blocks, threads_per_block>>>(in, out,
-                                                    rows, cols, stride);
+  kernel_sum_col << <num_blocks, threads_per_block>>>
+      (in, out, rows, cols, stride);
 }
 void add_row(int rows, int cols, int stride, const float *in_row,
              const float *in_mat, float *out) {
@@ -366,91 +354,90 @@ void add_row(int rows, int cols, int stride, const float *in_row,
   dim3 num_blocks(
       cols / threads_per_block.x + (cols % threads_per_block.x == 0 ? 0 : 1),
       rows / threads_per_block.y + (rows % threads_per_block.y == 0 ? 0 : 1));
-  kernel_add_vec_row<<<num_blocks, threads_per_block>>>(in_row, in_mat, out,
-                                                        rows, cols, stride);
+  kernel_add_vec_row << <num_blocks, threads_per_block>>>
+      (in_row, in_mat, out, rows, cols, stride);
 }
 void add(int n, const float *a, const float *b, float *out) {
-  kernel_add<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, b, out, n);
+  kernel_add << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (a, b, out, n);
 }
 void sub(int n, const float *a, const float *b, float *out) {
-  kernel_sub<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, b, out, n);
+  kernel_sub << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (a, b, out, n);
 }
 void exp(int n, const float *in, float *out) {
-  kernel_exp<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_exp << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void log(int n, const float *in, float *out) {
-  kernel_log<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_log << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void sigmoid(int n, const float *in, float *out) {
-  kernel_sigmoid<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_sigmoid << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void sigmoid_grad(int n, const float *in, float *out) {
-  kernel_sigmoid_grad<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_sigmoid_grad << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void relu(int n, const float *in, float *out) {
-  kernel_relu<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_relu << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void relu_grad(int n, const float *in, float *out) {
-  kernel_relu_grad<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_relu_grad << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void tanh(int n, const float *in, float *out) {
-  kernel_tanh<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_tanh << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void tanh_grad(int n, const float *in, float *out) {
-  kernel_tanh_grad<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_tanh_grad << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void softplus(int n, const float *in, float *out) {
-  kernel_softplus<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_softplus << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void softplus_grad(int n, const float *in, float *out) {
-  kernel_softplus_grad<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_softplus_grad << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void square(int n, const float *in, float *out) {
-  kernel_square<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_square << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void square_grad(int n, const float *in, float *out) {
-  kernel_square_grad<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_square_grad << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void sqrt(int n, const float *in, float *out) {
-  kernel_sqrt<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, n);
+  kernel_sqrt << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);
 }
 
 void pow(int n, const float *a, const float *b, float *out) {
-  kernel_pow<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, b, out, n);
+  kernel_pow << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (a, b, out, n);
 }
 
 void mult(int n, const float *a, const float *b, float *out) {
-  kernel_mult<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, b, out, n);
+  kernel_mult << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (a, b, out, n);
 }
 
 void mult(int n, const float *a, const float x, float *out) {
-  kernel_mult<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, x, out, n);
+  kernel_mult << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (a, x, out, n);
 }
 
 void div(int n, const float *a, const float *b, float *out) {
-  kernel_div<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(a, b, out, n);
+  kernel_div << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (a, b, out, n);
 }
 
 void set_value(int n, float v, float *out) {
-  kernel_set_value<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(out, v, n);
+  kernel_set_value << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (out, v, n);
 }
 
 void threshold(int n, float alpha, const float *in, float *out) {
-  kernel_threshold<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, alpha, n);
+  kernel_threshold << <ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, alpha, n);
 }
-
 
 // follow the consistency guide for math API
 __global__ void KernelDiv(const size_t num, const float alpha, const float *in,
@@ -461,6 +448,36 @@ __global__ void KernelDiv(const size_t num, const float alpha, const float *in,
   }
 }
 
+__global__ void KernelGE(const int num, const float *in, const float x,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in[idx] >= x ? 1.0f : 0.0f;
+  }
+}
+__global__ void KernelGT(const int num, const float *in, const float x,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in[idx] > x ? 1.0f : 0.0f;
+  }
+}
+__global__ void KernelLE(const int num, const float *in, const float x,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in[idx] <= x ? 1.0f : 0.0f;
+  }
+}
+
+__global__ void KernelLT(const int num, const float *in, const float x,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in[idx] < x ? 1.0f : 0.0f;
+  }
+}
+
 __global__ void KernelSet(const size_t num, const float x, float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
        idx += blockDim.x * gridDim.x) {
@@ -468,14 +485,31 @@ __global__ void KernelSet(const size_t num, const float x, float *out) {
   }
 }
 
+void Set(const size_t num, const float x, float *out, cudaStream_t s) {
+  KernelSet << <ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, x, out);
+}
 void Div(const size_t num, float alpha, const float *in, float *out,
          cudaStream_t s) {
-  KernelDiv<<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>>(num, alpha, in, out);
+  KernelDiv << <ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, alpha, in, out);
 }
 
-void Set(const size_t num, const float x, float *out, cudaStream_t s) {
-  KernelSet<<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>>(num, x, out);
+void GT(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s) {
+  KernelGT << <ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
 }
+void GE(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s) {
+  KernelGE << <ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
+}
+void LT(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s) {
+  KernelLT << <ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
+}
+void LE(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s) {
+  KernelLE << <ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
+}
+
 }  // namespace cuda
 }  // namespace singa
 

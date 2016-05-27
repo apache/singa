@@ -62,7 +62,7 @@ inline size_t SizeOf(DataType t) {
 /// then it must be set up correctly (shape, device). Otherwise, runtime error
 /// like SegmentFault would happen. Simply type/device check would be conducted.
 class Tensor {
-public:
+ public:
   ~Tensor();
   Tensor();
   explicit Tensor(Shape &&shape, DataType dtype = kFloat32);
@@ -83,7 +83,8 @@ public:
   Device *device() const { return device_; }
 
   /// Return immutable Tensor values with given type.
-  template <typename DType> DType data() const {
+  template <typename DType>
+  DType data() const {
     return static_cast<DType>(blob()->data());
   }
 
@@ -130,7 +131,8 @@ public:
   void ToHost();
 
   /// Set each element of the tensor to be x
-  template <typename SType> void SetValue(const SType x);
+  template <typename SType>
+  void SetValue(const SType x);
 
   /// For init the tensor values, copy 'num' elements.
   template <typename DType>
@@ -141,7 +143,7 @@ public:
   void CopyData(const Tensor &other);
 
   /// Return an exactly the same Tensor with data been deep copied.
-  Tensor Clone();
+  Tensor Clone() const;
 
   // Tensor operations
 
@@ -167,23 +169,27 @@ public:
   // Scalar operations.
 
   /// T is a scalar type
-  template <typename DType> Tensor &operator+=(DType x);
+  template <typename DType>
+  Tensor &operator+=(DType x);
 
   /// T is a scalar type
-  template <typename DType> Tensor &operator-=(const DType x);
+  template <typename DType>
+  Tensor &operator-=(const DType x);
 
   /// T is a scalar type
-  template <typename DType> Tensor &operator*=(const DType x);
+  template <typename DType>
+  Tensor &operator*=(const DType x);
 
   /// T is a scalar type
-  template <typename DType> Tensor &operator/=(const DType x);
+  template <typename DType>
+  Tensor &operator/=(const DType x);
 
   /// save Tensor into a proto msg
   // void ToProto(TensorProto* t);
   /// load Tensor from proto msg
   // void FromProto(const TensorProto& t);
 
-protected:
+ protected:
   bool transpose_ = false;
   DataType data_type_ = kFloat32;
   Device *device_ = nullptr;
@@ -220,7 +226,8 @@ Tensor Sqrt(const Tensor &t);
 Tensor Square(const Tensor &t);
 Tensor Tanh(const Tensor &t);
 
-template <typename SType> SType Sum(const Tensor &t);
+template <typename SType>
+SType Sum(const Tensor &t);
 /// Sum elements in the Tensor, currently only support vector and matrix.
 /// if 'axis' is 0, sum all rows into a single row
 /// if 'axis' is 1, sum all columns into a single column
@@ -232,16 +239,48 @@ Tensor Sum(const Tensor &t, int axis);
 /// if 'axis' is 1, average all columns into a single column
 /// TODO(wangwei) support arbitrary Tensor like numpy.average
 Tensor Average(const Tensor &t, int axis);
+/// Regarding the internal data as 2d, with shape_[0]*...*shape_[axis-1] rows,
+/// and shape_[axis]*...*shape_[nDim()] columns.
+/// and do softmax along each row.
+Tensor SoftMax(const Tensor &t, int axis = 0);
+void SoftMax(const Tensor &t, int axis, Tensor *ret);
+
 /// Regarding the internal data as 2d, with shape_[0]*...*shape_[axis] rows,
 /// and shape_[axis+1]*...*shape_[nDim()] columns.
 /// and do softmax along each row.
-Tensor Softmax(const Tensor &t, int axis = -1);
-void Softmax(const Tensor &t, Tensor *ret, int axis = -1);
+// Tensor Softmax(const Tensor& t, int axis = -1);
+// void Softmax(const Tensor& t, Tensor* ret, int axis = -1);
+
+/// Element-wise operation, ret[i]= (t[i] < x) ? 1.f : 0.f
+template <typename DType>
+Tensor operator<(const Tensor &t, const DType x);
+template <typename DType>
+void LT(const Tensor &t, DType x, Tensor *ret);
+
+/// Element-wise operation, ret[i]= (t[i] <= x) ? 1.f : 0.f
+template <typename DType>
+Tensor operator<=(const Tensor &t, const DType x);
+template <typename DType>
+void LE(const Tensor &t, DType x, Tensor *ret);
+
+/// Element-wise operation, ret[i]= (t[i] > x) ? 1.f : 0.f
+template <typename DType>
+Tensor operator>(const Tensor &t, const DType x);
+template <typename DType>
+void GT(const Tensor &t, DType x, Tensor *ret);
+
+/// Element-wise operation, ret[i]= (t[i] >= x) ? 1.f : 0.f
+template <typename DType>
+Tensor operator>=(const Tensor &t, const DType x);
+template <typename DType>
+void GE(const Tensor &t, DType x, Tensor *ret);
 
 /// Element-wise opeartion, ret[i]=t[i]^x
-template <typename DType> Tensor Pow(const Tensor &t, DType x);
+template <typename DType>
+Tensor Pow(const Tensor &t, DType x);
 /// Element-wise opeartion, ret[i]=t[i]^x
-template <typename DType> void Pow(const Tensor &t, DType x, Tensor *ret);
+template <typename DType>
+void Pow(const Tensor &t, DType x, Tensor *ret);
 /// Element-wise opeartion, ret[i]=baes[i]^exp[i]
 Tensor Pow(const Tensor &base, Tensor exp);
 /// Element-wise opeartion, ret[i]=baes[i]^exp[i]
@@ -256,18 +295,25 @@ void EltwiseMult(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
 Tensor operator/(const Tensor &lhs, const Tensor &rhs);
 void Div(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
 
-template <typename DType> Tensor operator+(const Tensor &t, DType x);
-template <typename DType> void Add(const Tensor &t, DType x, Tensor *ret);
+template <typename DType>
+Tensor operator+(const Tensor &t, DType x);
+template <typename DType>
+void Add(const Tensor &t, DType x, Tensor *ret);
 
-template <typename DType> Tensor operator-(const Tensor &t, DType x);
-template <typename DType> void Sub(const Tensor &t, DType x, Tensor *ret);
+template <typename DType>
+Tensor operator-(const Tensor &t, DType x);
+template <typename DType>
+void Sub(const Tensor &t, DType x, Tensor *ret);
 
-template <typename DType> Tensor operator*(const Tensor &t, DType x);
+template <typename DType>
+Tensor operator*(const Tensor &t, DType x);
 template <typename DType>
 void EltwiseMult(const Tensor &t, DType x, Tensor *ret);
 
-template <typename DType> Tensor operator/(const Tensor &t, DType x);
-template <typename DType> void Div(const Tensor &t, DType x, Tensor *ret);
+template <typename DType>
+Tensor operator/(const Tensor &t, DType x);
+template <typename DType>
+void Div(const Tensor &t, DType x, Tensor *ret);
 
 // ================Blas operations============================================
 // We fix the scalar argument type to be float.
@@ -301,6 +347,7 @@ void Uniform(float low, float high, Tensor *t);
 void Gaussian(float mean, float std, Tensor *t);
 
 // follow the consistency guide
+// https://issues.apache.org/jira/browse/SINGA-182
 // ============Matrix vector operations=======================================
 /// Add column 'v' with each column of matrix M
 void AddColumn(const Tensor &v, Tensor *M);
@@ -329,11 +376,27 @@ void SumRows(const Tensor &M, Tensor *out);
 void SumColumns(const Tensor &M, Tensor *out);
 
 /// For each element x of Tensor 'in', compute alpha/x
-template <typename SType> Tensor Div(const SType alpha, const Tensor &in);
+template <typename SType>
+Tensor Div(const SType alpha, const Tensor &in);
 
 /// For each element x of Tensor 'in', compute alpha/x into 'out'
 template <typename SType>
 void Div(const SType alpha, const Tensor &in, Tensor *out);
+
+/*
+/// Multiply each column of the lhs matrix with the rhs column
+Tensor MultColumn(const Tensor &lhs, const Tensor &rhs);
+void MultColumn(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
+/// Multiply each row of the lhs matrix with the rhs row
+Tensor MultRow(const Tensor &lhs, const Tensor &rhs);
+void MultRow(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
+/// Div each row of the lhs matrix with the rhs column
+Tensor DivColumn(const Tensor &lhs, const Tensor &rhs);
+void DivColumn(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
+/// Divide each row of the lhs matrix by the rhs row
+Tensor DivRow(const Tensor &lhs, const Tensor &rhs);
+void DivRow(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
+*/
 
 }  // namespace singa
 
