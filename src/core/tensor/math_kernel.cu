@@ -450,6 +450,32 @@ void set_value(int n, float v, float *out) {
 void threshold(int n, float alpha, const float *in, float *out) {
   kernel_threshold<<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>>(in, out, alpha, n);
 }
+
+
+// follow the consistency guide for math API
+__global__ void KernelDiv(const size_t num, const float alpha, const float *in,
+                          float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = alpha / in[idx];
+  }
+}
+
+__global__ void KernelSet(const size_t num, const float x, float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = x;
+  }
+}
+
+void Div(const size_t num, float alpha, const float *in, float *out,
+         cudaStream_t s) {
+  KernelDiv<<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>>(num, alpha, in, out);
+}
+
+void Set(const size_t num, const float x, float *out, cudaStream_t s) {
+  KernelSet<<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>>(num, x, out);
+}
 }  // namespace cuda
 }  // namespace singa
 

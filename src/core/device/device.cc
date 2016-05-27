@@ -35,7 +35,6 @@ void Device::Exec(function<void(Context*)>&& fn, const vector<Blob*> read_blobs,
 Blob* Device::NewBlob(int size) {
   if (size > 0) {
     void* ptr = Malloc(size);
-    // memset(ptr, 0, size);
     return new Blob(ptr, size);
   } else {
     return nullptr;

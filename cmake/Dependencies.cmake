@@ -14,3 +14,7 @@ ELSE()
     SET(USE_CUDA FALSE)
     SET(USE_CUDNN FALSE)
 ENDIF()
+
+
+#LIST(APPEND SINGA_LINKER_LIBS "/home/wangwei/local/lib/libopenblas.so")
+#MESSAGE(STATUS "link lib : " ${SINGA_LINKER_LIBS})

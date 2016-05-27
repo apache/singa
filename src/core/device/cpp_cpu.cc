@@ -33,13 +33,18 @@ void CppCPU::DoExec(function<void(Context*)>&& fn, int executor) {
 }
 
 void* CppCPU::Malloc(int size) {
-  void *ptr = malloc(size);
-  memset(ptr, 0, size);
-  return ptr;
+  if (size > 0) {
+    void *ptr = malloc(size);
+    memset(ptr, 0, size);
+    return ptr;
+  } else {
+    return nullptr;
+  }
 }
 
 void CppCPU::Free(void* ptr) {
-  free(ptr);
+  if (ptr != nullptr)
+    free(ptr);
 }
 
 void CppCPU::CopyToFrom(void* dst, const void* src, size_t nBytes,

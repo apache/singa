@@ -111,5 +111,3 @@ TEST(TensorClass, T) {
   EXPECT_EQ(t.shape()[1],  o.shape()[0]);
 }
 
-
-

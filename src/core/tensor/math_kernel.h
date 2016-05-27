@@ -28,13 +28,7 @@
 /// TODO(wangwei) Clean the function APIs as commented in tensor_math.h
 ///  Add 'Context *ctx' as an argument of all cuda functions.
 namespace singa {
-/*
-  void softmaxloss_forward(int n, int dim, const float *prob,
-      const int *label, float *loss);
 
-  void softmaxloss_backward(int n, int dim, float scale,
-      const int *label, float *grad);
-*/
 // TODO(wangwei) make all function templates.
 namespace cuda {
 void sum(int n, const float *in, float *out);
@@ -44,7 +38,7 @@ void sum_row(int rows, int cols, int stride, const float *in, float *out);
 void sum_col(int rows, int cols, int stride, const float *in, float *out);
 
 void add_row(int rows, int cols, int stride, const float *in_row,
-  const float *in_mat, float *out);
+             const float *in_mat, float *out);
 
 void add(int n, const float *a, const float *b, float *out);
 
@@ -87,7 +81,12 @@ void div(int n, const float *a, const float *b, float *out);
 void set_value(int n, float v, float *out);
 
 void threshold(int n, float alpha, const float *in, float *out);
-}  // cuda
+
+// follow the consistency guide for math API
+void Div(const size_t num, const float x, const float *in, float *out,
+         cudaStream_t s);
+void Set(const size_t num, const float x, float *out, cudaStream_t s);
+} // cuda
 
 }  // namespace singa
 

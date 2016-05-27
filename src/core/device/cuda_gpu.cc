@@ -89,15 +89,17 @@ void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
 /// Allocate cpu memory.
 void* CudaGPU::Malloc(int size) {
   void* ptr = nullptr;
-  CUDA_CHECK(cudaMalloc(&ptr, size));
-  CUDA_CHECK(cudaMemset(ptr, 0, size));
+  if (size > 0) {
+    CUDA_CHECK(cudaMalloc(&ptr, size));
+    CUDA_CHECK(cudaMemset(ptr, 0, size));
+  }
   return ptr;
 }
 
   /// Free cpu memory.
 void CudaGPU::Free(void* ptr) {
-  CHECK_NE(ptr, nullptr);
-  CUDA_CHECK(cudaFree(ptr));
+  if (ptr != nullptr)
+    CUDA_CHECK(cudaFree(ptr));
 }
 
 

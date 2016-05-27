@@ -4,7 +4,9 @@
 // Binaries director
 #define BINARY_FOLDER "${PROJECT_BINARY_DIR}"
 
-#cmakedefine CPU_ONLY 
+#cmakedefine CPU_ONLY
+
+#cmakedefine USE_CBLAS
 // cuda
 #cmakedefine USE_CUDA
 
