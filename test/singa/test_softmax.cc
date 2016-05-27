@@ -55,7 +55,6 @@ TEST(Softmax, Forward) {
   const float* yptr = out.data<const float*>();
   EXPECT_EQ(n, out.Size());
 
-  float* y = new float[n];
   float* sigma = new float[row];
   for (size_t i = 0; i < row; i++)
     sigma[i] = 0.f;
@@ -63,11 +62,9 @@ TEST(Softmax, Forward) {
     sigma[i / col] += exp(x[i]);
   //EXPECT_EQ(0, sigma[1]);
   for (size_t i = 0; i < row; i++)
-    for (size_t j = 0; j < col; j++)
-      y[i * col + j] = exp(x[i * col + j]) / sigma[i];
-  EXPECT_FLOAT_EQ(y[0], yptr[0]);
-  EXPECT_FLOAT_EQ(y[4], yptr[4]);
-  EXPECT_FLOAT_EQ(y[5], yptr[5]);
+    for (size_t j = 0; j < col; j++) {
+      EXPECT_FLOAT_EQ(yptr[i * col + j], exp(x[i * col + j]) / sigma[i]);
+    }
 }
 
 TEST(Softmax, Backward) {

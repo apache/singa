@@ -18,6 +18,7 @@
 
 #ifndef SINGA_MODEL_LOSS_H_
 #define SINGA_MODEL_LOSS_H_
+#include <stack>
 #include "singa/proto/model.pb.h"
 #include "singa/core/tensor.h"
 namespace singa {
@@ -54,6 +55,52 @@ class Loss {
   /// Compute the gradients of the loss values w.r.t. the prediction.
   virtual Tensor Backward() = 0;
 };
+
+
+
+// ============= Mean Squared Error ===========================================
+/// MSE is for mean squared error or squared euclidean distance.
+class MSE : public Loss<Tensor> {
+ public:
+  /// Compute the loss values for each sample/instance given the prediction
+  /// and the target, which is 0.5/||prediction-target||^2
+  /// Users can call Average(const Tensor&) to get the average
+  /// loss value over all samples in the batch.
+  Tensor Forward(const Tensor& prediction, const Tensor& target) override;
+
+  /// Compute the gradients of the loss values w.r.t. the prediction,
+  /// which is (prediction-target)/batchsize
+  Tensor Backward() override;
+
+ private:
+  // to buffer intermediate data, i.e., prediction-target
+  std::stack<Tensor> buf_;
+};
+
+
+// ===============Softamx Cross Entropy =======================================
+/// Softmax + cross entropy for multi-category classification
+class SoftmaxCrossEntropy : public Loss<Tensor> {
+ public:
+  /// Compute the loss values for each sample/instance given the prediction
+  /// and the target, which is -log(p[idx_truth]), idx_truth is the truth
+  /// category's index and p[] is the probability for each category, computed
+  /// from Softmax(prediction).
+  /// Users can call Average(const Tensor&) to get the average
+  /// loss value over all samples in the batch.
+  Tensor Forward(const Tensor& prediction, const Tensor& target) override;
+
+  /// Compute the gradients of the loss values w.r.t. the prediction,
+  /// which is: p[idx] - 1 if idx is the truth category's index; else,
+  /// p[idx]
+  Tensor Backward() override;
+
+ private:
+  // to buffer intermediate data, i.e., probability for each category and
+  // the target (ground truth)
+  std::stack<Tensor> buf_;
+};
+
 }  // namespace singa
 
 #endif  // SINGA_MODEL_LOSS_H_

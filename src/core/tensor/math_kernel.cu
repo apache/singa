@@ -485,8 +485,26 @@ __global__ void KernelSet(const size_t num, const float x, float *out) {
   }
 }
 
-void Set(const size_t num, const float x, float *out, cudaStream_t s) {
-  KernelSet << <ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, x, out);
+__global__
+void KernelComputeCrossEntropy(const size_t batchsize, const size_t dim, const float* p,
+    const int* t, float* loss) {
+  size_t sample = blockIdx.x * blockDim.x + threadIdx.x;
+  size_t num_threads = blockDim.x * gridDim.x;
+  for (; sample < batchsize; sample += num_threads) {
+    float prob_of_truth = p[sample * dim + t[sample]];
+    loss[sample] -= std::log(max(prob_of_truth, FLT_MIN));
+  }
+}
+
+__global__
+void KernelSoftmaxCrossEntropyBwd(const size_t batchsize, const size_t dim, const float* p,
+    const int* t, float* grad) {
+  size_t sample = blockIdx.x * blockDim.x + threadIdx.x;
+  size_t num_threads = blockDim.x * gridDim.x;
+  for (; sample < batchsize; sample += num_threads) {
+    size_t pos = sample * dim + t[sample];
+    grad[pos] = p[pos] - 1.0f;  // TODO(wangwei) Consider p and grad are diff
+  }
 }
 void Div(const size_t num, float alpha, const float *in, float *out,
          cudaStream_t s) {
@@ -510,6 +528,21 @@ void LE(const size_t num, const float *in, const float x, float *out,
   KernelLE << <ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
 }
 
+void ComputeCrossEntropy(size_t batchsize, const size_t dim, const float* p,
+    const int *t, float *loss, cudaStream_t stream) {
+  KernelComputeCrossEntropy<<<ceil(batchsize/CU1DBLOCKF), CU1DBLOCKF>>>(batchsize,
+      dim, p, t, loss);
+}
+
+void Set(const size_t num, const float x, float *out, cudaStream_t s) {
+  KernelSet<<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>>(num, x, out);
+}
+
+void SoftmaxCrossEntropyBwd(size_t batchsize, const size_t dim, const float* p,
+    const int *t, float *grad, cudaStream_t stream) {
+  KernelSoftmaxCrossEntropyBwd<<<ceil(batchsize/CU1DBLOCKF), CU1DBLOCKF>>>(batchsize,
+      dim, p, t, grad);
+}
 }  // namespace cuda
 }  // namespace singa
 

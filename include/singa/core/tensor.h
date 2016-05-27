@@ -239,11 +239,10 @@ Tensor Sum(const Tensor &t, int axis);
 /// if 'axis' is 1, average all columns into a single column
 /// TODO(wangwei) support arbitrary Tensor like numpy.average
 Tensor Average(const Tensor &t, int axis);
-/// Regarding the internal data as 2d, with shape_[0]*...*shape_[axis-1] rows,
-/// and shape_[axis]*...*shape_[nDim()] columns.
-/// and do softmax along each row.
-Tensor SoftMax(const Tensor &t, int axis = 0);
-void SoftMax(const Tensor &t, int axis, Tensor *ret);
+/// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
+Tensor SoftMax(const Tensor &in);
+/// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
+void SoftMax(const Tensor &in, Tensor *out);
 
 /// Regarding the internal data as 2d, with shape_[0]*...*shape_[axis] rows,
 /// and shape_[axis+1]*...*shape_[nDim()] columns.
@@ -398,6 +397,14 @@ Tensor DivRow(const Tensor &lhs, const Tensor &rhs);
 void DivRow(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
 */
 
+/// Compute the cross entropy loss given the prediction probability 'p' and
+/// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
+/// or 2-d matrix. 'loss' is 1-d vector. The loss is computed into p.
+void ComputeCrossEntropy(const Tensor& t, Tensor* p);
+/// Compute the dx, given prediction probability 'p' (p=softmax(x)) and
+/// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
+/// or 2-d matrix. 'grad' has the same shape as 'p'. dx is computed into p.
+void SoftmaxCrossEntropyBwd(const Tensor& t, Tensor* p);
 }  // namespace singa
 
 #endif  // SINGA_CORE_TENSOR_H_

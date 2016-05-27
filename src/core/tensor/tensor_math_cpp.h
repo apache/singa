@@ -17,7 +17,9 @@
  */
 #ifndef SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_
 #define SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_
+
 #include "./tensor_math.h"
+#include <cfloat>
 #include "singa/core/common.h"
 #include <math.h>
 
@@ -210,6 +212,22 @@ void Gaussian<float, lang::Cpp>(int count, float mean, float std, Blob *ret,
 
 // follow the consistency guide of math API
 template <>
+void ComputeCrossEntropy<float, lang::Cpp>(const size_t batchsize,
+                                           const size_t dim, const Blob *p,
+                                           const Blob *t, Blob *loss,
+                                           Context *ctx) {
+  const float *pPtr = static_cast<const float *>(p->data());
+  const float *tPtr = static_cast<const float *>(t->data());
+  float *lossPtr = static_cast<float *>(loss->mutable_data());
+  for (size_t i = 0; i < batchsize; i++) {
+    int truth_idx = static_cast<int>(tPtr[i]);
+    CHECK_GE(truth_idx, 0);
+    float prob_of_truth = pPtr[i * dim + truth_idx];
+    lossPtr[i] = -std::log(std::max(prob_of_truth, FLT_MIN));
+  }
+}
+
+template <>
 void Div<float, lang::Cpp>(const size_t num, const float alpha, const Blob *in,
                            Blob *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
@@ -248,13 +266,6 @@ void DGMM<float, lang::Cpp>(const bool side_right, const size_t nrow,
       }
     }
   }
-}
-
-template <>
-void Set<float, lang::Cpp>(const size_t num, const float x, Blob *out,
-                           Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  for (size_t i = 0; i < num; i++) outPtr[i] = x;
 }
 template <>
 void LE<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
@@ -312,8 +323,31 @@ void GEMM<float, lang::Cpp>(const bool transA, const bool transB,
   cblas_sgemm(CblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha, APtr,
               lda, BPtr, ldb, beta, CPtr, ldc);
 }
-
 #endif  // USE_CBLAS
+
+template <>
+void Set<float, lang::Cpp>(const size_t num, const float x, Blob *out,
+                           Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  for (size_t i = 0; i < num; i++) outPtr[i] = x;
+}
+template <>
+void SoftmaxCrossEntropyBwd<float, lang::Cpp>(const size_t batchsize,
+                                              const size_t dim, const Blob *p,
+                                              const Blob *t,
+                                              Blob *grad, Context *ctx) {
+  CHECK_EQ(p, grad) << "Use the same pointer to optimize performance";
+  // const float* pPtr = static_cast<const float*>(p->data());
+  const float *tPtr = static_cast<const float *>(t->data());
+  float *gradPtr = static_cast<float *>(grad->mutable_data());
+
+  for (size_t i = 0; i < batchsize; i++) {
+    int truth_idx = static_cast<int>(tPtr[i]);
+    CHECK_GE(truth_idx, 0);
+    gradPtr[i * dim + truth_idx] -= 1.0;
+  }
+}
+
 
 }  // namespace singa
 

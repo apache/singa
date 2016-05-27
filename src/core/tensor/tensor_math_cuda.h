@@ -75,6 +75,17 @@ void Sum<float, lang::Cuda>(int count, const Blob *input, float *ret,
 
 // follow the consistency guide of math API
 template <>
+void ComputeCrossEntropy<float, lang::Cuda>(const size_t batchsize,
+                                            const size_t dim, const Blob *p,
+                                            const Blob *t, Blob *loss,
+                                            Context *ctx) {
+  const float *pPtr = static_cast<const float *>(p->data());
+  const int *tPtr = static_cast<const int *>(t->data());
+  float *lossPtr = static_cast<float *>(loss->mutable_data());
+  cuda::ComputeCrossEntropy(batchsize, dim, pPtr, tPtr, lossPtr, ctx->stream);
+}
+
+template <>
 void Div<float, lang::Cuda>(const size_t num, const float alpha, const Blob *in,
                             Blob *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
@@ -82,19 +93,13 @@ void Div<float, lang::Cuda>(const size_t num, const float alpha, const Blob *in,
   cuda::Div(num, alpha, inPtr, outPtr, ctx->stream);
 }
 
-template <>
-void Set<float, lang::Cuda>(const size_t num, const float x, Blob *out,
-                            Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  cuda::Set(num, x, outPtr, ctx->stream);
-}
 // NOTE: cublas uses column major order.
 // http://peterwittek.com/cublas-matrix-c-style.html
 template <>
 void DGMM<float, lang::Cuda>(const bool side_right, const size_t nrow,
                              const size_t ncol, const Blob *M, const Blob *v,
                              Blob *out, Context *ctx) {
-  auto handle = ctx->cublas_handle; // TODO(wangwei) set cudastream
+  auto handle = ctx->cublas_handle;  // TODO(wangwei) set cudastream
   const float *MPtr = static_cast<const float *>(M->data());
   const float *vPtr = static_cast<const float *>(v->data());
   float *outPtr = static_cast<float *>(out->mutable_data());
@@ -121,7 +126,7 @@ void GEMM<float, lang::Cuda>(const bool transA, const bool transB,
   const float *APtr = static_cast<const float *>(A->data());
   const float *BPtr = static_cast<const float *>(B->data());
   float *CPtr = static_cast<float *>(C->mutable_data());
-  auto handle = ctx->cublas_handle; // TODO(wangwei) set cudastream
+  auto handle = ctx->cublas_handle;  // TODO(wangwei) set cudastream
   CUBLAS_CHECK(cublasSgemm(handle, transb, transa, ncolB, nrowA, ncolA, &alpha,
                            BPtr, ldb, APtr, lda, &beta, CPtr, ldc));
 }
@@ -155,9 +160,25 @@ void LT<float, lang::Cuda>(const size_t num, const Blob* in, const float x,
   cuda::LT(num, inPtr, x, outPtr, ctx->stream);
 }
 
+template<>
+void Set<float, lang::Cuda>(const size_t num, const float x, Blob *out,
+                            Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  cuda::Set(num, x, outPtr, ctx->stream);
+}
 
-
-
+template <>
+void SoftmaxCrossEntropyBwd<float, lang::Cuda>(const size_t batchsize,
+                                               const size_t dim, const Blob *p,
+                                               const Blob *t, Blob *grad,
+                                               Context *ctx) {
+  CHECK_EQ(p, grad) << "Use the same pointer to optimize performance";
+  const float *pPtr = static_cast<const float *>(p->data());
+  const int *tPtr = static_cast<const int *>(t->data());
+  float *gradPtr = static_cast<float *>(grad->mutable_data());
+  cuda::SoftmaxCrossEntropyBwd(batchsize, dim, pPtr, tPtr, gradPtr,
+                               ctx->stream);
+}
 
 }  // namespace singa
 

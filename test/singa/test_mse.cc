@@ -22,8 +22,9 @@
 #include "gtest/gtest.h"
 #include "singa/core/tensor.h"
 #include "singa/core/device.h"
-#include "../src/model/loss/mse.h"
+#include "singa/model/loss.h"
 #include "singa_config.h"
+
 using singa::Tensor;
 class TestMSE : public ::testing::Test {
  protected:
@@ -66,6 +67,8 @@ TEST_F(TestMSE, CppBackward) {
     EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
 }
 #endif
+
+#ifdef USE_CUDA
 TEST_F(TestMSE, CudaForward) {
   singa::MSE mse;
   singa::CudaGPU dev;
@@ -98,3 +101,4 @@ TEST_F(TestMSE, CudaBackward) {
   for (size_t i = 0; i < grad.Size(); i++)
     EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
 }
+#endif

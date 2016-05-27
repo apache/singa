@@ -77,10 +77,9 @@ void Tensor::ResetLike(const Tensor &t) {
   }
 }
 
-void Tensor::Reshape(const Shape &shape) {
-  if (Product(shape_) != Product(shape)) {
-    if (blob_ != nullptr && blob_->DecRefCount() == 0)
-      device_->FreeBlob(blob_);
+void Tensor::Reshape(const Shape& shape) {
+  if (Product(shape) != Product(shape_)) {
+    if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
     blob_ = device_->NewBlob(Product(shape) * SizeOf(data_type_));
   }
   shape_ = shape;
@@ -403,22 +402,21 @@ Tensor Average(const Tensor &t, int axis) {
   }
 }
 
-Tensor SoftMax(const Tensor &in, int axis) {
+Tensor SoftMax(const Tensor &in) {
   Tensor out(in.shape(), in.device(), in.data_type());
-  SoftMax(in, axis, &out);
+  SoftMax(in, &out);
   return out;
 }
 
-void SoftMax(const Tensor &in, int axis, Tensor *out) {
-  size_t nrow = 1, ncol = in.Size(), size = ncol;
-  CHECK_GE(axis, 0);
-  if (axis > 0) {
-    nrow = Product(in.shape(), 0, axis);
-    CHECK_EQ(size % nrow, 0u) << "Size = " << size << " nrow = " << nrow;
-    ncol = size / nrow;
-  }
+void SoftMax(const Tensor &in, Tensor *out) {
+  CHECK_LE(in.nDim(), 2u);
   Exp(in, out);
-  out->Reshape(Shape{nrow, ncol});
+  size_t nrow = 1, ncol = in.Size(), size = ncol;
+  if (in.nDim() == 2u) {
+    nrow = in.shape(0);
+    ncol = size / nrow;
+    out->Reshape(Shape{nrow, ncol});
+  }
   Tensor sum(Shape{nrow}, in.device(), in.data_type());
   SumColumns(*out, &sum);
   DivColumn(sum, out);
@@ -594,6 +592,19 @@ void AddRow(const float alpha, const float beta, const Tensor &v, Tensor *M) {
     Mult(alpha, one, vmat, beta, M);
   }
 }
+void ComputeCrossEntropy(const Tensor& t, Tensor* p) {
+  CHECK_LE(p->nDim(), 2u);
+  CHECK_LE(t.nDim(), 2u);  // TODO(wangwei) consider multi-labels.
+  size_t batchsize = 1;
+  if (p->nDim() == 2u) batchsize = p->shape(0);
+  size_t dim = p->Size() / batchsize;
+  TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
+    p->device()->Exec([batchsize, dim, t, p](Context *ctx) {
+      ComputeCrossEntropy<DType, Lang>(batchsize, dim, p->blob(), t.blob(),
+                                       p->blob(), ctx);
+    }, {p->blob(), t.blob()}, {p->blob()});
+  });
+}
 
 template <typename SType> Tensor Div(const SType alpha, const Tensor &in) {
   Tensor out(in.shape(), in.device(), in.data_type());
@@ -665,7 +676,20 @@ void MultRow(const Tensor &v, Tensor *M) {
         {M->blob(), v.blob()}, {M->blob()});
   });
 }
-
+void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
+  CHECK_LE(p->nDim(), 2u);
+  CHECK_LE(t.nDim(), 2u);  // TODO(wangwei) consider multi-labels.
+  size_t batchsize = 1;
+  if (p->nDim() == 2u)
+    batchsize = p->shape(0);
+  size_t dim = p->Size() / batchsize;
+  TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
+    p->device()->Exec([batchsize, dim, t, p](Context *ctx) {
+      SoftmaxCrossEntropyBwd<DType, Lang>(batchsize, dim, p->blob(), t.blob(),
+                                          p->blob(), ctx);
+    }, {p->blob(), t.blob()}, {p->blob()});
+  });
+}
 void SubColumn(const Tensor &v, Tensor *M) { AddColumn(-1, 1, v, M); }
 
 void SubRow(const Tensor &v, Tensor *M) { AddRow(-1, 1, v, M); }

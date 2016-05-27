@@ -26,10 +26,11 @@ void Softmax::Setup(const LayerConf& conf) {
 
 const Tensor Softmax::Forward(int flag, const Tensor& input) {
   if (input.nDim() == 1) {
-    Tensor tmp = Reshape(input, Shape{1, input.Size()});
-    buf_.push(SoftMax(tmp, 0));
+    buf_.push(SoftMax(input));
   } else {
-    buf_.push(SoftMax(input, axis_));
+    size_t nrow = Product(input.shape(), 0, axis_);
+    const Tensor& tmp = Reshape(input, Shape{nrow, input.Size() / nrow});
+    buf_.push(SoftMax(tmp));
   }
   return buf_.top();
 }

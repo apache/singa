@@ -110,12 +110,6 @@ void Sigmoid(int count, const Blob *input, Blob *ret, Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
-/// Do softmax for each row invidually
-template <typename DType, typename Lang>
-void Softmax(int nrow, int ncol, const Blob *input, Blob *ret, Context *ctx) {
-  LOG(FATAL) << "Not Implemented";
-}
-
 // TODO(wangwei) unify SumRow and SumCol.
 /// Sum the rows of the input matrix into a vector
 template <typename DType, typename Lang>
@@ -312,11 +306,14 @@ void Gaussian(int count, float mean, float std, Blob *ret, Context *ctx) {
 
 // ========follow the consistency guide of math API
 
+/// Divide alpha by each element of 'in'.
+// following the consistency guide.
 template <typename DType, typename Lang>
-void Set(const size_t num, const DType x, Blob *out, Context *ctx) {
+void ComputeCrossEntropy(const size_t batchsize, const size_t dim,
+                         const Blob *p, const Blob *t, Blob *loss,
+                         Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }
-/// Divide alpha by each element of 'in'.
 template <typename DType, typename Lang>
 void Div(const size_t num, const DType alpha, const Blob *in, Blob *out,
          Context *ctx) {
@@ -362,6 +359,17 @@ void GT(const size_t num, const Blob *in, const DType x, Blob *out,
 template <typename DType, typename Lang>
 void GE(const size_t num, const Blob *in, const DType x, Blob *out,
         Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+template <typename DType, typename Lang>
+void Set(const size_t num, const DType x, Blob *out, Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
+
+template <typename DType, typename Lang>
+void SoftmaxCrossEntropyBwd(const size_t batchsize, const size_t dim,
+                            const Blob *p, const Blob *t, Blob *grad,
+                            Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 

@@ -22,16 +22,15 @@
 #include "gtest/gtest.h"
 #include "singa/core/tensor.h"
 #include "singa/core/device.h"
-#include "../src/model/loss/cross_entropy.h"
+#include "singa/model/loss.h"
+#include "singa_config.h"
 
 using singa::Tensor;
-class TestCrossEntropy : public ::testing::Test {
+class TestSoftmaxCrossEntropy : public ::testing::Test {
  protected:
   virtual void SetUp() {
     p.Reshape(singa::Shape{2, 4});
     t.Reshape(singa::Shape{2, 1});
-    p.CopyDataFromHostPtr(pdat, sizeof(pdat) / sizeof(float));
-    t.CopyDataFromHostPtr(tdat, sizeof(pdat) / sizeof(float));
   }
   const float pdat[8] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
   const float tdat[2] = {0.0, 2.0};
@@ -39,8 +38,11 @@ class TestCrossEntropy : public ::testing::Test {
   singa::Tensor p, t;
 };
 
-TEST_F(TestCrossEntropy, CppForward) {
-  singa::CrossEntropy cross_entropy;
+TEST_F(TestSoftmaxCrossEntropy, CppForward) {
+  p.CopyDataFromHostPtr(pdat, 8);
+  t.CopyDataFromHostPtr(tdat, 2);
+
+  singa::SoftmaxCrossEntropy cross_entropy;
   const Tensor& loss = cross_entropy.Forward(p, t);
   auto ldat = loss.data<const float*>();
 
@@ -49,8 +51,11 @@ TEST_F(TestCrossEntropy, CppForward) {
   EXPECT_FLOAT_EQ(ldat[1], result_test);
 }
 
-TEST_F(TestCrossEntropy, CppBackward) {
-  singa::CrossEntropy cross_entropy;
+TEST_F(TestSoftmaxCrossEntropy, CppBackward) {
+  p.CopyDataFromHostPtr(pdat, 8);
+  t.CopyDataFromHostPtr(tdat, 2);
+
+  singa::SoftmaxCrossEntropy cross_entropy;
   cross_entropy.Forward(p, t);
   const Tensor& grad = cross_entropy.Backward();
 
@@ -64,3 +69,46 @@ TEST_F(TestCrossEntropy, CppBackward) {
   EXPECT_FLOAT_EQ(gdat[6], -0.75);
   EXPECT_FLOAT_EQ(gdat[7], 0.25);
 }
+
+#ifdef USE_CUDA
+
+TEST_F(TestSoftmaxCrossEntropy, CudaForward) {
+  singa::SoftmaxCrossEntropy cross_entropy;
+  singa::CudaGPU dev;
+  p.ToDevice(&dev);
+  t.ToDevice(&dev);
+  p.CopyDataFromHostPtr(pdat, 8);
+  t.CopyDataFromHostPtr(tdat, 2);
+
+  Tensor loss = cross_entropy.Forward(p, t);
+  loss.ToHost();
+  auto ldat = loss.data<const float*>();
+
+  const float result_test = -log(0.25);
+  EXPECT_FLOAT_EQ(ldat[0], result_test);
+  EXPECT_FLOAT_EQ(ldat[1], result_test);
+}
+
+TEST_F(TestSoftmaxCrossEntropy, CudaBackward) {
+  singa::SoftmaxCrossEntropy cross_entropy;
+  singa::CudaGPU dev;
+  p.ToDevice(&dev);
+  t.ToDevice(&dev);
+  p.CopyDataFromHostPtr(pdat, 8);
+  t.CopyDataFromHostPtr(tdat, 2);
+
+  cross_entropy.Forward(p, t);
+  Tensor grad = cross_entropy.Backward();
+
+  grad.ToHost();
+  auto gdat = grad.data<const float*>();
+  EXPECT_FLOAT_EQ(gdat[0], -0.75);
+  EXPECT_FLOAT_EQ(gdat[1], 0.25);
+  EXPECT_FLOAT_EQ(gdat[2], 0.25);
+  EXPECT_FLOAT_EQ(gdat[3], 0.25);
+  EXPECT_FLOAT_EQ(gdat[4], 0.25);
+  EXPECT_FLOAT_EQ(gdat[5], 0.25);
+  EXPECT_FLOAT_EQ(gdat[6], -0.75);
+  EXPECT_FLOAT_EQ(gdat[7], 0.25);
+}
+#endif  // USE_CUDA

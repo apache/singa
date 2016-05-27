@@ -83,13 +83,20 @@ void set_value(int n, float v, float *out);
 void threshold(int n, float alpha, const float *in, float *out);
 
 // follow the consistency guide for math API
+void ComputeCrossEntropy(const size_t batchsize, const size_t dim,
+                         const float *p, const int *t, float *loss,
+                         cudaStream_t stream);
 void Div(const size_t num, const float x, const float *in, float *out,
          cudaStream_t s);
-void Set(const size_t num, const float x, float *out, cudaStream_t s);
 void GT(size_t num, const float *in, const float x, float *out, cudaStream_t s);
 void GE(size_t num, const float *in, const float x, float *out, cudaStream_t s);
 void LT(size_t num, const float *in, const float x, float *out, cudaStream_t s);
 void LE(size_t num, const float *in, const float x, float *out, cudaStream_t s);
+void Set(const size_t num, const float x, float *out, cudaStream_t s);
+void SoftmaxCrossEntropyBwd(const size_t batchsize, const size_t dim,
+                            const float *p, const int *t, float *grad,
+                            cudaStream_t stream);
+
 }  // cuda
 
 }  // namespace singa
