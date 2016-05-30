@@ -6,7 +6,7 @@ INCLUDE(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LMDB DEFAULT_MSG LMDB_INCLUDE_DIR LMDB_LIBRARIES)
 
 IF(LMDB_FOUND)
-    MESSAGE(STATUS "Found lmdb at $ENV{LMDB_DIR}")
+    MESSAGE(STATUS "Found lmdb at ${LMDB_INCLUDE_DIR}")
     MARK_AS_ADVANCED(LMDB_INCLUDE_DIR LMDB_LIBRARIES)
     
 ENDIF()
