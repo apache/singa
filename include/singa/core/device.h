@@ -77,6 +77,10 @@ class Device {
 
   Device* host() const { return host_;}
 
+  Context* context(int k) {
+    return &ctx_;
+  }
+
   int id() const { return id_; }
 
  protected:
@@ -104,6 +108,8 @@ class Device {
   // SafeQueue<Operation> op_log_;
   /// The host device
   Device* host_;
+  // TODO(wangwei) define multiple contexts, one per executor
+  Context ctx_;
 };
 
 /// Represent a CPU device which may have multiple threads/executors.
@@ -125,9 +131,6 @@ class CppCPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-
- protected:
-  Context ctx_;
 };
 
 /// a singleton CppDevice as the host for all devices.
@@ -177,9 +180,6 @@ class CudaGPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-
- protected:
-  Context ctx_;
 };
 
 /// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.

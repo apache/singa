@@ -306,7 +306,8 @@ message ConvolutionConf {
   optional uint32 stride_h = 13; // The stride height (2D only)
   optional uint32 stride_w = 14; // The stride width (2D only)
 
-  optional uint32 group = 5 [default = 1]; // The group size for group conv
+  // SINGA: not supported.
+  // optional uint32 group = 5 [default = 1]; // The group size for group conv
 
   optional FillerConf weight_filler = 7; // The filler for the weight
   optional FillerConf bias_filler = 8; // The filler for the bias
@@ -326,20 +327,24 @@ message ConvolutionConf {
   // With (N, C, D, H, W) inputs, and axis == 1, we perform
   // N independent 3D convolutions, sliding (C/g)-channels
   // filters across the spatial axes (D, H, W) of the input.
-  optional int32 axis = 16 [default = 1];
+  // SINGA: not supported;
+  // optional int32 axis = 16 [default = 1];
 
   // Whether to force use of the general ND convolution, even if a specific
   // implementation for blobs of the appropriate number of spatial dimensions
   // is available. (Currently, there is only a 2D-specific convolution
   // implementation; for input blobs with num_axes != 2, this option is
   // ignored and the ND implementation will be used.)
-  optional bool force_nd_im2col = 17 [default = false];
-  // add by xiangrui
+  // SINGA: not supported;
+  // optional bool force_nd_im2col = 17 [default = false];
+
+
+  // SINGA: add by xiangrui
   // cudnn workspace size in MB
   optional int32 workspace_byte_limit = 50 [default = 512];
   // cudnn algorithm preference
   // options: "fastest", "limited_workspace", "no_workspace"
-  optional string algo_pref = 51 [default = "fastest"];
+  optional string prefer = 51 [default = "fastest"];
   // input shape
   optional int32 channels = 52;
   optional int32 height = 53;

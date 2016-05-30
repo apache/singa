@@ -30,8 +30,8 @@ void Pooling::Setup(const LayerConf& conf) {
     kernel_w_ = pool_conf.kernel_w();
     kernel_h_ = pool_conf.kernel_h();
   }
-  CHECK_NE(kernel_w_, 0);
-  CHECK_NE(kernel_h_, 0);
+  CHECK_GT(kernel_w_, 0u);
+  CHECK_GT(kernel_h_, 0u);
 
   if (pool_conf.has_pad()) {
     pad_w_ = pad_h_ = pool_conf.pad();
@@ -39,6 +39,8 @@ void Pooling::Setup(const LayerConf& conf) {
     pad_w_ = pool_conf.pad_w();
     pad_h_ = pool_conf.pad_h();
   }
+  CHECK_GE(pad_w_, 0u);
+  CHECK_GE(pad_h_, 0u);
 
   if (pool_conf.has_stride()) {
     stride_w_ = stride_h_ = pool_conf.stride();
@@ -46,6 +48,8 @@ void Pooling::Setup(const LayerConf& conf) {
     stride_w_ = pool_conf.stride_w();
     stride_h_ = pool_conf.stride_h();
   }
+  CHECK_GT(stride_w_, 0u);
+  CHECK_GT(stride_h_, 0u);
 
   pool_ = pool_conf.pool();
   CHECK(pool_ == PoolingConf_PoolMethod_AVE ||

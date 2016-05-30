@@ -28,32 +28,51 @@ void Convolution::Setup(const LayerConf &conf) {
   ConvolutionConf conv_conf = conf.convolution_conf();
   // kernel_size, pad, and stride are repeated fields.
   if (conv_conf.kernel_size_size() > 0) {
-    kernel_w_ = kernel_h_ = conv_conf.kernel_size(0);
+    if (conv_conf.kernel_size_size() == 1) {
+      kernel_w_ = kernel_h_ = conv_conf.kernel_size(0);
+    } else {
+      kernel_w_ = conv_conf.kernel_size(0);
+      kernel_h_ = conv_conf.kernel_size(1);
+    }
   } else {
     kernel_w_ = conv_conf.kernel_w();
     kernel_h_ = conv_conf.kernel_h();
   }
-  CHECK_NE(kernel_w_, 0);
-  CHECK_NE(kernel_h_, 0);
+  CHECK_GT(kernel_w_, 0u);
+  CHECK_GT(kernel_h_, 0u);
 
   if (conv_conf.pad_size() > 0) {
-    pad_w_ = pad_h_ = conv_conf.pad(0);
+    if (conv_conf.pad_size() == 1) {
+      pad_w_ = pad_h_ = conv_conf.pad(0);
+    } else {
+      pad_w_ = conv_conf.pad(0);
+      pad_h_ = conv_conf.pad(1);
+    }
   } else {
     pad_w_ = conv_conf.pad_w();
     pad_h_ = conv_conf.pad_h();
   }
+  CHECK_GE(pad_w_, 0u);
+  CHECK_GE(pad_h_, 0u);
 
   if (conv_conf.stride_size() > 0) {
-    stride_w_ = stride_h_ = conv_conf.stride(0);
+    if (conv_conf.stride_size() == 1) {
+      stride_w_ = stride_h_ = conv_conf.stride(0);
+    } else {
+      stride_w_ = conv_conf.stride(0);
+      stride_h_ = conv_conf.stride(1);
+    }
   } else {
     stride_w_ = conv_conf.stride_w();
     stride_h_ = conv_conf.stride_h();
   }
+  CHECK_GT(stride_w_, 0u);
+  CHECK_GT(stride_h_, 0u);
 
   num_filters_ = conv_conf.num_output();
   bias_term_ = conv_conf.bias_term();
 
-  // Shape of src
+  // Shape of input image
   channels_ = conv_conf.channels();
   height_ = conv_conf.height();
   width_ = conv_conf.width();
@@ -68,7 +87,7 @@ void Convolution::Setup(const LayerConf &conf) {
   bias_.Reshape(Shape{num_filters_});
   // Push back params into param_values_
   // Assume the order of param is: weight, bias
-  for (const auto& spec : conf.param()) param_specs_.push_back(spec);
+  for (const auto &spec : conf.param()) param_specs_.push_back(spec);
   param_values_.push_back(&weight_);
   param_values_.push_back(&bias_);
 }

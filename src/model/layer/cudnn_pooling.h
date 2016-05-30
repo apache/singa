@@ -43,7 +43,7 @@ class CudnnPooling : public Pooling {
                                                    const Tensor &grad) override;
 
   /// Init cudnn related data structures.
-  void InitCudnn(DataType dtype);
+  void InitCudnn(const Tensor& input);
 
  private:
   bool has_init_cudnn_ = false;

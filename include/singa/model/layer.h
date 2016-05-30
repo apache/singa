@@ -44,7 +44,7 @@ class Layer {
 
   // ============= Following Functions could be override =====================
   /// Destruct objects created by this layer.
-  virtual ~Layer() {}; 
+  virtual ~Layer() {};
 
   /// Each layer sub-class would optionaly have a type name.
   /// Used for debugging and logging.
@@ -160,7 +160,10 @@ class Layer {
   const vector<ParamSpec> param_specs() { return param_specs_; }
 
   /// Return the i-th ParamSpec.
-  const ParamSpec& param_specs(int i) { return param_specs_.at(i); }
+  const ParamSpec& param_specs(size_t i) {
+    CHECK_LT(i, param_specs_.size());
+    return param_specs_.at(i);
+  }
 
   /// Return pointers to parameter Tensor s.
   const vector<Tensor*> param_values() { return param_values_; }

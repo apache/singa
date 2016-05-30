@@ -43,23 +43,23 @@ TEST(CudnnPooling, Setup) {
   pool.Setup(conf);
 
   EXPECT_EQ(singa::PoolingConf_PoolMethod_MAX, pool.pool_method());
-  EXPECT_EQ(1, pool.kernel_h());
-  EXPECT_EQ(2, pool.kernel_w());
-  EXPECT_EQ(1, pool.pad_h());
-  EXPECT_EQ(0, pool.pad_w());
-  EXPECT_EQ(2, pool.stride_h());
-  EXPECT_EQ(1, pool.stride_w());
-  EXPECT_EQ(1, pool.channels());
-  EXPECT_EQ(3, pool.height());
-  EXPECT_EQ(3, pool.width());
+  EXPECT_EQ(1u, pool.kernel_h());
+  EXPECT_EQ(2u, pool.kernel_w());
+  EXPECT_EQ(1u, pool.pad_h());
+  EXPECT_EQ(0u, pool.pad_w());
+  EXPECT_EQ(2u, pool.stride_h());
+  EXPECT_EQ(1u, pool.stride_w());
+  EXPECT_EQ(1u, pool.channels());
+  EXPECT_EQ(3u, pool.height());
+  EXPECT_EQ(3u, pool.width());
 }
 
 TEST(CudnnPooling, Forward) {
   const size_t batchsize = 1, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
-                                      6.0f, 7.0f, 8.0f, 9.0f};
+                                          6.0f, 7.0f, 8.0f, 9.0f};
   singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{batchsize, c,  h, w}, &cuda);
+  singa::Tensor in(singa::Shape{batchsize, c, h, w}, &cuda);
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
 
   CudnnPooling pool;
@@ -83,7 +83,7 @@ TEST(CudnnPooling, Forward) {
   out1.ToDevice(&host);
   const float *outptr1 = out1.data<const float *>();
   // Input: 3*3; kernel: 2*2; stride: 1*1; no padding.
-  EXPECT_EQ(4, out1.Size());
+  EXPECT_EQ(4u, out1.Size());
   EXPECT_EQ(5.0f, outptr1[0]);
   EXPECT_EQ(6.0f, outptr1[1]);
   EXPECT_EQ(8.0f, outptr1[2]);
@@ -127,7 +127,7 @@ TEST(CudnnPooling, Backward) {
   singa::Tensor in_grad = ret.first;
   in_grad.ToDevice(&host);
   const float *dx = in_grad.data<const float *>();
-  EXPECT_EQ(9, in_grad.Size());
+  EXPECT_EQ(9u, in_grad.Size());
   EXPECT_EQ(0.0f, dx[0]);
   EXPECT_EQ(0.0f, dx[1]);
   EXPECT_EQ(0.0f, dx[2]);

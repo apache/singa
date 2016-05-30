@@ -47,7 +47,6 @@ class Convolution : public Layer {
   size_t stride_w() const { return stride_w_; }
   size_t stride_h() const { return stride_h_; }
   size_t num_filters() const { return num_filters_; }
-  size_t batchsize() const { return batchsize_; }
   size_t channels() const { return channels_; }
   size_t height() const { return height_; }
   size_t width() const { return width_; }
@@ -67,7 +66,7 @@ class Convolution : public Layer {
  protected:
   size_t kernel_w_, pad_w_, stride_w_;
   size_t kernel_h_, pad_h_, stride_h_;
-  size_t batchsize_, channels_, height_, width_;
+  size_t channels_, height_, width_;
   size_t col_height_, col_width_, conv_height_, conv_width_, num_filters_;
   Tensor weight_, bias_;
   // store intermediate data, i.e., input tensor

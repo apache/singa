@@ -23,9 +23,25 @@
 #define SINGA_UTILS_TOKENIZER_H_
 
 #include <string>
+#include <algorithm>
 #include "singa/utils/logging.h"
 
 namespace singa {
+inline bool icasecmp(const string& l, const string& r) {
+  return l.size() == r.size() &&
+         equal(l.cbegin(), l.cend(), r.cbegin(),
+               [](string::value_type l1, string::value_type r1) {
+                 return toupper(l1) == toupper(r1);
+               });
+}
+
+inline string ToLowerCase(const string& input) {
+  string out;
+  out.resize(input.size());
+  std::transform(input.begin(), input.end(), out.begin(), ::tolower);
+  return out;
+}
+
 /**
  * Tokenize a string.
  *

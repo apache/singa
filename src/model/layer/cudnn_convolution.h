@@ -27,6 +27,7 @@
 #include "singa/core/common.h"
 #include "singa/model/layer.h"
 #include "singa/proto/core.pb.h"
+#include "singa/utils/string.h"
 
 namespace singa {
 class CudnnConvolution : public Convolution {
@@ -41,13 +42,15 @@ class CudnnConvolution : public Convolution {
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const LayerConf &conf) override;
-  /// Init cudnn related data structures.
-  void InitCudnn(DataType dtype, Device *dev, Context *ctx);
 
   void ToDevice(Device *device) override;
 
   size_t workspace_byte_limit() { return workspace_byte_limit_; }
-  string pref() { return pref_; }
+  string prefer() { return prefer_; }
+
+ protected:
+  /// Init cudnn related data structures.
+  void InitCudnn(const Tensor& input);
 
  protected:
   bool has_init_cudnn_ = false;
@@ -61,7 +64,7 @@ class CudnnConvolution : public Convolution {
   cudnnConvolutionBwdDataAlgo_t bp_data_alg_;
   size_t workspace_byte_limit_, workspace_count_;
   Tensor workspace_;
-  string pref_;
+  string prefer_;
 };
 
 }  // namespace singa

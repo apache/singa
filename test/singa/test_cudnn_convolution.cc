@@ -40,31 +40,31 @@ TEST(CudnnConvolution, Setup) {
   convconf->set_bias_term(true);
   // MB
   convconf->set_workspace_byte_limit(256);
-  convconf->set_algo_pref("fastest");
+  convconf->set_prefer("fastest");
   convconf->set_channels(1);
   convconf->set_height(3);
   convconf->set_width(3);
   conv.Setup(conf);
 
-  EXPECT_EQ(2, conv.kernel_h());
-  EXPECT_EQ(2, conv.kernel_w());
-  EXPECT_EQ(1, conv.pad_h());
-  EXPECT_EQ(1, conv.pad_w());
-  EXPECT_EQ(1, conv.stride_h());
-  EXPECT_EQ(1, conv.stride_w());
-  EXPECT_EQ(2, conv.num_filters());
+  EXPECT_EQ(2u, conv.kernel_h());
+  EXPECT_EQ(2u, conv.kernel_w());
+  EXPECT_EQ(1u, conv.pad_h());
+  EXPECT_EQ(1u, conv.pad_w());
+  EXPECT_EQ(1u, conv.stride_h());
+  EXPECT_EQ(1u, conv.stride_w());
+  EXPECT_EQ(2u, conv.num_filters());
   EXPECT_EQ(true, conv.bias_term());
-  EXPECT_EQ(256 << 20, conv.workspace_byte_limit());
-  EXPECT_STREQ("fastest", conv.pref().c_str());
-  EXPECT_EQ(1, conv.channels());
-  EXPECT_EQ(3, conv.height());
-  EXPECT_EQ(3, conv.width());
+  EXPECT_EQ(256u << 20, conv.workspace_byte_limit());
+  EXPECT_STREQ("fastest", conv.prefer().c_str());
+  EXPECT_EQ(1u, conv.channels());
+  EXPECT_EQ(3u, conv.height());
+  EXPECT_EQ(3u, conv.width());
 }
 
 TEST(CudnnConvolution, Forward) {
   const size_t batchsize = 1, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
-                                      6.0f, 7.0f, 8.0f, 9.0f};
+                                          6.0f, 7.0f, 8.0f, 9.0f};
   singa::CudaGPU cuda(0, 1);
   singa::Tensor in(singa::Shape{batchsize, c, h, w}, &cuda);
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
@@ -94,7 +94,7 @@ TEST(CudnnConvolution, Forward) {
   convconf->set_bias_term(true);
   // MB
   convconf->set_workspace_byte_limit(256);
-  convconf->set_algo_pref("fastest");
+  convconf->set_prefer("fastest");
   convconf->set_channels(1);
   convconf->set_height(3);
   convconf->set_width(3);
@@ -106,7 +106,7 @@ TEST(CudnnConvolution, Forward) {
   out1.ToDevice(&host);
   const float *outptr1 = out1.data<const float *>();
   // Input: 3*3; kernel: 3*3; stride: 2*2; padding: 1*1.
-  EXPECT_EQ(4, out1.Size());
+  EXPECT_EQ(4u, out1.Size());
 
   EXPECT_EQ(3.0f, outptr1[0]);
   EXPECT_EQ(7.0f, outptr1[1]);
@@ -118,7 +118,7 @@ TEST(CudnnConvolution, Backward) {
   // src_data
   const size_t batchsize = 1, c = 1, src_h = 3, src_w = 3;
   const float x[batchsize * c * src_h * src_w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
-                                              6.0f, 7.0f, 8.0f, 9.0f};
+                                                  6.0f, 7.0f, 8.0f, 9.0f};
   singa::CudaGPU cuda(0, 1);
   singa::Tensor in(singa::Shape{batchsize, c, src_h, src_w}, &cuda);
   in.CopyDataFromHostPtr(x, batchsize * c * src_h * src_w);
@@ -148,7 +148,7 @@ TEST(CudnnConvolution, Backward) {
   convconf->set_num_output(1);
   convconf->set_bias_term(true);
   convconf->set_workspace_byte_limit(256);
-  convconf->set_algo_pref("fastest");
+  convconf->set_prefer("fastest");
   convconf->set_channels(1);
   convconf->set_height(3);
   convconf->set_width(3);
@@ -159,8 +159,10 @@ TEST(CudnnConvolution, Backward) {
 
   // grad
   const size_t grad_h = 2, grad_w = 2;
-  const float dy[batchsize * num_filters * grad_h * grad_w] = {0.1f, 0.2f, 0.3f, 0.4f};
-  singa::Tensor grad(singa::Shape{batchsize, num_filters, grad_h, grad_w}, &cuda);
+  const float dy[batchsize * num_filters * grad_h * grad_w] = {0.1f, 0.2f, 0.3f,
+                                                               0.4f};
+  singa::Tensor grad(singa::Shape{batchsize, num_filters, grad_h, grad_w},
+                     &cuda);
   grad.CopyDataFromHostPtr(dy, batchsize * num_filters * grad_h * grad_w);
 
   const auto ret = conv.Backward(singa::kTrain, grad);
@@ -169,7 +171,7 @@ TEST(CudnnConvolution, Backward) {
   in_grad.ToDevice(&host);
   const float *dx = in_grad.data<const float *>();
   const float *wptr = we;
-  EXPECT_EQ(9, in_grad.Size());
+  EXPECT_EQ(9u, in_grad.Size());
   EXPECT_EQ(dy[0] * wptr[4], dx[0]);
   EXPECT_EQ(dy[0] * wptr[5] + dy[1] * wptr[3], dx[1]);
   EXPECT_EQ(dy[1] * wptr[4], dx[2]);
@@ -190,7 +192,7 @@ TEST(CudnnConvolution, Backward) {
   EXPECT_EQ(dy[0] + dy[1] + dy[2] + dy[3], dbptr[0]);
 
   const float *dwptr = dw.data<const float *>();
-  EXPECT_EQ(9, dw.Size());
+  EXPECT_EQ(9u, dw.Size());
   EXPECT_EQ(dy[3] * x[4], dwptr[0]);
   EXPECT_EQ(dy[3] * x[5] + dy[2] * x[3], dwptr[1]);
   EXPECT_EQ(dy[2] * x[4], dwptr[2]);
@@ -201,5 +203,5 @@ TEST(CudnnConvolution, Backward) {
   EXPECT_EQ(dy[1] * x[4], dwptr[6]);
   EXPECT_EQ(dy[0] * x[3] + dy[1] * x[5], dwptr[7]);
   EXPECT_EQ(dy[0] * x[4], dwptr[8]);
-}  // USE_CUDNN
-#endif
+}
+#endif  // USE_CUDNN

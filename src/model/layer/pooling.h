@@ -46,7 +46,6 @@ class Pooling : public Layer {
   size_t stride_w() const { return stride_w_; }
   size_t stride_h() const { return stride_h_; }
   PoolingConf_PoolMethod pool_method() const { return pool_; }
-  size_t batchsize() const { return batchsize_; }
   size_t channels() const { return channels_; }
   size_t height() const { return height_; }
   size_t width() const { return width_; }
@@ -54,7 +53,7 @@ class Pooling : public Layer {
  protected:
   size_t kernel_w_, pad_w_, stride_w_;
   size_t kernel_h_, pad_h_, stride_h_;
-  size_t batchsize_, channels_, height_, width_, pooled_height_, pooled_width_;
+  size_t channels_, height_, width_, pooled_height_, pooled_width_;
   PoolingConf_PoolMethod pool_;
   // To store the input and output(of forward) tensors
   std::stack<Tensor> buf_;

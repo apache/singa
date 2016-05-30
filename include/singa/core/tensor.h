@@ -97,7 +97,7 @@ public:
     return shape_.at(idx);
   }
 
-  int nDim() const { return shape_.size(); }
+  size_t nDim() const { return shape_.size(); }
 
   bool transpose() const { return transpose_; }
 

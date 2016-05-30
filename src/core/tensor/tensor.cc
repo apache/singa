@@ -562,8 +562,8 @@ void AddColumn(const float alpha, const float beta, const Tensor &v,
     Tensor X = M->T();
     AddRow(v, &X);
   } else {
-    CHECK_EQ(M->nDim(), 2);
-    CHECK_EQ(v.nDim(), 1);
+    CHECK_EQ(M->nDim(), 2u);
+    CHECK_EQ(v.nDim(), 1u);
     size_t nb_row = M->shape(0), nb_col = M->shape(1);
     CHECK_EQ(nb_row, v.Size());
 
@@ -581,8 +581,8 @@ void AddRow(const float alpha, const float beta, const Tensor &v, Tensor *M) {
     Tensor X = M->T();
     AddColumn(v, &X);
   } else {
-    CHECK_EQ(M->nDim(), 2);
-    CHECK_EQ(v.nDim(), 1);
+    CHECK_EQ(M->nDim(), 2u);
+    CHECK_EQ(v.nDim(), 1u);
     size_t nb_row = M->shape(0), nb_col = M->shape(1);
     CHECK_EQ(nb_col, v.Size());
 

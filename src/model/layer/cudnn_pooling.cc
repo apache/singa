@@ -41,17 +41,19 @@ void CudnnPooling::Setup(const LayerConf &conf) {
     nan_prop_ = CUDNN_NOT_PROPAGATE_NAN;
 }
 
-void CudnnPooling::InitCudnn(DataType dtype) {
+void CudnnPooling::InitCudnn(const Tensor& input) {
   CHECK(!has_init_cudnn_);
+  DataType dtype = input.data_type();
+  size_t batchsize = input.shape(0);
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_desc_));
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_desc_));
   CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc_));
 
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(x_desc_, CUDNN_TENSOR_NCHW,
-                                         GetCudnnDataType(dtype), batchsize_,
+                                         GetCudnnDataType(dtype), batchsize,
                                          channels_, height_, width_));
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-      y_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), batchsize_,
+      y_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), batchsize,
       channels_, pooled_height_, pooled_width_));
   auto pool_method = CUDNN_POOLING_MAX;
   if (pool_ == PoolingConf_PoolMethod_MAX)
@@ -77,19 +79,19 @@ void CudnnPooling::InitCudnn(DataType dtype) {
 
 const Tensor CudnnPooling::Forward(int flag, const Tensor &input) {
   CHECK_EQ(input.device()->lang(), kCuda);
-  CHECK_EQ(input.shape().size(), 4);
+  CHECK_EQ(input.nDim(), 4u);
   buf_.push(input);
-  batchsize_ = input.shape()[0];
+  size_t batchsize = input.shape(0);
   DataType dtype = input.data_type();
   Device *dev = input.device();
-  float alpha = 1.0f, beta = 0.0f;
-  if (!has_init_cudnn_) InitCudnn(dtype);
+  if (!has_init_cudnn_) InitCudnn(input);
 
-  Shape shape{batchsize_, channels_, pooled_height_, pooled_width_};
+  Shape shape{batchsize, channels_, pooled_height_, pooled_width_};
   Tensor output = Tensor(shape, dev, dtype);
   output.device()->Exec(
-      [input, output, alpha, beta, this](Context *ctx) {
+      [input, output, this](Context *ctx) {
         Blob *inblob = input.blob(), *outblob = output.blob();
+        float alpha = 1.0f, beta = 0.0f;
         cudnnPoolingForward(ctx->cudnn_handle, this->pool_desc_, &alpha,
                             this->x_desc_, inblob->data(), &beta, this->y_desc_,
                             outblob->mutable_data());
@@ -102,26 +104,26 @@ const Tensor CudnnPooling::Forward(int flag, const Tensor &input) {
 const std::pair<Tensor, vector<Tensor>> CudnnPooling::Backward(
     int flag, const Tensor &grad) {
   CHECK_EQ(grad.device()->lang(), kCuda);
-  CHECK_EQ(grad.shape().size(), 4);
+  CHECK_EQ(grad.nDim(), 4u);
   vector<Tensor> param_grad;
+  Tensor y = buf_.top();
+  buf_.pop();
+  Tensor x = buf_.top();
+  buf_.pop();
   Tensor dx;
-  Tensor data = buf_.top();
-  buf_.pop();
-  Tensor src_data = buf_.top();
-  buf_.pop();
-  dx.ResetLike(src_data);
+  dx.ResetLike(x);
 
-  float alpha = 1.0f, beta = 0.0f;
   dx.device()->Exec(
-      [dx, grad, src_data, data, alpha, beta, this](Context *ctx) {
-        Blob *dyblob = grad.blob(), *dxblob = dx.blob(),
-             *yblob = data.blob(), *xblob = src_data.blob();
+      [dx, grad, x, y, this](Context *ctx) {
+        Blob *dyblob = grad.blob(), *dxblob = dx.blob(), *yblob = y.blob(),
+             *xblob = x.blob();
+        float alpha = 1.0f, beta = 0.0f;
         cudnnPoolingBackward(ctx->cudnn_handle, this->pool_desc_, &alpha,
                              this->y_desc_, yblob->data(), this->y_desc_,
                              dyblob->data(), this->x_desc_, xblob->data(),
                              &beta, this->x_desc_, dxblob->mutable_data());
       },
-      {grad.blob(), data.blob(), src_data.blob()}, {dx.blob()});
+      {grad.blob(), y.blob(), x.blob()}, {dx.blob()});
 
   return std::make_pair(dx, param_grad);
 }
