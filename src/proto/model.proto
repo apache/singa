@@ -208,6 +208,7 @@ message LayerConf {
   // optional ImageDataConf image_data_conf = 115;
   optional InfogainLossConf infogain_loss_conf = 116;
   optional InnerProductConf inner_product_conf = 117;
+  optional DenseConf dense_conf = 150;
   optional LogConf log_conf = 134;
   optional LRNConf lrn_conf = 118;
   // Used in SINGA
@@ -571,6 +572,20 @@ message InnerProductConf {
   // all preceding axes are retained in the output.
   // May be negative to index from the end (e.g., -1 for the last axis).
   optional int32 axis = 5 [default = 1];
+}
+
+message DenseConf {
+  optional uint32 num_output = 1; // The number of outputs for the layer
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
+  optional FillerConf weight_filler = 3; // The filler for the weight
+  optional FillerConf bias_filler = 4; // The filler for the bias
+
+  // The first axis to be lumped into a single inner product computation;
+  // all preceding axes are retained in the output.
+  // May be negative to index from the end (e.g., -1 for the last axis).
+  optional int32 axis = 5 [default = 1];
+  optional uint32 num_input = 20; // The number of inputs for the layer
+  optional bool transpose = 21 [default = false]; // whether transpose or not
 }
 
 // Message that stores hyper-parameters used by LogLayer
