@@ -33,7 +33,7 @@ void CudnnLRN::InitCudnn(const Shape& shape , DataType dtype) {
   CHECK(!has_init_cudnn_);
   mode_ = CUDNN_LRN_CROSS_CHANNEL_DIM1;
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&shape_desc_));
-  CHECK_EQ(shape.size(), 4);
+  CHECK_EQ(shape.size(), 4u);
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(shape_desc_,
       CUDNN_TENSOR_NCHW,
       GetCudnnDataType(dtype),
@@ -58,9 +58,9 @@ const Tensor CudnnLRN::Forward(int flag, const Tensor& input) {
   output.ResetLike(input);
   output.device()->Exec(
       [=](Context* ctx) {
-        Blob *inblob = input.blob(), *outblob = output.blob();
-        const float alpha = 1.0f, beta = 0.0f;
-        CUDNN_CHECK(cudnnLRNCrossChannelForward(ctx->cudnn_handle,
+      Blob *inblob = input.blob(), *outblob = output.blob();
+      const float alpha = 1.0f, beta = 0.0f;
+      CUDNN_CHECK(cudnnLRNCrossChannelForward(ctx->cudnn_handle,
             this->lrn_desc_,
             this->mode_,
             &alpha,
@@ -70,8 +70,11 @@ const Tensor CudnnLRN::Forward(int flag, const Tensor& input) {
             this->shape_desc_,
             outblob->mutable_data()));
       }, {input.blob()}, {output.blob()});
-  buf_.push(input);
-  buf_.push(output);
+
+  if (flag & kTrain) {
+    buf_.push(input);
+    buf_.push(output);
+  }
   return output;
 }
 
@@ -79,6 +82,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnLRN::Backward(
     int flag, const Tensor& grad) {
   vector <Tensor> param_grad;
   Tensor dx;
+  CHECK(!buf_.empty());
   Tensor output = buf_.top();
   buf_.pop();
   Tensor input = buf_.top();

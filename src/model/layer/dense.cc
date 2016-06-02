@@ -45,13 +45,13 @@ void Dense::Setup(const LayerConf &conf) {
 /// \copydoc Layer::Forward(int flag, const Tensor&)
 const Tensor Dense::Forward(int flag, const Tensor &input) {
   Tensor output;
-
   if (transpose_)  // use the transposed version of weight_ for computing
     output = Mult(input, weight_);
   else
     output = Mult(input, weight_.T());
   AddRow(bias_, &output);
-  buf_.push(input);
+  if (flag & kTrain)
+    buf_.push(input);
   return output;
 }
 
@@ -59,6 +59,7 @@ const Tensor Dense::Forward(int flag, const Tensor &input) {
 const std::pair<Tensor, vector<Tensor>> Dense::Backward(int flag,
                                                         const Tensor &grad) {
   vector<Tensor> param_grad;
+  CHECK(!buf_.empty());
   Tensor src_data = buf_.top();
   buf_.pop();
   Tensor db, dw, dx;

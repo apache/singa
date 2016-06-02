@@ -64,7 +64,7 @@ TEST(TCudnnActivation, Forward) {
     acti.Setup(conf);
     // acti.InitCudnn(n, singa::kFloat32);
 
-    singa::Tensor out = acti.Forward(0, in);
+    singa::Tensor out = acti.Forward(singa::kTrain, in);
     EXPECT_EQ(n, out.Size());
     singa::CppCPU host(0, 1);
     out.ToDevice(&host);
@@ -103,7 +103,7 @@ TEST(TCudnnActivation, Backward) {
     }
     acti.Setup(conf);
     acti.InitCudnn(n, singa::kFloat32);
-    singa::Tensor out = acti.Forward(0, in);
+    singa::Tensor out = acti.Forward(singa::kTrain, in);
     EXPECT_EQ(n, out.Size());
     singa::CppCPU host(0, 1);
     out.ToDevice(&host);
@@ -113,7 +113,7 @@ TEST(TCudnnActivation, Backward) {
                           -1.0, 1.5,  2.5,  -1.5, -2.5};
     singa::Tensor out_diff(singa::Shape{n}, &cuda);
     out_diff.CopyDataFromHostPtr<float>(grad, n);
-    const auto ret = acti.Backward(0, out_diff);
+    const auto ret = acti.Backward(singa::kTrain, out_diff);
     singa::Tensor in_diff = ret.first;
     in_diff.ToDevice(&host);
     const float* xptr = in_diff.data<const float*>();

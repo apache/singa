@@ -80,7 +80,6 @@ void CudnnPooling::InitCudnn(const Tensor& input) {
 const Tensor CudnnPooling::Forward(int flag, const Tensor &input) {
   CHECK_EQ(input.device()->lang(), kCuda);
   CHECK_EQ(input.nDim(), 4u);
-  buf_.push(input);
   size_t batchsize = input.shape(0);
   DataType dtype = input.data_type();
   Device *dev = input.device();
@@ -97,7 +96,10 @@ const Tensor CudnnPooling::Forward(int flag, const Tensor &input) {
                             outblob->mutable_data());
       },
       {input.blob()}, {output.blob()});
-  buf_.push(output);
+  if (flag & kTrain) {
+    buf_.push(input);
+    buf_.push(output);
+  }
   return output;
 }
 
@@ -106,6 +108,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnPooling::Backward(
   CHECK_EQ(grad.device()->lang(), kCuda);
   CHECK_EQ(grad.nDim(), 4u);
   vector<Tensor> param_grad;
+  CHECK(!buf_.empty());
   Tensor y = buf_.top();
   buf_.pop();
   Tensor x = buf_.top();
