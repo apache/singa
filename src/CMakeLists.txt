@@ -1,8 +1,21 @@
 # generate protobuf sources
 FILE(GLOB proto_files proto/*.proto)
-singa_protobuf_generate_cpp_py(${proto_gen_folder} proto_srcs proto_hdrs proto_python ${proto_files})
-# include python files either to force generation
-ADD_LIBRARY(proto STATIC ${proto_hdrs} ${proto_srcs} ${proto_python})
+protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
+protobuf_generate_python(proto_pys ${proto_files})
+INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
+#message(STATUS "include: ${CMAKE_BINARY_DIR} ")
+#message(STATUS "srcs: ${proto_srcs}")
+#message(STATUS "hdrs: ${proto_hdrs}")
+#message(STATUS "pys: ${proto_pys}")
+ADD_LIBRARY(proto STATIC ${proto_hdrs} ${proto_srcs} ${proto_pys})
+FOREACH(fil ${proto_hdrs})
+    ADD_CUSTOM_COMMAND(
+        TARGET proto PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/singa/proto"
+        COMMAND ${CMAKE_COMMAND} -E copy ${fil} "${CMAKE_BINARY_DIR}/include/singa/proto"
+        #COMMAND ${CMAKE_COMMAND} -E echo "copy done"
+        )
+ENDFOREACH()
 LIST(APPEND SINGA_LINKER_LIBS proto)
 
 #FILE(GLOB_RECURSE utils_source ${CMAKE_CURRENT_SOURCE_DIR}/utils/ "*.cc")
@@ -19,14 +32,14 @@ AUX_SOURCE_DIRECTORY(core/memory core_source)
 AUX_SOURCE_DIRECTORY(core/scheduler core_source)
 AUX_SOURCE_DIRECTORY(core/tensor core_source)
 FILE(GLOB_RECURSE cuda_source core "*.cu")
-set(FLAGS_BACKUP ${CMAKE_CXX_FLAGS})
-set(CMAKE_CXX_FLAGS "")
+SET(FLAGS_BACKUP ${CMAKE_CXX_FLAGS})
+SET(CMAKE_CXX_FLAGS "")
 CUDA_COMPILE(cuda_objs SHARED ${cuda_source} OPTIONS "-Xcompiler -fPIC")
 #message(STATUS "FLAGS ${CMAKE_CXX_FLAGS}")
 #message(STATUS "CORE ${cuda_source}")
 #message(STATUS "OBJ ${cuda_objs}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/core/tensor")
-set(CMAKE_CXX_FLAGS ${FLAGS_BACKUP})
+SET(CMAKE_CXX_FLAGS ${FLAGS_BACKUP})
 ADD_LIBRARY(singa_core SHARED ${core_source} ${cuda_objs})
 TARGET_LINK_LIBRARIES(singa_core ${SINGA_LINKER_LIBS})
 LIST(APPEND SINGA_LINKER_LIBS singa_core)
