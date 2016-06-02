@@ -33,7 +33,6 @@ class Dense : public Layer {
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const LayerConf& conf) override;
 
-  void SetupParam(const Tensor& input);
   /// \copydoc Layer::Forward(int flag, const Tensor&)
   const Tensor Forward(int flag, const Tensor& input) override;
 
@@ -42,12 +41,12 @@ class Dense : public Layer {
                                                    const Tensor& grad) override;
 
   void ToDevice(Device* device) override;
-  
+
   size_t num_output() const { return hdim_; }
   size_t num_input() const { return vdim_; }
   bool transpose() const { return transpose_; }
-  const Tensor &weight() const { return weight_; }
-  const Tensor &bias() const { return bias_; }
+  const Tensor& weight() const { return weight_; }
+  const Tensor& bias() const { return bias_; }
 
   void set_weight(Tensor w) {
     weight_.ResetLike(w);
@@ -58,9 +57,11 @@ class Dense : public Layer {
     bias_.CopyData(b);
   }
 
-protected:
-  size_t batchsize_, vdim_, hdim_;
-  bool transpose_;
+ protected:
+  /// Used in auto-encoder, where the decoder would share its weight matrix from
+  /// the encoder's transposed weight matrix.
+  bool transpose_ = false;
+  size_t vdim_, hdim_;
   Tensor weight_, bias_;
   // Tensor data_, grad_;
   std::stack<Tensor> buf_;

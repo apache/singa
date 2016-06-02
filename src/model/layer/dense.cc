@@ -29,7 +29,7 @@ Dense::~Dense() {
 }
 void Dense::Setup(const LayerConf &conf) {
   Layer::Setup(conf);
-  DenseConf dense_conf = conf.dense_conf();
+  auto dense_conf = conf.dense_conf();
   hdim_ = dense_conf.num_output();
   vdim_ = dense_conf.num_input();
   transpose_ = dense_conf.transpose();
@@ -45,7 +45,8 @@ void Dense::Setup(const LayerConf &conf) {
 /// \copydoc Layer::Forward(int flag, const Tensor&)
 const Tensor Dense::Forward(int flag, const Tensor &input) {
   Tensor output;
-  if (transpose_)
+
+  if (transpose_)  // use the transposed version of weight_ for computing
     output = Mult(input, weight_);
   else
     output = Mult(input, weight_.T());
@@ -55,8 +56,8 @@ const Tensor Dense::Forward(int flag, const Tensor &input) {
 }
 
 /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
-const std::pair<Tensor, vector<Tensor>>
-Dense::Backward(int flag, const Tensor &grad) {
+const std::pair<Tensor, vector<Tensor>> Dense::Backward(int flag,
+                                                        const Tensor &grad) {
   vector<Tensor> param_grad;
   Tensor src_data = buf_.top();
   buf_.pop();
@@ -65,11 +66,10 @@ Dense::Backward(int flag, const Tensor &grad) {
   dw.ResetLike(weight_);
   dx.ResetLike(src_data);
   SumRows(grad, &db);
-  if (transpose_){
-    dx = Mult(grad, weight_.T()); 
+  if (transpose_) {
+    dx = Mult(grad, weight_.T());
     dw = Mult(src_data.T(), grad);
-  }
-  else{
+  } else {
     dx = Mult(grad, weight_);
     dw = Mult(grad.T(), src_data);
   }
@@ -78,8 +78,8 @@ Dense::Backward(int flag, const Tensor &grad) {
   return std::make_pair(dx, param_grad);
 }
 
-void Dense::ToDevice(Device *device) { 
+void Dense::ToDevice(Device *device) {
   weight_.ToDevice(device);
-  bias_.ToDevice(device); 
+  bias_.ToDevice(device);
 }
 } // namespace singa
