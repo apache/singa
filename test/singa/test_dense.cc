@@ -37,7 +37,7 @@ TEST(Dense, Setup) {
   EXPECT_EQ(3u, dense.num_output());
   EXPECT_EQ(2u, dense.num_input());
 }
-
+#ifdef USE_CBLAS
 TEST(Dense, ForwardCpp) {
   Dense dense;
 
@@ -75,9 +75,8 @@ TEST(Dense, ForwardCpp) {
                        x[i * 2 + 1] * we[j * 2 + 1] + bia[j]),
                       outptr1[i * 3 + j]);
 }
-
-
-
+#endif  // USE_CBLAS
+#ifdef USE_CUDA
 TEST(Dense, BackwardCpp) {
   Dense dense;
 
@@ -140,6 +139,7 @@ TEST(Dense, BackwardCpp) {
   for (int i = 0; i < 3; i++)
     EXPECT_FLOAT_EQ((dy[0 * 3 + i] + dy[1 * 3 + i] + dy[2 * 3 + i]), dbiasx[i]);
 }
+#endif
 
 #ifdef USE_CUDA
 TEST(Dense, ForwardCuda) {

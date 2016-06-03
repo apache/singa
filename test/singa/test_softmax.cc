@@ -36,6 +36,7 @@ TEST(Softmax, Setup) {
   EXPECT_EQ(2, sft.Axis());
 }
 
+#ifdef USE_CBLAS
 TEST(Softmax, Forward) {
   const float x[] = {1.0f, 2.0f, 0.0f, -2.0f, -3.0f, -1.0};
   size_t n = sizeof(x) / sizeof(float);
@@ -108,3 +109,4 @@ TEST(Softmax, Backward) {
   EXPECT_FLOAT_EQ(dx[4], xptr[4]);
   EXPECT_FLOAT_EQ(dx[5], xptr[5]);
 }
+#endif

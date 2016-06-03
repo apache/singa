@@ -82,7 +82,7 @@ TEST(SGD, ApplyWithMomentum) {
   }
 }
 
-#ifndef USE_CUDA
+#ifdef USE_CUDA
 TEST(SGD, ApplyWithoutMomentumCuda) {
   singa::SGD sgd;
   const float v[4] = {0.1, 0.2, 0.3, 0.4};

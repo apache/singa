@@ -66,6 +66,7 @@ TEST_F(TestMSE, CppBackward) {
     EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
 }
 #endif
+#ifdef USE_CUDA
 TEST_F(TestMSE, CudaForward) {
   singa::MSE mse;
   singa::CudaGPU dev;
@@ -98,3 +99,4 @@ TEST_F(TestMSE, CudaBackward) {
   for (size_t i = 0; i < grad.Size(); i++)
     EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
 }
+#endif

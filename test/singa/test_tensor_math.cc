@@ -252,6 +252,7 @@ TEST_F(TestTensorMath, SumColumnsCpp) {
   }
 }
 #endif
+#ifdef USE_CUDA
 TEST_F(TestTensorMath, MultCuda) {
   const float x[4] = {1.0f, 2.0f, 3.0f, 4.0f};
   singa::CudaGPU dev;
@@ -337,7 +338,7 @@ TEST_F(TestTensorMath, SubColumnCuda) {
     }
   }
 }
-
+#endif
 TEST_F(TestTensorMath, MultColumnCpp) {
   const float x[3] = {1.0f, 2.0f, 3.0f};
   Tensor t(Shape{3});
@@ -351,7 +352,7 @@ TEST_F(TestTensorMath, MultColumnCpp) {
     }
   }
 }
-
+#ifdef USE_CUDA
 TEST_F(TestTensorMath, MultColumnCuda) {
   const float x[3] = {1.0f, 2.0f, 3.0f};
   singa::CudaGPU dev;
@@ -432,7 +433,7 @@ TEST_F(TestTensorMath, MultRowCuda) {
     }
   }
 }
-
+#endif
 TEST_F(TestTensorMath, DivRowCpp) {
   const float x[2] = {1.1f, 2.1f};
   Tensor t(Shape{2});
@@ -446,7 +447,7 @@ TEST_F(TestTensorMath, DivRowCpp) {
     }
   }
 }
-
+#ifdef USE_CUDA
 TEST_F(TestTensorMath, DivRowCuda) {
   const float x[2] = {1.1f, 2.1f};
   singa::CudaGPU dev;
@@ -495,3 +496,4 @@ TEST_F(TestTensorMath, SumColumnCuda) {
     EXPECT_FLOAT_EQ(tptr[i], tmp);
   }
 }
+#endif
