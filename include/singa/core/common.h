@@ -42,7 +42,7 @@ typedef struct _Cuda { } Cuda;
 typedef struct _Opencl { } Opencl;
 }  // namespace lang
 
-/// Blob reprent a chunk of memory (on device or host) managed by VirtualMemory.
+/// Blob represent a chunk of memory (on device or host) managed by VirtualMemory.
 class Blob {
  public:
   Blob(void* ptr, size_t size) : data_(ptr), size_(size), ref_count_(1) {}

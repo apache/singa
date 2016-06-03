@@ -51,7 +51,7 @@ TEST(Softmax, Forward) {
   softmaxconf->set_axis(axis);
   sft.Setup(conf);
 
-  singa::Tensor out = sft.Forward(0, in);
+  singa::Tensor out = sft.Forward(singa::kTrain, in);
   const float* yptr = out.data<const float*>();
   EXPECT_EQ(n, out.Size());
 
@@ -84,13 +84,13 @@ TEST(Softmax, Backward) {
   singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
   softmaxconf->set_axis(axis);
   sft.Setup(conf);
-  singa::Tensor out = sft.Forward(0, in);
+  singa::Tensor out = sft.Forward(singa::kTrain, in);
   const float* yptr = out.data<const float*>();
 
   const float grad[] = {2.0f, -3.0f, 1.0f, 3.0f, -1.0f, -2.0};
   singa::Tensor out_diff(singa::Shape{row, col});
   out_diff.CopyDataFromHostPtr<float>(grad, n);
-  const auto in_diff = sft.Backward(0, out_diff);
+  const auto in_diff = sft.Backward(singa::kTrain, out_diff);
   const float* xptr = in_diff.first.data<const float*>();
 
   float* dx = new float[n];

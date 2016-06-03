@@ -75,11 +75,13 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
         inblob->data(), &beta, this->desc_, outblob->mutable_data()));
 #endif
   }, {input.blob()}, {output.blob()});
-  if (cudnn_mode_ == CUDNN_ACTIVATION_SIGMOID ||
-      cudnn_mode_ == CUDNN_ACTIVATION_TANH) {
-    buf_.push(output);
-  } else if (cudnn_mode_ == CUDNN_ACTIVATION_RELU) {
-    buf_.push(input);
+  if (flag & kTrain) {
+    if (cudnn_mode_ == CUDNN_ACTIVATION_SIGMOID ||
+        cudnn_mode_ == CUDNN_ACTIVATION_TANH) {
+      buf_.push(output);
+    } else if (cudnn_mode_ == CUDNN_ACTIVATION_RELU) {
+      buf_.push(input);
+    }
   }
   return output;
 }
@@ -88,6 +90,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnActivation::Backward(
     int flag, const Tensor& grad) {
   vector<Tensor> param_grad;
   Tensor dx;  // inout = buf_.top();
+  CHECK(!buf_.empty());
   // inout means either used as input or output, only one is valid for one type
   // of activation
   Tensor inout = buf_.top();

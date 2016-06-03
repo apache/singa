@@ -138,7 +138,7 @@ void CudnnConvolution::InitCudnn(const Tensor& input) {
 const Tensor CudnnConvolution::Forward(int flag, const Tensor &input) {
   CHECK_EQ(input.device()->lang(), kCuda);
   CHECK_EQ(input.nDim(), 4u);
-  buf_.push(input);
+  if (flag & kTrain) buf_.push(input);  // buffer the input for backward
   size_t batchsize = input.shape()[0];
   DataType dtype = input.data_type();
   Device *dev = input.device();
@@ -175,6 +175,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnConvolution::Backward(
   CHECK(has_init_cudnn_);
   CHECK_EQ(grad.device()->lang(), kCuda);
   CHECK_EQ(grad.nDim(), 4u);
+  CHECK(!buf_.empty());
   Tensor src_data = buf_.top();
   buf_.pop();
   vector<Tensor> param_grad;
