@@ -41,9 +41,9 @@ void CudnnConvolution::Setup(const LayerConf &conf) {
   workspace_byte_limit_ = conv_conf.workspace_byte_limit() << 20;
   prefer_ = ToLowerCase(conv_conf.prefer());
   CHECK(prefer_ == "fastest" || prefer_ == "limited_workspace" ||
-        prefer_ == "no_workspace")
-      << "CudnnConvolution only supports three algorithm preferences: fastest, "
-         "limited_workspace and no_workspace";
+        prefer_ == "no_workspace" || prefer_ == "autotune")
+      << "CudnnConvolution only supports four algorithm preferences: fastest, "
+         "limited_workspace, no_workspace and autotune";
 }
 
 void CudnnConvolution::ToDevice(Device *device) {
@@ -52,7 +52,7 @@ void CudnnConvolution::ToDevice(Device *device) {
   workspace_.ToDevice(device);
 }
 
-void CudnnConvolution::InitCudnn(const Tensor& input) {
+void CudnnConvolution::InitCudnn(const Tensor &input) {
   CHECK(!has_init_cudnn_);
   DataType dtype = input.data_type();
   Device *dev = input.device();
@@ -89,34 +89,54 @@ void CudnnConvolution::InitCudnn(const Tensor& input) {
   LOG(FATAL) << "Not supported CUDNN version = " << CUDNN_VERSION_MAJOR;
 #endif
 
-  cudnnConvolutionFwdPreference_t fwd_pref;
-  cudnnConvolutionBwdFilterPreference_t bwd_filt_pref;
-  cudnnConvolutionBwdDataPreference_t bwd_data_pref;
-  if (prefer_ == "fastest") {
-    fwd_pref = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
-    bwd_filt_pref = CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST;
-    bwd_data_pref = CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST;
-  } else if (prefer_ == "limited_workspace") {
-    fwd_pref = CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT;
-    bwd_filt_pref = CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT;
-    bwd_data_pref = CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT;
-  } else if (prefer_ == "no_workspace") {
-    fwd_pref = CUDNN_CONVOLUTION_FWD_NO_WORKSPACE;
-    bwd_filt_pref = CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE;
-    bwd_data_pref = CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT;
+  if (prefer_ == "fastest" || prefer_ == "limited_workspace" ||
+      prefer_ == "no_workspace") {
+    cudnnConvolutionFwdPreference_t fwd_pref;
+    cudnnConvolutionBwdFilterPreference_t bwd_filt_pref;
+    cudnnConvolutionBwdDataPreference_t bwd_data_pref;
+    if (prefer_ == "fastest") {
+      fwd_pref = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
+      bwd_filt_pref = CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST;
+      bwd_data_pref = CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST;
+    } else if (prefer_ == "limited_workspace") {
+      fwd_pref = CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT;
+      bwd_filt_pref = CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT;
+      bwd_data_pref = CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT;
+    } else {
+      fwd_pref = CUDNN_CONVOLUTION_FWD_NO_WORKSPACE;
+      bwd_filt_pref = CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE;
+      bwd_data_pref = CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT;
+    }
+    CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
+        ctx->cudnn_handle, x_desc_, filter_desc_, conv_desc_, y_desc_, fwd_pref,
+        workspace_byte_limit_, &fp_alg_));
+    CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
+        ctx->cudnn_handle, x_desc_, y_desc_, conv_desc_, filter_desc_,
+        bwd_filt_pref, workspace_byte_limit_, &bp_filter_alg_));
+    CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
+        ctx->cudnn_handle, filter_desc_, y_desc_, conv_desc_, x_desc_,
+        bwd_data_pref, workspace_byte_limit_, &bp_data_alg_));
+  } else if (prefer_ == "autotune") {
+    const int topk = 1;
+    int num_fp_alg, num_bp_filt_alg, num_bp_data_alg;
+    cudnnConvolutionFwdAlgoPerf_t fp_alg_perf[topk];
+    cudnnConvolutionBwdFilterAlgoPerf_t bp_filt_perf[topk];
+    cudnnConvolutionBwdDataAlgoPerf_t bp_data_perf[topk];
+    CUDNN_CHECK(cudnnFindConvolutionForwardAlgorithm(
+        ctx->cudnn_handle, x_desc_, filter_desc_, conv_desc_, y_desc_, topk,
+        &num_fp_alg, fp_alg_perf));
+    fp_alg_ = fp_alg_perf[0].algo;
+    CUDNN_CHECK(cudnnFindConvolutionBackwardFilterAlgorithm(
+        ctx->cudnn_handle, x_desc_, y_desc_, conv_desc_, filter_desc_, topk,
+        &num_bp_filt_alg, bp_filt_perf));
+    bp_filter_alg_ = bp_filt_perf[0].algo;
+    CUDNN_CHECK(cudnnFindConvolutionBackwardDataAlgorithm(
+        ctx->cudnn_handle, filter_desc_, y_desc_, conv_desc_, x_desc_, topk,
+        &num_bp_data_alg, bp_data_perf));
+    bp_data_alg_ = bp_data_perf[0].algo;
   } else {
     LOG(FATAL) << "Preferred algorithm is not available!";
   }
-  CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
-      ctx->cudnn_handle, x_desc_, filter_desc_, conv_desc_, y_desc_, fwd_pref,
-      workspace_byte_limit_, &fp_alg_));
-
-  CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
-      ctx->cudnn_handle, x_desc_, y_desc_, conv_desc_, filter_desc_,
-      bwd_filt_pref, workspace_byte_limit_, &bp_filter_alg_));
-  CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
-      ctx->cudnn_handle, filter_desc_, y_desc_, conv_desc_, x_desc_,
-      bwd_data_pref, workspace_byte_limit_, &bp_data_alg_));
 
   size_t fp_byte, bp_data_byte, bp_filter_byte;
   CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(
@@ -147,25 +167,30 @@ const Tensor CudnnConvolution::Forward(int flag, const Tensor &input) {
 
   Shape shape{batchsize, num_filters_, conv_height_, conv_width_};
   Tensor output(shape, dev, dtype);
-  output.device()->Exec([input, output, this](Context *ctx) {
-    Blob *inblob = input.blob(), *outblob = output.blob(),
-         *wblob = this->weight_.blob();
-    float alpha = 1.f, beta = 0.f;
-    cudnnConvolutionForward(ctx->cudnn_handle, &alpha, this->x_desc_,
-                            inblob->data(), this->filter_desc_, wblob->data(),
-                            this->conv_desc_, this->fp_alg_,
-                            this->workspace_.blob()->mutable_data(),
-                            this->workspace_count_ * sizeof(float), &beta,
-                            this->y_desc_, outblob->mutable_data());
-  }, {input.blob(), weight_.blob()}, {output.blob()}, workspace_.blob());
+  output.device()->Exec(
+      [input, output, this](Context *ctx) {
+        Blob *inblob = input.blob(), *outblob = output.blob(),
+             *wblob = this->weight_.blob();
+        float alpha = 1.f, beta = 0.f;
+        cudnnConvolutionForward(ctx->cudnn_handle, &alpha, this->x_desc_,
+                                inblob->data(), this->filter_desc_,
+                                wblob->data(), this->conv_desc_, this->fp_alg_,
+                                this->workspace_.blob()->mutable_data(),
+                                this->workspace_count_ * sizeof(float), &beta,
+                                this->y_desc_, outblob->mutable_data());
+      },
+      {input.blob(), weight_.blob()}, {output.blob()}, workspace_.blob());
 
   if (bias_term_) {
-    output.device()->Exec([output, this](Context *ctx) {
-      float beta = 1.f, alpha = 1.0f;
-      Blob *outblob = output.blob(), *bblob = this->bias_.blob();
-      cudnnAddTensor(ctx->cudnn_handle, &alpha, this->bias_desc_, bblob->data(),
-                     &beta, this->y_desc_, outblob->mutable_data());
-    }, {output.blob(), bias_.blob()}, {output.blob()});
+    output.device()->Exec(
+        [output, this](Context *ctx) {
+          float beta = 1.f, alpha = 1.0f;
+          Blob *outblob = output.blob(), *bblob = this->bias_.blob();
+          cudnnAddTensor(ctx->cudnn_handle, &alpha, this->bias_desc_,
+                         bblob->data(), &beta, this->y_desc_,
+                         outblob->mutable_data());
+        },
+        {output.blob(), bias_.blob()}, {output.blob()});
   }
   return output;
 }
@@ -187,38 +212,45 @@ const std::pair<Tensor, vector<Tensor>> CudnnConvolution::Backward(
 
   // LOG(ERROR) << "backward bias";
   if (bias_term_) {
-    dx.device()->Exec([grad, db, this](Context *ctx) {
-      Blob *dyblob = grad.blob(), *dbblob = db.blob();
-      float alpha = 1.f, beta = 0.f;
-      cudnnConvolutionBackwardBias(ctx->cudnn_handle, &alpha, this->y_desc_,
-                                   dyblob->data(), &beta, this->bias_desc_,
-                                   dbblob->mutable_data());
-    }, {grad.blob()}, {db.blob()});
+    dx.device()->Exec(
+        [grad, db, this](Context *ctx) {
+          Blob *dyblob = grad.blob(), *dbblob = db.blob();
+          float alpha = 1.f, beta = 0.f;
+          cudnnConvolutionBackwardBias(ctx->cudnn_handle, &alpha, this->y_desc_,
+                                       dyblob->data(), &beta, this->bias_desc_,
+                                       dbblob->mutable_data());
+        },
+        {grad.blob()}, {db.blob()});
   }
   // LOG(ERROR) << "backward w";
-  dx.device()->Exec([grad, dw, src_data, this](Context *ctx) {
-    Blob *inblob = src_data.blob(), *dyblob = grad.blob(), *dwblob = dw.blob();
-    float alpha = 1.f, beta = 0.f;
-    cudnnConvolutionBackwardFilter(
-        ctx->cudnn_handle, &alpha, this->x_desc_, inblob->data(), this->y_desc_,
-        dyblob->data(), this->conv_desc_, this->bp_filter_alg_,
-        this->workspace_.blob()->mutable_data(),
-        this->workspace_count_ * sizeof(float), &beta, this->filter_desc_,
-        dwblob->mutable_data());
-  }, {grad.blob(), src_data.blob()}, {dw.blob(), workspace_.blob()});
+  dx.device()->Exec(
+      [grad, dw, src_data, this](Context *ctx) {
+        Blob *inblob = src_data.blob(), *dyblob = grad.blob(),
+             *dwblob = dw.blob();
+        float alpha = 1.f, beta = 0.f;
+        cudnnConvolutionBackwardFilter(
+            ctx->cudnn_handle, &alpha, this->x_desc_, inblob->data(),
+            this->y_desc_, dyblob->data(), this->conv_desc_,
+            this->bp_filter_alg_, this->workspace_.blob()->mutable_data(),
+            this->workspace_count_ * sizeof(float), &beta, this->filter_desc_,
+            dwblob->mutable_data());
+      },
+      {grad.blob(), src_data.blob()}, {dw.blob(), workspace_.blob()});
 
   // LOG(ERROR) << "backward src";
-  dx.device()->Exec([dx, grad, this](Context *ctx) {
-    Blob *wblob = this->weight_.blob(), *dyblob = grad.blob(),
-         *dxblob = dx.blob();
-    float alpha = 1.f, beta = 0.f;
-    cudnnConvolutionBackwardData(ctx->cudnn_handle, &alpha, this->filter_desc_,
-                                 wblob->data(), this->y_desc_, dyblob->data(),
-                                 this->conv_desc_, this->bp_data_alg_,
-                                 this->workspace_.blob()->mutable_data(),
-                                 this->workspace_count_ * sizeof(float), &beta,
-                                 this->x_desc_, dxblob->mutable_data());
-  }, {grad.blob(), weight_.blob()}, {dx.blob(), workspace_.blob()});
+  dx.device()->Exec(
+      [dx, grad, this](Context *ctx) {
+        Blob *wblob = this->weight_.blob(), *dyblob = grad.blob(),
+             *dxblob = dx.blob();
+        float alpha = 1.f, beta = 0.f;
+        cudnnConvolutionBackwardData(
+            ctx->cudnn_handle, &alpha, this->filter_desc_, wblob->data(),
+            this->y_desc_, dyblob->data(), this->conv_desc_, this->bp_data_alg_,
+            this->workspace_.blob()->mutable_data(),
+            this->workspace_count_ * sizeof(float), &beta, this->x_desc_,
+            dxblob->mutable_data());
+      },
+      {grad.blob(), weight_.blob()}, {dx.blob(), workspace_.blob()});
   param_grad.push_back(dw);
   param_grad.push_back(db);
   return std::make_pair(dx, param_grad);
