@@ -313,8 +313,8 @@ ta = t1 + t2
 print 't1+t2: \n', ta.data()
 print
 
-ts = t1 - t2
-print 't1-t2: \n', ts.data()
+ts = t1 * t2
+print 't1*t2: \n', ts.data()
 print
 
 #ttt = t1.singa_tensor < 5.2

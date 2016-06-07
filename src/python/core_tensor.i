@@ -230,7 +230,7 @@ namespace singa{
   //Tensor Pow(const Tensor &base, Tensor exp);
   //void Pow(const Tensor &base, const Tensor &exp, Tensor *ret);
 
-  /* renamed operators */
+  /* rename operators */
   %rename(Add_TT) operator+(const Tensor &lhs, const Tensor &rhs);
   %rename(Sub_TT) operator-(const Tensor &lhs, const Tensor &rhs);
   %rename(Mul_TT) operator*(const Tensor &lhs, const Tensor &rhs);
