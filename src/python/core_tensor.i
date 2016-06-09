@@ -45,9 +45,6 @@ using singa::DataType;
 
 namespace singa{
 
-  //%rename(floatLT) operator<(const Tensor &t, const float x);
-
-
   enum DataType {
     kFloat32, kFloat16, kInt, kChar, kDouble
   };
@@ -58,15 +55,12 @@ namespace singa{
 
   class Tensor {
 
-    /* renamed functions */
-    /* TODO(chonho-02) assign check python code */
-    %rename(Assign_T) operator=(const Tensor &t);
-
-
    public:
     Tensor();
-    explicit Tensor(const std::vector<size_t> &shape, DataType dtype = kFloat32);
-    Tensor(const std::vector<size_t> &shape, Device *dev, DataType dtype = kFloat32);
+    explicit Tensor(const std::vector<size_t> &shape,
+                    DataType dtype = kFloat32);
+    Tensor(const std::vector<size_t> &shape,
+           Device *dev, DataType dtype = kFloat32);
     Tensor(const Tensor &from);
 
     //Blob *blob() const;
@@ -95,29 +89,27 @@ namespace singa{
     %template(floatSetValue) SetValue<float>;
     // ...
 
-    template <typename DType> void CopyDataFromHostPtr(const DType *src, size_t num);
-    %template(floatCopyDataFromHostPtr) CopyDataFromHostPtr<float>;
-    // ...
+    /* no need to expose this function
+    template <typename DType> void CopyDataFromHostPtr(const DType *src,
+                                                       size_t num);
+    */
 
     void CopyData(const Tensor &other);
     Tensor Clone() const;
     Tensor T() const;
 
-    /* the following operators are renamed */
-    /* TODO(chonho-02) assign rename check python code*/
-    Tensor &operator=(const Tensor &t);
-
+    /* python has no assignment operator as c++
+    Tensor &operator=(const Tensor &t); */
     Tensor &operator+=(const Tensor &t);
     Tensor &operator-=(const Tensor &t);
     Tensor &operator*=(const Tensor &t);
     Tensor &operator/=(const Tensor &t);
 
+
     template <typename DType> Tensor &operator+=(const DType x);
     %template(iAdd_f) operator+=<float>;
     /* TODO(chonho-01) for other types */
-    //%template(iAdd_i) operator+=<int>;
-    //%template(iAdd_c) operator+=<char>;
-    //%template(iAdd_d) operator+=<double>;
+    // ...
 
     template <typename DType> Tensor &operator-=(DType x);
     %template(iSub_f) operator-=<float>;
@@ -136,10 +128,14 @@ namespace singa{
 
   };
 
+  /* TODO
   inline void CheckDataTypeAndLang(const Tensor &in1, const Tensor &in2);
-  Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
   void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
                       size_t src_offset = 0, size_t dst_offset = 0);
+  */
+
+  Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
+
   Tensor Abs(const Tensor &t);
   Tensor Exp(const Tensor &t);
   Tensor Log(const Tensor &t);
@@ -150,6 +146,7 @@ namespace singa{
   Tensor Square(const Tensor &t);
   Tensor Tanh(const Tensor &t);
 
+  Tensor Sum(const Tensor &t, int axis);
   template <typename SType> SType Sum(const Tensor &t);
   %template(floatSum) Sum<float>;
   /* TODO(chonho-03) not implemented
@@ -157,78 +154,59 @@ namespace singa{
   %template(charSum) Sum<char>;
   %template(doubleSum) Sum<double>;
   */
-  Tensor Sum(const Tensor &t, int axis);
+
   /* TODO(chonho-04) not implemented
-     all average ??? */
+     need average of all elements ??? */
   Tensor Average(const Tensor &t, int axis);
   Tensor SoftMax(const Tensor &t, int axis = 0);
-  /* TODO(chonho-05) no need for python???
-  void SoftMax(const Tensor &t, int axis, Tensor *ret);
+
+  /* TODO(chonho-05) not implemented ???
+  Tensor Pow(const Tensor &base, Tensor exp);
+  template <typename DType>
+  Tensor Pow(const Tensor &t, DType x);
   */
 
 
+  /* rename comparison operators */
+  %rename(LT_Tf) operator<(const Tensor &t, const float x);
+  %rename(LE_Tf) operator<=(const Tensor &t, const float x);
+  %rename(GT_Tf) operator>(const Tensor &t, const float x);
+  %rename(GE_Tf) operator>=(const Tensor &t, const float x);
 
-
-  /* TODO(chonho-06) operators  */
-  /*
   template <typename DType>
   Tensor operator<(const Tensor &t, const DType x);
-  %template(floatLT_op) operator< <float>;
-  */
-  //Tensor operator<(const Tensor &t, const float x);
-  //Tensor operator<(const Tensor &t, const int x);
-  //Tensor operator<(const Tensor &t, const char x);
-  //Tensor operator<(const Tensor &t, const double x);
-
-  /*
-  template <typename DType>
-  void LT(const Tensor &t, DType x, Tensor *ret);
-  %template(floatLT) LT<float>;
-  %template(intLT) LT<int>;
-  %template(charLT) LT<char>;
-  %template(doubleLT) LT<double>;
-  */
-
-  /* renamed
-  template <typename DType>
-  Tensor operator<=(const Tensor &t, const DType x); */
-  // ---
+  %template(op) operator< <float>;
+  // --- other types
 
   template <typename DType>
-  void LE(const Tensor &t, DType x, Tensor *ret);
-  %template(floatLE) LE<float>;
-  // ---
+  Tensor operator<=(const Tensor &t, const DType x);
+  %template(op) operator<= <float>;
+  // --- other types
 
   template <typename DType>
   Tensor operator>(const Tensor &t, const DType x);
-  %template(floatGT_op) operator><float>;
-  //Tensor operator>(const Tensor &t, const float x);
-  // ---
+  %template(op) operator> <float>;
+  // --- other types
 
+  template <typename DType>
+  Tensor operator>=(const Tensor &t, const DType x);
+  %template(op) operator>= <float>;
+  // --- other types
+
+  /* TODO(chonho-06)
+  no need to include theses
+  in python, these can be replaced with comparison operators
+
+  template <typename DType>
+  void LT(const Tensor &t, DType x, Tensor *ret);
+  template <typename DType>
+  void LE(const Tensor &t, DType x, Tensor *ret);
   template <typename DType>
   void GT(const Tensor &t, DType x, Tensor *ret);
-  %template(floatGT) GT<float>;
-  // ---
-
-  /* renamed
-  template <typename DType>
-  Tensor operator>=(const Tensor &t, const DType x); */
-  Tensor operator>=(const Tensor &t, const float x);
-  // ---
-
   template <typename DType>
   void GE(const Tensor &t, DType x, Tensor *ret);
-  %template(floatGE) GE<float>;
-  // ---
-
-  /*
-  template <typename DType>
-  Tensor Pow(const Tensor &t, DType x);
-  template <typename DType>
-  void Pow(const Tensor &t, DType x, Tensor *ret);
   */
-  //Tensor Pow(const Tensor &base, Tensor exp);
-  //void Pow(const Tensor &base, const Tensor &exp, Tensor *ret);
+
 
   /* rename operators */
   %rename(Add_TT) operator+(const Tensor &lhs, const Tensor &rhs);
@@ -240,11 +218,48 @@ namespace singa{
   Tensor operator*(const Tensor &lhs, const Tensor &rhs);
   Tensor operator/(const Tensor &lhs, const Tensor &rhs);
 
+  %rename(Add_Tf) operator+(const Tensor &t, float x);
+  template <typename DType>
+  Tensor operator+(const Tensor &t, DType x);
+  %template(op) operator+<float>;
+  // --- other types
+
+  %rename(Sub_Tf) operator-(const Tensor &t, float x);
+  template <typename DType>
+  Tensor operator-(const Tensor &t, DType x);
+  %template(op) operator-<float>;
+  // --- other types
+
+  %rename(Mul_Tf) operator*(const Tensor &t, float x);
+  template <typename DType>
+  Tensor operator*(const Tensor &t, DType x);
+  %template(op) operator*<float>;
+  // --- other types
+
+  %rename(Div_Tf) operator/(const Tensor &t, float x);
+  template <typename DType>
+  Tensor operator/(const Tensor &t, DType x);
+  %template(op) operator/<float>;
+  // --- other types
+
+  /* TODO(chonho-07)
+  no need to include theses
+  in python, these can be replaced with operators
+
   void Add(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
   void Sub(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
   void EltwiseMult(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
   void Div(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
 
-  /* (TODO) other operators */
+  template <typename DType>
+  void Add(const Tensor &t, DType x, Tensor *ret);
+  template <typename DType>
+  void Sub(const Tensor &t, DType x, Tensor *ret);
+  template <typename DType>
+  void EltwiseMult(const Tensor &t, DType x, Tensor *ret);
+  template <typename DType>
+  void Div(const Tensor &t, DType x, Tensor *ret);
+  */
+
 }
 
