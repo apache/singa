@@ -117,12 +117,11 @@ TEST_F(TestTensorMath, MemberTanh) {
 }
 
 TEST_F(TestTensorMath, Sum) {
-	Tensor p1(Shape{1,2});
-	p1 = Sum(e, 0);
+	Tensor p1 = Sum(e, 0);
   const float *dptr1 = p1.data<const float *>();
 	EXPECT_FLOAT_EQ(9.0f,dptr1[0]);
 	EXPECT_FLOAT_EQ(12.0f,dptr1[1]);
-	
+
 	Tensor p2(Shape{3,1});
 	p2 = Sum(e, 1);
   const float *dptr2 = p2.data<const float *>();
@@ -143,9 +142,9 @@ TEST_F(TestTensorMath, SoftMax) {
 	EXPECT_NEAR(exp(2)/sum, dptr1[1],1e-5);
 	EXPECT_NEAR(exp(4)/sum, dptr1[3],1e-5);
 	EXPECT_NEAR(exp(6)/sum, dptr1[5],1e-5);
-	
+
 	Tensor p2(Shape{3,2});
-	p2 = SoftMax(e,1); 
+	p2 = SoftMax(e,1);
   const float *dptr2 = p2.data<const float *>();
 	EXPECT_NEAR(exp(1)/(exp(1)+exp(2)),dptr2[0], 1e-5);
 	EXPECT_NEAR(exp(2)/(exp(1)+exp(2)),dptr2[1], 1e-5);
@@ -237,12 +236,12 @@ TEST_F(TestTensorMath, MemberDiv) {
 
 TEST_F(TestTensorMath, MemberBernoulli) {
 	Tensor p1(Shape{10000});
-	Bernoulli(0.3,&p1);
+	Bernoulli(0.3f, &p1);
 	const float* dptr1 = p1.data<const float*>();
 	float sum = 0;
 	for(int i = 0; i < 10000; i++) sum += dptr1[i];
 	float mean = sum/10000;
-	EXPECT_NEAR(mean, 0.3, 1e-2);
+	EXPECT_NEAR(mean, 0.3f, 1e-2);
 
 	sum = 0;
 	for(int i = 0; i < 10000; i++) sum += (dptr1[i]-mean)*(dptr1[i]-mean);
@@ -267,7 +266,7 @@ TEST_F(TestTensorMath, MemberUniform) {
 
 TEST_F(TestTensorMath, MemberGaussian) {
 	Tensor p1(Shape{50000});
-	Gaussian(0.0,1.0,&p1);
+	Gaussian(0.0f,1.0f,&p1);
 	const float* dptr1 = p1.data<const float*>();
 	float sum = 0;
 	for(int i = 0; i < 50000; i++) sum += dptr1[i];
