@@ -10,38 +10,25 @@ from core_pb2 import *
 '''
 class Tensor(object):
 
-  def __init__(self, arg=None, device=None, dtype=kFloat32):
-    ''' arg = Tensor or tuple for shape
-
+  def __init__(self, shape=None, device=None, dtype=kFloat32):
+    ''' shape = (tuple)
     '''
-    if arg == None:
+    if shape == None:
       # call constructor of singa::Tensor
       self.singa_tensor = singa.Tensor()
       return
-    elif isinstance(arg, Tensor):
-      # call copy constructor of singa::Tensor
-      self.singa_tensor = singa.Tensor(arg.singa_tensor)
-      self.tuple_shape = arg.tuple_shape
-      self.device = arg.device
-      self.dtype = arg.dtype
-      return
     else:
-      # otherwise, shape is required
-      assert not type(arg) == int, 'shape should be tuple'
-      shape = arg
+      assert type(shape) == tuple, 'shape should be tuple'
+      vs = _tuple_to_vector(shape)
+      if device == None:
+        self.singa_tensor = singa.Tensor(vs, dtype)
+      else:
+        self.singa_tensor = singa.Tensor(vs, device, dtype)
+      self.tuple_shape = shape
+      self.device = device
+      self.dtype = dtype
 
-    # call overloaded constructor of singa::Tensor
-    vs = _tuple_to_vector(shape)
-    if device == None:
-      self.singa_tensor = singa.Tensor(vs, dtype)
-    else:
-      self.singa_tensor = singa.Tensor(vs, device, dtype)
-
-    self.tuple_shape = shape
-    self.device = device
-    self.dtype = dtype
-
-  def data(self):
+  def toarray(self):
     #TODO(chonho) - need to think more efficient way to convert???
     idx = self.singa_tensor.data_type()
     if idx == kFloat32:
@@ -112,14 +99,28 @@ class Tensor(object):
     self.singa_tensor.CopyData(t.singa_tensor)
 
   def clone(self):
-    new_t = Tensor(self.tuple_shape, self.device, self.dtype)
-    new_t.singa_tensor = self.singa_tensor.Clone()
-    return new_t
+    ''' it does deep copy
+        call singa::Tensor::Clone()
+    '''
+    return _call_singa_func(self.singa_tensor.Clone)
 
   def transpose(self):
-    new_t = Tensor(self.tuple_shape, self.device, self.dtype)
-    new_t.singa_tensor = self.singa_tensor.T()
-    return new_t
+    ''' shallow copy, negate the transpose field
+        call singa::Tensor::T()
+    '''
+    return _call_singa_func(self.singa_tensor.T)
+
+  def copy(self):
+    ''' shallow copy
+        call copy constructor of singa::Tensor
+    '''
+    return _call_singa_func(singa.Tensor, self.singa_tensor)
+
+  def deepcopy(self):
+    ''' deep copy
+        call singa::Tensor::Clone()
+    '''
+    return self.clone()
 
   '''
   python operators (+=, -=, *=, /=) for singa::Tensor unary operators
@@ -203,6 +204,10 @@ def sizeof(dtype):
 
 def reshape(t, s):
   return _call_singa_func(singa.Reshape, t.singa_tensor, s)
+
+def copy_data_to_from(dst, src, size, src_offset=0, dst_offset=0):
+  singa.CopyDataToFrom(dst.singa_tensor, src.singa_tensor, size,
+                       src_offset, dst_offset)
 
 def abs(t):
   return _call_singa_func(singa.Abs, t.singa_tensor)

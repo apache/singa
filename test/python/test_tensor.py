@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, math, unittest
 import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__),
@@ -9,151 +9,105 @@ sys.path.append(os.path.join(os.path.dirname(__file__),
                              '../../src'))
 from core_pb2 import *
 
+class TestTensorMethods(unittest.TestCase):
 
-#---------------------------------------------------------
-# example usage
-#---------------------------------------------------------
+  def setUp(self):
+    self.shape = (2, 3)
+    self.t = Tensor(self.shape)
+    self.s = Tensor(self.shape)
 
-print '----------------------------'
-print 'global SizeOf kFloat32:', sizeof(kFloat32)
-print 'global SizeOf kFloat16:', sizeof(kFloat16)
-print 'global SizeOf kInt:', sizeof(kInt)
-print 'global SizeOf kDouble:', sizeof(kDouble)
-print
+  def test_tensor_fields(self):
+    t = self.t
+    shape = self.shape
+    self.assertTupleEqual(t.shape(), shape)
+    self.assertEqual(t.shape(0), shape[0])
+    self.assertEqual(t.shape(1), shape[1])
+    self.assertEqual(product(shape), 2*3)
+    self.assertEqual(t.ndim(), 2)
+    self.assertEqual(t.size(), 2*3)
+    self.assertEqual(t.memsize(), 2*3*sizeof(kFloat32))
+    self.assertFalse(t.is_transpose())
 
-a = Tensor()
-print 'a = Tensor()'
-print 'only defaultdevice is assigned \n'
+  def test_unary_operators(self):
+    t = self.t
+    self.assertAlmostEqual(t.toarray()[0,0], 0.0)
+    t += 1.23
+    self.assertAlmostEqual(t.toarray()[0,0], 1.23)
+    t -= 0.23
+    self.assertAlmostEqual(t.toarray()[0,0], 1.23-0.23)
+    t *= 2.5
+    self.assertAlmostEqual(t.toarray()[0,0], (1.23-0.23)*2.5)
+    t /= 2
+    self.assertAlmostEqual(t.toarray()[0,0], (1.23-0.23)*2.5/2)
 
-shape = (1, 6)
-t = Tensor(shape)
-print 'shape = (1, 6):', t.shape()
-print 'shape(0), shape(1):', t.shape(0), t.shape(1)
-print 'global Product:', product(shape)
-print 't = Tensor(shape)'
-#t.singa_tensor.AsType(kInt)
-print 'data_type():', t.data_type()
-print 'transpose', t.is_transpose()
-print 'nDim:', t.ndim()
-print 'size:', t.size()
-print 'memsize:', t.memsize()
-print 'data():', t.data()
-print
+  def test_binary_operators(self):
+    t = self.t
+    t += 3.2
+    s = self.s
+    s += 2.1
+    a = t + s
+    self.assertAlmostEqual(a.toarray()[0,0], 3.2+2.1, 5)
+    a = t - s
+    self.assertAlmostEqual(a.toarray()[0,0], 3.2-2.1, 5)
+    a = t * s
+    self.assertAlmostEqual(a.toarray()[0,0], 3.2*2.1, 5)
+    ''' not implemented yet
+    a = t / s
+    self.assertAlmostEqual(a.toarray()[0,0], 3.2/2.1, 5)
+    '''
 
-print '----------------------------'
-shape = (2, 3)
-t.reshape(shape)
-print 'shape = (3, 2)'
-print 'after reshape, t.shape():', t.shape()
-print 't.data(): \n', t.data()
-shape = (3, 2)
-t0 = reshape(t, shape)
-print 'shape = (2, 3)'
-print 'after t0 = reshape(t, shape) \n'
-print 't.shape():', t.shape()
-print 't0.shape():', t0.shape()
-print
-
-print '----------------------------'
-t += 1.2345
-print 't += 1.234, i.e., t.__iadd__(1.2345): \n', t.data()
-print
-
-t1 = Tensor(t)
-print 'copy\nt1 = Tensor(t)'
-print 't1.shape():', t1.shape()
-print 't1.data(): \n', t1.data()
-print
-
-
-print '----------------------------'
-t2 = log(t1)
-print 't2 = log(t1): \n', t2.data()
-print
-
-t1 += t2
-print 't1 += t2, i.e., t1.__iadd__(t2): \n', t1.data()
-print
-
-t1 *= 2
-print 't1 *= 2, i.e., t1.__imul__(2): \n', t1.data()
-print
-
-print '----------------------------'
-tc = t2.clone()
-print 'clone\ntc = t2.clone()\ntc.data(): \n', tc.data()
-print
-
-print 'sum(tc) \n', sum(tc)
-print
-t3 = sum(tc,0)
-print 'sum(tc,0) \n', t3.data()
-t3 = sum(tc,1)
-print 'sum(tc,1) \n', t3.data()
-print
-
-t3 = average(tc,0)
-print 'average(tc,0) \n', t3.data()
-t3 = average(tc,1)
-print 'average(tc,1) \n', t3.data()
-print
-
-t3 = softmax(tc,0)
-print 'softmax(tc,0)\n', t3.data()
-t3 = softmax(tc,1)
-print 'softmax(tc,1)\n', t3.data()
-
-print '----------------------------'
-print 't1 \n', t1.data()
-print
-
-n = t1 + t2
-print 't1 + t2: \n', n.data()
-print
-
-n = t1 * t2
-print 't1*t2: \n', n.data()
-print
-
-n = t1 - 1.2
-print 't1 - 1.2 \n', n.data()
-print
-
-n = add(t1, t1)
-print 'add(t1, t1) \n', n.data()
-print
-
-n = add(t1, 3.4)
-print 'add(t1, 3.4) \n', n.data()
-print
-
-n = div(t1, 2.0)
-print 'div(t1, 2.0) \n', n.data()
-print
-
-print '----------------------------'
-shape = (2, 2)
-t4 = Tensor(shape)
-t4 += 3.45
-print 't4 += 3.45 \n', t4.data()
-print
-
-n = t4 < 3.45
-print 't4 < 3.45 \n', n.data()
-print
-
-n = lt(t4, 3.45)
-print 'lt(t4, 3.45) \n', n.data()
-print
-
-n = ge(t4, 3.45)
-print 'ge(t4, 3.45) \n', n.data()
-print
+  def test_comparison_operators(self):
+    t = self.t
+    t += 3.45
+    a = t < 3.45
+    self.assertEqual(a.toarray()[0,0], 0)
+    a = t <= 3.45
+    self.assertEqual(a.toarray()[0,0], 1)
+    a = t > 3.45
+    self.assertEqual(a.toarray()[0,0], 0)
+    a = t >= 3.45
+    self.assertEqual(a.toarray()[0,0], 1)
+    a = lt(t, 3.45)
+    self.assertEqual(a.toarray()[0,0], 0)
+    a = le(t, 3.45)
+    self.assertEqual(a.toarray()[0,0], 1)
+    a = gt(t, 3.45)
+    self.assertEqual(a.toarray()[0,0], 0)
+    a = ge(t, 3.45)
+    self.assertEqual(a.toarray()[0,0], 1)
 
 
-#ttt = t1.singa_tensor < 5.2
-#ttt = lessthan(t1, 5.2)
-#print ttt.data()
+  def test_tensor_copy(self):
+    t = Tensor((2,3))
+    t += 1.23
+    self.assertAlmostEqual(t.toarray()[0,0], 1.23)
+    tc = t.copy()
+    tdc = t.deepcopy()
+    self.assertAlmostEqual(tc.toarray()[0,0], 1.23)
+    self.assertAlmostEqual(tdc.toarray()[0,0], 1.23)
+    t += 1.23
+    self.assertAlmostEqual(t.toarray()[0,0], 2.46)
+    self.assertAlmostEqual(tc.toarray()[0,0], 2.46)
+    self.assertAlmostEqual(tdc.toarray()[0,0], 1.23)
 
-#devCPU = singa.CppCPU(1)
-#devGPU = singa.CudaGPU(2)
+  def test_copy_data(self):
+    t = self.t
+    t += 1.23
+    s = self.s
+    s += 5.43
+    self.assertAlmostEqual(t.toarray()[0,0], 1.23)
+    copy_data_to_from(t, s, 2)
+    self.assertAlmostEqual(t.toarray()[0,0], 5.43, 5)
+    self.assertAlmostEqual(t.toarray()[0,1], 5.43, 5)
+    self.assertAlmostEqual(t.toarray()[0,2], 1.23)
+
+
+  def test_global_method(self):
+    t = self.t
+    t += 12.34
+    a = log(t)
+    self.assertAlmostEqual(a.toarray()[0,0], math.log(12.34))
+
+
+if __name__ == '__main__':
+  unittest.main()

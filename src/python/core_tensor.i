@@ -130,9 +130,9 @@ namespace singa{
 
   /* TODO
   inline void CheckDataTypeAndLang(const Tensor &in1, const Tensor &in2);
+  */
   void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
                       size_t src_offset = 0, size_t dst_offset = 0);
-  */
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
 
