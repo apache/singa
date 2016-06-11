@@ -86,6 +86,9 @@ message OptimizerConf {
 
   // used by vanilla sgd and nesterov
   optional float momentum = 5 [default = 0.9];
+
+  // delta is used to avoid dividing zero
+  optional float delta = 6 [default = 0.0000001];
 }
 
 message ConstraintConf {
