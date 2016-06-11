@@ -1,0 +1,18 @@
+// Source directory
+#define SOURCE_FOLDER "${PROJECT_SOURCE_DIR}"
+
+// Binaries director
+#define BINARY_FOLDER "${PROJECT_BINARY_DIR}"
+
+#cmakedefine CPU_ONLY
+
+#cmakedefine USE_CBLAS
+// cuda
+#cmakedefine USE_CUDA
+
+#cmakedefine USE_CUDNN
+#cmakedefine CUDNN_VERSION_MAJOR @CUDNN_VERSION_MAJOR@
+
+// lmdb
+#cmakedefine USE_LMDB
+
