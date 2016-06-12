@@ -173,6 +173,8 @@ class Tensor {
   template <typename SType>
   Tensor &operator/=(const SType x);
 
+  float L2() const;
+
  protected:
   bool transpose_ = false;
   DataType data_type_ = kFloat32;

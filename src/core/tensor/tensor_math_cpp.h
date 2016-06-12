@@ -241,7 +241,7 @@ void Sqrt<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
     outPtr[i] = sqrt(inPtr[i]);
   }
 }
-
+/*
 template <>
 void Square<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
                               Context *ctx) {
@@ -251,6 +251,7 @@ void Square<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
     outPtr[i] = inPtr[i] * inPtr[i];
   }
 }
+*/
 
 template <>
 void Sub<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
@@ -284,101 +285,6 @@ void Tanh<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
     outPtr[i] = tanh(inPtr[i]);
-  }
-}
-
-// =========Matrix operations ================================================
-
-template <>
-void AddCol<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                              const Blob *A, const Blob *v, Blob *out,
-                              Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *APtr = static_cast<const float *>(A->data());
-  const float *vPtr = static_cast<const float *>(v->data());
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    for (size_t c = 0; c < ncol; c++) {
-      outPtr[offset + c] = APtr[offset + c] + vPtr[r];
-    }
-  }
-}
-
-template <>
-void AddRow<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                              const Blob *A, const Blob *v, Blob *out,
-                              Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *APtr = static_cast<const float *>(A->data());
-  const float *vPtr = static_cast<const float *>(v->data());
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    for (size_t c = 0; c < ncol; c++) {
-      outPtr[offset + c] = APtr[offset + c] + vPtr[c];
-    }
-  }
-}
-template <>
-void Outer<float, lang::Cpp>(const size_t m, const size_t n, const Blob *in1,
-                             const Blob *in2, Blob *out, Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *in1Ptr = static_cast<const float *>(in1->data());
-  const float *in2Ptr = static_cast<const float *>(in2->data());
-  for (size_t r = 0; r < m; r++) {
-    size_t offset = r * n;
-    for (size_t c = 0; c < n; c++) {
-      outPtr[offset + c] = in1Ptr[r] * in2Ptr[c];
-    }
-  }
-}
-template <>
-void Softmax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                               const Blob *in, Blob *out, Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *inPtr = static_cast<const float *>(in->data());
-  float *bPtr = new float[ncol];
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    float denom = 0.f;
-    for (size_t c = 0; c < ncol; c++) {
-      bPtr[c] = exp(inPtr[offset + c]);
-      denom += bPtr[c];
-    }
-    for (size_t c = 0; c < ncol; c++) {
-      size_t idx = offset + c;
-      outPtr[idx] = bPtr[c] / denom;
-    }
-  }
-  delete bPtr;
-}
-
-template <>
-void SumColumns<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                                  const Blob *in, Blob *out, Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *inPtr = static_cast<const float *>(in->data());
-  for (size_t c = 0; c < ncol; c++) {
-    outPtr[c] = 0.f;
-  }
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    for (size_t c = 0; c < ncol; c++) {
-      outPtr[c] += inPtr[offset + c];
-    }
-  }
-}
-
-template <>
-void SumRows<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                               const Blob *in, Blob *out, Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  const float *inPtr = static_cast<const float *>(in->data());
-  for (size_t r = 0; r < nrow; r++) {
-    size_t offset = r * ncol;
-    outPtr[r] = 0.f;
-    for (size_t c = 0; c < ncol; c++) {
-      outPtr[r] += inPtr[offset + c];
-    }
   }
 }
 
@@ -440,17 +346,25 @@ void DGMM<float, lang::Cpp>(const bool side_right, const size_t nrow,
 
 #ifdef USE_CBLAS
 template <>
+void Amax<float, lang::Cpp>(const size_t num, const Blob *in, size_t *out,
+                            Context *ctx) {
+  const float *inPtr = static_cast<const float *>(in->data());
+  *out = cblas_isamax(num, inPtr, 1);
+}
+
+template <>
+void Asum<float, lang::Cpp>(const size_t num, const Blob *in, float *out,
+                            Context *ctx) {
+  const float *inPtr = static_cast<const float *>(in->data());
+  *out = cblas_sasum(num, inPtr, 1);
+}
+
+template <>
 void Axpy<float, lang::Cpp>(const size_t num, const float alpha, const Blob *in,
                             Blob *out, Context *ctx) {
   const float *inPtr = static_cast<const float *>(in->data());
   float *outPtr = static_cast<float *>(out->mutable_data());
   cblas_saxpy(num, alpha, inPtr, 1, outPtr, 1);
-}
-template <>
-void Scale<float, lang::Cpp>(const size_t num, const float x, Blob *out,
-                             Context *ctx) {
-  float *outPtr = static_cast<float *>(out->mutable_data());
-  cblas_sscal(num, x, outPtr, 1);
 }
 
 template <>
@@ -460,6 +374,19 @@ void Dot<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
   const float *in2Ptr = static_cast<const float *>(in2->data());
   *out = cblas_sdot(num, in1Ptr, 1, in2Ptr, 1);
 }
+template <>
+void Scale<float, lang::Cpp>(const size_t num, const float x, Blob *out,
+                             Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  cblas_sscal(num, x, outPtr, 1);
+}
+template <>
+void Nrm2<float, lang::Cpp>(const size_t num, const Blob *in, float *out,
+                            Context *ctx) {
+  const float *inPtr = static_cast<const float *>(in->data());
+  *out = cblas_snrm2(num, inPtr, 1);
+}
+
 template <>
 void GEMV<float, lang::Cpp>(bool trans, const size_t m, const size_t n,
                             const float alpha, const Blob *A, const Blob *v,
@@ -587,6 +514,102 @@ void GEMV<float, lang::Cpp>(bool trans, const size_t m, const size_t n,
 }
 
 #endif  // USE_CBLAS
+
+// =========Matrix operations ================================================
+/*
+template <>
+void AddCol<float, lang::Cpp>(const size_t nrow, const size_t ncol,
+                              const Blob *A, const Blob *v, Blob *out,
+                              Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *APtr = static_cast<const float *>(A->data());
+  const float *vPtr = static_cast<const float *>(v->data());
+  for (size_t r = 0; r < nrow; r++) {
+    size_t offset = r * ncol;
+    for (size_t c = 0; c < ncol; c++) {
+      outPtr[offset + c] = APtr[offset + c] + vPtr[r];
+    }
+  }
+}
+
+template <>
+void AddRow<float, lang::Cpp>(const size_t nrow, const size_t ncol,
+                              const Blob *A, const Blob *v, Blob *out,
+                              Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *APtr = static_cast<const float *>(A->data());
+  const float *vPtr = static_cast<const float *>(v->data());
+  for (size_t r = 0; r < nrow; r++) {
+    size_t offset = r * ncol;
+    for (size_t c = 0; c < ncol; c++) {
+      outPtr[offset + c] = APtr[offset + c] + vPtr[c];
+    }
+  }
+}
+template <>
+void Outer<float, lang::Cpp>(const size_t m, const size_t n, const Blob *in1,
+                             const Blob *in2, Blob *out, Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *in1Ptr = static_cast<const float *>(in1->data());
+  const float *in2Ptr = static_cast<const float *>(in2->data());
+  for (size_t r = 0; r < m; r++) {
+    size_t offset = r * n;
+    for (size_t c = 0; c < n; c++) {
+      outPtr[offset + c] = in1Ptr[r] * in2Ptr[c];
+    }
+  }
+}
+template <>
+void Softmax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
+                               const Blob *in, Blob *out, Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *inPtr = static_cast<const float *>(in->data());
+  float *bPtr = new float[ncol];
+  for (size_t r = 0; r < nrow; r++) {
+    size_t offset = r * ncol;
+    float denom = 0.f;
+    for (size_t c = 0; c < ncol; c++) {
+      bPtr[c] = exp(inPtr[offset + c]);
+      denom += bPtr[c];
+    }
+    for (size_t c = 0; c < ncol; c++) {
+      size_t idx = offset + c;
+      outPtr[idx] = bPtr[c] / denom;
+    }
+  }
+  delete bPtr;
+}
+
+template <>
+void SumColumns<float, lang::Cpp>(const size_t nrow, const size_t ncol,
+                                  const Blob *in, Blob *out, Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *inPtr = static_cast<const float *>(in->data());
+  for (size_t c = 0; c < ncol; c++) {
+    outPtr[c] = 0.f;
+  }
+  for (size_t r = 0; r < nrow; r++) {
+    size_t offset = r * ncol;
+    for (size_t c = 0; c < ncol; c++) {
+      outPtr[c] += inPtr[offset + c];
+    }
+  }
+}
+
+template <>
+void SumRows<float, lang::Cpp>(const size_t nrow, const size_t ncol,
+                               const Blob *in, Blob *out, Context *ctx) {
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  const float *inPtr = static_cast<const float *>(in->data());
+  for (size_t r = 0; r < nrow; r++) {
+    size_t offset = r * ncol;
+    outPtr[r] = 0.f;
+    for (size_t c = 0; c < ncol; c++) {
+      outPtr[r] += inPtr[offset + c];
+    }
+  }
+}
+*/
 }  // namespace singa
 
 #endif  // SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_

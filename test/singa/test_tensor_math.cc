@@ -5,17 +5,17 @@ using singa::Shape;
 using singa::Device;
 
 class TestTensorMath : public ::testing::Test {
-protected:
+ protected:
   virtual void SetUp() {
     a.Reshape(singa::Shape{6});
     b.Reshape(singa::Shape{6});
     c.Reshape(singa::Shape{6, 1});
     d.Reshape(singa::Shape{3, 2});
-		e.Reshape(singa::Shape{3, 2});
+    e.Reshape(singa::Shape{3, 2});
 
     a.CopyDataFromHostPtr<float>(dat1, 6);
     b.CopyDataFromHostPtr<float>(dat2, 6);
-		e.CopyDataFromHostPtr<float>(dat1, 6);
+    e.CopyDataFromHostPtr<float>(dat1, 6);
   }
   Tensor a, b, c, d, e;
   const float dat1[6] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
@@ -23,263 +23,261 @@ protected:
 };
 
 TEST_F(TestTensorMath, MemberAbs) {
-	Tensor aa = a.Clone();
-	Tensor bb = b.Clone();
-	Tensor cc = aa - bb;
-	const float* dptr = cc.data<const float*>();
-	EXPECT_NEAR(-0.1, dptr[0], 1e-5);
+  Tensor aa = a.Clone();
+  Tensor bb = b.Clone();
+  Tensor cc = aa - bb;
+  const float *dptr = cc.data<const float *>();
+  EXPECT_NEAR(-0.1, dptr[0], 1e-5);
   EXPECT_NEAR(-0.1, dptr[1], 1e-5);
   EXPECT_NEAR(-0.1, dptr[2], 1e-5);
 
-	Tensor p = Abs(cc);
-	const float* dptr1 = p.data<const float*>();
-	EXPECT_NEAR(0.1, dptr1[0], 1e-5);
+  Tensor p = Abs(cc);
+  const float *dptr1 = p.data<const float *>();
+  EXPECT_NEAR(0.1, dptr1[0], 1e-5);
   EXPECT_NEAR(0.1, dptr1[1], 1e-5);
   EXPECT_NEAR(0.1, dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberExp) {
-	Tensor p = Exp(a);
-	const float* dptr1 = p.data<const float*>();
-	EXPECT_NEAR(exp(1.0f), dptr1[0], 1e-5);
+  Tensor p = Exp(a);
+  const float *dptr1 = p.data<const float *>();
+  EXPECT_NEAR(exp(1.0f), dptr1[0], 1e-5);
   EXPECT_NEAR(exp(2.0f), dptr1[1], 1e-5);
   EXPECT_NEAR(exp(3.0f), dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberLog) {
-	Tensor p = Log(a);
-	const float* dptr1 = p.data<const float*>();
-	EXPECT_NEAR(log(1.0f), dptr1[0], 1e-5);
+  Tensor p = Log(a);
+  const float *dptr1 = p.data<const float *>();
+  EXPECT_NEAR(log(1.0f), dptr1[0], 1e-5);
   EXPECT_NEAR(log(2.0f), dptr1[1], 1e-5);
   EXPECT_NEAR(log(3.0f), dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberReLU) {
-	Tensor aa = a.Clone();
-	Tensor cc = aa - 2.0f;
-	const float* dptr = cc.data<const float*>();
-	EXPECT_NEAR(-1.0f, dptr[0], 1e-5);
+  Tensor aa = a.Clone();
+  Tensor cc = aa - 2.0f;
+  const float *dptr = cc.data<const float *>();
+  EXPECT_NEAR(-1.0f, dptr[0], 1e-5);
   EXPECT_NEAR(0.0f, dptr[1], 1e-5);
   EXPECT_NEAR(1.0f, dptr[2], 1e-5);
 
-	Tensor p = ReLU(cc);
-	const float* dptr1 = p.data<const float*>();
-	EXPECT_NEAR(0.0f, dptr1[0], 1e-5);
+  Tensor p = ReLU(cc);
+  const float *dptr1 = p.data<const float *>();
+  EXPECT_NEAR(0.0f, dptr1[0], 1e-5);
   EXPECT_NEAR(0.0f, dptr1[1], 1e-5);
   EXPECT_NEAR(1.0f, dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberSigmoid) {
-	Tensor p = Sigmoid(a);
-	const float* dptr1 = p.data<const float*>();
-	EXPECT_NEAR(1.0f/(1.0f + exp(-1.0f)), dptr1[0], 1e-5);
-  EXPECT_NEAR(1.0f/(1.0f + exp(-2.0f)), dptr1[1], 1e-5);
-  EXPECT_NEAR(1.0f/(1.0f + exp(-3.0f)), dptr1[2], 1e-5);
+  Tensor p = Sigmoid(a);
+  const float *dptr1 = p.data<const float *>();
+  EXPECT_NEAR(1.0f / (1.0f + exp(-1.0f)), dptr1[0], 1e-5);
+  EXPECT_NEAR(1.0f / (1.0f + exp(-2.0f)), dptr1[1], 1e-5);
+  EXPECT_NEAR(1.0f / (1.0f + exp(-3.0f)), dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberSign) {
-	Tensor aa = a.Clone();
-	Tensor cc = aa - 2.0f;
-	const float* dptr = cc.data<const float*>();
-	EXPECT_NEAR(-1.0f, dptr[0], 1e-5);
+  Tensor aa = a.Clone();
+  Tensor cc = aa - 2.0f;
+  const float *dptr = cc.data<const float *>();
+  EXPECT_NEAR(-1.0f, dptr[0], 1e-5);
   EXPECT_NEAR(0.0f, dptr[1], 1e-5);
   EXPECT_NEAR(1.0f, dptr[2], 1e-5);
 
-	Tensor p = Sign(cc);
-	const float* dptr1 = p.data<const float*>();
-	EXPECT_EQ(0.0f, dptr1[0]);
+  Tensor p = Sign(cc);
+  const float *dptr1 = p.data<const float *>();
+  EXPECT_EQ(0.0f, dptr1[0]);
   EXPECT_EQ(0.0f, dptr1[1]);
   EXPECT_EQ(1.0f, dptr1[2]);
 }
 
 TEST_F(TestTensorMath, MemberSqrt) {
-	Tensor p = Sqrt(a);
-	const float* dptr1 = p.data<const float*>();
-	EXPECT_NEAR(sqrt(1.0), dptr1[0], 1e-5);
+  Tensor p = Sqrt(a);
+  const float *dptr1 = p.data<const float *>();
+  EXPECT_NEAR(sqrt(1.0), dptr1[0], 1e-5);
   EXPECT_NEAR(sqrt(2.0), dptr1[1], 1e-5);
   EXPECT_NEAR(sqrt(3.0), dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberSquare) {
-	Tensor p = Square(a);
-	const float* dptr1 = p.data<const float*>();
-	EXPECT_NEAR(1.0, dptr1[0], 1e-5);
+  Tensor p = Square(a);
+  const float *dptr1 = p.data<const float *>();
+  EXPECT_NEAR(1.0, dptr1[0], 1e-5);
   EXPECT_NEAR(4.0, dptr1[1], 1e-5);
   EXPECT_NEAR(9.0, dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberTanh) {
-	Tensor p = Tanh(a);
-	const float* dptr1 = p.data<const float*>();
-	EXPECT_NEAR(tanh(1.0), dptr1[0], 1e-5);
+  Tensor p = Tanh(a);
+  const float *dptr1 = p.data<const float *>();
+  EXPECT_NEAR(tanh(1.0), dptr1[0], 1e-5);
   EXPECT_NEAR(tanh(2.0), dptr1[1], 1e-5);
   EXPECT_NEAR(tanh(3.0), dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, Sum) {
-	Tensor p1 = Sum(e, 0);
+  Tensor p1 = Sum(e, 0);
   const float *dptr1 = p1.data<const float *>();
-	EXPECT_FLOAT_EQ(9.0f,dptr1[0]);
-	EXPECT_FLOAT_EQ(12.0f,dptr1[1]);
+  EXPECT_FLOAT_EQ(9.0f, dptr1[0]);
+  EXPECT_FLOAT_EQ(12.0f, dptr1[1]);
 
-	Tensor p2(Shape{3,1});
-	p2 = Sum(e, 1);
+  Tensor p2(Shape{3, 1});
+  p2 = Sum(e, 1);
   const float *dptr2 = p2.data<const float *>();
-	EXPECT_FLOAT_EQ(3.0f,dptr2[0]);
-	EXPECT_FLOAT_EQ(7.0f,dptr2[1]);
-	EXPECT_FLOAT_EQ(11.0f,dptr2[2]);
+  EXPECT_FLOAT_EQ(3.0f, dptr2[0]);
+  EXPECT_FLOAT_EQ(7.0f, dptr2[1]);
+  EXPECT_FLOAT_EQ(11.0f, dptr2[2]);
 }
 
 TEST_F(TestTensorMath, SoftMax) {
-	Tensor p1(Shape{3,2});
-	p1 = SoftMax(e,0);
+  Tensor p1(Shape{3, 2});
+  p1 = SoftMax(e, 0);
   const float *dptr1 = p1.data<const float *>();
-	float sum = 0;
-	for(int i = 0; i < 6; i++) sum += exp(i+1);
-	EXPECT_NEAR(exp(1)/sum, dptr1[0],1e-5);
-	EXPECT_NEAR(exp(3)/sum, dptr1[2],1e-5);
-	EXPECT_NEAR(exp(5)/sum, dptr1[4],1e-5);
-	EXPECT_NEAR(exp(2)/sum, dptr1[1],1e-5);
-	EXPECT_NEAR(exp(4)/sum, dptr1[3],1e-5);
-	EXPECT_NEAR(exp(6)/sum, dptr1[5],1e-5);
+  float sum = 0;
+  for (int i = 0; i < 6; i++) sum += exp(i + 1);
+  EXPECT_NEAR(exp(1) / sum, dptr1[0], 1e-5);
+  EXPECT_NEAR(exp(3) / sum, dptr1[2], 1e-5);
+  EXPECT_NEAR(exp(5) / sum, dptr1[4], 1e-5);
+  EXPECT_NEAR(exp(2) / sum, dptr1[1], 1e-5);
+  EXPECT_NEAR(exp(4) / sum, dptr1[3], 1e-5);
+  EXPECT_NEAR(exp(6) / sum, dptr1[5], 1e-5);
 
-	Tensor p2(Shape{3,2});
-	p2 = SoftMax(e,1);
+  Tensor p2(Shape{3, 2});
+  p2 = SoftMax(e, 1);
   const float *dptr2 = p2.data<const float *>();
-	EXPECT_NEAR(exp(1)/(exp(1)+exp(2)),dptr2[0], 1e-5);
-	EXPECT_NEAR(exp(2)/(exp(1)+exp(2)),dptr2[1], 1e-5);
+  EXPECT_NEAR(exp(1) / (exp(1) + exp(2)), dptr2[0], 1e-5);
+  EXPECT_NEAR(exp(2) / (exp(1) + exp(2)), dptr2[1], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberLT) {
-	Tensor p1 = a < 2.0f;
-	const float *dptr1 = p1.data<const float *>();
-	EXPECT_FLOAT_EQ(1.0f, dptr1[0]);
-	EXPECT_FLOAT_EQ(0.0f, dptr1[1]);
-	EXPECT_FLOAT_EQ(0.0f, dptr1[2]);
+  Tensor p1 = a < 2.0f;
+  const float *dptr1 = p1.data<const float *>();
+  EXPECT_FLOAT_EQ(1.0f, dptr1[0]);
+  EXPECT_FLOAT_EQ(0.0f, dptr1[1]);
+  EXPECT_FLOAT_EQ(0.0f, dptr1[2]);
 }
 
 TEST_F(TestTensorMath, MemberLE) {
-	Tensor p1 = a <= 2.0f;
-	const float *dptr1 = p1.data<const float *>();
-	EXPECT_FLOAT_EQ(1.0f, dptr1[0]);
-	EXPECT_FLOAT_EQ(1.0f, dptr1[1]);
-	EXPECT_FLOAT_EQ(0.0f, dptr1[2]);
+  Tensor p1 = a <= 2.0f;
+  const float *dptr1 = p1.data<const float *>();
+  EXPECT_FLOAT_EQ(1.0f, dptr1[0]);
+  EXPECT_FLOAT_EQ(1.0f, dptr1[1]);
+  EXPECT_FLOAT_EQ(0.0f, dptr1[2]);
 }
 
 TEST_F(TestTensorMath, MemberGT) {
-	Tensor p1 = a > 2.0f;
-	const float *dptr1 = p1.data<const float *>();
-	EXPECT_FLOAT_EQ(0.0f, dptr1[0]);
-	EXPECT_FLOAT_EQ(0.0f, dptr1[1]);
-	EXPECT_FLOAT_EQ(1.0f, dptr1[2]);
+  Tensor p1 = a > 2.0f;
+  const float *dptr1 = p1.data<const float *>();
+  EXPECT_FLOAT_EQ(0.0f, dptr1[0]);
+  EXPECT_FLOAT_EQ(0.0f, dptr1[1]);
+  EXPECT_FLOAT_EQ(1.0f, dptr1[2]);
 }
 
 TEST_F(TestTensorMath, MemberGE) {
-	Tensor p1 = a >= 2.0f;
-	const float *dptr1 = p1.data<const float *>();
-	EXPECT_FLOAT_EQ(0.0f, dptr1[0]);
-	EXPECT_FLOAT_EQ(1.0f, dptr1[1]);
-	EXPECT_FLOAT_EQ(1.0f, dptr1[2]);
+  Tensor p1 = a >= 2.0f;
+  const float *dptr1 = p1.data<const float *>();
+  EXPECT_FLOAT_EQ(0.0f, dptr1[0]);
+  EXPECT_FLOAT_EQ(1.0f, dptr1[1]);
+  EXPECT_FLOAT_EQ(1.0f, dptr1[2]);
 }
 
 TEST_F(TestTensorMath, MemberPow) {
-	Tensor p1 = Pow(b,3.0f);
-	const float *dptr1 = p1.data<const float *>();
-	EXPECT_FLOAT_EQ(pow(1.1f,3.0f), dptr1[0]);
-	EXPECT_FLOAT_EQ(pow(2.1f,3.0f), dptr1[1]);
-	EXPECT_FLOAT_EQ(pow(3.1f,3.0f), dptr1[2]);
+  Tensor p1 = Pow(b, 3.0f);
+  const float *dptr1 = p1.data<const float *>();
+  EXPECT_FLOAT_EQ(pow(1.1f, 3.0f), dptr1[0]);
+  EXPECT_FLOAT_EQ(pow(2.1f, 3.0f), dptr1[1]);
+  EXPECT_FLOAT_EQ(pow(3.1f, 3.0f), dptr1[2]);
 
-	//TODO(Yuchen): check pow(tensor a, tensor b) and add testcase after the function is complete
-	//Tensor p2 = Pow(a,b);
-	//const float *dptr2 = p2.data<const float *>();
-	//EXPECT_FLOAT_EQ(pow(1.0f,1.1f), dptr2[0]);
-	//EXPECT_FLOAT_EQ(pow(2.0f,2.1f), dptr2[1]);
-	//EXPECT_FLOAT_EQ(pow(3.0f,3.1f), dptr2[2]);
+  // TODO(Yuchen): check pow(tensor a, tensor b) and add testcase after the
+  // function is complete
+  // Tensor p2 = Pow(a,b);
+  // const float *dptr2 = p2.data<const float *>();
+  // EXPECT_FLOAT_EQ(pow(1.0f,1.1f), dptr2[0]);
+  // EXPECT_FLOAT_EQ(pow(2.0f,2.1f), dptr2[1]);
+  // EXPECT_FLOAT_EQ(pow(3.0f,3.1f), dptr2[2]);
 }
 
-
 TEST_F(TestTensorMath, MemberSub) {
-	Tensor p1 = a - b;
-	const float* dptr1 = p1.data<const float*>();
-	EXPECT_NEAR(-0.1, dptr1[0], 1e-5);
+  Tensor p1 = a - b;
+  const float *dptr1 = p1.data<const float *>();
+  EXPECT_NEAR(-0.1, dptr1[0], 1e-5);
   EXPECT_NEAR(-0.1, dptr1[1], 1e-5);
   EXPECT_NEAR(-0.1, dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberEltwiseMult) {
-	Tensor p1 = a * b;
-	const float* dptr1 = p1.data<const float*>();
-	EXPECT_NEAR(1.0*1.1, dptr1[0], 1e-5);
-  EXPECT_NEAR(2.0*2.1, dptr1[1], 1e-5);
-  EXPECT_NEAR(3.0*3.1, dptr1[2], 1e-5);
+  Tensor p1 = a * b;
+  const float *dptr1 = p1.data<const float *>();
+  EXPECT_NEAR(1.0 * 1.1, dptr1[0], 1e-5);
+  EXPECT_NEAR(2.0 * 2.1, dptr1[1], 1e-5);
+  EXPECT_NEAR(3.0 * 3.1, dptr1[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberDiv) {
-	Tensor p1 = a / b;
-	const float* dptr1 = p1.data<const float*>();
-	EXPECT_NEAR(1.0/1.1, dptr1[0], 1e-5);
-  EXPECT_NEAR(2.0/2.1, dptr1[1], 1e-5);
-  EXPECT_NEAR(3.0/3.1, dptr1[2], 1e-5);
+  Tensor p1 = a / b;
+  const float *dptr1 = p1.data<const float *>();
+  EXPECT_NEAR(1.0 / 1.1, dptr1[0], 1e-5);
+  EXPECT_NEAR(2.0 / 2.1, dptr1[1], 1e-5);
+  EXPECT_NEAR(3.0 / 3.1, dptr1[2], 1e-5);
 
-	Tensor p2 = Div(10.0f,b);
-	const float* dptr2 = p2.data<const float*>();
-	EXPECT_NEAR(10.0/1.1, dptr2[0], 1e-5);
-  EXPECT_NEAR(10.0/2.1, dptr2[1], 1e-5);
-  EXPECT_NEAR(10.0/3.1, dptr2[2], 1e-5);
+  Tensor p2 = Div(10.0f, b);
+  const float *dptr2 = p2.data<const float *>();
+  EXPECT_NEAR(10.0 / 1.1, dptr2[0], 1e-5);
+  EXPECT_NEAR(10.0 / 2.1, dptr2[1], 1e-5);
+  EXPECT_NEAR(10.0 / 3.1, dptr2[2], 1e-5);
 
-	Tensor p3 = a / 8.0f;
-	const float* dptr3 = p3.data<const float*>();
-	EXPECT_NEAR(1.0/8.0, dptr3[0], 1e-5);
-  EXPECT_NEAR(2.0/8.0, dptr3[1], 1e-5);
-  EXPECT_NEAR(3.0/8.0, dptr3[2], 1e-5);
+  Tensor p3 = a / 8.0f;
+  const float *dptr3 = p3.data<const float *>();
+  EXPECT_NEAR(1.0 / 8.0, dptr3[0], 1e-5);
+  EXPECT_NEAR(2.0 / 8.0, dptr3[1], 1e-5);
+  EXPECT_NEAR(3.0 / 8.0, dptr3[2], 1e-5);
 }
 
 TEST_F(TestTensorMath, MemberBernoulli) {
-	Tensor p1(Shape{10000});
-	Bernoulli(0.3f, &p1);
-	const float* dptr1 = p1.data<const float*>();
-	float sum = 0;
-	for(int i = 0; i < 10000; i++) sum += dptr1[i];
-	float mean = sum/10000;
-	EXPECT_NEAR(mean, 0.3f, 1e-2);
+  Tensor p1(Shape{10000});
+  Bernoulli(0.3f, &p1);
+  const float *dptr1 = p1.data<const float *>();
+  float sum = 0;
+  for (int i = 0; i < 10000; i++) sum += dptr1[i];
+  float mean = sum / 10000;
+  EXPECT_NEAR(mean, 0.3f, 1e-2);
 
-	sum = 0;
-	for(int i = 0; i < 10000; i++) sum += (dptr1[i]-mean)*(dptr1[i]-mean);
-	float variance = sum/9999;
-	EXPECT_NEAR(variance, 0.3*0.7, 1e-2);
+  sum = 0;
+  for (int i = 0; i < 10000; i++) sum += (dptr1[i] - mean) * (dptr1[i] - mean);
+  float variance = sum / 9999;
+  EXPECT_NEAR(variance, 0.3 * 0.7, 1e-2);
 }
 
 TEST_F(TestTensorMath, MemberUniform) {
-	Tensor p1(Shape{10000});
-	Uniform(0.1f,0.2f,&p1);
-	const float* dptr1 = p1.data<const float*>();
-	float sum = 0;
-	for(int i = 0; i < 10000; i++) sum += dptr1[i];
-	float mean = sum/10000;
-	EXPECT_NEAR(mean, 0.15f, 1e-3);
+  Tensor p1(Shape{10000});
+  Uniform(0.1f, 0.2f, &p1);
+  const float *dptr1 = p1.data<const float *>();
+  float sum = 0;
+  for (int i = 0; i < 10000; i++) sum += dptr1[i];
+  float mean = sum / 10000;
+  EXPECT_NEAR(mean, 0.15f, 1e-3);
 
-	sum = 0;
-	for(int i = 0; i < 10000; i++) sum += (dptr1[i]-mean)*(dptr1[i]-mean);
-	float variance = sum/9999;
-	EXPECT_NEAR(variance, 0.01f/12, 1e-3);
+  sum = 0;
+  for (int i = 0; i < 10000; i++) sum += (dptr1[i] - mean) * (dptr1[i] - mean);
+  float variance = sum / 9999;
+  EXPECT_NEAR(variance, 0.01f / 12, 1e-3);
 }
 
 TEST_F(TestTensorMath, MemberGaussian) {
-	Tensor p1(Shape{50000});
-	Gaussian(0.0f,1.0f,&p1);
-	const float* dptr1 = p1.data<const float*>();
-	float sum = 0;
-	for(int i = 0; i < 50000; i++) sum += dptr1[i];
-	float mean = sum/50000;
-	EXPECT_NEAR(mean, 0.0, 1e-2);
+  Tensor p1(Shape{50000});
+  Gaussian(0.0f, 1.0f, &p1);
+  const float *dptr1 = p1.data<const float *>();
+  float sum = 0;
+  for (int i = 0; i < 50000; i++) sum += dptr1[i];
+  float mean = sum / 50000;
+  EXPECT_NEAR(mean, 0.0, 1e-2);
 
-	sum = 0;
-	for(int i = 0; i < 50000; i++) sum += (dptr1[i]-mean)*(dptr1[i]-mean);
-	float variance = sum/49999;
-	EXPECT_NEAR(variance, 1.0, 1e-2);
+  sum = 0;
+  for (int i = 0; i < 50000; i++) sum += (dptr1[i] - mean) * (dptr1[i] - mean);
+  float variance = sum / 49999;
+  EXPECT_NEAR(variance, 1.0, 1e-2);
 }
-
-
 
 TEST_F(TestTensorMath, MemberAddTensor) {
   Tensor aa = a.Clone();
@@ -333,8 +331,7 @@ TEST_F(TestTensorMath, SetValue) {
   Tensor t(Shape{4});
   t.SetValue(0.3f);
   const float *ptr = t.data<const float *>();
-  for (int i = 0; i < 4; i++)
-    EXPECT_FLOAT_EQ(ptr[i], 0.3f);
+  for (int i = 0; i < 4; i++) EXPECT_FLOAT_EQ(ptr[i], 0.3f);
 }
 
 TEST_F(TestTensorMath, Reshape) {
@@ -344,10 +341,15 @@ TEST_F(TestTensorMath, Reshape) {
   const float *ptr = t.data<const float *>();
   EXPECT_EQ(p.shape(0), 4u);
   EXPECT_EQ(p.shape(1), 1u);
-  for (int i = 0; i < 4; i++)
-    EXPECT_FLOAT_EQ(ptr[i], 0.3f);
+  for (int i = 0; i < 4; i++) EXPECT_FLOAT_EQ(ptr[i], 0.3f);
 }
 #ifdef USE_CBLAS
+TEST_F(TestTensorMath, L2Cpp) {
+  float l2 = a.L2();
+  float target = 0.0f;
+  for (size_t i = 0; i < a.Size(); i++) target += dat1[i] * dat1[i];
+  EXPECT_FLOAT_EQ(l2, sqrt(target));
+}
 TEST_F(TestTensorMath, MultCpp) {
   const float x[4] = {1.0f, 2.0f, 3.0f, 4.0f};
   Tensor t(Shape{2, 2});
@@ -368,8 +370,7 @@ TEST_F(TestTensorMath, MultCpp) {
   Tensor s(Shape{4, 2});
   s.CopyDataFromHostPtr(y, 8);
   const float *sPtr = s.data<const float *>();
-  for (int i = 0; i < 8; i++)
-    EXPECT_FLOAT_EQ(sPtr[i], y[i]);
+  for (int i = 0; i < 8; i++) EXPECT_FLOAT_EQ(sPtr[i], y[i]);
   Tensor D = Mult(d, s.T());
   const float *DPtr = D.data<const float *>();
   for (int i = 0; i < 3; i++) {
@@ -423,7 +424,6 @@ TEST_F(TestTensorMath, SubColumnCpp) {
   }
 }
 
-
 TEST_F(TestTensorMath, DivColumnCpp) {
   const float x[3] = {1.0f, 2.0f, 3.0f};
   Tensor t(Shape{3});
@@ -437,7 +437,6 @@ TEST_F(TestTensorMath, DivColumnCpp) {
     }
   }
 }
-
 
 TEST_F(TestTensorMath, AddRowCpp) {
   const float x[2] = {1.1f, 2.1f};
@@ -453,7 +452,6 @@ TEST_F(TestTensorMath, AddRowCpp) {
   }
 }
 
-
 TEST_F(TestTensorMath, SubRowCpp) {
   const float x[2] = {1.1f, 2.1f};
   Tensor t(Shape{2});
@@ -467,7 +465,6 @@ TEST_F(TestTensorMath, SubRowCpp) {
     }
   }
 }
-
 
 TEST_F(TestTensorMath, MultRowCpp) {
   const float x[2] = {1.1f, 2.1f};
@@ -483,7 +480,6 @@ TEST_F(TestTensorMath, MultRowCpp) {
   }
 }
 
-
 TEST_F(TestTensorMath, SumRowsCpp) {
   Tensor t(Shape{2});
   d.CopyDataFromHostPtr(dat1, 6);
@@ -497,7 +493,6 @@ TEST_F(TestTensorMath, SumRowsCpp) {
     EXPECT_FLOAT_EQ(tptr[i], tmp);
   }
 }
-
 
 TEST_F(TestTensorMath, SumColumnsCpp) {
   Tensor t(Shape{3});
@@ -514,6 +509,15 @@ TEST_F(TestTensorMath, SumColumnsCpp) {
 }
 #endif
 #ifdef USE_CUDA
+TEST_F(TestTensorMath, L2Cuda) {
+  singa::CudaGPU dev;
+  Tensor t(Shape{3, 2}, &dev);
+  t.CopyDataFromHostPtr(dat1, 6);
+  float l2 = t.L2();
+  float target = 0.0f;
+  for (size_t i = 0; i < t.Size(); i++) target += dat1[i] * dat1[i];
+  EXPECT_FLOAT_EQ(l2, sqrt(target));
+}
 TEST_F(TestTensorMath, MultCuda) {
   const float x[4] = {1.0f, 2.0f, 3.0f, 4.0f};
   singa::CudaGPU dev;
@@ -581,7 +585,6 @@ TEST_F(TestTensorMath, AddColumnCuda) {
     }
   }
 }
-
 
 TEST_F(TestTensorMath, SubColumnCuda) {
   const float x[3] = {1.0f, 2.0f, 3.0f};
@@ -757,4 +760,5 @@ TEST_F(TestTensorMath, SumColumnCuda) {
     EXPECT_FLOAT_EQ(tptr[i], tmp);
   }
 }
+
 #endif

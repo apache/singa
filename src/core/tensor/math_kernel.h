@@ -31,65 +31,66 @@ namespace singa {
 
 // TODO(wangwei) make all function templates.
 namespace cuda {
-void sum(int n, const float *in, float *out);
 
-void sum_row(int rows, int cols, int stride, const float *in, float *out);
+// 0 input
+void set(const size_t n, const float v, float *out, cudaStream_t s);
 
-void sum_col(int rows, int cols, int stride, const float *in, float *out);
+// 1 input
+void abs(const size_t n, const float *in, float *out, cudaStream_t s);
+void sign(const size_t n, const float *in, float *out, cudaStream_t s);
+void exp(const size_t n, const float *in, float *out, cudaStream_t s);
+void log(const size_t n, const float *in, float *out, cudaStream_t s);
+void sqrt(const size_t n, const float *in, float *out, cudaStream_t s);
+void square(const size_t n, const float *in, float *out, cudaStream_t s);
+void tanh(const size_t n, const float *in, float *out, cudaStream_t s);
+void relu(const size_t n, const float *in, float *out, cudaStream_t s);
+void sigmoid(const int n, const float *in, float *out, cudaStream_t s);
+void softplus(const size_t n, const float *in, float *out, cudaStream_t s);
+void clamp(const size_t n, const float low, const float high, const float *in,
+           float *out, cudaStream_t s);
 
-void add_row(int rows, int cols, int stride, const float *in_row,
-             const float *in_mat, float *out);
-
-void add(int n, const float *a, const float *b, float *out);
-
-void sub(int n, const float *a, const float *b, float *out);
-
-void exp(int n, const float *in, float *out);
-
-void log(int n, const float *in, float *out);
-
-void sigmoid(int n, const float *in, float *out);
-
-void sigmoid_grad(int n, const float *in, float *out);
-
-void relu(int n, const float *in, float *out);
-
-void relu_grad(int n, const float *in, float *out);
-
-void tanh(int n, const float *in, float *out);
-
-void tanh_grad(int n, const float *in, float *out);
-
-void softplus(int n, const float *in, float *out);
-
-void softplus_grad(int n, const float *in, float *out);
-
-void square(int n, const float *in, float *out);
-
-void square_grad(int n, const float *in, float *out);
-
-void sqrt(int n, const float *in, float *out);
-
-void pow(int n, const float *a, const float *b, float *out);
-
-void mult(int n, const float *a, const float *b, float *out);
-
-void mult(int n, const float *a, const float x, float *out);
-
-void div(int n, const float *a, const float *b, float *out);
-
-void set_value(int n, float v, float *out);
-
-void threshold(int n, float alpha, const float *in, float *out);
-
-// follow the consistency guide for math API
-void Div(const size_t num, const float x, const float *in, float *out,
+void pow(const size_t n, const float *in, const float x, float *out,
          cudaStream_t s);
-void Set(const size_t num, const float x, float *out, cudaStream_t s);
-void GT(size_t num, const float *in, const float x, float *out, cudaStream_t s);
-void GE(size_t num, const float *in, const float x, float *out, cudaStream_t s);
-void LT(size_t num, const float *in, const float x, float *out, cudaStream_t s);
-void LE(size_t num, const float *in, const float x, float *out, cudaStream_t s);
+
+void add(const size_t n, const float *in, const float x, float *out,
+         cudaStream_t s);
+
+void mult(const size_t n, const float *in, const float x, float *out,
+          cudaStream_t s);
+
+void div(const size_t n, const float x, const float *in, float *out,
+         cudaStream_t s);
+
+void threshold(const size_t n, const float x, const float *in, float *out,
+               cudaStream_t s);
+
+void gt(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s);
+void ge(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s);
+void lt(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s);
+void le(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s);
+
+// 2 inputs
+void pow(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s);
+
+void add(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s);
+
+void sub(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s);
+
+void mult(const size_t n, const float *in1, const float *in2, float *out,
+          cudaStream_t s);
+
+void div(const size_t n, const float *in1, const float *in2, float *out,
+         cudaStream_t s);
+
+void sum(const size_t n, const float *in, float *out, cudaStream_t s);
+
 }  // cuda
 
 }  // namespace singa

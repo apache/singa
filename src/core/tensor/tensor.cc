@@ -219,6 +219,8 @@ GenUnaryScalarArgMemberFn(operator+=, Add);
 GenUnaryScalarArgMemberFn(operator*=, EltwiseMult);
 GenUnaryScalarArgMemberFn(operator/=, Div);
 
+
+
 // ====================Tensor Operations=======================================
 void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
                     const size_t dst_offset, const size_t src_offset) {
@@ -309,6 +311,18 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   } while (0)
 
 // =============Element-wise operations====================================
+/// L2 norm, Do not use Nrm2 (name conflict).
+float Tensor::L2() const {
+  float nrm = 0.0f;
+  TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
+    device_->Exec([&nrm, this](Context *ctx) {
+      DType ret;
+      Nrm2<DType, Lang>(this->Size(), this->blob(), &ret, ctx);
+      nrm = TypeCast<DType, float>(ret);
+    }, {this->blob()}, {});
+  });
+  return nrm;
+}
 template <typename SType>
 void Tensor::SetValue(const SType x) {
   CHECK_EQ(sizeof(SType), SizeOf(data_type_));

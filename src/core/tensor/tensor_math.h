@@ -48,41 +48,45 @@ namespace singa {
 /// 7. Use size_t for the number of elements, rows or columns.
 /// 8. Use the same name for the Tensor and Blob level math functions.
 
-// =============Element-wise operations====================================
+// **************************************
+// Element-wise functions
+// **************************************
+
 /// out[i] = |in[i]|
 template <typename DType, typename Lang>
 void Abs(const size_t num, const Blob *in, Blob *out, Context *ctx) {
   LOG(FATAL) << "Abs Not Implemented";
 }
 
-/// out = in + x
+/// out[i] = in[i] + x
 template <typename DType, typename Lang>
 void Add(const size_t num, const Blob *in, const DType x, Blob *out,
          Context *ctx) {
   LOG(FATAL) << "Add Not Implemented";
 }
 
-/// out = in1 + in2
+/// out[i] = in1[i] + in2[i]
 template <typename DType, typename Lang>
 void Add(const size_t num, const Blob *in1, const Blob *in2, Blob *out,
          Context *ctx) {
   LOG(FATAL) << "Add-Pair Not Implemented";
 }
-/// Element-wise operation, clamp every element into [low, high]
-/// if x>high, then x=high; if x<low, then x=low.
+/// Clamp every element into [low, high]
+/// if in[i]>high, then out[i]=high; if in[i]<low, then out[i]=low.
 template <typename DType, typename Lang>
 void Clamp(const size_t num, const DType low, const DType high, const Blob *in,
            Blob *out, Context *ctx) {
   LOG(FATAL) << "Clamp Not Implemented";
 }
 
-/// out = x / in
+/// out[i] = x / in[i]
 template <typename DType, typename Lang>
 void Div(const size_t num, const DType x, const Blob *in, Blob *out,
          Context *ctx) {
   LOG(FATAL) << "Div Not Implemented";
 }
 
+/// out[i] = in[i] / x
 template <typename DType, typename Lang>
 void Div(const size_t num, const Blob *in, const DType x, Blob *out,
          Context *ctx) {
@@ -90,21 +94,21 @@ void Div(const size_t num, const Blob *in, const DType x, Blob *out,
   EltwiseMult<DType, Lang>(num, in, DType(1) / x, out, ctx);
 }
 
-/// out = in1 / in2
+/// out[i] = in1[i] / in2[i]
 template <typename DType, typename Lang>
 void Div(const size_t num, const Blob *in1, const Blob *in2, Blob *out,
          Context *ctx) {
   LOG(FATAL) << "Div-Pair Not Implemented";
 }
 
-/// out = in * x
+/// out[i] = in[i] * x
 template <typename DType, typename Lang>
 void EltwiseMult(const size_t num, const Blob *in, const DType x, Blob *out,
                  Context *ctx) {
   LOG(FATAL) << "EltwiseMult Not Implemented";
 }
 
-/// out = in2 * in2
+/// out[i] = in1[i] * in2[i]
 template <typename DType, typename Lang>
 void EltwiseMult(const size_t num, const Blob *in1, const Blob *in2, Blob *out,
                  Context *ctx) {
@@ -146,31 +150,32 @@ void GT(const size_t num, const Blob *in, const DType x, Blob *out,
         Context *ctx) {
   LOG(FATAL) << "GT Not Implemented";
 }
-/// Element-wise operation, do v^x for every v from the in tensor
+/// out[i] = pow(in[i], x)
 template <typename DType, typename Lang>
 void Pow(const size_t num, const Blob *in, const DType x, Blob *out,
          Context *ctx) {
   LOG(FATAL) << "Pow Not Implemented";
 }
 
-/// Element-wise operation, do v^x for every v from the lhs and every x from rhs
+/// out[i]=pow(in1[i], in2[i])
 template <typename DType, typename Lang>
 void Pow(const size_t num, const Blob *in1, const Blob *in2, Blob *out,
          Context *ctx) {
   LOG(FATAL) << "Pow-Pair Not Implemented";
 }
 
-/// Element-wise operation, out[i]=max(0, in[i])
+/// out[i]=max(0, in[i])
 template <typename DType, typename Lang>
 void ReLU(const size_t num, const Blob *in, Blob *out, Context *ctx) {
   LOG(FATAL) << "ReLU Not Implemented";
 }
 
+/// out[i] = x
 template <typename DType, typename Lang>
 void Set(const size_t num, const DType x, Blob *out, Context *ctx) {
   LOG(FATAL) << "Set Not Implemented";
 }
-/// Element-wise operation, out[i]=sigmoid([in[i])
+/// out[i]=sigmoid(in[i])
 template <typename DType, typename Lang>
 void Sigmoid(const size_t num, const Blob *in, Blob *out, Context *ctx) {
   LOG(FATAL) << "Sigmoid Not Implemented";
@@ -181,85 +186,47 @@ template <typename DType, typename Lang>
 void Sign(const size_t num, const Blob *in, Blob *out, Context *ctx) {
   LOG(FATAL) << "Sign Not Implemented";
 }
-/// Element-wise operation, out[i]=sqrt([in[i])
+/// out[i]=sqrt(in[i])
 template <typename DType, typename Lang>
 void Sqrt(const size_t num, const Blob *in, Blob *out, Context *ctx) {
   LOG(FATAL) << "Sqrt Not Implemented";
 }
 
-/// Element-wise operation, out[i]=square([in[i])
+/// out[i]=square(in[i])
 template <typename DType, typename Lang>
 void Square(const size_t num, const Blob *in, Blob *out, Context *ctx) {
-  LOG(FATAL) << "Square Not Implemented";
+  EltwiseMult<DType, Lang>(num, in, in, out, ctx);
 }
 
-/// out =  in - x
+/// out[i] =  in[i] - x
 template <typename DType, typename Lang>
 void Sub(const size_t num, const Blob *in, const DType x, Blob *out,
          Context *ctx) {
   Add<DType, Lang>(num, in, -x, out, ctx);
 }
 
-/// out = in1 - in2
+/// out[i] = in1[i] - in2[i]
 template <typename DType, typename Lang>
 void Sub(const size_t num, const Blob *in1, const Blob *in2, Blob *out,
          Context *ctx) {
   LOG(FATAL) << "Sub-Pair Not Implemented";
 }
+
 /// sum all elements of in into out
 template <typename DType, typename Lang>
 void Sum(const size_t num, const Blob *in, DType *out, Context *ctx) {
   LOG(FATAL) << "Sum Not Implemented";
 }
 
-/// Element-wise operation, out[i]=tanh([in[i])
+/// out[i]=tanh(in[i])
 template <typename DType, typename Lang>
 void Tanh(const size_t num, const Blob *in, Blob *out, Context *ctx) {
   LOG(FATAL) << "Tanh Not Implemented";
 }
 
-// =========== Matrix operations ===========================================
-/// Add the vector v to every column of A as the column of out
-template <typename DType, typename Lang>
-void AddCol(const size_t nrow, const size_t ncol, const Blob *A, const Blob *v,
-            Blob *out, Context *ctx) {
-  LOG(FATAL) << "AddCol Not Implemented";
-}
-// TODO(wangwei) unify AddRow and AddCol.
-/// Add the vector v to every row of A as the row of out
-template <typename DType, typename Lang>
-void AddRow(const size_t nrow, const size_t ncol, const Blob *A, const Blob *v,
-            Blob *out, Context *ctx) {
-  LOG(FATAL) << "AddRow Not Implemented";
-}
-/// outer-product.
-/// in1 and in2 are vectors of len m and n. out is matrix of shape m * n
-template <typename DType, typename Lang>
-void Outer(const size_t m, const size_t n, const Blob *in1, const Blob *in2,
-           Blob *out, Context *ctx) {
-  LOG(FATAL) << "Outer Not Implemented";
-}
-// Do softmax for each row invidually
-template <typename DType, typename Lang>
-void Softmax(const size_t nrow, const size_t ncol, const Blob *in, Blob *out,
-             Context *ctx) {
-  LOG(FATAL) << "Softmax Not Implemented";
-}
-/// Sum the columns of the in matrix into a vector
-template <typename DType, typename Lang>
-void SumColumns(const size_t nrow, const size_t ncol, const Blob *in, Blob *out,
-                Context *ctx) {
-  LOG(FATAL) << "SumColumns Not Implemented";
-}
-// TODO(wangwei) unify SumRow and SumCol.
-/// Sum the rows of the in matrix into a vector
-template <typename DType, typename Lang>
-void SumRows(const size_t nrow, const size_t ncol, const Blob *in, Blob *out,
-             Context *ctx) {
-  LOG(FATAL) << "SumRows Not Implemented";
-}
-
-// ================Random functions===========================================
+// **************************************
+// Random functions
+// **************************************
 /// Each element of out would be 1 with prob p and 0 with 1-p. 0<= p <= 1
 // Get the random generator from 'ctx'
 // If DType is not float, then convert the threshold to DType
@@ -282,7 +249,10 @@ void Uniform(const size_t num, const float low, const float high, Blob *out,
   LOG(FATAL) << "Uniform Not Implemented";
 }
 
-// ===== BLAS functions, ref to http://docs.nvidia.com/cuda/cublas
+// *********************************************************
+// BLAS functions, ref to http://docs.nvidia.com/cuda/cublas
+// *********************************************************
+
 /// outurn the index of the element with the max value.
 template <typename DType, typename Lang>
 void Amax(const size_t num, const Blob *in, size_t *out, Context *ctx) {
@@ -307,12 +277,19 @@ void Axpy(const size_t num, const DType alpha, const Blob *in, Blob *out,
   LOG(FATAL) << "Axpy Not Implemented";
 }
 
+/// out = ||in||_2^2, i.e, L2 norm.
+template <typename DType, typename Lang>
+void Nrm2(const size_t num, const Blob *in, float *out, Context *ctx) {
+  LOG(FATAL) << "Nrm2 Not Implemented";
+}
+
 /// out *= x
 template <typename DType, typename Lang>
 void Scale(const size_t num, const DType x, Blob *out, Context *ctx) {
   LOG(FATAL) << "Scale Not Implemented";
 }
 
+/// inner product of array in1 and in2
 template <typename DType, typename Lang>
 void Dot(const size_t num, const Blob *in1, const Blob *in2, DType *out,
          Context *ctx) {
@@ -346,5 +323,44 @@ void GEMM(const bool transA, const bool transB, const size_t nrowA,
   LOG(FATAL) << "GEMM Not Implemented";
 }
 
+// **************************************
+// Matrix functions
+// **************************************
+/*
+/// Add the vector v to every column of A as the column of out
+template <typename DType, typename Lang>
+void AddCol(const size_t nrow, const size_t ncol, const Blob *A, const Blob *v,
+            Blob *out, Context *ctx) {
+  LOG(FATAL) << "AddCol Not Implemented";
+}
+// TODO(wangwei) unify AddRow and AddCol.
+/// Add the vector v to every row of A as the row of out
+template <typename DType, typename Lang>
+void AddRow(const size_t nrow, const size_t ncol, const Blob *A, const Blob *v,
+            Blob *out, Context *ctx) {
+  LOG(FATAL) << "AddRow Not Implemented";
+}
+/// outer-product.
+/// in1 and in2 are vectors of len m and n. out is matrix of shape m * n
+template <typename DType, typename Lang>
+void Outer(const size_t m, const size_t n, const Blob *in1, const Blob *in2,
+           Blob *out, Context *ctx) {
+  LOG(FATAL) << "Outer Not Implemented";
+}
+
+/// Sum the columns of the in matrix into a vector
+template <typename DType, typename Lang>
+void SumColumns(const size_t nrow, const size_t ncol, const Blob *in, Blob *out,
+                Context *ctx) {
+  LOG(FATAL) << "SumColumns Not Implemented";
+}
+// TODO(wangwei) unify SumRow and SumCol.
+/// Sum the rows of the in matrix into a vector
+template <typename DType, typename Lang>
+void SumRows(const size_t nrow, const size_t ncol, const Blob *in, Blob *out,
+             Context *ctx) {
+  LOG(FATAL) << "SumRows Not Implemented";
+}
+*/
 }  // namespace singa
 #endif  // SINGA_CORE_MATH_H_
