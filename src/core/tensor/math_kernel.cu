@@ -236,21 +236,21 @@ __global__ void KernelThreshold(const size_t n, const float x, const float *in,
   }
 }
 
-__global__ void KernelGE(const int num, const float *in, const float x,
+__global__ void KernelGE(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
        idx += blockDim.x * gridDim.x) {
     out[idx] = in[idx] >= x ? 1.0f : 0.0f;
   }
 }
-__global__ void KernelGT(const int num, const float *in, const float x,
+__global__ void KernelGT(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
        idx += blockDim.x * gridDim.x) {
     out[idx] = in[idx] > x ? 1.0f : 0.0f;
   }
 }
-__global__ void KernelLE(const int num, const float *in, const float x,
+__global__ void KernelLE(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
        idx += blockDim.x * gridDim.x) {
@@ -258,7 +258,7 @@ __global__ void KernelLE(const int num, const float *in, const float x,
   }
 }
 
-__global__ void KernelLT(const int num, const float *in, const float x,
+__global__ void KernelLT(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
        idx += blockDim.x * gridDim.x) {
@@ -305,7 +305,7 @@ void tanh(const size_t n, const float *in, float *out, cudaStream_t s) {
 void relu(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelRelu <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);
 }
-void sigmoid(const int n, const float *in, float *out, cudaStream_t s) {
+void sigmoid(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelSigmoid <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);
 }
 void softplus(const size_t n, const float *in, float *out, cudaStream_t s) {
@@ -521,7 +521,7 @@ __global__ void KernelSquareGrad(const float *src_data, float *des_data,
     des_data[index] = 2 * src_data[index];
   }
 }
-__global__ void kernel_softmax_loss(const float *prob, const int *label,
+__global__ void kernel_softmax_loss(const float *prob, const size_t *label,
                                     float *loss, int n, int dim) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
@@ -530,7 +530,7 @@ __global__ void kernel_softmax_loss(const float *prob, const int *label,
     loss[index] -= std::log(max(prob_of_truth, FLT_MIN));
   }
 }
-__global__ void kernel_softmax_gradient(float *grad, const int *label, int n,
+__global__ void kernel_softmax_gradient(float *grad, const size_t *label, int n,
                                         int dim, float scale) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;

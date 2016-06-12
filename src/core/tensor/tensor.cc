@@ -685,8 +685,7 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
     }, {in.blob(), out->blob()}, {out->blob()});
   });
 }
-template <>
-void Axpy(const float alpha, const Tensor &in, Tensor *out);
+template void Axpy(const float alpha, const Tensor &in, Tensor *out);
 
 Tensor Mult(const Tensor &A, const Tensor &B) {
   Shape s;

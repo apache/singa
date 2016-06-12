@@ -44,7 +44,7 @@ void sqrt(const size_t n, const float *in, float *out, cudaStream_t s);
 void square(const size_t n, const float *in, float *out, cudaStream_t s);
 void tanh(const size_t n, const float *in, float *out, cudaStream_t s);
 void relu(const size_t n, const float *in, float *out, cudaStream_t s);
-void sigmoid(const int n, const float *in, float *out, cudaStream_t s);
+void sigmoid(const size_t n, const float *in, float *out, cudaStream_t s);
 void softplus(const size_t n, const float *in, float *out, cudaStream_t s);
 void clamp(const size_t n, const float low, const float high, const float *in,
            float *out, cudaStream_t s);

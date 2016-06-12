@@ -168,6 +168,49 @@ class SGD : Optimizer {
   std::function<float(int)> momentum_generator_;
 };
 
+// =============Nesterov======================================================
+class Nesterov : Optimizer {
+ public:
+  void Setup(const OptimizerConf& conf);
+  /// Apply the updating algorithm.
+  void Apply(int step, float lr, const string& name, Tensor* grad,
+             Tensor* value) override;
+
+  /// The argument function returns the momentum value given the current running
+  /// step (i.e., iterations/mini-batches).
+  void SetMomentumGenerator(std::function<float(int)> func) {
+    momentum_generator_ = func;
+  }
+
+ private:
+  std::unordered_map<string, Tensor> history_gradient_;
+  std::function<float(int)> momentum_generator_;
+};
+
+// =============Adagrad=======================================================
+class Adagrad : Optimizer {
+ public:
+  void Setup(const OptimizerConf& conf);
+  /// Apply the updating algorithm.
+  void Apply(int step, float lr, const string& name, Tensor* grad,
+             Tensor* value) override;
+
+ private:
+  std::unordered_map<string, Tensor> history_gradient_;
+  float delta_;
+};
+// =============RMSProp=======================================================
+class RMSProp : Optimizer {
+ public:
+  void Setup(const OptimizerConf& conf);
+  /// Apply the updating algorithm.
+  void Apply(int step, float lr, const string& name, Tensor* grad,
+             Tensor* value) override;
+
+ private:
+  std::unordered_map<string, Tensor> history_gradient_;
+  float delta_, rho_;
+};
 // ============LocalAllReduce for single node multiple workers ==============
 /// Updater for training models on a single node with multiple devices (workers)
 /// All model parameters are partitioned such that each parameter is updated on
