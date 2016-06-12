@@ -33,59 +33,67 @@ package singa;
 /// using Python (or C++/Java).
 
 // Specifies the shape (dimensions) of a Blob.
-message BlobShape { repeated int64 dim = 1[packed = true]; }
+message BlobShape {
+  repeated int64 dim = 1 [packed = true];
+}
 
 message BlobProto {
   optional BlobShape shape = 7;
-  repeated float data = 5[packed = true];
-  repeated float diff = 6[packed = true];
-  repeated double double_data = 8[packed = true];
-  repeated double double_diff = 9[packed = true];
+  repeated float data = 5 [packed = true];
+  repeated float diff = 6 [packed = true];
+  repeated double double_data = 8 [packed = true];
+  repeated double double_diff = 9 [packed = true];
 
   // 4D dimensions -- deprecated.  Use "shape" instead.
-  optional int32 num = 1[default = 0];
-  optional int32 channels = 2[default = 0];
-  optional int32 height = 3[default = 0];
-  optional int32 width = 4[default = 0];
+  optional int32 num = 1 [default = 0];
+  optional int32 channels = 2 [default = 0];
+  optional int32 height = 3 [default = 0];
+  optional int32 width = 4 [default = 0];
 }
 
 message FillerConf {
   // The filler type, case insensitive
-  optional string type = 1[default = 'constant'];
-  optional float value = 2[default = 0]; // the value in constant filler
-  optional float min = 3[default = 0];   // the min value in uniform filler
-  optional float max = 4[default = 1];   // the max value in uniform filler
-  optional float mean = 5[default = 0];  // the mean value in Gaussian filler
-  optional float std = 6[default = 1];   // the std value in Gaussian filler
+  optional string type = 1 [default = 'constant'];
+  optional float value = 2 [default = 0]; // the value in constant filler
+  optional float min = 3 [default = 0]; // the min value in uniform filler
+  optional float max = 4 [default = 1]; // the max value in uniform filler
+  optional float mean = 5 [default = 0]; // the mean value in Gaussian filler
+  optional float std = 6 [default = 1]; // the std value in Gaussian filler
   // The expected number of non-zero output weights for a given input in
   // Gaussian filler -- the default -1 means don't perform sparsification.
   /* optional int32 sparse = 7 [default = -1]; */
   // Normalize the filler variance by fan_in, fan_out, or their average.
   // Applies to 'xavier' and 'msra' fillers.
   enum VarianceNorm {
-    FAN_IN = 0; FAN_OUT = 1; AVERAGE = 2;
-  } optional VarianceNorm variance_norm = 8[default = FAN_IN];
+    FAN_IN = 0;
+    FAN_OUT = 1;
+    AVERAGE = 2;
+  }
+  optional VarianceNorm variance_norm = 8 [default = FAN_IN];
 }
 
 /// SINGA message
 message OptimizerConf {
   // case insensitive
-  optional string type = 1[default = "sgd"];
+  optional string type = 1 [default = "sgd"];
 
   // used by RMSprop and Adadelta
-  optional float rho = 2[default = 0.001];
+  optional float rho = 2 [default = 0.001];
 
   // used by Adam and AdamMax
-  optional float beta_1 = 3[default = 0.9];
-  optional float beta_2 = 4[default = 0.999];
+  optional float beta_1 = 3 [default = 0.9];
+  optional float beta_2 = 4 [default = 0.999];
 
   // used by vanilla sgd and nesterov
-  optional float momentum = 5[default = 0.9];
+  optional float momentum = 5 [default = 0.9];
+
+  // delta is used to avoid dividing zero
+  optional float delta = 6 [default = 1e-8];
 }
 
 message ConstraintConf {
   // case insensitive to limit the parameter value/gradient scale
-  optional string type = 1[default = "l2"];
+  optional string type = 1 [default = "l2"];
   // e.g., the threshold for limiting the parameter scale.
   optional float threshold = 2;
 }
@@ -93,7 +101,7 @@ message ConstraintConf {
 /// SINGA message
 message RegularizerConf {
   // case insensitive to regularize the parameters, e.g., L2.
-  optional string type = 1[default = "l2"];
+  optional string type = 1 [default = "l2"];
   // e.g., the weight decay for L2 regularizer
   optional float coefficient = 2;
 }
@@ -119,10 +127,10 @@ message ParamSpec {
   */
 
   // The multiplier on the global learning rate for this parameter.
-  optional float lr_mult = 3[default = 1.0];
+  optional float lr_mult = 3 [default = 1.0];
 
   // The multiplier on the global weight decay for this parameter.
-  optional float decay_mult = 4[default = 1.0];
+  optional float decay_mult = 4 [default = 1.0];
 
   // SINGA uses this filed internally. Users just configure the fillers in
   // Layer specific conf message as caffe (style).
@@ -132,13 +140,14 @@ message ParamSpec {
 }
 
 enum Phase {
-  kTrain = 4; kEval = 8;
+  kTrain = 4;
+  kEval = 8;
 }
-    // NOTE
-    // Update the next available ID when you add a new LayerConf field.
-    //
-    // LayerConf next available layer-specific ID: 139 (last added: tile_param)
-    message LayerConf {
+// NOTE
+// Update the next available ID when you add a new LayerConf field.
+//
+// LayerConf next available layer-specific ID: 139 (last added: tile_param)
+message LayerConf {
   optional string name = 1; // the layer name
   optional string type = 2; // the layer type
   /* repeated string bottom = 3; // the name of each bottom blob */
@@ -242,8 +251,7 @@ message TransformationConf {
   optional uint32 crop_size = 3 [default = 0];
   // mean_file and mean_value cannot be specified at the same time
   optional string mean_file = 4;
-  // if specified can be repeated once (would substract it from all the
-channels)
+  // if specified can be repeated once (would substract it from all the channels)
   // or can be repeated the same number of times as channels
   // (would subtract them from the corresponding channel)
   repeated float mean_value = 5;
@@ -260,33 +268,34 @@ message LossConf {
   optional int32 ignore_label = 1;
   // If true, normalize each batch across all instances (including spatial
   // dimesions, but not ignored instances); else, divide by batch size only.
-  optional bool normalize = 2[default = true];
+  optional bool normalize = 2 [default = true];
 }
 
 message MetricConf {
   // When computing accuracy, count as correct by comparing the true label to
   // the top k scoring classes.  By default, only compare to the top scoring
   // class (i.e. argmax).
-  optional uint32 top_k = 1[default = 1];
+  optional uint32 top_k = 1 [default = 1];
 
   // The "label" axis of the prediction blob, whose argmax corresponds to the
   // predicted label -- may be negative to index from the end (e.g., -1 for the
   // last axis).  For example, if axis == 1 and the predictions are
   // (N x C x H x W), the label blob is expected to contain N*H*W ground truth
   // labels with integer values in {0, 1, ..., C-1}.
-  optional int32 axis = 2[default = 1];
+  optional int32 axis = 2 [default = 1];
 
   // If specified, ignore instances with the given label.
   optional int32 ignore_label = 3;
 }
-// Messages that store hyper-parameters used by individual layer types follow,
-// in
+// Messages that store hyper-parameters used by individual layer types follow, in
 // alphabetical order.
+
+
 
 message ArgMaxConf {
   // If true produce pairs (argmax, maxval)
-  optional bool out_max_val = 1[default = false];
-  optional uint32 top_k = 2[default = 1];
+  optional bool out_max_val = 1 [default = false];
+  optional uint32 top_k = 2 [default = 1];
   // The axis along which to maximise -- may be negative to index from the
   // end (e.g., -1 for the last axis).
   // By default ArgMaxLayer maximizes over the flattened trailing dimensions
@@ -299,51 +308,54 @@ message ConcatConf {
   // end (e.g., -1 for the last axis).  Other axes must have the
   // same dimension for all the bottom blobs.
   // By default, ConcatLayer concatenates blobs along the "channels" axis (1).
-  optional int32 axis = 2[default = 1];
+  optional int32 axis = 2 [default = 1];
 
   // DEPRECATED: alias for "axis" -- does not support negative indexing.
-  optional uint32 concat_dim = 1[default = 1];
+  optional uint32 concat_dim = 1 [default = 1];
 }
 
 message ContrastiveLossConf {
   // margin for dissimilar pair
-  optional float margin = 1[default = 1.0];
+  optional float margin = 1 [default = 1.0];
   // The first implementation of this cost did not exactly match the cost of
   // Hadsell et al 2006 -- using (margin - d^2) instead of (margin - d)^2.
   // legacy_version = false (the default) uses (margin - d)^2 as proposed in the
   // Hadsell paper. New models should probably use this version.
   // legacy_version = true uses (margin - d^2). This is kept to support /
   // reproduce existing models and results
-  optional bool legacy_version = 2[default = false];
+  optional bool legacy_version = 2 [default = false];
 }
 
 message ConvolutionConf {
   optional uint32 num_output = 1; // The number of outputs for the layer
-  optional bool bias_term = 2[default = true]; // whether to have bias terms
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
 
   // Pad, kernel size, and stride are all given as a single value for equal
   // dimensions in all spatial dimensions, or once per spatial dimension.
-  repeated uint32 pad = 3;         // The padding size; defaults to 0
+  repeated uint32 pad = 3; // The padding size; defaults to 0
   repeated uint32 kernel_size = 4; // The kernel size
-  repeated uint32 stride = 6;      // The stride; defaults to 1
+  repeated uint32 stride = 6; // The stride; defaults to 1
 
   // For 2D convolution only, the *_h and *_w versions may also be used to
   // specify both spatial dimensions.
-  optional uint32 pad_h = 9[default = 0];  // The padding height (2D only)
-  optional uint32 pad_w = 10[default = 0]; // The padding width (2D only)
-  optional uint32 kernel_h = 11;           // The kernel height (2D only)
-  optional uint32 kernel_w = 12;           // The kernel width (2D only)
-  optional uint32 stride_h = 13;           // The stride height (2D only)
-  optional uint32 stride_w = 14;           // The stride width (2D only)
+  optional uint32 pad_h = 9 [default = 0]; // The padding height (2D only)
+  optional uint32 pad_w = 10 [default = 0]; // The padding width (2D only)
+  optional uint32 kernel_h = 11; // The kernel height (2D only)
+  optional uint32 kernel_w = 12; // The kernel width (2D only)
+  optional uint32 stride_h = 13; // The stride height (2D only)
+  optional uint32 stride_w = 14; // The stride width (2D only)
 
   // SINGA: not supported.
   // optional uint32 group = 5 [default = 1]; // The group size for group conv
 
   optional FillerConf weight_filler = 7; // The filler for the weight
-  optional FillerConf bias_filler = 8;   // The filler for the bias
+  optional FillerConf bias_filler = 8; // The filler for the bias
   enum Engine {
-    DEFAULT = 0; CAFFE = 1; CUDNN = 2;
-  } optional Engine engine = 15[default = DEFAULT];
+    DEFAULT = 0;
+    CAFFE = 1;
+    CUDNN = 2;
+  }
+  optional Engine engine = 15 [default = DEFAULT];
 
   // The axis to interpret as "channels" when performing convolution.
   // Preceding dimensions are treated as independent inputs;
@@ -365,12 +377,13 @@ message ConvolutionConf {
   // SINGA: not supported;
   // optional bool force_nd_im2col = 17 [default = false];
 
+
   // SINGA: add by xiangrui
   // cudnn workspace size in MB
-  optional int32 workspace_byte_limit = 50[default = 512];
+  optional int32 workspace_byte_limit = 50 [default = 512];
   // cudnn algorithm preference
   // options: "fastest", "limited_workspace", "no_workspace"
-  optional string prefer = 51[default = "fastest"];
+  optional string prefer = 51 [default = "fastest"];
   // input shape
   optional int32 channels = 52;
   optional int32 height = 53;
@@ -414,7 +427,7 @@ message DataConf {
 */
 
 message DropoutConf {
-  optional float dropout_ratio = 1[default = 0.5]; // dropout ratio
+  optional float dropout_ratio = 1 [default = 0.5]; // dropout ratio
 }
 
 // DummyDataLayer fills any number of arbitrarily shaped blobs with random
@@ -438,13 +451,16 @@ message DummyDataConf {
 
 message EltwiseConf {
   enum EltwiseOp {
-    PROD = 0; SUM = 1; MAX = 2;
-  } optional EltwiseOp operation = 1[default = SUM]; // element-wise operation
+    PROD = 0;
+    SUM = 1;
+    MAX = 2;
+  }
+  optional EltwiseOp operation = 1 [default = SUM]; // element-wise operation
   repeated float coeff = 2; // blob-wise coefficient for SUM operation
 
   // Whether to use an asymptotically slower (for >2 inputs) but stabler method
   // of computing the gradient for the PROD operation. (No effect for SUM op.)
-  optional bool stable_prod_grad = 3[default = true];
+  optional bool stable_prod_grad = 3 [default = true];
 }
 
 // Message that stores hyper-parameters used by EmbedLayer
@@ -455,9 +471,9 @@ message EmbedConf {
   // 1 greater than the maximum possible input value.
   optional uint32 input_dim = 2;
 
-  optional bool bias_term = 3[default = true]; // Whether to use a bias term
-  optional FillerConf weight_filler = 4;       // The filler for the weight
-  optional FillerConf bias_filler = 5;         // The filler for the bias
+  optional bool bias_term = 3 [default = true]; // Whether to use a bias term
+  optional FillerConf weight_filler = 4; // The filler for the weight
+  optional FillerConf bias_filler = 5; // The filler for the bias
 
 }
 
@@ -466,21 +482,21 @@ message ExpConf {
   // ExpLayer computes outputs y = base ^ (shift + scale * x), for base > 0.
   // Or if base is set to the default (-1), base is set to e,
   // so y = exp(shift + scale * x).
-  optional float base = 1[default = -1.0];
-  optional float scale = 2[default = 1.0];
-  optional float shift = 3[default = 0.0];
+  optional float base = 1 [default = -1.0];
+  optional float scale = 2 [default = 1.0];
+  optional float shift = 3 [default = 0.0];
 }
 
 /// Message that stores hyper-parameters used by FlattenLayer
 message FlattenConf {
   // The first axis to flatten: all preceding axes are retained in the output.
   // May be negative to index from the end (e.g., -1 for the last axis).
-  optional int32 axis = 1[default = 1];
+  optional int32 axis = 1 [default = 1];
 
   // The last axis to flatten: all following axes are retained in the output.
   // May be negative to index from the end (e.g., the default -1 for the last
   // axis).
-  optional int32 end_axis = 2[default = -1];
+  optional int32 end_axis = 2 [default = -1];
 }
 
 /*
@@ -506,10 +522,11 @@ message HDF5OutputConf {
 
 message HingeLossConf {
   enum Norm {
-    L1 = 1; L2 = 2;
+    L1 = 1;
+    L2 = 2;
   }
-      // Specify the Norm to use L1 or L2
-      optional Norm norm = 1[default = L1];
+  // Specify the Norm to use L1 or L2
+  optional Norm norm = 1 [default = L1];
 }
 
 /*
@@ -552,29 +569,29 @@ message InfogainLossConf {
 
 message InnerProductConf {
   optional uint32 num_output = 1; // The number of outputs for the layer
-  optional bool bias_term = 2[default = true]; // whether to have bias terms
-  optional FillerConf weight_filler = 3;       // The filler for the weight
-  optional FillerConf bias_filler = 4;         // The filler for the bias
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
+  optional FillerConf weight_filler = 3; // The filler for the weight
+  optional FillerConf bias_filler = 4; // The filler for the bias
 
   // The first axis to be lumped into a single inner product computation;
   // all preceding axes are retained in the output.
   // May be negative to index from the end (e.g., -1 for the last axis).
-  optional int32 axis = 5[default = 1];
+  optional int32 axis = 5 [default = 1];
 }
 
 message DenseConf {
   optional uint32 num_output = 1; // The number of outputs for the layer
-  optional bool bias_term = 2[default = true]; // whether to have bias terms
-  optional FillerConf weight_filler = 3;       // The filler for the weight
-  optional FillerConf bias_filler = 4;         // The filler for the bias
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
+  optional FillerConf weight_filler = 3; // The filler for the weight
+  optional FillerConf bias_filler = 4; // The filler for the bias
 
   // The first axis to be lumped into a single inner product computation;
   // all preceding axes are retained in the output.
   // May be negative to index from the end (e.g., -1 for the last axis).
-  optional int32 axis = 5[default = 1];
+  optional int32 axis = 5 [default = 1];
 
   optional uint32 num_input = 20; // The number of inputs for the layer
-  optional bool transpose = 21[default = false]; // whether transpose or not
+  optional bool transpose = 21 [default = false]; // whether transpose or not
 }
 
 // Message that stores hyper-parameters used by LogLayer
@@ -582,20 +599,22 @@ message LogConf {
   // LogLayer computes outputs y = log_base(shift + scale * x), for base > 0.
   // Or if base is set to the default (-1), base is set to e,
   // so y = ln(shift + scale * x) = log_e(shift + scale * x)
-  optional float base = 1[default = -1.0];
-  optional float scale = 2[default = 1.0];
-  optional float shift = 3[default = 0.0];
+  optional float base = 1 [default = -1.0];
+  optional float scale = 2 [default = 1.0];
+  optional float shift = 3 [default = 0.0];
 }
 
 // Message that stores hyper-parameters used by LRNLayer
 message LRNConf {
-  optional uint32 local_size = 1[default = 5];
-  optional float alpha = 2[default = 1.];
-  optional float beta = 3[default = 0.75];
+  optional uint32 local_size = 1 [default = 5];
+  optional float alpha = 2 [default = 1.];
+  optional float beta = 3 [default = 0.75];
   enum NormRegion {
-    ACROSS_CHANNELS = 0; WITHIN_CHANNEL = 1;
-  } optional NormRegion norm_region = 4[default = ACROSS_CHANNELS];
-  optional float k = 5[default = 1.];
+    ACROSS_CHANNELS = 0;
+    WITHIN_CHANNEL = 1;
+  }
+  optional NormRegion norm_region = 4 [default = ACROSS_CHANNELS];
+  optional float k = 5 [default = 1.];
 }
 
 message MemoryDataConf {
@@ -607,30 +626,33 @@ message MemoryDataConf {
 
 message MVNConf {
   // This parameter can be set to false to normalize mean only
-  optional bool normalize_variance = 1[default = true];
+  optional bool normalize_variance = 1 [default = true];
 
   // This parameter can be set to true to perform DNN-like MVN
-  optional bool across_channels = 2[default = false];
+  optional bool across_channels = 2 [default = false];
 
   // Epsilon for not dividing by zero while normalizing variance
-  optional float eps = 3[default = 1e-9];
+  optional float eps = 3 [default = 1e-9];
 }
 
 message PoolingConf {
   enum PoolMethod {
-    MAX = 0; AVE = 1; STOCHASTIC = 2;
-  } optional PoolMethod pool = 1[default = MAX]; // The pooling method
+    MAX = 0;
+    AVE = 1;
+    STOCHASTIC = 2;
+  }
+  optional PoolMethod pool = 1 [default = MAX]; // The pooling method
   // Pad, kernel size, and stride are all given as a single value for equal
   // dimensions in height and width or as Y, X pairs.
-  optional uint32 pad = 4[default = 0];    // The padding size (equal in Y, X)
-  optional uint32 pad_h = 9[default = 0];  // The padding height
-  optional uint32 pad_w = 10[default = 0]; // The padding width
-  optional uint32 kernel_size = 2;         // The kernel size (square)
-  optional uint32 kernel_h = 5;            // The kernel height
-  optional uint32 kernel_w = 6;            // The kernel width
-  optional uint32 stride = 3[default = 1]; // The stride (equal in Y, X)
-  optional uint32 stride_h = 7;            // The stride height
-  optional uint32 stride_w = 8;            // The stride width
+  optional uint32 pad = 4 [default = 0]; // The padding size (equal in Y, X)
+  optional uint32 pad_h = 9 [default = 0]; // The padding height
+  optional uint32 pad_w = 10 [default = 0]; // The padding width
+  optional uint32 kernel_size = 2; // The kernel size (square)
+  optional uint32 kernel_h = 5; // The kernel height
+  optional uint32 kernel_w = 6; // The kernel width
+  optional uint32 stride = 3 [default = 1]; // The stride (equal in Y, X)
+  optional uint32 stride_h = 7; // The stride height
+  optional uint32 stride_w = 8; // The stride width
   /*
   enum Engine {
     DEFAULT = 0;
@@ -641,20 +663,20 @@ message PoolingConf {
   */
   // If global_pooling then it will pool over the size of the bottom by doing
   // kernel_h = bottom->height and kernel_w = bottom->width
-  optional bool global_pooling = 12[default = false];
+  optional bool global_pooling = 12 [default = false];
   // Shape of source
   optional int32 channels = 50;
   optional int32 height = 51;
   optional int32 width = 52;
   // whether to propagate nan
-  optional bool nan_prop = 53[default = false];
+  optional bool nan_prop = 53 [default = false];
 }
 
 message PowerConf {
   // PowerLayer computes outputs y = (shift + scale * x) ^ power.
-  optional float power = 1[default = 1.0];
-  optional float scale = 2[default = 1.0];
-  optional float shift = 3[default = 0.0];
+  optional float power = 1 [default = 1.0];
+  optional float scale = 2 [default = 1.0];
+  optional float shift = 3 [default = 0.0];
 }
 /*
 message PythonConf {
@@ -665,8 +687,7 @@ message PythonConf {
   // string, dictionary in Python dict format, JSON, etc. You may parse this
   // string in `setup` method and use it in `forward` and `backward`.
   optional string param_str = 3 [default = ''];
-  // Whether this PythonLayer is shared among worker solvers during data
-parallelism.
+  // Whether this PythonLayer is shared among worker solvers during data parallelism.
   // If true, each worker solver sequentially run forward from this layer.
   // This value should be set true if you are using it as a data layer.
   optional bool share_in_parallel = 4 [default = false];
@@ -676,8 +697,13 @@ parallelism.
 // Message that stores hyper-parameters used by ReductionLayer
 message ReductionConf {
   enum ReductionOp {
-    SUM = 1; ASUM = 2; SUMSQ = 3; MEAN = 4;
-  } optional ReductionOp operation = 1[default = SUM]; // reduction operation
+    SUM = 1;
+    ASUM = 2;
+    SUMSQ = 3;
+    MEAN = 4;
+  }
+
+  optional ReductionOp operation = 1 [default = SUM]; // reduction operation
 
   // The first axis to reduce to a scalar -- may be negative to index from the
   // end (e.g., -1 for the last axis).
@@ -692,9 +718,9 @@ message ReductionConf {
   // If axis == 0 (the default), the output Blob always has the empty shape
   // (count 1), performing reduction across the entire input --
   // often useful for creating new loss functions.
-  optional int32 axis = 2[default = 0];
+  optional int32 axis = 2 [default = 0];
 
-  optional float coeff = 3[default = 1.0]; // coefficient for output
+  optional float coeff = 3 [default = 1.0]; // coefficient for output
 }
 
 // Message that stores hyper-parameters used by ReLULayer
@@ -704,7 +730,7 @@ message ReLUConf {
   // Maas, A. L., Hannun, A. Y., & Ng, A. Y. (2013). Rectifier nonlinearities
   // improve neural network acoustic models. In ICML Workshop on Deep Learning
   // for Audio, Speech, and Language Processing.
-  optional float negative_slope = 1[default = 0];
+  optional float negative_slope = 1 [default = 0];
   /*
   enum Engine {
     DEFAULT = 0;
@@ -775,50 +801,58 @@ message ReshapeConf {
   //   reshape_param { shape { dim: 2  dim: 1  dim: 8  }  }
   //   reshape_param { shape { dim: 1 }  axis: 1  num_axes: 0 }
   //
-  optional int32 axis = 2[default = 0];
-  optional int32 num_axes = 3[default = -1];
+  optional int32 axis = 2 [default = 0];
+  optional int32 num_axes = 3 [default = -1];
 }
 
 message SigmoidConf {
   enum Engine {
-    DEFAULT = 0; CAFFE = 1; CUDNN = 2;
-  } optional Engine engine = 1[default = DEFAULT];
+    DEFAULT = 0;
+    CAFFE = 1;
+    CUDNN = 2;
+  }
+  optional Engine engine = 1 [default = DEFAULT];
 }
 
 message SliceConf {
   // The axis along which to slice -- may be negative to index from the end
   // (e.g., -1 for the last axis).
   // By default, SliceLayer concatenates blobs along the "channels" axis (1).
-  optional int32 axis = 3[default = 1];
+  optional int32 axis = 3 [default = 1];
   repeated uint32 slice_point = 2;
 
   // DEPRECATED: alias for "axis" -- does not support negative indexing.
-  optional uint32 slice_dim = 1[default = 1];
+  optional uint32 slice_dim = 1 [default = 1];
 }
 
-// Message that stores hyper-parameters used by SoftmaxLayer,
-// SoftmaxWithLossLayer
+// Message that stores hyper-parameters used by SoftmaxLayer, SoftmaxWithLossLayer
 message SoftmaxConf {
   enum Engine {
-    DEFAULT = 0; CAFFE = 1; CUDNN = 2;
-  } optional Engine engine = 1[default = DEFAULT];
+    DEFAULT = 0;
+    CAFFE = 1;
+    CUDNN = 2;
+  }
+  optional Engine engine = 1 [default = DEFAULT];
 
   // The axis along which to perform the softmax -- may be negative to index
   // from the end (e.g., -1 for the last axis).
   // Any other axes will be evaluated as independent softmaxes.
-  optional int32 axis = 2[default = 1];
+  optional int32 axis = 2 [default = 1];
 }
 
 message TanHConf {
   enum Engine {
-    DEFAULT = 0; CAFFE = 1; CUDNN = 2;
-  } optional Engine engine = 1[default = DEFAULT];
+    DEFAULT = 0;
+    CAFFE = 1;
+    CUDNN = 2;
+  }
+  optional Engine engine = 1 [default = DEFAULT];
 }
 
 // Message that stores hyper-parameters used by TileLayer
 message TileConf {
   // The index of the axis to tile.
-  optional int32 axis = 1[default = 1];
+  optional int32 axis = 1 [default = 1];
 
   // The number of copies (tiles) of the blob to output.
   optional int32 tiles = 2;
@@ -826,7 +860,7 @@ message TileConf {
 
 // Message that stores hyper-parameters used by ThresholdLayer
 message ThresholdConf {
-  optional float threshold = 1[default = 0]; // Strictly positive values
+  optional float threshold = 1 [default = 0]; // Strictly positive values
 }
 
 /*
@@ -866,12 +900,18 @@ message WindowDataConf {
 
 message SPPConf {
   enum PoolMethod {
-    MAX = 0; AVE = 1; STOCHASTIC = 2;
-  } optional uint32 pyramid_height = 1;
-  optional PoolMethod pool = 2[default = MAX]; // The pooling method
+    MAX = 0;
+    AVE = 1;
+    STOCHASTIC = 2;
+  }
+  optional uint32 pyramid_height = 1;
+  optional PoolMethod pool = 2 [default = MAX]; // The pooling method
   enum Engine {
-    DEFAULT = 0; CAFFE = 1; CUDNN = 2;
-  } optional Engine engine = 6[default = DEFAULT];
+    DEFAULT = 0;
+    CAFFE = 1;
+    CUDNN = 2;
+  }
+  optional Engine engine = 6 [default = DEFAULT];
 }
 
 message PReLUConf {
@@ -881,15 +921,15 @@ message PReLUConf {
   // Initial value of a_i. Default is a_i=0.25 for all i.
   optional FillerConf filler = 1;
   // Whether or not slope paramters are shared across channels.
-  optional bool channel_shared = 2[default = false];
-  // format of the input. Default is NCHW.
-  optional string format = 50[default = "NCHW"];
+  optional bool channel_shared = 2 [default = false];
+
+  optional string format = 20 [default = "NCHW"];
 }
 
 message BatchNormConf {
   // Used in the moving average computation runningMean =
   // newMean*factor + runningMean*(1-factor).
-  optional double factor = 1[default = 0.9];
+  optional double factor = 1 [default = 0.9];
   // input shape
   optional int32 channels = 2;
   optional int32 height = 3;

@@ -36,10 +36,10 @@ TEST(Flatten, Setup) {
 }
 
 TEST(Flatten, ForwardCPU) {
-  const float x[] = { 1.f, 2.f, 3.f, -2.f, -3.f, -4.f, 1.5f, -1.5f, 0.f, -0.5f,
-                      -2.f, -1.f };
+  const float x[] = {1.f,  2.f,   3.f, -2.f,  -3.f, -4.f,
+                     1.5f, -1.5f, 0.f, -0.5f, -2.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
-  singa::Shape s = { 2, 1, 3, 2 };
+  singa::Shape s = {2, 1, 3, 2};
   singa::Tensor in(s);
   in.CopyDataFromHostPtr<float>(x, n);
 
@@ -52,22 +52,19 @@ TEST(Flatten, ForwardCPU) {
 
   singa::Tensor out = flt.Forward(singa::kTrain, in);
   EXPECT_EQ(n, out.Size());
-  EXPECT_EQ(6, out.shape(0));
-  EXPECT_EQ(2, out.shape(1));
+  EXPECT_EQ(6u, out.shape(0));
+  EXPECT_EQ(2u, out.shape(1));
   const float *yptr = out.data<const float *>();
-  for (size_t i = 0; i < n; i++)
-    EXPECT_FLOAT_EQ(x[i], yptr[i]);
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(x[i], yptr[i]);
 }
 
 TEST(Flatten, BackwardCPU) {
   // directly use input as the output_grad for backward
   // note that only the shape of input really matters
-  const float dy[] = { 1.f, 2.f, 3.f, -2.f, -3.f, -4.f, 1.5f, -1.5f, 0.f, -0.5f,
-                       -2.f, -1.f };
+  const float dy[] = {1.f,  2.f,   3.f, -2.f,  -3.f, -4.f,
+                      1.5f, -1.5f, 0.f, -0.5f, -2.f, -1.f};
   size_t n = sizeof(dy) / sizeof(float);
-  singa::Tensor in(singa::Shape {
-    2, 1, 3, 2
-  });
+  singa::Tensor in(singa::Shape{2, 1, 3, 2});
   in.CopyDataFromHostPtr<float>(dy, n);
 
   int axis = 2;
@@ -81,24 +78,20 @@ TEST(Flatten, BackwardCPU) {
   const auto out = flt.Backward(singa::kTrain, temp);
   const float *xptr = out.first.data<const float *>();
   EXPECT_EQ(n, out.first.Size());
-  EXPECT_EQ(2, out.first.shape(0));
-  EXPECT_EQ(1, out.first.shape(1));
-  EXPECT_EQ(3, out.first.shape(2));
-  EXPECT_EQ(2, out.first.shape(3));
-  for (size_t i = 0; i < n; i++)
-    EXPECT_FLOAT_EQ(dy[i], xptr[i]);
+  EXPECT_EQ(2u, out.first.shape(0));
+  EXPECT_EQ(1u, out.first.shape(1));
+  EXPECT_EQ(3u, out.first.shape(2));
+  EXPECT_EQ(2u, out.first.shape(3));
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dy[i], xptr[i]);
 }
 
 #ifdef USE_CUDA
 TEST(Flatten, ForwardGPU) {
-  const float x[] = { 1.f, 2.f, 3.f, -2.f, -3.f, -4.f, 1.5f, -1.5f, 0.f, -0.5f,
-                      -2.f, -1.f };
+  const float x[] = {1.f,  2.f,   3.f, -2.f,  -3.f, -4.f,
+                     1.5f, -1.5f, 0.f, -0.5f, -2.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
   singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape {
-    2, 1, 3, 2
-  },
-                   &cuda);
+  singa::Tensor in(singa::Shape{2, 1, 3, 2}, &cuda);
   in.CopyDataFromHostPtr<float>(x, n);
 
   int axis = 3;
@@ -112,24 +105,20 @@ TEST(Flatten, ForwardGPU) {
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
   EXPECT_EQ(n, out.Size());
-  EXPECT_EQ(6, out.shape(0));
-  EXPECT_EQ(2, out.shape(1));
+  EXPECT_EQ(6u, out.shape(0));
+  EXPECT_EQ(2u, out.shape(1));
   const float *yptr = out.data<const float *>();
-  for (size_t i = 0; i < n; i++)
-    EXPECT_FLOAT_EQ(x[i], yptr[i]);
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(x[i], yptr[i]);
 }
 
 TEST(Flatten, BackwardGPU) {
   // directly use input as the output_grad for backward
   // note that only the shape of input really matters
-  const float dy[] = { 1.f, 2.f, 3.f, -2.f, -3.f, -4.f, 1.5f, -1.5f, 0.f, -0.5f,
-                       -2.f, -1.f };
+  const float dy[] = {1.f,  2.f,   3.f, -2.f,  -3.f, -4.f,
+                      1.5f, -1.5f, 0.f, -0.5f, -2.f, -1.f};
   size_t n = sizeof(dy) / sizeof(float);
   singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape {
-    2, 1, 3, 2
-  },
-                   &cuda);
+  singa::Tensor in(singa::Shape{2, 1, 3, 2}, &cuda);
   in.CopyDataFromHostPtr<float>(dy, n);
 
   int axis = 2;
@@ -146,11 +135,10 @@ TEST(Flatten, BackwardGPU) {
   in_diff.ToDevice(&host);
   const float *xptr = in_diff.data<const float *>();
   EXPECT_EQ(n, in_diff.Size());
-  EXPECT_EQ(2, in_diff.shape(0));
-  EXPECT_EQ(1, in_diff.shape(1));
-  EXPECT_EQ(3, in_diff.shape(2));
-  EXPECT_EQ(2, in_diff.shape(3));
-  for (size_t i = 0; i < n; i++)
-    EXPECT_FLOAT_EQ(dy[i], xptr[i]);
+  EXPECT_EQ(2u, in_diff.shape(0));
+  EXPECT_EQ(1u, in_diff.shape(1));
+  EXPECT_EQ(3u, in_diff.shape(2));
+  EXPECT_EQ(2u, in_diff.shape(3));
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dy[i], xptr[i]);
 }
 #endif // USE_CUDA

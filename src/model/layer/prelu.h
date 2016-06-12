@@ -26,7 +26,7 @@ namespace singa {
 class PReLU : public Layer {
  public:
   /// \copydoc Layer::layer_type()
-   const std::string layer_type() const override { return "PReLU"; }
+  const std::string layer_type() const override { return "PReLU"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const LayerConf &conf) override;
@@ -35,9 +35,8 @@ class PReLU : public Layer {
   const Tensor Forward(int flag, const Tensor &input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
-  const std::pair<Tensor, vector<Tensor> > Backward(int flag,
-                                                    const Tensor &grad)
-      override;
+  const std::pair<Tensor, vector<Tensor> > Backward(
+      int flag, const Tensor &grad) override;
 
   void ToDevice(Device *device);
 
@@ -52,8 +51,8 @@ class PReLU : public Layer {
 
  protected:
   bool channel_shared_;
-  std::string format_; // format_ has two valid value, i.e. NCHW, NHWC
-  Tensor a_; // shape of a_ is 2D, i.e. (channels, 1)
+  std::string format_;  // format_ has two valid value, i.e. NCHW, NHWC
+  Tensor a_;            // shape of a_ is 2D, i.e. (channels, 1)
   std::stack<Tensor> buf_;
 };
 }  // namespace singa

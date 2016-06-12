@@ -39,13 +39,11 @@ TEST(PReLU, Setup) {
 }
 
 TEST(PReLU, ForwardCPU) {
-  const float x[] = { 1.f, 2.f, 3.f, -2.f, -3.f, -1.f, -1.f, 2.f, -1.f, -2.f,
-                      -2.f, -1.f };
+  const float x[] = {1.f,  2.f, 3.f,  -2.f, -3.f, -1.f,
+                     -1.f, 2.f, -1.f, -2.f, -2.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
   size_t batchsize = 2, c = 3, h = 2, w = 1;
-  singa::Tensor in(singa::Shape {
-    batchsize, h, w, c
-  });
+  singa::Tensor in(singa::Shape{batchsize, h, w, c});
   in.CopyDataFromHostPtr<float>(x, n);
 
   PReLU prelu;
@@ -55,10 +53,8 @@ TEST(PReLU, ForwardCPU) {
   preluconf->set_format("NHWC");
   prelu.Setup(conf);
 
-  const float neg_slope[] = { 0.25f, 0.5f, 0.75f };
-  singa::Tensor a(singa::Shape {
-    c
-  });
+  const float neg_slope[] = {0.25f, 0.5f, 0.75f};
+  singa::Tensor a(singa::Shape{c});
   a.CopyDataFromHostPtr<float>(neg_slope, c);
   prelu.Set_a(a);
 
@@ -79,17 +75,15 @@ TEST(PReLU, ForwardCPU) {
       y[i] = std::max(x[i], 0.f) + neg_slope[pos] * std::min(x[i], 0.f);
     }
   }
-  for (size_t i = 0; i < n; i++)
-    EXPECT_FLOAT_EQ(y[i], yptr[i]);
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(y[i], yptr[i]);
 }
 
 TEST(PReLU, BackwardCPU) {
-  const float x[] = {1.f, 2.f, 3.f, -2.f, -3.f, -1.f, -1.f, 2.f, -1.f, -2.f, -2.f, -1.f};
+  const float x[] = {1.f,  2.f, 3.f,  -2.f, -3.f, -1.f,
+                     -1.f, 2.f, -1.f, -2.f, -2.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
   size_t batchsize = 2, c = 3, h = 2, w = 1;
-  singa::Tensor in(singa::Shape {
-    batchsize, c, h, w
-  });
+  singa::Tensor in(singa::Shape{batchsize, c, h, w});
   in.CopyDataFromHostPtr<float>(x, n);
 
   PReLU prelu;
@@ -99,20 +93,16 @@ TEST(PReLU, BackwardCPU) {
   preluconf->set_format("NCHW");
   prelu.Setup(conf);
 
-  const float neg_slope[] = { 0.25f, 0.5f, 0.75f };
-  singa::Tensor a(singa::Shape {
-    c
-  });
+  const float neg_slope[] = {0.25f, 0.5f, 0.75f};
+  singa::Tensor a(singa::Shape{c});
   a.CopyDataFromHostPtr<float>(neg_slope, c);
   prelu.Set_a(a);
 
   singa::Tensor out = prelu.Forward(singa::kTrain, in);
 
-  const float grad[] = { 1.f, 2.f, -2.f, -1.f, -1.f, -3.f, 2.f, -2.f, 1.f, 1.f,
-                         -2.f, 0.f };
-  singa::Tensor out_diff(singa::Shape {
-    batchsize, c, h, w
-  });
+  const float grad[] = {1.f, 2.f,  -2.f, -1.f, -1.f, -3.f,
+                        2.f, -2.f, 1.f,  1.f,  -2.f, 0.f};
+  singa::Tensor out_diff(singa::Shape{batchsize, c, h, w});
   out_diff.CopyDataFromHostPtr<float>(grad, n);
   const auto ret = prelu.Backward(singa::kTrain, out_diff);
   const float *xptr = ret.first.data<const float *>();
@@ -120,7 +110,7 @@ TEST(PReLU, BackwardCPU) {
   float *dx = new float[n];
   size_t div_factor = prelu.Channel_shared() ? c : 1;
   size_t params = prelu.Channel_shared() ? 1 : c;
-  float da[] = { 0.f, 0.f, 0.f };
+  float da[] = {0.f, 0.f, 0.f};
   if (prelu.Format() == "NCHW") {
     for (size_t i = 0; i < n; i++) {
       size_t pos = i / (h * w) % c / div_factor;
@@ -142,8 +132,6 @@ TEST(PReLU, BackwardCPU) {
       da[pos] += grad[i] * std::min(x[i], 0.f);
     }
   }
-  for (size_t i = 0; i < n; i++)
-    EXPECT_FLOAT_EQ(dx[i], xptr[i]);
-  for (size_t i = 0; i < params; i++)
-    EXPECT_FLOAT_EQ(da[i], aptr[i]);
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dx[i], xptr[i]);
+  for (size_t i = 0; i < params; i++) EXPECT_FLOAT_EQ(da[i], aptr[i]);
 }

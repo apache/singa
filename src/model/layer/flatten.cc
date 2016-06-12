@@ -31,22 +31,15 @@ const Tensor Flatten::Forward(int flag, const Tensor &input) {
   if (!Axis()) {
     // reshape to 1D
     size_t dim = output.Size();
-    output.Reshape(Shape {
-      dim
-    });
-    output_shape_ = Shape { dim }
-    ;
+    output.Reshape(Shape{dim});
+    output_shape_ = Shape{dim};
   } else {
     // reshape to 2D
     size_t dim1 = 1, dim2;
-    for (int i = 0; i < Axis(); i++)
-      dim1 *= output.shape(i);
+    for (int i = 0; i < Axis(); i++) dim1 *= output.shape(i);
     dim2 = output.Size() / dim1;
-    output.Reshape(Shape {
-      dim1, dim2
-    });
-    output_shape_ = Shape { dim1, dim2 }
-    ;
+    output.Reshape(Shape{dim1, dim2});
+    output_shape_ = Shape{dim1, dim2};
   }
   return output;
 }
@@ -55,7 +48,7 @@ const std::pair<Tensor, vector<Tensor> > Flatten::Backward(int flag,
                                                            const Tensor &grad) {
   vector<Tensor> param_grad;
   Tensor input_grad = grad;
-  input_grad.Reshape(Input_shape());
+  input_grad.Reshape(input_shape_);
   return std::make_pair(input_grad, param_grad);
 }
 

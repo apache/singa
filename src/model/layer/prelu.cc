@@ -25,8 +25,7 @@ void PReLU::Setup(const LayerConf &conf) {
   channel_shared_ = conf.prelu_conf().channel_shared();
   format_ = conf.prelu_conf().format();
   // Push back params into param_values_
-  for (const auto &spec : conf.param())
-    param_specs_.push_back(spec);
+  for (const auto &spec : conf.param()) param_specs_.push_back(spec);
   param_values_.push_back(&a_);
 }
 
@@ -41,26 +40,18 @@ const Tensor PReLU::Forward(int flag, const Tensor &input) {
         c = temp.shape(1);
         h = temp.shape(2);
         w = temp.shape(3);
-        temp.Reshape(Shape {
-          n *c, h *w
-        });
-        Tensor temp_a(Shape {
-          n, c
-        });
+        temp.Reshape(Shape{n * c, h * w});
+        Tensor temp_a(Shape{n, c});
         Uniform(1.f, 1.f, &temp_a);
         MultRow(a_, &temp_a);
-        temp_a.Reshape(Shape {
-          n *c
-        });
+        temp_a.Reshape(Shape{n * c});
         MultColumn(temp_a, &temp);
       } else if (format_ == "NHWC") {
         n = temp.shape(0);
         h = temp.shape(1);
         w = temp.shape(2);
         c = temp.shape(3);
-        temp.Reshape(Shape {
-          n *h *w, c
-        });
+        temp.Reshape(Shape{n * h * w, c});
         MultRow(a_, &temp);
       } else {
         LOG(FATAL) << "Incorrect input format for prelu layer.";
@@ -74,8 +65,7 @@ const Tensor PReLU::Forward(int flag, const Tensor &input) {
     const float a = a_.data<const float *>()[0];
     output = input * ((input > 0.f) + (input <= 0.f) * a);
   }
-  if (flag & kTrain)
-    buf_.push(input);
+  if (flag & kTrain) buf_.push(input);
   return output;
 }
 
@@ -96,33 +86,21 @@ const std::pair<Tensor, vector<Tensor> > PReLU::Backward(int flag,
         c = temp1.shape(1);
         h = temp1.shape(2);
         w = temp1.shape(3);
-        temp1.Reshape(Shape {
-          n *c, h *w
-        });
-        Tensor temp_a(Shape {
-          n, c
-        });
+        temp1.Reshape(Shape{n * c, h * w});
+        Tensor temp_a(Shape{n, c});
         Uniform(1.f, 1.f, &temp_a);
         MultRow(a_, &temp_a);
-        temp_a.Reshape(Shape {
-          n *c
-        });
+        temp_a.Reshape(Shape{n * c});
         MultColumn(temp_a, &temp1);
-        temp1.Reshape(Shape {
-          n, c, h, w
-        });
+        temp1.Reshape(Shape{n, c, h, w});
       } else if (format_ == "NHWC") {
         n = temp1.shape(0);
         h = temp1.shape(1);
         w = temp1.shape(2);
         c = temp1.shape(3);
-        temp1.Reshape(Shape {
-          n *h *w, c
-        });
+        temp1.Reshape(Shape{n * h * w, c});
         MultRow(a_, &temp1);
-        temp1.Reshape(Shape {
-          n, h, w, c
-        });
+        temp1.Reshape(Shape{n, h, w, c});
       } else {
         LOG(FATAL) << "Incorrect input format for prelu layer.";
       }
@@ -130,22 +108,14 @@ const std::pair<Tensor, vector<Tensor> > PReLU::Backward(int flag,
       LOG(FATAL) << "Incorrect input format for prelu layer.";
     }
     input_grad = grad * input * ((input > 0.f) + temp1);
-    Tensor temp2 = grad * input * (input <= 0.f), temp3(Shape {
-      n *c
-    });
+    Tensor temp2 = grad * input * (input <= 0.f), temp3(Shape{n * c});
     if (format_ == "NCHW") {
-      temp2.Reshape(Shape {
-        n *c, h *w
-      });
+      temp2.Reshape(Shape{n * c, h * w});
       SumColumns(temp2, &temp3);
-      temp3.Reshape(Shape {
-        n, c
-      });
+      temp3.Reshape(Shape{n, c});
       SumRows(temp3, &da);
     } else if (format_ == "NHWC") {
-      temp2.Reshape(Shape {
-        n *h *w, c
-      });
+      temp2.Reshape(Shape{n * h * w, c});
       SumRows(temp2, &da);
     }
   } else {

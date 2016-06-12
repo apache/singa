@@ -24,7 +24,7 @@
 
 namespace singa {
 class Flatten : public Layer {
-public:
+ public:
   /// \copydoc Layer::layer_type();
   const std::string layer_type() const override { return "Flatten"; }
 
@@ -35,15 +35,14 @@ public:
   const Tensor Forward(int flag, const Tensor &input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
-  const std::pair<Tensor, vector<Tensor> > Backward(int flag,
-                                                    const Tensor &grad)
-      override;
+  const std::pair<Tensor, vector<Tensor> > Backward(
+      int flag, const Tensor &grad) override;
 
   const int Axis() const { return axis_; }
-  const Shape Input_shape() const { return input_shape_; }
-  const Shape Output_shape() const { return output_shape_; }
+  const Shape input_shape() const { return input_shape_; }
+  const Shape output_shape() const { return output_shape_; }
 
-protected:
+ protected:
   /// flatten layer reshape the input to 2D, one from 0 to axis_-1, one from
   /// axis_ to end.
   /// if axis_ is 0, reshape the input to 1D.
