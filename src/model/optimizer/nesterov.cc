@@ -26,16 +26,18 @@ void Nesterov::Setup(const OptimizerConf& conf) {
   SetMomentumGenerator([m](int step) { return m; });
 }
 
-void Nesterov::Apply(int step, float lr, const string& name, Tensor* grad,
+void Nesterov::Apply(int step, float lr, const string& name, const Tensor& grad,
                      Tensor* value) {
   if (momentum_generator_) {
     float mom = momentum_generator_(step);
     if (history_gradient_.find(name) == history_gradient_.end())
       history_gradient_[name].ResetLike(*value);
     Tensor& history = history_gradient_[name];
-    Tensor tmp = history;
-    history = history * mom + (*grad) * lr;
-    tmp = history * (1 + mom) - tmp * mom;
+    Tensor tmp = history.Clone();
+    history *= mom;
+    Axpy(lr, grad, &history);
+    tmp *= -mom;
+    Axpy(1 + mom, history, &tmp);
     (*value) -= tmp;
   }
 }

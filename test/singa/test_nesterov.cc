@@ -35,7 +35,7 @@ TEST(Nesterov, ApplyCPU) {
   value.CopyDataFromHostPtr(v, 4);
   grad.CopyDataFromHostPtr(g, 4);
 
-  nesterov.Apply(0, lr, "xx", &grad, &value);
+  nesterov.Apply(0, lr, "xx", grad, &value);
 
   singa::Tensor v1 = value.Clone();
   const float* newv1 = v1.data<const float*>();
@@ -47,7 +47,7 @@ TEST(Nesterov, ApplyCPU) {
   for (int i = 0; i < 4; ++i) EXPECT_FLOAT_EQ(newv1[i], v[i] - tmp[i]);
 
   grad.CopyDataFromHostPtr(g, 4);
-  nesterov.Apply(1, lr, "xx", &grad, &value);
+  nesterov.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
   const float* newv2 = v2.data<const float*>();
   for (int i = 0; i < 4; ++i) {
@@ -73,7 +73,7 @@ TEST(Nesterov, ApplyCUDA) {
   value.CopyDataFromHostPtr(v, 4);
   grad.CopyDataFromHostPtr(g, 4);
 
-  nesterov.Apply(0, lr, "xx", &grad, &value);
+  nesterov.Apply(0, lr, "xx", grad, &value);
 
   singa::Tensor v1 = value.Clone();
   v1.ToHost();
@@ -86,7 +86,7 @@ TEST(Nesterov, ApplyCUDA) {
   for (int i = 0; i < 4; ++i) EXPECT_FLOAT_EQ(newv1[i], v[i] - tmp[i]);
 
   grad.CopyDataFromHostPtr(g, 4);
-  nesterov.Apply(1, lr, "xx", &grad, &value);
+  nesterov.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
   v2.ToHost();
   const float* newv2 = v2.data<const float*>();

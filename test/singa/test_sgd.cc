@@ -33,7 +33,7 @@ TEST(SGD, ApplyWithoutMomentum) {
   grad.CopyDataFromHostPtr(g, 4);
 
   float lr = 0.1f;
-  sgd.Apply(0, lr, "xx", &grad, &value);
+  sgd.Apply(0, lr, "xx", grad, &value);
 
   singa::Tensor v1 = value.Clone();
   const float* newv1 = v1.data<const float*>();
@@ -44,7 +44,7 @@ TEST(SGD, ApplyWithoutMomentum) {
 
   lr /= 2;
   grad.CopyDataFromHostPtr(g, 4);
-  sgd.Apply(1, lr, "xx", &grad, &value);
+  sgd.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
   const float* newv2 = v2.data<const float*>();
   for (int i = 0; i < 4; i++) {
@@ -65,7 +65,7 @@ TEST(SGD, ApplyWithMomentum) {
   value.CopyDataFromHostPtr(v, 4);
   grad.CopyDataFromHostPtr(g, 4);
 
-  sgd.Apply(0, lr, "xx", &grad, &value);
+  sgd.Apply(0, lr, "xx", grad, &value);
 
   singa::Tensor v1 = value.Clone();
   const float* newv1 = v1.data<const float*>();
@@ -74,7 +74,7 @@ TEST(SGD, ApplyWithMomentum) {
   }
 
   grad.CopyDataFromHostPtr(g, 4);
-  sgd.Apply(1, lr, "xx", &grad, &value);
+  sgd.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
   const float* newv2 = v2.data<const float*>();
   for (int i = 0; i < 4; i++) {
@@ -94,7 +94,7 @@ TEST(SGD, ApplyWithoutMomentumCuda) {
   grad.CopyDataFromHostPtr(g, 4);
 
   float lr = 0.1f;
-  sgd.Apply(0, lr, "xx", &grad, &value);
+  sgd.Apply(0, lr, "xx", grad, &value);
 
   singa::Tensor v1 = value.Clone();
   v1.ToHost();
@@ -106,7 +106,7 @@ TEST(SGD, ApplyWithoutMomentumCuda) {
 
   lr /= 2;
   grad.CopyDataFromHostPtr(g, 4);
-  sgd.Apply(1, lr, "xx", &grad, &value);
+  sgd.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
   v2.ToHost();
   const float* newv2 = v2.data<const float*>();
@@ -129,7 +129,7 @@ TEST(SGD, ApplyWithMomentumCuda) {
   value.CopyDataFromHostPtr(v, 4);
   grad.CopyDataFromHostPtr(g, 4);
 
-  sgd.Apply(0, lr, "xx", &grad, &value);
+  sgd.Apply(0, lr, "xx", grad, &value);
 
   singa::Tensor v1 = value.Clone();
   v1.ToHost();
@@ -139,7 +139,7 @@ TEST(SGD, ApplyWithMomentumCuda) {
   }
 
   grad.CopyDataFromHostPtr(g, 4);
-  sgd.Apply(1, lr, "xx", &grad, &value);
+  sgd.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
   v2.ToHost();
   const float* newv2 = v2.data<const float*>();

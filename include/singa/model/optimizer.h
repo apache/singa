@@ -62,7 +62,7 @@ class Optimizer {
   /// conducted. It assumes all these operations are done either by users or
   /// by Apply(int, const string&, Tensor*, Tensor*).
   /// All sub-classes should override this function.
-  virtual void Apply(int step, float lr, const string& name, Tensor* grad,
+  virtual void Apply(int step, float lr, const string& name, const Tensor& grad,
                      Tensor* value) = 0;
 
   /// Apply the updating algorithm.
@@ -76,6 +76,9 @@ class Optimizer {
   void SetLearningRateGenerator(function<float(int)> func) {
     learning_rate_generator_ = func;
   }
+  /// Since Optimizer base layer has pure virtual function, a virtual
+  /// deconstructor is needed.
+  virtual ~Optimizer() = default;
 
  protected:
   function<float(int)> learning_rate_generator_;
@@ -109,6 +112,7 @@ class Constraint {
   /// \ref https://github.com/Lasagne/Lasagne/blob/master/lasagne/updates.py
   void Apply(int step, const vector<Tensor*>& grads,
              const vector<Tensor*>& values);
+
  private:
   /// currently only support "L2" norm constraint, i.e., the norm should be less
   /// than the configured threshold_, otherwise, the parameters would be clipped
@@ -142,6 +146,7 @@ class Regularizer {
   /// \ref https://github.com/Lasagne/Lasagne/blob/master/lasagne/updates.py
   void Apply(int step, const vector<Tensor*>& grads,
              const vector<Tensor*>& values);
+
  private:
   /// currently only support "L2" regularizer. type_ is case insensitive.
   /// TODO(wangwei) add more regularizer, e.g., L1.
@@ -154,7 +159,7 @@ class SGD : Optimizer {
  public:
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
-  void Apply(int step, float lr, const string& name, Tensor* grad,
+  void Apply(int step, float lr, const string& name, const Tensor& grad,
              Tensor* value) override;
 
   /// The argument function returns the momentum value given the current running
@@ -162,6 +167,7 @@ class SGD : Optimizer {
   void SetMomentumGenerator(std::function<float(int)> func) {
     momentum_generator_ = func;
   }
+  virtual ~SGD() = default;
 
  private:
   std::unordered_map<string, Tensor> history_gradient_;
@@ -173,7 +179,7 @@ class Nesterov : Optimizer {
  public:
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
-  void Apply(int step, float lr, const string& name, Tensor* grad,
+  void Apply(int step, float lr, const string& name, const Tensor& grad,
              Tensor* value) override;
 
   /// The argument function returns the momentum value given the current running
@@ -181,6 +187,7 @@ class Nesterov : Optimizer {
   void SetMomentumGenerator(std::function<float(int)> func) {
     momentum_generator_ = func;
   }
+  virtual ~Nesterov() = default;
 
  private:
   std::unordered_map<string, Tensor> history_gradient_;
@@ -192,8 +199,9 @@ class Adagrad : Optimizer {
  public:
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
-  void Apply(int step, float lr, const string& name, Tensor* grad,
+  void Apply(int step, float lr, const string& name, const Tensor& grad,
              Tensor* value) override;
+  virtual ~Adagrad() = default;
 
  private:
   std::unordered_map<string, Tensor> history_gradient_;
@@ -204,8 +212,9 @@ class RMSProp : Optimizer {
  public:
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
-  void Apply(int step, float lr, const string& name, Tensor* grad,
+  void Apply(int step, float lr, const string& name, const Tensor& grad,
              Tensor* value) override;
+  virtual ~RMSProp() = default;
 
  private:
   std::unordered_map<string, Tensor> history_gradient_;
@@ -236,7 +245,8 @@ class LocalAllReduce : public Optimizer{
   /// 2. Partition parameters onto worker devices. For example, model parameter
   /// set is {A, B, C}, nb_workers = 3, then worker 0/1/2 would be in charge of
   /// updating A/B/C respectively. A gradient Tensor for A/B/C would be created
-  /// on device 0/1/2, dentoed as GA/GB/GC. 0/1/2 would call the internal opt to register the specs
+  /// on device 0/1/2, dentoed as GA/GB/GC. 0/1/2 would call the internal opt to
+register the specs
   /// for A/B/C.
   void Register(const vector<string>& names,
                 const vector<Tensor>& values,

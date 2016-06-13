@@ -54,7 +54,7 @@ void Optimizer::Apply(int step, const string& name, Tensor* grad,
   float lr = learning_rate_generator_(step);
   if (learning_rate_multplier_.find(name) != learning_rate_multplier_.end())
     lr *= learning_rate_multplier_.at(name);
-  Apply(step, lr, name, grad, param);
+  Apply(step, lr, name, *grad, param);
 }
 
 void Regularizer::Setup(const RegularizerConf& conf) {

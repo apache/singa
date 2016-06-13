@@ -78,7 +78,7 @@ message OptimizerConf {
   optional string type = 1 [default = "sgd"];
 
   // used by RMSprop and Adadelta
-  optional float rho = 2 [default = 0.001];
+  optional float rho = 2 [default = 0.95];
 
   // used by Adam and AdamMax
   optional float beta_1 = 3 [default = 0.9];

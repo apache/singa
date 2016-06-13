@@ -23,14 +23,15 @@ namespace singa {
 
 void Adagrad::Setup(const OptimizerConf& conf) { delta_ = conf.delta(); }
 
-void Adagrad::Apply(int step, float lr, const string& name, Tensor* grad,
+void Adagrad::Apply(int step, float lr, const string& name, const Tensor& grad,
                     Tensor* value) {
   if (history_gradient_.find(name) == history_gradient_.end())
     history_gradient_[name].ResetLike(*value);
   Tensor& history = history_gradient_[name];
-  history += Square(*grad);
-  (*grad) /= Sqrt(history + delta_);
-  Axpy(-lr, *grad, value);
+  Tensor tmp = grad.Clone();
+  history += Square(tmp);
+  tmp /= Sqrt(history + delta_);
+  Axpy(-lr, tmp, value);
 }
 }  // namespace singa
 #endif  // SRC_MODEL_OPTIMIZER_ADAGRAD_H_

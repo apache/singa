@@ -26,16 +26,17 @@ void RMSProp::Setup(const OptimizerConf& conf) {
   rho_ = conf.rho();
 }
 
-void RMSProp::Apply(int step, float lr, const string& name, Tensor* grad,
+void RMSProp::Apply(int step, float lr, const string& name, const Tensor& grad,
                     Tensor* value) {
   if (history_gradient_.find(name) == history_gradient_.end()) {
     history_gradient_[name].ResetLike(*value);
   }
   Tensor& history = history_gradient_[name];
   history *= rho_;
-  Axpy(1 - rho_, Square(*grad), &history);
-  (*grad) /= Sqrt(history + delta_);
-  Axpy(-lr, *grad, value);
+  Tensor tmp = grad.Clone();
+  Axpy(1 - rho_, Square(tmp), &history);
+  tmp /= Sqrt(history + delta_);
+  Axpy(-lr, tmp, value);
 }
 }  // namespace singa
 #endif  // SRC_MODEL_OPTIMIZER_ADAGRAD_H_
