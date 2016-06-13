@@ -23,14 +23,18 @@ namespace singa {
 
 void Adagrad::Setup(const OptimizerConf& conf) { delta_ = conf.delta(); }
 
+// history += grad*grad;
+// value = value - lr*grad/sqrt(history+delta)
 void Adagrad::Apply(int step, float lr, const string& name, const Tensor& grad,
                     Tensor* value) {
   if (history_gradient_.find(name) == history_gradient_.end())
     history_gradient_[name].ResetLike(*value);
   Tensor& history = history_gradient_[name];
-  Tensor tmp = grad.Clone();
-  history += Square(tmp);
-  tmp /= Sqrt(history + delta_);
+  Tensor tmp = Square(grad);
+  history += tmp;
+  Add(history, delta_, &tmp);
+  Sqrt(tmp, &tmp);
+  Div(grad, tmp, &tmp);
   Axpy(-lr, tmp, value);
 }
 }  // namespace singa

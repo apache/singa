@@ -26,6 +26,10 @@ void Nesterov::Setup(const OptimizerConf& conf) {
   SetMomentumGenerator([m](int step) { return m; });
 }
 
+// tmp = history;
+// history = lr * grad + history * mom
+// tmp = (1+mom) * history - tmp * mom;
+// value = value - tmp;
 void Nesterov::Apply(int step, float lr, const string& name, const Tensor& grad,
                      Tensor* value) {
   if (momentum_generator_) {

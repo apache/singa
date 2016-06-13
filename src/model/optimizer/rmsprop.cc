@@ -26,6 +26,8 @@ void RMSProp::Setup(const OptimizerConf& conf) {
   rho_ = conf.rho();
 }
 
+// history = history * rho + grad * grad * (1 - rho)
+// value = value - lr * grad / sqrt(history + delta)
 void RMSProp::Apply(int step, float lr, const string& name, const Tensor& grad,
                     Tensor* value) {
   if (history_gradient_.find(name) == history_gradient_.end()) {
@@ -33,9 +35,10 @@ void RMSProp::Apply(int step, float lr, const string& name, const Tensor& grad,
   }
   Tensor& history = history_gradient_[name];
   history *= rho_;
-  Tensor tmp = grad.Clone();
-  Axpy(1 - rho_, Square(tmp), &history);
-  tmp /= Sqrt(history + delta_);
+  Tensor tmp = Square(grad);
+  Axpy(1 - rho_, tmp, &history);
+  Sqrt(history + delta_, &tmp);
+  Div(grad, tmp, &tmp);
   Axpy(-lr, tmp, value);
 }
 }  // namespace singa

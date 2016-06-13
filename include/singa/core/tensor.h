@@ -227,6 +227,17 @@ Tensor Sqrt(const Tensor &in);
 Tensor Square(const Tensor &in);
 Tensor Tanh(const Tensor &in);
 
+void Abs(const Tensor &in, Tensor *out);
+void Exp(const Tensor &in, Tensor *out);
+void Log(const Tensor &in, Tensor *out);
+void ReLU(const Tensor &in, Tensor *out);
+void Sigmoid(const Tensor &in, Tensor *out);
+void Sign(const Tensor &in, Tensor *out);
+void Sqrt(const Tensor &in, Tensor *out);
+void Square(const Tensor &in, Tensor *out);
+void Tanh(const Tensor &in, Tensor *out);
+
+
 /// Element-wise opeartion, out[i]=in[i]^x
 template <typename SType>
 Tensor Pow(const Tensor &in, const SType x);

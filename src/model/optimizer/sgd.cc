@@ -28,10 +28,10 @@ void SGD::Setup(const OptimizerConf& conf) {
   }
 }
 
+// history = history * momentum + grad * lr
+// value = value - history
 void SGD::Apply(int step, float lr, const string& name, const Tensor& grad,
                 Tensor* value) {
-  Tensor tmp = grad.Clone();
-  tmp *= lr;
   if (momentum_generator_) {
     float mom = momentum_generator_(step);
     if (mom != 0) {
@@ -39,12 +39,13 @@ void SGD::Apply(int step, float lr, const string& name, const Tensor& grad,
         history_gradient_[name].ResetLike(*value);
       Tensor& history = history_gradient_[name];
       history *= mom;
-      history += tmp;
+      Axpy(lr, grad, &history);
       (*value) -= history;
       return;
     }
+  } else {
+    Axpy(-lr, grad, value);
   }
-  (*value) -= tmp;
 }
 }  // namespace singa
 #endif  // SRC_MODEL_OPTIMIZER_SGD_H_
