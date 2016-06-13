@@ -40,7 +40,7 @@ TEST(RMSProp, ApplyCPU) {
   grad.CopyDataFromHostPtr(g, 4);
 
   rmsprop.Setup(conf);
-  rmsprop.Apply(0, lr, "xx", &grad, &value);
+  rmsprop.Apply(0, lr, "xx", grad, &value);
 
   singa::Tensor v1 = value.Clone();
   const float* newv1 = v1.data<const float*>();
@@ -51,7 +51,7 @@ TEST(RMSProp, ApplyCPU) {
                 1e-5);
 
   grad.CopyDataFromHostPtr(g, 4);
-  rmsprop.Apply(1, lr, "xx", &grad, &value);
+  rmsprop.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
   const float* newv2 = v2.data<const float*>();
   for (int i = 0; i < 4; ++i)
@@ -80,7 +80,7 @@ TEST(RMSProp, ApplyCUDA) {
   grad.CopyDataFromHostPtr(g, 4);
 
   rmsprop.Setup(conf);
-  rmsprop.Apply(0, lr, "xx", &grad, &value);
+  rmsprop.Apply(0, lr, "xx", grad, &value);
 
   singa::Tensor v1 = value.Clone();
   v1.ToHost();
@@ -92,7 +92,7 @@ TEST(RMSProp, ApplyCUDA) {
                 1e-5);
 
   grad.CopyDataFromHostPtr(g, 4);
-  rmsprop.Apply(1, lr, "xx", &grad, &value);
+  rmsprop.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
   v2.ToHost();
   const float* newv2 = v2.data<const float*>();
