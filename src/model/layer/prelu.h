@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include "singa/model/layer.h"
+#include "singa_config.h"
 
 namespace singa {
 class PReLU : public Layer {

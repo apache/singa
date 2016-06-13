@@ -41,7 +41,7 @@ const Tensor PReLU::Forward(int flag, const Tensor &input) {
         h = temp.shape(2);
         w = temp.shape(3);
         temp.Reshape(Shape{n * c, h * w});
-        Tensor temp_a(Shape{n, c});
+        Tensor temp_a(Shape{n, c}, input.device(), input.data_type());
         Uniform(1.f, 1.f, &temp_a);
         MultRow(a_, &temp_a);
         temp_a.Reshape(Shape{n * c});
@@ -87,7 +87,7 @@ const std::pair<Tensor, vector<Tensor> > PReLU::Backward(int flag,
         h = temp1.shape(2);
         w = temp1.shape(3);
         temp1.Reshape(Shape{n * c, h * w});
-        Tensor temp_a(Shape{n, c});
+        Tensor temp_a(Shape{n, c}, grad.device(), grad.data_type());
         Uniform(1.f, 1.f, &temp_a);
         MultRow(a_, &temp_a);
         temp_a.Reshape(Shape{n * c});
@@ -108,8 +108,9 @@ const std::pair<Tensor, vector<Tensor> > PReLU::Backward(int flag,
       LOG(FATAL) << "Incorrect input format for prelu layer.";
     }
     input_grad = grad * input * ((input > 0.f) + temp1);
-    Tensor temp2 = grad * input * (input <= 0.f), temp3(Shape{n * c});
+    Tensor temp2 = grad * input * (input <= 0.f);
     if (format_ == "NCHW") {
+      Tensor temp3(Shape{n * c}, grad.device(), grad.data_type());
       temp2.Reshape(Shape{n * c, h * w});
       SumColumns(temp2, &temp3);
       temp3.Reshape(Shape{n, c});
