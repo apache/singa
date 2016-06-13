@@ -29,47 +29,32 @@ CudnnLRN::~CudnnLRN() {
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(shape_desc_));
   }
 }
-void CudnnLRN::InitCudnn(const Shape& shape , DataType dtype) {
+void CudnnLRN::InitCudnn(const Shape& shape, DataType dtype) {
   CHECK(!has_init_cudnn_);
   mode_ = CUDNN_LRN_CROSS_CHANNEL_DIM1;
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&shape_desc_));
   CHECK_EQ(shape.size(), 4u);
-  CUDNN_CHECK(cudnnSetTensor4dDescriptor(shape_desc_,
-      CUDNN_TENSOR_NCHW,
-      GetCudnnDataType(dtype),
-      shape[0],
-      shape[1],
-      shape[2],
-      shape[3]));
+  CUDNN_CHECK(cudnnSetTensor4dDescriptor(shape_desc_, CUDNN_TENSOR_NCHW,
+                                         GetCudnnDataType(dtype), shape[0],
+                                         shape[1], shape[2], shape[3]));
   CUDNN_CHECK(cudnnCreateLRNDescriptor(&lrn_desc_));
-  CUDNN_CHECK(cudnnSetLRNDescriptor(lrn_desc_,
-        local_size_,
-        alpha_,
-        beta_,
-        k_));
+  CUDNN_CHECK(cudnnSetLRNDescriptor(lrn_desc_, local_size_, alpha_, beta_, k_));
   has_init_cudnn_ = true;
 }
 const Tensor CudnnLRN::Forward(int flag, const Tensor& input) {
   auto shape = input.shape();
   auto dtype = input.data_type();
-  if (!has_init_cudnn_)
-    InitCudnn(shape, dtype);
+  if (!has_init_cudnn_) InitCudnn(shape, dtype);
   Tensor output;
   output.ResetLike(input);
-  output.device()->Exec(
-      [=](Context* ctx) {
-      Blob *inblob = input.blob(), *outblob = output.blob();
-      const float alpha = 1.0f, beta = 0.0f;
-      CUDNN_CHECK(cudnnLRNCrossChannelForward(ctx->cudnn_handle,
-            this->lrn_desc_,
-            this->mode_,
-            &alpha,
-            this->shape_desc_,
-            inblob->data(),
-            &beta,
-            this->shape_desc_,
-            outblob->mutable_data()));
-      }, {input.blob()}, {output.blob()});
+  output.device()->Exec([=](Context* ctx) {
+    Block* inblock = input.block(), * outblock = output.block();
+    const float alpha = 1.0f, beta = 0.0f;
+    CUDNN_CHECK(cudnnLRNCrossChannelForward(
+        ctx->cudnn_handle, this->lrn_desc_, this->mode_, &alpha,
+        this->shape_desc_, inblock->data(), &beta, this->shape_desc_,
+        outblock->mutable_data()));
+  }, {input.block()}, {output.block()});
 
   if (flag & kTrain) {
     buf_.push(input);
@@ -78,9 +63,9 @@ const Tensor CudnnLRN::Forward(int flag, const Tensor& input) {
   return output;
 }
 
-const std::pair<Tensor, vector<Tensor>> CudnnLRN::Backward(
-    int flag, const Tensor& grad) {
-  vector <Tensor> param_grad;
+const std::pair<Tensor, vector<Tensor>> CudnnLRN::Backward(int flag,
+                                                           const Tensor& grad) {
+  vector<Tensor> param_grad;
   Tensor dx;
   CHECK(!buf_.empty());
   Tensor output = buf_.top();
@@ -89,25 +74,16 @@ const std::pair<Tensor, vector<Tensor>> CudnnLRN::Backward(
   buf_.pop();
   if ((flag & kTrain) == kTrain) {
     dx.ResetLike(grad);
-    dx.device()->Exec(
-        [=](Context *ctx) {
-          Blob *dyblob = grad.blob(), *dxblob = dx.blob();
-          Blob *yblob = output.blob(), *xblob = input.blob();
-          float alpha = 1.0f, beta = 0.0f;
-          CUDNN_CHECK(cudnnLRNCrossChannelBackward(ctx->cudnn_handle,
-              this->lrn_desc_,
-              this->mode_,
-              &alpha,
-              this->shape_desc_,
-              yblob->data(),
-              this->shape_desc_,
-              dyblob->data(),
-              this->shape_desc_,
-              xblob->data(),
-              &beta,
-              this->shape_desc_,
-              dxblob->mutable_data()));
-        }, {output.blob(), grad.blob(), input.blob()}, {dx.blob()});
+    dx.device()->Exec([=](Context* ctx) {
+      Block* dyblock = grad.block(), * dxblock = dx.block();
+      Block* yblock = output.block(), * xblock = input.block();
+      float alpha = 1.0f, beta = 0.0f;
+      CUDNN_CHECK(cudnnLRNCrossChannelBackward(
+          ctx->cudnn_handle, this->lrn_desc_, this->mode_, &alpha,
+          this->shape_desc_, yblock->data(), this->shape_desc_, dyblock->data(),
+          this->shape_desc_, xblock->data(), &beta, this->shape_desc_,
+          dxblock->mutable_data()));
+    }, {output.block(), grad.block(), input.block()}, {dx.block()});
   } else {
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }

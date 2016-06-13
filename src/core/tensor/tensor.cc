@@ -26,8 +26,9 @@ namespace singa {
 
 Tensor::~Tensor() {
   // LOG(ERROR) << "~";
-  if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
-  blob_ = nullptr;
+  if (block_ != nullptr && block_->DecRefCount() == 0)
+    device_->FreeBlock(block_);
+  block_ = nullptr;
 }
 
 Tensor::Tensor() { device_ = &defaultDevice; }
@@ -35,28 +36,28 @@ Tensor::Tensor() { device_ = &defaultDevice; }
 Tensor::Tensor(const Shape &shape, const DataType dtype)
     : data_type_(dtype), device_(&defaultDevice), shape_(shape) {
   device_ = &defaultDevice;
-  blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
+  block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
 }
 Tensor::Tensor(Shape &&shape, const DataType dtype)
     : data_type_(dtype), device_(&defaultDevice), shape_(shape) {
   device_ = &defaultDevice;
-  blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
+  block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
 }
 Tensor::Tensor(const Shape &shape, Device *device, const DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
-  blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
+  block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
 }
 Tensor::Tensor(Shape &&shape, Device *device, const DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
-  blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
+  block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
 }
 Tensor::Tensor(const Tensor &in)
     : transpose_(in.transpose_),
       data_type_(in.data_type_),
       device_(in.device_),
-      blob_(in.blob()),
+      block_(in.block()),
       shape_(in.shape_) {
-  blob_->IncRefCount();
+  block_->IncRefCount();
 }
 
 Tensor::Tensor(Tensor &&in)
@@ -64,40 +65,44 @@ Tensor::Tensor(Tensor &&in)
       data_type_(in.data_type_),
       device_(in.device_),
       shape_(std::move(in.shape_)) {
-  blob_ = in.blob_;
-  in.blob_ = nullptr;
+  block_ = in.block_;
+  in.block_ = nullptr;
 }
 
 void Tensor::ResetLike(const Tensor &in) {
-  if (blob_ == nullptr || device_ != in.device_ || MemSize() != in.MemSize()) {
-    if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
+  if (block_ == nullptr || device_ != in.device_ || MemSize() != in.MemSize()) {
+    if (block_ != nullptr && block_->DecRefCount() == 0)
+      device_->FreeBlock(block_);
     shape_ = in.shape_;
     device_ = in.device_;
     data_type_ = in.data_type_;
-    blob_ = device_->NewBlob(in.MemSize());
+    block_ = device_->NewBlock(in.MemSize());
   }
 }
 
 void Tensor::Reshape(const Shape &shape) {
   if (Product(shape_) != Product(shape)) {
-    if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
-    blob_ = device_->NewBlob(Product(shape) * SizeOf(data_type_));
+    if (block_ != nullptr && block_->DecRefCount() == 0)
+      device_->FreeBlock(block_);
+    block_ = device_->NewBlock(Product(shape) * SizeOf(data_type_));
   }
   shape_ = shape;
 }
 
 void Tensor::Reshape(Shape &&shape) {
   if (Product(shape_) != Product(shape)) {
-    if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
-    blob_ = device_->NewBlob(Product(shape) * SizeOf(data_type_));
+    if (block_ != nullptr && block_->DecRefCount() == 0)
+      device_->FreeBlock(block_);
+    block_ = device_->NewBlock(Product(shape) * SizeOf(data_type_));
   }
   shape_ = std::move(shape);
 }
 
 void Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
-    if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
-    blob_ = device_->NewBlob(Product(shape_) * SizeOf(type));
+    if (block_ != nullptr && block_->DecRefCount() == 0)
+      device_->FreeBlock(block_);
+    block_ = device_->NewBlock(Product(shape_) * SizeOf(type));
     data_type_ = type;
   }
 }
@@ -107,9 +112,10 @@ void Tensor::ToDevice(Device *dst) {
   if (device_ != dst) {
     Tensor tmp(shape_, dst, data_type_);
     tmp.CopyData(*this);
-    if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
-    blob_ = tmp.blob_;
-    tmp.blob_ = nullptr;
+    if (block_ != nullptr && block_->DecRefCount() == 0)
+      device_->FreeBlock(block_);
+    block_ = tmp.block_;
+    tmp.block_ = nullptr;
     device_ = dst;
   }
 }
@@ -122,7 +128,7 @@ void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num) {
       << "data_type is " << DataType_Name(data_type_)
       << " user given type is of size " << sizeof(DType);
   if (src != nullptr) {
-    device_->CopyDataFromHostPtr(blob(), src, sizeof(DType) * num, 0);
+    device_->CopyDataFromHostPtr(block(), src, sizeof(DType) * num, 0);
   } else {
     LOG(WARNING) << "Copy data from null host ptr";
   }
@@ -132,9 +138,9 @@ template void Tensor::CopyDataFromHostPtr(const int *src, const size_t num);
 
 void Tensor::CopyData(const Tensor &src) {
   CHECK_EQ(Size(), src.Size());
-  CHECK(blob_ != nullptr);
-  // Do copy only if the src's blob is already initialized.
-  if (src.blob_ != nullptr) {
+  CHECK(block_ != nullptr);
+  // Do copy only if the src's block is already initialized.
+  if (src.block_ != nullptr) {
     singa::CopyDataToFrom(this, src, Size(), 0, 0);
   }
 }
@@ -154,32 +160,34 @@ Tensor Tensor::T() const {
   t.transpose_ = ~transpose_;
   t.shape_.push_back(shape_[1]);
   t.shape_.push_back(shape_[0]);
-  t.blob_ = blob_;
-  blob_->IncRefCount();
+  t.block_ = block_;
+  block_->IncRefCount();
   return t;
 }
 
 Tensor &Tensor::operator=(const Tensor &in) {
   // LOG(ERROR) << "= const &";
-  if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
+  if (block_ != nullptr && block_->DecRefCount() == 0)
+    device_->FreeBlock(block_);
   transpose_ = in.transpose_;
   data_type_ = in.data_type_;
   shape_ = in.shape_;
   device_ = in.device_;
-  blob_ = in.blob();
-  blob_->IncRefCount();
+  block_ = in.block();
+  block_->IncRefCount();
   return *this;
 }
 
 Tensor &Tensor::operator=(Tensor &&in) {
   // LOG(ERROR) << "= &&";
-  if (blob_ != nullptr && blob_->DecRefCount() == 0) device_->FreeBlob(blob_);
+  if (block_ != nullptr && block_->DecRefCount() == 0)
+    device_->FreeBlock(block_);
   transpose_ = in.transpose_;
   data_type_ = in.data_type_;
   shape_ = std::move(in.shape_);
   device_ = in.device_;
-  blob_ = in.blob_;
-  in.blob_ = nullptr;
+  block_ = in.block_;
+  in.block_ = nullptr;
   return *this;
 }
 
@@ -233,7 +241,7 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   CHECK_GE(dst->MemSize(), d_offset + nBytes);
 
   Device *src_dev = src.device(), *dst_dev = dst->device();
-  Blob *from = src.blob(), *to = dst->blob();
+  Block *from = src.block(), *to = dst->block();
   if (dst_dev->lang() != src_dev->lang()) {
     // let the none cpp device conduct copy op
     if (dst_dev->lang() == kCpp) {
@@ -317,9 +325,9 @@ float Tensor::L2() const {
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec([&nrm, this](Context *ctx) {
       DType ret;
-      Nrm2<DType, Lang>(this->Size(), this->blob(), &ret, ctx);
+      Nrm2<DType, Lang>(this->Size(), this->block(), &ret, ctx);
       nrm = TypeCast<DType, float>(ret);
-    }, {this->blob()}, {});
+    }, {this->block()}, {});
   });
   return nrm;
 }
@@ -327,7 +335,7 @@ template <typename SType>
 void Tensor::SetValue(const SType x) {
   CHECK_EQ(sizeof(SType), SizeOf(data_type_));
   auto size = Size();
-  auto ptr = blob_;
+  auto ptr = block_;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // cast x to DType
     device_->Exec([size, x, ptr](Context *ctx) {
@@ -341,8 +349,8 @@ template void Tensor::SetValue<float>(const float x);
   do {                                                                 \
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, { \
       ret->device()->Exec([t, ret](Context * ctx) {                    \
-        fn<DType, Lang>(t.Size(), t.blob(), ret->blob(), ctx);         \
-      }, {t.blob()}, {ret->blob()});                                   \
+        fn<DType, Lang>(t.Size(), t.block(), ret->block(), ctx);       \
+      }, {t.block()}, {ret->block()});                                 \
     });                                                                \
   } while (0)
 
@@ -365,14 +373,15 @@ GenUnaryTensorFn(Sqrt);
 GenUnaryTensorFn(Square);
 GenUnaryTensorFn(Tanh);
 
-#define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                               \
-  do {                                                                         \
-    TYPE_LANG_SWITCH(lhs.data_type(), DType, lhs.device()->lang(), Lang, {     \
-      CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                        \
-      ret->device()->Exec([lhs, rhs, ret](Context * ctx) {                     \
-        fn<DType, Lang>(lhs.Size(), lhs.blob(), rhs.blob(), ret->blob(), ctx); \
-      }, {lhs.blob(), rhs.blob()}, {ret->blob()});                             \
-    });                                                                        \
+#define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                            \
+  do {                                                                      \
+    TYPE_LANG_SWITCH(lhs.data_type(), DType, lhs.device()->lang(), Lang, {  \
+      CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                     \
+      ret->device()->Exec([lhs, rhs, ret](Context * ctx) {                  \
+        fn<DType, Lang>(lhs.Size(), lhs.block(), rhs.block(), ret->block(), \
+                        ctx);                                               \
+      }, {lhs.block(), rhs.block()}, {ret->block()});                       \
+    });                                                                     \
   } while (0)
 
 #define GenBinaryTensorFn(op, fn)                              \
@@ -397,8 +406,8 @@ GenBinaryTensorFn(Pow, Pow);
       static_assert(std::is_same<SType, DType>::value,                  \
                     "The Scalar type must match the Tensor data type"); \
       ret->device()->Exec([t, x, ret](Context * ctx) {                  \
-        fn<DType, Lang>(t.Size(), t.blob(), x, ret->blob(), ctx);       \
-      }, {t.blob()}, {ret->blob()});                                    \
+        fn<DType, Lang>(t.Size(), t.block(), x, ret->block(), ctx);     \
+      }, {t.block()}, {ret->block()});                                  \
     });                                                                 \
   } while (0)
 
@@ -440,8 +449,8 @@ void Div(const SType alpha, const Tensor &in, Tensor *out) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     // TODO(wangwei) type cast SType to DType;
     in.device()->Exec([alpha, in, out](Context *ctx) {
-      Div<DType, Lang>(in.Size(), alpha, in.blob(), out->blob(), ctx);
-    }, {in.blob()}, {out->blob()});
+      Div<DType, Lang>(in.Size(), alpha, in.block(), out->block(), ctx);
+    }, {in.block()}, {out->block()});
   });
 }
 template void Div<float>(const float, const Tensor &, Tensor *);
@@ -474,8 +483,8 @@ float Sum<float>(const Tensor &in) {
   float s = 0.0f;
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     in.device()->Exec([in, &s](Context *ctx) {
-      Sum<DType, Lang>(in.Size(), in.blob(), &s, ctx);
-    }, {in.blob()}, {});
+      Sum<DType, Lang>(in.Size(), in.block(), &s, ctx);
+    }, {in.block()}, {});
   });
   return s;
 }
@@ -582,9 +591,9 @@ void MultColumn(const Tensor &v, Tensor *M) {
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
     v.device()->Exec([M, v](Context *ctx) {
-      DGMM<DType, Lang>(false, M->shape(0), M->shape(1), M->blob(), v.blob(),
-                        M->blob(), ctx);
-    }, {M->blob(), v.blob()}, {M->blob()});
+      DGMM<DType, Lang>(false, M->shape(0), M->shape(1), M->block(), v.block(),
+                        M->block(), ctx);
+    }, {M->block(), v.block()}, {M->block()});
   });
 }
 
@@ -597,9 +606,9 @@ void MultRow(const Tensor &v, Tensor *M) {
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
     v.device()->Exec([M, v](Context *ctx) {
-      DGMM<DType, Lang>(true, M->shape(0), M->shape(1), M->blob(), v.blob(),
-                        M->blob(), ctx);
-    }, {M->blob(), v.blob()}, {M->blob()});
+      DGMM<DType, Lang>(true, M->shape(0), M->shape(1), M->block(), v.block(),
+                        M->block(), ctx);
+    }, {M->block(), v.block()}, {M->block()});
   });
 }
 
@@ -644,8 +653,8 @@ void Bernoulli(const SType p, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto prob = TypeCast<SType, DType>(p);
     out->device()->Exec([prob, out](Context *ctx) {
-      Bernoulli<DType, Lang>(out->Size(), prob, out->blob(), ctx);
-    }, {}, {out->blob()}, true);
+      Bernoulli<DType, Lang>(out->Size(), prob, out->block(), ctx);
+    }, {}, {out->block()}, true);
   });
 }
 template void Bernoulli<float>(const float p, Tensor *out);
@@ -656,8 +665,8 @@ void Uniform(const SType low, const SType high, Tensor *out) {
     auto l = TypeCast<SType, DType>(low);
     auto h = TypeCast<SType, DType>(high);
     out->device()->Exec([l, h, out](Context *ctx) {
-      Uniform<DType, Lang>(out->Size(), l, h, out->blob(), ctx);
-    }, {}, {out->blob()}, true);
+      Uniform<DType, Lang>(out->Size(), l, h, out->block(), ctx);
+    }, {}, {out->block()}, true);
   });
 }
 template void Uniform<float>(const float low, const float high, Tensor *out);
@@ -668,8 +677,8 @@ void Gaussian(const SType mean, const SType std, Tensor *out) {
     auto m = TypeCast<SType, DType>(mean);
     auto s = TypeCast<SType, DType>(std);
     out->device()->Exec([m, s, out](Context *ctx) {
-      Gaussian<DType, Lang>(out->Size(), m, s, out->blob(), ctx);
-    }, {}, {out->blob()}, true);
+      Gaussian<DType, Lang>(out->Size(), m, s, out->block(), ctx);
+    }, {}, {out->block()}, true);
   });
 }
 template void Gaussian<float>(const float mean, const float std, Tensor *out);
@@ -680,8 +689,8 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     auto a = TypeCast<SType, DType>(alpha);
     out->device()->Exec([a, in, out](Context *ctx) {
-      Axpy<DType, Lang>(in.Size(), a, in.blob(), out->blob(), ctx);
-    }, {in.blob(), out->blob()}, {out->blob()});
+      Axpy<DType, Lang>(in.Size(), a, in.block(), out->block(), ctx);
+    }, {in.block(), out->block()}, {out->block()});
   });
 }
 template void Axpy(const float alpha, const Tensor &in, Tensor *out);
@@ -708,9 +717,9 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
       C->device()->Exec([a, A, b, B, C](Context *ctx) {
-        GEMV<DType, Lang>(A.transpose(), A.shape(0), A.shape(1), a, A.blob(),
-                          B.blob(), b, C->blob(), ctx);
-      }, {A.blob(), B.blob()}, {C->blob()});
+        GEMV<DType, Lang>(A.transpose(), A.shape(0), A.shape(1), a, A.block(),
+                          B.block(), b, C->block(), ctx);
+      }, {A.block(), B.block()}, {C->block()});
     });
   } else {
     CHECK(!C->transpose());
@@ -719,12 +728,12 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
       auto b = TypeCast<SType, DType>(beta);
       C->device()->Exec([a, A, b, B, C](Context *ctx) {
         GEMM<DType, Lang>(A.transpose(), B.transpose(), A.shape(0), B.shape(1),
-                          A.shape(1), a, A.blob(), B.blob(), b, C->blob(), ctx);
-      }, {A.blob(), B.blob()}, {C->blob()});
+                          A.shape(1), a, A.block(), B.block(), b, C->block(),
+                          ctx);
+      }, {A.block(), B.block()}, {C->block()});
     });
   }
 }
-
 
 // ************************
 // Misc.
@@ -737,23 +746,22 @@ void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
   size_t dim = p.Size() / batchsize;
   TYPE_LANG_SWITCH(p.data_type(), DType, p.device()->lang(), Lang, {
     p.device()->Exec([batchsize, dim, t, p, loss](Context *ctx) {
-      ComputeCrossEntropy<DType, Lang>(batchsize, dim, p.blob(), t.blob(),
-                                       loss->blob(), ctx);
-    }, {p.blob(), t.blob()}, {loss->blob()});
+      ComputeCrossEntropy<DType, Lang>(batchsize, dim, p.block(), t.block(),
+                                       loss->block(), ctx);
+    }, {p.block(), t.block()}, {loss->block()});
   });
 }
 void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
   CHECK_LE(p->nDim(), 2u);
   CHECK_LE(t.nDim(), 2u);  // TODO(wangwei) consider multi-labels.
   size_t batchsize = 1;
-  if (p->nDim() == 2u)
-    batchsize = p->shape(0);
+  if (p->nDim() == 2u) batchsize = p->shape(0);
   size_t dim = p->Size() / batchsize;
   TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
     p->device()->Exec([batchsize, dim, t, p](Context *ctx) {
-      SoftmaxCrossEntropyBwd<DType, Lang>(batchsize, dim, p->blob(), t.blob(),
-                                          p->blob(), ctx);
-    }, {p->blob(), t.blob()}, {p->blob()});
+      SoftmaxCrossEntropyBwd<DType, Lang>(batchsize, dim, p->block(), t.block(),
+                                          p->block(), ctx);
+    }, {p->block(), t.block()}, {p->block()});
   });
 }
 }  // namespace singa

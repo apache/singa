@@ -18,17 +18,17 @@ TEST(TensorTest, TestConstructor) {
   singa::Tensor float16_t(Shape{2,3}, singa::kFloat16);
   EXPECT_EQ(singa::kFloat16, float16_t.data_type());
   EXPECT_EQ(6u, float16_t.Size());
-  EXPECT_EQ(12u, float16_t.blob()->size());
+  EXPECT_EQ(12u, float16_t.block()->size());
 
   singa::Tensor x(float16_t);
   EXPECT_EQ(float16_t.Size(), x.Size());
-  EXPECT_EQ(float16_t.blob(), x.blob());
+  EXPECT_EQ(float16_t.block(), x.block());
   EXPECT_EQ(float16_t.data_type(), x.data_type());
   EXPECT_EQ(float16_t.device(), x.device());
 
   singa::Tensor y = float16_t;
   EXPECT_EQ(float16_t.Size(), x.Size());
-  EXPECT_EQ(float16_t.blob(), x.blob());
+  EXPECT_EQ(float16_t.block(), x.block());
   EXPECT_EQ(float16_t.data_type(), x.data_type());
   EXPECT_EQ(float16_t.device(), x.device());
 }
@@ -69,7 +69,7 @@ TEST(TensorClass, CopyDataFromHostPtr) {
   float data[] = {1.0f, 2.0f, 3.0f};
   Tensor t(Shape{3});
   t.CopyDataFromHostPtr(data, 3);
-  const float* dptr = static_cast<const float*>(t.blob()->data());
+  const float* dptr = static_cast<const float*>(t.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(2.0f, dptr[1]);
   EXPECT_FLOAT_EQ(3.0f, dptr[2]);
@@ -82,7 +82,7 @@ TEST(TensorClass, CopyData) {
 
   Tensor o(Shape{3});
   o.CopyData(t);
-  const float* dptr = static_cast<const float*>(o.blob()->data());
+  const float* dptr = static_cast<const float*>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(2.0f, dptr[1]);
   EXPECT_FLOAT_EQ(3.0f, dptr[2]);
@@ -94,7 +94,7 @@ TEST(TensorClass, Clone) {
   t.CopyDataFromHostPtr(data, 3);
 
   Tensor o = t.Clone();
-  const float* dptr = static_cast<const float*>(o.blob()->data());
+  const float* dptr = static_cast<const float*>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(2.0f, dptr[1]);
   EXPECT_FLOAT_EQ(3.0f, dptr[2]);
@@ -105,7 +105,7 @@ TEST(TensorClass, T) {
   EXPECT_FALSE(t.transpose());
   Tensor o = t.T();
   EXPECT_EQ(true, o.transpose());
-  EXPECT_EQ(t.blob(), o.blob());
+  EXPECT_EQ(t.block(), o.block());
   EXPECT_EQ(t.data_type(), o.data_type());
   EXPECT_EQ(t.shape()[0],  o.shape()[1]);
   EXPECT_EQ(t.shape()[1],  o.shape()[0]);
