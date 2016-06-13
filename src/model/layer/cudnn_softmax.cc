@@ -53,13 +53,15 @@ const Tensor CudnnSoftmax::Forward(int flag, const Tensor& input) {
                         &alpha, this->desc_, inblob->data(), &beta, this->desc_,
                         outblob->mutable_data());
   }, {input.blob()}, {output.blob()});
-  buf_.push(output);
+  if (flag & kTrain)
+    buf_.push(output);
   return output;
 }
 
 const std::pair<Tensor, vector<Tensor>> CudnnSoftmax::Backward(
     int flag, const Tensor& grad) {
   vector<Tensor> param_grad;
+  CHECK(!buf_.empty());
   Tensor dx, output = buf_.top();
   buf_.pop();
   dx.ResetLike(grad);

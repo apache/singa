@@ -55,7 +55,7 @@ TEST(CudnnSoftmax, Forward) {
   sft.Setup(conf);
   sft.InitCudnn(n, singa::kFloat32);
 
-  singa::Tensor out = sft.Forward(0, in);
+  singa::Tensor out = sft.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
   const float* yptr = out.data<const float*>();
@@ -83,7 +83,7 @@ TEST(CudnnSoftmax, Backward) {
   singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
   softmaxconf->set_axis(axis);
   sft.Setup(conf);
-  singa::Tensor out = sft.Forward(0, in);
+  singa::Tensor out = sft.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
   const float* yptr = out.data<const float*>();
@@ -91,7 +91,7 @@ TEST(CudnnSoftmax, Backward) {
   const float grad[] = {2.0f, -3.0f, 1.0f, 3.0f, -1.0f, -2.0};
   singa::Tensor out_diff(singa::Shape{n}, &cuda);
   out_diff.CopyDataFromHostPtr<float>(grad, n);
-  const auto ret = sft.Backward(0, out_diff);
+  const auto ret = sft.Backward(singa::kTrain, out_diff);
   singa::Tensor in_diff = ret.first;
   in_diff.ToDevice(&host);
   const float* xptr = in_diff.data<const float*>();

@@ -33,13 +33,14 @@ class TestSoftmaxCrossEntropy : public ::testing::Test {
     t.Reshape(singa::Shape{2, 1});
   }
   const float pdat[8] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
-  const float tdat[2] = {0.0, 2.0};
+  const int tdat[2] = {0, 2};
 
   singa::Tensor p, t;
 };
 
 TEST_F(TestSoftmaxCrossEntropy, CppForward) {
   p.CopyDataFromHostPtr(pdat, 8);
+  t.AsType(singa::kInt);
   t.CopyDataFromHostPtr(tdat, 2);
 
   singa::SoftmaxCrossEntropy cross_entropy;
@@ -53,6 +54,7 @@ TEST_F(TestSoftmaxCrossEntropy, CppForward) {
 
 TEST_F(TestSoftmaxCrossEntropy, CppBackward) {
   p.CopyDataFromHostPtr(pdat, 8);
+  t.AsType(singa::kInt);
   t.CopyDataFromHostPtr(tdat, 2);
 
   singa::SoftmaxCrossEntropy cross_entropy;

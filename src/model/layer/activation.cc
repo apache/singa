@@ -32,13 +32,16 @@ const Tensor Activation::Forward(int flag, const Tensor& input) {
   Tensor output;
   if (mode_ == "SIGMOID") {
     output = Sigmoid(input);
-    buf_.push(output);
+    if (flag & kTrain)
+      buf_.push(output);
   } else if (mode_ == "TANH") {
     output = Tanh(input);
-    buf_.push(output);
+    if (flag & kTrain)
+      buf_.push(output);
   } else if (mode_ == "RELU") {
     output = ReLU(input);
-    buf_.push(input);
+    if (flag & kTrain)
+      buf_.push(input);
   } else {
     LOG(FATAL) << "Unkown activation: " << mode_;
   }
@@ -48,6 +51,7 @@ const Tensor Activation::Forward(int flag, const Tensor& input) {
 const std::pair<Tensor, vector<Tensor>> Activation::Backward(
     int flag, const Tensor& grad) {
   vector<Tensor> param_grad;
+  CHECK(!buf_.empty());
   // inout means either input or output, but only one is valid for an
   // activation.
   Tensor input_grad, inout = buf_.top();

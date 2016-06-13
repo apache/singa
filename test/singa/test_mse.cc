@@ -67,7 +67,6 @@ TEST_F(TestMSE, CppBackward) {
     EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
 }
 #endif
-
 #ifdef USE_CUDA
 TEST_F(TestMSE, CudaForward) {
   singa::MSE mse;

@@ -32,17 +32,6 @@ using std::tuple;
 namespace singa {
 
 typedef vector<size_t> Shape;
-typedef Shape::iterator ShapeIter;
-inline size_t Product(const Shape &shape, int start = 0, size_t len = 0) {
-  if (len == 0)
-    len = shape.size();
-  CHECK_LE(len, shape.size());
-  size_t v = 1;
-  for (unsigned int i = start; i < len; i++)
-    v *= shape[i];
-  return v;
-}
-
 /// hardcode the width of types defined in DataType
 const size_t kDataWidth[] = {sizeof(float), sizeof(float) / 2, sizeof(int),
                              sizeof(char), sizeof(double)};
@@ -65,10 +54,10 @@ class Tensor {
  public:
   ~Tensor();
   Tensor();
-  explicit Tensor(Shape &&shape, DataType dtype = kFloat32);
-  explicit Tensor(const Shape &shape, DataType dtype = kFloat32);
-  Tensor(Shape &&shape, Device *dev, DataType dtype = kFloat32);
-  Tensor(const Shape &shape, Device *dev, DataType dtype = kFloat32);
+  explicit Tensor(Shape &&shape, const DataType dtype = kFloat32);
+  explicit Tensor(const Shape &shape, const DataType dtype = kFloat32);
+  Tensor(Shape &&shape, Device *dev, const DataType dtype = kFloat32);
+  Tensor(const Shape &shape, Device *dev, const DataType dtype = kFloat32);
 
   /// Copy Tensor to share the internal data.  No deep copy.
   Tensor(const Tensor &from);
@@ -82,10 +71,10 @@ class Tensor {
 
   Device *device() const { return device_; }
 
-  /// Return immutable Tensor values with given type.
-  template <typename DType>
-  DType data() const {
-    return static_cast<DType>(blob()->data());
+  /// return immutable Tensor values with given type.
+  template <typename SType>
+  SType data() const {
+    return static_cast<SType>(blob()->data());
   }
 
   /// data type, including kFloat16, kFloat32, kInt
@@ -93,7 +82,7 @@ class Tensor {
 
   const Shape &shape() const { return shape_; }
 
-  const size_t shape(size_t idx) const {
+  const size_t shape(const size_t idx) const {
     CHECK_LT(idx, shape_.size());
     return shape_.at(idx);
   }
@@ -102,13 +91,13 @@ class Tensor {
 
   bool transpose() const { return transpose_; }
 
-  /// Return number of total elements
+  /// return number of total elements
   size_t Size() const {
     CHECK_EQ(blob_->size() % SizeOf(data_type_), 0u);
     return blob_->size() / SizeOf(data_type_);
   }
 
-  /// Return memory size (i.e., Bytes)
+  /// return memory size (i.e., Bytes)
   size_t MemSize() const { return blob_->size(); }
 
   /// Reset the tensor shape, it may reallocate blob, if MemSize() changes.
@@ -121,7 +110,7 @@ class Tensor {
   void ResetLike(const Tensor &t);
 
   /// Reset the data type, it would reallocate blob if type changes.
-  void AsType(DataType type);
+  void AsType(const DataType type);
 
   /// Reset the device.
   /// If the target device is a diff device, then do deep data copy.
@@ -135,14 +124,14 @@ class Tensor {
   void SetValue(const SType x);
 
   /// For init the tensor values, copy 'num' elements.
-  template <typename DType>
-  void CopyDataFromHostPtr(const DType *src, size_t num);
+  template <typename SType>
+  void CopyDataFromHostPtr(const SType *src, const size_t num);
 
   /// Copy data from another Tensor which may be on a diff device.
   /// Meta data would not be copied!
   void CopyData(const Tensor &other);
 
-  /// Return an exactly the same Tensor with data been deep copied.
+  /// return an exactly the same Tensor with data been deep copied.
   Tensor Clone() const;
 
   // Tensor operations
@@ -152,42 +141,39 @@ class Tensor {
   Tensor T() const;
 
   /// Copy the meta info with data blob shared.
-  Tensor &operator=(const Tensor &t);
+  Tensor &operator=(const Tensor &in);
 
   /// Copy the meta info with data blob shared.
-  Tensor &operator=(Tensor &&t);
+  Tensor &operator=(Tensor &&in);
 
-  Tensor &operator+=(const Tensor &t);
-  // void operator+=(Tensor&& t);
-  Tensor &operator-=(const Tensor &t);
-  // void operator-=(Tensor&& t);
-  Tensor &operator*=(const Tensor &t);
-  // void operator*=(Tensor&& t);
-  Tensor &operator/=(const Tensor &t);
-  // void operator/=(Tensor&& t);
+  Tensor &operator+=(const Tensor &in);
+  // void operator+=(Tensor&& in);
+  Tensor &operator-=(const Tensor &in);
+  // void operator-=(Tensor&& in);
+  Tensor &operator*=(const Tensor &in);
+  // void operator*=(Tensor&& in);
+  Tensor &operator/=(const Tensor &in);
+  // void operator/=(Tensor&& in);
 
   // Scalar operations.
 
-  /// T is a scalar type
-  template <typename DType>
-  Tensor &operator+=(DType x);
+  /// SType is a scalar type
+  template <typename SType>
+  Tensor &operator+=(const SType x);
 
-  /// T is a scalar type
-  template <typename DType>
-  Tensor &operator-=(const DType x);
+  /// SType is a scalar type
+  template <typename SType>
+  Tensor &operator-=(const SType x);
 
-  /// T is a scalar type
-  template <typename DType>
-  Tensor &operator*=(const DType x);
+  /// SType is a scalar type
+  template <typename SType>
+  Tensor &operator*=(const SType x);
 
-  /// T is a scalar type
-  template <typename DType>
-  Tensor &operator/=(const DType x);
+  /// SType is a scalar type
+  template <typename SType>
+  Tensor &operator/=(const SType x);
 
-  /// save Tensor into a proto msg
-  // void ToProto(TensorProto* t);
-  /// load Tensor from proto msg
-  // void FromProto(const TensorProto& t);
+  float L2() const;
 
  protected:
   bool transpose_ = false;
@@ -196,12 +182,27 @@ class Tensor {
   /// Note: blob_ is allocated in lazy manner to avoid frequent malloc/free.
   /// If you want to get an allocated Blob, use blob() instead of blob_.
   Blob *blob_ = nullptr;
-  Shape shape_;
+  Shape shape_ = {};
 };
+
+typedef Shape::iterator ShapeIter;
+inline size_t Product(const Shape &shape, int start = 0, size_t len = 0) {
+  if (len == 0) len = shape.size();
+  CHECK_LE(len, shape.size());
+  size_t v = 1;
+  for (unsigned int i = start; i < len; i++) v *= shape[i];
+  return v;
+}
 
 inline void CheckDataTypeAndLang(const Tensor &in1, const Tensor &in2) {
   CHECK_EQ(in1.data_type(), in2.data_type());
   CHECK_EQ(in1.device()->lang(), in2.device()->lang());
+}
+
+template <typename FromType, typename ToType>
+ToType TypeCast(const FromType &x) {
+  // TODO(wangwei) cast fp16; prevent some casts, e.g., float to char
+  return static_cast<ToType>(x);
 }
 
 Tensor Reshape(const Tensor &in, const Shape &s);
@@ -212,118 +213,156 @@ Tensor Reshape(const Tensor &in, Shape &&s);
 
 /// Copy 'num' elements of src to dst.
 /// The first 'src_offset' ('dst_offset') elements will be skipped.
-void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
-                    size_t src_offset = 0, size_t dst_offset = 0);
+void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
+                    const size_t src_offset = 0, const size_t dst_offset = 0);
 
-// ==================Simple Linear Algebra Operations=========================
-Tensor Abs(const Tensor &t);
-Tensor Exp(const Tensor &t);
-Tensor Log(const Tensor &t);
-Tensor ReLU(const Tensor &t);
-Tensor Sigmoid(const Tensor &t);
-Tensor Sign(const Tensor &t);
-Tensor Sqrt(const Tensor &t);
-Tensor Square(const Tensor &t);
-Tensor Tanh(const Tensor &t);
+// =============Element-wise operations====================================
+Tensor Abs(const Tensor &in);
+Tensor Exp(const Tensor &in);
+Tensor Log(const Tensor &in);
+Tensor ReLU(const Tensor &in);
+Tensor Sigmoid(const Tensor &in);
+Tensor Sign(const Tensor &in);
+Tensor Sqrt(const Tensor &in);
+Tensor Square(const Tensor &in);
+Tensor Tanh(const Tensor &in);
+
+/// Element-wise opeartion, out[i]=in[i]^x
+template <typename SType>
+Tensor Pow(const Tensor &in, const SType x);
+/// Element-wise opeartion, out[i]=in[i]^x
+template <typename SType>
+void Pow(const Tensor &in, const SType x, Tensor *out);
+/// Element-wise opeartion, out[i]=baes[i]^exp[i]
+Tensor Pow(const Tensor &base, const Tensor &exp);
+/// Element-wise opeartion, out[i]=baes[i]^exp[i]
+void Pow(const Tensor &base, const Tensor &exp, Tensor *out);
+
+/// Element-wise operation, out[i]= (in[i] < x) ? 1.f : 0.f
+template <typename SType>
+Tensor operator<(const Tensor &in, const SType x);
+template <typename SType>
+void LT(const Tensor &in, const SType x, Tensor *out);
+
+/// Element-wise operation, out[i]= (in[i] <= x) ? 1.f : 0.f
+template <typename SType>
+Tensor operator<=(const Tensor &in, const SType x);
+template <typename SType>
+void LE(const Tensor &in, const SType x, Tensor *out);
+/// Element-wise operation, out[i]= (in[i] > x) ? 1.f : 0.f
+template <typename SType>
+Tensor operator>(const Tensor &in, const SType x);
+template <typename SType>
+void GT(const Tensor &in, const SType x, Tensor *out);
+
+/// Element-wise operation, out[i]= (in[i] >= x) ? 1.f : 0.f
+template <typename SType>
+Tensor operator>=(const Tensor &in, const SType x);
+template <typename SType>
+void GE(const Tensor &in, const SType x, Tensor *out);
+
+Tensor operator+(const Tensor &lhs, const Tensor &rhs);
+void Add(const Tensor &lhs, const Tensor &rhs, Tensor *out);
+Tensor operator-(const Tensor &lhs, const Tensor &rhs);
+void Sub(const Tensor &lhs, const Tensor &rhs, Tensor *out);
+Tensor operator*(const Tensor &lhs, const Tensor &rhs);
+void EltwiseMult(const Tensor &lhs, const Tensor &rhs, Tensor *out);
+Tensor operator/(const Tensor &lhs, const Tensor &rhs);
+void Div(const Tensor &lhs, const Tensor &rhs, Tensor *out);
 
 template <typename SType>
-SType Sum(const Tensor &t);
-/// Sum elements in the Tensor, currently only support vector and matrix.
-/// if 'axis' is 0, sum all rows into a single row
-/// if 'axis' is 1, sum all columns into a single column
-/// TODO(wangwei) support arbitrary Tensor like numpy.sum
-Tensor Sum(const Tensor &t, int axis);
+Tensor operator+(const Tensor &in, const SType x);
+template <typename SType>
+void Add(const Tensor &in, const SType x, Tensor *out);
 
+template <typename SType>
+Tensor operator-(const Tensor &in, const SType x);
+template <typename SType>
+void Sub(const Tensor &in, const SType x, Tensor *out);
+
+template <typename SType>
+Tensor operator*(const Tensor &in, const SType x);
+template <typename SType>
+void EltwiseMult(const Tensor &in, const SType x, Tensor *out);
+
+/// For each element e of Tensor 'in', compute e / x
+template <typename SType>
+Tensor operator/(const Tensor &in, const SType x);
+/// For each element e of Tensor 'in', compute e / x into out
+template <typename SType>
+void Div(const Tensor &in, const SType x, Tensor *out);
+
+/// For each element e of Tensor 'in', compute x/e
+template <typename SType>
+Tensor Div(const SType x, const Tensor &in);
+/// For each element e of Tensor 'in', compute x/e into 'out'
+template <typename SType>
+void Div(const SType x, const Tensor &in, Tensor *out);
+
+template <typename SType>
+SType Sum(const Tensor &in);
+// ============Matrix (row/column) operations==================================
 /// Average elements in the Tensor, currently only support vector and matrix.
 /// if 'axis' is 0, average all rows into a single row
 /// if 'axis' is 1, average all columns into a single column
 /// TODO(wangwei) support arbitrary Tensor like numpy.average
-Tensor Average(const Tensor &t, int axis);
+Tensor Average(const Tensor &in, const int axis);
+
+/// Add column 'v' with each column of matrix M
+void AddColumn(const Tensor &v, Tensor *M);
+/// For each column 'c' of matrix out, do c=alpha*v + beta*c
+template <typename SType>
+void AddColumn(const SType alpha, const SType beta, const Tensor &v,
+               Tensor *out);
+/// Add row 'v' with each row of matrix M; write results into 'out'
+void AddRow(const Tensor &v, Tensor *out);
+/// For each row 'r' of matrix out, do r=alpha*v + beta*r
+template <typename SType>
+void AddRow(const SType alpha, const SType beta, const Tensor &v, Tensor *M);
+/// Divide column 'v' by each column of matrix M; write results into 'out'
+void DivColumn(const Tensor &v, Tensor *M);
+/// Divide row 'v' by each row of matrix M; write results into 'out'
+void DivRow(const Tensor &v, Tensor *M);
+/// Multiply column 'v' and each column of matrix M; write results into 'out'
+void MultColumn(const Tensor &v, Tensor *M);
+/// Multiply row 'v' with each row of matrix M; write results into 'out'
+void MultRow(const Tensor &v, Tensor *M);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
 Tensor SoftMax(const Tensor &in);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
 void SoftMax(const Tensor &in, Tensor *out);
+/// Sub column 'v' by each column of matrix M
+void SubColumn(const Tensor &v, Tensor *M);
+/// Sub row 'v' by each row of matrix M; write results into 'out'
+void SubRow(const Tensor &v, Tensor *M);
+/// Sum all columns of matrix M into a single column as 'out'
+void SumColumns(const Tensor &M, Tensor *out);
+/// Sum all rows of matrix M into a single row as 'out'
+void SumRows(const Tensor &M, Tensor *out);
 
-/// Regarding the internal data as 2d, with shape_[0]*...*shape_[axis] rows,
-/// and shape_[axis+1]*...*shape_[nDim()] columns.
-/// and do softmax along each row.
-// Tensor Softmax(const Tensor& t, int axis = -1);
-// void Softmax(const Tensor& t, Tensor* ret, int axis = -1);
+/// Sum elements in the Tensor, currently only support vector and matrix.
+/// if 'axis' is 0, sum all rows into a single row
+/// if 'axis' is 1, sum all columns into a single column
+/// TODO(wangwei) support arbitrary Tensor like numpy.sum
+Tensor Sum(const Tensor &in, const int axis);
 
-/// Element-wise operation, ret[i]= (t[i] < x) ? 1.f : 0.f
-template <typename DType>
-Tensor operator<(const Tensor &t, const DType x);
-template <typename DType>
-void LT(const Tensor &t, DType x, Tensor *ret);
-
-/// Element-wise operation, ret[i]= (t[i] <= x) ? 1.f : 0.f
-template <typename DType>
-Tensor operator<=(const Tensor &t, const DType x);
-template <typename DType>
-void LE(const Tensor &t, DType x, Tensor *ret);
-
-/// Element-wise operation, ret[i]= (t[i] > x) ? 1.f : 0.f
-template <typename DType>
-Tensor operator>(const Tensor &t, const DType x);
-template <typename DType>
-void GT(const Tensor &t, DType x, Tensor *ret);
-
-/// Element-wise operation, ret[i]= (t[i] >= x) ? 1.f : 0.f
-template <typename DType>
-Tensor operator>=(const Tensor &t, const DType x);
-template <typename DType>
-void GE(const Tensor &t, DType x, Tensor *ret);
-
-/// Element-wise opeartion, ret[i]=t[i]^x
-template <typename DType>
-Tensor Pow(const Tensor &t, DType x);
-/// Element-wise opeartion, ret[i]=t[i]^x
-template <typename DType>
-void Pow(const Tensor &t, DType x, Tensor *ret);
-/// Element-wise opeartion, ret[i]=baes[i]^exp[i]
-Tensor Pow(const Tensor &base, Tensor exp);
-/// Element-wise opeartion, ret[i]=baes[i]^exp[i]
-void Pow(const Tensor &base, const Tensor &exp, Tensor *ret);
-
-Tensor operator+(const Tensor &lhs, const Tensor &rhs);
-void Add(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
-Tensor operator-(const Tensor &lhs, const Tensor &rhs);
-void Sub(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
-Tensor operator*(const Tensor &lhs, const Tensor &rhs);
-void EltwiseMult(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
-Tensor operator/(const Tensor &lhs, const Tensor &rhs);
-void Div(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
-
-template <typename DType>
-Tensor operator+(const Tensor &t, DType x);
-template <typename DType>
-void Add(const Tensor &t, DType x, Tensor *ret);
-
-template <typename DType>
-Tensor operator-(const Tensor &t, DType x);
-template <typename DType>
-void Sub(const Tensor &t, DType x, Tensor *ret);
-
-template <typename DType>
-Tensor operator*(const Tensor &t, DType x);
-template <typename DType>
-void EltwiseMult(const Tensor &t, DType x, Tensor *ret);
-
-template <typename DType>
-Tensor operator/(const Tensor &t, DType x);
-template <typename DType>
-void Div(const Tensor &t, DType x, Tensor *ret);
+// ================Random operations==========================================
+/// For each element x set x = 1 if random() < p; otherwise x = 1.
+template <typename SType>
+void Bernoulli(const SType p, Tensor *out);
+/// Fill in Tensor 't' following Gaussian distribution.
+template <typename SType>
+void Gaussian(const SType mean, const SType std, Tensor *out);
+/// Fill in Tensor 't' following uniform distribution.
+template <typename SType>
+void Uniform(const SType low, const SType high, Tensor *out);
 
 // ================Blas operations============================================
-// We fix the scalar argument type to be float.
-
-// ===== Level 1
 // TODO(wangwei) make amax/amin/asum a member function of tensor
-// void Amax(Tensor, Context* ctx); Get the index of the max value in a vector
-// void Asum(Tensor Context* ctx);
 
-// template <typename DType>
-// void Axpy(DType x, const Blob& t, Blob* ret, Context* ctx);
+/// out = alpha*in + out
+template <typename SType>
+void Axpy(SType alpha, const Tensor &in, Tensor *out);
 
 /// Do matrix vector multipication or matrix matrix multiplication depdending
 /// on the Tensor shape.  result = A * B
@@ -331,76 +370,19 @@ Tensor Mult(const Tensor &A, const Tensor &B);
 /// Do matrix vector multipication or matrix matrix multiplication depdending
 /// on the Tensor shape.  C = A * B
 void Mult(const Tensor &A, const Tensor &B, Tensor *C);
-
 /// Do matrix vector multipication or matrix matrix multiplication depdending
-/// on the Tensor shape. ret = alpha lhs * rhs + beta * ret
-void Mult(const float alpha, const Tensor &lhs, const Tensor &rhs,
-          const float beta, Tensor *C);
-
-// ================Random operations==========================================
-/// For each element x set x = 1 if random() < p; otherwise x = 1.
-void Bernoulli(float p, Tensor *t);
-/// Fill in Tensor 't' following uniform distribution.
-void Uniform(float low, float high, Tensor *t);
-/// Fill in Tensor 't' following Gaussian distribution.
-void Gaussian(float mean, float std, Tensor *t);
-
-// follow the consistency guide
-// https://issues.apache.org/jira/browse/SINGA-182
-// ============Matrix vector operations=======================================
-/// Add column 'v' with each column of matrix M
-void AddColumn(const Tensor &v, Tensor *M);
-void AddColumn(const float alpha, const float beta, const Tensor &v,
-               Tensor *out);
-/// Sub column 'v' by each column of matrix M
-void SubColumn(const Tensor &v, Tensor *M);
-/// Multiply column 'v' and each column of matrix M; write results into 'out'
-void MultColumn(const Tensor &v, Tensor *M);
-/// Divide column 'v' by each column of matrix M; write results into 'out'
-void DivColumn(const Tensor &v, Tensor *M);
-
-/// Add row 'v' with each row of matrix M; write results into 'out'
-void AddRow(const Tensor &v, Tensor *out);
-void AddRow(const float alpha, const float beta, const Tensor &v, Tensor *M);
-/// Sub row 'v' by each row of matrix M; write results into 'out'
-void SubRow(const Tensor &v, Tensor *M);
-/// Multiply row 'v' with each row of matrix M; write results into 'out'
-void MultRow(const Tensor &v, Tensor *M);
-/// Divide row 'v' by each row of matrix M; write results into 'out'
-void DivRow(const Tensor &v, Tensor *M);
-
-/// Sum all rows of matrix M into a single row as 'out'
-void SumRows(const Tensor &M, Tensor *out);
-/// Sum all columns of matrix M into a single column as 'out'
-void SumColumns(const Tensor &M, Tensor *out);
-
-/// For each element x of Tensor 'in', compute alpha/x
+/// on the Tensor shape. out = alpha lhs * rhs + beta * out
 template <typename SType>
-Tensor Div(const SType alpha, const Tensor &in);
+void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
+          Tensor *C);
 
-/// For each element x of Tensor 'in', compute alpha/x into 'out'
-template <typename SType>
-void Div(const SType alpha, const Tensor &in, Tensor *out);
-
-/*
-/// Multiply each column of the lhs matrix with the rhs column
-Tensor MultColumn(const Tensor &lhs, const Tensor &rhs);
-void MultColumn(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
-/// Multiply each row of the lhs matrix with the rhs row
-Tensor MultRow(const Tensor &lhs, const Tensor &rhs);
-void MultRow(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
-/// Div each row of the lhs matrix with the rhs column
-Tensor DivColumn(const Tensor &lhs, const Tensor &rhs);
-void DivColumn(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
-/// Divide each row of the lhs matrix by the rhs row
-Tensor DivRow(const Tensor &lhs, const Tensor &rhs);
-void DivRow(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
-*/
-
+// *****************
+// Misc.
+// ****************
 /// Compute the cross entropy loss given the prediction probability 'p' and
 /// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
 /// or 2-d matrix. 'loss' is 1-d vector. The loss is computed into p.
-void ComputeCrossEntropy(const Tensor& t, Tensor* p);
+void ComputeCrossEntropy(const Tensor& p, const Tensor& t, Tensor* loss);
 /// Compute the dx, given prediction probability 'p' (p=softmax(x)) and
 /// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
 /// or 2-d matrix. 'grad' has the same shape as 'p'. dx is computed into p.

@@ -25,14 +25,17 @@ void Softmax::Setup(const LayerConf& conf) {
 }
 
 const Tensor Softmax::Forward(int flag, const Tensor& input) {
+  Tensor output;
   if (input.nDim() == 1) {
-    buf_.push(SoftMax(input));
+    output = SoftMax(input);
   } else {
     size_t nrow = Product(input.shape(), 0, axis_);
     const Tensor& tmp = Reshape(input, Shape{nrow, input.Size() / nrow});
-    buf_.push(SoftMax(tmp));
+    output = SoftMax(tmp);
   }
-  return buf_.top();
+  if (flag & kTrain)
+    buf_.push(output);
+  return output;
 }
 
 const std::pair<Tensor, vector<Tensor>> Softmax::Backward(int flag,
@@ -44,6 +47,7 @@ const std::pair<Tensor, vector<Tensor>> Softmax::Backward(int flag,
   }
   Tensor input_grad = grad.Clone();
   input_grad.Reshape(Shape{nrow, ncol});
+  CHECK(!buf_.empty());
   Tensor y = buf_.top();
   buf_.pop();
   CHECK(y.shape() == input_grad.shape());
