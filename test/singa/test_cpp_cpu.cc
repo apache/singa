@@ -24,7 +24,7 @@
 #include "singa/proto/core.pb.h"
 
 using singa::CppCPU;
-using singa::Blob;
+using singa::Block;
 TEST(CppCPU, Constructor) {
   CppCPU dev(0, 1);
   EXPECT_EQ(0, dev.id());
@@ -32,15 +32,15 @@ TEST(CppCPU, Constructor) {
 
 TEST(CppCPU, MemoryMallocFree) {
   CppCPU dev(0, 1);
-  Blob* b = dev.NewBlob(4);
+  Block* b = dev.NewBlock(4);
   EXPECT_NE(nullptr, b);
   EXPECT_EQ(4u, b->size());
-  dev.FreeBlob(b);
+  dev.FreeBlock(b);
 }
 
 TEST(CppCPU, Exec) {
   CppCPU dev(0, 1);
-  Blob* b = dev.NewBlob(4);
+  Block* b = dev.NewBlock(4);
   int x = 1, y =3, z = 0;
   dev.Exec([x, y, &z](singa::Context *ctx) {
       z = x + y;
@@ -50,7 +50,7 @@ TEST(CppCPU, Exec) {
 
 TEST(CppCPU, CopyData) {
   CppCPU dev(0, 1);
-  Blob* b = dev.NewBlob(4);
+  Block* b = dev.NewBlock(4);
   char s[] = {'a', 'b', 'c', 'x'};
   dev.CopyDataFromHostPtr(b, s, 4);
   const char* bstr = static_cast<const char*>(b->data());
@@ -58,14 +58,14 @@ TEST(CppCPU, CopyData) {
   EXPECT_EQ('b', bstr[1]);
   EXPECT_EQ('x', bstr[3]);
 
-  Blob* c = dev.NewBlob(4);
+  Block* c = dev.NewBlock(4);
   dev.CopyDataToFrom(c, b, 4, singa::kHostToHost, 0, 0);
   const char* cstr = static_cast<const char*>(c->data());
 
   EXPECT_EQ('a', cstr[0]);
   EXPECT_EQ('b', cstr[1]);
   EXPECT_EQ('x', cstr[3]);
-  dev.FreeBlob(b);
-  dev.FreeBlob(c);
+  dev.FreeBlock(b);
+  dev.FreeBlock(c);
 }
 

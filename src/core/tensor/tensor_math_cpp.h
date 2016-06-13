@@ -30,7 +30,7 @@
 namespace singa {
 
 template <>
-void Abs<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
+void Abs<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                            Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -40,8 +40,8 @@ void Abs<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
 }
 
 template <>
-void Add<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
-                           Blob *out, Context *ctx) {
+void Add<float, lang::Cpp>(const size_t num, const Block *in, const float x,
+                           Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
@@ -50,8 +50,8 @@ void Add<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
 }
 
 template <>
-void Add<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
-                           Blob *out, Context *ctx) {
+void Add<float, lang::Cpp>(const size_t num, const Block *in1, const Block *in2,
+                           Block *out, Context *ctx) {
   // CHECK_EQ(ctx->stream, nullptr);
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *in1Ptr = static_cast<const float *>(in1->data());
@@ -63,7 +63,7 @@ void Add<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
 
 template <>
 void Clamp<float, lang::Cpp>(const size_t num, const float low,
-                             const float high, const Blob *in, Blob *out,
+                             const float high, const Block *in, Block *out,
                              Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -79,8 +79,8 @@ void Clamp<float, lang::Cpp>(const size_t num, const float low,
 }
 
 template <>
-void Div<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
-                           Blob *out, Context *ctx) {
+void Div<float, lang::Cpp>(const size_t num, const Block *in1, const Block *in2,
+                           Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *in1Ptr = static_cast<const float *>(in1->data());
   const float *in2Ptr = static_cast<const float *>(in2->data());
@@ -91,8 +91,8 @@ void Div<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
 }
 
 template <>
-void Div<float, lang::Cpp>(const size_t num, const float x, const Blob *in,
-                           Blob *out, Context *ctx) {
+void Div<float, lang::Cpp>(const size_t num, const float x, const Block *in,
+                           Block *out, Context *ctx) {
   const float *inPtr = static_cast<const float *>(in->data());
   float *outPtr = static_cast<float *>(out->mutable_data());
   for (size_t i = 0; i < num; i++) {
@@ -102,8 +102,8 @@ void Div<float, lang::Cpp>(const size_t num, const float x, const Blob *in,
 }
 
 template <>
-void EltwiseMult<float, lang::Cpp>(const size_t num, const Blob *in,
-                                   const float x, Blob *out, Context *ctx) {
+void EltwiseMult<float, lang::Cpp>(const size_t num, const Block *in,
+                                   const float x, Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
@@ -112,8 +112,8 @@ void EltwiseMult<float, lang::Cpp>(const size_t num, const Blob *in,
 }
 
 template <>
-void EltwiseMult<float, lang::Cpp>(const size_t num, const Blob *in1,
-                                   const Blob *in2, Blob *out, Context *ctx) {
+void EltwiseMult<float, lang::Cpp>(const size_t num, const Block *in1,
+                                   const Block *in2, Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *in1Ptr = static_cast<const float *>(in1->data());
   const float *in2Ptr = static_cast<const float *>(in2->data());
@@ -122,7 +122,7 @@ void EltwiseMult<float, lang::Cpp>(const size_t num, const Blob *in1,
   }
 }
 template <>
-void Exp<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
+void Exp<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                            Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -132,8 +132,8 @@ void Exp<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
 }
 
 template <>
-void GE<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
-                          Blob *out, Context *ctx) {
+void GE<float, lang::Cpp>(const size_t num, const Block *in, const float x,
+                          Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
@@ -142,8 +142,8 @@ void GE<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
 }
 
 template <>
-void GT<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
-                          Blob *out, Context *ctx) {
+void GT<float, lang::Cpp>(const size_t num, const Block *in, const float x,
+                          Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
@@ -151,8 +151,8 @@ void GT<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
   }
 }
 template <>
-void LE<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
-                          Blob *out, Context *ctx) {
+void LE<float, lang::Cpp>(const size_t num, const Block *in, const float x,
+                          Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
@@ -160,7 +160,7 @@ void LE<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
   }
 }
 template <>
-void Log<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
+void Log<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                            Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -170,8 +170,8 @@ void Log<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
   }
 }
 template <>
-void LT<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
-                          Blob *out, Context *ctx) {
+void LT<float, lang::Cpp>(const size_t num, const Block *in, const float x,
+                          Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
@@ -179,8 +179,8 @@ void LT<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
   }
 }
 template <>
-void Pow<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
-                           Blob *out, Context *ctx) {
+void Pow<float, lang::Cpp>(const size_t num, const Block *in, const float x,
+                           Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
@@ -189,8 +189,8 @@ void Pow<float, lang::Cpp>(const size_t num, const Blob *in, const float x,
 }
 
 template <>
-void Pow<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
-                           Blob *out, Context *ctx) {
+void Pow<float, lang::Cpp>(const size_t num, const Block *in1, const Block *in2,
+                           Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *in1Ptr = static_cast<const float *>(in1->data());
   const float *in2Ptr = static_cast<const float *>(in2->data());
@@ -199,7 +199,7 @@ void Pow<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
   }
 }
 template <>
-void ReLU<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
+void ReLU<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                             Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -208,13 +208,13 @@ void ReLU<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
   }
 }
 template <>
-void Set<float, lang::Cpp>(const size_t num, const float x, Blob *out,
+void Set<float, lang::Cpp>(const size_t num, const float x, Block *out,
                            Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   for (size_t i = 0; i < num; i++) outPtr[i] = x;
 }
 template <>
-void Sigmoid<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
+void Sigmoid<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                                Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -224,7 +224,7 @@ void Sigmoid<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
 }
 
 template <>
-void Sign<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
+void Sign<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                             Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -234,7 +234,7 @@ void Sign<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
 }
 
 template <>
-void Sqrt<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
+void Sqrt<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                             Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -245,7 +245,7 @@ void Sqrt<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
 }
 /*
 template <>
-void Square<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
+void Square<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                               Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -256,8 +256,8 @@ void Square<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
 */
 
 template <>
-void Sub<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
-                           Blob *out, Context *ctx) {
+void Sub<float, lang::Cpp>(const size_t num, const Block *in1, const Block *in2,
+                           Block *out, Context *ctx) {
   // CHECK_EQ(ctx->stream, nullptr);
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *in1Ptr = static_cast<const float *>(in1->data());
@@ -270,7 +270,7 @@ void Sub<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
 // sum all elements of input into out
 // TODO(wangwei) optimize using omp
 template <>
-void Sum<float, lang::Cpp>(const size_t num, const Blob *in, float *out,
+void Sum<float, lang::Cpp>(const size_t num, const Block *in, float *out,
                            Context *ctx) {
   float s = 0.f;
   const float *inPtr = static_cast<const float *>(in->data());
@@ -281,7 +281,7 @@ void Sum<float, lang::Cpp>(const size_t num, const Blob *in, float *out,
 }
 
 template <>
-void Tanh<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
+void Tanh<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                             Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
@@ -292,7 +292,7 @@ void Tanh<float, lang::Cpp>(const size_t num, const Blob *in, Blob *out,
 
 // ===============Random operations==========================================
 template <>
-void Bernoulli<float, lang::Cpp>(const size_t num, const float p, Blob *out,
+void Bernoulli<float, lang::Cpp>(const size_t num, const float p, Block *out,
                                  Context *ctx) {
   std::bernoulli_distribution distribution(p);
   float *outPtr = static_cast<float *>(out->mutable_data());
@@ -303,7 +303,7 @@ void Bernoulli<float, lang::Cpp>(const size_t num, const float p, Blob *out,
 
 template <>
 void Gaussian<float, lang::Cpp>(const size_t num, const float mean,
-                                const float std, Blob *out, Context *ctx) {
+                                const float std, Block *out, Context *ctx) {
   std::normal_distribution<float> distribution(mean, std);
   float *outPtr = static_cast<float *>(out->mutable_data());
   for (size_t i = 0; i < num; i++) {
@@ -312,7 +312,7 @@ void Gaussian<float, lang::Cpp>(const size_t num, const float mean,
 }
 template <>
 void Uniform<float, lang::Cpp>(const size_t num, const float low,
-                               const float high, Blob *out, Context *ctx) {
+                               const float high, Block *out, Context *ctx) {
   std::uniform_real_distribution<float> distribution(low, high);
   float *outPtr = static_cast<float *>(out->mutable_data());
   for (size_t i = 0; i < num; i++) {
@@ -324,8 +324,8 @@ void Uniform<float, lang::Cpp>(const size_t num, const float low,
 
 template <>
 void DGMM<float, lang::Cpp>(const bool side_right, const size_t nrow,
-                            const size_t ncol, const Blob *M, const Blob *v,
-                            Blob *out, Context *ctx) {
+                            const size_t ncol, const Block *M, const Block *v,
+                            Block *out, Context *ctx) {
   const float *MPtr = static_cast<const float *>(M->data());
   const float *vPtr = static_cast<const float *>(v->data());
   float *outPtr = static_cast<float *>(out->mutable_data());
@@ -348,42 +348,42 @@ void DGMM<float, lang::Cpp>(const bool side_right, const size_t nrow,
 
 #ifdef USE_CBLAS
 template <>
-void Amax<float, lang::Cpp>(const size_t num, const Blob *in, size_t *out,
+void Amax<float, lang::Cpp>(const size_t num, const Block *in, size_t *out,
                             Context *ctx) {
   const float *inPtr = static_cast<const float *>(in->data());
   *out = cblas_isamax(num, inPtr, 1);
 }
 
 template <>
-void Asum<float, lang::Cpp>(const size_t num, const Blob *in, float *out,
+void Asum<float, lang::Cpp>(const size_t num, const Block *in, float *out,
                             Context *ctx) {
   const float *inPtr = static_cast<const float *>(in->data());
   *out = cblas_sasum(num, inPtr, 1);
 }
 
 template <>
-void Axpy<float, lang::Cpp>(const size_t num, const float alpha, const Blob *in,
-                            Blob *out, Context *ctx) {
+void Axpy<float, lang::Cpp>(const size_t num, const float alpha,
+                            const Block *in, Block *out, Context *ctx) {
   const float *inPtr = static_cast<const float *>(in->data());
   float *outPtr = static_cast<float *>(out->mutable_data());
   cblas_saxpy(num, alpha, inPtr, 1, outPtr, 1);
 }
 
 template <>
-void Dot<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
+void Dot<float, lang::Cpp>(const size_t num, const Block *in1, const Block *in2,
                            float *out, Context *ctx) {
   const float *in1Ptr = static_cast<const float *>(in1->data());
   const float *in2Ptr = static_cast<const float *>(in2->data());
   *out = cblas_sdot(num, in1Ptr, 1, in2Ptr, 1);
 }
 template <>
-void Scale<float, lang::Cpp>(const size_t num, const float x, Blob *out,
+void Scale<float, lang::Cpp>(const size_t num, const float x, Block *out,
                              Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   cblas_sscal(num, x, outPtr, 1);
 }
 template <>
-void Nrm2<float, lang::Cpp>(const size_t num, const Blob *in, float *out,
+void Nrm2<float, lang::Cpp>(const size_t num, const Block *in, float *out,
                             Context *ctx) {
   const float *inPtr = static_cast<const float *>(in->data());
   *out = cblas_snrm2(num, inPtr, 1);
@@ -391,8 +391,8 @@ void Nrm2<float, lang::Cpp>(const size_t num, const Blob *in, float *out,
 
 template <>
 void GEMV<float, lang::Cpp>(bool trans, const size_t m, const size_t n,
-                            const float alpha, const Blob *A, const Blob *v,
-                            const float beta, Blob *out, Context *ctx) {
+                            const float alpha, const Block *A, const Block *v,
+                            const float beta, Block *out, Context *ctx) {
   const float *APtr = static_cast<const float *>(A->data());
   const float *vPtr = static_cast<const float *>(v->data());
   float *outPtr = static_cast<float *>(out->mutable_data());
@@ -409,8 +409,8 @@ template <>
 void GEMM<float, lang::Cpp>(const bool transA, const bool transB,
                             const size_t nrowA, const size_t ncolB,
                             const size_t ncolA, const float alpha,
-                            const Blob *A, const Blob *B, const float beta,
-                            Blob *C, Context *ctx) {
+                            const Block *A, const Block *B, const float beta,
+                            Block *C, Context *ctx) {
   auto transa = transA ? CblasTrans : CblasNoTrans;
   auto transb = transB ? CblasTrans : CblasNoTrans;
   auto lda = transA ? nrowA : ncolA;
@@ -426,7 +426,7 @@ void GEMM<float, lang::Cpp>(const bool transA, const bool transB,
 #else
 
 template <>
-void Amax<float, lang::Cpp>(const size_t num, const Blob *in, size_t *out,
+void Amax<float, lang::Cpp>(const size_t num, const Block *in, size_t *out,
                             Context *ctx) {
   size_t maxPos = 0;
   float maxVal = 0;
@@ -442,7 +442,7 @@ void Amax<float, lang::Cpp>(const size_t num, const Blob *in, size_t *out,
   *out = maxPos;
 }
 template <>
-void Amin<float, lang::Cpp>(const size_t num, const Blob *in, size_t *out,
+void Amin<float, lang::Cpp>(const size_t num, const Block *in, size_t *out,
                             Context *ctx) {
   size_t minPos = 0;
   float minVal = 0;
@@ -459,7 +459,7 @@ void Amin<float, lang::Cpp>(const size_t num, const Blob *in, size_t *out,
 }
 
 template <>
-void Asum<float, lang::Cpp>(const size_t num, const Blob *in, float *out,
+void Asum<float, lang::Cpp>(const size_t num, const Block *in, float *out,
                             Context *ctx) {
   float sum = 0;
   const float *inPtr = static_cast<const float *>(in->data());
@@ -469,8 +469,8 @@ void Asum<float, lang::Cpp>(const size_t num, const Blob *in, float *out,
 }
 
 template <>
-void Axpy<float, lang::Cpp>(const size_t num, const float alpha, const Blob *in,
-                            Blob *out, Context *ctx) {
+void Axpy<float, lang::Cpp>(const size_t num, const float alpha,
+                            const Block *in, Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
@@ -479,7 +479,7 @@ void Axpy<float, lang::Cpp>(const size_t num, const float alpha, const Blob *in,
 }
 
 template <>
-void Scale<float, lang::Cpp>(const size_t num, const float x, Blob *out,
+void Scale<float, lang::Cpp>(const size_t num, const float x, Block *out,
                              Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   for (size_t i = 0; i < num; i++) {
@@ -488,7 +488,7 @@ void Scale<float, lang::Cpp>(const size_t num, const float x, Blob *out,
 }
 
 template <>
-void Dot<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
+void Dot<float, lang::Cpp>(const size_t num, const Block *in1, const Block *in2,
                            float *out, Context *ctx) {
   float sum = 0;
   const float *in1Ptr = static_cast<const float *>(in1->data());
@@ -500,8 +500,8 @@ void Dot<float, lang::Cpp>(const size_t num, const Blob *in1, const Blob *in2,
 
 template <>
 void GEMV<float, lang::Cpp>(bool trans, const size_t m, const size_t n,
-                            const float alpha, const Blob *A, const Blob *v,
-                            const float beta, Blob *out, Context *ctx) {
+                            const float alpha, const Block *A, const Block *v,
+                            const float beta, Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *APtr = static_cast<const float *>(A->data());
   const float *vPtr = static_cast<const float *>(v->data());
@@ -518,8 +518,8 @@ void GEMV<float, lang::Cpp>(bool trans, const size_t m, const size_t n,
 #endif  // USE_CBLAS
 template <>
 void ComputeCrossEntropy<float, lang::Cpp>(const size_t batchsize,
-                                           const size_t dim, const Blob *p,
-                                           const Blob *t, Blob *loss,
+                                           const size_t dim, const Block *p,
+                                           const Block *t, Block *loss,
                                            Context *ctx) {
   const float *pPtr = static_cast<const float *>(p->data());
   const int *tPtr = static_cast<const int *>(t->data());
@@ -534,9 +534,9 @@ void ComputeCrossEntropy<float, lang::Cpp>(const size_t batchsize,
 
 template <>
 void SoftmaxCrossEntropyBwd<float, lang::Cpp>(const size_t batchsize,
-                                              const size_t dim, const Blob *p,
-                                              const Blob *t,
-                                              Blob *grad, Context *ctx) {
+                                              const size_t dim, const Block *p,
+                                              const Block *t, Block *grad,
+                                              Context *ctx) {
   CHECK_EQ(p, grad) << "Use the same pointer to optimize performance";
   // const float* pPtr = static_cast<const float*>(p->data());
   const int *tPtr = static_cast<const int *>(t->data());
@@ -549,12 +549,11 @@ void SoftmaxCrossEntropyBwd<float, lang::Cpp>(const size_t batchsize,
   }
 }
 
-
 // =========Matrix operations ================================================
 /*
 template <>
 void AddCol<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                              const Blob *A, const Blob *v, Blob *out,
+                              const Block *A, const Block *v, Block *out,
                               Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *APtr = static_cast<const float *>(A->data());
@@ -569,7 +568,7 @@ void AddCol<float, lang::Cpp>(const size_t nrow, const size_t ncol,
 
 template <>
 void AddRow<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                              const Blob *A, const Blob *v, Blob *out,
+                              const Block *A, const Block *v, Block *out,
                               Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *APtr = static_cast<const float *>(A->data());
@@ -582,8 +581,8 @@ void AddRow<float, lang::Cpp>(const size_t nrow, const size_t ncol,
   }
 }
 template <>
-void Outer<float, lang::Cpp>(const size_t m, const size_t n, const Blob *in1,
-                             const Blob *in2, Blob *out, Context *ctx) {
+void Outer<float, lang::Cpp>(const size_t m, const size_t n, const Block *in1,
+                             const Block *in2, Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *in1Ptr = static_cast<const float *>(in1->data());
   const float *in2Ptr = static_cast<const float *>(in2->data());
@@ -596,7 +595,7 @@ void Outer<float, lang::Cpp>(const size_t m, const size_t n, const Blob *in1,
 }
 template <>
 void Softmax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                               const Blob *in, Blob *out, Context *ctx) {
+                               const Block *in, Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   float *bPtr = new float[ncol];
@@ -617,7 +616,7 @@ void Softmax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
 
 template <>
 void SumColumns<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                                  const Blob *in, Blob *out, Context *ctx) {
+                                  const Block *in, Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t c = 0; c < ncol; c++) {
@@ -633,7 +632,7 @@ void SumColumns<float, lang::Cpp>(const size_t nrow, const size_t ncol,
 
 template <>
 void SumRows<float, lang::Cpp>(const size_t nrow, const size_t ncol,
-                               const Blob *in, Blob *out, Context *ctx) {
+                               const Block *in, Block *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t r = 0; r < nrow; r++) {

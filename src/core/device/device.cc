@@ -25,31 +25,31 @@ Device::Device(int id, int num_executors, string scheduler, string vm)
   host_ = &defaultDevice;
 }
 
-void Device::Exec(function<void(Context*)>&& fn, const vector<Blob*> read_blobs,
-                    const vector<Blob*> write_blobs, bool use_rand_generator) {
+void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
+                    const vector<Block*> write_blocks, bool use_rand_generator) {
   // TODO(wangwei) execute operations scheduled by the scheduler.
   DoExec(std::move(fn), 0);
 }
 
-// TODO(wangwei) get Blob from the memory manager
-Blob* Device::NewBlob(int size) {
+// TODO(wangwei) get Block from the memory manager
+Block* Device::NewBlock(int size) {
   if (size > 0) {
     void* ptr = Malloc(size);
-    return new Blob(ptr, size);
+    return new Block(ptr, size);
   } else {
     return nullptr;
   }
 }
 
-// TODO(wangwei) return Blob to the memory manager
-void Device::FreeBlob(Blob* blob) {
-  if (blob != nullptr) {
-    Free(blob->mutable_data());
-    delete blob;
+// TODO(wangwei) return Block to the memory manager
+void Device::FreeBlock(Block* block) {
+  if (block != nullptr) {
+    Free(block->mutable_data());
+    delete block;
   }
 }
 
-void Device::CopyDataToFrom(Blob* dst, Blob* src, size_t nBytes,
+void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                             CopyDirection direct, int dst_offset,
                             int src_offset) {
   this->Exec(
@@ -62,7 +62,7 @@ void Device::CopyDataToFrom(Blob* dst, Blob* src, size_t nBytes,
       {src}, {dst});
 }
 
-void Device::CopyDataFromHostPtr(Blob* dst, const void* src, size_t nBytes,
+void Device::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
                                  size_t dst_offset) {
   auto direct = lang_ == kCpp ? kHostToHost : kHostToDevice;
   void* dstptr = reinterpret_cast<char*>(dst->mutable_data()) + dst_offset;

@@ -47,14 +47,13 @@ const Tensor CudnnSoftmax::Forward(int flag, const Tensor& input) {
   Tensor output;
   output.ResetLike(input);
   output.device()->Exec([input, output, this](Context* ctx) {
-    Blob* inblob = input.blob(), * outblob = output.blob();
+    Block* inblock = input.block(), * outblock = output.block();
     float alpha = 1.0f, beta = 0.0f;
     cudnnSoftmaxForward(ctx->cudnn_handle, this->algorithm_, this->mode_,
-                        &alpha, this->desc_, inblob->data(), &beta, this->desc_,
-                        outblob->mutable_data());
-  }, {input.blob()}, {output.blob()});
-  if (flag & kTrain)
-    buf_.push(output);
+                        &alpha, this->desc_, inblock->data(), &beta,
+                        this->desc_, outblock->mutable_data());
+  }, {input.block()}, {output.block()});
+  if (flag & kTrain) buf_.push(output);
   return output;
 }
 
@@ -66,13 +65,14 @@ const std::pair<Tensor, vector<Tensor>> CudnnSoftmax::Backward(
   buf_.pop();
   dx.ResetLike(grad);
   dx.device()->Exec([dx, grad, output, this](Context* ctx) {
-    Blob* dyblob = grad.blob(), * dxblob = dx.blob(), * yblob = output.blob();
+    Block* dyblock = grad.block(), * dxblock = dx.block(),
+           * yblock = output.block();
     float alpha = 1.0f, beta = 0.0f;
     cudnnSoftmaxBackward(ctx->cudnn_handle, this->algorithm_, this->mode_,
-                         &alpha, this->desc_, yblob->data(), this->desc_,
-                         dyblob->data(), &beta, this->desc_,
-                         dxblob->mutable_data());
-  }, {grad.blob(), output.blob()}, {dx.blob()});
+                         &alpha, this->desc_, yblock->data(), this->desc_,
+                         dyblock->data(), &beta, this->desc_,
+                         dxblock->mutable_data());
+  }, {grad.block(), output.block()}, {dx.block()});
   return std::make_pair(dx, param_grad);
 }
 }  // namespace singa

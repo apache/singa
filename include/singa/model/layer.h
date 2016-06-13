@@ -61,7 +61,7 @@ class Layer {
   virtual void Setup(const LayerConf& conf) {
     name_ = conf.name();
     // for (const auto& spec : conf.param()) param_specs_.push_back(spec);
-    // TODO(wangwei) load param values from checkpoint blobs.
+    // TODO(wangwei) load param values from checkpoint files.
   }
 
   /// Do feature transformation for the given 'input' tensor (denoted as x).

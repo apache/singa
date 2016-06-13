@@ -64,17 +64,17 @@ class Tensor {
   /// Copy Tensor to share the internal data.  No deep copy.
   Tensor(Tensor &&from);
 
-  /// For functions in xx_math.cc to access the blob.
-  /// Users should not operate against Blob directly.
-  /// blob_ is allocated in constructors.
-  Blob *blob() const { return blob_; }
+  /// For functions in xx_math.cc to access the block.
+  /// Users should not operate against Block directly.
+  /// block_ is allocated in constructors.
+  Block *block() const { return block_; }
 
   Device *device() const { return device_; }
 
   /// return immutable Tensor values with given type.
   template <typename SType>
   SType data() const {
-    return static_cast<SType>(blob()->data());
+    return static_cast<SType>(block()->data());
   }
 
   /// data type, including kFloat16, kFloat32, kInt
@@ -93,23 +93,23 @@ class Tensor {
 
   /// return number of total elements
   size_t Size() const {
-    CHECK_EQ(blob_->size() % SizeOf(data_type_), 0u);
-    return blob_->size() / SizeOf(data_type_);
+    CHECK_EQ(block_->size() % SizeOf(data_type_), 0u);
+    return block_->size() / SizeOf(data_type_);
   }
 
   /// return memory size (i.e., Bytes)
-  size_t MemSize() const { return blob_->size(); }
+  size_t MemSize() const { return block_->size(); }
 
-  /// Reset the tensor shape, it may reallocate blob, if MemSize() changes.
+  /// Reset the tensor shape, it may reallocate block, if MemSize() changes.
   void Reshape(const Shape &shape);
   void Reshape(Shape &&shape);
 
   /// Reset the shape, device, and data type as given tensor.
-  /// If blob size changes, then reallocate a new blob. The previous blob would
+  /// If block size changes, then reallocate a new block. The previous block would
   /// be deleted.
   void ResetLike(const Tensor &t);
 
-  /// Reset the data type, it would reallocate blob if type changes.
+  /// Reset the data type, it would reallocate block if type changes.
   void AsType(const DataType type);
 
   /// Reset the device.
@@ -140,10 +140,10 @@ class Tensor {
   /// No data copy, just set the transpose_ filed of the returned tensor.
   Tensor T() const;
 
-  /// Copy the meta info with data blob shared.
+  /// Copy the meta info with data block shared.
   Tensor &operator=(const Tensor &in);
 
-  /// Copy the meta info with data blob shared.
+  /// Copy the meta info with data block shared.
   Tensor &operator=(Tensor &&in);
 
   Tensor &operator+=(const Tensor &in);
@@ -179,9 +179,9 @@ class Tensor {
   bool transpose_ = false;
   DataType data_type_ = kFloat32;
   Device *device_ = nullptr;
-  /// Note: blob_ is allocated in lazy manner to avoid frequent malloc/free.
-  /// If you want to get an allocated Blob, use blob() instead of blob_.
-  Blob *blob_ = nullptr;
+  /// Note: block_ is allocated in lazy manner to avoid frequent malloc/free.
+  /// If you want to get an allocated Block, use block() instead of block_.
+  Block *block_ = nullptr;
   Shape shape_ = {};
 };
 

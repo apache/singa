@@ -81,13 +81,13 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
   if ((flag & kTrain) == kTrain) {
     output.device()->Exec(
         [=](Context* ctx) {
-          Blob *inBlob = input.blob(), *outBlob = output.blob(),
-            *saveMeanBlob = resultSaveMean_.blob(),
-            *saveVarBlob = resultSaveVariance_.blob(),
-            *runningMeanBlob = runningMean_.blob(),
-            *runningVarBlob = runningVariance_.blob(),
-            *bnScaleBlob = bnScale_.blob(),
-            *bnBiasBlob = bnBias_.blob();
+          Block *inBlock = input.block(), *outBlock = output.block(),
+            *saveMeanBlock = resultSaveMean_.block(),
+            *saveVarBlock = resultSaveVariance_.block(),
+            *runningMeanBlock = runningMean_.block(),
+            *runningVarBlock = runningVariance_.block(),
+            *bnScaleBlock = bnScale_.block(),
+            *bnBiasBlock = bnBias_.block();
           const float alpha = 1.0f, beta = 0.0f;
           double epsilon = CUDNN_BN_MIN_EPSILON;
           CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
@@ -96,36 +96,36 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
               &alpha,
               &beta,
               shape_desc_,
-              inBlob->data(),
+              inBlock->data(),
               shape_desc_,
-              outBlob->mutable_data(),
+              outBlock->mutable_data(),
               param_desc_,
-              bnScaleBlob->data(),
-              bnBiasBlob->data(),
+              bnScaleBlock->data(),
+              bnBiasBlock->data(),
               factor_,
-              runningMeanBlob->mutable_data(),
-              runningVarBlob->mutable_data(),
+              runningMeanBlock->mutable_data(),
+              runningVarBlock->mutable_data(),
               epsilon,
-              saveMeanBlob->mutable_data(),
-              saveVarBlob->mutable_data()));
+              saveMeanBlock->mutable_data(),
+              saveVarBlock->mutable_data()));
         },
-        {input.blob(),
-         bnScale_.blob(),
-         bnBias_.blob()},
-        {output.blob(),
-         runningMean_.blob(),
-         runningVariance_.blob(),
-         resultSaveMean_.blob(),
-         resultSaveVariance_.blob()});
+        {input.block(),
+         bnScale_.block(),
+         bnBias_.block()},
+        {output.block(),
+         runningMean_.block(),
+         runningVariance_.block(),
+         resultSaveMean_.block(),
+         resultSaveVariance_.block()});
     buf_.push(input);
   } else {
     output.device()->Exec(
         [=](Context* ctx) {
-          Blob *inBlob = input.blob(), *outBlob = output.blob(),
-            *runningMeanBlob = runningMean_.blob(),
-            *runningVarBlob = runningVariance_.blob(),
-            *bnScaleBlob = bnScale_.blob(),
-            *bnBiasBlob = bnBias_.blob();
+          Block *inBlock = input.block(), *outBlock = output.block(),
+            *runningMeanBlock = runningMean_.block(),
+            *runningVarBlock = runningVariance_.block(),
+            *bnScaleBlock = bnScale_.block(),
+            *bnBiasBlock = bnBias_.block();
           const float alpha = 1.0f, beta = 0.0f;
           double epsilon = CUDNN_BN_MIN_EPSILON;
           CUDNN_CHECK(cudnnBatchNormalizationForwardInference(
@@ -134,22 +134,22 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
               &alpha,
               &beta,
               shape_desc_,
-              inBlob->data(),
+              inBlock->data(),
               shape_desc_,
-              outBlob->mutable_data(),
+              outBlock->mutable_data(),
               param_desc_,
-              bnScaleBlob->data(),
-              bnBiasBlob->data(),
-              runningMeanBlob->data(),
-              runningVarBlob->data(),
+              bnScaleBlock->data(),
+              bnBiasBlock->data(),
+              runningMeanBlock->data(),
+              runningVarBlock->data(),
               epsilon));
         },
-        {input.blob(),
-         bnScale_.blob(),
-         bnBias_.blob(),
-         runningMean_.blob(),
-         runningVariance_.blob()},
-        {output.blob()});
+        {input.block(),
+         bnScale_.block(),
+         bnBias_.block(),
+         runningMean_.block(),
+         runningVariance_.block()},
+        {output.block()});
   }
   return output;
 }
@@ -164,13 +164,13 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
     dx.ResetLike(grad);
     dx.device()->Exec(
         [=](Context* ctx) {
-          Blob *dyblob = grad.blob(), *dxblob = dx.blob(),
-            *xblob = input.blob(),
-            *bnScaleBlob = bnScale_.blob(),
-            *dbnScaleBlob = dbnScale_.blob(),
-            *dbnBiasBlob = dbnBias_.blob(),
-            *saveMeanBlob = resultSaveMean_.blob(),
-            *saveVarBlob = resultSaveVariance_.blob();
+          Block *dyblock = grad.block(), *dxblock = dx.block(),
+            *xblock = input.block(),
+            *bnScaleBlock = bnScale_.block(),
+            *dbnScaleBlock = dbnScale_.block(),
+            *dbnBiasBlock = dbnBias_.block(),
+            *saveMeanBlock = resultSaveMean_.block(),
+            *saveVarBlock = resultSaveVariance_.block();
           const float alpha = 1.0f, beta = .0f;
           double epsilon = CUDNN_BN_MIN_EPSILON;
           CUDNN_CHECK(cudnnBatchNormalizationBackward(ctx->cudnn_handle,
@@ -180,28 +180,28 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
               &alpha,
               &beta,
               shape_desc_,
-              xblob->data(),
+              xblock->data(),
               shape_desc_,
-              dyblob->data(),
+              dyblock->data(),
               shape_desc_,
-              dxblob->mutable_data(),
+              dxblock->mutable_data(),
               param_desc_,
-              bnScaleBlob->data(),
-              dbnScaleBlob->mutable_data(),
-              dbnBiasBlob->mutable_data(),
+              bnScaleBlock->data(),
+              dbnScaleBlock->mutable_data(),
+              dbnBiasBlock->mutable_data(),
               epsilon,
-              saveMeanBlob->data(),
-              saveVarBlob->data()));
+              saveMeanBlock->data(),
+              saveVarBlock->data()));
 
         },
-        {dx.blob(),
-         grad.blob(),
-         bnScale_.blob(),
-         resultSaveMean_.blob(),
-         resultSaveVariance_.blob()},
-        {dx.blob(),
-         dbnScale_.blob(),
-         dbnBias_.blob()});
+        {dx.block(),
+         grad.block(),
+         bnScale_.block(),
+         resultSaveMean_.block(),
+         resultSaveVariance_.block()},
+        {dx.block(),
+         dbnScale_.block(),
+         dbnBias_.block()});
   } else {
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }
