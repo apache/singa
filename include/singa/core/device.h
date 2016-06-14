@@ -23,6 +23,16 @@
 #include <vector>
 #include <string>
 #include <functional>
+
+#ifdef USE_OPENCL
+// http://github.khronos.org/OpenCL-CLHPP/
+// cl2.hpp includes cl.h, do not re-include.
+#define CL_HPP_MINIMUM_OPENCL_VERSION 200
+#define CL_HPP_TARGET_OPENCL_VERSION 200
+#include <map>
+#include <CL/cl2.hpp>
+#endif
+
 #include "singa_config.h"
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
@@ -135,6 +145,59 @@ class CppCPU : public Device {
 
 /// a singleton CppDevice as the host for all devices.
 extern CppCPU defaultDevice;
+
+// Implement Device using OpenCL libs.
+#ifdef USE_OPENCL
+
+// Fixed paths and other constants.
+constexpr char* kernel_path = "src/core/math";
+
+// Implement Device using OpenCL libs.
+class OpenclDevice : public Device {
+ public:
+
+  // TODO: Constructor arguments to consider:
+  // Path to kernel sources?
+  // Select only certain device types?
+  OpenclDevice();
+  ~OpenclDevice();
+
+  /// Prints information about each Platform stored.
+  void PrintAllPlatformInfo();
+  /// Prints information about all Devices in each Platform.
+  void PrintAllDeviceInfo();
+  /// Prints information about the specified Device.
+  void PrintDeviceInfo(const cl::Device &dev);
+  /// Prints status about CL source code builds.
+  void PrintClBuildInfo(const cl::Program &p);
+
+  cl::Kernel GetKernel(const std::string& kname);
+
+ protected:
+  cl::CommandQueue cmdQueue;
+  cl::Context context;
+  std::vector<cl::Platform> platforms;
+  std::vector<cl::Device> devices;
+  std::map<std::string, cl::Kernel> kernels;
+
+  /// Initializes the OpenCL device by retrieving all details at once,
+  /// and checking for respective errors. Called only by the constructor.
+  /// Init will also filter for OpenCL 2.0 platforms, which means that 
+  /// NVidia devices that only support 1.2 will be excluded.
+  /// Init will also call PrintPlatformInfo.
+  void Init();
+  
+  /// Searches the given paths for all .cl files and builds
+  /// OpenCL programs, then stores them in the Kernels map.
+  void BuildPrograms(const std::string &kdir = ".");
+  
+  /// Special function used to perform error checking and logging.
+  static bool CheckError(const cl_int status, const std::string& what);
+};
+
+extern OpenclDevice oclDevice;
+
+#endif // USE_OPENCL
 
 
 // Implement Device using OpenCL libs.
