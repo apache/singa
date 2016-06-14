@@ -10,7 +10,6 @@ MESSAGE(STATUS "Found cuda_v${CUDA_VERSION}")
 #ADD_DEFINITIONS(-DUSE_CUDA)
 #message(STATUS "linking: ${CUDA_CUDART_LIBRARY} ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES}")
 
-
 IF(USE_CUDNN)
 #include(cmake/Modules/Cudnn.cmake)
     FIND_PACKAGE(CUDNN REQUIRED)

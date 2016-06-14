@@ -20,7 +20,7 @@
 ************************************************************/
 #ifndef SINGA_MODEL_LAYER_CUDNN_BATCHNORM_H
 #define SINGA_MODEL_LAYER_CUDNN_BATCHNORM_H
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDNN
 
 #include "batchnorm.h"

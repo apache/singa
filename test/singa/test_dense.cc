@@ -20,7 +20,7 @@
 *************************************************************/
 #include "../src/model/layer/dense.h"
 #include "gtest/gtest.h"
-#include "singa_config.h"
+#include "singa/singa_config.h"
 
 using singa::Dense;
 TEST(Dense, Setup) {

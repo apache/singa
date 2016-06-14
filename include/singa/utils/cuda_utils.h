@@ -2,7 +2,7 @@
 #ifndef SINGA_UTILS_CUDA_UTILS_H_
 #define SINGA_UTILS_CUDA_UTILS_H_
 
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDA
 #include <cublas_v2.h>
 #include <cuda.h>

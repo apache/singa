@@ -20,7 +20,7 @@
 ************************************************************/
 #ifndef SINGA_MODEL_LAYER_CUDNN_LRN_H_
 #define SINGA_MODEL_LAYER_CUDNN_LRN_H_
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDNN
 
 #include "lrn.h"

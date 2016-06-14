@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDA
 #include <cmath>
 #include <algorithm>

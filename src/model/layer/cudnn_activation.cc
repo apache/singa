@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDNN
 #include "./cudnn_activation.h"
 #include <cudnn.h>

@@ -18,7 +18,7 @@
 
 #ifndef SRC_MODEL_LAYER_CUDNN_CONVOLUTION_H_
 #define SRC_MODEL_LAYER_CUDNN_CONVOLUTION_H_
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDNN
 #include <string>
 #include <utility>

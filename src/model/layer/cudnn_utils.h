@@ -18,7 +18,7 @@
 #ifndef SRC_MODEL_LAYER_CUDNN_UTILS_H_
 #define SRC_MODEL_LAYER_CUDNN_UTILS_H_
 
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDNN
 
 #include <cudnn.h>

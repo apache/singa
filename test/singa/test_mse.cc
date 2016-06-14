@@ -23,7 +23,7 @@
 #include "singa/core/tensor.h"
 #include "singa/core/device.h"
 #include "../src/model/loss/mse.h"
-#include "singa_config.h"
+#include "singa/singa_config.h"
 using singa::Tensor;
 class TestMSE : public ::testing::Test {
  protected:

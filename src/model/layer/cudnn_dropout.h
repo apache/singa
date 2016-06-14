@@ -18,7 +18,7 @@
 
 #ifndef SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
 #define SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
 #if CUDNN_VERSION_MAJOR >= 5

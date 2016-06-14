@@ -21,7 +21,7 @@
 
 #include "gtest/gtest.h"
 #include "singa/model/optimizer.h"
-#include "singa_config.h"
+#include "singa/singa_config.h"
 
 TEST(SGD, ApplyWithoutMomentum) {
   singa::SGD sgd;

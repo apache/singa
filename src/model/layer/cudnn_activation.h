@@ -18,7 +18,7 @@
 
 #ifndef SINGA_MODEL_LAYER_CUDNN_ACTIVATION_H_
 #define SINGA_MODEL_LAYER_CUDNN_ACTIVATION_H_
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #include <utility>

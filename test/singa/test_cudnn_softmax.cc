@@ -18,7 +18,7 @@
 * under the License.
 *
 *************************************************************/
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDNN
 
 #include "../src/model/layer/cudnn_softmax.h"

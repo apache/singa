@@ -22,7 +22,7 @@
 #define SRC_CORE_TENSOR__MATH_KERNEL_H_
 
 
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDA
 
 /// TODO(wangwei) Clean the function APIs as commented in tensor_math.h

@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #ifdef USE_CUDA
 #include <cublas_v2.h>
 #include <cuda.h>

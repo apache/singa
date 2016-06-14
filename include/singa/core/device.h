@@ -23,7 +23,7 @@
 #include <vector>
 #include <string>
 #include <functional>
-#include "singa_config.h"
+#include "singa/singa_config.h"
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
 #include "singa/core/scheduler.h"
