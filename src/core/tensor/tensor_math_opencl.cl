@@ -193,7 +193,7 @@ void clkernel_add_scalar(int count, float x, __global const float* input, __glob
 }
 
 __kernel
-void clkernel_mult_scalar(int count, float x, __global const float* input, __global float* ret) {
+void clkernel_eltmult_scalar(int count, float x, __global const float* input, __global float* ret) {
   const int i = get_global_id(0);
   if (i >= count) return;
   ret[i] = input[i] * x;
@@ -214,7 +214,7 @@ void clkernel_subtract(int count, __global const float* lhs, __global const floa
 }
 
 __kernel
-void clkernel_mult(int count, __global const float* lhs, __global const float* rhs, __global float* ret) {
+void clkernel_eltmult(int count, __global const float* lhs, __global const float* rhs, __global float* ret) {
   const int i = get_global_id(0);
   if (i >= count) return;
   ret[i] = lhs[i] * rhs[i];
