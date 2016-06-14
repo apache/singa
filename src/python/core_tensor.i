@@ -37,7 +37,6 @@
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
 #include "singa/proto/model.pb.h"
-using singa::Device;
 using singa::DataType;
 %}
 
@@ -60,11 +59,11 @@ namespace singa{
     explicit Tensor(const std::vector<size_t> &shape,
                     DataType dtype = kFloat32);
     Tensor(const std::vector<size_t> &shape,
-           Device *dev, DataType dtype = kFloat32);
+           singa::Device *dev, DataType dtype = kFloat32);
     Tensor(const Tensor &from);
 
     //Blob *blob() const;
-    Device *device() const;
+    singa::Device *device() const;
 
     template <typename DType> DType data() const;
     %template(floatData) data<const float*>;
@@ -82,7 +81,7 @@ namespace singa{
     void Reshape(const std::vector<size_t> &shape);
     void ResetLike(const Tensor &t);
     void AsType(DataType type);
-    void ToDevice(Device *dev);
+    void ToDevice(singa::Device *dev);
     void ToHost();
 
     template <typename SType> void SetValue(const SType x);

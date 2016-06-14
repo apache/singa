@@ -21,7 +21,40 @@
 
 /*interface file for swig */
 
-%module singa
-%include "core_tensor.i"
-%include "core_device.i"
-//%include "model_layer.i"
+%module core_device
+%include "std_vector.i"
+%include "std_string.i"
+
+%{
+#include "singa/core/device.h"
+%}
+
+namespace singa{
+
+  %nodefault Device;
+  class Device {
+   public:
+    virtual void SetRandSeed(unsigned seed) = 0;
+    Device* host();
+    int id() const;
+  };
+
+  class CppCPU : public Device {
+   public:
+    CppCPU(int id = -1, int num_executors = 1,
+           std::string scheduler = "sync", std::string vm = "gc-only");
+    void SetRandSeed(unsigned seed) override;
+    /* (TODO) add necessary functions of CppCPU class
+    */
+  };
+
+  class CudaGPU : public Device {
+   public:
+    CudaGPU(int id = 0, int num_executors = 1,
+            std::string scheduler = "sync", std::string vm = "gc-only");
+    void SetRandSeed(unsigned seed) override;
+    /* (TODO) add necessary functions of CudaGPU class
+    */
+  };
+}
+

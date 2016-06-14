@@ -1,297 +1,365 @@
-import sys, os
+#!/usr/bin/env python
+
+# /************************************************************
+# *
+# * Licensed to the Apache Software Foundation (ASF) under one
+# * or more contributor license agreements.  See the NOTICE file
+# * distributed with this work for additional information
+# * regarding copyright ownership.  The ASF licenses this file
+# * to you under the Apache License, Version 2.0 (the
+# * "License"); you may not use this file except in compliance
+# * with the License.  You may obtain a copy of the License at
+# *
+# *   http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing,
+# * software distributed under the License is distributed on an
+# * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# * KIND, either express or implied.  See the License for the
+# * specific language governing permissions and limitations
+# * under the License.
+# *
+# *************************************************************/
+
+'''
+This script includes Tensor class and its methods for python users
+to call singa::Tensor and its methods
+'''
+import sys
+import os
 import numpy as np
 import singa
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
+
 from core_pb2 import *
 
 
-''' Class and member functions for singa::Tensor
-'''
 class Tensor(object):
-
-  def __init__(self, shape=None, device=None, dtype=kFloat32):
-    ''' shape = (tuple)
+    ''' Class and member functions for singa::Tensor
     '''
-    if shape == None:
-      # call constructor of singa::Tensor
-      self.singa_tensor = singa.Tensor()
-      return
-    else:
-      assert type(shape) == tuple, 'shape should be tuple'
-      vs = _tuple_to_vector(shape)
-      if device == None:
-        self.singa_tensor = singa.Tensor(vs, dtype)
-      else:
-        self.singa_tensor = singa.Tensor(vs, device, dtype)
-      self.tuple_shape = shape
-      self.device = device
-      self.dtype = dtype
 
-  def toarray(self):
-    #TODO(chonho) - need to think more efficient way to convert???
-    idx = self.singa_tensor.data_type()
-    if idx == kFloat32:
-      data_array = singa.floatArray_frompointer(self.singa_tensor.floatData())
-      dt = np.float32
-    elif idx == kFloat16:
-      print 'not implemented yet'
-      return
-      #data_array = singa.floatArray_frompointer(self.singa_tensor.floatData())
-      #dt = np.float16
-    elif idx == kInt:
-      data_array = singa.intArray_frompointer(self.singa_tensor.intData())
-      dt = np.int32
-    elif idx == kChar:
-      data_array = singa.charArray_frompointer(self.singa_tensor.charData())
-      dt = np.int8
-    elif idx == kDouble:
-      data_array = singa.doubleArray_frompointer(self.singa_tensor.doubleData())
-      dt = np.float64
+    def __init__(self, shape=None, device=None, dtype=kFloat32):
+        ''' shape = (tuple)
+        '''
+        if shape is None:
+            # call constructor of singa::Tensor
+            self.singa_tensor = singa.Tensor()
+            return
+        else:
+            assert type(shape) == tuple, 'shape should be tuple'
+            vs = _tuple_to_vector(shape)
+            if device is None:
+                self.singa_tensor = singa.Tensor(vs, dtype)
+            else:
+                self.singa_tensor = singa.Tensor(vs, device, dtype)
+            self.tuple_shape = shape
+            self.device = device
+            self.dtype = dtype
 
-    data = [data_array[i] for i in range(self.singa_tensor.Size())]
-    data = np.array(data, dtype=dt).reshape(self.tuple_shape)
-    return data
+    def toarray(self):
+        # TODO(chonho) - need to think more efficient way to convert???
+        idx = self.singa_tensor.data_type()
+        if idx == kFloat32:
+            data_array = singa.floatArray_frompointer(
+                             self.singa_tensor.floatData())
+            dt = np.float32
+        elif idx == kFloat16:
+            print 'not implemented yet'
+            return
+            # data_array = singa.floatArray_frompointer(
+            #                  self.singa_tensor.floatData())
+            # dt = np.float16
+        elif idx == kInt:
+            data_array = singa.intArray_frompointer(
+                             self.singa_tensor.intData())
+            dt = np.int32
+        elif idx == kChar:
+            data_array = singa.charArray_frompointer(
+                             self.singa_tensor.charData())
+            dt = np.int8
+        elif idx == kDouble:
+            data_array = singa.doubleArray_frompointer(
+                             self.singa_tensor.doubleData())
+            dt = np.float64
 
-  def data_type(self):
-    return self.singa_tensor.data_type()
+        data = [data_array[i] for i in range(self.singa_tensor.Size())]
+        data = np.array(data, dtype=dt).reshape(self.tuple_shape)
+        return data
 
-  def shape(self, axis=None):
-    if axis==None:
-       return self.singa_tensor.shape()
-    else:
-       return self.singa_tensor.shape(axis)
+    def data_type(self):
+        return self.singa_tensor.data_type()
 
-  def ndim(self):
-    return self.singa_tensor.nDim()
+    def shape(self, axis=None):
+        if axis is None:
+            return self.singa_tensor.shape()
+        else:
+            return self.singa_tensor.shape(axis)
 
-  def is_transpose(self):
-    return self.singa_tensor.transpose()
+    def ndim(self):
+        return self.singa_tensor.nDim()
 
-  def size(self):
-    return self.singa_tensor.Size()
+    def is_transpose(self):
+        return self.singa_tensor.transpose()
 
-  def memsize(self):
-    return self.singa_tensor.MemSize()
+    def size(self):
+        return self.singa_tensor.Size()
 
-  def reshape(self, shape):
-    assert product(self.tuple_shape) == product(shape), \
-           'product of shape should be equal'
-    self.tuple_shape = shape
-    self.singa_tensor.Reshape(_tuple_to_vector(shape))
+    def memsize(self):
+        return self.singa_tensor.MemSize()
 
-  def reset_like(self, t):
-    self.singa_tensor.ResetLike(t.singa_tensor)
+    def reshape(self, shape):
+        assert product(self.tuple_shape) == product(shape), \
+               'product of shape should be equal'
+        self.tuple_shape = shape
+        self.singa_tensor.Reshape(_tuple_to_vector(shape))
 
-  def as_type(self, dtype):
-    self.singa_tensor.AsType(dtype)
+    def reset_like(self, t):
+        self.singa_tensor.ResetLike(t.singa_tensor)
 
-  def to_device(self, device):
-    self.singa_tensor.ToDevice(device)
+    def as_type(self, dtype):
+        self.singa_tensor.AsType(dtype)
 
-  def to_host(self):
-    self.singa_tensor.ToHost()
+    def to_device(self, device):
+        self.singa_tensor.ToDevice(device)
 
-  def set_value(self, x):
-    self.singa_tensor.SetValue(x)
+    def to_host(self):
+        self.singa_tensor.ToHost()
 
-  def copy_data(self, t):
-    self.singa_tensor.CopyData(t.singa_tensor)
+    def set_value(self, x):
+        self.singa_tensor.SetValue(x)
 
-  def clone(self):
-    ''' it does deep copy
-        call singa::Tensor::Clone()
+    def copy_data(self, t):
+        self.singa_tensor.CopyData(t.singa_tensor)
+
+    def clone(self):
+        ''' it does deep copy
+            call singa::Tensor::Clone()
+        '''
+        return _call_singa_func(self.singa_tensor.Clone)
+
+    def transpose(self):
+        ''' shallow copy, negate the transpose field
+            call singa::Tensor::T()
+        '''
+        return _call_singa_func(self.singa_tensor.T)
+
+    def copy(self):
+        ''' shallow copy
+            call copy constructor of singa::Tensor
+        '''
+        return _call_singa_func(singa.Tensor, self.singa_tensor)
+
+    def deepcopy(self):
+        ''' deep copy
+            call singa::Tensor::Clone()
+        '''
+        return self.clone()
+
     '''
-    return _call_singa_func(self.singa_tensor.Clone)
-
-  def transpose(self):
-    ''' shallow copy, negate the transpose field
-        call singa::Tensor::T()
+    python operators (+=, -=, *=, /=) for singa::Tensor unary operators
     '''
-    return _call_singa_func(self.singa_tensor.T)
+    def __iadd__(self, x):
+        if type(x) == Tensor:
+            self.singa_tensor += x.singa_tensor
+        else:
+            self.singa_tensor += x
+        return self
 
-  def copy(self):
-    ''' shallow copy
-        call copy constructor of singa::Tensor
+    def __isub__(self, x):
+        if type(x) == Tensor:
+            self.singa_tensor -= x.singa_tensor
+        else:
+            self.singa_tensor -= x
+        return self
+
+    def __imul__(self, x):
+        if type(x) == Tensor:
+            self.singa_tensor *= x.singa_tensor
+        else:
+            self.singa_tensor *= x
+        return self
+
+    def __idiv__(self, x):
+        if type(x) == Tensor:
+            self.singa_tensor /= x.singa_tensor
+        else:
+            self.singa_tensor /= x
+        return self
+
     '''
-    return _call_singa_func(singa.Tensor, self.singa_tensor)
-
-  def deepcopy(self):
-    ''' deep copy
-        call singa::Tensor::Clone()
+    python operators (+, -, *, /, <, <=, >, >=) for singa binary operators
     '''
-    return self.clone()
+    def __add__(self, rhs):
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(singa.Add_TT,
+                                    self.singa_tensor, rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.Add_Tf,
+                                    self.singa_tensor, rhs)
 
-  '''
-  python operators (+=, -=, *=, /=) for singa::Tensor unary operators
-  '''
-  def __iadd__(self, x):
-    if type(x) == Tensor:
-      self.singa_tensor += x.singa_tensor
-    else:
-      self.singa_tensor += x
-    return self
+    def __sub__(self, rhs):
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(singa.Sub_TT,
+                                    self.singa_tensor, rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.Sub_Tf,
+                                    self.singa_tensor, rhs)
 
-  def __isub__(self, x):
-    if type(x) == Tensor:
-      self.singa_tensor -= x.singa_tensor
-    else:
-      self.singa_tensor -= x
-    return self
+    def __mul__(self, rhs):
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(singa.Mul_TT,
+                                    self.singa_tensor, rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.Mul_Tf,
+                                    self.singa_tensor, rhs)
 
-  def __imul__(self, x):
-    if type(x) == Tensor:
-      self.singa_tensor *= x.singa_tensor
-    else:
-      self.singa_tensor *= x
-    return self
+    def __div__(self, rhs):
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(singa.Div_TT,
+                                    self.singa_tensor, rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.Div_Tf,
+                                    self.singa_tensor, rhs)
 
-  def __idiv__(self, x):
-    if type(x) == Tensor:
-      self.singa_tensor /= x.singa_tensor
-    else:
-      self.singa_tensor /= x
-    return self
+    def __lt__(self, rhs):
+        return _call_singa_func(singa.LT_Tf, self.singa_tensor, rhs)
 
-  '''
-  python operators (+, -, *, /, <, <=, >, >=) for singa binary operators
-  '''
-  def __add__(self, rhs):
-    if isinstance(rhs, Tensor):
-      return _call_singa_func(singa.Add_TT, self.singa_tensor, rhs.singa_tensor)
-    else:
-      return _call_singa_func(singa.Add_Tf, self.singa_tensor, rhs)
+    def __le__(self, rhs):
+        return _call_singa_func(singa.LE_Tf, self.singa_tensor, rhs)
 
-  def __sub__(self, rhs):
-    if isinstance(rhs, Tensor):
-      return _call_singa_func(singa.Sub_TT, self.singa_tensor, rhs.singa_tensor)
-    else:
-      return _call_singa_func(singa.Sub_Tf, self.singa_tensor, rhs)
+    def __gt__(self, rhs):
+        return _call_singa_func(singa.GT_Tf, self.singa_tensor, rhs)
 
-  def __mul__(self, rhs):
-    if isinstance(rhs, Tensor):
-      return _call_singa_func(singa.Mul_TT, self.singa_tensor, rhs.singa_tensor)
-    else:
-      return _call_singa_func(singa.Mul_Tf, self.singa_tensor, rhs)
-
-  def __div__(self, rhs):
-    if isinstance(rhs, Tensor):
-      return _call_singa_func(singa.Div_TT, self.singa_tensor, rhs.singa_tensor)
-    else:
-      return _call_singa_func(singa.Div_Tf, self.singa_tensor, rhs)
-
-  def __lt__(self, rhs):
-    return _call_singa_func(singa.LT_Tf, self.singa_tensor, rhs)
-
-  def __le__(self, rhs):
-    return _call_singa_func(singa.LE_Tf, self.singa_tensor, rhs)
-
-  def __gt__(self, rhs):
-    return _call_singa_func(singa.GT_Tf, self.singa_tensor, rhs)
-
-  def __ge__(self, rhs):
-    return _call_singa_func(singa.GE_Tf, self.singa_tensor, rhs)
-
+    def __ge__(self, rhs):
+        return _call_singa_func(singa.GE_Tf, self.singa_tensor, rhs)
 
 
 ''' python functions for global functions in Tensor.h
 '''
+
+
 def product(shape):
-  return reduce(lambda x, y: x * y, shape)
+    return reduce(lambda x, y: x * y, shape)
+
 
 def sizeof(dtype):
-  return singa.SizeOf(dtype)
+    return singa.SizeOf(dtype)
+
 
 def reshape(t, s):
-  return _call_singa_func(singa.Reshape, t.singa_tensor, s)
+    return _call_singa_func(singa.Reshape, t.singa_tensor, s)
+
 
 def copy_data_to_from(dst, src, size, src_offset=0, dst_offset=0):
-  singa.CopyDataToFrom(dst.singa_tensor, src.singa_tensor, size,
-                       src_offset, dst_offset)
+    singa.CopyDataToFrom(dst.singa_tensor, src.singa_tensor, size,
+                         src_offset, dst_offset)
+
 
 def abs(t):
-  return _call_singa_func(singa.Abs, t.singa_tensor)
+    return _call_singa_func(singa.Abs, t.singa_tensor)
+
 
 def exp(t):
-  return _call_singa_func(singa.Exp, t.singa_tensor)
+    return _call_singa_func(singa.Exp, t.singa_tensor)
+
 
 def log(t):
-  return _call_singa_func(singa.Log, t.singa_tensor)
+    return _call_singa_func(singa.Log, t.singa_tensor)
+
 
 def relu(t):
-  return _call_singa_func(singa.ReLU, t.singa_tensor)
+    return _call_singa_func(singa.ReLU, t.singa_tensor)
+
 
 def sigmoid(t):
-  return _call_singa_func(singa.Sigmoid, t.singa_tensor)
+    return _call_singa_func(singa.Sigmoid, t.singa_tensor)
+
 
 def square(t):
-  return _call_singa_func(singa.Square, t.singa_tensor)
+    return _call_singa_func(singa.Square, t.singa_tensor)
+
 
 def tanh(t):
-  return _call_singa_func(singa.Tanh, t.singa_tensor)
+    return _call_singa_func(singa.Tanh, t.singa_tensor)
+
 
 def sum(t, axis=None):
-  if axis == None:
-    return singa.floatSum(t.singa_tensor)
-  else:
-    return _call_singa_func(singa.Sum, t.singa_tensor, axis)
+    if axis is None:
+        return singa.floatSum(t.singa_tensor)
+    else:
+        return _call_singa_func(singa.Sum, t.singa_tensor, axis)
+
 
 def pow(t, x):
-  print 'not implemented yet'
+    print 'not implemented yet'
+
 
 def average(t, axis=0):
-  return _call_singa_func(singa.Average, t.singa_tensor, axis)
+    return _call_singa_func(singa.Average, t.singa_tensor, axis)
+
 
 def softmax(t, axis=0):
-  return _call_singa_func(singa.SoftMax, t.singa_tensor, axis)
+    return _call_singa_func(singa.SoftMax, t.singa_tensor, axis)
+
 
 def lt(t, x):
-  return t < x
+    return t < x
+
 
 def le(t, x):
-  return t <= x
+    return t <= x
+
 
 def gt(t, x):
-  return t > x
+    return t > x
+
 
 def ge(t, x):
-  return t >= x
+    return t >= x
+
 
 def add(lhs, rhs):
-  # call Tensor.__add__()
-  return lhs + rhs
+    # call Tensor.__add__()
+    return lhs + rhs
+
 
 def sub(lhs, rhs):
-  # call Tensor.__sub__()
-  return lhs - rhs
+    # call Tensor.__sub__()
+    return lhs - rhs
+
 
 def eltwise_mult(lhs, rhs):
-  # call Tensor.__mul__()
-  return lhs * rhs
+    # call Tensor.__mul__()
+    return lhs * rhs
+
 
 def div(lhs, rhs):
-  # call Tensor.__div__()
-  return lhs / rhs
+    # call Tensor.__div__()
+    return lhs / rhs
 
 
 ''' private functions, internally used
 '''
+
+
 def _tuple_to_vector(tshape):
-  ''' this function converts tuple to std::vector<int>
-  '''
-  vs = singa.Shape(len(tshape))
-  for i in range(len(tshape)):
-    vs[i] = tshape[i]
-  return vs
+    ''' this function converts tuple to std::vector<int>
+    '''
+    vs = singa.Shape(len(tshape))
+    for i in range(len(tshape)):
+        vs[i] = tshape[i]
+    return vs
+
 
 def _call_singa_func(_singa_func, *args):
-  ''' this function calls singa global functions that returns Tensor
-      and create new python Tensor instance
-      e.g., Tensor [singa_func](args...)
-  '''
-  new_t = Tensor()
-  new_t.singa_tensor = _singa_func(*args)
-  new_t.tuple_shape = new_t.singa_tensor.shape()
-  new_t.device = new_t.singa_tensor.device()
-  new_t.dtype = new_t.singa_tensor.data_type()
-  return new_t
+    ''' this function calls singa global functions that returns Tensor
+        and create new python Tensor instance
+        e.g., Tensor [singa_func](args...)
+    '''
+    new_t = Tensor()
+    new_t.singa_tensor = _singa_func(*args)
+    new_t.tuple_shape = new_t.singa_tensor.shape()
+    new_t.device = new_t.singa_tensor.device()
+    new_t.dtype = new_t.singa_tensor.data_type()
+    return new_t
