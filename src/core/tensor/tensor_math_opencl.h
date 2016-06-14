@@ -40,7 +40,7 @@ void Abs<float, lib::Opencl>(const size_t num, const Block* in, Block* out, Cont
 }
 
 template<>
-void Add<float, lib::Opencl>(const size_t num, const Block* in, float x, Block* out, Context* ctx) {
+void Add<float, lib::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
   std::string kname = "clkernel_add_scalar";
   auto kernel = oclDevice.GetKernel(kname);
   kernel.setArg(0, (int)num);
@@ -64,7 +64,7 @@ void Add<float, lib::Opencl>(const size_t num, const Block* in1, const Block* in
 }
 
 template<>
-void Clamp<float, lib::Opencl>(const size_t num, float low, float high, const Block* in, Block* out, Context* ctx) {
+void Clamp<float, lib::Opencl>(const size_t num, const float low, const float high, const Block* in, Block* out, Context* ctx) {
   std::string kname = "clkernel_clamp";
   auto kernel = oclDevice.GetKernel(kname);
   kernel.setArg(0, (int)num);
@@ -78,7 +78,19 @@ void Clamp<float, lib::Opencl>(const size_t num, float low, float high, const Bl
 
 template<>
 void Div<float, lib::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
-  std::string kname = "clkernel_divide_scalar";
+  std::string kname = "clkernel_divide_scalar_matx";
+  auto kernel = oclDevice.GetKernel(kname);
+  kernel.setArg(0, (int)num);
+  kernel.setArg(1, static_cast<const float*>(in->data()));
+  kernel.setArg(2, x);
+  kernel.setArg(3, static_cast<float*>(out->mutable_data()));
+
+  oclDevice.cmdQueue.enqueueNDRangeKernel(kernel, nullptr, NDRange(num));
+}
+
+template<>
+void Div<float, lib::Opencl>(const size_t num, const float x, const Block* in, Block* out, Context* ctx) {
+  std::string kname = "clkernel_divide_scalar_xmat";
   auto kernel = oclDevice.GetKernel(kname);
   kernel.setArg(0, (int)num);
   kernel.setArg(1, x);
@@ -101,7 +113,7 @@ void Div<float, lib::Opencl>(const size_t num, const Block* in1, const Block* in
 }
 
 template<>
-void EltwiseMult<float, lib::Opencl>(const size_t num, const Block* in, float x, Block* out, Context* ctx) {
+void EltwiseMult<float, lib::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
   std::string kname = "clkernel_eltmult_scalar";
   auto kernel = oclDevice.GetKernel(kname);
   kernel.setArg(0, (int)num);
@@ -230,7 +242,7 @@ void ReLU<float, lib::Opencl>(const size_t num, const Block* in, Block* out, Con
 }
 
 template<>
-void Set<float, lib::Opencl>(const size_t num, float x, Block* out, Context* ctx) {
+void Set<float, lib::Opencl>(const size_t num, const float x, Block* out, Context* ctx) {
   std::string kname = "clkernel_set";
   auto kernel = oclDevice.GetKernel(kname);
   kernel.setArg(0, (int)num);
@@ -279,7 +291,7 @@ void Square<float, lib::Opencl>(const size_t num, const Block* in, Block* out, C
 }
 
 template<>
-void Sub<float, lib::Opencl>(const size_t num, const Block* in, const float rhs, Block* out, Context* ctx) {
+void Sub<float, lib::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
   std::string kname = "clkernel_subtract_scalar";
   auto kernel = oclDevice.GetKernel(kname);
   kernel.setArg(0, (int)num);
@@ -329,11 +341,40 @@ void Tanh<float, lib::Opencl>(const size_t num, const Block* in, Block* out, Con
 // Random functions
 // **************************************
 
-// TODO: Bernoulli
+template<>
+void Bernoulli<float, lib::Opencl>(const size_t num, const float p, Block* out, Context *ctx) {
+  std::string kname = "clkernel_bernoulli";
+  auto kernel = oclDevice.GetKernel(kname);
+  kernel.setArg(0, (int)num);
+  kernel.setArg(1, p);
+  kernel.setArg(2, static_cast<float*>(out->mutable_data()));
 
-// TODO: Gaussian
+  oclDevice.cmdQueue.enqueueNDRangeKernel(kernel, nullptr, NDRange(num));
+}
 
-// TODO: Uniform
+template<>
+void Gaussian<float, lib::Opencl>(const size_t num, const float mean, const float std, Block* out, Context *ctx) {
+  std::string kname = "clkernel_gaussian";
+  auto kernel = oclDevice.GetKernel(kname);
+  kernel.setArg(0, (int)num);
+  kernel.setArg(1, mean);
+  kernel.setArg(2, std);
+  kernel.setArg(3, static_cast<float*>(out->mutable_data()));
+
+  oclDevice.cmdQueue.enqueueNDRangeKernel(kernel, nullptr, NDRange(num));
+}
+
+template<>
+void Uniform<float, lib::Opencl>(const size_t num, const float low, const float high, Block* out, Context *ctx) {
+  std::string kname = "clkernel_uniform";
+  auto kernel = oclDevice.GetKernel(kname);
+  kernel.setArg(0, (int)num);
+  kernel.setArg(1, low);
+  kernel.setArg(2, high);
+  kernel.setArg(3, static_cast<float*>(out->mutable_data()));
+
+  oclDevice.cmdQueue.enqueueNDRangeKernel(kernel, nullptr, NDRange(num));
+}
 
 // *********************************************************
 // BLAS functions, ref to http://docs.nvidia.com/cuda/cublas
@@ -376,7 +417,7 @@ void Asum<float, lib::Opencl>(const size_t num, const Block* in, float* out, Con
 }
 
 template<>
-void Axpy<float, lib::Opencl>(const size_t num, float alpha, const Block* in, Block* out, Context* ctx) {
+void Axpy<float, lib::Opencl>(const size_t num, const float alpha, const Block* in, Block* out, Context* ctx) {
   std::string kname = "clkernel_axpy";
   auto kernel = oclDevice.GetKernel(kname);
   kernel.setArg(0, (int)num);
@@ -387,10 +428,20 @@ void Axpy<float, lib::Opencl>(const size_t num, float alpha, const Block* in, Bl
   oclDevice.cmdQueue.enqueueNDRangeKernel(kernel, nullptr, NDRange(num));
 }
 
-// TODO:: Nrm2
+template<>
+void Nrm2<float, lib::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
+  std::string kname = "clkernel_nrm2";
+  auto kernel = oclDevice.GetKernel(kname);
+  kernel.setArg(0, (int)num);
+  kernel.setArg(1, alpha);
+  kernel.setArg(2, static_cast<const float*>(in->data()));
+  kernel.setArg(3, static_cast<float*>(out->mutable_data()));
+
+  oclDevice.cmdQueue.enqueueNDRangeKernel(kernel, nullptr, NDRange(num));
+}
 
 template<>
-void Scale<float, lib::Opencl>(const size_t num, float x, Block* out, Context* ctx) {
+void Scale<float, lib::Opencl>(const size_t num, const float x, Block* out, Context* ctx) {
   std::string kname = "clkernel_scale";
   auto kernel = oclDevice.GetKernel(kname);
   kernel.setArg(0, (int)num);
@@ -401,13 +452,13 @@ void Scale<float, lib::Opencl>(const size_t num, float x, Block* out, Context* c
 }
 
 template<>
-void Dot<float, lib::Opencl>(const size_t num, const Block *in1, const Block *in2, DType *out, Context *ctx) {
+void Dot<float, lib::Opencl>(const size_t num, const Block *in1, const Block *in2, float *out, Context *ctx) {
   std::string kname = "clkernel_dot";
   auto kernel = oclDevice.GetKernel(kname);
   kernel.setArg(0, (int)num);
   kernel.setArg(1, static_cast<const float*>(in1->data()));
   kernel.setArg(2, static_cast<const float*>(in2->data()));
-  kernel.setArg(3, static_cast<float*>(out->mutable_data()));
+  kernel.setArg(3, out);
   kernel.setArg(4, cl::Local(sizeof(float) * num))
 
   oclDevice.cmdQueue.enqueueNDRangeKernel(kernel, nullptr, NDRange(num));
@@ -416,7 +467,7 @@ void Dot<float, lib::Opencl>(const size_t num, const Block *in1, const Block *in
 // TODO: GEMV
 
 template<>
-void DGMM<float, lib::Opencl>(const bool side_right,
+void DGMM<float, lib::Opencl>(bool side_right,
 		  const size_t nrow, const size_t ncol,
 		  const Block *M, const Block *v, Block *out, Context *ctx) {
   std::string kname = side_right ? "clkernel_dgmm_right" : "clkernel_dgmm_left";
@@ -456,7 +507,7 @@ void GEMM<float, lib::Opencl>(const bool transA, const bool transB,
 // **************************************
 // Matrix functions
 // **************************************
-
+/*
 template<>
 void AddCol<float, lib::Opencl>(const size_t nrow, const size_t ncol, const Block* A, const Block* v, Block* out, Context* ctx) {
   std::string kname = "clkernel_addcol";
@@ -519,7 +570,7 @@ void SumRows<float, lib::Opencl>(const size_t nrow, const size_t ncol, const Blo
 
   oclDevice.cmdQueue.enqueueNDRangeKernel(kernel, nullptr, NDRange(nrow, ncol));
 }
-
+*/
 } //  namespace singa
 
 #endif  // SINGA_CORE_TENSOR_TENSOR_MATH_OPENCL_H_
