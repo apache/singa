@@ -24,4 +24,4 @@
 %module singa
 %include "core_tensor.i"
 %include "core_device.i"
-//%include "model_layer.i"
+%include "model_layer.i"
