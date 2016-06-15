@@ -45,6 +45,11 @@ class Convolution : public Layer {
                                                    const Tensor &grad) override;
 
   void ToDevice(std::shared_ptr<Device> device) override;
+
+  const std::vector<Tensor> param_values() override {
+    return std::vector<Tensor>{weight_, bias_};
+  }
+
   size_t kernel_w() const { return kernel_w_; }
   size_t kernel_h() const { return kernel_h_; }
   size_t pad_w() const { return pad_w_; }

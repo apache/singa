@@ -81,6 +81,8 @@ class Tensor {
     return static_cast<const SType *>(block()->data());
   }
 
+  /// used for swig code to convert Tensor into numpy array.
+  /// It gets data into 'value'
   template <typename SType>
   void GetValue(SType *value, const size_t num) {
     CHECK(device_ == defaultDevice);
@@ -213,6 +215,8 @@ class Tensor {
 typedef Shape::iterator ShapeIter;
 inline size_t Product(const Shape &shape, int start = 0, size_t len = 0) {
   if (len == 0) len = shape.size();
+  if (len == 0)
+    return 0;
   CHECK_LE(len, shape.size());
   size_t v = 1;
   for (unsigned int i = start; i < len; i++) v *= shape[i];

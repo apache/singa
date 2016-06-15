@@ -17,7 +17,9 @@
 # =============================================================================
 '''
 This script includes Device class and its subclasses for python users
-to call singa::Device and its methods
+to call singa::Device and its methods.
+
+TODO(wangwei) implement py CudaGPU class.
 '''
 
 from . import singa_wrap as singa
@@ -28,6 +30,7 @@ class Device(object):
 
     Create Device instances using the CreateXXXDevice.
     """
+
     def __init__(self, id, device):
         """Device constructor given device ID.
 
@@ -48,27 +51,25 @@ class Device(object):
         return self.singa_device.id()
 
 
-class Platform(object):
-    @staticmethod
-    def get_num_gpus():
-        return singa.Platform.GetNumGPUs()
+def get_num_gpus():
+    return singa.Platform.GetNumGPUs()
 
-    @staticmethod
-    def get_gpu_ids():
-        return singa.Platform.GetGPUIDs()
 
-    @staticmethod
-    def get_gpu_mem_size(id):
-        return singa.Platform.GetGPUMemSize(id)
+def get_gpu_ids():
+    return singa.Platform.GetGPUIDs()
 
-    @staticmethod
-    def device_query(id, verbose=False):
-        return singa.Platform.DeviceQuery(id, verbose)
 
-    @staticmethod
-    def create_raw_cuda_gpus(num):
-        return singa.Platform.CreateCudaGPUs(num)
+def get_gpu_mem_size(id):
+    return singa.Platform.GetGPUMemSize(id)
 
-    @staticmethod
-    def create_cuda_gpu():
-        return singa.Platform.CreateCudaGPUs(1)[0]
+
+def device_query(id, verbose=False):
+    return singa.Platform.DeviceQuery(id, verbose)
+
+
+def create_cuda_gpus(num):
+    return singa.Platform.CreateCudaGPUs(num)
+
+
+def create_cuda_gpu():
+    return singa.Platform.CreateCudaGPUs(1)[0]

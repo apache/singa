@@ -21,6 +21,7 @@
 #include "lrn.h"
 
 namespace singa{
+RegisterLayerClass(LRN);
 void LRN::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;

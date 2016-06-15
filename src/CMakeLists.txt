@@ -79,16 +79,31 @@ LIST(APPEND SINGA_LINKER_LIBS singa_io)
 #ADD_LIBRARY(singa SHARED ${SINGA_LINKER_LIBS})
 
 IF(USE_PYTHON)
+
     FILE(GLOB python_files python/swig/singa.i)
+    # delete old .cxx file
+    FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/singa_wrap.cxx")
+
+    # generate cxx and wrap.py
     swig_generate_cxx(python_srcs ${python_files})
-    FILE(COPY python/ DESTINATION ${CMAKE_BINARY_DIR}/python/singa FILES_MATCHING PATTERN "swig" EXCLUDE PATTERN "*.py")
-    SET(python_cxxs "${CMAKE_SOURCE_DIR}/src/core/tensor/tensor.cc;${CMAKE_SOURCE_DIR}/src/core/device/device.cc")
+
+    #FILE(COPY python/ DESTINATION ${CMAKE_BINARY_DIR}/python/singa FILES_MATCHING PATTERN "swig" EXCLUDE PATTERN "*.py")
+    #Create symlinks for all python source files  Do not omit !!!RELATIVE!!!
+    file(GLOB_RECURSE python_source_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
+
+    create_symlinks(${python_source_files})
+
+    FILE(GLOB_RECURSE layer_source_files ${CMAKE_SOURCE_DIR}/src/model/layer/*.cc)
+    # message(STATUS "layer_source_files ${layer_source_files}")
+    FILE(GLOB_RECURSE metric_source_files ${CMAKE_SOURCE_DIR}/src/model/metric/*.cc)
+    FILE(GLOB_RECURSE loss_source_files ${CMAKE_SOURCE_DIR}/src/model/loss/*.cc)
+    SET(python_cxxs "${CMAKE_SOURCE_DIR}/src/core/tensor/tensor.cc;${CMAKE_SOURCE_DIR}/src/core/device/device.cc;${layer_source_files};${metric_source_files};${loss_source_files}")
     ADD_LIBRARY(_singa_wrap SHARED ${python_srcs} ${python_cxxs})
     SET(WRAPPER_LINKER_LIBS "${SINGA_LINKER_LIBS};protobuf")
     TARGET_LINK_LIBRARIES(_singa_wrap ${WRAPPER_LINKER_LIBS})
     TARGET_INCLUDE_DIRECTORIES(_singa_wrap PRIVATE ${PYTHON_INCLUDE_DIRS})
     #message(STATUS "PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS}")
-    
+
     SET_TARGET_PROPERTIES(_singa_wrap
         PROPERTIES PREFIX ""
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa
@@ -98,7 +113,7 @@ IF(USE_PYTHON)
     SET(SETUP_PY_IN "python/setup.py.in")
     set(SETUP_PY    "${CMAKE_BINARY_DIR}/python/setup.py")
     configure_file(${SETUP_PY_IN} ${SETUP_PY})
-    
+
     #COPY protobuf files to python/singa/proto
     FILE(COPY ${CMAKE_BINARY_DIR}/python/singa/__init__.py DESTINATION ${CMAKE_BINARY_DIR}/python/singa/proto )
 

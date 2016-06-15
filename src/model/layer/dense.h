@@ -45,7 +45,9 @@ class Dense : public Layer {
                                                    const Tensor& grad) override;
 
   void ToDevice(std::shared_ptr<Device> device) override;
-
+  const std::vector<Tensor> param_values() override {
+    return std::vector<Tensor>{weight_, bias_};
+  }
   size_t num_output() const { return hdim_; }
   size_t num_input() const { return vdim_; }
   bool transpose() const { return transpose_; }

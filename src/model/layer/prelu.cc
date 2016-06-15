@@ -20,6 +20,7 @@
 #include "./prelu.h"
 namespace singa {
 
+RegisterLayerClass(PReLU);
 void PReLU::Setup(const Shape& in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
@@ -27,7 +28,7 @@ void PReLU::Setup(const Shape& in_sample, const LayerConf &conf) {
   format_ = conf.prelu_conf().format();
   // Push back params into param_values_
   for (const auto &spec : conf.param()) param_specs_.push_back(spec);
-  param_values_.push_back(&a_);
+//  param_values_.push_back(a_);
 }
 
 const Tensor PReLU::Forward(int flag, const Tensor &input) {

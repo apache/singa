@@ -27,28 +27,29 @@ namespace singa {
 /// score (loss) for a pair of prediction (from the model) and the target (i.e.
 /// the ground truth). It also computes the gradients of the objective w.r.t.
 /// the prediction. It has similar APIs as Layer.
-template <typename T = Tensor>
+// template <typename T = Tensor>
 class Loss {
- public:
+public:
   Loss() = default;
-  void Setup(const string& conf) {
+  void Setup(const string &conf) {
     LossConf loss;
     loss.ParseFromString(conf);
     Setup(loss);
   }
-	virtual ~Loss(){};
+  virtual ~Loss() {};
   virtual void ToDevice(std::shared_ptr<Device> device) {}
   /// Set meta fields from user configurations.
-  virtual void Setup(const LossConf& conf) {}
+  virtual void Setup(const LossConf &conf) {}
 
   /// Compute the loss values for each sample/instance given the prediction
   /// and the target.
-  virtual Tensor Forward(int flag, const Tensor& prediction, const T& target) = 0;
+  virtual Tensor Forward(int flag, const Tensor &prediction,
+                         const Tensor &target) = 0;
 
   /// Average loss values for all samples in the mini-batch
   /// It calls Forward() internally. The calling pattern should be
   /// [Evaluate|Forward] Backward.
-  float Evaluate(int flag, const Tensor& prediction, const T& target) {
+  float Evaluate(int flag, const Tensor &prediction, const Tensor &target) {
     Tensor loss = Forward(flag, prediction, target);
     loss.ToHost();
     return Sum<float>(loss) / (1.0f * loss.Size());
@@ -58,11 +59,9 @@ class Loss {
   virtual Tensor Backward() = 0;
 };
 
-
-
 // ============= Mean Squared Error ===========================================
 /// MSE is for mean squared error or squared euclidean distance.
-class MSE : public Loss<Tensor> {
+class MSE : public Loss {
  public:
   /// Compute the loss values for each sample/instance given the prediction
   /// and the target, which is 0.5/||prediction-target||^2
@@ -82,7 +81,7 @@ class MSE : public Loss<Tensor> {
 
 // ===============Softamx Cross Entropy =======================================
 /// Softmax + cross entropy for multi-category classification
-class SoftmaxCrossEntropy : public Loss<Tensor> {
+class SoftmaxCrossEntropy : public Loss {
  public:
   /// Compute the loss values for each sample/instance given the prediction
   /// and the target, which is -log(p[idx_truth]), idx_truth is the truth

@@ -25,6 +25,7 @@
 #include "singa/utils/logging.h"
 
 namespace singa {
+RegisterLayerClass(CudnnPooling);
 CudnnPooling::~CudnnPooling() {
   if (pool_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));

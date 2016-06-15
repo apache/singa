@@ -29,9 +29,7 @@ namespace singa {
 class BatchNorm : public Layer {
  public:
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override {
-    return "Batch Normalization";
-  }
+  const std::string layer_type() const override { return "BatchNorm"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const Shape& in_sample, const LayerConf& conf) override;
@@ -46,7 +44,10 @@ class BatchNorm : public Layer {
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor>> Backward(
       int flag, const Tensor& grad) override;
-
+  const std::vector<Tensor> param_values() override {
+    return std::vector<Tensor> { bnScale_, bnBias_, runningMean_,
+                                 runningVariance_ };
+  }
   const float factor() const { return factor_; }
   const Tensor& bnScale() const { return bnScale_; }
   const Tensor& bnBias() const { return bnBias_; }

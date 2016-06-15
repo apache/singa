@@ -33,5 +33,11 @@ def xavier(t):
     t.uniform(-scale, scale)
 
 
+def glorot(t):
+    scale = math.sqrt(2.0 / (t.shape[0] + t.shape[1]))
+    t.gaussian(0, 1)
+    t *= scale
+
+
 def msra(t):
     t.gaussian(0, math.sqrt(2.0 / t.shape[0]))

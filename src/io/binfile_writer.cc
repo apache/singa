@@ -24,7 +24,6 @@ namespace io {
 bool BinFileWriter::Open(const std::string& path, Mode mode) {
   path_ = path;
   mode_ = mode;
-  buf_ = new char[capacity_];
   return OpenFile();
 }
 
@@ -39,7 +38,7 @@ bool BinFileWriter::Open(const std::string& path, Mode mode, int capacity) {
 void BinFileWriter::Close() {
   Flush();
   if (buf_ != nullptr) {
-    delete buf_;
+    delete [] buf_;
     buf_ = nullptr;
   }
   if (fdat_.is_open()) fdat_.close();
@@ -92,6 +91,7 @@ void BinFileWriter::Flush() {
 }
 
 bool BinFileWriter::OpenFile() {
+  CHECK(buf_ == nullptr);
   buf_ = new char[capacity_];
   switch (mode_) {
     case kCreate:

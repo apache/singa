@@ -21,15 +21,16 @@ to call singa::Tensor and its methods
 """
 
 import numpy as np
-from proto.core_pb2 import *
+from .proto import core_pb2
 from . import singa_wrap as singa
+from functools import reduce
 
 
 class Tensor(object):
     ''' Class and member functions for singa::Tensor
     '''
 
-    def __init__(self, shape=None, device=None, dtype=kFloat32):
+    def __init__(self, shape=None, device=None, dtype=core_pb2.kFloat32):
         ''' shape = (tuple)
         '''
         if shape is None:
@@ -37,13 +38,13 @@ class Tensor(object):
             self.singa_tensor = singa.Tensor()
             return
         else:
-            assert type(shape) == tuple, 'shape should be tuple'
+            assert isinstance(shape, tuple), 'shape should be tuple'
             vs = _tuple_to_vector(shape)
             if device is None:
                 self.singa_tensor = singa.Tensor(vs, dtype)
             else:
                 self.singa_tensor = singa.Tensor(vs, device, dtype)
-            self.tuple_shape = shape
+            self.shape = shape
             self.device = device
             self.dtype = dtype
 
@@ -56,13 +57,17 @@ class Tensor(object):
             np_array = np_array.flatten()
         dt = np_array.dtype
         if dt == np.float32:
-            self.singa_tensor.floatCopyDataFromHostPtr(np_array, offset)
+            self.singa_tensor.floatCopyDataFromHostPtr(np_array)
+        elif dt == np.int or dt == np.int32:
+            self.singa_tensor.intCopyDataFromHostPtr(np_array)
         else:
             print 'Not implemented yet for ', dt
 
+    # deprecated, access the member data_type directly
     def data_type(self):
         return self.singa_tensor.data_type()
 
+    # deprecated, access the member shape directly
     def shape(self, axis=None):
         if axis is None:
             return self.singa_tensor.shape()
@@ -72,19 +77,19 @@ class Tensor(object):
     def ndim(self):
         return self.singa_tensor.nDim()
 
-    def is_transpose(self):
+    def is_transpose(self):  # TODO(wangwei) make transpose a member
         return self.singa_tensor.transpose()
 
-    def size(self):
+    def size(self):  # TODO(wangwei) compute size
         return self.singa_tensor.Size()
 
     def memsize(self):
         return self.singa_tensor.MemSize()
 
     def reshape(self, shape):
-        assert product(self.tuple_shape) == product(shape), \
+        assert product(self.shape) == product(shape), \
                'product of shape should be equal'
-        self.tuple_shape = shape
+        self.shape = shape
         self.singa_tensor.Reshape(_tuple_to_vector(shape))
 
     def reset_like(self, t):
@@ -99,11 +104,14 @@ class Tensor(object):
     def to_host(self):
         self.singa_tensor.ToHost()
 
-    def nrm2(self):
+    def l2(self):
         return self.singa_tensor.L2()
 
+    def l1(self):
+        return self.singa_tensor.L1()
+
     def set_value(self, x):
-        if type(x) == float:
+        if isinstance(x, float):
             self.singa_tensor.floatSetValue(x)
 
     def copy_data(self, t):
@@ -134,16 +142,13 @@ class Tensor(object):
         return self.clone()
 
     def bernoulli(self, p):
-        if type(p) == float:
-            singa.floatBernoulli(p, self.singa_tensor)
+        singa.floatBernoulli(float(p), self.singa_tensor)
 
     def gaussian(self, mean, std):
-        if type(mean) == float:
-            singa.floatGaussian(mean, std, self.singa_tensor)
+        singa.floatGaussian(float(mean), float(std), self.singa_tensor)
 
     def uniform(self, low, high):
-        if type(low) == float:
-            singa.floatUniform(low, high, self.singa_tensor)
+        singa.floatUniform(float(low), float(high), self.singa_tensor)
 
     def add_column(self, v):
         singa.AddColumn(v.singa_tensor, self.singa_tensor)
@@ -166,29 +171,30 @@ class Tensor(object):
     '''
     python operators (+=, -=, *=, /=) for singa::Tensor unary operators
     '''
+
     def __iadd__(self, x):
-        if type(x) == Tensor:
+        if isinstance(x, Tensor):
             self.singa_tensor += x.singa_tensor
         else:
             self.singa_tensor += x
         return self
 
     def __isub__(self, x):
-        if type(x) == Tensor:
+        if isinstance(x, Tensor):
             self.singa_tensor -= x.singa_tensor
         else:
             self.singa_tensor -= x
         return self
 
     def __imul__(self, x):
-        if type(x) == Tensor:
+        if isinstance(x, Tensor):
             self.singa_tensor *= x.singa_tensor
         else:
             self.singa_tensor *= x
         return self
 
     def __idiv__(self, x):
-        if type(x) == Tensor:
+        if isinstance(x, Tensor):
             self.singa_tensor /= x.singa_tensor
         else:
             self.singa_tensor /= x
@@ -197,6 +203,7 @@ class Tensor(object):
     '''
     python operators (+, -, *, /, <, <=, >, >=) for singa binary operators
     '''
+
     def __add__(self, rhs):
         if isinstance(rhs, Tensor):
             return _call_singa_func(singa.Add_TT,
@@ -246,6 +253,19 @@ class Tensor(object):
 '''
 
 
+def from_raw_tensor(t):
+    x = Tensor(t.shape(), t.device(), t.data_type())
+    x.singa_tensor = t
+    return x
+
+
+def from_raw_tensors(tt):
+    ret = []
+    for t in list(tt):
+        ret.append(from_raw_tensor(t))
+    return ret
+
+
 def product(shape):
     return reduce(lambda x, y: x * y, shape)
 
@@ -274,11 +294,13 @@ def to_numpy(t):
         returns it as numpy array
         TODO(wangwei) clone t to host
     '''
-    if t.dtype == kFloat32:
+    if t.dtype == core_pb2.kFloat32:
         np_array = t.singa_tensor.floatGetValue(int(t.size()))
+    elif t.dtype == core_pb2.kInt:
+        np_array = t.singa_tensor.intGetValue(int(t.size()))
     else:
         print 'Not implemented yet for ', t.dtype
-    return np_array.reshape(t.tuple_shape)
+    return np_array.reshape(t.shape)
 
 
 def abs(t):
@@ -331,7 +353,10 @@ def pow(t, x, out=None):
 
 
 def average(t, axis=0):
-    return _call_singa_func(singa.Average, t.singa_tensor, axis)
+    if t.ndim() > 1:
+        return _call_singa_func(singa.Average, t.singa_tensor, axis)
+    else:
+        return singa.floatSum(t.singa_tensor) / t.size()
 
 
 def softmax(t, out=None):
@@ -421,25 +446,25 @@ def div(lhs, rhs, ret=None):
 
 
 def axpy(alpha, x, y):
-    if type(alpha) == float:
+    if isinstance(alpha, float):
         singa.floatAxpy(alpha, x.singa_tensor, y.singa_tensor)
     return y
 
 
 def bernoulli(p, t):
-    if type(p) == float:
+    if isinstance(p, float):
         singa.floatBernoulli(p, t.singa_tensor)
     return t
 
 
 def gaussian(mean, std, t):
-    if type(mean) == float:
+    if isinstance(mean, float):
         singa.floatGaussian(mean, std, t.singa_tensor)
     return t
 
 
 def uniform(low, high, t):
-    if type(low) == float:
+    if isinstance(low, float):
         singa.floatUniform(low, high, t.singa_tensor)
     return t
 
@@ -490,7 +515,7 @@ def _call_singa_func(_singa_func, *args):
     '''
     new_t = Tensor()
     new_t.singa_tensor = _singa_func(*args)
-    new_t.tuple_shape = new_t.singa_tensor.shape()
+    new_t.shape = new_t.singa_tensor.shape()
     new_t.device = new_t.singa_tensor.device()
     new_t.dtype = new_t.singa_tensor.data_type()
     return new_t

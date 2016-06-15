@@ -21,10 +21,23 @@
 
 /*interface file for swig */
 
-%module singa_wrap
-%include "core_tensor.i"
-%include "core_device.i"
-%include "model_layer.i"
-%include "model_optimizer.i"
-%include "model_loss.i"
-%include "model_metric.i"
+%module model_metric
+%{
+#include "singa/model/metric.h"
+using singa::Tensor;
+%}
+
+namespace singa {
+class Metric {
+ public:
+  Metric() = default;
+  virtual ~Metric() {}
+  virtual Tensor Forward(const Tensor& prediction, const Tensor& target) = 0;
+  float Evaluate(const Tensor& prediction, const Tensor& target);
+};
+class Accuracy : public Metric {
+ public:
+  Tensor Forward(const Tensor& prediction, const Tensor& target);
+};
+
+}
