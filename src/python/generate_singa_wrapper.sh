@@ -24,8 +24,6 @@ SRC_CC=(${SINGA_SRC}/core/tensor/tensor.cc \
        )
 USR_LOCAL=/home/chonho/local
 
-#The following commands are only for developers adding new py apis.
-#swig -c++ -python -w509 -I../../include singa.i
 swig -c++ -python -I../../include singa.i
 
 g++ -fPIC ${SRC_CC[@]} singa_wrap.cxx -shared -o _singa.so \
@@ -39,5 +37,3 @@ g++ -fPIC ${SRC_CC[@]} singa_wrap.cxx -shared -o _singa.so \
     -I${USR_LOCAL}/cudnn/include \
     -I/usr/include/python2.7 \
     -I/usr/local/cuda-7.0/include
-
-#python example.py
