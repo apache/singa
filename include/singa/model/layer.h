@@ -79,7 +79,7 @@ class Layer {
   }
 
   /// Return the shape of the generated Tensor without the batchsize dimension
-  virtual const Shape GetOutputSampleShape() {
+  virtual const Shape GetOutputSampleShape() const {
     LOG(FATAL) << "Pls override this function";
     return vector<size_t>{};
   }

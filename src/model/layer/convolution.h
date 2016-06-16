@@ -31,7 +31,7 @@ class Convolution : public Layer {
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const vector<size_t>& in_shape, const LayerConf& conf) override;
-  const Shape GetOutputSampleShape() {
+  const Shape GetOutputSampleShape() const override {
     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
     return out_sample_shape_;
   }

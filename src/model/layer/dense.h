@@ -32,7 +32,7 @@ class Dense : public Layer {
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const Shape& in_sample, const LayerConf& conf) override;
-  const Shape GetOutputSampleShape() {
+  const Shape GetOutputSampleShape() const override {
     CHECK(hdim_) << "You may haven't call Setup()";
     return vector<size_t>{hdim_};
   }

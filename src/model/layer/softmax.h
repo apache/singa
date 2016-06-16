@@ -20,6 +20,7 @@
 #include "singa/model/layer.h"
 #include <stack>
 namespace singa {
+/// Do softmax for 1D or 2D tensors along the last dimension.
 class Softmax : public Layer {
  public:
   /// \copydoc Layer::layer_type()
@@ -27,7 +28,7 @@ class Softmax : public Layer {
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const Shape& in_sample, const LayerConf& conf) override;
-  const Shape GetOutputSampleShape() {
+  const Shape GetOutputSampleShape() const override {
     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
     return out_sample_shape_;
   }
@@ -39,10 +40,7 @@ class Softmax : public Layer {
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor& grad) override;
 
-  const int Axis() const { return axis_; }
-
  protected:
-  int axis_;
   std::stack<Tensor> buf_;
   Shape out_sample_shape_;
 };

@@ -829,6 +829,10 @@ message SoftmaxConf {
   // from the end (e.g., -1 for the last axis).
   // Any other axes will be evaluated as independent softmaxes.
   // optional int32 axis = 2 [default = 1];
+
+  /// The cudnn algorithm preferences
+  /// Options are: accurate, fast and log
+  optional string algorithm = 50 [default = "accurate"];
 }
 
 message TanHConf {

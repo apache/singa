@@ -41,7 +41,7 @@ class CudnnPooling : public Pooling {
   const Tensor Forward(int flag, const Tensor &input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor &grad) override;
-
+ private:
   /// Init cudnn related data structures.
   void InitCudnn(const Tensor& input);
 

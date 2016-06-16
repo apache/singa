@@ -39,8 +39,7 @@ TEST(TCudnnActivation, Setup) {
   reluconf->set_negative_slope(0.5f);
 
   acti.Setup(Shape{3}, conf);
-  acti.InitCudnn(1, singa::kFloat32);
-  EXPECT_EQ(CUDNN_ACTIVATION_RELU, acti.CudnnMode());
+//  EXPECT_EQ(CUDNN_ACTIVATION_RELU, acti.CudnnMode());
   EXPECT_EQ(0.5f, acti.Negative_slope());
 }
 
@@ -63,7 +62,6 @@ TEST(TCudnnActivation, Forward) {
       reluconf->set_negative_slope(neg_slope);
     }
     acti.Setup(Shape{n}, conf);
-    // acti.InitCudnn(n, singa::kFloat32);
 
     singa::Tensor out = acti.Forward(singa::kTrain, in);
     EXPECT_EQ(n, out.Size());
@@ -103,7 +101,6 @@ TEST(TCudnnActivation, Backward) {
       reluconf->set_negative_slope(neg_slope);
     }
     acti.Setup(Shape{n}, conf);
-    acti.InitCudnn(n, singa::kFloat32);
     singa::Tensor out = acti.Forward(singa::kTrain, in);
     EXPECT_EQ(n, out.Size());
     singa::CppCPU host(0, 1);

@@ -29,31 +29,29 @@
 namespace singa {
 class CudnnBatchNorm : public BatchNorm {
  public:
-   ~CudnnBatchNorm();
-   /// \copy doc Layer::layer_type()
-   const std::string layer_type() const override {
-     return "CudnnBatchNorm";
-   }
+  ~CudnnBatchNorm();
+  /// \copy doc Layer::layer_type()
+  const std::string layer_type() const override { return "CudnnBatchNorm"; }
 
-   void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  void Setup(const Shape& in_sample, const LayerConf& conf) override;
 
-   const Tensor Forward(int flag, const Tensor& input)
-     override;
-   const std::pair<Tensor, vector<Tensor>> Backward(
-       int flag, const Tensor& grad) override;
-
-   /// Init cudnn related data structures.
-   void InitCudnn(const Shape& shape, DataType dtype);
-   void ToDevice(Device* device) override;
+  const Tensor Forward(int flag, const Tensor& input) override;
+  const std::pair<Tensor, vector<Tensor>> Backward(int flag,
+                                                   const Tensor& grad) override;
+  void ToDevice(Device* device) override;
 
  private:
-   bool has_init_cudnn_ = false;
-   cudnnBatchNormMode_t mode_;
-   cudnnLRNDescriptor_t lrn_desc_;
-   cudnnTensorDescriptor_t shape_desc_, param_desc_;
-   Tensor resultSaveMean_, resultSaveVariance_;
+  /// Init cudnn related data structures.
+  void InitCudnn(const Shape& shape, DataType dtype);
 
-}; // class CudnnBatchNorm
+ private:
+  bool has_init_cudnn_ = false;
+  cudnnBatchNormMode_t mode_;
+  cudnnLRNDescriptor_t lrn_desc_ = nullptr;
+  cudnnTensorDescriptor_t shape_desc_ = nullptr, param_desc_ = nullptr;
+  Tensor resultSaveMean_, resultSaveVariance_;
+
+};  // class CudnnBatchNorm
 }  // namespace
 
 #endif  // USE_CUDNN
