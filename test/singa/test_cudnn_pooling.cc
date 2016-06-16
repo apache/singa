@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 
 using singa::CudnnPooling;
+using singa::Shape;
 TEST(CudnnPooling, Setup) {
   CudnnPooling pool;
   EXPECT_EQ("CudnnPooling", pool.layer_type());
@@ -37,10 +38,7 @@ TEST(CudnnPooling, Setup) {
   poolconf->set_pad_w(0);
   poolconf->set_stride_h(2);
   poolconf->set_stride_w(1);
-  poolconf->set_channels(1);
-  poolconf->set_height(3);
-  poolconf->set_width(3);
-  pool.Setup(conf);
+  pool.Setup(Shape{1, 3, 3}, conf);
 
   EXPECT_EQ(singa::PoolingConf_PoolMethod_MAX, pool.pool_method());
   EXPECT_EQ(1u, pool.kernel_h());
@@ -72,10 +70,7 @@ TEST(CudnnPooling, Forward) {
   poolconf->set_pad_w(0);
   poolconf->set_stride_h(1);
   poolconf->set_stride_w(1);
-  poolconf->set_channels(1);
-  poolconf->set_height(3);
-  poolconf->set_width(3);
-  pool.Setup(conf);
+  pool.Setup(Shape{1, 3, 3}, conf);
 
   // Parameter "flag" does not influence pooling
   singa::Tensor out1 = pool.Forward(singa::kTrain, in);
@@ -109,10 +104,7 @@ TEST(CudnnPooling, Backward) {
   poolconf->set_pad_w(0);
   poolconf->set_stride_h(1);
   poolconf->set_stride_w(1);
-  poolconf->set_channels(1);
-  poolconf->set_height(3);
-  poolconf->set_width(3);
-  pool.Setup(conf);
+  pool.Setup(Shape{1, 3, 3}, conf);
 
   singa::Tensor out1 = pool.Forward(singa::kTrain, in);
 

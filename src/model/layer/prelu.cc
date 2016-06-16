@@ -20,8 +20,9 @@
 #include "./prelu.h"
 namespace singa {
 
-void PReLU::Setup(const LayerConf &conf) {
-  Layer::Setup(conf);
+void PReLU::Setup(const Shape& in_sample, const LayerConf &conf) {
+  Layer::Setup(in_sample, conf);
+  out_sample_shape_ = in_sample;
   channel_shared_ = conf.prelu_conf().channel_shared();
   format_ = conf.prelu_conf().format();
   // Push back params into param_values_

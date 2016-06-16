@@ -36,11 +36,20 @@ class Layer {
   Layer() = default;
 
   /// Set meta data fields from a string representing a proto message.
-    void Setup(const string& proto_str) {
+  /// 'in_shape' is the shape of the input feature for one sample
+  void Setup(const vector<size_t>& in_shape, const string& proto_str) {
     LayerConf conf;
     conf.ParseFromString(proto_str);
-    this->Setup(conf);
+    this->Setup(in_shape, conf);
   }
+
+  /// 'in_shapes' is the shape of the input feature for one sample
+  void Setup(const vector<vector<size_t>>& in_shapes, const string& proto_str) {
+    LayerConf conf;
+    conf.ParseFromString(proto_str);
+    this->Setup(in_shapes, conf);
+  }
+
 
   // ============= Following Functions could be override =====================
   /// Destruct objects created by this layer.
@@ -51,17 +60,34 @@ class Layer {
   virtual const std::string layer_type() const { return "Unknown"; }
 
   /// Set meta data fields configured in 'conf' (a proto message).
-  /// For some layers, which use input tensor shapes for setting its parameter
-  /// shapes (e.g, desen layer and convolution layer), users or wrapper
-  /// functions need to configure ncessary fields inside LayerConf.
+  /// Some layers would use input tensor shapes for setting its parameter
+  /// shapes (e.g, desen layer and convolution layer). 'in_shape' provides such
+  /// shape info. It represents the shape of the Tensor (with a single sample)
+  /// from the last layer.
   /// After calling Setup, the shape info of parameters should be accssed
-  /// correctly. All other info that depends on input tensors (e.g., batchsize)
-  /// should be set inside Forward(). Internal buffer/fields are set assuming
-  /// batchsize is 1.
-  virtual void Setup(const LayerConf& conf) {
+  /// correctly. Internal buffer/fields are set assuming batchsize is 1.
+  virtual void Setup(const Shape& in_sample, const LayerConf& conf) {
     name_ = conf.name();
-    // for (const auto& spec : conf.param()) param_specs_.push_back(spec);
     // TODO(wangwei) load param values from checkpoint files.
+  }
+
+  /// Used for layers that have multiple input tensors, e.g., concatenate layer.
+  virtual void Setup(const vector<Shape>& in_samples,
+                     const LayerConf& conf) {
+    name_ = conf.name();
+    // TODO(wangwei) load param values from checkpoint files.
+  }
+
+  /// Return the shape of the generated Tensor without the batchsize dimension
+  virtual const Shape GetOutputSampleShape() {
+    LOG(FATAL) << "Pls override this function";
+    return vector<size_t>{};
+  }
+  /// Return the shape of the k-th generated tensor without the batchsize
+  /// dimension. Used for layers that generate multiple tensors.
+  virtual const Shape GetOutputSampleShape(int k) {
+    LOG(FATAL) << "Pls override this function";
+    return vector<size_t>{};
   }
 
   /// Do feature transformation for the given 'input' tensor (denoted as x).

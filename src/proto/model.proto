@@ -384,10 +384,6 @@ message ConvolutionConf {
   // cudnn algorithm preference
   // options: "fastest", "limited_workspace", "no_workspace"
   optional string prefer = 51 [default = "fastest"];
-  // input shape
-  optional int32 channels = 52;
-  optional int32 height = 53;
-  optional int32 width = 54;
 }
 
 /*
@@ -590,7 +586,6 @@ message DenseConf {
   // May be negative to index from the end (e.g., -1 for the last axis).
   optional int32 axis = 5 [default = 1];
 
-  optional uint32 num_input = 20; // The number of inputs for the layer
   optional bool transpose = 21 [default = false]; // whether transpose or not
 }
 
@@ -664,10 +659,6 @@ message PoolingConf {
   // If global_pooling then it will pool over the size of the bottom by doing
   // kernel_h = bottom->height and kernel_w = bottom->width
   optional bool global_pooling = 12 [default = false];
-  // Shape of source
-  optional int32 channels = 50;
-  optional int32 height = 51;
-  optional int32 width = 52;
   // whether to propagate nan
   optional bool nan_prop = 53 [default = false];
 }
@@ -837,7 +828,7 @@ message SoftmaxConf {
   // The axis along which to perform the softmax -- may be negative to index
   // from the end (e.g., -1 for the last axis).
   // Any other axes will be evaluated as independent softmaxes.
-  optional int32 axis = 2 [default = 1];
+  // optional int32 axis = 2 [default = 1];
 }
 
 message TanHConf {
@@ -930,8 +921,4 @@ message BatchNormConf {
   // Used in the moving average computation runningMean =
   // newMean*factor + runningMean*(1-factor).
   optional double factor = 1 [default = 0.9];
-  // input shape
-  optional int32 channels = 2;
-  optional int32 height = 3;
-  optional int32 width = 4;
 }

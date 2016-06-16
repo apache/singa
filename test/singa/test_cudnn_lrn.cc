@@ -27,7 +27,7 @@
 #include "gtest/gtest.h"
 
 using singa::CudnnLRN;
-
+using singa::Shape;
 TEST(CudnnLRN, Setup) {
   CudnnLRN lrn;
   EXPECT_EQ("CudnnLRN", lrn.layer_type());
@@ -38,7 +38,7 @@ TEST(CudnnLRN, Setup) {
   lrn_conf->set_local_size(3);
   lrn_conf->set_alpha(0.1);
   lrn_conf->set_beta(0.75);
-  lrn.Setup(conf);
+  lrn.Setup(Shape{1}, conf);
 
   EXPECT_FLOAT_EQ(1.0, lrn.k());
   EXPECT_EQ(3, lrn.local_size());
@@ -68,7 +68,7 @@ TEST(CudnnLRN, Forward) {
   lrn_conf->set_local_size(3);
   lrn_conf->set_alpha(0.1);
   lrn_conf->set_beta(0.75);
-  lrn.Setup(conf);
+  lrn.Setup(Shape{2, 4, 4}, conf);
 
   singa::Tensor out = lrn.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
@@ -152,7 +152,7 @@ TEST(CudnnLRN, Backward) {
   lrn_conf->set_local_size(3);
   lrn_conf->set_alpha(0.1);
   lrn_conf->set_beta(0.75);
-  lrn.Setup(conf);
+  lrn.Setup(Shape{2, 4, 4}, conf);
 
   lrn.Forward(singa::kTrain, x_tensor);
   const auto ret = lrn.Backward(singa::kTrain, dy_tensor);

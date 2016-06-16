@@ -20,27 +20,25 @@
 #include "./flatten.h"
 namespace singa {
 
-void Flatten::Setup(const LayerConf &conf) {
-  Layer::Setup(conf);
+void Flatten::Setup(const Shape& in_sample, const LayerConf &conf) {
+  Layer::Setup(in_sample, conf);
   axis_ = conf.flatten_conf().axis();
+  size_t len = 1;
+  if (axis_ > 0)
+    for (size_t i = axis_ - 1; i < in_sample.size(); i++)
+      len *= in_sample.at(i);
+  out_sample_shape_.push_back(len);
 }
 
 const Tensor Flatten::Forward(int flag, const Tensor &input) {
-  Tensor output = input;
+  Tensor output;
   input_shape_ = input.shape();
-  if (!Axis()) {
-    // reshape to 1D
-    size_t dim = output.Size();
-    output.Reshape(Shape{dim});
-    output_shape_ = Shape{dim};
-  } else {
-    // reshape to 2D
-    size_t dim1 = 1, dim2;
-    for (int i = 0; i < Axis(); i++) dim1 *= output.shape(i);
-    dim2 = output.Size() / dim1;
-    output.Reshape(Shape{dim1, dim2});
-    output_shape_ = Shape{dim1, dim2};
-  }
+  if (axis_ == 0)
+    output = Reshape(input, vector<size_t>{input.Size()});
+  else
+    output =
+        Reshape(input, vector<size_t>{input.Size() / out_sample_shape_.at(0),
+                                      out_sample_shape_.at(0)});
   return output;
 }
 

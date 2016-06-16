@@ -21,8 +21,9 @@
 #include "lrn.h"
 
 namespace singa{
-void LRN::Setup(const LayerConf& conf) {
-  Layer::Setup(conf);
+void LRN::Setup(const Shape& in_sample, const LayerConf& conf) {
+  Layer::Setup(in_sample, conf);
+  out_sample_shape_ = in_sample;
   local_size_ = conf.lrn_conf().local_size();
   CHECK_EQ(local_size_ % 2, 1) << "LRN only supports odd values for Localvol";
   k_ = conf.lrn_conf().k();

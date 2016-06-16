@@ -24,6 +24,7 @@
 #include "singa_config.h"
 
 using singa::PReLU;
+using singa::Shape;
 TEST(PReLU, Setup) {
   PReLU prelu;
   EXPECT_EQ("PReLU", prelu.layer_type());
@@ -33,7 +34,7 @@ TEST(PReLU, Setup) {
   preluconf->set_channel_shared(true);
   preluconf->set_format("NHWC");
 
-  prelu.Setup(conf);
+  prelu.Setup(Shape{4}, conf);
   EXPECT_EQ(true, prelu.Channel_shared());
   EXPECT_EQ("NHWC", prelu.Format());
 }
@@ -51,7 +52,7 @@ TEST(PReLU, ForwardCPU) {
   singa::PReLUConf *preluconf = conf.mutable_prelu_conf();
   preluconf->set_channel_shared(false);
   preluconf->set_format("NHWC");
-  prelu.Setup(conf);
+  prelu.Setup(Shape{h, w, c}, conf);
 
   const float neg_slope[] = {0.25f, 0.5f, 0.75f};
   singa::Tensor a(singa::Shape{c});
@@ -91,7 +92,7 @@ TEST(PReLU, BackwardCPU) {
   singa::PReLUConf *preluconf = conf.mutable_prelu_conf();
   preluconf->set_channel_shared(false);
   preluconf->set_format("NCHW");
-  prelu.Setup(conf);
+  prelu.Setup(Shape{c, h, w}, conf);
 
   const float neg_slope[] = {0.25f, 0.5f, 0.75f};
   singa::Tensor a(singa::Shape{c});
@@ -151,7 +152,7 @@ TEST(PReLU, ForwardGPU) {
   singa::PReLUConf *preluconf = conf.mutable_prelu_conf();
   preluconf->set_channel_shared(false);
   preluconf->set_format("NHWC");
-  prelu.Setup(conf);
+  prelu.Setup(Shape{h, w, c}, conf);
 
   const float neg_slope[] = {0.25f, 0.5f, 0.75f};
   singa::Tensor a(singa::Shape{c}, &cuda);
@@ -194,7 +195,7 @@ TEST(PReLU, BackwardGPU) {
   singa::PReLUConf *preluconf = conf.mutable_prelu_conf();
   preluconf->set_channel_shared(false);
   preluconf->set_format("NCHW");
-  prelu.Setup(conf);
+  prelu.Setup(Shape{c, h, w}, conf);
 
   const float neg_slope[] = {0.25f, 0.5f, 0.75f};
   singa::Tensor a(singa::Shape{c}, &cuda);

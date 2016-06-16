@@ -23,6 +23,7 @@
 #include "gtest/gtest.h"
 
 using singa::Dropout;
+using singa::Shape;
 TEST(Dropout, Setup) {
   Dropout drop;
   EXPECT_EQ("Dropout", drop.layer_type());
@@ -31,7 +32,7 @@ TEST(Dropout, Setup) {
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(0.8);
 
-  drop.Setup(conf);
+  drop.Setup(Shape{3}, conf);
   EXPECT_EQ(0.8f, drop.dropout_ratio());
 }
 
@@ -46,7 +47,7 @@ TEST(Dropout, Forward) {
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
-  drop.Setup(conf);
+  drop.Setup(Shape{1}, conf);
   float scale = 1.0f / (1.0f - pdrop);
 
   singa::Tensor out1 = drop.Forward(singa::kTrain, in);
@@ -84,7 +85,7 @@ TEST(Dropout, Backward) {
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
-  drop.Setup(conf);
+  drop.Setup(Shape{1}, conf);
   singa::Tensor out1 = drop.Forward(singa::kTrain, in);
 
   const float dy[] = {4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 1.0f, 2.0f, 3.0f};

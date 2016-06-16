@@ -29,7 +29,11 @@ class Flatten : public Layer {
   const std::string layer_type() const override { return "Flatten"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const LayerConf &conf) override;
+  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  const Shape GetOutputSampleShape() {
+    CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
+    return out_sample_shape_;
+  }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&);
   const Tensor Forward(int flag, const Tensor &input) override;
@@ -40,14 +44,13 @@ class Flatten : public Layer {
 
   const int Axis() const { return axis_; }
   const Shape input_shape() const { return input_shape_; }
-  const Shape output_shape() const { return output_shape_; }
 
  protected:
   /// flatten layer reshape the input to 2D, one from 0 to axis_-1, one from
   /// axis_ to end.
   /// if axis_ is 0, reshape the input to 1D.
   int axis_;
-  Shape input_shape_, output_shape_;
+  Shape input_shape_, out_sample_shape_;
 };
 }      // namespace singa
 #endif // SRC_MODEL_LAYER_FLATTEN_H_

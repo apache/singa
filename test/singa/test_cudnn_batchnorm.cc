@@ -25,7 +25,7 @@
 #include "gtest/gtest.h"
 
 using singa::CudnnBatchNorm;
-
+using singa::Shape;
 TEST(CudnnBatchNorm, Setup) {
   CudnnBatchNorm batchnorm;
   EXPECT_EQ("CudnnBatchNorm", batchnorm.layer_type());
@@ -33,10 +33,7 @@ TEST(CudnnBatchNorm, Setup) {
   singa::LayerConf conf;
   singa::BatchNormConf *batchnorm_conf = conf.mutable_batchnorm_conf();
   batchnorm_conf->set_factor(0.01);
-  batchnorm_conf->set_channels(2);
-  batchnorm_conf->set_height(4);
-  batchnorm_conf->set_width(4);
-  batchnorm.Setup(conf);
+  batchnorm.Setup(Shape{2, 4, 4}, conf);
 
   EXPECT_FLOAT_EQ(0.01, batchnorm.factor());
   EXPECT_EQ(2u, batchnorm.channels());
@@ -70,10 +67,7 @@ TEST(CudnnBatchNorm, Forward) {
   singa::LayerConf conf;
   singa::BatchNormConf *batchnorm_conf = conf.mutable_batchnorm_conf();
   batchnorm_conf->set_factor(0.9);
-  batchnorm_conf->set_channels(2);
-  batchnorm_conf->set_height(4);
-  batchnorm_conf->set_width(4);
-  batchnorm.Setup(conf);
+  batchnorm.Setup(Shape{2, 4, 4}, conf);
 
   batchnorm.ToDevice(&cuda);
   batchnorm.set_bnScale(alpha);
@@ -143,10 +137,7 @@ TEST(CudnnBatchNorm, Backward) {
   singa::LayerConf conf;
   singa::BatchNormConf *batchnorm_conf = conf.mutable_batchnorm_conf();
   batchnorm_conf->set_factor(1);
-  batchnorm_conf->set_channels(2);
-  batchnorm_conf->set_height(4);
-  batchnorm_conf->set_width(4);
-  batchnorm.Setup(conf);
+  batchnorm.Setup(Shape{2, 4, 4}, conf);
 
   const float dy[] = {
     -0.0064714, 0, 0, 0,

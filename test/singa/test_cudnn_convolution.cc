@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 
 using singa::CudnnConvolution;
+using singa::Shape;
 TEST(CudnnConvolution, Setup) {
   CudnnConvolution conv;
   EXPECT_EQ("CudnnConvolution", conv.layer_type());
@@ -41,10 +42,7 @@ TEST(CudnnConvolution, Setup) {
   // MB
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("fastest");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   EXPECT_EQ(2u, conv.kernel_h());
   EXPECT_EQ(2u, conv.kernel_w());
@@ -95,10 +93,7 @@ TEST(CudnnConvolution, Forward) {
   // MB
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("fastest");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   // Parameter "flag" does not influence convolution
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);
@@ -149,10 +144,7 @@ TEST(CudnnConvolution, Backward) {
   convconf->set_bias_term(true);
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("fastest");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   // Parameter "flag" does not influence convolution
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);
@@ -222,10 +214,7 @@ TEST(CudnnConvolution_AT, Setup) {
   // MB
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("autotune");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   EXPECT_EQ(2u, conv.kernel_h());
   EXPECT_EQ(2u, conv.kernel_w());
@@ -276,10 +265,7 @@ TEST(CudnnConvolution_AT, Forward) {
   // MB
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("autotune");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   // Parameter "flag" does not influence convolution
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);
@@ -330,10 +316,7 @@ TEST(CudnnConvolution_AT, Backward) {
   convconf->set_bias_term(true);
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("autotune");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   // Parameter "flag" does not influence convolution
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);

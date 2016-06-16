@@ -24,6 +24,7 @@
 #include <math.h> // exp, tanh
 
 using singa::Activation;
+using singa::Shape;
 TEST(Activation, Setup) {
   Activation acti;
   EXPECT_EQ("Activation", acti.layer_type());
@@ -33,7 +34,7 @@ TEST(Activation, Setup) {
   singa::ReLUConf* reluconf = conf.mutable_relu_conf();
   reluconf->set_negative_slope(0.5);
 
-  acti.Setup(conf);
+  acti.Setup(Shape{3}, conf);
   EXPECT_EQ("RELU", acti.Mode());
   EXPECT_EQ(0.5f, acti.Negative_slope());
 }
@@ -55,7 +56,7 @@ TEST(Activation, Forward) {
       singa::ReLUConf* reluconf = conf.mutable_relu_conf();
       reluconf->set_negative_slope(neg_slope);
     }
-    acti.Setup(conf);
+    acti.Setup(Shape{n}, conf);
 
     singa::Tensor out = acti.Forward(singa::kTrain, in);
 
@@ -100,7 +101,7 @@ TEST(Activation, Backward) {
       singa::ReLUConf* reluconf = conf.mutable_relu_conf();
       reluconf->set_negative_slope(neg_slope);
     }
-    acti.Setup(conf);
+    acti.Setup(Shape{n}, conf);
 
     singa::Tensor out = acti.Forward(singa::kTrain, in);
     const float* yptr = out.data<const float*>();

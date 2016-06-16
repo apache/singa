@@ -29,8 +29,13 @@ class PReLU : public Layer {
   /// \copydoc Layer::layer_type()
   const std::string layer_type() const override { return "PReLU"; }
 
+
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const LayerConf &conf) override;
+  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  const Shape GetOutputSampleShape() {
+    CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
+    return out_sample_shape_;
+  }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&)
   const Tensor Forward(int flag, const Tensor &input) override;
@@ -55,6 +60,7 @@ class PReLU : public Layer {
   std::string format_;  // format_ has two valid value, i.e. NCHW, NHWC
   Tensor a_;            // shape of a_ is 2D, i.e. (channels, 1)
   std::stack<Tensor> buf_;
+  Shape out_sample_shape_;
 };
 }  // namespace singa
 #endif  // SINGA_MODEL_LAYER_PRELU_H_

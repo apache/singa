@@ -35,7 +35,7 @@ class CudnnBatchNorm : public BatchNorm {
      return "CudnnBatchNorm";
    }
 
-   void Setup(const LayerConf& conf) override;
+   void Setup(const Shape& in_sample, const LayerConf& conf) override;
 
    const Tensor Forward(int flag, const Tensor& input)
      override;
@@ -52,9 +52,9 @@ class CudnnBatchNorm : public BatchNorm {
    cudnnLRNDescriptor_t lrn_desc_;
    cudnnTensorDescriptor_t shape_desc_, param_desc_;
    Tensor resultSaveMean_, resultSaveVariance_;
-   
+
 }; // class CudnnBatchNorm
 }  // namespace
 
 #endif  // USE_CUDNN
-#endif  // SINGA_MODEL_LAYER_CUDNN_BATCHNORM 
+#endif  // SINGA_MODEL_LAYER_CUDNN_BATCHNORM

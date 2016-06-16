@@ -23,6 +23,7 @@
 #include "gtest/gtest.h"
 
 using singa::Flatten;
+using singa::Shape;
 TEST(Flatten, Setup) {
   Flatten flt;
   EXPECT_EQ("Flatten", flt.layer_type());
@@ -31,7 +32,7 @@ TEST(Flatten, Setup) {
   singa::FlattenConf *flattenconf = conf.mutable_flatten_conf();
   flattenconf->set_axis(1);
 
-  flt.Setup(conf);
+  flt.Setup(Shape{2}, conf);
   EXPECT_EQ(1, flt.Axis());
 }
 
@@ -48,7 +49,7 @@ TEST(Flatten, ForwardCPU) {
   singa::LayerConf conf;
   singa::FlattenConf *flattenconf = conf.mutable_flatten_conf();
   flattenconf->set_axis(axis);
-  flt.Setup(conf);
+  flt.Setup(Shape{1, 3, 2}, conf);
 
   singa::Tensor out = flt.Forward(singa::kTrain, in);
   EXPECT_EQ(n, out.Size());
@@ -72,7 +73,7 @@ TEST(Flatten, BackwardCPU) {
   singa::LayerConf conf;
   singa::FlattenConf *flattenconf = conf.mutable_flatten_conf();
   flattenconf->set_axis(axis);
-  flt.Setup(conf);
+  flt.Setup(Shape{1, 3, 2}, conf);
 
   singa::Tensor temp = flt.Forward(singa::kTrain, in);
   const auto out = flt.Backward(singa::kTrain, temp);
@@ -99,7 +100,7 @@ TEST(Flatten, ForwardGPU) {
   singa::LayerConf conf;
   singa::FlattenConf *flattenconf = conf.mutable_flatten_conf();
   flattenconf->set_axis(axis);
-  flt.Setup(conf);
+  flt.Setup(Shape{1, 3, 2}, conf);
 
   singa::Tensor out = flt.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
@@ -126,7 +127,7 @@ TEST(Flatten, BackwardGPU) {
   singa::LayerConf conf;
   singa::FlattenConf *flattenconf = conf.mutable_flatten_conf();
   flattenconf->set_axis(axis);
-  flt.Setup(conf);
+  flt.Setup(Shape{1, 3, 2}, conf);
 
   singa::Tensor out = flt.Forward(singa::kTrain, in);
   const auto ret = flt.Backward(singa::kTrain, out);

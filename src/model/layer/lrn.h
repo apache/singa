@@ -31,8 +31,12 @@ class LRN : public Layer {
     return "LRN";
   }
 
-  /// \copydoc Layer::Setup(const LayerConf&)
-  void Setup(const LayerConf& conf) override;
+  /// \copydoc Layer::Setup(const LayerConf&);
+  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  const Shape GetOutputSampleShape() {
+    CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
+    return out_sample_shape_;
+  }
 
   /**
    * Local Response Normalization edge
@@ -62,9 +66,10 @@ class LRN : public Layer {
   float alpha_, beta_, k_;
   // store intermediate data, i.e., input tensor
   std::stack<Tensor> buf_;
-  
+  Shape out_sample_shape_;
+
 }; // class LRN
-} // namespace 
+} // namespace
 
 #endif  // SINGA_MODEL_LAYER_LRN_H_
 

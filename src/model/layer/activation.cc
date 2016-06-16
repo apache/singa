@@ -20,12 +20,13 @@
 #include "./activation.h"
 namespace singa {
 
-void Activation::Setup(const LayerConf& conf) {
-  Layer::Setup(conf);
+void Activation::Setup(const Shape& in_sample, const LayerConf& conf) {
+  Layer::Setup(in_sample, conf);
   mode_ = conf.type();
   if (mode_ == "RELU") {
     neg_slope_ = conf.relu_conf().negative_slope();
   }
+  out_sample_shape_ = in_sample;
 }
 
 const Tensor Activation::Forward(int flag, const Tensor& input) {

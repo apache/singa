@@ -20,9 +20,10 @@
 #include "./dropout.h"
 namespace singa {
 
-void Dropout::Setup(const LayerConf& conf) {
-  Layer::Setup(conf);
+void Dropout::Setup(const Shape& in_sample, const LayerConf& conf) {
+  Layer::Setup(in_sample, conf);
   dropout_ratio_ = conf.dropout_conf().dropout_ratio();
+  out_sample_shape_= in_sample;
 }
 
 const Tensor Dropout::Forward(int flag, const Tensor& input) {

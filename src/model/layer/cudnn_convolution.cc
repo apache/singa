@@ -34,8 +34,8 @@ CudnnConvolution::~CudnnConvolution() {
   if (y_desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_desc_));
 }
 
-void CudnnConvolution::Setup(const LayerConf &conf) {
-  Convolution::Setup(conf);
+void CudnnConvolution::Setup(const Shape& in_sample, const LayerConf &conf) {
+  Convolution::Setup(in_sample, conf);
   ConvolutionConf conv_conf = conf.convolution_conf();
   // convert MB to bytes
   workspace_byte_limit_ = conv_conf.workspace_byte_limit() << 20;

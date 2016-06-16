@@ -24,16 +24,13 @@
 #include <math.h> // exp
 
 using singa::Softmax;
+using singa::Shape;
 TEST(Softmax, Setup) {
   Softmax sft;
   EXPECT_EQ("Softmax", sft.layer_type());
 
   singa::LayerConf conf;
-  singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
-  softmaxconf->set_axis(2);
-
-  sft.Setup(conf);
-  EXPECT_EQ(2, sft.Axis());
+  sft.Setup(Shape{3}, conf);
 }
 
 #ifdef USE_CBLAS
@@ -45,12 +42,9 @@ TEST(Softmax, Forward) {
   singa::Tensor in(singa::Shape{row, col});
   in.CopyDataFromHostPtr<float>(x, row * col);
 
-  int axis = 1;
   Softmax sft;
   singa::LayerConf conf;
-  singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
-  softmaxconf->set_axis(axis);
-  sft.Setup(conf);
+  sft.Setup(Shape{col}, conf);
 
   singa::Tensor out = sft.Forward(singa::kTrain, in);
   const float* yptr = out.data<const float*>();
@@ -76,12 +70,9 @@ TEST(Softmax, Backward) {
   singa::Tensor in(singa::Shape{row, col});
   in.CopyDataFromHostPtr<float>(x, n);
 
-  int axis = 1;
   Softmax sft;
   singa::LayerConf conf;
-  singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
-  softmaxconf->set_axis(axis);
-  sft.Setup(conf);
+  sft.Setup(Shape{col}, conf);
   singa::Tensor out = sft.Forward(singa::kTrain, in);
   const float* yptr = out.data<const float*>();
 

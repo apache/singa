@@ -32,8 +32,8 @@ CudnnPooling::~CudnnPooling() {
   if (y_desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_desc_));
 }
 
-void CudnnPooling::Setup(const LayerConf &conf) {
-  Pooling::Setup(conf);
+void CudnnPooling::Setup(const Shape& in_sample, const LayerConf &conf) {
+  Pooling::Setup(in_sample, conf);
   PoolingConf pool_conf = conf.pooling_conf();
   if (pool_conf.nan_prop())
     nan_prop_ = CUDNN_PROPAGATE_NAN;

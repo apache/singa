@@ -26,18 +26,17 @@
 #include <math.h>  // exp
 #include <cudnn.h>
 
+// TODO(wangwei) add test for matrix input
 using singa::CudnnSoftmax;
+using singa::Shape;
 TEST(CudnnSoftmax, Setup) {
   CudnnSoftmax sft;
   EXPECT_EQ("CudnnSoftmax", sft.layer_type());
 
   singa::LayerConf conf;
-  singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
-  softmaxconf->set_axis(2);
 
-  sft.Setup(conf);
+  sft.Setup(Shape{4}, conf);
   sft.InitCudnn(1, singa::kFloat32);
-  EXPECT_EQ(2, sft.Axis());
 }
 
 TEST(CudnnSoftmax, Forward) {
@@ -47,12 +46,9 @@ TEST(CudnnSoftmax, Forward) {
   singa::Tensor in(singa::Shape{n}, &cuda);
   in.CopyDataFromHostPtr<float>(x, n);
 
-  int axis = 1;
   CudnnSoftmax sft;
   singa::LayerConf conf;
-  singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
-  softmaxconf->set_axis(axis);
-  sft.Setup(conf);
+  sft.Setup(Shape{1}, conf);
   sft.InitCudnn(n, singa::kFloat32);
 
   singa::Tensor out = sft.Forward(singa::kTrain, in);
@@ -77,12 +73,9 @@ TEST(CudnnSoftmax, Backward) {
   singa::Tensor in(singa::Shape{n}, &cuda);
   in.CopyDataFromHostPtr<float>(x, n);
 
-  int axis = 1;
   CudnnSoftmax sft;
   singa::LayerConf conf;
-  singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
-  softmaxconf->set_axis(axis);
-  sft.Setup(conf);
+  sft.Setup(Shape{1}, conf);
   singa::Tensor out = sft.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);

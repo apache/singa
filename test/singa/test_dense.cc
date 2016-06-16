@@ -23,16 +23,16 @@
 #include "singa_config.h"
 
 using singa::Dense;
+using singa::Shape;
 TEST(Dense, Setup) {
   Dense dense;
   EXPECT_EQ("Dense", dense.layer_type());
 
   singa::LayerConf conf;
   singa::DenseConf *denseconf = conf.mutable_dense_conf();
-  denseconf->set_num_input(2);
   denseconf->set_num_output(3);
   denseconf->set_transpose(false);
-  dense.Setup(conf);
+  dense.Setup(Shape{2}, conf);
 
   EXPECT_EQ(3u, dense.num_output());
   EXPECT_EQ(2u, dense.num_input());
@@ -43,10 +43,9 @@ TEST(Dense, ForwardCpp) {
 
   singa::LayerConf conf;
   singa::DenseConf *denseconf = conf.mutable_dense_conf();
-  denseconf->set_num_input(2);
   denseconf->set_num_output(3);
   denseconf->set_transpose(false);
-  dense.Setup(conf);
+  dense.Setup(Shape{2}, conf);
 
   const size_t batchsize = 3, vdim = 2, hdim = 3;
   const float x[batchsize * vdim] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
@@ -82,10 +81,9 @@ TEST(Dense, BackwardCpp) {
 
   singa::LayerConf conf;
   singa::DenseConf *denseconf = conf.mutable_dense_conf();
-  denseconf->set_num_input(2);
   denseconf->set_num_output(3);
   denseconf->set_transpose(false);
-  dense.Setup(conf);
+  dense.Setup(Shape{2}, conf);
 
   const size_t batchsize = 3, vdim = 2, hdim = 3;
   const float x[batchsize * vdim] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
@@ -147,10 +145,9 @@ TEST(Dense, ForwardCuda) {
 
   singa::LayerConf conf;
   singa::DenseConf *denseconf = conf.mutable_dense_conf();
-  denseconf->set_num_input(2);
   denseconf->set_num_output(3);
   denseconf->set_transpose(false);
-  dense.Setup(conf);
+  dense.Setup(Shape{2}, conf);
 
   const size_t batchsize = 3, vdim = 2, hdim = 3;
   const float x[batchsize * vdim] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
@@ -186,10 +183,9 @@ TEST(Dense, BackwardCuda) {
 
   singa::LayerConf conf;
   singa::DenseConf *denseconf = conf.mutable_dense_conf();
-  denseconf->set_num_input(2);
   denseconf->set_num_output(3);
   denseconf->set_transpose(false);
-  dense.Setup(conf);
+  dense.Setup(Shape{2}, conf);
 
   const size_t batchsize = 3, vdim = 2, hdim = 3;
   const float x[batchsize * vdim] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};

@@ -36,8 +36,8 @@ void CudnnBatchNorm::ToDevice(Device* device) {
   resultSaveVariance_.ToDevice(device);
 }
 
-void CudnnBatchNorm::Setup(const LayerConf& conf) {
-  BatchNorm::Setup(conf);
+void CudnnBatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
+  BatchNorm::Setup(in_sample, conf);
   bnScale_.Reshape(Shape{1,channels_,1,1});
   bnBias_.ResetLike(bnScale_);
   dbnScale_.ResetLike(bnScale_);
