@@ -50,7 +50,6 @@ class CudnnActivation : public Activation {
   bool has_init_cudnn_ = false;
   cudnnActivationDescriptor_t acti_desc_;
   cudnnTensorDescriptor_t desc_;
-  cudnnNanPropagation_t nan_opt_;
   cudnnActivationMode_t cudnn_mode_;
 };
 }  // namespace
