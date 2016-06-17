@@ -36,18 +36,22 @@ class CudnnSoftmax : public Softmax {
   /// \copydoc Layer::layer_type()
   const std::string layer_type() const override { return "CudnnSoftmax"; }
 
+  /// \copydoc Layer::Setup(const LayerConf&);
+  void Setup(const LayerConf &conf) override;
+
   const Tensor Forward(int flag, const Tensor& input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor& grad) override;
 
   /// Init cudnn related data structures.
-  void InitCudnn(size_t size, DataType dtype);
+  void InitCudnn(Shape shape, DataType dtype);
+
+  const cudnnSoftmaxAlgorithm_t Algorithm() const { return algorithm_; }
 
  private:
   bool has_init_cudnn_ = false;
   cudnnTensorDescriptor_t desc_;
   cudnnSoftmaxAlgorithm_t algorithm_;
-  cudnnSoftmaxMode_t mode_;
 };
 }  // namespace
 #endif  // USE_CUDNN

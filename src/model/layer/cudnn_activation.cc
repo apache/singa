@@ -48,9 +48,8 @@ void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
   else
     LOG(FATAL) << "Unkown activation: " << mode_;
 
-  nan_opt_ = CUDNN_PROPAGATE_NAN;
-  CUDNN_CHECK(
-      cudnnSetActivationDescriptor(acti_desc_, cudnn_mode_, nan_opt_, 0.0f));
+  CUDNN_CHECK(cudnnSetActivationDescriptor(
+        acti_desc_, cudnn_mode_, CUDNN_PROPAGATE_NAN, 0.0f));
   has_init_cudnn_ = true;
 }
 
@@ -89,7 +88,7 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
 const std::pair<Tensor, vector<Tensor>> CudnnActivation::Backward(
     int flag, const Tensor& grad) {
   vector<Tensor> param_grad;
-  Tensor dx;  // inout = buf_.top();
+  Tensor dx;
   CHECK(!buf_.empty());
   // inout means either used as input or output, only one is valid for one type
   // of activation

@@ -33,27 +33,27 @@ TEST(CudnnSoftmax, Setup) {
 
   singa::LayerConf conf;
   singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
-  softmaxconf->set_axis(2);
+  softmaxconf->set_algorithm("fast");
 
   sft.Setup(conf);
-  sft.InitCudnn(1, singa::kFloat32);
-  EXPECT_EQ(2, sft.Axis());
+  sft.InitCudnn(singa::Shape{1}, singa::kFloat32);
+  EXPECT_EQ(CUDNN_SOFTMAX_FAST, sft.Algorithm());
 }
 
-TEST(CudnnSoftmax, Forward) {
-  const float x[] = {1.0f, 2.0f, 0.0f, -2.0f, -3.0f, -1.0};
+TEST(CudnnSoftmax, Forward1D) {
+  const float x[] = {1.f, 2.f, 0.f, -2.f, -3.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
   singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{n}, &cuda);
+  singa::Shape shape = {n};
+  singa::Tensor in(shape, &cuda);
   in.CopyDataFromHostPtr<float>(x, n);
 
-  int axis = 1;
   CudnnSoftmax sft;
   singa::LayerConf conf;
   singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
-  softmaxconf->set_axis(axis);
+  softmaxconf->set_algorithm("accurate");
   sft.Setup(conf);
-  sft.InitCudnn(n, singa::kFloat32);
+  sft.InitCudnn(shape, singa::kFloat32);
 
   singa::Tensor out = sft.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
@@ -65,31 +65,31 @@ TEST(CudnnSoftmax, Forward) {
   float sigma = 0.f;
   for (size_t i = 0; i < n; i++) sigma += exp(x[i]);
   for (size_t i = 0; i < n; i++) y[i] = exp(x[i]) / sigma;
-  EXPECT_FLOAT_EQ(y[0], yptr[0]);
-  EXPECT_FLOAT_EQ(y[4], yptr[4]);
-  EXPECT_FLOAT_EQ(y[5], yptr[5]);
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(y[i], yptr[i]);
 }
 
-TEST(CudnnSoftmax, Backward) {
-  const float x[] = {1.0f, 2.0f, 3.0f, -2.0f, -3.0f, -1.0};
+TEST(CudnnSoftmax, Backward1D) {
+  const float x[] = {1.f, 2.f, 3.f, -2.f, -3.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
   singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{n}, &cuda);
+  singa::Shape shape = {n};
+  singa::Tensor in(shape, &cuda);
   in.CopyDataFromHostPtr<float>(x, n);
 
-  int axis = 1;
   CudnnSoftmax sft;
   singa::LayerConf conf;
   singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
-  softmaxconf->set_axis(axis);
+  softmaxconf->set_algorithm("accurate");
   sft.Setup(conf);
+  sft.InitCudnn(shape, singa::kFloat32);
+
   singa::Tensor out = sft.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
   const float* yptr = out.data<const float*>();
 
-  const float grad[] = {2.0f, -3.0f, 1.0f, 3.0f, -1.0f, -2.0};
-  singa::Tensor out_diff(singa::Shape{n}, &cuda);
+  const float grad[] = {2.f, -3.f, 1.f, 3.f, -1.f, -2.f};
+  singa::Tensor out_diff(shape, &cuda);
   out_diff.CopyDataFromHostPtr<float>(grad, n);
   const auto ret = sft.Backward(singa::kTrain, out_diff);
   singa::Tensor in_diff = ret.first;
@@ -100,8 +100,73 @@ TEST(CudnnSoftmax, Backward) {
   float sigma = 0.f;
   for (size_t i = 0; i < n; i++) sigma += grad[i] * yptr[i];
   for (size_t i = 0; i < n; i++) dx[i] = (grad[i] - sigma) * yptr[i];
-  EXPECT_FLOAT_EQ(dx[0], xptr[0]);
-  EXPECT_FLOAT_EQ(dx[4], xptr[4]);
-  EXPECT_FLOAT_EQ(dx[5], xptr[5]);
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dx[i], xptr[i]);
+}
+
+TEST(CudnnSoftmax, Forward2D) {
+  const float x[] = {1.f, 2.f, 0.f, -2.f, -3.f, -1.f};
+  size_t n = sizeof(x) / sizeof(float);
+  size_t batch = 2, c = 3;
+  singa::CudaGPU cuda(0, 1);
+  singa::Shape shape = {batch, c};
+  singa::Tensor in(shape, &cuda);
+  in.CopyDataFromHostPtr<float>(x, n);
+
+  CudnnSoftmax sft;
+  singa::LayerConf conf;
+  singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
+  softmaxconf->set_algorithm("accurate");
+  sft.Setup(conf);
+  sft.InitCudnn(shape, singa::kFloat32);
+
+  singa::Tensor out = sft.Forward(singa::kTrain, in);
+  singa::CppCPU host(0, 1);
+  out.ToDevice(&host);
+  const float* yptr = out.data<const float*>();
+  EXPECT_EQ(n, out.Size());
+
+  float* y = new float[n];
+  float* sigma = new float[batch];
+  for (size_t i = 0; i < batch; i++) sigma[i] = 0.f;
+  for (size_t i = 0; i < n; i++) sigma[i / c] += exp(x[i]);
+  for (size_t i = 0; i < n; i++) y[i] = exp(x[i]) / sigma[i / c];
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(y[i], yptr[i]);
+}
+
+TEST(CudnnSoftmax, Backward2D) {
+  const float x[] = {1.f, 2.f, 3.f, -2.f, -3.f, -1.f};
+  size_t n = sizeof(x) / sizeof(float);
+  size_t batch = 2, c = 3;
+  singa::CudaGPU cuda(0, 1);
+  singa::Shape shape = {batch, c};
+  singa::Tensor in(shape, &cuda);
+  in.CopyDataFromHostPtr<float>(x, n);
+
+  CudnnSoftmax sft;
+  singa::LayerConf conf;
+  singa::SoftmaxConf* softmaxconf = conf.mutable_softmax_conf();
+  softmaxconf->set_algorithm("accurate");
+  sft.Setup(conf);
+  sft.InitCudnn(shape, singa::kFloat32);
+
+  singa::Tensor out = sft.Forward(singa::kTrain, in);
+  singa::CppCPU host(0, 1);
+  out.ToDevice(&host);
+  const float* yptr = out.data<const float*>();
+
+  const float grad[] = {2.f, -3.f, 1.f, 3.f, -1.f, -2.f};
+  singa::Tensor out_diff(shape, &cuda);
+  out_diff.CopyDataFromHostPtr<float>(grad, n);
+  const auto ret = sft.Backward(singa::kTrain, out_diff);
+  singa::Tensor in_diff = ret.first;
+  in_diff.ToDevice(&host);
+  const float* xptr = in_diff.data<const float*>();
+
+  float* dx = new float[n];
+  float* sigma = new float[batch];
+  for (size_t i = 0; i < batch; i++) sigma[i] = 0.f;
+  for (size_t i = 0; i < n; i++) sigma[i / c] += grad[i] * yptr[i];
+  for (size_t i = 0; i < n; i++) dx[i] = (grad[i] - sigma[i / c]) * yptr[i];
+  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dx[i], xptr[i]);
 }
 #endif  // USE_CUDNN
