@@ -28,9 +28,12 @@ to call singa::Device and its methods
 import sys
 import os
 import numpy as np
-import singa
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
+sys.path.append(os.path.join(os.path.dirname(__file__),
+                             '../../build/lib'))
+sys.path.append(os.path.join(os.path.dirname(__file__),
+                             '../../build/python'))
+import singa
 
 
 class Device(object):

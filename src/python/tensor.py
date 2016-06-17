@@ -28,10 +28,15 @@ to call singa::Tensor and its methods
 import sys
 import os
 import numpy as np
+
+sys.path.append(os.path.join(os.path.dirname(__file__),
+                             '../../build/lib'))
+sys.path.append(os.path.join(os.path.dirname(__file__),
+                             '../../build/python'))
 import singa
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
-
+sys.path.append(os.path.join(os.path.dirname(__file__),
+                             '../../build/src'))
 from core_pb2 import *
 
 

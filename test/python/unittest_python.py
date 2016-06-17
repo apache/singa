@@ -33,7 +33,7 @@ from tensor import *
 from device import *
 
 sys.path.append(os.path.join(os.path.dirname(__file__),
-                             '../../src'))
+                             '../../build/src'))
 from core_pb2 import *
 
 class TestTensorMethods(unittest.TestCase):
