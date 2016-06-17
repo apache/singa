@@ -24,8 +24,10 @@ OPTION(USE_CUDA "Use Cuda libs" ON)
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
+OPTION(USE_PYTHON "Generate py wrappers" OFF)
 
 INCLUDE("cmake/Dependencies.cmake")
+INCLUDE("cmake/Utils.cmake")
 ADD_DEFINITIONS(-DUSE_CMAKE)
 
 CONFIGURE_FILE (
