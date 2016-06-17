@@ -63,3 +63,15 @@ LIST(APPEND SINGA_LINKER_LIBS singa_model)
 #TARGET_LINK_LIBRARIES(singa_model singa_layer singa_core singa_utils)
 
 #ADD_LIBRARY(singa SHARED ${SINGA_LINKER_LIBS})
+
+IF(USE_PYTHON)
+    FILE(GLOB python_files python/swig/singa.i)
+    swig_generate_cxx(python_srcs ${python_files})
+    SET(python_cxxs "${CMAKE_SOURCE_DIR}/src/core/tensor/tensor.cc;${CMAKE_SOURCE_DIR}/src/core/device/device.cc")
+    ADD_LIBRARY(_singa SHARED ${python_srcs} ${python_cxxs})
+    SET(WRAPPER_LINKER_LIBS ${SINGA_LINKER_LIBS})
+    TARGET_LINK_LIBRARIES(_singa ${SINGA_LINKER_LIBS})
+    TARGET_INCLUDE_DIRECTORIES(_singa PRIVATE ${PYTHON_INCLUDE_DIRS}) 
+    SET_TARGET_PROPERTIES(_singa 
+        PROPERTIES PREFIX "")
+ENDIF(USE_PYTHON)

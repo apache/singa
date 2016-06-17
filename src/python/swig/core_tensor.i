@@ -32,7 +32,6 @@
 %array_class(double, doubleArray);
 
 %{
-#include "core/tensor/tensor_math.h"
 #include "singa/core/tensor.h"
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
