@@ -51,33 +51,32 @@ namespace singa {
   class Layer {
     public:
       Layer();
-      void Setup(const std::string& proto_str);
+      virtual void Setup(const vector<size_t>& in_sample_shape,
+                         const std::string& proto_str);
+      virtual const vector<size_t> GetOutputSampleShape() const;
+      virtual void ToDevice(Device* device);
+      virtual void AsType(DataType dtype);
+      virtual const Tensor Forward(int flag, const Tensor& input);
+      virtual const std::vector<Tensor> Forward(
+          int flag, const std::vector<Tensor>& inputs);
+      virtual const std::pair<Tensor, std::vector<Tensor>> Backward(
+          int flag, const Tensor& grad);
+      virtual const std::pair<std::vector<Tensor>, std::vector<Tensor>>
+      Backward(int flag, const vector<Tensor>& grads);
 
+/*
+      const std::vector<Tensor*> param_values();
+      Tensor* param_value(size_t i);
       std::string ToProtoStr() const;
       const std::vector<ParamSpec> param_specs();
       const ParamSpec& param_specs(size_t i);
-      const std::vector<Tensor*> param_values();
-      Tensor* param_value(size_t i);
       const std::vector<std::string> param_names();
       const std::string& param_name(size_t i);
       const std::string name() const;
-
-      /* virtual functions */
       virtual const std::string layer_type() const;
-      virtual void Setup(const LayerConf& conf);
-      virtual void ToDevice(Device* device);
-      virtual void AsType(DataType dtype);
       virtual void ToProto(LayerConf* conf) const;
-
-      virtual const Tensor
-      Forward(int flag, const Tensor& input);
-      virtual const std::vector<Tensor>
-      Forward(int flag, const std::vector<Tensor>& inputs);
-      virtual const std::pair<Tensor, std::vector<Tensor>>
-      Backward(int flag, const Tensor& grad);
-      virtual const std::pair<std::vector<Tensor>, std::vector<Tensor>>
-      Backward(int flag, const vector<Tensor>& grads);
+*/
   };
-
+  Layer* CreateLayer(const std::string& type);
 }
 

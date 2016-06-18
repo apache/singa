@@ -156,7 +156,7 @@ namespace singa{
   /* TODO(chonho-04) not implemented
      need average of all elements ??? */
   Tensor Average(const Tensor &t, int axis);
-  Tensor SoftMax(const Tensor &t, int axis = 0);
+  Tensor SoftMax(const Tensor &t);
 
   /* TODO(chonho-05) not implemented ???
   Tensor Pow(const Tensor &base, Tensor exp);
