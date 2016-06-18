@@ -23,6 +23,7 @@
 namespace singa {
 using std::vector;
 
+RegisterLayerClass(Convolution);
 void Convolution::Setup(const Shape& in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   ConvolutionConf conv_conf = conf.convolution_conf();

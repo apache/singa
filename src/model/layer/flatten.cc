@@ -20,6 +20,7 @@
 #include "./flatten.h"
 namespace singa {
 
+RegisterLayerClass(Flatten);
 void Flatten::Setup(const Shape& in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   axis_ = conf.flatten_conf().axis();

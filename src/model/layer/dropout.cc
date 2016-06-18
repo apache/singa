@@ -20,6 +20,7 @@
 #include "./dropout.h"
 namespace singa {
 
+RegisterLayerClass(Dropout);
 void Dropout::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   dropout_ratio_ = conf.dropout_conf().dropout_ratio();

@@ -25,6 +25,7 @@
 #include <utility>
 #include "singa/core/tensor.h"
 #include "singa/proto/model.pb.h"
+#include "singa/utils/factory.h"
 
 namespace singa {
 
@@ -223,5 +224,11 @@ class Layer {
   vector<ParamSpec> param_specs_;
 };
 
+#define RegisterLayerClass(SubLayer) \
+  static Registra<Layer, SubLayer> _##SubLayer##Layer(#SubLayer);
+
+inline Layer* CreateLayer(const std::string type) {
+  return Factory<Layer>::Create(type);
+}
 }  // namespace singa
 #endif  // SINGA_MODEL_LAYER_H_
