@@ -20,7 +20,7 @@
 #include "./activation.h"
 namespace singa {
 
-RegisterLayerClass("Activation", Layer);
+RegisterLayerClass(Activation);
 
 void Activation::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);

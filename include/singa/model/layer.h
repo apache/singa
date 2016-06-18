@@ -224,8 +224,8 @@ class Layer {
   vector<ParamSpec> param_specs_;
 };
 
-#define RegisterLayerClass(type, Class) \
-  static Registra<Layer, Class> _type##Layer(type);
+#define RegisterLayerClass(SubLayer) \
+  static Registra<Layer, SubLayer> _##SubLayer##Layer(#SubLayer);
 
 inline Layer* CreateLayer(const std::string type) {
   return Factory<Layer>::Create(type);

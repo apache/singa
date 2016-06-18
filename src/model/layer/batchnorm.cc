@@ -21,6 +21,7 @@
 #include "batchnorm.h"
 
 namespace singa {
+RegisterLayerClass(BatchNorm);
 void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;

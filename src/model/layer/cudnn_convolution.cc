@@ -23,6 +23,7 @@
 #include "singa/utils/logging.h"
 
 namespace singa {
+RegisterLayerClass(CudnnConvolution);
 CudnnConvolution::~CudnnConvolution() {
   if (bias_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc_));

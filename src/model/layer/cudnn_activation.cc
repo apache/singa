@@ -25,6 +25,7 @@
 #include "singa/utils/logging.h"
 
 namespace singa {
+RegisterLayerClass(CudnnActivation);
 CudnnActivation::~CudnnActivation() {
   if (acti_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(acti_desc_));

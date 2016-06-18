@@ -20,6 +20,7 @@
 #include "singa/model/layer.h"
 namespace singa {
 
+RegisterLayerClass(Pooling);
 void Pooling::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   PoolingConf pool_conf = conf.pooling_conf();

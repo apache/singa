@@ -3,7 +3,7 @@
 
 TEST(Layer, CreateLayer) {
   std::vector<std::string> types{
-      "Convolution", "Dense", "Dropout", "Activation", "Batchnorm",
+      "Convolution", "Dense", "Dropout", "Activation", "BatchNorm",
       "Flatten",     "LRN",   "Pooling", "PReLU",      "Softmax"};
   for (auto type : types) {
     singa::Layer* layer = singa::CreateLayer(type);
@@ -15,7 +15,7 @@ TEST(Layer, CreateLayer) {
 TEST(Layer, CreateCudnnLayer) {
   std::vector<std::string> types{
       "CudnnConvolution", "CudnnDropout", "CudnnActivation",
-      "CudnnBatchnorm",   "Flatten",      "CudnnLRN",
+      "CudnnBatchNorm",   "Flatten",      "CudnnLRN",
       "CudnnPooling",     "PReLU",        "CudnnSoftmax"};
   for (auto type : types) {
     singa::Layer* layer = singa::CreateLayer(type);
