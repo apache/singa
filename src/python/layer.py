@@ -503,3 +503,12 @@ def _construct_param_specs_from_dict(specs):
     if 'constraint' in specs:
         conf.constraint.threshold= specs['constraint']
     return conf
+
+
+def _tuple_to_vector(tshape):
+    ''' this function converts tuple to std::vector<int>
+    '''
+    vs = singa.Shape(len(tshape))
+    for i in range(len(tshape)):
+        vs[i] = tshape[i]
+    return vs

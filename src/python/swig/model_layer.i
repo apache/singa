@@ -26,6 +26,9 @@
 %include "std_string.i"
 %include "std_pair.i"
 
+
+
+
 %{
 #include "singa/model/layer.h"
 #include "singa/core/tensor.h"
@@ -38,6 +41,7 @@ using singa::LayerConf;
 %}
 
 namespace std {
+//  %template(sizeVector) vector<size_t>;
   %template(strVector) vector<string>;
   %template(paramVector) vector<ParamSpec>;
   %template(tensorVector) vector<Tensor>;

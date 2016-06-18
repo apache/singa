@@ -54,7 +54,8 @@ class Factory {
   static void Register(const ID& id,
                        const std::function<T*(void)>& creator) {
     Registry* reg = GetRegistry();
-    CHECK(reg->find(id) == reg->end()) << "The id has been registered";
+    // CHECK(reg->find(id) == reg->end())
+    //  << "The id " << id << " has been registered";
     (*reg)[id] = creator;
   }
 
