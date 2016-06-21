@@ -233,7 +233,7 @@ class Platform {
   /// except the context initialization.
   static bool CheckDevice(const int device_id);
 
- private:
+// private:
   Platform() {};  // No need to construct an instance as it has no member fields
 };
 

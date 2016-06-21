@@ -24,7 +24,8 @@
 import sys
 import os
 import numpy as np
-from . import singa
+
+from . import singa_wrap as singa
 
 from .proto.core_pb2 import *
 from .proto.model_pb2 import *

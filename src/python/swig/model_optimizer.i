@@ -21,43 +21,50 @@
 
 /*interface file for swig */
 
-%module core_device
+%module model_optimizer
 %include "std_vector.i"
 %include "std_string.i"
 %include "std_pair.i"
 %include "std_shared_ptr.i"
 
 %{
-#include "singa/core/device.h"
+#include "singa/model/optimizer.h"
+#include "singa/proto/model.pb.h"
+using singa::Tensor;
+using singa::ParamSpec;
+using singa::OptimizerConf;
 %}
 
-/* smart pointer to avoid memory leak */
-%shared_ptr(singa::Device);
 
-namespace std{
-%template(sizePair) std::pair<size_t, size_t>;
-%template(vectorPair) std::vector<std::pair<size_t, size_t>>;
-%template(vectorSharedPtr) std::vector<std::shared_ptr<singa::Device>>;
-}
+%shared_ptr(singa::Optimizer)
+%shared_ptr(singa::Regularizer)
+%shared_ptr(singa::Constraint)
 
-namespace singa{
-
-class Device {
-  public:
-  virtual void SetRandSeed(unsigned seed) = 0;
-  std::shared_ptr<Device> host();
-  int id() const;
-};
-
-class Platform {
+namespace singa {
+class Optimizer {
  public:
-  static int GetNumGPUs();
-  static const std::vector<int> GetGPUIDs();
-  static const std::pair<size_t, size_t> GetGPUMemSize(const int device);
-  static const std::vector<std::pair<size_t, size_t>> GetGPUMemSize();
-  static const std::string DeviceQuery(int id, bool verbose = false);
-  static const std::vector<std::shared_ptr<Device> >
-  CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
+  // Optimizer() = default;
+  virtual ~Optimizer() = default;
+  void Setup(const std::string& str);
+  virtual void Apply(int step, float lr, const std::string& name,
+    const Tensor& grad, Tensor* value) = 0;
 };
-}
+inline std::shared_ptr<Optimizer> CreateOptimizer(const std::string& type);
 
+class Constraint {
+ public:
+  Constraint() = default;
+  void Setup(const std::string& conf_str);
+  void Apply(int step, Tensor* grad, Tensor* value);
+};
+
+inline std::shared_ptr<Constraint> CreateConstraint(const std::string& type);
+
+class Regularizer {
+ public:
+  Regularizer() = default;
+  void Setup(const std::string& conf_str);
+  void Apply(int step, Tensor* grad, Tensor* value);
+};
+inline std::shared_ptr<Regularizer> CreateRegularizer(const std::string& type);
+}

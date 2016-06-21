@@ -1,37 +1,28 @@
-#!/usr/bin/env python
-
-# /************************************************************
-# *
-# * Licensed to the Apache Software Foundation (ASF) under one
-# * or more contributor license agreements.  See the NOTICE file
-# * distributed with this work for additional information
-# * regarding copyright ownership.  The ASF licenses this file
-# * to you under the Apache License, Version 2.0 (the
-# * "License"); you may not use this file except in compliance
-# * with the License.  You may obtain a copy of the License at
-# *
-# *   http://www.apache.org/licenses/LICENSE-2.0
-# *
-# * Unless required by applicable law or agreed to in writing,
-# * software distributed under the License is distributed on an
-# * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# * KIND, either express or implied.  See the License for the
-# * specific language governing permissions and limitations
-# * under the License.
-# *
-# *************************************************************/
-
-'''
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+# =============================================================================
+"""
 This script includes Tensor class and its methods for python users
 to call singa::Tensor and its methods
-'''
-import sys
-import os
+"""
+
 import numpy as np
-
-from . import singa
-
-from .proto.core_pb2 import *
+from proto.core_pb2 import *
+from . import singa_wrap as singa
 
 
 class Tensor(object):
@@ -109,7 +100,7 @@ class Tensor(object):
         self.singa_tensor.ToHost()
 
     def nrm2(self):
-        self.singa_tensor.L2()
+        return self.singa_tensor.L2()
 
     def set_value(self, x):
         if type(x) == float:
@@ -503,4 +494,3 @@ def _call_singa_func(_singa_func, *args):
     new_t.device = new_t.singa_tensor.device()
     new_t.dtype = new_t.singa_tensor.data_type()
     return new_t
-

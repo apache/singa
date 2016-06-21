@@ -84,6 +84,9 @@ void Optimizer::Apply(int step, const string& name, Tensor* grad,
 void Regularizer::Setup(const RegularizerConf& conf) {
   type_ = conf.type();
   coefficient_ = conf.coefficient();
+  if (type_ != "L2" && type_ != "l2") {
+    CHECK(type_ == "NotSet") << "Unknown regularizer type = " << type_;
+  }
 }
 
 void Regularizer::Apply(int step, Tensor* value, Tensor* grad, float scale) {

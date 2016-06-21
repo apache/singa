@@ -20,6 +20,7 @@
 #define SINGA_CORE_MEMORY_H_
 
 #include <mutex>
+#include <atomic>
 #include "singa/proto/core.pb.h"
 #include "singa/singa_config.h"
 
@@ -68,12 +69,16 @@ class CnMemPool : public DeviceMemPool {
  protected:
   void Init();
 
+
  private:
+
   MemPoolConf conf_;
   // whether the (global) memory pool has been initialized
-  static bool initialized;
+  bool initialized_ = false;
   // lock on the initialized variable
-  static std::mutex mtx;
+  std::mutex mtx_;
+
+  static std::atomic<int> pool_count;
 };
 
 class CudaMemPool : public DeviceMemPool {

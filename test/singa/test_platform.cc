@@ -19,6 +19,7 @@
 
 #include "gtest/gtest.h"
 #include "singa/core/device.h"
+#include "singa/core/tensor.h"
 
 #ifdef USE_CUDA
 using singa::Platform;
@@ -29,7 +30,7 @@ TEST(Platform, NumGPUs) {
 }
 
 TEST(Platform, QueryMem) {
-  int n = Platform::GetNumGPUs();
+  size_t n = Platform::GetNumGPUs();
   auto ids = Platform::GetGPUIDs();
   EXPECT_EQ(ids.size(), n);
   auto mem = Platform::GetGPUMemSize();
@@ -39,7 +40,7 @@ TEST(Platform, QueryMem) {
 
 TEST(Platform, CreateDevice) {
   auto dev = Platform::CreateCudaGPUs(1).at(0);
-  int size[] = { 128, 256, 3, 24 };
+  size_t size[] = { 128, 256, 3, 24 };
   {
     auto ptr = dev->NewBlock(size[0]);
     auto allocated = dev->GetAllocatedMem();
@@ -72,9 +73,25 @@ TEST(Platform, CreateMultDevice) {
   auto devs = Platform::CreateCudaGPUs(n);
   for (auto dev : devs) {
     auto b = dev->NewBlock(32);
-    EXPECT_LE(32, dev->GetAllocatedMem());
+    EXPECT_LE(32u, dev->GetAllocatedMem());
     dev->FreeBlock(b);
   }
+}
+
+TEST(Platform, CreatTensor) {
+  auto cuda = Platform::CreateCudaGPUs(1)[0];
+  singa::Tensor t(singa::Shape{2,3,4}, cuda);
+  t.SetValue(2.1f);
+  t.ToHost();
+  auto tPtr = t.data<float>();
+  for (size_t i = 0; i < t.Size(); i++)
+    EXPECT_FLOAT_EQ(tPtr[i], 2.1f);
+  t.ToDevice(cuda);
+  t = t * 3.0f;
+  t.ToHost();
+  tPtr = t.data<float>();
+  for (size_t i = 0; i < t.Size(); i++)
+    EXPECT_FLOAT_EQ(tPtr[i], 2.1f * 3.0f);
 }
 #endif
 

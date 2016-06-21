@@ -83,13 +83,13 @@ IF(USE_PYTHON)
     swig_generate_cxx(python_srcs ${python_files})
     FILE(COPY python/ DESTINATION ${CMAKE_BINARY_DIR}/python/singa FILES_MATCHING PATTERN "swig" EXCLUDE PATTERN "*.py")
     SET(python_cxxs "${CMAKE_SOURCE_DIR}/src/core/tensor/tensor.cc;${CMAKE_SOURCE_DIR}/src/core/device/device.cc")
-    ADD_LIBRARY(_singa SHARED ${python_srcs} ${python_cxxs})
+    ADD_LIBRARY(_singa_wrap SHARED ${python_srcs} ${python_cxxs})
     SET(WRAPPER_LINKER_LIBS "${SINGA_LINKER_LIBS};protobuf")
-    TARGET_LINK_LIBRARIES(_singa ${WRAPPER_LINKER_LIBS})
-    TARGET_INCLUDE_DIRECTORIES(_singa PRIVATE ${PYTHON_INCLUDE_DIRS})
+    TARGET_LINK_LIBRARIES(_singa_wrap ${WRAPPER_LINKER_LIBS})
+    TARGET_INCLUDE_DIRECTORIES(_singa_wrap PRIVATE ${PYTHON_INCLUDE_DIRS})
     #message(STATUS "PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS}")
     
-    SET_TARGET_PROPERTIES(_singa
+    SET_TARGET_PROPERTIES(_singa_wrap
         PROPERTIES PREFIX ""
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa
         )

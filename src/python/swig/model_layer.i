@@ -43,7 +43,7 @@ namespace std {
   %template(tensorVector) vector<Tensor>;
   %template(tensorPtrVector) vector<Tensor*>;
   %template(ttvecPair) pair<Tensor, vector<Tensor>>;
-  %template(tvectvecPair) pair<vector<Tensor>, vector<Tensor>>;
+  %template(tvecPair) pair<vector<Tensor>, vector<Tensor>>;
 }
 
 
@@ -83,6 +83,5 @@ namespace singa {
       virtual const std::pair<std::vector<Tensor>, std::vector<Tensor>>
       Backward(int flag, const vector<Tensor>& grads);
   };
-
 }
 

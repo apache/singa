@@ -24,8 +24,8 @@
 #include "singa/singa_config.h"
 #include <cmath>
 
-TEST(Adagrad, ApplyCPU) {
-  singa::Adagrad adagrad;
+TEST(AdaGrad, ApplyCPU) {
+  singa::AdaGrad adagrad;
   float lr = 0.1f;
   const float v[4] = {0.1, 0.2, 0.3, 0.4};
   const float g[4] = {0.01, 0.02, 0.03, 0.04};
@@ -58,8 +58,8 @@ TEST(Adagrad, ApplyCPU) {
 }
 
 #ifdef USE_CUDA
-TEST(Adagrad, ApplyCUDA) {
-  singa::Adagrad adagrad;
+TEST(AdaGrad, ApplyCUDA) {
+  singa::AdaGrad adagrad;
   float lr = 0.1f;
   const float v[4] = {0.1, 0.2, 0.3, 0.4};
   const float g[4] = {0.01, 0.02, 0.03, 0.04};
