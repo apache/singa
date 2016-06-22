@@ -44,3 +44,16 @@ enum CopyDirection {
   kDeviceToDevice = 3;
   kNumDirection = 4;
 }
+
+// configuration for device memory pool
+message MemPoolConf {
+	optional string type = 1 [default = "cnmem"];
+	optional uint32 num_devices = 2 [default = 1];
+	// allocation size for each device
+	optional uint32 alloc_size = 3 [default = 10000000];
+	// memory manager flag for cnmem
+	// cnmemflag = 0: default flag
+	// cnmemflag = 1: prevent the manager from growing its memory consumption
+	// cnmemflag = 2: prevent the manager from stealing memory
+	optional uint32 cnmemflag = 4 [default = 0];
+}

@@ -35,7 +35,7 @@ class Loss {
     loss.ParseFromString(conf);
     Setup(loss);
   }
-
+	virtual ~Loss(){};
   /// Set meta fields from user configurations.
   virtual void Setup(const LossConf& conf) {}
 

@@ -147,6 +147,8 @@ class CudaGPU : public Device {
   ~CudaGPU();
   CudaGPU(int id = 0, int num_executors = 1, string scheduler = "sync",
          string vm = "gc-only");
+	CudaGPU(const MemPoolConf& mem_conf, 
+					int id = 0, int num_executors = 1, string scheduler = "sync");
 
   void SetRandSeed(unsigned seed) override;
   static void DeviceQuery();
@@ -180,6 +182,9 @@ class CudaGPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
+	
+	private:
+	DeviceMemPool* pool;
 };
 
 /// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.

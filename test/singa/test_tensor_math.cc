@@ -302,6 +302,8 @@ TEST_F(TestTensorMath, MultCuda) {
       EXPECT_FLOAT_EQ(oPtr[i * 4 + j], x[i]);
     }
   }
+	d.ToHost();
+	p.ToHost();
 }
 
 TEST_F(TestTensorMath, AddColumnCuda) {
@@ -479,6 +481,7 @@ TEST_F(TestTensorMath, SumRowsCuda) {
     }
     EXPECT_FLOAT_EQ(tptr[i], tmp);
   }
+	d.ToHost();
 }
 TEST_F(TestTensorMath, SumColumnCuda) {
   singa::CudaGPU dev;
@@ -495,5 +498,6 @@ TEST_F(TestTensorMath, SumColumnCuda) {
     }
     EXPECT_FLOAT_EQ(tptr[i], tmp);
   }
+	d.ToHost();
 }
 #endif

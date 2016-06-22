@@ -22,7 +22,7 @@
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <chrono>
-
+#include <iostream>
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
 namespace singa {
@@ -42,6 +42,8 @@ CudaGPU::~CudaGPU() {
     CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
   }
 #endif
+	delete pool;
+	LOG(INFO) << "device has been deleted";
 }
 
 CudaGPU::CudaGPU(int id, int num_executors,
@@ -67,6 +69,48 @@ CudaGPU::CudaGPU(int id, int num_executors,
   auto status = cudnnCreate(&ctx_.cudnn_handle);
   CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
 #endif  // USE_CUDNN
+	
+	// initialize cnmem memory management as default
+	pool = new CnMemPool();
+	((CnMemPool*)pool)->InitPool();
+}
+
+CudaGPU::CudaGPU(const MemPoolConf& mem_conf,int id, int num_executors,
+                       string scheduler)
+    : Device(id, num_executors, scheduler, "gc-only") {
+  if (id == -1)
+    id = FindDevice(0);
+  lang_ = kCuda;
+  ctx_.stream = NULL;  // use the default sync stream
+  // TODO(wangwei) create one handle for each steam?
+  CUDA_CHECK(cudaSetDevice(FindDevice(0)));
+  // use curandCreateGeneratorHost for CudaHost device
+  CURAND_CHECK(
+      curandCreateGenerator(&ctx_.curand_generator, CURAND_RNG_PSEUDO_DEFAULT));
+  auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+  SetRandSeed(seed);
+  // TODO(wangwei) if one generator per stream, then need diff offset per gen?
+  CURAND_CHECK(curandSetGeneratorOffset(ctx_.curand_generator, 0));
+  CUBLAS_CHECK(cublasCreate(&(ctx_.cublas_handle)));
+
+#ifdef USE_CUDNN
+  // TODO(wangwei) create one handle for each stream?
+  auto status = cudnnCreate(&ctx_.cudnn_handle);
+  CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
+#endif  // USE_CUDNN
+
+	// initialize memory management for cuda devices
+	string memoryPoolType = mem_conf.type();
+	if(memoryPoolType.compare("cnmem") == 0) {
+		pool = new CnMemPool();
+		int num_devices = mem_conf.num_devices();
+		size_t alloc_size = mem_conf.alloc_size();
+		unsigned flag = mem_conf.cnmemflag();
+		((CnMemPool*)pool)->InitPool(num_devices, alloc_size, flag);
+	}
+	else {
+		pool = new CudaMemPool();
+	}
 }
 
 void CudaGPU::SetRandSeed(unsigned seed) {
@@ -90,7 +134,8 @@ void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
 void* CudaGPU::Malloc(int size) {
   void* ptr = nullptr;
   if (size > 0) {
-    CUDA_CHECK(cudaMalloc(&ptr, size));
+		//CUDA_CHECK(cudaMalloc((void**)&ptr,size));
+		pool->Malloc((void**)&ptr,size);
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
   return ptr;
@@ -98,8 +143,14 @@ void* CudaGPU::Malloc(int size) {
 
   /// Free cpu memory.
 void CudaGPU::Free(void* ptr) {
-  if (ptr != nullptr)
-    CUDA_CHECK(cudaFree(ptr));
+	LOG(INFO) << "Cuda free is called";
+	LOG(INFO) << "pool pointer" << pool << "\n";
+	LOG(INFO) << "pool status:" << ((CnMemPool*)pool)->status;
+  if (ptr != nullptr) {
+		//CUDA_CHECK(cudaFree(ptr));
+		pool->Free(ptr);
+	}
+	LOG(INFO) << "free memory is successed";
 }
 
 
