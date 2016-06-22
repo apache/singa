@@ -42,6 +42,15 @@ inline string ToLowerCase(const string& input) {
   return out;
 }
 
+inline int ArgPos(int argc, char** arglist, const char* arg) {
+  for (int i = 0; i < argc; i++) {
+    if (strcmp(arglist[i], arg) == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 /**
  * Tokenize a string.
  *

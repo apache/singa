@@ -21,6 +21,7 @@
 
 #include <vector>
 #include <tuple>
+#include <memory>
 
 #include "singa/core/common.h"
 #include "singa/core/device.h"
@@ -127,14 +128,16 @@ class Tensor {
 
   /// For init the tensor values, copy 'num' elements.
   template <typename SType>
-  void CopyDataFromHostPtr(const SType *src, const size_t num);
+  void CopyDataFromHostPtr(const SType *src, const size_t num,
+                           const size_t offset = 0);
 
   /// Copy data from another Tensor which may be on a diff device.
   /// Meta data would not be copied!
   void CopyData(const Tensor &other);
 
-  /// return an exactly the same Tensor with data been deep copied.
-  Tensor Clone() const;
+  /// return an exactly the same Tensor with data been deep copied to the given
+  /// device. If 'device' is nullptr, then clone it one the current device.
+  Tensor Clone(std::shared_ptr<Device> device = nullptr) const;
 
   // Tensor operations
 

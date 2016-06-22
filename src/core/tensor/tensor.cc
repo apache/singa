@@ -130,20 +130,24 @@ void Tensor::ToDevice(std::shared_ptr<Device> dst) {
 void Tensor::ToHost() { ToDevice(device_->host()); }
 
 template <typename DType>
-void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num) {
+void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
+    const size_t offset) {
   CHECK_EQ(sizeof(DType), SizeOf(data_type_))
       << "data_type is " << DataType_Name(data_type_)
       << " user given type is of size " << sizeof(DType);
   if (src != nullptr) {
-    device_->CopyDataFromHostPtr(block(), src, sizeof(DType) * num, 0);
+    device_->CopyDataFromHostPtr(block(), src, sizeof(DType) * num, offset);
   } else {
     LOG(WARNING) << "Copy data from null host ptr";
   }
 }
 template void Tensor::CopyDataFromHostPtr(const unsigned char *src,
-                                          const size_t num);
-template void Tensor::CopyDataFromHostPtr(const float *src, const size_t num);
-template void Tensor::CopyDataFromHostPtr(const int *src, const size_t num);
+                                          const size_t num,
+                                          const size_t offset);
+template void Tensor::CopyDataFromHostPtr(const float *src, const size_t num,
+                                          const size_t offset);
+template void Tensor::CopyDataFromHostPtr(const int *src, const size_t num,
+                                          const size_t offset);
 
 void Tensor::CopyData(const Tensor &src) {
   CHECK_EQ(Size(), src.Size());
@@ -154,7 +158,9 @@ void Tensor::CopyData(const Tensor &src) {
   }
 }
 
-Tensor Tensor::Clone() const {
+Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
+  if (device == nullptr)
+    device = device_;
   Tensor t(shape_, device_, data_type_);
   t.transpose_ = transpose_;
   t.CopyData(*this);

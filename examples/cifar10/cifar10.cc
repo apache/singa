@@ -1,0 +1,98 @@
+/************************************************************
+*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*
+*************************************************************/
+#include <fstream>
+#include <string>
+#include <cstdint>
+#include <iostream>
+
+using std::string;
+namespace singa {
+/// For reading cifar10 binary data as tensors.
+class Cifar10 {
+ public:
+  /// 'dir_path': path to the folder including the *.bin files
+  Cifar10(string dir_path, bool normalize = true)
+      : dir_path_(dir_path), normalize_(normalize) {}
+
+  /// read all training data into an image Tensor and a label Tensor
+  const std::pair<Tensor, Tensor> ReadTrainData(bool shuffle = false);
+  /// read all test data into an image Tensor and a label Tensor
+  const std::pair<Tensor, Tensor> ReadTestData();
+  /// read data from one file into an image Tensor and a label Tensor
+  const std::pair<Tensor, Tensor> ReadFile(string file, bool shuffle = false);
+
+ private:
+  const int kImageSize = 32;
+  const int kImageVol = 3072;
+  const int kBatchSize = 10000;
+  const int kTrainFiles = 5;
+
+  string dir_path_;
+  bool normalize_;
+};
+
+void read_image(std::ifstream* file, int* label, char* buffer) {
+  char label_char;
+  file->read(&label_char, 1);
+  *label = label_char;
+  file->read(buffer, kImageVol);
+  return;
+}
+const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file,
+                                                  bool shuffle = false) {
+  Tensor images(Shape{kTrainFiles, 3, kImageSize, kImageSize});
+  Tensor labels(Shape{kTrainFiles}, kInt);
+  if (dir_path_.back() != '/') dir_path_.push_back('/');
+  LOG(INFO) << "Reading file " << dir_path_ + file;
+  std::ifstream data_file((dir_path_ + file).c_str(),
+                          std::ios::in | std::ios::binary);
+  CHECK(data_file.is_open()) << "Unable to open file " << file;
+  int label;
+  char image[kImageVol];
+  float float_image[kImageVol];
+  int tmplabels[kBatchSize];
+  for (int itemid = 0; itemid < kBatchSize; ++itemid) {
+    read_image(&data_file, &label, image);
+    for (int i = 0; i < kImageVol; i++)
+      float_image[i] = static_cast<float>(static_cast<int>(image[i]));
+    images.CopyDataFromHostPtr(float_image, kImageVol, itemid * kImageVol);
+    tmplabels[itemid] = label;
+  }
+  labels.CopyDataFromHostPtr(tmplabels, kBatchSize);
+  return std::make_pair(images, labels);
+}
+
+const std::pair<Tensor, Tensor> Cifar10::ReadTrainData(bool shuffle = false) {
+  Tensor images(Shape{kBatchSize * kTrainFiles, 3, kImageSize, kImageSize});
+  Tensor labels(Shape{kBatchSize * kTrainFiles, 3, kImageSize, kImageSize});
+  for (int fileid = 0; fileid < kTrainFiles; ++fileid) {
+    string file = "data_batch_" + std::to_string(fileid + 1) + ".bin";
+    const auto ret = ReadFile(file);
+    CopyDataToFrom(&images, ret.first, ret.first.Size(),
+                   fileid * ret.first.Size());
+    CopyDataToFrom(&labels, ret.second, kBatchSize, fileid * kBatchSize);
+  }
+  return std::make_pair(images, labels);
+}
+const std::pair<Tensor, Tensor> Cifar10::ReadTrainData() {
+  return ReadFile("test_batch.bin");
+}
+}  // namespace singa

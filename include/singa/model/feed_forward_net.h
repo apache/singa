@@ -1,0 +1,133 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef SINGA_MODEL_FEED_FORWARD_NET_H_
+#define SINGA_MODEL_FEED_FORWARD_NET_H_
+#include "singa/model/layer.h"
+
+namespace singa {
+
+/// The feed-forward neural net.
+/// It provides functions for constructing the layers, access layer parameters,
+/// and conducting training, evaluation and prediction.
+class FeedForwardNet {
+ public:
+  FeedForwardNet() = explicit;
+  ~FeedForwardNet();
+
+  /// Add a layer with the assumption that
+  /// 1. this function is called in correct order, i.e., the layers are added
+  ///    following the topological order.
+  /// 2. this layer has already been setup (Setup function is called outside).
+  void Add(Layer *layer);
+
+  // TODO(wangwei) add ConcatenateLayer and SliceLayer
+  // AddConcatenateLayer(vector<Layer*> src, Layer *dst);
+  // AddSliceLayer(Layer* layer, vector<Layer*> dst);
+
+  /// Add a layer by providing its configuration, and setup it.
+  /// Assume the layer is added in corret order.
+  /// For the first layer, 'sample_shape' (the input sample shape) is necessary
+  /// for calling Setup().
+  void Add(const LayerConf &conf, const Shape *sample_shape = nullptr);
+
+  /// Set some fields used for training and evaluating the neural net.
+  /// If the neural net is constructed for evaluation only, then 'opt' is not
+  /// necessary; But for training, both 'opt' and 'loss' are necessary.
+  /// 'shuffle' indicates shuffling training samples within one epoch it is
+  /// valid using Train();
+  void Compile(bool shuffle, Optimizer *opt, Loss *loss, Metric *metric);
+
+  /// Conduct the training giving the training data 'x' and label 'y'.
+  /// Due to memory limit, 'x' and 'y' could not be very large. Hence, it is
+  /// typically used for small training datasets, e.g., cifar10 and MNIST which
+  /// can be stored in main memory.
+  void Train(int batchsize, int nb_epoch, Tensor x, Tensor y);
+  /// Conduct the training giving the training data 'x' and label 'y'.
+  /// 'val_split' is a ratio for splitting (1-'val_split') of training data for
+  /// validation. Validation is performance before every epoch.
+  /// Due to memory limit, 'x' and 'y' could not be very large. Hence, it is
+  /// typically used for small training datasets, e.g., cifar10 and MNIST which
+  /// can be stored in main memory.
+  void Train(int batchsize, int nb_epoch, float val_split, Tensor x, Tensor y);
+  /// Conduct the training given the training and validation data.
+  /// Validation is performance before every epoch.
+  /// Due to memory limit, 'x' and 'y' could not be very large. Hence, it is
+  /// typically used for small training datasets, e.g., cifar10 and MNIST which
+  /// can be stored in main memory.
+  void Train(int batchsize, int nb_epoch, Tensor x, Tensor y, Tensor val_x,
+             Tensor val_y);
+  /// Train the neural net over one batch of training data.
+  Tensor TrainOnBatch(Tensor x, Tensor y);
+
+  /// Evaluate the neural net with given data.
+  /// Returns one tensor for loss values and one tensor for metric values;
+  /// Each sample would have a loss value and a metric value (if 'metic' is set
+  /// in Compile()).'batchsize' is used for controlling the memory footprint.
+  /// It should be smaller than the total number of samples.
+  /// Due to memory limit, 'x' and 'y' could not be very large. Hence, it is
+  /// typically used for small training datasets, e.g., cifar10 and MNIST which
+  /// can be stored in main memory.
+  std::pair<Tensor, Tensor> Evaluate(Tensor x, Tensor y, int batchsize = 128);
+  /// Evaluate the neural net for one batch of data
+  std::pair<Tensor, Tensor> EvaluateOnBatch(Tensor x, Tensor y);
+
+  /// Predict the probability distributation over candicate classes for each
+  /// data sample. 'batchsize' is used for controlling the memory footprint.
+  /// It should be smaller than the total number of samples.
+  /// Due to memory limit, 'x' and 'y' could not be very large. Hence, it is
+  /// typically used for small training datasets, e.g., cifar10 and MNIST which
+  /// can be stored in main memory.
+  Tensor Predict(const Tensor &x, int batchsize = 128);
+  /// Predict for one batch data.
+  Tensor PredictOnBatch(const Tensor &x);
+
+  /// Forward layers one by one using the data batch 'x'.
+  /// Returns the prediction results (from the last layer).
+  Tensor Forward(const Tensor& x);
+  /// Backward layers one by one using the gradient batch 'grad'.
+  /// Returns the parameter gradients.
+  const vector<Tensor> Backward(const Tensor& grad);
+
+  /// Clone the neuaral net by cloning every layer to the given device.
+  /// If 'device' is nullptr, then clone it one the current device.
+  FeedForwardNet Clone(std::shared_ptr<Device> device = nullptr);
+  /// Move the layer data to the given device.
+  void ToDevice(Device *device);
+  /// Set the data type of each layer.
+  void AsType(DataType dtype);
+
+  const vector<Layer *> layers() const { return layers_; }
+  const vector<string> GetParamNames() const;
+  const vector<Tensor *> GetParamValues() const;
+  const vector<Tensor *> GetParamGrads() const;
+
+ protected:
+  vector<Layer *> layers_;
+  Optimizer *opt_;
+  Loss *loss_;
+  Metric *metric_;
+
+  bool shuffle_ = true;
+  Device* device_ = nullptr;
+  DataType dtype_ = kFloat32;
+};
+
+}  /* singa */
+
+
+#endif  // SINGA_MODEL_FEED_FORWARD_NET_H_
