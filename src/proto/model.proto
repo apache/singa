@@ -51,28 +51,20 @@ message BlobProto {
   optional int32 width = 4 [default = 0];
 }
 
-/// directly copy from v0.3
-message Record {
-  enum Type {
-    // each record contains image raw feature and its label.
-    kSingleLabelImage = 0;
-  }
-  optional Type type = 1 [default = kSingleLabelImage];
-  optional string user_type =2;
-  // configuration for
-  optional RecordProto image = 5;
-
-  extensions 101 to 200;
-}
-
-// rename SingleLabelImageRecord to RecordProto
-message RecordProto {
+// rename RecordProto to ImageRecordProto
+message ImageRecordProto {
   repeated int32 shape = 1;
   optional int32 label = 2;
   optional bytes pixel = 3;
-  repeated float data = 4 [packed = true];
 }
-/// end of copy v0.3
+
+message EncoderConf {
+  optional string type = 1 [default = 'jpg'];
+}
+
+message DecoderConf {
+  optional string type = 1 [default = 'jpg'];
+}
 
 message FillerConf {
   // The filler type, case insensitive

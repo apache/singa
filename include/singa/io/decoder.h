@@ -22,6 +22,7 @@
 #include <vector>
 #include <string>
 #include "singa/core/tensor.h"
+#include "singa/proto/model.pb.h"
 
 namespace singa {
 namespace io {
@@ -31,13 +32,18 @@ class Decoder {
     Decoder() { }
     virtual ~Decoder() { }
 
+    virtual void Setup(const DecoderConf& conf) = 0;
+
     /**
     * Decode value to get data and labels
     */
-    virtual std::vector<Tensor> Decode(std::string value) {
-      vector<Tensor> output;
-      return output; 
-    }
+    virtual std::vector<Tensor> Decode(std::string value) = 0;
+};
+
+class Proto2JPGDecoder : public Decoder {
+  public:
+    void Setup(const DecoderConf& conf) override;
+    std::vector<Tensor> Decode(std::string value) override;
 };
 
 } // namespace io

@@ -22,6 +22,7 @@
 #include <vector>
 #include <string>
 #include "singa/core/tensor.h"
+#include "singa/proto/model.pb.h"
 
 namespace singa {
 namespace io {
@@ -30,13 +31,21 @@ class Encoder {
   public:
     Encoder() { }
     virtual ~Encoder() { }
+    
+    virtual void Setup(const EncoderConf& conf) = 0;
 
     /**
      * Format each sample data as a string,
      * whose structure depends on the proto definition.
      * e.g., {key, shape, label, type, data, ...}
      */
-    virtual std::string Encode(vector<Tensor>& data) { return ""; }
+    virtual std::string Encode(vector<Tensor>& data) = 0;
+};
+
+class JPG2ProtoEncoder : public Encoder {
+  public:
+    void Setup(const EncoderConf& conf) override;
+    std::string Encode(vector<Tensor>& data) override;
 };
 
 } // namespace io
