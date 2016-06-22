@@ -23,6 +23,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <memory>
 #include "singa/singa_config.h"
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
@@ -75,7 +76,7 @@ class Device {
     return lang_;
   }
 
-  Device* host() const { return host_;}
+  std::shared_ptr<Device> host() const { return host_;}
 
   Context* context(int k) {
     return &ctx_;
@@ -107,7 +108,7 @@ class Device {
   // SafeQueue<Operation> op_queue_;
   // SafeQueue<Operation> op_log_;
   /// The host device
-  Device* host_;
+  std::shared_ptr<Device> host_;
   // TODO(wangwei) define multiple contexts, one per executor
   Context ctx_;
 };
@@ -134,7 +135,7 @@ class CppCPU : public Device {
 };
 
 /// a singleton CppDevice as the host for all devices.
-extern CppCPU defaultDevice;
+extern std::shared_ptr<Device> defaultDevice;
 
 
 // Implement Device using OpenCL libs.

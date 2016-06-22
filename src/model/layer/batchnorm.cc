@@ -44,7 +44,7 @@ void BatchNorm::Setup(const LayerConf& conf) {
   param_values_.push_back(&runningVariance_);
 }
 
-void BatchNorm::ToDevice(Device* device) {
+void BatchNorm::ToDevice(std::shared_ptr<Device> device) {
   bnScale_.ToDevice(device);
   bnBias_.ToDevice(device);
   dbnScale_.ToDevice(device);

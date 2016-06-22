@@ -75,7 +75,7 @@ TEST(MemPool, CompareCudaCnmem) {
 	singa::CnMemPool cnPool;
 	cnPool.InitPool();
 
-	int numOfTests = 10000;
+	int numOfTests = 5000;
 	int allocSize = 1000000U;
 	struct timeval start,end;
 	double t1,t2;
@@ -93,7 +93,7 @@ TEST(MemPool, CompareCudaCnmem) {
 	
 	t1 = start.tv_sec * 1000 + start.tv_usec/1000;
 	t2 = end.tv_sec * 1000 + end.tv_usec/1000;
-	LOG(INFO) << "cnmem time: " << t2-t1 << " ms" << std::endl;
+	LOG(INFO) << "cnmem memory time: " << t2-t1 << " ms" << std::endl;
 
 	pool = &cudaPool;
 	gettimeofday(&start,NULL);
@@ -106,6 +106,6 @@ TEST(MemPool, CompareCudaCnmem) {
 	
 	t1 = start.tv_sec * 1000 + start.tv_usec/1000;
 	t2 = end.tv_sec * 1000 + end.tv_usec/1000;
-	LOG(INFO) << "cuda time: " << t2-t1 << " ms" << std::endl;
+	LOG(INFO) << "cuda memory time: " << t2-t1 << " ms" << std::endl;
 }
 #endif // USE_CUDA

@@ -88,8 +88,8 @@ TEST(SGD, ApplyWithoutMomentumCuda) {
   const float v[4] = {0.1, 0.2, 0.3, 0.4};
   const float g[4] = {0.1, 0.1, 0.1, 0.1};
 
-  singa::CudaGPU dev;
-  singa::Tensor value(singa::Shape{4}, &dev), grad(singa::Shape{4}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  singa::Tensor value(singa::Shape{4}, dev), grad(singa::Shape{4}, dev);
   value.CopyDataFromHostPtr(v, 4);
   grad.CopyDataFromHostPtr(g, 4);
 
@@ -124,8 +124,8 @@ TEST(SGD, ApplyWithMomentumCuda) {
   const float v[4] = {0.1, 0.2, 0.3, 0.4};
   const float g[4] = {0.01, 0.02, 0.03, 0.04};
 
-  singa::CudaGPU dev;
-  singa::Tensor value(singa::Shape{4}, &dev), grad(singa::Shape{4}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  singa::Tensor value(singa::Shape{4}, dev), grad(singa::Shape{4}, dev);
   value.CopyDataFromHostPtr(v, 4);
   grad.CopyDataFromHostPtr(g, 4);
 

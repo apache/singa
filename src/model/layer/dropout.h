@@ -43,7 +43,7 @@ class Dropout : public Layer {
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor& grad) override;
 
-  void ToDevice(Device* device) override;
+  void ToDevice(std::shared_ptr<Device> device) override;
 
   float dropout_ratio() const {
     return dropout_ratio_;

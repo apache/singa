@@ -67,7 +67,7 @@ class BatchNorm : public Layer {
     runningVariance_.ResetLike(x);
     runningVariance_.CopyData(x);
   }
-  virtual void ToDevice(Device* device) override;
+  virtual void ToDevice(std::shared_ptr<Device> device) override;
 
  protected:
   float factor_;

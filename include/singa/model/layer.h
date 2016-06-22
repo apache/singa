@@ -125,7 +125,7 @@ class Layer {
 
   /// Move the layer (including its parameters and other internal Tensor) onto
   /// the given device
-  virtual void ToDevice(Device* device) {
+  virtual void ToDevice(std::shared_ptr<Device> device) {
     //for (auto p : param_values_) p->ToDevice(device);
   }
 

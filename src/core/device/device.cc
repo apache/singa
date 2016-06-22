@@ -22,7 +22,7 @@ namespace singa {
 Device::Device(int id, int num_executors, string scheduler, string vm)
     : id_(id), num_executors_(num_executors) {
       // TODO(wangwei) create scheduler and vm.
-  host_ = &defaultDevice;
+  host_ = defaultDevice;
 }
 
 void Device::Exec(function<void(Context*)>&& fn, const vector<Blob*> read_blobs,

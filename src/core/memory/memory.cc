@@ -60,7 +60,6 @@ CnMemPool::~CnMemPool() {
 		initialized = false;
 	}
 	mtx.unlock();
-	LOG(INFO) << "cnmem has been freed";
 }
 
 
@@ -70,10 +69,8 @@ void CnMemPool::Malloc(void** ptr, const size_t size) {
 }
 
 void CnMemPool::Free(void* ptr) {
-	LOG(INFO) << "cnmem free is called !!!!!!!!!!!";
 	cnmemStatus_t status = cnmemFree(ptr,NULL);
 	CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS) << " " << cnmemGetErrorString(status);
-	LOG(INFO) << "cnmem free is terminated";
 }
 
 void CudaMemPool::Malloc(void** ptr, const size_t size) {

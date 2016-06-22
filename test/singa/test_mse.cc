@@ -69,9 +69,9 @@ TEST_F(TestMSE, CppBackward) {
 #ifdef USE_CUDA
 TEST_F(TestMSE, CudaForward) {
   singa::MSE* mse = new singa::MSE();
-  singa::CudaGPU dev;
-  p.ToDevice(&dev);
-  t.ToDevice(&dev);
+  auto dev = std::make_shared<singa::CudaGPU>();
+  p.ToDevice(dev);
+  t.ToDevice(dev);
   Tensor loss = mse->Forward(p, t);
 
   loss.ToHost();
@@ -85,18 +85,15 @@ TEST_F(TestMSE, CudaForward) {
     }
     EXPECT_FLOAT_EQ(ldat[i], 0.5 * l);
   }
-	LOG(INFO) << "Before delete pxxxxxxxxxxxxxxxxxxxxxxxx";
 	p.ToHost();
-	LOG(INFO) << "Before delete tyyyyyyyyyyyyyyyyyyyyyyy";
 	t.ToHost();
-	LOG(INFO) << "terminate-xxxxxxxxxxxxxxxxxx-";
-	delete mse;
 }
+
 TEST_F(TestMSE, CudaBackward) {
   singa::MSE mse;
-  singa::CudaGPU dev;
-  p.ToDevice(&dev);
-  t.ToDevice(&dev);
+  auto dev = std::make_shared<singa::CudaGPU>();
+  p.ToDevice(dev);
+  t.ToDevice(dev);
   mse.Forward(p, t);
   Tensor grad = mse.Backward();
   grad.ToHost();

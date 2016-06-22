@@ -52,7 +52,7 @@ const std::pair<Tensor, vector<Tensor>> Dropout::Backward(int flag,
   return std::make_pair(input_grad, param_grad);
 }
 
-void Dropout::ToDevice(Device* device) {
+void Dropout::ToDevice(std::shared_ptr<Device> device) {
   Layer::ToDevice(device);
   mask_.ToDevice(device);
 }

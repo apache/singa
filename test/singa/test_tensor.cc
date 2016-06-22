@@ -59,10 +59,10 @@ TEST(TensorClass, AsType) {
 
 TEST(TensorClass, ToDevice) {
   Tensor t(Shape{2,3});
-  EXPECT_EQ(static_cast<Device*>(&singa::defaultDevice), t.device());
-  singa::CppCPU *dev = new singa::CppCPU(0, 1);
+  EXPECT_EQ(singa::defaultDevice, t.device());
+  auto dev = std::make_shared<singa::CppCPU>(0, 1);
   t.ToDevice(dev);
-  EXPECT_NE(static_cast<Device*>(&singa::defaultDevice), t.device());
+  EXPECT_NE(singa::defaultDevice, t.device());
 }
 
 TEST(TensorClass, CopyDataFromHostPtr) {

@@ -40,7 +40,7 @@ class Dense : public Layer {
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor& grad) override;
 
-  void ToDevice(Device* device) override;
+  void ToDevice(std::shared_ptr<Device> device) override;
 
   size_t num_output() const { return hdim_; }
   size_t num_input() const { return vdim_; }

@@ -255,10 +255,10 @@ TEST_F(TestTensorMath, SumColumnsCpp) {
 #ifdef USE_CUDA
 TEST_F(TestTensorMath, MultCuda) {
   const float x[4] = {1.0f, 2.0f, 3.0f, 4.0f};
-  singa::CudaGPU dev;
-  Tensor t(Shape{2, 2}, &dev);
+  auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{2, 2}, dev);
   t.CopyDataFromHostPtr(x, 4);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   d.CopyDataFromHostPtr(dat1, 6);
   Tensor C = Mult(d, t);
   C.ToHost();
@@ -274,7 +274,7 @@ TEST_F(TestTensorMath, MultCuda) {
   }
 
   const float y[8] = {1.0f, 2.0f, 3.0f, 4.0f, 1.1f, 2.1f, 3.1f, 4.1f};
-  Tensor s(Shape{4, 2}, &dev);
+  Tensor s(Shape{4, 2}, dev);
   s.CopyDataFromHostPtr(y, 8);
   Tensor D = Mult(d, s.T());
   D.ToHost();
@@ -288,11 +288,11 @@ TEST_F(TestTensorMath, MultCuda) {
       EXPECT_FLOAT_EQ(DPtr[i * 4 + j], tmp);
     }
   }
-  Tensor p(Shape{4, 1}, &dev);
+  Tensor p(Shape{4, 1}, dev);
   p.CopyDataFromHostPtr(x, 4);
-  Tensor q(Shape{1, 4}, &dev);
+  Tensor q(Shape{1, 4}, dev);
   q.SetValue(1.0f);
-  Tensor o(Shape{4, 4}, &dev);
+  Tensor o(Shape{4, 4}, dev);
 
   Mult(p, q, &o);
   o.ToHost();
@@ -308,11 +308,11 @@ TEST_F(TestTensorMath, MultCuda) {
 
 TEST_F(TestTensorMath, AddColumnCuda) {
   const float x[3] = {1.0f, 2.0f, 3.0f};
-  singa::CudaGPU dev;
-  Tensor t(Shape{3}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{3}, dev);
   t.CopyDataFromHostPtr(x, 3);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   AddColumn(t, &d);
   d.ToHost();
   const float *xptr = d.data<const float *>();
@@ -326,11 +326,11 @@ TEST_F(TestTensorMath, AddColumnCuda) {
 
 TEST_F(TestTensorMath, SubColumnCuda) {
   const float x[3] = {1.0f, 2.0f, 3.0f};
-  singa::CudaGPU dev;
-  Tensor t(Shape{3}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{3}, dev);
   t.CopyDataFromHostPtr(x, 3);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   SubColumn(t, &d);
   d.ToHost();
   const float *xptr = d.data<const float *>();
@@ -357,11 +357,11 @@ TEST_F(TestTensorMath, MultColumnCpp) {
 #ifdef USE_CUDA
 TEST_F(TestTensorMath, MultColumnCuda) {
   const float x[3] = {1.0f, 2.0f, 3.0f};
-  singa::CudaGPU dev;
-  Tensor t(Shape{3}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{3}, dev);
   t.CopyDataFromHostPtr(x, 3);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   MultColumn(t, &d);
   d.ToHost();
   const float *xptr = d.data<const float *>();
@@ -373,11 +373,11 @@ TEST_F(TestTensorMath, MultColumnCuda) {
 }
 TEST_F(TestTensorMath, DivColumnCuda) {
   const float x[3] = {1.0f, 2.0f, 3.0f};
-  singa::CudaGPU dev;
-  Tensor t(Shape{3}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{3}, dev);
   t.CopyDataFromHostPtr(x, 3);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   DivColumn(t, &d);
   d.ToHost();
   const float *xptr = d.data<const float *>();
@@ -389,11 +389,11 @@ TEST_F(TestTensorMath, DivColumnCuda) {
 }
 TEST_F(TestTensorMath, AddRowCuda) {
   const float x[2] = {1.1f, 2.1f};
-  singa::CudaGPU dev;
-  Tensor t(Shape{2}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{2}, dev);
   t.CopyDataFromHostPtr(x, 2);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   AddRow(t, &d);
   d.ToHost();
   const float *xptr = d.data<const float *>();
@@ -405,11 +405,11 @@ TEST_F(TestTensorMath, AddRowCuda) {
 }
 TEST_F(TestTensorMath, SubRowCuda) {
   const float x[2] = {1.1f, 2.1f};
-  singa::CudaGPU dev;
-  Tensor t(Shape{2}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{2}, dev);
   t.CopyDataFromHostPtr(x, 2);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   SubRow(t, &d);
   d.ToHost();
   const float *xptr = d.data<const float *>();
@@ -421,11 +421,11 @@ TEST_F(TestTensorMath, SubRowCuda) {
 }
 TEST_F(TestTensorMath, MultRowCuda) {
   const float x[2] = {1.1f, 2.1f};
-  singa::CudaGPU dev;
-  Tensor t(Shape{2}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{2}, dev);
   t.CopyDataFromHostPtr(x, 2);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   MultRow(t, &d);
   d.ToHost();
   const float *xptr = d.data<const float *>();
@@ -452,11 +452,11 @@ TEST_F(TestTensorMath, DivRowCpp) {
 #ifdef USE_CUDA
 TEST_F(TestTensorMath, DivRowCuda) {
   const float x[2] = {1.1f, 2.1f};
-  singa::CudaGPU dev;
-  Tensor t(Shape{2}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{2}, dev);
   t.CopyDataFromHostPtr(x, 2);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   DivRow(t, &d);
   d.ToHost();
   const float *xptr = d.data<const float *>();
@@ -467,10 +467,10 @@ TEST_F(TestTensorMath, DivRowCuda) {
   }
 }
 TEST_F(TestTensorMath, SumRowsCuda) {
-  singa::CudaGPU dev;
-  Tensor t(Shape{2}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{2}, dev);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   SumRows(d, &t);
   t.ToHost();
   const float *tptr = t.data<const float *>();
@@ -484,10 +484,10 @@ TEST_F(TestTensorMath, SumRowsCuda) {
 	d.ToHost();
 }
 TEST_F(TestTensorMath, SumColumnCuda) {
-  singa::CudaGPU dev;
-  Tensor t(Shape{3}, &dev);
+	auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor t(Shape{3}, dev);
   d.CopyDataFromHostPtr(dat1, 6);
-  d.ToDevice(&dev);
+  d.ToDevice(dev);
   SumColumns(d, &t);
   t.ToHost();
   const float *tptr = t.data<const float *>();

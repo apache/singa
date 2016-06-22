@@ -17,7 +17,7 @@
  */
 #include "singa/core/device.h"
 namespace singa {
-CppCPU defaultDevice(-1, 1);
+std::shared_ptr<Device> defaultDevice=std::make_shared<CppCPU>(-1, 1);
 CppCPU::CppCPU(int id, int num_executors, string scheduler,
          string vm) : Device(id, num_executors, scheduler, vm) {
   lang_ = kCpp;

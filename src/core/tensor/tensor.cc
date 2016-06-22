@@ -25,29 +25,28 @@
 namespace singa {
 
 Tensor::~Tensor() {
-  // LOG(ERROR) << "~";
   if (blob_ != nullptr && blob_->DecRefCount() == 0)
     device_->FreeBlob(blob_);
   blob_ = nullptr;
 }
 
-Tensor::Tensor() { device_ = &defaultDevice; }
+Tensor::Tensor() { device_ = defaultDevice; }
 
 Tensor::Tensor(const Shape &shape, DataType dtype)
-    : data_type_(dtype), device_(&defaultDevice), shape_(shape) {
-  device_ = &defaultDevice;
+    : data_type_(dtype), device_(defaultDevice), shape_(shape) {
+  device_ = defaultDevice;
   blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
 }
 Tensor::Tensor(Shape &&shape, DataType dtype)
-    : data_type_(dtype), device_(&defaultDevice), shape_(shape) {
-  device_ = &defaultDevice;
+    : data_type_(dtype), device_(defaultDevice), shape_(shape) {
+  device_ = defaultDevice;
   blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
 }
-Tensor::Tensor(const Shape &shape, Device *device, DataType dtype)
+Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device, DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
   blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
 }
-Tensor::Tensor(Shape &&shape, Device *device, DataType dtype)
+Tensor::Tensor(Shape &&shape, std::shared_ptr<Device> device, DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
   blob_ = device_->NewBlob(Product(shape_) * SizeOf(data_type_));
 }
@@ -104,7 +103,7 @@ void Tensor::AsType(DataType type) {
   }
 }
 
-void Tensor::ToDevice(Device *dst) {
+void Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is very strict. May compare against device ID?
   if (device_ != dst) {
     Tensor tmp(shape_, dst, data_type_);
@@ -234,7 +233,7 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
   CHECK_GE(src.MemSize(), src_offset + nBytes);
   CHECK_GE(dst->MemSize(), dst_offset + nBytes);
 
-  Device *src_dev = src.device(), *dst_dev = dst->device();
+  std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
   Blob *from = src.blob(), *to = dst->blob();
   if (dst_dev->lang() != src_dev->lang()) {
     // let the none cpp device conduct copy op

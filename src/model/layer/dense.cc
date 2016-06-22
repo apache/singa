@@ -79,7 +79,7 @@ const std::pair<Tensor, vector<Tensor>> Dense::Backward(int flag,
   return std::make_pair(dx, param_grad);
 }
 
-void Dense::ToDevice(Device *device) {
+void Dense::ToDevice(std::shared_ptr<Device> device) {
   weight_.ToDevice(device);
   bias_.ToDevice(device);
 }

@@ -67,8 +67,8 @@ class Tensor {
   Tensor();
   explicit Tensor(Shape &&shape, DataType dtype = kFloat32);
   explicit Tensor(const Shape &shape, DataType dtype = kFloat32);
-  Tensor(Shape &&shape, Device *dev, DataType dtype = kFloat32);
-  Tensor(const Shape &shape, Device *dev, DataType dtype = kFloat32);
+  Tensor(Shape &&shape, std::shared_ptr<Device> dev, DataType dtype = kFloat32);
+  Tensor(const Shape &shape, std::shared_ptr<Device> dev, DataType dtype = kFloat32);
 
   /// Copy Tensor to share the internal data.  No deep copy.
   Tensor(const Tensor &from);
@@ -80,7 +80,7 @@ class Tensor {
   /// blob_ is allocated in constructors.
   Blob *blob() const { return blob_; }
 
-  Device *device() const { return device_; }
+  std::shared_ptr<Device> device() const { return device_; }
 
   /// Return immutable Tensor values with given type.
   template <typename DType>
@@ -125,7 +125,7 @@ class Tensor {
 
   /// Reset the device.
   /// If the target device is a diff device, then do deep data copy.
-  void ToDevice(Device *dev);
+  void ToDevice(std::shared_ptr<Device> dev);
 
   /// Equivalent to ToDevice(host_dev).
   void ToHost();
@@ -192,7 +192,7 @@ class Tensor {
  protected:
   bool transpose_ = false;
   DataType data_type_ = kFloat32;
-  Device *device_ = nullptr;
+  std::shared_ptr<Device> device_ = nullptr;
   /// Note: blob_ is allocated in lazy manner to avoid frequent malloc/free.
   /// If you want to get an allocated Blob, use blob() instead of blob_.
   Blob *blob_ = nullptr;

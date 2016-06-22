@@ -66,7 +66,6 @@ TEST(Dense, ForwardCpp) {
   dense.set_bias(bias);
 
   singa::Tensor out1 = dense.Forward(singa::kTrain, in);
-  singa::CppCPU host(0, 1);
   const float *outptr1 = out1.data<const float *>();
   EXPECT_EQ(9u, out1.Size());
   for (int i = 0; i < 3; i++)
@@ -76,7 +75,6 @@ TEST(Dense, ForwardCpp) {
                       outptr1[i * 3 + j]);
 }
 #endif  // USE_CBLAS
-#ifdef USE_CUDA
 TEST(Dense, BackwardCpp) {
   Dense dense;
 
@@ -89,7 +87,6 @@ TEST(Dense, BackwardCpp) {
 
   const size_t batchsize = 3, vdim = 2, hdim = 3;
   const float x[batchsize * vdim] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-  singa::CudaGPU cuda(0, 1);
   singa::Tensor in(singa::Shape{batchsize, vdim});
   in.CopyDataFromHostPtr(x, batchsize * vdim);
 
@@ -114,7 +111,6 @@ TEST(Dense, BackwardCpp) {
   grad.CopyDataFromHostPtr(dy, batchsize * hdim);
 
   const auto ret = dense.Backward(singa::kTrain, grad);
-  singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
   singa::Tensor dweight = ret.second.at(0);
   singa::Tensor dbias = ret.second.at(1);
@@ -139,7 +135,6 @@ TEST(Dense, BackwardCpp) {
   for (int i = 0; i < 3; i++)
     EXPECT_FLOAT_EQ((dy[0 * 3 + i] + dy[1 * 3 + i] + dy[2 * 3 + i]), dbiasx[i]);
 }
-#endif
 
 #ifdef USE_CUDA
 TEST(Dense, ForwardCuda) {
@@ -154,25 +149,24 @@ TEST(Dense, ForwardCuda) {
 
   const size_t batchsize = 3, vdim = 2, hdim = 3;
   const float x[batchsize * vdim] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{batchsize, vdim}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{batchsize, vdim}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * vdim);
 
   // set weight
   const float we[hdim * vdim] = {1.0f, 1.0f, 1.0f, 2.0f, 0.0f, 1.0f};
-  singa::Tensor weight(singa::Shape{hdim, vdim}, &cuda);
+  singa::Tensor weight(singa::Shape{hdim, vdim}, cuda);
   weight.CopyDataFromHostPtr(we, hdim * vdim);
 
   const float bia[hdim] = {1.0f, 1.0f, 1.0f};
-  singa::Tensor bias(singa::Shape{hdim}, &cuda);
+  singa::Tensor bias(singa::Shape{hdim}, cuda);
   bias.CopyDataFromHostPtr(bia, hdim);
 
   dense.set_weight(weight);
   dense.set_bias(bias);
 
   singa::Tensor out1 = dense.Forward(singa::kTrain, in);
-  singa::CppCPU host(0, 1);
-  out1.ToDevice(&host);
+  out1.ToHost();
   const float *outptr1 = out1.data<const float *>();
   EXPECT_EQ(9u, out1.Size());
   for (int i = 0; i < 3; i++)
@@ -193,17 +187,17 @@ TEST(Dense, BackwardCuda) {
 
   const size_t batchsize = 3, vdim = 2, hdim = 3;
   const float x[batchsize * vdim] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{batchsize, vdim}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{batchsize, vdim}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * vdim);
 
   // set weight
   const float we[hdim * vdim] = {1.0f, 1.0f, 1.0f, 2.0f, 0.0f, 1.0f};
-  singa::Tensor weight(singa::Shape{hdim, vdim}, &cuda);
+  singa::Tensor weight(singa::Shape{hdim, vdim}, cuda);
   weight.CopyDataFromHostPtr(we, hdim * vdim);
 
   const float bia[hdim] = {1.0f, 1.0f, 1.0f};
-  singa::Tensor bias(singa::Shape{hdim}, &cuda);
+  singa::Tensor bias(singa::Shape{hdim}, cuda);
   bias.CopyDataFromHostPtr(bia, hdim);
 
   dense.set_weight(weight);
@@ -214,15 +208,14 @@ TEST(Dense, BackwardCuda) {
   // grad
   const float dy[batchsize * hdim] = {1.0f, 1.0f, 1.0f, 2.0f, 2.0f,
                                       2.0f, 3.0f, 3.0f, 3.0f};
-  singa::Tensor grad(singa::Shape{batchsize, hdim}, &cuda);
+  singa::Tensor grad(singa::Shape{batchsize, hdim}, cuda);
   grad.CopyDataFromHostPtr(dy, batchsize * hdim);
 
   const auto ret = dense.Backward(singa::kTrain, grad);
-  singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
   singa::Tensor dweight = ret.second.at(0);
   singa::Tensor dbias = ret.second.at(1);
-  in_grad.ToDevice(&host);
+  in_grad.ToHost();
   const float *dx = in_grad.data<const float *>();
   EXPECT_EQ(6u, in_grad.Size());
   for (int i = 0; i < 3; i++)
@@ -231,7 +224,7 @@ TEST(Dense, BackwardCuda) {
           (dy[i * 3 + 0] * we[0 * 2 + j] + dy[i * 3 + 1] * we[1 * 2 + j] +
            dy[i * 3 + 2] * we[2 * 2 + j]),
           dx[i * 2 + j]);
-  dweight.ToDevice(&host);
+  dweight.ToHost();
   const float *dweightx = dweight.data<const float *>();
   EXPECT_EQ(6u, dweight.Size());
   for (int i = 0; i < 3; i++)
@@ -240,7 +233,7 @@ TEST(Dense, BackwardCuda) {
           (dy[0 * 3 + i] * x[0 * 2 + j] + dy[1 * 3 + i] * x[1 * 2 + j] +
            dy[2 * 3 + i] * x[2 * 2 + j]),
           dweightx[i * 2 + j]);
-  dbias.ToDevice(&host);
+  dbias.ToHost();
   const float *dbiasx = dbias.data<const float *>();
   EXPECT_EQ(3u, dbias.Size());
   for (int i = 0; i < 3; i++)

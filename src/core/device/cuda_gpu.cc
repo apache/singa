@@ -43,7 +43,6 @@ CudaGPU::~CudaGPU() {
   }
 #endif
 	delete pool;
-	LOG(INFO) << "device has been deleted";
 }
 
 CudaGPU::CudaGPU(int id, int num_executors,
@@ -143,14 +142,10 @@ void* CudaGPU::Malloc(int size) {
 
   /// Free cpu memory.
 void CudaGPU::Free(void* ptr) {
-	LOG(INFO) << "Cuda free is called";
-	LOG(INFO) << "pool pointer" << pool << "\n";
-	LOG(INFO) << "pool status:" << ((CnMemPool*)pool)->status;
   if (ptr != nullptr) {
 		//CUDA_CHECK(cudaFree(ptr));
 		pool->Free(ptr);
 	}
-	LOG(INFO) << "free memory is successed";
 }
 
 
