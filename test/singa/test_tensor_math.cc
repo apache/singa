@@ -760,3 +760,117 @@ TEST_F(TestTensorMath, SumColumnCuda) {
 }
 
 #endif
+
+TEST_F(TestTensorMath, ConcatenateRowsCpp) {
+  d.CopyDataFromHostPtr<float>(dat1, 6);
+  e.CopyDataFromHostPtr<float>(dat2, 6);
+  const auto ret = singa::ConcatenateRows(vector<Tensor>{d, e});
+  EXPECT_EQ(ret.shape(0), d.shape(0) + e.shape(0));
+  EXPECT_EQ(ret.shape(1), d.shape(1));
+  const float *retPtr = ret.data<float>();
+  for (int i = 0; i < 6; i++) EXPECT_FLOAT_EQ(retPtr[i], dat1[i]);
+  for (int i = 0; i < 6; i++) EXPECT_FLOAT_EQ(retPtr[i + 6], dat2[i]);
+}
+
+TEST_F(TestTensorMath, ConcatenateColumnsCpp) {
+  d.CopyDataFromHostPtr<float>(dat1, 6);
+  e.CopyDataFromHostPtr<float>(dat2, 6);
+  const auto ret = singa::ConcatenateColumns(vector<Tensor>{d, e});
+  EXPECT_EQ(ret.shape(0), d.shape(0));
+  EXPECT_EQ(ret.shape(1), d.shape(1) + e.shape(1));
+
+  const float *retPtr = ret.data<float>();
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 2; j++)
+      EXPECT_FLOAT_EQ(retPtr[i * 4 + j], dat1[i * 2 + j]);
+    for (int j = 0; j < 2; j++)
+      EXPECT_FLOAT_EQ(retPtr[i * 4 + 2 + j], dat2[i * 2 + j]);
+  }
+}
+
+TEST_F(TestTensorMath, CopyRowsCpp) {
+  const auto ret = singa::CopyRows(e, 1, 2);
+  EXPECT_EQ(ret.shape(0), 1u);
+  EXPECT_EQ(ret.shape(1), e.shape(1));
+  const float *retPtr = ret.data<float>();
+  for (size_t i = 0; i < ret.Size(); i++)
+    EXPECT_FLOAT_EQ(retPtr[i], dat1[1 * 2 + i]);
+}
+
+TEST_F(TestTensorMath, CopyColumnsCpp) {
+  a.Reshape(Shape{2, 3});
+  const auto ret = singa::CopyColumns(a, 1, 3);
+  EXPECT_EQ(ret.shape(0), a.shape(0));
+  EXPECT_EQ(ret.shape(1), 2u);
+  const float *retPtr = ret.data<float>();
+  for (size_t i = 0; i < ret.shape(0); i++)
+    for (size_t j = 0; j < ret.shape(1); j++)
+      EXPECT_FLOAT_EQ(retPtr[i * ret.shape(1) + j],
+                      dat1[i * a.shape(1) + j + 1]);
+}
+
+#ifdef USE_CUDA
+
+TEST_F(TestTensorMath, ConcatenateRowsCuda) {
+  singa::CudaGPU dev;
+  d.ToDevice(&dev);
+  e.ToDevice(&dev);
+  d.CopyDataFromHostPtr<float>(dat1, 6);
+  e.CopyDataFromHostPtr<float>(dat2, 6);
+  auto ret = singa::ConcatenateRows(vector<Tensor>{d, e});
+  EXPECT_EQ(ret.shape(0), d.shape(0) + e.shape(0));
+  EXPECT_EQ(ret.shape(1), d.shape(1));
+  ret.ToHost();
+  const float *retPtr = ret.data<float>();
+  for (int i = 0; i < 6; i++) EXPECT_FLOAT_EQ(retPtr[i], dat1[i]);
+  for (int i = 0; i < 6; i++) EXPECT_FLOAT_EQ(retPtr[i + 6], dat2[i]);
+}
+
+TEST_F(TestTensorMath, ConcatenateColumnsCuda) {
+  singa::CudaGPU dev;
+  d.ToDevice(&dev);
+  e.ToDevice(&dev);
+  d.CopyDataFromHostPtr<float>(dat1, 6);
+  e.CopyDataFromHostPtr<float>(dat2, 6);
+  auto ret = singa::ConcatenateColumns(vector<Tensor>{d, e});
+  ret.ToHost();
+  EXPECT_EQ(ret.shape(0), d.shape(0));
+  EXPECT_EQ(ret.shape(1), d.shape(1) + e.shape(1));
+
+  const float *retPtr = ret.data<float>();
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 2; j++)
+      EXPECT_FLOAT_EQ(retPtr[i * 4 + j], dat1[i * 2 + j]);
+    for (int j = 0; j < 2; j++)
+      EXPECT_FLOAT_EQ(retPtr[i * 4 + 2 + j], dat2[i * 2 + j]);
+  }
+}
+
+TEST_F(TestTensorMath, CopyRowsCuda) {
+  singa::CudaGPU dev;
+  e.ToDevice(&dev);
+  auto ret = singa::CopyRows(e, 1, 2);
+  ret.ToHost();
+  EXPECT_EQ(ret.shape(0), 1u);
+  EXPECT_EQ(ret.shape(1), e.shape(1));
+  const float *retPtr = ret.data<float>();
+  for (size_t i = 0; i < ret.Size(); i++)
+    EXPECT_FLOAT_EQ(retPtr[i], dat1[1 * 2 + i]);
+}
+
+TEST_F(TestTensorMath, CopyColumnsCuda) {
+  singa::CudaGPU dev;
+  a.Reshape(Shape{2, 3});
+  a.ToDevice(&dev);
+  auto ret = singa::CopyColumns(a, 1, 3);
+  EXPECT_EQ(ret.shape(0), a.shape(0));
+  EXPECT_EQ(ret.shape(1), 2u);
+  ret.ToHost();
+  const float *retPtr = ret.data<float>();
+  for (size_t i = 0; i < ret.shape(0); i++)
+    for (size_t j = 0; j < ret.shape(1); j++)
+      EXPECT_FLOAT_EQ(retPtr[i * ret.shape(1) + j],
+                      dat1[i * a.shape(1) + j + 1]);
+}
+
+#endif

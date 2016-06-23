@@ -20,6 +20,8 @@
 #define SINGA_CORE_COMMON_H_
 #include <random>
 #include <chrono>
+#include <atomic>
+#include <memory>
 #include "./singa_config.h"
 #include "singa/utils/logging.h"
 
@@ -31,7 +33,7 @@
 #include <cudnn.h>
 #endif
 #endif
-
+using std::atomic;
 namespace singa {
 namespace lang {
 /// To implemente functions using cpp libraries
@@ -45,25 +47,29 @@ typedef struct _Opencl { } Opencl;
 /// Block represent a chunk of memory (on device or host).
 class Block {
  public:
-  Block(void* ptr, size_t size) : data_(ptr), size_(size), ref_count_(1) {}
-  void* mutable_data() const { return data_; }
-  const void* data() const { return data_; }
+  Block(void* ptr, size_t size, size_t offset = 0)
+      : data_(ptr), size_(size), offset_(offset) {
+    ref_count_ = std::make_shared<std::atomic<int>>(1);
+  }
+  Block(void* ptr, size_t size, size_t offset, std::shared_ptr<atomic<int>> ref)
+      : data_(ptr), size_(size), offset_(offset), ref_count_(ref) {}
+  void* mutable_data() const { return static_cast<char*>(data_) + offset_; }
+  const void* data() const { return static_cast<char*>(data_) + offset_; }
   size_t size() const { return size_; }
+  size_t offset() const { return offset_; }
   int IncRefCount() {
-    ref_count_++;
-    return ref_count_;
+    return (*ref_count_)++;
   }
   int DecRefCount() {
-    ref_count_--;
-    CHECK_GE(ref_count_, 0);
-    return ref_count_;
+    return  (*ref_count_)--;
   }
-  int ref_count() const { return ref_count_; }
+  int ref_count() const { return ref_count_->load(); }
 
  private:
   void* data_ = nullptr;
   size_t size_ = 0;
-  int ref_count_ = 0;
+  size_t offset_ = 0;
+  std::shared_ptr<std::atomic<int>> ref_count_ = nullptr;
 };
 
 typedef struct _Context {

@@ -69,6 +69,14 @@ Tensor::Tensor(Tensor &&in)
   in.block_ = nullptr;
 }
 
+void Tensor::SetBlock(Block* block) {
+  LOG(WARNING) << "Pls avoid using this function, which may have side-effect.";
+  if (block_ != nullptr)
+    if (block_->DecRefCount())
+      device_->FreeBlock(block_);
+  block_ = block;
+}
+
 void Tensor::ResetLike(const Tensor &in) {
   if (block_ == nullptr || device_ != in.device_ || MemSize() != in.MemSize()) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
@@ -577,6 +585,76 @@ void DivColumn(const Tensor &v, Tensor *M) {
   MultColumn(inv, M);
 }
 
+Tensor ConcatenateRows(const vector<Tensor> &in) {
+  size_t nrow = 0, ncol = 0;
+  CHECK(in.size());
+  for (const auto &x : in) {
+    CHECK(!x.transpose());
+    CHECK_EQ(x.nDim(), 2u);
+    nrow += x.shape(0);
+    if (ncol == 0)
+      ncol = x.shape(1);
+    else
+      CHECK_EQ(ncol, x.shape(1));
+  }
+  Tensor out(Shape{nrow, ncol}, in.at(0).device(), in.at(0).data_type());
+  size_t dst_offset = 0;
+  for (const auto &x : in) {
+    CopyDataToFrom(&out, x, x.Size(), dst_offset, 0);
+    dst_offset += x.Size();
+  }
+  return out;
+}
+
+// TODO(wangwei) add a copypatch function for improve the efficiency on GPU.
+Tensor ConcatenateColumns(const vector<Tensor> &in) {
+  size_t nrow = 0, ncol = 0;
+  CHECK(in.size());
+  for (const auto &x : in) {
+    CHECK(!x.transpose());
+    CHECK_EQ(x.nDim(), 2u);
+    ncol += x.shape(1);
+    if (nrow == 0)
+      nrow = x.shape(0);
+    else
+      CHECK_EQ(nrow, x.shape(0));
+  }
+  Tensor out(Shape{nrow, ncol}, in.at(0).device(), in.at(0).data_type());
+  for (size_t row = 0; row < nrow; row++) {
+    size_t dst_offset = row * ncol;
+    for (const auto &x : in) {
+      size_t src_offset = row * x.shape(1);
+      CopyDataToFrom(&out, x, x.shape(1), dst_offset, src_offset);
+      dst_offset += x.shape(1);
+    }
+    CHECK_EQ(dst_offset, row * ncol + ncol);
+  }
+  return out;
+}
+Tensor CopyRows(const Tensor &in, const size_t start, const size_t end) {
+  CHECK_EQ(in.nDim(), 2u);
+  CHECK_LT(start, end);
+  CHECK_GE(in.shape(0), end);
+  Shape s;
+  s = Shape{end - start, in.shape(1)};
+  Tensor out(s, in.device(), in.data_type());
+  CopyDataToFrom(&out, in, out.Size(), 0, start * out.shape(1));
+  return out;
+}
+Tensor CopyColumns(const Tensor &in, const size_t start, const size_t end) {
+  CHECK_EQ(in.nDim(), 2u);
+  CHECK_LT(start, end);
+  CHECK_GE(in.shape(1), end);
+  Shape s{in.shape(0), end - start};
+  Tensor out(s, in.device(), in.data_type());
+  for (size_t row = 0; row < out.shape(0); row++) {
+    size_t src_offset = row * in.shape(1) + start;
+    size_t dst_offset = row * out.shape(1);
+    CopyDataToFrom(&out, in, end - start, dst_offset, src_offset);
+  }
+  return out;
+}
+
 /// Divide row 'v' by each row of matrix M; write results into 'out'
 void DivRow(const Tensor &v, Tensor *M) {
   Tensor inv;
@@ -614,6 +692,23 @@ void MultRow(const Tensor &v, Tensor *M) {
   });
 }
 
+Tensor SliceRows(const Tensor& in, const size_t start, const size_t end) {
+  LOG(FATAL) << "Tensor::SliceRows is not implemented";
+  Tensor ret;
+  /*
+  CHECK_LE(in.nDim(), 2);
+  CHECK_LT(start, end);
+  CHECK_LE(in.shape(0), end);
+  Shape s;
+  if (in.nDim() == 2)
+    s = Shape{end - start, in.shape(1)};
+  else
+    s = Shape{end - start};
+  Tensor out(s, in.device(), in.data_type());
+  Block *b = out.block();
+  */
+  return ret;
+}
 void SubColumn(const Tensor &v, Tensor *M) { AddColumn(-1, 1, v, M); }
 
 void SubRow(const Tensor &v, Tensor *M) { AddRow(-1, 1, v, M); }
@@ -766,4 +861,6 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
     }, {p->block(), t.block()}, {p->block()});
   });
 }
+
+
 }  // namespace singa

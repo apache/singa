@@ -68,6 +68,7 @@ class Tensor {
   /// Users should not operate against Block directly.
   /// block_ is allocated in constructors.
   Block *block() const { return block_; }
+  void SetBlock(Block* block);
 
   Device *device() const { return device_; }
 
@@ -214,7 +215,7 @@ Tensor Reshape(const Tensor &in, Shape &&s);
 /// Copy 'num' elements of src to dst.
 /// The first 'src_offset' ('dst_offset') elements will be skipped.
 void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
-                    const size_t src_offset = 0, const size_t dst_offset = 0);
+                    const size_t dst_offset = 0, const size_t src_offset = 0);
 
 // =============Element-wise operations====================================
 Tensor Abs(const Tensor &in);
@@ -398,6 +399,22 @@ void ComputeCrossEntropy(const Tensor& p, const Tensor& t, Tensor* loss);
 /// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
 /// or 2-d matrix. 'grad' has the same shape as 'p'. dx is computed into p.
 void SoftmaxCrossEntropyBwd(const Tensor& t, Tensor* p);
+
+/// Return a tensor consisting of rows ([start, end)) from 'in'. It shares the
+/// memory with 'in'. 'in' is a 1D or 2D Tensor.
+Tensor SliceRows(const Tensor& in, const size_t start, const size_t end);
+/// Return a tensor consisting of rows ([start, end)) from 'in'. It copies the
+/// values from 'in'. 'in' ia a 2D Tensor.
+Tensor CopyRows(const Tensor& in, const size_t start, const size_t end);
+/// Return a tensor consisting of columns ([start, end)) from 'in'. It copies
+/// the values from 'in'. 'in' is a  2D Tensor.
+Tensor CopyColumns(const Tensor& in, const size_t start, const size_t end);
+/// Return a tensor which is vertically stacked from tensors in 'in'. Each
+/// tensor in 'in' is a 2D tensor. Values are copied, no memory sharing.
+Tensor ConcatenateRows(const vector<Tensor>& in);
+/// Return a tensor which is horizontally stacked from tensors in 'in'. Each
+/// tensor in 'in' is a 2D tensor. Values are copied, no memory sharing.
+Tensor ConcatenateColumns(const vector<Tensor>& in);
 }  // namespace singa
 
 #endif  // SINGA_CORE_TENSOR_H_
