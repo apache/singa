@@ -17,54 +17,67 @@
  */
 
 #include "singa/io/encoder.h"
-#include "singa/proto/model.pb.h"
+
+#ifdef USE_OPENCV
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 namespace singa {
 
-namespace io{
-  void JPG2ProtoEncoder::Setup(const EncoderConf& conf) { return; }
-
-  std::string JPG2ProtoEncoder::Encode(vector<Tensor>& data) {
-    // suppose data[0]: data, data[1]: label
-    // data[0] has a shape as {height, width, channel}
-    CHECK_EQ(data[0].nDim(), 3u);
-    int height = data[0].shape()[0];
-    int width = data[0].shape()[1];
-    int channel = data[0].shape()[2];
-    cv::Mat mat = cv::Mat(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
-    CHECK_EQ(height, mat.rows);
-    CHECK_EQ(width, mat.cols);
-    CHECK_EQ(channel, mat.channels());
-
-    if (data[0].data_type() != kInt)
-      LOG(FATAL) << "Data type " << data[0].data_type() <<" is invalid for an raw image";
-    const int* raw = data[0].data<const int*>();
-    for (int i = 0; i < height; i++)
-      for (int j = 0; j < width; j++)
-        for (int k = 0; k < channel; k++)
-	  mat.at<cv::Vec3b>(i, j)[k] = static_cast<uchar>(raw[i * width * channel + j * channel + k]);
-    // suppose each image is attached with only one label
-    const int* label = data[1].data<const int*>();
-    CHECK_EQ(label[0], 2);
-
-    // encode image with jpg format
-    std::vector<uchar> buff;
-    std::vector<int> param = std::vector<int>(2);
-    param[0] = CV_IMWRITE_JPEG_QUALITY;
-    param[1] = 100; // default is 95
-    cv::imencode(".jpg", mat, buff, param);
-    std::string buf(buff.begin(), buff.end());
-
-    std::string output;
-    ImageRecordProto image;
-    image.set_label(label[0]);
-    for (size_t i = 0; i < data[0].nDim(); i++)
-      image.add_shape(data[0].shape()[i]);
-    image.set_pixel(buf);
-    image.SerializeToString(&output);
-    return output;
+std::string JPG2ProtoEncoder::Encode(vector<Tensor>& data) {
+  // suppose image: image, data[1]: label
+  CHECK_LE(data.size(), 2u);
+  const Tensor& image = data.at(0);
+  CHECK_EQ(image.nDim(), 3u);
+  CHECK_EQ(image.data_type(), kUChar) << "Data type " << image.data_type()
+    << " is invalid for an raw image";
+  const auto* raw = image.data<unsigned char>();
+  cv::Mat mat;
+  if (image_dim_order_ == "HWC") {
+    size_t height = image.shape(0), width = image.shape(1),
+           channel = image.shape(2);
+    mat = cv::Mat(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
+    for (size_t i = 0; i < height; i++)
+      for (size_t j = 0; j < width; j++)
+        for (size_t k = 0; k < channel; k++)
+          mat.at<cv::Vec3b>(i, j)[k] =
+              raw[i * width * channel + j * channel + k];
+  } else if (image_dim_order_ == "CHW") {
+    size_t channel = image.shape(0), height = image.shape(1),
+           width = image.shape(2);
+    mat = cv::Mat(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
+    for (size_t i = 0; i < height; i++)
+      for (size_t j = 0; j < width; j++)
+        for (size_t k = 0; k < channel; k++)
+          mat.at<cv::Vec3b>(i, j)[k] = raw[k * height * width + i * width + j];
+  } else {
+    LOG(FATAL) << "Unknow dimension order for images " << image_dim_order_
+               << " Only support 'HWC' and 'CHW'";
   }
+
+  // encode image with jpg format
+  std::vector<uchar> buff;
+  std::vector<int> param = std::vector<int>(2);
+  param[0] = CV_IMWRITE_JPEG_QUALITY;
+  param[1] = 100;  // default is 95
+  cv::imencode(".jpg", mat, buff, param);
+  std::string buf(buff.begin(), buff.end());
+
+  std::string output;
+  ImageRecord record;
+  for (size_t i = 0; i < image.nDim(); i++)
+    record.add_shape(image.shape(i));
+  record.set_pixel(buf);
+
+  // suppose each image is attached with at most one label
+  if (data.size() == 2) {
+    const int* label = data[1].data<int>();
+    CHECK_EQ(label[0], 2);
+    record.add_label(label[0]);
+  }
+
+  record.SerializeToString(&output);
+  return output;
 }
-}
+}  // namespace singa
+#endif  // USE_OPENCV

@@ -22,30 +22,35 @@
 #include <vector>
 #include <string>
 #include "singa/core/tensor.h"
-#include "singa/proto/model.pb.h"
+#include "singa/proto/io.pb.h"
 
 namespace singa {
-namespace io {
-
+/// The base decoder that converts a string into a set of tensors.
 class Decoder {
-  public:
-    Decoder() { }
-    virtual ~Decoder() { }
+ public:
+  Decoder() { }
+  virtual ~Decoder() { }
 
-    virtual void Setup(const DecoderConf& conf) = 0;
+  virtual void Setup(const DecoderConf& conf) {}
 
-    /**
-    * Decode value to get data and labels
-    */
-    virtual std::vector<Tensor> Decode(std::string value) = 0;
+  /// Decode value to get data and labels
+  virtual std::vector<Tensor> Decode(std::string value) = 0;
 };
 
+#ifdef USE_OPENCV
+/// Decode the string as an ImageRecord object and convert it into a image
+/// tensor (dtype is kFloat32) and a label tensor (dtype is kInt).
 class Proto2JPGDecoder : public Decoder {
-  public:
-    void Setup(const DecoderConf& conf) override;
-    std::vector<Tensor> Decode(std::string value) override;
-};
+ public:
+  void Setup(const DecoderConf& conf) override {
+    image_dim_order_ = conf.image_dim_order();
+  }
+  std::vector<Tensor> Decode(std::string value) override;
 
-} // namespace io
+ private:
+  /// Indicate the dimension order for the output image tensor.
+  std::string image_dim_order_ = "CHW";
+};
+#endif
 } // namespace singa
 #endif // SINGA_IO_DECODER_H_

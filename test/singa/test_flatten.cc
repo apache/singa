@@ -55,7 +55,7 @@ TEST(Flatten, ForwardCPU) {
   EXPECT_EQ(n, out.Size());
   EXPECT_EQ(6u, out.shape(0));
   EXPECT_EQ(2u, out.shape(1));
-  const float *yptr = out.data<const float *>();
+  const float *yptr = out.data<float>();
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(x[i], yptr[i]);
 }
 
@@ -77,7 +77,7 @@ TEST(Flatten, BackwardCPU) {
 
   singa::Tensor temp = flt.Forward(singa::kTrain, in);
   const auto out = flt.Backward(singa::kTrain, temp);
-  const float *xptr = out.first.data<const float *>();
+  const float *xptr = out.first.data<float>();
   EXPECT_EQ(n, out.first.Size());
   EXPECT_EQ(2u, out.first.shape(0));
   EXPECT_EQ(1u, out.first.shape(1));
@@ -108,7 +108,7 @@ TEST(Flatten, ForwardGPU) {
   EXPECT_EQ(n, out.Size());
   EXPECT_EQ(6u, out.shape(0));
   EXPECT_EQ(2u, out.shape(1));
-  const float *yptr = out.data<const float *>();
+  const float *yptr = out.data<float>();
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(x[i], yptr[i]);
 }
 
@@ -134,7 +134,7 @@ TEST(Flatten, BackwardGPU) {
   singa::CppCPU host(0, 1);
   singa::Tensor in_diff = ret.first;
   in_diff.ToDevice(&host);
-  const float *xptr = in_diff.data<const float *>();
+  const float *xptr = in_diff.data<float>();
   EXPECT_EQ(n, in_diff.Size());
   EXPECT_EQ(2u, in_diff.shape(0));
   EXPECT_EQ(1u, in_diff.shape(1));

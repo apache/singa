@@ -38,7 +38,7 @@ TEST(Nesterov, ApplyCPU) {
   nesterov.Apply(0, lr, "xx", grad, &value);
 
   singa::Tensor v1 = value.Clone();
-  const float* newv1 = v1.data<const float*>();
+  const float* newv1 = v1.data<float>();
   float history[4], tmp[4];
   for (int i = 0; i < 4; ++i) {
     history[i] = g[i] * lr;
@@ -49,7 +49,7 @@ TEST(Nesterov, ApplyCPU) {
   grad.CopyDataFromHostPtr(g, 4);
   nesterov.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
-  const float* newv2 = v2.data<const float*>();
+  const float* newv2 = v2.data<float>();
   for (int i = 0; i < 4; ++i) {
     tmp[i] = history[i];
     history[i] = history[i] * func(1) + g[i] * lr;
@@ -77,7 +77,7 @@ TEST(Nesterov, ApplyCUDA) {
 
   singa::Tensor v1 = value.Clone();
   v1.ToHost();
-  const float* newv1 = v1.data<const float*>();
+  const float* newv1 = v1.data<float>();
   float history[4], tmp[4];
   for (int i = 0; i < 4; ++i) {
     history[i] = g[i] * lr;
@@ -89,7 +89,7 @@ TEST(Nesterov, ApplyCUDA) {
   nesterov.Apply(1, lr, "xx", grad, &value);
   singa::Tensor v2 = value.Clone();
   v2.ToHost();
-  const float* newv2 = v2.data<const float*>();
+  const float* newv2 = v2.data<float>();
   for (int i = 0; i < 4; ++i) {
     tmp[i] = history[i];
     history[i] = history[i] * func(1) + g[i] * lr;

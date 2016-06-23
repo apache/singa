@@ -67,7 +67,7 @@ TEST(TCudnnActivation, Forward) {
     EXPECT_EQ(n, out.Size());
     singa::CppCPU host(0, 1);
     out.ToDevice(&host);
-    const float* yptr = out.data<const float*>();
+    const float* yptr = out.data<float>();
     float* y = new float[n];
     if (acti.Mode() == "SIGMOID") {
       for (size_t i = 0; i < n; i++) y[i] = 1.f / (1.f + exp(-x[i]));
@@ -105,7 +105,7 @@ TEST(TCudnnActivation, Backward) {
     EXPECT_EQ(n, out.Size());
     singa::CppCPU host(0, 1);
     out.ToDevice(&host);
-    const float* yptr = out.data<const float*>();
+    const float* yptr = out.data<float>();
 
     const float grad[] = {2.0f, 1.0f, 2.0f, 0.0f, -2.0f,
                           -1.0, 1.5,  2.5,  -1.5, -2.5};
@@ -114,7 +114,7 @@ TEST(TCudnnActivation, Backward) {
     const auto ret = acti.Backward(singa::kTrain, out_diff);
     singa::Tensor in_diff = ret.first;
     in_diff.ToDevice(&host);
-    const float* xptr = in_diff.data<const float*>();
+    const float* xptr = in_diff.data<float>();
     float* dx = new float[n];
     if (acti.Mode() == "SIGMOID") {
       for (size_t i = 0; i < n; i++) dx[i] = grad[i] * yptr[i] * (1. - yptr[i]);

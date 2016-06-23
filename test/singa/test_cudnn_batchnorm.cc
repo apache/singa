@@ -77,7 +77,7 @@ TEST(CudnnBatchNorm, Forward) {
   singa::Tensor out = batchnorm.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToHost();
-  const float *outptr = out.data<const float *>();
+  const float *outptr = out.data<float>();
   const auto & shape = out.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);
@@ -178,7 +178,7 @@ TEST(CudnnBatchNorm, Backward) {
   singa::CppCPU host(0, 1);
   singa::Tensor dx = ret.first;
   dx.ToDevice(&host);
-  const float *dxptr = dx.data<const float *>();
+  const float *dxptr = dx.data<float>();
   const auto & shape = dx.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);
@@ -220,7 +220,7 @@ TEST(CudnnBatchNorm, Backward) {
 
   singa::Tensor dbnScale = ret.second.at(0);
   dbnScale.ToDevice(&host);
-  const float *dbnScaleptr = dbnScale.data<const float *>();
+  const float *dbnScaleptr = dbnScale.data<float>();
   const auto & dbnScaleShape = dbnScale.shape();
   EXPECT_EQ(4u, dbnScaleShape.size());
   EXPECT_EQ(1u, dbnScaleShape[0]);
@@ -233,7 +233,7 @@ TEST(CudnnBatchNorm, Backward) {
 
   singa::Tensor dbnBias = ret.second.at(1);
   dbnBias.ToDevice(&host);
-  const float *dbnBiasptr = dbnBias.data<const float *>();
+  const float *dbnBiasptr = dbnBias.data<float>();
   const auto & dbnBiasShape = dbnBias.shape();
   EXPECT_EQ(4u, dbnBiasShape.size());
   EXPECT_EQ(1u, dbnBiasShape[0]);

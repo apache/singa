@@ -60,7 +60,7 @@ TEST(PReLU, ForwardCPU) {
   prelu.Set_a(a);
 
   singa::Tensor out = prelu.Forward(singa::kTrain, in);
-  const float *yptr = out.data<const float *>();
+  const float *yptr = out.data<float>();
   EXPECT_EQ(n, out.Size());
 
   float *y = new float[n];
@@ -106,8 +106,8 @@ TEST(PReLU, BackwardCPU) {
   singa::Tensor out_diff(singa::Shape{batchsize, c, h, w});
   out_diff.CopyDataFromHostPtr<float>(grad, n);
   const auto ret = prelu.Backward(singa::kTrain, out_diff);
-  const float *xptr = ret.first.data<const float *>();
-  const float *aptr = ret.second.at(0).data<const float *>();
+  const float *xptr = ret.first.data<float>();
+  const float *aptr = ret.second.at(0).data<float>();
   float *dx = new float[n];
   size_t div_factor = prelu.Channel_shared() ? c : 1;
   size_t params = prelu.Channel_shared() ? 1 : c;
@@ -162,7 +162,7 @@ TEST(PReLU, ForwardGPU) {
   singa::Tensor out = prelu.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
-  const float *yptr = out.data<const float *>();
+  const float *yptr = out.data<float>();
   EXPECT_EQ(n, out.Size());
 
   float *y = new float[n];
@@ -212,10 +212,10 @@ TEST(PReLU, BackwardGPU) {
   singa::Tensor in_diff = ret.first;
   singa::CppCPU host(0, 1);
   in_diff.ToDevice(&host);
-  const float *xptr = in_diff.data<const float *>();
+  const float *xptr = in_diff.data<float>();
   singa::Tensor a_diff = ret.second.at(0);
   a_diff.ToDevice(&host);
-  const float *aptr = a_diff.data<const float *>();
+  const float *aptr = a_diff.data<float>();
   float *dx = new float[n];
   size_t div_factor = prelu.Channel_shared() ? c : 1;
   size_t params = prelu.Channel_shared() ? 1 : c;

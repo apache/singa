@@ -17,41 +17,59 @@
  */
 
 #include "singa/io/decoder.h"
-#include "singa/proto/model.pb.h"
+
+#ifdef USE_OPENCV
+
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 namespace singa {
 
-namespace io {
-  void Proto2JPGDecoder::Setup(const DecoderConf& conf) { return; }
+std::vector<Tensor> Proto2JPGDecoder::Decode(std::string value) {
+  std::vector<Tensor> output;
 
-  std::vector<Tensor> Proto2JPGDecoder::Decode(std::string value) {
-    std::vector<Tensor> output;
-    ImageRecordProto image;
-    image.ParseFromString(value);
-    Shape shape(image.shape().begin(), image.shape().end());
-    Tensor raw(shape), label(Shape{1});
-    std::vector<uchar> pixel(image.pixel().begin(), image.pixel().end());
+  ImageRecord record;
+  record.ParseFromString(value);
+  std::vector<uchar> pixel(record.pixel().begin(), record.pixel().end());
 
-    // decode image
-    cv::Mat mat = cv::imdecode(cv::Mat(pixel), CV_LOAD_IMAGE_COLOR);
-    int height = mat.rows, width = mat.cols, channel = mat.channels();
-    CHECK_EQ(shape[0], height);
-    CHECK_EQ(shape[1], width);
-    CHECK_EQ(shape[2], channel);
+  // decode image
+  cv::Mat mat = cv::imdecode(cv::Mat(pixel), CV_LOAD_IMAGE_COLOR);
+  size_t height = mat.rows, width = mat.cols, channel = mat.channels();
+  Shape shape(record.shape().begin(), record.shape().end());
+  CHECK_EQ(shape[0], height);
+  CHECK_EQ(shape[1], width);
+  CHECK_EQ(shape[2], channel);
+  Tensor image(shape);
 
-    float* data = new float[raw.Size()];
-    for (int i = 0; i < height; i++)
-      for (int j = 0; j < width; j++)
-        for (int k = 0; k < channel; k++)
-          data[i * width * channel + j * channel + k] = static_cast<float>(static_cast<int>(mat.at<cv::Vec3b>(i, j)[k]));
-    raw.CopyDataFromHostPtr<float>(data, raw.Size());
-    float l = static_cast<float>(image.label());
-    label.CopyDataFromHostPtr(&l, 1);
-    output.push_back(raw);
-    output.push_back(label);
-    return output;
+  float* data = new float[image.Size()];
+  if (image_dim_order_ == "CHW") {
+    for (size_t i = 0; i < height; i++)
+      for (size_t j = 0; j < width; j++)
+        for (size_t k = 0; k < channel; k++)
+          data[k * height * width + i * width + j] = static_cast<float>(
+              static_cast<int>(mat.at<cv::Vec3b>(i, j)[k]));
+  } else if (image_dim_order_ == "HWC") {
+
+    for (size_t i = 0; i < height; i++)
+      for (size_t j = 0; j < width; j++)
+        for (size_t k = 0; k < channel; k++)
+          data[i * width * channel + j * channel + k] =
+              static_cast<float>(static_cast<int>(mat.at<cv::Vec3b>(i, j)[k]));
+  } else {
+    LOG(FATAL) << "Unknow dimension order for images " << image_dim_order_
+               << " Only support 'HWC' and 'CHW'";
   }
+  image.CopyDataFromHostPtr<float>(data, image.Size());
+  output.push_back(image);
+  delete data;
+
+  if (record.label_size()) {
+    Tensor label(Shape{1}, &defaultDevice, kInt);
+    int labelid = record.label(0);
+    label.CopyDataFromHostPtr(&labelid, 1);
+    output.push_back(label);
+  }
+  return output;
 }
-}
+}  // namespace singa
+#endif

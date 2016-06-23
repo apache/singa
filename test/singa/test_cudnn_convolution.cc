@@ -99,7 +99,7 @@ TEST(CudnnConvolution, Forward) {
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out1.ToDevice(&host);
-  const float *outptr1 = out1.data<const float *>();
+  const float *outptr1 = out1.data<float>();
   // Input: 3*3; kernel: 3*3; stride: 2*2; padding: 1*1.
   EXPECT_EQ(4u, out1.Size());
 
@@ -161,7 +161,7 @@ TEST(CudnnConvolution, Backward) {
   singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
   in_grad.ToDevice(&host);
-  const float *dx = in_grad.data<const float *>();
+  const float *dx = in_grad.data<float>();
   const float *wptr = we;
   EXPECT_EQ(9u, in_grad.Size());
   EXPECT_EQ(dy[0] * wptr[4], dx[0]);
@@ -180,10 +180,10 @@ TEST(CudnnConvolution, Backward) {
   singa::Tensor db = ret.second[1];
   dw.ToDevice(&host);
   db.ToDevice(&host);
-  const float *dbptr = db.data<const float *>();
+  const float *dbptr = db.data<float>();
   EXPECT_EQ(dy[0] + dy[1] + dy[2] + dy[3], dbptr[0]);
 
-  const float *dwptr = dw.data<const float *>();
+  const float *dwptr = dw.data<float>();
   EXPECT_EQ(9u, dw.Size());
   EXPECT_EQ(dy[3] * x[4], dwptr[0]);
   EXPECT_EQ(dy[3] * x[5] + dy[2] * x[3], dwptr[1]);
@@ -271,7 +271,7 @@ TEST(CudnnConvolution_AT, Forward) {
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out1.ToDevice(&host);
-  const float *outptr1 = out1.data<const float *>();
+  const float *outptr1 = out1.data<float>();
   // Input: 3*3; kernel: 3*3; stride: 2*2; padding: 1*1.
   EXPECT_EQ(4u, out1.Size());
 
@@ -333,7 +333,7 @@ TEST(CudnnConvolution_AT, Backward) {
   singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
   in_grad.ToDevice(&host);
-  const float *dx = in_grad.data<const float *>();
+  const float *dx = in_grad.data<float>();
   const float *wptr = we;
   EXPECT_EQ(9u, in_grad.Size());
   EXPECT_EQ(dy[0] * wptr[4], dx[0]);
@@ -352,10 +352,10 @@ TEST(CudnnConvolution_AT, Backward) {
   singa::Tensor db = ret.second[1];
   dw.ToDevice(&host);
   db.ToDevice(&host);
-  const float *dbptr = db.data<const float *>();
+  const float *dbptr = db.data<float>();
   EXPECT_EQ(dy[0] + dy[1] + dy[2] + dy[3], dbptr[0]);
 
-  const float *dwptr = dw.data<const float *>();
+  const float *dwptr = dw.data<float>();
   EXPECT_EQ(9u, dw.Size());
   EXPECT_EQ(dy[3] * x[4], dwptr[0]);
   EXPECT_EQ(dy[3] * x[5] + dy[2] * x[3], dwptr[1]);

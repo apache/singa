@@ -66,7 +66,7 @@ TEST(Dense, ForwardCpp) {
 
   singa::Tensor out1 = dense.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
-  const float *outptr1 = out1.data<const float *>();
+  const float *outptr1 = out1.data<float>();
   EXPECT_EQ(9u, out1.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
@@ -116,7 +116,7 @@ TEST(Dense, BackwardCpp) {
   singa::Tensor in_grad = ret.first;
   singa::Tensor dweight = ret.second.at(0);
   singa::Tensor dbias = ret.second.at(1);
-  const float *dx = in_grad.data<const float *>();
+  const float *dx = in_grad.data<float>();
   EXPECT_EQ(6u, in_grad.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 2; j++)
@@ -124,7 +124,7 @@ TEST(Dense, BackwardCpp) {
           (dy[i * 3 + 0] * we[0 * 2 + j] + dy[i * 3 + 1] * we[1 * 2 + j] +
            dy[i * 3 + 2] * we[2 * 2 + j]),
           dx[i * 2 + j]);
-  const float *dweightx = dweight.data<const float *>();
+  const float *dweightx = dweight.data<float>();
   EXPECT_EQ(6u, dweight.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 2; j++)
@@ -132,7 +132,7 @@ TEST(Dense, BackwardCpp) {
           (dy[0 * 3 + i] * x[0 * 2 + j] + dy[1 * 3 + i] * x[1 * 2 + j] +
            dy[2 * 3 + i] * x[2 * 2 + j]),
           dweightx[i * 2 + j]);
-  const float *dbiasx = dbias.data<const float *>();
+  const float *dbiasx = dbias.data<float>();
   EXPECT_EQ(3u, dbias.Size());
   for (int i = 0; i < 3; i++)
     EXPECT_FLOAT_EQ((dy[0 * 3 + i] + dy[1 * 3 + i] + dy[2 * 3 + i]), dbiasx[i]);
@@ -170,7 +170,7 @@ TEST(Dense, ForwardCuda) {
   singa::Tensor out1 = dense.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out1.ToDevice(&host);
-  const float *outptr1 = out1.data<const float *>();
+  const float *outptr1 = out1.data<float>();
   EXPECT_EQ(9u, out1.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
@@ -219,7 +219,7 @@ TEST(Dense, BackwardCuda) {
   singa::Tensor dweight = ret.second.at(0);
   singa::Tensor dbias = ret.second.at(1);
   in_grad.ToDevice(&host);
-  const float *dx = in_grad.data<const float *>();
+  const float *dx = in_grad.data<float>();
   EXPECT_EQ(6u, in_grad.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 2; j++)
@@ -228,7 +228,7 @@ TEST(Dense, BackwardCuda) {
            dy[i * 3 + 2] * we[2 * 2 + j]),
           dx[i * 2 + j]);
   dweight.ToDevice(&host);
-  const float *dweightx = dweight.data<const float *>();
+  const float *dweightx = dweight.data<float>();
   EXPECT_EQ(6u, dweight.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 2; j++)
@@ -237,7 +237,7 @@ TEST(Dense, BackwardCuda) {
            dy[2 * 3 + i] * x[2 * 2 + j]),
           dweightx[i * 2 + j]);
   dbias.ToDevice(&host);
-  const float *dbiasx = dbias.data<const float *>();
+  const float *dbiasx = dbias.data<float>();
   EXPECT_EQ(3u, dbias.Size());
   for (int i = 0; i < 3; i++)
     EXPECT_FLOAT_EQ((dy[0 * 3 + i] + dy[1 * 3 + i] + dy[2 * 3 + i]), dbiasx[i]);

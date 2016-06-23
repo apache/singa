@@ -56,7 +56,7 @@ TEST(CudnnSoftmax, Forward1D) {
   singa::Tensor out = sft.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
-  const float* yptr = out.data<const float*>();
+  const float* yptr = out.data<float>();
   EXPECT_EQ(n, out.Size());
 
   float* y = new float[n];
@@ -83,7 +83,7 @@ TEST(CudnnSoftmax, Backward1D) {
   singa::Tensor out = sft.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
-  const float* yptr = out.data<const float*>();
+  const float* yptr = out.data<float>();
 
   const float grad[] = {2.f, -3.f, 1.f, 3.f, -1.f, -2.f};
   singa::Tensor out_diff(shape, &cuda);
@@ -91,7 +91,7 @@ TEST(CudnnSoftmax, Backward1D) {
   const auto ret = sft.Backward(singa::kTrain, out_diff);
   singa::Tensor in_diff = ret.first;
   in_diff.ToDevice(&host);
-  const float* xptr = in_diff.data<const float*>();
+  const float* xptr = in_diff.data<float>();
 
   float* dx = new float[n];
   float sigma = 0.f;
@@ -118,7 +118,7 @@ TEST(CudnnSoftmax, Forward2D) {
   singa::Tensor out = sft.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
-  const float* yptr = out.data<const float*>();
+  const float* yptr = out.data<float>();
   EXPECT_EQ(n, out.Size());
 
   float* y = new float[n];
@@ -147,7 +147,7 @@ TEST(CudnnSoftmax, Backward2D) {
   singa::Tensor out = sft.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
-  const float* yptr = out.data<const float*>();
+  const float* yptr = out.data<float>();
 
   const float grad[] = {2.f, -3.f, 1.f, 3.f, -1.f, -2.f};
   singa::Tensor out_diff(shape, &cuda);
@@ -155,7 +155,7 @@ TEST(CudnnSoftmax, Backward2D) {
   const auto ret = sft.Backward(singa::kTrain, out_diff);
   singa::Tensor in_diff = ret.first;
   in_diff.ToDevice(&host);
-  const float* xptr = in_diff.data<const float*>();
+  const float* xptr = in_diff.data<float>();
 
   float* dx = new float[n];
   float* sigma = new float[batch];

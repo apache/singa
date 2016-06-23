@@ -76,7 +76,7 @@ TEST(CudnnPooling, Forward) {
   singa::Tensor out1 = pool.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out1.ToDevice(&host);
-  const float *outptr1 = out1.data<const float *>();
+  const float *outptr1 = out1.data<float>();
   // Input: 3*3; kernel: 2*2; stride: 1*1; no padding.
   EXPECT_EQ(4u, out1.Size());
   EXPECT_EQ(5.0f, outptr1[0]);
@@ -118,7 +118,7 @@ TEST(CudnnPooling, Backward) {
   singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
   in_grad.ToDevice(&host);
-  const float *dx = in_grad.data<const float *>();
+  const float *dx = in_grad.data<float>();
   EXPECT_EQ(9u, in_grad.Size());
   EXPECT_EQ(0.0f, dx[0]);
   EXPECT_EQ(0.0f, dx[1]);

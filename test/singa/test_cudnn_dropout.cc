@@ -64,13 +64,13 @@ TEST(CudnnDropout, Forward) {
 
   singa::Tensor mask(drop.mask().shape(), drop.mask().data_type());
   mask.CopyData(drop.mask());
-  const char* mptr = mask.data<const char*>();
+  const char* mptr = mask.data<char>();
   for (size_t i = 0; i < n; i++)
     EXPECT_FLOAT_EQ(0, GetBitValue(mptr, i) * (GetBitValue(mptr, i) - 1));
 
   singa::CppCPU host(0, 1);
   out1.ToDevice(&host);
-  const float* outptr1 = out1.data<const float*>();
+  const float* outptr1 = out1.data<float>();
   EXPECT_EQ(n, out1.Size());
   float scale = 1.0f / (1.0f - pdrop);
   // the output value should be 0 or the same as the input
@@ -81,7 +81,7 @@ TEST(CudnnDropout, Forward) {
   singa::Tensor out2 = drop.Forward(singa::kEval, in);
   out2.ToDevice(&host);
   EXPECT_EQ(n, out2.Size());
-  const float* outptr2 = out2.data<const float*>();
+  const float* outptr2 = out2.data<float>();
   // the output value should be the same as the input
   EXPECT_EQ(x[0], outptr2[0]);
   EXPECT_EQ(x[1], outptr2[1]);
@@ -113,11 +113,11 @@ TEST(CudnnDropout, Backward) {
   singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
   in_grad.ToDevice(&host);
-  const float* dx = in_grad.data<const float*>();
+  const float* dx = in_grad.data<float>();
 
   singa::Tensor mask(drop.mask().shape(), drop.mask().data_type());
   mask.CopyData(drop.mask());
-  const char* mptr = mask.data<const char*>();
+  const char* mptr = mask.data<char>();
 
 
   EXPECT_FLOAT_EQ(dx[0], dy[0] * GetBitValue(mptr, 0) * scale);

@@ -22,32 +22,40 @@
 #include <vector>
 #include <string>
 #include "singa/core/tensor.h"
-#include "singa/proto/model.pb.h"
+#include "singa/proto/io.pb.h"
 
 namespace singa {
-namespace io {
 
+/// Base encoder class that convert a set of tensors into string for storage.
 class Encoder {
-  public:
-    Encoder() { }
-    virtual ~Encoder() { }
-    
-    virtual void Setup(const EncoderConf& conf) = 0;
+ public:
+  Encoder() {}
+  virtual ~Encoder() {}
 
-    /**
-     * Format each sample data as a string,
-     * whose structure depends on the proto definition.
-     * e.g., {key, shape, label, type, data, ...}
-     */
-    virtual std::string Encode(vector<Tensor>& data) = 0;
+  virtual void Setup(const EncoderConf& conf) {}
+
+  /// Format each sample data as a string,
+  /// whose structure depends on the proto definition.
+  virtual std::string Encode(vector<Tensor>& data) = 0;
 };
 
+#ifdef USE_OPENCV
+/// Convert an image and its label into an ImageRecord (protobuf message).
 class JPG2ProtoEncoder : public Encoder {
-  public:
-    void Setup(const EncoderConf& conf) override;
-    std::string Encode(vector<Tensor>& data) override;
-};
+ public:
+  void Setup(const EncoderConf& conf) override {
+    image_dim_order_ = conf.image_dim_order();
+  }
+  /// 'data' has two tesors, one for the image pixels (3D) and one for the
+  /// label. The image tensor's data type is kUChar.
+  /// The dimension order is indicated in the EncoderConf, i.e. image_dim_order.
+  /// The label tensor's data type is kInt.
+  std::string Encode(vector<Tensor>& data) override;
 
-} // namespace io
+ private:
+  /// Indicate the input image tensor's dimension order.
+  std::string image_dim_order_ = "HWC";
+};
+#endif  // USE_OPENCV
 } // namespace singa
 #endif  // SINGA_IO_ENCODER_H_

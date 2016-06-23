@@ -63,7 +63,9 @@ const Tensor PReLU::Forward(int flag, const Tensor &input) {
     output = input * ((input > 0.f) + temp);
   } else {
     // share the first param of Tensor A along all channels
-    const float a = a_.data<const float *>()[0];
+    LOG(FATAL) << "Not implemented";
+  // TODO(wangwei) cannot access the data in this way. The data could be on GPU.
+    auto a = a_.data<float>()[0];
     output = input * ((input > 0.f) + (input <= 0.f) * a);
   }
   if (flag & kTrain) buf_.push(input);
@@ -122,7 +124,9 @@ const std::pair<Tensor, vector<Tensor> > PReLU::Backward(int flag,
     }
   } else {
     // share the first param of Tensor A along all channels
-    const float a = a_.data<const float *>()[0];
+    LOG(FATAL) << "Not Implemented";
+    // TODO(wangwei) cannot access the data in this way. The data could be on GPU.
+    auto a = a_.data<float>()[0];
     input_grad = grad * input * ((input > 0.f) + (input <= 0.f) * a);
     Tensor temp = grad * input * (input <= 0.f);
     float sum = Sum<float>(temp);

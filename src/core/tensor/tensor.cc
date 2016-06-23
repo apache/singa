@@ -133,6 +133,8 @@ void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num) {
     LOG(WARNING) << "Copy data from null host ptr";
   }
 }
+template void Tensor::CopyDataFromHostPtr(const unsigned char *src,
+                                          const size_t num);
 template void Tensor::CopyDataFromHostPtr(const float *src, const size_t num);
 template void Tensor::CopyDataFromHostPtr(const int *src, const size_t num);
 

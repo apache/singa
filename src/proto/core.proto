@@ -27,7 +27,8 @@ enum DataType {
   kInt = 2;
   kChar = 3;
   kDouble = 4;
-  kNumDataType = 5;
+  kUChar = 5;
+  kNumDataType = 6;
 }
 
 enum LangType {

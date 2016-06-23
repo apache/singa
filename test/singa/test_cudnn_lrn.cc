@@ -73,7 +73,7 @@ TEST(CudnnLRN, Forward) {
   singa::Tensor out = lrn.Forward(singa::kTrain, in);
   singa::CppCPU host(0, 1);
   out.ToDevice(&host);
-  const float *outptr = out.data<const float *>();
+  const float *outptr = out.data<float>();
   const auto & shape = out.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);
@@ -159,7 +159,7 @@ TEST(CudnnLRN, Backward) {
   singa::CppCPU host(0, 1);
   singa::Tensor dx = ret.first;
   dx.ToDevice(&host);
-  const float *dxptr = dx.data<const float *>();
+  const float *dxptr = dx.data<float>();
   const auto & shape = dx.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);

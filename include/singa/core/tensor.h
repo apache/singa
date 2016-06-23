@@ -34,7 +34,7 @@ namespace singa {
 typedef vector<size_t> Shape;
 /// hardcode the width of types defined in DataType
 const size_t kDataWidth[] = {sizeof(float), sizeof(float) / 2, sizeof(int),
-                             sizeof(char), sizeof(double)};
+                             sizeof(char), sizeof(double), sizeof(unsigned char)};
 inline size_t SizeOf(DataType t) {
   static_assert(kNumDataType == sizeof(kDataWidth) / sizeof(size_t),
                 "Num of data types not match num of data width");
@@ -73,8 +73,8 @@ class Tensor {
 
   /// return immutable Tensor values with given type.
   template <typename SType>
-  SType data() const {
-    return static_cast<SType>(block()->data());
+  const SType* data() const {
+    return static_cast<const SType*>(block()->data());
   }
 
   /// data type, including kFloat16, kFloat32, kInt
