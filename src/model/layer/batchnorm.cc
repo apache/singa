@@ -21,12 +21,13 @@
 #include "batchnorm.h"
 
 namespace singa {
-void BatchNorm::Setup(const LayerConf& conf) {
-  Layer::Setup(conf);
+void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
+  Layer::Setup(in_sample, conf);
+  out_sample_shape_ = in_sample;
   factor_ = conf.batchnorm_conf().factor();
-  channels_ = conf.batchnorm_conf().channels();
-  height_ = conf.batchnorm_conf().height();
-  width_ = conf.batchnorm_conf().width();
+  channels_ = in_sample.at(0);
+  height_ = in_sample.at(1);
+  width_ = in_sample.at(2);
 
   bnScale_.Reshape(Shape{channels_ * height_ * width_});
   bnBias_.ResetLike(bnScale_);

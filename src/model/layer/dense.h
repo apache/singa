@@ -31,7 +31,11 @@ class Dense : public Layer {
   const std::string layer_type() const override { return "Dense"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const LayerConf& conf) override;
+  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  const Shape GetOutputSampleShape() const override {
+    CHECK(hdim_) << "You may haven't call Setup()";
+    return vector<size_t>{hdim_};
+  }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&)
   const Tensor Forward(int flag, const Tensor& input) override;

@@ -19,19 +19,15 @@
 #include "./softmax.h"
 namespace singa {
 
-void Softmax::Setup(const LayerConf& conf) {
-  Layer::Setup(conf);
-  axis_ = conf.softmax_conf().axis();  // default is 1
+void Softmax::Setup(const Shape& in_sample, const LayerConf& conf) {
+  Layer::Setup(in_sample, conf);
+  CHECK_EQ(in_sample.size(), 1u);
+  out_sample_shape_ = in_sample;
 }
 
 const Tensor Softmax::Forward(int flag, const Tensor& input) {
-  Tensor output;
-  if (input.nDim() == 1) {
-    Tensor tmp = Reshape(input, Shape{1, input.Size()});
-      output = SoftMax(tmp, 0);
-  } else {
-    output = SoftMax(input, axis_);
-  }
+  CHECK_LE(input.nDim(), 2u);
+  Tensor output =  SoftMax(input);
   if (flag & kTrain)
     buf_.push(output);
   return output;
@@ -39,18 +35,22 @@ const Tensor Softmax::Forward(int flag, const Tensor& input) {
 
 const std::pair<Tensor, vector<Tensor>> Softmax::Backward(int flag,
                                                           const Tensor& grad) {
-  size_t nrow = 1, ncol = grad.Size();
-  if (grad.nDim() > 1 && axis_ > 0) {
-    nrow = Product(grad.shape(), 0, axis_);
-    ncol = Product(grad.shape(), axis_, grad.nDim());
-  }
+  CHECK_LE(grad.nDim(), 2u);
   Tensor input_grad = grad.Clone();
-  input_grad.Reshape(Shape{nrow, ncol});
   CHECK(!buf_.empty());
   Tensor y = buf_.top();
   buf_.pop();
   CHECK(y.shape() == input_grad.shape());
   Tensor sigma = input_grad * y;
+
+  size_t nrow = 1, ncol = grad.Size();
+  if (grad.nDim() > 1) {
+    nrow = grad.shape(0);
+    ncol = grad.shape(1);
+  } else {
+    input_grad.Reshape({nrow, ncol});
+    sigma.Reshape({nrow, ncol});
+  }
   Tensor sum(Shape{nrow}, grad.device(), grad.data_type());
   SumColumns(sigma, &sum);
   // dL / dy_i = grad_i
@@ -60,6 +60,8 @@ const std::pair<Tensor, vector<Tensor>> Softmax::Backward(int flag,
   // dL / dx_i = y_i * (grad_i - sum), where sum = sum_i(grad_i * y_i);
   SubColumn(sum, &input_grad);
   input_grad = input_grad * y;
+  if (grad.nDim() == 1)
+    input_grad.Reshape(Shape{ncol});
   // Mult(input_grad, y, &input_grad);
   vector<Tensor> param_grad;
   return std::make_pair(input_grad, param_grad);

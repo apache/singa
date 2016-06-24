@@ -48,21 +48,21 @@ class Device {
   virtual void SetRandSeed(unsigned seed) = 0;
 
   /// Called by Tensor.
-  Blob* NewBlob(int size);
+  Block* NewBlock(int size);
 
   /// Called by Tensor.
-  void FreeBlob(Blob* blob);
+  void FreeBlock(Block* block);
 
   /// Copy data within or across devices.
-  void CopyDataToFrom(Blob* dst, Blob* src, size_t nBytes,
+  void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                       CopyDirection direction, int dst_offset, int src_offset);
 
-  void CopyDataFromHostPtr(Blob* dst, const void* src, size_t nBytes,
+  void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
                            size_t dst_offset = 0);
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
-  void Exec(function<void(Context*)>&& fn, const vector<Blob*> read_blobs,
-                    const vector<Blob*> write_blobs,
+  void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
+                    const vector<Block*> write_blocks,
                     bool use_rand_generator = false);
 
   // Wait for one event.
@@ -211,11 +211,11 @@ class CallbackArg {
 /// Type of callback functions for executing tensor ops.
 typedef function<void(CallbackArg*)> CallbackFn;
 public:
-  /// Operation has a function, and read/write blobs.
+  /// Operation has a function, and read/write blocks.
   typedef struct _Operation {
     function<void(Context*)> fn;
-    const vector<Blob*> read_blobs;
-    const vector<Blob*> write_blobs;
+    const vector<Block*> read_blocks;
+    const vector<Block*> write_blocks;
   } Operation;
 
 */

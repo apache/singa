@@ -78,7 +78,7 @@ message OptimizerConf {
   optional string type = 1 [default = "sgd"];
 
   // used by RMSprop and Adadelta
-  optional float rho = 2 [default = 0.001];
+  optional float rho = 2 [default = 0.95];
 
   // used by Adam and AdamMax
   optional float beta_1 = 3 [default = 0.9];
@@ -86,6 +86,9 @@ message OptimizerConf {
 
   // used by vanilla sgd and nesterov
   optional float momentum = 5 [default = 0.9];
+
+  // delta is used to avoid dividing zero
+  optional float delta = 6 [default = 1e-8];
 }
 
 message ConstraintConf {
@@ -381,10 +384,6 @@ message ConvolutionConf {
   // cudnn algorithm preference
   // options: "fastest", "limited_workspace", "no_workspace"
   optional string prefer = 51 [default = "fastest"];
-  // input shape
-  optional int32 channels = 52;
-  optional int32 height = 53;
-  optional int32 width = 54;
 }
 
 /*
@@ -587,7 +586,6 @@ message DenseConf {
   // May be negative to index from the end (e.g., -1 for the last axis).
   optional int32 axis = 5 [default = 1];
 
-  optional uint32 num_input = 20; // The number of inputs for the layer
   optional bool transpose = 21 [default = false]; // whether transpose or not
 }
 
@@ -661,10 +659,6 @@ message PoolingConf {
   // If global_pooling then it will pool over the size of the bottom by doing
   // kernel_h = bottom->height and kernel_w = bottom->width
   optional bool global_pooling = 12 [default = false];
-  // Shape of source
-  optional int32 channels = 50;
-  optional int32 height = 51;
-  optional int32 width = 52;
   // whether to propagate nan
   optional bool nan_prop = 53 [default = false];
 }
@@ -834,7 +828,11 @@ message SoftmaxConf {
   // The axis along which to perform the softmax -- may be negative to index
   // from the end (e.g., -1 for the last axis).
   // Any other axes will be evaluated as independent softmaxes.
-  optional int32 axis = 2 [default = 1];
+  // optional int32 axis = 2 [default = 1];
+
+  /// The cudnn algorithm preferences
+  /// Options are: accurate, fast and log
+  optional string algorithm = 50 [default = "accurate"];
 }
 
 message TanHConf {
@@ -919,14 +917,12 @@ message PReLUConf {
   optional FillerConf filler = 1;
   // Whether or not slope paramters are shared across channels.
   optional bool channel_shared = 2 [default = false];
+
+  optional string format = 20 [default = "NCHW"];
 }
 
 message BatchNormConf {
   // Used in the moving average computation runningMean =
   // newMean*factor + runningMean*(1-factor).
   optional double factor = 1 [default = 0.9];
-  // input shape
-  optional int32 channels = 2;
-  optional int32 height = 3;
-  optional int32 width = 4;
 }

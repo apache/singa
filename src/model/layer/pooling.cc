@@ -20,9 +20,8 @@
 #include "singa/model/layer.h"
 namespace singa {
 
-void Pooling::Setup(const LayerConf& conf) {
-  Layer::Setup(conf);
-
+void Pooling::Setup(const Shape& in_sample, const LayerConf& conf) {
+  Layer::Setup(in_sample, conf);
   PoolingConf pool_conf = conf.pooling_conf();
   if (pool_conf.has_kernel_size()) {
     kernel_w_ = kernel_h_ = pool_conf.kernel_size();
@@ -57,13 +56,15 @@ void Pooling::Setup(const LayerConf& conf) {
         pool_ == PoolingConf_PoolMethod_STOCHASTIC)
       << "Padding implemented only for average and max pooling.";
 
-  channels_ = pool_conf.channels();
-  height_ = pool_conf.height();
-  width_ = pool_conf.width();
+  CHECK_EQ(in_sample.size(), 3u);
+  channels_ = in_sample.at(0);
+  height_ = in_sample.at(1);
+  width_ = in_sample.at(2);
   pooled_height_ =
       static_cast<size_t>((height_ + 2 * pad_h_ - kernel_h_) / stride_h_) + 1;
   pooled_width_ =
       static_cast<size_t>((width_ + 2 * pad_w_ - kernel_w_) / stride_w_) + 1;
+  out_sample_shape_ = vector<size_t>{channels_, pooled_height_, pooled_width_};
 }
 
 const Tensor Pooling::Forward(int flag, const Tensor& input) {

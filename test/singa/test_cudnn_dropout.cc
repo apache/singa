@@ -33,6 +33,7 @@ bool inline GetBitValue(const char* x, int pos) {
 }
 
 using singa::CudnnDropout;
+using singa::Shape;
 TEST(CudnnDropout, Setup) {
   CudnnDropout drop;
   EXPECT_EQ("CudnnDropout", drop.layer_type());
@@ -41,15 +42,15 @@ TEST(CudnnDropout, Setup) {
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(0.8);
 
-  drop.Setup(conf);
+  drop.Setup(Shape{1}, conf);
   EXPECT_EQ(0.8f, drop.dropout_ratio());
 }
 
 TEST(CudnnDropout, Forward) {
   const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
   size_t n = sizeof(x) / sizeof(float);
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{n}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{n}, cuda);
   in.CopyDataFromHostPtr(x, n);
 
   float pdrop = 0.5;
@@ -57,19 +58,18 @@ TEST(CudnnDropout, Forward) {
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
-  drop.Setup(conf);
+  drop.Setup(Shape{1}, conf);
 
   singa::Tensor out1 = drop.Forward(singa::kTrain, in);
 
   singa::Tensor mask(drop.mask().shape(), drop.mask().data_type());
   mask.CopyData(drop.mask());
-  const char* mptr = mask.data<const char*>();
+  const char* mptr = mask.data<char>();
   for (size_t i = 0; i < n; i++)
     EXPECT_FLOAT_EQ(0, GetBitValue(mptr, i) * (GetBitValue(mptr, i) - 1));
 
-  singa::CppCPU host(0, 1);
-  out1.ToDevice(&host);
-  const float* outptr1 = out1.data<const float*>();
+  out1.ToHost();
+  const float* outptr1 = out1.data<float>();
   EXPECT_EQ(n, out1.Size());
   float scale = 1.0f / (1.0f - pdrop);
   // the output value should be 0 or the same as the input
@@ -78,9 +78,9 @@ TEST(CudnnDropout, Forward) {
   EXPECT_EQ(0.f, outptr1[7] * (outptr1[7] - scale * x[7]));
 
   singa::Tensor out2 = drop.Forward(singa::kEval, in);
-  out2.ToDevice(&host);
+  out2.ToHost();
   EXPECT_EQ(n, out2.Size());
-  const float* outptr2 = out2.data<const float*>();
+  const float* outptr2 = out2.data<float>();
   // the output value should be the same as the input
   EXPECT_EQ(x[0], outptr2[0]);
   EXPECT_EQ(x[1], outptr2[1]);
@@ -90,8 +90,8 @@ TEST(CudnnDropout, Forward) {
 TEST(CudnnDropout, Backward) {
   const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
   size_t n = sizeof(x) / sizeof(float);
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{n}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{n}, cuda);
   in.CopyDataFromHostPtr(x, n);
 
   float pdrop = 0.5;
@@ -101,22 +101,21 @@ TEST(CudnnDropout, Backward) {
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
-  drop.Setup(conf);
+  drop.Setup(Shape{1}, conf);
   singa::Tensor out1 = drop.Forward(singa::kTrain, in);
 
   const float dy[] = {4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 1.0f, 2.0f, 3.0f};
-  singa::Tensor grad(singa::Shape{n}, &cuda);
+  singa::Tensor grad(singa::Shape{n}, cuda);
   grad.CopyDataFromHostPtr(dy, n);
 
   const auto ret = drop.Backward(singa::kTrain, grad);
-  singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
-  in_grad.ToDevice(&host);
-  const float* dx = in_grad.data<const float*>();
+  in_grad.ToHost();
+  const float* dx = in_grad.data<float>();
 
   singa::Tensor mask(drop.mask().shape(), drop.mask().data_type());
   mask.CopyData(drop.mask());
-  const char* mptr = mask.data<const char*>();
+  const char* mptr = mask.data<char>();
 
 
   EXPECT_FLOAT_EQ(dx[0], dy[0] * GetBitValue(mptr, 0) * scale);

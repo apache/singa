@@ -7,6 +7,8 @@
 #cmakedefine CPU_ONLY
 
 #cmakedefine USE_CBLAS
+
+#cmakedefine USE_OPENCV
 // cuda
 #cmakedefine USE_CUDA
 

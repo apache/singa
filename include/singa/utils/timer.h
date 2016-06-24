@@ -19,7 +19,7 @@ class Timer {
   /// Return the duration since last call to Tick() or since the creation of
   /// Timer. The template arg must be from Second or Millisecond or Hour.
   /// The returned value is the count of the time metric.
-  template <typename T>
+  template <typename T = Milliseconds>
   int Elapsed() const {
     static_assert(std::is_same<T, Seconds>::value ||
                       std::is_same<T, Milliseconds>::value ||

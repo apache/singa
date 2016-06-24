@@ -16,30 +16,9 @@
  * limitations under the License.
  */
 
-#ifndef SINGA_MODEL_LOSS_MSE_H_
-#define SINGA_MODEL_LOSS_MSE_H_
-#include <stack>
 #include "singa/model/loss.h"
 
 namespace singa {
-
-/// MSE is for mean squared error or squared euclidean distance.
-class MSE : public Loss<Tensor> {
- public:
-  /// Compute the loss values for each sample/instance given the prediction
-  /// and the target, which is 0.5/||prediction-target||^2
-  /// Users can call Average(const Tensor&) to get the average
-  /// loss value over all samples in the batch.
-  Tensor Forward(const Tensor& prediction, const Tensor& target) override;
-
-  /// Compute the gradients of the loss values w.r.t. the prediction,
-  /// which is (prediction-target)/batchsize
-  Tensor Backward() override;
-
- private:
-  // to buffer intermediate data, i.e., prediction-target
-  std::stack<Tensor> buf_;
-};
 
 Tensor MSE::Forward(const Tensor& prediction, const Tensor& target) {
   CHECK(buf_.empty()) << "Do not call Forward successively for more than twice."
@@ -60,7 +39,3 @@ Tensor MSE::Backward() {
   return ret * (1.0f / ret.shape().at(0));
 }
 }  // namespace singa
-
-#endif  // SINGA_MODEL_LOSS_H_
-
-

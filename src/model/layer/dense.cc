@@ -27,11 +27,12 @@ Dense::~Dense() {
   // delete weight_;
   // delete bias_;
 }
-void Dense::Setup(const LayerConf &conf) {
-  Layer::Setup(conf);
+void Dense::Setup(const Shape& in_sample, const LayerConf &conf) {
+  Layer::Setup(in_sample, conf);
   auto dense_conf = conf.dense_conf();
+  CHECK_EQ(in_sample.size(), 1u);
+  vdim_ = in_sample.at(0);
   hdim_ = dense_conf.num_output();
-  vdim_ = dense_conf.num_input();
   transpose_ = dense_conf.transpose();
   if (transpose_)
     weight_.Reshape(Shape{vdim_, hdim_});

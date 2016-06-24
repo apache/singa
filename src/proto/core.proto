@@ -27,7 +27,8 @@ enum DataType {
   kInt = 2;
   kChar = 3;
   kDouble = 4;
-  kNumDataType = 5;
+  kUChar = 5;
+  kNumDataType = 6;
 }
 
 enum LangType {
@@ -49,8 +50,8 @@ enum CopyDirection {
 message MemPoolConf {
 	optional string type = 1 [default = "cnmem"];
 	optional uint32 num_devices = 2 [default = 1];
-	// allocation size for each device
-	optional uint32 alloc_size = 3 [default = 10000000];
+	// allocation size for each device, default is 256 MB
+	optional uint32 alloc_size = 3 [default = 256];
 	// memory manager flag for cnmem
 	// cnmemflag = 0: default flag
 	// cnmemflag = 1: prevent the manager from growing its memory consumption

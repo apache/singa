@@ -32,8 +32,8 @@ CudnnPooling::~CudnnPooling() {
   if (y_desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_desc_));
 }
 
-void CudnnPooling::Setup(const LayerConf &conf) {
-  Pooling::Setup(conf);
+void CudnnPooling::Setup(const Shape& in_sample, const LayerConf &conf) {
+  Pooling::Setup(in_sample, conf);
   PoolingConf pool_conf = conf.pooling_conf();
   if (pool_conf.nan_prop())
     nan_prop_ = CUDNN_PROPAGATE_NAN;
@@ -41,7 +41,7 @@ void CudnnPooling::Setup(const LayerConf &conf) {
     nan_prop_ = CUDNN_NOT_PROPAGATE_NAN;
 }
 
-void CudnnPooling::InitCudnn(const Tensor& input) {
+void CudnnPooling::InitCudnn(const Tensor &input) {
   CHECK(!has_init_cudnn_);
   DataType dtype = input.data_type();
   size_t batchsize = input.shape(0);
@@ -53,8 +53,8 @@ void CudnnPooling::InitCudnn(const Tensor& input) {
                                          GetCudnnDataType(dtype), batchsize,
                                          channels_, height_, width_));
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-      y_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), batchsize,
-      channels_, pooled_height_, pooled_width_));
+      y_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), batchsize, channels_,
+      pooled_height_, pooled_width_));
   auto pool_method = CUDNN_POOLING_MAX;
   if (pool_ == PoolingConf_PoolMethod_MAX)
     pool_method = CUDNN_POOLING_MAX;
@@ -82,20 +82,18 @@ const Tensor CudnnPooling::Forward(int flag, const Tensor &input) {
   CHECK_EQ(input.nDim(), 4u);
   size_t batchsize = input.shape(0);
   DataType dtype = input.data_type();
-  Device *dev = input.device();
+  auto dev = input.device();
   if (!has_init_cudnn_) InitCudnn(input);
 
   Shape shape{batchsize, channels_, pooled_height_, pooled_width_};
   Tensor output = Tensor(shape, dev, dtype);
-  output.device()->Exec(
-      [input, output, this](Context *ctx) {
-        Blob *inblob = input.blob(), *outblob = output.blob();
-        float alpha = 1.0f, beta = 0.0f;
-        cudnnPoolingForward(ctx->cudnn_handle, this->pool_desc_, &alpha,
-                            this->x_desc_, inblob->data(), &beta, this->y_desc_,
-                            outblob->mutable_data());
-      },
-      {input.blob()}, {output.blob()});
+  output.device()->Exec([input, output, this](Context *ctx) {
+    Block *inblock = input.block(), *outblock = output.block();
+    float alpha = 1.0f, beta = 0.0f;
+    cudnnPoolingForward(ctx->cudnn_handle, this->pool_desc_, &alpha,
+                        this->x_desc_, inblock->data(), &beta, this->y_desc_,
+                        outblock->mutable_data());
+  }, {input.block()}, {output.block()});
   if (flag & kTrain) {
     buf_.push(input);
     buf_.push(output);
@@ -116,17 +114,15 @@ const std::pair<Tensor, vector<Tensor>> CudnnPooling::Backward(
   Tensor dx;
   dx.ResetLike(x);
 
-  dx.device()->Exec(
-      [dx, grad, x, y, this](Context *ctx) {
-        Blob *dyblob = grad.blob(), *dxblob = dx.blob(), *yblob = y.blob(),
-             *xblob = x.blob();
-        float alpha = 1.0f, beta = 0.0f;
-        cudnnPoolingBackward(ctx->cudnn_handle, this->pool_desc_, &alpha,
-                             this->y_desc_, yblob->data(), this->y_desc_,
-                             dyblob->data(), this->x_desc_, xblob->data(),
-                             &beta, this->x_desc_, dxblob->mutable_data());
-      },
-      {grad.blob(), y.blob(), x.blob()}, {dx.blob()});
+  dx.device()->Exec([dx, grad, x, y, this](Context *ctx) {
+    Block *dyblock = grad.block(), *dxblock = dx.block(), *yblock = y.block(),
+          *xblock = x.block();
+    float alpha = 1.0f, beta = 0.0f;
+    cudnnPoolingBackward(ctx->cudnn_handle, this->pool_desc_, &alpha,
+                         this->y_desc_, yblock->data(), this->y_desc_,
+                         dyblock->data(), this->x_desc_, xblock->data(), &beta,
+                         this->x_desc_, dxblock->mutable_data());
+  }, {grad.block(), y.block(), x.block()}, {dx.block()});
 
   return std::make_pair(dx, param_grad);
 }

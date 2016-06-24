@@ -25,7 +25,7 @@
 #include "gtest/gtest.h"
 
 using singa::CudnnBatchNorm;
-
+using singa::Shape;
 TEST(CudnnBatchNorm, Setup) {
   CudnnBatchNorm batchnorm;
   EXPECT_EQ("CudnnBatchNorm", batchnorm.layer_type());
@@ -33,10 +33,7 @@ TEST(CudnnBatchNorm, Setup) {
   singa::LayerConf conf;
   singa::BatchNormConf *batchnorm_conf = conf.mutable_batchnorm_conf();
   batchnorm_conf->set_factor(0.01);
-  batchnorm_conf->set_channels(2);
-  batchnorm_conf->set_height(4);
-  batchnorm_conf->set_width(4);
-  batchnorm.Setup(conf);
+  batchnorm.Setup(Shape{2, 4, 4}, conf);
 
   EXPECT_FLOAT_EQ(0.01, batchnorm.factor());
   EXPECT_EQ(2u, batchnorm.channels());
@@ -56,34 +53,30 @@ TEST(CudnnBatchNorm, Forward) {
     0.150676, 0.153442, -0.0929899, -0.148675,
     -0.112459, -0.106284, -0.103074, -0.0668811
   };
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{1,2,4,4}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{1,2,4,4}, cuda);
   in.CopyDataFromHostPtr(x, 1*2*4*4);
   const float alpha_[] = {1, 1};
-  singa::Tensor alpha(singa::Shape{1,2,1,1}, &cuda);
+  singa::Tensor alpha(singa::Shape{1,2,1,1}, cuda);
   alpha.CopyDataFromHostPtr(alpha_, 1*2*1*1);
 
   const float beta_[] = {0, 0};
-  singa::Tensor beta(singa::Shape{1,2,1,1}, &cuda);
+  singa::Tensor beta(singa::Shape{1,2,1,1}, cuda);
   beta.CopyDataFromHostPtr(beta_, 1*2*1*1);
 
   singa::LayerConf conf;
   singa::BatchNormConf *batchnorm_conf = conf.mutable_batchnorm_conf();
   batchnorm_conf->set_factor(0.9);
-  batchnorm_conf->set_channels(2);
-  batchnorm_conf->set_height(4);
-  batchnorm_conf->set_width(4);
-  batchnorm.Setup(conf);
+  batchnorm.Setup(Shape{2, 4, 4}, conf);
 
-  batchnorm.ToDevice(&cuda);
+  batchnorm.ToDevice(cuda);
   batchnorm.set_bnScale(alpha);
   batchnorm.set_bnBias(beta);
   batchnorm.set_runningMean(beta);
   batchnorm.set_runningVariance(beta);
   singa::Tensor out = batchnorm.Forward(singa::kTrain, in);
-  singa::CppCPU host(0, 1);
   out.ToHost();
-  const float *outptr = out.data<const float *>();
+  const float *outptr = out.data<float>();
   const auto & shape = out.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);
@@ -136,17 +129,14 @@ TEST(CudnnBatchNorm, Backward) {
     0.150676, 0.153442, -0.0929899, -0.148675,
     -0.112459, -0.106284, -0.103074, -0.0668811
   };
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor x_tensor(singa::Shape{1,2,4,4}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor x_tensor(singa::Shape{1,2,4,4}, cuda);
   x_tensor.CopyDataFromHostPtr(x, 1*2*4*4);
 
   singa::LayerConf conf;
   singa::BatchNormConf *batchnorm_conf = conf.mutable_batchnorm_conf();
   batchnorm_conf->set_factor(1);
-  batchnorm_conf->set_channels(2);
-  batchnorm_conf->set_height(4);
-  batchnorm_conf->set_width(4);
-  batchnorm.Setup(conf);
+  batchnorm.Setup(Shape{2, 4, 4}, conf);
 
   const float dy[] = {
     -0.0064714, 0, 0, 0,
@@ -159,35 +149,34 @@ TEST(CudnnBatchNorm, Backward) {
     0.00468428, 0.00735506, -0.00682525, 0.00342023
   };
 
-  singa::Tensor dy_tensor(singa::Shape{1,2,4,4}, &cuda);
+  singa::Tensor dy_tensor(singa::Shape{1,2,4,4}, cuda);
   dy_tensor.CopyDataFromHostPtr(dy, 1*2*4*4);
   const float alpha_[] = {1, 1};
-  singa::Tensor alpha(singa::Shape{1,2,1,1}, &cuda);
+  singa::Tensor alpha(singa::Shape{1,2,1,1}, cuda);
   alpha.CopyDataFromHostPtr(alpha_, 1*2*1*1);
 
   const float beta_[] = {0, 0};
-  singa::Tensor beta(singa::Shape{1,2,1,1}, &cuda);
+  singa::Tensor beta(singa::Shape{1,2,1,1}, cuda);
   beta.CopyDataFromHostPtr(beta_, 1*2*1*1);
 
   const float mean_[] = {0.0123405, -0.0622333};
-  singa::Tensor mean(singa::Shape{1,2,1,1}, &cuda);
+  singa::Tensor mean(singa::Shape{1,2,1,1}, cuda);
   mean.CopyDataFromHostPtr(mean_, 1*2*1*1);
 
   const float var_[] = {15.9948, 8.68198};
-  singa::Tensor var(singa::Shape{1,2,1,1}, &cuda);
+  singa::Tensor var(singa::Shape{1,2,1,1}, cuda);
   var.CopyDataFromHostPtr(var_, 1*2*1*1);
 
-  batchnorm.ToDevice(&cuda);
+  batchnorm.ToDevice(cuda);
   batchnorm.set_bnScale(alpha);
   batchnorm.set_bnBias(beta);
   batchnorm.set_runningMean(beta);
   batchnorm.set_runningVariance(beta);
   batchnorm.Forward(singa::kTrain, x_tensor);
   const auto ret = batchnorm.Backward(singa::kTrain, dy_tensor);
-  singa::CppCPU host(0, 1);
   singa::Tensor dx = ret.first;
-  dx.ToDevice(&host);
-  const float *dxptr = dx.data<const float *>();
+  dx.ToHost();
+  const float *dxptr = dx.data<float>();
   const auto & shape = dx.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);
@@ -228,8 +217,8 @@ TEST(CudnnBatchNorm, Backward) {
   EXPECT_NEAR(0.0217477, dxptr[31], 1e-4f);
 
   singa::Tensor dbnScale = ret.second.at(0);
-  dbnScale.ToDevice(&host);
-  const float *dbnScaleptr = dbnScale.data<const float *>();
+  dbnScale.ToHost();
+  const float *dbnScaleptr = dbnScale.data<float>();
   const auto & dbnScaleShape = dbnScale.shape();
   EXPECT_EQ(4u, dbnScaleShape.size());
   EXPECT_EQ(1u, dbnScaleShape[0]);
@@ -241,8 +230,8 @@ TEST(CudnnBatchNorm, Backward) {
   EXPECT_NEAR(-0.00219431f, dbnScaleptr[1], 1e-4f);
 
   singa::Tensor dbnBias = ret.second.at(1);
-  dbnBias.ToDevice(&host);
-  const float *dbnBiasptr = dbnBias.data<const float *>();
+  dbnBias.ToHost();
+  const float *dbnBiasptr = dbnBias.data<float>();
   const auto & dbnBiasShape = dbnBias.shape();
   EXPECT_EQ(4u, dbnBiasShape.size());
   EXPECT_EQ(1u, dbnBiasShape[0]);

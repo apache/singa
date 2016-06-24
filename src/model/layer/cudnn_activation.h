@@ -41,16 +41,17 @@ class CudnnActivation : public Activation {
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor& grad) override;
 
-  /// Init cudnn related data structures.
-  void InitCudnn(size_t size, DataType dtype);
 
   const cudnnActivationMode_t CudnnMode() const { return cudnn_mode_; }
 
  private:
+  /// Init cudnn related data structures.
+  void InitCudnn(size_t size, DataType dtype);
+
+ private:
   bool has_init_cudnn_ = false;
-  cudnnActivationDescriptor_t acti_desc_;
-  cudnnTensorDescriptor_t desc_;
-  cudnnNanPropagation_t nan_opt_;
+  cudnnActivationDescriptor_t acti_desc_ = nullptr;
+  cudnnTensorDescriptor_t desc_ = nullptr;
   cudnnActivationMode_t cudnn_mode_;
 };
 }  // namespace

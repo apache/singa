@@ -23,6 +23,7 @@
 #include "gtest/gtest.h"
 
 using singa::Dropout;
+using singa::Shape;
 TEST(Dropout, Setup) {
   Dropout drop;
   EXPECT_EQ("Dropout", drop.layer_type());
@@ -31,7 +32,7 @@ TEST(Dropout, Setup) {
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(0.8);
 
-  drop.Setup(conf);
+  drop.Setup(Shape{3}, conf);
   EXPECT_EQ(0.8f, drop.dropout_ratio());
 }
 
@@ -46,16 +47,16 @@ TEST(Dropout, Forward) {
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
-  drop.Setup(conf);
+  drop.Setup(Shape{1}, conf);
   float scale = 1.0f / (1.0f - pdrop);
 
   singa::Tensor out1 = drop.Forward(singa::kTrain, in);
 
-  const float* mptr = drop.mask().data<const float*>();
+  const float* mptr = drop.mask().data<float>();
   for (size_t i = 0; i < n; i++)
     EXPECT_FLOAT_EQ(0, mptr[i] * (mptr[i] - scale));
 
-  const float* outptr1 = out1.data<const float*>();
+  const float* outptr1 = out1.data<float>();
   EXPECT_EQ(n, out1.Size());
   // the output value should be 0 or the same as the input
   EXPECT_EQ(0.f, outptr1[0] * (outptr1[0] - scale * x[0]));
@@ -64,7 +65,7 @@ TEST(Dropout, Forward) {
 
   singa::Tensor out2 = drop.Forward(singa::kEval, in);
   EXPECT_EQ(n, out2.Size());
-  const float* outptr2 = out2.data<const float*>();
+  const float* outptr2 = out2.data<float>();
   // the output value should be the same as the input
   EXPECT_EQ(x[0], outptr2[0]);
   EXPECT_EQ(x[1], outptr2[1]);
@@ -84,16 +85,16 @@ TEST(Dropout, Backward) {
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
-  drop.Setup(conf);
+  drop.Setup(Shape{1}, conf);
   singa::Tensor out1 = drop.Forward(singa::kTrain, in);
 
   const float dy[] = {4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 1.0f, 2.0f, 3.0f};
   singa::Tensor grad(singa::Shape{n});
   grad.CopyDataFromHostPtr(dy, n);
 
-  const float* mptr = drop.mask().data<const float*>();
+  const float* mptr = drop.mask().data<float>();
   const auto ret = drop.Backward(singa::kTrain, grad);
-  const float* dx = ret.first.data<const float*>();
+  const float* dx = ret.first.data<float>();
   EXPECT_FLOAT_EQ(dx[0], dy[0] * (mptr[0] > 0 ? 1.0f : 0.0f) * scale);
   EXPECT_FLOAT_EQ(dx[1], dy[1] * (mptr[1] > 0) * scale);
   EXPECT_FLOAT_EQ(dx[7], dy[7] * (mptr[7] > 0) * scale);

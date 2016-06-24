@@ -22,8 +22,8 @@
 #include "gtest/gtest.h"
 #include "singa/core/tensor.h"
 #include "singa/core/device.h"
-#include "../src/model/loss/mse.h"
-#include "singa/singa_config.h"
+#include "singa/model/loss.h"
+
 using singa::Tensor;
 class TestMSE : public ::testing::Test {
  protected:
@@ -43,7 +43,7 @@ class TestMSE : public ::testing::Test {
 TEST_F(TestMSE, CppForward) {
   singa::MSE mse;
   const Tensor& loss = mse.Forward(p, t);
-  auto ldat = loss.data<const float*>();
+  auto ldat = loss.data<float>();
 
   for (size_t i = 0, k = 0; i < loss.Size(); i++) {
     float l = 0.f;
@@ -60,7 +60,7 @@ TEST_F(TestMSE, CppBackward) {
   mse.Forward(p, t);
   const Tensor& grad = mse.Backward();
 
-  auto gdat = grad.data<const float*>();
+  auto gdat = grad.data<float>();
 
   for (size_t i = 0; i < grad.Size(); i++)
     EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
@@ -75,7 +75,7 @@ TEST_F(TestMSE, CudaForward) {
   Tensor loss = mse->Forward(p, t);
 
   loss.ToHost();
-  auto ldat = loss.data<const float*>();
+  auto ldat = loss.data<float>();
 
   for (size_t i = 0, k = 0; i < loss.Size(); i++) {
     float l = 0.f;
@@ -97,7 +97,7 @@ TEST_F(TestMSE, CudaBackward) {
   mse.Forward(p, t);
   Tensor grad = mse.Backward();
   grad.ToHost();
-  auto gdat = grad.data<const float*>();
+  auto gdat = grad.data<float>();
 
   for (size_t i = 0; i < grad.Size(); i++)
     EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));

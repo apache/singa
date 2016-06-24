@@ -48,9 +48,8 @@ void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
   else
     LOG(FATAL) << "Unkown activation: " << mode_;
 
-  nan_opt_ = CUDNN_PROPAGATE_NAN;
-  CUDNN_CHECK(
-      cudnnSetActivationDescriptor(acti_desc_, cudnn_mode_, nan_opt_, 0.0f));
+  CUDNN_CHECK(cudnnSetActivationDescriptor(
+        acti_desc_, cudnn_mode_, CUDNN_PROPAGATE_NAN, 0.0f));
   has_init_cudnn_ = true;
 }
 
@@ -63,18 +62,18 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
   Tensor output;
   output.ResetLike(input);
   output.device()->Exec([input, output, this](Context* ctx) {
-    Blob* inblob = input.blob(), * outblob = output.blob();
+    Block* inblock = input.block(), * outblock = output.block();
     float alpha = 1.0f, beta = 0.0f;
 #if CUDNN_VERSION_MAJOR == 5
     CUDNN_CHECK(cudnnActivationForward(
         ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
-        inblob->data(), &beta, this->desc_, outblob->mutable_data()));
+        inblock->data(), &beta, this->desc_, outblock->mutable_data()));
 #elif CUDNN_VERSION_MAJOR == 4
     CUDNN_CHECK(cudnnActivationForward_v4(
         ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
-        inblob->data(), &beta, this->desc_, outblob->mutable_data()));
+        inblock->data(), &beta, this->desc_, outblock->mutable_data()));
 #endif
-  }, {input.blob()}, {output.blob()});
+  }, {input.block()}, {output.block()});
   if (flag & kTrain) {
     if (cudnn_mode_ == CUDNN_ACTIVATION_SIGMOID ||
         cudnn_mode_ == CUDNN_ACTIVATION_TANH) {
@@ -89,7 +88,7 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
 const std::pair<Tensor, vector<Tensor>> CudnnActivation::Backward(
     int flag, const Tensor& grad) {
   vector<Tensor> param_grad;
-  Tensor dx;  // inout = buf_.top();
+  Tensor dx;
   CHECK(!buf_.empty());
   // inout means either used as input or output, only one is valid for one type
   // of activation
@@ -97,21 +96,21 @@ const std::pair<Tensor, vector<Tensor>> CudnnActivation::Backward(
   buf_.pop();
   dx.ResetLike(grad);
   dx.device()->Exec([dx, grad, inout, this](Context* ctx) {
-    Blob* dyblob = grad.blob(), * dxblob = dx.blob(), * yblob = inout.blob(),
-          * xblob = inout.blob();
+    Block* dyblock = grad.block(), * dxblock = dx.block(),
+           * yblock = inout.block(), * xblock = inout.block();
     float alpha = 1.0f, beta = 0.0f;
 #if CUDNN_VERSION_MAJOR == 5
     CUDNN_CHECK(cudnnActivationBackward(
-        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_, yblob->data(),
-        this->desc_, dyblob->data(), this->desc_, xblob->data(), &beta,
-        this->desc_, dxblob->mutable_data()));
+        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
+        yblock->data(), this->desc_, dyblock->data(), this->desc_,
+        xblock->data(), &beta, this->desc_, dxblock->mutable_data()));
 #elif CUDNN_VERSION_MAJOR == 4
     CUDNN_CHECK(cudnnActivationBackward_v4(
-        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_, yblob->data(),
-        this->desc_, dyblob->data(), this->desc_, xblob->data(), &beta,
-        this->desc_, dxblob->mutable_data()));
+        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_, yblock->data(),
+        this->desc_, dyblock->data(), this->desc_, xblock->data(), &beta,
+        this->desc_, dxblock->mutable_data()));
 #endif
-  }, {grad.blob(), inout.blob()}, {dx.blob()});
+  }, {grad.block(), inout.block()}, {dx.block()});
   return std::make_pair(dx, param_grad);
 }
 }  // namespace singa

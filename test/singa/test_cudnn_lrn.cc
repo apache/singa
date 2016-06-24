@@ -27,7 +27,7 @@
 #include "gtest/gtest.h"
 
 using singa::CudnnLRN;
-
+using singa::Shape;
 TEST(CudnnLRN, Setup) {
   CudnnLRN lrn;
   EXPECT_EQ("CudnnLRN", lrn.layer_type());
@@ -38,7 +38,7 @@ TEST(CudnnLRN, Setup) {
   lrn_conf->set_local_size(3);
   lrn_conf->set_alpha(0.1);
   lrn_conf->set_beta(0.75);
-  lrn.Setup(conf);
+  lrn.Setup(Shape{1}, conf);
 
   EXPECT_FLOAT_EQ(1.0, lrn.k());
   EXPECT_EQ(3, lrn.local_size());
@@ -58,8 +58,8 @@ TEST(CudnnLRN, Forward) {
     0.0597329, -0.0530868, 0.0124246, 0.108429,
     0.0451175, 0.0247055, 0.0304345, 0.0179575
   };
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{1,2,4,4}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{1,2,4,4}, cuda);
   in.CopyDataFromHostPtr(x, 1*2*4*4);
 
   singa::LayerConf conf;
@@ -68,12 +68,11 @@ TEST(CudnnLRN, Forward) {
   lrn_conf->set_local_size(3);
   lrn_conf->set_alpha(0.1);
   lrn_conf->set_beta(0.75);
-  lrn.Setup(conf);
+  lrn.Setup(Shape{2, 4, 4}, conf);
 
   singa::Tensor out = lrn.Forward(singa::kTrain, in);
-  singa::CppCPU host(0, 1);
-  out.ToDevice(&host);
-  const float *outptr = out.data<const float *>();
+  out.ToHost();
+  const float *outptr = out.data<float>();
   const auto & shape = out.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);
@@ -128,8 +127,8 @@ TEST(CudnnLRN, Backward) {
     0.0597329, -0.0530868, 0.0124246, 0.108429,
     0.0451175, 0.0247055, 0.0304345, 0.0179575
   };
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor x_tensor(singa::Shape{1,2,4,4}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor x_tensor(singa::Shape{1,2,4,4}, cuda);
   x_tensor.CopyDataFromHostPtr(x, 1*2*4*4);
 
   const float dy[] = {
@@ -143,7 +142,7 @@ TEST(CudnnLRN, Backward) {
     0.177807, 0.000892812, -0.00113197, 0.00327798
   };
 
-  singa::Tensor dy_tensor(singa::Shape{1,2,4,4}, &cuda);
+  singa::Tensor dy_tensor(singa::Shape{1,2,4,4}, cuda);
   dy_tensor.CopyDataFromHostPtr(dy, 1*2*4*4);
 
   singa::LayerConf conf;
@@ -152,14 +151,13 @@ TEST(CudnnLRN, Backward) {
   lrn_conf->set_local_size(3);
   lrn_conf->set_alpha(0.1);
   lrn_conf->set_beta(0.75);
-  lrn.Setup(conf);
+  lrn.Setup(Shape{2, 4, 4}, conf);
 
   lrn.Forward(singa::kTrain, x_tensor);
   const auto ret = lrn.Backward(singa::kTrain, dy_tensor);
-  singa::CppCPU host(0, 1);
   singa::Tensor dx = ret.first;
-  dx.ToDevice(&host);
-  const float *dxptr = dx.data<const float *>();
+  dx.ToHost();
+  const float *dxptr = dx.data<float>();
   const auto & shape = dx.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);

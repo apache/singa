@@ -26,35 +26,53 @@ CudnnSoftmax::~CudnnSoftmax() {
   if (desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(desc_));
 }
 
-void CudnnSoftmax::InitCudnn(size_t size, DataType dtype) {
+void CudnnSoftmax::Setup(const Shape& in_sample, const LayerConf &conf) {
+  Softmax::Setup(in_sample, conf);
+  SoftmaxConf sft_conf = conf.softmax_conf();
+  std::string algorithm = sft_conf.algorithm();
+  CHECK(algorithm == "accurate" || algorithm == "fast" || algorithm == "log")
+    << "CudnnSoftmax only supports three algorithm preferences: "
+    << "accurate, fast and log.";
+  if (algorithm == "accurate")
+    algorithm_ = CUDNN_SOFTMAX_ACCURATE;
+  else if (algorithm == "fast")
+    algorithm_ = CUDNN_SOFTMAX_FAST;
+  else algorithm_ = CUDNN_SOFTMAX_LOG;
+}
+
+void CudnnSoftmax::InitCudnn(Shape shape, DataType dtype) {
   CHECK(!has_init_cudnn_);
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&desc_));
 
-  CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-      desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), 1, 1, 1, size));
-
-  algorithm_ = CUDNN_SOFTMAX_ACCURATE;
-  mode_ = CUDNN_SOFTMAX_MODE_INSTANCE;
+  CHECK_LE(shape.size(), 2u)
+    << "Tensor shape should range from 1 to 2D;"
+    << "otherwise, add flatten layer to transform";
+  if (shape.size() == 1u)
+    CUDNN_CHECK(cudnnSetTensor4dDescriptor( desc_,
+      CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), 1, shape[0], 1, 1));
+  else
+    CUDNN_CHECK(cudnnSetTensor4dDescriptor( desc_, CUDNN_TENSOR_NCHW,
+      GetCudnnDataType(dtype), shape[0], shape[1], 1, 1));
   has_init_cudnn_ = true;
 }
 
 const Tensor CudnnSoftmax::Forward(int flag, const Tensor& input) {
-  auto size = input.Size();
+  auto shape = input.shape();
   DataType dtype = input.data_type();
   if (!has_init_cudnn_) {
-    InitCudnn(size, dtype);
+    InitCudnn(shape, dtype);
   }
   Tensor output;
   output.ResetLike(input);
   output.device()->Exec([input, output, this](Context* ctx) {
-    Blob* inblob = input.blob(), * outblob = output.blob();
+    Block* inblock = input.block(), * outblock = output.block();
     float alpha = 1.0f, beta = 0.0f;
-    cudnnSoftmaxForward(ctx->cudnn_handle, this->algorithm_, this->mode_,
-                        &alpha, this->desc_, inblob->data(), &beta, this->desc_,
-                        outblob->mutable_data());
-  }, {input.blob()}, {output.blob()});
-  if (flag & kTrain)
-    buf_.push(output);
+    cudnnSoftmaxForward(ctx->cudnn_handle, this->algorithm_,
+                        CUDNN_SOFTMAX_MODE_INSTANCE,
+                        &alpha, this->desc_, inblock->data(), &beta,
+                        this->desc_, outblock->mutable_data());
+  }, {input.block()}, {output.block()});
+  if (flag & kTrain) buf_.push(output);
   return output;
 }
 
@@ -66,13 +84,15 @@ const std::pair<Tensor, vector<Tensor>> CudnnSoftmax::Backward(
   buf_.pop();
   dx.ResetLike(grad);
   dx.device()->Exec([dx, grad, output, this](Context* ctx) {
-    Blob* dyblob = grad.blob(), * dxblob = dx.blob(), * yblob = output.blob();
+    Block* dyblock = grad.block(), * dxblock = dx.block(),
+           * yblock = output.block();
     float alpha = 1.0f, beta = 0.0f;
-    cudnnSoftmaxBackward(ctx->cudnn_handle, this->algorithm_, this->mode_,
-                         &alpha, this->desc_, yblob->data(), this->desc_,
-                         dyblob->data(), &beta, this->desc_,
-                         dxblob->mutable_data());
-  }, {grad.blob(), output.blob()}, {dx.blob()});
+    cudnnSoftmaxBackward(ctx->cudnn_handle, this->algorithm_,
+                         CUDNN_SOFTMAX_MODE_INSTANCE,
+                         &alpha, this->desc_, yblock->data(), this->desc_,
+                         dyblock->data(), &beta, this->desc_,
+                         dxblock->mutable_data());
+  }, {grad.block(), output.block()}, {dx.block()});
   return std::make_pair(dx, param_grad);
 }
 }  // namespace singa

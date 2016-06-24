@@ -20,31 +20,28 @@
 #include "./activation.h"
 namespace singa {
 
-void Activation::Setup(const LayerConf& conf) {
-  Layer::Setup(conf);
+void Activation::Setup(const Shape& in_sample, const LayerConf& conf) {
+  Layer::Setup(in_sample, conf);
   mode_ = conf.type();
   if (mode_ == "RELU") {
     neg_slope_ = conf.relu_conf().negative_slope();
   }
+  out_sample_shape_ = in_sample;
 }
 
 const Tensor Activation::Forward(int flag, const Tensor& input) {
   Tensor output;
   if (mode_ == "SIGMOID") {
     output = Sigmoid(input);
-    if (flag & kTrain)
-      buf_.push(output);
+    if (flag & kTrain) buf_.push(output);
   } else if (mode_ == "TANH") {
     output = Tanh(input);
-    if (flag & kTrain)
-      buf_.push(output);
+    if (flag & kTrain) buf_.push(output);
   } else if (mode_ == "RELU") {
     output = ReLU(input);
-    if (flag & kTrain)
-      buf_.push(input);
-  } else {
+    if (flag & kTrain) buf_.push(input);
+  } else
     LOG(FATAL) << "Unkown activation: " << mode_;
-  }
   return output;
 }
 
@@ -56,15 +53,13 @@ const std::pair<Tensor, vector<Tensor>> Activation::Backward(
   // activation.
   Tensor input_grad, inout = buf_.top();
   buf_.pop();
-  if (mode_ == "SIGMOID") {
+  if (mode_ == "SIGMOID")
     input_grad = grad * inout * (inout * (-1.f) + 1.f);
-  } else if (mode_ == "TANH") {
+  else if (mode_ == "TANH")
     input_grad = grad * (inout * inout * (-1.f) + 1.f);
-  } else if (mode_ == "RELU") {
+  else if (mode_ == "RELU")
     input_grad = grad * (inout > 0.f) + (inout <= 0.f) * neg_slope_;
-  } else {
-    LOG(FATAL) << "Unkown activation: " << mode_;
-  }
+  else LOG(FATAL) << "Unkown activation: " << mode_;
   return std::make_pair(input_grad, param_grad);
 }
 

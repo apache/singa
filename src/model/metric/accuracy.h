@@ -49,7 +49,8 @@ Tensor Accuracy::Match(const Tensor& prediction, const vector<int>& target) {
   size_t nb_classes = prediction.Size() / batchsize;
   // each row of prediction is the prob distribution for one sample
   CHECK_EQ(prediction.shape().at(0), batchsize);
-  const float* prob = prediction.data<const float*>();
+  // TODO(wangwei) CloneToDevice(host);
+  const float* prob = prediction.data<float>();
   float* score = new float[batchsize];
   for (size_t b = 0; b < batchsize; b++) {
     vector<std::pair<float, int>> prob_class;
@@ -72,7 +73,7 @@ Tensor Accuracy::Match(const Tensor& prediction, const vector<int>& target) {
 Tensor Accuracy::Forward(const Tensor& prediction, const Tensor& target) {
   vector<int> target_vec;
   // TODO(wangwei) copy target to host.
-  const int* target_value = target.data<const int*>();
+  const int* target_value = target.data<int>();
   for (size_t i = 0; i < target.Size(); i++)
     target_vec.push_back(target_value[i]);
   return Match(prediction, target_vec);

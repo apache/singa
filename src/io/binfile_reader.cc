@@ -1,0 +1,113 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "singa/io/reader.h"
+#include "singa/utils/logging.h"
+
+namespace singa {
+namespace io {
+bool BinFileReader::Open(const std::string& path, int capacity) {
+  path_ = path;
+  capacity_ = capacity;
+  buf_ = new char[capacity_];
+  fdat_.open(path_, std::ios::in | std::ios::binary);
+  CHECK(fdat_.is_open()) << "Cannot open file " << path_;
+  return fdat_.is_open();
+}
+
+void BinFileReader::Close() {
+  if (buf_ != nullptr) {
+    delete[] buf_;
+    buf_ = nullptr;
+  }
+  if (fdat_.is_open()) fdat_.close();
+}
+
+bool BinFileReader::Read(std::string* key, std::string* value) {
+  CHECK(fdat_.is_open()) << "File not open!";
+  char magic[4];
+  int smagic = sizeof(magic);
+  if (!PrepareNextField(smagic)) return false;
+  memcpy(magic, buf_ + offset_, smagic);
+  offset_ += smagic;
+
+  if (magic[0] == kMagicWord[0] && magic[1] == kMagicWord[1]) {
+    if (magic[2] != 0 && magic[2] != 1) return false;
+    if (magic[2] == 1)
+      if (!ReadField(key)) return false;
+    if (!ReadField(value)) return false;
+  }
+  return true;
+}
+
+int BinFileReader::Count() {
+  std::ifstream fin(path_, std::ios::in | std::ios::binary);
+  CHECK(fdat_.is_open()) << "Cannot create file " << path_;
+  int count = 0;
+  while (true) {
+    size_t len;
+    char magic[4];
+    fin.read(reinterpret_cast<char*>(magic), sizeof(magic));
+    if (!fin.good()) break;
+    if (magic[2] == 1) {
+      fin.read(reinterpret_cast<char*>(&len), sizeof(len));
+      if (!fin.good()) break;
+      fin.seekg(len, std::ios_base::cur);
+      if (!fin.good()) break;
+    }
+    fin.read(reinterpret_cast<char*>(&len), sizeof(len));
+    if (!fin.good()) break;
+    fin.seekg(len, std::ios_base::cur);
+    if (!fin.good()) break;
+    count++;
+  }
+  fin.close();
+  return count;
+}
+
+bool BinFileReader::ReadField(std::string* content) {
+  content->clear();
+  int ssize = sizeof(size_t);
+  if (!PrepareNextField(ssize)) return false;
+  int len = *reinterpret_cast<size_t*>(buf_ + offset_);
+  offset_ += ssize;
+  if (!PrepareNextField(len)) return false;
+  for (int i = 0; i < len; ++i) content->push_back(buf_[offset_ + i]);
+  offset_ += len;
+  return true;
+}
+
+// if the buf does not have the next complete field, read data from disk
+bool BinFileReader::PrepareNextField(int size) {
+  if (offset_ + size > bufsize_) {
+    bufsize_ -= offset_;
+    memcpy(buf_, buf_ + offset_, bufsize_);
+    offset_ = 0;
+    if (fdat_.eof()) {
+      return false;
+    } else {
+      fdat_.read(buf_ + bufsize_, capacity_ - bufsize_);
+      bufsize_ += fdat_.gcount();
+      if (size > bufsize_) return false;
+    }
+  }
+  return true;
+}
+
+}  // namespace io
+}  // namespace singa

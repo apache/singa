@@ -24,6 +24,7 @@
 #include <math.h> // exp, tanh
 
 using singa::Activation;
+using singa::Shape;
 TEST(Activation, Setup) {
   Activation acti;
   EXPECT_EQ("Activation", acti.layer_type());
@@ -33,7 +34,7 @@ TEST(Activation, Setup) {
   singa::ReLUConf* reluconf = conf.mutable_relu_conf();
   reluconf->set_negative_slope(0.5);
 
-  acti.Setup(conf);
+  acti.Setup(Shape{3}, conf);
   EXPECT_EQ("RELU", acti.Mode());
   EXPECT_EQ(0.5f, acti.Negative_slope());
 }
@@ -55,11 +56,11 @@ TEST(Activation, Forward) {
       singa::ReLUConf* reluconf = conf.mutable_relu_conf();
       reluconf->set_negative_slope(neg_slope);
     }
-    acti.Setup(conf);
+    acti.Setup(Shape{n}, conf);
 
     singa::Tensor out = acti.Forward(singa::kTrain, in);
 
-    const float* yptr = out.data<const float*>();
+    const float* yptr = out.data<float>();
     EXPECT_EQ(n, out.Size());
 
     float* y = new float[n];
@@ -100,16 +101,16 @@ TEST(Activation, Backward) {
       singa::ReLUConf* reluconf = conf.mutable_relu_conf();
       reluconf->set_negative_slope(neg_slope);
     }
-    acti.Setup(conf);
+    acti.Setup(Shape{n}, conf);
 
     singa::Tensor out = acti.Forward(singa::kTrain, in);
-    const float* yptr = out.data<const float*>();
+    const float* yptr = out.data<float>();
 
     const float grad[] = {2.0f, -3.0f, 1.0f, 3.0f, -1.0f, -2.0};
     singa::Tensor out_diff(singa::Shape{n});
     out_diff.CopyDataFromHostPtr<float>(grad, n);
     const auto in_diff = acti.Backward(singa::kTrain, out_diff);
-    const float* xptr = in_diff.first.data<const float*>();
+    const float* xptr = in_diff.first.data<float>();
 
     float* dx = new float[n];
     if (acti.Mode() == "SIGMOID") {

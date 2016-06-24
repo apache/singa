@@ -41,9 +41,9 @@ class CudnnConvolution : public Convolution {
                                                    const Tensor &grad) override;
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const LayerConf &conf) override;
+  void Setup(const Shape& in_sample, const LayerConf &conf) override;
 
-  void ToDevice(Device *device) override;
+  void ToDevice(std::shared_ptr<Device> device) override;
 
   size_t workspace_byte_limit() { return workspace_byte_limit_; }
   string prefer() { return prefer_; }

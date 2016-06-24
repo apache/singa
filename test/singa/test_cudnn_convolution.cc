@@ -24,6 +24,7 @@
 #include "gtest/gtest.h"
 
 using singa::CudnnConvolution;
+using singa::Shape;
 TEST(CudnnConvolution, Setup) {
   CudnnConvolution conv;
   EXPECT_EQ("CudnnConvolution", conv.layer_type());
@@ -41,10 +42,7 @@ TEST(CudnnConvolution, Setup) {
   // MB
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("fastest");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   EXPECT_EQ(2u, conv.kernel_h());
   EXPECT_EQ(2u, conv.kernel_w());
@@ -65,18 +63,18 @@ TEST(CudnnConvolution, Forward) {
   const size_t batchsize = 1, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
                                           6.0f, 7.0f, 8.0f, 9.0f};
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{batchsize, c, h, w}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{batchsize, c, h, w}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
 
   // Set weight and bias manually
   const size_t num_filters = 1;
   const float we[num_filters * batchsize * h * w] = {
       1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
-  singa::Tensor weight(singa::Shape{num_filters, batchsize * h * w}, &cuda);
+  singa::Tensor weight(singa::Shape{num_filters, batchsize * h * w}, cuda);
   weight.CopyDataFromHostPtr(we, batchsize * h * w);
   const float b[num_filters] = {1.0f};
-  singa::Tensor bias(singa::Shape{num_filters}, &cuda);
+  singa::Tensor bias(singa::Shape{num_filters}, cuda);
   bias.CopyDataFromHostPtr(b, num_filters);
   CudnnConvolution conv;
   conv.set_weight(weight);
@@ -95,16 +93,12 @@ TEST(CudnnConvolution, Forward) {
   // MB
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("fastest");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   // Parameter "flag" does not influence convolution
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);
-  singa::CppCPU host(0, 1);
-  out1.ToDevice(&host);
-  const float *outptr1 = out1.data<const float *>();
+  out1.ToHost();
+  const float *outptr1 = out1.data<float>();
   // Input: 3*3; kernel: 3*3; stride: 2*2; padding: 1*1.
   EXPECT_EQ(4u, out1.Size());
 
@@ -119,8 +113,8 @@ TEST(CudnnConvolution, Backward) {
   const size_t batchsize = 1, c = 1, src_h = 3, src_w = 3;
   const float x[batchsize * c * src_h * src_w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
                                                   6.0f, 7.0f, 8.0f, 9.0f};
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{batchsize, c, src_h, src_w}, &cuda);
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{batchsize, c, src_h, src_w}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * c * src_h * src_w);
 
   // Set weight_ and bias_ manually
@@ -128,10 +122,10 @@ TEST(CudnnConvolution, Backward) {
   const float we[num_filters * batchsize * src_h * src_w] = {
       1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
   singa::Tensor weight(singa::Shape{num_filters, batchsize * src_h * src_w},
-                       &cuda);
+                       cuda);
   weight.CopyDataFromHostPtr(we, batchsize * src_h * src_w);
   const float b[num_filters] = {1.0f};
-  singa::Tensor bias(singa::Shape{num_filters}, &cuda);
+  singa::Tensor bias(singa::Shape{num_filters}, cuda);
   bias.CopyDataFromHostPtr(b, num_filters);
   CudnnConvolution conv;
   conv.set_weight(weight);
@@ -149,10 +143,7 @@ TEST(CudnnConvolution, Backward) {
   convconf->set_bias_term(true);
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("fastest");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   // Parameter "flag" does not influence convolution
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);
@@ -162,14 +153,13 @@ TEST(CudnnConvolution, Backward) {
   const float dy[batchsize * num_filters * grad_h * grad_w] = {0.1f, 0.2f, 0.3f,
                                                                0.4f};
   singa::Tensor grad(singa::Shape{batchsize, num_filters, grad_h, grad_w},
-                     &cuda);
+                     cuda);
   grad.CopyDataFromHostPtr(dy, batchsize * num_filters * grad_h * grad_w);
 
   const auto ret = conv.Backward(singa::kTrain, grad);
-  singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
-  in_grad.ToDevice(&host);
-  const float *dx = in_grad.data<const float *>();
+  in_grad.ToHost();
+  const float *dx = in_grad.data<float>();
   const float *wptr = we;
   EXPECT_EQ(9u, in_grad.Size());
   EXPECT_EQ(dy[0] * wptr[4], dx[0]);
@@ -186,12 +176,12 @@ TEST(CudnnConvolution, Backward) {
 
   singa::Tensor dw = ret.second[0];
   singa::Tensor db = ret.second[1];
-  dw.ToDevice(&host);
-  db.ToDevice(&host);
-  const float *dbptr = db.data<const float *>();
+  dw.ToHost();
+  db.ToHost();
+  const float *dbptr = db.data<float>();
   EXPECT_EQ(dy[0] + dy[1] + dy[2] + dy[3], dbptr[0]);
 
-  const float *dwptr = dw.data<const float *>();
+  const float *dwptr = dw.data<float>();
   EXPECT_EQ(9u, dw.Size());
   EXPECT_EQ(dy[3] * x[4], dwptr[0]);
   EXPECT_EQ(dy[3] * x[5] + dy[2] * x[3], dwptr[1]);
@@ -222,10 +212,7 @@ TEST(CudnnConvolution_AT, Setup) {
   // MB
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("autotune");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   EXPECT_EQ(2u, conv.kernel_h());
   EXPECT_EQ(2u, conv.kernel_w());
@@ -246,18 +233,19 @@ TEST(CudnnConvolution_AT, Forward) {
   const size_t batchsize = 1, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
                                           6.0f, 7.0f, 8.0f, 9.0f};
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{batchsize, c, h, w}, &cuda);
+
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{batchsize, c, h, w}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
 
   // Set weight and bias manually
   const size_t num_filters = 1;
   const float we[num_filters * batchsize * h * w] = {
       1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
-  singa::Tensor weight(singa::Shape{num_filters, batchsize * h * w}, &cuda);
+  singa::Tensor weight(singa::Shape{num_filters, batchsize * h * w}, cuda);
   weight.CopyDataFromHostPtr(we, batchsize * h * w);
   const float b[num_filters] = {1.0f};
-  singa::Tensor bias(singa::Shape{num_filters}, &cuda);
+  singa::Tensor bias(singa::Shape{num_filters}, cuda);
   bias.CopyDataFromHostPtr(b, num_filters);
   CudnnConvolution conv;
   conv.set_weight(weight);
@@ -276,16 +264,12 @@ TEST(CudnnConvolution_AT, Forward) {
   // MB
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("autotune");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   // Parameter "flag" does not influence convolution
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);
-  singa::CppCPU host(0, 1);
-  out1.ToDevice(&host);
-  const float *outptr1 = out1.data<const float *>();
+  out1.ToHost();
+  const float *outptr1 = out1.data<float>();
   // Input: 3*3; kernel: 3*3; stride: 2*2; padding: 1*1.
   EXPECT_EQ(4u, out1.Size());
 
@@ -300,8 +284,9 @@ TEST(CudnnConvolution_AT, Backward) {
   const size_t batchsize = 1, c = 1, src_h = 3, src_w = 3;
   const float x[batchsize * c * src_h * src_w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
                                                   6.0f, 7.0f, 8.0f, 9.0f};
-  singa::CudaGPU cuda(0, 1);
-  singa::Tensor in(singa::Shape{batchsize, c, src_h, src_w}, &cuda);
+
+  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  singa::Tensor in(singa::Shape{batchsize, c, src_h, src_w}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * c * src_h * src_w);
 
   // Set weight_ and bias_ manually
@@ -309,10 +294,10 @@ TEST(CudnnConvolution_AT, Backward) {
   const float we[num_filters * batchsize * src_h * src_w] = {
       1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
   singa::Tensor weight(singa::Shape{num_filters, batchsize * src_h * src_w},
-                       &cuda);
+                       cuda);
   weight.CopyDataFromHostPtr(we, batchsize * src_h * src_w);
   const float b[num_filters] = {1.0f};
-  singa::Tensor bias(singa::Shape{num_filters}, &cuda);
+  singa::Tensor bias(singa::Shape{num_filters}, cuda);
   bias.CopyDataFromHostPtr(b, num_filters);
   CudnnConvolution conv;
   conv.set_weight(weight);
@@ -330,10 +315,7 @@ TEST(CudnnConvolution_AT, Backward) {
   convconf->set_bias_term(true);
   convconf->set_workspace_byte_limit(256);
   convconf->set_prefer("autotune");
-  convconf->set_channels(1);
-  convconf->set_height(3);
-  convconf->set_width(3);
-  conv.Setup(conf);
+  conv.Setup(Shape{1, 3, 3}, conf);
 
   // Parameter "flag" does not influence convolution
   singa::Tensor out1 = conv.Forward(singa::kTrain, in);
@@ -343,14 +325,13 @@ TEST(CudnnConvolution_AT, Backward) {
   const float dy[batchsize * num_filters * grad_h * grad_w] = {0.1f, 0.2f, 0.3f,
                                                                0.4f};
   singa::Tensor grad(singa::Shape{batchsize, num_filters, grad_h, grad_w},
-                     &cuda);
+                     cuda);
   grad.CopyDataFromHostPtr(dy, batchsize * num_filters * grad_h * grad_w);
 
   const auto ret = conv.Backward(singa::kTrain, grad);
-  singa::CppCPU host(0, 1);
   singa::Tensor in_grad = ret.first;
-  in_grad.ToDevice(&host);
-  const float *dx = in_grad.data<const float *>();
+  in_grad.ToHost();
+  const float *dx = in_grad.data<float>();
   const float *wptr = we;
   EXPECT_EQ(9u, in_grad.Size());
   EXPECT_EQ(dy[0] * wptr[4], dx[0]);
@@ -367,12 +348,12 @@ TEST(CudnnConvolution_AT, Backward) {
 
   singa::Tensor dw = ret.second[0];
   singa::Tensor db = ret.second[1];
-  dw.ToDevice(&host);
-  db.ToDevice(&host);
-  const float *dbptr = db.data<const float *>();
+  dw.ToHost();
+  db.ToHost();
+  const float *dbptr = db.data<float>();
   EXPECT_EQ(dy[0] + dy[1] + dy[2] + dy[3], dbptr[0]);
 
-  const float *dwptr = dw.data<const float *>();
+  const float *dwptr = dw.data<float>();
   EXPECT_EQ(9u, dw.Size());
   EXPECT_EQ(dy[3] * x[4], dwptr[0]);
   EXPECT_EQ(dy[3] * x[5] + dy[2] * x[3], dwptr[1]);

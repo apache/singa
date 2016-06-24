@@ -30,8 +30,11 @@ class Pooling : public Layer {
   const std::string layer_type() const override { return "Pooling"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const LayerConf& conf) override;
-
+  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  const Shape GetOutputSampleShape() const override {
+    CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
+    return out_sample_shape_;
+  }
   /// \copydoc Layer::Forward(int flag, const Tensor&)
   const Tensor Forward(int flag, const Tensor& input) override;
 
@@ -57,6 +60,7 @@ class Pooling : public Layer {
   PoolingConf_PoolMethod pool_;
   // To store the input and output(of forward) tensors
   std::stack<Tensor> buf_;
+  Shape out_sample_shape_;
 };
 }  // namespace singa
 #endif  // SRC_MODEL_LAYER_POOLING_H_

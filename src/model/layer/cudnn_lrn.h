@@ -29,27 +29,25 @@
 namespace singa {
 class CudnnLRN : public LRN {
  public:
-   ~CudnnLRN();
-   /// \copy doc Layer::layer_type()
-   const std::string layer_type() const override {
-     return "CudnnLRN";
-   }
+  ~CudnnLRN();
+  /// \copy doc Layer::layer_type()
+  const std::string layer_type() const override { return "CudnnLRN"; }
 
-   const Tensor Forward(int flag, const Tensor& input)
-     override;
-   const std::pair<Tensor, vector<Tensor>> Backward(
-       int flag, const Tensor& grad) override;
-
-   /// Init cudnn related data structures.
-   void InitCudnn(const Shape& shape, DataType dtype);
+  const Tensor Forward(int flag, const Tensor& input) override;
+  const std::pair<Tensor, vector<Tensor>> Backward(int flag,
+                                                   const Tensor& grad) override;
 
  private:
-   bool has_init_cudnn_ = false;
-   cudnnLRNMode_t mode_;
-   cudnnLRNDescriptor_t lrn_desc_;
-   cudnnTensorDescriptor_t shape_desc_;
-   
-}; // class CudnnLRN
+  /// Init cudnn related data structures.
+  void InitCudnn(const Shape& shape, DataType dtype);
+
+ private:
+  bool has_init_cudnn_ = false;
+  cudnnLRNMode_t mode_;
+  cudnnLRNDescriptor_t lrn_desc_ = nullptr;
+  cudnnTensorDescriptor_t shape_desc_ = nullptr;
+
+};  // class CudnnLRN
 }  // namespcae
 
 #endif  // USE_CUDNN

@@ -30,7 +30,11 @@ class Convolution : public Layer {
   const std::string layer_type() const override { return "Convolution"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const LayerConf &conf) override;
+  void Setup(const vector<size_t>& in_shape, const LayerConf& conf) override;
+  const Shape GetOutputSampleShape() const override {
+    CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
+    return out_sample_shape_;
+  }
 
   // void SetupParam(const Tensor &input);
   /// \copydoc Layer::Forward(int flag, const Tensor&)
@@ -72,6 +76,7 @@ class Convolution : public Layer {
   // store intermediate data, i.e., input tensor
   std::stack<Tensor> buf_;
   bool bias_term_;
+  vector<size_t> out_sample_shape_;
 };
 }  // namespace singa
 #endif  // SRC_MODEL_LAYER_CONVOLUTION_H_

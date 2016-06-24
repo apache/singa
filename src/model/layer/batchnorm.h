@@ -33,8 +33,12 @@ class BatchNorm : public Layer {
     return "Batch Normalization";
   }
 
-  /// \copydoc Layer::Setup(const LayerConf&)
-  virtual void Setup(const LayerConf& conf) override;
+  /// \copydoc Layer::Setup(const LayerConf&);
+  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  const Shape GetOutputSampleShape() const override {
+    CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
+    return out_sample_shape_;
+  }
 
   const Tensor Forward(int flag, const Tensor& input)
     override;
@@ -77,8 +81,8 @@ class BatchNorm : public Layer {
   Tensor runningMean_, runningVariance_;
   // Store intermediate data, i.e., input tensor
   std::stack<Tensor> buf_;
-  
+  Shape out_sample_shape_;
 }; // class batchnorm
-} // namespace 
+} // namespace
 
 #endif  // SINGA_MODEL_LAYER_BATCHNORM_H

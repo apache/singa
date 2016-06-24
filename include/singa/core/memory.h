@@ -20,6 +20,7 @@
 #define SINGA_CORE_MEMORY_H_
 
 #include "cnmem.h"
+#include "singa/singa_config.h"
 #include <mutex>
 
 namespace singa {
@@ -28,47 +29,48 @@ namespace singa {
 class VirtualMemory {};
 
 class DeviceMemPool {
-	public:
-	virtual void InitPool() = 0;
-	virtual void Malloc(void** ptr, const size_t size) = 0;
-	virtual void Free(void* ptr) = 0;
-	virtual ~DeviceMemPool(){};
+ public:
+  virtual void InitPool() = 0;
+  virtual void Malloc(void** ptr, const size_t size) = 0;
+  virtual void Free(void* ptr) = 0;
+  virtual ~DeviceMemPool(){};
 };
 
+#ifdef USE_CUDA
 class CnMemPool : public DeviceMemPool {
-	public:
-	int status = 1;
+ public:
+  int status = 1;
 
-	void InitPool();
+  void InitPool();
 
-	/// numDevices: total number of available GPU cards.
-	/// initSize: all devices will be allocated with this size 
-	/// manager_flags: pool manager flag (one for all devices)
-	/// flag = 0; default flag
-	/// flag = 1: Prevent the manager from growing its memory consumption
-	/// flag = 2; Prevent the manager from stealing memory.
-	void InitPool(int numDevices, size_t initSize, unsigned flag);
+  /// numDevices: total number of available GPU cards.
+  /// initSize: all devices will be allocated with this size
+  /// manager_flags: pool manager flag (one for all devices)
+  /// flag = 0; default flag
+  /// flag = 1: Prevent the manager from growing its memory consumption
+  /// flag = 2; Prevent the manager from stealing memory.
+  void InitPool(int numDevices, size_t initSize, unsigned flag);
 
-	void Malloc(void** ptr, const size_t size);
-	void Free(void* ptr);
+  void Malloc(void** ptr, const size_t size);
+  void Free(void* ptr);
 
-	// release all memory and set cnmem manager to unintialized 
-	~CnMemPool();
+  // release all memory and set cnmem manager to unintialized
+  ~CnMemPool();
 
-	private:
-	// whether the (global) memory pool has been initialized
-	static bool initialized;
-	// lock on the initialized variable
-	static std::mutex mtx;
+ private:
+  // whether the (global) memory pool has been initialized
+  static bool initialized;
+  // lock on the initialized variable
+  static std::mutex mtx;
 };
 
 class CudaMemPool : public DeviceMemPool {
-	public:
-	void InitPool(){};
-	void Malloc(void** ptr, const size_t size);
-	void Free(void* ptr);
-	~CudaMemPool(){};
+ public:
+  void InitPool(){};
+  void Malloc(void** ptr, const size_t size);
+  void Free(void* ptr);
+  ~CudaMemPool(){};
 };
-
+#endif
 }  // namespace singa
 #endif  // SINGA_CORE_MEMORY_H_

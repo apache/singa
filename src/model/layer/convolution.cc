@@ -23,8 +23,8 @@
 namespace singa {
 using std::vector;
 
-void Convolution::Setup(const LayerConf &conf) {
-  Layer::Setup(conf);
+void Convolution::Setup(const Shape& in_sample, const LayerConf &conf) {
+  Layer::Setup(in_sample, conf);
   ConvolutionConf conv_conf = conf.convolution_conf();
   // kernel_size, pad, and stride are repeated fields.
   if (conv_conf.kernel_size_size() > 0) {
@@ -73,12 +73,15 @@ void Convolution::Setup(const LayerConf &conf) {
   bias_term_ = conv_conf.bias_term();
 
   // Shape of input image
-  channels_ = conv_conf.channels();
-  height_ = conv_conf.height();
-  width_ = conv_conf.width();
+  CHECK_EQ(in_sample.size(), 3u);
+  channels_ = in_sample.at(0);
+  height_ = in_sample.at(1);
+  width_ = in_sample.at(2);
 
   conv_height_ = (height_ + 2 * pad_h_ - kernel_h_) / stride_h_ + 1;
   conv_width_ = (width_ + 2 * pad_w_ - kernel_w_) / stride_w_ + 1;
+  out_sample_shape_ = vector<size_t>{num_filters_, conv_height_, conv_width_};
+
   col_height_ = channels_ * kernel_w_ * kernel_h_;
   col_width_ = conv_height_ * conv_width_;
 
