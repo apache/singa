@@ -203,6 +203,7 @@ message LayerConf {
   optional ConcatConf concat_conf = 104;
   optional ContrastiveLossConf contrastive_loss_conf = 105;
   optional ConvolutionConf convolution_conf = 106;
+  optional RNNConf rnn_conf = 140;
   // optional DataConf data_conf = 107;
   optional DropoutConf dropout_conf = 108;
   // optional DummyDataConf dummy_data_conf = 109;
@@ -389,6 +390,22 @@ message ConvolutionConf {
   // cudnn algorithm preference
   // options: "fastest", "limited_workspace", "no_workspace"
   optional string prefer = 51 [default = "fastest"];
+}
+
+message RNNConf {
+  optional uint32 hiddensize = 1; // The number of hiddensize
+  optional uint32 numlayers = 2; // The number of stacked RNN layers
+  optional float dropout = 3 [default = 0];
+  optional int32 workspace_byte_limit = 50 [default = 512];
+  // cudnn inputmode
+  // options: "cudnn_linear_input", "cudnn_skip_input"
+  optional string inputmode = 51 [default = "cudnn_linear_input"];
+  // cudnn direction
+  // options: "cudnn_undirectional", "cudnn_bidirectional"
+  optional string direction = 52 [default = "cudnn_undirectional"];
+  // cudnn RNN mode
+  // options: "cudnn_rnn_relu", "cudnn_rnn_tanh", "cudnn_lstm", "cudnn_gru"
+  optional string mode = 53 [default = "cudnn_rnn_relu"];
 }
 
 /*
