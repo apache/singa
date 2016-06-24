@@ -38,21 +38,32 @@ class RNN : public Layer {
   const std::string layer_type() const override { return "RNN"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const LayerConf& conf) override;
+  void Setup(const vector<size_t>& in_shape, const LayerConf& conf) override;
 
   /// \copydoc Layer::Forward(int flag, const vector<Tensor>&)
-  const vector<Tensor> Forward(int flag, const vector<Tensor>& input) override;
+  const vector<Tensor> Forward(int flag, const vector<Tensor>& inputs) override;
 
   /// \copydoc Layer::Backward(int, const vector<Tensor>&);
   const std::pair<vector<Tensor>, vector<Tensor>> Backward(
-      int flag, const vector<Tensor>& grad) override;
+      int flag, const vector<Tensor>& grads) override;
 
-  void ToDevice(Device* device) override;
 
+  size_t hiddenSize() const { return hiddenSize_; }
+  size_t numLayers() const { return numLayers_; }
+  size_t weightSize() const { return weightSize_; }
+  float dropout() const { return dropout_; }
+  
+  void set_weight(Tensor w) {
+    weight_.ResetLike(w);
+    weight_.CopyData(w);
+  }
+
+
+  void ToDevice(std::shared_ptr<Device> device) override;
   /// Return the internal state stack, which should be empty at the beginning
   /// of
   /// one iteration.
-  std::stack<Tensor> states() const { return states_; }
+  // std::stack<Tensor> states() const { return states_; }
 
  protected:
   /// Storing input or output from Forward(), which are used in Backward().
@@ -60,7 +71,15 @@ class RNN : public Layer {
   /// 1. push the 'input' or 'output' into states_ if the flag of Forward() is
   ///    for kTrain and 'input' or 'output' is necessary for Backward().
   /// 2. pop data out in Backward().
-  std::stack<Tensor*> states_;
+  // std::stack<Tensor*> states_;
+  std::stack<Tensor> buf_;
+  size_t hiddenSize_;
+  size_t numLayers_;
+  size_t numLinearLayer_;
+  size_t seqLength_;
+  size_t weightSize_; /*all the weights and biases*/
+  float dropout_;
+  Tensor weight_;
 };
 }  // namespace singa
 #endif  // SRC_MODEL_LAYER_RNN_H_
