@@ -121,7 +121,7 @@ void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
   // cudaMemcpyAsync(dst, src, nBytes,cudaMemcpyDefault, ctx_.stream);
 }
 
-/// Allocate cpu memory.
+/// Allocate gpu memory.
 void* CudaGPU::Malloc(int size) {
   void* ptr = nullptr;
   if (size > 0) {
@@ -132,7 +132,7 @@ void* CudaGPU::Malloc(int size) {
   return ptr;
 }
 
-/// Free cpu memory.
+/// Free gpu memory.
 void CudaGPU::Free(void* ptr) {
   if (ptr != nullptr) {
     // CUDA_CHECK(cudaFree(ptr));

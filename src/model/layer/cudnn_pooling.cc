@@ -78,6 +78,7 @@ void CudnnPooling::InitCudnn(const Tensor &input) {
 }
 
 const Tensor CudnnPooling::Forward(int flag, const Tensor &input) {
+  CHECK(buf_.empty());
   CHECK_EQ(input.device()->lang(), kCuda);
   CHECK_EQ(input.nDim(), 4u);
   size_t batchsize = input.shape(0);

@@ -96,6 +96,8 @@ class Tensor {
 
   /// return number of total elements
   size_t Size() const {
+    if (block_ == nullptr)
+      return 0u;
     CHECK_EQ(block_->size() % SizeOf(data_type_), 0u);
     return block_->size() / SizeOf(data_type_);
   }
@@ -315,7 +317,7 @@ Tensor Div(const SType x, const Tensor &in);
 template <typename SType>
 void Div(const SType x, const Tensor &in, Tensor *out);
 
-template <typename SType>
+template <typename SType = float>
 SType Sum(const Tensor &in);
 // ============Matrix (row/column) operations==================================
 /// Average elements in the Tensor, currently only support vector and matrix.

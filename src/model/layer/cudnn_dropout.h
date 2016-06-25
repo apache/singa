@@ -42,6 +42,7 @@ class CudnnDropout : public Dropout {
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor& grad) override;
 
+  void ToDevice(std::shared_ptr<Device> device) override;
  private:
   /// Init cudnn related data structures.
   void InitCudnn(int size, DataType dtype, std::shared_ptr<Device> dev,

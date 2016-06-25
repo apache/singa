@@ -45,7 +45,9 @@ void Dense::Setup(const Shape& in_sample, const LayerConf &conf) {
 
 /// \copydoc Layer::Forward(int flag, const Tensor&)
 const Tensor Dense::Forward(int flag, const Tensor &input) {
+  CHECK(buf_.empty());
   Tensor output;
+  CHECK_EQ(input.nDim(), 2);
   if (transpose_)  // use the transposed version of weight_ for computing
     output = Mult(input, weight_);
   else
@@ -81,6 +83,7 @@ const std::pair<Tensor, vector<Tensor>> Dense::Backward(int flag,
 }
 
 void Dense::ToDevice(std::shared_ptr<Device> device) {
+  Layer::ToDevice(device);
   weight_.ToDevice(device);
   bias_.ToDevice(device);
 }

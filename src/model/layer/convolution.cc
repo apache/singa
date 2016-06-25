@@ -112,5 +112,9 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
 
   return std::make_pair(input_grad, param_grad);
 }
-
+void Convolution::ToDevice(std::shared_ptr<Device> device) {
+  Layer::ToDevice(device);
+  weight_.ToDevice(device);
+  bias_.ToDevice(device);
+}
 }  // namespace singa

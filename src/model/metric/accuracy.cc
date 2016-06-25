@@ -16,35 +16,13 @@
  * limitations under the License.
  */
 
-#ifndef SINGA_MODEL_METRIC_ACCURACY_H_
-#define SINGA_MODEL_METRIC_ACCURACY_H_
 #include "singa/model/metric.h"
 #include <algorithm>
 namespace singa {
 
-/// Compute the accuray of the prediction, which is matched against the
-/// ground truth labels.
-/// TODO(wangwei) consider multi-label cases.
-class Accuracy : public Metric<Tensor> {
- public:
-  /// Set meta fields from user configurations.
-  void Setup(const MetricConf& conf) override { top_k_ = conf.top_k(); }
-
-  /// Check the prediction against the target (ground truth) for each data
-  /// sample. The returned Tensor has a float value for each sample, 0 for wrong
-  /// and 1 for correct. Users can call Sum(const Tensor&) / Tensor::Size() to
-  /// get the accuracy.
-  Tensor Forward(const Tensor& prediction, const Tensor& target);
-
- private:
-  /// \copydoc Match(const Tensor&, const Tensor&);
-  Tensor Match(const Tensor& prediction, const vector<int>& target);
-  /// If the ground truth label is in the top k predicted labels, then the
-  /// prediction is correct.
-  size_t top_k_ = 1;
-};
-
-Tensor Accuracy::Match(const Tensor& prediction, const vector<int>& target) {
+Tensor Accuracy::Match(const Tensor& predict, const vector<int>& target) {
+  Tensor prediction(predict.shape());
+  prediction.CopyData(predict);
   size_t batchsize = target.size();
   size_t nb_classes = prediction.Size() / batchsize;
   // each row of prediction is the prob distribution for one sample
@@ -70,7 +48,9 @@ Tensor Accuracy::Match(const Tensor& prediction, const vector<int>& target) {
 
 // TODO(wangwei) consider multi-label cases, where target is of shape
 // nb_samples * nb_classes
-Tensor Accuracy::Forward(const Tensor& prediction, const Tensor& target) {
+Tensor Accuracy::Forward(const Tensor& prediction, const Tensor& t) {
+  Tensor target(t.shape(), t.data_type());
+  target.CopyData(t);
   vector<int> target_vec;
   // TODO(wangwei) copy target to host.
   const int* target_value = target.data<int>();
@@ -80,5 +60,3 @@ Tensor Accuracy::Forward(const Tensor& prediction, const Tensor& target) {
 }
 
 }  // namespace singa
-
-#endif  // SINGA_MODEL_METRIC_ACCURACY_H_

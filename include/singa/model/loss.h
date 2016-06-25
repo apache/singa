@@ -37,6 +37,7 @@ class Loss {
     Setup(loss);
   }
 	virtual ~Loss(){};
+  virtual void ToDevice(std::shared_ptr<Device> device) {}
   /// Set meta fields from user configurations.
   virtual void Setup(const LossConf& conf) {}
 
@@ -48,7 +49,8 @@ class Loss {
   /// It calls Forward() internally. The calling pattern should be
   /// [Evaluate|Forward] Backward.
   float Evaluate(const Tensor& prediction, const T& target) {
-    const Tensor& loss = Forward(prediction, target);
+    Tensor loss = Forward(prediction, target);
+    loss.ToHost();
     return Sum<float>(loss) / (1.0f * loss.Size());
   }
 

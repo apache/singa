@@ -57,6 +57,7 @@ void CudnnSoftmax::InitCudnn(Shape shape, DataType dtype) {
 }
 
 const Tensor CudnnSoftmax::Forward(int flag, const Tensor& input) {
+  CHECK(buf_.empty());
   auto shape = input.shape();
   DataType dtype = input.data_type();
   if (!has_init_cudnn_) {

@@ -118,7 +118,8 @@ void Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is very strict. May compare against device ID?
   if (device_ != dst) {
     Tensor tmp(shape_, dst, data_type_);
-    tmp.CopyData(*this);
+    if (block_ != nullptr && Size())
+      tmp.CopyData(*this);
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = tmp.block_;
@@ -136,7 +137,8 @@ void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
       << "data_type is " << DataType_Name(data_type_)
       << " user given type is of size " << sizeof(DType);
   if (src != nullptr) {
-    device_->CopyDataFromHostPtr(block(), src, sizeof(DType) * num, offset);
+    device_->CopyDataFromHostPtr(block(), src, sizeof(DType) * num,
+        sizeof(DType) * offset);
   } else {
     LOG(WARNING) << "Copy data from null host ptr";
   }
@@ -637,13 +639,13 @@ Tensor ConcatenateColumns(const vector<Tensor> &in) {
   return out;
 }
 Tensor CopyRows(const Tensor &in, const size_t start, const size_t end) {
-  CHECK_EQ(in.nDim(), 2u);
   CHECK_LT(start, end);
   CHECK_GE(in.shape(0), end);
-  Shape s;
-  s = Shape{end - start, in.shape(1)};
+  Shape s = in.shape();
+  s[0] = end - start;
+  size_t sample_size = in.Size() / in.shape(0);
   Tensor out(s, in.device(), in.data_type());
-  CopyDataToFrom(&out, in, out.Size(), 0, start * out.shape(1));
+  CopyDataToFrom(&out, in, out.Size(), 0, start * sample_size);
   return out;
 }
 Tensor CopyColumns(const Tensor &in, const size_t start, const size_t end) {

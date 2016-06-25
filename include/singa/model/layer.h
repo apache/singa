@@ -151,7 +151,7 @@ class Layer {
 
   /// Clone the layer to the given device. Layer data (e.g., parameters) are
   /// deep copied. If 'device' is nullptr, then clone it one the current device.
-  virtual Layer* Clone(std::shared_ptr<Device> device);
+  // virtual Layer* Clone(std::shared_ptr<Device> device);
   /// Move the layer (including its parameters and other internal Tensor) onto
   /// the given device
   virtual void ToDevice(std::shared_ptr<Device> device) {

@@ -22,7 +22,7 @@
 #include <string>
 #include <cstdint>
 #include <iostream>
-
+#include "singa/core/tensor.h"
 using std::string;
 namespace singa {
 /// For reading cifar10 binary data as tensors.
@@ -39,38 +39,39 @@ class Cifar10 {
   /// read data from one file into an image Tensor and a label Tensor
   const std::pair<Tensor, Tensor> ReadFile(string file, bool shuffle = false);
 
+  void ReadImage(std::ifstream* file, int* label, char* buffer);
  private:
-  const int kImageSize = 32;
-  const int kImageVol = 3072;
-  const int kBatchSize = 10000;
-  const int kTrainFiles = 5;
+  const size_t kImageSize = 32;
+  const size_t kImageVol = 3072;
+  const size_t kBatchSize = 10000;
+  const size_t kTrainFiles = 1;
 
   string dir_path_;
   bool normalize_;
 };
 
-void read_image(std::ifstream* file, int* label, char* buffer) {
+void Cifar10::ReadImage(std::ifstream* file, int* label, char* buffer) {
   char label_char;
   file->read(&label_char, 1);
-  *label = label_char;
+  *label = static_cast<int>(label_char);
   file->read(buffer, kImageVol);
   return;
 }
-const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file,
-                                                  bool shuffle = false) {
-  Tensor images(Shape{kTrainFiles, 3, kImageSize, kImageSize});
-  Tensor labels(Shape{kTrainFiles}, kInt);
+const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file, bool shuffle) {
+  Tensor images(Shape{kBatchSize, 3, kImageSize, kImageSize});
+  Tensor labels(Shape{kBatchSize}, kInt);
   if (dir_path_.back() != '/') dir_path_.push_back('/');
   LOG(INFO) << "Reading file " << dir_path_ + file;
   std::ifstream data_file((dir_path_ + file).c_str(),
                           std::ios::in | std::ios::binary);
-  CHECK(data_file.is_open()) << "Unable to open file " << file;
+  CHECK(data_file.is_open()) << "Unable to open file " << dir_path_ + file;
   int label;
   char image[kImageVol];
   float float_image[kImageVol];
   int tmplabels[kBatchSize];
   for (int itemid = 0; itemid < kBatchSize; ++itemid) {
-    read_image(&data_file, &label, image);
+    // LOG(INFO) << "reading " << itemid << "-th image";
+    ReadImage(&data_file, &label, image);
     for (int i = 0; i < kImageVol; i++)
       float_image[i] = static_cast<float>(static_cast<int>(image[i]));
     images.CopyDataFromHostPtr(float_image, kImageVol, itemid * kImageVol);
@@ -80,9 +81,9 @@ const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file,
   return std::make_pair(images, labels);
 }
 
-const std::pair<Tensor, Tensor> Cifar10::ReadTrainData(bool shuffle = false) {
+const std::pair<Tensor, Tensor> Cifar10::ReadTrainData(bool shuffle) {
   Tensor images(Shape{kBatchSize * kTrainFiles, 3, kImageSize, kImageSize});
-  Tensor labels(Shape{kBatchSize * kTrainFiles, 3, kImageSize, kImageSize});
+  Tensor labels(Shape{kBatchSize * kTrainFiles}, kInt);
   for (int fileid = 0; fileid < kTrainFiles; ++fileid) {
     string file = "data_batch_" + std::to_string(fileid + 1) + ".bin";
     const auto ret = ReadFile(file);
@@ -92,7 +93,7 @@ const std::pair<Tensor, Tensor> Cifar10::ReadTrainData(bool shuffle = false) {
   }
   return std::make_pair(images, labels);
 }
-const std::pair<Tensor, Tensor> Cifar10::ReadTrainData() {
+const std::pair<Tensor, Tensor> Cifar10::ReadTestData() {
   return ReadFile("test_batch.bin");
 }
 }  // namespace singa

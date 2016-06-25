@@ -54,6 +54,7 @@ void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
 }
 
 const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
+  CHECK(buf_.empty());
   auto size = input.Size();
   DataType dtype = input.data_type();
   if (!has_init_cudnn_) {

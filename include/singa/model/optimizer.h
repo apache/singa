@@ -155,7 +155,7 @@ class Regularizer {
 };
 
 // =============Vallina SGD with Momentum=====================================
-class SGD : Optimizer {
+class SGD : public Optimizer {
  public:
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.

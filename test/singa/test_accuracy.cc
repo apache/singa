@@ -20,7 +20,7 @@
 *************************************************************/
 
 #include "gtest/gtest.h"
-#include "../src/model/metric/accuracy.h"
+#include "singa/model/metric.h"
 
 TEST(Accuracy, Compute) {
   singa::Accuracy acc;

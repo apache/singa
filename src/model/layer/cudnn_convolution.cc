@@ -156,6 +156,7 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
 }
 
 const Tensor CudnnConvolution::Forward(int flag, const Tensor &input) {
+  CHECK(buf_.empty());
   CHECK_EQ(input.device()->lang(), kCuda);
   CHECK_EQ(input.nDim(), 4u);
   if (flag & kTrain) buf_.push(input);  // buffer the input for backward

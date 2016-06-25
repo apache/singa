@@ -33,6 +33,7 @@ class Metric {
  public:
   // TODO(wangwei) call Setup using a default MetricConf.
   Metric() = default;
+  virtual void ToDevice(std::shared_ptr<Device> device) {}
   void Setup(const string& conf) {
     MetricConf metric;
     metric.ParseFromString(conf);
@@ -51,6 +52,28 @@ class Metric {
     return Sum<float>(metric) / (1.0f * metric.Size());
   }
 };
+/// Compute the accuray of the prediction, which is matched against the
+/// ground truth labels.
+/// TODO(wangwei) consider multi-label cases.
+class Accuracy : public Metric<Tensor> {
+ public:
+  /// Set meta fields from user configurations.
+  void Setup(const MetricConf& conf) override { top_k_ = conf.top_k(); }
+
+  /// Check the prediction against the target (ground truth) for each data
+  /// sample. The returned Tensor has a float value for each sample, 0 for wrong
+  /// and 1 for correct. Users can call Sum(const Tensor&) / Tensor::Size() to
+  /// get the accuracy.
+  Tensor Forward(const Tensor& prediction, const Tensor& target);
+
+ private:
+  /// \copydoc Match(const Tensor&, const Tensor&);
+  Tensor Match(const Tensor& prediction, const vector<int>& target);
+  /// If the ground truth label is in the top k predicted labels, then the
+  /// prediction is correct.
+  size_t top_k_ = 1;
+};
+
 
 }  // namespace singa
 
