@@ -41,13 +41,15 @@ void Dense::Setup(const Shape& in_sample, const LayerConf &conf) {
   bias_.Reshape(Shape{hdim_});
   param_values_.push_back(&weight_);
   param_values_.push_back(&bias_);
+  for (auto specs: conf.param())
+    param_specs_.push_back(specs);
 }
 
 /// \copydoc Layer::Forward(int flag, const Tensor&)
 const Tensor Dense::Forward(int flag, const Tensor &input) {
   CHECK(buf_.empty());
   Tensor output;
-  CHECK_EQ(input.nDim(), 2);
+  CHECK_EQ(input.nDim(), 2u);
   if (transpose_)  // use the transposed version of weight_ for computing
     output = Mult(input, weight_);
   else

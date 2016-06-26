@@ -43,13 +43,13 @@ class Loss {
 
   /// Compute the loss values for each sample/instance given the prediction
   /// and the target.
-  virtual Tensor Forward(const Tensor& prediction, const T& target) = 0;
+  virtual Tensor Forward(int flag, const Tensor& prediction, const T& target) = 0;
 
   /// Average loss values for all samples in the mini-batch
   /// It calls Forward() internally. The calling pattern should be
   /// [Evaluate|Forward] Backward.
-  float Evaluate(const Tensor& prediction, const T& target) {
-    Tensor loss = Forward(prediction, target);
+  float Evaluate(int flag, const Tensor& prediction, const T& target) {
+    Tensor loss = Forward(flag, prediction, target);
     loss.ToHost();
     return Sum<float>(loss) / (1.0f * loss.Size());
   }
@@ -68,7 +68,7 @@ class MSE : public Loss<Tensor> {
   /// and the target, which is 0.5/||prediction-target||^2
   /// Users can call Average(const Tensor&) to get the average
   /// loss value over all samples in the batch.
-  Tensor Forward(const Tensor& prediction, const Tensor& target) override;
+  Tensor Forward(int flag, const Tensor& prediction, const Tensor& target) override;
 
   /// Compute the gradients of the loss values w.r.t. the prediction,
   /// which is (prediction-target)/batchsize
@@ -90,7 +90,7 @@ class SoftmaxCrossEntropy : public Loss<Tensor> {
   /// from Softmax(prediction).
   /// Users can call Average(const Tensor&) to get the average
   /// loss value over all samples in the batch.
-  Tensor Forward(const Tensor& prediction, const Tensor& target) override;
+  Tensor Forward(int flag, const Tensor& prediction, const Tensor& target) override;
 
   /// Compute the gradients of the loss values w.r.t. the prediction,
   /// which is: p[idx] - 1 if idx is the truth category's index; else,
@@ -106,5 +106,3 @@ class SoftmaxCrossEntropy : public Loss<Tensor> {
 }  // namespace singa
 
 #endif  // SINGA_MODEL_LOSS_H_
-
-

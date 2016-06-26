@@ -21,7 +21,7 @@
 
 namespace singa {
 
-Tensor SoftmaxCrossEntropy::Forward(const Tensor& prediction,
+Tensor SoftmaxCrossEntropy::Forward(int flag, const Tensor& prediction,
                                     const Tensor& target) {
   CHECK(buf_.empty()) << "Do not call Forward successively for more than twice."
                       << " The calling pattern is [Forward|Evaluate] Backward";
@@ -30,13 +30,17 @@ Tensor SoftmaxCrossEntropy::Forward(const Tensor& prediction,
   size_t dim = prediction.Size() / batchsize;
   const Tensor& input = Reshape(prediction, Shape{batchsize, dim});
   Tensor prob = SoftMax(input);
+  // LOG(INFO) << "prob: " << prob.L2();
 
   // buffer intermediate data
-  buf_.push(prob);
-  buf_.push(target);
+  if (flag & kTrain) {
+    buf_.push(prob);
+    buf_.push(target);
+  }
   Tensor loss(Shape{batchsize}, prob.device(), prob.data_type());
 
   ComputeCrossEntropy(prob, target, &loss);
+
   return loss;
 }
 
@@ -49,5 +53,4 @@ Tensor SoftmaxCrossEntropy::Backward() {
   return prob;
 }
 }  // namespace singa
-
 

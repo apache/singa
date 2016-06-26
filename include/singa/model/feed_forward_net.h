@@ -72,7 +72,7 @@ class FeedForwardNet {
   void Train(size_t batchsize, int nb_epoch, const Tensor& x, const Tensor& y,
              const Tensor& val_x, const Tensor& val_y);
   /// Train the neural net over one batch of training data.
-  const std::pair<float, float> TrainOnBatch(const Tensor& x, const Tensor& y);
+  const std::pair<float, float> TrainOnBatch(int epoch, const Tensor& x, const Tensor& y);
 
   /// Evaluate the neural net with given data.
   /// Returns one tensor for loss values and one tensor for metric values;

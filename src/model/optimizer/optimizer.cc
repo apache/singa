@@ -21,6 +21,17 @@
 
 namespace singa {
 
+Optimizer::~Optimizer() {
+  for (auto entry : regularizers_) delete entry.second;
+  for (auto entry : constraints_) delete entry.second;
+  if (constraint_ != nullptr) delete constraint_;
+  if (regularizer_ != nullptr) delete regularizer_;
+}
+void Optimizer::Setup(const OptimizerConf& conf) {
+  if (conf.has_regularizer())
+    regularizer_ = new Regularizer(conf.regularizer());
+  if (conf.has_constraint()) constraint_ = new Constraint(conf.constraint());
+}
 void Optimizer::Register(const string& name, const ParamSpec& specs) {
   if (specs.has_constraint()) {
     CHECK(constraints_.find(name) == constraints_.end())
@@ -31,6 +42,11 @@ void Optimizer::Register(const string& name, const ParamSpec& specs) {
     CHECK(regularizers_.find(name) == regularizers_.end())
         << "Parameter with name = " << name << " has already registered";
     regularizers_[name] = new Regularizer(specs.regularizer());
+  }
+  if (specs.has_decay_mult()) {
+    CHECK(weight_decay_multplier_.find(name) == weight_decay_multplier_.end())
+        << "Parameter with name = " << name << " has already registered";
+    weight_decay_multplier_[name] = specs.decay_mult();
   }
   if (specs.has_lr_mult()) {
     CHECK(learning_rate_multplier_.find(name) == learning_rate_multplier_.end())
@@ -47,10 +63,18 @@ void Optimizer::Register(const string& name, const ParamSpec& specs) {
 void Optimizer::Apply(int step, const string& name, Tensor* grad,
                       Tensor* param) {
   // TODO(wangwei) need to consider the order of constraint and regularizer
-  if (regularizers_.find(name) != regularizers_.end())
+  if (regularizers_.find(name) != regularizers_.end()) {
     regularizers_.at(name)->Apply(step, param, grad);
+  } else if (regularizer_ != nullptr) {
+    float scale = 1.0f;
+    if (weight_decay_multplier_.find(name) != weight_decay_multplier_.end())
+      scale = weight_decay_multplier_.at(name);
+    regularizer_->Apply(step, param, grad, scale);
+  }
   if (constraints_.find(name) != constraints_.end())
     constraints_.at(name)->Apply(step, param, grad);
+  else if (constraint_ != nullptr)
+    constraint_->Apply(step, param, grad);
   float lr = learning_rate_generator_(step);
   if (learning_rate_multplier_.find(name) != learning_rate_multplier_.end())
     lr *= learning_rate_multplier_.at(name);
@@ -62,9 +86,9 @@ void Regularizer::Setup(const RegularizerConf& conf) {
   coefficient_ = conf.coefficient();
 }
 
-void Regularizer::Apply(int step, Tensor* value, Tensor* grad) {
+void Regularizer::Apply(int step, Tensor* value, Tensor* grad, float scale) {
   if (type_ == "L2" || type_ == "l2") {
-    (*grad) -= (*value) * coefficient_;
+    Axpy(coefficient_ * scale, *value, grad);
   } else {
     CHECK(type_ == "NotSet") << "Unknown regularizer type = " << type_;
   }

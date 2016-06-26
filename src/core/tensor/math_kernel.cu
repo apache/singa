@@ -265,6 +265,19 @@ __global__ void KernelLT(const size_t num, const float *in, const float x,
     out[idx] = in[idx] < x ? 1.0f : 0.0f;
   }
 }
+
+__global__ void KernelRowMax(const size_t nrow, const size_t ncol, const float *inPtr,
+    float *outPtr) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < nrow;
+       idx += blockDim.x * gridDim.x) {
+    int offset = idx * ncol;
+    float maxval = inPtr[offset];
+    for (size_t k = 1; k < ncol; k++) {
+      maxval = max(maxval, inPtr[offset + k]);
+    }
+    outPtr[idx] = maxval;
+  }
+}
 __global__ void KernelComputeCrossEntropy(const size_t batchsize,
                                           const size_t dim, const float *p,
                                           const int *t, float *loss) {
@@ -286,6 +299,9 @@ __global__ void KernelSoftmaxCrossEntropyBwd(const size_t batchsize,
     grad[pos] = p[pos] - 1.0f;  // TODO(wangwei) Consider p and grad are diff
   }
 }
+
+
+
 // ********************************
 // Functions call kernels
 // ********************************
@@ -421,6 +437,12 @@ void SoftmaxCrossEntropyBwd(size_t batchsize, const size_t dim, const float *p,
   KernelSoftmaxCrossEntropyBwd <<<ceil(batchsize / CU1DBLOCKF), CU1DBLOCKF>>>
       (batchsize, dim, p, t, grad);
 }
+
+void RowMax(const size_t nrow, const size_t ncol, const float *inPtr,
+    float *outPtr, cudaStream_t stream) {
+  KernelRowMax <<<ceil(nrow / CU1DBLOCKF), CU1DBLOCKF>>>(nrow, ncol, inPtr, outPtr);
+}
+
 /*
 void square_grad(int n, const float *in, float *out, cudaStream_t s) {
   kernel_square_grad <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (in, out, n);

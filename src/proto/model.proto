@@ -89,6 +89,11 @@ message OptimizerConf {
 
   // delta is used to avoid dividing zero
   optional float delta = 6 [default = 1e-8];
+
+  // global regularizer lower priority than ParamSpec regularizer
+  optional RegularizerConf regularizer = 10;
+  // global constraint lower priority than ParamSpec constraint
+  optional ConstraintConf constraint = 11;
 }
 
 message ConstraintConf {

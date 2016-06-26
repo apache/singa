@@ -108,7 +108,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnDropout::Backward(
 }
 void CudnnDropout::ToDevice(std::shared_ptr<Device> device) {
   Dropout::ToDevice(device);
-  state.ToDevice(device);
+  state_.ToDevice(device);
 }
 }  // namespace singa
 #endif  // CUDNN_VERSION_MAJOR>=5

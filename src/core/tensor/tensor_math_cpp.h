@@ -549,6 +549,20 @@ void SoftmaxCrossEntropyBwd<float, lang::Cpp>(const size_t batchsize,
   }
 }
 
+template <>
+void RowMax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
+                              const Block *in, const Block *out, Context *ctx) {
+  const float *inPtr = static_cast<const float *>(in->data());
+  float *outPtr = static_cast<float *>(out->mutable_data());
+  for (size_t r = 0; r < nrow; r++) {
+    int offset = r * ncol;
+    float maxval = inPtr[offset];
+    for (size_t c = 1; c < ncol; c++)
+      maxval = std::max(maxval, inPtr[offset + c]);
+    outPtr[r] = maxval;
+  }
+}
+
 // =========Matrix operations ================================================
 /*
 template <>

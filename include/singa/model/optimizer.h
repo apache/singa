@@ -41,7 +41,7 @@ class Regularizer;
 class Optimizer {
  public:
   Optimizer() = default;
-
+  virtual ~Optimizer();
   /// Setup the optimzier using configurations from serialized string (for
   /// binding languages).
   void Setup(const string& str) {
@@ -51,7 +51,7 @@ class Optimizer {
   }
 
   /// Setup the meta fields of the optimizer
-  virtual void Setup(const OptimizerConf& conf) {}
+  virtual void Setup(const OptimizerConf& conf);
   /// Register the parameter, e.g., create Constraint and Regularizers.
   /// If there is no constraint or regularizer, then no need to register the
   /// parameter.
@@ -76,15 +76,21 @@ class Optimizer {
   void SetLearningRateGenerator(function<float(int)> func) {
     learning_rate_generator_ = func;
   }
-  /// Since Optimizer base layer has pure virtual function, a virtual
-  /// deconstructor is needed.
-  virtual ~Optimizer() = default;
+  float GetLearningRate(int step) {
+    if (learning_rate_generator_)
+      return learning_rate_generator_(step);
+    else
+      return 0;
+  }
 
  protected:
   function<float(int)> learning_rate_generator_;
   std::unordered_map<std::string, float> learning_rate_multplier_;
+  std::unordered_map<std::string, float> weight_decay_multplier_;
   std::unordered_map<std::string, Constraint*> constraints_;
   std::unordered_map<std::string, Regularizer*> regularizers_;
+  Constraint* constraint_ = nullptr;
+  Regularizer* regularizer_ = nullptr;
 };
 
 /// Apply constraints for parameters (gradient).
@@ -141,7 +147,7 @@ class Regularizer {
   /// e.g., clip each gradient if it is too large w.r.t the threshold,
   /// \ref
   /// https://www.reddit.com/r/MachineLearning/comments/31b6x8/gradient_clipping_rnns/
-  void Apply(int step, Tensor* grad, Tensor* value);
+  void Apply(int step, Tensor* grad, Tensor* value, float scale = 1.0f);
   /// Apply the regularizer for multiple parameter objects together.
   /// \ref https://github.com/Lasagne/Lasagne/blob/master/lasagne/updates.py
   void Apply(int step, const vector<Tensor*>& grads,

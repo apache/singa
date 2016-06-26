@@ -30,6 +30,7 @@ Tensor Accuracy::Match(const Tensor& predict, const vector<int>& target) {
   // TODO(wangwei) CloneToDevice(host);
   const float* prob = prediction.data<float>();
   float* score = new float[batchsize];
+  memset(score, 0, batchsize * sizeof(float));
   for (size_t b = 0; b < batchsize; b++) {
     vector<std::pair<float, int>> prob_class;
     for (size_t c = 0; c < nb_classes; c++) {

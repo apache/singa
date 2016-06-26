@@ -40,11 +40,12 @@ class Cifar10 {
   const std::pair<Tensor, Tensor> ReadFile(string file, bool shuffle = false);
 
   void ReadImage(std::ifstream* file, int* label, char* buffer);
+
  private:
   const size_t kImageSize = 32;
   const size_t kImageVol = 3072;
   const size_t kBatchSize = 10000;
-  const size_t kTrainFiles = 1;
+  const size_t kTrainFiles = 5;
 
   string dir_path_;
   bool normalize_;

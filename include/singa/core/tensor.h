@@ -180,6 +180,7 @@ class Tensor {
   template <typename SType>
   Tensor &operator/=(const SType x);
 
+  float L1() const;
   float L2() const;
 
  protected:

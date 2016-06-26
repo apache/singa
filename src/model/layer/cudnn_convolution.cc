@@ -72,8 +72,8 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
       num_filters_, conv_height_, conv_width_));
   if (bias_term_)
     CUDNN_CHECK(cudnnSetTensor4dDescriptor(bias_desc_, CUDNN_TENSOR_NCHW,
-                                           GetCudnnDataType(dtype), 1, 1,
-                                           num_filters_, 1));
+                                           GetCudnnDataType(dtype), 1, 1, 1,
+                                           num_filters_));
   CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc_, pad_h_, pad_w_,
                                               stride_h_, stride_w_, 1, 1,
                                               CUDNN_CROSS_CORRELATION));
@@ -244,6 +244,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnConvolution::Backward(
   }, {grad.block(), weight_.block()}, {dx.block(), workspace_.block()});
   param_grad.push_back(dw);
   param_grad.push_back(db);
+  LOG(INFO) << "bias nrm " << db.L1();
   return std::make_pair(dx, param_grad);
 }
 

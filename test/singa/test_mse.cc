@@ -42,7 +42,7 @@ class TestMSE : public ::testing::Test {
 #ifdef USE_CBLAS
 TEST_F(TestMSE, CppForward) {
   singa::MSE mse;
-  const Tensor& loss = mse.Forward(p, t);
+  const Tensor& loss = mse.Forward(singa::kEval, p, t);
   auto ldat = loss.data<float>();
 
   for (size_t i = 0, k = 0; i < loss.Size(); i++) {
@@ -57,7 +57,7 @@ TEST_F(TestMSE, CppForward) {
 
 TEST_F(TestMSE, CppBackward) {
   singa::MSE mse;
-  mse.Forward(p, t);
+  mse.Forward(singa::kTrain, p, t);
   const Tensor& grad = mse.Backward();
 
   auto gdat = grad.data<float>();
@@ -72,7 +72,7 @@ TEST_F(TestMSE, CudaForward) {
   auto dev = std::make_shared<singa::CudaGPU>();
   p.ToDevice(dev);
   t.ToDevice(dev);
-  Tensor loss = mse->Forward(p, t);
+  Tensor loss = mse->Forward(singa::kEval, p, t);
 
   loss.ToHost();
   auto ldat = loss.data<float>();
@@ -94,7 +94,7 @@ TEST_F(TestMSE, CudaBackward) {
   auto dev = std::make_shared<singa::CudaGPU>();
   p.ToDevice(dev);
   t.ToDevice(dev);
-  mse.Forward(p, t);
+  mse.Forward(singa::kTrain, p, t);
   Tensor grad = mse.Backward();
   grad.ToHost();
   auto gdat = grad.data<float>();

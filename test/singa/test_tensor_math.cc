@@ -346,7 +346,7 @@ TEST_F(TestTensorMath, L2Cpp) {
   float l2 = a.L2();
   float target = 0.0f;
   for (size_t i = 0; i < a.Size(); i++) target += dat1[i] * dat1[i];
-  EXPECT_FLOAT_EQ(l2, sqrt(target));
+  EXPECT_FLOAT_EQ(l2, sqrt(target) / a.Size());
 }
 TEST_F(TestTensorMath, MultCpp) {
   const float x[4] = {1.0f, 2.0f, 3.0f, 4.0f};
@@ -514,7 +514,7 @@ TEST_F(TestTensorMath, L2Cuda) {
   float l2 = t.L2();
   float target = 0.0f;
   for (size_t i = 0; i < t.Size(); i++) target += dat1[i] * dat1[i];
-  EXPECT_FLOAT_EQ(l2, sqrt(target));
+  EXPECT_FLOAT_EQ(l2, sqrt(target) / t.Size());
 }
 TEST_F(TestTensorMath, MultCuda) {
   const float x[4] = {1.0f, 2.0f, 3.0f, 4.0f};

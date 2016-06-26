@@ -22,6 +22,7 @@
 namespace singa {
 
 void SGD::Setup(const OptimizerConf& conf) {
+  Optimizer::Setup(conf);
   if (conf.has_momentum()) {
     float m = conf.momentum();
     SetMomentumGenerator([m](int step) { return m; });
