@@ -128,7 +128,8 @@ class Tensor {
   template <typename SType>
   void SetValue(const SType x);
 
-  /// For init the tensor values, copy 'num' elements.
+  /// For init the tensor values, copy 'num' elements from 'src' to the internal
+  /// memory with 'offset' (elements).
   template <typename SType>
   void CopyDataFromHostPtr(const SType *src, const size_t num,
                            const size_t offset = 0);
@@ -180,6 +181,9 @@ class Tensor {
   template <typename SType>
   Tensor &operator/=(const SType x);
 
+  /// Return average L1 norm
+  float L1() const;
+  /// Return average L2 norm
   float L2() const;
 
  protected:

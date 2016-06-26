@@ -51,6 +51,17 @@ inline int ArgPos(int argc, char** arglist, const char* arg) {
   return -1;
 }
 
+template<typename T>
+inline std::string VecToStr(const std::vector<T> & in) {
+  std::string out = "(";
+
+  for (auto x : in) {
+    out += std::to_string(x) + ", ";
+  }
+  out += ")";
+  return out;
+}
+
 /**
  * Tokenize a string.
  *

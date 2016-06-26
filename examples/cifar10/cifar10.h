@@ -29,25 +29,24 @@ namespace singa {
 class Cifar10 {
  public:
   /// 'dir_path': path to the folder including the *.bin files
-  Cifar10(string dir_path, bool normalize = true)
-      : dir_path_(dir_path), normalize_(normalize) {}
+  Cifar10(string dir_path, bool normalize = true) : dir_path_(dir_path) {}
 
   /// read all training data into an image Tensor and a label Tensor
-  const std::pair<Tensor, Tensor> ReadTrainData(bool shuffle = false);
+  const std::pair<Tensor, Tensor> ReadTrainData();
   /// read all test data into an image Tensor and a label Tensor
   const std::pair<Tensor, Tensor> ReadTestData();
   /// read data from one file into an image Tensor and a label Tensor
-  const std::pair<Tensor, Tensor> ReadFile(string file, bool shuffle = false);
+  const std::pair<Tensor, Tensor> ReadFile(string file);
 
   void ReadImage(std::ifstream* file, int* label, char* buffer);
+
  private:
   const size_t kImageSize = 32;
   const size_t kImageVol = 3072;
   const size_t kBatchSize = 10000;
-  const size_t kTrainFiles = 1;
+  const size_t kTrainFiles = 5;
 
   string dir_path_;
-  bool normalize_;
 };
 
 void Cifar10::ReadImage(std::ifstream* file, int* label, char* buffer) {
@@ -57,7 +56,7 @@ void Cifar10::ReadImage(std::ifstream* file, int* label, char* buffer) {
   file->read(buffer, kImageVol);
   return;
 }
-const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file, bool shuffle) {
+const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file) {
   Tensor images(Shape{kBatchSize, 3, kImageSize, kImageSize});
   Tensor labels(Shape{kBatchSize}, kInt);
   if (dir_path_.back() != '/') dir_path_.push_back('/');
@@ -73,7 +72,7 @@ const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file, bool shuffle) {
     // LOG(INFO) << "reading " << itemid << "-th image";
     ReadImage(&data_file, &label, image);
     for (int i = 0; i < kImageVol; i++)
-      float_image[i] = static_cast<float>(static_cast<int>(image[i]));
+      float_image[i] = static_cast<float>(static_cast<uint8_t>(image[i]));
     images.CopyDataFromHostPtr(float_image, kImageVol, itemid * kImageVol);
     tmplabels[itemid] = label;
   }
@@ -81,7 +80,7 @@ const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file, bool shuffle) {
   return std::make_pair(images, labels);
 }
 
-const std::pair<Tensor, Tensor> Cifar10::ReadTrainData(bool shuffle) {
+const std::pair<Tensor, Tensor> Cifar10::ReadTrainData() {
   Tensor images(Shape{kBatchSize * kTrainFiles, 3, kImageSize, kImageSize});
   Tensor labels(Shape{kBatchSize * kTrainFiles}, kInt);
   for (int fileid = 0; fileid < kTrainFiles; ++fileid) {

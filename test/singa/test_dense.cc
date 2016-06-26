@@ -207,7 +207,7 @@ TEST(Dense, BackwardCuda) {
   singa::Tensor grad(singa::Shape{batchsize, hdim}, cuda);
   grad.CopyDataFromHostPtr(dy, batchsize * hdim);
 
-  const auto ret = dense.Backward(singa::kTrain, grad);
+  auto ret = dense.Backward(singa::kTrain, grad);
   singa::Tensor in_grad = ret.first;
   singa::Tensor dweight = ret.second.at(0);
   singa::Tensor dbias = ret.second.at(1);

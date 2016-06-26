@@ -20,7 +20,7 @@
 
 namespace singa {
 
-Tensor MSE::Forward(const Tensor& prediction, const Tensor& target) {
+Tensor MSE::Forward(int flag, const Tensor& prediction, const Tensor& target) {
   CHECK(buf_.empty()) << "Do not call Forward successively for more than twice."
                       << " The calling pattern is [Forward|Evaluate] Backward";
   Tensor t = prediction - target;
@@ -28,7 +28,8 @@ Tensor MSE::Forward(const Tensor& prediction, const Tensor& target) {
   if (t.nDim() > 1) batchsize = t.shape().at(0);
   size_t dim = t.Size() / batchsize;
   t.Reshape(Shape{batchsize, dim});
-  buf_.push(t);
+  if (kTrain & flag)
+    buf_.push(t);
   // TODO(wangwei) use CastType for operator/
   return Sum(Square(t), 1) * 0.5f;
 }

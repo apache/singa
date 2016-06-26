@@ -48,7 +48,7 @@ class Metric {
 
   /// Comptue the metric value averaged over all samples (in a batch)
   float Evaluate(const Tensor& prediction, const T& target) {
-    const Tensor& metric = Forward(prediction, target);
+    const Tensor metric = Forward(prediction, target);
     return Sum<float>(metric) / (1.0f * metric.Size());
   }
 };

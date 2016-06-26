@@ -42,7 +42,8 @@ Tensor::Tensor(Shape &&shape, DataType dtype)
   device_ = defaultDevice;
   block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
 }
-Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device, DataType dtype)
+Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
+               DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
   block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
 }
@@ -68,11 +69,10 @@ Tensor::Tensor(Tensor &&in)
   in.block_ = nullptr;
 }
 
-void Tensor::SetBlock(Block* block) {
+void Tensor::SetBlock(Block *block) {
   LOG(WARNING) << "Pls avoid using this function, which may have side-effect.";
   if (block_ != nullptr)
-    if (block_->DecRefCount())
-      device_->FreeBlock(block_);
+    if (block_->DecRefCount()) device_->FreeBlock(block_);
   block_ = block;
 }
 
@@ -118,8 +118,7 @@ void Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is very strict. May compare against device ID?
   if (device_ != dst) {
     Tensor tmp(shape_, dst, data_type_);
-    if (block_ != nullptr && Size())
-      tmp.CopyData(*this);
+    if (block_ != nullptr && Size()) tmp.CopyData(*this);
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = tmp.block_;
@@ -132,13 +131,13 @@ void Tensor::ToHost() { ToDevice(device_->host()); }
 
 template <typename DType>
 void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
-    const size_t offset) {
+                                 const size_t offset) {
   CHECK_EQ(sizeof(DType), SizeOf(data_type_))
       << "data_type is " << DataType_Name(data_type_)
       << " user given type is of size " << sizeof(DType);
   if (src != nullptr) {
     device_->CopyDataFromHostPtr(block(), src, sizeof(DType) * num,
-        sizeof(DType) * offset);
+                                 sizeof(DType) * offset);
   } else {
     LOG(WARNING) << "Copy data from null host ptr";
   }
@@ -161,8 +160,7 @@ void Tensor::CopyData(const Tensor &src) {
 }
 
 Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
-  if (device == nullptr)
-    device = device_;
+  if (device == nullptr) device = device_;
   Tensor t(shape_, device_, data_type_);
   t.transpose_ = transpose_;
   t.CopyData(*this);
@@ -243,8 +241,6 @@ GenUnaryScalarArgMemberFn(operator-=, Sub);
 GenUnaryScalarArgMemberFn(operator+=, Add);
 GenUnaryScalarArgMemberFn(operator*=, EltwiseMult);
 GenUnaryScalarArgMemberFn(operator/=, Div);
-
-
 
 // ====================Tensor Operations=======================================
 void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
@@ -336,6 +332,18 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   } while (0)
 
 // =============Element-wise operations====================================
+float Tensor::L1() const {
+  float nrm = 0.0f;
+  TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
+    device_->Exec([&nrm, this](Context *ctx) {
+      DType ret;
+      Asum<DType, Lang>(this->Size(), this->block(), &ret, ctx);
+      nrm = TypeCast<DType, float>(ret);
+    }, {this->block()}, {});
+  });
+  return nrm / Size();
+}
+
 /// L2 norm, Do not use Nrm2 (name conflict).
 float Tensor::L2() const {
   float nrm = 0.0f;
@@ -346,8 +354,10 @@ float Tensor::L2() const {
       nrm = TypeCast<DType, float>(ret);
     }, {this->block()}, {});
   });
-  return nrm;
+  return nrm / Size();
 }
+
+
 template <typename SType>
 void Tensor::SetValue(const SType x) {
   CHECK_EQ(sizeof(SType), SizeOf(data_type_));
@@ -525,18 +535,35 @@ Tensor SoftMax(const Tensor &in) {
   return out;
 }
 
+Tensor RowMax(const Tensor &in) {
+  Tensor ret({in.shape(0)}, in.device(), in.data_type());
+  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+    in.device()->Exec([in, ret](Context *ctx) {
+      size_t nrow = 1;
+      if (in.nDim() > 1) nrow = in.shape(0);
+      size_t ncol = in.Size() / nrow;
+      RowMax<DType, Lang>(nrow, ncol, in.block(), ret.block(), ctx);
+    }, {in.block()}, {ret.block()});
+  });
+  return ret;
+}
+
 void SoftMax(const Tensor &in, Tensor *out) {
   CHECK_LE(in.nDim(), 2u);
-  Exp(in, out);
+  out->CopyData(in);
   size_t nrow = 1, ncol = in.Size(), size = ncol;
   if (in.nDim() == 2u) {
     nrow = in.shape(0);
     ncol = size / nrow;
     out->Reshape(Shape{nrow, ncol});
   }
-  Tensor sum(Shape{nrow}, in.device(), in.data_type());
-  SumColumns(*out, &sum);
-  DivColumn(sum, out);
+  Tensor tmp = RowMax(*out);
+  SubColumn(tmp, out);
+  Exp(*out, out);
+
+  SumColumns(*out, &tmp);
+  DivColumn(tmp, out);
+  out->Reshape(in.shape());
 }
 
 void AddColumn(const Tensor &v, Tensor *M) { AddColumn(1, 1, v, M); }
@@ -582,8 +609,8 @@ void AddRow(const SType alpha, const SType beta, const Tensor &v, Tensor *M) {
     Mult(alpha, one, vmat, beta, M);
   }
 }
-template
-void AddRow(const float alpha, const float beta, const Tensor &v, Tensor *M);
+template void AddRow(const float alpha, const float beta, const Tensor &v,
+                     Tensor *M);
 
 /// Divide column 'v' by each column of matrix M; write results into 'out'
 void DivColumn(const Tensor &v, Tensor *M) {
@@ -699,7 +726,7 @@ void MultRow(const Tensor &v, Tensor *M) {
   });
 }
 
-Tensor SliceRows(const Tensor& in, const size_t start, const size_t end) {
+Tensor SliceRows(const Tensor &in, const size_t start, const size_t end) {
   LOG(FATAL) << "Tensor::SliceRows is not implemented";
   Tensor ret;
   /*
@@ -788,6 +815,7 @@ void Gaussian(const SType mean, const SType std, Tensor *out) {
 template void Gaussian<float>(const float mean, const float std, Tensor *out);
 
 // ================Blas operations============================================
+
 template <typename SType>
 void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
@@ -868,6 +896,5 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
     }, {p->block(), t.block()}, {p->block()});
   });
 }
-
 
 }  // namespace singa

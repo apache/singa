@@ -346,7 +346,7 @@ TEST_F(TestTensorMath, L2Cpp) {
   float l2 = a.L2();
   float target = 0.0f;
   for (size_t i = 0; i < a.Size(); i++) target += dat1[i] * dat1[i];
-  EXPECT_FLOAT_EQ(l2, sqrt(target));
+  EXPECT_FLOAT_EQ(l2, sqrt(target) / a.Size());
 }
 TEST_F(TestTensorMath, MultCpp) {
   const float x[4] = {1.0f, 2.0f, 3.0f, 4.0f};
@@ -480,13 +480,16 @@ TEST_F(TestTensorMath, MultRowCpp) {
 
 TEST_F(TestTensorMath, SumRowsCpp) {
   Tensor t(Shape{2});
-  d.CopyDataFromHostPtr(dat1, 6);
+  float dat[6];
+  for (int i = 0; i < 6; i ++)
+    dat[i] = (float)rand()/(float)(RAND_MAX/ 10);
+  d.CopyDataFromHostPtr(dat, 6);
   SumRows(d, &t);
   const float *tptr = t.data<float>();
   for (int i = 0; i < 2; i++) {
     float tmp = 0;
     for (int j = 0; j < 3; j++) {
-      tmp += dat1[j * 2 + i];
+      tmp += dat[j * 2 + i];
     }
     EXPECT_FLOAT_EQ(tptr[i], tmp);
   }
@@ -514,7 +517,7 @@ TEST_F(TestTensorMath, L2Cuda) {
   float l2 = t.L2();
   float target = 0.0f;
   for (size_t i = 0; i < t.Size(); i++) target += dat1[i] * dat1[i];
-  EXPECT_FLOAT_EQ(l2, sqrt(target));
+  EXPECT_FLOAT_EQ(l2, sqrt(target) / t.Size());
 }
 TEST_F(TestTensorMath, MultCuda) {
   const float x[4] = {1.0f, 2.0f, 3.0f, 4.0f};

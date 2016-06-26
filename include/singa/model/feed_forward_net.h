@@ -29,12 +29,14 @@ namespace singa {
 class FeedForwardNet {
  public:
   FeedForwardNet() = default;
+  /// Delete all layers.
   ~FeedForwardNet();
 
   /// Add a layer with the assumption that
   /// 1. this function is called in correct order, i.e., the layers are added
   ///    following the topological order.
   /// 2. this layer has already been setup (Setup function is called outside).
+  /// The layer will be freed in the destructor of FeedForwardNet.
   Layer* Add(Layer* layer);
 
   // TODO(wangwei) add ConcatenateLayer and SliceLayer
@@ -47,7 +49,9 @@ class FeedForwardNet {
   /// for calling Setup().
   Layer* Add(const LayerConf& conf, const Shape* sample_shape = nullptr);
 
-  Layer* Add(Layer* layer, const LayerConf& conf, const Shape* sample_shape = nullptr);
+  /// Add a layer, and call its Setup function.
+  Layer* Add(Layer* layer, const LayerConf& conf,
+             const Shape* sample_shape = nullptr);
   /// Set some fields used for training and evaluating the neural net.
   /// If the neural net is constructed for evaluation only, then 'opt' is not
   /// necessary; But for training, both 'opt' and 'loss' are necessary.
@@ -72,7 +76,8 @@ class FeedForwardNet {
   void Train(size_t batchsize, int nb_epoch, const Tensor& x, const Tensor& y,
              const Tensor& val_x, const Tensor& val_y);
   /// Train the neural net over one batch of training data.
-  const std::pair<float, float> TrainOnBatch(const Tensor& x, const Tensor& y);
+  const std::pair<float, float> TrainOnBatch(int epoch, const Tensor& x,
+                                             const Tensor& y);
 
   /// Evaluate the neural net with given data.
   /// Returns one tensor for loss values and one tensor for metric values;

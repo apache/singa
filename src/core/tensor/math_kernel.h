@@ -98,6 +98,8 @@ void SoftmaxCrossEntropyBwd(const size_t batchsize, const size_t dim,
                             const float *p, const int *t, float *grad,
                             cudaStream_t stream);
 
+void RowMax(const size_t nrow, const size_t ncol, const float *inPtr,
+    float *outPtr, cudaStream_t stream);
 }  // cuda
 
 }  // namespace singa

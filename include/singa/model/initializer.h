@@ -21,8 +21,8 @@
 #include <string>
 #include "singa/core/tensor.h"
 #include "singa/proto/model.pb.h"
+#include "singa/utils/string.h"
 namespace singa {
-namespace init {
 /// Base class for initializing parameter values.
 using InitializerConf = FillerConf;
 class Initializer {
@@ -40,6 +40,7 @@ class Initializer {
   virtual void Fill(Tensor* t) = 0;
 };
 
+namespace init {
 class Constant : public Initializer {
 public:
   Constant() = default;
@@ -76,7 +77,7 @@ public:
   void Fill(Tensor* t) override { singa::Gaussian(mean_, std_, t); }
 
  private:
-  float mean_ = 0, std_ = 0.01;
+  float mean_ = 0, std_ = 1;
 };
 
 /// Ref: [Bengio and Glorot 2010] Understanding the difficulty of training deep
@@ -86,6 +87,7 @@ public:
   void Fill(Tensor* t) override {
     CHECK_EQ(t->nDim(), 2u);
     float scale = sqrt(6.0f / (t->shape(0) + t->shape(1)));
+    LOG(INFO) << "xavier scale " << scale;
     singa::Uniform(-scale, scale, t);
   }
 };
@@ -100,6 +102,27 @@ class MSRA : public Initializer {
     singa::Gaussian(0.0f, std, t);
   }
 };
+
 }  // namespace init
+
+/// TODO(wangwei) create the initializers from factory like that for Layer.
+std::shared_ptr<Initializer> CreateInitializer(const InitializerConf& conf) {
+  std::shared_ptr<Initializer> init;
+  if (ToLowerCase(conf.type()) == "constant") {
+    init = std::make_shared<init::Constant>();
+  } else if (ToLowerCase(conf.type()) == "uniform") {
+    init = std::make_shared<init::Uniform>();
+  } else if (ToLowerCase(conf.type()) == "gaussian") {
+    init = std::make_shared<init::Gaussian>();
+  } else if (ToLowerCase(conf.type()) == "xavier") {
+    init = std::make_shared<init::Xavier>();
+  } else if (ToLowerCase(conf.type()) == "msra") {
+    init = std::make_shared<init::MSRA>();
+  } else {
+    LOG(FATAL) << "Unknown initialization type: " << conf.type();
+  }
+  init->Setup(conf);
+  return init;
+}
 }  // namespace singa
 #endif  // SINGA_MODEL_INITIALIZER_H_

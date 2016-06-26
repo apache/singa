@@ -44,7 +44,7 @@ TEST_F(TestSoftmaxCrossEntropy, CppForward) {
   t.CopyDataFromHostPtr(tdat, 2);
 
   singa::SoftmaxCrossEntropy cross_entropy;
-  const Tensor& loss = cross_entropy.Forward(p, t);
+  const Tensor& loss = cross_entropy.Forward(singa::kEval, p, t);
   auto ldat = loss.data<float>();
 
   const float result_test = -log(0.25);
@@ -58,7 +58,7 @@ TEST_F(TestSoftmaxCrossEntropy, CppBackward) {
   t.CopyDataFromHostPtr(tdat, 2);
 
   singa::SoftmaxCrossEntropy cross_entropy;
-  cross_entropy.Forward(p, t);
+  cross_entropy.Forward(singa::kTrain, p, t);
   const Tensor& grad = cross_entropy.Backward();
 
   auto gdat = grad.data<float>();
@@ -82,7 +82,7 @@ TEST_F(TestSoftmaxCrossEntropy, CudaForward) {
   p.CopyDataFromHostPtr(pdat, 8);
   t.CopyDataFromHostPtr(tdat, 2);
 
-  Tensor loss = cross_entropy.Forward(p, t);
+  Tensor loss = cross_entropy.Forward(singa::kEval, p, t);
   loss.ToHost();
   auto ldat = loss.data<float>();
 
@@ -99,7 +99,7 @@ TEST_F(TestSoftmaxCrossEntropy, CudaBackward) {
   p.CopyDataFromHostPtr(pdat, 8);
   t.CopyDataFromHostPtr(tdat, 2);
 
-  cross_entropy.Forward(p, t);
+  cross_entropy.Forward(singa::kTrain, p, t);
   Tensor grad = cross_entropy.Backward();
 
   grad.ToHost();
