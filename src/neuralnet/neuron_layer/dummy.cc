@@ -78,25 +78,53 @@ void DummyLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
     Copy(grad_, srclayers[0]->mutable_grad(this));
 }
 
-void DummyLayer::Feed(int batchsize, vector<float>& data, vector<int>& aux_data){
+void DummyLayer::Feed(vector<int> shape, vector<float>* data, int op){
 
-    batchsize_ = batchsize;
-    // input data
-    if (data.size() > 0) {
-      int size = data.size();
+    //batchsize_ = batchsize;
+    batchsize_ = shape[0];
+    // dataset
+    if (op == 0) {
+      /*
+      size_t hdim = 1;
+      for (size_t i = 1; i < shape.size(); ++i) 
+          hdim *= shape[i];
+      //data_.Reshape({batchsize, (int)hdim});
+      //shape.insert(shape.begin(),batchsize);
+      data_.Reshape(shape);
+      */
+      //reshape data
+      data_.Reshape(shape);
+      CHECK_EQ(data_.count(), data->size());
+
+      int size = data->size();
       float* ptr = data_.mutable_cpu_data();
       for (int i = 0; i< size; i++) { 
-          ptr[i] = data.at(i);
+          ptr[i] = data->at(i);
       }
     }
-    // auxiliary data, e.g., label
-    if (aux_data.size() > 0) {
+    // label
+    else {
       aux_data_.resize(batchsize_);
       for (int i = 0; i< batchsize_; i++) {
-          aux_data_[i] = static_cast<int>(aux_data.at(i));
+          aux_data_[i] = static_cast<int>(data->at(i));
       }
     }
+
     return;
+
+    /* Wenfeng's input
+    batchsize_ = batchsize;
+    shape.insert(shape.begin(),batchsize);
+    data_.Reshape(shape);
+
+    int size = data_.count() / batchsize_;
+    CHECK_EQ(size, data->size());
+    float* ptr = data_.mutable_cpu_data();
+    for (int i = 0; i< size; i++)
+	      ptr[i] = data->at(i);
+
+    return;
+    */
 }
 
 }  // namespace singa

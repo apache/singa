@@ -522,15 +522,15 @@ message LRNProto {
   // offset
   optional float knorm = 34 [default = 1.0];
 }
-
+enum PoolMethod {
+  MAX = 0;
+  AVG = 1;
+}
+ 
 message PoolingProto {
   // The kernel size (square)
   optional int32 kernel= 1 [default = 3];
-  enum PoolMethod {
-    MAX = 0;
-    AVG = 1;
-  }
-  // The pooling method
+ // The pooling method
   optional PoolMethod pool = 30 [default = MAX];
   // The padding size
   optional uint32 pad = 31 [default = 0];

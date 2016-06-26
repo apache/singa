@@ -58,8 +58,8 @@ void PoolingLayer::Setup(const LayerProto& conf,
   }
 
   pool_ = conf.pooling_conf().pool();
-  CHECK(pool_ == PoolingProto_PoolMethod_AVG
-        || pool_ == PoolingProto_PoolMethod_MAX)
+  CHECK(pool_ == PoolMethod::AVG
+        || pool_ == PoolMethod::MAX)
         << "Padding implemented only for average and max pooling.";
   const auto& srcshape = srclayers[0]->data(this).shape();
   int dim = srcshape.size();
@@ -83,9 +83,9 @@ void PoolingLayer::Setup(const LayerProto& conf,
 void PoolingLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
   auto src = Tensor4(srclayers[0]->mutable_data(this));
   auto data = Tensor4(&data_);
-  if (pool_ == PoolingProto_PoolMethod_MAX)
+  if (pool_ == PoolMethod::MAX)
     data = expr::pool<red::maximum>(src, kernel_x_, stride_x_);
-  else if (pool_ == PoolingProto_PoolMethod_AVG)
+  else if (pool_ == PoolMethod::AVG)
     data = expr::pool<red::sum>(src, kernel_x_, stride_x_)
       * (1.0f / (kernel_x_ * kernel_x_));
 }
@@ -99,9 +99,9 @@ void PoolingLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
   auto gsrc = Tensor4(srclayers[0]->mutable_grad(this));
   auto data = Tensor4(&data_);
   auto grad = Tensor4(&grad_);
-  if (pool_ == PoolingProto_PoolMethod_MAX)
+  if (pool_ == PoolMethod::MAX)
     gsrc = expr::unpool<red::maximum>(src, data, grad, kernel_x_, stride_x_);
-  else if (pool_ == PoolingProto_PoolMethod_AVG)
+  else if (pool_ == PoolMethod::AVG)
     gsrc = expr::unpool<red::sum>(src, data, grad, kernel_x_, stride_x_)
            * (1.0f / (kernel_x_ * kernel_x_));
 }
@@ -111,16 +111,16 @@ void PoolingLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
 void CPoolingLayer::Setup(const LayerProto& conf,
     const vector<Layer*>& srclayers) {
   PoolingLayer::Setup(conf, srclayers);
-  if (pool_ == PoolingProto_PoolMethod_MAX)
+  if (pool_ == PoolMethod::MAX)
       mask_.ReshapeLike(data_);
 }
 void CPoolingLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
-  if (pool_ == PoolingProto_PoolMethod_MAX)
+  if (pool_ == PoolMethod::MAX)
     ForwardMaxPooling(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
         batchsize_, channels_, height_, width_, kernel_y_, kernel_x_,
         pad_y_, pad_y_, stride_y_, stride_x_,
         data_.mutable_cpu_data(), mask_.mutable_cpu_data());
-  else if (pool_ == PoolingProto_PoolMethod_AVG)
+  else if (pool_ == PoolMethod::AVG)
     ForwardAvgPooling(srclayers[0]->mutable_data(this)->mutable_cpu_data(),
         batchsize_, channels_, height_, width_, kernel_y_, kernel_x_,
         pad_y_, pad_x_, stride_y_, stride_y_, data_.mutable_cpu_data());
@@ -129,12 +129,12 @@ void CPoolingLayer::ComputeFeature(int flag, const vector<Layer*>& srclayers) {
 }
 
 void CPoolingLayer::ComputeGradient(int flag, const vector<Layer*>& srclayers) {
-  if (pool_ == PoolingProto_PoolMethod_MAX)
+  if (pool_ == PoolMethod::MAX)
     BackwardMaxPooling(grad_.cpu_data(), mask_.cpu_data(), batchsize_,
         channels_, height_, width_, kernel_y_, kernel_x_, pad_y_, pad_x_,
         stride_y_, stride_y_,
         srclayers[0]->mutable_grad(this)->mutable_cpu_data());
-  else if (pool_ == PoolingProto_PoolMethod_AVG)
+  else if (pool_ == PoolMethod::AVG)
     BackwardAvgPooling(grad_.cpu_data(), batchsize_,
         channels_, height_, width_, kernel_y_, kernel_x_, pad_y_, pad_x_,
         stride_y_, stride_x_,
