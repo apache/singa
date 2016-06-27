@@ -28,6 +28,7 @@
 
 namespace singa {
 
+typedef vector<size_t> Shape;
 /// The base layer class.
 /// Generally, a layer conducts feature transformation against a set of Tensor
 /// to generate a set of Tensor. Each layer may have some parameters.
@@ -37,14 +38,14 @@ class Layer {
 
   /// Set meta data fields from a string representing a proto message.
   /// 'in_shape' is the shape of the input feature for one sample
-  void Setup(const vector<size_t>& in_shape, const string& proto_str) {
+  void Setup(const Shape& in_shape, const string& proto_str) {
     LayerConf conf;
     conf.ParseFromString(proto_str);
     this->Setup(in_shape, conf);
   }
 
   /// 'in_shapes' is the shape of the input feature for one sample
-  void Setup(const vector<vector<size_t>>& in_shapes, const string& proto_str) {
+  void Setup(const vector<Shape>& in_shapes, const string& proto_str) {
     LayerConf conf;
     conf.ParseFromString(proto_str);
     this->Setup(in_shapes, conf);

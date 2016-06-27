@@ -35,7 +35,7 @@ namespace singa{
   class Device {
    public:
     virtual void SetRandSeed(unsigned seed) = 0;
-    Device* host();
+    std::shared_ptr<Device> host();
     int id() const;
   };
 
