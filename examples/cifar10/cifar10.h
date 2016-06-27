@@ -68,10 +68,10 @@ const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file) {
   char image[kImageVol];
   float float_image[kImageVol];
   int tmplabels[kBatchSize];
-  for (int itemid = 0; itemid < kBatchSize; ++itemid) {
+  for (size_t itemid = 0; itemid < kBatchSize; ++itemid) {
     // LOG(INFO) << "reading " << itemid << "-th image";
     ReadImage(&data_file, &label, image);
-    for (int i = 0; i < kImageVol; i++)
+    for (size_t i = 0; i < kImageVol; i++)
       float_image[i] = static_cast<float>(static_cast<uint8_t>(image[i]));
     images.CopyDataFromHostPtr(float_image, kImageVol, itemid * kImageVol);
     tmplabels[itemid] = label;
@@ -83,7 +83,7 @@ const std::pair<Tensor, Tensor> Cifar10::ReadFile(string file) {
 const std::pair<Tensor, Tensor> Cifar10::ReadTrainData() {
   Tensor images(Shape{kBatchSize * kTrainFiles, 3, kImageSize, kImageSize});
   Tensor labels(Shape{kBatchSize * kTrainFiles}, kInt);
-  for (int fileid = 0; fileid < kTrainFiles; ++fileid) {
+  for (size_t fileid = 0; fileid < kTrainFiles; ++fileid) {
     string file = "data_batch_" + std::to_string(fileid + 1) + ".bin";
     const auto ret = ReadFile(file);
     CopyDataToFrom(&images, ret.first, ret.first.Size(),

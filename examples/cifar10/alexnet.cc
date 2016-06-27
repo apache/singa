@@ -84,12 +84,10 @@ LayerConf GenDenseConf(string name, int num_output, float std, float wd) {
   conf.set_type("Dense");
   DenseConf *dense = conf.mutable_dense_conf();
   dense->set_num_output(num_output);
-  FillerConf *bias = dense->mutable_bias_filler();
 
   ParamSpec *wspec = conf.add_param();
   wspec->set_name(name + "_weight");
   wspec->set_decay_mult(wd);
-
   auto wfill = wspec->mutable_filler();
   wfill->set_type("Gaussian");
   wfill->set_std(std);
@@ -164,7 +162,7 @@ void Train(float lr, int num_epoch, string data_dir) {
   CHECK_EQ(train_x.shape(0), train_y.shape(0));
   CHECK_EQ(test_x.shape(0), test_y.shape(0));
   LOG(INFO) << "Training samples = " << train_y.shape(0)
-            << " Test samples = " << test_y.shape(0);
+            << ", Test samples = " << test_y.shape(0);
   auto net = CreateNet();
   SGD sgd;
   OptimizerConf opt_conf;
@@ -177,7 +175,7 @@ void Train(float lr, int num_epoch, string data_dir) {
       return 0.001;
     else if (step <= 130)
       return 0.0001;
-    else if (step <= 140)
+    else
       return 0.00001;
   });
 

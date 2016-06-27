@@ -171,7 +171,8 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
     metric /= b;
     train_ch->Send("Epoch " + std::to_string(epoch) + ", training loss = " +
                    std::to_string(loss) + ", accuracy = " +
-                   std::to_string(metric));
+                   std::to_string(metric) + ", lr = " +
+                   std::to_string(opt_->GetLearningRate(epoch)));
     if (val_x.Size() && val_y.Size()) {
       const auto val_perf = Evaluate(val_x, val_y, batchsize);
       val_ch->Send("Epoch " + std::to_string(epoch) + ", val loss = " +
@@ -204,6 +205,7 @@ const Tensor FeedForwardNet::Forward(int flag, const Tensor& data) {
   for (auto layer : layers_) {
 //    LOG(INFO) << layer->name() << ": " << input.L1();
     output = layer->Forward(flag, input);
+    // LOG(INFO) << layer->name() << ": " << output.L2();
     input = output;
   }
   return output;
