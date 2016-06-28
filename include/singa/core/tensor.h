@@ -34,8 +34,9 @@ namespace singa {
 
 typedef vector<size_t> Shape;
 /// hardcode the width of types defined in DataType
-const size_t kDataWidth[] = {sizeof(float), sizeof(float) / 2, sizeof(int),
-                             sizeof(char), sizeof(double), sizeof(unsigned char)};
+const size_t kDataWidth[] = {sizeof(float),  sizeof(float) / 2,
+                             sizeof(int),    sizeof(char),
+                             sizeof(double), sizeof(unsigned char)};
 inline size_t SizeOf(DataType t) {
   static_assert(kNumDataType == sizeof(kDataWidth) / sizeof(size_t),
                 "Num of data types not match num of data width");
@@ -70,14 +71,14 @@ class Tensor {
   /// Users should not operate against Block directly.
   /// block_ is allocated in constructors.
   Block *block() const { return block_; }
-  void SetBlock(Block* block);
+  void SetBlock(Block *block);
 
   std::shared_ptr<Device> device() const { return device_; }
 
   /// return immutable Tensor values with given type.
   template <typename SType>
-  const SType* data() const {
-    return static_cast<const SType*>(block()->data());
+  const SType *data() const {
+    return static_cast<const SType *>(block()->data());
   }
 
   /// data type, including kFloat16, kFloat32, kInt
@@ -96,8 +97,7 @@ class Tensor {
 
   /// return number of total elements
   size_t Size() const {
-    if (block_ == nullptr)
-      return 0u;
+    if (block_ == nullptr) return 0u;
     CHECK_EQ(block_->size() % SizeOf(data_type_), 0u);
     return block_->size() / SizeOf(data_type_);
   }
@@ -110,7 +110,8 @@ class Tensor {
   void Reshape(Shape &&shape);
 
   /// Reset the shape, device, and data type as given tensor.
-  /// If block size changes, then reallocate a new block. The previous block would
+  /// If block size changes, then reallocate a new block. The previous block
+  /// would
   /// be deleted.
   void ResetLike(const Tensor &t);
 
@@ -137,6 +138,12 @@ class Tensor {
   /// Copy data from another Tensor which may be on a diff device.
   /// Meta data would not be copied!
   void CopyData(const Tensor &other);
+
+  /// Deserialize data, shape and transpose from protobuf object.
+  void FromProto(const singa::TensorProto &proto);
+
+  /// Serialize data, shape and transpose to protobuf object.
+  void ToProto(singa::TensorProto *proto) const;
 
   /// return an exactly the same Tensor with data been deep copied to the given
   /// device. If 'device' is nullptr, then clone it one the current device.
@@ -247,7 +254,6 @@ void Sign(const Tensor &in, Tensor *out);
 void Sqrt(const Tensor &in, Tensor *out);
 void Square(const Tensor &in, Tensor *out);
 void Tanh(const Tensor &in, Tensor *out);
-
 
 /// Element-wise opeartion, out[i]=in[i]^x
 template <typename SType>
@@ -404,27 +410,27 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 /// Compute the cross entropy loss given the prediction probability 'p' and
 /// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
 /// or 2-d matrix. 'loss' is 1-d vector. The loss is computed into p.
-void ComputeCrossEntropy(const Tensor& p, const Tensor& t, Tensor* loss);
+void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
 /// Compute the dx, given prediction probability 'p' (p=softmax(x)) and
 /// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
 /// or 2-d matrix. 'grad' has the same shape as 'p'. dx is computed into p.
-void SoftmaxCrossEntropyBwd(const Tensor& t, Tensor* p);
+void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
 
 /// Return a tensor consisting of rows ([start, end)) from 'in'. It shares the
 /// memory with 'in'. 'in' is a 1D or 2D Tensor.
-Tensor SliceRows(const Tensor& in, const size_t start, const size_t end);
+Tensor SliceRows(const Tensor &in, const size_t start, const size_t end);
 /// Return a tensor consisting of rows ([start, end)) from 'in'. It copies the
 /// values from 'in'. 'in' ia a 2D Tensor.
-Tensor CopyRows(const Tensor& in, const size_t start, const size_t end);
+Tensor CopyRows(const Tensor &in, const size_t start, const size_t end);
 /// Return a tensor consisting of columns ([start, end)) from 'in'. It copies
 /// the values from 'in'. 'in' is a  2D Tensor.
-Tensor CopyColumns(const Tensor& in, const size_t start, const size_t end);
+Tensor CopyColumns(const Tensor &in, const size_t start, const size_t end);
 /// Return a tensor which is vertically stacked from tensors in 'in'. Each
 /// tensor in 'in' is a 2D tensor. Values are copied, no memory sharing.
-Tensor ConcatenateRows(const vector<Tensor>& in);
+Tensor ConcatenateRows(const vector<Tensor> &in);
 /// Return a tensor which is horizontally stacked from tensors in 'in'. Each
 /// tensor in 'in' is a 2D tensor. Values are copied, no memory sharing.
-Tensor ConcatenateColumns(const vector<Tensor>& in);
+Tensor ConcatenateColumns(const vector<Tensor> &in);
 }  // namespace singa
 
 #endif  // SINGA_CORE_TENSOR_H_

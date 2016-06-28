@@ -58,3 +58,14 @@ message MemPoolConf {
 	// cnmemflag = 2: prevent the manager from stealing memory
 	optional uint32 cnmemflag = 4 [default = 0];
 }
+
+// For tensor serialization
+message TensorProto {
+  repeated uint32 shape = 1;
+  optional DataType data_type = 2;
+  optional bool transpose = 3;
+  repeated float float_data = 4;
+  repeated double double_data = 5;
+  repeated int32 int_data = 6;
+  repeated bytes bytes_data = 7;
+}

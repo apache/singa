@@ -159,6 +159,106 @@ void Tensor::CopyData(const Tensor &src) {
   }
 }
 
+void Tensor::FromProto(const singa::TensorProto &proto) {
+  if (block_ != nullptr && block_->DecRefCount() == 0)
+    device_->FreeBlock(block_);
+  block_ = nullptr;
+  Shape shape;
+  for (uint32_t s : proto.shape()) shape.push_back(s);
+  data_type_ = proto.data_type();
+  Reshape(shape);
+  transpose_ = proto.transpose();
+  switch (data_type_) {
+    case kFloat32: {
+      std::unique_ptr<float[]> data_ptr(new float[Product(shape_)]);
+      for (size_t i = 0; i < Product(shape_); ++i)
+        data_ptr[i] = static_cast<float>(proto.float_data(i));
+      CopyDataFromHostPtr<float>(data_ptr.get(), Product(shape_));
+      break;
+    }
+    case kDouble: {
+      std::unique_ptr<double[]> data(new double[Product(shape_)]);
+      for (size_t i = 0; i < Product(shape_); ++i)
+        data[i] = proto.double_data(i);
+      CopyDataFromHostPtr<double>(data.get(), Product(shape_));
+      break;
+    }
+    case kInt: {
+      std::unique_ptr<int[]> data(new int[Product(shape_)]);
+      for (size_t i = 0; i < Product(shape_); ++i) data[i] = proto.int_data(i);
+      CopyDataFromHostPtr<int>(data.get(), Product(shape_));
+      break;
+    }
+    ///TODO(wangji): Implement to support C++ type char using bytes type in protobuf
+    /// which is equivalent to string type is different from the other cases. The kchar
+    /// and kUChar case is to be implemented.
+    /*
+    case kChar: {
+      std::unique_ptr<char[]> data(new char[Product(shape_)]);
+      for (size_t i = 0; i < Product(shape_); ++i)
+        data[i] = static_cast<char>(proto.bytes_data(i));
+      break;
+    }
+    case kUChar: {
+      std::unique_ptr<unsigned char[]> data(new unsigned char[Product(shape_)]);
+      for (size_t i = 0; i < Product(shape_); ++i)
+        data[i] = static_cast<unsigned char>(proto.bytes_data(i));
+      break;
+    }
+    */
+    default: { LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_); }
+  }
+}
+
+void Tensor::ToProto(singa::TensorProto *proto) const {
+  proto->clear_shape();
+  for (auto s : shape_) {
+    proto->add_shape(s);
+  }
+  proto->set_data_type(data_type_);
+  proto->set_transpose(transpose_);
+  switch (data_type_) {
+    case kFloat32: {
+      proto->clear_float_data();
+      const float *data_ptr = data<float>();
+      for (size_t i = 0; i < Product(shape_); ++i)
+        proto->add_float_data(data_ptr[i]);
+      break;
+    }
+    case kDouble: {
+      proto->clear_double_data();
+      const double *data_ptr = data<double>();
+      for (size_t i = 0; i < Product(shape_); ++i)
+        proto->add_double_data(data_ptr[i]);
+      break;
+    }
+    case kInt: {
+      proto->clear_int_data();
+      const int *data_ptr = data<int>();
+      for (size_t i = 0; i < Product(shape_); ++i)
+        proto->add_int_data(data_ptr[i]);
+      break;
+    }
+    /*
+    case kChar: {
+      proto->clear_bytes_data();
+      const char *data = data<char>();
+      for (size_t i = 0; i < Product(shape_); ++i)
+        proto->add_bytes_data(static_cast<unsigned char>(data[i]));
+      break;
+    }
+    case kUChar: {
+      proto->clear_bytes_data();
+      const unsigned char *data = data<unsigned char>();
+      for (size_t i = 0; i < Product(shape_); ++i)
+        proto->add_bytes_data(static_cast<unsigned char>(data[i]));
+      break;
+    }
+    */
+    default: { LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_); }
+  }
+}
+
 Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   if (device == nullptr) device = device_;
   Tensor t(shape_, device_, data_type_);
@@ -292,6 +392,11 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
         { __VA_ARGS__ }                                             \
         break;                                                      \
       }                                                             \
+      case kDouble: {                                               \
+        typedef double DType;                                       \
+        { __VA_ARGS__ }                                             \
+        break;                                                      \
+      }                                                             \
       default:                                                      \
         LOG(FATAL) << "Unknow data type = " << DataType_Name(type); \
     }                                                               \
@@ -356,7 +461,6 @@ float Tensor::L2() const {
   });
   return nrm / Size();
 }
-
 
 template <typename SType>
 void Tensor::SetValue(const SType x) {
