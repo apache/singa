@@ -21,33 +21,19 @@
 
 namespace singa {
 namespace io {
+bool BinFileWriter::Open(const std::string& path, Mode mode) {
+  path_ = path;
+  mode_ = mode;
+  buf_ = new char[capacity_];
+  return OpenFile();
+}
+
 bool BinFileWriter::Open(const std::string& path, Mode mode, int capacity) {
   CHECK(!fdat_.is_open());
   path_ = path;
   mode_ = mode;
   capacity_ = capacity;
-  buf_ = new char[capacity_];
-  switch (mode) {
-    case kCreate:
-      fdat_.open(path_, std::ios::binary | std::ios::out | std::ios::trunc);
-      CHECK(fdat_.is_open()) << "Cannot create file " << path_;
-      break;
-    case kAppend:
-      fdat_.open(path_, std::ios::in | std::ios::binary);
-      CHECK(fdat_.is_open()) << "Cannot open file " << path_;
-      fdat_.close();
-      {
-        int last_tuple = PrepareForAppend(path_);
-        fdat_.open(path_, std::ios::binary | std::ios::out | std::ios::in |
-                              std::ios::ate);
-        fdat_.seekp(last_tuple);
-      }
-      break;
-    default:
-      LOG(FATAL) << "unknown model to open KVFile " << mode;
-      break;
-  }
-  return fdat_.is_open();
+  return OpenFile();
 }
 
 void BinFileWriter::Close() {
@@ -98,7 +84,6 @@ bool BinFileWriter::Write(const std::string& key, const std::string& value) {
 }
 
 void BinFileWriter::Flush() {
-  CHECK(fdat_);
   if (bufsize_ > 0) {
     fdat_.write(buf_, bufsize_);
     fdat_.flush();
@@ -106,31 +91,22 @@ void BinFileWriter::Flush() {
   }
 }
 
-int BinFileWriter::PrepareForAppend(const std::string& path) {
-  std::ifstream fin(path, std::ios::in | std::ios::binary);
-  if (!fin.is_open()) return 0;
-  int last_tuple_offset = 0;
-  char buf[256];
-  size_t len;
-  char magic[4];
-  while (true) {
-    fin.read(magic, sizeof(magic));
-    if (!fin.good()) break;
-    if (magic[2] == 1) {
-      fin.read(reinterpret_cast<char*>(&len), sizeof(len));
-      if (!fin.good()) break;
-      fin.read(buf, len);
-      buf[len] = '\0';
-      if (!fin.good()) break;
-    }
-    fin.read(reinterpret_cast<char*>(&len), sizeof(len));
-    if (!fin.good()) break;
-    fin.seekg(len, std::ios_base::cur);
-    if (!fin.good()) break;
-    last_tuple_offset = fin.tellg();
+bool BinFileWriter::OpenFile() {
+  buf_ = new char[capacity_];
+  switch (mode_) {
+    case kCreate:
+      fdat_.open(path_, std::ios::binary | std::ios::out | std::ios::trunc);
+      CHECK(fdat_.is_open()) << "Cannot create file " << path_;
+      break;
+    case kAppend:
+      fdat_.open(path_, std::ios::app | std::ios::binary);
+      CHECK(fdat_.is_open()) << "Cannot open file " << path_;
+      break;
+    default:
+      LOG(FATAL) << "unknown mode to open binary file " << mode_;
+      break;
   }
-  fin.close();
-  return last_tuple_offset;
+  return fdat_.is_open();
 }
 }  // namespace io
 }  // namespace singa

@@ -40,7 +40,7 @@ class Reader {
   /// path is the path to the storage, could be a file path, database
   /// connection, or hdfs path.
   /// return true if open successfully, otherwise false.
-  virtual bool Open(const std::string& path, int capacity = 10485760) = 0;
+  virtual bool Open(const std::string& path) = 0;
 
   /// Release resources.
   virtual void Close() = 0;
@@ -54,11 +54,14 @@ class Reader {
   virtual int Count() = 0;
 };
 
+/// Binfilereader reads tuples from binary file with key-value pairs.
 class BinFileReader : public Reader {
  public:
   ~BinFileReader() { Close(); }
   /// \copydoc Open(const std::string& path)
-  bool Open(const std::string& path, int capacity = 10485760) override;
+  bool Open(const std::string& path) override;
+  /// \copydoc Open(const std::string& path), user defines capacity
+  bool Open(const std::string& path, int capacity);
   /// \copydoc Close()
   void Close() override;
   /// \copydoc Read(std::string* key, std::string* value)
@@ -69,30 +72,55 @@ class BinFileReader : public Reader {
   inline std::string path() { return path_; }
 
  protected:
+  /// Open a file with path_ and initialize buf_
+  bool OpenFile();
   /// Read the next filed, including content_len and content;
   /// return true if succeed.
   bool ReadField(std::string* content);
-
   /// Read data from disk if the current data in the buffer is not a full field.
   /// size is the size of the next field.
   bool PrepareNextField(int size);
 
  private:
-  std::string path_ = "";
   /// file to be read
+  std::string path_ = "";
+  /// ifstream
   std::ifstream fdat_;
   /// internal buffer
   char* buf_ = nullptr;
   /// offset inside the buf_
   int offset_ = 0;
-  /// allocated bytes for the buf_
-  int capacity_ = 0;
+  /// allocated bytes for the buf_, default is 10M
+  int capacity_ = 10485760;
   /// bytes in buf_
   int bufsize_ = 0;
   /// magic word
   const char kMagicWord[2] = {'s', 'g'};
 };
 
+/// TextFileReader reads tuples from CSV file.
+class TextFileReader : public Reader {
+ public:
+  ~TextFileReader() { Close(); }
+  /// \copydoc Open(const std::string& path)
+  bool Open(const std::string& path) override;
+  /// \copydoc Close()
+  void Close() override;
+  /// \copydoc Read(std::string* key, std::string* value)
+  bool Read(std::string* key, std::string* value) override;
+  /// \copydoc Count()
+  int Count() override;
+  /// return path to text file
+  inline std::string path() { return path_; }
+
+ private:
+  /// file to be read
+  std::string path_ = "";
+  /// ifstream
+  std::ifstream fdat_;
+  /// current line number
+  int lineNo_ = 0;
+};
 }  // namespace io
 }  // namespace singa
 

@@ -21,13 +21,15 @@
 
 namespace singa {
 namespace io {
+bool BinFileReader::Open(const std::string& path) {
+  path_ = path;
+  return OpenFile();
+}
+
 bool BinFileReader::Open(const std::string& path, int capacity) {
   path_ = path;
   capacity_ = capacity;
-  buf_ = new char[capacity_];
-  fdat_.open(path_, std::ios::in | std::ios::binary);
-  CHECK(fdat_.is_open()) << "Cannot open file " << path_;
-  return fdat_.is_open();
+  return OpenFile();
 }
 
 void BinFileReader::Close() {
@@ -57,7 +59,7 @@ bool BinFileReader::Read(std::string* key, std::string* value) {
 
 int BinFileReader::Count() {
   std::ifstream fin(path_, std::ios::in | std::ios::binary);
-  CHECK(fdat_.is_open()) << "Cannot create file " << path_;
+  CHECK(fin.is_open()) << "Cannot create file " << path_;
   int count = 0;
   while (true) {
     size_t len;
@@ -78,6 +80,13 @@ int BinFileReader::Count() {
   }
   fin.close();
   return count;
+}
+
+bool BinFileReader::OpenFile() {
+  buf_ = new char[capacity_];
+  fdat_.open(path_, std::ios::in | std::ios::binary);
+  CHECK(fdat_.is_open()) << "Cannot open file " << path_;
+  return fdat_.is_open(); 
 }
 
 bool BinFileReader::ReadField(std::string* content) {

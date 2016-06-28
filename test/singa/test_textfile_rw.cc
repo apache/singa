@@ -23,17 +23,17 @@
 #include "../include/singa/io/writer.h"
 #include "gtest/gtest.h"
 
-const char* path_bin = "./binfile_test";
-using singa::io::BinFileReader;
-using singa::io::BinFileWriter;
-TEST(BinFileWriter, Create) {
-  BinFileWriter writer;
+const char* path_csv = "./textfile_test.csv";
+using singa::io::TextFileReader;
+using singa::io::TextFileWriter;
+TEST(TextFileWriter, Create) {
+  TextFileWriter writer;
   bool ret;
-  ret = writer.Open(path_bin, singa::io::kCreate);
+  ret = writer.Open(path_csv, singa::io::kCreate);
   EXPECT_EQ(true, ret);
 
   std::string key = "";
-  std::string value = "\nThis is a test for binfile io.";
+  std::string value = "This is a test for binfile io.";
   ret = writer.Write(key, value);
   EXPECT_EQ(true, ret);
 
@@ -44,30 +44,29 @@ TEST(BinFileWriter, Create) {
   writer.Close();
 }
 
-TEST(BinFileWriter, Append) {
-  BinFileWriter writer;
+TEST(TextFileWriter, Append) {
+  TextFileWriter writer;
   bool ret;
-  ret = writer.Open(path_bin, singa::io::kAppend, 20971520);
+  ret = writer.Open(path_csv, singa::io::kAppend);
   EXPECT_EQ(true, ret);
 
   std::string key = "1";
-  std::string value = "\nThis is another test for binfile io.";
+  std::string value = "This is another test for binfile io.";
   ret = writer.Write(key, value);
   EXPECT_EQ(true, ret);
 
   key = "2";
-  value = "\nThis is another test for binfile io.";
+  value = "This is another test for binfile io.";
   ret = writer.Write(key, value);
   EXPECT_EQ(true, ret);
 
   writer.Flush();
   writer.Close();
 }
-
-TEST(BinFileReader, Read) {
-  BinFileReader reader;
+TEST(TextFileReader, Read) {
+  TextFileReader reader;
   bool ret;
-  ret = reader.Open(path_bin);
+  ret = reader.Open(path_csv);
   EXPECT_EQ(true, ret);
 
   int cnt = reader.Count();
@@ -75,21 +74,21 @@ TEST(BinFileReader, Read) {
 
   std::string key, value;
   reader.Read(&key, &value);
-  EXPECT_STREQ("", key.c_str());
-  EXPECT_STREQ("\nThis is a test for binfile io.", value.c_str());
-
-  reader.Read(&key, &value);
-  EXPECT_STREQ("", key.c_str());
-  EXPECT_STREQ("\nThis is a test for binfile io.", value.c_str());
+  EXPECT_STREQ("0", key.c_str());
+  EXPECT_STREQ("This is a test for binfile io.", value.c_str());
 
   reader.Read(&key, &value);
   EXPECT_STREQ("1", key.c_str());
-  EXPECT_STREQ("\nThis is another test for binfile io.", value.c_str());
+  EXPECT_STREQ("This is a test for binfile io.", value.c_str());
 
   reader.Read(&key, &value);
   EXPECT_STREQ("2", key.c_str());
-  EXPECT_STREQ("\nThis is another test for binfile io.", value.c_str());
+  EXPECT_STREQ("This is another test for binfile io.", value.c_str());
+
+  reader.Read(&key, &value);
+  EXPECT_STREQ("3", key.c_str());
+  EXPECT_STREQ("This is another test for binfile io.", value.c_str());
 
   reader.Close();
-  remove(path_bin);
+  remove(path_csv);
 }

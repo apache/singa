@@ -44,11 +44,8 @@ class Writer {
   ///  - a path to local directory. This is to be compatible with the older
   ///    version (DataShard). The KVFile is shard.dat under that directory
   ///  - a hdfs file starting with "hdfs://"
-  /// mode is KVFile open mode(kCreate, kAppend).
-  /// buffer Caches capacity bytes data for every disk op (read or write),
-  /// default is 10MB.
-  virtual bool Open(const std::string &path, Mode mode,
-                    int capacity = 10485760) = 0;
+  /// mode is open mode(kCreate, kAppend).
+  virtual bool Open(const std::string &path, Mode mode) = 0;
 
   /// Release resources.
   virtual void Close() = 0;
@@ -73,9 +70,10 @@ class Writer {
 class BinFileWriter : public Writer {
  public:
   ~BinFileWriter() { Close(); }
-  /// \copydoc Open(const std::string &path, Mode mode, int bufsize = 10485760)
-  bool Open(const std::string &path, Mode mode,
-            int capacity = 10485760) override;
+  /// \copydoc Open(const std::string &path, Mode mode)
+  bool Open(const std::string &path, Mode mode) override;
+  /// \copydoc Open(const std::string& path), user defines capacity
+  bool Open(const std::string& path, Mode mode, int capacity);
   /// \copydoc Close()
   void Close() override;
   /// \copydoc Write(const std::string& key, const std::string& value) override;
@@ -86,26 +84,47 @@ class BinFileWriter : public Writer {
   inline std::string path() { return path_; }
 
  protected:
-  /// Setup the disk pointer to the right position for append in case that
-  /// the pervious write crashes.
-  /// return offset (end pos) of the last success written record.
-  int PrepareForAppend(const std::string &path);
+  /// Open a file with path_ and initialize buf_
+  bool OpenFile();
 
  private:
+  /// file to be written
   std::string path_ = "";
   Mode mode_;
-  /// file to be written
+  /// ofstream
   std::ofstream fdat_;
   /// internal buffer
   char *buf_ = nullptr;
   /// allocated bytes for the buf_
-  int capacity_ = 0;
+  int capacity_ = 10485760;
   /// bytes in buf_
   int bufsize_ = 0;
   /// magic word
   const char kMagicWord[2]= {'s', 'g'};
 };
 
+/// TextFileWriter write training/validation/test tuples in CSV file.
+class TextFileWriter : public Writer {
+ public:
+  ~TextFileWriter() { Close(); }
+  /// \copydoc Open(const std::string &path, Mode mode)
+  bool Open(const std::string &path, Mode mode) override;
+  /// \copydoc Close()
+  void Close() override;
+  /// \copydoc Write(const std::string& key, const std::string& value) override;
+  bool Write(const std::string &key, const std::string &value) override;
+  /// \copydoc Flush()
+  void Flush() override;
+  /// return path to text file
+  inline std::string path() { return path_; }
+
+ private:
+  /// file to be written
+  std::string path_ = "";
+  Mode mode_;
+  /// ofstream
+  std::ofstream fdat_;
+};
 }  // namespace io
 }  // namespace singa
 
