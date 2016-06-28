@@ -49,14 +49,19 @@ enum CopyDirection {
 // configuration for device memory pool
 message MemPoolConf {
 	optional string type = 1 [default = "cnmem"];
-	optional uint32 num_devices = 2 [default = 1];
 	// allocation size for each device, default is 256 MB
-	optional uint32 alloc_size = 3 [default = 256];
+	optional uint32 init_size = 2 [default = 256];
+  // size limit in MB; report error/warning if this limit is reached.
+  // 0 for unlimited memory, i.e., use as much memory as the device has
+  // not used currently.
+	optional uint32 max_size = 3 [default = 0];
+
 	// memory manager flag for cnmem
-	// cnmemflag = 0: default flag
-	// cnmemflag = 1: prevent the manager from growing its memory consumption
-	// cnmemflag = 2: prevent the manager from stealing memory
-	optional uint32 cnmemflag = 4 [default = 0];
+	// flag = 0: default flag
+	// flag = 1: prevent the manager from growing its memory consumption
+	// flag = 2: prevent the manager from stealing memory
+	optional uint32 flag = 11 [default = 0];
+  repeated uint32 device = 12;
 }
 
 // For tensor serialization

@@ -146,7 +146,7 @@ TEST(Dense, ForwardCuda) {
 
   const size_t batchsize = 3, vdim = 2, hdim = 3;
   const float x[batchsize * vdim] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{batchsize, vdim}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * vdim);
 
@@ -183,7 +183,7 @@ TEST(Dense, BackwardCuda) {
 
   const size_t batchsize = 3, vdim = 2, hdim = 3;
   const float x[batchsize * vdim] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{batchsize, vdim}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * vdim);
 

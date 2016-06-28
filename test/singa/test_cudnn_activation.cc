@@ -46,7 +46,7 @@ TEST(TCudnnActivation, Setup) {
 TEST(TCudnnActivation, Forward) {
   const float x[] = {1.0f, 2.0f, 3.0f, -2.0f, -3.0f, -4.0};
   size_t n = sizeof(x) / sizeof(float);
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{n}, cuda);
   in.CopyDataFromHostPtr<float>(x, n);
 
@@ -85,7 +85,7 @@ TEST(TCudnnActivation, Forward) {
 TEST(TCudnnActivation, Backward) {
   const float x[] = {2.0f, 3.0f, 3.0f, 7.f, 0.0f, 5.0, 1.5, 2.5, -2.5, 1.5};
   size_t n = sizeof(x) / sizeof(float);
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{n}, cuda);
   in.CopyDataFromHostPtr<float>(x, n);
   float neg_slope = 0.5f;

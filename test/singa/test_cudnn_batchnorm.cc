@@ -53,7 +53,7 @@ TEST(CudnnBatchNorm, Forward) {
     0.150676, 0.153442, -0.0929899, -0.148675,
     -0.112459, -0.106284, -0.103074, -0.0668811
   };
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{1,2,4,4}, cuda);
   in.CopyDataFromHostPtr(x, 1*2*4*4);
   const float alpha_[] = {1, 1};
@@ -129,7 +129,7 @@ TEST(CudnnBatchNorm, Backward) {
     0.150676, 0.153442, -0.0929899, -0.148675,
     -0.112459, -0.106284, -0.103074, -0.0668811
   };
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor x_tensor(singa::Shape{1,2,4,4}, cuda);
   x_tensor.CopyDataFromHostPtr(x, 1*2*4*4);
 

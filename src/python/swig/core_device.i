@@ -46,8 +46,7 @@ namespace singa{
 
   class CppCPU : public Device {
    public:
-    CppCPU(int id = -1, int num_executors = 1,
-           std::string scheduler = "sync", std::string vm = "gc-only");
+    CppCPU();
     void SetRandSeed(unsigned seed) override;
     /* (TODO) add necessary functions of CppCPU class
     */
@@ -55,8 +54,7 @@ namespace singa{
 
   class CudaGPU : public Device {
    public:
-    CudaGPU(int id = 0, int num_executors = 1,
-            std::string scheduler = "sync", std::string vm = "gc-only");
+    CudaGPU();
     void SetRandSeed(unsigned seed) override;
     /* (TODO) add necessary functions of CudaGPU class
     */

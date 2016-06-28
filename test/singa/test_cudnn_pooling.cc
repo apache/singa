@@ -56,7 +56,7 @@ TEST(CudnnPooling, Forward) {
   const size_t batchsize = 1, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
                                           6.0f, 7.0f, 8.0f, 9.0f};
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{batchsize, c, h, w}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
 
@@ -89,7 +89,7 @@ TEST(CudnnPooling, Backward) {
   const size_t batchsize = 1, c = 1, src_h = 3, src_w = 3;
   const float x[batchsize * src_h * src_w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
                                               6.0f, 7.0f, 8.0f, 9.0f};
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{batchsize, c, src_h, src_w}, cuda);
   in.CopyDataFromHostPtr(x, batchsize * c * src_h * src_w);
 
