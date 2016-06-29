@@ -19,8 +19,12 @@
 #ifndef SINGA_CORE_MEMORY_H_
 #define SINGA_CORE_MEMORY_H_
 
-#include "cnmem.h"
 #include "singa/singa_config.h"
+
+#ifdef USE_CUDA
+#include "cnmem.h"
+#endif
+
 #include <mutex>
 
 namespace singa {
