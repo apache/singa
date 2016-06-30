@@ -40,6 +40,17 @@
 using singa::DataType;
 %}
 
+%include "numpy.i"
+%init %{
+  import_array();
+%}
+%apply (float *IN_ARRAY1, int DIM1) {
+       (const float *src, const size_t num)
+}
+%apply (float *ARGOUT_ARRAY1, int DIM1) {
+       (float *value, const size_t num)
+}
+
 %template(Shape) std::vector<size_t>;
 
 namespace singa{
@@ -72,6 +83,10 @@ namespace singa{
     %template(charData) data<const char*>;
     %template(doubleData) data<const double*>;
 
+    template <typename SType> void GetValue(SType* value, const size_t num);
+    %template(floatGetValue) GetValue<float>;
+    //void ToArray(float *value, const size_t num);
+
     const DataType data_type() const;
     const std::vector<size_t> &shape() const;
     const size_t shape(size_t idx) const;
@@ -88,12 +103,14 @@ namespace singa{
 
     template <typename SType> void SetValue(const SType x);
     %template(floatSetValue) SetValue<float>;
-    // ...
+    /* TODO(chonho-01) other types */
+    // --- other types
 
     template <typename DType> void CopyDataFromHostPtr(const DType *src,
                                                        const size_t num,
                                                        const size_t offset);
-    %template(floatCopyData) CopyDataFromHostPtr<float>;
+    %template(floatCopyDataFromHostPtr) CopyDataFromHostPtr<float>;
+    // --- other types
 
     void CopyData(const Tensor &other);
     Tensor Clone() const;
@@ -109,26 +126,22 @@ namespace singa{
 
     template <typename DType> Tensor &operator+=(const DType x);
     %template(iAdd_f) operator+=<float>;
-    /* TODO(chonho-01) for other types */
-    // ...
+    // --- other types
 
     template <typename DType> Tensor &operator-=(DType x);
     %template(iSub_f) operator-=<float>;
-    /* TODO(chonho-01) for other types */
-    // ...
+    // --- other types
 
     template <typename DType> Tensor &operator*=(DType x);
     %template(iMul_f) operator*=<float>;
-    /* TODO(chonho-01) for other types */
-    // ...
+    // --- other types
 
     template <typename DType> Tensor &operator/=(DType x);
     %template(iDiv_f) operator/=<float>;
-    /* TODO(chonho-01) for other types */
-    // ...
+    // --- other types
 
 
-    /*TODO(chonho-08-b)
+    /*TODO(chonho-04)
     amax
     amin
     asum
@@ -137,9 +150,6 @@ namespace singa{
 
   };
 
-  /* TODO(chonho-02)
-  inline void CheckDataTypeAndLang(const Tensor &in1, const Tensor &in2);
-  */
   void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
                       size_t src_offset = 0, size_t dst_offset = 0);
 
@@ -160,7 +170,7 @@ namespace singa{
   %template(floatSum) Sum<float>;
   // --- other types
 
-  /* TODO(chonho-04)
+  /* TODO(chonho-02)
      need to implement the average of all elements ??? */
   Tensor Average(const Tensor &t, int axis);
 
@@ -205,7 +215,7 @@ namespace singa{
   %template(op) operator>= <float>;
   // --- other types
 
-  /* TODO(chonho-06)
+  /* NOTE(chonho)
   no need to include theses
   in python, these can be replaced with comparison operators
 
@@ -284,27 +294,23 @@ namespace singa{
   template <typename SType>
   void Bernoulli(const SType p, Tensor *out);
   %template(floatBernoulli) Bernoulli<float>;
-  /* TODO for other types */
-  // ...
+  // --- other types
 
   template <typename SType>
   void Gaussian(const SType mean, const SType std, Tensor *out);
   %template(floatGaussian) Gaussian<float>;
-  /* TODO for other types */
-  // ...
+  // --- other types
 
   template <typename SType>
   void Uniform(const SType low, const SType high, Tensor *out);
   %template(floatUniform) Uniform<float>;
-  /* TODO for other types */
-  // ...
+  // --- other types
 
   /* ========== Blas operations ========== */
   template <typename SType>
   void Axpy(SType alpha, const Tensor &in, Tensor *out);
   %template(floatAxpy) Axpy<float>;
-  /* TODO for other types */
-  // ...
+  // --- other types
 
   Tensor Mult(const Tensor &A, const Tensor &B);
   void Mult(const Tensor &A, const Tensor &B, Tensor *C);

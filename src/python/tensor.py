@@ -28,7 +28,6 @@ to call singa::Tensor and its methods
 import sys
 import os
 import numpy as np
-import ctypes
 
 sys.path.append(os.path.join(os.path.dirname(__file__),
                              '../../build/lib'))
@@ -64,7 +63,7 @@ class Tensor(object):
             self.dtype = dtype
 
     def to_array(self):
-        # TODO(chonho) - need to think more efficient way to convert???
+        # TODO(chonho): depreciated (will be deleted later)
         idx = self.singa_tensor.data_type()
         if idx == kFloat32:
             data_array = singa.floatArray_frompointer(
@@ -73,9 +72,6 @@ class Tensor(object):
         elif idx == kFloat16:
             print 'not implemented yet'
             return
-            # data_array = singa.floatArray_frompointer(
-            #                  self.singa_tensor.floatData())
-            # dt = np.float16
         elif idx == kInt:
             data_array = singa.intArray_frompointer(
                              self.singa_tensor.intData())
@@ -93,20 +89,28 @@ class Tensor(object):
         data = np.array(data, dtype=dt).reshape(self.tuple_shape)
         return data
 
-    def from_array(self, np_array):
-        # TODO(chonho)
-        test = np.array([[1,2],[3,4]], dtype=np.float32)
-        test = test.flatten()
-        self.singa_tensor.floatCopyData(test, 4, 0)
+    def copy_to_numpy(self):
+        ''' this method gets the values of tensor data and
+            returns it as numpy array
         '''
-        c_float_ptr = ctypes.POINTER(ctypes.c_float)
-        data_ptr = test.ctypes.data_as(c_float_ptr)
-        self.singa_tensor.floatCopyData(data_ptr, 4, 0)
+        if self.dtype == kFloat32:
+            np_array = self.singa_tensor.floatGetValue(int(self.size()))
+        else:
+            print 'Not implemented yet for ', self.dtype
+        return np_array.reshape(self.tuple_shape)
+
+    def copy_from_numpy(self, np_array, offset=0):
+        ''' this method stores the values of numpy array into tensor data
+            from the position of offset
         '''
-        '''
-        d = [1.0, 2.0, 3.0, 4.0]
-        self.singa_tensor.floatCopyData(d, 4, 0)
-        '''
+        assert np_array.size == self.size(), 'tensor shape should be the same'
+        if not np_array.ndim == 1:
+            np_array = np_array.flatten()
+        dt = np_array.dtype
+        if dt == np.float32:
+            self.singa_tensor.floatCopyDataFromHostPtr(np_array, offset)
+        else:
+            print 'Not implemented yet for ', dt
 
     def data_type(self):
         return self.singa_tensor.data_type()
@@ -306,9 +310,19 @@ def reshape(t, s):
     return _call_singa_func(singa.Reshape, t.singa_tensor, s)
 
 
-def copy_data_to_from(dst, src, size, src_offset=0, dst_offset=0):
+def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
     singa.CopyDataToFrom(dst.singa_tensor, src.singa_tensor, size,
-                         src_offset, dst_offset)
+                         dst_offset, src_offset)
+
+
+def from_numpy(np_array):
+    ret = Tensor(np_array.shape)
+    ret.copy_from_numpy(np_array)
+    return ret
+
+
+def to_numpy(t):
+    return t.copy_to_numpy()
 
 
 def abs(t):
@@ -426,28 +440,15 @@ def eltwise_mult(lhs, rhs, ret=None):
 
 
 def mult(A, B, C=None, alpha=1.0, beta=0.0):
+    '''
+    This function returns C = alpha * A * B + beta * C
+    '''
     if C is None:
         return _call_singa_func(singa.Mult, A.singa_tensor, B.singa_tensor)
     else:
         singa.floatMult(alpha, A.singa_tensor, B.singa_tensor,
                         beta, C.singa_tensor)
         return C
-
-
-'''
-TODO(chonho) combined into the above
-                delete later
-def mult(A, B, C=None):
-    if C is None:
-        return _call_singa_func(singa.Mult, A.singa_tensor, B.singa_tensor)
-    else:
-        singa_Mult(A.singa_tensor, B.singa_tensor, C.singa_tensor)
-        return C
-
-def axypbz(alpha, A, B, b, C):
-    singa.floatMult(alpha, A.singa_tensor, B.singa_tensor, b, C.singa_tensor)
-    return C
-'''
 
 
 def div(lhs, rhs, ret=None):
@@ -460,6 +461,12 @@ def div(lhs, rhs, ret=None):
         else:
             singa.Div_Tf_out(lhs.singa_tensor, rhs, ret.singa_tensor)
         return ret
+
+
+def axypbz(alpha, A, B, b, C):
+    # TODO(chonho): depreciated (will be deleted later)
+    singa.floatMult(alpha, A.singa_tensor, B.singa_tensor, b, C.singa_tensor)
+    return C
 
 
 def axpy(alpha, x, y):

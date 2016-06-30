@@ -81,6 +81,13 @@ class Tensor {
     return static_cast<const SType *>(block()->data());
   }
 
+  template <typename SType>
+  void GetValue(SType *value, const size_t num) {
+    CHECK(device_ == defaultDevice);
+    const SType* ptr = data<SType>();
+    for(size_t i = 0; i < num; i++) value[i] = ptr[i];
+  }
+
   /// data type, including kFloat16, kFloat32, kInt
   const DataType data_type() const { return data_type_; }
 
