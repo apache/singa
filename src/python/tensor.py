@@ -62,8 +62,8 @@ class Tensor(object):
             self.device = device
             self.dtype = dtype
 
-    def toarray(self):
-        # TODO(chonho) - need to think more efficient way to convert???
+    def to_array(self):
+        # TODO(chonho): depreciated (will be deleted later)
         idx = self.singa_tensor.data_type()
         if idx == kFloat32:
             data_array = singa.floatArray_frompointer(
@@ -72,9 +72,6 @@ class Tensor(object):
         elif idx == kFloat16:
             print 'not implemented yet'
             return
-            # data_array = singa.floatArray_frompointer(
-            #                  self.singa_tensor.floatData())
-            # dt = np.float16
         elif idx == kInt:
             data_array = singa.intArray_frompointer(
                              self.singa_tensor.intData())
@@ -91,6 +88,19 @@ class Tensor(object):
         data = [data_array[i] for i in range(self.singa_tensor.Size())]
         data = np.array(data, dtype=dt).reshape(self.tuple_shape)
         return data
+
+    def copy_from_numpy(self, np_array, offset=0):
+        ''' this method stores the values of numpy array into tensor data
+            from the position of offset
+        '''
+        assert np_array.size == self.size(), 'tensor shape should be the same'
+        if not np_array.ndim == 1:
+            np_array = np_array.flatten()
+        dt = np_array.dtype
+        if dt == np.float32:
+            self.singa_tensor.floatCopyDataFromHostPtr(np_array, offset)
+        else:
+            print 'Not implemented yet for ', dt
 
     def data_type(self):
         return self.singa_tensor.data_type()
@@ -131,8 +141,12 @@ class Tensor(object):
     def to_host(self):
         self.singa_tensor.ToHost()
 
+    def nrm2(self):
+        self.singa_tensor.L2()
+
     def set_value(self, x):
-        self.singa_tensor.SetValue(x)
+        if type(x) == float:
+            self.singa_tensor.floatSetValue(x)
 
     def copy_data(self, t):
         self.singa_tensor.CopyData(t.singa_tensor)
@@ -160,6 +174,36 @@ class Tensor(object):
             call singa::Tensor::Clone()
         '''
         return self.clone()
+
+    def bernoulli(self, p):
+        if type(p) == float:
+            singa.floatBernoulli(p, self.singa_tensor)
+
+    def gaussian(self, mean, std):
+        if type(mean) == float:
+            singa.floatGaussian(mean, std, self.singa_tensor)
+
+    def uniform(self, low, high):
+        if type(low) == float:
+            singa.floatUniform(low, high, self.singa_tensor)
+
+    def add_column(self, v):
+        singa.AddColumn(v.singa_tensor, self.singa_tensor)
+
+    def add_row(self, v):
+        singa.AddRow(v.singa_tensor, self.singa_tensor)
+
+    def div_column(self, v):
+        singa.DivColumn(v.singa_tensor, self.singa_tensor)
+
+    def div_row(self, v):
+        singa.DivRow(v.singa_tensor, self.singa_tensor)
+
+    def mult_column(self, v):
+        singa.MultColumn(v.singa_tensor, self.singa_tensor)
+
+    def mult_row(self, v):
+        singa.MultRow(v.singa_tensor, self.singa_tensor)
 
     '''
     python operators (+=, -=, *=, /=) for singa::Tensor unary operators
@@ -213,10 +257,10 @@ class Tensor(object):
 
     def __mul__(self, rhs):
         if isinstance(rhs, Tensor):
-            return _call_singa_func(singa.Mul_TT,
+            return _call_singa_func(singa.EltwiseMul_TT,
                                     self.singa_tensor, rhs.singa_tensor)
         else:
-            return _call_singa_func(singa.Mul_Tf,
+            return _call_singa_func(singa.EltwiseMul_Tf,
                                     self.singa_tensor, rhs)
 
     def __div__(self, rhs):
@@ -256,9 +300,27 @@ def reshape(t, s):
     return _call_singa_func(singa.Reshape, t.singa_tensor, s)
 
 
-def copy_data_to_from(dst, src, size, src_offset=0, dst_offset=0):
+def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
     singa.CopyDataToFrom(dst.singa_tensor, src.singa_tensor, size,
-                         src_offset, dst_offset)
+                         dst_offset, src_offset)
+
+
+def from_numpy(np_array):
+    ret = Tensor(np_array.shape)
+    ret.copy_from_numpy(np_array)
+    return ret
+
+
+def to_numpy(t):
+    ''' this method gets the values of tensor data and
+        returns it as numpy array
+        TODO(wangwei) clone t to host
+    '''
+    if t.dtype == kFloat32:
+        np_array = t.singa_tensor.floatGetValue(int(t.size()))
+    else:
+        print 'Not implemented yet for ', t.dtype
+    return np_array.reshape(t.tuple_shape)
 
 
 def abs(t):
@@ -296,16 +358,30 @@ def sum(t, axis=None):
         return _call_singa_func(singa.Sum, t.singa_tensor, axis)
 
 
-def pow(t, x):
-    print 'not implemented yet'
+def pow(t, x, out=None):
+    if out is None:
+        if isinstance(x, Tensor):
+            return _call_singa_func(singa.Pow, t.singa_tensor, x.singa_tensor)
+        else:
+            return _call_singa_func(singa.Pow_f, t.singa_tensor, x)
+    else:
+        if isinstance(x, Tensor):
+            singa.Pow(t.singa_tensor, x.singa_tensor, out.singa_tensor)
+        else:
+            singa.Pow_f_out(t.singa_tensor, x, out.singa_tensor)
+        return out
 
 
 def average(t, axis=0):
     return _call_singa_func(singa.Average, t.singa_tensor, axis)
 
 
-def softmax(t, axis=0):
-    return _call_singa_func(singa.SoftMax, t.singa_tensor, axis)
+def softmax(t, out=None):
+    if out is None:
+        return _call_singa_func(singa.SoftMax, t.singa_tensor)
+    else:
+        singa.SoftMax(t.singa_tensor, out.singa_tensor)
+        return out
 
 
 def lt(t, x):
@@ -324,24 +400,121 @@ def ge(t, x):
     return t >= x
 
 
-def add(lhs, rhs):
-    # call Tensor.__add__()
-    return lhs + rhs
+def add(lhs, rhs, ret=None):
+    if ret is None:
+        # call Tensor.__add__()
+        return lhs + rhs
+    else:
+        if isinstance(rhs, Tensor):
+            singa.Add(lhs.singa_tensor, rhs.singa_tensor, ret.singa_tensor)
+        else:
+            singa.Add_Tf_out(lhs.singa_tensor, rhs, ret.singa_tensor)
+        return ret
+
+def sub(lhs, rhs, ret=None):
+    if ret is None:
+        # call Tensor.__sub__()
+        return lhs - rhs
+    else:
+        if isinstance(rhs, Tensor):
+            singa.Sub(lhs.singa_tensor, rhs.singa_tensor, ret.singa_tensor)
+        else:
+            singa.Sub_Tf_out(lhs.singa_tensor, rhs, ret.singa_tensor)
+        return ret
 
 
-def sub(lhs, rhs):
-    # call Tensor.__sub__()
-    return lhs - rhs
+def eltwise_mult(lhs, rhs, ret=None):
+    if ret is None:
+        # call Tensor.__mul__()
+        return lhs * rhs
+    else:
+        if isinstance(rhs, Tensor):
+            singa.EltwiseMult(lhs.singa_tensor, rhs.singa_tensor,
+                              ret.singa_tensor)
+        else:
+            singa.EltwiseMult_Tf_out(lhs.singa_tensor, rhs,
+                                     ret.singa_tensor)
+        return ret
 
 
-def eltwise_mult(lhs, rhs):
-    # call Tensor.__mul__()
-    return lhs * rhs
+def mult(A, B, C=None, alpha=1.0, beta=0.0):
+    '''
+    This function returns C = alpha * A * B + beta * C
+    '''
+    if C is None:
+        return _call_singa_func(singa.Mult, A.singa_tensor, B.singa_tensor)
+    else:
+        singa.floatMult(alpha, A.singa_tensor, B.singa_tensor,
+                        beta, C.singa_tensor)
+        return C
 
 
-def div(lhs, rhs):
-    # call Tensor.__div__()
-    return lhs / rhs
+def div(lhs, rhs, ret=None):
+    if ret is None:
+        # call Tensor.__div__()
+        return lhs / rhs
+    else:
+        if isinstance(rhs, Tensor):
+            singa.Div(lhs.singa_tensor, rhs.singa_tensor, ret.singa_tensor)
+        else:
+            singa.Div_Tf_out(lhs.singa_tensor, rhs, ret.singa_tensor)
+        return ret
+
+
+def axypbz(alpha, A, B, b, C):
+    # TODO(chonho): depreciated (will be deleted later)
+    singa.floatMult(alpha, A.singa_tensor, B.singa_tensor, b, C.singa_tensor)
+    return C
+
+
+def axpy(alpha, x, y):
+    if type(alpha) == float:
+        singa.floatAxpy(alpha, x.singa_tensor, y.singa_tensor)
+    return y
+
+
+def bernoulli(p, t):
+    if type(p) == float:
+        singa.floatBernoulli(p, t.singa_tensor)
+    return t
+
+
+def gaussian(mean, std, t):
+    if type(mean) == float:
+        singa.floatGaussian(mean, std, t.singa_tensor)
+    return t
+
+
+def uniform(low, high, t):
+    if type(low) == float:
+        singa.floatUniform(low, high, t.singa_tensor)
+    return t
+
+
+def add_column(alpha, v, beta, M):
+    singa.floatAddColumn(alpha, beta, v.singa_tensor, M.singa_tensor)
+    return M
+
+
+def add_row(alpha, v, beta, M):
+    singa.floatAddRow(alpha, beta, v.singa_tensor, M.singa_tensor)
+    return M
+
+
+def sum_columns(M):
+    assert M.ndim() == 2, 'M.nDim() is supposed to be 2'
+    nb_col = M.shape(0)
+    ret = Tensor((nb_col, 1))
+    singa.SumColumns(M.singa_tensor, ret.singa_tensor)
+    return ret
+
+
+def sum_rows(M):
+    assert M.ndim() == 2, 'M.nDim() is supposed to be 2'
+    nb_row = M.shape(1)
+    ret = Tensor((1, nb_row))
+    singa.SumRows(M.singa_tensor, ret.singa_tensor)
+    return ret
 
 
 ''' private functions, internally used

@@ -24,18 +24,23 @@
 %module core_device
 %include "std_vector.i"
 %include "std_string.i"
+%include "std_shared_ptr.i"
 
 %{
 #include "singa/core/device.h"
 %}
 
+/* smart pointer to avoid memory leak */
+%shared_ptr(singa::Device);
+%shared_ptr(singa::CppCPU);
+%shared_ptr(singa::CudaGPU);
+
 namespace singa{
 
-  %nodefault Device;
   class Device {
    public:
     virtual void SetRandSeed(unsigned seed) = 0;
-    Device* host();
+    std::shared_ptr<Device> host();
     int id() const;
   };
 

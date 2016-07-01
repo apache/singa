@@ -21,7 +21,7 @@
 
 /*interface file for swig */
 
-%module singa_layer
+%module model_layer
 %include "std_vector.i"
 %include "std_string.i"
 %include "std_pair.i"
@@ -46,12 +46,14 @@ namespace std {
   %template(tvectvecPair) pair<vector<Tensor>, vector<Tensor>>;
 }
 
+
 namespace singa {
 
   class Layer {
     public:
       Layer();
-      void Setup(const std::string& proto_str);
+      void Setup(const std::vector<size_t>&, const string&);
+      void Setup(const std::vector<vector<size_t>>&, const string&);
 
       std::string ToProtoStr() const;
       const std::vector<ParamSpec> param_specs();
@@ -64,8 +66,11 @@ namespace singa {
 
       /* virtual functions */
       virtual const std::string layer_type() const;
-      virtual void Setup(const LayerConf& conf);
-      virtual void ToDevice(Device* device);
+      virtual void Setup(const std::vector<size_t>&,
+                         const LayerConf&);
+      virtual void Setup(const std::vector<std::vector<size_t>>&,
+                         const LayerConf&);
+      virtual void ToDevice(std::shared_ptr<Device> device);
       virtual void AsType(DataType dtype);
       virtual void ToProto(LayerConf* conf) const;
 
