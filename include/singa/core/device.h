@@ -84,6 +84,8 @@ class Device {
 
   int id() const { return id_; }
 
+  virtual ~Device() = 0;
+
  protected:
   /// Execute one operation on one executor.
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
@@ -117,6 +119,7 @@ class Device {
 /// It runs cpp code.
 class CppCPU : public Device {
  public:
+  ~CppCPU() {};
   CppCPU(int id = -1, int num_executors = 1,
             string scheduler = "sync", string vm = "gc-only");
 
@@ -148,7 +151,7 @@ class CudaGPU : public Device {
   ~CudaGPU();
   CudaGPU(int id = 0, int num_executors = 1, string scheduler = "sync",
          string vm = "gc-only");
-	CudaGPU(const MemPoolConf& mem_conf, 
+	CudaGPU(const MemPoolConf& mem_conf,
 					int id = 0, int num_executors = 1, string scheduler = "sync");
 
   void SetRandSeed(unsigned seed) override;
@@ -183,7 +186,7 @@ class CudaGPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-	
+
 	private:
 	DeviceMemPool* pool;
 };

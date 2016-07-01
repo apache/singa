@@ -89,7 +89,7 @@ class Tensor(object):
         data = np.array(data, dtype=dt).reshape(self.tuple_shape)
         return data
 
-    def copy_to_numpy(self):
+    def to_numpy(self):
         ''' this method gets the values of tensor data and
             returns it as numpy array
         '''
@@ -322,7 +322,7 @@ def from_numpy(np_array):
 
 
 def to_numpy(t):
-    return t.copy_to_numpy()
+    return t.to_numpy()
 
 
 def abs(t):
