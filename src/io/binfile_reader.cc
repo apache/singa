@@ -49,10 +49,14 @@ bool BinFileReader::Read(std::string* key, std::string* value) {
   offset_ += smagic;
 
   if (magic[0] == kMagicWord[0] && magic[1] == kMagicWord[1]) {
-    if (magic[2] != 0 && magic[2] != 1) return false;
+    if (magic[2] != 0 && magic[2] != 1)
+      LOG(FATAL) << "File format error: magic word does not match!";
     if (magic[2] == 1)
       if (!ReadField(key)) return false;
     if (!ReadField(value)) return false;
+  }
+  else {
+    LOG(FATAL) << "File format error: magic word does not match!";
   }
   return true;
 }
@@ -80,6 +84,14 @@ int BinFileReader::Count() {
   }
   fin.close();
   return count;
+}
+
+void BinFileReader::SeekToFirst() {
+  bufsize_ = 0;
+  offset_ = 0;
+  fdat_.clear();
+  fdat_.seekg(0);
+  CHECK(fdat_.is_open()) << "Cannot create file " << path_;
 }
 
 bool BinFileReader::OpenFile() {
@@ -112,7 +124,7 @@ bool BinFileReader::PrepareNextField(int size) {
     } else {
       fdat_.read(buf_ + bufsize_, capacity_ - bufsize_);
       bufsize_ += fdat_.gcount();
-      if (size > bufsize_) return false;
+      CHECK_LE(size, bufsize_) << "Field size is too large: " << size;
     }
   }
   return true;

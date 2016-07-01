@@ -19,9 +19,16 @@
 #ifndef SINGA_IO_WRITER_H_
 #define SINGA_IO_WRITER_H_
 
-#include <string>
 #include <cstring>
 #include <fstream>
+#include <string>
+#include "singa/singa_config.h"
+
+#ifdef USE_LMDB
+#include <lmdb.h>
+#include <sys/stat.h>
+#include <vector>
+#endif  // USE_LMDB
 
 namespace singa {
 namespace io {
@@ -73,7 +80,7 @@ class BinFileWriter : public Writer {
   /// \copydoc Open(const std::string &path, Mode mode)
   bool Open(const std::string &path, Mode mode) override;
   /// \copydoc Open(const std::string& path), user defines capacity
-  bool Open(const std::string& path, Mode mode, int capacity);
+  bool Open(const std::string &path, Mode mode, int capacity);
   /// \copydoc Close()
   void Close() override;
   /// \copydoc Write(const std::string& key, const std::string& value) override;
@@ -100,7 +107,7 @@ class BinFileWriter : public Writer {
   /// bytes in buf_
   int bufsize_ = 0;
   /// magic word
-  const char kMagicWord[2]= {'s', 'g'};
+  const char kMagicWord[2] = {'s', 'g'};
 };
 
 /// TextFileWriter write training/validation/test tuples in CSV file.
@@ -125,6 +132,39 @@ class TextFileWriter : public Writer {
   /// ofstream
   std::ofstream fdat_;
 };
+
+#ifdef USE_LMDB
+/// LMDBWriter write training/validation/test tuples into LMDB.
+class LMDBWriter : public Writer {
+ public:
+  ~LMDBWriter() { Close(); }
+  /// \copydoc Open(const std::string &path, Mode mode)
+  bool Open(const std::string &path, Mode mode) override;
+  /// \copydoc Close()
+  void Close() override;
+  /// \copydoc Write(const std::string& key, const std::string& value) override;
+  bool Write(const std::string &key, const std::string &value) override;
+  /// \copydoc Flush()
+  void Flush() override;
+  /// return path to text file
+  inline std::string path() { return path_; }
+
+ protected:
+  void DoubleMapSize();
+  inline void MDB_CHECK(int mdb_status);
+
+ private:
+  /// file to be written
+  std::string path_ = "";
+  /// kCreate or kAppend
+  Mode mode_;
+  /// lmdb env variable
+  MDB_env *mdb_env_ = nullptr;
+  /// buffer for key-value pairs
+  std::vector<string> keys, values;
+};
+#endif  // USE_LMDB
+
 }  // namespace io
 }  // namespace singa
 

@@ -22,6 +22,13 @@
 #include <cstring>
 #include <fstream>
 #include <string>
+#include "singa/singa_config.h"
+
+#ifdef USE_LMDB
+#include <lmdb.h>
+#include <sys/stat.h>
+#include <vector>
+#endif  // USE_LMDB
 
 namespace singa {
 namespace io {
@@ -46,12 +53,17 @@ class Reader {
   virtual void Close() = 0;
 
   /// Read a tuple.
-  /// return true if read successfully, otherwise false.
+  /// return true if read successfully;
+  /// return flase if coming to the end of the file;
+  /// LOG(FATAL) if error happens.
   virtual bool Read(std::string* key, std::string* value) = 0;
 
   /// Iterate through all tuples to get the num of all tuples.
   /// return num of tuples
   virtual int Count() = 0;
+
+  /// Seek to the first tuple when the cursor arrives to the end of the file
+  virtual void SeekToFirst() = 0;
 };
 
 /// Binfilereader reads tuples from binary file with key-value pairs.
@@ -68,6 +80,8 @@ class BinFileReader : public Reader {
   bool Read(std::string* key, std::string* value) override;
   /// \copydoc Count()
   int Count() override;
+  /// \copydoc SeekToFirst()
+  void SeekToFirst() override;
   /// return path to binary file
   inline std::string path() { return path_; }
 
@@ -110,6 +124,8 @@ class TextFileReader : public Reader {
   bool Read(std::string* key, std::string* value) override;
   /// \copydoc Count()
   int Count() override;
+  /// \copydoc SeekToFirst()
+  void SeekToFirst() override;
   /// return path to text file
   inline std::string path() { return path_; }
 
@@ -121,6 +137,51 @@ class TextFileReader : public Reader {
   /// current line number
   int lineNo_ = 0;
 };
+
+#ifdef USE_LMDB
+/// LMDBReader reads tuples from LMDB.
+class LMDBReader : public Reader {
+ public:
+  ~LMDBReader() { Close(); }
+  /// \copydoc Open(const std::string& path)
+  bool Open(const std::string& path) override;
+  /// \copydoc Close()
+  void Close() override;
+  /// \copydoc Read(std::string* key, std::string* value)
+  bool Read(std::string* key, std::string* value) override;
+  /// \copydoc Count()
+  int Count() override;
+  /// \copydoc SeekToFirst()
+  void SeekToFirst() override;
+  /// Return path to text file
+  inline std::string path() { return path_; }
+  /// Return valid, to indicate SeekToFirst();
+  inline bool valid() { return valid_; }
+
+ protected:
+  /// Seek to a certain position: MDB_FIRST, MDB_NEXT
+  void Seek(MDB_cursor_op op);
+  inline void MDB_CHECK(int mdb_status);
+
+ private:
+  /// file to be read
+  std::string path_ = "";
+  /// lmdb env variable
+  MDB_env* mdb_env_ = nullptr;
+  /// lmdb db instance
+  MDB_dbi mdb_dbi_;
+  /// lmdb transaction
+  MDB_txn* mdb_txn_ = nullptr;
+  /// lmdb cursor
+  MDB_cursor* mdb_cursor_ = nullptr;
+  /// lmdb key-value pair
+  MDB_val mdb_key_, mdb_value_;
+  /// whether the pair is found
+  bool valid_;
+  /// whether the cursor is at the first place
+  bool first_;
+};
+#endif  // USE_LMDB
 }  // namespace io
 }  // namespace singa
 

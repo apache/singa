@@ -59,5 +59,11 @@ int TextFileReader::Count() {
   return count;
 }
 
+void TextFileReader::SeekToFirst() {
+  CHECK(fdat_ != nullptr);
+  lineNo_ = 0;
+  fdat_.clear();
+  fdat_.seekg(0);
+}
 }  // namespace io
 }  // namespace singa
