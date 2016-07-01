@@ -62,33 +62,6 @@ class Tensor(object):
             self.device = device
             self.dtype = dtype
 
-    def to_array(self):
-        # TODO(chonho): depreciated (will be deleted later)
-        idx = self.singa_tensor.data_type()
-        if idx == kFloat32:
-            data_array = singa.floatArray_frompointer(
-                             self.singa_tensor.floatData())
-            dt = np.float32
-        elif idx == kFloat16:
-            print 'not implemented yet'
-            return
-        elif idx == kInt:
-            data_array = singa.intArray_frompointer(
-                             self.singa_tensor.intData())
-            dt = np.int32
-        elif idx == kChar:
-            data_array = singa.charArray_frompointer(
-                             self.singa_tensor.charData())
-            dt = np.int8
-        elif idx == kDouble:
-            data_array = singa.doubleArray_frompointer(
-                             self.singa_tensor.doubleData())
-            dt = np.float64
-
-        data = [data_array[i] for i in range(self.singa_tensor.Size())]
-        data = np.array(data, dtype=dt).reshape(self.tuple_shape)
-        return data
-
     def copy_from_numpy(self, np_array, offset=0):
         ''' this method stores the values of numpy array into tensor data
             from the position of offset
@@ -411,6 +384,7 @@ def add(lhs, rhs, ret=None):
             singa.Add_Tf_out(lhs.singa_tensor, rhs, ret.singa_tensor)
         return ret
 
+
 def sub(lhs, rhs, ret=None):
     if ret is None:
         # call Tensor.__sub__()
@@ -459,12 +433,6 @@ def div(lhs, rhs, ret=None):
         else:
             singa.Div_Tf_out(lhs.singa_tensor, rhs, ret.singa_tensor)
         return ret
-
-
-def axypbz(alpha, A, B, b, C):
-    # TODO(chonho): depreciated (will be deleted later)
-    singa.floatMult(alpha, A.singa_tensor, B.singa_tensor, b, C.singa_tensor)
-    return C
 
 
 def axpy(alpha, x, y):
@@ -541,3 +509,4 @@ def _call_singa_func(_singa_func, *args):
     new_t.device = new_t.singa_tensor.device()
     new_t.dtype = new_t.singa_tensor.data_type()
     return new_t
+

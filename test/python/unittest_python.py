@@ -114,8 +114,23 @@ class TestTensorMethods(unittest.TestCase):
         self.assertEqual(to_numpy(a)[0, 0], 1)
 
     def test_tensor_manipulation(self):
-        # TODO(chonho)
-        pass
+        t = self.t
+        arr = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.float32)
+        t.copy_from_numpy(arr)
+        s = Tensor((3,1))
+        arr = np.array([7, 8, 9], dtype=np.float32)
+        s.copy_from_numpy(arr)
+        t.add_column(s)
+        self.assertEqual(to_numpy(t)[0, 0], 1+7)
+        self.assertEqual(to_numpy(t)[1, 0], 3+8)
+        self.assertEqual(to_numpy(t)[1, 1], 4+8)
+
+        arr = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.float32)
+        t.copy_from_numpy(arr)
+        add_column(2, s, 3, t)
+        self.assertEqual(to_numpy(t)[0, 0], 3*1+2*7)
+        self.assertEqual(to_numpy(t)[1, 0], 3*3+2*8)
+        self.assertEqual(to_numpy(t)[1, 1], 3*4+2*8)
 
     def test_random_operations(self):
         # TODO(chonho)
