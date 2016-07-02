@@ -41,16 +41,28 @@ CudaGPU::~CudaGPU() {
     CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
   }
 #endif
-  delete pool;
+}
+const int kNumCudaStream = 1;
+
+CudaGPU::CudaGPU(int id) : Device(id, kNumCudaStream) {
+  MemPoolConf conf;
+  conf.add_device(id);
+  pool_ = std::make_shared<CnMemPool>(conf);
+  Setup();
 }
 
-CudaGPU::CudaGPU(int id, int num_executors, string scheduler, string vm)
-    : Device(id, num_executors, scheduler, vm) {
-  if (id == -1) id = FindDevice(0);
+CudaGPU::CudaGPU(int id, std::shared_ptr<DeviceMemPool> pool)
+    : Device(id, kNumCudaStream) {
+  CHECK_NE(pool, nullptr);
+  pool_ = pool;
+  Setup();
+}
+
+void CudaGPU::Setup() {
   lang_ = kCuda;
   ctx_.stream = NULL;  // use the default sync stream
   // TODO(wangwei) create one handle for each steam?
-  CUDA_CHECK(cudaSetDevice(FindDevice(0)));
+  CUDA_CHECK(cudaSetDevice(id_));
   // use curandCreateGeneratorHost for CudaHost device
   CURAND_CHECK(
       curandCreateGenerator(&ctx_.curand_generator, CURAND_RNG_PSEUDO_DEFAULT));
@@ -65,46 +77,6 @@ CudaGPU::CudaGPU(int id, int num_executors, string scheduler, string vm)
   auto status = cudnnCreate(&ctx_.cudnn_handle);
   CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
 #endif  // USE_CUDNN
-
-  // initialize cnmem memory management as default
-  pool = new CnMemPool();
-  ((CnMemPool*)pool)->InitPool();
-}
-
-CudaGPU::CudaGPU(const MemPoolConf& mem_conf, int id, int num_executors,
-                 string scheduler)
-    : Device(id, num_executors, scheduler, "gc-only") {
-  if (id == -1) id = FindDevice(0);
-  lang_ = kCuda;
-  ctx_.stream = NULL;  // use the default sync stream
-  // TODO(wangwei) create one handle for each steam?
-  CUDA_CHECK(cudaSetDevice(FindDevice(0)));
-  // use curandCreateGeneratorHost for CudaHost device
-  CURAND_CHECK(
-      curandCreateGenerator(&ctx_.curand_generator, CURAND_RNG_PSEUDO_DEFAULT));
-  auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-  SetRandSeed(seed);
-  // TODO(wangwei) if one generator per stream, then need diff offset per gen?
-  CURAND_CHECK(curandSetGeneratorOffset(ctx_.curand_generator, 0));
-  CUBLAS_CHECK(cublasCreate(&(ctx_.cublas_handle)));
-
-#ifdef USE_CUDNN
-  // TODO(wangwei) create one handle for each stream?
-  auto status = cudnnCreate(&ctx_.cudnn_handle);
-  CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
-#endif  // USE_CUDNN
-
-  // initialize memory management for cuda devices
-  string memoryPoolType = mem_conf.type();
-  if (memoryPoolType.compare("cnmem") == 0) {
-    pool = new CnMemPool();
-    int num_devices = mem_conf.num_devices();
-    size_t alloc_size = mem_conf.alloc_size();
-    unsigned flag = mem_conf.cnmemflag();
-    ((CnMemPool*)pool)->InitPool(num_devices, alloc_size, flag);
-  } else {
-    pool = new CudaMemPool();
-  }
 }
 
 void CudaGPU::SetRandSeed(unsigned seed) {
@@ -121,12 +93,22 @@ void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
   // cudaMemcpyAsync(dst, src, nBytes,cudaMemcpyDefault, ctx_.stream);
 }
 
+size_t CudaGPU::GetAllocatedMem() {
+  if (pool_ != nullptr) {
+    auto ret = pool_->GetMemUsage();
+    return ret.second - ret.first;
+  }
+  LOG(ERROR) << "The memory pool is not set";
+  return 0u;
+}
+
 /// Allocate gpu memory.
 void* CudaGPU::Malloc(int size) {
   void* ptr = nullptr;
   if (size > 0) {
-    // CUDA_CHECK(cudaMalloc((void**)&ptr,size));
-    pool->Malloc((void**)&ptr, size);
+    CUDA_CHECK(cudaSetDevice(id_));
+    pool_->Malloc((void**)&ptr, size);
+    // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
   return ptr;
@@ -135,61 +117,9 @@ void* CudaGPU::Malloc(int size) {
 /// Free gpu memory.
 void CudaGPU::Free(void* ptr) {
   if (ptr != nullptr) {
-    // CUDA_CHECK(cudaFree(ptr));
-    pool->Free(ptr);
+    CUDA_CHECK(cudaSetDevice(id_));
+    pool_->Free(ptr);
   }
-}
-
-// ==========Following code is from Caffe src/caffe/common.cpp=================
-
-void CudaGPU::DeviceQuery() {
-  cudaDeviceProp prop;
-  int device;
-  if (cudaSuccess != cudaGetDevice(&device)) {
-    printf("No cuda device present.\n");
-    return;
-  }
-  CUDA_CHECK(cudaGetDeviceProperties(&prop, device));
-  LOG(INFO) << "Device id:                     " << device;
-  LOG(INFO) << "Major revision number:         " << prop.major;
-  LOG(INFO) << "Minor revision number:         " << prop.minor;
-  LOG(INFO) << "Name:                          " << prop.name;
-  LOG(INFO) << "Total global memory:           " << prop.totalGlobalMem;
-  LOG(INFO) << "Total shared memory per block: " << prop.sharedMemPerBlock;
-  LOG(INFO) << "Total registers per block:     " << prop.regsPerBlock;
-  LOG(INFO) << "Warp size:                     " << prop.warpSize;
-  LOG(INFO) << "Maximum memory pitch:          " << prop.memPitch;
-  LOG(INFO) << "Maximum threads per block:     " << prop.maxThreadsPerBlock;
-  LOG(INFO) << "Maximum dimension of block:    " << prop.maxThreadsDim[0]
-            << ", " << prop.maxThreadsDim[1] << ", " << prop.maxThreadsDim[2];
-  LOG(INFO) << "Maximum dimension of grid:     " << prop.maxGridSize[0] << ", "
-            << prop.maxGridSize[1] << ", " << prop.maxGridSize[2];
-  LOG(INFO) << "Clock rate:                    " << prop.clockRate;
-  LOG(INFO) << "Total constant memory:         " << prop.totalConstMem;
-  LOG(INFO) << "Texture alignment:             " << prop.textureAlignment;
-  LOG(INFO) << "Concurrent copy and execution: " << (prop.deviceOverlap ? "Yes"
-                                                                        : "No");
-  LOG(INFO) << "Number of multiprocessors:     " << prop.multiProcessorCount;
-  LOG(INFO) << "Kernel execution timeout:      "
-            << (prop.kernelExecTimeoutEnabled ? "Yes" : "No");
-  return;
-}
-
-bool CudaGPU::CheckDevice(const int device_id) {
-  bool r = ((cudaSuccess == cudaSetDevice(device_id)) &&
-            (cudaSuccess == cudaFree(0)));
-  // reset any error that may have occurred.
-  cudaGetLastError();
-  return r;
-}
-
-int CudaGPU::FindDevice(const int start_id) {
-  int count = 0;
-  CUDA_CHECK(cudaGetDeviceCount(&count));
-  for (int i = start_id; i < count; i++) {
-    if (CheckDevice(i)) return i;
-  }
-  return -1;
 }
 
 }  // namespace singa

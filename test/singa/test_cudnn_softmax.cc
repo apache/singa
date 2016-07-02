@@ -43,7 +43,7 @@ TEST(CudnnSoftmax, Setup) {
 TEST(CudnnSoftmax, Forward1D) {
   const float x[] = {1.f, 2.f, 0.f, -2.f, -3.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Shape shape = {n};
   singa::Tensor in(shape, cuda);
   in.CopyDataFromHostPtr<float>(x, n);
@@ -69,7 +69,7 @@ TEST(CudnnSoftmax, Backward1D) {
   const float x[] = {1.f, 2.f, 3.f, -2.f, -3.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
   singa::Shape shape = {n};
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(shape, cuda);
   in.CopyDataFromHostPtr<float>(x, n);
 
@@ -103,7 +103,7 @@ TEST(CudnnSoftmax, Forward2D) {
   size_t n = sizeof(x) / sizeof(float);
   size_t batch = 2, c = 3;
   singa::Shape shape = {batch, c};
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(shape, cuda);
   in.CopyDataFromHostPtr<float>(x, n);
 
@@ -130,7 +130,7 @@ TEST(CudnnSoftmax, Backward2D) {
   const float x[] = {1.f, 2.f, 3.f, -2.f, -3.f, -1.f};
   size_t n = sizeof(x) / sizeof(float);
   size_t batch = 2, c = 3;
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Shape shape = {batch, c};
   singa::Tensor in(shape, cuda);
   in.CopyDataFromHostPtr<float>(x, n);

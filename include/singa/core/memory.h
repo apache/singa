@@ -19,9 +19,14 @@
 #ifndef SINGA_CORE_MEMORY_H_
 #define SINGA_CORE_MEMORY_H_
 
-#include "cnmem.h"
-#include "singa/singa_config.h"
 #include <mutex>
+#include "singa/proto/core.pb.h"
+#include "singa/singa_config.h"
+
+#ifdef USE_CUDA
+#include "cnmem.h"
+#endif
+
 
 namespace singa {
 
@@ -30,34 +35,41 @@ class VirtualMemory {};
 
 class DeviceMemPool {
  public:
-  virtual void InitPool() = 0;
-  virtual void Malloc(void** ptr, const size_t size) = 0;
-  virtual void Free(void* ptr) = 0;
+  virtual void Malloc(void** ptr, const size_t size)  = 0;
+  virtual void Free(void* ptr)  = 0;
+
+  /// Return a pair for free and total memory managed by this pool.
+  virtual std::pair<size_t, size_t> GetMemUsage() {
+    return std::make_pair(0u, 0u);
+  }
   virtual ~DeviceMemPool(){};
+
+ protected:
+  size_t usage_;
+//  size_t init_size_ = 0, max_size_ = 0;
 };
 
 #ifdef USE_CUDA
 class CnMemPool : public DeviceMemPool {
  public:
-  int status = 1;
-
-  void InitPool();
-
-  /// numDevices: total number of available GPU cards.
-  /// initSize: all devices will be allocated with this size
-  /// manager_flags: pool manager flag (one for all devices)
-  /// flag = 0; default flag
-  /// flag = 1: Prevent the manager from growing its memory consumption
-  /// flag = 2; Prevent the manager from stealing memory.
-  void InitPool(int numDevices, size_t initSize, unsigned flag);
+  // Create the mem pool by setting the devices [0, numDevices), and
+  // initial pool size (MB), and max pool size (no effect currently).
+  CnMemPool(int numDevices = 1, size_t init_size = 256, size_t max_size = 0);
+  CnMemPool(const MemPoolConf& conf);
 
   void Malloc(void** ptr, const size_t size);
   void Free(void* ptr);
 
+  std::pair<size_t, size_t> GetMemUsage() override;
+
   // release all memory and set cnmem manager to unintialized
   ~CnMemPool();
 
+ protected:
+  void Init();
+
  private:
+  MemPoolConf conf_;
   // whether the (global) memory pool has been initialized
   static bool initialized;
   // lock on the initialized variable
@@ -66,10 +78,8 @@ class CnMemPool : public DeviceMemPool {
 
 class CudaMemPool : public DeviceMemPool {
  public:
-  void InitPool(){};
-  void Malloc(void** ptr, const size_t size);
-  void Free(void* ptr);
-  ~CudaMemPool(){};
+  void Malloc(void** ptr, const size_t size) override;
+  void Free(void* ptr) override;
 };
 #endif
 }  // namespace singa

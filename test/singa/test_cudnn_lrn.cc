@@ -58,7 +58,7 @@ TEST(CudnnLRN, Forward) {
     0.0597329, -0.0530868, 0.0124246, 0.108429,
     0.0451175, 0.0247055, 0.0304345, 0.0179575
   };
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{1,2,4,4}, cuda);
   in.CopyDataFromHostPtr(x, 1*2*4*4);
 
@@ -127,7 +127,7 @@ TEST(CudnnLRN, Backward) {
     0.0597329, -0.0530868, 0.0124246, 0.108429,
     0.0451175, 0.0247055, 0.0304345, 0.0179575
   };
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor x_tensor(singa::Shape{1,2,4,4}, cuda);
   x_tensor.CopyDataFromHostPtr(x, 1*2*4*4);
 

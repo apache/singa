@@ -7,6 +7,7 @@
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <curand.h>
 
 inline const char* cublasGetErrorString(cublasStatus_t error) {
   switch (error) {

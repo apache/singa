@@ -18,6 +18,7 @@
 * under the License.
 *
 *************************************************************/
+
 #include "./cifar10.h"
 #include "singa/model/feed_forward_net.h"
 #include "singa/model/optimizer.h"

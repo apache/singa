@@ -76,3 +76,4 @@ class CudaGPU(Device):
 
     def __init__(self, id=0, num_executors=1, scheduler='sync', vm='gc-only'):
         super(CudaGPU, self).__init__(id, num_executors, scheduler, vm, 'gpu')
+

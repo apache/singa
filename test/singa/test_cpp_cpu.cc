@@ -26,12 +26,12 @@
 using singa::CppCPU;
 using singa::Block;
 TEST(CppCPU, Constructor) {
-  CppCPU dev(0, 1);
+  CppCPU dev;
   EXPECT_EQ(0, dev.id());
 }
 
 TEST(CppCPU, MemoryMallocFree) {
-  CppCPU dev(0, 1);
+  CppCPU dev;
   Block* b = dev.NewBlock(4);
   EXPECT_NE(nullptr, b);
   EXPECT_EQ(4u, b->size());
@@ -39,7 +39,7 @@ TEST(CppCPU, MemoryMallocFree) {
 }
 
 TEST(CppCPU, Exec) {
-  CppCPU dev(0, 1);
+  CppCPU dev;
   Block* b = dev.NewBlock(4);
   int x = 1, y =3, z = 0;
   dev.Exec([x, y, &z](singa::Context *ctx) {
@@ -49,7 +49,7 @@ TEST(CppCPU, Exec) {
 }
 
 TEST(CppCPU, CopyData) {
-  CppCPU dev(0, 1);
+  CppCPU dev;
   Block* b = dev.NewBlock(4);
   char s[] = {'a', 'b', 'c', 'x'};
   dev.CopyDataFromHostPtr(b, s, 4);

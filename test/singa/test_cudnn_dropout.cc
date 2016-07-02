@@ -49,7 +49,7 @@ TEST(CudnnDropout, Setup) {
 TEST(CudnnDropout, Forward) {
   const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
   size_t n = sizeof(x) / sizeof(float);
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{n}, cuda);
   in.CopyDataFromHostPtr(x, n);
 
@@ -90,7 +90,7 @@ TEST(CudnnDropout, Forward) {
 TEST(CudnnDropout, Backward) {
   const float x[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
   size_t n = sizeof(x) / sizeof(float);
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{n}, cuda);
   in.CopyDataFromHostPtr(x, n);
 
