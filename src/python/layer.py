@@ -78,4 +78,3 @@ class Conv2D(Layer):
         self.conf.convolution_conf.CopyFrom(conf)
 
         self.setup(self.conf)
-
