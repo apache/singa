@@ -27,14 +27,12 @@ import math
 import unittest
 import numpy as np
 
-sys.path.append(os.path.join(os.path.dirname(__file__),
-                             '../../src/python'))
-from tensor import *
-from device import *
+sys.path.append(os.path.join(os.path.dirname(__file__),'../../build/python'))
 
-sys.path.append(os.path.join(os.path.dirname(__file__),
-                             '../../build/src'))
-from core_pb2 import *
+from singa.tensor import *
+from singa.device import *
+
+from singa.proto.core_pb2 import *
 
 class TestTensorMethods(unittest.TestCase):
 

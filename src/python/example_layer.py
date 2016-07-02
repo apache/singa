@@ -1,10 +1,8 @@
 import sys, os
 
-from layer import *
+from .layer import *
 
-sys.path.append(os.path.join(os.path.dirname(__file__),
-                             '..'))
-from model_pb2 import *
+from .proto.model_pb2 import *
 
 #---------------------------------------------------------
 # example usage
