@@ -24,12 +24,10 @@
 import sys
 import os
 import numpy as np
-import singa
+from . import singa
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
-
-from core_pb2 import *
-from model_pb2 import *
+from .proto.core_pb2 import *
+from .proto.model_pb2 import *
 
 
 class Layer(object):
