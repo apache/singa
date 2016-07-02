@@ -29,11 +29,7 @@ import sys
 import os
 import numpy as np
 
-sys.path.append(os.path.join(os.path.dirname(__file__),
-                             '../../build/lib'))
-sys.path.append(os.path.join(os.path.dirname(__file__),
-                             '../../build/python'))
-import singa
+from . import singa
 
 
 class Device(object):

@@ -6,7 +6,7 @@ INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 #message(STATUS "include: ${CMAKE_BINARY_DIR} ")
 #message(STATUS "srcs: ${proto_srcs}")
 #message(STATUS "hdrs: ${proto_hdrs}")
-#message(STATUS "pys: ${proto_pys}")
+message(STATUS "pys: ${proto_pys}")
 ADD_LIBRARY(proto STATIC ${proto_hdrs} ${proto_srcs} ${proto_pys})
 FOREACH(fil ${proto_hdrs})
     ADD_CUSTOM_COMMAND(
@@ -81,11 +81,25 @@ LIST(APPEND SINGA_LINKER_LIBS singa_io)
 IF(USE_PYTHON)
     FILE(GLOB python_files python/swig/singa.i)
     swig_generate_cxx(python_srcs ${python_files})
+    FILE(COPY python/ DESTINATION ${CMAKE_BINARY_DIR}/python/singa FILES_MATCHING PATTERN "swig" EXCLUDE PATTERN "*.py")
     SET(python_cxxs "${CMAKE_SOURCE_DIR}/src/core/tensor/tensor.cc;${CMAKE_SOURCE_DIR}/src/core/device/device.cc")
     ADD_LIBRARY(_singa SHARED ${python_srcs} ${python_cxxs})
     SET(WRAPPER_LINKER_LIBS "${SINGA_LINKER_LIBS};protobuf")
     TARGET_LINK_LIBRARIES(_singa ${WRAPPER_LINKER_LIBS})
     TARGET_INCLUDE_DIRECTORIES(_singa PRIVATE ${PYTHON_INCLUDE_DIRS})
+    #message(STATUS "PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS}")
+    
     SET_TARGET_PROPERTIES(_singa
-        PROPERTIES PREFIX "")
+        PROPERTIES PREFIX ""
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa
+        )
+
+    #SETUP
+    SET(SETUP_PY_IN "python/setup.py.in")
+    set(SETUP_PY    "${CMAKE_BINARY_DIR}/python/setup.py")
+    configure_file(${SETUP_PY_IN} ${SETUP_PY})
+    
+    #COPY protobuf files to python/singa/proto
+    FILE(COPY ${CMAKE_BINARY_DIR}/python/singa/__init__.py DESTINATION ${CMAKE_BINARY_DIR}/python/singa/proto )
+
 ENDIF(USE_PYTHON)

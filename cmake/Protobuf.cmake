@@ -12,12 +12,12 @@ function(PROTOBUF_GENERATE_PYTHON OUTPUT)
         get_filename_component(FIL_WE ${FIL} NAME_WE)
         get_filename_component(PATH ${FIL} PATH)
 
-        list(APPEND ${OUTPUT} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}_pb2.py")
+        list(APPEND ${OUTPUT} "${CMAKE_BINARY_DIR}/python/singa/proto/${FIL_WE}_pb2.py")
 
         add_custom_command(
-            OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}_pb2.py"
+            OUTPUT "${CMAKE_BINARY_DIR}/python/singa/proto/${FIL_WE}_pb2.py"
             COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
-            ARGS --python_out ${CMAKE_CURRENT_BINARY_DIR}
+            ARGS --python_out ${CMAKE_BINARY_DIR}/python/singa/proto
                  --proto_path ${PATH} ${ABS_FIL}
             DEPENDS ${ABS_FIL}
             COMMENT "Running Python protocol buffer compiler on ${FIL}" VERBATIM)
