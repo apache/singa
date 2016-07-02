@@ -29,7 +29,6 @@ ELSEIF(USE_CUDA)
     OPTION(USE_CUDNN "Use Cudnn libs" OFF)
 ENDIF()
 INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
-
 INCLUDE("cmake/Dependencies.cmake")
 INCLUDE("cmake/Utils.cmake")
 ADD_DEFINITIONS(-DUSE_CMAKE)
