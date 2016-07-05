@@ -17,21 +17,25 @@
  */
 
 #include "singa/core/platform.h"
-#include "singa/core/device.h"
-#include "singa/singa_config.h"
 
-#ifdef USE_CUDA
-#include "singa/utils/cuda_utils.h"
-#endif // USE_CUDA
+using std::vector;
+using std::shared_ptr;
 
 namespace singa {
 
+Platform::Platform() {
+#ifdef USE_OPENCL
+  cl_int status = CL_SUCCESS;
+  status = cl::Platform::get(&clPlatform);
+#endif // USE_OPENCL
+}
 
 int Platform::GetNumGPUs() {
   int count;
   CUDA_CHECK(cudaGetDeviceCount(&count));
   return count;
 }
+
 
 bool Platform::CheckDevice(const int device_id) {
   bool r = ((cudaSuccess == cudaSetDevice(device_id)) &&
@@ -40,6 +44,7 @@ bool Platform::CheckDevice(const int device_id) {
   cudaGetLastError();
   return r;
 }
+
 
 /// Return the total num of free GPUs
 const vector<int> Platform::GetGPUIDs() {
@@ -52,6 +57,7 @@ const vector<int> Platform::GetGPUIDs() {
   }
   return gpus;
 }
+
 
 const std::pair<size_t, size_t> Platform::GetGPUMemSize(const int device) {
   std::pair<size_t, size_t> ret{ 0, 0 };
@@ -66,6 +72,7 @@ const std::pair<size_t, size_t> Platform::GetGPUMemSize(const int device) {
   return ret;
 }
 
+
 const vector<std::pair<size_t, size_t>> Platform::GetGPUMemSize() {
   vector<std::pair<size_t, size_t>> mem;
   int count = Platform::GetNumGPUs();
@@ -74,6 +81,10 @@ const vector<std::pair<size_t, size_t>> Platform::GetGPUMemSize() {
   }
   return mem;
 }
+
+////////////////////////////////////////////////////////////
+/////////////////////// CUDA Methods ///////////////////////
+////////////////////////////////////////////////////////////
 
 const string Platform::DeviceQuery(int device, bool verbose) {
   if (cudaSuccess != cudaGetDevice(&device)) {
@@ -112,6 +123,7 @@ const string Platform::DeviceQuery(int device, bool verbose) {
   return out.str();
 }
 
+
 const vector<shared_ptr<Device> >
 Platform::CreateCudaGPUs(const size_t num_devices, size_t init_size) {
   const vector<int> gpus = GetGPUIDs();
@@ -119,6 +131,7 @@ Platform::CreateCudaGPUs(const size_t num_devices, size_t init_size) {
   vector<int> use_gpus(gpus.begin(), gpus.begin() + num_devices);
   return CreateCudaGPUs(use_gpus, init_size);
 }
+
 
 const vector<shared_ptr<Device> >
 Platform::CreateCudaGPUs(const vector<int> &devices, size_t init_size) {
@@ -140,6 +153,51 @@ Platform::CreateCudaGPUs(const vector<int> &devices, size_t init_size) {
   return ret;
 }
 
-} // namespace singa
+////////////////////////////////////////////////////////////
+////////////////////// OpenCL Methods //////////////////////
+////////////////////////////////////////////////////////////
 
-#endif // USE_CUDA
+#ifdef USE_OPENCL
+const vector<shared_ptr<Device>> Platform::CreateOpenclDevices(const size_t num_devices) {
+  vector<shared_ptr<Device>> device_list;
+
+  for (int i = 0; i < num_devices; i++) {
+	for (auto p : clPlatform) {
+	  vector<cl::Device> clDevices;
+	  for (auto d : clDevices) {
+		device_list.emplace_back(new OpenclDevice(d));
+	  }
+	}
+  }
+
+  return device_list;
+}
+
+
+const vector<shared_ptr<Device>> Platform::CreateOpenclDevices(const vector<int>& id) {
+  vector<shared_ptr<Device>> device_list;
+
+  for (int i = 0; i < num_devices; i++) {
+	for (auto p : clPlatform) {
+	  vector<cl::Device> clDevices;
+	  for (auto d : clDevices) {
+		device_list.emplace_back(new OpenclDevice(id[i]));
+	  }
+	}
+  }
+
+  return device_list;
+}
+#else
+const vector<shared_ptr<Device>> Platform::CreateOpenclDevices(const size_t num_devices) {
+  return {};
+}
+
+
+const vector<shared_ptr<Device>> Platform::CreateOpenclDevices(const vector<int>& id) {
+  return {};
+}
+#endif // USE_OPENCL
+
+
+} // namespace singa

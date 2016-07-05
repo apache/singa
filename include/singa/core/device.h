@@ -34,7 +34,9 @@ using std::vector;
 using std::string;
 using std::function;
 using std::shared_ptr;
+
 namespace singa {
+
 /// Allocate memory and execute Tensor operations.
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
