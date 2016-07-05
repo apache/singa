@@ -16,11 +16,17 @@
  * limitations under the License.
  */
 
+#include "singa/core/platform.h"
 #include "singa/core/device.h"
 #include "singa/singa_config.h"
+
 #ifdef USE_CUDA
 #include "singa/utils/cuda_utils.h"
+#endif // USE_CUDA
+
 namespace singa {
+
+
 int Platform::GetNumGPUs() {
   int count;
   CUDA_CHECK(cudaGetDeviceCount(&count));
@@ -134,5 +140,6 @@ Platform::CreateCudaGPUs(const vector<int> &devices, size_t init_size) {
   return ret;
 }
 
-}  // namespace singa
-#endif  // USE_CUDA
+} // namespace singa
+
+#endif // USE_CUDA
