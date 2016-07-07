@@ -1,7 +1,10 @@
 # generate protobuf sources
+
 FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
-protobuf_generate_python(proto_pys ${proto_files})
+IF (USE_PYTHON)
+    protobuf_generate_python(proto_pys ${proto_files})
+ENDIF()
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 #message(STATUS "include: ${CMAKE_BINARY_DIR} ")
 #message(STATUS "srcs: ${proto_srcs}")
