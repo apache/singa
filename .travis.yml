@@ -5,7 +5,7 @@ dist: trusty
 
 before_install:
  - sudo apt-get -qq update
- - sudo apt-get install -qq -y libopenblas-dev libgoogle-glog-dev libprotobuf-dev protobuf-compiler
+ - sudo apt-get install -qq -y libopenblas-dev libgoogle-glog-dev libprotobuf-dev protobuf-compiler opencl-headers
 #- sudo apt-get install -qq libgtest-dev
 
 before_script:
