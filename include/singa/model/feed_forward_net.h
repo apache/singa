@@ -57,8 +57,8 @@ class FeedForwardNet {
   /// necessary; But for training, both 'opt' and 'loss' are necessary.
   /// 'shuffle' indicates shuffling training samples within one epoch it is
   /// valid using Train();
-  void Compile(bool shuffle, Optimizer* opt, Loss<Tensor>* loss,
-               Metric<Tensor>* metric);
+  void Compile(bool shuffle, Optimizer* opt, Loss* loss,
+               Metric* metric);
 
   /// Conduct the training giving the training data 'x' and label 'y'.
   /// 'val_split' of training data is used for
@@ -121,14 +121,13 @@ class FeedForwardNet {
   const vector<Layer*> layers() const { return layers_; }
   const vector<string> GetParamNames() const;
   const vector<ParamSpec> GetParamSpecs() const;
-  const vector<Tensor*> GetParamValues() const;
-  const vector<Tensor*> GetParamGrads() const;
+  const vector<Tensor> GetParamValues() const;
 
  protected:
   vector<Layer*> layers_;
   Optimizer* opt_;
-  Loss<Tensor>* loss_;
-  Metric<Tensor>* metric_;
+  Loss* loss_;
+  Metric* metric_;
 
   bool shuffle_ = true;
   Device* device_ = nullptr;

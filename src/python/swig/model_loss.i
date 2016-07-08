@@ -21,10 +21,42 @@
 
 /*interface file for swig */
 
-%module singa_wrap
-%include "core_tensor.i"
-%include "core_device.i"
-%include "model_layer.i"
-%include "model_optimizer.i"
-%include "model_loss.i"
-%include "model_metric.i"
+%module model_loss
+%include "std_string.i"
+%{
+#include "singa/model/loss.h"
+  using singa::Tensor;
+%}
+
+namespace singa {
+class Loss {
+public:
+  Loss() = default;
+  virtual ~Loss() {}
+
+  virtual Tensor Forward(int flag, const Tensor &prediction,
+                         const Tensor &target) = 0;
+
+  float Evaluate(int flag, const Tensor &prediction, const Tensor &target);
+
+  /// Compute the gradients of the loss values w.r.t. the prediction.
+  virtual Tensor Backward() = 0;
+};
+
+class MSE : public Loss {
+public:
+  Tensor Forward(int flag, const Tensor &prediction, const Tensor &target)
+      override;
+
+  Tensor Backward() override;
+};
+
+class SoftmaxCrossEntropy : public Loss {
+public:
+  Tensor Forward(int flag, const Tensor &prediction, const Tensor &target)
+      override;
+
+  Tensor Backward() override;
+};
+
+}

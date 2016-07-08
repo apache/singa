@@ -21,6 +21,7 @@
 #include "batchnorm.h"
 
 namespace singa {
+RegisterLayerClass(BatchNorm);
 void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
@@ -39,10 +40,6 @@ void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   // Push back params into param_values_
   // Assume the order of param is: bnScale, bnBias, runningMean, runningVariance
   for (const auto &spec : conf.param()) param_specs_.push_back(spec);
-  param_values_.push_back(&bnScale_);
-  param_values_.push_back(&bnBias_);
-  param_values_.push_back(&runningMean_);
-  param_values_.push_back(&runningVariance_);
 }
 
 void BatchNorm::ToDevice(std::shared_ptr<Device> device) {

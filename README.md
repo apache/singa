@@ -1,5 +1,7 @@
 #Apache SINGA
 
+[![Build Status](https://travis-ci.org/undisputed-seraphim/incubator-singa.png)](https://travis-ci.org/undisputed-seraphim/incubator-singa)
+
 Distributed deep learning system
 
 This is the dev branch for V1.0, please refer to the master branch and the following links for V0.3.

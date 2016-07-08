@@ -31,6 +31,7 @@ class Optimizer(object):
         3. use the optimizer to update parameter values given parameter
             gradients and other optional info
     """
+
     def __init__(self, lr=None, momentum=None, decay=None, lr_gen=None,
                  momentum_gen=None, regularizer=None, constraint=None):
         """Constructor.
@@ -74,14 +75,14 @@ class Optimizer(object):
                 'Cannot set decay and regularizer at the same time'
             regularizer = L2Regularizer(decay)
         if regularizer is not None:
-            if type(regularizer) is model_pb2.RegularizerConf:
+            if isinstance(regularizer, model_pb2.RegularizerConf):
                 self.regularizer = CppRegularizer(regularizer)
             else:
                 self.regularizer = regularizer
         else:
             self.regularizer = None
         if constraint is not None:
-            if type(constraint) is model_pb2.ConstraintConf:
+            if isinstance(constraint, model_pb2.ConstraintConf):
                 self.constraint = CppConstraint(constraint)
             else:
                 self.constraint = constraint
@@ -89,6 +90,8 @@ class Optimizer(object):
             self.constraint = None
         self.regularizers = {}
         self.constraints = {}
+        self.decay_multiplier = {}
+        self.learning_rate_multiplier = {}
 
     def register(self, name, specs):
         """Register the param specs, including creating regularizer and
@@ -99,14 +102,14 @@ class Optimizer(object):
             name (str): parameter name
             specs (ParamSpec): protobuf obj
         """
-        if specs.has_regularizer():
+        if specs.HasField('regularizer'):
             self.regularizers[name] = CppRegularizer(specs.constraint)
-        if specs.has_constraint():
+        if specs.HasField('constraint'):
             self.constraints[name] = CppConstraint(specs.regularizer)
-        if specs.has_lr_mult():
-            self.learning_rate_multiplier[name] = specs.lr_mult()
-        if specs.has_decay_mult():
-            self.decay_multiplier[name] = specs.decay_mult()
+        if specs.lr_mult != 1:
+            self.learning_rate_multiplier[name] = specs.lr_mult
+        if specs.decay_mult != 1:
+            self.decay_multiplier[name] = specs.decay_mult
 
     def apply_regularizer_constraint(self, value, grad, name=None, step=None):
         """Apply regularization and constraint if available.
@@ -174,6 +177,7 @@ class Optimizer(object):
 
 
 class SGD(Optimizer):
+
     def __init__(self, lr=None, momentum=None, decay=None, **kwargs):
         """The vallina Stochasitc Gradient Descent algorithm.
 
@@ -191,6 +195,7 @@ class SGD(Optimizer):
 
 
 class Nesterov(Optimizer):
+
     def __init__(self, lr=None, momentum=0.9, decay=None, **kwargs):
         """The SGD with Nesterov momentum
 
@@ -208,6 +213,7 @@ class Nesterov(Optimizer):
 
 
 class AdaGrad(Optimizer):
+
     def __init__(self, epsilon=1e-8, lr=None, decay=None, **kwargs):
         """AdaGrad optimizer.
 
@@ -228,6 +234,7 @@ class AdaGrad(Optimizer):
 
 
 class RMSProp(Optimizer):
+
     def __init__(self, rho=0.9, epsilon=1e-8, lr=None, decay=None, **kwargs):
         """RMSProp optimizer.
 
@@ -252,6 +259,7 @@ class RMSProp(Optimizer):
 class Regularizer(object):
     """Base Python regularizer for parameter gradients.
     """
+
     def apply(self, value, grad):
         assert False, 'Not Implemented. Call the subclass function.'
         return grad
@@ -260,6 +268,7 @@ class Regularizer(object):
 class CppRegularizer(Regularizer):
     """Wrapper for regularizer implemented using C++.
     """
+
     def __init__(self, conf):
         """Constructor.
 
@@ -276,6 +285,7 @@ class CppRegularizer(Regularizer):
 
 class L2Regularizer(Regularizer):
     """L2 regularization"""
+
     def __init__(self, coefficient):
         """
         Args:
@@ -294,6 +304,7 @@ class L2Regularizer(Regularizer):
 class Constraint(object):
     """Base Python constraint class for paramter gradients.
     """
+
     def apply(self, step, value, grad):
         return grad
 
@@ -301,6 +312,7 @@ class Constraint(object):
 class CppConstraint(Constraint):
     """Wrapper for constraints implemented using C++.
     """
+
     def __init__(self, conf):
         """Constructor.
 
@@ -318,6 +330,7 @@ class CppConstraint(Constraint):
 class L2Constraint(Constraint):
     """Rescale the gradient to make the L2 norm <= a given threshold.
     """
+
     def __init__(self, threshold=None):
         self.threshold = threshold
 
@@ -325,6 +338,6 @@ class L2Constraint(Constraint):
         if threshold is None:
             assert self.threshold is not None, 'Must set the threshold'
             threshold = self.threshold
-        nrm = grad.nrm2()
+        nrm = grad.l2()
         grad *= threshold / nrm
         return grad

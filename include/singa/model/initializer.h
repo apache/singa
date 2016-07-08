@@ -37,7 +37,7 @@ class Initializer {
   /// Set meta fields from user configurations.
   virtual void Setup(const InitializerConf& conf) {}
 
-  virtual void Fill(Tensor* t) = 0;
+  virtual void Fill(Tensor& t) = 0;
 };
 
 namespace init {
@@ -46,7 +46,7 @@ public:
   Constant() = default;
   Constant(const float x) : v_(x) {}
   void Setup(const InitializerConf& conf) override { v_ = conf.value(); }
-  void Fill(Tensor* t) override { t->SetValue(v_); }
+  void Fill(Tensor& t) override { t.SetValue(v_); }
 
  private:
   float v_ = 0;
@@ -60,7 +60,7 @@ public:
     min_ = conf.min();
     max_ = conf.max();
   }
-  void Fill(Tensor* t) override { singa::Uniform(min_, max_, t); }
+  void Fill(Tensor& t) override { singa::Uniform(min_, max_, &t); }
 
  private:
   float min_ = 0, max_ = 1;
@@ -74,7 +74,7 @@ public:
     mean_ = conf.mean();
     std_ = conf.std();
   }
-  void Fill(Tensor* t) override { singa::Gaussian(mean_, std_, t); }
+  void Fill(Tensor& t) override { singa::Gaussian(mean_, std_, &t); }
 
  private:
   float mean_ = 0, std_ = 1;
@@ -84,11 +84,11 @@ public:
 /// feedforward neural networks
 class Xavier : public Initializer {
 public:
-  void Fill(Tensor* t) override {
-    CHECK_EQ(t->nDim(), 2u);
-    float scale = sqrt(6.0f / (t->shape(0) + t->shape(1)));
+  void Fill(Tensor& t) override {
+    CHECK_EQ(t.nDim(), 2u);
+    float scale = sqrt(6.0f / (t.shape(0) + t.shape(1)));
     LOG(INFO) << "xavier scale " << scale;
-    singa::Uniform(-scale, scale, t);
+    singa::Uniform(-scale, scale, &t);
   }
 };
 
@@ -96,10 +96,10 @@ public:
 /// Surpassing Human-Level Performance on ImageNet Classification
 class MSRA : public Initializer {
  public:
-  void Fill(Tensor* t) override {
-    CHECK_EQ(t->nDim(), 2u);
-    float std = sqrt(2.0f / t->shape(0));
-    singa::Gaussian(0.0f, std, t);
+  void Fill(Tensor& t) override {
+    CHECK_EQ(t.nDim(), 2u);
+    float std = sqrt(2.0f / t.shape(0));
+    singa::Gaussian(0.0f, std, &t);
   }
 };
 

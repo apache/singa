@@ -26,7 +26,7 @@ import singa.tensor as tensor
 import singa.optimizer as opt
 import singa.device as device
 
-cuda = device.Platform.create_cuda_gpu()
+cuda = device.create_cuda_gpu()
 
 
 class TestOptimizer(unittest.TestCase):

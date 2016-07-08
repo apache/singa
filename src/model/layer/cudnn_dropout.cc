@@ -27,6 +27,7 @@
 #include "singa/utils/logging.h"
 
 namespace singa {
+RegisterLayerClass(CudnnDropout);
 CudnnDropout::~CudnnDropout() {
   if (drop_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyDropoutDescriptor(drop_desc_));

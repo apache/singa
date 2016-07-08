@@ -25,8 +25,6 @@ Device::Device(int id, int num_executors)
   host_ = defaultDevice;
 }
 
-Device::~Device() {}
-
 void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
                     const vector<Block*> write_blocks, bool use_rand_generator) {
   // TODO(wangwei) execute operations scheduled by the scheduler.

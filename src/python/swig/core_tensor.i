@@ -24,12 +24,15 @@
 %module core_tensor
 %include "std_vector.i"
 %include "std_string.i"
+%include "std_shared_ptr.i"
 
+/*
 %include "carrays.i"
 %array_class(float, floatArray);
 %array_class(int, intArray);
 %array_class(char, charArray);
 %array_class(double, doubleArray);
+*/
 
 %{
 #define SWIG_FILE_WITH_INIT
@@ -39,6 +42,7 @@
 #include "singa/proto/model.pb.h"
 using singa::DataType;
 %}
+%shared_ptr(singa::Device)
 
 %include "numpy.i"
 %init %{
@@ -47,8 +51,14 @@ using singa::DataType;
 %apply (float *IN_ARRAY1, int DIM1) {
        (const float *src, const size_t num)
 }
+%apply (int *IN_ARRAY1, int DIM1) {
+       (const int *src, const size_t num)
+}
 %apply (float *ARGOUT_ARRAY1, int DIM1) {
        (float *value, const size_t num)
+}
+%apply (int *ARGOUT_ARRAY1, int DIM1) {
+       (int *value, const size_t num)
 }
 
 %template(Shape) std::vector<size_t>;
@@ -74,18 +84,18 @@ namespace singa{
            std::shared_ptr<singa::Device> dev, DataType dtype = kFloat32);
     Tensor(const Tensor &from);
 
-    //Blob *blob() const;
     std::shared_ptr<singa::Device> device() const;
-
-    template <typename DType> DType data() const;
-    %template(floatData) data<const float*>;
-    %template(intData) data<const int*>;
-    %template(charData) data<const char*>;
-    %template(doubleData) data<const double*>;
+/*
+    template <typename DType> const DType* data() const;
+    %template(floatData) data<float>;
+    %template(intData) data<int>;
+    %template(charData) data<char>;
+    %template(doubleData) data<double>;
+    */
 
     template <typename SType> void GetValue(SType* value, const size_t num);
     %template(floatGetValue) GetValue<float>;
-    //void ToArray(float *value, const size_t num);
+    %template(intGetValue) GetValue<int>;
 
     const DataType data_type() const;
     const std::vector<size_t> &shape() const;
@@ -99,7 +109,8 @@ namespace singa{
     void AsType(DataType type);
     void ToDevice(std::shared_ptr<singa::Device> dev);
     void ToHost();
-    float L2();
+    float L2() const;
+    float L1() const;
 
     template <typename SType> void SetValue(const SType x);
     %template(floatSetValue) SetValue<float>;
@@ -108,8 +119,9 @@ namespace singa{
 
     template <typename DType> void CopyDataFromHostPtr(const DType *src,
                                                        const size_t num,
-                                                       const size_t offset);
+                                                       const size_t offset = 0);
     %template(floatCopyDataFromHostPtr) CopyDataFromHostPtr<float>;
+    %template(intCopyDataFromHostPtr) CopyDataFromHostPtr<int>;
     // --- other types
 
     void CopyData(const Tensor &other);
@@ -173,6 +185,7 @@ namespace singa{
   /* TODO(chonho-02)
      need to implement the average of all elements ??? */
   Tensor Average(const Tensor &t, int axis);
+  Tensor SoftMax(const Tensor &t);
 
 
   Tensor Pow(const Tensor &base, const Tensor &exp);

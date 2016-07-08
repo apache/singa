@@ -20,6 +20,7 @@
 #include "singa/model/layer.h"
 namespace singa {
 
+RegisterLayerClass(Pooling);
 void Pooling::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   PoolingConf pool_conf = conf.pooling_conf();
@@ -48,7 +49,7 @@ void Pooling::Setup(const Shape& in_sample, const LayerConf& conf) {
     stride_h_ = pool_conf.stride_h();
   }
   CHECK_GT(stride_w_, 0u);
-  CHECK_GT(stride_h_, 0u);
+  CHECK_GE(stride_h_, 0u);  // 0 for 1D pooling
 
   pool_ = pool_conf.pool();
   CHECK(pool_ == PoolingConf_PoolMethod_AVE ||
@@ -60,10 +61,12 @@ void Pooling::Setup(const Shape& in_sample, const LayerConf& conf) {
   channels_ = in_sample.at(0);
   height_ = in_sample.at(1);
   width_ = in_sample.at(2);
-  pooled_height_ =
+  pooled_height_ = 1;
+  if (stride_h_ > 0)
+    pooled_height_ =
       static_cast<size_t>((height_ + 2 * pad_h_ - kernel_h_) / stride_h_) + 1;
   pooled_width_ =
-      static_cast<size_t>((width_ + 2 * pad_w_ - kernel_w_) / stride_w_) + 1;
+    static_cast<size_t>((width_ + 2 * pad_w_ - kernel_w_) / stride_w_) + 1;
   out_sample_shape_ = vector<size_t>{channels_, pooled_height_, pooled_width_};
 }
 

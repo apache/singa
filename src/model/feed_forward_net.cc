@@ -59,8 +59,8 @@ const vector<string> FeedForwardNet::GetParamNames() const {
     for (const auto name : layer->param_names()) names.push_back(name);
   return names;
 }
-const vector<Tensor*> FeedForwardNet::GetParamValues() const {
-  vector<Tensor*> values;
+const vector<Tensor> FeedForwardNet::GetParamValues() const {
+  vector<Tensor> values;
   for (auto layer : layers_)
     for (const auto value : layer->param_values()) values.push_back(value);
   return values;
@@ -73,8 +73,8 @@ const vector<ParamSpec> FeedForwardNet::GetParamSpecs() const {
   return specs;
 }
 
-void FeedForwardNet::Compile(bool shuffle, Optimizer* opt, Loss<Tensor>* loss,
-                             Metric<Tensor>* metric) {
+void FeedForwardNet::Compile(bool shuffle, Optimizer* opt, Loss* loss,
+                             Metric* metric) {
   shuffle_ = shuffle;
   bool train = (opt != nullptr) && (loss != nullptr);
   bool test = metric != nullptr;
@@ -83,13 +83,13 @@ void FeedForwardNet::Compile(bool shuffle, Optimizer* opt, Loss<Tensor>* loss,
   loss_ = loss;
   metric_ = metric;
   const auto specs = GetParamSpecs();
-  const auto params = GetParamValues();
+  auto params = GetParamValues();
   CHECK_EQ(specs.size(), params.size());
   for (size_t k = 0; k < specs.size(); k++) {
     opt_->Register(specs[k].name(), specs[k]);
     auto init = CreateInitializer(specs[k].filler());
     init->Fill(params[k]);
-    LOG(INFO) << specs[k].name() << " : " << params[k]->L1();
+    LOG(INFO) << specs[k].name() << " : " << params[k].L1();
   }
 }
 
@@ -195,7 +195,7 @@ const std::pair<float, float> FeedForwardNet::TrainOnBatch(int epoch,
   auto names = GetParamNames();
   auto values = GetParamValues();
   for (size_t k = 0; k < grads.size(); k++) {
-    opt_->Apply(epoch, names[k], &grads[k], values.at(k));
+    opt_->Apply(epoch, names[k], grads[k], values.at(k));
   }
   return std::make_pair(loss, metric);
 }

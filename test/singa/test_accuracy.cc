@@ -29,7 +29,7 @@ TEST(Accuracy, Compute) {
   const float pdat[6] = {0.1, 0.3, 0.6, 0.3, 0.2, 0.5};
   const int tdat[2] = {1, 2};  // one wrong, one correct
   p.CopyDataFromHostPtr(pdat, sizeof(pdat) / sizeof(float));
-  t.CopyDataFromHostPtr(tdat, sizeof(pdat) / sizeof(float));
+  t.CopyDataFromHostPtr(tdat, sizeof(tdat) / sizeof(int));
   float a = acc.Evaluate(p, t);
   EXPECT_FLOAT_EQ(a, 0.5f);
 }

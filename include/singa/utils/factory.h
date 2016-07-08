@@ -41,7 +41,7 @@
  * 2. call Create() func to call the creation function and return
  * a pointer to the base calss.
  */
-template<typename T>
+template<typename T, typename ID = std::string>
 class Factory {
  public:
   /**
@@ -51,50 +51,47 @@ class Factory {
    * @param id Identifier of the creating function/class
    * @param func a function that creates a layer instance
    */
-  inline void Register(const std::string& id,
-                       const std::function<T*(void)>& func) {
-    CHECK(str2func_.find(id) == str2func_.end())
-      << "The id has been registered by another function";
-    str2func_[id] = func;
+  static void Register(const ID& id,
+                       const std::function<T*(void)>& creator) {
+    Registry* reg = GetRegistry();
+    // CHECK(reg->find(id) == reg->end())
+    //  << "The id " << id << " has been registered";
+    (*reg)[id] = creator;
   }
-  /**
-   * Register functions to create user defined classes.
-   * This function is called by the REGISTER_FACTORY macro.
-   *
-   * @param id Identifier of the creating function/class
-   * @param func a function that creates a layer instance
-   */
-  inline void Register(int id,
-                       const std::function<T*(void)>& func) {
-    CHECK(id2func_.find(id) == id2func_.end())
-      << "The id has been registered by another function";
-    id2func_[id] = func;
-  }
+
   /**
    * create an instance by providing its id
    *
    * @param id
    */
-  inline T* Create(const std::string& id) {
-    CHECK(str2func_.find(id) != str2func_.end())
+  static T* Create(const ID& id) {
+    Registry* reg = GetRegistry();
+    CHECK(reg->find(id) != reg->end())
       << "The creation function for " << id << " has not been registered";
-    return str2func_[id]();
+    return (*reg)[id]();
   }
-  /**
-   * create an instance by providing its id
-   *
-   * @param id
-   */
-  inline T* Create(int id) {
-    CHECK(id2func_.find(id) != id2func_.end())
-      << "The creation function for " << id << " has not been registered";
-    return id2func_[id]();
+
+  static const std::vector<ID> GetIDs() {
+    std::vector<ID> keys;
+    for (const auto entry : *GetRegistry())
+      keys.push_back(entry.first);
+    return keys;
   }
 
  private:
   // Map that stores the registered creation functions
-  std::map<std::string, std::function<T*(void)>> str2func_;
-  std::map<int, std::function<T*(void)>> id2func_;
+  typedef std::map<ID, std::function<T*(void)>> Registry;
+  static Registry* GetRegistry() {
+    static Registry reg;
+    return &reg;
+  }
 };
 
+template<typename Base, typename Sub, typename ID = std::string>
+class Registra {
+ public:
+  Registra(const ID& id) {
+    Factory<Base, ID>::Register(id, [](void) { return new Sub(); });
+  }
+};
 #endif  // SINGA_UTILS_FACTORY_H_

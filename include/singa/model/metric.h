@@ -28,11 +28,12 @@ namespace singa {
 /// The target type is a template argument.  For data samples with a single
 /// label, T could be 1-d tenor (or vector<int>); If each data sample has
 /// multiple labels, T could be vector<vector<int>>, one vector per sample.
-template <typename T = Tensor>
+// template <typename T = Tensor>
 class Metric {
  public:
   // TODO(wangwei) call Setup using a default MetricConf.
   Metric() = default;
+  virtual ~Metric() {}
   virtual void ToDevice(std::shared_ptr<Device> device) {}
   void Setup(const string& conf) {
     MetricConf metric;
@@ -44,10 +45,10 @@ class Metric {
   virtual void Setup(const MetricConf& conf) {}
 
   /// Compute the metric for each data sample
-  virtual Tensor Forward(const Tensor& prediction, const T& target) = 0;
+  virtual Tensor Forward(const Tensor& prediction, const Tensor& target) = 0;
 
   /// Comptue the metric value averaged over all samples (in a batch)
-  float Evaluate(const Tensor& prediction, const T& target) {
+  float Evaluate(const Tensor& prediction, const Tensor& target) {
     const Tensor metric = Forward(prediction, target);
     return Sum<float>(metric) / (1.0f * metric.Size());
   }
@@ -55,7 +56,7 @@ class Metric {
 /// Compute the accuray of the prediction, which is matched against the
 /// ground truth labels.
 /// TODO(wangwei) consider multi-label cases.
-class Accuracy : public Metric<Tensor> {
+class Accuracy : public Metric {
  public:
   /// Set meta fields from user configurations.
   void Setup(const MetricConf& conf) override { top_k_ = conf.top_k(); }

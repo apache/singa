@@ -63,13 +63,13 @@ class Optimizer {
   /// by Apply(int, const string&, Tensor*, Tensor*).
   /// All sub-classes should override this function.
   virtual void Apply(int step, float lr, const string& name, const Tensor& grad,
-                     Tensor* value) = 0;
+                     Tensor& value) = 0;
 
   /// Apply the updating algorithm.
   /// It will apply regularization and constraint to the parameters if
   /// configured during Register(). If will also scale the learning rate if
   /// configured in ParamSpecs (see Register).
-  void Apply(int step, const string& name, Tensor* grad, Tensor* value);
+  void Apply(int step, const string& name, Tensor& grad, Tensor& value);
 
   /// The argument is a function that returns the learning rate given the
   /// current step (i.e., curren running iteration).
@@ -113,11 +113,11 @@ class Constraint {
   /// e.g., clip each gradient if it is too large w.r.t the threshold,
   /// \ref
   /// https://www.reddit.com/r/MachineLearning/comments/31b6x8/gradient_clipping_rnns/
-  void Apply(int step, Tensor* grad, Tensor* value);
+  void Apply(int step, Tensor& grad, Tensor& value);
   /// Apply the constraint for multiple parameter objects together.
   /// \ref https://github.com/Lasagne/Lasagne/blob/master/lasagne/updates.py
-  void Apply(int step, const vector<Tensor*>& grads,
-             const vector<Tensor*>& values);
+  void Apply(int step, const vector<Tensor>& grads,
+             const vector<Tensor>& values);
 
  private:
   /// currently only support "L2" norm constraint, i.e., the norm should be less
@@ -150,11 +150,11 @@ class Regularizer {
   /// e.g., clip each gradient if it is too large w.r.t the threshold,
   /// \ref
   /// https://www.reddit.com/r/MachineLearning/comments/31b6x8/gradient_clipping_rnns/
-  void Apply(int step, Tensor* grad, Tensor* value, float scale = 1.0f);
+  void Apply(int step, Tensor& grad, Tensor& value, float scale = 1.0f);
   /// Apply the regularizer for multiple parameter objects together.
   /// \ref https://github.com/Lasagne/Lasagne/blob/master/lasagne/updates.py
-  void Apply(int step, const vector<Tensor*>& grads,
-             const vector<Tensor*>& values);
+  void Apply(int step, const vector<Tensor>& grads,
+             const vector<Tensor>& values);
 
  private:
   /// currently only support "L2" regularizer. type_ is case insensitive.
@@ -174,7 +174,7 @@ class SGD : public Optimizer {
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
   void Apply(int step, float lr, const string& name, const Tensor& grad,
-             Tensor* value) override;
+             Tensor& value) override;
 
   /// The argument function returns the momentum value given the current running
   /// step (i.e., iterations/mini-batches).
@@ -193,7 +193,7 @@ class Nesterov : public Optimizer {
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
   void Apply(int step, float lr, const string& name, const Tensor& grad,
-             Tensor* value) override;
+             Tensor& value) override;
 
   /// The argument function returns the momentum value given the current running
   /// step (i.e., iterations/mini-batches).
@@ -212,7 +212,7 @@ class AdaGrad : public Optimizer {
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
   void Apply(int step, float lr, const string& name, const Tensor& grad,
-             Tensor* value) override;
+             Tensor& value) override;
 
  private:
   std::unordered_map<string, Tensor> history_gradient_;
@@ -224,7 +224,7 @@ class RMSProp : public Optimizer {
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
   void Apply(int step, float lr, const string& name, const Tensor& grad,
-             Tensor* value) override;
+             Tensor& value) override;
   virtual ~RMSProp() = default;
 
  private:
