@@ -132,5 +132,9 @@ TEST(LMDBReader, SeekToFirst) {
   EXPECT_STREQ("This is the fourth test for lmdb io.", value.c_str());
 
   reader.Close();
+
+  remove("./test_lmdb/data.mdb");
+  remove("./test_lmdb/lock.mdb");
+  remove("./test_lmdb");
 }
 #endif  // USE_LMDB
