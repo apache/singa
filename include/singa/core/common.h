@@ -32,9 +32,20 @@
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #endif
+#endif // USE_CUDA
+
+
+#ifdef USE_OPENCL
+#define CL_HPP_MINIMUM_OPENCL_VERSION 120
+#define CL_HPP_TARGET_OPENCL_VERSION 120
+#include <CL/cl2.hpp>
+#include <map>
 #endif
+
 using std::atomic;
+
 namespace singa {
+
 namespace lang {
 /// To implemente functions using cpp libraries
 typedef struct _Cpp { } Cpp;
@@ -85,7 +96,14 @@ typedef struct _Context {
 #ifdef USE_CUDNN
   cudnnHandle_t cudnn_handle;
 #endif
+#endif // USE_CUDA
+
+#ifdef USE_OPENCL
+  std::shared_ptr<std::map<std::string, cl::Kernel>> kernels;
+  cl::CommandQueue ocl_cmdq;
+  cl::Context ocl_ctx;
 #endif
+
 } Context;
 
 }  // namespace singa
