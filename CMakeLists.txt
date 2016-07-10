@@ -24,6 +24,7 @@ OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
 OPTION(USE_PYTHON "Generate py wrappers" ON)
+OPTION(USE_OPENCL "Use OpenCL" ON)
 
 INCLUDE("cmake/Dependencies.cmake")
 INCLUDE("cmake/Utils.cmake")

@@ -15,21 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "singa/core/device.h"
+
 namespace singa {
+
 std::shared_ptr<Device> defaultDevice=std::make_shared<CppCPU>();
+
 CppCPU::CppCPU() : Device(0, 1) {
   lang_ = kCpp;
   //host_ = nullptr;
 }
 
+
 void CppCPU::SetRandSeed(unsigned seed) {
   ctx_.random_generator.seed(seed);
 }
+
+
 void CppCPU::DoExec(function<void(Context*)>&& fn, int executor) {
   CHECK_EQ(executor, 0);
   fn(&ctx_);
 }
+
 
 void* CppCPU::Malloc(int size) {
   if (size > 0) {
@@ -41,13 +49,16 @@ void* CppCPU::Malloc(int size) {
   }
 }
 
+
 void CppCPU::Free(void* ptr) {
   if (ptr != nullptr)
     free(ptr);
 }
 
+
 void CppCPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
                            CopyDirection direction, Context* ctx) {
   memcpy(dst, src, nBytes);
 }
+
 }  // namespace singa
