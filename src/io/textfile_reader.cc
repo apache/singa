@@ -60,7 +60,7 @@ int TextFileReader::Count() {
 }
 
 void TextFileReader::SeekToFirst() {
-  CHECK(fdat_ != nullptr);
+  CHECK(fdat_.is_open());
   lineNo_ = 0;
   fdat_.clear();
   fdat_.seekg(0);

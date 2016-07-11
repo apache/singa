@@ -1,6 +1,6 @@
 #Apache SINGA
 
-[![Build Status](https://travis-ci.org/undisputed-seraphim/incubator-singa.png)](https://travis-ci.org/undisputed-seraphim/incubator-singa)
+[![Build Status](https://travis-ci.org/apache/incubator-singa.png)](https://travis-ci.org/apache/incubator-singa)
 
 Distributed deep learning system
 

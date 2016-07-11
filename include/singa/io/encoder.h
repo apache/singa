@@ -41,7 +41,7 @@ class Encoder {
 
 #ifdef USE_OPENCV
 /// Convert an image and its label into an ImageRecord (protobuf message).
-class JPG2ProtoEncoder : public Encoder {
+class JPGEncoder : public Encoder {
  public:
   void Setup(const EncoderConf& conf) override {
     image_dim_order_ = conf.image_dim_order();
@@ -52,10 +52,22 @@ class JPG2ProtoEncoder : public Encoder {
   /// The label tensor's data type is kInt.
   std::string Encode(vector<Tensor>& data) override;
 
+  const std::string image_dim_order() const { return image_dim_order_; }
+
  private:
   /// Indicate the input image tensor's dimension order.
-  std::string image_dim_order_ = "HWC";
+  std::string image_dim_order_ = "CHW";
 };
 #endif  // USE_OPENCV
+
+/// Convert values from tensors into a csv formated string.
+class CSVEncoder : public Encoder {
+ public:
+  void Setup(const EncoderConf& conf) override {}
+  /// 'data' has two tesors, one for the data vector (1D) and one for the
+  /// label. The data tensor's data type is kFloat.
+  /// The label tensor's data type is kInt.
+  std::string Encode(vector<Tensor>& data) override;
+};
 } // namespace singa
 #endif  // SINGA_IO_ENCODER_H_
