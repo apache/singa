@@ -21,7 +21,7 @@
 
 namespace singa {
 
-std::string TextEncoder::Encode(vector<Tensor>& data) {
+std::string CSVEncoder::Encode(vector<Tensor>& data) {
   CHECK_GE(data.size(), 1);
   size_t size = data[0].Size();
   const float* value = data[0].data<float>();

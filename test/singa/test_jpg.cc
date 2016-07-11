@@ -30,8 +30,8 @@
 using singa::Shape;
 using singa::Tensor;
 TEST(Decoder, Decode) {
-  singa::JPG2ProtoEncoder encoder;
-  singa::Proto2JPGDecoder decoder;
+  singa::JPGEncoder encoder;
+  singa::JPGDecoder decoder;
 
   // initial random seed
   srand(time(NULL));

@@ -20,32 +20,33 @@
 #include <string>
 #include <sstream>
 
-#define MAXSIZE 4096
+const int kMaxCSVBufSize = 40960;
 
 namespace singa {
 
-std::vector<Tensor> TextDecoder::Decode(std::string value) {
+std::vector<Tensor> CSVDecoder::Decode(std::string value) {
   std::vector<Tensor> output;
   std::stringstream ss;
   ss.str(value);
   int l = 0;
-  if (has_label_ == true) ss >> l;
+  if (has_label_ == true)
+    ss >> l;
   std::string str;
-  float* d = new float[MAXSIZE];
+  float d[kMaxCSVBufSize];
   size_t size = 0;
-  while(std::getline(ss, str, ',')) {
+  while (std::getline(ss, str, ',')) {
     float temp;
     if (std::stringstream(str) >> temp) {
-      CHECK_LE(size, MAXSIZE-1);
+      CHECK_LE(size, kMaxCSVBufSize - 1);
       d[size++] = temp;
     }
   }
 
-  Tensor data(Shape{size}, kFloat32);
+  Tensor data(Shape {size}, kFloat32);
   data.CopyDataFromHostPtr(d, size);
   output.push_back(data);
   if (has_label_ == true) {
-    Tensor label(Shape{1}, kInt);
+    Tensor label(Shape {1}, kInt);
     label.CopyDataFromHostPtr(&l, 1);
     output.push_back(label);
   }

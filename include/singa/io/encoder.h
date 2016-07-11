@@ -60,12 +60,12 @@ class JPGEncoder : public Encoder {
 };
 #endif  // USE_OPENCV
 
-/// Convert a set of tensors parsed from csv file into strings
-class TextEncoder : public Encoder {
+/// Convert values from tensors into a csv formated string.
+class CSVEncoder : public Encoder {
  public:
   void Setup(const EncoderConf& conf) override {}
-  /// 'data' has two tesors, one for the text vector (1D) and one for the
-  /// label. The text tensor's data type is kFloat.
+  /// 'data' has two tesors, one for the data vector (1D) and one for the
+  /// label. The data tensor's data type is kFloat.
   /// The label tensor's data type is kInt.
   std::string Encode(vector<Tensor>& data) override;
 };

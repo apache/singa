@@ -55,9 +55,9 @@ class JPGDecoder : public Decoder {
 };
 #endif
 
-/// Decode the string and convert it into a text
-/// tensor (dtype is kFloat32) and a label tensor (dtype is kInt).
-class TextDecoder : public Decoder {
+/// Decode the string of csv formated data  into data tensor
+/// (dtype is kFloat32) and optionally a label tensor (dtype is kInt).
+class CSVDecoder : public Decoder {
  public:
   void Setup(const DecoderConf& conf) override {
     has_label_ = conf.has_label();
@@ -67,8 +67,8 @@ class TextDecoder : public Decoder {
   const bool has_label() const { return has_label_; }
 
  private:
-  /// Indicate the dimension order for the output image tensor.
-  bool has_label_ = true;
+  /// if ture the first value is the label
+  bool has_label_ = false;
 };
 } // namespace singa
 #endif // SINGA_IO_DECODER_H_

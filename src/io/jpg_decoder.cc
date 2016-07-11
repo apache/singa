@@ -25,7 +25,7 @@
 
 namespace singa {
 
-std::vector<Tensor> Proto2JPGDecoder::Decode(std::string value) {
+std::vector<Tensor> JPGDecoder::Decode(std::string value) {
   std::vector<Tensor> output;
 
   ImageRecord record;

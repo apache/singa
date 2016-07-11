@@ -27,9 +27,9 @@
 
 using singa::Shape;
 using singa::Tensor;
-TEST(TextDecoder, Decode) {
-  singa::TextEncoder encoder;
-  singa::TextDecoder decoder;
+TEST(CSV, EncoderDecode) {
+  singa::CSVEncoder encoder;
+  singa::CSVDecoder decoder;
 
   singa::DecoderConf decoder_conf;
   decoder_conf.set_has_label(true);
