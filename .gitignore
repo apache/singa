@@ -7,6 +7,7 @@
 *.log
 *.pb.h
 *.pb.cc
+*.cxx
 build/
 thirdparty/*
 !thirdparty/install.sh

@@ -40,17 +40,35 @@ class Decoder {
 #ifdef USE_OPENCV
 /// Decode the string as an ImageRecord object and convert it into a image
 /// tensor (dtype is kFloat32) and a label tensor (dtype is kInt).
-class Proto2JPGDecoder : public Decoder {
+class JPGDecoder : public Decoder {
  public:
   void Setup(const DecoderConf& conf) override {
     image_dim_order_ = conf.image_dim_order();
   }
   std::vector<Tensor> Decode(std::string value) override;
 
+  const std::string image_dim_order() const { return image_dim_order_; }
+
  private:
   /// Indicate the dimension order for the output image tensor.
   std::string image_dim_order_ = "CHW";
 };
 #endif
+
+/// Decode the string and convert it into a text
+/// tensor (dtype is kFloat32) and a label tensor (dtype is kInt).
+class TextDecoder : public Decoder {
+ public:
+  void Setup(const DecoderConf& conf) override {
+    has_label_ = conf.has_label();
+  }
+  std::vector<Tensor> Decode(std::string value) override;
+
+  const bool has_label() const { return has_label_; }
+
+ private:
+  /// Indicate the dimension order for the output image tensor.
+  bool has_label_ = true;
+};
 } // namespace singa
 #endif // SINGA_IO_DECODER_H_

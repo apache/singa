@@ -16,22 +16,28 @@
  * limitations under the License.
  */
 
-package singa;
+#include "singa/io/encoder.h"
+#include <sstream>
 
+namespace singa {
 
-message EncoderConf {
-  optional string type = 1 [default = "jpg2proto"];
-  optional string image_dim_order = 2 [default = "HWC"];
+std::string TextEncoder::Encode(vector<Tensor>& data) {
+  CHECK_GE(data.size(), 1);
+  size_t size = data[0].Size();
+  const float* value = data[0].data<float>();
+  std::string des = "";
+  if (data.size() == 2) {
+    const float label = (const float)data[1].data<int>()[0];
+    std::ostringstream buff;
+    buff << label;
+    des += buff.str() + ',';
+  }
+  for (size_t i = 0; i < size; i++) {
+    std::ostringstream buff;
+    buff << value[i];
+    if (i == size - 1) des += buff.str();
+    else des += buff.str() + ',';
+  }
+  return des;
 }
-
-message DecoderConf {
-  optional string type = 1 [default = "proto2jpg"];
-  optional string image_dim_order = 2 [default = "CHW"];
-  optional bool has_label = 3 [default = true];
-}
-
-message ImageRecord {
-  repeated int32 shape = 1;
-  repeated int32 label = 2;
-  optional bytes pixel = 3;
-}
+}  // namespace singa

@@ -16,22 +16,39 @@
  * limitations under the License.
  */
 
-package singa;
+#include "singa/io/decoder.h"
+#include <string>
+#include <sstream>
 
+#define MAXSIZE 4096
 
-message EncoderConf {
-  optional string type = 1 [default = "jpg2proto"];
-  optional string image_dim_order = 2 [default = "HWC"];
+namespace singa {
+
+std::vector<Tensor> TextDecoder::Decode(std::string value) {
+  std::vector<Tensor> output;
+  std::stringstream ss;
+  ss.str(value);
+  int l = 0;
+  if (has_label_ == true) ss >> l;
+  std::string str;
+  float* d = new float[MAXSIZE];
+  size_t size = 0;
+  while(std::getline(ss, str, ',')) {
+    float temp;
+    if (std::stringstream(str) >> temp) {
+      CHECK_LE(size, MAXSIZE-1);
+      d[size++] = temp;
+    }
+  }
+
+  Tensor data(Shape{size}, kFloat32);
+  data.CopyDataFromHostPtr(d, size);
+  output.push_back(data);
+  if (has_label_ == true) {
+    Tensor label(Shape{1}, kInt);
+    label.CopyDataFromHostPtr(&l, 1);
+    output.push_back(label);
+  }
+  return output;
 }
-
-message DecoderConf {
-  optional string type = 1 [default = "proto2jpg"];
-  optional string image_dim_order = 2 [default = "CHW"];
-  optional bool has_label = 3 [default = true];
-}
-
-message ImageRecord {
-  repeated int32 shape = 1;
-  repeated int32 label = 2;
-  optional bytes pixel = 3;
-}
+}  // namespace singa
