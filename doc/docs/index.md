@@ -1,6 +1,4 @@
-# Latest Documentation
-
----
+# English
 
 * [Introduction](overview.html)
 * [Installation](installation.html)
