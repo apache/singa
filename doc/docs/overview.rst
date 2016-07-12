@@ -1,6 +1,6 @@
-# Introduction
+Introduction
+==============
 
----
 
 SINGA is a general distributed deep learning platform for training big deep
 learning models over large datasets. It is designed with an intuitive
@@ -16,7 +16,8 @@ training of large models, namely partitioning on batch dimension, feature
 dimension or hybrid partitioning.
 
 
-## Goals
+Goals
+-----
 
 As a distributed system, the first goal of SINGA is to have good scalability. In other
 words, SINGA is expected to reduce the total training time to achieve certain
@@ -31,7 +32,8 @@ provide an easy to use programming model so that users can implement their deep
 learning models/algorithms without much awareness of the underlying distributed
 platform.
 
-## Principles
+Principles
+----------
 
 Scalability is a challenging research problem for distributed deep learning
 training. SINGA provides a general architecture to exploit the scalability of
@@ -45,23 +47,26 @@ SINGA comes with a programming model designed based on the layer abstraction, wh
 is intuitive for deep learning models.  A variety of
 popular deep learning models can be expressed and trained using this programming model.
 
-## System overview
+System overview
+---------------
 
-<img src="../images/sgd.png" align="center" width="400px"/>
-<span><strong>Figure 1 - SGD flow.</strong></span>
+.. figure:: /image/sgd.png
+
+            Figure 1 - SGD flow
 
 Training a deep learning model is to find the optimal parameters involved in
 the transformation functions that generate good features for specific tasks.
 The goodness of a set of parameters is measured by a loss function, e.g.,
-[Cross-Entropy Loss](https://en.wikipedia.org/wiki/Cross_entropy). Since the
+`Cross-Entropy Loss <https://en.wikipedia.org/wiki/Cross_entropy>`_ . Since the
 loss functions are usually non-linear and non-convex, it is difficult to get a
 closed form solution. Typically, people use the stochastic gradient descent
 (SGD) algorithm, which randomly
 initializes the parameters and then iteratively updates them to reduce the loss
 as shown in Figure 1.
 
-<img src="../images/overview.png" align="center" width="400px"/>
-<span><strong>Figure 2 - SINGA overview.</strong></span>
+.. figure:: /image/overview.png
+
+           Figure 2 - SINGA overview
 
 SGD is used in SINGA to train
 parameters of deep learning models. The training workload is distributed over
@@ -75,17 +80,18 @@ updating. Servers reply to workers with the updated parameters for the next
 iteration.
 
 
-## Job submission
+Job submission
+--------------
 
 To submit a job in SINGA (i.e., training a deep learning model),
 users pass the job configuration to SINGA driver in the
-[main function](programming-guide.html). The job configuration
+`main function <programming-guide.html>`_ . The job configuration
 specifies the four major components in Figure 2,
 
-  * a [NeuralNet](neural-net.html) describing the neural net structure with the detailed layer setting and their connections;
-  * a [TrainOneBatch](train-one-batch.html) algorithm which is tailored for different model categories;
-  * an [Updater](updater.html) defining the protocol for updating parameters at the server side;
-  * a [Cluster Topology](distributed-training.html) specifying the distributed architecture of workers and servers.
+  * a `NeuralNet <neural-net.html>`_ describing the neural net structure with the detailed layer setting and their connections;
+  * a `TrainOneBatch <train-one-batch.html>`_  algorithm which is tailored for different model categories;
+  * an `Updater <updater.html>`_  defining the protocol for updating parameters at the server side;
+  * a `Cluster Topology <distributed-training.html>`_ specifying the distributed architecture of workers and servers.
 
 This process is like the job submission in Hadoop, where users configure their
 jobs in the main function to set the mapper, reducer, etc.
