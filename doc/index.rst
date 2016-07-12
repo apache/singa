@@ -11,12 +11,8 @@ Welcome to Apache Singa's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
 
-   introduction
-   quickstart
    downloads
-
    docs
 
    develop/schedule
