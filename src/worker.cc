@@ -77,7 +77,7 @@ void Worker::Run() {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
   LOG(ERROR) << "Worker (group = " << grp_id_ <<", id = " << id_ << ") "
-    << " start on " << (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
+    << "start on " << (device >= 0 ? "GPU " + std::to_string(device) : "CPU");
   if (device >= 0)
     context->ActivateDevice(device);
 
