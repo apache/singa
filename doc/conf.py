@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Singa documentation build configuration file, created by
+# incubator-singa documentation build configuration file, created by
 # sphinx-quickstart on Sat Jul  9 20:36:57 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -35,7 +35,7 @@ source_parsers = {
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.githubpages',
+   
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -55,7 +55,7 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'Singa'
+project = u'incubator-singa'
 copyright = u'2016 The Apache Software Foundation. All rights reserved. Apache Singa, Apache, the Apache feather logo, and the Apache Singa project logos are trademarks of The Apache Software Foundation. All other marks mentioned may be trademarks or registered trademarks of their respective owners.'
 author = u'moaz'
 
@@ -266,7 +266,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Singa.tex', u'Singa Documentation',
+    (master_doc, 'incubator-singa.tex', u'incubator-singa Documentation',
      u'moaz', 'manual'),
 ]
 
@@ -302,7 +302,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'singa', u'Singa Documentation',
+    (master_doc, 'incubator-singa', u'incubator-singa Documentation',
      [author], 1)
 ]
 
@@ -317,8 +317,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Singa', u'Singa Documentation',
-     author, 'Singa', 'One line description of project.',
+    (master_doc, 'incubator-singa', u'incubator-singa Documentation',
+     author, 'incubator-singa', 'One line description of project.',
      'Miscellaneous'),
 ]
 
