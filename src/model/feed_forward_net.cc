@@ -166,6 +166,7 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
       const auto ret = TrainOnBatch(epoch, bx, by);
       loss += ret.first;
       metric += ret.second;
+      LOG(INFO) << "One batch is over " <<  loss << " " << metric;
     }
     loss /= b;
     metric /= b;
@@ -173,7 +174,7 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
         "Epoch " + std::to_string(epoch) + ", training loss = " +
         std::to_string(loss) + ", accuracy = " + std::to_string(metric) +
         ", lr = " +
-        std::to_string(updater->GetOptimizer->GetLearningRate(epoch)));
+        std::to_string(updater_->GetOptimizer()->GetLearningRate(epoch)));
     if (val_x.Size() && val_y.Size()) {
       const auto val_perf = Evaluate(val_x, val_y, batchsize);
       val_ch->Send("Epoch " + std::to_string(epoch) + ", val loss = " +

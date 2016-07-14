@@ -18,6 +18,8 @@
 
 #include "singa/model/updater.h"
 
+namespace singa {
+
 void Updater::Setup(const OptimizerConf& conf) { opt_->Setup(conf); }
 void Updater::Register(const string& name, const ParamSpec& specs) {
   opt_->Register(name, specs);
@@ -25,7 +27,7 @@ void Updater::Register(const string& name, const ParamSpec& specs) {
 }
 void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
   CHECK(partial_count_.count(name) == 1) << "Parameter " << name
-                                         << " is not registered before";
+                                         << " has not been registered before.";
   std::unique_lock<std::mutex> lock(mtx_);
   if (partial_count_[name] == 0) {
     partial_sum_[name].ResetLike(grad);
@@ -54,3 +56,4 @@ void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
   lock.unlock();
   value.CopyData(buffer_[name]);
 }
+} // namesapce singa

@@ -47,8 +47,8 @@ class Updater {
   Optimizer* GetOptimizer() { return opt_; }
 
   // No copy allowed.
-  update(const update&) = delete;
-  void operator=(const update&) = delete;
+  Updater(const Updater&) = delete;
+  void operator=(const Updater&) = delete;
 
  protected:
   int total_num_;
