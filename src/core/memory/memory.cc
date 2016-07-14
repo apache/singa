@@ -55,7 +55,7 @@ void CnMemPool::Init() {
     int i = 0;
     for (auto device : conf_.device()) {
       settingPtr[i].device = device;
-      settingPtr[device].size = conf_.init_size() * kNBytesPerMB;
+      settingPtr[i].size = conf_.init_size() * kNBytesPerMB;
       settingPtr[i].numStreams = 0;
       settingPtr[i].streams = NULL;
       settingPtr[i].streamSizes = 0;

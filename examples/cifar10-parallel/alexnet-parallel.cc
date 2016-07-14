@@ -19,7 +19,7 @@
 *
 *************************************************************/
 
-#include "./cifar10.h"
+#include "cifar10.h"
 #include "singa/model/feed_forward_net.h"
 #include "singa/model/optimizer.h"
 #include "singa/model/updater.h"
@@ -146,6 +146,7 @@ FeedForwardNet CreateNet() {
 void Train(float lr, int num_epoch, string data_dir) {
   Cifar10 data(data_dir);
   Tensor train_x, train_y, test_x, test_y;
+  Tensor train_x_1, train_x_2, train_y_1, train_y_2;
   {
     auto train = data.ReadTrainData();
     size_t nsamples = train.first.shape(0);
@@ -155,6 +156,26 @@ void Train(float lr, int num_epoch, string data_dir) {
     SubRow(mean, &mtrain);
     train_x = Reshape(mtrain, train.first.shape());
     train_y = train.second;
+
+    LOG(INFO) << "Slicing training data...";
+    train_x_1.Reshape(Shape{nsamples / 2, train.first.shape(1),
+        train.first.shape(2), train.first.shape(3)});
+    LOG(INFO) << "Copying first data slice...";
+    CopyDataToFrom(&train_x_1, train_x, train_x.Size() / 2);
+    train_x_2.Reshape(Shape{nsamples / 2, train.first.shape(1),
+        train.first.shape(2), train.first.shape(3)});
+    LOG(INFO) << "Copying second data slice...";
+    CopyDataToFrom(&train_x_2, train_x, train_x.Size() / 2, 0,
+                   train_x.Size() / 2);
+    train_y_1.Reshape(Shape{nsamples / 2});
+    train_y_1.AsType(kInt);
+    LOG(INFO) << "Copying first label slice...";
+    CopyDataToFrom(&train_y_1, train_y, train_y.Size() / 2);
+    train_y_2.Reshape(Shape{nsamples / 2});
+    train_y_2.AsType(kInt);
+    LOG(INFO) << "Copying second label slice...";
+    CopyDataToFrom(&train_y_2, train_y, train_y.Size() / 2, 0,
+                   train_y.Size() / 2);
 
     auto test = data.ReadTestData();
     nsamples = test.first.shape(0);
@@ -169,8 +190,14 @@ void Train(float lr, int num_epoch, string data_dir) {
   CHECK_EQ(test_x.shape(0), test_y.shape(0));
   LOG(INFO) << "Total Training samples = " << train_y.shape(0)
             << ", Total Test samples = " << test_y.shape(0);
+  CHECK_EQ(train_x_1.shape(0), train_y_1.shape(0));
+  LOG(INFO) << "On net 1, Training samples = " << train_y_1.shape(0)
+            << ", Test samples = " << test_y.shape(0);
+  CHECK_EQ(train_x_2.shape(0), train_y_2.shape(0));
+  LOG(INFO) << "On net 2, Training samples = " << train_y_2.shape(0);
 
-  auto net = CreateNet();
+  auto net_1 = CreateNet();
+  auto net_2 = CreateNet();
 
   SGD sgd;
   OptimizerConf opt_conf;
@@ -190,22 +217,54 @@ void Train(float lr, int num_epoch, string data_dir) {
   SoftmaxCrossEntropy loss_1, loss_2;
   Accuracy acc_1, acc_2;
   /// Create updater aggregating gradient on CPU
-  Updater updater(1, &sgd);
+  Updater updater(2, &sgd);
 
-  net.Compile(true, true, &updater, &loss_1, &acc_1);
+  /// Only need to register parameter once.
+  net_1.Compile(true, true, &updater, &loss_1, &acc_1);
+  net_2.Compile(true, false, &updater, &loss_2, &acc_1);
 
   MemPoolConf mem_conf;
   mem_conf.add_device(0);
+  mem_conf.add_device(1);
   std::shared_ptr<DeviceMemPool> mem_pool(new CnMemPool(mem_conf));
-  std::shared_ptr<CudaGPU> cuda(new CudaGPU(0, mem_pool));
-  net.ToDevice(cuda);
+  std::shared_ptr<CudaGPU> cuda_1(new CudaGPU(0, mem_pool));
+  std::shared_ptr<CudaGPU> cuda_2(new CudaGPU(1, mem_pool));
+  net_1.ToDevice(cuda_1);
+  net_2.ToDevice(cuda_2);
 
-  train_x.ToDevice(cuda);
-  train_y.ToDevice(cuda);
-  test_x.ToDevice(cuda);
-  test_y.ToDevice(cuda);
+  /*
+  // this does not work for net_2
+  train_x_2.ResetLike(train_x);
+  train_y_2.ResetLike(train_y);
+  test_x_2.ResetLike(test_x);
+  test_y_2.ResetLike(test_y);
 
-  net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
+  train_x.ToDevice(cuda_1);
+  train_y.ToDevice(cuda_1);
+  test_x.ToDevice(cuda_1);
+  test_y.ToDevice(cuda_1);
+
+  train_x_2.ToDevice(cuda_2);
+  train_y_2.ToDevice(cuda_2);
+  test_x_2.ToDevice(cuda_2);
+  test_y_2.ToDevice(cuda_2);
+  */
+
+  train_x_1.ToDevice(cuda_1);
+  train_y_1.ToDevice(cuda_1);
+  test_x.ToDevice(cuda_1);
+  test_y.ToDevice(cuda_1);
+  train_x_2.ToDevice(cuda_2);
+  train_y_2.ToDevice(cuda_2);
+
+  // net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
+
+  LOG(INFO) << "Launching thread...";
+  std::thread t1 =
+      net_1.TrainThread(50, num_epoch, train_x_1, train_y_1, test_x, test_y);
+  std::thread t2 = net_2.TrainThread(50, num_epoch, train_x_2, train_y_2);
+  t1.join();
+  t2.join();
 }
 }
 

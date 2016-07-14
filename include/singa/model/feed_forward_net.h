@@ -20,7 +20,8 @@
 #include "singa/model/layer.h"
 #include "singa/model/loss.h"
 #include "singa/model/metric.h"
-#include "singa/model/optimizer.h"
+#include "singa/model/updater.h"
+#include <thread>
 namespace singa {
 
 /// The feed-forward neural net.
@@ -56,8 +57,9 @@ class FeedForwardNet {
   /// If the neural net is constructed for evaluation only, then 'opt' is not
   /// necessary; But for training, both 'opt' and 'loss' are necessary.
   /// 'shuffle' indicates shuffling training samples within one epoch it is
-  /// valid using Train();
-  void Compile(bool shuffle, Optimizer* opt, Loss* loss,
+  /// valid using Train(). If to_register is set true, parameter will be
+  /// registered in Updater;
+  void Compile(bool shuffle, bool to_register, Updater* updater, Loss* loss,
                Metric* metric);
 
   /// Conduct the training giving the training data 'x' and label 'y'.
@@ -118,6 +120,19 @@ class FeedForwardNet {
   /// Set the data type of each layer.
   void AsType(DataType dtype);
 
+  /// A wrapper method to spawn a thread to execute Train() method.
+  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor& x,
+                          const Tensor& y, const Tensor& val_x,
+                          const Tensor& val_y) {
+    return std::thread([=]() { Train(batchsize, nb_epoch, x, y, val_x, val_y); });
+  }
+
+  /// A wrapper method to spawn a thread to execute Train() method.
+  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor& x,
+                          const Tensor& y) {
+    return std::thread([=]() { Train(batchsize, nb_epoch, x, y); });
+  }
+
   const vector<Layer*> layers() const { return layers_; }
   const vector<string> GetParamNames() const;
   const vector<ParamSpec> GetParamSpecs() const;
@@ -125,7 +140,7 @@ class FeedForwardNet {
 
  protected:
   vector<Layer*> layers_;
-  Optimizer* opt_;
+  Updater* updater_;
   Loss* loss_;
   Metric* metric_;
 
@@ -134,7 +149,6 @@ class FeedForwardNet {
   DataType dtype_ = kFloat32;
 };
 
-}  /* singa */
-
+} /* singa */
 
 #endif  // SINGA_MODEL_FEED_FORWARD_NET_H_
