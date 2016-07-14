@@ -27,12 +27,14 @@
 #include "singa/model/metric.h"
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
+#include "singa/core/memory.h"
 #include "../../src/model/layer/cudnn_convolution.h"
 #include "../../src/model/layer/cudnn_activation.h"
 #include "../../src/model/layer/cudnn_pooling.h"
 #include "../../src/model/layer/cudnn_lrn.h"
 #include "../../src/model/layer/dense.h"
 #include "../../src/model/layer/flatten.h"
+#include <thread>
 namespace singa {
 
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
@@ -144,6 +146,7 @@ FeedForwardNet CreateNet() {
 void Train(float lr, int num_epoch, string data_dir) {
   Cifar10 data(data_dir);
   Tensor train_x, train_y, test_x, test_y;
+  Tensor train_x_2, train_y_2, test_x_2, test_y_2;
   {
     auto train = data.ReadTrainData();
     size_t nsamples = train.first.shape(0);
@@ -165,7 +168,8 @@ void Train(float lr, int num_epoch, string data_dir) {
   CHECK_EQ(test_x.shape(0), test_y.shape(0));
   LOG(INFO) << "Training samples = " << train_y.shape(0)
             << ", Test samples = " << test_y.shape(0);
-  auto net = CreateNet();
+  auto net_1 = CreateNet();
+  auto net_2 = CreateNet();
   SGD sgd;
   OptimizerConf opt_conf;
   opt_conf.set_momentum(0.9);
@@ -181,18 +185,66 @@ void Train(float lr, int num_epoch, string data_dir) {
       return 0.00001;
   });
 
-  SoftmaxCrossEntropy loss;
-  Accuracy acc;
-  Updater updater(1, &Optimizer);
-  net.Compile(true, &updater, &loss, &acc);
+  SoftmaxCrossEntropy loss_1, loss_2;
+  Accuracy acc_1, acc_2;
+  Updater updater(2, &sgd);
+  net_1.Compile(true, true, &updater, &loss_1, &acc_1);
+  net_2.Compile(true, false, &updater, &loss_2, &acc_1);
 
-  auto cuda = std::make_shared<CudaGPU>();
-  net.ToDevice(cuda);
-  train_x.ToDevice(cuda);
-  train_y.ToDevice(cuda);
-  test_x.ToDevice(cuda);
-  test_y.ToDevice(cuda);
-  net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
+  MemPoolConf mem_conf;
+  mem_conf.add_device(1);
+  mem_conf.add_device(2);
+  std::shared_ptr<DeviceMemPool> mem_pool(new CnMemPool(mem_conf));
+  std::shared_ptr<CudaGPU> cuda_1(new CudaGPU(1, mem_pool));
+  std::shared_ptr<CudaGPU> cuda_2(new CudaGPU(2, mem_pool));
+  net_1.ToDevice(cuda_1);
+  net_2.ToDevice(cuda_2); 
+
+  /*
+  // this does not work for net_2
+  train_x_2.ResetLike(train_x);
+  train_y_2.ResetLike(train_y);
+  test_x_2.ResetLike(test_x);
+  test_y_2.ResetLike(test_y);
+
+  train_x.ToDevice(cuda_1);
+  train_y.ToDevice(cuda_1);
+  test_x.ToDevice(cuda_1);
+  test_y.ToDevice(cuda_1);
+
+  train_x_2.ToDevice(cuda_2);
+  train_y_2.ToDevice(cuda_2);
+  test_x_2.ToDevice(cuda_2);
+  test_y_2.ToDevice(cuda_2);
+  */
+  /*
+  // this works when only using thread 2
+  train_x.ToDevice(cuda_2);
+  train_y.ToDevice(cuda_2);
+  test_x.ToDevice(cuda_2);
+  test_y.ToDevice(cuda_2);
+  */
+
+  train_x_2 = train_x.Clone();
+  train_y_2 = train_y.Clone();
+  test_x_2 = test_x.Clone();
+  test_y_2 = test_y.Clone();
+  train_x.ToDevice(cuda_1);
+  train_y.ToDevice(cuda_1);
+  test_x.ToDevice(cuda_1);
+  test_y.ToDevice(cuda_1);
+  train_x_2.ToDevice(cuda_2);
+  train_y_2.ToDevice(cuda_2);
+  test_x_2.ToDevice(cuda_2);
+  test_y_2.ToDevice(cuda_2);
+
+  //net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
+  
+  LOG(INFO) << "Launching thread...";
+  std::thread t1 = net_1.TrainThread(100, num_epoch, train_x, train_y, test_x, test_y);
+  std::thread t2 = net_2.TrainThread(100, num_epoch, train_x_2, train_y_2, test_x_2, test_y_2);
+  t1.join();
+  t2.join();
 }
 }
 

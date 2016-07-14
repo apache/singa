@@ -25,40 +25,59 @@ void Updater::Register(const string& name, const ParamSpec& specs) {
   opt_->Register(name, specs);
   aggr_count_[name] = 0;
   copy_count_[name] = 0;
+  has_averaged_[name] = false;
+  has_init_[name] = false;
 }
 void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
-  CHECK(partial_count_.count(name) == 1) << "Parameter " << name
+  CHECK(aggr_count_.count(name) == 1) << "Parameter " << name
                                          << " has not been registered before.";
-  std::unique_lock<std::mutex> aggr_lock(aggr_mtx_);
-  if (partial_count_[name] == 0) {
-    partial_sum_[name].ResetLike(grad);
-    partial_sum_[name].ToHost();
-    buffer_[name].ResetLike(partial_sum_[name]);
+  /// This lock is aimed to protect aggregation counter, data transfering buffer,
+  /// and partial aggregation result. However, the data transfering can be moved out
+  /// of the critial section to improve performance in the future.
+  std::unique_lock<std::mutex> lock(mtx_);
+  if (aggr_count_[name] == 0) {
+    if (!has_init_[name]) {
+      partial_sum_[name].ResetLike(grad);
+      partial_sum_[name].ToHost();
+      buffer_[name].ResetLike(partial_sum_[name]);
+      has_init_[name] = true;
+    } else {
+      partial_sum_[name].SetValue(.0f);
+    }
   }
   buffer_[name].CopyData(grad);
   Add(partial_sum_[name], buffer_[name], &partial_sum_[name]);
-  ++partial_count_[name];
+  ++aggr_count_[name];
 
-  // Now we get enought paritial gradient from all neural net instances,
-  // then we calcuate the average gradient.
-  if (partial_count_[name] == total_num_) {
+  /// Block this thread when we have not gotten enough paritial gradients.
+  if (aggr_count_[name] != total_num_) {
+    while (aggr_count_[name] != total_num_) {
+      aggr_count_eq_total_num_.wait(lock);
+    }
+  } else {
+    aggr_count_eq_total_num_.notify_all();
+  }
+
+  /// Now we get enought paritial gradient from all neural net instances,
+  /// then we calcuate the average gradient. The first notified thread
+  /// finish the averaging once.
+  if (!has_averaged_[name]) {
     Div(partial_sum_[name], static_cast<float>(total_num_),
         &partial_sum_[name]);
-    buffer_[name].CopyData(value);
-    // Apply optimization algorithm based on the aggregated gradient.
-    opt_->Apply(step, name, partial_sum_[name], buffer_[name]);
     copy_count_[name] = 0;
-    partial_count_eq_total_num_.notify_all();
-  } else {
-    // Block this thread when we have not gotten enough paritial gradients.
-    while (partial_count_[name] != total_num_) {
-      partial_count_eq_total_num_.wait(lock);
-    }
+    has_averaged_[name] = true;
   }
-  lock.unlock();
+
+  buffer_[name].CopyData(value);
+  /// Apply optimization algorithm based on the averaged gradient.
+  opt_->Apply(step, name, partial_sum_[name], buffer_[name]);
   value.CopyData(buffer_[name]);
-  lock.lock();
+
+  /// The last thread finishing copy should set aggregation counter back to 0.
   ++copy_count_[name];
-  if (copy_count_[name] == total_num_) partial_count_[name] = 0;
+  if (copy_count_[name] == total_num_) {
+    aggr_count_[name] = 0;
+    has_averaged_[name] = false;
+  }
 }
 }  // namesapce singa

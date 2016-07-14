@@ -21,6 +21,7 @@
 #include "singa/model/loss.h"
 #include "singa/model/metric.h"
 #include "singa/model/updater.h"
+#include <thread>
 namespace singa {
 
 /// The feed-forward neural net.
@@ -57,7 +58,7 @@ class FeedForwardNet {
   /// necessary; But for training, both 'opt' and 'loss' are necessary.
   /// 'shuffle' indicates shuffling training samples within one epoch it is
   /// valid using Train();
-  void Compile(bool shuffle, Updater* updater, Loss* loss, Metric* metric);
+  void Compile(bool shuffle, bool registered, Updater* updater, Loss* loss, Metric* metric);
 
   /// Conduct the training giving the training data 'x' and label 'y'.
   /// 'val_split' of training data is used for
@@ -116,6 +117,13 @@ class FeedForwardNet {
   void ToHost() { ToDevice(defaultDevice); }
   /// Set the data type of each layer.
   void AsType(DataType dtype);
+
+  /// To spawn a thread to call Train() method.
+  std::thread TrainThread(size_t batchsize, int nb_epoch,
+                          const Tensor& x, const Tensor& y,
+                          const Tensor& val_x, const Tensor& val_y) {
+    return std::thread([=]{Train(batchsize, nb_epoch, x, y, val_x, val_y);});
+  }
 
   const vector<Layer*> layers() const { return layers_; }
   const vector<string> GetParamNames() const;

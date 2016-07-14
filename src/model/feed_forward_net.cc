@@ -73,7 +73,7 @@ const vector<ParamSpec> FeedForwardNet::GetParamSpecs() const {
   return specs;
 }
 
-void FeedForwardNet::Compile(bool shuffle, Updater* updater, Loss* loss,
+void FeedForwardNet::Compile(bool shuffle, bool registered, Updater* updater, Loss* loss,
                              Metric* metric) {
   shuffle_ = shuffle;
   bool train = (updater != nullptr) && (loss != nullptr);
@@ -86,7 +86,9 @@ void FeedForwardNet::Compile(bool shuffle, Updater* updater, Loss* loss,
   auto params = GetParamValues();
   CHECK_EQ(specs.size(), params.size());
   for (size_t k = 0; k < specs.size(); k++) {
-    updater_->Register(specs[k].name(), specs[k]);
+    if (!registered) {
+      updater_->Register(specs[k].name(), specs[k]);
+    }
     auto init = CreateInitializer(specs[k].filler());
     init->Fill(params[k]);
     LOG(INFO) << specs[k].name() << " : " << params[k].L1();
@@ -166,7 +168,6 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
       const auto ret = TrainOnBatch(epoch, bx, by);
       loss += ret.first;
       metric += ret.second;
-      LOG(INFO) << "One batch is over " <<  loss << " " << metric;
     }
     loss /= b;
     metric /= b;
