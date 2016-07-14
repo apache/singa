@@ -20,7 +20,7 @@
 #include "singa/model/layer.h"
 #include "singa/model/loss.h"
 #include "singa/model/metric.h"
-#include "singa/model/optimizer.h"
+#include "singa/model/updater.h"
 namespace singa {
 
 /// The feed-forward neural net.
@@ -57,8 +57,7 @@ class FeedForwardNet {
   /// necessary; But for training, both 'opt' and 'loss' are necessary.
   /// 'shuffle' indicates shuffling training samples within one epoch it is
   /// valid using Train();
-  void Compile(bool shuffle, Optimizer* opt, Loss* loss,
-               Metric* metric);
+  void Compile(bool shuffle, Updater* updater, Loss* loss, Metric* metric);
 
   /// Conduct the training giving the training data 'x' and label 'y'.
   /// 'val_split' of training data is used for
@@ -125,7 +124,7 @@ class FeedForwardNet {
 
  protected:
   vector<Layer*> layers_;
-  Optimizer* opt_;
+  Updater* updater_;
   Loss* loss_;
   Metric* metric_;
 
@@ -134,7 +133,6 @@ class FeedForwardNet {
   DataType dtype_ = kFloat32;
 };
 
-}  /* singa */
-
+} /* singa */
 
 #endif  // SINGA_MODEL_FEED_FORWARD_NET_H_

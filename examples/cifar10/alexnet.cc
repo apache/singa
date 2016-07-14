@@ -22,6 +22,7 @@
 #include "./cifar10.h"
 #include "singa/model/feed_forward_net.h"
 #include "singa/model/optimizer.h"
+#include "singa/model/updater.h"
 #include "singa/model/initializer.h"
 #include "singa/model/metric.h"
 #include "singa/utils/channel.h"
@@ -182,7 +183,8 @@ void Train(float lr, int num_epoch, string data_dir) {
 
   SoftmaxCrossEntropy loss;
   Accuracy acc;
-  net.Compile(true, &sgd, &loss, &acc);
+  Updater updater(1, &Optimizer);
+  net.Compile(true, &updater, &loss, &acc);
 
   auto cuda = std::make_shared<CudaGPU>();
   net.ToDevice(cuda);
