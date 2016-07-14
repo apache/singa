@@ -55,7 +55,7 @@ class Updater {
   Optimizer* opt_;
   std::mutex mtx_;
   std::condition_variable partial_count_eq_total_num_;
-  std::unordered_map<std::string, int> partial_count_;
+  std::unordered_map<std::string, int> aggr_count_, copy_count_;
   std::unordered_map<std::string, Tensor> buffer_, partial_sum_;
 };
 }  //  namespace singa

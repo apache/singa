@@ -23,12 +23,13 @@ namespace singa {
 void Updater::Setup(const OptimizerConf& conf) { opt_->Setup(conf); }
 void Updater::Register(const string& name, const ParamSpec& specs) {
   opt_->Register(name, specs);
-  partial_count_[name] = 0;
+  aggr_count_[name] = 0;
+  copy_count_[name] = 0;
 }
 void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
   CHECK(partial_count_.count(name) == 1) << "Parameter " << name
                                          << " has not been registered before.";
-  std::unique_lock<std::mutex> lock(mtx_);
+  std::unique_lock<std::mutex> aggr_lock(aggr_mtx_);
   if (partial_count_[name] == 0) {
     partial_sum_[name].ResetLike(grad);
     partial_sum_[name].ToHost();
@@ -46,6 +47,7 @@ void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
     buffer_[name].CopyData(value);
     // Apply optimization algorithm based on the aggregated gradient.
     opt_->Apply(step, name, partial_sum_[name], buffer_[name]);
+    copy_count_[name] = 0;
     partial_count_eq_total_num_.notify_all();
   } else {
     // Block this thread when we have not gotten enough paritial gradients.
@@ -55,5 +57,8 @@ void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
   }
   lock.unlock();
   value.CopyData(buffer_[name]);
+  lock.lock();
+  ++copy_count_[name];
+  if (copy_count_[name] == total_num_) partial_count_[name] = 0;
 }
-} // namesapce singa
+}  // namesapce singa
