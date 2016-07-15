@@ -1,27 +1,20 @@
 #Quickstart - Cifar10 example
-Convolutional neural network (CNN) is a type of feed-forward artificial neural network widely used for image and video classification. In this example, we will use a deep CNN model to do image classification for the [CIFAR10 dataset](http://www.cs.toronto.edu/~kriz/cifar.html).
+Convolution neural network (CNN) is a type of feed-forward artificial neural network widely used for image classification. In this example, we will use a deep CNN model to do image classification for the [CIFAR10 dataset](http://www.cs.toronto.edu/~kriz/cifar.html).
 
-## Running instructions of CPP version
-To run CNN example in CPP version, we need to compile SINGA first. In SINGA_ROOT, execute the following instructions (can also refer to [Installation instructions](https://github.com/kaiping/singa_v1.0_doc/blob/master/installation.md))
+## Running instructions for CPP version
+Please refer to [Installation](installation.html) page for how to install SINGA. Currently, we CNN requires CUDNN, hence both CUDA and CUDNN should be installed and SINGA should be compiled with CUDA and CUDNN.
 
-    # in SINGA_ROOT
-    $ mkdir build
-    $ cd build/
-    # generate Makefile for compilation
-    $ cmake ..
-    # compile SINGA
-    $ make
-
-
-Now download the Cifar10 dataset by running the script download_data.py, remember that for downloading CPP version data, we need `bin` as argument,
+The Cifar10 dataset could be downloaded by running
 
     # switch to cifar10 directory
     $ cd ../examples/cifar10
     # download data for CPP version
     $ python download_data.py bin
 
+'bin' is for downloading binary version of Cifar10 data.
+
 During downloading, you should see the detailed output like
-     
+
      Downloading CIFAR10 from http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz
      The tar file does exist. Extracting it now..
      Finished!
@@ -73,20 +66,17 @@ You should see the detailed output as follows: first read the data files in orde
     Epoch 3, training loss = 1.213776, accuracy = 0.571620, lr = 0.001000
     Epoch 3, val loss = 1.175346, metric = 0.582000
 
-The training details are stored in `train_perf` file in the same directory and the validation details in `val_perf` file. 
-## Running instructions of Python version
-To run CNN example in Python version, we also need to compile SINGA first. In SINGA_ROOT, execute the following instructions (can also refer to [Installation instructions](https://github.com/kaiping/singa_v1.0_doc/blob/master/installation.md))
+The training details are stored in `train_perf` file in the same directory and the validation details in `val_perf` file.
 
-    # in SINGA_ROOT
-    $ mkdir build
-    $ cd build/
-    # generate Makefile for compilation
-    $ cmake ..
-    # compile SINGA
+
+## Running instructions for Python version
+To run CNN example in Python version, we need to compile SINGA with Python binding,
+
+    $ mkdir build && cd build
+    $ cmake -DUSE_PYTHON=ON ..
     $ make
 
-
-Now download the Cifar10 dataset by running the script download_data.py, remember that for downloading Python version data, we need `py` as argument,
+Now download the Cifar10 dataset,
 
     # switch to cifar10 directory
     $ cd ../examples/cifar10
@@ -94,7 +84,7 @@ Now download the Cifar10 dataset by running the script download_data.py, remembe
     $ python download_data.py py
 
 During downloading, you should see the detailed output like
-     
+
      Downloading CIFAR10 from http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz
      The tar file does exist. Extracting it now..
      Finished!
@@ -103,7 +93,7 @@ Then execute the `train.py` script to build the model
 
     $ python train.py
 
-You should see the output as follows including the details of neural net structure with some parameter information, reading data files, and the performance details during training and testing process. 
+You should see the output as follows including the details of neural net structure with some parameter information, reading data files, and the performance details during training and testing process.
 
     (32L, 32L, 32L)
     (32L, 16L, 16L)

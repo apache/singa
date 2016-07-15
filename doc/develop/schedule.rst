@@ -1,7 +1,7 @@
 Development Schedule
 ====================
 
-.. csv-table:: 
+.. csv-table::
 	:header: "Release", "Module", "Feature", "Status"
 
 	" 0.1 Sep 2015     "," Neural Network          "," Feed forward neural network, including CNN, MLP                                                                 "," done  "
@@ -29,8 +29,6 @@ Development Schedule
 	"                  "," Installation            "," Remove dependency on ZeroMQ, CZMQ, Zookeeper for single node training","done"
 	"                  "," Updater                 "," Add new SGD updaters including Adam, AdamMax and AdaDelta","done"
 	"                  "," Binding                 "," Enhance Python binding for training","done"
-	"0.4 June 2016     "," Rafiki                  "," Deep learning as a service "," "
-	"                  ","                         "," Product search using Rafiki"," "
 	"1.0 July 2016     "," Programming abstraction ","Tensor with linear algebra, neural net and random operations "," "
 	"                  ","                         ","Updater for distributed parameter updating ",""
 	"                  "," Optimization            "," Execution and memory optimization",""
@@ -39,3 +37,4 @@ Development Schedule
 	"                  "," Cross-platform          "," To extend from Linux to MacOS and Windows",""
 	"                  "," Examples                "," Speech recognition example",""
 	"                  ","                         ","Large image models, e.g., [GoogLeNet](http://arxiv.org/abs/1409.4842), [VGG](https://arxiv.org/pdf/1409.1556.pdf) and [Residual Net](http://arxiv.org/abs/1512.03385)",""
+	"     "," Rafiki                  "," Deep learning as a service "," "

@@ -1,25 +1,22 @@
-## Source Repository
+# Source Repository
 
 ___
 
 This project uses [Git](http://git-scm.com/) to manage its source code. Instructions on Git use can be found at [http://git-scm.com/documentation](http://git-scm.com/documentation).
 
-### Web Access
+## Web Access
 
 The following is a link to the online source repository.
 
 * [https://git-wip-us.apache.org/repos/asf?p=incubator-singa.git;a=summary](https://git-wip-us.apache.org/repos/asf?p=incubator-singa.git;a=summary)
 
-### Anonymous Access
 
-The source can be checked out anonymously from Git with this command (See [http://git-scm.com/docs/git-clone](http://git-scm.com/docs/git-clone)):
+## Upstream for committers
 
-	$ git clone https://git-wip-us.apache.org/repos/asf/incubator-singa.git
+Committers need to set the upstream endpoint to the Apache git (not github) repo address, e.g.,
 
-### Developer Access
+    $ git remote add asf https://git-wip-us.apache.org/repos/asf/incubator-singa.git
 
-	$ git clone https://git-wip-us.apache.org/repos/asf/incubator-singa.git
+Then you (committer) can push your code in this way,
 
-The source can be checked out anonymously from Git with this command (See [http://git-scm.com/docs/git-clone](http://git-scm.com/docs/git-clone)):
-
-
+    $ git push asf <local-branch>:<remote-branch>
