@@ -35,9 +35,19 @@ TEST(Decoder, Decode) {
 
   // initial random seed
   srand(time(NULL));
+ 
+  singa::EncoderConf encoder_conf;
+  encoder_conf.set_image_dim_order("HWC");
+  encoder.Setup(encoder_conf);
+  EXPECT_EQ("HWC", encoder.image_dim_order());
 
-  size_t height = 40, width = 30;
-  size_t nheight = 256, nwidth = 256, channel = 3;
+  singa::DecoderConf decoder_conf;
+  decoder_conf.set_image_dim_order("HWC");
+  decoder.Setup(decoder_conf);
+  EXPECT_EQ("HWC", decoder.image_dim_order());
+
+  size_t height = 4, width = 2;
+  size_t nheight = 4, nwidth = 2, channel = 3;
   size_t total = nheight * nwidth * channel;
   cv::Mat image(height, width, CV_8UC3);
   for (size_t i = 0; i < height; i++)
@@ -48,8 +58,8 @@ TEST(Decoder, Decode) {
   cv::Mat transformed;
   cv::Size size(nwidth, nheight);
   cv::resize(image, transformed, size);
-  EXPECT_EQ(static_cast<int>(nwidth), transformed.cols);
-  EXPECT_EQ(static_cast<int>(nheight), transformed.rows);
+  EXPECT_EQ(static_cast<int>(nwidth), transformed.size().width);
+  EXPECT_EQ(static_cast<int>(nheight), transformed.size().height);
   EXPECT_EQ(static_cast<int>(channel), transformed.channels());
 
   unsigned char* buff = transformed.data;
@@ -67,7 +77,7 @@ TEST(Decoder, Decode) {
   const int* in_label = input[1].data<int>();
   EXPECT_EQ(2, in_label[0]);
   EXPECT_EQ(2u, input.size());
-
+ 
   std::string tmp = encoder.Encode(input);
   std::vector<Tensor> output = decoder.Decode(tmp);
   EXPECT_EQ(2u, output.size());
@@ -77,8 +87,14 @@ TEST(Decoder, Decode) {
   const int* out_label = output[1].data<int>();
   EXPECT_EQ(raw_label, out_label[0]);
   // opencv imencode will have some information loss
-  // const float* out_pixel = output[0].data<const float*>();
-  // for(size_t i = 0; i < total; i++)
-  //  EXPECT_LE(fabs(in_pixel[i]-out_pixel[i]), 10.f);
+  /*const float* out_pixel = output[0].data<const float>();
+  cv::Mat out(height, width, CV_8UC3);
+  for (size_t i = 0; i < height; i++)
+    for (size_t j = 0; j < width; j++)
+      for (size_t k = 0; k < channel; k++)
+        out.at<cv::Vec3b>(i, j)[k] = 
+            out_pixel[i * width * channel + j * channel + k];
+  for(size_t i = 0; i < total; i++)
+    EXPECT_LE(fabs(in_pixel[i]-out_pixel[i]), 10.f);*/
 }
 #endif

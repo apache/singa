@@ -28,6 +28,7 @@ OPTION(USE_PYTHON "Generate py wrappers" ON)
 INCLUDE("cmake/Dependencies.cmake")
 INCLUDE("cmake/Utils.cmake")
 ADD_DEFINITIONS(-DUSE_CMAKE)
+#message(STATUS "${SINGA_INCLUDE_DIR}")
 
 CONFIGURE_FILE (
     "${PROJECT_SOURCE_DIR}/cmake/Templates/singa_config.h.in"

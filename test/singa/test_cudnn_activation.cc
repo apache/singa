@@ -79,6 +79,7 @@ TEST(TCudnnActivation, Forward) {
     EXPECT_FLOAT_EQ(y[0], yptr[0]);
     EXPECT_FLOAT_EQ(y[4], yptr[4]);
     EXPECT_FLOAT_EQ(y[5], yptr[5]);
+    delete[] y;
   }
 }
 
@@ -127,6 +128,7 @@ TEST(TCudnnActivation, Backward) {
     for (size_t i = 0; i < n; i++) {
       EXPECT_NEAR(dx[i], xptr[i], 1e-7);
     }
+    delete[] dx;
   }
 }
 #endif  // USE_CUDNN

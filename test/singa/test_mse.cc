@@ -87,6 +87,7 @@ TEST_F(TestMSE, CudaForward) {
   }
 	p.ToHost();
 	t.ToHost();
+  delete mse;
 }
 
 TEST_F(TestMSE, CudaBackward) {

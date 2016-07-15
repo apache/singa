@@ -30,6 +30,27 @@ message DecoderConf {
   optional bool has_label = 3 [default = true];
 }
 
+message TransformerConf {
+  optional bool featurewise_center = 1 [default = false];
+  optional bool samplewise_center = 2 [default = false];
+  optional bool featurewise_std_norm = 3 [default = false];
+  optional bool samplewise_std_norm = 4 [default = false];
+  optional bool zca_whitening = 5 [default = false];
+  optional int32 rotation_range = 6 [default = 0];
+  /// crop_shape should exactly contain 2 elements in order,
+  /// i.e., crop_height, crop_width.
+  repeated uint32 crop_shape = 7 [packed = true];
+  optional int32 resize_height = 8 [default = 0];
+  optional int32 resize_width = 9 [default = 0];
+  optional bool horizontal_mirror = 10 [default = false];
+  optional bool vertical_mirror = 11 [default = false];
+  /// if input tensor is 4D or 3D,
+  /// supported shape of inputs are "CHW" and "HWC".
+  /// if input tensor is 2D, this field will be ignored.
+  optional string image_dim_order = 12 [default = "CHW"];
+  optional float rescale = 13 [default = 0];
+}
+
 message ImageRecord {
   repeated int32 shape = 1;
   repeated int32 label = 2;

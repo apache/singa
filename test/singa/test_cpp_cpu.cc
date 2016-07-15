@@ -46,6 +46,7 @@ TEST(CppCPU, Exec) {
       z = x + y;
       }, {b}, {b}, false);
   EXPECT_EQ(x + y, z);
+  dev.FreeBlock(b);
 }
 
 TEST(CppCPU, CopyData) {

@@ -81,6 +81,7 @@ TEST(Activation, Forward) {
     EXPECT_FLOAT_EQ(y[0], yptr[0]);
     EXPECT_FLOAT_EQ(y[4], yptr[4]);
     EXPECT_FLOAT_EQ(y[5], yptr[5]);
+    delete[] y;
   }
 }
 
@@ -130,5 +131,6 @@ TEST(Activation, Backward) {
     EXPECT_FLOAT_EQ(dx[0], xptr[0]);
     EXPECT_FLOAT_EQ(dx[4], xptr[4]);
     EXPECT_FLOAT_EQ(dx[5], xptr[5]);
+    delete[] dx;
   }
 }

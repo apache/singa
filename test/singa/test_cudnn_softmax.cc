@@ -63,6 +63,7 @@ TEST(CudnnSoftmax, Forward1D) {
   for (size_t i = 0; i < n; i++) sigma += exp(x[i]);
   for (size_t i = 0; i < n; i++) y[i] = exp(x[i]) / sigma;
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(y[i], yptr[i]);
+  delete[] y;
 }
 
 TEST(CudnnSoftmax, Backward1D) {
@@ -96,6 +97,7 @@ TEST(CudnnSoftmax, Backward1D) {
   for (size_t i = 0; i < n; i++) sigma += grad[i] * yptr[i];
   for (size_t i = 0; i < n; i++) dx[i] = (grad[i] - sigma) * yptr[i];
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dx[i], xptr[i]);
+  delete[] dx;
 }
 
 TEST(CudnnSoftmax, Forward2D) {
@@ -124,6 +126,8 @@ TEST(CudnnSoftmax, Forward2D) {
   for (size_t i = 0; i < n; i++) sigma[i / c] += exp(x[i]);
   for (size_t i = 0; i < n; i++) y[i] = exp(x[i]) / sigma[i / c];
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(y[i], yptr[i]);
+  delete[] y;
+  delete[] sigma;
 }
 
 TEST(CudnnSoftmax, Backward2D) {
@@ -159,5 +163,7 @@ TEST(CudnnSoftmax, Backward2D) {
   for (size_t i = 0; i < n; i++) sigma[i / c] += grad[i] * yptr[i];
   for (size_t i = 0; i < n; i++) dx[i] = (grad[i] - sigma[i / c]) * yptr[i];
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dx[i], xptr[i]);
+  delete[] dx;
+  delete[] sigma;
 }
 #endif  // USE_CUDNN

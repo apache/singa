@@ -34,11 +34,11 @@ std::vector<Tensor> JPGDecoder::Decode(std::string value) {
 
   // decode image
   cv::Mat mat = cv::imdecode(cv::Mat(pixel), CV_LOAD_IMAGE_COLOR);
-  size_t height = mat.rows, width = mat.cols, channel = mat.channels();
+  size_t height = mat.size().height, width = mat.size().width, channel = mat.channels();
   Shape shape(record.shape().begin(), record.shape().end());
-  CHECK_EQ(shape[0], height);
-  CHECK_EQ(shape[1], width);
-  CHECK_EQ(shape[2], channel);
+  //CHECK_EQ(shape[0], height);
+  //CHECK_EQ(shape[1], width);
+  //CHECK_EQ(shape[2], channel);
   Tensor image(shape);
 
   float* data = new float[image.Size()];
@@ -61,10 +61,10 @@ std::vector<Tensor> JPGDecoder::Decode(std::string value) {
   }
   image.CopyDataFromHostPtr<float>(data, image.Size());
   output.push_back(image);
-  delete data;
+  delete[] data;
 
   if (record.label_size()) {
-    Tensor label(Shape{1}, &defaultDevice, kInt);
+    Tensor label(Shape{1}, kInt);
     int labelid = record.label(0);
     label.CopyDataFromHostPtr(&labelid, 1);
     output.push_back(label);

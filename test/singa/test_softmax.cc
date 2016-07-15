@@ -60,6 +60,7 @@ TEST(Softmax, Forward) {
     for (size_t j = 0; j < col; j++) {
       EXPECT_FLOAT_EQ(yptr[i * col + j], exp(x[i * col + j]) / sigma[i]);
     }
+  delete[] sigma;
 }
 
 TEST(Softmax, Backward) {
@@ -96,5 +97,7 @@ TEST(Softmax, Backward) {
   EXPECT_FLOAT_EQ(dx[0], xptr[0]);
   EXPECT_FLOAT_EQ(dx[4], xptr[4]);
   EXPECT_FLOAT_EQ(dx[5], xptr[5]);
+  delete[] dx;
+  delete[] sigma;
 }
 #endif
