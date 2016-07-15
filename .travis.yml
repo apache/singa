@@ -1,0 +1,18 @@
+sudo: required
+language: cpp
+compiler: gcc
+dist: trusty
+
+before_install:
+ - sudo apt-get -qq update
+ - sudo apt-get install -qq -y libopenblas-dev libgoogle-glog-dev libprotobuf-dev protobuf-compiler
+#- sudo apt-get install -qq libgtest-dev
+
+before_script:
+ - mkdir build && cd build
+ - cmake .. -DUSE_CUDA=OFF -DUSE_CUDNN=OFF -DUSE_PYTHON=OFF
+
+script:
+ - make
+ - ./bin/test_singa --gtest_output=xml:./../gtest.xml
+

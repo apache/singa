@@ -22,15 +22,26 @@
 #ifndef SINGA_UTILS_CONTEXT_H_
 #define SINGA_UTILS_CONTEXT_H_
 
-#include <glog/logging.h>
 #include <chrono>
 #include <random>
 #include <thread>
 #include <unordered_map>
 #include <vector>
 
+#include "singa/utils/logging.h"
+
 #ifdef USE_GPU
-#include "singa/utils/cuda_utils.h"
+#include <cublas_v2.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <curand.h>
+// CUDA: various checks for different function calls.
+#define CUDA_CHECK(condition) \
+/* Code block avoids redefinition of cudaError_t error */ \
+do { \
+cudaError_t error = condition; \
+CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+} while (0)
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
