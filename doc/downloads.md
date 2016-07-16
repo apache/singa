@@ -1,7 +1,7 @@
 ## Download SINGA
 ---
 
-* Latest code: please clone the latest code from [Github](https://github.com/apache/incubator-singa)
+* Latest code: please clone the dev branch from [Github](https://github.com/apache/incubator-singa)
 
 * v0.3.0 (20 April 2016):
     * [Apache SINGA 0.3.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/0.3.0/apache-singa-incubating-0.3.0.tar.gz)
