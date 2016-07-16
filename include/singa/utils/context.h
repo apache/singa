@@ -49,6 +49,15 @@ CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
 
 #endif
 
+#ifdef USE_OPENCL
+// http://github.khronos.org/OpenCL-CLHPP/
+// cl2.hpp includes cl.h, do not re-include.
+#define CL_HPP_MINIMUM_OPENCL_VERSION 200
+#define CL_HPP_TARGET_OPENCL_VERSION 200
+#include <map>
+#include <CL/cl2.hpp>
+#endif // USE_OPENCL
+
 namespace singa {
 
 /**
@@ -156,7 +165,7 @@ class Context {
   }
 
   /**
-   * \copybreif rand_generator(const std::thread::id&);
+   * \copybrief rand_generator(const std::thread::id&);
    * @return the CPU random generator for the calling thread.
    */
   std::mt19937* rand_generator() {
@@ -181,7 +190,7 @@ class Context {
   }
 #ifdef USE_GPU
   /**
-   * \copybreif cublas_handle_(const std::thread::id&);
+   * \copybrief cublas_handle_(const std::thread::id&);
    * @return cublas handle for the calling thread.
    */
   cublasHandle_t cublas_handle() {
@@ -257,9 +266,20 @@ class Context {
     // LOG(ERROR) << "use cudnn handle from device " << device_id;
     return cudnn_handle_[device_id];
   }
-#endif
+#endif // USE_CUDNN
 
-#endif
+#endif // USE_GPU
+
+#ifdef USE_OPENCL
+  void set_ocl_ctx(const cl::Context& ctx) { oclctx = ctx; }
+
+  void add_ocl_device(const cl::Device& dev) { ocl_devices.push_back(dev); }
+
+  cl::Device get_ocl_device(const int id) { return ocl_devices.at(id); }
+  cl::CommandQueue get_dev_cmdq(const int id) { return ocl_devices.at(id).cmdq(); }
+
+  cl::Context ocl_ctx() { return oclctx; }
+#endif // USE_OPENCL
 
  protected:
   //!< max num of GPUs per process
@@ -278,8 +298,14 @@ class Context {
 
 #ifdef USE_CUDNN
   std::vector<cudnnHandle_t> cudnn_handle_;
-#endif
-#endif
+#endif // USE_CUDNN
+
+#endif // USE_GPU
+
+#ifdef USE_OPENCL
+  cl::Context oclctx;
+  std::vector<cl::Device> ocl_devices;
+#endif // USE_OPENCL
 };
 
 }  // namespace singa

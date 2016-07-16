@@ -305,7 +305,7 @@ void GEMV(bool trans, const size_t m, const size_t n, const DType alpha,
   LOG(FATAL) << "GEMV Not Implemented";
 }
 
-/// multiply a matrix with a diagnoal matrix constructed using values from 'v'.
+/// multiply a matrix with a diagonal matrix constructed using values from 'v'.
 /// if matrix_lef_side is true, do M*v; else do v*M
 template <typename DType, typename Lang>
 void DGMM(const bool side_right, const size_t nrow, const size_t ncol,

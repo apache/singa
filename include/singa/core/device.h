@@ -24,6 +24,7 @@
 #include <string>
 #include <functional>
 #include <memory>
+
 #include "singa/singa_config.h"
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
@@ -33,19 +34,19 @@
 using std::vector;
 using std::string;
 using std::function;
-using std::shared_ptr;
+
 namespace singa {
 /// Allocate memory and execute Tensor operations.
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
 class Device {
   public:
-  // Device() = default;
-  virtual ~Device() {}
+  Device() = default;
   /// Constructor with device ID, num of executors (e.g., cuda streams),
-  /// max mem size to use (in MB)
-  Device(int id, int num_executors);
-
+  /// max mem size to use (in MB), identifier of scheduler type (default
+  /// scheduler run operations synchronously) and virtual memory type (default
+  /// vm only provides garbage collection).
+  Device(int id, int num_executors, string scheduler, string vm);
   virtual void SetRandSeed(unsigned seed) = 0;
 
   /// Called by Tensor.
@@ -53,12 +54,6 @@ class Device {
 
   /// Called by Tensor.
   void FreeBlock(Block* block);
-
-  /// Return the size (bytes) of memory in use
-  /// TODO(wangwei) override this function for all devices.
-  virtual size_t GetAllocatedMem() {
-    return 0u;
-  }
 
   /// Copy data within or across devices.
   void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
@@ -90,9 +85,6 @@ class Device {
   }
 
   int id() const { return id_; }
-
- private:
-  Device() {};
 
  protected:
   /// Execute one operation on one executor.
@@ -127,8 +119,8 @@ class Device {
 /// It runs cpp code.
 class CppCPU : public Device {
  public:
-  ~CppCPU() {};
-  CppCPU();
+  CppCPU(int id = -1, int num_executors = 1,
+            string scheduler = "sync", string vm = "gc-only");
 
   void SetRandSeed(unsigned seed) override;
  protected:
@@ -156,68 +148,13 @@ extern std::shared_ptr<Device> defaultDevice;
 class CudaGPU : public Device {
  public:
   ~CudaGPU();
-  /// Construct the device using default mem pool setting.
-  CudaGPU(int id = 0);
-  /// Construct the device given the physical device ID and memory pool.
-  CudaGPU(int id, std::shared_ptr<DeviceMemPool> pool);
+  CudaGPU(int id = 0, int num_executors = 1, string scheduler = "sync",
+         string vm = "gc-only");
+	CudaGPU(const MemPoolConf& mem_conf, 
+					int id = 0, int num_executors = 1, string scheduler = "sync");
 
   void SetRandSeed(unsigned seed) override;
-  size_t GetAllocatedMem() override;
-
- protected:
-  void DoExec(function<void(Context*)>&& fn, int executor) override;
-
-  void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                  CopyDirection direction, Context* ctx) override;
-
-  /// Allocate cpu memory.
-  void* Malloc(int size) override;
-
-  /// Free cpu memory.
-  void Free(void* ptr) override;
-
- private:
-  void Setup();
-
- private:
-	shared_ptr<DeviceMemPool> pool_;
-};
-
-/// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
-
-#endif  // USE_CUDA
-
-/// For querying physical devices and creating singa::Device instances.
-class Platform {
- public:
-  /// Return the number of total avaiable GPUs
-  static int GetNumGPUs();
-
-  /// Return the device IDs of available GPUs.
-  /// TODO(wangwei) return the IDs according to free memory in decending order
-  static const vector<int> GetGPUIDs();
-
-  static const std::pair<size_t, size_t> GetGPUMemSize(const int device);
-  /// Return the memory of a GPU <free, total>
-  static const vector<std::pair<size_t, size_t>> GetGPUMemSize();
-
-  /// Return a string containing all hardware info, e.g., version, memory size.
-  static const string DeviceQuery(int id, bool verbose = false);
-
-  /// Create a set of CudaGPU Device using 'num_devices' free GPUs.
-  static const vector<shared_ptr<Device> >
-  CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
-
-  /// Create a set of CudaGPU Device using given GPU IDs.
-  static const vector<shared_ptr<Device> >
-  CreateCudaGPUs(const vector<int> &devices, size_t init_size = 0);
-
-  /// Create a set of OpenclGPU Device using 'num_devices' free GPUs.
-  const vector<shared_ptr<Device>> CreateOpenclGPUs(const size_t num_devices);
-
-  /// Create a set of OpenclGPU Device using given GPU IDs.
-  const vector<shared_ptr<Device>> CreateOpenclGPUs(const vector<int>& id);
-  /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
+  static void DeviceQuery();
   /// This function checks the availability of GPU #device_id.
   /// It attempts to create a context on the device by calling cudaFree(0).
   /// cudaSetDevice() alone is not sufficient to check the availability.
@@ -232,11 +169,58 @@ class Platform {
   /// the permission. cudaFree(0) is one of those with no side effect,
   /// except the context initialization.
   static bool CheckDevice(const int device_id);
+  /// This function finds the first available device by checking devices with
+  /// ordinal from start_id to the highest available value. In the
+  /// EXCLUSIVE_PROCESS or EXCLUSIVE_THREAD mode, if it succeeds, it also
+  /// claims the device due to the initialization of the context.
+  static int FindDevice(const int start_id);
+ protected:
+  void DoExec(function<void(Context*)>&& fn, int executor) override;
 
-// private:
-  Platform() {};  // No need to construct an instance as it has no member fields
+  void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                  CopyDirection direction, Context* ctx) override;
+
+  /// Allocate cpu memory.
+  void* Malloc(int size) override;
+
+  /// Free cpu memory.
+  void Free(void* ptr) override;
+	
+	private:
+	DeviceMemPool* pool;
 };
 
+/// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
+
+#endif  // USE_CUDA
+
+// Implement a CudaHost device, which used cuda functions for memory
+// malloc/free.
+// class CudaHost : public Device {}
+//
+/// The base type of callback argument structure.
+/// The specific arg should inherit from this one.
+/*
+class CallbackArg {
+ public:
+  template <typename T>
+  T* CastTo() {
+    static_assert(std::is_base_of<CallbackArg, T>::value,
+                  "The casted type must be a sub-class of CallbackArg");
+    return static_cast<T*>(this);
+  }
+};
+/// Type of callback functions for executing tensor ops.
+typedef function<void(CallbackArg*)> CallbackFn;
+public:
+  /// Operation has a function, and read/write blocks.
+  typedef struct _Operation {
+    function<void(Context*)> fn;
+    const vector<Block*> read_blocks;
+    const vector<Block*> write_blocks;
+  } Operation;
+
+*/
 }  // namespace singa
 
 #endif  // SINGA_CORE_DEVICE_H_
