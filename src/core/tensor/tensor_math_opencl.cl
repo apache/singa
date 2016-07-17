@@ -55,7 +55,7 @@ void clkernel_clamp(const int num, float low, float high, __global const float* 
 
 __kernel
 void clkernel_divide_scalar_matx(const int num, __global const float* in1, const float x,
-		  __global const float* in2, __global float* out) {
+		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
   out[i] = in1[i] / x;
@@ -63,7 +63,7 @@ void clkernel_divide_scalar_matx(const int num, __global const float* in1, const
 
 __kernel
 void clkernel_divide_scalar_xmat(const int num, const float x, __global const float* in1, 
-		  __global const float* in2, __global float* out) {
+		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
   out[i] = x / in1[i];
@@ -159,7 +159,7 @@ __kernel
 void clkernel_relu(const int num, __global const float* in, __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
-  out[i] = (in[i] > 0) ? in[i] : 0.0f;
+  out[i] = (in[i] >= 0.0f) ? in[i] : 0.0f;
 }
 
 __kernel
@@ -371,8 +371,9 @@ void clkernel_dot(const int num, __global const float* in1, __global const float
   
 }
 
-// Third kernel from http://www.bealto.com/gpu-gemv_intro.html
+// First kernel from http://www.bealto.com/gpu-gemv_intro.html
 // y = α*A*v + β*y
+// fma(a, b, c) == (a * b) + c with infinite precision
 __kernel
 void clkernel_gemv(const int m, const int n, const float alpha,
 				   __global const float* A, __global const float* v, 
@@ -380,7 +381,7 @@ void clkernel_gemv(const int m, const int n, const float alpha,
   const int i = get_global_id(0);
   float sum  = 0.0f;
   for (int k = 0; k < n; k++) {
-	sum += fma(alpha, A[i + m * k], v[k]) + beta * out[i + m * k];
+    sum += fma(beta, out[i + m * k], alpha * A[i + m * k] * v[k]);
   }
   out[i] = sum;
 }
@@ -418,18 +419,37 @@ void clkernel_dgmm_right(const int nrow, const int ncol,
 // TODO: Optimize with Reference from http://www.cedricnugteren.nl/tutorial.php?page=1
 //  C = α*A*B + β*C
 __kernel
-void clkernel_gemm(const int nrowA, const int ncolB, const int ncolA, const float alpha,
-		 		   __global const float *A, __global const float* B, const float beta, 
-		  		   __global float* C) {
-  const uint gidx = get_global_id(0);
-  const uint gidy = get_global_id(1);
+void clkernel_gemm(const uint nrowA, const uint ncolB, const uint ncolA, const float alpha,
+		 		   __global const float* A, __global const float* B, const float beta, 
+		  		   __global float* C, __local float* Asub, __local float* Bsub) {
 
+  const uint lidx = get_local_id(0);
+  const uint lidy = get_local_id(1);
+  const uint TS = get_local_size(0); // Tile size
+  const uint gidx = TS * get_group_id(0) + lidx; // Row ID of C (0..M)
+  const uint gidy = TS * get_group_id(1) + lidy; // Row ID of C (0..N)
+  
+  // Initialise the accumulation register
   float acc = 0.0f;
-  for (uint i = 0; i < ncolA; i++) {
-	acc = fma(A[i * nrowA + gidx], B[gidy * ncolA + i] * alpha, acc);
+  
+  // Loop over all tiles
+  const int numtiles = ncolA / TS;
+  for (int t = 0; t < numtiles; t++) {
+    const int tiledRow = TS * t + lidx;
+    const int tiledCol = TS * t + lidy;
+    Asub[lidy * TS + lidx] = A[tiledCol * nrowA + gidx];
+    Bsub[lidy * TS + lidx] = B[gidy * ncolA + tiledRow];
+    
+    barrier(CLK_LOCAL_MEM_FENCE);
+    
+    for(int k = 0; k < TS; k++) {
+      acc += Asub[k * TS + lidx] * Bsub[lidy * TS + k] * alpha;
+    }
+    
+    barrier(CLK_LOCAL_MEM_FENCE);
   }
-
-  C[gidy * nrowA + gidx] = fma(C[gidy * nrowA + gidx], beta, acc);
+  
+  C[gidy * nrowA + gidx] = fma(beta, C[gidy * nrowA + gidx], acc);
 }
 
 
@@ -562,6 +582,15 @@ void clkernel_transpose2(uint nrow, uint ncol, __global const float* in, __globa
 
 __kernel
 void clkernel_diagvec_left(uint vsize, __global const float* vin, __global float* out) {
+  const uint gid = get_global_id(0);
+
+  for (uint i = 0; i < vsize; i++)
+	out[gid * vsize + i] = (i == gid) ? vin[gid] : 0.0f;
+}
+
+
+__kernel
+void clkernel_diagvec_right(uint vsize, __global const float* vin, __global float* out) {
   const uint gid = get_global_id(0);
 
   for (uint i = 0; i < vsize; i++)

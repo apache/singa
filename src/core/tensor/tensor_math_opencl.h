@@ -19,7 +19,7 @@
 #ifndef  SINGA_CORE_TENSOR_TENSOR_MATH_OPENCL_H_
 
 #ifdef USE_OPENCL
-//#include <CL/cl2.hpp>
+#include <limits>
 
 #include "singa/utils/opencl_utils.h"
 #include "tensor_math.h"
@@ -122,7 +122,7 @@ void Div<float, lang::Opencl>(const size_t num, const Block* in, const float x, 
 
   std::string kname = "clkernel_divide_scalar_matx";
   auto kernel = ctx->kernels->at(kname);
-
+  
   cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
@@ -142,7 +142,7 @@ void Div<float, lang::Opencl>(const size_t num, const float x, const Block* in, 
 
   std::string kname = "clkernel_divide_scalar_xmat";
   auto kernel = ctx->kernels->at(kname);
-
+  
   cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
@@ -162,7 +162,7 @@ void Div<float, lang::Opencl>(const size_t num, const Block* in1, const Block* i
 
   std::string kname = "clkernel_divide";
   auto kernel = ctx->kernels->at(kname);
-
+  
   cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
   cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
@@ -401,7 +401,7 @@ void Set<float, lang::Opencl>(const size_t num, const float x, Block* out, Conte
 
   std::string kname = "clkernel_set";
   auto kernel = ctx->kernels->at(kname);
-
+  
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -568,21 +568,29 @@ void Tanh<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Co
 // Random functions
 // **************************************
 
+/// Seed value required for generating distributions.
+static unsigned int seed[4] = {0, 32, 42, 888};
+/// Number of generation rounds used in the current algorithm.
+static cl_uint rounds = 8;
+
 template<>
 void Bernoulli<float, lang::Opencl>(const size_t num, const float p, Block* out, Context *ctx) {
   cl_int status = CL_SUCCESS;
 
-//std::string kname = "clkernel_bernoulli";
   std::string kname = "PRNG_threefry4x32_bernoulli";
   auto kernel = ctx->kernels->at(kname);
   
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
-  kernel.setArg(0, (cl_int)(num / 4)); // Divide by 4 because kernel uses float4 as argument.
-  kernel.setArg(1, p);
-  kernel.setArg(2, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
+  kernel.setArg(0, outbuf);
+  kernel.setArg(1, seed);
+  kernel.setArg(2, 0.0f); // inf
+  kernel.setArg(3, 1.0f); // sup
+  kernel.setArg(4, p); // threshold
+  kernel.setArg(5, rounds);
+  kernel.setArg(6, cl_uint(num) / 4);
+  
+  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num/4));
   OCL_CHECK(status, "Failed to enqueue kernel function!");
 }
 
@@ -591,18 +599,19 @@ template<>
 void Gaussian<float, lang::Opencl>(const size_t num, const float mean, const float std, Block* out, Context *ctx) {
   cl_int status = CL_SUCCESS;
 
-//std::string kname = "clkernel_gaussian";
   std::string kname = "PRNG_threefry4x32_gaussian";
   auto kernel = ctx->kernels->at(kname);
 
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
-  kernel.setArg(0, (cl_int)(num / 4));
-  kernel.setArg(1, mean);
-  kernel.setArg(2, std);
-  kernel.setArg(3, outbuf);
+  kernel.setArg(0, outbuf);
+  kernel.setArg(1, seed);
+  kernel.setArg(2, mean); // E
+  kernel.setArg(3, std);  // V
+  kernel.setArg(4, rounds);
+  kernel.setArg(5, cl_uint(num) / 4);
 
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
+  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num/4));
   OCL_CHECK(status, "Failed to enqueue kernel function!");
 }
 
@@ -611,18 +620,19 @@ template<>
 void Uniform<float, lang::Opencl>(const size_t num, const float low, const float high, Block* out, Context *ctx) {
   cl_int status = CL_SUCCESS;
 
-//std::string kname = "clkernel_uniform";
   std::string kname = "PRNG_threefry4x32_uniform";
   auto kernel = ctx->kernels->at(kname);
 
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
+  
+  status = kernel.setArg(0, outbuf); OCL_CHECK(status, "kernel arg 0");
+  status = kernel.setArg(1, seed); OCL_CHECK(status, "kernel arg 1");
+  status = kernel.setArg(2, low); OCL_CHECK(status, "kernel arg 2");
+  status = kernel.setArg(3, high); OCL_CHECK(status, "kernel arg 3");
+  status = kernel.setArg(4, rounds); OCL_CHECK(status, "kernel arg 4");
+  status = kernel.setArg(5, cl_uint(num) / 4); OCL_CHECK(status, "kernel arg 5");
 
-  kernel.setArg(0, (cl_int)(num / 4));
-  kernel.setArg(1, low);
-  kernel.setArg(2, high);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
+  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num/4));
   OCL_CHECK(status, "Failed to enqueue kernel function!");
 }
 
@@ -887,17 +897,17 @@ void GEMM<float, lang::Opencl>(const bool transA, const bool transB,
 
   std::string kname = "clkernel_gemm";
   auto kernel = ctx->kernels->at(kname);
-
+  
   cl::Buffer Abuf = *(static_cast<cl::Buffer*>(A->mutable_data()));
   cl::Buffer Bbuf = *(static_cast<cl::Buffer*>(B->mutable_data()));
   cl::Buffer Cbuf = *(static_cast<cl::Buffer*>(C->mutable_data()));
 
   // If matrix A needs to be transposed, do it.
-  if (!transA)
+  if (transA)
 	Transpose(nrowA, ncolA, Abuf, Abuf, ctx);
 
   // If vector B needs to be transposed, do it.
-  if (!transB)
+  if (transB)
 	Transpose(nrowA, ncolB, Bbuf, Bbuf, ctx);
 
   kernel.setArg(0, (cl_int)nrowA);
@@ -908,10 +918,13 @@ void GEMM<float, lang::Opencl>(const bool transA, const bool transB,
   kernel.setArg(5, Bbuf);
   kernel.setArg(6, beta);
   kernel.setArg(7, Cbuf);
-
-  cl::NDRange global(nrowA, ncolA);
-  cl::NDRange local(32, 32);
-
+  kernel.setArg(8, cl::Local(sizeof(float) * nrowA * ncolB));
+  kernel.setArg(9, cl::Local(sizeof(float) * nrowA * ncolB));
+  
+// TODO: Try to make the work group size a power of 2 given an arbitrary matrix.
+  cl::NDRange global(nrowA, ncolB);
+  cl::NDRange local(nrowA, ncolB);
+  
   status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), global, local);
   OCL_CHECK(status, "Failed to enqueue kernel function!");
 }
@@ -1070,7 +1083,7 @@ void DiagVec_Left(const size_t size, cl::Buffer& in, cl::Buffer& out, Context* c
 
   std::string kname = "clkernel_diagvec_left";
   auto kernel = ctx->kernels->at(kname);
-
+  
   kernel.setArg(0, (cl_uint)size);
   kernel.setArg(1, in);
   kernel.setArg(2, out);

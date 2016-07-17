@@ -44,13 +44,12 @@ OpenclDevice::OpenclDevice(int id, int num_executors)
   std::vector<cl::Platform> platforms;
   status = cl::Platform::get(&platforms);
   OCL_CHECK(status, "Failed to find any OpenCL platforms!");
-
+  
   std::vector<cl::Device> devices;
   status = platforms[0].getDevices(CL_DEVICE_TYPE_ALL, &devices);
   OCL_CHECK(status, "Failed to get list of devices from platform!");
 
   this->this_device = cl::Device(devices[0]);
-
   this->ocl_ctx = cl::Context(this_device, nullptr, nullptr, nullptr, &status);
   OCL_CHECK(status, "Failed to create context!");
 
