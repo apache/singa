@@ -16,6 +16,14 @@
  * limitations under the License.
  */
 
+#ifdef USE_CUDA
+#include "singa/utils/cuda_utils.h"
+#endif // USE_CUDA
+
+#ifdef USE_OPENCL
+#include <cl/cl2.hpp>
+#endif // USE_OPENCL
+
 #include "singa/core/device.h"
 #include "singa/singa_config.h"
 

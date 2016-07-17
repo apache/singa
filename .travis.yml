@@ -13,7 +13,7 @@ before_install:
 
 before_script:
  - mkdir build && cd build
- - cmake .. -DUSE_CUDA=OFF -DUSE_CUDNN=OFF -DUSE_PYTHON=OFF
+ - cmake .. -DUSE_CUDA=OFF -DUSE_CUDNN=OFF -DUSE_PYTHON=OFF -DBUILD_OPENCL_TESTS=OFF
 
 script:
  - make
