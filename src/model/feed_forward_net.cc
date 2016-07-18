@@ -73,8 +73,8 @@ const vector<ParamSpec> FeedForwardNet::GetParamSpecs() const {
   return specs;
 }
 
-void FeedForwardNet::Compile(bool shuffle, bool registered, Updater* updater, Loss* loss,
-                             Metric* metric) {
+void FeedForwardNet::Compile(bool shuffle, bool registered, Updater* updater,
+                             Loss* loss, Metric* metric) {
   shuffle_ = shuffle;
   bool train = (updater != nullptr) && (loss != nullptr);
   bool test = metric != nullptr;
@@ -182,6 +182,32 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
                    std::to_string(Sum(val_perf.first) / val_y.Size()) +
                    ", metric = " +
                    std::to_string(Sum(val_perf.second) / val_y.Size()));
+    }
+  }
+}
+
+void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
+                           const Tensor& y) {
+  CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
+  int num_extra_samples = x.shape(0) % batchsize;
+  if (num_extra_samples != 0)
+    LOG(WARNING) << "Pls set batchsize to make num_total_samples "
+                 << "% batchsize == 0. Otherwise, the last "
+                 << num_extra_samples << " samples would not be used";
+  Channel* train_ch = GetChannel("train_perf");
+  train_ch->EnableDestStderr(true);
+  Channel* val_ch = GetChannel("val_perf");
+  val_ch->EnableDestStderr(true);
+  std::vector<size_t> index;
+  for (size_t i = 0; i < x.shape(0) / batchsize; i++) index.push_back(i);
+  for (int epoch = 0; epoch < nb_epoch; epoch++) {
+    if (shuffle_) std::random_shuffle(index.begin(), index.end());
+    size_t b = 0;
+    for (; b < x.shape(0) / batchsize; b++) {
+      size_t idx = index[b];
+      const Tensor bx = CopyRows(x, idx * batchsize, (idx + 1) * batchsize);
+      const Tensor by = CopyRows(y, idx * batchsize, (idx + 1) * batchsize);
+      const auto ret = TrainOnBatch(epoch, bx, by);
     }
   }
 }

@@ -20,6 +20,7 @@
 #define SINGA_MODEL_UPDATER_H_
 
 #include "singa/model/optimizer.h"
+#include "singa/core/device.h"
 #include "singa/core/tensor.h"
 #include "singa/utils/logging.h"
 
@@ -33,17 +34,21 @@
 namespace singa {
 class Updater {
  public:
-  Updater(int total_num, Optimizer* opt) : total_num_{total_num}, opt_{opt} {}
+  Updater(int total_num, Optimizer* opt,
+          std::shared_ptr<Device> dev = defaultDevice)
+      : total_num_{total_num}, opt_{opt}, dev_(dev) {}
   virtual ~Updater() {}
 
-  // Forward Setup() to Optimizer.
+  /// Forward Setup() to Optimizer.
   virtual void Setup(const OptimizerConf& conf);
-  // Forward Register() to Optimizer.
+  /// Forward Register() to Optimizer.
   virtual void Register(const string& name, const ParamSpec& specs);
-  // Update parameter value based on given gradient by invoking optimizer
-  // algoritim. When tranining net call this function will be blocked until
-  // all the partial gradients are aggrageted in a synchronized style training.
+  /// Update parameter value based on given gradient by invoking optimizer
+  /// algoritim. When tranining net call this function will be blocked until
+  /// all the partial gradients are aggrageted in a synchronized style training.
   virtual void Apply(int step, const string& name, Tensor& grad, Tensor& value);
+  /// Initiation of Tensor buffer pool of updater;
+  virtual void Init();
   Optimizer* GetOptimizer() { return opt_; }
 
   // No copy allowed.
@@ -53,6 +58,7 @@ class Updater {
  protected:
   int total_num_;
   Optimizer* opt_;
+  std::shared_ptr<Device> dev_;
   std::mutex mtx_;
   std::condition_variable aggr_count_eq_total_num_;
   std::unordered_map<std::string, int> aggr_count_, copy_count_;

@@ -58,7 +58,8 @@ class FeedForwardNet {
   /// necessary; But for training, both 'opt' and 'loss' are necessary.
   /// 'shuffle' indicates shuffling training samples within one epoch it is
   /// valid using Train();
-  void Compile(bool shuffle, bool registered, Updater* updater, Loss* loss, Metric* metric);
+  void Compile(bool shuffle, bool registered, Updater* updater, Loss* loss,
+               Metric* metric);
 
   /// Conduct the training giving the training data 'x' and label 'y'.
   /// 'val_split' of training data is used for
@@ -75,6 +76,8 @@ class FeedForwardNet {
   /// can be stored in main memory.
   void Train(size_t batchsize, int nb_epoch, const Tensor& x, const Tensor& y,
              const Tensor& val_x, const Tensor& val_y);
+  /// Conduct the training given the training data without validation.
+  void Train(size_t batchsize, int nb_epoch, const Tensor& x, const Tensor& y);
   /// Train the neural net over one batch of training data.
   const std::pair<float, float> TrainOnBatch(int epoch, const Tensor& x,
                                              const Tensor& y);
@@ -118,11 +121,17 @@ class FeedForwardNet {
   /// Set the data type of each layer.
   void AsType(DataType dtype);
 
-  /// To spawn a thread to call Train() method.
-  std::thread TrainThread(size_t batchsize, int nb_epoch,
-                          const Tensor& x, const Tensor& y,
-                          const Tensor& val_x, const Tensor& val_y) {
-    return std::thread([=]{Train(batchsize, nb_epoch, x, y, val_x, val_y);});
+  /// A wrapper method to spawn a thread to execute Train() method.
+  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor& x,
+                          const Tensor& y, const Tensor& val_x,
+                          const Tensor& val_y) {
+    return std::thread([=]() { Train(batchsize, nb_epoch, x, y, val_x, val_y); });
+  }
+
+  /// A wrapper method to spawn a thread to execute Train() method.
+  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor& x,
+                          const Tensor& y) {
+    return std::thread([=]() { Train(batchsize, nb_epoch, x, y); });
   }
 
   const vector<Layer*> layers() const { return layers_; }

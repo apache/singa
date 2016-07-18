@@ -21,6 +21,7 @@
 namespace singa {
 
 void Updater::Setup(const OptimizerConf& conf) { opt_->Setup(conf); }
+
 void Updater::Register(const string& name, const ParamSpec& specs) {
   opt_->Register(name, specs);
   aggr_count_[name] = 0;
@@ -28,6 +29,7 @@ void Updater::Register(const string& name, const ParamSpec& specs) {
   has_averaged_[name] = false;
   has_init_[name] = false;
 }
+
 void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
   CHECK(aggr_count_.count(name) == 1) << "Parameter " << name
                                          << " has not been registered before.";
@@ -37,9 +39,9 @@ void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
   std::unique_lock<std::mutex> lock(mtx_);
   if (aggr_count_[name] == 0) {
     if (!has_init_[name]) {
-      partial_sum_[name].ResetLike(grad);
-      partial_sum_[name].ToHost();
-      buffer_[name].ResetLike(partial_sum_[name]);
+      Tensor tmp(grad.shape(), dev, grad.data_type());
+      partial_sum_[name] = tmp;
+      buffer_[name].ResetLike(tmp);
       has_init_[name] = true;
     } else {
       partial_sum_[name].SetValue(.0f);
@@ -68,6 +70,8 @@ void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
     has_averaged_[name] = true;
   }
 
+  /// For now, gradient aggregation and SGD algorithm run on the same device.
+  /// TODO(wangji): It is possible to make them run separately.
   buffer_[name].CopyData(value);
   /// Apply optimization algorithm based on the averaged gradient.
   opt_->Apply(step, name, partial_sum_[name], buffer_[name]);
