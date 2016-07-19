@@ -35,6 +35,7 @@
 #include "../../src/model/layer/dense.h"
 #include "../../src/model/layer/flatten.h"
 #include <thread>
+#include <memory>
 namespace singa {
 
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
@@ -217,11 +218,11 @@ void Train(float lr, int num_epoch, string data_dir) {
   SoftmaxCrossEntropy loss_1, loss_2;
   Accuracy acc_1, acc_2;
   /// Create updater aggregating gradient on CPU
-  Updater updater(2, &sgd);
+  std::shared_ptr<Updater> updater = std::make_shared<LocalUpdater>(2, &sgd);
 
   /// Only need to register parameter once.
-  net_1.Compile(true, true, &updater, &loss_1, &acc_1);
-  net_2.Compile(true, false, &updater, &loss_2, &acc_1);
+  net_1.Compile(true, true, updater, &loss_1, &acc_1);
+  net_2.Compile(true, false, updater, &loss_2, &acc_1);
 
   MemPoolConf mem_conf;
   mem_conf.add_device(0);

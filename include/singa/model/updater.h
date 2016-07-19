@@ -32,20 +32,17 @@
 #include <unordered_map>
 
 namespace singa {
+/// Basic Updater class just forward all the method function call
+/// to the wrapped Optimizer.
 class Updater {
  public:
-  Updater(int total_num, Optimizer* opt,
-          std::shared_ptr<Device> dev = defaultDevice)
-      : total_num_{total_num}, opt_{opt}, dev_(dev) {}
+  explicit Updater(Optimizer* opt) : opt_{opt} {}
   virtual ~Updater() {}
-
   /// Forward Setup() to Optimizer.
   virtual void Setup(const OptimizerConf& conf);
   /// Forward Register() to Optimizer.
   virtual void Register(const string& name, const ParamSpec& specs);
-  /// Update parameter value based on given gradient by invoking optimizer
-  /// algoritim. When tranining net call this function will be blocked until
-  /// all the partial gradients are aggrageted in a synchronized style training.
+  /// Forward Apply() to Optimizer.
   virtual void Apply(int step, const string& name, Tensor& grad, Tensor& value);
   Optimizer* GetOptimizer() { return opt_; }
 
@@ -54,14 +51,35 @@ class Updater {
   void operator=(const Updater&) = delete;
 
  protected:
-  int total_num_;
   Optimizer* opt_;
+};
+
+/// LocalUpdater do gradient aggregation and update gradient calling
+/// the wrapped Optimizer on a specific device (i.e., CPU or GPU).
+class LocalUpdater : public Updater {
+ public:
+  LocalUpdater(int total_num, Optimizer* opt,
+               std::shared_ptr<Device> dev = defaultDevice)
+      : Updater(opt), total_num_{total_num}, dev_(dev) {}
+  virtual ~LocalUpdater() override {}
+  /// Forward Register() to Optimizer.
+  virtual void Register(const string& name, const ParamSpec& specs) override;
+  /// Update parameter value based on given gradient by invoking optimizer
+  /// algoritim. When tranining net call this function will be blocked until
+  /// all the partial gradients are aggrageted in a synchronized style training.
+  virtual void Apply(int step, const string& name, Tensor& grad,
+                     Tensor& value) override;
+
+ private:
+  int total_num_;
   std::shared_ptr<Device> dev_;
-  std::mutex mtx_;
-  std::condition_variable aggr_count_eq_total_num_;
   std::unordered_map<std::string, int> aggr_count_, copy_count_;
-  std::unordered_map<std::string, Tensor> buffer_, partial_sum_;
-  std::unordered_map<std::string, bool> has_averaged_, has_init_;
+  std::unordered_map<std::string, Tensor> grad_buffer_,
+    param_buffer_, partial_sum_;
+  std::unordered_map<std::string, bool> has_init_;
+  std::unordered_map<std::string, std::mutex> mtx_;
+  std::unordered_map<std::string, std::condition_variable>
+    aggr_count_eq_total_num_;
 };
 }  //  namespace singa
 

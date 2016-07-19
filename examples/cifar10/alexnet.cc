@@ -22,19 +22,16 @@
 #include "./cifar10.h"
 #include "singa/model/feed_forward_net.h"
 #include "singa/model/optimizer.h"
-#include "singa/model/updater.h"
 #include "singa/model/initializer.h"
 #include "singa/model/metric.h"
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
-#include "singa/core/memory.h"
 #include "../../src/model/layer/cudnn_convolution.h"
 #include "../../src/model/layer/cudnn_activation.h"
 #include "../../src/model/layer/cudnn_pooling.h"
 #include "../../src/model/layer/cudnn_lrn.h"
 #include "../../src/model/layer/dense.h"
 #include "../../src/model/layer/flatten.h"
-#include <thread>
 namespace singa {
 
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
@@ -58,7 +55,7 @@ LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
   ParamSpec *bspec = conf.add_param();
   bspec->set_name(name + "_bias");
   bspec->set_lr_mult(2);
-  //  bspec->set_decay_mult(0);
+//  bspec->set_decay_mult(0);
   return conf;
 }
 
@@ -151,11 +148,10 @@ void Train(float lr, int num_epoch, string data_dir) {
     size_t nsamples = train.first.shape(0);
     auto mtrain =
         Reshape(train.first, Shape{nsamples, train.first.Size() / nsamples});
-    const Tensor &mean = Average(mtrain, 0);
+    const Tensor& mean = Average(mtrain, 0);
     SubRow(mean, &mtrain);
     train_x = Reshape(mtrain, train.first.shape());
     train_y = train.second;
-
     auto test = data.ReadTestData();
     nsamples = test.first.shape(0);
     auto mtest =
@@ -164,14 +160,11 @@ void Train(float lr, int num_epoch, string data_dir) {
     test_x = Reshape(mtest, test.first.shape());
     test_y = test.second;
   }
-
   CHECK_EQ(train_x.shape(0), train_y.shape(0));
   CHECK_EQ(test_x.shape(0), test_y.shape(0));
-  LOG(INFO) << "Total Training samples = " << train_y.shape(0)
-            << ", Total Test samples = " << test_y.shape(0);
-
+  LOG(INFO) << "Training samples = " << train_y.shape(0)
+            << ", Test samples = " << test_y.shape(0);
   auto net = CreateNet();
-
   SGD sgd;
   OptimizerConf opt_conf;
   opt_conf.set_momentum(0.9);
@@ -187,24 +180,16 @@ void Train(float lr, int num_epoch, string data_dir) {
       return 0.00001;
   });
 
-  SoftmaxCrossEntropy loss_1, loss_2;
-  Accuracy acc_1, acc_2;
-  /// Create updater aggregating gradient on CPU
-  Updater updater(1, &sgd);
+  SoftmaxCrossEntropy loss;
+  Accuracy acc;
+  net.Compile(true, &sgd, &loss, &acc);
 
-  net.Compile(true, true, &updater, &loss_1, &acc_1);
-
-  MemPoolConf mem_conf;
-  mem_conf.add_device(0);
-  std::shared_ptr<DeviceMemPool> mem_pool(new CnMemPool(mem_conf));
-  std::shared_ptr<CudaGPU> cuda(new CudaGPU(0, mem_pool));
+  auto cuda = std::make_shared<CudaGPU>();
   net.ToDevice(cuda);
-
   train_x.ToDevice(cuda);
   train_y.ToDevice(cuda);
   test_x.ToDevice(cuda);
   test_y.ToDevice(cuda);
-
   net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
 }
 }

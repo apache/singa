@@ -73,8 +73,15 @@ const vector<ParamSpec> FeedForwardNet::GetParamSpecs() const {
   return specs;
 }
 
-void FeedForwardNet::Compile(bool shuffle, bool to_register, Updater* updater,
-                             Loss* loss, Metric* metric) {
+void FeedForwardNet::Compile(bool shuffle, Optimizer* opt, Loss* loss,
+                             Metric* metric) {
+  std::shared_ptr<Updater> updater = std::make_shared<Updater>(opt);
+  Compile(shuffle, true, updater, loss, metric);
+}
+
+void FeedForwardNet::Compile(bool shuffle, bool to_register,
+                             std::shared_ptr<Updater> updater, Loss* loss,
+                             Metric* metric) {
   shuffle_ = shuffle;
   bool train = (updater != nullptr) && (loss != nullptr);
   bool test = metric != nullptr;
