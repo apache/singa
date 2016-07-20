@@ -303,6 +303,7 @@ private:
 /// If CUDA or OPENCL are not enabled, then the respective related methods should
 /// return something that indicates their absence (for example, 0 devices);
 /// however they should always be available regardless of compile-time switches.
+#ifdef USE_CUDA
 class Platform {
 public:
 
@@ -371,6 +372,8 @@ private:
   cl::Platform clPlatform;
 #endif  // USE_OPENCL
 };
+
+#endif // USE_CUDA
 
 }  // namespace singa
 

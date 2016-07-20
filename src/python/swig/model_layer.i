@@ -44,7 +44,9 @@ using singa::LayerConf;
 
 %shared_ptr(singa::Layer)
 %shared_ptr(singa::RNN)
+#if USE_CUDNN
 %shared_ptr(singa::CudnnRNN)
+#endif
 
 namespace std {
   %template(strVector) vector<string>;
@@ -81,6 +83,8 @@ const std::vector<std::string> GetRegisteredLayers();
 class RNN : public Layer {
 };
 
+#if USE_CUDA && USE_CUDNN
+#if CUDNN_VERSION_MAJOR >= 5 && CUDNN_VERSION_PATCH >= 5
 class CudnnRNN : public RNN {
  public:
  // note: Must use std::vector instead of vector.
@@ -92,5 +96,7 @@ class CudnnRNN : public RNN {
     const std::vector<size_t> GetOutputSampleShape() const override;
 };
 
+#endif  // CUDNN_VERSION_MINOR >= 5 && CUDNN_VERSION_PATCH >= 5
+#endif  // USE_CUDA && USE_CUDNN
 }
 

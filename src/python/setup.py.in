@@ -40,7 +40,12 @@ setup(
 
     #py_modules=["singa"],
 
-    #install_requires=['peppercorn'],
+    install_requires=[
+        'numpy>=1.11.0',
+        'protobuf>=2.5.0,<3',
+        'flask>=0.10.1'
+        ],
+
     #List additional groups of dependencies here (e.g. development
     #dependencies). You can install these using the following syntax,
     #for example:

@@ -48,7 +48,7 @@ class FeedForwardNet(object):
         """
         if len(self.layers) > 0 and lyr.has_setup is False:
             shape = self.layers[-1].get_output_sample_shape()
-            print shape
+            #print shape
             lyr.setup(shape)
         self.layers.append(lyr)
 

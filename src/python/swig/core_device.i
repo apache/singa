@@ -49,6 +49,7 @@ class Device {
   int id() const;
 };
 
+#if USE_CUDA
 class Platform {
  public:
   static int GetNumGPUs();
@@ -63,5 +64,6 @@ class Platform {
   static std::shared_ptr<Device> GetDefaultDevice();
 };
 
+#endif // USE_CUDA
 }
 
