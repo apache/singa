@@ -1,4 +1,4 @@
-#Building SINGA from source
+# Building SINGA from source
 
 ## Dependencies
 
@@ -7,9 +7,10 @@
 * BLAS (tested with OpenBLAS >=0.2.10)
 * CUDA (tested with 6.5, 7.0 and 7.5)
 * CUDNN (v4 and v5)
+* cmake (>=2.6)
 
-Uses must install the above mandatory libraries.
-Currently CUDA and CUNN are also mandatory, but it would become optional later.
+Users must install the above mandatory libraries.
+Currently CUDA and CUDNN are also mandatory, but it would become optional later.
 
 ### Optional
 * Glog
@@ -37,13 +38,19 @@ which could be downloaded as
 
 ### Linux OS
 
-Then in SINGA_ROOT, execute the following commands for compiling SINGA,
+GCC (>=4.8.1) is required to compile SINGA on Linux OS.
+In SINGA_ROOT, execute the following commands for compiling SINGA,
 
     $ mkdir build && cd build
     # generate Makefile for compilation
     $ cmake ..
     # compile SINGA
     $ make
+
+Note that if you are using CUDNN, you need to let cmake know the paths to CUDNN,
+
+    $ export CMAKE_INCLUDE_PATH=<path to cudnn>/include:$CMAKE_INCLUDE_PATH
+    $ export CMAKE_LIBRARY_PATH=<path to cudnn>/lib64:$CMAKE_LIBRARY_PATH
 
 You can use `ccmake ..` to configure the compilation options including using
 LMDB, GLOG, etc.
@@ -53,7 +60,7 @@ After compiling SINGA, you can run the unit tests by
     $ ./bin/test_singa
 
 You can see all the testing cases with testing results. If SINGA passes all
-tests, then you have successfully installed SINGA. Please proceed to enjoy SINGA!
+tests, then you have successfully installed SINGA. Please proceed to try the examples!
 
 
 ### MacOS
