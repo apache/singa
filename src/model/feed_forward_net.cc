@@ -85,7 +85,7 @@ void FeedForwardNet::Compile(bool shuffle, bool to_register,
   shuffle_ = shuffle;
   bool train = (updater != nullptr) && (loss != nullptr);
   bool test = metric != nullptr;
-  CHECK(train || test) << "Must set upater and loss, or set metric";
+  CHECK(train || test) << "Must set updater and loss, or set metric";
   updater_ = updater;
   loss_ = loss;
   metric_ = metric;

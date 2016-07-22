@@ -29,7 +29,9 @@
 #include <mutex>
 #include <condition_variable>
 #include <string>
+#include <utility>
 #include <unordered_map>
+#include <atomic>
 
 namespace singa {
 /// Basic Updater class just forward all the method function call
@@ -69,17 +71,26 @@ class LocalUpdater : public Updater {
   /// all the partial gradients are aggrageted in a synchronized style training.
   virtual void Apply(int step, const string& name, Tensor& grad,
                      Tensor& value) override;
-
  private:
+  template <typename T1, typename T2>
+  struct key_hasher {
+    size_t operator() (const std::pair<T1, T2>& p) const {
+      auto h1 = std::hash<T1>{}(p.first);
+      auto h2 = std::hash<T2>{}(p.second);
+      return h1 ^ h2;
+    }
+  };
+
   int total_num_;
   std::shared_ptr<Device> dev_;
-  std::unordered_map<std::string, int> aggr_count_, copy_count_;
-  std::unordered_map<std::string, Tensor> grad_buffer_,
-    param_buffer_, partial_sum_;
-  std::unordered_map<std::string, bool> has_init_;
+  std::unordered_map<std::string, std::atomic<int>> dev_index_;
+  std::unordered_map<std::string, int> to_updater_finished_;
+  std::unordered_map<std::pair<int, std::string>, Tensor,
+    key_hasher<int, std::string>> grad_buffer_;
+  std::unordered_map<std::string, Tensor> sum_, param_buffer_;
   std::unordered_map<std::string, std::mutex> mtx_;
   std::unordered_map<std::string, std::condition_variable>
-    aggr_count_eq_total_num_;
+    to_updater_all_finished_;
 };
 }  //  namespace singa
 
