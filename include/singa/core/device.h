@@ -24,11 +24,20 @@
 #include <string>
 #include <functional>
 #include <memory>
+
 #include "singa/singa_config.h"
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
 #include "singa/core/scheduler.h"
 #include "singa/proto/core.pb.h"
+
+#ifdef USE_CUDA
+#include "singa/utils/cuda_utils.h"
+#endif // USE_CUDA
+
+#ifdef USE_OPENCL
+#include "singa/utils/opencl_utils.h"
+#endif // USE_OPENCL
 
 using std::vector;
 using std::string;
@@ -253,7 +262,9 @@ public:
 
 
 private:
+#ifdef USE_OPENCL
   cl::Platform clPlatform;
+#endif
 };
 
 }  // namespace singa
