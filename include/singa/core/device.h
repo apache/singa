@@ -208,9 +208,6 @@ class CudaGPU : public Device {
 class Platform {
 public:
 
-  /// Constructor.
-  Platform();
-
   /// Return the number of total available GPUs
   static int GetNumGPUs();
 
