@@ -17,10 +17,11 @@
  */
 #ifndef SRC_MODEL_LAYER_POOLING_H_
 #define SRC_MODEL_LAYER_POOLING_H_
+#include <cfloat>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
-#include <stack>
 #include "singa/model/layer.h"
 
 namespace singa {
@@ -41,6 +42,29 @@ class Pooling : public Layer {
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor& grad) override;
+
+  void ForwardMaxPooling(const float* bottom, const int num, const int channels,
+                         const int height, const int width, const int kernel_h,
+                         const int kernel_w, const int pad_h, const int pad_w,
+                         const int stride_h, const int stride_w, float* top,
+                         float* mask);
+
+  void BackwardMaxPooling(const float* top, const float* mask, const int num,
+                          const int channels, const int height, const int width,
+                          const int kernel_h, const int kernel_w,
+                          const int pad_h, const int pad_w, const int stride_h,
+                          const int stride_w, float* bottom);
+
+  void ForwardAvgPooling(const float* bottom, const int num, const int channels,
+                         const int height, const int width, const int kernel_h,
+                         const int kernel_w, const int pad_h, const int pad_w,
+                         const int stride_h, const int stride_w, float* top);
+
+  void BackwardAvgPooling(const float* top, const int num, const int channels,
+                          const int height, const int width, const int kernel_h,
+                          const int kernel_w, const int pad_h, const int pad_w,
+                          const int stride_h, const int stride_w,
+                          float* bottom);
 
   size_t kernel_w() const { return kernel_w_; }
   size_t kernel_h() const { return kernel_h_; }

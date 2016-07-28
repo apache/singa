@@ -17,10 +17,10 @@
  */
 #ifndef SRC_MODEL_LAYER_CONVOLUTION_H_
 #define SRC_MODEL_LAYER_CONVOLUTION_H_
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
-#include <stack>
 #include "singa/model/layer.h"
 
 namespace singa {
@@ -38,13 +38,23 @@ class Convolution : public Layer {
 
   // void SetupParam(const Tensor &input);
   /// \copydoc Layer::Forward(int flag, const Tensor&)
-  const Tensor Forward(int flag, const Tensor &input) override;
+  const Tensor Forward(int flag, const Tensor& input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                   const Tensor &grad) override;
+                                                   const Tensor& grad) override;
 
   void ToDevice(std::shared_ptr<Device> device) override;
+
+  void Im2col(const float* data_im, const int channels, const int height,
+              const int width, const int kernel_h, const int kernel_w,
+              const int pad_h, const int pad_w, const int stride_h,
+              const int stride_w, float* data_col);
+
+  void Col2im(const float* data_col, const int channels, const int height,
+              const int width, const int patch_h, const int patch_w,
+              const int pad_h, const int pad_w, const int stride_h,
+              const int stride_w, float* data_im);
 
   const std::vector<Tensor> param_values() override {
     return std::vector<Tensor>{weight_, bias_};
@@ -61,8 +71,8 @@ class Convolution : public Layer {
   size_t height() const { return height_; }
   size_t width() const { return width_; }
   bool bias_term() const { return bias_term_; }
-  const Tensor &weight() const { return weight_; }
-  const Tensor &bias() const { return bias_; }
+  const Tensor& weight() const { return weight_; }
+  const Tensor& bias() const { return bias_; }
 
   void set_weight(Tensor w) {
     weight_.ResetLike(w);
