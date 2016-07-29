@@ -23,13 +23,92 @@
 #include "singa/model/initializer.h"
 #include "singa/utils/logging.h"
 #include "singa/utils/channel.h"
+#include <queue>
 namespace singa {
+
+static bool IsLayerExistent(Layer* layer, const vector<Layer*> layers);
 
 FeedForwardNet::~FeedForwardNet() {
   for (auto layer : layers_) delete layer;
 }
+
 Layer* FeedForwardNet::Add(Layer* layer) {
   layers_.push_back(layer);
+  return layer;
+}
+
+Layer* FeedForwardNet::Add(Layer* layer, const LayerConf& conf, Layer* src) {
+  /// src should not be nullptr
+  if (src == nullptr)
+    LOG(FATAL) << "src cannot be nullptr.";
+  else
+    layer->Setup(src->GetOutputSampleShape(), conf);
+  if (src_.find(layer) != src_.end())
+    LOG(FATAL) << "layer " << layer->name() << " already exists.";
+  if (!IsLayerExistent(src, layers_))
+    LOG(FATAL) << "src layer " << src->name() << " does not exist.";
+  src_[layer].push_back(src);
+  layer_type_[layer] = "onetoone";
+  if (dst_.find(src) != dst_.end()) { 
+    dst_[src].push_back(layer);
+    if (dst_[src].size() > 1) { /// multiple dst layers, onetomany
+      if (layer_type_[src] == "manytoone")
+        LOG(FATAL) << "network does not support many-to-many layer";
+      layer_type_[src] = "onetomany";
+    }
+  } else {
+    dst_[src].push_back(layer);
+    if (layer_type_[src] != "manytoone")
+      layer_type_[src] = "onetoone";
+  }
+  Add(layer);
+  LOG(INFO) << layer->name() << VecToStr(layer->GetOutputSampleShape());
+  return layer;
+}
+
+Layer* FeedForwardNet::Add(Layer* layer, const LayerConf& conf, 
+         vector<Layer*> srcs) {
+  /// srcs should not be nullptr
+  if (!srcs.size() || (srcs.size() == 1 && srcs.at(0) == nullptr))
+    LOG(FATAL) << "src cannot be nullptr.";
+  else {
+    if (layer->layer_type() == "Merge")
+      layer->Setup(srcs.at(0)->GetOutputSampleShape(), conf);
+    else if (layer->layer_type() == "Concatenate") //TODO(jixin)
+      LOG(FATAL) << "Not implemented";
+    else 
+      LOG(FATAL) << "layer " << layer->name() 
+            << " should not have multiple src layers";
+  }
+  if (src_.find(layer) != src_.end())
+   LOG(FATAL) << "layer " << layer->name() << " already exists.";
+  vector<Layer*> tmpsrc;
+  for (size_t i = 0; i < srcs.size(); i++) {
+    if (!IsLayerExistent(srcs.at(i), layers_))
+      LOG(FATAL) << "src layer " << srcs.at(i)->name() << " does not exist.";
+    tmpsrc.push_back(srcs.at(i));
+  }
+  src_[layer] = tmpsrc;
+  if (srcs.size() == 1) layer_type_[layer] = "onetoone";
+  else layer_type_[layer] = "manytoone";
+
+  for (size_t i = 0; i < srcs.size(); i++) {
+    Layer* src = srcs.at(i);
+    if (dst_.find(src) != dst_.end()) { 
+      dst_[src].push_back(layer);
+      if (dst_[src].size() > 1) { /// multiple dst layers, onetomany
+        if (layer_type_[src] == "manytoone")
+          LOG(FATAL) << "network does not support many-to-many layer"; 
+        layer_type_[src] = "onetomany";
+      }
+    } else {
+      dst_[src].push_back(layer);
+      if (layer_type_[src] != "manytoone")
+        layer_type_[src] = "onetoone";
+    }
+  }
+  Add(layer);
+  LOG(INFO) << layer->name() << VecToStr(layer->GetOutputSampleShape());
   return layer;
 }
 
@@ -89,7 +168,8 @@ void FeedForwardNet::Compile(bool shuffle, Optimizer* opt, Loss* loss,
     opt_->Register(specs[k].name(), specs[k]);
     auto init = CreateInitializer(specs[k].filler());
     init->Fill(params[k]);
-    LOG(INFO) << specs[k].name() << " : " << params[k].L1();
+    LOG(INFO) << specs[k].name() << " : " << params[k].L1()
+       << ", filler type: " << specs[k].filler().type();
   }
 }
 
@@ -201,18 +281,63 @@ const std::pair<float, float> FeedForwardNet::TrainOnBatch(int epoch,
 }
 
 const Tensor FeedForwardNet::Forward(int flag, const Tensor& data) {
-  Tensor input = data, output;
-  for (auto layer : layers_) {
+//  Tensor input = data, output;
+//  for (auto layer : layers_) {
 //    LOG(INFO) << layer->name() << ": " << input.L1();
-    output = layer->Forward(flag, input);
+//    output = layer->Forward(flag, input);
     // LOG(INFO) << layer->name() << ": " << output.L2();
-    input = output;
+//    input = output;
+//  }
+
+  unordered_map<Layer*, std::queue<Tensor>> output;
+  output[nullptr].push(data);
+
+  /// layers_ are topological sorted
+  for (auto layer : layers_) {
+    //LOG(INFO) << "forward: " << layer->name();
+    if (layer_type_[layer] == "onetomany") {
+      vector<Tensor> tmp;
+      Layer* tmplayer = nullptr;
+      if (src_.find(layer) != src_.end()) tmplayer = src_[layer].at(0);
+      tmp.push_back(output[tmplayer].front());
+      //LOG(INFO) << "input shape: " << VecToStr(output[tmplayer].front().shape()); //
+      output[tmplayer].pop();
+      if (output[tmplayer].empty()) output.erase(tmplayer);
+
+      for (auto x : layer->Forward(flag, tmp))
+        output[layer].push(x);
+    } else if (layer_type_[layer] == "manytoone") {
+      vector<Tensor> tmp;
+      for (size_t i = 0; i < src_[layer].size(); i++) {
+        Layer* tmplayer = src_[layer].at(i);
+        tmp.push_back(output[tmplayer].front());
+        //Shape shape = output[tmplayer].front().shape(); //
+        //LOG(INFO) << "input shape: " << VecToStr(shape); //
+        output[tmplayer].pop();
+        if (output[tmplayer].empty()) output.erase(tmplayer);
+      }
+      output[layer].push(layer->Forward(flag, tmp).at(0));
+    } else if (layer_type_[layer] == "onetoone") {
+      Layer* tmplayer = nullptr;
+      if (src_.find(layer) != src_.end()) // not start layer
+        tmplayer = src_[layer].at(0);
+      output[layer].push(layer->Forward(flag, output[tmplayer].front()));
+      //LOG(INFO) << "input shape: " << VecToStr(output[tmplayer].front().shape()); //
+      output[tmplayer].pop();
+      if (output[tmplayer].empty()) output.erase(tmplayer);
+
+    } else
+      LOG(FATAL) << "invalid layer type: " << layer_type_[layer];
+    //LOG(INFO) << "===================================";
   }
-  return output;
+
+  Tensor out = output[layers_.back()].front();
+  output.erase(layers_.back());
+  return out;
 }
 
 const vector<Tensor> FeedForwardNet::Backward(int flag, const Tensor& grad) {
-  vector<Tensor> param_grads;
+  /*vector<Tensor> param_grads;
   std::stack<Tensor> buf;
   Tensor tmp = grad;
   for (int i = layers_.size() - 1; i >= 0; i--) {
@@ -225,7 +350,63 @@ const vector<Tensor> FeedForwardNet::Backward(int flag, const Tensor& grad) {
  //       LOG(INFO) <<  "      " << buf.top().L1();
       }
     }
+  }*/
+  
+  vector<Tensor> param_grads;
+  std::stack<Tensor> buf;
+  unordered_map<Layer*, std::stack<Tensor>> output_grads;
+  output_grads[nullptr].push(grad);
+  for (int i = layers_.size() - 1; i >= 0; i--) {
+    Layer* layer = layers_.at(i);
+    //LOG(INFO) << "backward: " << layer->name();
+    if (layer_type_[layer] == "onetoone") {
+      Layer* tmplayer = nullptr;
+      if (dst_.find(layer) != dst_.end()) // not last layer
+        tmplayer = dst_[layer].at(0);
+      //LOG(INFO) << "top grads shape: " << VecToStr(output_grads[tmplayer].top().shape());
+      auto ret = layer->Backward(flag, output_grads[tmplayer].top());
+      output_grads[tmplayer].pop();
+      if (output_grads[tmplayer].empty()) output_grads.erase(tmplayer);
+
+      output_grads[layer].push(ret.first);
+      if (ret.second.size()) {
+        for (int j = ret.second.size() - 1; j >= 0; j--)
+          buf.push(ret.second[j]);
+      }
+    } else if (layer_type_[layer] == "onetomany") {
+      vector<Tensor> tmp;
+      if (dst_.find(layer) == dst_.end()) { // TODO(jixin)
+        LOG(FATAL) << "current model does not support multiple outputs";
+      } else { 
+        for (int j = dst_[layer].size() - 1; j >= 0; j--) {
+          Layer* tmplayer = dst_[layer].at(j);
+          //LOG(INFO) << "top grads shape: " << VecToStr(output_grads[tmplayer].top().shape());
+          tmp.push_back(output_grads[tmplayer].top());
+          output_grads[tmplayer].pop();
+          if (output_grads[tmplayer].empty()) output_grads.erase(tmplayer);
+        }
+      }
+      auto ret = layer->Backward(flag, tmp);
+      output_grads[layer].push(ret.first[0]);
+      if (ret.second.size())
+        LOG(FATAL) << "split and slice layer should not have parameters.";
+    } else if (layer_type_[layer] == "manytoone") {
+      Layer* tmplayer = nullptr;
+      if (dst_.find(layer) != dst_.end()) // not last layer
+        tmplayer = dst_[layer].at(0);
+      //LOG(INFO) << "top grads shape: " << VecToStr(output_grads[tmplayer].top().shape());
+      auto ret = layer->Backward(flag, vector<Tensor>{output_grads[tmplayer].top()});
+      output_grads[tmplayer].pop();
+      if (output_grads[tmplayer].empty()) output_grads.erase(tmplayer);
+
+      for (int j = ret.first.size() - 1; j >= 0; j--)
+        output_grads[layer].push(ret.first[j]);
+      if (ret.second.size()) 
+        LOG(FATAL) << "merge and concatenate layer should not have parameters.";
+    }
+    //LOG(INFO) << "===================================";
   }
+  
   while (!buf.empty()) {
     param_grads.push_back(buf.top());
     buf.pop();
@@ -294,5 +475,12 @@ const Tensor FeedForwardNet::Predict(const Tensor& x, size_t batchsize) {
 
 const Tensor FeedForwardNet::PredictOnBatch(const Tensor& x) {
   return Forward(kEval, x);
+}
+
+static bool IsLayerExistent(Layer* layer, const vector<Layer*> layers) {
+  for (size_t i = 0; i < layers.size(); i++) {
+    if (layers.at(i)->name() == layer->name()) return true;
+  }
+  return false;
 }
 }  // namespace singa

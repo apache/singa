@@ -21,6 +21,8 @@
 #include "singa/model/loss.h"
 #include "singa/model/metric.h"
 #include "singa/model/optimizer.h"
+#include <map>
+#include <unordered_map>
 namespace singa {
 
 /// The feed-forward neural net.
@@ -38,6 +40,8 @@ class FeedForwardNet {
   /// 2. this layer has already been setup (Setup function is called outside).
   /// The layer will be freed in the destructor of FeedForwardNet.
   Layer* Add(Layer* layer);
+  Layer* Add(Layer* layer, const LayerConf& conf, Layer* src);
+  Layer* Add(Layer* layer, const LayerConf& conf, vector<Layer*> srcs);
 
   // TODO(wangwei) add ConcatenateLayer and SliceLayer
   // AddConcatenateLayer(vector<Layer*> src, Layer *dst);
@@ -122,8 +126,13 @@ class FeedForwardNet {
   const vector<string> GetParamNames() const;
   const vector<ParamSpec> GetParamSpecs() const;
   const vector<Tensor> GetParamValues() const;
+  const std::unordered_map<Layer*, vector<Layer*>> src() const { return src_; }
+  const std::unordered_map<Layer*, vector<Layer*>> dst() const { return dst_; }
+  const std::unordered_map<Layer*, string> layer_type() const { return layer_type_; }
 
  protected:
+  std::unordered_map<Layer*, vector<Layer*>> src_, dst_;
+  std::unordered_map<Layer*, string> layer_type_;
   vector<Layer*> layers_;
   Optimizer* opt_;
   Loss* loss_;
