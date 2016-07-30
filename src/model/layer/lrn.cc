@@ -19,8 +19,9 @@
 *
 ************************************************************/
 #include "lrn.h"
+#include <vector>
 
-namespace singa{
+namespace singa {
 RegisterLayerClass(LRN);
 void LRN::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
@@ -33,27 +34,113 @@ void LRN::Setup(const Shape& in_sample, const LayerConf& conf) {
 }
 
 const Tensor LRN::Forward(int flag, const Tensor& input) {
-  //Tensor output;
-  //const float salpha = alpha_ / local_size_;
-  LOG(FATAL) << "Not implemented";
-  /* Tensor API may be need
-   * 1. set
-   * template <typename Dtype>
-   * void Set(Dtype val);
-   *
-   * 2. axpy
-   * 3. padding
-   *
-   *
-   */
-  Tensor output;
+  Tensor x = input.Clone();
+  x.Reshape(Shape{input.shape(0), input.Size() / input.shape(0)});
+  vector<Tensor> channels, images;
+  // for each image
+  for (size_t i = 0; i < input.shape(0); ++i) {
+    Tensor image = CopyRows(x, i, i + 1);
+    image.Reshape(Shape{input.shape(1), input.shape(2) * input.shape(3)});
+    // for each channel of the image
+    channels.clear();
+    for (size_t c = 0; c < input.shape(1); ++c) {
+      Tensor window =
+          CopyRows(image, std::max(0, static_cast<int>(c) - local_size_ / 2),
+                   std::min(input.shape(1), c + local_size_ / 2 + 1));
+      window = Square(window);
+
+      Tensor tmp, ch;
+      tmp.Reshape(Shape{input.shape(2) * input.shape(3)});
+      SumRows(window, &tmp);
+
+      tmp *= alpha_;
+      tmp += k_;
+      tmp = Pow(tmp, beta_);
+
+      ch = CopyRows(image, c, c + 1);
+      ch = ch / tmp;
+      ch.Reshape(Shape{input.shape(2), input.shape(3)});
+      channels.push_back(ch);
+    }
+    Tensor normalized_image = ConcatenateRows(channels);
+    normalized_image.Reshape(
+        Shape{input.shape(1), input.shape(2) * input.shape(3)});
+    images.push_back(normalized_image);
+  }
+  Tensor output = ConcatenateRows(images);
+  output.Reshape(input.shape());
+  buf_.push(input);
+
   return output;
 }
 
-const std::pair<Tensor, vector<Tensor>> LRN::Backward(
-    int flag, const Tensor& grad) {
-  LOG(FATAL) << "Not implemented";
+const std::pair<Tensor, vector<Tensor>> LRN::Backward(int flag,
+                                                      const Tensor& grad) {
   Tensor dx;
+  if ((flag & kTrain) == kTrain) {
+    Tensor dy = grad.Clone();
+    dy.Reshape(Shape{grad.shape(0), grad.Size() / grad.shape(0)});
+    Tensor x = buf_.top();
+    buf_.pop();
+    x.Reshape(dy.shape());
+    vector<Tensor> channels, images;
+    // for each image
+    for (size_t i = 0; i < grad.shape(0); ++i) {
+      Tensor image = CopyRows(x, i, i + 1);
+      image.Reshape(Shape{grad.shape(1), grad.shape(2) * grad.shape(3)});
+      // for each channel of the image
+      channels.clear();
+      for (size_t c = 0; c < grad.shape(1); ++c) {
+        Tensor window =
+            CopyRows(image, std::max(0, static_cast<int>(c) - local_size_ / 2),
+                     std::min(grad.shape(1), c + local_size_ / 2 + 1));
+        Tensor tmp;
+        tmp.Reshape(Shape{grad.shape(2) * grad.shape(3)});
+        window = Square(window);
+        SumRows(window, &tmp);
+        tmp *= alpha_;
+        tmp += k_;
+        tmp.Reshape(Shape{grad.shape(2), grad.shape(3)});
+        channels.push_back(tmp);
+      }
+      Tensor norm_image = ConcatenateRows(channels);
+      norm_image.Reshape(Shape{grad.shape(1), grad.shape(2) * grad.shape(3)});
+      images.push_back(norm_image);
+    }
+    Tensor norm = ConcatenateRows(images);
+    norm.Reshape(dy.shape());
+    dx = Pow(norm, -beta_);
+    dx = dx * dy;
+    Tensor tmp = dx * x;
+    tmp = tmp / norm;
+    images.clear();
+    for (size_t i = 0; i < grad.shape(0); ++i) {
+      Tensor image = CopyRows(tmp, i, i + 1);
+      image.Reshape(Shape{grad.shape(1), grad.shape(2) * grad.shape(3)});
+      // for each channel of the image
+      channels.clear();
+      for (size_t c = 0; c < grad.shape(1); ++c) {
+        Tensor window =
+            CopyRows(image, std::max(0, static_cast<int>(c) - local_size_ / 2),
+                     std::min(grad.shape(1), c + local_size_ / 2 + 1));
+        Tensor tmpr;
+        tmpr.Reshape(Shape{grad.shape(2) * grad.shape(3)});
+        SumRows(window, &tmpr);
+        tmpr.Reshape(Shape{grad.shape(2), grad.shape(3)});
+        channels.push_back(tmpr);
+      }
+      Tensor pooled_image = ConcatenateRows(channels);
+      pooled_image.Reshape(Shape{grad.shape(1), grad.shape(2) * grad.shape(3)});
+      images.push_back(pooled_image);
+    }
+    Tensor tmp2 = ConcatenateRows(images);
+    tmp2 *= (-2.0f * beta_ * alpha_);
+    tmp2 = tmp2 * x;
+    dx = dx + tmp2;
+    dx.Reshape(grad.shape());
+  } else {
+    LOG(ERROR) << "Do not call backward for evaluation phase";
+  }
   vector<Tensor> param_grad;
   return std::make_pair(dx, param_grad);
 }
