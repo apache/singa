@@ -4,12 +4,12 @@ ADD_LIBRARY(gtest STATIC EXCLUDE_FROM_ALL "gtest/gtest.h" "gtest/gtest-all.cc")
 
 AUX_SOURCE_DIRECTORY(singa singa_test_source)
 
-IF(NOT BUILD_OPENCL_TESTS)
+IF(NOT USE_OPENCL)
     MESSAGE(STATUS "Skipping OpenCL tests")
     LIST(REMOVE_ITEM singa_test_source "singa/test_opencl.cc")
 ENDIF()
 
-ADD_EXECUTABLE(test_singa "gtest/gtest_main.cc" ${singa_test_source}) 
+ADD_EXECUTABLE(test_singa "gtest/gtest_main.cc" ${singa_test_source})
 ADD_DEPENDENCIES(test_singa singa_core singa_utils)
 MESSAGE(STATUS "link libs" ${singa_linker_libs})
 TARGET_LINK_LIBRARIES(test_singa gtest singa_core singa_utils singa_model

@@ -25,7 +25,7 @@ OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
 OPTION(USE_PYTHON "Generate py wrappers" ON)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
-OPTION(BUILD_OPENCL_TESTS "Build OpenCL tests" OFF)
+#OPTION(BUILD_OPENCL_TESTS "Build OpenCL tests" OFF)
 
 INCLUDE("cmake/Dependencies.cmake")
 INCLUDE("cmake/Utils.cmake")

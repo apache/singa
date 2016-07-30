@@ -21,7 +21,7 @@
 #include <sstream>
 #include <string>
 
-#include "singa/core/opencl_device.h"
+#include "singa/core/device.h"
 #include "singa/utils/tinydir.h"
 
 #ifdef USE_OPENCL
@@ -32,11 +32,11 @@ namespace singa {
 
 const string OpenclDevice::cl_src_path = "../src/core/tensor";
 
-OpenclDevice::OpenclDevice(int id, int num_executors) 
+OpenclDevice::OpenclDevice(int id, int num_executors)
 	: Device(id, num_executors) {
   lang_ = kOpencl;
-  this->kernels = std::make_shared<std::map<std::string, cl::Kernel>>();
-  
+  this->kernels = std::make_shared<std::unordered_map<string, cl::Kernel>>();
+
   // Create the OpenCL Device, Context, and CommandQueue.
   /// TODO: This merely chooses the first device on the first platform.
   cl_int status = CL_SUCCESS;
@@ -44,7 +44,7 @@ OpenclDevice::OpenclDevice(int id, int num_executors)
   std::vector<cl::Platform> platforms;
   status = cl::Platform::get(&platforms);
   OCL_CHECK(status, "Failed to find any OpenCL platforms!");
-  
+
   std::vector<cl::Device> devices;
   status = platforms[0].getDevices(CL_DEVICE_TYPE_ALL, &devices);
   OCL_CHECK(status, "Failed to get list of devices from platform!");
@@ -57,7 +57,7 @@ OpenclDevice::OpenclDevice(int id, int num_executors)
   OCL_CHECK(status, "Failed to create a command queue!");
 
   BuildPrograms();
-  
+
   ctx_.kernels = kernels;
   ctx_.ocl_cmdq = cmdq;
   ctx_.ocl_ctx = ocl_ctx;
@@ -65,7 +65,7 @@ OpenclDevice::OpenclDevice(int id, int num_executors)
 
 
 OpenclDevice::~OpenclDevice() {
-  
+
   // Flush and finish the command queue.
   cmdq.flush();
   cmdq.finish();
@@ -150,7 +150,7 @@ void OpenclDevice::BuildPrograms(const std::string &kdir) {
 	  std::vector<cl::Kernel> built_kernels;
 	  status = program.createKernels(&built_kernels);
 	  OCL_CHECK(status, "Failed to create kernels in built program.");
-	  
+
 	  for (auto k : built_kernels) {
 		std::string name = k.getInfo<CL_KERNEL_FUNCTION_NAME>(&status);
 		this->kernels->insert(std::make_pair(name, k));
@@ -221,7 +221,7 @@ void OpenclDevice::Free(void* p) {
 
 void OpenclDevice::WriteToDevice(cl::Buffer* dst, const void* src, const size_t size) {
   cl_int status = CL_SUCCESS;
-  
+
   status = cmdq.enqueueWriteBuffer(*dst, CL_TRUE, 0, size, src);
   OCL_CHECK(status, "Unable to write data to OpenCL device.");
 }
@@ -229,7 +229,7 @@ void OpenclDevice::WriteToDevice(cl::Buffer* dst, const void* src, const size_t 
 
 void OpenclDevice::ReadFromDevice(void* dst, const cl::Buffer* src, const size_t size) {
   cl_int status = CL_SUCCESS;
-  
+
   status = cmdq.enqueueReadBuffer(*src, CL_TRUE, 0, size, dst);
   OCL_CHECK(status, "Unable to read data from OpenCL device.");
 }
