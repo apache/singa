@@ -197,11 +197,12 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
   std::thread th;
   for (size_t fno = 1; fno <= num_train_files; fno++) {
     binfile = bin_folder + "/train" + std::to_string(fno) + ".bin";
+    //LOG(INFO) << "load data from " << binfile;
     while (true) {
       timer.Tick();
       if (th.joinable()) {
         th.join();
-        // LOG(INFO) << "num of samples: " << n_read;
+        //LOG(INFO) << "num of samples: " << n_read;
         if (n_read < read_size) {
           if (n_read > 0) {
             LOG(WARNING) << "Pls set batchsize to make num_total_samples "
@@ -211,12 +212,24 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
           break;
         }
       }
+      if (n_read >= read_size) {
       train_x.CopyData(prefetch_x);
       train_y.CopyData(prefetch_y);
 
+      //LOG(INFO) << "x.L1(): " << train_x.L1();
+      }
+      //train_y.ToHost();
+      //auto y = train_y.data<int>();
+      //for (size_t i = 0; i < train_y.Size(); i++)
+      //  LOG(INFO) << "Label " << i << ":" << y[i];
+
+      //train_y.ToDevice(device);
       th = data.AsyncLoadData(kTrain, binfile, read_size, &prefetch_x,
                               &prefetch_y, &n_read);
       load_time += timer.Elapsed();
+
+      if (n_read < read_size) continue;
+
       CHECK_EQ(train_x.shape(0), train_y.shape(0));
       //     train_x.ToDevice(device);
       //      train_y.ToDevice(device);

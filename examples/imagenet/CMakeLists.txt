@@ -3,6 +3,7 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 
 IF(USE_CUDNN)
   IF(USE_OPENCV)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp ")
     ADD_EXECUTABLE(imagenet alexnet.cc)
     ADD_DEPENDENCIES(imagenet singa_core singa_model singa_utils singa_io)
     TARGET_LINK_LIBRARIES(imagenet singa_core singa_utils singa_model singa_io protobuf ${SINGA_LIBKER_LIBS})

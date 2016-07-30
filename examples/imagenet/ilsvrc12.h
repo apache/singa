@@ -30,6 +30,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <omp.h>
 #include "singa/core/tensor.h"
 #include "singa/io/decoder.h"
 #include "singa/io/encoder.h"
@@ -37,6 +38,7 @@
 #include "singa/io/transformer.h"
 #include "singa/io/writer.h"
 #include "singa/proto/io.pb.h"
+#include "singa/utils/timer.h"
 
 using std::string;
 using namespace singa::io;
@@ -290,12 +292,11 @@ std::thread ILSVRC::AsyncLoadData(int flag, string file, size_t read_size,
 
 size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
                         Tensor *y, size_t *n_read) {
-  string image_path, image;
   x->Reshape(Shape{read_size, 3, kCropSize, kCropSize});
   y->AsType(kInt);
   y->Reshape(Shape{read_size});
-  Tensor tmp_x(Shape{read_size, 3, kCropSize, kCropSize});
-  Tensor tmp_y(Shape{read_size}, kInt);
+  //Tensor tmp_x(Shape{read_size, 3, kCropSize, kCropSize});
+  //Tensor tmp_y(Shape{read_size}, kInt);
   if (file != last_read_file) {
     if (reader != nullptr) {
       reader->Close();
@@ -312,9 +313,12 @@ size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
     reader = new BinFileReader();
     reader->Open(file, 100 << 20);
   }
-  size_t i;
-  for (i = 0; i < read_size; i++) {
+  //Timer timer1, timer2, timer3;
+  //float readtime = 0.0f, transtime = 0.0f;
+  vector<string> images;
+  for (size_t i = 0; i < read_size; i++) {
     // return false when reading to the end of file.
+    string image_path, image;
     bool ret = reader->Read(&image_path, &image);
     if (ret == false) {
       reader->Close();
@@ -322,16 +326,32 @@ size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
       reader = nullptr;
       break;
     }
-    std::vector<Tensor> pair = decoder->Decode(image);
+    images.push_back(image);
+  }
+  //auto iot = timer2.Elapsed();
+  int nimg = images.size();
+  //LOG(INFO) << "num of images: " << nimg;
+  *n_read = nimg;
+
+  //Timer omptime;
+  int nProcessors = omp_get_max_threads();
+  omp_set_num_threads(nProcessors);
+#pragma omp parallel for shared(nimg, images, x, y)
+  for (int k = 0; k < nimg; k++) {
+    std::vector<Tensor> pair = decoder->Decode(images.at(k));
     auto tmp_image = pair[0] - mean;
     Tensor aug_image = transformer->Apply(flag, tmp_image);
-    CopyDataToFrom(&tmp_x, aug_image, aug_image.Size(), i * aug_image.Size());
-    CopyDataToFrom(&tmp_y, pair[1], 1, i);
+    CopyDataToFrom(x, aug_image, aug_image.Size(), k * aug_image.Size());
+    CopyDataToFrom(y, pair[1], 1, k);
   }
-  x->CopyData(tmp_x);
-  y->CopyData(tmp_y);
-  *n_read = i;
-  return i;
+  //auto ompt = omptime.Elapsed();
+  //x->CopyData(tmp_x);
+  //y->CopyData(tmp_y);
+  //readtime = timer1.Elapsed();
+  //LOG(INFO) << "Total time of loading data: " << readtime << "ms";
+  //LOG(INFO) << "Time of reading data from file: " << iot << "ms";
+  //LOG(INFO) << "Time of transforming data: " << ompt << "ms";
+  return nimg;
 }
 }  // namespace singa
 
