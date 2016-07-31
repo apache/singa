@@ -295,8 +295,8 @@ size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
   x->Reshape(Shape{read_size, 3, kCropSize, kCropSize});
   y->AsType(kInt);
   y->Reshape(Shape{read_size});
-  //Tensor tmp_x(Shape{read_size, 3, kCropSize, kCropSize});
-  //Tensor tmp_y(Shape{read_size}, kInt);
+//  Tensor tmp_x(Shape{read_size, 3, kCropSize, kCropSize});
+//  Tensor tmp_y(Shape{read_size}, kInt);
   if (file != last_read_file) {
     if (reader != nullptr) {
       reader->Close();
@@ -345,8 +345,6 @@ size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
     CopyDataToFrom(y, pair[1], 1, k);
   }
   //auto ompt = omptime.Elapsed();
-  //x->CopyData(tmp_x);
-  //y->CopyData(tmp_y);
   //readtime = timer1.Elapsed();
   //LOG(INFO) << "Total time of loading data: " << readtime << "ms";
   //LOG(INFO) << "Time of reading data from file: " << iot << "ms";
