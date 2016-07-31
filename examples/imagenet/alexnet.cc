@@ -174,9 +174,13 @@ FeedForwardNet CreateNet() {
 }
 
 void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
-                   std::shared_ptr<Device> device, int epoch, string bin_folder,
-                   size_t num_train_images, size_t train_file_size,
-                   size_t read_size, float lr, Channel *train_ch) {
+                                      std::shared_ptr<Device> device, int epoch,
+                                      string bin_folder,
+                                      size_t num_train_images,
+                                      size_t train_file_size,
+                                      size_t read_size,
+                                      float lr,
+                                      Channel *train_ch) {
   size_t num_train_files = num_train_images / train_file_size +
                            (num_train_images % train_file_size ? 1 : 0);
   string mean_path = bin_folder + "/mean.bin";
@@ -184,72 +188,62 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
   float load_time = 0.0f, train_time = 0.0f;
   size_t b = 0;
   size_t n_read;
-  Timer timer;
-  Tensor prefetch_x, train_x;
-  Tensor prefetch_y, train_y;
-  prefetch_x.ToDevice(device);
-  prefetch_y.ToDevice(device);
+  Timer timer, ttr;
+  Tensor prefetch_x, prefetch_y;
+  //prefetch_x.ToDevice(device);
+  //prefetch_y.ToDevice(device);
   string binfile = bin_folder + "/train1.bin";
+  timer.Tick();
   data.LoadData(kTrain, binfile, read_size, &prefetch_x, &prefetch_y, &n_read);
+  load_time += timer.Elapsed();
   CHECK_EQ(n_read, read_size);
-  train_x.ResetLike(prefetch_x);
-  train_y.ResetLike(prefetch_y);
+  Tensor train_x(prefetch_x.shape(), device);
+  Tensor train_y(prefetch_y.shape(), device, kInt);
   std::thread th;
   for (size_t fno = 1; fno <= num_train_files; fno++) {
     binfile = bin_folder + "/train" + std::to_string(fno) + ".bin";
-    //LOG(INFO) << "load data from " << binfile;
+    //LOG(INFO) << "Load dat from " << binfile;
     while (true) {
-      timer.Tick();
       if (th.joinable()) {
         th.join();
+        load_time += timer.Elapsed();
         //LOG(INFO) << "num of samples: " << n_read;
         if (n_read < read_size) {
           if (n_read > 0) {
             LOG(WARNING) << "Pls set batchsize to make num_total_samples "
-                         << "% batchsize == 0. Otherwise, the last " << n_read
-                         << " samples would not be used";
+              << "% batchsize == 0. Otherwise, the last " << n_read
+              << " samples would not be used";
           }
           break;
         }
       }
-      if (n_read >= read_size) {
-      train_x.CopyData(prefetch_x);
-      train_y.CopyData(prefetch_y);
-
-      //LOG(INFO) << "x.L1(): " << train_x.L1();
+      if (n_read == read_size) {
+        train_x.CopyData(prefetch_x);
+        train_y.CopyData(prefetch_y);
       }
-      //train_y.ToHost();
-      //auto y = train_y.data<int>();
-      //for (size_t i = 0; i < train_y.Size(); i++)
-      //  LOG(INFO) << "Label " << i << ":" << y[i];
-
-      //train_y.ToDevice(device);
-      th = data.AsyncLoadData(kTrain, binfile, read_size, &prefetch_x,
-                              &prefetch_y, &n_read);
-      load_time += timer.Elapsed();
-
-      if (n_read < read_size) continue;
-
-      CHECK_EQ(train_x.shape(0), train_y.shape(0));
-      //     train_x.ToDevice(device);
-      //      train_y.ToDevice(device);
+      //LOG(INFO) << "train_x.L1(): " << train_x.L1();
       timer.Tick();
+      th = data.AsyncLoadData(kTrain, binfile, read_size, &prefetch_x, &prefetch_y, &n_read);
+      if (n_read < read_size) continue;
+      CHECK_EQ(train_x.shape(0), train_y.shape(0));
+ //     train_x.ToDevice(device);
+//      train_y.ToDevice(device);
+      ttr.Tick();
       auto ret = net.TrainOnBatch(epoch, train_x, train_y);
-      train_time += timer.Elapsed();
+      train_time += ttr.Elapsed();
       loss += ret.first;
       metric += ret.second;
       b++;
     }
 
-    if (fno % 50 == 0) {
-      train_ch->Send(
-          "Epoch " + std::to_string(epoch) + ", training loss = " +
-          std::to_string(loss / b) + ", accuracy = " +
-          std::to_string(metric / b) + ", lr = " + std::to_string(lr) +
-          ", time of loading " + std::to_string(read_size) + " images = " +
-          std::to_string(load_time / b) +
-          " ms, time of training (batchsize = " + std::to_string(read_size) +
-          ") = " + std::to_string(train_time / b) + " ms.");
+    if (fno % 20 == 0) {
+      train_ch->Send("Epoch " + std::to_string(epoch) + ", training loss = " +
+                      std::to_string(loss / b) + ", accuracy = " +
+                      std::to_string(metric / b) + ", lr = " +
+                      std::to_string(lr)
+                      + ", time of loading " + std::to_string(read_size) + " images = "
+                      + std::to_string(load_time / b) + " ms, time of training (batchsize = "
+                      + std::to_string(read_size) + ") = " + std::to_string(train_time / b) + " ms.");
       loss = 0.0f;
       metric = 0.0f;
       load_time = 0.0f;
@@ -260,53 +254,64 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
 }
 
 void TestOneEpoch(FeedForwardNet &net, ILSVRC &data,
-                  std::shared_ptr<Device> device, int epoch, string bin_folder,
-                  size_t num_test_images, size_t read_size, Channel *val_ch) {
+                                     std::shared_ptr<Device> device, int epoch,
+                                     string bin_folder, size_t num_test_images,
+                                     size_t read_size,
+                                     Channel *val_ch) {
   float loss = 0.0f, metric = 0.0f;
   float load_time = 0.0f, eval_time = 0.0f;
   size_t n_read;
   string binfile = bin_folder + "/test.bin";
-  Timer timer;
-  Tensor prefetch_x, test_x;
-  Tensor prefetch_y, test_y;
-  prefetch_x.ToDevice(device);
-  prefetch_y.ToDevice(device);
+  Timer timer, tte;
+  Tensor prefetch_x, prefetch_y;
+  //prefetch_x.ToDevice(device);
+  //prefetch_y.ToDevice(device);
+  timer.Tick();
   data.LoadData(kEval, binfile, read_size, &prefetch_x, &prefetch_y, &n_read);
+  load_time += timer.Elapsed();
+  Tensor test_x(prefetch_x.shape(), device);
+  Tensor test_y(prefetch_y.shape(), device, kInt);
+  int remain = (int)num_test_images - n_read;
+  //LOG(INFO) << "num of test images: " << remain;
   CHECK_EQ(n_read, read_size);
-  test_x.ResetLike(prefetch_x);
-  test_y.ResetLike(prefetch_y);
+  //test_x.ResetLike(prefetch_x);
+  //test_y.ResetLike(prefetch_y);
   std::thread th;
   while (true) {
-    timer.Tick();
     if (th.joinable()) {
       th.join();
+      load_time += timer.Elapsed();
+      remain -= n_read;
+      if (remain < 0) break;
       if (n_read < read_size) break;
     }
+    //LOG(INFO) << "num of test images: " << remain;
     test_x.CopyData(prefetch_x);
     test_y.CopyData(prefetch_y);
-    th = data.AsyncLoadData(kEval, binfile, read_size, &prefetch_x, &prefetch_y,
-                            &n_read);
-
-    load_time += timer.Elapsed();
-    CHECK_EQ(test_x.shape(0), test_y.shape(0));
-    // test_x.ToDevice(device);
-    // test_y.ToDevice(device);
     timer.Tick();
+    th = data.AsyncLoadData(kEval, binfile, read_size, &prefetch_x, &prefetch_y, &n_read);
+
+    CHECK_EQ(test_x.shape(0), test_y.shape(0));
+    //test_x.ToDevice(device);
+    //test_y.ToDevice(device);
+    tte.Tick();
     auto ret = net.EvaluateOnBatch(test_x, test_y);
-    eval_time += timer.Elapsed();
+    eval_time += tte.Elapsed();
     ret.first.ToHost();
     ret.second.ToHost();
     loss += Sum(ret.first);
     metric += Sum(ret.second);
+    //LOG(INFO) << "loss: " << loss;
+    //LOG(INFO) << "metric: " << metric;
   }
   loss /= num_test_images;
   metric /= num_test_images;
   val_ch->Send("Epoch " + std::to_string(epoch) + ", val loss = " +
-               std::to_string(loss) + ", accuracy = " + std::to_string(metric) +
-               ", time of loading " + std::to_string(num_test_images) +
-               " images = " + std::to_string(load_time) +
-               " ms, time of evaluating " + std::to_string(num_test_images) +
-               " images = " + std::to_string(eval_time) + " ms.");
+                std::to_string(loss) + ", accuracy = " +
+                std::to_string(metric)
+                + ", time of loading " + std::to_string(num_test_images) + " images = "
+                + std::to_string(load_time) + " ms, time of evaluating "
+                + std::to_string(num_test_images) + " images = " + std::to_string(eval_time) + " ms.");
 }
 
 void Checkpoint(FeedForwardNet &net, string prefix) {
@@ -316,6 +321,7 @@ void Checkpoint(FeedForwardNet &net, string prefix) {
   for (size_t k = 0; k < names.size(); k++) {
     values.at(k).ToHost();
     snapshot.Write(names.at(k), values.at(k));
+
   }
   LOG(INFO) << "Write snapshot into " << prefix;
 }
@@ -352,8 +358,7 @@ void Train(int num_epoch, float lr, size_t batchsize, size_t train_file_size,
       string prefix = "snapshot_epoch" + std::to_string(epoch);
       Checkpoint(net, prefix);
     }
-    TestOneEpoch(net, data, cuda, epoch, bin_folder, num_test_images, batchsize,
-                 val_ch);
+    TestOneEpoch(net, data, cuda, epoch, bin_folder, num_test_images, batchsize, val_ch);
   }
 }
 }
