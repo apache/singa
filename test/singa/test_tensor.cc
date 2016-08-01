@@ -60,7 +60,7 @@ TEST(TensorClass, AsType) {
 TEST(TensorClass, ToDevice) {
   Tensor t(Shape{2,3});
   EXPECT_EQ(singa::defaultDevice, t.device());
-  auto dev = std::make_shared<singa::CppCPU>(0, 1);
+  auto dev = std::make_shared<singa::CppCPU>();
   t.ToDevice(dev);
   EXPECT_NE(singa::defaultDevice, t.device());
 }

@@ -23,6 +23,7 @@
 #include "singa/utils/logging.h"
 
 namespace singa {
+RegisterLayerClass(CudnnConvolution);
 CudnnConvolution::~CudnnConvolution() {
   if (bias_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(bias_desc_));
@@ -47,8 +48,7 @@ void CudnnConvolution::Setup(const Shape& in_sample, const LayerConf &conf) {
 }
 
 void CudnnConvolution::ToDevice(std::shared_ptr<Device> device) {
-  weight_.ToDevice(device);
-  bias_.ToDevice(device);
+  Convolution::ToDevice(device);
   workspace_.ToDevice(device);
 }
 

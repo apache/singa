@@ -24,8 +24,8 @@
 #include "singa/singa_config.h"
 #include <cmath>
 
-TEST(Adagrad, ApplyCPU) {
-  singa::Adagrad adagrad;
+TEST(AdaGrad, ApplyCPU) {
+  singa::AdaGrad adagrad;
   float lr = 0.1f;
   const float v[4] = {0.1, 0.2, 0.3, 0.4};
   const float g[4] = {0.01, 0.02, 0.03, 0.04};
@@ -36,7 +36,7 @@ TEST(Adagrad, ApplyCPU) {
 
   singa::OptimizerConf conf;
   adagrad.Setup(conf);
-  adagrad.Apply(0, lr, "xx", grad, &value);
+  adagrad.Apply(0, lr, "xx", grad, value);
 
   singa::Tensor v1 = value.Clone();
   const float* newv1 = v1.data<float>();
@@ -47,7 +47,7 @@ TEST(Adagrad, ApplyCPU) {
                 1e-5);
 
   grad.CopyDataFromHostPtr(g, 4);
-  adagrad.Apply(1, lr, "xx", grad, &value);
+  adagrad.Apply(1, lr, "xx", grad, value);
   singa::Tensor v2 = value.Clone();
   const float* newv2 = v2.data<float>();
   for (int i = 0; i < 4; ++i) history[i] += g[i] * g[i];
@@ -58,8 +58,8 @@ TEST(Adagrad, ApplyCPU) {
 }
 
 #ifdef USE_CUDA
-TEST(Adagrad, ApplyCUDA) {
-  singa::Adagrad adagrad;
+TEST(AdaGrad, ApplyCUDA) {
+  singa::AdaGrad adagrad;
   float lr = 0.1f;
   const float v[4] = {0.1, 0.2, 0.3, 0.4};
   const float g[4] = {0.01, 0.02, 0.03, 0.04};
@@ -71,7 +71,7 @@ TEST(Adagrad, ApplyCUDA) {
 
   singa::OptimizerConf conf;
   adagrad.Setup(conf);
-  adagrad.Apply(0, lr, "xx", grad, &value);
+  adagrad.Apply(0, lr, "xx", grad, value);
 
   singa::Tensor v1 = value.Clone();
   v1.ToHost();
@@ -83,7 +83,7 @@ TEST(Adagrad, ApplyCUDA) {
                 1e-5);
 
   grad.CopyDataFromHostPtr(g, 4);
-  adagrad.Apply(1, lr, "xx", grad, &value);
+  adagrad.Apply(1, lr, "xx", grad, value);
   singa::Tensor v2 = value.Clone();
   v2.ToHost();
   const float* newv2 = v2.data<float>();

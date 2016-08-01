@@ -24,7 +24,7 @@
 
 namespace singa {
 
-std::string JPG2ProtoEncoder::Encode(vector<Tensor>& data) {
+std::string JPGEncoder::Encode(vector<Tensor>& data) {
   // suppose image: image, data[1]: label
   CHECK_LE(data.size(), 2u);
   const Tensor& image = data.at(0);

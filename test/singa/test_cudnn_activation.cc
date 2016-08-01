@@ -46,7 +46,7 @@ TEST(TCudnnActivation, Setup) {
 TEST(TCudnnActivation, Forward) {
   const float x[] = {1.0f, 2.0f, 3.0f, -2.0f, -3.0f, -4.0};
   size_t n = sizeof(x) / sizeof(float);
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{n}, cuda);
   in.CopyDataFromHostPtr<float>(x, n);
 
@@ -79,13 +79,14 @@ TEST(TCudnnActivation, Forward) {
     EXPECT_FLOAT_EQ(y[0], yptr[0]);
     EXPECT_FLOAT_EQ(y[4], yptr[4]);
     EXPECT_FLOAT_EQ(y[5], yptr[5]);
+    delete[] y;
   }
 }
 
 TEST(TCudnnActivation, Backward) {
   const float x[] = {2.0f, 3.0f, 3.0f, 7.f, 0.0f, 5.0, 1.5, 2.5, -2.5, 1.5};
   size_t n = sizeof(x) / sizeof(float);
-  auto cuda = std::make_shared<singa::CudaGPU>(0, 1);
+  auto cuda = std::make_shared<singa::CudaGPU>();
   singa::Tensor in(singa::Shape{n}, cuda);
   in.CopyDataFromHostPtr<float>(x, n);
   float neg_slope = 0.5f;
@@ -127,6 +128,7 @@ TEST(TCudnnActivation, Backward) {
     for (size_t i = 0; i < n; i++) {
       EXPECT_NEAR(dx[i], xptr[i], 1e-7);
     }
+    delete[] dx;
   }
 }
 #endif  // USE_CUDNN

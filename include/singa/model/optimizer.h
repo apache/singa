@@ -63,13 +63,13 @@ class Optimizer {
   /// by Apply(int, const string&, Tensor*, Tensor*).
   /// All sub-classes should override this function.
   virtual void Apply(int step, float lr, const string& name, const Tensor& grad,
-                     Tensor* value) = 0;
+                     Tensor& value) = 0;
 
   /// Apply the updating algorithm.
   /// It will apply regularization and constraint to the parameters if
   /// configured during Register(). If will also scale the learning rate if
   /// configured in ParamSpecs (see Register).
-  void Apply(int step, const string& name, Tensor* grad, Tensor* value);
+  void Apply(int step, const string& name, Tensor& grad, Tensor& value);
 
   /// The argument is a function that returns the learning rate given the
   /// current step (i.e., curren running iteration).
@@ -113,11 +113,11 @@ class Constraint {
   /// e.g., clip each gradient if it is too large w.r.t the threshold,
   /// \ref
   /// https://www.reddit.com/r/MachineLearning/comments/31b6x8/gradient_clipping_rnns/
-  void Apply(int step, Tensor* grad, Tensor* value);
+  void Apply(int step, Tensor& grad, Tensor& value);
   /// Apply the constraint for multiple parameter objects together.
   /// \ref https://github.com/Lasagne/Lasagne/blob/master/lasagne/updates.py
-  void Apply(int step, const vector<Tensor*>& grads,
-             const vector<Tensor*>& values);
+  void Apply(int step, const vector<Tensor>& grads,
+             const vector<Tensor>& values);
 
  private:
   /// currently only support "L2" norm constraint, i.e., the norm should be less
@@ -128,6 +128,9 @@ class Constraint {
   float threshold_;
 };
 
+inline std::shared_ptr<Constraint> CreateConstraint(std::string type) {
+  return std::make_shared<Constraint>();
+}
 /// Apply regularization for parameters (gradient), e.g., L1 norm and L2 norm.
 /// TODO(wangwei) implement a sub-class for each type of regularizer
 class Regularizer {
@@ -147,11 +150,11 @@ class Regularizer {
   /// e.g., clip each gradient if it is too large w.r.t the threshold,
   /// \ref
   /// https://www.reddit.com/r/MachineLearning/comments/31b6x8/gradient_clipping_rnns/
-  void Apply(int step, Tensor* grad, Tensor* value, float scale = 1.0f);
+  void Apply(int step, Tensor& grad, Tensor& value, float scale = 1.0f);
   /// Apply the regularizer for multiple parameter objects together.
   /// \ref https://github.com/Lasagne/Lasagne/blob/master/lasagne/updates.py
-  void Apply(int step, const vector<Tensor*>& grads,
-             const vector<Tensor*>& values);
+  void Apply(int step, const vector<Tensor>& grads,
+             const vector<Tensor>& values);
 
  private:
   /// currently only support "L2" regularizer. type_ is case insensitive.
@@ -159,6 +162,11 @@ class Regularizer {
   string type_ = "NotSet";
   float coefficient_;
 };
+inline std::shared_ptr<Regularizer> CreateRegularizer(std::string type) {
+  return std::make_shared<Regularizer>();
+}
+
+
 
 // =============Vallina SGD with Momentum=====================================
 class SGD : public Optimizer {
@@ -166,14 +174,13 @@ class SGD : public Optimizer {
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
   void Apply(int step, float lr, const string& name, const Tensor& grad,
-             Tensor* value) override;
+             Tensor& value) override;
 
   /// The argument function returns the momentum value given the current running
   /// step (i.e., iterations/mini-batches).
   void SetMomentumGenerator(std::function<float(int)> func) {
     momentum_generator_ = func;
   }
-  virtual ~SGD() = default;
 
  private:
   std::unordered_map<string, Tensor> history_gradient_;
@@ -181,19 +188,18 @@ class SGD : public Optimizer {
 };
 
 // =============Nesterov======================================================
-class Nesterov : Optimizer {
+class Nesterov : public Optimizer {
  public:
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
   void Apply(int step, float lr, const string& name, const Tensor& grad,
-             Tensor* value) override;
+             Tensor& value) override;
 
   /// The argument function returns the momentum value given the current running
   /// step (i.e., iterations/mini-batches).
   void SetMomentumGenerator(std::function<float(int)> func) {
     momentum_generator_ = func;
   }
-  virtual ~Nesterov() = default;
 
  private:
   std::unordered_map<string, Tensor> history_gradient_;
@@ -201,31 +207,46 @@ class Nesterov : Optimizer {
 };
 
 // =============Adagrad=======================================================
-class Adagrad : Optimizer {
+class AdaGrad : public Optimizer {
  public:
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
   void Apply(int step, float lr, const string& name, const Tensor& grad,
-             Tensor* value) override;
-  virtual ~Adagrad() = default;
+             Tensor& value) override;
 
  private:
   std::unordered_map<string, Tensor> history_gradient_;
   float delta_;
 };
 // =============RMSProp=======================================================
-class RMSProp : Optimizer {
+class RMSProp : public Optimizer {
  public:
   void Setup(const OptimizerConf& conf);
   /// Apply the updating algorithm.
   void Apply(int step, float lr, const string& name, const Tensor& grad,
-             Tensor* value) override;
+             Tensor& value) override;
   virtual ~RMSProp() = default;
 
  private:
   std::unordered_map<string, Tensor> history_gradient_;
   float delta_, rho_;
 };
+
+
+inline std::shared_ptr<Optimizer> CreateOptimizer(const string& type) {
+  std::shared_ptr<Optimizer>  opt;
+  if (type == "SGD")
+    opt = std::shared_ptr<Optimizer>(new SGD());
+  else if (type == "RMSProp")
+    opt = std::shared_ptr<Optimizer>(new RMSProp());
+  else if (type == "AdaGrad")
+    opt = std::shared_ptr<Optimizer>(new AdaGrad());
+  else if (type == "Nesterov")
+    opt = std::shared_ptr<Optimizer>(new Nesterov());
+  else
+    LOG(FATAL) << "Unknown optimizer type : " << type;
+  return opt;
+}
 // ============LocalAllReduce for single node multiple workers ==============
 /// Updater for training models on a single node with multiple devices (workers)
 /// All model parameters are partitioned such that each parameter is updated on

@@ -77,6 +77,7 @@ TEST(PReLU, ForwardCPU) {
     }
   }
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(y[i], yptr[i]);
+  delete[] y;
 }
 
 TEST(PReLU, BackwardCPU) {
@@ -135,6 +136,7 @@ TEST(PReLU, BackwardCPU) {
   }
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dx[i], xptr[i]);
   for (size_t i = 0; i < params; i++) EXPECT_FLOAT_EQ(da[i], aptr[i]);
+  delete[] dx;
 }
 
 #ifdef USE_CUDA
@@ -178,6 +180,7 @@ TEST(PReLU, ForwardGPU) {
     }
   }
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(y[i], yptr[i]);
+  delete[] y;
 }
 
 TEST(PReLU, BackwardGPU) {
@@ -241,5 +244,6 @@ TEST(PReLU, BackwardGPU) {
   }
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dx[i], xptr[i]);
   for (size_t i = 0; i < params; i++) EXPECT_FLOAT_EQ(da[i], aptr[i]);
+  delete[] dx;
 }
 #endif

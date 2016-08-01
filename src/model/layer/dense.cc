@@ -23,6 +23,7 @@
 namespace singa {
 using std::vector;
 
+RegisterLayerClass(Dense);
 Dense::~Dense() {
   // delete weight_;
   // delete bias_;
@@ -39,8 +40,6 @@ void Dense::Setup(const Shape& in_sample, const LayerConf &conf) {
   else
     weight_.Reshape(Shape{hdim_, vdim_});
   bias_.Reshape(Shape{hdim_});
-  param_values_.push_back(&weight_);
-  param_values_.push_back(&bias_);
   for (auto specs: conf.param())
     param_specs_.push_back(specs);
 }

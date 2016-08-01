@@ -24,20 +24,15 @@
 #include "singa/core/memory.h"
 #include "singa/singa_config.h"
 #include "singa/utils/timer.h"
-#include <sys/time.h>
+#include "singa/utils/cuda_utils.h"
 
 #ifdef USE_CUDA
-TEST(CnmemPool, PoolInit) {
-  singa::CnMemPool pool;
-  pool.InitPool();
-}
-
+/*
 TEST(CnmemPool, PoolInitAll) {
-  singa::CnMemPool pool;
+  singa::CnMemPool pool(1);
   int nDevices;
   cudaGetDeviceCount(&nDevices);
   CHECK_GE(nDevices, 1);
-  pool.InitPool(nDevices, 32, 0);
 }
 
 TEST(CnmemPool, UsePool) {
@@ -55,7 +50,6 @@ TEST(CnmemPool, UsePool) {
     delete[] memPtrs;
   }
 }
-
 TEST(CudaMemPool, UsePool) {
   singa::CudaMemPool pool;
   int numOfTests = 10;
@@ -70,11 +64,11 @@ TEST(CudaMemPool, UsePool) {
     delete[] memPtrs;
   }
 }
+*/
 
 TEST(MemPool, CompareCudaCnmem) {
   singa::CudaMemPool cudaPool;
   singa::CnMemPool cnPool;
-  cnPool.InitPool();
 
   int numOfTests = 5000;
   int allocSize = 32;
@@ -82,6 +76,7 @@ TEST(MemPool, CompareCudaCnmem) {
   singa::DeviceMemPool* pool = NULL;
   pool = &cnPool;
 
+  CUDA_CHECK(cudaSetDevice(0));
   singa::Timer tick;
   for (int i = 0; i < numOfTests; i++) {
     int* memPtrs = NULL;

@@ -59,8 +59,8 @@ const vector<string> FeedForwardNet::GetParamNames() const {
     for (const auto name : layer->param_names()) names.push_back(name);
   return names;
 }
-const vector<Tensor*> FeedForwardNet::GetParamValues() const {
-  vector<Tensor*> values;
+const vector<Tensor> FeedForwardNet::GetParamValues() const {
+  vector<Tensor> values;
   for (auto layer : layers_)
     for (const auto value : layer->param_values()) values.push_back(value);
   return values;
@@ -73,23 +73,32 @@ const vector<ParamSpec> FeedForwardNet::GetParamSpecs() const {
   return specs;
 }
 
-void FeedForwardNet::Compile(bool shuffle, Optimizer* opt, Loss<Tensor>* loss,
-                             Metric<Tensor>* metric) {
+void FeedForwardNet::Compile(bool shuffle, Optimizer* opt, Loss* loss,
+                             Metric* metric) {
+  std::shared_ptr<Updater> updater = std::make_shared<Updater>(opt);
+  Compile(shuffle, true, updater, loss, metric);
+}
+
+void FeedForwardNet::Compile(bool shuffle, bool to_register,
+                             std::shared_ptr<Updater> updater, Loss* loss,
+                             Metric* metric) {
   shuffle_ = shuffle;
-  bool train = (opt != nullptr) && (loss != nullptr);
+  bool train = (updater != nullptr) && (loss != nullptr);
   bool test = metric != nullptr;
-  CHECK(train || test) << "Must set opt and loss, or set metric";
-  opt_ = opt;
+  CHECK(train || test) << "Must set updater and loss, or set metric";
+  updater_ = updater;
   loss_ = loss;
   metric_ = metric;
   const auto specs = GetParamSpecs();
-  const auto params = GetParamValues();
+  auto params = GetParamValues();
   CHECK_EQ(specs.size(), params.size());
   for (size_t k = 0; k < specs.size(); k++) {
-    opt_->Register(specs[k].name(), specs[k]);
+    if (to_register) {
+      updater_->Register(specs[k].name(), specs[k]);
+    }
     auto init = CreateInitializer(specs[k].filler());
     init->Fill(params[k]);
-    LOG(INFO) << specs[k].name() << " : " << params[k]->L1();
+    LOG(INFO) << specs[k].name() << " : " << params[k].L1();
   }
 }
 
@@ -147,8 +156,8 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
   int num_extra_samples = x.shape(0) % batchsize;
   if (num_extra_samples != 0)
     LOG(WARNING) << "Pls set batchsize to make num_total_samples "
-      << "% batchsize == 0. Otherwise, the last " << num_extra_samples
-      << " samples would not be used";
+                 << "% batchsize == 0. Otherwise, the last "
+                 << num_extra_samples << " samples would not be used";
   Channel* train_ch = GetChannel("train_perf");
   train_ch->EnableDestStderr(true);
   Channel* val_ch = GetChannel("val_perf");
@@ -167,12 +176,14 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
       loss += ret.first;
       metric += ret.second;
     }
+    if (val_x.Size() == 0) continue;
     loss /= b;
     metric /= b;
-    train_ch->Send("Epoch " + std::to_string(epoch) + ", training loss = " +
-                   std::to_string(loss) + ", accuracy = " +
-                   std::to_string(metric) + ", lr = " +
-                   std::to_string(opt_->GetLearningRate(epoch)));
+    train_ch->Send(
+        "Epoch " + std::to_string(epoch) + ", training loss = " +
+        std::to_string(loss) + ", accuracy = " + std::to_string(metric) +
+        ", lr = " +
+        std::to_string(updater_->GetOptimizer()->GetLearningRate(epoch)));
     if (val_x.Size() && val_y.Size()) {
       const auto val_perf = Evaluate(val_x, val_y, batchsize);
       val_ch->Send("Epoch " + std::to_string(epoch) + ", val loss = " +
@@ -195,7 +206,7 @@ const std::pair<float, float> FeedForwardNet::TrainOnBatch(int epoch,
   auto names = GetParamNames();
   auto values = GetParamValues();
   for (size_t k = 0; k < grads.size(); k++) {
-    opt_->Apply(epoch, names[k], &grads[k], values.at(k));
+    updater_->Apply(epoch, names[k], grads[k], values.at(k));
   }
   return std::make_pair(loss, metric);
 }
@@ -203,7 +214,7 @@ const std::pair<float, float> FeedForwardNet::TrainOnBatch(int epoch,
 const Tensor FeedForwardNet::Forward(int flag, const Tensor& data) {
   Tensor input = data, output;
   for (auto layer : layers_) {
-//    LOG(INFO) << layer->name() << ": " << input.L1();
+    //    LOG(INFO) << layer->name() << ": " << input.L1();
     output = layer->Forward(flag, input);
     // LOG(INFO) << layer->name() << ": " << output.L2();
     input = output;
@@ -216,13 +227,13 @@ const vector<Tensor> FeedForwardNet::Backward(int flag, const Tensor& grad) {
   std::stack<Tensor> buf;
   Tensor tmp = grad;
   for (int i = layers_.size() - 1; i >= 0; i--) {
- //   LOG(INFO) << layers_.at(i)->name() << " : " << tmp.L1();
+    //   LOG(INFO) << layers_.at(i)->name() << " : " << tmp.L1();
     auto ret = layers_.at(i)->Backward(flag, tmp);
     tmp = ret.first;
     if (ret.second.size()) {
       for (int k = ret.second.size() - 1; k >= 0; k--) {
         buf.push(ret.second[k]);
- //       LOG(INFO) <<  "      " << buf.top().L1();
+        //       LOG(INFO) <<  "      " << buf.top().L1();
       }
     }
   }

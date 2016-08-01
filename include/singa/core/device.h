@@ -24,27 +24,45 @@
 #include <string>
 #include <functional>
 #include <memory>
+
 #include "singa/singa_config.h"
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
 #include "singa/core/scheduler.h"
 #include "singa/proto/core.pb.h"
 
+#ifdef USE_CUDA
+#include "singa/utils/cuda_utils.h"
+#endif // USE_CUDA
+
+#ifdef USE_OPENCL
+// http://github.khronos.org/OpenCL-CLHPP/
+// cl2.hpp includes cl.h, do not re-include.
+#define CL_HPP_MINIMUM_OPENCL_VERSION 120
+#define CL_HPP_TARGET_OPENCL_VERSION 120
+#include <unordered_map>
+#include <CL/cl2.hpp>
+#include "singa/utils/opencl_utils.h"
+#endif // USE_OPENCL
+
 using std::vector;
 using std::string;
 using std::function;
+using std::shared_ptr;
+
 namespace singa {
+
 /// Allocate memory and execute Tensor operations.
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
 class Device {
   public:
-  Device() = default;
+  // Device() = default;
+  virtual ~Device() {}
   /// Constructor with device ID, num of executors (e.g., cuda streams),
-  /// max mem size to use (in MB), identifier of scheduler type (default
-  /// scheduler run operations synchronously) and virtual memory type (default
-  /// vm only provides garbage collection).
-  Device(int id, int num_executors, string scheduler, string vm);
+  /// max mem size to use (in MB)
+  Device(int id, int num_executors);
+
   virtual void SetRandSeed(unsigned seed) = 0;
 
   /// Called by Tensor.
@@ -52,6 +70,12 @@ class Device {
 
   /// Called by Tensor.
   void FreeBlock(Block* block);
+
+  /// Return the size (bytes) of memory in use
+  /// TODO(wangwei) override this function for all devices.
+  virtual size_t GetAllocatedMem() {
+    return 0u;
+  }
 
   /// Copy data within or across devices.
   void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
@@ -83,6 +107,9 @@ class Device {
   }
 
   int id() const { return id_; }
+
+ private:
+  Device() {};
 
  protected:
   /// Execute one operation on one executor.
@@ -117,8 +144,8 @@ class Device {
 /// It runs cpp code.
 class CppCPU : public Device {
  public:
-  CppCPU(int id = -1, int num_executors = 1,
-            string scheduler = "sync", string vm = "gc-only");
+  ~CppCPU() {};
+  CppCPU();
 
   void SetRandSeed(unsigned seed) override;
  protected:
@@ -146,13 +173,172 @@ extern std::shared_ptr<Device> defaultDevice;
 class CudaGPU : public Device {
  public:
   ~CudaGPU();
-  CudaGPU(int id = 0, int num_executors = 1, string scheduler = "sync",
-         string vm = "gc-only");
-	CudaGPU(const MemPoolConf& mem_conf, 
-					int id = 0, int num_executors = 1, string scheduler = "sync");
+  /// Construct the device using default mem pool setting.
+  CudaGPU(int id = 0);
+  /// Construct the device given the physical device ID and memory pool.
+  CudaGPU(int id, std::shared_ptr<DeviceMemPool> pool);
 
   void SetRandSeed(unsigned seed) override;
-  static void DeviceQuery();
+  size_t GetAllocatedMem() override;
+
+ protected:
+  void DoExec(function<void(Context*)>&& fn, int executor) override;
+
+  void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                  CopyDirection direction, Context* ctx) override;
+
+  /// Allocate cpu memory.
+  void* Malloc(int size) override;
+
+  /// Free cpu memory.
+  void Free(void* ptr) override;
+
+ private:
+  void Setup();
+
+ private:
+	shared_ptr<DeviceMemPool> pool_;
+};
+
+/// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
+
+#endif  // USE_CUDA
+
+#ifdef USE_OPENCL
+// Implement Device using OpenCL libs.
+class OpenclDevice : public singa::Device {
+public:
+
+  // TODO: Constructor arguments to consider:
+  // Path to kernel sources?
+  // Select only certain device types?
+  OpenclDevice(int id = 0, int num_executors = 1);
+  ~OpenclDevice();
+
+  /// Get the specified kernel.
+  cl::Kernel GetKernel(const std::string& kname, cl_int* status = nullptr);
+
+  /// Get the command queue associated with this device.
+  cl::CommandQueue GetCmdQ() { return cmdq; }
+
+  /// Prints information about all Devices in each Platform.
+  void PrintAllDeviceInfo();
+
+  /// Prints status about CL source code builds.
+  void PrintClBuildInfo(cl::Program &p);
+
+// Overridden, inherited methods
+  void SetRandSeed(unsigned seed) override;
+
+  void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
+                      CopyDirection direction, int dst_offset = 0,
+                      int src_offset = 0);
+/*
+  void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes = 0,
+                           size_t dst_offset = 0) override;*/
+
+protected:
+  /// The OpenCL device that this object represents.
+  /// Each OpenclDevice contains exactly one cl::Device for the lifetime of the
+  /// object.
+  cl::Device this_device;
+
+  /// Each OpenclDevice has one OpenCL context. It is created along with the
+  /// creation of this object.
+  cl::Context ocl_ctx;
+
+  /// The CommandQueue that is associated with this device.
+  /// Since each OpenclDevice contains only one cl::Device and one cl::Context,
+  /// it naturally also contains one cl::CommandQueue that is associated
+  /// with said Device and Context.
+  cl::CommandQueue cmdq;
+
+  /// A list of kernels that has been compiled on this device.
+  std::shared_ptr<std::unordered_map<std::string, cl::Kernel>> kernels;
+
+  /// Searches the given paths for all .cl files and builds
+  /// OpenCL programs, then stores them in the Kernels map.
+  void BuildPrograms(const std::string &kdir = cl_src_path);
+
+// Overridden, inherited methods.
+
+  void DoExec(function<void(Context*)>&& fn, int executor) override;
+
+  void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                  CopyDirection direction, Context* ctx = nullptr) override;
+
+  /// Allocates memory on this OpenCL device
+  /// by creating and returning an empty cl::Buffer object.
+  /// with the indicated size.
+  void* Malloc(int size) override;
+
+  /// Converts the void pointer into a Buffer object, then deletes the object.
+  /// This has the effect of freeing up device memory.
+  void Free(void* ptr) override;
+
+private:
+
+  /// Copies a data block from host to device.
+  /// src: a pointer to an array of data.
+  /// dst: a pointer to a cl::Buffer object.
+  void WriteToDevice(cl::Buffer* dst, const void* src, const size_t size);
+
+  /// Reads a data block from device to host.
+  /// src: a pointer to an cl::Buffer object.
+  /// dst: a pointer to an malloc'ed empty array.
+  void ReadFromDevice(void* dst, const cl::Buffer* src, const size_t size);
+
+  /// Duplicates a block of data on the device.
+  /// src: a pointer to the original cl::Buffer object.
+  /// dst: a pointer to the new cl::Buffer object to copy the data into.
+  void CopyDeviceBuffer(cl::Buffer* dst, const cl::Buffer* src, const size_t size);
+
+  static const std::string cl_src_path;
+};
+#endif  // USE_OPENCL
+
+/// This class queries all available calculating devices on a given machine
+/// grouped according to manufacturer or device drivers. All methods should be static.
+/// If CUDA or OPENCL are not enabled, then the respective related methods should
+/// return something that indicates their absence (for example, 0 devices);
+/// however they should always be available regardless of compile-time switches.
+class Platform {
+public:
+
+  /// Return the number of total available GPUs
+  static int GetNumGPUs();
+
+  /// Return the device IDs of available GPUs.
+  /// TODO(wangwei) return the IDs according to free memory in decending order
+  static const std::vector<int> GetGPUIDs();
+
+  static const std::pair<size_t, size_t> GetGPUMemSize(const int device);
+
+  /// Return the memory of a GPU <free, total>
+  static const std::vector<std::pair<size_t, size_t>> GetGPUMemSize();
+
+  /// Return a string containing all hardware info, e.g., version, memory size.
+  static const std::string DeviceQuery(int id, bool verbose = false);
+
+  /// Create a set of CudaGPU Device using 'num_devices' free GPUs.
+  static const std::vector<std::shared_ptr<Device>>
+  CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
+
+  /// Create a set of CudaGPU Device using given GPU IDs.
+  static const std::vector<std::shared_ptr<Device>>
+  CreateCudaGPUs(const std::vector<int> &devices, size_t init_size = 0);
+
+  /// Create a \p num_devices set of valid OpenCL devices, regardless of platforms.
+  /// If there are fewer valid devices than requested, then this method will return as many as possible.
+  /// If OpenCL is not in use, this method will return an empty array.
+  const std::vector<std::shared_ptr<Device>> CreateOpenclDevices(const size_t num_devices);
+
+  /// Create a set of valid OpenCL devices, regardless of platforms, assigning \p id to each device in sequence.
+  /// If there are fewer valid devices than requested, then this method will return as many as possible.
+  /// If OpenCL is not in use, this method will return an empty array.
+  const std::vector<std::shared_ptr<Device>> CreateOpenclDevices(const vector<int>& id);
+
+  /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
   /// This function checks the availability of GPU #device_id.
   /// It attempts to create a context on the device by calling cudaFree(0).
   /// cudaSetDevice() alone is not sufficient to check the availability.
@@ -167,58 +353,14 @@ class CudaGPU : public Device {
   /// the permission. cudaFree(0) is one of those with no side effect,
   /// except the context initialization.
   static bool CheckDevice(const int device_id);
-  /// This function finds the first available device by checking devices with
-  /// ordinal from start_id to the highest available value. In the
-  /// EXCLUSIVE_PROCESS or EXCLUSIVE_THREAD mode, if it succeeds, it also
-  /// claims the device due to the initialization of the context.
-  static int FindDevice(const int start_id);
- protected:
-  void DoExec(function<void(Context*)>&& fn, int executor) override;
 
-  void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                  CopyDirection direction, Context* ctx) override;
 
-  /// Allocate cpu memory.
-  void* Malloc(int size) override;
-
-  /// Free cpu memory.
-  void Free(void* ptr) override;
-	
-	private:
-	DeviceMemPool* pool;
+private:
+#ifdef USE_OPENCL
+  cl::Platform clPlatform;
+#endif  // USE_OPENCL
 };
 
-/// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
-
-#endif  // USE_CUDA
-
-// Implement a CudaHost device, which used cuda functions for memory
-// malloc/free.
-// class CudaHost : public Device {}
-//
-/// The base type of callback argument structure.
-/// The specific arg should inherit from this one.
-/*
-class CallbackArg {
- public:
-  template <typename T>
-  T* CastTo() {
-    static_assert(std::is_base_of<CallbackArg, T>::value,
-                  "The casted type must be a sub-class of CallbackArg");
-    return static_cast<T*>(this);
-  }
-};
-/// Type of callback functions for executing tensor ops.
-typedef function<void(CallbackArg*)> CallbackFn;
-public:
-  /// Operation has a function, and read/write blocks.
-  typedef struct _Operation {
-    function<void(Context*)> fn;
-    const vector<Block*> read_blocks;
-    const vector<Block*> write_blocks;
-  } Operation;
-
-*/
 }  // namespace singa
 
 #endif  // SINGA_CORE_DEVICE_H_

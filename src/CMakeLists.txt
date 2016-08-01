@@ -1,7 +1,10 @@
 # generate protobuf sources
+
 FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
-protobuf_generate_python(proto_pys ${proto_files})
+IF (USE_PYTHON)
+    protobuf_generate_python(proto_pys ${proto_files})
+ENDIF()
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 #message(STATUS "include: ${CMAKE_BINARY_DIR} ")
 #message(STATUS "srcs: ${proto_srcs}")
@@ -58,6 +61,7 @@ AUX_SOURCE_DIRECTORY(model/layer model_source)
 AUX_SOURCE_DIRECTORY(model/optimizer model_source)
 AUX_SOURCE_DIRECTORY(model/loss model_source)
 AUX_SOURCE_DIRECTORY(model/metric model_source)
+AUX_SOURCE_DIRECTORY(model/updater model_source)
 #MESSAGE(STATUS "MODEL ${model_source}")
 ADD_LIBRARY(singa_model SHARED ${model_source})
 TARGET_LINK_LIBRARIES(singa_model ${SINGA_LINKER_LIBS})
@@ -79,13 +83,42 @@ LIST(APPEND SINGA_LINKER_LIBS singa_io)
 #ADD_LIBRARY(singa SHARED ${SINGA_LINKER_LIBS})
 
 IF(USE_PYTHON)
+
     FILE(GLOB python_files python/swig/singa.i)
+    # delete old .cxx file
+    FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/singa_wrap.cxx")
+
+    # generate cxx and wrap.py
     swig_generate_cxx(python_srcs ${python_files})
-    SET(python_cxxs "${CMAKE_SOURCE_DIR}/src/core/tensor/tensor.cc;${CMAKE_SOURCE_DIR}/src/core/device/device.cc")
-    ADD_LIBRARY(_singa SHARED ${python_srcs} ${python_cxxs})
+
+    #FILE(COPY python/ DESTINATION ${CMAKE_BINARY_DIR}/python/singa FILES_MATCHING PATTERN "swig" EXCLUDE PATTERN "*.py")
+    #Create symlinks for all python source files  Do not omit !!!RELATIVE!!!
+    file(GLOB_RECURSE python_source_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
+
+    create_symlinks(${python_source_files})
+
+    FILE(GLOB_RECURSE layer_source_files ${CMAKE_SOURCE_DIR}/src/model/layer/*.cc)
+    # message(STATUS "layer_source_files ${layer_source_files}")
+    FILE(GLOB_RECURSE metric_source_files ${CMAKE_SOURCE_DIR}/src/model/metric/*.cc)
+    FILE(GLOB_RECURSE loss_source_files ${CMAKE_SOURCE_DIR}/src/model/loss/*.cc)
+    SET(python_cxxs "${CMAKE_SOURCE_DIR}/src/core/tensor/tensor.cc;${CMAKE_SOURCE_DIR}/src/core/device/device.cc;${layer_source_files};${metric_source_files};${loss_source_files}")
+    ADD_LIBRARY(_singa_wrap SHARED ${python_srcs} ${python_cxxs})
     SET(WRAPPER_LINKER_LIBS "${SINGA_LINKER_LIBS};protobuf")
-    TARGET_LINK_LIBRARIES(_singa ${WRAPPER_LINKER_LIBS})
-    TARGET_INCLUDE_DIRECTORIES(_singa PRIVATE ${PYTHON_INCLUDE_DIRS})
-    SET_TARGET_PROPERTIES(_singa
-        PROPERTIES PREFIX "")
+    TARGET_LINK_LIBRARIES(_singa_wrap ${WRAPPER_LINKER_LIBS})
+    TARGET_INCLUDE_DIRECTORIES(_singa_wrap PRIVATE ${PYTHON_INCLUDE_DIRS})
+    #message(STATUS "PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS}")
+
+    SET_TARGET_PROPERTIES(_singa_wrap
+        PROPERTIES PREFIX ""
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa
+        )
+
+    #SETUP
+    SET(SETUP_PY_IN "python/setup.py.in")
+    set(SETUP_PY    "${CMAKE_BINARY_DIR}/python/setup.py")
+    configure_file(${SETUP_PY_IN} ${SETUP_PY})
+
+    #COPY protobuf files to python/singa/proto
+    FILE(COPY ${CMAKE_BINARY_DIR}/python/singa/__init__.py DESTINATION ${CMAKE_BINARY_DIR}/python/singa/proto )
+
 ENDIF(USE_PYTHON)

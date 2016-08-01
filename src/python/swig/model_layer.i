@@ -21,10 +21,12 @@
 
 /*interface file for swig */
 
-%module singa_layer
+%module model_layer
 %include "std_vector.i"
 %include "std_string.i"
 %include "std_pair.i"
+%include "std_shared_ptr.i"
+
 
 %{
 #include "singa/model/layer.h"
@@ -37,47 +39,39 @@ using singa::Device;
 using singa::LayerConf;
 %}
 
+%shared_ptr(singa::Layer)
+
 namespace std {
   %template(strVector) vector<string>;
-  %template(paramVector) vector<ParamSpec>;
-  %template(tensorVector) vector<Tensor>;
-  %template(tensorPtrVector) vector<Tensor*>;
-  %template(ttvecPair) pair<Tensor, vector<Tensor>>;
-  %template(tvectvecPair) pair<vector<Tensor>, vector<Tensor>>;
+  %template(paramVector) vector<singa::ParamSpec>;
+  %template(tensorVector) vector<singa::Tensor>;
+  %template(ttvecPair) pair<singa::Tensor, vector<singa::Tensor>>;
+  %template(tvecPair) pair<vector<singa::Tensor>, vector<singa::Tensor>>;
 }
+
 
 namespace singa {
 
   class Layer {
     public:
       Layer();
-      void Setup(const std::string& proto_str);
-
-      std::string ToProtoStr() const;
-      const std::vector<ParamSpec> param_specs();
-      const ParamSpec& param_specs(size_t i);
-      const std::vector<Tensor*> param_values();
-      Tensor* param_value(size_t i);
-      const std::vector<std::string> param_names();
-      const std::string& param_name(size_t i);
-      const std::string name() const;
-
-      /* virtual functions */
-      virtual const std::string layer_type() const;
-      virtual void Setup(const LayerConf& conf);
-      virtual void ToDevice(Device* device);
+//      virtual void Setup(const std::vector<vector<size_t>>&, const string&);
+      virtual void Setup(const std::vector<size_t>& in_sample_shape,
+                         const std::string& proto_str);
+      const std::vector<Tensor> param_values();
+      virtual const std::vector<size_t> GetOutputSampleShape() const;
+      virtual void ToDevice(std::shared_ptr<Device> device);
       virtual void AsType(DataType dtype);
-      virtual void ToProto(LayerConf* conf) const;
-
-      virtual const Tensor
-      Forward(int flag, const Tensor& input);
-      virtual const std::vector<Tensor>
-      Forward(int flag, const std::vector<Tensor>& inputs);
-      virtual const std::pair<Tensor, std::vector<Tensor>>
-      Backward(int flag, const Tensor& grad);
+      virtual const Tensor Forward(int flag, const Tensor& input);
+      virtual const std::vector<Tensor> Forward(
+          int flag, const std::vector<Tensor>& inputs);
+      virtual const std::pair<Tensor, std::vector<Tensor>> Backward(
+          int flag, const Tensor& grad);
       virtual const std::pair<std::vector<Tensor>, std::vector<Tensor>>
       Backward(int flag, const vector<Tensor>& grads);
-  };
 
+  };
+  std::shared_ptr<Layer> CreateLayer(const std::string& type);
+  const std::vector<std::string> GetRegisteredLayers();
 }
 

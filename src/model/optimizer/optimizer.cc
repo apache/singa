@@ -60,8 +60,8 @@ void Optimizer::Register(const string& name, const ParamSpec& specs) {
   */
 }
 
-void Optimizer::Apply(int step, const string& name, Tensor* grad,
-                      Tensor* param) {
+void Optimizer::Apply(int step, const string& name, Tensor& grad,
+                      Tensor& param) {
   // TODO(wangwei) need to consider the order of constraint and regularizer
   if (regularizers_.find(name) != regularizers_.end()) {
     regularizers_.at(name)->Apply(step, param, grad);
@@ -78,24 +78,27 @@ void Optimizer::Apply(int step, const string& name, Tensor* grad,
   float lr = learning_rate_generator_(step);
   if (learning_rate_multplier_.find(name) != learning_rate_multplier_.end())
     lr *= learning_rate_multplier_.at(name);
-  Apply(step, lr, name, *grad, param);
+  Apply(step, lr, name, grad, param);
 }
 
 void Regularizer::Setup(const RegularizerConf& conf) {
   type_ = conf.type();
   coefficient_ = conf.coefficient();
+  if (type_ != "L2" && type_ != "l2") {
+    CHECK(type_ == "NotSet") << "Unknown regularizer type = " << type_;
+  }
 }
 
-void Regularizer::Apply(int step, Tensor* value, Tensor* grad, float scale) {
+void Regularizer::Apply(int step, Tensor& value, Tensor& grad, float scale) {
   if (type_ == "L2" || type_ == "l2") {
-    Axpy(coefficient_ * scale, *value, grad);
+    Axpy(coefficient_ * scale, value, &grad);
   } else {
     CHECK(type_ == "NotSet") << "Unknown regularizer type = " << type_;
   }
 }
 
-void Regularizer::Apply(int step, const vector<Tensor*>& values,
-                        const vector<Tensor*>& grads) {
+void Regularizer::Apply(int step, const vector<Tensor>& values,
+                        const vector<Tensor>& grads) {
   LOG(FATAL) << "Not implemented yet";
 }
 
@@ -104,13 +107,13 @@ void Constraint::Setup(const ConstraintConf& conf) {
   threshold_ = conf.threshold();
 }
 
-void Constraint::Apply(int step, Tensor* value, Tensor* grad) {
+void Constraint::Apply(int step, Tensor& value, Tensor& grad) {
   // TODO(wangwei) implement L2 and hard constraint
   CHECK(type_ == "NotSet") << "Unknown regularizer type = " << type_;
 }
 
-void Constraint::Apply(int step, const vector<Tensor*>& values,
-                       const vector<Tensor*>& grads) {
+void Constraint::Apply(int step, const vector<Tensor>& values,
+                       const vector<Tensor>& grads) {
   LOG(FATAL) << "Not implemented yet";
 }
 

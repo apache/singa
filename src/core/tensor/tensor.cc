@@ -680,7 +680,7 @@ void AddColumn(const SType alpha, const SType beta, const Tensor &v,
     AddRow(v, &X);
   } else {
     CHECK_EQ(M->nDim(), 2u);
-    CHECK_EQ(v.nDim(), 1u);
+    // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
     size_t nb_row = M->shape(0), nb_col = M->shape(1);
     CHECK_EQ(nb_row, v.Size());
 
@@ -690,7 +690,7 @@ void AddColumn(const SType alpha, const SType beta, const Tensor &v,
     Mult(alpha, vmat, one, beta, M);
   }
 }
-template <>
+template
 void AddColumn(const float alpha, const float beta, const Tensor &v, Tensor *M);
 
 void AddRow(const Tensor &v, Tensor *M) { AddRow(1, 1, v, M); }
@@ -703,7 +703,7 @@ void AddRow(const SType alpha, const SType beta, const Tensor &v, Tensor *M) {
     AddColumn(v, &X);
   } else {
     CHECK_EQ(M->nDim(), 2u);
-    CHECK_EQ(v.nDim(), 1u);
+    // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
     size_t nb_row = M->shape(0), nb_col = M->shape(1);
     CHECK_EQ(nb_col, v.Size());
 
@@ -804,7 +804,7 @@ void DivRow(const Tensor &v, Tensor *M) {
 void MultColumn(const Tensor &v, Tensor *M) {
   CHECK(!M->transpose()) << "Not supported yet";
   CHECK_EQ(M->nDim(), 2u);
-  CHECK_EQ(v.nDim(), 1u);
+  // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
   CHECK_EQ(v.Size(), M->shape(0));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
@@ -819,7 +819,7 @@ void MultColumn(const Tensor &v, Tensor *M) {
 void MultRow(const Tensor &v, Tensor *M) {
   CHECK(!M->transpose()) << "Not supported yet";
   CHECK_EQ(M->nDim(), 2u);
-  CHECK_EQ(v.nDim(), 1u);
+  // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
   CHECK_EQ(v.Size(), M->shape(1));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
@@ -857,7 +857,7 @@ void SumColumns(const Tensor &M, Tensor *v) {
     SumRows(X, v);
   } else {
     CHECK_EQ(M.nDim(), 2u);
-    CHECK_EQ(v->nDim(), 1u);
+    // CHECK_EQ(v->nDim(), 1u); (chonho) shape of v is 2-element tuple
     size_t nb_row = M.shape().at(0), nb_col = M.shape().at(1);
     CHECK_EQ(nb_row, v->Size());
 
@@ -872,7 +872,7 @@ void SumRows(const Tensor &M, Tensor *v) {
     SumColumns(X, v);
   } else {
     CHECK_EQ(M.nDim(), 2u);
-    CHECK_EQ(v->nDim(), 1u);
+    // CHECK_EQ(v->nDim(), 1u); (chonho) shape of v is 2-element tuple
     size_t nb_row = M.shape(0), nb_col = M.shape(1);
     CHECK_EQ(nb_col, v->Size());
 
@@ -929,7 +929,8 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
     }, {in.block(), out->block()}, {out->block()});
   });
 }
-template void Axpy(const float alpha, const Tensor &in, Tensor *out);
+template
+void Axpy<float>(const float alpha, const Tensor &in, Tensor *out);
 
 Tensor Mult(const Tensor &A, const Tensor &B) {
   Shape s;

@@ -23,6 +23,7 @@
 namespace singa {
 using std::vector;
 
+RegisterLayerClass(Convolution);
 void Convolution::Setup(const Shape& in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   ConvolutionConf conv_conf = conf.convolution_conf();
@@ -67,7 +68,7 @@ void Convolution::Setup(const Shape& in_sample, const LayerConf &conf) {
     stride_h_ = conv_conf.stride_h();
   }
   CHECK_GT(stride_w_, 0u);
-  CHECK_GT(stride_h_, 0u);
+  CHECK_GE(stride_h_, 0u);  // 0 for 1D conv
 
   num_filters_ = conv_conf.num_output();
   bias_term_ = conv_conf.bias_term();
@@ -78,7 +79,9 @@ void Convolution::Setup(const Shape& in_sample, const LayerConf &conf) {
   height_ = in_sample.at(1);
   width_ = in_sample.at(2);
 
-  conv_height_ = (height_ + 2 * pad_h_ - kernel_h_) / stride_h_ + 1;
+  conv_height_ = 1;
+  if (stride_h_ > 0)
+    conv_height_ = (height_ + 2 * pad_h_ - kernel_h_) / stride_h_ + 1;
   conv_width_ = (width_ + 2 * pad_w_ - kernel_w_) / stride_w_ + 1;
   out_sample_shape_ = vector<size_t>{num_filters_, conv_height_, conv_width_};
 
@@ -88,11 +91,8 @@ void Convolution::Setup(const Shape& in_sample, const LayerConf &conf) {
   // Setup shape of weight_ and bias_
   weight_.Reshape(Shape{num_filters_, col_height_});
   bias_.Reshape(Shape{num_filters_});
-  // Push back params into param_values_
   // Assume the order of param is: weight, bias
   for (const auto &spec : conf.param()) param_specs_.push_back(spec);
-  param_values_.push_back(&weight_);
-  param_values_.push_back(&bias_);
 }
 
 /// \copydoc Layer::Forward(int flag, const Tensor&)

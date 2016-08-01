@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -23,11 +23,14 @@
 #include <string>
 #include <stack>
 #include <utility>
+#include <memory>
 #include "singa/core/tensor.h"
 #include "singa/proto/model.pb.h"
+#include "singa/utils/factory.h"
 
 namespace singa {
 
+typedef vector<size_t> Shape;
 /// The base layer class.
 /// Generally, a layer conducts feature transformation against a set of Tensor
 /// to generate a set of Tensor. Each layer may have some parameters.
@@ -37,14 +40,14 @@ class Layer {
 
   /// Set meta data fields from a string representing a proto message.
   /// 'in_shape' is the shape of the input feature for one sample
-  void Setup(const vector<size_t>& in_shape, const string& proto_str) {
+  void Setup(const Shape& in_shape, const string& proto_str) {
     LayerConf conf;
     conf.ParseFromString(proto_str);
     this->Setup(in_shape, conf);
   }
 
   /// 'in_shapes' is the shape of the input feature for one sample
-  void Setup(const vector<vector<size_t>>& in_shapes, const string& proto_str) {
+  void Setup(const vector<Shape>& in_shapes, const string& proto_str) {
     LayerConf conf;
     conf.ParseFromString(proto_str);
     this->Setup(in_shapes, conf);
@@ -195,12 +198,14 @@ class Layer {
   }
 
   /// Return pointers to parameter Tensor s.
-  const vector<Tensor*> param_values() { return param_values_; }
+  virtual const vector<Tensor> param_values() {
+    return vector<Tensor>{};
+  }
 
   /// Return a pointer to the 'i'-th parameter Tensor.
-  Tensor* param_value(size_t i) {
+  Tensor param_value(size_t i) {
     CHECK_LT(i, param_values_.size());
-    return param_values_[i];
+    return param_values().at(i);
   }
 
   /// Return names of all parmaeters.
@@ -226,5 +231,21 @@ class Layer {
   vector<ParamSpec> param_specs_;
 };
 
+#define RegisterLayerClass(SubLayer) \
+  static Registra<Layer, SubLayer> _##SubLayer##Layer(#SubLayer);
+
+inline std::shared_ptr<Layer> CreateLayer(const std::string type) {
+  std::shared_ptr<Layer> layer(Factory<Layer>::Create(type));
+  return layer;
+}
+
+inline const std::vector<std::string> GetRegisteredLayers() {
+  vector<std::string> ret;
+  for (const string type : Factory<Layer>::GetIDs()) {
+    auto layer = CreateLayer(type);
+    ret.push_back("Register type: " + type + " --> " + layer->layer_type());
+  }
+  return ret;
+}
 }  // namespace singa
 #endif  // SINGA_MODEL_LAYER_H_

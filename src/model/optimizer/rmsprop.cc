@@ -29,9 +29,9 @@ void RMSProp::Setup(const OptimizerConf& conf) {
 // history = history * rho + grad * grad * (1 - rho)
 // value = value - lr * grad / sqrt(history + delta)
 void RMSProp::Apply(int step, float lr, const string& name, const Tensor& grad,
-                    Tensor* value) {
+                    Tensor& value) {
   if (history_gradient_.find(name) == history_gradient_.end()) {
-    history_gradient_[name].ResetLike(*value);
+    history_gradient_[name].ResetLike(value);
   }
   Tensor& history = history_gradient_[name];
   history *= rho_;
@@ -39,7 +39,7 @@ void RMSProp::Apply(int step, float lr, const string& name, const Tensor& grad,
   Axpy(1 - rho_, tmp, &history);
   Sqrt(history + delta_, &tmp);
   Div(grad, tmp, &tmp);
-  Axpy(-lr, tmp, value);
+  Axpy(-lr, tmp, &value);
 }
 }  // namespace singa
 #endif  // SRC_MODEL_OPTIMIZER_ADAGRAD_H_

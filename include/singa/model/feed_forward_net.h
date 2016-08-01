@@ -20,7 +20,9 @@
 #include "singa/model/layer.h"
 #include "singa/model/loss.h"
 #include "singa/model/metric.h"
-#include "singa/model/optimizer.h"
+#include "singa/model/updater.h"
+#include <thread>
+#include <memory>
 namespace singa {
 
 /// The feed-forward neural net.
@@ -53,12 +55,25 @@ class FeedForwardNet {
   Layer* Add(Layer* layer, const LayerConf& conf,
              const Shape* sample_shape = nullptr);
   /// Set some fields used for training and evaluating the neural net.
+  /// This method will instantiate an Updater ,then wrap the Optimier into
+  /// Updater and always register the parameters of the net instance.
   /// If the neural net is constructed for evaluation only, then 'opt' is not
   /// necessary; But for training, both 'opt' and 'loss' are necessary.
   /// 'shuffle' indicates shuffling training samples within one epoch it is
-  /// valid using Train();
-  void Compile(bool shuffle, Optimizer* opt, Loss<Tensor>* loss,
-               Metric<Tensor>* metric);
+  /// valid using Train(). If to_register is set true, parameter will be
+  /// registered in Updater.;
+  void Compile(bool shuffle, Optimizer* opt, Loss* loss, Metric* metric);
+  /// Set some fields used for training and evaluating the neural net.
+  /// This method is mainly used in parallel training, where we need
+  /// multiple neuralnet instances.
+  /// If the neural net is constructed for evaluation only, then 'updater' is
+  /// not
+  /// necessary; But for training, both 'opt' and 'loss' are necessary.
+  /// 'shuffle' indicates shuffling training samples within one epoch it is
+  /// valid using Train(). If to_register is set true, parameter will be
+  /// registered in Updater.;
+  void Compile(bool shuffle, bool to_register, std::shared_ptr<Updater> updater,
+               Loss* loss, Metric* metric);
 
   /// Conduct the training giving the training data 'x' and label 'y'.
   /// 'val_split' of training data is used for
@@ -118,24 +133,36 @@ class FeedForwardNet {
   /// Set the data type of each layer.
   void AsType(DataType dtype);
 
+  /// A wrapper method to spawn a thread to execute Train() method.
+  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor& x,
+                          const Tensor& y, const Tensor& val_x,
+                          const Tensor& val_y) {
+    return std::thread(
+        [=]() { Train(batchsize, nb_epoch, x, y, val_x, val_y); });
+  }
+
+  /// A wrapper method to spawn a thread to execute Train() method.
+  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor& x,
+                          const Tensor& y) {
+    return std::thread([=]() { Train(batchsize, nb_epoch, x, y); });
+  }
+
   const vector<Layer*> layers() const { return layers_; }
   const vector<string> GetParamNames() const;
   const vector<ParamSpec> GetParamSpecs() const;
-  const vector<Tensor*> GetParamValues() const;
-  const vector<Tensor*> GetParamGrads() const;
+  const vector<Tensor> GetParamValues() const;
 
  protected:
   vector<Layer*> layers_;
-  Optimizer* opt_;
-  Loss<Tensor>* loss_;
-  Metric<Tensor>* metric_;
+  std::shared_ptr<Updater> updater_;
+  Loss* loss_;
+  Metric* metric_;
 
   bool shuffle_ = true;
   Device* device_ = nullptr;
   DataType dtype_ = kFloat32;
 };
 
-}  /* singa */
-
+} /* singa */
 
 #endif  // SINGA_MODEL_FEED_FORWARD_NET_H_

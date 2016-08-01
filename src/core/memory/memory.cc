@@ -23,65 +23,87 @@
 
 #ifdef USE_CUDA
 namespace singa {
-bool singa::CnMemPool::initialized = false;
-std::mutex singa::CnMemPool::mtx;
-void CnMemPool::InitPool(int numDevices, size_t initSize, unsigned flag) {
-  mtx.lock();
-  const size_t kNBytesPerMB = (1u << 20);
-  if (!initialized) {
-    CHECK_GE(numDevices, 1);
-    cnmemDevice_t* settingPtr = new cnmemDevice_t[numDevices];
-    for (int i = 0; i < numDevices; i++) {
-      settingPtr[i].device = i;
-      settingPtr[i].size = initSize * kNBytesPerMB;
+std::atomic<int> CnMemPool::pool_count(0);
+std::pair<size_t, size_t> CnMemPool::GetMemUsage() {
+  size_t free, total;
+  auto status = cnmemMemGetInfo(&free, &total, NULL);
+  CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
+    << cnmemGetErrorString(status);
+  return std::make_pair(free, total);
+}
+
+CnMemPool::CnMemPool(int numDevices, size_t init_size, size_t max_size) {
+  for (int i = 0; i < numDevices; i++)
+    conf_.add_device(i);
+  conf_.set_init_size(init_size);
+  conf_.set_max_size(max_size);
+  CHECK_LT(++pool_count, 2) << "CnMemPool must be used as a singleton.";
+}
+
+CnMemPool::CnMemPool(const MemPoolConf &conf) {
+  conf_ = conf;
+  CHECK_LT(++pool_count, 2) << "CnMemPool must be used as a singleton.";
+}
+
+void CnMemPool::Init() {
+  mtx_.lock();
+  if (!initialized_) {
+    const size_t kNBytesPerMB = (1u << 20);
+    CHECK_GE(conf_.device_size(), 1);
+    cnmemDevice_t *settingPtr = new cnmemDevice_t[conf_.device_size()];
+    CHECK_GT(conf_.init_size(), 0u);
+    int i = 0;
+    for (auto device : conf_.device()) {
+      settingPtr[i].device = device;
+      settingPtr[i].size = conf_.init_size() * kNBytesPerMB;
       settingPtr[i].numStreams = 0;
       settingPtr[i].streams = NULL;
       settingPtr[i].streamSizes = 0;
+      i++;
     }
-    cnmemStatus_t status = cnmemInit(numDevices, settingPtr, flag);
+    auto status = cnmemInit(conf_.device_size(), settingPtr, conf_.flag());
     CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
         << " " << cnmemGetErrorString(status);
     delete[] settingPtr;
-    initialized = true;
+    initialized_ = true;
   }
-  mtx.unlock();
-}
-
-void CnMemPool::InitPool() {
-  MemPoolConf conf;
-  InitPool(conf.num_devices(), conf.alloc_size(),
-           cnmemManagerFlags_t::CNMEM_FLAGS_DEFAULT);
+  mtx_.unlock();
 }
 
 CnMemPool::~CnMemPool() {
-  mtx.lock();
-  if (initialized) {
+  mtx_.lock();
+  if (initialized_) {
     cnmemStatus_t status = cnmemFinalize();
     CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
         << " " << cnmemGetErrorString(status);
-    initialized = false;
+    initialized_ = false;
+    --pool_count;
   }
-  mtx.unlock();
+  mtx_.unlock();
 }
 
-void CnMemPool::Malloc(void** ptr, const size_t size) {
+void CnMemPool::Malloc(void **ptr, const size_t size) {
+  if (!initialized_)
+    Init();
   cnmemStatus_t status = cnmemMalloc(ptr, size, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
       << " " << cnmemGetErrorString(status);
 }
 
-void CnMemPool::Free(void* ptr) {
+void CnMemPool::Free(void *ptr) {
+  CHECK(initialized_) << "Cannot free the memory as the pool is not initialzied";
   cnmemStatus_t status = cnmemFree(ptr, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
       << " " << cnmemGetErrorString(status);
 }
 
-void CudaMemPool::Malloc(void** ptr, const size_t size) {
+// ===========================================================================
+void CudaMemPool::Malloc(void **ptr, const size_t size) {
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
 }
 
-void CudaMemPool::Free(void* ptr) {
+void CudaMemPool::Free(void *ptr) {
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
 }

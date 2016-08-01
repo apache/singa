@@ -49,12 +49,12 @@ TEST(Snapshot, ReadTest) {
   singa::Tensor param_1, param_2;
   singa::Shape shape1, shape2;
   shape1 = snapshot.ReadShape("Param_1");
-  EXPECT_EQ(shape1.size(), 1);
-  EXPECT_EQ(shape1[0], 4);
+  EXPECT_EQ(shape1.size(), 1u);
+  EXPECT_EQ(shape1[0], 4u);
   shape2 = snapshot.ReadShape("Param_2");
-  EXPECT_EQ(shape2.size(), 2);
-  EXPECT_EQ(shape2[0], 2);
-  EXPECT_EQ(shape2[1], 2);
+  EXPECT_EQ(shape2.size(), 2u);
+  EXPECT_EQ(shape2[0], 2u);
+  EXPECT_EQ(shape2[1], 2u);
   param_1 = snapshot.Read("Param_1");
   const float* data_1 = param_1.data<float>();
   for (size_t i = 0; i < singa::Product(shape1); ++i)
@@ -84,8 +84,8 @@ TEST(Snapshot, ReadIntTest) {
     singa::Snapshot int_snapshot_read(prefix+".int", singa::Snapshot::kRead);
     singa::Shape shape;
     shape = int_snapshot_read.ReadShape("IntParam");
-    EXPECT_EQ(shape.size(), 1);
-    EXPECT_EQ(shape[0], 4);
+    EXPECT_EQ(shape.size(), 1u);
+    EXPECT_EQ(shape[0], 4u);
     singa::Tensor int_param = int_snapshot_read.Read("IntParam");
     const int* param_data = int_param.data<int>();
     for (size_t i = 0; i < singa::Product(shape); ++i)
@@ -106,8 +106,8 @@ TEST(Snapshot, ReadDoubleTest) {
     singa::Snapshot double_snapshot_read(prefix+".double", singa::Snapshot::kRead);
     singa::Shape shape;
     shape = double_snapshot_read.ReadShape("DoubleParam");
-    EXPECT_EQ(shape.size(), 1);
-    EXPECT_EQ(shape[0], 4);
+    EXPECT_EQ(shape.size(), 1u);
+    EXPECT_EQ(shape[0], 4u);
     singa::Tensor double_param = double_snapshot_read.Read("DoubleParam");
     const double* param_data = double_param.data<double>();
     for (size_t i = 0; i < singa::Product(shape); ++i)

@@ -23,6 +23,7 @@
 
 namespace singa {
 
+RegisterLayerClass(CudnnBatchNorm);
 CudnnBatchNorm::~CudnnBatchNorm() {
   if (has_init_cudnn_) {
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(shape_desc_));

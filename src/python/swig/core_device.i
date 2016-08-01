@@ -24,37 +24,40 @@
 %module core_device
 %include "std_vector.i"
 %include "std_string.i"
+%include "std_pair.i"
+%include "std_shared_ptr.i"
 
 %{
 #include "singa/core/device.h"
 %}
 
+/* smart pointer to avoid memory leak */
+%shared_ptr(singa::Device);
+
+namespace std{
+%template(sizePair) std::pair<size_t, size_t>;
+%template(vectorPair) std::vector<std::pair<size_t, size_t>>;
+%template(vectorSharedPtr) std::vector<std::shared_ptr<singa::Device>>;
+}
+
 namespace singa{
 
-  %nodefault Device;
-  class Device {
-   public:
-    virtual void SetRandSeed(unsigned seed) = 0;
-    Device* host();
-    int id() const;
-  };
+class Device {
+  public:
+  virtual void SetRandSeed(unsigned seed) = 0;
+  std::shared_ptr<Device> host();
+  int id() const;
+};
 
-  class CppCPU : public Device {
-   public:
-    CppCPU(int id = -1, int num_executors = 1,
-           std::string scheduler = "sync", std::string vm = "gc-only");
-    void SetRandSeed(unsigned seed) override;
-    /* (TODO) add necessary functions of CppCPU class
-    */
-  };
-
-  class CudaGPU : public Device {
-   public:
-    CudaGPU(int id = 0, int num_executors = 1,
-            std::string scheduler = "sync", std::string vm = "gc-only");
-    void SetRandSeed(unsigned seed) override;
-    /* (TODO) add necessary functions of CudaGPU class
-    */
-  };
+class Platform {
+ public:
+  static int GetNumGPUs();
+  static const std::vector<int> GetGPUIDs();
+  static const std::pair<size_t, size_t> GetGPUMemSize(const int device);
+  static const std::vector<std::pair<size_t, size_t>> GetGPUMemSize();
+  static const std::string DeviceQuery(int id, bool verbose = false);
+  static const std::vector<std::shared_ptr<Device> >
+  CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
+};
 }
 

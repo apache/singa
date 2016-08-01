@@ -63,6 +63,7 @@ TEST(TextFileWriter, Append) {
   writer.Flush();
   writer.Close();
 }
+
 TEST(TextFileReader, Read) {
   TextFileReader reader;
   bool ret;
@@ -73,6 +74,44 @@ TEST(TextFileReader, Read) {
   EXPECT_EQ(4, cnt);
 
   std::string key, value;
+  reader.Read(&key, &value);
+  EXPECT_STREQ("0", key.c_str());
+  EXPECT_STREQ("This is a test for binfile io.", value.c_str());
+
+  reader.Read(&key, &value);
+  EXPECT_STREQ("1", key.c_str());
+  EXPECT_STREQ("This is a test for binfile io.", value.c_str());
+
+  reader.Read(&key, &value);
+  EXPECT_STREQ("2", key.c_str());
+  EXPECT_STREQ("This is another test for binfile io.", value.c_str());
+
+  reader.Read(&key, &value);
+  EXPECT_STREQ("3", key.c_str());
+  EXPECT_STREQ("This is another test for binfile io.", value.c_str());
+
+  reader.Close();
+}
+
+TEST(TextFileReader, SeekToFirst) {
+  TextFileReader reader;
+  bool ret;
+  ret = reader.Open(path_csv);
+  EXPECT_EQ(true, ret);
+
+  int cnt = reader.Count();
+  EXPECT_EQ(4, cnt);
+
+  std::string key, value;
+  reader.Read(&key, &value);
+  EXPECT_STREQ("0", key.c_str());
+  EXPECT_STREQ("This is a test for binfile io.", value.c_str());
+
+  reader.Read(&key, &value);
+  EXPECT_STREQ("1", key.c_str());
+  EXPECT_STREQ("This is a test for binfile io.", value.c_str());
+
+  reader.SeekToFirst();
   reader.Read(&key, &value);
   EXPECT_STREQ("0", key.c_str());
   EXPECT_STREQ("This is a test for binfile io.", value.c_str());

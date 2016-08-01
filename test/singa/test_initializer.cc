@@ -26,7 +26,7 @@ TEST(Initializer, Constant) {
   singa::FillerConf conf;
   conf.set_value(3.1f);
   x.Setup(conf);
-  x.Fill(&t);
+  x.Fill(t);
   const float* xPtr = t.data<float>();
   for (size_t i = 0; i < n; i++)
     EXPECT_FLOAT_EQ(xPtr[i], 3.1f);
@@ -41,7 +41,7 @@ TEST(Initializer, Gaussian) {
   conf.set_mean(0.11f);
   conf.set_std(0.01f);
   x.Setup(conf);
-  x.Fill(&t);
+  x.Fill(t);
   const float* xPtr = t.data<float>();
   float mean = 0.0f, std = 0.0f;
   for (size_t i = 0; i < n; i++)
@@ -64,7 +64,7 @@ TEST(Initializer, ConstantCUDA) {
   singa::FillerConf conf;
   conf.set_value(3.1f);
   x.Setup(conf);
-  x.Fill(&t);
+  x.Fill(t);
   t.ToHost();
   const float* xPtr = t.data<float>();
   for (size_t i = 0; i < n; i++)
@@ -73,7 +73,7 @@ TEST(Initializer, ConstantCUDA) {
 
   singa::init::Constant y(-0.1f);
   singa::Tensor s(singa::Shape{n}, dev);
-  y.Fill(&s);
+  y.Fill(s);
   s.ToHost();
   const float* sPtr = s.data<float>();
   for (size_t i = 0; i < n; i++)
@@ -90,7 +90,7 @@ TEST(Initializer, GaussianCUDA) {
   conf.set_mean(0.11f);
   conf.set_std(0.01f);
   x.Setup(conf);
-  x.Fill(&t);
+  x.Fill(t);
   t.ToHost();
   const float* tPtr = t.data<float>();
   float mean = 0.0f, std = 0.0f;
@@ -107,7 +107,7 @@ TEST(Initializer, GaussianCUDA) {
 
   singa::init::Gaussian y(1.5f, 0.1f);
   singa::Tensor s(singa::Shape{n}, dev);
-  y.Fill(&s);
+  y.Fill(s);
   s.ToHost();
   const float* sPtr = s.data<float>();
   for (size_t i = 0; i < n; i++)
@@ -126,7 +126,7 @@ TEST(Initializer, XavierCUDA) {
   auto dev = std::make_shared<singa::CudaGPU>();
   size_t m = 30, n=40;
   singa::Tensor t(singa::Shape{m, n}, dev);
-  x.Fill(&t);
+  x.Fill(t);
   t.ToHost();
   const float* xPtr = t.data<float>();
   float mean = 0.0f;

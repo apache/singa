@@ -19,9 +19,9 @@
 #include "singa/core/device.h"
 
 namespace singa {
-Device::Device(int id, int num_executors, string scheduler, string vm)
+Device::Device(int id, int num_executors)
     : id_(id), num_executors_(num_executors) {
-      // TODO(wangwei) create scheduler and vm.
+  // TODO(wangwei) create scheduler and vm.
   host_ = defaultDevice;
 }
 

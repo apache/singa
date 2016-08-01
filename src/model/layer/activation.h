@@ -52,5 +52,6 @@ class Activation : public Layer {
   Shape out_sample_shape_;
   float neg_slope_;
 };
+
 }  // namespace singa
 #endif  // SINGA_MODEL_LAYER_ACTIVATION_H_

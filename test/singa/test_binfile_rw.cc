@@ -91,5 +91,43 @@ TEST(BinFileReader, Read) {
   EXPECT_STREQ("\nThis is another test for binfile io.", value.c_str());
 
   reader.Close();
+}
+
+TEST(BinFileReader, SeekToFirst) {
+  BinFileReader reader;
+  bool ret;
+  ret = reader.Open(path_bin);
+  EXPECT_EQ(true, ret);
+
+  int cnt = reader.Count();
+  EXPECT_EQ(4, cnt);
+
+  std::string key, value;
+  reader.Read(&key, &value);
+  EXPECT_STREQ("", key.c_str());
+  EXPECT_STREQ("\nThis is a test for binfile io.", value.c_str());
+
+  reader.Read(&key, &value);
+  EXPECT_STREQ("", key.c_str());
+  EXPECT_STREQ("\nThis is a test for binfile io.", value.c_str());
+
+  reader.SeekToFirst();
+  reader.Read(&key, &value);
+  EXPECT_STREQ("", key.c_str());
+  EXPECT_STREQ("\nThis is a test for binfile io.", value.c_str());
+
+  reader.Read(&key, &value);
+  EXPECT_STREQ("", key.c_str());
+  EXPECT_STREQ("\nThis is a test for binfile io.", value.c_str());
+
+  reader.Read(&key, &value);
+  EXPECT_STREQ("1", key.c_str());
+  EXPECT_STREQ("\nThis is another test for binfile io.", value.c_str());
+
+  reader.Read(&key, &value);
+  EXPECT_STREQ("2", key.c_str());
+  EXPECT_STREQ("\nThis is another test for binfile io.", value.c_str());
+
+  reader.Close();
   remove(path_bin);
 }
