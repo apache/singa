@@ -200,9 +200,10 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
   Tensor train_x(prefetch_x.shape(), device);
   Tensor train_y(prefetch_y.shape(), device, kInt);
   std::thread th;
+  //LOG(INFO) << "Total num of training files: " << num_train_files;
   for (size_t fno = 1; fno <= num_train_files; fno++) {
     binfile = bin_folder + "/train" + std::to_string(fno) + ".bin";
-    //LOG(INFO) << "Load dat from " << binfile;
+    //LOG(INFO) << "Load data from " << binfile;
     while (true) {
       if (th.joinable()) {
         th.join();
@@ -234,9 +235,10 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
       loss += ret.first;
       metric += ret.second;
       b++;
+      //LOG(INFO) << "batch " << b << ", loss: " << ret.first;
     }
-
     if (fno % 20 == 0) {
+      //LOG(INFO) << "num of batch: " << b;
       train_ch->Send("Epoch " + std::to_string(epoch) + ", training loss = " +
                       std::to_string(loss / b) + ", accuracy = " +
                       std::to_string(metric / b) + ", lr = " +
@@ -337,7 +339,7 @@ void Train(int num_epoch, float lr, size_t batchsize, size_t train_file_size,
   OptimizerConf opt_conf;
   opt_conf.set_momentum(0.9);
   auto reg = opt_conf.mutable_regularizer();
-  reg->set_coefficient(0.005);
+  reg->set_coefficient(0.0005);
   sgd.Setup(opt_conf);
   sgd.SetLearningRateGenerator(
       [lr](int epoch) { return lr * std::pow(0.1, epoch / 20); });
