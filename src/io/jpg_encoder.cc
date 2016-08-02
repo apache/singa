@@ -72,7 +72,7 @@ std::string JPGEncoder::Encode(vector<Tensor>& data) {
   // suppose each image is attached with at most one label
   if (data.size() == 2) {
     const int* label = data[1].data<int>();
-    CHECK_EQ(label[0], 2);
+    //CHECK_EQ(label[0], 2);
     record.add_label(label[0]);
   }
 

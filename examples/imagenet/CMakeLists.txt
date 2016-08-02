@@ -1,0 +1,16 @@
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
+
+IF(USE_CUDNN)
+  IF(USE_OPENCV)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp ")
+    ADD_EXECUTABLE(imagenet alexnet.cc)
+    ADD_DEPENDENCIES(imagenet singa_core singa_model singa_utils singa_io)
+    TARGET_LINK_LIBRARIES(imagenet singa_core singa_utils singa_model singa_io protobuf ${SINGA_LIBKER_LIBS})
+
+    ADD_EXECUTABLE(createdata ilsvrc12.cc)
+    ADD_DEPENDENCIES(createdata singa_core singa_io singa_model singa_utils)
+    TARGET_LINK_LIBRARIES(createdata singa_core singa_utils singa_io singa_model protobuf ${SINGA_LIBKER_LIBS})
+    #SET_TARGET_PROPERTIES(createdata PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+  ENDIF(USE_OPENCV)
+ENDIF(USE_CUDNN)

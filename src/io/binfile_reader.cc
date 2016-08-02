@@ -98,7 +98,7 @@ bool BinFileReader::OpenFile() {
   buf_ = new char[capacity_];
   fdat_.open(path_, std::ios::in | std::ios::binary);
   CHECK(fdat_.is_open()) << "Cannot open file " << path_;
-  return fdat_.is_open(); 
+  return fdat_.is_open();
 }
 
 bool BinFileReader::ReadField(std::string* content) {
@@ -108,7 +108,9 @@ bool BinFileReader::ReadField(std::string* content) {
   int len = *reinterpret_cast<size_t*>(buf_ + offset_);
   offset_ += ssize;
   if (!PrepareNextField(len)) return false;
-  for (int i = 0; i < len; ++i) content->push_back(buf_[offset_ + i]);
+  content->reserve(len);
+  content->insert(0, buf_ + offset_, len);
+  //for (int i = 0; i < len; ++i) content->push_back(buf_[offset_ + i]);
   offset_ += len;
   return true;
 }
