@@ -49,7 +49,8 @@ class Snapshot {
   /// i.e.
   /// name and shape, one line per parameter.
   /// kRead for reading snapshot, whereas kWrite for dumping out snapshot.
-  Snapshot(const std::string& prefix, Mode mode);
+  /// max_param_size: in MB
+  Snapshot(const std::string& prefix, Mode mode, int max_param_size = 10);
   ~Snapshot() {}
   /// Read parameters saved as tensors from checkpoint file.
   std::vector<std::pair<std::string, Tensor>> Read();
@@ -67,8 +68,9 @@ class Snapshot {
  private:
   std::string prefix_;
   Mode mode_;
-  std::unique_ptr<io::Writer> bin_writer_ptr_, text_writer_ptr_;
-  std::unique_ptr<io::Reader> bin_reader_ptr_;
+  std::unique_ptr<io::BinFileWriter> bin_writer_ptr_;
+  std::unique_ptr<io::Writer> text_writer_ptr_;
+  std::unique_ptr<io::BinFileReader> bin_reader_ptr_;
   /// Check whether parameter name is unique.
   std::unordered_set<std::string> param_names_;
   /// Preload key-parameter tensor pairs for seeking a specified key.
