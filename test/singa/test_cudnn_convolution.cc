@@ -69,10 +69,11 @@ TEST(CudnnConvolution, Forward) {
 
   // Set weight and bias manually
   const size_t num_filters = 1;
-  const float we[num_filters * batchsize * h * w] = {
+  const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
+  const float we[num_filters * col_height] = {
       1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
-  singa::Tensor weight(singa::Shape{num_filters, batchsize * h * w}, cuda);
-  weight.CopyDataFromHostPtr(we, batchsize * h * w);
+  singa::Tensor weight(singa::Shape{num_filters, col_height}, cuda);
+  weight.CopyDataFromHostPtr(we, col_height);
   const float b[num_filters] = {1.0f};
   singa::Tensor bias(singa::Shape{num_filters}, cuda);
   bias.CopyDataFromHostPtr(b, num_filters);
@@ -119,11 +120,12 @@ TEST(CudnnConvolution, Backward) {
 
   // Set weight_ and bias_ manually
   const size_t num_filters = 1;
-  const float we[num_filters * batchsize * src_h * src_w] = {
+  const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
+  const float we[num_filters * col_height] = {
       1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
-  singa::Tensor weight(singa::Shape{num_filters, batchsize * src_h * src_w},
+  singa::Tensor weight(singa::Shape{num_filters, col_height},
                        cuda);
-  weight.CopyDataFromHostPtr(we, batchsize * src_h * src_w);
+  weight.CopyDataFromHostPtr(we, col_height);
   const float b[num_filters] = {1.0f};
   singa::Tensor bias(singa::Shape{num_filters}, cuda);
   bias.CopyDataFromHostPtr(b, num_filters);
