@@ -232,6 +232,7 @@ void Sub<float, lang::Cuda>(const size_t num, const Block* in1,
 template <>
 void Sum<float, lang::Cuda>(const size_t num, const Block* in, float* out,
                             Context* ctx) {
+  LOG(FATAL) << "errors in kernel sum";
   const float* inPtr = static_cast<const float*>(in->data());
   cuda::sum(num, inPtr, out, ctx->stream);
 }
