@@ -82,10 +82,14 @@ class ILSVRC {
   /// offset: offset in the file
   /// n_read: number of images which are read
   size_t LoadData(int flag, string file, size_t read_size, Tensor *x, Tensor *y,
-                  size_t *n_read);
+                  size_t *n_read, int nthreads);
 
   std::thread AsyncLoadData(int flag, string file, size_t read_size, Tensor *x,
-                            Tensor *y, size_t *n_read);
+                            Tensor *y, size_t *n_read, int nthreads);
+
+  void DecodeTransform(int flag, int thid, int nthreads, vector<string*> images, Tensor *x, Tensor *y);
+  std::thread AsyncDecodeTransform(int flag, int thid, int nthreads, vector<string*> images, Tensor *x, Tensor *y);
+
   /// Read mean from path
   void ReadMean(string path);
 
@@ -285,14 +289,14 @@ void ILSVRC::ReadMean(string path) {
   bfreader.Close();
   mean = ret[0];
 }
-/// A wrapper method to spawn a thread to execute Train() method.
+/// A wrapper method to spawn a thread to execute LoadData() method.
 std::thread ILSVRC::AsyncLoadData(int flag, string file, size_t read_size,
-                                  Tensor *x, Tensor *y, size_t *n_read) {
-  return std::thread([=]() { LoadData(flag, file, read_size, x, y, n_read); });
+                                  Tensor *x, Tensor *y, size_t *n_read, int nthreads) {
+  return std::thread([=]() { LoadData(flag, file, read_size, x, y, n_read, nthreads); });
 }
 
 size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
-                        Tensor *y, size_t *n_read) {
+                        Tensor *y, size_t *n_read, int nthreads) {
   x->Reshape(Shape{read_size, 3, kCropSize, kCropSize});
   y->AsType(kInt);
   y->Reshape(Shape{read_size});
@@ -314,8 +318,7 @@ size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
     reader = new BinFileReader();
     reader->Open(file, 100 << 20);
   }
-  Timer tr;
-  float tdecode = 0.0f, ttrans = 0.0f;
+  //Timer tr;
   vector<string*> images;
   for (size_t i = 0; i < read_size; i++) {
     // return false when reading to the end of file.
@@ -331,18 +334,18 @@ size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
     }
     images.push_back(image);
   }
-  auto iot = tr.Elapsed();
+  //auto iot = tr.Elapsed();
   int nimg = images.size();
   //LOG(INFO) << "num of images: " << nimg;
   *n_read = nimg;
 
-  Timer timer;
+  //Timer timer;
 
   //Timer omptime;
   //int nProcessors = omp_get_max_threads();
   //omp_set_num_threads(nProcessors);
 //#pragma omp parallel for shared(nimg, images, x, y)
-  for (int k = 0; k < nimg; k++) {
+  /*for (int k = 0; k < nimg; k++) {
     timer.Tick();
     std::vector<Tensor> pair = decoder->Decode(*images.at(k));
     tdecode += timer.Elapsed<Timer::Microseconds>();
@@ -353,14 +356,50 @@ size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
     CopyDataToFrom(x, aug_image, aug_image.Size(), k * aug_image.Size());
     CopyDataToFrom(y, pair[1], 1, k);
   }
-  auto totaltime = tr.Elapsed();
-  LOG(INFO) << "Total time of loading data: " << totaltime << "ms";
-  LOG(INFO) << "Time of reading data from file: " << iot << "ms";
-  LOG(INFO) << "Time of decoding: " << tdecode / 1000 << "ms";
-  LOG(INFO) << "Time of transforming data: " << ttrans / 1000 << "ms";
+  */
+  vector<std::thread> threads;
+  for (int i = 1; i < nthreads; i++) {
+    threads.push_back(AsyncDecodeTransform(flag, i, nthreads, images, x, y));
+  }
+  DecodeTransform(flag, 0, nthreads, images, x, y);
+  for (size_t i = 0; i < threads.size(); i++)
+    threads[i].join();
+  //auto ttrans = timer.Elapsed<Timer::Microseconds>();
+  //auto totaltime = tr.Elapsed();
+  //LOG(INFO) << "Total time of loading data: " << totaltime << "ms";
+  //LOG(INFO) << "Time of reading data from file: " << iot << "ms";
+//  LOG(INFO) << "Time of decoding: " << tdecode / 1000 << "ms";
+  //LOG(INFO) << "Time of transforming data: " << ttrans / 1000 << "ms";
   for (int k = 0; k < nimg; k++)
     delete images.at(k);
   return nimg;
+}
+
+/// A wrapper method to spawn a thread to execute Decodetransform() method.
+std::thread ILSVRC::AsyncDecodeTransform(int flag, int thid, int nthreads, vector<string*> images, Tensor *x, Tensor *y) {
+  return std::thread([=]() { DecodeTransform(flag, thid, nthreads, images, x, y); });
+}
+
+void ILSVRC::DecodeTransform(int flag, int thid, int nthreads, vector<string*> images, Tensor *x, Tensor *y) {
+  int nimg = images.size();
+  int start = nimg / nthreads * thid;
+  int end = start + nimg / nthreads;
+  for (int k = start; k < end; k++) {
+    std::vector<Tensor> pair = decoder->Decode(*images.at(k));
+    auto tmp_image = pair[0] - mean;
+    Tensor aug_image = transformer->Apply(flag, tmp_image);
+    CopyDataToFrom(x, aug_image, aug_image.Size(), k * aug_image.Size());
+    CopyDataToFrom(y, pair[1], 1, k);
+  }
+  if (thid == 0) {
+    for (int k = nimg / nthreads * nthreads; k < nimg; k++) {
+      std::vector<Tensor> pair = decoder->Decode(*images.at(k));
+      auto tmp_image = pair[0] - mean;
+      Tensor aug_image = transformer->Apply(flag, tmp_image);
+      CopyDataToFrom(x, aug_image, aug_image.Size(), k * aug_image.Size());
+      CopyDataToFrom(y, pair[1], 1, k);
+    }
+  }
 }
 }  // namespace singa
 

@@ -180,7 +180,8 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
                                       size_t batchsize,
                                       float lr,
                                       Channel *train_ch,
-                                      size_t pfreq) {
+                                      size_t pfreq,
+                                      int nthreads) {
   float loss = 0.0f, metric = 0.0f;
   float load_time = 0.0f, train_time = 0.0f;
   size_t b = 0;
@@ -191,7 +192,7 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
   //prefetch_y.ToDevice(device);
   string binfile = bin_folder + "/train1.bin";
   timer.Tick();
-  data.LoadData(kTrain, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read);
+  data.LoadData(kTrain, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read, nthreads);
   load_time += timer.Elapsed();
   CHECK_EQ(n_read, batchsize);
   Tensor train_x(prefetch_x.shape(), device);
@@ -221,7 +222,7 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
       }
       //LOG(INFO) << "train_x.L1(): " << train_x.L1();
       timer.Tick();
-      th = data.AsyncLoadData(kTrain, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read);
+      th = data.AsyncLoadData(kTrain, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read, nthreads);
       if (n_read < batchsize) continue;
       CHECK_EQ(train_x.shape(0), train_y.shape(0));
  //     train_x.ToDevice(device);
@@ -256,7 +257,8 @@ void TestOneEpoch(FeedForwardNet &net, ILSVRC &data,
                                      std::shared_ptr<Device> device, int epoch,
                                      string bin_folder, size_t num_test_images,
                                      size_t batchsize,
-                                     Channel *val_ch) {
+                                     Channel *val_ch,
+                                     int nthreads) {
   float loss = 0.0f, metric = 0.0f;
   float load_time = 0.0f, eval_time = 0.0f;
   size_t n_read;
@@ -266,7 +268,7 @@ void TestOneEpoch(FeedForwardNet &net, ILSVRC &data,
   //prefetch_x.ToDevice(device);
   //prefetch_y.ToDevice(device);
   timer.Tick();
-  data.LoadData(kEval, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read);
+  data.LoadData(kEval, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read, nthreads);
   load_time += timer.Elapsed();
   Tensor test_x(prefetch_x.shape(), device);
   Tensor test_y(prefetch_y.shape(), device, kInt);
@@ -288,7 +290,7 @@ void TestOneEpoch(FeedForwardNet &net, ILSVRC &data,
     test_x.CopyData(prefetch_x);
     test_y.CopyData(prefetch_y);
     timer.Tick();
-    th = data.AsyncLoadData(kEval, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read);
+    th = data.AsyncLoadData(kEval, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read, nthreads);
 
     CHECK_EQ(test_x.shape(0), test_y.shape(0));
     //test_x.ToDevice(device);
@@ -327,7 +329,7 @@ void Checkpoint(FeedForwardNet &net, string prefix) {
 
 void Train(int num_epoch, float lr, size_t batchsize, size_t train_file_size,
            string bin_folder, size_t num_train_images, size_t num_test_images,
-           size_t pfreq) {
+           size_t pfreq, int nthreads) {
   ILSVRC data;
   data.ReadMean(bin_folder + "/mean.bin");
   auto net = CreateNet();
@@ -355,12 +357,12 @@ void Train(int num_epoch, float lr, size_t batchsize, size_t train_file_size,
   for (int epoch = 0; epoch < num_epoch; epoch++) {
     float epoch_lr = sgd.GetLearningRate(epoch);
     TrainOneEpoch(net, data, cuda, epoch, bin_folder, num_train_files,
-                  batchsize, epoch_lr, train_ch, pfreq);
+                  batchsize, epoch_lr, train_ch, pfreq, nthreads);
     if (epoch % 10 == 0 && epoch > 0) {
       string prefix = "snapshot_epoch" + std::to_string(epoch);
       Checkpoint(net, prefix);
     }
-    TestOneEpoch(net, data, cuda, epoch, bin_folder, num_test_images, batchsize, val_ch);
+    TestOneEpoch(net, data, cuda, epoch, bin_folder, num_test_images, batchsize, val_ch, nthreads);
   }
 }
 }
@@ -399,9 +401,13 @@ int main(int argc, char **argv) {
   size_t pfreq = 100;
   if (pos != -1) pfreq= atoi(argv[pos + 1]);
 
+  pos = singa::ArgPos(argc, argv, "-nthreads");
+  int nthreads = 12;
+  if (pos != -1) nthreads= atoi(argv[pos + 1]);
+
   LOG(INFO) << "Start training";
   singa::Train(nEpoch, lr, batchsize, train_file_size, bin_folder,
-               num_train_images, num_test_images, pfreq);
+               num_train_images, num_test_images, pfreq, nthreads);
   LOG(INFO) << "End training";
 }
 #endif
