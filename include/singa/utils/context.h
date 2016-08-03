@@ -22,21 +22,32 @@
 #ifndef SINGA_UTILS_CONTEXT_H_
 #define SINGA_UTILS_CONTEXT_H_
 
-#include <glog/logging.h>
 #include <chrono>
 #include <random>
 #include <thread>
 #include <unordered_map>
 #include <vector>
 
+#include "singa/utils/logging.h"
+
 #ifdef USE_GPU
-#include "singa/utils/cuda_utils.h"
+#include <cublas_v2.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <curand.h>
+// CUDA: various checks for different function calls.
+#define CUDA_CHECK(condition) \
+/* Code block avoids redefinition of cudaError_t error */ \
+do { \
+cudaError_t error = condition; \
+CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+} while (0)
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #endif
 
-#endif
+#endif // USE_GPU
 
 namespace singa {
 
@@ -238,17 +249,8 @@ class Context {
   cudnnHandle_t cudnn_handle(const int device_id) {
     CHECK_GE(device_id, 0);
     CHECK_LT(device_id, cudnn_handle_.size());
-    if (cudnn_handle_.at(device_id) == nullptr) {
-      ActivateDevice(device_id);
-      // LOG(ERROR) << "create cudnn handle for device " << device_id;
-      CHECK_EQ(cudnnCreate(&cudnn_handle_[device_id]), CUDNN_STATUS_SUCCESS);
-    }
-    // LOG(ERROR) << "use cudnn handle from device " << device_id;
-    return cudnn_handle_[device_id];
   }
-#endif
-
-#endif
+#endif // USE_CUDNN
 
  protected:
   //!< max num of GPUs per process
@@ -268,9 +270,22 @@ class Context {
 #ifdef USE_CUDNN
   std::vector<cudnnHandle_t> cudnn_handle_;
 #endif
-#endif
+#endif // USE_GPU
 };
 
 }  // namespace singa
 
 #endif  // SINGA_UTILS_CONTEXT_H_
+    if (cudnn_handle_.at(device_id) == nullptr) {
+      ActivateDevice(device_id);
+      // LOG(ERROR) << "create cudnn handle for device " << device_id;
+      CHECK_EQ(cudnnCreate(&cudnn_handle_[device_id]), CUDNN_STATUS_SUCCESS);
+    }
+    // LOG(ERROR) << "use cudnn handle from device " << device_id;
+    return cudnn_handle_[device_id];
+  }
+#endif
+
+#endif // USE_GPU
+
+#ifdef USE_OPENCL
