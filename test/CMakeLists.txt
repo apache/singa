@@ -9,9 +9,14 @@ IF(NOT USE_OPENCL)
     LIST(REMOVE_ITEM singa_test_source "singa/test_opencl.cc")
 ENDIF()
 
-ADD_EXECUTABLE(test_singa "gtest/gtest_main.cc" ${singa_test_source})
-ADD_DEPENDENCIES(test_singa singa_core singa_utils)
-MESSAGE(STATUS "link libs" ${singa_linker_libs})
-TARGET_LINK_LIBRARIES(test_singa gtest singa_core singa_utils singa_model
+#ADD_EXECUTABLE(test_singa "gtest/gtest_main.cc" ${singa_test_source})
+#ADD_DEPENDENCIES(test_singa singa_core singa_utils)
+#MESSAGE(STATUS "link libs" ${singa_linker_libs})
+#TARGET_LINK_LIBRARIES(test_singa gtest singa_core singa_utils singa_model
+#    singa_io proto protobuf ${SINGA_LINKER_LIBS})
+#SET_TARGET_PROPERTIES(test_singa PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
+
+ADD_EXECUTABLE(test_ep "singa/test_ep.cc")
+ADD_DEPENDENCIES(test_ep singa_io)
+TARGET_LINK_LIBRARIES(test_ep singa_core singa_utils singa_model
     singa_io proto protobuf ${SINGA_LINKER_LIBS})
-SET_TARGET_PROPERTIES(test_singa PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")

@@ -50,6 +50,9 @@ namespace singa {
 
 #define MAX_RETRY_CNT 3
 
+#define EV_WATCHER_STOP 0
+#define EV_WATCHER_START 1
+
 class NetworkThread;
 class EndPointFactory;
 
@@ -62,6 +65,7 @@ class EndPoint {
         std::mutex mtx_;
         struct sockaddr_in addr_;
         int fd_[2] = {-1, -1}; // two endpoints simultaneously connect to each other
+        int pfd_ = -1;
         int conn_status_ = CONN_INIT;
         int pending_cnt_ = 0;
         int retry_cnt_ = 0;
@@ -113,6 +117,7 @@ class NetworkThread{
         void doWork();
         int asyncSend(int);
         void asyncSendPendingMsg(EndPoint*);
+        void afterConnEst(EndPoint* ep, int fd, bool active);
     public:
         EndPointFactory* epf_;
 
