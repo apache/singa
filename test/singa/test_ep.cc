@@ -6,13 +6,13 @@
 
 #include "singa/utils/logging.h"
 
-#define SIZE 100
+#define SIZE 10000000
 #define PORT 10000
 
 using namespace singa;
 int main(int argc, char** argv) {
-    char md[SIZE];
-    char payload[SIZE];
+    char* md = new char[SIZE];
+    char* payload = new char[SIZE];
 
     char* host = "localhost";
     int port = PORT;
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 
     int cnt = 0;
 
-    while(ep && cnt++ <= 100 && ep->send(m) > 0 ) {
+    while(ep && cnt++ <= 5 && ep->send(m) > 0 ) {
 
         LOG(INFO) << "Send a " << m->getSize() << " bytes message";
 
