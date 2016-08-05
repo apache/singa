@@ -34,6 +34,7 @@ Message::Message(Message&& msg) {
     std::swap(psize_, msg.psize_);
     std::swap(msg_, msg.msg_);
     std::swap(type_, msg.type_);
+    std::swap(id_, msg.id_);
 }
 
 Message::Message(int type, uint32_t ack_msg_id): type_(type), id_(ack_msg_id) {
