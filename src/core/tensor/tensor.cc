@@ -367,7 +367,7 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
   Block *from = src.block(), *to = dst->block();
   if (dst_dev->lang() != src_dev->lang()) {
-    // let the none cpp device conduct copy op
+    // let the non-cpp device conduct copy operation
     if (dst_dev->lang() == kCpp) {
       src_dev->CopyDataToFrom(to, from, nBytes, kDeviceToHost, d_offset,
                               s_offset);
@@ -375,7 +375,7 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
       dst_dev->CopyDataToFrom(to, from, nBytes, kHostToDevice, d_offset,
                               s_offset);
     } else {
-      LOG(FATAL) << "Not support mem copy betwee Cuda and OpenCL device";
+      LOG(FATAL) << "Mem copy between OpenCL and CUDA is not supported.";
     }
   } else {
     auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;

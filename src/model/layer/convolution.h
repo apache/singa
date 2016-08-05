@@ -49,12 +49,14 @@ class Convolution : public Layer {
   void Im2col(const float* data_im, const int channels, const int height,
               const int width, const int kernel_h, const int kernel_w,
               const int pad_h, const int pad_w, const int stride_h,
-              const int stride_w, float* data_col);
+              const int stride_w, const int conv_h, const int conv_w, 
+              float* data_col);
 
   void Col2im(const float* data_col, const int channels, const int height,
               const int width, const int patch_h, const int patch_w,
               const int pad_h, const int pad_w, const int stride_h,
-              const int stride_w, float* data_im);
+              const int stride_w, const int conv_h, const int conv_w, 
+              float* data_im);
 
   const std::vector<Tensor> param_values() override {
     return std::vector<Tensor>{weight_, bias_};

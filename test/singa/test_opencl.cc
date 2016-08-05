@@ -82,7 +82,7 @@ float* MakeMatrix(const int size) {
   return mat;
 }
 
-
+/*
 TEST(OpenclDevice, Constructor) {
   OpenclDevice dev;
   EXPECT_EQ(0, dev.id());
@@ -621,8 +621,7 @@ TEST_F(OpenCL_TensorMath, Mult) {
   EXPECT_EQ(320.0f, out1[14]);
   EXPECT_EQ(360.0f, out1[15]);
 }
-
-
+*/
 
 // TODO: ComputeCrossEntropy, SoftmaxCrossEntropy
 //

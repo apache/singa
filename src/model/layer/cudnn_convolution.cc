@@ -67,16 +67,21 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(x_desc_, CUDNN_TENSOR_NCHW,
                                          GetCudnnDataType(dtype), batchsize,
                                          channels_, height_, width_));
-  CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-      y_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), batchsize,
-      num_filters_, conv_height_, conv_width_));
+                                         
+  CUDNN_CHECK(cudnnSetTensor4dDescriptor(y_desc_, CUDNN_TENSOR_NCHW, 
+                                         GetCudnnDataType(dtype), batchsize,
+                                         num_filters_, 
+                                         conv_height_, conv_width_));
+                                         
   if (bias_term_)
     CUDNN_CHECK(cudnnSetTensor4dDescriptor(bias_desc_, CUDNN_TENSOR_NCHW,
                                            GetCudnnDataType(dtype), 1,
                                            num_filters_, 1, 1));
+                                           
   CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc_, pad_h_, pad_w_,
                                               stride_h_, stride_w_, 1, 1,
                                               CUDNN_CROSS_CORRELATION));
+                                              
 #if CUDNN_VERSION_MAJOR == 5
   CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc_, GetCudnnDataType(dtype),
                                          CUDNN_TENSOR_NCHW, num_filters_,
@@ -192,18 +197,20 @@ const Tensor CudnnConvolution::Forward(int flag, const Tensor &input) {
   return output;
 }
 
-const std::pair<Tensor, vector<Tensor>> CudnnConvolution::Backward(
-    int flag, const Tensor &grad) {
-  CHECK(has_init_cudnn_);
+const std::pair<Tensor, vector<Tensor>>
+CudnnConvolution::Backward(int flag, const Tensor &grad) {
+  CHECK(!buf_.empty());
   CHECK_EQ(grad.device()->lang(), kCuda);
   CHECK_EQ(grad.nDim(), 4u);
-  CHECK(!buf_.empty());
+  CHECK(has_init_cudnn_);
+  
+  vector<Tensor> param_grad;
+  
   Tensor src_data = buf_.top();
   buf_.pop();
-  vector<Tensor> param_grad;
-  Tensor dx;
+  
+  Tensor dx, db, dw;
   dx.ResetLike(src_data);
-  Tensor db, dw;
   db.ResetLike(bias_);
   dw.ResetLike(weight_);
 

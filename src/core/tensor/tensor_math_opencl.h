@@ -42,7 +42,7 @@ void Abs<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Con
   std::string kname = "clkernel_abs";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -61,7 +61,7 @@ void Add<float, lang::Opencl>(const size_t num, const Block* in, const float x, 
   std::string kname = "clkernel_add_scalar";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -81,8 +81,8 @@ void Add<float, lang::Opencl>(const size_t num, const Block* in1, const Block* i
   std::string kname = "clkernel_add";
   auto kernel = ctx->kernels->at(kname);
   
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
+  cl::Buffer in1buf = *(static_cast<const cl::Buffer*>(in1->data()));
+  cl::Buffer in2buf = *(static_cast<const cl::Buffer*>(in2->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -102,7 +102,7 @@ void Clamp<float, lang::Opencl>(const size_t num, const float low, const float h
   std::string kname = "clkernel_clamp";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -123,7 +123,7 @@ void Div<float, lang::Opencl>(const size_t num, const Block* in, const float x, 
   std::string kname = "clkernel_divide_scalar_matx";
   auto kernel = ctx->kernels->at(kname);
   
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -143,7 +143,7 @@ void Div<float, lang::Opencl>(const size_t num, const float x, const Block* in, 
   std::string kname = "clkernel_divide_scalar_xmat";
   auto kernel = ctx->kernels->at(kname);
   
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -163,8 +163,8 @@ void Div<float, lang::Opencl>(const size_t num, const Block* in1, const Block* i
   std::string kname = "clkernel_divide";
   auto kernel = ctx->kernels->at(kname);
   
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
+  cl::Buffer in1buf = *(static_cast<const cl::Buffer*>(in1->data()));
+  cl::Buffer in2buf = *(static_cast<const cl::Buffer*>(in2->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -184,7 +184,7 @@ void EltwiseMult<float, lang::Opencl>(const size_t num, const Block* in, const f
   std::string kname = "clkernel_eltmult_scalar";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -204,8 +204,8 @@ void EltwiseMult<float, lang::Opencl>(const size_t num, const Block* in1, const 
   std::string kname = "clkernel_eltmult";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
+  cl::Buffer in1buf = *(static_cast<const cl::Buffer*>(in1->data()));
+  cl::Buffer in2buf = *(static_cast<const cl::Buffer*>(in2->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -225,7 +225,7 @@ void Exp<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Con
   std::string kname = "clkernel_exp";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -244,7 +244,7 @@ void LE<float, lang::Opencl>(const size_t num, const Block *in, const float x, B
   std::string kname = "clkernel_le";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -264,7 +264,7 @@ void Log<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Con
   std::string kname = "clkernel_log";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -283,7 +283,7 @@ void LT<float, lang::Opencl>(const size_t num, const Block *in, const float x, B
   std::string kname = "clkernel_lt";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -303,7 +303,7 @@ void GE<float, lang::Opencl>(const size_t num, const Block *in, const float x, B
   std::string kname = "clkernel_ge";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -323,7 +323,7 @@ void GT<float, lang::Opencl>(const size_t num, const Block *in, const float x, B
   std::string kname = "clkernel_gt";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -343,7 +343,7 @@ void Pow<float, lang::Opencl>(const size_t num, const Block* in, float x, Block*
   std::string kname = "clkernel_pow_scalar";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -363,8 +363,8 @@ void Pow<float, lang::Opencl>(const size_t num, const Block* in1, const Block* i
   std::string kname = "clkernel_pow";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
+  cl::Buffer in1buf = *(static_cast<const cl::Buffer*>(in1->data()));
+  cl::Buffer in2buf = *(static_cast<const cl::Buffer*>(in2->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -384,7 +384,7 @@ void ReLU<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Co
   std::string kname = "clkernel_relu";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -420,7 +420,7 @@ void Sigmoid<float, lang::Opencl>(const size_t num, const Block* in, Block* out,
   std::string kname = "clkernel_sigmoid";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -439,7 +439,7 @@ void Sign<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Co
   std::string kname = "clkernel_sign";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -458,7 +458,7 @@ void Sqrt<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Co
   std::string kname = "clkernel_sqrt";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -483,7 +483,7 @@ void Sub<float, lang::Opencl>(const size_t num, const Block* in, const float x, 
   std::string kname = "clkernel_subtract_scalar";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -503,8 +503,8 @@ void Sub<float, lang::Opencl>(const size_t num, const Block* in1, const Block* i
   std::string kname = "clkernel_subtract";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
+  cl::Buffer in1buf = *(static_cast<const cl::Buffer*>(in1->data()));
+  cl::Buffer in2buf = *(static_cast<const cl::Buffer*>(in2->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -524,7 +524,7 @@ void Sum<float, lang::Opencl>(const size_t num, const Block* in, float* out, Con
   std::string kname = "clkernel_reduce";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   
   size_t size = sizeof(float) * num;
   cl::Buffer outval(ctx->ocl_ctx, CL_MEM_WRITE_ONLY, size, nullptr, &status);
@@ -553,7 +553,7 @@ void Tanh<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Co
   std::string kname = "clkernel_tanh";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -647,7 +647,7 @@ void Amax<float, lang::Opencl>(const size_t num, const Block* in, size_t* out, C
   std::string kname = "clkernel_amax";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
 
   size_t size = sizeof(size_t) * num;
   cl::Buffer outval(ctx->ocl_ctx, CL_MEM_WRITE_ONLY, size, nullptr, &status);
@@ -677,7 +677,7 @@ void Amin<float, lang::Opencl>(const size_t num, const Block* in, size_t* out, C
   std::string kname = "clkernel_amin";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
 
   size_t size = sizeof(size_t) * num;
   cl::Buffer outval(ctx->ocl_ctx, CL_MEM_WRITE_ONLY, size, nullptr, &status);
@@ -707,7 +707,7 @@ void Asum<float, lang::Opencl>(const size_t num, const Block* in, float* out, Co
   std::string kname = "clkernel_asum";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   
   size_t size = sizeof(float) * num;
   cl::Buffer outval(ctx->ocl_ctx, CL_MEM_WRITE_ONLY, size, nullptr, &status);
@@ -736,7 +736,7 @@ void Axpy<float, lang::Opencl>(const size_t num, const float alpha, const Block*
   std::string kname = "clkernel_axpy";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)num);
@@ -756,7 +756,7 @@ void Nrm2<float, lang::Opencl>(const size_t num, const Block* in, float* out, Co
   std::string kname = "clkernel_nrm2";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
 
   size_t size = sizeof(float) * num;
   cl::Buffer outval(ctx->ocl_ctx, CL_MEM_WRITE_ONLY, size, nullptr, &status);
@@ -803,8 +803,8 @@ void Dot<float, lang::Opencl>(const size_t num, const Block *in1, const Block *i
   std::string kname = "clkernel_dot";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
+  cl::Buffer in1buf = *(static_cast<const cl::Buffer*>(in1->data()));
+  cl::Buffer in2buf = *(static_cast<const cl::Buffer*>(in2->data()));
 
   size_t size = sizeof(float) * num;
   cl::Buffer outval(ctx->ocl_ctx, CL_MEM_WRITE_ONLY, size, nullptr, &status);
@@ -835,8 +835,8 @@ void GEMV<float, lang::Opencl>(bool trans, const size_t m, const size_t n, const
   std::string kname = "clkernel_gemv";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer Abuf = *(static_cast<cl::Buffer*>(A->mutable_data()));
-  cl::Buffer vbuf = *(static_cast<cl::Buffer*>(v->mutable_data()));
+  cl::Buffer Abuf = *(static_cast<const cl::Buffer*>(A->data()));
+  cl::Buffer vbuf = *(static_cast<const cl::Buffer*>(v->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)m);
@@ -858,8 +858,8 @@ void DGMM<float, lang::Opencl>(bool side_right,
 		  const Block *M, const Block *v, Block *out, Context *ctx) {
   cl_int status = CL_SUCCESS;
 
-  cl::Buffer Mbuf = *(static_cast<cl::Buffer*>(M->mutable_data()));
-  cl::Buffer vbuf = *(static_cast<cl::Buffer*>(v->mutable_data()));
+  cl::Buffer Mbuf = *(static_cast<const cl::Buffer*>(M->data()));
+  cl::Buffer vbuf = *(static_cast<const cl::Buffer*>(v->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   std::string kname;
@@ -898,8 +898,8 @@ void GEMM<float, lang::Opencl>(const bool transA, const bool transB,
   std::string kname = "clkernel_gemm";
   auto kernel = ctx->kernels->at(kname);
   
-  cl::Buffer Abuf = *(static_cast<cl::Buffer*>(A->mutable_data()));
-  cl::Buffer Bbuf = *(static_cast<cl::Buffer*>(B->mutable_data()));
+  cl::Buffer Abuf = *(static_cast<const cl::Buffer*>(A->data()));
+  cl::Buffer Bbuf = *(static_cast<const cl::Buffer*>(B->data()));
   cl::Buffer Cbuf = *(static_cast<cl::Buffer*>(C->mutable_data()));
 
   // If matrix A needs to be transposed, do it.
@@ -938,8 +938,8 @@ void ComputeCrossEntropy<float, lang::Opencl>(const size_t batchsize, const size
   std::string kname = "clkernel_crossentropy";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer pbuf = *(static_cast<cl::Buffer*>(p->mutable_data()));
-  cl::Buffer tbuf = *(static_cast<cl::Buffer*>(t->mutable_data()));
+  cl::Buffer pbuf = *(static_cast<const cl::Buffer*>(p->data()));
+  cl::Buffer tbuf = *(static_cast<const cl::Buffer*>(t->data()));
   cl::Buffer lossbuf = *(static_cast<cl::Buffer*>(loss->mutable_data()));
 
   kernel.setArg(0, (cl_uint)batchsize);
@@ -963,8 +963,8 @@ void SoftmaxCrossEntropyBwd<float, lang::Opencl>(const size_t batchsize, const s
   std::string kname = "clkernel_softmaxentropy";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer pbuf = *(static_cast<cl::Buffer*>(p->mutable_data()));
-  cl::Buffer tbuf = *(static_cast<cl::Buffer*>(t->mutable_data()));
+  cl::Buffer pbuf = *(static_cast<const cl::Buffer*>(p->data()));
+  cl::Buffer tbuf = *(static_cast<const cl::Buffer*>(t->data()));
   cl::Buffer gradbuf = *(static_cast<cl::Buffer*>(grad->mutable_data()));
 
   kernel.setArg(0, (cl_uint)batchsize);
@@ -1028,7 +1028,7 @@ void SumColumns<float, lang::Opencl>(const size_t nrow, const size_t ncol, const
   auto kernel = ctx->kernels->at(kname);
   kernel.setArg(0, (cl_int)nrow);
   kernel.setArg(1, (cl_int)ncol);
-  kernel.setArg(2, static_cast<const float*>(in->mutable_data()));
+  kernel.setArg(2, static_cast<const float*>(in->data()));
   kernel.setArg(3, static_cast<float*>(out->mutable_data()));
 
   ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(nrow, ncol));
@@ -1041,7 +1041,7 @@ void SumRows<float, lang::Opencl>(const size_t nrow, const size_t ncol, const Bl
   std::string kname = "clkernel_sumrow";
   auto kernel = ctx->kernels->at(kname);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
+  cl::Buffer inbuf = *(static_cast<const cl::Buffer*>(in->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
 
   kernel.setArg(0, (cl_int)nrow);

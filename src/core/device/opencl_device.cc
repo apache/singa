@@ -30,7 +30,8 @@ using std::string;
 
 namespace singa {
 
-const string OpenclDevice::cl_src_path = "../src/core/tensor";
+const string OpenclDevice::cl_tensor_math_src_path = "../src/core/tensor";
+const string OpenclDevice::cl_layer_src_path = "../src/model/layer";
 
 OpenclDevice::OpenclDevice(int id, int num_executors)
 	: Device(id, num_executors) {
@@ -56,7 +57,8 @@ OpenclDevice::OpenclDevice(int id, int num_executors)
   this->cmdq = cl::CommandQueue(ocl_ctx, this_device, CL_QUEUE_PROFILING_ENABLE, &status);
   OCL_CHECK(status, "Failed to create a command queue!");
 
-  BuildPrograms();
+  BuildPrograms(cl_tensor_math_src_path);
+  BuildPrograms(cl_layer_src_path);
 
   ctx_.kernels = kernels;
   ctx_.ocl_cmdq = cmdq;
@@ -113,15 +115,16 @@ void OpenclDevice::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                                   CopyDirection direction, int dst_offset, int src_offset) {
   // Pointers must be valid.
   if (!dst || !src) return;
+  
+  cl_int status = CL_SUCCESS;
 
-  CopyToFrom(dst->mutable_data(), src->data(), nBytes, direction);
+  cl::Buffer src_buf = *(static_cast<cl::Buffer*>(src->mutable_data()));
+  cl::Buffer dst_buf = *(static_cast<cl::Buffer*>(dst->mutable_data()));
+
+  status = this->cmdq.enqueueCopyBuffer(src_buf, dst_buf, src_offset, dst_offset, nBytes, nullptr);
+  OCL_CHECK(status, "Unable to copy buffer at offset!");
 }
 
-/*
-void OpenclDevice::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes, size_t dst_offset) {
-  CopyToFrom(dst->mutable_data(), src, 4, kHostToDevice);
-}
-*/
 
 void OpenclDevice::BuildPrograms(const std::string &kdir) {
   cl_int status = CL_SUCCESS;

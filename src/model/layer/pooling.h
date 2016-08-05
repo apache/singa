@@ -44,16 +44,19 @@ class Pooling : public Layer {
                                                    const Tensor& grad) override;
 
   void ForwardMaxPooling(const float* bottom, const int num, const int channels,
-                         const int height, const int width, const int kernel_h,
-                         const int kernel_w, const int pad_h, const int pad_w,
-                         const int stride_h, const int stride_w, float* top,
-                         float* mask);
+                         const int height, const int width,
+                         const int pooled_h, const int pooled_w,
+                         const int kernel_h, const int kernel_w,
+                         const int pad_h, const int pad_w,
+                         const int stride_h, const int stride_w,
+                         float* top, float* mask);
 
   void BackwardMaxPooling(const float* top, const float* mask, const int num,
                           const int channels, const int height, const int width,
+                          const int pooled_h, const int pooled_w,
                           const int kernel_h, const int kernel_w,
-                          const int pad_h, const int pad_w, const int stride_h,
-                          const int stride_w, float* bottom);
+                          const int pad_h, const int pad_w,
+                          const int stride_h, const int stride_w, float* bottom);
 
   void ForwardAvgPooling(const float* bottom, const int num, const int channels,
                          const int height, const int width, const int kernel_h,

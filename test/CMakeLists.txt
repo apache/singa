@@ -15,6 +15,8 @@ LIST(REMOVE_ITEM singa_test_source "singa/test_ep.cc")
 IF(NOT USE_OPENCL)
     MESSAGE(STATUS "Skipping OpenCL tests")
     LIST(REMOVE_ITEM singa_test_source "singa/test_opencl.cc")
+    LIST(REMOVE_ITEM singa_test_source "singa/test_opencl_convolution.cc")
+    LIST(REMOVE_ITEM singa_test_source "singa/test_opencl_pooling.cc")
 ENDIF()
 
 

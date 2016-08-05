@@ -78,7 +78,7 @@ class Device {
   }
 
   /// Copy data within or across devices.
-  void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
+  virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                       CopyDirection direction, int dst_offset, int src_offset);
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
@@ -232,8 +232,12 @@ public:
   void SetRandSeed(unsigned seed) override;
 
   void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-                      CopyDirection direction, int dst_offset = 0,
-                      int src_offset = 0);
+                      CopyDirection direction, int dst_offset,
+                      int src_offset) override;
+
+  /// Searches the given paths for all .cl files and builds
+  /// OpenCL programs, then stores them in the Kernels map.
+  void BuildPrograms(const std::string &kdir);
 /*
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes = 0,
                            size_t dst_offset = 0) override;*/
@@ -256,10 +260,6 @@ protected:
 
   /// A list of kernels that has been compiled on this device.
   std::shared_ptr<std::unordered_map<std::string, cl::Kernel>> kernels;
-
-  /// Searches the given paths for all .cl files and builds
-  /// OpenCL programs, then stores them in the Kernels map.
-  void BuildPrograms(const std::string &kdir = cl_src_path);
 
 // Overridden, inherited methods.
 
@@ -294,7 +294,8 @@ private:
   /// dst: a pointer to the new cl::Buffer object to copy the data into.
   void CopyDeviceBuffer(cl::Buffer* dst, const cl::Buffer* src, const size_t size);
 
-  static const std::string cl_src_path;
+  static const std::string cl_tensor_math_src_path;
+  static const std::string cl_layer_src_path;
 };
 #endif  // USE_OPENCL
 
