@@ -71,7 +71,7 @@ void CppMemPool::RsetMemPool(size_t init_size_mb, size_t uint_size_kb)	{
 		struct _Uint* pCurUint = pAllocatedMemUint;
 		for(size_t idx = 0; idx < numAllocatedUintsInPool; idx++) {
 			Block* pOldBlk = pCurUint->pBlk;
-			const void* pData = pOldBlk->data();
+			void* pData = pOldBlk->mutable_data();
 			pNewPool->Malloc(&pOldBlk, pOldBlk->size(), false);
 			size_t copySize = pOldBlk->size() - pOldBlk->offset();
 			memcpy(pOldBlk->mutable_data(),pData,copySize);

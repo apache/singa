@@ -100,7 +100,7 @@ class Device {
     return lang_;
   }
 
-  std::shared_ptr<Device> host() const { return host_;}
+  virtual std::shared_ptr<Device> host() const { return host_;}
 
   Context* context(int k) {
     return &ctx_;
@@ -140,6 +140,9 @@ class Device {
   Context ctx_;
 };
 
+/// a singleton CppDevice as the host for all devices.
+extern std::shared_ptr<Device> defaultDevice;
+
 /// Represent a CPU device which may have multiple threads/executors.
 /// It runs cpp code.
 class CppCPU : public Device {
@@ -147,6 +150,7 @@ class CppCPU : public Device {
   ~CppCPU() {};
   CppCPU();
 
+  std::shared_ptr<Device> host() const override { return defaultDevice;}
   void SetRandSeed(unsigned seed) override;
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
@@ -160,9 +164,6 @@ class CppCPU : public Device {
   /// Free cpu memory.
   void Free(void* ptr) override;
 };
-
-/// a singleton CppDevice as the host for all devices.
-extern std::shared_ptr<Device> defaultDevice;
 
 
 // Implement Device using OpenCL libs.

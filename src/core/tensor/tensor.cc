@@ -34,22 +34,30 @@ Tensor::Tensor() { device_ = defaultDevice; }
 
 Tensor::Tensor(const Shape &shape, DataType dtype)
     : data_type_(dtype), device_(defaultDevice), shape_(shape) {
-  //device_ = defaultDevice;
-  block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
+  device_ = defaultDevice;
+  size_t size = Product(shape_) * SizeOf(data_type_);
+  if (size)
+    block_ = device_->NewBlock(size);
 }
 Tensor::Tensor(Shape &&shape, DataType dtype)
     : data_type_(dtype), device_(defaultDevice), shape_(shape) {
-  //device_ = defaultDevice;
-  block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
+  device_ = defaultDevice;
+  size_t size = Product(shape_) * SizeOf(data_type_);
+  if (size)
+    block_ = device_->NewBlock(size);
 }
 Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
                DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
-  block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
+  size_t size = Product(shape_) * SizeOf(data_type_);
+  if (size)
+    block_ = device_->NewBlock(size);
 }
 Tensor::Tensor(Shape &&shape, std::shared_ptr<Device> device, DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
-  block_ = device_->NewBlock(Product(shape_) * SizeOf(data_type_));
+  size_t size = Product(shape_) * SizeOf(data_type_);
+  if (size)
+    block_ = device_->NewBlock(size);
 }
 Tensor::Tensor(const Tensor &in)
     : transpose_(in.transpose_),
@@ -57,7 +65,8 @@ Tensor::Tensor(const Tensor &in)
       device_(in.device_),
       block_(in.block()),
       shape_(in.shape_) {
-  block_->IncRefCount();
+  if (block_ != nullptr)
+    block_->IncRefCount();
 }
 
 Tensor::Tensor(Tensor &&in)
@@ -118,7 +127,8 @@ void Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is very strict. May compare against device ID?
   if (device_ != dst) {
     Tensor tmp(shape_, dst, data_type_);
-    if (block_ != nullptr && Size()) tmp.CopyData(*this);
+    if (block_ != nullptr && Size() && block_->initialized())
+      tmp.CopyData(*this);
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = tmp.block_;

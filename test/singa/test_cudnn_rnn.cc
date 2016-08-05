@@ -26,187 +26,154 @@
 
 using singa::CudnnRNN;
 using singa::Shape;
-TEST(CudnnRNN, Setup) {
+using singa::Tensor;
+class TestCudnnRNN : public ::testing::Test {
+  protected:
+    virtual void SetUp() {
+      singa::RNNConf *rnnconf = conf.mutable_rnn_conf();
+      rnnconf->set_hidden_dim(hidden_dim);
+      rnnconf->set_num_stacks(1);
+      rnnconf->set_dropout(1);
+      rnnconf->set_input_mode("linear");
+      rnnconf->set_direction("unidirectional");
+      rnnconf->set_rnn_mode("tanh");
+    }
+    singa::LayerConf conf;
+    size_t hidden_dim = 4;
+};
+
+TEST_F(TestCudnnRNN, Setup) {
   CudnnRNN rnn;
   EXPECT_EQ("CudnnRNN", rnn.layer_type());
-
-  singa::LayerConf conf;
-  singa::RNNConf *rnnconf = conf.mutable_rnn_conf();
-  rnnconf->set_hiddensize(2);
-  rnnconf->set_numlayers(1);
-  rnnconf->set_dropout(0); 
-  rnnconf->set_inputmode("cudnn_linear_input");
-  rnnconf->set_direction("cudnn_undirectional");
-  rnnconf->set_mode("cudnn_rnn_tanh");
-  // MB
-  rnnconf->set_workspace_byte_limit(256);
-  rnn.Setup(Shape{4, 1, 2}, conf);
-
-  EXPECT_EQ(2u, rnn.hiddenSize());
-  EXPECT_EQ(1u, rnn.numLayers());
-  EXPECT_EQ(0u, rnn.dropout());
-  EXPECT_EQ("cudnn_linear_input", rnn.inputMode());
-  EXPECT_EQ("cudnn_undirectional", rnn.direction());
-  EXPECT_EQ("cudnn_rnn_tanh", rnn.mode());
-  EXPECT_EQ(256u << 20, rnn.workspace_byte_limit());
+  rnn.Setup(Shape{2}, conf);
+  auto weight = rnn.param_values().at(0);
+  EXPECT_EQ(weight.Size(), hidden_dim * (2 + hidden_dim + 2));
 }
 
-TEST(CudnnRNN, Forward) {
+TEST_F(TestCudnnRNN, Forward) {
   auto cuda = std::make_shared<singa::CudaGPU>();
   const size_t seqLength = 4, batchsize = 1, dim = 2;
-  const size_t numLayers = 1, hiddensize = 2, numDirections = 1;
   const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
                                           1.0f, 1.0f, 1.0f};
-  singa::Tensor in(singa::Shape{seqLength, batchsize, dim}, cuda);
-  in.CopyDataFromHostPtr(x, seqLength * batchsize * dim);
 
+  vector<Tensor> inputs;
+  for (size_t i = 0; i < seqLength; i++) {
+    Tensor t(Shape{batchsize, dim}, cuda);
+    t.CopyDataFromHostPtr(x + i * t.Size(), t.Size());
+    inputs.push_back(t);
+  }
 
-  
-  const float hx_data[numLayers * batchsize * hiddensize * numDirections] = {1.0f, 1.0f};
-  singa::Tensor hx(singa::Shape{numLayers, batchsize, hiddensize * numDirections}, cuda);
-  hx.CopyDataFromHostPtr(hx_data, numLayers * batchsize * hiddensize * numDirections);
+  singa::Tensor hx;
+  inputs.push_back(hx);
 
-  const float cx_data[numLayers * batchsize * hiddensize * numDirections] = {1.0f, 1.0f};
-  singa::Tensor cx(singa::Shape{numLayers, batchsize, hiddensize * numDirections}, cuda);
-  cx.CopyDataFromHostPtr(cx_data, numLayers * batchsize * hiddensize * numDirections);
-  
   CudnnRNN rnn;
-  
-  singa::LayerConf conf;
-  singa::RNNConf *rnnconf = conf.mutable_rnn_conf();
-  rnnconf->set_hiddensize(2);
-  rnnconf->set_numlayers(1);
-  rnnconf->set_dropout(0);
-  rnnconf->set_inputmode("cudnn_linear_input");
-  rnnconf->set_direction("cudnn_undirectional");
-  rnnconf->set_mode("cudnn_rnn_tanh");
-  // MB
-  rnnconf->set_workspace_byte_limit(256);
-  rnn.Setup(Shape{4, 1, 2}, conf);
- 
-  
-  size_t weightSize = rnn.weightSize();
-  float we[weightSize];
-  for (size_t i = 0; i < weightSize; i++)
-    we[i] = 1.0f;
-  singa::Tensor weight(singa::Shape{weightSize, 1, 1}, cuda);
-  weight.CopyDataFromHostPtr(we, weightSize);
-  rnn.set_weight(weight);
- 
-  vector<singa::Tensor> input_array;
-  input_array.push_back(in);
-  input_array.push_back(hx);
-  input_array.push_back(cx);
-  const auto ret = rnn.Forward(singa::kTrain, input_array);
-  // singa::CppCPU host(0, 1);
-  singa::Tensor out1 = ret[0];
-  out1.ToHost();
-  const float *outptr1 = out1.data<float>();
-  EXPECT_EQ(8u, out1.Size());
-  EXPECT_NEAR(1.0f, outptr1[0], 0.0001); // tanh 6
-  EXPECT_NEAR(1.0f, outptr1[1], 0.0001);
-  EXPECT_NEAR(1.0f, outptr1[2], 0.0001);
-  EXPECT_NEAR(1.0f, outptr1[3], 0.0001);
-  EXPECT_NEAR(1.0f, outptr1[4], 0.0001);
-  EXPECT_NEAR(1.0f, outptr1[5], 0.0001);
-  EXPECT_NEAR(1.0f, outptr1[6], 0.0001);
-  EXPECT_NEAR(1.0f, outptr1[7], 0.0001);
+  rnn.Setup(Shape{dim}, conf);
+  rnn.ToDevice(cuda);
 
-  singa::Tensor hy1 = ret[1];
-  hy1.ToHost();
-  const float *hyptr1 = hy1.data<float>();
-  EXPECT_EQ(2u, hy1.Size());
-  EXPECT_NEAR(1.0f, hyptr1[0], 0.0001);
-  EXPECT_NEAR(1.0f, hyptr1[1], 0.0001);
+  auto weight = rnn.param_values().at(0);
+  size_t weightSize = weight.Size();
+  float we[weightSize];
+  float wvalue = 0.1f;
+  for (size_t i = 0; i < weightSize; i++)
+    we[i] = wvalue;
+  weight.CopyDataFromHostPtr(we, weightSize);
+
+  const auto ret = rnn.Forward(singa::kEval, inputs);
+  EXPECT_EQ(ret.size(), seqLength + 1);
+  vector<float> hxptr(hidden_dim, 0.0f);
+  for (size_t i = 0; i < seqLength; i++) {
+    auto y = ret[i];
+    y.ToHost();
+    auto yptr = y.data<float>();
+    vector<float> tmp;
+    for (size_t j = 0; j < hidden_dim; j++) {
+      float ty = 0;
+      for (size_t k = 0; k < dim; k++) {
+        ty += x[i * dim + k] * wvalue;
+      }
+      ty += wvalue;
+      for (size_t k = 0; k < hidden_dim; k++) {
+        ty += hxptr[k] * wvalue;
+      }
+      ty += wvalue;
+      ty = tanh(ty);
+      EXPECT_NEAR(ty, yptr[j], 1e-4);
+      tmp.push_back(ty);
+    }
+    std::copy(tmp.begin(), tmp.end(), hxptr.begin());
+  }
 }
 
-TEST(CudnnRNN, Backward) {
-  // src_data
+TEST_F(TestCudnnRNN, Backward) {
   auto cuda = std::make_shared<singa::CudaGPU>();
   const size_t seqLength = 4, batchsize = 1, dim = 2;
-  const size_t numLayers = 1, hiddensize = 2, numDirections = 1;
   const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
                                           1.0f, 1.0f, 1.0f};
-  singa::Tensor in(singa::Shape{seqLength, batchsize, dim}, cuda);
-  in.CopyDataFromHostPtr(x, seqLength * batchsize * dim);
 
-  const float hx_data[numLayers * batchsize * hiddensize * numDirections] = {1.0f, 1.0f};
-  singa::Tensor hx(singa::Shape{numLayers, batchsize, hiddensize * numDirections}, cuda);
-  hx.CopyDataFromHostPtr(hx_data, numLayers * batchsize * hiddensize * numDirections);
+  vector<Tensor> inputs;
+  for (size_t i = 0; i < seqLength; i++) {
+    Tensor t(Shape{batchsize, dim}, cuda);
+    t.CopyDataFromHostPtr(x + i * t.Size(), t.Size());
+    inputs.push_back(t);
+  }
 
-  const float cx_data[numLayers * batchsize * hiddensize * numDirections] = {1.0f, 1.0f};
-  singa::Tensor cx(singa::Shape{numLayers, batchsize, hiddensize * numDirections}, cuda);
-  cx.CopyDataFromHostPtr(cx_data, numLayers * batchsize * hiddensize * numDirections);
+  singa::Tensor hx;
+  inputs.push_back(hx);
 
   CudnnRNN rnn;
+  rnn.Setup(Shape{dim}, conf);
+  rnn.ToDevice(cuda);
 
-  singa::LayerConf conf;
-  singa::RNNConf *rnnconf = conf.mutable_rnn_conf();
-  rnnconf->set_hiddensize(2);
-  rnnconf->set_numlayers(1);
-  rnnconf->set_dropout(0);
-  rnnconf->set_inputmode("cudnn_linear_input");
-  rnnconf->set_direction("cudnn_undirectional");
-  rnnconf->set_mode("cudnn_rnn_tanh");
-  // MB
-  rnnconf->set_workspace_byte_limit(256);
-  rnn.Setup(Shape{4, 1, 2}, conf);
-
-  size_t weightSize = rnn.weightSize();
+  auto weight = rnn.param_values().at(0);
+  size_t weightSize = weight.Size();
   float we[weightSize];
+  float wvalue = 0.1f;
   for (size_t i = 0; i < weightSize; i++)
-    we[i] = 1.0f;
-  singa::Tensor weight(singa::Shape{weightSize, 1, 1}, cuda);
+    we[i] = wvalue;
   weight.CopyDataFromHostPtr(we, weightSize);
-  rnn.set_weight(weight);
 
+  const auto outs = rnn.Forward(singa::kTrain, inputs);
 
-  vector<singa::Tensor> input_array;
-  input_array.push_back(in);
-  input_array.push_back(hx);
-  input_array.push_back(cx);
-  const auto ret = rnn.Forward(singa::kTrain, input_array);
-
-  // grad
-  const float dy[seqLength * batchsize * hiddensize * numDirections] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
-  singa::Tensor grad(singa::Shape{seqLength, batchsize, hiddensize * numDirections},
-                     cuda);
-  grad.CopyDataFromHostPtr(dy, seqLength * batchsize * hiddensize * numDirections);
-
-  const float dhy_data[numLayers * batchsize * hiddensize * numDirections] = {1.0f, 1.0f};
-  singa::Tensor dhy(singa::Shape{numLayers, batchsize, hiddensize * numDirections},
-                     cuda);
-  dhy.CopyDataFromHostPtr(dhy_data, numLayers * batchsize * hiddensize * numDirections);
-
-  const float dcy_data[numLayers * batchsize * hiddensize * numDirections] = {1.0f, 1.0f};
-  singa::Tensor dcy(singa::Shape{numLayers, batchsize, hiddensize * numDirections},
-                     cuda);
-  dcy.CopyDataFromHostPtr(dcy_data, numLayers * batchsize * hiddensize * numDirections);
-
-  vector<singa::Tensor> grad_array;
-  grad_array.push_back(grad);
-  grad_array.push_back(dhy);
-  grad_array.push_back(dcy);
-  const auto ret_back = rnn.Backward(singa::kTrain, grad_array);
-  // singa::CppCPU host(0, 1);
-  singa::Tensor in_grad = ret_back.first[0];
-  in_grad.ToHost();
-  const float *dx = in_grad.data<float>();
-  EXPECT_EQ(8u, in_grad.Size());
-  EXPECT_NEAR(0.14, dx[0], 0.0001);
-  EXPECT_NEAR(0.14, dx[1], 0.0001);
-  EXPECT_NEAR(0.1596, dx[2], 0.0001);
-  EXPECT_NEAR(0.1596, dx[3], 0.0001);
-  EXPECT_NEAR(0.1623, dx[4], 0.0001);
-  EXPECT_NEAR(0.1623, dx[5], 0.0001);
-  EXPECT_NEAR(0.1627, dx[6], 0.0001);
-  EXPECT_NEAR(0.1627, dx[7], 0.0001);
-
-  singa::Tensor dhx_grad = ret_back.first[1];
-  dhx_grad.ToHost();
-  const float *dhx = dhx_grad.data<float>();
-  EXPECT_EQ(2u, dhx_grad.Size());
-  EXPECT_NEAR(0.1627, dhx[0], 0.0001);
-  EXPECT_NEAR(0.1627, dhx[1], 0.0001);
+  float dyptr[seqLength * batchsize * hidden_dim];
+  for (size_t i = 0; i < seqLength * batchsize * hidden_dim; i++)
+    dyptr[i] = i * 0.1f;
+  vector<Tensor> grads;
+  for (size_t i = 0; i < seqLength; i++) {
+    Tensor dy(Shape{batchsize, hidden_dim}, cuda);
+    dy.CopyDataFromHostPtr(dyptr + i * dy.Size(), dy.Size());
+    grads.push_back(dy);
+  }
+  Tensor dhy;
+  grads.push_back(dhy);
+  vector<float> dhyptr(hidden_dim, 0.0f);
+  const auto ret = rnn.Backward(singa::kTrain, grads);
+  for (size_t i = seqLength - 1; i > 0 ; i --) {
+    auto dx = ret.first[i];
+    auto y = outs[i].Clone();
+    y.ToHost();
+    dx.ToHost();
+    auto dxptr = dx.data<float>();
+    auto yptr = y.data<float>();
+    for (size_t j = 0; j < hidden_dim; j++) {
+      dhyptr[j] += dyptr[i * hidden_dim + j];
+      dhyptr[j] *= 1 - yptr[j] * yptr[j];
+    }
+    for (size_t k = 0; k < dim; k++) {
+      float tdx = 0;
+      for (size_t j = 0; j < hidden_dim; j++) {
+        tdx += dhyptr[j] * wvalue;
+      }
+      EXPECT_NEAR(tdx, dxptr[k], 1e-4);
+    }
+    vector<float> tmp;
+    for (size_t k = 0; k < hidden_dim; k++) {
+      float tdhy = 0;
+      for (size_t j = 0; j < hidden_dim; j++) {
+        tdhy += dhyptr[j] * wvalue;
+      }
+      tmp.push_back(tdhy);
+    }
+    std::copy(tmp.begin(), tmp.end(), dhyptr.begin());
+  }
 }
 #endif  // USE_CUDNN

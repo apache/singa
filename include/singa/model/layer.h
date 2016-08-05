@@ -158,12 +158,10 @@ class Layer {
   /// Move the layer (including its parameters and other internal Tensor) onto
   /// the given device
   virtual void ToDevice(std::shared_ptr<Device> device) {
-    //for (auto p : param_values_) p->ToDevice(device);
   }
 
   /// Set the data type of Tensor in this layer.
   virtual void AsType(DataType dtype) {
-    //for (auto p : param_values_) p->AsType(dtype);
   }
 
   /// Serialize the layer info (including params) into a LayerConf proto message
@@ -202,12 +200,6 @@ class Layer {
     return vector<Tensor>{};
   }
 
-  /// Return a pointer to the 'i'-th parameter Tensor.
-  Tensor param_value(size_t i) {
-    CHECK_LT(i, param_values_.size());
-    return param_values().at(i);
-  }
-
   /// Return names of all parmaeters.
   const vector<string> param_names() {
     vector<string> pname;
@@ -227,7 +219,6 @@ class Layer {
 
  protected:
   std::string name_;
-  vector<Tensor*> param_values_;
   vector<ParamSpec> param_specs_;
 };
 

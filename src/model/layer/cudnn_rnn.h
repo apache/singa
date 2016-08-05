@@ -20,6 +20,7 @@
 #define SRC_MODEL_LAYER_CUDNN_RNN_H_
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
+#if CUDNN_VERSION_MAJOR >= 5
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,45 +42,46 @@ class CudnnRNN : public RNN {
   const std::string layer_type() const override { return "CudnnRNN"; }
 
   const vector<Tensor> Forward(int flag, const vector<Tensor>& inputs) override;
-  const std::pair<vector<Tensor>, vector<Tensor>> Backward(int flag, const vector<Tensor>& grads) override;
-
-  /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf &conf) override;
+  const std::pair<vector<Tensor>, vector<Tensor>> Backward(
+      int flag, const vector<Tensor>& grads) override;
 
   void ToDevice(std::shared_ptr<Device> device) override;
 
-  size_t workspace_byte_limit() { return workspace_byte_limit_; }
-  // string prefer() { return prefer_; }
-  string inputMode() const { return inputMode_; }
-  string direction() const { return direction_; }
-  string mode() const { return mode_; }
+  void SetRNNDescriptor(shared_ptr<Device> dev);
+  void ResetHiddenAndCellDescriptors(size_t batch_size);
+  void DestroyIODescriptors();
+  void UpdateIODescriptors(size_t num, const vector<Tensor>& inputs);
+  void UpdateSpaces(size_t num, shared_ptr<Device> dev);
+  void UpdateStates(size_t num, const vector<Tensor>& inputs);
+  Tensor MergeInputs(size_t num, const vector<Tensor>& in);
+  vector<Tensor> SplitOutput(size_t num, size_t dim, const vector<Tensor>& in,
+                             const Tensor output);
 
  protected:
-  /// Init cudnn related data structures.
-  void InitCudnn(const Tensor& input);
-
- protected:
-  bool has_init_cudnn_ = false;
   cudnnTensorDescriptor_t* x_descs_ = nullptr;
+  cudnnTensorDescriptor_t* dx_descs_ = nullptr;
   cudnnTensorDescriptor_t* y_descs_ = nullptr;
+  cudnnTensorDescriptor_t* dy_descs_ = nullptr;
   cudnnTensorDescriptor_t hx_desc_ = nullptr;
+  cudnnTensorDescriptor_t dhx_desc_ = nullptr;
   cudnnTensorDescriptor_t cx_desc_ = nullptr;
+  cudnnTensorDescriptor_t dcx_desc_ = nullptr;
   cudnnTensorDescriptor_t hy_desc_ = nullptr;
+  cudnnTensorDescriptor_t dhy_desc_ = nullptr;
   cudnnTensorDescriptor_t cy_desc_ = nullptr;
+  cudnnTensorDescriptor_t dcy_desc_ = nullptr;
   cudnnFilterDescriptor_t weight_desc_ = nullptr;
+  cudnnFilterDescriptor_t dweight_desc_ = nullptr;
   cudnnRNNDescriptor_t rnn_desc_ = nullptr;
   cudnnDropoutDescriptor_t dropout_desc_ = nullptr;
-  size_t workspace_byte_limit_, workspace_count_;
-  size_t ReserveSize_;
+  cudnnDataType_t dtype_ = CUDNN_DATA_FLOAT;
   Tensor workspace_;
-  string inputMode_;
-  string direction_;
-  string mode_;
-  Tensor reserve_;
-  Tensor dropoutStates_;
+  Tensor reserve_space_;
+  Tensor dropout_state_;
 };
 
 }  // namespace singa
 
+#endif  // CUDNN_VERSION_MAJOR >= 5
 #endif  // USE_CUDNN
 #endif  // SRC_MODEL_LAYER_CUDNN_RNN_H_

@@ -341,7 +341,7 @@ void SoftmaxCrossEntropyBwd(const size_t batchsize, const size_t dim,
 
 template <typename DType, typename Lang>
 void RowMax(const size_t nrow, const size_t ncol, const Block *in,
-    const Block *ret, Context* ctx) {
+    Block *ret, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 // **************************************
