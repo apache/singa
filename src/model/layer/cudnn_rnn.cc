@@ -30,12 +30,6 @@ CudnnRNN::~CudnnRNN() {
     CUDNN_CHECK(cudnnDestroyDropoutDescriptor(dropout_desc_));
   if (rnn_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyRNNDescriptor(rnn_desc_));
-  if (x_descs_ != nullptr)
-    for (size_t i = 0; i < seqLength_; i++) 
-      CUDNN_CHECK(cudnnDestroyTensorDescriptor(x_descs_[i]));
-  if (y_descs_ != nullptr)
-    for (size_t i = 0; i < seqLength_; i++) 
-      CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_descs_[i]));
   if (hx_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(hx_desc_));
   if (hy_desc_ != nullptr)
@@ -44,284 +38,392 @@ CudnnRNN::~CudnnRNN() {
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(cx_desc_));
   if (cy_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(cy_desc_));
-}
-
-void CudnnRNN::Setup(const Shape& in_sample, const LayerConf &conf) {
-  RNN::Setup(in_sample, conf);
-  RNNConf rnn_conf = conf.rnn_conf();
-  // convert MB to bytes
-  workspace_byte_limit_ = rnn_conf.workspace_byte_limit() << 20;
-  inputMode_ = ToLowerCase(rnn_conf.inputmode());
-  direction_ = ToLowerCase(rnn_conf.direction());
-  mode_ = ToLowerCase(rnn_conf.mode());
-  CHECK(inputMode_ == "cudnn_linear_input" || inputMode_ == "cudnn_skip_input")
-      << "CudnnRNN only supports two inputmodes: cudnn_linear_input, "
-         "cudnn_skip_input";
-  CHECK(direction_ == "cudnn_undirectional" || direction_ == "cudnn_bidirectional")
-      << "CudnnRNN only supports two directions: cudnn_undirectional, "
-         "cudnn_bidirectional";
-  CHECK(mode_ == "cudnn_rnn_relu" || mode_ == "cudnn_rnn_tanh" ||
-        mode_ == "cudnn_lstm" || mode_ == "cudnn_gru")
-      << "CudnnRNN only supports four modes: cudnn_rnn_relu, "
-         "cudnn_rnn_tanh, cudnn_lstm and cudnn_gru";
-  // the first constant (4) is the size of float
-  // the second constant (2, 8, 6) is the number of sets of params
-  if (mode_ == "cudnn_rnn_relu" || mode_ == "cudnn_rnn_tanh")
-    weightSize_ = 4 * 2 * (hiddenSize_ * in_sample[2] + hiddenSize_);
-  else if (mode_ == "cudnn_lstm")
-    weightSize_ = 4 * 8 * (hiddenSize_ * in_sample[2] + hiddenSize_);
-  else if (mode_ == "cudnn_gru")
-    weightSize_ = 4 * 6 * (hiddenSize_ * in_sample[2] + hiddenSize_);
-  if (direction_ == "cudnn_bidirectional")
-    weightSize_ = weightSize_ * 2;
+  if (dhx_desc_ != nullptr)
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dhx_desc_));
+  if (dhy_desc_ != nullptr)
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dhy_desc_));
+  if (dcx_desc_ != nullptr)
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dcx_desc_));
+  if (dcy_desc_ != nullptr)
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(dcy_desc_));
+  DestroyIODescriptors();
 }
 
 void CudnnRNN::ToDevice(std::shared_ptr<Device> device) {
-  weight_.ToDevice(device);
+  RNN::ToDevice(device);
   workspace_.ToDevice(device);
+  reserve_space_.ToDevice(device);
 }
 
-void CudnnRNN::InitCudnn(const Tensor &input) {
-  CHECK(!has_init_cudnn_);
-  DataType dtype = input.data_type();
-  auto dev = input.device();
-  Context *ctx = dev->context(0);
-  seqLength_ = input.shape(0);
-  size_t batchsize = input.shape(1); /*(seqLength, minibatch, inputSize) !!! */
-  size_t inputSize = input.shape(2);
-  size_t numDirections;
-  if (direction_ == "cudnn_undirectional")
-    numDirections = 1;
-  else 
-    numDirections = 2;
-  x_descs_ = new cudnnTensorDescriptor_t[seqLength_];
-  y_descs_ = new cudnnTensorDescriptor_t[seqLength_];
-  for (size_t i = 0; i < seqLength_; i++)
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_descs_[i]));
-  for (size_t i = 0; i < seqLength_; i++)
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_descs_[i]));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&hx_desc_));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&cx_desc_));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&hy_desc_));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&cy_desc_));
-  CUDNN_CHECK(cudnnCreateFilterDescriptor(&weight_desc_));
+void CudnnRNN::DestroyIODescriptors() {
+  if (x_descs_ != nullptr) {
+    for (size_t i = 0; i < seq_length_; i++) {
+      CUDNN_CHECK(cudnnDestroyTensorDescriptor(x_descs_[i]));
+      CUDNN_CHECK(cudnnDestroyTensorDescriptor(dx_descs_[i]));
+    }
+    delete [] x_descs_;
+    delete [] dx_descs_;
+  }
+  if (y_descs_ != nullptr) {
+    for (size_t i = 0; i < seq_length_; i++) {
+      CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_descs_[i]));
+      CUDNN_CHECK(cudnnDestroyTensorDescriptor(dy_descs_[i]));
+    }
+    delete [] y_descs_;
+    delete [] dy_descs_;
+  }
+}
+
+void CudnnRNN::UpdateIODescriptors(size_t len, const vector<Tensor> &inputs) {
+  bool reset = false;
+  if (seq_length_ < len) {
+    DestroyIODescriptors();
+    x_descs_ = new cudnnTensorDescriptor_t[len];
+    dx_descs_ = new cudnnTensorDescriptor_t[len];
+    y_descs_ = new cudnnTensorDescriptor_t[len];
+    dy_descs_ = new cudnnTensorDescriptor_t[len];
+    for (size_t i = 0; i < len; i++) {
+      CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_descs_[i]));
+      CUDNN_CHECK(cudnnCreateTensorDescriptor(&dx_descs_[i]));
+      CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_descs_[i]));
+      CUDNN_CHECK(cudnnCreateTensorDescriptor(&dy_descs_[i]));
+    }
+    reset = true;
+  }
+
+  for (size_t i = 0; i < len; i++) {
+    CHECK_EQ(inputs[i].shape(1), input_dim_);
+    if (inputs[i].shape(0) != batch_size_ || reset) {
+      int d[3] = {1, 1, 1}, s[3] = {1, 1, 1};
+      d[0] = static_cast<int>(inputs[i].shape(0));
+      CHECK_GT(d[0], 0);
+      d[1] = static_cast<int>(inputs[i].shape(1));
+      s[0] = d[1] * d[2];
+      s[1] = d[2];
+      CUDNN_CHECK(cudnnSetTensorNdDescriptor(x_descs_[i], dtype_, 3, d, s));
+      CUDNN_CHECK(cudnnSetTensorNdDescriptor(dx_descs_[i], dtype_, 3, d, s));
+
+      d[0] = static_cast<int>(inputs[i].shape(0));
+      d[1] = static_cast<int>(hidden_dim_ * num_directions_);
+      s[0] = d[1] * d[2];
+      s[1] = d[2];
+      CUDNN_CHECK(cudnnSetTensorNdDescriptor(y_descs_[i], dtype_, 3, d, s));
+      CUDNN_CHECK(cudnnSetTensorNdDescriptor(dy_descs_[i], dtype_, 3, d, s));
+    }
+  }
+}
+
+// must be called after setting IO descriptors
+void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
+  auto ctx = dev->context(0);
   CUDNN_CHECK(cudnnCreateDropoutDescriptor(&dropout_desc_));
+  size_t state_size;
+  CUDNN_CHECK(cudnnDropoutGetStatesSize(ctx->cudnn_handle, &state_size));
+  dropout_state_ = Tensor(Shape{state_size}, dev, kChar);
+  CUDNN_CHECK(cudnnSetDropoutDescriptor(
+      dropout_desc_, ctx->cudnn_handle, dropout_,
+      dropout_state_.block()->mutable_data(), state_size, seed_));
+
   CUDNN_CHECK(cudnnCreateRNNDescriptor(&rnn_desc_));
+  cudnnRNNInputMode_t input_mode;
+  if (input_mode_ == "linear")
+    input_mode = CUDNN_LINEAR_INPUT;
+  else if (input_mode_ == "skip")
+    input_mode = CUDNN_SKIP_INPUT;
 
-
-  int dimA[3] = {batchsize, inputSize, 1};
-  int strideA[3] = {dimA[2] * dimA[1], dimA[2], 1};
-  for (size_t i = 0; i < seqLength_; i++){
-    dimA[0] = batchsize;
-    dimA[1] = inputSize;
-    dimA[2] = 1;
-    strideA[0] = dimA[2] * dimA[1];
-    strideA[1] = dimA[2];
-    strideA[2] = 1;
-    CUDNN_CHECK(cudnnSetTensorNdDescriptor(x_descs_[i], GetCudnnDataType(dtype), 3,
-                                         dimA, strideA));
-    dimA[0] = batchsize;
-    dimA[1] = hiddenSize_ * numDirections;
-    dimA[2] = 1;
-    strideA[0] = dimA[2] * dimA[1];
-    strideA[1] = dimA[2];
-    strideA[2] = 1;
-    CUDNN_CHECK(cudnnSetTensorNdDescriptor(y_descs_[i], GetCudnnDataType(dtype), 3,
-                                         dimA, strideA));
-  }
-  
-  dimA[0] = numLayers_;
-  dimA[1] = batchsize;
-  dimA[2] = hiddenSize_ * numDirections;
-  strideA[0] = dimA[2] * dimA[1];
-  strideA[1] = dimA[2];
-  strideA[2] = 1;
-  CUDNN_CHECK(cudnnSetTensorNdDescriptor(hx_desc_, GetCudnnDataType(dtype), 3,
-                                         dimA, strideA));
-  CUDNN_CHECK(cudnnSetTensorNdDescriptor(cx_desc_, GetCudnnDataType(dtype), 3,
-                                         dimA, strideA));
-  CUDNN_CHECK(cudnnSetTensorNdDescriptor(hy_desc_, GetCudnnDataType(dtype), 3,
-                                         dimA, strideA));
-  CUDNN_CHECK(cudnnSetTensorNdDescriptor(cy_desc_, GetCudnnDataType(dtype), 3,
-                                         dimA, strideA));
-
-  size_t dropoutStatesSize;
-  CUDNN_CHECK(cudnnDropoutGetStatesSize(ctx->cudnn_handle, &dropoutStatesSize));
-  dropoutStates_ = Tensor(Shape{dropoutStatesSize}, dev, dtype);
-  CUDNN_CHECK(cudnnSetDropoutDescriptor(dropout_desc_, ctx->cudnn_handle, dropout_, this->dropoutStates_.block()->mutable_data(), dropoutStatesSize, 0x01234567));
-  
-  cudnnRNNInputMode_t inputMode;
   cudnnDirectionMode_t direction;
-  cudnnRNNMode_t mode;
-  
-  if (inputMode_ == "cudnn_linear_input" || inputMode_ == "cudnn_skip_input"){
-    if (inputMode_ == "cudnn_linear_input")
-      inputMode = CUDNN_LINEAR_INPUT;
-    else if (inputMode_ == "cudnn_skip_input")
-      inputMode = CUDNN_SKIP_INPUT;
-  }
-  if (direction_ == "cudnn_undirectional" || direction_ == "cudnn_bidirectional"){
-    if (direction_ == "cudnn_undirectional")
-      direction = CUDNN_UNIDIRECTIONAL;
-    else if (direction_ == "cudnn_bidirectional")
-      direction = CUDNN_BIDIRECTIONAL;
-  }
-  if (mode_ == "cudnn_rnn_relu" || mode_ == "cudnn_rnn_tanh" ||
-        mode_ == "cudnn_lstm" || mode_ == "cudnn_gru"){
-    if (mode_ == "cudnn_rnn_relu")
-      mode = CUDNN_RNN_RELU;
-    else if (mode_ == "cudnn_rnn_tanh")
-      mode = CUDNN_RNN_TANH;
-    else if (mode_ == "cudnn_lstm")
-      mode = CUDNN_LSTM;
-    else if (mode_ == "cudnn_gru")
-      mode = CUDNN_GRU;
-  }
-  CUDNN_CHECK(cudnnSetRNNDescriptor(rnn_desc_, hiddenSize_, numLayers_, dropout_desc_, inputMode, direction, mode, GetCudnnDataType(dtype)));
+  if (direction_ == "unidirectional")
+    direction = CUDNN_UNIDIRECTIONAL;
+  else if (direction_ == "bidirectional")
+    direction = CUDNN_BIDIRECTIONAL;
 
-  size_t weightSize;
-  CUDNN_CHECK(cudnnGetRNNParamsSize(ctx->cudnn_handle, rnn_desc_, x_descs_[0], &weightSize, GetCudnnDataType(dtype)));
-  CHECK_EQ(weightSize, weightSize_);
+  cudnnRNNMode_t rnn_mode;
+  if (rnn_mode_ == "relu")
+    rnn_mode = CUDNN_RNN_RELU;
+  else if (rnn_mode_ == "tanh")
+    rnn_mode = CUDNN_RNN_TANH;
+  else if (rnn_mode_ == "lstm")
+    rnn_mode = CUDNN_LSTM;
+  else if (rnn_mode_ == "gru")
+    rnn_mode = CUDNN_GRU;
+  CUDNN_CHECK(cudnnSetRNNDescriptor(rnn_desc_, hidden_dim_, num_stacks_,
+                                    dropout_desc_, input_mode, direction,
+                                    rnn_mode, dtype_));
 
-  int filterDimA[3] = {weightSize_, 1, 1};
-  CUDNN_CHECK(cudnnSetFilterNdDescriptor(weight_desc_, GetCudnnDataType(dtype), CUDNN_TENSOR_NCHW, 3, filterDimA));
-
-  
-  CUDNN_CHECK(cudnnGetRNNWorkspaceSize(ctx->cudnn_handle, rnn_desc_, seqLength_, x_descs_, &workspace_count_));
-  workspace_ = Tensor(Shape{workspace_count_}, dev, dtype);
-
-  CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(ctx->cudnn_handle, rnn_desc_, seqLength_, x_descs_, &ReserveSize_));
-  reserve_ = Tensor(Shape{ReserveSize_}, dev, dtype);
-  has_init_cudnn_ = true;
+  size_t weight_size;
+  CUDNN_CHECK(cudnnGetRNNParamsSize(ctx->cudnn_handle, rnn_desc_, x_descs_[0],
+                                    &weight_size, dtype_));
+  // check the size manually calculated
+  CHECK_EQ(weight_size, weight_.Size() * sizeof(float));
+  int filter_dim[3] = {static_cast<int>(weight_size), 1, 1};
+  CUDNN_CHECK(cudnnCreateFilterDescriptor(&weight_desc_));
+  CUDNN_CHECK(cudnnSetFilterNdDescriptor(weight_desc_, dtype_,
+                                         CUDNN_TENSOR_NCHW, 3, filter_dim));
 }
 
-const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor>& inputs) {
-  /*(seqLength, minibatch, inputSize) !!! */
-  singa::Tensor input = inputs[0];
-  singa::Tensor hx = inputs[1];
-  singa:: Tensor cx = inputs[2];
-  CHECK_EQ(input.device()->lang(), kCuda);
-  CHECK_EQ(input.device()->lang(), this->weight_.device()->lang());
-  CHECK_EQ(input.nDim(), 3u);
-  vector<Tensor> data_output;
-  if (flag & kTrain) buf_.push(input);  // buffer the input for backward
-  size_t batchsize = input.shape(1); /*(seqLength, minibatch, inputSize) !!! */
-  DataType dtype = input.data_type();
-  auto dev = input.device();
- 
-  if (!has_init_cudnn_) InitCudnn(input);
- 
-    
-  size_t numDirections;
-  if (direction_ == "cudnn_undirectional")
-    numDirections = 1;
-  else 
-    numDirections = 2;
-  
-  Shape shape{seqLength_, batchsize, hiddenSize_ * numDirections};
-  Tensor output(shape, dev, dtype);
-  Shape shape1{numLayers_, batchsize, hiddenSize_ * numDirections};
-  Tensor hy(shape1, dev, dtype);
-  Tensor cy(shape1, dev, dtype);
-  
-  output.device()->Exec([input, output, hx, hy, cx, cy, this](Context *ctx) {
-    Block *inblock = input.block(), *outblock = output.block(),
-          *wblock = this->weight_.block(), *hxblock = hx.block(), 
-          *hyblock = hy.block(), *cxblock = cx.block(), 
-          *cyblock = cy.block();
-    cudnnRNNForwardTraining(
-        ctx->cudnn_handle, this->rnn_desc_, seqLength_, this->x_descs_, 
-        inblock->data(), this->hx_desc_, hxblock->data(), this->cx_desc_, 
-        cxblock->data(), this->weight_desc_, wblock->data(), this->y_descs_, 
-        outblock->mutable_data(), this->hy_desc_, hyblock->mutable_data(), 
-        cy_desc_, cyblock->mutable_data(), this->workspace_.block()->mutable_data(), 
-        this->workspace_count_ * sizeof(float), this->reserve_.block()->mutable_data(), 
-        this->ReserveSize_ * sizeof(float));
-}, {input.block(), weight_.block(), hx.block(), cx.block()}, 
-   {output.block(), hy.block(), cy.block()}, workspace_.block());
-  buf_.push(output);
-  buf_.push(hx);
-  buf_.push(hy);  // in order to assign shape to dhy
-  buf_.push(cx);
-  buf_.push(cy);  // in order to assign shape to dcy
-  data_output.push_back(output);
-  data_output.push_back(hy);
-  data_output.push_back(cy);
-  return data_output;
+void CudnnRNN::ResetHiddenAndCellDescriptors(size_t batch_size) {
+  if (batch_size_ == 0) {
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&cx_desc_));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dcx_desc_));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&cy_desc_));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dcy_desc_));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&hx_desc_));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dhx_desc_));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&hy_desc_));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&dhy_desc_));
+  }
+
+  int dim[3] = {1, 1, 1};
+  dim[0] = static_cast<int>(num_stacks_ * num_directions_);
+  dim[1] = static_cast<int>(batch_size);
+  dim[2] = static_cast<int>(hidden_dim_);
+  int stride[3] = {1, 1, 1};
+  stride[0] = dim[1] * dim[2];
+  stride[1] = dim[2];
+  CUDNN_CHECK(cudnnSetTensorNdDescriptor(hx_desc_, dtype_, 3, dim, stride));
+  CUDNN_CHECK(cudnnSetTensorNdDescriptor(dhx_desc_, dtype_, 3, dim, stride));
+  CUDNN_CHECK(cudnnSetTensorNdDescriptor(hy_desc_, dtype_, 3, dim, stride));
+  CUDNN_CHECK(cudnnSetTensorNdDescriptor(dhy_desc_, dtype_, 3, dim, stride));
+  CUDNN_CHECK(cudnnSetTensorNdDescriptor(cx_desc_, dtype_, 3, dim, stride));
+  CUDNN_CHECK(cudnnSetTensorNdDescriptor(dcx_desc_, dtype_, 3, dim, stride));
+  CUDNN_CHECK(cudnnSetTensorNdDescriptor(cy_desc_, dtype_, 3, dim, stride));
+  CUDNN_CHECK(cudnnSetTensorNdDescriptor(dcy_desc_, dtype_, 3, dim, stride));
 }
 
+void CudnnRNN::UpdateSpaces(size_t seq_length, shared_ptr<Device> dev) {
+  size_t count;
+  auto ctx = dev->context(0);
+  CUDNN_CHECK(cudnnGetRNNWorkspaceSize(ctx->cudnn_handle, rnn_desc_,
+                                       seq_length, x_descs_, &count));
+  if (workspace_.Size() != count) {
+    workspace_ = Tensor(Shape{count}, dev, kChar);
+    // workspace_.SetValue(0);
+  }
+
+  CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(ctx->cudnn_handle, rnn_desc_,
+                                             seq_length, x_descs_, &count));
+  if (reserve_space_.Size() != count) {
+    reserve_space_ = Tensor(Shape{count}, dev, kChar);
+    // reserve_space_.SetValue(0);
+  }
+}
+
+void CudnnRNN::UpdateStates(size_t num_x, const vector<Tensor> &inputs) {
+  UpdateIODescriptors(num_x, inputs);
+  size_t new_batch_size = inputs.at(0).shape(0);
+  if (batch_size_ != new_batch_size)
+    ResetHiddenAndCellDescriptors(new_batch_size);
+  if (rnn_desc_ == nullptr)
+    SetRNNDescriptor(inputs.at(0).device());
+  UpdateSpaces(num_x, inputs.at(0).device());
+  batch_size_ = new_batch_size;
+  seq_length_ = num_x;
+}
+
+Tensor CudnnRNN::MergeInputs(size_t num, const vector<Tensor> &in) {
+  if (num == 1)
+    return in.at(0);
+  size_t size = 0;
+  for (size_t i = 0; i < num; i++) size += in.at(i).Size();
+  Tensor out(Shape{size}, in.at(0).device(), in.at(0).data_type());
+  for (size_t i = 0, offset = 0; i < num; i++) {
+    CopyDataToFrom(&out, in.at(i), in.at(i).Size(), offset);
+    offset += in.at(i).Size();
+  }
+  return out;
+}
+
+vector<Tensor> CudnnRNN::SplitOutput(size_t num, size_t dim,
+                                     const vector<Tensor> &in,
+                                     const Tensor output) {
+  vector<Tensor> outputs;
+  if (num == 1) {
+    outputs.push_back(output);
+  } else {
+    for (size_t i = 0, offset = 0; offset < output.Size(); i++) {
+      Shape s{in.at(i).shape(0), dim};
+      Tensor out(s, output.device(), output.data_type());
+      CopyDataToFrom(&out, output, out.Size(), 0, offset);
+      outputs.push_back(out);
+      offset += out.Size();
+    }
+    CHECK_EQ(num, outputs.size());
+  }
+  return outputs;
+}
+
+const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
+  DataType dtype = inputs.at(0).data_type();
+  auto dev = inputs.at(0).device();
+
+  // copy input data into a block of contiguous memory
+  // hx (and cx) is at the end of inputs
+  CHECK_GT(inputs.size(), 1u + has_cell_);
+  size_t num_x = inputs.size() - has_cell_ - 1;
+  Tensor input = MergeInputs(num_x, inputs);
+  LOG(INFO) << "input size " << input.Size() << " value " << input.L1();
+
+  if (rnn_desc_ != nullptr)
+    CHECK_EQ(dtype_, GetCudnnDataType(dtype))
+      << "Cannot change cudnn data type during training from " << dtype_
+      << " to " << GetCudnnDataType(dtype);
+  else
+    dtype_ = GetCudnnDataType(dtype);
+
+  UpdateStates(num_x, inputs);
+  // CheckFowardShapes();
+
+  Shape outshape{input.Size() * hidden_dim_ / input_dim_ * num_directions_};
+  Tensor output(outshape, dev, dtype);
+  LOG(INFO) << "output size " << output.Size();
+  Tensor hx = inputs.at(num_x);
+  Shape state_shape{num_stacks_ * num_directions_, batch_size_, hidden_dim_};
+  Tensor hy(state_shape, dev, dtype);
+  Tensor cy, cx;
+  if (has_cell_) {
+    cx = inputs.at(num_x + 1);
+    cy.ResetLike(hy);
+  }
+
+  LOG(INFO) << "hidden size " << hy.Size();
+  LOG(INFO) << "weight size " << weight_.Size() << " value " << weight_.L1();
+  Block *inb = input.block(), *outb = output.block(),
+        *wb = this->weight_.block(), *hxb = hx.block(), *cxb = cx.block(),
+        *hyb = hy.block(), *cyb = cy.block(),
+        *wspace = this->workspace_.block(),
+        *rspace = this->reserve_space_.block();
+  if (flag & kTrain) {
+    dev->Exec(
+        [inb, outb, wb, hxb, cxb, hyb, cyb, wspace, rspace, this](Context *ctx) {
+        // clang-format off
+        cudnnRNNForwardTraining(
+            ctx->cudnn_handle,
+            this->rnn_desc_,
+            this->seq_length_,
+            this->x_descs_, inb->data(),
+            this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
+            this->cx_desc_, cxb == nullptr ? nullptr : cxb->data(),
+            this->weight_desc_, wb->data(),
+            this->y_descs_, outb->mutable_data(),
+            this->hy_desc_, hyb->mutable_data(),
+            this->cy_desc_, cyb == nullptr ? nullptr : cyb->mutable_data(),
+            wspace->mutable_data(),
+            this->workspace_.Size(), rspace->mutable_data(),
+            this->reserve_space_.Size());
+        // clang-format on
+        },
+        {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace, rspace});
+    buf_.push(input);
+    buf_.push(output);
+    buf_.push(hx);
+    buf_.push(cx);
+  } else {
+    dev->Exec([inb, outb, wb, hxb, cxb, hyb, cyb, wspace, this](Context *ctx) {
+      // clang-format off
+      cudnnRNNForwardInference(
+          ctx->cudnn_handle,
+          this->rnn_desc_,
+          this->seq_length_,
+          this->x_descs_, inb->data(),
+          this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
+          this->cx_desc_, cxb == nullptr ? nullptr : cxb->data(),
+          this->weight_desc_, wb->data(),
+          this->y_descs_, outb->mutable_data(),
+          this->hy_desc_, hyb->mutable_data(),
+          this->cy_desc_, cyb == nullptr ? nullptr : cyb->mutable_data(),
+          wspace->mutable_data(), this->workspace_.Size());
+      // clang-format on
+    }, {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace});
+  }
+  auto outputs =
+      SplitOutput(num_x, hidden_dim_ * num_directions_, inputs, output);
+  outputs.push_back(hy);
+  if (has_cell_) outputs.push_back(cy);
+  return outputs;
+}
+
+// TODO(wangwei) check Tensor device to be on cuda?
 const std::pair<vector<Tensor>, vector<Tensor>> CudnnRNN::Backward(
-    int flag, const vector<Tensor>& grads) {
-  CHECK(has_init_cudnn_);
-  singa::Tensor grad = grads[0];
-  singa::Tensor dhy = grads[1];
-  singa::Tensor dcy = grads[2];
-  CHECK_EQ(grad.device()->lang(), kCuda);
-  CHECK_EQ(grad.nDim(), 3u);
-  CHECK(!buf_.empty());
-  Tensor cy = buf_.top();
+    int flag, const vector<Tensor> &grads) {
+  // dhy (and dcy) is at last
+  const Tensor cx = buf_.top();  // cannot use const Tensor& due to pop()
   buf_.pop();
-  CHECK(!buf_.empty());
-  Tensor cx = buf_.top();
+  const Tensor hx = buf_.top();
   buf_.pop();
-  CHECK(!buf_.empty());
-  Tensor hy = buf_.top();
+  const Tensor y = buf_.top();
   buf_.pop();
-  CHECK(!buf_.empty());
-  Tensor hx = buf_.top();
+  const Tensor x = buf_.top();
   buf_.pop();
-  CHECK(!buf_.empty());
-  Tensor src_output = buf_.top();
-  buf_.pop();
-  CHECK(!buf_.empty());
-  Tensor src_data = buf_.top();
-  buf_.pop();
-  vector<Tensor> param_grad;
-  vector<Tensor> data_grad;
-  Tensor dx;
-  dx.ResetLike(src_data);
-  Tensor dw;
-  dw.ResetLike(weight_);
-  Tensor dhx;
-  dhx.ResetLike(hx);
+
+  auto dev = y.device();
+  auto dtype = y.data_type();
+
+  CHECK_GT(grads.size(), 1u + has_cell_);
+  size_t num_dy = grads.size() - has_cell_ - 1;
+  CHECK_EQ(num_dy, seq_length_);
+  const Tensor dy = MergeInputs(num_dy, grads);
+  CHECK_EQ(dy.Size(), y.Size());
+  const Tensor dhy = grads.at(num_dy);
+  Tensor dcy;
+  if (has_cell_)
+    dcy = grads.at(num_dy + 1);
+
+  Shape xshape{y.Size() * input_dim_ / hidden_dim_ / num_directions_};
+  Tensor dx(xshape, dev, dtype);
+  Tensor dw(weight_.shape(), dev, dtype);
+  Shape state_shape{num_stacks_ * num_directions_, batch_size_, hidden_dim_};
+  Tensor dhx(state_shape, dev, dtype);
   Tensor dcx;
-  dcx.ResetLike(cx);
+  if (has_cell_)
+    dcx.ResetLike(dhx);
+  dw.SetValue(0.0f);
+  Block *yb = y.block(), *dyb = dy.block(), *dhyb = dhy.block(),
+        *dcyb = dcy.block(), *xb = x.block(), *cxb = cx.block(),
+        *wb = weight_.block(), *dwb = dw.block(), *hxb = hx.block(),
+        *dxb = dx.block(), *dhxb = dhx.block(), *dcxb = dcx.block(),
+        *wspace = workspace_.block(), *rspace = reserve_space_.block();
 
+  y.device()->Exec(
+      [yb, dyb, dhyb, dcyb, xb, cxb, wb, dwb, hxb, dxb, dhxb, dcxb, wspace,
+       rspace, this](Context *ctx) {
+        // clang-format off
+        cudnnRNNBackwardData(
+            ctx->cudnn_handle,
+            this->rnn_desc_,
+            this->seq_length_,
+            this->y_descs_, yb->data(),
+            this->dy_descs_, dyb->data(),
+            this->dhy_desc_, dhyb == nullptr ? nullptr : dhyb->data(),
+            this->dcy_desc_, dcyb == nullptr ? nullptr : dcyb->data(),
+            this->weight_desc_, wb->data(),
+            this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
+            this->cx_desc_, cxb == nullptr ? nullptr : cxb->data(),
+            this->dx_descs_, dxb->mutable_data(),
+            this->dhx_desc_, dhxb->mutable_data(),
+            this->dcx_desc_, dcxb == nullptr ? nullptr : dcxb->mutable_data(),
+            wspace->mutable_data(), this->workspace_.Size(),
+            rspace->mutable_data(), this->reserve_space_.Size());
+        cudnnRNNBackwardWeights(
+            ctx->cudnn_handle,
+            this->rnn_desc_,
+            this->seq_length_,
+            this->x_descs_, xb->data(),
+            this->hx_desc_, hxb == nullptr ? nullptr : hxb->data(),
+            this->y_descs_, yb->data(),
+            wspace->data(), this->workspace_.Size(),
+            this->dweight_desc_, dwb->mutable_data(),
+            rspace->data(), this->reserve_space_.Size());
+        // clang-format on
+      },
+      {yb, dyb, dhyb, dcyb, xb, wb, wspace, rspace},
+      {dxb, dwb, dhxb, dcxb, wspace, rspace});
 
-  dx.device()->Exec([grad, dw, src_data, src_output, hx, this](Context *ctx) {
-    Block *inblock = src_data.block(), *srcoutblock = src_output.block(), 
-          *dwblock = dw.block(), *hxblock = hx.block();
-    cudnnRNNBackwardWeights(
-        ctx->cudnn_handle, this->rnn_desc_, seqLength_, this->x_descs_, 
-        inblock->data(), this->hx_desc_, hxblock->data(), this->y_descs_, 
-        srcoutblock->data(), this->workspace_.block()->mutable_data(), 
-        this->workspace_count_ * sizeof(float), this->weight_desc_, 
-        dwblock->mutable_data(), this->reserve_.block()->mutable_data(), 
-        this->ReserveSize_ * sizeof(float));
-  }, {src_data.block(), hx.block(), src_output.block()}, {dw.block(), workspace_.block()}); 
-  
-  // LOG(ERROR) << "backward src";
-  dx.device()->Exec([grad, dw, src_output, dx, cy, cx, hy, hx, dhy, dcy, dhx, dcx, this](Context *ctx) {
-    Block *srcoutblock = src_output.block(), *wblock = this->weight_.block(), *dxblock = dx.block(),
-          *dyblock = grad.block(), *cxblock = cx.block(), *hxblock = hx.block(), *dhyblock = dhy.block(),
-          *dcyblock = dcy.block(), *dhxblock = dhx.block(), *dcxblock = dcx.block();
-    cudnnRNNBackwardData(
-        ctx->cudnn_handle, this->rnn_desc_, seqLength_, this->y_descs_, srcoutblock->data(), 
-        this->y_descs_, dyblock->data(), this->hy_desc_, dhyblock->data(), 
-        this->cy_desc_, dcyblock->data(), this->weight_desc_, wblock->data(), 
-        this->hx_desc_, hxblock->data(), this->cx_desc_, cxblock->data(), 
-        this->x_descs_, dxblock->mutable_data(), this->hx_desc_, dhxblock->mutable_data(), 
-        this->cx_desc_, dcxblock->mutable_data(), this->workspace_.block()->mutable_data(), 
-        this->workspace_count_ * sizeof(float), this->reserve_.block()->mutable_data(), 
-        this->ReserveSize_ * sizeof(float));
-  }, {hx.block(), src_output.block(), grad.block(), grad.block(), dhy.block(), dcy.block(), 
-      this->weight_.block(), hx.block(), cx.block()}, 
-     {dx.block(), dhx.block(), dcx.block(), reserve_.block(), workspace_.block()}); 
-  param_grad.push_back(dw);
-  data_grad.push_back(dx);
-  data_grad.push_back(dhx);
-  data_grad.push_back(dcx);
-  return std::make_pair(data_grad, param_grad);
+  vector <Tensor> param_grad{dw};
+  auto data_grads = SplitOutput(num_dy, input_dim_, grads, dx);
+  data_grads.push_back(dhx);
+  if (has_cell_)
+    data_grads.push_back(dcx);
+  return std::make_pair(data_grads, param_grad);
 }
 
 }  // namespace singa

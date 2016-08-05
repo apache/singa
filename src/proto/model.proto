@@ -393,19 +393,19 @@ message ConvolutionConf {
 }
 
 message RNNConf {
-  optional uint32 hiddensize = 1; // The number of hiddensize
-  optional uint32 numlayers = 2; // The number of stacked RNN layers
+  optional uint32 hidden_dim = 1; // The number of hiddensize
+  optional uint32 num_stacks = 2; // The number of stacked RNN layers
   optional float dropout = 3 [default = 0];
-  optional int32 workspace_byte_limit = 50 [default = 512];
+  optional bool remember_state = 4 [default = false];
   // cudnn inputmode
-  // options: "cudnn_linear_input", "cudnn_skip_input"
-  optional string inputmode = 51 [default = "cudnn_linear_input"];
+  // options: "linear", "skip"
+  optional string input_mode = 7 [default = "linear"];
   // cudnn direction
-  // options: "cudnn_undirectional", "cudnn_bidirectional"
-  optional string direction = 52 [default = "cudnn_undirectional"];
+  // options: "unidirectional", "bidirectional"
+  optional string direction = 8 [default = "unidirectional"];
   // cudnn RNN mode
-  // options: "cudnn_rnn_relu", "cudnn_rnn_tanh", "cudnn_lstm", "cudnn_gru"
-  optional string mode = 53 [default = "cudnn_rnn_relu"];
+  // options: "relu", "tanh", "lstm", "gru"
+  optional string rnn_mode = 9 [default = "relu"];
 }
 
 /*

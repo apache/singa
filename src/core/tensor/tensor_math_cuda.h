@@ -424,7 +424,7 @@ void SoftmaxCrossEntropyBwd<float, lang::Cuda>(const size_t batchsize,
 
 template <>
 void RowMax<float, lang::Cuda>(const size_t nrow, const size_t ncol,
-                               const Block* in, const Block* out,
+                               const Block* in, Block* out,
                                Context* ctx) {
   const float* inPtr = static_cast<const float*>(in->data());
   float* outPtr = static_cast<float*>(out->mutable_data());

@@ -64,6 +64,7 @@ AUX_SOURCE_DIRECTORY(model/metric model_source)
 AUX_SOURCE_DIRECTORY(model/updater model_source)
 #MESSAGE(STATUS "MODEL ${model_source}")
 ADD_LIBRARY(singa_model SHARED ${model_source})
+MESSAGE(STATUS "model linker libs ${SINGA_LINKER_LIBS}")
 TARGET_LINK_LIBRARIES(singa_model ${SINGA_LINKER_LIBS})
 LIST(APPEND SINGA_LINKER_LIBS singa_model)
 

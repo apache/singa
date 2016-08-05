@@ -36,8 +36,10 @@ void SGD::Apply(int step, float lr, const string& name, const Tensor& grad,
   if (momentum_generator_) {
     float mom = momentum_generator_(step);
     if (mom != 0) {
-      if (history_gradient_.find(name) == history_gradient_.end())
+      if (history_gradient_.find(name) == history_gradient_.end()) {
         history_gradient_[name].ResetLike(value);
+        history_gradient_[name].SetValue(0.0f);
+      }
       Tensor& history = history_gradient_[name];
       history *= mom;
       Axpy(lr, grad, &history);

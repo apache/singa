@@ -27,8 +27,10 @@ void AdaGrad::Setup(const OptimizerConf& conf) { delta_ = conf.delta(); }
 // value = value - lr*grad/sqrt(history+delta)
 void AdaGrad::Apply(int step, float lr, const string& name, const Tensor& grad,
                     Tensor& value) {
-  if (history_gradient_.find(name) == history_gradient_.end())
+  if (history_gradient_.find(name) == history_gradient_.end()) {
     history_gradient_[name].ResetLike(value);
+    history_gradient_[name].SetValue(0.0f);
+  }
   Tensor& history = history_gradient_[name];
   Tensor tmp = Square(grad);
   history += tmp;
