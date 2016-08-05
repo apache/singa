@@ -50,8 +50,7 @@ namespace singa {
 
 #define MAX_RETRY_CNT 3
 
-#define EV_WATCHER_STOP 0
-#define EV_WATCHER_START 1
+#define EP_TIMEOUT 5.
 
 class NetworkThread;
 class EndPointFactory;
@@ -64,13 +63,16 @@ class EndPoint {
         std::condition_variable cv_;
         std::mutex mtx_;
         struct sockaddr_in addr_;
+        ev_timer timer_;
+        ev_tstamp last_msg_time_;
         int fd_[2] = {-1, -1}; // two endpoints simultaneously connect to each other
         int pfd_ = -1;
+        bool is_socket_loop_ = false;
         int conn_status_ = CONN_INIT;
         int pending_cnt_ = 0;
         int retry_cnt_ = 0;
         NetworkThread* thread_ = nullptr;
-        EndPoint(NetworkThread* t):thread_(t){}
+        EndPoint(NetworkThread* t);
         ~EndPoint();
         friend class NetworkThread;
         friend class EndPointFactory;
@@ -105,7 +107,8 @@ class NetworkThread{
 
         std::unordered_map<int, ev_io> fd_wwatcher_map_;
         std::unordered_map<int, ev_io> fd_rwatcher_map_;
-        std::unordered_map<int, uint32_t> fd_ip_map_;
+
+        std::unordered_map<int, EndPoint*> fd_ep_map_;
 
         std::map<int, Message> pending_msgs_;
 
@@ -130,6 +133,7 @@ class NetworkThread{
         void onConnEst(int fd);
         void onNewEp();
         void onNewConn();
+        void onTimeout(struct ev_timer* timer);
 };
 }
 #endif

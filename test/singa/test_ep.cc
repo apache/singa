@@ -8,6 +8,7 @@
 
 #define SIZE 10000000
 #define PORT 10000
+#define ITER 10
 
 using namespace singa;
 int main(int argc, char** argv) {
@@ -30,10 +31,6 @@ int main(int argc, char** argv) {
     memset(md, 'a', SIZE);
     memset(payload, 'b', SIZE);
 
-    Message* m = new Message();
-    m->setMetadata(md, SIZE);
-    m->setPayload(payload, SIZE);
-
     NetworkThread* t = new NetworkThread(port);
 
     EndPointFactory* epf = t->epf_;
@@ -43,27 +40,53 @@ int main(int argc, char** argv) {
 
     EndPoint* ep = epf->getEp(host);
 
-    int cnt = 0;
-
-    while(ep && cnt++ <= 5 && ep->send(m) > 0 ) {
-
-        LOG(INFO) << "Send a " << m->getSize() << " bytes message";
-
-        Message* m1 = ep->recv();
-
-        if (!m1)
-            break;
-
-        char *p;
-
-        LOG(INFO) << "Receive a " << m1->getSize() << " bytes message";
-
-        CHECK(m1->getMetadata((void**)&p) == SIZE);
-        CHECK(0 == strncmp(p, md, SIZE));
-        CHECK(m1->getPayload((void**)&p) == SIZE);
-        CHECK(0 == strncmp(p, payload, SIZE));
-
-        delete m;
-        m = m1;
+    Message* m[ITER];
+    for (int i = 0; i < ITER; ++i)
+    {
+        m[i] = new Message();
+        m[i]->setMetadata(md, SIZE);
+        m[i]->setPayload(payload, SIZE);
     }
+
+    while (1) {
+        for (int i = 0; i < ITER; ++i)
+        {
+            if (ep->send(m[i]) < 0) return 1;
+            delete m[i];
+        }
+
+        for (int i = 0; i < ITER; ++i)
+        {
+            m[i] = ep->recv();
+            if (!m[i])
+                return 1;
+            char *p;
+            CHECK(m[i]->getMetadata((void**)&p) == SIZE);
+            CHECK(0 == strncmp(p, md, SIZE));
+            CHECK(m[i]->getPayload((void**)&p) == SIZE);
+            CHECK(0 == strncmp(p, payload, SIZE));
+        }
+    }
+
+    //while(ep && cnt++ <= 5 && ep->send(m) > 0 ) {
+
+    //    LOG(INFO) << "Send a " << m->getSize() << " bytes message";
+
+    //    Message* m1 = ep->recv();
+
+    //    if (!m1)
+    //        break;
+
+    //    char *p;
+
+    //    LOG(INFO) << "Receive a " << m1->getSize() << " bytes message";
+
+    //    CHECK(m1->getMetadata((void**)&p) == SIZE);
+    //    CHECK(0 == strncmp(p, md, SIZE));
+    //    CHECK(m1->getPayload((void**)&p) == SIZE);
+    //    CHECK(0 == strncmp(p, payload, SIZE));
+
+    //    delete m;
+    //    m = m1;
+    //}
 }
