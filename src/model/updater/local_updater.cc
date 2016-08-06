@@ -33,6 +33,7 @@ void LocalUpdater::Register(const string& name, const ParamSpec& specs) {
   }
   dev_index_[name] = 0;
   to_updater_finished_[name] = 0;
+  mtx_[name];
 }
 
 void LocalUpdater::Apply(int step, const string& name, Tensor& grad,

@@ -80,11 +80,11 @@ void Tensor::ResetLike(const Tensor &in) {
   if (block_ == nullptr || device_ != in.device_ || MemSize() != in.MemSize()) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
-    shape_ = in.shape_;
     device_ = in.device_;
     data_type_ = in.data_type_;
     block_ = device_->NewBlock(in.MemSize());
   }
+  shape_ = in.shape_;
 }
 
 void Tensor::Reshape(const Shape &shape) {

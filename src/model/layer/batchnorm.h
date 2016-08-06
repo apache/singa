@@ -44,7 +44,7 @@ class BatchNorm : public Layer {
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor>> Backward(
       int flag, const Tensor& grad) override;
-  const std::vector<Tensor> param_values() override {
+  virtual const std::vector<Tensor> param_values() override {
     return std::vector<Tensor> { bnScale_, bnBias_, runningMean_,
                                  runningVariance_ };
   }
@@ -77,6 +77,7 @@ class BatchNorm : public Layer {
  protected:
   float factor_;
   size_t channels_, height_, width_;
+  bool is_2d_ = false;
   Tensor bnScale_, bnBias_;
   Tensor dbnScale_, dbnBias_;
   Tensor runningMean_, runningVariance_;
