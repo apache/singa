@@ -327,10 +327,16 @@ class BatchNormalization(Layer):
             beta_specs['name'] = name + '_beta'
         if 'name' not in gamma_specs:
             gamma_specs['name'] = name + '_gamma'
-        self.conf.param.extend([_construct_param_specs_from_dict(beta_specs)])
+        mean_specs = {'init': 'constant', 'value': 0, 'name': name+'_mean'}
+        var_specs = {'init': 'constant', 'value': 1, 'name': name+'_var'}
         self.conf.param.extend([_construct_param_specs_from_dict(gamma_specs)])
-        self.param_specs.append(_construct_param_specs_from_dict(beta_specs))
+        self.conf.param.extend([_construct_param_specs_from_dict(beta_specs)])
+        self.conf.param.extend([_construct_param_specs_from_dict(mean_specs)])
+        self.conf.param.extend([_construct_param_specs_from_dict(var_specs)])
         self.param_specs.append(_construct_param_specs_from_dict(gamma_specs))
+        self.param_specs.append(_construct_param_specs_from_dict(beta_specs))
+        self.param_specs.append(_construct_param_specs_from_dict(mean_specs))
+        self.param_specs.append(_construct_param_specs_from_dict(var_specs))
         _check_engine(engine, ['cudnn'])
         self.layer = _create_layer(engine, 'BatchNorm')
         if input_sample_shape is not None:

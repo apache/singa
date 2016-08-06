@@ -64,6 +64,9 @@ class FeedForwardNet(object):
             specs.extend(lyr.param_specs)
         return specs
 
+    def param_names(self):
+        return [spec.name for spec in self.param_specs()]
+
     def train(self, x, y):
         out = self.forward(kTrain, x)
         l = self.loss.forward(kTrain, out, y)
@@ -89,9 +92,10 @@ class FeedForwardNet(object):
         return tensor.softmax(xx)
 
     def forward(self, flag, x):
+        #print x.l1()
         for lyr in self.layers:
             x = lyr.forward(flag, x)
-            # print lyr.name, x.l1()
+        #    print lyr.name, x.l1()
         return x
 
     def backward(self, flag=kTrain):

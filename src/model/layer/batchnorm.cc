@@ -27,8 +27,18 @@ void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   out_sample_shape_ = in_sample;
   factor_ = conf.batchnorm_conf().factor();
   channels_ = in_sample.at(0);
-  height_ = in_sample.at(1);
-  width_ = in_sample.at(2);
+  if (in_sample.size() == 3u)
+    height_ = in_sample.at(1);
+  else
+    height_ = 1;
+  if (in_sample.size() == 3u)
+    width_ = in_sample.at(2);
+  else
+    width_ = 1;
+  if (in_sample.size() == 1u)
+    is_2d_ = true;
+  else
+    is_2d_ = false;
 
   bnScale_.Reshape(Shape{channels_ * height_ * width_});
   bnBias_.ResetLike(bnScale_);
@@ -92,7 +102,8 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
     AddRow(bnBias_, &output);
   }
 
-  output.Reshape(Shape{output.shape(0), channels_, height_, width_});
+  if (!is_2d_)
+    output.Reshape(Shape{output.shape(0), channels_, height_, width_});
   return output;
 }
 
@@ -170,10 +181,16 @@ const std::pair<Tensor, vector<Tensor>> BatchNorm::Backward(
     SumRows(dy, &dbnBias_);
     param_grad.push_back(dbnScale_);
     param_grad.push_back(dbnBias_);
+    Tensor dummy;
+    dummy.ResetLike(runningMean_);
+    dummy.SetValue(.0f);
+    param_grad.push_back(dummy);
+    param_grad.push_back(dummy);
   } else {
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }
-  dx.Reshape(Shape{dx.shape(0), channels_, height_, width_});
+  if (!is_2d_)
+    dx.Reshape(Shape{dx.shape(0), channels_, height_, width_});
   return std::make_pair(dx, param_grad);
 }
 

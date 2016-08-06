@@ -75,14 +75,20 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
   auto shape = input.shape();
   auto dtype = input.data_type();
   Tensor output;
+  Tensor x;
+  if(is_2d_)
+    x = Reshape(input, Shape{shape.at(0), shape.at(1), 1, 1});
+  else
+    x = input;
+  shape = x.shape();
   if (!has_init_cudnn_)
     InitCudnn(shape, dtype);
   // TODO(wangji): check device id of input and params
-  output.ResetLike(input);
+  output.ResetLike(x);
   if ((flag & kTrain) == kTrain) {
     output.device()->Exec(
         [=](Context* ctx) {
-          Block *inBlock = input.block(), *outBlock = output.block(),
+          Block *inBlock = x.block(), *outBlock = output.block(),
             *saveMeanBlock = resultSaveMean_.block(),
             *saveVarBlock = resultSaveVariance_.block(),
             *runningMeanBlock = runningMean_.block(),
@@ -110,7 +116,7 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
               saveMeanBlock->mutable_data(),
               saveVarBlock->mutable_data()));
         },
-        {input.block(),
+        {x.block(),
          bnScale_.block(),
          bnBias_.block()},
         {output.block(),
@@ -118,11 +124,11 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
          runningVariance_.block(),
          resultSaveMean_.block(),
          resultSaveVariance_.block()});
-    buf_.push(input);
+    buf_.push(x);
   } else {
     output.device()->Exec(
         [=](Context* ctx) {
-          Block *inBlock = input.block(), *outBlock = output.block(),
+          Block *inBlock = x.block(), *outBlock = output.block(),
             *runningMeanBlock = runningMean_.block(),
             *runningVarBlock = runningVariance_.block(),
             *bnScaleBlock = bnScale_.block(),
@@ -145,13 +151,15 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
               runningVarBlock->data(),
               epsilon));
         },
-        {input.block(),
+        {x.block(),
          bnScale_.block(),
          bnBias_.block(),
          runningMean_.block(),
          runningVariance_.block()},
         {output.block()});
   }
+  if (is_2d_)
+    output.Reshape(Shape{shape.at(0), shape.at(1)});
   return output;
 }
 
@@ -160,13 +168,13 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
   vector <Tensor> param_grad;
   Tensor dx;
   if ((flag & kTrain) == kTrain) {
-    Tensor input = buf_.top();
+    Tensor x = buf_.top();
     buf_.pop();
     dx.ResetLike(grad);
     dx.device()->Exec(
         [=](Context* ctx) {
           Block *dyblock = grad.block(), *dxblock = dx.block(),
-            *xblock = input.block(),
+            *xblock = x.block(),
             *bnScaleBlock = bnScale_.block(),
             *dbnScaleBlock = dbnScale_.block(),
             *dbnBiasBlock = dbnBias_.block(),
@@ -208,6 +216,13 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
   }
   param_grad.push_back(dbnScale_);
   param_grad.push_back(dbnBias_);
+  Tensor dummy;
+  dummy.ResetLike(dbnScale_);
+  dummy.SetValue(.0f);
+  param_grad.push_back(dummy);
+  param_grad.push_back(dummy);
+  if (is_2d_)
+    dx.Reshape(Shape{dx.shape().at(0), dx.shape().at(1)});
   return std::make_pair(dx, param_grad);
 }
 }  // namespace
