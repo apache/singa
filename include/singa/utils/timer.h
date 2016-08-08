@@ -11,6 +11,7 @@ class Timer {
   typedef std::chrono::duration<int> Seconds;
   typedef std::chrono::duration<int, std::milli> Milliseconds;
   typedef std::chrono::duration<int, std::ratio<60 * 60>> Hours;
+  typedef std::chrono::duration<int, std::micro> Microseconds;
 
   /// Init the internal time point to the current time
   Timer() { Tick(); }
@@ -23,8 +24,9 @@ class Timer {
   int Elapsed() const {
     static_assert(std::is_same<T, Seconds>::value ||
                       std::is_same<T, Milliseconds>::value ||
-                      std::is_same<T, Hours>::value,
-                  "Template arg must be Seconds | Milliseconds | Hours");
+                      std::is_same<T, Hours>::value ||
+                      std::is_same<T, Microseconds>::value,
+                  "Template arg must be Seconds | Milliseconds | Hours | Microseconds");
     auto now  = std::chrono::high_resolution_clock::now();
     return std::chrono::duration_cast<T>(now - last_).count();
   }
