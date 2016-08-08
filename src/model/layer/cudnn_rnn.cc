@@ -17,6 +17,7 @@
  */
 #include "./cudnn_rnn.h"
 #ifdef USE_CUDNN
+#if CUDNN_VERSION_MAJOR >= 5
 #include <cudnn.h>
 #include <chrono>
 #include "./cudnn_utils.h"
@@ -92,7 +93,7 @@ void CudnnRNN::UpdateIODescriptors(size_t len, const vector<Tensor> &inputs) {
   }
 
   for (size_t i = 0; i < len; i++) {
-    CHECK_EQ(inputs[i].shape(1), input_dim_);
+    CHECK_EQ(inputs[i].shape(1), input_size_);
     if (inputs[i].shape(0) != batch_size_ || reset) {
       int d[3] = {1, 1, 1}, s[3] = {1, 1, 1};
       d[0] = static_cast<int>(inputs[i].shape(0));
@@ -104,7 +105,7 @@ void CudnnRNN::UpdateIODescriptors(size_t len, const vector<Tensor> &inputs) {
       CUDNN_CHECK(cudnnSetTensorNdDescriptor(dx_descs_[i], dtype_, 3, d, s));
 
       d[0] = static_cast<int>(inputs[i].shape(0));
-      d[1] = static_cast<int>(hidden_dim_ * num_directions_);
+      d[1] = static_cast<int>(hidden_size_ * num_directions_);
       s[0] = d[1] * d[2];
       s[1] = d[2];
       CUDNN_CHECK(cudnnSetTensorNdDescriptor(y_descs_[i], dtype_, 3, d, s));
@@ -121,7 +122,7 @@ void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
   CUDNN_CHECK(cudnnDropoutGetStatesSize(ctx->cudnn_handle, &state_size));
   dropout_state_ = Tensor(Shape{state_size}, dev, kChar);
   CUDNN_CHECK(cudnnSetDropoutDescriptor(
-      dropout_desc_, ctx->cudnn_handle, dropout_,
+      dropout_desc_, ctx->cudnn_handle, 1 - dropout_,  // keep probability
       dropout_state_.block()->mutable_data(), state_size, seed_));
 
   CUDNN_CHECK(cudnnCreateRNNDescriptor(&rnn_desc_));
@@ -146,7 +147,7 @@ void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
     rnn_mode = CUDNN_LSTM;
   else if (rnn_mode_ == "gru")
     rnn_mode = CUDNN_GRU;
-  CUDNN_CHECK(cudnnSetRNNDescriptor(rnn_desc_, hidden_dim_, num_stacks_,
+  CUDNN_CHECK(cudnnSetRNNDescriptor(rnn_desc_, hidden_size_, num_stacks_,
                                     dropout_desc_, input_mode, direction,
                                     rnn_mode, dtype_));
 
@@ -176,7 +177,7 @@ void CudnnRNN::ResetHiddenAndCellDescriptors(size_t batch_size) {
   int dim[3] = {1, 1, 1};
   dim[0] = static_cast<int>(num_stacks_ * num_directions_);
   dim[1] = static_cast<int>(batch_size);
-  dim[2] = static_cast<int>(hidden_dim_);
+  dim[2] = static_cast<int>(hidden_size_);
   int stride[3] = {1, 1, 1};
   stride[0] = dim[1] * dim[2];
   stride[1] = dim[2];
@@ -238,7 +239,7 @@ vector<Tensor> CudnnRNN::SplitOutput(size_t num, size_t dim,
                                      const Tensor output) {
   vector<Tensor> outputs;
   if (num == 1) {
-    outputs.push_back(output);
+    outputs.push_back(Reshape(output, Shape{in.at(0).shape(0), dim}));
   } else {
     for (size_t i = 0, offset = 0; offset < output.Size(); i++) {
       Shape s{in.at(i).shape(0), dim};
@@ -261,7 +262,7 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
   CHECK_GT(inputs.size(), 1u + has_cell_);
   size_t num_x = inputs.size() - has_cell_ - 1;
   Tensor input = MergeInputs(num_x, inputs);
-  LOG(INFO) << "input size " << input.Size() << " value " << input.L1();
+  // LOG(INFO) << "input size " << input.Size() << " value " << input.L1();
 
   if (rnn_desc_ != nullptr)
     CHECK_EQ(dtype_, GetCudnnDataType(dtype))
@@ -273,11 +274,11 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
   UpdateStates(num_x, inputs);
   // CheckFowardShapes();
 
-  Shape outshape{input.Size() * hidden_dim_ / input_dim_ * num_directions_};
+  Shape outshape{input.Size() * hidden_size_ / input_size_ * num_directions_};
   Tensor output(outshape, dev, dtype);
-  LOG(INFO) << "output size " << output.Size();
+  // LOG(INFO) << "output size " << output.Size();
   Tensor hx = inputs.at(num_x);
-  Shape state_shape{num_stacks_ * num_directions_, batch_size_, hidden_dim_};
+  Shape state_shape{num_stacks_ * num_directions_, batch_size_, hidden_size_};
   Tensor hy(state_shape, dev, dtype);
   Tensor cy, cx;
   if (has_cell_) {
@@ -285,8 +286,8 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
     cy.ResetLike(hy);
   }
 
-  LOG(INFO) << "hidden size " << hy.Size();
-  LOG(INFO) << "weight size " << weight_.Size() << " value " << weight_.L1();
+  // LOG(INFO) << "hidden size " << hy.Size();
+  // LOG(INFO) << "weight size " << weight_.Size() << " value " << weight_.L1();
   Block *inb = input.block(), *outb = output.block(),
         *wb = this->weight_.block(), *hxb = hx.block(), *cxb = cx.block(),
         *hyb = hy.block(), *cyb = cy.block(),
@@ -336,7 +337,7 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
     }, {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace});
   }
   auto outputs =
-      SplitOutput(num_x, hidden_dim_ * num_directions_, inputs, output);
+      SplitOutput(num_x, hidden_size_ * num_directions_, inputs, output);
   outputs.push_back(hy);
   if (has_cell_) outputs.push_back(cy);
   return outputs;
@@ -368,10 +369,10 @@ const std::pair<vector<Tensor>, vector<Tensor>> CudnnRNN::Backward(
   if (has_cell_)
     dcy = grads.at(num_dy + 1);
 
-  Shape xshape{y.Size() * input_dim_ / hidden_dim_ / num_directions_};
+  Shape xshape{y.Size() * input_size_ / hidden_size_ / num_directions_};
   Tensor dx(xshape, dev, dtype);
   Tensor dw(weight_.shape(), dev, dtype);
-  Shape state_shape{num_stacks_ * num_directions_, batch_size_, hidden_dim_};
+  Shape state_shape{num_stacks_ * num_directions_, batch_size_, hidden_size_};
   Tensor dhx(state_shape, dev, dtype);
   Tensor dcx;
   if (has_cell_)
@@ -419,7 +420,7 @@ const std::pair<vector<Tensor>, vector<Tensor>> CudnnRNN::Backward(
       {dxb, dwb, dhxb, dcxb, wspace, rspace});
 
   vector <Tensor> param_grad{dw};
-  auto data_grads = SplitOutput(num_dy, input_dim_, grads, dx);
+  auto data_grads = SplitOutput(num_dy, input_size_, grads, dx);
   data_grads.push_back(dhx);
   if (has_cell_)
     data_grads.push_back(dcx);
@@ -427,4 +428,5 @@ const std::pair<vector<Tensor>, vector<Tensor>> CudnnRNN::Backward(
 }
 
 }  // namespace singa
+#endif  // CUDNN_VERSION_MAJOR >= 5
 #endif  // USE_CUDNN

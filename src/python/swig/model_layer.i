@@ -30,6 +30,8 @@
 
 %{
 #include "singa/model/layer.h"
+#include "../src/model/layer/rnn.h"
+#include "../src/model/layer/cudnn_rnn.h"
 #include "singa/core/tensor.h"
 #include "singa/proto/model.pb.h"
 using singa::Tensor;
@@ -40,6 +42,8 @@ using singa::LayerConf;
 %}
 
 %shared_ptr(singa::Layer)
+%shared_ptr(singa::RNN)
+%shared_ptr(singa::CudnnRNN)
 
 namespace std {
   %template(strVector) vector<string>;
@@ -52,26 +56,44 @@ namespace std {
 
 namespace singa {
 
-  class Layer {
-    public:
-      Layer();
+class Layer {
+  public:
+    Layer();
 //      virtual void Setup(const std::vector<vector<size_t>>&, const string&);
-      virtual void Setup(const std::vector<size_t>& in_sample_shape,
-                         const std::string& proto_str);
-      const std::vector<Tensor> param_values();
-      virtual const std::vector<size_t> GetOutputSampleShape() const;
-      virtual void ToDevice(std::shared_ptr<Device> device);
-      virtual void AsType(DataType dtype);
-      virtual const Tensor Forward(int flag, const Tensor& input);
-      virtual const std::vector<Tensor> Forward(
-          int flag, const std::vector<Tensor>& inputs);
-      virtual const std::pair<Tensor, std::vector<Tensor>> Backward(
-          int flag, const Tensor& grad);
-      virtual const std::pair<std::vector<Tensor>, std::vector<Tensor>>
-      Backward(int flag, const vector<Tensor>& grads);
+    void Setup(const std::vector<size_t>& in_sample_shape,
+                        const std::string& proto_str);
+    virtual const std::vector<Tensor> param_values();
+    virtual const std::vector<size_t> GetOutputSampleShape() const;
+    virtual void ToDevice(std::shared_ptr<Device> device);
+    virtual void AsType(DataType dtype);
+    virtual const Tensor Forward(int flag, const Tensor& input);
+    virtual const std::vector<Tensor> Forward(
+        int flag, const std::vector<Tensor>& inputs);
+    virtual const std::pair<Tensor, std::vector<Tensor>> Backward(
+        int flag, const Tensor& grad);
+    virtual const std::pair<std::vector<Tensor>, std::vector<Tensor>>
+    Backward(int flag, const vector<Tensor>& grads);
+};
 
-  };
-  std::shared_ptr<Layer> CreateLayer(const std::string& type);
-  const std::vector<std::string> GetRegisteredLayers();
+std::shared_ptr<Layer> CreateLayer(const std::string& type);
+const std::vector<std::string> GetRegisteredLayers();
+class RNN : public Layer {
+  /*
+ public:
+  void Setup(const std::vector<size_t>& in_sample_shape,
+                        const std::string& proto_str) override;
+                        */
+};
+class CudnnRNN : public RNN {
+ public:
+ // note: Must use std::vector instead of vector.
+  const std::vector<Tensor> Forward(int flag, const std::vector<Tensor>& inputs) override;
+  const std::pair<std::vector<Tensor>, std::vector<Tensor>> Backward(
+      int flag, const std::vector<Tensor>& grads) override;
+  void ToDevice(std::shared_ptr<Device> device) override;
+    const std::vector<Tensor> param_values() override;
+    const std::vector<size_t> GetOutputSampleShape() const override;
+};
+
 }
 

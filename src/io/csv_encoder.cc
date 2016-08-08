@@ -22,7 +22,7 @@
 namespace singa {
 
 std::string CSVEncoder::Encode(vector<Tensor>& data) {
-  CHECK_GE(data.size(), 1);
+  CHECK_GE(data.size(), 1u);
   size_t size = data[0].Size();
   const float* value = data[0].data<float>();
   std::string des = "";

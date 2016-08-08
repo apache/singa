@@ -299,7 +299,8 @@ Tensor &Tensor::operator=(const Tensor &in) {
   shape_ = in.shape_;
   device_ = in.device_;
   block_ = in.block();
-  block_->IncRefCount();
+  if (block_ != nullptr)
+    block_->IncRefCount();
   return *this;
 }
 

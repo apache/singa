@@ -21,6 +21,7 @@
 
 #include "../src/model/layer/cudnn_rnn.h"
 #ifdef USE_CUDNN
+#if CUDNN_VERSION_MAJOR >= 5
 
 #include "gtest/gtest.h"
 
@@ -31,15 +32,15 @@ class TestCudnnRNN : public ::testing::Test {
   protected:
     virtual void SetUp() {
       singa::RNNConf *rnnconf = conf.mutable_rnn_conf();
-      rnnconf->set_hidden_dim(hidden_dim);
+      rnnconf->set_hidden_size(hidden_size);
       rnnconf->set_num_stacks(1);
-      rnnconf->set_dropout(1);
+      rnnconf->set_dropout(0);
       rnnconf->set_input_mode("linear");
       rnnconf->set_direction("unidirectional");
       rnnconf->set_rnn_mode("tanh");
     }
     singa::LayerConf conf;
-    size_t hidden_dim = 4;
+    size_t hidden_size = 4;
 };
 
 TEST_F(TestCudnnRNN, Setup) {
@@ -47,7 +48,7 @@ TEST_F(TestCudnnRNN, Setup) {
   EXPECT_EQ("CudnnRNN", rnn.layer_type());
   rnn.Setup(Shape{2}, conf);
   auto weight = rnn.param_values().at(0);
-  EXPECT_EQ(weight.Size(), hidden_dim * (2 + hidden_dim + 2));
+  EXPECT_EQ(weight.Size(), hidden_size * (2 + hidden_size + 2));
 }
 
 TEST_F(TestCudnnRNN, Forward) {
@@ -80,19 +81,19 @@ TEST_F(TestCudnnRNN, Forward) {
 
   const auto ret = rnn.Forward(singa::kEval, inputs);
   EXPECT_EQ(ret.size(), seqLength + 1);
-  vector<float> hxptr(hidden_dim, 0.0f);
+  vector<float> hxptr(hidden_size, 0.0f);
   for (size_t i = 0; i < seqLength; i++) {
     auto y = ret[i];
     y.ToHost();
     auto yptr = y.data<float>();
     vector<float> tmp;
-    for (size_t j = 0; j < hidden_dim; j++) {
+    for (size_t j = 0; j < hidden_size; j++) {
       float ty = 0;
       for (size_t k = 0; k < dim; k++) {
         ty += x[i * dim + k] * wvalue;
       }
       ty += wvalue;
-      for (size_t k = 0; k < hidden_dim; k++) {
+      for (size_t k = 0; k < hidden_size; k++) {
         ty += hxptr[k] * wvalue;
       }
       ty += wvalue;
@@ -134,18 +135,18 @@ TEST_F(TestCudnnRNN, Backward) {
 
   const auto outs = rnn.Forward(singa::kTrain, inputs);
 
-  float dyptr[seqLength * batchsize * hidden_dim];
-  for (size_t i = 0; i < seqLength * batchsize * hidden_dim; i++)
+  float dyptr[seqLength * batchsize * hidden_size];
+  for (size_t i = 0; i < seqLength * batchsize * hidden_size; i++)
     dyptr[i] = i * 0.1f;
   vector<Tensor> grads;
   for (size_t i = 0; i < seqLength; i++) {
-    Tensor dy(Shape{batchsize, hidden_dim}, cuda);
+    Tensor dy(Shape{batchsize, hidden_size}, cuda);
     dy.CopyDataFromHostPtr(dyptr + i * dy.Size(), dy.Size());
     grads.push_back(dy);
   }
   Tensor dhy;
   grads.push_back(dhy);
-  vector<float> dhyptr(hidden_dim, 0.0f);
+  vector<float> dhyptr(hidden_size, 0.0f);
   const auto ret = rnn.Backward(singa::kTrain, grads);
   for (size_t i = seqLength - 1; i > 0 ; i --) {
     auto dx = ret.first[i];
@@ -154,21 +155,21 @@ TEST_F(TestCudnnRNN, Backward) {
     dx.ToHost();
     auto dxptr = dx.data<float>();
     auto yptr = y.data<float>();
-    for (size_t j = 0; j < hidden_dim; j++) {
-      dhyptr[j] += dyptr[i * hidden_dim + j];
+    for (size_t j = 0; j < hidden_size; j++) {
+      dhyptr[j] += dyptr[i * hidden_size + j];
       dhyptr[j] *= 1 - yptr[j] * yptr[j];
     }
     for (size_t k = 0; k < dim; k++) {
       float tdx = 0;
-      for (size_t j = 0; j < hidden_dim; j++) {
+      for (size_t j = 0; j < hidden_size; j++) {
         tdx += dhyptr[j] * wvalue;
       }
       EXPECT_NEAR(tdx, dxptr[k], 1e-4);
     }
     vector<float> tmp;
-    for (size_t k = 0; k < hidden_dim; k++) {
+    for (size_t k = 0; k < hidden_size; k++) {
       float tdhy = 0;
-      for (size_t j = 0; j < hidden_dim; j++) {
+      for (size_t j = 0; j < hidden_size; j++) {
         tdhy += dhyptr[j] * wvalue;
       }
       tmp.push_back(tdhy);
@@ -176,4 +177,5 @@ TEST_F(TestCudnnRNN, Backward) {
     std::copy(tmp.begin(), tmp.end(), dhyptr.begin());
   }
 }
+#endif  // CUDNN_VERSION_MAJOR >= 5
 #endif  // USE_CUDNN

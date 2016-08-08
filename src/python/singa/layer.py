@@ -403,7 +403,7 @@ class Dense(Layer):
         if W_specs is None:
             W_specs = {'init': 'xavier'}
         if b_specs is None:
-            b_specs = {'init': 'constant'}
+            b_specs = {'init': 'constant', 'value': 0}
         if 'name' not in W_specs:
             W_specs['name'] = name + '_weight'
         if 'name' not in b_specs:
@@ -502,6 +502,71 @@ class Flatten(Layer):
             self.setup(input_sample_shape)
 
 
+class RNN(Layer):
+    def __init__(self, name, hidden_size, rnn_mode='lstm', engine='cudnn',
+            dropout=0.0, num_stacks=1, input_mode='linear', bidirectional=False,
+            param_specs=None, input_sample_shape=None):
+        super(RNN, self).__init__(name)
+        conf = self.conf.rnn_conf
+        assert hidden_size > 0, 'Hidden feature size must > 0'
+        conf.hidden_size = hidden_size
+        assert rnn_mode in Set(['lstm', 'gru', 'tanh', 'relu']), \
+                'rnn mode %s is not available' %s (rnn_mode)
+        conf.rnn_mode = rnn_mode
+        conf.num_stacks = num_stacks
+        conf.dropout = dropout
+        conf.input_mode = input_mode
+        conf.direction = 'unidirectional'
+        if bidirectional:
+            conf.direction = 'bidirectional'
+        _check_engine(engine, ['cudnn'])
+        if param_specs is None:
+            param_specs = {'name': name + '-weight',
+                    'init': 'uniform', 'low':0, 'high':1};
+        self.conf.param.extend([_construct_param_specs_from_dict(param_specs)])
+        self.param_specs.append(_construct_param_specs_from_dict(param_specs))
+
+        self.layer = singa_wrap.CudnnRNN()
+        if input_sample_shape is not None:
+            self.setup(input_sample_shape)
+
+    def forward(self, flag, inputs):
+        assert self.has_setup, 'Must call setup() before forward()'
+        assert len(inputs) > 1, 'The input to RNN must include at '\
+                'least one input tensor '\
+                'and one hidden state tensor (could be a dummy tensor)'
+        tensors = []
+        for t in inputs:
+            assert isinstance(t, tensor.Tensor), 'input must be py Tensor %s' % (type(t))
+            tensors.append(t.singa_tensor)
+        y = self.layer.Forward(flag, tensors)
+        return tensor.from_raw_tensors(y)
+
+    def backward(self, flag, grad):
+        tensors = []
+        for t in grad:
+            assert isinstance(t, tensor.Tensor), 'grad must be py Tensor'
+            tensors.append(t.singa_tensor)
+        ret = self.layer.Backward(flag, tensors)
+        return tensor.from_raw_tensors(ret[0]), tensor.from_raw_tensors(ret[1])
+
+class LSTM(RNN):
+    def __init__(self, name, hidden_size, engine='cudnn',
+            dropout=0.0, num_stacks=1, input_mode='linear', bidirectional=False,
+            param_specs=None, input_sample_shape=None):
+        super(LSTM, self).__init__(name, hidden_size,  'lstm', engine, dropout,
+                num_stacks, input_mode, bidirectional, param_specs,
+                input_sample_shape)
+
+class GRU(RNN):
+    def __init__(self, name, hidden_size, engine='cudnn',
+            dropout=0.0, num_stacks=1, input_mode='linear', bidirectional=False,
+            param_specs=None, input_sample_shape=None):
+        super(GRU, self).__init__(name,  hidden_size, 'gru', engine, dropout,
+                num_stacks, input_mode, bidirectional, param_specs,
+                input_sample_shape)
+
+
 def _check_engine(engine, allowed_engines):
     assert engine.lower() in Set(allowed_engines), \
            '%s is not a supported engine. Pls use one of %s' % \
@@ -585,8 +650,8 @@ def _construct_param_specs_from_dict(specs):
         if specs['init'].lower() == 'uniform':
             assert 'low' in specs and 'high' in specs, \
                 'low and high are required for "uniform" init method'
-            filler.low = specs['low']
-            filler.high = specs['high']
+            filler.min = specs['low']
+            filler.max = specs['high']
         elif specs['init'].lower() == 'gaussian':
             assert 'mean' in specs and 'std' in specs, \
                 'std and mean are required for "gaussian" init method'
