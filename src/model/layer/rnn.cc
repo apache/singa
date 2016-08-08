@@ -27,13 +27,13 @@ void RNN::Setup(const Shape& in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
 
   RNNConf rnn_conf = conf.rnn_conf();
-  hidden_dim_ = rnn_conf.hidden_dim();
-  CHECK_GT(hidden_dim_, 0u);
+  hidden_size_ = rnn_conf.hidden_size();
+  CHECK_GT(hidden_size_, 0u);
   num_stacks_ = rnn_conf.num_stacks();
   CHECK_GT(num_stacks_, 0u);
-  input_dim_ = Product(in_sample);
-  CHECK_GT(input_dim_, 0u);
-  dropout_ = rnn_conf.dropout();
+  input_size_ = Product(in_sample);
+  CHECK_GT(input_size_, 0u);
+  dropout_ = rnn_conf.dropout();  // drop probability
   CHECK_GE(dropout_, 0);
 
   input_mode_ = ToLowerCase(rnn_conf.input_mode());
@@ -71,9 +71,9 @@ void RNN::Setup(const Shape& in_sample, const LayerConf &conf) {
 
   size_t weight_size = 0;
   for (size_t i = 0; i < num_stacks_; i++) {
-    size_t dim = hidden_dim_ * (in_sample[0] +  hidden_dim_ + 2);
+    size_t dim = hidden_size_ * (in_sample[0] +  hidden_size_ + 2);
     if (i > 0)
-      dim = hidden_dim_ * (hidden_dim_ +  hidden_dim_ + 2);
+      dim = hidden_size_ * (hidden_size_ +  hidden_size_ + 2);
     weight_size += mult * dim;
   }
   weight_.Reshape(Shape{weight_size});
@@ -81,6 +81,7 @@ void RNN::Setup(const Shape& in_sample, const LayerConf &conf) {
 
 const vector<Tensor> RNN::Forward(int flag, const vector<Tensor>& inputs) {
   vector<Tensor> data_output;
+  LOG(FATAL) << "CPU RNN is not implemented!";
   return data_output;
 }
 
@@ -88,6 +89,7 @@ const std::pair<vector<Tensor>, vector<Tensor>> RNN::Backward(int flag,
     const vector<Tensor>& grads) {
   vector<Tensor> param_grad;
   vector<Tensor> data_grad;
+  LOG(FATAL) << "CPU RNN is not implemented!";
   return std::make_pair(data_grad, param_grad);
 }
 

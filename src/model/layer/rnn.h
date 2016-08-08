@@ -37,20 +37,32 @@ class RNN : public Layer {
   /// \copydoc Layer::layer_type()
   const std::string layer_type() const override { return "RNN"; }
 
-  /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const vector<size_t>& in_shape, const LayerConf& conf) override;
+  /// Setup the RNN layer.
+  /// in_shape is the shape of a single training instance from one timestep,
+  void Setup(const Shape& in_shape, const LayerConf& conf) override;
 
-  /// \copydoc Layer::Forward(int flag, const vector<Tensor>&)
+  /// The inputs vector includes <x1, ... xn, hx, cx> where xi is the input
+  /// tensor at the i-th time step. hx is used to initialize the hidden tensor,
+  /// which could be a dummy tensor (like Tensor hx;). cx is used to initialize
+  /// the cell tensor, which could be a dummy tensor( like Tensor cx;). For
+  /// dummy tensors, 0's would be used during computation.
+  /// cx is missing for gru/relu/tanh RNNs, and is valid for lstm.
+  /// The dim order of xi is <batch, feature>, and the batchsize of xi must be
+  /// >= that of x(i+1).
+  /// The output vector includes <y1, ... yn, hy, cy> where yi is the output
+  /// tensor at the i-th time step. hy is the final hidden tensor, cy is the
+  /// final cell tensor. cy is missing for gru/relu/tanh RNNs and is valid for
+  /// lstm.
   const vector<Tensor> Forward(int flag, const vector<Tensor>& inputs) override;
 
-  /// \copydoc Layer::Backward(int, const vector<Tensor>&);
+  /// The grads vector includes <dy1, dy2, ... dyn, dhy, dcy>, the symbols are
+  /// similar to those for Forward. dcy is missing for gru/relu/tanh RNNs and is
+  /// valid for lstm.
+  /// The first vector of the output includes <dx1, dx2, ... dxn, dhx, dcx>.
+  /// The second vector of the output includes the gradients of all parameters.
   const std::pair<vector<Tensor>, vector<Tensor>> Backward(
       int flag, const vector<Tensor>& grads) override;
 
-  void set_weight(Tensor w) {
-    weight_.ResetLike(w);
-    weight_.CopyData(w);
-  }
   const vector<Tensor> param_values() override {
     return vector<Tensor>{weight_};
   }
@@ -73,7 +85,7 @@ class RNN : public Layer {
   std::stack<Tensor> buf_;
   bool has_cell_ = false;
   size_t num_directions_ = 1;
-  size_t input_dim_ = 0, hidden_dim_ = 0, num_stacks_ = 0, seq_length_ = 0;
+  size_t input_size_ = 0, hidden_size_ = 0, num_stacks_ = 0, seq_length_ = 0;
   size_t batch_size_ = 0;
   size_t seed_ = 0x1234567;
   float dropout_ = 0.0f;

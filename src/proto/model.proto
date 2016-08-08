@@ -393,7 +393,7 @@ message ConvolutionConf {
 }
 
 message RNNConf {
-  optional uint32 hidden_dim = 1; // The number of hiddensize
+  optional uint32 hidden_size = 1; // The hidden feature size
   optional uint32 num_stacks = 2; // The number of stacked RNN layers
   optional float dropout = 3 [default = 0];
   optional bool remember_state = 4 [default = false];
