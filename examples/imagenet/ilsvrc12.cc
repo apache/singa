@@ -24,24 +24,35 @@
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
 int main(int argc, char **argv) {
+  if (argc == 1) {
+    std::cout << "-trainlist <file>: the file of training list;\n"
+              << "-trainfolder <folder>: the folder of training images;\n"
+              << "-testlist <file>: the file of test list;\n"
+              << "-testfolder <floder>: the folder of test images;"
+              << "outdata <folder>: the folder to save output files, including "
+                 "mean, training and test files;\n"
+              << "-filesize <int>: number of training images that stores in "
+                 "each binary file.\n";
+    return 0;
+  }
   int pos = singa::ArgPos(argc, argv, "-trainlist");
-  string train_image_list = "/data/xiangrui/label/train.txt";
+  string train_image_list = "imagenet/label/train.txt";
   if (pos != -1) train_image_list = argv[pos + 1];
 
   pos = singa::ArgPos(argc, argv, "-trainfolder");
-  string train_image_folder = "/data/xiangrui/ILSVRC2012_img_train";
+  string train_image_folder = "imagenet/ILSVRC2012_img_train";
   if (pos != -1) train_image_folder = argv[pos + 1];
 
   pos = singa::ArgPos(argc, argv, "-testlist");
-  string test_image_list = "/data/xiangrui/label/val.txt";
+  string test_image_list = "imagenet/label/val.txt";
   if (pos != -1) test_image_list = argv[pos + 1];
 
   pos = singa::ArgPos(argc, argv, "-testfolder");
-  string test_image_folder = "/data/xiangrui/ILSVRC2012_img_val";
+  string test_image_folder = "imagenet/ILSVRC2012_img_val";
   if (pos != -1) test_image_folder = argv[pos + 1];
 
   pos = singa::ArgPos(argc, argv, "-outdata");
-  string bin_folder = "/home/xiangrui/imagenet_data";
+  string bin_folder = "imagenet_data";
   if (pos != -1) bin_folder = argv[pos + 1];
 
   pos = singa::ArgPos(argc, argv, "-filesize");

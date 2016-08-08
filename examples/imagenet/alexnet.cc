@@ -348,6 +348,29 @@ void Train(int num_epoch, float lr, size_t batchsize, size_t train_file_size,
 
 int main(int argc, char **argv) {
   singa::InitChannel(nullptr);
+
+  if (argc == 1) {
+    std::cout << "Usage:\n"
+              << "-epoch <int>: number of epoch to be trained, default is 90;\n"
+              << "-lr <float>: base learning rate, the learning rate will "
+                 "decrease each 20 epochs,\n"
+              << "more specifically, lr = lr * exp(0.1 * (epoch / 20));\n"
+              << "-batchsize <int>: batchsize, it should be changed regarding "
+                 "to your memory;\n"
+              << "-filesize <int>: number of training images that stores in "
+                 "each binary file, it is the\n"
+              << "same as the filesize in data preprocessing;\n"
+              << "-ntrain <int>: number of training images;\n"
+              << "-ntest <int>: number of test images;\n"
+              << "-data <folder>: the folder which stores the binary files, it "
+                 "is exactly the output\n"
+              << "folder in data preprocessing step;\n"
+              << "-pfreq <int>: the frequency(in batch) of printing current "
+                 "model status(loss and accuracy);\n"
+              << "-nthreads <int>`: the number of threads to load data which "
+                 "feed to the model.\n";
+    return 0;
+  }
   int pos = singa::ArgPos(argc, argv, "-epoch");
   int nEpoch = 90;
   if (pos != -1) nEpoch = atoi(argv[pos + 1]);
@@ -373,7 +396,7 @@ int main(int argc, char **argv) {
   if (pos != -1) num_test_images = atoi(argv[pos + 1]);
 
   pos = singa::ArgPos(argc, argv, "-data");
-  string bin_folder = "/home/xiangrui/imagenet_data";
+  string bin_folder = "imagenet_data";
   if (pos != -1) bin_folder = argv[pos + 1];
 
   pos = singa::ArgPos(argc, argv, "-pfreq");
