@@ -24,8 +24,8 @@
 
 #include <atomic>
 
-#include "singa/io/network/message.h"
-#include "singa/io/network/integer.h"
+#include "singa/io/network.h"
+#include "singa/io/integer.h"
 
 namespace singa {
 
@@ -87,30 +87,6 @@ std::size_t Message::getPayload(void** p) {
     else 
         *p = msg_ + hsize_ + msize_;
     return this->psize_;
-}
-
-void MessageQueue::push(Message& msg) {
-    this->lock_.lock();
-    this->mqueue_.push(static_cast<Message&&>(msg));
-    this->lock_.unlock();
-}
-
-void MessageQueue::pop() {
-    this->lock_.lock();
-    this->mqueue_.pop();
-    this->lock_.unlock();
-}
-
-Message& MessageQueue::front() {
-    this->lock_.lock();
-    Message& ret = this->mqueue_.front();
-    this->lock_.unlock();
-    return ret;
-}
-
-std::size_t MessageQueue::size() {
-    std::unique_lock<std::mutex> lock(lock_);
-    return mqueue_.size();
 }
 
 }

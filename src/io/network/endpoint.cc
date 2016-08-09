@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#include "singa/io/network/endpoint.h"
-#include "singa/io/network/integer.h"
+#include "singa/io/network.h"
+#include "singa/io/integer.h"
 #include "singa/utils/logging.h"
 
 #include <sys/socket.h>
