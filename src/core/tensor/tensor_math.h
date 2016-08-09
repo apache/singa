@@ -127,6 +127,12 @@ void LE(const size_t num, const Block *in, const DType x, Block *out,
         Context *ctx) {
   LOG(FATAL) << "LE Not Implemented";
 }
+/// out[i]=(in1[i]<=in2[i])?1.f:0.f
+template <typename DType, typename Lang>
+void LE(const size_t num, const Block *in1, const Block *in2, Block *out,
+        Context *ctx) {
+  LOG(FATAL) << "Tensor-Tensor LE Not Implemented";
+}
 /// Natual logarithm, the base is e, Neper number out[i]=log(in[i]).
 template <typename DType, typename Lang>
 void Log(const size_t num, const Block *in, Block *out, Context *ctx) {
@@ -138,17 +144,35 @@ void LT(const size_t num, const Block *in, const DType x, Block *out,
         Context *ctx) {
   LOG(FATAL) << "LT Not Implemented";
 }
+/// out[i]=(in1[i]<in2[i])?1.f:0.f
+template <typename DType, typename Lang>
+void LT(const size_t num, const Block *in1, const Block *in2, Block *out,
+        Context *ctx) {
+  LOG(FATAL) << "Tensor-Tensor LT Not Implemented";
+}
 /// out[i]=(in[i]>=x)?1.f:0.f
 template <typename DType, typename Lang>
 void GE(const size_t num, const Block *in, const DType x, Block *out,
         Context *ctx) {
   LOG(FATAL) << "GE Not Implemented";
 }
+/// out[i]=(in1[i]>=in2[i])?1.f:0.f
+template <typename DType, typename Lang>
+void GE(const size_t num, const Block *in1, const Block *in2, Block *out,
+        Context *ctx) {
+  LOG(FATAL) << "Tensor-Tensor GE Not Implemented";
+}
 /// out[i]=(in[i]>x)?1.f:0.f
 template <typename DType, typename Lang>
 void GT(const size_t num, const Block *in, const DType x, Block *out,
         Context *ctx) {
   LOG(FATAL) << "GT Not Implemented";
+}
+/// out[i]=(in[i]>in2[i])?1.f:0.f
+template <typename DType, typename Lang>
+void GT(const size_t num, const Block *in, const Block *in2, Block *out,
+        Context *ctx) {
+  LOG(FATAL) << "Tensor-Tensor GT Not Implemented";
 }
 /// out[i] = pow(in[i], x)
 template <typename DType, typename Lang>
