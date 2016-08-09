@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-
+import cPickle as pickle
 import numpy as np
 import sys
 import os
@@ -27,6 +27,15 @@ import net as ffnet
 
 
 def predict(net, images, cuda, topk=5):
+    '''Predict the label of each image.
+
+    Args:
+        net, a pretrained neural net
+        images, a batch of images [batch_size, 3, 32, 32], which have been
+            pre-processed
+        cuda, the cuda device
+        topk, return the topk labels for each image.
+    '''
     x = tensor.from_numpy(images.astype(np.float32))
     x.to_device(cuda)
     y = net.predict(x)
@@ -40,7 +49,7 @@ def predict(net, images, cuda, topk=5):
 def load_dataset(filepath):
     print 'Loading data file %s' % filepath
     with open(filepath, 'rb') as fd:
-        cifar10 = cPickle.load(fd)
+        cifar10 = pickle.load(fd)
     image = cifar10['data'].astype(dtype=np.uint8)
     image = image.reshape((-1, 3, 32, 32))
     label = np.asarray(cifar10['labels'], dtype=np.uint8)
@@ -79,4 +88,5 @@ if __name__ == '__main__':
 
     mean = compute_image_mean('cifar-10-batches-py')
     test_images, _ = load_test_data('cifar-10-batches-py')
+    # minus mean is for alexnet; vgg uses a different pre-processing strategy
     print predict(model, test_images - mean, cuda)

@@ -23,9 +23,9 @@ import cPickle
 import numpy as np
 import os
 import sys
+import argparse
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
-from singa import initializer
 from singa import utils
 from singa import optimizer
 from singa import device
@@ -33,6 +33,7 @@ from singa import tensor
 from singa.proto import core_pb2
 
 import alexnet
+import vgg
 
 
 def load_dataset(filepath):
@@ -65,7 +66,28 @@ def load_test_data(dir_path):
     return np.array(images,  dtype=np.float32), np.array(labels, dtype=np.int32)
 
 
-def get_lr(epoch):
+def normalize_for_vgg(train_x, test_x):
+    mean = train_x.mean()
+    std = train_x.std()
+    train_x -= mean
+    test_x -= mean
+    train_x /= std
+    test_x /= std
+    return train_x, test_x
+
+
+def normalize_for_alexnet(train_x, test_x):
+    mean = np.average(train_x, axis=0)
+    train_x -= mean
+    test_x -= mean
+    return train_x, test_x
+
+
+def vgg_lr(epoch):
+    return 0.01 / float(1 << ((epoch / 30)))
+
+
+def alexnet_lr(epoch):
     if epoch < 120:
         return 0.001
     elif epoch < 130:
@@ -74,32 +96,21 @@ def get_lr(epoch):
         return 0.00001
 
 
-def train(data_dir, net, num_epoch=140, batch_size=100):
+def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100):
     print 'Start intialization............'
     cuda = device.create_cuda_gpu()
     net.to_device(cuda)
     opt = optimizer.SGD(momentum=0.9, weight_decay=0.004)
     for (p, specs) in zip(net.param_values(), net.param_specs()):
-        filler = specs.filler
-        if filler.type == 'gaussian':
-            initializer.gaussian(p, filler.mean, filler.std)
-        else:
-            p.set_value(0)
         opt.register(p, specs)
-        print specs.name, filler.type, p.l1()
-    print 'Loading data ..................'
-    train_x, train_y = load_train_data(data_dir)
-    test_x, test_y = load_test_data(data_dir)
-    mean = np.average(train_x, axis=0)
-    train_x -= mean
-    test_x -= mean
 
     tx = tensor.Tensor((batch_size, 3, 32, 32), cuda)
     ty = tensor.Tensor((batch_size,), cuda, core_pb2.kInt)
+    train_x, train_y, test_x, test_y = data
     num_train_batch = train_x.shape[0] / batch_size
     num_test_batch = test_x.shape[0] / batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
-    for epoch in range(num_epoch):
+    for epoch in range(max_epoch):
         np.random.shuffle(idx)
         loss, acc = 0.0, 0.0
         print 'Epoch %d' % epoch
@@ -135,8 +146,20 @@ def train(data_dir, net, num_epoch=140, batch_size=100):
     net.save('model.bin')  # save model params into checkpoint file
 
 if __name__ == '__main__':
-    data_dir = 'cifar-10-batches-py'
-    assert os.path.exists(data_dir), \
+    parser = argparse.ArgumentParser(description='Train vgg/alexnet for cifar10')
+    parser.add_argument('model', choices=['vgg', 'alexnet'], default='alexnet')
+    parser.add_argument('data', default='cifar-10-batches-py')
+    args = parser.parse_args()
+    assert os.path.exists(args.data), \
         'Pls download the cifar10 dataset via "download_data.py py"'
-    net = alexnet.create_net()
-    train(data_dir, net)
+    print 'Loading data ..................'
+    train_x, train_y = load_train_data(args.data)
+    test_x, test_y = load_test_data(args.data)
+    if args.model == 'alexnet':
+        train_x, test_x = normalize_for_alexnet(train_x, test_x)
+        net = alexnet.create_net()
+        train((train_x, train_y, test_x, test_y), net, 140, alexnet_lr, 0.004)
+    else:
+        train_x, test_x = normalize_for_vgg(train_x, test_x)
+        net = vgg.create_net()
+        train((train_x, train_y, test_x, test_y), net, 250, vgg_lr, 0.0005)
