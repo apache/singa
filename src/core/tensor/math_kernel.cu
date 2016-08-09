@@ -243,11 +243,26 @@ __global__ void KernelGE(const size_t num, const float *in, const float x,
     out[idx] = in[idx] >= x ? 1.0f : 0.0f;
   }
 }
+
+__global__ void KernelBGE(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] >= in2[idx] ? 1.0f : 0.0f;
+  }
+}
 __global__ void KernelGT(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
        idx += blockDim.x * gridDim.x) {
     out[idx] = in[idx] > x ? 1.0f : 0.0f;
+  }
+}
+__global__ void KernelBGT(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] > in2[idx] ? 1.0f : 0.0f;
   }
 }
 __global__ void KernelLE(const size_t num, const float *in, const float x,
@@ -257,7 +272,13 @@ __global__ void KernelLE(const size_t num, const float *in, const float x,
     out[idx] = in[idx] <= x ? 1.0f : 0.0f;
   }
 }
-
+__global__ void KernelBLE(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] <= in2[idx] ? 1.0f : 0.0f;
+  }
+}
 __global__ void KernelLT(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
@@ -265,7 +286,13 @@ __global__ void KernelLT(const size_t num, const float *in, const float x,
     out[idx] = in[idx] < x ? 1.0f : 0.0f;
   }
 }
-
+__global__ void KernelBLT(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] < in2[idx] ? 1.0f : 0.0f;
+  }
+}
 __global__ void KernelRowMax(const size_t nrow, const size_t ncol, const float *inPtr,
     float *outPtr) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < nrow;
@@ -381,19 +408,34 @@ void gt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {
   KernelGT <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
 }
+void gt(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBGT <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in1, in2, out);
+}
 void ge(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {
   KernelGE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
+}
+void ge(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBGE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in1, in2, out);
 }
 void lt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {
   KernelLT <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
 }
+void lt(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBLT <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in1, in2, out);
+}
 void le(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {
   KernelLE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
 }
-
+void le(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBLE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in1, in2, out);
+}
 void pow(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s) {
   KernelPow <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in1, in2, out);

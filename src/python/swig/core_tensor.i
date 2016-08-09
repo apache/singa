@@ -207,6 +207,16 @@ namespace singa{
   %rename(LE_Tf) operator<=(const Tensor &t, const float x);
   %rename(GT_Tf) operator>(const Tensor &t, const float x);
   %rename(GE_Tf) operator>=(const Tensor &t, const float x);
+  %rename(LT_TT) operator<(const Tensor &lhs, const Tensor &rhs);
+  %rename(LE_TT) operator<=(const Tensor &lhs, const Tensor &rhs);
+  %rename(GT_TT) operator>(const Tensor &lhs, const Tensor &rhs);
+  %rename(GE_TT) operator>=(const Tensor &lhs, const Tensor &rhs);
+
+  Tensor operator<(const Tensor &lhs, const Tensor &rhs);
+  Tensor operator<=(const Tensor &lhs, const Tensor &rhs);
+  Tensor operator>(const Tensor &lhs, const Tensor &rhs);
+  Tensor operator>=(const Tensor &lhs, const Tensor &rhs);
+
 
   template <typename DType>
   Tensor operator<(const Tensor &t, const DType x);

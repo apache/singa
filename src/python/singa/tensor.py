@@ -237,16 +237,28 @@ class Tensor(object):
                                     self.singa_tensor, rhs)
 
     def __lt__(self, rhs):
-        return _call_singa_func(singa.LT_Tf, self.singa_tensor, rhs)
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(singa.LT_TT, self.singa_tensor, rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.LT_Tf, self.singa_tensor, rhs)
 
     def __le__(self, rhs):
-        return _call_singa_func(singa.LE_Tf, self.singa_tensor, rhs)
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(singa.LE_TT, self.singa_tensor, rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.LE_Tf, self.singa_tensor, rhs)
 
     def __gt__(self, rhs):
-        return _call_singa_func(singa.GT_Tf, self.singa_tensor, rhs)
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(singa.GT_TT, self.singa_tensor, rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.GT_Tf, self.singa_tensor, rhs)
 
     def __ge__(self, rhs):
-        return _call_singa_func(singa.GE_Tf, self.singa_tensor, rhs)
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(singa.GE_TT, self.singa_tensor, rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.GE_Tf, self.singa_tensor, rhs)
 
 
 ''' python functions for global functions in Tensor.h

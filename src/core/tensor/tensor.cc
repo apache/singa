@@ -530,7 +530,10 @@ GenBinaryTensorFn(operator-, Sub);
 GenBinaryTensorFn(operator*, EltwiseMult);
 GenBinaryTensorFn(operator/, Div);
 GenBinaryTensorFn(Pow, Pow);
-
+GenBinaryTensorFn(operator<, LT);
+GenBinaryTensorFn(operator<=, LE);
+GenBinaryTensorFn(operator>, GT);
+GenBinaryTensorFn(operator>=, GE);
 #define EltwiseTensorScalarFn(fn, t, x, ret)                            \
   do {                                                                  \
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {  \

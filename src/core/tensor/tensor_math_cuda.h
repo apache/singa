@@ -117,6 +117,15 @@ void GE<float, lang::Cuda>(const size_t num, const Block* in, const float x,
   const float* inPtr = static_cast<const float*>(in->data());
   cuda::ge(num, inPtr, x, outPtr, ctx->stream);
 }
+template <>
+void GE<float, lang::Cuda>(const size_t num, const Block* in1, const Block* in2,
+                           Block* out, Context* ctx) {
+  float* outPtr = static_cast<float*>(out->mutable_data());
+  const float* inPtr1 = static_cast<const float*>(in1->data());
+  const float* inPtr2 = static_cast<const float*>(in2->data());
+  cuda::ge(num, inPtr1, inPtr2, outPtr, ctx->stream);
+}
+
 
 template <>
 void GT<float, lang::Cuda>(const size_t num, const Block* in, const float x,
@@ -125,13 +134,28 @@ void GT<float, lang::Cuda>(const size_t num, const Block* in, const float x,
   const float* inPtr = static_cast<const float*>(in->data());
   cuda::gt(num, inPtr, x, outPtr, ctx->stream);
 }
-
+template <>
+void GT<float, lang::Cuda>(const size_t num, const Block* in1, const Block* in2,
+                           Block* out, Context* ctx) {
+  float* outPtr = static_cast<float*>(out->mutable_data());
+  const float* inPtr1 = static_cast<const float*>(in1->data());
+  const float* inPtr2 = static_cast<const float*>(in2->data());
+  cuda::gt(num, inPtr1, inPtr2, outPtr, ctx->stream);
+}
 template <>
 void LE<float, lang::Cuda>(const size_t num, const Block* in, const float x,
                            Block* out, Context* ctx) {
   float* outPtr = static_cast<float*>(out->mutable_data());
   const float* inPtr = static_cast<const float*>(in->data());
   cuda::le(num, inPtr, x, outPtr, ctx->stream);
+}
+template <>
+void LE<float, lang::Cuda>(const size_t num, const Block* in1, const Block* in2,
+                           Block* out, Context* ctx) {
+  float* outPtr = static_cast<float*>(out->mutable_data());
+  const float* inPtr1 = static_cast<const float*>(in1->data());
+  const float* inPtr2 = static_cast<const float*>(in2->data());
+  cuda::le(num, inPtr1, inPtr2, outPtr, ctx->stream);
 }
 
 /// Natual logarithm, the base is e, Neper number out[i]=ln(in[i]).
@@ -149,7 +173,14 @@ void LT<float, lang::Cuda>(const size_t num, const Block* in, const float x,
   const float* inPtr = static_cast<const float*>(in->data());
   cuda::lt(num, inPtr, x, outPtr, ctx->stream);
 }
-
+template <>
+void LT<float, lang::Cuda>(const size_t num, const Block* in1, const Block* in2,
+                           Block* out, Context* ctx) {
+  float* outPtr = static_cast<float*>(out->mutable_data());
+  const float* inPtr1 = static_cast<const float*>(in1->data());
+  const float* inPtr2 = static_cast<const float*>(in2->data());
+  cuda::lt(num, inPtr1, inPtr2, outPtr, ctx->stream);
+}
 /// Element-wise operation, out[i] = in[i]^x
 template <>
 void Pow<float, lang::Cuda>(const size_t num, const Block* in, const float x,
