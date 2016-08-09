@@ -32,7 +32,7 @@
 #include "../../src/model/layer/cudnn_activation.h"
 #include "../../src/model/layer/cudnn_pooling.h"
 #include "../../src/model/layer/cudnn_lrn.h"
-#include "../../src/model/layer/cudnn_dropout.h"
+#include "../../src/model/layer/dropout.h"
 #include "../../src/model/layer/cudnn_batchnorm.h"
 #include "../../src/model/layer/dense.h"
 #include "../../src/model/layer/flatten.h"
@@ -155,7 +155,7 @@ LayerConf GenBatchNormConf(string name) {
 LayerConf GenDropoutConf(string name, float dropout_ratio) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnDropout");
+  conf.set_type("Dropout");
   DropoutConf *dropout = conf.mutable_dropout_conf();
   dropout->set_dropout_ratio(dropout_ratio);
 
@@ -172,37 +172,37 @@ FeedForwardNet CreateNet() {
   FeedForwardNet net;
   Shape s{3, 32, 32};
   ConvBNReLU(net, "conv1_1", 64, &s);
-  net.Add(new CudnnDropout(), GenDropoutConf("drop1", 0.3));
+  net.Add(new Dropout(), GenDropoutConf("drop1", 0.3));
   ConvBNReLU(net, "conv1_2", 64);
   net.Add(new CudnnPooling(), GenPoolingConf("pool1", true, 2, 2, 0));
   ConvBNReLU(net, "conv2_1", 128);
-  net.Add(new CudnnDropout(), GenDropoutConf("drop2", 0.4));
+  net.Add(new Dropout(), GenDropoutConf("drop2", 0.4));
   ConvBNReLU(net, "conv2_2", 128);
   net.Add(new CudnnPooling(), GenPoolingConf("pool2", true, 2, 2, 0));
   ConvBNReLU(net, "conv3_1", 256);
-  net.Add(new CudnnDropout(), GenDropoutConf("drop3_1", 0.4));
+  net.Add(new Dropout(), GenDropoutConf("drop3_1", 0.4));
   ConvBNReLU(net, "conv3_2", 256);
-  net.Add(new CudnnDropout(), GenDropoutConf("drop3_2", 0.4));
+  net.Add(new Dropout(), GenDropoutConf("drop3_2", 0.4));
   ConvBNReLU(net, "conv3_3", 256);
   net.Add(new CudnnPooling(), GenPoolingConf("pool3", true, 2, 2, 0));
   ConvBNReLU(net, "conv4_1", 512);
-  net.Add(new CudnnDropout(), GenDropoutConf("drop4_1", 0.4));
+  net.Add(new Dropout(), GenDropoutConf("drop4_1", 0.4));
   ConvBNReLU(net, "conv4_2", 512);
-  net.Add(new CudnnDropout(), GenDropoutConf("drop4_2", 0.4));
+  net.Add(new Dropout(), GenDropoutConf("drop4_2", 0.4));
   ConvBNReLU(net, "conv4_3", 512);
   net.Add(new CudnnPooling(), GenPoolingConf("pool4", true, 2, 2, 0));
   ConvBNReLU(net, "conv5_1", 512);
-  net.Add(new CudnnDropout(), GenDropoutConf("drop5_1", 0.4));
+  net.Add(new Dropout(), GenDropoutConf("drop5_1", 0.4));
   ConvBNReLU(net, "conv5_2", 512);
-  net.Add(new CudnnDropout(), GenDropoutConf("drop5_2", 0.4));
+  net.Add(new Dropout(), GenDropoutConf("drop5_2", 0.4));
   ConvBNReLU(net, "conv5_3", 512);
   net.Add(new CudnnPooling(), GenPoolingConf("pool5", true, 2, 2, 0));
   net.Add(new Flatten(), GenFlattenConf("flat"));
-  net.Add(new CudnnDropout(), GenDropoutConf("flat_drop", 0.5));
+  net.Add(new Dropout(), GenDropoutConf("flat_drop", 0.5));
   net.Add(new Dense(), GenDenseConf("ip1", 512, 0.02));
   net.Add(new CudnnBatchNorm(), GenBatchNormConf("ip1_bn"));
   net.Add(new CudnnActivation(), GenReLUConf("ip1_relu"));
-  net.Add(new CudnnDropout(), GenDropoutConf("ip1_drop", 0.5));
+  net.Add(new Dropout(), GenDropoutConf("ip1_drop", 0.5));
   net.Add(new Dense(), GenDenseConf("ip2", 10, 0.02));
 
   return net;

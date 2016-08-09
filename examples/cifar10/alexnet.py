@@ -14,15 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
+''' This model is created following the structure from
+https://code.google.com/p/cuda-convnet/source/browse/trunk/example-layers/layers-18pct.cfg
+Following the same setting for hyper-parameters and data pre-processing, the final
+validation accuracy would be about 82%.
+'''
+
 import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 from singa import layer
+from singa import initializer
 from singa import metric
 from singa import loss
 from singa import net as ffnet
-from singa.proto import core_pb2
 
 
 def create_net():
@@ -44,4 +50,12 @@ def create_net():
     net.add(layer.MaxPooling2D('pool3', 3, 2, pad=1))
     net.add(layer.Flatten('flat'))
     net.add(layer.Dense('dense', 10, W_specs=W2_specs.copy(), b_specs=b_specs.copy()))
+    for (p, specs) in zip(net.param_values(), net.param_specs()):
+        filler = specs.filler
+        if filler.type == 'gaussian':
+            initializer.gaussian(p, filler.mean, filler.std)
+        else:
+            p.set_value(0)
+        print specs.name, filler.type, p.l1()
+
     return net
