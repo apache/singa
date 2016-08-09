@@ -24,7 +24,7 @@
 #include <cmath>
 #include "../../src/model/layer/cudnn_activation.h"
 #include "../../src/model/layer/cudnn_convolution.h"
-#include "../../src/model/layer/cudnn_dropout.h"
+#include "../../src/model/layer/dropout.h"
 #include "../../src/model/layer/cudnn_lrn.h"
 #include "../../src/model/layer/cudnn_pooling.h"
 #include "../../src/model/layer/dense.h"
@@ -133,7 +133,7 @@ LayerConf GenFlattenConf(string name) {
 LayerConf GenDropoutConf(string name, float dropout_ratio) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnDropout");
+  conf.set_type("Dropout");
   DropoutConf *dropout = conf.mutable_dropout_conf();
   dropout->set_dropout_ratio(dropout_ratio);
   return conf;
@@ -164,10 +164,10 @@ FeedForwardNet CreateNet() {
   net.Add(new Flatten(), GenFlattenConf("flat"));
   net.Add(new Dense(), GenDenseConf("ip6", 4096, 0.005, 1, 1.0));
   net.Add(new CudnnActivation(), GenReLUConf("relu6"));
-  net.Add(new CudnnDropout(), GenDropoutConf("drop6", 0.5));
+  net.Add(new Dropout(), GenDropoutConf("drop6", 0.5));
   net.Add(new Dense(), GenDenseConf("ip7", 4096, 0.005, 1, 1.0));
   net.Add(new CudnnActivation(), GenReLUConf("relu7"));
-  net.Add(new CudnnDropout(), GenDropoutConf("drop7", 0.5));
+  net.Add(new Dropout(), GenDropoutConf("drop7", 0.5));
   net.Add(new Dense(), GenDenseConf("ip8", 1000, 0.01, 1));
 
   return net;
@@ -348,8 +348,8 @@ void Train(int num_epoch, float lr, size_t batchsize, size_t train_file_size,
 
 int main(int argc, char **argv) {
   singa::InitChannel(nullptr);
-
-  if (argc == 1) {
+  int pos = singa::ArgPos(argc, argv, "-h");
+  if (pos != -1) {
     std::cout << "Usage:\n"
               << "\t-epoch <int>: number of epoch to be trained, default is 90;\n"
               << "\t-lr <float>: base learning rate;\n"
@@ -366,7 +366,7 @@ int main(int argc, char **argv) {
                  "feed to the model.\n";
     return 0;
   }
-  int pos = singa::ArgPos(argc, argv, "-epoch");
+  pos = singa::ArgPos(argc, argv, "-epoch");
   int nEpoch = 90;
   if (pos != -1) nEpoch = atoi(argv[pos + 1]);
 
