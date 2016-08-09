@@ -24,7 +24,8 @@
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
 int main(int argc, char **argv) {
-  if (argc == 1) {
+  int pos = singa::ArgPos(argc, argv, "-h");
+  if (pos != -1) {
     std::cout << "Usage:\n"
               << "\t-trainlist <file>: the file of training list;\n"
               << "\t-trainfolder <folder>: the folder of training images;\n"
@@ -35,7 +36,7 @@ int main(int argc, char **argv) {
                  "each binary file.\n";
     return 0;
   }
-  int pos = singa::ArgPos(argc, argv, "-trainlist");
+  pos = singa::ArgPos(argc, argv, "-trainlist");
   string train_image_list = "imagenet/label/train.txt";
   if (pos != -1) train_image_list = argv[pos + 1];
 
