@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#ifndef SINGA_COMM_END_POINT_H_
-#define SINGA_COMM_END_POINT_H_
+#ifndef SINGA_COMM_NETWORK_H_
+#define SINGA_COMM_NETWORK_H_
 
 #include <ev.h>
 #include <thread>
@@ -32,8 +32,7 @@
 #include <atomic>
 #include <string>
 #include <netinet/in.h>
-
-#include "singa/io/network/message.h"
+#include <queue>
 
 namespace singa {
 
@@ -52,8 +51,40 @@ namespace singa {
 
 #define EP_TIMEOUT 5.
 
+#define MSG_DATA 0
+#define MSG_ACK 1
+
 class NetworkThread;
+class EndPoint;
 class EndPointFactory;
+
+class Message{
+    private:
+        uint8_t type_;
+        uint32_t id_;
+        std::size_t msize_ = 0;
+        std::size_t psize_ = 0;
+        std::size_t processed_ = 0;
+        char* msg_ = nullptr;
+        static const int hsize_ = sizeof(id_) + 2 * sizeof(std::size_t) + sizeof(type_);
+        char mdata_[hsize_];
+        friend class NetworkThread;
+        friend class EndPoint;
+    public:
+        Message(int = MSG_DATA, uint32_t = 0);
+        Message(const Message&) = delete;
+        Message(Message&&);
+        ~Message();
+
+        void setMetadata(const void*, int);
+        void setPayload(const void*, int);
+
+        std::size_t getMetadata(void**);
+        std::size_t getPayload(void**);
+
+        std::size_t getSize();
+        void setId(uint32_t);
+};
 
 class EndPoint {
     private:
@@ -102,19 +133,14 @@ class NetworkThread{
         struct ev_loop *loop_;
         ev_async ep_sig_;
         ev_async msg_sig_;
-
-        std::thread* thread_;
-
-        std::unordered_map<int, ev_io> fd_wwatcher_map_;
-        std::unordered_map<int, ev_io> fd_rwatcher_map_;
-
-        std::unordered_map<int, EndPoint*> fd_ep_map_;
-
-        std::map<int, Message> pending_msgs_;
-
         ev_io socket_watcher_;
         int port_;
         int socket_fd_;
+        std::thread* thread_;
+        std::unordered_map<int, ev_io> fd_wwatcher_map_;
+        std::unordered_map<int, ev_io> fd_rwatcher_map_;
+        std::unordered_map<int, EndPoint*> fd_ep_map_;
+        std::map<int, Message> pending_msgs_;
 
         void handleConnLost(int, EndPoint*, bool = true);
         void doWork();
@@ -125,7 +151,6 @@ class NetworkThread{
         EndPointFactory* epf_;
 
         NetworkThread(int);
-        //void join();
         void notify(int signal);
 
         void onRecv(int fd);
