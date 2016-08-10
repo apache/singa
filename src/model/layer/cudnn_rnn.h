@@ -20,7 +20,7 @@
 #define SRC_MODEL_LAYER_CUDNN_RNN_H_
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
-#if CUDNN_VERSION_MAJOR >= 5
+#if CUDNN_VERSION_MAJOR >= 5 && CUDNN_VERSION_PATCH >= 5
 #include <string>
 #include <utility>
 #include <vector>
@@ -82,6 +82,6 @@ class CudnnRNN : public RNN {
 
 }  // namespace singa
 
-#endif  // CUDNN_VERSION_MAJOR >= 5
+#endif  // CUDNN_VERSION_MAJOR >= 5 && CUDNN_VERSION_PATCH >= 5
 #endif  // USE_CUDNN
 #endif  // SRC_MODEL_LAYER_CUDNN_RNN_H_

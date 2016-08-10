@@ -21,7 +21,7 @@
 
 #include "../src/model/layer/cudnn_rnn.h"
 #ifdef USE_CUDNN
-#if CUDNN_VERSION_MAJOR >= 5
+#if CUDNN_VERSION_MAJOR >= 5 && CUDNN_VERSION_PATCH >= 5
 
 #include "gtest/gtest.h"
 
@@ -177,5 +177,5 @@ TEST_F(TestCudnnRNN, Backward) {
     std::copy(tmp.begin(), tmp.end(), dhyptr.begin());
   }
 }
-#endif  // CUDNN_VERSION_MAJOR >= 5
+#endif  // CUDNN_VERSION_MAJOR >= 5 && CUDNN_VERSION_PATCH >= 5
 #endif  // USE_CUDNN

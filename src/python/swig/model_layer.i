@@ -34,6 +34,7 @@
 #include "../src/model/layer/cudnn_rnn.h"
 #include "singa/core/tensor.h"
 #include "singa/proto/model.pb.h"
+#include "singa/singa_config.h"
 using singa::Tensor;
 using singa::ParamSpec;
 using singa::DataType;
@@ -78,12 +79,9 @@ class Layer {
 std::shared_ptr<Layer> CreateLayer(const std::string& type);
 const std::vector<std::string> GetRegisteredLayers();
 class RNN : public Layer {
-  /*
- public:
-  void Setup(const std::vector<size_t>& in_sample_shape,
-                        const std::string& proto_str) override;
-                        */
 };
+
+#if CUDNN_VERSION_MINOR >= 5 && CUDNN_VERSION_PATCH >= 5
 class CudnnRNN : public RNN {
  public:
  // note: Must use std::vector instead of vector.
@@ -94,6 +92,8 @@ class CudnnRNN : public RNN {
     const std::vector<Tensor> param_values() override;
     const std::vector<size_t> GetOutputSampleShape() const override;
 };
+
+#endif  // CUDNN_VERSION_MINOR >= 5 && CUDNN_VERSION_PATCH >= 5
 
 }
 
