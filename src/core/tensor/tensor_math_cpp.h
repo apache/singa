@@ -239,7 +239,7 @@ void Sqrt<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
-    CHECK_GT(inPtr[i], 0.f);
+    CHECK_GE(inPtr[i], 0.f);
     outPtr[i] = sqrt(inPtr[i]);
   }
 }

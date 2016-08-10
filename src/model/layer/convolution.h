@@ -27,7 +27,7 @@ namespace singa {
 class Convolution : public Layer {
  public:
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "Convolution"; }
+  // const std::string layer_type() const override { return "Convolution"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const vector<size_t>& in_shape, const LayerConf& conf) override;

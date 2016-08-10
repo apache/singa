@@ -39,7 +39,7 @@ class FeedForwardNet {
   ///    following the topological order.
   /// 2. this layer has already been setup (Setup function is called outside).
   /// The layer will be freed in the destructor of FeedForwardNet.
-  Layer* Add(Layer* layer);
+  std::shared_ptr<Layer> Add(std::shared_ptr<Layer> layer);
 
   // TODO(wangwei) add ConcatenateLayer and SliceLayer
   // AddConcatenateLayer(vector<Layer*> src, Layer *dst);
@@ -49,11 +49,9 @@ class FeedForwardNet {
   /// Assume the layer is added in corret order.
   /// For the first layer, 'sample_shape' (the input sample shape) is necessary
   /// for calling Setup().
-  Layer* Add(const LayerConf& conf, const Shape* sample_shape = nullptr);
+  std::shared_ptr<Layer> Add(const LayerConf& conf,
+      const Shape* sample_shape = nullptr);
 
-  /// Add a layer, and call its Setup function.
-  Layer* Add(Layer* layer, const LayerConf& conf,
-             const Shape* sample_shape = nullptr);
   /// Set some fields used for training and evaluating the neural net.
   /// This method will instantiate an Updater ,then wrap the Optimier into
   /// Updater and always register the parameters of the net instance.
@@ -147,13 +145,13 @@ class FeedForwardNet {
     return std::thread([=]() { Train(batchsize, nb_epoch, x, y); });
   }
 
-  const vector<Layer*> layers() const { return layers_; }
+  const vector<std::shared_ptr<Layer>> layers() const { return layers_; }
   const vector<string> GetParamNames() const;
   const vector<ParamSpec> GetParamSpecs() const;
   const vector<Tensor> GetParamValues() const;
 
  protected:
-  vector<Layer*> layers_;
+  vector<std::shared_ptr<Layer>> layers_;
   std::shared_ptr<Updater> updater_;
   Loss* loss_;
   Metric* metric_;

@@ -31,7 +31,10 @@ from singa import loss
 from singa import net as ffnet
 
 
-def create_net():
+def create_net(use_cpu=False):
+    if use_cpu:
+        layer.engine = 'singa'
+
     net = ffnet.FeedForwardNet(loss.SoftmaxCrossEntropy(), metric.Accuracy())
     W0_specs = {'init': 'gaussian', 'mean': 0, 'std': 0.0001}
     W1_specs = {'init': 'gaussian', 'mean': 0, 'std': 0.01}

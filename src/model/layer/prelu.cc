@@ -20,7 +20,7 @@
 #include "./prelu.h"
 namespace singa {
 
-RegisterLayerClass(PReLU);
+RegisterLayerClass(singa_prelu, PReLU);
 void PReLU::Setup(const Shape& in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
@@ -82,7 +82,7 @@ const std::pair<Tensor, vector<Tensor> > PReLU::Backward(int flag,
   Tensor da;
   da.ResetLike(a_);
   if (!channel_shared_) {
-    size_t n, c, h, w;
+    size_t n = 0, c = 0, h = 0, w = 0;
     Tensor temp1 = (input <= 0.f);
     if (temp1.nDim() == 4) {
       if (format_ == "NCHW") {

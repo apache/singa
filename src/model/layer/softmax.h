@@ -24,7 +24,7 @@ namespace singa {
 class Softmax : public Layer {
  public:
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "Softmax"; }
+  // const std::string layer_type() const override { return "Softmax"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const Shape& in_sample, const LayerConf& conf) override;

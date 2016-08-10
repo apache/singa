@@ -23,7 +23,7 @@
 #include "cudnn_utils.h"
 
 namespace singa {
-RegisterLayerClass(CudnnLRN);
+RegisterLayerClass(cudnn_lrn, CudnnLRN);
 CudnnLRN::~CudnnLRN() {
   if (has_init_cudnn_) {
     CUDNN_CHECK(cudnnDestroyLRNDescriptor(lrn_desc_));

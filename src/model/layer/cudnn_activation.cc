@@ -25,7 +25,9 @@
 #include "singa/utils/logging.h"
 
 namespace singa {
-RegisterLayerClass(CudnnActivation);
+RegisterLayerClass(cudnn_relu, CudnnActivation);
+RegisterLayerClass(cudnn_sigmoid, CudnnActivation);
+RegisterLayerClass(cudnn_tanh, CudnnActivation);
 CudnnActivation::~CudnnActivation() {
   if (acti_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(acti_desc_));
@@ -40,11 +42,11 @@ void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(
       desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), 1, 1, 1, size));
 
-  if (mode_ == "SIGMOID")
+  if (mode_ == "sigmoid")
     cudnn_mode_ = CUDNN_ACTIVATION_SIGMOID;
-  else if (mode_ == "TANH")
+  else if (mode_ == "tanh")
     cudnn_mode_ = CUDNN_ACTIVATION_TANH;
-  else if (mode_ == "RELU")
+  else if (mode_ == "relu")
     cudnn_mode_ = CUDNN_ACTIVATION_RELU;
   else
     LOG(FATAL) << "Unkown activation: " << mode_;

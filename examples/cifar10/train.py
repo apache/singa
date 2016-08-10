@@ -96,16 +96,23 @@ def alexnet_lr(epoch):
         return 0.00001
 
 
-def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100):
+def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
+          use_cpu=False):
     print 'Start intialization............'
-    cuda = device.create_cuda_gpu()
-    net.to_device(cuda)
+    if use_cpu:
+        print 'Using CPU'
+        dev = device.get_default_device()
+    else:
+        print 'Using GPU'
+        dev = device.create_cuda_gpu()
+
+    net.to_device(dev)
     opt = optimizer.SGD(momentum=0.9, weight_decay=0.004)
     for (p, specs) in zip(net.param_values(), net.param_specs()):
         opt.register(p, specs)
 
-    tx = tensor.Tensor((batch_size, 3, 32, 32), cuda)
-    ty = tensor.Tensor((batch_size,), cuda, core_pb2.kInt)
+    tx = tensor.Tensor((batch_size, 3, 32, 32), dev)
+    ty = tensor.Tensor((batch_size,), dev, core_pb2.kInt)
     train_x, train_y, test_x, test_y = data
     num_train_batch = train_x.shape[0] / batch_size
     num_test_batch = test_x.shape[0] / batch_size
@@ -127,7 +134,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100):
             # update progress bar
             utils.update_progress(b * 1.0 / num_train_batch,
                                   'training loss = %f, accuracy = %f' % (l, a))
-        info = 'training loss = %f, training accuracy = %f' \
+        info = '\ntraining loss = %f, training accuracy = %f' \
             % (loss / num_train_batch, acc / num_train_batch)
         print info
 
@@ -146,9 +153,11 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100):
     net.save('model.bin')  # save model params into checkpoint file
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train vgg/alexnet for cifar10')
+    parser = argparse.ArgumentParser(description='Train vgg/alexnet for '
+                                     'cifar10 dataset')
     parser.add_argument('model', choices=['vgg', 'alexnet'], default='alexnet')
     parser.add_argument('data', default='cifar-10-batches-py')
+    parser.add_argument('--use_cpu', action='store_true')
     args = parser.parse_args()
     assert os.path.exists(args.data), \
         'Pls download the cifar10 dataset via "download_data.py py"'
@@ -157,9 +166,11 @@ if __name__ == '__main__':
     test_x, test_y = load_test_data(args.data)
     if args.model == 'alexnet':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
-        net = alexnet.create_net()
-        train((train_x, train_y, test_x, test_y), net, 140, alexnet_lr, 0.004)
+        net = alexnet.create_net(args.use_cpu)
+        train((train_x, train_y, test_x, test_y), net, 140, alexnet_lr, 0.004,
+              use_cpu=args.use_cpu)
     else:
         train_x, test_x = normalize_for_vgg(train_x, test_x)
-        net = vgg.create_net()
-        train((train_x, train_y, test_x, test_y), net, 250, vgg_lr, 0.0005)
+        net = vgg.create_net(args.use_cpu)
+        train((train_x, train_y, test_x, test_y), net, 250, vgg_lr, 0.0005,
+              use_cpu=args.use_cpu)

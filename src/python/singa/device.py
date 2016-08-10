@@ -73,3 +73,16 @@ def create_cuda_gpus(num):
 
 def create_cuda_gpu():
     return singa.Platform.CreateCudaGPUs(1)[0]
+
+
+def create_cuda_gpus_on(device_ids):
+    return singa.Platform.CreateCudaGPUsOn(device_ids)
+
+
+def create_cuda_gpu_on(device_id):
+    devices = create_cuda_gpus_on([device_id])
+    return devices[0]
+
+
+def get_default_device():
+    return singa.Platform.GetDefaultDevice()

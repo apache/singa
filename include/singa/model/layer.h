@@ -222,8 +222,8 @@ class Layer {
   vector<ParamSpec> param_specs_;
 };
 
-#define RegisterLayerClass(SubLayer) \
-  static Registra<Layer, SubLayer> _##SubLayer##Layer(#SubLayer);
+#define RegisterLayerClass(Name, SubLayer) \
+  static Registra<Layer, SubLayer> Name##SubLayer(#Name);
 
 inline std::shared_ptr<Layer> CreateLayer(const std::string type) {
   std::shared_ptr<Layer> layer(Factory<Layer>::Create(type));

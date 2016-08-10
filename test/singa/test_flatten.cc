@@ -26,7 +26,7 @@ using singa::Flatten;
 using singa::Shape;
 TEST(Flatten, Setup) {
   Flatten flt;
-  EXPECT_EQ("Flatten", flt.layer_type());
+  // EXPECT_EQ("Flatten", flt.layer_type());
 
   singa::LayerConf conf;
   singa::FlattenConf *flattenconf = conf.mutable_flatten_conf();

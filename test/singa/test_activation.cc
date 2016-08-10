@@ -27,15 +27,15 @@ using singa::Activation;
 using singa::Shape;
 TEST(Activation, Setup) {
   Activation acti;
-  EXPECT_EQ("Activation", acti.layer_type());
+  // EXPECT_EQ("Activation", acti.layer_type());
 
   singa::LayerConf conf;
-  conf.set_type("RELU");
+  conf.set_type("singa_relu");
   singa::ReLUConf* reluconf = conf.mutable_relu_conf();
   reluconf->set_negative_slope(0.5);
 
   acti.Setup(Shape{3}, conf);
-  EXPECT_EQ("RELU", acti.Mode());
+  EXPECT_EQ("relu", acti.Mode());
   EXPECT_EQ(0.5f, acti.Negative_slope());
 }
 
@@ -46,13 +46,13 @@ TEST(Activation, Forward) {
   in.CopyDataFromHostPtr<float>(x, n);
 
   float neg_slope = 0.5f;
-  std::string types[] = {"SIGMOID","TANH","RELU"};
+  std::string types[] = {"singa_sigmoid", "singa_tanh", "singa_relu"};
   for (int j = 0; j < 3; j++) {
     Activation acti;
     singa::LayerConf conf;
     std::string layertype = types[j];
     conf.set_type(layertype);
-    if (layertype == "RELU") {
+    if (layertype == "relu") {
       singa::ReLUConf* reluconf = conf.mutable_relu_conf();
       reluconf->set_negative_slope(neg_slope);
     }
@@ -64,15 +64,15 @@ TEST(Activation, Forward) {
     EXPECT_EQ(n, out.Size());
 
     float* y = new float[n];
-    if (acti.Mode() == "SIGMOID") {
+    if (acti.Mode() == "sigmoid") {
       for (size_t i = 0; i < n; i++)
         y[i] = 1.f / (1.f + exp(-x[i]));
     }
-    else if (acti.Mode() == "TANH") {
+    else if (acti.Mode() == "tanh") {
       for (size_t i = 0; i < n; i++)
         y[i] = tanh(x[i]);
     }
-    else if (acti.Mode() == "RELU") {
+    else if (acti.Mode() == "relu") {
       for (size_t i = 0; i < n; i++)
         y[i] = (x[i] >= 0.f) ? x[i] : 0.f;
     }
@@ -92,13 +92,13 @@ TEST(Activation, Backward) {
   in.CopyDataFromHostPtr<float>(x, n);
 
   float neg_slope = 0.5f;
-  std::string types[] = {"SIGMOID","TANH","RELU"};
+  std::string types[] = {"singa_sigmoid", "singa_tanh", "singa_relu"};
   for (int j = 0; j < 3; j++) {
     Activation acti;
     singa::LayerConf conf;
     std::string layertype = types[j];
     conf.set_type(layertype);
-    if (layertype == "RELU") {
+    if (layertype == "relu") {
       singa::ReLUConf* reluconf = conf.mutable_relu_conf();
       reluconf->set_negative_slope(neg_slope);
     }
@@ -114,15 +114,15 @@ TEST(Activation, Backward) {
     const float* xptr = in_diff.first.data<float>();
 
     float* dx = new float[n];
-    if (acti.Mode() == "SIGMOID") {
+    if (acti.Mode() == "sigmoid") {
       for (size_t i = 0; i < n; i++)
         dx[i] = grad[i] * yptr[i] * (1. - yptr[i]);
     }
-    else if (acti.Mode() == "TANH") {
+    else if (acti.Mode() == "tanh") {
       for (size_t i = 0; i < n; i++)
         dx[i] = grad[i] * (1 - yptr[i] * yptr[i]);
     }
-    else if (acti.Mode() == "RELU") {
+    else if (acti.Mode() == "relu") {
       for (size_t i = 0; i < n; i++)
         dx[i] = grad[i] * (x[i] > 0.f) + acti.Negative_slope() * (x[i] <= 0.f);
     }

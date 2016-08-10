@@ -26,7 +26,7 @@ using singa::Dropout;
 using singa::Shape;
 TEST(Dropout, Setup) {
   Dropout drop;
-  EXPECT_EQ("Dropout", drop.layer_type());
+  // EXPECT_EQ("Dropout", drop.layer_type());
 
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();

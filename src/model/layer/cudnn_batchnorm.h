@@ -31,7 +31,7 @@ class CudnnBatchNorm : public BatchNorm {
  public:
   ~CudnnBatchNorm();
   /// \copy doc Layer::layer_type()
-  const std::string layer_type() const override { return "CudnnBatchNorm"; }
+  // const std::string layer_type() const override { return "CudnnBatchNorm"; }
 
   void Setup(const Shape& in_sample, const LayerConf& conf) override;
 

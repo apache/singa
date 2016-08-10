@@ -28,7 +28,7 @@ class Dense : public Layer {
  public:
   ~Dense();
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "Dense"; }
+  // const std::string layer_type() const override { return "Dense"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const Shape& in_sample, const LayerConf& conf) override;

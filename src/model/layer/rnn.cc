@@ -22,7 +22,7 @@
 #include "singa/utils/string.h"
 
 namespace singa {
-
+RegisterLayerClass(singa_rnn, RNN);
 void RNN::Setup(const Shape& in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
 
