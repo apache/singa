@@ -19,6 +19,8 @@
 
 #cmakedefine USE_OPENCL
 
+#cmakedefine ENABLE_DIST
+
 // lmdb
 #cmakedefine USE_LMDB
 

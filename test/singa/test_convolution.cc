@@ -18,6 +18,9 @@
 * under the License.
 *
 *************************************************************/
+#include "singa/singa_config.h"
+
+#ifdef USE_CBLAS
 #include "../src/model/layer/convolution.h"
 
 #include "gtest/gtest.h"
@@ -202,3 +205,4 @@ TEST(Convolution, Backward) {
                   dwptr[7]);
   EXPECT_FLOAT_EQ(dy[0] * x[4] + dy[4] * x[13], dwptr[8]);
 }
+#endif  // USE_CBLAS
