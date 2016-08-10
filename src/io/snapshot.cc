@@ -29,17 +29,17 @@
 #include <iostream>
 
 namespace singa {
-Snapshot::Snapshot(const std::string& prefix, Mode mode)
+Snapshot::Snapshot(const std::string& prefix, Mode mode, int max_param_size /*in MB*/)
     : prefix_(prefix),
       mode_(mode),
       bin_writer_ptr_(mode_ == kWrite ? (new io::BinFileWriter) : nullptr),
       text_writer_ptr_(mode_ == kWrite ? (new io::TextFileWriter) : nullptr),
       bin_reader_ptr_(mode_ == kRead ? (new io::BinFileReader) : nullptr) {
   if (mode_ == kWrite) {
-    bin_writer_ptr_->Open(prefix + ".model", io::kCreate);
+    bin_writer_ptr_->Open(prefix + ".model", io::kCreate, max_param_size << 20);
     text_writer_ptr_->Open(prefix + ".desc", io::kCreate);
   } else if (mode == kRead) {
-    bin_reader_ptr_->Open(prefix + ".model");
+    bin_reader_ptr_->Open(prefix + ".model", max_param_size << 20);
     std::string key, serialized_str;
     singa::TensorProto tp;
     while (bin_reader_ptr_->Read(&key, &serialized_str)) {
@@ -63,6 +63,7 @@ void Snapshot::Write(const std::string& key, const Tensor& param) {
   std::string serialized_str;
   CHECK(tp.SerializeToString(&serialized_str));
   bin_writer_ptr_->Write(key, serialized_str);
+//  bin_writer_ptr_->Flush();
 
   std::string desc_str = "parameter name: " + key;
   Shape shape = param.shape();
@@ -71,6 +72,7 @@ void Snapshot::Write(const std::string& key, const Tensor& param) {
   desc_str += "\tshape:";
   for (size_t s : shape) desc_str += " " + std::to_string(s);
   text_writer_ptr_->Write(key, desc_str);
+ // text_writer_ptr_->Flush();
 }
 
 std::vector<std::pair<std::string, Tensor>> Snapshot::Read() {

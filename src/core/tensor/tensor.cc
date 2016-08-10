@@ -34,14 +34,12 @@ Tensor::Tensor() { device_ = defaultDevice; }
 
 Tensor::Tensor(const Shape &shape, DataType dtype)
     : data_type_(dtype), device_(defaultDevice), shape_(shape) {
-  device_ = defaultDevice;
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock(size);
 }
 Tensor::Tensor(Shape &&shape, DataType dtype)
     : data_type_(dtype), device_(defaultDevice), shape_(shape) {
-  device_ = defaultDevice;
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock(size);
@@ -137,7 +135,9 @@ void Tensor::ToDevice(std::shared_ptr<Device> dst) {
   }
 }
 
-void Tensor::ToHost() { ToDevice(device_->host()); }
+void Tensor::ToHost() {
+  if (device_ != defaultDevice) ToDevice(device_->host());
+}
 
 template <typename DType>
 void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
