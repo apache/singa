@@ -25,6 +25,7 @@ OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
 OPTION(USE_PYTHON "Generate py wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
+OPTION(ENABLE_DIST "enable distributed training" OFF)
 #OPTION(BUILD_OPENCL_TESTS "Build OpenCL tests" OFF)
 
 INCLUDE("cmake/Dependencies.cmake")
@@ -47,7 +48,10 @@ IF (USE_CUDA)
     LIST(APPEND SINGA_LINKER_LIBS cnmem)
 ENDIF()
 
-LIST(APPEND SINGA_LINKER_LIBS ev)
+# TODO(wangwei) detect the ev lib
+IF (ENABLE_DIST)
+  LIST(APPEND SINGA_LINKER_LIBS ev)
+ENDIF()
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(test)

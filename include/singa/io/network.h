@@ -21,7 +21,8 @@
 
 #ifndef SINGA_COMM_NETWORK_H_
 #define SINGA_COMM_NETWORK_H_
-
+#include "singa/singa_config.h"
+#ifdef ENABLE_DIST
 #include <ev.h>
 #include <thread>
 #include <unordered_map>
@@ -58,107 +59,113 @@ class NetworkThread;
 class EndPoint;
 class EndPointFactory;
 
-class Message{
-    private:
-        uint8_t type_;
-        uint32_t id_;
-        std::size_t msize_ = 0;
-        std::size_t psize_ = 0;
-        std::size_t processed_ = 0;
-        char* msg_ = nullptr;
-        static const int hsize_ = sizeof(id_) + 2 * sizeof(std::size_t) + sizeof(type_);
-        char mdata_[hsize_];
-        friend class NetworkThread;
-        friend class EndPoint;
-    public:
-        Message(int = MSG_DATA, uint32_t = 0);
-        Message(const Message&) = delete;
-        Message(Message&&);
-        ~Message();
+class Message {
+private:
+  uint8_t type_;
+  uint32_t id_;
+  std::size_t msize_ = 0;
+  std::size_t psize_ = 0;
+  std::size_t processed_ = 0;
+  char *msg_ = nullptr;
+  static const int hsize_ =
+      sizeof(id_) + 2 * sizeof(std::size_t) + sizeof(type_);
+  char mdata_[hsize_];
+  friend class NetworkThread;
+  friend class EndPoint;
 
-        void setMetadata(const void*, int);
-        void setPayload(const void*, int);
+public:
+  Message(int = MSG_DATA, uint32_t = 0);
+  Message(const Message &) = delete;
+  Message(Message &&);
+  ~Message();
 
-        std::size_t getMetadata(void**);
-        std::size_t getPayload(void**);
+  void setMetadata(const void *, int);
+  void setPayload(const void *, int);
 
-        std::size_t getSize();
-        void setId(uint32_t);
+  std::size_t getMetadata(void **);
+  std::size_t getPayload(void **);
+
+  std::size_t getSize();
+  void setId(uint32_t);
 };
 
 class EndPoint {
-    private:
-        std::queue<Message*> send_;
-        std::queue<Message*> recv_;
-        std::queue<Message*> to_ack_;
-        std::condition_variable cv_;
-        std::mutex mtx_;
-        struct sockaddr_in addr_;
-        ev_timer timer_;
-        ev_tstamp last_msg_time_;
-        int fd_[2] = {-1, -1}; // two endpoints simultaneously connect to each other
-        int pfd_ = -1;
-        bool is_socket_loop_ = false;
-        int conn_status_ = CONN_INIT;
-        int pending_cnt_ = 0;
-        int retry_cnt_ = 0;
-        NetworkThread* thread_ = nullptr;
-        EndPoint(NetworkThread* t);
-        ~EndPoint();
-        friend class NetworkThread;
-        friend class EndPointFactory;
-    public:
-        int send(Message*);
-        Message* recv();
+private:
+  std::queue<Message *> send_;
+  std::queue<Message *> recv_;
+  std::queue<Message *> to_ack_;
+  std::condition_variable cv_;
+  std::mutex mtx_;
+  struct sockaddr_in addr_;
+  ev_timer timer_;
+  ev_tstamp last_msg_time_;
+  int fd_[2] = { -1, -1 }; // two endpoints simultaneously connect to each other
+  int pfd_ = -1;
+  bool is_socket_loop_ = false;
+  int conn_status_ = CONN_INIT;
+  int pending_cnt_ = 0;
+  int retry_cnt_ = 0;
+  NetworkThread *thread_ = nullptr;
+  EndPoint(NetworkThread *t);
+  ~EndPoint();
+  friend class NetworkThread;
+  friend class EndPointFactory;
+
+public:
+  int send(Message *);
+  Message *recv();
 };
 
 class EndPointFactory {
-    private:
-        std::unordered_map<uint32_t, EndPoint*> ip_ep_map_;
-        std::condition_variable map_cv_;
-        std::mutex map_mtx_;
-        NetworkThread* thread_;
-        EndPoint* getEp(uint32_t ip);
-        EndPoint* getOrCreateEp(uint32_t ip);
-        friend class NetworkThread;
-    public:
-        EndPointFactory(NetworkThread* thread) : thread_(thread) {}
-        ~EndPointFactory();
-        EndPoint* getEp(const char* host);
-        void getNewEps(std::vector<EndPoint*>& neps);
+private:
+  std::unordered_map<uint32_t, EndPoint *> ip_ep_map_;
+  std::condition_variable map_cv_;
+  std::mutex map_mtx_;
+  NetworkThread *thread_;
+  EndPoint *getEp(uint32_t ip);
+  EndPoint *getOrCreateEp(uint32_t ip);
+  friend class NetworkThread;
+
+public:
+  EndPointFactory(NetworkThread *thread) : thread_(thread) {}
+  ~EndPointFactory();
+  EndPoint *getEp(const char *host);
+  void getNewEps(std::vector<EndPoint *> &neps);
 };
 
-class NetworkThread{
-    private:
-        struct ev_loop *loop_;
-        ev_async ep_sig_;
-        ev_async msg_sig_;
-        ev_io socket_watcher_;
-        int port_;
-        int socket_fd_;
-        std::thread* thread_;
-        std::unordered_map<int, ev_io> fd_wwatcher_map_;
-        std::unordered_map<int, ev_io> fd_rwatcher_map_;
-        std::unordered_map<int, EndPoint*> fd_ep_map_;
-        std::map<int, Message> pending_msgs_;
+class NetworkThread {
+private:
+  struct ev_loop *loop_;
+  ev_async ep_sig_;
+  ev_async msg_sig_;
+  ev_io socket_watcher_;
+  int port_;
+  int socket_fd_;
+  std::thread *thread_;
+  std::unordered_map<int, ev_io> fd_wwatcher_map_;
+  std::unordered_map<int, ev_io> fd_rwatcher_map_;
+  std::unordered_map<int, EndPoint *> fd_ep_map_;
+  std::map<int, Message> pending_msgs_;
 
-        void handleConnLost(int, EndPoint*, bool = true);
-        void doWork();
-        int asyncSend(int);
-        void asyncSendPendingMsg(EndPoint*);
-        void afterConnEst(EndPoint* ep, int fd, bool active);
-    public:
-        EndPointFactory* epf_;
+  void handleConnLost(int, EndPoint *, bool = true);
+  void doWork();
+  int asyncSend(int);
+  void asyncSendPendingMsg(EndPoint *);
+  void afterConnEst(EndPoint *ep, int fd, bool active);
 
-        NetworkThread(int);
-        void notify(int signal);
+public:
+  EndPointFactory *epf_;
 
-        void onRecv(int fd);
-        void onSend(int fd = -1);
-        void onConnEst(int fd);
-        void onNewEp();
-        void onNewConn();
-        void onTimeout(struct ev_timer* timer);
+  NetworkThread(int);
+  void notify(int signal);
+
+  void onRecv(int fd);
+  void onSend(int fd = -1);
+  void onConnEst(int fd);
+  void onNewEp();
+  void onNewConn();
+  void onTimeout(struct ev_timer *timer);
 };
 }
+#endif  // ENABLE_DIST
 #endif
