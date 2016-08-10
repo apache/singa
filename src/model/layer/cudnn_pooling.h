@@ -35,7 +35,7 @@ class CudnnPooling : public Pooling {
  public:
   ~CudnnPooling();
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "CudnnPooling"; }
+  // const std::string layer_type() const override { return "CudnnPooling"; }
 
   void Setup(const Shape& in_sample, const LayerConf &conf) override;
   const Tensor Forward(int flag, const Tensor &input) override;

@@ -23,7 +23,7 @@
 namespace singa {
 using std::vector;
 
-RegisterLayerClass(Dense);
+RegisterLayerClass(singa_dense, Dense);
 Dense::~Dense() {
   // delete weight_;
   // delete bias_;

@@ -39,7 +39,7 @@ class CudnnRNN : public RNN {
  public:
   ~CudnnRNN();
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "CudnnRNN"; }
+  // const std::string layer_type() const override { return "CudnnRNN"; }
 
   const vector<Tensor> Forward(int flag, const vector<Tensor>& inputs) override;
   const std::pair<vector<Tensor>, vector<Tensor>> Backward(

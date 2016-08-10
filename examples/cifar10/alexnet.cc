@@ -26,19 +26,14 @@
 #include "singa/model/metric.h"
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
-#include "../../src/model/layer/cudnn_convolution.h"
-#include "../../src/model/layer/cudnn_activation.h"
-#include "../../src/model/layer/cudnn_pooling.h"
-#include "../../src/model/layer/cudnn_lrn.h"
-#include "../../src/model/layer/dense.h"
-#include "../../src/model/layer/flatten.h"
 namespace singa {
 
+const std::string engine = "cudnn";
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
                       int pad, float std) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnConvolution");
+  conf.set_type(engine + "_convolution");
   ConvolutionConf *conv = conf.mutable_convolution_conf();
   conv->set_num_output(nb_filter);
   conv->add_kernel_size(kernel);
@@ -63,7 +58,7 @@ LayerConf GenPoolingConf(string name, bool max_pool, int kernel, int stride,
                          int pad) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnPooling");
+  conf.set_type(engine + "_pooling");
   PoolingConf *pool = conf.mutable_pooling_conf();
   pool->set_kernel_size(kernel);
   pool->set_stride(stride);
@@ -75,14 +70,14 @@ LayerConf GenPoolingConf(string name, bool max_pool, int kernel, int stride,
 LayerConf GenReLUConf(string name) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("RELU");
+  conf.set_type(engine + "_relu");
   return conf;
 }
 
 LayerConf GenDenseConf(string name, int num_output, float std, float wd) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("Dense");
+  conf.set_type("singa_dense");
   DenseConf *dense = conf.mutable_dense_conf();
   dense->set_num_output(num_output);
 
@@ -104,7 +99,7 @@ LayerConf GenDenseConf(string name, int num_output, float std, float wd) {
 LayerConf GenLRNConf(string name) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnLRN");
+  conf.set_type(engine + "_lrn");
   LRNConf *lrn = conf.mutable_lrn_conf();
   lrn->set_local_size(3);
   lrn->set_alpha(5e-05);
@@ -115,7 +110,7 @@ LayerConf GenLRNConf(string name) {
 LayerConf GenFlattenConf(string name) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("Flatten");
+  conf.set_type("singa_flatten");
   return conf;
 }
 
@@ -123,20 +118,19 @@ FeedForwardNet CreateNet() {
   FeedForwardNet net;
   Shape s{3, 32, 32};
 
-  net.Add(new CudnnConvolution(), GenConvConf("conv1", 32, 5, 1, 2, 0.0001),
-          &s);
-  net.Add(new CudnnPooling(), GenPoolingConf("pool1", true, 3, 2, 1));
-  net.Add(new CudnnActivation(), GenReLUConf("relu1"));
-  net.Add(new CudnnLRN(), GenLRNConf("lrn1"));
-  net.Add(new CudnnConvolution(), GenConvConf("conv2", 32, 5, 1, 2, 0.01));
-  net.Add(new CudnnActivation(), GenReLUConf("relu2"));
-  net.Add(new CudnnPooling(), GenPoolingConf("pool2", false, 3, 2, 1));
-  net.Add(new CudnnLRN(), GenLRNConf("lrn2"));
-  net.Add(new CudnnConvolution, GenConvConf("conv3", 64, 5, 1, 2, 0.01));
-  net.Add(new CudnnActivation(), GenReLUConf("relu3"));
-  net.Add(new CudnnPooling(), GenPoolingConf("pool3", false, 3, 2, 1));
-  net.Add(new Flatten(), GenFlattenConf("flat"));
-  net.Add(new Dense(), GenDenseConf("ip", 10, 0.01, 250));
+  net.Add(GenConvConf("conv1", 32, 5, 1, 2, 0.0001), &s);
+  net.Add(GenPoolingConf("pool1", true, 3, 2, 1));
+  net.Add(GenReLUConf("relu1"));
+  net.Add(GenLRNConf("lrn1"));
+  net.Add(GenConvConf("conv2", 32, 5, 1, 2, 0.01));
+  net.Add(GenReLUConf("relu2"));
+  net.Add(GenPoolingConf("pool2", false, 3, 2, 1));
+  net.Add(GenLRNConf("lrn2"));
+  net.Add(GenConvConf("conv3", 64, 5, 1, 2, 0.01));
+  net.Add(GenReLUConf("relu3"));
+  net.Add(GenPoolingConf("pool3", false, 3, 2, 1));
+  net.Add(GenFlattenConf("flat"));
+  net.Add(GenDenseConf("ip", 10, 0.01, 250));
   return net;
 }
 
@@ -184,12 +178,12 @@ void Train(float lr, int num_epoch, string data_dir) {
   Accuracy acc;
   net.Compile(true, &sgd, &loss, &acc);
 
-  auto cuda = std::make_shared<CudaGPU>();
-  net.ToDevice(cuda);
-  train_x.ToDevice(cuda);
-  train_y.ToDevice(cuda);
-  test_x.ToDevice(cuda);
-  test_y.ToDevice(cuda);
+  auto dev = std::make_shared<CudaGPU>();
+  net.ToDevice(dev);
+  train_x.ToDevice(dev);
+  train_y.ToDevice(dev);
+  test_x.ToDevice(dev);
+  test_y.ToDevice(dev);
   net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
 }
 }

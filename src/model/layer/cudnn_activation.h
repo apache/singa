@@ -35,7 +35,7 @@ class CudnnActivation : public Activation {
  public:
   ~CudnnActivation();
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "CudnnActivation"; }
+  // const std::string layer_type() const override { return "CudnnActivation"; }
 
   const Tensor Forward(int flag, const Tensor& input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,

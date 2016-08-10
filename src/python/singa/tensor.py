@@ -39,7 +39,7 @@ class Tensor(object):
             return
         else:
             assert isinstance(shape, tuple), 'shape should be tuple'
-            vs = _tuple_to_vector(shape)
+            vs = list(shape)
             if device is None:
                 self.singa_tensor = singa.Tensor(vs, dtype)
             else:
@@ -111,8 +111,9 @@ class Tensor(object):
         return self.singa_tensor.L1()
 
     def set_value(self, x):
-        if isinstance(x, float):
-            self.singa_tensor.floatSetValue(x)
+        # assert type(x) == float, 'set value only accepts float input'
+        # if isinstance(x, float):
+        self.singa_tensor.floatSetValue(x)
 
     def copy_data(self, t):
         self.singa_tensor.CopyData(t.singa_tensor)

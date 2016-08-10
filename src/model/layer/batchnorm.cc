@@ -21,7 +21,7 @@
 #include "batchnorm.h"
 
 namespace singa {
-RegisterLayerClass(BatchNorm);
+RegisterLayerClass(singa_batchnorm, BatchNorm);
 void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
@@ -78,8 +78,8 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
     runningVariance_ *= 1.0f - factor_;
     Axpy(factor_, var, &runningVariance_);
     Tensor tmp = var.Clone();
-    tmp += 1e-6f;
     tmp = Sqrt(tmp);
+    tmp += 1e-6f;
     xnorm = x.Clone();
     SubRow(mean, &xnorm);
     DivRow(tmp, &xnorm);
@@ -94,8 +94,8 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
     xnorm = x.Clone();
     SubRow(runningMean_, &xnorm);
     Tensor tmp = runningVariance_.Clone();
-    tmp += 1e-6f;
     tmp = Sqrt(tmp);
+    tmp += 1e-6f;
     DivRow(tmp, &xnorm);
     output = xnorm.Clone();
     MultRow(bnScale_, &output);

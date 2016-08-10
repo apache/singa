@@ -29,7 +29,7 @@ using singa::Convolution;
 using singa::Shape;
 TEST(Convolution, Setup) {
   Convolution conv;
-  EXPECT_EQ("Convolution", conv.layer_type());
+  // EXPECT_EQ("Convolution", conv.layer_type());
 
   singa::LayerConf conf;
   singa::ConvolutionConf *convconf = conf.mutable_convolution_conf();

@@ -22,6 +22,12 @@ from . import singa_wrap
 from .proto import model_pb2
 import tensor
 
+# engine could be 'cudnn', 'singa', which is used to create layers.
+# e.g., CudnnConvolution layer is identified by 'cudnn_convolution'
+# Convolution layer is identified by 'singa_convolution'
+# engine is case insensitive
+engine = 'cudnn'
+
 
 class Layer(object):
     """Base Python layer class.
@@ -78,12 +84,31 @@ class Layer(object):
         return tensor.from_raw_tensors(self.layer.param_values())
 
     def forward(self, flag, input):
+        '''Forward propagate through this layer.
+
+        Args:
+            flag, kTrain or kEval
+            input, an input tensor
+
+        Return:
+            a tensor for the transformed feature
+        '''
         assert self.has_setup, 'Must call setup() before forward()'
         assert isinstance(input, tensor.Tensor), 'input must be py Tensor'
         y = self.layer.Forward(flag, input.singa_tensor)
         return tensor.from_raw_tensor(y)
 
     def backward(self, flag, grad):
+        '''Backward propagate through this layer.
+
+        Args:
+            flag, for future use.
+            grad, gradient of the returned values of the forward function.
+
+        Return:
+            <dx, <dp1, dp2..>>, dx is the gradient of the input of the
+            forward function, dpi is the gradient of the i-th parameter
+        '''
         assert isinstance(grad, tensor.Tensor), 'grad must be py Tensor'
         ret = self.layer.Backward(flag, grad.singa_tensor)
         return tensor.from_raw_tensor(ret[0]), tensor.from_raw_tensors(ret[1])
@@ -104,7 +129,7 @@ class Layer(object):
 class Conv2D(Layer):
 
     def __init__(self, name, nb_kernels, kernel=3, stride=1, border_mode='same',
-                 engine='cudnn', cudnn_prefer='fatest', data_format='NCHW',
+                 cudnn_prefer='fatest', data_format='NCHW',
                  use_bias=True, W_specs=None, b_specs=None,
                  pad=None, input_sample_shape=None):
         """Construct a layer for 2D convolution.
@@ -117,8 +142,6 @@ class Conv2D(Layer):
                 'valid' -> padding is 0 for height and width
                 'same' -> padding is half of the kernel (floor),
                     the kernel must be odd number.
-            engine (string): implementation engin, could be 'cudnn'
-                (case insensitive)
             cudnn_prefer (string): the preferred algorithm for cudnn convolution
                 which could be 'fatest', 'autotune', 'limited_workspace' and
                 'no_workspace'
@@ -165,7 +188,7 @@ class Conv2D(Layer):
         self.conf.param.extend([bspecs])
         self.param_specs.append(bspecs)
 
-        _check_engine(engine, ['cudnn'])
+        _check_engine(engine, ['cudnn', 'singa'])
         self.layer = _create_layer(engine, 'Convolution')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -174,7 +197,7 @@ class Conv2D(Layer):
 class Conv1D(Conv2D):
 
     def __init__(self, name, nb_kernels, kernel=3, stride=1,
-                 border_mode='same', engine='cudnn', cudnn_prefer='fatest',
+                 border_mode='same', cudnn_prefer='fatest',
                  use_bias=True, W_specs={'init': 'Xavier'},
                  b_specs={'init': 'Constant', 'value': 0}, pad=None,
                  input_sample_shape=None):
@@ -191,7 +214,7 @@ class Conv1D(Conv2D):
         if input_sample_shape is not None:
             input_sample_shape = (1, 1, input_sample_shape[0])
         super(Conv1D, self).__init__(name, nb_kernels, (1, kernel), (0, stride),
-                                     border_mode, engine, cudnn_prefer,
+                                     border_mode, cudnn_prefer,
                                      use_bias=use_bias, pad=pad,
                                      W_specs=W_specs, b_specs=b_specs,
                                      input_sample_shape=input_sample_shape)
@@ -206,15 +229,14 @@ class Conv1D(Conv2D):
 class Pooling2D(Layer):
 
     def __init__(self, name, mode, kernel=3, stride=2, border_mode='same',
-                 pad=None, data_format='NCHW', engine='cudnn',
-                 input_sample_shape=None):
+                 pad=None, data_format='NCHW', input_sample_shape=None):
         super(Pooling2D, self).__init__(name)
         assert data_format == 'NCHW', 'Not supported data format: %s ' \
             'only "NCHW" is enabled currently' % (data_format)
         conf = self.conf.pooling_conf
         conf = _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad)
         conf.pool = mode
-        _check_engine(engine, ['cudnn'])
+        _check_engine(engine, ['cudnn', 'singa'])
         self.layer = _create_layer(engine, 'Pooling')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -223,27 +245,25 @@ class Pooling2D(Layer):
 class MaxPooling2D(Pooling2D):
 
     def __init__(self, name, kernel=3, stride=2, border_mode='same', pad=None,
-                 data_format='NCHW', engine='cudnn', input_sample_shape=None):
+                 data_format='NCHW', input_sample_shape=None):
         super(MaxPooling2D, self).__init__(name, model_pb2.PoolingConf.MAX,
                                            kernel, stride, border_mode,
-                                           pad, data_format, engine,
-                                           input_sample_shape)
+                                           pad, data_format, input_sample_shape)
 
 
 class AvgPooling2D(Pooling2D):
 
     def __init__(self, name, kernel=3, stride=2, border_mode='same', pad=None,
-                 data_format='NCHW', engine='cudnn', input_sample_shape=None):
+                 data_format='NCHW', input_sample_shape=None):
         super(AvgPooling2D, self).__init__(name, model_pb2.PoolingConf.AVE,
                                            kernel, stride, border_mode,
-                                           pad, data_format, engine,
-                                           input_sample_shape)
+                                           pad, data_format, input_sample_shape)
 
 
 class MaxPooling1D(MaxPooling2D):
 
     def __init__(self, name, kernel=3, stride=2, border_mode='same', pad=None,
-                 data_format='NCHW', engine='cudnn', input_sample_shape=None):
+                 data_format='NCHW', input_sample_shape=None):
         """Max pooling for 1D feature.
 
         Args:
@@ -260,8 +280,7 @@ class MaxPooling1D(MaxPooling2D):
             input_sample_shape = None
         super(MaxPooling1D, self).__init__(name, (1, kernel), (0, stride),
                                            border_mode, pad,
-                                           data_format, engine,
-                                           input_sample_shape)
+                                           data_format, input_sample_shape)
 
     def get_output_sample_shape(self):
         shape = self.layer.GetOutputSampleShape()
@@ -271,7 +290,7 @@ class MaxPooling1D(MaxPooling2D):
 class AvgPooling1D(AvgPooling2D):
 
     def __init__(self, name, kernel=3, stride=2, border_mode='same', pad=None,
-                 data_format='NCHW', engine='cudnn', input_sample_shape=None):
+                 data_format='NCHW', input_sample_shape=None):
         """input_feature_length is a scalar value"""
         pad2 = None
         if pad is not None:
@@ -285,8 +304,7 @@ class AvgPooling1D(AvgPooling2D):
 
         super(AvgPooling1D, self).__init__(name, (kernel, 1), (0, stride),
                                            border_mode, pad2,
-                                           data_format, engine,
-                                           input_sample_shape)
+                                           data_format, input_sample_shape)
 
     def get_output_sample_shape(self):
         shape = self.layer.GetOutputSampleShape()
@@ -296,7 +314,7 @@ class AvgPooling1D(AvgPooling2D):
 class BatchNormalization(Layer):
     # TODO(wangwei) add mode and epsilon arguments
 
-    def __init__(self, name, momentum=0.9, engine='cudnn',
+    def __init__(self, name, momentum=0.9,
                  beta_specs=None, gamma_specs=None, input_sample_shape=None):
         """Batch-normalization.
 
@@ -337,16 +355,15 @@ class BatchNormalization(Layer):
         self.param_specs.append(_construct_param_specs_from_dict(beta_specs))
         self.param_specs.append(_construct_param_specs_from_dict(mean_specs))
         self.param_specs.append(_construct_param_specs_from_dict(var_specs))
-        _check_engine(engine, ['cudnn'])
+        _check_engine(engine, ['cudnn', 'singa'])
         self.layer = _create_layer(engine, 'BatchNorm')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
 
 
 class LRN(Layer):
-
     def __init__(self, name, size=5, alpha=1, beta=0.75, mode='cross_channel',
-                 k=1, engine='cudnn', input_sample_shape=None):
+                 k=1, input_sample_shape=None):
         """Local response normalization.
 
         Args:
@@ -364,7 +381,7 @@ class LRN(Layer):
         # TODO(wangwei) enable mode = 'within_channel'
         assert mode == 'cross_channel', 'only support mode="across_channel"'
         conf.norm_region = model_pb2.LRNConf.ACROSS_CHANNELS
-        _check_engine(engine, ['cudnn'])
+        _check_engine(engine, ['cudnn', 'singa'])
         self.layer = _create_layer(engine, 'LRN')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -374,7 +391,7 @@ class Dense(Layer):
 
     def __init__(self, name, num_output, use_bias=True,
                  W_specs=None, b_specs=None,
-                 W_transpose=True, engine='cuda', input_sample_shape=None):
+                 W_transpose=True, input_sample_shape=None):
         """Apply linear/affine transformation, also called inner-product or
         fully connected layer.
 
@@ -392,7 +409,6 @@ class Dense(Layer):
                 'regularizer' for regularization, currently support 'l2'
             b_specs (dict): specs for the bias vector, same fields as W_specs.
             W_transpose (bool): if true, output=x*W.T+b;
-            engine (string): could be 'cudnn', 'cuda'
             input_sample_shape (tuple): input feature length
         """
         super(Dense, self).__init__(name)
@@ -412,22 +428,19 @@ class Dense(Layer):
         self.param_specs.append(_construct_param_specs_from_dict(W_specs))
         self.conf.param.extend([_construct_param_specs_from_dict(b_specs)])
         self.param_specs.append(_construct_param_specs_from_dict(b_specs))
-        if engine == 'cudnn':
-            engine = 'cuda'
-        _check_engine(engine, ['cuda', 'cpp'])
-        self.layer = _create_layer(engine, 'Dense')
+        # dense layer is transparent to engine.
+        self.layer = _create_layer('singa', 'Dense')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
 
 
 class Dropout(Layer):
 
-    def __init__(self, name, p=0.5, engine='cuda', input_sample_shape=None):
+    def __init__(self, name, p=0.5, input_sample_shape=None):
         """Droput layer.
 
         Args:
             p (float): probability for dropping out the element, i.e., set to 0
-            engine (string): 'cudnn' for cudnn version>=5; or 'cuda'
             name (string): layer name
         """
         super(Dropout, self).__init__(name)
@@ -436,7 +449,7 @@ class Dropout(Layer):
         # 'cudnn' works for v>=5.0
         #  if engine.lower() == 'cudnn':
         #      engine = 'cuda'
-        _check_engine(engine, ['cudnn', 'cuda', 'cpp'])
+        _check_engine(engine, ['cudnn', 'singa'])
         self.layer = _create_layer(engine, 'Dropout')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -444,28 +457,25 @@ class Dropout(Layer):
 
 class Activation(Layer):
 
-    def __init__(self, name, mode='relu', engine='cudnn',
-                 input_sample_shape=None):
+    def __init__(self, name, mode='relu', input_sample_shape=None):
         """Activation layers.
 
         Args:
-            engine (string): 'cudnn'
             name (string): layer name
             mode (string): 'relu', 'sigmoid', or 'tanh'
             input_sample_shape (tuple): shape of a single sample
         """
         super(Activation, self).__init__(name)
-        _check_engine(engine, ['cudnn', 'cuda', 'cpp'])
-        mode_dict = {'relu': 'RELU', 'sigmoid': 'SIGMOID', 'tanh': 'TANH'}
-        self.conf.type = mode_dict[mode.lower()]
-        self.layer = _create_layer(engine, 'Activation')
+        self.conf.type = (engine + '_' + mode).lower()
+        _check_engine(engine, ['cudnn', 'singa'])
+        self.layer = _create_layer(engine, mode)
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
 
 
 class Softmax(Layer):
 
-    def __init__(self, name, axis=1, engine='cudnn', input_sample_shape=None):
+    def __init__(self, name, axis=1, input_sample_shape=None):
         """Apply softmax.
 
         Args:
@@ -476,7 +486,7 @@ class Softmax(Layer):
         super(Softmax, self).__init__(name)
         # conf = self.conf.softmax_conf
         # conf.axis = axis
-        _check_engine(engine, ['cudnn', 'cuda', 'cpp'])
+        _check_engine(engine, ['cudnn', 'singa'])
         self.layer = _create_layer(engine, 'Softmax')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -484,7 +494,7 @@ class Softmax(Layer):
 
 class Flatten(Layer):
 
-    def __init__(self, name, axis=1, engine='cudnn', input_sample_shape=None):
+    def __init__(self, name, axis=1, input_sample_shape=None):
         """Reshape the input tensor into a matrix.
         Args:
             axis (int): reshape the input as a matrix with the dimension
@@ -494,24 +504,39 @@ class Flatten(Layer):
         super(Flatten, self).__init__(name)
         conf = self.conf.flatten_conf
         conf.axis = axis
-        _check_engine(engine, ['cudnn', 'cuda', 'cpp'])
-        if engine == 'cudnn':
-            engine = 'cuda'
-        self.layer = _create_layer(engine, 'Flatten')
+        # fltten layer is transparent to engine
+        self.layer = _create_layer('singa', 'Flatten')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
 
 
 class RNN(Layer):
-    def __init__(self, name, hidden_size, rnn_mode='lstm', engine='cudnn',
-            dropout=0.0, num_stacks=1, input_mode='linear', bidirectional=False,
-            param_specs=None, input_sample_shape=None):
+    def __init__(self, name, hidden_size, rnn_mode='lstm', dropout=0.0,
+                 num_stacks=1, input_mode='linear', bidirectional=False,
+                 param_specs=None, input_sample_shape=None):
+        '''Wrapper for singa::RNN class.
+
+        Args:
+            hidden_size, hidden feature size, the same for all stacks of layers.
+            rnn_mode, decides the rnn unit, which could be one of 'lstm', 'gru',
+                'tanh' and 'relu', refer to cudnn manual for each mode.
+            num_stacks, num of stacks of rnn layers. It is different to the
+                unrolling seqence length.
+            input_mode, 'linear' convert the input feature x by by a linear
+                transformation to get a feature vector of size hidden_size;
+                'skip' does nothing but requires the input feature size equals
+                hidden_size
+            bidirection, True for bidirectional RNN
+            param_specs, config for initializing the RNN parameters.
+            input_sample_shape, includes a single integer for the input sample
+                feature size.
+        '''
         super(RNN, self).__init__(name)
         conf = self.conf.rnn_conf
         assert hidden_size > 0, 'Hidden feature size must > 0'
         conf.hidden_size = hidden_size
-        assert rnn_mode in Set(['lstm', 'gru', 'tanh', 'relu']), \
-                'rnn mode %s is not available' %s (rnn_mode)
+        assert rnn_mode in Set(['lstm', 'gru', 'tanh', 'relu']),  \
+            'rnn mode %s is not available' % (rnn_mode)
         conf.rnn_mode = rnn_mode
         conf.num_stacks = num_stacks
         conf.dropout = dropout
@@ -519,10 +544,11 @@ class RNN(Layer):
         conf.direction = 'unidirectional'
         if bidirectional:
             conf.direction = 'bidirectional'
+        # currently only has rnn layer implemented using cudnn
         _check_engine(engine, ['cudnn'])
         if param_specs is None:
             param_specs = {'name': name + '-weight',
-                    'init': 'uniform', 'low':0, 'high':1};
+                           'init': 'uniform', 'low': 0, 'high': 1}
         self.conf.param.extend([_construct_param_specs_from_dict(param_specs)])
         self.param_specs.append(_construct_param_specs_from_dict(param_specs))
 
@@ -531,18 +557,59 @@ class RNN(Layer):
             self.setup(input_sample_shape)
 
     def forward(self, flag, inputs):
+        '''Forward inputs through the RNN.
+
+        Args:
+            flag, kTrain or kEval.
+            inputs, <x1, x2,...xn, hx, cx>, where xi is the input tensor for the
+                i-th position, its shape is (batch_size, input_feature_length);
+                the batch_size of xi must >= that of xi+1; hx is the initial
+                hidden state of shape (num_stacks * bidirection?2:1, batch_size,
+                hidden_size). cx is the initial cell state tensor of the same
+                shape as hy. cx is valid for only lstm. For other RNNs there is
+                no cx. Both hx and cx could be dummy tensors without shape and
+                data.
+
+        Returns:
+            <y1, y2, ... yn, hy, cy>, where yi is the output tensor for the i-th
+                position, its shape is (batch_size,
+                hidden_size * bidirection?2:1). hy is the final hidden state
+                tensor. cx is the final cell state tensor. cx is only used for
+                lstm.
+        '''
         assert self.has_setup, 'Must call setup() before forward()'
         assert len(inputs) > 1, 'The input to RNN must include at '\
-                'least one input tensor '\
-                'and one hidden state tensor (could be a dummy tensor)'
+            'least one input tensor '\
+            'and one hidden state tensor (could be a dummy tensor)'
         tensors = []
         for t in inputs:
-            assert isinstance(t, tensor.Tensor), 'input must be py Tensor %s' % (type(t))
+            assert isinstance(t, tensor.Tensor), \
+                'input must be py Tensor %s' % (type(t))
             tensors.append(t.singa_tensor)
         y = self.layer.Forward(flag, tensors)
         return tensor.from_raw_tensors(y)
 
     def backward(self, flag, grad):
+        '''Backward gradients through the RNN.
+
+        Args:
+            flag, for future use.
+            grad, <dy1, dy2,...dyn, dhy, dcy>, where dyi is the gradient for the
+            i-th output, its shape is (batch_size, hidden_size*bidirection?2:1);
+                dhy is the gradient for the final hidden state, its shape is
+                (num_stacks * bidirection?2:1, batch_size,
+                hidden_size). dcy is the gradient for the final cell state.
+                cx is valid only for lstm. For other RNNs there is
+                no cx. Both dhy and dcy could be dummy tensors without shape and
+                data.
+
+        Returns:
+            <dx1, dx2, ... dxn, dhx, dcx>, where dxi is the gradient tensor for
+            the i-th input, its shape is (batch_size,
+                input_feature_length). dhx is the gradient for the initial
+                hidden state. dcx is the gradient for the initial cell state,
+                which is valid only for lstm.
+        '''
         tensors = []
         for t in grad:
             assert isinstance(t, tensor.Tensor), 'grad must be py Tensor'
@@ -550,21 +617,23 @@ class RNN(Layer):
         ret = self.layer.Backward(flag, tensors)
         return tensor.from_raw_tensors(ret[0]), tensor.from_raw_tensors(ret[1])
 
+
 class LSTM(RNN):
-    def __init__(self, name, hidden_size, engine='cudnn',
-            dropout=0.0, num_stacks=1, input_mode='linear', bidirectional=False,
-            param_specs=None, input_sample_shape=None):
-        super(LSTM, self).__init__(name, hidden_size,  'lstm', engine, dropout,
-                num_stacks, input_mode, bidirectional, param_specs,
-                input_sample_shape)
+    def __init__(self, name, hidden_size, dropout=0.0, num_stacks=1,
+                 input_mode='linear', bidirectional=False,
+                 param_specs=None, input_sample_shape=None):
+        super(LSTM, self).__init__(name, hidden_size,  'lstm',  dropout,
+                                   num_stacks, input_mode, bidirectional,
+                                   param_specs, input_sample_shape)
+
 
 class GRU(RNN):
-    def __init__(self, name, hidden_size, engine='cudnn',
-            dropout=0.0, num_stacks=1, input_mode='linear', bidirectional=False,
-            param_specs=None, input_sample_shape=None):
-        super(GRU, self).__init__(name,  hidden_size, 'gru', engine, dropout,
-                num_stacks, input_mode, bidirectional, param_specs,
-                input_sample_shape)
+    def __init__(self, name, hidden_size, dropout=0.0, num_stacks=1,
+                 input_mode='linear', bidirectional=False, param_specs=None,
+                 input_sample_shape=None):
+        super(GRU, self).__init__(name,  hidden_size, 'gru',  dropout,
+                                  num_stacks, input_mode, bidirectional,
+                                  param_specs, input_sample_shape)
 
 
 def _check_engine(engine, allowed_engines):
@@ -573,12 +642,17 @@ def _check_engine(engine, allowed_engines):
            (engine, ', '.join(allowed_engines))
 
 
-def _create_layer(engine, layer):
-    if engine == 'cuda' or engine == 'cpp':
-        layer_type = layer
-    else:
-        layer_type = engine.title() + layer
-    return singa_wrap.CreateLayer(layer_type)
+def _create_layer(eng, layer):
+    ''' create singa wrap layer.
+
+    Both arguments are case insensitive.
+    Args:
+        engine, implementation engine, either 'singa' or 'cudnn'
+        layer, layer type, e.g., 'convolution', 'pooling'; for activation
+        layers, use the specific activation mode, e.g. 'relu', 'tanh'.
+    '''
+    layer_type = eng + '_' + layer
+    return singa_wrap.CreateLayer(layer_type.lower())
 
 
 def _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad):

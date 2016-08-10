@@ -26,7 +26,7 @@ namespace singa {
 class Dropout : public Layer {
  public:
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "Dropout"; }
+  // const std::string layer_type() const override { return "Dropout"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const Shape& in_sample, const LayerConf& conf) override;

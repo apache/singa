@@ -58,6 +58,10 @@ class Platform {
   static const std::string DeviceQuery(int id, bool verbose = false);
   static const std::vector<std::shared_ptr<Device> >
   CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
+  static const std::vector<std::shared_ptr<Device>>
+  CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
+  static std::shared_ptr<Device> GetDefaultDevice();
 };
+
 }
 

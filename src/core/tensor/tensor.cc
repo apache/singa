@@ -452,7 +452,7 @@ float Tensor::L1() const {
   float nrm = 0.0f;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec([&nrm, this](Context *ctx) {
-      DType ret;
+      DType ret = DType(0);
       Asum<DType, Lang>(this->Size(), this->block(), &ret, ctx);
       nrm = TypeCast<DType, float>(ret);
     }, {this->block()}, {});
@@ -465,7 +465,7 @@ float Tensor::L2() const {
   float nrm = 0.0f;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec([&nrm, this](Context *ctx) {
-      DType ret;
+      DType ret = DType(0);
       Nrm2<DType, Lang>(this->Size(), this->block(), &ret, ctx);
       nrm = TypeCast<DType, float>(ret);
     }, {this->block()}, {});

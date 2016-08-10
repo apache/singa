@@ -26,7 +26,7 @@ using singa::Pooling;
 using singa::Shape;
 TEST(Pooling, Setup) {
   Pooling pool;
-  EXPECT_EQ("Pooling", pool.layer_type());
+  //  EXPECT_EQ("Pooling", pool.layer_type());
 
   singa::LayerConf conf;
   singa::PoolingConf *poolconf = conf.mutable_pooling_conf();

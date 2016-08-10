@@ -27,7 +27,7 @@ namespace singa {
 class PReLU : public Layer {
  public:
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "PReLU"; }
+  //  const std::string layer_type() const override { return "PReLU"; }
 
 
   /// \copydoc Layer::Setup(const LayerConf&);

@@ -81,7 +81,6 @@ const std::vector<std::string> GetRegisteredLayers();
 class RNN : public Layer {
 };
 
-#if CUDNN_VERSION_MINOR >= 5 && CUDNN_VERSION_PATCH >= 5
 class CudnnRNN : public RNN {
  public:
  // note: Must use std::vector instead of vector.
@@ -92,8 +91,6 @@ class CudnnRNN : public RNN {
     const std::vector<Tensor> param_values() override;
     const std::vector<size_t> GetOutputSampleShape() const override;
 };
-
-#endif  // CUDNN_VERSION_MINOR >= 5 && CUDNN_VERSION_PATCH >= 5
 
 }
 

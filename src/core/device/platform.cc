@@ -113,11 +113,11 @@ Platform::CreateCudaGPUs(const size_t num_devices, size_t init_size) {
   const vector<int> gpus = GetGPUIDs();
   CHECK_LE(num_devices, gpus.size());
   vector<int> use_gpus(gpus.begin(), gpus.begin() + num_devices);
-  return CreateCudaGPUs(use_gpus, init_size);
+  return CreateCudaGPUsOn(use_gpus, init_size);
 }
 
 const vector<shared_ptr<Device> >
-Platform::CreateCudaGPUs(const vector<int> &devices, size_t init_size) {
+Platform::CreateCudaGPUsOn(const vector<int> &devices, size_t init_size) {
   MemPoolConf conf;
   if (init_size > 0)
     conf.set_init_size(init_size);

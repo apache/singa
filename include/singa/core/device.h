@@ -321,23 +321,33 @@ public:
   /// Return a string containing all hardware info, e.g., version, memory size.
   static const std::string DeviceQuery(int id, bool verbose = false);
 
+  /// Return the defualt host device
+  static std::shared_ptr<Device> GetDefaultDevice() {
+    return defaultDevice;
+  }
+
   /// Create a set of CudaGPU Device using 'num_devices' free GPUs.
   static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
 
   /// Create a set of CudaGPU Device using given GPU IDs.
   static const std::vector<std::shared_ptr<Device>>
-  CreateCudaGPUs(const std::vector<int> &devices, size_t init_size = 0);
+  CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
 
-  /// Create a \p num_devices set of valid OpenCL devices, regardless of platforms.
-  /// If there are fewer valid devices than requested, then this method will return as many as possible.
-  /// If OpenCL is not in use, this method will return an empty array.
-  const std::vector<std::shared_ptr<Device>> CreateOpenclDevices(const size_t num_devices);
+  /// Create a \p num_devices set of valid OpenCL devices, regardless of
+  /// platforms.  If there are fewer valid devices than requested, then this
+  /// method will return as many as possible.If OpenCL is not in use, this
+  /// method will return an empty array.
+  const std::vector<std::shared_ptr<Device> > CreateOpenclDevices(
+             const size_t num_devices);
 
-  /// Create a set of valid OpenCL devices, regardless of platforms, assigning \p id to each device in sequence.
-  /// If there are fewer valid devices than requested, then this method will return as many as possible.
+  /// Create a set of valid OpenCL devices, regardless of platforms, assigning
+  /// \p id to each device in sequence.
+  /// If there are fewer valid devices than requested, then this method will
+  /// return as many as possible.
   /// If OpenCL is not in use, this method will return an empty array.
-  const std::vector<std::shared_ptr<Device>> CreateOpenclDevices(const vector<int>& id);
+  const std::vector<std::shared_ptr<Device> >
+  CreateOpenclDevices(const vector<int> &id);
 
   /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
   /// This function checks the availability of GPU #device_id.

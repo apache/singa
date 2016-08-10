@@ -26,7 +26,7 @@
 #include "singa/utils/logging.h"
 namespace singa {
 inline cudnnDataType_t GetCudnnDataType(DataType dtype) {
-  cudnnDataType_t ret;
+  cudnnDataType_t ret = CUDNN_DATA_FLOAT;
   switch (dtype) {
     case kFloat32:
       ret = CUDNN_DATA_FLOAT;

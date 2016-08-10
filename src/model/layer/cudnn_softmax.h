@@ -34,7 +34,7 @@ class CudnnSoftmax : public Softmax {
  public:
   ~CudnnSoftmax();
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "CudnnSoftmax"; }
+  // const std::string layer_type() const override { return "CudnnSoftmax"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const Shape& in_sample_shape, const LayerConf &conf) override;

@@ -26,23 +26,16 @@
 namespace singa {
 
 FeedForwardNet::~FeedForwardNet() {
-  for (auto layer : layers_) delete layer;
 }
-Layer* FeedForwardNet::Add(Layer* layer) {
+
+std::shared_ptr<Layer> FeedForwardNet::Add(std::shared_ptr<Layer> layer) {
   layers_.push_back(layer);
   return layer;
 }
 
-Layer* FeedForwardNet::Add(const LayerConf& conf, const Shape* sample_shape) {
-  CHECK(sample_shape != nullptr || layers_.size())
-      << "Must provide the input sample shape for the first layer";
-  Layer* layer = nullptr;  // TODO(wangwei) use CreateLayer(conf.type());
-  Add(layer, conf, sample_shape);
-  return layer;
-}
-
-Layer* FeedForwardNet::Add(Layer* layer, const LayerConf& conf,
-                           const Shape* sample_shape) {
+std::shared_ptr<Layer> FeedForwardNet::Add(const LayerConf& conf,
+    const Shape* sample_shape) {
+  std::shared_ptr<Layer> layer(CreateLayer(conf.type()));
   CHECK(conf.has_name()) << "Must set layer name";
   if (sample_shape == nullptr)
     layer->Setup(layers_.back()->GetOutputSampleShape(), conf);

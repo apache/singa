@@ -35,7 +35,7 @@ namespace singa {
 class RNN : public Layer {
  public:
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "RNN"; }
+  // const std::string layer_type() const override { return "RNN"; }
 
   /// Setup the RNN layer.
   /// in_shape is the shape of a single training instance from one timestep,

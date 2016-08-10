@@ -27,7 +27,7 @@ using singa::PReLU;
 using singa::Shape;
 TEST(PReLU, Setup) {
   PReLU prelu;
-  EXPECT_EQ("PReLU", prelu.layer_type());
+  // EXPECT_EQ("PReLU", prelu.layer_type());
 
   singa::LayerConf conf;
   singa::PReLUConf *preluconf = conf.mutable_prelu_conf();

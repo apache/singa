@@ -195,7 +195,7 @@ def train(data, max_epoch, hidden_size =100, seq_length=100, batch_size=16,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train multi-stack LSTM for '\
             'modeling  character sequence from plain text files')
-    parser.add_argument('data', type=string, help='training file')
+    parser.add_argument('data', type=str, help='training file')
     parser.add_argument('-b', type=int, default=32, help='batch_size')
     parser.add_argument('-l', type=int, default=64, help='sequence length')
     parser.add_argument('-d', type=int, default=128, help='hidden size')

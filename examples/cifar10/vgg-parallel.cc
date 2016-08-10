@@ -28,27 +28,20 @@
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
 #include "singa/core/memory.h"
-#include "../../src/model/layer/cudnn_convolution.h"
-#include "../../src/model/layer/cudnn_activation.h"
-#include "../../src/model/layer/cudnn_pooling.h"
-#include "../../src/model/layer/cudnn_lrn.h"
-#include "../../src/model/layer/dropout.h"
-#include "../../src/model/layer/cudnn_batchnorm.h"
-#include "../../src/model/layer/dense.h"
-#include "../../src/model/layer/flatten.h"
 #include <thread>
 #include <memory>
 #include <cmath>
 
 namespace singa {
 
+const std::string engine = "cudnn";
 const float default_wd  = 0.0005f;
 
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
                       int pad, float std = .02f, float bias = .0f) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnConvolution");
+  conf.set_type(engine + "_convolution");
   ConvolutionConf *conv = conf.mutable_convolution_conf();
   conv->set_num_output(nb_filter);
   conv->add_kernel_size(kernel);
@@ -75,7 +68,7 @@ LayerConf GenPoolingConf(string name, bool max_pool, int kernel, int stride,
                          int pad) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnPooling");
+  conf.set_type(engine + "_pooling");
   PoolingConf *pool = conf.mutable_pooling_conf();
   pool->set_kernel_size(kernel);
   pool->set_stride(stride);
@@ -87,14 +80,14 @@ LayerConf GenPoolingConf(string name, bool max_pool, int kernel, int stride,
 LayerConf GenReLUConf(string name) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("RELU");
+  conf.set_type(engine + "_relu");
   return conf;
 }
 
 LayerConf GenDenseConf(string name, int num_output, float std, float wd = default_wd) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("Dense");
+  conf.set_type("singa_dense");
   DenseConf *dense = conf.mutable_dense_conf();
   dense->set_num_output(num_output);
 
@@ -116,14 +109,14 @@ LayerConf GenDenseConf(string name, int num_output, float std, float wd = defaul
 LayerConf GenFlattenConf(string name) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("Flatten");
+  conf.set_type("singa_flatten");
   return conf;
 }
 
 LayerConf GenBatchNormConf(string name) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnBatchNorm");
+  conf.set_type(engine + "_batchnorm");
   ParamSpec *gammaspec = conf.add_param();
   gammaspec->set_name(name + "_gamma");
   auto gammafill = gammaspec->mutable_filler();
@@ -155,7 +148,7 @@ LayerConf GenBatchNormConf(string name) {
 LayerConf GenDropoutConf(string name, float dropout_ratio) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("Dropout");
+  conf.set_type(engine + "_dropout");
   DropoutConf *dropout = conf.mutable_dropout_conf();
   dropout->set_dropout_ratio(dropout_ratio);
 
@@ -163,47 +156,47 @@ LayerConf GenDropoutConf(string name, float dropout_ratio) {
 }
 
 void ConvBNReLU(FeedForwardNet& net, string name, int nb_filter, Shape* shape = nullptr) {
-  net.Add(new CudnnConvolution(), GenConvConf(name+"_conv", nb_filter, 3, 1, 1), shape);
-  net.Add(new CudnnBatchNorm(), GenBatchNormConf(name+"_bn"));
-  net.Add(new CudnnActivation(), GenReLUConf(name+"_relu"));
+  net.Add(GenConvConf(name+"_conv", nb_filter, 3, 1, 1), shape);
+  net.Add(GenBatchNormConf(name+"_bn"));
+  net.Add(GenReLUConf(name+"_relu"));
 }
 
 FeedForwardNet CreateNet() {
   FeedForwardNet net;
   Shape s{3, 32, 32};
   ConvBNReLU(net, "conv1_1", 64, &s);
-  net.Add(new Dropout(), GenDropoutConf("drop1", 0.3));
+  net.Add(GenDropoutConf("drop1", 0.3));
   ConvBNReLU(net, "conv1_2", 64);
-  net.Add(new CudnnPooling(), GenPoolingConf("pool1", true, 2, 2, 0));
+  net.Add(GenPoolingConf("pool1", true, 2, 2, 0));
   ConvBNReLU(net, "conv2_1", 128);
-  net.Add(new Dropout(), GenDropoutConf("drop2", 0.4));
+  net.Add(GenDropoutConf("drop2", 0.4));
   ConvBNReLU(net, "conv2_2", 128);
-  net.Add(new CudnnPooling(), GenPoolingConf("pool2", true, 2, 2, 0));
+  net.Add(GenPoolingConf("pool2", true, 2, 2, 0));
   ConvBNReLU(net, "conv3_1", 256);
-  net.Add(new Dropout(), GenDropoutConf("drop3_1", 0.4));
+  net.Add(GenDropoutConf("drop3_1", 0.4));
   ConvBNReLU(net, "conv3_2", 256);
-  net.Add(new Dropout(), GenDropoutConf("drop3_2", 0.4));
+  net.Add(GenDropoutConf("drop3_2", 0.4));
   ConvBNReLU(net, "conv3_3", 256);
-  net.Add(new CudnnPooling(), GenPoolingConf("pool3", true, 2, 2, 0));
+  net.Add(GenPoolingConf("pool3", true, 2, 2, 0));
   ConvBNReLU(net, "conv4_1", 512);
-  net.Add(new Dropout(), GenDropoutConf("drop4_1", 0.4));
+  net.Add(GenDropoutConf("drop4_1", 0.4));
   ConvBNReLU(net, "conv4_2", 512);
-  net.Add(new Dropout(), GenDropoutConf("drop4_2", 0.4));
+  net.Add(GenDropoutConf("drop4_2", 0.4));
   ConvBNReLU(net, "conv4_3", 512);
-  net.Add(new CudnnPooling(), GenPoolingConf("pool4", true, 2, 2, 0));
+  net.Add(GenPoolingConf("pool4", true, 2, 2, 0));
   ConvBNReLU(net, "conv5_1", 512);
-  net.Add(new Dropout(), GenDropoutConf("drop5_1", 0.4));
+  net.Add(GenDropoutConf("drop5_1", 0.4));
   ConvBNReLU(net, "conv5_2", 512);
-  net.Add(new Dropout(), GenDropoutConf("drop5_2", 0.4));
+  net.Add(GenDropoutConf("drop5_2", 0.4));
   ConvBNReLU(net, "conv5_3", 512);
-  net.Add(new CudnnPooling(), GenPoolingConf("pool5", true, 2, 2, 0));
-  net.Add(new Flatten(), GenFlattenConf("flat"));
-  net.Add(new Dropout(), GenDropoutConf("flat_drop", 0.5));
-  net.Add(new Dense(), GenDenseConf("ip1", 512, 0.02));
-  net.Add(new CudnnBatchNorm(), GenBatchNormConf("ip1_bn"));
-  net.Add(new CudnnActivation(), GenReLUConf("ip1_relu"));
-  net.Add(new Dropout(), GenDropoutConf("ip1_drop", 0.5));
-  net.Add(new Dense(), GenDenseConf("ip2", 10, 0.02));
+  net.Add(GenPoolingConf("pool5", true, 2, 2, 0));
+  net.Add(GenFlattenConf("flat"));
+  net.Add(GenDropoutConf("flat_drop", 0.5));
+  net.Add(GenDenseConf("ip1", 512, 0.02));
+  net.Add(GenBatchNormConf("ip1_bn"));
+  net.Add(GenReLUConf("ip1_relu"));
+  net.Add(GenDropoutConf("ip1_drop", 0.5));
+  net.Add(GenDenseConf("ip2", 10, 0.02));
 
   return net;
 }
@@ -294,17 +287,17 @@ void Train(float lr, int num_epoch, string data_dir) {
   mem_conf.add_device(0);
   mem_conf.add_device(1);
   std::shared_ptr<DeviceMemPool> mem_pool(new CnMemPool(mem_conf));
-  std::shared_ptr<CudaGPU> cuda_1(new CudaGPU(0, mem_pool));
-  std::shared_ptr<CudaGPU> cuda_2(new CudaGPU(1, mem_pool));
-  net_1.ToDevice(cuda_1);
-  net_2.ToDevice(cuda_2);
+  std::shared_ptr<CudaGPU> dev_1(new CudaGPU(0, mem_pool));
+  std::shared_ptr<CudaGPU> dev_2(new CudaGPU(1, mem_pool));
+  net_1.ToDevice(dev_1);
+  net_2.ToDevice(dev_2);
 
-  train_x_1.ToDevice(cuda_1);
-  train_y_1.ToDevice(cuda_1);
-  test_x.ToDevice(cuda_1);
-  test_y.ToDevice(cuda_1);
-  train_x_2.ToDevice(cuda_2);
-  train_y_2.ToDevice(cuda_2);
+  train_x_1.ToDevice(dev_1);
+  train_y_1.ToDevice(dev_1);
+  test_x.ToDevice(dev_1);
+  test_y.ToDevice(dev_1);
+  train_x_2.ToDevice(dev_2);
+  train_y_2.ToDevice(dev_2);
 
   LOG(INFO) << "Launching thread...";
   std::thread t1 =

@@ -23,7 +23,7 @@
 #include "singa/utils/logging.h"
 namespace singa {
 
-RegisterLayerClass(CudnnSoftmax);
+RegisterLayerClass(cudnn_softmax, CudnnSoftmax);
 CudnnSoftmax::~CudnnSoftmax() {
   if (desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(desc_));
 }

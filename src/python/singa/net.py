@@ -92,17 +92,17 @@ class FeedForwardNet(object):
         return tensor.softmax(xx)
 
     def forward(self, flag, x):
-        #print x.l1()
+        # print x.l1()
         for lyr in self.layers:
             x = lyr.forward(flag, x)
         #    print lyr.name, x.l1()
         return x
 
-    def backward(self, flag=kTrain):
+    def backward(self):
         grad = self.loss.backward()
         pgrads = []
         for lyr in reversed(self.layers):
-            grad, _pgrads = lyr.backward(flag, grad)
+            grad, _pgrads = lyr.backward(kTrain, grad)
             for g in reversed(_pgrads):
                 pgrads.append(g)
         return reversed(pgrads)

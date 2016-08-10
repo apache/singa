@@ -22,13 +22,6 @@
 #include "singa/singa_config.h"
 #ifdef USE_OPENCV
 #include <cmath>
-#include "../../src/model/layer/cudnn_activation.h"
-#include "../../src/model/layer/cudnn_convolution.h"
-#include "../../src/model/layer/dropout.h"
-#include "../../src/model/layer/cudnn_lrn.h"
-#include "../../src/model/layer/cudnn_pooling.h"
-#include "../../src/model/layer/dense.h"
-#include "../../src/model/layer/flatten.h"
 #include "./ilsvrc12.h"
 #include "singa/io/snapshot.h"
 #include "singa/model/feed_forward_net.h"
@@ -40,11 +33,12 @@
 #include "singa/utils/timer.h"
 namespace singa {
 
+const std::string engine = "cudnn";
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
                       int pad, float std, float bias = .0f) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnConvolution");
+  conf.set_type(engine + "_convolution");
   ConvolutionConf *conv = conf.mutable_convolution_conf();
   conv->set_num_output(nb_filter);
   conv->add_kernel_size(kernel);
@@ -71,7 +65,7 @@ LayerConf GenPoolingConf(string name, bool max_pool, int kernel, int stride,
                          int pad) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnPooling");
+  conf.set_type(engine + "_pooling");
   PoolingConf *pool = conf.mutable_pooling_conf();
   pool->set_kernel_size(kernel);
   pool->set_stride(stride);
@@ -83,7 +77,7 @@ LayerConf GenPoolingConf(string name, bool max_pool, int kernel, int stride,
 LayerConf GenReLUConf(string name) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("RELU");
+  conf.set_type(engine + "_relu");
   return conf;
 }
 
@@ -91,7 +85,7 @@ LayerConf GenDenseConf(string name, int num_output, float std, float wd,
                        float bias = .0f) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("Dense");
+  conf.set_type("singa_dense");
   DenseConf *dense = conf.mutable_dense_conf();
   dense->set_num_output(num_output);
 
@@ -115,7 +109,7 @@ LayerConf GenDenseConf(string name, int num_output, float std, float wd,
 LayerConf GenLRNConf(string name) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("CudnnLRN");
+  conf.set_type(engine + "_lrn");
   LRNConf *lrn = conf.mutable_lrn_conf();
   lrn->set_local_size(5);
   lrn->set_alpha(1e-04);
@@ -126,14 +120,14 @@ LayerConf GenLRNConf(string name) {
 LayerConf GenFlattenConf(string name) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("Flatten");
+  conf.set_type("singa_flatten");
   return conf;
 }
 
 LayerConf GenDropoutConf(string name, float dropout_ratio) {
   LayerConf conf;
   conf.set_name(name);
-  conf.set_type("Dropout");
+  conf.set_type(engine + "_dropout");
   DropoutConf *dropout = conf.mutable_dropout_conf();
   dropout->set_dropout_ratio(dropout_ratio);
   return conf;

@@ -36,7 +36,7 @@ class CudnnDropout : public Dropout {
  public:
   ~CudnnDropout();
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "CudnnDropout"; }
+  // const std::string layer_type() const override { return "CudnnDropout"; }
 
   const Tensor Forward(int flag, const Tensor& input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,

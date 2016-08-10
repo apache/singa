@@ -24,6 +24,7 @@
 #include "singa/utils/logging.h"
 
 namespace singa {
+RegisterLayerClass(cudnn_rnn, CudnnRNN);
 CudnnRNN::~CudnnRNN() {
   if (weight_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyFilterDescriptor(weight_desc_));
@@ -126,25 +127,19 @@ void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
       dropout_state_.block()->mutable_data(), state_size, seed_));
 
   CUDNN_CHECK(cudnnCreateRNNDescriptor(&rnn_desc_));
-  cudnnRNNInputMode_t input_mode;
-  if (input_mode_ == "linear")
-    input_mode = CUDNN_LINEAR_INPUT;
-  else if (input_mode_ == "skip")
+  cudnnRNNInputMode_t input_mode = CUDNN_LINEAR_INPUT;
+  if (input_mode_ == "skip")
     input_mode = CUDNN_SKIP_INPUT;
 
-  cudnnDirectionMode_t direction;
-  if (direction_ == "unidirectional")
-    direction = CUDNN_UNIDIRECTIONAL;
-  else if (direction_ == "bidirectional")
+  cudnnDirectionMode_t direction = CUDNN_UNIDIRECTIONAL;
+  if (direction_ == "bidirectional")
     direction = CUDNN_BIDIRECTIONAL;
 
-  cudnnRNNMode_t rnn_mode;
+  cudnnRNNMode_t rnn_mode = CUDNN_LSTM;
   if (rnn_mode_ == "relu")
     rnn_mode = CUDNN_RNN_RELU;
   else if (rnn_mode_ == "tanh")
     rnn_mode = CUDNN_RNN_TANH;
-  else if (rnn_mode_ == "lstm")
-    rnn_mode = CUDNN_LSTM;
   else if (rnn_mode_ == "gru")
     rnn_mode = CUDNN_GRU;
   CUDNN_CHECK(cudnnSetRNNDescriptor(rnn_desc_, hidden_size_, num_stacks_,
