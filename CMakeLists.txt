@@ -18,13 +18,14 @@ SET(SINGA_INCLUDE_DIR
     "${CMAKE_SOURCE_DIR}/include;${CMAKE_SOURCE_DIR}/lib/cnmem/include;${PROJECT_BINARY_DIR}")
 INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
 
-OPTION(USE_CBLAS "Use CBlas libs" ON)
-OPTION(USE_CUDA "Use Cuda libs" ON)
-OPTION(USE_CUDNN "Use Cudnn libs" ON)
+OPTION(USE_CBLAS "Use CBlas libs" OFF)
+OPTION(USE_CUDA "Use Cuda libs" OFF)
+OPTION(USE_CUDNN "Use Cudnn libs" OFF)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
-OPTION(USE_PYTHON "Generate py wrappers" ON)
+OPTION(USE_PYTHON "Generate py wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
+OPTION(ENABLE_DIST "enable distributed training" OFF)
 #OPTION(BUILD_OPENCL_TESTS "Build OpenCL tests" OFF)
 
 INCLUDE("cmake/Dependencies.cmake")
@@ -46,6 +47,12 @@ IF (USE_CUDA)
     ADD_SUBDIRECTORY(lib/cnmem)
     LIST(APPEND SINGA_LINKER_LIBS cnmem)
 ENDIF()
+
+# TODO(wangwei) detect the ev lib
+IF (ENABLE_DIST)
+  LIST(APPEND SINGA_LINKER_LIBS ev)
+ENDIF()
+
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(test)
 ADD_SUBDIRECTORY(examples)
