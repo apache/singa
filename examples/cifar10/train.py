@@ -33,7 +33,7 @@ from singa.proto import core_pb2
 
 import alexnet
 import vgg
-
+import resnet
 
 def load_dataset(filepath):
     print 'Loading data file %s' % filepath
@@ -94,6 +94,13 @@ def alexnet_lr(epoch):
     else:
         return 0.00001
 
+def resnet_lr(epoch):
+    if epoch < 80:
+        return 0.02
+    elif epoch < 120:
+        return 0.005
+    else:
+        return 0.001
 
 def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
           use_cpu=False):
@@ -152,9 +159,8 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
     net.save('model.bin')  # save model params into checkpoint file
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train vgg/alexnet for '
-                                     'cifar10 dataset')
-    parser.add_argument('model', choices=['vgg', 'alexnet'], default='alexnet')
+    parser = argparse.ArgumentParser(description='Train vgg/alexnet for cifar10')
+    parser.add_argument('model', choices=['vgg', 'alexnet', 'resnet'], default='alexnet')
     parser.add_argument('data', default='cifar-10-batches-py')
     parser.add_argument('--use_cpu', action='store_true')
     args = parser.parse_args()
@@ -168,8 +174,12 @@ if __name__ == '__main__':
         net = alexnet.create_net(args.use_cpu)
         train((train_x, train_y, test_x, test_y), net, 160, alexnet_lr, 0.004,
               use_cpu=args.use_cpu)
-    else:
+    elif args.model == 'vgg':
         train_x, test_x = normalize_for_vgg(train_x, test_x)
         net = vgg.create_net(args.use_cpu)
         train((train_x, train_y, test_x, test_y), net, 250, vgg_lr, 0.0005,
               use_cpu=args.use_cpu)
+    else:
+        train_x, test_x = normalize_for_vgg(train_x, test_x)
+        net = resnet.create_net()
+        train((train_x, train_y, test_x, test_y), net, 200, resnet_lr, 1e-4)
