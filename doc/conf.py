@@ -16,9 +16,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(1, os.path.abspath('../build/python'))
 
 # -- General configuration ------------------------------------------------
 from recommonmark.parser import CommonMarkParser
@@ -34,9 +35,8 @@ source_parsers = {
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
-   
-]
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+napoleon_google_docstring = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -49,7 +49,7 @@ source_suffix = ['.rst', '.md']
 
 # The encoding of source files.
 #
-# source_encoding = 'utf-8-sig'
+source_encoding = 'utf-8-sig'
 
 # The master toctree document.
 master_doc = 'index'
@@ -149,7 +149,7 @@ html_theme = 'sphinx_rtd_theme'
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 #
-html_logo = '/singa.png'
+html_logo = 'image/singa.png'
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -202,7 +202,7 @@ html_static_path = ['_static']
 
 # If true, links to the reST sources are added to the pages.
 #
-html_show_sourcelink = False
+# html_show_sourcelink = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #

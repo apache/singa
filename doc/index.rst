@@ -7,9 +7,9 @@ Welcome to Apache Singa
 =======================
 
 Recent News
-===========
+-----------
 
-* The **third release** is now available, 20 April, 2016. `Download SINGA v0.3.0 <downloads.html>`_ 
+* The **third release** is now available, 20 April, 2016. `Download SINGA v0.3.0 <downloads.html>`_
 
 * The **second release** is now available, 14 Jan, 2016. `Download SINGA v0.2.0 <downloads.html>`_.
 
@@ -34,7 +34,7 @@ Recent News
 * SINGA has been accepted by `Apache Incubator <http://incubator.apache.org/>`_, 17 March, 2015.
 
 Getting Started
-===============
+---------------
 * The `Introduction <docs/overview.html>`_ page gives an overview of SINGA.
 
 * The `Installation <docs/installation.html>`_ guide describes details on downloading and installing SINGA.
@@ -42,7 +42,7 @@ Getting Started
 * Please follow the `Quick Start <docs/quick-start.html>`_ guide to run simple applications on SINGA.
 
 Documentation
-=============
+-------------
 
 * Documentations are listed `here <docs.html>`_.
 
@@ -51,8 +51,8 @@ Documentation
 * Research publication list is available `here <http://www.comp.nus.edu.sg/~dbsystem/singa/research/publication/>`_.
 
 How to contribute
-=================
-  
+----------------------
+
 * Please subscribe to our development mailing list dev-subscribe@singa.incubator.apache.org.
 
 * If you find any issues using SINGA, please report it to the `Issue Tracker <https://issues.apache.org/jira/browse/singa>`_.
@@ -62,17 +62,17 @@ How to contribute
 More details on contributing to SINGA is described `here <develop/how-contribute.html>`_ .
 
 Citing SINGA
-============
+------------
 
 Please cite the following two papers if you use SINGA in your research:
 
 * B. C. Ooi, K.-L. Tan, S. Wang, W. Wang, Q. Cai, G. Chen, J. Gao, Z. Luo, A. K. H. Tung, Y. Wang, Z. Xie, M. Zhang, and K. Zheng. `SINGA: A distributed deep learning platform <http://www.comp.nus.edu.sg/~ooibc/singaopen-mm15.pdf>`_. ACM Multimedia (Open Source Software Competition) 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-oss.txt>`_).
 
-* W. Wang, G. Chen, T. T. A. Dinh, B. C. Ooi, K.-L.Tan, J. Gao, and S. Wang. `SINGA: putting deep learning in the hands of multimedia users <http://www.comp.nus.edu.sg/~ooibc/singa-mm15.pdf>`_. ACM Multimedia 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-singa.txt>`_, `Slides <files/mm2015.ppt>`_). 
+* W. Wang, G. Chen, T. T. A. Dinh, B. C. Ooi, K.-L.Tan, J. Gao, and S. Wang. `SINGA: putting deep learning in the hands of multimedia users <http://www.comp.nus.edu.sg/~ooibc/singa-mm15.pdf>`_. ACM Multimedia 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-singa.txt>`_, `Slides <files/mm2015.ppt>`_).
 
 .. toctree::
    :hidden:
-   
+
    downloads
    docs
 
@@ -85,25 +85,25 @@ Please cite the following two papers if you use SINGA in your research:
    develop/how-contribute
    develop/contribute-code
    develop/contribute-docs
-   
+
 .. toctree::
    :hidden:
    :maxdepth: 2
    :caption: Community
-   
+
    community/source-repository
    community/mail-lists
    community/issue-tracking
    community/team-list
-   
+
 
 
 License
-=======
+----------
 SINGA is released under `Apache License Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
 
 Disclaimers
-===========
+-----------
 
 Apache SINGA is an effort undergoing incubation at The Apache Software Foundation (ASF), sponsored by the Apache Incubator. Incubation is required of all newly accepted projects until a further review indicates that the infrastructure, communications, and decision making process have stabilized in a manner consistent with other successful ASF projects. While incubation status is not necessarily a reflection of the completeness or stability of the code, it does indicate that the project has yet to be fully endorsed by the ASF.
 

@@ -2,15 +2,9 @@ English
 =======
 
 .. toctree::
-	overview
-        installation
-	quick-start
-        programming-guide
-        distributed-training
-        data
-        checkpoint
-        python
-        test
-        gpu
-        examples
 
+   installation
+   software_stack
+   device
+   tensor
+   examples

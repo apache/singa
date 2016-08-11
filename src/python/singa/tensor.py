@@ -21,17 +21,21 @@ to call singa::Tensor and its methods
 """
 
 import numpy as np
+from functools import reduce
 from .proto import core_pb2
 from . import singa_wrap as singa
-from functools import reduce
+import device
 
 
 class Tensor(object):
-    ''' Class and member functions for singa::Tensor
-    '''
-
-    def __init__(self, shape=None, device=None, dtype=core_pb2.kFloat32):
-        ''' shape = (tuple)
+    def __init__(self, shape=None, device=None, dtype=core_pb.kFloat32):
+        '''Create a Py Tensor, which wraps a swig converted Tensor from SINGA
+            Tensor.
+        Args:
+            shape (list), a list of integers for the tensor shape. If shape is not specified, the created tensor is called a dummy tensor.
+            device, a Device instance created from ::py:mod:device. If it is
+                None, then the default host device would be used.
+            dtype, data type. currently, most operations only accept kFloat32.
         '''
         if shape is None:
             # call constructor of singa::Tensor
@@ -111,11 +115,19 @@ class Tensor(object):
         return self.singa_tensor.L1()
 
     def set_value(self, x):
+        '''Set all elements of the tensor to be the give value.
+
+        Args:
+            x (float), a float value to be set to all elements.
+        '''
         # assert type(x) == float, 'set value only accepts float input'
         # if isinstance(x, float):
         self.singa_tensor.floatSetValue(x)
 
     def copy_data(self, t):
+        '''Copy data from other Tensor instance.
+        '''
+        assert type(t) == Tensor, 't must be a singa Tensor instance'
         self.singa_tensor.CopyData(t.singa_tensor)
 
     def clone(self):
@@ -285,16 +297,35 @@ def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
 
 
 def from_numpy(np_array):
+    '''Create a Tensor instance with the shape, dtype and values from the numpy
+        array.
+
+    Args:
+        np_array: the numpy array.
+
+    Returns:
+        A Tensor instance allocated on the default CppCPU device.
+    '''
     ret = Tensor(np_array.shape)
     ret.copy_from_numpy(np_array)
     return ret
 
 
 def to_numpy(t):
-    ''' this method gets the values of tensor data and
-        returns it as numpy array
-        TODO(wangwei) clone t to host
+    '''Convert the tensor into a numpy array.
+
+    Since numpy array is allocated on CPU devices, the input Tensor instance
+    must be on the default CppCPU device.
+
+    Args:
+        t (Tensor), a Tensor on the default CppCPU device.
+
+    Returns:
+        a numpy array
     '''
+    assert t.device == device.get_default_device() or t.device == None, \
+        'Please move the tensor onto the default host device'
+
     if t.dtype == core_pb2.kFloat32:
         np_array = t.singa_tensor.floatGetValue(int(t.size()))
     elif t.dtype == core_pb2.kInt:
