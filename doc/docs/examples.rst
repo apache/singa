@@ -1,0 +1,6 @@
+Examples
+========
+
+.. toctree::
+
+   examples/index
