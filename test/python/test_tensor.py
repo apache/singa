@@ -34,6 +34,8 @@ class TestTensorMethods(unittest.TestCase):
         self.shape = (2, 3)
         self.t = tensor.Tensor(self.shape)
         self.s = tensor.Tensor(self.shape)
+        self.t.set_value(0)
+        self.s.set_value(0)
 
     def test_tensor_fields(self):
         t = self.t

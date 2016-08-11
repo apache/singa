@@ -17,8 +17,8 @@
  */
 #include "./cudnn_rnn.h"
 #ifdef USE_CUDNN
-#if CUDNN_VERSION_MAJOR >= 5 && CUDNN_VERSION_PATCH >= 5
 #include <cudnn.h>
+#if CUDNN_VERSION >= 5005
 #include <chrono>
 #include "./cudnn_utils.h"
 #include "singa/utils/logging.h"
@@ -423,5 +423,5 @@ const std::pair<vector<Tensor>, vector<Tensor>> CudnnRNN::Backward(
 }
 
 }  // namespace singa
-#endif  // CUDNN_VERSION_MAJOR >= 5 && CUDNN_VERSION_PATCH >= 5
+#endif  // CUDNN_VERSION >= 5005
 #endif  // USE_CUDNN

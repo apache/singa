@@ -25,7 +25,7 @@ import cPickle as pickle
 import numpy as np
 import argparse
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
+# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 from singa import layer
 from singa import loss
 from singa import device

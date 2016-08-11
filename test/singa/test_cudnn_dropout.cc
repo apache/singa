@@ -21,7 +21,7 @@
 #include "../src/model/layer/cudnn_dropout.h"
 #ifdef USE_CUDNN
 // cudnn dropout is added in cudnn 5
-#if CUDNN_VERSION_MAJOR >= 5
+#if CUDNN_MAJOR >= 5
 
 #include "gtest/gtest.h"
 
@@ -122,5 +122,5 @@ TEST(CudnnDropout, Backward) {
   EXPECT_FLOAT_EQ(dx[1], dy[1] * GetBitValue(mptr, 1) * scale);
   EXPECT_FLOAT_EQ(dx[7], dy[7] * GetBitValue(mptr, 7) * scale);
 }
-#endif  // CUDNN_VERSION_MAJOR>=5
+#endif  // CUDNN_MAJOR>=5
 #endif  // USE_CUDNN

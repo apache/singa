@@ -17,10 +17,10 @@
  */
 #include "./cudnn_dropout.h"
 #ifdef USE_CUDNN
-// cudnn dropout is added in cudnn 5
-#if CUDNN_VERSION_MAJOR >= 5
-
 #include <cudnn.h>
+// cudnn dropout is added in cudnn 5
+#if CUDNN_MAJOR >= 5
+
 #include <chrono>
 
 #include "./cudnn_utils.h"
@@ -112,5 +112,5 @@ void CudnnDropout::ToDevice(std::shared_ptr<Device> device) {
   state_.ToDevice(device);
 }
 }  // namespace singa
-#endif  // CUDNN_VERSION_MAJOR>=5
+#endif  // CUDNN_MAJOR>=5
 #endif  // USE_CUDNN

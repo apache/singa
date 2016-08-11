@@ -25,7 +25,7 @@ import os
 import sys
 import argparse
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
+# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 from singa import utils
 from singa import optimizer
 from singa import device

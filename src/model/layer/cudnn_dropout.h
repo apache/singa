@@ -20,8 +20,9 @@
 #define SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
+#include <cudnn.h>
 // cudnn dropout is added in cudnn 5
-#if CUDNN_VERSION_MAJOR >= 5
+#if CUDNN_MAJOR >= 5
 #include "./dropout.h"
 
 #include <cudnn.h>
@@ -56,6 +57,6 @@ class CudnnDropout : public Dropout {
   Tensor state_;
 };
 }  // namespace
-#endif  // CUDNN_VERSION_MAJOR>=5
+#endif  // CUDNN_MAJOR>=5
 #endif  // USE_CUDNN
 #endif  // SRC_MODEL_LAYER_CUDNN_DROPOUT_H_

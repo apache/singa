@@ -33,7 +33,7 @@ std::vector<Tensor> CSVDecoder::Decode(std::string value) {
     ss >> l;
   std::string str;
   float d[kMaxCSVBufSize];
-  size_t size = 0;
+  int size = 0;
   while (std::getline(ss, str, ',')) {
     float temp;
     if (std::stringstream(str) >> temp) {
@@ -42,7 +42,7 @@ std::vector<Tensor> CSVDecoder::Decode(std::string value) {
     }
   }
 
-  Tensor data(Shape {size}, kFloat32);
+  Tensor data(Shape {static_cast<size_t>(size)}, kFloat32);
   data.CopyDataFromHostPtr(d, size);
   output.push_back(data);
   if (has_label_ == true) {

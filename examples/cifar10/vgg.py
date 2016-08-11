@@ -24,7 +24,7 @@ import sys
 import os
 import math
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
+#sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 
 from singa import layer
 from singa import initializer
