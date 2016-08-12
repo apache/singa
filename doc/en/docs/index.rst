@@ -7,4 +7,4 @@ English
    software_stack
    device
    tensor
-   examples
+   examples/index

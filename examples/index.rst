@@ -1,3 +1,6 @@
+Examples
+--------
+
 .. toctree::
 
    char-rnn/README
