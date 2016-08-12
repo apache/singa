@@ -14,7 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-""" Python layers which wraps the C++ layers by providing easy to construct APIs
+""" Python layers wrap the C++ layers to provide simpler construction APIs.
+
+Example usages::
+
+    from singa import layer
+    from singa import tensor
+    from singa import device
+    from singa.model_pb2 import kTrain
+
+    layer.engine = 'cudnn'  # to use cudnn layers
+    dev = device.create_cuda_gpu()
+
+    # create a convolution layer
+    conv = layer.Conv2D('conv', 32, 3, 1, pad=1, input_sample_shape=(3, 32, 32))
+    conv.to_device(dev)  # move the layer data onto a CudaGPU device
+    x = tensor.Tensor((3, 32, 32), dev)
+    x.uniform(-1, 1)
+    y = conv.foward(kTrain, x)
+
+    dy = tensor.Tensor()
+    dy.reset_like(y)
+    dy.set_value(0.1)
+    # dp is a list of tensors for parameter gradients
+    dx, dp = conv.backward(kTrain, dy)
 """
 
 from sets import Set
@@ -22,23 +45,37 @@ from . import singa_wrap
 from .proto import model_pb2
 import tensor
 
-# engine could be 'cudnn', 'singa', which is used to create layers.
-# e.g., CudnnConvolution layer is identified by 'cudnn_convolution'
-# Convolution layer is identified by 'singa_convolution'
-# engine is case insensitive
+
 engine = 'cudnn'
+'''engine is the prefix of layer identifier.
+
+The value could be one of [**'cudnn', 'singacpp', 'singacuda', 'singacl'**], for
+layers implemented using the cudnn library, Cpp, Cuda and OpenCL respectively.
+For example, CudnnConvolution layer is identified by 'cudnn_convolution';
+'singacpp_convolution' is for Convolution layer;
+Some layers' implementation use only Tensor functions, thererfore they are
+transparent to the underlying devices. For threse layers, they would have
+multiple identifiers, e.g., singacpp_dropout, singacuda_dropout and
+singacl_dropout are all for the Dropout layer.
+
+engine is case insensitive. Each python layer would create the correct specific
+layer using the engine attribute.
+'''
 
 
 class Layer(object):
-    """Base Python layer class.
+    '''Base Python layer class.
 
-    Usages:
-        1.  construct layer without input_sample_shapes, goto 2;
-            construct layer with input_sample_shapes, goto 3;
+    Typically, the life cycle of a layer instance includes:
+        1. construct layer without input_sample_shapes, goto 2;
+           construct layer with input_sample_shapes, goto 3;
         2. call setup to create the parameters and setup other meta fields
         3. call forward or access layer members
         4. call backward and get parameters for update
-    """
+
+    Args:
+        name (str): layer name
+    '''
 
     def __init__(self, name, **kwargs):
         self.layer = None  # layer converted by swig
@@ -49,20 +86,24 @@ class Layer(object):
         self.has_setup = False
 
     def param_names(self):
+        '''
+        Returns:
+            a list of strings, one for the name of one parameter Tensor
+        '''
         names = []
         for x in self.param_specs:
             names.append(x['name'])
         return names
 
     def setup(self, in_shapes):
-        """Call the C++ setup function to create params and set some meta data.
+        '''Call the C++ setup function to create params and set some meta data.
 
         Args:
             in_shapes: if the layer accepts a single input Tensor, in_shapes is
                 a single tuple specifying the inpute Tensor shape; if the layer
                 accepts multiple input Tensor (e.g., the concatenation layer),
-                in_shapes is a tuple of tuples, each for one input Tensor shape
-        """
+                in_shapes is a tuple of tuples, each for one input Tensor
+        '''
         if self.has_setup:
             return
         self.layer.Setup(list(in_shapes),
@@ -70,54 +111,92 @@ class Layer(object):
         self.has_setup = True
 
     def get_output_sample_shape(self):
+        '''Called after setup to get the shape of the output sample(s).
+
+        Returns:
+            a tuple for a single output Tensor or a list of tuples if this layer
+            has multiple outputs
+        '''
         assert self.has_setup, \
             'Must call setup() before get_output_sample_shape()'
         return self.layer.GetOutputSampleShape()
 
     def param_values(self):
-        """Return param value tensors.
+        '''Return param value tensors.
 
-        Do not store these tensors as layer members because cpp Tensor could be
-        moved onto diff devices due to the change of layer device. However, the
-        py tensors would not update its internal cpp tensor automatically.
-        """
+        Parameter tensors are not stored as layer members because cpp Tensor
+        could be moved onto diff devices due to the change of layer device,
+        which would result in inconsistency.
+
+        Returns:
+            a list of tensors, one for each paramter
+        '''
         return tensor.from_raw_tensors(self.layer.param_values())
 
-    def forward(self, flag, input):
+    def forward(self, flag, x):
         '''Forward propagate through this layer.
 
         Args:
-            flag, kTrain or kEval
-            input, an input tensor
+            flag (int): kTrain or kEval
+            x (Tensor or list<Tensor>): an input tensor if the layer is
+                connected from a single layer; a list of tensors if the layer
+                is connected from multiple layers.
 
         Return:
-            a tensor for the transformed feature
+            a tensor if the layer is connected to a single layer; a list of
+            tensors if the layer is connected to multiple layers;
         '''
         assert self.has_setup, 'Must call setup() before forward()'
-        assert isinstance(input, tensor.Tensor), 'input must be py Tensor'
-        y = self.layer.Forward(flag, input.singa_tensor)
-        return tensor.from_raw_tensor(y)
+        if type(x) == list:
+            xs = []
+            for t in x:
+                x.append(t.singa_tensor)
+        else:
+            assert isinstance(input, tensor.Tensor), \
+                'input must be a Tensor or a list of Tensor'
+            xs = x
+        y = self.layer.Forward(flag, xs)
+        if type(y) == list:
+            return tensor.from_raw_tensors(y)
+        else:
+            return tensor.from_raw_tensor(y)
 
-    def backward(self, flag, grad):
-        '''Backward propagate through this layer.
+    def backward(self, flag, dy):
+        '''Backward propagate gradients through this layer.
 
         Args:
-            flag, for future use.
-            grad, gradient of the returned values of the forward function.
-
+            flag (int): for future use.
+            dy (Tensor or list<Tensor>): the gradient tensor(s) y w.r.t the
+                objective loss
         Return:
-            <dx, <dp1, dp2..>>, dx is the gradient of the input of the
-            forward function, dpi is the gradient of the i-th parameter
+            <dx, <dp1, dp2..>>, dx is a (set of) tensor(s) for the gradient of x
+            , dpi is the gradient of the i-th parameter
         '''
-        assert isinstance(grad, tensor.Tensor), 'grad must be py Tensor'
-        ret = self.layer.Backward(flag, grad.singa_tensor)
-        return tensor.from_raw_tensor(ret[0]), tensor.from_raw_tensors(ret[1])
+        if type(dy) == list:
+            dys = []
+            for t in dy:
+                dys.append(t.singa_tensor)
+        else:
+            assert isinstance(dy, tensor.Tensor), \
+                'the input must be a Tensor or a set of Tensor'
+            dys = dy.singa_tensor
+        ret = self.layer.Backward(flag, dys)
+        if type(ret[0]) == list:
+            dxs = tensor.from_raw_tensors(ret[0])
+        else:
+            dxs = tensor.from_raw_tensor(ret[0])
+        return dxs, tensor.from_raw_tensors(ret[1])
 
     def to_device(self, device):
+        '''Move layer state tensors onto the given device.
+
+        Args:
+            device: swig converted device, created using singa.device
+        '''
         self.layer.ToDevice(device)
 
     def as_type(self, dtype):
-        self.layer.AsType(dtype)
+        pass
 
     def __copy__(self):
         pass
@@ -127,43 +206,42 @@ class Layer(object):
 
 
 class Conv2D(Layer):
+    """Construct a layer for 2D convolution.
 
+    Args:
+        nb_kernels (int): num of the channels (kernels) of the input Tensor
+        kernel: an integer or a pair of integers for kernel height and width
+        stride: an integer or a pair of integers for stride height and width
+        border_mode (string): padding mode, case in-sensitive,
+            'valid' -> padding is 0 for height and width
+            'same' -> padding is half of the kernel (floor), the kernel must be
+            odd number.
+        cudnn_prefer (string): the preferred algorithm for cudnn convolution
+            which could be 'fatest', 'autotune', 'limited_workspace' and
+            'no_workspace'
+        data_format (string): either 'NCHW' or 'NHWC'
+        use_bias (bool): True or False
+        pad: an integer or a pair of integers for padding height and width
+        W_specs (dict): used to specify the weight matrix specs, fields
+            include,
+            'name' for parameter name
+            'lr_mult' for learning rate multiplier
+            'decay_mult' for weight decay multiplier
+            'init' for init method, which could be 'gaussian', 'uniform',
+            'xavier' and ''
+            'std', 'mean', 'high', 'low' for corresponding init methods
+            TODO(wangwei) 'clamp' for gradient constraint, value is scalar
+            'regularizer' for regularization, currently support 'l2'
+        b_specs (dict): hyper-parameters for bias vector, similar as W_specs
+        name (string): layer name.
+        input_sample_shape: 3d tuple for the shape of the input Tensor
+            without the batchsize, e.g., (channel, height, width) or
+            (height, width, channel)
+    """
     def __init__(self, name, nb_kernels, kernel=3, stride=1, border_mode='same',
                  cudnn_prefer='fatest', data_format='NCHW',
                  use_bias=True, W_specs=None, b_specs=None,
                  pad=None, input_sample_shape=None):
-        """Construct a layer for 2D convolution.
-
-        Args:
-            nb_kernels (int): num of the channels (kernels) of the input Tensor
-            kernel: an integer or a pair of integers for kernel height and width
-            stride: an integer or a pair of integers for stride height and width
-            border_mode (string): padding mode, case in-sensitive,
-                'valid' -> padding is 0 for height and width
-                'same' -> padding is half of the kernel (floor),
-                    the kernel must be odd number.
-            cudnn_prefer (string): the preferred algorithm for cudnn convolution
-                which could be 'fatest', 'autotune', 'limited_workspace' and
-                'no_workspace'
-            data_format (string): either 'NCHW' or 'NHWC'
-            use_bias (bool): True or False
-            pad: an integer or a pair of integers for padding height and width
-            W_specs (dict): used to specify the weight matrix specs, fields
-                include,
-                'name' for parameter name
-                'lr_mult' for learning rate multiplier
-                'decay_mult' for weight decay multiplier
-                'init' for init method, which could be 'gaussian', 'uniform',
-                'xavier' and ''
-                'std', 'mean', 'high', 'low' for corresponding init methods
-                TODO(wangwei) 'clamp' for gradient constraint, value is scalar
-                'regularizer' for regularization, currently support 'l2'
-            b_specs (dict): hyper-parameters for bias vector, similar as W_specs
-            name (string): layer name.
-            input_sample_shape: 3d tuple for the shape of the input Tensor
-                without the batchsize, e.g., (channel, height, width) or
-                (height, width, channel)
-        """
         super(Conv2D, self).__init__(name)
         assert data_format == 'NCHW', 'Not supported data format: %s ' \
             'only "NCHW" is enabled currently' % (data_format)
@@ -195,19 +273,19 @@ class Conv2D(Layer):
 
 
 class Conv1D(Conv2D):
+    """Construct a layer for 1D convolution.
+
+    Most of the args are the same as those for Conv2D except the kernel,
+    stride, pad, which is a scalar instead of a tuple.
+    input_sample_shape is a tuple with a single value for the input feature
+    length
+    """
 
     def __init__(self, name, nb_kernels, kernel=3, stride=1,
                  border_mode='same', cudnn_prefer='fatest',
                  use_bias=True, W_specs={'init': 'Xavier'},
                  b_specs={'init': 'Constant', 'value': 0}, pad=None,
                  input_sample_shape=None):
-        """Construct a layer for 1D convolution.
-
-        Most of the args are the same as those for Conv2D except the kernel,
-        stride, pad, which is a scalar instead of a tuple.
-        input_sample_shape is a tuple with a single value for the input feature
-        length
-        """
         pad = None
         if pad is not None:
             pad = (0, pad)
@@ -227,7 +305,15 @@ class Conv1D(Conv2D):
 
 
 class Pooling2D(Layer):
+    '''2D pooling layer providing max/avg pooling.
 
+    All args are the same as those for Conv2D, except the following one
+
+    Args:
+        mode: pooling type, model_pb2.PoolingConf.MAX or
+            model_pb2.PoolingConf.AVE
+
+    '''
     def __init__(self, name, mode, kernel=3, stride=2, border_mode='same',
                  pad=None, data_format='NCHW', input_sample_shape=None):
         super(Pooling2D, self).__init__(name)
@@ -312,28 +398,26 @@ class AvgPooling1D(AvgPooling2D):
 
 
 class BatchNormalization(Layer):
-    # TODO(wangwei) add mode and epsilon arguments
+    """Batch-normalization.
 
+    Args:
+        momentum (float): for running average mean and variance.
+        beta_specs (dict): dictionary includes the fields for the beta
+            param:
+            'name' for parameter name
+            'lr_mult' for learning rate multiplier
+            'decay_mult' for weight decay multiplier
+            'init' for init method, which could be 'gaussian', 'uniform',
+            'xavier' and ''
+            'std', 'mean', 'high', 'low' for corresponding init methods
+            'clamp' for gradient constraint, value is scalar
+            'regularizer' for regularization, currently support 'l2'
+        gamma_specs (dict): similar to beta_specs, but for the gamma param.
+        name (string): layer name
+        input_sample_shape (tuple): with at least one integer
+    """
     def __init__(self, name, momentum=0.9,
                  beta_specs=None, gamma_specs=None, input_sample_shape=None):
-        """Batch-normalization.
-
-        Args:
-            momentum (float): for running average mean and variance.
-            beta_specs (dict): dictionary includes the fields for the beta
-                param:
-                'name' for parameter name
-                'lr_mult' for learning rate multiplier
-                'decay_mult' for weight decay multiplier
-                'init' for init method, which could be 'gaussian', 'uniform',
-                'xavier' and ''
-                'std', 'mean', 'high', 'low' for corresponding init methods
-                'clamp' for gradient constraint, value is scalar
-                'regularizer' for regularization, currently support 'l2'
-            gamma_specs (dict): similar to beta_specs, but for the gamma param.
-            name (string): layer name
-            input_sample_shape (tuple): with at least one integer
-        """
         super(BatchNormalization, self).__init__(name)
         conf = self.conf.batchnorm_conf
         conf.factor = momentum
@@ -362,16 +446,17 @@ class BatchNormalization(Layer):
 
 
 class LRN(Layer):
+    """Local response normalization.
+
+    Args:
+        size (int): # of channels to be crossed
+            normalization.
+        mode (string): 'cross_channel'
+        input_sample_shape (tuple): 3d tuple, (channel, height, width)
+    """
+
     def __init__(self, name, size=5, alpha=1, beta=0.75, mode='cross_channel',
                  k=1, input_sample_shape=None):
-        """Local response normalization.
-
-        Args:
-            size (int): # of channels to be crossed
-                normalization.
-            mode (string): 'cross_channel'
-            input_sample_shape (tuple): 3d tuple, (channel, height, width)
-        """
         super(LRN, self).__init__(name)
         conf = self.conf.lrn_conf
         conf.local_size = size
@@ -388,29 +473,28 @@ class LRN(Layer):
 
 
 class Dense(Layer):
+    """Apply linear/affine transformation, also called inner-product or
+    fully connected layer.
 
+    Args:
+        num_output (int): output feature length.
+        use_bias (bool): add a bias vector or not to the transformed feature
+        W_specs (dict): specs for the weight matrix
+            'name' for parameter name
+            'lr_mult' for learning rate multiplier
+            'decay_mult' for weight decay multiplier
+            'init' for init method, which could be 'gaussian', 'uniform',
+            'xavier' and ''
+            'std', 'mean', 'high', 'low' for corresponding init methods
+            'clamp' for gradient constraint, value is scalar
+            'regularizer' for regularization, currently support 'l2'
+        b_specs (dict): specs for the bias vector, same fields as W_specs.
+        W_transpose (bool): if true, output=x*W.T+b;
+        input_sample_shape (tuple): input feature length
+    """
     def __init__(self, name, num_output, use_bias=True,
                  W_specs=None, b_specs=None,
                  W_transpose=True, input_sample_shape=None):
-        """Apply linear/affine transformation, also called inner-product or
-        fully connected layer.
-
-        Args:
-            num_output (int): output feature length.
-            use_bias (bool): add a bias vector or not to the transformed feature
-            W_specs (dict): specs for the weight matrix
-                'name' for parameter name
-                'lr_mult' for learning rate multiplier
-                'decay_mult' for weight decay multiplier
-                'init' for init method, which could be 'gaussian', 'uniform',
-                'xavier' and ''
-                'std', 'mean', 'high', 'low' for corresponding init methods
-                'clamp' for gradient constraint, value is scalar
-                'regularizer' for regularization, currently support 'l2'
-            b_specs (dict): specs for the bias vector, same fields as W_specs.
-            W_transpose (bool): if true, output=x*W.T+b;
-            input_sample_shape (tuple): input feature length
-        """
         super(Dense, self).__init__(name)
         conf = self.conf.dense_conf
         conf.num_output = num_output
@@ -435,14 +519,14 @@ class Dense(Layer):
 
 
 class Dropout(Layer):
+    """Droput layer.
+
+    Args:
+        p (float): probability for dropping out the element, i.e., set to 0
+        name (string): layer name
+    """
 
     def __init__(self, name, p=0.5, input_sample_shape=None):
-        """Droput layer.
-
-        Args:
-            p (float): probability for dropping out the element, i.e., set to 0
-            name (string): layer name
-        """
         super(Dropout, self).__init__(name)
         conf = self.conf.dropout_conf
         conf.dropout_ratio = p
@@ -456,15 +540,14 @@ class Dropout(Layer):
 
 
 class Activation(Layer):
+    """Activation layers.
 
+    Args:
+        name (string): layer name
+        mode (string): 'relu', 'sigmoid', or 'tanh'
+        input_sample_shape (tuple): shape of a single sample
+    """
     def __init__(self, name, mode='relu', input_sample_shape=None):
-        """Activation layers.
-
-        Args:
-            name (string): layer name
-            mode (string): 'relu', 'sigmoid', or 'tanh'
-            input_sample_shape (tuple): shape of a single sample
-        """
         super(Activation, self).__init__(name)
         self.conf.type = (engine + '_' + mode).lower()
         _check_engine(engine, ['cudnn', 'singa'])
@@ -474,15 +557,14 @@ class Activation(Layer):
 
 
 class Softmax(Layer):
+    """Apply softmax.
 
+    Args:
+        axis (int): reshape the input as a matrix with the dimension
+            [0,axis) as the row, the [axis, -1) as the column.
+        input_sample_shape (tuple): shape of a single sample
+    """
     def __init__(self, name, axis=1, input_sample_shape=None):
-        """Apply softmax.
-
-        Args:
-            axis (int): reshape the input as a matrix with the dimension
-                [0,axis) as the row, the [axis, -1) as the column.
-            input_sample_shape (tuple): shape of a single sample
-        """
         super(Softmax, self).__init__(name)
         # conf = self.conf.softmax_conf
         # conf.axis = axis
@@ -493,14 +575,14 @@ class Softmax(Layer):
 
 
 class Flatten(Layer):
+    """Reshape the input tensor into a matrix.
 
+    Args:
+        axis (int): reshape the input as a matrix with the dimension
+            [0,axis) as the row, the [axis, -1) as the column.
+        input_sample_shape (tuple): shape for a single sample
+    """
     def __init__(self, name, axis=1, input_sample_shape=None):
-        """Reshape the input tensor into a matrix.
-        Args:
-            axis (int): reshape the input as a matrix with the dimension
-                [0,axis) as the row, the [axis, -1) as the column.
-            input_sample_shape (tuple): shape for a single sample
-        """
         super(Flatten, self).__init__(name)
         conf = self.conf.flatten_conf
         conf.axis = axis
@@ -511,26 +593,27 @@ class Flatten(Layer):
 
 
 class RNN(Layer):
+    '''Recurrent layer with 4 types of units, namely lstm, gru, tanh and relu.
+
+    Args:
+        hidden_size: hidden feature size, the same for all stacks of layers.
+        rnn_mode: decides the rnn unit, which could be one of 'lstm', 'gru',
+            'tanh' and 'relu', refer to cudnn manual for each mode.
+        num_stacks: num of stacks of rnn layers. It is different to the
+            unrolling seqence length.
+        input_mode: 'linear' convert the input feature x by by a linear
+            transformation to get a feature vector of size hidden_size;
+            'skip' does nothing but requires the input feature size equals
+            hidden_size
+        bidirection: True for bidirectional RNN
+        param_specs: config for initializing the RNN parameters.
+        input_sample_shape: includes a single integer for the input sample
+            feature size.
+    '''
+
     def __init__(self, name, hidden_size, rnn_mode='lstm', dropout=0.0,
                  num_stacks=1, input_mode='linear', bidirectional=False,
                  param_specs=None, input_sample_shape=None):
-        '''Wrapper for singa::RNN class.
-
-        Args:
-            hidden_size, hidden feature size, the same for all stacks of layers.
-            rnn_mode, decides the rnn unit, which could be one of 'lstm', 'gru',
-                'tanh' and 'relu', refer to cudnn manual for each mode.
-            num_stacks, num of stacks of rnn layers. It is different to the
-                unrolling seqence length.
-            input_mode, 'linear' convert the input feature x by by a linear
-                transformation to get a feature vector of size hidden_size;
-                'skip' does nothing but requires the input feature size equals
-                hidden_size
-            bidirection, True for bidirectional RNN
-            param_specs, config for initializing the RNN parameters.
-            input_sample_shape, includes a single integer for the input sample
-                feature size.
-        '''
         super(RNN, self).__init__(name)
         conf = self.conf.rnn_conf
         assert hidden_size > 0, 'Hidden feature size must > 0'
@@ -605,7 +688,7 @@ class RNN(Layer):
 
         Returns:
             <dx1, dx2, ... dxn, dhx, dcx>, where dxi is the gradient tensor for
-            the i-th input, its shape is (batch_size,
+                the i-th input, its shape is (batch_size,
                 input_feature_length). dhx is the gradient for the initial
                 hidden state. dcx is the gradient for the initial cell state,
                 which is valid only for lstm.
@@ -741,5 +824,7 @@ def _construct_param_specs_from_dict(specs):
 
 
 def get_layer_list():
-    """ Return a list of strings reprensenting the all supported layers"""
+    """ Return a list of strings which include the identifiers (tags) of all
+    supported layers
+    """
     return singa_wrap.GetRegisteredLayers()

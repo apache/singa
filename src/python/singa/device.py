@@ -68,21 +68,52 @@ def device_query(id, verbose=False):
 
 
 def create_cuda_gpus(num):
+    '''Create a list of CudaGPU devices.
+
+    Args:
+        num (int): number of device to create.
+    Returns:
+        a list of swig converted CudaGPU devices.
+    '''
+
     return singa.Platform.CreateCudaGPUs(num)
 
 
 def create_cuda_gpu():
+    '''Create a single CudaGPU device.
+
+    Returns:
+        a swig converted CudaGPU device.
+    '''
+
     return singa.Platform.CreateCudaGPUs(1)[0]
 
 
 def create_cuda_gpus_on(device_ids):
+    '''Create a list of CudaGPU devices.
+
+    Args:
+        device_ids (list): a list of GPU card IDs.
+
+    Returns:
+        a list of swig converted CudaGPU devices.
+    '''
     return singa.Platform.CreateCudaGPUsOn(device_ids)
 
 
 def create_cuda_gpu_on(device_id):
+    '''Create a CudaGPU device on the given device ID.
+
+    Args:
+        device_id (int): GPU card ID.
+
+    Returns:
+        a swig converted CudaGPU device.
+    '''
     devices = create_cuda_gpus_on([device_id])
     return devices[0]
 
 
 def get_default_device():
+    '''Get the default host device which is a CppCPU device'''
     return singa.Platform.GetDefaultDevice()

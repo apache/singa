@@ -2,7 +2,10 @@ Device
 =======
 
 
-The Device abstract represent a hardware device with memory and compuation units.
+The Device abstract represents any hardware device with memory and compuation units.
+All [Tensor operations](tensor.html) are scheduled by the resident device for execution.
+Tensor memory is also managed by the device's memory manager. Therefore, optimization
+of memory and execution are implemented in the Device class.
 
 Specific devices
 ----------------
@@ -13,24 +16,14 @@ Currently, SINGA has three Device implmentations,
 3. OpenclGPU for a GPU card which runs OpenCL code
 
 
-Create devices
----------------
-
 Python API
-~~~~~~~~~~
+----------
 
-.. autofunction:: device.create_cuda_gpus
-
-.. autofunction:: device.create_cuda_gpus_on
-
-.. autofunction:: device.create_cuda_gpu_on
-
-.. autofunction:: device.get_default_device
+.. automodule:: singa.device
+   :members: create_cuda_gpus, create_cuda_gpus_on, get_default_device
 
 
-The following code shows how to create devices,
-
-.. code:: python
+The following code provides examples of creating devices::
 
    from singa import device
    cuda = device.create_cuda_gpu_on(0)  # use GPU card of ID 0
@@ -39,9 +32,5 @@ The following code shows how to create devices,
    ary2 = device.create_cuda_gpus([0,2])  # create 2 devices on ID 0 and 2
 
 
-
 CPP API
-~~~~~~~
-
-
-
+---------
