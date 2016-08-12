@@ -137,32 +137,29 @@ FeedForwardNet CreateNet() {
   FeedForwardNet net;
   Shape s{3, 227, 227};
 
-  net.Add(new CudnnConvolution(), GenConvConf("conv1", 96, 11, 4, 0, 0.01), &s);
-  net.Add(new CudnnActivation(), GenReLUConf("relu1"));
-  net.Add(new CudnnPooling(), GenPoolingConf("pool1", true, 3, 2, 0));
-  net.Add(new CudnnLRN(), GenLRNConf("lrn1"));
-  net.Add(new CudnnConvolution(),
-          GenConvConf("conv2", 256, 5, 1, 2, 0.01, 1.0));
-  net.Add(new CudnnActivation(), GenReLUConf("relu2"));
-  net.Add(new CudnnPooling(), GenPoolingConf("pool2", true, 3, 2, 0));
-  net.Add(new CudnnLRN(), GenLRNConf("lrn2"));
-  net.Add(new CudnnConvolution(), GenConvConf("conv3", 384, 3, 1, 1, 0.01));
-  net.Add(new CudnnActivation(), GenReLUConf("relu3"));
-  net.Add(new CudnnConvolution(),
-          GenConvConf("conv4", 384, 3, 1, 1, 0.01, 1.0));
-  net.Add(new CudnnActivation(), GenReLUConf("relu4"));
-  net.Add(new CudnnConvolution(),
-          GenConvConf("conv5", 256, 3, 1, 1, 0.01, 1.0));
-  net.Add(new CudnnActivation(), GenReLUConf("relu5"));
-  net.Add(new CudnnPooling(), GenPoolingConf("pool5", true, 3, 2, 0));
-  net.Add(new Flatten(), GenFlattenConf("flat"));
-  net.Add(new Dense(), GenDenseConf("ip6", 4096, 0.005, 1, 1.0));
-  net.Add(new CudnnActivation(), GenReLUConf("relu6"));
-  net.Add(new Dropout(), GenDropoutConf("drop6", 0.5));
-  net.Add(new Dense(), GenDenseConf("ip7", 4096, 0.005, 1, 1.0));
-  net.Add(new CudnnActivation(), GenReLUConf("relu7"));
-  net.Add(new Dropout(), GenDropoutConf("drop7", 0.5));
-  net.Add(new Dense(), GenDenseConf("ip8", 1000, 0.01, 1));
+  net.Add(GenConvConf("conv1", 96, 11, 4, 0, 0.01), &s);
+  net.Add(GenReLUConf("relu1"));
+  net.Add(GenPoolingConf("pool1", true, 3, 2, 0));
+  net.Add(GenLRNConf("lrn1"));
+  net.Add(GenConvConf("conv2", 256, 5, 1, 2, 0.01, 1.0));
+  net.Add(GenReLUConf("relu2"));
+  net.Add(GenPoolingConf("pool2", true, 3, 2, 0));
+  net.Add(GenLRNConf("lrn2"));
+  net.Add(GenConvConf("conv3", 384, 3, 1, 1, 0.01));
+  net.Add(GenReLUConf("relu3"));
+  net.Add(GenConvConf("conv4", 384, 3, 1, 1, 0.01, 1.0));
+  net.Add(GenReLUConf("relu4"));
+  net.Add(GenConvConf("conv5", 256, 3, 1, 1, 0.01, 1.0));
+  net.Add(GenReLUConf("relu5"));
+  net.Add(GenPoolingConf("pool5", true, 3, 2, 0));
+  net.Add(GenFlattenConf("flat"));
+  net.Add(GenDenseConf("ip6", 4096, 0.005, 1, 1.0));
+  net.Add(GenReLUConf("relu6"));
+  net.Add(GenDropoutConf("drop6", 0.5));
+  net.Add(GenDenseConf("ip7", 4096, 0.005, 1, 1.0));
+  net.Add(GenReLUConf("relu7"));
+  net.Add(GenDropoutConf("drop7", 0.5));
+  net.Add(GenDenseConf("ip8", 1000, 0.01, 1));
 
   return net;
 }
