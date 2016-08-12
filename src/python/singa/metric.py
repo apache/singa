@@ -15,28 +15,71 @@
 # specific language governing permissions and limitations
 # under the License.
 # =============================================================================
-""" Python wrappers for optimizers implemented by C++."""
+'''This module includes a set of metric classes for evaluating the model's
+performance. The specific metric classes could be converted from C++
+implmentation or implemented directly using Python.
+
+
+Example usage::
+
+    from singa import tensor
+    from singa import metric
+
+    x = tensor.Tensor((3, 5))
+    x.uniform(0, 1)  # randomly genearte the prediction activation
+    x = tensor.SoftMax(x)  # normalize the prediction into probabilities
+    y = tensor.from_numpy(np.array([0, 1, 3], dtype=np.int))  # set the truth
+
+    f = metric.Accuracy()
+    acc = f.evaluate(x, y)  # averaged accuracy over all 3 samples in x
+
+'''
 
 from . import singa_wrap as singa
 import tensor
 
 
 class Metric(object):
+    '''Base metric class.
+
+    Subclasses that wrap the C++ loss classes can use the inherited foward,
+    and evaluate functions of this base class. Other subclasses need
+    to override these functions. Users need to feed in the **predictions** and
+    ground truth to get the metric values.
+    '''
 
     def __init__(self):
         self.swig_metric = None
 
     def forward(self, x, y):
-        """Return a tensor of floats, one per sample"""
+        '''Compute the metric for each sample.
+
+        Args:
+            x (Tensor): predictions, one row per sample
+            y (Tensor): ground truth values, one row per sample
+
+        Returns:
+            a tensor of floats, one per sample
+        '''
         return tensor.from_raw_tensor(
             self.swig_metric.Forward(x.singa_tensor, y.singa_tensor))
 
     def evaluate(self, x, y):
-        """Return the averaged metric for all samples in x"""
+        '''Compute the averaged metric over all samples.
+
+        Args:
+            x (Tensor): predictions, one row per sample
+            y (Tensor): ground truth values, one row per sample
+        Returns:
+            a float value for the averaged metric
+        '''
         return self.swig_metric.Evaluate(x.singa_tensor, y.singa_tensor)
 
 
 class Accuracy(Metric):
+    '''Compute the top one accuracy for singel label prediction tasks.
 
+    It calls the C++ functions to do the calculation.
+    '''
     def __init__(self):
         self.swig_metric = singa.Accuracy()
