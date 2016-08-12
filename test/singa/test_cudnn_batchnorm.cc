@@ -152,19 +152,19 @@ TEST(CudnnBatchNorm, Backward) {
   singa::Tensor dy_tensor(singa::Shape{1,2,4,4}, cuda);
   dy_tensor.CopyDataFromHostPtr(dy, 1*2*4*4);
   const float alpha_[] = {1, 1};
-  singa::Tensor alpha(singa::Shape{1,2,1,1}, cuda);
+  singa::Tensor alpha(singa::Shape{2}, cuda);
   alpha.CopyDataFromHostPtr(alpha_, 1*2*1*1);
 
   const float beta_[] = {0, 0};
-  singa::Tensor beta(singa::Shape{1,2,1,1}, cuda);
+  singa::Tensor beta(singa::Shape{2}, cuda);
   beta.CopyDataFromHostPtr(beta_, 1*2*1*1);
 
   const float mean_[] = {0.0123405, -0.0622333};
-  singa::Tensor mean(singa::Shape{1,2,1,1}, cuda);
+  singa::Tensor mean(singa::Shape{2}, cuda);
   mean.CopyDataFromHostPtr(mean_, 1*2*1*1);
 
   const float var_[] = {15.9948, 8.68198};
-  singa::Tensor var(singa::Shape{1,2,1,1}, cuda);
+  singa::Tensor var(singa::Shape{2}, cuda);
   var.CopyDataFromHostPtr(var_, 1*2*1*1);
 
   batchnorm.ToDevice(cuda);
@@ -220,11 +220,8 @@ TEST(CudnnBatchNorm, Backward) {
   dbnScale.ToHost();
   const float *dbnScaleptr = dbnScale.data<float>();
   const auto & dbnScaleShape = dbnScale.shape();
-  EXPECT_EQ(4u, dbnScaleShape.size());
-  EXPECT_EQ(1u, dbnScaleShape[0]);
-  EXPECT_EQ(2u, dbnScaleShape[1]);
-  EXPECT_EQ(1u, dbnScaleShape[2]);
-  EXPECT_EQ(1u, dbnScaleShape[3]);
+  EXPECT_EQ(1u, dbnScaleShape.size());
+  EXPECT_EQ(2u, dbnScaleShape[0]);
 
   EXPECT_NEAR(-0.013569f, dbnScaleptr[0], 1e-4f);
   EXPECT_NEAR(-0.00219431f, dbnScaleptr[1], 1e-4f);
@@ -233,11 +230,8 @@ TEST(CudnnBatchNorm, Backward) {
   dbnBias.ToHost();
   const float *dbnBiasptr = dbnBias.data<float>();
   const auto & dbnBiasShape = dbnBias.shape();
-  EXPECT_EQ(4u, dbnBiasShape.size());
-  EXPECT_EQ(1u, dbnBiasShape[0]);
-  EXPECT_EQ(2u, dbnBiasShape[1]);
-  EXPECT_EQ(1u, dbnBiasShape[2]);
-  EXPECT_EQ(1u, dbnBiasShape[3]);
+  EXPECT_EQ(1u, dbnBiasShape.size());
+  EXPECT_EQ(2u, dbnBiasShape[0]);
 
   EXPECT_NEAR(-0.0322803f, dbnBiasptr[0], 1e-4f);
   EXPECT_NEAR(0.0161278f, dbnBiasptr[1], 1e-4f);
