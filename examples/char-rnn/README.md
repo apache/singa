@@ -1,4 +1,4 @@
-# Train Char-RNN using SINGA
+# Train Char-RNN over plain text
 
 Recurrent neural networks (RNN) are widely used for modelling sequential data,
 e.g., natural language sentences. This example describes how to implement a RNN

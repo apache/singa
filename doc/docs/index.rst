@@ -12,4 +12,4 @@ English
    loss
    metric
    optimizer
-   examples
+   examples/index

@@ -5,7 +5,7 @@ Python API
 ----------
 
 .. automodule:: singa.initializer
-   :members:
+   :members: uniform, gaussian
    :member-order: bysource
 
 CPP API

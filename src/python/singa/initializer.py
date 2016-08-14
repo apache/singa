@@ -23,76 +23,67 @@ Example usages::
     from singa import initializer
 
     x = tensor.Tensor((3, 5))
-    initializer.xavier(x)
+    initializer.uniform(x, 3, 5) # use both fan_in and fan_out
+    initializer.uniform(x, 3, 0)  # use only fan_in
 '''
 
 import math
 
 
-'''
-TODO(wangwei) update the uniform and gaussian initializers
-
 def uniform(t, fan_in=0, fan_out=0):
-    typically, for conv layer weight: fan_in = nb_filter * kh * kw,
-    fan_out = nb_channel * kh * kw
-    for dense layer weight, fan_in = input_feature_length,
-    fan_out = output_feature_length
-    # Ref: [Bengio and Glorot 2010]: Understanding the difficulty of
+    '''Initialize the values of the input tensor following a uniform
+    distribution with specific bounds.
+
+    Args:
+        fan_in(int): for the weight Tensor of a convolution layer,
+            fan_in = nb_channel * kh * kw; for dense layer,
+            fan_in = input_feature_length
+        fan_out(int): for the convolution layer weight Tensor,
+            fan_out = nb_filter * kh * kw; for the weight Tensor of a dense
+            layer, fan_out = output_feature_length
+
+    Ref: [Bengio and Glorot 2010]: Understanding the difficulty of
     training deep feedforward neuralnetworks.
 
-    assert fan_in >0 or fan_out > 0, \
+    '''
+    assert fan_in > 0 or fan_out > 0, \
         'fan_in and fan_out cannot be 0 at the same time'
-    avg = 1
+    avg = 2
     if fan_in * fan_out == 0:
-      avg = 2
-    x = math.sqrt(3.0f * avg / (fan_in + fan_out))
+        avg = 1
+    x = math.sqrt(3.0 * avg / (fan_in + fan_out))
     t.uniform(-x, x)
 
 
 def gaussian(t, fan_in=0, fan_out=0):
-    typically, for conv layer weight: fan_in = nb_filter * kh * kw,
-    fan_out = nb_channel * kh * kw
-    for dense layer weight, fan_in = input_feature_length,
-    fan_out = output_feature_length
+    '''Initialize the values of the input tensor following a Gaussian
+    distribution with specific std.
+
+    Args:
+        fan_in(int): for the weight Tensor of a convolution layer,
+            fan_in = nb_channel * kh * kw; for dense layer,
+            fan_in = input_feature_length
+        fan_out(int): for the convolution layer weight Tensor,
+            fan_out = nb_filter * kh * kw; for the weight Tensor of a dense
+            layer, fan_out = output_feature_length
 
     Ref Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun: Delving Deep into
     Rectifiers: Surpassing Human-Level Performance on ImageNet Classification
-
-    assert fan_in >0 or fan_out > 0, \
+    '''
+    assert fan_in > 0 or fan_out > 0, \
         'fan_in and fan_out cannot be 0 at the same time'
-    avg = 1
+    avg = 2
     if fan_in * fan_out == 0:
-      avg = 2
-    std = math.sqrt(2.0f * avg / (fan_in + fan_out))
+        avg = 1
+    std = math.sqrt(2.0 * avg / (fan_in + fan_out))
     t.gaussian(0, std)
-'''
-
-
-def uniform(t, low=0, high=1):
-    '''Initialize the parameter values following an Uniform distribution.
-
-    Args:
-        t (Tensor): the parater tensor
-        low (float): lower bound
-        high (float): higher bound
-    '''
-    t.uniform(low, high)
-
-
-def gaussian(t, mean=0, std=0.01):
-    '''Initialize the parameter values following an Gaussian distribution.
-
-    Args:
-        t (Tensor): the parater tensor
-        mean (float): mean of the distribution
-        std (float): standard variance
-    '''
-    t.gaussian(mean, std)
 
 
 def xavier(t):
     '''Initialize the matrix parameter follow a Uniform distribution from
     [-sqrt(6/(fan_in + fan_out)), sqrt(6/(fan_in + fan_out))].
+
+    Deprecated. Please use uniform()
 
     Args:
         t (Tensor): the parater tensor
@@ -106,6 +97,8 @@ def glorot(t):
     '''Initialize the matrix parameter follow a Gaussian distribution with
     mean = 0 and std = sqrt(2.0 / (nb_row + nb_col))
 
+    Deprecated. Please use gaussian()
+
     Args:
         t (Tensor): the parater tensor
     '''
@@ -117,6 +110,8 @@ def glorot(t):
 def msra(t):
     '''Initialize the matrix parameter follow a Guassian distribution with
     mean = 0, std = math.sqrt(2.0 / nb_row).
+
+    Deprecated. Please use gaussian()
 
     Ref [He, Zhang, Ren and Sun 2015]: Specifically accounts for ReLU
     nonlinearities.

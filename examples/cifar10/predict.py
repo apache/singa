@@ -16,28 +16,26 @@
 # =============================================================================
 import cPickle as pickle
 import numpy as np
-import sys
-import os
 
-#sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
+# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 
 from singa import device
 from singa import tensor
 import net as ffnet
 
 
-def predict(net, images, cuda, topk=5):
+def predict(net, images, dev, topk=5):
     '''Predict the label of each image.
 
     Args:
         net, a pretrained neural net
         images, a batch of images [batch_size, 3, 32, 32], which have been
             pre-processed
-        cuda, the cuda device
+        dev, the training device
         topk, return the topk labels for each image.
     '''
     x = tensor.from_numpy(images.astype(np.float32))
-    x.to_device(cuda)
+    x.to_device(dev)
     y = net.predict(x)
     y.to_host()
     y = tensor.to_numpy(y)
