@@ -51,7 +51,6 @@ public:
   /// [Evaluate|Forward] Backward.
   float Evaluate(int flag, const Tensor &prediction, const Tensor &target) {
     Tensor loss = Forward(flag, prediction, target);
-    loss.ToHost();
     return Sum<float>(loss) / (1.0f * loss.Size());
   }
 

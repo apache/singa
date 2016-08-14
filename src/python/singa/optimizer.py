@@ -102,10 +102,12 @@ class Optimizer(object):
             name (str): parameter name
             specs (ParamSpec): protobuf obj
         """
+	assert type(specs) == model_pb2.ParamSpec, \
+		'specs should be model_pb2.ParamSpec instance'
         if specs.HasField('regularizer'):
-            self.regularizers[name] = CppRegularizer(specs.constraint)
+            self.regularizers[name] = CppRegularizer(specs.regularizer)
         if specs.HasField('constraint'):
-            self.constraints[name] = CppConstraint(specs.regularizer)
+            self.constraints[name] = CppConstraint(specs.constraint)
         if specs.lr_mult != 1:
             self.learning_rate_multiplier[name] = specs.lr_mult
         if specs.decay_mult != 1:
@@ -185,6 +187,7 @@ class SGD(Optimizer):
         """
         super(SGD, self).__init__(lr, momentum, decay)
         conf = model_pb2.OptimizerConf()
+        conf.momentum = momentum
         self.opt = singa.CreateOptimizer('SGD')
         self.opt.Setup(conf.SerializeToString())
 

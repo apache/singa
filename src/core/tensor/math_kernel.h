@@ -66,11 +66,23 @@ void threshold(const size_t n, const float x, const float *in, float *out,
 
 void gt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s);
+void gt(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s);
+
 void ge(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s);
+void ge(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s);
+
+
 void lt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s);
+void lt(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s);
+
 void le(const size_t num, const float *in, const float x, float *out,
+        cudaStream_t s);
+void le(const size_t num, const float *in1, const float *in2, float *out,
         cudaStream_t s);
 
 // 2 inputs
@@ -89,7 +101,7 @@ void mult(const size_t n, const float *in1, const float *in2, float *out,
 void div(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s);
 
-void sum(const size_t n, const float *in, float *out, cudaStream_t s);
+// void sum(const size_t n, const float *in, float *out, cudaStream_t s);
 
 void ComputeCrossEntropy(const size_t batchsize, const size_t dim,
                          const float *p, const int *t, float *loss,
