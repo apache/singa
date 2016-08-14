@@ -15,102 +15,103 @@
 # limitations under the License.
 # =============================================================================
 
-import cPickle
 import numpy as np
-import numpy.matlib
 import os
-import sys
-import gzip, numpy
-
-
-sys.path.append(os.path.join(os.path.dirname(__file__),
-                             '../../build/python'))
-sys.path.append(os.path.join(os.path.dirname(__file__),
-                             '../../build/lib'))
-sys.path.append(os.path.join(os.path.dirname(__file__),'../../build/src'))
+import gzip
+import argparse
+import cPickle
 from singa import initializer
 from singa import utils
 from singa import optimizer
 from singa import device
 from singa import tensor
+
+
 from singa.proto import core_pb2
 
 
 
-def load_train_data(dir_path):
-    f = gzip.open(dir_path, 'rb')
+def load_train_data(file_path):
+    f = gzip.open(file_path, 'rb')
     train_set, valid_set, test_set = cPickle.load(f)
     traindata = train_set[0].astype(np.float32)
     validdata = valid_set[0].astype(np.float32)
+    print traindata.shape, validdata.shape
     return traindata, validdata
 
 
 
-def train(data_dir, num_epoch=10, batch_size=100):
+def train(data_file, use_gpu, num_epoch=10, batch_size=100):
     print 'Start intialization............'
     lr = 0.1   # Learning rate
     weight_decay  = 0.0002
     hdim = 1000
     vdim = 784
     opt = optimizer.SGD(momentum=0.8, weight_decay=weight_decay)
-    
-    shape = (vdim, hdim)
-    tweight = tensor.Tensor(shape)
-    initializer.gaussian(tweight, 0.0, 0.1)
+
+    tweight = tensor.Tensor((vdim, hdim))
+    tweight.gaussian(0.0, 0.1)
     tvbias = tensor.from_numpy(np.zeros(vdim, dtype = np.float32))
     thbias = tensor.from_numpy(np.zeros(hdim, dtype = np.float32))
     opt = optimizer.SGD(momentum=0.5, weight_decay=weight_decay)
 
     print 'Loading data ..................'
-    train_x, valid_x = load_train_data(data_dir)
+    train_x, valid_x = load_train_data(data_file)
 
-    num_train_batch = train_x.shape[0]/batch_size
-    print "num_train_batch = \n", num_train_batch
+    if use_gpu:
+        dev = device.create_cuda_gpu()
+    else:
+        dev = device.get_default_device()
+
+    for t in [tweight, tvbias, thbias]:
+        t.to_device(dev)
+
+    num_train_batch = train_x.shape[0] / batch_size
+    print "num_train_batch = %d " % (num_train_batch)
     for epoch in range(num_epoch):
         trainerrorsum = 0.0
         validerrorsum = 0.0
         print 'Epoch %d' % epoch
         for b in range(num_train_batch):
             # positive phase
-            if b % 100 == 0:
-                print "batch: \n", b
-
-            tdata = tensor.from_numpy(train_x[ (b * batch_size): ((b + 1) * batch_size), : ])
+            tdata = tensor.from_numpy(
+                    train_x[(b * batch_size):((b + 1) * batch_size), : ])
+            tdata.to_device(dev)
             tposhidprob = tensor.mult(tdata, tweight)
             tposhidprob.add_row(thbias)
             tposhidprob = tensor.sigmoid(tposhidprob)
-            tposhidrandom = tensor.Tensor(tposhidprob.shape)
-            initializer.uniform(tposhidrandom, 0.0, 1.0)
+            tposhidrandom = tensor.Tensor(tposhidprob.shape, dev)
+            tposhidrandom.uniform(0.0, 1.0)
             tposhidsample = tensor.gt(tposhidprob, tposhidrandom)
-            
+
             # negative phase
             tnegdata = tensor.mult(tposhidsample, tweight.transpose())
             tnegdata.add_row(tvbias)
             tnegdata = tensor.sigmoid(tnegdata)
 
             tneghidprob = tensor.mult(tnegdata, tweight)
-            tneghidprob.add_row(thbias) 
+            tneghidprob.add_row(thbias)
             tneghidprob = tensor.sigmoid(tneghidprob)
-            trainerror = tensor.sum(tensor.eltwise_mult((tdata - tnegdata),(tdata - tnegdata)))
-            trainerrorsum = trainerror + trainerrorsum
-           
-            tgweight = tensor.mult(tnegdata.transpose(), tneghidprob) - tensor.mult(tdata.transpose(), tposhidprob)
+            error = tensor.sum(tensor.square((tdata - tnegdata)))
+            trainerrorsum = error + trainerrorsum
+
+            tgweight = tensor.mult(tnegdata.transpose(), tneghidprob) -\
+                    tensor.mult(tdata.transpose(), tposhidprob)
             tgvbias = tensor.sum(tnegdata, 0) - tensor.sum(tdata, 0)
             tghbias = tensor.sum(tneghidprob, 0) - tensor.sum(tposhidprob, 0)
-            
-            opt.apply_with_lr(epoch, lr / batch_size, tgweight, tweight, '')
-            opt.apply_with_lr(epoch, lr / batch_size, tgvbias, tvbias, '')
-            opt.apply_with_lr(epoch, lr / batch_size, tghbias, thbias, '')
 
-        info = 'train errorsum = %f' \
-            % (trainerrorsum)
-        print info
+            opt.apply_with_lr(epoch, lr / batch_size, tgweight, tweight, 'w')
+            opt.apply_with_lr(epoch, lr / batch_size, tgvbias, tvbias, 'vb')
+            opt.apply_with_lr(epoch, lr / batch_size, tghbias, thbias, 'hb')
 
-        tvaliddata = tensor.from_numpy(valid_x[ :, : ])
+        print 'training errorsum = %f' % (trainerrorsum)
+
+        tvaliddata = tensor.from_numpy(valid_x)
+        tvaliddata.to_device(dev)
         tvalidposhidprob = tensor.mult(tvaliddata, tweight)
         tvalidposhidprob.add_row(thbias)
         tvalidposhidprob = tensor.sigmoid(tvalidposhidprob)
-        tvalidposhidrandom = tensor.Tensor(tvalidposhidprob.shape)
+        tvalidposhidrandom = tensor.Tensor(tvalidposhidprob.shape, dev)
         initializer.uniform(tvalidposhidrandom, 0.0, 1.0)
         tvalidposhidsample = tensor.gt(tvalidposhidprob, tvalidposhidrandom)
 
@@ -118,14 +119,16 @@ def train(data_dir, num_epoch=10, batch_size=100):
         tvalidnegdata.add_row(tvbias)
         tvalidnegdata = tensor.sigmoid(tvalidnegdata)
 
-        validerrorsum = tensor.sum(tensor.eltwise_mult((tvaliddata - tvalidnegdata),(tvaliddata - tvalidnegdata)))
-        validinfo = 'valid errorsum = %f' \
-            % (validerrorsum)
-        print validinfo
+        validerrorsum = tensor.sum(tensor.square((tvaliddata - tvalidnegdata)))
+        print 'valid errorsum = %f' % (validerrorsum)
 
 
 if __name__ == '__main__':
-    data_dir = 'mnist.pkl.gz'
-    assert os.path.exists(data_dir), \
-        'Pls download the mnist dataset'
-    train(data_dir)
+    parser = argparse.ArgumentParser(description='Train RBM over MNIST')
+    parser.add_argument('file', type=str, help='the dataset path')
+    parser.add_argument('--use_gpu', action='store_true')
+    args = parser.parse_args()
+
+    assert os.path.exists(args.file), 'Pls download the MNIST dataset from' \
+            'https://github.com/mnielsen/neural-networks-and-deep-learning/raw/master/data/mnist.pkl.gz'
+    train(args.file, args.use_gpu)

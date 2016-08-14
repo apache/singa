@@ -1,3 +1,18 @@
-This example is to train an RBM model using mnist data set. This RBM follows paper http://www.cs.toronto.edu/~hinton/science.pdf and the source code for this paper can be found http://www.cs.toronto.edu/~hinton/MatlabForSciencePaper.html
-1. Download dataset mnist.pkl.gz from https://github.com/mnielsen/neural-networks-and-deep-learning/raw/master/data/mnist.pkl.gz
-2. $ python train.py
+# Train a RBM model against MNIST dataset
+
+This example is to train an RBM model using the
+MNIST dataset. The RBM model and its hyper-parameters are set following
+[Hinton's paper](http://www.cs.toronto.edu/~hinton/science.pdf)
+
+## Running instructions
+
+1. Download the pre-processed [MNIST dataset](https://github.com/mnielsen/neural-networks-and-deep-learning/raw/master/data/mnist.pkl.gz)
+
+2. Start the training
+
+        python train.py
+
+By default the training code would run on CPU. To run it on a GPU card, please start
+the program with an additional argument
+
+        python train.py --use_gpu

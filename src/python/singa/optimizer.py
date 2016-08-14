@@ -187,6 +187,7 @@ class SGD(Optimizer):
         """
         super(SGD, self).__init__(lr, momentum, decay)
         conf = model_pb2.OptimizerConf()
+        conf.momentum = momentum
         self.opt = singa.CreateOptimizer('SGD')
         self.opt.Setup(conf.SerializeToString())
 

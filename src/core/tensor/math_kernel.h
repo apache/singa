@@ -101,7 +101,7 @@ void mult(const size_t n, const float *in1, const float *in2, float *out,
 void div(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s);
 
-void sum(const size_t n, const float *in, float *out, cudaStream_t s);
+// void sum(const size_t n, const float *in, float *out, cudaStream_t s);
 
 void ComputeCrossEntropy(const size_t batchsize, const size_t dim,
                          const float *p, const int *t, float *loss,

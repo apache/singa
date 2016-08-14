@@ -35,6 +35,8 @@
 namespace singa {
 // Cuda Kernel Functions
 namespace cuda {
+/*
+wangwei: Not used due to error in the code.
 __global__ void KernelSum(const size_t n, const float *in, float *out) {
   int THREADS = blockDim.x;
 
@@ -65,6 +67,7 @@ __global__ void KernelSum(const size_t n, const float *in, float *out) {
   __syncthreads();
   *out = aux[0];
 }
+*/
 
 __global__ void KernelAdd(const size_t n, const float *in1, const float *in2,
                           float *out) {
@@ -461,12 +464,14 @@ void div(const size_t n, const float *in1, const float *in2, float *out,
   KernelDiv <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in1, in2, out);
 }
 
+/*
 void sum(const size_t n, const float *in, float *out, cudaStream_t s) {
   int threads_per_block = n > CU1DBLOCK ? CU1DBLOCK : n;
   //  here, we only need one block
   int num_blocks = 1;
   KernelSum <<<num_blocks, threads_per_block>>> (n, in, out);
 }
+*/
 
 void ComputeCrossEntropy(size_t batchsize, const size_t dim, const float *p,
                          const int *t, float *loss, cudaStream_t stream) {

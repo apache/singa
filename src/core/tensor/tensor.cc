@@ -626,10 +626,14 @@ Tensor Average(const Tensor &M, int axis) {
 template <>
 float Sum<float>(const Tensor &in) {
   float s = 0.0f;
+  Tensor one(in.shape(), in.device(), in.data_type());
+  one.SetValue(1.0f);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    in.device()->Exec([in, &s](Context *ctx) {
-      Sum<DType, Lang>(in.Size(), in.block(), &s, ctx);
-    }, {in.block()}, {});
+    one.device()->Exec([in, one, &s](Context *ctx) {
+      DType ret = DType(0);
+      Dot<DType, Lang>(in.Size(), in.block(), one.block(), &ret, ctx);
+      s = ret;
+    }, {in.block(), one.block()}, {});
   });
   return s;
 }
