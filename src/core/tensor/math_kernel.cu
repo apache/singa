@@ -35,6 +35,8 @@
 namespace singa {
 // Cuda Kernel Functions
 namespace cuda {
+/*
+wangwei: Not used due to error in the code.
 __global__ void KernelSum(const size_t n, const float *in, float *out) {
   int THREADS = blockDim.x;
 
@@ -65,6 +67,7 @@ __global__ void KernelSum(const size_t n, const float *in, float *out) {
   __syncthreads();
   *out = aux[0];
 }
+*/
 
 __global__ void KernelAdd(const size_t n, const float *in1, const float *in2,
                           float *out) {
@@ -243,11 +246,26 @@ __global__ void KernelGE(const size_t num, const float *in, const float x,
     out[idx] = in[idx] >= x ? 1.0f : 0.0f;
   }
 }
+
+__global__ void KernelBGE(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] >= in2[idx] ? 1.0f : 0.0f;
+  }
+}
 __global__ void KernelGT(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
        idx += blockDim.x * gridDim.x) {
     out[idx] = in[idx] > x ? 1.0f : 0.0f;
+  }
+}
+__global__ void KernelBGT(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] > in2[idx] ? 1.0f : 0.0f;
   }
 }
 __global__ void KernelLE(const size_t num, const float *in, const float x,
@@ -257,7 +275,13 @@ __global__ void KernelLE(const size_t num, const float *in, const float x,
     out[idx] = in[idx] <= x ? 1.0f : 0.0f;
   }
 }
-
+__global__ void KernelBLE(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] <= in2[idx] ? 1.0f : 0.0f;
+  }
+}
 __global__ void KernelLT(const size_t num, const float *in, const float x,
                          float *out) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
@@ -265,7 +289,13 @@ __global__ void KernelLT(const size_t num, const float *in, const float x,
     out[idx] = in[idx] < x ? 1.0f : 0.0f;
   }
 }
-
+__global__ void KernelBLT(const size_t num, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < num;
+       idx += blockDim.x * gridDim.x) {
+    out[idx] = in1[idx] < in2[idx] ? 1.0f : 0.0f;
+  }
+}
 __global__ void KernelRowMax(const size_t nrow, const size_t ncol, const float *inPtr,
     float *outPtr) {
   for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < nrow;
@@ -381,19 +411,34 @@ void gt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {
   KernelGT <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
 }
+void gt(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBGT <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in1, in2, out);
+}
 void ge(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {
   KernelGE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
+}
+void ge(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBGE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in1, in2, out);
 }
 void lt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {
   KernelLT <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
 }
+void lt(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBLT <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in1, in2, out);
+}
 void le(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s) {
   KernelLE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in, x, out);
 }
-
+void le(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelBLE <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF>>> (num, in1, in2, out);
+}
 void pow(const size_t n, const float *in1, const float *in2, float *out,
          cudaStream_t s) {
   KernelPow <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in1, in2, out);
@@ -419,12 +464,14 @@ void div(const size_t n, const float *in1, const float *in2, float *out,
   KernelDiv <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in1, in2, out);
 }
 
+/*
 void sum(const size_t n, const float *in, float *out, cudaStream_t s) {
   int threads_per_block = n > CU1DBLOCK ? CU1DBLOCK : n;
   //  here, we only need one block
   int num_blocks = 1;
   KernelSum <<<num_blocks, threads_per_block>>> (n, in, out);
 }
+*/
 
 void ComputeCrossEntropy(size_t batchsize, const size_t dim, const float *p,
                          const int *t, float *loss, cudaStream_t stream) {
