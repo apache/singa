@@ -20,6 +20,9 @@
 namespace singa {
 
 RegisterLayerClass(singa_softmax, Softmax);
+RegisterLayerClass(singacpp_softmax, Softmax);
+RegisterLayerClass(singacuda_softmax, Softmax);
+RegisterLayerClass(singacl_softmax, Softmax);
 void Softmax::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   CHECK_EQ(in_sample.size(), 1u);

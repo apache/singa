@@ -85,7 +85,7 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
             tposhidsample = tensor.gt(tposhidprob, tposhidrandom)
 
             # negative phase
-            tnegdata = tensor.mult(tposhidsample, tweight.transpose())
+            tnegdata = tensor.mult(tposhidsample, tweight.T())
             tnegdata.add_row(tvbias)
             tnegdata = tensor.sigmoid(tnegdata)
 
@@ -95,8 +95,8 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
             error = tensor.sum(tensor.square((tdata - tnegdata)))
             trainerrorsum = error + trainerrorsum
 
-            tgweight = tensor.mult(tnegdata.transpose(), tneghidprob) -\
-                    tensor.mult(tdata.transpose(), tposhidprob)
+            tgweight = tensor.mult(tnegdata.T(), tneghidprob) -\
+                    tensor.mult(tdata.T(), tposhidprob)
             tgvbias = tensor.sum(tnegdata, 0) - tensor.sum(tdata, 0)
             tghbias = tensor.sum(tneghidprob, 0) - tensor.sum(tposhidprob, 0)
 
@@ -115,7 +115,7 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
         initializer.uniform(tvalidposhidrandom, 0.0, 1.0)
         tvalidposhidsample = tensor.gt(tvalidposhidprob, tvalidposhidrandom)
 
-        tvalidnegdata = tensor.mult(tvalidposhidsample, tweight.transpose())
+        tvalidnegdata = tensor.mult(tvalidposhidsample, tweight.T())
         tvalidnegdata.add_row(tvbias)
         tvalidnegdata = tensor.sigmoid(tvalidnegdata)
 

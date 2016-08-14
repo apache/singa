@@ -22,6 +22,9 @@
 
 namespace singa {
 RegisterLayerClass(singa_batchnorm, BatchNorm);
+RegisterLayerClass(singacpp_batchnorm, BatchNorm);
+RegisterLayerClass(singacuda_batchnorm, BatchNorm);
+RegisterLayerClass(singacl_batchnorm, BatchNorm);
 void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;

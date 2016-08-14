@@ -29,7 +29,7 @@ from singa import net as ffnet
 
 def create_net(use_cpu=False):
     if use_cpu:
-        layer.engine = 'singa'
+        layer.engine = 'singacpp'
 
     net = ffnet.FeedForwardNet(loss.SoftmaxCrossEntropy(), metric.Accuracy())
     W0_specs = {'init': 'gaussian', 'mean': 0, 'std': 0.0001}

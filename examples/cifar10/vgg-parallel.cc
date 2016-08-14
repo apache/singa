@@ -34,6 +34,7 @@
 
 namespace singa {
 
+// currently supports 'cudnn' and 'singacpp'
 const std::string engine = "cudnn";
 const float default_wd  = 0.0005f;
 

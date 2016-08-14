@@ -25,6 +25,7 @@ class TestPythonLayer(unittest.TestCase):
                          )
 
     def setUp(self):
+        layer.engine='singacpp'
         self.w = {'init': 'Xavier', 'regularizer': 1e-4}
         self.b = {'init': 'Constant', 'value': 0}
         self.sample_shape = None
@@ -40,8 +41,8 @@ class TestPythonLayer(unittest.TestCase):
         in_sample_shape = (1, 3, 3)
         conv = layer.Conv2D('conv', 1, 3, 2, W_specs=self.w, b_specs=self.b,
                             pad=1, input_sample_shape=in_sample_shape)
-        cuda = device.create_cuda_gpu()
-        conv.to_device(cuda)
+        # cuda = device.create_cuda_gpu()
+        # conv.to_device(cuda)
         params = conv.param_values()
 
         raw_x = np.arange(9, dtype=np.float32) + 1
@@ -51,9 +52,9 @@ class TestPythonLayer(unittest.TestCase):
         params[0].copy_from_numpy(w)
         params[1].set_value(1.0)
 
-        x.to_device(cuda)
+        # x.to_device(cuda)
         y = conv.forward(model_pb2.kTrain, x)
-        y.to_host()
+        # y.to_host()
         npy = tensor.to_numpy(y).flatten()
 
         self.assertAlmostEqual(3.0, npy[0])
@@ -63,7 +64,7 @@ class TestPythonLayer(unittest.TestCase):
 
         dy = np.asarray([0.1, 0.2, 0.3, 0.4], dtype=np.float32).reshape(y.shape)
         grad = tensor.from_numpy(dy)
-        grad.to_device(cuda)
+        # grad.to_device(cuda)
         (dx, [dw, db]) = conv.backward(model_pb2.kTrain, grad)
         dx.to_host()
         dw.to_host()

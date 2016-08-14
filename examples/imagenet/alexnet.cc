@@ -33,6 +33,7 @@
 #include "singa/utils/timer.h"
 namespace singa {
 
+// currently supports 'cudnn' and 'singacpp'
 const std::string engine = "cudnn";
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
                       int pad, float std, float bias = .0f) {

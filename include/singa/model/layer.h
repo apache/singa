@@ -222,6 +222,17 @@ class Layer {
   vector<ParamSpec> param_specs_;
 };
 
+/// Name should be formated as cudnn_xxx, singacpp_xxx, singacuda_xxx,
+/// singacl_xxx, where xxx is the real layer type, e.g., convolution, relu, etc.
+/// xxx should only have lower case letters.
+/// if the implmentation is transparent to cpp/cuda/opencl, then register all
+/// possible identifiers. For instance, Dropout is registered three times,
+/// RegisterLayerClass("singacpp_dropout", Dropout)
+/// RegisterLayerClass("singacl_dropout", Dropout)
+/// RegisterLayerClass("singacuda_dropout", Dropout)
+/// to be compatible with previous commits, the following identifier is
+/// registered. Better avoid using it, as it would be deprecated.
+/// RegisterLayerClass("singa_dropout", Dropout)
 #define RegisterLayerClass(Name, SubLayer) \
   static Registra<Layer, SubLayer> Name##SubLayer(#Name);
 
@@ -234,7 +245,7 @@ inline const std::vector<std::string> GetRegisteredLayers() {
   vector<std::string> ret;
   for (const string type : Factory<Layer>::GetIDs()) {
     auto layer = CreateLayer(type);
-    ret.push_back("Register type: " + type + " --> " + layer->layer_type());
+    ret.push_back("Register type: " + type);
   }
   return ret;
 }

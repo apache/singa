@@ -21,6 +21,9 @@
 namespace singa {
 
 RegisterLayerClass(singa_dropout, Dropout);
+RegisterLayerClass(singacpp_dropout, Dropout);
+RegisterLayerClass(singacuda_dropout, Dropout);
+RegisterLayerClass(singacl_dropout, Dropout);
 void Dropout::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   dropout_ratio_ = conf.dropout_conf().dropout_ratio();

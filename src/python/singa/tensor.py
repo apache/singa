@@ -56,7 +56,7 @@ import numpy as np
 from functools import reduce
 from .proto import core_pb2
 from . import singa_wrap as singa
-import device
+import device as pydevice
 
 
 class Tensor(object):
@@ -81,7 +81,8 @@ class Tensor(object):
             assert isinstance(shape, tuple), 'shape should be tuple'
             vs = list(shape)
             if device is None:
-                self.singa_tensor = singa.Tensor(vs, dtype)
+                device = pydevice.get_default_device()
+                self.singa_tensor = singa.Tensor(vs, device, dtype)
             else:
                 self.singa_tensor = singa.Tensor(vs, device, dtype)
             self.shape = shape
@@ -225,12 +226,10 @@ class Tensor(object):
         '''
         return _call_singa_func(self.singa_tensor.T)
 
-    '''
     def copy(self):
-        shallow copy
-            call copy constructor of singa::Tensor
+        '''shallow copy calls copy constructor of singa::Tensor
+        '''
         return _call_singa_func(singa.Tensor, self.singa_tensor)
-    '''
 
     def deepcopy(self):
         '''Same as clone().
@@ -513,7 +512,7 @@ def to_numpy(t):
     Returns:
         a numpy array
     '''
-    assert t.device == device.get_default_device() or t.device is None, \
+    assert (t.device.id() == -1) or (t.device is None), \
         'Please move the tensor onto the default host device'
 
     if t.dtype == core_pb2.kFloat32:

@@ -7,7 +7,7 @@ TEST(Layer, CreateLayer) {
       "convolution", "dense", "dropout", "relu", "batchnorm",
       "flatten",     "lrn",   "pooling", "prelu",      "softmax"};
   for (auto type : types) {
-    auto layer = singa::CreateLayer("singa_" + type);
+    auto layer = singa::CreateLayer("singacpp_" + type);
     // EXPECT_EQ(layer->layer_type(), type);
   }
 }

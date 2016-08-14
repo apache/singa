@@ -152,9 +152,9 @@ class Layer(object):
             for t in x:
                 x.append(t.singa_tensor)
         else:
-            assert isinstance(input, tensor.Tensor), \
+            assert isinstance(x, tensor.Tensor), \
                 'input must be a Tensor or a list of Tensor'
-            xs = x
+            xs = x.singa_tensor
         y = self.layer.Forward(flag, xs)
         if type(y) == list:
             return tensor.from_raw_tensors(y)
@@ -266,7 +266,7 @@ class Conv2D(Layer):
         self.conf.param.extend([bspecs])
         self.param_specs.append(bspecs)
 
-        _check_engine(engine, ['cudnn', 'singa'])
+        _check_engine(engine, ['cudnn', 'singacpp'])
         self.layer = _create_layer(engine, 'Convolution')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -322,7 +322,7 @@ class Pooling2D(Layer):
         conf = self.conf.pooling_conf
         conf = _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad)
         conf.pool = mode
-        _check_engine(engine, ['cudnn', 'singa'])
+        _check_engine(engine, ['cudnn', 'singacpp'])
         self.layer = _create_layer(engine, 'Pooling')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -439,7 +439,7 @@ class BatchNormalization(Layer):
         self.param_specs.append(_construct_param_specs_from_dict(beta_specs))
         self.param_specs.append(_construct_param_specs_from_dict(mean_specs))
         self.param_specs.append(_construct_param_specs_from_dict(var_specs))
-        _check_engine(engine, ['cudnn', 'singa'])
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
         self.layer = _create_layer(engine, 'BatchNorm')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -466,7 +466,7 @@ class LRN(Layer):
         # TODO(wangwei) enable mode = 'within_channel'
         assert mode == 'cross_channel', 'only support mode="across_channel"'
         conf.norm_region = model_pb2.LRNConf.ACROSS_CHANNELS
-        _check_engine(engine, ['cudnn', 'singa'])
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
         self.layer = _create_layer(engine, 'LRN')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -513,7 +513,10 @@ class Dense(Layer):
         self.conf.param.extend([_construct_param_specs_from_dict(b_specs)])
         self.param_specs.append(_construct_param_specs_from_dict(b_specs))
         # dense layer is transparent to engine.
-        self.layer = _create_layer('singa', 'Dense')
+        if engine == 'cudnn':
+            self.layer = _create_layer('singacuda', 'Dense')
+        else:
+            self.layer = _create_layer(engine, 'Dense')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
 
@@ -533,7 +536,7 @@ class Dropout(Layer):
         # 'cudnn' works for v>=5.0
         #  if engine.lower() == 'cudnn':
         #      engine = 'cuda'
-        _check_engine(engine, ['cudnn', 'singa'])
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
         self.layer = _create_layer(engine, 'Dropout')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -549,8 +552,8 @@ class Activation(Layer):
     """
     def __init__(self, name, mode='relu', input_sample_shape=None):
         super(Activation, self).__init__(name)
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
         self.conf.type = (engine + '_' + mode).lower()
-        _check_engine(engine, ['cudnn', 'singa'])
         self.layer = _create_layer(engine, mode)
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -568,7 +571,7 @@ class Softmax(Layer):
         super(Softmax, self).__init__(name)
         # conf = self.conf.softmax_conf
         # conf.axis = axis
-        _check_engine(engine, ['cudnn', 'singa'])
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacl', 'singacuda'])
         self.layer = _create_layer(engine, 'Softmax')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -587,7 +590,10 @@ class Flatten(Layer):
         conf = self.conf.flatten_conf
         conf.axis = axis
         # fltten layer is transparent to engine
-        self.layer = _create_layer('singa', 'Flatten')
+        if engine == 'cudnn':
+            self.layer = _create_layer('singacuda', 'Flatten')
+        else:
+            self.layer = _create_layer(engine, 'Flatten')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
 

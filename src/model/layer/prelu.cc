@@ -21,6 +21,9 @@
 namespace singa {
 
 RegisterLayerClass(singa_prelu, PReLU);
+RegisterLayerClass(singacpp_prelu, PReLU);
+RegisterLayerClass(singacuda_prelu, PReLU);
+RegisterLayerClass(singacl_prelu, PReLU);
 void PReLU::Setup(const Shape& in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
