@@ -1,57 +1,39 @@
 {#
- Licensed to the Apache Software Foundation (ASF) under one
- or more contributor license agreements.  See the NOTICE file
- distributed with this work for additional information
- regarding copyright ownership.  The ASF licenses this file
- to you under the Apache License, Version 2.0 (the
- "License"); you may not use this file except in compliance
- with the License.  You may obtain a copy of the License at
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 #}
 {% extends "!layout.html" %}
-     
+
 {% block footer %}
 
 
 <div class="rst-versions shift-up" data-toggle="rst-versions" role="note" aria-label="versions">
-<img src= "{{pathto('_static/'+ 'apache.jpg' , 1) }}">  
- 
-  <span class="rst-current-version" data-toggle="rst-current-version">
+    <img src="{{pathto('_static/'+ 'apache.jpg' , 1) }}">
+
+    <span class="rst-current-version" data-toggle="rst-current-version">
     <span class="fa fa-book"> incubator-singa </span>
     v: {{ version }}
     <span class="fa fa-caret-down"></span>
   </span>
-  <div class="rst-other-versions">
-    <dl>
-      <dt>Languages</dt>
-      <dd><a href="/en/latest/">English</a></dd>
-      <dd><a href="/zh/latest/">中文</a></dd>	  
-	  <dd><a href="/jp/latest/">日本語</a></dd>
-	  <dd><a href="/kr/latest/">한국어</a></dd>
-	  <dd><a href="/it/latest/">Italiano</a></dd>
-	  <dd><a href="/ar/latest/">العربية</a></dd>
-    </dl>
-    <dl>
-      <dt>Versions</dt>
-      <dd><a href="/{{ language }}/latest/">latest</a></dd>
-      <dd><a href="/{{ language }}/0.3.0/">v0.3.0</a></dd>
-      <dd><a href="/{{ language }}/0.2.0/">v0.2.0</a></dd>
-	  <dd><a href="/{{ language }}/0.1.0/">v0.1.0</a></dd>
-    </dl>
-  </div>
 </div>
 
- <a href="https://github.com/apache/incubator-singa">
+<a href="https://github.com/apache/incubator-singa">
     <img style="position: absolute; top: 0; right: 0; border: 0; z-index: 10000;"
-        src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"
-        alt="Fork me on GitHub">
+         src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"
+         alt="Fork me on GitHub">
 </a>
 
 {{ super() }}
