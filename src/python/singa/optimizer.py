@@ -44,8 +44,8 @@ class Optimizer(object):
 
     1. construct the optimizer
     2. (optional) register each parameter with its specs.
-    3. use the optimizer to update parameter values given parameter
-        gradients and other optional info
+    3. use the optimizer to update parameter values given parameter gradients
+       and other optional info
 
     The subclasses should override the apply_with_lr function to do the real
     parameter udpate.

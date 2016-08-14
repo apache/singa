@@ -20,11 +20,7 @@ The performance could be improved by tuning some hyper-parameters, including
 learning rate, weight decay, max_epoch, parameter initialization, etc.
 """
 
-import sys
-import os
-import math
-
-#sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
+# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 
 from singa import layer
 from singa import initializer
@@ -86,11 +82,11 @@ def create_net(use_cpu=False):
             elif 'var' in name:
                 p.set_value(1.0)
             elif 'gamma' in name:
-                initializer.uniform(p, 0, 1)
+                p.uniform(0, 1)
             elif 'conv' in name:
-                initializer.gaussian(p, 0, math.sqrt(2.0/(9.0 * p.shape[0])))
+                initializer.gaussian(p, 0, 3 * 3 * p.shape[0])
             else:
-                initializer.gaussian(p, 0, 0.02)
+                p.gaussian(0, 0.02)
         else:
             p.set_value(0)
         print name, p.l1()
