@@ -1,5 +1,4 @@
 ## Download SINGA
----
 
 * Latest code: please clone the dev branch from [Github](https://github.com/apache/incubator-singa)
 
