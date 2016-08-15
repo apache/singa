@@ -1,6 +1,6 @@
-# generate protobuf sources
+# generate protobuf sources 
 
-FILE(GLOB proto_files proto/*.proto)
+FILE(GLOB proto_files proto/*.proto) 
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
 IF (USE_PYTHON)
     protobuf_generate_python(proto_pys ${proto_files})
@@ -11,16 +11,16 @@ INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 #message(STATUS "srcs: ${proto_srcs}")
 #message(STATUS "hdrs: ${proto_hdrs}")
 #message(STATUS "pys: ${proto_pys}")
-ADD_LIBRARY(proto STATIC ${proto_hdrs} ${proto_srcs} ${proto_pys})
+ADD_LIBRARY(singa_proto STATIC ${proto_hdrs} ${proto_srcs} ${proto_pys})
 FOREACH(fil ${proto_hdrs})
     ADD_CUSTOM_COMMAND(
-        TARGET proto PRE_BUILD
+        TARGET singa_proto PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/singa/proto"
         COMMAND ${CMAKE_COMMAND} -E copy ${fil} "${CMAKE_BINARY_DIR}/include/singa/proto"
         #COMMAND ${CMAKE_COMMAND} -E echo "copy done"
         )
 ENDFOREACH()
-LIST(APPEND SINGA_LINKER_LIBS proto)
+LIST(APPEND SINGA_LINKER_LIBS singa_proto)
 
 SET(PREVIOUS_LINKER_LIBS ${SINGA_LINKER_LIBS})
 

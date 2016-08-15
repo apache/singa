@@ -23,6 +23,9 @@
 
 namespace singa {
 RegisterLayerClass(singa_rnn, RNN);
+RegisterLayerClass(singacpp_rnn, RNN);
+RegisterLayerClass(singacuda_rnn, RNN);
+RegisterLayerClass(singacl_rnn, RNN);
 void RNN::Setup(const Shape& in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
 

@@ -25,6 +25,16 @@ RegisterLayerClass(singa_relu, Activation);
 RegisterLayerClass(singa_sigmoid, Activation);
 RegisterLayerClass(singa_tanh, Activation);
 
+RegisterLayerClass(singacpp_relu, Activation);
+RegisterLayerClass(singacuda_relu, Activation);
+RegisterLayerClass(singacl_relu, Activation);
+RegisterLayerClass(singacpp_sigmoid, Activation);
+RegisterLayerClass(singacuda_sigmoid, Activation);
+RegisterLayerClass(singacl_sigmoid, Activation);
+RegisterLayerClass(singacpp_tanh, Activation);
+RegisterLayerClass(singacuda_tanh, Activation);
+RegisterLayerClass(singacl_tanh, Activation);
+
 void Activation::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   auto pos = conf.type().find_first_of('_');

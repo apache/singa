@@ -27,7 +27,7 @@ using singa::CppCPU;
 using singa::Block;
 TEST(CppCPU, Constructor) {
   CppCPU dev;
-  EXPECT_EQ(0, dev.id());
+  EXPECT_EQ(-1, dev.id());
 }
 
 TEST(CppCPU, MemoryMallocFree) {

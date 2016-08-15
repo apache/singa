@@ -22,7 +22,7 @@ namespace singa {
 
 std::shared_ptr<Device> defaultDevice=std::make_shared<CppCPU>();
 
-CppCPU::CppCPU() : Device(0, 1) {
+CppCPU::CppCPU() : Device(-1, 1) {
   lang_ = kCpp;
   //host_ = nullptr;
 }

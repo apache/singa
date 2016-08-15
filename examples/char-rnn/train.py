@@ -128,7 +128,7 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
     print 'dense b ', dense_b.shape
     initializer.uniform(dense_w, dense_w.shape[0], dense_w.shape[1])
     print 'dense weight l1 = %f' % (dense_w.l1())
-    dense_b.set_value(0.0)
+    dense_b.set_value(0)
     print 'dense b l1 = %f' % (dense_b.l1())
 
     g_dense_w = tensor.Tensor(dense_w.shape, cuda)

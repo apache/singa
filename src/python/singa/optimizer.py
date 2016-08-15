@@ -54,8 +54,8 @@ class Optimizer(object):
         lr (float): a constant for the learning rate, mutually exclusive with
             'lr_gen'.
         momentum (float): a constant for the momentum value
-        decay (float): the coefficent for L2 regularizer, which is mutually
-            exclusive with 'regularizer'.
+        weight_decay (float): the coefficent for L2 regularizer, which is
+            mutually exclusive with 'regularizer'.
         lr_gen (function): a function returns the learning rate given
             the current training step/epoch. It is mutually exclusive with lr.
             If both are not set, the apply_with_lr function should be used for
@@ -67,7 +67,8 @@ class Optimizer(object):
             constraint would be applied inside apply_with_lr(). Users can
             also do regularization outside.
     '''
-    def __init__(self, lr=None, momentum=None, decay=None, lr_gen=None,
+
+    def __init__(self, lr=None, momentum=None, weight_decay=None, lr_gen=None,
                  regularizer=None, constraint=None):
         if lr is not None:
             assert lr_gen is None, 'Cannot set lr and lr_gen at the same time'
@@ -76,10 +77,10 @@ class Optimizer(object):
                 return lr
         self.lr_gen = lr_gen
         self.momentum = momentum
-        if decay is not None:
+        if weight_decay is not None:
             assert regularizer is None, \
-                'Cannot set decay and regularizer at the same time'
-            regularizer = L2Regularizer(decay)
+                'Cannot set weight_decay and regularizer at the same time'
+            regularizer = L2Regularizer(weight_decay)
         if regularizer is not None:
             if isinstance(regularizer, model_pb2.RegularizerConf):
                 self.regularizer = CppRegularizer(regularizer)
@@ -108,17 +109,20 @@ class Optimizer(object):
             name (str): parameter name
             specs (ParamSpec): protobuf obj, including regularizer and
                 constraint, multipliers for learning rate and weight decay.
+
         '''
+        assert isinstance(specs, model_pb2.ParamSpec), \
+            'specs should be model_pb2.ParamSpec instance'
         if specs.HasField('regularizer'):
-            self.regularizers[name] = CppRegularizer(specs.constraint)
+            self.regularizers[name] = CppRegularizer(specs.regularizer)
         if specs.HasField('constraint'):
-            self.constraints[name] = CppConstraint(specs.regularizer)
+            self.constraints[name] = CppConstraint(specs.constraint)
         if specs.lr_mult != 1:
             self.learning_rate_multiplier[name] = specs.lr_mult
         if specs.decay_mult != 1:
             self.decay_multiplier[name] = specs.decay_mult
 
-    def apply_regularizer_constraint(self, value, grad, name=None, epoch=None):
+    def apply_regularizer_constraint(self, epoch, value, grad, name=None):
         '''Apply regularization and constraint if available.
 
         If there are both global regularizer (constraint) and param specific
@@ -134,12 +138,12 @@ class Optimizer(object):
             the updated gradient Tensor
         '''
         if name is not None and name in self.constraints:
-            self.constraints[name].apply(value, grad, epoch)
+            self.constraints[name].apply(epoch, value, grad)
         elif self.constraint is not None:
             self.constraint.apply(epoch, value, grad)
 
         if name is not None and name in self.regularizers:
-            self.regularizers[name].apply(value, grad, epoch)
+            self.regularizers[name].apply(epoch, value, grad)
         elif self.regularizer is not None:
             self.regularizer.apply(epoch, value, grad)
         return grad
@@ -190,12 +194,20 @@ class SGD(Optimizer):
     See the base Optimizer for all arguments.
     '''
 
-    def __init__(self, lr=None, momentum=None, decay=None, lr_gen=None,
+    def __init__(self, lr=None, momentum=None, weight_decay=None, lr_gen=None,
                  regularizer=None, constraint=None):
-        super(SGD, self).__init__(lr, momentum, decay, lr_gen, regularizer,
-                                  constraint)
+        super(
+            SGD,
+            self).__init__(
+            lr,
+            momentum,
+            weight_decay,
+            lr_gen,
+            regularizer,
+         constraint)
         conf = model_pb2.OptimizerConf()
-        conf.momentum = self.momentum
+        if self.momentum is not None:
+            conf.momentum = self.momentum
         conf.type = 'sgd'
         self.opt = singa.CreateOptimizer('SGD')
         self.opt.Setup(conf.SerializeToString())
@@ -212,12 +224,13 @@ class Nesterov(Optimizer):
     See the base Optimizer for all arguments.
     '''
 
-    def __init__(self, lr=None, momentum=0.9, decay=None, lr_gen=None,
+    def __init__(self, lr=None, momentum=0.9, weight_decay=None, lr_gen=None,
                  regularizer=None, constraint=None):
-        super(Nesterov, self).__init__(lr, momentum, decay, lr_gen, regularizer,
-                                       constraint)
+        super(Nesterov, self).__init__(lr, momentum, weight_decay, lr_gen,
+                                       regularizer, constraint)
         conf = model_pb2.OptimizerConf()
-        conf.momentum = momentum
+        if self.momentum is not None:
+            conf.momentum = momentum
         conf.type = 'nesterov'
         self.opt = singa.CreateOptimizer('Nesterov')
         self.opt.Setup(conf.SerializeToString())
@@ -236,9 +249,10 @@ class AdaGrad(Optimizer):
     Args:
         epsilon (float): small number for preventing numeric error.
     '''
-    def __init__(self, epsilon=1e-8, lr=None, decay=None, lr_gen=None,
+
+    def __init__(self, epsilon=1e-8, lr=None, weight_decay=None, lr_gen=None,
                  regularizer=None, constraint=None):
-        super(RMSProp, self).__init__(lr, decay, lr_gen, regularizer,
+        super(RMSProp, self).__init__(lr, weight_decay, lr_gen, regularizer,
                                       constraint)
         conf = model_pb2.OptimizerConf()
         conf.delta = epsilon
@@ -262,9 +276,9 @@ class RMSProp(Optimizer):
         epsilon (float): small value for preventing numeric error
     '''
 
-    def __init__(self, rho=0.9, epsilon=1e-8, lr=None, decay=None, lr_gen=None,
-                 regularizer=None, constraint=None):
-        super(RMSProp, self).__init__(lr, decay, lr_gen, regularizer,
+    def __init__(self, rho=0.9, epsilon=1e-8, lr=None, weight_decay=None,
+                 lr_gen=None, regularizer=None, constraint=None):
+        super(RMSProp, self).__init__(lr, weight_decay, lr_gen, regularizer,
                                       constraint)
         conf = model_pb2.OptimizerConf()
         conf.rho = rho
@@ -333,6 +347,7 @@ class CppConstraint(Constraint):
     Args:
         conf (ConstraintConf): protobuf message for the configuration.
     '''
+
     def __init__(self, conf):
         self.constraint = singa.CreateConstraint(conf.type)
         self.constraint.Setup(conf.SerializeToString())

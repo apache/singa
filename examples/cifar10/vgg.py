@@ -38,7 +38,7 @@ def ConvBnReLU(net, name, nb_filers, sample_shape=None):
 
 def create_net(use_cpu=False):
     if use_cpu:
-        layer.engine = 'singa'
+        layer.engine = 'singacpp'
     net = ffnet.FeedForwardNet(loss.SoftmaxCrossEntropy(), metric.Accuracy())
     ConvBnReLU(net, 'conv1_1', 64, (3, 32, 32))
     net.add(layer.Dropout('drop1', 0.3))
@@ -76,14 +76,14 @@ def create_net(use_cpu=False):
     print 'Start intialization............'
     for (p, name) in zip(net.param_values(), net.param_names()):
         print name, p.shape
-        if len(p.shape) > 1:
-            if 'mean' in name or 'beta' in name:
-                p.set_value(0.0)
-            elif 'var' in name:
-                p.set_value(1.0)
-            elif 'gamma' in name:
-                p.uniform(0, 1)
-            elif 'conv' in name:
+        if 'mean' in name or 'beta' in name:
+            p.set_value(0.0)
+        elif 'var' in name:
+            p.set_value(1.0)
+        elif 'gamma' in name:
+            initializer.uniform(p, 0, 1)
+        elif len(p.shape) > 1:
+            if 'conv' in name:
                 initializer.gaussian(p, 0, 3 * 3 * p.shape[0])
             else:
                 p.gaussian(0, 0.02)

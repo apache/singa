@@ -49,9 +49,9 @@ class Device {
   int id() const;
 };
 
-#if USE_CUDA
 class Platform {
  public:
+#if USE_CUDA
   static int GetNumGPUs();
   static const std::vector<int> GetGPUIDs();
   static const std::pair<size_t, size_t> GetGPUMemSize(const int device);
@@ -61,9 +61,9 @@ class Platform {
   CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
   static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
+#endif // USE_CUDA
   static std::shared_ptr<Device> GetDefaultDevice();
 };
 
-#endif // USE_CUDA
 }
 

@@ -114,6 +114,9 @@ def create_cuda_gpu_on(device_id):
     return devices[0]
 
 
+default_device = singa.Platform.GetDefaultDevice()
+
+
 def get_default_device():
     '''Get the default host device which is a CppCPU device'''
-    return singa.Platform.GetDefaultDevice()
+    return default_device

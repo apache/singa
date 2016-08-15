@@ -56,7 +56,7 @@ import numpy as np
 from functools import reduce
 from .proto import core_pb2
 from . import singa_wrap as singa
-import device
+import device as pydevice
 
 
 class Tensor(object):
@@ -81,7 +81,8 @@ class Tensor(object):
             assert isinstance(shape, tuple), 'shape should be tuple'
             vs = list(shape)
             if device is None:
-                self.singa_tensor = singa.Tensor(vs, dtype)
+                device = pydevice.get_default_device()
+                self.singa_tensor = singa.Tensor(vs, device, dtype)
             else:
                 self.singa_tensor = singa.Tensor(vs, device, dtype)
             self.shape = shape
@@ -206,7 +207,7 @@ class Tensor(object):
         Args:
             t (Tensor): source Tensor.
         '''
-        assert type(t) == Tensor, 't must be a singa Tensor instance'
+        assert isinstance(t, Tensor), 't must be a singa Tensor instance'
         self.singa_tensor.CopyData(t.singa_tensor)
 
     def clone(self):
@@ -225,12 +226,10 @@ class Tensor(object):
         '''
         return _call_singa_func(self.singa_tensor.T)
 
-    '''
     def copy(self):
-        shallow copy
-            call copy constructor of singa::Tensor
+        '''shallow copy calls copy constructor of singa::Tensor
+        '''
         return _call_singa_func(singa.Tensor, self.singa_tensor)
-    '''
 
     def deepcopy(self):
         '''Same as clone().
@@ -404,16 +403,38 @@ class Tensor(object):
                                     self.singa_tensor, rhs)
 
     def __lt__(self, rhs):
-        return _call_singa_func(singa.LT_Tf, self.singa_tensor, rhs)
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(singa.LT_TT, self.singa_tensor,
+                                    rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.LT_Tf, self.singa_tensor, rhs)
 
     def __le__(self, rhs):
-        return _call_singa_func(singa.LE_Tf, self.singa_tensor, rhs)
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(
+                singa.LE_TT,
+                self.singa_tensor,
+                rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.LE_Tf, self.singa_tensor, rhs)
 
     def __gt__(self, rhs):
-        return _call_singa_func(singa.GT_Tf, self.singa_tensor, rhs)
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(
+                singa.GT_TT,
+                self.singa_tensor,
+                rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.GT_Tf, self.singa_tensor, rhs)
 
     def __ge__(self, rhs):
-        return _call_singa_func(singa.GE_Tf, self.singa_tensor, rhs)
+        if isinstance(rhs, Tensor):
+            return _call_singa_func(
+                singa.GE_TT,
+                self.singa_tensor,
+                rhs.singa_tensor)
+        else:
+            return _call_singa_func(singa.GE_Tf, self.singa_tensor, rhs)
 
 
 ''' python functions for global functions in Tensor.h
@@ -501,7 +522,7 @@ def to_numpy(t):
     Returns:
         a numpy array
     '''
-    assert t.device == device.get_default_device() or t.device is None, \
+    assert (t.device.id() == -1) or (t.device is None), \
         'Please move the tensor onto the default host device'
 
     if t.dtype == core_pb2.kFloat32:

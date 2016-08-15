@@ -152,6 +152,7 @@ class CppCPU : public Device {
 
   std::shared_ptr<Device> host() const override { return defaultDevice;}
   void SetRandSeed(unsigned seed) override;
+
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
@@ -303,10 +304,15 @@ private:
 /// If CUDA or OPENCL are not enabled, then the respective related methods should
 /// return something that indicates their absence (for example, 0 devices);
 /// however they should always be available regardless of compile-time switches.
-#ifdef USE_CUDA
 class Platform {
 public:
 
+  /// Return the defualt host device
+  static std::shared_ptr<Device> GetDefaultDevice() {
+    return defaultDevice;
+  }
+
+#ifdef USE_CUDA
   /// Return the number of total available GPUs
   static int GetNumGPUs();
 
@@ -322,11 +328,6 @@ public:
   /// Return a string containing all hardware info, e.g., version, memory size.
   static const std::string DeviceQuery(int id, bool verbose = false);
 
-  /// Return the defualt host device
-  static std::shared_ptr<Device> GetDefaultDevice() {
-    return defaultDevice;
-  }
-
   /// Create a set of CudaGPU Device using 'num_devices' free GPUs.
   static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
@@ -334,6 +335,7 @@ public:
   /// Create a set of CudaGPU Device using given GPU IDs.
   static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
+#endif // USE_CUDA
 
   /// Create a \p num_devices set of valid OpenCL devices, regardless of
   /// platforms.  If there are fewer valid devices than requested, then this
@@ -373,7 +375,6 @@ private:
 #endif  // USE_OPENCL
 };
 
-#endif // USE_CUDA
 
 }  // namespace singa
 
