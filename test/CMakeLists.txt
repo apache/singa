@@ -22,7 +22,7 @@ ADD_EXECUTABLE(test_singa "gtest/gtest_main.cc" ${singa_test_source})
 ADD_DEPENDENCIES(test_singa singa_core singa_utils)
 #MESSAGE(STATUS "link libs" ${singa_linker_libs})
 TARGET_LINK_LIBRARIES(test_singa gtest singa_core singa_utils singa_model
-    singa_io proto protobuf ${SINGA_LINKER_LIBS})
+    singa_io singa_proto protobuf ${SINGA_LINKER_LIBS})
 IF(UNIX AND (NOT APPLE))
     LIST(APPEND LINK_FLAGS "-pthread")
 ENDIF()

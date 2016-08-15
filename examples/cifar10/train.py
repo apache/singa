@@ -106,7 +106,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         dev = device.create_cuda_gpu()
 
     net.to_device(dev)
-    opt = optimizer.SGD(momentum=0.9, decay=weight_decay)
+    opt = optimizer.SGD(momentum=0.9, weight_decay=weight_decay)
     for (p, specs) in zip(net.param_names(), net.param_specs()):
         opt.register(p, specs)
 

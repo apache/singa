@@ -234,6 +234,8 @@ class Nesterov(Optimizer):
 
     def apply_with_lr(self, epoch, lr, grad, value, name):
         self.apply_regularizer_constraint(epoch, value, grad, name)
+        if name is not None and name in self.learning_rate_multiplier:
+            lr = lr * self.learning_rate_multiplier[name]
         self.opt.Apply(epoch, lr, name, grad.singa_tensor, value.singa_tensor)
         return value
 

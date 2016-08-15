@@ -70,7 +70,6 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
     print "num_train_batch = %d " % (num_train_batch)
     for epoch in range(num_epoch):
         trainerrorsum = 0.0
-        validerrorsum = 0.0
         print 'Epoch %d' % epoch
         for b in range(num_train_batch):
             # positive phase

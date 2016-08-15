@@ -161,7 +161,7 @@ void Train(int num_epoch, string data_dir) {
   auto net = CreateNet();
   SGD sgd;
   OptimizerConf opt_conf;
-  // opt_conf.set_momentum(0.9);
+  opt_conf.set_momentum(0.9);
   auto reg = opt_conf.mutable_regularizer();
   reg->set_coefficient(0.004);
   sgd.Setup(opt_conf);

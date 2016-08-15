@@ -26,14 +26,9 @@ clean:
 
 .PHONY: html
 html:
-<<<<<<< HEAD
-	cp -rf ../examples docs/
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-=======
 	cp -rf ../examples en/docs/
-	$(SPHINXBUILD) -b html  -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) en $(BUILDDIR)/html
+	$(SPHINXBUILD) -b html  -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) en $(BUILDDIR)/html/en
 	$(SPHINXBUILD) -b html  -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) zh $(BUILDDIR)/html/zh
->>>>>>> v1doc
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 

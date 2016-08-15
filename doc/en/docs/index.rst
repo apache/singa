@@ -1,5 +1,5 @@
-English
-=======
+Documentation
+=============
 
 .. toctree::
 
@@ -7,4 +7,9 @@ English
    software_stack
    device
    tensor
+   layer
+   initializer
+   loss
+   metric
+   optimizer
    examples/index

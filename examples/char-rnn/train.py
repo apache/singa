@@ -98,9 +98,9 @@ def get_lr(epoch):
 
 
 def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
-          num_stacks=1, lr=0.001, dropout=0.5, model_path='model.bin'):
+          num_stacks=1, dropout=0.5, model_path='model.bin'):
     # SGD with L2 gradient normalization
-    opt = optimizer.SGD(constraint=optimizer.L2Constraint(5))
+    opt = optimizer.RMSProp(constraint=optimizer.L2Constraint(5))
     cuda = device.create_cuda_gpu()
     rnn = layer.LSTM(
         name='lstm',
@@ -126,7 +126,7 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
     dense_b = dense.param_values()[1]
     print 'dense w ', dense_w.shape
     print 'dense b ', dense_b.shape
-    initializer.uniform(dense_w, dense_w.shape[0], dense_w.shape[1])
+    initializer.uniform(dense_w, dense_w.shape[0], 0)
     print 'dense weight l1 = %f' % (dense_w.l1())
     dense_b.set_value(0)
     print 'dense b l1 = %f' % (dense_b.l1())
@@ -154,6 +154,7 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
                 lvalue = lossfun.forward(model_pb2.kTrain, act, label)
                 batch_loss += lvalue.l1()
                 grad = lossfun.backward()
+                grad /= batch_size
                 grad, gwb = dense.backward(model_pb2.kTrain, grad)
                 grads.append(grad)
                 g_dense_w += gwb[0]

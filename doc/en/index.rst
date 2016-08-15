@@ -2,7 +2,6 @@
    sphinx-quickstart on Sat Jul  9 20:36:57 2016.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
-
 Welcome to Apache Singa
 =======================
 
@@ -35,18 +34,16 @@ Recent News
 
 Getting Started
 ---------------
-* The `Introduction <docs/overview.html>`_ page gives an overview of SINGA.
+* The `Software stack <docs/software_stack.html>`_ page gives an overview of SINGA.
 
 * The `Installation <docs/installation.html>`_ guide describes details on downloading and installing SINGA.
 
-* Please follow the `Quick Start <docs/quick-start.html>`_ guide to run simple applications on SINGA.
+* Please follow the `Examples <docs/examples/index.html>`_ guide to run simple applications on SINGA.
 
 Documentation
 -------------
 
 * Documentations are listed `here <docs.html>`_.
-
-* Code API can be found `here <api/index.html>`_.
 
 * Research publication list is available `here <http://www.comp.nus.edu.sg/~dbsystem/singa/research/publication/>`_.
 
@@ -74,7 +71,7 @@ Please cite the following two papers if you use SINGA in your research:
    :hidden:
 
    downloads
-   docs
+   docs/index
 
 .. toctree::
    :hidden:
