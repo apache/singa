@@ -23,7 +23,9 @@ Python API
    :members: create_cuda_gpus, create_cuda_gpus_on, get_default_device
 
 
-The following code provides examples of creating devices::
+The following code provides examples of creating devices,
+
+.. code:: python
 
    from singa import device
    cuda = device.create_cuda_gpu_on(0)  # use GPU card of ID 0

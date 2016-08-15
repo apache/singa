@@ -20,7 +20,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(1, os.path.abspath('../build/python'))
-#autodoc_mock_imports = ['singa.device', 'singa.tensor', 'singa.layer']
 
 # -- General configuration ------------------------------------------------
 from recommonmark.parser import CommonMarkParser
@@ -161,7 +160,7 @@ html_logo = 'image/singa.png'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['../_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -203,7 +202,7 @@ html_static_path = ['_static']
 
 # If true, links to the reST sources are added to the pages.
 #
-# html_show_sourcelink = True
+html_show_sourcelink = False
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #

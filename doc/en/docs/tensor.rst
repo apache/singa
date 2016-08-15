@@ -21,10 +21,34 @@ type of Device.
 Python API
 ----------
 
+There are two set of tensor functions,
+1. Tensor member functions, which would change the internal state of the Tensor instance.
+2. tensor module functions, which accepts Tensor instances as arguments and return
+Tensor instances.
+
+
+Create Tensor instances
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: singa.tensor.Tensor
+
+
+Tensor instances can be constructed from Numpy array,
 
 .. automodule:: singa.tensor
-   :members:
+   :members: from_numpy
 
 
-CPP API
----------
+Set Tensor values
+~~~~~~~~~~~~~~~~~
+
+
+
+
+
+
+
+
+
+
+

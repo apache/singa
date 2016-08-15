@@ -120,3 +120,4 @@ default_device = singa.Platform.GetDefaultDevice()
 def get_default_device():
     '''Get the default host device which is a CppCPU device'''
     return default_device
+
