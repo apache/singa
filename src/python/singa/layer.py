@@ -56,7 +56,8 @@ For example, CudnnConvolution layer is identified by 'cudnn_convolution';
 Some layers' implementation use only Tensor functions, thererfore they are
 transparent to the underlying devices. For threse layers, they would have
 multiple identifiers, e.g., singacpp_dropout, singacuda_dropout and
-singacl_dropout are all for the Dropout layer.
+singacl_dropout are all for the Dropout layer. In addition, it has an extra
+identifier 'singa', i.e. 'singa_dropout' also stands for the Dropout layer.
 
 engine is case insensitive. Each python layer would create the correct specific
 layer using the engine attribute.
@@ -439,7 +440,8 @@ class BatchNormalization(Layer):
         self.param_specs.append(_construct_param_specs_from_dict(beta_specs))
         self.param_specs.append(_construct_param_specs_from_dict(mean_specs))
         self.param_specs.append(_construct_param_specs_from_dict(var_specs))
-        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
+        _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacuda',
+                               'singacl'])
         self.layer = _create_layer(engine, 'BatchNorm')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -466,7 +468,8 @@ class LRN(Layer):
         # TODO(wangwei) enable mode = 'within_channel'
         assert mode == 'cross_channel', 'only support mode="across_channel"'
         conf.norm_region = model_pb2.LRNConf.ACROSS_CHANNELS
-        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
+        _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacuda',
+                               'singacl'])
         self.layer = _create_layer(engine, 'LRN')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -555,7 +558,8 @@ class Dropout(Layer):
         # 'cudnn' works for v>=5.0
         #  if engine.lower() == 'cudnn':
         #      engine = 'cuda'
-        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
+        _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacuda',
+                               'singacl'])
         self.layer = _create_layer(engine, 'Dropout')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -590,7 +594,8 @@ class Softmax(Layer):
         super(Softmax, self).__init__(name)
         # conf = self.conf.softmax_conf
         # conf.axis = axis
-        _check_engine(engine, ['cudnn', 'singacpp', 'singacl', 'singacuda'])
+        _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacl',
+                               'singacuda'])
         self.layer = _create_layer(engine, 'Softmax')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -820,7 +825,6 @@ def _construct_param_specs_from_dict(specs):
         a ParamSpec object
     """
     conf = model_pb2.ParamSpec()
-    print 'convert', specs
     if 'name' in specs:
         conf.name = specs['name']
     if 'lr_mult' in specs:
