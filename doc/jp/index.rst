@@ -15,13 +15,13 @@ Recent News
 
 * SINGA will be presented at `Strata+Hadoop <http://strataconf.com/big-data-conference-sg-2015/public/schedule/detail/45123>`_ on 2 Dec, 2015
 
-* SINGA was presented at `ACM Multimedia <http://www.acmmm.org/2015/at-a-glance/>`_ Best Paper session and Open Source Software Competition session, 26-30 Oct, 2015 (`Slides <files/mm2015.ppt>`_)
+* SINGA was presented at `ACM Multimedia <http://www.acmmm.org/2015/at-a-glance/>`_ Best Paper session and Open Source Software Competition session, 26-30 Oct, 2015 (`Slides <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/mm2015.ppt>`_)
 
 * The **first release** is now available, 8 Oct, 2015. `Download SINGA v0.1.0 <downloads.html>`_.
 
 * SINGA was presented at `workshop on deep learning <http://www.comp.nus.edu.sg/~dbsystem/singa/workshop>`_  held on 16 Sep, 2015
 
-* SINGA was presented at `BOSS <http://boss.dima.tu-berlin.de/>`_ of `VLDB 2015 <http://www.vldb.org/2015/>`_ at Hawaii, 4 Sep, 2015. (slides: `overview <files/singa-vldb-boss.pptx>`_, `basic <files/basic-user-guide.pptx>`_, `advanced <files/advanced-user-guide.pptx>`_)
+* SINGA was presented at `BOSS <http://boss.dima.tu-berlin.de/>`_ of `VLDB 2015 <http://www.vldb.org/2015/>`_ at Hawaii, 4 Sep, 2015. (slides: `overview <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/singa-vldb-boss.pptx>`_, `basic <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/basic-user-guide.pptx>`_, `advanced <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/advanced-user-guide.pptx>`_)
 
 * SINGA was presented at `ADSC/I2R Deep Learning Workshop <http://adsc.illinois.edu/contact-us>`_, 25 Aug, 2015.
 

@@ -1,4 +1,4 @@
-# Latest Documentation
+# Documentation
 
 ---
 
