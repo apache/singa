@@ -95,16 +95,22 @@ class FeedForwardNet(object):
         # print x.l1()
         for lyr in self.layers:
             x = lyr.forward(flag, x)
-        #    print lyr.name, x.l1()
+            # print lyr.name, x.l1()
         return x
 
     def backward(self):
         grad = self.loss.backward()
+        if len(grad.shape) > 1:
+            grad /= grad.shape[0]  # average across the batch
+        # print 'grad', grad.l1()
         pgrads = []
         for lyr in reversed(self.layers):
             grad, _pgrads = lyr.backward(kTrain, grad)
+            # disp = '%f ' % grad.l1()
             for g in reversed(_pgrads):
                 pgrads.append(g)
+                # disp = disp + ', %f ' % g.l1()
+            # print disp
         return reversed(pgrads)
 
     def save(self, f):

@@ -494,7 +494,26 @@ class Dense(Layer):
     """
     def __init__(self, name, num_output, use_bias=True,
                  W_specs=None, b_specs=None,
-                 W_transpose=True, input_sample_shape=None):
+                 W_transpose=False, input_sample_shape=None):
+        """Apply linear/affine transformation, also called inner-product or
+        fully connected layer.
+
+        Args:
+            num_output (int): output feature length.
+            use_bias (bool): add a bias vector or not to the transformed feature
+            W_specs (dict): specs for the weight matrix
+                'name' for parameter name
+                'lr_mult' for learning rate multiplier
+                'decay_mult' for weight decay multiplier
+                'init' for init method, which could be 'gaussian', 'uniform',
+                'xavier' and ''
+                'std', 'mean', 'high', 'low' for corresponding init methods
+                'clamp' for gradient constraint, value is scalar
+                'regularizer' for regularization, currently support 'l2'
+            b_specs (dict): specs for the bias vector, same fields as W_specs.
+            W_transpose (bool): if true, output=x*W.T+b;
+            input_sample_shape (tuple): input feature length
+        """
         super(Dense, self).__init__(name)
         conf = self.conf.dense_conf
         conf.num_output = num_output
@@ -508,10 +527,10 @@ class Dense(Layer):
             W_specs['name'] = name + '_weight'
         if 'name' not in b_specs:
             b_specs['name'] = name + '_bias'
-        self.conf.param.extend([_construct_param_specs_from_dict(W_specs)])
-        self.param_specs.append(_construct_param_specs_from_dict(W_specs))
-        self.conf.param.extend([_construct_param_specs_from_dict(b_specs)])
-        self.param_specs.append(_construct_param_specs_from_dict(b_specs))
+        wspecs = _construct_param_specs_from_dict(W_specs)
+        bspecs = _construct_param_specs_from_dict(b_specs)
+        self.conf.param.extend([wspecs, bspecs])
+        self.param_specs.extend([wspecs, bspecs])
         # dense layer is transparent to engine.
         if engine == 'cudnn':
             self.layer = _create_layer('singacuda', 'Dense')
@@ -801,6 +820,7 @@ def _construct_param_specs_from_dict(specs):
         a ParamSpec object
     """
     conf = model_pb2.ParamSpec()
+    print 'convert', specs
     if 'name' in specs:
         conf.name = specs['name']
     if 'lr_mult' in specs:

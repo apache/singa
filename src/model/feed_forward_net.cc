@@ -206,8 +206,8 @@ const std::pair<float, float> FeedForwardNet::TrainOnBatch(int epoch,
 
 const Tensor FeedForwardNet::Forward(int flag, const Tensor& data) {
   Tensor input = data, output;
+  // LOG(INFO) << data.L1();
   for (auto layer : layers_) {
-    //    LOG(INFO) << layer->name() << ": " << input.L1();
     output = layer->Forward(flag, input);
     // LOG(INFO) << layer->name() << ": " << output.L2();
     input = output;
@@ -220,13 +220,13 @@ const vector<Tensor> FeedForwardNet::Backward(int flag, const Tensor& grad) {
   std::stack<Tensor> buf;
   Tensor tmp = grad;
   for (int i = layers_.size() - 1; i >= 0; i--) {
-    //   LOG(INFO) << layers_.at(i)->name() << " : " << tmp.L1();
+    // LOG(INFO) << layers_.at(i)->name() << " : " << tmp.L1();
     auto ret = layers_.at(i)->Backward(flag, tmp);
     tmp = ret.first;
     if (ret.second.size()) {
       for (int k = ret.second.size() - 1; k >= 0; k--) {
         buf.push(ret.second[k]);
-        //       LOG(INFO) <<  "      " << buf.top().L1();
+        // LOG(INFO) <<  "      " << buf.top().L1();
       }
     }
   }

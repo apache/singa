@@ -109,18 +109,20 @@ class Optimizer(object):
             name (str): parameter name
             specs (ParamSpec): protobuf obj, including regularizer and
                 constraint, multipliers for learning rate and weight decay.
-
         '''
         assert isinstance(specs, model_pb2.ParamSpec), \
             'specs should be model_pb2.ParamSpec instance'
         if specs.HasField('regularizer'):
             self.regularizers[name] = CppRegularizer(specs.regularizer)
+        elif specs.decay_mult != 1:
+            self.regularizers[name] = L2Regularizer(
+                specs.decay_mult * self.regularizer.coefficient)
+
         if specs.HasField('constraint'):
             self.constraints[name] = CppConstraint(specs.constraint)
+
         if specs.lr_mult != 1:
             self.learning_rate_multiplier[name] = specs.lr_mult
-        if specs.decay_mult != 1:
-            self.decay_multiplier[name] = specs.decay_mult
 
     def apply_regularizer_constraint(self, epoch, value, grad, name=None):
         '''Apply regularization and constraint if available.
@@ -196,15 +198,8 @@ class SGD(Optimizer):
 
     def __init__(self, lr=None, momentum=None, weight_decay=None, lr_gen=None,
                  regularizer=None, constraint=None):
-        super(
-            SGD,
-            self).__init__(
-            lr,
-            momentum,
-            weight_decay,
-            lr_gen,
-            regularizer,
-         constraint)
+        super(SGD, self).__init__(lr, momentum, weight_decay, lr_gen,
+                                  regularizer, constraint)
         conf = model_pb2.OptimizerConf()
         if self.momentum is not None:
             conf.momentum = self.momentum
@@ -214,6 +209,8 @@ class SGD(Optimizer):
 
     def apply_with_lr(self, epoch, lr, grad, value, name):
         self.apply_regularizer_constraint(epoch, value, grad, name)
+        if name is not None and name in self.learning_rate_multiplier:
+            lr = lr * self.learning_rate_multiplier[name]
         self.opt.Apply(epoch, lr, name, grad.singa_tensor, value.singa_tensor)
         return value
 
@@ -262,6 +259,8 @@ class AdaGrad(Optimizer):
 
     def apply_with_lr(self, epoch, lr, grad, value, name):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name)
+        if name is not None and name in self.learning_rate_multiplier:
+            lr = lr * self.learning_rate_multiplier[name]
         self.opt.Apply(epoch, lr,  name, grad.singa_tensor, value.singa_tensor)
         return value
 
@@ -288,6 +287,8 @@ class RMSProp(Optimizer):
 
     def apply_with_lr(self, epoch, lr, grad, value, name):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name)
+        if name is not None and name in self.learning_rate_multiplier:
+            lr = lr * self.learning_rate_multiplier[name]
         self.opt.Apply(epoch, lr,  name, grad.singa_tensor, value.singa_tensor)
         return value
 
@@ -330,7 +331,9 @@ class L2Regularizer(Regularizer):
         if coefficient is None:
             assert self.coefficient is not None, 'Must set the coefficient'
             coefficient = self.coefficient
-        tensor.axpy(coefficient, value, grad)
+        # print coefficient, value.l1(), grad.l1()
+        if coefficient != 0:
+            tensor.axpy(coefficient, value, grad)
         return grad
 
 

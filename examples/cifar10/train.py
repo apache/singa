@@ -22,7 +22,6 @@ includes 1 label & 3072 pixels.  3072 pixels are 3 channels of a 32x32 image
 import cPickle
 import numpy as np
 import os
-import sys
 import argparse
 
 # sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
@@ -84,7 +83,7 @@ def normalize_for_alexnet(train_x, test_x):
 
 
 def vgg_lr(epoch):
-    return 0.01 / float(1 << ((epoch / 30)))
+    return 0.1 / float(1 << ((epoch / 25)))
 
 
 def alexnet_lr(epoch):
@@ -92,7 +91,7 @@ def alexnet_lr(epoch):
         return 0.001
     elif epoch < 130:
         return 0.0001
-    elif epoch < 140:
+    else:
         return 0.00001
 
 
@@ -107,8 +106,8 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         dev = device.create_cuda_gpu()
 
     net.to_device(dev)
-    opt = optimizer.SGD(momentum=0.9, weight_decay=weight_decay)
-    for (p, specs) in zip(net.param_values(), net.param_specs()):
+    opt = optimizer.SGD(momentum=0.9, decay=weight_decay)
+    for (p, specs) in zip(net.param_names(), net.param_specs()):
         opt.register(p, specs)
 
     tx = tensor.Tensor((batch_size, 3, 32, 32), dev)
@@ -129,13 +128,13 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
             grads, (l, a) = net.train(tx, ty)
             loss += l
             acc += a
-            for (s, p, g) in zip(net.param_specs(), net.param_values(), grads):
-                opt.apply_with_lr(epoch, get_lr(epoch), g, p, str(s.name))
+            for (s, p, g) in zip(net.param_names(), net.param_values(), grads):
+                opt.apply_with_lr(epoch, get_lr(epoch), g, p, str(s))
             # update progress bar
             utils.update_progress(b * 1.0 / num_train_batch,
                                   'training loss = %f, accuracy = %f' % (l, a))
-        info = '\ntraining loss = %f, training accuracy = %f' \
-            % (loss / num_train_batch, acc / num_train_batch)
+        info = '\ntraining loss = %f, training accuracy = %f, lr = %f' \
+            % (loss / num_train_batch, acc / num_train_batch, get_lr(epoch))
         print info
 
         loss, acc = 0.0, 0.0
@@ -167,7 +166,7 @@ if __name__ == '__main__':
     if args.model == 'alexnet':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = alexnet.create_net(args.use_cpu)
-        train((train_x, train_y, test_x, test_y), net, 140, alexnet_lr, 0.004,
+        train((train_x, train_y, test_x, test_y), net, 160, alexnet_lr, 0.004,
               use_cpu=args.use_cpu)
     else:
         train_x, test_x = normalize_for_vgg(train_x, test_x)
