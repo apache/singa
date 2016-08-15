@@ -1,0 +1,5 @@
+€}q(Upredict]q(Uload_test_dataqUcompute_image_meanqUpredictqUtest_imagesqUload_train_dataqUload_datasetqUmodelq	Umeanq
+UcudaqeUtrain]q(UparserqUnormalize_for_vggqUtrain_xqUtrain_yqUnormalize_for_alexnetqhUnetqUvgg_lrqhU
+alexnet_lrqUargsqUtrainqhUtest_yqUtest_xqeUdownload_data]q(hUurlqUextract_tarfileqhUdo_downloadqUcheck_dir_existqUdirpathqUgzfileqeUvgg]q (U
+create_netq!U
+ConvBnReLUq"eUalexnet]q#h!au.
