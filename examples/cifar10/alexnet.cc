@@ -134,7 +134,7 @@ FeedForwardNet CreateNet() {
   return net;
 }
 
-void Train(float lr, int num_epoch, string data_dir) {
+void Train(int num_epoch, string data_dir) {
   Cifar10 data(data_dir);
   Tensor train_x, train_y, test_x, test_y;
   {
@@ -161,11 +161,11 @@ void Train(float lr, int num_epoch, string data_dir) {
   auto net = CreateNet();
   SGD sgd;
   OptimizerConf opt_conf;
-  opt_conf.set_momentum(0.9);
+  // opt_conf.set_momentum(0.9);
   auto reg = opt_conf.mutable_regularizer();
   reg->set_coefficient(0.004);
   sgd.Setup(opt_conf);
-  sgd.SetLearningRateGenerator([lr](int step) {
+  sgd.SetLearningRateGenerator([](int step) {
     if (step <= 120)
       return 0.001;
     else if (step <= 130)
@@ -193,14 +193,11 @@ int main(int argc, char **argv) {
   int pos = singa::ArgPos(argc, argv, "-epoch");
   int nEpoch = 1;
   if (pos != -1) nEpoch = atoi(argv[pos + 1]);
-  pos = singa::ArgPos(argc, argv, "-lr");
-  float lr = 0.001;
-  if (pos != -1) lr = atof(argv[pos + 1]);
   pos = singa::ArgPos(argc, argv, "-data");
   string data = "cifar-10-batches-bin";
   if (pos != -1) data = argv[pos + 1];
 
   LOG(INFO) << "Start training";
-  singa::Train(lr, nEpoch, data);
+  singa::Train(nEpoch, data);
   LOG(INFO) << "End training";
 }

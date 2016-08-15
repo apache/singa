@@ -177,28 +177,28 @@ class Tensor(object):
         if isinstance(x, Tensor):
             self.singa_tensor += x.singa_tensor
         else:
-            self.singa_tensor += x
+            self.singa_tensor += float(x)
         return self
 
     def __isub__(self, x):
         if isinstance(x, Tensor):
             self.singa_tensor -= x.singa_tensor
         else:
-            self.singa_tensor -= x
+            self.singa_tensor -= float(x)
         return self
 
     def __imul__(self, x):
         if isinstance(x, Tensor):
             self.singa_tensor *= x.singa_tensor
         else:
-            self.singa_tensor *= x
+            self.singa_tensor *= float(x)
         return self
 
     def __idiv__(self, x):
         if isinstance(x, Tensor):
             self.singa_tensor /= x.singa_tensor
         else:
-            self.singa_tensor /= x
+            self.singa_tensor /= float(x)
         return self
 
     '''

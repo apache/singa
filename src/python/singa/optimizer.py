@@ -102,16 +102,19 @@ class Optimizer(object):
             name (str): parameter name
             specs (ParamSpec): protobuf obj
         """
-	assert type(specs) == model_pb2.ParamSpec, \
-		'specs should be model_pb2.ParamSpec instance'
+        assert type(specs) == model_pb2.ParamSpec, \
+            'specs should be model_pb2.ParamSpec instance'
         if specs.HasField('regularizer'):
             self.regularizers[name] = CppRegularizer(specs.regularizer)
+        elif specs.decay_mult != 1:
+            self.regularizers[name] = L2Regularizer(
+                specs.decay_mult * self.regularizer.coefficient)
+
         if specs.HasField('constraint'):
             self.constraints[name] = CppConstraint(specs.constraint)
+
         if specs.lr_mult != 1:
             self.learning_rate_multiplier[name] = specs.lr_mult
-        if specs.decay_mult != 1:
-            self.decay_multiplier[name] = specs.decay_mult
 
     def apply_regularizer_constraint(self, value, grad, name=None, step=None):
         """Apply regularization and constraint if available.
@@ -129,12 +132,12 @@ class Optimizer(object):
             the updated gradient Tensor
         """
         if name is not None and name in self.constraints:
-            self.constraints[name].apply(value, grad, step)
+            self.constraints[name].apply(step, value, grad)
         elif self.constraint is not None:
             self.constraint.apply(step, value, grad)
 
         if name is not None and name in self.regularizers:
-            self.regularizers[name].apply(value, grad, step)
+            self.regularizers[name].apply(step, value, grad)
         elif self.regularizer is not None:
             self.regularizer.apply(step, value, grad)
         return grad
@@ -175,24 +178,29 @@ class Optimizer(object):
         assert self.lr_gen is not None, 'Learning rate generator is not set.'\
             'Either set the lr_gen in constructor or call apply_with_lr'
         lr = self.lr_gen(step)
+        if name is not None and name in self.learning_rate_multiplier:
+            lr = lr * self.learning_rate_multiplier[name]
         return self.apply_with_lr(step, lr, grad, value, name)
 
 
 class SGD(Optimizer):
 
-    def __init__(self, lr=None, momentum=None, decay=None, **kwargs):
+    def __init__(self, lr=None, momentum=None, decay=None):
         """The vallina Stochasitc Gradient Descent algorithm.
 
         See the base Optimizer for all arguments.
         """
         super(SGD, self).__init__(lr, momentum, decay)
         conf = model_pb2.OptimizerConf()
-        conf.momentum = momentum
+        if momentum is not None:
+            conf.momentum = momentum
         self.opt = singa.CreateOptimizer('SGD')
         self.opt.Setup(conf.SerializeToString())
 
     def apply_with_lr(self, step, lr, grad, value, name):
-        self.apply_regularizer_constraint(step, value, grad, name)
+        self.apply_regularizer_constraint(value, grad, name, step)
+        if name is not None and name in self.learning_rate_multiplier:
+            lr = lr * self.learning_rate_multiplier[name]
         self.opt.Apply(step, lr, name, grad.singa_tensor, value.singa_tensor)
         return value
 
@@ -206,6 +214,8 @@ class Nesterov(Optimizer):
         """
         super(Nesterov, self).__init__(lr, momentum, decay, kwargs)
         conf = model_pb2.OptimizerConf()
+        if momentum is not None:
+            conf.momentum = momentum
         self.opt = singa.CreateOptimizer('Nesterov')
         self.opt.Setup(conf.SerializeToString())
 
@@ -232,6 +242,8 @@ class AdaGrad(Optimizer):
 
     def apply_with_lr(self, step, lr, grad, value, name):
         grad = self.apply_regularizer_constraint(step, value, grad, name)
+        if name is not None and name in self.learning_rate_multiplier:
+            lr = lr * self.learning_rate_multiplier[name]
         self.opt.Apply(step, lr,  name, grad.singa_tensor, value.singa_tensor)
         return value
 
@@ -255,6 +267,8 @@ class RMSProp(Optimizer):
 
     def apply_with_lr(self, step, lr, grad, value, name):
         grad = self.apply_regularizer_constraint(step, value, grad, name)
+        if name is not None and name in self.learning_rate_multiplier:
+            lr = lr * self.learning_rate_multiplier[name]
         self.opt.Apply(step, lr,  name, grad.singa_tensor, value.singa_tensor)
         return value
 
@@ -300,7 +314,9 @@ class L2Regularizer(Regularizer):
         if coefficient is None:
             assert self.coefficient is not None, 'Must set the coefficient'
             coefficient = self.coefficient
-        tensor.axpy(coefficient, value, grad)
+        # print coefficient, value.l1(), grad.l1()
+        if coefficient != 0:
+            tensor.axpy(coefficient, value, grad)
         return grad
 
 

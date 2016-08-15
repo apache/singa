@@ -33,6 +33,7 @@ void SGD::Setup(const OptimizerConf& conf) {
 // value = value - history
 void SGD::Apply(int step, float lr, const string& name, const Tensor& grad,
                 Tensor& value) {
+  // LOG(INFO) << "param " << name  << " lr = " << lr << " grad = " << grad.L1() << " value = " << value.L1();
   if (momentum_generator_) {
     float mom = momentum_generator_(step);
     if (mom != 0) {
@@ -46,9 +47,8 @@ void SGD::Apply(int step, float lr, const string& name, const Tensor& grad,
       value -= history;
       return;
     }
-  } else {
-    Axpy(-lr, grad, &value);
   }
+  Axpy(-lr, grad, &value);
 }
 }  // namespace singa
 #endif  // SRC_MODEL_OPTIMIZER_SGD_H_

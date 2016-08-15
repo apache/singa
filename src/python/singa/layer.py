@@ -362,8 +362,8 @@ class BatchNormalization(Layer):
 
 
 class LRN(Layer):
-    def __init__(self, name, size=5, alpha=1, beta=0.75, mode='cross_channel',
-                 k=1, input_sample_shape=None):
+    def __init__(self, name, size=5, alpha=1e-4, beta=0.75,
+                 mode='cross_channel', k=1, input_sample_shape=None):
         """Local response normalization.
 
         Args:
@@ -391,7 +391,7 @@ class Dense(Layer):
 
     def __init__(self, name, num_output, use_bias=True,
                  W_specs=None, b_specs=None,
-                 W_transpose=True, input_sample_shape=None):
+                 W_transpose=False, input_sample_shape=None):
         """Apply linear/affine transformation, also called inner-product or
         fully connected layer.
 
@@ -424,10 +424,10 @@ class Dense(Layer):
             W_specs['name'] = name + '_weight'
         if 'name' not in b_specs:
             b_specs['name'] = name + '_bias'
-        self.conf.param.extend([_construct_param_specs_from_dict(W_specs)])
-        self.param_specs.append(_construct_param_specs_from_dict(W_specs))
-        self.conf.param.extend([_construct_param_specs_from_dict(b_specs)])
-        self.param_specs.append(_construct_param_specs_from_dict(b_specs))
+        wspecs = _construct_param_specs_from_dict(W_specs)
+        bspecs = _construct_param_specs_from_dict(b_specs)
+        self.conf.param.extend([wspecs, bspecs])
+        self.param_specs.extend([wspecs, bspecs])
         # dense layer is transparent to engine.
         self.layer = _create_layer('singa', 'Dense')
         if input_sample_shape is not None:
@@ -712,6 +712,7 @@ def _construct_param_specs_from_dict(specs):
         a ParamSpec object
     """
     conf = model_pb2.ParamSpec()
+    print 'convert', specs
     if 'name' in specs:
         conf.name = specs['name']
     if 'lr_mult' in specs:
