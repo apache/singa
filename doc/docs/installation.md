@@ -36,24 +36,29 @@ which could be downloaded as
     $ git submodule update
 
 
-### Linux OS
+### Linux & MacOS 
 
-GCC (>=4.8.1) is required to compile SINGA on Linux OS.
+GCC (>=4.8.1) is required to compile SINGA on Linux.
+You can use gcc compiler to do the installation on MacOS following the
+steps in Linux installation. 
+In addition, you can also install singa via clang compiler following the
+commands in this section.
+
 In SINGA_ROOT, execute the following commands for compiling SINGA,
 
     $ mkdir build && cd build
-    # generate Makefile for compilation
     $ cmake ..
-    # compile SINGA
     $ make
 
-Note that if you are using CUDNN, you need to let cmake know the paths to CUDNN,
+Note that if you are using CUDNN and it is not installed under system default
+folder, you need to let cmake know the paths to CUDNN,
 
     $ export CMAKE_INCLUDE_PATH=<path to cudnn>/include:$CMAKE_INCLUDE_PATH
     $ export CMAKE_LIBRARY_PATH=<path to cudnn>/lib64:$CMAKE_LIBRARY_PATH
 
 You can use `ccmake ..` to configure the compilation options including using
-LMDB, GLOG, etc.
+LMDB, GLOG, etc. In addition, you can set the proper search paths for the
+dependent libraries.
 
 After compiling SINGA, you can run the unit tests by
 
@@ -61,9 +66,6 @@ After compiling SINGA, you can run the unit tests by
 
 You can see all the testing cases with testing results. If SINGA passes all
 tests, then you have successfully installed SINGA. Please proceed to try the examples!
-
-
-### MacOS
 
 
 ### Windows
