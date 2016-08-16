@@ -33,22 +33,13 @@
     v: {{ version }}
     <span class="fa fa-caret-down"></span>
   </span>
-  <div class="rst-other-versions">
-    <dl>
-      <dt>Languages</dt>
-      <dd><a href="{{pathto(''+ '../index.html' , 1) }}">English</a></dd>
-      <dd><a href="">中文</a></dd>	  
-	  <!--dd><a href="/jp/latest/">日本語</a></dd>
-	  <dd><a href="/kr/latest/">한국어</a></dd>
-	  <dd><a href="/it/latest/">Italiano</a></dd>
-	  <dd><a href="/ar/latest/">العربية</a></dd-->
-    </dl>
-    <dl>
-      <dt>Versions</dt>
-      <dd><a href="/{{ language }}/latest/">latest</a></dd>
-      <dd><a href="/{{ language }}/0.3.0/">v0.3.0</a></dd>
-    </dl>
-  </div>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Languages</dt>
+            <dd><a href="{{ pathto('../en/index.html', 1) }}">English</a></dd>
+            <dd><a href="{{ pathto('../zh/index.html', 1) }}">中文</a></dd>
+        </dl>
+    </div>
 </div>
 
  <a href="https://github.com/apache/incubator-singa">

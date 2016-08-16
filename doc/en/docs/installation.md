@@ -29,7 +29,7 @@ Most of the dependent libraries could be installed via package mangers like
 apt-get or homebrew.
 
     # for ubuntu users, tested on 14.04
-    sudo apt-get install libprotobuf-dev libopencv-dev protobuf-compiler libgoogle-glog-dev liblmdb-dev, python2.7-dev, python-pip, python-numpy
+    sudo apt-get install libprotobuf-dev libopenblas-dev libopencv-dev protobuf-compiler libgoogle-glog-dev liblmdb-dev python2.7-dev python-pip python-numpy
 
     # for Mac OS users
     brew install -vd glog lmdb
