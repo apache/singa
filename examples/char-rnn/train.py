@@ -98,7 +98,7 @@ def get_lr(epoch):
 
 
 def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
-          num_stacks=1, dropout=0.5, model_path='model.bin'):
+          num_stacks=1, dropout=0.5, model_path='model'):
     # SGD with L2 gradient normalization
     opt = optimizer.RMSProp(constraint=optimizer.L2Constraint(5))
     cuda = device.create_cuda_gpu()
@@ -194,22 +194,24 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
         print 'Epoch %d, evaluation loss is %f' % \
             (epoch, eval_loss / data.num_test_batch / seq_length)
 
-    # checkpoint the file model
-    with open(model_path, 'wb') as fd:
-        print 'saving model to %s' % model_path
-        d = {}
-        for name, w in zip(
-                ['rnn_w', 'dense_w', 'dense_b'],
-                [rnn_w, dense_w, dense_b]):
-            w.to_host()
-            d[name] = tensor.to_numpy(w)
-        d['idx_to_char'] = data.idx_to_char
-        d['char_to_idx'] = data.char_to_idx
-        d['hidden_size'] = hidden_size
-        d['num_stacks'] = num_stacks
-        d['dropout'] = dropout
+        if (epoch + 1) % 30 == 0:
+            # checkpoint the file model
+            with open('%s_%d.bin' % (model_path, epoch), 'wb') as fd:
+                print 'saving model to %s' % model_path
+                d = {}
+                for name, w in zip(
+                        ['rnn_w', 'dense_w', 'dense_b'],
+                        [rnn_w, dense_w, dense_b]):
+                    w.to_host()
+                    d[name] = tensor.to_numpy(w)
+                    w.to_device(cuda)
+                d['idx_to_char'] = data.idx_to_char
+                d['char_to_idx'] = data.char_to_idx
+                d['hidden_size'] = hidden_size
+                d['num_stacks'] = num_stacks
+                d['dropout'] = dropout
 
-        pickle.dump(d, fd)
+                pickle.dump(d, fd)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

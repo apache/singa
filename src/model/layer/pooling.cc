@@ -107,27 +107,28 @@ const std::pair<Tensor, vector<Tensor>> Pooling::Backward(int flag,
   CHECK_EQ(grad.device()->lang(), kCpp);
   CHECK_EQ(grad.nDim(), 4u);
   vector<Tensor> param_grad;
-  CHECK(!buf_.empty());
-  Tensor mask = buf_.top();
-  buf_.pop();
-  size_t batchsize = grad.shape(0);
+    size_t batchsize = grad.shape(0);
   Shape shape{batchsize, channels_, height_, width_};
   auto dev = grad.device();
   DataType dtype = grad.data_type();
   Tensor dx(shape, dev, dtype);
   auto gradptr = grad.data<float>();
-  auto maskptr = mask.data<float>();
   float* dxptr = new float[dx.Size()];
-  if (pool_ == PoolingConf_PoolMethod_MAX)
+  if (pool_ == PoolingConf_PoolMethod_MAX) {
+    CHECK(!buf_.empty());
+    Tensor mask = buf_.top();
+    buf_.pop();
+    auto maskptr = mask.data<float>();
     BackwardMaxPooling(gradptr, maskptr, batchsize, channels_, height_, width_,
                        kernel_h_, kernel_w_, pad_h_, pad_w_, stride_h_,
                        stride_w_, dxptr);
-  else if (pool_ == PoolingConf_PoolMethod_AVE)
+  } else if (pool_ == PoolingConf_PoolMethod_AVE) {
     BackwardAvgPooling(gradptr, batchsize, channels_, height_, width_,
                        kernel_h_, kernel_w_, pad_h_, pad_w_, stride_h_,
                        stride_w_, dxptr);
-  else
+  } else {
     LOG(FATAL) << "Unknow pooling method";
+  }
 
   dx.CopyDataFromHostPtr(dxptr, dx.Size());
   delete[] dxptr;
