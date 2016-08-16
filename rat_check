@@ -1,0 +1,1756 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2016-08-16T12:50:50+08:00
+Notes: 4
+Binaries: 0
+Archives: 0
+Standards: 282
+
+Apache Licensed: 240
+Generated Documents: 0
+
+JavaDocs are generated and so license header is optional
+Generated files do not required license headers
+
+42 Unknown Licenses
+
+*******************************
+
+Unapproved licenses:
+
+  ./.gitmodules
+  ./.travis.yml
+  ./CMakeLists.txt
+  ./rat_check
+  ./cmake/Cuda.cmake
+  ./cmake/Dependencies.cmake
+  ./cmake/Protobuf.cmake
+  ./cmake/Utils.cmake
+  ./cmake/Templates/singa_config.h.in
+  ./cmake/Thirdparty/FindCBLAS.cmake
+  ./cmake/Thirdparty/FindCUDNN.cmake
+  ./cmake/Thirdparty/FindGlog.cmake
+  ./cmake/Thirdparty/FindLMDB.cmake
+  ./cmake/Thirdparty/FindOpenCL.cmake
+  ./examples/CMakeLists.txt
+  ./examples/index.rst
+  ./examples/cifar10/CMakeLists.txt
+  ./examples/cifar10/download_data.py
+  ./examples/cifar10/run-parallel.sh
+  ./examples/cifar10/run.sh
+  ./examples/imagenet/CMakeLists.txt
+  ./examples/imagenet/create_data.sh
+  ./examples/imagenet/run.sh
+  ./include/singa/utils/cuda_utils.h
+  ./include/singa/utils/timer.h
+  ./include/singa/utils/tinydir.h
+  ./src/CMakeLists.txt
+  ./src/core/tensor/distribution.cl
+  ./src/python/setup.py.in
+  ./src/python/singa/__init__.py
+  ./src/python/swig/numpy.i
+  ./test/CMakeLists.txt
+  ./test/gtest/CMakeLists.txt
+  ./test/gtest/gtest-all.cc
+  ./test/gtest/gtest.h
+  ./test/gtest/gtest_main.cc
+  ./test/python/test_layer.py
+  ./test/singa/test_layer.cc
+  ./test/singa/test_tensor.cc
+  ./test/singa/test_tensor_math.cc
+  ./test/singa/test_timer.cc
+  ./tool/cpplint.py
+
+*******************************
+
+Archives:
+
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require AL headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc will be marked N
+ !????? ./.gitmodules
+ !????? ./.travis.yml
+ !????? ./CMakeLists.txt
+  N     ./DISCLAIMER
+  N     ./LICENSE
+  N     ./NOTICE
+  N     ./RELEASE_NOTES
+  AL    ./jenkins.sh
+ !????? ./rat_check
+  AL    ./bin/singa-cleanup.sh
+  AL    ./bin/singa-console.sh
+  AL    ./bin/singa-env.sh
+  AL    ./bin/singa-run.sh
+  AL    ./bin/singa-stop.sh
+  AL    ./bin/zk-service.sh
+ !????? ./cmake/Cuda.cmake
+ !????? ./cmake/Dependencies.cmake
+ !????? ./cmake/Protobuf.cmake
+ !????? ./cmake/Utils.cmake
+ !????? ./cmake/Templates/singa_config.h.in
+ !????? ./cmake/Thirdparty/FindCBLAS.cmake
+ !????? ./cmake/Thirdparty/FindCUDNN.cmake
+ !????? ./cmake/Thirdparty/FindGlog.cmake
+ !????? ./cmake/Thirdparty/FindLMDB.cmake
+ !????? ./cmake/Thirdparty/FindOpenCL.cmake
+ !????? ./examples/CMakeLists.txt
+ !????? ./examples/index.rst
+  AL    ./examples/char-rnn/sample.py
+  AL    ./examples/char-rnn/train.py
+ !????? ./examples/cifar10/CMakeLists.txt
+  AL    ./examples/cifar10/alexnet-parallel.cc
+  AL    ./examples/cifar10/alexnet.cc
+  AL    ./examples/cifar10/alexnet.py
+  AL    ./examples/cifar10/cifar10.h
+ !????? ./examples/cifar10/download_data.py
+  AL    ./examples/cifar10/predict.py
+ !????? ./examples/cifar10/run-parallel.sh
+ !????? ./examples/cifar10/run.sh
+  AL    ./examples/cifar10/train.py
+  AL    ./examples/cifar10/vgg-parallel.cc
+  AL    ./examples/cifar10/vgg.py
+ !????? ./examples/imagenet/CMakeLists.txt
+  AL    ./examples/imagenet/alexnet.cc
+ !????? ./examples/imagenet/create_data.sh
+  AL    ./examples/imagenet/ilsvrc12.cc
+  AL    ./examples/imagenet/ilsvrc12.h
+ !????? ./examples/imagenet/run.sh
+  AL    ./examples/mnist/train.py
+  AL    ./include/singa/core/common.h
+  AL    ./include/singa/core/device.h
+  AL    ./include/singa/core/memory.h
+  AL    ./include/singa/core/scheduler.h
+  AL    ./include/singa/core/tensor.h
+  AL    ./include/singa/io/decoder.h
+  AL    ./include/singa/io/encoder.h
+  AL    ./include/singa/io/integer.h
+  AL    ./include/singa/io/network.h
+  AL    ./include/singa/io/reader.h
+  AL    ./include/singa/io/snapshot.h
+  AL    ./include/singa/io/transformer.h
+  AL    ./include/singa/io/writer.h
+  AL    ./include/singa/model/feed_forward_net.h
+  AL    ./include/singa/model/initializer.h
+  AL    ./include/singa/model/layer.h
+  AL    ./include/singa/model/loss.h
+  AL    ./include/singa/model/metric.h
+  AL    ./include/singa/model/optimizer.h
+  AL    ./include/singa/model/updater.h
+  AL    ./include/singa/utils/channel.h
+ !????? ./include/singa/utils/cuda_utils.h
+  AL    ./include/singa/utils/factory.h
+  AL    ./include/singa/utils/integer.h
+  AL    ./include/singa/utils/logging.h
+  AL    ./include/singa/utils/opencl_utils.h
+  AL    ./include/singa/utils/safe_queue.h
+  AL    ./include/singa/utils/singleton.h
+  AL    ./include/singa/utils/string.h
+ !????? ./include/singa/utils/timer.h
+ !????? ./include/singa/utils/tinydir.h
+ !????? ./src/CMakeLists.txt
+  AL    ./src/core/device/cpp_cpu.cc
+  AL    ./src/core/device/cuda_gpu.cc
+  AL    ./src/core/device/device.cc
+  AL    ./src/core/device/opencl_device.cc
+  AL    ./src/core/device/platform.cc
+  AL    ./src/core/memory/memory.cc
+  AL    ./src/core/scheduler/scheduler.cc
+ !????? ./src/core/tensor/distribution.cl
+  AL    ./src/core/tensor/math_kernel.cu
+  AL    ./src/core/tensor/math_kernel.h
+  AL    ./src/core/tensor/sparse_tensor.cc
+  AL    ./src/core/tensor/tensor.cc
+  AL    ./src/core/tensor/tensor_math.h
+  AL    ./src/core/tensor/tensor_math_cpp.h
+  AL    ./src/core/tensor/tensor_math_cuda.h
+  AL    ./src/core/tensor/tensor_math_opencl.cl
+  AL    ./src/core/tensor/tensor_math_opencl.h
+  AL    ./src/io/binfile_reader.cc
+  AL    ./src/io/binfile_writer.cc
+  AL    ./src/io/csv_decoder.cc
+  AL    ./src/io/csv_encoder.cc
+  AL    ./src/io/image_transformer.cc
+  AL    ./src/io/jpg_decoder.cc
+  AL    ./src/io/jpg_encoder.cc
+  AL    ./src/io/lmdb_reader.cc
+  AL    ./src/io/lmdb_writer.cc
+  AL    ./src/io/snapshot.cc
+  AL    ./src/io/textfile_reader.cc
+  AL    ./src/io/textfile_writer.cc
+  AL    ./src/io/network/endpoint.cc
+  AL    ./src/io/network/message.cc
+  AL    ./src/model/feed_forward_net.cc
+  AL    ./src/model/rnn.cc
+  AL    ./src/model/layer/activation.cc
+  AL    ./src/model/layer/activation.h
+  AL    ./src/model/layer/batchnorm.cc
+  AL    ./src/model/layer/batchnorm.h
+  AL    ./src/model/layer/convolution.cc
+  AL    ./src/model/layer/convolution.h
+  AL    ./src/model/layer/cudnn_activation.cc
+  AL    ./src/model/layer/cudnn_activation.h
+  AL    ./src/model/layer/cudnn_batchnorm.cc
+  AL    ./src/model/layer/cudnn_batchnorm.h
+  AL    ./src/model/layer/cudnn_convolution.cc
+  AL    ./src/model/layer/cudnn_convolution.h
+  AL    ./src/model/layer/cudnn_dropout.cc
+  AL    ./src/model/layer/cudnn_dropout.h
+  AL    ./src/model/layer/cudnn_lrn.cc
+  AL    ./src/model/layer/cudnn_lrn.h
+  AL    ./src/model/layer/cudnn_pooling.cc
+  AL    ./src/model/layer/cudnn_pooling.h
+  AL    ./src/model/layer/cudnn_rnn.cc
+  AL    ./src/model/layer/cudnn_rnn.h
+  AL    ./src/model/layer/cudnn_softmax.cc
+  AL    ./src/model/layer/cudnn_softmax.h
+  AL    ./src/model/layer/cudnn_utils.h
+  AL    ./src/model/layer/dense.cc
+  AL    ./src/model/layer/dense.h
+  AL    ./src/model/layer/dropout.cc
+  AL    ./src/model/layer/dropout.h
+  AL    ./src/model/layer/flatten.cc
+  AL    ./src/model/layer/flatten.h
+  AL    ./src/model/layer/lrn.cc
+  AL    ./src/model/layer/lrn.h
+  AL    ./src/model/layer/pooling.cc
+  AL    ./src/model/layer/pooling.h
+  AL    ./src/model/layer/prelu.cc
+  AL    ./src/model/layer/prelu.h
+  AL    ./src/model/layer/rnn.cc
+  AL    ./src/model/layer/rnn.h
+  AL    ./src/model/layer/softmax.cc
+  AL    ./src/model/layer/softmax.h
+  AL    ./src/model/loss/mse.cc
+  AL    ./src/model/loss/softmax_cross_entropy.cc
+  AL    ./src/model/metric/accuracy.cc
+  AL    ./src/model/optimizer/adagrad.cc
+  AL    ./src/model/optimizer/local_all_reduce.cc
+  AL    ./src/model/optimizer/nesterov.cc
+  AL    ./src/model/optimizer/optimizer.cc
+  AL    ./src/model/optimizer/rmsprop.cc
+  AL    ./src/model/optimizer/sgd.cc
+  AL    ./src/model/updater/local_updater.cc
+  AL    ./src/model/updater/updater.cc
+  AL    ./src/proto/core.proto
+  AL    ./src/proto/io.proto
+  AL    ./src/proto/model.proto
+ !????? ./src/python/setup.py.in
+ !????? ./src/python/singa/__init__.py
+  AL    ./src/python/singa/command.py
+  AL    ./src/python/singa/device.py
+  AL    ./src/python/singa/initializer.py
+  AL    ./src/python/singa/layer.py
+  AL    ./src/python/singa/loss.py
+  AL    ./src/python/singa/metric.py
+  AL    ./src/python/singa/model.py
+  AL    ./src/python/singa/net.py
+  AL    ./src/python/singa/optimizer.py
+  AL    ./src/python/singa/tensor.py
+  AL    ./src/python/singa/utils.py
+  AL    ./src/python/swig/core_device.i
+  AL    ./src/python/swig/core_tensor.i
+  AL    ./src/python/swig/model_layer.i
+  AL    ./src/python/swig/model_loss.i
+  AL    ./src/python/swig/model_metric.i
+  AL    ./src/python/swig/model_optimizer.i
+ !????? ./src/python/swig/numpy.i
+  AL    ./src/python/swig/singa.i
+  AL    ./src/utils/channel.cc
+  AL    ./src/utils/logging.cc
+  AL    ./src/utils/opencl_utils.cc
+ !????? ./test/CMakeLists.txt
+ !????? ./test/gtest/CMakeLists.txt
+ !????? ./test/gtest/gtest-all.cc
+ !????? ./test/gtest/gtest.h
+ !????? ./test/gtest/gtest_main.cc
+ !????? ./test/python/test_layer.py
+  AL    ./test/python/test_optimizer.py
+  AL    ./test/python/test_tensor.py
+  AL    ./test/singa/test_accuracy.cc
+  AL    ./test/singa/test_activation.cc
+  AL    ./test/singa/test_adagrad.cc
+  AL    ./test/singa/test_batchnorm.cc
+  AL    ./test/singa/test_binfile_rw.cc
+  AL    ./test/singa/test_channel.cc
+  AL    ./test/singa/test_convolution.cc
+  AL    ./test/singa/test_cpp_cpu.cc
+  AL    ./test/singa/test_cross_entropy.cc
+  AL    ./test/singa/test_csv.cc
+  AL    ./test/singa/test_cudnn_activation.cc
+  AL    ./test/singa/test_cudnn_batchnorm.cc
+  AL    ./test/singa/test_cudnn_convolution.cc
+  AL    ./test/singa/test_cudnn_dropout.cc
+  AL    ./test/singa/test_cudnn_lrn.cc
+  AL    ./test/singa/test_cudnn_pooling.cc
+  AL    ./test/singa/test_cudnn_rnn.cc
+  AL    ./test/singa/test_cudnn_softmax.cc
+  AL    ./test/singa/test_dense.cc
+  AL    ./test/singa/test_dropout.cc
+  AL    ./test/singa/test_ep.cc
+  AL    ./test/singa/test_flatten.cc
+  AL    ./test/singa/test_image_transformer.cc
+  AL    ./test/singa/test_initializer.cc
+  AL    ./test/singa/test_jpg.cc
+ !????? ./test/singa/test_layer.cc
+  AL    ./test/singa/test_lmdb_rw.cc
+  AL    ./test/singa/test_logging.cc
+  AL    ./test/singa/test_lrn.cc
+  AL    ./test/singa/test_memory.cc
+  AL    ./test/singa/test_mse.cc
+  AL    ./test/singa/test_nesterov.cc
+  AL    ./test/singa/test_opencl.cc
+  AL    ./test/singa/test_platform.cc
+  AL    ./test/singa/test_pooling.cc
+  AL    ./test/singa/test_prelu.cc
+  AL    ./test/singa/test_rmsprop.cc
+  AL    ./test/singa/test_sgd.cc
+  AL    ./test/singa/test_snapshot.cc
+  AL    ./test/singa/test_softmax.cc
+ !????? ./test/singa/test_tensor.cc
+ !????? ./test/singa/test_tensor_math.cc
+  AL    ./test/singa/test_textfile_rw.cc
+ !????? ./test/singa/test_timer.cc
+  AL    ./thirdparty/install.sh
+ !????? ./tool/cpplint.py
+  AL    ./tool/graph.py
+  AL    ./tool/node.sh
+  AL    ./tool/docker/mesos/.bashrc
+  AL    ./tool/docker/mesos/Dockerfile
+  AL    ./tool/docker/mesos/core-site.xml
+  AL    ./tool/docker/mesos/hdfs-site.xml
+  AL    ./tool/docker/mesos/install.sh
+  AL    ./tool/docker/mesos/mapred-site.xml
+  AL    ./tool/docker/mesos/yarn-site.xml
+  AL    ./tool/docker/singa/.bashrc
+  AL    ./tool/docker/singa/Dockerfile
+  AL    ./tool/docker/singa/Dockerfile_gpu
+  AL    ./tool/mesos/scheduler.proto
+  AL    ./tool/mesos/singa_scheduler.cc
+  AL    ./tool/python/singa.py
+  AL    ./tool/python/examples/__init__.py
+  AL    ./tool/python/examples/cifar10_cnn.py
+  AL    ./tool/python/examples/cifar10_cnn_cudnn.py
+  AL    ./tool/python/examples/cifar10_cnn_parameter.py
+  AL    ./tool/python/examples/mnist_ae.py
+  AL    ./tool/python/examples/mnist_mlp.py
+  AL    ./tool/python/examples/mnist_mlp_parameter.py
+  AL    ./tool/python/examples/mnist_mlp_test.py
+  AL    ./tool/python/examples/mnist_rbm1.py
+  AL    ./tool/python/examples/mnist_rbm2.py
+  AL    ./tool/python/examples/mnist_rbm3.py
+  AL    ./tool/python/examples/mnist_rbm4.py
+  AL    ./tool/python/examples/train_cifar10.py
+  AL    ./tool/python/examples/train_mnist.py
+  AL    ./tool/python/examples/datasets/__init__.py
+  AL    ./tool/python/examples/datasets/cifar10.py
+  AL    ./tool/python/examples/datasets/mnist.py
+  AL    ./tool/python/singa/__init__.py
+  AL    ./tool/python/singa/driver.i
+  AL    ./tool/python/singa/generatepy.sh
+  AL    ./tool/python/singa/initializations.py
+  AL    ./tool/python/singa/layer.py
+  AL    ./tool/python/singa/model.py
+  AL    ./tool/python/singa/parameter.py
+  AL    ./tool/python/singa/utils/__init__.py
+  AL    ./tool/python/singa/utils/message.py
+  AL    ./tool/python/singa/utils/utility.py
+ 
+*****************************************************
+ Printing headers for files without AL header...
+ 
+ 
+=======================================================================
+==./.gitmodules
+=======================================================================
+[submodule "lib/cnmem"]
+	path = lib/cnmem
+	url = https://github.com/NVIDIA/cnmem.git
+
+=======================================================================
+==./.travis.yml
+=======================================================================
+sudo: required
+language: cpp
+compiler: gcc
+dist: trusty
+
+before_install:
+ - sudo apt-get -qq update
+ - sudo apt-get install -qq -y libopenblas-dev libgoogle-glog-dev libprotobuf-dev protobuf-compiler
+ - sudo apt-get install -qq -y opencl-headers ocl-icd-*
+ - wget https://github.com/KhronosGroup/OpenCL-CLHPP/releases/download/v2.0.9/cl2.hpp
+ - sudo mv cl2.hpp /usr/include/CL/
+#- sudo apt-get install -qq libgtest-dev
+
+before_script:
+ - mkdir build && cd build
+ - cmake .. -DUSE_CUDA=OFF -DUSE_CUDNN=OFF -DUSE_PYTHON=OFF -DBUILD_OPENCL_TESTS=OFF
+
+script:
+ - make
+ - ./bin/test_singa --gtest_output=xml:./../gtest.xml
+
+
+=======================================================================
+==./CMakeLists.txt
+=======================================================================
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
+PROJECT(singa)
+SET(PACKAGE_VERSION "1.0.0")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 ")
+
+LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
+#message(STATUS "module path: ${CMAKE_MODULE_PATH}")
+
+# Flags
+IF(UNIX OR APPLE)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall")
+ENDIF()
+IF(CMAKE_BUILD_TYPE=Debug)
+  SET(NVCC_FLAG "${NVCC_FLAG} -g -G ")
+ENDIF()
+#message(STATUS "${CMAKE_CXX_FLAGS}")
+SET(SINGA_INCLUDE_DIR
+    "${CMAKE_SOURCE_DIR}/include;${CMAKE_SOURCE_DIR}/lib/cnmem/include;${PROJECT_BINARY_DIR}")
+INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
+
+OPTION(USE_CBLAS "Use CBlas libs" ON)
+OPTION(USE_CUDA "Use Cuda libs" ON)
+OPTION(USE_CUDNN "Use Cudnn libs" ON)
+OPTION(USE_OPENCV "Use opencv" OFF)
+OPTION(USE_LMDB "Use LMDB libs" OFF)
+OPTION(USE_PYTHON "Generate py wrappers" ON)
+OPTION(USE_OPENCL "Use OpenCL" OFF)
+OPTION(ENABLE_DIST "enable distributed training" OFF)
+#OPTION(BUILD_OPENCL_TESTS "Build OpenCL tests" OFF)
+
+INCLUDE("cmake/Dependencies.cmake")
+INCLUDE("cmake/Utils.cmake")
+ADD_DEFINITIONS(-DUSE_CMAKE)
+#message(STATUS "${SINGA_INCLUDE_DIR}")
+
+CONFIGURE_FILE (
+    "${PROJECT_SOURCE_DIR}/cmake/Templates/singa_config.h.in"
+    "${PROJECT_BINARY_DIR}/include/singa/singa_config.h")
+
+#set(SINGA_CONFIGURE_SRC "${PROJECT_BINARY_DIR}/singa_config.h")
+#LIST(APPEND SRCS ${SINGA_CONFIGURE_SRCS} ${PROJECT_BINARY_DIR}/singa_config.h)
+
+SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+
+IF (USE_CUDA)
+    ADD_SUBDIRECTORY(lib/cnmem)
+    LIST(APPEND SINGA_LINKER_LIBS cnmem)
+ENDIF()
+
+=======================================================================
+==./rat_check
+=======================================================================
+
+=======================================================================
+==./cmake/Cuda.cmake
+=======================================================================
+
+FIND_PACKAGE(CUDA 5.5 QUIET)
+
+IF(NOT CUDA_FOUND)
+    return()
+ENDIF()
+
+SET(HAVE_CUDA TRUE)
+MESSAGE(STATUS "Found cuda_v${CUDA_VERSION}")
+#ADD_DEFINITIONS(-DUSE_CUDA)
+#message(STATUS "linking: ${CUDA_CUDART_LIBRARY} ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES}")
+
+IF(USE_CUDNN)
+#include(cmake/Modules/Cudnn.cmake)
+    FIND_PACKAGE(CUDNN REQUIRED)
+    INCLUDE_DIRECTORIES(SYSTEM ${CUDNN_INCLUDE_DIR})
+    LIST(APPEND SINGA_LINKER_LIBS ${CUDNN_LIBRARIES})
+    #ADD_DEFINITIONS(-DUSE_CUDNN)
+    #ADD_DEFINITIONS(-DCUDNN_VERSION_MAJOR=${CUDNN_VERSION_MAJOR})
+ENDIF()
+
+INCLUDE_DIRECTORIES(SYSTEM ${CUDA_INCLUDE_DIRS})
+LIST(APPEND SINGA_LINKER_LIBS ${CUDA_CUDART_LIBRARY} ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES})
+#MESSAGE(STATUS "libs " ${SINGA_LINKER_LIBS})
+
+=======================================================================
+==./cmake/Dependencies.cmake
+=======================================================================
+SET(SINGA_LINKER_LIBS "")
+
+#INCLUDE("cmake/ProtoBuf.cmake")
+
+FIND_PACKAGE( Protobuf REQUIRED )
+INCLUDE_DIRECTORIES(SYSTEM ${PROTOBUF_INCLUDE_DIR})
+MESSAGE(STATUS "proto libs " ${PROTOBUF_LIBRARIES})
+LIST(APPEND SINGA_LINKER_LIBS ${PROTOBUF_LIBRARIES})
+INCLUDE("cmake/Protobuf.cmake")
+
+#FIND_PACKAGE(Glog)
+#IF(GLOG_FOUND)
+#    MESSAGE(STATUS "GLOG FOUND at ${GLOG_INCLUDE_DIR}")
+#    ADD_DEFINITIONS("-DUSE_GLOG")
+#    LIST(APPEND SINGA_LINKER_LIBS ${GLOG_LIBRARIES})
+#ENDIF()
+
+IF(USE_LMDB)
+    FIND_PACKAGE(LMDB REQUIRED)
+    INCLUDE_DIRECTORIES(SYSTEM ${LMDB_INCLUDE_DIR})
+    LIST(APPEND SINGA_LINKER_LIBS ${LMDB_LIBRARIES})
+    MESSAGE(STATUS "FOUND lmdb at ${LMDB_INCLUDE_DIR}")
+ENDIF()
+
+IF(USE_CUDA)
+    INCLUDE("cmake/Cuda.cmake")
+ELSE()
+    SET(USE_CUDNN FALSE)
+ENDIF()
+
+IF(USE_CBLAS)
+    FIND_PACKAGE(CBLAS REQUIRED)
+    INCLUDE_DIRECTORIES(SYSTEM ${CBLAS_INCLUDE_DIR})
+    LIST(APPEND SINGA_LINKER_LIBS ${CBLAS_LIBRARIES})
+    MESSAGE(STATUS "FOUND cblas at ${CBLAS_LIBRARIES}")
+ENDIF()
+
+IF(USE_OPENCL)
+    FIND_PACKAGE(OpenCL REQUIRED)
+    IF(NOT OPENCL_FOUND)
+        MESSAGE(SEND_ERROR "OpenCL was requested, but not found.")
+    ELSE()
+        INCLUDE_DIRECTORIES(SYSTEM ${OpenCL_INCPATH})
+        LIST(APPEND SINGA_LINKER_LIBS ${OPENCL_LIBRARIES})
+        MESSAGE(STATUS "Found OpenCL at ${OPENCL_INCLUDE_DIRS}")
+        IF(NOT OPENCL_HAS_CPP_BINDINGS)
+            MESSAGE(SEND_ERROR "OpenCL C++ bindings cl2.hpp was not found.")
+        ELSE()
+            MESSAGE(STATUS "Found OpenCL C++ bindings.")
+        ENDIF()
+
+=======================================================================
+==./cmake/Protobuf.cmake
+=======================================================================
+# copy from cmake source code
+function(PROTOBUF_GENERATE_PYTHON OUTPUT)
+    if(NOT ARGN)
+        message(SEND_ERROR "Error: PROTOBUF_GENERATE_PYTHON() called 
+        without any proto files")
+        return()
+    endif(NOT ARGN)
+
+    set(${OUTPUT})
+    foreach(FIL ${ARGN})
+        get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
+        get_filename_component(FIL_WE ${FIL} NAME_WE)
+        get_filename_component(PATH ${FIL} PATH)
+
+        list(APPEND ${OUTPUT} "${CMAKE_BINARY_DIR}/python/singa/proto/${FIL_WE}_pb2.py")
+
+        add_custom_command(
+            OUTPUT "${CMAKE_BINARY_DIR}/python/singa/proto/${FIL_WE}_pb2.py"
+            COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+            ARGS --python_out ${CMAKE_BINARY_DIR}/python/singa/proto
+                 --proto_path ${PATH} ${ABS_FIL}
+            DEPENDS ${ABS_FIL}
+            COMMENT "Running Python protocol buffer compiler on ${FIL}" VERBATIM)
+    endforeach()
+    
+    set_source_files_properties(${${SRCS}} ${${HDRS}} PROPERTIES GENERATED TRUE)
+    set(${OUTPUT} ${${OUTPUT}} PARENT_SCOPE)
+endfunction()
+
+=======================================================================
+==./cmake/Utils.cmake
+=======================================================================
+
+macro(swig_generate_cxx pylist_variable)
+    if(NOT EXISTS "${CMKAE_BINARY_DIR}/python")
+        execute_process(
+            COMMAND mkdir ${CMAKE_BINARY_DIR}/python
+            COMMAND mkdir ${CMAKE_BINARY_DIR}/python/singa
+            COMMAND mkdir ${CMAKE_BINARY_DIR}/python/singa/proto
+            ERROR_QUIET)
+    endif()
+    execute_process(
+        COMMAND swig -c++ -python -I${CMAKE_SOURCE_DIR}/include 
+        -outdir ${CMAKE_BINARY_DIR}/python/singa
+        ${ARGN})
+
+    set(${pylist_variable} "${CMAKE_SOURCE_DIR}/src/python/swig/singa_wrap.cxx")
+endmacro()
+
+function (create_symlinks)
+    # Do nothing if building in-source
+    if (${CMAKE_CURRENT_BINARY_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+        return()
+    endif()
+
+    foreach (path_file ${ARGN})
+        get_filename_component(folder ${path_file} PATH)
+
+        # Create REAL folder
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/${folder}")
+
+        # Delete symlink if it exists
+        file(REMOVE "${CMAKE_BINARY_DIR}/${path_file}")
+
+        # Get OS dependent path to use in `execute_process`
+        file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/${path_file}" link)
+        file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${path_file}" target)
+
+        if (UNIX)
+            set(command ln -s ${target} ${link})
+        else()
+            set(command cmd.exe /c mklink ${link} ${target})
+        endif()
+
+        execute_process(COMMAND ${command} 
+                        RESULT_VARIABLE result
+                        ERROR_VARIABLE output)
+
+        if (NOT ${result} EQUAL 0)
+            message(FATAL_ERROR "Could not create symbolic link for: ${target} --> ${output}")
+        endif()
+
+
+=======================================================================
+==./cmake/Templates/singa_config.h.in
+=======================================================================
+// Source directory
+#define SOURCE_FOLDER "${PROJECT_SOURCE_DIR}"
+
+// Binaries director
+#define BINARY_FOLDER "${PROJECT_BINARY_DIR}"
+
+#cmakedefine CPU_ONLY
+
+#cmakedefine USE_CBLAS
+
+#cmakedefine USE_OPENCV
+// cuda
+#cmakedefine USE_CUDA
+
+#cmakedefine USE_CUDNN
+#cmakedefine CUDNN_VERSION_MAJOR @CUDNN_VERSION_MAJOR@
+#cmakedefine CUDNN_VERSION_MINOR @CUDNN_VERSION_MINOR@
+#cmakedefine CUDNN_VERSION_PATCH @CUDNN_VERSION_PATCH@
+#cmakedefine CUDNN_VERSION_SWIG @CUDNN_VERSION_SWIG@
+
+#cmakedefine USE_OPENCL
+
+#cmakedefine ENABLE_DIST
+
+// lmdb
+#cmakedefine USE_LMDB
+
+
+=======================================================================
+==./cmake/Thirdparty/FindCBLAS.cmake
+=======================================================================
+
+FIND_PATH(CBLAS_INCLUDE_DIR NAMES cblas.h PATHS "$ENV{CBLAS_DIR}/include")
+FIND_LIBRARY(CBLAS_LIBRARIES NAMES openblas PATHS "$ENV{CBLAS_DIR}/lib")
+
+INCLUDE(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(CBLAS DEFAULT_MSG CBLAS_INCLUDE_DIR CBLAS_LIBRARIES)
+
+IF(CBLAS_FOUND)
+    #    MESSAGE(STATUS "Found cblas at ${CBLAS_INCLUDE_DIR}")
+    MARK_AS_ADVANCED(CBLAS_INCLUDE_DIR CBLAS_LIBRARIES)
+ENDIF()
+
+=======================================================================
+==./cmake/Thirdparty/FindCUDNN.cmake
+=======================================================================
+
+FIND_PATH(CUDNN_INCLUDE_DIR NAME "cudnn.h" PATHS "$ENV{CMAKE_INCLUDE_PATH}")
+FIND_LIBRARY(CUDNN_LIBRARIES NAME "libcudnn.so" PATHS "$ENV{CMAKE_LIBRARY_PATH}")
+
+#message("cudnn include path:${CUDNN_INCLUDE_DIR}  lib path: ${CUDNN_LIBRARIES}")
+#message("env include path:$ENV{CUDNN_DIR} next: $ENV{CMAKE_INCLUDE_PATH}")
+INCLUDE(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(CUDNN DEFAULT_MSG CUDNN_INCLUDE_DIR CUDNN_LIBRARIES)
+
+IF(CUDNN_FOUND)
+    FILE(READ ${CUDNN_INCLUDE_DIR}/cudnn.h CUDNN_VERSION_FILE_CONTENTS)
+    STRING(REGEX MATCH "define CUDNN_MAJOR * +([0-9]+)"
+        CUDNN_VERSION_MAJOR "${CUDNN_VERSION_FILE_CONTENTS}")
+    STRING(REGEX REPLACE "define CUDNN_MAJOR * +([0-9]+)" "\\1"
+        CUDNN_VERSION_MAJOR "${CUDNN_VERSION_MAJOR}")
+    STRING(REGEX MATCH "define CUDNN_MINOR * +([0-9]+)"
+        CUDNN_VERSION_MINOR "${CUDNN_VERSION_FILE_CONTENTS}")
+    STRING(REGEX REPLACE "define CUDNN_MINOR * +([0-9]+)" "\\1"
+        CUDNN_VERSION_MINOR "${CUDNN_VERSION_MINOR}")
+    STRING(REGEX MATCH "define CUDNN_PATCHLEVEL * +([0-9]+)"
+        CUDNN_VERSION_PATCH "${CUDNN_VERSION_FILE_CONTENTS}")
+    STRING(REGEX REPLACE "define CUDNN_PATCHLEVEL * +([0-9]+)" "\\1"
+        CUDNN_VERSION_PATCH "${CUDNN_VERSION_PATCH}")
+
+    IF(NOT CUDNN_VERSION_MAJOR)
+        SET(CUDNN_VERSION "???")
+    ELSE()
+      MATH(EXPR CUDNN_VERSION_SWIG "${CUDNN_VERSION_MAJOR} * 1000 + ${CUDNN_VERSION_MINOR} * 100 + ${CUDNN_VERSION_PATCH}")
+    ENDIF()
+    MESSAGE(STATUS "Found Cudnn_v${CUDNN_VERSION_SWIG} at ${CUDNN_INCLUDE_DIR} ${CUDNN_LIBRARIES}")
+    MARK_AS_ADVANCED(CUDNN_INCLUDE_DIR CUDNN_LIBRARIES)
+
+ENDIF()
+
+=======================================================================
+==./cmake/Thirdparty/FindGlog.cmake
+=======================================================================
+
+FIND_PATH(GLOG_INCLUDE_DIR NAMES glog/logging.h PATHS "$ENV{GLOG_DIR}/include")
+FIND_LIBRARY(GLOG_LIBRARIES NAMES glog)
+
+INCLUDE(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(GLOG DEFAULT_MSG GLOG_INCLUDE_DIR GLOG_LIBRARIES)
+
+IF(GLOG_FOUND)
+    #    MESSAGE(STATUS "Found glog at ${GLOG_INCLUDE_DIR}")
+    MARK_AS_ADVANCED(GLOG_INCLUDE_DIR GLOG_LIBRARIES)
+ENDIF()
+
+=======================================================================
+==./cmake/Thirdparty/FindLMDB.cmake
+=======================================================================
+
+FIND_PATH(LMDB_INCLUDE_DIR NAMES lmdb.h PATHS "$ENV{LMDB_DIR}/include")
+FIND_LIBRARY(LMDB_LIBRARIES NAMES lmdb PATHS "$ENV{LMDB_DIR}/include")
+
+INCLUDE(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(LMDB DEFAULT_MSG LMDB_INCLUDE_DIR LMDB_LIBRARIES)
+
+IF(LMDB_FOUND)
+    MESSAGE(STATUS "Found lmdb at ${LMDB_INCLUDE_DIR}")
+    MARK_AS_ADVANCED(LMDB_INCLUDE_DIR LMDB_LIBRARIES)
+    
+ENDIF()
+
+=======================================================================
+==./cmake/Thirdparty/FindOpenCL.cmake
+=======================================================================
+# This script was taken from https://github.com/elhigu/cmake-findopencl
+# and modified to support finding OpenCL 2.x C++ bindings.
+
+# Find OpenCL
+#
+# To set manually the paths, define these environment variables:
+# OpenCL_INCPATH    - Include path (e.g. OpenCL_INCPATH=/opt/cuda/4.0/cuda/include)
+# OpenCL_LIBPATH    - Library path (e.h. OpenCL_LIBPATH=/usr/lib64/nvidia)
+#
+# Once done this will define
+#  OPENCL_FOUND            - system has OpenCL
+#  OPENCL_INCLUDE_DIRS     - the OpenCL include directory
+#  OPENCL_LIBRARIES        - link these to use OpenCL
+#  OPENCL_HAS_CPP_BINDINGS - system has also cl2.hpp
+
+FIND_PACKAGE(PackageHandleStandardArgs)
+
+SET (OPENCL_VERSION_STRING "0.1.0")
+SET (OPENCL_VERSION_MAJOR 0)
+SET (OPENCL_VERSION_MINOR 1)
+SET (OPENCL_VERSION_PATCH 0)
+
+IF (APPLE)
+
+	# IF OpenCL_LIBPATH is given use it and don't use default path
+	IF (DEFINED ENV{OpenCL_LIBPATH})
+		FIND_LIBRARY(OPENCL_LIBRARIES OpenCL PATHS ENV OpenCL_LIBPATH NO_DEFAULT_PATH)
+	ELSE ()
+		FIND_LIBRARY(OPENCL_LIBRARIES OpenCL DOC "OpenCL lib for OSX")
+	ENDIF ()
+
+	# IF OpenCL_INCPATH is given use it and find for CL/cl.h and OpenCL/cl.h do not try to find default paths
+	IF (DEFINED ENV{OpenCL_INCPATH})
+		FIND_PATH(OPENCL_INCLUDE_DIRS CL/cl.h OpenCL/cl.h PATHS ENV OpenCL_INCPATH NO_DEFAULT_PATH)
+		FIND_PATH(_OPENCL_CPP_INCLUDE_DIRS CL/cl2.hpp OpenCL/cl2.hpp PATHS ${OPENCL_INCLUDE_DIRS} NO_DEFAULT_PATH)
+	ELSE ()
+		FIND_PATH(OPENCL_INCLUDE_DIRS OpenCL/cl.h DOC "Include for OpenCL on OSX")
+		FIND_PATH(_OPENCL_CPP_INCLUDE_DIRS OpenCL/cl2.hpp DOC "Include for OpenCL CPP bindings on OSX")
+	ENDIF ()
+
+ELSE (APPLE)
+
+	IF (WIN32)
+
+		# Find OpenCL includes and libraries from environment variables provided by vendor
+		SET(OPENCL_INCLUDE_SEARCH_PATHS)
+		SET(OPENCL_LIBRARY_SEARCH_PATHS)
+		SET(OPENCL_LIBRARY_64_SEARCH_PATHS)
+
+		# Nvidia
+
+=======================================================================
+==./examples/CMakeLists.txt
+=======================================================================
+ADD_SUBDIRECTORY(cifar10)
+ADD_SUBDIRECTORY(imagenet)
+
+=======================================================================
+==./examples/index.rst
+=======================================================================
+Examples
+========
+
+.. toctree::
+
+   cifar10/README
+   char-rnn/README
+   imagenet/README
+
+
+
+=======================================================================
+==./examples/cifar10/CMakeLists.txt
+=======================================================================
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
+
+IF(USE_CUDNN)
+ADD_EXECUTABLE(alexnet alexnet.cc)
+ADD_DEPENDENCIES(alexnet singa_core singa_model singa_utils)
+TARGET_LINK_LIBRARIES(alexnet singa_core singa_utils singa_model protobuf ${SINGA_LIBKER_LIBS})
+
+ADD_EXECUTABLE(alexnet-parallel alexnet-parallel.cc)
+ADD_DEPENDENCIES(alexnet-parallel singa_core singa_model singa_utils)
+TARGET_LINK_LIBRARIES(alexnet-parallel singa_core singa_utils singa_model protobuf ${SINGA_LIBKER_LIBS})
+SET_TARGET_PROPERTIES(alexnet-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
+
+ADD_EXECUTABLE(vgg-parallel vgg-parallel.cc)
+ADD_DEPENDENCIES(vgg-parallel singa_core singa_model singa_utils)
+TARGET_LINK_LIBRARIES(vgg-parallel singa_core singa_utils singa_model protobuf ${SINGA_LIBKER_LIBS})
+SET_TARGET_PROPERTIES(vgg-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
+ENDIF(USE_CUDNN)
+
+=======================================================================
+==./examples/cifar10/download_data.py
+=======================================================================
+#!/usr/bin/env python
+import urllib
+import tarfile
+import os
+import sys
+import argparse
+
+
+def extract_tarfile(filepath):
+    if os.path.exists(filepath):
+        print 'The tar file does exist. Extracting it now..'
+        with tarfile.open(filepath, 'r') as f:
+            f.extractall('.')
+        print 'Finished!'
+        sys.exit(0)
+
+
+def check_dir_exist(dirpath):
+    if os.path.exists(dirpath):
+        print 'Directory %s does exist. To redownload the files, '\
+            'remove the existing directory and %s.tar.gz' % (dirpath, dirpath)
+        return True
+    else:
+        return False
+
+
+def do_download(dirpath, gzfile, url):
+    if check_dir_exist(dirpath):
+        sys.exit(0)
+    print 'Downloading CIFAR10 from %s' % (url)
+    urllib.urlretrieve(url, gzfile)
+    extract_tarfile(gzfile)
+    print 'Finished!'
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Download Cifar10 datasets')
+    parser.add_argument(
+        'file',
+        type=str,
+        choices=['py', 'bin'])
+    args = parser.parse_args()
+    if args.file == 'bin':
+        dirpath = 'cifar-10-batches-bin'
+        gzfile = 'cifar-10-binary' + '.tar.gz'
+        url = 'http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz'
+        do_download(dirpath, gzfile, url)
+    else:
+        dirpath = 'cifar-10-batches-py'
+        gzfile = 'cifar-10-python' + '.tar.gz'
+
+=======================================================================
+==./examples/cifar10/run-parallel.sh
+=======================================================================
+#!/usr/bin/env sh
+../../build/bin/alexnet-parallel -epoch 4
+#../../build/bin/vgg-parallel -epoch 4
+
+=======================================================================
+==./examples/cifar10/run.sh
+=======================================================================
+#!/usr/bin/env sh
+../../build/bin/alexnet -epoch 140
+
+=======================================================================
+==./examples/imagenet/CMakeLists.txt
+=======================================================================
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
+
+IF(USE_CUDNN)
+  IF(USE_OPENCV)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp ")
+    ADD_EXECUTABLE(imagenet alexnet.cc)
+    ADD_DEPENDENCIES(imagenet singa_core singa_model singa_utils singa_io)
+    TARGET_LINK_LIBRARIES(imagenet singa_core singa_utils singa_model singa_io protobuf ${SINGA_LIBKER_LIBS})
+
+    ADD_EXECUTABLE(createdata ilsvrc12.cc)
+    ADD_DEPENDENCIES(createdata singa_core singa_io singa_model singa_utils)
+    TARGET_LINK_LIBRARIES(createdata singa_core singa_utils singa_io singa_model protobuf ${SINGA_LIBKER_LIBS})
+    #SET_TARGET_PROPERTIES(createdata PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+  ENDIF(USE_OPENCV)
+ENDIF(USE_CUDNN)
+
+=======================================================================
+==./examples/imagenet/create_data.sh
+=======================================================================
+#!/usr/bin/env sh
+../../build/bin/createdata -trainlist "imagenet/label/train.txt" -trainfolder "imagenet/ILSVRC2012_img_train" \
+  -testlist "imagenet/label/val.txt" -testfolder "imagenet/ILSVRC2012_img_val" -outdata "imagenet_data" -filesize 1280
+
+=======================================================================
+==./examples/imagenet/run.sh
+=======================================================================
+#!/usr/bin/env sh
+../../build/bin/imagenet -epoch 90 -lr 0.01 -batchsize 256 -filesize 1280 -ntrain 1281167 -ntest 50000 \
+  -data "imagenet_data" -pfreq 100 -nthreads 12
+
+=======================================================================
+==./include/singa/utils/cuda_utils.h
+=======================================================================
+// from caffe include/caffe/util/device_alternative.hpp
+#ifndef SINGA_UTILS_CUDA_UTILS_H_
+#define SINGA_UTILS_CUDA_UTILS_H_
+
+#include "singa/singa_config.h"
+#ifdef USE_CUDA
+#include <cublas_v2.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <curand.h>
+
+inline const char* cublasGetErrorString(cublasStatus_t error) {
+  switch (error) {
+  case CUBLAS_STATUS_SUCCESS:
+    return "CUBLAS_STATUS_SUCCESS";
+  case CUBLAS_STATUS_NOT_INITIALIZED:
+    return "CUBLAS_STATUS_NOT_INITIALIZED";
+  case CUBLAS_STATUS_ALLOC_FAILED:
+    return "CUBLAS_STATUS_ALLOC_FAILED";
+  case CUBLAS_STATUS_INVALID_VALUE:
+    return "CUBLAS_STATUS_INVALID_VALUE";
+  case CUBLAS_STATUS_ARCH_MISMATCH:
+    return "CUBLAS_STATUS_ARCH_MISMATCH";
+  case CUBLAS_STATUS_MAPPING_ERROR:
+    return "CUBLAS_STATUS_MAPPING_ERROR";
+  case CUBLAS_STATUS_EXECUTION_FAILED:
+    return "CUBLAS_STATUS_EXECUTION_FAILED";
+  case CUBLAS_STATUS_INTERNAL_ERROR:
+    return "CUBLAS_STATUS_INTERNAL_ERROR";
+#if CUDA_VERSION >= 6000
+  case CUBLAS_STATUS_NOT_SUPPORTED:
+    return "CUBLAS_STATUS_NOT_SUPPORTED";
+#endif
+#if CUDA_VERSION >= 6050
+  case CUBLAS_STATUS_LICENSE_ERROR:
+    return "CUBLAS_STATUS_LICENSE_ERROR";
+#endif
+  }
+  return "Unknown cublas status";
+}
+
+inline const char* curandGetErrorString(curandStatus_t error) {
+  switch (error) {
+  case CURAND_STATUS_SUCCESS:
+    return "CURAND_STATUS_SUCCESS";
+  case CURAND_STATUS_VERSION_MISMATCH:
+    return "CURAND_STATUS_VERSION_MISMATCH";
+  case CURAND_STATUS_NOT_INITIALIZED:
+    return "CURAND_STATUS_NOT_INITIALIZED";
+  case CURAND_STATUS_ALLOCATION_FAILED:
+
+=======================================================================
+==./include/singa/utils/timer.h
+=======================================================================
+#ifndef SINGA_UTILS_TIMER_H
+#define SINGA_UTILS_TIMER_H
+
+#include <chrono>
+
+namespace singa {
+
+/// For benchmarking the time cost of operations.
+class Timer {
+ public:
+  typedef std::chrono::duration<int> Seconds;
+  typedef std::chrono::duration<int, std::milli> Milliseconds;
+  typedef std::chrono::duration<int, std::ratio<60 * 60>> Hours;
+  typedef std::chrono::duration<int, std::micro> Microseconds;
+
+  /// Init the internal time point to the current time
+  Timer() { Tick(); }
+  /// Reset the internal time point to the current time
+  void Tick() { last_ = std::chrono::high_resolution_clock::now(); }
+  /// Return the duration since last call to Tick() or since the creation of
+  /// Timer. The template arg must be from Second or Millisecond or Hour.
+  /// The returned value is the count of the time metric.
+  template <typename T = Milliseconds>
+  int Elapsed() const {
+    static_assert(std::is_same<T, Seconds>::value ||
+                      std::is_same<T, Milliseconds>::value ||
+                      std::is_same<T, Hours>::value ||
+                      std::is_same<T, Microseconds>::value,
+                  "Template arg must be Seconds | Milliseconds | Hours | Microseconds");
+    auto now  = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<T>(now - last_).count();
+  }
+  /// Return the string rep of current wall time
+  // std::string CurrentTime();
+
+ private:
+  std::chrono::high_resolution_clock::time_point last_;
+};
+}
+#endif
+
+=======================================================================
+==./include/singa/utils/tinydir.h
+=======================================================================
+/*
+Copyright (c) 2013-2014, Cong Xu, Baudouin Feildel
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+#ifndef TINYDIR_H
+#define TINYDIR_H
+
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#ifdef _MSC_VER
+#pragma warning (disable : 4996)
+#endif
+#else
+#include <dirent.h>
+#include <libgen.h>
+#include <sys/stat.h>
+#endif
+
+
+/* types */
+
+#define _TINYDIR_PATH_MAX 4096
+#ifdef _WIN32
+/* extra chars for the "\\*" mask */
+#define _TINYDIR_PATH_EXTRA 2
+#else
+
+=======================================================================
+==./src/CMakeLists.txt
+=======================================================================
+# generate protobuf sources 
+
+FILE(GLOB proto_files proto/*.proto) 
+protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
+IF (USE_PYTHON)
+    protobuf_generate_python(proto_pys ${proto_files})
+ENDIF()
+INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
+
+#message(STATUS "include: ${CMAKE_BINARY_DIR} ")
+#message(STATUS "srcs: ${proto_srcs}")
+#message(STATUS "hdrs: ${proto_hdrs}")
+#message(STATUS "pys: ${proto_pys}")
+ADD_LIBRARY(singa_proto STATIC ${proto_hdrs} ${proto_srcs} ${proto_pys})
+FOREACH(fil ${proto_hdrs})
+    ADD_CUSTOM_COMMAND(
+        TARGET singa_proto PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/singa/proto"
+        COMMAND ${CMAKE_COMMAND} -E copy ${fil} "${CMAKE_BINARY_DIR}/include/singa/proto"
+        #COMMAND ${CMAKE_COMMAND} -E echo "copy done"
+        )
+ENDFOREACH()
+LIST(APPEND SINGA_LINKER_LIBS singa_proto)
+
+SET(PREVIOUS_LINKER_LIBS ${SINGA_LINKER_LIBS})
+
+#FILE(GLOB_RECURSE utils_source ${CMAKE_CURRENT_SOURCE_DIR}/utils/ "*.cc")
+AUX_SOURCE_DIRECTORY(utils utils_source)
+#message(STATUS "UTILS ${utils_source}")
+ADD_LIBRARY(singa_utils SHARED ${utils_source})
+TARGET_LINK_LIBRARIES(singa_utils ${SINGA_LINKER_LIBS})
+LIST(APPEND SINGA_LINKER_LIBS singa_utils)
+
+#FILE(GLOB_RECURSE core_source ${CMAKE_CURRENT_SOURCE_DIR}/core/ "*.cc")
+AUX_SOURCE_DIRECTORY(core/device core_source)
+AUX_SOURCE_DIRECTORY(core/memory core_source)
+AUX_SOURCE_DIRECTORY(core/scheduler core_source)
+AUX_SOURCE_DIRECTORY(core/tensor core_source)
+IF (USE_CUDA)
+    FILE(GLOB_RECURSE cuda_source core "*.cu")
+    SET(FLAGS_BACKUP ${CMAKE_CXX_FLAGS})
+    SET(CMAKE_CXX_FLAGS "")
+    IF (CMAKE_BUILD_TYPE MATCHES DEBUG)
+        CUDA_COMPILE(cuda_objs SHARED ${cuda_source}
+            OPTIONS "-Xcompiler -fPIC -G -g")
+    ELSE (CMAKE_BUILD_TYPE MATCHES  DEBUG)
+        CUDA_COMPILE(cuda_objs SHARED ${cuda_source} OPTIONS "-Xcompiler -fPIC")
+    ENDIF (CMAKE_BUILD_TYPE MATCHES DEBUG)
+    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/core/tensor")
+    SET(CMAKE_CXX_FLAGS ${FLAGS_BACKUP})
+
+=======================================================================
+==./src/core/tensor/distribution.cl
+=======================================================================
+// This code is adapted from https://github.com/amd/OpenCL-caffe/blob/stable/src/caffe/ocl/random.cl
+
+//Note: random generator has two parts
+//first part: the open sourced threefy random generator kernel from DE Shaw Research
+//second part. we wrap the kernel up to generate uniform, bernoulli and gaussion distribution generators.
+
+//begin: the open sourced random generator from DE Shaw Research
+//https://www.deshawresearch.com/resources_random123.html
+typedef uint uint32_t;
+
+struct r123array4x32 {
+  uint32_t v[4];
+};
+
+enum r123_enum_threefry32x4 {
+  R_32x4_0_0 = 10,
+  R_32x4_0_1 = 26,
+  R_32x4_1_0 = 11,
+  R_32x4_1_1 = 21,
+  R_32x4_2_0 = 13,
+  R_32x4_2_1 = 27,
+  R_32x4_3_0 = 23,
+  R_32x4_3_1 = 5,
+  R_32x4_4_0 = 6,
+  R_32x4_4_1 = 20,
+  R_32x4_5_0 = 17,
+  R_32x4_5_1 = 11,
+  R_32x4_6_0 = 25,
+  R_32x4_6_1 = 10,
+  R_32x4_7_0 = 18,
+  R_32x4_7_1 = 20
+};
+
+inline uint32_t RotL_32(uint32_t x, unsigned int N) {
+  return (x << (N & 31)) | (x >> ((32 - N) & 31));
+}
+
+typedef struct r123array4x32 threefry4x32_ctr_t;
+typedef struct r123array4x32 threefry4x32_key_t;
+typedef struct r123array4x32 threefry4x32_ukey_t;
+
+inline threefry4x32_ctr_t threefry4x32_R(unsigned int Nrounds, threefry4x32_ctr_t in, threefry4x32_key_t k) {
+  threefry4x32_ctr_t X;
+  uint32_t ks[4 + 1];
+  int i;
+  ks[4] = 0x1BD11BDA;
+
+  {
+    ks[0] = k.v[0];
+    X.v[0] = in.v[0];
+
+=======================================================================
+==./src/python/setup.py.in
+=======================================================================
+# Always prefer setuptools over distutils
+from setuptools import setup
+
+
+setup(
+    name='singa',
+
+    version='${PACKAGE_VERSION}',
+
+    description='A General Deep Learning System',
+
+    url='https://github.com/apache/incubator-singa',
+
+    author='Apache SINGA (incubating)',
+    author_email='dev@singa.incubator.apache.org',
+
+    license='Apache 2',
+
+    classifiers=[
+        #   3 - Alpha
+        #   4 - Beta
+        #   5 - Production/Stable
+        'Development Status :: 3 - Alpha',
+
+        'Intended Audience :: Developers',
+        'Topic :: Deep Learning System ',
+
+        'License :: Apache License',
+
+        # Specify the Python versions you support here. In particular, ensure
+        # that you indicate whether you support Python 2, Python 3 or both.
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        ],
+
+    keywords='deep learning singa apache',
+
+    packages= ['singa', 'singa.proto'],
+
+    #py_modules=["singa"],
+
+    install_requires=[
+        'numpy>=1.11.0',
+        'protobuf>=2.5.0,<3'
+        ],
+
+    #List additional groups of dependencies here (e.g. development
+    #dependencies). You can install these using the following syntax,
+    #for example:
+
+=======================================================================
+==./src/python/singa/__init__.py
+=======================================================================
+
+=======================================================================
+==./src/python/swig/numpy.i
+=======================================================================
+/* -*- C -*-  (not really, but good for syntax highlighting) */
+
+/*
+ * Copyright (c) 2005-2015, NumPy Developers.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *        notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials provided
+ *        with the distribution.
+ *
+ *     * Neither the name of the NumPy Developers nor the names of any
+ *        contributors may be used to endorse or promote products derived
+ *        from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifdef SWIGPYTHON
+
+%{
+#ifndef SWIG_FILE_WITH_INIT
+#define NO_IMPORT_ARRAY
+#endif
+#include "stdio.h"
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include <numpy/arrayobject.h>
+%}
+
+/**********************************************************************/
+
+%fragment("NumPy_Backward_Compatibility", "header")
+{
+
+=======================================================================
+==./test/CMakeLists.txt
+=======================================================================
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
+
+IF(ENABLE_DIST)
+  ADD_EXECUTABLE(test_ep "singa/test_ep.cc")
+  ADD_DEPENDENCIES(test_ep singa_io)
+  TARGET_LINK_LIBRARIES(test_ep singa_utils singa_io protobuf ${SINGA_LINKER_LIBS})
+ENDIF()
+
+ADD_LIBRARY(gtest STATIC EXCLUDE_FROM_ALL "gtest/gtest.h" "gtest/gtest-all.cc")
+
+AUX_SOURCE_DIRECTORY(singa singa_test_source)
+LIST(REMOVE_ITEM singa_test_source "singa/test_ep.cc")
+
+IF(NOT USE_OPENCL)
+    MESSAGE(STATUS "Skipping OpenCL tests")
+    LIST(REMOVE_ITEM singa_test_source "singa/test_opencl.cc")
+ENDIF()
+
+
+ADD_EXECUTABLE(test_singa "gtest/gtest_main.cc" ${singa_test_source})
+ADD_DEPENDENCIES(test_singa singa_core singa_utils)
+#MESSAGE(STATUS "link libs" ${singa_linker_libs})
+TARGET_LINK_LIBRARIES(test_singa gtest singa_core singa_utils singa_model
+    singa_io singa_proto protobuf ${SINGA_LINKER_LIBS})
+IF(UNIX AND (NOT APPLE))
+    LIST(APPEND LINK_FLAGS "-pthread")
+ENDIF()
+SET_TARGET_PROPERTIES(test_singa PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
+
+=======================================================================
+==./test/gtest/CMakeLists.txt
+=======================================================================
+
+=======================================================================
+==./test/gtest/gtest-all.cc
+=======================================================================
+// Copyright 2008, Google Inc.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//     * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Author: mheule@google.com (Markus Heule)
+//
+// Google C++ Testing Framework (Google Test)
+//
+// Sometimes it's desirable to build Google Test by compiling a single file.
+// This file serves this purpose.
+
+// This line ensures that gtest.h can be compiled on its own, even
+// when it's fused.
+#include "gtest/gtest.h"
+
+// The following lines pull in the real gtest *.cc files.
+// Copyright 2005, Google Inc.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+
+=======================================================================
+==./test/gtest/gtest.h
+=======================================================================
+// Copyright 2005, Google Inc.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//     * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Author: wan@google.com (Zhanyong Wan)
+//
+// The Google C++ Testing Framework (Google Test)
+//
+// This header file defines the public API for Google Test.  It should be
+// included by any test program that uses Google Test.
+//
+// IMPORTANT NOTE: Due to limitation of the C++ language, we have to
+// leave some internal implementation details in this header file.
+// They are clearly marked by comments like this:
+//
+//   // INTERNAL IMPLEMENTATION - DO NOT USE IN A USER PROGRAM.
+//
+// Such code is NOT meant to be used by a user directly, and is subject
+// to CHANGE WITHOUT NOTICE.  Therefore DO NOT DEPEND ON IT in a user
+// program!
+//
+// Acknowledgment: Google Test borrowed the idea of automatic test
+// registration from Barthelemy Dagenais' (barthelemy@prologique.com)
+// easyUnit framework.
+
+
+=======================================================================
+==./test/gtest/gtest_main.cc
+=======================================================================
+// Copyright 2006, Google Inc.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//     * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#include <stdio.h>
+
+#include "gtest/gtest.h"
+
+GTEST_API_ int main(int argc, char **argv) {
+  printf("Running main() from gtest_main.cc\n");
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
+
+=======================================================================
+==./test/python/test_layer.py
+=======================================================================
+import sys
+import os
+import unittest
+import numpy as np
+
+#sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
+
+from singa import layer
+from singa import device
+from singa import tensor
+from singa.proto import model_pb2
+
+
+def _tuple_to_string(t):
+    lt = [str(x) for x in t]
+    return '(' + ', '.join(lt) + ')'
+
+
+class TestPythonLayer(unittest.TestCase):
+
+    def check_shape(self, actual, expect):
+        self.assertEqual(actual, expect, 'shape mismatch, actual shape is %s'
+                         ' exepcted is %s' % (_tuple_to_string(actual),
+                                              _tuple_to_string(expect))
+                         )
+
+    def setUp(self):
+        layer.engine='singacpp'
+        self.w = {'init': 'Xavier', 'regularizer': 1e-4}
+        self.b = {'init': 'Constant', 'value': 0}
+        self.sample_shape = None
+
+    def test_conv2D_shape(self):
+        in_sample_shape = (3, 224, 224)
+        conv = layer.Conv2D('conv', 64, 3, 1, W_specs=self.w, b_specs=self.b,
+                            input_sample_shape=in_sample_shape)
+        out_sample_shape = conv.get_output_sample_shape()
+        self.check_shape(out_sample_shape, (64, 224, 224))
+
+    def test_conv2D_forward_backward(self):
+        in_sample_shape = (1, 3, 3)
+        conv = layer.Conv2D('conv', 1, 3, 2, W_specs=self.w, b_specs=self.b,
+                            pad=1, input_sample_shape=in_sample_shape)
+        # cuda = device.create_cuda_gpu()
+        # conv.to_device(cuda)
+        params = conv.param_values()
+
+        raw_x = np.arange(9, dtype=np.float32) + 1
+        x = tensor.from_numpy(raw_x)
+        x.reshape((1, 1, 3, 3))
+
+=======================================================================
+==./test/singa/test_layer.cc
+=======================================================================
+#include "gtest/gtest.h"
+#include "singa/model/layer.h"
+#include "singa/singa_config.h"
+
+TEST(Layer, CreateLayer) {
+  std::vector<std::string> types{
+      "convolution", "dense", "dropout", "relu", "batchnorm",
+      "flatten",     "lrn",   "pooling", "prelu",      "softmax"};
+  for (auto type : types) {
+    auto layer = singa::CreateLayer("singacpp_" + type);
+    // EXPECT_EQ(layer->layer_type(), type);
+  }
+}
+
+#ifdef USE_CUDNN
+TEST(Layer, CreateCudnnLayer) {
+  std::vector<std::string> types{
+      "convolution", "dropout", "relu", "batchnorm",
+      "lrn",   "pooling", "softmax"};
+#if CUDNN_VERSION_MAJOR >= 5
+  types.push_back("dropout");
+#endif
+  for (auto type : types) {
+    auto layer = singa::CreateLayer("cudnn_" + type);
+    // EXPECT_EQ(layer->layer_type(), type);
+  }
+}
+#endif
+
+=======================================================================
+==./test/singa/test_tensor.cc
+=======================================================================
+#include "gtest/gtest.h"
+#include "singa/core/tensor.h"
+using singa::Tensor;
+using singa::Shape;
+using singa::Device;
+
+TEST(TensorTest, TestConstructor) {
+  singa::Tensor float_t(singa::Shape{2,3});
+  EXPECT_EQ(6u, float_t.Size());
+  EXPECT_EQ(sizeof(float) * 6, float_t.MemSize());
+  EXPECT_EQ(singa::kFloat32, float_t.data_type());
+  auto s = float_t.shape();
+  EXPECT_EQ(s[0], 2u);
+  EXPECT_EQ(s[1], 3u);
+
+  EXPECT_NE(float_t.device(), nullptr);
+
+  singa::Tensor float16_t(Shape{2,3}, singa::kFloat16);
+  EXPECT_EQ(singa::kFloat16, float16_t.data_type());
+  EXPECT_EQ(6u, float16_t.Size());
+  EXPECT_EQ(12u, float16_t.block()->size());
+
+  singa::Tensor x(float16_t);
+  EXPECT_EQ(float16_t.Size(), x.Size());
+  EXPECT_EQ(float16_t.block(), x.block());
+  EXPECT_EQ(float16_t.data_type(), x.data_type());
+  EXPECT_EQ(float16_t.device(), x.device());
+
+  singa::Tensor y = float16_t;
+  EXPECT_EQ(float16_t.Size(), x.Size());
+  EXPECT_EQ(float16_t.block(), x.block());
+  EXPECT_EQ(float16_t.data_type(), x.data_type());
+  EXPECT_EQ(float16_t.device(), x.device());
+}
+
+TEST(TensorClass, Reshape) {
+  Tensor t;
+  t.Reshape(Shape{2,3});
+  EXPECT_TRUE((Shape{2,3} == t.shape()));
+
+  t.Reshape(Shape{3,3, 4});
+  EXPECT_TRUE((Shape{3,3, 4} == t.shape()));
+
+  t.Reshape(Shape{12});
+  EXPECT_TRUE((Shape{12} == t.shape()));
+
+  Tensor o;
+  EXPECT_TRUE(o.shape() != t.shape());
+  o.Reshape(Shape{3, 3});
+  EXPECT_TRUE(o.shape() != t.shape());
+
+=======================================================================
+==./test/singa/test_tensor_math.cc
+=======================================================================
+#include "gtest/gtest.h"
+#include "singa/core/tensor.h"
+using singa::Tensor;
+using singa::Shape;
+using singa::Device;
+
+class TestTensorMath : public ::testing::Test {
+ protected:
+  virtual void SetUp() {
+    a.Reshape(singa::Shape{6});
+    b.Reshape(singa::Shape{6});
+    c.Reshape(singa::Shape{6, 1});
+    d.Reshape(singa::Shape{3, 2});
+    e.Reshape(singa::Shape{3, 2});
+
+    a.CopyDataFromHostPtr<float>(dat1, 6);
+    b.CopyDataFromHostPtr<float>(dat2, 6);
+    e.CopyDataFromHostPtr<float>(dat1, 6);
+  }
+  Tensor a, b, c, d, e;
+  const float dat1[6] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+  const float dat2[6] = {1.1f, 2.1f, 3.1f, 4.1f, 5.1f, 6.1f};
+};
+
+TEST_F(TestTensorMath, MemberAbs) {
+  Tensor aa = a.Clone();
+  Tensor bb = b.Clone();
+  Tensor cc = aa - bb;
+  const float *dptr = cc.data<float>();
+  EXPECT_NEAR(-0.1, dptr[0], 1e-5);
+  EXPECT_NEAR(-0.1, dptr[1], 1e-5);
+  EXPECT_NEAR(-0.1, dptr[2], 1e-5);
+
+  Tensor p = Abs(cc);
+  const float *dptr1 = p.data<float>();
+  EXPECT_NEAR(0.1, dptr1[0], 1e-5);
+  EXPECT_NEAR(0.1, dptr1[1], 1e-5);
+  EXPECT_NEAR(0.1, dptr1[2], 1e-5);
+}
+
+TEST_F(TestTensorMath, MemberExp) {
+  Tensor p = Exp(a);
+  const float *dptr1 = p.data<float>();
+  EXPECT_NEAR(exp(1.0f), dptr1[0], 1e-5);
+  EXPECT_NEAR(exp(2.0f), dptr1[1], 1e-5);
+  EXPECT_NEAR(exp(3.0f), dptr1[2], 1e-5);
+}
+
+TEST_F(TestTensorMath, MemberLog) {
+  Tensor p = Log(a);
+
+=======================================================================
+==./test/singa/test_timer.cc
+=======================================================================
+#include "gtest/gtest.h"
+#include "singa/utils/timer.h"
+
+#include <chrono>
+#include <thread>
+
+TEST(TimerTest, TestTick) {
+  singa::Timer t;
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  int time = t.Elapsed<singa::Timer::Milliseconds>();
+  EXPECT_GE(time, 1000);
+}
+
+=======================================================================
+==./tool/cpplint.py
+=======================================================================
+#!/usr/bin/env python
+#
+# Copyright (c) 2009 Google Inc. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+#    * Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following disclaimer
+# in the documentation and/or other materials provided with the
+# distribution.
+#    * Neither the name of Google Inc. nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+"""Does google-lint on c++ files.
+
+The goal of this script is to identify places in the code that *may*
+be in non-compliance with google style.  It does not attempt to fix
+up these problems -- the point is to educate.  It does also not
+attempt to find all problems, or to ensure that everything it does
+find is legitimately a problem.
+
+In particular, we can get very confused by /* and // inside strings!
+We do a small hack, which is to ignore //'s with "'s after them on the
+same line, but it is far from perfect (in either direction).
+"""
+
+import codecs
+import copy
+import getopt
+import math  # for log
+import os
+import re
+import sre_compile
