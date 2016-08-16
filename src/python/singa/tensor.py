@@ -79,15 +79,14 @@ class Tensor(object):
             return
         else:
             assert isinstance(shape, tuple), 'shape should be tuple'
-            vs = list(shape)
             if device is None:
                 device = pydevice.get_default_device()
-                self.singa_tensor = singa.Tensor(vs, device, dtype)
+                self.singa_tensor = singa.Tensor(list(shape), device, dtype)
             else:
-                self.singa_tensor = singa.Tensor(vs, device, dtype)
-            self.shape = shape
-            self.device = device
-            self.dtype = dtype
+                self.singa_tensor = singa.Tensor(list(shape), device, dtype)
+        self.shape = shape
+        self.dtype = dtype
+        self.device = device
 
     def ndim(self):
         '''
@@ -136,6 +135,9 @@ class Tensor(object):
             t (Tensor)
         '''
         self.singa_tensor.ResetLike(t.singa_tensor)
+        self.shape = t.shape
+        self.device = t.device
+        self.dtype = t.dtype
 
     '''
     def as_type(self, dtype):
@@ -153,11 +155,13 @@ class Tensor(object):
             device: a swig Device converted from CudaGPU or CppCPU or OpenclGPU
         '''
         self.singa_tensor.ToDevice(device)
+        self.device = device
 
     def to_host(self):
         '''Move the tensor data onto the default host CppCPU device.
         '''
         self.singa_tensor.ToHost()
+        self.device = pydevice.default_device
 
     def l2(self):
         '''
