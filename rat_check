@@ -2,19 +2,19 @@
 *****************************************************
 Summary
 -------
-Generated at: 2016-08-16T12:50:50+08:00
-Notes: 4
+Generated at: 2016-08-17T13:11:07+08:00
+Notes: 5
 Binaries: 0
 Archives: 0
-Standards: 282
+Standards: 288
 
-Apache Licensed: 240
+Apache Licensed: 269
 Generated Documents: 0
 
 JavaDocs are generated and so license header is optional
 Generated files do not required license headers
 
-42 Unknown Licenses
+18 Unknown Licenses
 
 *******************************
 
@@ -22,45 +22,21 @@ Unapproved licenses:
 
   ./.gitmodules
   ./.travis.yml
-  ./CMakeLists.txt
   ./rat_check
-  ./cmake/Cuda.cmake
-  ./cmake/Dependencies.cmake
   ./cmake/Protobuf.cmake
-  ./cmake/Utils.cmake
-  ./cmake/Templates/singa_config.h.in
-  ./cmake/Thirdparty/FindCBLAS.cmake
-  ./cmake/Thirdparty/FindCUDNN.cmake
-  ./cmake/Thirdparty/FindGlog.cmake
-  ./cmake/Thirdparty/FindLMDB.cmake
   ./cmake/Thirdparty/FindOpenCL.cmake
-  ./examples/CMakeLists.txt
-  ./examples/index.rst
-  ./examples/cifar10/CMakeLists.txt
-  ./examples/cifar10/download_data.py
-  ./examples/cifar10/run-parallel.sh
-  ./examples/cifar10/run.sh
-  ./examples/imagenet/CMakeLists.txt
-  ./examples/imagenet/create_data.sh
-  ./examples/imagenet/run.sh
   ./include/singa/utils/cuda_utils.h
-  ./include/singa/utils/timer.h
   ./include/singa/utils/tinydir.h
-  ./src/CMakeLists.txt
+  ./lib/cnmem/.git
+  ./lib/cnmem/CMakeLists.txt
+  ./lib/cnmem/include/cnmem.h
+  ./lib/cnmem/src/cnmem.cpp
+  ./lib/cnmem/tests/cnmem_tests.cpp
   ./src/core/tensor/distribution.cl
-  ./src/python/setup.py.in
-  ./src/python/singa/__init__.py
   ./src/python/swig/numpy.i
-  ./test/CMakeLists.txt
-  ./test/gtest/CMakeLists.txt
   ./test/gtest/gtest-all.cc
   ./test/gtest/gtest.h
   ./test/gtest/gtest_main.cc
-  ./test/python/test_layer.py
-  ./test/singa/test_layer.cc
-  ./test/singa/test_tensor.cc
-  ./test/singa/test_tensor_math.cc
-  ./test/singa/test_timer.cc
   ./tool/cpplint.py
 
 *******************************
@@ -74,7 +50,7 @@ Archives:
   Notices, licenses etc will be marked N
  !????? ./.gitmodules
  !????? ./.travis.yml
- !????? ./CMakeLists.txt
+  AL    ./CMakeLists.txt
   N     ./DISCLAIMER
   N     ./LICENSE
   N     ./NOTICE
@@ -87,38 +63,38 @@ Archives:
   AL    ./bin/singa-run.sh
   AL    ./bin/singa-stop.sh
   AL    ./bin/zk-service.sh
- !????? ./cmake/Cuda.cmake
- !????? ./cmake/Dependencies.cmake
+  AL    ./cmake/Cuda.cmake
+  AL    ./cmake/Dependencies.cmake
  !????? ./cmake/Protobuf.cmake
- !????? ./cmake/Utils.cmake
- !????? ./cmake/Templates/singa_config.h.in
- !????? ./cmake/Thirdparty/FindCBLAS.cmake
- !????? ./cmake/Thirdparty/FindCUDNN.cmake
- !????? ./cmake/Thirdparty/FindGlog.cmake
- !????? ./cmake/Thirdparty/FindLMDB.cmake
+  AL    ./cmake/Utils.cmake
+  AL    ./cmake/Templates/singa_config.h.in
+  AL    ./cmake/Thirdparty/FindCBLAS.cmake
+  AL    ./cmake/Thirdparty/FindCUDNN.cmake
+  AL    ./cmake/Thirdparty/FindGlog.cmake
+  AL    ./cmake/Thirdparty/FindLMDB.cmake
  !????? ./cmake/Thirdparty/FindOpenCL.cmake
- !????? ./examples/CMakeLists.txt
- !????? ./examples/index.rst
+  AL    ./examples/CMakeLists.txt
+  AL    ./examples/index.rst
   AL    ./examples/char-rnn/sample.py
   AL    ./examples/char-rnn/train.py
- !????? ./examples/cifar10/CMakeLists.txt
+  AL    ./examples/cifar10/CMakeLists.txt
   AL    ./examples/cifar10/alexnet-parallel.cc
   AL    ./examples/cifar10/alexnet.cc
   AL    ./examples/cifar10/alexnet.py
   AL    ./examples/cifar10/cifar10.h
- !????? ./examples/cifar10/download_data.py
+  AL    ./examples/cifar10/download_data.py
   AL    ./examples/cifar10/predict.py
- !????? ./examples/cifar10/run-parallel.sh
- !????? ./examples/cifar10/run.sh
+  AL    ./examples/cifar10/run-parallel.sh
+  AL    ./examples/cifar10/run.sh
   AL    ./examples/cifar10/train.py
   AL    ./examples/cifar10/vgg-parallel.cc
   AL    ./examples/cifar10/vgg.py
- !????? ./examples/imagenet/CMakeLists.txt
+  AL    ./examples/imagenet/CMakeLists.txt
   AL    ./examples/imagenet/alexnet.cc
- !????? ./examples/imagenet/create_data.sh
+  AL    ./examples/imagenet/create_data.sh
   AL    ./examples/imagenet/ilsvrc12.cc
   AL    ./examples/imagenet/ilsvrc12.h
- !????? ./examples/imagenet/run.sh
+  AL    ./examples/imagenet/run.sh
   AL    ./examples/mnist/train.py
   AL    ./include/singa/core/common.h
   AL    ./include/singa/core/device.h
@@ -149,9 +125,15 @@ Archives:
   AL    ./include/singa/utils/safe_queue.h
   AL    ./include/singa/utils/singleton.h
   AL    ./include/singa/utils/string.h
- !????? ./include/singa/utils/timer.h
+  AL    ./include/singa/utils/timer.h
  !????? ./include/singa/utils/tinydir.h
- !????? ./src/CMakeLists.txt
+ !????? ./lib/cnmem/.git
+ !????? ./lib/cnmem/CMakeLists.txt
+  N     ./lib/cnmem/LICENSE
+ !????? ./lib/cnmem/include/cnmem.h
+ !????? ./lib/cnmem/src/cnmem.cpp
+ !????? ./lib/cnmem/tests/cnmem_tests.cpp
+  AL    ./src/CMakeLists.txt
   AL    ./src/core/device/cpp_cpu.cc
   AL    ./src/core/device/cuda_gpu.cc
   AL    ./src/core/device/device.cc
@@ -238,8 +220,8 @@ Archives:
   AL    ./src/proto/core.proto
   AL    ./src/proto/io.proto
   AL    ./src/proto/model.proto
- !????? ./src/python/setup.py.in
- !????? ./src/python/singa/__init__.py
+  AL    ./src/python/setup.py.in
+  AL    ./src/python/singa/__init__.py
   AL    ./src/python/singa/command.py
   AL    ./src/python/singa/device.py
   AL    ./src/python/singa/initializer.py
@@ -259,15 +241,16 @@ Archives:
   AL    ./src/python/swig/model_optimizer.i
  !????? ./src/python/swig/numpy.i
   AL    ./src/python/swig/singa.i
+   ./src/python/swig/singa_wrap.cxx
   AL    ./src/utils/channel.cc
   AL    ./src/utils/logging.cc
   AL    ./src/utils/opencl_utils.cc
- !????? ./test/CMakeLists.txt
- !????? ./test/gtest/CMakeLists.txt
+  AL    ./test/CMakeLists.txt
+  AL    ./test/gtest/CMakeLists.txt
  !????? ./test/gtest/gtest-all.cc
  !????? ./test/gtest/gtest.h
  !????? ./test/gtest/gtest_main.cc
- !????? ./test/python/test_layer.py
+  AL    ./test/python/test_layer.py
   AL    ./test/python/test_optimizer.py
   AL    ./test/python/test_tensor.py
   AL    ./test/singa/test_accuracy.cc
@@ -295,7 +278,7 @@ Archives:
   AL    ./test/singa/test_image_transformer.cc
   AL    ./test/singa/test_initializer.cc
   AL    ./test/singa/test_jpg.cc
- !????? ./test/singa/test_layer.cc
+  AL    ./test/singa/test_layer.cc
   AL    ./test/singa/test_lmdb_rw.cc
   AL    ./test/singa/test_logging.cc
   AL    ./test/singa/test_lrn.cc
@@ -310,10 +293,10 @@ Archives:
   AL    ./test/singa/test_sgd.cc
   AL    ./test/singa/test_snapshot.cc
   AL    ./test/singa/test_softmax.cc
- !????? ./test/singa/test_tensor.cc
- !????? ./test/singa/test_tensor_math.cc
+  AL    ./test/singa/test_tensor.cc
+  AL    ./test/singa/test_tensor_math.cc
   AL    ./test/singa/test_textfile_rw.cc
- !????? ./test/singa/test_timer.cc
+  AL    ./test/singa/test_timer.cc
   AL    ./thirdparty/install.sh
  !????? ./tool/cpplint.py
   AL    ./tool/graph.py
@@ -396,149 +379,16 @@ script:
 
 
 =======================================================================
-==./CMakeLists.txt
-=======================================================================
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-
-PROJECT(singa)
-SET(PACKAGE_VERSION "1.0.0")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 ")
-
-LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
-#message(STATUS "module path: ${CMAKE_MODULE_PATH}")
-
-# Flags
-IF(UNIX OR APPLE)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall")
-ENDIF()
-IF(CMAKE_BUILD_TYPE=Debug)
-  SET(NVCC_FLAG "${NVCC_FLAG} -g -G ")
-ENDIF()
-#message(STATUS "${CMAKE_CXX_FLAGS}")
-SET(SINGA_INCLUDE_DIR
-    "${CMAKE_SOURCE_DIR}/include;${CMAKE_SOURCE_DIR}/lib/cnmem/include;${PROJECT_BINARY_DIR}")
-INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
-
-OPTION(USE_CBLAS "Use CBlas libs" ON)
-OPTION(USE_CUDA "Use Cuda libs" ON)
-OPTION(USE_CUDNN "Use Cudnn libs" ON)
-OPTION(USE_OPENCV "Use opencv" OFF)
-OPTION(USE_LMDB "Use LMDB libs" OFF)
-OPTION(USE_PYTHON "Generate py wrappers" ON)
-OPTION(USE_OPENCL "Use OpenCL" OFF)
-OPTION(ENABLE_DIST "enable distributed training" OFF)
-#OPTION(BUILD_OPENCL_TESTS "Build OpenCL tests" OFF)
-
-INCLUDE("cmake/Dependencies.cmake")
-INCLUDE("cmake/Utils.cmake")
-ADD_DEFINITIONS(-DUSE_CMAKE)
-#message(STATUS "${SINGA_INCLUDE_DIR}")
-
-CONFIGURE_FILE (
-    "${PROJECT_SOURCE_DIR}/cmake/Templates/singa_config.h.in"
-    "${PROJECT_BINARY_DIR}/include/singa/singa_config.h")
-
-#set(SINGA_CONFIGURE_SRC "${PROJECT_BINARY_DIR}/singa_config.h")
-#LIST(APPEND SRCS ${SINGA_CONFIGURE_SRCS} ${PROJECT_BINARY_DIR}/singa_config.h)
-
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-
-IF (USE_CUDA)
-    ADD_SUBDIRECTORY(lib/cnmem)
-    LIST(APPEND SINGA_LINKER_LIBS cnmem)
-ENDIF()
-
-=======================================================================
 ==./rat_check
 =======================================================================
 
 =======================================================================
-==./cmake/Cuda.cmake
-=======================================================================
-
-FIND_PACKAGE(CUDA 5.5 QUIET)
-
-IF(NOT CUDA_FOUND)
-    return()
-ENDIF()
-
-SET(HAVE_CUDA TRUE)
-MESSAGE(STATUS "Found cuda_v${CUDA_VERSION}")
-#ADD_DEFINITIONS(-DUSE_CUDA)
-#message(STATUS "linking: ${CUDA_CUDART_LIBRARY} ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES}")
-
-IF(USE_CUDNN)
-#include(cmake/Modules/Cudnn.cmake)
-    FIND_PACKAGE(CUDNN REQUIRED)
-    INCLUDE_DIRECTORIES(SYSTEM ${CUDNN_INCLUDE_DIR})
-    LIST(APPEND SINGA_LINKER_LIBS ${CUDNN_LIBRARIES})
-    #ADD_DEFINITIONS(-DUSE_CUDNN)
-    #ADD_DEFINITIONS(-DCUDNN_VERSION_MAJOR=${CUDNN_VERSION_MAJOR})
-ENDIF()
-
-INCLUDE_DIRECTORIES(SYSTEM ${CUDA_INCLUDE_DIRS})
-LIST(APPEND SINGA_LINKER_LIBS ${CUDA_CUDART_LIBRARY} ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES})
-#MESSAGE(STATUS "libs " ${SINGA_LINKER_LIBS})
-
-=======================================================================
-==./cmake/Dependencies.cmake
-=======================================================================
-SET(SINGA_LINKER_LIBS "")
-
-#INCLUDE("cmake/ProtoBuf.cmake")
-
-FIND_PACKAGE( Protobuf REQUIRED )
-INCLUDE_DIRECTORIES(SYSTEM ${PROTOBUF_INCLUDE_DIR})
-MESSAGE(STATUS "proto libs " ${PROTOBUF_LIBRARIES})
-LIST(APPEND SINGA_LINKER_LIBS ${PROTOBUF_LIBRARIES})
-INCLUDE("cmake/Protobuf.cmake")
-
-#FIND_PACKAGE(Glog)
-#IF(GLOG_FOUND)
-#    MESSAGE(STATUS "GLOG FOUND at ${GLOG_INCLUDE_DIR}")
-#    ADD_DEFINITIONS("-DUSE_GLOG")
-#    LIST(APPEND SINGA_LINKER_LIBS ${GLOG_LIBRARIES})
-#ENDIF()
-
-IF(USE_LMDB)
-    FIND_PACKAGE(LMDB REQUIRED)
-    INCLUDE_DIRECTORIES(SYSTEM ${LMDB_INCLUDE_DIR})
-    LIST(APPEND SINGA_LINKER_LIBS ${LMDB_LIBRARIES})
-    MESSAGE(STATUS "FOUND lmdb at ${LMDB_INCLUDE_DIR}")
-ENDIF()
-
-IF(USE_CUDA)
-    INCLUDE("cmake/Cuda.cmake")
-ELSE()
-    SET(USE_CUDNN FALSE)
-ENDIF()
-
-IF(USE_CBLAS)
-    FIND_PACKAGE(CBLAS REQUIRED)
-    INCLUDE_DIRECTORIES(SYSTEM ${CBLAS_INCLUDE_DIR})
-    LIST(APPEND SINGA_LINKER_LIBS ${CBLAS_LIBRARIES})
-    MESSAGE(STATUS "FOUND cblas at ${CBLAS_LIBRARIES}")
-ENDIF()
-
-IF(USE_OPENCL)
-    FIND_PACKAGE(OpenCL REQUIRED)
-    IF(NOT OPENCL_FOUND)
-        MESSAGE(SEND_ERROR "OpenCL was requested, but not found.")
-    ELSE()
-        INCLUDE_DIRECTORIES(SYSTEM ${OpenCL_INCPATH})
-        LIST(APPEND SINGA_LINKER_LIBS ${OPENCL_LIBRARIES})
-        MESSAGE(STATUS "Found OpenCL at ${OPENCL_INCLUDE_DIRS}")
-        IF(NOT OPENCL_HAS_CPP_BINDINGS)
-            MESSAGE(SEND_ERROR "OpenCL C++ bindings cl2.hpp was not found.")
-        ELSE()
-            MESSAGE(STATUS "Found OpenCL C++ bindings.")
-        ENDIF()
-
-=======================================================================
 ==./cmake/Protobuf.cmake
 =======================================================================
-# copy from cmake source code
+# This script is taken from
+# https://github.com/Kitware/CMake/blob/master/Modules/FindProtobuf.cmake
+# and modified to our compilation.
+
 function(PROTOBUF_GENERATE_PYTHON OUTPUT)
     if(NOT ARGN)
         message(SEND_ERROR "Error: PROTOBUF_GENERATE_PYTHON() called 
@@ -566,174 +416,6 @@ function(PROTOBUF_GENERATE_PYTHON OUTPUT)
     set_source_files_properties(${${SRCS}} ${${HDRS}} PROPERTIES GENERATED TRUE)
     set(${OUTPUT} ${${OUTPUT}} PARENT_SCOPE)
 endfunction()
-
-=======================================================================
-==./cmake/Utils.cmake
-=======================================================================
-
-macro(swig_generate_cxx pylist_variable)
-    if(NOT EXISTS "${CMKAE_BINARY_DIR}/python")
-        execute_process(
-            COMMAND mkdir ${CMAKE_BINARY_DIR}/python
-            COMMAND mkdir ${CMAKE_BINARY_DIR}/python/singa
-            COMMAND mkdir ${CMAKE_BINARY_DIR}/python/singa/proto
-            ERROR_QUIET)
-    endif()
-    execute_process(
-        COMMAND swig -c++ -python -I${CMAKE_SOURCE_DIR}/include 
-        -outdir ${CMAKE_BINARY_DIR}/python/singa
-        ${ARGN})
-
-    set(${pylist_variable} "${CMAKE_SOURCE_DIR}/src/python/swig/singa_wrap.cxx")
-endmacro()
-
-function (create_symlinks)
-    # Do nothing if building in-source
-    if (${CMAKE_CURRENT_BINARY_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-        return()
-    endif()
-
-    foreach (path_file ${ARGN})
-        get_filename_component(folder ${path_file} PATH)
-
-        # Create REAL folder
-        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/${folder}")
-
-        # Delete symlink if it exists
-        file(REMOVE "${CMAKE_BINARY_DIR}/${path_file}")
-
-        # Get OS dependent path to use in `execute_process`
-        file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/${path_file}" link)
-        file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${path_file}" target)
-
-        if (UNIX)
-            set(command ln -s ${target} ${link})
-        else()
-            set(command cmd.exe /c mklink ${link} ${target})
-        endif()
-
-        execute_process(COMMAND ${command} 
-                        RESULT_VARIABLE result
-                        ERROR_VARIABLE output)
-
-        if (NOT ${result} EQUAL 0)
-            message(FATAL_ERROR "Could not create symbolic link for: ${target} --> ${output}")
-        endif()
-
-
-=======================================================================
-==./cmake/Templates/singa_config.h.in
-=======================================================================
-// Source directory
-#define SOURCE_FOLDER "${PROJECT_SOURCE_DIR}"
-
-// Binaries director
-#define BINARY_FOLDER "${PROJECT_BINARY_DIR}"
-
-#cmakedefine CPU_ONLY
-
-#cmakedefine USE_CBLAS
-
-#cmakedefine USE_OPENCV
-// cuda
-#cmakedefine USE_CUDA
-
-#cmakedefine USE_CUDNN
-#cmakedefine CUDNN_VERSION_MAJOR @CUDNN_VERSION_MAJOR@
-#cmakedefine CUDNN_VERSION_MINOR @CUDNN_VERSION_MINOR@
-#cmakedefine CUDNN_VERSION_PATCH @CUDNN_VERSION_PATCH@
-#cmakedefine CUDNN_VERSION_SWIG @CUDNN_VERSION_SWIG@
-
-#cmakedefine USE_OPENCL
-
-#cmakedefine ENABLE_DIST
-
-// lmdb
-#cmakedefine USE_LMDB
-
-
-=======================================================================
-==./cmake/Thirdparty/FindCBLAS.cmake
-=======================================================================
-
-FIND_PATH(CBLAS_INCLUDE_DIR NAMES cblas.h PATHS "$ENV{CBLAS_DIR}/include")
-FIND_LIBRARY(CBLAS_LIBRARIES NAMES openblas PATHS "$ENV{CBLAS_DIR}/lib")
-
-INCLUDE(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(CBLAS DEFAULT_MSG CBLAS_INCLUDE_DIR CBLAS_LIBRARIES)
-
-IF(CBLAS_FOUND)
-    #    MESSAGE(STATUS "Found cblas at ${CBLAS_INCLUDE_DIR}")
-    MARK_AS_ADVANCED(CBLAS_INCLUDE_DIR CBLAS_LIBRARIES)
-ENDIF()
-
-=======================================================================
-==./cmake/Thirdparty/FindCUDNN.cmake
-=======================================================================
-
-FIND_PATH(CUDNN_INCLUDE_DIR NAME "cudnn.h" PATHS "$ENV{CMAKE_INCLUDE_PATH}")
-FIND_LIBRARY(CUDNN_LIBRARIES NAME "libcudnn.so" PATHS "$ENV{CMAKE_LIBRARY_PATH}")
-
-#message("cudnn include path:${CUDNN_INCLUDE_DIR}  lib path: ${CUDNN_LIBRARIES}")
-#message("env include path:$ENV{CUDNN_DIR} next: $ENV{CMAKE_INCLUDE_PATH}")
-INCLUDE(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(CUDNN DEFAULT_MSG CUDNN_INCLUDE_DIR CUDNN_LIBRARIES)
-
-IF(CUDNN_FOUND)
-    FILE(READ ${CUDNN_INCLUDE_DIR}/cudnn.h CUDNN_VERSION_FILE_CONTENTS)
-    STRING(REGEX MATCH "define CUDNN_MAJOR * +([0-9]+)"
-        CUDNN_VERSION_MAJOR "${CUDNN_VERSION_FILE_CONTENTS}")
-    STRING(REGEX REPLACE "define CUDNN_MAJOR * +([0-9]+)" "\\1"
-        CUDNN_VERSION_MAJOR "${CUDNN_VERSION_MAJOR}")
-    STRING(REGEX MATCH "define CUDNN_MINOR * +([0-9]+)"
-        CUDNN_VERSION_MINOR "${CUDNN_VERSION_FILE_CONTENTS}")
-    STRING(REGEX REPLACE "define CUDNN_MINOR * +([0-9]+)" "\\1"
-        CUDNN_VERSION_MINOR "${CUDNN_VERSION_MINOR}")
-    STRING(REGEX MATCH "define CUDNN_PATCHLEVEL * +([0-9]+)"
-        CUDNN_VERSION_PATCH "${CUDNN_VERSION_FILE_CONTENTS}")
-    STRING(REGEX REPLACE "define CUDNN_PATCHLEVEL * +([0-9]+)" "\\1"
-        CUDNN_VERSION_PATCH "${CUDNN_VERSION_PATCH}")
-
-    IF(NOT CUDNN_VERSION_MAJOR)
-        SET(CUDNN_VERSION "???")
-    ELSE()
-      MATH(EXPR CUDNN_VERSION_SWIG "${CUDNN_VERSION_MAJOR} * 1000 + ${CUDNN_VERSION_MINOR} * 100 + ${CUDNN_VERSION_PATCH}")
-    ENDIF()
-    MESSAGE(STATUS "Found Cudnn_v${CUDNN_VERSION_SWIG} at ${CUDNN_INCLUDE_DIR} ${CUDNN_LIBRARIES}")
-    MARK_AS_ADVANCED(CUDNN_INCLUDE_DIR CUDNN_LIBRARIES)
-
-ENDIF()
-
-=======================================================================
-==./cmake/Thirdparty/FindGlog.cmake
-=======================================================================
-
-FIND_PATH(GLOG_INCLUDE_DIR NAMES glog/logging.h PATHS "$ENV{GLOG_DIR}/include")
-FIND_LIBRARY(GLOG_LIBRARIES NAMES glog)
-
-INCLUDE(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(GLOG DEFAULT_MSG GLOG_INCLUDE_DIR GLOG_LIBRARIES)
-
-IF(GLOG_FOUND)
-    #    MESSAGE(STATUS "Found glog at ${GLOG_INCLUDE_DIR}")
-    MARK_AS_ADVANCED(GLOG_INCLUDE_DIR GLOG_LIBRARIES)
-ENDIF()
-
-=======================================================================
-==./cmake/Thirdparty/FindLMDB.cmake
-=======================================================================
-
-FIND_PATH(LMDB_INCLUDE_DIR NAMES lmdb.h PATHS "$ENV{LMDB_DIR}/include")
-FIND_LIBRARY(LMDB_LIBRARIES NAMES lmdb PATHS "$ENV{LMDB_DIR}/include")
-
-INCLUDE(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(LMDB DEFAULT_MSG LMDB_INCLUDE_DIR LMDB_LIBRARIES)
-
-IF(LMDB_FOUND)
-    MESSAGE(STATUS "Found lmdb at ${LMDB_INCLUDE_DIR}")
-    MARK_AS_ADVANCED(LMDB_INCLUDE_DIR LMDB_LIBRARIES)
-    
-ENDIF()
 
 =======================================================================
 ==./cmake/Thirdparty/FindOpenCL.cmake
@@ -790,149 +472,6 @@ ELSE (APPLE)
 		# Nvidia
 
 =======================================================================
-==./examples/CMakeLists.txt
-=======================================================================
-ADD_SUBDIRECTORY(cifar10)
-ADD_SUBDIRECTORY(imagenet)
-
-=======================================================================
-==./examples/index.rst
-=======================================================================
-Examples
-========
-
-.. toctree::
-
-   cifar10/README
-   char-rnn/README
-   imagenet/README
-
-
-
-=======================================================================
-==./examples/cifar10/CMakeLists.txt
-=======================================================================
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
-
-IF(USE_CUDNN)
-ADD_EXECUTABLE(alexnet alexnet.cc)
-ADD_DEPENDENCIES(alexnet singa_core singa_model singa_utils)
-TARGET_LINK_LIBRARIES(alexnet singa_core singa_utils singa_model protobuf ${SINGA_LIBKER_LIBS})
-
-ADD_EXECUTABLE(alexnet-parallel alexnet-parallel.cc)
-ADD_DEPENDENCIES(alexnet-parallel singa_core singa_model singa_utils)
-TARGET_LINK_LIBRARIES(alexnet-parallel singa_core singa_utils singa_model protobuf ${SINGA_LIBKER_LIBS})
-SET_TARGET_PROPERTIES(alexnet-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
-
-ADD_EXECUTABLE(vgg-parallel vgg-parallel.cc)
-ADD_DEPENDENCIES(vgg-parallel singa_core singa_model singa_utils)
-TARGET_LINK_LIBRARIES(vgg-parallel singa_core singa_utils singa_model protobuf ${SINGA_LIBKER_LIBS})
-SET_TARGET_PROPERTIES(vgg-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
-ENDIF(USE_CUDNN)
-
-=======================================================================
-==./examples/cifar10/download_data.py
-=======================================================================
-#!/usr/bin/env python
-import urllib
-import tarfile
-import os
-import sys
-import argparse
-
-
-def extract_tarfile(filepath):
-    if os.path.exists(filepath):
-        print 'The tar file does exist. Extracting it now..'
-        with tarfile.open(filepath, 'r') as f:
-            f.extractall('.')
-        print 'Finished!'
-        sys.exit(0)
-
-
-def check_dir_exist(dirpath):
-    if os.path.exists(dirpath):
-        print 'Directory %s does exist. To redownload the files, '\
-            'remove the existing directory and %s.tar.gz' % (dirpath, dirpath)
-        return True
-    else:
-        return False
-
-
-def do_download(dirpath, gzfile, url):
-    if check_dir_exist(dirpath):
-        sys.exit(0)
-    print 'Downloading CIFAR10 from %s' % (url)
-    urllib.urlretrieve(url, gzfile)
-    extract_tarfile(gzfile)
-    print 'Finished!'
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Download Cifar10 datasets')
-    parser.add_argument(
-        'file',
-        type=str,
-        choices=['py', 'bin'])
-    args = parser.parse_args()
-    if args.file == 'bin':
-        dirpath = 'cifar-10-batches-bin'
-        gzfile = 'cifar-10-binary' + '.tar.gz'
-        url = 'http://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz'
-        do_download(dirpath, gzfile, url)
-    else:
-        dirpath = 'cifar-10-batches-py'
-        gzfile = 'cifar-10-python' + '.tar.gz'
-
-=======================================================================
-==./examples/cifar10/run-parallel.sh
-=======================================================================
-#!/usr/bin/env sh
-../../build/bin/alexnet-parallel -epoch 4
-#../../build/bin/vgg-parallel -epoch 4
-
-=======================================================================
-==./examples/cifar10/run.sh
-=======================================================================
-#!/usr/bin/env sh
-../../build/bin/alexnet -epoch 140
-
-=======================================================================
-==./examples/imagenet/CMakeLists.txt
-=======================================================================
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
-
-IF(USE_CUDNN)
-  IF(USE_OPENCV)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp ")
-    ADD_EXECUTABLE(imagenet alexnet.cc)
-    ADD_DEPENDENCIES(imagenet singa_core singa_model singa_utils singa_io)
-    TARGET_LINK_LIBRARIES(imagenet singa_core singa_utils singa_model singa_io protobuf ${SINGA_LIBKER_LIBS})
-
-    ADD_EXECUTABLE(createdata ilsvrc12.cc)
-    ADD_DEPENDENCIES(createdata singa_core singa_io singa_model singa_utils)
-    TARGET_LINK_LIBRARIES(createdata singa_core singa_utils singa_io singa_model protobuf ${SINGA_LIBKER_LIBS})
-    #SET_TARGET_PROPERTIES(createdata PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
-  ENDIF(USE_OPENCV)
-ENDIF(USE_CUDNN)
-
-=======================================================================
-==./examples/imagenet/create_data.sh
-=======================================================================
-#!/usr/bin/env sh
-../../build/bin/createdata -trainlist "imagenet/label/train.txt" -trainfolder "imagenet/ILSVRC2012_img_train" \
-  -testlist "imagenet/label/val.txt" -testfolder "imagenet/ILSVRC2012_img_val" -outdata "imagenet_data" -filesize 1280
-
-=======================================================================
-==./examples/imagenet/run.sh
-=======================================================================
-#!/usr/bin/env sh
-../../build/bin/imagenet -epoch 90 -lr 0.01 -batchsize 256 -filesize 1280 -ntrain 1281167 -ntest 50000 \
-  -data "imagenet_data" -pfreq 100 -nthreads 12
-
-=======================================================================
 ==./include/singa/utils/cuda_utils.h
 =======================================================================
 // from caffe include/caffe/util/device_alternative.hpp
@@ -985,50 +524,6 @@ inline const char* curandGetErrorString(curandStatus_t error) {
   case CURAND_STATUS_NOT_INITIALIZED:
     return "CURAND_STATUS_NOT_INITIALIZED";
   case CURAND_STATUS_ALLOCATION_FAILED:
-
-=======================================================================
-==./include/singa/utils/timer.h
-=======================================================================
-#ifndef SINGA_UTILS_TIMER_H
-#define SINGA_UTILS_TIMER_H
-
-#include <chrono>
-
-namespace singa {
-
-/// For benchmarking the time cost of operations.
-class Timer {
- public:
-  typedef std::chrono::duration<int> Seconds;
-  typedef std::chrono::duration<int, std::milli> Milliseconds;
-  typedef std::chrono::duration<int, std::ratio<60 * 60>> Hours;
-  typedef std::chrono::duration<int, std::micro> Microseconds;
-
-  /// Init the internal time point to the current time
-  Timer() { Tick(); }
-  /// Reset the internal time point to the current time
-  void Tick() { last_ = std::chrono::high_resolution_clock::now(); }
-  /// Return the duration since last call to Tick() or since the creation of
-  /// Timer. The template arg must be from Second or Millisecond or Hour.
-  /// The returned value is the count of the time metric.
-  template <typename T = Milliseconds>
-  int Elapsed() const {
-    static_assert(std::is_same<T, Seconds>::value ||
-                      std::is_same<T, Milliseconds>::value ||
-                      std::is_same<T, Hours>::value ||
-                      std::is_same<T, Microseconds>::value,
-                  "Template arg must be Seconds | Milliseconds | Hours | Microseconds");
-    auto now  = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<T>(now - last_).count();
-  }
-  /// Return the string rep of current wall time
-  // std::string CurrentTime();
-
- private:
-  std::chrono::high_resolution_clock::time_point last_;
-};
-}
-#endif
 
 =======================================================================
 ==./include/singa/utils/tinydir.h
@@ -1085,58 +580,220 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #else
 
 =======================================================================
-==./src/CMakeLists.txt
+==./lib/cnmem/.git
 =======================================================================
-# generate protobuf sources 
+gitdir: ../../.git/modules/lib/cnmem
 
-FILE(GLOB proto_files proto/*.proto) 
-protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
-IF (USE_PYTHON)
-    protobuf_generate_python(proto_pys ${proto_files})
-ENDIF()
-INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
+=======================================================================
+==./lib/cnmem/CMakeLists.txt
+=======================================================================
+# CMakeLists to build the cnmem library.
+cmake_minimum_required(VERSION 2.8.8)
+project(cnmem)
 
-#message(STATUS "include: ${CMAKE_BINARY_DIR} ")
-#message(STATUS "srcs: ${proto_srcs}")
-#message(STATUS "hdrs: ${proto_hdrs}")
-#message(STATUS "pys: ${proto_pys}")
-ADD_LIBRARY(singa_proto STATIC ${proto_hdrs} ${proto_srcs} ${proto_pys})
-FOREACH(fil ${proto_hdrs})
-    ADD_CUSTOM_COMMAND(
-        TARGET singa_proto PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/singa/proto"
-        COMMAND ${CMAKE_COMMAND} -E copy ${fil} "${CMAKE_BINARY_DIR}/include/singa/proto"
-        #COMMAND ${CMAKE_COMMAND} -E echo "copy done"
-        )
-ENDFOREACH()
-LIST(APPEND SINGA_LINKER_LIBS singa_proto)
+# We need CUDA to build that library.
+find_package(CUDA QUIET REQUIRED)
+include_directories(${CUDA_INCLUDE_DIRS})
 
-SET(PREVIOUS_LINKER_LIBS ${SINGA_LINKER_LIBS})
+# Rules to build the cnmem library.
+include_directories(include)
+add_definitions(-DCNMEM_DLLEXPORT)
+add_library(cnmem SHARED src/cnmem.cpp)
+set_target_properties(cnmem PROPERTIES VERSION 1.0.0 SOVERSION 1)
+target_link_libraries(cnmem LINK_PUBLIC ${CUDA_LIBRARIES})
+install(TARGETS cnmem RUNTIME DESTINATION bin ARCHIVE DESTINATION lib LIBRARY DESTINATION lib)
+install(FILES include/cnmem.h DESTINATION include)
 
-#FILE(GLOB_RECURSE utils_source ${CMAKE_CURRENT_SOURCE_DIR}/utils/ "*.cc")
-AUX_SOURCE_DIRECTORY(utils utils_source)
-#message(STATUS "UTILS ${utils_source}")
-ADD_LIBRARY(singa_utils SHARED ${utils_source})
-TARGET_LINK_LIBRARIES(singa_utils ${SINGA_LINKER_LIBS})
-LIST(APPEND SINGA_LINKER_LIBS singa_utils)
+# Add the tests.
+if(WITH_TESTS)
 
-#FILE(GLOB_RECURSE core_source ${CMAKE_CURRENT_SOURCE_DIR}/core/ "*.cc")
-AUX_SOURCE_DIRECTORY(core/device core_source)
-AUX_SOURCE_DIRECTORY(core/memory core_source)
-AUX_SOURCE_DIRECTORY(core/scheduler core_source)
-AUX_SOURCE_DIRECTORY(core/tensor core_source)
-IF (USE_CUDA)
-    FILE(GLOB_RECURSE cuda_source core "*.cu")
-    SET(FLAGS_BACKUP ${CMAKE_CXX_FLAGS})
-    SET(CMAKE_CXX_FLAGS "")
-    IF (CMAKE_BUILD_TYPE MATCHES DEBUG)
-        CUDA_COMPILE(cuda_objs SHARED ${cuda_source}
-            OPTIONS "-Xcompiler -fPIC -G -g")
-    ELSE (CMAKE_BUILD_TYPE MATCHES  DEBUG)
-        CUDA_COMPILE(cuda_objs SHARED ${cuda_source} OPTIONS "-Xcompiler -fPIC")
-    ENDIF (CMAKE_BUILD_TYPE MATCHES DEBUG)
-    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/core/tensor")
-    SET(CMAKE_CXX_FLAGS ${FLAGS_BACKUP})
+  # Get Google tests.
+  find_package(GTest QUIET REQUIRED)
+  include_directories(${GTEST_INCLUDE_DIRS})
+  
+  # Build the executable.
+  add_executable(cnmem_tests tests/cnmem_tests.cpp)
+  if(MSVC)
+    if(MSVC_VERSION GREATER 1700) # Visual Studio 11 or more.
+      add_definitions(-DUSE_CPP_11)
+    endif(MSVC_VERSION GREATER 1700)
+  endif(MSVC)
+  if(CMAKE_COMPILER_IS_GNUCC)
+    add_definitions(-std=c++11 -DUSE_CPP_11)
+  endif(CMAKE_COMPILER_IS_GNUCC)
+  target_link_libraries(cnmem_tests LINK_PUBLIC cnmem ${CUDA_LIBRARIES} ${GTEST_LIBRARIES} -lpthread)
+  install(TARGETS cnmem_tests RUNTIME DESTINATION bin)
+  
+  # On Windows, we copy the Google test DLL to the bin folder.
+  if(MSVC)
+    get_filename_component(gtest_dll_path ${GTEST_LIBRARIES} DIRECTORY)
+    install(FILES ${gtest_dll_path}/gtest.dll DESTINATION bin)
+  endif(MSVC)
+
+endif(WITH_TESTS)
+
+
+=======================================================================
+==./lib/cnmem/include/cnmem.h
+=======================================================================
+/* ********************************************************************** 
+ * Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *  * Neither the name of NVIDIA CORPORATION nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * ********************************************************************** */
+#pragma once
+
+#ifdef __cplusplus
+#include "cstdio"
+#else
+#include "stdio.h"
+#endif
+#include "cuda_runtime_api.h"
+
+#if defined(_MSC_VER) || defined(WIN32)
+#ifdef CNMEM_DLLEXPORT
+#define CNMEM_API __declspec(dllexport)
+#else
+#define CNMEM_API __declspec(dllimport)
+#endif
+#else
+#ifdef CNMEM_DLLEXPORT
+#define CNMEM_API __attribute__((visibility ("default")))
+#else
+#define CNMEM_API
+#endif
+#endif
+
+
+=======================================================================
+==./lib/cnmem/src/cnmem.cpp
+=======================================================================
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//  * Neither the name of NVIDIA CORPORATION nor the names of its
+//    contributors may be used to endorse or promote products derived
+//    from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+// OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "cnmem.h"
+#include <cstddef>
+#include <vector>
+#include <cuda_runtime_api.h>
+
+#if !defined(WIN32) && defined(_MSC_VER)
+#define WIN32
+#endif
+
+#ifdef WIN32
+#include <Windows.h>
+#else
+#include <pthread.h>
+#endif
+
+#if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 4 // ARMv7 is the only 32-bit target that we support.
+#define CNMEM_BUILD_WITH_32_BIT_POINTERS
+#endif
+
+#define CNMEM_GRANULARITY 512
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+=======================================================================
+==./lib/cnmem/tests/cnmem_tests.cpp
+=======================================================================
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//  * Neither the name of NVIDIA CORPORATION nor the names of its
+//    contributors may be used to endorse or promote products derived
+//    from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+// OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include <gtest/gtest.h>
+#include <cnmem.h>
+#include <fstream>
+#ifdef USE_CPP_11
+#include <thread>
+#endif
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+static std::size_t getFreeMemory() {
+    cudaFree(0);
+    std::size_t freeMem, totalMem;
+    cudaMemGetInfo(&freeMem, &totalMem);
+    return freeMem;
+}
+
+class CnmemTest : public ::testing::Test {
+    /// We determine the amount of free memory.
+    std::size_t mFreeMem;
+    
+protected:
+    /// Do we test memory leaks.
 
 =======================================================================
 ==./src/core/tensor/distribution.cl
@@ -1193,64 +850,6 @@ inline threefry4x32_ctr_t threefry4x32_R(unsigned int Nrounds, threefry4x32_ctr_
     X.v[0] = in.v[0];
 
 =======================================================================
-==./src/python/setup.py.in
-=======================================================================
-# Always prefer setuptools over distutils
-from setuptools import setup
-
-
-setup(
-    name='singa',
-
-    version='${PACKAGE_VERSION}',
-
-    description='A General Deep Learning System',
-
-    url='https://github.com/apache/incubator-singa',
-
-    author='Apache SINGA (incubating)',
-    author_email='dev@singa.incubator.apache.org',
-
-    license='Apache 2',
-
-    classifiers=[
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
-
-        'Intended Audience :: Developers',
-        'Topic :: Deep Learning System ',
-
-        'License :: Apache License',
-
-        # Specify the Python versions you support here. In particular, ensure
-        # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
-        ],
-
-    keywords='deep learning singa apache',
-
-    packages= ['singa', 'singa.proto'],
-
-    #py_modules=["singa"],
-
-    install_requires=[
-        'numpy>=1.11.0',
-        'protobuf>=2.5.0,<3'
-        ],
-
-    #List additional groups of dependencies here (e.g. development
-    #dependencies). You can install these using the following syntax,
-    #for example:
-
-=======================================================================
-==./src/python/singa/__init__.py
-=======================================================================
-
-=======================================================================
 ==./src/python/swig/numpy.i
 =======================================================================
 /* -*- C -*-  (not really, but good for syntax highlighting) */
@@ -1303,43 +902,6 @@ setup(
 
 %fragment("NumPy_Backward_Compatibility", "header")
 {
-
-=======================================================================
-==./test/CMakeLists.txt
-=======================================================================
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
-
-IF(ENABLE_DIST)
-  ADD_EXECUTABLE(test_ep "singa/test_ep.cc")
-  ADD_DEPENDENCIES(test_ep singa_io)
-  TARGET_LINK_LIBRARIES(test_ep singa_utils singa_io protobuf ${SINGA_LINKER_LIBS})
-ENDIF()
-
-ADD_LIBRARY(gtest STATIC EXCLUDE_FROM_ALL "gtest/gtest.h" "gtest/gtest-all.cc")
-
-AUX_SOURCE_DIRECTORY(singa singa_test_source)
-LIST(REMOVE_ITEM singa_test_source "singa/test_ep.cc")
-
-IF(NOT USE_OPENCL)
-    MESSAGE(STATUS "Skipping OpenCL tests")
-    LIST(REMOVE_ITEM singa_test_source "singa/test_opencl.cc")
-ENDIF()
-
-
-ADD_EXECUTABLE(test_singa "gtest/gtest_main.cc" ${singa_test_source})
-ADD_DEPENDENCIES(test_singa singa_core singa_utils)
-#MESSAGE(STATUS "link libs" ${singa_linker_libs})
-TARGET_LINK_LIBRARIES(test_singa gtest singa_core singa_utils singa_model
-    singa_io singa_proto protobuf ${SINGA_LINKER_LIBS})
-IF(UNIX AND (NOT APPLE))
-    LIST(APPEND LINK_FLAGS "-pthread")
-ENDIF()
-SET_TARGET_PROPERTIES(test_singa PROPERTIES LINK_FLAGS "${LINK_FLAGS}")
-
-=======================================================================
-==./test/gtest/CMakeLists.txt
-=======================================================================
 
 =======================================================================
 ==./test/gtest/gtest-all.cc
@@ -1489,216 +1051,6 @@ GTEST_API_ int main(int argc, char **argv) {
   printf("Running main() from gtest_main.cc\n");
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
-}
-
-=======================================================================
-==./test/python/test_layer.py
-=======================================================================
-import sys
-import os
-import unittest
-import numpy as np
-
-#sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
-
-from singa import layer
-from singa import device
-from singa import tensor
-from singa.proto import model_pb2
-
-
-def _tuple_to_string(t):
-    lt = [str(x) for x in t]
-    return '(' + ', '.join(lt) + ')'
-
-
-class TestPythonLayer(unittest.TestCase):
-
-    def check_shape(self, actual, expect):
-        self.assertEqual(actual, expect, 'shape mismatch, actual shape is %s'
-                         ' exepcted is %s' % (_tuple_to_string(actual),
-                                              _tuple_to_string(expect))
-                         )
-
-    def setUp(self):
-        layer.engine='singacpp'
-        self.w = {'init': 'Xavier', 'regularizer': 1e-4}
-        self.b = {'init': 'Constant', 'value': 0}
-        self.sample_shape = None
-
-    def test_conv2D_shape(self):
-        in_sample_shape = (3, 224, 224)
-        conv = layer.Conv2D('conv', 64, 3, 1, W_specs=self.w, b_specs=self.b,
-                            input_sample_shape=in_sample_shape)
-        out_sample_shape = conv.get_output_sample_shape()
-        self.check_shape(out_sample_shape, (64, 224, 224))
-
-    def test_conv2D_forward_backward(self):
-        in_sample_shape = (1, 3, 3)
-        conv = layer.Conv2D('conv', 1, 3, 2, W_specs=self.w, b_specs=self.b,
-                            pad=1, input_sample_shape=in_sample_shape)
-        # cuda = device.create_cuda_gpu()
-        # conv.to_device(cuda)
-        params = conv.param_values()
-
-        raw_x = np.arange(9, dtype=np.float32) + 1
-        x = tensor.from_numpy(raw_x)
-        x.reshape((1, 1, 3, 3))
-
-=======================================================================
-==./test/singa/test_layer.cc
-=======================================================================
-#include "gtest/gtest.h"
-#include "singa/model/layer.h"
-#include "singa/singa_config.h"
-
-TEST(Layer, CreateLayer) {
-  std::vector<std::string> types{
-      "convolution", "dense", "dropout", "relu", "batchnorm",
-      "flatten",     "lrn",   "pooling", "prelu",      "softmax"};
-  for (auto type : types) {
-    auto layer = singa::CreateLayer("singacpp_" + type);
-    // EXPECT_EQ(layer->layer_type(), type);
-  }
-}
-
-#ifdef USE_CUDNN
-TEST(Layer, CreateCudnnLayer) {
-  std::vector<std::string> types{
-      "convolution", "dropout", "relu", "batchnorm",
-      "lrn",   "pooling", "softmax"};
-#if CUDNN_VERSION_MAJOR >= 5
-  types.push_back("dropout");
-#endif
-  for (auto type : types) {
-    auto layer = singa::CreateLayer("cudnn_" + type);
-    // EXPECT_EQ(layer->layer_type(), type);
-  }
-}
-#endif
-
-=======================================================================
-==./test/singa/test_tensor.cc
-=======================================================================
-#include "gtest/gtest.h"
-#include "singa/core/tensor.h"
-using singa::Tensor;
-using singa::Shape;
-using singa::Device;
-
-TEST(TensorTest, TestConstructor) {
-  singa::Tensor float_t(singa::Shape{2,3});
-  EXPECT_EQ(6u, float_t.Size());
-  EXPECT_EQ(sizeof(float) * 6, float_t.MemSize());
-  EXPECT_EQ(singa::kFloat32, float_t.data_type());
-  auto s = float_t.shape();
-  EXPECT_EQ(s[0], 2u);
-  EXPECT_EQ(s[1], 3u);
-
-  EXPECT_NE(float_t.device(), nullptr);
-
-  singa::Tensor float16_t(Shape{2,3}, singa::kFloat16);
-  EXPECT_EQ(singa::kFloat16, float16_t.data_type());
-  EXPECT_EQ(6u, float16_t.Size());
-  EXPECT_EQ(12u, float16_t.block()->size());
-
-  singa::Tensor x(float16_t);
-  EXPECT_EQ(float16_t.Size(), x.Size());
-  EXPECT_EQ(float16_t.block(), x.block());
-  EXPECT_EQ(float16_t.data_type(), x.data_type());
-  EXPECT_EQ(float16_t.device(), x.device());
-
-  singa::Tensor y = float16_t;
-  EXPECT_EQ(float16_t.Size(), x.Size());
-  EXPECT_EQ(float16_t.block(), x.block());
-  EXPECT_EQ(float16_t.data_type(), x.data_type());
-  EXPECT_EQ(float16_t.device(), x.device());
-}
-
-TEST(TensorClass, Reshape) {
-  Tensor t;
-  t.Reshape(Shape{2,3});
-  EXPECT_TRUE((Shape{2,3} == t.shape()));
-
-  t.Reshape(Shape{3,3, 4});
-  EXPECT_TRUE((Shape{3,3, 4} == t.shape()));
-
-  t.Reshape(Shape{12});
-  EXPECT_TRUE((Shape{12} == t.shape()));
-
-  Tensor o;
-  EXPECT_TRUE(o.shape() != t.shape());
-  o.Reshape(Shape{3, 3});
-  EXPECT_TRUE(o.shape() != t.shape());
-
-=======================================================================
-==./test/singa/test_tensor_math.cc
-=======================================================================
-#include "gtest/gtest.h"
-#include "singa/core/tensor.h"
-using singa::Tensor;
-using singa::Shape;
-using singa::Device;
-
-class TestTensorMath : public ::testing::Test {
- protected:
-  virtual void SetUp() {
-    a.Reshape(singa::Shape{6});
-    b.Reshape(singa::Shape{6});
-    c.Reshape(singa::Shape{6, 1});
-    d.Reshape(singa::Shape{3, 2});
-    e.Reshape(singa::Shape{3, 2});
-
-    a.CopyDataFromHostPtr<float>(dat1, 6);
-    b.CopyDataFromHostPtr<float>(dat2, 6);
-    e.CopyDataFromHostPtr<float>(dat1, 6);
-  }
-  Tensor a, b, c, d, e;
-  const float dat1[6] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-  const float dat2[6] = {1.1f, 2.1f, 3.1f, 4.1f, 5.1f, 6.1f};
-};
-
-TEST_F(TestTensorMath, MemberAbs) {
-  Tensor aa = a.Clone();
-  Tensor bb = b.Clone();
-  Tensor cc = aa - bb;
-  const float *dptr = cc.data<float>();
-  EXPECT_NEAR(-0.1, dptr[0], 1e-5);
-  EXPECT_NEAR(-0.1, dptr[1], 1e-5);
-  EXPECT_NEAR(-0.1, dptr[2], 1e-5);
-
-  Tensor p = Abs(cc);
-  const float *dptr1 = p.data<float>();
-  EXPECT_NEAR(0.1, dptr1[0], 1e-5);
-  EXPECT_NEAR(0.1, dptr1[1], 1e-5);
-  EXPECT_NEAR(0.1, dptr1[2], 1e-5);
-}
-
-TEST_F(TestTensorMath, MemberExp) {
-  Tensor p = Exp(a);
-  const float *dptr1 = p.data<float>();
-  EXPECT_NEAR(exp(1.0f), dptr1[0], 1e-5);
-  EXPECT_NEAR(exp(2.0f), dptr1[1], 1e-5);
-  EXPECT_NEAR(exp(3.0f), dptr1[2], 1e-5);
-}
-
-TEST_F(TestTensorMath, MemberLog) {
-  Tensor p = Log(a);
-
-=======================================================================
-==./test/singa/test_timer.cc
-=======================================================================
-#include "gtest/gtest.h"
-#include "singa/utils/timer.h"
-
-#include <chrono>
-#include <thread>
-
-TEST(TimerTest, TestTick) {
-  singa::Timer t;
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  int time = t.Elapsed<singa::Timer::Milliseconds>();
-  EXPECT_GE(time, 1000);
 }
 
 =======================================================================

@@ -1,4 +1,7 @@
-# copy from cmake source code
+# This script is taken from
+# https://github.com/Kitware/CMake/blob/master/Modules/FindProtobuf.cmake
+# and modified to our compilation.
+
 function(PROTOBUF_GENERATE_PYTHON OUTPUT)
     if(NOT ARGN)
         message(SEND_ERROR "Error: PROTOBUF_GENERATE_PYTHON() called 
