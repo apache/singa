@@ -10,9 +10,9 @@ MNIST dataset. The RBM model and its hyper-parameters are set following
 
 2. Start the training
 
-        python train.py
+        python train.py mnist.pkl.gz
 
 By default the training code would run on CPU. To run it on a GPU card, please start
 the program with an additional argument
 
-        python train.py --use_gpu
+        python train.py mnist.pkl.gz --use_gpu

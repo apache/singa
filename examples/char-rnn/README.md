@@ -19,7 +19,7 @@ Other plain text files can also be used.
 
 * Start the training,
 
-        python train.py input_linux.txt
+        python train.py linux_input.txt
 
   Some hyper-parameters could be set through command line,
 
@@ -27,4 +27,7 @@ Other plain text files can also be used.
 
 * Sample characters from the model by providing the number of characters to sample and the seed string.
 
-        python sample.py 100 --seed '#include <std'
+        python sample.py 'model.bin' 100 --seed '#include <std'
+
+  Please replace 'model.bin' with the path to one of the checkpoint paths.
+

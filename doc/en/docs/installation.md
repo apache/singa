@@ -64,6 +64,8 @@ Then, run the following command
     $ sudo pip install --upgrade $SINGA_WHEEL_URL
 
 If you do not have sudo right, you can run `pip install` in a python virtual environment.
+Note that in python virtual environment, you may need to reset the `PYTHONPATH` to empty
+to avoid the conflicts of system path and virtual environment path.
 
 
 ### From source
@@ -83,8 +85,9 @@ Developers can build the wheel file via
     $ cd python
     $ python setup.py bdist_wheel
 
-
-The generated wheel file is under "dist" directory
+The generated wheel file is under "dist" directory.
+To build cnmem into the wheel file, please change CMakeLists.txt by replacing
+'SHARED' with 'STATIC'.
 
 
 ## Build SINGA from source
@@ -224,3 +227,7 @@ To be added.
 
     After this, you can build glog again.
 
+* Q: When using virtual environment, everytime I run pip install, it would reinstall numpy. However, the numpy would not be used when I `import numpy`
+
+    A: It could be caused by the `PYTHONPATH` which should be set to empty when you are using virtual environment to avoid the conflicts with the path of
+    the virtual environment.

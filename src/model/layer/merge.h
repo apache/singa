@@ -23,30 +23,31 @@
 #include "singa/model/layer.h"
 
 namespace singa {
+/// Sum features of all input layers
 class Merge : public Layer {
  public:
-  /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "Merge"; }
+  // const std::string layer_type() const override { return "Merge"; }
 
-  /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf& conf) override;
-  const Shape GetOutputSampleShape() const override {
-    CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
-    return out_sample_shape_;
-  }
-  /// \copydoc Layer::Forward(int flag, const vector<Tensor>&)
-  const vector<Tensor> Forward(int flag, const vector<Tensor>& inputs) override;
+   /// the sample shape of all input tesnors should be the same
+   void Setup(const Shape &in_sample, const LayerConf &conf) override;
+   const Shape GetOutputSampleShape() const override {
+     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
+     return out_sample_shape_;
+   }
+   /// Sum all tensors in 'inputs'
+   /// Return a vector including the result of the summation
+   const vector<Tensor> Forward(int flag,
+                                const vector<Tensor> &inputs) override;
 
-  /// \copydoc Layer::Backward(int, const vector<Tensor>&);
-  const std::pair<vector<Tensor>, vector<Tensor>> Backward(int flag,
-                                                   const vector<Tensor>& grads) override;
-
-  const size_t input_size() const { return input_size_; }
+   /// 'grads' should include only one tensor
+   /// the first result vector includes the gradients for each input layer
+   /// the second result vector is empty
+   const std::pair<vector<Tensor>, vector<Tensor> >
+   Backward(int flag, const vector<Tensor> &grads) override;
 
  protected:
-  // To store the input and output(of forward) tensors
   Shape out_sample_shape_;
-  size_t input_size_;
+  size_t input_size_ = 1u;
 };
 }  // namespace singa
 #endif  // SRC_MODEL_LAYER_MERGE_H_

@@ -16,12 +16,11 @@
 # =============================================================================
 '''Sample characters from the pre-trained model'''
 import sys
-import os
 import cPickle as pickle
 import numpy as np
 import argparse
 
-#sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
+# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 from singa import layer
 from singa import tensor
 from singa import device
@@ -30,10 +29,10 @@ from singa.proto import model_pb2
 
 def sample(model_path, nsamples=100, seed_text='', do_sample=True):
     with open(model_path, 'rb') as fd:
-        d=pickle.load(fd)
+        d = pickle.load(fd)
         rnn_w = tensor.from_numpy(d['rnn_w'])
-        idx_to_char=d['idx_to_char']
-        char_to_idx=d['char_to_idx']
+        idx_to_char = d['idx_to_char']
+        char_to_idx = d['char_to_idx']
         vocab_size = len(idx_to_char)
         dense_w = tensor.from_numpy(d['dense_w'])
         dense_b = tensor.from_numpy(d['dense_b'])
@@ -43,8 +42,8 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
 
     cuda = device.create_cuda_gpu()
     rnn = layer.LSTM(name='lstm', hidden_size=hidden_size,
-            num_stacks=num_stacks, dropout=dropout,
-            input_sample_shape=(len(idx_to_char),))
+                     num_stacks=num_stacks, dropout=dropout,
+                     input_sample_shape=(len(idx_to_char),))
     rnn.to_device(cuda)
     rnn.param_values()[0].copy_data(rnn_w)
     dense = layer.Dense('dense', vocab_size, input_sample_shape=(hidden_size,))
@@ -59,10 +58,10 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
         for c in seed_text:
             x = np.zeros((1, vocab_size), dtype=np.float32)
             x[0, char_to_idx[c]] = 1
-            tx=tensor.from_numpy(x)
+            tx = tensor.from_numpy(x)
             tx.to_device(cuda)
-            inputs=[tx, hx, cx]
-            outputs=rnn.forward(model_pb2.kEval, inputs)
+            inputs = [tx, hx, cx]
+            outputs = rnn.forward(model_pb2.kEval, inputs)
             y = dense.forward(model_pb2.kEval, outputs[0])
             y = tensor.softmax(y)
             hx = outputs[1]
@@ -76,16 +75,16 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
         y.to_host()
         prob = tensor.to_numpy(y)[0]
         if do_sample:
-            cur=np.random.choice(vocab_size, 1, p=prob)[0]
+            cur = np.random.choice(vocab_size, 1, p=prob)[0]
         else:
             cur = np.argmax(prob)
         sys.stdout.write(idx_to_char[cur])
         x = np.zeros((1, vocab_size), dtype=np.float32)
         x[0, cur] = 1
-        tx=tensor.from_numpy(x)
+        tx = tensor.from_numpy(x)
         tx.to_device(cuda)
-        inputs=[tx, hx, cx]
-        outputs=rnn.forward(model_pb2.kEval, inputs)
+        inputs = [tx, hx, cx]
+        outputs = rnn.forward(model_pb2.kEval, inputs)
         y = dense.forward(model_pb2.kEval, outputs[0])
         y = tensor.softmax(y)
         hx = outputs[1]
@@ -94,9 +93,10 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='sample chars from char-rnn')
-    parser.add_argument('--seed', help='seed text string which warms up the rnn'\
-            ' states for sampling', default='')
+    parser.add_argument('model', type=int, help='the model checkpoint file')
     parser.add_argument('n', type=int, help='num of characters to sample')
+    parser.add_argument('--seed', help='seed text string which warms up the '
+                        ' rnn states for sampling', default='')
     args = parser.parse_args()
     assert args.n > 0, 'n must > 0'
-    sample('model.bin', args.n, seed_text=args.seed)
+    sample(args.model, args.n, seed_text=args.seed)

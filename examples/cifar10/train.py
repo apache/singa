@@ -180,6 +180,6 @@ if __name__ == '__main__':
         train((train_x, train_y, test_x, test_y), net, 250, vgg_lr, 0.0005,
               use_cpu=args.use_cpu)
     else:
-        train_x, test_x = normalize_for_vgg(train_x, test_x)
+        train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = resnet.create_net()
         train((train_x, train_y, test_x, test_y), net, 200, resnet_lr, 1e-4)

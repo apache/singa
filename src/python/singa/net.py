@@ -22,6 +22,7 @@ functions for net info, e.g., parameters.
 
 from .proto.model_pb2 import kTrain, kEval
 import tensor
+import layer
 import cPickle as pickle
 
 
@@ -31,12 +32,15 @@ class FeedForwardNet(object):
         self.loss = loss
         self.metric = metric
         self.layers = []
+        self.src_of_layer = {}
+        self.dst_of_layer = None
+        self.ordered_layers = None
 
     def to_device(self, dev):
         for lyr in self.layers:
             lyr.to_device(dev)
 
-    def add(self, lyr):
+    def add(self, lyr, src=None):
         """Append a layer into the layer list.
 
         This function will get the sample shape from the last layer to setup
@@ -46,21 +50,44 @@ class FeedForwardNet(object):
         Args:
             lyr (Layer): the layer to be added
         """
-        if len(self.layers) > 0 and lyr.has_setup is False:
-            shape = self.layers[-1].get_output_sample_shape()
-            #print shape
-            lyr.setup(shape)
+        if src is not None:
+            if isinstance(src, layer.Layer):
+                assert src.has_setup is True, 'the source layer must be set up'
+                self.src_of_layer[lyr.name] = [src]
+            else:
+                assert type(src) == list, 'the src must be a list of layers'
+                self.src_of_layer[lyr.name] = src
+                # print 'merge------', len(src)
+        else:
+            assert len(self.layers) > 0 or lyr.has_setup, \
+                'Source layers are needed to set up this layer'
+            if len(self.layers) > 0:
+                self.src_of_layer[lyr.name] = [self.layers[-1]]
+            else:
+                self.src_of_layer[lyr.name] = []
+        if lyr.has_setup is False:
+            # print shape
+            in_shape = self.src_of_layer[lyr.name][0].get_output_sample_shape()
+            lyr.setup(in_shape)
+            print lyr.name, lyr.get_output_sample_shape()
         self.layers.append(lyr)
+        return lyr
 
     def param_values(self):
         values = []
-        for lyr in self.layers:
+        layers = self.layers
+        if self.ordered_layers is not None:
+            layers = self.ordered_layers
+        for lyr in layers:
             values.extend(lyr.param_values())
         return values
 
     def param_specs(self):
         specs = []
-        for lyr in self.layers:
+        layers = self.layers
+        if self.ordered_layers is not None:
+            layers = self.ordered_layers
+        for lyr in layers:
             specs.extend(lyr.param_specs)
         return specs
 
@@ -91,27 +118,83 @@ class FeedForwardNet(object):
         xx = self.forward(kEval, x)
         return tensor.softmax(xx)
 
+    def topo_sort(self, cur, src_of_layer, visited=None, order=None):
+        if visited is None:
+            visited = {}
+            for name in src_of_layer.keys():
+                visited[name] = False
+            order = []
+        srcs = src_of_layer[cur.name]
+        for src in srcs:
+            if visited[src.name] is False:
+                visited[src.name] = True
+                self.topo_sort(src, src_of_layer, visited, order)
+        order.append(cur)
+        visited[cur.name] = True
+        return order
+
     def forward(self, flag, x):
         # print x.l1()
-        for lyr in self.layers:
-            x = lyr.forward(flag, x)
+        if self.ordered_layers is None:
+            self.ordered_layers = self.topo_sort(self.layers[-1],
+                                                 self.src_of_layer)
+        inputs = [x]
+        output_of_layer = {}
+        for cur in self.ordered_layers:
+            srcs = self.src_of_layer[cur.name]
+            disp_src = cur.name + '<--'
+            for src in srcs:
+                outs = output_of_layer[src.name]
+                if type(outs) == list:
+                    inputs.append(outs[0])
+                else:
+                    inputs.append(outs)
+                disp_src += '+' + src.name
+                # del output_of_layer[src.name]
+            # print disp_src
+            if len(inputs) == 1:
+                inputs = inputs[0]
+            output_of_layer[cur.name] = cur.forward(flag, inputs)
+            inputs = []
             # print lyr.name, x.l1()
-        return x
+        # print output_of_layer
+        return output_of_layer[self.ordered_layers[-1].name]
 
     def backward(self):
+        if self.dst_of_layer is None:
+            self.dst_of_layer = {}
+            for cur in self.layers:
+                self.dst_of_layer[cur.name] = []
+            for cur in self.ordered_layers[1:]:
+                srcs = self.src_of_layer[cur.name]
+                for src in srcs:
+                    self.dst_of_layer[src.name].append(cur)
         grad = self.loss.backward()
         if len(grad.shape) > 1:
             grad /= grad.shape[0]  # average across the batch
         # print 'grad', grad.l1()
+        grads = [grad]
+        output_of_layer = {}
         pgrads = []
-        for lyr in reversed(self.layers):
-            grad, _pgrads = lyr.backward(kTrain, grad)
-            # disp = '%f ' % grad.l1()
-            for g in reversed(_pgrads):
-                pgrads.append(g)
-                # disp = disp + ', %f ' % g.l1()
-            # print disp
-        return reversed(pgrads)
+        for cur in reversed(self.ordered_layers):
+            for dst in self.dst_of_layer[cur.name]:
+                outputs = output_of_layer[dst.name]
+                if type(outputs) == list:
+                    grads.append(outputs[0])
+                else:
+                    grads.append(outputs)
+                # del output_of_layer[dst.name]
+            if len(grads) == 1:
+                grads = grads[0]
+            outs, _pgrads = cur.backward(kTrain, grads)
+            pgrads.append(_pgrads)
+            output_of_layer[cur.name] = outs
+            grads = []
+
+        ret = []
+        for pgrad in reversed(pgrads):
+            ret.extend(pgrad)
+        return ret
 
     def save(self, f):
         """Save model parameters using cpickle"""

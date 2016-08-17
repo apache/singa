@@ -242,7 +242,6 @@ message LayerConf {
   optional MetricConf metric_conf = 200;
   optional BatchNormConf batchnorm_conf = 202;
   optional SplitConf split_conf = 203;
-  optional MergeConf merge_conf = 204;
 }
 
 // Message that stores hyper-parameters used to apply transformation
@@ -954,9 +953,4 @@ message BatchNormConf {
 message SplitConf {
   // Indicate the number of outputs
   optional int32 output_size = 1 [default = 2];
-}
-
-message MergeConf {
-  // Indicate the number of outputs
-  optional int32 input_size = 1 [default = 2];
 }

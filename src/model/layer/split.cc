@@ -31,8 +31,7 @@ void Split::Setup(const Shape& in_sample, const LayerConf& conf) {
 
 const vector<Tensor> Split::Forward(int flag, const vector<Tensor>& inputs) {
   vector<Tensor> outputs;
-  if (inputs.size() != 1)
-    LOG(FATAL) << "Split layer only have one input tensor.";
+  CHECK_EQ(inputs.size(), 1u) << "Split layer only have one input tensor.";
   for (size_t i = 0; i < output_size_; i++)
     outputs.push_back(inputs.at(0));
   return outputs;
@@ -42,7 +41,7 @@ const std::pair<vector<Tensor>, vector<Tensor>> Split::Backward(
     int flag, const vector<Tensor>& grads) {
   vector<Tensor> input_grad, param_grad;
   CHECK_EQ(grads.size(), output_size_);
-  
+
   /// Input_grad is the sum of all the output gradients.
   Tensor temp = grads.at(0);
   for (size_t i = 1; i < output_size_; i++)

@@ -132,7 +132,10 @@ class Layer(object):
         Returns:
             a list of tensors, one for each paramter
         '''
-        return tensor.from_raw_tensors(self.layer.param_values())
+        if self.layer is None:
+            return []
+        else:
+            return tensor.from_raw_tensors(self.layer.param_values())
 
     def forward(self, flag, x):
         '''Forward propagate through this layer.
@@ -194,7 +197,8 @@ class Layer(object):
         Args:
             device: swig converted device, created using singa.device
         '''
-        self.layer.ToDevice(device)
+        if self.layer is not None:
+            self.layer.ToDevice(device)
 
     def as_type(self, dtype):
         pass
@@ -620,6 +624,75 @@ class Flatten(Layer):
             self.layer = _create_layer(engine, 'Flatten')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
+
+
+class Merge(Layer):
+    '''Sum all input tensors.
+
+    Args:
+        input_sample_shape: sample shape of the input. The sample shape of all
+            inputs should be the same.
+    '''
+    def __init__(self, name, input_sample_shape=None):
+        self.in_shape = input_sample_shape
+        self.num_input = 1
+        super(Merge, self).__init__(name)
+
+    def setup(self, in_shape):
+        self.in_shape = in_shape
+        self.has_setup = True
+
+    def get_output_sample_shape(self):
+        return self.in_shape
+
+    def forward(self, flag, inputs):
+        assert len(inputs) > 1, 'There must be multiple input tensors'
+        self.num_input = len(inputs)
+        output = tensor.Tensor()
+        output.reset_like(inputs[0])
+        output.set_value(0)
+        for x in inputs:
+            output += x
+        return output
+
+    def backward(self, flag, grad):
+        assert isinstance(grad, tensor.Tensor), 'The input must be Tensor'
+        return [grad], []  # * self.num_input
+
+
+class Split(Layer):
+    '''Replicate the input tensor.
+
+    Args:
+        num_output (int): number of output tensors to generate.
+        input_sample_shape: includes a single integer for the input sample
+            feature size.
+    '''
+    def __init__(self, name, num_output, input_sample_shape=None):
+        self.num_output = num_output
+        self.in_shape = input_sample_shape
+        super(Split, self).__init__(name)
+
+    def setup(self, in_shape):
+        self.in_shape = in_shape
+        self.has_setup = True
+
+    def get_output_sample_shape(self):
+        return self.in_shape
+
+    def forward(self, flag, input):
+        assert isinstance(input, tensor.Tensor), 'The input must be Tensor'
+        outputs = [input] * self.num_output
+        return outputs
+
+    def backward(self, flag, grads):
+        assert len(grads) > 1, 'There must be multiple gradients'
+        dx = tensor.Tensor()
+        dx.reset_like(grads[0])
+        dx.set_value(0)
+        for g in grads:
+            dx += g
+        return dx, []
 
 
 class RNN(Layer):

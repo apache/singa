@@ -21,7 +21,15 @@ Users can compile and install SINGA from source or install the Python version.
 The code can ran on both CPU and GPU. For GPU training, CUDA and CUDNN (V4 or V5)
 are required. Please refer to the installation page for detailed instructions.
 
+### Data preparation
 
+The binary Cifar-10 dataset could be downloaded by
+
+    python download_data.py bin
+
+The Python version could be downloaded by
+
+    python download_data.py py
 
 ### Training
 

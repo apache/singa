@@ -23,10 +23,12 @@
 #include "singa/model/layer.h"
 
 namespace singa {
+/// Duplicate the input into multiple outputs
+/// need to configure the number of outputs
 class Split : public Layer {
  public:
   /// \copydoc Layer::layer_type()
-  const std::string layer_type() const override { return "Split"; }
+  // const std::string layer_type() const override { return "Split"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
   void Setup(const Shape& in_sample, const LayerConf& conf) override;
@@ -34,12 +36,13 @@ class Split : public Layer {
     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
     return out_sample_shape_;
   }
-  /// \copydoc Layer::Forward(int flag, const vector<Tensor>&)
-  const vector<Tensor> Forward(int flag, const vector<Tensor>& inputs) override;
+  /// The inputs should have only one Tensor
+  /// The outputs is a set of replicated Tensor
+  const vector<Tensor> Forward(int flag, const vector<Tensor> &inputs) override;
 
   /// \copydoc Layer::Backward(int, const vector<Tensor>&);
-  const std::pair<vector<Tensor>, vector<Tensor>> Backward(int flag,
-                                                   const vector<Tensor>& grads) override;
+  const std::pair<vector<Tensor>, vector<Tensor> >
+  Backward(int flag, const vector<Tensor> &grads) override;
 
   const size_t output_size() const { return output_size_; }
 
