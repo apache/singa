@@ -36,10 +36,7 @@
 
 
 #ifdef USE_OPENCL
-#define CL_HPP_MINIMUM_OPENCL_VERSION 120
-#define CL_HPP_TARGET_OPENCL_VERSION 120
-#include <CL/cl2.hpp>
-#include <unordered_map>
+#include "singa/utils/opencl_utils.h"
 #endif  // USE_OPENCL
 
 using std::atomic;
@@ -110,9 +107,8 @@ typedef struct _Context {
 #endif // USE_CUDA
 
 #ifdef USE_OPENCL
-  std::shared_ptr<std::unordered_map<std::string, cl::Kernel>> kernels;
-  cl::CommandQueue ocl_cmdq;
-  cl::Context ocl_ctx;
+  // This stores the context ID of the OpenCL context controlled by ViennaCL.
+  long vcl_ctx_id;
 #endif
 
 } Context;
