@@ -1,6 +1,4 @@
 #
-# Copyright 2015 The Apache Software Foundation
-# 
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -40,7 +38,7 @@ SET(SINGA_INCLUDE_DIR
 INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
 
 OPTION(USE_CBLAS "Use CBlas libs" ON)
-OPTION(USE_CUDA "Use Cuda libs" ON)
+OPTION(USE_CUDA "Use Cuda libs" OFF)
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
@@ -77,10 +75,3 @@ ENDIF()
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(test)
 ADD_SUBDIRECTORY(examples)
-
-INSTALL(DIRECTORY include/singa DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/include/singa/singa_config.h DESTINATION
-    ${CMAKE_INSTALL_PREFIX}/include/singa)
-INSTALL (DIRECTORY ${CMAKE_BINARY_DIR}/lib DESTINATION ${CMAKE_INSTALL_PREFIX}
-    PATTERN "*libgtest.a" EXCLUDE )
-#INSTALL (DIRECTORY ${CMAKE_BINARY_DIR}/bin DESTINATION ${CMAKE_INSTALL_PREFIX})
