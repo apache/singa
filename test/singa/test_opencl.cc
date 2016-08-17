@@ -23,13 +23,16 @@
 #include "singa/core/device.h"
 #include "singa/core/tensor.h"
 #include "singa/proto/core.pb.h"
+
 using singa::CppCPU;
 using singa::Block;
 using singa::Shape;
 using singa::Tensor;
 
 #ifdef USE_OPENCL
+
 using singa::OpenclDevice;
+
 class OpenCL_TensorMath : public ::testing::Test {
 protected:
 
@@ -74,77 +77,6 @@ protected:
 };
 
 
-// Makes a float array and fills it with increasing values from 0.
-float* MakeMatrix(const int size) {
-  float* mat = new float[size];
-  for (int i = 0; i < size; i++)
-    mat[i] = i;
-  return mat;
-}
-
-
-TEST(OpenclDevice, Constructor) {
-  OpenclDevice dev;
-  EXPECT_EQ(0, dev.id());
-}
-
-
-TEST(OpenclDevice, MemoryAllocFree) {
-  OpenclDevice dev;
-  Block* b = dev.NewBlock(4);
-  EXPECT_NE(nullptr, b);
-  EXPECT_EQ(4u, b->size());
-  dev.FreeBlock(b);
-}
-
-// Tests for integrity of one round of data transfer to an OpenCL device and back.
-TEST(OpenclDevice, CopyDataToFrom) {
-  OpenclDevice dev;
-  CppCPU host;
-
-  Block* a = host.NewBlock(4);
-  Block* b = dev.NewBlock(4);
-  Block* c = host.NewBlock(4);
-
-  // Allocate the Block object on the host.
-  char s[] = {'a', 'b', 'c', 'x'};
-  host.CopyDataFromHostPtr(a, s, 4);
-
-  // Copy back and forth.
-  dev.CopyDataToFrom(b, a, 4, singa::kHostToDevice);
-  dev.CopyDataToFrom(c, b, 4, singa::kDeviceToHost);
-
-  const char* astr = static_cast<const char*>(c->data());
-  EXPECT_EQ('a', astr[0]);
-  EXPECT_EQ('b', astr[1]);
-  EXPECT_EQ('x', astr[3]);
-}
-
-
-TEST(OpenclDevice, DuplicateDataOnDevice) {
-  OpenclDevice dev;
-  CppCPU host;
-
-  Block* a = host.NewBlock(4);
-  Block* b = dev.NewBlock(4);
-  Block* c = dev.NewBlock(4);
-  Block* d = host.NewBlock(4);
-
-  // Allocate the Block object on the host.
-  char s[] = {'a', 'b', 'c', 'x'};
-  host.CopyDataFromHostPtr(a, s, 4);
-
-  // Copy to device and duplicate.
-  dev.CopyDataToFrom(b, a, 4, singa::kHostToDevice);
-  dev.CopyDataToFrom(c, b, 4, singa::kDeviceToDevice);
-  dev.CopyDataToFrom(d, c, 4, singa::kDeviceToHost);
-
-  const char* astr = static_cast<const char*>(d->data());
-  EXPECT_EQ('a', astr[0]);
-  EXPECT_EQ('b', astr[1]);
-  EXPECT_EQ('x', astr[3]);
-}
-
 // Tensor tests, uses OpenCL_TensorMath class defined above.
 
 TEST_F(OpenCL_TensorMath, CopyDataToDevice) {
@@ -154,7 +86,6 @@ TEST_F(OpenCL_TensorMath, CopyDataToDevice) {
   EXPECT_EQ(1.0f, out[1]);
   EXPECT_EQ(3.0f, out[3]);
 }
-
 
 TEST_F(OpenCL_TensorMath, MemberAbs) {
   tf4in = Abs(tf4in);
@@ -194,7 +125,7 @@ TEST_F(OpenCL_TensorMath, MemberLog) {
   EXPECT_NEAR(log(3.0f), out[3], 1e-5);
 }
 
-
+/*
 TEST_F(OpenCL_TensorMath, MemberReLU) {
   tf4in -= 2.0f;
   Tensor result = ReLU(tf4in);
@@ -232,7 +163,7 @@ TEST_F(OpenCL_TensorMath, MemberSign) {
   EXPECT_NEAR(1.0f, out[2], 1e-5);
   EXPECT_NEAR(2.0f, out[3], 1e-5);
 }
-
+*/
 
 TEST_F(OpenCL_TensorMath, MemberSqrt) {
   tf4in = Sqrt(tf4in);
@@ -272,7 +203,7 @@ TEST_F(OpenCL_TensorMath, MemberTanh) {
   EXPECT_NEAR(tanh(3.0f), out[3], 1e-5);
 }
 
-
+/*
 TEST_F(OpenCL_TensorMath, Sum) {
   Tensor result = Sum(tf4in, 0);
 
@@ -335,7 +266,7 @@ TEST_F(OpenCL_TensorMath, MemberGE) {
   EXPECT_FLOAT_EQ(1.0f, out[2]);
   EXPECT_FLOAT_EQ(1.0f, out[3]);
 }
-
+*/
 
 TEST_F(OpenCL_TensorMath, MemberPow) {
   Tensor result = Pow(tf4in, 2.0f);
@@ -359,7 +290,7 @@ TEST_F(OpenCL_TensorMath, MemberPow) {
   EXPECT_FLOAT_EQ(27.0f, out1[3]);
 }
 
-
+/*
 TEST_F(OpenCL_TensorMath, MemberSub) {
   Tensor result = tf4in - tf4zin;
 
@@ -381,7 +312,7 @@ TEST_F(OpenCL_TensorMath, MemberSub) {
   EXPECT_FLOAT_EQ(2.0f, out1[2]);
   EXPECT_FLOAT_EQ(3.0f, out1[3]);
 }
-
+*/
 
 TEST_F(OpenCL_TensorMath, MemberEltwiseMult) {
   Tensor result = tf4in * tf4zin;
@@ -441,7 +372,7 @@ TEST_F(OpenCL_TensorMath, MemberDiv) {
 // **************************************
 // Random functions
 // **************************************
-
+/*
 TEST_F(OpenCL_TensorMath, Bernoulli) {
   const float p = 0.3f;
 
@@ -507,7 +438,7 @@ TEST_F(OpenCL_TensorMath, Uniform) {
 // *********************************************************
 // BLAS functions, ref to http://docs.nvidia.com/cuda/cublas
 // *********************************************************
-
+*/
 
 TEST_F(OpenCL_TensorMath, EltwiseAdd) {
   Tensor result = tf4in + tf4in;
@@ -569,6 +500,7 @@ TEST_F(OpenCL_TensorMath, SetValue) {
 }
 
 
+/*
 TEST_F(OpenCL_TensorMath, Axpy) {
   Axpy(10.0f, tf4in, &tf4in);
 
@@ -621,7 +553,7 @@ TEST_F(OpenCL_TensorMath, Mult) {
   EXPECT_EQ(320.0f, out1[14]);
   EXPECT_EQ(360.0f, out1[15]);
 }
-
+*/
 
 
 // TODO: ComputeCrossEntropy, SoftmaxCrossEntropy

@@ -21,225 +21,148 @@
 #ifdef USE_OPENCL
 #include <limits>
 
-#include <viennacl.hpp>
-#include <viennacl/vector.hpp>
-#include <viennacl/matrix.hpp>
-
-#include <viennacl/linalg/inner_prod.hpp>
-#include <viennacl/linalg/norm_1.hpp>
-#include <viennacl/linalg/norm_2.hpp>
-#include <viennacl/linalg/norm_inf.hpp>
-
 #include "tensor_math.h"
+#include "singa/utils/opencl_utils.h"
 
 namespace singa {
 
 // **************************************
 // Element-wise functions
 // **************************************
-/*
+
 template<>
 void Abs<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_abs";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, inbuf);
-  kernel.setArg(2, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
+  
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
+  
+  viennacl::linalg::element_abs(v_in);
+  v_out = v_in;
 }
 
 
 template<>
 void Add<float, lang::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_add_scalar";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, x);
-  kernel.setArg(2, inbuf);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
+  
+  viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ctx->vcl_ctx);
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
+  
+  v_out = v_in + x_in;
 }
 
 
 template<>
 void Add<float, lang::Opencl>(const size_t num, const Block* in1, const Block* in2, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in1_buf = WrapHandle((const cl_mem)in1->data(), &ctx->vcl_ctx);
+  auto in2_buf = WrapHandle((const cl_mem)in2->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
 
-  std::string kname = "clkernel_add";
-  auto kernel = ctx->kernels->at(kname);
-  
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
+  viennacl::vector<float> v_in1(in1_buf, num);
+  viennacl::vector<float> v_in2(in2_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, in1buf);
-  kernel.setArg(2, in2buf);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = v_in1 + v_in2;
 }
 
-
+/*
 template<>
 void Clamp<float, lang::Opencl>(const size_t num, const float low, const float high, const Block* in, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
 
-  std::string kname = "clkernel_clamp";
-  auto kernel = ctx->kernels->at(kname);
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, low);
-  kernel.setArg(2, high);
-  kernel.setArg(3, inbuf);
-  kernel.setArg(4, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  viennacl::linalg::element_clamp(v_in);
+  
 }
-
+*/
 
 template<>
 void Div<float, lang::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_divide_scalar_matx";
-  auto kernel = ctx->kernels->at(kname);
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
   
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
+  viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ctx->vcl_ctx);
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, inbuf);
-  kernel.setArg(2, x);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = viennacl::linalg::element_div(v_in, x_in);
 }
 
 
 template<>
 void Div<float, lang::Opencl>(const size_t num, const float x, const Block* in, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_divide_scalar_xmat";
-  auto kernel = ctx->kernels->at(kname);
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
   
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
+  viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ctx->vcl_ctx);
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, x);
-  kernel.setArg(2, inbuf);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = viennacl::linalg::element_div(x_in, v_in);
 }
 
 
 template<>
 void Div<float, lang::Opencl>(const size_t num, const Block* in1, const Block* in2, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in1_buf = WrapHandle((const cl_mem)in1->data(), &ctx->vcl_ctx);
+  auto in2_buf = WrapHandle((const cl_mem)in2->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
 
-  std::string kname = "clkernel_divide";
-  auto kernel = ctx->kernels->at(kname);
-  
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
+  viennacl::vector<float> v_in1(in1_buf, num);
+  viennacl::vector<float> v_in2(in2_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, in1buf);
-  kernel.setArg(2, in2buf);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = viennacl::linalg::element_div(v_in1, v_in2);
 }
 
 
 template<>
 void EltwiseMult<float, lang::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
+  
+  viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ctx->vcl_ctx);
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  std::string kname = "clkernel_eltmult_scalar";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, x);
-  kernel.setArg(2, inbuf);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = viennacl::linalg::element_prod(v_in, x_in);
 }
 
 
 template<>
 void EltwiseMult<float, lang::Opencl>(const size_t num, const Block* in1, const Block* in2, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in1_buf = WrapHandle((const cl_mem)in1->data(), &ctx->vcl_ctx);
+  auto in2_buf = WrapHandle((const cl_mem)in2->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
 
-  std::string kname = "clkernel_eltmult";
-  auto kernel = ctx->kernels->at(kname);
+  viennacl::vector<float> v_in1(in1_buf, num);
+  viennacl::vector<float> v_in2(in2_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, in1buf);
-  kernel.setArg(2, in2buf);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = viennacl::linalg::element_prod(v_in1, v_in2);
 }
 
 
 template<>
 void Exp<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_exp";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, inbuf);
-  kernel.setArg(2, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
+  
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
+  
+  viennacl::linalg::element_exp(v_in);
+  v_out = v_in;
 }
 
-
+/*
 template<>
 void LE<float, lang::Opencl>(const size_t num, const Block *in, const float x, Block *out, Context *ctx) {
   cl_int status = CL_SUCCESS;
@@ -258,27 +181,21 @@ void LE<float, lang::Opencl>(const size_t num, const Block *in, const float x, B
   status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
   OCL_CHECK(status, "Failed to enqueue kernel function!");
 }
-
+*/
 
 template<>
 void Log<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_log";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, inbuf);
-  kernel.setArg(2, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
+  std::cout << "Log being called!" << std::endl;
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
+  
+  viennacl::linalg::element_log(v_in);
+  v_out = v_in;
 }
 
-
+/*
 template<>
 void LT<float, lang::Opencl>(const size_t num, const Block *in, const float x, Block *out, Context *ctx) {
   cl_int status = CL_SUCCESS;
@@ -337,49 +254,35 @@ void GT<float, lang::Opencl>(const size_t num, const Block *in, const float x, B
   status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
   OCL_CHECK(status, "Failed to enqueue kernel function!");
 }
-
+*/
 
 template<>
 void Pow<float, lang::Opencl>(const size_t num, const Block* in, float x, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
+  
+  viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ctx->vcl_ctx);
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  std::string kname = "clkernel_pow_scalar";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, x);
-  kernel.setArg(2, inbuf);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = viennacl::linalg::element_pow(v_in, x_in);
 }
 
 
 template<>
 void Pow<float, lang::Opencl>(const size_t num, const Block* in1, const Block* in2, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in1_buf = WrapHandle((const cl_mem)in1->data(), &ctx->vcl_ctx);
+  auto in2_buf = WrapHandle((const cl_mem)in2->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
 
-  std::string kname = "clkernel_pow";
-  auto kernel = ctx->kernels->at(kname);
+  viennacl::vector<float> v_in1(in1_buf, num);
+  viennacl::vector<float> v_in2(in2_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, in1buf);
-  kernel.setArg(2, in2buf);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = viennacl::linalg::element_pow(v_in1, v_in2);
 }
 
-
+/*
 template<>
 void ReLU<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
   cl_int status = CL_SUCCESS;
@@ -397,25 +300,18 @@ void ReLU<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Co
   status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
   OCL_CHECK(status, "Failed to enqueue kernel function!");
 }
+*/
 
 template<>
 void Set<float, lang::Opencl>(const size_t num, const float x, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_set";
-  auto kernel = ctx->kernels->at(kname);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
   
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, x);
-  kernel.setArg(2, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  viennacl::vector<float> v_out(out_buf, num);
+  
+  v_out = viennacl::scalar_vector<float>(num, x, ctx->vcl_ctx);
 }
 
-
+/*
 template<>
 void Sigmoid<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
   cl_int status = CL_SUCCESS;
@@ -452,24 +348,17 @@ void Sign<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Co
   status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
   OCL_CHECK(status, "Failed to enqueue kernel function!");
 }
-
+*/
 
 template<>
 void Sqrt<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
+  
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  std::string kname = "clkernel_sqrt";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, inbuf);
-  kernel.setArg(2, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = viennacl::linalg::element_sqrt(v_in);
 }
 
 
@@ -481,45 +370,24 @@ void Square<float, lang::Opencl>(const size_t num, const Block* in, Block* out, 
 
 template<>
 void Sub<float, lang::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_subtract_scalar";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, inbuf);
-  kernel.setArg(2, x);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  Add<float, lang::Opencl>(num, in, -x, out, ctx);
 }
 
 
 template<>
 void Sub<float, lang::Opencl>(const size_t num, const Block* in1, const Block* in2, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in1_buf = WrapHandle((const cl_mem)in1->data(), &ctx->vcl_ctx);
+  auto in2_buf = WrapHandle((const cl_mem)in2->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
 
-  std::string kname = "clkernel_subtract";
-  auto kernel = ctx->kernels->at(kname);
+  viennacl::vector<float> v_in1(in1_buf, num);
+  viennacl::vector<float> v_in2(in2_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  cl::Buffer in1buf = *(static_cast<cl::Buffer*>(in1->mutable_data()));
-  cl::Buffer in2buf = *(static_cast<cl::Buffer*>(in2->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, in1buf);
-  kernel.setArg(2, in2buf);
-  kernel.setArg(3, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = v_in1 - v_in2;
 }
 
-
+/*
 template<>
 void Sum<float, lang::Opencl>(const size_t num, const Block* in, float* out, Context* ctx) {
   cl_int status = CL_SUCCESS;
@@ -547,30 +415,23 @@ void Sum<float, lang::Opencl>(const size_t num, const Block* in, float* out, Con
   out[0] = temp[0];
   delete temp;
 }
-
+*/
 
 template<>
 void Tanh<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  auto in_buf = WrapHandle((const cl_mem)in->data(), &ctx->vcl_ctx);
+  auto out_buf = WrapHandle(static_cast<cl_mem>(out->mutable_data()), &ctx->vcl_ctx);
+  
+  viennacl::vector<float> v_in(in_buf, num);
+  viennacl::vector<float> v_out(out_buf, num);
 
-  std::string kname = "clkernel_tanh";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, inbuf);
-  kernel.setArg(2, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  v_out = viennacl::linalg::element_tanh(v_in);
 }
 
 // **************************************
 // Random functions
 // **************************************
-
+/*
 /// Seed value required for generating distributions.
 static unsigned int seed[4] = {0, 32, 42, 888};
 /// Number of generation rounds used in the current algorithm.
@@ -830,24 +691,23 @@ void Dot<float, lang::Opencl>(const size_t num, const Block *in1, const Block *i
 }
 */
 
-template<DType>
-void GEMV<DType, lang::Opencl>(bool trans, const size_t m, const size_t n, const DType alpha,
-		  const Block *A, const Block *v, const DType beta, Block* out, Context* ctx) {
+template<>
+void GEMV<float, lang::Opencl>(bool trans, const size_t m, const size_t n, const float alpha,
+		  const Block *A, const Block *v, const float beta, Block* out, Context* ctx) {
 
-  cl::Buffer Abuf = *(static_cast<const cl::Buffer*>(A->data()));
-  cl::Buffer vbuf = *(static_cast<const cl::Buffer*>(v->data()));
-  cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
+  auto Abuf = *(static_cast<const viennacl::ocl::handle<cl_mem>*>(A->data()));
+  auto vbuf = *(static_cast<const viennacl::ocl::handle<cl_mem>*>(v->data()));
+  auto outbuf = *(static_cast<viennacl::ocl::handle<cl_mem>*>(out->mutable_data()));
   
-  viennacl::ocl::context vctx = ctx->vcl_ctx();
-  viennacl::vector_base<DType> v_in(vbuf.get(), trans?M:N, 0, 1, vctx);
-  viennacl::vector_base<DType> o_in(outbuf.get(), trans?N:M, 0, 1, vctx);
-  viennacl::matrix_base<DType> A_in(Abuf.get(), M, N, true, vctx);
+  viennacl::vector<float> v_in((cl_mem)vbuf.get(), trans ? m : n);
+  viennacl::vector<float> o_in((cl_mem)outbuf.get(), trans ? n : m);
+  viennacl::matrix<float> A_in((cl_mem)Abuf.get(), m, n);
   
-  out *= beta;
+  o_in *= beta;
   if (trans)
-    out += alpha * viennacl::linalg::prod(viennacl::trans(AA), vv);
+    o_in += alpha * viennacl::linalg::prod(viennacl::trans(A_in), v_in);
   else
-    out += alpha * viennacl::linalg::prod(AA, vv);
+    o_in += alpha * viennacl::linalg::prod(A_in, v_in);
 }
 
 /*
@@ -1057,4 +917,4 @@ void SumRows<float, lang::Opencl>(const size_t nrow, const size_t ncol, const Bl
 
 #endif // USE_OPENCL
 
-#endif  // SINGA_CORE_TENSOR_TENSOR_MATH_OPENCL_H_
+#endif  // SINGA_CORE_TENSOR_TENSOR_MATH_OPENCL_H_v_in + x;
