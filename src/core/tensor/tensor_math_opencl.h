@@ -21,20 +21,23 @@
 #ifdef USE_OPENCL
 #include <limits>
 
-#include "singa/utils/opencl_utils.h"
+#include <viennacl.hpp>
+#include <viennacl/vector.hpp>
+#include <viennacl/matrix.hpp>
+
+#include <viennacl/linalg/inner_prod.hpp>
+#include <viennacl/linalg/norm_1.hpp>
+#include <viennacl/linalg/norm_2.hpp>
+#include <viennacl/linalg/norm_inf.hpp>
+
 #include "tensor_math.h"
 
 namespace singa {
 
-// Some forward declarations of utility functions that only exist here.
-void Transpose(const size_t nrow, const size_t ncol, cl::Buffer& in, cl::Buffer& out, Context* ctx);
-void DiagVec_Left(const size_t size, cl::Buffer& in, cl::Buffer& out, Context* ctx);
-void DiagVec_Right(const size_t size, cl::Buffer& in, cl::Buffer& out, Context* ctx);
-
 // **************************************
 // Element-wise functions
 // **************************************
-
+/*
 template<>
 void Abs<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
   cl_int status = CL_SUCCESS;
@@ -825,33 +828,29 @@ void Dot<float, lang::Opencl>(const size_t num, const Block *in1, const Block *i
   out[0] = temp[0];
   delete temp;
 }
+*/
 
+template<DType>
+void GEMV<DType, lang::Opencl>(bool trans, const size_t m, const size_t n, const DType alpha,
+		  const Block *A, const Block *v, const DType beta, Block* out, Context* ctx) {
 
-template<>
-void GEMV<float, lang::Opencl>(bool trans, const size_t m, const size_t n, const float alpha,
-		  const Block *A, const Block *v, const float beta, Block* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_gemv";
-  auto kernel = ctx->kernels->at(kname);
-
-  cl::Buffer Abuf = *(static_cast<cl::Buffer*>(A->mutable_data()));
-  cl::Buffer vbuf = *(static_cast<cl::Buffer*>(v->mutable_data()));
+  cl::Buffer Abuf = *(static_cast<const cl::Buffer*>(A->data()));
+  cl::Buffer vbuf = *(static_cast<const cl::Buffer*>(v->data()));
   cl::Buffer outbuf = *(static_cast<cl::Buffer*>(out->mutable_data()));
-
-  kernel.setArg(0, (cl_int)m);
-  kernel.setArg(1, (cl_int)n);
-  kernel.setArg(2, alpha);
-  kernel.setArg(3, Abuf);
-  kernel.setArg(4, vbuf);
-  kernel.setArg(5, beta);
-  kernel.setArg(6, outbuf);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(m, n));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
+  
+  viennacl::ocl::context vctx = ctx->vcl_ctx();
+  viennacl::vector_base<DType> v_in(vbuf.get(), trans?M:N, 0, 1, vctx);
+  viennacl::vector_base<DType> o_in(outbuf.get(), trans?N:M, 0, 1, vctx);
+  viennacl::matrix_base<DType> A_in(Abuf.get(), M, N, true, vctx);
+  
+  out *= beta;
+  if (trans)
+    out += alpha * viennacl::linalg::prod(viennacl::trans(AA), vv);
+  else
+    out += alpha * viennacl::linalg::prod(AA, vv);
 }
 
-
+/*
 template<>
 void DGMM<float, lang::Opencl>(bool side_right,
 		  const size_t nrow, const size_t ncol,
@@ -978,7 +977,7 @@ void SoftmaxCrossEntropyBwd<float, lang::Opencl>(const size_t batchsize, const s
   status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), global);
   OCL_CHECK(status, "Failed to enqueue kernel function!");
 }
-
+*/
 // **************************************
 // Matrix functions
 // **************************************
@@ -1053,58 +1052,6 @@ void SumRows<float, lang::Opencl>(const size_t nrow, const size_t ncol, const Bl
   status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(nrow, ncol));
 }
 */
-
-
-#define BLOCK_DIM 16
-
-void Transpose(const size_t nrow, const size_t ncol, cl::Buffer& in, cl::Buffer& out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_transpose";
-  auto kernel = ctx->kernels->at(kname);
-
-  kernel.setArg(0, (cl_uint)nrow);
-  kernel.setArg(1, (cl_uint)ncol);
-  kernel.setArg(2, in);
-  kernel.setArg(3, out);
-  kernel.setArg(4, cl::Local((BLOCK_DIM + 1) * BLOCK_DIM));
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(nrow, ncol));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
-}
-
-#undef BLOCK_DIM
-
-
-/// This is a utility function that transforms a single-row vector into a diagonal matrix.
-/// For example, a vector of size n will become a matrix of size n*n where only the positions nx == ny will have values.
-void DiagVec_Left(const size_t size, cl::Buffer& in, cl::Buffer& out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_diagvec_left";
-  auto kernel = ctx->kernels->at(kname);
-  
-  kernel.setArg(0, (cl_uint)size);
-  kernel.setArg(1, in);
-  kernel.setArg(2, out);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(size));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
-}
-
-void DiagVec_Right(const size_t size, cl::Buffer& in, cl::Buffer& out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
-
-  std::string kname = "clkernel_diagvec_right";
-  auto kernel = ctx->kernels->at(kname);
-
-  kernel.setArg(0, (cl_uint)size);
-  kernel.setArg(1, in);
-  kernel.setArg(2, out);
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(size));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
-}
 
 } // namespace singa
 

@@ -45,7 +45,6 @@ OPTION(USE_LMDB "Use LMDB libs" OFF)
 OPTION(USE_PYTHON "Generate py wrappers" OFF)
 #OPTION(USE_OPENCL "Use OpenCL" OFF)
 OPTION(ENABLE_DIST "enable distributed training" OFF)
-#OPTION(BUILD_OPENCL_TESTS "Build OpenCL tests" OFF)
 
 INCLUDE("cmake/Dependencies.cmake")
 INCLUDE("cmake/Utils.cmake")

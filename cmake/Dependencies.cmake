@@ -67,6 +67,8 @@ IF(USE_OPENCL)
             MESSAGE(STATUS "Found OpenCL C++ bindings.")
         ENDIF()
     ENDIF()
+    
+    FIND_PACKAGE(Vienna)
 ENDIF()
 
 FIND_PACKAGE(Glog REQUIRED)
