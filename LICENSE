@@ -205,25 +205,35 @@ notices and license terms. Your use of the source code for the these
 subcomponents is subject to the terms and conditions of the following
 licenses.
 
-============================================================================
-SINGA bundles the following under BSD 2-clause license: include/singa/utils/blob.h,
-src/utils/blob.cc, include/singa/utils/common.h, src/utils/common.cc, include/singa/utils/cuda_utils.h
 
-Copyright (c) 2014, 2015, The Regents of the University of California (Regents)
-Copyright (c) 2014, the respective contributors
-https://github.com/BVLC/caffe/blob/master/LICENSE
+============================================================================
+SINGA bundles the following under BSD 3-clause license:
+cmake/Profobuf.cmake
+
+Copyright 2009 Kitware, Inc.
+Copyright 2009-2011 Philip Lowman <philip@yhbt.com>
+Copyright 2008 Esben Mose Hansen, Ange Optimization ApS
 
 =====================================================================
-SINGA bundles the following under BSD 2-clause license: include/singa/utils/tinydir.h
+SINGA bundles the following under BSD 2-clause license:
+include/singa/utils/tinydir.h
 
 Copyright (c) 2013, Cong Xu, Baudouin Feildel
 https://github.com/cxong/tinydir/blob/master/COPYING
 
-=====================================================================
-SINGA bundles the following under Apache v2.0 license: include/mshadow/*
 
-Copyright (c) 2014 by Contributors
-https://github.com/dmlc/mshadow/blob/master/LICENSE
+===========================================================================
+SINGA bundles the following under BSD 2-clause license:
+include/singa/utils/cuda_utils.h, src/core/tensor/distribution.cl
+
+All contributions by the University of California:
+Copyright (c) 2014, 2015, The Regents of the University of California (Regents)
+All rights reserved.
+
+All other contributions:
+Copyright (c) 2014, 2015, the respective contributors
+All rights reserved.
+https://github.com/BVLC/caffe/blob/master/LICENSE
 
 =====================================================================
 SINGA bundles the following under New BSD license: include/gtest/*
@@ -238,9 +248,13 @@ Copyright (c) 2009 Google Inc. All rights reserved.
 https://github.com/google/styleguide/tree/gh-pages/cpplint
 
 =====================================================================
-SINGA bundles the following under New BSD license: examples/rnnlm/create_data.cc
+SINGA bundles the following under New BSD license: lib/cnmem/*
 
-Copyright (c) 2010-2012 Tomas Mikolov
-Copyright (c) 2013 Cantab Research Ltd
+Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+https://github.com/NVIDIA/cnmem
+
+=====================================================================
+SINGA bundles the following under New BSD license: src/python/swig/numpy.i
+
+Copyright (c) 2005-2015, NumPy Developers.
 All rights reserved.
-http://www.fit.vutbr.cz/~imikolov/rnnlm/

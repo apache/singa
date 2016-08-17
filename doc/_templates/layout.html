@@ -1,0 +1,57 @@
+{#
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+#}
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+    <link href="{{ pathto("_static/style.css", True) }}" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block footer %}
+
+<div class="rst-versions shift-up" data-toggle="rst-versions" role="note" aria-label="versions">
+<a href="http://incubator.apache.org/">
+<img src= "{{pathto('_static/'+ 'apache.jpg' , 1) }}">
+</a>
+
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> incubator-singa </span>
+    v: {{ version }}
+    <span class="fa fa-caret-down"></span>
+  </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Languages</dt>
+            <dd><a href="{{ pathto('../en/index.html', 1) }}">English</a></dd>
+            <dd><a href="{{ pathto('../zh/index.html', 1) }}">中文</a></dd>
+        </dl>
+        <dl>
+            <dt>Versions</dt>
+            <dd><a href="http://singa.apache.org/v0.3.0/">0.3</a></dd>
+        </dl>
+
+    </div>
+</div>
+
+ <a href="https://github.com/apache/incubator-singa">
+    <img style="position: absolute; top: 0; right: 0; border: 0; z-index: 10000;"
+        src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"
+        alt="Fork me on GitHub">
+</a>
+
+{{ super() }}
+{% endblock %}

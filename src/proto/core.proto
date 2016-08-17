@@ -1,0 +1,76 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package singa;
+
+// TODO(wangwei) check protobuf version to include the syntax
+//syntax = "proto2";
+
+enum DataType {
+  kFloat32 = 0;
+  kFloat16 = 1;
+  kInt = 2;
+  kChar = 3;
+  kDouble = 4;
+  kUChar = 5;
+  kNumDataType = 6;
+}
+
+enum LangType {
+  kCpp = 0;
+  kCuda = 1;
+  kOpencl = 2;
+  kNumDeviceType = 4;
+}
+
+enum CopyDirection {
+  kHostToHost = 0;
+  kHostToDevice = 1;
+  kDeviceToHost = 2;
+  kDeviceToDevice = 3;
+  kNumDirection = 4;
+}
+
+// configuration for device memory pool
+message MemPoolConf {
+	optional string type = 1 [default = "cnmem"];
+	// allocation size for each device, default is 256 MB
+	optional uint32 init_size = 2 [default = 256];
+  // size limit in MB; report error/warning if this limit is reached.
+  // 0 for unlimited memory, i.e., use as much memory as the device has
+  // not used currently.
+	optional uint32 max_size = 3 [default = 0];
+
+	// memory manager flag for cnmem
+	// flag = 0: default flag
+	// flag = 1: prevent the manager from growing its memory consumption
+	// flag = 2: prevent the manager from stealing memory
+	optional uint32 flag = 11 [default = 0];
+  repeated uint32 device = 12;
+}
+
+// For tensor serialization
+message TensorProto {
+  repeated uint32 shape = 1;
+  optional DataType data_type = 2;
+  optional bool transpose = 3;
+  repeated float float_data = 4;
+  repeated double double_data = 5;
+  repeated int32 int_data = 6;
+  repeated bytes bytes_data = 7;
+}
