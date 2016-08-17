@@ -23,86 +23,63 @@
 
 #include "singa/core/device.h"
 #include "singa/utils/tinydir.h"
+#include "singa/utils/opencl_utils.h"
 
 #ifdef USE_OPENCL
 
-using std::string;
+using namespace viennacl;
+using namespace viennacl::backend::opencl;
 
 namespace singa {
 
-const string OpenclDevice::cl_src_path = "../src/core/tensor";
+const std::string OpenclDevice::cl_src_path = "../src/core/tensor";
 
 OpenclDevice::OpenclDevice(int id, int num_executors)
 	: Device(id, num_executors) {
+  CHECK_GE(id, 0);
   lang_ = kOpencl;
-  this->kernels = std::make_shared<std::unordered_map<string, cl::Kernel>>();
-
-  // Create the OpenCL Device, Context, and CommandQueue.
-  /// TODO: This merely chooses the first device on the first platform.
-  cl_int status = CL_SUCCESS;
-
-  std::vector<cl::Platform> platforms;
-  status = cl::Platform::get(&platforms);
-  OCL_CHECK(status, "Failed to find any OpenCL platforms!");
-
-  std::vector<cl::Device> devices;
-  status = platforms[0].getDevices(CL_DEVICE_TYPE_ALL, &devices);
-  OCL_CHECK(status, "Failed to get list of devices from platform!");
-
-  this->this_device = cl::Device(devices[0]);
-  this->ocl_ctx = cl::Context(this_device, nullptr, nullptr, nullptr, &status);
-  OCL_CHECK(status, "Failed to create context!");
-
-  this->cmdq = cl::CommandQueue(ocl_ctx, this_device, CL_QUEUE_PROFILING_ENABLE, &status);
-  OCL_CHECK(status, "Failed to create a command queue!");
-
-  BuildPrograms();
-
-  ctx_.kernels = kernels;
-  ctx_.ocl_cmdq = cmdq;
-  ctx_.ocl_ctx = ocl_ctx;
+  /*
+  cl_int err = CL_SUCCESS;
+  
+  cl_uint num_platforms;
+  clGetPlatformIDs(0, nullptr, &num_platforms);
+  cl_platform_id* platforms = new cl_platform_id[num_platforms];
+  clGetPlatformIDs(num_platforms, platforms, nullptr);
+  
+  cl_uint num_devices;
+  clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_DEFAULT, 0, nullptr, &num_devices);
+  cl_device_id* devices = new cl_device_id[num_devices];
+  clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_DEFAULT, num_devices, devices, nullptr);
+  std::vector<cl_device_id> device_vector;
+  for (cl_uint i = 0; i < num_devices; i++) {
+    device_vector.push_back(devices[i]);
+  }
+  
+  cl_context ocl_ctx = clCreateContext(0, num_devices, devices, nullptr, nullptr, &err);
+  
+  std::vector<cl_command_queue> cmdq;
+  for (cl_uint i = 0; i < num_devices; i++) {
+    cmdq.push_back(clCreateCommandQueue(ocl_ctx, devices[i], 0, &err));
+  }
+  
+  ocl::setup_context(0, ocl_ctx, device_vector, cmdq);
+  ocl::switch_context(0);
+  */
+  
+  ocl::current_context().build_options("-cl-std=CL1.2");
+  
+  ctx_.vcl_ctx = ocl::current_context();
+  this->this_device = ocl::current_device();
 }
 
 
 OpenclDevice::~OpenclDevice() {
 
   // Flush and finish the command queue.
+  auto cmdq = ocl::current_context().get_queue();
+  
   cmdq.flush();
   cmdq.finish();
-}
-
-
-cl::Kernel OpenclDevice::GetKernel(const std::string& kname, cl_int* status) {
-  if (!status) *status = CL_SUCCESS;
-  if (kernels->find(kname) == kernels->end()) {
-    // TODO: Not found
-    LOG(ERROR) << "Error: Kernel " << kname << " could not be found!";
-    if (!status) *status = CL_INVALID_KERNEL;
-  }
-  return kernels->at(kname);
-}
-
-/*
-void OpenclDevice::PrintAllDeviceInfo() {
-  cl_int status = CL_SUCCESS;
-
-  for (auto dev : devices) {
-    PrintDeviceInfo(d);
-  }
-}
-*/
-
-
-void OpenclDevice::PrintClBuildInfo(cl::Program &p) {
-  cl_int status = CL_SUCCESS;
-
-  auto buildStatus = p.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(&status);
-  for (auto pair : buildStatus)
-	std::cout << clGetBuildInfoString(pair.second) << std::endl;
-
-  auto buildLog = p.getBuildInfo<CL_PROGRAM_BUILD_LOG>(&status);
-  for (auto pair : buildLog)
-	std::cout << pair.second << std::endl;
 }
 
 
@@ -114,15 +91,29 @@ void OpenclDevice::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
   // Pointers must be valid.
   if (!dst || !src) return;
 
-  CopyToFrom(dst->mutable_data(), src->data(), nBytes, direction);
+  switch(direction) {
+  case kHostToDevice: {
+    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), &ctx_.vcl_ctx);
+    memory_write(dst_handle, dst_offset, nBytes, src->data());
+    return;
+  }
+  case kDeviceToHost: {
+    auto src_handle = WrapHandle(static_cast<cl_mem>(src->mutable_data()), &ctx_.vcl_ctx);
+    memory_read(src_handle, src_offset, nBytes, dst->mutable_data());
+    return;
+  }
+  case kDeviceToDevice: {
+    auto src_handle = WrapHandle(static_cast<cl_mem>(src->mutable_data()), &ctx_.vcl_ctx);
+    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), &ctx_.vcl_ctx);
+    memory_copy(src_handle, dst_handle, src_offset, dst_offset, nBytes);
+    return;
+  }
+  default:
+    return;
+  }
 }
 
 /*
-void OpenclDevice::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes, size_t dst_offset) {
-  CopyToFrom(dst->mutable_data(), src, 4, kHostToDevice);
-}
-*/
-
 void OpenclDevice::BuildPrograms(const std::string &kdir) {
   cl_int status = CL_SUCCESS;
 
@@ -163,7 +154,7 @@ void OpenclDevice::BuildPrograms(const std::string &kdir) {
 
 	tinydir_next(&dir);
   }
-}
+}*/
 
 // Device IO functions.
 // TODO:
@@ -177,7 +168,7 @@ void OpenclDevice::DoExec(function<void(Context*)>&& fn, int executor) {
   fn(&ctx_);
 }
 
-// NOTE: ASSUMES dst AND/OR src POINTERS CAN BE CAST TO cl::Buffer POINTERS!
+
 void OpenclDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
                   CopyDirection direction, Context* ctx) {
   // Pointers must be valid.
@@ -185,15 +176,19 @@ void OpenclDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
 
   switch(direction) {
   case kHostToDevice: {
-    WriteToDevice(static_cast<cl::Buffer*>(dst), src, nBytes);
+    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst), &ctx_.vcl_ctx);
+    memory_write(dst_handle, 0, nBytes, src);
     return;
   }
   case kDeviceToHost: {
-    ReadFromDevice(dst, static_cast<const cl::Buffer*>(src), nBytes);
+    auto src_handle = WrapHandle(static_cast<cl_mem>(const_cast<void*>(src)), &ctx_.vcl_ctx);
+    memory_read(src_handle, 0, nBytes, dst);
     return;
   }
   case kDeviceToDevice: {
-    CopyDeviceBuffer(static_cast<cl::Buffer*>(dst), static_cast<const cl::Buffer*>(src), nBytes);
+    auto src_handle = WrapHandle(static_cast<cl_mem>(const_cast<void*>(src)), &ctx_.vcl_ctx);
+    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst), &ctx_.vcl_ctx);
+    memory_copy(src_handle, dst_handle, 0, 0, nBytes);
     return;
   }
   default:
@@ -203,10 +198,7 @@ void OpenclDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
 
 
 void* OpenclDevice::Malloc(int size) {
-  cl_int status = CL_SUCCESS;
-
-  cl::Buffer* buffer = new cl::Buffer(ocl_ctx, CL_MEM_READ_WRITE, size, nullptr, &status);
-  OCL_CHECK(status, "Unable to allocate memory in OpenCL device.");
+  cl_mem buffer = memory_create(ocl::current_context(), size, nullptr);
 
   return static_cast<void*>(buffer);
 }
@@ -214,33 +206,8 @@ void* OpenclDevice::Malloc(int size) {
 
 void OpenclDevice::Free(void* p) {
   if (!p) return;
-  cl::Buffer* buffer = static_cast<cl::Buffer*>(p);
-  delete buffer;
-}
-
-
-void OpenclDevice::WriteToDevice(cl::Buffer* dst, const void* src, const size_t size) {
-  cl_int status = CL_SUCCESS;
-
-  status = cmdq.enqueueWriteBuffer(*dst, CL_TRUE, 0, size, src);
-  OCL_CHECK(status, "Unable to write data to OpenCL device.");
-}
-
-
-void OpenclDevice::ReadFromDevice(void* dst, const cl::Buffer* src, const size_t size) {
-  cl_int status = CL_SUCCESS;
-
-  status = cmdq.enqueueReadBuffer(*src, CL_TRUE, 0, size, dst);
-  OCL_CHECK(status, "Unable to read data from OpenCL device.");
-}
-
-
-// dst: cl::Buffer pointer    src: cl::Buffer pointer
-void OpenclDevice::CopyDeviceBuffer(cl::Buffer* dst, const cl::Buffer* src, const size_t size) {
-  cl_int status = CL_SUCCESS;
-
-  status = cmdq.enqueueCopyBuffer(*src, *dst, 0, 0, size);
-  OCL_CHECK(status, "Unable to copy buffer in OpenCL device.");
+  cl_mem buffer = static_cast<cl_mem>(p);
+  clReleaseMemObject(buffer);
 }
 
 } // namespace singa
