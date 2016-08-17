@@ -1,3 +1,0 @@
-# Please add here the environment variables that cannot be recognized after ssh.
-# This file will be `source`ed upon ssh
-

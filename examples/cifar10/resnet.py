@@ -49,7 +49,10 @@ def Block(net, name, nb_filters, stride):
         net.add(layer.Merge(name + "-merge"), [br1bn2, split])
 
 
-def create_net():
+def create_net(use_cpu=False):
+    if use_cpu:
+        layer.engine = 'singacpp'
+
     net = ffnet.FeedForwardNet(loss.SoftmaxCrossEntropy(), metric.Accuracy())
     net.add(layer.Conv2D("conv1", 16, 3, 1, pad=1, input_sample_shape=(3, 32, 32)))
     net.add(layer.BatchNormalization("bn1"))

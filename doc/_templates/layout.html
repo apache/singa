@@ -20,14 +20,14 @@
 {% block extrahead %}
     <link href="{{ pathto("_static/style.css", True) }}" rel="stylesheet" type="text/css">
 {% endblock %}
-     
+
 {% block footer %}
 
 <div class="rst-versions shift-up" data-toggle="rst-versions" role="note" aria-label="versions">
 <a href="http://incubator.apache.org/">
-<img src= "{{pathto('_static/'+ 'apache.jpg' , 1) }}">  
+<img src= "{{pathto('_static/'+ 'apache.jpg' , 1) }}">
 </a>
- 
+
   <span class="rst-current-version" data-toggle="rst-current-version">
     <span class="fa fa-book"> incubator-singa </span>
     v: {{ version }}
@@ -39,6 +39,11 @@
             <dd><a href="{{ pathto('../en/index.html', 1) }}">English</a></dd>
             <dd><a href="{{ pathto('../zh/index.html', 1) }}">中文</a></dd>
         </dl>
+        <dl>
+            <dt>Versions</dt>
+            <dd><a href="http://singa.apache.org/v0.3.0/">0.3</a></dd>
+        </dl>
+
     </div>
 </div>
 

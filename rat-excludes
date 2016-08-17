@@ -3,7 +3,6 @@ Doxyfile
 Makefile.*
 configure
 .gitignore
-conf/*
 doc/*
 config/*
 \.dirstamp

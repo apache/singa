@@ -4,10 +4,11 @@
 
 Distributed deep learning system
 
-This is the dev branch for V1.0, please refer to the following docs for compilation and examples
 
-* [Compilation](doc/docs/installation.md)
-* [CNN example](doc/docs/cnn.md)
+## Quick Start
+
+* [Installation](doc/en/docs/installation.md)
+* [Examples](examples)
 
 ##Mailing Lists
 

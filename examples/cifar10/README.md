@@ -48,13 +48,13 @@ version of the Cifar-10 dataset in 'cifar-10-batches-py' folder.
 
 2. alexnet.cc. It trains the AlexNet model using the CPP APIs on a CudaGPU,
 
-        run.sh
+        ./run.sh
 
 3. alexnet-parallel.cc. It trains the AlexNet model using the CPP APIs on two CudaGPU devices.
 The two devices run synchronously to compute the gradients of the mode parameters, which are
 averaged on the host CPU device and then be applied to update the parameters.
 
-        run-parallel.sh
+        ./run-parallel.sh
 
 4. vgg-parallel.cc. It train the VGG model using the CPP APIs on two CudaGPU devices similar to alexnet-parallel.cc.
 

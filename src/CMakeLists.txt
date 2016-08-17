@@ -6,19 +6,19 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
-# generate protobuf sources 
+# generate protobuf sources
 
-FILE(GLOB proto_files proto/*.proto) 
+FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
 IF (USE_PYTHON)
     protobuf_generate_python(proto_pys ${proto_files})
@@ -111,9 +111,9 @@ IF(USE_PYTHON)
     file(GLOB_RECURSE python_source_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
 
     create_symlinks(${python_source_files})
-    
+
     SET(python_cxxs "${core_source};${io_source};${model_source};${utils_source}")
-    ADD_LIBRARY(_singa_wrap SHARED "${python_srcs} ${python_cxxs} ${cuda_objs}")
+    ADD_LIBRARY(_singa_wrap SHARED ${python_srcs} ${python_cxxs} ${cuda_objs})
     SET(WRAPPER_LINKER_LIBS "${PREVIOUS_LINKER_LIBS}")
     TARGET_LINK_LIBRARIES(_singa_wrap ${WRAPPER_LINKER_LIBS})
     TARGET_INCLUDE_DIRECTORIES(_singa_wrap PRIVATE ${PYTHON_INCLUDE_DIRS})

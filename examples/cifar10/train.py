@@ -181,5 +181,6 @@ if __name__ == '__main__':
               use_cpu=args.use_cpu)
     else:
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
-        net = resnet.create_net()
-        train((train_x, train_y, test_x, test_y), net, 200, resnet_lr, 1e-4)
+        net = resnet.create_net(args.use_cpu)
+        train((train_x, train_y, test_x, test_y), net, 200, resnet_lr, 1e-4,
+              use_cpu=args.use_cpu)
