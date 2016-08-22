@@ -11,7 +11,7 @@ This release includes following features:
       * [SINGA-196]  Rename class Blob to Block
       * [SINGA-194]  Add a Platform singleton
       * [SINGA-175]  Add memory management APIs and implement a subclass using CNMeM
-      * [SINGA-173]  * [SINGA-162 OpenCL Implementation
+      * [SINGA-173]  OpenCL Implementation
       * [SINGA-171]  Create CppDevice and CudaDevice
       * [SINGA-168]  Implement Cpp Math functions APIs
       * [SINGA-162]  Overview of features for V1.x

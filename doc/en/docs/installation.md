@@ -92,6 +92,15 @@ To build cnmem into the wheel file, please change CMakeLists.txt by replacing
 
 ## Build SINGA from source
 
+### From the downloaded `tar.gz` file:
+
+Extract the downloaded. If using CUDA, CNMeM needs to be fetched:
+   
+    $ cd $SINGA_ROOT/lib/cnmem/
+    $ git clone https://github.com/NVIDIA/cnmem
+
+### From Git:
+
 Please clone the newest code from [Github](https://github.com/apache/incubator-singa) and execute the following commands,
 
     $ git clone https://github.com/apache/incubator-singa.git
