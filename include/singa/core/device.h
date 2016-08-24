@@ -229,7 +229,7 @@ protected:
 
   /// Searches the given paths for all .cl files and builds
   /// OpenCL programs, then stores them in the Kernels map.
-// void BuildPrograms(const std::string &kdir = cl_src_path);
+  void BuildPrograms(const std::string &kdir);
 
 // Overridden, inherited methods.
 

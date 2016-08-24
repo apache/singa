@@ -38,38 +38,14 @@ OpenclDevice::OpenclDevice(int id, int num_executors)
 	: Device(id, num_executors) {
   CHECK_GE(id, 0);
   lang_ = kOpencl;
-  /*
-  cl_int err = CL_SUCCESS;
-  
-  cl_uint num_platforms;
-  clGetPlatformIDs(0, nullptr, &num_platforms);
-  cl_platform_id* platforms = new cl_platform_id[num_platforms];
-  clGetPlatformIDs(num_platforms, platforms, nullptr);
-  
-  cl_uint num_devices;
-  clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_DEFAULT, 0, nullptr, &num_devices);
-  cl_device_id* devices = new cl_device_id[num_devices];
-  clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_DEFAULT, num_devices, devices, nullptr);
-  std::vector<cl_device_id> device_vector;
-  for (cl_uint i = 0; i < num_devices; i++) {
-    device_vector.push_back(devices[i]);
-  }
-  
-  cl_context ocl_ctx = clCreateContext(0, num_devices, devices, nullptr, nullptr, &err);
-  
-  std::vector<cl_command_queue> cmdq;
-  for (cl_uint i = 0; i < num_devices; i++) {
-    cmdq.push_back(clCreateCommandQueue(ocl_ctx, devices[i], 0, &err));
-  }
-  
-  ocl::setup_context(0, ocl_ctx, device_vector, cmdq);
-  ocl::switch_context(0);
-  */
   
   ocl::current_context().build_options("-cl-std=CL1.2");
   
   ctx_.vcl_ctx = ocl::current_context();
+  ctx_.vcl_ocl_ctx_id = 0;
   this->this_device = ocl::current_device();
+  
+  BuildPrograms(cl_src_path);
 }
 
 
@@ -113,10 +89,8 @@ void OpenclDevice::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
   }
 }
 
-/*
-void OpenclDevice::BuildPrograms(const std::string &kdir) {
-  cl_int status = CL_SUCCESS;
 
+void OpenclDevice::BuildPrograms(const std::string &kdir) {
   tinydir_dir dir;
   tinydir_open(&dir, kdir.c_str());
 
@@ -128,40 +102,18 @@ void OpenclDevice::BuildPrograms(const std::string &kdir) {
 	  tinydir_next(&dir);
 	  continue;
 	}
-
+	
 	std::ifstream clFile(file.path, std::ios_base::binary);
 	std::stringstream buffer;
 	buffer << clFile.rdbuf();
 	std::string clSrc(buffer.str());
 
-	cl::Program program(this->ocl_ctx, clSrc, false, &status);
-	OCL_CHECK(status, "Program creation failed.");
-	status = program.build({this_device}, "-cl-std=CL1.2");
-	if (status == CL_SUCCESS) {
-	  std::vector<cl::Kernel> built_kernels;
-	  status = program.createKernels(&built_kernels);
-	  OCL_CHECK(status, "Failed to create kernels in built program.");
-
-	  for (auto k : built_kernels) {
-		std::string name = k.getInfo<CL_KERNEL_FUNCTION_NAME>(&status);
-		this->kernels->insert(std::make_pair(name, k));
-	  }
-	} else {
-	  OCL_CHECK(status, "Build failed on source path");
-	  LOG(ERROR) << file.path << std::endl;
-	  PrintClBuildInfo(program);
-	}
+	std::string name(file.name);
+    ocl::current_context().add_program(clSrc, name);
 
 	tinydir_next(&dir);
   }
-}*/
-
-// Device IO functions.
-// TODO:
-// Research - MapBuffers can improve performance when the device uses shared memory
-// but is more complex to understand. http://stackoverflow.com/questions/22057692/whats-the-difference-between-clenqueuemapbuffer-and-clenqueuewritebuffer
-// Intel graphics (and possibly AMD APUs) should use MapBuffers?
-// https://software.intel.com/en-us/articles/getting-the-most-from-opencl-12-how-to-increase-performance-by-minimizing-buffer-copies-on-intel-processor-graphics
+}
 
 
 void OpenclDevice::DoExec(function<void(Context*)>&& fn, int executor) {
@@ -181,12 +133,12 @@ void OpenclDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
     return;
   }
   case kDeviceToHost: {
-    auto src_handle = WrapHandle(static_cast<cl_mem>(const_cast<void*>(src)), &ctx_.vcl_ctx);
+    auto src_handle = WrapHandle((const cl_mem)src, &ctx_.vcl_ctx);
     memory_read(src_handle, 0, nBytes, dst);
     return;
   }
   case kDeviceToDevice: {
-    auto src_handle = WrapHandle(static_cast<cl_mem>(const_cast<void*>(src)), &ctx_.vcl_ctx);
+    auto src_handle = WrapHandle((const cl_mem)src, &ctx_.vcl_ctx);
     auto dst_handle = WrapHandle(static_cast<cl_mem>(dst), &ctx_.vcl_ctx);
     memory_copy(src_handle, dst_handle, 0, 0, nBytes);
     return;

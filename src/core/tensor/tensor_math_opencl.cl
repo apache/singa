@@ -24,7 +24,7 @@
 // This reduction code is serial reduction modified from AMD's example.
 // http://developer.amd.com/resources/documentation-articles/articles-whitepapers/opencl-optimization-case-study-simple-reductions/
 __kernel 
-void clkernel_abs(const int num, __global const float* in, __global float* out) {
+void clkernel_fabs(const int num, __global const float* in, __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
   out[i] = fabs(in[i]);
@@ -462,7 +462,7 @@ void clkernel_crossentropy(const uint batchsize, const uint dim,
 
   int truth_idx = t[gidx];
   if (truth_idx <= 0) return;
-  float prob_of_truth = p[gidx + truth_idx];
+  float prob_of_truth = p[gidx * dim + truth_idx];
   loss[gidx] = -log(fmax(prob_of_truth, -FLT_MIN));
 }
 
@@ -477,6 +477,21 @@ void clkernel_softmaxentropy(const uint batchsize, const uint dim,
   int truth_idx = t[gidx];
   if (truth_idx <= 0) return;
   grad[gidx * dim + truth_idx] -= 1.0;
+}
+
+
+__kernel
+void clkernel_rowmax(const uint nrow, const uint ncol,
+                     __global const float* in, __global float* out) {
+  const uint row_id = get_global_id(0);
+  if (row_id >= nrow) return;
+  
+  float row_max_val = -FLT_MAX;
+  for (uint i = 0; i < ncol; i++) {
+    row_max_val = fmax(row_max_val, in[row_id * ncol + i]);
+  }
+  
+  out[row_id] = row_max_val;
 }
 
 
