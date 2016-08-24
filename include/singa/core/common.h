@@ -108,6 +108,7 @@ typedef struct _Context {
 
 #ifdef USE_OPENCL
   viennacl::ocl::context vcl_ctx;
+  long vcl_ocl_ctx_id;
 #endif
 
 } Context;

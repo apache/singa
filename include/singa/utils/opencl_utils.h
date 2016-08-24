@@ -49,14 +49,6 @@
 #include <viennacl/ocl/program.hpp>
 #include <viennacl/ocl/kernel.hpp>
 
-#include <viennacl/scalar.hpp>
-#include <viennacl/vector.hpp>
-#include <viennacl/matrix.hpp>
-
-#include <viennacl/linalg/scalar_operations.hpp>
-#include <viennacl/linalg/vector_operations.hpp>
-#include <viennacl/linalg/matrix_operations.hpp>
-
 
 inline viennacl::ocl::handle<cl_mem>
 WrapHandle(cl_mem in, viennacl::ocl::context *ctx) {
