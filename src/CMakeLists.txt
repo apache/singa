@@ -25,31 +25,12 @@ IF (USE_PYTHON)
 ENDIF()
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 
-#message(STATUS "include: ${CMAKE_BINARY_DIR} ")
-#message(STATUS "srcs: ${proto_srcs}")
-#message(STATUS "hdrs: ${proto_hdrs}")
-#message(STATUS "pys: ${proto_pys}")
-ADD_LIBRARY(singa_proto STATIC ${proto_hdrs} ${proto_srcs} ${proto_pys})
-FOREACH(fil ${proto_hdrs})
-    ADD_CUSTOM_COMMAND(
-        TARGET singa_proto PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/singa/proto"
-        COMMAND ${CMAKE_COMMAND} -E copy ${fil} "${CMAKE_BINARY_DIR}/include/singa/proto"
-        #COMMAND ${CMAKE_COMMAND} -E echo "copy done"
-        )
-ENDFOREACH()
-LIST(APPEND SINGA_LINKER_LIBS singa_proto)
-
+LIST(APPEND singa_sources ${proto_hdrs} ${proto_srcs} ${proto_pys})
 SET(PREVIOUS_LINKER_LIBS ${SINGA_LINKER_LIBS})
 
-#FILE(GLOB_RECURSE utils_source ${CMAKE_CURRENT_SOURCE_DIR}/utils/ "*.cc")
 AUX_SOURCE_DIRECTORY(utils utils_source)
-#message(STATUS "UTILS ${utils_source}")
-ADD_LIBRARY(singa_utils SHARED ${utils_source})
-TARGET_LINK_LIBRARIES(singa_utils ${SINGA_LINKER_LIBS})
-LIST(APPEND SINGA_LINKER_LIBS singa_utils)
+LIST(APPEND singa_sources ${utils_source})
 
-#FILE(GLOB_RECURSE core_source ${CMAKE_CURRENT_SOURCE_DIR}/core/ "*.cc")
 AUX_SOURCE_DIRECTORY(core/device core_source)
 AUX_SOURCE_DIRECTORY(core/memory core_source)
 AUX_SOURCE_DIRECTORY(core/scheduler core_source)
@@ -67,32 +48,19 @@ IF (USE_CUDA)
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/core/tensor")
     SET(CMAKE_CXX_FLAGS ${FLAGS_BACKUP})
 ENDIF (USE_CUDA)
-#message(STATUS "FLAGS ${CMAKE_CXX_FLAGS}")
-#message(STATUS "CORE ${cuda_source}")
-#message(STATUS "OBJ ${cuda_objs}")
-ADD_LIBRARY(singa_core SHARED ${core_source} ${cuda_objs})
-TARGET_LINK_LIBRARIES(singa_core ${SINGA_LINKER_LIBS})
-LIST(APPEND SINGA_LINKER_LIBS singa_core)
-#MESSAGE(STATUS "link libs " ${SINGA_LINKER_LIBS})
+LIST(APPEND singa_sources ${core_source} ${cuda_objs})
 
-#FILE(GLOB_RECURSE model_source ${CMAKE_CURRENT_SOURCE_DIR}/model/ "*.cc")
 AUX_SOURCE_DIRECTORY(model model_source)
 AUX_SOURCE_DIRECTORY(model/layer model_source)
 AUX_SOURCE_DIRECTORY(model/optimizer model_source)
 AUX_SOURCE_DIRECTORY(model/loss model_source)
 AUX_SOURCE_DIRECTORY(model/metric model_source)
 AUX_SOURCE_DIRECTORY(model/updater model_source)
-#MESSAGE(STATUS "MODEL ${model_source}")
-ADD_LIBRARY(singa_model SHARED ${model_source})
-MESSAGE(STATUS "model linker libs ${SINGA_LINKER_LIBS}")
-TARGET_LINK_LIBRARIES(singa_model ${SINGA_LINKER_LIBS})
-LIST(APPEND SINGA_LINKER_LIBS singa_model)
+LIST(APPEND singa_sources ${model_source})
 
 AUX_SOURCE_DIRECTORY(io io_source)
 AUX_SOURCE_DIRECTORY(io/network io_source)
-ADD_LIBRARY(singa_io SHARED ${io_source})
-TARGET_LINK_LIBRARIES(singa_io ${SINGA_LINKER_LIBS})
-LIST(APPEND SINGA_LINKER_LIBS singa_io)
+LIST(APPEND singa_sources ${io_source})
 
 IF(USE_PYTHON)
 
@@ -133,3 +101,16 @@ IF(USE_PYTHON)
     FILE(WRITE ${CMAKE_BINARY_DIR}/python/singa/proto/__init__.py "")
 
 ENDIF(USE_PYTHON)
+
+ADD_LIBRARY(singa SHARED ${singa_sources})
+ADD_CUSTOM_TARGET(
+  copy_protobuf
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/singa/proto"
+  COMMAND ${CMAKE_COMMAND} -E copy ${proto_hdrs} "${CMAKE_BINARY_DIR}/include/singa/proto/"
+  DEPENDS ${proto_hdrs}
+  COMMENT "Copying Protobuf files"
+  )
+ADD_DEPENDENCIES(singa copy_protobuf)
+TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
+#MESSAGE(STATUS "HEADERS: ${proto_hdrs}")
+
