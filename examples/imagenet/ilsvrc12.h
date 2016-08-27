@@ -83,12 +83,13 @@ class ILSVRC {
   /// n_read: number of images which are read
   size_t LoadData(int flag, string file, size_t read_size, Tensor *x, Tensor *y,
                   size_t *n_read, int nthreads);
-
+  /// A wrapper method to spawn a thread to execute LoadData() method.
   std::thread AsyncLoadData(int flag, string file, size_t read_size, Tensor *x,
                             Tensor *y, size_t *n_read, int nthreads);
 
   void DecodeTransform(int flag, int thid, int nthreads,
                        vector<string *> images, Tensor *x, Tensor *y);
+  /// A wrapper method to spawn a thread to execute Decodetransform() method.
   std::thread AsyncDecodeTransform(int flag, int thid, int nthreads,
                                    vector<string *> images, Tensor *x,
                                    Tensor *y);
@@ -191,9 +192,7 @@ void ILSVRC::CreateTrainData(string image_list, string input_folder,
                std::default_random_engine());
   LOG(INFO) << "Total number of training images is " << file_list.size();
   size_t num_train_images = file_list.size();
-  num_train_images = 12900;
   if (file_size == 0) file_size = num_train_images;
-  // todo: accelerate with omp
   for (size_t imageid = 0; imageid < num_train_images; imageid++) {
     string path = input_folder + "/" + file_list[imageid].first;
     Tensor image = ReadImage(path);
@@ -206,7 +205,6 @@ void ILSVRC::CreateTrainData(string image_list, string input_folder,
     std::vector<Tensor> input;
     input.push_back(image);
     input.push_back(lb);
-    //  LOG(INFO) << path << "\t" << label;
     string encoded_str = encoder->Encode(input);
     if (writer == nullptr) {
       writer = new BinFileWriter();
@@ -257,7 +255,6 @@ void ILSVRC::CreateTestData(string image_list, string input_folder,
     file_list.push_back(std::make_pair(image_file_name, label));
   LOG(INFO) << "Total number of test images is " << file_list.size();
   size_t num_test_images = file_list.size();
-  num_test_images = 500;
   for (size_t imageid = 0; imageid < num_test_images; imageid++) {
     string path = input_folder + "/" + file_list[imageid].first;
     Tensor image = ReadImage(path);
@@ -292,7 +289,7 @@ void ILSVRC::ReadMean(string path) {
   bfreader.Close();
   mean = ret[0];
 }
-/// A wrapper method to spawn a thread to execute LoadData() method.
+
 std::thread ILSVRC::AsyncLoadData(int flag, string file, size_t read_size,
                                   Tensor *x, Tensor *y, size_t *n_read,
                                   int nthreads) {
@@ -344,7 +341,6 @@ size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
   return nimg;
 }
 
-/// A wrapper method to spawn a thread to execute Decodetransform() method.
 std::thread ILSVRC::AsyncDecodeTransform(int flag, int thid, int nthreads,
                                          vector<string *> images, Tensor *x,
                                          Tensor *y) {
