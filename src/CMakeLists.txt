@@ -106,10 +106,15 @@ ADD_LIBRARY(singa SHARED ${singa_sources})
 ADD_CUSTOM_TARGET(
   copy_protobuf
   COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/singa/proto"
-  COMMAND ${CMAKE_COMMAND} -E copy ${proto_hdrs} "${CMAKE_BINARY_DIR}/include/singa/proto/"
   DEPENDS ${proto_hdrs}
-  COMMENT "Copying Protobuf files"
+  COMMENT "Copying Protobuf headers"
   )
+FOREACH(fil ${proto_hdrs})
+  ADD_CUSTOM_COMMAND(
+    TARGET copy_protobuf PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${fil} "${CMAKE_BINARY_DIR}/include/singa/proto"
+ )
+ENDFOREACH()
 ADD_DEPENDENCIES(singa copy_protobuf)
 TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
 #MESSAGE(STATUS "HEADERS: ${proto_hdrs}")
