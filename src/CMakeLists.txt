@@ -78,6 +78,7 @@ TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
 IF(USE_PYTHON)
 
     protobuf_generate_python(proto_pys ${proto_files})
+    #MESSAGE(STATUS "proto pys: ${proto_pys}")
     FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/config.i")
     CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/python/swig/config.i.in" "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/config.i")
 
@@ -94,11 +95,11 @@ IF(USE_PYTHON)
 
     create_symlinks(${python_source_files})
 
-    ADD_LIBRARY(_singa_wrap SHARED ${python_srcs} ${singa_sources} ${cuda_objs})
+    ADD_LIBRARY(_singa_wrap SHARED ${python_srcs} ${singa_sources} ${cuda_objs} ${proto_pys})
     SET(WRAPPER_LINKER_LIBS "${PREVIOUS_LINKER_LIBS}")
-    TARGET_LINK_LIBRARIES(_singa_wrap ${WRAPPER_LINKER_LIBS})
+    TARGET_LINK_LIBRARIES(_singa_wrap ${WRAPPER_LINKER_LIBS} ${PYTHON_LIBRARIES})
     TARGET_INCLUDE_DIRECTORIES(_singa_wrap PRIVATE ${PYTHON_INCLUDE_DIRS})
-    ADD_DEPENDENCIES(_singa_wrap singa)
+    ADD_DEPENDENCIES(_singa_wrap singa )
     #message(STATUS "PREVIOUS_LINKER_LIBS ${PREVIOUS_LINKER_LIBS}")
 
     SET_TARGET_PROPERTIES(_singa_wrap
@@ -113,13 +114,14 @@ IF(USE_PYTHON)
 
     #create python/singa/proto/__init__.py
     FILE(WRITE ${CMAKE_BINARY_DIR}/python/singa/proto/__init__.py "")
+    #MESSAGE(STATUS "apple: ${APPLE}")
     IF(APPLE)
         ADD_CUSTOM_TARGET(
-            change_subfix 
+            change_suffix ALL 
             COMMAND ${CMAKE_COMMAND} -E rename "${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.dylib" "${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.so"
-            DEPENDS ${_singa_wrap}
             COMMENT "change .dylib to .so in mac system"
         )
+        ADD_DEPENDENCIES(change_suffix _singa_wrap)
     ENDIF(APPLE)
 
 ENDIF(USE_PYTHON)
