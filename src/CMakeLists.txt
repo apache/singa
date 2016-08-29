@@ -20,12 +20,9 @@
 
 FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
-IF (USE_PYTHON)
-    protobuf_generate_python(proto_pys ${proto_files})
-ENDIF()
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 
-LIST(APPEND singa_sources ${proto_hdrs} ${proto_srcs} ${proto_pys})
+LIST(APPEND singa_sources ${proto_hdrs} ${proto_srcs})
 SET(PREVIOUS_LINKER_LIBS ${SINGA_LINKER_LIBS})
 
 AUX_SOURCE_DIRECTORY(utils utils_source)
@@ -61,47 +58,6 @@ LIST(APPEND singa_sources ${model_source})
 AUX_SOURCE_DIRECTORY(io io_source)
 AUX_SOURCE_DIRECTORY(io/network io_source)
 LIST(APPEND singa_sources ${io_source})
-
-IF(USE_PYTHON)
-
-    FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/config.i")
-    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/python/swig/config.i.in" "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/config.i")
-
-    FILE(GLOB python_files python/swig/singa.i)
-    # delete old .cxx file
-    FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/singa_wrap.cxx")
-
-    # generate cxx and wrap.py
-    swig_generate_cxx(python_srcs ${python_files})
-
-    #FILE(COPY python/ DESTINATION ${CMAKE_BINARY_DIR}/python/singa FILES_MATCHING PATTERN "swig" EXCLUDE PATTERN "*.py")
-    #Create symlinks for all python source files  Do not omit !!!RELATIVE!!!
-    file(GLOB_RECURSE python_source_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
-
-    create_symlinks(${python_source_files})
-
-    SET(python_cxxs "${core_source};${io_source};${model_source};${utils_source}")
-    ADD_LIBRARY(_singa_wrap SHARED ${python_srcs} ${python_cxxs} ${cuda_objs})
-    SET(WRAPPER_LINKER_LIBS "${PREVIOUS_LINKER_LIBS}")
-    TARGET_LINK_LIBRARIES(_singa_wrap ${WRAPPER_LINKER_LIBS})
-    TARGET_INCLUDE_DIRECTORIES(_singa_wrap PRIVATE ${PYTHON_INCLUDE_DIRS})
-    #message(STATUS "PREVIOUS_LINKER_LIBS ${PREVIOUS_LINKER_LIBS}")
-
-    SET_TARGET_PROPERTIES(_singa_wrap
-        PROPERTIES PREFIX ""
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa
-        )
-
-    #SETUP
-    SET(SETUP_PY_IN "python/setup.py.in")
-    SET(SETUP_PY    "${CMAKE_BINARY_DIR}/python/setup.py")
-    CONFIGURE_FILE(${SETUP_PY_IN} ${SETUP_PY})
-
-    #create python/singa/proto/__init__.py
-    FILE(WRITE ${CMAKE_BINARY_DIR}/python/singa/proto/__init__.py "")
-
-ENDIF(USE_PYTHON)
-
 ADD_LIBRARY(singa SHARED ${singa_sources})
 ADD_CUSTOM_TARGET(
   copy_protobuf
@@ -118,4 +74,56 @@ ENDFOREACH()
 ADD_DEPENDENCIES(singa copy_protobuf)
 TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
 #MESSAGE(STATUS "HEADERS: ${proto_hdrs}")
+
+IF(USE_PYTHON)
+
+    protobuf_generate_python(proto_pys ${proto_files})
+    #MESSAGE(STATUS "proto pys: ${proto_pys}")
+    FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/config.i")
+    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/python/swig/config.i.in" "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/config.i")
+
+    FILE(GLOB python_files python/swig/singa.i)
+    # delete old .cxx file
+    FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/python/swig/singa_wrap.cxx")
+
+    # generate cxx and wrap.py
+    swig_generate_cxx(python_srcs ${python_files})
+
+    #FILE(COPY python/ DESTINATION ${CMAKE_BINARY_DIR}/python/singa FILES_MATCHING PATTERN "swig" EXCLUDE PATTERN "*.py")
+    #Create symlinks for all python source files  Do not omit !!!RELATIVE!!!
+    file(GLOB_RECURSE python_source_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
+
+    create_symlinks(${python_source_files})
+
+    ADD_LIBRARY(_singa_wrap SHARED ${python_srcs} ${singa_sources} ${cuda_objs} ${proto_pys})
+    SET(WRAPPER_LINKER_LIBS "${PREVIOUS_LINKER_LIBS}")
+    TARGET_LINK_LIBRARIES(_singa_wrap ${WRAPPER_LINKER_LIBS} ${PYTHON_LIBRARIES})
+    TARGET_INCLUDE_DIRECTORIES(_singa_wrap PRIVATE ${PYTHON_INCLUDE_DIRS})
+    ADD_DEPENDENCIES(_singa_wrap singa )
+    #message(STATUS "PREVIOUS_LINKER_LIBS ${PREVIOUS_LINKER_LIBS}")
+
+    SET_TARGET_PROPERTIES(_singa_wrap
+        PROPERTIES PREFIX ""
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa
+        )
+
+    #SETUP
+    SET(SETUP_PY_IN "python/setup.py.in")
+    SET(SETUP_PY    "${CMAKE_BINARY_DIR}/python/setup.py")
+    CONFIGURE_FILE(${SETUP_PY_IN} ${SETUP_PY})
+
+    #create python/singa/proto/__init__.py
+    FILE(WRITE ${CMAKE_BINARY_DIR}/python/singa/proto/__init__.py "")
+    #MESSAGE(STATUS "apple: ${APPLE}")
+    IF(APPLE)
+        ADD_CUSTOM_TARGET(
+            change_suffix ALL 
+            COMMAND ${CMAKE_COMMAND} -E rename "${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.dylib" "${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.so"
+            COMMENT "change .dylib to .so in mac system"
+        )
+        ADD_DEPENDENCIES(change_suffix _singa_wrap)
+    ENDIF(APPLE)
+
+ENDIF(USE_PYTHON)
+
 
