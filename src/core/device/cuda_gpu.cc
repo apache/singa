@@ -53,7 +53,7 @@ CudaGPU::CudaGPU(int id) : Device(id, kNumCudaStream) {
 
 CudaGPU::CudaGPU(int id, std::shared_ptr<DeviceMemPool> pool)
     : Device(id, kNumCudaStream) {
-  CHECK_NE(pool, nullptr);
+  CHECK(pool != nullptr);
   pool_ = pool;
   Setup();
 }
