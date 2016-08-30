@@ -9,36 +9,81 @@
 
 
 ### Optional
-* glog
-* opencv (tested with 2.4.8)
-* lmdb (tested with 0.9)
 * cuda (tested with 6.5, 7.0 and 7.5)
 * cudnn (v4 and v5)
+* opencv (tested with 2.4.8)
+* lmdb (tested with 0.9)
+* glog
 
-PySINGA has additional dependencies
+PySINGA (the Python binding) has additional dependencies
 
 * python(==2.7)
 * pip(>=1.5)
-* swig(>=3.0)
+* swig(>=3.0.10)
 * numpy(>=1.11.0)
-* openblas (>=0.2.10)
 
 Users are encouraged to install the cuda and [cudnn](https://developer.nvidia.com/cudnn) for running SINGA on GPUs to
 get better performance.
-Most of the dependent libraries could be installed via package mangers like
-apt-get or homebrew.
+Most of the dependent libraries could be installed from source or via package mangers like
+apt-get, homebrew, pip and anaconda. Please refer to FAQ for problems caused by the path setting of the dependent libraries.
 
-    # for ubuntu users, tested on 14.04
-    sudo apt-get install libprotobuf-dev libopenblas-dev libopencv-dev protobuf-compiler libgoogle-glog-dev liblmdb-dev python2.7-dev python-pip python-numpy
 
-    # for Mac OS users
-    brew install -vd glog lmdb
-    brew tap homebrew/science
-    brew install opencv
-    brew install openblas
-    brew tap homebrew/python
-    brew install python
-    brew install numpy  --with-openblas
+### apt-get
+The following instructions are tested on Ubuntu 14.04 for installing dependent libraries.
+
+    # required libraries
+    $ sudo apt-get install libprotobuf-dev libopenblas-dev protobuf-compiler
+
+    # optional libraries
+    $ sudo apt-get install python2.7-dev python-pip python-numpy
+    $ sudo apt-get install llibopencv-dev ibgoogle-glog-dev liblmdb-dev
+
+Please note that PySINGA requires swig >=3.0, which could be installed via
+apt-get on Ubuntu 16.04; but it has to be installed from source for other Ubuntu versions including 14.04.
+
+### homebrew
+The following instructions are tested on Mac OS X Yosemite (10.10.5) for installing dependent libraries.
+
+    # required libraries
+    $ brew tap homebrew/science
+    $ brew install openblas
+    $ brew install protobuf260
+
+    # optional libraries
+    $ brew tap homebrew/python
+    $ brew install python
+    $ brew install opencv
+    $ brew install -vd glog lmdb
+
+By default, openblas is installed into /usr/local/opt/openblas. To let the compiler (and cmake) know the openblas
+path, please export
+
+    $ export CMAKE_INCLUDE_PATH=/usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH
+    $ export CMAKE_LIBRARY_PATH=/usr/local/opt/openblas/library:$CMAKE_LIBRARY_PATH
+
+To let the runtime know the openblas path, please export
+
+    $ export LD_LIBRARY_PATH=/usr/local/opt/openblas/library:$LD_LIBRARY_PATH
+
+### pip and anaconda for PySINGA
+pip and anaconda could be used to install python packages, e.g. numpy.
+To use pip with virtual environment,
+
+    # install virtualenv
+    $ pip install virtualenv
+    $ virtualenv pysinga
+    $ source pysinga/bin/activate
+    $ pip install numpy
+
+To use anaconda with virtual environment,
+
+    $ conda create --name pysinga python=2
+    $ source activate pysinga
+    $ conda install numpy
+
+After installing numpy, please export the header path of numpy.i as
+
+    $ export CPLUS_INCLUDE_PATH=`python -c "import numpy; print numpy.get_include()"`:$CPLUS_INCLUDE_PATH
 
 
 ## Install PySINGA
@@ -95,7 +140,7 @@ To build cnmem into the wheel file, please change CMakeLists.txt by replacing
 ### From the downloaded `tar.gz` file:
 
 Extract the downloaded. If using CUDA, CNMeM needs to be fetched:
-   
+
     $ cd $SINGA_ROOT/lib/cnmem/
     $ git clone https://github.com/NVIDIA/cnmem
 
@@ -240,3 +285,9 @@ To be added.
 
     A: It could be caused by the `PYTHONPATH` which should be set to empty when you are using virtual environment to avoid the conflicts with the path of
     the virtual environment.
+
+* Q: When compiling PySINGA from source, there is a compilation error due to the missing of <numpy/objectarray.h>
+
+    A: Please install numpy and export the path of numpy header files as
+
+        $ export CPLUS_INCLUDE_PATH=`python -c "import numpy; print numpy.get_include()"`:$CPLUS_INCLUDE_PATH

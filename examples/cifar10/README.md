@@ -56,7 +56,7 @@ averaged on the host CPU device and then be applied to update the parameters.
 
         ./run-parallel.sh
 
-4. vgg-parallel.cc. It train the VGG model using the CPP APIs on two CudaGPU devices similar to alexnet-parallel.cc.
+4. vgg-parallel.cc. It trains the VGG model using the CPP APIs on two CudaGPU devices similar to alexnet-parallel.cc.
 
 ### Prediction
 
@@ -68,10 +68,3 @@ The net is created by loading the previously trained model; Images consist of
 a numpy array of images (one row per image); dev is the training device, e.g.,
 a CudaGPU device or the host CppCPU device; topk labels of each image would be
 returned.
-
-
-
-
-
-
-
