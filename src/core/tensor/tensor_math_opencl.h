@@ -27,6 +27,7 @@
 #include <viennacl/vector.hpp>
 #include <viennacl/matrix.hpp>
 
+#include <viennacl/linalg/prod.hpp>
 #include <viennacl/linalg/inner_prod.hpp>
 #include <viennacl/linalg/norm_2.hpp>
 #include <viennacl/linalg/sum.hpp>
@@ -510,19 +511,23 @@ void Dot<float, lang::Opencl>(const size_t num, const Block *in1, const Block *i
 template<>
 void GEMV<float, lang::Opencl>(bool trans, const size_t m, const size_t n, const float alpha,
 		  const Block *A, const Block *v, const float beta, Block* out, Context* ctx) {
-		  
-  viennacl::matrix<float> A_in((const cl_mem)A->data(), m, n);
-  viennacl::vector<float> v_in((const cl_mem)v->data(), trans ? m : n);
-  viennacl::vector<float> o_in(static_cast<cl_mem>(out->mutable_data()), trans ? n : m);
+  viennacl::vector<float> v_buf((const cl_mem)v->data(), n);
+  viennacl::vector<float> o_buf(static_cast<cl_mem>(out->mutable_data()), m);
   
-  if (trans) viennacl::trans(A_in);
+  viennacl::matrix<float> A_buf;
   
-  o_in *= beta;
-  o_in += alpha * viennacl::linalg::prod(A_in, v_in);
+  if (trans) {
+    A_buf = viennacl::matrix<float>((const cl_mem)A->data(), n, m);
+    A_buf = viennacl::trans(A_buf);
+  } else {
+    A_buf = viennacl::matrix<float>((const cl_mem)A->data(), m, n);
+  }
+
+  o_buf *= beta;
+  o_buf += alpha * viennacl::linalg::prod(A_buf, v_buf);
 }
 
-
-/// multiply a matrix with a diagnoal matrix constructed using values from 'v'.
+/// multiply a matrix with a diagonal matrix constructed using values from 'v'.
 /// if matrix_lef_side is true, do M*v; else do v*M
 template<>
 void DGMM<float, lang::Opencl>(bool side_right,
@@ -549,12 +554,22 @@ void GEMM<float, lang::Opencl>(const bool transA, const bool transB,
 		  const float alpha, const Block *A, const Block *B, const float beta,
 		  Block *C, Context *ctx) {
 
-  viennacl::matrix<float> A_buf((const cl_mem)A->data(), nrowA, ncolA);
-  viennacl::matrix<float> B_buf((const cl_mem)B->data(), ncolA, ncolB);
+  viennacl::matrix<float> A_buf, B_buf;
   viennacl::matrix<float> C_buf(static_cast<cl_mem>(C->mutable_data()), nrowA, ncolB);
-
-  if (transA) viennacl::trans(A_buf);
-  if (transB) viennacl::trans(B_buf);
+  
+  if (transA) {
+    A_buf = viennacl::matrix<float>((const cl_mem)A->data(), ncolA, nrowA);
+    A_buf = viennacl::trans(A_buf);
+  } else {
+    A_buf = viennacl::matrix<float>((const cl_mem)A->data(), nrowA, ncolA);
+  }
+  
+  if (transB) {
+    B_buf = viennacl::matrix<float>((const cl_mem)B->data(), ncolB, ncolA);
+    B_buf = viennacl::trans(B_buf);
+  } else {
+    B_buf = viennacl::matrix<float>((const cl_mem)B->data(), ncolA, ncolB);
+  }
   
   C_buf *= beta;
   C_buf += alpha * viennacl::linalg::prod(A_buf, B_buf);

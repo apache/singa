@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 # This file is retrieved from caffe/cmake/Modules/FindViennaCL.cmake.
 
-=======
->>>>>>> 8ac95cb... SINGA-243 ViennaCL backend for OpenCL support
 SET(ViennaCL_WITH_OPENCL TRUE)
 
 SET(VIENNACL_INCLUDE_SEARCH_PATHS

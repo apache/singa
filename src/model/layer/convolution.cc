@@ -142,14 +142,16 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
   size_t batchsize = grad.shape(0);
   size_t imagesize = src_data.Size() / batchsize;
   if (bias_term_) {
-    Tensor tmp1 =
-        Reshape(grad, Shape{batchsize * num_filters_,
-                            grad.Size() / (batchsize * num_filters_)});
+    auto tmpshp = Shape{batchsize * num_filters_, grad.Size() / (batchsize * num_filters_)};
+    Tensor tmp1 = Reshape(grad, tmpshp);
+
     Tensor tmp2(Shape{batchsize * num_filters_});
     SumColumns(tmp1, &tmp2);
     Tensor tmp3 = Reshape(tmp2, Shape{batchsize, num_filters_});
+
     SumRows(tmp3, &db);
   }
+  
   auto in_data = src_data.data<float>();
   Tensor col_data(Shape{col_height_, col_width_});
   float *data_col = new float[col_height_ * col_width_];
@@ -157,14 +159,17 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
   for (size_t b = 0; b < batchsize; b++) {
     Im2col(in_data + b * imagesize, channels_, height_, width_, kernel_h_,
            kernel_w_, pad_h_, pad_w_, stride_h_, stride_w_, data_col);
+    
     col_data.CopyDataFromHostPtr(data_col, col_height_ * col_width_);
     Tensor grad_b(Shape{num_filters_, conv_height_ * conv_width_});
     CopyDataToFrom(&grad_b, grad, grad_b.Size(), 0, b * grad_b.Size());
     dw += Mult(grad_b, col_data.T());
     Tensor dcol_b = Mult(weight_.T(), grad_b);
     auto dcol_data = dcol_b.data<float>();
+    
     Col2im(dcol_data, channels_, height_, width_, kernel_h_, kernel_w_, pad_h_,
            pad_w_, stride_h_, stride_w_, dx_b);
+    
     dx.CopyDataFromHostPtr(dx_b, imagesize, b * imagesize);
   }
   param_grad.push_back(dw);
@@ -180,12 +185,13 @@ void Convolution::ToDevice(std::shared_ptr<Device> device) {
 }
 
 void Convolution::Im2col(const float *data_im, const int channels,
-                         const int height, const int width, const int kernel_h,
-                         const int kernel_w, const int pad_h, const int pad_w,
+                         const int height, const int width,
+                         const int kernel_h, const int kernel_w,
+                         const int pad_h, const int pad_w,
                          const int stride_h, const int stride_w,
                          float *data_col) {
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
-  int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+  int width_col  = ( width + 2 * pad_w - kernel_w) / stride_w + 1;
   int channels_col = channels * kernel_h * kernel_w;
   for (int c = 0; c < channels_col; ++c) {
     int w_offset = c % kernel_w;
@@ -206,18 +212,19 @@ void Convolution::Im2col(const float *data_im, const int channels,
 }
 
 void Convolution::Col2im(const float *data_col, const int channels,
-                         const int height, const int width, const int patch_h,
-                         const int patch_w, const int pad_h, const int pad_w,
+                         const int height, const int width,
+                         const int kernel_h, const int kernel_w,
+                         const int pad_h, const int pad_w,
                          const int stride_h, const int stride_w,
                          float *data_im) {
   memset(data_im, 0, height * width * channels * sizeof(float));
-  int height_col = (height + 2 * pad_h - patch_h) / stride_h + 1;
-  int width_col = (width + 2 * pad_w - patch_w) / stride_w + 1;
-  int channels_col = channels * patch_h * patch_w;
+  int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+  int width_col  = ( width + 2 * pad_w - kernel_w) / stride_w + 1;
+  int channels_col = channels * kernel_h * kernel_w;
   for (int c = 0; c < channels_col; ++c) {
-    int w_offset = c % patch_w;
-    int h_offset = (c / patch_w) % patch_h;
-    int c_im = c / patch_h / patch_w;
+    int w_offset = c % kernel_w;
+    int h_offset = (c / kernel_w) % kernel_h;
+    int c_im = c / kernel_h / kernel_w;
     for (int h = 0; h < height_col; ++h) {
       for (int w = 0; w < width_col; ++w) {
         int h_pad = h * stride_h - pad_h + h_offset;

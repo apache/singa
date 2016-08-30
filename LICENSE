@@ -305,6 +305,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 SINGA bundles the following under BSD 2-clause license:
 include/singa/utils/cuda_utils.h
 src/core/tensor/distribution.cl
+src/model/layer/im2col.cl
+src/model/layer/pooling.cl
 cmake/ThirdParty/FindViennaCL.cmake
 
 COPYRIGHT

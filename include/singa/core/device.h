@@ -72,7 +72,7 @@ class Device {
   }
 
   /// Copy data within or across devices.
-  void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
+  virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                       CopyDirection direction, int dst_offset, int src_offset);
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
@@ -214,9 +214,9 @@ public:
 // Overridden, inherited methods
   void SetRandSeed(unsigned seed) override;
 
-  void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
+  virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                       CopyDirection direction, int dst_offset = 0,
-                      int src_offset = 0);
+                      int src_offset = 0) override;
 
 protected:
   /// The OpenCL device that this object represents.

@@ -51,16 +51,16 @@
 
 
 inline viennacl::ocl::handle<cl_mem>
-WrapHandle(cl_mem in, viennacl::ocl::context *ctx) {
+WrapHandle(cl_mem in, viennacl::ocl::context &ctx) {
   if (in != nullptr) {
-    viennacl::ocl::handle<cl_mem> memhandle(in, *ctx);
+    viennacl::ocl::handle<cl_mem> memhandle(in, ctx);
     memhandle.inc();
     return memhandle;
   } else {
     cl_int err;
-    cl_mem dummy = clCreateBuffer(ctx->handle().get(), CL_MEM_READ_WRITE, 0,
+    cl_mem dummy = clCreateBuffer(ctx.handle().get(), CL_MEM_READ_WRITE, 0,
                                   nullptr, &err);
-    viennacl::ocl::handle<cl_mem> memhandle(dummy, *ctx);
+    viennacl::ocl::handle<cl_mem> memhandle(dummy, ctx);
     return memhandle;
   }
 }

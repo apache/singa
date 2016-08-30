@@ -45,6 +45,7 @@ OpenclDevice::OpenclDevice(int id, int num_executors)
   this->this_device = ocl::current_device();
   
   BuildPrograms(cl_src_path);
+  BuildPrograms("../src/model/layer");
 }
 
 
@@ -70,18 +71,18 @@ void OpenclDevice::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
 
   switch(direction) {
   case kHostToDevice: {
-    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), &ocl_ctx);
+    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
     memory_write(dst_handle, dst_offset, nBytes, src->data());
     return;
   }
   case kDeviceToHost: {
-    auto src_handle = WrapHandle(static_cast<cl_mem>(src->mutable_data()), &ocl_ctx);
+    auto src_handle = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
     memory_read(src_handle, src_offset, nBytes, dst->mutable_data());
     return;
   }
   case kDeviceToDevice: {
-    auto src_handle = WrapHandle(static_cast<cl_mem>(src->mutable_data()), &ocl_ctx);
-    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), &ocl_ctx);
+    auto src_handle = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
+    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
     memory_copy(src_handle, dst_handle, src_offset, dst_offset, nBytes);
     return;
   }
@@ -131,18 +132,18 @@ void OpenclDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
 
   switch(direction) {
   case kHostToDevice: {
-    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst), &ocl_ctx);
+    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst), ocl_ctx);
     memory_write(dst_handle, 0, nBytes, src);
     return;
   }
   case kDeviceToHost: {
-    auto src_handle = WrapHandle((const cl_mem)src, &ocl_ctx);
+    auto src_handle = WrapHandle((const cl_mem)src, ocl_ctx);
     memory_read(src_handle, 0, nBytes, dst);
     return;
   }
   case kDeviceToDevice: {
-    auto src_handle = WrapHandle((const cl_mem)src, &ocl_ctx);
-    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst), &ocl_ctx);
+    auto src_handle = WrapHandle((const cl_mem)src, ocl_ctx);
+    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst), ocl_ctx);
     memory_copy(src_handle, dst_handle, 0, 0, nBytes);
     return;
   }

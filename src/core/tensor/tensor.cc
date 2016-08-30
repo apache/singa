@@ -787,6 +787,7 @@ Tensor ConcatenateColumns(const vector<Tensor> &in) {
   }
   return out;
 }
+
 Tensor CopyRows(const Tensor &in, const size_t start, const size_t end) {
   CHECK_LT(start, end);
   CHECK_GE(in.shape(0), end);
@@ -797,6 +798,7 @@ Tensor CopyRows(const Tensor &in, const size_t start, const size_t end) {
   CopyDataToFrom(&out, in, out.Size(), 0, start * sample_size);
   return out;
 }
+
 Tensor CopyColumns(const Tensor &in, const size_t start, const size_t end) {
   CHECK_EQ(in.nDim(), 2u);
   CHECK_LT(start, end);
@@ -865,6 +867,7 @@ Tensor SliceRows(const Tensor &in, const size_t start, const size_t end) {
   */
   return ret;
 }
+
 void SubColumn(const Tensor &v, Tensor *M) { AddColumn(-1, 1, v, M); }
 
 void SubRow(const Tensor &v, Tensor *M) { AddRow(-1, 1, v, M); }
@@ -910,6 +913,7 @@ void Bernoulli(const SType p, Tensor *out) {
     }, {}, {out->block()}, true);
   });
 }
+
 template void Bernoulli<float>(const float p, Tensor *out);
 
 template <typename SType>
@@ -922,6 +926,7 @@ void Uniform(const SType low, const SType high, Tensor *out) {
     }, {}, {out->block()}, true);
   });
 }
+
 template void Uniform<float>(const float low, const float high, Tensor *out);
 
 template <typename SType>
@@ -947,6 +952,7 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
     }, {in.block(), out->block()}, {out->block()});
   });
 }
+
 template
 void Axpy<float>(const float alpha, const Tensor &in, Tensor *out);
 
@@ -1006,6 +1012,7 @@ void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
     }, {p.block(), t.block()}, {loss->block()});
   });
 }
+
 void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
   CHECK_LE(p->nDim(), 2u);
   CHECK_LE(t.nDim(), 2u);  // TODO(wangwei) consider multi-labels.
