@@ -93,7 +93,7 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='sample chars from char-rnn')
-    parser.add_argument('model', type=int, help='the model checkpoint file')
+    parser.add_argument('model', help='the model checkpoint file')
     parser.add_argument('n', type=int, help='num of characters to sample')
     parser.add_argument('--seed', help='seed text string which warms up the '
                         ' rnn states for sampling', default='')

@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
+'''Predicting the labels for new images using the pre-trained alexnet model'''
 import cPickle as pickle
 import numpy as np
 
@@ -21,7 +22,7 @@ import numpy as np
 
 from singa import device
 from singa import tensor
-import net as ffnet
+import alexnet
 
 
 def predict(net, images, dev, topk=5):
@@ -38,10 +39,10 @@ def predict(net, images, dev, topk=5):
     x.to_device(dev)
     y = net.predict(x)
     y.to_host()
-    y = tensor.to_numpy(y)
-    prob = np.average(y, 0)
+    prob = tensor.to_numpy(y)
+    # prob = np.average(prob, 0)
     labels = np.flipud(np.argsort(prob))  # sort prob in descending order
-    return labels[0:topk], prob[labels[0:topk]]
+    return labels[:, 0:topk]
 
 
 def load_dataset(filepath):
@@ -75,16 +76,16 @@ def load_test_data(dir_path):
 
 
 def compute_image_mean(train_dir):
-    images = np.load(train_dir)
+    images, _ = load_train_data(train_dir)
     return np.average(images, 0)
 
 if __name__ == '__main__':
-    model = ffnet.create_alexnet()
-    model.load('model.bin')
-    cuda = device.create_cuda_gpu()
-    model.to_device(cuda)
+    model = alexnet.create_net(True)
+    model.load('model.bin')  # the checkpoint from train.py
+    dev = device.get_default_device()
+    model.to_device(dev)
 
     mean = compute_image_mean('cifar-10-batches-py')
     test_images, _ = load_test_data('cifar-10-batches-py')
-    # minus mean is for alexnet; vgg uses a different pre-processing strategy
-    print predict(model, test_images - mean, cuda)
+    # predict for two images
+    print predict(model, test_images[0:2] - mean, dev)
