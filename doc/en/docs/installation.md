@@ -14,6 +14,7 @@
 * opencv (tested with 2.4.8)
 * lmdb (tested with 0.9)
 * glog
+* opencl-headers and viennacl (version 1.7.1 or newer) for OpenCL support
 
 PySINGA (the Python binding) has additional dependencies
 
@@ -191,6 +192,28 @@ After compiling SINGA, you can run the unit tests by
 You can see all the testing cases with testing results. If SINGA passes all
 tests, then you have successfully installed SINGA. Please proceed to try the examples!
 
+### OpenCL support (Linux)
+
+Install `opencl-headers` and `libviennacl-dev` (Ubuntu 16) or `viennacl` (Fedora).
+
+Additionally, you will need the OpenCL Installable Client Driver (ICD) for the platforms that you want to run OpenCL on.
+
+* For AMD and nVidia GPUs, the driver package should also install the correct OpenCL ICD.
+* For Intel CPUs and/or GPUs, get the driver from the [Intel website.](https://software.intel.com/en-us/articles/opencl-drivers) Note that the drivers provided on that website only supports recent CPUs and Iris GPUs.
+* For older Intel CPUs, you can use the `beignet-opencl-icd` package.
+
+Note that running OpenCL on CPUs is not currently recommended because it is slow. Memory transfer is on the order of whole seconds (1000's of ms on CPUs as compared to 1's of ms on GPUs).
+
+More information on setting up a working OpenCL environment may be found [here](https://wiki.tiker.net/OpenCLHowTo).
+
+If the package version of ViennaCL is not at least 1.7.1, you will need to build it from source:
+
+Clone [the repository from here](https://github.com/viennacl/viennacl-dev), checkout the `release-1.7.1` tag and build it.
+Remember to add its directory to `PATH` and the built libraries to `LD_LIBRARY_PATH`.
+
+To build SINGA with OpenCL support, you need to pass the flag during cmake:
+
+    cmake .. -DUSE_OPENCL=ON
 
 ### Windows
 To be added.
