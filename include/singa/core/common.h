@@ -20,7 +20,7 @@
 #define SINGA_CORE_COMMON_H_
 #include <random>
 #include <chrono>
-#include "./singa/singa_config.h"
+#include "singa/singa_config.h"
 #include <atomic>
 #include <memory>
 #include "singa/utils/logging.h"
