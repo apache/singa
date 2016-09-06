@@ -38,22 +38,23 @@ SET(SINGA_INCLUDE_DIR
 INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
 
 OPTION(USE_CBLAS "Use CBlas libs" ON)
-OPTION(USE_CUDA "Use Cuda libs" OFF)
+OPTION(USE_CUDA "Use Cuda libs" ON)
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
-OPTION(USE_PYTHON "Generate py wrappers" OFF)
+OPTION(USE_PYTHON "Generate py wrappers" ON)
+OPTION(USE_JAVA "Generate java wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
 OPTION(ENABLE_DIST "enable distributed training" OFF)
 
 INCLUDE("cmake/Dependencies.cmake")
-INCLUDE("cmake/Utils.cmake")
+#INCLUDE("cmake/Utils.cmake")
 ADD_DEFINITIONS(-DUSE_CMAKE)
 #message(STATUS "${SINGA_INCLUDE_DIR}")
 
 CONFIGURE_FILE (
     "${PROJECT_SOURCE_DIR}/cmake/Templates/singa_config.h.in"
-    "${PROJECT_BINARY_DIR}/include/singa/singa_config.h")
+    "${PROJECT_SOURCE_DIR}/include/singa/singa_config.h")
 
 #set(SINGA_CONFIGURE_SRC "${PROJECT_BINARY_DIR}/singa_config.h")
 #LIST(APPEND SRCS ${SINGA_CONFIGURE_SRCS} ${PROJECT_BINARY_DIR}/singa_config.h)
@@ -64,6 +65,7 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 IF (USE_CUDA)
     ADD_SUBDIRECTORY(lib/cnmem)
     LIST(APPEND SINGA_LINKER_LIBS cnmem)
+    SET(global_cuda_objs "")
 ENDIF()
 
 # TODO(wangwei) detect the ev lib
@@ -71,9 +73,18 @@ IF (ENABLE_DIST)
   LIST(APPEND SINGA_LINKER_LIBS ev)
 ENDIF()
 
+INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(test)
 ADD_SUBDIRECTORY(examples)
+
+IF (USE_PYTHON)
+  ADD_SUBDIRECTORY(python)
+ENDIF()
+
+IF (USE_JAVA)
+  ADD_SUBDIRECTORY(java)
+ENDIF()
 
 INSTALL(DIRECTORY include/singa DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 INSTALL(FILES ${CMAKE_BINARY_DIR}/include/singa/singa_config.h DESTINATION
