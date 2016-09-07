@@ -38,7 +38,7 @@ SET(SINGA_INCLUDE_DIR
 INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
 
 OPTION(USE_CBLAS "Use CBlas libs" ON)
-OPTION(USE_CUDA "Use Cuda libs" ON)
+OPTION(USE_CUDA "Use Cuda libs" OFF)
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
@@ -54,7 +54,7 @@ ADD_DEFINITIONS(-DUSE_CMAKE)
 
 CONFIGURE_FILE (
     "${PROJECT_SOURCE_DIR}/cmake/Templates/singa_config.h.in"
-    "${PROJECT_SOURCE_DIR}/include/singa/singa_config.h")
+    "${PROJECT_BINARY_DIR}/include/singa/singa_config.h")
 
 #set(SINGA_CONFIGURE_SRC "${PROJECT_BINARY_DIR}/singa_config.h")
 #LIST(APPEND SRCS ${SINGA_CONFIGURE_SRCS} ${PROJECT_BINARY_DIR}/singa_config.h)
@@ -83,6 +83,7 @@ IF (USE_PYTHON)
 ENDIF()
 
 IF (USE_JAVA)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing ")
   ADD_SUBDIRECTORY(java)
 ENDIF()
 
