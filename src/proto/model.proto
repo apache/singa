@@ -18,6 +18,7 @@
 
 package singa;
 
+option java_package = "singa.proto";
 /// \file layer.proto is adapted from [Caffe](https://github.com/BVLC/caffe/)'s
 /// proto file with commit id c419f8517b1e1b3d7a07fe212fc6c90a70b519ea. We
 /// use caffe's protocol for configuring layer hyper-parameters for easy

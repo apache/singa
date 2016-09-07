@@ -18,6 +18,8 @@
 
 package singa;
 
+option java_package = "singa.proto";
+
 // TODO(wangwei) check protobuf version to include the syntax
 //syntax = "proto2";
 

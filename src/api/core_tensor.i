@@ -44,10 +44,13 @@ using singa::DataType;
 %}
 %shared_ptr(singa::Device)
 
+#if USE_PYTHON
 %include "numpy.i"
 %init %{
   import_array();
 %}
+#endif //USE_PYTHON
+
 %apply (float *IN_ARRAY1, int DIM1) {
        (const float *src, const size_t num)
 }

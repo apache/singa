@@ -1,4 +1,6 @@
 // Pass in cmake configurations to swig
 #cmakedefine01 USE_CUDA
 #cmakedefine01 USE_CUDNN
+#cmakedefine01 USE_PYTHON
+#cmakedefine01 USE_JAVA
 #cmakedefine CUDNN_VERSION_SWIG ${CUDNN_VERSION_SWIG}

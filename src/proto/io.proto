@@ -18,6 +18,7 @@
 
 package singa;
 
+option java_package = "singa.proto";
 
 message EncoderConf {
   optional string type = 1 [default = "jpg2proto"];
