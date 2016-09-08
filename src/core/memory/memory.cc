@@ -21,8 +21,157 @@
 #include "singa/proto/core.pb.h"
 #include <iostream>
 
-#ifdef USE_CUDA
 namespace singa {
+
+std::pair<size_t, size_t> CppMemPool::GetMemUsage() {
+	size_t total,free;
+	total = memUintSize * numUints;
+	free = total - memUintSize * numAllocatedUintsInPool;
+	return std::make_pair(free,total);
+}
+
+CppMemPool::CppMemPool(size_t init_size_mb, size_t uint_size_kb)	{
+	pMemPool = NULL ;
+	pAllocatedMemUint = pFreeMemUint = NULL;
+	memUintSize = memUintSizeNoMeta = 0;
+	numUints = numAllocatedUintsInPool = numAllocatedUints = 0;
+	RsetMemPool(init_size_mb,uint_size_kb);
+}
+
+
+void CppMemPool::RsetMemPool(size_t init_size_mb, size_t uint_size_kb)	{
+
+	if(numAllocatedUintsInPool == 0) { // in the case the pool is empty
+		// setting up the parameters in the memory pool
+		const size_t kNBytesPerKB = (1u << 10);
+		const size_t kNBytesPerMB = (1u << 20);
+		memUintSize = uint_size_kb * kNBytesPerKB;
+		memUintSizeNoMeta = memUintSize - sizeof(struct _Uint);
+		size_t poolSize = init_size_mb * kNBytesPerMB; 
+		bool memAligned = poolSize % memUintSize == 0;
+		numUints = memAligned ? (poolSize / memUintSize) : (poolSize / memUintSize + 1);
+		CHECK_GE(numUints,1);
+		poolSize = memUintSize * numUints;
+		
+		// intialize the memory pool
+		pMemPool = malloc(poolSize);
+		CHECK(pMemPool != NULL);
+		for(size_t idx = 0; idx < numUints; idx++) {
+			struct _Uint *pCurUint = (struct _Uint*)((char *)pMemPool + idx * memUintSize);
+			pCurUint->pPrev = NULL;
+			pCurUint->pNext = pFreeMemUint;
+			if(pFreeMemUint != NULL) {
+				pFreeMemUint->pPrev = pCurUint;
+			}
+			pFreeMemUint = pCurUint;
+			pCurUint->pBlk = NULL;
+		}
+	} else { // the pool is not empty, create a new one and copy the old to the new one
+		CppMemPool* pNewPool = new CppMemPool(init_size_mb, uint_size_kb);
+		struct _Uint* pCurUint = pAllocatedMemUint;
+		for(size_t idx = 0; idx < numAllocatedUintsInPool; idx++) {
+			Block* pOldBlk = pCurUint->pBlk;
+			void* pData = pOldBlk->mutable_data();
+			pNewPool->Malloc(&pOldBlk, pOldBlk->size(), false);
+			size_t copySize = pOldBlk->size() - pOldBlk->offset();
+			memcpy(pOldBlk->mutable_data(),pData,copySize);
+			pCurUint = pCurUint->pNext;
+		}
+		// swap the new pool with the current
+		std::swap(pNewPool->pMemPool,pMemPool);
+		std::swap(pNewPool->pAllocatedMemUint,pAllocatedMemUint);
+		std::swap(pNewPool->pFreeMemUint,pFreeMemUint);
+		std::swap(pNewPool->memUintSize,memUintSize);
+		std::swap(pNewPool->memUintSizeNoMeta,memUintSizeNoMeta);
+		std::swap(pNewPool->numUints,numUints);	
+		std::swap(pNewPool->numAllocatedUintsInPool,numAllocatedUintsInPool);	
+		pNewPool->numAllocatedUints = 0;
+		delete pNewPool;
+	}
+}
+
+void CppMemPool::Malloc(Block** ptr, const size_t size, bool is_ptr_null) {
+	numAllocatedUints++;
+	// the size is larger than the memory uint size
+	if(size > memUintSizeNoMeta || pFreeMemUint == NULL) { 
+		void* pData = malloc(size);
+		if(is_ptr_null) {
+			*ptr = new Block(pData,size);
+		} else {
+			CHECK_EQ((*ptr)->size(),size);
+			(*ptr)->set_data(pData);
+		}
+		return;
+	}
+
+	// otherwise retrieve from one of the memory uint
+	numAllocatedUintsInPool++;
+	struct _Uint *pCurUint = pFreeMemUint;
+	pFreeMemUint = pCurUint->pNext;
+	if(pFreeMemUint != NULL) {
+		pFreeMemUint->pPrev = NULL;
+	}
+	
+	pCurUint->pNext = pAllocatedMemUint;
+	if(pAllocatedMemUint != NULL) {
+		pAllocatedMemUint->pPrev = pCurUint;
+	}
+
+	pAllocatedMemUint = pCurUint;
+	void* pData = (void*)((char *)pCurUint + sizeof(struct _Uint));
+	if(is_ptr_null) {
+		*ptr = new Block(pData,size);
+	} else {
+		CHECK_EQ((*ptr)->size(),size);
+		(*ptr)->set_data(pData);
+	}
+	CHECK(pCurUint->pBlk == NULL);
+	pCurUint->pBlk = *ptr;
+}
+
+void CppMemPool::Free(Block* ptr) {
+	void* pData = ptr->mutable_data();
+	if(pMemPool < pData && pData < (void*)((char*)pMemPool + numUints * memUintSize)) {
+		struct _Uint *pCurUint = (struct _Uint*)((char*)pData-sizeof(struct _Uint));
+		CHECK(ptr == pCurUint->pBlk);
+
+		if(pCurUint == pAllocatedMemUint) {
+				pAllocatedMemUint = pCurUint->pNext;
+				if(pAllocatedMemUint != NULL) {
+					pAllocatedMemUint->pPrev = NULL;
+				}		
+		} else {
+				struct _Uint *pCurPrevUint = pCurUint->pPrev;
+				pCurUint->pPrev = NULL;
+				pCurPrevUint->pNext = pCurUint->pNext;
+				if(pCurUint->pNext != NULL) {
+					pCurUint->pNext->pPrev = pCurPrevUint;
+				}
+		}
+
+		pCurUint->pNext = pFreeMemUint;
+		if(pFreeMemUint != NULL) {
+			pFreeMemUint->pPrev = pCurUint;
+		}
+		
+		pFreeMemUint = pCurUint;
+		pCurUint->pBlk = NULL;
+		numAllocatedUintsInPool--;
+	}
+	else {
+		free(pData);
+	}
+	numAllocatedUints--;
+	delete ptr;
+}
+
+CppMemPool::~CppMemPool() {
+	CHECK_EQ(numAllocatedUints,0);
+	free(pMemPool);
+}
+
+
+#ifdef USE_CUDA
 std::atomic<int> CnMemPool::pool_count(0);
 std::pair<size_t, size_t> CnMemPool::GetMemUsage() {
   size_t free, total;
@@ -107,5 +256,5 @@ void CudaMemPool::Free(void *ptr) {
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
 }
-}
 #endif
+}

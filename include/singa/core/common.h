@@ -36,7 +36,10 @@
 
 
 #ifdef USE_OPENCL
-#include "singa/utils/opencl_utils.h"
+#define CL_HPP_MINIMUM_OPENCL_VERSION 120
+#define CL_HPP_TARGET_OPENCL_VERSION 120
+#include <CL/cl2.hpp>
+#include <unordered_map>
 #endif  // USE_OPENCL
 
 using std::atomic;
@@ -62,6 +65,9 @@ class Block {
   // Disabled as it is not used currently.
   // Block(void* ptr, size_t size, size_t offset, std::shared_ptr<atomic<int>>
   //  ref) : data_(ptr), size_(size), offset_(offset), ref_count_(ref) {}
+
+	// TODO(wangwei) check if the set is correct and add lock if shared sturcture is allowed
+	void set_data(void* ptr) { data_ = ptr; }
   void* mutable_data() {
     initialized_ = true;
     return static_cast<char*>(data_) + offset_;
@@ -107,8 +113,9 @@ typedef struct _Context {
 #endif // USE_CUDA
 
 #ifdef USE_OPENCL
-  // This stores the context ID of the OpenCL context controlled by ViennaCL.
-  long vcl_ctx_id;
+  std::shared_ptr<std::unordered_map<std::string, cl::Kernel>> kernels;
+  cl::CommandQueue ocl_cmdq;
+  cl::Context ocl_ctx;
 #endif
 
 } Context;
