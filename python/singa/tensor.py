@@ -372,6 +372,7 @@ class Tensor(object):
 
     '''
     python operators (+, -, *, /, <, <=, >, >=) for singa binary operators
+    https://docs.python.org/2/library/operator.html#mapping-operators-to-functions
     '''
 
     def __add__(self, rhs):
@@ -439,6 +440,29 @@ class Tensor(object):
                 rhs.singa_tensor)
         else:
             return _call_singa_func(singa.GE_Tf, self.singa_tensor, rhs)
+
+
+    def __radd__(self, lhs):
+        lhs = float(lhs)
+        return _call_singa_func(singa.Add_Tf, self.singa_tensor, lhs)
+
+    def __rsub__(self, lhs):
+        lhs = float(lhs)
+        ret = _call_singa_func(singa.Sub_Tf, self.singa_tensor, lhs)
+        ret *= -1
+        return ret
+
+    def __rmul__(self, lhs):
+        lhs = float(lhs)
+        return _call_singa_func(singa.EltwiseMul_Tf, self.singa_tensor, lhs)
+
+    def __rdiv__(self, lhs):
+        lhs = float(lhs)
+        one = Tensor(self.shape, self.device, self.dtype)
+        one.set_value(1)
+        one *= lhs
+        return _call_singa_func(singa.Div_TT, one.singa_tensor,\
+                self.singa_tensor)
 
 
 ''' python functions for global functions in Tensor.h
