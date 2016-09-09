@@ -95,6 +95,7 @@ class SoftmaxCrossEntropy(Loss):
     '''
 
     def __init__(self):
+        super(SoftmaxCrossEntropy, self).__init__()
         self.swig_loss = singa.SoftmaxCrossEntropy()
 
 
@@ -105,7 +106,7 @@ class SquaredError(Loss):
     It is implemented using Python Tensor operations.
     '''
     def __init__(self):
-        super(Loss, SquaredError).__init__()
+        super(SquareLoss, self).__init__()
         self.err = None
 
     def forward(self, flag, x, y):
@@ -122,7 +123,7 @@ class SquaredError(Loss):
             a Tensor with one error value per sample
         '''
         self.err = x - y
-        return 0.5 * tensor.squared(self.err)
+        return tensor.square(self.err) * 0.5
 
     def backward(self):
         '''Compute the gradient of x w.r.t the error.
@@ -138,4 +139,4 @@ class SquaredError(Loss):
         Returns:
             a float value as the averaged error
         '''
-        return tensor.sum(0.5 * tensor.squared(x - y)) / x.size()
+        return tensor.sum(tensor.square(x - y) * 0.5) / x.size()

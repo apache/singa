@@ -133,5 +133,34 @@ class TestTensorMethods(unittest.TestCase):
         self.assertAlmostEqual(tensor.average(x), 1, 3)
 
 
+    def test_radd(self):
+        x = tensor.Tensor((3,))
+        x.set_value(1)
+        y = 1 + x
+        self.assertEqual(tensor.average(y), 2.)
+
+
+    def test_rsub(self):
+        x = tensor.Tensor((3,))
+        x.set_value(1)
+        y = 1 - x
+        self.assertEqual(tensor.average(y), 0.)
+
+
+    def test_rmul(self):
+        x = tensor.Tensor((3,))
+        x.set_value(1)
+        y = 2 * x
+        self.assertEqual(tensor.average(y), 2.)
+
+
+    def test_rdiv(self):
+        x = tensor.Tensor((3,))
+        x.set_value(1)
+        y = 2 / x
+        self.assertEqual(tensor.average(y), 2.)
+
+
+
 if __name__ == '__main__':
     unittest.main()
