@@ -62,20 +62,23 @@ AUX_SOURCE_DIRECTORY(io/network io_source)
 LIST(APPEND singa_sources ${io_source})
 
 ADD_CUSTOM_TARGET(
-  copy_protobuf
+  copy_protobuf ALL
   COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/include/singa/proto"
   DEPENDS ${proto_hdrs}
   COMMENT "Copying Protobuf headers"
   )
 FOREACH(fil ${proto_hdrs})
+  GET_FILENAME_COMPONENT(filename ${fil} NAME)
   ADD_CUSTOM_COMMAND(
-    TARGET copy_protobuf PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${fil} "${CMAKE_BINARY_DIR}/include/singa/proto"
+    TARGET copy_protobuf POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fil}
+    "${CMAKE_BINARY_DIR}/include/singa/proto/${filename}"
+    DEPENDS ${proto_files} 
  )
 ENDFOREACH()
 
 ADD_LIBRARY(singa_objects OBJECT ${singa_sources})
-ADD_DEPENDENCIES(singa_objects copy_protobuf)
+#ADD_DEPENDENCIES(singa_objects copy_protobuf)
 
 ADD_LIBRARY(singa SHARED $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
 TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
