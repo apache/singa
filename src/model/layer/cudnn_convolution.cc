@@ -77,11 +77,11 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
   CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc_, pad_h_, pad_w_,
                                               stride_h_, stride_w_, 1, 1,
                                               CUDNN_CROSS_CORRELATION));
-#if CUDNN_VERSION_MAJOR == 5
+#if CUDNN_MAJOR == 5
   CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc_, GetCudnnDataType(dtype),
                                          CUDNN_TENSOR_NCHW, num_filters_,
                                          channels_, kernel_h_, kernel_w_));
-#elif CUDNN_VERSION_MAJOR == 4
+#elif CUDNN_MAJOR == 4
   CUDNN_CHECK(cudnnSetFilter4dDescriptor_v4(
       filter_desc_, GetCudnnDataType(dtype), CUDNN_TENSOR_NCHW, num_filters_,
       channels_, kernel_h_, kernel_w_));

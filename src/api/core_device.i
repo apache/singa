@@ -38,6 +38,7 @@ namespace std{
 %template(sizePair) std::pair<size_t, size_t>;
 %template(vectorPair) std::vector<std::pair<size_t, size_t>>;
 %template(vectorSharedPtr) std::vector<std::shared_ptr<singa::Device>>;
+%template(deviceVec) std::vector<int>;
 }
 
 namespace singa{

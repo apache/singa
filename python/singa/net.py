@@ -25,6 +25,8 @@ import tensor
 import layer
 import cPickle as pickle
 
+'''For display training information, e.g L1 value of layer data'''
+verbose = False
 
 class FeedForwardNet(object):
 
@@ -146,15 +148,22 @@ class FeedForwardNet(object):
             for src in srcs:
                 outs = output_of_layer[src.name]
                 if type(outs) == list:
+                    assert len(outs) > 0, \
+                            'the output from layer %s is empty' % src.name
                     inputs.append(outs[0])
+                    outs.pop(0)
                 else:
                     inputs.append(outs)
+                    output_of_layer[cur.name] = []
                 disp_src += '+' + src.name
                 # del output_of_layer[src.name]
             # print disp_src
             if len(inputs) == 1:
                 inputs = inputs[0]
-            output_of_layer[cur.name] = cur.forward(flag, inputs)
+            out= cur.forward(flag, inputs)
+            if verbose:
+                print '%s: %f' % (cur.name, out.l1())
+            output_of_layer[cur.name] = out
             inputs = []
             # print lyr.name, x.l1()
         # print output_of_layer
@@ -180,9 +189,13 @@ class FeedForwardNet(object):
             for dst in self.dst_of_layer[cur.name]:
                 outputs = output_of_layer[dst.name]
                 if type(outputs) == list:
+                    assert len(outputs) > 0, \
+                            'the gradient from layer %s is empty' % dst.name
                     grads.append(outputs[0])
+                    outputs.pop(0)
                 else:
                     grads.append(outputs)
+                    output_of_layer[dst.name] = []
                 # del output_of_layer[dst.name]
             if len(grads) == 1:
                 grads = grads[0]

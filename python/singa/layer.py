@@ -560,11 +560,13 @@ class Dropout(Layer):
         conf = self.conf.dropout_conf
         conf.dropout_ratio = p
         # 'cudnn' works for v>=5.0
-        #  if engine.lower() == 'cudnn':
-        #      engine = 'cuda'
-        _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacuda',
-                               'singacl'])
-        self.layer = _create_layer(engine, 'Dropout')
+        if engine.lower() == 'cudnn':
+            myengine = 'singacuda'
+        else:
+            myengine = engine
+        _check_engine(myengine, ['cudnn', 'singa', 'singacpp', 'singacuda',
+                                 'singacl'])
+        self.layer = _create_layer(myengine, 'Dropout')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
 
