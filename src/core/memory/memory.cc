@@ -20,154 +20,119 @@
 #include "singa/utils/logging.h"
 #include "singa/proto/core.pb.h"
 #include <iostream>
-
+/*
+int get_pos(size_t size) {
+	int result = 0;
+	while(size > 1) {
+		result++;
+		size = size/2;
+	}
+	return result;
+}
+*/
 namespace singa {
 
-std::pair<size_t, size_t> CppMemPool::GetMemUsage() {
-	size_t total,free;
-	total = memUintSize * numUints;
-	free = total - memUintSize * numAllocatedUintsInPool;
-	return std::make_pair(free,total);
-}
-
-CppMemPool::CppMemPool(size_t init_size_mb, size_t uint_size_kb)	{
-	pMemPool = NULL ;
-	pAllocatedMemUint = pFreeMemUint = NULL;
-	memUintSize = memUintSizeNoMeta = 0;
-	numUints = numAllocatedUintsInPool = numAllocatedUints = 0;
-	RsetMemPool(init_size_mb,uint_size_kb);
-}
-
-
-void CppMemPool::RsetMemPool(size_t init_size_mb, size_t uint_size_kb)	{
-
-	if(numAllocatedUintsInPool == 0) { // in the case the pool is empty
-		// setting up the parameters in the memory pool
-		const size_t kNBytesPerKB = (1u << 10);
-		const size_t kNBytesPerMB = (1u << 20);
-		memUintSize = uint_size_kb * kNBytesPerKB;
-		memUintSizeNoMeta = memUintSize - sizeof(struct _Uint);
-		size_t poolSize = init_size_mb * kNBytesPerMB; 
-		bool memAligned = poolSize % memUintSize == 0;
-		numUints = memAligned ? (poolSize / memUintSize) : (poolSize / memUintSize + 1);
-		CHECK_GE(numUints,1);
-		poolSize = memUintSize * numUints;
-		
-		// intialize the memory pool
-		pMemPool = malloc(poolSize);
-		CHECK(pMemPool != NULL);
-		for(size_t idx = 0; idx < numUints; idx++) {
-			struct _Uint *pCurUint = (struct _Uint*)((char *)pMemPool + idx * memUintSize);
-			pCurUint->pPrev = NULL;
-			pCurUint->pNext = pFreeMemUint;
-			if(pFreeMemUint != NULL) {
-				pFreeMemUint->pPrev = pCurUint;
-			}
-			pFreeMemUint = pCurUint;
-			pCurUint->pBlk = NULL;
-		}
-	} else { // the pool is not empty, create a new one and copy the old to the new one
-		CppMemPool* pNewPool = new CppMemPool(init_size_mb, uint_size_kb);
-		struct _Uint* pCurUint = pAllocatedMemUint;
-		for(size_t idx = 0; idx < numAllocatedUintsInPool; idx++) {
-			Block* pOldBlk = pCurUint->pBlk;
-			void* pData = pOldBlk->mutable_data();
-			pNewPool->Malloc(&pOldBlk, pOldBlk->size(), false);
-			size_t copySize = pOldBlk->size() - pOldBlk->offset();
-			memcpy(pOldBlk->mutable_data(),pData,copySize);
-			pCurUint = pCurUint->pNext;
-		}
-		// swap the new pool with the current
-		std::swap(pNewPool->pMemPool,pMemPool);
-		std::swap(pNewPool->pAllocatedMemUint,pAllocatedMemUint);
-		std::swap(pNewPool->pFreeMemUint,pFreeMemUint);
-		std::swap(pNewPool->memUintSize,memUintSize);
-		std::swap(pNewPool->memUintSizeNoMeta,memUintSizeNoMeta);
-		std::swap(pNewPool->numUints,numUints);	
-		std::swap(pNewPool->numAllocatedUintsInPool,numAllocatedUintsInPool);	
-		pNewPool->numAllocatedUints = 0;
-		delete pNewPool;
+CppMemPool::CppMemPool()	{
+	memPoolSize = 0;
+	freeSize = 0;
+	ppAllocUints = (struct _Uint**)malloc(64*sizeof(struct _Uint*));
+	ppFreeUints = (struct _Uint**)malloc(64*sizeof(struct _Uint*));
+	for(int i = 0; i < 64; i++) {
+		ppAllocUints[i] = NULL;
+		ppFreeUints[i] = NULL;
 	}
 }
 
-void CppMemPool::Malloc(Block** ptr, const size_t size, bool is_ptr_null) {
-	numAllocatedUints++;
-	// the size is larger than the memory uint size
-	if(size > memUintSizeNoMeta || pFreeMemUint == NULL) { 
-		void* pData = malloc(size);
-		if(is_ptr_null) {
-			*ptr = new Block(pData,size);
-		} else {
-			CHECK_EQ((*ptr)->size(),size);
-			(*ptr)->set_data(pData);
-		}
-		return;
-	}
 
-	// otherwise retrieve from one of the memory uint
-	numAllocatedUintsInPool++;
-	struct _Uint *pCurUint = pFreeMemUint;
-	pFreeMemUint = pCurUint->pNext;
-	if(pFreeMemUint != NULL) {
-		pFreeMemUint->pPrev = NULL;
-	}
+Block* CppMemPool::Malloc(const size_t size) {	
+	CHECK(size > 0);
+	Block *pAllocBlk = NULL;
+	int pos = 63 - __builtin_clzll(size);
 	
-	pCurUint->pNext = pAllocatedMemUint;
-	if(pAllocatedMemUint != NULL) {
-		pAllocatedMemUint->pPrev = pCurUint;
-	}
-
-	pAllocatedMemUint = pCurUint;
-	void* pData = (void*)((char *)pCurUint + sizeof(struct _Uint));
-	if(is_ptr_null) {
-		*ptr = new Block(pData,size);
+	struct _Uint*& pAllocUint = ppAllocUints[pos];
+	struct _Uint*& pFreeUint = ppFreeUints[pos];
+	struct _Uint* pCurUint = NULL;
+	size_t memSize = pow(2,pos);
+	size_t blkSize = (size % memSize == 0) ? memSize : memSize*2;
+	blkSize += sizeof(struct _Uint);
+	
+	if(pFreeUint == NULL) { // if no available free blocks
+		memPoolSize += blkSize;
+		pCurUint = (struct _Uint*)malloc(blkSize);
+		pCurUint->pPrev = NULL;
+		pCurUint->pNext = pAllocUint; 
+		if(pAllocUint != NULL) {
+			pAllocUint->pPrev = pCurUint;
+		}
+		pAllocUint = pCurUint;
+		pAllocBlk = new Block((char*)(pCurUint) + sizeof(struct _Uint), size);
+		pCurUint->pBlk = pAllocBlk;
 	} else {
-		CHECK_EQ((*ptr)->size(),size);
-		(*ptr)->set_data(pData);
+		freeSize -= blkSize;
+		pCurUint = pFreeUint;
+		pFreeUint = pCurUint->pNext;
+		if(pFreeUint != NULL) {
+			pFreeUint->pPrev = NULL;
+		}
+		
+		pCurUint->pNext = pAllocUint;
+		if(pAllocUint != NULL) {
+			pAllocUint->pPrev = pCurUint;
+		}
+		pAllocUint = pCurUint;
+		pAllocBlk = pCurUint->pBlk;
 	}
-	CHECK(pCurUint->pBlk == NULL);
-	pCurUint->pBlk = *ptr;
+	return pAllocBlk;
 }
 
 void CppMemPool::Free(Block* ptr) {
-	void* pData = ptr->mutable_data();
-	if(pMemPool < pData && pData < (void*)((char*)pMemPool + numUints * memUintSize)) {
-		struct _Uint *pCurUint = (struct _Uint*)((char*)pData-sizeof(struct _Uint));
-		CHECK(ptr == pCurUint->pBlk);
+	void* pData = ptr->mutable_data();	
+	struct _Uint *pCurUint = (struct _Uint*)((char*)pData-sizeof(struct _Uint));
+	int pos = 63 - __builtin_clzll(ptr->size());
+	struct _Uint*& pAllocUint = ppAllocUints[pos];
+	struct _Uint*& pFreeUint = ppFreeUints[pos];
+	size_t memSize = pow(2,pos); 
+	size_t blkSize = (ptr->size() % memSize == 0) ? memSize : memSize*2;
+	blkSize += sizeof(struct _Uint);
+	freeSize += blkSize;
 
-		if(pCurUint == pAllocatedMemUint) {
-				pAllocatedMemUint = pCurUint->pNext;
-				if(pAllocatedMemUint != NULL) {
-					pAllocatedMemUint->pPrev = NULL;
-				}		
-		} else {
-				struct _Uint *pCurPrevUint = pCurUint->pPrev;
-				pCurUint->pPrev = NULL;
-				pCurPrevUint->pNext = pCurUint->pNext;
-				if(pCurUint->pNext != NULL) {
-					pCurUint->pNext->pPrev = pCurPrevUint;
-				}
+	if(pCurUint == pAllocUint) {
+		pAllocUint = pCurUint->pNext;
+		if(pAllocUint != NULL) {
+			pAllocUint->pPrev = NULL;
+		}		
+	} else {
+		struct _Uint *pCurPrevUint = pCurUint->pPrev;
+		pCurUint->pPrev = NULL;
+		pCurPrevUint->pNext = pCurUint->pNext;
+		if(pCurUint->pNext != NULL) {
+			pCurUint->pNext->pPrev = pCurPrevUint;
 		}
+	}
 
-		pCurUint->pNext = pFreeMemUint;
-		if(pFreeMemUint != NULL) {
-			pFreeMemUint->pPrev = pCurUint;
-		}
-		
-		pFreeMemUint = pCurUint;
-		pCurUint->pBlk = NULL;
-		numAllocatedUintsInPool--;
-	}
-	else {
-		free(pData);
-	}
-	numAllocatedUints--;
-	delete ptr;
+	pCurUint->pNext = pFreeUint;
+	if(pFreeUint != NULL) {
+		pFreeUint->pPrev = pCurUint;
+	}		
+	pFreeUint = pCurUint;
 }
 
+
 CppMemPool::~CppMemPool() {
-	CHECK_EQ(numAllocatedUints,0);
-	free(pMemPool);
+	// traverse all lists to delete the memory
+	for(int pos = 0; pos < 64; pos++) {
+		for(int i = 0; i < 2; i++) {
+			struct _Uint *pCurUint = i == 0 ? ppAllocUints[pos] : ppFreeUints[pos];
+			while(pCurUint != NULL) {
+				struct _Uint *pNextUint = pCurUint->pNext;
+				free(pCurUint->pBlk);
+				free(pCurUint);
+				pCurUint = pNextUint;
+			}
+		}
+	}
+	free(ppAllocUints);
+	free(ppFreeUints);
 }
 
 

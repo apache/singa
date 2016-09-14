@@ -27,98 +27,59 @@
 #include "singa/utils/cuda_utils.h"
 #include <stdlib.h>
 
-// this tests allocated a number of memory blocks in the memory pool
-// the pool consists of 1024 uints and each uint has a size of 1000 bytes
-// we malloc 1024 blocks where half of the block will reside outside the pool,
-// and the other half will be inside the pool
-TEST(CppMemPool, Malloc) {
-	singa::CppMemPool pool(1,1);
-	const int numOfTests = 1024;
-	const size_t dataSizeSmall = 1000;
-	const size_t dataSizeLarge = 2000;
-	singa::Block** pptr = new singa::Block*[numOfTests];
-
-	for(int i = 0; i < numOfTests; i++) {
-		const size_t dataSize = (i%2) ? dataSizeSmall : dataSizeLarge;
-		pool.Malloc(&(pptr[i]),dataSize);
-		int* data = static_cast<int*>(pptr[i]->mutable_data());
-		for(int idx = 0; idx < (int)dataSize/4; idx++) {
-			data[idx] = i;
-		}
-		data = static_cast<int*>(pptr[i]->mutable_data());
-		int sum = 0;
-		for(int idx = 0; idx < (int)dataSize/4; idx++) {
-			sum += data[idx];
-		}
-		CHECK_EQ(sum,i*dataSize/4);
-	}
-	CHECK_EQ(512,pool.GetNumFreeUints());
-
-	for(int i = 0; i < numOfTests; i++) {
-		pool.Free(pptr[i]);
-	}
-	CHECK_EQ(1024,pool.GetNumFreeUints());
-
-	delete[] pptr;
-}
-
-// this tests intialize a pool with size 2M bytes and each memory unit has a size of 2048 bytes
-// we then allocated 1024 memory block with half of the blocks with size 2000 and the other half with size 1000
-// then we reset the pool to size 1M bytes and memory uint size to 1000 bytes to test the reset function
-TEST(CppMemPool, MallocAndRest) {
-	singa::CppMemPool pool(2,2);
-	const int numOfTests = 1024;
-	const size_t dataSizeSmall = 1000;
-	const size_t dataSizeLarge = 2000;
-	singa::Block** pptr = new singa::Block*[numOfTests];
-
-	for(int i = 0; i < numOfTests; i++) {
-		const size_t dataSize = (i%2) ? dataSizeSmall : dataSizeLarge;
-		pool.Malloc(&(pptr[i]),dataSize);
-		int* data = static_cast<int*>(pptr[i]->mutable_data());
-		for(int idx = 0; idx < (int)dataSize/4; idx++) {
-			data[idx] = i;
-		}
-		data = static_cast<int*>(pptr[i]->mutable_data());
-		int sum = 0;
-		for(int idx = 0; idx < (int)dataSize/4; idx++) {
-			sum += data[idx];
-		}
-		CHECK_EQ(sum,i*dataSize/4);
-	}
-	CHECK_EQ(0,pool.GetNumFreeUints());
-
-	pool.RsetMemPool(1,1);
-	CHECK_EQ(512,pool.GetNumFreeUints());
-	for(int i = 0; i < numOfTests; i++) {
-		const size_t dataSize = (i%2) ? dataSizeSmall : dataSizeLarge;
-		int* data = static_cast<int*>(pptr[i]->mutable_data());
-		for(int idx = 0; idx < (int)dataSize/4; idx++) {
-			data[idx] = i;
-		}
-		data = static_cast<int*>(pptr[i]->mutable_data());
-		int sum = 0;
-		for(int idx = 0; idx < (int)dataSize/4; idx++) {
-			sum += data[idx];
-		}
-		CHECK_EQ(sum,i*dataSize/4);
-	}
+TEST(CppMemPool, Compare) {
+	singa::CppMemPool pool;
+	const int numOfOuterLoops =1000;
+	const int numOfInnerLoops = 100;
+	const size_t allocSize = 1024; 
+	int** pp = new int*[numOfInnerLoops];
+	singa::Block** ppBlk = new singa::Block*[numOfInnerLoops];
 	
-	for(int i = 0; i < numOfTests; i++) {
-		pool.Free(pptr[i]);
-	}
-	CHECK_EQ(1024,pool.GetNumFreeUints());
-
-	delete[] pptr;
+	double alloc_time = 0;
+	double free_time = 0;
+	time_t start,end;
+	singa::Timer t;
+  for (int i = 0; i < numOfOuterLoops; i++) {
+		start = clock();
+		for(int j = 0; j < numOfInnerLoops; j++) {
+    	pp[j] = (int*)malloc(allocSize);
+		}
+		end = clock();
+		alloc_time += end-start;
+		start = clock();
+		for(int j = 0; j < numOfInnerLoops; j++) {
+    	free(pp[j]);
+		}
+		end = clock();
+		free_time += end-start;
+  }
+  int kernel_time = t.Elapsed<singa::Timer::Milliseconds>();
+	
+	t.Tick();
+	alloc_time = free_time = 0;
+  for (int i = 0; i < numOfOuterLoops; i++) {
+		start = clock();
+		for(int j = 0; j < numOfInnerLoops; j++) {
+			ppBlk[j] = pool.Malloc(allocSize);
+		}
+		end = clock();
+		alloc_time += end-start;
+		start = clock();
+		for(int j = 0; j < numOfInnerLoops; j++) {
+    	pool.Free(ppBlk[j]);
+		}
+		end = clock();
+		free_time += end-start;
+  }
+  int mempool_time = t.Elapsed<singa::Timer::Milliseconds>();
+	EXPECT_GT(kernel_time,mempool_time);
+	delete pp;
+	delete ppBlk;
 }
 
-// this tests initialize a pool with size 1M bytes and uint size of 1024 bytes
-// then 1024 memory blocks are allocated, half of them in the pool and the other half outside the pool
-// subsequently, we randomly free 512 blocks and after that allocate them back to the pool
-// after reset the pool to a size of 2M bytes and uint size of 2048 bytes,
-// we free all memory blocks allocated. 
-TEST(CppMemPool, RandomFree) {
-	singa::CppMemPool pool(1,1);
+// this tests allocated a number of memory blocks in the memory pool
+TEST(CppMemPool, Malloc) {
+	singa::CppMemPool pool;
 	const int numOfTests = 1024;
 	const size_t dataSizeSmall = 1000;
 	const size_t dataSizeLarge = 2000;
@@ -126,7 +87,7 @@ TEST(CppMemPool, RandomFree) {
 
 	for(int i = 0; i < numOfTests; i++) {
 		const size_t dataSize = (i%2) ? dataSizeSmall : dataSizeLarge;
-		pool.Malloc(&(pptr[i]),dataSize);
+		pptr[i] = pool.Malloc(dataSize);
 		int* data = static_cast<int*>(pptr[i]->mutable_data());
 		for(int idx = 0; idx < (int)dataSize/4; idx++) {
 			data[idx] = i;
@@ -138,7 +99,36 @@ TEST(CppMemPool, RandomFree) {
 		}
 		CHECK_EQ(sum,i*dataSize/4);
 	}
-	CHECK_EQ(512,pool.GetNumFreeUints());
+	for(int i = 0; i < numOfTests; i++) {
+		pool.Free(pptr[i]);
+	}
+	delete[] pptr;
+}
+
+
+// we allocate 1024 memory blocks
+// subsequently, we randomly free 512 blocks and after that allocate them back to the pool
+TEST(CppMemPool, RandomFree) {
+	singa::CppMemPool pool;
+	const int numOfTests = 1024;
+	const size_t dataSizeSmall = 1000;
+	const size_t dataSizeLarge = 2000;
+	singa::Block** pptr = new singa::Block*[numOfTests];
+
+	for(int i = 0; i < numOfTests; i++) {
+		const size_t dataSize = (i%2) ? dataSizeSmall : dataSizeLarge;
+		pptr[i] = pool.Malloc(dataSize);
+		int* data = static_cast<int*>(pptr[i]->mutable_data());
+		for(int idx = 0; idx < (int)dataSize/4; idx++) {
+			data[idx] = i;
+		}
+		data = static_cast<int*>(pptr[i]->mutable_data());
+		int sum = 0;
+		for(int idx = 0; idx < (int)dataSize/4; idx++) {
+			sum += data[idx];
+		}
+		CHECK_EQ(sum,i*dataSize/4);
+	}
 
 	// randomized free pointers
 	int* randomPool = new int[numOfTests];
@@ -187,15 +177,9 @@ TEST(CppMemPool, RandomFree) {
 	for(int pos = numOfTests/2; pos < numOfTests; pos++) {
 		int i = randomPool[pos];
 		const size_t dataSize = (i%2) ? dataSizeSmall : dataSizeLarge;
-		pool.Malloc(&(pptr[i]),dataSize);
+		pptr[i] = pool.Malloc(dataSize);
 	}
-
-	pool.RsetMemPool(2,2);
-	for(int i = 0; i < numOfTests; i++) {
-		pool.Free(pptr[i]);
-	}
-	CHECK_EQ(1024,pool.GetNumFreeUints());
-
+	
 	delete[] randomPool;
 	delete[] pptr;
 }

@@ -53,53 +53,33 @@ class DeviceMemPool {
 
 class CppMemPool {
 	public:
-		// initial pool size (MB), and the size of each memory uint in the memory pool (KB)
-		CppMemPool(size_t init_size_mb = 256, size_t uint_size_kb = 1);
+		CppMemPool();
 		
-		// return a new pool based on the current pool
-		// once returned, the old pool will be invalid
-		// re-initial with pool size (MB), and set the size of each memory uint in the memory pool (KB)
-		void RsetMemPool(size_t init_size_mb = 256, size_t uint_size_kb = 1);
-
-		// create the memory requested, if size is larger than memUintSize, malloc from system call
-		// is_ptr_null indicate whether the pointer is null and if so we will initialize it in the malloc function,
-		// otherwise we will use the ptr directly and access its data and functions.
-		// after the malloc, the data pointer of the block will be changed and the orginal data pointer will be lost.
-		void Malloc(Block** ptr, const size_t size, bool is_ptr_null = true);
+		Block* Malloc(const size_t size);
 		void Free(Block* ptr);
 
-  	std::pair<size_t, size_t> GetMemUsage();
-		size_t GetNumFreeUints(){return numUints - numAllocatedUintsInPool;};	
+		// get the free and total size of the memory pool (in terms of bytes)
+  	std::pair<size_t, size_t> GetMemUsage(){return std::make_pair(freeSize,memPoolSize);};
 
-		// release all memory.
-		// all pointers allocated in the pool must be freed before calling the descturctor. 
   	~CppMemPool();
 
-	protected:
-	// each structure define a memory uint in the memory pool
-	// the structure is a static double linked list
+	private:
+		// each structure define a memory uint in the memory pool
+		// the structure is a static double linked list
 		struct _Uint {
 			struct _Uint *pPrev, *pNext;
 			Block* pBlk;
 		};
 
-		// pointer to the memory pool
-		void* pMemPool; 
+		// total size held by the memory pool (in terms of bytes)
+		size_t memPoolSize;
+		// total free size by the memory pool (in terms of bytes)
+		size_t freeSize;
 
-		// head pointer to allocated memory uint
-		struct _Uint* pAllocatedMemUint; 
-		// head pointer to free memory uint
-		struct _Uint* pFreeMemUint;
-
-		// the size of each memory uint with/out the meta data of the uint 
-		size_t memUintSize, memUintSizeNoMeta;
-
-		// the number of memory uints in the pool
-		size_t numUints;
-		// the number of allocated uints which are resided in the memory pool
-		size_t numAllocatedUintsInPool;
-		// the number of allocated uints including the ones resided outside the memory pool
-		size_t numAllocatedUints; 
+		// each pointer in this array keeps a head of the allocated memory uints of different size (power of 2)
+		struct _Uint **ppAllocUints;
+		// each pointer in this array keeps a head of the allocated memory uints of different size (power of 2)
+		struct _Uint **ppFreeUints;
 };
 
 #ifdef USE_CUDA
