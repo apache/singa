@@ -20,9 +20,123 @@
 #include "singa/utils/logging.h"
 #include "singa/proto/core.pb.h"
 #include <iostream>
+/*
+int get_pos(size_t size) {
+	int result = 0;
+	while(size > 1) {
+		result++;
+		size = size/2;
+	}
+	return result;
+}
+*/
+namespace singa {
+
+CppMemPool::CppMemPool()	{
+	memPoolSize = 0;
+	freeSize = 0;
+	ppAllocUints = (struct _Uint**)malloc(64*sizeof(struct _Uint*));
+	ppFreeUints = (struct _Uint**)malloc(64*sizeof(struct _Uint*));
+	for(int i = 0; i < 64; i++) {
+		ppAllocUints[i] = NULL;
+		ppFreeUints[i] = NULL;
+	}
+}
+
+
+Block* CppMemPool::Malloc(const size_t size) {	
+	CHECK(size > 0);
+	Block *pAllocBlk = NULL;
+	int pos = 63 - __builtin_clzll(size);
+	
+	struct _Uint*& pAllocUint = ppAllocUints[pos];
+	struct _Uint*& pFreeUint = ppFreeUints[pos];
+	struct _Uint* pCurUint = NULL;
+	size_t memSize = pow(2,pos);
+	size_t blkSize = (size % memSize == 0) ? memSize : memSize*2;
+	blkSize += sizeof(struct _Uint);
+	
+	if(pFreeUint == NULL) { // if no available free blocks
+		memPoolSize += blkSize;
+		pCurUint = (struct _Uint*)malloc(blkSize);
+		pCurUint->pPrev = NULL;
+		pCurUint->pNext = pAllocUint; 
+		if(pAllocUint != NULL) {
+			pAllocUint->pPrev = pCurUint;
+		}
+		pAllocUint = pCurUint;
+		pAllocBlk = new Block((char*)(pCurUint) + sizeof(struct _Uint), size);
+		pCurUint->pBlk = pAllocBlk;
+	} else {
+		freeSize -= blkSize;
+		pCurUint = pFreeUint;
+		pFreeUint = pCurUint->pNext;
+		if(pFreeUint != NULL) {
+			pFreeUint->pPrev = NULL;
+		}
+		
+		pCurUint->pNext = pAllocUint;
+		if(pAllocUint != NULL) {
+			pAllocUint->pPrev = pCurUint;
+		}
+		pAllocUint = pCurUint;
+		pAllocBlk = pCurUint->pBlk;
+	}
+	return pAllocBlk;
+}
+
+void CppMemPool::Free(Block* ptr) {
+	void* pData = ptr->mutable_data();	
+	struct _Uint *pCurUint = (struct _Uint*)((char*)pData-sizeof(struct _Uint));
+	int pos = 63 - __builtin_clzll(ptr->size());
+	struct _Uint*& pAllocUint = ppAllocUints[pos];
+	struct _Uint*& pFreeUint = ppFreeUints[pos];
+	size_t memSize = pow(2,pos); 
+	size_t blkSize = (ptr->size() % memSize == 0) ? memSize : memSize*2;
+	blkSize += sizeof(struct _Uint);
+	freeSize += blkSize;
+
+	if(pCurUint == pAllocUint) {
+		pAllocUint = pCurUint->pNext;
+		if(pAllocUint != NULL) {
+			pAllocUint->pPrev = NULL;
+		}		
+	} else {
+		struct _Uint *pCurPrevUint = pCurUint->pPrev;
+		pCurUint->pPrev = NULL;
+		pCurPrevUint->pNext = pCurUint->pNext;
+		if(pCurUint->pNext != NULL) {
+			pCurUint->pNext->pPrev = pCurPrevUint;
+		}
+	}
+
+	pCurUint->pNext = pFreeUint;
+	if(pFreeUint != NULL) {
+		pFreeUint->pPrev = pCurUint;
+	}		
+	pFreeUint = pCurUint;
+}
+
+
+CppMemPool::~CppMemPool() {
+	// traverse all lists to delete the memory
+	for(int pos = 0; pos < 64; pos++) {
+		for(int i = 0; i < 2; i++) {
+			struct _Uint *pCurUint = i == 0 ? ppAllocUints[pos] : ppFreeUints[pos];
+			while(pCurUint != NULL) {
+				struct _Uint *pNextUint = pCurUint->pNext;
+				free(pCurUint->pBlk);
+				free(pCurUint);
+				pCurUint = pNextUint;
+			}
+		}
+	}
+	free(ppAllocUints);
+	free(ppFreeUints);
+}
+
 
 #ifdef USE_CUDA
-namespace singa {
 std::atomic<int> CnMemPool::pool_count(0);
 std::pair<size_t, size_t> CnMemPool::GetMemUsage() {
   size_t free, total;
@@ -107,5 +221,5 @@ void CudaMemPool::Free(void *ptr) {
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
 }
-}
 #endif
+}
