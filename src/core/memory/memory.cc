@@ -110,12 +110,13 @@ void CppMemPool::Free(Block* ptr) {
 			pCurUint->pNext->pPrev = pCurPrevUint;
 		}
 	}
-
+	
 	pCurUint->pNext = pFreeUint;
 	if(pFreeUint != NULL) {
 		pFreeUint->pPrev = pCurUint;
 	}		
 	pFreeUint = pCurUint;
+	ptr->set_size(0);
 }
 
 
