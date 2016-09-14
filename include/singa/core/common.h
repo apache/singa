@@ -67,7 +67,7 @@ class Block {
   //  ref) : data_(ptr), size_(size), offset_(offset), ref_count_(ref) {}
 
 	// TODO(wangwei) check if the set is correct and add lock if shared sturcture is allowed
-	void set_data(void* ptr) { data_ = ptr; }
+	void set_size(size_t size) { size_=size; }
   void* mutable_data() {
     initialized_ = true;
     return static_cast<char*>(data_) + offset_;

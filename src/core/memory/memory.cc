@@ -81,6 +81,7 @@ Block* CppMemPool::Malloc(const size_t size) {
 		}
 		pAllocUint = pCurUint;
 		pAllocBlk = pCurUint->pBlk;
+		pAllocBlk->set_size(size);
 	}
 	return pAllocBlk;
 }
