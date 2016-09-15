@@ -13,7 +13,7 @@ This release includes following features:
     * [SINGA-131] Implement and optimize hybrid training using both CPU and GPU
     * [SINGA-136] Support cuDNN v4
     * [SINGA-134] Extend SINGA to run over a GPU cluster
-    * [Singa-157] Change the priority of cudnn library and install libsingagpu.so
+    * [SINGA-157] Change the priority of cudnn library and install libsingagpu.so
 
   * Remove Dependences
     * [SINGA-156] Remove the dependency on ZMQ for single process training
@@ -32,6 +32,6 @@ This release includes following features:
     * [SINGA-150] Mesos Docker container failed
     * [SIGNA-141] Undesired Hash collision when locating process id to worker…
     * [SINGA-149] Docker build fail
-    * [Singa-143] The compilation cannot detect libsingagpu.so file
+    * [SINGA-143] The compilation cannot detect libsingagpu.so file
 
 

@@ -60,7 +60,7 @@ By default, openblas is installed into /usr/local/opt/openblas. To let the compi
 path, please export
 
     $ export CMAKE_INCLUDE_PATH=/usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH
-    $ export CMAKE_LIBRARY_PATH=/usr/local/opt/openblas/library:$CMAKE_LIBRARY_PATH
+    $ export CMAKE_LIBRARY_PATH=/usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH
 
 To let the runtime know the openblas path, please export
 
@@ -99,6 +99,12 @@ After installing the dependencies for SINGA and PySINGA, please download the cor
     # Ubuntu/Linux 64-bit, CPU only, Python 2.7, Protobuf 2.6
     $ export SINGA_WHEEL_URL=http://comp.nus.edu.sg/~dbsystem/singa/assets/file/pb2.6/singa-1.0.0-cp27-none-linux_x86_64.whl
 
+    # Mac OSX (10.11), CPU only, Python 2.7, Protobuf 2.5
+    $ export SINGA_WHEEL_URL=http://comp.nus.edu.sg/~dbsystem/singa/assets/file/pb2.5/singa-1.0.0-cp27-none-macosx_10_11_intel.whl
+
+    # Mac OSX (10.11), CPU only, Python 2.7, Protobuf 2.6
+    $ export SINGA_WHEEL_URL=http://comp.nus.edu.sg/~dbsystem/singa/assets/file/pb2.6/singa-1.0.0-cp27-none-macosx_10_11_intel.whl
+
     # Ubuntu/Linux 64-bit, GPU enabled, Python 2.7, Protobuf 2.5, CUDA toolkit 7.5 and CuDNN v5
     $ export SINGA_WHEEL_URL=http://comp.nus.edu.sg/~dbsystem/singa/assets/file/pb2.5-cuda7.5-cudnn5/singa-1.0.0-cp27-none-linux_x86_64.whl
 
@@ -116,7 +122,7 @@ to avoid the conflicts of system path and virtual environment path.
 
 ### From source
 
-Please compile SINGA from source (see the next section) with the 'USE_PYTHON' option on,
+Please compile SINGA from source (see the next section) with the 'USE_PYTHON' option on (`cmake -DUSE_PYTHON=ON ..`),
 and then run the following commands,
 
     # under the build directory

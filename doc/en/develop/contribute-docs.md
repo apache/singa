@@ -18,7 +18,7 @@ To install the markdown support for Sphinx:
 
 You can build the website by executing the following command from the doc folder:
 
-    $ make html
+    $ ./build.sh html
 
 The procedure for contributing documentation is the same as [contributing code](contribute-code.html).
 
