@@ -15,11 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifdef USE_CUDA
 
 #include "singa/core/device.h"
 #include "singa/singa_config.h"
-
-#ifdef USE_CUDA
 
 namespace singa {
 

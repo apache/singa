@@ -40,6 +40,8 @@
 
 #cmakedefine ENABLE_DIST
 
+#cmakedefine DISABLE_WARNINGS
+
 // lmdb
 #cmakedefine USE_LMDB
 

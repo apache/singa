@@ -567,7 +567,7 @@ GenBinaryTensorFn(operator>=, GE);
   void fn(const Tensor &in, const SType x, Tensor *ret) {     \
     EltwiseTensorScalarFn(fn, in, x, ret);                    \
   }                                                           \
-  template Tensor op<float>(const Tensor &in, const float x); \
+  template Tensor op <float>(const Tensor &in, const float x); \
   template void fn<float>(const Tensor &in, const float x, Tensor *ret)
 
 GenTensorScalarFn(operator+, Add);

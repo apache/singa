@@ -209,7 +209,7 @@ class Tensor {
   /// Note: block_ is allocated in lazy manner to avoid frequent malloc/free.
   /// If you want to get an allocated Block, use block() instead of block_.
   Block *block_ = nullptr;
-  Shape shape_ = {};
+  Shape shape_;// = {};
 };
 
 typedef Shape::iterator ShapeIter;

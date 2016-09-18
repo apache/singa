@@ -24,7 +24,7 @@
 
 TEST(TimerTest, TestTick) {
   singa::Timer t;
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
   int time = t.Elapsed<singa::Timer::Milliseconds>();
-  EXPECT_GE(time, 1000);
+  EXPECT_GE(time, 10);
 }
