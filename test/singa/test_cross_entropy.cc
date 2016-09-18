@@ -32,7 +32,7 @@ class TestSoftmaxCrossEntropy : public ::testing::Test {
     p.Reshape(singa::Shape{2, 4});
     t.Reshape(singa::Shape{2, 1});
   }
-  const float pdat[8] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+  const float pdat[8] = {0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f };
   const int tdat[2] = {0, 2};
 
   singa::Tensor p, t;

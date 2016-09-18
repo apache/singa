@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifdef USE_LMDB
 
 #include "singa/io/reader.h"
 #include "singa/utils/logging.h"
-#ifdef USE_LMDB
 
 namespace singa {
 namespace io {

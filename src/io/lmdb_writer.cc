@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
+#ifdef USE_LMDB
+
 #include "singa/io/writer.h"
 #include "singa/utils/logging.h"
-#ifdef USE_LMDB
 
 namespace singa {
 namespace io {

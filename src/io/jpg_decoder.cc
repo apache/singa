@@ -15,10 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifdef USE_OPENCV
 
 #include "singa/io/decoder.h"
-
-#ifdef USE_OPENCV
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>

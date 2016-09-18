@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+#ifdef USE_OPENCL
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -25,7 +27,6 @@
 #include "singa/utils/tinydir.h"
 #include "singa/utils/opencl_utils.h"
 
-#ifdef USE_OPENCL
 
 using namespace viennacl;
 using namespace viennacl::backend::opencl;
