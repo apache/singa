@@ -129,7 +129,7 @@ void FeedForwardNet::AsType(DataType dtype) {
 void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
                            const Tensor& y, float val_split) {
   CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
-  size_t num_train = x.shape(0) * val_split;
+  size_t num_train = (size_t) (x.shape(0) * val_split);
   if (val_split == 0.0f) {
     Tensor dummy;
     Train(batchsize, nb_epoch, x, y, dummy, dummy);

@@ -282,7 +282,7 @@ Tensor Tensor::T() const {
   Tensor t;
   t.device_ = device_;
   t.data_type_ = data_type_;
-  t.transpose_ = ~transpose_;
+  t.transpose_ = !transpose_;
   t.shape_.push_back(shape_[1]);
   t.shape_.push_back(shape_[0]);
   t.block_ = block_;

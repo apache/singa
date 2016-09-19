@@ -28,7 +28,7 @@ RegisterLayerClass(singacl_batchnorm, BatchNorm);
 void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
-  factor_ = conf.batchnorm_conf().factor();
+  factor_ = (float) conf.batchnorm_conf().factor();
   channels_ = in_sample.at(0);
   if (in_sample.size() == 3u)
     height_ = in_sample.at(1);
