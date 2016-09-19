@@ -81,13 +81,16 @@ ENDFOREACH()
 ADD_LIBRARY(singa_objects OBJECT ${singa_sources})
 IF(WIN32) 
   IF (MSVC)
-	SET_TARGET_PROPERTIES(singa_objects 
-	  PROPERTIES COMPILE_FLAGS "/wd4244 /wd4267 /wd4018 /wd4005 /wd4804 /wd4800")
+	#SET_TARGET_PROPERTIES(singa_objects 
+	#  PROPERTIES COMPILE_FLAGS "/wd4244 /wd4267 /wd4018 /wd4005 /wd4804 /wd4800")
   ENDIF()
 ENDIF()
-#ADD_DEPENDENCIES(singa_objects copy_protobuf)
+ADD_DEPENDENCIES(singa_objects copy_protobuf)
 
 ADD_LIBRARY(singa SHARED $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
+TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
+
+ADD_LIBRARY(singa_static STATIC $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
 TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
 
 #pass configure infor to swig 

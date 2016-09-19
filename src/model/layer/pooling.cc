@@ -167,7 +167,7 @@ void Pooling::ForwardMaxPooling(const float* bottom, const int num,
               const int index = h * width + w;
               if (bottom[index] > top[top_index]) {
                 top[top_index] = bottom[index];
-                mask[top_index] = index;
+                mask[top_index] = (float) index;
               }
             }
           }
