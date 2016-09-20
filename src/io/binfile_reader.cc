@@ -125,7 +125,7 @@ bool BinFileReader::PrepareNextField(int size) {
       return false;
     } else {
       fdat_.read(buf_ + bufsize_, capacity_ - bufsize_);
-      bufsize_ += fdat_.gcount();
+      bufsize_ += (int) fdat_.gcount();
       CHECK_LE(size, bufsize_) << "Field size is too large: " << size;
     }
   }
