@@ -462,7 +462,7 @@ void GEMM<float, lang::Cpp>(const bool transA, const bool transB,
   const float *BPtr = static_cast<const float *>(B->data());
   float *CPtr = static_cast<float *>(C->mutable_data());
   cblas_sgemm(CblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha, APtr,
-              lda, BPtr, ldb, beta, CPtr, ldc);
+	  lda, BPtr, ldb, beta, CPtr, ldc);
 }
 
 #else
@@ -597,7 +597,7 @@ void RowMax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
   const float *inPtr = static_cast<const float *>(in->data());
   float *outPtr = static_cast<float *>(out->mutable_data());
   for (size_t r = 0; r < nrow; r++) {
-    int offset = r * ncol;
+    int offset = (int)(r * ncol);
     float maxval = inPtr[offset];
     for (size_t c = 1; c < ncol; c++)
       maxval = std::max(maxval, inPtr[offset + c]);

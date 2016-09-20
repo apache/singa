@@ -146,7 +146,7 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
                            const Tensor& y, const Tensor& val_x,
                            const Tensor& val_y) {
   CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
-  int num_extra_samples = x.shape(0) % batchsize;
+  int num_extra_samples = (int)x.shape(0) % batchsize;
   if (num_extra_samples != 0)
     LOG(WARNING) << "Pls set batchsize to make num_total_samples "
                  << "% batchsize == 0. Otherwise, the last "
@@ -219,12 +219,12 @@ const vector<Tensor> FeedForwardNet::Backward(int flag, const Tensor& grad) {
   vector<Tensor> param_grads;
   std::stack<Tensor> buf;
   Tensor tmp = grad;
-  for (int i = layers_.size() - 1; i >= 0; i--) {
+  for (int i = (int)layers_.size() - 1; i >= 0; i--) {
     // LOG(INFO) << layers_.at(i)->name() << " : " << tmp.L1();
     auto ret = layers_.at(i)->Backward(flag, tmp);
     tmp = ret.first;
     if (ret.second.size()) {
-      for (int k = ret.second.size() - 1; k >= 0; k--) {
+      for (int k = (int)ret.second.size() - 1; k >= 0; k--) {
         buf.push(ret.second[k]);
         // LOG(INFO) <<  "      " << buf.top().L1();
       }
@@ -242,10 +242,10 @@ std::pair<Tensor, Tensor> FeedForwardNet::Evaluate(const Tensor& x,
                                                    size_t batchsize) {
   CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
   CHECK_GE(x.shape(0), batchsize);
-  int num_extra_samples = x.shape(0) % batchsize;
+  int num_extra_samples = (int)x.shape(0) % batchsize;
   Tensor loss(Shape{x.shape(0)}), metric(Shape{x.shape(0)});
   for (size_t b = 0; b < x.shape(0) / batchsize; b++) {
-    int start = b * batchsize, end = start + batchsize;
+    int start = (int)(b * batchsize), end = (int)(start + batchsize);
     const Tensor bx = CopyRows(x, start, end);
     const Tensor by = CopyRows(y, start, end);
     const auto ret = EvaluateOnBatch(bx, by);
@@ -253,12 +253,12 @@ std::pair<Tensor, Tensor> FeedForwardNet::Evaluate(const Tensor& x,
     CopyDataToFrom(&metric, ret.second, batchsize, start, 0);
   }
   {
-    int start = x.shape(0) - batchsize, end = x.shape(0);
+    int start = (int)(x.shape(0) - batchsize), end = (int)x.shape(0);
     const Tensor bx = CopyRows(x, start, end);
     const Tensor by = CopyRows(y, start, end);
     const auto ret = EvaluateOnBatch(bx, by);
-    int dst_offset = x.shape(0) - num_extra_samples;
-    int src_offset = batchsize - num_extra_samples;
+    int dst_offset = (int)(x.shape(0) - num_extra_samples);
+    int src_offset = (int)(batchsize - num_extra_samples);
     CopyDataToFrom(&loss, ret.first, num_extra_samples, dst_offset, src_offset);
     CopyDataToFrom(&metric, ret.second, num_extra_samples, dst_offset,
                    src_offset);
@@ -277,17 +277,17 @@ std::pair<Tensor, Tensor> FeedForwardNet::EvaluateOnBatch(const Tensor& x,
 
 const Tensor FeedForwardNet::Predict(const Tensor& x, size_t batchsize) {
   CHECK_GE(x.shape(0), batchsize);
-  int num_extra_samples = x.shape(0) % batchsize;
+  int num_extra_samples = (int)(x.shape(0) % batchsize);
   const auto outshape = layers_.back()->GetOutputSampleShape();
   Tensor y(Shape{x.shape(0), Product(outshape)}, x.device());
   for (size_t b = 0; b < x.shape(0) / batchsize; b++) {
-    int start = b * batchsize, end = start + batchsize;
+    int start = (int)(b * batchsize), end = (int)(start + batchsize);
     const Tensor bx = CopyRows(x, start, end);
     CopyDataToFrom(&y, PredictOnBatch(bx), batchsize * y.shape(1),
                    start * y.shape(1), 0);
   }
   if (num_extra_samples > 0) {
-    int start = x.shape(0) - batchsize, end = x.shape(0);
+    int start = (int)(x.shape(0) - batchsize), end = (int)(x.shape(0));
     const Tensor bx = CopyRows(x, start, end);
     CopyDataToFrom(&y, PredictOnBatch(bx), num_extra_samples * y.shape(1),
                    (x.shape(0) - num_extra_samples) * y.shape(1),

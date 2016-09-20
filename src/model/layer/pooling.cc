@@ -108,14 +108,14 @@ const std::pair<Tensor, vector<Tensor>>
 Pooling::Backward(int flag, const Tensor& grad) {
   CHECK_EQ(grad.device()->lang(), kCpp);
   CHECK_EQ(grad.nDim(), 4u);
-  
+
   vector<Tensor> param_grad;
-  
+
   auto batchsize = grad.shape(0);
   auto dtype = grad.data_type();
   auto dev = grad.device();
   Shape shape{batchsize, channels_, height_, width_};
-  
+
   Tensor dx(shape, dev, dtype);
   auto gradptr = grad.data<float>();
   float* dxptr = new float[dx.Size()];
@@ -190,7 +190,7 @@ void Pooling::ForwardMaxPooling(const float* bottom, const int num,
 void Pooling::BackwardMaxPooling(const float* top, const float* mask,
                                  const int num, const int channels,
                                  const int height, const int width,
-                                 const int pooled_h, const int pooled_w, 
+                                 const int pooled_h, const int pooled_w,
                                  const int kernel_h, const int kernel_w,
                                  const int pad_h, const int pad_w,
                                  const int stride_h, const int stride_w,
@@ -215,7 +215,7 @@ void Pooling::BackwardMaxPooling(const float* top, const float* mask,
 }
 
 void Pooling::ForwardAvgPooling(const float* bottom, const int num,
-                                const int channels, 
+                                const int channels,
                                 const int height, const int width,
                                 const int pooled_h, const int pooled_w,
                                 const int kernel_h, const int kernel_w,
@@ -261,7 +261,7 @@ void Pooling::ForwardAvgPooling(const float* bottom, const int num,
 
 void Pooling::BackwardAvgPooling(const float* top, const int num,
                                  const int channels,
-                                 const int height, const int width, 
+                                 const int height, const int width,
                                  const int pooled_h, const int pooled_w,
                                  const int kernel_h, const int kernel_w,
                                  const int pad_h, const int pad_w,
