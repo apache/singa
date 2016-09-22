@@ -92,7 +92,7 @@ ADD_LIBRARY(singa SHARED $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
 TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
 
 ADD_LIBRARY(singa_static STATIC $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
-TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
+TARGET_LINK_LIBRARIES(singa_static ${SINGA_LINKER_LIBS})
 
 #pass configure infor to swig 
 FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
