@@ -570,7 +570,7 @@ void ComputeCrossEntropy<float, lang::Cpp>(const size_t batchsize,
     int truth_idx = tPtr[i];
     CHECK_GE(truth_idx, 0);
     float prob_of_truth = pPtr[i * dim + truth_idx];
-    lossPtr[i] = -std::log(std::max(prob_of_truth, FLT_MIN));
+    lossPtr[i] = -std::log((std::max)(prob_of_truth, FLT_MIN));
   }
 }
 
@@ -600,7 +600,7 @@ void RowMax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
     int offset = (int)(r * ncol);
     float maxval = inPtr[offset];
     for (size_t c = 1; c < ncol; c++)
-      maxval = std::max(maxval, inPtr[offset + c]);
+      maxval = (std::max)(maxval, inPtr[offset + c]);
     outPtr[r] = maxval;
   }
 }
