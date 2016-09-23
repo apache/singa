@@ -17,7 +17,6 @@
 #
 
 # generate protobuf sources
-
 FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
 #MESSAGE(STATUS "proto_srcs: ${proto_srcs}")
