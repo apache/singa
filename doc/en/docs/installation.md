@@ -216,16 +216,16 @@ To build SINGA with OpenCL support, you need to pass the flag during cmake:
 
 ### Windows
 
-The compiler used for windows can ONLY be Visual Studio 2015 as some c++11
+The ONLY compiler used for windows is Visual Studio 2015 as some c++11
 features (Generic lambdas, auto, non-static data member intitializers, etc.)
-followed by singa are only supported in this version (Details can be found
+followed by singa are only supported in this version (details can be found
 [here](https://msdn.microsoft.com/en-us/library/hh567368.aspx)). 
 
 For the dependent library installation, please refer to
-[Dependencies](doc/en/docs/dependencies.md).
+[Dependencies](dependencies.md).
 After all the
 dependencies are successfully installed, just run the following commands to
-generate the VS project in cmd under singa folder:
+generate the VS solution in cmd under singa folder:
 
     $ md build && cd build
     $ cmake -G "Visual Studio 14" -DUSE_CUDA=OFF -DUSE_PYTHON=OFF .. 
@@ -251,8 +251,9 @@ can run the following command:
 
     $ cmake -LAH
 
-After generating the VS project, please open the "singa.sln" project file under
-the "build" folder and compile it via a normal VS project. You will find the
+If you use cmake GUI tool in windows, please make sure you configure the right
+parameters for the singa solution by select "Advanced" box. After generating the VS project, please open the "singa.sln" project file under
+the "build" folder and compile it as a normal VS solution. You will find the
 unit tests file named "test_singa" in the project binary folder.
 
 ## FAQ
