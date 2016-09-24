@@ -154,7 +154,7 @@ class Layer(object):
         if type(x) == list:
             xs = []
             for t in x:
-                x.append(t.singa_tensor)
+                xs.append(t.singa_tensor)
         else:
             assert isinstance(x, tensor.Tensor), \
                 'input must be a Tensor or a list of Tensor'
