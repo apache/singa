@@ -23,7 +23,11 @@
 
 #include <stdlib.h>
 #include <sys/types.h>
+#ifdef _MSC_VER
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 
 namespace singa {
 

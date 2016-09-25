@@ -84,7 +84,7 @@ class Tokenizer {
     auto pos = buf_.find_first_of(sep_, start);
     if (pos == std::string::npos)
       pos = buf_.length();
-    start_ = pos + 1;
+    start_ = (unsigned int)(pos + 1);
     out = buf_.substr(start, pos);
     return *this;
   }

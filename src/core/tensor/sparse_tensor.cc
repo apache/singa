@@ -15,5 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "singa/singa_config.h"
+
+#ifndef DISABLE_WARNINGS
+
 #include "singa/core/tensor.h"
 namespace singa {}
+
+#endif

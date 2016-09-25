@@ -85,15 +85,15 @@ const Tensor Pooling::Forward(int flag, const Tensor& input) {
     Tensor mask;
     mask.ResetLike(output);
     float* maskptr = new float[mask.Size()];
-    ForwardMaxPooling(inptr, batchsize, channels_, height_, width_, kernel_h_,
-                      kernel_w_, pad_h_, pad_w_, stride_h_, stride_w_, outptr,
+    ForwardMaxPooling(inptr, (int)batchsize, (int)channels_, (int)height_, (int)width_, (int)kernel_h_,
+		(int)kernel_w_, (int)pad_h_, (int)pad_w_, (int)stride_h_, (int)stride_w_, outptr,
                       maskptr);
     mask.CopyDataFromHostPtr(maskptr, mask.Size());
     if (flag & kTrain) buf_.push(mask);
     delete[] maskptr;
   } else if (pool_ == PoolingConf_PoolMethod_AVE)
-    ForwardAvgPooling(inptr, batchsize, channels_, height_, width_, kernel_h_,
-                      kernel_w_, pad_h_, pad_w_, stride_h_, stride_w_, outptr);
+    ForwardAvgPooling(inptr, (int)batchsize, (int)channels_, (int)height_, (int)width_, (int)kernel_h_,
+		(int)kernel_w_, (int)pad_h_, (int)pad_w_, (int)stride_h_, (int)stride_w_, outptr);
   else
     LOG(FATAL) << "Unknow pooling method";
 
@@ -119,13 +119,13 @@ const std::pair<Tensor, vector<Tensor>> Pooling::Backward(int flag,
     Tensor mask = buf_.top();
     buf_.pop();
     auto maskptr = mask.data<float>();
-    BackwardMaxPooling(gradptr, maskptr, batchsize, channels_, height_, width_,
-                       kernel_h_, kernel_w_, pad_h_, pad_w_, stride_h_,
-                       stride_w_, dxptr);
+    BackwardMaxPooling(gradptr, maskptr, (int)batchsize, (int)channels_, (int)height_, (int)width_,
+		(int)kernel_h_, (int)kernel_w_, (int)pad_h_, (int)pad_w_, (int)stride_h_,
+		(int)stride_w_, dxptr);
   } else if (pool_ == PoolingConf_PoolMethod_AVE) {
-    BackwardAvgPooling(gradptr, batchsize, channels_, height_, width_,
-                       kernel_h_, kernel_w_, pad_h_, pad_w_, stride_h_,
-                       stride_w_, dxptr);
+    BackwardAvgPooling(gradptr, (int)batchsize, (int)channels_, (int)height_, (int)width_,
+		(int)kernel_h_, (int)kernel_w_, (int)pad_h_, (int)pad_w_, (int)stride_h_,
+		(int)stride_w_, dxptr);
   } else {
     LOG(FATAL) << "Unknow pooling method";
   }
@@ -167,7 +167,7 @@ void Pooling::ForwardMaxPooling(const float* bottom, const int num,
               const int index = h * width + w;
               if (bottom[index] > top[top_index]) {
                 top[top_index] = bottom[index];
-                mask[top_index] = index;
+                mask[top_index] = (float) index;
               }
             }
           }

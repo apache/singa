@@ -31,7 +31,7 @@ namespace singa {
     CHECK_GE(input.nDim(), 2u);
     CHECK_EQ(input.data_type(), kFloat32) << "Data type " << input.data_type()
       << " is invalid for an raw image";
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
     /// TODO
     /// currently only consider one sample each time
 

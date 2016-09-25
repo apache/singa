@@ -105,7 +105,7 @@ bool BinFileReader::ReadField(std::string* content) {
   content->clear();
   int ssize = sizeof(size_t);
   if (!PrepareNextField(ssize)) return false;
-  int len = *reinterpret_cast<size_t*>(buf_ + offset_);
+  int len = *reinterpret_cast<int*>(buf_ + offset_);
   offset_ += ssize;
   if (!PrepareNextField(len)) return false;
   content->reserve(len);
@@ -125,7 +125,7 @@ bool BinFileReader::PrepareNextField(int size) {
       return false;
     } else {
       fdat_.read(buf_ + bufsize_, capacity_ - bufsize_);
-      bufsize_ += fdat_.gcount();
+      bufsize_ += (int) fdat_.gcount();
       CHECK_LE(size, bufsize_) << "Field size is too large: " << size;
     }
   }

@@ -27,6 +27,10 @@ LIST(APPEND singa_sources ${proto_hdrs} ${proto_srcs})
 AUX_SOURCE_DIRECTORY(utils utils_source)
 LIST(APPEND singa_sources ${utils_source})
 
+AUX_SOURCE_DIRECTORY(io io_source)
+AUX_SOURCE_DIRECTORY(io/network io_source)
+LIST(APPEND singa_sources ${io_source})
+
 AUX_SOURCE_DIRECTORY(core/device core_source)
 AUX_SOURCE_DIRECTORY(core/memory core_source)
 AUX_SOURCE_DIRECTORY(core/scheduler core_source)
@@ -57,9 +61,6 @@ AUX_SOURCE_DIRECTORY(model/metric model_source)
 AUX_SOURCE_DIRECTORY(model/updater model_source)
 LIST(APPEND singa_sources ${model_source})
 
-AUX_SOURCE_DIRECTORY(io io_source)
-AUX_SOURCE_DIRECTORY(io/network io_source)
-LIST(APPEND singa_sources ${io_source})
 
 ADD_CUSTOM_TARGET(
   copy_protobuf ALL
@@ -78,10 +79,20 @@ FOREACH(fil ${proto_hdrs})
 ENDFOREACH()
 
 ADD_LIBRARY(singa_objects OBJECT ${singa_sources})
-#ADD_DEPENDENCIES(singa_objects copy_protobuf)
+IF(WIN32) 
+  IF (MSVC)
+	ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
+	#SET_TARGET_PROPERTIES(singa_objects 
+	#  PROPERTIES COMPILE_FLAGS "/wd4244 /wd4267 /wd4018 /wd4005 /wd4804 /wd4800")
+  ENDIF()
+ENDIF()
+ADD_DEPENDENCIES(singa_objects copy_protobuf)
 
 ADD_LIBRARY(singa SHARED $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
 TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
+
+ADD_LIBRARY(singa_static STATIC $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
+TARGET_LINK_LIBRARIES(singa_static ${SINGA_LINKER_LIBS})
 
 #pass configure infor to swig 
 FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
