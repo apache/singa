@@ -23,6 +23,7 @@ functions for net info, e.g., parameters.
 from .proto.model_pb2 import kTrain, kEval
 import tensor
 import layer
+import snapshot
 import cPickle as pickle
 
 '''For display training information, e.g L1 value of layer data'''
@@ -209,18 +210,16 @@ class FeedForwardNet(object):
             ret.extend(pgrad)
         return ret
 
-    def save(self, f):
-        """Save model parameters using cpickle"""
-        params = {}
+    def save(self, f, buffer_size = 10):
+        """Save model parameters using io/snapshot"""
+        sp = snapshot.Snapshot(f, True, buffer_size)
         for (specs, val) in zip(self.param_specs(), self.param_values()):
             val.to_host()
-            params[specs.name] = tensor.to_numpy(val)
-        with open(f, 'wb') as fd:
-            pickle.dump(params, fd)
+            sp.write(specs.name, val)
 
-    def load(self, f):
-        """Load model parameters using cpickle"""
-        with open(f, 'rb') as fd:
-            params = pickle.load(fd)
+    def load(self, f, buffer_size = 10):
+        """Load model parameters using io/snapshot"""
+        sp = snapshot.Snapshot(f, False, buffer_size)
+        params = sp.read()
         for (specs, val) in zip(self.param_specs(), self.param_values()):
-            val.copy_from_numpy(params[specs.name])
+            val.copy_data(params[specs.name])

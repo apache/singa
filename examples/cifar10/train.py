@@ -156,7 +156,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
 
         print 'test loss = %f, test accuracy = %f' \
             % (loss / num_test_batch, acc / num_test_batch)
-    net.save('model.bin')  # save model params into checkpoint file
+    net.save('model', 20)  # save model params into checkpoint file
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train vgg/alexnet for cifar10')

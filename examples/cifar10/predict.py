@@ -81,7 +81,7 @@ def compute_image_mean(train_dir):
 
 if __name__ == '__main__':
     model = alexnet.create_net(True)
-    model.load('model.bin')  # the checkpoint from train.py
+    model.load('model', 20)  # the checkpoint from train.py
     dev = device.get_default_device()
     model.to_device(dev)
 

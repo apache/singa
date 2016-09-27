@@ -21,12 +21,26 @@
 
 /*interface file for swig */
 
-%module singa_wrap
-%include "config.i"
-%include "core_tensor.i"
-%include "core_device.i"
-%include "model_layer.i"
-%include "model_optimizer.i"
-%include "model_loss.i"
-%include "model_metric.i"
-%include "io_snapshot.i"
+%module io_snapshot
+
+%{
+#include "singa/io/snapshot.h"
+%}
+
+namespace std{
+%template(nametensorPair) std::pair<string, singa::Tensor>;
+%template(nametensorVec) std::vector<std::pair<string, singa::Tensor>>;
+}
+
+namespace singa {
+
+class Snapshot {
+ public:
+  enum Mode { kRead, kWrite };
+  Snapshot(const std::string& prefix, Mode mode, int max_param_size = 10);
+  ~Snapshot() {}
+  std::vector<std::pair<std::string, Tensor>> Read();
+  void Write(const std::string& key, const Tensor& param);
+};
+
+}
