@@ -28,8 +28,14 @@ void RMSProp::Setup(const OptimizerConf& conf) {
 
 // history = history * rho + grad * grad * (1 - rho)
 // value = value - lr * grad / sqrt(history + delta)
-void RMSProp::Apply(int step, float lr, const string& name, const Tensor& grad,
-                    Tensor& value) {
+void RMSProp::Apply(int epoch, float lr, const string& name, Tensor& grad,
+                    Tensor& value, int step) {
+  if (grad.empty())
+    return;
+  ApplyRegularizerConstraint(epoch, name, value, grad, step);
+  if (learning_rate_multplier_.find(name) != learning_rate_multplier_.end())
+    lr *= learning_rate_multplier_.at(name);
+
   if (history_gradient_.find(name) == history_gradient_.end()) {
     history_gradient_[name].ResetLike(value);
     history_gradient_[name].SetValue(0.0f);

@@ -659,7 +659,7 @@ class Merge(Layer):
 
     def backward(self, flag, grad):
         assert isinstance(grad, tensor.Tensor), 'The input must be Tensor'
-        return [grad], []  # * self.num_input
+        return [grad] * self.num_input, []  # * self.num_input
 
 
 class Split(Layer):

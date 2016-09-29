@@ -217,8 +217,6 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
   param_grad.push_back(dbnScale_);
   param_grad.push_back(dbnBias_);
   Tensor dummy;
-  dummy.ResetLike(dbnScale_);
-  dummy.SetValue(.0f);
   param_grad.push_back(dummy);
   param_grad.push_back(dummy);
   if (is_2d_)

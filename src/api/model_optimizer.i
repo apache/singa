@@ -46,8 +46,8 @@ class Optimizer {
   // Optimizer() = default;
   virtual ~Optimizer() = default;
   void Setup(const std::string& str);
-  virtual void Apply(int step, float lr, const std::string& name,
-    const Tensor& grad, Tensor& value) = 0;
+  virtual void Apply(int epoch, float lr, const std::string& name,
+      Tensor& grad, Tensor& value, int step = -1) = 0;
 };
 inline std::shared_ptr<Optimizer> CreateOptimizer(const std::string& type);
 
@@ -55,7 +55,7 @@ class Constraint {
  public:
   Constraint() = default;
   void Setup(const std::string& conf_str);
-  void Apply(int step, Tensor& grad, Tensor& value);
+  void Apply(int epoch, const Tensor& value, Tensor& grad, int step = -1);
 };
 
 inline std::shared_ptr<Constraint> CreateConstraint(const std::string& type);
@@ -64,7 +64,7 @@ class Regularizer {
  public:
   Regularizer() = default;
   void Setup(const std::string& conf_str);
-  void Apply(int step, Tensor& grad, Tensor& value);
+  void Apply(int epoch, const Tensor& value, Tensor& grad, int step = -1);
 };
 inline std::shared_ptr<Regularizer> CreateRegularizer(const std::string& type);
 }

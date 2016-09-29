@@ -95,6 +95,13 @@ class Tensor(object):
         '''
         return self.singa_tensor.nDim()
 
+    def is_empty(self):
+        '''
+        Returns:
+            True if the tensor is empty according to its shape
+        '''
+        return self.ndim() == 0
+
     def is_transpose(self):
         '''
         Returns:
@@ -441,7 +448,6 @@ class Tensor(object):
         else:
             return _call_singa_func(singa.GE_Tf, self.singa_tensor, rhs)
 
-
     def __radd__(self, lhs):
         lhs = float(lhs)
         return _call_singa_func(singa.Add_Tf, self.singa_tensor, lhs)
@@ -461,9 +467,8 @@ class Tensor(object):
         one = Tensor(self.shape, self.device, self.dtype)
         one.set_value(1)
         one *= lhs
-        return _call_singa_func(singa.Div_TT, one.singa_tensor,\
-                self.singa_tensor)
-
+        return _call_singa_func(singa.Div_TT, one.singa_tensor,
+                                self.singa_tensor)
 
 ''' python functions for global functions in Tensor.h
 '''
@@ -616,6 +621,17 @@ def sigmoid(t):
         a new Tensor whose element y = sigmoid(x); x is an element of t
     '''
     return _call_singa_func(singa.Sigmoid, t.singa_tensor)
+
+
+def sqrt(t):
+    '''
+    Args:
+        t (Tensor): input Tensor
+
+    Returns:
+        a new Tensor whose element y = sqrt(x), x is an element of t
+    '''
+    return _call_singa_func(singa.Sqrt, t.singa_tensor)
 
 
 def square(t):
