@@ -78,13 +78,51 @@ class Layer(object):
         name (str): layer name
     '''
 
-    def __init__(self, name, **kwargs):
-        self.layer = None  # layer converted by swig
-        self.name = name  # TODO(wangwei) duplicate with self.conf.name
-        self.conf = model_pb2.LayerConf()
-        self.conf.name = name
-        self.param_specs = []
+    def __init__(self, name, conf=None, **kwargs):
+        if conf == None:
+            self.layer = None  # layer converted by swig
+            self.name = name  # TODO(wangwei) duplicate with self.conf.name
+            self.conf = model_pb2.LayerConf()
+            self.conf.name = name
+            self.param_specs = []
+        else:
+            self.conf = conf
+            self.name = str(conf.name)
+            self.caffe_layer()
+            self.param_specs = []
+
+            # convert caffe proto into singa proto format
+            #   case1: parameters of conv and dense layers
+            #   case2: type of activation layers
+            if (conf.type == 'Convolution' or conf.type == 4) or \
+                (conf.type == 'InnerProduct' or conf.type == 14):
+                w, b = _construct_param_specs_from_caffe_proto(conf)
+                del conf.param[:]
+                conf.param.extend([w, b])
+                self.param_specs.append(w)
+                self.param_specs.append(b)
+                #print 'conf:\n', conf
+            #if conf.type == 'Pooling':
+            #    print 'conf:\n', conf
+
+            elif (conf.type == 'ReLU' or conf.type == 18) or \
+                (conf.type == 'Sigmoid' or conf.type == 19) or \
+                (conf.type == 'TanH' or conf.type == 23):
+                conf.type = (engine + '_' + conf.type).lower()
+            self.conf = conf
+
         self.has_setup = False
+
+    def caffe_layer(self):
+        '''
+        Create a singa layer based on caffe layer configuration.
+        '''
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda'])
+        if self.conf.type == 'InnerProduct' or self.conf.type == 14:
+            self.layer = _create_layer(engine, 'Dense')
+        else:
+            self.layer = _create_layer(engine, str(self.conf.type))
+
 
     def param_names(self):
         '''
@@ -243,6 +281,7 @@ class Conv2D(Layer):
             without the batchsize, e.g., (channel, height, width) or
             (height, width, channel)
     """
+
     def __init__(self, name, nb_kernels, kernel=3, stride=1, border_mode='same',
                  cudnn_prefer='fatest', data_format='NCHW',
                  use_bias=True, W_specs=None, b_specs=None,
@@ -319,6 +358,7 @@ class Pooling2D(Layer):
             model_pb2.PoolingConf.AVE
 
     '''
+
     def __init__(self, name, mode, kernel=3, stride=2, border_mode='same',
                  pad=None, data_format='NCHW', input_sample_shape=None):
         super(Pooling2D, self).__init__(name)
@@ -421,6 +461,7 @@ class BatchNormalization(Layer):
         name (string): layer name
         input_sample_shape (tuple): with at least one integer
     """
+
     def __init__(self, name, momentum=0.9,
                  beta_specs=None, gamma_specs=None, input_sample_shape=None):
         super(BatchNormalization, self).__init__(name)
@@ -434,8 +475,8 @@ class BatchNormalization(Layer):
             beta_specs['name'] = name + '_beta'
         if 'name' not in gamma_specs:
             gamma_specs['name'] = name + '_gamma'
-        mean_specs = {'init': 'constant', 'value': 0, 'name': name+'_mean'}
-        var_specs = {'init': 'constant', 'value': 1, 'name': name+'_var'}
+        mean_specs = {'init': 'constant', 'value': 0, 'name': name + '_mean'}
+        var_specs = {'init': 'constant', 'value': 1, 'name': name + '_var'}
         self.conf.param.extend([_construct_param_specs_from_dict(gamma_specs)])
         self.conf.param.extend([_construct_param_specs_from_dict(beta_specs)])
         self.conf.param.extend([_construct_param_specs_from_dict(mean_specs)])
@@ -499,6 +540,7 @@ class Dense(Layer):
         W_transpose (bool): if true, output=x*W.T+b;
         input_sample_shape (tuple): input feature length
     """
+
     def __init__(self, name, num_output, use_bias=True,
                  W_specs=None, b_specs=None,
                  W_transpose=False, input_sample_shape=None):
@@ -579,6 +621,7 @@ class Activation(Layer):
         mode (string): 'relu', 'sigmoid', or 'tanh'
         input_sample_shape (tuple): shape of a single sample
     """
+
     def __init__(self, name, mode='relu', input_sample_shape=None):
         super(Activation, self).__init__(name)
         _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
@@ -596,6 +639,7 @@ class Softmax(Layer):
             [0,axis) as the row, the [axis, -1) as the column.
         input_sample_shape (tuple): shape of a single sample
     """
+
     def __init__(self, name, axis=1, input_sample_shape=None):
         super(Softmax, self).__init__(name)
         # conf = self.conf.softmax_conf
@@ -615,6 +659,7 @@ class Flatten(Layer):
             [0,axis) as the row, the [axis, -1) as the column.
         input_sample_shape (tuple): shape for a single sample
     """
+
     def __init__(self, name, axis=1, input_sample_shape=None):
         super(Flatten, self).__init__(name)
         conf = self.conf.flatten_conf
@@ -635,6 +680,7 @@ class Merge(Layer):
         input_sample_shape: sample shape of the input. The sample shape of all
             inputs should be the same.
     '''
+
     def __init__(self, name, input_sample_shape=None):
         self.in_shape = input_sample_shape
         self.num_input = 1
@@ -669,6 +715,7 @@ class Split(Layer):
         input_sample_shape: includes a single integer for the input sample
             feature size.
     '''
+
     def __init__(self, name, num_output, input_sample_shape=None):
         self.num_output = num_output
         self.in_shape = input_sample_shape
@@ -806,6 +853,7 @@ class RNN(Layer):
 
 
 class LSTM(RNN):
+
     def __init__(self, name, hidden_size, dropout=0.0, num_stacks=1,
                  input_mode='linear', bidirectional=False,
                  param_specs=None, input_sample_shape=None):
@@ -815,6 +863,7 @@ class LSTM(RNN):
 
 
 class GRU(RNN):
+
     def __init__(self, name, hidden_size, dropout=0.0, num_stacks=1,
                  input_mode='linear', bidirectional=False, param_specs=None,
                  input_sample_shape=None):
@@ -825,8 +874,8 @@ class GRU(RNN):
 
 def _check_engine(engine, allowed_engines):
     assert engine.lower() in Set(allowed_engines), \
-           '%s is not a supported engine. Pls use one of %s' % \
-           (engine, ', '.join(allowed_engines))
+        '%s is not a supported engine. Pls use one of %s' % \
+        (engine, ', '.join(allowed_engines))
 
 
 def _create_layer(eng, layer):
@@ -839,6 +888,7 @@ def _create_layer(eng, layer):
         layers, use the specific activation mode, e.g. 'relu', 'tanh'.
     '''
     layer_type = eng + '_' + layer
+    print layer_type.lower()
     return singa_wrap.CreateLayer(layer_type.lower())
 
 
@@ -925,6 +975,63 @@ def _construct_param_specs_from_dict(specs):
     if 'constraint' in specs:
         conf.constraint.threshold = specs['constraint']
     return conf
+
+
+def _construct_param_specs_from_caffe_proto(lyr_conf):
+    """convert the param specs from a caffe layer proto into a singa paramspec
+    protobuf object.
+
+    args:
+        specs (dict): the fields inlcude
+            'name' for parameter name
+            'lr_mult' for learning rate multiplier;
+            'decay_mult' for weight decay multiplier;
+            'init' for init method, which could be 'gaussian', 'uniform',
+            'xavier' and 'msra';
+            'std', 'mean', 'high', 'low' are used by corresponding init methods;
+            caffe model has no 'constraint' and 'regularizer'
+
+    returns:
+        a pair of paramspec objects(weight and bias)
+    """
+    wparam = model_pb2.ParamSpec()
+    bparam = model_pb2.ParamSpec()
+    if len(lyr_conf.param) > 0:
+        wparam.name = lyr_conf.param[0].name
+        wparam.lr_mult = lyr_conf.param[0].lr_mult
+        wparam.decay_mult = lyr_conf.param[0].decay_mult
+        if len(lyr_conf.param) > 1:
+            bparam.name = lyr_conf.param[1].name
+            bparam.lr_mult = lyr_conf.param[1].lr_mult
+            bparam.decay_mult = lyr_conf.param[1].decay_mult
+    if wparam.name == '' or wparam.name is None:
+        wparam.name = lyr_conf.name + '_weight'
+    if bparam.name == '' or bparam.name is None:
+        bparam.name = lyr_conf.name + '_bias'
+    wfiller = wparam.filler
+    bfiller = bparam.filler
+    param = ''
+    if lyr_conf.type == 'Convolution' or lyr_conf.type == 4:
+        param = lyr_conf.convolution_conf
+    elif lyr_conf.type == 'InnerProduct' or lyr_conf.type == 14:
+        param = lyr_conf.dense_conf
+
+    if param != '':
+        wfiller.type = param.weight_filler.type.lower()
+        wfiller.min = param.weight_filler.min
+        wfiller.max = param.weight_filler.max
+        wfiller.mean = param.weight_filler.mean
+        wfiller.std = param.weight_filler.std
+        wfiller.value = param.weight_filler.value
+
+        bfiller.type = param.bias_filler.type.lower()
+        bfiller.min = param.bias_filler.min
+        bfiller.max = param.bias_filler.max
+        bfiller.mean = param.bias_filler.mean
+        bfiller.std = param.bias_filler.std
+        bfiller.value = param.bias_filler.value
+
+    return (wparam, bparam)
 
 
 def get_layer_list():
