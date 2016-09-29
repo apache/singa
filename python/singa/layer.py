@@ -78,12 +78,54 @@ class Layer(object):
         name (str): layer name
     '''
 
-    def __init__(self, name, **kwargs):
-        self.layer = None  # layer converted by swig
-        self.name = name  # TODO(wangwei) duplicate with self.conf.name
-        self.conf = model_pb2.LayerConf()
-        self.conf.name = name
-        self.param_specs = []
+    def __init__(self, name, conf = None, **kwargs):
+        if conf == None:
+            self.layer = None  # layer converted by swig
+            self.name = name  # TODO(wangwei) duplicate with self.conf.name
+            self.conf = model_pb2.LayerConf()
+            self.conf.name = name
+            self.param_specs = []
+        else:
+            self.layer = None
+            self.name = conf.name
+            self.conf = conf
+            # TODO(Xiangrui) need to fill in param_specs
+            self.param_specs = []
+            if conf.type == 'Convolution' or conf.type == 4:
+                _check_engine(engine, ['cudnn', 'singacpp'])
+                self.layer = _create_layer(engine, 'Convolution')
+            elif conf.type == 'Pooling' or conf.type == 17:
+                _check_engine(engine, ['cudnn', 'singacpp'])
+                self.layer = _create_layer(engine, 'Pooling')
+            elif conf.type == 'ReLU' or conf.type == 18:
+                _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
+                mode = 'relu'
+                self.conf.type = (engine + '_' + mode).lower()
+                self.layer = _create_layer(engine, mode)
+            elif conf.type == 'LRN' or conf.type == 15:
+                _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacuda', 'singacl'])
+                self.layer = _create_layer(engine, 'LRN')
+            elif conf.type == 'InnerProduct' or conf.type == 14:
+                if engine == 'cudnn':
+                    self.layer = _create_layer('singacuda', 'Dense')
+                else:
+                    self.layer = _create_layer(engine, 'Dense')
+            elif conf.type == 'Dropout' or conf.type == 6:
+                if engine == 'cudnn':
+                    self.layer = _create_layer('singacuda', 'Dropout')
+                else:
+                    self.layer = _create_layer(engine, 'Dropout')
+            elif conf.type == 'Softmax' or conf.type == 20:
+                _check_engine(engine, ['cudnn', 'singa', 'singacpp', 'singacl', 'singacuda'])
+                self.layer = _create_layer(engine, 'Softmax')
+            elif conf.type == 'Flatten' or conf.type == 8:
+                if engine == 'cudnn':
+                    self.layer = _create_layer('singacuda', 'Flatten')
+                else:
+                    self.layer = _create_layer(engine, 'Flatten')
+            else:
+                raise Exception('Unknown layer type: ' + conf.type)
+
         self.has_setup = False
 
     def param_names(self):

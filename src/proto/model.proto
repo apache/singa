@@ -217,7 +217,8 @@ message LayerConf {
   optional HingeLossConf hinge_loss_conf = 114;
   // optional ImageDataConf image_data_conf = 115;
   optional InfogainLossConf infogain_loss_conf = 116;
-  optional InnerProductConf inner_product_conf = 117;
+  // use dense_conf to replace this inner_product_conf
+  // optional InnerProductConf inner_product_conf = 117;
   optional LogConf log_conf = 134;
   optional LRNConf lrn_conf = 118;
   // optional MemoryDataConf memory_data_conf = 119;
@@ -239,7 +240,7 @@ message LayerConf {
   //optional WindowDataConf window_data_conf = 129;
 
   // Used in SINGA
-  optional DenseConf dense_conf = 201;
+  optional DenseConf dense_conf = 117;
   optional MetricConf metric_conf = 200;
   optional BatchNormConf batchnorm_conf = 202;
   optional SplitConf split_conf = 203;
