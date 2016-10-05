@@ -125,6 +125,7 @@ if __name__ == '__main__':
                           image_transform, shuffle=True, delimeter=',',
                           image_folder='images/',
                           capacity=10)
+    data.start()
     imgs, labels = data.next()
     for idx in range(imgs.shape[0]):
         img = Image.fromarray(imgs[idx].astype(np.uint8).transpose(1, 2, 0),
