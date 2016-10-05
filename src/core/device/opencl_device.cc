@@ -15,8 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifdef USE_OPENCL
+#ifndef DISABLE_WARNINGS
 
 #include <iostream>
 #include <fstream>
@@ -27,6 +26,7 @@
 #include "singa/utils/tinydir.h"
 #include "singa/utils/opencl_utils.h"
 
+#ifdef USE_OPENCL
 
 using namespace viennacl;
 using namespace viennacl::backend::opencl;
@@ -169,3 +169,5 @@ void OpenclDevice::Free(void* p) {
 } // namespace singa
 
 #endif // USE_OPENCL
+
+#endif

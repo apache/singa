@@ -37,9 +37,9 @@ ENDIF()
 
 
 ADD_EXECUTABLE(test_singa "gtest/gtest_main.cc" ${singa_test_source})
-ADD_DEPENDENCIES(test_singa singa_static)
+ADD_DEPENDENCIES(test_singa singa)
 #MESSAGE(STATUS "link libs" ${singa_linker_libs})
-TARGET_LINK_LIBRARIES(test_singa gtest singa_static ${SINGA_LINKER_LIBS})
+TARGET_LINK_LIBRARIES(test_singa gtest singa ${SINGA_LINKER_LIBS})
 IF(UNIX AND (NOT APPLE))
     LIST(APPEND LINK_FLAGS "-pthread")
 ENDIF()

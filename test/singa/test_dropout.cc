@@ -30,7 +30,7 @@ TEST(Dropout, Setup) {
 
   singa::LayerConf conf;
   singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
-  dropconf->set_dropout_ratio(0.8);
+  dropconf->set_dropout_ratio(0.8f);
 
   drop.Setup(Shape{3}, conf);
   EXPECT_EQ(0.8f, drop.dropout_ratio());

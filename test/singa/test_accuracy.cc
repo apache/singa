@@ -26,7 +26,7 @@ TEST(Accuracy, Compute) {
   singa::Accuracy acc;
   singa::Tensor p(singa::Shape{2, 3});
   singa::Tensor t(singa::Shape{2}, singa::kInt);
-  const float pdat[6] = {0.1, 0.3, 0.6, 0.3, 0.2, 0.5};
+  const float pdat[6] = {0.1f, 0.3f, 0.6f, 0.3f, 0.2f, 0.5f};
   const int tdat[2] = {1, 2};  // one wrong, one correct
   p.CopyDataFromHostPtr(pdat, sizeof(pdat) / sizeof(float));
   t.CopyDataFromHostPtr(tdat, sizeof(tdat) / sizeof(int));

@@ -51,7 +51,7 @@ TEST_F(TestMSE, CppForward) {
       l += (pdat[k] - tdat[k]) * (pdat[k] - tdat[k]);
       k++;
     }
-    EXPECT_FLOAT_EQ(ldat[i], 0.5 * l);
+    EXPECT_FLOAT_EQ(ldat[i], 0.5f * l);
   }
 }
 

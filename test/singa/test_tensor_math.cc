@@ -152,7 +152,7 @@ TEST_F(TestTensorMath, SoftMax) {
   Tensor p1 = SoftMax(Reshape(e, Shape{1, 6}));
   const float *dptr1 = p1.data<float>();
   float sum = 0;
-  for (int i = 0; i < 6; i++) sum += exp(i + 1);
+  for (int i = 0; i < 6; i++) sum += (float)exp(i + 1);
   EXPECT_NEAR(exp(1) / sum, dptr1[0], 1e-5);
   EXPECT_NEAR(exp(3) / sum, dptr1[2], 1e-5);
   EXPECT_NEAR(exp(5) / sum, dptr1[4], 1e-5);

@@ -36,7 +36,7 @@ TEST(CSV, EncoderDecode) {
   decoder.Setup(decoder_conf);
   EXPECT_EQ(true, decoder.has_label());
 
-  float in_data[] = {1.23, 4.5, 5.1, 3.33, 0.44};
+  float in_data[] = {1.23f, 4.5f, 5.1f, 3.33f, 0.44f};
   std::string in_str = "2, 1.23, 4.5, 5.1, 3.33, 0.44";
   int in_label = 2;
   size_t size = 5;

@@ -17,11 +17,12 @@
  */
 #ifndef DISABLE_WARNINGS
 
-#ifdef USE_CUDA
 #include "singa/core/memory.h"
 #include "singa/utils/logging.h"
 #include "singa/proto/core.pb.h"
 #include <iostream>
+
+#ifdef USE_CUDA
 
 namespace singa {
 std::atomic<int> CnMemPool::pool_count(0);

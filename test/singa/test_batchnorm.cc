@@ -34,7 +34,7 @@ TEST(BatchNorm, Setup) {
   batchnorm_conf->set_factor(0.01);
   batchnorm.Setup(Shape{2, 4, 4}, conf);
 
-  EXPECT_FLOAT_EQ(0.01, batchnorm.factor());
+  EXPECT_FLOAT_EQ(0.01f, batchnorm.factor());
   EXPECT_EQ(2u, batchnorm.channels());
   EXPECT_EQ(4u, batchnorm.height());
   EXPECT_EQ(4u, batchnorm.width());
