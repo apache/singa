@@ -15,9 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifdef USE_OPENCV
+#ifndef DISABLE_WARNINGS
 
 #include "singa/io/encoder.h"
+
+#ifdef USE_OPENCV
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -81,3 +83,5 @@ std::string JPGEncoder::Encode(vector<Tensor>& data) {
 }
 }  // namespace singa
 #endif  // USE_OPENCV
+
+#endif

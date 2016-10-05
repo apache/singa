@@ -25,8 +25,8 @@
 
 TEST(SGD, ApplyWithoutMomentum) {
   singa::SGD sgd;
-  const float v[4] = {0.1, 0.2, 0.3, 0.4};
-  const float g[4] = {0.1, 0.1, 0.1, 0.1};
+  const float v[4] = {0.1f, 0.2f, 0.3f, 0.4f};
+  const float g[4] = {0.1f, 0.1f, 0.1f, 0.1f};
 
   singa::Tensor value(singa::Shape{4}), grad(singa::Shape{4});
   value.CopyDataFromHostPtr(v, 4);
@@ -58,8 +58,8 @@ TEST(SGD, ApplyWithMomentum) {
   float lr = 0.1f;
   auto func = [](int step) { return step <=5 ? 0.5f: 0.9f;};
   sgd.SetMomentumGenerator(func);
-  const float v[4] = {0.1, 0.2, 0.3, 0.4};
-  const float g[4] = {0.01, 0.02, 0.03, 0.04};
+  const float v[4] = {0.1f, 0.2f, 0.3f, 0.4f};
+  const float g[4] = {0.01f, 0.02f, 0.03f, 0.04f};
 
   singa::Tensor value(singa::Shape{4}), grad(singa::Shape{4});
   value.CopyDataFromHostPtr(v, 4);

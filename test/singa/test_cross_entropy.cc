@@ -47,7 +47,7 @@ TEST_F(TestSoftmaxCrossEntropy, CppForward) {
   const Tensor& loss = cross_entropy.Forward(singa::kEval, p, t);
   auto ldat = loss.data<float>();
 
-  const float result_test = -log(0.25);
+  const float result_test = (float) -log(0.25);
   EXPECT_FLOAT_EQ(ldat[0], result_test);
   EXPECT_FLOAT_EQ(ldat[1], result_test);
 }

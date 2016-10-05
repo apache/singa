@@ -28,8 +28,8 @@
 #include <fstream>
 
 const std::string prefix = "./snapshot_test";
-const float param_1_data[] = {0.1, 0.2, 0.3, 0.4};
-const float param_2_data[] = {0.2, 0.1, 0.4, 0.3};
+const float param_1_data[] = {0.1f, 0.2f, 0.3f, 0.4f};
+const float param_2_data[] = {0.2f, 0.1f, 0.4f, 0.3f};
 const std::string desc_1 =
     "parameter name: Param_1\tdata type: 0\tdim: 1\tshape: 4";
 const std::string desc_2 =

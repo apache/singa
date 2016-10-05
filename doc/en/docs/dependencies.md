@@ -56,7 +56,7 @@ Step 5: Done.
 ### CBLAS
 
 There are ready-to-use binary packages online
-([link](https://sourceforge.net/projects/openblas/files/). However, we still install
+([link](https://sourceforge.net/projects/openblas/files/)). However, we still install
 OpenBLAS with version 0.2.18 as test:
 
 Step 1: Download and decompress the source code.

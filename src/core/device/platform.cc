@@ -15,10 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifdef USE_CUDA
+#ifndef DISABLE_WARNINGS
 
 #include "singa/core/device.h"
 #include "singa/singa_config.h"
+
+#ifdef USE_CUDA
 
 namespace singa {
 
@@ -138,3 +140,5 @@ Platform::CreateCudaGPUsOn(const vector<int> &devices, size_t init_size) {
 }  // namespace singa
 
 #endif  // USE_CUDA
+
+#endif
