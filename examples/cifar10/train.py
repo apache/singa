@@ -35,6 +35,7 @@ import alexnet
 import vgg
 import resnet
 
+
 def load_dataset(filepath):
     print 'Loading data file %s' % filepath
     with open(filepath, 'rb') as fd:
@@ -94,13 +95,15 @@ def alexnet_lr(epoch):
     else:
         return 0.00001
 
+
 def resnet_lr(epoch):
-    if epoch < 80:
-        return 0.02
-    elif epoch < 120:
-        return 0.005
+    if epoch < 81:
+        return 0.1
+    elif epoch < 122:
+        return 0.01
     else:
         return 0.001
+
 
 def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
           use_cpu=False):
@@ -136,7 +139,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
             loss += l
             acc += a
             for (s, p, g) in zip(net.param_names(), net.param_values(), grads):
-                opt.apply_with_lr(epoch, get_lr(epoch), g, p, str(s))
+                opt.apply_with_lr(epoch, get_lr(epoch), g, p, str(s), b)
             # update progress bar
             utils.update_progress(b * 1.0 / num_train_batch,
                                   'training loss = %f, accuracy = %f' % (l, a))
@@ -156,11 +159,12 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
 
         print 'test loss = %f, test accuracy = %f' \
             % (loss / num_test_batch, acc / num_test_batch)
-    net.save('model.bin')  # save model params into checkpoint file
+    net.save('model', 20)  # save model params into checkpoint file
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train vgg/alexnet for cifar10')
-    parser.add_argument('model', choices=['vgg', 'alexnet', 'resnet'], default='alexnet')
+    parser = argparse.ArgumentParser(description='Train dcnn for cifar10')
+    parser.add_argument('model', choices=['vgg', 'alexnet', 'resnet'],
+                        default='alexnet')
     parser.add_argument('data', default='cifar-10-batches-py')
     parser.add_argument('--use_cpu', action='store_true')
     args = parser.parse_args()

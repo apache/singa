@@ -30,8 +30,13 @@ void Nesterov::Setup(const OptimizerConf& conf) {
 // history = lr * grad + history * mom
 // tmp = (1+mom) * history - tmp * mom;
 // value = value - tmp;
-void Nesterov::Apply(int step, float lr, const string& name, const Tensor& grad,
-                     Tensor& value) {
+void Nesterov::Apply(int epoch, float lr, const string& name, Tensor& grad,
+                     Tensor& value, int step) {
+  if (grad.empty())
+    return;
+  ApplyRegularizerConstraint(epoch, name, value, grad, step);
+  if (learning_rate_multplier_.find(name) != learning_rate_multplier_.end())
+    lr *= learning_rate_multplier_.at(name);
   if (momentum_generator_) {
     float mom = momentum_generator_(step);
     if (history_gradient_.find(name) == history_gradient_.end()) {

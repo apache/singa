@@ -31,6 +31,7 @@ void Optimizer::Setup(const OptimizerConf& conf) {
   if (conf.has_regularizer())
     regularizer_ = new Regularizer(conf.regularizer());
   if (conf.has_constraint()) constraint_ = new Constraint(conf.constraint());
+  conf_ = conf;
 }
 void Optimizer::Register(const string& name, const ParamSpec& specs) {
   if (specs.has_constraint()) {
@@ -44,9 +45,9 @@ void Optimizer::Register(const string& name, const ParamSpec& specs) {
     regularizers_[name] = new Regularizer(specs.regularizer());
   }
   if (specs.has_decay_mult()) {
-    CHECK(weight_decay_multplier_.find(name) == weight_decay_multplier_.end())
-        << "Parameter with name = " << name << " has already registered";
-    weight_decay_multplier_[name] = specs.decay_mult();
+    auto reg = specs.regularizer();
+    reg.set_coefficient(reg.coefficient() * conf_.regularizer().coefficient());
+    regularizers_[name] = new Regularizer(reg);
   }
   if (specs.has_lr_mult()) {
     CHECK(learning_rate_multplier_.find(name) == learning_rate_multplier_.end())
@@ -59,26 +60,25 @@ void Optimizer::Register(const string& name, const ParamSpec& specs) {
   }
   */
 }
-
-void Optimizer::Apply(int step, const string& name, Tensor& grad,
-                      Tensor& param) {
+void Optimizer::ApplyRegularizerConstraint(int epoch, const string& name,
+      const Tensor& value, Tensor& grad, int step) {
   // TODO(wangwei) need to consider the order of constraint and regularizer
   if (regularizers_.find(name) != regularizers_.end()) {
-    regularizers_.at(name)->Apply(step, param, grad);
+    regularizers_.at(name)->Apply(epoch, value, grad, step);
   } else if (regularizer_ != nullptr) {
-    float scale = 1.0f;
-    if (weight_decay_multplier_.find(name) != weight_decay_multplier_.end())
-      scale = weight_decay_multplier_.at(name);
-    regularizer_->Apply(step, param, grad, scale);
+    regularizer_->Apply(epoch, value, grad, step);
   }
   if (constraints_.find(name) != constraints_.end())
-    constraints_.at(name)->Apply(step, param, grad);
+    constraints_.at(name)->Apply(epoch, value, grad, step);
   else if (constraint_ != nullptr)
-    constraint_->Apply(step, param, grad);
+    constraint_->Apply(epoch, value, grad, step);
+}
+
+
+void Optimizer::Apply(int epoch, const string& name, Tensor& grad,
+                      Tensor& value, int step) {
   float lr = learning_rate_generator_(step);
-  if (learning_rate_multplier_.find(name) != learning_rate_multplier_.end())
-    lr *= learning_rate_multplier_.at(name);
-  Apply(step, lr, name, grad, param);
+  Apply(epoch, lr, name, grad, value, step);
 }
 
 void Regularizer::Setup(const RegularizerConf& conf) {
@@ -89,16 +89,17 @@ void Regularizer::Setup(const RegularizerConf& conf) {
   }
 }
 
-void Regularizer::Apply(int step, Tensor& value, Tensor& grad, float scale) {
+void Regularizer::Apply(int epoch, const Tensor& value, Tensor& grad, int step)
+{
   if (type_ == "L2" || type_ == "l2") {
-    Axpy(coefficient_ * scale, value, &grad);
+    Axpy(coefficient_, value, &grad);
   } else {
     CHECK(type_ == "NotSet") << "Unknown regularizer type = " << type_;
   }
 }
 
-void Regularizer::Apply(int step, const vector<Tensor>& values,
-                        const vector<Tensor>& grads) {
+void Regularizer::Apply(int epoch, const vector<Tensor>& values,
+                        const vector<Tensor>& grads, int step) {
   LOG(FATAL) << "Not implemented yet";
 }
 
@@ -107,13 +108,13 @@ void Constraint::Setup(const ConstraintConf& conf) {
   threshold_ = conf.threshold();
 }
 
-void Constraint::Apply(int step, Tensor& value, Tensor& grad) {
+void Constraint::Apply(int epoch, const Tensor& value, Tensor& grad, int step) {
   // TODO(wangwei) implement L2 and hard constraint
   CHECK(type_ == "NotSet") << "Unknown regularizer type = " << type_;
 }
 
-void Constraint::Apply(int step, const vector<Tensor>& values,
-                       const vector<Tensor>& grads) {
+void Constraint::Apply(int epoch, const vector<Tensor>& values,
+                       const vector<Tensor>& grads, int step) {
   LOG(FATAL) << "Not implemented yet";
 }
 

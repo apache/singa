@@ -102,6 +102,8 @@ class Tensor {
 
   size_t nDim() const { return shape_.size(); }
 
+  bool empty() const { return nDim() == 0; }
+
   bool transpose() const { return transpose_; }
 
   /// return number of total elements

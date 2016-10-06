@@ -207,6 +207,10 @@ class ImageTool():
     def get(self):
         return self.imgs
 
+    def num_augmentation(self):
+        '''Return the total number of augmentations to each image'''
+        pass
+
     def resize_by_range(self, rng, inplace=True):
         '''
         Args:
@@ -242,13 +246,6 @@ class ImageTool():
         else:
             return new_imgs
 
-    def resize_for_test(self, rng):
-        '''
-        Args:
-            rng: a tuple (begin,end)
-        '''
-        size_list = [rng[0], rng[0]/2+rng[1]/2, rng[1]]
-        return self.resize_by_list(size_list, num_case=3)
 
     def rotate_by_range(self, rng, inplace=True):
         '''

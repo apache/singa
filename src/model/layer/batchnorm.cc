@@ -185,8 +185,6 @@ const std::pair<Tensor, vector<Tensor>> BatchNorm::Backward(
     param_grad.push_back(dbnScale_);
     param_grad.push_back(dbnBias_);
     Tensor dummy;
-    dummy.ResetLike(runningMean_);
-    dummy.SetValue(.0f);
     param_grad.push_back(dummy);
     param_grad.push_back(dummy);
   } else {

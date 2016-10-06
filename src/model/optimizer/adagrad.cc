@@ -25,8 +25,14 @@ void AdaGrad::Setup(const OptimizerConf& conf) { delta_ = conf.delta(); }
 
 // history += grad*grad;
 // value = value - lr*grad/sqrt(history+delta)
-void AdaGrad::Apply(int step, float lr, const string& name, const Tensor& grad,
-                    Tensor& value) {
+void AdaGrad::Apply(int epoch, float lr, const string& name,
+    Tensor& grad, Tensor& value, int step) {
+  if (grad.empty())
+    return;
+  ApplyRegularizerConstraint(epoch, name, value, grad, step);
+  if (learning_rate_multplier_.find(name) != learning_rate_multplier_.end())
+    lr *= learning_rate_multplier_.at(name);
+
   if (history_gradient_.find(name) == history_gradient_.end()) {
     history_gradient_[name].ResetLike(value);
     history_gradient_[name].SetValue(0.0f);
