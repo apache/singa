@@ -37,7 +37,7 @@ The following instructions are tested on Ubuntu 14.04 for installing dependent l
 
     # optional libraries
     $ sudo apt-get install python2.7-dev python-pip python-numpy
-    $ sudo apt-get install llibopencv-dev ibgoogle-glog-dev liblmdb-dev
+    $ sudo apt-get install libopencv-dev libgoogle-glog-dev liblmdb-dev
 
 Please note that PySINGA requires swig >=3.0, which could be installed via
 apt-get on Ubuntu 16.04; but it has to be installed from source for other Ubuntu versions including 14.04.
@@ -68,6 +68,7 @@ To let the runtime know the openblas path, please export
 
 ### pip and anaconda for PySINGA
 pip and anaconda could be used to install python packages, e.g. numpy.
+Python virtual environment is recommended to run PySINGA.
 To use pip with virtual environment,
 
     # install virtualenv
@@ -219,6 +220,30 @@ To be added.
 
 ## FAQ
 
+* Q: Error from 'import singa' using PySINGA installed from wheel.
+
+    A: Please check the detailed error from `python -c  "from singa import _singa_wrap"`. Sometimes it is
+    caused by the dependent libraries, e.g. there are multiple versions of protobuf or missing of cudnn. Following
+    steps show the solutions for different cases
+    1. check the cudnn and cuda and gcc versions, cudnn5 and cuda7.5 and gcc4.8/4.9 are preferred. if gcc is 5.0, then downgrade it.
+       if cudnn is missing or not match with the wheel version, you can download the correct version of cudnn into ~/local/cudnn/ and
+        ```
+        echo "export LD_LIBRARY_PATH=/home/<yourname>/local/cudnn/lib64:$LD_LIBRARY_PATH" >> ~/.bashrc
+        ```
+    2. if it is the problem related to protobuf, then better install protobuf from source into a local folder, say ~/local/;
+       Decompress the tar file, and then
+       ```
+       ./configure --prefix=/home/<yourname>local
+       make && make install
+       echo "export LD_LIBRARY_PATH=/home/<yourname>/local/lib:$LD_LIBRARY_PATH" >> ~/.bashrc
+       source ~/.bashrc
+    3. if it cannot find other libs including python, then please create virtual env using pip or conda;
+       and then install SINGA via
+       ```
+       pip install --upgrade <url of singa wheel>
+       ```
+
+
 * Q: Error from running `cmake ..`, which cannot find the dependent libraries.
 
     A: If you haven't installed the libraries, please install them. If you installed
@@ -276,7 +301,7 @@ To be added.
 
 * Q: When I build protocol buffer, it reports that GLIBC++_3.4.20 not found in /usr/lib64/libstdc++.so.6.
 
-    A9: This means the linker found libstdc++.so.6 but that library
+    A: This means the linker found libstdc++.so.6 but that library
     belongs to an older version of GCC than was used to compile and link the
     program. The program depends on code defined in
     the newer libstdc++ that belongs to the newer version of GCC, so the linker
