@@ -14,6 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
+'''
+An utility model for image augmentation.
+
+Example usage::
+
+    from singa import image_tool
+
+    tool = image_tool.ImageTool()
+    imgs = tool.load('input.png').\
+        resize_by_list([112]).crop5((96, 96), 5).enhance().flip().get()
+    for idx, img in enumerate(imgs):
+        img.save('%d.png' % idx)
+
+'''
 
 import random
 import numpy as np
@@ -245,7 +259,6 @@ class ImageTool():
             return self
         else:
             return new_imgs
-
 
     def rotate_by_range(self, rng, inplace=True):
         '''

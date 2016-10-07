@@ -16,20 +16,8 @@
    under the License.
 
 
-Documentation
-=============
+Image Tool
+==========
 
-.. toctree::
-
-   installation
-   software_stack
-   device
-   tensor
-   layer
-   initializer
-   loss
-   metric
-   optimizer
-   data
-   image_tool
-   examples/index
+.. automodule:: singa.image_tool
+   :members:

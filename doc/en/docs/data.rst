@@ -16,20 +16,10 @@
    under the License.
 
 
-Documentation
-=============
+Data
+========
 
-.. toctree::
 
-   installation
-   software_stack
-   device
-   tensor
-   layer
-   initializer
-   loss
-   metric
-   optimizer
-   data
-   image_tool
-   examples/index
+
+.. automodule:: singa.data
+   :members:
