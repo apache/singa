@@ -23,6 +23,7 @@
 #include <atomic>
 #include "singa/proto/core.pb.h"
 #include "singa/singa_config.h"
+#include "singa/core/common.h"
 
 #ifdef USE_CUDA
 #include "cnmem.h"
@@ -48,6 +49,37 @@ class DeviceMemPool {
  protected:
   size_t usage_;
 //  size_t init_size_ = 0, max_size_ = 0;
+};
+
+class CppMemPool {
+	public:
+		CppMemPool();
+		
+		Block* Malloc(const size_t size);
+		void Free(Block* ptr);
+
+		// get the free and total size of the memory pool (in terms of bytes)
+  	std::pair<size_t, size_t> GetMemUsage(){return std::make_pair(freeSize,memPoolSize);};
+
+  	~CppMemPool();
+
+	private:
+		// each structure define a memory uint in the memory pool
+		// the structure is a static double linked list
+		struct _Uint {
+			struct _Uint *pPrev, *pNext;
+			Block* pBlk;
+		};
+
+		// total size held by the memory pool (in terms of bytes)
+		size_t memPoolSize;
+		// total free size by the memory pool (in terms of bytes)
+		size_t freeSize;
+
+		// each pointer in this array keeps a head of the allocated memory uints of different size (power of 2)
+		struct _Uint **ppAllocUints;
+		// each pointer in this array keeps a head of the allocated memory uints of different size (power of 2)
+		struct _Uint **ppFreeUints;
 };
 
 #ifdef USE_CUDA
