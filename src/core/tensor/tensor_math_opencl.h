@@ -440,36 +440,17 @@ void Amin<float, lang::Opencl>(const size_t num, const Block* in, size_t* out, C
   out[0] = temp[0];
   delete temp;
 }
-
+*/
 	
 template<>
 void Asum<float, lang::Opencl>(const size_t num, const Block* in, float* out, Context* ctx) {
-  cl_int status = CL_SUCCESS;
+  viennacl::vector<float> v_in((const cl_mem)in->data(), num);
 
-  std::string kname = "clkernel_asum";
-  auto kernel = ctx->kernels->at(kname);
+  viennacl::vector<float> temp = viennacl::linalg::element_fabs(v_in);
 
-  cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  
-  size_t size = sizeof(float) * num;
-  cl::Buffer outval(ctx->ocl_ctx, CL_MEM_WRITE_ONLY, size, nullptr, &status);
-  OCL_CHECK(status, "Failed to create buffer!");
-
-  kernel.setArg(0, (cl_int)num);
-  kernel.setArg(1, inbuf);
-  kernel.setArg(2, outval);
-  kernel.setArg(3, cl::Local(size));
-
-  status = ctx->ocl_cmdq.enqueueNDRangeKernel(kernel, cl::NDRange(0), cl::NDRange(num));
-  OCL_CHECK(status, "Failed to enqueue kernel function!");
-
-  float* temp = new float[num];
-  status = ctx->ocl_cmdq.enqueueReadBuffer(outval, CL_TRUE, 0, size, temp);
-  OCL_CHECK(status, "Failed to read from buffer!");
-  out[0] = temp[0];
-  delete temp;
+  out[0] = viennacl::linalg::sum(temp);
 }
-*/
+
 /// out = alpha * in + out
 template<>
 void Axpy<float, lang::Opencl>(const size_t num, const float alpha, const Block* in, Block* out, Context* ctx) {
@@ -528,7 +509,7 @@ void GEMV<float, lang::Opencl>(bool trans, const size_t m, const size_t n, const
 }
 
 /// multiply a matrix with a diagonal matrix constructed using values from 'v'.
-/// if matrix_lef_side is true, do M*v; else do v*M
+/// if matrix_left_side is true, do M*v; else do v*M
 template<>
 void DGMM<float, lang::Opencl>(bool side_right,
 		  const size_t nrow, const size_t ncol,
@@ -541,9 +522,9 @@ void DGMM<float, lang::Opencl>(bool side_right,
   auto diag = viennacl::diag(v_buf);
   
   if (side_right) {
-    out_buf = viennacl::linalg::prod(diag, M_buf);
-  } else {
     out_buf = viennacl::linalg::prod(M_buf, diag);
+  } else {
+    out_buf = viennacl::linalg::prod(diag, M_buf);
   }
 }
 

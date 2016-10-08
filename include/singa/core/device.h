@@ -50,7 +50,7 @@ namespace singa {
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
 class Device {
-  public:
+public:
   // Device() = default;
   virtual ~Device() {}
   /// Constructor with device ID, num of executors (e.g., cuda streams),
@@ -102,10 +102,10 @@ class Device {
 
   int id() const { return id_; }
 
- private:
+private:
   Device() {};
 
- protected:
+protected:
   /// Execute one operation on one executor.
   virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
 
@@ -118,7 +118,7 @@ class Device {
   /// Free device memory.
   virtual void Free(void* ptr) = 0;
 
- protected:
+protected:
   int id_ = 0;
   int num_executors_ = 0;
   unsigned seed_ = 0;
@@ -140,14 +140,14 @@ extern std::shared_ptr<Device> defaultDevice;
 /// Represent a CPU device which may have multiple threads/executors.
 /// It runs cpp code.
 class CppCPU : public Device {
- public:
+public:
   ~CppCPU() {};
   CppCPU();
 
   std::shared_ptr<Device> host() const override { return defaultDevice;}
   void SetRandSeed(unsigned seed) override;
 
- protected:
+protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
@@ -167,7 +167,7 @@ class CppCPU : public Device {
 #ifdef USE_CUDA
 // Represent a Nvidia GPU which runs cuda code.
 class CudaGPU : public Device {
- public:
+public:
   ~CudaGPU();
   /// Construct the device using default mem pool setting.
   CudaGPU(int id = 0);
@@ -177,7 +177,7 @@ class CudaGPU : public Device {
   void SetRandSeed(unsigned seed) override;
   size_t GetAllocatedMem() override;
 
- protected:
+protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
   void CopyToFrom(void* dst, const void* src, size_t nBytes,
@@ -189,10 +189,10 @@ class CudaGPU : public Device {
   /// Free cpu memory.
   void Free(void* ptr) override;
 
- private:
+private:
   void Setup();
 
- private:
+private:
 	shared_ptr<DeviceMemPool> pool_;
 };
 
@@ -292,20 +292,30 @@ public:
   CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
 #endif // USE_CUDA
 
+#ifdef USE_OPENCL
+
+  const int GetNumOCLPlatforms();
+
+  const int GetNumOCLDevices();
+
+  static const std::shared_ptr<Device> GetDefaultOCLDevice();
+
   /// Create a \p num_devices set of valid OpenCL devices, regardless of
   /// platforms.  If there are fewer valid devices than requested, then this
-  /// method will return as many as possible.If OpenCL is not in use, this
+  /// method will return as many as possible. If OpenCL is not in use, this
   /// method will return an empty array.
-  const std::vector<std::shared_ptr<Device> > CreateOpenclDevices(
-             const size_t num_devices);
+//  static const std::vector<std::shared_ptr<Device>>
+//  CreateOCLDevices(const size_t num_devices);
 
   /// Create a set of valid OpenCL devices, regardless of platforms, assigning
   /// \p id to each device in sequence.
   /// If there are fewer valid devices than requested, then this method will
   /// return as many as possible.
   /// If OpenCL is not in use, this method will return an empty array.
-  const std::vector<std::shared_ptr<Device> >
-  CreateOpenclDevices(const vector<int> &id);
+//  static const std::vector<std::shared_ptr<Device>>
+//  CreateOCLDevices(const std::vector<int> &id);
+  
+#endif // USE_OPENCL
 
   /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
   /// This function checks the availability of GPU #device_id.

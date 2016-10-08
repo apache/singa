@@ -22,7 +22,7 @@
 
 namespace singa {
 
-RegisterLayerClass(opencl_pooling, OpenclPooling);
+RegisterLayerClass(singacl_pooling, OpenclPooling);
 
 const Tensor OpenclPooling::Forward(int flag, const Tensor &input) {
   CHECK(buf_.empty());

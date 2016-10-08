@@ -22,7 +22,7 @@
 
 namespace singa {
 
-RegisterLayerClass(opencl_convolution, OpenclConvolution);
+RegisterLayerClass(singacl_convolution, OpenclConvolution);
 
 /// \copydoc Layer::Forward(int flag, const Tensor&)
 const Tensor OpenclConvolution::Forward(int flag, const Tensor &input) {

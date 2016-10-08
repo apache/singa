@@ -44,25 +44,38 @@ namespace std{
 namespace singa{
 
 class Device {
-  public:
+public:
   virtual void SetRandSeed(unsigned seed) = 0;
   std::shared_ptr<Device> host();
   int id() const;
 };
 
 class Platform {
- public:
+public:
 #if USE_CUDA
   static int GetNumGPUs();
   static const std::vector<int> GetGPUIDs();
   static const std::pair<size_t, size_t> GetGPUMemSize(const int device);
   static const std::vector<std::pair<size_t, size_t>> GetGPUMemSize();
   static const std::string DeviceQuery(int id, bool verbose = false);
-  static const std::vector<std::shared_ptr<Device> >
+  static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
   static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
 #endif // USE_CUDA
+
+#if USE_OPENCL
+
+  const int GetNumOCLPlatforms();
+  const int GetNumOCLDevices();
+  static const std::shared_ptr<Device> GetDefaultOCLDevice();
+//  static const std::vector<std::shared_ptr<Device>>
+//  CreateOpenclDevices(const size_t num_devices);
+//  static const std::vector<std::shared_ptr<Device>>
+//  CreateOpenclDevices();
+
+#endif // USE_OPENCL
+
   static std::shared_ptr<Device> GetDefaultDevice();
 };
 

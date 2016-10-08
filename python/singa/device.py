@@ -120,6 +120,22 @@ def create_cuda_gpu_on(device_id):
     return devices[0]
 
 
+def get_num_ocl_platforms():
+    return singa.Platform.GetNumOCLPlatforms()
+
+def get_num_ocl_devices():
+    return singa.Platform.GetNumOCLDevices()
+
+
+def create_opencl_device():
+    '''Create the default OpenCL device.
+    
+    Returns:
+        a swig converted OpenCL device.
+    '''
+    return singa.Platform.GetDefaultOCLDevice()
+
+
 default_device = singa.Platform.GetDefaultDevice()
 
 

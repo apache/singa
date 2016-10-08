@@ -28,6 +28,7 @@ import cPickle as pickle
 
 '''For display training information, e.g L1 value of layer data'''
 verbose = False
+#benchmark = True
 
 
 class FeedForwardNet(object):
