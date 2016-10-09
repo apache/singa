@@ -22,13 +22,16 @@
 #include "./cifar10.h"
 #include "singa/model/feed_forward_net.h"
 #include "singa/model/optimizer.h"
-#include "singa/model/initializer.h"
 #include "singa/model/metric.h"
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
 namespace singa {
 // currently supports 'cudnn' and 'singacpp'
+#ifdef USE_CUDNN
 const std::string engine = "cudnn";
+#else
+const std::string engine = "singacpp";
+#endif  // USE_CUDNN
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
                       int pad, float std) {
   LayerConf conf;
@@ -177,13 +180,14 @@ void Train(int num_epoch, string data_dir) {
   SoftmaxCrossEntropy loss;
   Accuracy acc;
   net.Compile(true, &sgd, &loss, &acc);
-
+#ifdef USE_CUDNN
   auto dev = std::make_shared<CudaGPU>();
   net.ToDevice(dev);
   train_x.ToDevice(dev);
   train_y.ToDevice(dev);
   test_x.ToDevice(dev);
   test_y.ToDevice(dev);
+#endif  // USE_CUDNN
   net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
 }
 }
