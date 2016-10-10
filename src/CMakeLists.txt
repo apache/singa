@@ -73,19 +73,19 @@ FOREACH(fil ${proto_hdrs})
     TARGET copy_protobuf POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fil}
     "${CMAKE_BINARY_DIR}/include/singa/proto/${filename}"
-    DEPENDS ${proto_files} 
+    DEPENDS ${proto_files}
  )
 ENDFOREACH()
 
 ADD_LIBRARY(singa_objects OBJECT ${singa_sources})
-IF(WIN32) 
+IF(WIN32)
   ADD_LIBRARY(singa STATIC $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
   TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
   IF (MSVC)
 	ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
 	IF(DISABLE_WARNINGS)
 	  ADD_DEFINITIONS(-DDISABLE_WARNINGS)
-	  SET_TARGET_PROPERTIES(singa_objects 
+	  SET_TARGET_PROPERTIES(singa_objects
 	    PROPERTIES COMPILE_FLAGS "/wd4244 /wd4267 /wd4018 /wd4005 /wd4804 /wd4800")
 	ENDIF()
   ENDIF()
@@ -97,7 +97,7 @@ IF(UNIX OR APPLE)
   TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
 ENDIF()
 
-#pass configure infor to swig 
+#pass configure infor to swig
 FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/api/config.i.in" "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
 

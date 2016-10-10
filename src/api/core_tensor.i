@@ -22,17 +22,10 @@
 /*interface file for swig */
 
 %module core_tensor
+%include "config.i"
 %include "std_vector.i"
 %include "std_string.i"
 %include "std_shared_ptr.i"
-
-/*
-%include "carrays.i"
-%array_class(float, floatArray);
-%array_class(int, intArray);
-%array_class(char, charArray);
-%array_class(double, doubleArray);
-*/
 
 %{
 #define SWIG_FILE_WITH_INIT
@@ -49,8 +42,6 @@ using singa::DataType;
 %init %{
   import_array();
 %}
-#endif //USE_PYTHON
-
 %apply (float *IN_ARRAY1, int DIM1) {
        (const float *src, const size_t num)
 }
@@ -63,6 +54,15 @@ using singa::DataType;
 %apply (int *ARGOUT_ARRAY1, int DIM1) {
        (int *value, const size_t num)
 }
+#endif // USE_PYTHON
+
+#if USE_JAVA
+%include "arrays_java.i"
+%apply int[] {int *};
+%apply float[] {float *};
+#endif // USE_JAVA
+
+
 
 %template(Shape) std::vector<size_t>;
 
@@ -84,21 +84,18 @@ namespace singa{
     explicit Tensor(const std::vector<size_t> &shape,
                     DataType dtype = kFloat32);
     Tensor(const std::vector<size_t> &shape,
-           std::shared_ptr<singa::Device> dev, DataType dtype = kFloat32);
+           std::shared_ptr<singa::Device> dev,
+           DataType dtype = kFloat32);
     Tensor(const Tensor &from);
 
     std::shared_ptr<singa::Device> device() const;
-/*
-    template <typename DType> const DType* data() const;
-    %template(floatData) data<float>;
-    %template(intData) data<int>;
-    %template(charData) data<char>;
-    %template(doubleData) data<double>;
-    */
 
     template <typename SType> void GetValue(SType* value, const size_t num);
-    %template(floatGetValue) GetValue<float>;
-    %template(intGetValue) GetValue<int>;
+    %template(GetFloatValue) GetValue<float>;
+    %template(GetIntValue) GetValue<int>;
+
+    template <typename SType> void SetValue(const SType x);
+    %template(SetFloatValue) SetValue<float>;
 
     const DataType data_type() const;
     const std::vector<size_t> &shape() const;
@@ -115,45 +112,39 @@ namespace singa{
     float L2() const;
     float L1() const;
 
-    template <typename SType> void SetValue(const SType x);
-    %template(floatSetValue) SetValue<float>;
-    /* TODO(chonho-01) other types */
-    // --- other types
-
     template <typename DType> void CopyDataFromHostPtr(const DType *src,
                                                        const size_t num,
                                                        const size_t offset = 0);
-    %template(floatCopyDataFromHostPtr) CopyDataFromHostPtr<float>;
-    %template(intCopyDataFromHostPtr) CopyDataFromHostPtr<int>;
-    // --- other types
+    %template(CopyFloatDataFromHostPtr) CopyDataFromHostPtr<float>;
+    %template(CopyIntDataFromHostPtr) CopyDataFromHostPtr<int>;
 
     void CopyData(const Tensor &other);
     Tensor Clone() const;
     Tensor T() const;
 
-    /* python has no assignment operator
-    Tensor &operator=(const Tensor &t); */
+#if USE_JAVA
+    %rename(iAdd) operator+=(const Tensor &t);
+    %rename(iSub) operator-=(const Tensor &t);
+    %rename(iMul) operator*=(const Tensor &t);
+    %rename(iDiv) operator/=(const Tensor &t);
+#endif  // USE_JAVA
+
     Tensor &operator+=(const Tensor &t);
     Tensor &operator-=(const Tensor &t);
     Tensor &operator*=(const Tensor &t);
     Tensor &operator/=(const Tensor &t);
 
-
     template <typename DType> Tensor &operator+=(const DType x);
-    %template(iAdd_f) operator+=<float>;
-    // --- other types
+    %template(iAddFloat) operator+=<float>;
 
     template <typename DType> Tensor &operator-=(DType x);
-    %template(iSub_f) operator-=<float>;
-    // --- other types
+    %template(iSubFloat) operator-=<float>;
 
     template <typename DType> Tensor &operator*=(DType x);
-    %template(iMul_f) operator*=<float>;
-    // --- other types
+    %template(iMulFloat) operator*=<float>;
 
     template <typename DType> Tensor &operator/=(DType x);
-    %template(iDiv_f) operator/=<float>;
-    // --- other types
+    %template(iDivFloat) operator/=<float>;
 
 
     /*TODO(chonho-04)
@@ -161,8 +152,6 @@ namespace singa{
     amin
     asum
     */
-
-
   };
 
   void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
@@ -182,180 +171,139 @@ namespace singa{
 
   Tensor Sum(const Tensor &t, int axis);
   template <typename SType> SType Sum(const Tensor &t);
-  %template(floatSum) Sum<float>;
-  // --- other types
+  %template(SumAsFloat) Sum<float>;
 
-  /* TODO(chonho-02)
-     need to implement the average of all elements ??? */
   Tensor Average(const Tensor &t, int axis);
   Tensor SoftMax(const Tensor &t);
 
-
   Tensor Pow(const Tensor &base, const Tensor &exp);
+
+  %rename(PowWithRet) Pow(const Tensor &base, const Tensor &exp, Tensor *out);
   void Pow(const Tensor &base, const Tensor &exp, Tensor *out);
 
-  %rename(Pow_f) Pow(const Tensor &in, const float x);
-  template <typename SType>
-  Tensor Pow(const Tensor &in, const SType x);
-  %template(pow_temp) Pow<float>;
+  template <typename SType> Tensor Pow(const Tensor &in, const SType x);
+  %template(PowFloat) Pow<float>;
 
-  %rename(Pow_f_out) Pow(const Tensor &in, const float x, Tensor *out);
   template <typename SType>
   void Pow(const Tensor &in, const SType x, Tensor *out);
-  %template(pow_temp) Pow<float>;
+  %template(PowFloatWithRet) Pow<float>;
 
 
-  /* rename comparison operators */
-  %rename(LT_Tf) operator<(const Tensor &t, const float x);
-  %rename(LE_Tf) operator<=(const Tensor &t, const float x);
-  %rename(GT_Tf) operator>(const Tensor &t, const float x);
-  %rename(GE_Tf) operator>=(const Tensor &t, const float x);
-  %rename(LT_TT) operator<(const Tensor &lhs, const Tensor &rhs);
-  %rename(LE_TT) operator<=(const Tensor &lhs, const Tensor &rhs);
-  %rename(GT_TT) operator>(const Tensor &lhs, const Tensor &rhs);
-  %rename(GE_TT) operator>=(const Tensor &lhs, const Tensor &rhs);
-
+  %rename(__lt__) operator<(const Tensor &lhs, const Tensor &rhs);
+  %rename(__le__) operator<=(const Tensor &lhs, const Tensor &rhs);
+  %rename(__gt__) operator>(const Tensor &lhs, const Tensor &rhs);
+  %rename(__ge__) operator>=(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<(const Tensor &lhs, const Tensor &rhs);
   Tensor operator<=(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>(const Tensor &lhs, const Tensor &rhs);
   Tensor operator>=(const Tensor &lhs, const Tensor &rhs);
 
 
+  %rename(LTFloat) operator<(const Tensor &t, const float x);
   template <typename DType>
   Tensor operator<(const Tensor &t, const DType x);
-  %template(op) operator< <float>;
-  // --- other types
+  %template(oplt) operator< <float>;
 
-  template <typename DType>
-  Tensor operator<=(const Tensor &t, const DType x);
-  %template(op) operator<= <float>;
-  // --- other types
+  %rename(LEFloat) operator<=(const Tensor &t, const float x);
+  template <typename DType> Tensor operator<=(const Tensor &t, const DType x);
+  %template(ople) operator<= <float>;
 
-  template <typename DType>
-  Tensor operator>(const Tensor &t, const DType x);
-  %template(op) operator> <float>;
-  // --- other types
+  %rename(GTFloat) operator>(const Tensor &t, const float x);
+  template <typename DType> Tensor operator>(const Tensor &t, const DType x);
+  %template(opgt) operator> <float>;
 
-  template <typename DType>
-  Tensor operator>=(const Tensor &t, const DType x);
-  %template(op) operator>= <float>;
-  // --- other types
-
-  /* NOTE(chonho)
-  no need to include theses
-  in python, these can be replaced with comparison operators
-
-  template <typename DType>
-  void LT(const Tensor &t, DType x, Tensor *ret);
-  template <typename DType>
-  void LE(const Tensor &t, DType x, Tensor *ret);
-  template <typename DType>
-  void GT(const Tensor &t, DType x, Tensor *ret);
-  template <typename DType>
-  void GE(const Tensor &t, DType x, Tensor *ret);
-  */
+  %rename(GEFloat) operator>=(const Tensor &t, const float x);
+  template <typename DType> Tensor operator>=(const Tensor &t, const DType x);
+  %template(opge) operator>= <float>;
 
 
   /* ========== Arithmetic operations ========== */
-  %rename(Add_TT) operator+(const Tensor &lhs, const Tensor &rhs);
-  %rename(Sub_TT) operator-(const Tensor &lhs, const Tensor &rhs);
-  %rename(EltwiseMul_TT) operator*(const Tensor &lhs, const Tensor &rhs);
-  %rename(Div_TT) operator/(const Tensor &lhs, const Tensor &rhs);
+  %rename(__add__) operator+(const Tensor &lhs, const Tensor &rhs);
+  %rename(__sub__) operator-(const Tensor &lhs, const Tensor &rhs);
+  %rename(__mul__) operator*(const Tensor &lhs, const Tensor &rhs);
+  %rename(__div__) operator/(const Tensor &lhs, const Tensor &rhs);
   Tensor operator+(const Tensor &lhs, const Tensor &rhs);
   Tensor operator-(const Tensor &lhs, const Tensor &rhs);
   Tensor operator*(const Tensor &lhs, const Tensor &rhs);
   Tensor operator/(const Tensor &lhs, const Tensor &rhs);
-
-  %rename(Add_Tf) operator+(const Tensor &t, float x);
-  template <typename DType>
-  Tensor operator+(const Tensor &t, DType x);
-  %template(op) operator+<float>;
-  // --- other types
-
-  %rename(Sub_Tf) operator-(const Tensor &t, float x);
-  template <typename DType>
-  Tensor operator-(const Tensor &t, DType x);
-  %template(op) operator-<float>;
-  // --- other types
-
-  %rename(EltwiseMul_Tf) operator*(const Tensor &t, float x);
-  template <typename DType>
-  Tensor operator*(const Tensor &t, DType x);
-  %template(op) operator*<float>;
-  // --- other types
-
-  %rename(Div_Tf) operator/(const Tensor &t, float x);
-  template <typename DType>
-  Tensor operator/(const Tensor &t, DType x);
-  %template(op) operator/<float>;
-  // --- other types
-
   void Add(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
   void Sub(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
   void EltwiseMult(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
   void Div(const Tensor &lhs, const Tensor &rhs, Tensor *ret);
 
-  template <typename DType>
-  void Add(const Tensor &t, DType x, Tensor *ret);
-  %template(Add_Tf_out) Add<float>;
-  // --- other types
+  %rename(AddFloat) operator+(const Tensor &t, float x);
+  template <typename DType> Tensor operator+(const Tensor &t, DType x);
+  %template(opadd) operator+ <float>;
+
+  %rename(SubFloat) operator-(const Tensor &t, float x);
+  template <typename DType> Tensor operator-(const Tensor &t, DType x);
+  %template(opsub) operator- <float>;
+
+  %rename(MultFloat) operator*(const Tensor &t, float x);
+  template <typename DType> Tensor operator*(const Tensor &t, DType x);
+  %template(opmul) operator* <float>;
+
+  %rename(DivFloat) operator/(const Tensor &t, float x);
+  template <typename DType> Tensor operator/(const Tensor &t, DType x);
+  %template(opdiv) operator/ <float>;
+
+  template <typename DType> void Add(const Tensor &t, DType x, Tensor *ret);
+  %template(AddFloatWithRet) Add<float>;
 
   template <typename DType>
   void Sub(const Tensor &t, DType x, Tensor *ret);
-  %template(Sub_Tf_out) Sub<float>;
-  // --- other types
+  %template(SubFloatWithRet) Sub<float>;
 
   template <typename DType>
   void EltwiseMult(const Tensor &t, DType x, Tensor *ret);
-  %template(EltwiseMult_Tf_out) EltwiseMult<float>;
-  // --- other types
+  %template(EltwiseMultFloatWithRet) EltwiseMult<float>;
 
   template <typename DType>
   void Div(const Tensor &t, DType x, Tensor *ret);
-  %template(Div_Tf_out) Div<float>;
-  // --- other types
+  %template(DivFloatWithRet) Div<float>;
 
 
   /* ========== Random operations ========== */
   template <typename SType>
   void Bernoulli(const SType p, Tensor *out);
-  %template(floatBernoulli) Bernoulli<float>;
-  // --- other types
+  %template(Bernoulli) Bernoulli<float>;
 
   template <typename SType>
   void Gaussian(const SType mean, const SType std, Tensor *out);
-  %template(floatGaussian) Gaussian<float>;
-  // --- other types
+  %template(Gaussian) Gaussian<float>;
 
   template <typename SType>
   void Uniform(const SType low, const SType high, Tensor *out);
-  %template(floatUniform) Uniform<float>;
-  // --- other types
+  %template(Uniform) Uniform<float>;
+
 
   /* ========== Blas operations ========== */
   template <typename SType>
   void Axpy(SType alpha, const Tensor &in, Tensor *out);
-  %template(floatAxpy) Axpy<float>;
-  // --- other types
+  %template(Axpy) Axpy<float>;
 
   Tensor Mult(const Tensor &A, const Tensor &B);
+  %rename(MultWithRet) Mult(const Tensor &A, const Tensor &B, Tensor *C);
   void Mult(const Tensor &A, const Tensor &B, Tensor *C);
   template <typename SType>
   void Mult(const SType alpha, const Tensor &A, const Tensor &B,
             const SType beta, Tensor *C);
-  %template(floatMult) Mult<float>;
+  %template(MultWithScale) Mult<float>;
+
+
+  /* =========== Matrix operations ==========*/
 
   void AddColumn(const Tensor &v, Tensor *M);
   template <typename SType>
   void AddColumn(const SType alpha, const SType beta, const Tensor &v,
                  Tensor *M);
-  %template(floatAddColumn) AddColumn<float>;
+  %template(AddColumnWithScale) AddColumn<float>;
 
   void AddRow(const Tensor &v, Tensor *M);
   template <typename SType>
   void AddRow(const SType alpha, const SType beta, const Tensor &v,
               Tensor *M);
-  %template(floatAddRow) AddRow<float>;
+  %template(AddRowWithScale) AddRow<float>;
 
   void DivColumn(const Tensor &v, Tensor *M);
   void DivRow(const Tensor &v, Tensor *M);
@@ -369,6 +317,4 @@ namespace singa{
 
   Tensor SoftMax(const Tensor &in);
   void SoftMax(const Tensor &in, Tensor *out);
-
 }
-

@@ -28,8 +28,8 @@
 %}
 
 namespace std{
-%template(nametensorPair) std::pair<string, singa::Tensor>;
-%template(nametensorVec) std::vector<std::pair<string, singa::Tensor>>;
+%template(PairStrTensor) std::pair<string, singa::Tensor>;
+%template(VecPairStrTensor) std::vector<std::pair<string, singa::Tensor>>;
 }
 
 namespace singa {

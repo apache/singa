@@ -49,11 +49,11 @@ using singa::LayerConf;
 #endif
 
 namespace std {
-  %template(strVector) vector<string>;
-  %template(paramVector) vector<singa::ParamSpec>;
-  %template(tensorVector) vector<singa::Tensor>;
-  %template(ttvecPair) pair<singa::Tensor, vector<singa::Tensor>>;
-  %template(tvecPair) pair<vector<singa::Tensor>, vector<singa::Tensor>>;
+  %template(VecStr) vector<string>;
+  %template(VecParamSpec) vector<singa::ParamSpec>;
+  %template(VecTensor) vector<singa::Tensor>;
+  %template(PairTensorVecTensor) pair<singa::Tensor, vector<singa::Tensor>>;
+  %template(PairVecTensor) pair<vector<singa::Tensor>, vector<singa::Tensor>>;
 }
 
 
@@ -80,6 +80,7 @@ class Layer {
 
 std::shared_ptr<Layer> CreateLayer(const std::string& type);
 const std::vector<std::string> GetRegisteredLayers();
+
 class RNN : public Layer {
 };
 
@@ -88,12 +89,13 @@ class RNN : public Layer {
 class CudnnRNN : public RNN {
  public:
  // note: Must use std::vector instead of vector.
-  const std::vector<Tensor> Forward(int flag, const std::vector<Tensor>& inputs) override;
-  const std::pair<std::vector<Tensor>, std::vector<Tensor>> Backward(
-      int flag, const std::vector<Tensor>& grads) override;
+  const std::vector<Tensor> Forward(int flag,
+                                    const std::vector<Tensor>& inputs) override;
+  const std::pair<std::vector<Tensor>, std::vector<Tensor>>
+  Backward(int flag, const std::vector<Tensor>& grads) override;
   void ToDevice(std::shared_ptr<Device> device) override;
-    const std::vector<Tensor> param_values() override;
-    const std::vector<size_t> GetOutputSampleShape() const override;
+  const std::vector<Tensor> param_values() override;
+  const std::vector<size_t> GetOutputSampleShape() const override;
 };
 
 #endif  // CUDNN_VERSION_SWIG >= 5005

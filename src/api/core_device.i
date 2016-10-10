@@ -35,10 +35,10 @@
 %shared_ptr(singa::Device);
 
 namespace std{
-%template(sizePair) std::pair<size_t, size_t>;
-%template(vectorPair) std::vector<std::pair<size_t, size_t>>;
-%template(vectorSharedPtr) std::vector<std::shared_ptr<singa::Device>>;
-%template(deviceVec) std::vector<int>;
+%template(PairSizeT) std::pair<size_t, size_t>;
+%template(VecPairSizeT) std::vector<std::pair<size_t, size_t>>;
+%template(VecSharedPtrDevice) std::vector<std::shared_ptr<singa::Device>>;
+%template(VecInt) std::vector<int>;
 }
 
 namespace singa{

@@ -479,13 +479,14 @@ void Tensor::SetValue(const SType x) {
   auto size = Size();
   auto ptr = block_;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
-    // cast x to DType
+    // TODO(wangwei) cast x to DType
     device_->Exec([size, x, ptr](Context *ctx) {
       Set<DType, Lang>(size, x, ptr, ctx);
     }, {}, {ptr});
   });
 }
 template void Tensor::SetValue<float>(const float x);
+template void Tensor::SetValue<int>(const int x);
 
 #define EltwiseUnaryTensorFn(fn, t, ret)                               \
   do {                                                                 \

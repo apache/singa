@@ -256,6 +256,13 @@ void Set<float, lang::Cpp>(const size_t num, const float x, Block *out,
   for (size_t i = 0; i < num; i++) outPtr[i] = x;
 }
 template <>
+void Set<int, lang::Cpp>(const size_t num, const int x, Block *out,
+                           Context *ctx) {
+  int *outPtr = static_cast<int *>(out->mutable_data());
+  for (size_t i = 0; i < num; i++) outPtr[i] = x;
+}
+
+template <>
 void Sigmoid<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
                                Context *ctx) {
   float *outPtr = static_cast<float *>(out->mutable_data());
