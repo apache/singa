@@ -30,6 +30,7 @@ from singa import optimizer
 from singa import device
 from singa import tensor
 from singa.proto import core_pb2
+from caffe import caffe_net
 
 import alexnet
 import vgg
@@ -163,8 +164,8 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train dcnn for cifar10')
-    parser.add_argument('model', choices=['vgg', 'alexnet', 'resnet'],
-                        default='alexnet')
+    parser.add_argument('model', choices=['vgg', 'alexnet', 'resnet', 'caffe'],
+            default='alexnet')
     parser.add_argument('data', default='cifar-10-batches-py')
     parser.add_argument('--use_cpu', action='store_true')
     args = parser.parse_args()
@@ -173,7 +174,12 @@ if __name__ == '__main__':
     print 'Loading data ..................'
     train_x, train_y = load_train_data(args.data)
     test_x, test_y = load_test_data(args.data)
-    if args.model == 'alexnet':
+    if args.model == 'caffe':
+        train_x, test_x = normalize_for_alexnet(train_x, test_x)
+        net = caffe_net.create_net(args.use_cpu)
+        train((train_x, train_y, test_x, test_y), net, 160, alexnet_lr, 0.004,
+              use_cpu=args.use_cpu)
+    elif args.model == 'alexnet':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = alexnet.create_net(args.use_cpu)
         train((train_x, train_y, test_x, test_y), net, 160, alexnet_lr, 0.004,

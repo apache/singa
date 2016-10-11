@@ -1,3 +1,6 @@
+// Version of caffe.proto:
+//  commits on Jun 29, 2016 in caffe github reporsitory
+
 syntax = "proto2";
 
 package caffe;
