@@ -163,7 +163,11 @@ class FeedForwardNet(object):
                 inputs = inputs[0]
             out= cur.forward(flag, inputs)
             if verbose:
-                print '%s: %f' % (cur.name, out.l1())
+                layer_out = out.deepcopy()
+                layer_out.to_host()
+                #print '%s: %f' % (cur.name, out.l1())
+                if cur.name[-1] == '6' or cur.name[-1] == '7':
+                    print 'singa layer {} out:\n'.format(cur.name), tensor.to_numpy(layer_out)
             output_of_layer[cur.name] = out
             inputs = []
             # print lyr.name, x.l1()
