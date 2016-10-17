@@ -10,6 +10,7 @@ the best validation accuracy (without data augmentation) we achieved was about 8
 
 2. [VGGNet](http://torch.ch/blog/2015/07/30/cifar.html), the best validation accuracy (without data augmentation) we achieved was about 89%.
 3. [ResNet](https://github.com/facebook/fb.resnet.torch), the best validation accuracy (without data augmentation) we achieved was about 83%.
+4. [Alexnet from Caffe](https://github.com/BVLC/caffe/tree/master/examples/cifar10), SINGA is able to convert model from Caffe seamlessly.
 
 
 ## Instructions
@@ -40,7 +41,8 @@ version of the Cifar-10 dataset in 'cifar-10-batches-py' folder.
 
         python train.py vgg cifar-10-batches-py
 
-    To train other models, please replace 'vgg' to 'alexnet' or 'resnet'. By default
+    To train other models, please replace 'vgg' to 'alexnet', 'resnet' or 'caffe', 
+    where 'caffe' refers to the alexnet model converted from Caffe. By default
     the training would run on a CudaGPU device, to run it on CppCPU, add an additional
     argument
 
