@@ -185,11 +185,11 @@ if __name__ == '__main__':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = caffe_net.create_net(args.use_cpu)
         # for cifar10_full_train_test.prototxt
-        #train((train_x, train_y, test_x, test_y), net, 160, alexnet_lr, 0.004,
-        #      use_cpu=args.use_cpu)
-        # for cifar10_quick_train_test.prototxt
-        train((train_x, train_y, test_x, test_y), net, 18, caffe_lr, 0.004,
+        train((train_x, train_y, test_x, test_y), net, 160, alexnet_lr, 0.004,
               use_cpu=args.use_cpu)
+        # for cifar10_quick_train_test.prototxt
+        #train((train_x, train_y, test_x, test_y), net, 18, caffe_lr, 0.004,
+        #      use_cpu=args.use_cpu)
     elif args.model == 'alexnet':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = alexnet.create_net(args.use_cpu)

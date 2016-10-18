@@ -23,10 +23,10 @@ def create_net(use_cpu):
     if use_cpu:
         layer.engine = 'singacpp'
 
-    #net_proto = os.path.abspath('./caffe/cifar10_full_train_test.prototxt')
-    #solver_proto = os.path.abspath('./caffe/cifar10_full_solver.prototxt')
-    net_proto = os.path.abspath('./caffe/cifar10_quick_train_test.prototxt')
-    solver_proto = os.path.abspath('./caffe/cifar10_quick_solver.prototxt')
+    net_proto = os.path.abspath('./caffe/cifar10_full_train_test.prototxt')
+    solver_proto = os.path.abspath('./caffe/cifar10_full_solver.prototxt')
+    #net_proto = os.path.abspath('./caffe/cifar10_quick_train_test.prototxt')
+    #solver_proto = os.path.abspath('./caffe/cifar10_quick_solver.prototxt')
     input_sample_shape = [3, 32, 32, ]
 
     cvt = converter.CaffeConverter(net_proto, solver_proto, input_sample_shape)

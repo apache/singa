@@ -102,8 +102,9 @@ class Layer(object):
                 self.param_specs.append(w)
                 self.param_specs.append(b)
                 #print 'conf:\n', conf
-            #if conf.type == 'Pooling':
-            #    print 'conf:\n', conf
+            if conf.type == 'Pooling':
+                conf.pooling_conf.ceil = True
+                #print 'conf:\n', conf
 
             elif (conf.type == 'ReLU' or conf.type == 18) or \
                 (conf.type == 'Sigmoid' or conf.type == 19) or \
@@ -888,7 +889,6 @@ def _create_layer(eng, layer):
         layers, use the specific activation mode, e.g. 'relu', 'tanh'.
     '''
     layer_type = eng + '_' + layer
-    print layer_type.lower()
     return singa_wrap.CreateLayer(layer_type.lower())
 
 

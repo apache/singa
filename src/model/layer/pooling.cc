@@ -18,6 +18,8 @@
 
 #include "./pooling.h"
 #include "singa/model/layer.h"
+#include <cmath>
+
 namespace singa {
 
 RegisterLayerClass(singacpp_pooling, Pooling);
@@ -62,11 +64,20 @@ void Pooling::Setup(const Shape& in_sample, const LayerConf& conf) {
   height_ = in_sample.at(1);
   width_ = in_sample.at(2);
   pooled_height_ = 1;
-  if (stride_h_ > 0)
-    pooled_height_ =
-        static_cast<size_t>((height_ + 2 * pad_h_ - kernel_h_) / stride_h_) + 1;
-  pooled_width_ =
-      static_cast<size_t>((width_ + 2 * pad_w_ - kernel_w_) / stride_w_) + 1;
+  if (pool_conf.ceil()) {
+    if (stride_h_ > 0)
+      pooled_height_ = static_cast<int>(ceil(static_cast<float>(
+              height_ + 2 * pad_h_ - kernel_h_) / stride_h_)) + 1;
+    pooled_width_ = static_cast<int>(ceil(static_cast<float>(
+        width_ + 2 * pad_w_ - kernel_w_) / stride_w_)) + 1;
+  }
+  else {
+    if (stride_h_ > 0)
+      pooled_height_ =
+          static_cast<size_t>((height_ + 2 * pad_h_ - kernel_h_) / stride_h_) + 1;
+    pooled_width_ =
+        static_cast<size_t>((width_ + 2 * pad_w_ - kernel_w_) / stride_w_) + 1;
+  }
   out_sample_shape_ = vector<size_t>{channels_, pooled_height_, pooled_width_};
 }
 
