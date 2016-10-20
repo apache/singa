@@ -91,6 +91,7 @@ PROTOBUF_GENERATE_PYTHON(proto_pys ${proto_files})
 
 # generate cxx and wrap.py
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa/proto)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/rafiki)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src/api)
 execute_process(
     COMMAND swig -c++ -python -I${CMAKE_SOURCE_DIR}/include
