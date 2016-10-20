@@ -95,6 +95,7 @@ ADD_DEPENDENCIES(singa_objects copy_protobuf)
 IF(UNIX OR APPLE)
   ADD_LIBRARY(singa SHARED $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
   TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
+  SET_TARGET_PROPERTIES(singa PROPERTIES LINK_FLAGS "")
 ENDIF()
 
 #pass configure infor to swig

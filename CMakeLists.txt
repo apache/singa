@@ -16,7 +16,7 @@
 # limitations under the License.
 # 
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 PROJECT(singa)
 SET(PACKAGE_VERSION "1.0.0")
@@ -27,17 +27,18 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
 
 # Flags
 IF(UNIX OR APPLE)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall")
+    SET(CMAKE_CXX_FLAGS 
+        "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall -pthread")
 ENDIF()
 IF(WIN32) 
-  IF (MSVC)
-	MESSAGE(STATUS "Using msvc compiler")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_SCL_SECURE_NO_WARNINGS")
-	MESSAGE(STATUS "Using msvc compiler ${CMAKE_CXX_FLAGS}")
-  ENDIF()
+    IF (MSVC)
+        MESSAGE(STATUS "Using msvc compiler")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_SCL_SECURE_NO_WARNINGS")
+        MESSAGE(STATUS "Using msvc compiler ${CMAKE_CXX_FLAGS}")
+    ENDIF()
 ENDIF()
 IF(CMAKE_BUILD_TYPE=Debug)
-  SET(NVCC_FLAG "${NVCC_FLAG} -g -G ")
+    SET(NVCC_FLAG "${NVCC_FLAG} -g -G ")
 ENDIF()
 #message(STATUS "${CMAKE_CXX_FLAGS}")
 SET(SINGA_INCLUDE_DIR
@@ -54,6 +55,8 @@ OPTION(USE_JAVA "Generate java wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
 OPTION(ENABLE_DIST "enable distributed training" OFF)
 OPTION(DISABLE_WARNINGS "disable warnings under windows" ON)
+OPTION(USE_MODULES "Use submodules to compile" ON)
+OPTION(USE_SHARED_LIBS "Use shared library" OFF)
 
 INCLUDE("cmake/Dependencies.cmake")
 #INCLUDE("cmake/Utils.cmake")
@@ -78,7 +81,47 @@ ENDIF()
 
 # TODO(wangwei) detect the ev lib
 IF (ENABLE_DIST)
-  LIST(APPEND SINGA_LINKER_LIBS ev)
+    LIST(APPEND SINGA_LINKER_LIBS ev)
+ENDIF()
+
+IF (USE_MODULES)
+    include(ExternalProject)
+    #ADD_SUBDIRECTORY(lib/protobuf/cmake)
+    #ADD_SUBDIRECTORY(lib/OpenBLAS)
+    IF(USE_SHARED_LIBS)
+        ExternalProject_Add(protobuf
+            GIT_REPOSITORY "https://github.com/google/protobuf.git"
+            GIT_TAG "2.7.0"
+            SOURCE_DIR "protobuf/" 
+            CONFIGURE_COMMAND "${CMAKE_COMMAND}"
+            "-H${CMAKE_BINARY_DIR}/protobuf/cmake" "-B."
+            "-Dprotobuf_BUILD_TESTS=OFF" "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
+            "-Dprotobuf_BUILD_SHARED_LIBS=ON" "-DCMAKE_C_FLAGS=-fPIC"
+            "-DCMAKE_CXX_FLAGS=-fPIC"
+            BUILD_COMMAND "${CMAKE_COMMAND}" --build "." 
+            )
+    ELSE()
+        ExternalProject_Add(protobuf
+            GIT_REPOSITORY "https://github.com/google/protobuf.git"
+            GIT_TAG "2.7.0"
+            SOURCE_DIR "protobuf/" 
+            CONFIGURE_COMMAND "${CMAKE_COMMAND}"
+            "-H${CMAKE_BINARY_DIR}/protobuf/cmake" "-B."
+            "-Dprotobuf_BUILD_TESTS=OFF" "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
+            "-Dprotobuf_BUILD_SHARED_LIBS=OFF" "-DCMAKE_C_FLAGS=-fPIC"
+            "-DCMAKE_CXX_FLAGS=-fPIC"
+            BUILD_COMMAND "${CMAKE_COMMAND}" --build "." 
+            )
+    ENDIF()
+    ExternalProject_Add(openblas
+        GIT_REPOSITORY "https://github.com/xianyi/OpenBLAS.git"
+        GIT_TAG "develop"
+        SOURCE_DIR "openblas/" 
+        BUILD_IN_SOURCE 1
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND "make" "ONLY_CBLAS=1" 
+        INSTALL_COMMAND "make" "PREFIX=${CMAKE_BINARY_DIR}/" "install"
+        )
 ENDIF()
 
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
@@ -87,17 +130,17 @@ ADD_SUBDIRECTORY(test)
 ADD_SUBDIRECTORY(examples)
 
 IF (USE_PYTHON)
-  ADD_SUBDIRECTORY(python)
+    ADD_SUBDIRECTORY(python)
 ENDIF()
 
 IF (USE_JAVA)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing ")
-  ADD_SUBDIRECTORY(java)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing ")
+    ADD_SUBDIRECTORY(java)
 ENDIF()
 
 INSTALL(DIRECTORY include/singa DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 INSTALL(FILES ${CMAKE_BINARY_DIR}/include/singa/singa_config.h DESTINATION
-  ${CMAKE_INSTALL_PREFIX}/include/singa)
+    ${CMAKE_INSTALL_PREFIX}/include/singa)
 INSTALL (DIRECTORY ${CMAKE_BINARY_DIR}/lib DESTINATION
-  ${CMAKE_INSTALL_PREFIX}
-  PATTERN "*libgtest.a" EXCLUDE )
+    ${CMAKE_INSTALL_PREFIX}
+    PATTERN "*libgtest.a" EXCLUDE )
