@@ -104,21 +104,16 @@ def getDataFromInfoQueue(need_return=False):
     global info_queue_, data_
     if not need_return:
         while not info_queue_.empty():
-            info_queue_.top()
             msg,d = info_queue_.get()
             data_.append(d)
     else:
         while True: # loop until get answer
-            print 'test'
             while not info_queue_.empty():
-                print 'test2'
                 msg,d = info_queue_.get()
                 if msg.is_info():
-                    print 'test3'
                     data_.append(d)
                 else:
                     return msg,d
-            print 'test4'
             time.sleep(0.01)
 
 
