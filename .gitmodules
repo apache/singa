@@ -1,9 +1,0 @@
-[submodule "lib/cnmem"]
-	path = lib/cnmem
-	url = https://github.com/NVIDIA/cnmem.git
-[submodule "lib/protobuf"]
-	path = lib/protobuf
-	url = https://github.com/google/protobuf.git
-[submodule "lib/OpenBLAS"]
-	path = lib/OpenBLAS
-	url = https://github.com/xianyi/OpenBLAS.git

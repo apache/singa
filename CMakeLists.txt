@@ -50,13 +50,13 @@ OPTION(USE_CUDA "Use Cuda libs" OFF)
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
-OPTION(USE_PYTHON "Generate py wrappers" ON)
+OPTION(USE_PYTHON "Generate py wrappers" OFF)
 OPTION(USE_JAVA "Generate java wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
 OPTION(ENABLE_DIST "enable distributed training" OFF)
 OPTION(DISABLE_WARNINGS "disable warnings under windows" ON)
-OPTION(USE_MODULES "Use submodules to compile" ON)
-OPTION(USE_SHARED_LIBS "Use shared library" OFF)
+OPTION(USE_MODULES "Use submodules to compile" OFF)
+OPTION(BUILD_SHARED_LIBS "Use shared library" OFF)
 
 INCLUDE("cmake/Dependencies.cmake")
 #INCLUDE("cmake/Utils.cmake")
@@ -74,9 +74,18 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 IF (USE_CUDA)
-    ADD_SUBDIRECTORY(lib/cnmem)
-    LIST(APPEND SINGA_LINKER_LIBS cnmem)
-    SET(global_cuda_objs "")
+    include(ExternalProject)
+    ExternalProject_Add(cnmem
+        GIT_REPOSITORY "https://github.com/NVIDIA/cnmem.git"
+        GIT_TAG "master"
+        SOURCE_DIR "cnmem/"
+        CONFIGURE_COMMAND "${CMAKE_COMMAND}"
+        "-H${CMAKE_BINARY_DIR}/cnmem" "-B."
+        "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
+        )
+    #ADD_SUBDIRECTORY(lib/cnmem)
+    #LIST(APPEND SINGA_LINKER_LIBS cnmem)
+    #SET(global_cuda_objs "")
 ENDIF()
 
 # TODO(wangwei) detect the ev lib
@@ -88,7 +97,7 @@ IF (USE_MODULES)
     include(ExternalProject)
     #ADD_SUBDIRECTORY(lib/protobuf/cmake)
     #ADD_SUBDIRECTORY(lib/OpenBLAS)
-    IF(USE_SHARED_LIBS)
+    IF(BUILD_SHARED_LIBS)
         ExternalProject_Add(protobuf
             GIT_REPOSITORY "https://github.com/google/protobuf.git"
             GIT_TAG "2.7.0"
@@ -122,6 +131,16 @@ IF (USE_MODULES)
         BUILD_COMMAND "make" "ONLY_CBLAS=1" 
         INSTALL_COMMAND "make" "PREFIX=${CMAKE_BINARY_DIR}/" "install"
         )
+    IF(USE_CUDA)
+    ExternalProject_Add(cnmem
+        GIT_REPOSITORY "https://github.com/NVIDIA/cnmem.git"
+        GIT_TAG "master"
+        SOURCE_DIR "cnmem/"
+        CONFIGURE_COMMAND "${CMAKE_COMMAND}"
+        "-H${CMAKE_BINARY_DIR}/cnmem" "-B."
+        "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
+        )
+    ENDIF()
 ENDIF()
 
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
