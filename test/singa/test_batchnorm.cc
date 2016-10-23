@@ -43,19 +43,19 @@ TEST(BatchNorm, Setup) {
 TEST(BatchNorm, Forward) {
   BatchNorm batchnorm;
   const float x[] = {1, 2, 3, 4};
-  Tensor in(Shape{2, 1, 2, 1});
-  in.CopyDataFromHostPtr(x, 2 * 1 * 2 * 1);
+  Tensor in(Shape{2, 2});
+  in.CopyDataFromHostPtr(x, 2 * 2);
   const float alpha_[] = {1, 1};
-  Tensor alpha(Shape{1, 2});
-  alpha.CopyDataFromHostPtr(alpha_, 1 * 2);
+  Tensor alpha(Shape{2});
+  alpha.CopyDataFromHostPtr(alpha_, 2);
 
   const float beta_[] = {2, 2};
-  Tensor beta(Shape{1, 2});
-  beta.CopyDataFromHostPtr(beta_, 1 * 2);
+  Tensor beta(Shape{2});
+  beta.CopyDataFromHostPtr(beta_, 2);
   singa::LayerConf conf;
   singa::BatchNormConf *batchnorm_conf = conf.mutable_batchnorm_conf();
   batchnorm_conf->set_factor(1);
-  batchnorm.Setup(Shape{1, 2, 1}, conf);
+  batchnorm.Setup(Shape{2}, conf);
   batchnorm.set_bnScale(alpha);
   batchnorm.set_bnBias(beta);
   batchnorm.set_runningMean(beta);
@@ -63,11 +63,9 @@ TEST(BatchNorm, Forward) {
   Tensor out = batchnorm.Forward(kTrain, in);
   const float *outptr = out.data<float>();
   const auto &shape = out.shape();
-  EXPECT_EQ(4u, shape.size());
+  EXPECT_EQ(2u, shape.size());
   EXPECT_EQ(2u, shape[0]);
-  EXPECT_EQ(1u, shape[1]);
-  EXPECT_EQ(2u, shape[2]);
-  EXPECT_EQ(1u, shape[3]);
+  EXPECT_EQ(2u, shape[1]);
   EXPECT_NEAR(1.0f, outptr[0], 1e-4f);
   EXPECT_NEAR(1.0f, outptr[1], 1e-4f);
   EXPECT_NEAR(3.0f, outptr[2], 1e-4f);
@@ -77,22 +75,22 @@ TEST(BatchNorm, Forward) {
 TEST(BatchNorm, Backward) {
   BatchNorm batchnorm;
   const float x[] = {1, 2, 3, 4};
-  Tensor in(Shape{2, 1, 2, 1});
-  in.CopyDataFromHostPtr(x, 2 * 1 * 2 * 1);
+  Tensor in(Shape{2, 2});
+  in.CopyDataFromHostPtr(x, 2 * 2);
   const float dy[] = {4, 3, 2, 1};
-  Tensor dy_in(Shape{2, 1, 2, 1});
-  dy_in.CopyDataFromHostPtr(dy, 2 * 1 * 2 * 1);
+  Tensor dy_in(Shape{2, 2});
+  dy_in.CopyDataFromHostPtr(dy, 2 * 2);
   const float alpha_[] = {1, 1};
-  Tensor alpha(Shape{1, 2});
-  alpha.CopyDataFromHostPtr(alpha_, 1 * 2);
+  Tensor alpha(Shape{2});
+  alpha.CopyDataFromHostPtr(alpha_, 2);
 
   const float beta_[] = {0, 0};
-  Tensor beta(Shape{1, 2});
-  beta.CopyDataFromHostPtr(beta_, 1 * 2);
+  Tensor beta(Shape{2});
+  beta.CopyDataFromHostPtr(beta_, 2);
   singa::LayerConf conf;
   singa::BatchNormConf *batchnorm_conf = conf.mutable_batchnorm_conf();
   batchnorm_conf->set_factor(1);
-  batchnorm.Setup(Shape{1, 2, 1}, conf);
+  batchnorm.Setup(Shape{2}, conf);
   batchnorm.set_bnScale(alpha);
   batchnorm.set_bnBias(beta);
   batchnorm.set_runningMean(beta);
@@ -101,11 +99,9 @@ TEST(BatchNorm, Backward) {
   auto ret = batchnorm.Backward(kTrain, dy_in);
   Tensor dx = ret.first;
   const auto & shape = dx.shape();
-  EXPECT_EQ(4u, shape.size());
+  EXPECT_EQ(2u, shape.size());
   EXPECT_EQ(2u, shape[0]);
-  EXPECT_EQ(1u, shape[1]);
-  EXPECT_EQ(2u, shape[2]);
-  EXPECT_EQ(1u, shape[3]);
+  EXPECT_EQ(2u, shape[1]);
   const float *dxptr = ret.first.data<float>();
   EXPECT_NEAR(.0f, dxptr[0], 1e-4f);
   EXPECT_NEAR(.0f, dxptr[1], 1e-4f);
