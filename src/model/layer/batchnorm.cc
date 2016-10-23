@@ -117,7 +117,7 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
       bnBias_.Reshape(Shape{channels_, 1});
 
       std::vector<Tensor> mean_stack, var_stack, scale_stack, bias_stack;
-      for (int i = 0; i < height_ * width_; ++i) {
+      for (unsigned i = 0; i < height_ * width_; ++i) {
         mean_stack.push_back(runningMean_);
         var_stack.push_back(runningVariance_);
         scale_stack.push_back(bnScale_);
