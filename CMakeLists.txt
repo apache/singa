@@ -49,13 +49,16 @@ OPTION(USE_CUDA "Use Cuda libs" OFF)
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
-OPTION(USE_PYTHON "Generate py wrappers" OFF)
+OPTION(USE_PYTHON "Generate py wrappers" ON)
 OPTION(USE_JAVA "Generate java wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
-OPTION(ENABLE_DIST "enable distributed training" OFF)
-OPTION(DISABLE_WARNINGS "disable warnings under windows" ON)
-OPTION(USE_MODULES "Use submodules to compile" OFF)
+OPTION(ENABLE_DIST "Enable distributed training" OFF)
+OPTION(DISABLE_WARNINGS "Disable warnings under windows" ON)
+OPTION(USE_MODULES "Compile dependent libs as submodules together with singa" OFF)
 #OPTION(USE_SHARED_LIBS "Use shared library" OFF)
+
+# TODO: remove all USE_CBLAS in codes
+SET(USE_CBLAS ON)
 
 INCLUDE("cmake/Dependencies.cmake")
 #INCLUDE("cmake/Utils.cmake")
@@ -75,8 +78,8 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 IF (USE_CUDA)
     include(ExternalProject)
     ExternalProject_Add(cnmem
-        GIT_REPOSITORY "https://github.com/NVIDIA/cnmem.git"
-        GIT_TAG "28a182d"
+        GIT_REPOSITORY "https://github.com/nusdbsystem/cnmem.git"
+        GIT_TAG "master"
         SOURCE_DIR "cnmem/"
         CONFIGURE_COMMAND "${CMAKE_COMMAND}"
         "-H${CMAKE_BINARY_DIR}/cnmem" "-B."
@@ -107,19 +110,19 @@ IF (USE_MODULES)
     #        BUILD_COMMAND "${CMAKE_COMMAND}" --build "." 
     #        )
     #ELSE()
-        ExternalProject_Add(protobuf
-            GIT_REPOSITORY "https://github.com/google/protobuf.git"
-            #GIT_TAG "2.7.0"
-            GIT_TAG "f56542f"
-            SOURCE_DIR "protobuf/" 
-            CONFIGURE_COMMAND "${CMAKE_COMMAND}"
-            "-H${CMAKE_BINARY_DIR}/protobuf/cmake" "-B."
-            "-Dprotobuf_BUILD_TESTS=OFF" "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
-            "-Dprotobuf_BUILD_SHARED_LIBS=OFF" "-DCMAKE_C_FLAGS=-fPIC"
-            "-DCMAKE_CXX_FLAGS=-fPIC"
-            BUILD_COMMAND "${CMAKE_COMMAND}" --build "." 
-            )
-        #ENDIF()
+    #ENDIF()
+    ExternalProject_Add(protobuf
+        DOWNLOAD_COMMAND "wget"
+        "http://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.gz"
+        "-O" "protobuf-2.6.1.tar.gz"
+        UPDATE_COMMAND "tar" "zxvf"
+        "${CMAKE_BINARY_DIR}/protobuf-prefix/src/protobuf-2.6.1.tar.gz" "-C" ".."
+        SOURCE_DIR "protobuf-2.6.1/" 
+        BUILD_IN_SOURCE 1
+        CONFIGURE_COMMAND "./configure" "--disable-shared"
+        "--prefix=${CMAKE_BINARY_DIR}/" "CXXFLAGS=-fPIC"
+        INSTALL_COMMAND "make" "install"
+        )
     ExternalProject_Add(openblas
         GIT_REPOSITORY "https://github.com/xianyi/OpenBLAS.git"
         #GIT_TAG "develop"
