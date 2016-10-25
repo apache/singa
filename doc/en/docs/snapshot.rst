@@ -16,9 +16,9 @@
    under the License.
 
 
-Utils
-=========
+Snapshot
+========
 
 
-.. automodule:: singa.utils
+.. automodule:: singa.snapshot
    :members:

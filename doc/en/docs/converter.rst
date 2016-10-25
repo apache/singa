@@ -16,9 +16,8 @@
    under the License.
 
 
-Utils
-=========
+Caffe Converter
+================
 
-
-.. automodule:: singa.utils
+.. automodule:: singa.converter
    :members:

@@ -16,9 +16,8 @@
    under the License.
 
 
-Utils
-=========
+FeedForward Net
+===============
 
-
-.. automodule:: singa.utils
+.. automodule:: singa.net
    :members:
