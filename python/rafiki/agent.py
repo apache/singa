@@ -90,6 +90,8 @@ class Agent():
         return
 
     def stop(self):
+        #sleep a while, wait for http response finished
+        time.sleep(1)
         self.p.terminate()
 
 def start(port,info_queue,command_queue):
@@ -115,7 +117,6 @@ def getDataFromInfoQueue(need_return=False):
                 else:
                     return msg,d
             time.sleep(0.01)
-
 
 @app.route("/")
 @cross_origin()
