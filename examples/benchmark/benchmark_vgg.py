@@ -102,30 +102,27 @@ def train(net, dev):
     acc = 0.0
     
     train_time = 0.0
-    update_time = 0.0
     for b in range(iterations):
-    
+        
         t0 = timeit.default_timer()
-        grads, (l, a) = net.train(tx, ty)
-        t1 = timeit.default_timer()
-        t1 -= t0
-        train_time += t1
+        grads, (l, a) = net.train_benchmark(tx, ty)
+        t0 = timeit.default_timer() - t0
+        train_time += t0
         
         loss += l
         acc += a
         
-        t2 = timeit.default_timer()
+        t1 = timeit.default_timer()
         for (s, p, g) in zip(net.param_names(), net.param_values(), grads):
             opt.apply_with_lr(0, 0.01, g, p, str(s), b)
-        t3 = timeit.default_timer()
-        t3 -= t2
-        update_time += t3
-        
-        print("Iteration {}: Train: {}, Update: {}".format(b, t1, t3))
+        t1 = timeit.default_timer() - t1
+        update_time += t1
+                
+        print("Iteration {}: Train: {}, Update: {}".format(b, round(t0, 4), round(t1, 4)))
     
     print("Total iterations: {}".format(iterations))
-    print("Average training time: {}".format(train_time/iterations))
-    print("Average update time: {}".format(update_time/iterations))
+    print("Average training time: {0:.4f}".format(train_time/iterations))
+    print("Average update time: {0:.4f}".format(update_time/iterations))
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

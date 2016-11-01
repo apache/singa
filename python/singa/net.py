@@ -19,7 +19,7 @@ Nerual net class for constructing the nets using layers and providing access
 functions for net info, e.g., parameters.
 """
 
-
+import timeit
 from .proto.model_pb2 import kTrain, kEval
 import tensor
 import layer
@@ -28,7 +28,7 @@ import cPickle as pickle
 
 '''For display training information, e.g L1 value of layer data'''
 verbose = False
-#benchmark = True
+benchmark = True
 
 
 class FeedForwardNet(object):
@@ -134,6 +134,22 @@ class FeedForwardNet(object):
         if self.metric is not None:
             m = self.metric.evaluate(out, y)
         return self.backward(), (l.l1(), m)
+        
+    def train_benchmark(self, x, y):
+        t0 = timeit.default_timer()
+        out = self.forward(kTrain, x)
+        t0 = timeit.default_timer() - t0
+        
+        l = self.loss.forward(kTrain, out, y)
+        if self.metric is not None:
+            m = self.metric.evaluate(out, y)
+        
+        t1 = timeit.default_timer()
+        grads = self.backward()
+        t1 = timeit.default_timer() - t1
+        
+        print("Forward: {0:.4f}\tBackward: {0:.4f}".format(t0, t1))
+        return grads, (l.l1(), m)
 
     def evaluate(self, x, y):
         '''Evaluate the loss and metric of the given data.
