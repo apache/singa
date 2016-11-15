@@ -403,7 +403,7 @@ class Tensor(object):
             return from_raw_tensor(
                 singa.__mul__(self.singa_tensor, rhs.singa_tensor))
         else:
-            return _call_singa_func(singa.EltwiseMulFloat,
+            return _call_singa_func(singa.MultFloat,
                                     self.singa_tensor, rhs)
 
     def __div__(self, rhs):
