@@ -6,30 +6,34 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 PROJECT(singa)
-SET(PACKAGE_VERSION "1.0.0")
+SET(PACKAGE_VERSION "1.0.1")
+SET(SINGA_MAJOR_VERSION 1)  # 0 -
+SET(SINGA_MINOR_VERSION 0)  # 0 - 9
+SET(SINGA_PATCH_VERSION 1)  # 0 - 99
+MATH(EXPR SINGA_VERSION "${SINGA_MAJOR_VERSION} * 1000 + ${SINGA_MINOR_VERSION} * 100 + ${SINGA_PATCH_VERSION}")
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
 #message(STATUS "module path: ${CMAKE_MODULE_PATH}")
 
 # Flags
 IF(UNIX OR APPLE)
-    SET(CMAKE_CXX_FLAGS 
+    SET(CMAKE_CXX_FLAGS
         "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall -pthread")
 ENDIF()
-IF(WIN32) 
+IF(WIN32)
     IF (MSVC)
         MESSAGE(STATUS "Using msvc compiler")
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_SCL_SECURE_NO_WARNINGS")
@@ -101,13 +105,13 @@ IF (USE_MODULES)
     #    ExternalProject_Add(protobuf
     #        GIT_REPOSITORY "https://github.com/google/protobuf.git"
     #        GIT_TAG "2.7.0"
-    #        SOURCE_DIR "protobuf/" 
+    #        SOURCE_DIR "protobuf/"
     #        CONFIGURE_COMMAND "${CMAKE_COMMAND}"
     #        "-H${CMAKE_BINARY_DIR}/protobuf/cmake" "-B."
     #        "-Dprotobuf_BUILD_TESTS=OFF" "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
     #        "-Dprotobuf_BUILD_SHARED_LIBS=ON" "-DCMAKE_C_FLAGS=-fPIC"
     #        "-DCMAKE_CXX_FLAGS=-fPIC"
-    #        BUILD_COMMAND "${CMAKE_COMMAND}" --build "." 
+    #        BUILD_COMMAND "${CMAKE_COMMAND}" --build "."
     #        )
     #ELSE()
     #ENDIF()
@@ -117,7 +121,7 @@ IF (USE_MODULES)
         "-O" "protobuf-2.6.1.tar.gz"
         UPDATE_COMMAND "tar" "zxvf"
         "${CMAKE_BINARY_DIR}/protobuf-prefix/src/protobuf-2.6.1.tar.gz" "-C" ".."
-        SOURCE_DIR "protobuf-2.6.1/" 
+        SOURCE_DIR "protobuf-2.6.1/"
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND "./configure" "--disable-shared"
         "--prefix=${CMAKE_BINARY_DIR}/" "CXXFLAGS=-fPIC"
@@ -127,10 +131,10 @@ IF (USE_MODULES)
         GIT_REPOSITORY "https://github.com/xianyi/OpenBLAS.git"
         #GIT_TAG "develop"
         GIT_TAG "f3419e6"
-        SOURCE_DIR "openblas/" 
+        SOURCE_DIR "openblas/"
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND "make" "ONLY_CBLAS=1" 
+        BUILD_COMMAND "make" "ONLY_CBLAS=1"
         INSTALL_COMMAND "make" "PREFIX=${CMAKE_BINARY_DIR}/" "install"
         )
 ENDIF()

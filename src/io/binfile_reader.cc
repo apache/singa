@@ -97,7 +97,8 @@ void BinFileReader::SeekToFirst() {
 bool BinFileReader::OpenFile() {
   buf_ = new char[capacity_];
   fdat_.open(path_, std::ios::in | std::ios::binary);
-  CHECK(fdat_.is_open()) << "Cannot open file " << path_;
+  if (!fdat_.is_open())
+    LOG(WARNING) << "Cannot open file " << path_;
   return fdat_.is_open();
 }
 

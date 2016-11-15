@@ -64,8 +64,14 @@ class Snapshot {
   /// binary file is for serialized tensors, the other csv file is for parameter
   /// names and shapes.
   void Write(const std::string& key, const Tensor& param);
+  /// available for singa > 1.0.1
+  int version() const {
+    return version_;
+  }
 
  private:
+  /// version of SINGA which generates the snapshot
+  int version_ = 0;
   std::string prefix_;
   Mode mode_;
   std::unique_ptr<io::BinFileWriter> bin_writer_ptr_;
