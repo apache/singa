@@ -44,14 +44,14 @@ namespace std{
 namespace singa{
 
 class Device {
-public:
+ public:
   virtual void SetRandSeed(unsigned seed) = 0;
   std::shared_ptr<Device> host();
   int id() const;
 };
 
 class Platform {
-public:
+ public:
 #if USE_CUDA
   static int GetNumGPUs();
   static const std::vector<int> GetGPUIDs();
@@ -66,9 +66,9 @@ public:
 
 #if USE_OPENCL
 
-  const int GetNumOCLPlatforms();
-  const int GetNumOCLDevices();
-  static const std::shared_ptr<Device> GetDefaultOCLDevice();
+  const int GetNumOpenclPlatforms();
+  const int GetNumOpenclDevices();
+  static const std::shared_ptr<Device> GetDefaultOpenclDevice();
 //  static const std::vector<std::shared_ptr<Device>>
 //  CreateOpenclDevices(const size_t num_devices);
 //  static const std::vector<std::shared_ptr<Device>>

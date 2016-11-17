@@ -142,12 +142,12 @@ Platform::CreateCudaGPUsOn(const vector<int> &devices, size_t init_size) {
 
 #ifdef USE_OPENCL
 
-const int Platform::GetNumOCLPlatforms() {
+const int Platform::GetNumOpenclPlatforms() {
   auto all_platforms = viennacl::ocl::get_platforms();
   return (int)all_platforms.size();
 }
 
-const int Platform::GetNumOCLDevices() {
+const int Platform::GetNumOpenclDevices() {
   auto all_platforms = viennacl::ocl::get_platforms();
   unsigned int total_num_devices = 0;
   for (auto plat : all_platforms) {
@@ -157,12 +157,12 @@ const int Platform::GetNumOCLDevices() {
   return (int)total_num_devices;
 }
 
-const std::shared_ptr<Device> Platform::GetDefaultOCLDevice() {
+const std::shared_ptr<Device> Platform::GetDefaultOpenclDevice() {
   return std::make_shared<OpenclDevice>();
 }
 /*
 static const std::vector<std::shared_ptr<Device>>
-Platform::CreateOCLDevices(const size_t num_devices) {
+Platform::CreateOpenclDevices(const size_t num_devices) {
   auto all_platforms = viennacl::ocl::get_platforms();
   for (auto plat : all_platforms) {
     auto all_devices = plat.devices(CL_DEVICE_TYPE_ALL);
@@ -172,8 +172,8 @@ Platform::CreateOCLDevices(const size_t num_devices) {
 }
 
 static const std::vector<std::shared_ptr<Device>>
-Platform::CreateOCLDevices(const std::vector<int> &id) {
-  
+Platform::CreateOpenclDevices(const std::vector<int> &id) {
+
 }
 */
 #endif // USE_OPENCL
