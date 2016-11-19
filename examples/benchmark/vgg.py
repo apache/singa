@@ -23,6 +23,7 @@ from singa import loss
 from singa import metric
 from singa import net as ffnet
 
+ffnet.verbose=True
 
 def create_net(input_shape, use_cpu=False, use_ocl=False):
     if use_cpu:
@@ -71,11 +72,10 @@ def create_net(input_shape, use_cpu=False, use_ocl=False):
     net.add(layer.Dense("fc8", 1000))
 
     for (val, spec) in zip(net.param_values(), net.param_specs()):
-        filler = spec.filler
-        if filler.type == 'gaussian':
-            val.gaussian(filler.mean, filler.std)
+        if len(val.shape) > 1:
+            val.gaussian(0, 0.01)
         else:
             val.set_value(0)
-        print spec.name, filler.type, val.l1()
+        print spec.name, spec.filler.type, val.l1()
 
     return net

@@ -28,10 +28,10 @@ import cPickle as pickle
 
 '''For display training information, e.g L1 value of layer data'''
 verbose = False
-benchmark = True
+benchmark = False
 forward_time = {}  # forward time for each layer
 backward_time = {}  # backward time for each layer
-bp_time = [0, 0, 0]  # forward + backward, forward, backward
+iter_time = [0, 0, 0]  # time for one iteration, forward, and backward
 
 
 
@@ -141,9 +141,9 @@ class FeedForwardNet(object):
             t2 = timer()
             ret = self.backward()
             t3 = timer()
-            bp_time[0] += t3 - t1
-            bp_time[1] += t2 - t1
-            bp_time[2] += t3 - t2
+            iter_time[0] += t3 - t1
+            iter_time[1] += t2 - t1
+            iter_time[2] += t3 - t2
             return ret, (l.l1(), None)
         else:
             out = self.forward(kTrain, x)
@@ -363,6 +363,7 @@ class FeedForwardNet(object):
         for ly in self.layers:
             forward_time[ly.name] = 0
             backward_time[ly.name] = 0
+        return iter_time, forward_time, backward_time
 
     def stop_benchmark(self, num):
         '''Stop the benchmark and return the time information.
@@ -372,7 +373,7 @@ class FeedForwardNet(object):
 
         Returns:
             time for the following procedures within one iteration
-            foward-backward, forward, backward, [forward of each layer],
+            [foward-backward, forward, backward], [forward of each layer],
             [backward of each layer]
         '''
         fp = []
@@ -380,7 +381,7 @@ class FeedForwardNet(object):
         for lyr in self.ordered_layers:
             fp.append((lyr.name, forward_time[lyr.name] / num))
             bp.append((lyr.name, backward_time[lyr.name] / num))
-        return bp_time[0] / num, bp_time[1] / num, bp_time[2] / num, fp, bp
+        return [t / num for t in iter_time], fp, bp
 
     def save(self, f, buffer_size=10, use_pickle=False):
         '''Save model parameters using io/snapshot.
