@@ -762,7 +762,9 @@ Tensor ConcatenateRows(const vector<Tensor> &in) {
   }
   return out;
 }
-
+Tensor ConcatRows(const vector<Tensor> &in) {
+  return ConcatenateRows(in);
+}
 // TODO(wangwei) add a copypatch function for improve the efficiency on GPU.
 Tensor ConcatenateColumns(const vector<Tensor> &in) {
   size_t nrow = 0, ncol = 0;
@@ -788,16 +790,23 @@ Tensor ConcatenateColumns(const vector<Tensor> &in) {
   }
   return out;
 }
+Tensor ConcatColumns(const vector<Tensor> &in) {
+  return ConcatenateColumns(in);
+}
 
 Tensor CopyRows(const Tensor &in, const size_t start, const size_t end) {
   CHECK_LT(start, end);
-  CHECK_GE(in.shape(0), end);
+  CHECK_GE(in.shape(0), end) << "Tensor size must >= end";
   Shape s = in.shape();
   s[0] = end - start;
   size_t sample_size = in.Size() / in.shape(0);
   Tensor out(s, in.device(), in.data_type());
   CopyDataToFrom(&out, in, out.Size(), 0, start * sample_size);
   return out;
+}
+
+Tensor SliceRows(const Tensor &in, const size_t start, const size_t end) {
+  return CopyRows(in, start, end);
 }
 
 Tensor CopyColumns(const Tensor &in, const size_t start, const size_t end) {
@@ -813,6 +822,11 @@ Tensor CopyColumns(const Tensor &in, const size_t start, const size_t end) {
   }
   return out;
 }
+
+Tensor SliceColumns(const Tensor &in, const size_t start, const size_t end) {
+  return CopyColumns(in, start, end);
+}
+
 
 /// Divide row 'v' by each row of matrix M; write results into 'out'
 void DivRow(const Tensor &v, Tensor *M) {
@@ -849,24 +863,6 @@ void MultRow(const Tensor &v, Tensor *M) {
                         M->block(), ctx);
     }, {M->block(), v.block()}, {M->block()});
   });
-}
-
-Tensor SliceRows(const Tensor &in, const size_t start, const size_t end) {
-  LOG(FATAL) << "Tensor::SliceRows is not implemented";
-  Tensor ret;
-  /*
-  CHECK_LE(in.nDim(), 2);
-  CHECK_LT(start, end);
-  CHECK_LE(in.shape(0), end);
-  Shape s;
-  if (in.nDim() == 2)
-    s = Shape{end - start, in.shape(1)};
-  else
-    s = Shape{end - start};
-  Tensor out(s, in.device(), in.data_type());
-  Block *b = out.block();
-  */
-  return ret;
 }
 
 void SubColumn(const Tensor &v, Tensor *M) { AddColumn(-1, 1, v, M); }

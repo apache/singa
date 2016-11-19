@@ -55,6 +55,7 @@ void CudnnRNN::ToDevice(std::shared_ptr<Device> device) {
   RNN::ToDevice(device);
   workspace_.ToDevice(device);
   reserve_space_.ToDevice(device);
+  dropout_state_.ToDevice(device);
 }
 
 void CudnnRNN::DestroyIODescriptors() {
@@ -281,6 +282,23 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
     cy.ResetLike(hy);
   }
 
+  int did = input.device()->id();
+  CHECK_EQ(did, output.device()->id());
+  if (hx.Size()) {
+    CHECK_EQ(did, hx.device()->id());
+    CHECK_EQ(hx.device()->lang(), kCuda);
+  }
+  if (cx.Size()) {
+    CHECK_EQ(did, cx.device()->id());
+    CHECK_EQ(cx.device()->lang(), kCuda);
+  }
+  CHECK_EQ(did, weight_.device()->id());
+  CHECK_EQ(did, workspace_.device()->id());
+  CHECK_EQ(input.device()->lang(), kCuda);
+  CHECK_EQ(output.device()->lang(), kCuda);
+  CHECK_EQ(weight_.device()->lang(), kCuda);
+  CHECK_EQ(workspace_.device()->lang(), kCuda);
+
   // LOG(INFO) << "hidden size " << hy.Size();
   // LOG(INFO) << "weight size " << weight_.Size() << " value " << weight_.L1();
   Block *inb = input.block(), *outb = output.block(),
@@ -289,6 +307,8 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
         *wspace = this->workspace_.block(),
         *rspace = this->reserve_space_.block();
   if (flag & kTrain) {
+    CHECK_EQ(reserve_space_.device()->lang(), kCuda);
+    CHECK_EQ(did, reserve_space_.device()->id());
     dev->Exec(
         [inb, outb, wb, hxb, cxb, hyb, cyb, wspace, rspace, this](Context *ctx) {
         // clang-format off

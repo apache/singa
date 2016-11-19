@@ -21,6 +21,9 @@
 namespace singa {
 
 RegisterLayerClass(singa_split, Split);
+RegisterLayerClass(singacpp_split, Split);
+RegisterLayerClass(singacuda_split, Split);
+RegisterLayerClass(singacl_split, Split);
 
 void Split::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
