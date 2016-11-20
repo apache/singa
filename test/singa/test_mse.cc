@@ -33,8 +33,8 @@ class TestMSE : public ::testing::Test {
     p.CopyDataFromHostPtr(pdat, sizeof(pdat) / sizeof(float));
     t.CopyDataFromHostPtr(tdat, sizeof(pdat) / sizeof(float));
   }
-  const float pdat[6] = {0.1, 1.1, 2.1, 0.3, 2.2, 1.8};
-  const float tdat[6] = {0.1, 1.1, 2.0, 0.3, 2.2, 1.8};
+  const float pdat[6] = { 0.1f, 1.1f, 2.1f, 0.3f, 2.2f, 1.8f};
+  const float tdat[6] = { 0.1f, 1.1f, 2.0f, 0.3f, 2.2f, 1.8f};
 
   singa::Tensor p, t;
 };
@@ -51,7 +51,7 @@ TEST_F(TestMSE, CppForward) {
       l += (pdat[k] - tdat[k]) * (pdat[k] - tdat[k]);
       k++;
     }
-    EXPECT_FLOAT_EQ(ldat[i], 0.5 * l);
+    EXPECT_FLOAT_EQ(ldat[i], 0.5f * l);
   }
 }
 

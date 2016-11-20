@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef DISABLE_WARNINGS
 
 #include <iostream>
 #include <fstream>
@@ -169,3 +170,5 @@ void OpenclDevice::Free(void* p) {
 } // namespace singa
 
 #endif // USE_OPENCL
+
+#endif

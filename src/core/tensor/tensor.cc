@@ -36,26 +36,26 @@ Tensor::Tensor(const Shape &shape, DataType dtype)
     : data_type_(dtype), device_(defaultDevice), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
-    block_ = device_->NewBlock(size);
+    block_ = device_->NewBlock((int)size);
 }
 Tensor::Tensor(Shape &&shape, DataType dtype)
     : data_type_(dtype), device_(defaultDevice), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
-    block_ = device_->NewBlock(size);
+    block_ = device_->NewBlock((int)size);
 }
 Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
                DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
-    block_ = device_->NewBlock(size);
+    block_ = device_->NewBlock((int)size);
 }
 Tensor::Tensor(Shape &&shape, std::shared_ptr<Device> device, DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
-    block_ = device_->NewBlock(size);
+    block_ = device_->NewBlock((int)size);
 }
 Tensor::Tensor(const Tensor &in)
     : transpose_(in.transpose_),
@@ -89,7 +89,7 @@ void Tensor::ResetLike(const Tensor &in) {
       device_->FreeBlock(block_);
     device_ = in.device_;
     data_type_ = in.data_type_;
-    block_ = device_->NewBlock(in.MemSize());
+    block_ = device_->NewBlock((int)in.MemSize());
   }
   shape_ = in.shape_;
 }
@@ -98,7 +98,7 @@ void Tensor::Reshape(const Shape &shape) {
   if (Product(shape_) != Product(shape)) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
-    block_ = device_->NewBlock(Product(shape) * SizeOf(data_type_));
+    block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
   }
   shape_ = shape;
 }
@@ -107,7 +107,7 @@ void Tensor::Reshape(Shape &&shape) {
   if (Product(shape_) != Product(shape)) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
-    block_ = device_->NewBlock(Product(shape) * SizeOf(data_type_));
+    block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
   }
   shape_ = std::move(shape);
 }
@@ -116,7 +116,7 @@ void Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
-    block_ = device_->NewBlock(Product(shape_) * SizeOf(type));
+    block_ = device_->NewBlock((int)(Product(shape_) * SizeOf(type)));
     data_type_ = type;
   }
 }
@@ -182,20 +182,20 @@ void Tensor::FromProto(const singa::TensorProto &proto) {
     case kFloat32: {
       std::unique_ptr<float[]> data_ptr(new float[Product(shape_)]);
       for (size_t i = 0; i < Product(shape_); ++i)
-        data_ptr[i] = static_cast<float>(proto.float_data(i));
+        data_ptr[i] = static_cast<float>(proto.float_data((int)i));
       CopyDataFromHostPtr<float>(data_ptr.get(), Product(shape_));
       break;
     }
     case kDouble: {
       std::unique_ptr<double[]> data(new double[Product(shape_)]);
       for (size_t i = 0; i < Product(shape_); ++i)
-        data[i] = proto.double_data(i);
+        data[i] = proto.double_data((int)i);
       CopyDataFromHostPtr<double>(data.get(), Product(shape_));
       break;
     }
     case kInt: {
       std::unique_ptr<int[]> data(new int[Product(shape_)]);
-      for (size_t i = 0; i < Product(shape_); ++i) data[i] = proto.int_data(i);
+      for (size_t i = 0; i < Product(shape_); ++i) data[i] = proto.int_data((int)i);
       CopyDataFromHostPtr<int>(data.get(), Product(shape_));
       break;
     }
@@ -282,7 +282,7 @@ Tensor Tensor::T() const {
   Tensor t;
   t.device_ = device_;
   t.data_type_ = data_type_;
-  t.transpose_ = ~transpose_;
+  t.transpose_ = !transpose_;
   t.shape_.push_back(shape_[1]);
   t.shape_.push_back(shape_[0]);
   t.block_ = block_;
@@ -369,17 +369,17 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   if (dst_dev->lang() != src_dev->lang()) {
     // let the none cpp device conduct copy op
     if (dst_dev->lang() == kCpp) {
-      src_dev->CopyDataToFrom(to, from, nBytes, kDeviceToHost, d_offset,
-                              s_offset);
+      src_dev->CopyDataToFrom(to, from, nBytes, kDeviceToHost, (int)d_offset,
+                              (int)s_offset);
     } else if (src_dev->lang() == kCpp) {
-      dst_dev->CopyDataToFrom(to, from, nBytes, kHostToDevice, d_offset,
-                              s_offset);
+      dst_dev->CopyDataToFrom(to, from, nBytes, kHostToDevice, (int)d_offset,
+							  (int)s_offset);
     } else {
       LOG(FATAL) << "Not support mem copy betwee Cuda and OpenCL device";
     }
   } else {
     auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
-    src_dev->CopyDataToFrom(to, from, nBytes, direct, d_offset, s_offset);
+    src_dev->CopyDataToFrom(to, from, nBytes, direct, (int)d_offset, (int)s_offset);
   }
 }
 //============================================================================
@@ -479,13 +479,14 @@ void Tensor::SetValue(const SType x) {
   auto size = Size();
   auto ptr = block_;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
-    // cast x to DType
+    // TODO(wangwei) cast x to DType
     device_->Exec([size, x, ptr](Context *ctx) {
       Set<DType, Lang>(size, x, ptr, ctx);
     }, {}, {ptr});
   });
 }
 template void Tensor::SetValue<float>(const float x);
+template void Tensor::SetValue<int>(const int x);
 
 #define EltwiseUnaryTensorFn(fn, t, ret)                               \
   do {                                                                 \
@@ -567,7 +568,7 @@ GenBinaryTensorFn(operator>=, GE);
   void fn(const Tensor &in, const SType x, Tensor *ret) {     \
     EltwiseTensorScalarFn(fn, in, x, ret);                    \
   }                                                           \
-  template Tensor op<float>(const Tensor &in, const float x); \
+  template Tensor op <float>(const Tensor &in, const float x); \
   template void fn<float>(const Tensor &in, const float x, Tensor *ret)
 
 GenTensorScalarFn(operator+, Add);

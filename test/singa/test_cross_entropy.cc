@@ -32,7 +32,7 @@ class TestSoftmaxCrossEntropy : public ::testing::Test {
     p.Reshape(singa::Shape{2, 4});
     t.Reshape(singa::Shape{2, 1});
   }
-  const float pdat[8] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+  const float pdat[8] = {0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f };
   const int tdat[2] = {0, 2};
 
   singa::Tensor p, t;
@@ -47,7 +47,7 @@ TEST_F(TestSoftmaxCrossEntropy, CppForward) {
   const Tensor& loss = cross_entropy.Forward(singa::kEval, p, t);
   auto ldat = loss.data<float>();
 
-  const float result_test = -log(0.25);
+  const float result_test = (float) -log(0.25);
   EXPECT_FLOAT_EQ(ldat[0], result_test);
   EXPECT_FLOAT_EQ(ldat[1], result_test);
 }

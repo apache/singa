@@ -18,6 +18,7 @@
 * under the License.
 *
 ************************************************************/
+#include <vector>
 #include "batchnorm.h"
 
 namespace singa {
@@ -28,7 +29,7 @@ RegisterLayerClass(singacl_batchnorm, BatchNorm);
 void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
-  factor_ = conf.batchnorm_conf().factor();
+  factor_ = (float)conf.batchnorm_conf().factor();
   channels_ = in_sample.at(0);
   if (in_sample.size() == 3u)
     height_ = in_sample.at(1);
@@ -43,7 +44,7 @@ void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   else
     is_2d_ = false;
 
-  bnScale_.Reshape(Shape{channels_ * height_ * width_});
+  bnScale_.Reshape(Shape{channels_});
   bnBias_.ResetLike(bnScale_);
   runningMean_.ResetLike(bnScale_);
   runningVariance_.ResetLike(bnScale_);
@@ -70,39 +71,83 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
   Tensor output, mean, var, xnorm;
   output.ResetLike(x);
 
-  if ((flag & kTrain) == kTrain) {
-    mean = Average(x, 0);
-    runningMean_ *= 1.0f - factor_;
-    Axpy(factor_, mean, &runningMean_);
-    xnorm = x.Clone();
-    SubRow(mean, &xnorm);
-    xnorm = Square(xnorm);
-    var = Average(xnorm, 0);
-    runningVariance_ *= 1.0f - factor_;
-    Axpy(factor_, var, &runningVariance_);
-    Tensor tmp = var.Clone();
-    tmp = Sqrt(tmp);
-    tmp += 1e-6f;
-    xnorm = x.Clone();
-    SubRow(mean, &xnorm);
-    DivRow(tmp, &xnorm);
-    output = xnorm.Clone();
-    MultRow(bnScale_, &output);
-    AddRow(bnBias_, &output);
-    buf_.push(x);
-    buf_.push(mean);
-    buf_.push(var);
-    buf_.push(xnorm);
-  } else {
-    xnorm = x.Clone();
-    SubRow(runningMean_, &xnorm);
-    Tensor tmp = runningVariance_.Clone();
-    tmp = Sqrt(tmp);
-    tmp += 1e-6f;
-    DivRow(tmp, &xnorm);
-    output = xnorm.Clone();
-    MultRow(bnScale_, &output);
-    AddRow(bnBias_, &output);
+  if ((flag & kTrain) == kTrain) {  // forward for train
+    if (is_2d_) {                   // batchnorm_per_activation mode
+      mean = Average(x, 0);
+      runningMean_ *= 1.0f - factor_;
+      Axpy(factor_, mean, &runningMean_);
+      xnorm = x.Clone();
+      SubRow(mean, &xnorm);
+      xnorm = Square(xnorm);
+      var = Average(xnorm, 0);
+      runningVariance_ *= 1.0f - factor_;
+      Axpy(factor_, var, &runningVariance_);
+      Tensor tmp = var.Clone();
+      tmp = Sqrt(tmp);
+      tmp += 1e-6f;
+      xnorm = x.Clone();
+      SubRow(mean, &xnorm);
+      DivRow(tmp, &xnorm);
+      output = xnorm.Clone();
+      MultRow(bnScale_, &output);
+      AddRow(bnBias_, &output);
+      buf_.push(x);
+      buf_.push(mean);
+      buf_.push(var);
+      buf_.push(xnorm);
+    } else {  // batchnorm_spatial mode
+      LOG(FATAL) << "Trainning SpatialBatchNormalization has not been "
+                    "implemented yet...";
+    }
+  } else {         // forward for test
+    if (is_2d_) {  // batchnorm_per_activation mode
+      xnorm = x.Clone();
+      SubRow(runningMean_, &xnorm);
+      Tensor tmp = runningVariance_.Clone();
+      tmp = Sqrt(tmp);
+      tmp += 1e-6f;
+      DivRow(tmp, &xnorm);
+      output = xnorm.Clone();
+      MultRow(bnScale_, &output);
+      AddRow(bnBias_, &output);
+    } else {  // batchnorm_spatial mode
+      runningMean_.Reshape(Shape{channels_, 1});
+      runningVariance_.Reshape(Shape{channels_, 1});
+      bnScale_.Reshape(Shape{channels_, 1});
+      bnBias_.Reshape(Shape{channels_, 1});
+
+      std::vector<Tensor> mean_stack, var_stack, scale_stack, bias_stack;
+      for (unsigned i = 0; i < height_ * width_; ++i) {
+        mean_stack.push_back(runningMean_);
+        var_stack.push_back(runningVariance_);
+        scale_stack.push_back(bnScale_);
+        bias_stack.push_back(bnBias_);
+      }
+      auto mean = ConcatenateColumns(mean_stack);
+      auto var = ConcatenateColumns(var_stack);
+      auto scale = ConcatenateColumns(scale_stack);
+      auto bias = ConcatenateColumns(bias_stack);
+
+      mean.Reshape(Shape{channels_ * height_ * width_});
+      var.Reshape(Shape{channels_ * height_ * width_});
+      scale.Reshape(Shape{channels_ * height_ * width_});
+      bias.Reshape(Shape{channels_ * height_ * width_});
+
+      xnorm = x.Clone();
+      SubRow(mean, &xnorm);
+      var = Sqrt(var);
+      var += 1e-6f;
+      DivRow(var, &xnorm);
+      output = xnorm.Clone();
+
+      MultRow(scale, &output);
+      AddRow(bias, &output);
+
+      runningMean_.Reshape(Shape{channels_});
+      runningVariance_.Reshape(Shape{channels_});
+      bnScale_.Reshape(Shape{channels_});
+      bnBias_.Reshape(Shape{channels_});
+    }
   }
 
   if (!is_2d_)
@@ -127,71 +172,75 @@ const std::pair<Tensor, vector<Tensor>> BatchNorm::Backward(
   vector<Tensor> param_grad;
 
   if ((flag & kTrain) == kTrain) {
-    // gxnrom
-    Tensor gxnorm = dy.Clone();
-    MultRow(bnScale_, &gxnorm);
-    // gvar
-    Tensor tmp = var.Clone();
-    tmp += 1e-6f;
-    tmp = Pow(var, -1.5f);
-    tmp *= -0.5f;
+    if (is_2d_) {
+      // gxnrom
+      Tensor gxnorm = dy.Clone();
+      MultRow(bnScale_, &gxnorm);
+      // gvar
+      Tensor tmp = var.Clone();
+      tmp += 1e-6f;
+      tmp = Pow(var, -1.5f);
+      tmp *= -0.5f;
 
-    Tensor tmpx = input.Clone();
-    SubRow(mean, &tmpx);
+      Tensor tmpx = input.Clone();
+      SubRow(mean, &tmpx);
 
-    tmpx = tmpx * gxnorm;
-    MultRow(tmp, &tmpx);
-    Tensor gvar;
-    gvar.ResetLike(var);
-    SumRows(tmpx, &gvar);
-    // gmean
-    tmp = var.Clone();
-    tmp += 1e-6f;
-    tmp = Pow(tmp, -0.5f);
-    tmp *= -1.0f;
-    Tensor tmpx_r;
-    tmpx_r.ResetLike(tmp);
-    SumRows(gxnorm, &tmpx_r);
-    Tensor gmean = tmpx_r * tmp;
+      tmpx = tmpx * gxnorm;
+      MultRow(tmp, &tmpx);
+      Tensor gvar;
+      gvar.ResetLike(var);
+      SumRows(tmpx, &gvar);
+      // gmean
+      tmp = var.Clone();
+      tmp += 1e-6f;
+      tmp = Pow(tmp, -0.5f);
+      tmp *= -1.0f;
+      Tensor tmpx_r;
+      tmpx_r.ResetLike(tmp);
+      SumRows(gxnorm, &tmpx_r);
+      Tensor gmean = tmpx_r * tmp;
 
-    tmpx = input.Clone();
-    SubRow(mean, &tmpx);
-    SumRows(tmpx, &tmp);
-    tmp *= -2.0f / input.shape(0);
-    tmp = tmp * gvar;
-    gmean = gmean + tmp;
-    // dx
-    tmp = var.Clone();
-    tmp += 1e-6f;
-    tmp = Pow(tmp, -0.5f);
-    dx = gxnorm.Clone();
-    MultRow(tmp, &dx);
+      tmpx = input.Clone();
+      SubRow(mean, &tmpx);
+      SumRows(tmpx, &tmp);
+      tmp *= -2.0f / input.shape(0);
+      tmp = tmp * gvar;
+      gmean = gmean + tmp;
+      // dx
+      tmp = var.Clone();
+      tmp += 1e-6f;
+      tmp = Pow(tmp, -0.5f);
+      dx = gxnorm.Clone();
+      MultRow(tmp, &dx);
 
-    tmpx = input.Clone();
-    SubRow(mean, &tmpx);
-    tmpx *= 2.0f / input.shape(0);
-    MultRow(gvar, &tmpx);
-    dx = dx + tmpx;
+      tmpx = input.Clone();
+      SubRow(mean, &tmpx);
+      tmpx *= 2.0f / input.shape(0);
+      MultRow(gvar, &tmpx);
+      dx = dx + tmpx;
 
-    tmp = gmean.Clone();
-    tmp *= 1.0f / input.shape(0);
+      tmp = gmean.Clone();
+      tmp *= 1.0f / input.shape(0);
 
-    AddRow(tmp, &dx);
-    // dbnScale
-    tmpx = dy * xnorm;
-    SumRows(tmpx, &dbnScale_);
-    // dbnBias
-    SumRows(dy, &dbnBias_);
-    param_grad.push_back(dbnScale_);
-    param_grad.push_back(dbnBias_);
-    Tensor dummy;
-    param_grad.push_back(dummy);
-    param_grad.push_back(dummy);
+      AddRow(tmp, &dx);
+      // dbnScale
+      tmpx = dy * xnorm;
+      SumRows(tmpx, &dbnScale_);
+      // dbnBias
+      SumRows(dy, &dbnBias_);
+      param_grad.push_back(dbnScale_);
+      param_grad.push_back(dbnBias_);
+      Tensor dummy;
+      param_grad.push_back(dummy);
+      param_grad.push_back(dummy);
+    } else {
+      LOG(FATAL) << "Trainning SpatialBatchNormalization has not been "
+                    "implemented yet...";
+    }
   } else {
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }
-  if (!is_2d_)
-    dx.Reshape(Shape{dx.shape(0), channels_, height_, width_});
+  if (!is_2d_) dx.Reshape(Shape{dx.shape(0), channels_, height_, width_});
   return std::make_pair(dx, param_grad);
 }
 

@@ -16,12 +16,9 @@
 # under the License.
 # =============================================================================
 
-import sys
-import os
 import math
 import unittest
-
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
+import numpy as np
 
 
 from singa import tensor
@@ -132,13 +129,11 @@ class TestTensorMethods(unittest.TestCase):
         x.gaussian(1, 0.01)
         self.assertAlmostEqual(tensor.average(x), 1, 3)
 
-
     def test_radd(self):
         x = tensor.Tensor((3,))
         x.set_value(1)
         y = 1 + x
         self.assertEqual(tensor.average(y), 2.)
-
 
     def test_rsub(self):
         x = tensor.Tensor((3,))
@@ -146,13 +141,11 @@ class TestTensorMethods(unittest.TestCase):
         y = 1 - x
         self.assertEqual(tensor.average(y), 0.)
 
-
     def test_rmul(self):
         x = tensor.Tensor((3,))
         x.set_value(1)
         y = 2 * x
         self.assertEqual(tensor.average(y), 2.)
-
 
     def test_rdiv(self):
         x = tensor.Tensor((3,))
@@ -160,6 +153,16 @@ class TestTensorMethods(unittest.TestCase):
         y = 2 / x
         self.assertEqual(tensor.average(y), 2.)
 
+    def test_numpy_convert(self):
+        a = np.asarray([[1, 0, 0], [0, 1, 0]], dtype=np.int)
+        t = tensor.from_numpy(a)
+        b = tensor.to_numpy(t)
+        self.assertEqual(np.sum(a-b), 0)
+
+        a = np.asarray([[1, 0, 0], [0, 1, 0]], dtype=np.float32)
+        t = tensor.from_numpy(a)
+        b = tensor.to_numpy(t)
+        self.assertEqual(np.sum(a-b), 0.)
 
 
 if __name__ == '__main__':

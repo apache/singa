@@ -17,7 +17,6 @@
 #
 
 # generate protobuf sources
-
 FILE(GLOB proto_files proto/*.proto)
 protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_files})
 #MESSAGE(STATUS "proto_srcs: ${proto_srcs}")
@@ -26,6 +25,10 @@ LIST(APPEND singa_sources ${proto_hdrs} ${proto_srcs})
 
 AUX_SOURCE_DIRECTORY(utils utils_source)
 LIST(APPEND singa_sources ${utils_source})
+
+AUX_SOURCE_DIRECTORY(io io_source)
+AUX_SOURCE_DIRECTORY(io/network io_source)
+LIST(APPEND singa_sources ${io_source})
 
 AUX_SOURCE_DIRECTORY(core/device core_source)
 AUX_SOURCE_DIRECTORY(core/memory core_source)
@@ -57,9 +60,6 @@ AUX_SOURCE_DIRECTORY(model/metric model_source)
 AUX_SOURCE_DIRECTORY(model/updater model_source)
 LIST(APPEND singa_sources ${model_source})
 
-AUX_SOURCE_DIRECTORY(io io_source)
-AUX_SOURCE_DIRECTORY(io/network io_source)
-LIST(APPEND singa_sources ${io_source})
 
 ADD_CUSTOM_TARGET(
   copy_protobuf ALL
@@ -73,17 +73,32 @@ FOREACH(fil ${proto_hdrs})
     TARGET copy_protobuf POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fil}
     "${CMAKE_BINARY_DIR}/include/singa/proto/${filename}"
-    DEPENDS ${proto_files} 
+    DEPENDS ${proto_files}
  )
 ENDFOREACH()
 
 ADD_LIBRARY(singa_objects OBJECT ${singa_sources})
-#ADD_DEPENDENCIES(singa_objects copy_protobuf)
+IF(WIN32)
+  ADD_LIBRARY(singa STATIC $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
+  TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
+  IF (MSVC)
+	ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
+	IF(DISABLE_WARNINGS)
+	  ADD_DEFINITIONS(-DDISABLE_WARNINGS)
+	  SET_TARGET_PROPERTIES(singa_objects
+	    PROPERTIES COMPILE_FLAGS "/wd4244 /wd4267 /wd4018 /wd4005 /wd4804 /wd4800")
+	ENDIF()
+  ENDIF()
+ENDIF()
+ADD_DEPENDENCIES(singa_objects copy_protobuf)
 
-ADD_LIBRARY(singa SHARED $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
-TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
+IF(UNIX OR APPLE)
+  ADD_LIBRARY(singa SHARED $<TARGET_OBJECTS:singa_objects> ${cuda_objs})
+  TARGET_LINK_LIBRARIES(singa ${SINGA_LINKER_LIBS})
+  SET_TARGET_PROPERTIES(singa PROPERTIES LINK_FLAGS "")
+ENDIF()
 
-#pass configure infor to swig 
+#pass configure infor to swig
 FILE(REMOVE "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
 CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/api/config.i.in" "${CMAKE_CURRENT_SOURCE_DIR}/api/config.i")
 

@@ -19,18 +19,21 @@
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 
-IF(USE_CUDNN)
+
 ADD_EXECUTABLE(alexnet alexnet.cc)
 ADD_DEPENDENCIES(alexnet singa)
-TARGET_LINK_LIBRARIES(alexnet singa protobuf ${SINGA_LIBKER_LIBS})
+TARGET_LINK_LIBRARIES(alexnet singa) 
+
+IF(USE_CUDNN)
 
 ADD_EXECUTABLE(alexnet-parallel alexnet-parallel.cc)
 ADD_DEPENDENCIES(alexnet-parallel singa)
-TARGET_LINK_LIBRARIES(alexnet-parallel singa protobuf ${SINGA_LIBKER_LIBS})
-SET_TARGET_PROPERTIES(alexnet-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
+TARGET_LINK_LIBRARIES(alexnet-parallel singa)
+#SET_TARGET_PROPERTIES(alexnet-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
 
 ADD_EXECUTABLE(vgg-parallel vgg-parallel.cc)
 ADD_DEPENDENCIES(vgg-parallel singa)
-TARGET_LINK_LIBRARIES(vgg-parallel singa protobuf ${SINGA_LIBKER_LIBS})
-SET_TARGET_PROPERTIES(vgg-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
+TARGET_LINK_LIBRARIES(vgg-parallel singa)
+#SET_TARGET_PROPERTIES(vgg-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
+
 ENDIF(USE_CUDNN)

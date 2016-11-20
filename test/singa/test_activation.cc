@@ -116,7 +116,7 @@ TEST(Activation, Backward) {
     float* dx = new float[n];
     if (acti.Mode() == "sigmoid") {
       for (size_t i = 0; i < n; i++)
-        dx[i] = grad[i] * yptr[i] * (1. - yptr[i]);
+        dx[i] = grad[i] * yptr[i] * (1.0f - yptr[i]);
     }
     else if (acti.Mode() == "tanh") {
       for (size_t i = 0; i < n; i++)

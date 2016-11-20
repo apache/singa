@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef DISABLE_WARNINGS
 
 #include "singa/core/memory.h"
 #include "singa/utils/logging.h"
@@ -22,6 +23,7 @@
 #include <iostream>
 
 #ifdef USE_CUDA
+
 namespace singa {
 std::atomic<int> CnMemPool::pool_count(0);
 std::pair<size_t, size_t> CnMemPool::GetMemUsage() {
@@ -108,4 +110,6 @@ void CudaMemPool::Free(void *ptr) {
   CHECK_EQ(status, cudaError_t::cudaSuccess);
 }
 }
+#endif
+
 #endif

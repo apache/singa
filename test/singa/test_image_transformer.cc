@@ -58,7 +58,7 @@ TEST(ImageTransformer, Apply3D) {
   float* x = new float[n];
   size_t channel = 3, height = 6, width = 10;
   singa::Tensor in(singa::Shape{height, width, channel});
-  srand(time(NULL));
+  srand((unsigned int)time(NULL));
   for (size_t i = 0; i < n; i++) x[i] = (float)(rand() % 256);
   in.CopyDataFromHostPtr<float>(x, n);
   int resize_height = 4, resize_width = 6;
@@ -125,7 +125,7 @@ TEST(ImageTransformer, Apply2D) {
   float* x = new float[n];
   size_t height = 6, width = 10;
   singa::Tensor in(singa::Shape{height, width});
-  srand(time(NULL));
+  srand((unsigned int)time(NULL));
   for (size_t i = 0; i < n; i++) x[i] = (float)(rand() % 256);
   in.CopyDataFromHostPtr<float>(x, n);
   int resize_height = 4, resize_width = 6;
@@ -219,7 +219,7 @@ TEST(ImageTransformer, Crop) {
   float* x = new float[n];
   size_t channel = 3, height = 6, width = 10;
   singa::Tensor in(singa::Shape{channel, height, width});
-  srand(time(NULL));
+  srand((unsigned int)time(NULL));
   for (size_t i = 0; i < n; i++) x[i] = (float)(rand() % 256);
   in.CopyDataFromHostPtr<float>(x, n);
   size_t crop_height = 3, crop_width = 4,
@@ -244,7 +244,7 @@ TEST(ImageTransformer, Mirror) {
   float* x = new float[n];
   size_t channel = 3, height = 2, width = 5;
   singa::Tensor in(singa::Shape{height, width, channel});
-  srand(time(NULL));
+  srand((unsigned int)time(NULL));
   for (size_t i = 0; i < n; i++) x[i] = (float)(rand() % 256);
   in.CopyDataFromHostPtr<float>(x, n);
   singa::Tensor out = singa::mirror(in, true, false, "HWC");

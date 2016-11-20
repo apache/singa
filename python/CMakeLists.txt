@@ -21,7 +21,7 @@
 # and modified to our compilation.
 function(PROTOBUF_GENERATE_PYTHON OUTPUT)
     if(NOT ARGN)
-        message(SEND_ERROR "Error: PROTOBUF_GENERATE_PYTHON() called 
+        message(SEND_ERROR "Error: PROTOBUF_GENERATE_PYTHON() called
         without any proto files")
         return()
     endif(NOT ARGN)
@@ -42,7 +42,7 @@ function(PROTOBUF_GENERATE_PYTHON OUTPUT)
             DEPENDS ${ABS_FIL}
             COMMENT "Running Python protocol buffer compiler on ${FIL}" VERBATIM)
     endforeach()
-    
+
     set_source_files_properties(${${SRCS}} ${${HDRS}} PROPERTIES GENERATED TRUE)
     set(${OUTPUT} ${${OUTPUT}} PARENT_SCOPE)
 endfunction()
@@ -72,7 +72,7 @@ function (create_symlinks)
             set(command cmd.exe /c mklink ${link} ${target})
         endif()
 
-        execute_process(COMMAND ${command} 
+        execute_process(COMMAND ${command}
                         RESULT_VARIABLE result
                         ERROR_VARIABLE output)
 
@@ -90,19 +90,14 @@ PROTOBUF_GENERATE_PYTHON(proto_pys ${proto_files})
 #MESSAGE(STATUS "proto pys: ${proto_pys}")
 
 # generate cxx and wrap.py
-if(NOT EXISTS "${CMKAE_BINARY_DIR}/python")
-    execute_process(
-        COMMAND mkdir ${CMAKE_BINARY_DIR}/python
-        COMMAND mkdir ${CMAKE_BINARY_DIR}/python/singa
-        COMMAND mkdir ${CMAKE_BINARY_DIR}/python/singa/proto
-        ERROR_QUIET)
-endif()
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa/proto)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/rafiki)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src/api)
 execute_process(
-    COMMAND mkdir ${CMAKE_BINARY_DIR}/src/api
-    COMMAND swig -c++ -python -I${CMAKE_SOURCE_DIR}/include 
+    COMMAND swig -c++ -python -I${CMAKE_SOURCE_DIR}/include
     -outdir ${CMAKE_BINARY_DIR}/python/singa
     -o ${CMAKE_BINARY_DIR}/src/api/singa_wrap.cxx
-    ${CMAKE_SOURCE_DIR}/src/api/singa.i )
+    ${CMAKE_SOURCE_DIR}/src/api/singa.i)
 
 set(python_srcs "${CMAKE_BINARY_DIR}/src/api/singa_wrap.cxx")
 
@@ -112,7 +107,7 @@ create_symlinks(${python_source_files})
 
 
 IF(USE_CUDA)
-# remain this custom command to avoid cuda objs can't find 
+# remain this custom command to avoid cuda objs can't find
 ADD_CUSTOM_COMMAND(
     OUTPUT ${global_cuda_objs}
     COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/"
@@ -137,7 +132,7 @@ FILE(WRITE ${CMAKE_BINARY_DIR}/python/singa/proto/__init__.py "")
 #MESSAGE(STATUS "apple: ${APPLE}")
 IF(APPLE)
 ADD_CUSTOM_TARGET(
-    change_suffix ALL 
+    change_suffix ALL
     COMMAND ${CMAKE_COMMAND} -E rename "${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.dylib" "${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.so"
     COMMENT "change .dylib to .so in mac system"
 )

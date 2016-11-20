@@ -32,14 +32,14 @@ TEST(LRN, Setup) {
   LRNConf *lrn_conf = conf.mutable_lrn_conf();
   lrn_conf->set_k(1.0);
   lrn_conf->set_local_size(3);
-  lrn_conf->set_alpha(0.1);
-  lrn_conf->set_beta(0.75);
+  lrn_conf->set_alpha(0.1f);
+  lrn_conf->set_beta(0.75f);
   lrn.Setup(Shape{1}, conf);
 
   EXPECT_FLOAT_EQ(1.0, lrn.k());
   EXPECT_EQ(3, lrn.local_size());
-  EXPECT_FLOAT_EQ(0.1, lrn.alpha());
-  EXPECT_FLOAT_EQ(0.75, lrn.beta());
+  EXPECT_FLOAT_EQ(0.1f, lrn.alpha());
+  EXPECT_FLOAT_EQ(0.75f, lrn.beta());
 }
 
 TEST(LRN, Forward) {
@@ -52,8 +52,8 @@ TEST(LRN, Forward) {
   singa::LRNConf *lrn_conf = conf.mutable_lrn_conf();
   lrn_conf->set_k(1.0);
   lrn_conf->set_local_size(3);
-  lrn_conf->set_alpha(0.1);
-  lrn_conf->set_beta(0.75);
+  lrn_conf->set_alpha(0.1f);
+  lrn_conf->set_beta(0.75f);
   lrn.Setup(Shape{4, 1, 1}, conf);
 
   Tensor out = lrn.Forward(kTrain, in);
@@ -85,8 +85,8 @@ TEST(LRN, Backward) {
   singa::LRNConf *lrn_conf = conf.mutable_lrn_conf();
   lrn_conf->set_k(1.0);
   lrn_conf->set_local_size(3);
-  lrn_conf->set_alpha(0.1);
-  lrn_conf->set_beta(0.75);
+  lrn_conf->set_alpha(0.1f);
+  lrn_conf->set_beta(0.75f);
   lrn.Setup(Shape{4, 1, 1}, conf);
 
   Tensor out = lrn.Forward(kTrain, in);

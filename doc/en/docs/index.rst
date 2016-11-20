@@ -26,8 +26,14 @@ Documentation
    device
    tensor
    layer
+   net
    initializer
    loss
    metric
    optimizer
+   data
+   image_tool
+   snapshot
+   converter
+   utils
    examples/index

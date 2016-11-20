@@ -54,7 +54,7 @@ setup(
 
     keywords='deep learning singa apache',
 
-    packages= ['singa', 'singa.proto'],
+    packages= ['rafiki','singa', 'singa.proto'],
 
     #py_modules=["singa"],
 

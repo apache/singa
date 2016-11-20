@@ -18,6 +18,8 @@
 
 #include "./pooling.h"
 #include "singa/model/layer.h"
+#include <cmath>
+
 namespace singa {
 
 RegisterLayerClass(singacpp_pooling, Pooling);
@@ -62,11 +64,20 @@ void Pooling::Setup(const Shape& in_sample, const LayerConf& conf) {
   height_ = in_sample.at(1);
   width_ = in_sample.at(2);
   pooled_height_ = 1;
-  if (stride_h_ > 0)
-    pooled_height_ =
-        static_cast<size_t>((height_ + 2 * pad_h_ - kernel_h_) / stride_h_) + 1;
-  pooled_width_ =
-      static_cast<size_t>((width_ + 2 * pad_w_ - kernel_w_) / stride_w_) + 1;
+  if (pool_conf.ceil()) {
+    if (stride_h_ > 0)
+      pooled_height_ = static_cast<int>(ceil(static_cast<float>(
+              height_ + 2 * pad_h_ - kernel_h_) / stride_h_)) + 1;
+    pooled_width_ = static_cast<int>(ceil(static_cast<float>(
+        width_ + 2 * pad_w_ - kernel_w_) / stride_w_)) + 1;
+  }
+  else {
+    if (stride_h_ > 0)
+      pooled_height_ =
+          static_cast<size_t>((height_ + 2 * pad_h_ - kernel_h_) / stride_h_) + 1;
+    pooled_width_ =
+        static_cast<size_t>((width_ + 2 * pad_w_ - kernel_w_) / stride_w_) + 1;
+  }
   out_sample_shape_ = vector<size_t>{channels_, pooled_height_, pooled_width_};
 }
 
@@ -108,14 +119,14 @@ const std::pair<Tensor, vector<Tensor>>
 Pooling::Backward(int flag, const Tensor& grad) {
   CHECK_EQ(grad.device()->lang(), kCpp);
   CHECK_EQ(grad.nDim(), 4u);
-  
+
   vector<Tensor> param_grad;
-  
+
   auto batchsize = grad.shape(0);
   auto dtype = grad.data_type();
   auto dev = grad.device();
   Shape shape{batchsize, channels_, height_, width_};
-  
+
   Tensor dx(shape, dev, dtype);
   auto gradptr = grad.data<float>();
   float* dxptr = new float[dx.Size()];
@@ -173,7 +184,7 @@ void Pooling::ForwardMaxPooling(const float* bottom, const int num,
               const int index = h * width + w;
               if (bottom[index] > top[top_index]) {
                 top[top_index] = bottom[index];
-                mask[top_index] = index;
+                mask[top_index] = (float) index;
               }
             }
           }
@@ -190,7 +201,7 @@ void Pooling::ForwardMaxPooling(const float* bottom, const int num,
 void Pooling::BackwardMaxPooling(const float* top, const float* mask,
                                  const int num, const int channels,
                                  const int height, const int width,
-                                 const int pooled_h, const int pooled_w, 
+                                 const int pooled_h, const int pooled_w,
                                  const int kernel_h, const int kernel_w,
                                  const int pad_h, const int pad_w,
                                  const int stride_h, const int stride_w,
@@ -215,7 +226,7 @@ void Pooling::BackwardMaxPooling(const float* top, const float* mask,
 }
 
 void Pooling::ForwardAvgPooling(const float* bottom, const int num,
-                                const int channels, 
+                                const int channels,
                                 const int height, const int width,
                                 const int pooled_h, const int pooled_w,
                                 const int kernel_h, const int kernel_w,
@@ -261,7 +272,7 @@ void Pooling::ForwardAvgPooling(const float* bottom, const int num,
 
 void Pooling::BackwardAvgPooling(const float* top, const int num,
                                  const int channels,
-                                 const int height, const int width, 
+                                 const int height, const int width,
                                  const int pooled_h, const int pooled_w,
                                  const int kernel_h, const int kernel_w,
                                  const int pad_h, const int pad_w,

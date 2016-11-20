@@ -16,7 +16,38 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-'''Utilities for data loading and preprocessing'''
+'''
+This module includes classes for loading and prefetching data batches.
+
+Example usage::
+
+    import image_tool
+    from PIL import Image
+
+    tool = image_tool.ImageTool()
+
+    def image_transform(img_path):
+        global tool
+        return tool.load(img_path).resize_by_range(
+            (112, 128)).random_crop(
+            (96, 96)).flip().get()
+
+    data = ImageBatchIter('train.txt', 3,
+                          image_transform, shuffle=True, delimiter=',',
+                          image_folder='images/',
+                          capacity=10)
+    data.start()
+    # imgs is a numpy array for a batch of images,
+    # shape: batch_size, 3 (RGB), height, width
+    imgs, labels = data.next()
+
+    # convert numpy array back into images
+    for idx in range(imgs.shape[0]):
+        img = Image.fromarray(imgs[idx].astype(np.uint8).transpose(1, 2, 0),
+                              'RGB')
+        img.save('img%d.png' % idx)
+    data.end()
+'''
 
 import os
 import random
@@ -30,25 +61,25 @@ class ImageBatchIter:
 
     Args:
         img_list_file(str): name of the file containing image meta data; each
-                            line consists of image_path_suffix delimeter label
+                            line consists of image_path_suffix delimiter label
         batch_size(int): num of samples in one mini-batch
         image_transform: a function for image augmentation; it accepts the full
                         image path and outputs a list of augmented images.
         shuffle(boolean): True for shuffling images in the list
-        delimeter(char): delimeter between image_path_suffix and label, e.g.,
+        delimiter(char): delimiter between image_path_suffix and label, e.g.,
                          space or comma
         image_folder(boolean): prefix of the image path
         capacity(int): the max num of mini-batches in the internal queue.
     '''
 
     def __init__(self, img_list_file, batch_size, image_transform,
-                 shuffle=True, delimeter=' ', image_folder=None, capacity=10):
+                 shuffle=True, delimiter=' ', image_folder=None, capacity=10):
         self.img_list_file = img_list_file
         self.queue = Queue(capacity)
         self.batch_size = batch_size
         self.image_transform = image_transform
         self.shuffle = shuffle
-        self.delimeter = delimeter
+        self.delimiter = delimiter
         self.image_folder = image_folder
         self.stop = False
         self.p = None
@@ -76,7 +107,7 @@ class ImageBatchIter:
     def run(self):
         img_list = []
         for line in open(self.img_list_file, 'r'):
-            item = line.split(self.delimeter)
+            item = line.split(self.delimiter)
             img_path = item[0]
             img_label = int(item[1])
             img_list.append((img_label, img_path))
@@ -122,7 +153,7 @@ if __name__ == '__main__':
             (96, 96)).flip().get()
 
     data = ImageBatchIter('train.txt', 3,
-                          image_transform, shuffle=True, delimeter=',',
+                          image_transform, shuffle=True, delimiter=',',
                           image_folder='images/',
                           capacity=10)
     data.start()

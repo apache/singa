@@ -26,13 +26,13 @@
 TEST(RMSProp, ApplyCPU) {
   singa::RMSProp rmsprop;
   float lr = 0.1f;
-  float rho = 0.9;
-  const float v[4] = {0.1, 0.2, 0.3, 0.4};
-  const float g[4] = {0.01, 0.02, 0.03, 0.04};
+  float rho = 0.9f;
+  const float v[4] = {0.1f, 0.2f, 0.3f, 0.4f};
+  const float g[4] = {0.01f, 0.02f, 0.03f, 0.04f};
 
   singa::OptimizerConf conf;
   conf.set_rho(rho);
-  conf.set_delta(1E-8);
+  conf.set_delta(1E-8f);
 
   singa::Tensor value(singa::Shape{4}), grad(singa::Shape{4});
   value.CopyDataFromHostPtr(v, 4);

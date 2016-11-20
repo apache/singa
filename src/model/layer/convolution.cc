@@ -112,7 +112,7 @@ const Tensor Convolution::Forward(int flag, const Tensor &input) {
   auto in_data = input.data<float>();
   for (size_t b = 0; b < batchsize; b++) {
     Im2col(in_data + b * imagesize, channels_, height_, width_, kernel_h_,
-           kernel_w_, pad_h_, pad_w_, stride_h_, stride_w_, data_col);
+        kernel_w_, pad_h_, pad_w_, stride_h_, stride_w_, data_col);
     col_data.CopyDataFromHostPtr(data_col, col_height_ * col_width_);
     Tensor each = Mult(weight_, col_data);
     if (bias_term_) {
@@ -151,7 +151,7 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
 
     SumRows(tmp3, &db);
   }
-  
+
   auto in_data = src_data.data<float>();
   Tensor col_data(Shape{col_height_, col_width_});
   float *data_col = new float[col_height_ * col_width_];
@@ -159,17 +159,15 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
   for (size_t b = 0; b < batchsize; b++) {
     Im2col(in_data + b * imagesize, channels_, height_, width_, kernel_h_,
            kernel_w_, pad_h_, pad_w_, stride_h_, stride_w_, data_col);
-    
+
     col_data.CopyDataFromHostPtr(data_col, col_height_ * col_width_);
     Tensor grad_b(Shape{num_filters_, conv_height_ * conv_width_});
     CopyDataToFrom(&grad_b, grad, grad_b.Size(), 0, b * grad_b.Size());
     dw += Mult(grad_b, col_data.T());
     Tensor dcol_b = Mult(weight_.T(), grad_b);
     auto dcol_data = dcol_b.data<float>();
-    
     Col2im(dcol_data, channels_, height_, width_, kernel_h_, kernel_w_, pad_h_,
            pad_w_, stride_h_, stride_w_, dx_b);
-    
     dx.CopyDataFromHostPtr(dx_b, imagesize, b * imagesize);
   }
   param_grad.push_back(dw);

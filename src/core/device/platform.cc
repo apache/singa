@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef DISABLE_WARNINGS
 
 #include "singa/core/device.h"
 #include "singa/singa_config.h"
@@ -139,3 +140,5 @@ Platform::CreateCudaGPUsOn(const vector<int> &devices, size_t init_size) {
 }  // namespace singa
 
 #endif  // USE_CUDA
+
+#endif

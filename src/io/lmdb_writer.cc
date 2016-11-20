@@ -15,9 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef DISABLE_WARNINGS
 
 #include "singa/io/writer.h"
 #include "singa/utils/logging.h"
+
 #ifdef USE_LMDB
 
 namespace singa {
@@ -131,3 +133,5 @@ inline void LMDBWriter::MDB_CHECK(int mdb_status) {
 }  // namespace io
 }  // namespace singa
 #endif  // USE_LMDB
+
+#endif

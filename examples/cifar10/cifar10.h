@@ -41,9 +41,9 @@ class Cifar10 {
   void ReadImage(std::ifstream* file, int* label, char* buffer);
 
  private:
-  const size_t kImageSize = 32;
-  const size_t kImageVol = 3072;
-  const size_t kBatchSize = 10000;
+  static const size_t kImageSize = 32;
+  static const size_t kImageVol = 3072;
+  static const size_t kBatchSize = 10000;
   const size_t kTrainFiles = 5;
 
   string dir_path_;
