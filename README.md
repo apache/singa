@@ -1,6 +1,7 @@
 #Apache SINGA
 
 [![Build Status](https://travis-ci.org/apache/incubator-singa.png)](https://travis-ci.org/apache/incubator-singa)
+![License](http://img.shields.io/:license-Apache%202.0-blue.svg)
 
 Distributed deep learning system
 
