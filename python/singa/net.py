@@ -39,6 +39,7 @@ class FeedForwardNet(object):
         self.src_of_layer = {}
         self.dst_of_layer = None
         self.ordered_layers = None
+        self.out_sample_shape_of_layer = {}
 
     def to_device(self, dev):
         for lyr in self.layers:
@@ -47,9 +48,11 @@ class FeedForwardNet(object):
     def add(self, lyr, src=None):
         """Append a layer into the layer list.
 
-        This function will get the sample shape from the last layer to setup
-        the newly added layer. For the first layer, it is setup outside.
-        The calling function should ensure the correctness of the layer order.
+        This function will get the sample shape from the src layers to setup the
+        newly added layer. For the first layer, it is setup outside. The calling
+        function should ensure the correctness of the layer order. If src is
+        None, the last layer is the src layer. If there are multiple src layers,
+        the src is a list of the src layers.
 
         Args:
             lyr (Layer): the layer to be added
@@ -70,11 +73,24 @@ class FeedForwardNet(object):
             else:
                 self.src_of_layer[lyr.name] = []
         if lyr.has_setup is False:
-            # print shape
-            in_shape = self.src_of_layer[lyr.name][0].get_output_sample_shape()
-            lyr.setup(in_shape)
-        print lyr.name, lyr.get_output_sample_shape()
+            in_shape = []
+            for src in self.src_of_layer[lyr.name]:
+                shapes = self.out_sample_shape_of_layer[src.name]
+                assert len(shapes) > 0, \
+                    'Cannot get output shape of layer %s' % lyr.name
+                in_shape.append(shapes[0])
+                shapes.pop(0)
+            if len(in_shape) == 1:
+                lyr.setup(in_shape[0])
+            else:
+                lyr.setup(in_shape)
+        out_shape = lyr.get_output_sample_shape()
+        if type(out_shape[0]) is tuple:
+            self.out_sample_shape_of_layer[lyr.name] = out_shape
+        else:
+            self.out_sample_shape_of_layer[lyr.name] = [out_shape]
         self.layers.append(lyr)
+        print lyr.name, out_shape
         return lyr
 
     def param_values(self):
@@ -239,7 +255,7 @@ class FeedForwardNet(object):
                 disp_src += '-->' + cur.name
                 if type(out) is list:
                     print '%s: %s' % (disp_src,
-                            ' '.join([str(o.l1()) for o in out]))
+                                      ' '.join([str(o.l1()) for o in out]))
                 else:
                     print '%s: %f' % (disp_src, out.l1())
             output_of_layer[cur.name] = out

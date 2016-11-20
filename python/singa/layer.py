@@ -94,20 +94,19 @@ class Layer(object):
             #   case1: parameters of conv and dense layers
             #   case2: type of activation layers
             if (conf.type == 'Convolution' or conf.type == 4) or \
-                (conf.type == 'InnerProduct' or conf.type == 14):
+                    (conf.type == 'InnerProduct' or conf.type == 14):
                 w, b = _construct_param_specs_from_caffe_proto(conf)
                 del conf.param[:]
                 conf.param.extend([w, b])
                 self.param_specs.append(w)
                 self.param_specs.append(b)
-                #print 'conf:\n', conf
+                # print 'conf:\n', conf
             if conf.type == 'Pooling':
                 conf.pooling_conf.ceil = True
-                #print 'conf:\n', conf
-
-            elif (conf.type == 'ReLU' or conf.type == 18) or \
-                (conf.type == 'Sigmoid' or conf.type == 19) or \
-                (conf.type == 'TanH' or conf.type == 23):
+                # print 'conf:\n', conf
+            elif (conf.type == 'ReLU' or conf.type == 18 or
+                  conf.type == 'Sigmoid' or conf.type == 19 or
+                  conf.type == 'TanH' or conf.type == 23):
                 conf.type = (engine + '_' + conf.type).lower()
             self.conf = conf
 
@@ -122,7 +121,6 @@ class Layer(object):
             self.layer = _create_layer(engine, 'Dense')
         else:
             self.layer = _create_layer(engine, str(self.conf.type))
-
 
     def param_names(self):
         '''
@@ -145,8 +143,11 @@ class Layer(object):
         '''
         if self.has_setup:
             return
-        self.layer.Setup(list(in_shapes),
-                         self.conf.SerializeToString())
+        if type(in_shapes[0]) is tuple:
+            self.layer.SetupWithMultInputs([list(s) for s in in_shapes],
+                                           self.conf.SerializeToString())
+        else:
+            self.layer.Setup(list(in_shapes), self.conf.SerializeToString())
         self.has_setup = True
 
     def get_output_sample_shape(self):
@@ -194,6 +195,7 @@ class Layer(object):
             xs = []
             for t in x:
                 xs.append(t.singa_tensor)
+            y = self.layer.ForwardWithMultInputs(flag, xs)
         else:
             assert isinstance(x, tensor.Tensor), \
                 'input must be a Tensor or a list of Tensor'
@@ -204,7 +206,7 @@ class Layer(object):
             else:
                 flag = model_pb2.kEval
         y = self.layer.Forward(flag, xs)
-        if type(y) == list:
+        if type(y) is tuple:
             return tensor.from_raw_tensors(y)
         else:
             return tensor.from_raw_tensor(y)
@@ -224,12 +226,13 @@ class Layer(object):
             dys = []
             for t in dy:
                 dys.append(t.singa_tensor)
+            ret = self.layer.BackwardWithMultInputs(flag, dys)
         else:
             assert isinstance(dy, tensor.Tensor), \
                 'the input must be a Tensor or a set of Tensor'
             dys = dy.singa_tensor
-        ret = self.layer.Backward(flag, dys)
-        if type(ret[0]) == list:
+            ret = self.layer.Backward(flag, dys)
+        if type(ret[0]) is tuple:
             dxs = tensor.from_raw_tensors(ret[0])
         else:
             dxs = tensor.from_raw_tensor(ret[0])
@@ -274,6 +277,7 @@ class Dummy(Layer):
 
     def backward(self, falg, dy):
         return dy
+
 
 class Conv2D(Layer):
     """Construct a layer for 2D convolution.
@@ -763,7 +767,7 @@ class Split(Layer):
         self.has_setup = True
 
     def get_output_sample_shape(self):
-        return self.in_shape
+        return [self.in_shape] * self.num_output
 
     def forward(self, flag, input):
         '''Replicate the input tensor into mutiple tensors.
@@ -787,6 +791,53 @@ class Split(Layer):
         for g in grads:
             dx += g
         return dx, []
+
+
+class Concat(Layer):
+    '''Concatenate tensors vertically (axis = 0) or horizontally (axis = 1).
+
+    Currently, only support tensors with 2 dimensions.
+
+    Args:
+        axis(int): 0 for concat row; 1 for concat columns;
+        input_sample_shapes: a list of shape tuples, one per input tensor
+    '''
+
+    def __init__(self, name, axis, input_sample_shapes=None):
+        super(Concat, self).__init__(name)
+        self.in_shapes = input_sample_shapes
+        self.axis = axis
+        self.conf.concat_conf.axis = axis
+        self.layer = _create_layer(engine, 'Concat')
+        if input_sample_shapes is not None:
+            self.setup(input_sample_shapes)
+
+
+class Slice(Layer):
+    '''Slice the input tensor into multiple sub-tensors vertially (axis=0) or
+    horizontally (axis=1).
+
+    Args:
+        axis (int): 0 for slice rows; 1 for slice columns;
+        slice_point(list): positions along the axis to do slice; there are n-1
+            points for n sub-tensors;
+        input_sample_shape: input tensor shape
+    '''
+
+    def __init__(self, name, axis, slice_point, input_sample_shape=None):
+        super(Slice, self).__init__(name)
+        self.in_shape = input_sample_shape
+        self.axis = axis
+        self.conf.slice_conf.axis = axis
+        self.conf.slice_conf.slice_point.extend(slice_point)
+        self.layer = _create_layer(engine, 'Slice')
+        if input_sample_shape is not None:
+            self.setup(input_sample_shape)
+
+    def get_output_sample_shape(self):
+        out = []
+        for i in range(len(self.conf.slice_conf.slice_point) + 1):
+            out.append(self.layer.GetOutputSampleShape(i))
 
 
 class RNN(Layer):

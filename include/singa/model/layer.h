@@ -75,8 +75,7 @@ class Layer {
   }
 
   /// Used for layers that have multiple input tensors, e.g., concatenate layer.
-  virtual void Setup(const vector<Shape>& in_samples,
-                     const LayerConf& conf) {
+  virtual void Setup(const vector<Shape>& in_samples, const LayerConf& conf) {
     name_ = conf.name();
     // TODO(wangwei) load param values from checkpoint files.
   }

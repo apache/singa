@@ -1,4 +1,4 @@
-# 
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -6,25 +6,21 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 
-import sys
-import os
 import unittest
 import numpy as np
 
-#sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 
 from singa import layer
-from singa import device
 from singa import tensor
 from singa.proto import model_pb2
 
@@ -43,7 +39,7 @@ class TestPythonLayer(unittest.TestCase):
                          )
 
     def setUp(self):
-        layer.engine='singacpp'
+        layer.engine = 'singacpp'
         self.w = {'init': 'Xavier', 'regularizer': 1e-4}
         self.b = {'init': 'Constant', 'value': 0}
         self.sample_shape = None
@@ -207,6 +203,27 @@ class TestPythonLayer(unittest.TestCase):
                                 input_sample_shape=input_sample_shape)
         out_sample_shape = flatten.get_output_sample_shape()
         self.check_shape(out_sample_shape, (12,))
+
+    def test_concat(self):
+        t1 = tensor.Tensor((2, 3))
+        t2 = tensor.Tensor((1, 3))
+        t1.set_value(1)
+        t2.set_value(2)
+        lyr = layer.Concat('concat', 0, [t1.shape, t2.shape])
+        t = lyr.forward(model_pb2.kTrain, [t1, t2])
+        tnp = tensor.to_numpy(t[0])
+        self.assertEquals(np.sum(tnp), 12)
+
+    def test_slice(self):
+        t = np.zeros((3, 3))
+        t[:, :2] = float(2)
+        t[:, 2] = float(1)
+        lyr = layer.Slice('slice', 1, [2], t.shape)
+        out = lyr.forward(model_pb2.kTrain, [tensor.from_numpy(t)])
+        t1 = tensor.to_numpy(out[0])
+        t2 = tensor.to_numpy(out[1])
+        self.assertEquals(np.average(t1), 2)
+        self.assertEquals(np.average(t2), 1)
 
 
 if __name__ == '__main__':

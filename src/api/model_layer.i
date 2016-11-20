@@ -40,6 +40,7 @@ using singa::ParamSpec;
 using singa::DataType;
 using singa::Device;
 using singa::LayerConf;
+using singa::Shape;
 %}
 
 %shared_ptr(singa::Layer)
@@ -52,26 +53,36 @@ namespace std {
   %template(VecStr) vector<string>;
   %template(VecParamSpec) vector<singa::ParamSpec>;
   %template(VecTensor) vector<singa::Tensor>;
+  %template(VecVecSize) vector<vector<size_t>>;
   %template(PairTensorVecTensor) pair<singa::Tensor, vector<singa::Tensor>>;
   %template(PairVecTensor) pair<vector<singa::Tensor>, vector<singa::Tensor>>;
 }
 
-
 namespace singa {
 
 class Layer {
-  public:
-    Layer();
-//      virtual void Setup(const std::vector<vector<size_t>>&, const string&);
-    void Setup(const std::vector<size_t>& in_sample_shape,
-                        const std::string& proto_str);
-    virtual const std::vector<Tensor> param_values();
-    virtual const std::vector<size_t> GetOutputSampleShape() const;
-    virtual void ToDevice(std::shared_ptr<Device> device);
-    virtual void AsType(DataType dtype);
-    virtual const Tensor Forward(int flag, const Tensor& input);
-    virtual const std::pair<Tensor, std::vector<Tensor>> Backward(
-        int flag, const Tensor& grad);
+ public:
+  Layer();
+  void Setup(const std::vector<size_t>&, const std::string& );
+  %rename(SetupWithMultInputs) Setup(const std::vector<std::vector<size_t>>&,
+                                     const std::string&);
+  void Setup(const std::vector<std::vector<size_t>>&, const std::string&);
+
+  virtual const std::vector<Tensor> param_values();
+  virtual const std::vector<size_t> GetOutputSampleShape() const;
+  %rename(GetOutputSampleShapeAt) GetOutputSampleShape(int k);
+  virtual const std::vector<size_t> GetOutputSampleShape(int k);
+  virtual void ToDevice(std::shared_ptr<Device> device);
+  virtual void AsType(DataType dtype);
+  virtual const Tensor Forward(int flag, const Tensor& input);
+  %rename(ForwardWithMultInputs) Forward(int flag, const std::vector<Tensor>&);
+  virtual const std::vector<Tensor> Forward(
+      int flag, const std::vector<Tensor>& inputs);
+  virtual const std::pair<Tensor, std::vector<Tensor>> Backward(
+      int flag, const Tensor& grad);
+  %rename(BackwardWithMultInputs) Backward(int, const vector<Tensor>&);
+  virtual const std::pair<std::vector<Tensor>, std::vector<Tensor>>
+  Backward(int flag, const vector<Tensor>& grads);
 };
 
 std::shared_ptr<Layer> CreateLayer(const std::string& type);
