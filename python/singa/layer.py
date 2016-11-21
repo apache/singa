@@ -77,9 +77,8 @@ class Layer(object):
     Args:
         name (str): layer name
     '''
-
     def __init__(self, name, conf=None, **kwargs):
-        if conf == None:
+        if conf is None:
             self.layer = None  # layer converted by swig
             self.name = name  # TODO(wangwei) duplicate with self.conf.name
             self.conf = model_pb2.LayerConf()
@@ -180,7 +179,8 @@ class Layer(object):
         '''Forward propagate through this layer.
 
         Args:
-            flag (int): kTrain or kEval
+            flag: True (kTrain) for training (kEval); False for evaluating;
+                other values for furture use.
             x (Tensor or list<Tensor>): an input tensor if the layer is
                 connected from a single layer; a list of tensors if the layer
                 is connected from multiple layers.
@@ -198,6 +198,11 @@ class Layer(object):
             assert isinstance(x, tensor.Tensor), \
                 'input must be a Tensor or a list of Tensor'
             xs = x.singa_tensor
+        if type(flag) is bool:
+            if flag:
+                flag = model_pb2.kTrain
+            else:
+                flag = model_pb2.kEval
         y = self.layer.Forward(flag, xs)
         if type(y) == list:
             return tensor.from_raw_tensors(y)
@@ -248,6 +253,27 @@ class Layer(object):
     def __deepcopy__(self):
         pass
 
+
+class Dummy(Layer):
+    '''A dummy layer that does nothing but just forwards/backwards the data
+    (the input/output is a single tensor).
+    '''
+    def __init__(self, name, input_sample_shape=None):
+        super(Dummy, self).__init__(name)
+        self.output_sample_shape = input_sample_shape
+
+    def get_output_sample_shape(self):
+        return self.output_sample_shape
+
+    def setup(self, input_sample_shape):
+        self.output_sample_shape = input_sample_shape
+        self.has_setup = True
+
+    def forward(self, flag, x):
+        return x
+
+    def backward(self, falg, dy):
+        return dy
 
 class Conv2D(Layer):
     """Construct a layer for 2D convolution.
@@ -695,6 +721,15 @@ class Merge(Layer):
         return self.in_shape
 
     def forward(self, flag, inputs):
+        '''Merge all input tensors by summation.
+
+        Args:
+            flag: not used.
+            inputs (list): a list of tensors
+
+        Returns:
+            A single tensor as the sum of all input tensors
+        '''
         assert len(inputs) > 1, 'There must be multiple input tensors'
         self.num_input = len(inputs)
         output = tensor.Tensor()
@@ -707,6 +742,7 @@ class Merge(Layer):
     def backward(self, flag, grad):
         assert isinstance(grad, tensor.Tensor), 'The input must be Tensor'
         return [grad] * self.num_input, []  # * self.num_input
+
 
 class Split(Layer):
     '''Replicate the input tensor.
@@ -730,6 +766,15 @@ class Split(Layer):
         return self.in_shape
 
     def forward(self, flag, input):
+        '''Replicate the input tensor into mutiple tensors.
+
+        Args:
+            flag: not used
+            input: a single input tensor
+
+        Returns:
+            a list a output tensor (each one is a copy of the input)
+        '''
         assert isinstance(input, tensor.Tensor), 'The input must be Tensor'
         outputs = [input] * self.num_output
         return outputs
@@ -795,7 +840,8 @@ class RNN(Layer):
         '''Forward inputs through the RNN.
 
         Args:
-            flag, kTrain or kEval.
+            flag: True(kTrain) for training; False(kEval) for evaluation;
+                others values for future use.
             inputs, <x1, x2,...xn, hx, cx>, where xi is the input tensor for the
                 i-th position, its shape is (batch_size, input_feature_length);
                 the batch_size of xi must >= that of xi+1; hx is the initial
@@ -821,6 +867,11 @@ class RNN(Layer):
             assert isinstance(t, tensor.Tensor), \
                 'input must be py Tensor %s' % (type(t))
             tensors.append(t.singa_tensor)
+        if type(flag) is bool:
+            if flag:
+                flag = model_pb2.kTrain
+            else:
+                flag = model_pb2.kEval
         y = self.layer.Forward(flag, tensors)
         return tensor.from_raw_tensors(y)
 

@@ -70,12 +70,8 @@ class Layer {
     virtual void ToDevice(std::shared_ptr<Device> device);
     virtual void AsType(DataType dtype);
     virtual const Tensor Forward(int flag, const Tensor& input);
-    virtual const std::vector<Tensor> Forward(
-        int flag, const std::vector<Tensor>& inputs);
     virtual const std::pair<Tensor, std::vector<Tensor>> Backward(
         int flag, const Tensor& grad);
-    virtual const std::pair<std::vector<Tensor>, std::vector<Tensor>>
-    Backward(int flag, const vector<Tensor>& grads);
 };
 
 std::shared_ptr<Layer> CreateLayer(const std::string& type);

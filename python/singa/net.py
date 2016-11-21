@@ -29,6 +29,7 @@ import cPickle as pickle
 '''For display training information, e.g L1 value of layer data'''
 verbose = False
 
+
 class FeedForwardNet(object):
 
     def __init__(self, loss=None, metric=None):
@@ -72,7 +73,7 @@ class FeedForwardNet(object):
             # print shape
             in_shape = self.src_of_layer[lyr.name][0].get_output_sample_shape()
             lyr.setup(in_shape)
-            print lyr.name, lyr.get_output_sample_shape()
+        print lyr.name, lyr.get_output_sample_shape()
         self.layers.append(lyr)
         return lyr
 
@@ -98,6 +99,19 @@ class FeedForwardNet(object):
         return [spec.name for spec in self.param_specs()]
 
     def train(self, x, y):
+        '''Run BP for one iteration.
+
+        Currently only support nets with a single output layer, and a single
+        loss objective and metric.
+        TODO(wangwei) consider multiple loss objectives and metrics.
+
+        Args:
+            x: input data, a single input Tensor or a dict: layer name -> Tensor
+            y: label data, a single input Tensor.
+
+        Returns:
+            gradients of parameters and the loss and metric values.
+        '''
         out = self.forward(kTrain, x)
         l = self.loss.forward(kTrain, out, y)
         if self.metric is not None:
@@ -105,7 +119,16 @@ class FeedForwardNet(object):
         return self.backward(), (l.l1(), m)
 
     def evaluate(self, x, y):
-        """Evaluate the loss and metric of the given data"""
+        '''Evaluate the loss and metric of the given data.
+
+        Currently only support nets with a single output layer, and a single
+        loss objective and metric.
+        TODO(wangwei) consider multiple loss objectives and metrics.
+
+        Args:
+            x: input data, a single input Tensor or a dict: layer name -> Tensor
+            y: label data, a single input Tensor.
+        '''
         out = self.forward(kEval, x)
         l = None
         m = None
@@ -118,34 +141,83 @@ class FeedForwardNet(object):
         return l, m
 
     def predict(self, x):
+        '''Forward the input data through each layer to get the values of the
+        output layers.
+
+        Currently only support nets with a single output layer
+
+        Args:
+            x: input data, a single input Tensor or a dict: layer name -> Tensor
+
+        Returns:
+            a single output tensor as the prediction result.
+        '''
         xx = self.forward(kEval, x)
         return tensor.softmax(xx)
 
-    def topo_sort(self, cur, src_of_layer, visited=None, order=None):
-        if visited is None:
-            visited = {}
-            for name in src_of_layer.keys():
-                visited[name] = False
-            order = []
-        srcs = src_of_layer[cur.name]
-        for src in srcs:
-            if visited[src.name] is False:
-                visited[src.name] = True
-                self.topo_sort(src, src_of_layer, visited, order)
-        order.append(cur)
-        visited[cur.name] = True
+    def topo_sort(self, layers, src_of_layer):
+        '''Topology sort of layers.
+
+        It would try to preserve the orders of the input layers.
+
+        Args:
+            layers: a list of layers; the layers from the output of the same
+                layer (e.g., slice layer) should be added by users in correct
+                order; This function would not change their order.
+            src_of_layer: a dictionary: src layer name -> a list of src layers
+
+        Returns:
+            A list of ordered layer
+        '''
+        order = []
+        while len(order) < len(layers):
+            for lyr in self.layers:
+                if lyr not in order:
+                    for src in src_of_layer[lyr.name]:
+                        if src not in order:
+                            break
+                    order.append(lyr)
         return order
 
-    def forward(self, flag, x):
-        # print x.l1()
+    def forward(self, flag, x, output=[]):
+        '''Forward the input(s) through every layer.
+
+        If a layer has inputs from other layers and from x, the data from x is
+        ordered before the data from other layers, e.g., if layer 1 -> layer 2,
+        and x['layer 2'] has data, then the input of layer 2 is
+        flatten([x['layer 2'], output of layer 1])
+
+        Args:
+            flag: True for training; False for evaluation; could also be
+                model_pb2.kTrain or model_pb2.kEval, or other values for future
+                use.
+            x: a single SINGA tensor or a dictionary: layer name-> singa tensor
+            output(list): a list of layer names whose output would be returned
+                in addition to the default output
+
+        Returns:
+            if there is only one output layer, return its output tensor(s);
+            else return a dictionary: layer name -> output tensor(s)
+        '''
         if self.ordered_layers is None:
-            self.ordered_layers = self.topo_sort(self.layers[-1],
-                                                 self.src_of_layer)
-        inputs = [x]
-        output_of_layer = {}
+            self.ordered_layers = self.topo_sort(self.layers, self.src_of_layer)
+        if type(x) is dict:
+            input_of_layer = x
+        else:
+            assert isinstance(x, tensor.Tensor), \
+                'The inputs of a net should be dict or a single tensor'
+            input_of_layer = {self.ordered_layers[0].name: x}
+        output_of_layer = {}  # outputs generated by each layer
+        ret = {}  # outputs to return
         for cur in self.ordered_layers:
+            inputs = []
+            if cur.name in input_of_layer:
+                if type(input_of_layer[cur.name]) is list:
+                    inputs.extend(input_of_layer[cur.name])
+                else:
+                    inputs.append(input_of_layer[cur.name])
             srcs = self.src_of_layer[cur.name]
-            disp_src = cur.name + '<--'
+            disp_src = ''
             for src in srcs:
                 outs = output_of_layer[src.name]
                 if type(outs) == list:
@@ -153,22 +225,33 @@ class FeedForwardNet(object):
                             'the output from layer %s is empty' % src.name
                     inputs.append(outs[0])
                     outs.pop(0)
+                    if len(outs) == 0:
+                        output_of_layer.pop(src.name)
                 else:
                     inputs.append(outs)
                     output_of_layer[cur.name] = []
-                disp_src += '+' + src.name
-                # del output_of_layer[src.name]
-            # print disp_src
+                    output_of_layer.pop(src.name)
             if len(inputs) == 1:
                 inputs = inputs[0]
-            out= cur.forward(flag, inputs)
+            out = cur.forward(flag, inputs)
             if verbose:
-                print '%s: %f' % (cur.name, out.l1())
+                disp_src = '+'.join([src.name for src in srcs])
+                disp_src += '-->' + cur.name
+                if type(out) is list:
+                    print '%s: %s' % (disp_src,
+                            ' '.join([str(o.l1()) for o in out]))
+                else:
+                    print '%s: %f' % (disp_src, out.l1())
             output_of_layer[cur.name] = out
-            inputs = []
+            if cur.name in output:
+                ret[cur.name] = out
             # print lyr.name, x.l1()
         # print output_of_layer
-        return output_of_layer[self.ordered_layers[-1].name]
+        ret.update(output_of_layer)
+        if len(ret) == 1:
+            return ret.values()[0]
+        else:
+            return ret
 
     def backward(self):
         if self.dst_of_layer is None:
@@ -210,7 +293,7 @@ class FeedForwardNet(object):
             ret.extend(pgrad)
         return ret
 
-    def save(self, f, buffer_size = 10, use_pickle=False):
+    def save(self, f, buffer_size=10, use_pickle=False):
         '''Save model parameters using io/snapshot.
 
         Args:
@@ -234,7 +317,7 @@ class FeedForwardNet(object):
                 val.to_host()
                 sp.write(specs.name, val)
 
-    def load(self, f, buffer_size = 10, use_pickle=False):
+    def load(self, f, buffer_size=10, use_pickle=False):
         '''Load model parameters using io/snapshot.
 
         Please refer to the argument description in save().
