@@ -191,21 +191,18 @@ class Layer(object):
             tensors if the layer is connected to multiple layers;
         '''
         assert self.has_setup, 'Must call setup() before forward()'
-        if type(x) == list:
-            xs = []
-            for t in x:
-                xs.append(t.singa_tensor)
-            y = self.layer.ForwardWithMultInputs(flag, xs)
-        else:
-            assert isinstance(x, tensor.Tensor), \
-                'input must be a Tensor or a list of Tensor'
-            xs = x.singa_tensor
         if type(flag) is bool:
             if flag:
                 flag = model_pb2.kTrain
             else:
                 flag = model_pb2.kEval
-        y = self.layer.Forward(flag, xs)
+        if type(x) is list:
+            xs = [t.singa_tensor for t in x]
+            y = self.layer.ForwardWithMultInputs(flag, xs)
+        else:
+            assert isinstance(x, tensor.Tensor), \
+                'input must be a Tensor or a list of Tensor'
+            y = self.layer.Forward(flag, x.singa_tensor)
         if type(y) is tuple:
             return tensor.from_raw_tensors(y)
         else:
@@ -223,9 +220,7 @@ class Layer(object):
             , dpi is the gradient of the i-th parameter
         '''
         if type(dy) == list:
-            dys = []
-            for t in dy:
-                dys.append(t.singa_tensor)
+            dys = [t.singa_tensor for t in dy]
             ret = self.layer.BackwardWithMultInputs(flag, dys)
         else:
             assert isinstance(dy, tensor.Tensor), \
