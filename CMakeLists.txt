@@ -49,6 +49,7 @@ OPTION(USE_CUDA "Use Cuda libs" OFF)
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
+OPTION(USE_GLOG "Use glog libs" ON)
 OPTION(USE_PYTHON "Generate py wrappers" ON)
 OPTION(USE_JAVA "Generate java wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
@@ -74,6 +75,14 @@ CONFIGURE_FILE (
 
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+#SET(DEPENDENT_LIB_PREFIX ${CMAKE_INSTALL_PREFIX}) 
+
+IF(CMAKE_INSTALL_PREFIX STREQUAL "")
+    SET(DEPENDENT_LIB_PREFIX ${CMAKE_BINARY_DIR}) 
+ELSE()
+    SET(DEPENDENT_LIB_PREFIX ${CMAKE_INSTALL_PREFIX}) 
+ENDIF()
+
 
 IF (USE_CUDA)
     include(ExternalProject)
@@ -83,7 +92,7 @@ IF (USE_CUDA)
         SOURCE_DIR "cnmem/"
         CONFIGURE_COMMAND "${CMAKE_COMMAND}"
         "-H${CMAKE_BINARY_DIR}/cnmem" "-B."
-        "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}"
+        "-DCMAKE_INSTALL_PREFIX=${DEPENDENT_LIB_PREFIX}"
         )
     #ADD_SUBDIRECTORY(lib/cnmem)
     #LIST(APPEND SINGA_LINKER_LIBS cnmem)
@@ -120,7 +129,7 @@ IF (USE_MODULES)
         SOURCE_DIR "protobuf-2.6.1/" 
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND "./configure" "--disable-shared"
-        "--prefix=${CMAKE_BINARY_DIR}/" "CXXFLAGS=-fPIC"
+        "--prefix=${DEPENDENT_LIB_PREFIX}/" "CXXFLAGS=-fPIC"
         INSTALL_COMMAND "make" "install"
         )
     ExternalProject_Add(openblas
@@ -131,7 +140,7 @@ IF (USE_MODULES)
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
         BUILD_COMMAND "make" "ONLY_CBLAS=1" 
-        INSTALL_COMMAND "make" "PREFIX=${CMAKE_BINARY_DIR}/" "install"
+        INSTALL_COMMAND "make" "PREFIX=${DEPENDENT_LIB_PREFIX}/" "install"
         )
 ENDIF()
 
