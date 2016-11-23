@@ -63,6 +63,11 @@ engine is case insensitive. Each python layer would create the correct specific
 layer using the engine attribute.
 '''
 
+if singa_wrap.USE_CUDNN:
+    cudnn_version = singa_wrap.CUDNN_VERSION
+else:
+    cudnn_version = 0
+
 
 class Layer(object):
     '''Base Python layer class.
@@ -219,6 +224,12 @@ class Layer(object):
             <dx, <dp1, dp2..>>, dx is a (set of) tensor(s) for the gradient of x
             , dpi is the gradient of the i-th parameter
         '''
+        if type(flag) is bool:
+            if flag:
+                flag = model_pb2.kTrain
+            else:
+                flag = model_pb2.kEval
+
         if type(dy) == list:
             dys = [t.singa_tensor for t in dy]
             ret = self.layer.BackwardWithMultInputs(flag, dys)
@@ -918,7 +929,7 @@ class RNN(Layer):
                 flag = model_pb2.kTrain
             else:
                 flag = model_pb2.kEval
-        y = self.layer.Forward(flag, tensors)
+        y = self.layer.ForwardWithMultInputs(flag, tensors)
         return tensor.from_raw_tensors(y)
 
     def backward(self, flag, grad):
@@ -942,11 +953,17 @@ class RNN(Layer):
                 hidden state. dcx is the gradient for the initial cell state,
                 which is valid only for lstm.
         '''
+        if type(flag) is bool:
+            if flag:
+                flag = model_pb2.kTrain
+            else:
+                flag = model_pb2.kEval
+
         tensors = []
         for t in grad:
             assert isinstance(t, tensor.Tensor), 'grad must be py Tensor'
             tensors.append(t.singa_tensor)
-        ret = self.layer.Backward(flag, tensors)
+        ret = self.layer.BackwardWithMultInputs(flag, tensors)
         return tensor.from_raw_tensors(ret[0]), tensor.from_raw_tensors(ret[1])
 
 
