@@ -66,7 +66,8 @@ class MSE : public Loss {
   /// and the target, which is 0.5/||prediction-target||^2
   /// Users can call Average(const Tensor&) to get the average
   /// loss value over all samples in the batch.
-  Tensor Forward(int flag, const Tensor& prediction, const Tensor& target) override;
+  Tensor Forward(int flag, const Tensor& prediction,
+      const Tensor& target) override;
 
   /// Compute the gradients of the loss values w.r.t. the prediction,
   /// which is (prediction-target)/batchsize
@@ -83,16 +84,23 @@ class MSE : public Loss {
 class SoftmaxCrossEntropy : public Loss {
  public:
   /// Compute the loss values for each sample/instance given the prediction
-  /// and the target, which is -log(p[idx_truth]), idx_truth is the truth
-  /// category's index and p[] is the probability for each category, computed
-  /// from Softmax(prediction).
+  /// and the target.
+  ///
+  /// If the target consists one integer per instance, i.e. the label index
+  /// (dentoed as idx_truth), the loss is -log(p[idx_truth]), p[] is the
+  /// probability for each category, computed from Softmax(prediction).
+  /// If the target consists one array per instance (e.g., for multiple
+  /// labels), the loss is -\sum_i (t[i] * log(p[i]) / \sum_j t[j], t[i]
+  /// is the weight of the i-th label (e.g., 1: the instance has this label, 0:
+  /// the instance does not have this label).
+  ///
   /// Users can call Average(const Tensor&) to get the average
   /// loss value over all samples in the batch.
-  Tensor Forward(int flag, const Tensor& prediction, const Tensor& target) override;
+  Tensor Forward(int flag, const Tensor& prediction,
+      const Tensor& target) override;
 
   /// Compute the gradients of the loss values w.r.t. the prediction,
-  /// which is: p[idx] - 1 if idx is the truth category's index; else,
-  /// p[idx]
+  /// which is: p[i] - t[i]/\sum_j t[j]
   Tensor Backward() override;
 
  private:

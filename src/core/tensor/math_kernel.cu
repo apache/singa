@@ -308,25 +308,50 @@ __global__ void KernelRowMax(const size_t nrow, const size_t ncol, const float *
     outPtr[idx] = maxval;
   }
 }
-__global__ void KernelComputeCrossEntropy(const size_t batchsize,
+__global__ void KernelComputeCrossEntropy(const bool int_target, const size_t batchsize,
                                           const size_t dim, const float *p,
                                           const int *t, float *loss) {
   size_t sample = blockIdx.x * blockDim.x + threadIdx.x;
   size_t num_threads = blockDim.x * gridDim.x;
-  for (; sample < batchsize; sample += num_threads) {
-    float prob_of_truth = p[sample * dim + t[sample]];
-    loss[sample] = -std::log(max(prob_of_truth, FLT_MIN));
+  if (int_target) {
+    for (; sample < batchsize; sample += num_threads) {
+      float prob_of_truth = p[sample * dim + t[sample]];
+      loss[sample] = -std::log(max(prob_of_truth, FLT_MIN));
+    }
+  } else {
+    for (; sample < batchsize; sample += num_threads) {
+      float sum = 0.f;
+      for (size_t j = 0; j < dim; j++) {
+        sum += t[sample * dim + j];
+      }
+      loss[sample] = 0;
+      for (size_t j = 0, offset = sample * dim; j < dim; j++, offset++) {
+        loss[sample] -= t[offset] / sum * std::log(max(p[offset], FLT_MIN));
+      }
+    }
   }
 }
 
-__global__ void KernelSoftmaxCrossEntropyBwd(const size_t batchsize,
+__global__ void KernelSoftmaxCrossEntropyBwd(const bool int_target, const size_t batchsize,
                                              const size_t dim, const float *p,
                                              const int *t, float *grad) {
   size_t sample = blockIdx.x * blockDim.x + threadIdx.x;
   size_t num_threads = blockDim.x * gridDim.x;
-  for (; sample < batchsize; sample += num_threads) {
-    size_t pos = sample * dim + t[sample];
-    grad[pos] = p[pos] - 1.0f;  // TODO(wangwei) Consider p and grad are diff
+  if (int_target) {
+    for (; sample < batchsize; sample += num_threads) {
+      size_t pos = sample * dim + t[sample];
+      grad[pos] = p[pos] - 1.0f;  // TODO(wangwei) Consider p and grad are diff
+    }
+  } else {
+    for (; sample < batchsize; sample += num_threads) {
+      float sum = 0.f;
+      for (size_t j = 0; j < dim; j++) {
+        sum += t[sample * dim + j];
+      }
+      for (size_t j = 0, offset = sample * dim; j < dim; j++, offset++) {
+        grad[offset] -= t[offset] / sum;
+      }
+    }
   }
 }
 
@@ -473,16 +498,16 @@ void sum(const size_t n, const float *in, float *out, cudaStream_t s) {
 }
 */
 
-void ComputeCrossEntropy(size_t batchsize, const size_t dim, const float *p,
+void ComputeCrossEntropy(const bool int_target, size_t batchsize, const size_t dim, const float *p,
                          const int *t, float *loss, cudaStream_t stream) {
   KernelComputeCrossEntropy <<<ceil(batchsize / CU1DBLOCKF), CU1DBLOCKF>>>
-      (batchsize, dim, p, t, loss);
+      (int_target, batchsize, dim, p, t, loss);
 }
 
-void SoftmaxCrossEntropyBwd(size_t batchsize, const size_t dim, const float *p,
+void SoftmaxCrossEntropyBwd(const bool int_target, size_t batchsize, const size_t dim, const float *p,
                             const int *t, float *grad, cudaStream_t stream) {
   KernelSoftmaxCrossEntropyBwd <<<ceil(batchsize / CU1DBLOCKF), CU1DBLOCKF>>>
-      (batchsize, dim, p, t, grad);
+      (int_target, batchsize, dim, p, t, grad);
 }
 
 void RowMax(const size_t nrow, const size_t ncol, const float *inPtr,

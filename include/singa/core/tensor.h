@@ -440,8 +440,13 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 // Misc.
 // ****************
 /// Compute the cross entropy loss given the prediction probability 'p' and
-/// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
-/// or 2-d matrix. 'loss' is 1-d vector. The loss is computed into p.
+/// the target (ground truth) labels 't'. 'p' could be either a 1-d vector for
+/// a single instance or a 2-d matrix for a batch of instances. t[i]
+/// could be the ground truth label index or a label weighted
+/// array of the i-th instance. For example, if there are 3 candidate labels for
+/// each instance, t[i] could be 2 or [0, 0, 1]. If one instance could have
+/// multiple labels, then t[i] could be [1, 0, 1].
+/// The loss is computed into p.
 void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
 /// Compute the dx, given prediction probability 'p' (p=softmax(x)) and
 /// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector

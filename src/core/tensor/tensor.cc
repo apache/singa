@@ -995,31 +995,33 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 
 // ************************
 // Misc.
-// ***********************
+// ************************
 void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
   CHECK_LE(p.nDim(), 2u);
-  CHECK_LE(t.nDim(), 2u);  // TODO(wangwei) consider multi-labels.
+  CHECK_LE(t.nDim(), 2u);
   size_t batchsize = 1;
   if (p.nDim() == 2u) batchsize = p.shape(0);
   size_t dim = p.Size() / batchsize;
   TYPE_LANG_SWITCH(p.data_type(), DType, p.device()->lang(), Lang, {
     p.device()->Exec([batchsize, dim, t, p, loss](Context *ctx) {
-      ComputeCrossEntropy<DType, Lang>(batchsize, dim, p.block(), t.block(),
-                                       loss->block(), ctx);
+        bool int_target = t.Size() == batchsize;
+        ComputeCrossEntropy<DType, Lang>(int_target, batchsize, dim, p.block(),
+            t.block(), loss->block(), ctx);
     }, {p.block(), t.block()}, {loss->block()});
   });
 }
 
 void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
   CHECK_LE(p->nDim(), 2u);
-  CHECK_LE(t.nDim(), 2u);  // TODO(wangwei) consider multi-labels.
+  CHECK_LE(t.nDim(), 2u);
   size_t batchsize = 1;
   if (p->nDim() == 2u) batchsize = p->shape(0);
   size_t dim = p->Size() / batchsize;
   TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
     p->device()->Exec([batchsize, dim, t, p](Context *ctx) {
-      SoftmaxCrossEntropyBwd<DType, Lang>(batchsize, dim, p->block(), t.block(),
-                                          p->block(), ctx);
+      bool int_target = t.Size() == batchsize;
+      SoftmaxCrossEntropyBwd<DType, Lang>(int_target, batchsize, dim,
+          p->block(), t.block(), p->block(), ctx);
     }, {p->block(), t.block()}, {p->block()});
   });
 }

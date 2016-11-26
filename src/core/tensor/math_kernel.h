@@ -103,12 +103,12 @@ void div(const size_t n, const float *in1, const float *in2, float *out,
 
 // void sum(const size_t n, const float *in, float *out, cudaStream_t s);
 
-void ComputeCrossEntropy(const size_t batchsize, const size_t dim,
-                         const float *p, const int *t, float *loss,
-                         cudaStream_t stream);
-void SoftmaxCrossEntropyBwd(const size_t batchsize, const size_t dim,
-                            const float *p, const int *t, float *grad,
-                            cudaStream_t stream);
+void ComputeCrossEntropy(bool int_target, const size_t batchsize,
+                         const size_t dim, const float *p, const int *t,
+                         float *loss, cudaStream_t stream);
+void SoftmaxCrossEntropyBwd(bool int_target, const size_t batchsize,
+                            const size_t dim, const float *p, const int *t,
+                            float *grad, cudaStream_t stream);
 
 void RowMax(const size_t nrow, const size_t ncol, const float *inPtr,
     float *outPtr, cudaStream_t stream);

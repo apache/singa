@@ -566,23 +566,39 @@ void GEMV<float, lang::Cpp>(bool trans, const size_t m, const size_t n,
 
 #endif  // USE_CBLAS
 template <>
-void ComputeCrossEntropy<float, lang::Cpp>(const size_t batchsize,
+void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
+                                           const size_t batchsize,
                                            const size_t dim, const Block *p,
                                            const Block *t, Block *loss,
                                            Context *ctx) {
   const float *pPtr = static_cast<const float *>(p->data());
   const int *tPtr = static_cast<const int *>(t->data());
   float *lossPtr = static_cast<float *>(loss->mutable_data());
-  for (size_t i = 0; i < batchsize; i++) {
-    int truth_idx = tPtr[i];
-    CHECK_GE(truth_idx, 0);
-    float prob_of_truth = pPtr[i * dim + truth_idx];
-    lossPtr[i] = -std::log((std::max)(prob_of_truth, FLT_MIN));
+  if (int_target) {
+    for (size_t i = 0; i < batchsize; i++) {
+      int truth_idx = tPtr[i];
+      CHECK_GE(truth_idx, 0);
+      float prob_of_truth = pPtr[i * dim + truth_idx];
+      lossPtr[i] = -std::log((std::max)(prob_of_truth, FLT_MIN));
+    }
+  } else {
+    for (size_t i = 0;i < batchsize; i++) {
+      float sum = 0.f;
+      for (size_t j = 0; j < dim; j++) {
+        sum += tPtr[i * dim + j];
+      }
+      float loss = 0.f;
+      for (size_t j = 0, offset = i * dim; j < dim; j++, offset++) {
+        loss -= tPtr[offset] / sum * std::log((std::max)(pPtr[offset], FLT_MIN));
+      }
+      lossPtr[i] = loss;
+    }
   }
 }
 
 template <>
-void SoftmaxCrossEntropyBwd<float, lang::Cpp>(const size_t batchsize,
+void SoftmaxCrossEntropyBwd<float, lang::Cpp>(bool int_target,
+                                              const size_t batchsize,
                                               const size_t dim, const Block *p,
                                               const Block *t, Block *grad,
                                               Context *ctx) {
@@ -591,10 +607,22 @@ void SoftmaxCrossEntropyBwd<float, lang::Cpp>(const size_t batchsize,
   const int *tPtr = static_cast<const int *>(t->data());
   float *gradPtr = static_cast<float *>(grad->mutable_data());
 
-  for (size_t i = 0; i < batchsize; i++) {
-    int truth_idx = static_cast<int>(tPtr[i]);
-    CHECK_GE(truth_idx, 0);
-    gradPtr[i * dim + truth_idx] -= 1.0;
+  if (int_target) {
+    for (size_t i = 0; i < batchsize; i++) {
+      int truth_idx = static_cast<int>(tPtr[i]);
+      CHECK_GE(truth_idx, 0);
+      gradPtr[i * dim + truth_idx] -= 1.0;
+    }
+  } else {
+    for (size_t i = 0; i < batchsize; i++) {
+      float sum = 0.f;
+      for (size_t j = 0; j < dim; j++) {
+        sum += tPtr[i * dim + j];
+      }
+      for (size_t j = 0, offset = i * dim; j < dim; j++, offset++) {
+        gradPtr[offset] -= tPtr[offset] / sum;
+      }
+    }
   }
 }
 
