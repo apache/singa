@@ -814,7 +814,10 @@ class Concat(Layer):
         self.in_shapes = input_sample_shapes
         self.axis = axis
         self.conf.concat_conf.axis = axis
-        self.layer = _create_layer(engine, 'Concat')
+	if engine == "cudnn":
+            self.layer = _create_layer('singacuda', 'Concat')
+        else:
+            self.layer = _create_layer(engine, 'Concat')
         if input_sample_shapes is not None:
             self.setup(input_sample_shapes)
 
@@ -836,7 +839,10 @@ class Slice(Layer):
         self.axis = axis
         self.conf.slice_conf.axis = axis
         self.conf.slice_conf.slice_point.extend(slice_point)
-        self.layer = _create_layer(engine, 'Slice')
+	if engine == "cudnn":
+            self.layer = _create_layer('singacuda', 'Slice')
+        else:
+            self.layer = _create_layer(engine, 'Slice')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
 
