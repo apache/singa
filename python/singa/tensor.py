@@ -18,6 +18,7 @@
 """
 Example usage::
 
+    import numpy as np
     from singa import tensor
     from singa import device
 
