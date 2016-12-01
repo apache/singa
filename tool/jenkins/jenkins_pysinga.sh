@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash 
 #/**
 # *
 # * Licensed to the Apache Software Foundation (ASF) under one
@@ -18,34 +18,29 @@
 # * limitations under the License.
 # */
 
-
-
-if [ $1 = "CPP" ]; then
-  echo "CPP test"
-  mkdir build
-  rm -f gtest.xml
-  cd build
-  cmake -DUSE_CUDNN=OFF -DUSE_CUDA=OFF -DUSE_PYTHON=OFF ../ 
-  make
-  ./bin/test_singa --gtest_output=xml:./../gtest.xml
+echo Compile, test and distribute PySINGA...
+echo Parameters: $1
+echo Workspace: `pwd`
+echo OS env: `uname -a`
+echo Cuda env: `nvcc --version`
+# set parameters
+CUDNN="OFF"
+if [ $1 = "cudnn" ]; then
+  CUDNN="ON"
 fi
-
-if [ $1 = "CUDNN" ]; then
-  echo "CUDNN test"
-  git submodule init
-  git submodule update
-  mkdir build
-  rm -f gtest.xml
-  cd build
-  cmake -DUSE_CUDNN=ON -DUSE_CUDA=ON -DUSE_PYTHON=OFF ../ 
-  make
-  ./bin/test_singa --gtest_output=xml:./../gtest.xml
-fi
-
-cd ..
+# setup env
 rm -rf build
-
-
-
-
-
+mkdir build
+# compile singa c++
+cd build
+cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDNN ../ 
+make
+# unit test
+./bin/test_singa --gtest_output=xml:./../gtest.xml
+# compile pysinga
+cd python
+python setup.py bdist_wheel
+# rename dist
+cd dist
+mv singa-1.0.1-py2-none-any.whl singa-1.0.0-cp27-none-linux_x86_64.whl
+echo Job finished...
