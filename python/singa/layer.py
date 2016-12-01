@@ -21,7 +21,6 @@ Example usages::
     from singa import layer
     from singa import tensor
     from singa import device
-    from singa.model_pb2 import kTrain
 
     layer.engine = 'cudnn'  # to use cudnn layers
     dev = device.create_cuda_gpu()
@@ -31,7 +30,7 @@ Example usages::
     conv.to_device(dev)  # move the layer data onto a CudaGPU device
     x = tensor.Tensor((3, 32, 32), dev)
     x.uniform(-1, 1)
-    y = conv.foward(kTrain, x)
+    y = conv.foward(True, x)
 
     dy = tensor.Tensor()
     dy.reset_like(y)

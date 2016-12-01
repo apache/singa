@@ -17,31 +17,31 @@
 # =============================================================================
 """
 Example usage::
-
     import numpy as np
     from singa import tensor
     from singa import device
 
-    # create a tensor with shape (2,3), default CppCPU device and float32
-    x = tensor.Tensor((2,3))
+# create a tensor with shape (2,3), default CppCPU device and float32
+    x = tensor.Tensor((2, 3))
     x.set_value(0.4)
 
-    # create a tensor from a numpy array
-    y = tensor.from_numpy((3,3), dtype=np.float32)
-    y.uniform(-1, 1)
+# create a tensor from a numpy array
+    npy = np.zeros((3, 3), dtype=np.float32)
+    y = tensor.from_numpy(npy)
 
-    z = mult(x, y)  # gemm -> z of shape (2, 3)
+    y.uniform(-1, 1)  # sample values from the uniform distribution
 
-    x += z # element-wise addition
+    z = tensor.mult(x, y)  # gemm -> z of shape (2, 3)
 
-    dev = device.create_cuda_gpu()
+    x += z  # element-wise addition
+
+    dev = device.get_default_device()
     x.to_device(dev)  # move the data to a gpu device
 
-    r = relu(x)
+    r = tensor.relu(x)
 
     r.to_host()  # move the data back to host cpu
-    s = r.to_numpy()  # tensor -> numpy array, r must be on cpu
-
+    s = tensor.to_numpy(r)  # tensor -> numpy array, r must be on cpu
 
 There are two sets of tensor functions,
 
