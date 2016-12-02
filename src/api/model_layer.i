@@ -74,15 +74,17 @@ class Layer {
   virtual const std::vector<size_t> GetOutputSampleShape(int k);
   virtual void ToDevice(std::shared_ptr<Device> device);
   virtual void AsType(DataType dtype);
+
   virtual const Tensor Forward(int flag, const Tensor& input);
   %rename(ForwardWithMultInputs) Forward(int flag, const std::vector<Tensor>&);
   virtual const std::vector<Tensor> Forward(
       int flag, const std::vector<Tensor>& inputs);
+
   virtual const std::pair<Tensor, std::vector<Tensor>> Backward(
       int flag, const Tensor& grad);
-  %rename(BackwardWithMultInputs) Backward(int, const vector<Tensor>&);
+  %rename(BackwardWithMultInputs) Backward(int, const std::vector<Tensor>&);
   virtual const std::pair<std::vector<Tensor>, std::vector<Tensor>>
-  Backward(int flag, const vector<Tensor>& grads);
+  Backward(int flag, const std::vector<Tensor>& grads);
 };
 
 std::shared_ptr<Layer> CreateLayer(const std::string& type);
@@ -92,20 +94,23 @@ class RNN : public Layer {
 };
 
 #if USE_CUDA && USE_CUDNN
-#if CUDNN_VERSION_SWIG >= 5005
+#if CUDNN_VERSION >= 5005
 class CudnnRNN : public RNN {
  public:
- // note: Must use std::vector instead of vector.
-  const std::vector<Tensor> Forward(int flag,
-                                    const std::vector<Tensor>& inputs) override;
+  // note: Must use std::vector instead of vector.
+  %rename(ForwardWithMultInputs) Forward(int flag, const std::vector<Tensor>&);
+  const std::vector<Tensor> Forward(
+      int flag, const std::vector<Tensor>& inputs);
+  %rename(BackwardWithMultInputs) Backward(int, const std::vector<Tensor>&);
   const std::pair<std::vector<Tensor>, std::vector<Tensor>>
-  Backward(int flag, const std::vector<Tensor>& grads) override;
+  Backward(int flag, const std::vector<Tensor>& grads);
+
   void ToDevice(std::shared_ptr<Device> device) override;
   const std::vector<Tensor> param_values() override;
   const std::vector<size_t> GetOutputSampleShape() const override;
 };
 
-#endif  // CUDNN_VERSION_SWIG >= 5005
+#endif  // CUDNN_VERSION >= 5005
 #endif  // USE_CUDA && USE_CUDNN
 }
 

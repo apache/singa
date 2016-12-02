@@ -432,17 +432,20 @@ void GEMM<float, lang::Cuda>(const bool transA, const bool transB,
 }
 
 template <>
-void ComputeCrossEntropy<float, lang::Cuda>(const size_t batchsize,
+void ComputeCrossEntropy<float, lang::Cuda>(bool int_target,
+                                            const size_t batchsize,
                                             const size_t dim, const Block* p,
                                             const Block* t, Block* loss,
                                             Context* ctx) {
   const float* pPtr = static_cast<const float*>(p->data());
   const int* tPtr = static_cast<const int*>(t->data());
   float* lossPtr = static_cast<float*>(loss->mutable_data());
-  cuda::ComputeCrossEntropy(batchsize, dim, pPtr, tPtr, lossPtr, ctx->stream);
+  cuda::ComputeCrossEntropy(int_target, batchsize, dim, pPtr, tPtr, lossPtr,
+      ctx->stream);
 }
 template <>
-void SoftmaxCrossEntropyBwd<float, lang::Cuda>(const size_t batchsize,
+void SoftmaxCrossEntropyBwd<float, lang::Cuda>(bool int_target,
+                                               const size_t batchsize,
                                                const size_t dim, const Block* p,
                                                const Block* t, Block* grad,
                                                Context* ctx) {
@@ -450,7 +453,7 @@ void SoftmaxCrossEntropyBwd<float, lang::Cuda>(const size_t batchsize,
   const float* pPtr = static_cast<const float*>(p->data());
   const int* tPtr = static_cast<const int*>(t->data());
   float* gradPtr = static_cast<float*>(grad->mutable_data());
-  cuda::SoftmaxCrossEntropyBwd(batchsize, dim, pPtr, tPtr, gradPtr,
+  cuda::SoftmaxCrossEntropyBwd(int_target, batchsize, dim, pPtr, tPtr, gradPtr,
                                ctx->stream);
 }
 

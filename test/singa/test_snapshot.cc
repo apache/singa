@@ -68,6 +68,7 @@ TEST(Snapshot, ReadTest) {
   std::ifstream desc_file(prefix + ".desc");
   std::string line;
   getline(desc_file, line);
+  getline(desc_file, line);
   EXPECT_EQ(line, desc_1);
   getline(desc_file, line);
   EXPECT_EQ(line, desc_2);

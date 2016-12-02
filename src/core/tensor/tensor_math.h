@@ -347,19 +347,17 @@ void GEMM(const bool transA, const bool transB, const size_t nrowA,
   LOG(FATAL) << "GEMM Not Implemented";
 }
 
-/// Divide alpha by each element of 'in'.
-// following the consistency guide.
 template <typename DType, typename Lang>
-void ComputeCrossEntropy(const size_t batchsize, const size_t dim,
-                         const Block *p, const Block *t, Block *loss,
-                         Context *ctx) {
+void ComputeCrossEntropy(bool int_target, const size_t batchsize,
+                         const size_t dim, const Block *p, const Block *t,
+                         Block *loss, Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
 template <typename DType, typename Lang>
-void SoftmaxCrossEntropyBwd(const size_t batchsize, const size_t dim,
-                            const Block *p, const Block *t, Block *grad,
-                            Context *ctx) {
+void SoftmaxCrossEntropyBwd(bool int_target, const size_t batchsize,
+                            const size_t dim, const Block *p, const Block *t,
+                            Block *grad, Context *ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 

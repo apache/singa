@@ -19,6 +19,7 @@
 *
 *************************************************************/
 
+#include "singa/singa_config.h"
 #include "singa/io/snapshot.h"
 
 #include <string>
@@ -36,16 +37,37 @@ Snapshot::Snapshot(const std::string& prefix, Mode mode, int max_param_size /*in
       text_writer_ptr_(mode_ == kWrite ? (new io::TextFileWriter) : nullptr),
       bin_reader_ptr_(mode_ == kRead ? (new io::BinFileReader) : nullptr) {
   if (mode_ == kWrite) {
-    bin_writer_ptr_->Open(prefix + ".model", io::kCreate, max_param_size << 20);
+    // changed to .bin since v1.0.1
+    bin_writer_ptr_->Open(prefix + ".bin", io::kCreate, max_param_size << 20);
     text_writer_ptr_->Open(prefix + ".desc", io::kCreate);
+
+    // write the current version ids
+    text_writer_ptr_->Write("SINGA_VERSION", std::to_string(SINGA_VERSION));
   } else if (mode == kRead) {
-    bin_reader_ptr_->Open(prefix + ".model", max_param_size << 20);
-    std::string key, serialized_str;
+    auto text_reader_ptr = new io::TextFileReader();
+    text_reader_ptr->Open(prefix + ".desc");
+    std::string key, val;
+    while (text_reader_ptr->Read(&key, &val)) {
+      if (key == "SINGA_VERSION")
+        version_ = std::stoi(val);
+    }
+    delete text_reader_ptr;
+
+    if (!bin_reader_ptr_->Open(prefix + ".bin", max_param_size << 20))
+      CHECK(bin_reader_ptr_->Open(prefix + ".model", max_param_size << 20))
+        << "Cannot open the checkpoint bin file:" << prefix + ".bin (>=1.0.1) "
+        <<" or " << prefix + " .model (used by 1.0.0)";
     singa::TensorProto tp;
-    while (bin_reader_ptr_->Read(&key, &serialized_str)) {
+    while (bin_reader_ptr_->Read(&key, &val)) {
+      if (key == "SINGA_VERSION") {
+        CHECK(version_ == std::stoi(val)) << key << " in .bin and .desc mismatch: "
+          << val << " (bin) vs " << version_ << " (desc)";
+        continue;
+      }
+
       CHECK(param_names_.count(key) == 0);
       param_names_.insert(key);
-      CHECK(tp.ParseFromString(serialized_str));
+      CHECK(tp.ParseFromString(val));
       param_map_[key].FromProto(tp);
     }
   } else {

@@ -38,7 +38,9 @@ Example usage::
 
 
 from . import singa_wrap as singa
+from proto import model_pb2
 import tensor
+
 
 
 class Loss(object):
@@ -64,6 +66,11 @@ class Loss(object):
         Returns:
             a tensor of floats for the loss values, one per sample
         '''
+        if type(flag) is bool:
+            if flag:
+                flag = model_pb2.kTrain
+            else:
+                flag = model_pb2.kEval
         return tensor.from_raw_tensor(
             self.swig_loss.Forward(flag, x.singa_tensor, y.singa_tensor))
 
@@ -84,6 +91,12 @@ class Loss(object):
         Returns:
             the averaged loss for all samples in x.
         '''
+        if type(flag) is bool:
+            if flag:
+                flag = model_pb2.kTrain
+            else:
+                flag = model_pb2.kEval
+
         return self.swig_loss.Evaluate(flag, x.singa_tensor, y.singa_tensor)
 
 
@@ -92,6 +105,12 @@ class SoftmaxCrossEntropy(Loss):
 
     It converts the inputs via SoftMax function and then
     computes the cross-entropy loss against the ground truth values.
+
+    For each sample, the ground truth could be a integer as the label index;
+    or a binary array, indicating the label distribution. The ground truth
+    tensor thus could be a 1d or 2d tensor.
+    The data/feature tensor could 1d (for a single sample) or 2d for a batch of
+    samples.
     '''
 
     def __init__(self):

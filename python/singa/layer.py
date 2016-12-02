@@ -62,6 +62,11 @@ engine is case insensitive. Each python layer would create the correct specific
 layer using the engine attribute.
 '''
 
+if singa_wrap.USE_CUDNN:
+    cudnn_version = singa_wrap.CUDNN_VERSION
+else:
+    cudnn_version = 0
+
 
 class Layer(object):
     '''Base Python layer class.
@@ -218,6 +223,12 @@ class Layer(object):
             <dx, <dp1, dp2..>>, dx is a (set of) tensor(s) for the gradient of x
             , dpi is the gradient of the i-th parameter
         '''
+        if type(flag) is bool:
+            if flag:
+                flag = model_pb2.kTrain
+            else:
+                flag = model_pb2.kEval
+
         if type(dy) == list:
             dys = [t.singa_tensor for t in dy]
             ret = self.layer.BackwardWithMultInputs(flag, dys)
@@ -802,7 +813,10 @@ class Concat(Layer):
         self.in_shapes = input_sample_shapes
         self.axis = axis
         self.conf.concat_conf.axis = axis
-        self.layer = _create_layer(engine, 'Concat')
+	if engine == "cudnn":
+            self.layer = _create_layer('singacuda', 'Concat')
+        else:
+            self.layer = _create_layer(engine, 'Concat')
         if input_sample_shapes is not None:
             self.setup(input_sample_shapes)
 
@@ -824,7 +838,10 @@ class Slice(Layer):
         self.axis = axis
         self.conf.slice_conf.axis = axis
         self.conf.slice_conf.slice_point.extend(slice_point)
-        self.layer = _create_layer(engine, 'Slice')
+	if engine == "cudnn":
+            self.layer = _create_layer('singacuda', 'Slice')
+        else:
+            self.layer = _create_layer(engine, 'Slice')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
 
@@ -917,7 +934,7 @@ class RNN(Layer):
                 flag = model_pb2.kTrain
             else:
                 flag = model_pb2.kEval
-        y = self.layer.Forward(flag, tensors)
+        y = self.layer.ForwardWithMultInputs(flag, tensors)
         return tensor.from_raw_tensors(y)
 
     def backward(self, flag, grad):
@@ -941,11 +958,17 @@ class RNN(Layer):
                 hidden state. dcx is the gradient for the initial cell state,
                 which is valid only for lstm.
         '''
+        if type(flag) is bool:
+            if flag:
+                flag = model_pb2.kTrain
+            else:
+                flag = model_pb2.kEval
+
         tensors = []
         for t in grad:
             assert isinstance(t, tensor.Tensor), 'grad must be py Tensor'
             tensors.append(t.singa_tensor)
-        ret = self.layer.Backward(flag, tensors)
+        ret = self.layer.BackwardWithMultInputs(flag, tensors)
         return tensor.from_raw_tensors(ret[0]), tensor.from_raw_tensors(ret[1])
 
 
