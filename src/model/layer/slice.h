@@ -48,6 +48,8 @@ class Slice : public Layer {
   int axis_ = 0;
   /// out_sample_shapes_[i] is the shape of the i-th output tensor
   vector<Shape> out_sample_shapes_;
+  /// slice point, end offset of each output
+  vector<size_t> slice_point_;
 };
 
 }  // namespace singa

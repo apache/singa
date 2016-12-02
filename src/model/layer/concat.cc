@@ -27,19 +27,28 @@ RegisterLayerClass(singacl_concat, Concat);
 
 void Concat::Setup(const vector<Shape>& in_shapes, const LayerConf& conf) {
   Layer::Setup(in_shapes, conf);
-  dim_size_.clear();
+  out_sample_shape_.clear();
+  slice_point_.clear();
   axis_ = conf.concat_conf().axis();
-  out_sample_shape_ = {0, 0};
-  out_sample_shape_[1 - axis_] = in_shapes[0][1 - axis_];
-  for (auto& s: in_shapes) {
-    out_sample_shape_[axis_] += s[axis_];
-    dim_size_.push_back(s[axis_]);
-    // LOG(ERROR) << s[axis_];
+  if (axis_ == 0)
+    out_sample_shape_.push_back(in_shapes[0][0]);
+  else {
+    size_t l = 0;
+    for (auto& s: in_shapes) {
+       l += s[0];
+    }
+    out_sample_shape_.push_back(l);
   }
 }
 
 const vector<Tensor> Concat::Forward(int flag, const vector<Tensor>& inputs) {
   vector<Tensor> outputs;
+  slice_point_.clear();
+  size_t offset = 0;
+  for (auto& x : inputs) {
+    offset += x.shape(axis_);
+    slice_point_.push_back(offset);
+  }
   if (inputs.size() == 1u) {
     outputs = inputs;
   } else {
@@ -55,14 +64,13 @@ const std::pair<vector<Tensor>, vector<Tensor>> Concat::Backward(
     int flag, const vector<Tensor>& grads) {
   vector<Tensor> input_grad, param_grad;
   CHECK_EQ(grads.size(), 1u) << "Concat layer only have one output tensor.";
-  for (size_t i = 0, offset = 0; i < dim_size_.size(); i++) {
+  size_t last_offset = 0u;
+  for (auto p : slice_point_) {
     if (axis_ == 0)
-      input_grad.push_back(SliceRows(grads.at(0), offset,
-            offset + dim_size_[i]));
+      input_grad.push_back(SliceRows(grads.at(0), last_offset, p));
     else
-      input_grad.push_back(SliceColumns(grads.at(0), offset,
-            offset + dim_size_[i]));
-    offset += dim_size_[i];
+      input_grad.push_back(SliceColumns(grads.at(0), last_offset, p));
+    last_offset = p;
   }
   return std::make_pair(input_grad, param_grad);
 }

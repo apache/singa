@@ -116,26 +116,6 @@ class Layer(object):
 
         self.has_setup = False
 
-    def caffe_layer(self):
-        '''
-        Create a singa layer based on caffe layer configuration.
-        '''
-        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda'])
-        if self.conf.type == 'InnerProduct' or self.conf.type == 14:
-            self.layer = _create_layer(engine, 'Dense')
-        else:
-            self.layer = _create_layer(engine, str(self.conf.type))
-
-    def param_names(self):
-        '''
-        Returns:
-            a list of strings, one for the name of one parameter Tensor
-        '''
-        names = []
-        for x in self.param_specs:
-            names.append(x['name'])
-        return names
-
     def setup(self, in_shapes):
         '''Call the C++ setup function to create params and set some meta data.
 
@@ -154,6 +134,17 @@ class Layer(object):
             self.layer.Setup(list(in_shapes), self.conf.SerializeToString())
         self.has_setup = True
 
+    def caffe_layer(self):
+        '''
+        Create a singa layer based on caffe layer configuration.
+        '''
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda'])
+        if self.conf.type == 'InnerProduct' or self.conf.type == 14:
+            self.layer = _create_layer(engine, 'Dense')
+        else:
+            self.layer = _create_layer(engine, str(self.conf.type))
+
+
     def get_output_sample_shape(self):
         '''Called after setup to get the shape of the output sample(s).
 
@@ -164,6 +155,16 @@ class Layer(object):
         assert self.has_setup, \
             'Must call setup() before get_output_sample_shape()'
         return self.layer.GetOutputSampleShape()
+
+    def param_names(self):
+        '''
+        Returns:
+            a list of strings, one for the name of one parameter Tensor
+        '''
+        names = []
+        for x in self.param_specs:
+            names.append(x['name'])
+        return names
 
     def param_values(self):
         '''Return param value tensors.
@@ -278,10 +279,12 @@ class Dummy(Layer):
         self.has_setup = True
 
     def forward(self, flag, x):
+        '''Return the input x'''
         return x
 
     def backward(self, falg, dy):
-        return dy
+        '''Return dy, []'''
+        return dy, []
 
 
 class Conv2D(Layer):
@@ -732,6 +735,7 @@ class Merge(Layer):
     def forward(self, flag, inputs):
         '''Merge all input tensors by summation.
 
+        TODO(wangwei) do element-wise merge operations, e.g., avg, count
         Args:
             flag: not used.
             inputs (list): a list of tensors
@@ -749,6 +753,14 @@ class Merge(Layer):
         return output
 
     def backward(self, flag, grad):
+        '''Replicate the grad for each input source layer.
+
+        Args:
+            grad(Tensor), the gradient tensor of the merged result from forward
+
+        Returns:
+            A list of replicated grad, one per source layer
+        '''
         assert isinstance(grad, tensor.Tensor), 'The input must be Tensor'
         return [grad] * self.num_input, []  # * self.num_input
 
@@ -789,6 +801,14 @@ class Split(Layer):
         return outputs
 
     def backward(self, flag, grads):
+        '''Sum all grad tensors to generate a single output tensor.
+
+        Args:
+            grads(list of Tensor), one per dest layer
+
+        Returns:
+            a single tensor as the sum of all grads
+        '''
         assert len(grads) > 1, 'There must be multiple gradients'
         dx = tensor.Tensor()
         dx.reset_like(grads[0])
@@ -805,7 +825,7 @@ class Concat(Layer):
 
     Args:
         axis(int): 0 for concat row; 1 for concat columns;
-        input_sample_shapes: a list of shape tuples, one per input tensor
+        input_sample_shapes: a list of sample shape tuples, one per input tensor
     '''
 
     def __init__(self, name, axis, input_sample_shapes=None):
@@ -820,6 +840,36 @@ class Concat(Layer):
         if input_sample_shapes is not None:
             self.setup(input_sample_shapes)
 
+    def forward(self, flag, inputs):
+        '''Concatenate all input tensors.
+
+        Args:
+            flag: same as Layer::forward()
+            input: a list of tensors
+
+        Returns:
+            a single concatenated tensor
+        '''
+        assert type(inputs) is list, 'Must be a list of Tensors'
+        ys = super(Concat, self).forward(flag, inputs)
+        return ys[0]
+
+
+    def backward(self, flag, dy):
+        '''Backward propagate gradients through this layer.
+
+        Args:
+            flag: same as Layer::backward()
+            dy(Tensor): the gradient tensors of y w.r.t objective loss
+        Return:
+            <dx, []>, dx is a list tensors for the gradient of the inputs; []
+               is an empty list.
+        '''
+        if type(dy) is tensor.Tensor:
+            dy = [dy]
+        assert type(dy) is list, 'Must be a list(Tensor)'
+        return super(Concat, self).backward(flag, dy)
+
 
 class Slice(Layer):
     '''Slice the input tensor into multiple sub-tensors vertially (axis=0) or
@@ -829,7 +879,7 @@ class Slice(Layer):
         axis (int): 0 for slice rows; 1 for slice columns;
         slice_point(list): positions along the axis to do slice; there are n-1
             points for n sub-tensors;
-        input_sample_shape: input tensor shape
+        input_sample_shape: input tensor sample shape
     '''
 
     def __init__(self, name, axis, slice_point, input_sample_shape=None):
@@ -849,6 +899,36 @@ class Slice(Layer):
         out = []
         for i in range(len(self.conf.slice_conf.slice_point) + 1):
             out.append(self.layer.GetOutputSampleShape(i))
+
+    def forward(self, flag, x):
+        '''Slice the input tensor on the given axis.
+
+        Args:
+            flag: same as Layer::forward()
+            x: a single input tensor
+
+        Returns:
+            a list a output tensor
+        '''
+        if type(x) is tensor.Tensor:
+            x = [x]
+        assert type(x) is list, 'Must be a list of Tensor'
+        return super(Slice, self).forward(flag, x)
+
+    def backward(self, flag, grads):
+        '''Concate all grad tensors to generate a single output tensor
+
+        Args:
+            flag: same as Layer::backward()
+            grads: a list of tensors, one for the gradient of one sliced tensor
+
+        Returns:
+            a single tensor for the gradient of the original user, and an empty
+                list.
+        '''
+        assert len(grads) > 1, 'There must be multiple gradients'
+        dxs, _ = super(Slice, self).backward(flag, grads)
+        return dxs[0], []
 
 
 class RNN(Layer):

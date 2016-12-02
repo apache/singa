@@ -31,10 +31,9 @@ TEST(Concat, Setup) {
   conf.set_type("singa_concat");
   conf.mutable_concat_conf()->set_axis(0);
   singa::Concat layer;
-  layer.Setup({s1, s2}, conf);
+  layer.Setup({{3u}, {3u}}, conf);
   auto s = layer.GetOutputSampleShape();
   EXPECT_EQ(s[0], 3u);
-  EXPECT_EQ(s[1], 3u);
 }
 
 void ForwardConcatRowTest(std::shared_ptr<singa::Device> dev) {
@@ -45,7 +44,7 @@ void ForwardConcatRowTest(std::shared_ptr<singa::Device> dev) {
   conf.set_type("singa_concat");
   conf.mutable_concat_conf()->set_axis(0);
   singa::Concat layer;
-  layer.Setup({t1.shape(), t2.shape()}, conf);
+  layer.Setup({{c}, {c}}, conf);
   layer.ToDevice(dev);
 
   t1.SetValue(1.0f);
@@ -74,7 +73,7 @@ void ForwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
   conf.set_type("singa_concat");
   conf.mutable_concat_conf()->set_axis(1);
   singa::Concat layer;
-  layer.Setup({t1.shape(), t2.shape()}, conf);
+  layer.Setup({{a}, {b}}, conf);
   layer.ToDevice(dev);
 
   t1.SetValue(1.0f);
@@ -119,8 +118,14 @@ void BackwardConcatRowTest(std::shared_ptr<singa::Device> dev) {
   conf.set_type("singa_concat");
   conf.mutable_concat_conf()->set_axis(0);
   singa::Concat layer;
-  layer.Setup({{a, c}, {b, c}}, conf);
+  layer.Setup({{c}, {c}}, conf);
   layer.ToDevice(dev);
+
+  singa::Tensor t1({a, c}, dev);
+  singa::Tensor t2({b, c}, dev);
+  t1.SetValue(1.0f);
+  t2.SetValue(2.0f);
+  layer.Forward(singa::kTrain, {t1, t2});
 
   singa::Tensor t({a + b, c}, dev);
   singa::Uniform(-1.f, 1.f, &t);
@@ -149,8 +154,14 @@ void BackwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
   conf.set_type("singa_concat");
   conf.mutable_concat_conf()->set_axis(1);
   singa::Concat layer;
-  layer.Setup({{c, a}, {c, b}}, conf);
+  layer.Setup({{a}, {b}}, conf);
   layer.ToDevice(dev);
+
+  singa::Tensor t1({c, a}, dev);
+  singa::Tensor t2({c, b}, dev);
+  t1.SetValue(1.0f);
+  t2.SetValue(2.0f);
+  layer.Forward(singa::kTrain, {t1, t2});
 
   singa::Tensor t({c, a + b}, dev);
   singa::Uniform(-1.f, 1.f, &t);

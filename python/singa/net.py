@@ -301,7 +301,10 @@ class FeedForwardNet(object):
                 grads = grads[0]
             outs, _pgrads = cur.backward(kTrain, grads)
             pgrads.append(_pgrads)
-            output_of_layer[cur.name] = outs
+            if type(outs) is list:
+                output_of_layer[cur.name] = reversed(outs)
+            else:
+                output_of_layer[cur.name] = outs
             grads = []
 
         ret = []

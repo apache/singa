@@ -24,20 +24,17 @@
 
 using singa::Shape;
 TEST(Slice, Setup) {
-  Shape s{2u, 3u};
   singa::LayerConf conf;
   conf.set_type("singa_slice");
   auto slice_conf = conf.mutable_slice_conf();
   slice_conf->set_axis(1);
   slice_conf->add_slice_point(2);
   singa::Slice layer;
-  layer.Setup(s, conf);
+  layer.Setup({3u}, conf);
   auto s1 = layer.GetOutputSampleShape(0);
   EXPECT_EQ(s1[0], 2u);
-  EXPECT_EQ(s1[1], 2u);
   auto s2 = layer.GetOutputSampleShape(1);
-  EXPECT_EQ(s2[0], 2u);
-  EXPECT_EQ(s2[1], 1u);
+  EXPECT_EQ(s2[0], 1u);
 }
 
 void ForwardSliceRowTest(std::shared_ptr<singa::Device> dev) {
@@ -46,9 +43,9 @@ void ForwardSliceRowTest(std::shared_ptr<singa::Device> dev) {
   conf.set_type("singa_slice");
   auto slice_conf = conf.mutable_slice_conf();
   slice_conf->set_axis(0);
-  slice_conf->add_slice_point(2);
+  slice_conf->add_slice_point(a);
   singa::Slice layer;
-  layer.Setup({a + b ,c}, conf);
+  layer.Setup({c}, conf);
   layer.ToDevice(dev);
 
   singa::Tensor t({a + b, c}, dev);
@@ -77,9 +74,9 @@ void ForwardSliceColumnTest(std::shared_ptr<singa::Device> dev) {
   conf.set_type("singa_slice");
   auto slice_conf = conf.mutable_slice_conf();
   slice_conf->set_axis(1);
-  slice_conf->add_slice_point(2);
+  slice_conf->add_slice_point(a);
   singa::Slice layer;
-  layer.Setup({c, a + b}, conf);
+  layer.Setup({a + b}, conf);
   layer.ToDevice(dev);
 
   singa::Tensor t({c, a + b}, dev);
@@ -132,7 +129,7 @@ void BackwardSliceRowTest(std::shared_ptr<singa::Device> dev) {
   slice_conf->set_axis(0);
   slice_conf->add_slice_point(2);
   singa::Slice layer;
-  layer.Setup({a + b ,c}, conf);
+  layer.Setup({c}, conf);
   layer.ToDevice(dev);
 
   singa::Tensor t1({a, c}, dev);
@@ -162,7 +159,7 @@ void BackwardSliceColumnTest(std::shared_ptr<singa::Device> dev) {
   slice_conf->set_axis(1);
   slice_conf->add_slice_point(2);
   singa::Slice layer;
-  layer.Setup({c , a + b}, conf);
+  layer.Setup({a + b}, conf);
   layer.ToDevice(dev);
 
   singa::Tensor t1({c, a}, dev);

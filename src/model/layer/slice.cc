@@ -28,32 +28,37 @@ RegisterLayerClass(singacl_slice, Slice);
 void Slice::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shapes_.clear();
+  slice_point_.clear();
   axis_ = conf.slice_conf().axis();
   int offset = 0;
   // #slice point = # out tensors - 1
   for (size_t p : conf.slice_conf().slice_point()) {
-    Shape s{0, 0};
-    s[1 - axis_] = in_sample[1 - axis_];
-    s[axis_] = p - offset;
-    offset = p;
-    out_sample_shapes_.push_back(s);
+    slice_point_.push_back(p);
+    if (axis_ == 1) {
+      out_sample_shapes_.push_back({p - offset});
+      offset = p;
+    } else {
+      out_sample_shapes_.push_back(in_sample);
+    }
   }
-  Shape s{0, 0};
-  s[1 - axis_] = in_sample[1 - axis_];
-  s[axis_] = in_sample[axis_] - offset;
-  out_sample_shapes_.push_back(s);
+  slice_point_.push_back(in_sample[0]);
+  if (axis_ == 1) {
+    out_sample_shapes_.push_back({in_sample[0] - offset});
+  } else {
+    out_sample_shapes_.push_back(in_sample);
+  }
 }
 
 const vector<Tensor> Slice::Forward(int flag, const vector<Tensor>& inputs) {
   vector<Tensor> outputs;
   CHECK_EQ(inputs.size(), 1u) << "Split layer only have one input tensor.";
   size_t offset = 0;
-  for (auto& s : out_sample_shapes_) {
+  for (auto& s : slice_point_) {
     if (axis_ == 0)
-      outputs.push_back(SliceRows(inputs.at(0), offset, offset + s[axis_]));
+      outputs.push_back(SliceRows(inputs.at(0), offset, s));
     else
-      outputs.push_back(SliceColumns(inputs.at(0), offset, offset + s[axis_]));
-    offset += s[axis_];
+      outputs.push_back(SliceColumns(inputs.at(0), offset, s));
+    offset = s;
   }
   return outputs;
 }

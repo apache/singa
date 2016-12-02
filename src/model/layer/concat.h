@@ -45,8 +45,9 @@ class Concat : public Layer {
  protected:
   /// 0 for concat rows; 1 for concat cols
   int axis_ = 0;
-  /// dim_size_[i] the size of the i-th source tensor on the concat dim
-  vector<int> dim_size_;
+  /// slice_point_[i] the end offset of the i-th source tensor on the concat
+  /// axis of the result tensor
+  vector<int> slice_point_;
   Shape out_sample_shape_;
 };
 
