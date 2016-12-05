@@ -202,11 +202,12 @@ class CaffeConverter:
 
                 wmat = np.array(layer.blobs[0].data, dtype=np.float32).reshape(wmat_dim)
                 bias = np.array(layer.blobs[1].data, dtype=np.float32)
-                channels = layer.blobs[0].channels;
-                if channels == 3 or channels == 4: # RGB or RGBA
-                    if first_conv:
-                        print 'Swapping BGR of caffe into RGB in singa'
-                        wmat[:, [0, 2], :, :] = wmat[:, [2, 0], :, :]
+                #channels = layer.blobs[0].channels;
+                #if channels == 3 or channels == 4: # RGB or RGBA
+                #    if first_conv:
+                #        print 'Swapping BGR of caffe into RGB in singa'
+                #        wmat[:, [0, 2], :, :] = wmat[:, [2, 0], :, :]
+                print layer.name, ' wmat_dim: ', wmat_dim
 
                 wdim = []
                 if layer.type == 'InnerProduct':
@@ -218,6 +219,7 @@ class CaffeConverter:
                         chw *= wmat_dim[k]
                     wdim.extend([nb_filters, chw])
                 #print 'wdim:', wdim
+                print layer.name, ' wdim: ', wdim
                 w = np.reshape(wmat, wdim)
 
                 if layer.type == 'InnerProduct':

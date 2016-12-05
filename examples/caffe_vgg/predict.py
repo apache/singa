@@ -17,12 +17,15 @@
 import numpy as np
 import os
 import argparse
-from PIL import Image
+#from PIL import Image
 
 from singa import device
 from singa import tensor
 from singa import converter
 from singa import layer
+from singa import net
+
+net.verbose = True
 
 
 def convert_model(prototxt, caffemodel):
@@ -51,39 +54,37 @@ def load_test_data(test_dir, mean):
     print paths
     test = []
     for path in paths:
-        img = Image.open(os.path.join(test_dir, path))
+        import cv2
+        im = cv2.resize(cv2.imread(os.path.join(test_dir, path)), (224, 224)).astype(np.float32)
+        im[:,:,0] -= 103.939
+        im[:,:,1] -= 116.779
+        im[:,:,2] -= 123.68
+        im = im.transpose((2,0,1))
+
+        #img = Image.open(os.path.join(test_dir, path))
         # BGR is the default model in caffe
         # convert RGB to BGR
-        img = img.convert('RGB')
+        #img = img.convert('RGB')
         #r, g, b = img.split()
         #img = Image.merge('RGB', (b, g, r))
-        resized = img.resize((224, 224))
+        #resized = img.resize((224, 224))
         #resized.save('./load/' + path)
         #print 'image shape1: ', img.size
         # order of dimensions: width,height,channel
-        img_ary = np.asarray(resized, dtype=np.float32)
+        #img_ary = np.asarray(resized, dtype=np.float32)
         #print 'img_ary shape: ', img_ary.shape
         #print 'img_ary[0][0]: ', img_ary[0][0]
-        img_ary -= mean
+        #img_ary -= mean
         #print 'img_ary[0][0]: ', img_ary[0][0]
         #img2 = Image.fromarray(img_ary, 'RGB')
         #img2.save('./load/' + path)
         #print 'image shape1: ', img_ary.shape
-        img_ary = np.swapaxes(img_ary, 0, 2)
+        #img_ary = np.swapaxes(img_ary, 0, 2)
         #img_ary = np.transpose(img_ary, (2, 1, 0))
         #print 'img_ary[0][0]', img_ary[0][0][0], img_ary[1][0][0], img_ary[2][0][0]
         #print 'image shape2: ', img_ary.shape
-        test.append(img_ary)
+        test.append(im)
     return np.asarray(test)
-
-
-def subtract_mean_pixel(ary, mean_pixel):
-    print 'input array shape: ', ary.shape
-    for i in range(ary.shape[0]):
-        for j in range(3):
-            #print 'before subtraction:\n', np.average(ary[i][j])
-            ary[i][j] -= mean_pixel[j]
-            #print 'after subtraction:\n', np.average(ary[i][j])
 
 
 def predict(net, images, dev, synset_list=None, topk=5):
@@ -102,15 +103,11 @@ def predict(net, images, dev, synset_list=None, topk=5):
     y.to_host()
     prob = tensor.to_numpy(y)
     # prob = np.average(prob, 0)
-    labels = np.flipud(np.argsort(prob))  # sort prob in descending order
+    labels = np.fliplr(np.argsort(prob))  # sort prob in descending order
     print labels[:, 0:topk]
-    #syn_labels = []
     for i in range(labels.shape[0]):
         l = [synset_list[labels[i][j]] for j in range(topk)]
         print l
-        #syn_labels.append(l)
-    #return labels[:, 0:topk]
-    #return syn_labels
 
 
 if __name__ == '__main__':
@@ -122,7 +119,6 @@ if __name__ == '__main__':
     parser.add_argument('model_bin', default='./vgg16.caffemodel')
     parser.add_argument('imgclass', default='./synset_words.txt')
     parser.add_argument('testdir', default='./test/')
-    #parser.add_argument('--use_cpu', action='store_true')
     args = parser.parse_args()
 
     check_path(args.model_txt)
@@ -142,8 +138,8 @@ if __name__ == '__main__':
     #mean_BGR =[103.939, 116.779, 123.68]
     mean_RGB = [123.68, 116.779, 103.939]
     test_images = load_test_data(args.testdir, mean_RGB)
-    print 'test norm: ', np.linalg.norm(test_images) / test_images.size
-    #subtract_mean_pixel(test_images, mean_RGB)
+    print 'test norm: ', np.sum(np.abs(test_images)) / test_images.size
+    #print 'test norm: ', np.linalg.norm(test_images) / test_images.size
 
     # predict for two images
     predict(model, test_images, dev, synset_list=syn_li, topk=5)
