@@ -158,7 +158,6 @@ class CaffeConverter:
                     layer.engine = self.convert_engine(layer_confs[i], 0)
                 lyr = layer.Layer(conf.name, conf)
                 if len(net.layers) == 0:
-                    print 'set up the first layer'
                     print 'input sample shape: ', self.input_sample_shape
                     lyr.setup(self.input_sample_shape)
                     print lyr.name, lyr.get_output_sample_shape()
@@ -202,12 +201,7 @@ class CaffeConverter:
 
                 wmat = np.array(layer.blobs[0].data, dtype=np.float32).reshape(wmat_dim)
                 bias = np.array(layer.blobs[1].data, dtype=np.float32)
-                #channels = layer.blobs[0].channels;
-                #if channels == 3 or channels == 4: # RGB or RGBA
-                #    if first_conv:
-                #        print 'Swapping BGR of caffe into RGB in singa'
-                #        wmat[:, [0, 2], :, :] = wmat[:, [2, 0], :, :]
-                print layer.name, ' wmat_dim: ', wmat_dim
+                #print layer.name, ' wmat_dim: ', wmat_dim
 
                 wdim = []
                 if layer.type == 'InnerProduct':
@@ -218,24 +212,14 @@ class CaffeConverter:
                     for k in range(1, len(wmat_dim)):
                         chw *= wmat_dim[k]
                     wdim.extend([nb_filters, chw])
-                #print 'wdim:', wdim
-                print layer.name, ' wdim: ', wdim
+                #print layer.name, ' wdim: ', wdim
                 w = np.reshape(wmat, wdim)
 
                 if layer.type == 'InnerProduct':
                     w = np.transpose(w)
-                #print 'weight shape: ', w.shape
-                #print 'param i size: ', params[i].size()
-                #print 'weight size: ', w.size
                 params[i].copy_from_numpy(w)
                 i += 1
                 params[i].copy_from_numpy(bias)
                 i += 1
                 print 'converting layer {0}, wmat shape = {1}, bias shape = {2}'.format(layer.name, w.shape, bias.shape)
-                #print 'weight norm: ', np.linalg.norm(wmat), params[i-2].l2() * params[i-2].size()
-                #if first_conv and layer.type == 'Convolution':
-                #    first_conv = False
-
-        #for (p, val) in zip(net.param_specs(), net.param_values()):
-        #    print 'param name: %s, norm: %f' %(p.name, val.l2())
 

@@ -17,7 +17,7 @@
 import numpy as np
 import os
 import argparse
-#from PIL import Image
+from PIL import Image
 
 from singa import device
 from singa import tensor
@@ -25,7 +25,8 @@ from singa import converter
 from singa import layer
 from singa import net
 
-net.verbose = True
+#for debug: print norm of each layer
+#net.verbose = True
 
 
 def convert_model(prototxt, caffemodel):
@@ -37,7 +38,7 @@ def convert_model(prototxt, caffemodel):
 
 def check_path(path):
     assert os.path.exists(
-        path), 'Please check the existence of the file: ' + path
+        path), 'File not found: ' + path
 
 
 def synset_list(sw_path):
@@ -54,36 +55,18 @@ def load_test_data(test_dir, mean):
     print paths
     test = []
     for path in paths:
-        import cv2
-        im = cv2.resize(cv2.imread(os.path.join(test_dir, path)), (224, 224)).astype(np.float32)
-        im[:,:,0] -= 103.939
-        im[:,:,1] -= 116.779
-        im[:,:,2] -= 123.68
-        im = im.transpose((2,0,1))
-
-        #img = Image.open(os.path.join(test_dir, path))
+        img = Image.open(os.path.join(test_dir, path))
         # BGR is the default model in caffe
         # convert RGB to BGR
-        #img = img.convert('RGB')
-        #r, g, b = img.split()
-        #img = Image.merge('RGB', (b, g, r))
-        #resized = img.resize((224, 224))
-        #resized.save('./load/' + path)
-        #print 'image shape1: ', img.size
-        # order of dimensions: width,height,channel
-        #img_ary = np.asarray(resized, dtype=np.float32)
-        #print 'img_ary shape: ', img_ary.shape
-        #print 'img_ary[0][0]: ', img_ary[0][0]
-        #img_ary -= mean
-        #print 'img_ary[0][0]: ', img_ary[0][0]
-        #img2 = Image.fromarray(img_ary, 'RGB')
-        #img2.save('./load/' + path)
-        #print 'image shape1: ', img_ary.shape
-        #img_ary = np.swapaxes(img_ary, 0, 2)
-        #img_ary = np.transpose(img_ary, (2, 1, 0))
-        #print 'img_ary[0][0]', img_ary[0][0][0], img_ary[1][0][0], img_ary[2][0][0]
-        #print 'image shape2: ', img_ary.shape
-        test.append(im)
+        img = img.convert('RGB')
+        r, g, b = img.split()
+        img = Image.merge('RGB', (b, g, r))
+        resized = img.resize((224, 224))
+        # order of axes: width,height,channel
+        img_ary = np.asarray(resized, dtype=np.float32)
+        img_ary -= mean
+        img_ary = np.swapaxes(img_ary, 0, 2)
+        test.append(img_ary)
     return np.asarray(test)
 
 
@@ -95,6 +78,7 @@ def predict(net, images, dev, synset_list=None, topk=5):
         images, a batch of images [batch_size, 3, 32, 32], which have been
             pre-processed
         dev, the training device
+        synset_list: the synset of labels
         topk, return the topk labels for each image.
     '''
     x = tensor.from_numpy(images.astype(np.float32))
@@ -102,7 +86,6 @@ def predict(net, images, dev, synset_list=None, topk=5):
     y = net.predict(x)
     y.to_host()
     prob = tensor.to_numpy(y)
-    # prob = np.average(prob, 0)
     labels = np.fliplr(np.argsort(prob))  # sort prob in descending order
     print labels[:, 0:topk]
     for i in range(labels.shape[0]):
@@ -135,11 +118,7 @@ if __name__ == '__main__':
     # According to the VGG paper(Very Deep Convolutional Networks for
     # Large-Scale Image Recognition), the input images are zero-centered by
     # mean pixel(rather than mean image) substraction.
-    #mean_BGR =[103.939, 116.779, 123.68]
-    mean_RGB = [123.68, 116.779, 103.939]
-    test_images = load_test_data(args.testdir, mean_RGB)
-    print 'test norm: ', np.sum(np.abs(test_images)) / test_images.size
-    #print 'test norm: ', np.linalg.norm(test_images) / test_images.size
+    mean_BGR =[103.939, 116.779, 123.68]
+    test_images = load_test_data(args.testdir, mean_BGR)
 
-    # predict for two images
     predict(model, test_images, dev, synset_list=syn_li, topk=5)

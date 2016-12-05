@@ -65,13 +65,14 @@ void Convolution::Setup(const Shape &in_sample, const LayerConf &conf) {
       stride_h_ = conv_conf.stride(1);
     }
   } else {
-      if(conv_conf.stride_size() == 0) {
-        stride_h_ = kStrideDefault;
-        stride_w_ = kStrideDefault;
-      } else {
+    stride_w_ = kStrideDefault;
+    stride_h_ = kStrideDefault;
+    if (conv_conf.has_stride_w()) {
         stride_w_ = conv_conf.stride_w();
+    }
+    if (conv_conf.has_stride_h()) {
         stride_h_ = conv_conf.stride_h();
-      }
+    }
   }
   CHECK_GT(stride_w_, 0u);
   CHECK_GE(stride_h_, 0u);  // 0 for 1D conv
