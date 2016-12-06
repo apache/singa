@@ -37,40 +37,27 @@ def convert_model(prototxt, caffemodel):
 
 
 def check_path(path):
-    assert os.path.exists(
-        path), 'File not found: ' + path
+    assert os.path.exists(path), 'File not found: ' + path
 
 
-def synset_list(sw_path):
-    with open(sw_path, 'rb') as synsets:
-        syn_li = []
-        for line in synsets:
-            syn_word = line.split(' ', 1)[1].strip('\n')
-            syn_li.append(syn_word)
-        return syn_li
+def read_image(img_path):
+    # According to the VGG paper(Very Deep Convolutional Networks for
+    # Large-Scale Image Recognition), the input images are zero-centered by
+    # mean pixel(rather than mean image) substraction.
+    mean_RGB =[123.68, 116.779, 103.939]
+
+    img = Image.open(img_path)
+    img = img.convert('RGB')
+    resized = img.resize((224, 224))
+    # order of axes: width,height,channel
+    img_ary = np.asarray(resized, dtype=np.float32)
+    img_ary -= mean_RGB
+    # HWC -> CHW
+    img_ary = np.swapaxes(img_ary, 0, 2)
+    return np.asarray(img_ary)
 
 
-def load_test_data(test_dir, mean):
-    paths = os.listdir(test_dir)
-    print paths
-    test = []
-    for path in paths:
-        img = Image.open(os.path.join(test_dir, path))
-        # BGR is the default model in caffe
-        # convert RGB to BGR
-        img = img.convert('RGB')
-        r, g, b = img.split()
-        img = Image.merge('RGB', (b, g, r))
-        resized = img.resize((224, 224))
-        # order of axes: width,height,channel
-        img_ary = np.asarray(resized, dtype=np.float32)
-        img_ary -= mean
-        img_ary = np.swapaxes(img_ary, 0, 2)
-        test.append(img_ary)
-    return np.asarray(test)
-
-
-def predict(net, images, dev, synset_list=None, topk=5):
+def predict(net, dev, synset_list, topk=5):
     '''Predict the label of each image.
 
     Args:
@@ -81,16 +68,21 @@ def predict(net, images, dev, synset_list=None, topk=5):
         synset_list: the synset of labels
         topk, return the topk labels for each image.
     '''
-    x = tensor.from_numpy(images.astype(np.float32))
-    x.to_device(dev)
-    y = net.predict(x)
-    y.to_host()
-    prob = tensor.to_numpy(y)
-    labels = np.fliplr(np.argsort(prob))  # sort prob in descending order
-    print labels[:, 0:topk]
-    for i in range(labels.shape[0]):
-        l = [synset_list[labels[i][j]] for j in range(topk)]
-        print l
+    while True:
+        img_path = raw_input("Enter input image path('quit' to exit): ")
+        if img_path == 'quit':
+            return
+        if not os.path.exists(img_path):
+            print 'Path is invalid'
+            continue
+        img = read_image(img_path)
+        x = tensor.from_numpy(img.astype(np.float32)[np.newaxis,:])
+        x.to_device(dev)
+        y = net.predict(x)
+        y.to_host()
+        prob = tensor.to_numpy(y)
+        lbl = np.argsort(-prob[0])  # sort prob in descending order
+        print [synset_list[lbl[i]] for i in range(topk)]
 
 
 if __name__ == '__main__':
@@ -98,27 +90,20 @@ if __name__ == '__main__':
         description='Convert caffe vgg into singa. \
             This tool only supports caffe model in current version(29-Nov-2016). \
             You can use caffe tool to update previous model')
-    parser.add_argument('model_txt', default='./vgg16.prototxt')
-    parser.add_argument('model_bin', default='./vgg16.caffemodel')
-    parser.add_argument('imgclass', default='./synset_words.txt')
-    parser.add_argument('testdir', default='./test/')
+    parser.add_argument('--model_txt', default='./vgg16.prototxt')
+    parser.add_argument('--model_bin', default='./vgg16.caffemodel')
+    parser.add_argument('--imgclass', default='./synset_words.txt')
     args = parser.parse_args()
 
     check_path(args.model_txt)
     check_path(args.model_bin)
     check_path(args.imgclass)
-    check_path(args.testdir)
 
     model = convert_model(args.model_txt, args.model_bin)
     dev = device.get_default_device()
     model.to_device(dev)
 
-    syn_li = synset_list(args.imgclass)
+    with open(args.imgclass, 'r') as fd:
+        syn_li = [line.split(' ', 1)[1].strip('\n') for line in fd.readlines()]
 
-    # According to the VGG paper(Very Deep Convolutional Networks for
-    # Large-Scale Image Recognition), the input images are zero-centered by
-    # mean pixel(rather than mean image) substraction.
-    mean_BGR =[103.939, 116.779, 123.68]
-    test_images = load_test_data(args.testdir, mean_BGR)
-
-    predict(model, test_images, dev, synset_list=syn_li, topk=5)
+    predict(model, dev, synset_list=syn_li, topk=5)

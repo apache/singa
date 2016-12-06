@@ -186,7 +186,7 @@ class CaffeConverter:
         first_conv = True
         for layer in layers:
             if layer.type == 'Convolution' or layer.type == 'InnerProduct':
-                assert(len(layer.blobs) == 2)
+                assert(len(layer.blobs) == 2), 'Either 2 params per layer or 0'
                 wmat_dim = []
                 if getattr(layer.blobs[0].shape, 'dim', None) is not None:
                     if len(layer.blobs[0].shape.dim) > 0:
@@ -199,7 +199,7 @@ class CaffeConverter:
                 else:
                     wmat_dim = list(layer.blobs[0].shape)
 
-                wmat = np.array(layer.blobs[0].data, dtype=np.float32).reshape(wmat_dim)
+                wmat = np.array(layer.blobs[0].data, dtype=np.float32)
                 bias = np.array(layer.blobs[1].data, dtype=np.float32)
                 #print layer.name, ' wmat_dim: ', wmat_dim
 
@@ -207,6 +207,10 @@ class CaffeConverter:
                 if layer.type == 'InnerProduct':
                     wdim = wmat_dim[-2:]
                 else:
+                    if wmat_dim[1] == 3 and first_conv:  # BGR -> RGB
+                        wmat = wmat.reshape(wmat_dim)
+                        wmat[:, [0, 1, 2], :, :] = wmat[:, [2, 1, 0], :, :]
+                        first_conv = False
                     nb_filters = wmat_dim[0]
                     chw = 1
                     for k in range(1, len(wmat_dim)):
@@ -215,6 +219,7 @@ class CaffeConverter:
                 #print layer.name, ' wdim: ', wdim
                 w = np.reshape(wmat, wdim)
 
+                # TODO(wangwei) transpose SINGA's weight following caffe
                 if layer.type == 'InnerProduct':
                     w = np.transpose(w)
                 params[i].copy_from_numpy(w)
@@ -222,4 +227,3 @@ class CaffeConverter:
                 params[i].copy_from_numpy(bias)
                 i += 1
                 print 'converting layer {0}, wmat shape = {1}, bias shape = {2}'.format(layer.name, w.shape, bias.shape)
-
