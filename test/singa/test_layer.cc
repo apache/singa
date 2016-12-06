@@ -35,7 +35,7 @@ TEST(Layer, CreateCudnnLayer) {
   std::vector<std::string> types{
       "convolution", "dropout", "relu", "batchnorm",
       "lrn",   "pooling", "softmax"};
-#if CUDNN_VERSION_MAJOR >= 5
+#if CUDNN_MAJOR >= 5
   types.push_back("dropout");
 #endif
   for (auto type : types) {
