@@ -23,7 +23,7 @@
 
 #ifdef USE_CUDNN
 // cudnn lrn is added in cudnn 4
-#if CUDNN_VERSION_MAJOR >=4
+#if CUDNN_MAJOR >=4
 #include "gtest/gtest.h"
 
 using singa::CudnnLRN;
@@ -199,5 +199,5 @@ TEST(CudnnLRN, Backward) {
   EXPECT_NEAR(0.00327978, dxptr[31], 1e-6f);
 }
 
-#endif  //  CUDNN_VERSION_MAJOR >= 4
+#endif  //  CUDNN_MAJOR >= 4
 #endif  //  USE_CUDNN

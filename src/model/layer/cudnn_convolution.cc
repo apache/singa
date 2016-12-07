@@ -86,7 +86,7 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
       filter_desc_, GetCudnnDataType(dtype), CUDNN_TENSOR_NCHW, num_filters_,
       channels_, kernel_h_, kernel_w_));
 #else
-  LOG(FATAL) << "Not supported CUDNN version = " << CUDNN_VERSION_MAJOR;
+  LOG(FATAL) << "Not supported CUDNN version = " << CUDNN_MAJOR;
 #endif
 
   if (prefer_ == "fastest" || prefer_ == "limited_workspace" ||

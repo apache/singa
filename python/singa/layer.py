@@ -144,7 +144,6 @@ class Layer(object):
         else:
             self.layer = _create_layer(engine, str(self.conf.type))
 
-
     def get_output_sample_shape(self):
         '''Called after setup to get the shape of the output sample(s).
 
@@ -642,8 +641,8 @@ class Dropout(Layer):
         super(Dropout, self).__init__(name)
         conf = self.conf.dropout_conf
         conf.dropout_ratio = p
-        # 'cudnn' works for v>=5.0
-        if engine.lower() == 'cudnn':
+        # dropout is support in cudnn since V5
+        if engine.lower() == 'cudnn' and cudnn_version < 5000:
             myengine = 'singacuda'
         else:
             myengine = engine
@@ -836,7 +835,7 @@ class Concat(Layer):
         self.in_shapes = input_sample_shapes
         self.axis = axis
         self.conf.concat_conf.axis = axis
-	if engine == "cudnn":
+        if engine == "cudnn":
             self.layer = _create_layer('singacuda', 'Concat')
         else:
             self.layer = _create_layer(engine, 'Concat')
@@ -856,7 +855,6 @@ class Concat(Layer):
         assert type(inputs) is list, 'Must be a list of Tensors'
         ys = super(Concat, self).forward(flag, inputs)
         return ys[0]
-
 
     def backward(self, flag, dy):
         '''Backward propagate gradients through this layer.
@@ -891,7 +889,7 @@ class Slice(Layer):
         self.axis = axis
         self.conf.slice_conf.axis = axis
         self.conf.slice_conf.slice_point.extend(slice_point)
-	if engine == "cudnn":
+        if engine == "cudnn":
             self.layer = _create_layer('singacuda', 'Slice')
         else:
             self.layer = _create_layer(engine, 'Slice')
@@ -956,6 +954,8 @@ class RNN(Layer):
     def __init__(self, name, hidden_size, rnn_mode='lstm', dropout=0.0,
                  num_stacks=1, input_mode='linear', bidirectional=False,
                  param_specs=None, input_sample_shape=None):
+        assert cudnn_version >= 5005, 'RNN is supported since CUDNN V5.0.5; '\
+            'This version is %d' % cudnn_version
         super(RNN, self).__init__(name)
         conf = self.conf.rnn_conf
         assert hidden_size > 0, 'Hidden feature size must > 0'
@@ -1090,6 +1090,8 @@ def _create_layer(eng, layer):
         layer, layer type, e.g., 'convolution', 'pooling'; for activation
         layers, use the specific activation mode, e.g. 'relu', 'tanh'.
     '''
+    assert eng != 'cudnn' or cudnn_version > 0, 'CUDNN is not enabled, please '\
+        'change the engine, e.g., layer.engine=singacpp'
     layer_type = eng + '_' + layer
     return singa_wrap.CreateLayer(layer_type.lower())
 

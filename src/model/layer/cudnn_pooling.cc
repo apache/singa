@@ -73,7 +73,7 @@ void CudnnPooling::InitCudnn(const Tensor &input) {
                                              kernel_h_, kernel_w_, pad_h_,
                                              pad_w_, stride_h_, stride_w_));
 #else
-  LOG(FATAL) << "Not supported CUDNN version = " << CUDNN_VERSION_MAJOR;
+  LOG(FATAL) << "Not supported CUDNN version = " << CUDNN_MAJOR;
 #endif
   has_init_cudnn_ = true;
 }

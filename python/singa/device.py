@@ -52,18 +52,22 @@ class Device(object):
 
 
 def get_num_gpus():
+    assert singa.USE_CUDA, 'SINGA is not compiled with CDUA/GPU'
     return singa.Platform.GetNumGPUs()
 
 
 def get_gpu_ids():
+    assert singa.USE_CUDA, 'SINGA is not compiled with CDUA/GPU'
     return singa.Platform.GetGPUIDs()
 
 
 def get_gpu_mem_size(id):
+    assert singa.USE_CUDA, 'SINGA is not compiled with CDUA/GPU'
     return singa.Platform.GetGPUMemSize(id)
 
 
 def device_query(id, verbose=False):
+    assert singa.USE_CUDA, 'SINGA is not compiled with CDUA/GPU'
     return singa.Platform.DeviceQuery(id, verbose)
 
 
@@ -75,7 +79,7 @@ def create_cuda_gpus(num):
     Returns:
         a list of swig converted CudaGPU devices.
     '''
-
+    assert singa.USE_CUDA, 'SINGA is not compiled with CDUA/GPU'
     return singa.Platform.CreateCudaGPUs(num)
 
 
@@ -85,7 +89,7 @@ def create_cuda_gpu():
     Returns:
         a swig converted CudaGPU device.
     '''
-
+    assert singa.USE_CUDA, 'SINGA is not compiled with CDUA/GPU'
     return singa.Platform.CreateCudaGPUs(1)[0]
 
 
@@ -98,6 +102,7 @@ def create_cuda_gpus_on(device_ids):
     Returns:
         a list of swig converted CudaGPU devices.
     '''
+    assert singa.USE_CUDA, 'SINGA is not compiled with CDUA/GPU'
     return singa.Platform.CreateCudaGPUsOn(device_ids)
 
 
@@ -110,6 +115,7 @@ def create_cuda_gpu_on(device_id):
     Returns:
         a swig converted CudaGPU device.
     '''
+    assert singa.USE_CUDA, 'SINGA is not compiled with CDUA/GPU'
     devices = create_cuda_gpus_on([device_id])
     return devices[0]
 
@@ -120,4 +126,3 @@ default_device = singa.Platform.GetDefaultDevice()
 def get_default_device():
     '''Get the default host device which is a CppCPU device'''
     return default_device
-
