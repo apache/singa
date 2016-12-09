@@ -1,14 +1,12 @@
 # Jenkins CI Support
 
 ## Introduction
-
 This documentation is to guide SINGA developers to setup Jenkins service.
 
 We use jenkins to support continuous integration.
 After each commit, we want to automatically compile and test SINGA
 under different OS and settings.
 Those built binaries need to be archived for users to download.
-
 
 ## Install Jenkins
 [Jenkins Official Wiki](https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins)
@@ -32,11 +30,19 @@ Create a multi-configuration project and configure project as follows:
   * Poll SCM - Schedule - ``H/30 * * * *`` (pull every 30 minutes)
 
 ### Configuration Matrix
-  * User-defined Axis - name ``support`` values ``blas cudnn``
+  * User-defined Axis - name ``support`` values ``BLAS CUDNN``
+  * Slave - name ``env`` Node/label ``tick all nodes``
 
 ### Build
-  * Execute shell - command - ``bash -ex tool/jenkins/jenkins_pysinga.sh $support``
+  * Execute shell - command - ``bash -ex tool/jenkins/jenkins_wheel.sh $support``
 
 ### Post-build Actions
   * Archive the artifacts - ``build/python/dist/**.whl``
   * Publish JUnit test result report - Test report XMLs - ``**/gtest.xml``
+
+## Docker Images
+We provide in `docker` a number of singa docker images for Jenkins to use as
+slaves.
+
+## Access Control
+Use `Role Strategy Plugin` to give read access for anonymous users.

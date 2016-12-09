@@ -18,14 +18,18 @@
 # * limitations under the License.
 # */
 
+# This script is used by Jenkins to compile and distribute SINGA wheel file.
+
 echo Compile, test and distribute PySINGA...
-echo Parameters: $1
-echo Workspace: `pwd`
-echo OS env: `uname -a`
-echo Cuda env: `nvcc --version`
+echo parameters: $1
+echo workspace: `pwd`
+echo OS version: `cat /etc/issue`
+echo kernal version: `uname -a`
+echo CUDA version: $CUDA_VERSION
+echo CUDNN version: $CUDNN_VERSION 
 # set parameters
 CUDNN="OFF"
-if [ $1 = "cudnn" ]; then
+if [ $1 = "CUDNN" ]; then
   CUDNN="ON"
 fi
 # setup env
