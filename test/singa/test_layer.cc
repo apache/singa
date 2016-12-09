@@ -21,9 +21,9 @@
 #include "singa/singa_config.h"
 
 TEST(Layer, CreateLayer) {
-  std::vector<std::string> types{
-      "convolution", "dense", "dropout", "relu", "batchnorm",
-      "flatten",     "lrn",   "pooling", "prelu",      "softmax"};
+  std::vector<std::string> types{"convolution", "dense",   "dropout", "relu",
+                                 "batchnorm",   "flatten", "lrn",     "pooling",
+                                 "prelu",       "softmax"};
   for (auto type : types) {
     auto layer = singa::CreateLayer("singacpp_" + type);
     // EXPECT_EQ(layer->layer_type(), type);
@@ -32,9 +32,8 @@ TEST(Layer, CreateLayer) {
 
 #ifdef USE_CUDNN
 TEST(Layer, CreateCudnnLayer) {
-  std::vector<std::string> types{
-      "convolution", "dropout", "relu", "batchnorm",
-      "lrn",   "pooling", "softmax"};
+  std::vector<std::string> types{"convolution", "relu",    "batchnorm",
+                                 "lrn",         "pooling", "softmax"};
 #if CUDNN_MAJOR >= 5
   types.push_back("dropout");
 #endif
