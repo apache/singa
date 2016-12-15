@@ -37,7 +37,7 @@ rm -rf build
 mkdir build
 # compile singa c++
 cd build
-cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDNN ../
+cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDNN -DUSE_MODULES=ON ../
 make
 # unit test cpp code
 ./bin/test_singa --gtest_output=xml:./gtest.xml

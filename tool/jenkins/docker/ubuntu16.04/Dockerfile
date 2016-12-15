@@ -5,8 +5,7 @@ FROM nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04
 
 # install dependencies
 RUN apt-get update && apt-get install -y \
-    git vim wget build-essential autoconf libtool cmake \
-    libprotobuf-dev libopenblas-dev protobuf-compiler \
+    git wget build-essential autoconf libtool cmake \
     libpcre3-dev python-dev python-pip swig && \
     pip install numpy unittest-xml-reporting
 
