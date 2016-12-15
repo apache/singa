@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     git vim wget build-essential autoconf libtool cmake \
     libprotobuf-dev libopenblas-dev protobuf-compiler \
     libpcre3-dev python-dev python-pip && \
-    pip install numpy
+    pip install numpy unittest-xml-reporting
 
 # install swig 3.0
 RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz && \

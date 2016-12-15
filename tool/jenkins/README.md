@@ -38,7 +38,7 @@ Create a multi-configuration project and configure project as follows:
 
 ### Post-build Actions
   * Archive the artifacts - ``build/python/dist/**.whl``
-  * Publish JUnit test result report - Test report XMLs - ``**/gtest.xml``
+  * Publish JUnit test result report - Test report XMLs - ``**/gtest.xml, **/unittest.xml``
 
 ## Docker Images
 We provide in `docker` a number of singa docker images for Jenkins to use as

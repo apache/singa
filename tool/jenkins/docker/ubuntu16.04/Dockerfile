@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     git vim wget build-essential autoconf libtool cmake \
     libprotobuf-dev libopenblas-dev protobuf-compiler \
     libpcre3-dev python-dev python-pip swig && \
-    pip install numpy
+    pip install numpy unittest-xml-reporting
 
 # set environment
 ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}
