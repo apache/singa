@@ -205,8 +205,8 @@ class ImageTool():
         self.imgs = []
         return
 
-    def load(self, path):
-        img = load_img(path)
+    def load(self, path, grayscale=False):
+        img = load_img(path, grayscale)
         self.imgs = [img]
         return self
 
