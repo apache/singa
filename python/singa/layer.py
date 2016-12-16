@@ -206,7 +206,8 @@ class Layer(object):
             y = self.layer.ForwardWithMultInputs(flag, xs)
         else:
             assert isinstance(x, tensor.Tensor), \
-                'input must be a Tensor or a list of Tensor'
+                    'input of %s (type:%s) must be a Tensor or Tensor list'\
+                    % (self.name, type(x).__name__)
             y = self.layer.Forward(flag, x.singa_tensor)
         if type(y) is tuple:
             return tensor.from_raw_tensors(y)
@@ -235,7 +236,8 @@ class Layer(object):
             ret = self.layer.BackwardWithMultInputs(flag, dys)
         else:
             assert isinstance(dy, tensor.Tensor), \
-                'the input must be a Tensor or a set of Tensor'
+                    'input of %s (type:%s) must be a Tensor or Tensor list'\
+                    % (self.name, type(dy).__name__)
             dys = dy.singa_tensor
             ret = self.layer.Backward(flag, dys)
         if type(ret[0]) is tuple:
@@ -761,7 +763,8 @@ class Merge(Layer):
         Returns:
             A list of replicated grad, one per source layer
         '''
-        assert isinstance(grad, tensor.Tensor), 'The input must be Tensor'
+        assert isinstance(grad, tensor.Tensor), 'The input must be Tensor'\
+                ' instead of %s' % type(grad).__name__
         return [grad] * self.num_input, []  # * self.num_input
 
 
