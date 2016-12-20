@@ -112,9 +112,9 @@ class ImageBatchIter:
             img_label = int(item[1])
             img_list.append((img_label, img_path))
         index = 0  # index for the image
+        if self.shuffle:
+            random.shuffle(img_list)
         while not self.stop:
-            if index == 0 and self.shuffle:
-                random.shuffle(img_list)
             if not self.queue.full():
                 x = []
                 y = np.empty(self.batch_size, dtype=np.int32)
@@ -134,6 +134,8 @@ class ImageBatchIter:
                     index += 1
                     if index == self.num_samples:
                         index = 0  # reset to the first image
+                        if self.shuffle:
+                            random.shuffle(img_list)
                 # enqueue one mini-batch
                 self.queue.put((np.asarray(x), y))
             else:

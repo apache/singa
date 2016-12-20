@@ -33,6 +33,8 @@ void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_block
 
 // TODO(wangwei) get Block from the memory manager
 Block* Device::NewBlock(int size) {
+  CHECK_GE(size, 0) << "size is negative, could be caused by the type cast "
+    << "from size_t to int. In that case, the size is too large.";
   if (size > 0) {
     void* ptr = Malloc(size);
     return new Block(ptr, size);

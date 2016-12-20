@@ -122,7 +122,7 @@ void Tensor::AsType(const DataType type) {
 }
 
 void Tensor::ToDevice(std::shared_ptr<Device> dst) {
-  // TODO(wangwei) the comparison is very strict. May compare against device ID?
+  // TODO(wangwei) the comparison is restricted. May compare against device ID?
   if (device_ != dst) {
     Tensor tmp(shape_, dst, data_type_);
     if (block_ != nullptr && Size() && block_->initialized())
