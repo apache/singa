@@ -25,15 +25,8 @@ The `predict.py` script creates the VGG model and read the parameters,
 where `imgclass` refers to the synsets of imagenet dataset for vgg models.
 You can start the prediction program by executing the following command:
 
-    python predict.py ./vgg16.prototxt ./vgg16.caffemodel ./synset_words.txt
+    python predict.py vgg16.prototxt vgg16.caffemodel synset_words.txt
 
 Then you type in the image path, and the program would output the top-5 labels.
-
-**NOTE** Caffe uses OpenCV to load images, whose channels are in BGR order. To
-do prediction using Caffe's pre-trained parameters, please make sure the input
-tensor of SINGA net is in BGR order. cv2 loads images as BGR, hence you don't need
-to do any additional processing. If you use pillow to read images, you need to
-swap the channel as shown in predict.py.
-
 
 More Caffe models would be tested soon.

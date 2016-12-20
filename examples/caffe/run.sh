@@ -24,7 +24,7 @@ if [[ $1 == "vgg19" ]]; then
         tar -zxvf test.tar.gz
     fi
     echo "Converting..."
-    python predict.py ./vgg19.prototxt ./vgg19.caffemodel ./synset_words.txt ./test
+    python predict.py ./vgg19.prototxt ./vgg19.caffemodel ./synset_words.txt
 
 elif [[ $1 == "vgg16" ]]; then
     echo "Downloading label list..."
@@ -45,7 +45,7 @@ elif [[ $1 == "vgg16" ]]; then
         tar -zxvf test.tar.gz
     fi
     echo "Converting..."
-    python predict.py ./vgg16.prototxt ./vgg16.caffemodel ./synset_words.txt ./test
+    python predict.py ./vgg16.prototxt ./vgg16.caffemodel ./synset_words.txt
 else
     echo "unsupported model: $1"
 fi

@@ -90,9 +90,9 @@ if __name__ == '__main__':
         description='Convert caffe vgg into singa. \
             This tool only supports caffe model in current version(29-Nov-2016). \
             You can use caffe tool to update previous model')
-    parser.add_argument('--model_txt', default='./vgg16.prototxt')
-    parser.add_argument('--model_bin', default='./vgg16.caffemodel')
-    parser.add_argument('--imgclass', default='./synset_words.txt')
+    parser.add_argument('model_txt', default='./vgg16.prototxt')
+    parser.add_argument('model_bin', default='./vgg16.caffemodel')
+    parser.add_argument('imgclass', default='./synset_words.txt')
     args = parser.parse_args()
 
     check_path(args.model_txt)
