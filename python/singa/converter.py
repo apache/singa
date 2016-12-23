@@ -22,14 +22,17 @@ from singa import loss
 from singa import net as ffnet
 from .proto import model_pb2
 from .proto import caffe_pb2
+import numpy as np
 
 
 class CaffeConverter:
 
-    def __init__(self, net_proto, solver_proto = None, input_sample_shape = None):
+    def __init__(self, net_proto, solver_proto = None, input_sample_shape =
+            None, param_path = None):
         self.caffe_net_path = net_proto
         self.caffe_solver_path = solver_proto
         self.input_sample_shape = input_sample_shape
+        self.param_path = param_path
 
     def read_net_proto(self):
         net_config = caffe_pb2.NetParameter()
@@ -38,6 +41,13 @@ class CaffeConverter:
     def read_solver_proto(self):
         solver_config = caffe_pb2.SolverParameter()
         return self.read_proto(self.caffe_solver_path, solver_config)
+
+    def read_caffemodel(self):
+        f = open(self.param_path, 'rb')
+        contents = f.read()
+        net_param = caffe_pb2.NetParameter();
+        net_param.ParseFromString(contents)
+        return net_param
 
     def read_proto(self, filepath, parser_object):
         file = open(filepath, "r")
@@ -98,7 +108,6 @@ class CaffeConverter:
 
         return singa_engine
 
-
     def create_net(self):
         '''
         Create singa net based on caffe proto files.
@@ -109,6 +118,7 @@ class CaffeConverter:
             a FeedForwardNet object
         '''
         caffe_net = self.read_net_proto()
+        caffe_solver = None
         if self.caffe_solver_path is not None:
             caffe_solver = self.read_solver_proto()
         layer_confs = ''
@@ -128,6 +138,8 @@ class CaffeConverter:
         for i in range(len(layer_confs)):
             if layer_confs[i].type == 'Data' or layer_confs[i].type == 5:
                 continue
+            elif layer_confs[i].type == 'Input':
+                self.input_sample_shape = layer_confs[i].input_param.shape[0].dim[1:]
             elif layer_confs[i].type == 'SoftmaxWithLoss' or layer_confs[i].type == 21:
                 net.loss = loss.SoftmaxCrossEntropy()
             elif layer_confs[i].type == 'EuclideanLoss' or layer_confs[i].type == 7:
@@ -142,9 +154,11 @@ class CaffeConverter:
                     layer.engine = self.convert_engine(
                         layer_confs[i], caffe_solver.solver_mode)
                 else:
+                    # if caffe_solver is None,
                     layer.engine = self.convert_engine(layer_confs[i], 0)
                 lyr = layer.Layer(conf.name, conf)
                 if len(net.layers) == 0:
+                    print 'input sample shape: ', self.input_sample_shape
                     lyr.setup(self.input_sample_shape)
                     print lyr.name, lyr.get_output_sample_shape()
                 if layer_confs[i].type == 'InnerProduct' or layer_confs[i].type == 14:
@@ -153,3 +167,63 @@ class CaffeConverter:
                 net.add(lyr)
 
         return net
+
+    def convert_params(self, net):
+        '''
+        Convert params in .caffemodel into singa model.
+        This method only supports current version of Caffe(24-Nov-2016).
+        '''
+
+        params = net.param_values()
+        caffe_model = self.read_caffemodel()
+        layers = None
+        if len(caffe_model.layer):
+            layers = caffe_model.layer
+        else:
+            raise Exception('Invalid proto file!')
+
+        i = 0
+        first_conv = True
+        for layer in layers:
+            if layer.type == 'Convolution' or layer.type == 'InnerProduct':
+                assert(len(layer.blobs) == 2), 'Either 2 params per layer or 0'
+                wmat_dim = []
+                if getattr(layer.blobs[0].shape, 'dim', None) is not None:
+                    if len(layer.blobs[0].shape.dim) > 0:
+                        wmat_dim = layer.blobs[0].shape.dim
+                    else:
+                        wmat_dim = [layer.blobs[0].num, \
+                                layer.blobs[0].channels, \
+                                layer.blobs[0].height, \
+                                layer.blobs[0].width]
+                else:
+                    wmat_dim = list(layer.blobs[0].shape)
+
+                wmat = np.array(layer.blobs[0].data, dtype=np.float32)
+                bias = np.array(layer.blobs[1].data, dtype=np.float32)
+                #print layer.name, ' wmat_dim: ', wmat_dim
+
+                wdim = []
+                if layer.type == 'InnerProduct':
+                    wdim = wmat_dim[-2:]
+                else:
+                    if wmat_dim[1] == 3 and first_conv:  # BGR -> RGB
+                        wmat = wmat.reshape(wmat_dim)
+                        wmat[:, [0, 1, 2], :, :] = wmat[:, [2, 1, 0], :, :]
+                        first_conv = False
+                    nb_filters = wmat_dim[0]
+                    chw = 1
+                    for k in range(1, len(wmat_dim)):
+                        chw *= wmat_dim[k]
+                    wdim.extend([nb_filters, chw])
+                #print layer.name, ' wdim: ', wdim
+                w = np.reshape(wmat, wdim)
+
+                # TODO(wangwei) transpose SINGA's weight following caffe
+                if layer.type == 'InnerProduct':
+                    w = np.transpose(w)
+                params[i].copy_from_numpy(w)
+                i += 1
+                params[i].copy_from_numpy(bias)
+                i += 1
+                print 'converting layer {0}, wmat shape = {1}, bias shape = {2}'.format(layer.name, w.shape, bias.shape)
