@@ -30,19 +30,19 @@ Create a multi-configuration project and configure project as follows:
   * Poll SCM - Schedule - ``H/30 * * * *`` (pull every 30 minutes)
 
 ### Configuration Matrix
-  * User-defined Axis - name ``support`` values ``BLAS CUDNN``
+  * User-defined Axis - name ``lang`` values ``CPP CUDA``
   * Slave - name ``env`` Node/label ``tick all nodes``
 
 ### Build
-  * Execute shell - command - ``bash -ex tool/jenkins/jenkins_wheel.sh $support``
+  * Execute shell - command - ``bash -ex tool/jenkins/jenkins_wheel.sh $lang``
 
 ### Post-build Actions
   * Archive the artifacts - ``build/python/dist/**.whl``
+  * Send build artifacts over SSH - source files ``build/python/dist/*.tar.gz``, Remove prefix `build/python/dist`, Exec command `tar xf *.tar.gz && rm *.tar.gz`
   * Publish JUnit test result report - Test report XMLs - ``**/gtest.xml, **/unittest.xml``
 
 ## Docker Images
-We provide in `docker` a number of singa docker images for Jenkins to use as
-slaves.
+We provide in `docker` a number of singa docker images for Jenkins to use as slaves.
 
 ## Access Control
 Use `Role Strategy Plugin` to give read access for anonymous users.

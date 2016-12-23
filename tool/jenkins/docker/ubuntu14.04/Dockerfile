@@ -7,10 +7,12 @@
 FROM nvidia/cuda:8.0-cudnn5-devel
 
 # install dependencies
-RUN apt-get update && apt-get install -y \
-    git vim wget build-essential autoconf libtool cmake \
-    libpcre3-dev python-dev python-pip && \
-    pip install numpy protobuf unittest-xml-reporting
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git g++ cmake libprotobuf-dev libopenblas-dev protobuf-compiler python-dev python-pip wget\
+    && apt-get clean && apt-get autoremove && apt-get autoclean \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip --no-cache-dir install -U pip wheel numpy setuptools unittest-xml-reporting protobuf>=2.5.0,<3
+
 
 # install swig 3.0
 RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz && \
@@ -21,6 +23,7 @@ RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz && \
 ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}
 ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
 ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
+ENV OS_VERSION ubuntu14.04
 
 # download singa source
 RUN git clone https://github.com/apache/incubator-singa.git

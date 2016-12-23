@@ -27,26 +27,39 @@ echo OS version: `cat /etc/issue`
 echo kernal version: `uname -a`
 echo CUDA version: $CUDA_VERSION
 echo CUDNN version: $CUDNN_VERSION
+echo OS name: $OS_VERSION
+COMMIT=`git rev-parse HEAD`
+echo COMMIT HASH: $COMMIT
 # set parameters
+CUDA="OFF"
 CUDNN="OFF"
-if [ $1 = "CUDNN" ]; then
+FOLDER=$COMMIT/$OS_VERSION-cpp/
+if [ $1 = "CUDA" ]; then
+  CUDA="ON"
   CUDNN="ON"
+  FOLDER=$COMMIT/$OS_VERSION-cuda$CUDA_VERSION-cudnn$CUDNN_VERSION/
 fi
+echo wheel file folder: build/python/dist/whl/$FOLDER
+
 # setup env
 rm -rf build
 mkdir build
+
 # compile singa c++
 cd build
-cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDNN -DUSE_MODULES=ON ../
+cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDA -DUSE_MODULES=ON -DUSE_MODULES=ON ../
 make
 # unit test cpp code
 ./bin/test_singa --gtest_output=xml:./gtest.xml
 # compile pysinga
 cd python
 python setup.py bdist_wheel
-# rename dist
+# mv whl file to a folder whose name identifies the OS, CUDA, CUDNN etc.
 cd dist
-mv singa-1.0.1-py2-none-any.whl singa-1.0.0-cp27-none-linux_x86_64.whl
+mkdir -p $FOLDER
+mv *.whl $FOLDER/
+tar czf $FOLDER.tar.gz $FOLDER/*
+
 # unit test python code
 cd ../../../test/python
 PYTHONPATH=../../build/python/ python run.py

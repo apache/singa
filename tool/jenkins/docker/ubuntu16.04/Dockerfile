@@ -4,21 +4,26 @@
 FROM nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04
 
 # install dependencies
-RUN apt-get update && apt-get install -y \
-    git wget build-essential autoconf libtool cmake \
-    libpcre3-dev python-dev python-pip swig && \
-    pip install numpy protobuf unittest-xml-reporting
+
+MAINTAINER incubator-singa dev@singa.incubator.apache.org
+
+# install dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git g++ cmake libprotobuf-dev libopenblas-dev protobuf-compiler python-dev python-pip swig wget openssh-server\
+    && apt-get clean && apt-get autoremove && apt-get autoclean \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip --no-cache-dir install -U pip wheel numpy setuptools unittest-xml-reporting protobuf>=2.5.0,<3
 
 # set environment
 ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}
 ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
 ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
+ENV OS_VERSION ubuntu16.04
 
 # download singa source
 RUN git clone https://github.com/apache/incubator-singa.git
 
-# install ssh service
-RUN apt-get install -y openssh-server
+# config ssh service
 RUN mkdir /var/run/sshd
 RUN echo 'root:singa' | chpasswd
 RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
