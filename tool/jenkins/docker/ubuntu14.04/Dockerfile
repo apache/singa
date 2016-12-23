@@ -4,14 +4,14 @@
 #   FROM nvidia/cuda:7.5-cudnn5-devel
 #   FROM nvidia/cuda:7.5-cudnn4-devel
 #   FROM nvidia/cuda:7.0-cudnn4-devel
-FROM nvidia/cuda:8.0-cudnn5-devel
+FROM nvidia/cuda:7.5-cudnn5-devel
 
 # install dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git g++ cmake libprotobuf-dev libopenblas-dev protobuf-compiler python-dev python-pip wget\
+    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libpcre3-dev libprotobuf-dev libopenblas-dev protobuf-compiler python-dev python-pip wget openssh-server\
     && apt-get clean && apt-get autoremove && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
-    && pip --no-cache-dir install -U pip wheel numpy setuptools unittest-xml-reporting protobuf>=2.5.0,<3
+    && pip install -U pip wheel numpy setuptools unittest-xml-reporting protobuf
 
 
 # install swig 3.0
@@ -28,8 +28,7 @@ ENV OS_VERSION ubuntu14.04
 # download singa source
 RUN git clone https://github.com/apache/incubator-singa.git
 
-# install ssh service
-RUN apt-get install -y openssh-server
+# config ssh service
 RUN mkdir /var/run/sshd
 RUN echo 'root:singa' | chpasswd
 RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config

@@ -12,7 +12,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git g++ cmake libprotobuf-dev libopenblas-dev protobuf-compiler python-dev python-pip swig wget openssh-server\
     && apt-get clean && apt-get autoremove && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
-    && pip --no-cache-dir install -U pip wheel numpy setuptools unittest-xml-reporting protobuf>=2.5.0,<3
+    && pip --no-cache-dir install -U pip wheel numpy setuptools unittest-xml-reporting protobuf
 
 # set environment
 ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}

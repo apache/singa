@@ -28,16 +28,16 @@ echo kernal version: `uname -a`
 echo CUDA version: $CUDA_VERSION
 echo CUDNN version: $CUDNN_VERSION
 echo OS name: $OS_VERSION
-COMMIT=`git rev-parse HEAD`
+COMMIT=`git rev-parse --short HEAD`
 echo COMMIT HASH: $COMMIT
 # set parameters
 CUDA="OFF"
 CUDNN="OFF"
-FOLDER=$COMMIT/$OS_VERSION-cpp/
+FOLDER=$BUILD_NUMBER/$COMMIT/$OS_VERSION-cpp
 if [ $1 = "CUDA" ]; then
   CUDA="ON"
   CUDNN="ON"
-  FOLDER=$COMMIT/$OS_VERSION-cuda$CUDA_VERSION-cudnn$CUDNN_VERSION/
+  FOLDER=$BUILD_NUMBER/$COMMIT/$OS_VERSION-cuda$CUDA_VERSION-cudnn$CUDNN_VERSION
 fi
 echo wheel file folder: build/python/dist/whl/$FOLDER
 
@@ -58,7 +58,7 @@ python setup.py bdist_wheel
 cd dist
 mkdir -p $FOLDER
 mv *.whl $FOLDER/
-tar czf $FOLDER.tar.gz $FOLDER/*
+tar czf $BUILD_NUMBER.tar.gz $FOLDER/*
 
 # unit test python code
 cd ../../../test/python
