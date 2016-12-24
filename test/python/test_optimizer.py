@@ -15,8 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 # =============================================================================
-import sys
-import os
 import unittest
 import numpy as np
 
@@ -24,8 +22,10 @@ import numpy as np
 import singa.tensor as tensor
 import singa.optimizer as opt
 import singa.device as device
+from singa import singa_wrap
 
-cuda = device.create_cuda_gpu()
+if singa_wrap.USE_CUDA:
+    cuda = device.create_cuda_gpu()
 
 
 class TestOptimizer(unittest.TestCase):
@@ -48,6 +48,7 @@ class TestOptimizer(unittest.TestCase):
         for i in range(self.W.size()):
             self.assertAlmostEqual(w[i], self.np_W[i] - lr * self.np_g[i])
 
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_sgd_cuda(self):
         lr = 0.1
         sgd = opt.SGD(lr)
@@ -67,6 +68,7 @@ class TestOptimizer(unittest.TestCase):
         for i in range(g.size):
             self.assertAlmostEqual(g[i], self.np_g[i] * threshold / nrm)
 
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_constraint_cuda(self):
         threshold = 0.02
         self.to_cuda()
@@ -87,6 +89,7 @@ class TestOptimizer(unittest.TestCase):
             self.assertAlmostEqual(g[i],
                                    self.np_g[i] + coefficient * self.np_W[i])
 
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_regularizer_cuda(self):
         coefficient = 0.0001
         reg = opt.L2Regularizer(coefficient)

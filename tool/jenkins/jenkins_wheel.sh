@@ -1,4 +1,4 @@
-#!/usr/bin/env bash 
+#!/usr/bin/env bash
 #/**
 # *
 # * Licensed to the Apache Software Foundation (ASF) under one
@@ -26,7 +26,7 @@ echo workspace: `pwd`
 echo OS version: `cat /etc/issue`
 echo kernal version: `uname -a`
 echo CUDA version: $CUDA_VERSION
-echo CUDNN version: $CUDNN_VERSION 
+echo CUDNN version: $CUDNN_VERSION
 # set parameters
 CUDNN="OFF"
 if [ $1 = "CUDNN" ]; then
@@ -37,14 +37,17 @@ rm -rf build
 mkdir build
 # compile singa c++
 cd build
-cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDNN ../ 
+cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDNN -DUSE_MODULES=ON ../
 make
-# unit test
-./bin/test_singa --gtest_output=xml:./../gtest.xml
+# unit test cpp code
+./bin/test_singa --gtest_output=xml:./gtest.xml
 # compile pysinga
 cd python
 python setup.py bdist_wheel
 # rename dist
 cd dist
 mv singa-1.0.1-py2-none-any.whl singa-1.0.0-cp27-none-linux_x86_64.whl
+# unit test python code
+cd ../../../test/python
+PYTHONPATH=../../build/python/ python run.py
 echo Job finished...
