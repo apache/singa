@@ -1,5 +1,15 @@
 # Installation
 
+## Install with Debian packages 
+
+Debian binary packages for Ubuntu/Debian operating systems are available:
+
+[SINGA-1.0.0 Python](http://www.comp.nus.edu.sg/~moaz/singa-python_1.0.0_amd64.deb)
+
+[SINGA-1.0.0 C++](http://www.comp.nus.edu.sg/~moaz/singa-cpp_1.0.0_amd64.deb)
+
+These packages are built for amd64 architecture. They provide SINGA CPU-only functions.
+
 ## Install PySINGA
 
 PySINGA has been tested on Linux (Ubunu 14.04 and 16.04) and Mac OS (10.11).
@@ -303,6 +313,11 @@ the "build" folder and compile it as a normal VS solution. You will find the
 unit tests file named "test_singa" in the project binary folder.
 If you get errors when running test_singa.exe due to libglog.dll/libopenblas.dll missing,
 please just copy the dll files into the same folder as test_singa.exe
+
+## Build the Debian packages
+
+    $ cd debian
+    $ ./build.sh
 
 ## FAQ
 

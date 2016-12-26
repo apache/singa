@@ -1,0 +1,4 @@
+#!/bin/bash 
+
+cd /usr/local/lib/singa
+python setup.py install

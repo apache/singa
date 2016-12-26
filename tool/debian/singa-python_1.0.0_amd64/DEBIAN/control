@@ -1,0 +1,15 @@
+Package: singa-python
+Version: 1.0.0
+Installed-Size: 30488
+Maintainer: Moaz Reyad <moazreyad@gmail.com>
+Section: devel
+Source: https://github.com/apache/incubator-singa
+Homepage: http://singa.apache.org
+Architecture: amd64
+Priority: optional
+Depends: libc6, libstdc++6, libprotobuf-dev, libgoogle-glog-dev, python, libpython2.7, python-setuptools, python-numpy
+Description: Singa is an Apache Incubating project for developing an open source deep learning library.
+ The Singa project was initiated by the DB System Group at National University of Singapore in 2014. It focused on distributed deep learning by partitioning the model and data onto nodes in a cluster and parallelize the training. The prototype was accepted by Apache Incubator in March 2015. Four versions have been released as shown In the following table. Since V1.0, SINGA is general to support traditional machine learning models such as logistic regression. Singa's software stack includes three major components, namely, core, IO and model. The core component provides memory management and tensor operations; IO has classes for reading (and writing) data from (to) disk and network; The model component provides data structures and algorithms for machine learning models, e.g., layers for neural network models, optimizers/initializer/metric/loss for general machine learning models.
+
+
+

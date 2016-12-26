@@ -1,0 +1,4 @@
+#!/bin/bash 
+
+cd /usr/local/lib/singa
+rm -r build dist singa.egg-info
