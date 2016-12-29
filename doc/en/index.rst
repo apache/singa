@@ -64,7 +64,7 @@ Getting Started
 
 * Please follow the `Examples <docs/examples/index.html>`_ guide to run simple applications on SINGA.
 
-* More exmaples in `Jupyter <http://jupyter.org/>`_ (IPython) can be open in `notebook viewer <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/notebook/index.ipynb>`_ .
+* More exmaples in `Jupyter <http://jupyter.org/>`_ (IPython) can be open in `notebook viewer <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ .
 
 Documentation
 -------------

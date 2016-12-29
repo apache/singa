@@ -1,7 +1,5 @@
 # How to Contribute Documentation
 
-___
-
 
 ## Website
 This document gives step-by-step instructions for deploying [Singa website](http://singa.incubator.apache.org).
@@ -20,7 +18,13 @@ You can build the website by executing the following command from the doc folder
 
     $ ./build.sh html
 
-The procedure for contributing documentation is the same as [contributing code](contribute-code.html).
+Committers can update the [SINGA website](http://singa.apache.org/en/index.html) by following these steps:
+
+    $ cd _build
+    $ svn co https://svn.apache.org/repos/asf/incubator/singa/site/trunk
+    $ cp -r html/* trunk
+    # svn add <newly added html files>
+    $ svn commit -m "commit messages" --username  <committer ID> --password <password>
 
 
 ## CPP API

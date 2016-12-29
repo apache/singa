@@ -1,7 +1,5 @@
 # How to Contribute to SINGA
 
-___
-
 As with any open source project, there are several ways you can help:
 
 * Join the [mailing list](../community/mail-lists.html) and answer other user's questions.

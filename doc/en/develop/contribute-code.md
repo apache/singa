@@ -1,13 +1,12 @@
 ## How to Contribute Code
 
-_____
 
 ### Coding Style
 
 The SINGA codebase follows the [Google C++ Style Guide](http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml).
 
 To check if your code follows the style, you can use the provided cpplint tool:
-    
+
     $ ./tool/cpplint.py YOUR_FILE
 
 
@@ -49,12 +48,12 @@ the work to the project under the project's open source license. Further commits
 to your new branch will be added to this pull request automatically by Github.
 
 * Wait for one committer to review the patch. If no conflicts, the committers will merge it with
-the master branch. The merge should a) not use rebase b) disable fast forward merge c) check the 
+the master branch. The merge should a) not use rebase b) disable fast forward merge c) check the
 commit message format and test the code/feature.
 
 * If there are too many small commit messages, you will be told to squash your commits into fewer meaningful
 commits. If your commit message does not follow the format (i.e., SINGA-xxxx), you will be told to
 reword your commit message. Both changes can be done using interactive git rebase. Once you
-get the commits corrected, push them to you own github again. Your pull request 
-will be automatically updated. For details, please refer to 
+get the commits corrected, push them to you own github again. Your pull request
+will be automatically updated. For details, please refer to
 [Rebase Pull Requests](https://github.com/edx/edx-platform/wiki/How-to-Rebase-a-Pull-Request).

@@ -1,6 +1,5 @@
 # Neural Net
 
----
 
 `NeuralNet` in SINGA represents an instance of user's neural net model. As the
 neural net typically consists of a set of layers, `NeuralNet` comprises
