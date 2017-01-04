@@ -21,6 +21,9 @@ from flask_cors import CORS, cross_origin
 import os, traceback, sys
 import time
 from werkzeug.utils import secure_filename
+from werkzeug.datastructures import CombinedMultiDict, MultiDict
+import pickle
+import uuid
 
 class MsgType:
    def __init__(self, name):
@@ -82,7 +85,10 @@ class Agent():
 
     def pull(self):
         if not self.command_queue.empty():
-            return self.command_queue.get()
+            msg,data=self.command_queue.get()
+            if msg.is_request():
+                data = pickle.loads(data)
+            return msg,data
         return None,None 
 
     def push(self,msg,value):
@@ -162,12 +168,12 @@ def getTopKData():
 def api():
     global info_queue_,command_queue_ 
     try:
-        file = request.files['image']
-        filename = secure_filename(file.filename)
-        filepath=os.path.join(os.getcwd(), filename)
-        file.save(filepath)
-        command_queue_.put((MsgType.kRequest,filepath))
+        files=transformFile(request.files)
+        values = CombinedMultiDict([request.args,request.form,files])
+        req_str = pickle.dumps(values)
+        command_queue_.put((MsgType.kRequest,req_str))
         msg,response=getDataFromInfoQueue(True)
+        deleteFiles(files)
         return response
     except:                                                                            
         traceback.print_exc()
@@ -194,3 +200,20 @@ def failure(message):
     '''return failure status in json format'''
     res = dict(result="message", message=message)
     return jsonify(res)
+
+def transformFile(files):
+    result= MultiDict([])
+    for f in files.keys():
+        file = files[f]
+        unique_filename = str(uuid.uuid4())+secure_filename(file.filename)
+        filepath=os.path.join(os.getcwd(),unique_filename)
+        file.save(filepath)
+        result.add(f,filepath)
+    return result
+
+def deleteFiles(files):
+    for f in files.keys():
+        filepath = files[f]    
+        os.remove(filepath)
+        #print "remove",filepath
+    return
