@@ -12,12 +12,14 @@ Those built binaries need to be archived for users to download.
 [Jenkins Official Wiki](https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins)
 The slave nodes for running different building environments are configured under 'Manage Jenkins'->'Manage nodes'.
 
-## Configure Jenkins Multi-configuration Project for Unit Testing and PySINGA Generation
+## Configure Jenkins Multi-configuration Project for Unit Testing and Package Generation
 Create a multi-configuration project and configure project as follows:
 
 ### Description
-This job automatically pulls latest commits from apache SINGA github repository.
-It compiles and tests SINGA in different environments and creates PySINGA wheel distribution accordingly.
+This job automatically pulls latest commits from Apache incubator-singa github repository, then for different environments
+* compile and test SINGA
+* create PySINGA wheel files
+* create Debian packages
 
 ### General
   * Discard old builds - Max # of builds to keep - 50
@@ -39,22 +41,38 @@ It compiles and tests SINGA in different environments and creates PySINGA wheel 
 
 ### Post-build Actions
   * Publish JUnit test result report - Test report XMLs - ``**/gtest.xml, **/unittest.xml``
-  * Archive the artifacts - ``build/python/dist/**.whl``
-  * Send build artifacts over SSH
-    * In jenkins_wheel.sh, package the .whl file into $BUILD_ID.tar.gz. Inside the tar file,
+  * (optional) Archive the artifacts - ``build/python/dist/**.whl, build/debian/**.deb``
+  * Send build artifacts (wheel) over SSH
+    * jenkins_wheel.sh packages the .whl file into $BUILD_ID.tar.gz. Inside the tar file,
       the folder layout is `build_id/commit_hash/os_lang/*.whl`, where `os_lang` is the combination of os version, device programming language (cuda/cpp/opencl) and cudnn version.
     * In `Manage Jenkins`-`Configure System`, configure the SSH for connecting to the remote public server and set the target folder location
     * Source files - `build/python/dist/*.tar.gz`
     * Remove prefix - `build/python/dist`
+    * Remote directory - `wheel`
     * Exec a command on the remote server to decompress the package and add a symlink to the latest build. E.g., on a Solaris server the command is
 
-            cd <target_folder> && gunzip $BUILD_ID.tar.gz && tar xf $BUILD_ID.tar && chmod -R 755 $BUILD_ID && /bin/rm -f $BUILD_ID.tar && /bin/rm -f latest && ln -s $BUILD_ID/* latest
+            cd <target_folder>/wheel && gunzip $BUILD_ID.tar.gz && tar xf $BUILD_ID.tar && chmod -R 755 $BUILD_ID && /bin/rm -f $BUILD_ID.tar && /bin/rm -f latest && ln -s $BUILD_ID/* latest
 
     * The file links on the remote public server would be like
 
-            32/84d56b7/ubuntu16.04-cpp/singa-1.0.1-py2-none-any.whl
-            32/84d56b7/ubuntu16.04-cuda8.0-cudnn5/singa-1.0.1-py2-none-any.whl
+            wheel/32/84d56b7/ubuntu16.04-cpp/singa-1.0.1-py2-none-any.whl
+            wheel/32/84d56b7/ubuntu16.04-cuda8.0-cudnn5/singa-1.0.1-py2-none-any.whl
 
+  * Send build artifacts (Debian package) over SSH for wheel
+    * ../debian/build.sh packages the .deb file into $BUILD_ID.tar.gz. Inside the tar file,
+      the folder layout is `build_id/commit_hash/os_lang/*.deb`, where `os_lang` is the combination of os version, device programming language (cuda/cpp/opencl) and cudnn version.
+    * In `Manage Jenkins`-`Configure System`, configure the SSH for connecting to the remote public server and set the target folder location
+    * Source files - `build/debian/*.tar.gz`
+    * Remove prefix - `build/debian
+    * Remote directory - `debian`
+    * Exec a command on the remote server to decompress the package and add a symlink to the latest build. E.g., on a Solaris server the command is
+
+            cd <target_folder>/debian && gunzip $BUILD_ID.tar.gz && tar xf $BUILD_ID.tar && chmod -R 755 $BUILD_ID && /bin/rm -f $BUILD_ID.tar && /bin/rm -f latest && ln -s $BUILD_ID/* latest
+
+    * The file links on the remote public server would be like
+
+            debian/32/84d56b7/ubuntu16.04-cpp/singa-1.0.1-py2-none-any.whl
+            debian/32/84d56b7/ubuntu16.04-cuda8.0-cudnn5/singa-1.0.1-py2-none-any.whl
 
 ## Configure Jenkins for SINGA Website Updates
 

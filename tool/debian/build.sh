@@ -16,52 +16,136 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# singa-cpp
+# execute this script at SINGA_ROOT
+BUILD="OFF"
+CUDA="OFF"
+CUDNN="OFF"
+MODULES="OFF"
+PYTHON="OFF"
 
-mkdir build
-cd build
-cmake ../../.. -DUSE_MODULES=ON 
-make
-cd ..
+echo "OS version: " $OS_VERSION
+COMMIT=`git rev-parse --short HEAD`
+echo "Commit ID: " $COMMIT
 
-mkdir -p singa-cpp_1.0.0_amd64/usr/local/include
-cp -r ../../include/singa singa-cpp_1.0.0_amd64/usr/local/include
-cp -r build/include/singa/proto singa-cpp_1.0.0_amd64/usr/local/include/singa
-cp build/include/singa/singa_config.h singa-cpp_1.0.0_amd64/usr/local/include/singa
+while [[ $# -gt 0 ]]
+do
+key="$1"
+case $key in
+  -b|--build)
+  BUILD="ON"
+  shift
+  ;;
+  -m|--modules)
+  MODULES="ON"
+  shift
+  ;;
+  -c|--cuda|--CUDA)
+  CUDA="ON"
+  CUDNN="ON"
+  shift
+  ;;
+  -p|--python)
+  PYTHON="ON"
+  shift
+  ;;
+  -h|--help)
+  echo "Usage (execute at SINGA_ROOT folder): build.sh -b|--build -m|--modules -c|--cuda -p|--python"
+  echo "      build: compile SINGA; if not set, we assume SINGA is compiled in ROOT/build/"
+  echo "      modules: if set, protobuf and openblas are linked statically, hence they are removed from 'depends' in control file"
+  echo "      cuda: if set, SINGA is compiled with CUDA and CUDNN"
+  echo "      python: if set, package pysinga together"
+  exit 0
+  ;;
+  *)
+  echo "WRONG argument:" $key
+# for jenkins
+  shift
+  ;;
+esac
+done
 
-mkdir -p singa-cpp_1.0.0_amd64/usr/local/lib
-cp build/lib/libsinga.so singa-cpp_1.0.0_amd64/usr/local/lib
-
-mkdir -p singa-cpp_1.0.0_amd64/usr/share/doc/singa
-cp ../../LICENSE singa-cpp_1.0.0_amd64/usr/share/doc/singa/
-
-dpkg -b singa-cpp_1.0.0_amd64
-
-rm -rf ./build
+# get singa version
+SINGA_VERSION=`grep "PACKAGE_VERSION" CMakeLists.txt |sed 's/SET(PACKAGE_VERSION\s*\"\([0-9]\.[0-9]\.[0-9]\)\"\s*)/\1/'`
+echo "SINGA version: " $SINGA_VERSION
 
 
-# singa-python
+# compile singa
+if [ $BUILD = "ON" ]; then
+  rm -rf build
+  mkdir build
+  cd build
+  cmake -DUSE_MODULES=$MODULES -DUSE_CUDA=$CUDA -DUSE_CUDNN=$CUDNN -DUSE_PYTHON=$PYTHON ..
+  make
+  cd ..
+fi
 
-mkdir build
-cd build
-cmake ../../.. -DUSE_PYTHON=ON -DUSE_MODULES=ON 
-make
-cd python
-make
-cd ../..
+# create the folder for the package
+FOLDER_PREFIX="singa"
+if [ -n ${BUILD_ID+x} ]; then
+  FOLDER_PREFIX=$BUILD_ID/$COMMIT/$OS_VERSION
+fi
 
-mkdir -p singa-python_1.0.0_amd64/usr/local/lib/singa/singa/
-cp -r ../../python/singa singa-python_1.0.0_amd64/usr/local/lib/singa
-cp -r ../../python/rafiki singa-python_1.0.0_amd64/usr/local/lib/singa
+FOLDER=$FOLDER_PREFIX-cpp
+if [ $CUDA = "ON" ]; then
+  FOLDER=$FOLDER_PREFIX-cuda$CUDA_VERSION-cudnn$CUDNN_VERSION
+fi
 
-cp    build/python/setup.py singa-python_1.0.0_amd64/usr/local/lib/singa
-cp    build/python/singa/singa_wrap.py singa-python_1.0.0_amd64/usr/local/lib/singa/singa
-cp    build/python/singa/_singa_wrap.so singa-python_1.0.0_amd64/usr/local/lib/singa/singa/
-cp -r build/python/singa/proto singa-python_1.0.0_amd64/usr/local/lib/singa/singa
+if [ $PYTHON = "ON" ]
+then
+  FOLDER=$FOLDER/python-singa
+else
+  FOLDER=$FOLDER/singa
+fi
 
-mkdir -p singa-python_1.0.0_amd64/usr/share/doc/singa
-cp ../../LICENSE singa-python_1.0.0_amd64/usr/share/doc/singa/
+echo "Path: " build/debian/$FOLDER
+mkdir -p build/debian/$FOLDER
 
-dpkg -b singa-python_1.0.0_amd64
+if [ $PYTHON = "ON" ]
+then
+  cp -r tool/debian/python-singa/* build/debian/$FOLDER/
+else
+  cp -r tool/debian/singa/* build/debian/$FOLDER/
+fi
 
-rm -rf ./build
+# change SINGA version in the control file
+sed -i "s/\(Version: [0-9]\.[0-9]\.[0-9]\)/Version: $SINGA_VERSION/" build/debian/$FOLDER/DEBIAN/control
+
+# remove unnecessary dependencies
+if [ $MODULES = "ON" ]; then
+  sed -i 's/<libopenblas-dev\>,*//' build/debian/$FOLDER/DEBIAN/control
+  sed -i 's/<libprotobuf-dev\>,*//' build/debian/$FOLDER/DEBIAN/control
+  sed -i 's/<protobuf-compiler\>,*//' build/debian/$FOLDER/DEBIAN/control
+fi
+
+# copy cpp and cuda files
+ICL_FOLDER=build/debian/$FOLDER/usr/local/include
+mkdir -p ${ICL_FOLDER}
+cp -r include/singa ${ICL_FOLDER}/
+cp -r build/include/singa/proto ${ICL_FOLDER}/singa
+cp build/include/singa/singa_config.h ${ICL_FOLDER}/singa
+
+LIB_FOLDER=build/debian/$FOLDER/usr/local/lib
+mkdir -p ${LIB_FOLDER}
+cp build/lib/libsinga.so ${LIB_FOLDER}
+
+mkdir -p build/debian/$FOLDER/usr/share/doc/singa
+cp LICENSE build/debian/$FOLDER/usr/share/doc/singa
+
+# copy pysinga files
+if [ $PYTHON = "ON" ]; then
+  PY_FOLDER=build/debian/$FOLDER/usr/local/lib/singa
+  mkdir -p $PY_FOLDER
+  cp -r python/singa $PY_FOLDER/
+  cp -r python/rafiki $PY_FOLDER/
+
+  cp    build/python/setup.py $PY_FOLDER/
+  cp    build/python/singa/singa_wrap.py $PY_FOLDER/singa/
+  cp    build/python/singa/_singa_wrap.so $PY_FOLDER/singa/
+  cp -r build/python/singa/proto $PY_FOLDER/singa/
+fi
+
+dpkg -b build/debian/$FOLDER/
+
+cd build/debian
+tar czf $BUILD_ID.tar.gz $FOLDER.deb
+exit 0

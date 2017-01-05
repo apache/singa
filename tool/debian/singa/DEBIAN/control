@@ -1,0 +1,12 @@
+Package: Singa
+Version: 1.0.1
+Architecture: amd64
+Maintainer: Moaz Reyad <moazreyad@gmail.com>
+Depends: libgoogle-glog-dev, libprotobuf-dev, libopenblas-dev, libstdc++6, libc6
+Installed-Size: 24820
+Section: devel
+Priority: optional
+Source: https://github.com/apache/incubator-singa
+Homepage: http://singa.apache.org
+Description: Singa is an Apache Incubating project for developing an open source deep learning library.
+ The Singa project was initiated by the DB System Group at National University of Singapore in 2014. It focused on distributed deep learning by partitioning the model and data onto nodes in a cluster and parallelize the training. The prototype was accepted by Apache Incubator in March 2015.
