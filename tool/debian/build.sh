@@ -81,7 +81,7 @@ fi
 
 # create the folder for the package
 FOLDER_PREFIX="singa"
-if [ -n ${BUILD_ID+x} ]; then
+if [ -n "$BUILD_ID" ]; then
   FOLDER_PREFIX=$BUILD_ID/$COMMIT/$OS_VERSION
 fi
 
@@ -106,9 +106,6 @@ then
 else
   cp -r tool/debian/singa/* build/debian/$FOLDER/
 fi
-
-# change SINGA version in the control file
-sed -i "s/\(Version: [0-9]\.[0-9]\.[0-9]\)/Version: $SINGA_VERSION/" build/debian/$FOLDER/DEBIAN/control
 
 # remove unnecessary dependencies
 if [ $MODULES = "ON" ]; then
@@ -143,6 +140,11 @@ if [ $PYTHON = "ON" ]; then
   cp    build/python/singa/_singa_wrap.so $PY_FOLDER/singa/
   cp -r build/python/singa/proto $PY_FOLDER/singa/
 fi
+# change SINGA version in the control file
+sed -i "s/\(Version: [0-9]\.[0-9]\.[0-9]\)/Version: $SINGA_VERSION/" build/debian/$FOLDER/DEBIAN/control
+SIZE=`du -s build/debian/$FOLDER|cut -f 1`
+# change the Size
+sed -i "s/\(Installed-Size: [1-9][0-9]*\)/Installed-Size: $SIZE/" build/debian/$FOLDER/DEBIAN/control
 
 dpkg -b build/debian/$FOLDER/
 
