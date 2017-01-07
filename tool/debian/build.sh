@@ -109,9 +109,9 @@ fi
 
 # remove unnecessary dependencies
 if [ $MODULES = "ON" ]; then
-  sed -i 's/<libopenblas-dev\>,*//' build/debian/$FOLDER/DEBIAN/control
-  sed -i 's/<libprotobuf-dev\>,*//' build/debian/$FOLDER/DEBIAN/control
-  sed -i 's/<protobuf-compiler\>,*//' build/debian/$FOLDER/DEBIAN/control
+  sed -i 's/libopenblas-dev,//' build/debian/$FOLDER/DEBIAN/control
+  sed -i 's/libprotobuf-dev,//' build/debian/$FOLDER/DEBIAN/control
+  sed -i 's/protobuf-compiler,//' build/debian/$FOLDER/DEBIAN/control
 fi
 
 # copy cpp and cuda files

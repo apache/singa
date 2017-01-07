@@ -1,14 +1,5 @@
 # Installation
 
-## Install with Debian packages 
-
-Debian binary packages for Ubuntu/Debian operating systems are available:
-
-[SINGA-1.0.0 Python](http://www.comp.nus.edu.sg/~moaz/singa-python_1.0.0_amd64.deb)
-
-[SINGA-1.0.0 C++](http://www.comp.nus.edu.sg/~moaz/singa-cpp_1.0.0_amd64.deb)
-
-These packages are built for amd64 architecture. They provide SINGA CPU-only functions.
 
 ## Install PySINGA
 
@@ -110,14 +101,14 @@ We have prepared the Debian packages (on architecture: amd64) for SINGA as liste
 | OS          | Lang  | CUDNN | Link |
 |:----        |:------|------|:-------|:--------|
 | Ubuntu14.04|CPP11|-|[latest](http://comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu14.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
-| Ubuntu14.04|CUDA7.5|CUDNN4|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu14.04-cuda7.5-cudnn4/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
-| Ubuntu14.04|CUDA7.5|CUDNN5|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu14.04-cuda7.5-cudnn5/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
+| Ubuntu14.04|CUDA7.5|CUDNN4|coming soon|
+| Ubuntu14.04|CUDA7.5|CUDNN5|coming soon|
 | Ubuntu16.04|CPP11|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu16.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
-| Ubuntu16.04|CUDA8|CUDNN5|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu16.04-cuda8.0-cudnn5/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
+| Ubuntu16.04|CUDA8|CUDNN5|coming soon|
 
 Please download the deb file and install it via
 
-    apt-get install <path to the deb file>
+    apt-get install <path to the deb file, e.g., ./python-singa.deb>
 
 To create the Debian packages, please refer to the README.md file under `SINGA_ROOT/tool/debian`.
 
