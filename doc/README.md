@@ -1,4 +1,4 @@
-# How to Contribute Documentation
+# How to Contribute to Documentation
 
 
 ## Website

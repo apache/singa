@@ -109,6 +109,7 @@ Please download the deb file and install it via
 
     apt-get install <path to the deb file>
 
+To create the Debian packages, please refer to the README.md file under `SINGA_ROOT/tool/debian`.
 
 ## Compile SINGA from source on Linux and Mac OS
 
