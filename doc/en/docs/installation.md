@@ -3,7 +3,7 @@
 
 ## Install PySINGA
 
-PySINGA has been tested on Linux (Ubunu 14.04 and 16.04) and Mac OS (10.11).
+PySINGA has been tested on Linux (Ubunu 14.04 and 16.04) and Mac OS (10.11 and 10.12).
 
 ### Install dependent libraries
 
@@ -41,16 +41,17 @@ to avoid the conflicts of system path and virtual environment path.
 
 Currently, we have the following wheel files,
 
-| OS          | Lang  | CUDNN | Link |
+| OS          | Device  | CUDA/CUDNN | Link |
 |:----        |:------|------|:-------|:--------|
-| Ubuntu14.04|CPP11|-|[latest](http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/latest/ubuntu14.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/)|
-| Ubuntu14.04|CUDA7.5|CUDNN4|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/latest/ubuntu14.04-cuda7.5-cudnn4/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/)|
-| Ubuntu14.04|CUDA7.5|CUDNN5|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/latest/ubuntu14.04-cuda7.5-cudnn5/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/)|
-| Ubuntu16.04|CPP11|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/latest/ubuntu16.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/)|
-| Ubuntu16.04|CUDA8|CUDNN5|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/latest/ubuntu16.04-cuda8.0-cudnn5/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/)|
-| MacOSX10.11|CPP11|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/latest/macosx10.11-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/)|
+| Ubuntu14.04|CPU|-|[latest](http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
+| Ubuntu14.04|GPU|CUDA7.5+CUDNN4|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cuda7.5-cudnn4/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
+| Ubuntu14.04|GPU|CUDA7.5+CUDNN5|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cuda7.5-cudnn5/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
+| Ubuntu16.04|CPU|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
+| Ubuntu16.04|GPU|CUDA8+CUDNN5|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cuda8.0-cudnn5/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
+| MacOSX10.11|CPU|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx/latest/macosx10.11-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx)|
+| MacOSX10.12|CPU|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx/latest/macosx10.12-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx)|
 
-Please download the whl file and execute the following command to install PySINGA,
+Download the whl file and execute the following command to install PySINGA,
 
     $ pip install --upgrade <path to the whel file>
 
@@ -74,11 +75,11 @@ They can be installed by
     $ sudo apt-get install swig
 
 Note that swig has to be installed from source on Ubuntu 14.04.
-After installing numpy, please export the header path of numpy.i as
+After installing numpy, export the header path of numpy.i as
 
     $ export CPLUS_INCLUDE_PATH=`python -c "import numpy; print numpy.get_include()"`:$CPLUS_INCLUDE_PATH
 
-Please **compile SINGA from source** (see the next section) with `cmake -DUSE_PYTHON=ON ..`,
+**compile SINGA from source** (see the next section) with `cmake -DUSE_PYTHON=ON ..`,
 and then run the following commands,
 
     # under the build directory
@@ -98,15 +99,15 @@ The generated wheel file is under "dist" directory.
 
 We have prepared the Debian packages (on architecture: amd64) for SINGA as listed below,
 
-| OS          | Lang  | CUDNN | Link |
+| OS          | Device  | CUDA/CUDNN | Link |
 |:----        |:------|------|:-------|:--------|
-| Ubuntu14.04|CPP11|-|[latest](http://comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu14.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
-| Ubuntu14.04|CUDA7.5|CUDNN4|coming soon|
-| Ubuntu14.04|CUDA7.5|CUDNN5|coming soon|
-| Ubuntu16.04|CPP11|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu16.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
-| Ubuntu16.04|CUDA8|CUDNN5|coming soon|
+| Ubuntu14.04|CPU|-|[latest](http://comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu14.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
+| Ubuntu14.04|GPU|CUDA7.5+CUDNN4|coming soon|
+| Ubuntu14.04|GPU|CUDA7.5+CUDNN5|coming soon|
+| Ubuntu16.04|CPU|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu16.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
+| Ubuntu16.04|GPU|CUDA8+CUDNN5|coming soon|
 
-Please download the deb file and install it via
+Download the deb file and install it via
 
     apt-get install <path to the deb file, e.g., ./python-singa.deb>
 
@@ -168,7 +169,7 @@ The following instructions are tested on Ubuntu 14.04 for installing dependent l
     $ sudo apt-get install python2.7-dev python-pip python-numpy
     $ sudo apt-get install libopencv-dev libgoogle-glog-dev liblmdb-dev
 
-Please note that PySINGA requires swig >=3.0, which could be installed via
+Note that PySINGA requires swig >=3.0, which could be installed via
 apt-get on Ubuntu 16.04; but it has to be installed from source for other Ubuntu versions including 14.04.
 
 The following instructions are tested on Mac OS X Yosemite (10.10.5) for installing dependent libraries.
@@ -185,12 +186,12 @@ The following instructions are tested on Mac OS X Yosemite (10.10.5) for install
     $ brew install -vd glog lmdb
 
 By default, openblas is installed into /usr/local/opt/openblas. To let the compiler (and cmake) know the openblas
-path, please export
+path,
 
     $ export CMAKE_INCLUDE_PATH=/usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH
     $ export CMAKE_LIBRARY_PATH=/usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH
 
-To let the runtime know the openblas path, please export
+To let the runtime know the openblas path,
 
     $ export LD_LIBRARY_PATH=/usr/local/opt/openblas/library:$LD_LIBRARY_PATH
 
@@ -285,7 +286,7 @@ specify a 64-bit version project by:
     $ cmake -G "Visual Studio 14 Win64" -DUSE_CUDA=OFF -DUSE_PYTHON=OFF ..
 
 If you get error outputs like "Could NOT find xxxxx" indicating a dependent
-library missing, please configure your library file and include path for cmake or the system.
+library missing, configure your library file and include path for cmake or the system.
 For example, you get an error "Could NOT find CBLAS" and suppose you installed
 openblas header files at "d:\include" and openblas library at "d:\lib". You should run the
 following command to specify your cblas parameters in cmake:
@@ -297,13 +298,13 @@ can run the following command:
 
     $ cmake -LAH
 
-If you use cmake GUI tool in windows, please make sure you configure the right
+If you use cmake GUI tool in windows, make sure you configure the right
 parameters for the singa solution by select "Advanced" box. After generating the VS project,
-please open the "singa.sln" project file under
+open the "singa.sln" project file under
 the "build" folder and compile it as a normal VS solution. You will find the
 unit tests file named "test_singa" in the project binary folder.
 If you get errors when running test_singa.exe due to libglog.dll/libopenblas.dll missing,
-please just copy the dll files into the same folder as test_singa.exe
+just copy the dll files into the same folder as test_singa.exe
 
 ## Build the Debian packages
 
@@ -322,7 +323,7 @@ please just copy the dll files into the same folder as test_singa.exe
 
             $ echo "export LD_LIBRARY_PATH=/home/<yourname>/local/cudnn/lib64:$LD_LIBRARY_PATH" >> ~/.bashrc
 
-    2. If it is the problem related to protobuf, then please download the newest whl files which have [compiled protobuf and openblas into the whl](https://issues.apache.org/jira/browse/SINGA-255) file of PySINGA.
+    2. If it is the problem related to protobuf, then download the newest whl files which have [compiled protobuf and openblas into the whl](https://issues.apache.org/jira/browse/SINGA-255) file of PySINGA.
        Or you can install protobuf from source into a local folder, say ~/local/;
        Decompress the tar file, and then
 
@@ -331,7 +332,7 @@ please just copy the dll files into the same folder as test_singa.exe
             $ echo "export LD_LIBRARY_PATH=/home/<yourname>/local/lib:$LD_LIBRARY_PATH" >> ~/.bashrc
             $ source ~/.bashrc
 
-    3. If it cannot find other libs including python, then please create virtual env using pip or conda;
+    3. If it cannot find other libs including python, then create virtual env using pip or conda;
        and then install SINGA via
 
             $ pip install --upgrade <url of singa wheel>
@@ -339,9 +340,9 @@ please just copy the dll files into the same folder as test_singa.exe
 
 * Q: Error from running `cmake ..`, which cannot find the dependent libraries.
 
-    A: If you haven't installed the libraries, please install them. If you installed
+    A: If you haven't installed the libraries, install them. If you installed
     the libraries in a folder that is outside of the system folder, e.g. /usr/local,
-    please export the following variables
+    you need to export the following variables
 
         $ export CMAKE_INCLUDE_PATH=<path to your header file folder>
         $ export CMAKE_LIBRARY_PATH=<path to your lib file folder>
@@ -430,3 +431,15 @@ please just copy the dll files into the same folder as test_singa.exe
     A: Please install numpy and export the path of numpy header files as
 
         $ export CPLUS_INCLUDE_PATH=`python -c "import numpy; print numpy.get_include()"`:$CPLUS_INCLUDE_PATH
+
+* Q: When I run PySINGA in Mac OS X, I got the error "Fatal Python error: PyThreadState_Get: no current thread  Abort trap: 6"
+
+    A: This error happens typically when you have multiple version of Python on your system,
+    e.g, the one comes with the OS and the one installed by Homebrew. The Python linked by PySINGA must be the same as the Python interpreter.
+    You can check your interpreter by `which python` and check the Python linked by PySINGA via `otool -L <path to _singa_wrap.so>`.
+    To fix this error, compile SINGA with the correct version of Python.
+    In particular, if you build PySINGA from source, you need to specify the paths when invoking [cmake](http://stackoverflow.com/questions/15291500/i-have-2-versions-of-python-installed-but-cmake-is-using-older-version-how-do)
+
+        $ cmake -DPYTHON_LIBRARY=`python-config --prefix`/lib/libpython2.7.dylib -DPYTHON_INCLUDE_DIR=`python-config --prefix`/include/python2.7/ ..
+
+    If installed PySINGA from binary packages, e.g. debian or wheel, then you need to change the python interpreter, e.g., reset the $PATH to put the correct path of Python at the front position.

@@ -3,7 +3,7 @@
 ## Introduction
 This documentation is to guide SINGA developers to setup Jenkins service.
 
-We use jenkins to support continuous integration.
+We use Jenkins to support continuous integration.
 After each commit, we want to automatically compile and test SINGA
 under different OS and settings.
 Those built binaries need to be archived for users to download.
@@ -12,7 +12,7 @@ Those built binaries need to be archived for users to download.
 [Jenkins Official Wiki](https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins)
 The slave nodes for running different building environments are configured under 'Manage Jenkins'->'Manage nodes'.
 
-## Configure Jenkins Multi-configuration Project for Unit Testing and Package Generation
+## Configure Jenkins for Unit Testing and Binary Package Generation
 Create a multi-configuration project and configure project as follows:
 
 ### Description
@@ -34,7 +34,7 @@ This job automatically pulls latest commits from Apache incubator-singa github r
 
 ### Configuration Matrix
   * User-defined Axis - name ``lang`` values ``CPP CUDA``
-  * Slave - name ``env`` Node/label ``tick all nodes``
+  * Slave - name ``env`` Node/label: tick available nodes
 
 ### Build
   * Execute shell - command - ``bash -ex tool/jenkins/jenkins_wheel.sh $lang``
@@ -48,15 +48,15 @@ This job automatically pulls latest commits from Apache incubator-singa github r
     * In `Manage Jenkins`-`Configure System`, configure the SSH for connecting to the remote public server and set the target folder location
     * Source files - `build/python/dist/*.tar.gz`
     * Remove prefix - `build/python/dist`
-    * Remote directory - `wheel`
+    * Remote directory - `wheel/linux`
     * Exec a command on the remote server to decompress the package and add a symlink to the latest build. E.g., on a Solaris server the command is
 
-            cd <target_folder>/wheel && gunzip $BUILD_ID.tar.gz && tar xf $BUILD_ID.tar && chmod -R 755 $BUILD_ID && /bin/rm -f $BUILD_ID.tar && /bin/rm -f latest && ln -s $BUILD_ID/* latest
+            cd <target_folder>/wheel/linux && gunzip $BUILD_ID.tar.gz && tar xf $BUILD_ID.tar && chmod -R 755 $BUILD_ID && /bin/rm -f $BUILD_ID.tar && /bin/rm -f latest && ln -s $BUILD_ID/* latest
 
     * The file links on the remote public server would be like
 
-            wheel/32/84d56b7/ubuntu16.04-cpp/singa-1.0.1-py2-none-any.whl
-            wheel/32/84d56b7/ubuntu16.04-cuda8.0-cudnn5/singa-1.0.1-py2-none-any.whl
+            wheel/Linux/32/84d56b7/ubuntu16.04-cpp/singa-1.0.1-py2-none-any.whl
+            wheel/Linux/32/84d56b7/ubuntu16.04-cuda8.0-cudnn5/singa-1.0.1-py2-none-any.whl
 
   * Send build artifacts (Debian package) over SSH for wheel
     * ../debian/build.sh packages the .deb file into $BUILD_ID.tar.gz. Inside the tar file,
@@ -73,6 +73,30 @@ This job automatically pulls latest commits from Apache incubator-singa github r
 
             debian/32/84d56b7/ubuntu16.04-cpp/singa-1.0.1-py2-none-any.whl
             debian/32/84d56b7/ubuntu16.04-cuda8.0-cudnn5/singa-1.0.1-py2-none-any.whl
+
+### Notes for Mac OS X
+The Job configuration is the same as stated above except,
+* Machines (or docker containers) with Mac OS X should be configured as jenkin nodes; the following environmental variables should be exported in the .bashrc or in the node configuration
+
+    # 10.11 or 10.12
+    export OS_VERSION=macosx10.11
+    # if using Homebrew
+    export PATH=/usr/local/bin:$PATH
+    # for numpy.i
+    export CPLUS_INCLUDE_PATH=`python -c "import numpy; print numpy.get_include()"`:$CPLUS_INCLUDE_PATH
+
+* Set User-defined Axis to None and tick only Mac OS X nodes
+
+* Send build artifacts (wheel) over SSH
+  * The remote directly -- `wheel/macosx`
+  * The shell command is
+
+            cd <target_folder>/wheel/macosx && gunzip $BUILD_ID.tar.gz && tar xf $BUILD_ID.tar && chmod -R 755 $BUILD_ID && /bin/rm -f $BUILD_ID.tar && /bin/rm -f latest && ln -s $BUILD_ID/* latest
+### Docker Images
+We provide in `docker` a number of singa docker images for Jenkins to use as slaves.
+To run the docker images,
+
+    nvidia-docker run --name <jenkins-slaveXX> -d <Image ID>
 
 ## Configure Jenkins for SINGA Website Updates
 
@@ -109,12 +133,6 @@ To start the slave node
     # to set password free commit, we have to do a manual commit at first.
     # change any file (add spaces) inside trunk/ to commit a message
     $ svn commit -m "test" --username <committer id> --password <passwd>
-
-## Docker Images
-We provide in `docker` a number of singa docker images for Jenkins to use as slaves.
-To run the docker images,
-
-    nvidia-docker run --name <jenkins-slaveXX> -d <Image ID>
 
 ## Access Control
 Use `Role Strategy Plugin` to give read access for anonymous users.

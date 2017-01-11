@@ -127,8 +127,8 @@ IF (USE_MODULES)
         "--prefix=${CMAKE_BINARY_DIR}/" "CXXFLAGS=-fPIC"
         INSTALL_COMMAND "make" "install"
         )
-    SET(PROTOBUF_PROTOC_EXECUTABLE "${CMAKE_BINARY_DIR}/bin/protoc")
-    message(STATUS "${PROTOBUF_PROTOC_EXECUTABLE}")
+    SET(Protobuf_PROTOC_EXECUTABLE "${CMAKE_BINARY_DIR}/bin/protoc")
+    # message(STATUS "${PROTOBUF_PROTOC_EXECUTABLE}")
 
     ExternalProject_Add(openblas
         GIT_REPOSITORY "https://github.com/xianyi/OpenBLAS.git"

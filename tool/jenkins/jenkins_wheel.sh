@@ -45,9 +45,13 @@ echo wheel file folder: build/python/dist/whl/$FOLDER
 rm -rf build
 mkdir build
 
+if [ `uname` = "Darwin" ]; then
+  EXTRA_ARGS="-DPYTHON_LIBRARY=`python-config --prefix`/lib/libpython2.7.dylib -DPYTHON_INCLUDE_DIR=`python-config --prefix`/include/python2.7/"
+fi
+
 # compile singa c++
 cd build
-cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDA -DUSE_MODULES=ON -DUSE_MODULES=ON ../
+cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDA -DUSE_MODULES=ON $EXTRA_ARGS ../
 make
 # unit test cpp code
 ./bin/test_singa --gtest_output=xml:./gtest.xml
