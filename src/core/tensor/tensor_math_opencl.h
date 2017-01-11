@@ -577,9 +577,9 @@ void GEMM<float, lang::Opencl>(const bool transA, const bool transB,
 
 
 template <>
-void ComputeCrossEntropy<float, lang::Opencl>(const size_t batchsize, const size_t dim,
-                         const Block *p, const Block *t, Block *loss,
-                         Context *ctx) {
+void ComputeCrossEntropy<float, lang::Opencl>(bool int_target, const size_t batchsize,
+                         const size_t dim, const Block *p, const Block *t,
+                         Block *loss, Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_crossentropy");
   
@@ -592,7 +592,7 @@ void ComputeCrossEntropy<float, lang::Opencl>(const size_t batchsize, const size
 
 
 template <>
-void SoftmaxCrossEntropyBwd<float, lang::Opencl>(const size_t batchsize, const size_t dim,
+void SoftmaxCrossEntropyBwd<float, lang::Opencl>(bool int_target, const size_t batchsize, const size_t dim,
                             const Block *p, const Block *t, Block *grad,
                             Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
