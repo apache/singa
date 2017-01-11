@@ -8,7 +8,7 @@ FROM nvidia/cuda:7.5-cudnn5-devel
 
 # install dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libpcre3-dev libprotobuf-dev libopenblas-dev protobuf-compiler python-dev python-pip wget openssh-server\
+    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libpcre3-dev python-dev python-pip wget openssh-server \
     && apt-get clean && apt-get autoremove && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
     && pip install -U pip wheel numpy setuptools unittest-xml-reporting protobuf
