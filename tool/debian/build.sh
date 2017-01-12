@@ -40,8 +40,8 @@ case $key in
   shift
   ;;
   -c|--cuda|--CUDA)
-  CUDA="ON"
-  CUDNN="ON"
+  # CUDA="ON"
+  # CUDNN="ON"
   shift
   ;;
   -p|--python)
