@@ -41,7 +41,7 @@ to avoid the conflicts of system path and virtual environment path.
 
 Currently, we have the following wheel files,
 
-<table>
+<table border="1">
   <tr>
     <th>OS</th>
     <th>Device</th>
@@ -140,7 +140,7 @@ The generated wheel file is under "dist" directory.
 
 We have prepared the Debian packages (on architecture: amd64) for SINGA as listed below,
 
-<table>
+<table border="1">
   <tr>
     <th>OS</th>
     <th>Device</th>
