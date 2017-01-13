@@ -5,6 +5,7 @@
 | Tag | OS version | devel/runtime | Device|CUDA/CUDNN|
 |:----|:-----------|:--------------|:------|:---------|
 |runtime| Ubuntu16.04|runtime|CPU|-|
+|runtime| Ubuntu16.04|runtime|CPU|-|
 |runtime-cuda| Ubuntu16.04|runtime|GPU|CUDA8.0+CUDNN5|
 |devel| Ubuntu16.04|devel|CPU|-|
 |devel-cuda| Ubuntu16.04|devel|GPU|CUDA8.0+CUDNN5|

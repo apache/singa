@@ -113,6 +113,19 @@ Download the deb file and install it via
 
 To create the Debian packages, please refer to the README.md file under `SINGA_ROOT/tool/debian`.
 
+
+## Use SINGA Docker Images
+
+A list of Docker images with SINGA installed are available on [Dockerhub](https://hub.docker.com/r/nusdbsystem/singa/).
+To use the image, run
+
+    # for images built without CUDA
+    $ docker run -it nusdbsystem/singa:<tag> /bin/bash
+    # for images built with CUDA support
+    $ nvidia-docker run -it nusdbsystem/singa:<tag> /bin/bash
+
+All available tags and descriptions are on [Dockerhub](https://hub.docker.com/r/nusdbsystem/singa/) and [Github](https://github.com/apache/incubator-singa/blob/master/tool/docker/README.md)
+
 ## Compile SINGA from source on Linux and Mac OS
 
 The source files could be downloaded either as a [tar.gz file](https://dist.apache.org/repos/dist/dev/incubator/singa/), or as a git repo

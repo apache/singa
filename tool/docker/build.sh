@@ -22,30 +22,31 @@
 # ./build.sh PUSH would push the images to dockerhub/nusdbsystem and then delete the local image
 #   (used by Jenkins to avoid dangling images from multiple building)
 
+echo "###################"
 echo "build singa:runtime"
-docker build tool/docker/runtime/ --force-rm -t nusdbsystem/singa:runtime
-if [ $1 = "PUSH" ]; then
-  docker push nusdbsystem/singa:runtime
-  docker rmi nusdbsystem/singa:runtime
-fi
+echo "###################"
+docker build tool/docker/runtime/ --force-rm -t nusdbsystem/singa:runtime -t nusdbsystem/singa:latest
 
+echo "###################"
 echo "build singa:runtime-cuda"
+echo "###################"
 docker build tool/docker/runtime/cuda --force-rm -t nusdbsystem/singa:runtime-cuda
-if [ $1 = "PUSH" ]; then
-  docker push nusdbsystem/singa:runtime-cuda
-  docker rmi nusdbsystem/singa:runtime-cuda
-fi
 
+echo "###################"
 echo "build singa:devel"
+echo "###################"
 docker build tool/docker/devel/ --force-rm -t nusdbsystem/singa:devel
-if [ $1 = "PUSH" ]; then
-  docker push nusdbsystem/singa:devel
-  docker rmi nusdbsystem/singa:devel
-fi
 
+echo "###################"
 echo "build singa:devel-cuda"
+echo "###################"
 docker build tool/docker/devel/cuda --force-rm -t nusdbsystem/singa:devel-cuda
+
 if [ $1 = "PUSH" ]; then
-  docker push nusdbsystem/singa:devel-cuda
-  docker rmi nusdbsystem/singa:devel-cuda
+  echo "##########################################"
+  echo "Push to Dockerhub and delete local images"
+  echo "#########################################"
+
+  docker push nusdbsystem/singa
+  docker rmi -f `docker images nusdbsystem/singa -q`
 fi
