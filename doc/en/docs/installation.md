@@ -41,15 +41,56 @@ to avoid the conflicts of system path and virtual environment path.
 
 Currently, we have the following wheel files,
 
-| OS          | Device  | CUDA/CUDNN | Link |
-|:----        |:------|------|:-------|:--------|
-| Ubuntu14.04|CPU|-|[latest](http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
-| Ubuntu14.04|GPU|CUDA7.5+CUDNN4|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cuda7.5-cudnn4/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
-| Ubuntu14.04|GPU|CUDA7.5+CUDNN5|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cuda7.5-cudnn5/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
-| Ubuntu16.04|CPU|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
-| Ubuntu16.04|GPU|CUDA8+CUDNN5|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cuda8.0-cudnn5/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux)|
-| MacOSX10.11|CPU|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx/latest/macosx10.11-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx)|
-| MacOSX10.12|CPU|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx/latest/macosx10.12-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx)|
+<table border="1">
+  <tr>
+    <th>OS</th>
+    <th>Device</th>
+    <th>CUDA/CUDNN</th>
+    <th>Link</th>
+  </tr>
+  <tr>
+    <td>Ubuntu14.04</td>
+    <td>CPU</td>
+    <td>-</td>
+    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
+  </tr>
+  <tr>
+    <td>Ubuntu14.04</td>
+    <td>GPU</td>
+    <td>CUDA7.5+CUDNN4</td>
+    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cuda7.5-cudnn4/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
+  </tr>
+  <tr>
+    <td>Ubuntu14.04</td>
+    <td>GPU</td>
+    <td>CUDA7.5+CUDNN5</td>
+    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cuda7.5-cudnn5/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
+  </tr>
+  <tr>
+    <td>Ubuntu16.04</td>
+    <td>CPU</td>
+    <td>-</td>
+    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
+  </tr>
+  <tr>
+    <td>Ubuntu16.04</td>
+    <td>GPU</td>
+    <td>CUDA8.0+CUDNN5</td>
+    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cuda8.0-cudnn5/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
+  </tr>
+  <tr>
+    <td>MacOSX10.11</td>
+    <td>CPU</td>
+    <td>-</td>
+    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx/latest/macosx10.11-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx">history</a></td>
+  </tr>
+  <tr>
+    <td>MacOSX10.12</td>
+    <td>CPU</td>
+    <td>-</td>
+    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx/latest/macosx10.12-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx">history</a></td>
+  </tr>
+</table>
 
 Download the whl file and execute the following command to install PySINGA,
 
@@ -99,13 +140,44 @@ The generated wheel file is under "dist" directory.
 
 We have prepared the Debian packages (on architecture: amd64) for SINGA as listed below,
 
-| OS          | Device  | CUDA/CUDNN | Link |
-|:----        |:------|------|:-------|:--------|
-| Ubuntu14.04|CPU|-|[latest](http://comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu14.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
-| Ubuntu14.04|GPU|CUDA7.5+CUDNN4|coming soon|
-| Ubuntu14.04|GPU|CUDA7.5+CUDNN5|coming soon|
-| Ubuntu16.04|CPU|-|[latest](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu16.04-cpp/), [history](http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/)|
-| Ubuntu16.04|GPU|CUDA8+CUDNN5|coming soon|
+<table border="1">
+  <tr>
+    <th>OS</th>
+    <th>Device</th>
+    <th>CUDA/CUDNN</th>
+    <th>Link</th>
+  </tr>
+  <tr>
+    <td>Ubuntu14.04</td>
+    <td>CPU</td>
+    <td>-</td>
+    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu14.04-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian">history</a></td>
+  </tr>
+  <tr>
+    <td>Ubuntu14.04</td>
+    <td>GPU</td>
+    <td>CUDA7.5+CUDNN4</td>
+    <td>coming soon</td>
+  </tr>
+  <tr>
+    <td>Ubuntu14.04</td>
+    <td>GPU</td>
+    <td>CUDA7.5+CUDNN5</td>
+    <td>coming soon</td>
+  </tr>
+  <tr>
+    <td>Ubuntu16.04</td>
+    <td>CPU</td>
+    <td>-</td>
+    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu16.04-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian">history</a></td>
+  </tr>
+  <tr>
+    <td>Ubuntu16.04</td>
+    <td>GPU</td>
+    <td>CUDA8.0+CUDNN5</td>
+    <td>coming soon</td>
+  </tr>
+</table>
 
 Download the deb file and install it via
 
