@@ -409,7 +409,12 @@ class FeedForwardNet(object):
                 params = pickle.load(fd)
                 for (specs, val) in zip(self.param_specs(),
                                         self.param_values()):
-                    val.copy_from_numpy(params[specs.name])
+                    try:
+                        val.copy_from_numpy(params[specs.name])
+                    except AssertionError as err:
+                        print 'Error from copying values for param: %s' % specs.name
+                        print 'shape of param vs checkpoint', val.shape, params[specs.name].shape
+                        raise err
         else:
             print 'NOTE: If your model was saved using pickle, '\
                     'then set use_pickle=True for loading it'

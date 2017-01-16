@@ -21,8 +21,8 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 
 IF(ENABLE_DIST)
   ADD_EXECUTABLE(test_ep "singa/test_ep.cc")
-  ADD_DEPENDENCIES(test_ep singa_io)
-  TARGET_LINK_LIBRARIES(test_ep singa_utils singa_io protobuf ${SINGA_LINKER_LIBS})
+  ADD_DEPENDENCIES(test_ep singa)
+  TARGET_LINK_LIBRARIES(test_ep singa protobuf ${SINGA_LINKER_LIBS})
 ENDIF()
 
 ADD_LIBRARY(gtest STATIC EXCLUDE_FROM_ALL "gtest/gtest.h" "gtest/gtest-all.cc")

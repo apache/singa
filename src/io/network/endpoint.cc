@@ -227,6 +227,9 @@ void NetworkThread::doWork() {
     LOG(FATAL) << "Bind Error: " << strerror(errno);
   }
 
+  // TODO(wangwei) remove the hardcode setting, which would result erros if
+  // there are more than 10 connections
+  // reported by yaochang
   if (listen(socket_fd_, 10)) {
     LOG(FATAL) << "Listen Error: " << strerror(errno);
   }

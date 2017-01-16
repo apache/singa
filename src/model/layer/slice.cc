@@ -30,22 +30,26 @@ void Slice::Setup(const Shape& in_sample, const LayerConf& conf) {
   out_sample_shapes_.clear();
   slice_point_.clear();
   axis_ = conf.slice_conf().axis();
+  CHECK_GE(axis_, 0u);
   int offset = 0;
   // #slice point = # out tensors - 1
   for (size_t p : conf.slice_conf().slice_point()) {
     slice_point_.push_back(p);
-    if (axis_ == 1) {
-      out_sample_shapes_.push_back({p - offset});
-      offset = p;
-    } else {
+    if (axis_ == 0) {
       out_sample_shapes_.push_back(in_sample);
+    } else {
+      auto s = in_sample;
+      s[axis_ - 1] = p - offset;
+      out_sample_shapes_.push_back(s);
+      offset = p;
     }
   }
-  slice_point_.push_back(in_sample[0]);
-  if (axis_ == 1) {
-    out_sample_shapes_.push_back({in_sample[0] - offset});
-  } else {
+  if (axis_ == 0) {
     out_sample_shapes_.push_back(in_sample);
+  } else {
+    auto s = in_sample;
+    s[axis_ - 1] = in_sample[axis_ - 1] - offset;
+    out_sample_shapes_.push_back(s);
   }
 }
 
@@ -54,12 +58,11 @@ const vector<Tensor> Slice::Forward(int flag, const vector<Tensor>& inputs) {
   CHECK_EQ(inputs.size(), 1u) << "Split layer only have one input tensor.";
   size_t offset = 0;
   for (auto& s : slice_point_) {
-    if (axis_ == 0)
-      outputs.push_back(SliceRows(inputs.at(0), offset, s));
-    else
-      outputs.push_back(SliceColumns(inputs.at(0), offset, s));
+      outputs.push_back(SliceOn(inputs.at(0), offset, s, axis_));
     offset = s;
   }
+  outputs.push_back(SliceOn(inputs.at(0), offset, inputs.at(0).shape(axis_),
+        axis_));
   return outputs;
 }
 
@@ -67,10 +70,7 @@ const std::pair<vector<Tensor>, vector<Tensor>> Slice::Backward(
     int flag, const vector<Tensor>& grads) {
   vector<Tensor> input_grad, param_grad;
   CHECK_EQ(grads.size(), out_sample_shapes_.size());
-  if (axis_ == 0)
-    input_grad.push_back(ConcatRows(grads));
-  else
-    input_grad.push_back(ConcatColumns(grads));
+  input_grad.push_back(ConcatOn(grads, axis_));
   return std::make_pair(input_grad, param_grad);
 }
 

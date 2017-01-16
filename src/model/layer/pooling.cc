@@ -65,6 +65,8 @@ void Pooling::Setup(const Shape& in_sample, const LayerConf& conf) {
   width_ = in_sample.at(2);
   pooled_height_ = 1;
   if (pool_conf.ceil()) {
+    // TODO(wangwei): caffe also ensures the last pooling window starts strictly
+    // within the original area
     if (stride_h_ > 0)
       pooled_height_ = static_cast<int>(ceil(static_cast<float>(
               height_ + 2 * pad_h_ - kernel_h_) / stride_h_)) + 1;

@@ -23,6 +23,9 @@
 #include "singa/model/layer.h"
 
 namespace singa {
+/**
+ * Cocnatenate tensors from the source layers along the give axis.
+ */
 class Concat : public Layer {
  public:
   /// \copydoc Layer::layer_type()
@@ -43,7 +46,7 @@ class Concat : public Layer {
       const vector<Tensor>& grad) override;
 
  protected:
-  /// 0 for concat rows; 1 for concat cols
+  /// >= 0
   int axis_ = 0;
   /// slice_point_[i] the end offset of the i-th source tensor on the concat
   /// axis of the result tensor

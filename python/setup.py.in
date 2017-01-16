@@ -61,7 +61,10 @@ setup(
     install_requires=[
         'numpy>=1.11.0',
         'protobuf>=2.5.0,<3',
-        'unittest-xml-reporting'
+        'unittest-xml-reporting',
+        'flask>=0.10.1',
+        'flask_cors>=3.0.2',
+        'pillow>=2.3.0'
         ],
 
     #List additional groups of dependencies here (e.g. development

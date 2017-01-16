@@ -458,6 +458,8 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
 Tensor CopyRows(const Tensor &in, const size_t start, const size_t end);
 /// Alias of CopyRows
 Tensor SliceRows(const Tensor &in, const size_t start, const size_t end);
+/// Slice the input tensor along the give axis to generate a new tensor
+Tensor SliceOn(const Tensor &in, const size_t start, const size_t end, int axis);
 /// Return a tensor consisting of columns ([start, end)) from 'in'. It copies
 /// the values from 'in'. 'in' is a  2D Tensor.
 Tensor CopyColumns(const Tensor &in, const size_t start, const size_t end);
@@ -466,6 +468,8 @@ Tensor SliceColumns(const Tensor &in, const size_t start, const size_t end);
 /// Return a tensor which is vertically stacked from tensors in 'in'. Each
 /// tensor in 'in' is a 2D tensor. Values are copied, no memory sharing.
 Tensor ConcatenateRows(const vector<Tensor> &in);
+/// Return a tensor concatenated of the input tensors along the give axis.
+Tensor ConcatOn(const vector<Tensor> &in, int axis);
 /// Alias name for function ConcatenateRows
 Tensor ConcatRows(const vector<Tensor> &in);
 /// Return a tensor which is horizontally stacked from tensors in 'in'. Each

@@ -578,9 +578,9 @@ def to_numpy(t):
     '''
     th = to_host(t)
     if th.dtype == core_pb2.kFloat32:
-        np_array = ret.singa_tensor.GetFloatValue(int(th.size()))
+        np_array = th.singa_tensor.GetFloatValue(int(th.size()))
     elif th.dtype == core_pb2.kInt:
-        np_array = ret.singa_tensor.GetIntValue(int(th.size()))
+        np_array = th.singa_tensor.GetIntValue(int(th.size()))
     else:
         print 'Not implemented yet for ', th.dtype
     return np_array.reshape(th.shape)

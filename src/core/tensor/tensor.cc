@@ -742,6 +742,42 @@ void DivColumn(const Tensor &v, Tensor *M) {
   MultColumn(inv, M);
 }
 
+Tensor ConcatOn(const vector<Tensor> &in, int axis) {
+  vector<Tensor> tmp;
+  Shape out_shape = in[0].shape();
+  size_t dim = in[0].shape().size();
+  CHECK_GE(dim, 2u) << " Only work for tensor of dim >=2 ";
+  size_t size = in[0].Size() / in[0].shape(axis);
+  size_t new_size = 0u;
+  for (const auto& t: in) {
+    CHECK_EQ(dim, t.shape().size()) << "All tensors should have the same dim";
+    CHECK_EQ(size, t.Size() / t.shape(axis)) << "The size of all axis should "
+      <<" be the same except the concatenated axis";
+    new_size += t.shape(axis);
+  }
+  out_shape[axis] = new_size;
+  if (axis == 0) {
+    size_t nrow = 0;
+    for (const auto& t: in) {
+      nrow += t.shape(0);
+      tmp.push_back(Reshape(t, {t.shape(0), t.Size() / t.shape(0)}));
+    }
+    auto ret = ConcatenateRows(tmp);
+    ret.Reshape(out_shape);
+    return ret;
+  } else {
+    for (const auto& t: in) {
+      size_t nrow = 1;
+      for (int i = 0; i < axis; i++)
+        nrow *= t.shape(i);
+      tmp.push_back(Reshape(t, {nrow, t.Size() / nrow}));
+    }
+    auto ret = ConcatenateColumns(tmp);
+    ret.Reshape(out_shape);
+    return ret;
+  }
+}
+
 Tensor ConcatenateRows(const vector<Tensor> &in) {
   size_t nrow = 0, ncol = 0;
   CHECK(in.size());
@@ -803,6 +839,27 @@ Tensor CopyRows(const Tensor &in, const size_t start, const size_t end) {
   Tensor out(s, in.device(), in.data_type());
   CopyDataToFrom(&out, in, out.Size(), 0, start * sample_size);
   return out;
+}
+
+
+Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis) {
+  Shape out_shape = in.shape();
+  out_shape[axis] = end - start;
+  if (axis == 0) {
+    auto ret = SliceRows(Reshape(in, {in.shape(0), in.Size() / in.shape(0)}),
+        start, end);
+    ret.Reshape(out_shape);
+    return ret;
+  } else {
+    size_t nrow = 1;
+    for (int i = 0; i < axis; i++)
+      nrow *= in.shape(i);
+    auto suffix = in.Size() / nrow / in.shape(axis);
+    auto ret = SliceColumns(Reshape(in, {nrow, in.Size() / nrow}),
+        start * suffix, end * suffix);
+    ret.Reshape(out_shape);
+    return ret;
+  }
 }
 
 Tensor SliceRows(const Tensor &in, const size_t start, const size_t end) {

@@ -23,6 +23,10 @@
 #include "singa/model/layer.h"
 
 namespace singa {
+/**
+ * Slice the tensor from the source layer along the give axis and according to
+ * the give slicep points.
+ */
 class Slice : public Layer {
  public:
   /// \copydoc Layer::layer_type()
@@ -44,7 +48,7 @@ class Slice : public Layer {
       const vector<Tensor>& grad) override;
 
  protected:
-  /// 0 for slice rows; 1 for slice cols
+  /// >= 0
   int axis_ = 0;
   /// out_sample_shapes_[i] is the shape of the i-th output tensor
   vector<Shape> out_sample_shapes_;

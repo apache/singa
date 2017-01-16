@@ -30,14 +30,26 @@ void Concat::Setup(const vector<Shape>& in_shapes, const LayerConf& conf) {
   out_sample_shape_.clear();
   slice_point_.clear();
   axis_ = conf.concat_conf().axis();
-  if (axis_ == 0)
-    out_sample_shape_.push_back(in_shapes[0][0]);
-  else {
+  CHECK_GE(axis_, 0);
+
+  if (axis_ == 0) {
+    out_sample_shape_ = in_shapes[0];
+    size_t fea_size = Product(in_shapes[0]);
+    for (auto& s: in_shapes) {
+      CHECK_EQ(Product(s), fea_size) << "Feature length of all source samples "
+        << "must be the same";
+    }
+  } else {
+    out_sample_shape_ = in_shapes[0];
+    size_t fea_size = Product(in_shapes[0]) / in_shapes[0][axis_ - 1];
     size_t l = 0;
     for (auto& s: in_shapes) {
-       l += s[0];
+       CHECK_GE(s.size(), axis_);
+       l += s[axis_ - 1];
+       CHECK_EQ(fea_size, Product(s) / s[axis_ - 1])
+         << "Feature length for all axis except axis_ must be the same";
     }
-    out_sample_shape_.push_back(l);
+    out_sample_shape_[axis_ - 1] = l;
   }
 }
 
@@ -52,10 +64,7 @@ const vector<Tensor> Concat::Forward(int flag, const vector<Tensor>& inputs) {
   if (inputs.size() == 1u) {
     outputs = inputs;
   } else {
-    if(axis_ == 0)
-      outputs.push_back(ConcatRows(inputs));
-    else
-      outputs.push_back(ConcatColumns(inputs));
+    outputs.push_back(ConcatOn(inputs, axis_));
   }
   return outputs;
 }
@@ -66,10 +75,7 @@ const std::pair<vector<Tensor>, vector<Tensor>> Concat::Backward(
   CHECK_EQ(grads.size(), 1u) << "Concat layer only have one output tensor.";
   size_t last_offset = 0u;
   for (auto p : slice_point_) {
-    if (axis_ == 0)
-      input_grad.push_back(SliceRows(grads.at(0), last_offset, p));
-    else
-      input_grad.push_back(SliceColumns(grads.at(0), last_offset, p));
+    input_grad.push_back(SliceOn(grads.at(0), last_offset, p, axis_));
     last_offset = p;
   }
   return std::make_pair(input_grad, param_grad);
