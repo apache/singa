@@ -19,7 +19,7 @@ Nerual net class for constructing the nets using layers and providing access
 functions for net info, e.g., parameters.
 """
 
-
+from timeit import default_timer as timer
 from .proto.model_pb2 import kTrain, kEval
 import tensor
 import layer
@@ -28,6 +28,11 @@ import cPickle as pickle
 
 '''For display training information, e.g L1 value of layer data'''
 verbose = False
+benchmark = False
+forward_time = {}  # forward time for each layer
+backward_time = {}  # backward time for each layer
+iter_time = [0, 0, 0]  # time for one iteration, forward, and backward
+
 
 
 class FeedForwardNet(object):
@@ -128,11 +133,24 @@ class FeedForwardNet(object):
         Returns:
             gradients of parameters and the loss and metric values.
         '''
-        out = self.forward(kTrain, x)
-        l = self.loss.forward(kTrain, out, y)
-        if self.metric is not None:
-            m = self.metric.evaluate(out, y)
-        return self.backward(), (l.l1(), m)
+        if benchmark:
+            global bp_time
+            t1 = timer()
+            out = self.forward(kTrain, x)
+            l = self.loss.forward(kTrain, out, y)
+            t2 = timer()
+            ret = self.backward()
+            t3 = timer()
+            iter_time[0] += t3 - t1
+            iter_time[1] += t2 - t1
+            iter_time[2] += t3 - t2
+            return ret, (l.l1(), None)
+        else:
+            out = self.forward(kTrain, x)
+            l = self.loss.forward(kTrain, out, y)
+            if self.metric is not None:
+                m = self.metric.evaluate(out, y)
+            return self.backward(), (l.l1(), m)
 
     def evaluate(self, x, y):
         '''Evaluate the loss and metric of the given data.
@@ -249,7 +267,15 @@ class FeedForwardNet(object):
                     output_of_layer.pop(src.name)
             if len(inputs) == 1:
                 inputs = inputs[0]
-            out = cur.forward(flag, inputs)
+
+            if benchmark:
+                global forward_time
+                start_tick = timer()
+                out = cur.forward(flag, inputs)
+                forward_time[cur.name] += timer() - start_tick
+            else:
+                out = cur.forward(flag, inputs)
+
             if verbose:
                 disp_src = '+'.join([src.name for src in srcs])
                 disp_src += '-->' + cur.name
@@ -299,7 +325,13 @@ class FeedForwardNet(object):
                 # del output_of_layer[dst.name]
             if len(grads) == 1:
                 grads = grads[0]
-            outs, _pgrads = cur.backward(kTrain, grads)
+            if benchmark:
+                global backward_time
+                start_tick = timer()
+                outs, _pgrads = cur.backward(kTrain, grads)
+                backward_time[cur.name] += timer() - start_tick
+            else:
+                outs, _pgrads = cur.backward(kTrain, grads)
             pgrads.append(_pgrads)
             if verbose:
                 disp_src = '+'.join(
@@ -320,6 +352,36 @@ class FeedForwardNet(object):
         for pgrad in reversed(pgrads):
             ret.extend(pgrad)
         return ret
+
+    def start_benchmark(self):
+        '''Reset the internal arrays to start benchmark, must be called before
+        calling the train() function.
+        '''
+        global benchmark, bp_time
+        benchmark = True
+        bp_time = [0, 0, 0]
+        for ly in self.layers:
+            forward_time[ly.name] = 0
+            backward_time[ly.name] = 0
+        return iter_time, forward_time, backward_time
+
+    def stop_benchmark(self, num):
+        '''Stop the benchmark and return the time information.
+
+        Args:
+            num(int), number of total iterations
+
+        Returns:
+            time for the following procedures within one iteration
+            [foward-backward, forward, backward], [forward of each layer],
+            [backward of each layer]
+        '''
+        fp = []
+        bp = []
+        for lyr in self.ordered_layers:
+            fp.append((lyr.name, forward_time[lyr.name] / num))
+            bp.append((lyr.name, backward_time[lyr.name] / num))
+        return [t / num for t in iter_time], fp, bp
 
     def save(self, f, buffer_size=10, use_pickle=False):
         '''Save model parameters using io/snapshot.

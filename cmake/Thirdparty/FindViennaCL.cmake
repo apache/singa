@@ -1,9 +1,14 @@
 # This file is retrieved from caffe/cmake/Modules/FindViennaCL.cmake.
+# from the opencl branch on BVLC/Caffe.
 
 SET(ViennaCL_WITH_OPENCL TRUE)
 
 SET(VIENNACL_INCLUDE_SEARCH_PATHS
+  viennacl
+  viennacl-dev
   ..
+  ../viennacl
+  ../viennacl-dev
   /usr/include
   /usr/local/include
   /opt/ViennaCL/include
@@ -15,7 +20,7 @@ FIND_PATH(ViennaCL_INCLUDE_DIR NAMES viennacl/forwards.h PATHS ${VIENNACL_INCLUD
 
 SET(ViennaCL_FOUND ON)
 
-#    Check include files
+# Check include files
 IF(NOT ViennaCL_INCLUDE_DIR)
     SET(ViennaCL_FOUND OFF)
     MESSAGE(STATUS "Could not find ViennaCL include. Turning ViennaCL_FOUND off")
@@ -33,6 +38,10 @@ ENDIF (ViennaCL_FOUND)
 
 IF(ViennaCL_WITH_OPENCL)
   find_package(OpenCL REQUIRED)
+  IF(NOT OPENCL_INCLUDE_DIRS)
+    MESSAGE(FATAL_ERROR "Could not find OpenCL include.")
+  ENDIF()
+  MESSAGE(STATUS "Found OpenCL include: ${OPENCL_INCLUDE_DIRS}")
 ENDIF(ViennaCL_WITH_OPENCL)
 
 set(ViennaCL_INCLUDE_DIRS ${ViennaCL_INCLUDE_DIR} ${OPENCL_INCLUDE_DIRS})

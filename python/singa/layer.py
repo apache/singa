@@ -75,6 +75,7 @@ class Layer(object):
         1. construct layer without input_sample_shapes, goto 2;
            construct layer with input_sample_shapes, goto 3;
         2. call setup to create the parameters and setup other meta fields
+w
         3. call forward or access layer members
         4. call backward and get parameters for update
 
@@ -350,7 +351,7 @@ class Conv2D(Layer):
         self.conf.param.extend([bspecs])
         self.param_specs.append(bspecs)
 
-        _check_engine(engine, ['cudnn', 'singacpp'])
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacl'])
         self.layer = _create_layer(engine, 'Convolution')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -407,7 +408,7 @@ class Pooling2D(Layer):
         conf = self.conf.pooling_conf
         conf = _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad)
         conf.pool = mode
-        _check_engine(engine, ['cudnn', 'singacpp'])
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacl'])
         self.layer = _create_layer(engine, 'Pooling')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)

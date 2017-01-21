@@ -173,10 +173,23 @@ const Tensor CudnnConvolution::Forward(int flag, const Tensor &input) {
 
   Shape shape{batchsize, num_filters_, conv_height_, conv_width_};
   Tensor output(shape, dev, dtype);
+  LOG(ERROR) << "input: " << input.shape(0) << ", " << input.shape(1) << ", "
+    << input.shape(2) << ", " << input.shape(3);
+  LOG(ERROR) << "weight: " << weight_.shape(0) << ", " << weight_.shape(1);
+  LOG(ERROR) << "output: " << output.shape(0) << ", " << output.shape(1) << ", "
+    << output.shape(2) << ", " << output.shape(3);
+
   output.device()->Exec([input, output, this](Context *ctx) {
     Block *inblock = input.block(), *outblock = output.block(),
           *wblock = this->weight_.block();
     float alpha = 1.f, beta = 0.f;
+    /*
+    LOG(ERROR) << "before conv";
+    CHECK(inblock->data() != nullptr);
+    CHECK(wblock->data() != nullptr);
+    CHECK(outblock->mutable_data() != nullptr);
+    CHECK(workspace_.block()->mutable_data() != nullptr);
+    */
     cudnnConvolutionForward(ctx->cudnn_handle, &alpha, this->x_desc_,
                             inblock->data(), this->filter_desc_, wblock->data(),
                             this->conv_desc_, this->fp_alg_,
@@ -185,6 +198,7 @@ const Tensor CudnnConvolution::Forward(int flag, const Tensor &input) {
                             this->y_desc_, outblock->mutable_data());
   }, {input.block(), weight_.block()}, {output.block()}, workspace_.block());
 
+  // LOG(ERROR) << "before bias";
   if (bias_term_) {
     output.device()->Exec([output, this](Context *ctx) {
       float beta = 1.f, alpha = 1.0f;
