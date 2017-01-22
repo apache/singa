@@ -19,10 +19,11 @@
 
 #include "singa/core/device.h"
 #include "singa/singa_config.h"
-
-#ifdef USE_CUDA
+#include "singa/utils/opencl_utils.h"
 
 namespace singa {
+
+#ifdef USE_CUDA
 
 int Platform::GetNumGPUs() {
   int count;
@@ -109,7 +110,7 @@ const string Platform::DeviceQuery(int device, bool verbose) {
   return out.str();
 }
 
-const vector<shared_ptr<Device> >
+const vector<shared_ptr<Device>>
 Platform::CreateCudaGPUs(const size_t num_devices, size_t init_size) {
   const vector<int> gpus = GetGPUIDs();
   CHECK_LE(num_devices, gpus.size());
@@ -117,7 +118,7 @@ Platform::CreateCudaGPUs(const size_t num_devices, size_t init_size) {
   return CreateCudaGPUsOn(use_gpus, init_size);
 }
 
-const vector<shared_ptr<Device> >
+const vector<shared_ptr<Device>>
 Platform::CreateCudaGPUsOn(const vector<int> &devices, size_t init_size) {
   MemPoolConf conf;
   if (init_size > 0)
@@ -137,8 +138,46 @@ Platform::CreateCudaGPUsOn(const vector<int> &devices, size_t init_size) {
   return ret;
 }
 
-}  // namespace singa
-
 #endif  // USE_CUDA
+
+#ifdef USE_OPENCL
+
+const int Platform::GetNumOpenclPlatforms() {
+  auto all_platforms = viennacl::ocl::get_platforms();
+  return (int)all_platforms.size();
+}
+
+const int Platform::GetNumOpenclDevices() {
+  auto all_platforms = viennacl::ocl::get_platforms();
+  unsigned int total_num_devices = 0;
+  for (auto plat : all_platforms) {
+    auto all_devices = plat.devices(CL_DEVICE_TYPE_ALL);
+    total_num_devices += all_devices.size();
+  }
+  return (int)total_num_devices;
+}
+
+const std::shared_ptr<Device> Platform::GetDefaultOpenclDevice() {
+  return std::make_shared<OpenclDevice>();
+}
+/*
+static const std::vector<std::shared_ptr<Device>>
+Platform::CreateOpenclDevices(const size_t num_devices) {
+  auto all_platforms = viennacl::ocl::get_platforms();
+  for (auto plat : all_platforms) {
+    auto all_devices = plat.devices(CL_DEVICE_TYPE_ALL);
+    total_num_devices += all_devices.size();
+  }
+  return (int)total_num_devices;
+}
+
+static const std::vector<std::shared_ptr<Device>>
+Platform::CreateOpenclDevices(const std::vector<int> &id) {
+
+}
+*/
+#endif // USE_OPENCL
+
+}  // namespace singa
 
 #endif

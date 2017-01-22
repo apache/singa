@@ -262,7 +262,7 @@ private:
 class Platform {
 public:
 
-  /// Return the defualt host device
+  /// Return the default host device
   static std::shared_ptr<Device> GetDefaultDevice() {
     return defaultDevice;
   }
@@ -290,23 +290,7 @@ public:
   /// Create a set of CudaGPU Device using given GPU IDs.
   static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
-#endif // USE_CUDA
-
-  /// Create a \p num_devices set of valid OpenCL devices, regardless of
-  /// platforms.  If there are fewer valid devices than requested, then this
-  /// method will return as many as possible.If OpenCL is not in use, this
-  /// method will return an empty array.
-  const std::vector<std::shared_ptr<Device> > CreateOpenclDevices(
-             const size_t num_devices);
-
-  /// Create a set of valid OpenCL devices, regardless of platforms, assigning
-  /// \p id to each device in sequence.
-  /// If there are fewer valid devices than requested, then this method will
-  /// return as many as possible.
-  /// If OpenCL is not in use, this method will return an empty array.
-  const std::vector<std::shared_ptr<Device> >
-  CreateOpenclDevices(const vector<int> &id);
-
+  
   /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
   /// This function checks the availability of GPU #device_id.
   /// It attempts to create a context on the device by calling cudaFree(0).
@@ -322,6 +306,31 @@ public:
   /// the permission. cudaFree(0) is one of those with no side effect,
   /// except the context initialization.
   static bool CheckDevice(const int device_id);
+#endif // USE_CUDA
+
+#ifdef USE_OPENCL
+
+  const int GetNumOpenclPlatforms();
+  
+  const int GetNumOpenclDevices();
+  
+  static const std::shared_ptr<Device> GetDefaultOpenclDevice();
+
+  /// Create a \p num_devices set of valid OpenCL devices, regardless of
+  /// platforms.  If there are fewer valid devices than requested, then this
+  /// method will return as many as possible. If OpenCL is not in use, this
+  /// method will return an empty array.
+//  static const std::vector<std::shared_ptr<Device>>
+//  CreateOpenclDevices(const size_t num_devices);
+
+  /// Create a set of valid OpenCL devices, regardless of platforms, assigning
+  /// \p id to each device in sequence.
+  /// If there are fewer valid devices than requested, then this method will
+  /// return as many as possible.
+  /// If OpenCL is not in use, this method will return an empty array.
+//  const std::vector<std::shared_ptr<Device>>
+//  CreateOpenclDevices(const vector<int> &id);
+#endif // USE_OPENCL
 
 };
 
