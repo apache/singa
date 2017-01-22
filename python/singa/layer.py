@@ -138,7 +138,7 @@ class Layer(object):
         '''
         Create a singa layer based on caffe layer configuration.
         '''
-        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda'])
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacuda', 'singacl'])
         if self.conf.type == 'InnerProduct' or self.conf.type == 14:
             self.layer = _create_layer(engine, 'Dense')
         else:
@@ -350,7 +350,7 @@ class Conv2D(Layer):
         self.conf.param.extend([bspecs])
         self.param_specs.append(bspecs)
 
-        _check_engine(engine, ['cudnn', 'singacpp'])
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacl'])
         self.layer = _create_layer(engine, 'Convolution')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
@@ -407,7 +407,7 @@ class Pooling2D(Layer):
         conf = self.conf.pooling_conf
         conf = _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad)
         conf.pool = mode
-        _check_engine(engine, ['cudnn', 'singacpp'])
+        _check_engine(engine, ['cudnn', 'singacpp', 'singacl'])
         self.layer = _create_layer(engine, 'Pooling')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
