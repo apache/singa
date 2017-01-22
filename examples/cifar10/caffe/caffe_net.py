@@ -18,12 +18,9 @@
 import os
 from singa import converter
 
-
 def create_net(use_cpu):
     net_proto = os.path.abspath('./caffe/cifar10_full_train_test.prototxt')
     solver_proto = os.path.abspath('./caffe/cifar10_full_solver.prototxt')
-    #net_proto = os.path.abspath('./caffe/cifar10_quick_train_test.prototxt')
-    #solver_proto = os.path.abspath('./caffe/cifar10_quick_solver.prototxt')
     input_sample_shape = [3, 32, 32, ]
 
     cvt = converter.CaffeConverter(net_proto, solver_proto, input_sample_shape)
