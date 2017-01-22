@@ -67,6 +67,12 @@ verbose = False
 class FeedForwardNet(object):
 
     def __init__(self, loss=None, metric=None):
+        '''Representing a feed-forward neural net.
+
+        Args:
+            loss, a Loss instance. Necessary training
+            metric, a Metric instance. Necessary for evaluation
+        '''
         self.loss = loss
         self.metric = metric
         self.layers = []
@@ -76,6 +82,9 @@ class FeedForwardNet(object):
         self.out_sample_shape_of_layer = {}
 
     def to_device(self, dev):
+        '''Move the net onto the given device, including
+        all parameters and intermediate data.
+        '''
         for lyr in self.layers:
             lyr.to_device(dev)
 
@@ -90,6 +99,7 @@ class FeedForwardNet(object):
 
         Args:
             lyr (Layer): the layer to be added
+            src (Layer): the source layer of lyr
         """
         if src is not None:
             if isinstance(src, layer.Layer):
@@ -128,6 +138,7 @@ class FeedForwardNet(object):
         return lyr
 
     def param_values(self):
+        '''Return a list of tensors for all parameters'''
         values = []
         layers = self.layers
         if self.ordered_layers is not None:
@@ -137,6 +148,7 @@ class FeedForwardNet(object):
         return values
 
     def param_specs(self):
+        '''Return a list of ParamSpec for all parameters'''
         specs = []
         layers = self.layers
         if self.ordered_layers is not None:
@@ -146,6 +158,7 @@ class FeedForwardNet(object):
         return specs
 
     def param_names(self):
+        '''Return a list for the names of all params'''
         return [spec.name for spec in self.param_specs()]
 
     def train(self, x, y):
@@ -304,6 +317,11 @@ class FeedForwardNet(object):
             return ret
 
     def backward(self):
+        '''Run back-propagation after forward-propagation.
+
+        Returns:
+            a list of gradient tensor for all parameters
+        '''
         if self.dst_of_layer is None:
             self.dst_of_layer = {}
             for cur in self.layers:

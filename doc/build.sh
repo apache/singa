@@ -29,7 +29,7 @@ fi
 
 
 if [ "$1"x = "html"x ]; then
-  cp -rf ../examples en/docs/
+  cp -rf ../examples en/docs/model_zoo
   cp README.md en/develop/contribute-docs.md
   for (( i=0; i<${#LANG_ARR[@]}; i++)) do
     echo "building language ${LANG_ARR[i]} ..."

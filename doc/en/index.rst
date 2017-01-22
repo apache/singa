@@ -58,18 +58,16 @@ Recent News
 
 Getting Started
 ---------------
-* The `Software stack <docs/software_stack.html>`_ page gives an overview of SINGA.
+* Try SINGA on `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ or via `Docker <https://hub.docker.com/r/nusdbsystem/singa/>`_.
 
-* The `Installation <docs/installation.html>`_ guide describes details on downloading and installing SINGA.
+* Install SINGA via `python wheel files <./docs/installation.html#from-wheel>`_, `Debian packages <./docs/installation.html#from-debian-package>`_ or from `source <./docs/installation.html#from-source>`_.
 
-* Please follow the `Examples <docs/examples/index.html>`_ guide to run simple applications on SINGA.
-
-* More exmaples in `Jupyter <http://jupyter.org/>`_ (IPython) can be open in `notebook viewer <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ .
+* Refer to the `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ for some basic examples and the `model zoo page <./docs/model_zoo/index.html>`_ for more examples.
 
 Documentation
 -------------
 
-* Documentations are listed `here <docs.html>`_.
+* Documentation and APIs are listed `here <docs.html>`_.
 
 * Research publication list is available `here <http://www.comp.nus.edu.sg/~dbsystem/singa/research/publication/>`_.
 

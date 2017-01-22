@@ -36,4 +36,4 @@ Documentation
    snapshot
    converter
    utils
-   examples/index
+   model_zoo/index

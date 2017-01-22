@@ -21,3 +21,6 @@ FeedForward Net
 
 .. automodule:: singa.net
    :members:
+   :member-order: bysource
+   :show-inheritance:
+   :undoc-members:
