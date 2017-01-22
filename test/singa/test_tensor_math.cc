@@ -105,7 +105,7 @@ TEST_F(TestTensorMath, MemberSign) {
 
   Tensor p = Sign(cc);
   const float *dptr1 = p.data<float>();
-  EXPECT_EQ(0.0f, dptr1[0]);
+  EXPECT_EQ(-1.0f, dptr1[0]);
   EXPECT_EQ(0.0f, dptr1[1]);
   EXPECT_EQ(1.0f, dptr1[2]);
 }

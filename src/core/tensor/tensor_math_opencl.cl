@@ -23,7 +23,7 @@
 // Sum is basically reduction.
 // This reduction code is serial reduction modified from AMD's example.
 // http://developer.amd.com/resources/documentation-articles/articles-whitepapers/opencl-optimization-case-study-simple-reductions/
-__kernel 
+__kernel
 void clkernel_fabs(const int num, __global const float* in, __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -38,7 +38,7 @@ void clkernel_add_scalar(const int num, float x, __global const float* in, __glo
 }
 
 __kernel
-void clkernel_add(const int num, __global const float* in1, __global const float* in2, 
+void clkernel_add(const int num, __global const float* in1, __global const float* in2,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -46,7 +46,7 @@ void clkernel_add(const int num, __global const float* in1, __global const float
 }
 
 __kernel
-void clkernel_clamp(const int num, float low, float high, __global const float* in, 
+void clkernel_clamp(const int num, float low, float high, __global const float* in,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -62,7 +62,7 @@ void clkernel_divide_scalar_matx(const int num, __global const float* in1, const
 }
 
 __kernel
-void clkernel_divide_scalar_xmat(const int num, const float x, __global const float* in1, 
+void clkernel_divide_scalar_xmat(const int num, const float x, __global const float* in1,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -70,7 +70,7 @@ void clkernel_divide_scalar_xmat(const int num, const float x, __global const fl
 }
 
 __kernel
-void clkernel_divide(const int num, __global const float* in1, __global const float* in2, 
+void clkernel_divide(const int num, __global const float* in1, __global const float* in2,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -78,7 +78,7 @@ void clkernel_divide(const int num, __global const float* in1, __global const fl
 }
 
 __kernel
-void clkernel_eltmult_scalar(const int num, const float x, __global const float* in, 
+void clkernel_eltmult_scalar(const int num, const float x, __global const float* in,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -86,7 +86,7 @@ void clkernel_eltmult_scalar(const int num, const float x, __global const float*
 }
 
 __kernel
-void clkernel_eltmult(const int num, __global const float* in1, __global const float* in2, 
+void clkernel_eltmult(const int num, __global const float* in1, __global const float* in2,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -101,7 +101,7 @@ void clkernel_exp(const int num, __global const float* in, __global float* out) 
 }
 
 __kernel
-void clkernel_le(const int num, __global const float* in, const float x, 
+void clkernel_le(const int num, __global const float* in, const float x,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -116,7 +116,7 @@ void clkernel_log(const int num, __global const float* in, __global float* out) 
 }
 
 __kernel
-void clkernel_lt(const int num, __global const float* in, const float x, 
+void clkernel_lt(const int num, __global const float* in, const float x,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -124,7 +124,7 @@ void clkernel_lt(const int num, __global const float* in, const float x,
 }
 
 __kernel
-void clkernel_ge(const int num, __global const float* in, const float x, 
+void clkernel_ge(const int num, __global const float* in, const float x,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -132,7 +132,7 @@ void clkernel_ge(const int num, __global const float* in, const float x,
 }
 
 __kernel
-void clkernel_gt(const int num, __global const float* in, const float x, 
+void clkernel_gt(const int num, __global const float* in, const float x,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -140,7 +140,7 @@ void clkernel_gt(const int num, __global const float* in, const float x,
 }
 
 __kernel
-void clkernel_pow_scalar(const int num, const float x, __global const float* in, 
+void clkernel_pow_scalar(const int num, const float x, __global const float* in,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -148,7 +148,7 @@ void clkernel_pow_scalar(const int num, const float x, __global const float* in,
 }
 
 __kernel
-void clkernel_pow(const int num, __global const float* in1, __global const float* in2, 
+void clkernel_pow(const int num, __global const float* in1, __global const float* in2,
 		  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -180,7 +180,7 @@ __kernel
 void clkernel_sign(const int num, __global const float* in, __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
-  out[i] = sign(in[i]);
+  out[i] = (in[i] > 0) - (in[i] < 0);
 }
 
 __kernel
@@ -193,7 +193,7 @@ void clkernel_sqrt(const int num, __global const float* in, __global float* out)
 // kernel for square is called pow(2).
 
 __kernel
-void clkernel_subtract_scalar(const int num, __global const float* in, const float x, 
+void clkernel_subtract_scalar(const int num, __global const float* in, const float x,
 							  __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -201,7 +201,7 @@ void clkernel_subtract_scalar(const int num, __global const float* in, const flo
 }
 
 __kernel
-void clkernel_subtract(const int num, __global const float* in1, __global const float* in2, 
+void clkernel_subtract(const int num, __global const float* in1, __global const float* in2,
 					   __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -210,8 +210,8 @@ void clkernel_subtract(const int num, __global const float* in1, __global const 
 
 // reduce3 kernel from
 // https://github.com/sschaetz/nvidia-opencl-examples/blob/master/OpenCL/src/oclReduction/oclReduction_kernel.cl
-__kernel 
-void clkernel_sum(const int num, __global const float* in, __global float* out, 
+__kernel
+void clkernel_sum(const int num, __global const float* in, __global float* out,
 				  __local float* sdata) {
   const int i = get_group_id(0)*(get_local_size(0)*2) + get_local_id(0);
   const int tid = get_local_id(0);
@@ -253,7 +253,7 @@ void clkernel_tanh(const int num, __global const float* in, __global float* out)
 // *********************************************************
 
 __kernel
-void clkernel_amax(const int num, __global const float* in, __global int* ret, 
+void clkernel_amax(const int num, __global const float* in, __global int* ret,
 				   __local uint* sdata, __local size_t* temp) {
   const int gid = get_global_id(0);
   const int tid = get_local_id(0);
@@ -272,7 +272,7 @@ void clkernel_amax(const int num, __global const float* in, __global int* ret,
 
 /* TODO: Fix line 284:20.
 __kernel
-void clkernel_amin(const int num, __global const float* in, __global int* ret, 
+void clkernel_amin(const int num, __global const float* in, __global int* ret,
 				   __local float* sdata, __local size_t* temp) {
   const int gid = get_global_id(0);
   const int tid = get_local_id(0);
@@ -294,7 +294,7 @@ void clkernel_amin(const int num, __global const float* in, __global int* ret,
 
 
 __kernel
-void clkernel_asum(const int num, __global const float* in, __global float* out, 
+void clkernel_asum(const int num, __global const float* in, __global float* out,
 				   __local float* sdata) {
   const int tid = get_local_id(0);
   const int i = get_global_id(0);
@@ -319,7 +319,7 @@ void clkernel_asum(const int num, __global const float* in, __global float* out,
 }
 
 __kernel
-void clkernel_axpy(const int num, float alpha, __global const float* in, 
+void clkernel_axpy(const int num, float alpha, __global const float* in,
 				   __global float* out) {
   const int i = get_global_id(0);
   if (i >= num) return;
@@ -362,13 +362,13 @@ void clkernel_scale(const int num, float x, __global float* out) {
 }
 
 __kernel
-void clkernel_dot(const int num, __global const float* in1, __global const float* in2, 
+void clkernel_dot(const int num, __global const float* in1, __global const float* in2,
 	  			  __global float* out, __local float* scratch) {
   const int i = get_global_id(0);
   if (i >= num) return;
   int offset = i << 2;
   scratch[i] = in1[offset] * in2[offset];
-  
+
 }
 
 // First kernel from http://www.bealto.com/gpu-gemv_intro.html
@@ -376,7 +376,7 @@ void clkernel_dot(const int num, __global const float* in1, __global const float
 // fma(a, b, c) == (a * b) + c with infinite precision
 __kernel
 void clkernel_gemv(const int m, const int n, const float alpha,
-				   __global const float* A, __global const float* v, 
+				   __global const float* A, __global const float* v,
 				   const float beta, __global float* out) {
   const int i = get_global_id(0);
   float sum  = 0.0f;
@@ -387,13 +387,13 @@ void clkernel_gemv(const int m, const int n, const float alpha,
 }
 
 // http://docs.nvidia.com/cuda/cublas/#cublas-lt-t-gt-dgmm
-// X[j] = x[j*inc(x)] 						if inc(x) ≥ 0 
+// X[j] = x[j*inc(x)] 						if inc(x) ≥ 0
 //		= x[(χ − 1)*|inc(x)| − j*|inc(x)|] 	if inc(x) < 0
 
 // C = diag( X )*A
 __kernel
 void clkernel_dgmm_left(const int nrow, const int ncol,
-						__global const float* M, __global const float* v, 
+						__global const float* M, __global const float* v,
 						__global float* out) {
   const uint gidx = get_global_id(0);
 
@@ -406,7 +406,7 @@ void clkernel_dgmm_left(const int nrow, const int ncol,
 // C = A*diag( X )
 __kernel
 void clkernel_dgmm_right(const int nrow, const int ncol,
-						 __global const float* M, __global const float* v, 
+						 __global const float* M, __global const float* v,
 						 __global float* out) {
   const uint gidx = get_global_id(0);
 
@@ -420,7 +420,7 @@ void clkernel_dgmm_right(const int nrow, const int ncol,
 //  C = α*A*B + β*C
 __kernel
 void clkernel_gemm(const uint nrowA, const uint ncolB, const uint ncolA, const float alpha,
-		 		   __global const float* A, __global const float* B, const float beta, 
+		 		   __global const float* A, __global const float* B, const float beta,
 		  		   __global float* C, __local float* Asub, __local float* Bsub) {
 
   const uint lidx = get_local_id(0);
@@ -428,10 +428,10 @@ void clkernel_gemm(const uint nrowA, const uint ncolB, const uint ncolA, const f
   const uint TS = get_local_size(0); // Tile size
   const uint gidx = TS * get_group_id(0) + lidx; // Row ID of C (0..M)
   const uint gidy = TS * get_group_id(1) + lidy; // Row ID of C (0..N)
-  
+
   // Initialise the accumulation register
   float acc = 0.0f;
-  
+
   // Loop over all tiles
   const int numtiles = ncolA / TS;
   for (int t = 0; t < numtiles; t++) {
@@ -439,23 +439,23 @@ void clkernel_gemm(const uint nrowA, const uint ncolB, const uint ncolA, const f
     const int tiledCol = TS * t + lidy;
     Asub[lidy * TS + lidx] = A[tiledCol * nrowA + gidx];
     Bsub[lidy * TS + lidx] = B[gidy * ncolA + tiledRow];
-    
+
     barrier(CLK_LOCAL_MEM_FENCE);
-    
+
     for(int k = 0; k < TS; k++) {
       acc += Asub[k * TS + lidx] * Bsub[lidy * TS + k] * alpha;
     }
-    
+
     barrier(CLK_LOCAL_MEM_FENCE);
   }
-  
+
   C[gidy * nrowA + gidx] = fma(beta, C[gidy * nrowA + gidx], acc);
 }
 
 
 __kernel
-void clkernel_crossentropy(const uint batchsize, const uint dim, 
-						   __global const float* p, __global const int* t, 
+void clkernel_crossentropy(const uint batchsize, const uint dim,
+						   __global const float* p, __global const int* t,
 						   __global float* loss) {
   const uint gidx = get_global_id(0);
   if (gidx >= batchsize) return;
@@ -485,12 +485,12 @@ void clkernel_rowmax(const uint nrow, const uint ncol,
                      __global const float* in, __global float* out) {
   const uint row_id = get_global_id(0);
   if (row_id >= nrow) return;
-  
+
   float row_max_val = -FLT_MAX;
   for (uint i = 0; i < ncol; i++) {
     row_max_val = fmax(row_max_val, in[row_id * ncol + i]);
   }
-  
+
   out[row_id] = row_max_val;
 }
 
@@ -521,7 +521,7 @@ __kernel
 void clkernel_outerproduct(int m, const int n, __global const float* in1, __global const float* in2, __global float* out) {
   const int col = get_global_id(0);
   const int row = get_global_id(1);
-  
+
   // TODO: This
 }
 
@@ -541,7 +541,7 @@ __kernel
 void clkernel_sumrow(int nrow, int ncol, __global const float* in, __global float* out) {
   const int idx = get_global_id(0);
   if (idx >= nrow) return;
-  
+
   float sum = 0.0f;
   for (int j = 0; j < ncol; j++) {
 	sum += in[j + ncol * idx];
@@ -553,8 +553,8 @@ void clkernel_sumrow(int nrow, int ncol, __global const float* in, __global floa
 // Adapted from http://code.haskell.org/HsOpenCL/tests/bench/transpose.cl
 #define BLOCK_DIM 16
 __kernel
-void clkernel_transpose(uint nrow, uint ncol, 
-						__global const float* in, __global float* out, 
+void clkernel_transpose(uint nrow, uint ncol,
+						__global const float* in, __global float* out,
 						__local float* sdata) {
   uint gidx = get_global_id(0);
   uint gidy = get_global_id(1);

@@ -25,14 +25,13 @@ Example usage::
 
     from singa import tensor
     from singa import loss
-    from singa.proto import model_pb2
 
     x = tensor.Tensor((3, 5))
     x.uniform(0, 1)  # randomly genearte the prediction activation
     y = tensor.from_numpy(np.array([0, 1, 3], dtype=np.int))  # set the truth
 
     f = loss.SoftmaxCrossEntropy()
-    l = f.forward(model_pb2.kTrain, x, y)  # l is tensor with 3 loss values
+    l = f.forward(True, x, y)  # l is tensor with 3 loss values
     g = f.backward()  # g is a tensor containing all gradients of x w.r.t l
 '''
 
@@ -40,7 +39,6 @@ Example usage::
 from . import singa_wrap as singa
 from proto import model_pb2
 import tensor
-
 
 
 class Loss(object):
@@ -58,7 +56,7 @@ class Loss(object):
         '''Compute the loss values.
 
         Args:
-            flag (int): kTrain or kEval. If it is kTrain, then the backward
+            flag: kTrain/kEval or bool. If it is kTrain/True, then the backward
                 function must be called before calling forward again.
             x (Tensor): the prediction Tensor
             y (Tensor): the ground truch Tensor, x.shape[0] must = y.shape[0]
@@ -125,7 +123,7 @@ class SquaredError(Loss):
     It is implemented using Python Tensor operations.
     '''
     def __init__(self):
-        super(SquareLoss, self).__init__()
+        super(SquaredError, self).__init__()
         self.err = None
 
     def forward(self, flag, x, y):

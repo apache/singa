@@ -18,6 +18,16 @@
 '''
 This script includes io::snapshot class and its methods.
 
+Example usages::
+
+    from singa import snapshot
+
+    sn1 = snapshot.Snapshot('param', False)
+    params = sn1.read()  # read all params as a dictionary
+
+    sn2 = snapshot.Snapshot('param_new', False)
+    for k, v in params.iteritems():
+        sn2.write(k, v)
 '''
 
 from . import singa_wrap as singa
@@ -36,7 +46,7 @@ class Snapshot(object):
             buffer_size (int): Buffer size (in MB), default is 10
         '''
         self.snapshot = singa.Snapshot(f, mode, buffer_size)
-    
+
     def write(self, param_name, param_val):
         '''Call Write method to write a parameter
 

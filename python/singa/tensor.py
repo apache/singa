@@ -21,11 +21,11 @@ Example usage::
     from singa import tensor
     from singa import device
 
-# create a tensor with shape (2,3), default CppCPU device and float32
+    # create a tensor with shape (2,3), default CppCPU device and float32
     x = tensor.Tensor((2, 3))
     x.set_value(0.4)
 
-# create a tensor from a numpy array
+    # create a tensor from a numpy array
     npy = np.zeros((3, 3), dtype=np.float32)
     y = tensor.from_numpy(npy)
 
@@ -40,13 +40,13 @@ Example usage::
 
     r = tensor.relu(x)
 
-    r.to_host()  # move the data back to host cpu
-    s = tensor.to_numpy(r)  # tensor -> numpy array, r must be on cpu
+    s = tensor.to_numpy(r)  # tensor -> numpy array
 
 There are two sets of tensor functions,
 
 Tensor member functions
     which would change the internal state of the Tensor instance.
+
 Tensor module functions
     which accept Tensor instances as arguments and return Tensor instances.
 
@@ -558,28 +558,31 @@ def from_numpy(np_array):
     return ret
 
 
-def to_numpy(t):
-    '''Convert the tensor into a numpy array.
+def to_host(t):
+    '''Copy the data to a host tensor.
+    '''
+    ret = t.clone()
+    ret.to_host()
+    return ret
 
-    Since numpy array is allocated on CPU devices, the input Tensor instance
-    must be on the default CppCPU device.
+
+def to_numpy(t):
+    '''Copy the tensor into a numpy array.
 
     Args:
-        t (Tensor), a Tensor on the default CppCPU device.
+        t (Tensor), a Tensor
 
     Returns:
         a numpy array
     '''
-    assert (t.device.id() == -1) or (t.device is None), \
-        'Please move the tensor onto the default host device'
-
-    if t.dtype == core_pb2.kFloat32:
-        np_array = t.singa_tensor.GetFloatValue(int(t.size()))
-    elif t.dtype == core_pb2.kInt:
-        np_array = t.singa_tensor.GetIntValue(int(t.size()))
+    th = to_host(t)
+    if th.dtype == core_pb2.kFloat32:
+        np_array = ret.singa_tensor.GetFloatValue(int(th.size()))
+    elif th.dtype == core_pb2.kInt:
+        np_array = ret.singa_tensor.GetIntValue(int(th.size()))
     else:
-        print 'Not implemented yet for ', t.dtype
-    return np_array.reshape(t.shape)
+        print 'Not implemented yet for ', th.dtype
+    return np_array.reshape(th.shape)
 
 
 def abs(t):
@@ -636,6 +639,17 @@ def sigmoid(t):
         a new Tensor whose element y = sigmoid(x); x is an element of t
     '''
     return _call_singa_func(singa.Sigmoid, t.singa_tensor)
+
+
+def sign(t):
+    '''
+    Args:
+        t (Tensor): input Tensor
+
+    Returns:
+        a new Tensor whose element y = sign(x)
+    '''
+    return _call_singa_func(singa.Sign, t.singa_tensor)
 
 
 def sqrt(t):

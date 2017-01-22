@@ -278,7 +278,7 @@ void Sign<float, lang::Cpp>(const size_t num, const Block *in, Block *out,
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in->data());
   for (size_t i = 0; i < num; i++) {
-    outPtr[i] = inPtr[i] > 0 ? 1.0f : 0.0f;
+    outPtr[i] = (inPtr[i] > 0) - (inPtr[i] < 0);
   }
 }
 

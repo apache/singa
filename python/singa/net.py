@@ -17,8 +17,42 @@
 """
 Nerual net class for constructing the nets using layers and providing access
 functions for net info, e.g., parameters.
-"""
 
+Example usages::
+
+    from singa import net as ffnet
+    from singa import metric
+    from singa import loss
+    from singa import layer
+    from singa import device
+
+    # create net and add layers
+    net = ffnet.FeedForwardNet(loss.SoftmaxCrossEntropy(), metric.Accuracy())
+    net.add(layer.Conv2D('conv1', 32, 5, 1, input_sample_shape=(3,32,32,)))
+    net.add(layer.Activation('relu1'))
+    net.add(layer.MaxPooling2D('pool1', 3, 2))
+    net.add(layer.Flatten('flat'))
+    net.add(layer.Dense('dense', 10))
+
+    # init parameters
+    for p in net.param_values():
+        if len(p.shape) == 0:
+            p.set_value(0)
+        else:
+            p.gaussian(0, 0.01)
+
+    # move net onto gpu
+    dev = device.create_cuda_gpu()
+    net.to_device(dev)
+
+    # training (skipped)
+
+    # do prediction after training
+    x = tensor.Tensor((2, 3, 32, 32), dev)
+    x.uniform(-1, 1)
+    y = net.predict(x)
+    print tensor.to_numpy(y)
+"""
 
 from .proto.model_pb2 import kTrain, kEval
 import tensor

@@ -50,10 +50,10 @@ template<>
 void Abs<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_fabs");
-  
+
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   v_out = v_in;
   enqueue(kernel((cl_int)num, v_in, v_out));
 }
@@ -62,11 +62,11 @@ void Abs<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Con
 template<>
 void Add<float, lang::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
-  
+
   viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ocl_ctx);
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   v_out = v_in + x_in;
 }
 
@@ -86,7 +86,7 @@ void Clamp<float, lang::Opencl>(const size_t num, const float low, const float h
                                 const Block* in, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_clamp");
-  
+
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
 
@@ -97,7 +97,7 @@ void Clamp<float, lang::Opencl>(const size_t num, const float low, const float h
 template<>
 void Div<float, lang::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
-  
+
   viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ocl_ctx);
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
@@ -109,7 +109,7 @@ void Div<float, lang::Opencl>(const size_t num, const Block* in, const float x, 
 template<>
 void Div<float, lang::Opencl>(const size_t num, const float x, const Block* in, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
-  
+
   viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ocl_ctx);
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
@@ -131,7 +131,7 @@ void Div<float, lang::Opencl>(const size_t num, const Block* in1, const Block* i
 template<>
 void EltwiseMult<float, lang::Opencl>(const size_t num, const Block* in, const float x, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
-  
+
   viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ocl_ctx);
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
@@ -154,7 +154,7 @@ template<>
 void Exp<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   v_out = viennacl::linalg::element_exp(v_in);
 }
 
@@ -163,10 +163,10 @@ template<>
 void LE<float, lang::Opencl>(const size_t num, const Block *in, const float x, Block *out, Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_le");
-  
+
   viennacl::vector<float> in_buf((const cl_mem)in->data(), num);
   viennacl::vector<float> out_buf(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   enqueue(kernel((cl_int)num, in_buf, x, out_buf));
 }
 
@@ -175,7 +175,7 @@ template<>
 void Log<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   v_out = viennacl::linalg::element_log(v_in);
 }
 
@@ -184,10 +184,10 @@ template<>
 void LT<float, lang::Opencl>(const size_t num, const Block *in, const float x, Block *out, Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_lt");
-  
+
   viennacl::vector<float> in_buf((const cl_mem)in->data(), num);
   viennacl::vector<float> out_buf(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   enqueue(kernel((cl_int)num, in_buf, x, out_buf));
 }
 
@@ -196,10 +196,10 @@ template<>
 void GE<float, lang::Opencl>(const size_t num, const Block *in, const float x, Block *out, Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_ge");
-  
+
   viennacl::vector<float> in_buf((const cl_mem)in->data(), num);
   viennacl::vector<float> out_buf(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   enqueue(kernel((cl_int)num, in_buf, x, out_buf));
 }
 
@@ -208,10 +208,10 @@ template<>
 void GT<float, lang::Opencl>(const size_t num, const Block *in, const float x, Block *out, Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_gt");
-  
+
   viennacl::vector<float> in_buf((const cl_mem)in->data(), num);
   viennacl::vector<float> out_buf(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   enqueue(kernel((cl_int)num, in_buf, x, out_buf));
 }
 
@@ -219,7 +219,7 @@ void GT<float, lang::Opencl>(const size_t num, const Block *in, const float x, B
 template<>
 void Pow<float, lang::Opencl>(const size_t num, const Block* in, float x, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
-  
+
   viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ocl_ctx);
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
@@ -242,10 +242,10 @@ template<>
 void ReLU<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_relu");
-  
+
   viennacl::vector<float> in_buf((const cl_mem)in->data(), num);
   viennacl::vector<float> out_buf(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   enqueue(kernel((cl_int)num, in_buf, out_buf));
 }
 
@@ -255,7 +255,7 @@ void Set<float, lang::Opencl>(const size_t num, const float x, Block* out, Conte
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
 
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   v_out = viennacl::scalar_vector<float>(num, x, ocl_ctx);
 }
 
@@ -263,13 +263,13 @@ void Set<float, lang::Opencl>(const size_t num, const float x, Block* out, Conte
 template<>
 void Sigmoid<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
-  
+
   const viennacl::vector<float> zero = viennacl::zero_vector<float>(num, ocl_ctx);
   const viennacl::vector<float> one = viennacl::scalar_vector<float>(num, 1.0f, ocl_ctx);
-  
+
   viennacl::vector<float> v_in((const cl_mem)in->data(), num);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   v_out = viennacl::linalg::element_div(one, viennacl::linalg::element_exp(zero - v_in) + one);
 }
 
@@ -277,11 +277,11 @@ void Sigmoid<float, lang::Opencl>(const size_t num, const Block* in, Block* out,
 template<>
 void Sign<float, lang::Opencl>(const size_t num, const Block* in, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_abs");
-  
+  auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_sign");
+
   viennacl::vector<float> in_buf((const cl_mem)in->data(), num);
   viennacl::vector<float> out_buf(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   enqueue(kernel(num, in_buf, out_buf));
 }
 
@@ -344,11 +344,11 @@ template<>
 void Bernoulli<float, lang::Opencl>(const size_t num, const float p, Block* out, Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("distribution.cl", "PRNG_threefry4x32_bernoulli");
-  
+
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   viennacl::ocl::packed_cl_uint seed = {0, 32, 42, 888};
-  
+
   enqueue(kernel(v_out, seed, 0.0f, 1.0f, p, rounds, cl_uint(num / 4)));
 }
 
@@ -357,11 +357,11 @@ template<>
 void Gaussian<float, lang::Opencl>(const size_t num, const float mean, const float std, Block* out, Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("distribution.cl", "PRNG_threefry4x32_gaussian");
-  
+
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   viennacl::ocl::packed_cl_uint seed = {0, 32, 42, 888};
-  
+
   enqueue(kernel(v_out, seed, mean, std, rounds, cl_uint(num/4)));
 }
 
@@ -370,11 +370,11 @@ template<>
 void Uniform<float, lang::Opencl>(const size_t num, const float low, const float high, Block* out, Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("distribution.cl", "PRNG_threefry4x32_uniform");
-  
+
   viennacl::ocl::packed_cl_uint seed = {0, 32, 42, 888};
-  
+
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   enqueue(kernel(v_out, seed, low, high, rounds, cl_uint(num/4)));
 }
 
@@ -441,7 +441,7 @@ void Amin<float, lang::Opencl>(const size_t num, const Block* in, size_t* out, C
   delete temp;
 }
 
-	
+
 template<>
 void Asum<float, lang::Opencl>(const size_t num, const Block* in, float* out, Context* ctx) {
   cl_int status = CL_SUCCESS;
@@ -450,7 +450,7 @@ void Asum<float, lang::Opencl>(const size_t num, const Block* in, float* out, Co
   auto kernel = ctx->kernels->at(kname);
 
   cl::Buffer inbuf = *(static_cast<cl::Buffer*>(in->mutable_data()));
-  
+
   size_t size = sizeof(float) * num;
   cl::Buffer outval(ctx->ocl_ctx, CL_MEM_WRITE_ONLY, size, nullptr, &status);
   OCL_CHECK(status, "Failed to create buffer!");
@@ -475,7 +475,7 @@ template<>
 void Axpy<float, lang::Opencl>(const size_t num, const float alpha, const Block* in, Block* out, Context* ctx) {
   viennacl::vector<float> inbuf((const cl_mem)in->data(), num);
   viennacl::vector<float> outbuf(static_cast<cl_mem>(out->mutable_data()), num);
-  
+
   outbuf += alpha * inbuf;
 }
 
@@ -483,7 +483,7 @@ void Axpy<float, lang::Opencl>(const size_t num, const float alpha, const Block*
 template<>
 void Nrm2<float, lang::Opencl>(const size_t num, const Block* in, float* out, Context* ctx) {
   viennacl::vector<float> inbuf((const cl_mem)in->data(), num);
-  
+
   out[0] = viennacl::linalg::norm_2(inbuf);
 }
 
@@ -491,7 +491,7 @@ void Nrm2<float, lang::Opencl>(const size_t num, const Block* in, float* out, Co
 template<>
 void Scale<float, lang::Opencl>(const size_t num, const float x, Block* out, Context* ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
-  
+
   viennacl::vector<float> x_in = viennacl::scalar_vector<float>(num, x, ocl_ctx);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), num);
 
@@ -503,7 +503,7 @@ template<>
 void Dot<float, lang::Opencl>(const size_t num, const Block *in1, const Block *in2, float *out, Context *ctx) {
   viennacl::vector<float> in1_buf((const cl_mem)in1->data(), num);
   viennacl::vector<float> in2_buf((const cl_mem)in2->data(), num);
-  
+
   out[0] = viennacl::linalg::inner_prod(in1_buf, in2_buf);
 }
 
@@ -513,9 +513,9 @@ void GEMV<float, lang::Opencl>(bool trans, const size_t m, const size_t n, const
 		  const Block *A, const Block *v, const float beta, Block* out, Context* ctx) {
   viennacl::vector<float> v_buf((const cl_mem)v->data(), n);
   viennacl::vector<float> o_buf(static_cast<cl_mem>(out->mutable_data()), m);
-  
+
   viennacl::matrix<float> A_buf;
-  
+
   if (trans) {
     A_buf = viennacl::matrix<float>((const cl_mem)A->data(), n, m);
     A_buf = viennacl::trans(A_buf);
@@ -537,9 +537,9 @@ void DGMM<float, lang::Opencl>(bool side_right,
   viennacl::matrix<float> M_buf((const cl_mem)M->data(), nrow, ncol);
   viennacl::vector<float> v_buf((const cl_mem)v->data(), nrow);
   viennacl::matrix<float> out_buf(static_cast<cl_mem>(out->mutable_data()), nrow, ncol);
-  
+
   auto diag = viennacl::diag(v_buf);
-  
+
   if (side_right) {
     out_buf = viennacl::linalg::prod(diag, M_buf);
   } else {
@@ -556,21 +556,21 @@ void GEMM<float, lang::Opencl>(const bool transA, const bool transB,
 
   viennacl::matrix<float> A_buf, B_buf;
   viennacl::matrix<float> C_buf(static_cast<cl_mem>(C->mutable_data()), nrowA, ncolB);
-  
+
   if (transA) {
     A_buf = viennacl::matrix<float>((const cl_mem)A->data(), ncolA, nrowA);
     A_buf = viennacl::trans(A_buf);
   } else {
     A_buf = viennacl::matrix<float>((const cl_mem)A->data(), nrowA, ncolA);
   }
-  
+
   if (transB) {
     B_buf = viennacl::matrix<float>((const cl_mem)B->data(), ncolB, ncolA);
     B_buf = viennacl::trans(B_buf);
   } else {
     B_buf = viennacl::matrix<float>((const cl_mem)B->data(), ncolA, ncolB);
   }
-  
+
   C_buf *= beta;
   C_buf += alpha * viennacl::linalg::prod(A_buf, B_buf);
 }
@@ -582,11 +582,11 @@ void ComputeCrossEntropy<float, lang::Opencl>(const size_t batchsize, const size
                          Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_crossentropy");
-  
+
   viennacl::vector<float> p_buf((const cl_mem)p->data(), batchsize);
   viennacl::vector<float> t_buf((const cl_mem)t->data(), batchsize);
   viennacl::vector<float> loss_buf(static_cast<cl_mem>(loss->mutable_data()), batchsize);
-  
+
   enqueue(kernel((cl_uint)batchsize, (cl_uint)dim, p_buf, t_buf, loss_buf));
 }
 
@@ -597,11 +597,11 @@ void SoftmaxCrossEntropyBwd<float, lang::Opencl>(const size_t batchsize, const s
                             Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_softmaxentropy");
-  
+
   viennacl::vector<float> p_buf((const cl_mem)p->data(), batchsize);
   viennacl::vector<float> t_buf((const cl_mem)t->data(), batchsize);
   viennacl::vector<float> grad_buf(static_cast<cl_mem>(grad->mutable_data()), batchsize);
-  
+
   enqueue(kernel((cl_uint)batchsize, (cl_uint)dim, p_buf, t_buf, grad_buf));
 }
 
@@ -611,12 +611,12 @@ void RowMax<float, lang::Opencl>(const size_t nrow, const size_t ncol,
                                  const Block *in, Block *out, Context *ctx) {
   auto ocl_ctx = get_context(ctx->vcl_ctx_id);
   auto kernel = ocl_ctx.get_kernel("tensor_math_opencl.cl", "clkernel_rowmax");
-  
+
 //  kernel.global_work_size(0, nrow);
-  
+
   viennacl::matrix<float> in_buf((const cl_mem)in->data(), nrow, ncol);
   viennacl::vector<float> outbuf(static_cast<cl_mem>(out->mutable_data()), nrow);
-  
+
   enqueue(kernel((cl_uint)nrow, (cl_uint)ncol, in_buf, outbuf));
 }
 
@@ -641,7 +641,7 @@ void Outer<float, lang::Opencl>(const size_t m, const size_t n, const Block* lhs
   viennacl::vector<float> lhs_in((const cl_mem)lhs->data(), m);
   viennacl::vector<float> rhs_in((const cl_mem)rhs->data(), n);
   viennacl::matrix<float> out_buf(static_cast<cl_mem>(out->mutable_data()), m, n);
-  
+
   out_buf = viennacl::linalg::outer_prod(lhs_in, rhs_in);
 }
 
@@ -650,7 +650,7 @@ template<>
 void SumColumns<float, lang::Opencl>(const size_t nrow, const size_t ncol, const Block* in, Block* out, Context* ctx) {
   viennacl::matrix<float> m_in((const cl_mem)in->data(), nrow, ncol);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), nrow);
-  
+
   v_out = viennacl::linalg::column_sum(m_in);
 }
 
@@ -659,7 +659,7 @@ template<>
 void SumRows<float, lang::Opencl>(const size_t nrow, const size_t ncol, const Block* in, Block* out, Context* ctx) {
   viennacl::matrix<float> m_in((const cl_mem)in->data(), nrow, ncol);
   viennacl::vector<float> v_out(static_cast<cl_mem>(out->mutable_data()), ncol);
-  
+
   v_out = viennacl::linalg::column_sum(m_in);
 }
 */
