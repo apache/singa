@@ -4,6 +4,6 @@
 
 [How to contribute code](./doc/en/develop/contribute-code.md)
 
-[How to contribute documentation](./doc/en/develop/contribute-docs.md)
+[How to contribute documentation](./doc/README.md)
 
 

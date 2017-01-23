@@ -6,9 +6,8 @@ configure
 doc/*
 config/*
 \.dirstamp
-autom4te.cache/*
 config.*
-libtool
 stamp-h1
 .*\.conf
 .*\.md
+control
