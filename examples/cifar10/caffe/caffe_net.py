@@ -14,16 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-
-import os
+import urllib
 from singa import converter
 
+
 def create_net(use_cpu):
-    net_proto = os.path.abspath('./caffe/cifar10_full_train_test.prototxt')
-    solver_proto = os.path.abspath('./caffe/cifar10_full_solver.prototxt')
+    urllib.urlretrieve("https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_train_test.prototxt", "train_test.prototxt")
+    urllib.urlretrieve("https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_solver.prototxt", "solver.prototxt")
     input_sample_shape = [3, 32, 32, ]
 
-    cvt = converter.CaffeConverter(net_proto, solver_proto, input_sample_shape)
+    cvt = converter.CaffeConverter("train_test.prototxt", "solver.prototxt",
+                                   input_sample_shape)
     net = cvt.create_net()
     for (p, specs) in zip(net.param_values(), net.param_specs()):
         filler = specs.filler
