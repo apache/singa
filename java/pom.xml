@@ -23,7 +23,7 @@
   <groupId>org.apache.singa</groupId>
   <artifactId>junit-tests</artifactId>
   <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.1-SNAPSHOT</version>
   <name>junit-tests</name>
   <build>
     <plugins>

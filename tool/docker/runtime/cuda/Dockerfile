@@ -28,4 +28,4 @@ RUN apt-get update \
 
 
 # install pysinga TODO(wangwei) install debian package
-RUN pip install --upgrade http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cuda8.0-cudnn5/singa-1.0.1-py2-none-any.whl
+RUN pip install --upgrade http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cuda8.0-cudnn5/singa-1.1.0-py2-none-any.whl
