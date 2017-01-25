@@ -387,7 +387,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =====================================================================
-SINGA bundles the following under New BSD license: src/python/swig/numpy.i
+SINGA bundles the following under New BSD license: src/api/numpy.i
 
 Copyright (c) 2005-2016, NumPy Developers.
 All rights reserved.
