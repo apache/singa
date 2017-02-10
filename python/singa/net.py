@@ -386,16 +386,16 @@ class FeedForwardNet(object):
         '''
         if use_pickle:
             params = {}
-            for (specs, val) in zip(self.param_specs(), self.param_values()):
+            for (name, val) in zip(self.param_names(), self.param_values()):
                 val.to_host()
-                params[specs.name] = tensor.to_numpy(val)
+                params[name] = tensor.to_numpy(val)
                 with open(f, 'wb') as fd:
                     pickle.dump(params, fd)
         else:
             sp = snapshot.Snapshot(f, True, buffer_size)
-            for (specs, val) in zip(self.param_specs(), self.param_values()):
+            for (name, val) in zip(self.param_names(), self.param_values()):
                 val.to_host()
-                sp.write(specs.name, val)
+                sp.write(name, val)
 
     def load(self, f, buffer_size=10, use_pickle=False):
         '''Load model parameters using io/snapshot.
@@ -407,18 +407,30 @@ class FeedForwardNet(object):
                     'then set use_pickle=False for loading it'
             with open(f, 'rb') as fd:
                 params = pickle.load(fd)
-                for (specs, val) in zip(self.param_specs(),
-                                        self.param_values()):
+                for name, val in zip(self.param_names(), self.param_values()):
+                    if name not in params:
+                        print 'Param: %s missing in the checkpoint file' % name
+                        continue
                     try:
-                        val.copy_from_numpy(params[specs.name])
+                        val.copy_from_numpy(params[name])
                     except AssertionError as err:
-                        print 'Error from copying values for param: %s' % specs.name
-                        print 'shape of param vs checkpoint', val.shape, params[specs.name].shape
+                        print 'Error from copying values for param: %s' % name
+                        print 'shape of param vs checkpoint', \
+                                val.shape, params[name].shape
                         raise err
         else:
             print 'NOTE: If your model was saved using pickle, '\
                     'then set use_pickle=True for loading it'
             sp = snapshot.Snapshot(f, False, buffer_size)
             params = sp.read()
-            for (specs, val) in zip(self.param_specs(), self.param_values()):
-                val.copy_data(params[specs.name])
+            for (name, val) in zip(self.param_names(), self.param_values()):
+                if name not in params:
+                    print 'Param: %s missing in the checkpoint file' % name
+                    continue
+                try:
+                    val.copy_data(params[name])
+                except AssertionError as err:
+                    print 'Error from copying values for param: %s' % name
+                    print 'shape of param vs checkpoint', \
+                            val.shape, params[name].shape
+                    raise err

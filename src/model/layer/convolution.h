@@ -57,7 +57,10 @@ class Convolution : public Layer {
               const int stride_w, float* data_im);
 
   const std::vector<Tensor> param_values() override {
-    return std::vector<Tensor>{weight_, bias_};
+    if (bias_term_)
+      return std::vector<Tensor>{weight_, bias_};
+    else
+      return std::vector<Tensor>{weight_};
   }
 
   size_t kernel_w() const { return kernel_w_; }

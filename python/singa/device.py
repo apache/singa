@@ -132,12 +132,12 @@ def create_cuda_gpu_on(device_id):
 
 def create_opencl_device():
     '''Create the default OpenCL device.
-    
+
     Returns:
         a swig converted OpenCL device.
     '''
     assert singa.USE_OPENCL, 'SINGA has not been compiled with OpenCL enabled.'
-    return singa.Platform.GetDefaultDevice()
+    return singa.Platform.GetDefaultOpenclDevice()
 
 
 default_device = singa.Platform.GetDefaultDevice()

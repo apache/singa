@@ -97,7 +97,8 @@ void Convolution::Setup(const Shape &in_sample, const LayerConf &conf) {
 
   // Setup shape of weight_ and bias_
   weight_.Reshape(Shape{num_filters_, col_height_});
-  bias_.Reshape(Shape{num_filters_});
+  if (bias_term_)
+    bias_.Reshape(Shape{num_filters_});
   // Assume the order of param is: weight, bias
   for (const auto &spec : conf.param()) param_specs_.push_back(spec);
 }
@@ -143,7 +144,6 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
   Tensor dx;
   Tensor db, dw;
   dx.ResetLike(src_data);
-  db.ResetLike(bias_);
   dw.ResetLike(weight_);
   dw.SetValue(0.0f);
   size_t batchsize = grad.shape(0);
@@ -156,6 +156,7 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
     SumColumns(tmp1, &tmp2);
     Tensor tmp3 = Reshape(tmp2, Shape{batchsize, num_filters_});
 
+    db.ResetLike(bias_);
     SumRows(tmp3, &db);
   }
 
@@ -178,7 +179,8 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
     dx.CopyDataFromHostPtr(dx_b, imagesize, b * imagesize);
   }
   param_grad.push_back(dw);
-  param_grad.push_back(db);
+  if (bias_term_)
+    param_grad.push_back(db);
   delete[] data_col;
   delete[] dx_b;
   return std::make_pair(dx, param_grad);

@@ -46,7 +46,10 @@ class Dense : public Layer {
 
   void ToDevice(std::shared_ptr<Device> device) override;
   const std::vector<Tensor> param_values() override {
-    return std::vector<Tensor>{weight_, bias_};
+    if (bias_term_)
+      return std::vector<Tensor>{weight_, bias_};
+    else
+      return std::vector<Tensor>{weight_};
   }
   size_t num_output() const { return hdim_; }
   size_t num_input() const { return vdim_; }
@@ -67,6 +70,8 @@ class Dense : public Layer {
   /// Used in auto-encoder, where the decoder would share its weight matrix from
   /// the encoder's transposed weight matrix.
   bool transpose_ = false;
+  /// use bias or not;
+  bool bias_term_ = true;
   size_t vdim_, hdim_;
   Tensor weight_, bias_;
   // Tensor data_, grad_;

@@ -337,18 +337,19 @@ class Conv2D(Layer):
         # conf.data_format = data_format
         if W_specs is None:
             W_specs = {'init': 'xavier'}
-        if b_specs is None:
-            b_specs = {'init': 'constant'}
         if 'name' not in W_specs:
             W_specs['name'] = name + '_weight'
-        if 'name' not in b_specs:
-            b_specs['name'] = name + '_bias'
         wspecs = _construct_param_specs_from_dict(W_specs)
         self.conf.param.extend([wspecs])
         self.param_specs.append(wspecs)
-        bspecs = _construct_param_specs_from_dict(b_specs)
-        self.conf.param.extend([bspecs])
-        self.param_specs.append(bspecs)
+        if use_bias:
+            if b_specs is None:
+                b_specs = {'init': 'constant'}
+            if 'name' not in b_specs:
+                b_specs['name'] = name + '_bias'
+            bspecs = _construct_param_specs_from_dict(b_specs)
+            self.conf.param.extend([bspecs])
+            self.param_specs.append(bspecs)
 
         _check_engine(engine, ['cudnn', 'singacpp', 'singacl'])
         self.layer = _create_layer(engine, 'Convolution')
@@ -610,16 +611,19 @@ class Dense(Layer):
         conf.transpose = W_transpose
         if W_specs is None:
             W_specs = {'init': 'xavier'}
-        if b_specs is None:
-            b_specs = {'init': 'constant', 'value': 0}
         if 'name' not in W_specs:
             W_specs['name'] = name + '_weight'
-        if 'name' not in b_specs:
-            b_specs['name'] = name + '_bias'
         wspecs = _construct_param_specs_from_dict(W_specs)
-        bspecs = _construct_param_specs_from_dict(b_specs)
-        self.conf.param.extend([wspecs, bspecs])
-        self.param_specs.extend([wspecs, bspecs])
+        self.conf.param.extend([wspecs])
+        self.param_specs.append(wspecs)
+        if use_bias:
+            if b_specs is None:
+                b_specs = {'init': 'constant', 'value': 0}
+            if 'name' not in b_specs:
+                b_specs['name'] = name + '_bias'
+            bspecs = _construct_param_specs_from_dict(b_specs)
+            self.conf.param.extend([bspecs])
+            self.param_specs.append(bspecs)
         # dense layer is transparent to engine.
         if engine == 'cudnn':
             self.layer = _create_layer('singacuda', 'Dense')
@@ -775,7 +779,6 @@ class Split(Layer):
         input_sample_shape: includes a single integer for the input sample
             feature size.
     '''
-
     def __init__(self, name, num_output, input_sample_shape=None):
         self.num_output = num_output
         self.in_shape = input_sample_shape

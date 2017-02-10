@@ -60,7 +60,8 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
   size_t batchsize = input.shape(0);
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_desc_));
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_desc_));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc_));
+  if (bias_term_)
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc_));
   CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
   CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
 
@@ -209,11 +210,11 @@ const std::pair<Tensor, vector<Tensor>> CudnnConvolution::Backward(
   Tensor dx;
   dx.ResetLike(src_data);
   Tensor db, dw;
-  db.ResetLike(bias_);
   dw.ResetLike(weight_);
 
   // LOG(ERROR) << "backward bias";
   if (bias_term_) {
+    db.ResetLike(bias_);
     dx.device()->Exec([grad, db, this](Context *ctx) {
       Block *dyblock = grad.block(), *dbblock = db.block();
       float alpha = 1.f, beta = 0.f;
@@ -248,7 +249,8 @@ const std::pair<Tensor, vector<Tensor>> CudnnConvolution::Backward(
                                  this->x_desc_, dxblock->mutable_data());
   }, {grad.block(), weight_.block()}, {dx.block(), workspace_.block()});
   param_grad.push_back(dw);
-  param_grad.push_back(db);
+  if (bias_term_)
+    param_grad.push_back(db);
   return std::make_pair(dx, param_grad);
 }
 
