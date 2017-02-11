@@ -105,6 +105,8 @@ def main():
         parser.add_argument("-c", "--use_cpu", action="store_true",
                             help="If set, load models onto CPU devices")
         parser.add_argument("--parameter_file", default="wrn-50-2.pickle")
+        parser.add_argument("--model", choices = ['resnet', 'wrn', 'preact', 'addbn'], default='wrn')
+        parser.add_argument("--depth", type=int, choices = [18, 34, 50, 101, 152, 200], default='50')
 
         # Process arguments
         args = parser.parse_args()
@@ -113,9 +115,10 @@ def main():
         # start to train
         agent = Agent(port)
 
-        net = model.create_wide_resnet(args.parameter_file)
+        net = model.create_net(args.model, args.depth)
         dev = device.create_cuda_gpu()
         net.to_device(dev)
+        model.init_params(net, args.parameter_file)
         print 'Finish loading models'
 
         labels = np.loadtxt('synset_words.txt', str, delimiter='\t ')
