@@ -16,5 +16,5 @@
 # limitations under the License.
 #
 
-cd /usr/local/lib/singa
-rm -r build dist singa.egg-info
+cd /usr/local/lib/singa/python
+pip install .
