@@ -80,22 +80,19 @@ if [ $BUILD = "ON" ]; then
 fi
 
 # create the folder for the package
-FOLDER_PREFIX="singa"
-if [ -n "$BUILD_ID" ]; then
-  FOLDER_PREFIX=$BUILD_ID/$COMMIT/$OS_VERSION
-fi
-
-FOLDER=$FOLDER_PREFIX-cpp
 if [ $PYTHON = "ON" ]
 then
-  FOLDER=$FOLDER/python-singa
+  FOLDER_PREFIX="python-singa"
+
 else
-  FOLDER=$FOLDER/singa
+  FOLDER_PREFIX="singa"
 fi
 
 if [ $CUDA = "ON" ]
 then
   FOLDER=$FOLDER_PREFIX-cuda$CUDA_VERSION-cudnn$CUDNN_VERSION
+else
+  FOLDER=singa-cpp/$FOLDER_PREFIX
 fi
 
 echo "Path: " build/debian/$FOLDER
