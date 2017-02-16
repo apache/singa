@@ -201,6 +201,12 @@ class CudaGPU : public Device {
 #endif  // USE_CUDA
 
 #ifdef USE_OPENCL
+
+extern std::string distribution_str;
+extern std::string tensormath_str;
+extern std::string im2col_str;
+extern std::string pooling_str;
+
 // Implement Device using OpenCL libs.
 class OpenclDevice : public singa::Device {
 public:
@@ -230,7 +236,7 @@ protected:
 
   /// Searches the given paths for all .cl files and builds
   /// OpenCL programs, then stores them in the Kernels map.
-  void BuildPrograms(const std::string &kdir);
+  void BuildPrograms();
 
 // Overridden, inherited methods.
 

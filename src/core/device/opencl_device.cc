@@ -33,8 +33,6 @@ using namespace viennacl::backend::opencl;
 
 namespace singa {
 
-const std::string OpenclDevice::cl_src_path = "../src/core/tensor";
-
 OpenclDevice::OpenclDevice(int id, int num_executors)
 	: Device(id, num_executors) {
   CHECK_GE(id, 0);
@@ -45,8 +43,7 @@ OpenclDevice::OpenclDevice(int id, int num_executors)
   ctx_.vcl_ctx_id = 0;
   this->this_device = ocl::current_device();
   
-  BuildPrograms(cl_src_path);
-  BuildPrograms("../src/model/layer");
+  BuildPrograms();
 }
 
 
@@ -93,29 +90,11 @@ void OpenclDevice::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
 }
 
 
-void OpenclDevice::BuildPrograms(const std::string &kdir) {
-  tinydir_dir dir;
-  tinydir_open(&dir, kdir.c_str());
-
-  while (dir.has_next) {
-	tinydir_file file;
-	tinydir_readfile(&dir, &file);
-	std::string ext(file.extension);
-	if (ext.compare("cl") != 0) {
-	  tinydir_next(&dir);
-	  continue;
-	}
-	
-	std::ifstream clFile(file.path, std::ios_base::binary);
-	std::stringstream buffer;
-	buffer << clFile.rdbuf();
-	std::string clSrc(buffer.str());
-
-	std::string name(file.name);
-    ocl::current_context().add_program(clSrc, name);
-
-	tinydir_next(&dir);
-  }
+void OpenclDevice::BuildPrograms() {
+  ocl::current_context().add_program(distribution_str, "distribution.cl");
+  ocl::current_context().add_program(tensormath_str, "tensor_math_opencl.cl");
+  ocl::current_context().add_program(im2col_str, "im2col.cl");
+  ocl::current_context().add_program(pooling_str, "pooling.cl");
 }
 
 
