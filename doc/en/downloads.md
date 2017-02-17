@@ -2,10 +2,33 @@
 
 * Latest code: please clone the dev branch from [Github](https://github.com/apache/incubator-singa)
 
+* v1.1.0 (12 February 2017):
+     * [Apache SINGA 1.1.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz)
+      [\[MD5\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.md5)
+      [\[KEYS\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.1.0/KEYS)
+    * [Release Notes 1.1.0](releases/RELEASE_NOTES_1.1.0.html)
+    * New features and major updates,
+        * Create Docker images (CPU and GPU versions)
+        * Create Amazon AMI for SINGA (CPU version)
+        * Integrate with Jenkins for automatically generating Wheel and Debian packages (for installation), and updating the website.
+        * Enhance the FeedFowardNet, e.g., multiple inputs and verbose mode for debugging
+        * Add Concat and Slice layers
+        * Extend CrossEntropyLoss to accept instance with multiple labels
+        * Add image_tool.py with image augmentation methods
+        * Support model loading and saving via the Snapshot API
+        * Compile SINGA source on Windows
+        * Compile mandatory dependent libraries together with SINGA code
+        * Enable Java binding (basic) for SINGA
+        * Add version ID in checkpointing files
+        * Add Rafiki toolkit for providing RESTFul APIs
+        * Add examples pretrained from Caffe, including GoogleNet
+
+
+
 * v1.0.0 (8 September 2016):
-    * [Apache SINGA 1.0.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz)
-      [\[MD5\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz.md5)
-      [\[KEYS\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.0.0/KEYS)
+    * [Apache SINGA 1.0.0](https://archive.apache.org/dist/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz)
+      [\[MD5\]](https://archive.apache.org/dist/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz.md5)
+      [\[KEYS\]](https://archive.apache.org/dist/incubator/singa//1.0.0/KEYS)
     * [Release Notes 1.0.0](releases/RELEASE_NOTES_1.0.0.html)
     * New features and major updates,
         * Tensor abstraction for supporting more machine learning models.

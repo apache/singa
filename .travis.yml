@@ -23,7 +23,7 @@ dist: trusty
 
 before_install:
  - sudo apt-get -qq update
- - sudo apt-get install -qq -y libopenblas-dev libgoogle-glog-dev libprotobuf-dev protobuf-compiler
+ - sudo apt-get install -qq -y libopenblas-dev libprotobuf-dev protobuf-compiler
  - sudo apt-get install -qq -y opencl-headers ocl-icd-*
 #- wget https://github.com/KhronosGroup/OpenCL-CLHPP/releases/download/v2.0.9/cl2.hpp
 #- sudo mv cl2.hpp /usr/include/CL/
