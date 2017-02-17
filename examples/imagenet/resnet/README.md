@@ -26,7 +26,7 @@ In this example, we convert Residual Networks trained on [Torch](https://github.
 * Example
 
         # use cpu
-        $ python serve.py -C --parameter_file resnet-18.pickle --model resnet --depth 18 &
+        $ python serve.py --use_cpu --parameter_file resnet-18.pickle --model resnet --depth 18 &
         # use gpu
         $ python serve.py --parameter_file resnet-18.pickle --model resnet --depth 18 &
 

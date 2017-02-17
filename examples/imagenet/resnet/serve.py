@@ -117,8 +117,8 @@ def main():
         # Setup argument parser
         parser = ArgumentParser(description="Wide residual network")
 
-        parser.add_argument("-p", "--port", default=9999, help="listen port")
-        parser.add_argument("-c", "--use_cpu", action="store_true",
+        parser.add_argument("--port", default=9999, help="listen port")
+        parser.add_argument("--use_cpu", action="store_true",
                             help="If set, load models onto CPU devices")
         parser.add_argument("--parameter_file", default="wrn-50-2.pickle")
         parser.add_argument("--model", choices = ['resnet', 'wrn', 'preact', 'addbn'], default='wrn')
@@ -131,9 +131,14 @@ def main():
         # start to train
         agent = Agent(port)
 
-        net = model.create_net(args.model, args.depth)
-        dev = device.create_cuda_gpu()
-        net.to_device(dev)
+        net = model.create_net(args.model, args.depth, args.use_cpu)
+        if args.use_cpu:
+            print 'Using CPU'
+            dev = device.get_default_device()
+        else:
+            print 'Using GPU'
+            dev = device.create_cuda_gpu()
+            net.to_device(dev)
         model.init_params(net, args.parameter_file)
         print 'Finish loading models'
 

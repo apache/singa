@@ -21,6 +21,7 @@ from singa.layer import Conv2D, Activation, MaxPooling2D, AvgPooling2D,\
         Split, Merge, Flatten, Dense, BatchNormalization, Softmax
 from singa import net as ffnet
 from singa import initializer
+from singa import layer
 
 ffnet.verbose=True
 
@@ -257,7 +258,9 @@ def create_wide_resnet(depth=50):
     return net
 
 
-def create_net(name, depth):
+def create_net(name, depth, use_cpu):
+    if use_cpu:
+        layer.engine = 'singacpp'
     if name == 'resnet':
         return create_resnet(depth)
     elif name == 'wrn':
