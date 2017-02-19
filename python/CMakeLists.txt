@@ -129,14 +129,3 @@ CONFIGURE_FILE(${SETUP_PY_IN} ${SETUP_PY})
 
 #create python/singa/proto/__init__.py
 FILE(WRITE ${CMAKE_BINARY_DIR}/python/singa/proto/__init__.py "")
-#MESSAGE(STATUS "apple: ${APPLE}")
-IF(APPLE)
-ADD_CUSTOM_TARGET(
-    change_suffix ALL
-    COMMAND ${CMAKE_COMMAND} -E rename "${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.dylib" "${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.so"
-    COMMENT "change .dylib to .so in mac system"
-)
-ADD_DEPENDENCIES(change_suffix _singa_wrap)
-ENDIF(APPLE)
-
-

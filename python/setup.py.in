@@ -81,7 +81,7 @@ setup(
     #have to be included in MANIFEST.in as well.
 
     package_data={
-        'singa': ['_singa_wrap.so'],
+        'singa': ['_singa_wrap.*'],
     },
 
     #Although 'package_data' is the preferred approach, in some case you may
