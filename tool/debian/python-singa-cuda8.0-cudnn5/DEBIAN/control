@@ -8,7 +8,7 @@ Homepage: http://singa.apache.org
 Architecture: amd64
 Priority: optional
 Pre-Depends: ca-certificates, cuda-cudart-8-0, cuda-curand-8-0
-Depends: libc6, libstdc++6, libprotobuf-dev, libopenblas-dev, libgoogle-glog-dev, python, libpython2.7, python-setuptools, python-numpy, python-pillow
+Depends: libc6, libstdc++6, libprotobuf-dev, libopenblas-dev, libgoogle-glog-dev, python-dev, libpython2.7, python-pip, python-numpy, python-pillow
 Description: Singa is an Apache Incubating project for developing an open source deep learning library.
  The Singa project was initiated by the DB System Group at National University of Singapore in 2014. It focused on distributed deep learning by partitioning the model and data onto nodes in a cluster and parallelize the training. The prototype was accepted by Apache Incubator in March 2015. 
 
