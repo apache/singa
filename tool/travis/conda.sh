@@ -15,29 +15,14 @@
 # limitations under the License.
 #
 
-# to use container for building
-sudo: required
-language: cpp
+# to build SINGA package and upload it to anaconda
 
-matrix:
-  include:
-  - os: osx
-    compiler: clang
-    osx_image: xcode7.3
-  - os: linux
-    dist: trusty
-    compiler: gcc
+USER=nusdbsystem
+OS=$TRAVIS_OS_NAME-64
 
-#
-#addons:
-#  apt:
-#    packages:
-#      - libopenblas-dev
-#      - libprotobuf-dev
-#      - protobuf-compiler
-
-install:
-  - bash -ex tool/travis/depends.sh
-
-script:
-  - bash -ex tool/travis/build.sh
+mkdir ~/conda-bld
+conda config --set anaconda_upload no
+suffix=`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
+export CONDA_BLD_PATH=~/conda-bld-$suffix
+conda build tool/conda/
+anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u $USER -l nightly $CONDA_BLD_PATH/$OS/singa-*.tar.bz2 --force

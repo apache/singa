@@ -15,29 +15,18 @@
 # limitations under the License.
 #
 
-# to use container for building
-sudo: required
-language: cpp
 
-matrix:
-  include:
-  - os: osx
-    compiler: clang
-    osx_image: xcode7.3
-  - os: linux
-    dist: trusty
-    compiler: gcc
-
-#
-#addons:
-#  apt:
-#    packages:
-#      - libopenblas-dev
-#      - libprotobuf-dev
-#      - protobuf-compiler
-
-install:
-  - bash -ex tool/travis/depends.sh
-
-script:
-  - bash -ex tool/travis/build.sh
+if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
+then
+  if [[ "$TRAVIS_OS_NAME" == "osx" ]];
+  then
+    export CMAKE_LIBRARY_PATH=/usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH;
+    export CMAKE_INCLUDE_PATH=/usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH;
+  fi
+  mkdir build && cd build;
+  cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF ..;
+  make;
+  ./bin/test_singa --gtest_output=xml:./../gtest.xml;
+else
+  bash tool/travis/conda.sh;
+fi
