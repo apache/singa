@@ -25,6 +25,7 @@
 #include "singa/core/device.h"
 #include "singa/utils/tinydir.h"
 #include "singa/utils/opencl_utils.h"
+#include "./opencl_func.h"
 
 #ifdef USE_OPENCL
 
@@ -91,10 +92,10 @@ void OpenclDevice::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
 
 
 void OpenclDevice::BuildPrograms() {
-  ocl::current_context().add_program(distribution_str, "distribution.cl");
-  ocl::current_context().add_program(tensormath_str, "tensor_math_opencl.cl");
-  ocl::current_context().add_program(im2col_str, "im2col.cl");
-  ocl::current_context().add_program(pooling_str, "pooling.cl");
+  ocl::current_context().add_program(opencl::distribution_str, "opencl_distribution");
+  ocl::current_context().add_program(opencl::tensormath_str, "opencl_tensor_math");
+  ocl::current_context().add_program(opencl::im2col_str, "opencl_im2col");
+  ocl::current_context().add_program(opencl::pooling_str, "opencl_pooling");
 }
 
 

@@ -175,7 +175,7 @@ void OpenclConvolution::Im2Col(Block* src, int data_im_off,
                                Block* dst, Context* ctx) {
 
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("im2col.cl", "im2col");
+  auto kernel = ocl_ctx.get_kernel("opencl_im2col", "im2col");
 
   auto src_buf = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
   auto dst_buf = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
@@ -200,7 +200,7 @@ void OpenclConvolution::Col2Im(Block* src, const int col_data_off,
                                Block* dst, Context* ctx) {
                                
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("im2col.cl", "col2im");
+  auto kernel = ocl_ctx.get_kernel("opencl_im2col", "col2im");
   
   auto src_buf = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
   auto dst_buf = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);

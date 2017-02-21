@@ -202,11 +202,6 @@ class CudaGPU : public Device {
 
 #ifdef USE_OPENCL
 
-extern std::string distribution_str;
-extern std::string tensormath_str;
-extern std::string im2col_str;
-extern std::string pooling_str;
-
 // Implement Device using OpenCL libs.
 class OpenclDevice : public singa::Device {
 public:

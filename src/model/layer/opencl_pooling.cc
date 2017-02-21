@@ -131,7 +131,7 @@ void OpenclPooling::Pooling_Forward_Max(const int num, Block* src, Block* mask,
                                         Block* dst, const int channels,
                                         Context* ctx) {
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("pooling.cl", "max_pool_forward");
+  auto kernel = ocl_ctx.get_kernel("opencl_pooling", "max_pool_forward");
   
   auto src_buf = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
   auto dst_buf = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
@@ -152,7 +152,7 @@ void OpenclPooling::Pooling_Forward_Ave(const int num, Block* src, Block* dst,
                                         const int pad_h, const int pad_w,
                                         const int channels, Context* ctx) {
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("pooling.cl", "ave_pool_forward");
+  auto kernel = ocl_ctx.get_kernel("opencl_pooling", "ave_pool_forward");
   
   auto src_buf = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
   auto dst_buf = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
@@ -172,7 +172,7 @@ void OpenclPooling::Pooling_Forward_Sto_Train(Block* src, Block* rand,
                                               const int channels, 
                                               Block* dst, Context* ctx) {
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("pooling.cl", "sto_pool_forward_train");
+  auto kernel = ocl_ctx.get_kernel("opencl_pooling", "sto_pool_forward_train");
   
   auto src_buf = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
   auto dst_buf = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
@@ -192,7 +192,7 @@ void OpenclPooling::Pooling_Forward_Sto_Test(Block* src, Block* dst,
                                              const int stride_h, const int stride_w,
                                              const int channels, Context* ctx) {
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("pooling.cl", "sto_pool_forward_test");
+  auto kernel = ocl_ctx.get_kernel("opencl_pooling", "sto_pool_forward_test");
   
   auto src_buf = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
   auto dst_buf = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
@@ -213,7 +213,7 @@ void OpenclPooling::Pooling_Backward_Max(Block* top, Block* mask,
                                          const int stride_h, const int stride_w,
                                          Block* bottom, Context* ctx) {
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("pooling.cl", "max_pool_backward");
+  auto kernel = ocl_ctx.get_kernel("opencl_pooling", "max_pool_backward");
   
   auto src_buf = WrapHandle(static_cast<cl_mem>(top->mutable_data()), ocl_ctx);
   auto dst_buf = WrapHandle(static_cast<cl_mem>(bottom->mutable_data()), ocl_ctx);
@@ -235,7 +235,7 @@ void OpenclPooling::Pooling_Backward_Ave(Block* bottom,
                                          const int stride_h, const int stride_w,
                                          Block* top, Context* ctx) {
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("pooling.cl", "ave_pool_backward");
+  auto kernel = ocl_ctx.get_kernel("opencl_pooling", "ave_pool_backward");
   
   auto src_buf = WrapHandle(static_cast<cl_mem>(bottom->mutable_data()), ocl_ctx);
   auto dst_buf = WrapHandle(static_cast<cl_mem>(top->mutable_data()), ocl_ctx);
@@ -254,7 +254,7 @@ void OpenclPooling::Pooling_Backward_Sto(Block* src, Block* rand, Block* dst,
                                          const int stride_h, const int stride_w,
                                          const int channels, Context* ctx) {
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
-  auto kernel = ocl_ctx.get_kernel("pooling.cl", "sto_pool_backward");
+  auto kernel = ocl_ctx.get_kernel("opencl_pooling", "sto_pool_backward");
   
   auto src_buf = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
   auto dst_buf = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
