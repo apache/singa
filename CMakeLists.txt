@@ -29,10 +29,13 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
 #message(STATUS "module path: ${CMAKE_MODULE_PATH}")
 
 # Flags
-IF(UNIX OR APPLE)
-    SET(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall -pthread")
+IF(UNIX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2 -fPIC -Wall -pthread")
 ENDIF()
+IF(APPLE)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -g -O2 -fPIC -Wall -pthread")
+ENDIF()
+
 IF(WIN32)
     IF (MSVC)
         MESSAGE(STATUS "Using msvc compiler")
@@ -57,6 +60,7 @@ OPTION(USE_PYTHON "Generate py wrappers" ON)
 OPTION(USE_JAVA "Generate java wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
 OPTION(ENABLE_DIST "Enable distributed training" OFF)
+OPTION(ENABLE_TEST "Enable unit test" OFF)
 OPTION(DISABLE_WARNINGS "Disable warnings under windows" ON)
 OPTION(USE_MODULES "Compile dependent libs as submodules together with singa" OFF)
 #OPTION(USE_SHARED_LIBS "Use shared library" OFF)
@@ -145,8 +149,11 @@ ENDIF()
 
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(test)
-ADD_SUBDIRECTORY(examples)
+
+IF (ENABLE_TEST)
+  ADD_SUBDIRECTORY(test)
+  ADD_SUBDIRECTORY(examples)
+ENDIF()
 
 IF (USE_PYTHON)
     ADD_SUBDIRECTORY(python)

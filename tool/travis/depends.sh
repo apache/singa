@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+# if no env var (i.e., token), then do normal build and test;
+# otherwise use conda to build and package
 if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
 then
   if [[ "$TRAVIS_OS_NAME" == "linux" ]];
@@ -27,6 +29,7 @@ then
     brew install openblas protobuf260;
   fi
 else
+  # install miniconda
   if [[ "$TRAVIS_OS_NAME" == "linux" ]];
   then
     wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;

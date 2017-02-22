@@ -24,9 +24,9 @@ then
     export CMAKE_INCLUDE_PATH=/usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH;
   fi
   mkdir build && cd build;
-  cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF ..;
+  cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF -DENABLE_TEST=ON ..;
   make;
   ./bin/test_singa --gtest_output=xml:./../gtest.xml;
 else
-  bash tool/travis/conda.sh;
+  bash -e tool/travis/conda.sh;
 fi
