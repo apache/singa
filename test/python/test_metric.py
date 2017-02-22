@@ -52,5 +52,33 @@ class TestPrecision(unittest.TestCase):
         e = self.prcs.evaluate(self.x,self.y)
         self.assertAlmostEqual(e, (0.5 + 1 + 0) / 3)
 
+class TestRecall(unittest.TestCase):
+    def setUp(self):
+        x_np = np.asarray([[0.7, 0.2, 0.1],
+                           [0.2, 0.4, 0.5],
+                           [0.2,0.4,0.4]],
+                          dtype=np.float32)
+
+        y_np = np.asarray([[1, 0, 1],
+                           [1, 1, 1],
+                           [1, 0, 0]],
+                           dtype=np.int32)
+
+        self.recall = metric.Recall(top_k=2)
+        self.x = tensor.from_numpy(x_np)
+        self.y = tensor.from_numpy(y_np)
+
+
+    def test_forward(self):
+        r = self.recall.forward(self.x,self.y)
+        self.assertAlmostEqual(tensor.to_numpy(r)[0], 0.5)
+        self.assertAlmostEqual(tensor.to_numpy(r)[1], 2.0 / 3)
+        self.assertAlmostEqual(tensor.to_numpy(r)[2], 0)
+
+
+    def test_evaluate(self):
+        e = self.recall.evaluate(self.x,self.y)
+        self.assertAlmostEqual(e, (0.5 + 2.0 / 3 + 0) / 3)
+
 if __name__ == '__main__':
     unittest.main()
