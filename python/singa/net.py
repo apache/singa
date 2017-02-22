@@ -179,7 +179,9 @@ class FeedForwardNet(object):
         l = self.loss.forward(kTrain, out, y)
         if self.metric is not None:
             m = self.metric.evaluate(out, y)
-        return self.backward(), (l.l1(), m)
+            return self.backward(), (l.l1(), m)
+        else:
+            return self.backward(), (l.l1(),None)
 
     def evaluate(self, x, y):
         '''Evaluate the loss and metric of the given data.
