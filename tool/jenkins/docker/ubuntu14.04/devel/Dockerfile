@@ -16,15 +16,15 @@
 #
 # Base unbuntu 14.04 image from nvidia/cuda
 # Change tags to build with different cuda/cudnn versions:
-#   FROM nvidia/cuda:8.0-cudnn5-devel
-#   FROM nvidia/cuda:7.5-cudnn5-devel
-#   FROM nvidia/cuda:7.5-cudnn4-devel
-#   FROM nvidia/cuda:7.0-cudnn4-devel
-FROM nvidia/cuda:7.5-cudnn5-devel
+#   FROM nvidia/cuda:8.0-cudnn5-devel-ubuntu14.04
+#   FROM nvidia/cuda:7.5-cudnn5-devel-ubuntu14.04
+#   FROM nvidia/cuda:7.5-cudnn4-devel-ubuntu14.04
+#   FROM nvidia/cuda:7.0-cudnn4-devel-ubuntu14.04
+FROM nvidia/cuda:7.5-cudnn5-devel-ubuntu14.04
 
 # install dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libpcre3-dev python-dev python-pip wget openssh-server \
+    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libprotobuf-dev libopenblas-dev libpcre3-dev python-dev python-pip protobuf-compiler wget openssh-server \
     && apt-get clean && apt-get autoremove && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
     && pip install -U pip wheel numpy setuptools unittest-xml-reporting protobuf
@@ -35,14 +35,22 @@ RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz && \
     tar zxf swig-3.0.10.tar.gz && cd swig-3.0.10 && \
     ./configure && make && make install
 
+# install conda, conda-build and anaconda-client
+RUN wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+RUN bash miniconda.sh -b -p $HOME/miniconda
+RUN $HOME/miniconda/bin/conda config --set always_yes yes --set changeps1 no
+RUN $HOME/miniconda/bin/conda update -q conda
+RUN $HOME/miniconda/bin/conda install conda-build
+RUN $HOME/miniconda/bin/conda install anaconda-client
+ENV PATH $HOME/miniconda/bin:${PATH}
+
 # set environment
 ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}
-ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
-ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
-ENV OS_VERSION ubuntu14.04
+# ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
+# ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
 
 # download singa source
-RUN git clone https://github.com/apache/incubator-singa.git
+# RUN git clone https://github.com/apache/incubator-singa.git
 
 # config ssh service
 RUN mkdir /var/run/sshd

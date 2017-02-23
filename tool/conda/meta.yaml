@@ -17,13 +17,12 @@ requirements:
     - numpy >=1.10
     - swig >=3.0
     - openblas >=0.2.10
-    - libprotobuf 3.0.0
+    - protobuf 3.0.0
     - glog 0.3.4
 
   run:
     - python 2.7*
     - numpy >=1.10
-    - libprotobuf 3.0.0
     - protobuf 3.0.0
     - glog 0.3.4
     - openblas >=0.2.10

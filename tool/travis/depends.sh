@@ -43,4 +43,5 @@ else
   conda update -q conda
   conda install conda-build
   conda install anaconda-client
+  conda config --add channels conda-forge
 fi

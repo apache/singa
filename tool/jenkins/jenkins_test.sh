@@ -18,28 +18,24 @@
 # * limitations under the License.
 # */
 
-# This script is used by Jenkins to compile and distribute SINGA wheel file.
+# This script is used by Jenkins to compile and test SINGA
 
-echo Compile, test and distribute PySINGA...
+echo Compile and test SINGA...
 echo parameters: $1
 echo workspace: `pwd`
 echo OS version: `cat /etc/issue`
 echo kernal version: `uname -a`
 echo CUDA version: $CUDA_VERSION
 echo CUDNN version: $CUDNN_VERSION
-echo OS name: $OS_VERSION
 COMMIT=`git rev-parse --short HEAD`
 echo COMMIT HASH: $COMMIT
 # set parameters
 CUDA="OFF"
 CUDNN="OFF"
-FOLDER=$BUILD_NUMBER/$COMMIT/$OS_VERSION-cpp
 if [ $1 = "CUDA" ]; then
   CUDA="ON"
   CUDNN="ON"
-  FOLDER=$BUILD_NUMBER/$COMMIT/$OS_VERSION-cuda$CUDA_VERSION-cudnn$CUDNN_VERSION
 fi
-echo wheel file folder: build/python/dist/whl/$FOLDER
 
 # setup env
 rm -rf build
@@ -51,20 +47,11 @@ fi
 
 # compile singa c++
 cd build
-cmake -DUSE_CUDNN=$CUDNN -DUSE_CUDA=$CUDA -DUSE_MODULES=ON $EXTRA_ARGS ../
+cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON $EXTRA_ARGS ../
 make
 # unit test cpp code
 ./bin/test_singa --gtest_output=xml:./gtest.xml
-# compile pysinga
-cd python
-python setup.py bdist_wheel
-# mv whl file to a folder whose name identifies the OS, CUDA, CUDNN etc.
-cd dist
-mkdir -p $FOLDER
-mv *.whl $FOLDER/
-tar czf $BUILD_NUMBER.tar.gz $FOLDER/*
-
 # unit test python code
-cd ../../../test/python
+cd ../test/python
 PYTHONPATH=../../build/python/ python run.py
 echo Job finished...

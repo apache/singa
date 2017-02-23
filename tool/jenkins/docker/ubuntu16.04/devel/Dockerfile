@@ -36,7 +36,6 @@ RUN apt-get update \
 ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}
 ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
 ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
-ENV OS_VERSION ubuntu16.04
 
 # download singa source
 RUN git clone https://github.com/apache/incubator-singa.git

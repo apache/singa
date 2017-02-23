@@ -27,7 +27,7 @@ export PATH="$HOME/miniconda/bin:$PATH"
 conda config --set anaconda_upload no
 
 # save the package at given folder, then we can upload using singa-*.tar.bz2
-suffix=`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
+suffix=$TRAVIS_JOB_NUMBER  #`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
 export CONDA_BLD_PATH=~/conda-bld-$suffix
 mkdir $CONDA_BLD_PATH
 
@@ -35,4 +35,4 @@ conda build tool/conda/
 
 # turn off debug to hide the token in travis log
 set +x
-anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u $USER -l nightly $CONDA_BLD_PATH/$OS/singa-*.tar.bz2 --force
+anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u $USER -l main $CONDA_BLD_PATH/$OS/singa-*.tar.bz2 --force
