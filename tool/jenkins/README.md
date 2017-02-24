@@ -1,12 +1,11 @@
 # Jenkins CI Support
 
 ## Introduction
-This documentation is to guide SINGA developers to setup Jenkins service.
+This documentation is to guide SINGA developers to setup Jenkins service to support continuous integration on GPU systems. After each commit,
+1. SINGA should be compiled and tested automatically under different settings (e.g., OS and hardware).
+2. Convenient binaries should be generated automatically and archived.
 
-We use Jenkins to support continuous integration.
-After each commit, we want to automatically compile and test SINGA
-under different OS and settings.
-Those built binaries need to be archived for users to download.
+Continuous integration for CPU systems is enabled via [Travis](../travis).
 
 ## Install Jenkins
 [Jenkins Official Wiki](https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins)
@@ -56,18 +55,21 @@ Each node should configure the following environment variable
   * create conda package
     Execute shell - command -
 
-        git push --mirror <https://username:auth_token@github.com/mirror_repo>
-        /root/miniconda/conda tool/conda/
+        git push https://username:token@github.com/nusdbsystem/incubator-singa.git -f
+        bash -ex tool/jenkins/jenkins_test.sh $lang
         export CONDA_BLD_PATH=/root/conda-bld-$BUILD_NUMBER
         mkdir $CONDA_BLD_PATH
-        /root/miniconda/anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u $USER -l main $CONDA_BLD_PATH/$OS/singa-*.tar.bz2 --force
+        /root/miniconda/bin/conda-build tool/conda
+        /root/miniconda/bin/anaconda -t ANACONDA_UPLOAD_TOKEN upload -u nusdbsystem -l main $CONDA_BLD_PATH/linux-64/singa-*.tar.bz2 --force
+
 
     It first pushes to a mirror site to invoke travis-ci for CPU package creation;
-    Then it creates the conda package for GPU and uploads the package.
+    Then it compiles and runs unit tests;
+    Finally it creates the conda package for GPU and upload it.
 
 ### Post-build Actions
   * Publish JUnit test result report - Test report XMLs - ``**/gtest.xml, **/unittest.xml``
-  * (optional) Archive the artifacts - ``build/python/dist/**.whl, build/debian/**.deb``
+  * (optional) Archive the artifacts - ``build/debian/**.deb``
   * Send build artifacts (Debian package) over SSH for wheel
     * ../debian/build.sh packages the .deb file into $BUILD_ID.tar.gz. Inside the tar file,
       the folder layout is `build_id/commit_hash/os_lang/*.deb`, where `os_lang` is the combination of os version, device programming language (cuda/cpp/opencl) and cudnn version.
@@ -81,12 +83,11 @@ Each node should configure the following environment variable
 
     * The file links on the remote public server would be like
 
-            debian/32/84d56b7/ubuntu16.04-cpp/singa-1.0.1.deb
-            debian/32/84d56b7/ubuntu16.04-cuda8.0-cudnn5/singa-1.0.1.deb
-
+            debian/32/84d56b7/ubuntu14.04-cpp/singa-1.0.1.deb
+            debian/32/84d56b7/ubuntu14.04-cuda8.0-cudnn5/singa-1.0.1.deb
 
 ### Docker Images
-We provide in a number of singa docker [images](../docker) for Jenkins to use as slaves.
+We provide in a number of singa docker [images](./docker) for Jenkins to use as slaves.
 To run the docker images,
 
     nvidia-docker run --name <jenkins-slaveXX> -d <Image ID>
