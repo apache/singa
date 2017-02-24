@@ -23,11 +23,19 @@ MAINTAINER incubator-singa dev@singa.incubator.apache.org
 
 # install dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends subversion git python-dev python-pip python-sphinx openssh-server\
+    && apt-get install -y --no-install-recommends subversion git wget openssh-server bzip2\
     && apt-get clean && apt-get autoremove && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip --no-cache-dir install -U pip setuptools \
-    && pip --no-cache-dir install recommonmark
+    && rm -rf /var/lib/apt/lists/*
+
+RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+RUN bash miniconda.sh -b -p /root/miniconda
+ENV PATH /root/miniconda/bin:${PATH}
+RUN conda config --set always_yes yes --set changeps1 no
+RUN conda update -q conda
+RUN conda install -c conda-forge sphinx
+RUN conda install -c conda-forge sphinx_rtd_theme
+RUN conda install -c clinicalgraphics recommonmark=0.2.0
+RUN conda install -c nusdbsystem singa
 
 RUN mkdir /var/run/sshd
 RUN echo 'root:singa' | chpasswd
