@@ -54,13 +54,13 @@ setup(
 
     keywords='deep learning singa apache',
 
-    packages= ['rafiki','singa', 'singa.proto'],
+    packages=['rafiki', 'singa', 'singa.proto'],
 
-    #py_modules=["singa"],
+    # py_modules=["singa"],
 
     install_requires=[
         'numpy>=1.11.0',
-        'protobuf>=2.5.0,<3',
+        'protobuf>=2.5.0',
         'unittest-xml-reporting',
         'flask>=0.10.1',
         'flask_cors>=3.0.2',
@@ -81,7 +81,7 @@ setup(
     #have to be included in MANIFEST.in as well.
 
     package_data={
-        'singa': ['_singa_wrap.*'],
+        'singa': ['_singa_wrap.so'],
     },
 
     #Although 'package_data' is the preferred approach, in some case you may

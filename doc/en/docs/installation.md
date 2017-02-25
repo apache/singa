@@ -1,109 +1,38 @@
 # Installation
 
+## From Conda
 
-## From wheel
+Conda is a package manager provided by [Anaconda](https://www.continuum.io/downloads) or [Miniconda](https://conda.io/miniconda.html).
+Currently, SINGA has conda packages (Python2.7) for Linux and MacOSX.
 
-Users can download the pre-compiled wheel files to install PySINGA.
-PySINGA has been tested on Linux (Ubunu 14.04 and 16.04) and Mac OS (10.11 and 10.12).
+### Linux
 
-### Pre-requisite
+1. CPU only
 
-Python 2.7 and pip are required
+        conda install -c nusdbsystem singa
 
-    # For Ubuntu
-    $ sudo apt-get install python2.7-dev python-pip
+2. GPU via CUDA+cuDNN
 
-    # For Mac
-    $ brew tap homebrew/python
-    $ brew install python
+        conda install -c nusdbsystem singa-cudax.y-cudnnz
 
-Note for Mac OS, you need to configure the (python) paths correctly if multiple python versions are installed.
-Refer to FAQ for the errors and solutions.
-
-### Virtual environment
-
-Users are recommended to use PySINGA in python virtual environment.
-
-To use pip with virtual environment,
-
-    # install virtualenv
-    $ pip install virtualenv
-    $ virtualenv pysinga
-    $ source pysinga/bin/activate
-
-To use anaconda with virtual environment,
-
-    $ conda create --name pysinga python=2
-    $ source activate pysinga
+    where `x.y,z` is one of <8.0, 5>, <7.5, 5> and <7.5, 4>.
+    Users need to install CUDA and cuDNN before installing SINGA.
+    If cuDNN is not in system folders (e.g., /usr/local), export the folder of libcudnn.so to LD_LIBRARY_PATH
 
 
-Note that in python virtual environment, you may need to reset the `PYTHONPATH` to empty
-to avoid the conflicts of system path and virtual environment path.
+### Mac OSX
+
+Only the CPU version is available,
+
+    conda config --add channels conda-forge
+    conda install -c nusdbsystem singa
 
 
-### Instructions
+If there is no error message from
 
-Currently, the following wheel files are available,
+    python -c "from singa import tensor"
 
-<table border="1">
-  <tr>
-    <th>OS</th>
-    <th>Device</th>
-    <th>CUDA/cuDNN</th>
-    <th>Link</th>
-  </tr>
-  <tr>
-    <td>Ubuntu14.04</td>
-    <td>CPU</td>
-    <td>-</td>
-    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
-  </tr>
-  <tr>
-    <td>Ubuntu14.04</td>
-    <td>GPU</td>
-    <td>CUDA7.5+cuDNN4</td>
-    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cuda7.5-cudnn4/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
-  </tr>
-  <tr>
-    <td>Ubuntu14.04</td>
-    <td>GPU</td>
-    <td>CUDA7.5+cuDNN5</td>
-    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu14.04-cuda7.5-cudnn5/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
-  </tr>
-  <tr>
-    <td>Ubuntu16.04</td>
-    <td>CPU</td>
-    <td>-</td>
-    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
-  </tr>
-  <tr>
-    <td>Ubuntu16.04</td>
-    <td>GPU</td>
-    <td>CUDA8.0+cuDNN5</td>
-    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cuda8.0-cudnn5/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux">history</a></td>
-  </tr>
-  <tr>
-    <td>MacOSX10.11</td>
-    <td>CPU</td>
-    <td>-</td>
-    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx/latest/macosx10.11-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx">history</a></td>
-  </tr>
-  <tr>
-    <td>MacOSX10.12</td>
-    <td>CPU</td>
-    <td>-</td>
-    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx/latest/macosx10.12-cpp/">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/macosx">history</a></td>
-  </tr>
-</table>
-
-Download the whl file and execute the following command to install PySINGA,
-
-    $ pip install --upgrade <path to the whel file>
-
-To install the wheel file compiled with CUDA, you need to install CUDA and export the `LD_LIBRARY_PATH` to cuDNN before running the above instruction.
-
-If you have sudo right, you can run the above commands using `sudo pip install` without python virtual environment.
-The option `--upgrade` may cause errors sometimes, in which case you can ignore it.
+then SINGA is installed successfully.
 
 ## From Debian Package
 
@@ -126,25 +55,19 @@ The following Debian packages (on architecture: amd64) are available
     <td>Ubuntu14.04</td>
     <td>GPU</td>
     <td>CUDA7.5+cuDNN4</td>
-    <td>coming soon</td>
+    <td>-</td>
   </tr>
   <tr>
     <td>Ubuntu14.04</td>
     <td>GPU</td>
     <td>CUDA7.5+cuDNN5</td>
-    <td>coming soon</td>
-  </tr>
-  <tr>
-    <td>Ubuntu16.04</td>
-    <td>CPU</td>
     <td>-</td>
-    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu16.04-cpp/python-singa.deb">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian">history</a></td>
   </tr>
   <tr>
-    <td>Ubuntu16.04</td>
+    <td>Ubuntu14.04</td>
     <td>GPU</td>
     <td>CUDA8.0+cuDNN5</td>
-    <td>coming soon</td>
+    <td>-</td>
   </tr>
 </table>
 
@@ -166,7 +89,7 @@ The source files could be downloaded either as a [tar.gz file](https://dist.apac
 The following libraries are required
 * cmake (>=2.8)
 * gcc (>=4.8.1) or Clang
-* google protobuf (>=2.5,<3)
+* google protobuf (>=2.5)
 * blas (tested with openblas >=0.2.10)
 * swig(>=3.0.10) for compiling PySINGA
 * numpy(>=1.11.0) for compiling PySINGA

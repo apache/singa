@@ -20,11 +20,14 @@ if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
 then
   if [[ "$TRAVIS_OS_NAME" == "osx" ]];
   then
-    export CMAKE_LIBRARY_PATH=/usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH;
-    export CMAKE_INCLUDE_PATH=/usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH;
+    export CMAKE_LIBRARY_PATH=/usr/local/opt/openblas/lib:/usr/local/opt/protobuf/lib:$CMAKE_LIBRARY_PATH;
+    export CMAKE_INCLUDE_PATH=/usr/local/opt/openblas/include:/usr/local/opt/protobuf/include:$CMAKE_INCLUDE_PATH;
+    mkdir build && cd build;
+    cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF -DENABLE_TEST=ON -DProtobuf_PROTOC_EXECUTABLE=/usr/local/opt/protobuf/bin/protoc ..;
+  else
+    mkdir build && cd build;
+    cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF -DENABLE_TEST=ON ..
   fi
-  mkdir build && cd build;
-  cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF -DENABLE_TEST=ON ..;
   make;
   ./bin/test_singa --gtest_output=xml:./../gtest.xml;
 else

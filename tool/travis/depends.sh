@@ -26,7 +26,7 @@ then
   else
     brew update;
     brew tap homebrew/science;
-    brew install openblas protobuf260;
+    brew install openblas protobuf;
   fi
 else
   # install miniconda
