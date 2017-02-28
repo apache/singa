@@ -17,4 +17,4 @@
 #
 
 cd /usr/local/lib/singa
-python setup.py install
+pip install .

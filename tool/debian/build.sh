@@ -40,8 +40,8 @@ case $key in
   shift
   ;;
   -c|--cuda|--CUDA)
-  # CUDA="ON"
-  # CUDNN="ON"
+  CUDA="ON"
+  CUDNN="ON"
   shift
   ;;
   -p|--python)
@@ -80,32 +80,25 @@ if [ $BUILD = "ON" ]; then
 fi
 
 # create the folder for the package
-FOLDER_PREFIX="singa"
-if [ -n "$BUILD_ID" ]; then
-  FOLDER_PREFIX=$BUILD_ID/$COMMIT/$OS_VERSION
-fi
-
-FOLDER=$FOLDER_PREFIX-cpp
-if [ $CUDA = "ON" ]; then
-  FOLDER=$FOLDER_PREFIX-cuda$CUDA_VERSION-cudnn$CUDNN_VERSION
-fi
-
 if [ $PYTHON = "ON" ]
 then
-  FOLDER=$FOLDER/python-singa
+  FOLDER_PREFIX="python-singa"
+
 else
-  FOLDER=$FOLDER/singa
+  FOLDER_PREFIX="singa"
+fi
+
+if [ $CUDA = "ON" ]
+then
+  FOLDER=$FOLDER_PREFIX-cuda$CUDA_VERSION-cudnn$CUDNN_VERSION
+else
+  FOLDER=singa-cpp/$FOLDER_PREFIX
 fi
 
 echo "Path: " build/debian/$FOLDER
 mkdir -p build/debian/$FOLDER
 
-if [ $PYTHON = "ON" ]
-then
-  cp -r tool/debian/python-singa/* build/debian/$FOLDER/
-else
-  cp -r tool/debian/singa/* build/debian/$FOLDER/
-fi
+cp -r tool/debian/$FOLDER/* build/debian/$FOLDER/
 
 # remove unnecessary dependencies
 if [ $MODULES = "ON" ]; then
