@@ -171,4 +171,41 @@ INSTALL(FILES ${CMAKE_BINARY_DIR}/include/singa/singa_config.h DESTINATION
 INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/lib DESTINATION
     ${CMAKE_INSTALL_PREFIX}
     PATTERN "*libgtest.a" EXCLUDE )
+
 INSTALL(CODE "execute_process(COMMAND python setup.py install --prefix=${CMAKE_INSTALL_PREFIX} WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/python)")
+
+# CPack
+IF (USE_MODULES)
+	SET(CORE_DEPENDENCIES "libgoogle-glog-dev, libstdc++6, libc6")
+ELSE()
+	SET(CORE_DEPENDENCIES "libgoogle-glog-dev, libprotobuf-dev, libopenblas-dev, libstdc++6, libc6")
+ENDIF()
+
+SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python-dev, libpython2.7, python-pip, python-numpy, python-pillow")
+
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Apache Incubator <dev@singa.incubator.apache.org>")
+SET(CPACK_DEBIAN_PACKAGE_VERSION ${PACKAGE_VERSION})
+SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+SET(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://singa.apache.org")
+SET(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Singa is an Apache Incubating project for developing an open source deep learning library.
+ The Singa project was initiated by the DB System Group at National University of Singapore in 2014. It focused on distributed deep learning by partitioning the model and data onto nodes in a cluster and parallelize the training. The prototype was accepted by Apache Incubator in March 2015.")
+IF (USE_PYTHON)
+	SET(CPACK_DEBIAN_PACKAGE_DEPENDS ${PYTHON_DEPENDENCIES})
+        #SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian/postinst;${PROJECT_SOURCE_DIR}/tool/debian/postrm" )
+	IF (USE_CUDA)
+		SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa-cuda")
+		SET(CPACK_PACKAGE_FILE_NAME "python-singa-cuda-${PACKAGE_VERSION}")
+		SET(CPACK_DEBIAN_PACKAGE_PREDEPENDS "ca-certificates, cuda-cudart-8-0, cuda-curand-8-0")
+	ELSE()
+		SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa")
+		SET(CPACK_PACKAGE_FILE_NAME "python-singa-${PACKAGE_VERSION}")
+		SET(CPACK_DEBIAN_PACKAGE_PREDEPENDS "ca-certificates")
+	ENDIF()
+ELSE()
+	SET(CPACK_DEBIAN_PACKAGE_NAME "singa")
+	SET(CPACK_PACKAGE_FILE_NAME "singa-${PACKAGE_VERSION}")
+        SET(CPACK_DEBIAN_PACKAGE_DEPENDS ${CORE_DEPENDENCIES})
+ENDIF()
+INCLUDE(CPack)
