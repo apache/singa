@@ -38,6 +38,7 @@ Example usage::
 
 from . import singa_wrap as singa
 import tensor
+import numpy as np
 
 
 class Metric(object):
@@ -78,9 +79,138 @@ class Metric(object):
 
 
 class Accuracy(Metric):
-    '''Compute the top one accuracy for singel label prediction tasks.
+    '''Compute the top one accuracy for single label prediction tasks.
 
     It calls the C++ functions to do the calculation.
     '''
     def __init__(self):
         self.swig_metric = singa.Accuracy()
+
+
+
+
+class Precision(Metric):
+    '''Make the top-k labels of max probability as the prediction
+
+    Compute the precision against the groundtruth labels
+    '''
+    def __init__(self, top_k):
+        self.top_k = top_k
+
+
+
+    def forward(self, x, y):
+        '''Compute the precision for each sample.
+
+        Convert tensor to numpy for computation
+
+        Args:
+            x (Tensor): predictions, one row per sample
+            y (Tensor): ground truth labels, one row per sample
+
+        Returns:
+            a tensor of floats, one per sample
+        '''
+
+        dev = x.device
+        x.to_host()
+        y.to_host()
+
+        x_np = tensor.to_numpy(x)
+        y_np = tensor.to_numpy(y)
+
+        pred_np = np.argsort(-x_np)[:, 0:self.top_k] #Sort in descending order
+
+        prcs_np = np.zeros(pred_np.shape[0], dtype=np.float32)
+
+        for i in range(pred_np.shape[0]):
+            #groundtruth labels
+            label_np = np.argwhere(y_np[i])
+
+            #Num of common labels among prediction and groundtruth
+            num_intersect = np.intersect1d(pred_np[i], label_np).size
+            prcs_np[i] = num_intersect / float(self.top_k)
+
+        precision = tensor.from_numpy(prcs_np)
+
+        x.to_device(dev)
+        y.to_device(dev)
+        precision.to_device(dev)
+
+        return precision
+
+
+    def evaluate(self, x, y):
+        '''Compute the averaged precision over all samples.
+
+        Args:
+            x (Tensor): predictions, one row per sample
+            y (Tensor): ground truth values, one row per sample
+        Returns:
+            a float value for the averaged metric
+        '''
+
+        return tensor.average(self.forward(x, y))
+
+
+class Recall(Metric):
+    '''Make the top-k labels of max probability as the prediction
+
+    Compute the recall against the groundtruth labels
+    '''
+    def __init__(self, top_k):
+        self.top_k = top_k
+
+
+    def forward(self, x, y):
+        '''Compute the recall for each sample.
+
+        Convert tensor to numpy for computation
+
+        Args:
+            x (Tensor): predictions, one row per sample
+            y (Tensor): ground truth labels, one row per sample
+
+        Returns:
+            a tensor of floats, one per sample
+        '''
+
+        dev = x.device
+        x.to_host()
+        y.to_host()
+
+        x_np = tensor.to_numpy(x)
+        y_np = tensor.to_numpy(y)
+
+        pred_np = np.argsort(-x_np)[:, 0:self.top_k] #Sort in descending order
+
+        recall_np = np.zeros(pred_np.shape[0], dtype=np.float32)
+
+        for i in range(pred_np.shape[0]):
+            #Return the index of non-zero dimension of i-th sample
+            label_np = np.argwhere(y_np[i])
+
+            #Num of common labels among prediction and groundtruth
+            num_intersect = np.intersect1d(pred_np[i], label_np).size
+            recall_np[i] = float(num_intersect) / label_np.size
+
+        recall = tensor.from_numpy(recall_np)
+
+        x.to_device(dev)
+        y.to_device(dev)
+        recall.to_device(dev)
+
+        return recall
+
+
+    def evaluate(self, x, y):
+        '''Compute the averaged precision over all samples.
+
+        Args:
+            x (Tensor): predictions, one row per sample
+            y (Tensor): ground truth values, one row per sample
+        Returns:
+            a float value for the averaged metric
+        '''
+
+        return tensor.average(self.forward(x,y))
