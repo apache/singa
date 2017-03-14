@@ -37,7 +37,7 @@ matrix:
 #      - protobuf-compiler
 
 install:
-  - bash -ex tool/travis/depends.sh
+  - travis_wait bash -ex tool/travis/depends.sh
 
 script:
   - bash -ex tool/travis/build.sh
