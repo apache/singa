@@ -60,6 +60,8 @@ from .proto import core_pb2
 from . import singa_wrap as singa
 import device as pydevice
 
+int32 = core_pb2.kInt
+float32 = core_pb2.kFloat32
 
 class Tensor(object):
     '''Create a Py Tensor, which wraps a swig converted Tensor from CPP Tensor

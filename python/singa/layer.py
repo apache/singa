@@ -27,7 +27,13 @@ Example usages::
 
     # create a convolution layer
     conv = layer.Conv2D('conv', 32, 3, 1, pad=1, input_sample_shape=(3, 32, 32))
+
+    # init param values
+    w, b = conv.param_values()
+    w.guassian(0, 0.01)
+    b.set_value(0)
     conv.to_device(dev)  # move the layer data onto a CudaGPU device
+
     x = tensor.Tensor((3, 32, 32), dev)
     x.uniform(-1, 1)
     y = conv.foward(True, x)
@@ -766,8 +772,8 @@ class Merge(Layer):
         Returns:
             A list of replicated grad, one per source layer
         '''
-        assert isinstance(grad, tensor.Tensor), 'The input must be Tensor'\
-                ' instead of %s' % type(grad).__name__
+        assert isinstance(grad, tensor.Tensor), 'The input must be Tensor' \
+            ' instead of %s' % type(grad).__name__
         return [grad] * self.num_input, []  # * self.num_input
 
 
@@ -902,7 +908,8 @@ class Slice(Layer):
     def get_output_sample_shape(self):
         out = []
         for i in range(len(self.conf.slice_conf.slice_point) + 1):
-            out.append(self.layer.GetOutputSampleShape(i))
+            out.append(self.layer.GetOutputSampleShapeAt(i))
+        return out
 
     def forward(self, flag, x):
         '''Slice the input tensor on the given axis.
