@@ -1,0 +1,5 @@
+matplotlib=2.0.0=np112py27_0
+nb_conda_kernels=2.0.0=py27_0
+nb_conda=2.0.0=py27_0
+pillow=4.0.0=py27_1
+tqdm=4.11.2=py27_0
