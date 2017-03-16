@@ -32,6 +32,8 @@
 
 #cmakedefine USE_OPENCL
 
+#cmakedefine USE_GLOG
+
 #cmakedefine ENABLE_DIST
 
 // lmdb
