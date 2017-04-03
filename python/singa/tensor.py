@@ -1046,7 +1046,7 @@ def sum_columns(M):
         a new Tensor as the resulted column.
     '''
     assert M.ndim() == 2, 'M.nDim() is supposed to be 2'
-    ret = Tensor((M.shape[0], 1))
+    ret = Tensor((M.shape[0], 1), M.signa_tensor.device())
     singa.SumColumns(M.singa_tensor, ret.singa_tensor)
     return ret
 
@@ -1061,7 +1061,7 @@ def sum_rows(M):
         a new Tensor as the resulted row.
     '''
     assert M.ndim() == 2, 'M.nDim() is supposed to be 2'
-    ret = Tensor((1, M.shape[1]))
+    ret = Tensor((1, M.shape[1]), M.singa_tensor.device())
     singa.SumRows(M.singa_tensor, ret.singa_tensor)
     return ret
 

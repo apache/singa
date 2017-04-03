@@ -168,7 +168,7 @@ class Layer(object):
         '''
         names = []
         for x in self.param_specs:
-            names.append(x['name'])
+            names.append(x.name)
         return names
 
     def param_values(self):
