@@ -1046,7 +1046,7 @@ def sum_columns(M):
         a new Tensor as the resulted column.
     '''
     assert M.ndim() == 2, 'M.nDim() is supposed to be 2'
-    ret = Tensor((M.shape[0], 1), M.signa_tensor.device())
+    ret = Tensor((M.shape[0], 1), M.singa_tensor.device())
     singa.SumColumns(M.singa_tensor, ret.singa_tensor)
     return ret
 
