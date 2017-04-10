@@ -53,17 +53,18 @@ void CudnnConvolution::ToDevice(std::shared_ptr<Device> device) {
 }
 
 void CudnnConvolution::InitCudnn(const Tensor &input) {
-  CHECK(!has_init_cudnn_);
   DataType dtype = input.data_type();
   auto dev = input.device();
   Context *ctx = dev->context(0);
   size_t batchsize = input.shape(0);
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_desc_));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_desc_));
-  if (bias_term_)
-    CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc_));
-  CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
-  CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
+  if (!has_init_cudnn_) {
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_desc_));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_desc_));
+    if (bias_term_)
+      CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc_));
+    CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
+    CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
+  }
 
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(x_desc_, CUDNN_TENSOR_NCHW,
                                          GetCudnnDataType(dtype), batchsize,
@@ -170,7 +171,23 @@ const Tensor CudnnConvolution::Forward(int flag, const Tensor &input) {
   DataType dtype = input.data_type();
   auto dev = input.device();
 
-  if (!has_init_cudnn_) InitCudnn(input);
+  if (!has_init_cudnn_) {
+    InitCudnn(input);
+  } else {
+    int n, c, h, w, s;
+    cudnnDataType_t type;
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(x_desc_, &type, &n, &c, &h, &w,
+          &s, &s, &s, &s));
+    if (batchsize != static_cast<size_t>(n))
+      InitCudnn(input);
+    CHECK(input.shape(1) == static_cast<size_t>(c)
+        && input.shape(2) == static_cast<size_t>(h)
+        && input.shape(3) == static_cast<size_t>(w))
+      << "input sample shape should not change"
+      << "previous shape " << c << ", " << h << ", " << w
+      << "current shape " << input.shape(1) << ", " << input.shape(2) << ", "
+      << input.shape(3);
+  }
 
   Shape shape{batchsize, num_filters_, conv_height_, conv_width_};
   Tensor output(shape, dev, dtype);

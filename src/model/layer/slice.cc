@@ -54,6 +54,7 @@ void Slice::Setup(const Shape& in_sample, const LayerConf& conf) {
 }
 
 const vector<Tensor> Slice::Forward(int flag, const vector<Tensor>& inputs) {
+  // TODO(wangwei) check the inputs shape to be the same for all iterations
   vector<Tensor> outputs;
   CHECK_EQ(inputs.size(), 1u) << "Split layer only have one input tensor.";
   size_t offset = 0;

@@ -69,8 +69,17 @@ const Tensor CudnnDropout::Forward(int flag, const Tensor& input) {
     auto dev = input.device();
     if (!has_init_cudnn_) {
       input.device()->Exec([size, dtype, this, dev](Context* ctx) {
-        this->InitCudnn(size, dtype, dev, ctx);
-      }, {}, {this->state_.block()});
+          this->InitCudnn(size, dtype, dev, ctx);
+          }, {}, {this->state_.block()});
+    } else {
+      int n, c, h, w, s;
+      cudnnDataType_t type;
+      CUDNN_CHECK(cudnnGetTensor4dDescriptor(x_desc_, &type,
+            &n, &c, &h, &w, &s, &s, &s, &s));
+      if (size != static_cast<size_t>(w))
+        input.device()->Exec([size, dtype, this, dev](Context* ctx) {
+            this->InitCudnn(size, dtype, dev, ctx);
+            }, {}, {this->state_.block()});
     }
     Tensor output;
     output.ResetLike(input);

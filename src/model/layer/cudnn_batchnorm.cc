@@ -44,13 +44,14 @@ void CudnnBatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
 }
 
 void CudnnBatchNorm::InitCudnn(const Shape& shape, DataType dtype) {
-  CHECK(!has_init_cudnn_);
-  if (is_2d_)
-    mode_ = CUDNN_BATCHNORM_PER_ACTIVATION;
-  else
-    mode_ = CUDNN_BATCHNORM_SPATIAL;
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&shape_desc_));
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&param_desc_));
+  if (!has_init_cudnn_) {
+    if (is_2d_)
+      mode_ = CUDNN_BATCHNORM_PER_ACTIVATION;
+    else
+      mode_ = CUDNN_BATCHNORM_SPATIAL;
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&shape_desc_));
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&param_desc_));
+  }
   CHECK_EQ(shape.size(), 4u);
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(shape_desc_, CUDNN_TENSOR_NCHW,
                                          GetCudnnDataType(dtype), shape[0],
@@ -70,7 +71,25 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
   else
     x = input;
   shape = x.shape();
-  if (!has_init_cudnn_) InitCudnn(shape, dtype);
+  if (!has_init_cudnn_) {
+    InitCudnn(shape, dtype);
+  } else {
+    int n, c, h, w, s;
+    cudnnDataType_t type;
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(shape_desc_, &type,
+          &n, &c, &h, &w, &s, &s, &s, &s));
+    if (shape[0] != static_cast<size_t>(n))
+      InitCudnn(shape, dtype);
+    CHECK(input.shape(1) == static_cast<size_t>(c)
+        && input.shape(2) == static_cast<size_t>(h)
+        && input.shape(3) == static_cast<size_t>(w))
+      << "input sample shape should not change"
+      << "previous shape " << c << ", " << h << ", " << w
+      << "current shape " << input.shape(1) << ", " << input.shape(2) << ", "
+      << input.shape(3);
+  }
+
+
   // TODO(wangji): check device id of input and params
   output.ResetLike(x);
   if ((flag & kTrain) == kTrain) {

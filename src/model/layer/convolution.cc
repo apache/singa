@@ -111,6 +111,9 @@ const Tensor Convolution::Forward(int flag, const Tensor &input) {
   if (flag & kTrain) buf_.push(input);
   size_t batchsize = input.shape(0);
   size_t imagesize = input.Size() / batchsize;
+  // TODO(wangwei) update the layer config if the input sample shape changes
+  CHECK(input.shape(1) == channels_ && input.shape(2) == height_ &&
+      input.shape(3) == width_) << "input sample shape should not change";
   DataType dtype = input.data_type();
   auto dev = input.device();
   Shape shape{batchsize, num_filters_, conv_height_, conv_width_};

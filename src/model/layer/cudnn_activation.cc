@@ -35,24 +35,26 @@ CudnnActivation::~CudnnActivation() {
 }
 
 void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
-  CHECK(!has_init_cudnn_);
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&desc_));
-  CUDNN_CHECK(cudnnCreateActivationDescriptor(&acti_desc_));
+  if (!has_init_cudnn_) {
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&desc_));
+    CUDNN_CHECK(cudnnCreateActivationDescriptor(&acti_desc_));
+
+    if (mode_ == "sigmoid")
+      cudnn_mode_ = CUDNN_ACTIVATION_SIGMOID;
+    else if (mode_ == "tanh")
+      cudnn_mode_ = CUDNN_ACTIVATION_TANH;
+    else if (mode_ == "relu")
+      cudnn_mode_ = CUDNN_ACTIVATION_RELU;
+    else
+      LOG(FATAL) << "Unkown activation: " << mode_;
+
+    CUDNN_CHECK(cudnnSetActivationDescriptor(
+          acti_desc_, cudnn_mode_, CUDNN_PROPAGATE_NAN, 0.0f));
+  }
 
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(
       desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), 1, 1, 1, size));
 
-  if (mode_ == "sigmoid")
-    cudnn_mode_ = CUDNN_ACTIVATION_SIGMOID;
-  else if (mode_ == "tanh")
-    cudnn_mode_ = CUDNN_ACTIVATION_TANH;
-  else if (mode_ == "relu")
-    cudnn_mode_ = CUDNN_ACTIVATION_RELU;
-  else
-    LOG(FATAL) << "Unkown activation: " << mode_;
-
-  CUDNN_CHECK(cudnnSetActivationDescriptor(
-        acti_desc_, cudnn_mode_, CUDNN_PROPAGATE_NAN, 0.0f));
   has_init_cudnn_ = true;
 }
 
@@ -62,7 +64,15 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
   DataType dtype = input.data_type();
   if (!has_init_cudnn_) {
     InitCudnn(size, dtype);
+  } else {
+    int n, c, h, w, s;
+    cudnnDataType_t type;
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(desc_,
+          &type, &n, &c, &h, &w, &s, &s, &s, &s));
+    if (size != static_cast<size_t>(w))
+      InitCudnn(size, dtype);
   }
+
   Tensor output;
   output.ResetLike(input);
   output.device()->Exec([input, output, this](Context* ctx) {

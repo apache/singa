@@ -70,6 +70,7 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
   x.Reshape(Shape{input.shape(0), input.Size() / input.shape(0)});
   Tensor output, mean, var, xnorm;
   output.ResetLike(x);
+  // TODO(wangwei) input sample shape check
 
   if ((flag & kTrain) == kTrain) {  // forward for train
     if (is_2d_) {                   // batchnorm_per_activation mode

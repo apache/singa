@@ -43,12 +43,9 @@ void CudnnSoftmax::Setup(const Shape& in_sample, const LayerConf &conf) {
 }
 
 void CudnnSoftmax::InitCudnn(Shape shape, DataType dtype) {
-  CHECK(!has_init_cudnn_);
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&desc_));
+  if (!has_init_cudnn_)
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&desc_));
 
-  CHECK_LE(shape.size(), 2u)
-    << "Tensor shape should range from 1 to 2D;"
-    << "otherwise, add flatten layer to transform";
   if (shape.size() == 1u)
     CUDNN_CHECK(cudnnSetTensor4dDescriptor( desc_,
       CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), 1, shape[0], 1, 1));
@@ -61,10 +58,24 @@ void CudnnSoftmax::InitCudnn(Shape shape, DataType dtype) {
 const Tensor CudnnSoftmax::Forward(int flag, const Tensor& input) {
   CHECK(buf_.empty());
   auto shape = input.shape();
+  CHECK_LE(shape.size(), 2u)
+    << "Tensor shape should range from 1 to 2D;"
+    << "otherwise, add flatten layer to transform";
   DataType dtype = input.data_type();
   if (!has_init_cudnn_) {
     InitCudnn(shape, dtype);
+  } else {
+    int n, c, h, w, s;
+    cudnnDataType_t type;
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(desc_, &type, &n, &c, &h, &w,
+          &s, &s, &s, &s));
+    if ((shape.size() == 1u && shape[0] != static_cast<size_t>(c)) ||
+        (shape.size() == 2u &&
+         (shape[0] != static_cast<size_t>(n)
+          || shape[1] != static_cast<size_t>(c))))
+      InitCudnn(shape, dtype);
   }
+
   Tensor output;
   output.ResetLike(input);
   output.device()->Exec([input, output, this](Context* ctx) {

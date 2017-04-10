@@ -54,6 +54,7 @@ void Concat::Setup(const vector<Shape>& in_shapes, const LayerConf& conf) {
 }
 
 const vector<Tensor> Concat::Forward(int flag, const vector<Tensor>& inputs) {
+  // TODO(wangwei) check the inputs shape to be the same for all iterations
   vector<Tensor> outputs;
   slice_point_.clear();
   size_t offset = 0;

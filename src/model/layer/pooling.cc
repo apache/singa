@@ -89,6 +89,11 @@ const Tensor Pooling::Forward(int flag, const Tensor& input) {
   CHECK_EQ(input.nDim(), 4u);
   size_t batchsize = input.shape(0);
   DataType dtype = input.data_type();
+
+  // TODO(wangwei) update the layer config if the input sample shape changes
+  CHECK(input.shape(1) == channels_ && input.shape(2) == height_ &&
+      input.shape(3) == width_) << "input sample shape should not change";
+
   auto dev = input.device();
   Shape shape{batchsize, channels_, pooled_height_, pooled_width_};
   Tensor output(shape, dev, dtype);

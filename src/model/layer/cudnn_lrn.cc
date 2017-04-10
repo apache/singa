@@ -31,21 +31,39 @@ CudnnLRN::~CudnnLRN() {
   }
 }
 void CudnnLRN::InitCudnn(const Shape& shape, DataType dtype) {
-  CHECK(!has_init_cudnn_);
-  mode_ = CUDNN_LRN_CROSS_CHANNEL_DIM1;
-  CUDNN_CHECK(cudnnCreateTensorDescriptor(&shape_desc_));
   CHECK_EQ(shape.size(), 4u);
+  if (!has_init_cudnn_) {
+    mode_ = CUDNN_LRN_CROSS_CHANNEL_DIM1;
+    CUDNN_CHECK(cudnnCreateTensorDescriptor(&shape_desc_));
+    CUDNN_CHECK(cudnnCreateLRNDescriptor(&lrn_desc_));
+    CUDNN_CHECK(cudnnSetLRNDescriptor(lrn_desc_, local_size_, alpha_, beta_, k_));
+  }
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(shape_desc_, CUDNN_TENSOR_NCHW,
-                                         GetCudnnDataType(dtype), shape[0],
-                                         shape[1], shape[2], shape[3]));
-  CUDNN_CHECK(cudnnCreateLRNDescriptor(&lrn_desc_));
-  CUDNN_CHECK(cudnnSetLRNDescriptor(lrn_desc_, local_size_, alpha_, beta_, k_));
+        GetCudnnDataType(dtype), shape[0],
+        shape[1], shape[2], shape[3]));
   has_init_cudnn_ = true;
 }
 const Tensor CudnnLRN::Forward(int flag, const Tensor& input) {
   auto shape = input.shape();
   auto dtype = input.data_type();
-  if (!has_init_cudnn_) InitCudnn(shape, dtype);
+  if (!has_init_cudnn_) {
+    InitCudnn(shape, dtype);
+  } else {
+    int n, c, h, w, s;
+    cudnnDataType_t type;
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(shape_desc_, &type,
+          &n, &c, &h, &w, &s, &s, &s, &s));
+    if (shape[0] != static_cast<size_t>(n))
+      InitCudnn(shape, dtype);
+    CHECK(input.shape(1) == static_cast<size_t>(c)
+        && input.shape(2) == static_cast<size_t>(h)
+        && input.shape(3) == static_cast<size_t>(w))
+      << "input sample shape should not change"
+      << "previous shape " << c << ", " << h << ", " << w
+      << "current shape " << input.shape(1) << ", " << input.shape(2) << ", "
+      << input.shape(3);
+  }
+
   Tensor output;
   output.ResetLike(input);
   output.device()->Exec([=](Context* ctx) {
