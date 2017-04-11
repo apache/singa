@@ -323,9 +323,9 @@ class Adam(Optimizer):
         self.epsilon = epsilon
         self.m = {}
         self.v = {}
-        self.t = 1
-        self.last_epoch = 0
-        self.last_step = 0
+        self.t = 0
+        self.last_epoch = -1
+        self.last_step = -1
 
     def apply_with_lr(self, epoch, lr, grad, value, name, step):
         '''Update one parameter object.
@@ -339,6 +339,8 @@ class Adam(Optimizer):
         assert step != -1, 'step should >= 0'
         if epoch != self.last_epoch or step != self.last_step:
             self.t += 1
+            self.last_step = step
+            self.last_epoch = epoch
         grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
