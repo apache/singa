@@ -20,6 +20,8 @@ export export CPLUS_INCLUDE_PATH=`python -c "import numpy; print numpy.get_inclu
 
 # to let cmake use the dependent libs installed by conda, including python
 export CMAKE_PREFIX_PATH=$PREFIX
+export CMAKE_INCLUDE_PATH=$SINGA_INCLUDE_PATH
+export CMAKE_LIBRARY_PATH=$SINGA_LIBRARY_PATH
 
 mkdir build
 cd build

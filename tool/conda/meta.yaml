@@ -3,13 +3,15 @@ package:
   version: "{{ GIT_DESCRIBE_TAG }}"
 
 source:
-  git_url: https://github.com/nusdbsystem/singa-osx.git
+  git_url: https://github.com/apache/incubator-singa.git
 
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
   script_env:
     - CONDA_BLD_PATH
+    - SINGA_INCLUDE_PATH
+    - SINGA_LIBRARY_PATH
 
 requirements:
   build:
@@ -19,6 +21,7 @@ requirements:
     - openblas >=0.2.10
     - protobuf 3.0.0
     - glog 0.3.4
+    - gcc 4.8.5 # [linux]
 
   run:
     - python 2.7*
@@ -29,6 +32,7 @@ requirements:
     - flask >=0.10.1
     - flask-cors >=3.0.2
     - pillow >=2.3.0
+    - libgcc 4.8.5 # [linux]
 
 test:
   source_files:

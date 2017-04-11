@@ -28,6 +28,7 @@ Each node should configure the following environment variable
 3. ANACONDA_UPLOAD_TOKEN
 4. SINGA_NAME=singa-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}
 5. OS_VERSION, e.g., ubuntu14.04
+6. SINGA_INCLUDE_PATH and SINGA_LIBRARY_PATH for the cudnn.h and libcudnn.so folder respectively
 
 ### General
   * Discard old builds - Max # of builds to keep - 50
