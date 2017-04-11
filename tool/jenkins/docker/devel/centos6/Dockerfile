@@ -20,29 +20,20 @@
 #   FROM nvidia/cuda:7.5-cudnn5-devel-ubuntu14.04
 #   FROM nvidia/cuda:7.5-cudnn4-devel-ubuntu14.04
 #   FROM nvidia/cuda:7.0-cudnn4-devel-ubuntu14.04
-FROM nvidia/cuda:7.5-cudnn5-devel-ubuntu14.04
+FROM nvidia/cuda:7.5-cudnn5-devel-centos6
 
 # install dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libprotobuf-dev libopenblas-dev libpcre3-dev python-dev python-pip protobuf-compiler wget openssh-server \
-    && apt-get clean && apt-get autoremove && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install -U pip wheel numpy setuptools unittest-xml-reporting protobuf
+RUN yum -y update && yum -y install git wget openssh-server cmake
 
-
-# install swig 3.0
-RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz && \
-    tar zxf swig-3.0.10.tar.gz && cd swig-3.0.10 && \
-    ./configure && make && make install
 
 # install conda, conda-build and anaconda-client
 RUN wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-RUN bash miniconda.sh -b -p $HOME/miniconda
-RUN $HOME/miniconda/bin/conda config --set always_yes yes --set changeps1 no
-RUN $HOME/miniconda/bin/conda update -q conda
-RUN $HOME/miniconda/bin/conda install conda-build
-RUN $HOME/miniconda/bin/conda install anaconda-client
-ENV PATH $HOME/miniconda/bin:${PATH}
+RUN bash miniconda.sh -b -p /root/miniconda
+ENV PATH /root/miniconda/bin:${PATH}
+RUN /root/miniconda/bin/conda config --set always_yes yes --set changeps1 no
+RUN /root/miniconda/bin/conda update -q conda
+RUN /root/miniconda/bin/conda install conda-build
+RUN /root/miniconda/bin/conda install anaconda-client
 
 # set environment
 ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}
@@ -54,10 +45,16 @@ ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include
 
 # config ssh service
 RUN mkdir /var/run/sshd
+RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
+RUN ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key
+
+RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+RUN sed -ri 's/#UsePAM no/UsePAM no/g' /etc/ssh/sshd_config
 RUN echo 'root:singa' | chpasswd
-RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+#RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 # SSH login fix. Otherwise user is kicked off after login
-RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+#RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 # dump environment variables into files, so that ssh can see also
 RUN env | grep _ >> /etc/environment
