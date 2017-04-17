@@ -1,4 +1,4 @@
-#Quickstart - Cifar10 example
+# Quickstart - Cifar10 example
 Convolution neural network (CNN) is a type of feed-forward artificial neural network widely used for image classification. In this example, we will use a deep CNN model to do image classification for the [CIFAR10 dataset](http://www.cs.toronto.edu/~kriz/cifar.html).
 
 ## Running instructions for CPP version
