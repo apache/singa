@@ -153,7 +153,7 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
   workspace_count_ = std::max(std::max(fp_byte, bp_data_byte), bp_filter_byte) /
                          sizeof(float) +
                      1;
-  if (workspace_count_ > workspace_byte_limit_)
+  if (workspace_count_ * sizeof(float) > workspace_byte_limit_)
     LOG(WARNING) << "The required memory for workspace ("
       << workspace_count_ * sizeof(float)
       << ") is larger than the expected Bytes ("

@@ -308,6 +308,7 @@ class Conv2D(Layer):
         cudnn_prefer (string): the preferred algorithm for cudnn convolution
             which could be 'fatest', 'autotune', 'limited_workspace' and
             'no_workspace'
+        workspace_byte_limit(int): max workspace size in MB (default is 512MB)
         data_format (string): either 'NCHW' or 'NHWC'
         use_bias (bool): True or False
         pad: an integer or a pair of integers for padding height and width
@@ -329,14 +330,16 @@ class Conv2D(Layer):
     """
 
     def __init__(self, name, nb_kernels, kernel=3, stride=1, border_mode='same',
-                 cudnn_prefer='fatest', data_format='NCHW',
-                 use_bias=True, W_specs=None, b_specs=None,
+                 cudnn_prefer='fatest', workspace_byte_limit=512,
+                 data_format='NCHW', use_bias=True, W_specs=None, b_specs=None,
                  pad=None, input_sample_shape=None):
         super(Conv2D, self).__init__(name)
         assert data_format == 'NCHW', 'Not supported data format: %s ' \
             'only "NCHW" is enabled currently' % (data_format)
         conf = self.conf.convolution_conf
         conf.num_output = nb_kernels
+        conf.prefer = cudnn_prefer
+        conf.workspace_byte_limit = workspace_byte_limit
         conf = _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad)
         conf.bias_term = use_bias
         # TODO(wangwei) enable data format for cpp code
@@ -374,6 +377,7 @@ class Conv1D(Conv2D):
 
     def __init__(self, name, nb_kernels, kernel=3, stride=1,
                  border_mode='same', cudnn_prefer='fatest',
+                 workspace_byte_limit=512,
                  use_bias=True, W_specs={'init': 'Xavier'},
                  b_specs={'init': 'Constant', 'value': 0}, pad=None,
                  input_sample_shape=None):
@@ -384,6 +388,7 @@ class Conv1D(Conv2D):
             input_sample_shape = (1, 1, input_sample_shape[0])
         super(Conv1D, self).__init__(name, nb_kernels, (1, kernel), (0, stride),
                                      border_mode, cudnn_prefer,
+                                     workspace_byte_limit,
                                      use_bias=use_bias, pad=pad,
                                      W_specs=W_specs, b_specs=b_specs,
                                      input_sample_shape=input_sample_shape)

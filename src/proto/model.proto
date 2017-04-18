@@ -689,7 +689,7 @@ message PoolingConf {
 
   // Added by xiangrui, 18 Oct, 2016
   optional bool ceil = 60 [default = false];
-} 
+}
 
 message PowerConf {
   // PowerLayer computes outputs y = (shift + scale * x) ^ power.
