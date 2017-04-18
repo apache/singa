@@ -306,7 +306,7 @@ class Conv2D(Layer):
             'same' -> padding is half of the kernel (floor), the kernel must be
             odd number.
         cudnn_prefer (string): the preferred algorithm for cudnn convolution
-            which could be 'fatest', 'autotune', 'limited_workspace' and
+            which could be 'fastest', 'autotune', 'limited_workspace' and
             'no_workspace'
         workspace_byte_limit(int): max workspace size in MB (default is 512MB)
         data_format (string): either 'NCHW' or 'NHWC'
@@ -330,7 +330,7 @@ class Conv2D(Layer):
     """
 
     def __init__(self, name, nb_kernels, kernel=3, stride=1, border_mode='same',
-                 cudnn_prefer='fatest', workspace_byte_limit=512,
+                 cudnn_prefer='fastest', workspace_byte_limit=1024,
                  data_format='NCHW', use_bias=True, W_specs=None, b_specs=None,
                  pad=None, input_sample_shape=None):
         super(Conv2D, self).__init__(name)
@@ -376,8 +376,8 @@ class Conv1D(Conv2D):
     """
 
     def __init__(self, name, nb_kernels, kernel=3, stride=1,
-                 border_mode='same', cudnn_prefer='fatest',
-                 workspace_byte_limit=512,
+                 border_mode='same', cudnn_prefer='fastest',
+                 workspace_byte_limit=1024,
                  use_bias=True, W_specs={'init': 'Xavier'},
                  b_specs={'init': 'Constant', 'value': 0}, pad=None,
                  input_sample_shape=None):

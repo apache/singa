@@ -389,7 +389,7 @@ message ConvolutionConf {
 
   // SINGA: add by xiangrui
   // cudnn workspace size in MB
-  optional int32 workspace_byte_limit = 50 [default = 512];
+  optional int32 workspace_byte_limit = 50 [default = 1024];
   // cudnn algorithm preference
   // options: "fastest", "limited_workspace", "no_workspace"
   optional string prefer = 51 [default = "fastest"];
