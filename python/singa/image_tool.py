@@ -426,7 +426,33 @@ class ImageTool():
             return self
         else:
             return new_imgs
+        
+    def random_size_crop(self,inplace=True):
+            '''Crop the image at random offset and get a patch of random size.
+            Args:
+                inplace(Boolean): replace the internal images list with the patches
+                                  if True; otherwise, return the patches.
+            '''
+            new_imgs = []
+            for img in self.imgs:
+                patch=[0,0]
+                patch[0]=random.randint(0,img.size[0])
+                patch[1]=random.randint(0,img.size[1])
+                assert img.size[0] >= patch[0] and img.size[1] >= patch[1],\
+                    'img size (%d, %d), patch size (%d, %d)' % \
+                    (img.size[0], img.size[1], patch[0], patch[1])
+                left_offset = random.randint(0, img.size[0] - patch[0])
+                top_offset = random.randint(0, img.size[1] - patch[1])
+                box = (left_offset, top_offset,
+                       left_offset + patch[0], top_offset + patch[1])
+                new_imgs.append(img.crop(box))
 
+            if inplace:
+                self.imgs = new_imgs
+                return self
+            else:
+                return new_imgs
+        
     def flip(self, num_case=1, inplace=True):
         '''Randomly flip a img left to right.
 
