@@ -544,6 +544,39 @@ class BatchNormalization(Layer):
             self.setup(input_sample_shape)
 
 
+class L2Norm(Layer):
+    '''Normalize each sample to have L2 norm = 1'''
+    def __init__(self, name, input_sample_shape, epsilon=1e-8):
+        super(L2Norm, self).__init__(name)
+        self.y = None
+        self.norm = None
+        self.name = name
+        self.epsilon = epsilon
+        self.out_sample_shape = input_sample_shape
+
+    def get_output_sample_shape(self):
+        return self.out_sample_shape
+
+    def forward(self, is_train, x):
+        norm = tensor.sum_columns(tensor.square(x))
+        norm += self.epsilon
+        norm = tensor.sqrt(norm)
+        self.y = x.clone()
+        self.y.div_column(norm)
+
+        if is_train:
+            self.norm = norm
+        return self.y
+
+    def backward(self, is_train, dy):
+        # (dy - y * k) / norm, k = sum(dy * y)
+        k = tensor.sum_columns(tensor.eltwise_mult(dy, self.y))
+        self.y.mult_column(k)
+        dx = dy - self.y
+        dx.div_column(self.norm)
+        return dx, []
+
+
 class LRN(Layer):
     """Local response normalization.
 
