@@ -347,7 +347,7 @@ class Conv2D(Layer):
         if W_specs is None:
             W_specs = {'init': 'xavier'}
         if 'name' not in W_specs:
-            W_specs['name'] = name + '_weight'
+            W_specs['name'] = name + '/weight'
         wspecs = _construct_param_specs_from_dict(W_specs)
         self.conf.param.extend([wspecs])
         self.param_specs.append(wspecs)
@@ -355,7 +355,7 @@ class Conv2D(Layer):
             if b_specs is None:
                 b_specs = {'init': 'constant'}
             if 'name' not in b_specs:
-                b_specs['name'] = name + '_bias'
+                b_specs['name'] = name + '/bias'
             bspecs = _construct_param_specs_from_dict(b_specs)
             self.conf.param.extend([bspecs])
             self.param_specs.append(bspecs)
@@ -524,11 +524,11 @@ class BatchNormalization(Layer):
         if gamma_specs is None:
             gamma_specs = {'init': 'Xavier'}
         if 'name' not in beta_specs:
-            beta_specs['name'] = name + '_beta'
+            beta_specs['name'] = name + '/beta'
         if 'name' not in gamma_specs:
-            gamma_specs['name'] = name + '_gamma'
-        mean_specs = {'init': 'constant', 'value': 0, 'name': name + '_mean'}
-        var_specs = {'init': 'constant', 'value': 1, 'name': name + '_var'}
+            gamma_specs['name'] = name + '/gamma'
+        mean_specs = {'init': 'constant', 'value': 0, 'name': name + '/mean'}
+        var_specs = {'init': 'constant', 'value': 1, 'name': name + '/var'}
         self.conf.param.extend([_construct_param_specs_from_dict(gamma_specs)])
         self.conf.param.extend([_construct_param_specs_from_dict(beta_specs)])
         self.conf.param.extend([_construct_param_specs_from_dict(mean_specs)])
@@ -656,7 +656,7 @@ class Dense(Layer):
         if W_specs is None:
             W_specs = {'init': 'xavier'}
         if 'name' not in W_specs:
-            W_specs['name'] = name + '_weight'
+            W_specs['name'] = name + '/weight'
         wspecs = _construct_param_specs_from_dict(W_specs)
         self.conf.param.extend([wspecs])
         self.param_specs.append(wspecs)
@@ -664,7 +664,7 @@ class Dense(Layer):
             if b_specs is None:
                 b_specs = {'init': 'constant', 'value': 0}
             if 'name' not in b_specs:
-                b_specs['name'] = name + '_bias'
+                b_specs['name'] = name + '/bias'
             bspecs = _construct_param_specs_from_dict(b_specs)
             self.conf.param.extend([bspecs])
             self.param_specs.append(bspecs)
@@ -1020,7 +1020,7 @@ class RNN(Layer):
         # currently only has rnn layer implemented using cudnn
         _check_engine(engine, ['cudnn'])
         if param_specs is None:
-            param_specs = {'name': name + '-weight',
+            param_specs = {'name': name + '/weight',
                            'init': 'uniform', 'low': 0, 'high': 1}
         self.conf.param.extend([_construct_param_specs_from_dict(param_specs)])
         self.param_specs.append(_construct_param_specs_from_dict(param_specs))

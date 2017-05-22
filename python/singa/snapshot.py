@@ -33,11 +33,12 @@ Example usages::
 from . import singa_wrap as singa
 import tensor
 
+
 class Snapshot(object):
     ''' Class and member functions for singa::Snapshot.
 
     '''
-    def __init__(self, f, mode, buffer_size = 10):
+    def __init__(self, f, mode, buffer_size=10):
         '''Snapshot constructor given file name and R/W mode.
 
         Args:
@@ -55,6 +56,7 @@ class Snapshot(object):
             param_val (Tensor): value tensor of the parameter
         '''
         self.snapshot.Write(str(param_name), param_val.singa_tensor)
+
     def read(self):
         '''Call read method to load all (param_name, param_val)
 
@@ -62,8 +64,8 @@ class Snapshot(object):
             a dict of (parameter name, parameter Tensor)
         '''
         params = {}
-        p = self.snapshot.Read();
+        p = self.snapshot.Read()
         for (param_name, param_val) in p:
-            print param_name
+            # print(param_name)
             params[param_name] = tensor.from_raw_tensor(param_val)
         return params

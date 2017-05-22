@@ -55,10 +55,13 @@ Example usages::
 """
 
 from .proto.model_pb2 import kTrain, kEval
+from __init__ import __version__
 import tensor
 import layer
 import snapshot
 import cPickle as pickle
+
+import os
 
 '''For display training information, e.g L1 value of layer data'''
 verbose = False
@@ -134,7 +137,7 @@ class FeedForwardNet(object):
         else:
             self.out_sample_shape_of_layer[lyr.name] = [out_shape]
         self.layers.append(lyr)
-        print lyr.name, out_shape
+        print(lyr.name, out_shape)
         return lyr
 
     def param_values(self):
@@ -181,7 +184,7 @@ class FeedForwardNet(object):
             m = self.metric.evaluate(out, y)
             return self.backward(), (l.l1(), m)
         else:
-            return self.backward(), (l.l1(),None)
+            return self.backward(), (l.l1(), None)
 
     def evaluate(self, x, y):
         '''Evaluate the loss and metric of the given data.
@@ -303,10 +306,10 @@ class FeedForwardNet(object):
                 disp_src = '+'.join([src.name for src in srcs])
                 disp_src += '-->' + cur.name
                 if type(out) is list:
-                    print '%s: %s' % (disp_src,
-                                      ' '.join([str(o.l1()) for o in out]))
+                    print('%s: %s' % (disp_src,
+                                      ' '.join([str(o.l1()) for o in out])))
                 else:
-                    print '%s: %f' % (disp_src, out.l1())
+                    print('%s: %f' % (disp_src, out.l1()))
             output_of_layer[cur.name] = out
             if cur.name in output:
                 ret[cur.name] = out
@@ -360,10 +363,10 @@ class FeedForwardNet(object):
                         [dst.name for dst in self.dst_of_layer[cur.name]])
                 disp_src += '-->' + cur.name
                 if type(outs) is list:
-                    print '%s: %s' % (disp_src,
-                                      ' '.join([str(o.l1()) for o in outs]))
+                    print('%s: %s' % (disp_src,
+                                      ' '.join([str(o.l1()) for o in outs])))
                 else:
-                    print '%s: %f' % (disp_src, outs.l1())
+                    print('%s: %f' % (disp_src, outs.l1()))
             if type(outs) is list:
                 output_of_layer[cur.name] = outs[::-1]
             else:
@@ -388,12 +391,18 @@ class FeedForwardNet(object):
         '''
         if use_pickle:
             params = {}
+            # since SINGA>=1.1.1
+            params['SINGA_VERSION'] = __version__
             for (name, val) in zip(self.param_names(), self.param_values()):
                 val.to_host()
                 params[name] = tensor.to_numpy(val)
-                with open(f, 'wb') as fd:
-                    pickle.dump(params, fd)
+            if not f.endswith('.pickle'):
+                f = f + '.pickle'
+            with open(f, 'wb') as fd:
+                pickle.dump(params, fd)
         else:
+            if f.endswith('.bin'):
+                f = f[0:-4]
             sp = snapshot.Snapshot(f, True, buffer_size)
             for (name, val) in zip(self.param_names(), self.param_values()):
                 val.to_host()
@@ -404,35 +413,49 @@ class FeedForwardNet(object):
 
         Please refer to the argument description in save().
         '''
+        version = 0
+
+        def get_name(name):
+            if version < 1011:
+                idx = name.rfind('/')
+                assert idx > 0, '/ must be in the parameter name'
+                name = name[:idx-1] + '_' + name[idx:]
+            return name
+
         if use_pickle:
-            print 'NOTE: If your model was saved using Snapshot, '\
-                    'then set use_pickle=False for loading it'
+            print('NOTE: If your model was saved using Snapshot, '
+                  'then set use_pickle=False for loading it')
+            if not os.path.exists(f):
+                # guess the correct path
+                if f.endswith('.pickle'):
+                    f = f[0:-7]
+                else:
+                    f = f + '.pickle'
+            assert os.path.exists(f), 'file not exists %s w/o .pickle' % f
             with open(f, 'rb') as fd:
                 params = pickle.load(fd)
-                for name, val in zip(self.param_names(), self.param_values()):
-                    if name not in params:
-                        print 'Param: %s missing in the checkpoint file' % name
-                        continue
-                    try:
-                        val.copy_from_numpy(params[name])
-                    except AssertionError as err:
-                        print 'Error from copying values for param: %s' % name
-                        print 'shape of param vs checkpoint', \
-                                val.shape, params[name].shape
-                        raise err
         else:
-            print 'NOTE: If your model was saved using pickle, '\
-                    'then set use_pickle=True for loading it'
+            print('NOTE: If your model was saved using pickle, '
+                  'then set use_pickle=True for loading it')
+            if f.endswith('.bin'):
+                f = f[0:-4]
             sp = snapshot.Snapshot(f, False, buffer_size)
             params = sp.read()
-            for (name, val) in zip(self.param_names(), self.param_values()):
-                if name not in params:
-                    print 'Param: %s missing in the checkpoint file' % name
-                    continue
-                try:
+        if 'SINGA_VERSION' in params:
+            # for SINGA >= 1.1.1
+            version = params['SINGA_VERSION']
+        for name, val in zip(self.param_names(), self.param_values()):
+            name = get_name(name)
+            if name not in params:
+                print('Param: %s missing in the checkpoint file' % name)
+                continue
+            try:
+                if isinstance(params[name], tensor.Tensor):
                     val.copy_data(params[name])
-                except AssertionError as err:
-                    print 'Error from copying values for param: %s' % name
-                    print 'shape of param vs checkpoint', \
-                            val.shape, params[name].shape
-                    raise err
+                else:
+                    val.copy_from_numpy(params[name])
+            except AssertionError as err:
+                print('Error from copying values for param: %s' % name)
+                print('shape of param vs checkpoint',
+                      val.shape, params[name].shape)
+                raise err
