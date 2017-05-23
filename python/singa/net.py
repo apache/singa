@@ -399,7 +399,7 @@ class FeedForwardNet(object):
             if cur.name in output:
                 ret[cur.name] = outs
             # ret.update(output_of_layer)
-            yield (cur.param_names(), cur.param_values(), pgrads)
+            yield (cur.param_names(), cur.param_values(), pgrads, ret)
 
     def save(self, f, buffer_size=10, use_pickle=False):
         '''Save model parameters using io/snapshot.

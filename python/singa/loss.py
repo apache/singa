@@ -39,6 +39,7 @@ Example usage::
 from . import singa_wrap as singa
 from proto import model_pb2
 import tensor
+import numpy as np
 
 
 class Loss(object):
@@ -114,6 +115,59 @@ class SoftmaxCrossEntropy(Loss):
     def __init__(self):
         super(SoftmaxCrossEntropy, self).__init__()
         self.swig_loss = singa.SoftmaxCrossEntropy()
+
+
+class SigmoidCrossEntropy(Loss):
+    '''This loss evaluates the cross-entropy loss between the prediction and the
+    truth values with the prediction probability generated from Sigmoid.
+    '''
+    def __init__(self, epsilon=1e-8):
+        super(SigmoidCrossEntropy, self).__init__()
+        self.truth = None
+        self.prob = None
+        self.epsilon = epsilon  # to avoid log(x) with x being too small
+
+    def forward(self, flag, x, y):
+        '''loss is -yi * log pi - (1-yi) log (1-pi), where pi=sigmoid(xi)
+
+        Args:
+            flag (bool): true for training; false for evaluation
+            x (Tensor): the prediction Tensor
+            y (Tensor): the truth Tensor, a binary array value per sample
+
+        Returns:
+            a Tensor with one error value per sample
+        '''
+        p = tensor.sigmoid(x)
+        if flag:
+            self.truth = y
+            self.prob = p
+        np = 1 - p
+        p += (p < self.epsilon) * self.epsilon
+        np += (np < self.epsilon) * self.epsilon
+        l = (y-1) * tensor.log(np) - y * tensor.log(p)
+        # TODO(wangwei): add unary operation -Tensor
+        return tensor.average(l, axis=1)
+
+    def backward(self):
+        ''' Compute the gradient of loss w.r.t to x.
+
+        Returns:
+            dx = pi - yi.
+        '''
+        assert self.truth is not None, 'must call forward in a prior'
+        dx =  self.prob - self.truth
+        self.truth = None
+        return dx
+
+    def evaluate(self, flag, x, y):
+        '''Compuate the averaged error.
+
+        Returns:
+            a float value as the averaged error
+        '''
+        l = self.forward(False, x, y)
+        return l.l1()
 
 
 class SquaredError(Loss):
