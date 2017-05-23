@@ -74,7 +74,7 @@ class TestFeedForwardNet(unittest.TestCase):
         out = tensor.to_numpy(out['split1'])
         self.assertAlmostEqual(np.average(out), 2)
 
-    def test_save(self):
+    def test_save_load(self):
         ffn = net.FeedForwardNet(loss.SoftmaxCrossEntropy())
         ffn.add(layer.Conv2D('conv', 4, 3, input_sample_shape=(3, 12, 12)))
         ffn.add(layer.Flatten('flat'))
@@ -87,6 +87,28 @@ class TestFeedForwardNet(unittest.TestCase):
 
         ffn.load('test_snaphost')
         ffn.load('test_pickle', use_pickle=True)
+
+    def test_train_one_batch(self):
+        ffn = net.FeedForwardNet(loss.SoftmaxCrossEntropy())
+        ffn.add(layer.Conv2D('conv', 4, 3, input_sample_shape=(3, 12, 12)))
+        ffn.add(layer.Flatten('flat'))
+        ffn.add(layer.Dense('dense', num_output=4))
+        for pname, pval in zip(ffn.param_names(), ffn.param_values()):
+            pval.set_value(0.1)
+        x = tensor.Tensor((4, 3, 12, 12))
+        x.gaussian(0, 0.01)
+        y = np.asarray([[1, 0, 0],
+                        [0, 0, 1],
+                        [0, 0, 1],
+                        [0, 1, 0]], dtype=np.int32)
+        y = tensor.from_numpy(y)
+        o = ffn.forward(True, x)
+        ffn.loss.forward(True, o, y)
+        g = ffn.loss.backward()
+        for pname, pvalue, pgrad in ffn.backward(g):
+            self.assertEqual(len(pvalue), len(pgrad))
+            for p, g in zip(pvalue, pgrad):
+                self.assertEqual(p.size(), g.size())
 
 
 if __name__ == '__main__':
