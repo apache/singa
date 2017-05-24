@@ -61,7 +61,12 @@ class ImageBatchIter:
 
     Args:
         img_list_file(str): name of the file containing image meta data; each
-                            line consists of image_path_suffix delimiter label
+                            line consists of image_path_suffix delimiter meta_info,
+                            where meta info could be label index or label strings, etc.
+                            meta_info should not contain the delimiter. If the meta_info
+                            of each image is just the label index, then we will parse the
+                            label index into a numpy array with length=batchsize
+                            (for compatibility); otherwise, we return a list of meta_info
         batch_size(int): num of samples in one mini-batch
         image_transform: a function for image augmentation; it accepts the full
                         image path and outputs a list of augmented images.
@@ -106,21 +111,21 @@ class ImageBatchIter:
 
     def run(self):
         img_list = []
+        is_labelindex = True
         for line in open(self.img_list_file, 'r'):
-            item = line.split(self.delimiter)
-            img_path = item[0]
-            img_label = int(item[1])
-            img_list.append((img_label, img_path))
+            item = line.strip('\n').split(self.delimiter)
+            if not item[1].strip().isdigit():  # the meta info is not label index
+                is_labelindex = False
+            img_list.append((item[0].strip(), item[1].strip()))
         index = 0  # index for the image
         if self.shuffle:
             random.shuffle(img_list)
         while not self.stop:
             if not self.queue.full():
-                x = []
-                y = np.empty(self.batch_size, dtype=np.int32)
+                x, y = [], []
                 i = 0
                 while i < self.batch_size:
-                    img_label, img_path = img_list[index]
+                    img_path, img_meta = img_list[index]
                     aug_images = self.image_transform(
                             os.path.join(self.image_folder, img_path))
                     assert i + len(aug_images) <= self.batch_size, \
@@ -129,7 +134,10 @@ class ImageBatchIter:
                     for img in aug_images:
                         ary = np.asarray(img.convert('RGB'), dtype=np.float32)
                         x.append(ary.transpose(2, 0, 1))
-                        y[i] = img_label
+                        if is_labelindex:
+                            y.append(int(img_meta))
+                        else:
+                            y.append(img_meta)
                         i += 1
                     index += 1
                     if index == self.num_samples:
@@ -137,7 +145,10 @@ class ImageBatchIter:
                         if self.shuffle:
                             random.shuffle(img_list)
                 # enqueue one mini-batch
-                self.queue.put((np.asarray(x), y))
+                if is_labelindex:
+                    self.queue.put((np.asarray(x), np.asarray(y, dtype=np.int32)))
+                else:
+                    self.queue.put((np.asarray(x), y))
             else:
                 time.sleep(0.1)
         return
@@ -155,11 +166,12 @@ if __name__ == '__main__':
             (96, 96)).flip().get()
 
     data = ImageBatchIter('train.txt', 3,
-                          image_transform, shuffle=True, delimiter=',',
+                          image_transform, shuffle=False, delimiter=',',
                           image_folder='images/',
                           capacity=10)
     data.start()
     imgs, labels = data.next()
+    print labels
     for idx in range(imgs.shape[0]):
         img = Image.fromarray(imgs[idx].astype(np.uint8).transpose(1, 2, 0),
                               'RGB')
