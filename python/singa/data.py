@@ -66,7 +66,8 @@ class ImageBatchIter:
                             meta_info should not contain the delimiter. If the meta_info
                             of each image is just the label index, then we will parse the
                             label index into a numpy array with length=batchsize
-                            (for compatibility); otherwise, we return a list of meta_info
+                            (for compatibility); otherwise, we return a list of meta_info;
+                            if meta info is available, we return a list of None.
         batch_size(int): num of samples in one mini-batch
         image_transform: a function for image augmentation; it accepts the full
                         image path and outputs a list of augmented images.
@@ -103,6 +104,9 @@ class ImageBatchIter:
         x, y = self.queue.get()  # dequeue one mini-batch
         return x, y
 
+    def stop(self):
+        self.end();
+
     def end(self):
         if self.p is not None:
             self.stop = True
@@ -111,12 +115,17 @@ class ImageBatchIter:
 
     def run(self):
         img_list = []
-        is_labelindex = True
+        is_label_index = True
         for line in open(self.img_list_file, 'r'):
             item = line.strip('\n').split(self.delimiter)
-            if not item[1].strip().isdigit():  # the meta info is not label index
-                is_labelindex = False
-            img_list.append((item[0].strip(), item[1].strip()))
+            if len(item) < 2:
+                is_label_index = False
+                img_list.append((item[0].strip(), None))
+            else:
+                if not item[1].strip().isdigit():
+                    # the meta info is not label index
+                    is_label_index = False
+                img_list.append((item[0].strip(), item[1].strip()))
         index = 0  # index for the image
         if self.shuffle:
             random.shuffle(img_list)
@@ -134,7 +143,7 @@ class ImageBatchIter:
                     for img in aug_images:
                         ary = np.asarray(img.convert('RGB'), dtype=np.float32)
                         x.append(ary.transpose(2, 0, 1))
-                        if is_labelindex:
+                        if is_label_index:
                             y.append(int(img_meta))
                         else:
                             y.append(img_meta)
@@ -145,7 +154,7 @@ class ImageBatchIter:
                         if self.shuffle:
                             random.shuffle(img_list)
                 # enqueue one mini-batch
-                if is_labelindex:
+                if is_label_index:
                     self.queue.put((np.asarray(x), np.asarray(y, dtype=np.int32)))
                 else:
                     self.queue.put((np.asarray(x), y))
