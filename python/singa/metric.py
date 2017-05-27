@@ -34,10 +34,15 @@ Example usage::
     acc = f.evaluate(x, y)  # averaged accuracy over all 3 samples in x
 
 '''
+from __future__ import division
+from __future__ import absolute_import
 
 
+from builtins import range
+from past.utils import old_div
+from builtins import object
 from . import singa_wrap as singa
-import tensor
+from . import tensor
 import numpy as np
 
 
@@ -129,7 +134,7 @@ class Precision(Metric):
 
             #Num of common labels among prediction and groundtruth
             num_intersect = np.intersect1d(pred_np[i], label_np).size
-            prcs_np[i] = num_intersect / float(self.top_k)
+            prcs_np[i] = old_div(num_intersect, float(self.top_k))
 
         precision = tensor.from_numpy(prcs_np)
 
@@ -192,7 +197,7 @@ class Recall(Metric):
 
             #Num of common labels among prediction and groundtruth
             num_intersect = np.intersect1d(pred_np[i], label_np).size
-            recall_np[i] = float(num_intersect) / label_np.size
+            recall_np[i] = old_div(float(num_intersect), label_np.size)
 
         recall = tensor.from_numpy(recall_np)
 

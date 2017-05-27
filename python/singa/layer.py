@@ -44,11 +44,16 @@ Example usages::
     # dp is a list of tensors for parameter gradients
     dx, dp = conv.backward(kTrain, dy)
 """
+from __future__ import division
+from __future__ import absolute_import
 
+from builtins import str
+from builtins import range
+from builtins import object
 from sets import Set
 from . import singa_wrap
 from .proto import model_pb2
-import tensor
+from . import tensor
 
 
 engine = 'cudnn'
@@ -1217,7 +1222,7 @@ def _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad, in_shape):
                      0)
             assert ph % 2 == 0 and pw % 2 == 0, 'ph=%d and pw=%d are not even' \
                 % (ph, pw)
-            pad = (ph / 2, pw / 2)
+            pad = (ph // 2, pw // 2)
         elif mode == 'valid':
             pad = (0, 0)
         else:

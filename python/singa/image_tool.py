@@ -28,7 +28,11 @@ Example usage::
         img.save('%d.png' % idx)
 
 '''
+from __future__ import division
 
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import random
 import numpy as np
 from PIL import Image, ImageEnhance
@@ -69,7 +73,7 @@ def crop(img, patch, position):
     elif position == 'right_bottom':
         left, upper = img.size[0]-patch[0], img.size[1]-patch[1]
     elif position == 'center':
-        left, upper = (img.size[0]-patch[0])/2, (img.size[1]-patch[1])/2
+        left, upper = old_div((img.size[0]-patch[0]),2), old_div((img.size[1]-patch[1]),2)
     else:
         raise Exception('position is wrong')
 
@@ -92,8 +96,8 @@ def crop_and_resize(img, patch, position):
         left, upper = 0, 0
         right, bottom = size[1], size[1]
     elif position == 'center':
-        left, upper = (size[0]-size[1])/2, 0
-        right, bottom = (size[0]+size[1])/2, size[1]
+        left, upper = old_div((size[0]-size[1]),2), 0
+        right, bottom = old_div((size[0]+size[1]),2), size[1]
     elif position == 'right':
         left, upper = size[0]-size[1], 0
         right, bottom = size[0], size[1]
@@ -101,8 +105,8 @@ def crop_and_resize(img, patch, position):
         left, upper = 0, 0
         right, bottom = size[0], size[0]
     elif position == 'middle':
-        left, upper = 0, (size[1]-size[0])/2
-        right, bottom = size[0], (size[1]+size[0])/2
+        left, upper = 0, old_div((size[1]-size[0]),2)
+        right, bottom = size[0], old_div((size[1]+size[0]),2)
     elif position == 'bottom':
         left, upper = 0, size[1]-size[0]
         right, bottom = size[0], size[1]
@@ -192,10 +196,10 @@ def flip_down(img):
 
 
 def get_list_sample(l, sample_size):
-    return [l[i] for i in sorted(random.sample(xrange(len(l)), sample_size))]
+    return [l[i] for i in sorted(random.sample(range(len(l)), sample_size))]
 
 
-class ImageTool():
+class ImageTool(object):
     '''A tool for image augmentation.
 
     For operations with inplace=True, the returned value is the ImageTool
@@ -238,7 +242,7 @@ class ImageTool():
             rng: a tuple (begin,end), include begin, exclude end
             inplace: inplace imgs or not ( return new_imgs)
         '''
-        size_list = range(rng[0], rng[1])
+        size_list = list(range(rng[0], rng[1]))
         return self.resize_by_list(size_list, 1, inplace)
 
     def resize_by_list(self, size_list, num_case=1, inplace=True):
@@ -273,7 +277,7 @@ class ImageTool():
             rng: a tuple (begin,end) in degree, include begin, exclude end
             inplace: inplace imgs or not ( return new_imgs)
         '''
-        angle_list = range(rng[0], rng[1])
+        angle_list = list(range(rng[0], rng[1]))
         return self.rotate_by_list(angle_list, 1, inplace)
 
     def rotate_by_list(self, angle_list, num_case=1, inplace=True):
@@ -391,7 +395,7 @@ class ImageTool():
         if num_case == patch5 + patch3:
             count = patch5
         else:
-            sample_list = range(0, patch5 + patch3)
+            sample_list = list(range(0, patch5 + patch3))
             samples = get_list_sample(sample_list, num_case)
             count = 0
             for s in samples:

@@ -53,13 +53,20 @@ Example usages::
     y = net.predict(x)
     print tensor.to_numpy(y)
 """
+from __future__ import print_function
+from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
+from builtins import object
 from .proto.model_pb2 import kTrain, kEval
-from __init__ import __version__
-import tensor
-import layer
-import snapshot
-import cPickle as pickle
+from .__init__ import __version__
+from . import tensor
+from . import layer
+from . import snapshot
+import pickle as pickle
 
 import os
 
@@ -137,7 +144,7 @@ class FeedForwardNet(object):
         else:
             self.out_sample_shape_of_layer[lyr.name] = [out_shape]
         self.layers.append(lyr)
-        print(lyr.name, out_shape)
+        print((lyr.name, out_shape))
         return lyr
 
     def param_values(self):
@@ -334,7 +341,7 @@ class FeedForwardNet(object):
         # print output_of_layer
         ret.update(output_of_layer)
         if len(ret) == 1:
-            return ret.values()[0]
+            return list(ret.values())[0]
         else:
             return ret
 
@@ -494,6 +501,6 @@ class FeedForwardNet(object):
                     val.copy_from_numpy(params[name])
             except AssertionError as err:
                 print('Error from copying values for param: %s' % name)
-                print('shape of param vs checkpoint',
-                      val.shape, params[name].shape)
+                print(('shape of param vs checkpoint',
+                      val.shape, params[name].shape))
                 raise err

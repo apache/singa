@@ -21,12 +21,16 @@ This script is the main entrance for user to run singa inside a model workspace
 
 To use this script, user sudo install these dependencies: flask pillow and protobuf
 '''
+from __future__ import print_function
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 import sys, glob, os, random, shutil, time
 from flask import Flask, request, redirect, url_for
 import numpy as np
-import ConfigParser
-import urllib, traceback
+import configparser
+import urllib.request, urllib.parse, urllib.error, traceback
 
 
 from argparse import ArgumentParser
@@ -42,7 +46,7 @@ welcome to singa
 '''
 
 app = Flask(__name__)
-config = ConfigParser.RawConfigParser()
+config = configparser.RawConfigParser()
 service = {}
 data_path = "data_"
 parameter_path = "parameter_"
@@ -123,19 +127,19 @@ USAGE
         parameter_file=get_parameter(parameter_file)
 
         if parameter_file:
-            print "load parameter file: %s" % parameter_file
+            print("load parameter file: %s" % parameter_file)
             model.load(parameter_file)
 
         if use_cpu:
             raise CLIError("Currently cpu is not support!")
         else:
-            print "runing with gpu"
+            print("runing with gpu")
             d = device.create_cuda_gpu()
 
         model.to_device(d)
 
         if mode == "serve":
-            print "runing singa in serve mode, listen to  port: %s " % port
+            print("runing singa in serve mode, listen to  port: %s " % port)
             global service
             from serve import Service
             service =Service(model,d)
@@ -143,7 +147,7 @@ USAGE
             app.debug = debug
             app.run(host='0.0.0.0', port= port)
         elif mode == "train":
-            print "runing singa in train mode"
+            print("runing singa in train mode")
             global trainer
             from train import Trainer
             trainer= Trainer(model,d)
@@ -156,7 +160,7 @@ USAGE
     except KeyboardInterrupt:
         ### handle keyboard interrupt ###
         return 0
-    except Exception, e:
+    except Exception as e:
         if debug:
             traceback.print_exc()
             raise(e)
@@ -172,7 +176,7 @@ def file_prepare(reload_data=False):
     if not reload_data and os.path.exists("data_.py"):
         return
 
-    print "download file"
+    print("download file")
     #clean data
     shutil.rmtree("data_.py",ignore_errors=True)
     shutil.rmtree("data_",ignore_errors=True)
@@ -203,7 +207,7 @@ def download_file(name,path,dest):
     if (path.startswith('http')):
         file_name = path.split('/')[-1]
         target = os.path.join(dest,file_name)
-        urllib.urlretrieve(path,target)
+        urllib.request.urlretrieve(path,target)
     return name,target
 
 

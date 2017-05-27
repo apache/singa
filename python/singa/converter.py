@@ -15,6 +15,10 @@
 # limitations under the License.
 # =============================================================================
 
+from __future__ import print_function
+from builtins import str
+from builtins import range
+from builtins import object
 from google.protobuf import text_format
 from singa import layer
 from singa import metric
@@ -25,7 +29,7 @@ from .proto import caffe_pb2
 import numpy as np
 
 
-class CaffeConverter:
+class CaffeConverter(object):
 
     def __init__(self, net_proto, solver_proto = None, input_sample_shape =
             None, param_path = None):
@@ -158,9 +162,9 @@ class CaffeConverter:
                     layer.engine = self.convert_engine(layer_confs[i], 0)
                 lyr = layer.Layer(conf.name, conf)
                 if len(net.layers) == 0:
-                    print 'input sample shape: ', self.input_sample_shape
+                    print('input sample shape: ', self.input_sample_shape)
                     lyr.setup(self.input_sample_shape)
-                    print lyr.name, lyr.get_output_sample_shape()
+                    print(lyr.name, lyr.get_output_sample_shape())
                 if layer_confs[i].type == 'InnerProduct' or layer_confs[i].type == 14:
                     net.add(layer.Flatten('flat' + str(flatten_id)))
                     flatten_id += 1
@@ -226,4 +230,4 @@ class CaffeConverter:
                 i += 1
                 params[i].copy_from_numpy(bias)
                 i += 1
-                print 'converting layer {0}, wmat shape = {1}, bias shape = {2}'.format(layer.name, w.shape, bias.shape)
+                print('converting layer {0}, wmat shape = {1}, bias shape = {2}'.format(layer.name, w.shape, bias.shape))

@@ -29,9 +29,12 @@ Example usages::
     for k, v in params.iteritems():
         sn2.write(k, v)
 '''
+from __future__ import absolute_import
 
+from builtins import str
+from builtins import object
 from . import singa_wrap as singa
-import tensor
+from . import tensor
 
 
 class Snapshot(object):
