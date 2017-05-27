@@ -23,33 +23,33 @@ SINGA 中文文档
 最新动态
 -----------
 
-* **版本 1.1** 于2017年2月12日发布. `请点击下载 v1.1.0 <../en/downloads.html>`_
+* **版本 1.1.0** 于2017年2月12日发布. `下载页面 <../en/downloads.html>`_
 
 * 关于SINGA V1的讲座在 `SGInnovate <https://www.eventbrite.sg/e/ai-eveningssginnovate-apache-singa-tickets-31505061487>`_ 举行, 时间：2017年3月23日
 
-* **版本 1** 于2016年9月9日发布. `请点击下载SINGA v1.0.0 <../en/downloads.html>`_
+* **版本 1.0.0** 于2016年9月9日发布. `下载页面 <../en/downloads.html>`_
 
 * 我们在 `REWORK <https://www.re-work.co/events/deep-learning-singapore/schedule>`_ 报告了SINGA的最新进展, 时间：2016年10月21日.
 
-* 关于SINGA的讲座在`PyDataSG <http://www.meetup.com/PyData-SG/events/229691286/>`_举办, 时间：2016年8月16日.
+* 关于SINGA的讲座在 `PyDataSG <http://www.meetup.com/PyData-SG/events/229691286/>`_ 举办, 时间：2016年8月16日.
 
-* **版本 0.3** 于2016年4月20日发布. `请点击下载 SINGA v0.3.0 <../en/downloads.html>`_
+* **版本 0.3.0** 于2016年4月20日发布. `下载页面 <../en/downloads.html>`_
 
-* **版本 0.2** 于2016年1月14日发布. `请点击下载 SINGA v0.2.0 <../en/downloads.html>`_.
+* **版本 0.2.0** 于2016年1月14日发布. `下载页面 <../en/downloads.html>`_.
 
-* 我们在`Strata+Hadoop <http://strataconf.com/big-data-conference-sg-2015/public/schedule/detail/45123>`_ 做了关于SINGA的报告, 时间：2015年12月2日
+* 我们在 `Strata+Hadoop<http://strataconf.com/big-data-conference-sg-2015/public/schedule/detail/45123>`_ 做了关于SINGA的报告, 时间：2015年12月2日
 
-* 我们在多媒体国际会议(`ACM Multimedia <http://www.acmmm.org/2015/at-a-glance/>`_ ) 的最佳论文和开源竞赛环节报告了关于SINGA的工作. 时间2015年10月26-30(`资料 <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/mm2015.ppt>`_)
+* 我们在多媒体国际会议(`ACM Multimedia<http://www.acmmm.org/2015/at-a-glance/>`_ ) 的最佳论文和开源竞赛环节报告了关于SINGA的工作. 时间2015年10月26-30(`资料 <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/mm2015.ppt>`_)
 
-* **版本 0.1** 于2015年10月8日发布.. `请点击下载 SINGA v0.1.0 <../en/downloads.html>`_.
+* **版本 0.1** 于2015年10月8日发布. `下载页面 SINGA v0.1.0 <../en/downloads.html>`_.
 
-* 我们举办了一届关于`深度学习的研讨会<http://www.comp.nus.edu.sg/~dbsystem/singa/workshop>`_，并报告了SINGA.时间：2015年9月16
+* 我们举办了一届关于 `深度学习的研讨会<http://www.comp.nus.edu.sg/~dbsystem/singa/workshop>`_ ，并报告了SINGA.时间：2015年9月16
 
-* SINGA参展了VLDB2015期间举办的开源项目研讨会`BOSS <http://boss.dima.tu-berlin.de/>`_ 时间2015年9月4日. (`简介 <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/singa-vldb-boss.pptx>`_, `基础 <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/basic-user-guide.pptx>`_, `高级 <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/advanced-user-guide.pptx>`_)
+* SINGA参展了VLDB2015期间举办的开源项目研讨会 `BOSS <http://boss.dima.tu-berlin.de/>`_ 时间2015年9月4日. (`简介 <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/singa-vldb-boss.pptx>`_, `基础 <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/basic-user-guide.pptx>`_ , `高级 <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/advanced-user-guide.pptx>`_ )
 
 * 我们在 VLDB 暑期学校做了关于SINGA的教学. 时间：2015年7月; 地点：清华大学.
 
-* 我们`SIGMOD 2015 <http://www.sigmod2015.org/index.shtml>`_的研讨会`DanaC <http://danac.org/>`_ 上面报告了SINGA. 时间：2015年5月31日-6月4日;地点：墨尔本
+* 我们 `SIGMOD 2015<http://www.sigmod2015.org/index.shtml>`_ 的研讨会 `DanaC<http://danac.org/>`_ 上面报告了SINGA. 时间：2015年5月31日-6月4日;地点：墨尔本
 
 * SINGA 加入 `Apache Incubator <http://incubator.apache.org/>`_,  2015年3月17日.
 
@@ -57,9 +57,9 @@ SINGA 入门
 ---------------
 * 无需安装，直接使用 `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ or via `Docker <https://hub.docker.com/r/nusdbsystem/singa/>`_.
 
-* 安装SINGA，通过 `conda<../en/docs/installation.html#from-conda`_, `Debian packages <../en/docs/installation.html#from-debian-package>`_ or from `source <../en/docs/installation.html#from-source>`_.
+* 安装SINGA，通过 `conda<../en/docs/installation.html#from-conda`_, `Debian packages <../en/docs/installation.html#from-debian-package>`_  或者 `源码 <../en/docs/installation.html#from-source>`_.
 
-* 更多操作和实例，参考`Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ 
+* 更多操作和实例，参考 `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ 
 
 .. |logo1| image:: _static/github.png
    :scale: 100%

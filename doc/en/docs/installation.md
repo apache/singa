@@ -9,11 +9,11 @@ Currently, SINGA has conda packages (Python2.7) for Linux and MacOSX.
 
 1. CPU only
 
-      conda install -c nusdbsystem singa
+        conda install -c nusdbsystem singa
 
 2. GPU via CUDA+cuDNN
 
-      conda install -c nusdbsystem singa-cudax.y-cudnnz
+        conda install -c nusdbsystem singa-cudax.y-cudnnz
 
     where `x.y,z` is one of <8.0, 5>, <7.5, 5> and <7.5, 4>.
     Users need to install CUDA and cuDNN before installing SINGA.
