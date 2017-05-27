@@ -22,6 +22,7 @@ to call singa::Device and its methods.
 TODO(wangwei) implement py CudaGPU class.
 '''
 
+from builtins import object
 from . import singa_wrap as singa
 
 

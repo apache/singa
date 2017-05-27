@@ -26,7 +26,9 @@ Example usages::
     initializer.uniform(x, 3, 5) # use both fan_in and fan_out
     initializer.uniform(x, 3, 0)  # use only fan_in
 '''
+from __future__ import division
 
+from past.utils import old_div
 import math
 
 
@@ -89,7 +91,7 @@ def xavier(t):
         t (Tensor): the parater tensor
     '''
 
-    scale = math.sqrt(6.0 / (t.shape[0] + t.shape[1]))
+    scale = math.sqrt(old_div(6.0, (t.shape[0] + t.shape[1])))
     t.uniform(-scale, scale)
 
 
@@ -102,7 +104,7 @@ def glorot(t):
     Args:
         t (Tensor): the parater tensor
     '''
-    scale = math.sqrt(2.0 / (t.shape[0] + t.shape[1]))
+    scale = math.sqrt(old_div(2.0, (t.shape[0] + t.shape[1])))
     t.gaussian(0, 1)
     t *= scale
 
@@ -119,4 +121,4 @@ def msra(t):
     Args:
         t (Tensor): the parater tensor
     '''
-    t.gaussian(0, math.sqrt(2.0 / t.shape[0]))
+    t.gaussian(0, math.sqrt(old_div(2.0, t.shape[0])))

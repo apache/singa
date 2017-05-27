@@ -31,10 +31,14 @@ Example usage::
   sgd.apply(1, g, p, 'param')  # use the global lr=0.1 for epoch 1
   sgd.apply_with_lr(2, 0.03, g, p, 'param')  # use lr=0.03 for epoch 2
 '''
+from __future__ import division
+from __future__ import absolute_import
 
+from past.utils import old_div
+from builtins import object
 import math
 from . import singa_wrap as singa
-import tensor
+from . import tensor
 from proto import model_pb2
 
 
@@ -434,5 +438,5 @@ class L2Constraint(Constraint):
 
     def apply(self, epoch, value, grad, step=-1):
         nrm = grad.l2()
-        grad *= self.threshold / nrm
+        grad *= old_div(self.threshold, nrm)
         return grad

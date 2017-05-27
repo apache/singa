@@ -48,7 +48,11 @@ Example usage::
         img.save('img%d.png' % idx)
     data.end()
 '''
+from __future__ import print_function
+from __future__ import absolute_import
 
+from builtins import range
+from builtins import object
 import os
 import random
 import time
@@ -56,7 +60,7 @@ from multiprocessing import Process, Queue
 import numpy as np
 
 
-class ImageBatchIter:
+class ImageBatchIter(object):
     '''Utility for iterating over an image dataset to get mini-batches.
 
     Args:
@@ -97,7 +101,7 @@ class ImageBatchIter:
         self.p.start()
         return
 
-    def next(self):
+    def __next__(self):
         assert self.p is not None, 'call start before next'
         while self.queue.empty():
             time.sleep(0.1)
@@ -164,7 +168,7 @@ class ImageBatchIter:
 
 
 if __name__ == '__main__':
-    import image_tool
+    from . import image_tool
     from PIL import Image
     tool = image_tool.ImageTool()
 
@@ -179,8 +183,8 @@ if __name__ == '__main__':
                           image_folder='images/',
                           capacity=10)
     data.start()
-    imgs, labels = data.next()
-    print labels
+    imgs, labels = next(data)
+    print(labels)
     for idx in range(imgs.shape[0]):
         img = Image.fromarray(imgs[idx].astype(np.uint8).transpose(1, 2, 0),
                               'RGB')

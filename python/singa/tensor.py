@@ -53,12 +53,17 @@ Tensor module functions
 
 Every Tesor instance must be initialized before reading data from it.
 """
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
+from past.utils import old_div
+from builtins import object
 import numpy as np
 from functools import reduce
 from .proto import core_pb2
 from . import singa_wrap as singa
-import device as pydevice
+from . import device as pydevice
 
 int32 = core_pb2.kInt
 float32 = core_pb2.kFloat32
@@ -214,7 +219,7 @@ class Tensor(object):
         elif dt == np.int or dt == np.int32:
             self.singa_tensor.CopyIntDataFromHostPtr(np_array)
         else:
-            print 'Not implemented yet for ', dt
+            print('Not implemented yet for ', dt)
 
     def copy_data(self, t):
         '''Copy data from other Tensor instance.
@@ -584,7 +589,7 @@ def to_numpy(t):
     elif th.dtype == core_pb2.kInt:
         np_array = th.singa_tensor.GetIntValue(int(th.size()))
     else:
-        print 'Not implemented yet for ', th.dtype
+        print('Not implemented yet for ', th.dtype)
     return np_array.reshape(th.shape)
 
 
@@ -746,7 +751,7 @@ def average(t, axis=None):
     if t.ndim() > 1:
         return _call_singa_func(singa.Average, t.singa_tensor, axis)
     else:
-        return singa.SumAsFloat(t.singa_tensor) / t.size()
+        return old_div(singa.SumAsFloat(t.singa_tensor), t.size())
 
 
 def softmax(t, out=None):
@@ -933,7 +938,7 @@ def div(lhs, rhs, ret=None):
     '''
     if ret is None:
         # call Tensor.__div__()
-        return lhs / rhs
+        return old_div(lhs, rhs)
     else:
         if isinstance(rhs, Tensor):
             singa.Div(lhs.singa_tensor, rhs.singa_tensor, ret.singa_tensor)

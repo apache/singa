@@ -34,11 +34,15 @@ Example usage::
     l = f.forward(True, x, y)  # l is tensor with 3 loss values
     g = f.backward()  # g is a tensor containing all gradients of x w.r.t l
 '''
+from __future__ import division
+from __future__ import absolute_import
 
 
+from past.utils import old_div
+from builtins import object
 from . import singa_wrap as singa
 from proto import model_pb2
-import tensor
+from . import tensor
 import numpy as np
 
 
@@ -210,4 +214,4 @@ class SquaredError(Loss):
         Returns:
             a float value as the averaged error
         '''
-        return tensor.sum(tensor.square(x - y) * 0.5) / x.size()
+        return old_div(tensor.sum(tensor.square(x - y) * 0.5), x.size())

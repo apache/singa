@@ -122,13 +122,13 @@ IF (USE_MODULES)
     #ENDIF()
     ExternalProject_Add(protobuf
         DOWNLOAD_COMMAND "wget"
-        "http://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.gz"
-        "-O" "protobuf-2.6.1.tar.gz"
+        "https://github.com/google/protobuf/archive/v3.3.0.tar.gz"
+        "-O" "protobuf-3.3.0.tar.gz"
         UPDATE_COMMAND "tar" "zxvf"
-        "${CMAKE_BINARY_DIR}/protobuf-prefix/src/protobuf-2.6.1.tar.gz" "-C" ".."
-        SOURCE_DIR "protobuf-2.6.1/"
+        "${CMAKE_BINARY_DIR}/protobuf-prefix/src/protobuf-3.3.0.tar.gz" "-C" ".."
+        SOURCE_DIR "protobuf-3.3.0/"
         BUILD_IN_SOURCE 1
-        CONFIGURE_COMMAND "./configure" "--disable-shared"
+        CONFIGURE_COMMAND "./autogen.sh" COMMAND "./configure" "--disable-shared"
         "--prefix=${CMAKE_BINARY_DIR}/" "CXXFLAGS=-fPIC"
         INSTALL_COMMAND "make" "install"
         )
@@ -192,7 +192,11 @@ IF(PACKAGE)
 		SET(CORE_DEPENDENCIES "libgoogle-glog-dev, libprotobuf-dev, libopenblas-dev, libstdc++6, libc6")
 	ENDIF()
 
-	SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python-dev, libpython2.7, python-pip, python-numpy, python-pillow")
+	IF(PYTHON2)
+		SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python-dev, libpython2.7, python-pip, python-numpy, python-pillow")
+	ELSE()
+		SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python3, python3-dev, python3-pip, python3-numpy, python3-pillow")
+	ENDIF()
 
 	SET(CPACK_GENERATOR "DEB")
 	SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Apache Incubator <dev@singa.incubator.apache.org>")
@@ -206,12 +210,24 @@ IF(PACKAGE)
 		SET(CPACK_DEBIAN_PACKAGE_DEPENDS ${PYTHON_DEPENDENCIES})
 		SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian/postinst" )
 		SET(CPACK_DEBIAN_PACKAGE_PREDEPENDS "ca-certificates")
-		IF (USE_CUDA)
-			SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa-cuda")
-			SET(CPACK_PACKAGE_FILE_NAME "python-singa-cuda-${PACKAGE_VERSION}")
+		IF(PYTHON2)
+			SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian-python2/postinst" )
+			IF (USE_CUDA)
+				SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa-cuda")
+				SET(CPACK_PACKAGE_FILE_NAME "python-singa-cuda-${PACKAGE_VERSION}")
+			ELSE()
+				SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa")
+				SET(CPACK_PACKAGE_FILE_NAME "python-singa-${PACKAGE_VERSION}")
+			ENDIF()
 		ELSE()
-			SET(CPACK_DEBIAN_PACKAGE_NAME "python-singa")
-			SET(CPACK_PACKAGE_FILE_NAME "python-singa-${PACKAGE_VERSION}")
+			SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian/postinst" )
+			IF (USE_CUDA)
+				SET(CPACK_DEBIAN_PACKAGE_NAME "python3-singa-cuda")
+				SET(CPACK_PACKAGE_FILE_NAME "python3-singa-cuda-${PACKAGE_VERSION}")
+			ELSE()
+				SET(CPACK_DEBIAN_PACKAGE_NAME "python3-singa")
+				SET(CPACK_PACKAGE_FILE_NAME "python3-singa-${PACKAGE_VERSION}")
+			ENDIF()
 		ENDIF()
 	ELSE()
 		SET(CPACK_DEBIAN_PACKAGE_NAME "singa")
