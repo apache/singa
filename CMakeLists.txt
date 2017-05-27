@@ -200,8 +200,8 @@ IF(PACKAGE)
 	SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
 	SET(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 	SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://singa.apache.org")
-	SET(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Singa is an Apache Incubating project for developing an open source deep learning library.
-	 The Singa project was initiated by the DB System Group at National University of Singapore in 2014. It focused on distributed deep learning by partitioning the model and data onto nodes in a cluster and parallelize the training. The prototype was accepted by Apache Incubator in March 2015.")
+	SET(CPACK_DEBIAN_PACKAGE_DESCRIPTION "SINGA is an Apache Incubating project for developing an open source deep learning library.
+	 The SINGA project was initiated by the DB System Group at National University of Singapore in 2014. It focused on distributed deep learning by partitioning the model and data onto nodes in a cluster and parallelize the training. The prototype was accepted by Apache Incubator in March 2015.")
 	IF (USE_PYTHON)
 		SET(CPACK_DEBIAN_PACKAGE_DEPENDS ${PYTHON_DEPENDENCIES})
 		SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian/postinst" )
