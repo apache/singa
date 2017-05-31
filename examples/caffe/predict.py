@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import input
+from builtins import range
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -69,11 +72,11 @@ def predict(net, dev, synset_list, topk=5):
         topk, return the topk labels for each image.
     '''
     while True:
-        img_path = raw_input("Enter input image path('quit' to exit): ")
+        img_path = eval(input("Enter input image path('quit' to exit): "))
         if img_path == 'quit':
             return
         if not os.path.exists(img_path):
-            print 'Path is invalid'
+            print('Path is invalid')
             continue
         img = read_image(img_path)
         x = tensor.from_numpy(img.astype(np.float32)[np.newaxis,:])
@@ -82,7 +85,7 @@ def predict(net, dev, synset_list, topk=5):
         y.to_host()
         prob = tensor.to_numpy(y)
         lbl = np.argsort(-prob[0])  # sort prob in descending order
-        print [synset_list[lbl[i]] for i in range(topk)]
+        print([synset_list[lbl[i]] for i in range(topk)])
 
 
 if __name__ == '__main__':

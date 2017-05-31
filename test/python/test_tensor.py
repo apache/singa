@@ -1,3 +1,5 @@
+from __future__ import division
+from past.utils import old_div
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -150,7 +152,7 @@ class TestTensorMethods(unittest.TestCase):
     def test_rdiv(self):
         x = tensor.Tensor((3,))
         x.set_value(1)
-        y = 2 / x
+        y = old_div(2, x)
         self.assertEqual(tensor.average(y), 2.)
 
     def test_numpy_convert(self):

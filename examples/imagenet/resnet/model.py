@@ -17,6 +17,9 @@
 ''' This models are created following https://github.com/facebook/fb.resnet.torch.git
 and https://github.com/szagoruyko/wide-residual-networks
 '''
+from __future__ import print_function
+from builtins import zip
+from builtins import range
 from singa.layer import Conv2D, Activation, MaxPooling2D, AvgPooling2D,\
         Split, Merge, Flatten, Dense, BatchNormalization, Softmax
 from singa import net as ffnet
@@ -139,7 +142,7 @@ def stage(sid, net, num_blk, inplane, midplane, outplane, stride, block, preact=
 def init_params(net, weight_path=None):
     if weight_path == None:
         for pname, pval in zip(net.param_names(), net.param_values()):
-            print pname, pval.shape
+            print(pname, pval.shape)
             if 'conv' in pname and len(pval.shape) > 1:
                 initializer.gaussian(pval, 0, pval.shape[1])
             elif 'dense' in pname:

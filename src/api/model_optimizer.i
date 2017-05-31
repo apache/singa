@@ -28,6 +28,7 @@
 %include "std_shared_ptr.i"
 
 %{
+#define SWIG_PYTHON_STRICT_BYTE_CHAR
 #include "singa/model/optimizer.h"
 #include "singa/proto/model.pb.h"
 using singa::Tensor;

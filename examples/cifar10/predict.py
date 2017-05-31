@@ -15,7 +15,11 @@
 # limitations under the License.
 # =============================================================================
 '''Predicting the labels for new images using the pre-trained alexnet model'''
-import cPickle as pickle
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+import pickle as pickle
 import numpy as np
 
 # sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
@@ -46,7 +50,7 @@ def predict(net, images, dev, topk=5):
 
 
 def load_dataset(filepath):
-    print 'Loading data file %s' % filepath
+    print('Loading data file %s' % filepath)
     with open(filepath, 'rb') as fd:
         cifar10 = pickle.load(fd)
     image = cifar10['data'].astype(dtype=np.uint8)
@@ -88,4 +92,4 @@ if __name__ == '__main__':
     mean = compute_image_mean('cifar-10-batches-py')
     test_images, _ = load_test_data('cifar-10-batches-py')
     # predict for two images
-    print predict(model, test_images[0:2] - mean, dev)
+    print(predict(model, test_images[0:2] - mean, dev))

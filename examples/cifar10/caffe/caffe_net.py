@@ -1,3 +1,7 @@
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,13 +18,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from singa import converter
 
 
 def create_net(use_cpu):
-    urllib.urlretrieve("https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_train_test.prototxt", "train_test.prototxt")
-    urllib.urlretrieve("https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_solver.prototxt", "solver.prototxt")
+    urllib.request.urlretrieve("https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_train_test.prototxt", "train_test.prototxt")
+    urllib.request.urlretrieve("https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_solver.prototxt", "solver.prototxt")
     input_sample_shape = [3, 32, 32, ]
 
     cvt = converter.CaffeConverter("train_test.prototxt", "solver.prototxt",
@@ -32,6 +36,6 @@ def create_net(use_cpu):
             p.gaussian(filler.mean, filler.std)
         else:
             p.set_value(0)
-        print specs.name, filler.type, p.l1()
+        print(specs.name, filler.type, p.l1())
 
     return net

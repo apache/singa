@@ -1,3 +1,9 @@
+from __future__ import division
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from past.utils import old_div
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,7 +25,7 @@ import numpy as np
 import os
 import gzip
 import argparse
-import cPickle
+import pickle
 from singa import initializer
 from singa import utils
 from singa import optimizer
@@ -33,16 +39,16 @@ from singa.proto import core_pb2
 
 def load_train_data(file_path):
     f = gzip.open(file_path, 'rb')
-    train_set, valid_set, test_set = cPickle.load(f)
+    train_set, valid_set, test_set = pickle.load(f)
     traindata = train_set[0].astype(np.float32)
     validdata = valid_set[0].astype(np.float32)
-    print traindata.shape, validdata.shape
+    print(traindata.shape, validdata.shape)
     return traindata, validdata
 
 
 
 def train(data_file, use_gpu, num_epoch=10, batch_size=100):
-    print 'Start intialization............'
+    print('Start intialization............')
     lr = 0.1   # Learning rate
     weight_decay  = 0.0002
     hdim = 1000
@@ -55,7 +61,7 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
     thbias = tensor.from_numpy(np.zeros(hdim, dtype = np.float32))
     opt = optimizer.SGD(momentum=0.5, weight_decay=weight_decay)
 
-    print 'Loading data ..................'
+    print('Loading data ..................')
     train_x, valid_x = load_train_data(data_file)
 
     if use_gpu:
@@ -66,11 +72,11 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
     for t in [tweight, tvbias, thbias]:
         t.to_device(dev)
 
-    num_train_batch = train_x.shape[0] / batch_size
-    print "num_train_batch = %d " % (num_train_batch)
+    num_train_batch = old_div(train_x.shape[0], batch_size)
+    print("num_train_batch = %d " % (num_train_batch))
     for epoch in range(num_epoch):
         trainerrorsum = 0.0
-        print 'Epoch %d' % epoch
+        print('Epoch %d' % epoch)
         for b in range(num_train_batch):
             # positive phase
             tdata = tensor.from_numpy(
@@ -99,11 +105,11 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
             tgvbias = tensor.sum(tnegdata, 0) - tensor.sum(tdata, 0)
             tghbias = tensor.sum(tneghidprob, 0) - tensor.sum(tposhidprob, 0)
 
-            opt.apply_with_lr(epoch, lr / batch_size, tgweight, tweight, 'w')
-            opt.apply_with_lr(epoch, lr / batch_size, tgvbias, tvbias, 'vb')
-            opt.apply_with_lr(epoch, lr / batch_size, tghbias, thbias, 'hb')
+            opt.apply_with_lr(epoch, old_div(lr, batch_size), tgweight, tweight, 'w')
+            opt.apply_with_lr(epoch, old_div(lr, batch_size), tgvbias, tvbias, 'vb')
+            opt.apply_with_lr(epoch, old_div(lr, batch_size), tghbias, thbias, 'hb')
 
-        print 'training errorsum = %f' % (trainerrorsum)
+        print('training errorsum = %f' % (trainerrorsum))
 
         tvaliddata = tensor.from_numpy(valid_x)
         tvaliddata.to_device(dev)
@@ -119,7 +125,7 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
         tvalidnegdata = tensor.sigmoid(tvalidnegdata)
 
         validerrorsum = tensor.sum(tensor.square((tvaliddata - tvalidnegdata)))
-        print 'valid errorsum = %f' % (validerrorsum)
+        print('valid errorsum = %f' % (validerrorsum))
 
 
 if __name__ == '__main__':

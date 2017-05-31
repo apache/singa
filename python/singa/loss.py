@@ -41,7 +41,7 @@ from __future__ import absolute_import
 from past.utils import old_div
 from builtins import object
 from . import singa_wrap as singa
-from proto import model_pb2
+from .proto import model_pb2
 from . import tensor
 import numpy as np
 

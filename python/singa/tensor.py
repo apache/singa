@@ -423,6 +423,14 @@ class Tensor(object):
             return _call_singa_func(singa.DivFloat,
                                     self.singa_tensor, rhs)
 
+    def __truediv__(self, rhs):
+        if isinstance(rhs, Tensor):
+            return from_raw_tensor(
+                singa.__div__(self.singa_tensor, rhs.singa_tensor))
+        else:
+            return _call_singa_func(singa.DivFloat,
+                                    self.singa_tensor, rhs)
+
     def __lt__(self, rhs):
         if isinstance(rhs, Tensor):
             return from_raw_tensor(
@@ -473,6 +481,13 @@ class Tensor(object):
         return one
 
     def __rdiv__(self, lhs):
+        lhs = float(lhs)
+        one = Tensor(self.shape, self.device, self.dtype)
+        one.set_value(lhs)
+        one /= self
+        return one
+
+    def __rtruediv__(self, lhs):
         lhs = float(lhs)
         one = Tensor(self.shape, self.device, self.dtype)
         one.set_value(lhs)
@@ -938,7 +953,7 @@ def div(lhs, rhs, ret=None):
     '''
     if ret is None:
         # call Tensor.__div__()
-        return old_div(lhs, rhs)
+        return lhs / rhs
     else:
         if isinstance(rhs, Tensor):
             singa.Div(lhs.singa_tensor, rhs.singa_tensor, ret.singa_tensor)

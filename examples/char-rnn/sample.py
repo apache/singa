@@ -15,8 +15,14 @@
 # limitations under the License.
 # =============================================================================
 '''Sample characters from the pre-trained model'''
+from __future__ import division
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from past.utils import old_div
 import sys
-import cPickle as pickle
+import pickle as pickle
 import numpy as np
 import argparse
 
@@ -69,7 +75,7 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
         sys.stdout.write(seed_text)
     else:
         y = tensor.Tensor((1, vocab_size), cuda)
-        y.set_value(1.0 / vocab_size)
+        y.set_value(old_div(1.0, vocab_size))
 
     for i in range(nsamples):
         y.to_host()
@@ -89,7 +95,7 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
         y = tensor.softmax(y)
         hx = outputs[1]
         cx = outputs[2]
-    print ''
+    print('')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='sample chars from char-rnn')

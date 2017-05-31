@@ -49,7 +49,7 @@ class Snapshot(object):
             mode (boolean): True for write, False for read
             buffer_size (int): Buffer size (in MB), default is 10
         '''
-        self.snapshot = singa.Snapshot(f, mode, buffer_size)
+        self.snapshot = singa.Snapshot(f.encode(), mode, buffer_size)
 
     def write(self, param_name, param_val):
         '''Call Write method to write a parameter
@@ -58,7 +58,7 @@ class Snapshot(object):
             param_name (string): name of the parameter
             param_val (Tensor): value tensor of the parameter
         '''
-        self.snapshot.Write(str(param_name), param_val.singa_tensor)
+        self.snapshot.Write(str(param_name).encode(), param_val.singa_tensor)
 
     def read(self):
         '''Call read method to load all (param_name, param_val)

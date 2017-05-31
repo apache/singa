@@ -90,8 +90,7 @@ def traverse(m, idx, params, param_names):
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Convert params from torch to python '
-            'dict. \n resnet could have depth of 18, 34, 101, 152; \n
-            wrn has depth 50; preact has depth 200; addbn has depth 50')
+            'dict. \n resnet could have depth of 18, 34, 101, 152; \n wrn has depth 50; preact has depth 200; addbn has depth 50')
     parser.add_argument("infile", help="torch checkpoint file")
     parser.add_argument("model", choices = ['resnet', 'wrn', 'preact', 'addbn'])
     parser.add_argument("depth", type=int, choices = [18, 34, 50, 101, 152, 200])

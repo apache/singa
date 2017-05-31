@@ -1,3 +1,5 @@
+from __future__ import division
+from past.utils import old_div
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -50,7 +52,7 @@ class TestPrecision(unittest.TestCase):
 
     def test_evaluate(self):
         e = self.prcs.evaluate(self.x,self.y)
-        self.assertAlmostEqual(e, (0.5 + 1 + 0) / 3)
+        self.assertAlmostEqual(e, old_div((0.5 + 1 + 0), 3))
 
 class TestRecall(unittest.TestCase):
     def setUp(self):
@@ -72,13 +74,13 @@ class TestRecall(unittest.TestCase):
     def test_forward(self):
         r = self.recall.forward(self.x,self.y)
         self.assertAlmostEqual(tensor.to_numpy(r)[0], 0.5)
-        self.assertAlmostEqual(tensor.to_numpy(r)[1], 2.0 / 3)
+        self.assertAlmostEqual(tensor.to_numpy(r)[1], old_div(2.0, 3))
         self.assertAlmostEqual(tensor.to_numpy(r)[2], 0)
 
 
     def test_evaluate(self):
         e = self.recall.evaluate(self.x,self.y)
-        self.assertAlmostEqual(e, (0.5 + 2.0 / 3 + 0) / 3)
+        self.assertAlmostEqual(e, old_div((0.5 + old_div(2.0, 3) + 0), 3))
 
 if __name__ == '__main__':
     unittest.main()

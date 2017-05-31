@@ -19,7 +19,15 @@ The model is created following https://github.com/karpathy/char-rnn
 The train file could be any text file,
 e.g., http://cs.stanford.edu/people/karpathy/char-rnn/
 '''
-import cPickle as pickle
+from __future__ import division
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import range
+from builtins import object
+from past.utils import old_div
+import pickle as pickle
 import numpy as np
 import argparse
 
@@ -51,18 +59,18 @@ class Data(object):
         self.idx_to_char = {i: ch for i, ch in enumerate(chars)}
         data = [self.char_to_idx[c] for c in self.raw_data]
         # seq_length + 1 for the data + label
-        nsamples = len(data) / (1 + seq_length)
+        nsamples = old_div(len(data), (1 + seq_length))
         data = data[0:nsamples * (1 + seq_length)]
         data = np.asarray(data, dtype=np.int32)
         data = np.reshape(data, (-1, seq_length + 1))
         # shuffle all sequences
         np.random.shuffle(data)
         self.train_dat = data[0:int(data.shape[0]*train_ratio)]
-        self.num_train_batch = self.train_dat.shape[0] / batch_size
+        self.num_train_batch = old_div(self.train_dat.shape[0], batch_size)
         self.val_dat = data[self.train_dat.shape[0]:]
-        self.num_test_batch = self.val_dat.shape[0] / batch_size
-        print 'train dat', self.train_dat.shape
-        print 'val dat', self.val_dat.shape
+        self.num_test_batch = old_div(self.val_dat.shape[0], batch_size)
+        print('train dat', self.train_dat.shape)
+        print('val dat', self.val_dat.shape)
 
 
 def numpy2tensors(npx, npy, dev):
@@ -94,7 +102,7 @@ def convert(batch, batch_size, seq_length, vocab_size, dev):
 
 
 def get_lr(epoch):
-    return 0.001 / float(1 << (epoch / 50))
+    return old_div(0.001, float(1 << (old_div(epoch, 50))))
 
 
 def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
@@ -111,10 +119,10 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
             data.vocab_size,
         ))
     rnn.to_device(cuda)
-    print 'created rnn'
+    print('created rnn')
     rnn_w = rnn.param_values()[0]
     rnn_w.uniform(-0.08, 0.08)  # init all rnn parameters
-    print 'rnn weight l1 = %f' % (rnn_w.l1())
+    print('rnn weight l1 = %f' % (rnn_w.l1()))
     dense = layer.Dense(
         'dense',
         data.vocab_size,
@@ -124,12 +132,12 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
     dense.to_device(cuda)
     dense_w = dense.param_values()[0]
     dense_b = dense.param_values()[1]
-    print 'dense w ', dense_w.shape
-    print 'dense b ', dense_b.shape
+    print('dense w ', dense_w.shape)
+    print('dense b ', dense_b.shape)
     initializer.uniform(dense_w, dense_w.shape[0], 0)
-    print 'dense weight l1 = %f' % (dense_w.l1())
+    print('dense weight l1 = %f' % (dense_w.l1()))
     dense_b.set_value(0)
-    print 'dense b l1 = %f' % (dense_b.l1())
+    print('dense b l1 = %f' % (dense_b.l1()))
 
     g_dense_w = tensor.Tensor(dense_w.shape, cuda)
     g_dense_b = tensor.Tensor(dense_b.shape, cuda)
@@ -162,7 +170,7 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
                 # print output.l1(), act.l1()
             utils.update_progress(
                 b * 1.0 / data.num_train_batch, 'training loss = %f' %
-                (batch_loss / seq_length))
+                (old_div(batch_loss, seq_length)))
             train_loss += batch_loss
 
             grads.append(tensor.Tensor())
@@ -176,8 +184,8 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
             opt.apply_with_lr(
                 epoch, get_lr(epoch),
                 g_dense_b, dense_b, 'dense_b')
-        print '\nEpoch %d, train loss is %f' % \
-            (epoch, train_loss / data.num_train_batch / seq_length)
+        print('\nEpoch %d, train loss is %f' % \
+            (epoch, train_loss / data.num_train_batch / seq_length))
 
         eval_loss = 0
         for b in range(data.num_test_batch):
@@ -191,13 +199,13 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
                 output = dense.forward(model_pb2.kEval, output)
                 eval_loss += lossfun.forward(model_pb2.kEval,
                                              output, label).l1()
-        print 'Epoch %d, evaluation loss is %f' % \
-            (epoch, eval_loss / data.num_test_batch / seq_length)
+        print('Epoch %d, evaluation loss is %f' % \
+            (epoch, eval_loss / data.num_test_batch / seq_length))
 
         if (epoch + 1) % 30 == 0:
             # checkpoint the file model
             with open('%s_%d.bin' % (model_path, epoch), 'wb') as fd:
-                print 'saving model to %s' % model_path
+                print('saving model to %s' % model_path)
                 d = {}
                 for name, w in zip(
                         ['rnn_w', 'dense_w', 'dense_b'],

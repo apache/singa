@@ -19,6 +19,8 @@ https://code.google.com/p/cuda-convnet/source/browse/trunk/example-layers/layers
 Following the same setting for hyper-parameters and data pre-processing, the final
 validation accuracy would be about 82%.
 '''
+from __future__ import print_function
+from builtins import zip
 
 # sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 from singa import layer
@@ -56,6 +58,6 @@ def create_net(use_cpu=False):
             p.gaussian(filler.mean, filler.std)
         else:
             p.set_value(0)
-        print specs.name, filler.type, p.l1()
+        print(specs.name, filler.type, p.l1())
 
     return net

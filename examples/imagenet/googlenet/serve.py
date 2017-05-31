@@ -17,6 +17,9 @@
 ''' This model is created following Caffe implementation of GoogleNet
 https://github.com/BVLC/caffe/blob/master/models/bvlc_googlenet/
 '''
+from __future__ import print_function
+from builtins import zip
+from builtins import str
 import os
 import sys
 import time
@@ -157,14 +160,14 @@ def serve(agent, use_cpu, parameter_file, topk=5):
         dev = device.get_default_device()
         layer.engine = 'singacpp'
     else:
-        print "runing with gpu"
+        print("runing with gpu")
         dev = device.create_cuda_gpu()
     agent = agent
 
-    print 'Start intialization............'
+    print('Start intialization............')
     net = create_net((3, 224, 224), parameter_file)
     net.to_device(dev)
-    print 'End intialization............'
+    print('End intialization............')
 
     labels = np.loadtxt('synset_words.txt', str, delimiter='\t ')
     while True:
@@ -199,15 +202,15 @@ def serve(agent, use_cpu, parameter_file, topk=5):
                 response = "Sorry, system error during prediction."
             agent.push(MsgType.kResponse, response)
         elif MsgType.kCommandStop.equal(msg_type):
-                print 'get stop command'
+                print('get stop command')
                 agent.push(MsgType.kStatus, "success")
                 break
         else:
-            print 'get unsupported message %s' % str(msg_type)
+            print('get unsupported message %s' % str(msg_type))
             agent.push(MsgType.kStatus, "Unknown command")
             break
         # while loop
-    print "server stop"
+    print("server stop")
 
 
 def main():

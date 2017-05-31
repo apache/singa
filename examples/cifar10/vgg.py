@@ -19,6 +19,8 @@ The best validation accuracy we achieved is about 89% without data augmentation.
 The performance could be improved by tuning some hyper-parameters, including
 learning rate, weight decay, max_epoch, parameter initialization, etc.
 """
+from __future__ import print_function
+from builtins import zip
 
 # sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 
@@ -74,9 +76,9 @@ def create_net(use_cpu=False):
     net.add(layer.Activation('relu_ip1'))
     net.add(layer.Dropout('drop_ip2', 0.5))
     net.add(layer.Dense('ip2', 10))
-    print 'Start intialization............'
+    print('Start intialization............')
     for (p, name) in zip(net.param_values(), net.param_names()):
-        print name, p.shape
+        print(name, p.shape)
         if 'mean' in name or 'beta' in name:
             p.set_value(0.0)
         elif 'var' in name:
@@ -90,6 +92,6 @@ def create_net(use_cpu=False):
                 p.gaussian(0, 0.02)
         else:
             p.set_value(0)
-        print name, p.l1()
+        print(name, p.l1())
 
     return net

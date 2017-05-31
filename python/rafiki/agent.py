@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -25,7 +27,7 @@ from werkzeug.datastructures import CombinedMultiDict, MultiDict
 import pickle
 import uuid
 
-class MsgType:
+class MsgType(object):
    def __init__(self, name):
        self.name = name
    def __str__(self):
@@ -72,7 +74,7 @@ for t in types:
 app = Flask(__name__)
 top_k_=5
 
-class Agent():
+class Agent(object):
 
     def __init__(self,port):
         info_queue = Queue()
@@ -203,7 +205,7 @@ def failure(message):
 
 def transformFile(files):
     result= MultiDict([])
-    for f in files.keys():
+    for f in list(files.keys()):
         file = files[f]
         unique_filename = str(uuid.uuid4())+secure_filename(file.filename)
         filepath=os.path.join(os.getcwd(),unique_filename)
@@ -212,7 +214,7 @@ def transformFile(files):
     return result
 
 def deleteFiles(files):
-    for f in files.keys():
+    for f in list(files.keys()):
         filepath = files[f]    
         os.remove(filepath)
         #print "remove",filepath

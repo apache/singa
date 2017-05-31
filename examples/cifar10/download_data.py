@@ -17,7 +17,10 @@
 # limitations under the License.
 # 
 
-import urllib
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+import urllib.request, urllib.parse, urllib.error
 import tarfile
 import os
 import sys
@@ -26,17 +29,17 @@ import argparse
 
 def extract_tarfile(filepath):
     if os.path.exists(filepath):
-        print 'The tar file does exist. Extracting it now..'
+        print('The tar file does exist. Extracting it now..')
         with tarfile.open(filepath, 'r') as f:
             f.extractall('.')
-        print 'Finished!'
+        print('Finished!')
         sys.exit(0)
 
 
 def check_dir_exist(dirpath):
     if os.path.exists(dirpath):
-        print 'Directory %s does exist. To redownload the files, '\
-            'remove the existing directory and %s.tar.gz' % (dirpath, dirpath)
+        print('Directory %s does exist. To redownload the files, '\
+            'remove the existing directory and %s.tar.gz' % (dirpath, dirpath))
         return True
     else:
         return False
@@ -45,10 +48,10 @@ def check_dir_exist(dirpath):
 def do_download(dirpath, gzfile, url):
     if check_dir_exist(dirpath):
         sys.exit(0)
-    print 'Downloading CIFAR10 from %s' % (url)
-    urllib.urlretrieve(url, gzfile)
+    print('Downloading CIFAR10 from %s' % (url))
+    urllib.request.urlretrieve(url, gzfile)
     extract_tarfile(gzfile)
-    print 'Finished!'
+    print('Finished!')
 
 
 if __name__ == '__main__':

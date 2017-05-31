@@ -1,3 +1,6 @@
+from __future__ import division
+from builtins import zip
+from past.utils import old_div
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -41,7 +44,7 @@ class TestFeedForwardNet(unittest.TestCase):
         y.set_value(0)
         out, _ = ffn.evaluate(x, y)
         self.assertAlmostEqual(out * 3,
-                               - math.log(1.0/(1+math.exp(1))) -
+                               - math.log(old_div(1.0,(1+math.exp(1)))) -
                                math.log(0.5) - math.log(0.5),
                                5)
 

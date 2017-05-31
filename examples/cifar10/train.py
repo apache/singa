@@ -18,8 +18,16 @@
 It includes 5 binary dataset, each contains 10000 images. 1 row (1 image)
 includes 1 label & 3072 pixels.  3072 pixels are 3 channels of a 32x32 image
 """
+from __future__ import division
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
+from builtins import range
+from past.utils import old_div
 
-import cPickle
+import pickle
 import numpy as np
 import os
 import argparse
@@ -38,9 +46,9 @@ import resnet
 
 
 def load_dataset(filepath):
-    print 'Loading data file %s' % filepath
+    print('Loading data file %s' % filepath)
     with open(filepath, 'rb') as fd:
-        cifar10 = cPickle.load(fd)
+        cifar10 = pickle.load(fd)
     image = cifar10['data'].astype(dtype=np.uint8)
     image = image.reshape((-1, 3, 32, 32))
     label = np.asarray(cifar10['labels'], dtype=np.uint8)
@@ -85,7 +93,7 @@ def normalize_for_alexnet(train_x, test_x):
 
 
 def vgg_lr(epoch):
-    return 0.1 / float(1 << ((epoch / 25)))
+    return old_div(0.1, float(1 << ((old_div(epoch, 25)))))
 
 
 def alexnet_lr(epoch):
@@ -115,12 +123,12 @@ def caffe_lr(epoch):
 
 def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
           use_cpu=False):
-    print 'Start intialization............'
+    print('Start intialization............')
     if use_cpu:
-        print 'Using CPU'
+        print('Using CPU')
         dev = device.get_default_device()
     else:
-        print 'Using GPU'
+        print('Using GPU')
         dev = device.create_cuda_gpu()
 
     net.to_device(dev)
@@ -131,13 +139,13 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
     tx = tensor.Tensor((batch_size, 3, 32, 32), dev)
     ty = tensor.Tensor((batch_size,), dev, core_pb2.kInt)
     train_x, train_y, test_x, test_y = data
-    num_train_batch = train_x.shape[0] / batch_size
-    num_test_batch = test_x.shape[0] / batch_size
+    num_train_batch = old_div(train_x.shape[0], batch_size)
+    num_test_batch = old_div(test_x.shape[0], batch_size)
     idx = np.arange(train_x.shape[0], dtype=np.int32)
     for epoch in range(max_epoch):
         np.random.shuffle(idx)
         loss, acc = 0.0, 0.0
-        print 'Epoch %d' % epoch
+        print('Epoch %d' % epoch)
         for b in range(num_train_batch):
             x = train_x[idx[b * batch_size: (b + 1) * batch_size]]
             y = train_y[idx[b * batch_size: (b + 1) * batch_size]]
@@ -152,8 +160,8 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
             utils.update_progress(b * 1.0 / num_train_batch,
                                   'training loss = %f, accuracy = %f' % (l, a))
         info = '\ntraining loss = %f, training accuracy = %f, lr = %f' \
-            % (loss / num_train_batch, acc / num_train_batch, get_lr(epoch))
-        print info
+            % (old_div(loss, num_train_batch), old_div(acc, num_train_batch), get_lr(epoch))
+        print(info)
 
         loss, acc = 0.0, 0.0
         for b in range(num_test_batch):
@@ -165,8 +173,8 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
             loss += l
             acc += a
 
-        print 'test loss = %f, test accuracy = %f' \
-            % (loss / num_test_batch, acc / num_test_batch)
+        print('test loss = %f, test accuracy = %f' \
+            % (old_div(loss, num_test_batch), old_div(acc, num_test_batch)))
     net.save('model', 20)  # save model params into checkpoint file
 
 if __name__ == '__main__':
@@ -178,7 +186,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     assert os.path.exists(args.data), \
         'Pls download the cifar10 dataset via "download_data.py py"'
-    print 'Loading data ..................'
+    print('Loading data ..................')
     train_x, train_y = load_train_data(args.data)
     test_x, test_y = load_test_data(args.data)
     if args.model == 'caffe':
