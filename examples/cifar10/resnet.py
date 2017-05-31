@@ -19,8 +19,12 @@ The best validation accuracy we achieved is about 83% without data augmentation.
 The performance could be improved by tuning some hyper-parameters, including
 learning rate, weight decay, max_epoch, parameter initialization, etc.
 """
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
 
-import cPickle as pickle
+import pickle as pickle
 
 # sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 # use the python modules by installing py singa in build/python
@@ -73,7 +77,7 @@ def create_net(use_cpu=False):
     net.add(layer.AvgPooling2D("pool4", 8, 8, border_mode='valid'))
     net.add(layer.Flatten('flat'))
     net.add(layer.Dense('ip5', 10))
-    print 'Start intialization............'
+    print('Start intialization............')
     for (p, name) in zip(net.param_values(), net.param_names()):
         # print name, p.shape
         if 'mean' in name or 'beta' in name:

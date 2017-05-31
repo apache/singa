@@ -1,3 +1,7 @@
+from __future__ import division
+from builtins import zip
+from builtins import range
+from past.utils import old_div
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -106,7 +110,7 @@ class TestOptimizer(unittest.TestCase):
         cons = opt.L2Constraint(threshold)
         cons.apply(0, self.W, self.g)
         g = tensor.to_numpy(self.g)
-        nrm = np.linalg.norm(self.np_g) / self.np_g.size
+        nrm = old_div(np.linalg.norm(self.np_g), self.np_g.size)
         for i in range(g.size):
             self.assertAlmostEqual(g[i], self.np_g[i] * threshold / nrm)
 
@@ -118,7 +122,7 @@ class TestOptimizer(unittest.TestCase):
         cons.apply(0, self.W, self.g)
         self.g.to_host()
         g = tensor.to_numpy(self.g)
-        nrm = np.linalg.norm(self.np_g) / self.np_g.size
+        nrm = old_div(np.linalg.norm(self.np_g), self.np_g.size)
         for i in range(g.size):
             self.assertAlmostEqual(g[i], self.np_g[i] * threshold / nrm)
 

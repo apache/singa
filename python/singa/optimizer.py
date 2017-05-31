@@ -39,8 +39,7 @@ from builtins import object
 import math
 from . import singa_wrap as singa
 from . import tensor
-from proto import model_pb2
-
+from .proto import model_pb2
 
 class Optimizer(object):
     '''The base python optimizer class.
@@ -205,7 +204,7 @@ class SGD(Optimizer):
         if self.momentum is not None:
             conf.momentum = self.momentum
         conf.type = 'sgd'
-        self.opt = singa.CreateOptimizer('SGD')
+        self.opt = singa.CreateOptimizer('SGD'.encode())
         self.opt.Setup(conf.SerializeToString())
 
     def apply_with_lr(self, epoch, lr, grad, value, name, step=-1):
@@ -214,7 +213,7 @@ class SGD(Optimizer):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr, name, grad.singa_tensor, value.singa_tensor)
+        self.opt.Apply(epoch, lr, name.encode(), grad.singa_tensor, value.singa_tensor)
         return value
 
 
@@ -232,7 +231,7 @@ class Nesterov(Optimizer):
         if self.momentum is not None:
             conf.momentum = momentum
         conf.type = 'nesterov'
-        self.opt = singa.CreateOptimizer('Nesterov')
+        self.opt = singa.CreateOptimizer('Nesterov'.encode())
         self.opt.Setup(conf.SerializeToString())
 
     def apply_with_lr(self, epoch, lr, grad, value, name, step=-1):
@@ -242,7 +241,7 @@ class Nesterov(Optimizer):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr, name, grad.singa_tensor, value.singa_tensor)
+        self.opt.Apply(epoch, lr, name.encode(), grad.singa_tensor, value.singa_tensor)
         return value
 
 
@@ -263,7 +262,7 @@ class RMSProp(Optimizer):
         conf = model_pb2.OptimizerConf()
         conf.rho = rho
         conf.delta = epsilon
-        self.opt = singa.CreateOptimizer('RMSProp')
+        self.opt = singa.CreateOptimizer('RMSProp'.encode())
         self.opt.Setup(conf.SerializeToString())
 
     def apply_with_lr(self, epoch, lr, grad, value, name, step=-1):
@@ -273,7 +272,7 @@ class RMSProp(Optimizer):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(step, lr,  name, grad.singa_tensor, value.singa_tensor)
+        self.opt.Apply(step, lr,  name.encode(), grad.singa_tensor, value.singa_tensor)
         return value
 
 
@@ -293,7 +292,7 @@ class AdaGrad(Optimizer):
         conf = model_pb2.OptimizerConf()
         conf.delta = epsilon
         conf.type = 'adagrad'
-        self.opt = singa.CreateOptimizer('AdaGrad')
+        self.opt = singa.CreateOptimizer('AdaGrad'.encode())
         self.opt.Setup(conf.SerializeToString())
 
     def apply_with_lr(self, epoch, lr, grad, value, name, step=-1):
@@ -303,7 +302,7 @@ class AdaGrad(Optimizer):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr,  name, grad.singa_tensor, value.singa_tensor)
+        self.opt.Apply(epoch, lr,  name.encode(), grad.singa_tensor, value.singa_tensor)
         return value
 
 

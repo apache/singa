@@ -93,8 +93,15 @@ PROTOBUF_GENERATE_PYTHON(proto_pys ${proto_files})
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa/proto)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/rafiki)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src/api)
+
+IF(PYTHON2)
+	SET(SWIG_PYTHON3 "")
+ELSE()
+	SET(SWIG_PYTHON3 "-py3")
+ENDIF()
+
 execute_process(
-    COMMAND swig -c++ -python -I${CMAKE_SOURCE_DIR}/include
+    COMMAND swig -c++ -python ${SWIG_PYTHON3} -I${CMAKE_SOURCE_DIR}/include
     -outdir ${CMAKE_BINARY_DIR}/python/singa
     -o ${CMAKE_BINARY_DIR}/src/api/singa_wrap.cxx
     ${CMAKE_SOURCE_DIR}/src/api/singa.i)

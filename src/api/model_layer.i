@@ -29,6 +29,7 @@
 
 
 %{
+#define SWIG_PYTHON_STRICT_BYTE_CHAR
 #include "singa/model/layer.h"
 #include "../src/model/layer/rnn.h"
 #include "../src/model/layer/cudnn_rnn.h"

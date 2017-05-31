@@ -1,3 +1,8 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
+from past.utils import old_div
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -52,7 +57,7 @@ def predict(net, images, num=10):
     '''
     prob = net.predict(images)
     prob = tensor.to_numpy(prob)
-    prob = prob.reshape((images.shape[0] / num, num, -1))
+    prob = prob.reshape((old_div(images.shape[0], num), num, -1))
     prob = np.average(prob, 1)
     return prob
 
@@ -82,11 +87,11 @@ def serve(net, label_map, dev, agent, topk=5):
             try:
                 # process images
                 im = [np.array(x.convert('RGB'), dtype=np.float32).transpose(2, 0, 1) for x in image_transform(val['image'])]
-                im = np.array(im) / 256
+                im = old_div(np.array(im), 256)
                 im -= mean[np.newaxis, :, np.newaxis, np.newaxis]
                 im /= std[np.newaxis, :, np.newaxis, np.newaxis]
                 images.copy_from_numpy(im)
-                print "input: ", images.l1()
+                print("input: ", images.l1())
                 # do prediction
                 prob = predict(net, images, num_augmentation)[0]
                 idx = np.argsort(-prob)
@@ -100,17 +105,17 @@ def serve(net, label_map, dev, agent, topk=5):
             agent.push(MsgType.kResponse, response)
         elif msg.is_command():
             if MsgType.kCommandStop.equal(msg):
-                print 'get stop command'
+                print('get stop command')
                 agent.push(MsgType.kStatus, "success")
                 break
             else:
-                print 'get unsupported command %s' % str(msg)
+                print('get unsupported command %s' % str(msg))
                 agent.push(MsgType.kStatus, "Unknown command")
         else:
-            print 'get unsupported message %s' % str(msg)
+            print('get unsupported message %s' % str(msg))
             agent.push(MsgType.kStatus, "unsupported msg; going to shutdown")
             break
-    print "server stop"
+    print("server stop")
 
 def main():
     try:
@@ -133,14 +138,14 @@ def main():
 
         net = model.create_net(args.model, args.depth, args.use_cpu)
         if args.use_cpu:
-            print 'Using CPU'
+            print('Using CPU')
             dev = device.get_default_device()
         else:
-            print 'Using GPU'
+            print('Using GPU')
             dev = device.create_cuda_gpu()
             net.to_device(dev)
         model.init_params(net, args.parameter_file)
-        print 'Finish loading models'
+        print('Finish loading models')
 
         labels = np.loadtxt('synset_words.txt', str, delimiter='\t ')
         serve(net, labels, dev, agent)

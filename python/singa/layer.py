@@ -51,11 +51,10 @@ from builtins import str
 from builtins import range
 from past.utils import old_div
 from builtins import object
-from sets import Set
+from builtins import set
 from . import singa_wrap
 from .proto import model_pb2
 from . import tensor
-
 
 engine = 'cudnn'
 '''engine is the prefix of layer identifier.
@@ -1014,7 +1013,7 @@ class RNN(Layer):
         conf = self.conf.rnn_conf
         assert hidden_size > 0, 'Hidden feature size must > 0'
         conf.hidden_size = hidden_size
-        assert rnn_mode in Set(['lstm', 'gru', 'tanh', 'relu']),  \
+        assert rnn_mode in set(['lstm', 'gru', 'tanh', 'relu']),  \
             'rnn mode %s is not available' % (rnn_mode)
         conf.rnn_mode = rnn_mode
         conf.num_stacks = num_stacks
@@ -1130,7 +1129,7 @@ class GRU(RNN):
 
 
 def _check_engine(engine, allowed_engines):
-    assert engine.lower() in Set(allowed_engines), \
+    assert engine.lower() in set(allowed_engines), \
         '%s is not a supported engine. Pls use one of %s' % \
         (engine, ', '.join(allowed_engines))
 
@@ -1147,7 +1146,7 @@ def _create_layer(eng, layer):
     assert eng != 'cudnn' or cudnn_version > 0, 'CUDNN is not enabled, please '\
         'change the engine, e.g., layer.engine=singacpp'
     layer_type = eng + '_' + layer
-    return singa_wrap.CreateLayer(layer_type.lower())
+    return singa_wrap.CreateLayer(layer_type.lower().encode())
 
 
 def _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad):

@@ -1,3 +1,5 @@
+from __future__ import division
+from past.utils import old_div
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -45,7 +47,7 @@ class TestLoss(unittest.TestCase):
         sig.backward()
         l2 = sig.evaluate(True, self.x, self.y)
 
-        p = 1.0 / (1 + np.exp(-self.x_np))
+        p = old_div(1.0, (1 + np.exp(-self.x_np)))
         l = - (self.y_np * np.log(p) + (1-self.y_np) * np.log(1-p))
         self.assertAlmostEqual(l1.l1(), l2)
         self.assertAlmostEqual(l1.l1(), np.average(l))

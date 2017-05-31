@@ -57,7 +57,7 @@ if __name__ == "__main__":
         fout.write(license)
         fout.write("#include <string>\n\n")
         fout.write("namespace singa {\n namespace opencl {\n")
-        for name, path in files.items():
+        for name, path in list(files.items()):
             with open(path, 'r') as fin:
                 src = fin.read()
                 src = repr(src)
