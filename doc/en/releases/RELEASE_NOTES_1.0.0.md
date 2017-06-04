@@ -49,7 +49,7 @@ This release includes following features:
       * [SINGA-199]  Implement Python classes for SGD optimizers
       * [SINGA-198]  Change Layer::Setup API to include input Tensor shapes
       * [SINGA-193]  Add Python layers
-      * [SINGA-192]  Implement optimization algorithms for Singa v1 (nesterove, adagrad, rmsprop)
+      * [SINGA-192]  Implement optimization algorithms for SINGA v1 (nesterove, adagrad, rmsprop)
       * [SINGA-191]  Add "autotune" for CudnnConvolution Layer
       * [SINGA-190]  Add prelu layer and flatten layer
       * [SINGA-189]  Generate python outputs of proto files

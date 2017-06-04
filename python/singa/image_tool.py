@@ -183,6 +183,10 @@ def flip(img):
     new_img = img.transpose(Image.FLIP_LEFT_RIGHT)
     return new_img
 
+def flip_down(img):
+    # print 'flip_down'
+    new_img = img.transpose(Image.FLIP_TOP_BOTTOM)
+    return new_img
 
 def get_list_sample(l, sample_size):
     return [l[i] for i in sorted(random.sample(xrange(len(l)), sample_size))]
@@ -470,6 +474,32 @@ class ImageTool():
                     new_imgs.append(img)
             elif num_case == 2:
                 new_imgs.append(flip(img))
+                new_imgs.append(img)
+            else:
+                raise Exception('num_case must be in [0,2]')
+
+        if inplace:
+            self.imgs = new_imgs
+            return self
+        else:
+            return new_imgs
+
+    def flip_down(self, num_case=1, inplace=True):
+        '''Randomly flip a img top to bottom.
+        Args:
+            num_case: num of cases, must be in {1,2}; if 2, then add the orignal
+                      and flip_down img
+            inplace: inplace imgs or not (return new_imgs)
+        '''
+        new_imgs = []
+        for img in self.imgs:
+            if num_case == 1:
+                if random.randint(0, 1):
+                    new_imgs.append(flip_down(img))
+                else:
+                    new_imgs.append(img)
+            elif num_case == 2:
+                new_imgs.append(flip_down(img))
                 new_imgs.append(img)
             else:
                 raise Exception('num_case must be in [0,2]')

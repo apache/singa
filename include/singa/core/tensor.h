@@ -106,6 +106,11 @@ class Tensor {
 
   bool transpose() const { return transpose_; }
 
+  /// return true if the content of the tensor is initialized
+  bool initailized() const {
+    return block_ != nullptr && block_->initialized();
+  }
+
   /// return number of total elements
   size_t Size() const {
     if (block_ == nullptr) return 0u;

@@ -28,6 +28,7 @@ from singa import loss
 layer.engine = 'singacpp'
 # net.verbose = True
 
+
 class TestFeedForwardNet(unittest.TestCase):
 
     def test_single_input_output(self):
@@ -40,8 +41,9 @@ class TestFeedForwardNet(unittest.TestCase):
         y.set_value(0)
         out, _ = ffn.evaluate(x, y)
         self.assertAlmostEqual(out * 3,
-                - math.log(1.0/(1+math.exp(1))) - math.log(0.5) -math.log(0.5),
-                5);
+                               - math.log(1.0/(1+math.exp(1))) -
+                               math.log(0.5) - math.log(0.5),
+                               5)
 
     def test_mult_inputs(self):
         ffn = net.FeedForwardNet(loss.SoftmaxCrossEntropy())
@@ -52,7 +54,7 @@ class TestFeedForwardNet(unittest.TestCase):
         x1.set_value(1.1)
         x2 = tensor.Tensor((2, 2))
         x2.set_value(0.9)
-        out = ffn.forward(False, {'relu1':x1, 'relu2':x2})
+        out = ffn.forward(False, {'relu1': x1, 'relu2': x2})
         out = tensor.to_numpy(out)
         self.assertAlmostEqual(np.average(out), 2)
 
@@ -68,9 +70,45 @@ class TestFeedForwardNet(unittest.TestCase):
         x1.set_value(1.1)
         x2 = tensor.Tensor((2, 2))
         x2.set_value(0.9)
-        out = ffn.forward(False, {'relu1':x1, 'relu2':x2})
+        out = ffn.forward(False, {'relu1': x1, 'relu2': x2})
         out = tensor.to_numpy(out['split1'])
         self.assertAlmostEqual(np.average(out), 2)
+
+    def test_save_load(self):
+        ffn = net.FeedForwardNet(loss.SoftmaxCrossEntropy())
+        ffn.add(layer.Conv2D('conv', 4, 3, input_sample_shape=(3, 12, 12)))
+        ffn.add(layer.Flatten('flat'))
+        # ffn.add(layer.BatchNorm('bn'))
+        ffn.add(layer.Dense('dense', num_output=4))
+        for pname, pval in zip(ffn.param_names(), ffn.param_values()):
+            pval.set_value(0.1)
+        ffn.save('test_snaphost')
+        ffn.save('test_pickle', use_pickle=True)
+
+        ffn.load('test_snaphost')
+        ffn.load('test_pickle', use_pickle=True)
+
+    def test_train_one_batch(self):
+        ffn = net.FeedForwardNet(loss.SoftmaxCrossEntropy())
+        ffn.add(layer.Conv2D('conv', 4, 3, input_sample_shape=(3, 12, 12)))
+        ffn.add(layer.Flatten('flat'))
+        ffn.add(layer.Dense('dense', num_output=4))
+        for pname, pval in zip(ffn.param_names(), ffn.param_values()):
+            pval.set_value(0.1)
+        x = tensor.Tensor((4, 3, 12, 12))
+        x.gaussian(0, 0.01)
+        y = np.asarray([[1, 0, 0],
+                        [0, 0, 1],
+                        [0, 0, 1],
+                        [0, 1, 0]], dtype=np.int32)
+        y = tensor.from_numpy(y)
+        o = ffn.forward(True, x)
+        ffn.loss.forward(True, o, y)
+        g = ffn.loss.backward()
+        for pname, pvalue, pgrad in ffn.backward(g):
+            self.assertEqual(len(pvalue), len(pgrad))
+            for p, g in zip(pvalue, pgrad):
+                self.assertEqual(p.size(), g.size())
 
 
 if __name__ == '__main__':

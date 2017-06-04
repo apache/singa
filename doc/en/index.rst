@@ -16,35 +16,35 @@
    under the License.
 
 
-.. Singa documentation master file, created by
+.. SINGA documentation master file, created by
    sphinx-quickstart on Sat Jul  9 20:36:57 2016.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
-Welcome to Apache Singa
+Welcome to Apache SINGA
 =======================
 
 Recent News
 -----------
 
-* **Version 1.1** is now available, 12 Feb, 2017. `Download SINGA v1.1.0 <downloads.html>`_
+* **Version 1.1.0** is now available, 12 Feb, 2017. `Download SINGA v1.1.0 <downloads.html>`_
 
 * A tutorial on SINGA V1 will be given at `SGInnovate <https://www.eventbrite.sg/e/ai-eveningssginnovate-apache-singa-tickets-31505061487>`_, on 23 March, 2017
 
-* **Version 1** is now available, 9 Sep, 2016. `Download SINGA v1.0.0 <downloads.html>`_
+* **Version 1.0.0** is now available, 9 Sep, 2016. `Download SINGA v1.0.0 <downloads.html>`_
 
 * SINGA will be presented at `REWORK <https://www.re-work.co/events/deep-learning-singapore/schedule>`_, 21 Oct, 2016.
 
 * SINGA was presented at `PyDataSG <http://www.meetup.com/PyData-SG/events/229691286/>`_, 16 Aug, 2016.
 
-* The **third release** is now available, 20 April, 2016. `Download SINGA v0.3.0 <downloads.html>`_
+* **Version 0.3.0** is now available, 20 April, 2016. `Download SINGA v0.3.0 <downloads.html>`_
 
-* The **second release** is now available, 14 Jan, 2016. `Download SINGA v0.2.0 <downloads.html>`_.
+* **Version 0.2.0** is now available, 14 Jan, 2016. `Download SINGA v0.2.0 <downloads.html>`_.
 
 * SINGA will be presented at `Strata+Hadoop <http://strataconf.com/big-data-conference-sg-2015/public/schedule/detail/45123>`_ on 2 Dec, 2015
 
 * SINGA was presented at `ACM Multimedia <http://www.acmmm.org/2015/at-a-glance/>`_ Best Paper session and Open Source Software Competition session, 26-30 Oct, 2015 (`Slides <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/mm2015.ppt>`_)
 
-* The **first release** is now available, 8 Oct, 2015. `Download SINGA v0.1.0 <downloads.html>`_.
+* **Version 0.1.0** is now available, 8 Oct, 2015. `Download SINGA v0.1.0 <downloads.html>`_.
 
 * SINGA was presented at `workshop on deep learning <http://www.comp.nus.edu.sg/~dbsystem/singa/workshop>`_  held on 16 Sep, 2015
 

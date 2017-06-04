@@ -19,10 +19,10 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 PROJECT(singa)
-SET(PACKAGE_VERSION "1.1.0")
+SET(PACKAGE_VERSION "1.1.1")
 SET(SINGA_MAJOR_VERSION 1)  # 0 -
 SET(SINGA_MINOR_VERSION 1)  # 0 - 9
-SET(SINGA_PATCH_VERSION 0)  # 0 - 99
+SET(SINGA_PATCH_VERSION 1)  # 0 - 99
 MATH(EXPR SINGA_VERSION "${SINGA_MAJOR_VERSION} * 1000 + ${SINGA_MINOR_VERSION} * 100 + ${SINGA_PATCH_VERSION}")
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Thirdparty)
@@ -174,18 +174,18 @@ INSTALL(CODE "execute_process(COMMAND python setup.py install --prefix=${CMAKE_I
 # CPack
 IF(PACKAGE)
 	IF(USE_PYTHON)
-		INSTALL(FILES ${CMAKE_BINARY_DIR}/python/setup.py 
+		INSTALL(FILES ${CMAKE_BINARY_DIR}/python/setup.py
 			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python)
 		INSTALL(FILES ${CMAKE_BINARY_DIR}/python/singa/singa_wrap.py
 			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
 		INSTALL(FILES ${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.so
 			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
-		INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/python 
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa)	
+		INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/python
+			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa)
 		INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/python/singa/proto
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)	
+			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
 	ENDIF()
-    
+
 	IF (USE_MODULES)
 		SET(CORE_DEPENDENCIES "libgoogle-glog-dev, libstdc++6, libc6")
 	ELSE()
@@ -200,8 +200,8 @@ IF(PACKAGE)
 	SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
 	SET(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 	SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://singa.apache.org")
-	SET(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Singa is an Apache Incubating project for developing an open source deep learning library.
-	 The Singa project was initiated by the DB System Group at National University of Singapore in 2014. It focused on distributed deep learning by partitioning the model and data onto nodes in a cluster and parallelize the training. The prototype was accepted by Apache Incubator in March 2015.")
+	SET(CPACK_DEBIAN_PACKAGE_DESCRIPTION "SINGA is an Apache Incubating project for developing an open source deep learning library.
+	 The SINGA project was initiated by the DB System Group at National University of Singapore in 2014. It focused on distributed deep learning by partitioning the model and data onto nodes in a cluster and parallelize the training. The prototype was accepted by Apache Incubator in March 2015.")
 	IF (USE_PYTHON)
 		SET(CPACK_DEBIAN_PACKAGE_DEPENDS ${PYTHON_DEPENDENCIES})
 		SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian/postinst" )

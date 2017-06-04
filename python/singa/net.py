@@ -55,10 +55,13 @@ Example usages::
 """
 
 from .proto.model_pb2 import kTrain, kEval
+from __init__ import __version__
 import tensor
 import layer
 import snapshot
 import cPickle as pickle
+
+import os
 
 '''For display training information, e.g L1 value of layer data'''
 verbose = False
@@ -134,7 +137,7 @@ class FeedForwardNet(object):
         else:
             self.out_sample_shape_of_layer[lyr.name] = [out_shape]
         self.layers.append(lyr)
-        print lyr.name, out_shape
+        print(lyr.name, out_shape)
         return lyr
 
     def param_values(self):
@@ -166,22 +169,26 @@ class FeedForwardNet(object):
 
         Currently only support nets with a single output layer, and a single
         loss objective and metric.
-        TODO(wangwei) consider multiple loss objectives and metrics.
+        For multiple outputs (with multiple loss/metric), please manually
+        call forward, compute loss/metric and call backward. backward() is also
+        more memory efficient than this function.
 
         Args:
             x: input data, a single input Tensor or a dict: layer name -> Tensor
             y: label data, a single input Tensor.
-
         Returns:
             gradients of parameters and the loss and metric values.
         '''
         out = self.forward(kTrain, x)
         l = self.loss.forward(kTrain, out, y)
+        g = self.loss.backward()
+        m = None
         if self.metric is not None:
             m = self.metric.evaluate(out, y)
-            return self.backward(), (l.l1(), m)
-        else:
-            return self.backward(), (l.l1(),None)
+        grads = []  # store all gradient tensors; memory inefficient
+        for _, _, grad, _ in self.backward(g):
+            grads.extend(grad)
+        return grads[::-1], (l.l1(), m)
 
     def evaluate(self, x, y):
         '''Evaluate the loss and metric of the given data.
@@ -247,22 +254,23 @@ class FeedForwardNet(object):
     def forward(self, flag, x, output=[]):
         '''Forward the input(s) through every layer.
 
-        If a layer has inputs from other layers and from x, the data from x is
-        ordered before the data from other layers, e.g., if layer 1 -> layer 2,
-        and x['layer 2'] has data, then the input of layer 2 is
-        flatten([x['layer 2'], output of layer 1])
-
         Args:
             flag: True for training; False for evaluation; could also be
                 model_pb2.kTrain or model_pb2.kEval, or other values for future
                 use.
-            x: a single SINGA tensor or a dictionary: layer name-> singa tensor
+            x: a single SINGA tensor if there is a single input; otherwise, a
+                dictionary: layer name-> singa tensor, for each layer accepting
+                input data. Do not associate a layer with input tensor if it is
+                connected from another layer. For such case, use a Dummy() layer
+                to accept the input data and connect the dummy layer to this
+                layer.
             output(list): a list of layer names whose output would be returned
-                in addition to the default output
+                in addition to the default output.
 
         Returns:
-            if there is only one output layer, return its output tensor(s);
-            else return a dictionary: layer name -> output tensor(s)
+            if there is only one output layer and output arg is empty, return
+                the result from the single output layer; otherwise, return a
+                dictionary: layer name -> output tensor(s)
         '''
         if self.ordered_layers is None:
             self.ordered_layers = self.topo_sort(self.layers, self.src_of_layer)
@@ -303,10 +311,10 @@ class FeedForwardNet(object):
                 disp_src = '+'.join([src.name for src in srcs])
                 disp_src += '-->' + cur.name
                 if type(out) is list:
-                    print '%s: %s' % (disp_src,
-                                      ' '.join([str(o.l1()) for o in out]))
+                    print('%s: %s' % (disp_src,
+                                      ' '.join([str(o.l1()) for o in out])))
                 else:
-                    print '%s: %f' % (disp_src, out.l1())
+                    print('%s: %f' % (disp_src, out.l1()))
             output_of_layer[cur.name] = out
             if cur.name in output:
                 ret[cur.name] = out
@@ -318,11 +326,26 @@ class FeedForwardNet(object):
         else:
             return ret
 
-    def backward(self):
+    def backward(self, dy, output=[]):
         '''Run back-propagation after forward-propagation.
 
+        Args:
+            dy: a single tensor if there is a single loss function; otherwise,
+                a dictionary maps the name of the layer connecting to the loss
+                function -> gradient from the loss function. Do not associate a
+                layer with gradient tensor if it is connecting to another layer.
+                For such case, connect this layer to a Dummy() layer and use the
+                dummy layer to accept the gradient.
+            output(list): a list of layer names whose output gradient would be
+                returned in addition to the param gradient
+
         Returns:
-            a list of gradient tensor for all parameters
+                a geneartor iterator that generates
+                (param_names, param_values, param_grads, layer_grads) after
+                processing each layer h, where the first three lists are for h
+                and the last item is a dictionary which maps
+                layer name -> its output gradient tensor(s). At the end of this
+                function, the key set includes all layers in the output arg.
         '''
         if self.dst_of_layer is None:
             self.dst_of_layer = {}
@@ -332,48 +355,52 @@ class FeedForwardNet(object):
                 srcs = self.src_of_layer[cur.name]
                 for src in srcs:
                     self.dst_of_layer[src.name].append(cur)
-        grad = self.loss.backward()
-        if len(grad.shape) > 1:
-            grad /= grad.shape[0]  # average across the batch
-        # print 'grad', grad.l1()
-        grads = [grad]
-        output_of_layer = {}
-        pgrads = []
+        output_of_layer = {}  # outputs generated by each layer
+        ret = {}  # outputs to return
+        if type(dy) is dict:
+            input_of_layer = dy
+        else:
+            assert isinstance(dy, tensor.Tensor), \
+                'The inputs of a net should be dict or a single tensor'
+            input_of_layer = {self.ordered_layers[-1].name: dy}
         for cur in reversed(self.ordered_layers):
+            inputs = []
+            if cur.name in input_of_layer:
+                if type(input_of_layer[cur.name]) is list:
+                    inputs.extend(input_of_layer[cur.name])
+                else:
+                    inputs.append(input_of_layer[cur.name])
             for dst in self.dst_of_layer[cur.name]:
                 outputs = output_of_layer[dst.name]
                 if type(outputs) == list:
                     assert len(outputs) > 0, \
                             'the gradient from layer %s is empty' % dst.name
-                    grads.append(outputs[0])
+                    inputs.append(outputs[0])
                     outputs.pop(0)
                 else:
-                    grads.append(outputs)
+                    inputs.append(outputs)
                     output_of_layer[dst.name] = []
                 # del output_of_layer[dst.name]
-            if len(grads) == 1:
-                grads = grads[0]
-            outs, _pgrads = cur.backward(kTrain, grads)
-            pgrads.append(_pgrads)
+            if len(inputs) == 1:
+                inputs = inputs[0]
+            outs, pgrads = cur.backward(kTrain, inputs)
             if verbose:
                 disp_src = '+'.join(
                         [dst.name for dst in self.dst_of_layer[cur.name]])
                 disp_src += '-->' + cur.name
                 if type(outs) is list:
-                    print '%s: %s' % (disp_src,
-                                      ' '.join([str(o.l1()) for o in outs]))
+                    print('%s: %s' % (disp_src,
+                                      ' '.join([str(o.l1()) for o in outs])))
                 else:
-                    print '%s: %f' % (disp_src, outs.l1())
+                    print('%s: %f' % (disp_src, outs.l1()))
             if type(outs) is list:
                 output_of_layer[cur.name] = outs[::-1]
             else:
                 output_of_layer[cur.name] = outs
-            grads = []
-
-        ret = []
-        for pgrad in reversed(pgrads):
-            ret.extend(pgrad)
-        return ret
+            if cur.name in output:
+                ret[cur.name] = outs
+            # ret.update(output_of_layer)
+            yield (cur.param_names(), cur.param_values(), pgrads, ret)
 
     def save(self, f, buffer_size=10, use_pickle=False):
         '''Save model parameters using io/snapshot.
@@ -388,12 +415,18 @@ class FeedForwardNet(object):
         '''
         if use_pickle:
             params = {}
+            # since SINGA>=1.1.1  (1101)
+            params['SINGA_VERSION'] = __version__
             for (name, val) in zip(self.param_names(), self.param_values()):
                 val.to_host()
                 params[name] = tensor.to_numpy(val)
-                with open(f, 'wb') as fd:
-                    pickle.dump(params, fd)
+            if not f.endswith('.pickle'):
+                f = f + '.pickle'
+            with open(f, 'wb') as fd:
+                pickle.dump(params, fd)
         else:
+            if f.endswith('.bin'):
+                f = f[0:-4]
             sp = snapshot.Snapshot(f, True, buffer_size)
             for (name, val) in zip(self.param_names(), self.param_values()):
                 val.to_host()
@@ -404,35 +437,48 @@ class FeedForwardNet(object):
 
         Please refer to the argument description in save().
         '''
+        version = 0
+
+        def get_name(name):
+            if version < 1101:
+                idx = name.rfind('/')
+                assert idx > 0, '/ must be in the parameter name'
+                name = name[:idx] + '_' + name[idx+1:]
+            return name
+
         if use_pickle:
-            print 'NOTE: If your model was saved using Snapshot, '\
-                    'then set use_pickle=False for loading it'
+            print('NOTE: If your model was saved using Snapshot, '
+                  'then set use_pickle=False for loading it')
+            if not os.path.exists(f):
+                # guess the correct path
+                if f.endswith('.pickle'):
+                    f = f[0:-7]
+                else:
+                    f = f + '.pickle'
+            assert os.path.exists(f), 'file not exists %s w/o .pickle' % f
             with open(f, 'rb') as fd:
                 params = pickle.load(fd)
-                for name, val in zip(self.param_names(), self.param_values()):
-                    if name not in params:
-                        print 'Param: %s missing in the checkpoint file' % name
-                        continue
-                    try:
-                        val.copy_from_numpy(params[name])
-                    except AssertionError as err:
-                        print 'Error from copying values for param: %s' % name
-                        print 'shape of param vs checkpoint', \
-                                val.shape, params[name].shape
-                        raise err
         else:
-            print 'NOTE: If your model was saved using pickle, '\
-                    'then set use_pickle=True for loading it'
+            print('NOTE: If your model was saved using pickle, '
+                  'then set use_pickle=True for loading it')
+            if f.endswith('.bin'):
+                f = f[0:-4]
             sp = snapshot.Snapshot(f, False, buffer_size)
             params = sp.read()
-            for (name, val) in zip(self.param_names(), self.param_values()):
-                if name not in params:
-                    print 'Param: %s missing in the checkpoint file' % name
-                    continue
-                try:
+        if 'SINGA_VERSION' in params:
+            version = params['SINGA_VERSION']
+        for name, val in zip(self.param_names(), self.param_values()):
+            name = get_name(name)
+            if name not in params:
+                print('Param: %s missing in the checkpoint file' % name)
+                continue
+            try:
+                if isinstance(params[name], tensor.Tensor):
                     val.copy_data(params[name])
-                except AssertionError as err:
-                    print 'Error from copying values for param: %s' % name
-                    print 'shape of param vs checkpoint', \
-                            val.shape, params[name].shape
-                    raise err
+                else:
+                    val.copy_from_numpy(params[name])
+            except AssertionError as err:
+                print('Error from copying values for param: %s' % name)
+                print('shape of param vs checkpoint',
+                      val.shape, params[name].shape)
+                raise err

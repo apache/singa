@@ -69,7 +69,7 @@ def traverse(m, idx, params, param_names):
         idx, index for the current cursor of param_names
         params, an empty dictionary (name->numpy) to dump the params via pickle;
             or a list of tensor objects which should be in the same order as
-            param_names, called to initialize net created in Singa directly
+            param_names, called to initialize net created in SINGA directly
             using param values from torch checkpoint file.
 
     Returns:
