@@ -32,6 +32,7 @@ Example usage::
 import random
 import numpy as np
 from PIL import Image, ImageEnhance
+import math
 
 
 def load_img(path, grayscale=False):
@@ -127,6 +128,11 @@ def resize(img, small_size):
     # print 'resize to (%d,%d)' % new_size
     return new_img
 
+def resize_tuple(img,patch):
+    ''' Resize the image to the given tuple.
+    '''
+    new_img = img.resize(patch)
+    return new_img
 
 def color_cast(img, offset):
     '''Add a random value from [-offset, offset] to each channel'''
@@ -431,31 +437,40 @@ class ImageTool():
         else:
             return new_imgs
         
-    def random_size_crop(self,inplace=True):
-            '''Crop the image at random offset and get a patch of random size.
-            Args:
-                inplace(Boolean): replace the internal images list with the patches
-                                  if True; otherwise, return the patches.
-            '''
-            new_imgs = []
-            for img in self.imgs:
-                patch=[0,0]
-                patch[0]=random.randint(0,img.size[0])
-                patch[1]=random.randint(0,img.size[1])
-                assert img.size[0] >= patch[0] and img.size[1] >= patch[1],\
-                    'img size (%d, %d), patch size (%d, %d)' % \
-                    (img.size[0], img.size[1], patch[0], patch[1])
-                left_offset = random.randint(0, img.size[0] - patch[0])
-                top_offset = random.randint(0, img.size[1] - patch[1])
-                box = (left_offset, top_offset,
-                       left_offset + patch[0], top_offset + patch[1])
-                new_imgs.append(img.crop(box))
+    def random_crop_resize(self,patch,inplace=True):
+        ''' Crop of the image at a random size between 0.08 to 1 of input image size
+            and random aspect ratio between 3/4 to 4/3 of input image aspect ratio is made.
+            This crop is then resized to the given patch size.
+        Args:
+            patch(tuple): width and height of the patch
+            inplace(Boolean): replace the internal images list with the patches
+                              if True; otherwise, return the patches.
+        '''
+        new_imgs = []
+        for img in self.imgs:
+            area=img.size[0]*img.size[1]
+            target_area = random.uniform(0.08, 1.0) * area
+            aspect_ratio = random.uniform(3. / 4, 4. / 3)
+            crop_x = int(round(math.sqrt(target_area * aspect_ratio)))
+            crop_y = int(round(math.sqrt(target_area / aspect_ratio)))
+            assert img.size[0] >= patch[0] and img.size[1] >= patch[1],\
+                'img size (%d, %d), patch size (%d, %d)' % \
+                (img.size[0], img.size[1], patch[0], patch[1])
+            left_offset = random.randint(0, img.size[0] - crop_x)
+            print left_offset
+            top_offset = random.randint(0, img.size[1] - crop_y)
+            print top_offset
+            box = (left_offset, top_offset,
+                   left_offset + crop_x, top_offset + crop_y)
+            img_croped=img.crop(box)
+            img_resized=resize_tuple(img_croped,patch)
+            new_imgs.append(img_resized)
 
-            if inplace:
-                self.imgs = new_imgs
-                return self
-            else:
-                return new_imgs
+        if inplace:
+            self.imgs = new_imgs
+            return self
+        else:
+            return new_imgs
         
     def flip(self, num_case=1, inplace=True):
         '''Randomly flip a img left to right.
