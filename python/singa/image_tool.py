@@ -63,17 +63,18 @@ def crop(img, patch, position):
     if position == 'left_top':
         left, upper = 0, 0
     elif position == 'left_bottom':
-        left, upper = 0, img.size[1]-patch[1]
+        left, upper = 0, img.size[1] - patch[1]
     elif position == 'right_top':
-        left, upper = img.size[0]-patch[0], 0
+        left, upper = img.size[0] - patch[0], 0
     elif position == 'right_bottom':
-        left, upper = img.size[0]-patch[0], img.size[1]-patch[1]
+        left, upper = img.size[0] - patch[0], img.size[1] - patch[1]
     elif position == 'center':
-        left, upper = (img.size[0]-patch[0])/2, (img.size[1]-patch[1])/2
+        left, upper = (img.size[0] - patch[0]) / \
+            2, (img.size[1] - patch[1]) / 2
     else:
         raise Exception('position is wrong')
 
-    box = (left, upper, left+patch[0], upper+patch[1])
+    box = (left, upper, left + patch[0], upper + patch[1])
     new_img = img.crop(box)
     # print "crop to box %d,%d,%d,%d" % box
     return new_img
@@ -92,19 +93,19 @@ def crop_and_resize(img, patch, position):
         left, upper = 0, 0
         right, bottom = size[1], size[1]
     elif position == 'center':
-        left, upper = (size[0]-size[1])/2, 0
-        right, bottom = (size[0]+size[1])/2, size[1]
+        left, upper = (size[0] - size[1]) / 2, 0
+        right, bottom = (size[0] + size[1]) / 2, size[1]
     elif position == 'right':
-        left, upper = size[0]-size[1], 0
+        left, upper = size[0] - size[1], 0
         right, bottom = size[0], size[1]
     elif position == 'top':
         left, upper = 0, 0
         right, bottom = size[0], size[0]
     elif position == 'middle':
-        left, upper = 0, (size[1]-size[0])/2
-        right, bottom = size[0], (size[1]+size[0])/2
+        left, upper = 0, (size[1] - size[0]) / 2
+        right, bottom = size[0], (size[1] + size[0]) / 2
     elif position == 'bottom':
-        left, upper = 0, size[1]-size[0]
+        left, upper = 0, size[1] - size[0]
         right, bottom = size[0], size[1]
     else:
         raise Exception('position is wrong')
@@ -121,11 +122,23 @@ def resize(img, small_size):
     '''Resize the image to make the smaller side be at the given size'''
     size = img.size
     if size[0] < size[1]:
-        new_size = (small_size, int(small_size*size[1]/size[0]))
+        new_size = (small_size, int(small_size * size[1] / size[0]))
     else:
-        new_size = (int(small_size*size[0]/size[1]), small_size)
+        new_size = (int(small_size * size[0] / size[1]), small_size)
     new_img = img.resize(new_size)
     # print 'resize to (%d,%d)' % new_size
+    return new_img
+
+
+def scale(img, small_size):
+    '''Scale the image to make the smaller side be at the give size
+        This method is to replace original resize'''
+    return resize(img, small_size)
+
+
+def resize_by_hw(img, (height, width)):
+    '''Resize the image to be the given width and height'''
+    new_img = img.resize((width, height))
     return new_img
 
 
@@ -143,7 +156,7 @@ def color_cast(img, offset):
             for c in range(3):
                 if cast_value[c] == 0:
                     continue
-                v = x[w][h][c]+cast_value[c]
+                v = x[w][h][c] + cast_value[c]
                 if v < 0:
                     v = 0
                 if v > 255:
@@ -163,7 +176,7 @@ def enhance(img, scale):
     for i in range(4):
         r = random.randint(0, 1)
         if r:
-            enhance_value[i] = random.uniform(1-scale, 1+scale)
+            enhance_value[i] = random.uniform(1 - scale, 1 + scale)
     if not enhance_value[0] == 1.0:
         enhancer = ImageEnhance.Color(img)
         img = enhancer.enhance(enhance_value[0])
@@ -184,10 +197,12 @@ def flip(img):
     new_img = img.transpose(Image.FLIP_LEFT_RIGHT)
     return new_img
 
+
 def flip_down(img):
     # print 'flip_down'
     new_img = img.transpose(Image.FLIP_TOP_BOTTOM)
     return new_img
+
 
 def get_list_sample(l, sample_size):
     return [l[i] for i in sorted(random.sample(xrange(len(l)), sample_size))]
@@ -230,6 +245,22 @@ class ImageTool():
         '''Return the total number of augmentations to each image'''
         pass
 
+    def scale_by_range(self, rng, inplace=True):
+        '''
+        Args:
+            rng: a tuple (begin,end), include begin, exclude end
+            inplace: inplace imgs or not ( return new_imgs)
+        '''
+        return self.resize_by_range(rng, inplace)
+
+    def scale_by_list(self, size_list, num_case=1, inplace=True):
+        '''
+        Args:
+            num_case: num of resize cases, must be <= the length of size_list
+            inplace: inplace imgs or not ( return new_imgs)
+        '''
+        return self.resize_by_list(size_list, num_case, inplace)
+
     def resize_by_range(self, rng, inplace=True):
         '''
         Args:
@@ -258,6 +289,45 @@ class ImageTool():
 
             for small_size in small_sizes:
                 new_img = resize(img, small_size)
+                new_imgs.append(new_img)
+        if inplace:
+            self.imgs = new_imgs
+            return self
+        else:
+            return new_imgs
+
+    def resize_by_hw_range(self, rng, inplace=True):
+        '''
+        Args:
+            rng: a tuple ((hbegin[0], hend[0]), (wbegin[1], wend[1])), include begin, exclude end
+            inplace: inplace imgs or not (return new_imgs)
+        '''
+        if rng[0][1] - rng[0][0] != rng[1][1] - rng[1][0]:
+            raise Exception('num of widths and heights must be the same!')
+        heights = range(rng[0][0], rng[0][1])
+        widths = range(rng[1][0], rng[1][1])
+        size_list = zip(heights, widths)
+        return self.resize_by_hw_list(size_list, 1, inplace)
+
+    def resize_by_hw_list(self, size_list, num_case=1, inplace=True):
+        '''
+        Args:
+            num_case: num of resize cases, must be <= the length of size_list
+            inplace: inplace imgs or not (return new_imgs)
+        '''
+        new_imgs = []
+        if num_case < 1 or num_case > len(size_list):
+            raise Exception(
+                'num_case must be smaller in [0,%d(length of size_list)]' %
+                len(size_list))
+        for img in self.imgs:
+            if num_case == len(size_list):
+                small_sizes = size_list
+            else:
+                small_sizes = get_list_sample(size_list, num_case)
+
+            for small_size in small_sizes:
+                new_img = resize_by_hw(img, small_size)
                 new_imgs.append(new_img)
         if inplace:
             self.imgs = new_imgs
@@ -385,7 +455,7 @@ class ImageTool():
         patch3 = 3
         if num_case < 1 or num_case > patch5 + patch3:
             raise Exception(
-                'num_case must be in [0,%d]' % (patch5+patch3))
+                'num_case must be in [0,%d]' % (patch5 + patch3))
         if num_case == patch5 + patch3:
             count = patch5
         else:
@@ -398,8 +468,8 @@ class ImageTool():
         new_imgs = []
         if count > 0:
             new_imgs += self.crop5(patch, count, False)
-        if num_case-count > 0:
-            new_imgs += self.crop3(patch, num_case-count, False)
+        if num_case - count > 0:
+            new_imgs += self.crop3(patch, num_case - count, False)
 
         if inplace:
             self.imgs = new_imgs
