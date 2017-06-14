@@ -182,12 +182,13 @@ class FeedForwardNet(object):
         out = self.forward(kTrain, x)
         l = self.loss.forward(kTrain, out, y)
         g = self.loss.backward()
+        g /= x.shape[0]
         m = None
         if self.metric is not None:
             m = self.metric.evaluate(out, y)
         grads = []  # store all gradient tensors; memory inefficient
         for _, _, grad, _ in self.backward(g):
-            grads.extend(grad)
+            grads.extend(grad[::-1])
         return grads[::-1], (l.l1(), m)
 
     def evaluate(self, x, y):

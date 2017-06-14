@@ -80,13 +80,13 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
           &n, &c, &h, &w, &s, &s, &s, &s));
     if (shape[0] != static_cast<size_t>(n))
       InitCudnn(shape, dtype);
-    CHECK(input.shape(1) == static_cast<size_t>(c)
-        && input.shape(2) == static_cast<size_t>(h)
-        && input.shape(3) == static_cast<size_t>(w))
+    CHECK(shape[1] == static_cast<size_t>(c)
+        && shape[2] == static_cast<size_t>(h)
+        && shape[3] == static_cast<size_t>(w))
       << "input sample shape should not change"
       << "previous shape " << c << ", " << h << ", " << w
-      << "current shape " << input.shape(1) << ", " << input.shape(2) << ", "
-      << input.shape(3);
+      << "current shape " << shape[1] << ", " << shape[2] << ", "
+      << shape[3];
   }
 
 
