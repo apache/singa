@@ -105,7 +105,7 @@ class TestFeedForwardNet(unittest.TestCase):
         o = ffn.forward(True, x)
         ffn.loss.forward(True, o, y)
         g = ffn.loss.backward()
-        for pname, pvalue, pgrad in ffn.backward(g):
+        for pname, pvalue, pgrad, _ in ffn.backward(g):
             self.assertEqual(len(pvalue), len(pgrad))
             for p, g in zip(pvalue, pgrad):
                 self.assertEqual(p.size(), g.size())
