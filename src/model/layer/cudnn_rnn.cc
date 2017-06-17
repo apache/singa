@@ -60,7 +60,7 @@ void CudnnRNN::ToDevice(std::shared_ptr<Device> device) {
 
 void CudnnRNN::DestroyIODescriptors() {
   if (x_descs_ != nullptr) {
-    for (size_t i = 0; i < seq_length_; i++) {
+    for (size_t i = 0; i < max_length_; i++) {
       CUDNN_CHECK(cudnnDestroyTensorDescriptor(x_descs_[i]));
       CUDNN_CHECK(cudnnDestroyTensorDescriptor(dx_descs_[i]));
     }
@@ -68,7 +68,7 @@ void CudnnRNN::DestroyIODescriptors() {
     delete [] dx_descs_;
   }
   if (y_descs_ != nullptr) {
-    for (size_t i = 0; i < seq_length_; i++) {
+    for (size_t i = 0; i < max_length_; i++) {
       CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_descs_[i]));
       CUDNN_CHECK(cudnnDestroyTensorDescriptor(dy_descs_[i]));
     }
@@ -79,8 +79,9 @@ void CudnnRNN::DestroyIODescriptors() {
 
 void CudnnRNN::UpdateIODescriptors(size_t len, const vector<Tensor> &inputs) {
   bool reset = false;
-  if (seq_length_ < len) {
+  if (max_length_ < len) {
     DestroyIODescriptors();
+    max_length_ = len;
     x_descs_ = new cudnnTensorDescriptor_t[len];
     dx_descs_ = new cudnnTensorDescriptor_t[len];
     y_descs_ = new cudnnTensorDescriptor_t[len];
