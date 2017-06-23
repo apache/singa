@@ -299,7 +299,7 @@ just copy the dll files into the same folder as test_singa.exe
 * Q: Error from 'import singa' using PySINGA installed from wheel.
 
     A: Please check the detailed error from `python -c  "from singa import _singa_wrap"`. Sometimes it is
-    caused by the dependent libraries, e.g. there are multiple versions of protobuf or missing of cudnn. Following
+    caused by the dependent libraries, e.g. there are multiple versions of protobuf, missing of cudnn, numpy version mismatch. Following
     steps show the solutions for different cases
     1. Check the cudnn and cuda and gcc versions, cudnn5 and cuda7.5 and gcc4.8/4.9 are preferred. if gcc is 5.0, then downgrade it.
        If cudnn is missing or not match with the wheel version, you can download the correct version of cudnn into ~/local/cudnn/ and
@@ -316,9 +316,18 @@ just copy the dll files into the same folder as test_singa.exe
             $ source ~/.bashrc
 
     3. If it cannot find other libs including python, then create virtual env using pip or conda;
-       and then install SINGA via
 
-            $ pip install --upgrade <url of singa wheel>
+    4. If it is not caused by the above reasons, go to the folder of `_singa_wrap.so`,
+
+            $ python
+            >> import importlib
+            >> importlib.import_module('_singa_wrap')
+
+      Check the error message. For example, if the numpy version mismatches, the error message would be,
+
+            RuntimeError: module compiled against API version 0xb but this version of numpy is 0xa
+
+      Then you need to upgrade the numpy.
 
 
 * Q: Error from running `cmake ..`, which cannot find the dependent libraries.
@@ -417,7 +426,7 @@ just copy the dll files into the same folder as test_singa.exe
 
 * Q: When I run PySINGA in Mac OS X, I got the error "Fatal Python error: PyThreadState_Get: no current thread  Abort trap: 6"
 
-    A: This error happens typically when you have multiple version of Python on your system,
+    A: This error happens typically when you have multiple version of Python on your system and you installed SINGA via pip (this problem is resolved for installation via conda),
     e.g, the one comes with the OS and the one installed by Homebrew. The Python linked by PySINGA must be the same as the Python interpreter.
     You can check your interpreter by `which python` and check the Python linked by PySINGA via `otool -L <path to _singa_wrap.so>`.
     To fix this error, compile SINGA with the correct version of Python.

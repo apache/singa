@@ -16,9 +16,9 @@ build:
 requirements:
   build:
     - python 2.7*
-    - numpy >=1.10
-    - swig >=3.0
-    - openblas >=0.2.10
+    - numpy 1.10
+    - swig 3.0
+    - openblas 0.2.10
     - protobuf 3.0.0
     - glog 0.3.4
     - gcc 4.8.5 # [linux]
@@ -26,8 +26,8 @@ requirements:
   run:
     - python 2.7*
     - numpy >=1.10
-    - protobuf 3.0.0
-    - glog 0.3.4
+    - protobuf >=3.0.0
+    - glog >=0.3.4
     - openblas >=0.2.10
     - flask >=0.10.1
     - flask-cors >=3.0.2
