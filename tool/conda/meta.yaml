@@ -18,7 +18,7 @@ requirements:
     - python 2.7*
     - numpy 1.10
     - swig 3.0
-    - openblas 0.2.10
+    - openblas 0.2.14
     - protobuf 3.0.0
     - glog 0.3.4
     - gcc 4.8.5 # [linux]
@@ -28,7 +28,7 @@ requirements:
     - numpy >=1.10
     - protobuf >=3.0.0
     - glog >=0.3.4
-    - openblas >=0.2.10
+    - openblas >=0.2.14
     - flask >=0.10.1
     - flask-cors >=3.0.2
     - pillow >=2.3.0
