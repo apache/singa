@@ -16,8 +16,8 @@ build:
 requirements:
   build:
     - python 2.7*
-    - numpy 1.10
-    - swig 3.0
+    - numpy 1.10.0
+    - swig 3.0.2
     - openblas 0.2.14
     - protobuf 3.0.0
     - glog 0.3.4
@@ -25,7 +25,7 @@ requirements:
 
   run:
     - python 2.7*
-    - numpy >=1.10
+    - numpy >=1.10.0
     - protobuf >=3.0.0
     - glog >=0.3.4
     - openblas >=0.2.14
