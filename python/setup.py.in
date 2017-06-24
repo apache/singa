@@ -70,6 +70,7 @@ setup(
 	'xmlrunner',
 	'tqdm',
 	'ipywidgets',
+	'matplotlib',
         ],
 
     #List additional groups of dependencies here (e.g. development
