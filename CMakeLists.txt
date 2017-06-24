@@ -195,7 +195,7 @@ IF(PACKAGE)
 	IF(PYTHON2)
 		SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python-dev, libpython2.7, python-pip, python-numpy, python-pillow")
 	ELSE()
-		SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python3, python3-dev, python3-pip, python3-numpy, python3-pillow")
+		SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python3, python3-dev, python3-pip, python3-numpy, python3-pillow, python3-matplotlib")
 	ENDIF()
 
 	SET(CPACK_GENERATOR "DEB")
