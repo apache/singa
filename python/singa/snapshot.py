@@ -36,7 +36,6 @@ from builtins import object
 from . import singa_wrap as singa
 from . import tensor
 
-
 class Snapshot(object):
     ''' Class and member functions for singa::Snapshot.
 
@@ -58,7 +57,7 @@ class Snapshot(object):
             param_name (string): name of the parameter
             param_val (Tensor): value tensor of the parameter
         '''
-        self.snapshot.Write(str(param_name).encode(), param_val.singa_tensor)
+        self.snapshot.Write(param_name.encode(), param_val.singa_tensor)
 
     def read(self):
         '''Call read method to load all (param_name, param_val)

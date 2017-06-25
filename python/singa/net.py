@@ -473,6 +473,7 @@ class FeedForwardNet(object):
                 f = f[0:-4]
             sp = snapshot.Snapshot(f, False, buffer_size)
             params = sp.read()
+        version = __version__
         if 'SINGA_VERSION' in params:
             version = params['SINGA_VERSION']
         for name, val in zip(self.param_names(), self.param_values()):
