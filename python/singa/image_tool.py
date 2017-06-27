@@ -53,11 +53,11 @@ def crop(img, patch, position):
         and center.
     '''
     if img.size[0] < patch[0]:
-        raise Exception(
-            'img size[0] %d is smaller than patch[0]: %d' % (img[0], patch[0]))
+        raise Exception('img size[0] %d is smaller than patch[0]: %d'
+                        % (img.size[0], patch[0]))
     if img.size[1] < patch[1]:
-        raise Exception(
-            'img size[1] %d is smaller than patch[1]: %d' % (img[1], patch[1]))
+        raise Exception('img size[1] %d is smaller than patch[1]: %d'
+                        % (img.size[1], patch[1]))
 
     if position == 'left_top':
         left, upper = 0, 0

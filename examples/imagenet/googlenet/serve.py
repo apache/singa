@@ -139,7 +139,7 @@ def create_net(shape, weight_path='bvlc_googlenet.pickle'):
     # prob=net.add(Softmax('softmax'))
 
     net.load(weight_path, use_pickle=True)
-    print 'total num of params %d' % (len(net.param_names()))
+    print('total num of params %d' % (len(net.param_names())))
     # SINGA and Caffe have different layout for the weight matrix of the dense
     # layer
     for key, val in zip(net.param_names(), net.param_values()):
@@ -153,7 +153,7 @@ def create_net(shape, weight_path='bvlc_googlenet.pickle'):
 
 def serve(agent, use_cpu, parameter_file, topk=5):
     if use_cpu:
-        print 'running with cpu'
+        print('running with cpu')
         dev = device.get_default_device()
         layer.engine = 'singacpp'
     else:

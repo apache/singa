@@ -340,7 +340,10 @@ class Conv2D(Layer):
         conf.num_output = nb_kernels
         conf.prefer = cudnn_prefer
         conf.workspace_byte_limit = workspace_byte_limit
-        conf = _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad)
+        self.kernel = kernel
+        self.stride = stride
+        self.pad = pad
+        self.border_mode = border_mode
         conf.bias_term = use_bias
         # TODO(wangwei) enable data format for cpp code
         # conf.data_format = data_format
@@ -364,6 +367,21 @@ class Conv2D(Layer):
         self.layer = _create_layer(engine, 'Convolution')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
+
+    def setup(self, in_shape):
+        '''Set up the kernel, stride and padding; then call the C++ setup
+        function to create params and set some meta data.
+
+        Args:
+                in_shapes is a tuple of int for the input sample shape
+        '''
+        if self.has_setup:
+            return
+        _set_kernel_stride_pad(self.conf.convolution_conf, self.kernel,
+                               self.stride, self.border_mode, self.pad,
+                               in_shape)
+        self.layer.Setup(list(in_shape), self.conf.SerializeToString())
+        self.has_setup = True
 
 
 class Conv1D(Conv2D):
@@ -417,12 +435,29 @@ class Pooling2D(Layer):
         assert data_format == 'NCHW', 'Not supported data format: %s ' \
             'only "NCHW" is enabled currently' % (data_format)
         conf = self.conf.pooling_conf
-        conf = _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad)
         conf.pool = mode
+        self.kernel = kernel
+        self.stride = stride
+        self.pad = pad
+        self.border_mode = border_mode
         _check_engine(engine, ['cudnn', 'singacpp', 'singacl'])
         self.layer = _create_layer(engine, 'Pooling')
         if input_sample_shape is not None:
             self.setup(input_sample_shape)
+
+    def setup(self, in_shape):
+        '''Set up the kernel, stride and padding; then call the C++ setup
+        function to create params and set some meta data.
+
+        Args:
+            in_shapes is a tuple of int for the input sample shape
+        '''
+        if self.has_setup:
+            return
+        _set_kernel_stride_pad(self.conf.pooling_conf, self.kernel, self.stride,
+                               self.border_mode, self.pad, in_shape)
+        self.layer.Setup(list(in_shape), self.conf.SerializeToString())
+        self.has_setup = True
 
 
 class MaxPooling2D(Pooling2D):
@@ -1144,8 +1179,20 @@ def _create_layer(eng, layer):
     return singa_wrap.CreateLayer(layer_type.lower())
 
 
-def _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad):
-    """Private function called by Convolution2D and Pooling2D."""
+def _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad, in_shape):
+    """Private function called by Convolution2D and Pooling2D.
+
+    PyTorch:
+        http://pytorch.org/docs/nn.html#pooling-layers
+        floor for both conv and pooling
+    Caffe:
+        https://github.com/BVLC/caffe/issues/1318#issuecomment-59594323
+        floor for conv and ceil for pooling
+    Tensorflow: https://www.tensorflow.org/api_guides/python/nn#Convolution
+        SAME  outsize = ceil(insize/stride),
+              pad_h_w = max((outsize-1)*stride+k-insize, 0)
+        VALID same as pytorch
+    """
     if isinstance(kernel, tuple):
         conf.kernel_h = kernel[0]
         conf.kernel_w = kernel[1]
@@ -1162,16 +1209,20 @@ def _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad):
     if pad is None:
         # TODO(wangwei) check the border mode
         if mode == 'same':
-            assert conf.kernel_h % 2 == 1 and conf.kernel_w % 2 == 1, \
-                'Must use odd kernel for mode="same", kernel is (%d, %d)' % (
-                    conf.kernel_h, conf.kernel_w)
-            pad = (conf.kernel_h / 2, conf.kernel_w / 2)
+            out_h = in_shape[1] / conf.stride_h
+            out_w = in_shape[2] / conf.stride_w
+            ph = max((out_h - 1) * conf.stride_h + conf.kernel_h - in_shape[1],
+                     0)
+            pw = max((out_w - 1) * conf.stride_w + conf.kernel_w - in_shape[2],
+                     0)
+            assert ph % 2 == 0 and pw % 2 == 0, 'ph=%d and pw=%d are not even' \
+                % (ph, pw)
+            pad = (ph / 2, pw / 2)
         elif mode == 'valid':
             pad = (0, 0)
         else:
             assert False, ('Unsupported border_mode: %s. '
-                           'Please use {"valid", "same"}' % border_mode)
-        assert isinstance(pad, tuple), 'pad should be a tuple'
+                           'Please use {"VALID", "SAME"}' % border_mode)
     if isinstance(pad, tuple):
         conf.pad_h = pad[0]
         conf.pad_w = pad[1]
