@@ -85,7 +85,7 @@ class RNN : public Layer {
   std::stack<Tensor> buf_;
   bool has_cell_ = false;
   size_t num_directions_ = 1;
-  size_t input_size_ = 0, hidden_size_ = 0, num_stacks_ = 0, seq_length_ = 0;
+  size_t input_size_ = 0, hidden_size_ = 0, num_stacks_ = 0, seq_length_ = 0, max_length_ = 0;
   size_t batch_size_ = 0;
   size_t seed_ = 0x1234567;
   float dropout_ = 0.0f;
