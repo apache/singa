@@ -32,6 +32,7 @@ Example usage::
 import random
 import numpy as np
 from PIL import Image, ImageEnhance
+import math
 
 
 def load_img(path, grayscale=False):
@@ -424,6 +425,39 @@ class ImageTool():
             box = (left_offset, top_offset,
                    left_offset + patch[0], top_offset + patch[1])
             new_imgs.append(img.crop(box))
+
+        if inplace:
+            self.imgs = new_imgs
+            return self
+        else:
+            return new_imgs
+
+    def random_crop_resize(self,patch,inplace=True):
+        ''' Crop of the image at a random size between 0.08 to 1 of input image size
+            and random aspect ratio between 3/4 to 4/3 of input image aspect ratio is made.
+            This crop is then resized to the given patch size.
+        Args:
+            patch(tuple): width and height of the patch
+            inplace(Boolean): replace the internal images list with the patches
+                              if True; otherwise, return the patches.
+        '''
+        new_imgs = []
+        for img in self.imgs:
+            area=img.size[0]*img.size[1]
+            target_area = random.uniform(0.08, 1.0) * area
+            aspect_ratio = random.uniform(3. / 4, 4. / 3)
+            crop_x = int(round(math.sqrt(target_area * aspect_ratio)))
+            crop_y = int(round(math.sqrt(target_area / aspect_ratio)))
+            assert img.size[0] >= patch[0] and img.size[1] >= patch[1],\
+                'img size (%d, %d), patch size (%d, %d)' % \
+                (img.size[0], img.size[1], patch[0], patch[1])
+            left_offset = random.randint(0, img.size[0] - crop_x)
+            top_offset = random.randint(0, img.size[1] - crop_y)
+            box = (left_offset, top_offset,
+                   left_offset + crop_x, top_offset + crop_y)
+            img_croped=img.crop(box)
+            img_resized=img_croped.resize(patch)
+            new_imgs.append(img_resized)
 
         if inplace:
             self.imgs = new_imgs
