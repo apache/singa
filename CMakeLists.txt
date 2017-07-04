@@ -179,7 +179,7 @@ IF(PACKAGE)
 		INSTALL(FILES ${CMAKE_BINARY_DIR}/python/singa/singa_wrap.py
 			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
 		INSTALL(FILES ${CMAKE_BINARY_DIR}/python/singa/_singa_wrap.so
-			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python/singa)
+			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa/python)
 		INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/python
 			DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/singa)
 		INSTALL(DIRECTORY ${CMAKE_BINARY_DIR}/python/singa/proto

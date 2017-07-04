@@ -47,11 +47,18 @@ fi
 
 # compile singa c++
 cd build
-cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON $EXTRA_ARGS ../
+cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON -DPACKAGE=ON $EXTRA_ARGS ../
 make
 # unit test cpp code
 ./bin/test_singa --gtest_output=xml:./gtest.xml
 # unit test python code
 cd ../test/python
 PYTHONPATH=../../build/python/ python run.py
-echo Job finished...
+echo Test complete.
+echo Building Debian package...
+cd ../../build
+make package
+mkdir $BUILD_ID
+cp *.deb $BUILD_ID
+tar czf $BUILD_ID.tar.gz $BUILD_ID/*.deb
+echo Job finished.
