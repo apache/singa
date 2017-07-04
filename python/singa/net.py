@@ -414,10 +414,10 @@ class FeedForwardNet(object):
                 otherwise, it would use protobuf for serialization, which uses
                 less space.
         '''
+        params['SINGA_VERSION'] = __version__
         if use_pickle:
             params = {}
             # since SINGA>=1.1.1  (1101)
-            params['SINGA_VERSION'] = __version__
             for (name, val) in zip(self.param_names(), self.param_values()):
                 val.to_host()
                 params[name] = tensor.to_numpy(val)
