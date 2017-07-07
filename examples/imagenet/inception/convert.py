@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""A simple script for inspect checkpoint files."""
+"""Converting tensorflow checkpoint file to key-val pkl file."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -25,7 +25,8 @@ import os
 import numpy as np
 from tensorflow.python import pywrap_tensorflow
 from tensorflow.python.platform import app
-import model
+import inception_v4
+import inception_v3
 
 
 FLAGS = None
@@ -38,8 +39,11 @@ def rename(name, suffix):
     return name[0:p+1] + suffix
 
 
-def convert(file_name):
-    net, _ = model.create_net()
+def convert(model, file_name):
+    if model == 'v3':
+        net, _ = inception_v3.create_net()
+    else:
+        net, _ = inception_v4.create_net()
     params = {'SINGA_VERSION': 1101}
     try:
         reader = pywrap_tensorflow.NewCheckpointReader(file_name)
@@ -61,7 +65,8 @@ def convert(file_name):
                 val = np.ones(pval.shape)
             else:
                 print('not matched param %s' % pname)
-            assert val.shape == pval.shape, ('the shapes not match ', val.shape, pval.shape)
+            assert val.shape == pval.shape, ('the shapes not match ',
+                    val.shape, pval.shape)
             params[pname] = val.astype(np.float32)
             print('converting:', pname, pval.shape)
         var_to_shape_map = reader.get_variable_to_shape_map()
@@ -103,15 +108,13 @@ def main(unused_argv):
         print("Usage: convert.py --file_name=checkpoint_file_name ")
         sys.exit(1)
     else:
-        convert(FLAGS.file_name)
+        convert(FLAGS.model, FLAGS.file_name)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.register("type", "bool", lambda v: v.lower() == "true")
-    parser.add_argument(
-        "--file_name", type=str, default="", help="Checkpoint filename. "
-                        "Note, if using Checkpoint V2 format, file_name is the "
-                        "shared prefix between all files in the checkpoint.")
+    parser.add_argument("model", choices=['v3', 'v4'], help="inception version")
+    parser.add_argument("file_name", help="Checkpoint path")
     FLAGS, unparsed = parser.parse_known_args()
     app.run(main=main, argv=[sys.argv[0]] + unparsed)
