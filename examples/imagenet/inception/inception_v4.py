@@ -39,9 +39,10 @@ from singa import net as ffnet
 
 ffnet.verbose = True
 
+
 def conv2d(net, name, nb_filter, k, s=1, border_mode='SAME', src=None):
     net.add(Conv2D(name, nb_filter, k, s, border_mode=border_mode,
-        use_bias=False), src)
+                   use_bias=False), src)
     net.add(BatchNormalization('%s/BatchNorm' % name))
     return net.add(Activation(name+'/relu'))
 
@@ -66,13 +67,13 @@ def block_reduction_a(blk, net):
     # By default use stride=1 and SAME padding
     s = net.add(Split('%s/Split' % blk, 3))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 384, 3, 2,
-            border_mode='VALID', src=s)
+                 border_mode='VALID', src=s)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 192, 1, src=s)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_3x3' % blk, 224, 3)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, 256, 3, 2,
-            border_mode='VALID')
+                 border_mode='VALID')
     br2 = net.add(MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk, 3, 2,
-        border_mode='VALID'), s)
+                               border_mode='VALID'), s)
     return net.add(Concat('%s/Concat' % blk, 1), [br0, br1, br2])
 
 
@@ -97,17 +98,17 @@ def block_inception_b(blk, net):
 def block_reduction_b(blk, net):
     """Builds Reduction-B block for Inception v4 network."""
     # By default use stride=1 and SAME padding
-    s = net.add(Split('%s/Split' % blk , 3))
+    s = net.add(Split('%s/Split' % blk, 3))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 192, 1, src=s)
     br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 192, 3, 2,
-            border_mode='VALID')
+                 border_mode='VALID')
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 256, 1, src=s)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 256, (1, 7))
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, 320, (7, 1))
     br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, 320, 3, 2,
-            border_mode='VALID')
+                 border_mode='VALID')
     br2 = net.add(MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk, 3, 2,
-        border_mode='VALID'), s)
+                               border_mode='VALID'), s)
     return net.add(Concat('%s/Concat' % blk, 1), [br0, br1, br2])
 
 
@@ -123,9 +124,9 @@ def block_inception_c(blk, net):
     br11 = conv2d(net, '%s/Branch_1/Conv2d_0c_3x1' % blk, 256, (3, 1), src=br1)
     br1 = net.add(Concat('%s/Branch_1/Concat' % blk, 1), [br10, br11])
 
-    br2 =conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, 384, 1, src=s)
-    br2 =conv2d(net, '%s/Branch_2/Conv2d_0b_3x1' % blk, 448, (3, 1))
-    br2 =conv2d(net, '%s/Branch_2/Conv2d_0c_1x3' % blk, 512, (1, 3))
+    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, 384, 1, src=s)
+    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_3x1' % blk, 448, (3, 1))
+    br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_1x3' % blk, 512, (1, 3))
     br2 = net.add(Split('%s/Branch_2/Split' % blk, 2))
     br20 = conv2d(net, '%s/Branch_2/Conv2d_0d_1x3' % blk, 256, (1, 3), src=br2)
     br21 = conv2d(net, '%s/Branch_2/Conv2d_0e_3x1' % blk, 256, (3, 1), src=br2)
@@ -136,8 +137,8 @@ def block_inception_c(blk, net):
     return net.add(Concat('%s/Concat' % blk, 1), [br0, br1, br2, br3])
 
 
-def inception_v4_base(name, sample_shape, final_endpoint='Inception/Mixed_7d',
-        aux_endpoint='Inception/Mixed_6e'):
+def inception_v4_base(sample_shape, final_endpoint='Inception/Mixed_7d',
+                      aux_endpoint='Inception/Mixed_6e'):
     """Creates the Inception V4 network up to the given final endpoint.
 
     Endpoint name list: 'InceptionV4/' +
@@ -148,17 +149,18 @@ def inception_v4_base(name, sample_shape, final_endpoint='Inception/Mixed_7d',
         'Mixed_7d']
 
     Args:
-        inputs: a 4-D tensor of size [batch_size, height, width, 3].
+        sample_shape: input image sample shape, 3d tuple
         final_endpoint: specifies the endpoint to construct the network up to.
         aux_endpoint: for aux loss.
 
     Returns:
         the neural net
-        the last layer
         the set of end_points from the inception model.
     """
+    name = 'InceptionV4'
     end_points = {}
     net = ffnet.FeedForwardNet()
+
     def final_aux_check(block_name):
         if block_name == final_endpoint:
             return True
@@ -167,36 +169,34 @@ def inception_v4_base(name, sample_shape, final_endpoint='Inception/Mixed_7d',
             end_points[aux] = net.add(Split(aux, 2))
         return False
 
-
     # 299 x 299 x 3
-    blk = name + 'Conv2d_1a_3x3'
+    blk = name + '/Conv2d_1a_3x3'
     net.add(Conv2D(blk, 32, 3, 2, border_mode='VALID', use_bias=False,
-        input_sample_shape=sample_shape))
+                   input_sample_shape=sample_shape))
     net.add(BatchNormalization('%s/BatchNorm' % blk))
     end_points[blk] = net.add(Activation('%s/relu' % blk))
     if final_aux_check(blk):
         return net, end_points
 
     # 149 x 149 x 32
-    blk = name + 'Conv2d_2a_3x3'
-    end_points[blk] = conv2d(net, '%s/Conv2d_2a_3x3' % blk, 32, 3,
-            border_mode='VALID')
+    blk = name + '/Conv2d_2a_3x3'
+    end_points[blk] = conv2d(net, blk, 32, 3, border_mode='VALID')
     if final_aux_check(blk):
         return net, end_points
 
     # 147 x 147 x 32
-    blk = name + 'Conv2d_2b_3x3'
-    end_points[blk] = conv2d(net, '%s/Conv2d_2b_3x3' % blk, 64, 3)
+    blk = name + '/Conv2d_2b_3x3'
+    end_points[blk] = conv2d(net, blk, 64, 3)
     if final_aux_check(blk):
         return net, end_points
 
     # 147 x 147 x 64
     blk = name + '/Mixed_3a'
     s = net.add(Split('%s/Split' % blk, 2))
-    br0 = net.add(MaxPooling2D('%s/Branch_0/MaxPool_0a_3x3' % blk, 3,
-        2, border_mode='VALID'), s)
+    br0 = net.add(MaxPooling2D('%s/Branch_0/MaxPool_0a_3x3' % blk, 3, 2,
+                               border_mode='VALID'), s)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_3x3' % blk, 96, 3, 2,
-            border_mode='VALID', src=s)
+                 border_mode='VALID', src=s)
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1), [br0, br1])
     if final_aux_check(blk):
         return net, end_points
@@ -206,12 +206,12 @@ def inception_v4_base(name, sample_shape, final_endpoint='Inception/Mixed_7d',
     s = net.add(Split('%s/Split' % blk, 2))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 64, 1, src=s)
     br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 96, 3,
-            border_mode='VALID')
+                 border_mode='VALID')
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 64, 1, src=s)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 64, (1, 7))
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, 64, (7, 1))
     br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, 96, 3,
-            border_mode='VALID')
+                 border_mode='VALID')
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1), [br0, br1])
     if final_aux_check(blk):
         return net, end_points
@@ -220,9 +220,9 @@ def inception_v4_base(name, sample_shape, final_endpoint='Inception/Mixed_7d',
     blk = name + '/Mixed_5a'
     s = net.add(Split('%s/Split' % blk, 2))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 192, 3, 2,
-            border_mode='VALID', src=s)
-    br1 = net.add(MaxPooling2D('%s/Branch_1/MaxPool_1a_3x3' % blk, 3,
-        2, border_mode='VALID'), s)
+                 border_mode='VALID', src=s)
+    br1 = net.add(MaxPooling2D('%s/Branch_1/MaxPool_1a_3x3' % blk, 3, 2,
+                               border_mode='VALID'), s)
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1), [br0, br1])
     if final_aux_check(blk):
         return net, end_points
@@ -265,12 +265,13 @@ def inception_v4_base(name, sample_shape, final_endpoint='Inception/Mixed_7d',
         if final_aux_check(blk):
             return net, end_points
 
-    return net, end_points
+    assert final_endpoint == blk, \
+        'final_enpoint = %s is not in the net' % final_endpoint
 
 
 def create_net(num_classes=1001, sample_shape=(3, 299, 299), is_training=True,
-        dropout_keep_prob=0.8, final_endpoint='InceptionV4/Mixed_7d',
-        aux_endpoint='InceptionV4/Mixed_6e'):
+               dropout_keep_prob=0.8, final_endpoint='InceptionV4/Mixed_7d',
+               aux_endpoint='InceptionV4/Mixed_6e'):
     """Creates the Inception V4 model.
 
     Args:
@@ -285,28 +286,30 @@ def create_net(num_classes=1001, sample_shape=(3, 299, 299), is_training=True,
     """
     end_points = {}
     name = 'InceptionV4'
-    net, end_points = inception_v4_base(name, sample_shape,
-            final_endpoint=final_endpoint, aux_endpoint=aux_endpoint)
+    net, end_points = inception_v4_base(sample_shape,
+                                        final_endpoint=final_endpoint,
+                                        aux_endpoint=aux_endpoint)
     # Auxiliary Head logits
     if aux_endpoint is not None:
         # 17 x 17 x 1024
         aux_logits = end_points[aux_endpoint + '-aux']
-        blk = 'AuxLogits'
+        blk = name + '/AuxLogits'
         net.add(AvgPooling2D('%s/AvgPool_1a_5x5' % blk, 5, stride=3,
-            border_mode='VALID'), aux_logits)
+                             border_mode='VALID'), aux_logits)
         t = conv2d(net, '%s/Conv2d_1b_1x1' % blk, 128, 1)
         conv2d(net, '%s/Conv2d_2a' % blk, 768,
-                t.get_output_sample_shape()[1:3], border_mode='VALID')
+               t.get_output_sample_shape()[1:3], border_mode='VALID')
         net.add(Flatten('%s/flat' % blk))
         end_points[blk] = net.add(Dense('%s/Aux_logits' % blk, num_classes))
 
     # Final pooling and prediction
     # 8 x 8 x 1536
-    blk = 'Logits'
+    blk = name + '/Logits'
     last_layer = end_points[final_endpoint]
     net.add(AvgPooling2D('%s/AvgPool_1a' % blk,
-        last_layer.get_output_sample_shape()[1:3], border_mode='VALID'),
-        last_layer)
+                         last_layer.get_output_sample_shape()[1:3],
+                         border_mode='VALID'),
+            last_layer)
     # 1 x 1 x 1536
     net.add(Dropout('%s/Dropout_1b' % blk, 1 - dropout_keep_prob))
     net.add(Flatten('%s/PreLogitsFlatten' % blk))
