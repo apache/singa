@@ -105,10 +105,13 @@ The following libraries are optional
 2. run `cmake [options] ..`
   by default all options are OFF except `USE_PYTHON`
 
-    * `USE_MODUELS=ON`, used if protobuf and blas are not installed a prior
+    * `USE_MODULES=ON`, used if protobuf and blas are not installed a prior
     * `USE_CUDA=ON`, used if CUDA and cuDNN is available
     * `USE_PYTHON=ON`, used for compiling PySINGA
     * `USE_OPENCL=ON`, used for compiling with OpenCL support
+    * `PYTHON2=ON`, used for compiling with Python 2 support. (The default is Python 3)
+    * `PACKAGE=ON`, used for building the Debian package
+
 3. compile the code, e.g., `make`
 4. goto python folder
 5. run `pip install .`
@@ -257,6 +260,17 @@ Remember to add its directory to `PATH` and the built libraries to `LD_LIBRARY_P
 To build SINGA with OpenCL support, you need to pass the flag during cmake:
 
     cmake -DUSE_OPENCL=ON ..
+
+#### Compile SINGA with PYTHON2=ON
+
+The default Python version for SINGA is 3. SINGA can be built for Python 2 by setting PYTHON2=ON.
+
+#### Compile SINGA with PACKAGE=ON
+
+This setting is used to build the Debian package. Set PACKAGE=ON and build the package with make command like this:
+
+    $ cmake -DPACKAGE=ON
+    $ make package
 
 ### Compile SINGA on Windows
 
