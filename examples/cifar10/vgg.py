@@ -28,6 +28,7 @@ from singa import metric
 from singa import loss
 from singa import net as ffnet
 
+ffnet.verbose=True
 
 def ConvBnReLU(net, name, nb_filers, sample_shape=None):
     net.add(layer.Conv2D(name + '_1', nb_filers, 3, 1, pad=1,
