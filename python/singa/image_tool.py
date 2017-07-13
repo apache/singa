@@ -111,7 +111,7 @@ def crop_and_resize(img, patch, position):
     box = (left, upper, right, bottom)
     new_img = img.crop(box)
 
-    new_img = img.resize(patch)
+    new_img = img.resize(patch, Image.BILINEAR)
     # print box+crop
     # print "crop to box %d,%d,%d,%d and scale to %d,%d" % (box+crop)
     return new_img
@@ -124,7 +124,7 @@ def resize(img, small_size):
         new_size = (small_size, int(small_size*size[1]/size[0]))
     else:
         new_size = (int(small_size*size[0]/size[1]), small_size)
-    new_img = img.resize(new_size)
+    new_img = img.resize(new_size, Image.BILINEAR)
     # print 'resize to (%d,%d)' % new_size
     return new_img
 
@@ -184,10 +184,12 @@ def flip(img):
     new_img = img.transpose(Image.FLIP_LEFT_RIGHT)
     return new_img
 
+
 def flip_down(img):
     # print 'flip_down'
     new_img = img.transpose(Image.FLIP_TOP_BOTTOM)
     return new_img
+
 
 def get_list_sample(l, sample_size):
     return [l[i] for i in sorted(random.sample(xrange(len(l)), sample_size))]
@@ -432,10 +434,11 @@ class ImageTool():
         else:
             return new_imgs
 
-    def random_crop_resize(self,patch,inplace=True):
-        ''' Crop of the image at a random size between 0.08 to 1 of input image size
-            and random aspect ratio between 3/4 to 4/3 of input image aspect ratio is made.
+    def random_crop_resize(self, patch, inplace=True):
+        ''' Crop of the image at a random size between 0.08 to 1 of input image
+            and random aspect ratio between 3/4 to 4/3.
             This crop is then resized to the given patch size.
+
         Args:
             patch(tuple): width and height of the patch
             inplace(Boolean): replace the internal images list with the patches
@@ -443,20 +446,26 @@ class ImageTool():
         '''
         new_imgs = []
         for img in self.imgs:
-            area=img.size[0]*img.size[1]
-            target_area = random.uniform(0.08, 1.0) * area
-            aspect_ratio = random.uniform(3. / 4, 4. / 3)
-            crop_x = int(round(math.sqrt(target_area * aspect_ratio)))
-            crop_y = int(round(math.sqrt(target_area / aspect_ratio)))
-            assert img.size[0] >= patch[0] and img.size[1] >= patch[1],\
-                'img size (%d, %d), patch size (%d, %d)' % \
-                (img.size[0], img.size[1], patch[0], patch[1])
-            left_offset = random.randint(0, img.size[0] - crop_x)
-            top_offset = random.randint(0, img.size[1] - crop_y)
-            box = (left_offset, top_offset,
-                   left_offset + crop_x, top_offset + crop_y)
-            img_croped=img.crop(box)
-            img_resized=img_croped.resize(patch)
+            area = img.size[0]*img.size[1]
+            img_resized = None
+            for attempt in range(10):
+                target_area = random.uniform(0.08, 1.0) * area
+                aspect_ratio = random.uniform(3. / 4, 4. / 3)
+                crop_x = int(round(math.sqrt(target_area * aspect_ratio)))
+                crop_y = int(round(math.sqrt(target_area / aspect_ratio)))
+                assert img.size[0] >= patch[0] and img.size[1] >= patch[1],\
+                    'img size (%d, %d), patch size (%d, %d)' % \
+                    (img.size[0], img.size[1], patch[0], patch[1])
+                if img.size[0] >= crop_x and img.size[1] >= crop_y:
+                    left_offset = random.randint(0, img.size[0] - crop_x)
+                    top_offset = random.randint(0, img.size[1] - crop_y)
+                    box = (left_offset, top_offset, left_offset + crop_x,
+                           top_offset + crop_y)
+                    img_croped = img.crop(box)
+                    img_resized = img_croped.resize(patch, Image.BILINEAR)
+                    break
+            if img_resized is None:
+                img_resized = img.resize(patch, Image.BILINEAR)
             new_imgs.append(img_resized)
 
         if inplace:
