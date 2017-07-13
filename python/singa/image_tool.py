@@ -453,10 +453,7 @@ class ImageTool():
                 aspect_ratio = random.uniform(3. / 4, 4. / 3)
                 crop_x = int(round(math.sqrt(target_area * aspect_ratio)))
                 crop_y = int(round(math.sqrt(target_area / aspect_ratio)))
-                assert img.size[0] >= patch[0] and img.size[1] >= patch[1],\
-                    'img size (%d, %d), patch size (%d, %d)' % \
-                    (img.size[0], img.size[1], patch[0], patch[1])
-                if img.size[0] >= crop_x and img.size[1] >= crop_y:
+                if img.size[0] > crop_x and img.size[1] > crop_y:
                     left_offset = random.randint(0, img.size[0] - crop_x)
                     top_offset = random.randint(0, img.size[1] - crop_y)
                     box = (left_offset, top_offset, left_offset + crop_x,
