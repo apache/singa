@@ -32,7 +32,6 @@ from __future__ import division
 
 from builtins import range
 from builtins import object
-from past.utils import old_div
 import random
 import numpy as np
 from PIL import Image, ImageEnhance
@@ -72,7 +71,7 @@ def crop(img, patch, position):
     elif position == 'right_bottom':
         left, upper = img.size[0]-patch[0], img.size[1]-patch[1]
     elif position == 'center':
-        left, upper = old_div((img.size[0]-patch[0]),2), old_div((img.size[1]-patch[1]),2)
+        left, upper = (img.size[0]-patch[0]) // 2, (img.size[1]-patch[1]) // 2
     else:
         raise Exception('position is wrong')
 
@@ -95,8 +94,8 @@ def crop_and_resize(img, patch, position):
         left, upper = 0, 0
         right, bottom = size[1], size[1]
     elif position == 'center':
-        left, upper = old_div((size[0]-size[1]),2), 0
-        right, bottom = old_div((size[0]+size[1]),2), size[1]
+        left, upper = (size[0]-size[1]) // 2, 0
+        right, bottom = (size[0]+size[1]) // 2, size[1]
     elif position == 'right':
         left, upper = size[0]-size[1], 0
         right, bottom = size[0], size[1]
@@ -104,8 +103,8 @@ def crop_and_resize(img, patch, position):
         left, upper = 0, 0
         right, bottom = size[0], size[0]
     elif position == 'middle':
-        left, upper = 0, old_div((size[1]-size[0]),2)
-        right, bottom = size[0], old_div((size[1]+size[0]),2)
+        left, upper = 0, (size[1]-size[0]) // 2
+        right, bottom = size[0], (size[1]+size[0]) // 2
     elif position == 'bottom':
         left, upper = 0, size[1]-size[0]
         right, bottom = size[0], size[1]
@@ -187,10 +186,12 @@ def flip(img):
     new_img = img.transpose(Image.FLIP_LEFT_RIGHT)
     return new_img
 
+
 def flip_down(img):
     # print 'flip_down'
     new_img = img.transpose(Image.FLIP_TOP_BOTTOM)
     return new_img
+
 
 def get_list_sample(l, sample_size):
     return [l[i] for i in sorted(random.sample(range(len(l)), sample_size))]

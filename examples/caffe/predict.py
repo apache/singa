@@ -1,6 +1,3 @@
-from __future__ import print_function
-from builtins import input
-from builtins import range
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,6 +14,10 @@ from builtins import range
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
+from __future__ import print_function
+from builtins import input
+from builtins import range
+
 import numpy as np
 import os
 import argparse
@@ -25,11 +26,10 @@ from PIL import Image
 from singa import device
 from singa import tensor
 from singa import converter
-from singa import layer
-from singa import net
 
-#for debug: print norm of each layer
-#net.verbose = True
+
+# for debug: print norm of each layer
+# net.verbose = True
 
 
 def convert_model(prototxt, caffemodel):
@@ -47,7 +47,7 @@ def read_image(img_path):
     # According to the VGG paper(Very Deep Convolutional Networks for
     # Large-Scale Image Recognition), the input images are zero-centered by
     # mean pixel(rather than mean image) substraction.
-    mean_RGB =[123.68, 116.779, 103.939]
+    mean_RGB = [123.68, 116.779, 103.939]
 
     img = Image.open(img_path)
     img = img.convert('RGB')
@@ -79,7 +79,7 @@ def predict(net, dev, synset_list, topk=5):
             print('Path is invalid')
             continue
         img = read_image(img_path)
-        x = tensor.from_numpy(img.astype(np.float32)[np.newaxis,:])
+        x = tensor.from_numpy(img.astype(np.float32)[np.newaxis, :])
         x.to_device(dev)
         y = net.predict(x)
         y.to_host()
@@ -91,7 +91,7 @@ def predict(net, dev, synset_list, topk=5):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Convert caffe vgg into singa. \
-            This tool only supports caffe model in current version(29-Nov-2016). \
+            This tool only supports caffe model from version as 29-Nov-2016. \
             You can use caffe tool to update previous model')
     parser.add_argument('model_txt', default='./vgg16.prototxt')
     parser.add_argument('model_bin', default='./vgg16.caffemodel')

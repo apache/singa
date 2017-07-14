@@ -20,15 +20,7 @@ The performance could be improved by tuning some hyper-parameters, including
 learning rate, weight decay, max_epoch, parameter initialization, etc.
 """
 from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
 from builtins import zip
-
-import pickle as pickle
-
-# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
-# use the python modules by installing py singa in build/python
-# pip install -e .
 
 from singa import layer
 from singa import initializer
