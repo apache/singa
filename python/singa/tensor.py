@@ -57,16 +57,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from past.utils import old_div
 from builtins import object
 import numpy as np
 from functools import reduce
+
 from .proto import core_pb2
 from . import singa_wrap as singa
 from . import device as pydevice
 
 int32 = core_pb2.kInt
 float32 = core_pb2.kFloat32
+
 
 class Tensor(object):
     '''Create a Py Tensor, which wraps a swig converted Tensor from CPP Tensor
@@ -766,7 +767,7 @@ def average(t, axis=None):
     if t.ndim() > 1:
         return _call_singa_func(singa.Average, t.singa_tensor, axis)
     else:
-        return old_div(singa.SumAsFloat(t.singa_tensor), t.size())
+        return singa.SumAsFloat(t.singa_tensor) / t.size()
 
 
 def softmax(t, out=None):

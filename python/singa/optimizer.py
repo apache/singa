@@ -34,12 +34,13 @@ Example usage::
 from __future__ import division
 from __future__ import absolute_import
 
-from past.utils import old_div
 from builtins import object
 import math
+
 from . import singa_wrap as singa
 from . import tensor
 from .proto import model_pb2
+
 
 class Optimizer(object):
     '''The base python optimizer class.
@@ -213,7 +214,8 @@ class SGD(Optimizer):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr, name.encode(), grad.singa_tensor, value.singa_tensor)
+        self.opt.Apply(epoch, lr, name.encode(), grad.singa_tensor,
+                       value.singa_tensor)
         return value
 
 
@@ -241,7 +243,8 @@ class Nesterov(Optimizer):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr, name.encode(), grad.singa_tensor, value.singa_tensor)
+        self.opt.Apply(epoch, lr, name.encode(), grad.singa_tensor,
+                       value.singa_tensor)
         return value
 
 
@@ -272,7 +275,8 @@ class RMSProp(Optimizer):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(step, lr,  name.encode(), grad.singa_tensor, value.singa_tensor)
+        self.opt.Apply(step, lr,  name.encode(), grad.singa_tensor,
+                       value.singa_tensor)
         return value
 
 
@@ -302,7 +306,8 @@ class AdaGrad(Optimizer):
         grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr,  name.encode(), grad.singa_tensor, value.singa_tensor)
+        self.opt.Apply(epoch, lr,  name.encode(), grad.singa_tensor,
+                       value.singa_tensor)
         return value
 
 
@@ -437,5 +442,5 @@ class L2Constraint(Constraint):
 
     def apply(self, epoch, value, grad, step=-1):
         nrm = grad.l2()
-        grad *= old_div(self.threshold, nrm)
+        grad *= self.threshold / nrm
         return grad

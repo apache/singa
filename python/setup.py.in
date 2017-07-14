@@ -67,10 +67,9 @@ setup(
         'flask_cors>=3.0.2',
         'pillow>=2.3.0',
         'future',
-	'xmlrunner',
-	'tqdm',
-	'ipywidgets',
-	'matplotlib',
+        'xmlrunner',
+        'tqdm',
+        'ipywidgets',
         ],
 
     #List additional groups of dependencies here (e.g. development

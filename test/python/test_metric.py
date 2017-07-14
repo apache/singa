@@ -1,5 +1,3 @@
-from __future__ import division
-from past.utils import old_div
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -17,9 +15,9 @@ from past.utils import old_div
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import division
 
 import unittest
-
 import numpy as np
 
 from singa import metric
@@ -30,57 +28,55 @@ class TestPrecision(unittest.TestCase):
     def setUp(self):
         x_np = np.asarray([[0.7, 0.2, 0.1],
                            [0.2, 0.4, 0.5],
-                           [0.2,0.4,0.4]],
+                           [0.2, 0.4, 0.4]],
                           dtype=np.float32)
 
         y_np = np.asarray([[1, 0, 1],
                            [0, 1, 1],
                            [1, 0, 0]],
-                           dtype=np.int32)
+                          dtype=np.int32)
 
         self.prcs = metric.Precision(top_k=2)
         self.x = tensor.from_numpy(x_np)
         self.y = tensor.from_numpy(y_np)
 
-
     def test_forward(self):
-        p = self.prcs.forward(self.x,self.y)
+        p = self.prcs.forward(self.x, self.y)
         self.assertAlmostEqual(tensor.to_numpy(p)[0], 0.5)
         self.assertAlmostEqual(tensor.to_numpy(p)[1], 1)
         self.assertAlmostEqual(tensor.to_numpy(p)[2], 0)
 
-
     def test_evaluate(self):
-        e = self.prcs.evaluate(self.x,self.y)
-        self.assertAlmostEqual(e, old_div((0.5 + 1 + 0), 3))
+        e = self.prcs.evaluate(self.x, self.y)
+        self.assertAlmostEqual(e, (0.5 + 1 + 0) / 3)
+
 
 class TestRecall(unittest.TestCase):
     def setUp(self):
         x_np = np.asarray([[0.7, 0.2, 0.1],
                            [0.2, 0.4, 0.5],
-                           [0.2,0.4,0.4]],
+                           [0.2, 0.4, 0.4]],
                           dtype=np.float32)
 
         y_np = np.asarray([[1, 0, 1],
                            [1, 1, 1],
                            [1, 0, 0]],
-                           dtype=np.int32)
+                          dtype=np.int32)
 
         self.recall = metric.Recall(top_k=2)
         self.x = tensor.from_numpy(x_np)
         self.y = tensor.from_numpy(y_np)
 
-
     def test_forward(self):
-        r = self.recall.forward(self.x,self.y)
+        r = self.recall.forward(self.x, self.y)
         self.assertAlmostEqual(tensor.to_numpy(r)[0], 0.5)
-        self.assertAlmostEqual(tensor.to_numpy(r)[1], old_div(2.0, 3))
+        self.assertAlmostEqual(tensor.to_numpy(r)[1], 2.0 / 3)
         self.assertAlmostEqual(tensor.to_numpy(r)[2], 0)
 
-
     def test_evaluate(self):
-        e = self.recall.evaluate(self.x,self.y)
-        self.assertAlmostEqual(e, old_div((0.5 + old_div(2.0, 3) + 0), 3))
+        e = self.recall.evaluate(self.x, self.y)
+        self.assertAlmostEqual(e, (0.5 + (2.0 / 3) + 0) / 3)
+
 
 if __name__ == '__main__':
     unittest.main()

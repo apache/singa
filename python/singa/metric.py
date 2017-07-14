@@ -37,10 +37,9 @@ Example usage::
 from __future__ import division
 from __future__ import absolute_import
 
-
 from builtins import range
-from past.utils import old_div
 from builtins import object
+
 from . import singa_wrap as singa
 from . import tensor
 import numpy as np
@@ -92,8 +91,6 @@ class Accuracy(Metric):
         self.swig_metric = singa.Accuracy()
 
 
-
-
 class Precision(Metric):
     '''Make the top-k labels of max probability as the prediction
 
@@ -101,8 +98,6 @@ class Precision(Metric):
     '''
     def __init__(self, top_k):
         self.top_k = top_k
-
-
 
     def forward(self, x, y):
         '''Compute the precision for each sample.
@@ -124,17 +119,17 @@ class Precision(Metric):
         x_np = tensor.to_numpy(x)
         y_np = tensor.to_numpy(y)
 
-        pred_np = np.argsort(-x_np)[:, 0:self.top_k] #Sort in descending order
+        pred_np = np.argsort(-x_np)[:, 0:self.top_k]  # Sort in descending order
 
         prcs_np = np.zeros(pred_np.shape[0], dtype=np.float32)
 
         for i in range(pred_np.shape[0]):
-            #groundtruth labels
+            # groundtruth labels
             label_np = np.argwhere(y_np[i])
 
-            #Num of common labels among prediction and groundtruth
+            # num of common labels among prediction and groundtruth
             num_intersect = np.intersect1d(pred_np[i], label_np).size
-            prcs_np[i] = old_div(num_intersect, float(self.top_k))
+            prcs_np[i] = num_intersect / float(self.top_k)
 
         precision = tensor.from_numpy(prcs_np)
 
@@ -143,7 +138,6 @@ class Precision(Metric):
         precision.to_device(dev)
 
         return precision
-
 
     def evaluate(self, x, y):
         '''Compute the averaged precision over all samples.
@@ -166,7 +160,6 @@ class Recall(Metric):
     def __init__(self, top_k):
         self.top_k = top_k
 
-
     def forward(self, x, y):
         '''Compute the recall for each sample.
 
@@ -187,17 +180,17 @@ class Recall(Metric):
         x_np = tensor.to_numpy(x)
         y_np = tensor.to_numpy(y)
 
-        pred_np = np.argsort(-x_np)[:, 0:self.top_k] #Sort in descending order
+        pred_np = np.argsort(-x_np)[:, 0:self.top_k]  # Sort in descending order
 
         recall_np = np.zeros(pred_np.shape[0], dtype=np.float32)
 
         for i in range(pred_np.shape[0]):
-            #Return the index of non-zero dimension of i-th sample
+            # Return the index of non-zero dimension of i-th sample
             label_np = np.argwhere(y_np[i])
 
-            #Num of common labels among prediction and groundtruth
+            # Num of common labels among prediction and groundtruth
             num_intersect = np.intersect1d(pred_np[i], label_np).size
-            recall_np[i] = old_div(float(num_intersect), label_np.size)
+            recall_np[i] = float(num_intersect) / label_np.size
 
         recall = tensor.from_numpy(recall_np)
 
@@ -206,7 +199,6 @@ class Recall(Metric):
         recall.to_device(dev)
 
         return recall
-
 
     def evaluate(self, x, y):
         '''Compute the averaged precision over all samples.
@@ -218,4 +210,4 @@ class Recall(Metric):
             a float value for the averaged metric
         '''
 
-        return tensor.average(self.forward(x,y))
+        return tensor.average(self.forward(x, y))

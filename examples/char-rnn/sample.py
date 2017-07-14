@@ -15,22 +15,21 @@
 # limitations under the License.
 # =============================================================================
 '''Sample characters from the pre-trained model'''
+
 from __future__ import division
 from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
 from builtins import range
-from past.utils import old_div
 import sys
-import pickle as pickle
 import numpy as np
 import argparse
+try:
+    import pickle
+except ImportError:
+    import cPickle as pickle
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 from singa import layer
 from singa import tensor
 from singa import device
-from singa.proto import model_pb2
 
 
 def sample(model_path, nsamples=100, seed_text='', do_sample=True):
@@ -67,15 +66,15 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
             tx = tensor.from_numpy(x)
             tx.to_device(cuda)
             inputs = [tx, hx, cx]
-            outputs = rnn.forward(model_pb2.kEval, inputs)
-            y = dense.forward(model_pb2.kEval, outputs[0])
+            outputs = rnn.forward(False, inputs)
+            y = dense.forward(False, outputs[0])
             y = tensor.softmax(y)
             hx = outputs[1]
             cx = outputs[2]
         sys.stdout.write(seed_text)
     else:
         y = tensor.Tensor((1, vocab_size), cuda)
-        y.set_value(old_div(1.0, vocab_size))
+        y.set_value(1.0 / vocab_size)
 
     for i in range(nsamples):
         y.to_host()
@@ -90,8 +89,8 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
         tx = tensor.from_numpy(x)
         tx.to_device(cuda)
         inputs = [tx, hx, cx]
-        outputs = rnn.forward(model_pb2.kEval, inputs)
-        y = dense.forward(model_pb2.kEval, outputs[0])
+        outputs = rnn.forward(False, inputs)
+        y = dense.forward(False, outputs[0])
         y = tensor.softmax(y)
         hx = outputs[1]
         cx = outputs[2]

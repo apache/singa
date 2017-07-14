@@ -51,6 +51,7 @@ from builtins import str
 from builtins import range
 from builtins import object
 from builtins import set
+
 from . import singa_wrap
 from .proto import model_pb2
 from . import tensor

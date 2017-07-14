@@ -36,14 +36,11 @@ Example usage::
 '''
 from __future__ import division
 from __future__ import absolute_import
-
-
-from past.utils import old_div
 from builtins import object
+
 from . import singa_wrap as singa
-from .proto import model_pb2
 from . import tensor
-import numpy as np
+from .proto import model_pb2
 
 
 class Loss(object):
@@ -160,7 +157,7 @@ class SigmoidCrossEntropy(Loss):
             dx = pi - yi.
         '''
         assert self.truth is not None, 'must call forward in a prior'
-        dx =  self.prob - self.truth
+        dx = self.prob - self.truth
         self.truth = None
         return dx
 
@@ -214,4 +211,4 @@ class SquaredError(Loss):
         Returns:
             a float value as the averaged error
         '''
-        return old_div(tensor.sum(tensor.square(x - y) * 0.5), x.size())
+        return tensor.sum(tensor.square(x - y)) * 0.5 / x.size()

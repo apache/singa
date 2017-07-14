@@ -1,7 +1,3 @@
-from __future__ import division
-from builtins import zip
-from builtins import range
-from past.utils import old_div
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,6 +15,10 @@ from past.utils import old_div
 # specific language governing permissions and limitations
 # under the License.
 # =============================================================================
+from __future__ import division
+from builtins import zip
+from builtins import range
+
 import unittest
 import math
 import numpy as np
@@ -35,7 +35,7 @@ if singa_wrap.USE_CUDA:
 
 def np_adam(plist, glist, mlist, vlist, lr, t, b1=0.9, b2=0.999):
     for p, g, m, v in zip(plist, glist, mlist, vlist):
-        m *=b1
+        m *= b1
         m += (1-b1) * g
         v *= b2
         v += (1-b2) * g * g
@@ -110,7 +110,7 @@ class TestOptimizer(unittest.TestCase):
         cons = opt.L2Constraint(threshold)
         cons.apply(0, self.W, self.g)
         g = tensor.to_numpy(self.g)
-        nrm = old_div(np.linalg.norm(self.np_g), self.np_g.size)
+        nrm = np.linalg.norm(self.np_g) / self.np_g.size
         for i in range(g.size):
             self.assertAlmostEqual(g[i], self.np_g[i] * threshold / nrm)
 
@@ -122,7 +122,7 @@ class TestOptimizer(unittest.TestCase):
         cons.apply(0, self.W, self.g)
         self.g.to_host()
         g = tensor.to_numpy(self.g)
-        nrm = old_div(np.linalg.norm(self.np_g), self.np_g.size)
+        nrm = np.linalg.norm(self.np_g) / self.np_g.size
         for i in range(g.size):
             self.assertAlmostEqual(g[i], self.np_g[i] * threshold / nrm)
 
