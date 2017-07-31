@@ -3,7 +3,7 @@ package:
   version: "{{ GIT_DESCRIBE_TAG }}"
 
 source:
-  git_url: https://github.com/apache/incubator-singa.git
+  path: ../../
 
 
 build:
@@ -15,18 +15,20 @@ build:
 
 requirements:
   build:
-    - python 2.7*
+    - python 2.7* [py27]
+    - python 3.6* [py36]
     - numpy >=1.10
     - swig >=3.0
     - openblas >=0.2.10
-    - protobuf 3.0.0
+    - protobuf 3.2
     - glog 0.3.4
     - gcc 4.8.5 # [linux]
 
   run:
-    - python 2.7*
+    - python 2.7* [py27]
+    - python 3.6* [py36]
     - numpy >=1.10
-    - protobuf 3.0.0
+    - protobuf 3.2
     - glog 0.3.4
     - openblas >=0.2.10
     - flask >=0.10.1
@@ -37,8 +39,6 @@ requirements:
 test:
   source_files:
     - test/python/*.py
-  requires:
-    - unittest-xml-reporting
   test:
     - python run.py
 
