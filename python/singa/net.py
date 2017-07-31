@@ -56,19 +56,22 @@ Example usages::
 from __future__ import print_function
 from __future__ import absolute_import
 
-from future import standard_library
-standard_library.install_aliases()
 from builtins import zip
 from builtins import str
 from builtins import object
+import os
+
 from .proto.model_pb2 import kTrain, kEval
 from .__init__ import __version__
 from . import tensor
 from . import layer
 from . import snapshot
-import pickle as pickle
 
-import os
+try:
+    import pickle
+except ImportError:
+    import cPickle as pickle
+
 
 '''For display training information, e.g L1 value of layer data'''
 verbose = False

@@ -20,14 +20,13 @@ includes 1 label & 3072 pixels.  3072 pixels are 3 channels of a 32x32 image
 """
 from __future__ import division
 from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
 from builtins import zip
 from builtins import str
 from builtins import range
-from past.utils import old_div
-
-import pickle
+try:
+    import pickle
+except ImportError:
+    import cPickle as pickle
 import numpy as np
 import os
 import argparse
@@ -93,7 +92,7 @@ def normalize_for_alexnet(train_x, test_x):
 
 
 def vgg_lr(epoch):
-    return old_div(0.1, float(1 << ((old_div(epoch, 25)))))
+    return 0.1 / float(1 << (epoch // 25))
 
 
 def alexnet_lr(epoch):
@@ -139,8 +138,8 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
     tx = tensor.Tensor((batch_size, 3, 32, 32), dev)
     ty = tensor.Tensor((batch_size,), dev, core_pb2.kInt)
     train_x, train_y, test_x, test_y = data
-    num_train_batch = old_div(train_x.shape[0], batch_size)
-    num_test_batch = old_div(test_x.shape[0], batch_size)
+    num_train_batch = train_x.shape[0] // batch_size
+    num_test_batch = test_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
     for epoch in range(max_epoch):
         np.random.shuffle(idx)
@@ -160,7 +159,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
             utils.update_progress(b * 1.0 / num_train_batch,
                                   'training loss = %f, accuracy = %f' % (l, a))
         info = '\ntraining loss = %f, training accuracy = %f, lr = %f' \
-            % (old_div(loss, num_train_batch), old_div(acc, num_train_batch), get_lr(epoch))
+            % ((loss / num_train_batch), (acc / num_train_batch), get_lr(epoch))
         print(info)
 
         loss, acc = 0.0, 0.0
@@ -173,14 +172,14 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
             loss += l
             acc += a
 
-        print('test loss = %f, test accuracy = %f' \
-            % (old_div(loss, num_test_batch), old_div(acc, num_test_batch)))
+        print('test loss = %f, test accuracy = %f' %
+              ((loss / num_test_batch), (acc / num_test_batch)))
     net.save('model', 20)  # save model params into checkpoint file
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train dcnn for cifar10')
     parser.add_argument('model', choices=['vgg', 'alexnet', 'resnet', 'caffe'],
-            default='alexnet')
+                        default='alexnet')
     parser.add_argument('data', default='cifar-10-batches-py')
     parser.add_argument('--use_cpu', action='store_true')
     args = parser.parse_args()
@@ -196,7 +195,7 @@ if __name__ == '__main__':
         train((train_x, train_y, test_x, test_y), net, 160, alexnet_lr, 0.004,
               use_cpu=args.use_cpu)
         # for cifar10_quick_train_test.prototxt
-        #train((train_x, train_y, test_x, test_y), net, 18, caffe_lr, 0.004,
+        # train((train_x, train_y, test_x, test_y), net, 18, caffe_lr, 0.004,
         #      use_cpu=args.use_cpu)
     elif args.model == 'alexnet':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)

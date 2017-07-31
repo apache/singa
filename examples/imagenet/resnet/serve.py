@@ -1,8 +1,3 @@
-from __future__ import division
-from __future__ import print_function
-from builtins import str
-from builtins import range
-from past.utils import old_div
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,20 +14,20 @@ from past.utils import old_div
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
+
 import sys
 import time
 import numpy as np
-import threading
 import traceback
-from scipy.misc import imread, imresize
 from argparse import ArgumentParser
 
 from singa import device
 from singa import tensor
-from singa import data
 from singa import image_tool
-from singa import metric
 from rafiki.agent import Agent, MsgType
 import model
 
@@ -40,11 +35,14 @@ tool = image_tool.ImageTool()
 num_augmentation = 10
 crop_size = 224
 mean = np.array([0.485, 0.456, 0.406])
-std = np.array([ 0.229, 0.224, 0.225])
+std = np.array([0.229, 0.224, 0.225])
+
+
 def image_transform(img):
     '''Input an image path and return a set of augmented images (type Image)'''
     global tool
-    return tool.load(img).resize_by_list([256]).crop5((crop_size, crop_size), 5).flip(2).get()
+    return tool.load(img).resize_by_list([256]).crop5((crop_size, crop_size),
+                                                      5).flip(2).get()
 
 
 def predict(net, images, num=10):
@@ -57,7 +55,7 @@ def predict(net, images, num=10):
     '''
     prob = net.predict(images)
     prob = tensor.to_numpy(prob)
-    prob = prob.reshape((old_div(images.shape[0], num), num, -1))
+    prob = prob.reshape(((images.shape[0] // num), num, -1))
     prob = np.average(prob, 1)
     return prob
 
@@ -76,7 +74,7 @@ def serve(net, label_map, dev, agent, topk=5):
         label_map: a list of food names, corresponding to the index in meta_file
     '''
 
-    images =tensor.Tensor((num_augmentation, 3, crop_size, crop_size), dev)
+    images = tensor.Tensor((num_augmentation, 3, crop_size, crop_size), dev)
     while True:
         msg, val = agent.pull()
         if msg is None:
@@ -86,8 +84,10 @@ def serve(net, label_map, dev, agent, topk=5):
         if msg.is_request():
             try:
                 # process images
-                im = [np.array(x.convert('RGB'), dtype=np.float32).transpose(2, 0, 1) for x in image_transform(val['image'])]
-                im = old_div(np.array(im), 256)
+                im = [np.array(x.convert('RGB'),
+                               dtype=np.float32).transpose(2, 0, 1)
+                      for x in image_transform(val['image'])]
+                im = np.array(im) / 255
                 im -= mean[np.newaxis, :, np.newaxis, np.newaxis]
                 im /= std[np.newaxis, :, np.newaxis, np.newaxis]
                 images.copy_from_numpy(im)
@@ -98,7 +98,8 @@ def serve(net, label_map, dev, agent, topk=5):
                 # prepare results
                 response = ""
                 for i in range(topk):
-                    response += "%s:%f <br/>" % (label_map[idx[i]], prob[idx[i]])
+                    response += "%s:%f <br/>" % (label_map[idx[i]],
+                                                 prob[idx[i]])
             except:
                 traceback.print_exc()
                 response = "sorry, system error during prediction."
@@ -117,6 +118,7 @@ def serve(net, label_map, dev, agent, topk=5):
             break
     print("server stop")
 
+
 def main():
     try:
         # Setup argument parser
@@ -126,8 +128,11 @@ def main():
         parser.add_argument("--use_cpu", action="store_true",
                             help="If set, load models onto CPU devices")
         parser.add_argument("--parameter_file", default="wrn-50-2.pickle")
-        parser.add_argument("--model", choices = ['resnet', 'wrn', 'preact', 'addbn'], default='wrn')
-        parser.add_argument("--depth", type=int, choices = [18, 34, 50, 101, 152, 200], default='50')
+        parser.add_argument("--model", choices=['resnet', 'wrn', 'preact',
+                                                'addbn'], default='wrn')
+        parser.add_argument("--depth", type=int, choices=[18, 34, 50, 101,
+                                                          152, 200],
+                            default='50')
 
         # Process arguments
         args = parser.parse_args()

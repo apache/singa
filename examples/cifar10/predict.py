@@ -16,13 +16,12 @@
 # =============================================================================
 '''Predicting the labels for new images using the pre-trained alexnet model'''
 from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
 from builtins import range
-import pickle as pickle
+try:
+    import pickle
+except ImportError:
+    import cPickle as pickle
 import numpy as np
-
-# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 
 from singa import device
 from singa import tensor

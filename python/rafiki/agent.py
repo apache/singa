@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import object
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,6 +15,9 @@ from builtins import object
 # specific language governing permissions and limitations
 # under the License.
 # =============================================================================
+from builtins import str
+from builtins import object
+
 from multiprocessing import Process, Queue
 from flask import Flask,request, send_from_directory, jsonify
 from flask_cors import CORS, cross_origin
@@ -38,15 +39,15 @@ class MsgType(object):
        return str(self) == str(target)
 
    def is_info(self):
-       return self.name.startswith('kInfo') 
+       return self.name.startswith('kInfo')
    def is_command(self):
-       return self.name.startswith('kCommand') 
+       return self.name.startswith('kCommand')
    def is_status(self):
-       return self.name.startswith('kStatus') 
+       return self.name.startswith('kStatus')
    def is_request(self):
-       return self.name.startswith('kRequest') 
+       return self.name.startswith('kRequest')
    def is_response(self):
-       return self.name.startswith('kResponse') 
+       return self.name.startswith('kResponse')
 
    @staticmethod
    def parse(name):
@@ -59,7 +60,7 @@ class MsgType(object):
            return MsgType.kCommandPause
        if name=='resume':
            return MsgType.kCommandResume
-       return MsgType.kCommand 
+       return MsgType.kCommand
 
 types =  ['kInfo','kInfoMetric',
            'kCommand','kCommandStop','kCommandPause','kCommandResume',
@@ -91,7 +92,7 @@ class Agent(object):
             if msg.is_request():
                 data = pickle.loads(data)
             return msg,data
-        return None,None 
+        return None,None
 
     def push(self,msg,value):
         self.info_queue.put((msg,value))
@@ -165,10 +166,10 @@ def getTopKData():
         return failure("Internal Error")
     return success(data_[-k:])
 
-@app.route("/api", methods=['POST'])                                                                  
-@cross_origin()                                                                                           
+@app.route("/api", methods=['POST'])
+@cross_origin()
 def api():
-    global info_queue_,command_queue_ 
+    global info_queue_,command_queue_
     try:
         files=transformFile(request.files)
         values = CombinedMultiDict([request.args,request.form,files])
@@ -177,20 +178,20 @@ def api():
         msg,response=getDataFromInfoQueue(True)
         deleteFiles(files)
         return response
-    except:                                                                            
+    except:
         traceback.print_exc()
         return failure("Internal Error")
 
-@app.route("/command/<name>", methods=['GET','POST'])                                                                  
-@cross_origin()                                                                                           
+@app.route("/command/<name>", methods=['GET','POST'])
+@cross_origin()
 def command(name):
-    global info_queue_,command_queue_ 
+    global info_queue_,command_queue_
     try:
         command=MsgType.get_command(name)
         command_queue_.put((command,""))
         msg,response=getDataFromInfoQueue(True)
         return response
-    except:                                                                            
+    except:
         traceback.print_exc()
         return failure("Internal Error")
 
@@ -203,19 +204,20 @@ def failure(message):
     res = dict(result="message", message=message)
     return jsonify(res)
 
+
 def transformFile(files):
     result= MultiDict([])
-    for f in list(files.keys()):
+    for f in files:
         file = files[f]
         unique_filename = str(uuid.uuid4())+secure_filename(file.filename)
-        filepath=os.path.join(os.getcwd(),unique_filename)
+        filepath=os.path.join(os.getcwd(), unique_filename)
         file.save(filepath)
-        result.add(f,filepath)
+        result.add(f, filepath)
     return result
 
+
 def deleteFiles(files):
-    for f in list(files.keys()):
-        filepath = files[f]    
+    for f in files:
+        filepath = files[f]
         os.remove(filepath)
-        #print "remove",filepath
     return
