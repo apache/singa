@@ -28,6 +28,8 @@ cd build
 USE_CUDA=ON
 # singa with cuda and cudnn has the name as : singa-cudaxx-cudnnxx
 if  [ "$PKG_NAME" == "singa" ]; then USE_CUDA=OFF; fi
-cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA ..
+PYTHON3=OFF
+if  [ "$PY3K" == "True" ]; then PYTHON3=ON; fi
+cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA -DPYTHON3=$PYTHON3 ..
 make
 make install
