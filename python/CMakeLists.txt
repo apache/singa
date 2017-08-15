@@ -94,10 +94,10 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/singa/proto)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/python/rafiki)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/src/api)
 
-IF(PYTHON2)
-	SET(SWIG_PYTHON3 "")
-ELSE()
+IF(PYTHON3)
 	SET(SWIG_PYTHON3 "-py3")
+ELSE()
+	SET(SWIG_PYTHON3 "")
 ENDIF()
 
 execute_process(
