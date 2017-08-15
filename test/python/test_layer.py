@@ -132,7 +132,7 @@ class TestPythonLayer(unittest.TestCase):
         self.check_shape(out_sample_shape, (64, 224,))
 
     def test_max_pooling2D(self):
-        in_sample_shape = (64, 224, 224)
+        in_sample_shape = (64, 225, 225)
         pooling = layer.MaxPooling2D('pool', 3, 2,
                                      input_sample_shape=in_sample_shape)
         out_sample_shape = pooling.get_output_sample_shape()
@@ -146,7 +146,7 @@ class TestPythonLayer(unittest.TestCase):
         self.check_shape(out_sample_shape, (112,))
 
     def test_avg_pooling2D(self):
-        in_sample_shape = (64, 224, 224)
+        in_sample_shape = (64, 225, 225)
         pooling = layer.AvgPooling2D('pool', 3, 2,
                                      input_sample_shape=in_sample_shape)
         out_sample_shape = pooling.get_output_sample_shape()
@@ -234,7 +234,7 @@ class TestPythonLayer(unittest.TestCase):
         t2 = tensor.Tensor((3, 1))
         t1.set_value(1)
         t2.set_value(2)
-        grad,_ = lyr.backward(model_pb2.kTrain, [t1, t2])
+        grad, _ = lyr.backward(model_pb2.kTrain, [t1, t2])
         gnp = tensor.to_numpy(grad)
         self.assertEquals(np.sum(gnp), 12)
 

@@ -1214,10 +1214,14 @@ def _set_kernel_stride_pad(conf, kernel, stride, border_mode, pad, in_shape):
     if pad is None:
         # TODO(wangwei) check the border mode
         if mode == 'same':
-            out_h = in_shape[1] / conf.stride_h
-            out_w = in_shape[2] / conf.stride_w
-            ph = max((out_h - 1) * conf.stride_h + conf.kernel_h - in_shape[1],
-                     0)
+            if conf.stride_h != 0:
+                out_h = in_shape[1] // conf.stride_h
+                ph = max(
+                    (out_h - 1) * conf.stride_h + conf.kernel_h - in_shape[1],
+                    0)
+            else:
+                ph = 0
+            out_w = in_shape[2] // conf.stride_w
             pw = max((out_w - 1) * conf.stride_w + conf.kernel_w - in_shape[2],
                      0)
             assert ph % 2 == 0 and pw % 2 == 0, 'ph=%d and pw=%d are not even' \
