@@ -139,7 +139,7 @@ IF (USE_MODULES)
         GIT_REPOSITORY "https://github.com/xianyi/OpenBLAS.git"
         #GIT_TAG "develop"
         #GIT_TAG "f3419e6"
-        GIT_TAG "optimized_for_deeplearning"
+        GIT_TAG "v0.2.20"
         SOURCE_DIR "openblas/"
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
