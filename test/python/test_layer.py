@@ -139,7 +139,7 @@ class TestPythonLayer(unittest.TestCase):
         self.check_shape(out_sample_shape, (64, 112, 112))
 
     def test_max_pooling1D(self):
-        in_sample_shape = (224,)
+        in_sample_shape = (225,)
         pooling = layer.MaxPooling1D('pool', 3, 2,
                                      input_sample_shape=in_sample_shape)
         out_sample_shape = pooling.get_output_sample_shape()
