@@ -3,7 +3,7 @@
 ## From Conda
 
 Conda is a package manager provided by [Anaconda](https://www.continuum.io/downloads) or [Miniconda](https://conda.io/miniconda.html).
-Currently, SINGA has conda packages (Python2.7) for Linux and MacOSX.
+Currently, SINGA has conda packages (Python 2.7 and Python 3.6) for Linux and MacOSX.
 
 ### Linux
 
@@ -130,8 +130,10 @@ The following instructions are tested on Ubuntu 14.04  and 16.04for installing d
     # required libraries
     $ sudo apt-get install libprotobuf-dev libopenblas-dev protobuf-compiler
 
-    # optional libraries
+    # optional libraries.
     $ sudo apt-get install python2.7-dev python-pip python-numpy
+    # for Python 3
+    $ sudo apt-get install python3-dev python3-numpy, python3-pip
     $ sudo apt-get install libopencv-dev libgoogle-glog-dev liblmdb-dev
 
 The following instructions are tested on Mac OS X Yosemite (10.11 and 10.12) for installing dependent libraries.
