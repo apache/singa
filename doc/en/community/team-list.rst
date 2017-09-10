@@ -37,6 +37,8 @@ Thejas Nair          thejas@apache.org
 Developers
 ----------
 
+The SINGA community has developers mainly from National University of Singapore, Zhejiang University, NetEase, Osaka University, yzBigData, etc.
+
 +--------------------+--------------------------------+-----------------------------------------------+
 | Name               | Email                          | Organization                                  |
 +====================+================================+===============================================+

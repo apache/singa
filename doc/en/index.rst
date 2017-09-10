@@ -72,7 +72,7 @@ Getting Started
    :scale: 100%
    :align: middle
    :target: https://github.com/apache/incubator-singa
-.. |logo2| image:: _static/awsmp.gif 
+.. |logo2| image:: _static/awsmp.gif
    :scale: 100%
    :align: middle
    :target: https://aws.amazon.com/marketplace/seller-profile?id=5bcac385-12c4-4802-aec7-351e09b77b4c
@@ -107,14 +107,17 @@ How to contribute
 
 More details on contributing to SINGA is described `here <develop/how-contribute.html>`_ .
 
-Citing SINGA
+History
 ------------
 
+SINGA was initiated by the DB System Group at National University of Singapore in 2014, in collaboration with the database group of Zhejiang University.
 Please cite the following two papers if you use SINGA in your research:
 
 * B. C. Ooi, K.-L. Tan, S. Wang, W. Wang, Q. Cai, G. Chen, J. Gao, Z. Luo, A. K. H. Tung, Y. Wang, Z. Xie, M. Zhang, and K. Zheng. `SINGA: A distributed deep learning platform <http://www.comp.nus.edu.sg/~ooibc/singaopen-mm15.pdf>`_. ACM Multimedia (Open Source Software Competition) 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-oss.txt>`_).
 
 * W. Wang, G. Chen, T. T. A. Dinh, B. C. Ooi, K.-L.Tan, J. Gao, and S. Wang. `SINGA: putting deep learning in the hands of multimedia users <http://www.comp.nus.edu.sg/~ooibc/singa-mm15.pdf>`_. ACM Multimedia 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-singa.txt>`_, `Slides <files/mm2015.ppt>`_).
+
+Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_, `yzBigData <http://www.yzbigdata.com/en/index.html>`_ and `Shentilium <https://shentilium.com/>`_ are using SINGA for their applications.
 
 .. toctree::
    :hidden:
