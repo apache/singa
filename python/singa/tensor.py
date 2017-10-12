@@ -384,7 +384,7 @@ class Tensor(object):
         if isinstance(x, Tensor):
             self.singa_tensor /= x.singa_tensor
         else:
-            self.singa_tensor /= float(x)
+            self.__imul__(1/float(x))
         return self
 
     '''
