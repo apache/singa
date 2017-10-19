@@ -47,7 +47,7 @@ import resnet
 def load_dataset(filepath):
     print('Loading data file %s' % filepath)
     with open(filepath, 'rb') as fd:
-        cifar10 = pickle.load(fd, encoding='latin1')
+        cifar10 = pickle.load(fd)
     image = cifar10['data'].astype(dtype=np.uint8)
     image = image.reshape((-1, 3, 32, 32))
     label = np.asarray(cifar10['labels'], dtype=np.uint8)
