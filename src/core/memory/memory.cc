@@ -21,7 +21,16 @@
 #include "singa/utils/logging.h"
 #include "singa/proto/core.pb.h"
 #include <iostream>
+#include <fstream>
+#include <chrono>
+#include <stdint.h>
+// similar in core/device/platform.cc for use of cudaMemGetInfo
+#include "singa/core/device.h"
+#include "singa/singa_config.h"
+#include "singa/utils/opencl_utils.h"
+#include <cuda.h>
 
+using namespace std;
 #ifdef USE_CUDA
 
 namespace singa {
@@ -90,6 +99,20 @@ void CnMemPool::Malloc(void **ptr, const size_t size) {
   cnmemStatus_t status = cnmemMalloc(ptr, size, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
       << " " << cnmemGetErrorString(status);
+  fstream file("memInfo.text", ios::in|ios::out|ios::app);
+  int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  file<<"Malloc "<<*ptr<<' '<<size<<' '<<now<<endl;
+  size_t free_byte=0;
+  size_t total_byte=0;
+  cudaMemGetInfo(&free_byte,&total_byte);
+  double free_db = (double)free_byte ;
+  double total_db = (double)total_byte ;
+  double used_db = total_db - free_db ;
+  fstream file2("cudaMem.text", ios::in|ios::out|ios::app);
+  file2<<used_db/1024.0/1024.0<<' '<<free_db/1024.0/1024.0<<' '<<total_db/1024.0/1024.0<<endl;
+  //FILE *pfile =fopen("cnmemMemoryState.log","a");
+  //cnmemPrintMemoryState(pfile,NULL);
+  //fclose(pfile);
 }
 
 void CnMemPool::Free(void *ptr) {
@@ -97,6 +120,20 @@ void CnMemPool::Free(void *ptr) {
   cnmemStatus_t status = cnmemFree(ptr, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
       << " " << cnmemGetErrorString(status);
+  fstream file("memInfo.text", ios::in|ios::out|ios::app);
+  int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  file<<"Free "<<ptr<<' '<<now<<endl;
+  size_t free_byte=0;
+  size_t total_byte=0;
+  cudaMemGetInfo(&free_byte,&total_byte);
+  double free_db = (double)free_byte ;
+  double total_db = (double)total_byte ;
+  double used_db = total_db - free_db ;
+  fstream file2("cudaMem.text", ios::in|ios::out|ios::app);
+  file2<<used_db/1024.0/1024.0<<' '<<free_db/1024.0/1024.0<<' '<<total_db/1024.0/1024.0<<endl;
+  //FILE *pfile =fopen("cnmemMemoryState.log","a");
+  //cnmemPrintMemoryState(pfile,NULL);
+  //fclose(pfile);
 }
 
 // ===========================================================================
