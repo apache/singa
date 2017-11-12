@@ -43,14 +43,13 @@ import alexnet
 import vgg
 import resnet
 
+from datetime import datetime
+import time
 
 def load_dataset(filepath):
     print('Loading data file %s' % filepath)
     with open(filepath, 'rb') as fd:
-        try:
-            cifar10 = pickle.load(fd, encoding='latin1')
-        except TypeError:
-            cifar10 = pickle.load(fd)
+        cifar10 = pickle.load(fd)
     image = cifar10['data'].astype(dtype=np.uint8)
     image = image.reshape((-1, 3, 32, 32))
     label = np.asarray(cifar10['labels'], dtype=np.uint8)
@@ -131,7 +130,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         dev = device.get_default_device()
     else:
         print('Using GPU')
-        dev = device.create_cuda_gpu()
+        dev = device.create_cuda_gpu_on(1)
 
     net.to_device(dev)
     opt = optimizer.SGD(momentum=0.9, weight_decay=weight_decay)
@@ -144,11 +143,21 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
     num_train_batch = train_x.shape[0] // batch_size
     num_test_batch = test_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
-    for epoch in range(max_epoch):
+    fileTimeLog =open("epochTimeLog.text","a")
+    for epoch in range(1):
         np.random.shuffle(idx)
         loss, acc = 0.0, 0.0
         print('Epoch %d' % epoch)
-        for b in range(num_train_batch):
+        print(datetime.now().timetz()) # miliseconds
+        print(int(round(time.time()*1000)))
+        fileTimeLog.write('Epoch %d: ' % epoch)
+        fileTimeLog.write(str(int(round(time.time()*1000))))
+        fileTimeLog.write('\n')
+	    for b in range(1):
+            time.sleep(0.5)
+            fileTimeLog.write('iteration %d: ' % b)
+            fileTimeLog.write(str(int(round(time.time()*1000))))
+            fileTimeLog.write('\n')
             x = train_x[idx[b * batch_size: (b + 1) * batch_size]]
             y = train_y[idx[b * batch_size: (b + 1) * batch_size]]
             tx.copy_from_numpy(x)
@@ -166,7 +175,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         print(info)
 
         loss, acc = 0.0, 0.0
-        for b in range(num_test_batch):
+        for b in range(0):
             x = test_x[b * batch_size: (b + 1) * batch_size]
             y = test_y[b * batch_size: (b + 1) * batch_size]
             tx.copy_from_numpy(x)
@@ -177,6 +186,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
 
         print('test loss = %f, test accuracy = %f' %
               ((loss / num_test_batch), (acc / num_test_batch)))
+    fileTimeLog.close()
     net.save('model', 20)  # save model params into checkpoint file
 
 if __name__ == '__main__':
@@ -185,6 +195,7 @@ if __name__ == '__main__':
                         default='alexnet')
     parser.add_argument('data', default='cifar-10-batches-py')
     parser.add_argument('--use_cpu', action='store_true')
+    parser.add_argument('batch_size',type=int, default=100)
     args = parser.parse_args()
     assert os.path.exists(args.data), \
         'Pls download the cifar10 dataset via "download_data.py py"'
@@ -196,7 +207,7 @@ if __name__ == '__main__':
         net = caffe_net.create_net(args.use_cpu)
         # for cifar10_full_train_test.prototxt
         train((train_x, train_y, test_x, test_y), net, 160, alexnet_lr, 0.004,
-              use_cpu=args.use_cpu)
+              use_cpu=args.use_cpu,batch_size=args.batch_size)
         # for cifar10_quick_train_test.prototxt
         # train((train_x, train_y, test_x, test_y), net, 18, caffe_lr, 0.004,
         #      use_cpu=args.use_cpu)
@@ -204,14 +215,14 @@ if __name__ == '__main__':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = alexnet.create_net(args.use_cpu)
         train((train_x, train_y, test_x, test_y), net, 2, alexnet_lr, 0.004,
-              use_cpu=args.use_cpu)
+              use_cpu=args.use_cpu,batch_size=args.batch_size)
     elif args.model == 'vgg':
         train_x, test_x = normalize_for_vgg(train_x, test_x)
         net = vgg.create_net(args.use_cpu)
         train((train_x, train_y, test_x, test_y), net, 250, vgg_lr, 0.0005,
-              use_cpu=args.use_cpu)
+              use_cpu=args.use_cpu,batch_size=args.batch_size)
     else:
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = resnet.create_net(args.use_cpu)
         train((train_x, train_y, test_x, test_y), net, 200, resnet_lr, 1e-4,
-              use_cpu=args.use_cpu)
+              use_cpu=args.use_cpu,batch_size=args.batch_size)
