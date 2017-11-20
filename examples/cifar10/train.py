@@ -154,7 +154,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         fileTimeLog.write(str(int(round(time.time()*1000))))
         fileTimeLog.write('\n')
         for b in range(1):
-            time.sleep(0.5)
+            time.sleep(2)
             fileTimeLog.write('iteration %d: ' % b)
             fileTimeLog.write(str(int(round(time.time()*1000))))
             fileTimeLog.write('\n')
