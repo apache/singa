@@ -143,7 +143,7 @@ void CudaGPU::Free(void* ptr) {
     cudaFree(ptr);
     fstream file4("cudaMalloc_memInfo.text", ios::in|ios::out|ios::app);
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    file4<"Free "<<ptr<<' '<<now<<endl;
+    file4<<"Free "<<ptr<<' '<<now<<endl;
     size_t free_byte=0;
     size_t total_byte=0;
     cudaMemGetInfo(&free_byte,&total_byte);
