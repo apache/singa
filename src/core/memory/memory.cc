@@ -872,6 +872,11 @@ void SmartMemPool::getMaxLoad(){
     
 }
 
+std::pair<size_t, size_t> SmartMemPool::GetMemUsage() {
+  //TODO(junzhe) note here the pair is different from that of CnMemPool.
+  return std::make_pair(maxMemUsage, maxTotalLoad);
+}
+
 }
 #endif
 
