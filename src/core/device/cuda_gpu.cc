@@ -25,13 +25,6 @@
 #include <iostream>
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
-
-//added for print cudaMalloc info, not all needed.
-#include <iostream>
-#include <fstream>
-#include <stdint.h>
-using namespace std;
-
 namespace singa {
 
 const cudaMemcpyKind copyKind[] = {cudaMemcpyHostToHost, cudaMemcpyHostToDevice,
@@ -54,7 +47,7 @@ const int kNumCudaStream = 1;
 CudaGPU::CudaGPU(int id) : Device(id, kNumCudaStream) {
   MemPoolConf conf;
   conf.add_device(id);
-  pool_ = std::make_shared<SmartMemPool>(conf);
+  pool_ = std::make_shared<SmartMemPool>;
   Setup();
 }
 
@@ -114,20 +107,7 @@ void* CudaGPU::Malloc(int size) {
   void* ptr = nullptr;
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
-    //pool_->Malloc((void**)&ptr, size);
-    // below are done by cudaMalloc instead of cnmemPool::Malloc,  by junzhe 11/20
-    cudaMalloc((void**)&ptr,size);
-    fstream file4("cudaMalloc_memInfo.text", ios::in|ios::out|ios::app);
-    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    file4<<"Malloc "<<ptr<<' '<<size<<' '<<now<<endl;
-    size_t free_byte=0;
-    size_t total_byte=0;
-    cudaMemGetInfo(&free_byte,&total_byte);
-    double free_db = (double)free_byte ;
-    double total_db = (double)total_byte ;
-    double used_db = total_db - free_db ;
-    fstream file5("cudaMemGetInfo.text", ios::in|ios::out|ios::app);
-    file5<<"Malloc "<<used_db/1024.0/1024.0<<' '<<free_db/1024.0/1024.0<<' '<<total_db/1024.0/1024.0<<endl;
+    pool_->Malloc((void**)&ptr, size);
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
@@ -138,20 +118,7 @@ void* CudaGPU::Malloc(int size) {
 void CudaGPU::Free(void* ptr) {
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
-    //pool_->Free(ptr);
-    // below are done by cudaMalloc instead of cnmemPool::Free,  by junzhe 11/20
-    cudaFree(ptr);
-    fstream file4("cudaMalloc_memInfo.text", ios::in|ios::out|ios::app);
-    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    file4<<"Free "<<ptr<<' '<<now<<endl;
-    size_t free_byte=0;
-    size_t total_byte=0;
-    cudaMemGetInfo(&free_byte,&total_byte);
-    double free_db = (double)free_byte ;
-    double total_db = (double)total_byte ;
-    double used_db = total_db - free_db ;
-    fstream file5("cudaMemGetInfo.text", ios::in|ios::out|ios::app);
-    file5<<"Free "<<used_db/1024.0/1024.0<<' '<<free_db/1024.0/1024.0<<' '<<total_db/1024.0/1024.0<<endl;
+    pool_->Free(ptr);
   }
 }
 
