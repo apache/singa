@@ -120,6 +120,7 @@ public:
     void Free(void* ptr);
     ~SmartMemPool();
     void getMaxLoad(void);
+    std::pair<size_t, size_t> GetMemUsage() override;
 private:
     string colorMethod;
     int mallocFlag =0; //0 for cudaMalloc, 1 for coloringMalloc
