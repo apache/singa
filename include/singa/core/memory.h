@@ -148,6 +148,9 @@ private:
     map<void*,size_t>Table_p2s; //For tracking load in Free. add when allocate, delete when deallocate.
     map<void*,int>Table_p2r; //ptr for arrival idx, for look up Table during free
     int checkPoint=300; //for reduce number of test.
+    size_t maxTotalLoad;
+    size_t maxMemUsage;
+    float memRatio;
 };
 
 #endif
