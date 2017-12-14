@@ -20,3 +20,7 @@ Distributed deep learning system
 
 * [Development Mailing List](mailto:dev-subscribe@singa.incubator.apache.org) ([Archive](http://mail-archives.apache.org/mod_mbox/singa-dev/))
 * [Commits Mailing List](mailto:commits-subscribe@singa.incubator.apache.org) ([Archive](http://mail-archives.apache.org/mod_mbox/singa-commits/))
+
+## change note:
+this version is a brach off of junzhezhang's master, Cmakelist and dependencies remain changed.
+This version implements SmartMemPool, got changes in memory.cc, memory.h, cuda_gpu.cc, platform.cc,and cifar-10/train.py. 
