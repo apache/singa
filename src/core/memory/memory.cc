@@ -661,13 +661,24 @@ void overlap_test(vector<Vertex> vertices){
 }
 
 
-SmartMemPool::SmartMemPool(string meth){
+SmartMemPool::SmartMemPool(const MemPoolConf &conf){
     //TODO(junzhe) to figure out what to do here.
-    colorMethod = meth;
+    colorMethod = "BF";
+    conf_ = conf;
 }
 
+void SmartMemPool::Init(){
+  //TODO(junzhe) Note, this is dummy here, not catter multiple GPU.
+  mtx_.lock();
+  if(!initialized_){
+    initialized_ =true;
+  }
+  mtx_.unlock();
+}
+
+
 ///Malloc
-void SmartMemPool::Malloc(void** ptr, size_t size){
+void SmartMemPool::Malloc(void** ptr, const size_t size){
     /*
      1. switch flag when gc == globeCounter, construct lookup table and malloc the whole pool.
      2. if flag=0, malloc/cudaMalloc, collect vec string
@@ -678,7 +689,11 @@ void SmartMemPool::Malloc(void** ptr, size_t size){
 //    cout<<"before Malloc: gc  GC idxRange:"<<gc<<' '<<globeCounter<<' '<<idxRange<<endl;
 //    cout<<"maxLen, location and flag: "<<maxLen<<' '<<location<<' '<<mallocFlag<<endl;
 //    cout<<" offset: "<<offset<<endl;
-    
+    //TODO(junzhe) Note, this is dummy here, not catter multiple GPU.
+  if (!initialized_){
+    Init();
+  }
+
     void* allocatedPtr = NULL; //ptr to be returned
     
     if (gc == globeCounter){
@@ -701,7 +716,7 @@ void SmartMemPool::Malloc(void** ptr, size_t size){
         Table_d2r = pairs.second;
         
         //update ptrPool
-        ptrPool = malloc(offset); //poolSize or memory foot print  offset.
+        cudaMalloc(&ptrPool,offset); //poolSize or memory foot print  offset.
         cout<<"ptrPool is: "<<ptrPool<<endl;
         //3rd map
         for (int i=0; i<vertices.size(); i++){
@@ -719,7 +734,8 @@ void SmartMemPool::Malloc(void** ptr, size_t size){
     
     if(mallocFlag==0){
         ///  2. if flag=0, malloc/cudaMalloc
-        allocatedPtr = malloc(size);
+        cudaMalloc(ptr, size);
+        allocatedPtr = *ptr;
 
         //update load
         if(loadLogFlag==1){
@@ -754,8 +770,8 @@ void SmartMemPool::Malloc(void** ptr, size_t size){
             }
         }else {
             //size not proper or occupied
-            
-            allocatedPtr = malloc(size);
+            cudaMalloc(ptr, size);
+            allocatedPtr = *ptr;
             //update load
             if(loadLogFlag==1){
                 Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first+size,Table_load.find(gc-1)->second.second);
@@ -805,7 +821,7 @@ void SmartMemPool::Free(void* ptr){
             Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first-deallocatedSize,Table_load.find(gc-1)->second.second);
         }
         /// before flag switch, for sure all free shall be done by free()
-        free(ptr);
+        cudaFree(ptr);
     }else{
         if (!(Table_p2r.find(ptr)==Table_p2r.end())){
             int resp_rIdx = Table_p2r.find(ptr)->second;
@@ -827,7 +843,7 @@ void SmartMemPool::Free(void* ptr){
             if(loadLogFlag==1){
                 Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first-deallocatedSize,Table_load.find(gc-1)->second.second);
             }
-            free(ptr);
+            cudaFree(ptr);
         }
     }
     gc++;
@@ -835,7 +851,7 @@ void SmartMemPool::Free(void* ptr){
 
 
 SmartMemPool::~SmartMemPool(){
-    free(ptrPool);
+    cudaFree(ptrPool);
     //TODO(junzhe) verify what else shall be cleaned up.
 }
 
@@ -868,8 +884,7 @@ void SmartMemPool::getMaxLoad(){
     cout<<maxTotalLoad<<endl;
     cout<<maxCudaLoad<<endl;
     cout<<maxMemUsage<<endl;
-    cout<<"memRatio: "<<memRatio<<endl;
-    
+    cout<<"memRatio: "<<memRatio<<endl;   
 }
 
 std::pair<size_t, size_t> SmartMemPool::GetMemUsage() {
