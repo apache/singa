@@ -112,7 +112,7 @@ struct lookUpElement{
 };
 
 ///class mem-pool SmartMemPool
-class SmartMemPool{
+class SmartMemPool: public DeviceMemPool {
 public:
     SmartMemPool(string meth); //constructor
     //TODO(junzhe) in Singa, void Malloc( void**, size_t); change to cudaMalloc and cudaFree.
