@@ -128,7 +128,7 @@ Platform::CreateCudaGPUsOn(const vector<int> &devices, size_t init_size) {
     conf.add_device(device);
     CHECK_LE(bytes, Platform::GetGPUMemSize(device).first);
   }
-  auto pool = std::make_shared<SmartMemPool>;
+  auto pool = std::make_shared<SmartMemPool>(conf);
 
   vector<shared_ptr<Device> > ret;
   for (auto device : devices) {
@@ -170,10 +170,8 @@ Platform::CreateOpenclDevices(const size_t num_devices) {
   }
   return (int)total_num_devices;
 }
-
 static const std::vector<std::shared_ptr<Device>>
 Platform::CreateOpenclDevices(const std::vector<int> &id) {
-
 }
 */
 #endif // USE_OPENCL
