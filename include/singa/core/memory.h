@@ -114,14 +114,22 @@ struct lookUpElement{
 ///class mem-pool SmartMemPool
 class SmartMemPool: public DeviceMemPool {
 public:
-    SmartMemPool(string meth="BF"); //constructor
+    SmartMemPool(const MemPoolConf &conf); //constructor
     //TODO(junzhe) in Singa, void Malloc( void**, size_t); change to cudaMalloc and cudaFree.
-    void Malloc(void** ptr, size_t size);
+    void Malloc(void** ptr, const size_t size);
     void Free(void* ptr);
     ~SmartMemPool();
     void getMaxLoad(void);
     std::pair<size_t, size_t> GetMemUsage() override;
+protected:
+    void Init();
 private:
+    MemPoolConf conf_;
+    // whether the (global) memory pool has been initialized
+    bool initialized_ = false;
+    // lock on the initialized variable
+    std::mutex mtx_;
+
     string colorMethod;
     int mallocFlag =0; //0 for cudaMalloc, 1 for coloringMalloc
     int gc =0; //global counter each time Malloc/Free, add 1.
