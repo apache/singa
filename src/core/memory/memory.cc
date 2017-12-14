@@ -872,9 +872,9 @@ void SmartMemPool::getMaxLoad(){
     int idxMaxColorLoad = static_cast<int>(distance(colorLoadLog.begin(),max_element(colorLoadLog.begin(),colorLoadLog.end())));
     size_t offsetCudaLoad = Table_load.find(idxMaxColorLoad)->second.first;
     
-    size_t maxTotalLoad = max(maxCudaLoad,maxColorLoad+offsetCudaLoad);
-    size_t maxMemUsage = max(maxCudaLoad,offset+offsetCudaLoad);
-    float memRatio = (float)maxMemUsage/(float)maxTotalLoad;
+    maxTotalLoad = max(maxCudaLoad,maxColorLoad+offsetCudaLoad);
+    maxMemUsage = max(maxCudaLoad,offset+offsetCudaLoad);
+    memRatio = (float)maxMemUsage/(float)maxTotalLoad;
     
     cout<<"=============================memory usage stats print: ================================"<<endl;
     cout<<"maxColorLoad vs memPoolSize: (at idx "<<idxMaxColorLoad<<")"<<endl;
