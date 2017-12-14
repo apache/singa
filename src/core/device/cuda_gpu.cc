@@ -47,7 +47,7 @@ const int kNumCudaStream = 1;
 CudaGPU::CudaGPU(int id) : Device(id, kNumCudaStream) {
   MemPoolConf conf;
   conf.add_device(id);
-  pool_ = std::make_shared<SmartMemPool>;
+  pool_ = std::make_shared<SmartMemPool>(conf);
   Setup();
 }
 
