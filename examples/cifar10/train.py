@@ -144,7 +144,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
     num_test_batch = test_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
     fileTimeLog =open("epochTimeLog.text","a")
-    for epoch in range(1):
+    for epoch in range(3):
         np.random.shuffle(idx)
         loss, acc = 0.0, 0.0
         print('Epoch %d' % epoch)
@@ -153,8 +153,8 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         fileTimeLog.write('Epoch %d: ' % epoch)
         fileTimeLog.write(str(int(round(time.time()*1000))))
         fileTimeLog.write('\n')
-        for b in range(1):
-            time.sleep(2)
+        for b in range(num_train_batch):
+            #time.sleep(0.001)
             fileTimeLog.write('iteration %d: ' % b)
             fileTimeLog.write(str(int(round(time.time()*1000))))
             fileTimeLog.write('\n')
