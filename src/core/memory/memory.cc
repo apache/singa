@@ -844,7 +844,12 @@ void SmartMemPool::Free(void* ptr){
                 //deallocate and unmark TODO(junzhe) double check what else to be done.
                 Table_r2Ver.find(resp_rIdx)->second.Occupied =0; //freed, able to allocate again.
             }else{
-                cout<<"error, in freeing the ptr"<<endl;
+                //TODO(junzhe) but only resnet last iteration falls in.
+                if(loadLogFlag==1){
+                Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second-deallocatedSize);
+                }
+                file<<" Condition F4, addr: "<<ptr<<" error, in freeing the ptr"<<endl
+                Table_r2Ver.find(resp_rIdx)->second.Occupied =0; //freed, able to allocate again.
             }
         }else{
             //update load
