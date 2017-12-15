@@ -21,6 +21,7 @@
 #include "singa/utils/logging.h"
 #include "singa/proto/core.pb.h"
 #include <iostream>
+#include <fstream> //a.
 //for SmartMemoryPool
 using namespace std;
 
@@ -690,7 +691,9 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
 //    cout<<"maxLen, location and flag: "<<maxLen<<' '<<location<<' '<<mallocFlag<<endl;
 //    cout<<" offset: "<<offset<<endl;
     //TODO(junzhe) Note, this is dummy here, not catter multiple GPU.
-  if (!initialized_){
+    fstream file("memInfo.text", ios::in|ios::out|ios::app); //a.
+    file<<gc<<' '<<"Malloc"; //a.
+    if (!initialized_){
     Init();
   }
 
@@ -736,7 +739,6 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
         ///  2. if flag=0, malloc/cudaMalloc
         cudaMalloc(ptr, size);
         allocatedPtr = *ptr;
-
         //update load
         if(loadLogFlag==1){
             if (gc>0){
@@ -755,6 +757,7 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
         string tempStr3 = strm3.str();
         string temp = tempStr1+tempStr2+" "+tempStr3;
         vec.push_back(temp);
+        file<<" Condition M1, addr: "<<*ptr<<endl;  //a.
     }else{
         /// 3. if flag=1, look up table, switch back at last iteration.
         int lookupIdx = (gc-location)%maxLen;
@@ -763,7 +766,8 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
             allocatedPtr = Table_r2Ver.find(lookupIdx)->second.ptr;
             Table_r2Ver.find(lookupIdx)->second.Occupied=1;
             Table_p2r[allocatedPtr]=lookupIdx;
-
+            *ptr =allocatedPtr; //a. value added step
+            file<<" Condition M2, addr: "<<*ptr<<endl;  //a.
             //update load
             if(loadLogFlag==1){
                 Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second+size);
@@ -772,6 +776,7 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
             //size not proper or occupied
             cudaMalloc(ptr, size);
             allocatedPtr = *ptr;
+            file<<" Condition M3, addr: "<<*ptr<<endl;  //a.
             //update load
             if(loadLogFlag==1){
                 Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first+size,Table_load.find(gc-1)->second.second);
@@ -804,6 +809,8 @@ void SmartMemPool::Free(void* ptr){
 //    cout<<"before Free: gc  GC idxRange:"<<gc<<' '<<globeCounter<<' '<<idxRange<<endl;
 //    cout<<"maxLen, location and flag: "<<maxLen<<' '<<location<<' '<<mallocFlag<<endl;
 //    cout<<" offset: "<<offset<<endl;
+    fstream file("memInfo.text", ios::in|ios::out|ios::app); //a.
+    file<<gc<<' '<<"Free"; //a.
     
     size_t deallocatedSize = Table_p2s.find(ptr)->second;
     
@@ -816,6 +823,7 @@ void SmartMemPool::Free(void* ptr){
         string temp = tempStr1+tempStr2;
         vec.push_back(temp);
         
+        file<<" Condition F1, addr: "<<ptr<<endl;  //a.
         //update load before free
         if(loadLogFlag==1){
             Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first-deallocatedSize,Table_load.find(gc-1)->second.second);
@@ -832,7 +840,7 @@ void SmartMemPool::Free(void* ptr){
                 if(loadLogFlag==1){
                 Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second-deallocatedSize);
                 }
-                
+                file<<" Condition F2, addr: "<<ptr<<endl;  //a.
                 //deallocate and unmark TODO(junzhe) double check what else to be done.
                 Table_r2Ver.find(resp_rIdx)->second.Occupied =0; //freed, able to allocate again.
             }else{
@@ -843,6 +851,7 @@ void SmartMemPool::Free(void* ptr){
             if(loadLogFlag==1){
                 Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first-deallocatedSize,Table_load.find(gc-1)->second.second);
             }
+            file<<" Condition F3, addr: "<<ptr<<endl;  //a.
             cudaFree(ptr);
         }
     }
