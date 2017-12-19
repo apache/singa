@@ -143,7 +143,8 @@ private:
     vector<string> vec;
     map<int,int>Table_r2d; //full duration info, cross-iteration duration.
     map<int,int>Table_d2r;
-    map<int,lookUpElement>Table_r2Ver;
+    //map<int,lookUpElement>Table_r2Ver;
+    vector<pair<int,lookUpElement>>Vec_r2Ver; //b. replace Table_r2Ver
     map<int, pair<size_t,size_t>>Table_load; //gc, <cudaLoad, colorLoad>
     map<void*,size_t>Table_p2s; //For tracking load in Free. add when allocate, delete when deallocate.
     map<void*,int>Table_p2r; //ptr for arrival idx, for look up Table during free
