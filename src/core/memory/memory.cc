@@ -721,7 +721,12 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
         //update ptrPool
         cudaMalloc(&ptrPool,offset); //poolSize or memory foot print  offset.
         cout<<"ptrPool is: "<<ptrPool<<endl;
-        //3rd map
+
+        //b.  below 2 loops: vec_r2Ver to replace Table_r2Ver
+        for (int i=0; i<idxRange; i++){
+            lookUpElement tempElement;
+            Vec_r2Ver.push_back(make_pair(i,tempElement));
+        }
         for (int i=0; i<vertices.size(); i++){
             lookUpElement temp;
             temp.r_idx =vertices[i].r;
@@ -731,7 +736,7 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
             temp.ptr = (void*)((char*)ptrPool+temp.offset*sizeof(char));
             temp.Occupied =0;
             //build tables for lookup.
-            Table_r2Ver[temp.r_idx]= temp;
+            Vec_r2Ver[vertices[i].r].second= temp;
         }
     }
     
@@ -761,10 +766,10 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
     }else{
         /// 3. if flag=1, look up table, switch back at last iteration.
         int lookupIdx = (gc-location)%maxLen;
-        if ((Table_r2Ver.find(lookupIdx)->second.size == size)&& (Table_r2Ver.find(lookupIdx)->second.Occupied==0)){
+        if ((Vec_r2Ver[lookupIdx].second.size ==size) && (Vec_r2Ver[lookupIdx].second.Occupied==0)){
             //assign ptr and mark as occupied, and add in ptr2rIdx
-            allocatedPtr = Table_r2Ver.find(lookupIdx)->second.ptr;
-            Table_r2Ver.find(lookupIdx)->second.Occupied=1;
+            allocatedPtr = Vec_r2Ver[lookupIdx].second.ptr;
+            Vec_r2Ver[lookupIdx].second.Occupied=1;
             Table_p2r[allocatedPtr]=lookupIdx;
             *ptr =allocatedPtr; //a. value added step
             file<<" Condition M2, addr: "<<*ptr<<endl;  //a.
@@ -835,21 +840,21 @@ void SmartMemPool::Free(void* ptr){
             int resp_rIdx = Table_p2r.find(ptr)->second;
             Table_p2r.erase(ptr);
             
-            if (((gc-location)%maxLen == Table_r2Ver.find(resp_rIdx)->second.d_idx) && (ptr == Table_r2Ver.find(resp_rIdx)->second.ptr) &&(Table_r2Ver.find(resp_rIdx)->second.Occupied ==1)){
+            if (((gc-location)%maxLen == Vec_r2Ver[resp_rIdx].second.d_idx) && (ptr == Vec_r2Ver[resp_rIdx].second.ptr) && (Vec_r2Ver[resp_rIdx].second.Occupied==1)){
                 //update load
                 if(loadLogFlag==1){
                 Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second-deallocatedSize);
                 }
                 file<<" Condition F2, addr: "<<ptr<<endl;  //a.
                 //deallocate and unmark TODO(junzhe) double check what else to be done.
-                Table_r2Ver.find(resp_rIdx)->second.Occupied =0; //freed, able to allocate again.
+                Vec_r2Ver[resp_rIdx].second.Occupied =0; //freed, able to allocate again.
             }else{
-                //TODO(junzhe) but only resnet last iteration falls in.
+                //TODO(junzhe) only resnet last iteration falls in.
                 if(loadLogFlag==1){
                 Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second-deallocatedSize);
                 }
                 file<<" Condition F4, addr: "<<ptr<<" error, in freeing the ptr"<<endl;
-                Table_r2Ver.find(resp_rIdx)->second.Occupied =0; //freed, able to allocate again.
+                Vec_r2Ver[resp_rIdx].second.Occupied =0;  //freed, able to allocate again.
             }
         }else{
             //update load
