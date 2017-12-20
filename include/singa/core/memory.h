@@ -109,6 +109,8 @@ struct lookUpElement{
     size_t offset;
     void* ptr;
     int Occupied; //0 is free, 1 is occupied.
+    int crossItr; 
+    int Occupied_backup; 
 };
 
 ///class mem-pool SmartMemPool
@@ -138,6 +140,7 @@ private:
     void* ptrPool = NULL;
     int idxRange = 0;
     size_t offset = 0;
+    size_t offsetCrossItr=0; //cross iteration offset.
     int maxLen =0;
     int location=0;
     vector<string> vec;
