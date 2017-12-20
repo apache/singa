@@ -695,8 +695,8 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
      */
 
     //TODO(junzhe) Note, this is dummy here, not catter multiple GPU.
-    fstream file("memInfo.text", ios::in|ios::out|ios::app); //a.
-    file<<gc<<' '<<"Malloc"; //a.
+    //fstream file("memInfo.text", ios::in|ios::out|ios::app); //a.
+    //file<<gc<<' '<<"Malloc"; //a.
     if (!initialized_){
     Init();
   }
@@ -768,7 +768,7 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
         string tempStr3 = strm3.str();
         string temp = tempStr1+tempStr2+" "+tempStr3;
         vec.push_back(temp);
-        file<<" Condition M1, addr: "<<*ptr<<endl;  //a.
+        //file<<" Condition M1, addr: "<<*ptr<<endl;  //a.
     }else{
         /// 3. if flag=1, look up table.
         int lookupIdx = (gc-location)%maxLen;
@@ -783,7 +783,7 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
                 if(loadLogFlag==1){
                   Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second+size);
                 }
-                file<<" Condition M2, addr: "<<*ptr<<endl;  //a.
+                //file<<" Condition M2, addr: "<<*ptr<<endl;  //a.
               }else if ((Vec_r2Ver[lookupIdx].second.crossItr==1) && (Vec_r2Ver[lookupIdx].second.Occupied==1) && (Vec_r2Ver[lookupIdx].second.Occupied_backup ==0)) {
                 //condition M4, crossItr's backup
                 allocatedPtr = (void*)((char*)Vec_r2Ver[lookupIdx].second.ptr+offsetCrossItr*sizeof(char));
@@ -793,7 +793,7 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
                 if(loadLogFlag==1){
                   Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second+size);
                 }
-                file<<" Condition M4, addr: "<<*ptr<<endl;  //a.
+                //file<<" Condition M4, addr: "<<*ptr<<endl;  //a.
               }
         }else{  //condition M3, size not proper or both occupied.
                 cudaMalloc(ptr, size);
@@ -802,7 +802,7 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
                 if(loadLogFlag==1){
                   Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first+size,Table_load.find(gc-1)->second.second);
                 }
-                file<<" Condition M3, addr: "<<*ptr<<endl;  //a.
+                //file<<" Condition M3, addr: "<<*ptr<<endl;  //a.
         } 
     } //end of loop for flag=1
     
@@ -827,8 +827,8 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
 ///Free
 void SmartMemPool::Free(void* ptr){
     
-    fstream file("memInfo.text", ios::in|ios::out|ios::app); //a.
-    file<<gc<<' '<<"Free"; //a.
+    //fstream file("memInfo.text", ios::in|ios::out|ios::app); //a.
+    //file<<gc<<' '<<"Free"; //a.
     
     size_t deallocatedSize = Table_p2s.find(ptr)->second;
     
@@ -841,7 +841,7 @@ void SmartMemPool::Free(void* ptr){
         string temp = tempStr1+tempStr2;
         vec.push_back(temp);
         
-        file<<" Condition F1, addr: "<<ptr<<endl;  //a.
+        //file<<" Condition F1, addr: "<<ptr<<endl;  //a.
         //update load before free
         if(loadLogFlag==1){
             Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first-deallocatedSize,Table_load.find(gc-1)->second.second);
@@ -856,11 +856,11 @@ void SmartMemPool::Free(void* ptr){
             if (ptr == Vec_r2Ver[resp_rIdx].second.ptr){
               //Condition F2, from M2
               Vec_r2Ver[resp_rIdx].second.Occupied =0; //freed, able to allocate again.
-              file<<" Condition F2, addr: "<<ptr<<endl;  //a.
+              //file<<" Condition F2, addr: "<<ptr<<endl;  //a.
             }else if (ptr == (void*)((char*)Vec_r2Ver[resp_rIdx].second.ptr+offsetCrossItr*sizeof(char))){
               //Condition F4, from M4
               Vec_r2Ver[resp_rIdx].second.Occupied_backup =0;
-              file<<" Condition F4, addr: "<<ptr<<endl;  //a.
+              //file<<" Condition F4, addr: "<<ptr<<endl;  //a.
             } else{
               //Condition F5, from M2, M4 but idx switched.
               if (((float)((char*)ptr-((char*)ptrPool+offsetCrossItr*sizeof(char)))>0) && ((float)((char*)ptr-((char*)ptrPool+2*offsetCrossItr*sizeof(char)))<0)){
@@ -878,7 +878,7 @@ void SmartMemPool::Free(void* ptr){
           if(loadLogFlag==1){
               Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first-deallocatedSize,Table_load.find(gc-1)->second.second);
           }
-          file<<" Condition F3, addr: "<<ptr<<endl;  //a.
+          //file<<" Condition F3, addr: "<<ptr<<endl;  //a.
           cudaFree(ptr);
         }
             
