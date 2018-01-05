@@ -890,7 +890,7 @@ void SmartMemPool::Free(void* ptr){
 SmartMemPool::~SmartMemPool(){
     fstream file_block("blockInfo.text", ios::in|ios::out|ios::app);
     for (int i=0; i< vec_block_RW.size();i++){
-        file_block<<vec_block[i]<<endl;
+        file_block<<vec_block_RW[i]<<endl;
     }
     cudaFree(ptrPool);
     //TODO(junzhe) verify what else shall be cleaned up.

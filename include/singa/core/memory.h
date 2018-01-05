@@ -49,7 +49,7 @@ class DeviceMemPool {
  public:
   virtual void Malloc(void** ptr, const size_t size)  = 0;
   virtual void Free(void* ptr)  = 0;
-
+  virtual void Append(string blockInfo) = 0;
   /// Return a pair for free and total memory managed by this pool.
   virtual std::pair<size_t, size_t> GetMemUsage() {
     return std::make_pair(0u, 0u);
@@ -71,7 +71,7 @@ class CnMemPool : public DeviceMemPool {
 
   void Malloc(void** ptr, const size_t size);
   void Free(void* ptr);
-
+    void Append(string blockInfo){}
   std::pair<size_t, size_t> GetMemUsage() override;
 
   // release all memory and set cnmem manager to unintialized
@@ -96,6 +96,7 @@ class CudaMemPool : public DeviceMemPool {
  public:
   void Malloc(void** ptr, const size_t size) override;
   void Free(void* ptr) override;
+void Append(string blockInfo){}
 };
 
 //for SmartMemPool

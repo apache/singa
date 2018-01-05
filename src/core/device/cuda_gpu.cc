@@ -122,7 +122,7 @@ void CudaGPU::Free(void* ptr) {
   }
 }
 
-void* CudaGPU::Append(string blockInfo){
+void CudaGPU::Append(string blockInfo){
     pool_->Append(blockInfo);
 }
 

@@ -160,6 +160,8 @@ class CppCPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
+    
+  void Append(string blockInfo) override {}
 };
 
 
@@ -252,6 +254,8 @@ protected:
   /// Converts the void pointer into a Buffer object, then deletes the object.
   /// This has the effect of freeing up device memory.
   void Free(void* ptr) override;
+    
+  void Append(string blockInfo) override {}
 
 private:
 
