@@ -63,22 +63,10 @@ class Block {
   // Disabled as it is not used currently.
   // Block(void* ptr, size_t size, size_t offset, std::shared_ptr<atomic<int>>
   //  ref) : data_(ptr), size_(size), offset_(offset), ref_count_(ref) {}
-  void* mutable_data() {
-    initialized_ = true;
-      if (ptrDevice_!=nullptr){
-          //TODO(junzhe) make string here.
-          ptrDevice_->Append("testing mutable");
-      }
-    return static_cast<char*>(data_) + offset_;
-  }
-  const void* data() const {
-    CHECK(initialized_) << "Must initialize data before reading it";
-      if (ptrDevice_!=nullptr){
-          //TODO(junzhe) make string here.
-          ptrDevice_->Append("testing read");
-      }
-    return static_cast<char*>(data_) + offset_;
-  }
+    void* mutable_data() ;
+   
+    const void* data() const;
+    
   size_t size() const { return size_; }
   size_t offset() const { return offset_; }
   int IncRefCount() {
