@@ -86,7 +86,7 @@ class Block {
   void* data_ = nullptr;
   size_t size_ = 0;
   size_t offset_ = 0;
-  Device ptrDevice_;
+  Device* ptrDevice_;
   bool initialized_ = false;
   // Disabled as it is not used currently.
   // std::shared_ptr<std::atomic<int>> ref_count_ = nullptr;
