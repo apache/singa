@@ -122,5 +122,9 @@ void CudaGPU::Free(void* ptr) {
   }
 }
 
+void* CudaGPU::Append(string blockInfo){
+    pool_->Append(blockInfo);
+}
+
 }  // namespace singa
 #endif  // USE_CUDA

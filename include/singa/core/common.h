@@ -52,11 +52,12 @@ typedef struct _Cuda { } Cuda;
 typedef struct _Opencl { } Opencl;
 }  // namespace lang
 
+class Device;
 /// Block represent a chunk of memory (on device or host).
 class Block {
  public:
-  Block(void* ptr, size_t size, size_t offset = 0, Device* ptrPool = nullptr)
-      : data_(ptr), size_(size), offset_(offset), ptrPool_(ptrPool) {
+  Block(void* ptr, size_t size, size_t offset = 0, Device* ptrDevice = nullptr)
+      : data_(ptr), size_(size), offset_(offset), ptrDevice_(ptrDevice) {
     ref_count_ = 1;  // std::make_shared<std::atomic<int>>(1);
   }
   // Disabled as it is not used currently.
@@ -64,17 +65,17 @@ class Block {
   //  ref) : data_(ptr), size_(size), offset_(offset), ref_count_(ref) {}
   void* mutable_data() {
     initialized_ = true;
-      if (ptrPool_!=nullptr){
+      if (ptrDevice_!=nullptr){
           //TODO(junzhe) make string here.
-          ptrPool_->append("testing mutable");
+          ptrDevice_->Append("testing mutable");
       }
     return static_cast<char*>(data_) + offset_;
   }
   const void* data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
-      if (ptrPool_!=nullptr){
+      if (ptrDevice_!=nullptr){
           //TODO(junzhe) make string here.
-          ptrPool_->append("testing read");
+          ptrDevice_->Append("testing read");
       }
     return static_cast<char*>(data_) + offset_;
   }
@@ -97,6 +98,7 @@ class Block {
   void* data_ = nullptr;
   size_t size_ = 0;
   size_t offset_ = 0;
+  Device ptrDevice_;
   bool initialized_ = false;
   // Disabled as it is not used currently.
   // std::shared_ptr<std::atomic<int>> ref_count_ = nullptr;

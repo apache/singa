@@ -123,7 +123,7 @@ public:
     ~SmartMemPool();
     void getMaxLoad(void);
     std::pair<size_t, size_t> GetMemUsage() override;
-    void append(string blockInfo);
+    void Append(string blockInfo);
 protected:
     void Init();
 private:

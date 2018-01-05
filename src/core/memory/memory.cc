@@ -933,7 +933,7 @@ std::pair<size_t, size_t> SmartMemPool::GetMemUsage() {
   return std::make_pair(maxMemUsage, maxTotalLoad);
 }
     
-void SmartMemPool::append(string blockInfo) {
+void SmartMemPool::Append(string blockInfo) {
      //TODO(junzhe) add idx later
     vec_block_RW.push_back(blockInfo);
 }

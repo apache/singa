@@ -117,6 +117,8 @@ class Device {
 
   /// Free device memory.
   virtual void Free(void* ptr) = 0;
+  
+  virtual void Append(string blockInfo) = 0;
 
  protected:
   int id_ = 0;
@@ -188,6 +190,8 @@ class CudaGPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
+
+  void Append(string blockInfo) override;
 
  private:
   void Setup();
