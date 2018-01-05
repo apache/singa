@@ -888,6 +888,10 @@ void SmartMemPool::Free(void* ptr){
 
 
 SmartMemPool::~SmartMemPool(){
+    fstream file_block("blockInfo.text", ios::in|ios::out|ios::app);
+    for (int i=0; i< vec_block_RW.size();i++){
+        file_block<<vec_block[i]<<endl;
+    }
     cudaFree(ptrPool);
     //TODO(junzhe) verify what else shall be cleaned up.
 }
@@ -927,6 +931,11 @@ void SmartMemPool::getMaxLoad(){
 std::pair<size_t, size_t> SmartMemPool::GetMemUsage() {
   //TODO(junzhe) note here the pair is different from that of CnMemPool.
   return std::make_pair(maxMemUsage, maxTotalLoad);
+}
+    
+void SmartMemPool::append(string blockInfo) {
+     //TODO(junzhe) add idx later
+    vec_block_RW.push_back(blockInfo);
 }
 
 }

@@ -123,6 +123,7 @@ public:
     ~SmartMemPool();
     void getMaxLoad(void);
     std::pair<size_t, size_t> GetMemUsage() override;
+    void append(string blockInfo);
 protected:
     void Init();
 private:
@@ -144,6 +145,8 @@ private:
     int maxLen =0;
     int location=0;
     vector<string> vec;
+    vector<string> vec_block_RW;
+    vector<string> vec_block_MFRW;
     map<int,int>Table_r2d; //full duration info, cross-iteration duration.
     map<int,int>Table_d2r;
     //map<int,lookUpElement>Table_r2Ver;

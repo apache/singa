@@ -55,8 +55,8 @@ typedef struct _Opencl { } Opencl;
 /// Block represent a chunk of memory (on device or host).
 class Block {
  public:
-  Block(void* ptr, size_t size, size_t offset = 0)
-      : data_(ptr), size_(size), offset_(offset) {
+  Block(void* ptr, size_t size, size_t offset = 0, Device* ptrPool = nullptr)
+      : data_(ptr), size_(size), offset_(offset), ptrPool_(ptrPool) {
     ref_count_ = 1;  // std::make_shared<std::atomic<int>>(1);
   }
   // Disabled as it is not used currently.
@@ -64,10 +64,18 @@ class Block {
   //  ref) : data_(ptr), size_(size), offset_(offset), ref_count_(ref) {}
   void* mutable_data() {
     initialized_ = true;
+      if (ptrPool_!=nullptr){
+          //TODO(junzhe) make string here.
+          ptrPool_->append("testing mutable");
+      }
     return static_cast<char*>(data_) + offset_;
   }
   const void* data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
+      if (ptrPool_!=nullptr){
+          //TODO(junzhe) make string here.
+          ptrPool_->append("testing read");
+      }
     return static_cast<char*>(data_) + offset_;
   }
   size_t size() const { return size_; }
