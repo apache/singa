@@ -48,3 +48,4 @@ const void* Block::data() const {
 
 
 }  // namespace singa
+#endif
