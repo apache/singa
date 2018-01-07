@@ -23,6 +23,7 @@
 #include <curand.h>
 #include <chrono>
 #include <iostream>
+#include <string>
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
 namespace singa {

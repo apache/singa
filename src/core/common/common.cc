@@ -19,9 +19,9 @@
 
 #include "singa/core/common.h"
 #include "singa/core/device.h"
-//#include <iostream>
-//#include <fstream>
-
+#include <iostream>
+#include <fstream>
+#include <string>
 //TODO(junzhe) ifdef to counter verify
 ///only include mutable_data() and data()
 
