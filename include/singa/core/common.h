@@ -24,7 +24,7 @@
 #include <atomic>
 #include <memory>
 #include "singa/utils/logging.h"
-nclude <string>
+#include <string>
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
