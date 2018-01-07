@@ -30,6 +30,7 @@ AUX_SOURCE_DIRECTORY(io io_source)
 AUX_SOURCE_DIRECTORY(io/network io_source)
 LIST(APPEND singa_sources ${io_source})
 
+AUX_SOURCE_DIRECTORY(core/common core_source)
 AUX_SOURCE_DIRECTORY(core/device core_source)
 AUX_SOURCE_DIRECTORY(core/memory core_source)
 AUX_SOURCE_DIRECTORY(core/scheduler core_source)
