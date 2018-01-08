@@ -30,8 +30,14 @@ namespace singa {
 void* Block::mutable_data() {
     initialized_ = true;
       if (ptrDevice_!=nullptr){
-          //TODO(junzhe) make string here.
-          ptrDevice_->AppendInfo("testing mutable");
+          stringstream strm2;
+          strm2<<data_;
+          string tempStr2 = strm2.str();
+          stringstream strm3;
+          strm3<<size_;
+          string tempStr3 = strm3.str();
+	  string temp = "Mutable "+tempStr2+" "+tempStr3;   
+          ptrDevice_->AppendInfo(temp);
       }
     return static_cast<char*>(data_) + offset_;
   }
@@ -40,8 +46,14 @@ void* Block::mutable_data() {
 const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
       if (ptrDevice_!=nullptr){
-          //TODO(junzhe) make string here.
-          ptrDevice_->AppendInfo("testing read");
+          stringstream strm2;
+          strm2<<data_;
+          string tempStr2 = strm2.str();
+          stringstream strm3;
+          strm3<<size_;
+          string tempStr3 = strm3.str();
+          string temp = "Read "+tempStr2+" "+tempStr3;
+          ptrDevice_->AppendInfo(temp);
       }
     return static_cast<char*>(data_) + offset_;
   }
