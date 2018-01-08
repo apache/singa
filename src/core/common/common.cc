@@ -31,7 +31,7 @@ void* Block::mutable_data() {
     initialized_ = true;
       if (ptrDevice_!=nullptr){
           //TODO(junzhe) make string here.
-          ptrDevice_->Append("testing mutable");
+          ptrDevice_->AppendInfo("testing mutable");
       }
     return static_cast<char*>(data_) + offset_;
   }
@@ -41,7 +41,7 @@ const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
       if (ptrDevice_!=nullptr){
           //TODO(junzhe) make string here.
-          ptrDevice_->Append("testing read");
+          ptrDevice_->AppendInfo("testing read");
       }
     return static_cast<char*>(data_) + offset_;
   }
