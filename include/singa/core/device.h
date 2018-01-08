@@ -64,6 +64,8 @@ class Device {
 
   /// Called by Tensor.
   void FreeBlock(Block* block);
+  
+  void AppendInfo(string blockInfo);
 
   /// Return the size (bytes) of memory in use
   /// TODO(wangwei) override this function for all devices.

@@ -51,6 +51,10 @@ void Device::FreeBlock(Block* block) {
   }
 }
 
+void Device::AppendInfo(string blockInfo){
+Append(blockInfo);
+}
+
 void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                             CopyDirection direct, int dst_offset,
                             int src_offset) {
