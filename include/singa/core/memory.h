@@ -147,7 +147,7 @@ private:
     int location=0;
     vector<string> vec;
     vector<string> vec_block_RW;
-    vector<string> vec_block_MFRW;
+    vector<string> vec_block_RWMF;
     map<int,int>Table_r2d; //full duration info, cross-iteration duration.
     map<int,int>Table_d2r;
     //map<int,lookUpElement>Table_r2Ver;

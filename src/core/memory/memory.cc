@@ -22,6 +22,7 @@
 #include "singa/proto/core.pb.h"
 #include <iostream>
 #include <fstream> //a.
+#include <chrono>
 //for SmartMemoryPool
 using namespace std;
 
@@ -821,7 +822,17 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
     
     gc++;
     Table_p2s[allocatedPtr]=size; //update it for load tracking purpose.
-    *ptr = allocatedPtr; 
+    *ptr = allocatedPtr;
+    ///update block_RWMF
+    string tempStr1 ="Malloc ";
+    stringstream strm2;
+    strm2<<allocatedPtr;
+    string tempStr2 = strm2.str();
+    stringstream strm3;
+    strm3<<size;
+    string tempStr3 = strm3.str();
+    string temp = tempStr1+tempStr2+" "+tempStr3;
+    vec_block_RWMF.push_back(temp);
 }
 
 ///Free
@@ -884,13 +895,24 @@ void SmartMemPool::Free(void* ptr){
             
     }
     gc++;
+    ///update block_RWMF
+    string tempStr1 ="Free ";
+    stringstream strm2;
+    strm2<<ptr;
+    string tempStr2 = strm2.str();
+    string temp = tempStr1+tempStr2;
+    vec_block_RWMF.push_back(temp);
 }//end of Free.
 
 
 SmartMemPool::~SmartMemPool(){
-    fstream file_block("blockInfo.text", ios::in|ios::out|ios::app);
+    fstream file_block1("blockInfo_RW.text", ios::in|ios::out|ios::app);
+    fstream file_block2("blockInfo_RWMF.text", ios::in|ios::out|ios::app);
     for (int i=0; i< vec_block_RW.size();i++){
-        file_block<<vec_block_RW[i]<<endl;
+        file_block1<<vec_block_RW[i]<<endl;
+    }
+    for (int i=0; i< vec_block_RWMF.size();i++){
+        file_block2<<vec_block_RWMF[i]<<endl;
     }
     cudaFree(ptrPool);
     //TODO(junzhe) verify what else shall be cleaned up.
@@ -936,6 +958,7 @@ std::pair<size_t, size_t> SmartMemPool::GetMemUsage() {
 void SmartMemPool::Append(string blockInfo) {
      //TODO(junzhe) add idx later
     vec_block_RW.push_back(blockInfo);
+    vec_block_RWMF.push_back(blockInfo);
 }
 
 }
