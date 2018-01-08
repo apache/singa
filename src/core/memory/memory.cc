@@ -832,6 +832,12 @@ void SmartMemPool::Malloc(void** ptr, const size_t size){
     strm3<<size;
     string tempStr3 = strm3.str();
     string temp = tempStr1+tempStr2+" "+tempStr3;
+    ///below time can be removed TODO(junzhe)
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    stringstream strm4;
+    strm4<<now;
+    string tempStr4 = strm4.str();
+    temp = temp+" "+tempStr4;
     vec_block_RWMF.push_back(temp);
 }
 
@@ -901,6 +907,12 @@ void SmartMemPool::Free(void* ptr){
     strm2<<ptr;
     string tempStr2 = strm2.str();
     string temp = tempStr1+tempStr2;
+    ///below time can be removed TODO(junzhe)
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    stringstream strm4;
+    strm4<<now;
+    string tempStr4 = strm4.str();
+    temp = temp+" "+tempStr4;
     vec_block_RWMF.push_back(temp);
 }//end of Free.
 
