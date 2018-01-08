@@ -130,7 +130,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         dev = device.get_default_device()
     else:
         print('Using GPU')
-        dev = device.create_cuda_gpu_on()
+        dev = device.create_cuda_gpu_on(1)
 
     net.to_device(dev)
     opt = optimizer.SGD(momentum=0.9, weight_decay=weight_decay)
@@ -153,7 +153,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         fileTimeLog.write('Epoch %d: ' % epoch)
         fileTimeLog.write(str(int(round(time.time()*1000))))
         fileTimeLog.write('\n')
-        for b in range(num_train_batch):
+        for b in range(10): #num_train_batch):
             #time.sleep(0.001)
             fileTimeLog.write('iteration %d: ' % b)
             fileTimeLog.write(str(int(round(time.time()*1000))))
