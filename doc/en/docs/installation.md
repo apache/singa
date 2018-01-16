@@ -136,7 +136,7 @@ The following instructions are tested on Ubuntu 14.04  and 16.04for installing d
     $ sudo apt-get install python3-dev python3-numpy, python3-pip
     $ sudo apt-get install libopencv-dev libgoogle-glog-dev liblmdb-dev
 
-The following instructions are tested on Mac OS X Yosemite (10.11 and 10.12) for installing dependent libraries.
+The following instructions are tested on Mac OS X Yosemite (10.11 and 10.12) for installing dependent libraries. Instructions for installing on macOS 10.13 (High Sierra) can be found [here](install_macos1013.html).
 
     # required libraries
     $ brew tap homebrew/science

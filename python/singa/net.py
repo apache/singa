@@ -175,6 +175,15 @@ class FeedForwardNet(object):
         return [spec.name for spec in self.param_specs()]
 
     def train(self, x, y):
+	'''Run BP for one iteration.
+	This method is deprecated. It is only kept for backward compatibility.
+	The name of this method is confusing since it does not update parameters.
+	Please use backprob() instead.
+	The back progagation algorithm computes gradients but it does not train.
+        '''
+        return backprob(x, y)
+
+    def backprob(self, x, y):
         '''Run BP for one iteration.
 
         Currently only support nets with a single output layer, and a single
