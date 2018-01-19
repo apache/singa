@@ -1012,7 +1012,7 @@ void getMaxLoad (){
   //empty
 }
 
-std::pair<size_t, size_t> SmartMemPool::GetMemUsage() {
+std::pair<size_t, size_t> Swap::GetMemUsage() {
   /empty
   return std::make_pair(0, 0);
 }
