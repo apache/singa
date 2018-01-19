@@ -1012,6 +1012,11 @@ void getMaxLoad (){
   //empty
 }
 
+std::pair<size_t, size_t> SmartMemPool::GetMemUsage() {
+  /empty
+  return std::make_pair(0, 0);
+}
+
 Swap::~Swap(){
   //put in notes
     fstream file_block1("blockInfo_RW.text", ios::in|ios::out|ios::app);
