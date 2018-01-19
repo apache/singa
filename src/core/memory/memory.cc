@@ -973,7 +973,58 @@ void SmartMemPool::Append(string blockInfo) {
     vec_block_RWMF.push_back(blockInfo);
 }
 
+///Swap:
+Swap::Swap(const MemPoolConf &conf){
+    conf_ = conf;
 }
+
+void SmartMemPool::Init(){
+  //TODO(junzhe) Note, this is dummy here, not catter multiple GPU.
+  mtx_.lock();
+  if(!initialized_){
+    initialized_ =true;
+  }
+  mtx_.unlock();
+}
+
+void Swap::Malloc(void** ptr, const size_t size){
+  cudaError_t status = cudaMalloc(ptr, size);
+  CHECK_EQ(status, cudaError_t::cudaSuccess);
+  string blockInfo =" testting for Malloc";
+  vec_block_RWMF.push_back(blockInfo);
+
+}
+
+void Swap::Free(void *ptr) {
+  cudaError_t status = cudaFree(ptr);
+  CHECK_EQ(status, cudaError_t::cudaSuccess);
+  string blockInfo =" testting for Free";
+  vec_block_RWMF.push_back(blockInfo);
+}
+
+void SmartMemPool::Append(string blockInfo) {
+     //TODO(junzhe) add idx later
+    vec_block_RW.push_back(blockInfo);
+    vec_block_RWMF.push_back(blockInfo);
+}
+
+void getMaxLoad (){
+  //empty
+}
+
+SmartMemPool::~SmartMemPool(){
+  //put in notes
+    fstream file_block1("blockInfo_RW.text", ios::in|ios::out|ios::app);
+    fstream file_block2("blockInfo_RWMF.text", ios::in|ios::out|ios::app);
+    for (int i=0; i< vec_block_RW.size();i++){
+        file_block1<<vec_block_RW[i]<<endl;
+    }
+    for (int i=0; i< vec_block_RWMF.size();i++){
+        file_block2<<vec_block_RWMF[i]<<endl;
+    }
+}
+
+
 #endif
 
 #endif

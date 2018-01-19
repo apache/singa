@@ -161,6 +161,29 @@ private:
     float memRatio;
 };
 
+class Swap : public DeviceMemPool {
+public:
+    Swap(const MemPoolConf &conf); //constructor
+    //TODO(junzhe) in Singa, void Malloc( void**, size_t); change to cudaMalloc and cudaFree.
+    void Malloc(void** ptr, const size_t size);
+    void Free(void* ptr);
+    ~Swap();
+    void getMaxLoad(void);
+    std::pair<size_t, size_t> GetMemUsage() override;
+    void Append(string blockInfo);
+protected:
+    void Init();
+private:
+    MemPoolConf conf_;
+    // whether the (global) memory pool has been initialized
+    bool initialized_ = false;
+    // lock on the initialized variable
+    std::mutex mtx_; 
+    vector<string> vec_block_RW;
+    vector<string> vec_block_RWMF;  
+
+};
+
 #endif
 }  // namespace singa
 #endif  // SINGA_CORE_MEMORY_H_
