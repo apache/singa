@@ -1023,7 +1023,7 @@ Swap::~Swap(){
         file_block2<<vec_block_RWMF[i]<<endl;
     }
 }
-
+}
 
 #endif
 
