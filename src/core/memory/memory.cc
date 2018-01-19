@@ -1013,7 +1013,7 @@ void getMaxLoad (){
 }
 
 std::pair<size_t, size_t> Swap::GetMemUsage() {
-  /empty
+  //empty
   return std::make_pair(0, 0);
 }
 
