@@ -978,7 +978,7 @@ Swap::Swap(const MemPoolConf &conf){
     conf_ = conf;
 }
 
-void SmartMemPool::Init(){
+void Swap::Init(){
   //TODO(junzhe) Note, this is dummy here, not catter multiple GPU.
   mtx_.lock();
   if(!initialized_){
@@ -1002,7 +1002,7 @@ void Swap::Free(void *ptr) {
   vec_block_RWMF.push_back(blockInfo);
 }
 
-void SmartMemPool::Append(string blockInfo) {
+void Swap::Append(string blockInfo) {
      //TODO(junzhe) add idx later
     vec_block_RW.push_back(blockInfo);
     vec_block_RWMF.push_back(blockInfo);
@@ -1012,7 +1012,7 @@ void getMaxLoad (){
   //empty
 }
 
-SmartMemPool::~SmartMemPool(){
+Swap::~Swap(){
   //put in notes
     fstream file_block1("blockInfo_RW.text", ios::in|ios::out|ios::app);
     fstream file_block2("blockInfo_RWMF.text", ios::in|ios::out|ios::app);
