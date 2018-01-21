@@ -1018,7 +1018,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   strm1<<temp.realGpuPtr;
   string blockInfo ="Malloc "+strm1+" "+strm2+" "+strm3+" "+strm4;
   vec_block_RWMF.push_back(blockInfo);
-  TTable_id2LookUpElement/push_back(make_pair(temp.data_,temp));
+  Table_id2LookUpElement.push_back(make_pair(temp.data_,temp));
 }
 
 void Swap::Free(void *ptr) {
