@@ -990,15 +990,41 @@ void Swap::Init(){
 void Swap::Malloc(void** ptr, const size_t size){
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
-  string blockInfo =" testting for Malloc";
+  swapLookUpElement temp;
+  int i = 0;
+  if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
+      i = i + 1;
+      temp.data_ = *ptr +i*sizeof(char); 
+      while(!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end()){
+        //TODO(swap) verify this loop, can simplify as well.
+        i = i + 1;
+        temp.data_ = *ptr +i*sizeof(char);
+      }
+  } else {
+      temp.data_ = *ptr;
+  }
+  temp.realGpuPtr = *ptr;
+  temp.location = 1;
+  if (size>swapLimit){
+    temp.realCpuPtr = malloc(size);
+  }
+  stringstream strm1;
+  strm1<<size;
+  stringstream strm2;
+  strm1<<i;
+  stringstream strm3;
+  strm1<<temp.data_;
+  stringstream strm4;
+  strm1<<temp.realGpuPtr;
+  string blockInfo ="Malloc "+strm1+" "+strm2+" "+strm3+" "+strm4;
   vec_block_RWMF.push_back(blockInfo);
-
+  TTable_id2LookUpElement/push_back(make_pair(temp.data_,temp));
 }
 
 void Swap::Free(void *ptr) {
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
-  string blockInfo =" testting for Free";
+  string blockInfo ="testting for Free";
   vec_block_RWMF.push_back(blockInfo);
 }
 

@@ -161,6 +161,20 @@ private:
     float memRatio;
 };
 
+
+//for Swap
+struct swapLookUpElement{
+    /*
+    book keep the block info and status
+     */
+    void* data_ = nullptr;
+    void* realGpuPtr = nullptr;
+    void* realCpuPtr = nullptr;
+
+    int location; //1 is at GPU, 2 is at CPU.
+    size_t size; //size may used as of now.
+};
+
 class Swap : public DeviceMemPool {
 public:
     Swap(const MemPoolConf &conf); //constructor
@@ -180,8 +194,9 @@ private:
     // lock on the initialized variable
     std::mutex mtx_; 
     vector<string> vec_block_RW;
-    vector<string> vec_block_RWMF;  
-
+    vector<string> vec_block_RWMF;
+    size_t swapLimit = 1<<22; //4MB
+    vector<pair<void* ptr,swapLookUpElement>> Table_id2LookUpElement;
 };
 
 #endif
