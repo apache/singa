@@ -995,20 +995,20 @@ void Swap::Malloc(void** ptr, const size_t size){
   if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
       i = i + 1;
       temp.data_ = *ptr +i*sizeof(char); 
-      // while(!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
-      //   //TODO(swap) verify this loop, can simplify as well.
-      //   i = i + 1;
-      //   temp.data_ = *ptr +i*sizeof(char);
-      // }
+      while(!(Table_id2LookUpElement.find(temp.data_)==Table_id2LookUpElement.end())){
+        //TODO(swap) verify this loop, can simplify as well.
+        i = i + 1;
+        temp.data_ = *ptr +i*sizeof(char);
+      }
   } else {
       temp.data_ = *ptr;
   }
   temp.realGpuPtr = *ptr;
   temp.location = 1;
   temp.size = size;
-  // if (size>swapLimit){
-  //   temp.realCpuPtr = malloc(size);
-  // }
+  if (size>swapLimit){
+    temp.realCpuPtr = malloc(size);
+  }
   stringstream strm1;
   strm1<<size;
   string tempStr1 = strm1.str();
