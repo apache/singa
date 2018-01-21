@@ -991,7 +991,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   swapLookUpElement temp;
-  // int i = 0;
+  int i = 0;
   // if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
   //     i = i + 1;
   //     temp.data_ = *ptr +i*sizeof(char); 
