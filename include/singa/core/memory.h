@@ -196,7 +196,7 @@ private:
     vector<string> vec_block_RW;
     vector<string> vec_block_RWMF;
     size_t swapLimit = 1<<22; //4MB
-    vector<pair<void*,swapLookUpElement>> Table_id2LookUpElement;
+    map<void*,swapLookUpElement>Table_id2LookUpElement;
 };
 
 #endif
