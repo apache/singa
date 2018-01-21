@@ -995,7 +995,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
       i = i + 1;
       temp.data_ = *ptr +i*sizeof(char); 
-      while(!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end()){
+      while(!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
         //TODO(swap) verify this loop, can simplify as well.
         i = i + 1;
         temp.data_ = *ptr +i*sizeof(char);
