@@ -1010,15 +1010,19 @@ void Swap::Malloc(void** ptr, const size_t size){
   }
   stringstream strm1;
   strm1<<size;
+  string tempStr1 = strm1.str()
   stringstream strm2;
-  strm1<<i;
+  strm2<<i;
+  string tempStr2 = strm2.str()
   stringstream strm3;
-  strm1<<temp.data_;
+  strm3<<temp.data_;
+  string tempStr3 = strm3.str()
   stringstream strm4;
-  strm1<<temp.realGpuPtr;
-  string blockInfo ="Malloc "+strm1+" "+strm2+" "+strm3+" "+strm4;
+  strm4<<temp.realGpuPtr;
+  string tempStr4 = strm4.str()
+  string blockInfo ="Malloc "+tempStr1+" "+tempStr2+" "+tempStr3+" "+tempStr4;
   vec_block_RWMF.push_back(blockInfo);
-  Table_id2LookUpElement.push_back(make_pair(temp.data_,temp));
+  Table_id2LookUpElement[temp.data_]=temp;
 }
 
 void Swap::Free(void *ptr) {
