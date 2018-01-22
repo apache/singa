@@ -1050,21 +1050,21 @@ void* Swap::GetRealGpuPtr(void* data_){
 }
 
 void Swap::SwapOut(void* data_){
-    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+    auto t1 = chrono::high_resolution_clock::now();
     Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
     cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
     //TODO(swap) no free
     //Free(Table_id2LookUpElement.find(data_)->second.realGpuPtr);
     //Table_id2LookUpElement.find(data_)->second.realGpuPtr =nullptr;
 
-    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
-    chrono::high_resolution_clock::time_point t = t2 - t1;
+    auto t2 = chrono::high_resolution_clock::now();
+    auto t = t2 - t1;
     fstream file_block3("blockInfo_swapTime.text", ios::in|ios::out|ios::app);
-    file_block1<<t<<endl;
+    file_block3<<t<<endl;
 }
 
 void Swap::SwapIn(void* data_){
-    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+    //chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
     void** tempPtr;
     Malloc(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
     cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
