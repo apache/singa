@@ -1059,20 +1059,8 @@ void Swap::SwapOut(void* data_){
 
     chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
     chrono::high_resolution_clock::time_point t = t2 - t1;
-    stringstream strm1;
-    strm1<<size;
-    string tempStr1 = strm1.str();
-    stringstream strm2;
-    strm2<<t1;
-    string tempStr2 = strm2.str();
-    stringstream strm3;
-    strm3<<t2;
-    string tempStr3 = strm3.str();
-    stringstream strm4;
-    strm4<<t;
-    string tempStr4 = strm4.str();
-    string blockInfo ="SwapOut: size "+tempStr1+", t1 "+tempStr2+", t2 "+tempStr3+", t "+tempStr4;
-    vec_block_RWMF.push_back(blockInfo);
+    fstream file_block3("blockInfo_swapTime.text", ios::in|ios::out|ios::app);
+    file_block1<<t<<endl;
 }
 
 void Swap::SwapIn(void* data_){
@@ -1085,22 +1073,22 @@ void Swap::SwapIn(void* data_){
     //Table_id2LookUpElement.find(data_)->second.realCpuPtr = nullptr;
     Table_id2LookUpElement.find(data_)->second.realGpuPtr = *tempPtr;
 
-    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
-    chrono::high_resolution_clock::time_point t = t2 - t1;
-    stringstream strm1;
-    strm1<<size;
-    string tempStr1 = strm1.str();
-    stringstream strm2;
-    strm2<<t1;
-    string tempStr2 = strm2.str();
-    stringstream strm3;
-    strm3<<t2;
-    string tempStr3 = strm3.str();
-    stringstream strm4;
-    strm4<<t;
-    string tempStr4 = strm4.str();
-    string blockInfo ="SwapOut: size "+tempStr1+", t1 "+tempStr2+", t2 "+tempStr3+", t "+tempStr4;
-    vec_block_RWMF.push_back(blockInfo);
+    // chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+    // chrono::high_resolution_clock::time_point t = t2 - t1;
+    // stringstream strm1;
+    // strm1<<size;
+    // string tempStr1 = strm1.str();
+    // stringstream strm2;
+    // strm2<<t1;
+    // string tempStr2 = strm2.str();
+    // stringstream strm3;
+    // strm3<<t2;
+    // string tempStr3 = strm3.str();
+    // stringstream strm4;
+    // strm4<<t;
+    // string tempStr4 = strm4.str();
+    // string blockInfo ="SwapOut: size "+tempStr1+", t1 "+tempStr2+", t2 "+tempStr3+", t "+tempStr4;
+    // vec_block_RWMF.push_back(blockInfo);
 }
 
 void getMaxLoad (){
