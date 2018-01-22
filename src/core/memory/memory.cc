@@ -1050,15 +1050,33 @@ void* Swap::GetRealGpuPtr(void* data_){
 }
 
 void Swap::SwapOut(void* data_){
+    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
     Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
     cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
     //TODO(swap) no free
     //Free(Table_id2LookUpElement.find(data_)->second.realGpuPtr);
     //Table_id2LookUpElement.find(data_)->second.realGpuPtr =nullptr;
+
+    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+    chrono::high_resolution_clock::time_point t = t2 - t1;
+    stringstream strm1;
+    strm1<<size;
+    string tempStr1 = strm1.str();
+    stringstream strm2;
+    strm2<<t1;
+    string tempStr2 = strm2.str();
+    stringstream strm3;
+    strm3<<t2;
+    string tempStr3 = strm3.str();
+    stringstream strm4;
+    strm4<<t;
+    string tempStr4 = strm4.str();
+    string blockInfo ="SwapOut: size "+tempStr1+", t1 "+tempStr2+", t2 "+tempStr3+", t "+tempStr4;
+    vec_block_RWMF.push_back(blockInfo);
 }
 
 void Swap::SwapIn(void* data_){
-    //synchronous
+    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
     void** tempPtr;
     Malloc(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
     cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
@@ -1066,6 +1084,23 @@ void Swap::SwapIn(void* data_){
     //free(Table_id2LookUpElement.find(data_)->second.realCpuPtr);
     //Table_id2LookUpElement.find(data_)->second.realCpuPtr = nullptr;
     Table_id2LookUpElement.find(data_)->second.realGpuPtr = *tempPtr;
+
+    chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+    chrono::high_resolution_clock::time_point t = t2 - t1;
+    stringstream strm1;
+    strm1<<size;
+    string tempStr1 = strm1.str();
+    stringstream strm2;
+    strm2<<t1;
+    string tempStr2 = strm2.str();
+    stringstream strm3;
+    strm3<<t2;
+    string tempStr3 = strm3.str();
+    stringstream strm4;
+    strm4<<t;
+    string tempStr4 = strm4.str();
+    string blockInfo ="SwapOut: size "+tempStr1+", t1 "+tempStr2+", t2 "+tempStr3+", t "+tempStr4;
+    vec_block_RWMF.push_back(blockInfo);
 }
 
 void getMaxLoad (){
