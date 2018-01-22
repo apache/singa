@@ -50,6 +50,9 @@ class DeviceMemPool {
   virtual void Malloc(void** ptr, const size_t size)  = 0;
   virtual void Free(void* ptr)  = 0;
   virtual void Append(string blockInfo) = 0;
+  virtual void* GetRealGpuPtr(void* data_) = 0;
+  virtual void SwapOut(void* data_) = 0;
+  virtual void SwapIn(void* data_) = 0;
   /// Return a pair for free and total memory managed by this pool.
   virtual std::pair<size_t, size_t> GetMemUsage() {
     return std::make_pair(0u, 0u);
