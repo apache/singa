@@ -124,6 +124,9 @@ class Device {
   virtual void Free(void* ptr) = 0;
   
   virtual void Append(string blockInfo) = 0;
+  virtual void* GetRealGpuPtr(void* data_) = 0;
+  virtual void SwapOut(void* data_) = 0;
+  virtual void SwapIn(void* data_) = 0;
 
  protected:
   int id_ = 0;
