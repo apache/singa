@@ -210,7 +210,7 @@ private:
     std::mutex mtx_; 
     vector<string> vec_block_RW;
     vector<string> vec_block_RWMF;
-    size_t swapLimit = 1<<22; //4MB
+    size_t swapLimit = 1<<23; //8MB
     map<void*,swapLookUpElement>Table_id2LookUpElement;
 };
 
