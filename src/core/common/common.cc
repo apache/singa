@@ -29,33 +29,39 @@ namespace singa {
 
 void* Block::mutable_data() {
     initialized_ = true;
-      if (ptrDevice_!=nullptr){
-          stringstream strm2;
-          strm2<<data_;
-          string tempStr2 = strm2.str();
-          stringstream strm3;
-          strm3<<size_;
-          string tempStr3 = strm3.str();
-	  string temp = "Mutable "+tempStr2+" "+tempStr3;   
-          ptrDevice_->AppendInfo(temp);
-      }
-    return static_cast<char*>(data_) + offset_;
+    if (ptrDevice_!=nullptr){
+        stringstream strm2;
+        strm2<<data_;
+        string tempStr2 = strm2.str();
+        stringstream strm3;
+        strm3<<size_;
+        string tempStr3 = strm3.str();
+        string temp = "Mutable "+tempStr2+" "+tempStr3;   
+        ptrDevice_->AppendInfo(temp);
+    }
+    void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
+    ptrDevice_->SwapOutInfo(void* data_);
+
+    return static_cast<char*>(realPtr_) + offset_;
   }
 
 
 const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
-      if (ptrDevice_!=nullptr){
-          stringstream strm2;
-          strm2<<data_;
-          string tempStr2 = strm2.str();
-          stringstream strm3;
-          strm3<<size_;
-          string tempStr3 = strm3.str();
-          string temp = "Read "+tempStr2+" "+tempStr3;
-          ptrDevice_->AppendInfo(temp);
-      }
-    return static_cast<char*>(data_) + offset_;
+    if (ptrDevice_!=nullptr){
+        stringstream strm2;
+        strm2<<data_;
+        string tempStr2 = strm2.str();
+        stringstream strm3;
+        strm3<<size_;
+        string tempStr3 = strm3.str();
+        string temp = "Read "+tempStr2+" "+tempStr3;
+        ptrDevice_->AppendInfo(temp);
+    }
+
+    void* realPtr = ptrDevice_->GetRealGpuPtrInfo(data_);
+    ptrDevice_->SwapOutInfo(void* data_);
+    return static_cast<char*>(realPtr_) + offset_;
   }
 
 
