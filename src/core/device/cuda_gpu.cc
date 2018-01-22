@@ -127,15 +127,15 @@ void CudaGPU::Append(string blockInfo){
     pool_->Append(blockInfo);
 }
 
-void* CudaGPU::GetRealGpuPtrInfo(void* data_){
+void* CudaGPU::GetRealGpuPtr(void* data_){
   return pool_->GetRealGpuPtr(data_);
 }
 
-void CudaGPU::SwapOutInfo(void* data_){
+void CudaGPU::SwapOut(void* data_){
   pool_->SwapOut(data_);
 }
 
-void CudaGPU::SwapInInfo(void* data_){
+void CudaGPU::SwapIn(void* data_){
   pool_->SwapIn(data_);
 }
 
