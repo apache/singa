@@ -170,6 +170,9 @@ class CppCPU : public Device {
   void Free(void* ptr) override;
     
   void Append(string blockInfo) override {}
+  void* GetRealGpuPtr(void* data_) override {}
+  void SwapOut(void* data_) override {}
+  void SwapIn(void* data_) override {}
 };
 
 
@@ -267,6 +270,9 @@ protected:
   void Free(void* ptr) override;
     
   void Append(string blockInfo) override {}
+  void* GetRealGpuPtr(void* data_) override {}
+  void SwapOut(void* data_) override {}
+  void SwapIn(void* data_) override {}
 
 
 private:

@@ -75,6 +75,9 @@ class CnMemPool : public DeviceMemPool {
   void Malloc(void** ptr, const size_t size);
   void Free(void* ptr);
     void Append(string blockInfo){}
+    void* GetRealGpuPtr(void* data_) override {}
+  void SwapOut(void* data_) override {}
+  void SwapIn(void* data_) override {}
   std::pair<size_t, size_t> GetMemUsage() override;
 
   // release all memory and set cnmem manager to unintialized
@@ -100,6 +103,9 @@ class CudaMemPool : public DeviceMemPool {
   void Malloc(void** ptr, const size_t size) override;
   void Free(void* ptr) override;
 void Append(string blockInfo){}
+void* GetRealGpuPtr(void* data_) override {}
+  void SwapOut(void* data_) override {}
+  void SwapIn(void* data_) override {}
 };
 
 //for SmartMemPool
@@ -128,6 +134,9 @@ public:
     void getMaxLoad(void);
     std::pair<size_t, size_t> GetMemUsage() override;
     void Append(string blockInfo);
+    void* GetRealGpuPtr(void* data_) override {}
+  void SwapOut(void* data_) override {}
+  void SwapIn(void* data_) override {}
 protected:
     void Init();
 private:
