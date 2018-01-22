@@ -1058,10 +1058,10 @@ void Swap::SwapOut(void* data_){
     //Table_id2LookUpElement.find(data_)->second.realGpuPtr =nullptr;
 
     auto t2 = chrono::high_resolution_clock::now();
-    auto t = t2 - t1;
+    std::chrono::duration<double> diff = t2-t1;
     fstream file_block3("blockInfo_swapTime.text", ios::in|ios::out|ios::app);
-    //file_block3<<t<<endl;
-    cout<<t<<endl;
+    file_block3<<diff.count()<<endl;
+    
 }
 
 void Swap::SwapIn(void* data_){
