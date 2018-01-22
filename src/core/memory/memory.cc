@@ -1060,8 +1060,9 @@ void Swap::SwapOut(void* data_){
     auto t2 = chrono::high_resolution_clock::now();
     auto t = t2 - t1;
     fstream file_block3("blockInfo_swapTime.text", ios::in|ios::out|ios::app);
-    file_block3<<t<<endl;
-}
+    //file_block3<<t<<endl;
+    cout<<t<<endl;
+
 
 void Swap::SwapIn(void* data_){
     //chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
