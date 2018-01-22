@@ -1006,9 +1006,10 @@ void Swap::Malloc(void** ptr, const size_t size){
   temp.realGpuPtr = *ptr;
   temp.location = 1;
   temp.size = size;
-  if (size>swapLimit){
-    temp.realCpuPtr = malloc(size);
-  }
+  //create before swap.
+  // if (size>swapLimit){
+  //   temp.realCpuPtr = malloc(size);
+  // }
   stringstream strm1;
   strm1<<size;
   string tempStr1 = strm1.str();
@@ -1021,12 +1022,13 @@ void Swap::Malloc(void** ptr, const size_t size){
   stringstream strm4;
   strm4<<temp.realGpuPtr;
   string tempStr4 = strm4.str();
-  string blockInfo ="Malloc "+tempStr1+" "+tempStr2+" "+tempStr3+" "+tempStr4;
+  string blockInfo ="Malloc: size "+tempStr1+", i "+tempStr2+", data_ "+tempStr3+",  realGpuPtr "+tempStr4;
   vec_block_RWMF.push_back(blockInfo);
   Table_id2LookUpElement[temp.data_]=temp;
 }
 
 void Swap::Free(void *ptr) {
+  //input is real ptr
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   string blockInfo ="testting for Free";
@@ -1037,6 +1039,29 @@ void Swap::Append(string blockInfo) {
      //TODO(junzhe) add idx later
     vec_block_RW.push_back(blockInfo);
     vec_block_RWMF.push_back(blockInfo);
+}
+
+void* Swap::GetRealGpuPtr(void* data_){
+    if (Table_id2LookUpElement.find(data_)->second.realGpuPtr ==nullptr){
+      //assume no start swapping yet. TODO(swap)
+      SwapIn(data_);
+    }
+    return Table_id2LookUpElement.find(data_)->second.realGpuPtr;
+}
+
+void Swap::SwapOut(void* data_){
+    Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
+    cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+    Free(able_id2LookUpElement.find(data_)->second.realGpuPtr);
+}
+
+void Swap::SwapIn(void* data_){
+    //synchronous
+    void** tempPtr;
+    Malloc(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
+    cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+    free(Table_id2LookUpElement.find(data_)->second.realCpuPtr);
+    Table_id2LookUpElement.find(data_)->second.realGpuPtr = *tempPtr;
 }
 
 void getMaxLoad (){

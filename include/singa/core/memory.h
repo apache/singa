@@ -185,6 +185,9 @@ public:
     void getMaxLoad(void);
     std::pair<size_t, size_t> GetMemUsage() override;
     void Append(string blockInfo);
+    void* GetRealGpuPtr(void* data_);
+    void SwapOut(void* data_);
+    void SwapIn(void* data_);
 protected:
     void Init();
 private:
