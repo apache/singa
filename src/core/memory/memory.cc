@@ -1052,7 +1052,7 @@ void* Swap::GetRealGpuPtr(void* data_){
 void Swap::SwapOut(void* data_){
     Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
     cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
-    Free(able_id2LookUpElement.find(data_)->second.realGpuPtr);
+    Free(Table_id2LookUpElement.find(data_)->second.realGpuPtr);
 }
 
 void Swap::SwapIn(void* data_){
