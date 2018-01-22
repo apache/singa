@@ -52,7 +52,19 @@ void Device::FreeBlock(Block* block) {
 }
 
 void Device::AppendInfo(string blockInfo){
-Append(blockInfo);
+  Append(blockInfo);
+}
+
+void* GetRealGpuPtrInfo(void* data_){
+  return GetRealGpuPtr(data_);
+}
+
+void SwapOutInfo(void* data_){
+  SwapOut(data_);
+}
+
+void SwapInInfo(void* data_){
+  SwapIn(data_);
 }
 
 void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,

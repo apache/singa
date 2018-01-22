@@ -66,6 +66,9 @@ class Device {
   void FreeBlock(Block* block);
   
   void AppendInfo(string blockInfo);
+  void* GetRealGpuPtrInfo(void* data_);
+  void SwapOutInfo(void* data_);
+  void SwapInInfo(void* data_);
 
   /// Return the size (bytes) of memory in use
   /// TODO(wangwei) override this function for all devices.
@@ -196,6 +199,9 @@ class CudaGPU : public Device {
   void Free(void* ptr) override;
 
   void Append(string blockInfo) override;
+  void* GetRealGpuPtr(void* data_) override;
+  void SwapOut(void* data_) override;
+  void SwapIn(void* data_) override;
 
  private:
   void Setup();
@@ -258,6 +264,7 @@ protected:
   void Free(void* ptr) override;
     
   void Append(string blockInfo) override {}
+
 
 private:
 
