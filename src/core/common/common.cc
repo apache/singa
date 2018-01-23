@@ -39,7 +39,7 @@ void* Block::mutable_data() {
         string temp = "Mutable "+tempStr2+" "+tempStr3;   
         ptrDevice_->AppendInfo(temp);
     }
-    void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
+    //void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
     //ptrDevice_->SwapOutInfo(data_);
 
     return static_cast<char*>(realPtr_) + offset_;
@@ -59,7 +59,7 @@ const void* Block::data() const {
         ptrDevice_->AppendInfo(temp);
     }
 
-    void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
+    //void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
     //ptrDevice_->SwapOutInfo(data_);
     return static_cast<char*>(realPtr_) + offset_;
   }
