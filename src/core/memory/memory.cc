@@ -1056,7 +1056,7 @@ void Swap::SwapOut(void* data_){
       //TODO(swap) malloc or cudaMallocHost
       //Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
       void** tempPtr;
-      cudaMallocHost(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
+      //cudaMallocHost(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
       Table_id2LookUpElement.find(data_)->second.realCpuPtr = *tempPtr;
 
       
