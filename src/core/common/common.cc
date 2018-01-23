@@ -40,7 +40,7 @@ void* Block::mutable_data() {
         ptrDevice_->AppendInfo(temp);
     }
     //void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
-    ptrDevice_->SwapOutInfo(data_);
+    //ptrDevice_->SwapOutInfo(data_);
     // if (size_>1<<22){
     //   void* CPUptr = malloc(size_);
     //   cudaMemcpy(CPUptr,data_,size_,cudaMemcpyDeviceToHost);
@@ -65,7 +65,7 @@ const void* Block::data() const {
     }
 
     //void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
-    //ptrDevice_->SwapOutInfo(data_);
+    ptrDevice_->SwapOutInfo(data_);
     return static_cast<char*>(data_) + offset_;
   }
 
