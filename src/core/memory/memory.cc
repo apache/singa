@@ -1052,8 +1052,14 @@ void* Swap::GetRealGpuPtr(void* data_){
 void Swap::SwapOut(void* data_){
     
     //if (Table_id2LookUpElement.find(data_)->second.size>swapLimit){
-      Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
       auto t1 = chrono::high_resolution_clock::now();
+      //TODO(swap) malloc or cudaMallocHost
+      //Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
+      void** tempPtr;
+      cudaMallocHost(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
+      Table_id2LookUpElement.find(data_)->second.realCpuPtr = *tempPtr;
+
+      
       cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
     //}
     //TODO(swap) no free
