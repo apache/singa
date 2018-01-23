@@ -1062,7 +1062,7 @@ void Swap::SwapOut(void* data_){
     auto t2 = chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff = t2-t1;
     fstream file_block3("blockInfo_swapTime.text", ios::in|ios::out|ios::app);
-    file_block3<<diff.count()<<endl;
+    file_block3<<diff.count()<<" "<<Table_id2LookUpElement.find(data_)->second.size<<endl;
     
 }
 
