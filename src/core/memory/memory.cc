@@ -1059,6 +1059,7 @@ void Swap::SwapOut(void* data_){
       //cudaMallocHost(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
       Table_id2LookUpElement.find(data_)->second.realCpuPtr = *tempPtr;
 
+
       
       cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
     //}
