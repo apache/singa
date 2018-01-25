@@ -78,6 +78,7 @@ Tensor::Tensor(Tensor &&in)
 
 void Tensor::Append(string blockInfo){
   device_->AppendInfo(blockInfo);
+  std::cout<<"Activation done"<<std::endl;
 }
 
 void Tensor::SetBlock(Block *block) {
