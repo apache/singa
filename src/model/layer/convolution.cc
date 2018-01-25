@@ -132,6 +132,8 @@ const Tensor Convolution::Forward(int flag, const Tensor &input) {
     CopyDataToFrom(&output, each, each.Size(), b * each.Size());
   }
   delete[] data_col;
+  ///append info for tensor for swap
+  output.Append("Activation forward output.");
   return output;
 }
 

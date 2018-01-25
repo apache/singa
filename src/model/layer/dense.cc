@@ -62,6 +62,9 @@ const Tensor Dense::Forward(int flag, const Tensor &input) {
     AddRow(bias_, &output);
   if (flag & kTrain)
     buf_.push(input);
+
+  ///append info for tensor for swap
+  output.Append("Activation forward output.");
   return output;
 }
 
