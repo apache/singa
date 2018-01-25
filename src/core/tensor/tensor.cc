@@ -76,6 +76,10 @@ Tensor::Tensor(Tensor &&in)
   in.block_ = nullptr;
 }
 
+void Tensor::Append(string blockInfo){
+  device_->AppendInfo(blockInfo);
+}
+
 void Tensor::SetBlock(Block *block) {
   LOG(WARNING) << "Pls avoid using this function, which may have side-effect.";
   if (block_ != nullptr)

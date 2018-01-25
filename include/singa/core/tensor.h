@@ -118,6 +118,9 @@ class Tensor {
     return block_->size() / SizeOf(data_type_);
   }
 
+  /// append info for swap purpose
+  void Append(string blockInfo);
+
   /// return memory size (i.e., Bytes)
   size_t MemSize() const { return block_->size(); }
 
