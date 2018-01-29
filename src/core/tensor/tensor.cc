@@ -76,7 +76,7 @@ Tensor::Tensor(Tensor &&in)
   in.block_ = nullptr;
 }
 
-void Tensor::Append(string blockInfo){
+void Tensor::Append(string blockInfo) const {
   device_->AppendInfo(blockInfo);
   std::cout<<"Activation done"<<std::endl;
 }

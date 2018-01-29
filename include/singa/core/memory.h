@@ -183,7 +183,7 @@ struct swapLookUpElement{
     void* realGpuPtr = nullptr;
     void* realCpuPtr = nullptr;
 
-    int location; //1 is at GPU, 2 is at CPU.
+    int location; //1 is at GPU, 2 is at CPU. 3 on the way C2G, 4 on the way G2C.
     size_t size; //size may used as of now.
 };
 
