@@ -134,7 +134,7 @@ const Tensor Convolution::Forward(int flag, const Tensor &input) {
   delete[] data_col;
   ///append info for tensor for swap
   output.Append("layer done, cnn forward output.");
-  input.Append("layer done, cnn forward input.")
+  input.Append("layer done, cnn forward input.");
   return output;
 }
 
