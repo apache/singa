@@ -64,7 +64,7 @@ const Tensor Dense::Forward(int flag, const Tensor &input) {
     buf_.push(input);
 
   ///append info for tensor for swap
-  output.Append("layer done, dense forward output.");
+  output.Append("layer done, dense forward output."+"2nd string"+" 3rd string");
   input.Append("layer done, dense forward input.");
   return output;
 }
