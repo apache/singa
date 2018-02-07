@@ -69,6 +69,10 @@ const void* Block::data() const {
     return static_cast<char*>(data_) + offset_;
   }
 
+const void* Block::data() const {
+    return static_cast<char*>(data_) + offset_;
+}
+
 
 }  // namespace singa
 #endif

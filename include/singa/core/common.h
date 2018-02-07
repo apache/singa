@@ -66,6 +66,8 @@ class Block {
     void* mutable_data() ;
    
     const void* data() const;
+
+    const void* log_ptr() const; //for return **ptr only given block ptr
     
   size_t size() const { return size_; }
   size_t offset() const { return offset_; }

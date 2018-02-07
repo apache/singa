@@ -78,7 +78,7 @@ Tensor::Tensor(Tensor &&in)
 
 void Tensor::Append() const {
   stringstream strm;
-  strm<<block_;
+  strm<<block_->log_ptr();
   string tempStr = strm.str();
   string temp = "Layer "+tempStr;
   device_->AppendInfo(temp);
