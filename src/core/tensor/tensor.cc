@@ -81,7 +81,7 @@ void Tensor::Append() const {
   strm<<block_;
   string tempStr = strm.str();
   string temp = "Layer "+tempStr;
-  device_->AAppendInfo(temp);
+  device_->AppendInfo(temp);
 }
 
 void Tensor::SetBlock(Block *block) {
