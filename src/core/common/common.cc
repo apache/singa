@@ -69,7 +69,7 @@ const void* Block::data() const {
     return static_cast<char*>(data_) + offset_;
   }
 
-const void* Block::data() const {
+const void* Block::log_ptr() const {
     return static_cast<char*>(data_) + offset_;
 }
 
