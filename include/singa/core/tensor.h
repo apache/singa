@@ -119,7 +119,7 @@ class Tensor {
   }
 
   /// append info for swap purpose
-  void Append(string blockInfo) const;
+  void Append() const;
 
   /// return memory size (i.e., Bytes)
   size_t MemSize() const { return block_->size(); }

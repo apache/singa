@@ -76,9 +76,12 @@ Tensor::Tensor(Tensor &&in)
   in.block_ = nullptr;
 }
 
-void Tensor::Append(string blockInfo) const {
-  device_->AppendInfo(blockInfo);
-  std::cout<<"Activation done"<<std::endl;
+void Tensor::Append() const {
+  stringstream strm;
+  strm<<block_;
+  string tempStr = strm.str();
+  string temp = "Layer "+tempStr;
+  device_->AAppendInfo(temp);
 }
 
 void Tensor::SetBlock(Block *block) {
