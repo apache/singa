@@ -76,7 +76,7 @@ Tensor::Tensor(Tensor &&in)
   in.block_ = nullptr;
 }
 
-void Tensor::Append() const {
+void Tensor::AppendLayer() const {
   stringstream strm;
   strm<<block_->log_ptr();
   string tempStr = strm.str();
