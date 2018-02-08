@@ -1034,7 +1034,7 @@ void Swap::Free(void *ptr) {
   stringstream strm1;
   strm1<<ptr;
   string tempStr1 = strm1.str();
-  string blockInfo ="Free "+tempstr1;
+  string blockInfo ="Free "+tempStr1;
   vec_block_RWMF.push_back(blockInfo);
 }
 
