@@ -990,22 +990,23 @@ void Swap::Init(){
 void Swap::Malloc(void** ptr, const size_t size){
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
-  swapLookUpElement temp;
-  int i = 0;
-  if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
-      i = i + 1;
-      temp.data_ = *ptr +i*sizeof(char); 
-      while(!(Table_id2LookUpElement.find(temp.data_)==Table_id2LookUpElement.end())){
-        //TODO(swap) verify this loop, can simplify as well.
-        i = i + 1;
-        temp.data_ = *ptr +i*sizeof(char);
-      }
-  } else {
-      temp.data_ = *ptr;
-  }
-  temp.realGpuPtr = *ptr;
-  temp.location = 1;
-  temp.size = size;
+  // swapLookUpElement temp;
+  // int i = 0;
+  // if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
+  //     i = i + 1;
+  //     temp.data_ = *ptr +i*sizeof(char); 
+  //     while(!(Table_id2LookUpElement.find(temp.data_)==Table_id2LookUpElement.end())){
+  //       //TODO(swap) verify this loop, can simplify as well.
+  //       i = i + 1;
+  //       temp.data_ = *ptr +i*sizeof(char);
+  //     }
+  // } else {
+  //     temp.data_ = *ptr;
+  // }
+  // temp.realGpuPtr = *ptr;
+  // temp.location = 1;
+  // temp.size = size;
+  
   //create before swap.
   // if (size>swapLimit){
   //   temp.realCpuPtr = malloc(size);
@@ -1022,8 +1023,9 @@ void Swap::Malloc(void** ptr, const size_t size){
   stringstream strm4;
   strm4<<temp.realGpuPtr;
   string tempStr4 = strm4.str();
-  string blockInfo ="Malloc: size "+tempStr1+", i "+tempStr2+", data_ "+tempStr3+",  realGpuPtr "+tempStr4;
-  vec_block_RWMF.push_back(blockInfo);
+  string blockInfo ="Malloc "+tempStr3+" (data_) "+tempStr1+" (size) "+tempStr4+" (realGpuPtr)";
+  //string blockInfo ="Malloc: size "+tempStr1+", i "+tempStr2+", data_ "+tempStr3+",  realGpuPtr "+tempStr4;
+  vec_block.push_back(blockInfo);
   Table_id2LookUpElement[temp.data_]=temp;
 }
 
@@ -1035,13 +1037,13 @@ void Swap::Free(void *ptr) {
   strm1<<ptr;
   string tempStr1 = strm1.str();
   string blockInfo ="Free "+tempStr1;
-  vec_block_RWMF.push_back(blockInfo);
+  vec_block.push_back(blockInfo);
 }
 
 void Swap::Append(string blockInfo) {
      //TODO(junzhe) add idx later
-    vec_block_RW.push_back(blockInfo);
-    vec_block_RWMF.push_back(blockInfo);
+    vec_block.push_back(blockInfo);
+
 }
 
 void* Swap::GetRealGpuPtr(void* data_){
@@ -1116,14 +1118,11 @@ std::pair<size_t, size_t> Swap::GetMemUsage() {
 
 Swap::~Swap(){
   //put in notes
-    fstream file_block1("blockInfo_RW.text", ios::in|ios::out|ios::app);
-    fstream file_block2("blockInfo_RWMF.text", ios::in|ios::out|ios::app);
-    for (int i=0; i< vec_block_RW.size();i++){
-        file_block1<<vec_block_RW[i]<<endl;
+    fstream file_block1("blockInfo.text", ios::in|ios::out|ios::app);
+    for (int i=0; i< vec_block.size();i++){
+        file_block1<<vec_block[i]<<endl;
     }
-    for (int i=0; i< vec_block_RWMF.size();i++){
-        file_block2<<vec_block_RWMF[i]<<endl;
-    }
+   
 }
 }
 
