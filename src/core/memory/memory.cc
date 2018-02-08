@@ -991,7 +991,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   // swapLookUpElement temp;
-  // int i = 0;
+   int i = 0;
   // if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
   //     i = i + 1;
   //     temp.data_ = *ptr +i*sizeof(char); 
@@ -1006,7 +1006,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   // temp.realGpuPtr = *ptr;
   // temp.location = 1;
   // temp.size = size;
-  
+
   //create before swap.
   // if (size>swapLimit){
   //   temp.realCpuPtr = malloc(size);
@@ -1026,7 +1026,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   string blockInfo ="Malloc "+tempStr3+" (data_) "+tempStr1+" (size) "+tempStr4+" (realGpuPtr)";
   //string blockInfo ="Malloc: size "+tempStr1+", i "+tempStr2+", data_ "+tempStr3+",  realGpuPtr "+tempStr4;
   vec_block.push_back(blockInfo);
-  Table_id2LookUpElement[temp.data_]=temp;
+  //Table_id2LookUpElement[temp.data_]=temp;
 }
 
 void Swap::Free(void *ptr) {
