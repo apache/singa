@@ -1031,7 +1031,10 @@ void Swap::Free(void *ptr) {
   //input is real ptr
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
-  string blockInfo ="testting for Free";
+  stringstream strm1;
+  strm1<<ptr;
+  string tempStr1 = strm1.str();
+  string blockInfo ="Free "+tempstr1;
   vec_block_RWMF.push_back(blockInfo);
 }
 

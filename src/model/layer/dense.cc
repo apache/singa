@@ -95,7 +95,6 @@ const std::pair<Tensor, vector<Tensor>> Dense::Backward(int flag,
     dw = Mult(src_data.T(), grad);
   }
   param_grad.push_back(dw);
-  dw = Mult
   if (bias_term_){
   	param_grad.push_back(db);
 	db.AppendLayer();
