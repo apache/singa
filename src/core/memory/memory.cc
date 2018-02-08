@@ -1027,7 +1027,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   strm1<<size;
   string tempStr1 = strm1.str();
   stringstream strm3;
-  strm3<<data_;
+  strm3<<*ptr;
   string tempStr3 = strm3.str();
 
   string blockInfo ="Malloc "+tempStr3+" (data_) "+tempStr1+" (size) ";
