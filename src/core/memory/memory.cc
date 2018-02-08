@@ -1018,7 +1018,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   strm2<<i;
   string tempStr2 = strm2.str();
   stringstream strm3;
-  strm3<<temp.data_;
+  strm3<<data_;
   string tempStr3 = strm3.str();
   stringstream strm4;
   strm4<<temp.realGpuPtr;
