@@ -991,7 +991,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   // swapLookUpElement temp;
-   int i = 0;
+  //  int i = 0;
   // if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
   //     i = i + 1;
   //     temp.data_ = *ptr +i*sizeof(char); 
@@ -1007,23 +1007,30 @@ void Swap::Malloc(void** ptr, const size_t size){
   // temp.location = 1;
   // temp.size = size;
 
-  //create before swap.
+  // create before swap.
   // if (size>swapLimit){
   //   temp.realCpuPtr = malloc(size);
   // }
+  // stringstream strm1;
+  // strm1<<size;
+  // string tempStr1 = strm1.str();
+  // stringstream strm2;
+  // strm2<<i;
+  // string tempStr2 = strm2.str();
+  // stringstream strm3;
+  // strm3<<data_;
+  // string tempStr3 = strm3.str();
+  // stringstream strm4;
+  // strm4<<temp.realGpuPtr;
+  // string tempStr4 = strm4.str();
   stringstream strm1;
   strm1<<size;
   string tempStr1 = strm1.str();
-  stringstream strm2;
-  strm2<<i;
-  string tempStr2 = strm2.str();
   stringstream strm3;
   strm3<<data_;
   string tempStr3 = strm3.str();
-  stringstream strm4;
-  strm4<<temp.realGpuPtr;
-  string tempStr4 = strm4.str();
-  string blockInfo ="Malloc "+tempStr3+" (data_) "+tempStr1+" (size) "+tempStr4+" (realGpuPtr)";
+
+  string blockInfo ="Malloc "+tempStr3+" (data_) "+tempStr1+" (size) ";
   //string blockInfo ="Malloc: size "+tempStr1+", i "+tempStr2+", data_ "+tempStr3+",  realGpuPtr "+tempStr4;
   vec_block.push_back(blockInfo);
   //Table_id2LookUpElement[temp.data_]=temp;
