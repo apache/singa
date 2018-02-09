@@ -1097,6 +1097,7 @@ void Swap::SwapIn(void* data_){
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     fstream file_block4("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
     file_block4<<t2-t1<<" "<<Table_id2LookUpElement.find(data_)->second.size<<endl;
+    cudaFree(*tempPtr);
  
 }
 
