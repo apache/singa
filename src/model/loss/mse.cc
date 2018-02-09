@@ -30,6 +30,9 @@ Tensor MSE::Forward(int flag, const Tensor& prediction, const Tensor& target) {
   t.Reshape(Shape{batchsize, dim});
   if (kTrain & flag)
     buf_.push(t);
+  prediction.AppendLayer();
+  target.AppendLayer();
+  //TODO(junzhe) t not included, as used in the return, same in Backward.
   // TODO(wangwei) use CastType for operator/
   return Sum(Square(t), 1) * 0.5f;
 }
