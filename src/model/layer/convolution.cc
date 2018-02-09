@@ -128,11 +128,17 @@ const Tensor Convolution::Forward(int flag, const Tensor &input) {
     Tensor each = Mult(weight_, col_data);
     if (bias_term_) {
       AddColumn(bias_, &each);
+      bias_.AppendLayer();
     }
     CopyDataToFrom(&output, each, each.Size(), b * each.Size());
   }
   delete[] data_col;
   ///append info for tensor for swap
+  input.AppendLayer();
+  output.AppendLayer();
+  weight_.AppendLayer();
+  col_data.AppendLayer();
+  //TODO(junzhe) col_data
 
   return output;
 }
@@ -184,10 +190,19 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
     dx.CopyDataFromHostPtr(dx_b, imagesize, b * imagesize);
   }
   param_grad.push_back(dw);
-  if (bias_term_)
+  if (bias_term_) {
     param_grad.push_back(db);
+    db.AppendLayer();
+  }
   delete[] data_col;
   delete[] dx_b;
+  dx.AppendLayer();
+  dw.AppendLayer();
+  grad.AppendLayer();
+  weight_.AppendLayer();
+  src_data.AppendLayer();
+  col_data.AppendLayer();
+
   return std::make_pair(dx, param_grad);
 }
 void Convolution::ToDevice(std::shared_ptr<Device> device) {

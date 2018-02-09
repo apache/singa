@@ -1030,7 +1030,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   strm3<<*ptr;
   string tempStr3 = strm3.str();
 
-  string blockInfo ="Malloc "+tempStr3+" (data_) "+tempStr1+" (size) ";
+  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" (data_&size)";
   //string blockInfo ="Malloc: size "+tempStr1+", i "+tempStr2+", data_ "+tempStr3+",  realGpuPtr "+tempStr4;
   vec_block.push_back(blockInfo);
   //Table_id2LookUpElement[temp.data_]=temp;

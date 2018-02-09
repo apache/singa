@@ -64,6 +64,7 @@ const Tensor Activation::Forward(int flag, const Tensor& input) {
   } else
     LOG(FATAL) << "Unkown activation: " << mode_;
   ///append info for tensor for swap
+  output.AppendLayer();
 
   return output;
 }
