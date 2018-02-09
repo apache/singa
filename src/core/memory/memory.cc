@@ -1069,31 +1069,27 @@ void* Swap::GetRealGpuPtr(void* data_){
 }
 
 void Swap::SwapOut(void* data_){
-    
+    //TODO(junzhe) below version for blindly swap in and swap out only
     //if (Table_id2LookUpElement.find(data_)->second.size>swapLimit){
-      auto t1 = chrono::high_resolution_clock::now();
-      //TODO(swap) malloc or cudaMallocHost
-      //Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
-      void** tempPtr;
-      //cudaMallocHost(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
-      Table_id2LookUpElement.find(data_)->second.realCpuPtr = *tempPtr;
-
-
-
-      cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
-    //}
-    //TODO(swap) no free
-    //Free(Table_id2LookUpElement.find(data_)->second.realGpuPtr);
-    //Table_id2LookUpElement.find(data_)->second.realGpuPtr =nullptr;
-
-    auto t2 = chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = t2-t1;
-    fstream file_block3("blockInfo_swapTime.text", ios::in|ios::out|ios::app);
-    file_block3<<diff.count()<<" "<<Table_id2LookUpElement.find(data_)->second.size<<endl;
+    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    //   //TODO(swap) malloc or cudaMallocHost
+    Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
+    //   void** tempPtr;
+    //   //cudaMallocHost(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
+    //   Table_id2LookUpElement.find(data_)->second.realCpuPtr = *tempPtr;
+    cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
+    // //}
+    // //TODO(swap) no free
+    // //Free(Table_id2LookUpElement.find(data_)->second.realGpuPtr);
+    // //Table_id2LookUpElement.find(data_)->second.realGpuPtr =nullptr;
+    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
+    file_block3<<t2-t1<<" "<<Table_id2LookUpElement.find(data_)->second.size<<endl;
     
 }
 
 void Swap::SwapIn(void* data_){
+    //TODO(junzhe) below version for blindly swap in and swap out only
     //chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
     void** tempPtr;
     //Malloc(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
@@ -1103,22 +1099,7 @@ void Swap::SwapIn(void* data_){
     //Table_id2LookUpElement.find(data_)->second.realCpuPtr = nullptr;
     Table_id2LookUpElement.find(data_)->second.realGpuPtr = *tempPtr;
 
-    // chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
-    // chrono::high_resolution_clock::time_point t = t2 - t1;
-    // stringstream strm1;
-    // strm1<<size;
-    // string tempStr1 = strm1.str();
-    // stringstream strm2;
-    // strm2<<t1;
-    // string tempStr2 = strm2.str();
-    // stringstream strm3;
-    // strm3<<t2;
-    // string tempStr3 = strm3.str();
-    // stringstream strm4;
-    // strm4<<t;
-    // string tempStr4 = strm4.str();
-    // string blockInfo ="SwapOut: size "+tempStr1+", t1 "+tempStr2+", t2 "+tempStr3+", t "+tempStr4;
-    // vec_block_RWMF.push_back(blockInfo);
+ 
 }
 
 void getMaxLoad (){
