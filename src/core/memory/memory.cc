@@ -1090,15 +1090,13 @@ void Swap::SwapOut(void* data_){
 
 void Swap::SwapIn(void* data_){
     //TODO(junzhe) below version for blindly swap in and swap out only
-    //chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
     void** tempPtr;
-    //Malloc(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
-    //cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
-    //TODO(swap) no free
-    //free(Table_id2LookUpElement.find(data_)->second.realCpuPtr);
-    //Table_id2LookUpElement.find(data_)->second.realCpuPtr = nullptr;
-    Table_id2LookUpElement.find(data_)->second.realGpuPtr = *tempPtr;
-
+    cudaMalloc(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
+    cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    fstream file_block4("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
+    file_block4<<t2-t1<<" "<<Table_id2LookUpElement.find(data_)->second.size<<endl;
  
 }
 
