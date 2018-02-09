@@ -33,10 +33,14 @@ void* Block::mutable_data() {
         stringstream strm2;
         strm2<<data_;
         string tempStr2 = strm2.str();
-        stringstream strm3;
-        strm3<<size_;
-        string tempStr3 = strm3.str();
-        string temp = "Mutable "+tempStr2+" "+tempStr3;   
+        // stringstream strm3;
+        // strm3<<size_;
+        // string tempStr3 = strm3.str();
+        stringstream strm4;
+      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      strm4<<t2;
+      string tempStr4 = strm4.str();
+        string temp = "Mutable "+tempStr2+" "+tempStr4;   
         ptrDevice_->AppendInfo(temp);
     }
     //void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
@@ -57,10 +61,14 @@ const void* Block::data() const {
         stringstream strm2;
         strm2<<data_;
         string tempStr2 = strm2.str();
-        stringstream strm3;
-        strm3<<size_;
-        string tempStr3 = strm3.str();
-        string temp = "Read "+tempStr2+" "+tempStr3;
+        // stringstream strm3;
+        // strm3<<size_;
+        // string tempStr3 = strm3.str();
+        stringstream strm4;
+      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      strm4<<t2;
+      string tempStr4 = strm4.str();
+        string temp = "Read "+tempStr2+" "+tempStr4;
         ptrDevice_->AppendInfo(temp);
     }
 

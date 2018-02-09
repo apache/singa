@@ -80,7 +80,11 @@ void Tensor::AppendLayer() const {
   stringstream strm;
   strm<<block_->log_ptr();
   string tempStr = strm.str();
-  string temp = "Layer "+tempStr;
+  stringstream strm4;
+  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  strm4<<t2;
+  string tempStr4 = strm4.str();
+  string temp = "Layer "+tempStr+" "+tempStr4;
   device_->AppendInfo(temp);
 }
 

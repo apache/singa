@@ -1046,7 +1046,11 @@ void Swap::Free(void *ptr) {
   stringstream strm1;
   strm1<<ptr;
   string tempStr1 = strm1.str();
-  string blockInfo ="Free "+tempStr1;
+  stringstream strm4;
+  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  strm4<<t2;
+  string tempStr4 = strm4.str();
+  string blockInfo ="Free "+tempStr1+" "+tempStr4;
   vec_block.push_back(blockInfo);
 }
 
