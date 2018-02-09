@@ -1030,11 +1030,10 @@ void Swap::Malloc(void** ptr, const size_t size){
   strm3<<*ptr;
   string tempStr3 = strm3.str();
   stringstream strm4;
-  auto t1= chrono::high_resolution_clock::now();
-  std::chrono::duration<double> t2 = t1-t1;
-   strm4<<t2.count();
-   string tempStr4 = strm4.str();
-  //string blockInfo ="Malloc "+tempStr3+" "+tempStr1;
+  std::chrono::duration<double> t2= chrono::high_resolution_clock::now();
+ 
+  strm4<<t2.count();
+  string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4+" (data_&size)";
   //string blockInfo ="Malloc: size "+tempStr1+", i "+tempStr2+", data_ "+tempStr3+",  realGpuPtr "+tempStr4;
   vec_block.push_back(blockInfo);
