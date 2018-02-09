@@ -211,7 +211,11 @@ const Tensor CudnnConvolution::Forward(int flag, const Tensor &input) {
                      bblock->data(), &beta, this->y_desc_,
                      outblock->mutable_data());
     }, {output.block(), bias_.block()}, {output.block()});
+    bias_.AppendLayer();
   }
+  input.AppendLayer();
+  output.AppendLayer();
+  weight_.AppendLayer();
   return output;
 }
 
@@ -266,8 +270,15 @@ const std::pair<Tensor, vector<Tensor>> CudnnConvolution::Backward(
                                  this->x_desc_, dxblock->mutable_data());
   }, {grad.block(), weight_.block()}, {dx.block(), workspace_.block()});
   param_grad.push_back(dw);
-  if (bias_term_)
+  if (bias_term_){
     param_grad.push_back(db);
+    db.AppendLayer();
+  }
+  src_data.AppendLayer();
+  dw.AppendLayer();
+  dx.AppendLayer();
+  grad.AppendLayer();
+  weight_.AppendLayer();
   return std::make_pair(dx, param_grad);
 }
 

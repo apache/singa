@@ -44,6 +44,7 @@ Tensor SoftmaxCrossEntropy::Forward(int flag, const Tensor& prediction,
   prediction.AppendLayer();
   target.AppendLayer();
   prob.AppendLayer();
+  loss.AppendLayer();
   //TODO(junzhe) loss not included as used in return, same in Backward.
   return loss;
 }
@@ -55,6 +56,7 @@ Tensor SoftmaxCrossEntropy::Backward() {
   buf_.pop();
   SoftmaxCrossEntropyBwd(target, &prob);
   target.AppendLayer();
+  prob.AppendLayer();
   return prob;
 }
 }  // namespace singa
