@@ -1029,8 +1029,12 @@ void Swap::Malloc(void** ptr, const size_t size){
   stringstream strm3;
   strm3<<*ptr;
   string tempStr3 = strm3.str();
-
-  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" (data_&size)";
+  stringstream strm4;
+  auto t1= chrono::high_resolution_clock::now();
+  std::chrono::duration<double> t2 = t1;
+  strm4<<t2;
+  string tempStr4 = strm4.str();
+  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4+" (data_&size)";
   //string blockInfo ="Malloc: size "+tempStr1+", i "+tempStr2+", data_ "+tempStr3+",  realGpuPtr "+tempStr4;
   vec_block.push_back(blockInfo);
   //Table_id2LookUpElement[temp.data_]=temp;
@@ -1072,7 +1076,7 @@ void Swap::SwapOut(void* data_){
       Table_id2LookUpElement.find(data_)->second.realCpuPtr = *tempPtr;
 
 
-      
+
       cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
     //}
     //TODO(swap) no free
