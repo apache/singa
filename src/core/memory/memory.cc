@@ -997,7 +997,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   //     temp.data_ = *ptr +i*sizeof(char); 
   //     while(!(Table_id2LookUpElement.find(temp.data_)==Table_id2LookUpElement.end())){
   //       //TODO(swap) verify this loop, can simplify as well.
-  //       i = i + 1;
+  //       i = i + 1
   //       temp.data_ = *ptr +i*sizeof(char);
   //     }
   // } else {
@@ -1031,7 +1031,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   string tempStr3 = strm3.str();
   stringstream strm4;
   auto t1= chrono::high_resolution_clock::now();
-  std::chrono::duration<double> t2 = t1;
+  std::chrono::duration<double> t2 = t1-t1;
    strm4<<t2.count();
    string tempStr4 = strm4.str();
   //string blockInfo ="Malloc "+tempStr3+" "+tempStr1;
