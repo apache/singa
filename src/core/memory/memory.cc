@@ -1105,13 +1105,13 @@ void Swap::SwapIn(void* data_){
     //cudaMemcpy(data_, Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
     auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
     size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
-    void** tempPtr;
-    cudaMalloc(tempPtr,tempSize);
-    cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+    //void** tempPtr;
+    //cudaMalloc(tempPtr,tempSize);
+    cudaMemcpy(data_, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     fstream file_block4("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
     file_block4<<t2-t1<<" "<<tempSize<<endl;
-    cudaFree(*tempPtr);
+    //cudaFree(*tempPtr);
     cout<<"testing after SwapIn"<<endl;
  
 }
