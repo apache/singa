@@ -992,7 +992,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   CHECK_EQ(status, cudaError_t::cudaSuccess);
    swapLookUpElement temp;
    temp.size = size;
-   Table_id2LookUpElement(*ptr) = temp;
+   Table_id2LookUpElement[*ptr] = temp;
   //  int i = 0;
   // if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
   //     i = i + 1;
@@ -1054,6 +1054,7 @@ void Swap::Free(void *ptr) {
   string tempStr4 = strm4.str();
   string blockInfo ="Free "+tempStr1+" "+tempStr4;
   vec_block.push_back(blockInfo);
+  Table_id2LookUpElement.erase(ptr);
 }
 
 void Swap::Append(string blockInfo) {
