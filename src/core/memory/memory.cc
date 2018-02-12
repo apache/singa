@@ -990,7 +990,9 @@ void Swap::Init(){
 void Swap::Malloc(void** ptr, const size_t size){
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
-  // swapLookUpElement temp;
+   swapLookUpElement temp;
+   temp.size = size;
+   Table_id2LookUpElement(*ptr) = temp;
   //  int i = 0;
   // if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
   //     i = i + 1;
@@ -1071,21 +1073,25 @@ void* Swap::GetRealGpuPtr(void* data_){
 void Swap::SwapOut(void* data_){
     //TODO(junzhe) below version for blindly swap in and swap out only
     //if (Table_id2LookUpElement.find(data_)->second.size>swapLimit){
-    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    
     //   //TODO(swap) malloc or cudaMallocHost
-    Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
+    //Table_id2LookUpElement.find(data_)->second.realCpuPtr = malloc(Table_id2LookUpElement.find(data_)->second.size);
     //   void** tempPtr;
     //   //cudaMallocHost(tempPtr,Table_id2LookUpElement.find(data_)->second.size);
     //   Table_id2LookUpElement.find(data_)->second.realCpuPtr = *tempPtr;
-    cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
+    //cudaMemcpy(Table_id2LookUpElement.find(data_)->second.realCpuPtr,Table_id2LookUpElement.find(data_)->second.realGpuPtr,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
     // //}
     // //TODO(swap) no free
     // //Free(Table_id2LookUpElement.find(data_)->second.realGpuPtr);
     // //Table_id2LookUpElement.find(data_)->second.realGpuPtr =nullptr;
+    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
+    void* tempPtr = malloc(tempSize);
+    cudaMemcpy(tempPtr,data_,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
-    file_block3<<t2-t1<<" "<<Table_id2LookUpElement.find(data_)->second.size<<endl;
-    free(Table_id2LookUpElement.find(data_)->second.realCpuPtr);
+    file_block3<<t2-t1<<" "<<tempSize<<endl;
+    free(tempPtr);
 }
 
 void Swap::SwapIn(void* data_){
