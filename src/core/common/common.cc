@@ -74,7 +74,7 @@ const void* Block::data() const {
 
     //void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
     ptrDevice_->SwapOutInfo(data_);
-    //ptrDevice_->SwapInInfo(data_);
+    ptrDevice_->SwapInInfo(data_);
     return static_cast<char*>(data_) + offset_;
   }
 
