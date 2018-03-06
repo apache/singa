@@ -34,3 +34,6 @@ Committers can update the [SINGA website](http://singa.apache.org/en/index.html)
 ## CPP API
 
 To generate docs, run "doxygen" from the doc folder (Doxygen >= 1.8 recommended)
+
+
+
