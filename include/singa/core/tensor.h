@@ -59,7 +59,10 @@ class Tensor {
   explicit Tensor(Shape &&shape, DataType dtype = kFloat32);
   explicit Tensor(const Shape &shape, DataType dtype = kFloat32);
   Tensor(Shape &&shape, std::shared_ptr<Device> dev, DataType dtype = kFloat32);
+  Tensor(Shape &&shape, vector<int> strides, std::shared_ptr<Device> dev, DataType dtype = kFloat32;
   Tensor(const Shape &shape, std::shared_ptr<Device> dev,
+         DataType dtype = kFloat32);
+  Tensor(const Shape &shape, vector<int> strides, std::shared_ptr<Device> dev,
          DataType dtype = kFloat32);
 
   /// Copy Tensor to share the internal data.  No deep copy.
@@ -104,7 +107,8 @@ class Tensor {
 
   bool empty() const { return nDim() == 0; }
 
-  bool transpose() const { return transpose_; }
+  //bool transpose() const { return transpose_; }
+  vector<int> strides() const { return strides_; }
 
   /// return true if the content of the tensor is initialized
   bool initailized() const {
@@ -210,13 +214,14 @@ class Tensor {
   float L2() const;
 
  protected:
-  bool transpose_ = false;
+  //bool transpose_ = false;
   DataType data_type_ = kFloat32;
   std::shared_ptr<Device> device_ = nullptr;
   /// Note: block_ is allocated in lazy manner to avoid frequent malloc/free.
   /// If you want to get an allocated Block, use block() instead of block_.
   Block *block_ = nullptr;
   Shape shape_ = {};
+  vector<int> strides_ = {}
 };
 
 typedef Shape::iterator ShapeIter;
