@@ -74,6 +74,10 @@ const Tensor LRN::Forward(int flag, const Tensor& input) {
   output.Reshape(input.shape());
   buf_.push(input);
 
+  input.AppendLayer();
+  x.AppendLayer();
+  output.AppendLayer();
+
   return output;
 }
 
@@ -145,6 +149,11 @@ const std::pair<Tensor, vector<Tensor>> LRN::Backward(int flag,
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }
   vector<Tensor> param_grad;
+
+  grad.AppendLayer();
+  dx.AppendLayer();
+  dy.AppendLayer();
+  x.AppendLayer();
   return std::make_pair(dx, param_grad);
 }
 

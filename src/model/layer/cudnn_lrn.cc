@@ -79,6 +79,8 @@ const Tensor CudnnLRN::Forward(int flag, const Tensor& input) {
     buf_.push(input);
     buf_.push(output);
   }
+  input.AppendLayer();
+  output.AppendLayer();
   return output;
 }
 
@@ -106,6 +108,10 @@ const std::pair<Tensor, vector<Tensor>> CudnnLRN::Backward(int flag,
   } else {
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }
+  grad.AppendLayer();
+  dx.AppendLayer();
+  input.AppendLayer();
+  output.AppendLayer();
   return std::make_pair(dx, param_grad);
 }
 }  // namespace
