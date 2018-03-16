@@ -153,6 +153,13 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
 
   if (!is_2d_)
     output.Reshape(Shape{output.shape(0), channels_, height_, width_});
+  
+  input.AppendLayer();
+  x.AppendLayer();
+  output.AppendLayer();
+  mean.AppendLayer();
+  var.AppendLayer();
+  xnorm.AppendLayer();
   return output;
 }
 
