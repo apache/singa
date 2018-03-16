@@ -152,8 +152,6 @@ const std::pair<Tensor, vector<Tensor>> LRN::Backward(int flag,
 
   grad.AppendLayer();
   dx.AppendLayer();
-  dy.AppendLayer();
-  x.AppendLayer();
   return std::make_pair(dx, param_grad);
 }
 
