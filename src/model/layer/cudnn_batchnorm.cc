@@ -187,7 +187,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
 
   grad.AppendLayer();
   dx.AppendLayer();
-  x.AppendLayer();
+
   return std::make_pair(dx, param_grad);
 }
 }  // namespace
