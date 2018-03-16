@@ -73,6 +73,8 @@ const Tensor PReLU::Forward(int flag, const Tensor &input) {
     output = input * ((input > 0.f) + (input <= 0.f) * a);
   }
   if (flag & kTrain) buf_.push(input);
+  input.AppendLayer();
+  output.AppendLayer();
   return output;
 }
 
@@ -138,6 +140,10 @@ const std::pair<Tensor, vector<Tensor> > PReLU::Backward(int flag,
     da *= sum;
   }
   param_grad.push_back(da);
+  grad.AppendLayer();
+  input.AppendLayer();
+  input_grad.AppendLayer();
+  da.AppendLayer();
   return std::make_pair(input_grad, param_grad);
 }
 
