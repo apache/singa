@@ -1086,7 +1086,7 @@ void Swap::SwapOut(void* data_){
     printf("A. to swapOut\n");
     auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
     size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
-    Table_Meta.find(data_)->second.first.ptr = malloc(tempSize);
+    Table_Meta.find(data_)->second.first.ptr = malloc(swapSize);
     SwapMeta cpu, gpu;
     cpu = Table_Meta.find(data_)->second.first;
     gpu = Table_Meta.find(data_)->second.second;
@@ -1100,7 +1100,7 @@ void Swap::SwapOut(void* data_){
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
     file_block3<<t2-t1<<" "<<tempSize<<endl;
-    free(tempPtr);
+    //free(tempPtr);
     printf("B. swapOut done.\n");
 }
 
