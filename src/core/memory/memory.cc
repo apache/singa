@@ -1100,7 +1100,7 @@ void Swap::SwapIn(void* data_){
   void** d_ptr;
   cudaMalloc(d_ptr,tempSize);
   cudaError_t err;
-  err=cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+  err=cudaMemcpy(*d_ptr, h_ptr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
   printf("2. swapIn done.\n");
 
 ///below is to swapIn swapped out items
