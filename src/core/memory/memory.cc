@@ -1110,7 +1110,7 @@ void Swap::SwapIn(void* data_){
     cout<<"1. Copy input data from the host memory to the CUDA device."<<endl;
     printf("2. Copy input data from the host memory to the CUDA device\n");
     cudaError_t err;
-    err=cudaMemcpy(tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+    err=cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
       {
       fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
