@@ -1076,7 +1076,7 @@ struct SwapMeta{
      for copy between block and info.
      */
     size_t swapSize;
-    void* h_ptr;
+    void* h_ptr;//so far only used h_ptr.
     void* d_ptr;
 };
 
