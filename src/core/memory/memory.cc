@@ -1071,6 +1071,15 @@ void* Swap::GetRealGpuPtr(void* data_){
     return Table_id2LookUpElement.find(data_)->second.realGpuPtr;
 }
 
+struct SwapMeta{
+    /*
+     for copy between block and info.
+     */
+    size_t swapSize;
+    void* h_ptr;
+    void* d_ptr;
+};
+
 void Swap::SwapOut(void* data_){
 
     printf("A. to swapOut\n");
@@ -1094,14 +1103,28 @@ void Swap::SwapOut(void* data_){
 
 void Swap::SwapIn(void* data_){
 ///below testing for newly malloc items to swap in.
+  //Note: h_ptr is just h and d ptr
   cout<<"1. to swapIn."<<endl;
-  size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
-  void* h_ptr=malloc(tempSize);
-  void** d_ptr;
-  cudaMalloc(d_ptr,tempSize);
+  SwapMeta cpu, gpu;
+  cpu.swapSize=Table_id2LookUpElement.find(data_)->second.size;
+  cpu.h_ptr=malloc(h_meta.swapSize);
+  gpu=cpu;
+  cudaMalloc(&gpu.h_ptr,cpu.swapSize);
+  
   cudaError_t err;
-  err=cudaMemcpy(*d_ptr, h_ptr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+  err=cudaMemcpy(gpu.h_ptr, cpu.h_ptr ,cpu.swapSize),cudaMemcpyHostToDevice);
   printf("2. swapIn done.\n");
+///below partial copy 
+  // SwapMeta h_meta;
+  // SwapMeta* d_meta;
+  // h_meta.swapSize=Table_id2LookUpElement.find(data_)->second.size;
+  // h_meta.h_ptr=malloc(h_meta.swapSize);
+  // cudaMalloc(d_meta,sizeof(SwapMeta));
+  // cudaMemcpy(d_meta,&h_meta,sizeof(SwapMeta),cudaMemcpyHostToDevice);
+
+  // void** d_ptr;
+  // cudaMalloc()
+  // void* h_ptr=malloc(tempSize);
 
 ///below is to swapIn swapped out items
     // auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
