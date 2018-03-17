@@ -1107,12 +1107,12 @@ void Swap::SwapIn(void* data_){
   cout<<"1. to swapIn."<<endl;
   SwapMeta cpu, gpu;
   cpu.swapSize=Table_id2LookUpElement.find(data_)->second.size;
-  cpu.h_ptr=malloc(h_meta.swapSize);
+  cpu.h_ptr=malloc(cpu.swapSize);
   gpu=cpu;
   cudaMalloc(&gpu.h_ptr,cpu.swapSize);
   
   cudaError_t err;
-  err=cudaMemcpy(gpu.h_ptr, cpu.h_ptr ,cpu.swapSize),cudaMemcpyHostToDevice);
+  err=cudaMemcpy(gpu.h_ptr, cpu.h_ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
   printf("2. swapIn done.\n");
 ///below partial copy 
   // SwapMeta h_meta;
