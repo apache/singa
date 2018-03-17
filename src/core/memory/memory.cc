@@ -1099,7 +1099,7 @@ void Swap::SwapOut(void* data_){
       }
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
-    file_block3<<t2-t1<<" "<<tempSize<<endl;
+    file_block3<<t2-t1<<" "<<swapSize<<endl;
     //free(tempPtr);
     printf("B. swapOut done.\n");
 }
