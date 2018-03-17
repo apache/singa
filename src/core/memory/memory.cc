@@ -1102,14 +1102,14 @@ void Swap::SwapOut(void* data_){
     file_block3<<t2-t1<<" "<<swapSize<<endl;
     //free(tempPtr);
     //printf("B. swapOut done.\n");
-    cudaFree(data_);
+    //cudaFree(data_);
 }
 
 void Swap::SwapIn(void* data_){
   //cout<<"1. to swapIn."<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
-  cudaMalloc(&(Table_Meta.find(data_)->second.second.ptr),swapSize); //verify if syntax correct.
+  //cudaMalloc(&(Table_Meta.find(data_)->second.second.ptr),swapSize); //verify if syntax correct.
   SwapMeta cpu, gpu;
   cpu = Table_Meta.find(data_)->second.first;
   gpu = Table_Meta.find(data_)->second.second;
