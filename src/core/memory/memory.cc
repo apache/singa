@@ -1107,8 +1107,15 @@ void Swap::SwapIn(void* data_){
     size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
     void** tempPtr;
     cudaMalloc(tempPtr,tempSize);
-    cudaMemcpy(tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+    cout<<"1. Copy input data from the host memory to the CUDA device."<<endl;
+    printf("2. Copy input data from the host memory to the CUDA device\n");
 
+    err=cudaMemcpy(tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+    if (err != cudaSuccess)
+      {
+      fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
+      exit(EXIT_FAILURE);
+      }
     //cudaMemcpy(data_, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     fstream file_block4("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
