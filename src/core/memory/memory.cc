@@ -997,9 +997,9 @@ void Swap::Malloc(void** ptr, const size_t size){
   pair<SwapMeta,SwapMeta>meta = std::make_pair(cpu, gpu);
   Table_Meta[*ptr] = meta;
 
-   swapLookUpElement temp;
-   temp.size = size;
-   Table_id2LookUpElement[*ptr] = temp;
+ swapLookUpElement temp;
+ temp.size = size;
+ Table_id2LookUpElement[*ptr] = temp;
   //  int i = 0;
   // if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
   //     i = i + 1;
@@ -1061,6 +1061,8 @@ void Swap::Free(void *ptr) {
   string tempStr4 = strm4.str();
   string blockInfo ="Free "+tempStr1+" "+tempStr4;
   vec_block.push_back(blockInfo);
+  Table_Meta.erase(ptr);
+
   Table_id2LookUpElement.erase(ptr);
 }
 
@@ -1081,20 +1083,15 @@ void* Swap::GetRealGpuPtr(void* data_){
 
 
 void Swap::SwapOut(void* data_){
-    
-
-
-
-
-
-
     printf("A. to swapOut\n");
     auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
-    void* tempPtr = malloc(tempSize);
-    Table_id2LookUpElement.find(data_)->second.realCpuPtr = tempPtr;
+    size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
+    Table_Meta.find(data_)->second.first.ptr = malloc(tempSize);
+    SwapMeta cpu, gpu;
+    cpu = Table_Meta.find(data_)->second.first;
+    gpu = Table_Meta.find(data_)->second.second;
     cudaError_t err;
-    err=cudaMemcpy(tempPtr,data_,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
+    err=cudaMemcpy(cpu.ptr,gpu.ptr,gpu.swapSize,cudaMemcpyDeviceToHost);
     if (err != cudaSuccess)
       {
       fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
