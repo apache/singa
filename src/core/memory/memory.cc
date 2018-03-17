@@ -1083,7 +1083,7 @@ void* Swap::GetRealGpuPtr(void* data_){
 
 
 void Swap::SwapOut(void* data_){
-    printf("A. to swapOut\n");
+    //printf("A. to swapOut\n");
     auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
     size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
     Table_Meta.find(data_)->second.first.ptr = malloc(swapSize);
@@ -1101,19 +1101,21 @@ void Swap::SwapOut(void* data_){
     fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
     file_block3<<t2-t1<<" "<<swapSize<<endl;
     //free(tempPtr);
-    printf("B. swapOut done.\n");
+    //printf("B. swapOut done.\n");
+    cudaFree(data_);
 }
 
 void Swap::SwapIn(void* data_){
-  cout<<"1. to swapIn."<<endl;
+  //cout<<"1. to swapIn."<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
+  cudaMalloc(&(Table_Meta.find(data_)->second.second.ptr),swapSize); //verify if syntax correct.
   SwapMeta cpu, gpu;
   cpu = Table_Meta.find(data_)->second.first;
   gpu = Table_Meta.find(data_)->second.second;
   cudaError_t err;
   err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
-  printf("2. swapIn done.\n");
+  //printf("2. swapIn done.\n");
   free(cpu.ptr);
 
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
