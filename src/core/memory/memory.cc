@@ -1085,15 +1085,23 @@ void Swap::SwapOut(void* data_){
     // //TODO(swap) no free
     // //Free(Table_id2LookUpElement.find(data_)->second.realGpuPtr);
     // //Table_id2LookUpElement.find(data_)->second.realGpuPtr =nullptr;
+    printf("A. Copy input data from the host memory to the CUDA device\n");
     auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
     size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
     void* tempPtr = malloc(tempSize);
     Table_id2LookUpElement.find(data_)->second.realCpuPtr = tempPtr;
-    cudaMemcpy(tempPtr,data_,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
+    cudaError_t err;
+    err=cudaMemcpy(tempPtr,data_,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess)
+      {
+      fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
+      exit(EXIT_FAILURE);
+      }
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
     file_block3<<t2-t1<<" "<<tempSize<<endl;
     free(tempPtr);
+    printf("B. Copy input data from the host memory to the CUDA device\n");
 }
 
 void Swap::SwapIn(void* data_){
@@ -1108,7 +1116,6 @@ void Swap::SwapIn(void* data_){
     void** tempPtr;
     cudaMalloc(tempPtr,tempSize);
     cout<<"1. Copy input data from the host memory to the CUDA device."<<endl;
-    printf("2. Copy input data from the host memory to the CUDA device\n");
     cudaError_t err;
     err=cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
@@ -1122,6 +1129,7 @@ void Swap::SwapIn(void* data_){
     file_block4<<t2-t1<<" "<<tempSize<<endl;
     cudaFree(*tempPtr);
     cout<<"testing after SwapIn"<<endl;
+    printf("2. Copy input data from the host memory to the CUDA device\n");
  
 }
 
