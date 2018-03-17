@@ -1088,31 +1088,42 @@ void Swap::SwapOut(void* data_){
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
     file_block3<<t2-t1<<" "<<tempSize<<endl;
-    //free(tempPtr);
+    free(tempPtr);
     printf("B. swapOut done.\n");
 }
 
 void Swap::SwapIn(void* data_){
+///below testing for newly malloc items to swap in.
+  cout<<"1. to swapIn."<<endl;
+  size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
+  void* h_ptr=malloc(tempSize);
+  void** d_ptr;
+  cudaMalloc(d_ptr,tempSize);
+  cudaError_t err;
+  err=cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+  printf("2. swapIn done.\n");
 
-    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
-    void** tempPtr;
-    cudaMalloc(tempPtr,tempSize);
-    cout<<"1. to swapIn."<<endl;
-    cudaError_t err;
-    err=cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
-    if (err != cudaSuccess)
-      {
-      fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
-      exit(EXIT_FAILURE);
-      }
-    //cudaMemcpy(data_, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
-    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    fstream file_block4("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
-    file_block4<<t2-t1<<" "<<tempSize<<endl;
-    cudaFree(*tempPtr);
-    cout<<"testing after SwapIn"<<endl;
-    printf("2. swapIn done.\n");
+///below is to swapIn swapped out items
+    // auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    // size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
+    // void** tempPtr;
+    // cudaMalloc(tempPtr,tempSize);
+    // cout<<"1. to swapIn."<<endl;
+    // cudaError_t err;
+    // err=cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+    // if (err != cudaSuccess)
+    //   {
+    //   fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
+    //   exit(EXIT_FAILURE);
+    //   }
+    // //cudaMemcpy(data_, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
+    // auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    // fstream file_block4("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
+    // file_block4<<t2-t1<<" "<<tempSize<<endl;
+    // cudaFree(*tempPtr);
+    // free(Table_id2LookUpElement.find(data_)->second.realCpuPtr);
+    // cout<<"testing after SwapIn"<<endl;
+    // printf("2. swapIn done.\n");
  
 }
 
