@@ -187,6 +187,15 @@ struct swapLookUpElement{
     size_t size; //size may used as of now.
 };
 
+struct SwapMeta{
+    /*
+     for copy between block and info.
+     */
+    size_t swapSize;
+    void* ptr;
+    void* d_ptr; //not used for
+};
+
 class Swap : public DeviceMemPool {
 public:
     Swap(const MemPoolConf &conf); //constructor
@@ -210,7 +219,8 @@ private:
     std::mutex mtx_; 
     vector<string> vec_block;
     size_t swapLimit = 1<<23; //8MB
-    map<void*,swapLookUpElement>Table_id2LookUpElement;
+    map<void*,swapLookUpElement>Table_id2LookUpElement; //old TODO(junzhe) remove
+    map<void*,pair<SwapMeta,SwapMeta>>Table_Meta;
 };
 
 #endif
