@@ -1005,7 +1005,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   cout<<"malloc data_ after verify: "<<data_<<endl;
   swapLookUpElement temp;
   temp.size = size;
- TODOable_id2LookUpElement[*ptr] = temp;
+  Table_id2LookUpElement[*ptr] = temp;
   //  int i = 0;
   // if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
   //     i = i + 1;
