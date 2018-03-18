@@ -1114,6 +1114,11 @@ void Swap::SwapIn(void* data_){
   void** pptr;
   cudaMalloc(pptr,swapSize);
   cout<<"before alloc: "<<Table_Meta.find(data_)->second.second.ptr<<endl;
+  cout<<"pptr "<<pptr<<endl;
+  cout<<"*pptr "<<*pptr<<endl;
+  if (!(Table_Meta.find(data_)==Table_Meta.end())){
+    cout<<"not in Table_Meta"<<endl;
+  }
   Table_Meta.find(data_)->second.second.ptr=*pptr;
   cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   //cudaMalloc(&(Table_Meta.find(data_)->second.second.ptr),swapSize); //verify if syntax correct.
