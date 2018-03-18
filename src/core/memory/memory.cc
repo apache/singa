@@ -1121,7 +1121,7 @@ void Swap::SwapIn(void* data_){
   err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
   printf("2. swapIn done.\n");
   free(cpu.ptr);
-
+  \\
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
   file_block3<<t2-t1<<" "<<gpu.swapSize<<endl;
