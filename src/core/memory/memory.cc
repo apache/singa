@@ -988,6 +988,7 @@ void Swap::Init(){
 }
 
 void Swap::Malloc(void** ptr, const size_t size){
+  cout<<"before malloc"<<endl;
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   SwapMeta cpu,gpu;
@@ -1000,7 +1001,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   if (!(Table_Meta.find(data_)==Table_Meta.end())){
     data_=data_+sizeof(char);
   }
-  Table_Meta[*ptr] = data_;
+  Table_Meta[*ptr] = meta;
   *ptr = data_; //make Malloc return data_ instead of real ptr;
   cout<<"malloc data_ after verify: "<<data_<<endl;
   swapLookUpElement temp;
