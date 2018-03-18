@@ -1112,6 +1112,7 @@ void Swap::SwapIn(void* data_){
   SwapMeta cpu, gpu;
   cpu = Table_Meta.find(data_)->second.first;
   gpu = Table_Meta.find(data_)->second.second;
+  gpu.ptr=nullptr;
   cudaError_t status = cudaMalloc(&gpu.ptr, gpu.swapSize);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   Table_Meta.find(data_)->second.second.ptr=gpu.ptr;
