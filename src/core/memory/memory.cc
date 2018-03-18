@@ -995,8 +995,14 @@ void Swap::Malloc(void** ptr, const size_t size){
   gpu.swapSize = size;
   gpu.ptr = *ptr;
   pair<SwapMeta,SwapMeta>meta = std::make_pair(cpu, gpu);
-  Table_Meta[*ptr] = meta;
-
+  void* data_=*ptr;
+  cout<<"malloc data_: "<<data_<<endl;
+  if (!(Table_Meta.find(data_)==Table_Meta.end())){
+    data_=data_+sizeof(char);
+  } else {
+    Table_Meta[*ptr] = meta;
+  }
+  cout<<"malloc data_ after verify: "<<data_<<endl;
  swapLookUpElement temp;
  temp.size = size;
  Table_id2LookUpElement[*ptr] = temp;
@@ -1121,7 +1127,7 @@ void Swap::SwapIn(void* data_){
   err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
   printf("2. swapIn done.\n");
   free(cpu.ptr);
-  //
+
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
   file_block3<<t2-t1<<" "<<gpu.swapSize<<endl;
