@@ -1115,7 +1115,7 @@ void Swap::SwapIn(void* data_){
   cudaMalloc(pptr,swapSize);
   cout<<"before alloc: "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   Table_Meta.find(data_)->second.second.ptr=*pptr;
-  cout<<"after alloc: 1"<<gpu.ptr<<endl;
+  cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   //cudaMalloc(&(Table_Meta.find(data_)->second.second.ptr),swapSize); //verify if syntax correct.
   SwapMeta cpu, gpu;
   cpu = Table_Meta.find(data_)->second.first;
