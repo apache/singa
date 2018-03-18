@@ -1100,7 +1100,7 @@ void Swap::SwapOut(void* data_){
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
     file_block3<<t2-t1<<" "<<swapSize<<endl;
-    //free(tempPtr);
+    free(tempPtr);
     printf("B. swapOut done.\n");
     cout<<"before free: "<<data_<<endl;
     //cudaFree(data_);
@@ -1110,25 +1110,13 @@ void Swap::SwapOut(void* data_){
 void Swap::SwapIn(void* data_){
   printf("1. to swapIn.\n");
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
-  cout<<"swapSize: "<<swapSize<<endl;
-  void** pptr;
-  cudaError_t status = cudaMalloc(pptr, swapSize);
-  CHECK_EQ(status, cudaError_t::cudaSuccess);
-  cout<<"before alloc: "<<Table_Meta.find(data_)->second.second.ptr<<endl;
-  cout<<"pptr "<<pptr<<endl;
-
-  cout<<"*pptr "<<*pptr<<endl;
-  if (!(Table_Meta.find(data_)==Table_Meta.end())){
-    cout<<"not in Table_Meta"<<endl;
-  }
-  Table_Meta.find(data_)->second.second.ptr=*pptr;
-  cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
-  //cudaMalloc(&(Table_Meta.find(data_)->second.second.ptr),swapSize); //verify if syntax correct.
   SwapMeta cpu, gpu;
   cpu = Table_Meta.find(data_)->second.first;
   gpu = Table_Meta.find(data_)->second.second;
-  cout<<"after alloc: 2"<<gpu.ptr<<endl;
+  cudaError_t status = cudaMalloc(&gpu.ptr, gpu.swapSize);
+  CHECK_EQ(status, cudaError_t::cudaSuccess);
+  Table_Meta.find(data_)->second.second.ptr=gpu.ptr;
+  cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   cudaError_t err;
   err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
   printf("2. swapIn done.\n");
