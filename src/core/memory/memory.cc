@@ -1115,11 +1115,12 @@ void Swap::SwapIn(void* data_){
   cudaMalloc(pptr,swapSize);
   cout<<"before alloc: "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   Table_Meta.find(data_)->second.second.ptr=*pptr;
+  cout<<"after alloc: 1"<<gpu.ptr<<endl;
   //cudaMalloc(&(Table_Meta.find(data_)->second.second.ptr),swapSize); //verify if syntax correct.
   SwapMeta cpu, gpu;
   cpu = Table_Meta.find(data_)->second.first;
   gpu = Table_Meta.find(data_)->second.second;
-  cout<<"after alloc: "<<gpu.ptr<<endl;
+  cout<<"after alloc: 2"<<gpu.ptr<<endl;
   cudaError_t err;
   err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
   printf("2. swapIn done.\n");
