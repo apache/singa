@@ -1111,10 +1111,12 @@ void Swap::SwapIn(void* data_){
   printf("1. to swapIn.\n");
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
+  cout<<"swapSize: "<<swapSize<<endl;
   void** pptr;
   cudaMalloc(pptr,swapSize);
   cout<<"before alloc: "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   cout<<"pptr "<<pptr<<endl;
+
   cout<<"*pptr "<<*pptr<<endl;
   if (!(Table_Meta.find(data_)==Table_Meta.end())){
     cout<<"not in Table_Meta"<<endl;
