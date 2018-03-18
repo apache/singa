@@ -1042,7 +1042,7 @@ void Swap::Malloc(void** ptr, const size_t size){
   strm1<<size;
   string tempStr1 = strm1.str();
   stringstream strm3;
-  strm3<<*ptr;
+  strm3<<data_;
   string tempStr3 = strm3.str();
   stringstream strm4;
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
@@ -1054,12 +1054,12 @@ void Swap::Malloc(void** ptr, const size_t size){
   //Table_id2LookUpElement[temp.data_]=temp;
 }
 
-void Swap::Free(void *ptr) {
-  //input is real ptr
-  cudaError_t status = cudaFree(ptr);
+void Swap::Free(void *data_) {
+  //input is data_ also
+  cudaError_t status = cudaFree(data_);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   stringstream strm1;
-  strm1<<ptr;
+  strm1<<data_;
   string tempStr1 = strm1.str();
   stringstream strm4;
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
@@ -1067,9 +1067,9 @@ void Swap::Free(void *ptr) {
   string tempStr4 = strm4.str();
   string blockInfo ="Free "+tempStr1+" "+tempStr4;
   vec_block.push_back(blockInfo);
-  Table_Meta.erase(ptr);
+  Table_Meta.erase(data_);
 
-  Table_id2LookUpElement.erase(ptr);
+  Table_id2LookUpElement.erase(data_);
 }
 
 void Swap::Append(string blockInfo) {
@@ -1079,11 +1079,12 @@ void Swap::Append(string blockInfo) {
 }
 
 void* Swap::GetRealGpuPtr(void* data_){
-    if (Table_id2LookUpElement.find(data_)->second.realGpuPtr ==nullptr){
-      //assume no start swapping yet. TODO(swap)
-      SwapIn(data_);
-    }
-    return Table_id2LookUpElement.find(data_)->second.realGpuPtr;
+    //should be able to wait...
+    // if (Table_id2LookUpElement.find(data_)->second.realGpuPtr ==nullptr){
+    //   //assume no start swapping yet. TODO(swap)
+    //   SwapIn(data_);
+    // }
+    return Table_Meta.find(data_)->second.second.ptr;
 }
 
 
