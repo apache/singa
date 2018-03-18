@@ -1109,7 +1109,6 @@ void Swap::SwapOut(void* data_){
 
 void Swap::SwapIn(void* data_){
   printf("1. to swapIn.\n");
-  printf()
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
   void** pptr;
