@@ -1103,7 +1103,7 @@ void Swap::SwapOut(void* data_){
     //free(tempPtr);
     printf("B. swapOut done.\n");
     cout<<"before free: "<<data_<<endl;
-    cudaFree(data_);
+    //cudaFree(data_);
     cout<<"after free: "<<data_<<endl;
 }
 
@@ -1113,7 +1113,8 @@ void Swap::SwapIn(void* data_){
   size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
   cout<<"swapSize: "<<swapSize<<endl;
   void** pptr;
-  cudaMalloc(pptr,swapSize);
+  cudaError_t status = cudaMalloc(pptr, swapSize);
+  CHECK_EQ(status, cudaError_t::cudaSuccess);
   cout<<"before alloc: "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   cout<<"pptr "<<pptr<<endl;
 
