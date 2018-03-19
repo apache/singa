@@ -64,12 +64,12 @@ const void* Block::data() const {
         string temp = "Read "+tempStr2+" "+tempStr4;
         ptrDevice_->AppendInfo(temp);
     }
-    //update data_ to the real ptr
-    data_ = ptrDevice_->GetRealGpuPtrInfo(this);
+    //update the real ptr, not able to assign to data_ as const function
+    void data_2 = ptrDevice_->GetRealGpuPtrInfo(this);
     
-    ptrDevice_->SwapOutInfo(data_);
-    ptrDevice_->SwapInInfo(data_);
-    return static_cast<char*>(data_) + offset_;
+    ptrDevice_->SwapOutInfo(data_2);
+    ptrDevice_->SwapInInfo(data_2);
+    return static_cast<char*>(data_2) + offset_;
   }
 
 const void* Block::log_ptr() const {
