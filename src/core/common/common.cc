@@ -73,7 +73,7 @@ const void* Block::data() const {
   }
 
 const void* Block::log_ptr() const {
-    return static_cast<void*>this;
+    return this;
 }
 
 
