@@ -150,7 +150,7 @@ void SwapGPU::SwapOut(const Block* block_){
   printf("A. to swapOut\n");
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   size_t swapSize = Table_Meta.find(block_)->second.second.size;
-  Table_Meta.find(data_)->second.first.ptr = malloc(swapSize);
+  Table_Meta.find(block_)->second.first.ptr = malloc(swapSize);
   BlockMeta cpu, gpu;
   cpu = Table_Meta.find(block_)->second.first;
   gpu = Table_Meta.find(block_)->second.second;
@@ -178,19 +178,19 @@ void SwapGPU::SwapIn(const Block* block_){
   cpu = Table_Meta.find(block_)->second.first;
   gpu = Table_Meta.find(block_)->second.second;
   //gpu.ptr=nullptr;
-  cudaError_t status = cudaMalloc(&gpu.ptr, gpu.swapSize);
+  cudaError_t status = cudaMalloc(&gpu.ptr, gpu.size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   Table_Meta.find(block_)->second.second.ptr=gpu.ptr;
   //cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   cudaError_t err;
-  err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
+  err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice);
   printf("2. swapIn done.\n");
   free(cpu.ptr);
   Table_Meta.find(block_)->second.first.ptr=nullptr;
   //
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
-  file_block3<<t2-t1<<" "<<gpu.swapSize<<endl;
+  file_block3<<t2-t1<<" "<<gpu.size<<endl;
 }
 
 }  // namespace singa
