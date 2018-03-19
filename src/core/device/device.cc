@@ -38,7 +38,7 @@ Block* Device::NewBlock(int size) {
   if (size > 0) {
     void* ptr = Malloc(size);
     Block* block_ = new Block(ptr, size,0,this);
-    MakeMetaTable(block_,ptr);
+    MakeMetaTable(block_,ptr,size);
     return block_;
   } else {
     return nullptr;
