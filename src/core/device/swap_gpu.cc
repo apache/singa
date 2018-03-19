@@ -26,6 +26,8 @@
 #include <string>
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
+
+using namespace std;
 namespace singa {
 
 const cudaMemcpyKind copyKind[] = {cudaMemcpyHostToHost, cudaMemcpyHostToDevice,
@@ -106,6 +108,7 @@ size_t SwapGPU::GetAllocatedMem() {
 /// Allocate gpu memory.
 void* SwapGPU::Malloc(int size) {
   void* ptr = nullptr;
+  cout<<"hello, SwapGPU."<<endl;
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Malloc((void**)&ptr, size);
