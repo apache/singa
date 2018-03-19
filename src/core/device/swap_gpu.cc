@@ -130,8 +130,8 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   //std::cout<<"SwapGpu block_"<<block_<<endl;
   //put in Meta Table
   BlockMeta cpu,gpu;
-  cpu.swapSize = size;
-  gpu.swapSize = size;
+  cpu.size = size;
+  gpu.size = size;
   gpu.ptr = data_;
   pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
   Table_Meta[block_] = meta;
