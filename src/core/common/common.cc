@@ -65,7 +65,7 @@ const void* Block::data() const {
         ptrDevice_->AppendInfo(temp);
     }
     //update the real ptr, not able to assign to data_ as const function
-    void data_2 = ptrDevice_->GetRealGpuPtrInfo(this);
+    void* data_2 = ptrDevice_->GetRealGpuPtrInfo(this);
     
     ptrDevice_->SwapOutInfo(data_2);
     ptrDevice_->SwapInInfo(data_2);
