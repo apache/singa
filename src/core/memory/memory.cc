@@ -988,6 +988,7 @@ void Swap::Init(){
 }
 
 void Swap::Malloc(void** ptr, const size_t size){
+  cout<<"to malloc"<<endl;
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   SwapMeta cpu,gpu;
@@ -1049,6 +1050,7 @@ void Swap::Malloc(void** ptr, const size_t size){
 }
 
 void Swap::Free(void *ptr) {
+  cout<<"to malloc"<<endl;
   //input is real ptr
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
