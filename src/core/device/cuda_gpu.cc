@@ -131,12 +131,12 @@ void* CudaGPU::GetRealGpuPtr(const Block* block_){
   return nullptr;
 }
 
-void CudaGPU::SwapOut(void* data_){
-  pool_->SwapOut(data_);
+void CudaGPU::SwapOut(const Block* block_){
+  
 }
 
-void CudaGPU::SwapIn(void* data_){
-  pool_->SwapIn(data_);
+void CudaGPU::SwapIn(const Block* block_){
+  
 }
 
 }  // namespace singa
