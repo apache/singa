@@ -57,8 +57,8 @@ void Device::AppendInfo(string blockInfo){
   Append(blockInfo);
 }
 
-void* Device::GetRealGpuPtrInfo(void* data_,string block_){
-  return GetRealGpuPtr(data_, block_);
+void* Device::GetRealGpuPtrInfo(Block* block_){
+  return GetRealGpuPtr(block_);
 }
 
 void Device::SwapOutInfo(void* data_){

@@ -1074,18 +1074,6 @@ void Swap::Append(string blockInfo) {
 
 }
 
-void* Swap::GetRealGpuPtr(void* data_,string block_){
-    SwapMeta meta;
-    cout<<"realPtr is: "<<block_<<endl;
-    //Table_Meta[*ptr] = meta;
-    if (Table_id2LookUpElement.find(data_)->second.realGpuPtr ==nullptr){
-      //assume no start swapping yet. TODO(swap)
-      SwapIn(data_);
-    }
-    return Table_id2LookUpElement.find(data_)->second.realGpuPtr;
-}
-
-
 
 void Swap::SwapOut(void* data_){
     printf("A. to swapOut\n");

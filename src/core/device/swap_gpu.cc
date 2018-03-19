@@ -141,8 +141,9 @@ void SwapGPU::Append(string blockInfo){
     pool_->Append(blockInfo);
 }
 
-void* SwapGPU::GetRealGpuPtr(void* data_,string block_){
-  return pool_->GetRealGpuPtr(data_,block_);
+void* SwapGPU::GetRealGpuPtr(Block* block_){
+  void* data_ = Table_Meta.find(block_)->second.second.ptr;
+  return data_;
 }
 
 void SwapGPU::SwapOut(void* data_){

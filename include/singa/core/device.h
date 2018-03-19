@@ -66,7 +66,7 @@ class Device {
   void FreeBlock(Block* block);
   
   void AppendInfo(string blockInfo);
-  void* GetRealGpuPtrInfo(void* data_,string block_);
+  void* GetRealGpuPtrInfo(Block* block_);
   void SwapOutInfo(void* data_);
   void SwapInInfo(void* data_);
 
@@ -124,7 +124,7 @@ class Device {
   virtual void Free(void* ptr) = 0;
   virtual void MakeMetaTable(Block* block,void* data_,int size) = 0;
   virtual void Append(string blockInfo) = 0;
-  virtual void* GetRealGpuPtr(void* data_,string block_) = 0;
+  virtual void* GetRealGpuPtr(Block* block_) = 0;
   virtual void SwapOut(void* data_) = 0;
   virtual void SwapIn(void* data_) = 0;
 
@@ -170,7 +170,7 @@ class CppCPU : public Device {
   void Free(void* ptr) override;
   void MakeMetaTable(Block* block,void* data_,int size) override {}
   void Append(string blockInfo) override {}
-  void* GetRealGpuPtr(void* data_,string block_) override {}
+  void* GetRealGpuPtr(Block* block_) override {}
   void SwapOut(void* data_) override {}
   void SwapIn(void* data_) override {}
 };
@@ -205,7 +205,7 @@ class CudaGPU : public Device {
   void Free(void* ptr) override;
   void MakeMetaTable(Block* block,void* data_,int size) override {}
   void Append(string blockInfo) override;
-  void* GetRealGpuPtr(void* data_,string block_) override;
+  void* GetRealGpuPtr(Block* block_) override;
   void SwapOut(void* data_) override;
   void SwapIn(void* data_) override;
 
@@ -253,7 +253,7 @@ class SwapGPU : public Device {
   void Free(void* ptr) override;
   void MakeMetaTable(Block* block,void* data_,int size) override;
   void Append(string blockInfo) override;
-  void* GetRealGpuPtr(void* data_,string block_) override;
+  void* GetRealGpuPtr(Block* block_) override;
   void SwapOut(void* data_) override;
   void SwapIn(void* data_) override;
 
@@ -317,7 +317,7 @@ protected:
   void Free(void* ptr) override;
   void MakeMetaTable(Block* block,void* data_,int size) override {}
   void Append(string blockInfo) override {}
-  void* GetRealGpuPtr(void* data_,string block_) override {}
+  void* GetRealGpuPtr(Block* block_) override {}
   void SwapOut(void* data_) override {}
   void SwapIn(void* data_) override {}
 

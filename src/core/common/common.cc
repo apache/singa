@@ -31,7 +31,7 @@ void* Block::mutable_data() {
     initialized_ = true;
     if (ptrDevice_!=nullptr){
         stringstream strm2;
-        strm2<<data_;
+        strm2<<this;
         string tempStr2 = strm2.str();
         // stringstream strm3;
         // strm3<<size_;
@@ -43,13 +43,6 @@ void* Block::mutable_data() {
         string temp = "Mutable "+tempStr2+" "+tempStr4;   
         ptrDevice_->AppendInfo(temp);
     }
-    //void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
-    //ptrDevice_->SwapOutInfo(data_);
-    // if (size_>1<<22){
-    //   void* CPUptr = malloc(size_);
-    //   cudaMemcpy(CPUptr,data_,size_,cudaMemcpyDeviceToHost);
-    //   ptrDevice_->AppendInfo("cudaMemcpy GPU to CPU");
-    // }
 
     return static_cast<char*>(data_) + offset_;
   }
@@ -59,7 +52,7 @@ const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
     if (ptrDevice_!=nullptr){
         stringstream strm2;
-        strm2<<data_;
+        strm2<<this;
         string tempStr2 = strm2.str();
         // stringstream strm3;
         // strm3<<size_;
@@ -71,15 +64,16 @@ const void* Block::data() const {
         string temp = "Read "+tempStr2+" "+tempStr4;
         ptrDevice_->AppendInfo(temp);
     }
-
-    ///void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
+    //update data_ to the real ptr
+    data_ = ptrDevice_->GetRealGpuPtrInfo(this);
+    
     ptrDevice_->SwapOutInfo(data_);
     ptrDevice_->SwapInInfo(data_);
     return static_cast<char*>(data_) + offset_;
   }
 
 const void* Block::log_ptr() const {
-    return static_cast<char*>(data_) + offset_;
+    return static_cast<void*>this;
 }
 
 
