@@ -122,7 +122,7 @@ class Device {
 
   /// Free device memory.
   virtual void Free(void* ptr) = 0;
-  
+  virtual void MakeMetaTable(Block* block,void* data_) = 0;
   virtual void Append(string blockInfo) = 0;
   virtual void* GetRealGpuPtr(void* data_,string block_) = 0;
   virtual void SwapOut(void* data_) = 0;
@@ -168,7 +168,7 @@ class CppCPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-    
+  void MakeMetaTable(Block* block,void* data_) override {}
   void Append(string blockInfo) override {}
   void* GetRealGpuPtr(void* data_,string block_) override {}
   void SwapOut(void* data_) override {}
@@ -203,7 +203,7 @@ class CudaGPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-
+  void MakeMetaTable(Block* block,void* data_) override {}
   void Append(string blockInfo) override;
   void* GetRealGpuPtr(void* data_,string block_) override;
   void SwapOut(void* data_) override;
@@ -241,7 +241,7 @@ class SwapGPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-
+  void MakeMetaTable(Block* block,void* data_) override;
   void Append(string blockInfo) override;
   void* GetRealGpuPtr(void* data_,string block_) override;
   void SwapOut(void* data_) override;
@@ -304,7 +304,7 @@ protected:
   /// Converts the void pointer into a Buffer object, then deletes the object.
   /// This has the effect of freeing up device memory.
   void Free(void* ptr) override;
-    
+  void MakeMetaTable(Block* block,void* data_) override {}
   void Append(string blockInfo) override {}
   void* GetRealGpuPtr(void* data_,string block_) override {}
   void SwapOut(void* data_) override {}

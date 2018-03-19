@@ -108,7 +108,7 @@ size_t SwapGPU::GetAllocatedMem() {
 /// Allocate gpu memory.
 void* SwapGPU::Malloc(int size) {
   void* ptr = nullptr;
-  cout<<"hello, SwapGPU."<<endl;
+  //cout<<"hello, SwapGPU."<<endl;
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Malloc((void**)&ptr, size);
@@ -124,6 +124,10 @@ void SwapGPU::Free(void* ptr) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Free(ptr);
   }
+}
+
+void SwapGPU::MakeMetaTable(Block* block_,void* data_){
+  std::cout<<"SwapGpu block_"<<block_<<endl;
 }
 
 void SwapGPU::Append(string blockInfo){

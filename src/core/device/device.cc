@@ -37,7 +37,9 @@ Block* Device::NewBlock(int size) {
     << "from size_t to int. In that case, the size is too large.";
   if (size > 0) {
     void* ptr = Malloc(size);
-    return new Block(ptr, size,0,this);
+    Block* block_ = new Block(ptr, size,0,this);
+    MakeMetaTable(block_,ptr);
+    return block_;
   } else {
     return nullptr;
   }
