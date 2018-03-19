@@ -218,6 +218,42 @@ class CudaGPU : public Device {
 
 /// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
 
+/// Device able to Swap memory between Nvidia GPU and Swap
+class SwapGPU : public Device {
+ public:
+  ~SwapGPU();
+  /// Construct the device using default mem pool setting.
+  SwapGPU(int id = 0);
+  /// Construct the device given the physical device ID and memory pool.
+  SwapGPU(int id, std::shared_ptr<DeviceMemPool> pool);
+
+  void SetRandSeed(unsigned seed) override;
+  size_t GetAllocatedMem() override;
+
+ protected:
+  void DoExec(function<void(Context*)>&& fn, int executor) override;
+
+  void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                  CopyDirection direction, Context* ctx) override;
+
+  /// Allocate cpu memory.
+  void* Malloc(int size) override;
+
+  /// Free cpu memory.
+  void Free(void* ptr) override;
+
+  void Append(string blockInfo) override;
+  void* GetRealGpuPtr(void* data_,string block_) override;
+  void SwapOut(void* data_) override;
+  void SwapIn(void* data_) override;
+
+ private:
+  void Setup();
+
+ private:
+  shared_ptr<DeviceMemPool> pool_;
+};
+
 #endif  // USE_CUDA
 
 #ifdef USE_OPENCL
