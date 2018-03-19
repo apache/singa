@@ -129,7 +129,7 @@ void SwapGPU::Free(void* ptr) {
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   //std::cout<<"SwapGpu block_"<<block_<<endl;
   //put in Meta Table
-  SwapMeta cpu,gpu;
+  BlockMeta cpu,gpu;
   cpu.swapSize = size;
   gpu.swapSize = size;
   gpu.ptr = data_;
