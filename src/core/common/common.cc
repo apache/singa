@@ -51,8 +51,7 @@ void* Block::mutable_data() {
     //   ptrDevice_->AppendInfo("cudaMemcpy GPU to CPU");
     // }
 
-    void* real_data_ = ptrDevice_->GetRealGpuPtrInfo(data_);
-    return static_cast<char*>(real_data_) + offset_;
+    return static_cast<char*>(data_) + offset_;
   }
 
 
@@ -76,13 +75,11 @@ const void* Block::data() const {
     ///void* realPtr_ = ptrDevice_->GetRealGpuPtrInfo(data_);
     ptrDevice_->SwapOutInfo(data_);
     ptrDevice_->SwapInInfo(data_);
-
-    void* real_data_ = ptrDevice_->GetRealGpuPtrInfo(data_);
-    return static_cast<char*>(real_data_) + offset_;
+    return static_cast<char*>(data_) + offset_;
   }
 
 const void* Block::log_ptr() const {
-    return static_cast<char*>(data_); //no offset, as only for log.
+    return static_cast<char*>(data_) + offset_;
 }
 
 
