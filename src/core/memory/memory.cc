@@ -1074,7 +1074,10 @@ void Swap::Append(string blockInfo) {
 
 }
 
-void* Swap::GetRealGpuPtr(void* data_){
+void* Swap::GetRealGpuPtr(void* data_,string block_){
+    SwapMeta meta;
+    cout<<"realPtr is: "<<block_<<endl;
+    //Table_Meta[*ptr] = meta;
     if (Table_id2LookUpElement.find(data_)->second.realGpuPtr ==nullptr){
       //assume no start swapping yet. TODO(swap)
       SwapIn(data_);
@@ -1103,9 +1106,9 @@ void Swap::SwapOut(void* data_){
     fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
     file_block3<<t2-t1<<" "<<swapSize<<endl;
     printf("B. swapOut done.\n");
-    cout<<"before free: "<<data_<<endl;
+    //cout<<"before free: "<<data_<<endl;
     cudaFree(data_);
-    cout<<"after free: "<<data_<<endl;
+    //cout<<"after free: "<<data_<<endl;
 }
 
 void Swap::SwapIn(void* data_){
@@ -1118,7 +1121,7 @@ void Swap::SwapIn(void* data_){
   cudaError_t status = cudaMalloc(&gpu.ptr, gpu.swapSize);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   Table_Meta.find(data_)->second.second.ptr=gpu.ptr;
-  cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
+  //cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   cudaError_t err;
   err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
   printf("2. swapIn done.\n");
