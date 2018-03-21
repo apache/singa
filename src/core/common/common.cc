@@ -28,6 +28,7 @@
 namespace singa {
 
 void* Block::mutable_data() {
+    std::cout<<"data"<<std::endl;
     initialized_ = true;
     if (ptrDevice_!=nullptr){
         stringstream strm2;
@@ -50,6 +51,7 @@ void* Block::mutable_data() {
 
 const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
+    std::cout<<"data"<<std::endl;
     if (ptrDevice_!=nullptr){
         stringstream strm2;
         strm2<<this;
