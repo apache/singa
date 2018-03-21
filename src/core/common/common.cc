@@ -65,11 +65,11 @@ const void* Block::data() const {
         ptrDevice_->AppendInfo(temp);
     }
     //update the real ptr, not able to assign to data_ as const function
-    void* data_2 = ptrDevice_->GetRealGpuPtrInfo(this);
+    //void* data_2 = ptrDevice_->GetRealGpuPtrInfo(this);
     
     ptrDevice_->SwapOutInfo(this);
     ptrDevice_->SwapInInfo(this);
-    return static_cast<char*>(data_2) + offset_;
+    return static_cast<char*>(data_) + offset_;
   }
 
 const void* Block::log_ptr() const {
