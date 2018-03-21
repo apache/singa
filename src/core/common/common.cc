@@ -28,7 +28,7 @@
 namespace singa {
 
 void* Block::mutable_data() {
-    std::cout<<"data"<<std::endl;
+    std::cout<<"mutable_data"<<std::endl;
     initialized_ = true;
     if (ptrDevice_!=nullptr){
         stringstream strm2;
