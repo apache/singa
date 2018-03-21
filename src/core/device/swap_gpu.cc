@@ -155,6 +155,7 @@ void SwapGPU::SwapOut(const Block* block_){
   cpu = Table_Meta.find(block_)->second.first;
   gpu = Table_Meta.find(block_)->second.second;
   cudaError_t err;
+  cout<<cpu.ptr<<' '<<gpu.ptr<<' '<<gpu.size<<endl;
   err=cudaMemcpy(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost);
   if (err != cudaSuccess)
     {

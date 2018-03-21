@@ -28,7 +28,7 @@
 namespace singa {
 
 void* Block::mutable_data() {
-    std::cout<<"mutable_data"<<std::endl;
+    std::cout<<"mutable_data "<<this<<std::endl;
     initialized_ = true;
     if (ptrDevice_!=nullptr){
         stringstream strm2;
@@ -51,7 +51,7 @@ void* Block::mutable_data() {
 
 const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
-    std::cout<<"data"<<std::endl;
+    std::cout<<"data "<<this<<std::endl;
     if (ptrDevice_!=nullptr){
         stringstream strm2;
         strm2<<this;
@@ -60,9 +60,9 @@ const void* Block::data() const {
         // strm3<<size_;
         // string tempStr3 = strm3.str();
         stringstream strm4;
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      strm4<<t2;
-      string tempStr4 = strm4.str();
+        auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+        strm4<<t2;
+        string tempStr4 = strm4.str();
         string temp = "Read "+tempStr2+" "+tempStr4;
         ptrDevice_->AppendInfo(temp);
     }
