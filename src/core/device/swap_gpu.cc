@@ -179,9 +179,9 @@ void SwapGPU::SwapIn(const Block* block_){
   cpu = Table_Meta.find(block_)->second.first;
   gpu = Table_Meta.find(block_)->second.second;
   //without free here.
-  //gpu.ptr=nullptr;
-  //cudaError_t status = cudaMalloc(&gpu.ptr, gpu.size);
-  //CHECK_EQ(status, cudaError_t::cudaSuccess);
+  gpu.ptr=nullptr;
+  cudaError_t status = cudaMalloc(&gpu.ptr, gpu.size);
+  CHECK_EQ(status, cudaError_t::cudaSuccess);
   Table_Meta.find(block_)->second.second.ptr=gpu.ptr;
   //cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
   cudaError_t err;
