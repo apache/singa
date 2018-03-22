@@ -134,7 +134,7 @@ void SwapGPU::Free(void* ptr) {
   }
   //push info
   stringstream strm1;
-  strm1<<Table_data_block_.find(ptr).second;;
+  strm1<<Table_data_block_.find(ptr)->second;;
   string tempStr1 = strm1.str();
   stringstream strm4;
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
@@ -143,7 +143,7 @@ void SwapGPU::Free(void* ptr) {
   string blockInfo ="Free "+tempStr1+" "+tempStr4;
   vec_block.push_back(blockInfo);
   //clean up Tables
-  Table_Meta.erase(Table_data_block_.find(ptr).second);
+  Table_Meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
   
 }
