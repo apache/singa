@@ -206,8 +206,8 @@ void SwapGPU::SwapOut(const Block* block_){
   //printf("B. swapOut done.\n");
   // //cout<<"before free: "<<data_<<endl;
   //without free here.
-  //cudaFree(gpu.ptr); //TODO(junzhe) not able to free, work on it.
-  //Table_Meta.find(block_)->second.second.ptr=nullptr;
+  cudaFree(gpu.ptr); //TODO(junzhe) not able to free, work on it.
+  Table_Meta.find(block_)->second.second.ptr=nullptr;
   // //cout<<"after free: "<<data_<<endl;
 }
 
