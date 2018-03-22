@@ -48,7 +48,7 @@ void* Block::mutable_data() {
     ptrDevice_->SwapOutInfo(this);
     ptrDevice_->SwapInInfo(this);
     std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
-    return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
+    return static_cast<char*>(data_) + offset_;
   }
 
 
