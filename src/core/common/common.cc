@@ -28,7 +28,7 @@
 namespace singa {
 
 void* Block::mutable_data() {
-    std::cout<<"mutable_data "<<this<<std::endl;
+    //std::cout<<"mutable_data "<<this<<std::endl;
     initialized_ = true;
     if (ptrDevice_!=nullptr){
         stringstream strm2;
@@ -45,7 +45,10 @@ void* Block::mutable_data() {
         ptrDevice_->AppendInfo(temp);
     }
     //data_ = ptrDevice_->GetRealGpuPtrInfo(this);
-    return static_cast<char*>(data_) + offset_;
+    ptrDevice_->SwapOutInfo(this);
+    ptrDevice_->SwapInInfo(this);
+    std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
+    return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
   }
 
 
@@ -71,6 +74,7 @@ const void* Block::data() const {
     
     ptrDevice_->SwapOutInfo(this);
     ptrDevice_->SwapInInfo(this);
+    std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
     return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
   }
 
