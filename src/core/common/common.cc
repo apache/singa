@@ -71,7 +71,7 @@ const void* Block::data() const {
     
     ptrDevice_->SwapOutInfo(this);
     ptrDevice_->SwapInInfo(this);
-    return static_cast<char*>(data_) + offset_;
+    return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
   }
 
 const void* Block::log_ptr() const {
