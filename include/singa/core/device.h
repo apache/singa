@@ -260,6 +260,8 @@ class SwapGPU : public Device {
  private:
   void Setup();
   map<const Block*,pair<BlockMeta,BlockMeta>>Table_Meta;
+  vector<string> vec_block;
+  map<void*, const Block*>Table_data_block_; //for Free, info append.
 
  private:
   shared_ptr<DeviceMemPool> pool_;

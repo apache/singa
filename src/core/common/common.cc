@@ -38,9 +38,9 @@ void* Block::mutable_data() {
         // strm3<<size_;
         // string tempStr3 = strm3.str();
         stringstream strm4;
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      strm4<<t2;
-      string tempStr4 = strm4.str();
+        auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+        strm4<<t2;
+        string tempStr4 = strm4.str();
         string temp = "Mutable "+tempStr2+" "+tempStr4;   
         ptrDevice_->AppendInfo(temp);
     }

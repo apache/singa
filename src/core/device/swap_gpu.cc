@@ -23,6 +23,7 @@
 #include <curand.h>
 #include <chrono>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
@@ -35,6 +36,12 @@ const cudaMemcpyKind copyKind[] = {cudaMemcpyHostToHost, cudaMemcpyHostToDevice,
                                    cudaMemcpyDeviceToDevice};
 
 SwapGPU::~SwapGPU() {
+  //print out push-info
+  fstream file_block1("blockInfo.text", ios::in|ios::out|ios::app);
+  for (int i=0; i< vec_block.size();i++){
+      file_block1<<vec_block[i]<<endl;
+  }
+  //main body
   if (ctx_.cublas_handle) CUBLAS_CHECK(cublasDestroy(ctx_.cublas_handle));
   if (ctx_.curand_generator)
     CURAND_CHECK(curandDestroyGenerator(ctx_.curand_generator));
@@ -115,6 +122,7 @@ void* SwapGPU::Malloc(int size) {
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
+
   return ptr;
 }
 
@@ -124,21 +132,51 @@ void SwapGPU::Free(void* ptr) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Free(ptr);
   }
+  //push info
+  stringstream strm1;
+  strm1<<Table_data_block_.find(ptr).second;;
+  string tempStr1 = strm1.str();
+  stringstream strm4;
+  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  strm4<<t2;
+  string tempStr4 = strm4.str();
+  string blockInfo ="Free "+tempStr1+" "+tempStr4;
+  vec_block.push_back(blockInfo);
+  //clean up Tables
+  Table_Meta.erase(Table_data_block_.find(ptr).second);
+  Table_data_block_.erase(ptr);
+  
 }
 
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
-  //std::cout<<"SwapGpu block_"<<block_<<endl;
-  //put in Meta Table
+  //this is only called once, right after Malloc. 
+  //Hence the malloc info is pushed here.
   BlockMeta cpu,gpu;
   cpu.size = size;
   gpu.size = size;
   gpu.ptr = data_;
   pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
+  //Make tables
   Table_Meta[block_] = meta;
+  Table_data_block_[data_]=block_; //table map data_block, for Free(). 
+  //TODO(junzhe) update this table once data_ changed.
+  //push info
+  stringstream strm1;
+  strm1<<size;
+  string tempStr1 = strm1.str();
+  stringstream strm3;
+  strm3<<block_;
+  string tempStr3 = strm3.str();
+  stringstream strm4;
+  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  strm4<<t2;
+  string tempStr4 = strm4.str();
+  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4+" (data_&size)";
+  vec_block.push_back(blockInfo);
 }
 
 void SwapGPU::Append(string blockInfo){
-    pool_->Append(blockInfo);
+  vec_block.push_back(blockInfo);
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
