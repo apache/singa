@@ -677,7 +677,7 @@ void SwapGPU::Free(void* ptr) {
   //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
   if (((gc+1)%300==0) && (asyncSwapFlag==0)){
     cout<<"gc and GC before test: "<<gc<<' '<<globeCounter<<endl;
-    globeCounter = test(vec_block,maxLen,location);
+    globeCounter = swap_test(vec_block,maxLen,location);
   }
 
   if (ptr != nullptr) {
