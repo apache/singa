@@ -111,7 +111,7 @@ struct less_than_lookupIdx{
 
 
 /// string delimiter
-vector<string> split(string s, string delimiter) {
+vector<string> swap_split(string s, string delimiter) {
     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
     string token;
     vector<string> res;
@@ -128,7 +128,7 @@ vector<string> split(string s, string delimiter) {
 //vector of pairMsg is used in run.
 //vector of iterMsg is used in test.
 
-vector<onePieceMsg> strVec_2_pieceMsgVec(vector<string> vec, int &idxRange){
+vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange){
     /*
      convert vector of string into vector of onePieceMsg, sorted by ptr and then idx, and update idxRange to pieceMsgVec size.
      format of onePieceMsg [ptr, size/-1, flag, idx, timestamp]
@@ -137,7 +137,7 @@ vector<onePieceMsg> strVec_2_pieceMsgVec(vector<string> vec, int &idxRange){
     
     vector<onePieceMsg>onePieceMsgVec_;
     for (int i=0;i<vec.size();i++) {
-        vector<string> v = split(vec[i], " ");
+        vector<string> v = swap_split(vec[i], " ");
         if (v[0]=="Malloc"){
             //change v[2] from str to size_t
             size_t result;
@@ -388,10 +388,10 @@ void load_update(vector<double>& vec_load,int old_idx, int plusMinus, size_t siz
     }
 }
 
-int test(vector<string>vec_block,int &maxLen, int &location){
+int swap_test(vector<string>vec_block,int &maxLen, int &location){
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
   int idxRange =0;
-  vector<onePieceMsg> vec_pieceMsg = strVec_2_pieceMsgVec(vec_block,idxRange);
+  vector<onePieceMsg> vec_pieceMsg = swap_strVec_2_pieceMsgVec(vec_block,idxRange);
   cout<<"size of vec_pieceMsg and vec_block are: "<<vec_pieceMsg.size()<<' '<<vec_block.size()<<endl;
   ///rep test
   vector<size_t> vec_rep = Swap_piece2rep(vec_pieceMsg);
@@ -656,7 +656,7 @@ void* SwapGPU::Malloc(int size) {
   //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
   if (((gc+1)%300==0) && (asyncSwapFlag==0)){
     cout<<"gc and GC before test: "<<gc<<' '<<globeCounter<<endl;
-    globeCounter = test(vec_block,maxLen,location);
+    globeCounter = swap_test(vec_block,maxLen,location);
   }
 
   void* ptr = nullptr;
