@@ -83,21 +83,21 @@ struct less_than_iterIdx{
     }
 };
 
-
-struct lookUpElement{
-    /*
-     for memory pool Malloc look-up table.
-     */
-    int r_idx;
-    int d_idx;
-    size_t size;
-    size_t offset;
-    void* ptr;
-    int Occupied; //0 is free, 1 is occupied.
-    int crossItr; //c.
-    int Occupied_backup; //c.
-    int last_Occupied; //c. 1 means primary allocated, 2 means secondary.
-};
+//TODO(junzhe) redefinition.
+// struct lookUpElement{
+//     /*
+//      for memory pool Malloc look-up table.
+//      */
+//     int r_idx;
+//     int d_idx;
+//     size_t size;
+//     size_t offset;
+//     void* ptr;
+//     int Occupied; //0 is free, 1 is occupied.
+//     int crossItr; //c.
+//     int Occupied_backup; //c.
+//     int last_Occupied; //c. 1 means primary allocated, 2 means secondary.
+// };
 
 struct less_than_lookupIdx{
     /*
@@ -412,6 +412,10 @@ int test(vector<string>vec_block,int &maxLen, int &location){
   for (int i=0; i<maxLen;i++){
       vec_run[i].idx = vec_run[i].idx - location;
   }
+  ///get peak and idx
+  int maxIdx =0;
+  size_t maxLoad =0;
+  vector<double>vec_load = compute_peak(vec_run, maxIdx, maxLoad);//no longer valid here.
 
   //sort by ptr & idx
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
@@ -556,8 +560,8 @@ int test(vector<string>vec_block,int &maxLen, int &location){
     cout<<"total overhead: "<<overhead<<endl;
     cout<<"done"<<endl;
 
-  //update globeCounter
-  return globeCounter_;
+  //update globeCounter below TODO(junzhe)
+  return 0;
 }
 
 
@@ -650,7 +654,7 @@ void* SwapGPU::Malloc(int size) {
   }
   ///test
   //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
-  if ((gc+1)%300==0) && (asyncSwapFlag==0)){
+  if (((gc+1)%300==0) && (asyncSwapFlag==0)){
     cout<<"gc and GC before test: "<<gc<<' '<<globeCounter<<endl;
     globeCounter = test(vec_block,maxLen,location);
   }
@@ -671,7 +675,7 @@ void* SwapGPU::Malloc(int size) {
 void SwapGPU::Free(void* ptr) {
   ///test
   //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
-  if ((gc+1)%300==0) && (asyncSwapFlag==0)){
+  if (((gc+1)%300==0) && (asyncSwapFlag==0)){
     cout<<"gc and GC before test: "<<gc<<' '<<globeCounter<<endl;
     globeCounter = test(vec,maxLen,location);
   }
