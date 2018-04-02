@@ -35,6 +35,16 @@ const cudaMemcpyKind copyKind[] = {cudaMemcpyHostToHost, cudaMemcpyHostToDevice,
                                    cudaMemcpyDeviceToHost,
                                    cudaMemcpyDeviceToDevice};
 
+///functions to be used
+void test1(){
+  cout<<"test1 in"<<endl;
+}
+
+void test(){
+  cout<<"test in"<<endl;
+  test1();
+}
+
 SwapGPU::~SwapGPU() {
   //print out push-info
   fstream file_block1("blockInfo.text", ios::in|ios::out|ios::app);
@@ -239,15 +249,7 @@ void SwapGPU::SwapIn(const Block* block_){
   file_block3<<t2-t1<<" "<<gpu.size<<endl;
 }
 
-///functions to be used
-void test(){
-  cout<<"test in"<<endl;
-  test1();
-}
 
-void test1(){
-  cout<<"test1 in"<<endl;
-}
 
 
 }  // namespace singa
