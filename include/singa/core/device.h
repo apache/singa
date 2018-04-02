@@ -263,6 +263,10 @@ class SwapGPU : public Device {
   vector<string> vec_block;
   map<void*, const Block*>Table_data_block_; //for Free, info append.
   int asyncSwapFlag =0; //0 for sync, 1 for async.
+  int gc =0; //global counter each time Malloc/Free, add 1.
+  int globeCounter=-1;
+  int maxLen =0;
+  int location=0;
   //void Test(void); not a class function, function only. TODO(junzhe)
 
  private:
