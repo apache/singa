@@ -128,6 +128,9 @@ void* SwapGPU::Malloc(int size) {
 
 /// Free gpu memory.
 void SwapGPU::Free(void* ptr) {
+  cout<<"test function in memory.cc: "<<endl;
+  onePieceMsg tempMsg;
+  cout<<"no error calling onePieceMsg"<<endl;
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Free(ptr);
@@ -235,6 +238,10 @@ void SwapGPU::SwapIn(const Block* block_){
   fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
   file_block3<<t2-t1<<" "<<gpu.size<<endl;
 }
+
+///functions to be used
+
+
 
 }  // namespace singa
 #endif  // USE_CUDA

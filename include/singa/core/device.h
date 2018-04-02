@@ -262,6 +262,8 @@ class SwapGPU : public Device {
   map<const Block*,pair<BlockMeta,BlockMeta>>Table_Meta;
   vector<string> vec_block;
   map<void*, const Block*>Table_data_block_; //for Free, info append.
+  int asyncSwapFlag =0; //0 for sync, 1 for async.
+  //void Test(void); not a class function, function only. TODO(junzhe)
 
  private:
   shared_ptr<DeviceMemPool> pool_;
