@@ -20,16 +20,16 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 
 
-ADD_EXECUTABLE(alexnet alexnet.cc)
-ADD_DEPENDENCIES(alexnet singa)
-TARGET_LINK_LIBRARIES(alexnet singa) 
+ADD_EXECUTABLE(cnn cnn.cc)
+ADD_DEPENDENCIES(cnn singa)
+TARGET_LINK_LIBRARIES(cnn singa)
 
 IF(USE_CUDNN)
 
-ADD_EXECUTABLE(alexnet-parallel alexnet-parallel.cc)
-ADD_DEPENDENCIES(alexnet-parallel singa)
-TARGET_LINK_LIBRARIES(alexnet-parallel singa)
-#SET_TARGET_PROPERTIES(alexnet-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
+ADD_EXECUTABLE(cnn-parallel cnn-parallel.cc)
+ADD_DEPENDENCIES(cnn-parallel singa)
+TARGET_LINK_LIBRARIES(cnn-parallel singa)
+#SET_TARGET_PROPERTIES(cnn-parallel PROPERTIES LINK_FLAGS "${LINK_FLAGS} -pthread")
 
 ADD_EXECUTABLE(vgg-parallel vgg-parallel.cc)
 ADD_DEPENDENCIES(vgg-parallel singa)

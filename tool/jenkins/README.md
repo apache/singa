@@ -11,6 +11,10 @@ Continuous integration for CPU systems is enabled via [Travis](../travis).
 [Jenkins Official Wiki](https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins)
 The slave nodes for running different building environments are configured under 'Manage Jenkins'->'Manage nodes'.
 
+Change Jenkins time zone by executing the following code in 'Mange jenkins' -> 'Script Console':
+
+    System.setProperty('org.apache.commons.jelly.tags.fmt.timeZone', 'Asia/Singapore')
+
 ## Configure Jenkins for Unit Testing and Binary Package Generation
 Create a multi-configuration project and configure project as follows:
 
@@ -88,10 +92,27 @@ Each node should configure the following environment variable
             debian/32/84d56b7/ubuntu14.04-cuda8.0-cudnn5/singa-1.0.1.deb
 
 ### Docker Images
-We provide in a number of singa docker [images](./docker) for Jenkins to use as slaves.
+We provide a number of singa docker [images](./docker) for Jenkins to use as slaves.
 To run the docker images,
 
-    nvidia-docker run --name <jenkins-slaveXX> -d <Image ID>
+    nvidia-docker run --name <jenkins-slaveXX> -d <Image ID> -P
+
+To add the container into a network for easy access
+
+    docker network create <network name>
+    docker network connect <network name> <jenkins-slaveXX>
+
+After connecting both the jenkins and slave contaniners into the same network, we can ssh to the slave from jenkins container like
+
+
+    # inside jenkins container
+    ssh root@<jenkins-slaveXX>
+
+You need execute the above command manually for the first ssh login
+
+In the Jenkins node configuration page, the container name is used to configure the `Host` field.
+Notice that Oracle username and account are required to luanch the node by Jenkins.
+
 
 ## Configure Jenkins for SINGA Website Updates
 
