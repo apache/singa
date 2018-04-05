@@ -69,6 +69,7 @@ int32 = core_pb2.kInt
 float32 = core_pb2.kFloat32
 
 
+
 class Tensor(object):
     '''Create a Py Tensor, which wraps a swig converted Tensor from CPP Tensor
 
@@ -80,13 +81,17 @@ class Tensor(object):
         device: a swig converted Device instance using the device moduel . If it
             is None, then the default host device would be used.
         dtype: data type. currently, most operations only accept kFloat32.
-    '''
+        data: a singa_tensor recording input data.
+        creator: a Operation object which generate this tensor.
+        requires_grad: a bool recording if the creator of tensor require gradient.
+        grad_outlet: a bool recording if the tensor is a outlet for gradient.
 
-    def __init__(self, shape=None, device=None, dtype=core_pb2.kFloat32):
+    '''
+    def __init__(self, shape=None, device=None, dtype=core_pb2.kFloat32, data=None, creator=None, requires_grad=True,
+                 grad_outlet=False):
         if shape is None:
             # call constructor of singa::Tensor
             self.singa_tensor = singa.Tensor()
-            return
         else:
             assert isinstance(shape, tuple), 'shape should be tuple'
             if device is None:
@@ -94,9 +99,17 @@ class Tensor(object):
                 self.singa_tensor = singa.Tensor(list(shape), device, dtype)
             else:
                 self.singa_tensor = singa.Tensor(list(shape), device, dtype)
-        self.shape = shape
-        self.dtype = dtype
-        self.device = device
+        if data is not None:
+            self.singa_tensor = data
+            if creator is None:
+                creator = Initializer(self, requires_grad)
+
+        self.shape = tuple(self.singa_tensor.shape())
+        self.device = self.singa_tensor.device()
+        self.dtype = self.singa_tensor.data_type()
+
+        self.creator = creator
+        self.grad_outlet = grad_outlet
 
     def ndim(self):
         '''
@@ -384,7 +397,7 @@ class Tensor(object):
         if isinstance(x, Tensor):
             self.singa_tensor /= x.singa_tensor
         else:
-            self.__imul__(1/float(x))
+            self.singa_tensor /= float(x)
         return self
 
     '''
@@ -1102,3 +1115,202 @@ def _call_singa_func(_singa_func, *args):
     new_t.device = new_t.singa_tensor.device()
     new_t.dtype = new_t.singa_tensor.data_type()
     return new_t
+
+
+def copy_from_numpy(singa_tensor, np_array):
+    '''
+    Copy the data from the numpy array.
+    '''
+    assert np_array.size == singa_tensor.Size(), 'tensor shape should be the same'
+    if not np_array.ndim == 1:
+        np_array = np_array.flatten()
+    dt = np_array.dtype
+    if dt == np.float32:
+        singa_tensor.CopyFloatDataFromHostPtr(np_array)
+    elif dt == np.int or dt == np.int32:
+        singa_tensor.CopyIntDataFromHostPtr(np_array)
+    else:
+        print('Not implemented yet for ', dt)
+
+
+class Operation(object):
+    '''
+    Wrap normal functions such as dot to realize autograd.
+
+    '''
+    def __init__(self, **operation_params):
+        pass
+
+    def __call__(self, *input):
+        return self._do_forward(*input)
+
+    def _do_forward(self, *input):
+        unpacked_input = tuple(arg.singa_tensor for arg in input)
+        raw_output = self.forward(*unpacked_input)
+        if not isinstance(raw_output, tuple):
+            raw_output = (raw_output,)
+        self.needs_input_grad = tuple(arg.creator.requires_grad for arg in input)
+        self.requires_grad = any(self.needs_input_grad)
+        output = tuple(Tensor(data=data, creator=self) for data in raw_output)
+        self.previous_functions = [(arg.creator, id(arg)) for arg in input]
+        self.output_ids = {id(var): i for i, var in enumerate(output)}
+        return output
+
+    def _do_backward(self, grad_output):
+        grad_input = self.backward(grad_output)
+        if not isinstance(grad_input, tuple):
+            grad_input = (grad_input,)
+        return grad_input
+
+    def forward(self, *input):
+        raise NotImplementedError
+
+    def backward(self, *grad_output):
+        raise NotImplementedError
+
+
+class Initializer(Operation):
+    '''
+    For Tensor without creator, Initializer can act as its creator.
+    It is commonly used in feeding training data or initialize parameters like weights and bias.
+
+    '''
+    def __init__(self, Tensor, requires_grad):
+        self.Tensor = Tensor
+        self.output_ids = {id(Tensor): 0}
+        self.previous_functions = []
+        self.requires_grad = requires_grad
+        shape = self.Tensor.singa_tensor.shape()
+        self.init = singa.Tensor(list(shape))
+        copy_from_numpy(self.init, np.zeros(shape=shape, dtype=np.float32))
+        self.grads = self.init.Clone()
+
+    def _do_forward(self):
+        raise NotImplementedError
+
+    def _do_backward(self, *dy):
+        assert len(dy) == 1
+        self.grads = singa.__add__(self.grads, dy[0])
+        return tuple()
+
+
+class ReLU(Operation):
+    def forward(self, x):
+        '''
+        forward function for ReLU Operation.
+
+        '''
+        self.input = (x,)
+        return singa.ReLU(x)
+
+    def backward(self, dy):
+        '''
+        backward function for ReLU Operation.
+        '''
+        dx = singa.GTFloat(self.input[0], 0.0)
+        return singa.__mul__(dy, dx)
+def relu(x):
+    return ReLU()(x)[0]
+
+
+class Dot(Operation):
+    def forward(self, x, w):
+        '''
+        forward function for Dot Operation.
+
+        '''
+        self.input = (x, w)
+        return singa.Mult(x, w)
+
+    def backward(self, dy):
+        '''
+        backward function for Dot Operation.
+
+        '''
+        return singa.Mult(dy, self.input[1].T()), singa.Mult(self.input[0].T(), dy)
+def dot(x, w):
+    return Dot()(x, w)[0]
+
+
+class Add_Bias(Operation):
+    def forward(self, b, x):
+        '''
+        forward function for Add_Bias Operation.
+
+        '''
+        singa.AddRow(b, x)
+        return x
+
+    def backward(self, dy):
+        '''
+        backward function for Add_Bias Operation.
+
+        '''
+        return singa.Sum(dy, 0), dy
+def add_bias(b, x):
+    return Add_Bias()(b, x)[0]
+
+
+class SoftMax(Operation):
+    def forward(self, x):
+        '''
+        forward function for SoftMax Operation.
+
+        '''
+        self.output = (singa.SoftMax(x),)
+        return self.output[0]
+
+    def backward(self, dy):
+        '''
+        backward function for SoftMax Operation.
+
+        '''
+        # calculations are made on numpy
+        grad = To_Numpy(dy)
+        output = To_Numpy(self.output[0])
+        out_1 = np.einsum('ki,ki->ki', grad, output)
+        medium_out = np.einsum('ki,kj->kij', output, output)
+        out_2 = np.einsum('kij,kj->ki', medium_out, grad)
+        out = out_1 - out_2
+        out_singa = singa.Tensor(out_1.shape)
+        out_singa.CopyFloatDataFromHostPtr(out.flatten())
+        return out_singa
+def softmax(x):
+    return SoftMax()(x)[0]
+
+
+class Cross_Entropy(Operation):
+    def forward(self, pred, target):
+        '''
+        forward function for Cross_Entropy Operation.
+
+        '''
+        loss = singa.Tensor((1,))
+        loss.SetFloatValue(-singa.SumAsFloat(singa.__mul__(target, singa.Log(pred)))/pred.shape()[0])
+        self.input = (pred, target)
+        return loss
+
+    def backward(self, dy):
+        '''
+        backward function for Cross_Entropy Operation.
+
+        '''
+        dx = singa.__div__(self.input[1], self.input[0])
+        dx *= float(-1/self.input[0].shape()[0])
+        if not isinstance(dy, singa.Tensor):
+            # dtype of dy: float
+            dx *= dy
+            return dx
+        else:
+            pass  # TODO
+def cross_entropy(y, t):
+    return Cross_Entropy()(y, t)[0]
+
+
+def To_Numpy(x):
+    '''
+    To be used in SoftMax Operation.
+    Convert a singa_tensor to numpy_tensor.
+    '''
+    np_array = x.GetFloatValue(int(x.Size()))
+    return np_array.reshape(x.shape())
