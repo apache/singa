@@ -21,11 +21,12 @@ if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
 then
   if [[ "$TRAVIS_OS_NAME" == "linux" ]];
   then
-    sudo apt-get -qq update;
-    sudo apt-get -qq -y install libopenblas-dev libprotobuf-dev protobuf-compiler;
+    echo "nothing to install"
+#    sudo apt-get -qq update;
+#    sudo apt-get -qq -y install libopenblas-dev libprotobuf-dev protobuf-compiler;
   else
     brew update;
-    brew tap homebrew/science;
+    # brew tap homebrew/science;
     brew install openblas protobuf;
   fi
 else

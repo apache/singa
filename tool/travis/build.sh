@@ -26,7 +26,7 @@ then
     cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF -DENABLE_TEST=ON -DProtobuf_PROTOC_EXECUTABLE=/usr/local/opt/protobuf/bin/protoc ..;
   else
     mkdir build && cd build;
-    cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF -DENABLE_TEST=ON ..
+    cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF -DENABLE_TEST=ON -DUSE_MODULES=ON ..
   fi
   make;
   ./bin/test_singa --gtest_output=xml:./../gtest.xml;
