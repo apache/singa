@@ -67,6 +67,7 @@ class Optimizer(object):
             constraint would be applied inside apply_with_lr(). Users can
             also apply constraint outside.
     '''
+
     def __init__(self, lr=None, momentum=None, weight_decay=None,
                  regularizer=None, constraint=None):
         self.lr = lr
@@ -211,11 +212,12 @@ class SGD(Optimizer):
     def apply_with_lr(self, epoch, lr, grad, value, name, step=-1):
         if grad.is_empty():
             return value
-        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(
+            epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr, name.encode(), grad.singa_tensor,
-                       value.singa_tensor)
+        self.opt.Apply(epoch, lr, name.encode(), grad.data,
+                       value.data)
         return value
 
 
@@ -240,11 +242,12 @@ class Nesterov(Optimizer):
         if grad.is_empty():
             return value
 
-        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(
+            epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr, name.encode(), grad.singa_tensor,
-                       value.singa_tensor)
+        self.opt.Apply(epoch, lr, name.encode(), grad.data,
+                       value.data)
         return value
 
 
@@ -272,11 +275,12 @@ class RMSProp(Optimizer):
         if grad.is_empty():
             return value
 
-        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(
+            epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(step, lr,  name.encode(), grad.singa_tensor,
-                       value.singa_tensor)
+        self.opt.Apply(step, lr,  name.encode(), grad.data,
+                       value.data)
         return value
 
 
@@ -303,11 +307,12 @@ class AdaGrad(Optimizer):
         if grad.is_empty():
             return value
 
-        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(
+            epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
-        self.opt.Apply(epoch, lr,  name.encode(), grad.singa_tensor,
-                       value.singa_tensor)
+        self.opt.Apply(epoch, lr,  name.encode(), grad.data,
+                       value.data)
         return value
 
 
@@ -349,7 +354,8 @@ class Adam(Optimizer):
             self.t += 1
             self.last_step = step
             self.last_epoch = epoch
-        grad = self.apply_regularizer_constraint(epoch, value, grad, name, step)
+        grad = self.apply_regularizer_constraint(
+            epoch, value, grad, name, step)
         if name is not None and name in self.learning_rate_multiplier:
             lr = lr * self.learning_rate_multiplier[name]
         if name not in self.m or name not in self.v:
@@ -389,7 +395,7 @@ class CppRegularizer(Regularizer):
         self.reg.Setup(conf.SerializeToString())
 
     def apply(self, epoch, value, grad, step=-1):
-        self.reg.Apply(epoch, value.singa_tensor, grad.singa_tensor)
+        self.reg.Apply(epoch, value.data, grad.data)
         return grad
 
 
@@ -429,7 +435,7 @@ class CppConstraint(Constraint):
         self.constraint.Setup(conf.SerializeToString())
 
     def apply(self, epoch, value, grad, step=-1):
-        self.constraint.Apply(epoch, value.singa_tensor, grad.singa_tensor,
+        self.constraint.Apply(epoch, value.data, grad.data,
                               step)
         return grad
 

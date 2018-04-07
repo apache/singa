@@ -68,7 +68,7 @@ class Metric(object):
             a tensor of floats, one per sample
         '''
         return tensor.from_raw_tensor(
-            self.swig_metric.Forward(x.singa_tensor, y.singa_tensor))
+            self.swig_metric.Forward(x.data, y.data))
 
     def evaluate(self, x, y):
         '''Compute the averaged metric over all samples.
@@ -79,7 +79,7 @@ class Metric(object):
         Returns:
             a float value for the averaged metric
         '''
-        return self.swig_metric.Evaluate(x.singa_tensor, y.singa_tensor)
+        return self.swig_metric.Evaluate(x.data, y.data)
 
 
 class Accuracy(Metric):
@@ -87,6 +87,7 @@ class Accuracy(Metric):
 
     It calls the C++ functions to do the calculation.
     '''
+
     def __init__(self):
         self.swig_metric = singa.Accuracy()
 
@@ -96,6 +97,7 @@ class Precision(Metric):
 
     Compute the precision against the groundtruth labels
     '''
+
     def __init__(self, top_k):
         self.top_k = top_k
 
@@ -119,7 +121,8 @@ class Precision(Metric):
         x_np = tensor.to_numpy(x)
         y_np = tensor.to_numpy(y)
 
-        pred_np = np.argsort(-x_np)[:, 0:self.top_k]  # Sort in descending order
+        # Sort in descending order
+        pred_np = np.argsort(-x_np)[:, 0:self.top_k]
 
         prcs_np = np.zeros(pred_np.shape[0], dtype=np.float32)
 
@@ -157,6 +160,7 @@ class Recall(Metric):
 
     Compute the recall against the groundtruth labels
     '''
+
     def __init__(self, top_k):
         self.top_k = top_k
 
@@ -180,7 +184,8 @@ class Recall(Metric):
         x_np = tensor.to_numpy(x)
         y_np = tensor.to_numpy(y)
 
-        pred_np = np.argsort(-x_np)[:, 0:self.top_k]  # Sort in descending order
+        # Sort in descending order
+        pred_np = np.argsort(-x_np)[:, 0:self.top_k]
 
         recall_np = np.zeros(pred_np.shape[0], dtype=np.float32)
 

@@ -72,7 +72,7 @@ class Loss(object):
             else:
                 flag = model_pb2.kEval
         return tensor.from_raw_tensor(
-            self.swig_loss.Forward(flag, x.singa_tensor, y.singa_tensor))
+            self.swig_loss.Forward(flag, x.data, y.data))
 
     def backward(self):
         '''
@@ -97,7 +97,7 @@ class Loss(object):
             else:
                 flag = model_pb2.kEval
 
-        return self.swig_loss.Evaluate(flag, x.singa_tensor, y.singa_tensor)
+        return self.swig_loss.Evaluate(flag, x.data, y.data)
 
 
 class SoftmaxCrossEntropy(Loss):
@@ -122,6 +122,7 @@ class SigmoidCrossEntropy(Loss):
     '''This loss evaluates the cross-entropy loss between the prediction and the
     truth values with the prediction probability generated from Sigmoid.
     '''
+
     def __init__(self, epsilon=1e-8):
         super(SigmoidCrossEntropy, self).__init__()
         self.truth = None
@@ -146,7 +147,7 @@ class SigmoidCrossEntropy(Loss):
         np = 1 - p
         p += (p < self.epsilon) * self.epsilon
         np += (np < self.epsilon) * self.epsilon
-        l = (y-1) * tensor.log(np) - y * tensor.log(p)
+        l = (y - 1) * tensor.log(np) - y * tensor.log(p)
         # TODO(wangwei): add unary operation -Tensor
         return tensor.average(l, axis=1)
 
@@ -177,6 +178,7 @@ class SquaredError(Loss):
 
     It is implemented using Python Tensor operations.
     '''
+
     def __init__(self):
         super(SquaredError, self).__init__()
         self.err = None

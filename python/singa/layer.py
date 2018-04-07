@@ -92,6 +92,7 @@ class Layer(object):
     Args:
         name (str): layer name
     '''
+
     def __init__(self, name, conf=None, **kwargs):
         if conf is None:
             self.layer = None  # layer converted by swig
@@ -212,13 +213,13 @@ class Layer(object):
             else:
                 flag = model_pb2.kEval
         if type(x) is list:
-            xs = [t.singa_tensor for t in x]
+            xs = [t.data for t in x]
             y = self.layer.ForwardWithMultInputs(flag, xs)
         else:
             assert isinstance(x, tensor.Tensor), \
-                    'input of %s (type:%s) must be a Tensor or Tensor list'\
-                    % (self.name, type(x).__name__)
-            y = self.layer.Forward(flag, x.singa_tensor)
+                'input of %s (type:%s) must be a Tensor or Tensor list'\
+                % (self.name, type(x).__name__)
+            y = self.layer.Forward(flag, x.data)
         if type(y) is tuple:
             return tensor.from_raw_tensors(y)
         else:
@@ -242,13 +243,13 @@ class Layer(object):
                 flag = model_pb2.kEval
 
         if type(dy) == list:
-            dys = [t.singa_tensor for t in dy]
+            dys = [t.data for t in dy]
             ret = self.layer.BackwardWithMultInputs(flag, dys)
         else:
             assert isinstance(dy, tensor.Tensor), \
-                    'input of %s (type:%s) must be a Tensor or Tensor list'\
-                    % (self.name, type(dy).__name__)
-            dys = dy.singa_tensor
+                'input of %s (type:%s) must be a Tensor or Tensor list'\
+                % (self.name, type(dy).__name__)
+            dys = dy.data
             ret = self.layer.Backward(flag, dys)
         if type(ret[0]) is tuple:
             dxs = tensor.from_raw_tensors(ret[0])
@@ -279,6 +280,7 @@ class Dummy(Layer):
     '''A dummy layer that does nothing but just forwards/backwards the data
     (the input/output is a single tensor).
     '''
+
     def __init__(self, name, input_sample_shape=None):
         super(Dummy, self).__init__(name)
         self.output_sample_shape = input_sample_shape
@@ -586,6 +588,7 @@ class BatchNormalization(Layer):
 
 class L2Norm(Layer):
     '''Normalize each sample to have L2 norm = 1'''
+
     def __init__(self, name, input_sample_shape, epsilon=1e-8):
         super(L2Norm, self).__init__(name)
         self.y = None
@@ -863,6 +866,7 @@ class Split(Layer):
         input_sample_shape: includes a single integer for the input sample
             feature size.
     '''
+
     def __init__(self, name, num_output, input_sample_shape=None):
         self.num_output = num_output
         self.in_shape = input_sample_shape
@@ -1099,7 +1103,7 @@ class RNN(Layer):
         for t in inputs:
             assert isinstance(t, tensor.Tensor), \
                 'input must be py Tensor %s' % (type(t))
-            tensors.append(t.singa_tensor)
+            tensors.append(t.data)
         if type(flag) is bool:
             if flag:
                 flag = model_pb2.kTrain
@@ -1138,7 +1142,7 @@ class RNN(Layer):
         tensors = []
         for t in grad:
             assert isinstance(t, tensor.Tensor), 'grad must be py Tensor'
-            tensors.append(t.singa_tensor)
+            tensors.append(t.data)
         ret = self.layer.BackwardWithMultInputs(flag, tensors)
         return tensor.from_raw_tensors(ret[0]), tensor.from_raw_tensors(ret[1])
 
