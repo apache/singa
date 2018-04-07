@@ -17,6 +17,7 @@
 
 import sys
 
+
 def update_progress(progress, info):
     """Display progress bar and user info.
 
@@ -38,10 +39,9 @@ def update_progress(progress, info):
         progress = 1
         status = "Done. "
     status = status + info
-    block = int(round(barLength*progress))
-    text = "[{0}] {1:3.1f}% {2}".format("."*block + " "*(barLength-block),
-                                        progress*100, status)
+    block = int(round(barLength * progress))
+    text = "[{0}] {1:3.1f}% {2}".format("." * block + " " * (barLength - block),
+                                        progress * 100, status)
     sys.stdout.write(text)
-    sys.stdout.write('\b'*(9 + barLength + len(status)))
+    sys.stdout.write('\b' * (9 + barLength + len(status)))
     sys.stdout.flush()
-

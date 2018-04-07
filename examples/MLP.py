@@ -1,7 +1,6 @@
-
 from singa import tensor
-from singa import engine
-from singa import singa_wrap as singa
+from singa import autograd
+from singa import optimizer
 import numpy as np
 
 
@@ -46,65 +45,39 @@ if __name__ == '__main__':
         categorical = np.reshape(categorical, output_shape)
         return categorical
 
-    label = to_categorical(label,2).astype(np.float32)
-    print 'train_data_shape:', data.shape, 'train_label_shape:', label.shape
+    label = to_categorical(label, 2).astype(np.float32)
+    print('train_data_shape:', data.shape)
+    print('train_label_shape:', label.shape)
 
-    # send training data(numpy array) to singa_tensor
-    tr_data = singa.Tensor((400, 2))
-    tr_data.CopyFloatDataFromHostPtr(data.flatten())
+    inputs = tensor.Tensor(data=data, requires_grad=False)
+    target = tensor.Tensor(data=label, requires_grad=False)
 
-    tr_label = singa.Tensor((400, 2))
-    tr_label.CopyFloatDataFromHostPtr(label.flatten())
+    w0 = tensor.Tensor(shape=(2, 3), requires_grad=True, stores_grad=True)
+    w0.gaussian(0.0, 0.1)
+    b0 = tensor.Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
+    b0.set_value(0.0)
 
-    w_0 = singa.Tensor((2, 3))
-    singa.Gaussian(float(0), float(0.1), w_0)
-    b_0 = singa.Tensor((1, 3))
-    b_0.SetFloatValue(float(0))
+    w1 = tensor.Tensor(shape=(3, 2), requires_grad=True, stores_grad=True)
+    w1.gaussian(0.0, 0.1)
+    b1 = tensor.Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
+    b1.set_value(0.0)
 
-    w_1 = singa.Tensor((3, 2))
-    singa.Gaussian(float(0), float(0.1), w_1)
-    b_1 = singa.Tensor((1, 2))
-    b_1.SetFloatValue(float(0))
-
-    # initialize tensor.Tensor using singa_tensor
-    inputs = tensor.Tensor(data=tr_data, requires_grad=False, grad_outlet=False)
-    target = tensor.Tensor(data=tr_label, requires_grad=False, grad_outlet=False)
-
-    weight_0 = tensor.Tensor(data=w_0, requires_grad=True, grad_outlet=True)
-    bias_0 = tensor.Tensor(data=b_0, requires_grad=True, grad_outlet=True)
-
-    weight_1 = tensor.Tensor(data=w_1, requires_grad=True, grad_outlet=True)
-    bias_1 = tensor.Tensor(data=b_1, requires_grad=True, grad_outlet=True)
-
-    def update(lr, param, grad):
-        '''
-        To update the value of parameters
-        Args:
-            param: tensor.Tensor
-            grad: singa_tensor
-        '''
-        grad *= float(lr)
-        assert param.singa_tensor.shape() == grad.shape()
-        param.singa_tensor = singa.__sub__(param.singa_tensor, grad)
-        return
-
+    sgd = optimizer.SGD(0.05)
     # training process
-    lr = 0.05
     for i in range(1001):
-        outputs = tensor.dot(inputs, weight_0)
-        outputs = tensor.add_bias(bias_0, outputs)
-        outputs = tensor.relu(outputs)
-        outputs = tensor.dot(outputs, weight_1)
-        outputs = tensor.add_bias(bias_1, outputs)
-        outputs = tensor.softmax(outputs)
-
-        loss = tensor.cross_entropy(outputs, target)
-
-        grads = float(1)
-        in_grads = engine.gradients(loss, grads)
+        x = tensor.matmul(inputs, w0)
+        x = tensor.add_bias(x, b0)
+        x = tensor.relu(x)
+        x = tensor.matmul(x, w1)
+        x = tensor.add_bias(x, b1)
+        x = tensor.softmax(x)
+        loss = tensor.cross_entropy(x, target)
+        in_grads = autograd.backward(loss)
 
         for param in in_grads:
-            update(lr, param, in_grads[param])
+            sgd.apply(0, in_grads[param], param, '')
 
         if (i % 100 == 0):
-            print 'training loss = ', float(tensor.To_Numpy(loss.singa_tensor))
+            print('training loss = ', tensor.to_numpy(loss)[0])
+
+
