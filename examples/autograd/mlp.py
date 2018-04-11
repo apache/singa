@@ -1,4 +1,5 @@
 from singa import tensor
+from singa.tensor import Tensor
 from singa import autograd
 from singa import optimizer
 import numpy as np
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     label = np.asarray([5 * a + 1 > b for (a, b) in zip(x, y)])
     data = np.array([[a, b] for (a, b) in zip(x, y)], dtype=np.float32)
 
-    def to_categorical(y, num_classes=None):
+    def to_categorical(y, num_classes):
         '''
         Converts a class vector (integers) to binary class matrix.
 
@@ -32,34 +33,26 @@ if __name__ == '__main__':
             A binary matrix representation of the input.
         '''
         y = np.array(y, dtype='int')
-        input_shape = y.shape
-        if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
-            input_shape = tuple(input_shape[:-1])
-        y = y.ravel()
-        if not num_classes:
-            num_classes = np.max(y) + 1
         n = y.shape[0]
         categorical = np.zeros((n, num_classes))
         categorical[np.arange(n), y] = 1
-        output_shape = input_shape + (num_classes,)
-        categorical = np.reshape(categorical, output_shape)
         return categorical
 
     label = to_categorical(label, 2).astype(np.float32)
     print('train_data_shape:', data.shape)
     print('train_label_shape:', label.shape)
 
-    inputs = tensor.Tensor(data=data, requires_grad=False)
-    target = tensor.Tensor(data=label, requires_grad=False)
+    inputs = Tensor(data=data)
+    target = Tensor(data=label)
 
-    w0 = tensor.Tensor(shape=(2, 3), requires_grad=True, stores_grad=True)
+    w0 = Tensor(shape=(2, 3), requires_grad=True, stores_grad=True)
     w0.gaussian(0.0, 0.1)
-    b0 = tensor.Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
+    b0 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
     b0.set_value(0.0)
 
-    w1 = tensor.Tensor(shape=(3, 2), requires_grad=True, stores_grad=True)
+    w1 = Tensor(shape=(3, 2), requires_grad=True, stores_grad=True)
     w1.gaussian(0.0, 0.1)
-    b1 = tensor.Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
+    b1 = Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
     b1.set_value(0.0)
 
     sgd = optimizer.SGD(0.05)
@@ -70,7 +63,7 @@ if __name__ == '__main__':
         x = tensor.relu(x)
         x = tensor.matmul(x, w1)
         x = tensor.add_bias(x, b1)
-        x = tensor.softmax(x)
+        x = tensor.soft_max(x)
         loss = tensor.cross_entropy(x, target)
         in_grads = autograd.backward(loss)
 
@@ -79,5 +72,3 @@ if __name__ == '__main__':
 
         if (i % 100 == 0):
             print('training loss = ', tensor.to_numpy(loss)[0])
-
-

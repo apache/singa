@@ -1130,32 +1130,42 @@ class Operation(object):
     a Xxxx instance and calls __call__ to do forward. The autograd engine
     is able to do backward propagation by calling the backward() of Xxxx
     automatically. Notice that the tensors are CTensor. NOT Python Tensor.
-    The arguments of forward includes both CTensor instances and other
-    types of data; The backward function ONLY supports CTensor args.
+    The arguments of forward() and backward() should only include CTensor args; 
     '''
 
     def __call__(self, *xs):
         return self._do_forward(*xs)
 
     def _do_forward(self, *xs):
+        '''
+        Do not call this function from user code. It is called by __call__().
+
+        Args:
+            xs, Tensor instance(s)
+
+        Returns:
+            Tensor instance(s)
+        '''
         # TODO add the pre hook
-        # filter out args that are not Tensor instances
-        tensor_xs = [x for x in xs if isinstance(x, Tensor)]
+        assert all([isinstance(x, Tensor) for x in xs]), \
+            'xs should include only Tensor instances'
 
         # need to do backward if any of its input arg needs gradient
-        self.requires_grad = any([x.requires_grad for x in tensor_xs])
-        # src records info of every input arg that needs gradient
-        # the backward() function computes grad only for those arg
+        self.requires_grad = any([x.requires_grad for x in xs])
 
         self.src = []
-        for x in tensor_xs:
+        for x in xs:
             if x.stores_grad:
+                # store the tensor whose gradient needs be returned in
+                # backward(), e.g. if x is parameter
                 self.src.append((x.creator, id(x), x, x.stores_grad))
             else:
+                # for intermediate tensors, they will be released soon;
+                # no need to store them --> use None
                 self.src.append((x.creator, id(x), None, x.stores_grad))
 
-        # use the CTensor (data) if the input arg is Tensor
-        xs = tuple(x.data if isinstance(x, Tensor) else x for x in xs)
+        # get the CTensor (data) if the input arg is Tensor
+        xs = tuple(x.data for x in xs)
         ys = self.forward(*xs)
         if not isinstance(ys, tuple):
             ys = (ys,)
@@ -1166,7 +1176,7 @@ class Operation(object):
                           requires_grad=self.requires_grad,
                           creator=self) for y in ys)
         # map from python id to output index
-        self.y_ids = {id(y): i for i, y in enumerate(ys)}
+        self.y_id2idx = {id(y): i for i, y in enumerate(ys)}
         # TODO add the post hook
         return ys
 
@@ -1180,7 +1190,7 @@ class Operation(object):
         '''Forward propagation.
 
         Args:
-            xs: input args consisting of CTensors and others.
+            xs: input args consisting of only CTensors.
 
         Returns:
             CTensor instance(s)
@@ -1191,7 +1201,7 @@ class Operation(object):
         ''' Backward propagation.
 
         Args:
-            dys: input args consisting of CTensors.
+            dys: input args consisting of only CTensors.
 
         Returns:
             CTensor instance(s)
@@ -1209,7 +1219,7 @@ class Dummy(Operation):
     def __init__(self, tensor, name=None):
         self.name = name
         self.src = []
-        self.y_ids = {id(tensor): 0}
+        self.y_id2idx = {id(tensor): 0}
         self.requires_grad = False
 
 
@@ -1268,7 +1278,8 @@ class Matmul(Operation):
         Returns:
             a tuple for (dx, dw)
         '''
-        return singa.Mult(dy, self.input[1].T()), singa.Mult(self.input[0].T(), dy)
+        return singa.Mult(dy, self.input[1].T()), \
+            singa.Mult(self.input[0].T(), dy)
 
 
 def matmul(x, w):
@@ -1279,10 +1290,11 @@ class AddBias(Operation):
     '''
     Add Bias to each row / column of the Tensor, depending on the parameter axis.
     '''
+
     def __init__(self, axis=0):
         '''
         To indicate the calculation axis, 0 for row, 1 for column.
-        
+
         Args:
             axis: 0 or 1, default is 0.
         '''
@@ -1327,6 +1339,7 @@ class SoftMax(Operation):
     Apply SoftMax for each row of the Tensor or each column of the Tensor
     according to the parameter axis.
     '''
+
     def __init__(self, axis=0):
         self.axis = axis
 
@@ -1372,7 +1385,7 @@ class SoftMax(Operation):
             return dx.T()
 
 
-def softmax(x, axis=0):
+def soft_max(x, axis=0):
     return SoftMax(axis)(x)[0]
 
 
@@ -1381,6 +1394,7 @@ class CrossEntropy(Operation):
     Calculte CrossEntropy loss for a batch of training data.
 
     '''
+
     def forward(self, x, t):
         '''
         Args:
@@ -1393,10 +1407,12 @@ class CrossEntropy(Operation):
         loss = CTensor((1,))
         loss_data = -singa.SumAsFloat(singa.__mul__(t, singa.Log(x)))
         loss.SetFloatValue(loss_data / x.shape()[0])
+        self.x = x
+        self.t = t
         self.input = (x, t)
         return loss
 
-    def backward(self, dy):
+    def backward(self, dy=1.0):
         '''
         Args:
             dy (float or CTensor): scalar, accumulate gradient from outside of current network, usually
@@ -1406,8 +1422,8 @@ class CrossEntropy(Operation):
             dx (CTensor): data for the dL /dx, L is the loss, x is the output of current network.
             note that this is true for dy = 1.0
         '''
-        dx = singa.__div__(self.input[1], self.input[0])
-        dx *= float(-1 / self.input[0].shape()[0])
+        dx = singa.__div__(self.t, self.x)
+        dx *= float(-1 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
             dx *= dy
