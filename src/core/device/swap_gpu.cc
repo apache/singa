@@ -740,10 +740,10 @@ void SwapGPU::SwapOut(const Block* block_){
 	// 2 is sync, 1 async
 	int tempFlag = 1;
 	switch (tempFlag) {
-		case (1) 
+		case (1) :
 		{	
 			//asynchrous here.
-			auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+			
 			size_t swapSize = Table_Meta.find(block_)->second.second.size;
 			void* tempPtr;
 			cudaMallocHost(&tempPtr,swapSize); //pinned memory.
@@ -763,7 +763,7 @@ void SwapGPU::SwapOut(const Block* block_){
 			cout<<"time for sync: "<<t3-t2<<endl;
 
 		}
-		case (2) {
+		case (2) :{
 		  printf("A. to swapOut\n");
 		  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
 		  size_t swapSize = Table_Meta.find(block_)->second.second.size;
@@ -797,12 +797,12 @@ void SwapGPU::SwapIn(const Block* block_){
 	// 2 is sync, 1 async
 	int tempFlag = 1;
 	switch (tempFlag) {
-		case (1) 
+		case (1) :
 		{
 			//asynchrous here.
 		}
 
-		case (2) {
+		case (2) : {
 		  printf("1. to swapIn.\n");
 		  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
 		  BlockMeta cpu, gpu;
