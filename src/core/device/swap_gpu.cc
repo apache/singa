@@ -739,7 +739,7 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
 void SwapGPU::SwapOut(const Block* block_){
 	// 2 is sync, 1 async
 	int tempFlag = 1;
-	swtich (tempFlag) {
+	switch (tempFlag) {
 		case (1) 
 		{	
 			//asynchrous here.
@@ -796,7 +796,7 @@ void SwapGPU::SwapOut(const Block* block_){
 void SwapGPU::SwapIn(const Block* block_){
 	// 2 is sync, 1 async
 	int tempFlag = 1;
-	swtich (tempFlag) {
+	switch (tempFlag) {
 		case (1) 
 		{
 			//asynchrous here.
