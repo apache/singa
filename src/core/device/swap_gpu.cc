@@ -826,6 +826,7 @@ void SwapGPU::SwapIn(const Block* block_){
 		  fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
 		  file_block3<<t2-t1<<" "<<gpu.size<<endl;
 		}
+	}
 }
 
 
