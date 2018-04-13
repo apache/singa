@@ -761,6 +761,7 @@ void SwapGPU::SwapOut(const Block* block_){
 			err2=cudaMemcpy(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost);
 			auto t3 = (std::chrono::system_clock::now()).time_since_epoch().count();
 			cout<<"time for sync: "<<t3-t2<<endl;
+			break;
 
 		}
 		case (2) :{
@@ -788,6 +789,7 @@ void SwapGPU::SwapOut(const Block* block_){
 		  //cudaFree(gpu.ptr); //TODO(junzhe) not able to free, work on it.
 		  //Table_Meta.find(block_)->second.second.ptr=nullptr;
 		  // //cout<<"after free: "<<data_<<endl;
+		  break;
 		}
 
 	}
@@ -800,6 +802,7 @@ void SwapGPU::SwapIn(const Block* block_){
 		case (1) :
 		{
 			//asynchrous here.
+			break;
 		}
 
 		case (2) : {
@@ -825,6 +828,7 @@ void SwapGPU::SwapIn(const Block* block_){
 		  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
 		  fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
 		  file_block3<<t2-t1<<" "<<gpu.size<<endl;
+		  break;
 		}
 	}
 }

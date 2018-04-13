@@ -69,9 +69,9 @@ const void* Block::data() const {
         string temp = "Read "+tempStr2+" "+tempStr4;
         ptrDevice_->AppendInfo(temp);
     }
-    //test async, with size  1228800
-    if (size_ ==1228800){
-        std::cout<<"to swap with size 1228800"<<std::endl;
+    //test async, with size  1228800 , 13107200
+    if (size_ ==13107200){
+        std::cout<<"to swap with size 13107200"<<std::endl;
         ptrDevice_->SwapOutInfo(this);
         std::cout<<"done"<<std::endl;
     }
