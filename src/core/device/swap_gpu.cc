@@ -737,55 +737,95 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
 }
 
 void SwapGPU::SwapOut(const Block* block_){
-  printf("A. to swapOut\n");
-  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  size_t swapSize = Table_Meta.find(block_)->second.second.size;
-  Table_Meta.find(block_)->second.first.ptr = malloc(swapSize);
-  BlockMeta cpu, gpu;
-  cpu = Table_Meta.find(block_)->second.first;
-  gpu = Table_Meta.find(block_)->second.second;
-  cudaError_t err;
-  cout<<"to Copy: "<<cpu.ptr<<' '<<gpu.ptr<<' '<<gpu.size<<endl;
-  err=cudaMemcpy(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost);
-  if (err != cudaSuccess)
-    {
-    fprintf(stderr, "SwapOut err (error code %s)!\n", cudaGetErrorString(err));
-    exit(EXIT_FAILURE);
-    }
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  // fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
-  // file_block3<<t2-t1<<" "<<swapSize<<endl;
-  //printf("B. swapOut done.\n");
-  // //cout<<"before free: "<<data_<<endl;
-  //without free here.
-  //cudaFree(gpu.ptr); //TODO(junzhe) not able to free, work on it.
-  //Table_Meta.find(block_)->second.second.ptr=nullptr;
-  // //cout<<"after free: "<<data_<<endl;
+	// 2 is sync, 1 async
+	int tempFlag = 1;
+	swtich (tempFlag) {
+		case (1) 
+		{	
+			//asynchrous here.
+			auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+			size_t swapSize = Table_Meta.find(block_)->second.second.size;
+			void* tempPtr;
+			cudaMallocHost(&tempPtr,swapSize); //pinned memory.
+			Table_Meta.find(block_)->second.first.ptr = tempPtr;
+			BlockMeta cpu, gpu;
+			cpu = Table_Meta.find(block_)->second.first;
+			gpu = Table_Meta.find(block_)->second.second;
+			auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+			cudaError_t err;
+			cudaStream_t stream1;
+			err=cudaMemcpyAsync(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost,stream1);
+			auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+			cout<<"time for asynchrous: "<<t2-t1<<endl;
+			cudaError_t err2;
+			err2=cudaMemcpy(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost);
+			auto t3 = (std::chrono::system_clock::now()).time_since_epoch().count();
+			cout<<"time for sync: "<<t3-t2<<endl;
+
+		}
+		case (2) {
+		  printf("A. to swapOut\n");
+		  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+		  size_t swapSize = Table_Meta.find(block_)->second.second.size;
+		  Table_Meta.find(block_)->second.first.ptr = malloc(swapSize);
+		  BlockMeta cpu, gpu;
+		  cpu = Table_Meta.find(block_)->second.first;
+		  gpu = Table_Meta.find(block_)->second.second;
+		  cudaError_t err;
+		  cout<<"to Copy: "<<cpu.ptr<<' '<<gpu.ptr<<' '<<gpu.size<<endl;
+		  err=cudaMemcpy(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost);
+		  if (err != cudaSuccess)
+		    {
+		    fprintf(stderr, "SwapOut err (error code %s)!\n", cudaGetErrorString(err));
+		    exit(EXIT_FAILURE);
+		    }
+		  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+		  // fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
+		  // file_block3<<t2-t1<<" "<<swapSize<<endl;
+		  //printf("B. swapOut done.\n");
+		  // //cout<<"before free: "<<data_<<endl;
+		  //without free here.
+		  //cudaFree(gpu.ptr); //TODO(junzhe) not able to free, work on it.
+		  //Table_Meta.find(block_)->second.second.ptr=nullptr;
+		  // //cout<<"after free: "<<data_<<endl;
+		}
+
+	}
 }
 
 void SwapGPU::SwapIn(const Block* block_){
-  printf("1. to swapIn.\n");
-  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  BlockMeta cpu, gpu;
-  cpu = Table_Meta.find(block_)->second.first;
-  gpu = Table_Meta.find(block_)->second.second;
-  //without free here.
-  gpu.ptr=nullptr;
-  cudaError_t status = cudaMalloc(&gpu.ptr, gpu.size);
-  CHECK_EQ(status, cudaError_t::cudaSuccess);
-  //update tables
-  Table_Meta.find(block_)->second.second.ptr=gpu.ptr;
-  //cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
-  cudaError_t err;
-  err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice);
-  //printf("2. swapIn done.\n");
-  free(cpu.ptr);
-  //update tables
-  Table_Meta.find(block_)->second.first.ptr=nullptr;
-  //
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
-  file_block3<<t2-t1<<" "<<gpu.size<<endl;
+	// 2 is sync, 1 async
+	int tempFlag = 1;
+	swtich (tempFlag) {
+		case (1) 
+		{
+			//asynchrous here.
+		}
+
+		case (2) {
+		  printf("1. to swapIn.\n");
+		  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+		  BlockMeta cpu, gpu;
+		  cpu = Table_Meta.find(block_)->second.first;
+		  gpu = Table_Meta.find(block_)->second.second;
+		  //without free here.
+		  gpu.ptr=nullptr;
+		  cudaError_t status = cudaMalloc(&gpu.ptr, gpu.size);
+		  CHECK_EQ(status, cudaError_t::cudaSuccess);
+		  //update tables
+		  Table_Meta.find(block_)->second.second.ptr=gpu.ptr;
+		  //cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
+		  cudaError_t err;
+		  err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice);
+		  //printf("2. swapIn done.\n");
+		  free(cpu.ptr);
+		  //update tables
+		  Table_Meta.find(block_)->second.first.ptr=nullptr;
+		  //
+		  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+		  fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
+		  file_block3<<t2-t1<<" "<<gpu.size<<endl;
+		}
 }
 
 

@@ -69,6 +69,10 @@ const void* Block::data() const {
         string temp = "Read "+tempStr2+" "+tempStr4;
         ptrDevice_->AppendInfo(temp);
     }
+    //test async, with size  1228800
+    if (size ==1228800){
+        ptrDevice_->SwapOutInfo(this);
+    }
     //update the real ptr, not able to assign to data_ as const function
     //void* data_2 = ptrDevice_->GetRealGpuPtrInfo(this);
     //TODO(junzhe) used for testing phase only.
