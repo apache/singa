@@ -326,7 +326,7 @@ void Clamp<float, lang::Cpp>(const float low, const float high,
 // }
 
 template <>
-void Div<float, lang::Cpp>(const Tensor* in, const float x, Tensor* out,
+void Div<float, lang::Cpp>(const float x, const Tensor* in, Tensor* out,
                            Context *ctx) {
   const float *inPtr = static_cast<const float *>(in->block()->data());
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
@@ -1185,25 +1185,32 @@ void Uniform<float, lang::Cpp>(const float low,
 
 // ====================Blas operations======================================
 
+//yisen todo, this function has block M overwritting to block M itself
 template <>
-void DGMM<float, lang::Cpp>(const bool side_right, const size_t nrow,
-                            const size_t ncol, const Tensor* M, const Tensor* v,
+void DGMM<float, lang::Cpp>(const bool side_right,
+                            const Tensor* M, const Tensor* v,
                             Tensor* out, Context *ctx) {
   const float *MPtr = static_cast<const float *>(M->block()->data());
   const float *vPtr = static_cast<const float *>(v->block()->data());
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
+  const size_t nrow = M->shape(0);
+  const size_t ncol = M->shape(1);
+  vector<int> traversal_info = M->generate_traversal_info();
+
   if (side_right) {
     for (size_t r = 0; r < nrow; r++) {
       size_t offset = r * ncol;
       for (size_t c = 0; c < ncol; c++) {
-        outPtr[offset + c] = MPtr[offset + c] * vPtr[c];
+        outPtr[traversal_info[M->shape().size()]] = MPtr[traversal_info[M->shape().size()]] * vPtr[c];
+        M->traverse_next(traversal_info, offset+c+1);
       }
     }
   } else {
     for (size_t r = 0; r < nrow; r++) {
       size_t offset = r * ncol;
       for (size_t c = 0; c < ncol; c++) {
-        outPtr[offset + c] = MPtr[offset + c] * vPtr[r];
+        outPtr[traversal_info[M->shape().size()]] = MPtr[traversal_info[M->shape().size()]] * vPtr[r];
+        M->traverse_next(traversal_info, offset+c+1);
       }
     }
   }
@@ -1599,8 +1606,8 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor *A, const Tensor *v,
   const float *APtr = static_cast<const float *>(A->block()->data());
   const float *vPtr = static_cast<const float *>(v->block()->data());
   bool trans = ((A->strides())[0] != 1) ? true : false;
-  const size_t m = A->shape()[0];
-  const size_t n = A->shape()[1];
+  const size_t m = A->shape(0);
+  const size_t n = A->shape(1);
   for (size_t r = 0; r < m; r++) {
     float sum = 0;
     for (size_t c = 0; c < n; c++) {
@@ -1613,66 +1620,66 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor *A, const Tensor *v,
 
 //yisen todo
 #endif  // USE_CBLAS
-// template <>
-// void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
-//                                            const size_t batchsize,
-//                                            const size_t dim, const Tensor* p,
-//                                            const Tensor* t, Tensor* loss,
-//                                            Context *ctx) {
-//   const float *pPtr = static_cast<const float *>(p->data());
-//   const int *tPtr = static_cast<const int *>(t->data());
-//   float *lossPtr = static_cast<float *>(loss->mutable_data());
-//   if (int_target) {
-//     for (size_t i = 0; i < batchsize; i++) {
-//       int truth_idx = tPtr[i];
-//       CHECK_GE(truth_idx, 0);
-//       float prob_of_truth = pPtr[i * dim + truth_idx];
-//       lossPtr[i] = -std::log((std::max)(prob_of_truth, FLT_MIN));
-//     }
-//   } else {
-//     for (size_t i = 0;i < batchsize; i++) {
-//       float sum = 0.f;
-//       for (size_t j = 0; j < dim; j++) {
-//         sum += tPtr[i * dim + j];
-//       }
-//       float loss = 0.f;
-//       for (size_t j = 0, offset = i * dim; j < dim; j++, offset++) {
-//         loss -= tPtr[offset] / sum * std::log((std::max)(pPtr[offset], FLT_MIN));
-//       }
-//       lossPtr[i] = loss;
-//     }
-//   }
-// }
+template <>
+void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
+                                           const size_t batchsize,
+                                           const size_t dim, const Block *p,
+                                           const Block *t, Block *loss,
+                                           Context *ctx) {
+  const float *pPtr = static_cast<const float *>(p->data());
+  const int *tPtr = static_cast<const int *>(t->data());
+  float *lossPtr = static_cast<float *>(loss->mutable_data());
+  if (int_target) {
+    for (size_t i = 0; i < batchsize; i++) {
+      int truth_idx = tPtr[i];
+      CHECK_GE(truth_idx, 0);
+      float prob_of_truth = pPtr[i * dim + truth_idx];
+      lossPtr[i] = -std::log((std::max)(prob_of_truth, FLT_MIN));
+    }
+  } else {
+    for (size_t i = 0;i < batchsize; i++) {
+      float sum = 0.f;
+      for (size_t j = 0; j < dim; j++) {
+        sum += tPtr[i * dim + j];
+      }
+      float loss = 0.f;
+      for (size_t j = 0, offset = i * dim; j < dim; j++, offset++) {
+        loss -= tPtr[offset] / sum * std::log((std::max)(pPtr[offset], FLT_MIN));
+      }
+      lossPtr[i] = loss;
+    }
+  }
+}
 
-// template <>
-// void SoftmaxCrossEntropyBwd<float, lang::Cpp>(bool int_target,
-//                                               const size_t batchsize,
-//                                               const size_t dim, const Tensor* p,
-//                                               const Tensor* t, Tensor* grad,
-//                                               Context *ctx) {
-//   CHECK_EQ(p, grad) << "Use the same pointer to optimize performance";
-//   // const float* pPtr = static_cast<const float*>(p->data());
-//   const int *tPtr = static_cast<const int *>(t->data());
-//   float *gradPtr = static_cast<float *>(grad->mutable_data());
+template <>
+void SoftmaxCrossEntropyBwd<float, lang::Cpp>(bool int_target,
+                                              const size_t batchsize,
+                                              const size_t dim, const Block *p,
+                                              const Block *t, Block *grad,
+                                              Context *ctx) {
+  CHECK_EQ(p, grad) << "Use the same pointer to optimize performance";
+  // const float* pPtr = static_cast<const float*>(p->data());
+  const int *tPtr = static_cast<const int *>(t->data());
+  float *gradPtr = static_cast<float *>(grad->mutable_data());
 
-//   if (int_target) {
-//     for (size_t i = 0; i < batchsize; i++) {
-//       int truth_idx = static_cast<int>(tPtr[i]);
-//       CHECK_GE(truth_idx, 0);
-//       gradPtr[i * dim + truth_idx] -= 1.0;
-//     }
-//   } else {
-//     for (size_t i = 0; i < batchsize; i++) {
-//       float sum = 0.f;
-//       for (size_t j = 0; j < dim; j++) {
-//         sum += tPtr[i * dim + j];
-//       }
-//       for (size_t j = 0, offset = i * dim; j < dim; j++, offset++) {
-//         gradPtr[offset] -= tPtr[offset] / sum;
-//       }
-//     }
-//   }
-// }
+  if (int_target) {
+    for (size_t i = 0; i < batchsize; i++) {
+      int truth_idx = static_cast<int>(tPtr[i]);
+      CHECK_GE(truth_idx, 0);
+      gradPtr[i * dim + truth_idx] -= 1.0;
+    }
+  } else {
+    for (size_t i = 0; i < batchsize; i++) {
+      float sum = 0.f;
+      for (size_t j = 0; j < dim; j++) {
+        sum += tPtr[i * dim + j];
+      }
+      for (size_t j = 0, offset = i * dim; j < dim; j++, offset++) {
+        gradPtr[offset] -= tPtr[offset] / sum;
+      }
+    }
+  }
+}
 
 // template <>
 // void RowMax<float, lang::Cpp>(const size_t nrow, const size_t ncol,

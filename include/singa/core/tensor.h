@@ -188,6 +188,10 @@ class Tensor {
   /// No data copy, just set the transpose_ filed of the returned tensor.
   Tensor T() const;
 
+  Tensor Transpose() const;
+
+  Tensor Transpose(Shape axes) const;
+
   /// Copy the meta info with data block shared.
   Tensor &operator=(const Tensor &in);
 
@@ -232,6 +236,11 @@ class Tensor {
 >>>>>>> 4aa09f1... Add files via upload
   //generate strides automatically if stride field is not passed
 void Generate_Strides(){
+    if(shape_.size()==0){
+      strides_ = {1};
+      return void();
+    }
+    strides_.clear();
     size_t dim = Size();
     int cumulative_product = 1;
 <<<<<<< HEAD
@@ -259,13 +268,20 @@ void Generate_Strides(){
 
 //generate shape multipliers
 //for e.g. tensor of shape (3,3), stride (1,3) will have shape multipliers of (3,1)
-//for e.g. tensor of shape (3,3), stride (3,1) will also have shape multipliers of (3,1) regardless of stride
+//for e.g. tensor of shape (3,3), stride (3,1) will also have shape multipliers of (3,1)
 //this means that the 3rd, 6th, and 9th index of the array will always be the starting element of their respective rows
 //so we need to need use the inner stride when jumping from 1st->2nd element, and outer stride when jumping from 2nd->3rd
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 vector<int> Generate_Shape_Multipliers(Shape y_shape) {
+=======
+vector<int> Generate_Shape_Multipliers(Shape y_shape) const {
+>>>>>>> 15489ad... updated Generate_Shape_Multipliers function to a const function
+    if(y_shape.size()==0){
+      return {1};
+    }
     reverse(y_shape.begin(), y_shape.end());
     vector<int> shape_multipliers = {};
     int cumulative_product = 1;
@@ -703,8 +719,12 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 =======
 =======
 
+<<<<<<< HEAD
 >>>>>>> cb9153a... Add files via upload
 //void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
+=======
+void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
+>>>>>>> 13227e7... re-enabled the entropy functions for testing
 
 /// Compute the dx, given prediction probability 'p' (p=softmax(x)) and
 /// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
@@ -713,8 +733,12 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 >>>>>>> 2d95dba... Add files via upload
 =======
 
+<<<<<<< HEAD
 >>>>>>> cb9153a... Add files via upload
 //void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
+=======
+void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
+>>>>>>> 13227e7... re-enabled the entropy functions for testing
 
 
 /// Return a tensor consisting of rows ([start, end)) from 'in'. It copies the

@@ -408,7 +408,7 @@ void GEMV(const DType alpha,
 /// multiply a matrix with a diagnoal matrix constructed using values from 'v'.
 /// if matrix_lef_side is true, do M*v; else do v*M
 template <typename DType, typename Lang>
-void DGMM(const bool side_right, const size_t nrow, const size_t ncol,
+void DGMM(const bool side_right,
   const Tensor *M, const Tensor *v, Tensor *out, Context *ctx) {
   LOG(FATAL) << "DGMM Not Implemented";
 }
@@ -423,19 +423,19 @@ void GEMM(const DType alpha,
 }
 
 //yisen todo
-// template <typename DType, typename Lang>
-// void ComputeCrossEntropy(bool int_target, const size_t batchsize,
-//                          const size_t dim, const Tensor *p, const Tensor *t,
-//                          Tensor *loss, Context *ctx) {
-//   LOG(FATAL) << "Not Implemented";
-// }
+template <typename DType, typename Lang>
+void ComputeCrossEntropy(bool int_target, const size_t batchsize,
+                         const size_t dim, const Block *p, const Block *t,
+                         Block *loss, Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
 
-// template <typename DType, typename Lang>
-// void SoftmaxCrossEntropyBwd(bool int_target, const size_t batchsize,
-//                             const size_t dim, const Tensor *p, const Tensor *t,
-//                             Tensor *grad, Context *ctx) {
-//   LOG(FATAL) << "Not Implemented";
-// }
+template <typename DType, typename Lang>
+void SoftmaxCrossEntropyBwd(bool int_target, const size_t batchsize,
+                            const size_t dim, const Block *p, const Block *t,
+                            Block *grad, Context *ctx) {
+  LOG(FATAL) << "Not Implemented";
+}
 
 template <typename DType, typename Lang>
 void RowMax(const Tensor *in, Tensor *out, Context* ctx) {

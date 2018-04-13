@@ -21,6 +21,7 @@
 #include "./tensor_math_cuda.h"
 #include "./tensor_math_opencl.h"
 #include <utility>
+#include <iostream>
 
 namespace singa {
 
@@ -30,7 +31,11 @@ Tensor::~Tensor() {
   block_ = nullptr;
 }
 
-Tensor::Tensor() { device_ = defaultDevice; }
+Tensor::Tensor() { 
+  device_ = defaultDevice;
+  strides_ = {1};
+  shape_multipliers_ = {1};
+}
 
 //non-strided constructors 
 Tensor::Tensor(const Shape &shape, DataType dtype)
@@ -173,40 +178,93 @@ void Tensor::ResetLike(const Tensor &in) {
     block_ = device_->NewBlock((int)in.MemSize());
   }
   shape_ = in.shape_;
+  strides_ = in.strides_;
+  shape_multipliers_ = in.shape_multipliers_;
 }
 
 //yisen todo
-//if tensor is not transposed yet i.e strides == 1, then we simply change the shape and generate new default strides
-//if tensor is already transposed i.e strides != 1, it should be copied to a new tensor with newly generated default strides 
-void Tensor::Reshape(const Shape &shape) { 
+//*******************************************************************************
+//*******************************************************************************
+//*******************************************************************************
+void Tensor::Reshape(const Shape &shape) {
+  if(strides_.size()==0)
+    strides_.push_back(1);
+
   if (Product(shape_) != Product(shape)) {
-    //throw error
-    // if (block_ != nullptr && block_->DecRefCount() == 0)
-    //   device_->FreeBlock(block_);
-    // block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-  } else if (strides_[0] == 1){ //check for strides first, if == 1, means tensor is not transposed, we can reshape normally
-    shape_ = shape;
-    Generate_Strides();
-  } else { //tensor is already transposed, need to generate new tensor object with new shape
-    //copy data from the block
-    //report error if enter this branch
+    if (block_ != nullptr && block_->DecRefCount() == 0)
+      device_->FreeBlock(block_);
+    block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+  } else if (strides_[0] != 1) {
+    std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
+    return void();
   }
+  shape_ = shape;
+  Generate_Strides();
+  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
 }
 
 void Tensor::Reshape(Shape &&shape) {
+  if(strides_.size()==0)
+    strides_.push_back(1);
+
   if (Product(shape_) != Product(shape)) {
-  //throw error
-  //   if (block_ != nullptr && block_->DecRefCount() == 0)
-  //     device_->FreeBlock(block_);
-  //   block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-  // }
-  } else if (strides_[0] == 1){ //check for strides first, if == 1, means tensor is not transposed, we can reshape normally
-    shape_ = std::move(shape);
-    Generate_Strides();
-  } else { //tensor is already transposed, need to generate new tensor object with new shape
-    //
+    if (block_ != nullptr && block_->DecRefCount() == 0)
+      device_->FreeBlock(block_);
+    block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+  } else if (strides_[0] != 1) {
+    std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
+    return void();
   }
+  shape_ = std::move(shape);
+  Generate_Strides();
+  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
 }
+//*******************************************************************************
+//*******************************************************************************
+//*******************************************************************************
+
+//if tensor is not transposed yet i.e strides == 1, then we simply change the shape and generate new default strides
+//if tensor is already transposed i.e strides != 1, it should be copied to a new tensor with newly generated default strides 
+// void Tensor::Reshape(const Shape &shape) {
+//   if((shape_.size()==0) && (shape.size() != 0)) {
+//     shape_ = shape;
+//     Generate_Strides();
+//     shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+//   } else if (Product(shape_) != Product(shape)) {
+//     std::cout << "Reshape Error: Shape dimension mismatch." << std::endl;
+//     // if (block_ != nullptr && block_->DecRefCount() == 0)
+//     //   device_->FreeBlock(block_);
+//     // block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+//   } else if ((strides_[0] == 1) || (strides_.size()==0)){ 
+//     shape_ = shape;
+//     Generate_Strides();
+//     shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+//   } else { //tensor is already transposed, need to generate new tensor object with new shape
+//     //copy data from the block
+//     //report error if enter this branch
+//     std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
+//   }
+// }
+
+// void Tensor::Reshape(Shape &&shape) {
+//   if((shape_.size()==0) && (shape.size() != 0)) {
+//     shape_ = std::move(shape);
+//     Generate_Strides();
+//     shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+//   } else if (Product(shape_) != Product(shape)) {
+//   std::cout << "Reshape Error: Shape dimension mismatch." << std::endl;
+//   //   if (block_ != nullptr && block_->DecRefCount() == 0)
+//   //     device_->FreeBlock(block_);
+//   //   block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+//   // }
+//   } else if ((strides_[0] == 1) || (strides_.size()==0)){ 
+//     shape_ = std::move(shape);
+//     Generate_Strides();
+//     shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+//   } else { //tensor is already transposed, need to generate new tensor object with new shape
+//     std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
+//   }
+// }
 
 void Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
@@ -274,7 +332,8 @@ void Tensor::FromProto(const singa::TensorProto &proto) {
   data_type_ = proto.data_type();
   Reshape(shape);
   //transpose_ = proto.transpose();
-  //yisen todo, clarify and fix tensorproto strides
+  strides_.clear();
+  for (int32_t s : proto.strides()) strides_.push_back(s);
   switch (data_type_) {
     case kFloat32: {
       std::unique_ptr<float[]> data_ptr(new float[Product(shape_)]);
@@ -324,7 +383,10 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
   }
   proto->set_data_type(data_type_);
   //proto->set_transpose(transpose_);
-  //yisen todo, clarify and fix tensorproto strides
+  proto->clear_strides();
+  for (auto s : strides_) {
+    proto->add_strides(s);
+  }
   switch (data_type_) {
     case kFloat32: {
       proto->clear_float_data();
@@ -378,15 +440,59 @@ Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
 
 //yisen todo
 Tensor Tensor::T() const {
-  // this function only works for 2d tensors for now
+  // this function only works for 2d tensors
   CHECK_EQ(shape_.size(), 2u);
   Tensor t;
   t.device_ = device_;
   t.data_type_ = data_type_;
   t.shape_.push_back(shape_[1]);
   t.shape_.push_back(shape_[0]);
+  t.strides_.clear();
   t.strides_.push_back(strides_[1]);
   t.strides_.push_back(strides_[0]);
+  t.shape_multipliers_ = Generate_Shape_Multipliers(t.shape_);
+  t.block_ = block_;
+  block_->IncRefCount();
+  return t;
+}
+
+//normal transpose without axes
+Tensor Tensor::Transpose() const {
+  // if(shape_.size() != strides_.size())
+  //   Generate_Strides();
+
+  Tensor t;
+  t.device_ = device_;
+  t.data_type_ = data_type_;
+  t.strides_.clear();
+  for(size_t n=0; n<shape_.size(); ++n){
+    t.shape_.push_back(shape_[shape_.size()-n-1]);
+    t.strides_.push_back(strides_[shape_.size()-n-1]);
+  }
+  t.shape_multipliers_ = Generate_Shape_Multipliers(t.shape_);
+  t.block_ = block_;
+  block_->IncRefCount();
+  return t;
+}
+
+//transpose with axes
+Tensor Tensor::Transpose(Shape axes) const {
+  // if(axes.size() != shape_.size()){
+  //   std::cout << "Warning: Size of input axes doesn't match size of shape" << std::endl;
+  //   return void();
+  // }
+  // if(shape_.size() != strides_.size())
+  //   Generate_Strides();
+
+  Tensor t;
+  t.device_ = device_;
+  t.data_type_ = data_type_;
+  t.strides_.clear();
+  for(size_t n=0; n<axes.size(); ++n){
+    t.shape_.push_back(shape_[axes[n]]);
+    t.strides_.push_back(strides_[axes[n]]);
+  }
+  t.shape_multipliers_ = Generate_Shape_Multipliers(t.shape_);
   t.block_ = block_;
   block_->IncRefCount();
   return t;
@@ -1035,14 +1141,14 @@ void DivRow(const Tensor &v, Tensor *M) {
 
 /// Multiply column 'v' and each column of matrix M; write results into 'out'
 void MultColumn(const Tensor &v, Tensor *M) {
-  CHECK(!M->transpose()) << "Not supported yet";
+  //CHECK(!M->transpose()) << "Not supported yet";
   CHECK_EQ(M->nDim(), 2u);
   // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
   CHECK_EQ(v.Size(), M->shape(0));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
     v.device()->Exec([M, v](Context *ctx) {
-      DGMM<DType, Lang>(false, M->shape(0), M->shape(1), M, &v,
+      DGMM<DType, Lang>(false, M, &v,
                         M, ctx);
     }, {M->block(), v.block()}, {M->block()});
   });
@@ -1050,14 +1156,14 @@ void MultColumn(const Tensor &v, Tensor *M) {
 
 /// Multiply row 'v' with each row of matrix M; write results into 'out'
 void MultRow(const Tensor &v, Tensor *M) {
-  CHECK(!M->transpose()) << "Not supported yet";
+  //CHECK(!M->transpose()) << "Not supported yet";
   CHECK_EQ(M->nDim(), 2u);
   // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
   CHECK_EQ(v.Size(), M->shape(1));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
     v.device()->Exec([M, v](Context *ctx) {
-      DGMM<DType, Lang>(true, M->shape(0), M->shape(1), M, &v,
+      DGMM<DType, Lang>(true, M, &v,
                         M, ctx);
     }, {M->block(), v.block()}, {M->block()});
   });
@@ -1192,34 +1298,34 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 // ************************
 // Misc.
 // ************************
-// void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
-//   CHECK_LE(p.nDim(), 2u);
-//   CHECK_LE(t.nDim(), 2u);
-//   size_t batchsize = 1;
-//   if (p.nDim() == 2u) batchsize = p.shape(0);
-//   size_t dim = p.Size() / batchsize;
-//   TYPE_LANG_SWITCH(p.data_type(), DType, p.device()->lang(), Lang, {
-//     p.device()->Exec([batchsize, dim, t, p, loss](Context *ctx) {
-//         bool int_target = t.Size() == batchsize;
-//         ComputeCrossEntropy<DType, Lang>(int_target, batchsize, dim, p.block(),
-//             t.block(), loss->block(), ctx);
-//     }, {p.block(), t.block()}, {loss->block()});
-//   });
-// }
+void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
+  CHECK_LE(p.nDim(), 2u);
+  CHECK_LE(t.nDim(), 2u);
+  size_t batchsize = 1;
+  if (p.nDim() == 2u) batchsize = p.shape(0);
+  size_t dim = p.Size() / batchsize;
+  TYPE_LANG_SWITCH(p.data_type(), DType, p.device()->lang(), Lang, {
+    p.device()->Exec([batchsize, dim, t, p, loss](Context *ctx) {
+        bool int_target = t.Size() == batchsize;
+        ComputeCrossEntropy<DType, Lang>(int_target, batchsize, dim, p.block(),
+            t.block(), loss->block(), ctx);
+    }, {p.block(), t.block()}, {loss->block()});
+  });
+}
 
-// void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
-//   CHECK_LE(p->nDim(), 2u);
-//   CHECK_LE(t.nDim(), 2u);
-//   size_t batchsize = 1;
-//   if (p->nDim() == 2u) batchsize = p->shape(0);
-//   size_t dim = p->Size() / batchsize;
-//   TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
-//     p->device()->Exec([batchsize, dim, t, p](Context *ctx) {
-//       bool int_target = t.Size() == batchsize;
-//       SoftmaxCrossEntropyBwd<DType, Lang>(int_target, batchsize, dim,
-//           p->block(), t.block(), p->block(), ctx);
-//     }, {p->block(), t.block()}, {p->block()});
-//   });
-// }
+void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
+  CHECK_LE(p->nDim(), 2u);
+  CHECK_LE(t.nDim(), 2u);
+  size_t batchsize = 1;
+  if (p->nDim() == 2u) batchsize = p->shape(0);
+  size_t dim = p->Size() / batchsize;
+  TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
+    p->device()->Exec([batchsize, dim, t, p](Context *ctx) {
+      bool int_target = t.Size() == batchsize;
+      SoftmaxCrossEntropyBwd<DType, Lang>(int_target, batchsize, dim,
+          p->block(), t.block(), p->block(), ctx);
+    }, {p->block(), t.block()}, {p->block()});
+  });
+}
 
 }  // namespace singa

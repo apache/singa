@@ -40,7 +40,7 @@ Tensor SoftmaxCrossEntropy::Forward(int flag, const Tensor& prediction,
   }
   Tensor loss(Shape{batchsize}, prob.device(), prob.data_type());
 
-  //ComputeCrossEntropy(prob, target, &loss);
+  ComputeCrossEntropy(prob, target, &loss);
 
   return loss;
 }
@@ -50,7 +50,7 @@ Tensor SoftmaxCrossEntropy::Backward() {
   buf_.pop();
   Tensor prob = buf_.top();
   buf_.pop();
-  //SoftmaxCrossEntropyBwd(target, &prob);
+  SoftmaxCrossEntropyBwd(target, &prob);
   return prob;
 }
 }  // namespace singa

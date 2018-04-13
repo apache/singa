@@ -34,7 +34,6 @@ TEST(Nesterov, ApplyCPU) {
   singa::Tensor value(singa::Shape{4}), grad(singa::Shape{4});
   value.CopyDataFromHostPtr(v, 4);
   grad.CopyDataFromHostPtr(g, 4);
-
   nesterov.Apply(0, lr, "xx", grad, value);
 
   singa::Tensor v1 = value.Clone();
@@ -45,7 +44,6 @@ TEST(Nesterov, ApplyCPU) {
     tmp[i] = history[i] * (1 + func(0));
   }
   for (int i = 0; i < 4; ++i) EXPECT_FLOAT_EQ(newv1[i], v[i] - tmp[i]);
-
   grad.CopyDataFromHostPtr(g, 4);
   nesterov.Apply(1, lr, "xx", grad, value);
   singa::Tensor v2 = value.Clone();
