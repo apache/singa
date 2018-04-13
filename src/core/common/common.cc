@@ -70,8 +70,10 @@ const void* Block::data() const {
         ptrDevice_->AppendInfo(temp);
     }
     //test async, with size  1228800
-    if (size ==1228800){
+    if (size_ ==1228800){
+        std::cout<<"to swap with size 1228800"<<std::endl;
         ptrDevice_->SwapOutInfo(this);
+        std::cout<<"done"<<std::endl;
     }
     //update the real ptr, not able to assign to data_ as const function
     //void* data_2 = ptrDevice_->GetRealGpuPtrInfo(this);
