@@ -1,3 +1,5 @@
+#!/usr/bin/env sh
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -21,11 +23,30 @@ MAINTAINER incubator-singa dev@singa.incubator.apache.org
 
 # install dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git python python-pip \
+    && apt-get install -y --no-install-recommends subversion git wget openssh-server bzip2\
     && apt-get clean && apt-get autoremove && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip --no-cache-dir install -U pip setuptools
+    && rm -rf /var/lib/apt/lists/*
 
+RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+RUN bash miniconda.sh -b -p /root/miniconda
+ENV PATH /root/miniconda/bin:${PATH}
+RUN conda config --set always_yes yes --set changeps1 no
+RUN conda update -q conda
+RUN conda install -c conda-forge sphinx
+RUN conda install -c conda-forge sphinx_rtd_theme
+RUN conda install -c clinicalgraphics recommonmark=0.2.0
+# TODO(wangwei) add the cpu build string
+RUN conda install -c nusdbsystem singa
 
-# install pysinga TODO(wangwei) install debian package
-RUN pip install --upgrade http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cpp/singa-1.1.0-py2-none-any.whl
+RUN mkdir /var/run/sshd
+RUN echo 'root:singa' | chpasswd
+RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+# SSH login fix. Otherwise user is kicked off after login
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+
+# dump environment variables into files, so that ssh can see also
+# RUN env | grep _ >> /etc/environment
+
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd", "-D"]

@@ -18,34 +18,36 @@
 # * limitations under the License.
 # */
 
-# This script is used by Jenkins to compile and test SINGA
+# This script is used by Jenkins to compile and test Singa
 
-echo Compile and test SINGA...
-echo parameters: $1
+echo Compile and test Singa...
 echo workspace: `pwd`
 echo OS version: `cat /etc/issue`
 echo kernal version: `uname -a`
-echo CUDA version: $CUDA_VERSION
-echo CUDNN version: $CUDNN_VERSION
 COMMIT=`git rev-parse --short HEAD`
 echo COMMIT HASH: $COMMIT
 # set parameters
 CUDA="OFF"
 CUDNN="OFF"
-if [ $1 = "CUDA" ]; then
+if [ -z ${CUDNN_PATH+x} ]; then
   CUDA="ON"
   CUDNN="ON"
+  export CMAKE_PREFIX_PATH=$CUDNN_PATH:$CMAKE_PREFIX_PATH
+  export CMAKE_INCLUDE_PATH=$CUDNN_PATH/include:$CMAKE_INCLUDE_PATH
+  export CMAKE_LIBRARY_PATH=$CUDNN_PATH/lib64:$CMAKE_LIBRARY_PATH
 fi
 
 # setup env
 rm -rf build
 mkdir build
 
+# TODO(wangwei) test python 3 according to env variable PY3K
+
 if [ `uname` = "Darwin" ]; then
   EXTRA_ARGS="-DPYTHON_LIBRARY=`python-config --prefix`/lib/libpython2.7.dylib -DPYTHON_INCLUDE_DIR=`python-config --prefix`/include/python2.7/"
 fi
 
-# compile singa c++
+# compile c++ code
 cd build
 cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON $EXTRA_ARGS ../
 make

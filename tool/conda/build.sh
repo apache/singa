@@ -19,9 +19,9 @@
 export CPLUS_INCLUDE_PATH=`python -c "from __future__ import print_function; import numpy; print(numpy.get_include())"`:$CPLUS_INCLUDE_PATH
 
 # to let cmake use the dependent libs installed by conda, including python
-export CMAKE_PREFIX_PATH=$PREFIX
-export CMAKE_INCLUDE_PATH=$PREFIX/include
-export CMAKE_LIBRARY_PATH=$PREFIX/lib
+export CMAKE_PREFIX_PATH=$PREFIX:$CMAKE_PREFIX_PATH
+export CMAKE_INCLUDE_PATH=$PREFIX/include:$CMAKE_INCLUDE_PATH
+export CMAKE_LIBRARY_PATH=$PREFIX/lib:$CMAKE_LIBRARY_PATH
 
 mkdir build
 cd build
@@ -29,12 +29,13 @@ USE_CUDA=OFF
 if [ -z ${CUDNN_PATH+x} ]; then
 	USE_CUDA=ON
 	cp $CUDNN_PATH/include $PREFIX/include 
-	cp -P $CUDNN_PATH/lib64/* $PREFIX/lib/
+	cp -P $CUDNN_PATH/lib64/libcudnn.so* $PREFIX/lib/
 fi
 
 PYTHON3=OFF
 # PY3K is set by conda
-if  [ "$PY3K" == "True" ]; then PYTHON3=ON; fi
+if  [ "$PY3K" == "1" ]; then PYTHON3=ON; fi
+echo "PY3K = $PY3K"
 cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA -DPYTHON3=$PYTHON3 ..
 make
 make install

@@ -1,5 +1,3 @@
-#!/usr/bin/env sh
-#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,35 +14,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Base unbuntu 16.04 image
-FROM ubuntu:latest
-
-MAINTAINER incubator-singa dev@singa.incubator.apache.org
+# Base unbuntu 14.04 image from nvidia/cuda
+# Change tags to build with different cuda/cudnn versions:
+FROM nvidia/cuda:9.0-devel-ubuntu16.04
+#   FROM nvidia/cuda:7.5-cudnn5-devel-ubuntu14.04
+#   FROM nvidia/cuda:7.5-cudnn4-devel-ubuntu14.04
+#   FROM nvidia/cuda:7.0-cudnn4-devel-ubuntu14.04
+# FROM nvidia/cuda:7.5-cudnn5-devel-ubuntu14.04
 
 # install dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends subversion git wget openssh-server bzip2\
+    && apt-get install -y --no-install-recommends git build-essential cmake wget openssh-server ca-certificates\
     && apt-get clean && apt-get autoremove && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* 
 
-RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+# install conda, conda-build and anaconda-client
+RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 RUN bash miniconda.sh -b -p /root/miniconda
+RUN /root/miniconda/bin/conda config --set always_yes yes --set changeps1 no
+RUN /root/miniconda/bin/conda update -q conda
+RUN /root/miniconda/bin/conda install conda-build
+RUN /root/miniconda/bin/conda install anaconda-client
 ENV PATH /root/miniconda/bin:${PATH}
-RUN conda config --set always_yes yes --set changeps1 no
-RUN conda update -q conda
-RUN conda install -c conda-forge sphinx
-RUN conda install -c conda-forge sphinx_rtd_theme
-RUN conda install -c clinicalgraphics recommonmark=0.2.0
-RUN conda install -c nusdbsystem singa
 
+# set environment
+# ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
+# ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
+
+# download singa source
+# RUN git clone https://github.com/apache/incubator-singa.git
+
+# config ssh service
 RUN mkdir /var/run/sshd
 RUN echo 'root:singa' | chpasswd
+# for ubuntu 14.04
+# RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+# for ubuntu 16.04 prohibit
 RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 # SSH login fix. Otherwise user is kicked off after login
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 # dump environment variables into files, so that ssh can see also
-# RUN env | grep _ >> /etc/environment
+RUN env | grep _ >> /etc/environment
 
 EXPOSE 22
 

@@ -2,6 +2,8 @@
 
 ## Availabe images
 
+TO BE UPDATED.
+
 | Tag | OS version | devel/runtime | Device|CUDA/CUDNN|
 |:----|:-----------|:--------------|:------|:---------|
 |runtime| Ubuntu16.04|runtime|CPU|-|
