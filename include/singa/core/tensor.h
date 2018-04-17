@@ -22,6 +22,7 @@
 #include <vector>
 #include <tuple>
 #include <memory>
+#include <algorithm>
 
 #include "singa/core/common.h"
 #include "singa/core/device.h"
@@ -30,6 +31,7 @@
 
 using std::vector;
 using std::tuple;
+using std::reverse;
 namespace singa {
 
 typedef vector<size_t> Shape;
@@ -58,12 +60,14 @@ class Tensor {
   Tensor();
   explicit Tensor(Shape &&shape, DataType dtype = kFloat32);
   explicit Tensor(const Shape &shape, DataType dtype = kFloat32);
+
   Tensor(Shape &&shape, std::shared_ptr<Device> dev, DataType dtype = kFloat32);
-  Tensor(const Shape &shape, std::shared_ptr<Device> dev,
-         DataType dtype = kFloat32);
+  Tensor(const Shape &shape, std::shared_ptr<Device> dev, DataType dtype = kFloat32);
 
   /// Copy Tensor to share the internal data.  No deep copy.
   Tensor(const Tensor &from);
+  /// Copy Tensor to share the internal data.  No deep copy. For 2 tensors sharing same block but different strides.
+  Tensor(const Tensor &from, Shape &new_shape, vector<int> &new_strides);
   /// Copy Tensor to share the internal data.  No deep copy.
   Tensor(Tensor &&from);
 
@@ -104,7 +108,12 @@ class Tensor {
 
   bool empty() const { return nDim() == 0; }
 
-  bool transpose() const { return transpose_; }
+  //bool transpose() const { return transpose_; }
+  bool transpose() const { return (strides_[0] != 1); }
+
+  const vector<int>& strides() const { return strides_; }
+
+  const vector<int>& shape_multipliers() const { return shape_multipliers_; }
 
   /// return true if the content of the tensor is initialized
   bool initailized() const {
@@ -171,6 +180,10 @@ class Tensor {
   /// No data copy, just set the transpose_ filed of the returned tensor.
   Tensor T() const;
 
+  Tensor Transpose() const;
+
+  Tensor Transpose(Shape axes) const;
+
   /// Copy the meta info with data block shared.
   Tensor &operator=(const Tensor &in);
 
@@ -209,15 +222,106 @@ class Tensor {
   /// Return average L2 norm
   float L2() const;
 
+  //generate strides automatically if stride field is not passed
+void Generate_Strides(){
+    if(shape_.size()==0){
+      strides_ = {1};
+      return void();
+    }
+    strides_.clear();
+    size_t dim = Size();
+    int cumulative_product = 1;
+    for (size_t n=0; n<shape_.size(); ++n) {
+        cumulative_product = cumulative_product*shape_[n];
+        strides_.push_back(dim/cumulative_product);
+    }
+    reverse(strides_.begin(), strides_.end());
+};
+
+//generate shape multipliers
+//for e.g. tensor of shape (3,3), stride (1,3) will have shape multipliers of (3,1)
+//for e.g. tensor of shape (3,3), stride (3,1) will also have shape multipliers of (3,1)
+//this means that the 3rd, 6th, and 9th index of the array will always be the starting element of their respective rows
+//so we need to need use the inner stride when jumping from 1st->2nd element, and outer stride when jumping from 2nd->3rd
+vector<int> Generate_Shape_Multipliers(Shape y_shape) const {
+    if(y_shape.size()==0){
+      return {1};
+    }
+    reverse(y_shape.begin(), y_shape.end());
+    vector<int> shape_multipliers = {};
+    int cumulative_product = 1;
+
+    shape_multipliers.push_back(1);
+    for (size_t n=0; n<(y_shape.size()-1); ++n) {
+        cumulative_product = cumulative_product*y_shape[n];
+        shape_multipliers.push_back(cumulative_product);
+    }
+    reverse(shape_multipliers.begin(), shape_multipliers.end());
+    return shape_multipliers;
+};
+
+// ******************************************************************************************
+// Some traversal operations (works on const declarations without modifying tensor variables)
+// ******************************************************************************************
+
+//generate a traversal_info vector based on the tensor's shape for the traverse_next function to work
+vector<int> generate_traversal_info() const {
+    vector<int> traversal_info = {};
+    for(size_t n=0; n<(shape_.size()+2); ++n) {
+      traversal_info.push_back(0);
+    }
+    return traversal_info;
+};
+
+//this function checks whether the next index falls on a special multiplier of the outer shape
+//so the algorithm knows when to jump over/back to a starting element of the outer shape
+//for e.g. in [[1,4,7], [2,5,8], [3,6,9]], elements 1,2,3 are the starting elements of their respective rows
+//this additional check only has 1 loop for 2d matrix
+//but runtime performance might degrade to O(nlog(n)) for higher dimensional tensors
+int determine_order(int counter) const {
+    for (size_t n=0; n<(shape_multipliers_.size()-1); ++n) {
+        if((counter%shape_multipliers_[n])==0){
+            return ((shape_multipliers_.size()) - 1 - n);
+        }
+    }
+    return 0;
+};
+
+//this function updates the base indexes with the current index after every single traversal step, can be generalized beyond 2d cases
+void update_base_index(std::vector<int>& traversal_info) const {
+    for (int n=0; n<(traversal_info[shape_.size()+1]+1); ++n) {
+        traversal_info[n] = traversal_info[shape_.size()];
+    }
+};
+
+//function to traverse a const strided tensor object
+//it requires an additional vector, traversal_info {0,0,0,0 ...}, comprising (shape_.size()+2) elements of 0
+//for e.g. 2d matrix:
+//index 0 and 1 store the base row and column index respectively
+//index 2 stores the current index of the traversal
+//index 3 stores the order of the traversal for e.g. if the order is 0, it means the next element can be navigated to using the innermost stride
+void traverse_next(std::vector<int>& traversal_info, int counter) const {
+    update_base_index(traversal_info);
+    traversal_info[shape_.size()+1] = determine_order(counter);
+    traversal_info[shape_.size()] = traversal_info[traversal_info[shape_.size()+1]]+strides_[traversal_info[shape_.size()+1]];
+};
+
+// ******************************************************************************************
+// traversal operations end
+// ******************************************************************************************
+
  protected:
-  bool transpose_ = false;
+  //bool transpose_ = false;
   DataType data_type_ = kFloat32;
   std::shared_ptr<Device> device_ = nullptr;
   /// Note: block_ is allocated in lazy manner to avoid frequent malloc/free.
   /// If you want to get an allocated Block, use block() instead of block_.
   Block *block_ = nullptr;
   Shape shape_ = {};
-};
+  vector<int> strides_ = {};
+  vector<int> shape_multipliers_ = {};
+
+}; //end of tensor class
 
 typedef Shape::iterator ShapeIter;
 inline size_t Product(const Shape &shape, int start = 0, size_t len = 0) {
@@ -452,11 +556,15 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 /// each instance, t[i] could be 2 or [0, 0, 1]. If one instance could have
 /// multiple labels, then t[i] could be [1, 0, 1].
 /// The loss is computed into p.
+
 void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
+
 /// Compute the dx, given prediction probability 'p' (p=softmax(x)) and
 /// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
 /// or 2-d matrix. 'grad' has the same shape as 'p'. dx is computed into p.
+
 void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
+
 
 /// Return a tensor consisting of rows ([start, end)) from 'in'. It copies the
 /// values from 'in'. 'in' ia a 2D Tensor.

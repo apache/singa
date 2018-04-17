@@ -50,19 +50,19 @@ enum CopyDirection {
 
 // configuration for device memory pool
 message MemPoolConf {
-	optional string type = 1 [default = "cnmem"];
-	// allocation size for each device, default is 256 MB
-	optional uint32 init_size = 2 [default = 256];
+  optional string type = 1 [default = "cnmem"];
+  // allocation size for each device, default is 256 MB
+  optional uint32 init_size = 2 [default = 256];
   // size limit in MB; report error/warning if this limit is reached.
   // 0 for unlimited memory, i.e., use as much memory as the device has
   // not used currently.
-	optional uint32 max_size = 3 [default = 0];
+  optional uint32 max_size = 3 [default = 0];
 
-	// memory manager flag for cnmem
-	// flag = 0: default flag
-	// flag = 1: prevent the manager from growing its memory consumption
-	// flag = 2: prevent the manager from stealing memory
-	optional uint32 flag = 11 [default = 0];
+  // memory manager flag for cnmem
+  // flag = 0: default flag
+  // flag = 1: prevent the manager from growing its memory consumption
+  // flag = 2: prevent the manager from stealing memory
+  optional uint32 flag = 11 [default = 0];
   repeated uint32 device = 12;
 }
 
@@ -70,7 +70,8 @@ message MemPoolConf {
 message TensorProto {
   repeated uint32 shape = 1;
   optional DataType data_type = 2;
-  optional bool transpose = 3;
+  //optional bool transpose = 3;
+  repeated int32 strides = 3;
   repeated float float_data = 4 [packed = true];
   repeated double double_data = 5 [packed = true];
   repeated int32 int_data = 6 [packed = true];
