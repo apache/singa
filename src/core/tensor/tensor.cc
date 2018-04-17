@@ -44,15 +44,7 @@ Tensor::Tensor(const Shape &shape, DataType dtype)
   if (size)
     block_ = device_->NewBlock((int)size);
   Generate_Strides();
-<<<<<<< HEAD
-<<<<<<< HEAD
   shape_multipliers_ = Generate_Shape_Multipliers(shape_);
-=======
-  shape_multipliers_ = Generate_Shape_Multipliers(shape);
->>>>>>> 300a249... Add files via upload
-=======
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
->>>>>>> c4ed412... Add files via upload
 }
 Tensor::Tensor(Shape &&shape, DataType dtype)
     : data_type_(dtype), device_(defaultDevice), shape_(shape) {
@@ -60,15 +52,7 @@ Tensor::Tensor(Shape &&shape, DataType dtype)
   if (size)
     block_ = device_->NewBlock((int)size);
   Generate_Strides();
-<<<<<<< HEAD
-<<<<<<< HEAD
   shape_multipliers_ = Generate_Shape_Multipliers(shape_);
-=======
-  shape_multipliers_ = Generate_Shape_Multipliers(shape);
->>>>>>> 300a249... Add files via upload
-=======
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
->>>>>>> c4ed412... Add files via upload
 }
 
 //non-strided constructors with device
@@ -79,15 +63,7 @@ Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
   if (size)
     block_ = device_->NewBlock((int)size);
   Generate_Strides();
-<<<<<<< HEAD
-<<<<<<< HEAD
   shape_multipliers_ = Generate_Shape_Multipliers(shape_);
-=======
-  shape_multipliers_ = Generate_Shape_Multipliers(shape);
->>>>>>> 300a249... Add files via upload
-=======
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
->>>>>>> c4ed412... Add files via upload
 }
 Tensor::Tensor(Shape &&shape, std::shared_ptr<Device> device, DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
@@ -95,15 +71,7 @@ Tensor::Tensor(Shape &&shape, std::shared_ptr<Device> device, DataType dtype)
   if (size)
     block_ = device_->NewBlock((int)size);
   Generate_Strides();
-<<<<<<< HEAD
-<<<<<<< HEAD
   shape_multipliers_ = Generate_Shape_Multipliers(shape_);
-=======
-  shape_multipliers_ = Generate_Shape_Multipliers(shape);
->>>>>>> 300a249... Add files via upload
-=======
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
->>>>>>> c4ed412... Add files via upload
 }
 
 
@@ -125,27 +93,9 @@ Tensor::Tensor(const Tensor &in, Shape &new_shape, vector<int> &new_strides)
       data_type_(in.data_type_),
       device_(in.device_),
       block_(in.block()),
-<<<<<<< HEAD
-<<<<<<< HEAD
       shape_(new_shape),
       strides_(new_strides) {
   shape_multipliers_ = Generate_Shape_Multipliers(shape_);
-=======
-      shape_(new_shape) {
-<<<<<<< HEAD
-  shape_multipliers_ = Generate_Shape_Multipliers(shape);
->>>>>>> 300a249... Add files via upload
-=======
-=======
-      shape_(new_shape),
-<<<<<<< HEAD
-      strides_(new_strides), {
->>>>>>> b4f515d... Add files via upload
-=======
-      strides_(new_strides) {
->>>>>>> c95c60c... Add files via upload
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
->>>>>>> c4ed412... Add files via upload
   if (block_ != nullptr)
     block_->IncRefCount();
 }
@@ -183,9 +133,9 @@ void Tensor::ResetLike(const Tensor &in) {
 }
 
 //yisen todo
-//*******************************************************************************
-//*******************************************************************************
-//*******************************************************************************
+//if tensor is not transposed yet i.e strides == 1, then we simply change the shape and generate new default strides
+//if tensor is already transposed i.e strides != 1, it should be copied to a new tensor with newly generated default strides 
+
 void Tensor::Reshape(const Shape &shape) {
   if(strides_.size()==0)
     strides_.push_back(1);
@@ -219,52 +169,6 @@ void Tensor::Reshape(Shape &&shape) {
   Generate_Strides();
   shape_multipliers_ = Generate_Shape_Multipliers(shape_);
 }
-//*******************************************************************************
-//*******************************************************************************
-//*******************************************************************************
-
-//if tensor is not transposed yet i.e strides == 1, then we simply change the shape and generate new default strides
-//if tensor is already transposed i.e strides != 1, it should be copied to a new tensor with newly generated default strides 
-// void Tensor::Reshape(const Shape &shape) {
-//   if((shape_.size()==0) && (shape.size() != 0)) {
-//     shape_ = shape;
-//     Generate_Strides();
-//     shape_multipliers_ = Generate_Shape_Multipliers(shape_);
-//   } else if (Product(shape_) != Product(shape)) {
-//     std::cout << "Reshape Error: Shape dimension mismatch." << std::endl;
-//     // if (block_ != nullptr && block_->DecRefCount() == 0)
-//     //   device_->FreeBlock(block_);
-//     // block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-//   } else if ((strides_[0] == 1) || (strides_.size()==0)){ 
-//     shape_ = shape;
-//     Generate_Strides();
-//     shape_multipliers_ = Generate_Shape_Multipliers(shape_);
-//   } else { //tensor is already transposed, need to generate new tensor object with new shape
-//     //copy data from the block
-//     //report error if enter this branch
-//     std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
-//   }
-// }
-
-// void Tensor::Reshape(Shape &&shape) {
-//   if((shape_.size()==0) && (shape.size() != 0)) {
-//     shape_ = std::move(shape);
-//     Generate_Strides();
-//     shape_multipliers_ = Generate_Shape_Multipliers(shape_);
-//   } else if (Product(shape_) != Product(shape)) {
-//   std::cout << "Reshape Error: Shape dimension mismatch." << std::endl;
-//   //   if (block_ != nullptr && block_->DecRefCount() == 0)
-//   //     device_->FreeBlock(block_);
-//   //   block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-//   // }
-//   } else if ((strides_[0] == 1) || (strides_.size()==0)){ 
-//     shape_ = std::move(shape);
-//     Generate_Strides();
-//     shape_multipliers_ = Generate_Shape_Multipliers(shape_);
-//   } else { //tensor is already transposed, need to generate new tensor object with new shape
-//     std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
-//   }
-// }
 
 void Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
@@ -584,7 +488,7 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
                               (int)s_offset);
     } else if (src_dev->lang() == kCpp) {
       dst_dev->CopyDataToFrom(to, from, nBytes, kHostToDevice, (int)d_offset,
-							  (int)s_offset);
+                (int)s_offset);
     } else {
       LOG(FATAL) << "Not support mem copy betwee Cuda and OpenCL device";
     }
@@ -691,15 +595,7 @@ void Tensor::SetValue(const SType x) {
   auto ptr = block_;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // TODO(wangwei) cast x to DType
-<<<<<<< HEAD
-<<<<<<< HEAD
     device_->Exec([this, x, ptr](Context *ctx) {
-=======
-    device_->Exec([size, x, ptr](Context *ctx) {
->>>>>>> 177b1ea... Add files via upload
-=======
-    device_->Exec([this, x, ptr](Context *ctx) {
->>>>>>> 6defefc... Add files via upload
       Set<DType, Lang>(x, this, ctx);
     }, {}, {ptr});
   });
@@ -880,39 +776,11 @@ Tensor SoftMax(const Tensor &in) {
 Tensor RowMax(const Tensor &in) {
   Tensor ret({in.shape(0)}, in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-<<<<<<< HEAD
-<<<<<<< HEAD
     in.device()->Exec([&in, &ret](Context *ctx) {
       //size_t nrow = 1;
       //if (in.nDim() > 1) nrow = in.shape(0);
       //size_t ncol = in.Size() / nrow;
-=======
-    in.device()->Exec([in, ret](Context *ctx) {
-      size_t nrow = 1;
-      if (in.nDim() > 1) nrow = in.shape(0);
-      size_t ncol = in.Size() / nrow;
->>>>>>> 74056dc... Add files via upload
       RowMax<DType, Lang>(&in, &ret, ctx);
-=======
-    in.device()->Exec([&in, &ret](Context *ctx) {
-<<<<<<< HEAD
-      size_t nrow = 1;
-      if (in.nDim() > 1) nrow = in.shape(0);
-<<<<<<< HEAD
-      size_t ncol = in.Size() / nrow;
-<<<<<<< HEAD
-      RowMax<DType, Lang>(in, ret, ctx);
->>>>>>> f985cf3... Add files via upload
-=======
-=======
-=======
-      //size_t nrow = 1;
-      //if (in.nDim() > 1) nrow = in.shape(0);
->>>>>>> b4f515d... Add files via upload
-      //size_t ncol = in.Size() / nrow;
->>>>>>> 79508e8... Add files via upload
-      RowMax<DType, Lang>(&in, &ret, ctx);
->>>>>>> 2a36af6... Add files via upload
     }, {in.block()}, {ret.block()});
   });
   return ret;

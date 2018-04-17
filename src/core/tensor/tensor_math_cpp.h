@@ -31,51 +31,7 @@
 
 namespace singa {
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-template <>
-void TraverseUnary<float>(const Tensor* in, Tensor* out, std::function<float(float)> func){
-  float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  const float *inPtr = static_cast<const float *>(in.block()->data());
-  vector<int> traversal_info = {0,0,0,0};
-  for (size_t i = 0; i < in.Size(); i++) { 
-    outPtr[i] = func(inPtr[traversal_info[2]]);
-    in.traverse_next(traversal_info, i+1);
-  }
-}
-=======
 // template <>
-<<<<<<< HEAD
-// void TraverseUnary<float>(const Tensor* in, Tensor* out, std::function<float(float)> func){
-//   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-//   const float *inPtr = static_cast<const float *>(in->block()->data());
-//   vector<int> traversal_info = {0,0,0,0};
-//   for (size_t i = 0; i < in->Size(); i++) { 
-//     outPtr[i] = func(inPtr[traversal_info[2]]);
-//     in->traverse_next(traversal_info, i+1);
-//   }
-// }
->>>>>>> c3d4bc2... Add files via upload
-
-// template <>
-// void TraverseBinary<float>(const Tensor* in1, const Tensor* in2, Tensor* out, std::function<float(float, float)> func){
-//   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-//   const float *in1Ptr = static_cast<const float *>(in1->block()->data());
-//   const float *in2Ptr = static_cast<const float *>(in2->block()->data());
-//   vector<int> traversal_info_in1 = {0,0,0,0};
-//   vector<int> traversal_info_in2 = {0,0,0,0};
-//   for (size_t i = 0; i < in1->Size(); i++) {
-//     outPtr[i] = func(in1Ptr[traversal_info_in1[2]], in2Ptr[traversal_info_in2[2]]);
-//     in1->traverse_next(traversal_info_in1, i+1);
-//     in2->traverse_next(traversal_info_in2, i+1);
-//   }
-// }
-
->>>>>>> 1f0f7ad... Add files via upload
-// template <>
-=======
->>>>>>> 55ab74e... Add files via upload
 // void Abs<float, lang::Cpp>(const Tensor* in, Tensor* out,
 //                            Context *ctx) {
 //   float *outPtr = static_cast<float *>(out->mutable_data());
@@ -86,25 +42,8 @@ void TraverseUnary<float>(const Tensor* in, Tensor* out, std::function<float(flo
 // }
 
 template <>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 void Abs<float, lang::Cpp>(const Tensor* in, Tensor* out, Context *ctx) {
   TraverseUnary<float>(in, out, [](float x) {return fabs(x);});
-=======
-void Abs<float, lang:Cpp>(const Tensor& in, Tensor* out) {
-=======
-void Abs<float, lang:Cpp>(const Tensor* in, Tensor* out, Context *ctx) {
-<<<<<<< HEAD
->>>>>>> 1f0f7ad... Add files via upload
-  TraverseUnary<>(in, out, [](float x) {return fabs(x);});
->>>>>>> 16cd477... Add files via upload
-=======
-=======
-void Abs<float, lang::Cpp>(const Tensor* in, Tensor* out, Context *ctx) {
->>>>>>> e2127fe... Add files via upload
-  TraverseUnary<float>(in, out, [](float x) {return fabs(x);});
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -119,37 +58,12 @@ void Abs<float, lang::Cpp>(const Tensor* in, Tensor* out, Context *ctx) {
 
 // template <>
 // void Add<float, lang::Cpp>(const Tensor* in, const float x, Tensor* out, Context *ctx) {
-<<<<<<< HEAD
-<<<<<<< HEAD
 //   float *outPtr = static_cast<float *>(out->block()->mutable_data());
 //   const float *inPtr = static_cast<const float *>(in->block()->data());
 //   vector<int> traversal_info = in->generate_traversal_info();
 //   for (size_t i = 0; i < in->Size(); i++) {
 //     outPtr[i] = inPtr[traversal_info[in->shape().size()]] + x;
-<<<<<<< HEAD
 //     in->traverse_next(traversal_info, i+1);
-=======
-//   float *outPtr = static_cast<float *>(out.block()->mutable_data());
-//   const float *inPtr = static_cast<const float *>(in.block()->data());
-=======
-//   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-//   const float *inPtr = static_cast<const float *>(in->block()->data());
-<<<<<<< HEAD
->>>>>>> c3d4bc2... Add files via upload
-//   vector<int> traversal_info = {0,0,0,0};
-=======
-//   vector<int> traversal_info = in->generate_traversal_info();
->>>>>>> 55ab74e... Add files via upload
-//   for (size_t i = 0; i < in->Size(); i++) {
-//     outPtr[i] = inPtr[traversal_info[2]] + x;
-<<<<<<< HEAD
-//     in.traverse_next(traversal_info, i+1);
->>>>>>> 1f0f7ad... Add files via upload
-=======
-=======
->>>>>>> a102d78... Add files via upload
-//     in->traverse_next(traversal_info, i+1);
->>>>>>> e773b90... Add files via upload
 //   }
 // }
 
@@ -158,15 +72,7 @@ void Add<float, lang::Cpp>(const Tensor* in, const float x, Tensor* out, Context
   auto add_lambda = [&x](float a) {
     return (a+x);
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, add_lambda);
-=======
-  TraverseUnary<>(in, out, add_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, add_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -188,39 +94,12 @@ void Add<float, lang::Cpp>(const Tensor* in, const float x, Tensor* out, Context
 //   const float *in1Ptr = static_cast<const float *>(in1->block()->data());
 //   const float *in2Ptr = static_cast<const float *>(in2->block()->data());
 //   //call axpy if both strides are 1?
-<<<<<<< HEAD
-<<<<<<< HEAD
 //   vector<int> traversal_info_in1 = in1->generate_traversal_info();
 //   vector<int> traversal_info_in2 = in2->generate_traversal_info();
 //   for (size_t i = 0; i < in1->Size(); i++) {
-<<<<<<< HEAD
 //     outPtr[i] = in1Ptr[traversal_info_in1[in1->shape().size()]] + in2Ptr[traversal_info_in2[in2->shape().size()]];
 //     in1->traverse_next(traversal_info_in1, i+1);
 //     in2->traverse_next(traversal_info_in2, i+1);
-=======
-//   vector<int> traversal_info_in1 = {0,0,0,0};
-//   vector<int> traversal_info_in2 = {0,0,0,0};
-=======
-//   vector<int> traversal_info_in1 = in1->generate_traversal_info();
-//   vector<int> traversal_info_in2 = in2->generate_traversal_info();
->>>>>>> 55ab74e... Add files via upload
-//   for (size_t i = 0; i < in1->Size(); i++) {
-<<<<<<< HEAD
-//     outPtr[i] = in1Ptr[traversal_info_in1[2]] + in2Ptr[traversal_info_in2[2]];
-<<<<<<< HEAD
-//     in1.traverse_next(traversal_info_in1, i+1);
-//     in2.traverse_next(traversal_info_in2, i+1);
->>>>>>> d90461e... Add files via upload
-=======
-=======
-//     outPtr[i] = in1Ptr[traversal_info_in1[in->shape().size()]] + in2Ptr[traversal_info_in2[in->shape().size()]];
->>>>>>> a102d78... Add files via upload
-=======
-//     outPtr[i] = in1Ptr[traversal_info_in1[in1->shape().size()]] + in2Ptr[traversal_info_in2[in2->shape().size()]];
->>>>>>> c29609a... Add files via upload
-//     in1->traverse_next(traversal_info_in1, i+1);
-//     in2->traverse_next(traversal_info_in2, i+1);
->>>>>>> e773b90... Add files via upload
 //   }
 // }
 
@@ -230,15 +109,7 @@ void Add<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor* out, Co
   auto add_lambda_binary = [](float a, float b) {
     return (a+b);
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseBinary<float>(in1, in2, out, add_lambda_binary);
-=======
-  TraverseBinary<>(in1, in2, out, add_lambda_binary);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseBinary<float>(in1, in2, out, add_lambda_binary);
->>>>>>> c3d4bc2... Add files via upload
   
 }
 
@@ -265,23 +136,9 @@ void Add<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor* out, Co
 //                              Context *ctx) {
 //   float *outPtr = static_cast<float *>(out->block()->mutable_data());
 //   const float *inPtr = static_cast<const float *>(in->block()->data());
-<<<<<<< HEAD
-<<<<<<< HEAD
 //   vector<int> traversal_info = in->generate_traversal_info();
 //   for (size_t i = 0; i < in->Size(); i++) {
 //     int traversed_index = traversal_info[in->shape().size()];
-=======
-//   vector<int> traversal_info = {0,0,0,0};
-=======
-//   vector<int> traversal_info = in->generate_traversal_info();
->>>>>>> 55ab74e... Add files via upload
-//   for (size_t i = 0; i < in->Size(); i++) {
-<<<<<<< HEAD
-//     int traversed_index = traversal_info[2];
->>>>>>> c3d4bc2... Add files via upload
-=======
-//     int traversed_index = traversal_info[in->shape().size()];
->>>>>>> a102d78... Add files via upload
 //     if (inPtr[traversed_index] > high) {
 //       outPtr[i] = high;
 //     } else if (inPtr[traversed_index] < low) {
@@ -302,15 +159,7 @@ void Clamp<float, lang::Cpp>(const float low, const float high,
     else if(a > high){return high;}
     else {return a;}
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, clamp_lambda);
-=======
-  TraverseUnary<>(in, out, clamp_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, clamp_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 
@@ -330,30 +179,11 @@ void Div<float, lang::Cpp>(const float x, const Tensor* in, Tensor* out,
                            Context *ctx) {
   const float *inPtr = static_cast<const float *>(in->block()->data());
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   vector<int> traversal_info = in->generate_traversal_info();
   for (size_t i = 0; i < in->Size(); i++) {
     CHECK_NE(inPtr[traversal_info[in->shape().size()]], 0.f);
     outPtr[i] = x / inPtr[traversal_info[in->shape().size()]];
-<<<<<<< HEAD
     in->traverse_next(traversal_info, i+1);
-=======
-  vector<int> traversal_info = {0,0,0,0};
-=======
-  vector<int> traversal_info = in->generate_traversal_info();
->>>>>>> 55ab74e... Add files via upload
-  for (size_t i = 0; i < in->Size(); i++) {
-    CHECK_NE(inPtr[traversal_info[2]], 0.f);
-    outPtr[i] = x / inPtr[traversal_info[2]];
-<<<<<<< HEAD
-    in.traverse_next(traversal_info, i+1);
->>>>>>> c3d4bc2... Add files via upload
-=======
-=======
->>>>>>> a102d78... Add files via upload
-    in->traverse_next(traversal_info, i+1);
->>>>>>> e773b90... Add files via upload
   }
 }
 
@@ -376,41 +206,13 @@ void Div<float, lang::Cpp>(const Tensor* in1, const Tensor* in2,
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
   const float *in1Ptr = static_cast<const float *>(in1->block()->data());
   const float *in2Ptr = static_cast<const float *>(in2->block()->data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   vector<int> traversal_info_in1 = in1->generate_traversal_info();
   vector<int> traversal_info_in2 = in2->generate_traversal_info();
   for (size_t i = 0; i < in1->Size(); i++) {
     CHECK_NE(in2Ptr[traversal_info_in2[in2->shape().size()]], 0.f);
     outPtr[i] = in1Ptr[traversal_info_in1[in1->shape().size()]] / in2Ptr[traversal_info_in2[in2->shape().size()]];
-<<<<<<< HEAD
     in1->traverse_next(traversal_info_in1, i+1);
     in2->traverse_next(traversal_info_in2, i+1);
-=======
-  vector<int> traversal_info_in1 = {0,0,0,0};
-  vector<int> traversal_info_in2 = {0,0,0,0};
-=======
-  vector<int> traversal_info_in1 = in1->generate_traversal_info();
-  vector<int> traversal_info_in2 = in2->generate_traversal_info();
->>>>>>> 55ab74e... Add files via upload
-  for (size_t i = 0; i < in1->Size(); i++) {
-<<<<<<< HEAD
-    CHECK_NE(in2Ptr[traversal_info_in2[2]], 0.f);
-    outPtr[i] = in1Ptr[traversal_info_in1[2]] / in2Ptr[traversal_info_in2[2]];
-<<<<<<< HEAD
-    in1.traverse_next(traversal_info_in1, i+1);
-    in2.traverse_next(traversal_info_in2, i+1);
->>>>>>> c3d4bc2... Add files via upload
-=======
-=======
-    CHECK_NE(in2Ptr[traversal_info_in2[in->shape().size()]], 0.f);
-    outPtr[i] = in1Ptr[traversal_info_in1[in->shape().size()]] / in2Ptr[traversal_info_in2[in->shape().size()]];
->>>>>>> a102d78... Add files via upload
-=======
->>>>>>> c29609a... Add files via upload
-    in1->traverse_next(traversal_info_in1, i+1);
-    in2->traverse_next(traversal_info_in2, i+1);
->>>>>>> e773b90... Add files via upload
   }
 }
 
@@ -431,15 +233,7 @@ void EltwiseMult<float, lang::Cpp>(const Tensor* in, const float x, Tensor* out,
   auto eltwisemult_lambda = [&x](float a) {
     return (a*x);
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, eltwisemult_lambda);
-=======
-  TraverseUnary<>(in, out, eltwisemult_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, eltwisemult_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -459,15 +253,7 @@ void EltwiseMult<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor*
   auto eltwisemult_lambda_binary = [](float a, float b) {
     return (a*b);
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseBinary<float>(in1, in2, out, eltwisemult_lambda_binary);
-=======
-  TraverseBinary<>(in1, in2, out, eltwisemult_lambda_binary);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseBinary<float>(in1, in2, out, eltwisemult_lambda_binary);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -481,29 +267,8 @@ void EltwiseMult<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor*
 // }
 
 template <>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 void Exp<float, lang::Cpp>(const Tensor* in, Tensor *out, Context *ctx) {
   TraverseUnary<float>(in, out, [](float x) {return exp(x);});
-=======
-void Exp<float, lang:Cpp>(const Tensor& in, Tensor *out) {
-=======
-void Exp<float, lang:Cpp>(const Tensor* in, Tensor *out) {
-<<<<<<< HEAD
->>>>>>> 1f0f7ad... Add files via upload
-  TraverseUnary<>(in, out, [](float x) {return exp(x);});
->>>>>>> 16cd477... Add files via upload
-=======
-=======
-void Exp<float, lang:Cpp>(const Tensor* in, Tensor *out, Context *ctx) {
->>>>>>> e773b90... Add files via upload
-=======
-void Exp<float, lang::Cpp>(const Tensor* in, Tensor *out, Context *ctx) {
->>>>>>> e2127fe... Add files via upload
-  TraverseUnary<float>(in, out, [](float x) {return exp(x);});
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -522,15 +287,7 @@ void GE<float, lang::Cpp>(const Tensor* in, const float x, Tensor* out,
   auto ge_lambda = [&x](float a) {
     return (a >= x) ? 1.f : 0.f;
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, ge_lambda);
-=======
-  TraverseUnary<>(in, out, ge_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, ge_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -550,15 +307,7 @@ void GE<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor* out,
   auto ge_lambda_binary = [](float a, float b) {
     return (a >= b) ? 1.f : 0.f;
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseBinary<float>(in1, in2, out, ge_lambda_binary);
-=======
-  TraverseBinary<>(in1, in2, out, ge_lambda_binary);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseBinary<float>(in1, in2, out, ge_lambda_binary);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -577,15 +326,7 @@ void GT<float, lang::Cpp>(const Tensor* in, const float x, Tensor* out,
   auto gt_lambda = [&x](float a) {
     return (a > x) ? 1.f : 0.f;
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, gt_lambda);
-=======
-  TraverseUnary<>(in, out, gt_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, gt_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -605,15 +346,7 @@ void GT<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor* out,
   auto gt_lambda_binary = [](float a, float b) {
     return (a > b) ? 1.f : 0.f;
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseBinary<float>(in1, in2, out, gt_lambda_binary);
-=======
-  TraverseBinary<>(in1, in2, out, gt_lambda_binary);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseBinary<float>(in1, in2, out, gt_lambda_binary);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -632,15 +365,7 @@ void LE<float, lang::Cpp>(const Tensor* in, const float x, Tensor* out,
   auto le_lambda = [&x](float a) {
     return (a <= x) ? 1.f : 0.f;
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, le_lambda);
-=======
-  TraverseUnary<>(in, out, le_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, le_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -660,15 +385,7 @@ void LE<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor* out,
   auto le_lambda_binary = [](float a, float b) {
     return (a <= b) ? 1.f : 0.f;
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseBinary<float>(in1, in2, out, le_lambda_binary);
-=======
-  TraverseBinary<>(in1, in2, out, le_lambda_binary);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseBinary<float>(in1, in2, out, le_lambda_binary);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -687,32 +404,11 @@ void Log<float, lang::Cpp>(const Tensor* in, Tensor* out,
                            Context *ctx) {
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
   const float *inPtr = static_cast<const float *>(in->block()->data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   vector<int> traversal_info = in->generate_traversal_info();
   for (size_t i = 0; i < in->Size(); i++) {
     CHECK_GT(inPtr[traversal_info[in->shape().size()]], 0.f);
     outPtr[i] = log(inPtr[traversal_info[in->shape().size()]]);
     in->traverse_next(traversal_info, i+1);
-=======
-  vector<int> traversal_info = {0,0,0,0};
-=======
-  vector<int> traversal_info = in->generate_traversal_info();
->>>>>>> 55ab74e... Add files via upload
-  for (size_t i = 0; i < in->Size(); i++) {
-<<<<<<< HEAD
-    CHECK_GT(inPtr[traversal_info[2]], 0.f);
-    outPtr[i] = log(inPtr[traversal_info[2]]);
-<<<<<<< HEAD
-    in.traverse_next(traversal_info, i+1);
->>>>>>> c3d4bc2... Add files via upload
-=======
-=======
-    CHECK_GT(inPtr[traversal_info[in->shape().size()]], 0.f);
-    outPtr[i] = log(inPtr[traversal_info[in->shape().size()]]);
->>>>>>> a102d78... Add files via upload
-    in->traverse_next(traversal_info, i+1);
->>>>>>> e773b90... Add files via upload
   }
 }
 
@@ -732,15 +428,7 @@ void LT<float, lang::Cpp>(const Tensor* in, const float x, Tensor* out,
   auto lt_lambda = [&x](float a) {
     return (a < x) ? 1.f : 0.f;
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, lt_lambda);
-=======
-  TraverseUnary<>(in, out, lt_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, lt_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -760,15 +448,7 @@ void LT<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor* out,
   auto lt_lambda_binary = [](float a, float b) {
     return (a < b) ? 1.f : 0.f;
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseBinary<float>(in1, in2, out, lt_lambda_binary);
-=======
-  TraverseBinary<>(in1, in2, out, lt_lambda_binary);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseBinary<float>(in1, in2, out, lt_lambda_binary);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -782,34 +462,8 @@ void LT<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor* out,
 // }
 
 template <>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 void Pow<float, lang::Cpp>(const Tensor* in, const float x, Tensor *out, Context *ctx) {
   TraverseUnary<float>(in, out, [x](float y) {return pow(y,x);});
-=======
-void Pow<float, lang:Cpp>(const Tensor& in, const float y, Tensor *out) {
-=======
-void Pow<float, lang:Cpp>(const Tensor* in, const float y, Tensor *out) {
-<<<<<<< HEAD
->>>>>>> 1f0f7ad... Add files via upload
-  TraverseUnary<>(in, out, [](float x) {return pow(x,y);});
->>>>>>> 16cd477... Add files via upload
-=======
-=======
-void Pow<float, lang:Cpp>(const Tensor* in, const float y, Tensor *out, Context *ctx) {
->>>>>>> e773b90... Add files via upload
-=======
-void Pow<float, lang::Cpp>(const Tensor* in, const float y, Tensor *out, Context *ctx) {
->>>>>>> e2127fe... Add files via upload
-  TraverseUnary<float>(in, out, [](float x) {return pow(x,y);});
->>>>>>> c3d4bc2... Add files via upload
-=======
-void Pow<float, lang::Cpp>(const Tensor* in, const float x, Tensor *out, Context *ctx) {
-  TraverseUnary<float>(in, out, [x](float y) {return pow(y,x);});
->>>>>>> 07cbfb5... Add files via upload
 }
 
 // template <>
@@ -829,15 +483,7 @@ void Pow<float, lang::Cpp>(const Tensor* in1, const Tensor* in2, Tensor* out,
   auto pow_lambda_binary = [](float a, float b) {
     return pow(a,b);
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseBinary<float>(in1, in2, out, pow_lambda_binary);
-=======
-  TraverseBinary<>(in1, in2, out, pow_lambda_binary);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseBinary<float>(in1, in2, out, pow_lambda_binary);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -856,15 +502,7 @@ void ReLU<float, lang::Cpp>(const Tensor* in, Tensor* out,
   auto relu_lambda = [](float a) {
     return (a >= 0.f) ? a : 0.f;
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, relu_lambda);
-=======
-  TraverseUnary<>(in, out, relu_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, relu_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -878,15 +516,7 @@ template <>
 void Set<float, lang::Cpp>(const float x, Tensor* out,
                            Context *ctx) {
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   for (size_t i = 0; i < out->Size(); i++) outPtr[i] = x;
-=======
-  for (size_t i = 0; i < out.Size(); i++) outPtr[i] = x;
->>>>>>> c3d4bc2... Add files via upload
-=======
-  for (size_t i = 0; i < out->Size(); i++) outPtr[i] = x;
->>>>>>> e773b90... Add files via upload
 }
 
 // template <>
@@ -900,15 +530,7 @@ template <>
 void Set<int, lang::Cpp>(const int x, Tensor* out,
                            Context *ctx) {
   int *outPtr = static_cast<int *>(out->block()->mutable_data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   for (size_t i = 0; i < out->Size(); i++) outPtr[i] = x;
-=======
-  for (size_t i = 0; i < out.Size(); i++) outPtr[i] = x;
->>>>>>> c3d4bc2... Add files via upload
-=======
-  for (size_t i = 0; i < out->Size(); i++) outPtr[i] = x;
->>>>>>> e773b90... Add files via upload
 }
 
 // template <>
@@ -927,15 +549,7 @@ void Sigmoid<float, lang::Cpp>(const Tensor* in, Tensor* out,
   auto sigmoid_lambda = [](float a) {
     return 1.f / (1.f + exp(-a));
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, sigmoid_lambda);
-=======
-  TraverseUnary<>(in, out, sigmoid_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, sigmoid_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -954,15 +568,7 @@ void Sign<float, lang::Cpp>(const Tensor* in, Tensor* out,
   auto sign_lambda = [](float a) {
     return (a > 0) - (a < 0);
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, sign_lambda);
-=======
-  TraverseUnary<>(in, out, sign_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, sign_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // template <>
@@ -981,30 +587,11 @@ void Sqrt<float, lang::Cpp>(const Tensor* in, Tensor* out,
                             Context *ctx) {
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
   const float *inPtr = static_cast<const float *>(in->block()->data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   vector<int> traversal_info = in->generate_traversal_info();
   for (size_t i = 0; i < in->Size(); i++) {
     CHECK_GE(inPtr[traversal_info[in->shape().size()]], 0.f);
     outPtr[i] = sqrt(inPtr[traversal_info[in->shape().size()]]);
-<<<<<<< HEAD
     in->traverse_next(traversal_info, i+1);
-=======
-  vector<int> traversal_info = {0,0,0,0};
-=======
-  vector<int> traversal_info = in->generate_traversal_info();
->>>>>>> 55ab74e... Add files via upload
-  for (size_t i = 0; i < in->Size(); i++) {
-    CHECK_GE(inPtr[traversal_info[2]], 0.f);
-    outPtr[i] = sqrt(inPtr[traversal_info[2]]);
-<<<<<<< HEAD
-    in.traverse_next(traversal_info, i+1);
->>>>>>> c3d4bc2... Add files via upload
-=======
-=======
->>>>>>> a102d78... Add files via upload
-    in->traverse_next(traversal_info, i+1);
->>>>>>> e773b90... Add files via upload
   }
 }
 
@@ -1039,15 +626,7 @@ void Sub<float, lang::Cpp>(const Tensor* in1, const Tensor* in2,
   auto sub_lambda_binary = [](float a, float b) {
     return (a-b);
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseBinary<float>(in1, in2, out, sub_lambda_binary);
-=======
-  TraverseBinary<>(in1, in2, out, sub_lambda_binary);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseBinary<float>(in1, in2, out, sub_lambda_binary);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // sum all elements of input into out
@@ -1056,15 +635,7 @@ template <>
 void Sum<float, lang::Cpp>(const Tensor* in, float *out,
                            Context *ctx) {
   float s = 0.f;
-<<<<<<< HEAD
-<<<<<<< HEAD
   const float *inPtr = static_cast<const float *>(in->block()->data());
-=======
-  const float *inPtr = static_cast<const float *>(in->data());
->>>>>>> 07cbfb5... Add files via upload
-=======
-  const float *inPtr = static_cast<const float *>(in->block()->data());
->>>>>>> 300a249... Add files via upload
   for (size_t i = 0; i < in->Size(); i++) {
     s += inPtr[i];
   }
@@ -1087,15 +658,7 @@ void Tanh<float, lang::Cpp>(const Tensor* in, Tensor* out,
   auto tanh_lambda = [](float a) {
     return tanh(a);
   };
-<<<<<<< HEAD
-<<<<<<< HEAD
   TraverseUnary<float>(in, out, tanh_lambda);
-=======
-  TraverseUnary<>(in, out, tanh_lambda);
->>>>>>> 16cd477... Add files via upload
-=======
-  TraverseUnary<float>(in, out, tanh_lambda);
->>>>>>> c3d4bc2... Add files via upload
 }
 
 // ===============Random operations==========================================
@@ -1114,15 +677,7 @@ void Bernoulli<float, lang::Cpp>(const float p, Tensor* out,
                                  Context *ctx) {
   std::bernoulli_distribution distribution(p);
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   for (size_t i = 0; i < out->Size(); i++) {
-=======
-  for (size_t i = 0; i < num; i++) {
->>>>>>> c3d4bc2... Add files via upload
-=======
-  for (size_t i = 0; i < out->Size(); i++) {
->>>>>>> e773b90... Add files via upload
     outPtr[i] = distribution(ctx->random_generator) ? 1.0f : 0.0f;
   }
 }
@@ -1142,15 +697,7 @@ void Gaussian<float, lang::Cpp>(const float mean,
                                 const float std, Tensor* out, Context *ctx) {
   std::normal_distribution<float> distribution(mean, std);
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   for (size_t i = 0; i < out->Size(); i++) {
-=======
-  for (size_t i = 0; i < num; i++) {
->>>>>>> c3d4bc2... Add files via upload
-=======
-  for (size_t i = 0; i < out->Size(); i++) {
->>>>>>> e773b90... Add files via upload
     outPtr[i] = static_cast<float>(distribution(ctx->random_generator));
   }
 }
@@ -1170,15 +717,7 @@ void Uniform<float, lang::Cpp>(const float low,
                                const float high, Tensor* out, Context *ctx) {
   std::uniform_real_distribution<float> distribution(low, high);
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   for (size_t i = 0; i < out->Size(); i++) {
-=======
-  for (size_t i = 0; i < num; i++) {
->>>>>>> c3d4bc2... Add files via upload
-=======
-  for (size_t i = 0; i < out->Size(); i++) {
->>>>>>> e773b90... Add files via upload
     outPtr[i] = static_cast<float>(distribution(ctx->random_generator));
   }
 }
@@ -1291,15 +830,7 @@ template <>
 void Dot<float, lang::Cpp>(const Tensor *in1, const Tensor *in2,
                            float *out, Context *ctx) {
   //check input tensor for strides first
-<<<<<<< HEAD
-<<<<<<< HEAD
   if(((in1->strides())[0] == 1) && ((in2->strides())[0] == 1)){
-=======
-  if((in->strides())[0] == 1){
->>>>>>> 4e413f3... Add files via upload
-=======
-  if(((in1->strides())[0] == 1) && ((in2->strides())[0] == 1)){
->>>>>>> 07cbfb5... Add files via upload
     const float *in1Ptr = static_cast<const float *>(in1->block()->data());
     const float *in2Ptr = static_cast<const float *>(in2->block()->data());
     *out = cblas_sdot(in1->Size(), in1Ptr, 1, in2Ptr, 1);
@@ -1377,7 +908,7 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor *A, const Tensor *v,
 //   const float *BPtr = static_cast<const float *>(B->data());
 //   float *CPtr = static_cast<float *>(C->mutable_data());
 //   cblas_sgemm(CblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha, APtr,
-// 	  lda, BPtr, ldb, beta, CPtr, ldc);
+//    lda, BPtr, ldb, beta, CPtr, ldc);
 // }
 
 template <>
@@ -1543,15 +1074,7 @@ void Axpy<float, lang::Cpp>(const float alpha,
   const float *inPtr = static_cast<const float *>(in->block()->data());
   vector<int> traversal_info = in->generate_traversal_info();
   for (size_t i = 0; i < in->Size(); i++) { 
-<<<<<<< HEAD
-<<<<<<< HEAD
     outPtr[i] += alpha * inPtr[traversal_info[in->shape().size()]];
-=======
-    outPtr[i] += alpha * inPtr[traversal_info[2]];
->>>>>>> e773b90... Add files via upload
-=======
-    outPtr[i] += alpha * inPtr[traversal_info[in->shape().size()]];
->>>>>>> a102d78... Add files via upload
     in->traverse_next(traversal_info, i+1);
   }
 }
@@ -1581,19 +1104,7 @@ void Dot<float, lang::Cpp>(const Tensor *in1, const Tensor *in2,
   vector<int> traversal_info_in1 = in1->generate_traversal_info();
   vector<int> traversal_info_in2 = in2->generate_traversal_info();
   for (size_t i = 0; i < in1->Size(); i++) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     sum += in1Ptr[traversal_info_in1[in1->shape().size()]] * in2Ptr[traversal_info_in2[in2->shape().size()]];
-=======
-    sum += in1Ptr[traversal_info_in1[2]] * in2Ptr[traversal_info_in2[2]];
->>>>>>> e773b90... Add files via upload
-=======
-    sum += in1Ptr[traversal_info_in1[in->shape().size()]] * in2Ptr[traversal_info_in2[in->shape().size()]];
->>>>>>> a102d78... Add files via upload
-=======
-    sum += in1Ptr[traversal_info_in1[in1->shape().size()]] * in2Ptr[traversal_info_in2[in2->shape().size()]];
->>>>>>> c29609a... Add files via upload
     in1->traverse_next(traversal_info_in1, i+1);
     in2->traverse_next(traversal_info_in2, i+1);
   }
@@ -1699,38 +1210,15 @@ template <>
 void RowMax<float, lang::Cpp>(const Tensor *in, Tensor *out, Context *ctx) {
   const float *inPtr = static_cast<const float *>(in->block()->data());
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   const size_t nrow = in->shape()[0];
   const size_t ncol = in->shape()[1];
   vector<int> traversal_info = in->generate_traversal_info();
-=======
-  const size_t nrow = in->shape_[0];
-  const size_t ncol = in->shape_[1];
-=======
-  const size_t nrow = in->shape()[0];
-  const size_t ncol = in->shape()[1];
-<<<<<<< HEAD
->>>>>>> 4e413f3... Add files via upload
-  vector<int> traversal_info = {0,0,0,0};
->>>>>>> e773b90... Add files via upload
-=======
-  vector<int> traversal_info = in->generate_traversal_info();
->>>>>>> 55ab74e... Add files via upload
     
   for (size_t r = 0; r < nrow; r++) {
     int counter_offset = (r * ncol);
     float maxval = 0;
     for (size_t c = 0; c < ncol; c++){
-<<<<<<< HEAD
-<<<<<<< HEAD
       maxval = (std::max)(maxval, inPtr[traversal_info[in->shape().size()]]);
-=======
-      maxval = (std::max)(maxval, inPtr[traversal_info[2]]);
->>>>>>> 79508e8... Add files via upload
-=======
-      maxval = (std::max)(maxval, inPtr[traversal_info[in->shape().size()]]);
->>>>>>> a102d78... Add files via upload
       in->traverse_next(traversal_info, counter_offset+c+1);
     }
     outPtr[r] = maxval;

@@ -60,27 +60,10 @@ template <typename DType>
 void TraverseUnary(const Tensor* in, Tensor* out, std::function<DType(DType)> func){
   DType *outPtr = static_cast<DType *>(out->block()->mutable_data());
   const DType *inPtr = static_cast<const DType *>(in->block()->data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   vector<int> traversal_info = in->generate_traversal_info();
   for (size_t i = 0; i < in->Size(); i++) { 
     outPtr[i] = func(inPtr[traversal_info[in->shape().size()]]);
     in->traverse_next(traversal_info, i+1);
-=======
-  vector<int> traversal_info = {0,0,0,0};
-  for (size_t i = 0; i < in->Size(); i++) { 
-    outPtr[i] = func(inPtr[traversal_info[2]]);
-<<<<<<< HEAD
-    in.traverse_next(traversal_info, i+1);
->>>>>>> c3d4bc2... Add files via upload
-=======
-=======
-  vector<int> traversal_info = in->generate_traversal_info();
-  for (size_t i = 0; i < in->Size(); i++) { 
-    outPtr[i] = func(inPtr[traversal_info[in->shape().size()]]);
->>>>>>> a102d78... Add files via upload
-    in->traverse_next(traversal_info, i+1);
->>>>>>> e773b90... Add files via upload
   }
 }
 
@@ -89,37 +72,12 @@ void TraverseBinary(const Tensor* in1, const Tensor* in2, Tensor* out, std::func
   DType *outPtr = static_cast<DType *>(out->block()->mutable_data());
   const DType *in1Ptr = static_cast<const DType *>(in1->block()->data());
   const DType *in2Ptr = static_cast<const DType *>(in2->block()->data());
-<<<<<<< HEAD
-<<<<<<< HEAD
   vector<int> traversal_info_in1 = in1->generate_traversal_info();
   vector<int> traversal_info_in2 = in2->generate_traversal_info();
   for (size_t i = 0; i < in1->Size(); i++) {
     outPtr[i] = func(in1Ptr[traversal_info_in1[in1->shape().size()]], in2Ptr[traversal_info_in2[in2->shape().size()]]);
     in1->traverse_next(traversal_info_in1, i+1);
     in2->traverse_next(traversal_info_in2, i+1);
-=======
-  vector<int> traversal_info_in1 = {0,0,0,0};
-  vector<int> traversal_info_in2 = {0,0,0,0};
-  for (size_t i = 0; i < in1->Size(); i++) {
-    outPtr[i] = func(in1Ptr[traversal_info_in1[2]], in2Ptr[traversal_info_in2[2]]);
-<<<<<<< HEAD
-    in1.traverse_next(traversal_info_in1, i+1);
-    in2.traverse_next(traversal_info_in2, i+1);
->>>>>>> c3d4bc2... Add files via upload
-=======
-=======
-  vector<int> traversal_info_in1 = in1->generate_traversal_info();
-  vector<int> traversal_info_in2 = in2->generate_traversal_info();
-  for (size_t i = 0; i < in1->Size(); i++) {
-<<<<<<< HEAD
-    outPtr[i] = func(in1Ptr[traversal_info_in1[in->shape().size()]], in2Ptr[traversal_info_in2[in->shape().size()]]);
->>>>>>> a102d78... Add files via upload
-=======
-    outPtr[i] = func(in1Ptr[traversal_info_in1[in1->shape().size()]], in2Ptr[traversal_info_in2[in2->shape().size()]]);
->>>>>>> c29609a... Add files via upload
-    in1->traverse_next(traversal_info_in1, i+1);
-    in2->traverse_next(traversal_info_in2, i+1);
->>>>>>> e773b90... Add files via upload
   }
 }
 

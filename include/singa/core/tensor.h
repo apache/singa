@@ -109,16 +109,8 @@ class Tensor {
   bool empty() const { return nDim() == 0; }
 
   //bool transpose() const { return transpose_; }
-<<<<<<< HEAD
-<<<<<<< HEAD
   bool transpose() const { return (strides_[0] != 1); }
 
-=======
->>>>>>> e658bbf... Add files via upload
-=======
-  bool transpose() const { return (strides_[0] != 1); }
-
->>>>>>> dfdac84... Add files via upload
   const vector<int>& strides() const { return strides_; }
 
   const vector<int>& shape_multipliers() const { return shape_multipliers_; }
@@ -230,10 +222,6 @@ class Tensor {
   /// Return average L2 norm
   float L2() const;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4aa09f1... Add files via upload
   //generate strides automatically if stride field is not passed
 void Generate_Strides(){
     if(shape_.size()==0){
@@ -243,27 +231,11 @@ void Generate_Strides(){
     strides_.clear();
     size_t dim = Size();
     int cumulative_product = 1;
-<<<<<<< HEAD
-<<<<<<< HEAD
     for (size_t n=0; n<shape_.size(); ++n) {
         cumulative_product = cumulative_product*shape_[n];
         strides_.push_back(dim/cumulative_product);
     }
     reverse(strides_.begin(), strides_.end());
-=======
-    for (int n=0; n<shape_.size(); ++n) {
-=======
-    for (size_t n=0; n<shape_.size(); ++n) {
->>>>>>> c17b2f5... Add files via upload
-        cumulative_product = cumulative_product*shape_[n];
-        strides_.push_back(dim/cumulative_product);
-    }
-<<<<<<< HEAD
-    std::reverse(strides_.begin(), strides_.end());
->>>>>>> 4aa09f1... Add files via upload
-=======
-    reverse(strides_.begin(), strides_.end());
->>>>>>> e3fdfe3... Add files via upload
 };
 
 //generate shape multipliers
@@ -271,14 +243,7 @@ void Generate_Strides(){
 //for e.g. tensor of shape (3,3), stride (3,1) will also have shape multipliers of (3,1)
 //this means that the 3rd, 6th, and 9th index of the array will always be the starting element of their respective rows
 //so we need to need use the inner stride when jumping from 1st->2nd element, and outer stride when jumping from 2nd->3rd
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-vector<int> Generate_Shape_Multipliers(Shape y_shape) {
-=======
 vector<int> Generate_Shape_Multipliers(Shape y_shape) const {
->>>>>>> 15489ad... updated Generate_Shape_Multipliers function to a const function
     if(y_shape.size()==0){
       return {1};
     }
@@ -288,7 +253,6 @@ vector<int> Generate_Shape_Multipliers(Shape y_shape) const {
 
     shape_multipliers.push_back(1);
     for (size_t n=0; n<(y_shape.size()-1); ++n) {
-<<<<<<< HEAD
         cumulative_product = cumulative_product*y_shape[n];
         shape_multipliers.push_back(cumulative_product);
     }
@@ -345,121 +309,6 @@ void traverse_next(std::vector<int>& traversal_info, int counter) const {
 // ******************************************************************************************
 // traversal operations end
 // ******************************************************************************************
-=======
-=======
-std::vector<int> Generate_Shape_Multipliers(std::vector<int> y_shape) {
-    std::reverse(y_shape.begin(), y_shape.end());
-    std::vector<int> shape_multipliers = {};
-=======
-vector<int> Generate_Shape_Multipliers(vector<int> y_shape) {
-=======
-vector<int> Generate_Shape_Multipliers(Shape y_shape) {
->>>>>>> 3b59660... Add files via upload
-    reverse(y_shape.begin(), y_shape.end());
-    vector<int> shape_multipliers = {};
->>>>>>> 8c632c2... Add files via upload
-    int cumulative_product = 1;
-
-    shape_multipliers.push_back(1);
-    for (int n=0; n<(y_shape.size()-1); ++n) {
-=======
->>>>>>> c17b2f5... Add files via upload
-        cumulative_product = cumulative_product*y_shape[n];
-        shape_multipliers.push_back(cumulative_product);
-    }
-    reverse(shape_multipliers.begin(), shape_multipliers.end());
-    return shape_multipliers;
-};
-
-<<<<<<< HEAD
->>>>>>> 4aa09f1... Add files via upload
-    // ************************
-  // Some traversal operations (works on const declarations without modifying tensor variables)
-  // ************************
-
-  //this function checks whether the next index falls on a special multiplier of the outer shape
-  //so the algorithm knows when to jump over/back to a starting element of the outer shape
-  //for e.g. in [[1,4,7], [2,5,8], [3,6,9]], elements 1,2,3 are the starting elements of their respective rows
-  //this additional check only has 1 loop for 2d matrix
-  //but runtime performance might degrade to O(nlog(n)) for higher dimensional tensors
-  int determine_order(int counter) const {
-      for (size_t n=0; n<(shape_multipliers_.size()-1); ++n) {
-          if((counter%shape_multipliers_[n])==0){
-              return ((shape_multipliers_.size()) - 1 - n);
-          }
-      }
-      return 0;
-  };
-
-  //this function updates the base indexes with the current index after every single traversal step, can be generalized beyond 2d cases
-  void update_base_index(std::vector<int>& traversal_info) const {
-      for (int n=0; n<(traversal_info[3]+1); ++n) {
-          traversal_info[n] = traversal_info[2];
-      }
-  };
-
-  //function to traverse a const strided tensor object
-  //it requires an additional vector, traversal_info {0,0,0,0}, comprising 4 elements
-  //index 0 and 1 store the base row and column index respectively (for 2d matrix)
-  //index 2 stores the current index of the traversal
-  //index 3 stores the order of the traversal for e.g. if the order is 0, it means the next element can be navigated to using the innermost stride
-  void traverse_next(std::vector<int>& traversal_info, int counter) const {
-      update_base_index(traversal_info);
-      traversal_info[3] = determine_order(counter);
-      traversal_info[2] = traversal_info[traversal_info[3]]+strides_[traversal_info[3]];
-  };
->>>>>>> e658bbf... Add files via upload
-=======
-// ******************************************************************************************
-// Some traversal operations (works on const declarations without modifying tensor variables)
-// ******************************************************************************************
-
-//generate a traversal_info vector based on the tensor's shape for the traverse_next function to work
-vector<int> generate_traversal_info() const {
-    vector<int> traversal_info = {};
-    for(size_t n=0; n<(shape_.size()+2); ++n) {
-      traversal_info.push_back(0);
-    }
-    return traversal_info;
-};
-
-//this function checks whether the next index falls on a special multiplier of the outer shape
-//so the algorithm knows when to jump over/back to a starting element of the outer shape
-//for e.g. in [[1,4,7], [2,5,8], [3,6,9]], elements 1,2,3 are the starting elements of their respective rows
-//this additional check only has 1 loop for 2d matrix
-//but runtime performance might degrade to O(nlog(n)) for higher dimensional tensors
-int determine_order(int counter) const {
-    for (size_t n=0; n<(shape_multipliers_.size()-1); ++n) {
-        if((counter%shape_multipliers_[n])==0){
-            return ((shape_multipliers_.size()) - 1 - n);
-        }
-    }
-    return 0;
-};
-
-//this function updates the base indexes with the current index after every single traversal step, can be generalized beyond 2d cases
-void update_base_index(std::vector<int>& traversal_info) const {
-    for (int n=0; n<(traversal_info[shape_.size()+1]+1); ++n) {
-        traversal_info[n] = traversal_info[shape_.size()];
-    }
-};
-
-//function to traverse a const strided tensor object
-//it requires an additional vector, traversal_info {0,0,0,0 ...}, comprising (shape_.size()+2) elements of 0
-//for e.g. 2d matrix:
-//index 0 and 1 store the base row and column index respectively
-//index 2 stores the current index of the traversal
-//index 3 stores the order of the traversal for e.g. if the order is 0, it means the next element can be navigated to using the innermost stride
-void traverse_next(std::vector<int>& traversal_info, int counter) const {
-    update_base_index(traversal_info);
-    traversal_info[shape_.size()+1] = determine_order(counter);
-    traversal_info[shape_.size()] = traversal_info[traversal_info[shape_.size()+1]]+strides_[traversal_info[shape_.size()+1]];
-};
-
-// ******************************************************************************************
-// traversal operations end
-// ******************************************************************************************
->>>>>>> cb9153a... Add files via upload
 
  protected:
   //bool transpose_ = false;
@@ -707,38 +556,14 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 /// each instance, t[i] could be 2 or [0, 0, 1]. If one instance could have
 /// multiple labels, then t[i] could be [1, 0, 1].
 /// The loss is computed into p.
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-//void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
-
-/// Compute the dx, given prediction probability 'p' (p=softmax(x)) and
-/// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
-/// or 2-d matrix. 'grad' has the same shape as 'p'. dx is computed into p.
-
-=======
-=======
-
-<<<<<<< HEAD
->>>>>>> cb9153a... Add files via upload
-//void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
-=======
 void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
->>>>>>> 13227e7... re-enabled the entropy functions for testing
 
 /// Compute the dx, given prediction probability 'p' (p=softmax(x)) and
 /// the target (ground truth) labels 't'. 'p' and 't' are either 1-d vector
 /// or 2-d matrix. 'grad' has the same shape as 'p'. dx is computed into p.
-<<<<<<< HEAD
->>>>>>> 2d95dba... Add files via upload
-=======
 
-<<<<<<< HEAD
->>>>>>> cb9153a... Add files via upload
-//void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
-=======
 void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
->>>>>>> 13227e7... re-enabled the entropy functions for testing
 
 
 /// Return a tensor consisting of rows ([start, end)) from 'in'. It copies the
