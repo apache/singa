@@ -17,17 +17,13 @@
 # 
 # Change tags to build with different cuda/cudnn versions:
 FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
-#   FROM nvidia/cuda:7.5-cudnn5-devel-ubuntu14.04
-#   FROM nvidia/cuda:7.5-cudnn4-devel-ubuntu14.04
-#   FROM nvidia/cuda:7.0-cudnn4-devel-ubuntu14.04
-# FROM nvidia/cuda:7.5-cudnn5-devel-ubuntu14.04
 
 # install dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libprotobuf-dev libopenblas-dev libpcre3-dev python-dev python-pip protobuf-compiler wget openssh-server swig\
+    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libprotobuf-dev libopenblas-dev libpcre3-dev protobuf-compiler wget openssh-server swig python3-dev python3-pip python3-setuptools\
     && apt-get clean && apt-get autoremove && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install -U pip wheel numpy setuptools unittest-xml-reporting protobuf future
+    && pip3 install -U pip3 wheel numpy setuptools unittest-xml-reporting protobuf future
 
 
 # install swig > 3.0.10 for ubuntu < 16.04
@@ -36,12 +32,8 @@ RUN apt-get update \
 #     ./configure && make && make install
 
 # set environment
-ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}
 # ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
 # ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
-
-# download singa source
-# RUN git clone https://github.com/apache/incubator-singa.git
 
 # config ssh service
 RUN mkdir /var/run/sshd

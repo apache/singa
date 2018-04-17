@@ -107,7 +107,7 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
     CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
         ctx->cudnn_handle, x_desc_, y_desc_, conv_desc_, filter_desc_,
         bwd_filt_pref, workspace_byte_limit_, &bp_filter_alg_));
-    # deprecated in cudnn v7
+    // deprecated in cudnn v7
     CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
         ctx->cudnn_handle, filter_desc_, y_desc_, conv_desc_, x_desc_,
         bwd_data_pref, workspace_byte_limit_, &bp_data_alg_));

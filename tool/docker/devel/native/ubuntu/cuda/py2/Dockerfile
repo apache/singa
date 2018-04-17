@@ -14,25 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+# 
 # Change tags to build with different cuda/cudnn versions:
-FROM nvidia/cuda:9.0-devel-ubuntu16.04
+FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
 # install dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git build-essential cmake wget openssh-server ca-certificates\
+    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libprotobuf-dev libopenblas-dev libpcre3-dev protobuf-compiler wget openssh-server swig python-dev python-pip python-setuptools\
     && apt-get clean && apt-get autoremove && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/* 
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install -U pip wheel numpy setuptools unittest-xml-reporting protobuf future
 
-# install conda, conda-build and anaconda-client
-RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-RUN bash miniconda.sh -b -p /root/miniconda
-RUN /root/miniconda/bin/conda config --set always_yes yes --set changeps1 no
-RUN /root/miniconda/bin/conda update -q conda
-RUN /root/miniconda/bin/conda install conda-build
-RUN /root/miniconda/bin/conda install anaconda-client
-ENV PATH /root/miniconda/bin:${PATH}
 
+# install swig > 3.0.10 for ubuntu < 16.04
+# RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz && \
+#     tar zxf swig-3.0.10.tar.gz && cd swig-3.0.10 && \
+#     ./configure && make && make install
+
+# set environment
+# ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
+# ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
 
 # config ssh service
 RUN mkdir /var/run/sshd

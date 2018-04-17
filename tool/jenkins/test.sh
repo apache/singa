@@ -24,29 +24,24 @@ echo Compile and test Singa...
 echo workspace: `pwd`
 echo OS version: `cat /etc/issue`
 echo kernal version: `uname -a`
+echo parameters: $1
 COMMIT=`git rev-parse --short HEAD`
 echo COMMIT HASH: $COMMIT
+
 # set parameters
 CUDA="OFF"
-CUDNN="OFF"
-if [ -z ${CUDNN_PATH+x} ]; then
-  CUDA="ON"
-  CUDNN="ON"
-  export CMAKE_PREFIX_PATH=$CUDNN_PATH:$CMAKE_PREFIX_PATH
-  export CMAKE_INCLUDE_PATH=$CUDNN_PATH/include:$CMAKE_INCLUDE_PATH
-  export CMAKE_LIBRARY_PATH=$CUDNN_PATH/lib64:$CMAKE_LIBRARY_PATH
+if [ $1 = "CUDA" ]; then
+  CUDA="ON"  
 fi
-
-# setup env
-rm -rf build
-mkdir build
 
 # TODO(wangwei) test python 3 according to env variable PY3K
 
-if [ `uname` = "Darwin" ]; then
-  EXTRA_ARGS="-DPYTHON_LIBRARY=`python-config --prefix`/lib/libpython2.7.dylib -DPYTHON_INCLUDE_DIR=`python-config --prefix`/include/python2.7/"
-fi
+#if [ `uname` = "Darwin" ]; then
+#  EXTRA_ARGS="-DPYTHON_LIBRARY=`python-config --prefix`/lib/libpython2.7.dylib -DPYTHON_INCLUDE_DIR=`python-config --prefix`/include/python2.7/"
+#fi
 
+rm -rf build
+mkdir build
 # compile c++ code
 cd build
 cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON $EXTRA_ARGS ../
