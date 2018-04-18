@@ -1098,6 +1098,8 @@ def tensormult(A, B, sum=None, multiply=None):
 
     Return: (Singa.Tensor)
         The output of the tensormult calculation
+
+    fix some error of source code in the nils-werner/sparse
     '''
     if sum is None:
         sum = [[], []]
@@ -1117,8 +1119,12 @@ def tensormult(A, B, sum=None, multiply=None):
         post_multiply[v] += i
 
 
-    for i in post_multiply:
+#    for i in post_multiply:
+#        A = diag(A,i)
+    for i in sorted(post_multiply):
+
         A = diag(A,i)
+        sum[0] = [x+1 if x >= i else x for x in sum[0]]
 
     sum[0] += post_multiply
     sum[1] += multiply[1]
