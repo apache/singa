@@ -25,6 +25,7 @@ echo workspace: `pwd`
 echo OS version: `cat /etc/issue`
 echo kernal version: `uname -a`
 echo parameters: $1
+echo parameters: $2
 COMMIT=`git rev-parse --short HEAD`
 echo COMMIT HASH: $COMMIT
 
@@ -44,11 +45,19 @@ rm -rf build
 mkdir build
 # compile c++ code
 cd build
-cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON $EXTRA_ARGS ../
+if [ $2 = "PYTHON3" ]; then 
+    cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON -DUSE_PYTHON3=ON $EXTRA_ARGS ../
+else
+    cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON $EXTRA_ARGS ../
+fi
 make
 # unit test cpp code
 ./bin/test_singa --gtest_output=xml:./gtest.xml
 # unit test python code
 cd ../test/python
-PYTHONPATH=../../build/python/ python run.py
+if [ $2 = "PYTHON3" ]; then 
+    PYTHONPATH=../../build/python/ python3 run.py
+else
+    PYTHONPATH=../../build/python/ python run.py
+fi
 echo Job finished...

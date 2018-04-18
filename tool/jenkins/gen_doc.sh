@@ -18,7 +18,9 @@
 # * limitations under the License.
 # */
 
-# This script is used by Jenkins to update SINGA website
+
+# This script is used by Jenkins to update Singa website. 
+# Run this script in runtime docker container.
 
 echo Install PySinga, generate HTML files and update Singa website
 

@@ -16,15 +16,14 @@
 #
 
 # to compile swig api files which depdend on numpy.i
-export CPLUS_INCLUDE_PATH=`python -c "from __future__ import print_function; import numpy; print(numpy.get_include())"`:$CPLUS_INCLUDE_PATH
+# export CPLUS_INCLUDE_PATH=`python -c "from __future__ import print_function; import numpy; print(numpy.get_include())"`:$CPLUS_INCLUDE_PATH
 
 # to let cmake use the dependent libs installed by conda, including python
 export CMAKE_PREFIX_PATH=$PREFIX:$CMAKE_PREFIX_PATH
 export CMAKE_INCLUDE_PATH=$PREFIX/include:$CMAKE_INCLUDE_PATH
 export CMAKE_LIBRARY_PATH=$PREFIX/lib:$CMAKE_LIBRARY_PATH
 
-mkdir build
-cd build
+
 USE_CUDA=OFF
 if [ -z ${CUDNN_PATH+x} ]; then
 	USE_CUDA=ON
@@ -32,10 +31,13 @@ if [ -z ${CUDNN_PATH+x} ]; then
 	cp -P $CUDNN_PATH/lib64/libcudnn.so* $PREFIX/lib/
 fi
 
-PYTHON3=OFF
+USE_PYTHON3=OFF
 # PY3K is set by conda
-if  [ "$PY3K" == "1" ]; then PYTHON3=ON; fi
-echo "PY3K = $PY3K"
-cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA -DPYTHON3=$PYTHON3 ..
+if  [ "$PY3K" == "1" ]; then USE_PYTHON3=ON; fi
+
+
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA -DUSE_PYTHON3=$USE_PYTHON3 ..
 make
 make install

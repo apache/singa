@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO(wangwei) install other libs and test. It has bugs now.
+
 # Change tags to build with different cuda/cudnn versions:
 FROM nvidia/cuda:7.5-cudnn5-devel-centos6
 
@@ -21,11 +23,6 @@ FROM nvidia/cuda:7.5-cudnn5-devel-centos6
 RUN yum -y update && yum -y install git wget openssh-server cmake
 
 
-
-# set environment
-ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}
-# ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
-# ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
 
 # download singa source
 # RUN git clone https://github.com/apache/incubator-singa.git

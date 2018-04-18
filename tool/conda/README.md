@@ -24,7 +24,7 @@ this folder should include a subfolder `include/cudnn.h` for the header file, an
 
 After exporting the environment variables, execute the following command to compile Singa and package it
 
-    conda-build .
+    conda-build .  --python 3.6  (or 2.7)
 
 You will see the package path from the screen output.
 

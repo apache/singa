@@ -16,7 +16,7 @@
 #
 
 # Change tags to build with different cuda/cudnn versions:
-FROM nvidia/cuda:9.0-devel-ubuntu16.04
+FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
 # install dependencies
 RUN apt-get update \

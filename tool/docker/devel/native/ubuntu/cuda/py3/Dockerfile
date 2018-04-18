@@ -23,7 +23,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libprotobuf-dev libopenblas-dev libpcre3-dev protobuf-compiler wget openssh-server swig python3-dev python3-pip python3-setuptools\
     && apt-get clean && apt-get autoremove && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
-    && pip3 install -U pip3 wheel numpy setuptools unittest-xml-reporting protobuf future
+    && pip3 install -U wheel numpy setuptools unittest-xml-reporting protobuf future
 
 
 # install swig > 3.0.10 for ubuntu < 16.04
@@ -32,6 +32,7 @@ RUN apt-get update \
 #     ./configure && make && make install
 
 # set environment
+
 # ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
 # ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
 

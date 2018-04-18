@@ -109,7 +109,7 @@ The following libraries are optional
     * `USE_CUDA=ON`, used if CUDA and cuDNN is available
     * `USE_PYTHON=ON`, used for compiling PySINGA
     * `USE_OPENCL=ON`, used for compiling with OpenCL support
-    * `PYTHON3=ON`, used for compiling with Python 3 support. (The default is Python 2)
+    * `USE_PYTHON3=ON`, used for compiling with Python 3 support. (The default is Python 2)
     * `PACKAGE=ON`, used for building the Debian package
 
 3. compile the code, e.g., `make`
