@@ -1042,7 +1042,6 @@ def tensordot(A, B, axes=2):
     #reshape the result
     return res.reshape(olda + oldb)
 
-
 def einsum_(A,B,ops):
     '''Do the matrix to matrix einsum calculation according to the operands
 
@@ -1182,6 +1181,65 @@ def diag(A,axis=-1):
         npA_diag[index_npA_diag] = npA[index_npA]
     A_diag = from_numpy(npA_diag)
     return A_diag
+
+def einsum2(A,B,ops):
+    '''
+        Do the matrix to matrix einsum calculation according to the operands
+
+    Args:
+        A (Singa.Tensor): The first argument.
+        B (Singa.Tensor): The second argument.
+        ops(string):
+            the string specifies the subscripts for summation such as 'ki,kj->kij'
+
+    Returns: Singa.Tensor
+        the output matirx of the einsum calculation
+    '''
+
+    if len(ops) == 0:
+        raise ValueError("No input operands")
+
+    inputops, outputops = ops.split('->')
+    inputops = inputops.split(',')
+
+    if A.ndim != len(inputops[0]) or B.ndim != len(inputops[1]):
+        raise ValueError("input dim doesn't match operands")
+
+    sums = sorted(list((set(inputops[0]) | set(inputops[1])) - set(outputops)))
+
+    broadcast_A = sorted(list(set(inputops[1]) - set(inputops[0])))
+    broadcast_B = sorted(list(set(inputops[0]) - set(inputops[1])))
+
+
+    outputall = sorted(list(set(inputops[0]) | set(inputops[1])))
+
+    sums = [outputall.index(x) for x in sums]
+    broadcast_idA = [inputops[1].find(x) for x in broadcast_A]
+    broadcast_idB = [inputops[0].find(x) for x in broadcast_B]
+
+    broadcast_a = [B.shape[x] for x in broadcast_idA]
+    broadcast_b = [A.shape[x] for x in broadcast_idB]
+
+    transpose_A = [(list(inputops[0])+broadcast_A) .index(x) for x in outputall]
+    transpose_B = [(list(inputops[1])+broadcast_B) .index(x) for x in outputall]
+
+
+    reshape_A = list(A.shape)+broadcast_a
+    reshape_B = list(B.shape)+broadcast_b
+
+    mult_A = np.repeat(A, np.product(broadcast_a)).reshape(reshape_A).transpose(transpose_A)
+    mult_B = np.repeat(B, np.product(broadcast_b)).reshape(reshape_B).transpose(transpose_B)
+
+    if mult_A.shape != mult_B.shape:
+        raise ValueError("error: matrix dimension mismatch")
+    res = eltwise_mult(mult_A, mult_B)
+
+    sum_R = sorted(sums, reverse=True)
+    for i in sum_R:
+        res = res.sum(axis=i)
+    transpose_res = [sorted(list(outputops)).index(x) for x in list(outputops)]
+
+    return res.transpose(transpose_res)
 
 
 
