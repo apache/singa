@@ -24,10 +24,11 @@ export CMAKE_INCLUDE_PATH=$PREFIX/include:$CMAKE_INCLUDE_PATH
 export CMAKE_LIBRARY_PATH=$PREFIX/lib:$CMAKE_LIBRARY_PATH
 
 
-USE_CUDA=OFF
 if [ -z ${CUDNN_PATH+x} ]; then
+	USE_CUDA=OFF
+else
 	USE_CUDA=ON
-	cp $CUDNN_PATH/include $PREFIX/include 
+	cp -r $CUDNN_PATH/include $PREFIX/include 
 	cp -P $CUDNN_PATH/lib64/libcudnn.so* $PREFIX/lib/
 fi
 

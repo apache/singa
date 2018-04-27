@@ -12,3 +12,4 @@ build/
 thirdparty/*
 !thirdparty/install.sh
 test/samples/
+.idea

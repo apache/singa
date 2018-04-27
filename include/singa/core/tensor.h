@@ -104,14 +104,82 @@ class Tensor {
     return shape_.at(idx);
   }
 
+  /*  
+  cudnn requires tensor dimensions to fulfill 2 requirements:
+    1.) dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
+    2.) dimensions have to be set to multiples of 8
+
+    for e.g. Tensor A has shape {3,3}, cudnn requires shape of {1,1,24,24} to be the input
+             Tensor B has shape (2,3,4), cudnn requires shape of {1,16,24,32} to be the input
+  */
+  vector<int> generate_shape_cuda() const {
+    vector<int> shape_arr;
+    if(shape_.size() <= 4){
+      for (size_t n=0; n<4-shape_.size(); ++n) {
+        shape_arr.push_back(1);
+      } 
+      for (size_t n=0; n<shape_.size(); ++n) {
+        shape_arr.push_back(shape_.at(n));
+      } 
+      return shape_arr;
+    } else if(shape_.size() == 5){
+      for (size_t n=0; n<shape_.size(); ++n) {
+        shape_arr.push_back(shape_.at(n));
+      } 
+      return shape_arr;
+    } else {
+      LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
+    }
+  }
+
+  int generate_dim_cuda() const {
+    if(shape_.size() <= 4){return 4;}
+    else if(shape_.size() == 5){return 5;}
+    else{
+      LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
+    } 
+  }
+
   size_t nDim() const { return shape_.size(); }
 
   bool empty() const { return nDim() == 0; }
 
   //bool transpose() const { return transpose_; }
-  bool transpose() const { return (strides_[0] != 1); }
+  bool transpose() const { return (strides_.back() != 1); }
 
   const vector<int>& strides() const { return strides_; }
+
+  /*  
+  cudnn requires stride dimensions to conform to the format of the shape input as well
+    1.) stride dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
+    2.) stride dimensions have to be set to powers of 8, depending on the stride order (outer stride = higher power)
+
+    for e.g. Tensor A has shape {3,3}, stride {3,1}, cudnn requires shape {1,1,24,24} and stride {576, 576, 24, 1} to be the inputs,
+             if A is transposed with stride {1,3}, then the new cudnn stride becomes {576, 576, 8, 3}
+  */
+  vector<int> generate_strides_cuda() const {
+    vector<int> strides_arr;
+    int product = 1;
+    for (size_t n=0; n<(shape_.size()); ++n) {
+      product *= shape_[n];
+    }
+    if(shape_.size() <= 4){
+      for (size_t n=0; n<4-shape_.size(); ++n) {
+        strides_arr.push_back(product);
+      } 
+      for (size_t n=0; n<strides_.size(); ++n) {
+          strides_arr.push_back(strides_[n]);
+        }
+      return strides_arr;
+    } else if(shape_.size() == 5){
+      for (size_t n=0; n<strides_.size(); ++n) {
+          strides_arr.push_back(strides_[n]);
+        }
+      return strides_arr;
+    } else {
+      LOG(FATAL) << "Dimensions (strides) beyond 3 are currently not supported" ;
+    }
+  }
 
   const vector<int>& shape_multipliers() const { return shape_multipliers_; }
 
@@ -235,8 +303,11 @@ void Generate_Strides(){
         cumulative_product = cumulative_product*shape_[n];
         strides_.push_back(dim/cumulative_product);
     }
-    reverse(strides_.begin(), strides_.end());
 };
+
+void Set_Strides(const vector<int> new_strides){
+  strides_ = new_strides;
+}
 
 //generate shape multipliers
 //for e.g. tensor of shape (3,3), stride (1,3) will have shape multipliers of (3,1)
@@ -303,7 +374,7 @@ void update_base_index(std::vector<int>& traversal_info) const {
 void traverse_next(std::vector<int>& traversal_info, int counter) const {
     update_base_index(traversal_info);
     traversal_info[shape_.size()+1] = determine_order(counter);
-    traversal_info[shape_.size()] = traversal_info[traversal_info[shape_.size()+1]]+strides_[traversal_info[shape_.size()+1]];
+    traversal_info[shape_.size()] = traversal_info[traversal_info[shape_.size()+1]]+strides_[strides_.size()-traversal_info[shape_.size()+1]-1];
 };
 
 // ******************************************************************************************
@@ -498,6 +569,8 @@ void MultColumn(const Tensor &v, Tensor *M);
 void MultRow(const Tensor &v, Tensor *M);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
 Tensor SoftMax(const Tensor &in);
+
+Tensor RowMax(const Tensor &in);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
 void SoftMax(const Tensor &in, Tensor *out);
 /// Sub column 'v' by each column of matrix M

@@ -144,7 +144,7 @@ void Tensor::Reshape(const Shape &shape) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-  } else if (strides_[0] != 1) {
+  } else if (transpose()) {
     std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
     return void();
   }
@@ -161,7 +161,7 @@ void Tensor::Reshape(Shape &&shape) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-  } else if (strides_[0] != 1) {
+  } else if (transpose()) {
     std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
     return void();
   }
