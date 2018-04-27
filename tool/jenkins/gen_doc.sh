@@ -18,10 +18,12 @@
 # * limitations under the License.
 # */
 
-# This script is used by Jenkins to update SINGA website
 
-echo Install PySINGA, generate HTML files and update SINGA website
-# pip install --upgrade http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/wheel/linux/latest/ubuntu16.04-cpp/singa-1.1.0-py2-none-any.whl
+# This script is used by Jenkins to update Singa website. 
+# Run this script in runtime docker container.
+
+echo Install PySinga, generate HTML files and update Singa website
+
 conda update singa
 COMMIT=`git rev-parse --short HEAD`
 cd doc

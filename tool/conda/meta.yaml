@@ -1,16 +1,15 @@
 package:
-  name: {{ environ.get('SINGA_NAME', 'singa') }}
+  name: singa
   version: "{{ GIT_DESCRIBE_TAG }}"
 
 source:
   git_url: https://github.com/apache/incubator-singa.git
 
 build:
-  number: {{ GIT_DESCRIBE_NUMBER }}
+  number: 0
+  string: py{{py}}_{{ environ.get('BUILD_STR', 'cpu') }}
   script_env:
-    - CONDA_BLD_PATH
-    - SINGA_INCLUDE_PATH
-    - SINGA_LIBRARY_PATH
+    - CUDNN_PATH
 
 requirements:
   build:

@@ -18,40 +18,46 @@
 # * limitations under the License.
 # */
 
-# This script is used by Jenkins to compile and test SINGA
+# This script is used by Jenkins to compile and test Singa
 
-echo Compile and test SINGA...
-echo parameters: $1
+echo Compile and test Singa...
 echo workspace: `pwd`
 echo OS version: `cat /etc/issue`
 echo kernal version: `uname -a`
-echo CUDA version: $CUDA_VERSION
-echo CUDNN version: $CUDNN_VERSION
+echo parameters: $1
+echo parameters: $2
 COMMIT=`git rev-parse --short HEAD`
 echo COMMIT HASH: $COMMIT
+
 # set parameters
 CUDA="OFF"
-CUDNN="OFF"
 if [ $1 = "CUDA" ]; then
-  CUDA="ON"
-  CUDNN="ON"
+  CUDA="ON"  
 fi
 
-# setup env
+# TODO(wangwei) test python 3 according to env variable PY3K
+
+#if [ `uname` = "Darwin" ]; then
+#  EXTRA_ARGS="-DPYTHON_LIBRARY=`python-config --prefix`/lib/libpython2.7.dylib -DPYTHON_INCLUDE_DIR=`python-config --prefix`/include/python2.7/"
+#fi
+
 rm -rf build
 mkdir build
-
-if [ `uname` = "Darwin" ]; then
-  EXTRA_ARGS="-DPYTHON_LIBRARY=`python-config --prefix`/lib/libpython2.7.dylib -DPYTHON_INCLUDE_DIR=`python-config --prefix`/include/python2.7/"
-fi
-
-# compile singa c++
+# compile c++ code
 cd build
-cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON $EXTRA_ARGS ../
+if [ $2 = "PYTHON3" ]; then 
+    cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON -DUSE_PYTHON3=ON $EXTRA_ARGS ../
+else
+    cmake -DUSE_CUDA=$CUDA -DENABLE_TEST=ON $EXTRA_ARGS ../
+fi
 make
 # unit test cpp code
 ./bin/test_singa --gtest_output=xml:./gtest.xml
 # unit test python code
 cd ../test/python
-PYTHONPATH=../../build/python/ python run.py
+if [ $2 = "PYTHON3" ]; then 
+    PYTHONPATH=../../build/python/ python3 run.py
+else
+    PYTHONPATH=../../build/python/ python run.py
+fi
 echo Job finished...

@@ -1,5 +1,3 @@
-#!/usr/bin/env sh
-#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,35 +14,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Base unbuntu 16.04 image
-FROM ubuntu:latest
-
-MAINTAINER incubator-singa dev@singa.incubator.apache.org
+# 
+# Change tags to build with different cuda/cudnn versions:
+FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
 # install dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends subversion git wget openssh-server bzip2\
+    && apt-get install -y --no-install-recommends git build-essential autoconf libtool cmake libprotobuf-dev libopenblas-dev libpcre3-dev protobuf-compiler wget openssh-server swig python-dev python-pip python-setuptools\
     && apt-get clean && apt-get autoremove && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install -U pip wheel numpy setuptools unittest-xml-reporting protobuf future
 
-RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-RUN bash miniconda.sh -b -p /root/miniconda
-ENV PATH /root/miniconda/bin:${PATH}
-RUN conda config --set always_yes yes --set changeps1 no
-RUN conda update -q conda
-RUN conda install -c conda-forge sphinx
-RUN conda install -c conda-forge sphinx_rtd_theme
-RUN conda install -c clinicalgraphics recommonmark=0.2.0
-RUN conda install -c nusdbsystem singa
 
+# install swig > 3.0.10 for ubuntu < 16.04
+# RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz && \
+#     tar zxf swig-3.0.10.tar.gz && cd swig-3.0.10 && \
+#     ./configure && make && make install
+
+# set environment
+# ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
+# ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
+
+# config ssh service
 RUN mkdir /var/run/sshd
 RUN echo 'root:singa' | chpasswd
+# for ubuntu 14.04
+# RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+# for ubuntu 16.04 prohibit
 RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 # SSH login fix. Otherwise user is kicked off after login
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 # dump environment variables into files, so that ssh can see also
-# RUN env | grep _ >> /etc/environment
+RUN env | grep _ >> /etc/environment
 
 EXPOSE 22
 

@@ -144,9 +144,9 @@ void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
     rnn_mode = CUDNN_RNN_TANH;
   else if (rnn_mode_ == "gru")
     rnn_mode = CUDNN_GRU;
-  CUDNN_CHECK(cudnnSetRNNDescriptor(rnn_desc_, hidden_size_, num_stacks_,
+  CUDNN_CHECK(cudnnSetRNNDescriptor(ctx->cudnn_handle, rnn_desc_, hidden_size_, num_stacks_,
                                     dropout_desc_, input_mode, direction,
-                                    rnn_mode, dtype_));
+                                    rnn_mode, CUDNN_RNN_ALGO_STANDARD, dtype_));
 
   size_t weight_size;
   CUDNN_CHECK(cudnnGetRNNParamsSize(ctx->cudnn_handle, rnn_desc_, x_descs_[0],

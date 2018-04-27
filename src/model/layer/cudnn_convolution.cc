@@ -78,19 +78,11 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
                                            num_filters_, 1, 1));
   CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc_, pad_h_, pad_w_,
                                               stride_h_, stride_w_, 1, 1,
-                                              CUDNN_CROSS_CORRELATION));
-#if CUDNN_MAJOR == 5
+                                              CUDNN_CROSS_CORRELATION, 
+                                              GetCudnnDataType(dtype)));
   CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc_, GetCudnnDataType(dtype),
                                          CUDNN_TENSOR_NCHW, num_filters_,
                                          channels_, kernel_h_, kernel_w_));
-#elif CUDNN_MAJOR == 4
-  CUDNN_CHECK(cudnnSetFilter4dDescriptor_v4(
-      filter_desc_, GetCudnnDataType(dtype), CUDNN_TENSOR_NCHW, num_filters_,
-      channels_, kernel_h_, kernel_w_));
-#else
-  LOG(FATAL) << "Not supported CUDNN version = " << CUDNN_MAJOR;
-#endif
-
   if (prefer_ == "fastest" || prefer_ == "limited_workspace" ||
       prefer_ == "no_workspace") {
     cudnnConvolutionFwdPreference_t fwd_pref;
@@ -115,6 +107,7 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
     CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(
         ctx->cudnn_handle, x_desc_, y_desc_, conv_desc_, filter_desc_,
         bwd_filt_pref, workspace_byte_limit_, &bp_filter_alg_));
+    // deprecated in cudnn v7
     CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
         ctx->cudnn_handle, filter_desc_, y_desc_, conv_desc_, x_desc_,
         bwd_data_pref, workspace_byte_limit_, &bp_data_alg_));

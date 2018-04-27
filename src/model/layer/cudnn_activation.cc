@@ -78,15 +78,9 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
   output.device()->Exec([input, output, this](Context* ctx) {
     Block* inblock = input.block(), * outblock = output.block();
     float alpha = 1.0f, beta = 0.0f;
-#if CUDNN_MAJOR == 5
     CUDNN_CHECK(cudnnActivationForward(
         ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
         inblock->data(), &beta, this->desc_, outblock->mutable_data()));
-#elif CUDNN_MAJOR == 4
-    CUDNN_CHECK(cudnnActivationForward_v4(
-        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
-        inblock->data(), &beta, this->desc_, outblock->mutable_data()));
-#endif
   }, {input.block()}, {output.block()});
   if (flag & kTrain) {
     if (cudnn_mode_ == CUDNN_ACTIVATION_SIGMOID ||
@@ -113,17 +107,10 @@ const std::pair<Tensor, vector<Tensor>> CudnnActivation::Backward(
     Block* dyblock = grad.block(), * dxblock = dx.block(),
            * yblock = inout.block(), * xblock = inout.block();
     float alpha = 1.0f, beta = 0.0f;
-#if CUDNN_MAJOR == 5
     CUDNN_CHECK(cudnnActivationBackward(
         ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
         yblock->data(), this->desc_, dyblock->data(), this->desc_,
         xblock->data(), &beta, this->desc_, dxblock->mutable_data()));
-#elif CUDNN_MAJOR == 4
-    CUDNN_CHECK(cudnnActivationBackward_v4(
-        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_, yblock->data(),
-        this->desc_, dyblock->data(), this->desc_, xblock->data(), &beta,
-        this->desc_, dxblock->mutable_data()));
-#endif
   }, {grad.block(), inout.block()}, {dx.block()});
   return std::make_pair(dx, param_grad);
 }
