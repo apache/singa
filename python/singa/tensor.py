@@ -1010,7 +1010,7 @@ def einsum(ops,*args):
 
     A_ = [0,1,2,3,4,5,6,7,8,9,10,11]
     A = A_.reshape(3,2,2)
-    Res = einsum('ki,kj->kij',A,A)
+    Res = einsum('kia,kja->kij',A,A)
     >>> [[[  1   3]
           [  3  13]]
 
