@@ -941,7 +941,7 @@ def mult(A, B, C=None, alpha=1.0, beta=0.0):
 
 
 
-def einsum(A,B,ops):
+def einsum(ops,*args):
     '''
 
     function TODO list to finish the function in cpp(just like numpy function):
@@ -951,23 +951,90 @@ def einsum(A,B,ops):
 
     Do the matrix to matrix einsum calculation according to the operands
 
+    Warning : this function could only support two matrix' einsum calcultion
+
     Args:
-        A (Singa.Tensor): The first argument.
-        B (Singa.Tensor): The second argument.
+
         ops(string):
             the string specifies the subscripts for summation such as 'ki,kj->kij'
+            Here all the 26 lowercase letter can be used here.
+        arg(list of array_like):
+            These are the tensors for the operation,but here only support two tensors.
 
     Returns: Singa.Tensor
         the output matirx of the einsum calculation
+
+     The best way to understand this function is to try the examples below:
+
+    A_ = [0,1,2,3,4,5,6,7,8,9,10,11]
+    A = A_.reshape(4,3)
+    B = A_.reshape(3,4)
+    Here this einsum calculation is the same as normal 'mult'
+    Res = einsum('ij,jk->ik',A,B)
+    >>> [[ 20  23  26  29]
+         [ 56  68  80  92]
+         [ 92 113 134 155]
+         [128 158 188 218]]
+
+
+    A_ = [0,1,2,3,4,5,6,7,8,9,10,11]
+    A = A_.reshape(4,3)
+    B = A_.reshape(4,3)
+    Here the einsum calculation is the same as normol 'eltwise_mult'
+    Res = einsum('ki,ki->ki',A,B)
+    >>> [[  0   1   4]
+         [  9  16  25]
+         [ 36  49  64]
+         [ 81 100 121]]
+
+
+    A = [0,1,2,3,4,5,6,7,8,9,10,11]
+    A = A.reshape(4,3)
+    Res = einsum('ki,kj->kij',A,A)
+    >>> [[[  0   0   0]
+          [  0   1   2]
+          [  0   2   4]]
+
+        [[  9  12  15]
+         [ 12  16  20]
+         [ 15  20  25]]
+
+        [[ 36  42  48]
+         [ 42  49  56]
+         [ 48  56  64]]
+
+        [[ 81  90  99]
+         [ 90 100 110]
+         [ 99 110 121]]]
+
+
+    A_ = [0,1,2,3,4,5,6,7,8,9,10,11]
+    A = A_.reshape(3,2,2)
+    Res = einsum('ki,kj->kij',A,A)
+    >>> [[[  1   3]
+          [  3  13]]
+
+         [[ 41  59]
+          [ 59  85]]
+
+         [[145 179]
+          [179 221]]]
+
     '''
 
 
     if len(ops) == 0:
         raise ValueError("No input operands")
 
+    if len(args) != 2:
+        raise ValueError("Currently only two operands are supported")
     # to get the input and output ops
     inputops, outputops = ops.split('->')
     inputops = inputops.split(',')
+
+    # to get the two input tensor
+    A = args[0]
+    B = args[1]
 
     if A.ndim != len(inputops[0]) or B.ndim != len(inputops[1]):
         raise ValueError("input dim doesn't match operands")

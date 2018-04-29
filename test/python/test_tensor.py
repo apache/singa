@@ -165,6 +165,18 @@ class TestTensorMethods(unittest.TestCase):
         b = tensor.to_numpy(t)
         self.assertEqual(np.sum(a-b), 0.)
 
+    def test_einsum(self):
+        a =  np.arange(12).reshape(3,2,2)
+        ta = tensor.from_numpy(a)
+        res1 = np.einsum('kij,kij->kij',a,a)
+        tres1 = tensor.einsum('kij,kij->kij',ta,ta)
+        res2 = np.einsum('kij,kih->kjh',a,a)
+        tres2 = tensor.einsum('kij,kih->kjh',ta,ta)
+
+        self.assertEqual(np.sum(tres1 - res1), 0.)
+        self.assertEqual(np.sum(tres2 - res2), 0.)
+
+
 
 if __name__ == '__main__':
     unittest.main()
