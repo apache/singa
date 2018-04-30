@@ -1,6 +1,8 @@
 from singa import tensor
 from singa import layer
 from singa.proto import model_pb2
+from singa import autograd
+
 
 
 def ctensor2numpy(x):
@@ -64,8 +66,6 @@ z= layer_1._do_backward(y.data)
 a=ctensor2numpy(y.data)
 
 
-
-
 class MaxPooling2D(tensor.Operation):
     def __init__(self, name, kernel=3, stride=2, border_mode='same', pad=None,
                  data_format='NCHW', input_sample_shape=None):
@@ -123,7 +123,7 @@ class Flatten(tensor.Operation):
 
     def __call__(self, x):
         if not self.PyLayer.has_setup:
-            self.PyLayer.setup(x.shape)
+            self.PyLayer.setup(x.shape[1:])
         return self._do_forward(x)
 
     def forward(self, x):
@@ -138,6 +138,38 @@ layer_1= Flatten('flatten')
 y= layer_1(x)[0]
 z= layer_1._do_backward(y.data)
 a=ctensor2numpy(y.data)
+
+
+inputs=tensor.Tensor(shape=(10, 2, 3, 3), requires_grad=False, stores_grad=False)
+inputs.gaussian(1,0)
+
+x = Convolution2D('conv',4)(inputs)[0]
+print(x.shape)
+
+x = MaxPooling2D('pooling')(x)[0]
+print(x.shape)
+
+x = Activation('relu')(x)[0]
+print(x.shape)
+
+x = Flatten('flatten')(x)[0]
+print(x.shape)
+
+w0 = tensor.Tensor(shape=(4, 10), requires_grad=True, stores_grad=True)
+w0.gaussian(0.0, 0.1)
+x = tensor.matmul(x, w0)
+print(x.shape)
+
+x = tensor.softmax(x)
+
+target=tensor.Tensor(shape=(10, 10), requires_grad=False, stores_grad=False)
+target.gaussian(0.0 ,0.1)
+loss = tensor.cross_entropy(x, target)
+
+grad=autograd.backward(loss)
+print(grad)
+
+
 
 
 
