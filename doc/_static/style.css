@@ -1,3 +1,6 @@
 .wy-nav-content {
     max-width: none;
 }
+.wy-nav-side {
+    padding-bottom:10em;
+}
