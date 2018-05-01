@@ -34,20 +34,24 @@ class Convolution2D(tensor.Operation):
                  data_format=data_format, use_bias=use_bias, W_specs=W_specs, b_specs=b_specs,
                  pad=pad, input_sample_shape=input_sample_shape)
 
+
     def __call__(self, x):
         if not self.PyLayer.has_setup:
             self.PyLayer.setup(x.shape[1:])
         param_data = self.PyLayer.layer.param_values()
+
+        if not hasattr(self, 'w'):
+            self.w = tensor.Tensor(data=param_data[0], requires_grad=True, stores_grad=True)
+            self.w.gaussian(0.0, 0.1)  # TODO realize other initialization method according to W_specs
+
+        xs = [x, self.w]
+
         if len(param_data) == 2:
-            w = tensor.Tensor(data=param_data[0], requires_grad=True, stores_grad=True)
-            b = tensor.Tensor(data=param_data[1], requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.1)
-            b.set_value(0.0)
-            xs = tuple([x, w, b])
-        else:
-            w = tensor.Tensor(data=param_data[0], requires_grad=True, stores_grad=True)
-            w.gaussian(0.0, 0.1)
-            xs = tuple([x, w])
+            self.b = tensor.Tensor(data=param_data[1], requires_grad=True, stores_grad=True)
+            self.b.set_value(0.0)  # TODO realize other initialization method according to b_specs
+            xs.append(self.b)
+
+        xs = tuple(xs)
         return self._do_forward(*xs)
 
     def forward(self, *xs):
@@ -56,14 +60,6 @@ class Convolution2D(tensor.Operation):
     def backward(self, dy):
         ret = self.PyLayer.layer.Backward(True, dy)
         return (ret[0],)+ret[1]
-
-
-x = tensor.Tensor(shape=(1, 1, 3, 3), requires_grad=True, stores_grad=True)
-x.gaussian(1,0.0)
-layer_1= Convolution2D('conv1',4)
-y= layer_1(x)[0]
-z= layer_1._do_backward(y.data)
-a=ctensor2numpy(y.data)
 
 
 class MaxPooling2D(tensor.Operation):
@@ -85,13 +81,6 @@ class MaxPooling2D(tensor.Operation):
     def backward(self, dy):
         return self.PyLayer.layer.Backward(True, dy)[0]   # how backward() return?
 
-x = tensor.Tensor(shape=(1, 1, 3, 3), requires_grad=True, stores_grad=True)
-x.gaussian(1,0.0)
-layer_1= MaxPooling2D('pooling1')
-y= layer_1(x)[0]
-z= layer_1._do_backward(y.data)
-a=ctensor2numpy(y.data)
-
 
 class Activation(tensor.Operation):
     def __init__(self,name, mode='relu',input_sample_shape=None):
@@ -109,14 +98,6 @@ class Activation(tensor.Operation):
         return self.PyLayer.layer.Backward(True, dy)[0]
 
 
-x = tensor.Tensor(shape=(1, 1, 3, 3), requires_grad=True, stores_grad=True)
-x.gaussian(-1,0.0)
-layer_1= Activation('relu1')
-y= layer_1(x)[0]
-z= layer_1._do_backward(y.data)
-a=ctensor2numpy(y.data)
-
-
 class Flatten(tensor.Operation):
     def __init__(self, name, axis=1, input_sample_shape=None):
         self.PyLayer = layer.Flatten(name, axis, input_sample_shape)
@@ -132,12 +113,12 @@ class Flatten(tensor.Operation):
     def backward(self, dy):
         return self.PyLayer.layer.Backward(True, dy)[0]
 
-x = tensor.Tensor(shape=(1, 1, 3, 3), requires_grad=True, stores_grad=True)
-x.gaussian(-1,0.0)
-layer_1= Flatten('flatten')
-y= layer_1(x)[0]
-z= layer_1._do_backward(y.data)
-a=ctensor2numpy(y.data)
+
+class Dense(tensor.Operation):
+    '''
+    Need to implemented?
+    '''
+    pass
 
 
 inputs=tensor.Tensor(shape=(10, 2, 3, 3), requires_grad=False, stores_grad=False)
