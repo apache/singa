@@ -646,21 +646,28 @@ size_t SwapGPU::GetAllocatedMem() {
 
 /// Allocate gpu memory.
 void* SwapGPU::Malloc(int size) {
-  /// planning
+  ///switch flag and do the planning.
   if (gc == globeCounter){
     asyncSwapFlag =1;
     //run();
     //TODO(juznhe) planning, now it's in test.
   }
+
+  if (asyncSwapFlag ==1){
+    //TODO(junzhe) do as scheduled, stored in Table_schedule.
+    //the schedule shall be refer to Table_meta.
+    //Table_schedule.find('') ! then do sth
+    //else return.
+  }
+
   ///test
   //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
   if (((gc+1)%300==0) && (asyncSwapFlag==0)){
-    cout<<"gc and GC before test: "<<gc<<' '<<globeCounter<<endl;
+    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<vec_block.size()<<endl;
     globeCounter = swap_test(vec_block,maxLen,location);
   }
 
   void* ptr = nullptr;
-  //cout<<"hello, SwapGPU."<<endl;
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Malloc((void**)&ptr, size);
@@ -673,10 +680,16 @@ void* SwapGPU::Malloc(int size) {
 
 /// Free gpu memory.
 void SwapGPU::Free(void* ptr) {
+  ///switch flag and do the planning.
+  if (gc == globeCounter){
+    asyncSwapFlag =1;
+    //run();
+    //TODO(juznhe) planning, now it's in test.
+  }
   ///test
   //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
   if (((gc+1)%300==0) && (asyncSwapFlag==0)){
-    cout<<"gc and GC before test: "<<gc<<' '<<globeCounter<<endl;
+    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<vec_block.size()<<endl;
     globeCounter = swap_test(vec_block,maxLen,location);
   }
 
@@ -684,18 +697,18 @@ void SwapGPU::Free(void* ptr) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Free(ptr);
   }
-  //push info
-  stringstream strm1;
-  strm1<<Table_data_block_.find(ptr)->second;;
-  string tempStr1 = strm1.str();
-  stringstream strm4;
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  strm4<<t2;
-  string tempStr4 = strm4.str();
-  string blockInfo ="Free "+tempStr1+" "+tempStr4;
-  vec_block.push_back(blockInfo);
-  //clean up Tables
-  Table_Meta.erase(Table_data_block_.find(ptr)->second);
+  // //push info
+  // stringstream strm1;
+  // strm1<<Table_data_block_.find(ptr)->second;;
+  // string tempStr1 = strm1.str();
+  // stringstream strm4;
+  // auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  // strm4<<t2;
+  // string tempStr4 = strm4.str();
+  // string blockInfo ="Free "+tempStr1+" "+tempStr4;
+  // vec_block.push_back(blockInfo);
+  //clean up Tables TODO(junzhe) can just remove.
+  Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
 
   gc++;
@@ -703,6 +716,7 @@ void SwapGPU::Free(void* ptr) {
 }
 
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
+  //make table and append vec_block.
   //this is only called once, right after Malloc. 
   //Hence the malloc info is pushed here.
   BlockMeta cpu,gpu;
@@ -711,7 +725,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   gpu.ptr = data_;
   pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
   //Make tables
-  Table_Meta[block_] = meta;
+  Table_meta[block_] = meta;
   Table_data_block_[data_]=block_; //table map data_block, for Free(). 
   //TODO(junzhe) update this table once data_ changed.
   //push info
@@ -737,8 +751,8 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
-  //void* data_ = Table_Meta.find(block_)->second.second.ptr;
-  return Table_Meta.find(block_)->second.second.ptr;
+  //void* data_ = Table_meta.find(block_)->second.second.ptr;
+  return Table_meta.find(block_)->second.second.ptr;
 }
 
 void SwapGPU::SwapOut(const Block* block_){
@@ -749,13 +763,13 @@ void SwapGPU::SwapOut(const Block* block_){
 		{	
 			//asynchrous here.
 			
-			size_t swapSize = Table_Meta.find(block_)->second.second.size;
+			size_t swapSize = Table_meta.find(block_)->second.second.size;
 			void* tempPtr;
 			cudaMallocHost(&tempPtr,swapSize); //pinned memory.
-			Table_Meta.find(block_)->second.first.ptr = tempPtr;
+			Table_meta.find(block_)->second.first.ptr = tempPtr;
 			BlockMeta cpu, gpu;
-			cpu = Table_Meta.find(block_)->second.first;
-			gpu = Table_Meta.find(block_)->second.second;
+			cpu = Table_meta.find(block_)->second.first;
+			gpu = Table_meta.find(block_)->second.second;
 			auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
 			cudaError_t err;
 			cudaStream_t stream1;
@@ -778,11 +792,11 @@ void SwapGPU::SwapOut(const Block* block_){
 		case (2) :{
 		  printf("A. to swapOut\n");
 		  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-		  size_t swapSize = Table_Meta.find(block_)->second.second.size;
-		  Table_Meta.find(block_)->second.first.ptr = malloc(swapSize);
+		  size_t swapSize = Table_meta.find(block_)->second.second.size;
+		  Table_meta.find(block_)->second.first.ptr = malloc(swapSize);
 		  BlockMeta cpu, gpu;
-		  cpu = Table_Meta.find(block_)->second.first;
-		  gpu = Table_Meta.find(block_)->second.second;
+		  cpu = Table_meta.find(block_)->second.first;
+		  gpu = Table_meta.find(block_)->second.second;
 		  cudaError_t err;
 		  cout<<"to Copy: "<<cpu.ptr<<' '<<gpu.ptr<<' '<<gpu.size<<endl;
 		  err=cudaMemcpy(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost);
@@ -798,7 +812,7 @@ void SwapGPU::SwapOut(const Block* block_){
 		  // //cout<<"before free: "<<data_<<endl;
 		  //without free here.
 		  //cudaFree(gpu.ptr); //TODO(junzhe) not able to free, work on it.
-		  //Table_Meta.find(block_)->second.second.ptr=nullptr;
+		  //Table_meta.find(block_)->second.second.ptr=nullptr;
 		  // //cout<<"after free: "<<data_<<endl;
 		  break;
 		}
@@ -820,21 +834,21 @@ void SwapGPU::SwapIn(const Block* block_){
 		  printf("1. to swapIn.\n");
 		  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
 		  BlockMeta cpu, gpu;
-		  cpu = Table_Meta.find(block_)->second.first;
-		  gpu = Table_Meta.find(block_)->second.second;
+		  cpu = Table_meta.find(block_)->second.first;
+		  gpu = Table_meta.find(block_)->second.second;
 		  //without free here.
 		  gpu.ptr=nullptr;
 		  cudaError_t status = cudaMalloc(&gpu.ptr, gpu.size);
 		  CHECK_EQ(status, cudaError_t::cudaSuccess);
 		  //update tables
-		  Table_Meta.find(block_)->second.second.ptr=gpu.ptr;
-		  //cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
+		  Table_meta.find(block_)->second.second.ptr=gpu.ptr;
+		  //cout<<"after alloc:1 "<<Table_meta.find(data_)->second.second.ptr<<endl;
 		  cudaError_t err;
 		  err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice);
 		  //printf("2. swapIn done.\n");
 		  free(cpu.ptr);
 		  //update tables
-		  Table_Meta.find(block_)->second.first.ptr=nullptr;
+		  Table_meta.find(block_)->second.first.ptr=nullptr;
 		  //
 		  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
 		  fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);

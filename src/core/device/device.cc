@@ -17,6 +17,9 @@
  */
 
 #include "singa/core/device.h"
+#include <chrono>
+#include <iostream>
+#include <fstream>
 
 namespace singa {
 Device::Device(int id, int num_executors)
@@ -38,7 +41,7 @@ Block* Device::NewBlock(int size) {
   if (size > 0) {
     void* ptr = Malloc(size);
     Block* block_ = new Block(ptr, size,0,this);
-    MakeMetaTable(block_,ptr,size);
+    MakeMetaTable(block_,ptr,size); // make table and append vec_block.
     return block_;
   } else {
     return nullptr;
@@ -49,6 +52,18 @@ Block* Device::NewBlock(int size) {
 void Device::FreeBlock(Block* block) {
   if (block != nullptr) {
     Free(block->mutable_data());
+    
+    //Add Append for free here.
+    stringstream strm1;
+    strm1<<block;
+    string tempStr1 = strm1.str();
+    stringstream strm4;
+    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    strm4<<t2;
+    string tempStr4 = strm4.str();
+    string blockInfo ="Free "+tempStr1+" "+tempStr4;
+    Append(blockInfo);
+
     delete block;
   }
 }

@@ -259,7 +259,7 @@ class SwapGPU : public Device {
 
  private:
   void Setup();
-  map<const Block*,pair<BlockMeta,BlockMeta>>Table_Meta;
+  map<const Block*,pair<BlockMeta,BlockMeta>>Table_meta;
   vector<string> vec_block;
   map<void*, const Block*>Table_data_block_; //for Free, info append.
   int asyncSwapFlag =0; //0 for sync, 1 for async.
