@@ -252,7 +252,7 @@ vector<onePieceMsg> strVec_2_pieceMsgVec(vector<string> vec, int &idxRange){
     for (int i=0;i<vec.size();i++) {
         vector<string> v = split(vec[i], " ");
         if (v[0]=="Malloc"){
-            //change v[2] from str to size_t
+            //convert v[2] from str to size_t
             size_t result;
             stringstream convert(v[2]);
             if (!(convert>>result)){
