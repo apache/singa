@@ -66,11 +66,11 @@ const void* Block::data() const {
         ptrDevice_->AppendInfo(temp);
     }
     //test async, with size 13107200.
-    if (size_ ==13107200){
-        std::cout<<"swap testing: to swap with size 13107200"<<std::endl;
-        ptrDevice_->SwapOutInfo(this);
-        std::cout<<"done"<<std::endl;
-    }
+    // if (size_ ==13107200){
+    //     std::cout<<"swap testing: to swap with size 13107200"<<std::endl;
+    //     ptrDevice_->SwapOutInfo(this);
+    //     std::cout<<"done"<<std::endl;
+    // }
     //update the real ptr, not able to assign to data_ as const function
     //void* data_2 = ptrDevice_->GetRealGpuPtrInfo(this);
     //TODO(junzhe) used for testing phase only.
