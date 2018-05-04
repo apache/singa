@@ -1354,4 +1354,4 @@ def get_layer_list():
     """ Return a list of strings which include the identifiers (tags) of all
     supported layers
     """
-    return singa_wrap.GetRegisteredLayers()
+    return [str(l) for l in singa_wrap.GetRegisteredLayers()]
