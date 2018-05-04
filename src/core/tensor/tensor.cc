@@ -1,4 +1,4 @@
-/**
+x/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -78,7 +78,7 @@ Tensor::Tensor(Tensor &&in)
 
 void Tensor::AppendLayer() const {
   stringstream strm;
-  strm<<block_->log_ptr();
+  strm<<block_;
   string tempStr = strm.str();
   stringstream strm4;
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();

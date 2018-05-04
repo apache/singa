@@ -663,7 +663,7 @@ void* SwapGPU::Malloc(int size) {
   ///test
   //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
   if (((gc+1)%300==0) && (asyncSwapFlag==0)){
-    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<vec_block.size()<<endl;
+    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
     globeCounter = swap_test(vec_block,maxLen,location);
   }
 
@@ -674,7 +674,7 @@ void* SwapGPU::Malloc(int size) {
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
-  gc++;
+  //gc++;
   return ptr;
 }
 
@@ -689,7 +689,7 @@ void SwapGPU::Free(void* ptr) {
   ///test
   //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
   if (((gc+1)%300==0) && (asyncSwapFlag==0)){
-    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<vec_block.size()<<endl;
+    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
     globeCounter = swap_test(vec_block,maxLen,location);
   }
 
@@ -711,7 +711,7 @@ void SwapGPU::Free(void* ptr) {
   Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
 
-  gc++;
+  //gc++;
   
 }
 
@@ -740,7 +740,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   strm4<<t2;
   string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4+" (data_&size)";
-  vec_block.push_back(blockInfo);
+  Append(blockInfo);
 }
 
 void SwapGPU::Append(string blockInfo){

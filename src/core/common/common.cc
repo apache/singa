@@ -31,12 +31,10 @@ void* Block::mutable_data() {
     //std::cout<<"mutable_data() "<<this<<std::endl;
     initialized_ = true;
     if (ptrDevice_!=nullptr){
+        //Append info.
         stringstream strm2;
         strm2<<this;
         string tempStr2 = strm2.str();
-        // stringstream strm3;
-        // strm3<<size_;
-        // string tempStr3 = strm3.str();
         stringstream strm4;
         auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
         strm4<<t2;
@@ -56,12 +54,10 @@ const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
     //std::cout<<"data() "<<this<<std::endl;
     if (ptrDevice_!=nullptr){
+        //Append info.
         stringstream strm2;
         strm2<<this;
         string tempStr2 = strm2.str();
-        // stringstream strm3;
-        // strm3<<size_;
-        // string tempStr3 = strm3.str();
         stringstream strm4;
         auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
         strm4<<t2;
@@ -69,7 +65,7 @@ const void* Block::data() const {
         string temp = "Read "+tempStr2+" "+tempStr4;
         ptrDevice_->AppendInfo(temp);
     }
-    //test async, with size  1228800 , 13107200
+    //test async, with size 13107200.
     if (size_ ==13107200){
         std::cout<<"swap testing: to swap with size 13107200"<<std::endl;
         ptrDevice_->SwapOutInfo(this);
@@ -86,6 +82,7 @@ const void* Block::data() const {
 
 const void* Block::log_ptr() const {
     return this;
+    //TODO(junzhe) was used in Tensor::AppendLayer, now in use any more.
 }
 
 
