@@ -670,12 +670,20 @@ void* SwapGPU::Malloc(int size) {
     //TODO(juznhe) planning, now it's in test.
   }
 
-  if (asyncSwapFlag ==1){
-    //TODO(junzhe) do as scheduled, stored in Table_schedule.
-    //the schedule shall be refer to Table_meta.
-    //Table_schedule.find('') ! then do sth
-    //else return.
+  ///swap as per schedule
+  int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
+  //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
+  if (asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_p2r.end())){
+    cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
+    if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
+      swapOut(std::get<0>(Table_sched.find(relative_gc)->second));
+      cout<<"swapOut - print from Malloc"<<endl;
+    } else {
+      swapIn(std::get<1>(Table_sched.find(relative_gc)->second));
+      cout<<"swapIn - print from Malloc"<<endl;
+    }
   }
+
 
   ///test
   //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
@@ -708,6 +716,20 @@ void SwapGPU::Free(void* ptr) {
   if (((gc+1)%300==0) && (asyncSwapFlag==0)){
     cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
     globeCounter = swap_test(vec_block,maxLen,location);
+  }
+
+  ///swap as per schedule
+  int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
+  //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
+  if (asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_p2r.end())){
+    cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
+    if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
+      swapOut(std::get<0>(Table_sched.find(relative_gc)->second));
+      cout<<"swapOut - print from Malloc"<<endl;
+    } else {
+      swapIn(std::get<1>(Table_sched.find(relative_gc)->second));
+      cout<<"swapIn - print from Malloc"<<endl;
+    }
   }
 
   if (ptr != nullptr) {
