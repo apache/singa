@@ -697,6 +697,8 @@ void SwapGPU::Free(void* ptr) {
   //clean up Tables
   Table_Meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
+
+  gc++;
   
 }
 
@@ -729,6 +731,9 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 
 void SwapGPU::Append(string blockInfo){
   vec_block.push_back(blockInfo);
+  //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
+  gc++;
+
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){

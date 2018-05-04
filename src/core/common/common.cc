@@ -71,7 +71,7 @@ const void* Block::data() const {
     }
     //test async, with size  1228800 , 13107200
     if (size_ ==13107200){
-        std::cout<<"to swap with size 13107200"<<std::endl;
+        std::cout<<"swap testing: to swap with size 13107200"<<std::endl;
         ptrDevice_->SwapOutInfo(this);
         std::cout<<"done"<<std::endl;
     }
