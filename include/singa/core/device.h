@@ -260,6 +260,7 @@ class SwapGPU : public Device {
  private:
   void Setup();
   map<const Block*,pair<BlockMeta,BlockMeta>>Table_meta;
+  map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   vector<string> vec_block;
   map<void*, const Block*>Table_data_block_; //for Free, info append.
   int asyncSwapFlag =0; //0 for sync, 1 for async.

@@ -25,6 +25,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <tuple>        // std::tuple, std::get, std::tie, std::ignore
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
 
@@ -388,7 +389,7 @@ void load_update(vector<double>& vec_load,int old_idx, int plusMinus, size_t siz
     }
 }
 
-int swap_test(vector<string>vec_block,int &maxLen, int &location){
+int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
   int idxRange =0;
   vector<onePieceMsg> vec_pieceMsg = swap_strVec_2_pieceMsgVec(vec_block,idxRange);
@@ -559,6 +560,16 @@ int swap_test(vector<string>vec_block,int &maxLen, int &location){
     }
     cout<<"total overhead: "<<overhead<<endl;
     cout<<"done"<<endl;
+    ///make the Table_sched
+    //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
+    for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
+        //for each selct block, i1 is start swapOut, i2p is start swapIn. junzhe on 5.4 
+        //TODO(junzhe) to verify above statement.
+        //TODO(junzhe) change str into block*
+        Block* tempBlock_ =nullptr;
+        Table_sched[vec_swap_selct[i].i1] = std::make_tuple(tempBlock_, vec_swap_selct[i].size,0);
+        Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(tempBlock_,vec_swap_selct[i].size,1);
+    }
 
   //update globeCounter below TODO(junzhe)
   return 0;
@@ -697,17 +708,7 @@ void SwapGPU::Free(void* ptr) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Free(ptr);
   }
-  // //push info
-  // stringstream strm1;
-  // strm1<<Table_data_block_.find(ptr)->second;;
-  // string tempStr1 = strm1.str();
-  // stringstream strm4;
-  // auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  // strm4<<t2;
-  // string tempStr4 = strm4.str();
-  // string blockInfo ="Free "+tempStr1+" "+tempStr4;
-  // vec_block.push_back(blockInfo);
-  //clean up Tables TODO(junzhe) can just remove.
+
   Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
 
