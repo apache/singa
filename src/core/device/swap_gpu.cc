@@ -679,7 +679,7 @@ void* SwapGPU::Malloc(int size) {
       SwapOut(std::get<0>(Table_sched.find(relative_gc)->second));
       cout<<"swapOut - print from Malloc"<<endl;
     } else {
-      SwapIn(std::get<1>(Table_sched.find(relative_gc)->second));
+      SwapIn(std::get<0>(Table_sched.find(relative_gc)->second));
       cout<<"swapIn - print from Malloc"<<endl;
     }
   }
@@ -727,7 +727,7 @@ void SwapGPU::Free(void* ptr) {
       SwapOut(std::get<0>(Table_sched.find(relative_gc)->second));
       cout<<"swapOut - print from Malloc"<<endl;
     } else {
-      SwapIn(std::get<1>(Table_sched.find(relative_gc)->second));
+      SwapIn(std::get<0>(Table_sched.find(relative_gc)->second));
       cout<<"swapIn - print from Malloc"<<endl;
     }
   }
