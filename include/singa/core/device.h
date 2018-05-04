@@ -252,6 +252,7 @@ class SwapGPU : public Device {
   /// Free cpu memory.
   void Free(void* ptr) override;
   void MakeMetaTable(Block* block,void* data_,int size) override;
+  int swap_test(vector<string>vec_block,int &maxLen, int &location);
   void Append(string blockInfo) override;
   void* GetRealGpuPtr(const Block* block_) override;
   void SwapOut(const Block* block_) override;
