@@ -566,7 +566,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         //for each selct block, i1 is start swapOut, i2p is start swapIn. junzhe on 5.4 
         //TODO(junzhe) to verify above statement.
         //convert str to Block*
-        Block* tempBlock_ =nullptr;
+        void* tempBlock_ =nullptr;
         stringstream convert(vec_swap_selct[i].ptr);
         if (!(convert>>tempBlock_)){
             cout<<"error for converting str to Block*."<<endl;
