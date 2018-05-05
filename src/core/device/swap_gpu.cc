@@ -574,24 +574,29 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     cout<<"total overhead: "<<overhead<<endl;
     cout<<"done"<<endl;
     ///make the Table_sched
-    //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
+    //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
     for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
         //for each selct block, i1 is start swapOut, i2p is start swapIn. junzhe on 5.4 
         //TODO(junzhe) to verify above statement.
-        //convert str to Block*
-        void* tempBlock_ =nullptr;
-        stringstream convert(vec_swap_selct[i].ptr);
-        if (!(convert>>tempBlock_)){
-            cout<<"error for converting str to Block*."<<endl;
-        }
-        Block* tempBlock_2 = static_cast<Block*>(tempBlock_);
-        Table_sched[vec_swap_selct[i].i1] = std::make_tuple(tempBlock_2, vec_swap_selct[i].size,0);
-        Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(tempBlock_2,vec_swap_selct[i].size,1);
+        Table_sched[vec_swap_selct[i].i1] = std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0);
+        Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
+        //init only, update at MakeTableMeta.
+        Table_Block_[vec_swap_selct[i].r_idx] = nullptr;
+
+        // //convert str to Block*
+        // void* tempBlock_ =nullptr;
+        // stringstream convert(vec_swap_selct[i].ptr);
+        // if (!(convert>>tempBlock_)){
+        //     cout<<"error for converting str to Block*."<<endl;
+        // }
+        // Block* tempBlock_2 = static_cast<Block*>(tempBlock_);
+        // Table_sched[vec_swap_selct[i].i1] = std::make_tuple(tempBlock_2, vec_swap_selct[i].size,0);
+        // Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(tempBlock_2,vec_swap_selct[i].size,1);
         cout<<"complete store: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<endl;
     }
 
-  //update globeCounter below TODO(junzhe)
-  return 0;
+  //update globeCounter
+  return gc+maxLen-(gc-location)%maxLen;
 }
 
 
@@ -690,16 +695,16 @@ void* SwapGPU::Malloc(int size) {
   //   cout<<"print relative_gc "<<relative_gc<<' '<<gc<<' '<<location<<' '<<maxLen<<endl;
   // }
   
-  if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
-    cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
-    if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
-      SwapOut(std::get<0>(Table_sched.find(relative_gc)->second));
-      cout<<"swapOut - print from Malloc"<<endl;
-    } else {
-      SwapIn(std::get<0>(Table_sched.find(relative_gc)->second));
-      cout<<"swapIn - print from Malloc"<<endl;
-    }
-  }
+  // if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
+  //   cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
+  //   if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
+  //     SwapOut(std::get<0>(Table_sched.find(relative_gc)->second));
+  //     cout<<"swapOut - print from Malloc"<<endl;
+  //   } else {
+  //     SwapIn(std::get<0>(Table_sched.find(relative_gc)->second));
+  //     cout<<"swapIn - print from Malloc"<<endl;
+  //   }
+  // }
 
 
   ///test
@@ -739,19 +744,19 @@ void SwapGPU::Free(void* ptr) {
     cout<<"done swap test, the impt params are: "<<maxLen<<' '<<location<<' '<<globeCounter<<' '<<(gc-location)%maxLen<<endl;
   }
 
-  ///swap as per schedule
-  int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
-  //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
-  if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
-    cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
-    if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
-      SwapOut(std::get<0>(Table_sched.find(relative_gc)->second));
-      cout<<"swapOut - print from Malloc"<<endl;
-    } else {
-      SwapIn(std::get<0>(Table_sched.find(relative_gc)->second));
-      cout<<"swapIn - print from Malloc"<<endl;
-    }
-  }
+  // ///swap as per schedule
+  // int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
+  // //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
+  // if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
+  //   cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
+  //   if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
+  //     SwapOut(std::get<0>(Table_sched.find(relative_gc)->second));
+  //     cout<<"swapOut - print from Malloc"<<endl;
+  //   } else {
+  //     SwapIn(std::get<0>(Table_sched.find(relative_gc)->second));
+  //     cout<<"swapIn - print from Malloc"<<endl;
+  //   }
+  // }
 
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
@@ -791,6 +796,9 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
+
+  //update Table_Block_
+  
 }
 
 void SwapGPU::Append(string blockInfo){
