@@ -581,7 +581,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Table_sched[vec_swap_selct[i].i1] = std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0);
         Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
         //init only, update at MakeTableMeta.
-        Table_Block_[vec_swap_selct[i].r_idx] = nullptr;
+        Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
 
         // //convert str to Block*
         // void* tempBlock_ =nullptr;
@@ -806,10 +806,18 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 
+  //Pay attention, here got problem TODO(junzhe) looks cannot duplciate block_.
   // //update Table_Block_, to reduce time complexity TODO(junzhe)
   // if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
   //     Table_Block_.at((gc-location)%maxLen) = block_;
   // }
+  if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
+      stringstream strm;
+      strm<<block_;
+
+      Table_Block_.at((gc-location)%maxLen) = strm1.str();
+  }
+  
 
 }
 
