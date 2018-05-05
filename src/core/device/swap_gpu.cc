@@ -730,11 +730,11 @@ void SwapGPU::Test_sched_switch_swap(){
     if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
       cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
       if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
-        int r_idx = std::get<0>(Table_sched.find(relative_gc)->second;
+        int r_idx = std::get<0>(Table_sched.find(relative_gc)->second);
         SwapOut(Table_Block_.find(r_idx)->second);
         cout<<"swapOut - print from Malloc"<<endl;
       } else {
-        int r_idx = std::get<0>(Table_sched.find(relative_gc)->second;
+        int r_idx = std::get<0>(Table_sched.find(relative_gc)->second);
         SwapIn(Table_Block_.find(r_idx)->second);
         cout<<"swapIn - print from Malloc"<<endl;
       }
@@ -771,7 +771,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 
   //update Block_, to reduce time complexity TODO(junzhe); verify syntax.
   if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
-    Table_Block_.at(gc-location)%maxLen) = block_;
+    Table_Block_.at((gc-location)%maxLen) = block_;
   }
 
 }
