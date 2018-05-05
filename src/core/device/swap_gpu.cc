@@ -401,10 +401,21 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   repPatternDetector(vec_rep,maxLen,location);
   cout<<"maxLen and location are: "<<maxLen<<' '<<location<<endl;
   cout<<"test rep"<<endl;
-  //TODO(junzhe) Note here location not exactly start of one iteration.
+  //Note here location not exactly start of one iteration, adjust to nearly start of one by restricting "Malloc"
+  int shift_counter =0;
+  for (int i=0;i<maxLen;i++){
+    if (vec_pieceMsg[location+i].MallocFree ==1) {
+      shift_counter = i; 
+      break;
+    } 
+  }
+  location =location+shift_counter;
+  cout<<"shift_counter is "<<shift_counter<<endl;
+  cout<<"location changed to "<<location<<endl;
+
   if (maxLen<100) {return -1;}
   //TODO(junzhe) below belong to run() section
-  ///cut into one iteration,
+  ///cut into one iteration.
   sort(vec_pieceMsg.begin(),vec_pieceMsg.end(),less_than_Idx());
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+maxLen]);
   cout<<"time for one itr: "<<vec_run[vec_run.size()-1].t-vec_run[0].t<<endl;
@@ -776,7 +787,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   strm4<<t2;
   string tempStr4 = strm4.str();
-  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4+" (data_&size)";
+  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 }
 
