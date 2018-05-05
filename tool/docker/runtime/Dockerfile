@@ -27,7 +27,7 @@ RUN apt-get update \
     && apt-get clean && apt-get autoremove && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 RUN bash miniconda.sh -b -p /root/miniconda
 ENV PATH /root/miniconda/bin:${PATH}
 RUN conda config --set always_yes yes --set changeps1 no

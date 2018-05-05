@@ -15,34 +15,19 @@
 # limitations under the License.
 #
 
-# if no env var (i.e., token), then do normal build and test;
-# otherwise use conda to build and package
-if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
+
+# install miniconda
+if [[ "$TRAVIS_OS_NAME" == "linux" ]];
 then
-  if [[ "$TRAVIS_OS_NAME" == "linux" ]];
-  then
-    echo "nothing to install"
-#    sudo apt-get -qq update;
-#    sudo apt-get -qq -y install libopenblas-dev libprotobuf-dev protobuf-compiler;
-  else
-    brew update;
-    # brew tap homebrew/science;
-    brew install openblas protobuf;
-  fi
+  wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 else
-  # install miniconda
-  if [[ "$TRAVIS_OS_NAME" == "linux" ]];
-  then
-    wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-  else
-    wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh;
-  fi
-  bash miniconda.sh -b -p $HOME/miniconda
-  export PATH="$HOME/miniconda/bin:$PATH"
-  hash -r
-  conda config --set always_yes yes --set changeps1 no
-  conda update -q conda
-  conda install conda-build
-  conda install anaconda-client
-  conda config --add channels conda-forge
+  wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
 fi
+bash miniconda.sh -b -p $HOME/miniconda
+export PATH="$HOME/miniconda/bin:$PATH"
+hash -r
+conda config --set always_yes yes --set changeps1 no
+conda update -q conda
+conda install conda-build
+conda install anaconda-client
+conda config --add channels conda-forge
