@@ -690,6 +690,7 @@ void* SwapGPU::Malloc(int size) {
   if (((gc+1)%300==0) && (asyncSwapFlag==0)){
     cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
     globeCounter = swap_test(vec_block,maxLen,location);
+    cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
   }
 
   void* ptr = nullptr;
