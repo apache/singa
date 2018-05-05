@@ -687,9 +687,9 @@ void* SwapGPU::Malloc(int size) {
     //run();
     //TODO(juznhe) planning, now it's in test.
   }
-
+  Test_sched_switch_swap();
   ///swap as per schedule
-  int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
+  //int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
   //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   // if ((gc+1)%100 ==0 && (asyncSwapFlag ==1)) {
   //   cout<<"print relative_gc "<<relative_gc<<' '<<gc<<' '<<location<<' '<<maxLen<<endl;
@@ -743,7 +743,7 @@ void SwapGPU::Free(void* ptr) {
     cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
     cout<<"done swap test, the impt params are: "<<maxLen<<' '<<location<<' '<<globeCounter<<' '<<(gc-location)%maxLen<<endl;
   }
-
+  Test_sched_switch_swap();
   // ///swap as per schedule
   // int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
   // //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
@@ -768,6 +768,15 @@ void SwapGPU::Free(void* ptr) {
 
   //gc++;
   
+}
+
+void SwapGPU::Test_sched_switch_swap(){
+  /*
+    do Test_sched_switch_swap during Malloc and Free.
+  */
+
+
+
 }
 
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
@@ -797,8 +806,11 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 
-  //update Table_Block_
-  
+  //update Table_Block_, to reduce time complexity TODO(junzhe)
+  if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
+      Table_Block_.find((gc-location)%maxLen) = block_;
+  }
+
 }
 
 void SwapGPU::Append(string blockInfo){
