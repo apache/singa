@@ -673,7 +673,10 @@ void* SwapGPU::Malloc(int size) {
   ///swap as per schedule
   int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
   //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
-  cout<<"print relative_gc "<<relative_gc<<' '<<gc<<' '<<location<<' '<<maxLen<<endl;
+  if ((gc+1)%100 ==0 && (asyncSwapFlag ==1)) {
+    cout<<"print relative_gc "<<relative_gc<<' '<<gc<<' '<<location<<' '<<maxLen<<endl;
+  }
+  
   if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
     cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
     if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
