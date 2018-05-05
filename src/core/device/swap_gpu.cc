@@ -404,10 +404,12 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   //Note here location not exactly start of one iteration, adjust to nearly start of one by restricting "Malloc"
   int shift_counter =0;
   for (int i=0;i<maxLen;i++){
-    if (vec_pieceMsg[location+i].MallocFree ==1) {
+    vector<string> v = swap_split(vec_block[i], " ");
+    if (v[0]=="Malloc"){
       shift_counter = i; 
       break;
-    } 
+    }
+
   }
   location =location+shift_counter;
   cout<<"shift_counter is "<<shift_counter<<endl;
