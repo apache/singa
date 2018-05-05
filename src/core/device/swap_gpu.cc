@@ -808,7 +808,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 
   //update Table_Block_, to reduce time complexity TODO(junzhe)
   if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
-      Table_Block_.find((gc-location)%maxLen) = block_;
+      Table_Block_.at((gc-location)%maxLen) = block_;
   }
 
 }
