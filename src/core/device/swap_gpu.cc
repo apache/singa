@@ -769,9 +769,9 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 
-  //update Block_, to reduce time complexity TODO(junzhe)
+  //update Block_, to reduce time complexity TODO(junzhe); verify syntax.
   if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
-    Table_Block_.find((gc-location)%maxLen) = block_;
+    Table_Block_.at(gc-location)%maxLen) = block_;
   }
 
 }
