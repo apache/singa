@@ -574,7 +574,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Block* tempBlock_2 = static_cast<Block*>(tempBlock_);
         Table_sched[vec_swap_selct[i].i1] = std::make_tuple(tempBlock_2, vec_swap_selct[i].size,0);
         Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(tempBlock_2,vec_swap_selct[i].size,1);
-        cout<<"complete converting and storing "<<i<<endl;
+        cout<<"complete store: "<<Table_sched[vec_swap_selct[i].i1]<<' '<<Table_sched[vec_swap_selct[i].i1p]<<endl;
     }
 
   //update globeCounter below TODO(junzhe)
