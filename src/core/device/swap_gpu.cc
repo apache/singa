@@ -588,7 +588,7 @@ SwapGPU::~SwapGPU() {
   //print out push-info
   fstream file_block1("blockInfo.text", ios::in|ios::out|ios::app);
   for (int i=0; i< vec_block.size();i++){
-      file_block1<<vec_block[i]<<endl;
+      file_block1<<i<<' '<<vec_block[i]<<endl;
   }
   //main body
   if (ctx_.cublas_handle) CUBLAS_CHECK(cublasDestroy(ctx_.cublas_handle));
