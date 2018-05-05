@@ -28,7 +28,7 @@
 namespace singa {
 
 void* Block::mutable_data() {
-    std::cout<<"to mutable_data() "<<this<<std::endl;
+    //std::cout<<"mutable_data() "<<this<<std::endl;
     initialized_ = true;
     if (ptrDevice_!=nullptr){
         //Append info.
@@ -46,14 +46,13 @@ void* Block::mutable_data() {
     //ptrDevice_->SwapOutInfo(this);
     //ptrDevice_->SwapInInfo(this);
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
-    std::cout<<"done mutable_data() "<<this<<std::endl;
     return static_cast<char*>(data_) + offset_;
   }
 
 
 const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
-    std::cout<<"to data() "<<this<<std::endl;
+    //std::cout<<"data() "<<this<<std::endl;
     if (ptrDevice_!=nullptr){
         //Append info.
         stringstream strm2;
@@ -78,7 +77,6 @@ const void* Block::data() const {
     //ptrDevice_->SwapOutInfo(this);
     //ptrDevice_->SwapInInfo(this);
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
-    std::cout<<"done data() "<<this<<std::endl;
     return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
   }
 
