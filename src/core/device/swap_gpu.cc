@@ -778,12 +778,12 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   // if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
   //     Table_Block_.at((gc-location)%maxLen) = block_;
   // }
-  if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
-      // stringstream strm;
-      // strm<<block_;
+  // if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
+  //     // stringstream strm;
+  //     // strm<<block_;
 
-      // Table_Block_.at((gc-location)%maxLen) = strm1.str();
-  }
+  //     // Table_Block_.at((gc-location)%maxLen) = strm1.str();
+  // }
   
 
 }
