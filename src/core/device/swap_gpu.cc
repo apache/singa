@@ -574,7 +574,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Block* tempBlock_2 = static_cast<Block*>(tempBlock_);
         Table_sched[vec_swap_selct[i].i1] = std::make_tuple(tempBlock_2, vec_swap_selct[i].size,0);
         Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(tempBlock_2,vec_swap_selct[i].size,1);
-        cout<<"complete store: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
+        cout<<"complete store: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<endl;
     }
 
   //update globeCounter below TODO(junzhe)
@@ -673,9 +673,9 @@ void* SwapGPU::Malloc(int size) {
   ///swap as per schedule
   int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
   //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
-  if ((gc+1)%100 ==0 && (asyncSwapFlag ==1)) {
-    cout<<"print relative_gc "<<relative_gc<<' '<<gc<<' '<<location<<' '<<maxLen<<endl;
-  }
+  // if ((gc+1)%100 ==0 && (asyncSwapFlag ==1)) {
+  //   cout<<"print relative_gc "<<relative_gc<<' '<<gc<<' '<<location<<' '<<maxLen<<endl;
+  // }
   
   if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
     cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
