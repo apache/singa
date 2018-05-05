@@ -681,40 +681,8 @@ size_t SwapGPU::GetAllocatedMem() {
 
 /// Allocate gpu memory.
 void* SwapGPU::Malloc(int size) {
-  ///switch flag and do the planning.
-  if (gc == globeCounter){
-    asyncSwapFlag =1;
-    //run();
-    //TODO(juznhe) planning, now it's in test.
-  }
+
   Test_sched_switch_swap();
-  ///swap as per schedule
-  //int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
-  //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
-  // if ((gc+1)%100 ==0 && (asyncSwapFlag ==1)) {
-  //   cout<<"print relative_gc "<<relative_gc<<' '<<gc<<' '<<location<<' '<<maxLen<<endl;
-  // }
-  
-  // if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
-  //   cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
-  //   if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
-  //     SwapOut(std::get<0>(Table_sched.find(relative_gc)->second));
-  //     cout<<"swapOut - print from Malloc"<<endl;
-  //   } else {
-  //     SwapIn(std::get<0>(Table_sched.find(relative_gc)->second));
-  //     cout<<"swapIn - print from Malloc"<<endl;
-  //   }
-  // }
-
-
-  ///test
-  //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
-  if (((gc+1)%300==0) && (asyncSwapFlag==0)){
-    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
-    globeCounter = swap_test(vec_block,maxLen,location);
-    cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
-    cout<<"done swap test, the impt params are: "<<maxLen<<' '<<location<<' '<<globeCounter<<' '<<(gc-location)%maxLen<<endl;
-  }
 
   void* ptr = nullptr;
   if (size > 0) {
@@ -723,40 +691,13 @@ void* SwapGPU::Malloc(int size) {
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
-  //gc++;
   return ptr;
 }
 
 /// Free gpu memory.
 void SwapGPU::Free(void* ptr) {
-  ///switch flag and do the planning.
-  if (gc == globeCounter){
-    asyncSwapFlag =1;
-    //run();
-    //TODO(juznhe) planning, now it's in test.
-  }
-  ///test
-  //if (((gc+1)%300==0) && (asyncSwapFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
-  if (((gc+1)%300==0) && (asyncSwapFlag==0)){
-    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
-    globeCounter = swap_test(vec_block,maxLen,location);
-    cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
-    cout<<"done swap test, the impt params are: "<<maxLen<<' '<<location<<' '<<globeCounter<<' '<<(gc-location)%maxLen<<endl;
-  }
+
   Test_sched_switch_swap();
-  // ///swap as per schedule
-  // int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
-  // //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
-  // if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
-  //   cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
-  //   if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
-  //     SwapOut(std::get<0>(Table_sched.find(relative_gc)->second));
-  //     cout<<"swapOut - print from Malloc"<<endl;
-  //   } else {
-  //     SwapIn(std::get<0>(Table_sched.find(relative_gc)->second));
-  //     cout<<"swapIn - print from Malloc"<<endl;
-  //   }
-  // }
 
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
@@ -765,8 +706,6 @@ void SwapGPU::Free(void* ptr) {
 
   Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
-
-  //gc++;
   
 }
 
@@ -774,8 +713,36 @@ void SwapGPU::Test_sched_switch_swap(){
   /*
     do Test_sched_switch_swap during Malloc and Free.
   */
+  ///test & schedule
+ if (((gc+1)%300==0) && (asyncSwapFlag==0)){
+   //TODO(junzhe) not lean, chances are globeCounter found more than 300 idx ago: redudant test.
+   cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
+   globeCounter = swap_test(vec_block,maxLen,location);
+   cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
+   cout<<"done swap test, the impt params are: "<<maxLen<<' '<<location<<' '<<globeCounter<<' '<<(gc-location)%maxLen<<endl;
+ }
+
+ ///switch flag;
+ if (gc == globeCounter){
+   asyncSwapFlag =1;
+ }
 
 
+//  ///swap as per schedule
+//     int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
+//     //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
+//     if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
+//       cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
+//       if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
+//         int r_idx = std::get<0>(Table_sched.find(relative_gc)->second;
+//         SwapOut(Table_Block_.find(r_idx)->second);
+//         cout<<"swapOut - print from Malloc"<<endl;
+//       } else {
+//         int r_idx = std::get<0>(Table_sched.find(relative_gc)->second;
+//         SwapIn(Table_Block_.find(r_idx)->second);
+//         cout<<"swapIn - print from Malloc"<<endl;
+//       }
+//     }
 
 }
 
@@ -812,10 +779,10 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   //     Table_Block_.at((gc-location)%maxLen) = block_;
   // }
   if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
-      stringstream strm;
-      strm<<block_;
+      // stringstream strm;
+      // strm<<block_;
 
-      Table_Block_.at((gc-location)%maxLen) = strm1.str();
+      // Table_Block_.at((gc-location)%maxLen) = strm1.str();
   }
   
 
