@@ -31,17 +31,15 @@ export CONDA_BLD_PATH=~/conda-bld-$suffix
 mkdir $CONDA_BLD_PATH
 
 conda build tool/conda/ --python 3.6
+conda install --use-local singa
+cd test/python
+python run.py
 
 if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
   # install and run unittest
 then
-  conda install --use-local
-  cd test/python
-  python run.py
+  echo "no uploading if ANACONDA_UPLOAD_TOKEN not set"
 else
-  conda install --use-local
-  cd test/python
-  python run.py
   # turn off debug to hide the token in travis log
   set +x
   # upload the package onto anaconda cloud

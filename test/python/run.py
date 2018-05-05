@@ -22,8 +22,6 @@ import xmlrunner
 loader = unittest.TestLoader()
 tests = loader.discover('.')
 # testRunner = unittest.runner.TextTestRunner()
-with open('unittest.xml', 'wb') as output:
-    testRunner = xmlrunner.XMLTestRunner(output=output,
-                                         failfast=False,
-                                         buffer=False)
+with open('unittest.xml', 'w') as output:
+    testRunner = xmlrunner.XMLTestRunner(output=output)
     testRunner.run(tests)
