@@ -680,7 +680,8 @@ size_t SwapGPU::GetAllocatedMem() {
 
 /// Allocate gpu memory.
 void* SwapGPU::Malloc(int size) {
-  Test_sched_switch_swap();
+  cout<<"to do Malloc"<<endl;
+  //Test_sched_switch_swap();
 
   void* ptr = nullptr;
   if (size > 0) {
@@ -694,7 +695,8 @@ void* SwapGPU::Malloc(int size) {
 
 /// Free gpu memory.
 void SwapGPU::Free(void* ptr) {
-  Test_sched_switch_swap();
+  cout<<"to do Free"<<endl;
+  //Test_sched_switch_swap();
 
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
