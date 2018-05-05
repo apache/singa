@@ -690,6 +690,8 @@ void* SwapGPU::Malloc(int size) {
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
+
+  cout<<"done Malloc"<<endl;
   return ptr;
 }
 
@@ -702,9 +704,10 @@ void SwapGPU::Free(void* ptr) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Free(ptr);
   }
-  //TODO(junzhe) verify it needed.
+  //TODO(junzhe) verify if needed.
   Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr); 
+  cout<<"done Free"<<endl;
 }
 
 void SwapGPU::Test_sched_switch_swap(){
