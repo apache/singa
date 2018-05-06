@@ -582,6 +582,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
         //init only, update at MakeTableMeta.
         Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
+        Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
 
         // //convert str to Block*
         // void* tempBlock_ =nullptr;
@@ -784,6 +785,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
     stringstream strm;
     strm<<block_;
     Table_Block_.at((gc-location)%maxLen) = strm.str();
+    Table_Block_ptr.at((gc-location)%maxLen) = block_;
   }
 
 
