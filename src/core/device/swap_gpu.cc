@@ -784,8 +784,8 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   // if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
   //     Table_Block_.at((gc-location)%maxLen) = block_;
   // }
-  int relative_gc = (gc-location)%maxLen;
-  vec_Block_[relative_gc] = "helloWorld";
+  // int relative_gc = (gc-location)%maxLen;
+  // vec_Block_[relative_gc] = "helloWorld";
 
 }
 
