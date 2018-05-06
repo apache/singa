@@ -310,6 +310,8 @@ unit tests file named "test_singa" in the project binary folder.
 If you get errors when running test_singa.exe due to libglog.dll/libopenblas.dll missing,
 just copy the dll files into the same folder as test_singa.exe
 
+Instructions for building on Windows with Python support can be found [here](install_win.html).
+
 ## FAQ
 
 * Q: Error from 'import singa' using PySINGA installed from wheel.
