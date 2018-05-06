@@ -721,7 +721,7 @@ void SwapGPU::Test_sched_switch_swap(){
    cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
    cout<<"done swap test, the impt params are: "<<maxLen<<' '<<location<<' '<<globeCounter<<' '<<(gc-location)%maxLen<<endl;
    if (maxLen>100) {
-    //make vec_Block_
+    //make vec_Block_ TODO(junzhe) can remove
     for (int i=0; i<maxLen;i++){
       vec_Block_.push_back("nullptr");
     }
@@ -780,10 +780,13 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   Append(blockInfo);
 
   //Pay attention, here got problem TODO(junzhe) looks cannot duplciate block_.
+  if ((asyncSwapFlag ==1) && (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end()))){
+    Table_Block_.at((gc-location)%maxLen) = "helloWorld";
+  }
   // //update Table_Block_, to reduce time complexity TODO(junzhe)
-  // if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
-  //     Table_Block_.at((gc-location)%maxLen) = block_;
-  // }
+  // if {
+  //     
+    //   
   // int relative_gc = (gc-location)%maxLen;
   // vec_Block_[relative_gc] = "helloWorld";
 
