@@ -720,6 +720,12 @@ void SwapGPU::Test_sched_switch_swap(){
    globeCounter = swap_test(vec_block,maxLen,location);
    cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
    cout<<"done swap test, the impt params are: "<<maxLen<<' '<<location<<' '<<globeCounter<<' '<<(gc-location)%maxLen<<endl;
+   if (maxLen>100) {
+    //make vec_Block_
+    for (int i=0; i<maxLen;i++){
+      vec_Block_.push_back("nullptr");
+    }
+   }
  }
 
  ///switch flag;
@@ -778,15 +784,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   // if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
   //     Table_Block_.at((gc-location)%maxLen) = block_;
   // }
-  int i=0;
-  if (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end())){
-      i =1;
-      // stringstream strm;
-      // strm<<block_;
-
-      // Table_Block_.at((gc-location)%maxLen) = strm1.str();
-  }
-  
+  vec_Block_[(gc-location)%maxLen] = "helloWorld";
 
 }
 

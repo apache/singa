@@ -265,6 +265,7 @@ class SwapGPU : public Device {
   //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   map<int,std::tuple<int,size_t,int>>Table_sched; //schedule: idx--> r_idx,size,dir. int 0 means D2H, 1 means H2D.
   map<int, string>Table_Block_; //as Block* changes every iteration. r_idx --> Block_
+  vector<string>vec_Block_; //replace Table_Block_
   vector<string> vec_block;
   map<void*, const Block*>Table_data_block_; //for Free, info append.
   int asyncSwapFlag =0; //0 for sync, 1 for async.
