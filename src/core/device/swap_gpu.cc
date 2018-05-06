@@ -734,22 +734,21 @@ void SwapGPU::Test_sched_switch_swap(){
    asyncSwapFlag =1;
  }
 
-
-//  ///swap as per schedule
-//     int relative_gc = (gc-location)%maxLen; //TODO(junzhe) verify it.
-//     //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
-//     if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
-//       cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
-//       if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
-//         int r_idx = std::get<0>(Table_sched.find(relative_gc)->second;
-//         SwapOut(Table_Block_.find(r_idx)->second);
-//         cout<<"swapOut - print from Malloc"<<endl;
-//       } else {
-//         int r_idx = std::get<0>(Table_sched.find(relative_gc)->second;
-//         SwapIn(Table_Block_.find(r_idx)->second);
-//         cout<<"swapIn - print from Malloc"<<endl;
-//       }
-//     }
+ ///swap as per schedule
+  int relative_gc = (gc-location)%maxLen; //verified
+  //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
+  if ((asyncSwapFlag ==1) && (!(Table_sched.find(relative_gc)==Table_sched.end()))){
+    cout<<"std::get<2>(Table_sched.find(relative_gc)->second) "<<std::get<2>(Table_sched.find(relative_gc)->second)<<endl;
+    if (std::get<2>(Table_sched.find(relative_gc)->second) == 0) {
+      int r_idx = std::get<0>(Table_sched.find(relative_gc)->second;
+      SwapOut(Table_Block_ptr.find(r_idx)->second);
+      cout<<"swapOut - print from Malloc"<<endl;
+    } else {
+      int r_idx = std::get<0>(Table_sched.find(relative_gc)->second;
+      SwapIn(Table_Block_ptr.find(r_idx)->second);
+      cout<<"swapIn - print from Malloc"<<endl;
+    }
+  }
 
 }
 
@@ -781,7 +780,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   Append(blockInfo);
 
   //Pay attention, here got problem TODO(junzhe) looks cannot duplciate block_.
-  if ((asyncSwapFlag ==1) && (!(Table_Block_.find((gc-location)%maxLen)==Table_Block_.end()))){
+  if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find((gc-location)%maxLen)==Table_Block_ptr.end()))){
     stringstream strm;
     strm<<block_;
     Table_Block_.at((gc-location)%maxLen) = strm.str();
