@@ -36,7 +36,6 @@ requirements:
     - flask-cors >=3.0.2
     - pillow >=2.3.0
     - future >=0.16.0
-    - xmlrunner 1.7.7 
 
 test:
   source_files:

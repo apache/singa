@@ -17,10 +17,10 @@
 #
 
 import unittest
-import xmlrunner
+# import xmlrunner
 
 loader = unittest.TestLoader()
 tests = loader.discover('.')
-# testRunner = unittest.runner.TextTestRunner()
-testRunner = xmlrunner.XMLTestRunner(output='unittest.xml')
+testRunner = unittest.runner.TextTestRunner()
+# testRunner = xmlrunner.XMLTestRunner(output='.')
 testRunner.run(tests)
