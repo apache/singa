@@ -1,8 +1,9 @@
 import numpy as np
-from singa import convolution_operation as layer_ops
+
 from singa import tensor
 from singa import autograd
 from singa import optimizer
+
 
 
 def load_data(path):
@@ -51,7 +52,6 @@ if __name__ == '__main__':
     epochs = 1
 
     sgd = optimizer.SGD(0.05)
-    #opt = optimizer.SGD(momentum=0.9, weight_decay=1e-4)
 
     train,test=load_data('/Users/wanqixue/Downloads/mnist.npz')
     x_train=preprocess(train[0])
@@ -59,31 +59,22 @@ if __name__ == '__main__':
 
     x_test=preprocess(test[0])
     y_test=to_categorical(test[1],num_classes)
-    print 'the shape of training data is',x_train.shape
-    print 'the shape of training label is',y_train.shape
-    print 'the shape of testing data is', x_test.shape
-    print 'the shape of testing label is', y_test.shape
+    print ('the shape of training data is',x_train.shape)
+    print ('the shape of training label is',y_train.shape)
+    print ('the shape of testing data is', x_test.shape)
+    print ('the shape of testing label is', y_test.shape)
 
+    # operations initialization
+    conv1=autograd.Conv2d(3,32)
+    relu1 = autograd.ReLU_Layer()  # same name for tensor.ReLU and layer_ops.ReLU
+    conv2=autograd.Conv2d(32,32)
+    relu2 = autograd.ReLU_Layer()
+    pooling = autograd.MaxPool2d()
+    flatten = autograd.Flatten()
+    linear = autograd.Linear(None, 10)  # in_feature=None for input_shape auto calculation
+    softmax = autograd.SoftMax()
+    cross_entropy = autograd.CrossEntropy()
 
-    conv1=layer_ops.Convolution2D('conv1',32,3,1,border_mode='same')
-    conv2=layer_ops.Convolution2D('conv2',32,3,1,border_mode='same')
-
-    #operations can create when call
-    relu1=layer_ops.Activation('relu1')
-    relu2 = layer_ops.Activation('relu2')
-    pooling= layer_ops.MaxPooling2D('pooling',3,1,border_mode='same')
-    flatten=layer_ops.Flatten('flatten')
-    matmul=tensor.Matmul()
-    add_bias=tensor.AddBias()
-    softmax=tensor.SoftMax()
-    cross_entropy=tensor.CrossEntropy()
-    #avoid repeat create operations
-
-    w = tensor.Tensor(shape=(25088, 10), requires_grad=True, stores_grad=True) #package a dense layer to calculate the shape automatically
-    w.gaussian(0.0, 0.1)
-
-    b = tensor.Tensor(shape=(1, 10), requires_grad=True, stores_grad=True)
-    b.set_value(0.0)
 
     def forward(x,t):
         y=conv1(x)[0]
@@ -92,25 +83,22 @@ if __name__ == '__main__':
         y=relu2(y)[0]
         y=pooling(y)[0]
         y=flatten(y)[0]
-        y=matmul(y,w)[0]
-        y=add_bias(y,b)[0]
+        y=linear(y)[0]
         y=softmax(y)[0]
-        loss=cross_entropy(y,t)[0]
+        loss=cross_entropy(y, t)[0]
         return loss, y
 
     for epoch in range(epochs):
-        #for i in range(batch_number):
-        for i in range(50):
+        for i in range(16):
             inputs = tensor.Tensor(data=x_train[i * 100:(1 + i) * 100, :], requires_grad=False, stores_grad=False)
             targets = tensor.Tensor(data=y_train[i * 100:(1 + i) * 100, :], requires_grad=False, stores_grad=False)
-            loss, y = forward(inputs,targets)
+            loss, y = forward(inputs, targets)
 
-            accuracy_rate = accuracy(tensor.ctensor2numpy(y.data),tensor.ctensor2numpy(targets.data))
+            accuracy_rate = accuracy(autograd.ctensor2numpy(y.data),autograd.ctensor2numpy(targets.data))
             if (i % 5 == 0):
-                print 'accuracy is:', accuracy_rate,'loss is:', tensor.ctensor2numpy(loss.data)[0]
+                print('accuracy is:', accuracy_rate,'loss is:', autograd.ctensor2numpy(loss.data)[0])
 
             in_grads = autograd.backward(loss)
 
             for param in in_grads:
                 sgd.apply(0, in_grads[param], param, '')
-
