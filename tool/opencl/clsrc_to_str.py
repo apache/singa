@@ -57,6 +57,7 @@ if __name__ == "__main__":
  */
 """
         fout.write(license)
+		fout.write("#ifdef USE_OPENCL\n\n")
         fout.write("#include <string>\n\n")
         fout.write("namespace singa {\n namespace opencl {\n")
         for name, path in iteritems(files):
@@ -69,5 +70,6 @@ if __name__ == "__main__":
                 fout.write("const std::string " + name + " = \"")
                 fout.write(src)
                 fout.write("\";")
-        fout.write("\n } //  namespace opencl \n} //  namespace singa")
+        fout.write("\n } //  namespace opencl \n} //  namespace singa\n\n")
+		fout.write("#endif")
         fout.close()
