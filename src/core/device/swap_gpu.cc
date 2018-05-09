@@ -729,7 +729,7 @@ void SwapGPU::Test_sched_switch_swap(){
  }
 
  ///swap as per schedule
-  int (gc-location)%maxLen = (gc-location)%maxLen; //verified
+  int relative_gc = (gc-location)%maxLen; //verified
   //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   if ((asyncSwapFlag ==1) && (!(Table_sched.find((gc-location)%maxLen)==Table_sched.end()))){
     cout<<"std::get<2>(Table_sched.find((gc-location)%maxLen)->second) "<<std::get<2>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
