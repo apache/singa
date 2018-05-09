@@ -277,6 +277,9 @@ class SwapGPU : public Device {
   int location=0;
   //void Test(void); not a class function, function only. TODO(junzhe)
 
+  cudaStream_t stream1; //swapOut stream
+  cudaStream_t stream2; //swapIn stream
+
  private:
   shared_ptr<DeviceMemPool> pool_;
 };
