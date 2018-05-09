@@ -833,10 +833,10 @@ void SwapGPU::SwapOut(const Block* block_){
       auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cudaError_t err;
       cudaStream_t stream1;
-      cudaEvent_t event1;
-      cudaEventCreate (&event1);
+      //cudaEvent_t event1;
+      //cudaEventCreate (&event1);
       err=cudaMemcpyAsync(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost,stream1);
-      cudaEventRecord(event1,stream1);
+      //cudaEventRecord(event1,stream1);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cout<<"time for asynchrous: "<<t2-t1<<endl;
       //cudaEventSynchronize(event1);
