@@ -626,8 +626,7 @@ SwapGPU::SwapGPU(int id) : Device(id, kNumCudaStream) {
   conf.add_device(id);
   pool_ = std::make_shared<Swap>(conf);
   Setup();
-  cudaStream_t stream1; //swapOut stream
-  cudaStream_t stream2; //swapIn stream
+
 }
 
 SwapGPU::SwapGPU(int id, std::shared_ptr<DeviceMemPool> pool)
@@ -828,12 +827,14 @@ void SwapGPU::SwapOut(const Block* block_){
       size_t swapSize = Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second.size;
       void* tempPtr;
       cudaMallocHost(&tempPtr,swapSize); //pinned memory.
+      cout<<"cudaMallocHost done"<<endl;
       Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.first.ptr = tempPtr;
       BlockMeta cpu, gpu;
       cpu = Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.first;
       gpu = Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second;
       auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cudaError_t err;
+      cout<<"before cudaMemcpyAsync"<<endl;
       //cudaStream_t stream1;
       //cudaEvent_t event1;
       //cudaEventCreate (&event1);
