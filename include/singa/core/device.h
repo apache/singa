@@ -262,6 +262,7 @@ class SwapGPU : public Device {
  private:
   void Setup();
   map<const Block*,pair<BlockMeta,BlockMeta>>Table_meta;
+  map<const int,pair<BlockMeta,BlockMeta>>Table_meta_ridx;
   //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   map<int,std::tuple<int,size_t,int>>Table_sched; //schedule: idx--> r_idx,size,dir. int 0 means D2H, 1 means H2D.
   map<int, string>Table_Block_; //as Block* changes every iteration. r_idx --> Block_

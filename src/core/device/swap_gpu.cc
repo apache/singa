@@ -584,6 +584,14 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
         Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
 
+        void* tempBlock_ =nullptr;
+        stringstream convert(vec_swap_selct[i].ptr);
+        if (!(convert>>tempBlock_)){
+            cout<<"error for converting str to Block*."<<endl;
+        }
+        Block* tempBlock_2 = static_cast<Block*>(tempBlock_);        
+        Table_meta_ridx[vec_swap_selct[i].r_idx] = Table_meta.find(tempBlock_)->second;
+        
         // //convert str to Block*
         // void* tempBlock_ =nullptr;
         // stringstream convert(vec_swap_selct[i].ptr);
@@ -721,12 +729,7 @@ void SwapGPU::Test_sched_switch_swap(){
    globeCounter = swap_test(vec_block,maxLen,location);
    cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
    cout<<"done swap test, the impt params are: "<<maxLen<<' '<<location<<' '<<globeCounter<<' '<<(gc-location)%maxLen<<endl;
-   if (maxLen>100) {
-    //make vec_Block_ TODO(junzhe) can remove
-    for (int i=0; i<maxLen;i++){
-      vec_Block_.push_back("nullptr");
-    }
-   }
+
  }
 
  ///switch flag;
@@ -765,7 +768,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   Table_meta[block_] = meta;
   Table_data_block_[data_]=block_; //table map data_block, for Free(). 
   //TODO(junzhe) update this table once data_ changed.
-  //push info
+  //push info.
   stringstream strm1;
   strm1<<size;
   string tempStr1 = strm1.str();
@@ -946,7 +949,6 @@ void SwapGPU::SwapIn(const Block* block_){
 		}
 	}
 }
-
 
 
 
