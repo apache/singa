@@ -584,14 +584,14 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
         Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
 
+        //convert str to ptr
         void* tempBlock_ =nullptr;
         stringstream convert(vec_swap_selct[i].ptr);
         if (!(convert>>tempBlock_)){
             cout<<"error for converting str to Block*."<<endl;
         }
-        Block* tempBlock_2 = static_cast<Block*>(tempBlock_);        
-        Table_meta_ridx[vec_swap_selct[i].r_idx] = Table_meta.find(tempBlock_)->second;
-        
+        Table_meta_ridx[vec_swap_selct[i].r_idx] = Table_meta.find(static_cast<Block*>(tempBlock_))->second;
+
         // //convert str to Block*
         // void* tempBlock_ =nullptr;
         // stringstream convert(vec_swap_selct[i].ptr);
