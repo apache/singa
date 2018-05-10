@@ -709,6 +709,7 @@ void SwapGPU::Free(void* ptr) {
     pool_->Free(ptr);
   }
 
+<<<<<<< HEAD
   //Append Info
   stringstream strm3;
   strm3<<Table_data_block_.find(ptr)->second;
@@ -720,6 +721,8 @@ void SwapGPU::Free(void* ptr) {
   string blockInfo ="Free "+tempStr3+" "+tempStr4;
   Append(blockInfo);
 
+=======
+>>>>>>> parent of 8115a6e... add append info at Free()
   Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
   
