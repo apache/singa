@@ -583,7 +583,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         //init only, update at MakeTableMeta.
         //Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
         Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
-
+        cout<<"Table_Block_ptr "<<vec_swap_selct[i].r_idx<<" "<<Table_Block_ptr.find(vec_swap_selct[i].r_idx)->second<<endl;
         // //convert str to ptr
         // void* tempBlock_ =nullptr;
         // stringstream convert(vec_swap_selct[i].ptr);
@@ -740,11 +740,11 @@ void SwapGPU::Test_sched_switch_swap(){
     cout<<"std::get<2>(Table_sched.find((gc-location)%maxLen)->second) "<<std::get<2>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
     if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
-      SwapOut(Table_Block_ptr.find(r_idx)->second);
+      //SwapOut(Table_Block_ptr.find(r_idx)->second);
       cout<<"swapOut - print from Malloc"<<endl;
     } else {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
-      SwapIn(Table_Block_ptr.find(r_idx)->second);
+      //SwapIn(Table_Block_ptr.find(r_idx)->second);
       cout<<"swapIn - print from Malloc"<<endl;
     }
   }
