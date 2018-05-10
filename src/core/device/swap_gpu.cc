@@ -520,7 +520,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
             load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
         }
         cout<<"old_idx and i1p: "<<old_idx<<' '<<tempIdx<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_run[old_idx].MallocFree<<" overhead "<<overhead<<endl;
-        
+        cout<<"--------------size: "<<vec_swap_selct[i].size<<endl;
     } //for loop
     //cout<<"total overhead: "<<overhead<<endl;
     ///update swap-in index
@@ -774,7 +774,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 
-  cout<<"---------------------"<<Table_meta.find(block_)->second.second.size<<endl;
+  //cout<<"---------------------"<<Table_meta.find(block_)->second.second.size<<endl; //no problem here.
   //Pay attention, here got problem TODO(junzhe) looks cannot duplciate block_.
   if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find((gc-location)%maxLen)==Table_Block_ptr.end()))){
     stringstream strm;
