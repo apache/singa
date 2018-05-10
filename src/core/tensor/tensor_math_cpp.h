@@ -724,7 +724,7 @@ void Uniform<float, lang::Cpp>(const float low,
 
 // ====================Blas operations======================================
 
-//yisen todo, this function has block M overwritting to block M itself
+//warning, this function has block M overwritting to block M itself
 template <>
 void DGMM<float, lang::Cpp>(const bool side_right,
                             const Tensor* M, const Tensor* v,
@@ -817,26 +817,26 @@ template <>
 void Axpy<float, lang::Cpp>(const float alpha,
                             const Tensor *in, Tensor *out, Context *ctx) {
   //check input tensor for strides first
-  if((in->strides())[0] == 1){
+  if(in->strides() != out->strides()){
     const float *inPtr = static_cast<const float *>(in->block()->data());
     float *outPtr = static_cast<float *>(out->block()->mutable_data());
     cblas_saxpy(in->Size(), alpha, inPtr, 1, outPtr, 1);
+  } else {
+    LOG(FATAL) << "Axpy, input and output strides do not match." ;
   }
-  //yisen todo
-  //else throw error
 }
 
 template <>
 void Dot<float, lang::Cpp>(const Tensor *in1, const Tensor *in2,
                            float *out, Context *ctx) {
   //check input tensor for strides first
-  if(((in1->strides())[0] == 1) && ((in2->strides())[0] == 1)){
+  if(!(in1->transpose()) && !(in2->transpose())){
     const float *in1Ptr = static_cast<const float *>(in1->block()->data());
     const float *in2Ptr = static_cast<const float *>(in2->block()->data());
     *out = cblas_sdot(in1->Size(), in1Ptr, 1, in2Ptr, 1);
+  } else {
+    LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet." ;
   }
-  //yisen todo
-  //else throw error
 }
 
 template <>
@@ -878,15 +878,14 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor *A, const Tensor *v,
   const float *APtr = static_cast<const float *>(A->block()->data());
   const float *vPtr = static_cast<const float *>(v->block()->data());
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  auto trans = ((A->strides())[0] != 1) ? true : false;
   const size_t m = A->shape()[0];
   const size_t n = A->shape()[1];
-  if (!trans) {
-    cblas_sgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, APtr, n, vPtr, 1,
-                beta, outPtr, 1);
-  } else {
+  if (A->transpose()) {
     cblas_sgemv(CblasRowMajor, CblasTrans, n, m, alpha, APtr, m, vPtr, 1, beta,
                 outPtr, 1);
+  } else {
+    cblas_sgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, APtr, n, vPtr, 1,
+                beta, outPtr, 1);
   }
 }
 
@@ -915,9 +914,9 @@ template <>
 void GEMM<float, lang::Cpp>(const float alpha,
                             const Tensor *A, const Tensor *B, const float beta,
                             Tensor *C, Context *ctx) {
-  auto transA = ((A->strides())[0] != 1) ? true : false;
+  auto transA = A->transpose();
   auto transa = transA ? CblasTrans : CblasNoTrans;
-  auto transB = ((B->strides())[0] != 1) ? true : false;
+  auto transB = B->transpose();
   auto transb = transB ? CblasTrans : CblasNoTrans;
   const size_t nrowA = A->shape()[0];
   const size_t ncolA = A->shape()[1];
@@ -1088,7 +1087,6 @@ void Scale<float, lang::Cpp>(const float x, Tensor *out,
   }
 }
 
-//yisen todo check purpose of sum in this function
 template <>
 void Dot<float, lang::Cpp>(const Tensor *in1, const Tensor *in2,
                            float *out, Context *ctx) {
@@ -1116,7 +1114,7 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor *A, const Tensor *v,
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
   const float *APtr = static_cast<const float *>(A->block()->data());
   const float *vPtr = static_cast<const float *>(v->block()->data());
-  bool trans = ((A->strides())[0] != 1) ? true : false;
+  bool trans = A->transpose();
   const size_t m = A->shape(0);
   const size_t n = A->shape(1);
   for (size_t r = 0; r < m; r++) {
@@ -1129,7 +1127,6 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor *A, const Tensor *v,
   }
 }
 
-//yisen todo
 #endif  // USE_CBLAS
 template <>
 void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,

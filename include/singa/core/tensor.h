@@ -105,12 +105,13 @@ class Tensor {
   }
 
   /*  
-  cudnn requires tensor dimensions to fulfill 2 requirements:
-    1.) dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
-    2.) dimensions have to be set to multiples of 8
+  cudnn requires tensor dimensions to fulfill 1 requirement:
+    1.) Dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors 
+        if input tensor is 5d, cudnn will take a 5d tensor as input. Beyond 5d, certain operations are not supported.
+        (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
 
-    for e.g. Tensor A has shape {3,3}, cudnn requires shape of {1,1,24,24} to be the input
-             Tensor B has shape (2,3,4), cudnn requires shape of {1,16,24,32} to be the input
+    for e.g. Tensor A has shape {3,3}, cudnn requires shape of {1,1,3,3} to be the input
+             Tensor B has shape (2,3,4), cudnn requires shape of {1,2,3,4} to be the input
   */
   vector<int> generate_shape_cuda() const {
     vector<int> shape_arr;
@@ -151,11 +152,11 @@ class Tensor {
 
   /*  
   cudnn requires stride dimensions to conform to the format of the shape input as well
-    1.) stride dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
-    2.) stride dimensions have to be set to powers of 8, depending on the stride order (outer stride = higher power)
+    1.) Stride dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors
+        If input tensor is 5d, cudnn will take a 5d tensor as input. Beyond 5d, certain operations are not supported.
+        (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
 
-    for e.g. Tensor A has shape {3,3}, stride {3,1}, cudnn requires shape {1,1,24,24} and stride {576, 576, 24, 1} to be the inputs,
-             if A is transposed with stride {1,3}, then the new cudnn stride becomes {576, 576, 8, 3}
+    for e.g. Tensor A has shape {3,3}, stride {3,1}, cudnn requires shape {1,1,3,3} and stride {9, 9, 3, 1} or {9, 9, 1, 3} to be the inputs
   */
   vector<int> generate_strides_cuda() const {
     vector<int> strides_arr;
@@ -177,7 +178,7 @@ class Tensor {
         }
       return strides_arr;
     } else {
-      LOG(FATAL) << "Dimensions (strides) beyond 3 are currently not supported" ;
+      LOG(FATAL) << "Dimensions (strides) beyond 5 are currently not supported" ;
     }
   }
 

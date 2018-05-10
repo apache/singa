@@ -132,10 +132,8 @@ void Tensor::ResetLike(const Tensor &in) {
   shape_multipliers_ = in.shape_multipliers_;
 }
 
-//yisen todo
 //if tensor is not transposed yet i.e strides == 1, then we simply change the shape and generate new default strides
 //if tensor is already transposed i.e strides != 1, it should be copied to a new tensor with newly generated default strides 
-
 void Tensor::Reshape(const Shape &shape) {
   if(strides_.size()==0)
     strides_.push_back(1);
@@ -144,9 +142,8 @@ void Tensor::Reshape(const Shape &shape) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-  } else if (strides_[0] != 1) {
-    std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
-    return void();
+  } else if (transpose()) {
+    LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
   }
   shape_ = shape;
   Generate_Strides();
@@ -161,9 +158,8 @@ void Tensor::Reshape(Shape &&shape) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-  } else if (strides_[0] != 1) {
-    std::cout << "Reshape Error: Tranposed tensor must return new tensor. Not implemented yet." << std::endl;
-    return void();
+  } else if (transpose()) {
+    LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
   }
   shape_ = std::move(shape);
   Generate_Strides();

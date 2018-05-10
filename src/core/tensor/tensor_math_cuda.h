@@ -32,6 +32,30 @@
 
 namespace singa {
 
+cudnnTensorDescriptor_t generate_tensorND_desc(const Tensor* x){
+  cudnnTensorDescriptor_t x_desc;
+  cudnnCreateTensorDescriptor(&x_desc);
+  cudnnSetTensorNdDescriptor(x_desc, CUDNN_DATA_FLOAT,
+                             x->generate_dim_cuda(),
+                             x->generate_shape_cuda().data(),
+                             x->generate_strides_cuda().data()
+                             );
+
+  return x_desc;
+}
+
+cudnnOpTensorDescriptor_t generate_Op_desc(cudnnOpTensorOp_t op){
+  cudnnOpTensorDescriptor_t op_desc;
+  cudnnCreateOpTensorDescriptor(&op_desc);
+  cudnnSetOpTensorDescriptor(op_desc, op,
+                             CUDNN_DATA_FLOAT,
+                             CUDNN_PROPAGATE_NAN
+                             );
+
+  return op_desc;
+}
+
+
 /// out[i] = |in[i]|
 template <>
 void Abs<float, lang::Cuda>(const Tensor* in, Tensor* out,
@@ -39,41 +63,25 @@ void Abs<float, lang::Cuda>(const Tensor* in, Tensor* out,
   const float* inPtr = static_cast<const float*>(in->block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
-  cudnnOpTensorOp_t op = CUDNN_OP_TENSOR_MAX;
-  cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-  cudnnNanPropagation_t cudnn_propagation = CUDNN_PROPAGATE_NAN;
-  cudnnOpTensorDescriptor_t op_desc;
-  cudnnCreateOpTensorDescriptor(&op_desc);
-  cudnnSetOpTensorDescriptor(op_desc, op, cudnn_dtype, cudnn_propagation);
-  
-  float alpha1[1] = {1.0};
-  float alpha2[1] = {-1.0};
-  float beta[1] = {0.0};
-  cudnnTensorDescriptor_t in_desc, out_desc;
-  cudnnCreateTensorDescriptor(&in_desc);
-  cudnnCreateTensorDescriptor(&out_desc);
-  cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in->generate_dim_cuda(), in->generate_shape_cuda().data(), in->generate_strides_cuda().data());
-  cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-  cudnnOpTensor(ctx->cudnn_handle, op_desc, (void*)(&alpha1), in_desc, inPtr, 
-                (void*)(&alpha2), in_desc, inPtr, (void*)(&beta), out_desc, outPtr);
-
+  float alpha1 = 1.0;
+  float alpha2 = -1.0;
+  float beta = 0.0;
+  cudnnTensorDescriptor_t in_desc = generate_tensorND_desc(in);
+  cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_MAX),
+                (void*)(&alpha1), in_desc, inPtr, 
+                (void*)(&alpha2), in_desc, inPtr,
+                (void*)(&beta), generate_tensorND_desc(out), outPtr
+                );
   cudnnDestroyTensorDescriptor(in_desc);
-  cudnnDestroyTensorDescriptor(out_desc);
 }
 
 template <>
 void Set<float, lang::Cuda>(const float x, Tensor* out,
                             Context* ctx) {
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  //float valuePtr[1] = {x};
 
-  cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-  cudnnTensorDescriptor_t out_desc;
-  cudnnCreateTensorDescriptor(&out_desc);
-  cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-  cudnnSetTensor(ctx->cudnn_handle, out_desc, outPtr, (void*)(&x));
-
-  cudnnDestroyTensorDescriptor(out_desc);
+  cudnnSetTensor(ctx->cudnn_handle, generate_tensorND_desc(out), 
+                  outPtr, (void*)(&x));
 }
 
 template <>
@@ -83,17 +91,11 @@ void Add<float, lang::Cuda>(const Tensor* in, const float x,
   const float* inPtr = static_cast<const float*>(in->block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
-  float alpha = 1.0, beta=1.0;
-  cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-  cudnnTensorDescriptor_t in_desc, out_desc;
-  cudnnCreateTensorDescriptor(&in_desc);
-  cudnnCreateTensorDescriptor(&out_desc);
-  cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in->generate_dim_cuda(), in->generate_shape_cuda().data(), in->generate_strides_cuda().data());
-  cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-  cudnnAddTensor(ctx->cudnn_handle, (void*)(&alpha), in_desc, inPtr,  (void*)(&beta), out_desc, outPtr);
-
-  cudnnDestroyTensorDescriptor(in_desc);
-  cudnnDestroyTensorDescriptor(out_desc);
+  float alpha = 1.0, beta = 1.0;
+  cudnnAddTensor(ctx->cudnn_handle,
+                 (void*)(&alpha), generate_tensorND_desc(in), inPtr,
+                 (void*)(&beta), generate_tensorND_desc(out), outPtr
+                 );
 }
 
 /// out = in1 + in2
@@ -104,34 +106,23 @@ void Add<float, lang::Cuda>(const Tensor* in1,
   const float* inPtr2 = static_cast<const float*>(in2->block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
-  cudnnOpTensorOp_t op = CUDNN_OP_TENSOR_ADD;
-  cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-  cudnnNanPropagation_t cudnn_propagation = CUDNN_PROPAGATE_NAN;
-  cudnnOpTensorDescriptor_t op_desc;
-  cudnnCreateOpTensorDescriptor(&op_desc);
-  cudnnSetOpTensorDescriptor(op_desc, op, cudnn_dtype, cudnn_propagation);
+  float alpha1 = 1.0;
+  float alpha2 = 1.0;
+  float beta = 0.0;
 
-  float alpha1[1] = {1.0};
-  float alpha2[1] = {1.0};
-  float beta[1] = {0.0};
-  cudnnTensorDescriptor_t in1_desc, in2_desc, out_desc;
-  cudnnCreateTensorDescriptor(&in1_desc);
-  cudnnCreateTensorDescriptor(&in2_desc);
-  cudnnCreateTensorDescriptor(&out_desc);
-  cudnnSetTensorNdDescriptor(in1_desc, cudnn_dtype, in1->generate_dim_cuda(), in1->generate_shape_cuda().data(), in1->generate_strides_cuda().data());
   if((in1->nDim() == in2->nDim()) || (in2->nDim() == 1)){
-    cudnnSetTensorNdDescriptor(in2_desc, cudnn_dtype, in2->generate_dim_cuda(), in2->generate_shape_cuda().data(), in2->generate_strides_cuda().data());
+    cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_ADD),
+              (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
+              (void*)(&alpha2), generate_tensorND_desc(in2), inPtr2,
+              (void*)(&beta), generate_tensorND_desc(out), outPtr
+              );
   } else {
-    cudnnSetTensorNdDescriptor(in2_desc, cudnn_dtype, in1->generate_dim_cuda(), in1->generate_shape_cuda().data(), in1->generate_strides_cuda().data());
+    cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_ADD),
+          (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
+          (void*)(&alpha2), generate_tensorND_desc(in1), inPtr2,
+          (void*)(&beta), generate_tensorND_desc(out), outPtr
+          );
   }
-
-  cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-  cudnnOpTensor(ctx->cudnn_handle, op_desc, (void*)(alpha1), in1_desc, inPtr1,
-                (void*)(alpha2), in2_desc, inPtr2, (void*)(beta), out_desc, outPtr);
-
-  cudnnDestroyTensorDescriptor(in1_desc);
-  cudnnDestroyTensorDescriptor(in2_desc);
-  cudnnDestroyTensorDescriptor(out_desc);
 }
 
 /// out = in1 - in2
@@ -142,34 +133,23 @@ void Sub<float, lang::Cuda>(const Tensor* in1,
   const float* inPtr2 = static_cast<const float*>(in2->block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
-  cudnnOpTensorOp_t op = CUDNN_OP_TENSOR_ADD;
-  cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-  cudnnNanPropagation_t cudnn_propagation = CUDNN_PROPAGATE_NAN;
-  cudnnOpTensorDescriptor_t op_desc;
-  cudnnCreateOpTensorDescriptor(&op_desc);
-  cudnnSetOpTensorDescriptor(op_desc, op, cudnn_dtype, cudnn_propagation);
+  float alpha1 = 1.0;
+  float alpha2 = -1.0;
+  float beta = 0.0;
 
-  float alpha1[1] = {1.0};
-  float alpha2[1] = {-1.0};
-  float beta[1] = {0.0};
-  cudnnTensorDescriptor_t in1_desc, in2_desc, out_desc;
-  cudnnCreateTensorDescriptor(&in1_desc);
-  cudnnCreateTensorDescriptor(&in2_desc);
-  cudnnCreateTensorDescriptor(&out_desc);
-  cudnnSetTensorNdDescriptor(in1_desc, cudnn_dtype, in1->generate_dim_cuda(), in1->generate_shape_cuda().data(), in1->generate_strides_cuda().data());
   if((in1->nDim() == in2->nDim()) || (in2->nDim() == 1)){
-    cudnnSetTensorNdDescriptor(in2_desc, cudnn_dtype, in2->generate_dim_cuda(), in2->generate_shape_cuda().data(), in2->generate_strides_cuda().data());
+    cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_ADD),
+              (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
+              (void*)(&alpha2), generate_tensorND_desc(in2), inPtr2,
+              (void*)(&beta), generate_tensorND_desc(out), outPtr
+              );
   } else {
-    cudnnSetTensorNdDescriptor(in2_desc, cudnn_dtype, in1->generate_dim_cuda(), in1->generate_shape_cuda().data(), in1->generate_strides_cuda().data());
+    cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_ADD),
+          (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
+          (void*)(&alpha2), generate_tensorND_desc(in1), inPtr2,
+          (void*)(&beta), generate_tensorND_desc(out), outPtr
+          );
   }
-
-  cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-  cudnnOpTensor(ctx->cudnn_handle, op_desc, (void*)(alpha1), in1_desc, inPtr1,
-                (void*)(alpha2), in2_desc, inPtr2, (void*)(beta),  out_desc, outPtr);
-
-  cudnnDestroyTensorDescriptor(in1_desc);
-  cudnnDestroyTensorDescriptor(in2_desc);
-  cudnnDestroyTensorDescriptor(out_desc);
 }
 
 /// Element-wise operation, clamp every element into [low, high]
@@ -193,26 +173,21 @@ void Div<float, lang::Cuda>(const Tensor* in1,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in1->Size();
 
-  if(in1->strides() == in2->strides()){ //if both in1 and in2 strides are the same, we proceed to normal cuda::div
+  //if both in1 and in2 strides are the same, we proceed to normal cuda::div
+  if(in1->strides() == in2->strides()){
         cuda::div(num, inPtr1, inPtr2, outPtr, ctx->stream);
         out->Set_Strides(in1->strides());
   } else { //else we transform in1 to out to store first
-    float alpha[1] = {1.0};
-    float beta[1] = {0.0};
+    float alpha = 1.0;
+    float beta = 0.0;
 
-    cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-    cudnnTensorDescriptor_t in1_desc, out_desc;
-    cudnnCreateTensorDescriptor(&in1_desc);
-    cudnnCreateTensorDescriptor(&out_desc);
-    cudnnSetTensorNdDescriptor(in1_desc, cudnn_dtype, in1->generate_dim_cuda(), in1->generate_shape_cuda().data(), in1->generate_strides_cuda().data());
     out->Set_Strides(in2->strides());
-    cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-    cudnnTransformTensor(ctx->cudnn_handle, (void*)(alpha), in1_desc, inPtr1,
-                         (void*)(beta), out_desc, outPtr);
+    cudnnTransformTensor(ctx->cudnn_handle,
+                        (void*)(&alpha), generate_tensorND_desc(in1), inPtr1,
+                        (void*)(&beta), generate_tensorND_desc(out), outPtr
+                        );
 
     cuda::div(num, outPtr, inPtr2, outPtr, ctx->stream);
-    cudnnDestroyTensorDescriptor(in1_desc);
-    cudnnDestroyTensorDescriptor(out_desc);
   }
 }
 
@@ -234,16 +209,10 @@ void EltwiseMult<float, lang::Cuda>(const Tensor* in,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
   float alpha = x, beta = 0.0;
-  cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-  cudnnTensorDescriptor_t in_desc, out_desc;
-  cudnnCreateTensorDescriptor(&in_desc);
-  cudnnCreateTensorDescriptor(&out_desc);
-  cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in->generate_dim_cuda(), in->generate_shape_cuda().data(), in->generate_strides_cuda().data());
-  cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-  cudnnAddTensor(ctx->cudnn_handle, (void*)(&alpha), in_desc, inPtr,  (void*)(&beta), out_desc, outPtr);
-
-  cudnnDestroyTensorDescriptor(in_desc);
-  cudnnDestroyTensorDescriptor(out_desc);
+  cudnnAddTensor(ctx->cudnn_handle,
+                (void*)(&alpha), generate_tensorND_desc(in), inPtr,
+                (void*)(&beta), generate_tensorND_desc(out), outPtr
+                );
 }
 
 /// out = in1 * in2
@@ -256,27 +225,21 @@ void EltwiseMult<float, lang::Cuda>(const Tensor* in1,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in1->Size();
 
-  if(in1->strides() == in2->strides()){ //if both in1 and in2 strides are the same, we proceed to normal cuda::mult
+  //if both in1 and in2 strides are the same, we proceed to normal cuda::mult
+  if(in1->strides() == in2->strides()){ 
         cuda::mult(num, inPtr1, inPtr2, outPtr, ctx->stream);
         out->Set_Strides(in1->strides());
   } else { //else we transform in1 to out to store first
-    float alpha[1] = {1.0};
-    float beta[1] = {0.0};
+    float alpha = 1.0;
+    float beta = 0.0;
 
-
-    cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-    cudnnTensorDescriptor_t in1_desc, out_desc;
-    cudnnCreateTensorDescriptor(&in1_desc);
-    cudnnCreateTensorDescriptor(&out_desc);
-    cudnnSetTensorNdDescriptor(in1_desc, cudnn_dtype, in1->generate_dim_cuda(), in1->generate_shape_cuda().data(), in1->generate_strides_cuda().data());
     out->Set_Strides(in2->strides());
-    cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-    cudnnTransformTensor(ctx->cudnn_handle, (void*)(alpha), in1_desc, inPtr1,
-                         (void*)(beta), out_desc, outPtr);
+    cudnnTransformTensor(ctx->cudnn_handle,
+                        (void*)(&alpha), generate_tensorND_desc(in1), inPtr1,
+                        (void*)(&beta), generate_tensorND_desc(out), outPtr
+                        );
 
     cuda::mult(num, outPtr, inPtr2, outPtr, ctx->stream);
-    cudnnDestroyTensorDescriptor(in1_desc);
-    cudnnDestroyTensorDescriptor(out_desc);
   }
 }
 
@@ -404,26 +367,20 @@ void Pow<float, lang::Cuda>(const Tensor* in1,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in1->Size();
 
-  if(in1->strides() == in2->strides()){ //if both in1 and in2 strides are the same, we proceed to normal cuda::pow
+  if(in1->strides() == in2->strides()){
         cuda::pow(num, inPtr1, inPtr2, outPtr, ctx->stream);
         out->Set_Strides(in1->strides());
   } else { //else we transform in1 to out to store first
-    float alpha[1] = {1.0};
-    float beta[1] = {0.0};
+    float alpha = 1.0;
+    float beta = 0.0;
 
-    cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-    cudnnTensorDescriptor_t in1_desc, out_desc;
-    cudnnCreateTensorDescriptor(&in1_desc);
-    cudnnCreateTensorDescriptor(&out_desc);
-    cudnnSetTensorNdDescriptor(in1_desc, cudnn_dtype, in1->generate_dim_cuda(), in1->generate_shape_cuda().data(), in1->generate_strides_cuda().data());
     out->Set_Strides(in2->strides());
-    cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-    cudnnTransformTensor(ctx->cudnn_handle, (void*)(alpha), in1_desc, inPtr1,
-                         (void*)(beta), out_desc, outPtr);
+    cudnnTransformTensor(ctx->cudnn_handle,
+                        (void*)(&alpha), generate_tensorND_desc(in1), inPtr1,
+                        (void*)(&beta), generate_tensorND_desc(out), outPtr
+                        );
 
     cuda::pow(num, outPtr, inPtr2, outPtr, ctx->stream);
-    cudnnDestroyTensorDescriptor(in1_desc);
-    cudnnDestroyTensorDescriptor(out_desc);
   }
 }
 
@@ -525,27 +482,16 @@ void Sqrt<float, lang::Cuda>(const Tensor* in, Tensor* out,
                              Context* ctx) {
   const float* inPtr = static_cast<const float*>(in->block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-
-  cudnnOpTensorOp_t op = CUDNN_OP_TENSOR_SQRT;
-  cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-  cudnnNanPropagation_t cudnn_propagation = CUDNN_PROPAGATE_NAN;
-  cudnnOpTensorDescriptor_t op_desc;
-  cudnnCreateOpTensorDescriptor(&op_desc);
-  cudnnSetOpTensorDescriptor(op_desc, op, cudnn_dtype, cudnn_propagation);
   
-  float alpha1[1] = {1.0};
-  float alpha2[1] = {0.0};
-  float beta[1] = {0.0};
-  cudnnTensorDescriptor_t in_desc, out_desc;
-  cudnnCreateTensorDescriptor(&in_desc);
-  cudnnCreateTensorDescriptor(&out_desc);
-  cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in->generate_dim_cuda(), in->generate_shape_cuda().data(), in->generate_strides_cuda().data());
-  cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-  cudnnOpTensor(ctx->cudnn_handle, op_desc, (void*)(&alpha1), in_desc, inPtr, 
-                (void*)(&alpha2), in_desc, inPtr, (void*)(&beta), out_desc, outPtr);
-
-  cudnnDestroyTensorDescriptor(in_desc);
-  cudnnDestroyTensorDescriptor(out_desc);
+  float alpha1 = 1.0;
+  float alpha2 = 0.0;
+  float beta = 0.0;
+  cudnnTensorDescriptor_t in_desc = generate_tensorND_desc(in);
+  cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_SQRT),
+                (void*)(&alpha1), in_desc, inPtr, 
+                (void*)(&alpha2), in_desc, inPtr,
+                (void*)(&beta), generate_tensorND_desc(out), outPtr
+                );
 }
 
 /// Element-wise operation, out[i]=in[i]^2
@@ -593,30 +539,26 @@ void Sum<float, lang::Cuda>(const Tensor* in, float* out,
                                  cudnn_propagation, cudnn_indices, cudnn_indices_type);
 
   //instantiate 2 new tensors to use new blocks as memory instead of cudaMalloc
-  Shape reduction_size = {1000};
+  size_t reduction_size_int = Product(in->shape());
+  Shape reduction_size = {reduction_size_int*100};
   Tensor indices(reduction_size, in->device(), in->data_type());
   Tensor workspace(reduction_size, in->device(), in->data_type());
-  size_t indices_bytes = indices.block()->size()*1000;
-  size_t workspace_bytes = workspace.block()->size()*1000;
+  size_t indices_bytes = indices.block()->size()*100;
+  size_t workspace_bytes = workspace.block()->size()*100;
   size_t* indicesPtr = static_cast<size_t*>(indices.block()->mutable_data());
   float* workspacePtr = static_cast<float*>(workspace.block()->mutable_data());
   //void* indicesPtr{nullptr}; void* workspacePtr{nullptr};
   //cudaMalloc(&indicesPtr, indices_bytes); cudaMalloc(&workspacePtr, workspace_bytes);
 
-  float alpha[1] = {1.0};
-  float beta[1] = {0.0};
-  cudnnTensorDescriptor_t in_desc, t_desc;
-  cudnnCreateTensorDescriptor(&in_desc);
-  cudnnCreateTensorDescriptor(&t_desc);
-  cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in->generate_dim_cuda(), in->generate_shape_cuda().data(), in->generate_strides_cuda().data());
-  cudnnSetTensorNdDescriptor(t_desc, cudnn_dtype, t.generate_dim_cuda(), reduce_all_axes.data(), reduce_all_axes.data());
+  float alpha = 1.0;
+  float beta = 0.0;
   cudnnReduceTensor(ctx->cudnn_handle, reduce_desc,
                     indicesPtr, indices_bytes, workspacePtr, workspace_bytes,
-                    (void*)(&alpha), in_desc, inPtr, (void*)(&beta), t_desc, tPtr);
+                    (void*)(&alpha), generate_tensorND_desc(in), inPtr,
+                    (void*)(&beta), generate_tensorND_desc(&t), tPtr
+                    );
 
   *out = tPtr[0];
-  cudnnDestroyTensorDescriptor(in_desc);
-  cudnnDestroyTensorDescriptor(t_desc);
 }
 
 
@@ -922,22 +864,17 @@ void RowMax<float, lang::Cuda>(const Tensor* in, Tensor* out,
   if(in->transpose()){
     Tensor t(in->shape(), in->device(), in->data_type());
     float* tPtr = static_cast<float*>(t.block()->mutable_data());
-    float alpha[1] = {1.0};
-    float beta[1] = {0.0};
 
-    cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-    cudnnTensorDescriptor_t in_desc, t_desc;
-    cudnnCreateTensorDescriptor(&in_desc);
-    cudnnCreateTensorDescriptor(&t_desc);
-    cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in->generate_dim_cuda(), in->generate_shape_cuda().data(), in->generate_strides_cuda().data());
-    cudnnSetTensorNdDescriptor(t_desc, cudnn_dtype, t.generate_dim_cuda(), t.generate_shape_cuda().data(), t.generate_strides_cuda().data());
-    cudnnTransformTensor(ctx->cudnn_handle, (void*)(alpha), in_desc, inPtr,
-                         (void*)(beta), t_desc, tPtr);
+    float alpha = 1.0;
+    float beta = 0.0;
+
+    cudnnTransformTensor(ctx->cudnn_handle,
+                        (void*)(&alpha), generate_tensorND_desc(in), inPtr,
+                        (void*)(&beta), generate_tensorND_desc(&t), tPtr
+                        );
 
     const float* tPtr_const = static_cast<const float*>(t.block()->data());
     cuda::RowMax(nrow, ncol, tPtr_const, outPtr, ctx->stream);
-    cudnnDestroyTensorDescriptor(in_desc);
-    cudnnDestroyTensorDescriptor(t_desc);
   } else {
     cuda::RowMax(nrow, ncol, inPtr, outPtr, ctx->stream);
   }
