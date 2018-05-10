@@ -709,6 +709,17 @@ void SwapGPU::Free(void* ptr) {
     pool_->Free(ptr);
   }
 
+  //Append Info
+  stringstream strm3;
+  strm3<<Table_data_block_.find(ptr)->second;
+  string tempStr3 = strm3.str();
+  stringstream strm4;
+  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  strm4<<t2;
+  string tempStr4 = strm4.str();
+  string blockInfo ="Free "+tempStr3+" "+tempStr4;
+  Append(blockInfo);
+  
   Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
   
