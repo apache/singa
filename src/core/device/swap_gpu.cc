@@ -709,19 +709,7 @@ void SwapGPU::Free(void* ptr) {
     pool_->Free(ptr);
   }
 
-
-  //Append Info
-  stringstream strm3;
-  strm3<<Table_data_block_.find(ptr)->second;
-  string tempStr3 = strm3.str();
-  stringstream strm4;
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  strm4<<t2;
-  string tempStr4 = strm4.str();
-  string blockInfo ="Free "+tempStr3+" "+tempStr4;
-  Append(blockInfo);
-  
-  //Table_meta.erase();
+  Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
   
 }
@@ -764,11 +752,19 @@ void SwapGPU::Test_sched_switch_swap(){
 }
 
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
-  /*
-  this is only called once, right after Malloc. 
-  */
-
-  //Append Info
+  //make table and append vec_block.
+  //this is only called once, right after Malloc. 
+  //Hence the malloc info is pushed here.
+  BlockMeta cpu,gpu;
+  cpu.size = static_cast<size_t>(size);
+  gpu.size = static_cast<size_t>(size);
+  gpu.ptr = data_;
+  pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
+  //Make tables
+  Table_meta[block_] = meta;
+  Table_data_block_[data_]=block_; //table map data_block, for Free(). 
+  //TODO(junzhe) update this table once data_ changed.
+  //push info.
   stringstream strm1;
   strm1<<size;
   string tempStr1 = strm1.str();
@@ -781,22 +777,6 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
-  
-  //table data_ -> block_, for Append Info in Free()
-  Table_data_block_[data_]=block_;
-
-
-  
-  
-  BlockMeta cpu,gpu;
-  cpu.size = static_cast<size_t>(size);
-  gpu.size = static_cast<size_t>(size);
-  gpu.ptr = data_;
-  pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
-  //Make tables
-  Table_meta[block_] = meta;
-
-
 
   //cout<<"---------------------"<<Table_meta.find(block_)->second.second.size<<endl; //no problem here.
   //Pay attention, here got problem TODO(junzhe) looks cannot duplciate block_.
@@ -823,7 +803,7 @@ void SwapGPU::Append(string blockInfo){
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
   //void* data_ = Table_meta.find(block_)->second.second.ptr;
-  return nullptr;
+  return Table_meta.find(block_)->second.second.ptr;
 }
 
 void SwapGPU::SwapOut(const Block* block_){
@@ -868,7 +848,7 @@ void SwapGPU::SwapOut(const Block* block_){
       cudaStream_t stream3;
       //cudaEvent_t event1;
       //cudaEventCreate (&event1);
-      err = cudaMemcpyAsync(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost,stream3);
+      err=cudaMemcpyAsync(cpu.ptr,gpu.ptr,gpu.size,cudaMemcpyDeviceToHost,stream3);
       //cudaEventRecord(event1,stream1);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cout<<"time for asynchrous: "<<t2-t1<<endl;
