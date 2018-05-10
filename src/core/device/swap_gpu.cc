@@ -774,6 +774,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 
+  cout<<"---------------------"<<Table_meta.find(block_)->second.second.size<<endl;
   //Pay attention, here got problem TODO(junzhe) looks cannot duplciate block_.
   if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find((gc-location)%maxLen)==Table_Block_ptr.end()))){
     stringstream strm;
