@@ -581,7 +581,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Table_sched[vec_swap_selct[i].i1] = std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0);
         Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
         //init only, update at MakeTableMeta.
-        Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
+        //Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
         Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
 
         // //convert str to ptr
@@ -783,10 +783,12 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find((gc-location)%maxLen)==Table_Block_ptr.end()))){
     stringstream strm;
     strm<<block_;
-    Table_Block_.at((gc-location)%maxLen) = strm.str();
+    //update Block_
+    cout<<"update Block_,";
     Table_Block_ptr.at((gc-location)%maxLen) = block_;
-
-    Table_meta_ridx[(gc-location)%maxLen] = Table_meta.find(block_)->second;
+    cout<<" update Table_meta_ridx ";
+    Table_meta_ridx[(gc-location)%maxLen] = meta;
+    cout<<"size: "<<Table_meta_ridx.find((gc-location)%maxLen)->second.second.size<<endl;
   }
 
 
@@ -808,7 +810,7 @@ void SwapGPU::SwapOut(const Block* block_){
 	// 0 is sync, 1 async: asyncSwapFlag
   if (asyncSwapFlag == 0){
       //TODO(junzhe)
-      // Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))
+     
       printf("A. to swapOut\n");
       auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
       size_t swapSize = Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second.size;
@@ -941,7 +943,6 @@ void SwapGPU::SwapIn(const Block* block_){
   }
 
 }
-
 
 
 }  // namespace singa

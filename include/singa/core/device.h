@@ -261,21 +261,30 @@ class SwapGPU : public Device {
 
  private:
   void Setup();
+  ///Tables needed
+  //meta, TODO(junzhe) if needed or not.
   map<const Block*,pair<BlockMeta,BlockMeta>>Table_meta;
+
+  //for Free, info append. TODO(junzhe) if needed or not.
+  map<void*, const Block*>Table_data_block_;
+
+  //r_idx --> meta, for geting GPU CPU data_. currently good for one iteration only.
   map<const int,pair<BlockMeta,BlockMeta>>Table_meta_ridx;
-  //map<int,std::tuple<Block*,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
-  map<int,std::tuple<int,size_t,int>>Table_sched; //schedule: idx--> r_idx,size,dir. int 0 means D2H, 1 means H2D.
-  map<int, string>Table_Block_; //as Block* changes every iteration. r_idx --> Block_
+
+  //schedule: idx--> r_idx,size,dir. int 0 means D2H, 1 means H2D.
+  map<int,std::tuple<int,size_t,int>>Table_sched; 
+
+  //as Block* changes every iteration. r_idx -> Block_, should be updated every iteration.
   map<int,Block*>Table_Block_ptr;
-  vector<string>vec_Block_; //replace Table_Block_
+
+  //vec_block
   vector<string> vec_block;
-  map<void*, const Block*>Table_data_block_; //for Free, info append.
+
   int asyncSwapFlag =0; //0 for sync, 1 for async.
   int gc =0; //global counter each time Malloc/Free, add 1.
   int globeCounter=-1;
   int maxLen =0;
   int location=0;
-  //void Test(void); not a class function, function only. TODO(junzhe)
 
   cudaStream_t stream1; //swapOut stream
   cudaStream_t stream2; //swapIn stream
