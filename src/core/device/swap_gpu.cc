@@ -826,7 +826,7 @@ void SwapGPU::SwapOut(const Block* block_){
       cout<<"doing asynchrous swapOut"<<endl;
       size_t swapSize = Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second.size;
       void* tempPtr=nullptr;
-      cout<<"tempPtr & swapSize "<<tmepPtr<<' '<<swapSize<<endl;
+      cout<<"tempPtr & swapSize "<<tempPtr<<' '<<swapSize<<endl;
       cudaMallocHost(&tempPtr,swapSize); //pinned memory.
       cout<<"cudaMallocHost done"<<endl;
       Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.first.ptr = tempPtr;
