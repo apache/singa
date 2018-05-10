@@ -590,6 +590,10 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         if (!(convert>>tempBlock_)){
             cout<<"error for converting str to Block*."<<endl;
         }
+
+        if ((Table_meta.find(static_cast<Block*>(tempBlock_))==Table_meta.end())){
+          cout<<"no such a block_";
+        }
         Table_meta_ridx[vec_swap_selct[i].r_idx] = Table_meta.find(static_cast<Block*>(tempBlock_))->second;
 
         cout<<"complete store: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<Table_meta.find(static_cast<Block*>(tempBlock_))->second.second.size<<endl;
