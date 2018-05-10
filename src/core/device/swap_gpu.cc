@@ -752,8 +752,8 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   //this is only called once, right after Malloc. 
   //Hence the malloc info is pushed here.
   BlockMeta cpu,gpu;
-  cpu.size = size;
-  gpu.size = size;
+  cpu.size = static_cast<size_t>(size);
+  gpu.size = static_cast<size_t>(size);
   gpu.ptr = data_;
   pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
   //Make tables
