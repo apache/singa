@@ -584,19 +584,19 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
         Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
 
-        //convert str to ptr
-        void* tempBlock_ =nullptr;
-        stringstream convert(vec_swap_selct[i].ptr);
-        if (!(convert>>tempBlock_)){
-            cout<<"error for converting str to Block*."<<endl;
-        }
+        // //convert str to ptr
+        // void* tempBlock_ =nullptr;
+        // stringstream convert(vec_swap_selct[i].ptr);
+        // if (!(convert>>tempBlock_)){
+        //     cout<<"error for converting str to Block*."<<endl;
+        // }
 
-        if ((Table_meta.find(static_cast<Block*>(tempBlock_))==Table_meta.end())){
-          cout<<"no such a block_";
-        }
-        Table_meta_ridx[vec_swap_selct[i].r_idx] = Table_meta.find(static_cast<Block*>(tempBlock_))->second;
+        // if ((Table_meta.find(static_cast<Block*>(tempBlock_))==Table_meta.end())){
+        //   cout<<"no such a block_";
+        // }
+        // Table_meta_ridx[vec_swap_selct[i].r_idx] = Table_meta.find(static_cast<Block*>(tempBlock_))->second;
 
-        cout<<"complete store: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<Table_meta.find(static_cast<Block*>(tempBlock_))->second.second.size<<endl;
+        // cout<<"complete store: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<Table_meta.find(static_cast<Block*>(tempBlock_))->second.second.size<<endl;
     }
 
   //update globeCounter
@@ -785,6 +785,8 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
     strm<<block_;
     Table_Block_.at((gc-location)%maxLen) = strm.str();
     Table_Block_ptr.at((gc-location)%maxLen) = block_;
+
+    Table_meta_ridx[(gc-location)%maxLen] = Table_meta.find(block_)->second;
   }
 
 
