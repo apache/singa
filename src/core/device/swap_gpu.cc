@@ -709,7 +709,6 @@ void SwapGPU::Free(void* ptr) {
     pool_->Free(ptr);
   }
 
-<<<<<<< HEAD
   //Append Info
   stringstream strm3;
   strm3<<Table_data_block_.find(ptr)->second;
@@ -720,9 +719,7 @@ void SwapGPU::Free(void* ptr) {
   string tempStr4 = strm4.str();
   string blockInfo ="Free "+tempStr3+" "+tempStr4;
   Append(blockInfo);
-
-=======
->>>>>>> parent of 8115a6e... add append info at Free()
+  
   Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
   
@@ -766,8 +763,6 @@ void SwapGPU::Test_sched_switch_swap(){
 }
 
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
-
-  //TODO(junzhe) to clean up here.
   //make table and append vec_block.
   //this is only called once, right after Malloc. 
   //Hence the malloc info is pushed here.
@@ -780,8 +775,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   Table_meta[block_] = meta;
   Table_data_block_[data_]=block_; //table map data_block, for Free(). 
   //TODO(junzhe) update this table once data_ changed.
-
-  //Append Info
+  //push info.
   stringstream strm1;
   strm1<<size;
   string tempStr1 = strm1.str();
@@ -819,9 +813,8 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
-  //not in use TODO(junzhe)
   //void* data_ = Table_meta.find(block_)->second.second.ptr;
-  return nullptr;
+  return Table_meta.find(block_)->second.second.ptr;
 }
 
 void SwapGPU::SwapOut(const Block* block_){
@@ -926,8 +919,10 @@ void SwapGPU::SwapIn(const Block* block_){
       CHECK_EQ(status, cudaError_t::cudaSuccess);
       //update tables
       Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second.ptr=gpu.ptr;
+      //cout<<"after alloc:1 "<<Table_meta.find(data_)->second.second.ptr<<endl;
       cudaError_t err;
       err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice);
+      //printf("2. swapIn done.\n");
       free(cpu.ptr);
       //update tables
       Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.first.ptr=nullptr;
