@@ -584,6 +584,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         //Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
         Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
         cout<<"Table_Block_ptr "<<vec_swap_selct[i].r_idx<<" "<<Table_Block_ptr.find(vec_swap_selct[i].r_idx)->second<<endl;
+        cout<<"***Table_sched "<<vec_swap_selct[i].i1<<' '<<std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0)<<endl;
+        cout<<"***Table_sched "<<vec_swap_selct[i].i2p<<' '<<std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,1)<<endl;
         // //convert str to ptr
         // void* tempBlock_ =nullptr;
         // stringstream convert(vec_swap_selct[i].ptr);
@@ -767,7 +769,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   this is only called once, right after Malloc.
   Hence the malloc info is pushed here.
   */
-  cout<<"malloc done; ";
+
   //append info
   stringstream strm1;
   strm1<<size;
@@ -781,10 +783,9 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
-  cout<<"Append done; ";
+  
   //data_->block_
   Table_data_block_[data_]=block_;
-  cout<<"Table_data_block_ done; ";
   
   //Table_meta
   BlockMeta cpu,gpu;
@@ -801,14 +802,15 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
     //update Block_
     cout<<"update Block_ at "<<(gc-location)%maxLen;
     Table_Block_ptr.at((gc-location)%maxLen) = block_;
-    cout<<" update Table_meta_ridx ";
+    //cout<<" update Table_meta_ridx ";
     // BlockMeta cpu,gpu;
     // cpu.size = static_cast<size_t>(size);
     // gpu.size = static_cast<size_t>(size);
     // gpu.ptr = data_;
     // pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
     Table_meta_ridx[(gc-location)%maxLen] = meta;
-    cout<<"size: "<<Table_meta_ridx.find((gc-location)%maxLen)->second.second.size<<endl;
+    //cout<<"size: "<<Table_meta_ridx.find((gc-location)%maxLen)->second.second.size<<endl;
+    cout<<endl;
   }
 
 
