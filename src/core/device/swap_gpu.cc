@@ -728,6 +728,7 @@ void SwapGPU::Test_sched_switch_swap(){
    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
    globeCounter = swap_test(vec_block,maxLen,location);
    cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
+   cout<<"--size of Table_Block_ptr"<<Table_Block_ptr.size()<<endl;
    cout<<"done swap test, the impt params are: "<<maxLen<<' '<<location<<' '<<globeCounter<<' '<<(gc-location)%maxLen<<endl;
 
  }
