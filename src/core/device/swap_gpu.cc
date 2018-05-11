@@ -767,7 +767,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   this is only called once, right after Malloc.
   Hence the malloc info is pushed here.
   */
-
+  cout<<"malloc done; ";
   //append info
   stringstream strm1;
   strm1<<size;
@@ -781,9 +781,10 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
-
+  cout<<"Append done; ";
   //data_->block_
   Table_data_block_[data_]=block_;
+  cout<<"Table_data_block_ done; ";
   
   //Table_meta
   // BlockMeta cpu,gpu;
