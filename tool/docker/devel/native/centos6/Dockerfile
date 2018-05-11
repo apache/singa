@@ -20,28 +20,27 @@
 FROM nvidia/cuda:7.5-cudnn5-devel-centos6
 
 # install dependencies
-RUN yum -y update && yum -y install git wget openssh-server cmake
-
-
-
-# download singa source
-# RUN git clone https://github.com/apache/incubator-singa.git
-
-# config ssh service
-RUN mkdir /var/run/sshd
-RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
-RUN ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key
-
-RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
-RUN sed -ri 's/#UsePAM no/UsePAM no/g' /etc/ssh/sshd_config
-RUN echo 'root:singa' | chpasswd
-
-#RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-# SSH login fix. Otherwise user is kicked off after login
-#RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
-
-# dump environment variables into files, so that ssh can see also
-RUN env | grep _ >> /etc/environment
+RUN yum -y update \
+    && yum install -y \
+        git \
+        wget \
+        openssh-server \
+        cmake \
+    && yum clean all \
+    # download singa source
+    # RUN git clone https://github.com/apache/incubator-singa.git
+    # config ssh service
+    && mkdir /var/run/sshd \
+    && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
+    && ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key \
+    && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
+    && sed -ri 's/#UsePAM no/UsePAM no/g' /etc/ssh/sshd_config \
+    && echo 'root:singa' | chpasswd \
+    #RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+    # SSH login fix. Otherwise user is kicked off after login
+    #RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+    # dump environment variables into files, so that ssh can see also
+    && env | grep _ >> /etc/environment
 
 EXPOSE 22
 
