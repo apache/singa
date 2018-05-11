@@ -795,7 +795,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   if (asyncSwapFlag == 1) {
     int r_gc = (gc-location)%maxLen;
     if (!(Table_Block_ptr.find(r_gc)==Table_Block_ptr.end())){
-      cout<<"good at "<<r_gc<<endl;
+      cout<<"good at "<<r_gc<<" size of Table_Block_ptr "<<Table_Block_ptr.size()<<endl;
       //Table_Block_ptr.at((gc-location)%maxLen) = block_;
     //Table_meta_ridx[(gc-location)%maxLen] = meta;
     }
