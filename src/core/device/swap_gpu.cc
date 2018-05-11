@@ -788,7 +788,11 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   Table_meta[block_] = meta;
 
   //TODO(junzhe) find may not be good.
-  if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find((gc-location)%maxLen)==Table_Block_ptr.end()))){
+  if ((gc-location)%maxLen==69) || ((gc-location)%maxLen==60)||((gc-location)%maxLen==50)||((gc-location)%maxLen==36)){
+    cout<<"should update Block_ "<<(gc-location)%maxLen<<endl;
+  }
+  int relative_gc = (gc-location)%maxLen;
+  if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find(relative_gc)==Table_Block_ptr.end()))){
 
     //update Block_
     cout<<"update Block_ at "<<(gc-location)%maxLen;
