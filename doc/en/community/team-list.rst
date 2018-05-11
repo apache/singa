@@ -50,7 +50,7 @@ The SINGA community has developers mainly from National University of Singapore,
 +--------------------+--------------------------------+-----------------------------------------------+
 | Jinyang Gao        | jinyang@apache.org             | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Xing Ji            | jixin@comp.nus.edu.sg          | National University of Singapore              |
+| Xin Ji             | jixin@comp.nus.edu.sg          | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Chonho Lee         | chonho@gmail.com               | Osaka University                              |
 +--------------------+--------------------------------+-----------------------------------------------+

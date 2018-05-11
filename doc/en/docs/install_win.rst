@@ -19,10 +19,10 @@
 Building SINGA on Windows
 =========================
 
-The process of building SINGA from source on Microsoft Windows has three parts: install dependencies, build SINGA source, and (optionally) install the python module.
+The process of building SINGA from source on Microsoft Windows has four parts: install dependencies, build SINGA source, (optionally) install the python module and (optionally) run the unit tests.
 
 1. Install Dependencies
-----------------------
+-----------------------
 
 You may create a folder for building the dependencies.
 
@@ -167,12 +167,54 @@ A video tutorial for the build process can be found here:
 +---------+
 
 	
+4. Run Unit Tests
+-----------------
+
+* In the test folder, generate the Visual Studio solution:
+
+.. code-block:: bash
+
+	cmake -G "Visual Studio 15 2017 Win64"
+
+* Open the generated solution in Visual Studio.
+
+* Change the build settings to Release and x64.
+
+* Build glog project.
+
+* In test_singa project:
 	
+	* Add USE_GLOG to the Preprocessor Definitions.
+	* In Additional Include Directories, add path of GLOG_INCLUDE_DIR, CBLAS_INCLUDE_DIR and Protobuf_INCLUDE_DIR which were used in step 2 above. Add also build and build/include folders.
+	* Goto Additional Library Directories and add the path to openblas, protobuf and glog libraries. Add also build/src/singa_objects.dir/Release.
+	* Goto Additional Dependencies and add libopenblas.lib, libglog.lib and libprotobuf.lib. Fix the names of the two libraries: gtest.lib and singa_objects.lib.
+
+* Build test_singa project.
+
+* Make libglog.dll and libopenblas.dll available by adding them to the path or by copying them to test/release folder
+
+* The unit tests can be executed
+
+	* From the command line:
 	
+		.. code-block:: bash
 	
+			test_singa.exe
+
+	* From Visual Studio:
+		* right click on the test_singa project and choose 'Set as StartUp Project'.
+		* from the Debug menu, choose 'Start Without Debugging'
+
+A video tutorial for running the unit tests can be found here:
 	
-	
-	
-	
-	
+
+.. |video| image:: https://img.youtube.com/vi/393gPtzMN1k/0.jpg
+   :scale: 100%
+   :align: middle
+   :target: https://www.youtube.com/watch?v=393gPtzMN1k
+
++---------+
+| |video| |
++---------+
+
 	
