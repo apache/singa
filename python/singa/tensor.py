@@ -97,7 +97,7 @@ class Tensor(object):
             copy_from_numpy(self.data, data)
         elif isinstance(data, CTensor):
             self.data = data
-            assert data.device() == device, 'not the same device'
+            assert data.device == device, 'not the same device'
         else:
             self.data = CTensor(list(shape), device, dtype)
 

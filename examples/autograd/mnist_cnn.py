@@ -65,33 +65,32 @@ if __name__ == '__main__':
     print ('the shape of testing label is', y_test.shape)
 
     # operations initialization
-    conv1=autograd.Conv2d(3,32)
-    relu1 = autograd.ReLU_Layer()  # same name for tensor.ReLU and layer_ops.ReLU
-    conv2=autograd.Conv2d(32,32)
-    relu2 = autograd.ReLU_Layer()
-    pooling = autograd.MaxPool2d()
-    flatten = autograd.Flatten()
-    linear = autograd.Linear(None, 10)  # in_feature=None for input_shape auto calculation
-    softmax = autograd.SoftMax()
-    cross_entropy = autograd.CrossEntropy()
+    conv1=autograd.Conv2d(3, 32)
+    conv2=autograd.Conv2d(32, 32)
+
+    w0 = tensor.Tensor(shape=(25088, 10), requires_grad=True, stores_grad=True)
+    w0.gaussian(0.0, 0.1)
+    b0 = tensor.Tensor(shape=(1, 10), requires_grad=True, stores_grad=True)
+    b0.set_value(0.0)
 
 
     def forward(x,t):
-        y=conv1(x)[0]
-        y=relu1(y)[0]
-        y=conv2(y)[0]
-        y=relu2(y)[0]
-        y=pooling(y)[0]
-        y=flatten(y)[0]
-        y=linear(y)[0]
-        y=softmax(y)[0]
-        loss=cross_entropy(y, t)[0]
+        y=conv1(x)
+        y=autograd.relu(y)
+        y=conv2(y)
+        y=autograd.relu(y)
+        y=autograd.max_pool_2d(y)
+        y=autograd.flatten(y)
+        y=autograd.dense(y, w0, b0)
+        y=autograd.soft_max(y)
+        loss=autograd.cross_entropy(y, t)
         return loss, y
 
     for epoch in range(epochs):
         for i in range(16):
             inputs = tensor.Tensor(data=x_train[i * 100:(1 + i) * 100, :], requires_grad=False, stores_grad=False)
             targets = tensor.Tensor(data=y_train[i * 100:(1 + i) * 100, :], requires_grad=False, stores_grad=False)
+
             loss, y = forward(inputs, targets)
 
             accuracy_rate = accuracy(autograd.ctensor2numpy(y.data),autograd.ctensor2numpy(targets.data))

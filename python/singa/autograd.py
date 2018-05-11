@@ -10,11 +10,16 @@ from singa.proto import model_pb2
 from . import singa_wrap as singa
 
 import numpy as np
+import math
 
 CTensor = singa.Tensor
 
 
 class ReLU(Operation):
+    def __call__(self, x, flag=True):
+        assert type(flag) is bool, 'flag can only be bool.'
+        self.flag=flag
+        return self._do_forward(x)
 
     def forward(self, x):
         '''
@@ -24,7 +29,8 @@ class ReLU(Operation):
         Returns:
             a new CTensor whose element y = x if x >= 0; otherwise 0;
         '''
-        self.input = x
+        if self.flag:
+            self.input = x
         return singa.ReLU(x)
 
     def backward(self, dy):
@@ -45,6 +51,10 @@ def relu(x):
 
 class Matmul(Operation):
     '''For matrix multiplication'''
+    def __call__(self, x, w, flag=True):
+        assert type(flag) is bool, 'flag can only be bool.'
+        self.flag=flag
+        return self._do_forward(x, w)
 
     def forward(self, x, w):
         '''Do forward propgation.
@@ -58,7 +68,8 @@ class Matmul(Operation):
         Returns:
             a CTensor for the result
         '''
-        self.input = (x, w)
+        if self.flag:
+            self.input = (x, w)
         return singa.Mult(x, w)
 
     def backward(self, dy):
@@ -243,9 +254,7 @@ class Conv2d(Operation):
         cudnn_prefer = 'fastest'
         workspace_byte_limit = 1024
         data_format = 'NCHW'
-        W_specs ={'init': 'gaussian',
-                  'mean':0.0,
-                  'std':0.1}
+        W_specs ={'init': 'xavier'}
         b_specs = {'init': 'constant'}
         input_sample_shape = None
 
@@ -266,7 +275,8 @@ class Conv2d(Operation):
             else:
                 inner_params[kwarg] = kwargs[kwarg]
                 
-
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.W_specs=inner_params['W_specs']
         self.b_specs=inner_params['b_specs']
 
@@ -296,25 +306,26 @@ class Conv2d(Operation):
 
         param_data = self.PyLayer.layer.param_values()
         if not hasattr(self, 'w'):
-            self.w = Tensor(data=param_data[0], requires_grad=True, stores_grad=True)
-            if self.W_specs['init'] == 'gaussian':
+            self.w = Tensor(device=param_data[0].device, data=param_data[0], requires_grad=True, stores_grad=True)
+            if self.W_specs['init'] == 'xavier':
+                std = math.sqrt(2.0/(self.in_channels+self.out_channels))
+                self.w.gaussian(0.0, std)
+            elif self.W_specs['init'] == 'gaussian':
                 if 'std' not in self.W_specs or 'mean' not in self.W_specs:
                     self.w.gaussian(0.0, 0.1)
                 else:
                     self.w.gaussian(self.W_specs['mean'],self.W_specs['std'])
             elif self.W_specs['init'] == 'uniform':
                 if 'low' not in self.W_specs or 'high' not in self.W_specs:
-                    self.w.uniform(0.0, 1.0)
+                    self.w.uniform(0.0, 0.1)
                 else:
                     self.w.uniform(self.W_specs['low'],self.W_specs['high'])
-            elif self.W_specs['init'] == 'xavier':
-                pass  # TODO
 
         xs = [x, self.w]
 
         if len(param_data) == 2:
             if not hasattr(self, 'b'):
-                self.b = Tensor(data=param_data[1], requires_grad=True, stores_grad=True)
+                self.b = Tensor(device=param_data[1].device, data=param_data[1], requires_grad=True, stores_grad=True)
                 if self.b_specs['init'] == 'gaussian':
                     if 'std' not in self.b_specs or 'mean' not in self.b_specs:
                         self.b.gaussian(0.0, 0.1)
@@ -322,18 +333,19 @@ class Conv2d(Operation):
                         self.b.gaussian(self.b_specs['mean'], self.b_specs['std'])
                 elif self.b_specs['init'] == 'uniform':
                     if 'low' not in self.b_specs or 'high' not in self.b_specs:
-                        self.b.uniform(0.0, 1.0)
+                        self.b.uniform(0.0, 0.1)
                     else:
                         self.b.uniform(self.b_specs['low'], self.b_specs['high'])
-                elif self.b_specs['init'] == 'xavier':
-                    pass  # TODO
                 elif self.b_specs['init'] == 'constant':
                     self.b.set_value(0.0)
 
             xs.append(self.b)
 
         xs = tuple(xs)
-        return self._do_forward(*xs)
+        return self._do_forward_0(*xs)
+
+    def _do_forward_0(self, *xs):
+        return self._do_forward(*xs)[0]
 
     def forward(self, *xs):
         return self.PyLayer.layer.Forward(self.flag, xs[0])
@@ -351,7 +363,7 @@ class MaxPool2d(Operation):
         data_format = 'NCHW'
         input_sample_shape = None
 
-        allowed_kwargs = {'name': name,
+        inner_params = {'name': name,
                           'border_mode': border_mode,
                           'data_format': data_format,
                           'input_sample_shape': input_sample_shape
@@ -361,7 +373,7 @@ class MaxPool2d(Operation):
             if kwarg not in allowed_kwargs:
                 raise TypeError('Keyword argument not understood:', kwarg)
             else:
-                allowed_kwargs[kwarg] = kwargs[kwarg]
+                inner_params[kwarg] = kwargs[kwarg]
 
         if padding == 0:
             pad = None
@@ -371,9 +383,9 @@ class MaxPool2d(Operation):
         if dilation != 1 or return_indices is not False or ceil_mode is not False:
             raise ValueError('Not implemented yet')
 
-        self.PyLayer = layer.Pooling2D(name, model_pb2.PoolingConf.MAX,
-                                           kernel_size, stride, border_mode,
-                                           pad, data_format, input_sample_shape)
+        self.PyLayer = layer.Pooling2D(inner_params['name'], model_pb2.PoolingConf.MAX,
+                                           kernel_size, stride, inner_params['border_mode'],
+                                           pad, inner_params['data_format'], inner_params['input_sample_shape'])
 
     def __call__(self, x, flag=True):
         assert type(flag) is bool, 'flag can only be bool.'
@@ -393,8 +405,11 @@ class MaxPool2d(Operation):
     def backward(self, dy):
         return self.PyLayer.layer.Backward(0, dy)[0]
 
+def max_pool_2d(x,kernel_size=3, stride=1, padding=0, dilation=1, return_indices=False, ceil_mode=False, **kwargs):
+    return MaxPool2d(kernel_size, stride, padding, dilation, return_indices, ceil_mode, **kwargs)(x)[0]
 
-class ReLU_Layer(Operation):
+
+'''class ReLU_Layer(Operation):
     def __init__(self, name='ReLU', mode='relu',input_sample_shape=None):
         self.PyLayer = layer.Activation(name, mode, input_sample_shape)
 
@@ -412,7 +427,7 @@ class ReLU_Layer(Operation):
         return self.PyLayer.layer.Forward(self.flag, xs[0])
 
     def backward(self, dy):
-        return self.PyLayer.layer.Backward(0, dy)[0]
+        return self.PyLayer.layer.Backward(0, dy)[0]'''
 
 
 class Flatten(Operation):
@@ -435,15 +450,26 @@ class Flatten(Operation):
     def backward(self, dy):
         return self.PyLayer.layer.Backward(0, dy)[0]
 
+def flatten(x, name='Flatten', axis=1, input_sample_shape=None):
+    return Flatten(name,axis,input_sample_shape)(x)[0]
 
-class Linear(Operation):
+def dense(x, w, b=None, bias=True, axis=0):
+    if bias:
+        if b is None:
+            raise ValueError('must input bias value.')
+        else:
+            y= matmul(x, w)
+            y= add_bias(y, b, axis)
+            return y
+    else:
+        return matmul(x, w)
+
+'''class Linear(Operation):
     def __init__(self, in_features, out_features, bias=True, **kwargs):
 
         name = 'Linear'
         W_transpose=False
-        W_specs = {'init': 'gaussian',
-                   'mean': 0.0,
-                   'std': 0.1}
+        W_specs = {'init': 'xavier'}
         b_specs = {'init': 'constant'}
         input_sample_shape = in_features
 
@@ -462,6 +488,8 @@ class Linear(Operation):
             else:
                 inner_params[kwarg] = kwargs[kwarg]
 
+        self.in_features = in_features
+        self.out_features = out_features
         self.W_specs = W_specs
         self.b_specs = b_specs
 
@@ -481,25 +509,26 @@ class Linear(Operation):
 
         param_data = self.PyLayer.layer.param_values()
         if not hasattr(self, 'w'):
-            self.w = Tensor(data=param_data[0], requires_grad=True, stores_grad=True)
-            if self.W_specs['init'] == 'gaussian':
+            self.w = Tensor(device=param_data[0].device, data=param_data[0], requires_grad=True, stores_grad=True)
+            if self.W_specs['init'] == 'xavier':
+                std = math.sqrt(2.0/(self.in_channels+self.out_channels))
+                self.w.gaussian(0.0, std)
+            elif self.W_specs['init'] == 'gaussian':
                 if 'std' not in self.W_specs or 'mean' not in self.W_specs:
                     self.w.gaussian(0.0, 0.1)
                 else:
                     self.w.gaussian(self.W_specs['mean'],self.W_specs['std'])
             elif self.W_specs['init'] == 'uniform':
                 if 'low' not in self.W_specs or 'high' not in self.W_specs:
-                    self.w.uniform(0.0, 1.0)
+                    self.w.uniform(0.0, 0.1)
                 else:
                     self.w.uniform(self.W_specs['low'],self.W_specs['high'])
-            elif self.W_specs['init'] == 'xavier':
-                pass  # TODO
 
         xs = [x, self.w]
 
         if len(param_data) == 2:
             if not hasattr(self, 'b'):
-                self.b = Tensor(data=param_data[1], requires_grad=True, stores_grad=True)
+                self.b = Tensor(device=param_data[1].device, data=param_data[1], requires_grad=True, stores_grad=True)
                 if self.b_specs['init'] == 'gaussian':
                     if 'std' not in self.b_specs or 'mean' not in self.b_specs:
                         self.b.gaussian(0.0, 0.1)
@@ -507,11 +536,9 @@ class Linear(Operation):
                         self.b.gaussian(self.b_specs['mean'], self.b_specs['std'])
                 elif self.b_specs['init'] == 'uniform':
                     if 'low' not in self.b_specs or 'high' not in self.b_specs:
-                        self.b.uniform(0.0, 1.0)
+                        self.b.uniform(0.0, 0.1)
                     else:
                         self.b.uniform(self.b_specs['low'], self.b_specs['high'])
-                elif self.b_specs['init'] == 'xavier':
-                    pass  # TODO
                 elif self.b_specs['init'] == 'constant':
                     self.b.set_value(0.0)
 
@@ -525,7 +552,7 @@ class Linear(Operation):
 
     def backward(self, dy):
         ret = self.PyLayer.layer.Backward(0, dy)
-        return (ret[0],)+ret[1]
+        return (ret[0],)+ret[1]'''
 
 def infer_dependency(op):
     '''
