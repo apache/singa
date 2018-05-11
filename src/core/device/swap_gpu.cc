@@ -788,7 +788,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   Table_meta[block_] = meta;
 
   //TODO(junzhe) find may not be good.
-  if ((gc-location)%maxLen==69) || ((gc-location)%maxLen==60)||((gc-location)%maxLen==50)||((gc-location)%maxLen==36)){
+  if (((gc-location)%maxLen==69) or ((gc-location)%maxLen==60)or((gc-location)%maxLen==50)or((gc-location)%maxLen==36)){
     cout<<"should update Block_ "<<(gc-location)%maxLen<<endl;
   }
   int relative_gc = (gc-location)%maxLen;
