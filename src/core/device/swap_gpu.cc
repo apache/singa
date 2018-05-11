@@ -802,11 +802,11 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
     cout<<"update Block_ at "<<(gc-location)%maxLen;
     Table_Block_ptr.at((gc-location)%maxLen) = block_;
     cout<<" update Table_meta_ridx ";
-    BlockMeta cpu,gpu;
-    cpu.size = static_cast<size_t>(size);
-    gpu.size = static_cast<size_t>(size);
-    gpu.ptr = data_;
-    pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
+    // BlockMeta cpu,gpu;
+    // cpu.size = static_cast<size_t>(size);
+    // gpu.size = static_cast<size_t>(size);
+    // gpu.ptr = data_;
+    // pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
     Table_meta_ridx[(gc-location)%maxLen] = meta;
     cout<<"size: "<<Table_meta_ridx.find((gc-location)%maxLen)->second.second.size<<endl;
   }
