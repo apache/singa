@@ -585,7 +585,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
         cout<<"Table_Block_ptr "<<vec_swap_selct[i].r_idx<<" "<<Table_Block_ptr.find(vec_swap_selct[i].r_idx)->second<<endl;
         cout<<"***Table_sched "<<vec_swap_selct[i].i1<<' '<<std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0)<<endl;
-        cout<<"***Table_sched "<<vec_swap_selct[i].i2p<<' '<<std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,1)<<endl;
+        //cout<<"***Table_sched "<<vec_swap_selct[i].i2p<<' '<<std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,1)<<endl;
         // //convert str to ptr
         // void* tempBlock_ =nullptr;
         // stringstream convert(vec_swap_selct[i].ptr);
