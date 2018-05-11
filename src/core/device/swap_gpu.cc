@@ -600,6 +600,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
         // cout<<"complete store: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<Table_meta.find(static_cast<Block*>(tempBlock_))->second.second.size<<endl;
     }
+    cout<<"size of Table_Block_ptr "<<Table_Block_ptr.size()<<endl;
 
   //update globeCounter
   return gc+maxLen-(gc-location)%maxLen;
@@ -711,21 +712,7 @@ void SwapGPU::Free(void* ptr) {
     pool_->Free(ptr);
   }
 
-  // //Append Info
-  // //verify if hash map got it or not.
-  // if (Table_data_block_.find(ptr)==Table_data_block_.end()) {
-  //   cout<<"ops, no such ptr stored"<<endl;
-  // }
-  // stringstream strm3;
-  // strm3<<Table_data_block_.find(ptr)->second;
-  // string tempStr3 = strm3.str();
-  // stringstream strm4;
-  // auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  // strm4<<t2;
-  // string tempStr4 = strm4.str();
-  // string blockInfo ="Free "+tempStr3+" "+tempStr4;
-  // Append(blockInfo);
-  
+  //Apend info done at device.cc, TODO(junzhe) if remove below item.
   Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
   
@@ -801,19 +788,13 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 
   //TODO(junzhe) find may not be good.
   if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find((gc-location)%maxLen)==Table_Block_ptr.end()))){
-    stringstream strm;
-    strm<<block_;
+
     //update Block_
     cout<<"update Block_ at "<<(gc-location)%maxLen;
     Table_Block_ptr.at((gc-location)%maxLen) = block_;
-    //cout<<" update Table_meta_ridx ";
-    // BlockMeta cpu,gpu;
-    // cpu.size = static_cast<size_t>(size);
-    // gpu.size = static_cast<size_t>(size);
-    // gpu.ptr = data_;
-    // pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
+
     Table_meta_ridx[(gc-location)%maxLen] = meta;
-    //cout<<"size: "<<Table_meta_ridx.find((gc-location)%maxLen)->second.second.size<<endl;
+
     cout<<endl;
   }
 
