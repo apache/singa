@@ -16,16 +16,16 @@
    under the License.
 
 
-The SINGA Team
+SINGA团队
 ==============
 
-A successful project requires many people to play many roles. Some members write code or documentation, while others are valuable as testers, submitting patches and suggestions.
+一个成功的项目需要很多人扮演很多角色. 一些成员编写代码或文档, 而其他成员则作为测试人员提供补丁和建议.
 
-Mentors
+指导
 -------
 
 ==================   ============
-Name                 Email
+姓名                 Email
 ==================   ============
 Daniel Dai           daijy@apache.org
 Ted Dunning          tdunning@apache.org
@@ -34,13 +34,13 @@ Thejas Nair          thejas@apache.org
 ==================   ============
 
 
-Developers
+开发人员
 ----------
 
-The SINGA community has developers mainly from National University of Singapore, Zhejiang University, NetEase, Osaka University, yzBigData, etc.
+SINGA社区的开发者主要来自新加坡国立大学，浙江大学，网易，大阪大学，yzBigData等.
 
 +--------------------+--------------------------------+-----------------------------------------------+
-| Name               | Email                          | Organization                                  |
+| 姓名               | Email                          | 组织		                          |
 +====================+================================+===============================================+
 | Gang Chen          | cg@zju.edu.cn                  | Zhejiang University                           |
 +--------------------+--------------------------------+-----------------------------------------------+

@@ -29,7 +29,28 @@
 
 
 %{
+// To make the code compatible between py2 and py3, the follow 
+// macro is required, which forces the 
+// interface (function) to accept byte string (from python) and 
+// return byte string (in python) in py3. Otherwise the strings 
+// should be unicode strings in py3.
+// Note that by default the strings in python3 are of type unicode.
+// You have to encode it with the correct encoding (default is utf-8) 
+// to convert it into bytes. Sometimes, the string is already byte string
+// e.g. from protobuf SerializeToString, then there is no need to do
+// conversion. The output byte strings should be decoded into unicode.
+// For python2, the default type of string is byte string. 
+//
+// Because protobuf::SerializeToString cannot be decoded into unicode 
+// string, we cannot use SWIG_PYTHON_2_UNICODE which forces the 
+// interface (function) to accept unicode strings as input args 
+// and return unicode strings.
+//
+// TODO(wangwei) make strings compatible between py2 and py3.
+
 #define SWIG_PYTHON_STRICT_BYTE_CHAR
+
+
 #include "singa/model/layer.h"
 #include "../src/model/layer/rnn.h"
 #include "../src/model/layer/cudnn_rnn.h"

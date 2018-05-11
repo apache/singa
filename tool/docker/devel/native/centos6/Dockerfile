@@ -13,32 +13,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# Base unbuntu 14.04 image from nvidia/cuda
+
+# TODO(wangwei) install other libs and test. It has bugs now.
+
 # Change tags to build with different cuda/cudnn versions:
-#   FROM nvidia/cuda:8.0-cudnn5-devel-ubuntu14.04
-#   FROM nvidia/cuda:7.5-cudnn5-devel-ubuntu14.04
-#   FROM nvidia/cuda:7.5-cudnn4-devel-ubuntu14.04
-#   FROM nvidia/cuda:7.0-cudnn4-devel-ubuntu14.04
 FROM nvidia/cuda:7.5-cudnn5-devel-centos6
 
 # install dependencies
 RUN yum -y update && yum -y install git wget openssh-server cmake
 
 
-# install conda, conda-build and anaconda-client
-RUN wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-RUN bash miniconda.sh -b -p /root/miniconda
-ENV PATH /root/miniconda/bin:${PATH}
-RUN /root/miniconda/bin/conda config --set always_yes yes --set changeps1 no
-RUN /root/miniconda/bin/conda update -q conda
-RUN /root/miniconda/bin/conda install conda-build
-RUN /root/miniconda/bin/conda install anaconda-client
-
-# set environment
-ENV CPLUS_INCLUDE_PATH /usr/local/lib/python2.7/dist-packages/numpy/core/include:${CPLUS_INCLUDE_PATH}
-# ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
-# ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
 
 # download singa source
 # RUN git clone https://github.com/apache/incubator-singa.git

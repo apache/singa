@@ -18,6 +18,7 @@
 Nerual net class for constructing the nets using layers and providing access
 functions for net info, e.g., parameters.
 
+
 Example usages::
 
     from singa import net as ffnet
@@ -175,11 +176,11 @@ class FeedForwardNet(object):
         return [spec.name for spec in self.param_specs()]
 
     def train(self, x, y):
-	'''Run BP for one iteration.
-	This method is deprecated. It is only kept for backward compatibility.
-	The name of this method is confusing since it does not update parameters.
-	Please use backprob() instead.
-	The back progagation algorithm computes gradients but it does not train.
+        '''Run BP for one iteration.
+        This method is deprecated. It is only kept for backward compatibility.
+        The name of this method is confusing since it does not update parameters.
+        Please use backprob() instead.
+        The back progagation algorithm computes gradients but it does not train.
         '''
         return backprob(x, y)
 
@@ -295,7 +296,8 @@ class FeedForwardNet(object):
                 dictionary: layer name -> output tensor(s)
         '''
         if self.ordered_layers is None:
-            self.ordered_layers = self.topo_sort(self.layers, self.src_of_layer)
+            self.ordered_layers = self.topo_sort(
+                self.layers, self.src_of_layer)
         if type(x) is dict:
             input_of_layer = x
         else:
@@ -326,7 +328,7 @@ class FeedForwardNet(object):
                 outs = output_of_layer[src.name]
                 if type(outs) == list:
                     assert len(outs) > 0, \
-                            'the output from layer %s is empty' % src.name
+                        'the output from layer %s is empty' % src.name
                     inputs.append(outs[0])
                     outs.pop(0)
                     if len(outs) == 0:
@@ -406,7 +408,7 @@ class FeedForwardNet(object):
                 outputs = output_of_layer[dst.name]
                 if type(outputs) == list:
                     assert len(outputs) > 0, \
-                            'the gradient from layer %s is empty' % dst.name
+                        'the gradient from layer %s is empty' % dst.name
                     inputs.append(outputs[0])
                     outputs.pop(0)
                 else:
@@ -418,7 +420,7 @@ class FeedForwardNet(object):
             outs, pgrads = cur.backward(kTrain, inputs)
             if verbose:
                 disp_src = '+'.join(
-                        [dst.name for dst in self.dst_of_layer[cur.name]])
+                    [dst.name for dst in self.dst_of_layer[cur.name]])
                 disp_src += '-->' + cur.name
                 if type(outs) is list:
                     print('%s: %s' % (disp_src,
@@ -477,7 +479,7 @@ class FeedForwardNet(object):
             if version < 1101:
                 idx = name.rfind('/')
                 assert idx > 0, '/ must be in the parameter name'
-                name = name[:idx] + '_' + name[idx+1:]
+                name = name[:idx] + '_' + name[idx + 1:]
             return name
 
         if use_pickle:
@@ -515,5 +517,5 @@ class FeedForwardNet(object):
             except AssertionError as err:
                 print('Error from copying values for param: %s' % name)
                 print(('shape of param vs checkpoint',
-                      val.shape, params[name].shape))
+                       val.shape, params[name].shape))
                 raise err

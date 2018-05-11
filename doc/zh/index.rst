@@ -82,6 +82,36 @@ SINGA 入门
 | |logo1| | |logo2| | |logo3| | |logo4| |
 +---------+---------+---------+---------+
 
+文档
+-------------
+
+* `这里 <docs.html>`_ 列出了文档和 Python API.
+* `C++ APIs <http://www.comp.nus.edu.sg/~dbsystem/singa/api/>`_ 由 Doxygen 生成.
+* 研究出版物清单可在 `此处 <http://www.comp.nus.edu.sg/~dbsystem/singa/research/publication/>`_ 查阅.
+
+如何贡献
+----------------------
+
+* 请订阅我们的开发邮件列表 dev-subscribe@singa.incubator.apache.org.
+
+* 如果您发现使用 SINGA 的任何问题，请将其报告给 `Issue Tracker <https://issues.apache.org/jira/browse/singa>`_.
+
+* 您也可以直接联系 `SINGA 提交者 <community/team-list.html>`_.
+
+关于更多描述贡献SINGA的细节, 见 `这里 <develop/how-contribute.html>`_ .
+
+历史
+------------
+
+2014年，SINGA 由新加坡国立大学 DB System Group 与浙江大学数据库团队合作发起.
+如果您在研究中使用 SINGA，请引用以下两篇论文:
+
+* B. C. Ooi, K.-L. Tan, S. Wang, W. Wang, Q. Cai, G. Chen, J. Gao, Z. Luo, A. K. H. Tung, Y. Wang, Z. Xie, M. Zhang, and K. Zheng. `SINGA: A distributed deep learning platform <http://www.comp.nus.edu.sg/~ooibc/singaopen-mm15.pdf>`_. ACM Multimedia (Open Source Software Competition) 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-oss.txt>`_).
+
+* W. Wang, G. Chen, T. T. A. Dinh, B. C. Ooi, K.-L.Tan, J. Gao, and S. Wang. `SINGA: putting deep learning in the hands of multimedia users <http://www.comp.nus.edu.sg/~ooibc/singa-mm15.pdf>`_. ACM Multimedia 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-singa.txt>`_, `Slides <files/mm2015.ppt>`_).
+
+诸如 `网易 <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_, `yzBigData <http://www.yzbigdata.com/en/index.html>`_ 和 `Shentilium <https://shentilium.com/>`_ 等公司正在使用 SINGA 作为其应用程序.
+
 .. toctree::
    :hidden:
 
@@ -91,7 +121,7 @@ SINGA 入门
 .. toctree::
    :hidden:
    :maxdepth: 2
-   :caption: Development
+   :caption: 开发
 
    develop/schedule
    develop/how-contribute
@@ -101,7 +131,7 @@ SINGA 入门
 .. toctree::
    :hidden:
    :maxdepth: 2
-   :caption: Community
+   :caption: 社区
 
    community/source-repository
    community/mail-lists
@@ -110,11 +140,11 @@ SINGA 入门
 
 
 
-License
+许可证
 ----------
-SINGA is released under `Apache License Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
+SINGA 在 `Apache License Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_ 许可证下发布.
 
-Disclaimers
------------
+免责声明（英文）
+--------------------
 
 Apache SINGA is an effort undergoing incubation at The Apache Software Foundation (ASF), sponsored by the Apache Incubator. Incubation is required of all newly accepted projects until a further review indicates that the infrastructure, communications, and decision making process have stabilized in a manner consistent with other successful ASF projects. While incubation status is not necessarily a reflection of the completeness or stability of the code, it does indicate that the project has yet to be fully endorsed by the ASF.

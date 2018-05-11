@@ -52,19 +52,21 @@ SET(SINGA_INCLUDE_DIR
     "${CMAKE_SOURCE_DIR}/include;${PROJECT_BINARY_DIR}")
 INCLUDE_DIRECTORIES(${SINGA_INCLUDE_DIR})
 
-#OPTION(USE_CBLAS "Use CBlas libs" ON)
+
 OPTION(USE_CUDA "Use Cuda libs" OFF)
+OPTION(ENABLE_TEST "Enable unit test" OFF)
+OPTION(USE_PYTHON "Generate py wrappers" ON)
+OPTION(USE_PYTHON3 "Python 3x" OFF)
+
 OPTION(USE_CUDNN "Use Cudnn libs" ON)
 OPTION(USE_OPENCV "Use opencv" OFF)
 OPTION(USE_LMDB "Use LMDB libs" OFF)
-OPTION(USE_PYTHON "Generate py wrappers" ON)
 OPTION(USE_JAVA "Generate java wrappers" OFF)
 OPTION(USE_OPENCL "Use OpenCL" OFF)
 OPTION(ENABLE_DIST "Enable distributed training" OFF)
-OPTION(ENABLE_TEST "Enable unit test" OFF)
 OPTION(DISABLE_WARNINGS "Disable warnings under windows" ON)
 OPTION(USE_MODULES "Compile dependent libs as submodules together with singa" OFF)
-#OPTION(USE_SHARED_LIBS "Use shared library" OFF)
+
 
 # TODO: remove all USE_CBLAS in codes
 SET(USE_CBLAS ON)
@@ -192,7 +194,7 @@ IF(PACKAGE)
 		SET(CORE_DEPENDENCIES "libgoogle-glog-dev, libprotobuf-dev, libopenblas-dev, libstdc++6, libc6")
 	ENDIF()
 
-	IF(PYTHON3)
+	IF(USE_PYTHON3)
 		SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python3, python3-dev, python3-pip, python3-numpy, python3-pillow, python3-matplotlib")
 	ELSE()
 		SET(PYTHON_DEPENDENCIES "${CORE_DEPENDENCIES}, python-dev, libpython2.7, python-pip, python-numpy, python-pillow")
@@ -210,7 +212,7 @@ IF(PACKAGE)
 		SET(CPACK_DEBIAN_PACKAGE_DEPENDS ${PYTHON_DEPENDENCIES})
 		SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian/postinst" )
 		SET(CPACK_DEBIAN_PACKAGE_PREDEPENDS "ca-certificates")
-		IF(PYTHON3)
+		IF(USE_PYTHON3)
 			SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/tool/debian/postinst" )
 			IF (USE_CUDA)
 				SET(CPACK_DEBIAN_PACKAGE_NAME "python3-singa-cuda")

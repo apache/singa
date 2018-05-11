@@ -16,20 +16,32 @@
 #
 
 
+set -ex
+
+# anaconda login user name
+USER=nusdbsystem
+OS=$TRAVIS_OS_NAME-64
+
+export PATH="$HOME/miniconda/bin:$PATH"
+conda config --set anaconda_upload no
+
+# save the package at given folder, then we can upload using singa-*.tar.bz2
+suffix=$TRAVIS_JOB_NUMBER  #`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
+export CONDA_BLD_PATH=~/conda-bld-$suffix
+mkdir $CONDA_BLD_PATH
+
+conda build tool/conda/ --python 3.6
+conda install --use-local singa
+cd test/python
+$HOME/miniconda/bin/python run.py
+
 if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
+  # install and run unittest
 then
-  if [[ "$TRAVIS_OS_NAME" == "osx" ]];
-  then
-    export CMAKE_LIBRARY_PATH=/usr/local/opt/openblas/lib:/usr/local/opt/protobuf/lib:$CMAKE_LIBRARY_PATH;
-    export CMAKE_INCLUDE_PATH=/usr/local/opt/openblas/include:/usr/local/opt/protobuf/include:$CMAKE_INCLUDE_PATH;
-    mkdir build && cd build;
-    cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF -DENABLE_TEST=ON -DProtobuf_PROTOC_EXECUTABLE=/usr/local/opt/protobuf/bin/protoc ..;
-  else
-    mkdir build && cd build;
-    cmake -DUSE_CUDA=OFF -DUSE_PYTHON=OFF -DENABLE_TEST=ON -DUSE_MODULES=ON ..
-  fi
-  make;
-  ./bin/test_singa --gtest_output=xml:./../gtest.xml;
+  echo "no uploading if ANACONDA_UPLOAD_TOKEN not set"
 else
-  bash -e tool/travis/conda.sh;
+  # turn off debug to hide the token in travis log
+  set +x
+  # upload the package onto anaconda cloud
+  anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u $USER -l main $CONDA_BLD_PATH/$OS/singa-*.tar.bz2 --force
 fi

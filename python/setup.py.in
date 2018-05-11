@@ -67,7 +67,7 @@ setup(
         'flask_cors>=3.0.2',
         'pillow>=2.3.0',
         'future',
-        'xmlrunner',
+    #    'xmlrunner',
         'tqdm',
         'ipywidgets',
         ],

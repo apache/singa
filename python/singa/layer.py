@@ -102,7 +102,7 @@ class Layer(object):
             self.param_specs = []
         else:
             self.conf = conf
-            self.name = str(conf.name)
+            self.name = conf.name
             self.caffe_layer()
             self.param_specs = []
 
@@ -154,7 +154,7 @@ class Layer(object):
         if self.conf.type == 'InnerProduct' or self.conf.type == 14:
             self.layer = _create_layer(engine, 'Dense')
         else:
-            self.layer = _create_layer(engine, str(self.conf.type))
+            self.layer = _create_layer(engine, self.conf.type)
 
     def get_output_sample_shape(self):
         '''Called after setup to get the shape of the output sample(s).
@@ -1354,4 +1354,4 @@ def get_layer_list():
     """ Return a list of strings which include the identifiers (tags) of all
     supported layers
     """
-    return singa_wrap.GetRegisteredLayers()
+    return [str(l) for l in singa_wrap.GetRegisteredLayers()]

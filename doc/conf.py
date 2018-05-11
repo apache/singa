@@ -34,8 +34,12 @@
 #
 import os
 import sys
-#sys.path.insert(0, os.path.abspath('.'))
-#sys.path.insert(1, os.path.abspath('../build/python/'))
+
+# If the user has singa codebase
+# will build document from code comments in these loactions
+sys.path.append(os.path.abspath('../python/'))
+sys.path.append(os.path.abspath('../build/python/'))
+
 
 # -- General configuration ------------------------------------------------
 from recommonmark.parser import CommonMarkParser
