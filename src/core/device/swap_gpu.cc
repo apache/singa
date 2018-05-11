@@ -712,6 +712,9 @@ void SwapGPU::Free(void* ptr) {
   }
 
   //Append Info
+  if (Table_data_block_.find(ptr)==Table_data_block_.end()) {
+    cout<<"ops, no such ptr install"<<endl;
+  }
   stringstream strm3;
   strm3<<Table_data_block_.find(ptr)->second;
   string tempStr3 = strm3.str();
