@@ -763,19 +763,12 @@ void SwapGPU::Test_sched_switch_swap(){
 }
 
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
-  //make table and append vec_block.
-  //this is only called once, right after Malloc. 
-  //Hence the malloc info is pushed here.
-  BlockMeta cpu,gpu;
-  cpu.size = static_cast<size_t>(size);
-  gpu.size = static_cast<size_t>(size);
-  gpu.ptr = data_;
-  pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
-  //Make tables
-  Table_meta[block_] = meta;
-  Table_data_block_[data_]=block_; //table map data_block, for Free(). 
-  //TODO(junzhe) update this table once data_ changed.
-  //push info.
+  /*make table and append vec_block.
+  this is only called once, right after Malloc.
+  Hence the malloc info is pushed here.
+  */
+
+  //append info
   stringstream strm1;
   strm1<<size;
   string tempStr1 = strm1.str();
@@ -789,15 +782,30 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 
-  //cout<<"---------------------"<<Table_meta.find(block_)->second.second.size<<endl; //no problem here.
-  //Pay attention, here got problem TODO(junzhe) looks cannot duplciate block_.
+  //data_->block_
+  Table_data_block_[data_]=block_;
+  
+  //Table_meta
+  // BlockMeta cpu,gpu;
+  // cpu.size = static_cast<size_t>(size);
+  // gpu.size = static_cast<size_t>(size);
+  // gpu.ptr = data_;
+  // pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
+  // Table_meta[block_] = meta;
+
+  //TODO(junzhe) find may not be good.
   if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find((gc-location)%maxLen)==Table_Block_ptr.end()))){
     stringstream strm;
     strm<<block_;
     //update Block_
-    cout<<"update Block_,";
+    cout<<"update Block_ at "<<(gc-location)%maxLen;
     Table_Block_ptr.at((gc-location)%maxLen) = block_;
     cout<<" update Table_meta_ridx ";
+    BlockMeta cpu,gpu;
+    cpu.size = static_cast<size_t>(size);
+    gpu.size = static_cast<size_t>(size);
+    gpu.ptr = data_;
+    pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
     Table_meta_ridx[(gc-location)%maxLen] = meta;
     cout<<"size: "<<Table_meta_ridx.find((gc-location)%maxLen)->second.second.size<<endl;
   }
