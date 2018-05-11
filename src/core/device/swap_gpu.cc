@@ -787,12 +787,12 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   cout<<"Table_data_block_ done; ";
   
   //Table_meta
-  // BlockMeta cpu,gpu;
-  // cpu.size = static_cast<size_t>(size);
-  // gpu.size = static_cast<size_t>(size);
-  // gpu.ptr = data_;
-  // pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
-  // Table_meta[block_] = meta;
+  BlockMeta cpu,gpu;
+  cpu.size = static_cast<size_t>(size);
+  gpu.size = static_cast<size_t>(size);
+  gpu.ptr = data_;
+  pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
+  Table_meta[block_] = meta;
 
   //TODO(junzhe) find may not be good.
   if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find((gc-location)%maxLen)==Table_Block_ptr.end()))){
