@@ -723,7 +723,7 @@ void SwapGPU::Test_sched_switch_swap(){
     do Test_sched_switch_swap during Malloc and Free.
   */
   ///test & schedule
- if (((gc+1)%300==0) && (asyncSwapFlag==0)){
+ if (((gc+1)%300 == 0) && (asyncSwapFlag == 0)){
    //TODO(junzhe) not lean, chances are globeCounter found more than 300 idx ago: redudant test.
    cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
    globeCounter = swap_test(vec_block,maxLen,location);
@@ -735,13 +735,14 @@ void SwapGPU::Test_sched_switch_swap(){
 
  ///switch flag;
  if (gc == globeCounter){
-   asyncSwapFlag =1;
+   asyncSwapFlag = 1;
+   cout<<"switched flag for ever"<<endl;
  }
 
  ///swap as per schedule
   int relative_gc = (gc-location)%maxLen; //verified
   //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
-  if ((asyncSwapFlag ==1) && (!(Table_sched.find((gc-location)%maxLen)==Table_sched.end()))){
+  if ((asyncSwapFlag == 1) && (!(Table_sched.find((gc-location)%maxLen) == Table_sched.end()))){
     cout<<"std::get<2>(Table_sched.find((gc-location)%maxLen)->second) "<<std::get<2>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
     if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
@@ -787,20 +788,17 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
   Table_meta[block_] = meta;
 
-  //TODO(junzhe) find may not be good.
+  //TODO(junzhe) below causes core dumped.
   // if (((gc-location)%maxLen==69) or ((gc-location)%maxLen==60)or((gc-location)%maxLen==50)or((gc-location)%maxLen==36)){
   //   cout<<"should update Block_ "<<(gc-location)%maxLen<<endl;
   // }
-  int relative_gc = (gc-location)%maxLen;
-  if ((asyncSwapFlag ==1) && (!(Table_Block_ptr.find(relative_gc)==Table_Block_ptr.end()))){
-
-    //update Block_
-    cout<<"update Block_ at "<<(gc-location)%maxLen;
-    Table_Block_ptr.at((gc-location)%maxLen) = block_;
-
-    Table_meta_ridx[(gc-location)%maxLen] = meta;
-
-    cout<<endl;
+  if (asyncSwapFlag == 1) {
+    int r_gc = (gc-location)%maxLen;
+    if (!(Table_Block_ptr.find(r_gc)==Table_Block_ptr.end())){
+      cout<<"good at "<<r_gc<<endl;
+      //Table_Block_ptr.at((gc-location)%maxLen) = block_;
+    //Table_meta_ridx[(gc-location)%maxLen] = meta;
+    }
   }
 
 
@@ -915,18 +913,18 @@ void SwapGPU::SwapIn(const Block* block_){
       cpu = Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.first;
       gpu = Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second;
       //without free here.
-      gpu.ptr=nullptr;
+      gpu.ptr = nullptr;
       cudaError_t status = cudaMalloc(&gpu.ptr, gpu.size);
       CHECK_EQ(status, cudaError_t::cudaSuccess);
       //update tables
-      Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second.ptr=gpu.ptr;
+      Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second.ptr = gpu.ptr;
       //cout<<"after alloc:1 "<<Table_meta.find(data_)->second.second.ptr<<endl;
       cudaError_t err;
-      err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice);
+      err = cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice);
       //printf("2. swapIn done.\n");
       free(cpu.ptr);
       //update tables
-      Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.first.ptr=nullptr;
+      Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.first.ptr = nullptr;
       //
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
@@ -938,7 +936,7 @@ void SwapGPU::SwapIn(const Block* block_){
       cpu = Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.first;
       gpu = Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second;
       //without free here.
-      gpu.ptr=nullptr;
+      gpu.ptr = nullptr;
       cudaError_t status = cudaMalloc(&gpu.ptr, gpu.size);
       CHECK_EQ(status, cudaError_t::cudaSuccess);
       //update tables
@@ -948,7 +946,7 @@ void SwapGPU::SwapIn(const Block* block_){
      // cudaStream_t stream2;
       cudaEvent_t event2;
       cudaEventCreate (&event2);
-      err=cudaMemcpyAsync(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice,stream2);
+      err = cudaMemcpyAsync(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice,stream2);
       cudaEventRecord(event2,stream2);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cout<<"time for asynchrous: "<<t2-t1<<endl;
