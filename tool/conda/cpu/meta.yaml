@@ -1,0 +1,16 @@
+package:
+  name: singa-cpu
+  version: 1.1.1
+
+build:
+  track_features:
+    - singa-cpu
+
+requirements:
+  run:
+    - singa 1.1.1 py36_cpu
+
+about:
+  home: http://singa.apache.org/
+  license: Apache V2
+  summary: SINGA is an Apache Incubating project for providing distributed deep learning. Apache disclaimers http://singa.apache.org/en/index.html#disclaimers

@@ -44,7 +44,6 @@ RUN apt-get update \
         wheel \
         numpy \
         setuptools \
-        unittest-xml-reporting \
         protobuf \
         future \
     # install swig > 3.0.10 for ubuntu < 16.04
