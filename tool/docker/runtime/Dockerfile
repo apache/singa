@@ -35,8 +35,7 @@ RUN conda update -q conda
 RUN conda install -c conda-forge sphinx
 RUN conda install -c conda-forge sphinx_rtd_theme
 RUN conda install -c conda-forge recommonmark
-# TODO(wangwei) add the cpu build string
-# RUN conda install -c nusdbsystem singa_cpu
+RUN conda install -c nusdbsystem singa_cpu
 
 RUN mkdir /var/run/sshd
 RUN echo 'root:singa' | chpasswd
