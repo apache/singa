@@ -22,7 +22,6 @@
 #include <vector>
 #include <tuple>
 #include <memory>
-#include <algorithm>
 
 #include "singa/core/common.h"
 #include "singa/core/device.h"
@@ -31,7 +30,6 @@
 
 using std::vector;
 using std::tuple;
-using std::reverse;
 namespace singa {
 
 typedef vector<size_t> Shape;
@@ -104,43 +102,6 @@ class Tensor {
     return shape_.at(idx);
   }
 
-  /*  
-  cudnn requires tensor dimensions to fulfill 1 requirement:
-    1.) Dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors 
-        if input tensor is 5d, cudnn will take a 5d tensor as input. Beyond 5d, certain operations are not supported.
-        (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
-
-    for e.g. Tensor A has shape {3,3}, cudnn requires shape of {1,1,3,3} to be the input
-             Tensor B has shape (2,3,4), cudnn requires shape of {1,2,3,4} to be the input
-  */
-  vector<int> generate_shape_cuda() const {
-    vector<int> shape_arr;
-    if(shape_.size() <= 4){
-      for (size_t n=0; n<4-shape_.size(); ++n) {
-        shape_arr.push_back(1);
-      } 
-      for (size_t n=0; n<shape_.size(); ++n) {
-        shape_arr.push_back(shape_.at(n));
-      } 
-      return shape_arr;
-    } else if(shape_.size() == 5){
-      for (size_t n=0; n<shape_.size(); ++n) {
-        shape_arr.push_back(shape_.at(n));
-      } 
-      return shape_arr;
-    } else {
-      LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
-    }
-  }
-
-  int generate_dim_cuda() const {
-    if(shape_.size() <= 4){return 4;}
-    else if(shape_.size() == 5){return 5;}
-    else{
-      LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
-    } 
-  }
-
   size_t nDim() const { return shape_.size(); }
 
   bool empty() const { return nDim() == 0; }
@@ -149,40 +110,6 @@ class Tensor {
   bool transpose() const { return (strides_.back() != 1); }
 
   const vector<int>& strides() const { return strides_; }
-
-  /*  
-  cudnn requires stride dimensions to conform to the format of the shape input as well
-    1.) Stride dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors
-        If input tensor is 5d, cudnn will take a 5d tensor as input. Beyond 5d, certain operations are not supported.
-        (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
-
-    for e.g. Tensor A has shape {3,3}, stride {3,1}, cudnn requires shape {1,1,3,3} and stride {9, 9, 3, 1} or {9, 9, 1, 3} to be the inputs
-  */
-  vector<int> generate_strides_cuda() const {
-    vector<int> strides_arr;
-    int product = 1;
-    for (size_t n=0; n<(shape_.size()); ++n) {
-      product *= shape_[n];
-    }
-    if(shape_.size() <= 4){
-      for (size_t n=0; n<4-shape_.size(); ++n) {
-        strides_arr.push_back(product);
-      } 
-      for (size_t n=0; n<strides_.size(); ++n) {
-          strides_arr.push_back(strides_[n]);
-        }
-      return strides_arr;
-    } else if(shape_.size() == 5){
-      for (size_t n=0; n<strides_.size(); ++n) {
-          strides_arr.push_back(strides_[n]);
-        }
-      return strides_arr;
-    } else {
-      LOG(FATAL) << "Dimensions (strides) beyond 5 are currently not supported" ;
-    }
-  }
-
-  const vector<int>& shape_multipliers() const { return shape_multipliers_; }
 
   /// return true if the content of the tensor is initialized
   bool initailized() const {
@@ -292,7 +219,7 @@ class Tensor {
   float L2() const;
 
   //generate strides automatically if stride field is not passed
-void Generate_Strides(){
+void generate_strides(){
     if(shape_.size()==0){
       strides_ = {1};
       return void();
@@ -306,84 +233,11 @@ void Generate_Strides(){
     }
 };
 
-void Set_Strides(const vector<int> new_strides){
+void set_strides(const vector<int> new_strides){
   strides_ = new_strides;
 }
 
-//generate shape multipliers
-//for e.g. tensor of shape (3,3), stride (1,3) will have shape multipliers of (3,1)
-//for e.g. tensor of shape (3,3), stride (3,1) will also have shape multipliers of (3,1)
-//this means that the 3rd, 6th, and 9th index of the array will always be the starting element of their respective rows
-//so we need to need use the inner stride when jumping from 1st->2nd element, and outer stride when jumping from 2nd->3rd
-vector<int> Generate_Shape_Multipliers(Shape y_shape) const {
-    if(y_shape.size()==0){
-      return {1};
-    }
-    reverse(y_shape.begin(), y_shape.end());
-    vector<int> shape_multipliers = {};
-    int cumulative_product = 1;
-
-    shape_multipliers.push_back(1);
-    for (size_t n=0; n<(y_shape.size()-1); ++n) {
-        cumulative_product = cumulative_product*y_shape[n];
-        shape_multipliers.push_back(cumulative_product);
-    }
-    reverse(shape_multipliers.begin(), shape_multipliers.end());
-    return shape_multipliers;
-};
-
-// ******************************************************************************************
-// Some traversal operations (works on const declarations without modifying tensor variables)
-// ******************************************************************************************
-
-//generate a traversal_info vector based on the tensor's shape for the traverse_next function to work
-vector<int> generate_traversal_info() const {
-    vector<int> traversal_info = {};
-    for(size_t n=0; n<(shape_.size()+2); ++n) {
-      traversal_info.push_back(0);
-    }
-    return traversal_info;
-};
-
-//this function checks whether the next index falls on a special multiplier of the outer shape
-//so the algorithm knows when to jump over/back to a starting element of the outer shape
-//for e.g. in [[1,4,7], [2,5,8], [3,6,9]], elements 1,2,3 are the starting elements of their respective rows
-//this additional check only has 1 loop for 2d matrix
-//but runtime performance might degrade to O(nlog(n)) for higher dimensional tensors
-int determine_order(int counter) const {
-    for (size_t n=0; n<(shape_multipliers_.size()-1); ++n) {
-        if((counter%shape_multipliers_[n])==0){
-            return ((shape_multipliers_.size()) - 1 - n);
-        }
-    }
-    return 0;
-};
-
-//this function updates the base indexes with the current index after every single traversal step, can be generalized beyond 2d cases
-void update_base_index(std::vector<int>& traversal_info) const {
-    for (int n=0; n<(traversal_info[shape_.size()+1]+1); ++n) {
-        traversal_info[n] = traversal_info[shape_.size()];
-    }
-};
-
-//function to traverse a const strided tensor object
-//it requires an additional vector, traversal_info {0,0,0,0 ...}, comprising (shape_.size()+2) elements of 0
-//for e.g. 2d matrix:
-//index 0 and 1 store the base row and column index respectively
-//index 2 stores the current index of the traversal
-//index 3 stores the order of the traversal for e.g. if the order is 0, it means the next element can be navigated to using the innermost stride
-void traverse_next(std::vector<int>& traversal_info, int counter) const {
-    update_base_index(traversal_info);
-    traversal_info[shape_.size()+1] = determine_order(counter);
-    traversal_info[shape_.size()] = traversal_info[traversal_info[shape_.size()+1]]+strides_[strides_.size()-traversal_info[shape_.size()+1]-1];
-};
-
-// ******************************************************************************************
-// traversal operations end
-// ******************************************************************************************
-
  protected:
-  //bool transpose_ = false;
   DataType data_type_ = kFloat32;
   std::shared_ptr<Device> device_ = nullptr;
   /// Note: block_ is allocated in lazy manner to avoid frequent malloc/free.
@@ -391,8 +245,6 @@ void traverse_next(std::vector<int>& traversal_info, int counter) const {
   Block *block_ = nullptr;
   Shape shape_ = {};
   vector<int> strides_ = {};
-  vector<int> shape_multipliers_ = {};
-
 }; //end of tensor class
 
 typedef Shape::iterator ShapeIter;

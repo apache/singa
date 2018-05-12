@@ -34,7 +34,6 @@ Tensor::~Tensor() {
 Tensor::Tensor() { 
   device_ = defaultDevice;
   strides_ = {1};
-  shape_multipliers_ = {1};
 }
 
 //non-strided constructors 
@@ -43,16 +42,14 @@ Tensor::Tensor(const Shape &shape, DataType dtype)
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock((int)size);
-  Generate_Strides();
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+  generate_strides();
 }
 Tensor::Tensor(Shape &&shape, DataType dtype)
     : data_type_(dtype), device_(defaultDevice), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock((int)size);
-  Generate_Strides();
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+  generate_strides();
 }
 
 //non-strided constructors with device
@@ -62,16 +59,14 @@ Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock((int)size);
-  Generate_Strides();
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+  generate_strides();
 }
 Tensor::Tensor(Shape &&shape, std::shared_ptr<Device> device, DataType dtype)
     : data_type_(dtype), device_(device), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock((int)size);
-  Generate_Strides();
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+  generate_strides();
 }
 
 
@@ -81,8 +76,7 @@ Tensor::Tensor(const Tensor &in)
       device_(in.device_),
       block_(in.block()),
       shape_(in.shape_),
-      strides_(in.strides_),
-      shape_multipliers_(in.shape_multipliers_) {
+      strides_(in.strides_) {
   if (block_ != nullptr)
     block_->IncRefCount();
 }
@@ -95,7 +89,6 @@ Tensor::Tensor(const Tensor &in, Shape &new_shape, vector<int> &new_strides)
       block_(in.block()),
       shape_(new_shape),
       strides_(new_strides) {
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
   if (block_ != nullptr)
     block_->IncRefCount();
 }
@@ -105,8 +98,7 @@ Tensor::Tensor(Tensor &&in)
       data_type_(in.data_type_),
       device_(in.device_),
       shape_(std::move(in.shape_)),
-      strides_(in.strides_),
-      shape_multipliers_(in.shape_multipliers_) {
+      strides_(in.strides_) {
   block_ = in.block_;
   in.block_ = nullptr;
 }
@@ -129,7 +121,6 @@ void Tensor::ResetLike(const Tensor &in) {
   }
   shape_ = in.shape_;
   strides_ = in.strides_;
-  shape_multipliers_ = in.shape_multipliers_;
 }
 
 //if tensor is not transposed yet i.e strides == 1, then we simply change the shape and generate new default strides
@@ -146,8 +137,7 @@ void Tensor::Reshape(const Shape &shape) {
     LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
   }
   shape_ = shape;
-  Generate_Strides();
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+  generate_strides();
 }
 
 void Tensor::Reshape(Shape &&shape) {
@@ -162,8 +152,7 @@ void Tensor::Reshape(Shape &&shape) {
     LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
   }
   shape_ = std::move(shape);
-  Generate_Strides();
-  shape_multipliers_ = Generate_Shape_Multipliers(shape_);
+  generate_strides();
 }
 
 void Tensor::AsType(const DataType type) {
@@ -350,7 +339,6 @@ Tensor Tensor::T() const {
   t.strides_.clear();
   t.strides_.push_back(strides_[1]);
   t.strides_.push_back(strides_[0]);
-  t.shape_multipliers_ = Generate_Shape_Multipliers(t.shape_);
   t.block_ = block_;
   block_->IncRefCount();
   return t;
@@ -359,7 +347,7 @@ Tensor Tensor::T() const {
 //normal transpose without axes
 Tensor Tensor::Transpose() const {
   // if(shape_.size() != strides_.size())
-  //   Generate_Strides();
+  //   generate_strides();
 
   Tensor t;
   t.device_ = device_;
@@ -369,7 +357,6 @@ Tensor Tensor::Transpose() const {
     t.shape_.push_back(shape_[shape_.size()-n-1]);
     t.strides_.push_back(strides_[shape_.size()-n-1]);
   }
-  t.shape_multipliers_ = Generate_Shape_Multipliers(t.shape_);
   t.block_ = block_;
   block_->IncRefCount();
   return t;
@@ -382,7 +369,7 @@ Tensor Tensor::Transpose(Shape axes) const {
   //   return void();
   // }
   // if(shape_.size() != strides_.size())
-  //   Generate_Strides();
+  //   generate_strides();
 
   Tensor t;
   t.device_ = device_;
@@ -392,7 +379,6 @@ Tensor Tensor::Transpose(Shape axes) const {
     t.shape_.push_back(shape_[axes[n]]);
     t.strides_.push_back(strides_[axes[n]]);
   }
-  t.shape_multipliers_ = Generate_Shape_Multipliers(t.shape_);
   t.block_ = block_;
   block_->IncRefCount();
   return t;
@@ -564,7 +550,7 @@ float Tensor::L1() const {
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec([&nrm, this](Context *ctx) {
       DType ret = DType(0);
-      Asum<DType, Lang>(this, &ret, ctx);
+      Asum<DType, Lang>(*this, &ret, ctx);
       nrm = TypeCast<DType, float>(ret);
     }, {this->block()}, {});
   });
@@ -577,7 +563,7 @@ float Tensor::L2() const {
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec([&nrm, this](Context *ctx) {
       DType ret = DType(0);
-      Nrm2<DType, Lang>(this, &ret, ctx);
+      Nrm2<DType, Lang>(*this, &ret, ctx);
       nrm = TypeCast<DType, float>(ret);
     }, {this->block()}, {});
   });
@@ -603,7 +589,7 @@ template void Tensor::SetValue<int>(const int x);
   do {                                                                 \
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, { \
       ret->device()->Exec([t, ret](Context * ctx) {                    \
-        fn<DType, Lang>(&t, ret, ctx);       \
+        fn<DType, Lang>(t, ret, ctx);       \
       }, {t.block()}, {ret->block()});                                 \
     });                                                                \
   } while (0)
@@ -632,7 +618,7 @@ GenUnaryTensorFn(Tanh);
     TYPE_LANG_SWITCH(lhs.data_type(), DType, lhs.device()->lang(), Lang, {  \
       CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                     \
       ret->device()->Exec([lhs, rhs, ret](Context * ctx) {                  \
-        fn<DType, Lang>(&lhs, &rhs, ret, \
+        fn<DType, Lang>(lhs, rhs, ret, \
                         ctx);                                               \
       }, {lhs.block(), rhs.block()}, {ret->block()});                       \
     });                                                                     \
@@ -663,7 +649,7 @@ GenBinaryTensorFn(operator>=, GE);
       static_assert(std::is_same<SType, DType>::value,                  \
                     "The Scalar type must match the Tensor data type"); \
       ret->device()->Exec([t, x, ret](Context * ctx) {                  \
-        fn<DType, Lang>(&t, x, ret, ctx);     \
+        fn<DType, Lang>(t, x, ret, ctx);     \
       }, {t.block()}, {ret->block()});                                  \
     });                                                                 \
   } while (0)
@@ -706,7 +692,7 @@ void Div(const SType alpha, const Tensor &in, Tensor *out) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     // TODO(wangwei) type cast SType to DType;
     in.device()->Exec([alpha, in, out](Context *ctx) {
-      Div<DType, Lang>(alpha, &in, out, ctx);
+      Div<DType, Lang>(alpha, in, out, ctx);
     }, {in.block()}, {out->block()});
   });
 }
@@ -743,7 +729,7 @@ float Sum<float>(const Tensor &in) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     one.device()->Exec([in, one, &s](Context *ctx) {
       DType ret = DType(0);
-      Dot<DType, Lang>(&in, &one, &ret, ctx);
+      Dot<DType, Lang>(in, one, &ret, ctx);
       s = ret;
     }, {in.block(), one.block()}, {});
   });
@@ -776,7 +762,7 @@ Tensor RowMax(const Tensor &in) {
       //size_t nrow = 1;
       //if (in.nDim() > 1) nrow = in.shape(0);
       //size_t ncol = in.Size() / nrow;
-      RowMax<DType, Lang>(&in, &ret, ctx);
+      RowMax<DType, Lang>(in, &ret, ctx);
     }, {in.block()}, {ret.block()});
   });
   return ret;
@@ -1012,7 +998,7 @@ void MultColumn(const Tensor &v, Tensor *M) {
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
     v.device()->Exec([M, v](Context *ctx) {
-      DGMM<DType, Lang>(false, M, &v,
+      DGMM<DType, Lang>(false, *M, v,
                         M, ctx);
     }, {M->block(), v.block()}, {M->block()});
   });
@@ -1027,7 +1013,7 @@ void MultRow(const Tensor &v, Tensor *M) {
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
     v.device()->Exec([M, v](Context *ctx) {
-      DGMM<DType, Lang>(true, M, &v,
+      DGMM<DType, Lang>(true, *M, v,
                         M, ctx);
     }, {M->block(), v.block()}, {M->block()});
   });
@@ -1113,7 +1099,7 @@ void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     auto a = TypeCast<SType, DType>(alpha);
     out->device()->Exec([a, in, out](Context *ctx) {
-      Axpy<DType, Lang>(a, &in, out, ctx);
+      Axpy<DType, Lang>(a, in, out, ctx);
     }, {in.block(), out->block()}, {out->block()});
   });
 }
@@ -1143,7 +1129,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
       C->device()->Exec([a, A, b, B, C](Context *ctx) {
-        GEMV<DType, Lang>(a, &A, &B, b, C, ctx);
+        GEMV<DType, Lang>(a, A, B, b, C, ctx);
       }, {A.block(), B.block()}, {C->block()});
     });
   } else {
@@ -1152,7 +1138,7 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
       C->device()->Exec([a, A, b, B, C](Context *ctx) {
-        GEMM<DType, Lang>(a, &A, &B, b, C,
+        GEMM<DType, Lang>(a, A, B, b, C,
                           ctx);
       }, {A.block(), B.block()}, {C->block()});
     });
