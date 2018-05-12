@@ -54,7 +54,7 @@ The building script can do the following tasks:
   * create conda package and upload it to anaconda cloud
     Execute shell - command 
 
-        /root/miniconda/bin/conda-build tool/conda
+        /root/miniconda/bin/conda-build tool/conda/singa
         /root/miniconda/bin/anaconda -t <ANACONDA_UPLOAD_TOKEN> upload -u nusdbsystem -l main /root/miniconda/linux-64/singa-*.so.*.tar.bz2 --force
 
   * (optional) create Debian package

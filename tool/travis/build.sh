@@ -30,7 +30,7 @@ suffix=$TRAVIS_JOB_NUMBER  #`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
 export CONDA_BLD_PATH=~/conda-bld-$suffix
 mkdir $CONDA_BLD_PATH
 
-conda build tool/conda/ --python 3.6
+conda build tool/conda/singa --python 3.6
 conda install --use-local singa
 cd test/python
 $HOME/miniconda/bin/python run.py
