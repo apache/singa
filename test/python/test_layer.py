@@ -86,11 +86,11 @@ class TestPythonLayer(unittest.TestCase):
         dx = tensor.to_numpy(dx).flatten()
         dw = tensor.to_numpy(dw).flatten()
         dy = dy.flatten()
-        self.assertAlmostEquals(dy[0] * w[4], dx[0])
-        self.assertAlmostEquals(dy[0] * w[5] + dy[1] * w[3], dx[1])
-        self.assertAlmostEquals(dy[1] * w[4], dx[2])
-        self.assertAlmostEquals(dy[0] * w[7] + dy[2] * w[1], dx[3])
-        self.assertAlmostEquals(
+        self.assertAlmostEqual(dy[0] * w[4], dx[0])
+        self.assertAlmostEqual(dy[0] * w[5] + dy[1] * w[3], dx[1])
+        self.assertAlmostEqual(dy[1] * w[4], dx[2])
+        self.assertAlmostEqual(dy[0] * w[7] + dy[2] * w[1], dx[3])
+        self.assertAlmostEqual(
             dy[0] *
             w[8] +
             dy[1] *
@@ -100,16 +100,16 @@ class TestPythonLayer(unittest.TestCase):
             dy[3] *
             w[0],
             dx[4])
-        self.assertAlmostEquals(dy[1] * w[7] + dy[3] * w[1], dx[5])
-        self.assertAlmostEquals(dy[2] * w[4], dx[6])
-        self.assertAlmostEquals(dy[2] * w[5] + dy[3] * w[3], dx[7])
-        self.assertAlmostEquals(dy[3] * w[4], dx[8])
+        self.assertAlmostEqual(dy[1] * w[7] + dy[3] * w[1], dx[5])
+        self.assertAlmostEqual(dy[2] * w[4], dx[6])
+        self.assertAlmostEqual(dy[2] * w[5] + dy[3] * w[3], dx[7])
+        self.assertAlmostEqual(dy[3] * w[4], dx[8])
 
-        self.assertAlmostEquals(dy[3] * raw_x[4], dw[0])
-        self.assertAlmostEquals(dy[3] * raw_x[5] + dy[2] * raw_x[3], dw[1])
-        self.assertAlmostEquals(dy[2] * raw_x[4], dw[2])
-        self.assertAlmostEquals(dy[1] * raw_x[1] + dy[3] * raw_x[7], dw[3])
-        self.assertAlmostEquals(
+        self.assertAlmostEqual(dy[3] * raw_x[4], dw[0])
+        self.assertAlmostEqual(dy[3] * raw_x[5] + dy[2] * raw_x[3], dw[1])
+        self.assertAlmostEqual(dy[2] * raw_x[4], dw[2])
+        self.assertAlmostEqual(dy[1] * raw_x[1] + dy[3] * raw_x[7], dw[3])
+        self.assertAlmostEqual(
             dy[0] *
             raw_x[0] +
             dy[1] *
@@ -119,10 +119,10 @@ class TestPythonLayer(unittest.TestCase):
             dy[3] *
             raw_x[8],
             dw[4], 5)
-        self.assertAlmostEquals(dy[0] * raw_x[1] + dy[2] * raw_x[7], dw[5])
-        self.assertAlmostEquals(dy[1] * raw_x[4], dw[6])
-        self.assertAlmostEquals(dy[0] * raw_x[3] + dy[1] * raw_x[5], dw[7])
-        self.assertAlmostEquals(dy[0] * raw_x[4], dw[8])
+        self.assertAlmostEqual(dy[0] * raw_x[1] + dy[2] * raw_x[7], dw[5])
+        self.assertAlmostEqual(dy[1] * raw_x[4], dw[6])
+        self.assertAlmostEqual(dy[0] * raw_x[3] + dy[1] * raw_x[5], dw[7])
+        self.assertAlmostEqual(dy[0] * raw_x[4], dw[8])
 
     def test_conv1D(self):
         in_sample_shape = (224,)
@@ -213,12 +213,12 @@ class TestPythonLayer(unittest.TestCase):
         lyr = layer.Concat('concat', 0, [(3,), (3,)])
         t = lyr.forward(model_pb2.kTrain, [t1, t2])
         tnp = tensor.to_numpy(t)
-        self.assertEquals(np.sum(tnp), 12)
+        self.assertEqual(np.sum(tnp), 12)
         t3 = tensor.Tensor((3, 3))
         t3.set_value(1.5)
         grads, _ = lyr.backward(model_pb2.kTrain, [t3])
         gnp = tensor.to_numpy(grads[0])
-        self.assertEquals(np.sum(gnp), 6 * 1.5)
+        self.assertEqual(np.sum(gnp), 6 * 1.5)
 
     def test_slice(self):
         t = np.zeros((3, 3))
@@ -228,16 +228,34 @@ class TestPythonLayer(unittest.TestCase):
         out = lyr.forward(model_pb2.kTrain, [tensor.from_numpy(t)])
         t1 = tensor.to_numpy(out[0])
         t2 = tensor.to_numpy(out[1])
-        self.assertEquals(np.average(t1), 2)
-        self.assertEquals(np.average(t2), 1)
+        self.assertEqual(np.average(t1), 2)
+        self.assertEqual(np.average(t2), 1)
         t1 = tensor.Tensor((3, 2))
         t2 = tensor.Tensor((3, 1))
         t1.set_value(1)
         t2.set_value(2)
         grad, _ = lyr.backward(model_pb2.kTrain, [t1, t2])
         gnp = tensor.to_numpy(grad)
-        self.assertEquals(np.sum(gnp), 12)
+        self.assertEqual(np.sum(gnp), 12)
 
+    def test_l2norm(self):
+        in_sample_shape = (3, 224, 224)
+        l2norm = layer.L2Norm('l2norm', input_sample_shape=in_sample_shape)
+        out_sample_shape = l2norm.get_output_sample_shape()
+        self.check_shape(out_sample_shape, in_sample_shape)
+
+    def test_merge(self):
+        in_sample_shape = (3, 224, 224)
+        merge = layer.Merge('merge', input_sample_shape=in_sample_shape)
+        out_sample_shape = merge.get_output_sample_shape()
+        self.check_shape(out_sample_shape, in_sample_shape)
+
+    def test_split(self):
+        in_sample_shape = (3, 224, 224)
+        split = layer.Split('split', num_output=3,
+                            input_sample_shape=in_sample_shape)
+        out_sample_shape = split.get_output_sample_shape()
+        self.check_shape(out_sample_shape, [in_sample_shape] * 3)
 
 if __name__ == '__main__':
     unittest.main()
