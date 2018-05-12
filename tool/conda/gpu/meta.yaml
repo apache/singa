@@ -2,10 +2,6 @@ package:
   name: singa-gpu
   version: 1.1.1
 
-build:
-  track_features:
-    - singa-gpu
-
 requirements:
   run:
     - singa 1.1.1 py36_cuda9.0_cudnn7.1.2

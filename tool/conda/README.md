@@ -5,7 +5,7 @@
 
 ## Environment variables
 
-Build string is a part of the conda package specification. We include the cuda and cudnn version in it if Singa is compiled with CUDA enabled. 
+Build string is a part of the conda package specification. We include the cuda and cudnn version in it if Singa is compiled with CUDA enabled.
 
 	# for singa with gpu, e.g. cuda8.0-cudnn7.0.5
     export BUILD_STR=cudax.y-cudnna.b.c
@@ -14,7 +14,7 @@ Build string is a part of the conda package specification. We include the cuda a
     export BUILD_STR=cpu
 
 
-To package Singa with CUDA and CUDNN, 
+To package Singa with CUDA and CUDNN,
 
     export CUDNN_PATH=<path to cudnn folder>
 
@@ -31,3 +31,4 @@ You will see the package path from the screen output.
 To clean the cache
 
     conda clean -ay
+
