@@ -22,6 +22,8 @@
 #include "./tensor_math_opencl.h"
 #include <utility>
 
+using std::vector;
+
 namespace singa {
 
 Tensor::~Tensor() {
@@ -165,7 +167,25 @@ void Tensor::CopyData(const Tensor &src) {
   CHECK(block_ != nullptr);
   // Do copy only if the src's block is already initialized.
   if (src.block_ != nullptr) {
-    singa::CopyDataToFrom(this, src, Size(), 0, 0);
+    singa::CopyDataToFrom(this, src, Size()*repeats, 0, 0);
+  }
+}
+
+// void Tensor::RepeatData(const Tensor &src, int repeats, int axis) {
+//   CHECK_EQ(Size(), src.Size()*repeats);
+//   CHECK(block_ != nullptr);
+//   // Do repeat only if the src's block is already initialized.
+//   if (src.block_ != nullptr) {
+//     singa::RepeatDataToFrom(this, src, repeats, axis, Size(), false, 0, 0);
+//   }
+// }
+
+void Tensor::RepeatData(const Tensor &src, vector<int> repeats, int axis, int total_repeats) {
+  CHECK_EQ(Size(), src.Size()*total_repeats);
+  CHECK(block_ != nullptr);
+  // Do repeat only if the src's block is already initialized.
+  if (src.block_ != nullptr) {
+    singa::RepeatDataToFrom(this, src, repeats, axis, Size(), false, 0, 0);
   }
 }
 
@@ -277,6 +297,30 @@ Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   return t;
 }
 
+// Tensor Tensor::Repeat(std::shared_ptr<Device> device, int repeats, int axis) const {
+//   if (device == nullptr) device = device_;
+//   t.shape_ = push_back(Product(shape_)*repeats);
+//   t.device_ = device_;
+//   t.data_type_ = data_type_;
+//   t.RepeatData(*this, repeats, axis);
+//   return t
+// }
+
+Tensor Tensor::Repeat(std::shared_ptr<Device> device, vector<int> repeats, int axis) const {
+  if (device == nullptr) device = device_;
+  for (i = 0; i < shape_[axis]; i++) {
+    if(repeats[i] < 0) {
+      LOG(FATAL) << "the repeats number is less than zero";
+    }
+    total_repeats += repeats[i];
+  }
+  t.shape_ = push_back(Product(shape_)*total_repeats);
+  t.device_ = device_;
+  t.data_type_ = data_type_;
+  t.RepeatData(*this, repeats, axis, total_repeats);
+  return t;
+}
+
 Tensor Tensor::T() const {
   CHECK_EQ(shape_.size(), 2u);
   Tensor t;
@@ -381,6 +425,68 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
     auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
     src_dev->CopyDataToFrom(to, from, nBytes, direct, (int)d_offset, (int)s_offset);
   }
+}
+
+// void RepeatDataToFrom(Tensor *dst, const Tensor &src, int repeats, int axis, 
+//                       const size_t num, bool broadcast_flag,
+//                       const size_t dst_offset, const size_t src_offset) {
+//   CHECK_GE(repeats, 0);
+//   vector<int> repeats_v;
+//   repeats_v.push(repeats);
+// //  broadcast_flag = 1;
+//   RepeatDataToFrom(dst, src, repeats_v, axis, num, broadcast_flag, (int)d_offset, (int)s_offset);
+// }
+
+void RepeatDataToFrom(Tensor *dst, const Tensor &src, vector<int> repeats, int axis, 
+                      const size_t num, bool broadcast_flag,
+                      const size_t dst_offset, const size_t src_offset) {
+  if (repeats == NULL) {
+    return NULL;
+  }
+  if (repeats.size() == 1) {
+    broadcast_flag = 1;
+  }
+  if (repeat.size() > 1) {
+    if (axis == NULL) {
+      LOG(FATAL) << "When repeats parameter is sequence, axis cannot be None"
+    }
+  }
+  for (i = 0; i < repeats.size(); i++){
+    CHECK_GE(repeats[i], 0);
+  }
+  auto width = SizeOf(src.data_type());
+  CHECK_EQ(width, SizeOf(dst->data_type()));
+  size_t nBytes = num * width;
+  int chunk = width;
+  if (axis == NULL){
+    int axis_shape = 1;
+
+  } else {
+    int axis_shape = src.shape()[axis];
+    for(i = axis + 1; i < src.nDim(); i++) {
+      chunk *= src.shape()[i];
+    }
+  }
+  int shape_outer = Product(src.shape());
+  std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
+  Block *from = src.block(), *to = dst->block();
+  if (dst_dev->lang() != src_dev->lang()) {
+    // let the none cpp device conduct copy op
+    if (dst_dev->lang() == kCpp) {
+      src_dev->Repeat(to, from, nBytes, kDeviceToHost, (int)d_offset,
+                              (int)s_offset);
+    } else if (src_dev->lang() == kCpp) {
+      dst_dev->CopyDataToFrom(to, from, nBytes, kHostToDevice, (int)d_offset,
+                (int)s_offset);
+    } else {
+      LOG(FATAL) << "Not support mem repeat copy betwee Cuda and OpenCL device";
+    }
+  } else {
+    auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
+    src_dev->RepeatDataToFrom(to, from, nBytes, direct, shape_outer, chunk,
+                              axis_shape, repeats, (int)d_offset, (int)s_offset);
+
+
 }
 //============================================================================
 /// typedef DType accroding to type value.
@@ -652,6 +758,8 @@ Tensor Sum(const Tensor &M, int axis) {
   }
 }
 
+
+
 Tensor SoftMax(const Tensor &in) {
   Tensor out(in.shape(), in.device(), in.data_type());
   SoftMax(in, &out);
@@ -892,6 +1000,8 @@ void DivRow(const Tensor &v, Tensor *M) {
   MultRow(inv, M);
 }
 
+
+
 /// Multiply column 'v' and each column of matrix M; write results into 'out'
 void MultColumn(const Tensor &v, Tensor *M) {
   CHECK(!M->transpose()) << "Not supported yet";
@@ -956,6 +1066,10 @@ void SumRows(const Tensor &M, Tensor *v) {
     Tensor X = M.T();
     Mult(X, one, v);
   }
+}
+
+
+
 }
 // ====================Random operations=====================================
 template <typename SType>
@@ -1049,6 +1163,55 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
     });
   }
 }
+/*void HighDimMult(const Tensor &A, const Tensor &B) {
+    CHECK_EQ(A.shape(A.ndim()-1),B.shape(0));
+    Shape s;
+    for (int i = A.ndim();i > 1;i--){
+        s.push_back(A.shape(A.ndim() - i));
+    }
+    for (int i = B.ndim();i > 1;i--){
+        s.push_back(A.shape(A.ndim() - i+1));
+    }
+    Tensor out(s, A.device(), A.data_type());
+    HighDimMult(A, B, &out);
+    out = out.reshape(s);
+    return out;
+}
+
+void HighDimMult(const Tensor &A, const Tensor &B, Tensor *out) {
+    HighDimMult(1.0f, A, B, 0.0f, out);
+}
+
+template <typename SType>
+void HighDimMult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta, Tensor *C) {
+    CHECK_GE(A.shape().size(), 3u);
+    if (B.nDim() == 1u) {
+        TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
+            auto a = TypeCast<SType, DType>(alpha);
+            auto b = TypeCast<SType, DType>(beta);
+            auto A_2d = A.reshape(Product(A.shape)/A.shape(A.ndim()-1),A.shape(A.ndim()-1});
+            C->device()->Exec([a, A_2d, b, B, C](Context *ctx) {
+                GEMV<DType, Lang>(A_2d.transpose(), A_2d.shape(0), A_2d.shape(1), a, A_2d.block(),
+                                  B.block(), b, C->block(), ctx);
+            }, {A_2d.block(), B.block()}, {C->block()});
+        });
+    }
+    else {
+        CHECK(!C->transpose());
+        TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
+            auto a = TypeCast<SType, DType>(alpha);
+            auto b = TypeCast<SType, DType>(beta);
+            auto A_2d = A.reshape(Product(A.shape)/A.shape(A.ndim()-1),A.shape(A.ndim()-1});
+            auto B_2d = B.reshape(Product(B.shape)/B.shape(B.ndim()-1),B.shape(B.ndim()-1});
+            C->device()->Exec([a, A_2d, b, B_2d, C](Context *ctx) {
+                GEMM<DType, Lang>(A_2d.transpose(), B_2d.transpose(), A_2d.shape(0), B_2d.shape(1),
+                                  A_2d.shape(1), a, A_2d.block(), B_2d.block(), b, C->block(),
+                                  ctx);
+            }, {A_2d.block(), B_2d.block()}, {C->block()});
+        });
+    }
+}*/
+
 
 // ************************
 // Misc.

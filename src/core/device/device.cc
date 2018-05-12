@@ -18,6 +18,8 @@
 
 #include "singa/core/device.h"
 
+using std::vector;
+
 namespace singa {
 Device::Device(int id, int num_executors)
     : id_(id), num_executors_(num_executors) {
@@ -59,9 +61,36 @@ void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
         this->CopyToFrom(
             reinterpret_cast<char*>(dst->mutable_data()) + dst_offset,
             reinterpret_cast<const char*>(src->data()) + src_offset, nBytes,
-            direct, ctx);
+            direct, ctx);;
       },
       {src}, {dst});
+}
+
+void Device::RepeatDataToFrom(Block* dst, Block* src, size_t nBytes,
+                              CopyDirection direct, bool broadcast_flag, 
+                              int axis_shape, int shape_outer, int chunk, 
+                              vector<int> repeats, int dst_offset, int src_offset) {
+  src_data = src->data();
+  dst_data = dst->mutable_data();
+  for (i = 0; i < shape_outer; i++) {
+    for (j = 0; j < axis_shape; j++) {
+      int temp = broadcast_flag ? repeats[0] : repeats[j];
+      for (k = 0; k < temp; k++) {
+        this->Exec(
+            [this, dst_data, src_data, direct, chunk, repeats, dst_offset, src_offset](Context* ctx) {
+              this->CopyToFrom(
+                  reinterpret_cast<char*>(dst_data) + dst_offset,
+                  reinterpret_cast<const char*>(src_data) + src_offset, chunk,
+                  direct, ctx);
+            },
+            {src_data}, {dst_data});
+        dst_data += chunk;
+      }
+      src_data += chunk;
+    }
+  }
+
+
 }
 
 void Device::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,

@@ -155,6 +155,10 @@ class Tensor {
   /// Meta data would not be copied!
   void CopyData(const Tensor &other);
 
+  // void RepeatData(const Tensor &other, int repeats, int axis);
+
+  void RepeatData(const Tensor &other, vector<int> repeats, int axis, int total_repeats);
+
   /// Deserialize data, shape and transpose from protobuf object.
   void FromProto(const singa::TensorProto &proto);
 
@@ -164,6 +168,11 @@ class Tensor {
   /// return an exactly the same Tensor with data been deep copied to the given
   /// device. If 'device' is nullptr, then clone it one the current device.
   Tensor Clone(std::shared_ptr<Device> device = nullptr) const;
+
+  // Tensor Repeat(std::shared_ptr<Device> device = nullptr, int repeats, int axis) const;
+
+  Tensor Repeat(std::shared_ptr<Device> device = nullptr, vectot<int> repeats, int axis) const;
+
 
   // Tensor operations
 
@@ -251,6 +260,14 @@ Tensor Reshape(const Tensor &in, Shape &&s);
 /// The first 'src_offset' ('dst_offset') elements will be skipped.
 void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
                     const size_t dst_offset = 0, const size_t src_offset = 0);
+
+void RepeatDataToFrom(Tensor *dst, const Tensor &in, int repeats, int axis, 
+                      const size_t num, bool broadcast_flag,
+                      const size_t dst_offset = 0, const size_t src_offset = 0);
+
+void RepeatDataToFrom(Tensor *dst, const Tensor &in, vector<int> repeats, int axis, 
+                      const size_t num, bool broadcast_flag,
+                      const size_t dst_offset = 0, const size_t src_offset = 0);
 
 // =============Element-wise operations====================================
 Tensor Abs(const Tensor &in);
