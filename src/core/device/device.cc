@@ -61,7 +61,7 @@ void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
         this->CopyToFrom(
             reinterpret_cast<char*>(dst->mutable_data()) + dst_offset,
             reinterpret_cast<const char*>(src->data()) + src_offset, nBytes,
-            direct, ctx);;
+            direct, ctx);
       },
       {src}, {dst});
 }

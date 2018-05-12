@@ -167,7 +167,7 @@ void Tensor::CopyData(const Tensor &src) {
   CHECK(block_ != nullptr);
   // Do copy only if the src's block is already initialized.
   if (src.block_ != nullptr) {
-    singa::CopyDataToFrom(this, src, Size()*repeats, 0, 0);
+    singa::CopyDataToFrom(this, src, Size(), 0, 0);
   }
 }
 
