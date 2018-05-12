@@ -261,9 +261,9 @@ Tensor Reshape(const Tensor &in, Shape &&s);
 void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
                     const size_t dst_offset = 0, const size_t src_offset = 0);
 
-void RepeatDataToFrom(Tensor *dst, const Tensor &in, int repeats, int axis, 
-                      const size_t num, bool broadcast_flag,
-                      const size_t dst_offset = 0, const size_t src_offset = 0);
+//void RepeatDataToFrom(Tensor *dst, const Tensor &in, int repeats, int axis,
+//                      const size_t num, bool broadcast_flag,
+//                      const size_t dst_offset = 0, const size_t src_offset = 0);
 
 void RepeatDataToFrom(Tensor *dst, const Tensor &in, vector<int> repeats, int axis, 
                       const size_t num, bool broadcast_flag,

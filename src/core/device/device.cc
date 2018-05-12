@@ -89,8 +89,6 @@ void Device::RepeatDataToFrom(Block* dst, Block* src, size_t nBytes,
       src_data += chunk;
     }
   }
-
-
 }
 
 void Device::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,

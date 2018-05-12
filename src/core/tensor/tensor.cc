@@ -1163,55 +1163,6 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
     });
   }
 }
-/*void HighDimMult(const Tensor &A, const Tensor &B) {
-    CHECK_EQ(A.shape(A.ndim()-1),B.shape(0));
-    Shape s;
-    for (int i = A.ndim();i > 1;i--){
-        s.push_back(A.shape(A.ndim() - i));
-    }
-    for (int i = B.ndim();i > 1;i--){
-        s.push_back(A.shape(A.ndim() - i+1));
-    }
-    Tensor out(s, A.device(), A.data_type());
-    HighDimMult(A, B, &out);
-    out = out.reshape(s);
-    return out;
-}
-
-void HighDimMult(const Tensor &A, const Tensor &B, Tensor *out) {
-    HighDimMult(1.0f, A, B, 0.0f, out);
-}
-
-template <typename SType>
-void HighDimMult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta, Tensor *C) {
-    CHECK_GE(A.shape().size(), 3u);
-    if (B.nDim() == 1u) {
-        TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
-            auto a = TypeCast<SType, DType>(alpha);
-            auto b = TypeCast<SType, DType>(beta);
-            auto A_2d = A.reshape(Product(A.shape)/A.shape(A.ndim()-1),A.shape(A.ndim()-1});
-            C->device()->Exec([a, A_2d, b, B, C](Context *ctx) {
-                GEMV<DType, Lang>(A_2d.transpose(), A_2d.shape(0), A_2d.shape(1), a, A_2d.block(),
-                                  B.block(), b, C->block(), ctx);
-            }, {A_2d.block(), B.block()}, {C->block()});
-        });
-    }
-    else {
-        CHECK(!C->transpose());
-        TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
-            auto a = TypeCast<SType, DType>(alpha);
-            auto b = TypeCast<SType, DType>(beta);
-            auto A_2d = A.reshape(Product(A.shape)/A.shape(A.ndim()-1),A.shape(A.ndim()-1});
-            auto B_2d = B.reshape(Product(B.shape)/B.shape(B.ndim()-1),B.shape(B.ndim()-1});
-            C->device()->Exec([a, A_2d, b, B_2d, C](Context *ctx) {
-                GEMM<DType, Lang>(A_2d.transpose(), B_2d.transpose(), A_2d.shape(0), B_2d.shape(1),
-                                  A_2d.shape(1), a, A_2d.block(), B_2d.block(), b, C->block(),
-                                  ctx);
-            }, {A_2d.block(), B_2d.block()}, {C->block()});
-        });
-    }
-}*/
-
 
 // ************************
 // Misc.

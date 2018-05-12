@@ -1151,13 +1151,6 @@ def repeat(t, repeats, axis = None):
 
     return ret
 
-
-
-
-
-
-
-
 def tensordot (A,B,axes=2):
 
     """Returns the tensor multiplication of two tensors along specified axes.
