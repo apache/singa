@@ -421,7 +421,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   sort(vec_pieceMsg.begin(),vec_pieceMsg.end(),less_than_Idx());
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+maxLen]);
   cout<<"time for one itr: "<<vec_run[vec_run.size()-1].t-vec_run[0].t<<endl;
-  cout<<" to write vec_run for comparison"<<endl;
+  cout<<" to write vec_run for comparison, nothing wrong till here 5/13."<<endl;
    //print out push-info
   fstream file_block2("vec_run.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run.size();i++){
@@ -460,6 +460,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
           }
           vec_swap.push_back(tempSwap);
           sumSizeSwapAble+=tempSwap.size;
+          //onePairMsg_Swap(string p, size_t s, int i1, int i2, double t1, double t2): ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
+
+          cout<<"SwapItem: "<<tempSwap.r_dix<<' '<<tempSwap.d_idx<<endl;
       } else {//cout<<endl;
           
       }
