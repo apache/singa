@@ -599,6 +599,12 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         // Table_meta_ridx[vec_swap_selct[i].r_idx] = Table_meta.find(static_cast<Block*>(tempBlock_))->second;
 
         // cout<<"complete store: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<Table_meta.find(static_cast<Block*>(tempBlock_))->second.second.size<<endl;
+      void* tempPtr = nullptr;
+      cudaMallocHost(&tempPtr,vec_swap_selct[i].size); //pinned memory.
+      BM_new meta;
+      meta.size = vec_swap_selct[i].size;
+      meta.cpu_ptr = tempPtr;
+      Table_new[vec_swap_selct[i].r_idx] = meta;
     }
     cout<<"size of Table_Block_ptr "<<Table_Block_ptr.size()<<endl;
 
