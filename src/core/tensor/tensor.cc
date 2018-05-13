@@ -22,6 +22,8 @@
 #include "./tensor_math_opencl.h"
 #include <utility>
 
+using std::vector;
+
 namespace singa {
 
 Tensor::~Tensor() {
@@ -169,6 +171,24 @@ void Tensor::CopyData(const Tensor &src) {
   }
 }
 
+// void Tensor::RepeatData(const Tensor &src, int repeats, int axis) {
+//   CHECK_EQ(Size(), src.Size()*repeats);
+//   CHECK(block_ != nullptr);
+//   // Do repeat only if the src's block is already initialized.
+//   if (src.block_ != nullptr) {
+//     singa::RepeatDataToFrom(this, src, repeats, axis, Size(), false, 0, 0);
+//   }
+// }
+
+void Tensor::RepeatData(const Tensor &src, vector<int> repeats, int axis, int total_repeats) {
+  CHECK_EQ(Size(), src.Size()*total_repeats);
+  CHECK(block_ != nullptr);
+  // Do repeat only if the src's block is already initialized.
+  if (src.block_ != nullptr) {
+    singa::RepeatDataToFrom(this, src, repeats, axis, Size(), false, 0, 0);
+  }
+}
+
 void Tensor::FromProto(const singa::TensorProto &proto) {
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
@@ -277,6 +297,30 @@ Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   return t;
 }
 
+// Tensor Tensor::Repeat(std::shared_ptr<Device> device, int repeats, int axis) const {
+//   if (device == nullptr) device = device_;
+//   t.shape_ = push_back(Product(shape_)*repeats);
+//   t.device_ = device_;
+//   t.data_type_ = data_type_;
+//   t.RepeatData(*this, repeats, axis);
+//   return t
+// }
+
+Tensor Tensor::Repeat(std::shared_ptr<Device> device, vector<int> repeats, int axis) const {
+  if (device == nullptr) device = device_;
+  for (i = 0; i < shape_[axis]; i++) {
+    if(repeats[i] < 0) {
+      LOG(FATAL) << "the repeats number is less than zero";
+    }
+    total_repeats += repeats[i];
+  }
+  t.shape_ = push_back(Product(shape_)*total_repeats);
+  t.device_ = device_;
+  t.data_type_ = data_type_;
+  t.RepeatData(*this, repeats, axis, total_repeats);
+  return t;
+}
+
 Tensor Tensor::T() const {
   CHECK_EQ(shape_.size(), 2u);
   Tensor t;
@@ -381,6 +425,68 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
     auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
     src_dev->CopyDataToFrom(to, from, nBytes, direct, (int)d_offset, (int)s_offset);
   }
+}
+
+// void RepeatDataToFrom(Tensor *dst, const Tensor &src, int repeats, int axis, 
+//                       const size_t num, bool broadcast_flag,
+//                       const size_t dst_offset, const size_t src_offset) {
+//   CHECK_GE(repeats, 0);
+//   vector<int> repeats_v;
+//   repeats_v.push(repeats);
+// //  broadcast_flag = 1;
+//   RepeatDataToFrom(dst, src, repeats_v, axis, num, broadcast_flag, (int)d_offset, (int)s_offset);
+// }
+
+void RepeatDataToFrom(Tensor *dst, const Tensor &src, vector<int> repeats, int axis, 
+                      const size_t num, bool broadcast_flag,
+                      const size_t dst_offset, const size_t src_offset) {
+  if (repeats == NULL) {
+    return NULL;
+  }
+  if (repeats.size() == 1) {
+    broadcast_flag = 1;
+  }
+  if (repeat.size() > 1) {
+    if (axis == NULL) {
+      LOG(FATAL) << "When repeats parameter is sequence, axis cannot be None"
+    }
+  }
+  for (i = 0; i < repeats.size(); i++){
+    CHECK_GE(repeats[i], 0);
+  }
+  auto width = SizeOf(src.data_type());
+  CHECK_EQ(width, SizeOf(dst->data_type()));
+  size_t nBytes = num * width;
+  int chunk = width;
+  if (axis == NULL){
+    int axis_shape = 1;
+
+  } else {
+    int axis_shape = src.shape()[axis];
+    for(i = axis + 1; i < src.nDim(); i++) {
+      chunk *= src.shape()[i];
+    }
+  }
+  int shape_outer = Product(src.shape());
+  std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
+  Block *from = src.block(), *to = dst->block();
+  if (dst_dev->lang() != src_dev->lang()) {
+    // let the none cpp device conduct copy op
+    if (dst_dev->lang() == kCpp) {
+      src_dev->Repeat(to, from, nBytes, kDeviceToHost, (int)d_offset,
+                              (int)s_offset);
+    } else if (src_dev->lang() == kCpp) {
+      dst_dev->CopyDataToFrom(to, from, nBytes, kHostToDevice, (int)d_offset,
+                (int)s_offset);
+    } else {
+      LOG(FATAL) << "Not support mem repeat copy betwee Cuda and OpenCL device";
+    }
+  } else {
+    auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
+    src_dev->RepeatDataToFrom(to, from, nBytes, direct, shape_outer, chunk,
+                              axis_shape, repeats, (int)d_offset, (int)s_offset);
+
+
 }
 //============================================================================
 /// typedef DType accroding to type value.
@@ -652,6 +758,8 @@ Tensor Sum(const Tensor &M, int axis) {
   }
 }
 
+
+
 Tensor SoftMax(const Tensor &in) {
   Tensor out(in.shape(), in.device(), in.data_type());
   SoftMax(in, &out);
@@ -892,6 +1000,8 @@ void DivRow(const Tensor &v, Tensor *M) {
   MultRow(inv, M);
 }
 
+
+
 /// Multiply column 'v' and each column of matrix M; write results into 'out'
 void MultColumn(const Tensor &v, Tensor *M) {
   CHECK(!M->transpose()) << "Not supported yet";
@@ -956,6 +1066,10 @@ void SumRows(const Tensor &M, Tensor *v) {
     Tensor X = M.T();
     Mult(X, one, v);
   }
+}
+
+
+
 }
 // ====================Random operations=====================================
 template <typename SType>

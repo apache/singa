@@ -941,7 +941,7 @@ def mult(A, B, C=None, alpha=1.0, beta=0.0):
 
 def einsum(ops, *args):
     '''
-    function TODO list to finish the function in cpp(just like numpy function):
+    function_TODO list to finish the function in cpp(just like numpy function):
     1.sum(A,axis = None)
     2.repeat(A,repeats)
     3.transpose(A,axes = None)
@@ -952,7 +952,7 @@ def einsum(ops, *args):
             the string specifies the subscripts for summation such as 'ki,kj->kij'
             Here all the 26 lowercase letter can be used here.
         arg(list of array_like):
-                These are the tensors for the operation,but here only support two tensors.
+            These are the tensors for the operation,but here only support two tensors.
     Returns: Singa.Tensor
         the output matirx of the einsum calculation
     The best way to understand this function is to try the examples below:
@@ -1069,6 +1069,192 @@ def einsum(ops, *args):
     res = from_numpy(res_)
 
     return res
+
+
+def sum2(t, axis=None, out=None):
+    '''Sum of tensor elements over given axis
+
+    Args:
+        t: Singa.tensor
+            The array_like tensor to be sumed
+        axis: None or int or tuple of ints, optional
+            Axis or axes along which a sum is performed.
+            The default, axis=None, will sum all of the elements of the input array.
+            If axis is negative it counts from the last to the first axis.
+            If axis is a tuple of ints, a sum is performed on all of the axes specified
+            in the tuple instead of a single axis or all the axes as before.
+        out:Singa.tensor optional
+            Alternative output array in which to place the result.
+            It must have the same shape as the expected output,
+            but the type of the output values will be cast if necessary.
+
+    Return: sum_along_axis: tensor
+        A tensor with the same shape as t, with the specified axis removed.
+        If a is a 0-d array, or if axis is None, a scalar is returned.
+        If an output array is specified, a reference to out is returned
+    '''
+
+    t_shape = t.shape
+    t_ndim = t.ndim()
+
+    if axis is None:
+        one = Tensor(t.shape, t.device, t.dtype)
+        one.set_value(1.0)
+        ret = tensordot(t, one, t_ndim)
+
+    if isinstance(axis,int):
+        if axis < 0:
+            axis += 2
+
+        axis_shape = t_shape[axis]
+        one = Tensor(axis_shape, t.device, t.dtype)
+        one.set_value(1.0)
+        ret = tensordot(t, one, axes=([axis],[0]))
+
+    if isinstance(axis,tuple):
+        l_axis = list(axis)
+        axis_shape = [t_shape[x] for x in axis]
+        one = Tensor(axis_shape, t.device, t.dtype)
+        one.set_value(1.0)
+        one_axis = [x for x in range(one.ndim())]
+        ret = tensordot(t, one, (l_axis,one_axis))
+
+    if out is not None:
+        if out.shape != ret.shape:
+            raise ValueError('dimensions do not match')
+        out[:] = ret
+        return out
+    else:
+        return ret
+
+def repeat(t, repeats, axis = None):
+    if isinstance(repeats, int):
+        if repeats < 0:
+            raise ValueError("'repeats' should not be negative: {}".format(repeats))
+        # broadcast = True
+        if axis < 0:
+            axis += 2
+        ret = singa.Repeat(t, list(repeats), axis)
+    elif isinstance(repeats, tuple) or isinstance(repeats, list):
+        for rep in repeats:
+            if rep < 0:
+                raise ValueError("'repeats' should be int or sequence: {}".format(repeats))
+        if axis < 0:
+            axis += 2
+        ret = singa.Repeat(t, list(repeats), axis)
+        t_shape = t.shape
+        t_shape[axis] = sum(repeats)
+        ret = ret.reshape(t_shape)
+    else:
+        raise ValueError('repeats should be int or sequence')
+
+    return ret
+
+def tensordot (A,B,axes=2):
+
+    """Returns the tensor multiplication of two tensors along specified axes.
+
+    This is equivalent to compute dot product along the specified axes which
+    are treated as one axis by reshaping.
+
+    Args:
+        A: Singa.Tensor
+        B: Singa.Tensor
+        axes:
+            - If it is an integer, then ''axes'' represent axes at the last of ''a`'' and
+              the first of ''b'' are used.
+            - If it is a pair of sequences of integers, then these two
+              sequences specify the list of axes for ''a'' and ''b''. The
+              corresponding axes are paired for sum-product.
+
+    Return:
+        singa.tensor: The tensor  product of ''A'' and ''B'' along the
+        axes specified by ''axes''.
+
+    Thanks to numpy.tensordot.
+    the link is https://github.com/numpy/numpy/blob/v1.14.0/numpy/core/numeric.py#L1123-L1306
+    """
+    # when axes is an integer, axes_A and axes_B represent axes at the last of ''A'' and
+    # the first of ''B''. For example, when axes is 1, we do the normal multiplication :
+    # if A is in shape(3,2,4), B is in shape(4,2,5), it will return a matrix in shape(3,2,2,5)
+    #when axes is 2 and A,B are shape (3,2,4) and (2,4,5), it will return a matrix in shape(3,5)
+
+    if type(axes) == int:
+        axes_A = list(range(-axes, 0))
+        axes_B = list(range(0, axes))
+        axes_B = axes_B
+    else:
+        axes_A,axes_B =axes
+    # when axes is a pair of sequences of integers.For example, A is in shape(3,2,4),
+    #B is in shape(4,2,5), we set axes as ([1,2],[1,0]), it will return a matrix in shape(3,5)
+    if isinstance(axes_A,list):
+        na = len(axes_A)
+        axes_A = list(axes_A)
+    else:
+        axes_A = [axes_A]
+        na = 1
+    if isinstance(axes_B,list):
+        nb = len(axes_B)
+        axes_B = list(axes_B)
+    else:
+        axes_B = [axes_B]
+        nb = 1
+
+    # a_shape and b_shape are the shape of tensor A and B, while nda and ndb are the dim of A and B
+    a_shape = A.shape
+    nda = A.ndim()
+    b_shape = B.shape
+    ndb = B.ndim()
+    equal = True
+    # to check if the length of axe_A is equal to axes_B
+    if na != nb:
+        equal = False
+    else:
+    # to make the shape match
+        for k in range(na):
+            if a_shape[axes_A[k]] != b_shape[axes_B[k]]:
+                equal = False
+                break
+            if axes_A[k] < 0:
+                axes_A[k] += nda
+            if axes_B[k] < 0:
+                axes_B[k] += ndb
+    if not equal:
+        raise ValueError("shape-mismatch for sum")
+    '''start to do the calculation according to the axes'''
+
+    notin = [k for k in range(nda) if k not in axes_A]
+    # nda is the dim of A, and axes_a is the axis for A, notin is the axis which is not in axes_A
+    newaxes_a = notin + axes_A
+    N2 = 1
+    for axis in axes_A:
+        N2 *= a_shape[axis]
+    N1 = 1
+    for ax in notin:
+        N1 *=a_shape[ax]
+    # newshape_a is the shape to do multiplication.For example, A is in shape(3,2,4),
+    #B is in shape(4,2,5), we set axes as ([1,2],[1,0]), then newshape_a should be (3,5)
+    #olda is the shape that will be shown in the result.
+    newshape_a = (N1,N2)
+    olda = [a_shape[axis] for axis in notin]
+    notin = [k for k in range(ndb) if k not in axes_B]
+    newaxes_b = axes_B + notin
+    N2 = 1
+    for axis in axes_B:
+        N2 *= b_shape[axis]
+    N1 = 1
+    for bx in notin:
+        N1 *= b_shape[bx]
+    newshape_b = (N2, N1)
+    oldb = [b_shape[axis] for axis in notin]
+    # do transpose and reshape to get the 2D matrix to do multiplication
+    print(newaxes_a)
+    print(newshape_a)
+    at = A.transpose(newaxes_a).reshape(newshape_a)
+    bt = B.transpose(newaxes_b).reshape(newshape_b)
+    res = mult(at, bt)
+    #reshape the result
+    return res.reshape(olda + oldb)
 
 
 
