@@ -462,7 +462,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
           sumSizeSwapAble+=tempSwap.size;
           //onePairMsg_Swap(string p, size_t s, int i1, int i2, double t1, double t2): ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
 
-          cout<<"SwapItem: "<<tempSwap.r_dix<<' '<<tempSwap.d_idx<<endl;
+          cout<<"SwapItem: "<<tempSwap.r_idx<<' '<<tempSwap.d_idx<<endl;
       } else {//cout<<endl;
           
       }
