@@ -322,6 +322,7 @@ struct onePairMsg_Swap{
     double t1p;
     double t2p;
     //onePairMsg(int n,size_t s, int r,int d):name(n),size(s),r_idx(r),d_idx(d){}
+    //from LayerAppend (3) - r_idx, to next read/write (2) - d_idx
     onePairMsg_Swap(string p, size_t s, int i1, int i2, double t1, double t2): ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
 };
 
@@ -451,6 +452,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   for (int i =1; i<vec_run.size(); i++){
       //cout<<vec_run[i-1].ptr<<' '<<vec_run[i-1].idx<<' '<<vec_run[i-1].MallocFree<<' '<<vec_run[i-1].size;
       //condition for selecting condidates: 3->2, cross peak
+      //from LayerAppend (3) - r_idx, to next read/write (2) - d_idx
       if ((vec_run[i-1].idx<maxIdx) && (vec_run[i].idx>maxIdx) && (vec_run[i-1].ptr ==vec_run[i].ptr) && (vec_run[i-1].MallocFree==3)&&(vec_run[i].MallocFree==2)){
           //cout<<' '<<"selected"<<endl;
           onePairMsg_Swap tempSwap(vec_run[i].ptr,vec_run[i].size,vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
@@ -810,7 +812,13 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
     }
   }
 
-  //vC12 part
+
+}
+
+void SwapGPU::Append(string blockInfo){
+  vec_block.push_back(blockInfo);
+  //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
+    //vC12 part
   if (maxLen > 100) {
     int r_gc = (gc-location)%maxLen;
     //BM_new tempMeta;
@@ -818,17 +826,11 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
     if (!(Table_new.find(r_gc)==Table_new.end())){
       cout<<"r_gc, gc and size ot Table_new "<<r_gc<<' '<<gc<<" "<<Table_new.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
-      Table_new.find(r_gc)->second.block_ = block_;
-      Table_new.find(r_gc)->second.data_ = data_;
+      Table_new.find(r_gc)->second.block_ = nullptr;
+      Table_new.find(r_gc)->second.data_ = nullptr;
     }
   }
 
-
-}
-
-void SwapGPU::Append(string blockInfo){
-  vec_block.push_back(blockInfo);
-  //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
   gc++;
 
 }
