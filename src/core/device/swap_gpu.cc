@@ -724,6 +724,8 @@ void SwapGPU::Free(void* ptr) {
   //Apend info done at device.cc, TODO(junzhe) if remove below item.
   Table_meta.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
+
+  
   
 }
 
@@ -812,6 +814,8 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
     }
   }
 
+  Table_data_block_[data_] = block_;
+  Table_block_data_[block_] = data_;
 
 }
 
@@ -830,7 +834,7 @@ void SwapGPU::Append(string blockInfo){
       cout<<"r_gc, gc and size ot Table_new "<<r_gc<<' '<<gc<<" "<<Table_new.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
       Table_new.find(r_gc)->second.block_ = static_cast<Block*>(result);
-      Table_new.find(r_gc)->second.data_ = nullptr;
+      Table_new.find(r_gc)->second.data_ = Table_block_data_.find(static_cast<Block*>(result))->second;
     }
   }
 

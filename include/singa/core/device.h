@@ -286,6 +286,7 @@ class SwapGPU : public Device {
 
   //for Free, info append. TODO(junzhe) if needed or not.
   map<void*, const Block*>Table_data_block_;
+  map<Block*, void*>Table_block_data_;
 
   //r_idx --> meta, for geting GPU CPU data_. currently good for one iteration only.
   map<const int,pair<BlockMeta,BlockMeta>>Table_meta_ridx;
