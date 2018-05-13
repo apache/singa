@@ -228,6 +228,17 @@ struct BlockMeta{
     void* d_ptr; //not used for
 };
 
+struct BM_new{
+    /*
+     block Meta.
+     */
+    Block* block_ = nullptr;
+    void* data_ = nullptr;
+    void* cpu_ptr = nullptr;
+    size_t size = 0;    
+    //TODO(junzhe) expandable event_t and stream_t
+    //BlockMeta(Block* b, void* d, void* c, size_t s): block_(b), data_(d), cpu_ptr(c), size(s) {}
+};
 /// Device able to Swap memory between Nvidia GPU and Swap
 class SwapGPU : public Device {
  public:
@@ -259,9 +270,16 @@ class SwapGPU : public Device {
   void SwapOut(const Block* block_) override;
   void SwapIn(const Block* block_) override;
 
+  //changed to intake data_ instead
+  void SwapOut_idx(const int r_idx);
+  void SwapIn_idx(const int r_idx);
+
  private:
   void Setup();
   ///Tables needed
+  //to replace Table_meta: r_idx->BlockMeta
+  map<int,BM_new>Table_new;
+
   //meta, TODO(junzhe) if needed or not.
   map<const Block*,pair<BlockMeta,BlockMeta>>Table_meta;
 
