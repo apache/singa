@@ -218,3 +218,151 @@ A video tutorial for running the unit tests can be found here:
 +---------+
 
 	
+5. Build GPU support with CUDA
+------------------------------
+
+In this section, we will extend the previous steps to enable GPU.
+
+5.1 Install Dependencies
+------------------------
+
+In addition to the dependencies in section 1 above, we will need the following:
+
+* CUDA 
+	
+	Download a suitable version such as 9.1 from https://developer.nvidia.com/cuda-downloads . Make sure to install the Visual Studio integration module.
+
+* cuDNN
+
+	Download a suitable version such as 7.1 from https://developer.nvidia.com/cudnn 
+
+* cnmem: 
+
+	* Download the latest version from https://github.com/NVIDIA/cnmem 
+	* Build the Visual Studio solution:
+	
+		.. code-block:: bash
+	
+			cmake -G "Visual Studio 15 2017 Win64"
+		
+	* Open the generated solution in Visual Studio.
+	* Change the build settings to Release and x64.
+	* Build the cnmem project.
+	
+
+5.2 Build SINGA source
+----------------------
+
+* Call cmake and add the paths in your system similar to the following example:
+
+	.. code-block:: bash
+	
+    		cmake -G "Visual Studio 15 2017 Win64" ^
+			  -DGLOG_INCLUDE_DIR="D:/WinSinga/dependencies/glog-0.3.5/src/windows" ^
+			  -DGLOG_LIBRARIES="D:/WinSinga/dependencies/glog-0.3.5/x64/Release" ^
+			  -DCBLAS_INCLUDE_DIR="D:/WinSinga/dependencies/openblas-0.2.20/lapack-netlib/CBLAS/include" ^
+			  -DCBLAS_LIBRARIES="D:/WinSinga/dependencies/openblas-0.2.20/lib/RELEASE" ^
+			  -DProtobuf_INCLUDE_DIR="D:/WinSinga/dependencies/protobuf-2.6.1/src" ^
+			  -DProtobuf_LIBRARIES="D:\WinSinga/dependencies/protobuf-2.6.1/vsprojects/x64/Release" ^
+			  -DProtobuf_PROTOC_EXECUTABLE="D:/WinSinga/dependencies/protoc-2.6.1-win32/protoc.exe" ^
+			  -DCUDNN_INCLUDE_DIR=D:\WinSinga\dependencies\cudnn-9.1-windows10-x64-v7.1\cuda\include ^
+			  -DCUDNN_LIBRARIES=D:\WinSinga\dependencies\cudnn-9.1-windows10-x64-v7.1\cuda\lib\x64 ^
+			  -DSWIG_DIR=D:\WinSinga\dependencies\swigwin-3.0.12 ^
+			  -DSWIG_EXECUTABLE=D:\WinSinga\dependencies\swigwin-3.0.12\swig.exe ^
+			  -DUSE_CUDA=YES ^
+			  -DCUDNN_VERSION=7 ^
+			  ..
+  
+
+* Generate swig interfaces for C++ and Python:
+	Goto src/api
+
+	.. code-block:: bash
+	
+		swig -python -c++ singa.i
+
+* Open the generated solution in Visual Studio
+		
+* Change the build settings to Release and x64
+
+5.2.1 Building singa_objects
+----------------------------
+
+* Add the singa_wrap.cxx file from src/api to the singa_objects project
+* In the singa_objects project, open Additional Include Directories.
+* Add Python include path
+* Add numpy include path
+* Add protobuf include path
+* Add include path for CUDA, cuDNN and cnmem
+* In the preprocessor definitions of the singa_objects project, add USE_GLOG, USE_CUDA and USE_CUDNN. Remove DISABLE_WARNINGS.
+* Build singa_objects project
+	
+5.2.2 Building singa-kernel
+---------------------------	
+
+* Create a new Visual Studio projcet of type "CUDA 9.1 Runtime". Give it a name such as singa-kernel.
+* The project comes with an initial file called kernel.cu. Remove this file from the project.
+* Add this file: src/core/tensor/math_kernel.cu 
+* In the project settings:
+
+	* Set Platfrom Toolset to "Visual Studio 2015 (v140)"
+	* Set Configuration Type to " Static Library (.lib)"
+	* In the Include Directories, add build/include.
+
+* Build singa-kernel project
+
+
+5.2.3 Building singa
+--------------------
+	
+* In singa project:
+	* add singa_wrap.obj to Object Libraries
+	* change target name to _singa_wrap
+	* change target extension to .pyd
+	* change configuration type to Dynamic Library (.dll)
+	* goto Additional Library Directories and add the path to python, openblas, protobuf and glog libraries
+	* Add also the library path to singa-kernel, cnmem, cuda and cudnn.
+	* goto Additional Dependencies and add libopenblas.lib, libglog.lib and libprotobuf.lib.
+	* Add also: singa-kernel.lib, cnmem.lib, cudnn.lib, cuda.lib , cublas.lib, curand.lib and cudart.lib.
+	
+* build singa project
+
+5.3. Install Python module
+--------------------------
+
+* Change _singa_wrap.so to _singa_wrap.pyd in build/python/setup.py 
+* Copy the files in src/proto/python_out to build/python/singa/proto
+
+* Optionally create and activate a virtual environment:
+
+.. code-block:: bash
+
+	mkdir SingaEnv
+	virtualenv SingaEnv
+	SingaEnv\Scripts\activate
+	
+* goto build/python folder and run:
+
+.. code-block:: bash
+
+	python setup.py install
+
+* Make _singa_wrap.pyd, libglog.dll, libopenblas.dll, cnmem.dll, CUDA Runtime (e.g. cudart64_91.dll) and cuDNN (e.g. cudnn64_7.dll) available by adding them to the path or by copying them to singa package folder in the python site-packages 
+	
+* Verify that SINGA is installed by running:
+
+.. code-block:: bash
+
+	python -c "from singa import device; dev = device.create_cuda_gpu()"
+
+A video tutorial for this part can be found here:
+	
+
+.. |video| image:: https://img.youtube.com/vi/YasKVjRtuDs/0.jpg
+   :scale: 100%
+   :align: middle
+   :target: https://www.youtube.com/watch?v=YasKVjRtuDs
+
++---------+
+| |video| |
++---------+
