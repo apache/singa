@@ -812,6 +812,8 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   //vC12 part
   if (maxLen > 100) {
     int r_gc = (gc-location)%maxLen;
+    BM_new tempMeta;
+    Table_new [r_gc] = tempMeta; 
     if (!(Table_new.find(r_gc)==Table_new.end())){
       cout<<"gc is "<<r_gc<<" size of Table_new: "<<Table_new.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
