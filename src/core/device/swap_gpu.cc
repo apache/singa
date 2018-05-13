@@ -438,7 +438,12 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
   //sort by ptr & idx
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
-
+   cout<<" to write vec_run2 for comparison, nothing wrong till here 5/13."<<endl;
+   //print out push-info
+  fstream file_block3("vec_run2.text", ios::in|ios::out|ios::app);
+  for (int i = 0; i<vec_run.size();i++){
+    file_block3<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<vec_run[i].t<<endl;
+  }
   vector<onePairMsg_Swap>vec_swap;
   size_t sumSizeSwapAble =0;
   ///formulate swap items.
