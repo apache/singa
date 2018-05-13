@@ -813,7 +813,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   if (asyncSwapFlag == 1) {
     int r_gc = (gc-location)%maxLen;
     if (!(Table_new.find(r_gc)==Table_new.end())){
-      cout<<"good at "<<r_gc<<endl;
+      cout<<"gc is "<<r_gc<<" size of Table_new: "<<Table_new.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
       Table_new.find(r_gc)->second.block_ = block_;
       Table_new.find(r_gc)->second.data_ = data_;

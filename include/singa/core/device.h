@@ -24,6 +24,7 @@
 #include <string>
 #include <functional>
 #include <memory>
+#include <map>
 
 #include "singa/singa_config.h"
 #include "singa/core/common.h"
