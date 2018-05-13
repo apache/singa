@@ -809,6 +809,17 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
     }
   }
 
+  //vC12 part
+  if (asyncSwapFlag == 1) {
+    int r_gc = (gc-location)%maxLen;
+    if (!(Table_new.find(r_gc)==Table_new.end())){
+      cout<<"good at "<<r_gc<<endl;
+      //TODO(junzhe) verify the length change, if go in, value update
+      Table_new.find(r_gc)->second.block_ = block_;
+      Table_new.find(r_gc)->second.data_ = data_;
+    }
+  }
+
 
 }
 
