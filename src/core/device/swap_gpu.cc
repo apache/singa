@@ -421,7 +421,12 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   sort(vec_pieceMsg.begin(),vec_pieceMsg.end(),less_than_Idx());
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+maxLen]);
   cout<<"time for one itr: "<<vec_run[vec_run.size()-1].t-vec_run[0].t<<endl;
-
+  cout<<" to write vec_run for comparison"<<endl;
+   //print out push-info
+  fstream file_block2("vec_run.text", ios::in|ios::out|ios::app);
+  for (int i = 0; i<vec_run.size();i++){
+    file_block2<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<vec_run[i].t<<endl;
+  }
   //scale down idx
   for (int i=0; i<maxLen;i++){
       vec_run[i].idx = vec_run[i].idx - location;
@@ -732,22 +737,22 @@ void SwapGPU::Test_sched_switch_swap(){
  ///switch flag;
  if (gc == globeCounter){
    asyncSwapFlag = 1;
-   cout<<"switched flag for ever"<<endl;
+   cout<<"switched flag for at "<<globeCounter<<endl;
  }
 
  ///swap as per schedule
   int relative_gc = (gc-location)%maxLen; //verified
   //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   if ((asyncSwapFlag == 1) && (!(Table_sched.find((gc-location)%maxLen) == Table_sched.end()))){
-    cout<<"std::get<2>(Table_sched.find((gc-location)%maxLen)->second) "<<std::get<2>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
+    //cout<<"std::get<2>(Table_sched.find((gc-location)%maxLen)->second) "<<std::get<2>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
     if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
       //SwapOut(Table_Block_ptr.find(r_idx)->second);
-      cout<<"swapOut - print from Malloc"<<endl;
+      //cout<<"swapOut - print from Malloc"<<endl;
     } else {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
       //SwapIn(Table_Block_ptr.find(r_idx)->second);
-      cout<<"swapIn - print from Malloc"<<endl;
+      //cout<<"swapIn - print from Malloc"<<endl;
     }
   }
 
