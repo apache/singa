@@ -282,14 +282,14 @@ class SwapGPU : public Device {
   map<int,BM_new>Table_new;
 
   //meta, TODO(junzhe) if needed or not.
-  map<const Block*,pair<BlockMeta,BlockMeta>>Table_meta;
+  map<Block*,pair<BlockMeta,BlockMeta>>Table_meta;
 
   //for Free, info append. TODO(junzhe) if needed or not.
-  map<void*, const Block*>Table_data_block_;
+  map<void*, Block*>Table_data_block_;
   map<Block*, void*>Table_block_data_;
 
   //r_idx --> meta, for geting GPU CPU data_. currently good for one iteration only.
-  map<const int,pair<BlockMeta,BlockMeta>>Table_meta_ridx;
+  map<int,pair<BlockMeta,BlockMeta>>Table_meta_ridx;
 
   //schedule: idx--> r_idx,size,dir. int 0 means D2H, 1 means H2D.
   map<int,std::tuple<int,size_t,int>>Table_sched; 
