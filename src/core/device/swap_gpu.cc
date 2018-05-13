@@ -818,15 +818,18 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 void SwapGPU::Append(string blockInfo){
   vec_block.push_back(blockInfo);
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
-    //vC12 part
+  //vC12 part
   if (maxLen > 100) {
     int r_gc = (gc-location)%maxLen;
-    //BM_new tempMeta;
-    //Table_new [r_gc] = tempMeta; 
+
     if (!(Table_new.find(r_gc)==Table_new.end())){
+      vector<string> v = swap_split(blockInfo, " ");
+      void* result;
+      stringstream convert(v[1]);
+      convert>>result;
       cout<<"r_gc, gc and size ot Table_new "<<r_gc<<' '<<gc<<" "<<Table_new.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
-      Table_new.find(r_gc)->second.block_ = nullptr;
+      Table_new.find(r_gc)->second.block_ = static_cast<Block*>result;
       Table_new.find(r_gc)->second.data_ = nullptr;
     }
   }
