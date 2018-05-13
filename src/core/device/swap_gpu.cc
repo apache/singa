@@ -723,10 +723,10 @@ void SwapGPU::Free(void* ptr) {
 
   //Apend info done at device.cc, TODO(junzhe) if remove below item.
   Table_meta.erase(Table_data_block_.find(ptr)->second);
+  //vC12
+  Table_block_data_.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
-
-  
-  
+ 
 }
 
 void SwapGPU::Test_sched_switch_swap(){
@@ -789,9 +789,6 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
-  
-  //data_->block_
-  Table_data_block_[data_]=block_;
   
   //Table_meta
   BlockMeta cpu,gpu;
