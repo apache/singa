@@ -584,21 +584,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         //Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
         Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
         cout<<"Table_Block_ptr "<<vec_swap_selct[i].r_idx<<" "<<Table_Block_ptr.find(vec_swap_selct[i].r_idx)->second<<endl;
-        cout<<"***Table_sched "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<endl;
-        cout<<"***Table_sched "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<endl;
-        // //convert str to ptr
-        // void* tempBlock_ =nullptr;
-        // stringstream convert(vec_swap_selct[i].ptr);
-        // if (!(convert>>tempBlock_)){
-        //     cout<<"error for converting str to Block*."<<endl;
-        // }
-
-        // if ((Table_meta.find(static_cast<Block*>(tempBlock_))==Table_meta.end())){
-        //   cout<<"no such a block_";
-        // }
-        // Table_meta_ridx[vec_swap_selct[i].r_idx] = Table_meta.find(static_cast<Block*>(tempBlock_))->second;
-
-        // cout<<"complete store: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<Table_meta.find(static_cast<Block*>(tempBlock_))->second.second.size<<endl;
+        //cout<<"***Table_sched "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<endl;
+        //cout<<"***Table_sched "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<endl;
+        
       void* tempPtr = nullptr;
       cudaMallocHost(&tempPtr,vec_swap_selct[i].size); //pinned memory.
       BM_new meta;
@@ -812,10 +800,10 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   //vC12 part
   if (maxLen > 100) {
     int r_gc = (gc-location)%maxLen;
-    BM_new tempMeta;
-    Table_new [r_gc] = tempMeta; 
+    //BM_new tempMeta;
+    //Table_new [r_gc] = tempMeta; 
     if (!(Table_new.find(r_gc)==Table_new.end())){
-      cout<<"gc is "<<r_gc<<" size of Table_new: "<<Table_new.size()<<endl;
+      cout<<"r_gc, gc and size ot Table_new "<<r_gc<<' '<<gc<<" "<<Table_new.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
       Table_new.find(r_gc)->second.block_ = block_;
       Table_new.find(r_gc)->second.data_ = data_;
