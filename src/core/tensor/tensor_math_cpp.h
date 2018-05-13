@@ -32,13 +32,14 @@ namespace singa {
 
 // ===================== Helper Functions =============================
 
-//generate a traversal_info vector based on the tensor's shape for the traverse_next function to work
+// generate a traversal_info vector based on the tensor's shape for the
+// traverse_next function to work
 vector<int> generate_traversal_info(const Tensor& x) {
-    vector<int> traversal_info = {};
-    for(size_t n=0; n<(x.shape().size()+2); ++n) {
-      traversal_info.push_back(0);
-    }
-    return traversal_info;
+  vector<int> traversal_info = {};
+  for (size_t n = 0; n < (x.shape().size() + 2); ++n) {
+    traversal_info.push_back(0);
+  }
+  return traversal_info;
 };
 
 //generate shape multipliers
@@ -47,18 +48,18 @@ vector<int> generate_traversal_info(const Tensor& x) {
 //this means that the 3rd, 6th, and 9th index of the array will always be the starting element of their respective rows
 //so we need to need use the inner stride when jumping from 1st->2nd element, and outer stride when jumping from 2nd->3rd
 vector<int> generate_shape_multipliers(const Tensor& x) {
-    Shape y_shape = x.shape();
-    if(y_shape.size()==0){
-      return {1};
-    }
-    vector<int> shape_multipliers = {1};
-    int cumulative_product = 1;
+  Shape y_shape = x.shape();
+  if (y_shape.size() == 0) {
+    return {1};
+  }
+  vector<int> shape_multipliers = {1};
+  int cumulative_product = 1;
 
-    for (size_t n=0; n<(y_shape.size()-1); ++n) {
-        cumulative_product = cumulative_product*y_shape[y_shape.size()-1-n];
-        shape_multipliers.insert(shape_multipliers.begin(), cumulative_product);
-    }
-    return shape_multipliers;
+  for (size_t n = 0; n < (y_shape.size() - 1); ++n) {
+    cumulative_product = cumulative_product * y_shape[y_shape.size() - 1 - n];
+    shape_multipliers.insert(shape_multipliers.begin(), cumulative_product);
+  }
+  return shape_multipliers;
 };
 
 // ******************************************************************************************
@@ -71,20 +72,20 @@ vector<int> generate_shape_multipliers(const Tensor& x) {
 //this additional check only has 1 loop for 2d matrix
 //but runtime performance might degrade to O(nlog(n)) for higher dimensional tensors
 int determine_order(vector<int>& shape_multipliers, int counter) {
-    for (size_t n=0; n<(shape_multipliers.size()-1); ++n) {
-        if((counter%shape_multipliers[n])==0){
-            return ((shape_multipliers.size()) - 1 - n);
-        }
+  for (size_t n = 0; n < (shape_multipliers.size() - 1); ++n) {
+    if ((counter % shape_multipliers[n]) == 0) {
+      return ((shape_multipliers.size()) - 1 - n);
     }
-    return 0;
+  }
+  return 0;
 };
 
 //this function updates the base indexes with the current index after every single traversal step,
 //can be generalized beyond 2d cases
 void update_base_index(const Tensor& x, vector<int>& traversal_info) {
-    for (int n=0; n<(traversal_info[x.shape().size()+1]+1); ++n) {
-        traversal_info[n] = traversal_info[x.shape().size()];
-    }
+  for (int n = 0; n < (traversal_info[x.shape().size() + 1] + 1); ++n) {
+    traversal_info[n] = traversal_info[x.shape().size()];
+  }
 };
 
 //function to traverse a const strided tensor object
@@ -95,32 +96,32 @@ void update_base_index(const Tensor& x, vector<int>& traversal_info) {
 //index 3 stores the order of the traversal for e.g. if the order is 0,
 //it means the next element can be navigated to using the innermost stride
 void traverse_next(const Tensor& x,
-                   vector<int>& shape_multipliers, 
+                   vector<int>& shape_multipliers,
                    vector<int>& traversal_info,
                    int counter) {
 
-    update_base_index(x, traversal_info);
-    traversal_info[x.shape().size()+1] = determine_order(shape_multipliers, counter);
-    traversal_info[x.shape().size()] = traversal_info[traversal_info[x.shape().size()+1]] + 
-                                                   x.strides()[x.strides().size()-traversal_info[x.shape().size()+1]-1];
+  update_base_index(x, traversal_info);
+  traversal_info[x.shape().size() + 1] = determine_order(shape_multipliers, counter);
+  traversal_info[x.shape().size()] = traversal_info[traversal_info[x.shape().size() + 1]] +
+                                     x.strides()[x.strides().size() - traversal_info[x.shape().size() + 1] - 1];
 };
 
 template <typename DType>
-void TraverseUnary(const Tensor &in, Tensor* out, std::function<DType(DType)> func){
+void TraverseUnary(const Tensor &in, Tensor* out, std::function<DType(DType)> func) {
   DType *outPtr = static_cast<DType *>(out->block()->mutable_data());
   const DType *inPtr = static_cast<const DType *>(in.block()->data());
   vector<int> traversal_info = generate_traversal_info(in);
   vector<int> shape_multipliers = generate_shape_multipliers(in);
 
-  for (size_t i = 0; i < in.Size(); i++) { 
+  for (size_t i = 0; i < in.Size(); i++) {
     outPtr[i] = func(inPtr[traversal_info[in.shape().size()]]);
-    traverse_next(in, shape_multipliers, traversal_info, i+1);
+    traverse_next(in, shape_multipliers, traversal_info, i + 1);
   }
 }
 
 template <typename DType>
-void TraverseBinary(const Tensor &in1, const Tensor &in2, Tensor* out, 
-                    std::function<DType(DType, DType)> func){
+void TraverseBinary(const Tensor &in1, const Tensor &in2, Tensor* out,
+                    std::function<DType(DType, DType)> func) {
   DType *outPtr = static_cast<DType *>(out->block()->mutable_data());
   const DType *in1Ptr = static_cast<const DType *>(in1.block()->data());
   const DType *in2Ptr = static_cast<const DType *>(in2.block()->data());
@@ -132,8 +133,8 @@ void TraverseBinary(const Tensor &in1, const Tensor &in2, Tensor* out,
   for (size_t i = 0; i < in1.Size(); i++) {
     outPtr[i] = func(in1Ptr[traversal_info_in1[in1.shape().size()]],
                      in2Ptr[traversal_info_in2[in2.shape().size()]]);
-    traverse_next(in1, shape_multipliers_in1, traversal_info_in1, i+1);
-    traverse_next(in2, shape_multipliers_in2, traversal_info_in2, i+1);
+    traverse_next(in1, shape_multipliers_in1, traversal_info_in1, i + 1);
+    traverse_next(in2, shape_multipliers_in2, traversal_info_in2, i + 1);
   }
 }
 
@@ -151,7 +152,7 @@ void Abs<float, lang::Cpp>(const Tensor& in, Tensor* out, Context *ctx) {
 template <>
 void Add<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out, Context *ctx) {
   auto add_lambda = [&x](float a) {
-    return (a+x);
+    return (a + x);
   };
   TraverseUnary<float>(in, out, add_lambda);
 }
@@ -160,10 +161,10 @@ template <>
 void Add<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out, Context *ctx) {
   // CHECK_EQ(ctx->stream, nullptr);
   auto add_lambda_binary = [](float a, float b) {
-    return (a+b);
+    return (a + b);
   };
   TraverseBinary<float>(in1, in2, out, add_lambda_binary);
-  
+
 }
 
 template <>
@@ -171,8 +172,8 @@ void Clamp<float, lang::Cpp>(const float low, const float high,
                              const Tensor& in, Tensor* out,
                              Context *ctx) {
   auto clamp_lambda = [&low, &high](float a) {
-    if(a < low){return low;}
-    else if(a > high){return high;}
+    if (a < low) {return low;}
+    else if (a > high) {return high;}
     else {return a;}
   };
   TraverseUnary<float>(in, out, clamp_lambda);
@@ -189,7 +190,7 @@ void Div<float, lang::Cpp>(const float x, const Tensor& in, Tensor* out,
   for (size_t i = 0; i < in.Size(); i++) {
     CHECK_NE(inPtr[traversal_info[in.shape().size()]], 0.f);
     outPtr[i] = x / inPtr[traversal_info[in.shape().size()]];
-    traverse_next(in, shape_multipliers, traversal_info, i+1);
+    traverse_next(in, shape_multipliers, traversal_info, i + 1);
   }
 }
 
@@ -207,8 +208,8 @@ void Div<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
   for (size_t i = 0; i < in1.Size(); i++) {
     CHECK_NE(in2Ptr[traversal_info_in2[in2.shape().size()]], 0.f);
     outPtr[i] = in1Ptr[traversal_info_in1[in1.shape().size()]] / in2Ptr[traversal_info_in2[in2.shape().size()]];
-    traverse_next(in1, shape_multipliers_in1, traversal_info_in1, i+1);
-    traverse_next(in2, shape_multipliers_in2, traversal_info_in2, i+1);
+    traverse_next(in1, shape_multipliers_in1, traversal_info_in1, i + 1);
+    traverse_next(in2, shape_multipliers_in2, traversal_info_in2, i + 1);
   }
 }
 
@@ -216,16 +217,16 @@ template <>
 void EltwiseMult<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
                                    Context *ctx) {
   auto eltwisemult_lambda = [&x](float a) {
-    return (a*x);
+    return (a * x);
   };
   TraverseUnary<float>(in, out, eltwisemult_lambda);
 }
 
 template <>
-void EltwiseMult<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out, 
+void EltwiseMult<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
                                    Context *ctx) {
   auto eltwisemult_lambda_binary = [](float a, float b) {
-    return (a*b);
+    return (a * b);
   };
   TraverseBinary<float>(in1, in2, out, eltwisemult_lambda_binary);
 }
@@ -300,7 +301,7 @@ void Log<float, lang::Cpp>(const Tensor& in, Tensor* out,
   for (size_t i = 0; i < in.Size(); i++) {
     CHECK_GT(inPtr[traversal_info[in.shape().size()]], 0.f);
     outPtr[i] = log(inPtr[traversal_info[in.shape().size()]]);
-    traverse_next(in, shape_multipliers, traversal_info, i+1);
+    traverse_next(in, shape_multipliers, traversal_info, i + 1);
   }
 }
 
@@ -325,21 +326,21 @@ void LT<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
 
 template <>
 void Pow<float, lang::Cpp>(const Tensor& in, const float x, Tensor *out, Context *ctx) {
-  TraverseUnary<float>(in, out, [x](float y) {return pow(y,x);});
+  TraverseUnary<float>(in, out, [x](float y) {return pow(y, x);});
 }
 
 template <>
 void Pow<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
                            Context *ctx) {
   auto pow_lambda_binary = [](float a, float b) {
-    return pow(a,b);
+    return pow(a, b);
   };
   TraverseBinary<float>(in1, in2, out, pow_lambda_binary);
 }
 
 template <>
 void ReLU<float, lang::Cpp>(const Tensor& in, Tensor* out,
-                          Context *ctx) {
+                            Context *ctx) {
   auto relu_lambda = [](float a) {
     return (a >= 0.f) ? a : 0.f;
   };
@@ -355,14 +356,14 @@ void Set<float, lang::Cpp>(const float x, Tensor* out,
 
 template <>
 void Set<int, lang::Cpp>(const int x, Tensor* out,
-                           Context *ctx) {
+                         Context *ctx) {
   int *outPtr = static_cast<int *>(out->block()->mutable_data());
   for (size_t i = 0; i < out->Size(); i++) outPtr[i] = x;
 }
 
 template <>
 void Sigmoid<float, lang::Cpp>(const Tensor& in, Tensor* out,
-                          Context *ctx) {
+                               Context *ctx) {
   auto sigmoid_lambda = [](float a) {
     return 1.f / (1.f + exp(-a));
   };
@@ -371,7 +372,7 @@ void Sigmoid<float, lang::Cpp>(const Tensor& in, Tensor* out,
 
 template <>
 void Sign<float, lang::Cpp>(const Tensor& in, Tensor* out,
-                          Context *ctx) {
+                            Context *ctx) {
   auto sign_lambda = [](float a) {
     return (a > 0) - (a < 0);
   };
@@ -389,7 +390,7 @@ void Sqrt<float, lang::Cpp>(const Tensor& in, Tensor* out,
   for (size_t i = 0; i < in.Size(); i++) {
     CHECK_GE(inPtr[traversal_info[in.shape().size()]], 0.f);
     outPtr[i] = sqrt(inPtr[traversal_info[in.shape().size()]]);
-    traverse_next(in, shape_multipliers, traversal_info, i+1);
+    traverse_next(in, shape_multipliers, traversal_info, i + 1);
   }
 }
 
@@ -398,7 +399,7 @@ void Sub<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
                            Tensor* out, Context *ctx) {
   // CHECK_EQ(ctx->stream, nullptr);
   auto sub_lambda_binary = [](float a, float b) {
-    return (a-b);
+    return (a - b);
   };
   TraverseBinary<float>(in1, in2, out, sub_lambda_binary);
 }
@@ -418,7 +419,7 @@ void Sum<float, lang::Cpp>(const Tensor& in, float *out,
 
 template <>
 void Tanh<float, lang::Cpp>(const Tensor& in, Tensor* out,
-                          Context *ctx) {
+                            Context *ctx) {
   auto tanh_lambda = [](float a) {
     return tanh(a);
   };
@@ -475,7 +476,7 @@ void DGMM<float, lang::Cpp>(const bool side_right,
       size_t offset = r * ncol;
       for (size_t c = 0; c < ncol; c++) {
         outPtr[traversal_info[M.shape().size()]] = MPtr[traversal_info[M.shape().size()]] * vPtr[c];
-        traverse_next(M, shape_multipliers, traversal_info, offset+c+1);
+        traverse_next(M, shape_multipliers, traversal_info, offset + c + 1);
       }
     }
   } else {
@@ -483,7 +484,7 @@ void DGMM<float, lang::Cpp>(const bool side_right,
       size_t offset = r * ncol;
       for (size_t c = 0; c < ncol; c++) {
         outPtr[traversal_info[M.shape().size()]] = MPtr[traversal_info[M.shape().size()]] * vPtr[r];
-        traverse_next(M, shape_multipliers, traversal_info, offset+c+1);
+        traverse_next(M, shape_multipliers, traversal_info, offset + c + 1);
       }
     }
   }
@@ -509,7 +510,7 @@ template <>
 void Axpy<float, lang::Cpp>(const float alpha,
                             const Tensor& in, Tensor *out, Context *ctx) {
   //check input tensor for strides first
-  if(in.strides() == out->strides()){
+  if (in.strides() == out->strides()) {
     const float *inPtr = static_cast<const float *>(in.block()->data());
     float *outPtr = static_cast<float *>(out->block()->mutable_data());
     cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
@@ -522,7 +523,7 @@ template <>
 void Dot<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
                            float *out, Context *ctx) {
   //check input tensor for strides first
-  if(!(in1.transpose()) && !(in2.transpose())){
+  if (!(in1.transpose()) && !(in2.transpose())) {
     const float *in1Ptr = static_cast<const float *>(in1.block()->data());
     const float *in2Ptr = static_cast<const float *>(in2.block()->data());
     *out = cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
@@ -580,10 +581,10 @@ void GEMM<float, lang::Cpp>(const float alpha,
   const float *BPtr = static_cast<const float *>(B.block()->data());
   float *CPtr = static_cast<float *>(C->block()->mutable_data());
   cblas_sgemm(CblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha, APtr,
-    lda, BPtr, ldb, beta, CPtr, ldc);
+              lda, BPtr, ldb, beta, CPtr, ldc);
 }
 
-#else    
+#else
 
 template <>
 void Amax<float, lang::Cpp>(const Tensor& in, size_t *out,
@@ -636,9 +637,9 @@ void Axpy<float, lang::Cpp>(const float alpha,
   vector<int> traversal_info = generate_traversal_info(in);
   vector<int> shape_multipliers = generate_shape_multipliers(in);
 
-  for (size_t i = 0; i < in.Size(); i++) { 
+  for (size_t i = 0; i < in.Size(); i++) {
     outPtr[i] += alpha * inPtr[traversal_info[in.shape().size()]];
-    traverse_next(in, shape_multipliers, traversal_info, i+1);
+    traverse_next(in, shape_multipliers, traversal_info, i + 1);
   }
 }
 
@@ -658,7 +659,7 @@ void Dot<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
   // const float *in1Ptr = static_cast<const float *>(in1.data());
   // const float *in2Ptr = static_cast<const float *>(in2.data());
   // for (size_t i = 0; i < in.Size(); i++) {
-  //   sum += in1Ptr[i] * in2Ptr[i]; 
+  //   sum += in1Ptr[i] * in2Ptr[i];
   // }
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
   const float *in1Ptr = static_cast<const float *>(in1.block()->data());
@@ -670,8 +671,8 @@ void Dot<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
 
   for (size_t i = 0; i < in1.Size(); i++) {
     sum += in1Ptr[traversal_info_in1[in1.shape().size()]] * in2Ptr[traversal_info_in2[in2.shape().size()]];
-    traverse_next(in1, shape_multipliers_in1, traversal_info_in1, i+1);
-    traverse_next(in2, shape_multipliers_in2, traversal_info_in2, i+1);
+    traverse_next(in1, shape_multipliers_in1, traversal_info_in1, i + 1);
+    traverse_next(in2, shape_multipliers_in2, traversal_info_in2, i + 1);
   }
 }
 
@@ -697,10 +698,10 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor& A, const Tensor& v,
 #endif  // USE_CBLAS
 template <>
 void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
-                                           const size_t batchsize,
-                                           const size_t dim, const Block *p,
-                                           const Block *t, Block *loss,
-                                           Context *ctx) {
+    const size_t batchsize,
+    const size_t dim, const Block *p,
+    const Block *t, Block *loss,
+    Context *ctx) {
   const float *pPtr = static_cast<const float *>(p->data());
   const int *tPtr = static_cast<const int *>(t->data());
   float *lossPtr = static_cast<float *>(loss->mutable_data());
@@ -712,7 +713,7 @@ void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
       lossPtr[i] = -std::log((std::max)(prob_of_truth, FLT_MIN));
     }
   } else {
-    for (size_t i = 0;i < batchsize; i++) {
+    for (size_t i = 0; i < batchsize; i++) {
       float sum = 0.f;
       for (size_t j = 0; j < dim; j++) {
         sum += tPtr[i * dim + j];
@@ -728,10 +729,10 @@ void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
 
 template <>
 void SoftmaxCrossEntropyBwd<float, lang::Cpp>(bool int_target,
-                                              const size_t batchsize,
-                                              const size_t dim, const Block *p,
-                                              const Block *t, Block *grad,
-                                              Context *ctx) {
+    const size_t batchsize,
+    const size_t dim, const Block *p,
+    const Block *t, Block *grad,
+    Context *ctx) {
   CHECK_EQ(p, grad) << "Use the same pointer to optimize performance";
   // const float* pPtr = static_cast<const float*>(p->data());
   const int *tPtr = static_cast<const int *>(t->data());
@@ -764,13 +765,13 @@ void RowMax<float, lang::Cpp>(const Tensor& in, Tensor *out, Context *ctx) {
   const size_t ncol = in.shape()[1];
   vector<int> traversal_info = generate_traversal_info(in);
   vector<int> shape_multipliers = generate_shape_multipliers(in);
-    
+
   for (size_t r = 0; r < nrow; r++) {
     int counter_offset = (r * ncol);
     float maxval = 0;
-    for (size_t c = 0; c < ncol; c++){
+    for (size_t c = 0; c < ncol; c++) {
       maxval = (std::max)(maxval, inPtr[traversal_info[in.shape().size()]]);
-      traverse_next(in, shape_multipliers, traversal_info, counter_offset+c+1);
+      traverse_next(in, shape_multipliers, traversal_info, counter_offset + c + 1);
     }
     outPtr[r] = maxval;
   }

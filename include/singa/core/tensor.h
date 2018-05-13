@@ -36,7 +36,8 @@ typedef vector<size_t> Shape;
 /// hardcode the width of types defined in DataType
 const size_t kDataWidth[] = {sizeof(float),  sizeof(float) / 2,
                              sizeof(int),    sizeof(char),
-                             sizeof(double), sizeof(unsigned char)};
+                             sizeof(double), sizeof(unsigned char)
+                            };
 inline size_t SizeOf(DataType t) {
   static_assert(kNumDataType == sizeof(kDataWidth) / sizeof(size_t),
                 "Num of data types not match num of data width");
@@ -51,7 +52,7 @@ inline size_t SizeOf(DataType t) {
 /// Tensor.
 /// For all operations, if the result tensor is passed as an argument,
 /// then it must be set up correctly (shape, device). Otherwise, runtime error
-/// like SegmentFault would happen. Simply type/device check would be conducted.
+/// like SegmentFault would happen. Simple type/device check would be conducted.
 class Tensor {
  public:
   ~Tensor();
@@ -59,12 +60,17 @@ class Tensor {
   explicit Tensor(Shape &&shape, DataType dtype = kFloat32);
   explicit Tensor(const Shape &shape, DataType dtype = kFloat32);
 
-  Tensor(Shape &&shape, std::shared_ptr<Device> dev, DataType dtype = kFloat32);
-  Tensor(const Shape &shape, std::shared_ptr<Device> dev, DataType dtype = kFloat32);
+  Tensor(Shape &&shape,
+         std::shared_ptr<Device> dev,
+         DataType dtype = kFloat32);
+  Tensor(const Shape &shape,
+         std::shared_ptr<Device> dev,
+         DataType dtype = kFloat32);
 
   /// Copy Tensor to share the internal data.  No deep copy.
   Tensor(const Tensor &from);
-  /// Copy Tensor to share the internal data.  No deep copy. For 2 tensors sharing same block but different strides.
+  /// Copy Tensor to share the internal data.  No deep copy.
+  /// For 2 tensors sharing same block but different strides.
   Tensor(const Tensor &from, Shape &new_shape, vector<int> &new_strides);
   /// Copy Tensor to share the internal data.  No deep copy.
   Tensor(Tensor &&from);
@@ -89,7 +95,7 @@ class Tensor {
   void GetValue(SType *value, const size_t num) {
     CHECK(device_ == defaultDevice);
     const SType* ptr = data<SType>();
-    for(size_t i = 0; i < num; i++) value[i] = ptr[i];
+    for (size_t i = 0; i < num; i++) value[i] = ptr[i];
   }
 
   /// data type, including kFloat16, kFloat32, kInt
@@ -106,7 +112,7 @@ class Tensor {
 
   bool empty() const { return nDim() == 0; }
 
-  //bool transpose() const { return transpose_; }
+  /// Check if the tensor's last stride==1
   bool transpose() const { return (strides_.back() != 1); }
 
   const vector<int>& strides() const { return strides_; }
@@ -131,9 +137,8 @@ class Tensor {
   void Reshape(Shape &&shape);
 
   /// Reset the shape, device, and data type as given tensor.
-  /// If block size changes, then reallocate a new block. The previous block
-  /// would
-  /// be deleted.
+  /// If block size changes, then reallocate a new block.
+  /// The previous block would be deleted.
   void ResetLike(const Tensor &t);
 
   /// Reset the data type, it would reallocate block if type changes.
@@ -176,9 +181,11 @@ class Tensor {
   /// No data copy, just set the transpose_ filed of the returned tensor.
   Tensor T() const;
 
+  /// Reverse the shape vector
   Tensor Transpose() const;
 
-  Tensor Transpose(Shape axes) const;
+  /// Change the axes
+  Tensor Transpose(const vector<size_t>& axes) const;
 
   /// Copy the meta info with data block shared.
   Tensor &operator=(const Tensor &in);
@@ -219,23 +226,24 @@ class Tensor {
   float L2() const;
 
   //generate strides automatically if stride field is not passed
-void generate_strides(){
-    if(shape_.size()==0){
-      strides_ = {1};
-      return void();
-    }
+  void generate_strides() {
     strides_.clear();
+    if (shape_.size() == 0) {
+      strides_.push_back(1);
+      return;
+    }
+
     size_t dim = Size();
     int cumulative_product = 1;
-    for (size_t n=0; n<shape_.size(); ++n) {
-        cumulative_product = cumulative_product*shape_[n];
-        strides_.push_back(dim/cumulative_product);
+    for (size_t n = 0; n < shape_.size(); ++n) {
+      cumulative_product = cumulative_product * shape_[n];
+      strides_.push_back(dim / cumulative_product);
     }
-};
+  }
 
-void set_strides(const vector<int> new_strides){
-  strides_ = new_strides;
-}
+  void set_strides(const vector<int> new_strides) {
+    strides_ = new_strides;
+  }
 
  protected:
   DataType data_type_ = kFloat32;
@@ -247,7 +255,6 @@ void set_strides(const vector<int> new_strides){
   vector<int> strides_ = {};
 }; //end of tensor class
 
-typedef Shape::iterator ShapeIter;
 inline size_t Product(const Shape &shape, int start = 0, size_t len = 0) {
   if (len == 0) len = shape.size();
   if (len == 0)

@@ -34,45 +34,45 @@ namespace singa {
 
 // ===================== Helper Functions =============================
 
-  /*  
-  cudnn requires tensor dimensions to fulfill 1 requirement:
-    1.) Dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors 
-        if input tensor is 5d, cudnn will take a 5d tensor as input. Beyond 5d, certain operations are not supported.
-        (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
+/*
+cudnn requires tensor dimensions to fulfill 1 requirement:
+  1.) Dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors
+      if input tensor is 5d, cudnn will take a 5d tensor as input. Beyond 5d, certain operations are not supported.
+      (cudnnOp supports up to 5d, cudnnReduce supports up to 8d)
 
-    for e.g. Tensor A has shape {3,3}, cudnn requires shape of {1,1,3,3} to be the input
-             Tensor B has shape (2,3,4), cudnn requires shape of {1,2,3,4} to be the input
-  */
-  vector<int> generate_shape_cuda(const Tensor& x) {
-    Shape shape_ = x.shape();
-    vector<int> shape_arr;
-    if(shape_.size() <= 4){
-      for (size_t n=0; n<4-shape_.size(); ++n) {
-        shape_arr.push_back(1);
-      } 
-      for (size_t n=0; n<shape_.size(); ++n) {
-        shape_arr.push_back(shape_.at(n));
-      } 
-      return shape_arr;
-    } else if(shape_.size() == 5){
-      for (size_t n=0; n<shape_.size(); ++n) {
-        shape_arr.push_back(shape_.at(n));
-      } 
-      return shape_arr;
-    } else {
-      LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
+  for e.g. Tensor A has shape {3,3}, cudnn requires shape of {1,1,3,3} to be the input
+           Tensor B has shape (2,3,4), cudnn requires shape of {1,2,3,4} to be the input
+*/
+vector<int> generate_shape_cuda(const Tensor& x) {
+  Shape shape_ = x.shape();
+  vector<int> shape_arr;
+  if (shape_.size() <= 4) {
+    for (size_t n = 0; n < 4 - shape_.size(); ++n) {
+      shape_arr.push_back(1);
     }
+    for (size_t n = 0; n < shape_.size(); ++n) {
+      shape_arr.push_back(shape_.at(n));
+    }
+    return shape_arr;
+  } else if (shape_.size() == 5) {
+    for (size_t n = 0; n < shape_.size(); ++n) {
+      shape_arr.push_back(shape_.at(n));
+    }
+    return shape_arr;
+  } else {
+    LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
   }
+}
 
-  int generate_dim_cuda(const Tensor& x) {
-    if(x.shape().size() <= 4){return 4;}
-    else if(x.shape().size() == 5){return 5;}
-    else{
-      LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
-    } 
+int generate_dim_cuda(const Tensor& x) {
+  if (x.shape().size() <= 4) {return 4;}
+  else if (x.shape().size() == 5) {return 5;}
+  else {
+    LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
   }
+}
 
-/*  
+/*
   cudnn requires stride dimensions to conform to the format of the shape input as well
     1.) Stride dimensions to be set to a minimum of 4 for 4d and lower dimensional tensors
         If input tensor is 5d, cudnn will take a 5d tensor as input. Beyond 5d, certain operations are not supported.
@@ -81,51 +81,51 @@ namespace singa {
     for e.g. Tensor A has shape {3,3}, stride {3,1}, cudnn requires shape {1,1,3,3}
     and stride {9, 9, 3, 1} or {9, 9, 1, 3} to be the inputs
   */
-  vector<int> generate_strides_cuda(const Tensor& x) {
-    Shape shape_ = x.shape();
-    vector<int> strides_ = x.strides();
-    vector<int> strides_arr;
-    int product = 1;
-    for (size_t n=0; n<(shape_.size()); ++n) {
-      product *= shape_[n];
-    }
-    if(shape_.size() <= 4){
-      for (size_t n=0; n<4-shape_.size(); ++n) {
-        strides_arr.push_back(product);
-      } 
-      for (size_t n=0; n<strides_.size(); ++n) {
-          strides_arr.push_back(strides_[n]);
-        }
-      return strides_arr;
-    } else if(shape_.size() == 5){
-      for (size_t n=0; n<strides_.size(); ++n) {
-          strides_arr.push_back(strides_[n]);
-        }
-      return strides_arr;
-    } else {
-      LOG(FATAL) << "Dimensions (strides) beyond 5 are currently not supported" ;
-    }
+vector<int> generate_strides_cuda(const Tensor& x) {
+  Shape shape_ = x.shape();
+  vector<int> strides_ = x.strides();
+  vector<int> strides_arr;
+  int product = 1;
+  for (size_t n = 0; n < (shape_.size()); ++n) {
+    product *= shape_[n];
   }
+  if (shape_.size() <= 4) {
+    for (size_t n = 0; n < 4 - shape_.size(); ++n) {
+      strides_arr.push_back(product);
+    }
+    for (size_t n = 0; n < strides_.size(); ++n) {
+      strides_arr.push_back(strides_[n]);
+    }
+    return strides_arr;
+  } else if (shape_.size() == 5) {
+    for (size_t n = 0; n < strides_.size(); ++n) {
+      strides_arr.push_back(strides_[n]);
+    }
+    return strides_arr;
+  } else {
+    LOG(FATAL) << "Dimensions (strides) beyond 5 are currently not supported" ;
+  }
+}
 
-cudnnTensorDescriptor_t generate_tensorND_desc(const Tensor& x){
+cudnnTensorDescriptor_t generate_tensorND_desc(const Tensor& x) {
   cudnnTensorDescriptor_t x_desc;
   cudnnCreateTensorDescriptor(&x_desc);
   cudnnSetTensorNdDescriptor(x_desc, CUDNN_DATA_FLOAT,
                              generate_dim_cuda(x),
                              generate_shape_cuda(x).data(),
                              generate_strides_cuda(x).data()
-                             );
+                            );
 
   return x_desc;
 }
 
-cudnnOpTensorDescriptor_t generate_Op_desc(cudnnOpTensorOp_t op){
+cudnnOpTensorDescriptor_t generate_Op_desc(cudnnOpTensorOp_t op) {
   cudnnOpTensorDescriptor_t op_desc;
   cudnnCreateOpTensorDescriptor(&op_desc);
   cudnnSetOpTensorDescriptor(op_desc, op,
                              CUDNN_DATA_FLOAT,
                              CUDNN_PROPAGATE_NAN
-                             );
+                            );
 
   return op_desc;
 }
@@ -144,10 +144,10 @@ void Abs<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float beta = 0.0;
   cudnnTensorDescriptor_t in_desc = generate_tensorND_desc(in);
   cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_MAX),
-                (void*)(&alpha1), in_desc, inPtr, 
+                (void*)(&alpha1), in_desc, inPtr,
                 (void*)(&alpha2), in_desc, inPtr,
                 (void*)(&beta), generate_tensorND_desc(*out), outPtr
-                );
+               );
   cudnnDestroyTensorDescriptor(in_desc);
 }
 
@@ -156,8 +156,8 @@ void Set<float, lang::Cuda>(const float x, Tensor* out,
                             Context* ctx) {
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
-  cudnnSetTensor(ctx->cudnn_handle, generate_tensorND_desc(*out), 
-                  outPtr, (void*)(&x));
+  cudnnSetTensor(ctx->cudnn_handle, generate_tensorND_desc(*out),
+                 outPtr, (void*)(&x));
 }
 
 template <>
@@ -171,7 +171,7 @@ void Add<float, lang::Cuda>(const Tensor& in, const float x,
   cudnnAddTensor(ctx->cudnn_handle,
                  (void*)(&alpha), generate_tensorND_desc(in), inPtr,
                  (void*)(&beta), generate_tensorND_desc(*out), outPtr
-                 );
+                );
 }
 
 /// out = in1 + in2
@@ -186,18 +186,18 @@ void Add<float, lang::Cuda>(const Tensor& in1,
   float alpha2 = 1.0;
   float beta = 0.0;
 
-  if((in1.nDim() == in2.nDim()) || (in2.nDim() == 1)){
+  if ((in1.nDim() == in2.nDim()) || (in2.nDim() == 1)) {
     cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_ADD),
-              (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
-              (void*)(&alpha2), generate_tensorND_desc(in2), inPtr2,
-              (void*)(&beta), generate_tensorND_desc(*out), outPtr
-              );
+                  (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
+                  (void*)(&alpha2), generate_tensorND_desc(in2), inPtr2,
+                  (void*)(&beta), generate_tensorND_desc(*out), outPtr
+                 );
   } else {
     cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_ADD),
-          (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
-          (void*)(&alpha2), generate_tensorND_desc(in1), inPtr2,
-          (void*)(&beta), generate_tensorND_desc(*out), outPtr
-          );
+                  (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
+                  (void*)(&alpha2), generate_tensorND_desc(in1), inPtr2,
+                  (void*)(&beta), generate_tensorND_desc(*out), outPtr
+                 );
   }
 }
 
@@ -213,18 +213,18 @@ void Sub<float, lang::Cuda>(const Tensor& in1,
   float alpha2 = -1.0;
   float beta = 0.0;
 
-  if((in1.nDim() == in2.nDim()) || (in2.nDim() == 1)){
+  if ((in1.nDim() == in2.nDim()) || (in2.nDim() == 1)) {
     cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_ADD),
-              (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
-              (void*)(&alpha2), generate_tensorND_desc(in2), inPtr2,
-              (void*)(&beta), generate_tensorND_desc(*out), outPtr
-              );
+                  (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
+                  (void*)(&alpha2), generate_tensorND_desc(in2), inPtr2,
+                  (void*)(&beta), generate_tensorND_desc(*out), outPtr
+                 );
   } else {
     cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_ADD),
-          (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
-          (void*)(&alpha2), generate_tensorND_desc(in1), inPtr2,
-          (void*)(&beta), generate_tensorND_desc(*out), outPtr
-          );
+                  (void*)(&alpha1), generate_tensorND_desc(in1), inPtr1,
+                  (void*)(&alpha2), generate_tensorND_desc(in1), inPtr2,
+                  (void*)(&beta), generate_tensorND_desc(*out), outPtr
+                 );
   }
 }
 
@@ -250,17 +250,17 @@ void Div<float, lang::Cuda>(const Tensor& in1,
   const size_t num = in1.Size();
 
   //if both in1 and in2 strides are the same, we proceed to normal cuda::div
-  if(in1.strides() == in2.strides()){
-        cuda::div(num, inPtr1, inPtr2, outPtr, ctx->stream);
-        out->set_strides(in1.strides());
+  if (in1.strides() == in2.strides()) {
+    cuda::div(num, inPtr1, inPtr2, outPtr, ctx->stream);
+    out->set_strides(in1.strides());
   } else { //else we transform in1 to out to store first
     float alpha = 1.0;
     float beta = 0.0;
 
     out->set_strides(in2.strides());
     cudnnTransformTensor(ctx->cudnn_handle,
-                        (void*)(&alpha), generate_tensorND_desc(in1), inPtr1,
-                        (void*)(&beta), generate_tensorND_desc(*out), outPtr
+                         (void*)(&alpha), generate_tensorND_desc(in1), inPtr1,
+                         (void*)(&beta), generate_tensorND_desc(*out), outPtr
                         );
 
     cuda::div(num, outPtr, inPtr2, outPtr, ctx->stream);
@@ -286,8 +286,8 @@ void EltwiseMult<float, lang::Cuda>(const Tensor& in,
 
   float alpha = x, beta = 0.0;
   cudnnAddTensor(ctx->cudnn_handle,
-                (void*)(&alpha), generate_tensorND_desc(in), inPtr,
-                (void*)(&beta), generate_tensorND_desc(*out), outPtr
+                 (void*)(&alpha), generate_tensorND_desc(in), inPtr,
+                 (void*)(&beta), generate_tensorND_desc(*out), outPtr
                 );
 }
 
@@ -302,17 +302,17 @@ void EltwiseMult<float, lang::Cuda>(const Tensor& in1,
   const size_t num = in1.Size();
 
   //if both in1 and in2 strides are the same, we proceed to normal cuda::mult
-  if(in1.strides() == in2.strides()){ 
-        cuda::mult(num, inPtr1, inPtr2, outPtr, ctx->stream);
-        out->set_strides(in1.strides());
+  if (in1.strides() == in2.strides()) {
+    cuda::mult(num, inPtr1, inPtr2, outPtr, ctx->stream);
+    out->set_strides(in1.strides());
   } else { //else we transform in1 to out to store first
     float alpha = 1.0;
     float beta = 0.0;
 
     out->set_strides(in2.strides());
     cudnnTransformTensor(ctx->cudnn_handle,
-                        (void*)(&alpha), generate_tensorND_desc(in1), inPtr1,
-                        (void*)(&beta), generate_tensorND_desc(*out), outPtr
+                         (void*)(&alpha), generate_tensorND_desc(in1), inPtr1,
+                         (void*)(&beta), generate_tensorND_desc(*out), outPtr
                         );
 
     cuda::mult(num, outPtr, inPtr2, outPtr, ctx->stream);
@@ -443,17 +443,17 @@ void Pow<float, lang::Cuda>(const Tensor& in1,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in1.Size();
 
-  if(in1.strides() == in2.strides()){
-        cuda::pow(num, inPtr1, inPtr2, outPtr, ctx->stream);
-        out->set_strides(in1.strides());
+  if (in1.strides() == in2.strides()) {
+    cuda::pow(num, inPtr1, inPtr2, outPtr, ctx->stream);
+    out->set_strides(in1.strides());
   } else { //else we transform in1 to out to store first
     float alpha = 1.0;
     float beta = 0.0;
 
     out->set_strides(in2.strides());
     cudnnTransformTensor(ctx->cudnn_handle,
-                        (void*)(&alpha), generate_tensorND_desc(in1), inPtr1,
-                        (void*)(&beta), generate_tensorND_desc(*out), outPtr
+                         (void*)(&alpha), generate_tensorND_desc(in1), inPtr1,
+                         (void*)(&beta), generate_tensorND_desc(*out), outPtr
                         );
 
     cuda::pow(num, outPtr, inPtr2, outPtr, ctx->stream);
@@ -473,18 +473,18 @@ void Pow<float, lang::Cuda>(const Tensor& in1,
 //   double coef = 0.0; //only used for CLIPPED_RELU or ELU
 //   cudnnCreateActivationDescriptor(&act_desc);
 //   cudnnSetActivationDescriptor(act_desc, mode, cudnn_propagation, coef);
-  
+
 //   float alpha[1] = {1.0};
 //   float beta[1] = {0.0};
 //   cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
 //   cudnnTensorDescriptor_t in_desc, out_desc;
 //   cudnnCreateTensorDescriptor(&in_desc);
 //   cudnnCreateTensorDescriptor(&out_desc);
-//   cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in.generate_dim_cuda(), 
+//   cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in.generate_dim_cuda(),
 // in.generate_shape_cuda().data(), in.generate_strides_cuda().data());
-//   cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), 
+//   cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(),
 // out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-//   cudnnActivationForward(ctx->cudnn_handle, act_desc, (void*)(&alpha), in_desc, inPtr, 
+//   cudnnActivationForward(ctx->cudnn_handle, act_desc, (void*)(&alpha), in_desc, inPtr,
 //                         (void*)(&beta), out_desc, outPtr);
 
 //   cudnnDestroyTensorDescriptor(in_desc);
@@ -515,18 +515,18 @@ void ReLU<float, lang::Cuda>(const Tensor& in, Tensor* out,
 //   double coef = 0.0; //only used for CLIPPED_RELU or ELU
 //   cudnnCreateActivationDescriptor(&act_desc);
 //   cudnnSetActivationDescriptor(act_desc, mode, cudnn_propagation, coef);
-  
+
 //   float alpha[1] = {1.0};
 //   float beta[1] = {0.0};
 //   cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
 //   cudnnTensorDescriptor_t in_desc, out_desc;
 //   cudnnCreateTensorDescriptor(&in_desc);
 //   cudnnCreateTensorDescriptor(&out_desc);
-//   cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in.generate_dim_cuda(), 
+//   cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in.generate_dim_cuda(),
 // in.generate_shape_cuda().data(), in.generate_strides_cuda().data());
-//   cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), 
+//   cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(),
 // out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-//   cudnnActivationForward(ctx->cudnn_handle, act_desc, (void*)(&alpha), in_desc, inPtr, 
+//   cudnnActivationForward(ctx->cudnn_handle, act_desc, (void*)(&alpha), in_desc, inPtr,
 //                         (void*)(&beta), out_desc, outPtr);
 
 //   cudnnDestroyTensorDescriptor(in_desc);
@@ -562,16 +562,16 @@ void Sqrt<float, lang::Cuda>(const Tensor& in, Tensor* out,
                              Context* ctx) {
   const float* inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  
+
   float alpha1 = 1.0;
   float alpha2 = 0.0;
   float beta = 0.0;
   cudnnTensorDescriptor_t in_desc = generate_tensorND_desc(in);
   cudnnOpTensor(ctx->cudnn_handle, generate_Op_desc(CUDNN_OP_TENSOR_SQRT),
-                (void*)(&alpha1), in_desc, inPtr, 
+                (void*)(&alpha1), in_desc, inPtr,
                 (void*)(&alpha2), in_desc, inPtr,
                 (void*)(&beta), generate_tensorND_desc(*out), outPtr
-                );
+               );
 }
 
 /// Element-wise operation, out[i]=in[i]^2
@@ -598,15 +598,15 @@ void Sum<float, lang::Cuda>(const Tensor& in, float* out,
                             Context* ctx) {
   const float* inPtr = static_cast<const float*>(in.block()->data());
 
-   //reduce all axes to 1 for cudnnReduce, e.g. Tensor A with shape (2,4) will be reduced to (1)
-   Shape reduced_shape = {1};
-   Tensor t(reduced_shape, in.device(), in.data_type());
-   float* tPtr = static_cast<float*>(t.block()->mutable_data());
-   vector<int> reduce_all_axes = generate_shape_cuda(in);
-   for (size_t n=0; n<reduce_all_axes.size(); ++n) {
+  //reduce all axes to 1 for cudnnReduce, e.g. Tensor A with shape (2,4) will be reduced to (1)
+  Shape reduced_shape = {1};
+  Tensor t(reduced_shape, in.device(), in.data_type());
+  float* tPtr = static_cast<float*>(t.block()->mutable_data());
+  vector<int> reduce_all_axes = generate_shape_cuda(in);
+  for (size_t n = 0; n < reduce_all_axes.size(); ++n) {
     reduce_all_axes[n] = 1;
-   }
-   
+  }
+
   //reduce_desc
   cudnnReduceTensorDescriptor_t reduce_desc;
   cudnnReduceTensorOp_t reduce_op = CUDNN_REDUCE_TENSOR_ADD;
@@ -620,11 +620,11 @@ void Sum<float, lang::Cuda>(const Tensor& in, float* out,
 
   //instantiate 2 new tensors to use new blocks as memory instead of cudaMalloc
   size_t reduction_size_int = Product(in.shape());
-  Shape reduction_size = {reduction_size_int*100};
+  Shape reduction_size = {reduction_size_int * 100};
   Tensor indices(reduction_size, in.device(), in.data_type());
   Tensor workspace(reduction_size, in.device(), in.data_type());
-  size_t indices_bytes = indices.block()->size()*100;
-  size_t workspace_bytes = workspace.block()->size()*100;
+  size_t indices_bytes = indices.block()->size() * 100;
+  size_t workspace_bytes = workspace.block()->size() * 100;
   size_t* indicesPtr = static_cast<size_t*>(indices.block()->mutable_data());
   float* workspacePtr = static_cast<float*>(workspace.block()->mutable_data());
   //void* indicesPtr{nullptr}; void* workspacePtr{nullptr};
@@ -636,7 +636,7 @@ void Sum<float, lang::Cuda>(const Tensor& in, float* out,
                     indicesPtr, indices_bytes, workspacePtr, workspace_bytes,
                     (void*)(&alpha), generate_tensorND_desc(in), inPtr,
                     (void*)(&beta), generate_tensorND_desc(t), tPtr
-                    );
+                   );
 
   *out = tPtr[0];
 }
@@ -655,18 +655,18 @@ void Sum<float, lang::Cuda>(const Tensor& in, float* out,
 //   double coef = 0.0; //only used for CLIPPED_RELU or ELU
 //   cudnnCreateActivationDescriptor(&act_desc);
 //   cudnnSetActivationDescriptor(act_desc, mode, cudnn_propagation, coef);
-  
+
 //   float alpha[1] = {1.0};
 //   float beta[1] = {0.0};
 //   cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
 //   cudnnTensorDescriptor_t in_desc, out_desc;
 //   cudnnCreateTensorDescriptor(&in_desc);
 //   cudnnCreateTensorDescriptor(&out_desc);
-//   cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in.generate_dim_cuda(), 
+//   cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in.generate_dim_cuda(),
 // in.generate_shape_cuda().data(), in.generate_strides_cuda().data());
-//   cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), 
+//   cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(),
 // out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-//   cudnnActivationForward(ctx->cudnn_handle, act_desc, (void*)(&alpha), in_desc, inPtr, 
+//   cudnnActivationForward(ctx->cudnn_handle, act_desc, (void*)(&alpha), in_desc, inPtr,
 //                         (void*)(&beta), out_desc, outPtr);
 
 //   cudnnDestroyTensorDescriptor(in_desc);
@@ -676,7 +676,7 @@ void Sum<float, lang::Cuda>(const Tensor& in, float* out,
 
 template <>
 void Tanh<float, lang::Cuda>(const Tensor& in, Tensor* out,
-                                Context* ctx) {
+                             Context* ctx) {
   const float* inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
@@ -856,22 +856,22 @@ void GEMM<float, lang::Cuda>(const float alpha,
 
 template <>
 void ComputeCrossEntropy<float, lang::Cuda>(bool int_target,
-                                            const size_t batchsize,
-                                            const size_t dim, const Block* p,
-                                            const Block* t, Block* loss,
-                                            Context* ctx) {
+    const size_t batchsize,
+    const size_t dim, const Block* p,
+    const Block* t, Block* loss,
+    Context* ctx) {
   const float* pPtr = static_cast<const float*>(p->data());
   const int* tPtr = static_cast<const int*>(t->data());
   float* lossPtr = static_cast<float*>(loss->mutable_data());
   cuda::ComputeCrossEntropy(int_target, batchsize, dim, pPtr, tPtr, lossPtr,
-      ctx->stream);
+                            ctx->stream);
 }
 template <>
 void SoftmaxCrossEntropyBwd<float, lang::Cuda>(bool int_target,
-                                               const size_t batchsize,
-                                               const size_t dim, const Block* p,
-                                               const Block* t, Block* grad,
-                                               Context* ctx) {
+    const size_t batchsize,
+    const size_t dim, const Block* p,
+    const Block* t, Block* grad,
+    Context* ctx) {
   CHECK_EQ(p, grad) << "Use the same pointer to optimize performance";
   const float* pPtr = static_cast<const float*>(p->data());
   const int* tPtr = static_cast<const int*>(t->data());
@@ -924,11 +924,11 @@ void SoftmaxCrossEntropyBwd<float, lang::Cuda>(bool int_target,
 //   cudnnTensorDescriptor_t in_desc, out_desc;
 //   cudnnCreateTensorDescriptor(&in_desc);
 //   cudnnCreateTensorDescriptor(&out_desc);
-//   cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in.generate_dim_cuda(), 
+//   cudnnSetTensorNdDescriptor(in_desc, cudnn_dtype, in.generate_dim_cuda(),
 // in.generate_shape_cuda().data(), in.generate_strides_cuda().data());
-//   //cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), 
+//   //cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(),
 // out->generate_shape_cuda().data(), out->generate_strides_cuda().data());
-//   cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(), 
+//   cudnnSetTensorNdDescriptor(out_desc, cudnn_dtype, out->generate_dim_cuda(),
 // reduce_row_axes_shape.data(), reduced_strides.data());
 //   cudnnReduceTensor(ctx->cudnn_handle, reduce_desc,
 //                     indicesPtr, indices_bytes, workspacePtr, workspace_bytes,
@@ -946,7 +946,7 @@ void RowMax<float, lang::Cuda>(const Tensor& in, Tensor* out,
   const size_t nrow = in.shape()[0];
   const size_t ncol = in.shape()[1];
 
-  if(in.transpose()){
+  if (in.transpose()) {
     Tensor t(in.shape(), in.device(), in.data_type());
     float* tPtr = static_cast<float*>(t.block()->mutable_data());
 
@@ -954,8 +954,8 @@ void RowMax<float, lang::Cuda>(const Tensor& in, Tensor* out,
     float beta = 0.0;
 
     cudnnTransformTensor(ctx->cudnn_handle,
-                        (void*)(&alpha), generate_tensorND_desc(in), inPtr,
-                        (void*)(&beta), generate_tensorND_desc(t), tPtr
+                         (void*)(&alpha), generate_tensorND_desc(in), inPtr,
+                         (void*)(&beta), generate_tensorND_desc(t), tPtr
                         );
 
     const float* tPtr_const = static_cast<const float*>(t.block()->data());
