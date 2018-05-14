@@ -108,6 +108,8 @@ class Device {
 
   int id() const { return id_; }
 
+  virtual void* GetRealGpuPtr(const Block* block_) = 0;
+
  private:
   Device() {};
 
@@ -125,7 +127,7 @@ class Device {
   virtual void Free(void* ptr) = 0;
   virtual void MakeMetaTable(Block* block,void* data_,int size) = 0;
   virtual void Append(string blockInfo) = 0;
-  virtual void* GetRealGpuPtr(const Block* block_) = 0;
+  
   virtual void SwapOut(const Block* block_) = 0;
   virtual void SwapIn(const Block* block_) = 0;
 
