@@ -46,9 +46,27 @@ class TestLoss(unittest.TestCase):
         l2 = sig.evaluate(True, self.x, self.y)
 
         p = 1.0 / (1 + np.exp(-self.x_np))
-        l = - (self.y_np * np.log(p) + (1-self.y_np) * np.log(1-p))
+        l = - (self.y_np * np.log(p) + (1 - self.y_np) * np.log(1 - p))
         self.assertAlmostEqual(l1.l1(), l2)
         self.assertAlmostEqual(l1.l1(), np.average(l))
+
+    def test_squared_error(self):
+        sqe = loss.SquaredError()
+        l1 = sqe.forward(True, self.x, self.y)
+        sqe.backward()
+        l2 = sqe.evaluate(True, self.x, self.y)
+
+        l = 0.5 * (self.y_np - self.x_np) ** 2
+        self.assertAlmostEqual(l1.l1(), l2)
+        self.assertAlmostEqual(l1.l1(), np.average(l))
+        
+    def test_softmax_cross_entropy(self):
+        sce = loss.SoftmaxCrossEntropy()
+        l1 = sce.forward(True, self.x, self.y)
+        sce.backward()
+        l2 = sce.evaluate(True, self.x, self.y)
+
+        self.assertAlmostEqual(l1.l1(), l2)
 
 
 if __name__ == '__main__':
