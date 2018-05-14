@@ -86,7 +86,7 @@ const void* Block::data() const {
     std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
     auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
     auto temp2 = ptrDevice_->GetRealGpuPtr(this);
-    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<std::endl;
+    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<' '<<temp2<<std::endl;
     //CHECK_EQ(data_,ptrDevice_->GetRealGpuPtrInfo(this));
     //return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
     return static_cast<char*>(data_) + offset_;
