@@ -2,31 +2,31 @@
 
 ## From Conda
 
-Conda is a package manager provided by [Anaconda](https://www.continuum.io/downloads) or [Miniconda](https://conda.io/miniconda.html).
-Currently, SINGA has conda packages (Python 2.7 and Python 3.6) for Linux and MacOSX.
+Conda is a package manager for Python, CPP and other packages.
 
-### Linux
+Currently, SINGA has conda packages (Python 2.7 and Python 3.6) for Linux and MacOSX.
+[Miniconda3](https://conda.io/miniconda.html) is recommended to use with SINGA.
+After installing miniconda, execute the one of the following commands to install
+SINGA.
 
 1. CPU only
 
-        conda install -c nusdbsystem singa
+        conda install -c nusdbsystem singa-cpu
 
-2. GPU via CUDA+cuDNN
+2. GPU with CUDA and cuDNN
 
-        conda install -c nusdbsystem singa-cudax.y-cudnnz
-
-    where `x.y,z` is one of <8.0, 5>, <7.5, 5> and <7.5, 4>.
-    Users need to install CUDA and cuDNN before installing SINGA.
-    If cuDNN is not in system folders (e.g., /usr/local), export the folder of libcudnn.so to LD_LIBRARY_PATH
+        conda install -c nusdbsystem singa-gpu
 
 
-### Mac OSX
+    It is equivalent to
 
-Only the CPU version is available,
+        conda install -c nusdbsystem singa=1.1.1=py36_cuda9.0-cudnn7.1.2
 
-    conda config --add channels conda-forge
-    conda install -c nusdbsystem singa
+    CUDA 9.0 must be installed before executing the above command. Singa
+    packages for other CUDA versions are also available. The following instruction
+    lists all the available Singa packages.
 
+        conda search -c nusdbsystem singa
 
 If there is no error message from
 
@@ -34,72 +34,62 @@ If there is no error message from
 
 then SINGA is installed successfully.
 
-## From Debian Package
-
-The following Debian packages (on architecture: amd64) are available
-
-<table border="1">
-  <tr>
-    <th>OS</th>
-    <th>Device</th>
-    <th>CUDA/cuDNN</th>
-    <th>Link</th>
-  </tr>
-  <tr>
-    <td>Ubuntu14.04</td>
-    <td>CPU</td>
-    <td>-</td>
-    <td><a href="http://comp.nus.edu.sg/~dbsystem/singa/assets/file/debian/latest/ubuntu14.04-cpp/python-singa.deb">latest</a>, <a href="http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/debian">history</a></td>
-  </tr>
-  <tr>
-    <td>Ubuntu14.04</td>
-    <td>GPU</td>
-    <td>CUDA7.5+cuDNN4</td>
-    <td>-</td>
-  </tr>
-  <tr>
-    <td>Ubuntu14.04</td>
-    <td>GPU</td>
-    <td>CUDA7.5+cuDNN5</td>
-    <td>-</td>
-  </tr>
-  <tr>
-    <td>Ubuntu14.04</td>
-    <td>GPU</td>
-    <td>CUDA8.0+cuDNN5</td>
-    <td>-</td>
-  </tr>
-</table>
-
-Download the deb file and install it via
-
-    apt-get install <path to the deb file, e.g., ./python-singa.deb>
-
-Note that the path must include `./` if the file in inside the current folder.
 
 ## From source
 
-The source files could be downloaded either as a [tar.gz file](https://dist.apache.org/repos/dist/dev/incubator/singa/), or as a git repo
+The source files could be downloaded either as a
+[tar.gz file](https://dist.apache.org/repos/dist/dev/incubator/singa/), or as a git repo
 
     $ git clone https://github.com/apache/incubator-singa.git
     $ cd incubator-singa/
 
-### Pre-requisite
+### Use Conda to build SINGA
 
-The following libraries are required
+Conda-build is a building tool that installs the dependent libraries from anaconda cloud and
+executes the building scripts. The generated package can be uploaded to anaconda
+cloud for others to download and install.
+
+To install conda-build (after installing miniconda)
+
+    conda install conda-build
+
+To build the CPU version of SINGA
+
+    export BUILD_STR=cpu
+    conda build tool/conda/singa/ --python3.6 (or --python2.7)
+
+The above commands have been tested on Ubuntu 16.04 and Mac OSX.
+Refer to the [Travis-CI page](https://travis-ci.org/apache/incubator-singa) for more information.
+
+
+To build the GPU version of SINGA
+
+    export BUILD_STR=cudax.y-cudnna.b.c (e.g. cuda9.0-cudnn7.1.2)
+    export CUDNN_PATH=<path to cudnn folder>
+    conda build tool/conda/singa/ --python3.6 (or --python2.7)
+
+The commands for building on GPU platforms have been tested on Ubuntu 16.04 (cuDNN>=7 and CUDA>=9).
+[Nvidia's Docker image](https://hub.docker.com/r/nvidia/cuda/) provides the building
+environment with cuDNN and CUDA.
+
+The location of the generated package file is shown on the screen.
+Refer to [conda install](https://conda.io/docs/commands/conda-install.html) for
+the instructions of installing the package from the local file.
+
+
+### Use native tools to build SINGA on Ubuntu
+
+The following libraries are required to compile and run SINGA.
+Refer to SINGA [Dockerfiles](https://github.com/apache/incubator-singa/blob/master/tool/docker/)
+for the instructions of installing them on Ubuntu 16.04.
+
 * cmake (>=2.8)
-* gcc (>=4.8.1) or Clang
+* gcc (>=4.8.1)
 * google protobuf (>=2.5)
 * blas (tested with openblas >=0.2.10)
 * swig(>=3.0.10) for compiling PySINGA
 * numpy(>=1.11.0) for compiling PySINGA
 
-The following libraries are optional
-* opencv (tested with 2.4.8)
-* lmdb (tested with 0.9)
-* glog
-
-### Instructions
 
 1. create a `build` folder inside incubator-singa and go into that folder
 2. run `cmake [options] ..`
@@ -108,59 +98,32 @@ The following libraries are optional
     * `USE_MODULES=ON`, used if protobuf and blas are not installed a prior
     * `USE_CUDA=ON`, used if CUDA and cuDNN is available
     * `USE_PYTHON=ON`, used for compiling PySINGA
-    * `USE_OPENCL=ON`, used for compiling with OpenCL support
     * `USE_PYTHON3=ON`, used for compiling with Python 3 support. (The default is Python 2)
+    * `USE_OPENCL=ON`, used for compiling with OpenCL support
     * `PACKAGE=ON`, used for building the Debian package
+    * `ENABLE_TEST`, used for compiling unit test cases
 
-3. compile the code, e.g., `make`
+3. compile the code, `make`
 4. goto python folder
-5. run `pip install .`
-6. [optional] run `python setup.py bdist_wheel` to generate the wheel file
+5. run `pip install .` or `pip install -e .` The second command creates symlinks instead of copying files into python site-package folder.
 
-Step 4 and 5 are to install PySINGA.
-Details on the installation of dependent libraries and the instructions for each OS are given in the following sections.
+Execute step 4 and 5 are to install PySINGA when USE_PYTHON=ON.
 
-### Linux and Mac OS
+After compiling SINGA with ENABLE_TEST=ON, you can run the unit tests by
 
-Most of the dependent libraries could be installed from source or via package mangers like
-apt-get, yum, and homebrew. Please refer to FAQ for problems caused by the path setting of the dependent libraries.
+    $ ./bin/test_singa
 
-The following instructions are tested on Ubuntu 14.04  and 16.04for installing dependent libraries.
-
-    # required libraries
-    $ sudo apt-get install libprotobuf-dev libopenblas-dev protobuf-compiler
-
-    # optional libraries.
-    $ sudo apt-get install python2.7-dev python-pip python-numpy
-    # for Python 3
-    $ sudo apt-get install python3-dev python3-numpy, python3-pip
-    $ sudo apt-get install libopencv-dev libgoogle-glog-dev liblmdb-dev
-
-The following instructions are tested on Mac OS X Yosemite (10.11 and 10.12) for installing dependent libraries. Instructions for installing on macOS 10.13 (High Sierra) can be found [here](install_macos1013.html).
-
-    # required libraries
-    $ brew tap homebrew/science
-    $ brew install openblas
-    $ brew install protobuf260
-
-    # optional libraries
-    $ brew tap homebrew/python
-    $ brew install python
-    $ brew install opencv
-    $ brew install -vd glog lmdb
-
-By default, openblas is installed into /usr/local/opt/openblas. To let the compiler (and cmake) know the openblas
-path,
-
-    $ export CMAKE_INCLUDE_PATH=/usr/local/opt/openblas/include:$CMAKE_INCLUDE_PATH
-    $ export CMAKE_LIBRARY_PATH=/usr/local/opt/openblas/lib:$CMAKE_LIBRARY_PATH
-
-To let the runtime know the openblas path,
-
-    $ export LD_LIBRARY_PATH=/usr/local/opt/openblas/library:$LD_LIBRARY_PATH
+You can see all the testing cases with testing results. If SINGA passes all
+tests, then you have successfully installed SINGA.
 
 
-#### Compile with USE_MODULES=ON
+### Compile SINGA on Windows
+
+Instructions for building on Windows with Python support can be found [here](install_win.html).
+
+### More details about the compilation options
+
+### USE_MODULES
 
 If protobuf and openblas are not installed, you can compile SINGA together with them
 
@@ -173,13 +136,6 @@ If protobuf and openblas are not installed, you can compile SINGA together with 
 cmake would download OpenBlas and Protobuf (2.6.1) and compile them together
 with SINGA.
 
-After compiling SINGA, you can run the unit tests by
-
-    $ ./bin/test_singa
-
-You can see all the testing cases with testing results. If SINGA passes all
-tests, then you have successfully installed SINGA.
-
 You can use `ccmake ..` to configure the compilation options.
 If some dependent libraries are not in the system default paths, you need to export
 the following environment variables
@@ -187,18 +143,7 @@ the following environment variables
     export CMAKE_INCLUDE_PATH=<path to the header file folder>
     export CMAKE_LIBRARY_PATH=<path to the lib file folder>
 
-#### Compile with USE_PYTHON=ON
-swig and numpy can be install by
-
-    $ Ubuntu 14.04 and 16.04
-    $ sudo apt-get install python-numpy
-    # Ubuntu 16.04
-    $ sudo apt-get install swig
-
-Note that swig has to be installed from source on Ubuntu 14.04.
-After installing numpy, export the header path of numpy.i as
-
-    $ export CPLUS_INCLUDE_PATH=`python -c "import numpy; print numpy.get_include()"`:$CPLUS_INCLUDE_PATH
+#### USE_PYTHON
 
 Similar to compile CPP code, PySINGA is compiled by
 
@@ -207,22 +152,15 @@ Similar to compile CPP code, PySINGA is compiled by
     $ cd python
     $ pip install .
 
-Developers can build the wheel file via
 
-    # under the build directory
-    $ cd python
-
-The generated wheel file is under "dist" directory.
-
-
-#### Compile SINGA with USE_CUDA=ON
+#### USE_CUDA
 
 Users are encouraged to install the CUDA and
 [cuDNN](https://developer.nvidia.com/cudnn) for running SINGA on GPUs to
 get better performance.
 
-SINGA has been tested over CUDA (7, 7.5, 8), and cuDNN (4 and 5).  If cuDNN is
-decompressed into non-system folder, e.g. /home/bob/local/cudnn/, the following
+SINGA has been tested over CUDA 9, and cuDNN 7.  If cuDNN is
+installed into non-system folder, e.g. /home/bob/local/cudnn/, the following
 commands should be executed for cmake and the runtime to find it
 
     $ export CMAKE_INCLUDE_PATH=/home/bob/local/cudnn/include:$CMAKE_INCLUDE_PATH
@@ -233,8 +171,9 @@ The cmake options for CUDA and cuDNN should be switched on
 
     # Dependent libs are install already
     $ cmake -DUSE_CUDA=ON ..
+    $ make
 
-#### Compile SINGA with USE_OPENCL=ON
+#### USE_OPENCL
 
 SINGA uses opencl-headers and viennacl (version 1.7.1 or newer) for OpenCL support, which
 can be installed using via
@@ -250,7 +189,8 @@ Additionally, you will need the OpenCL Installable Client Driver (ICD) for the p
 * For Intel CPUs and/or GPUs, get the driver from the [Intel website.](https://software.intel.com/en-us/articles/opencl-drivers) Note that the drivers provided on that website only supports recent CPUs and Iris GPUs.
 * For older Intel CPUs, you can use the `beignet-opencl-icd` package.
 
-Note that running OpenCL on CPUs is not currently recommended because it is slow. Memory transfer is on the order of whole seconds (1000's of ms on CPUs as compared to 1's of ms on GPUs).
+Note that running OpenCL on CPUs is not currently recommended because it is slow.
+Memory transfer is on the order of whole seconds (1000's of ms on CPUs as compared to 1's of ms on GPUs).
 
 More information on setting up a working OpenCL environment may be found [here](https://wiki.tiker.net/OpenCLHowTo).
 
@@ -259,24 +199,18 @@ If the package version of ViennaCL is not at least 1.7.1, you will need to build
 Clone [the repository from here](https://github.com/viennacl/viennacl-dev), checkout the `release-1.7.1` tag and build it.
 Remember to add its directory to `PATH` and the built libraries to `LD_LIBRARY_PATH`.
 
-To build SINGA with OpenCL support, you need to pass the flag during cmake:
+To build SINGA with OpenCL support (tested on SINGA 1.1):
 
-    cmake -DUSE_OPENCL=ON ..
+    $ cmake -DUSE_OPENCL=ON ..
+    $ make
 
-#### Compile SINGA with PYTHON2=ON
-
-The default Python version for SINGA is 3. SINGA can be built for Python 2 by setting PYTHON2=ON.
-
-#### Compile SINGA with PACKAGE=ON
+#### PACKAGE
 
 This setting is used to build the Debian package. Set PACKAGE=ON and build the package with make command like this:
 
     $ cmake -DPACKAGE=ON
     $ make package
 
-### Compile SINGA on Windows
-
-Instructions for building on Windows with Python support can be found [here](install_win.html).
 
 ## FAQ
 
