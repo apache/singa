@@ -79,7 +79,8 @@ const void* Block::data() const {
     //
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
     //static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
-    std::cout<<"-------NOTE: from common.cc, data_, block_, ptrDevice_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
+    std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
+    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<trDevice_->GetRealGpuPtrInfo(this)<<std::endl;
     //CHECK_EQ(data_,ptrDevice_->GetRealGpuPtrInfo(this));
     return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
   }
