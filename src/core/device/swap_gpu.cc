@@ -843,7 +843,7 @@ void SwapGPU::Append(string blockInfo){
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
   //void* data_ = Table_meta.find(block_)->second.second.ptr;
-  return Table_meta.find(block_)->second.second.ptr;
+  return Table_block_data_.find(block_)->second; //TODO(junzhe) attention, based on no change here.
 }
 
 void SwapGPU::SwapOut_idx(const int r_idx){
