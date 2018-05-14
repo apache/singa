@@ -69,7 +69,7 @@ setup(
         'future',
     #    'xmlrunner',
         'tqdm',
-        'ipywidgets',
+    #    'ipywidgets',
         ],
 
     #List additional groups of dependencies here (e.g. development
