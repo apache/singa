@@ -31,21 +31,25 @@ void* Block::mutable_data() {
     //std::cout<<"mutable_data() "<<this<<std::endl;
     initialized_ = true;
     if (ptrDevice_!=nullptr){
-        //Append info.
-        stringstream strm2;
-        strm2<<this;
-        string tempStr2 = strm2.str();
-        stringstream strm4;
-        auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-        strm4<<t2;
-        string tempStr4 = strm4.str();
-        string temp = "Mutable "+tempStr2+" "+tempStr4;   
-        ptrDevice_->AppendInfo(temp);
+      //Append info.
+      stringstream strm2;
+      strm2<<this;
+      string tempStr2 = strm2.str();
+      stringstream strm4;
+      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      strm4<<t2;
+      string tempStr4 = strm4.str();
+      string temp = "Mutable "+tempStr2+" "+tempStr4;   
+      ptrDevice_->AppendInfo(temp);
     }
     //data_ = ptrDevice_->GetRealGpuPtrInfo(this);
     //ptrDevice_->SwapOutInfo(this);
     //ptrDevice_->SwapInInfo(this);
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
+    std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
+    auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
+    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<std::endl;
+
     return static_cast<char*>(data_) + offset_;
   }
 
@@ -54,16 +58,16 @@ const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
     //std::cout<<"data() "<<this<<std::endl;
     if (ptrDevice_!=nullptr){
-        //Append info.
-        stringstream strm2;
-        strm2<<this;
-        string tempStr2 = strm2.str();
-        stringstream strm4;
-        auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-        strm4<<t2;
-        string tempStr4 = strm4.str();
-        string temp = "Read "+tempStr2+" "+tempStr4;
-        ptrDevice_->AppendInfo(temp);
+      //Append info.
+      stringstream strm2;
+      strm2<<this;
+      string tempStr2 = strm2.str();
+      stringstream strm4;
+      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      strm4<<t2;
+      string tempStr4 = strm4.str();
+      string temp = "Read "+tempStr2+" "+tempStr4;
+      ptrDevice_->AppendInfo(temp);
     }
     //test async, with size 13107200.
     // if (size_ ==13107200){
@@ -80,10 +84,11 @@ const void* Block::data() const {
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
     //static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
     std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
-    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
-    
+    auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
+    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<std::endl;
     //CHECK_EQ(data_,ptrDevice_->GetRealGpuPtrInfo(this));
-    return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
+    //return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
+    return static_cast<char*>(data_) + offset_;
   }
 
 const void* Block::log_ptr() const {
