@@ -79,7 +79,7 @@ const void* Block::data() const {
     //
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
     //static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
-    return static_cast<char*>(data_) + offset_;
+    return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
   }
 
 const void* Block::log_ptr() const {
