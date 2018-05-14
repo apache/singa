@@ -79,6 +79,7 @@ const void* Block::data() const {
     //
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
     //static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
+    CHECK_EQ(data_,ptrDevice_->GetRealGpuPtrInfo(this));
     return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
   }
 
