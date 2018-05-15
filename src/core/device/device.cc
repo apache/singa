@@ -41,7 +41,7 @@ Block* Device::NewBlock(int size) {
   if (size > 0) {
     void* ptr = Malloc(size);
     Block* block_ = new Block(ptr, size,0,this);
-    std::cout<<"NOTE: from device.cc after, data_, block_ device: "<<ptr<<" "<<block_<<' '<<this<<std::endl;
+    std::cout<<"(reference) from device.cc after, data_, block_ device: "<<ptr<<" "<<block_<<' '<<this<<std::endl;
     MakeMetaTable(block_,ptr,size); // make table and append vec_block.
     return block_;
   } else {

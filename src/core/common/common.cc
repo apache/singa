@@ -48,7 +48,8 @@ void* Block::mutable_data() {
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
     std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
     auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
-    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<std::endl;
+    auto temp2 = ptrDevice_->GetRealGpuPtr(this);
+    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<' '<<temp2<<std::endl;
 
     return static_cast<char*>(data_) + offset_;
   }
