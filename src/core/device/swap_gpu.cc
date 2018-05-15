@@ -769,6 +769,8 @@ void SwapGPU::Test_sched_switch_swap(){
       SwapIn_idx(r_idx);
       //SwapIn(Table_Block_ptr.find(r_idx)->second);
       cout<<"swapIn - print from Malloc"<<endl;
+      //cout<<"=========== update data_"<<endl;
+
     }
   }
 
@@ -844,14 +846,16 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
-  //void* data_ = Table_meta.find(block_)->second.second.ptr;
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  cout<<"NOTE--: from SwapGPU, data_, block_ device_: "<<Table_block_data_.find(block_)->second<<' '<<block_<<' '<<this<<endl;
-  if (!(Table_block_data_.find(block_) == Table_block_data_.end())){
-    cout<<"return nullptr"<<endl;
-    return Table_block_data_.find(block_)->second;
+  // //void* data_ = Table_meta.find(block_)->second.second.ptr;
+  // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  // cout<<"NOTE--: from SwapGPU, data_, block_ device_: "<<Table_block_data_.find(block_)->second<<' '<<block_<<' '<<this<<endl;
+  // if (!(Table_block_data_.find(block_) == Table_block_data_.end())){
+    
+  //   return Table_block_data_.find(block_)->second;
 
-  } 
+  // } else {
+  //   cout<<"return nullptr"<<endl; 
+  // }
   return nullptr; //TODO(junzhe) attention, based on no change here.
 }
 

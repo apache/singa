@@ -46,10 +46,11 @@ void* Block::mutable_data() {
     //ptrDevice_->SwapOutInfo(this);
     //ptrDevice_->SwapInInfo(this);
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
-    std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
-    auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
-    auto temp2 = ptrDevice_->GetRealGpuPtr(this);
-    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<' '<<temp2<<std::endl;
+
+    // std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
+    // auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
+    // auto temp2 = ptrDevice_->GetRealGpuPtr(this);
+    // std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<' '<<temp2<<std::endl;
 
     return static_cast<char*>(data_) + offset_;
   }
@@ -84,18 +85,18 @@ const void* Block::data() const {
     //
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
     //static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
-    std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
-    auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
-    auto temp2 = ptrDevice_->GetRealGpuPtr(this);
-    std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<' '<<temp2<<std::endl;
+
+    // std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
+    // auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
+    // auto temp2 = ptrDevice_->GetRealGpuPtr(this);
+    // std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<' '<<temp2<<std::endl;
     //CHECK_EQ(data_,ptrDevice_->GetRealGpuPtrInfo(this));
     //return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
     return static_cast<char*>(data_) + offset_;
   }
 
-const void* Block::log_ptr() const {
-    return this;
-    //TODO(junzhe) was used in Tensor::AppendLayer, now in use any more.
+void Block::update_data(void* data_new) {
+  data_ = data_new;
 }
 
 
