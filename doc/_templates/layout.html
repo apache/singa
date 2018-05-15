@@ -19,6 +19,16 @@
 
 {% block extrahead %}
     <link href="{{ pathto("_static/style.css", True) }}" rel="stylesheet" type="text/css">
+    <!--link href="{{ pathto("_static/fontawesome-all.min.css", True) }}" rel="stylesheet" type="text/css"-->
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp" crossorigin="anonymous">
+    <style>
+	.fa:hover {
+	    opacity: 0.7;
+	}
+	.fab:hover {
+	    opacity: 0.7;
+	}
+    </style>
 {% endblock %}
 
 {% block footer %}
@@ -43,6 +53,15 @@
 
   </div>
   <a href="http://incubator.apache.org/"> <img src= "{{pathto('_static/'+ 'apache.png' , 1) }}" style="background-color:white;"> </a>
+
+  <a href="https://github.com/apache/incubator-singa" class="fa fa-github" style="padding: 10px; font-size: 20px; width: 30px; text-align: center; text-decoration: none; margin: 5px 2px;"></a>
+  <a href="https://aws.amazon.com/marketplace/seller-profile?id=5bcac385-12c4-4802-aec7-351e09b77b4c" class="fab fa-aws" style="padding: 10px; font-size: 20px; width: 30px; text-align: center; text-decoration: none; margin: 5px 2px;"></a>
+  <a href="https://hub.docker.com/r/nusdbsystem/singa/" class="fab fa-docker" style="padding: 10px; font-size: 20px; width: 30px; text-align: center; text-decoration: none; margin: 5px 2px;"></a> 
+  <a href="https://www.linkedin.com/groups/13550034" class="fa fa-linkedin" style="padding: 10px; font-size: 20px; width: 30px; text-align: center; text-decoration: none; margin: 5px 2px;"></a>
+  <a href="https://twitter.com/ApacheSinga" class="fa fa-twitter" style="padding: 10px; font-size: 20px; width: 30px; text-align: center; text-decoration: none; margin: 5px 2px;"></a>
+  <a href="https://www.facebook.com/Apache-SINGA-347284219056544/" class="fa fa-facebook" style="padding: 10px; font-size: 20px; width: 30px; text-align: center; text-decoration: none; margin: 5px 2px;"></a>
+  <a href="https://www.researchgate.net/project/Apache-SINGA" class="fab fa-researchgate" style="padding: 10px; font-size: 20px; width: 30px; text-align: center; text-decoration: none; margin: 5px 2px;"></a>
+
 </div>
 
  <a href="https://github.com/apache/incubator-singa">
