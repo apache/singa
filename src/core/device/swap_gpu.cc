@@ -808,6 +808,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   // if (((gc-location)%maxLen==69) or ((gc-location)%maxLen==60)or((gc-location)%maxLen==50)or((gc-location)%maxLen==36)){
   //   cout<<"should update Block_ "<<(gc-location)%maxLen<<endl;
   // }
+  //TODO(junzhe) to remove it.
   if (asyncSwapFlag == 1) {
     int r_gc = (gc-location)%maxLen;
     if (!(Table_Block_ptr.find(r_gc)==Table_Block_ptr.end())){
@@ -880,6 +881,11 @@ void SwapGPU::SwapOut_idx(const int r_idx){
 }
 
 void SwapGPU::SwapIn_idx(const int r_idx){
+  //TODO(junzhe) test funcionality of change data_
+  cout<<"update data_ here, block_ from data_ to data_"<<Table_new.find(r_idx)->second.block_<<' '<<Table_new.find(r_idx)->second.data_<<endl;
+  Table_new.find(r_idx)->second.block_->udpate_data(Malloc(Table_new.find(r_idx)->second.size));
+
+
   //TODO(junzhe) not lean, as size is stored in Table_sched as well.
   //cout<<"doing asynchrous swapIn"<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
