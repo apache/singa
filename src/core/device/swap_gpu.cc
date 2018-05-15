@@ -848,7 +848,7 @@ void SwapGPU::Append(string blockInfo){
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
   // //void* data_ = Table_meta.find(block_)->second.second.ptr;
-  // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  // 
   // cout<<"NOTE--: from SwapGPU, data_, block_ device_: "<<Table_block_data_.find(block_)->second<<' '<<block_<<' '<<this<<endl;
   // if (!(Table_block_data_.find(block_) == Table_block_data_.end())){
     
@@ -895,6 +895,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,stream2);
   meta.block_->update_data(meta.data_);
   cout<<"update block and data: "<<meta.block_<<' '<<meta.data_<<endl;
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   //err = cudaMemcpyAsync(Table_meta.find(r_idx)->second.data_,Table_meta.find(r_gc)->second.cpu_ptr,Table_meta.find(r_gc)->second.size,cudaMemcpyHostToDevice,stream2);
 
   cudaEventRecord(event2,stream2);
