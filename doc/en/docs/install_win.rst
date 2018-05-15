@@ -366,3 +366,54 @@ A video tutorial for this part can be found here:
 +---------+
 | |video| |
 +---------+
+
+5.4. Run Unit Tests
+-------------------
+
+* In the test folder, generate the Visual Studio solution:
+
+.. code-block:: bash
+
+	cmake -G "Visual Studio 15 2017 Win64"
+
+* Open the generated solution in Visual Studio, or add the project to the singa solution that was created in step 5.2
+
+* Change the build settings to Release and x64.
+
+* Build glog project.
+
+* In test_singa project:
+	
+	* Add USE_GLOG; USE_CUDA; USE_CUDNN to the Preprocessor Definitions.
+	* In Additional Include Directories, add path of GLOG_INCLUDE_DIR, CBLAS_INCLUDE_DIR and Protobuf_INCLUDE_DIR which were used in step 5.2 above. Add also build, build/include, CUDA and cuDNN include folders.
+	* Goto Additional Library Directories and add the path to openblas, protobuf and glog libraries. Add also build/src/singa_objects.dir/Release, singa-kernel, cnmem, CUDA and cuDNN library paths.
+	* Goto Additional Dependencies and add libopenblas.lib; libglog.lib; libprotobuf.lib; cnmem.lib; cudnn.lib; cuda.lib; cublas.lib; curand.lib; cudart.lib; singa-kernel.lib. Fix the names of the two libraries: gtest.lib and singa_objects.lib.
+	
+
+* Build test_singa project.
+
+* Make libglog.dll, libopenblas.dll, cnmem.dll, cudart64_91.dll and cudnn64_7.dll available by adding them to the path or by copying them to test/release folder
+
+* The unit tests can be executed
+
+	* From the command line:
+	
+		.. code-block:: bash
+	
+			test_singa.exe
+
+	* From Visual Studio:
+		* right click on the test_singa project and choose 'Set as StartUp Project'.
+		* from the Debug menu, choose 'Start Without Debugging'
+
+A video tutorial for running the unit tests can be found here:
+	
+
+.. |video| image:: https://img.youtube.com/vi/YOjwtrvTPn4/0.jpg
+   :scale: 100%
+   :align: middle
+   :target: https://www.youtube.com/watch?v=YOjwtrvTPn4
+
++---------+
+| |video| |
++---------+
