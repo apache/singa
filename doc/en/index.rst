@@ -63,26 +63,14 @@ Getting Started
 
 * Refer to the `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ for some basic examples and the `model zoo page <./docs/model_zoo/index.html>`_ for more examples.
 
-.. |logo1| image:: _static/github.png
-   :scale: 100%
-   :align: middle
-   :target: https://github.com/apache/incubator-singa
-.. |logo2| image:: _static/awsmp.gif
-   :scale: 100%
-   :align: middle
-   :target: https://aws.amazon.com/marketplace/seller-profile?id=5bcac385-12c4-4802-aec7-351e09b77b4c
-.. |logo3| image:: _static/docker.png
-   :scale: 50%
-   :align: middle
-   :target: https://hub.docker.com/r/nusdbsystem/singa/
-.. |logo4| image:: _static/jupyter.png
+.. |logo| image:: _static/jupyter.png
    :scale: 25%
    :align: middle
    :target: http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb
 
-+---------+---------+---------+---------+
-| |logo1| | |logo2| | |logo3| | |logo4| |
-+---------+---------+---------+---------+
++---------+
+| |logo|  |
++---------+
 
 Documentation
 -------------
