@@ -883,7 +883,7 @@ void SwapGPU::SwapOut_idx(const int r_idx){
 void SwapGPU::SwapIn_idx(const int r_idx){
   //TODO(junzhe) test funcionality of change data_
   cout<<"update data_ here, block_ from data_ to data_"<<Table_new.find(r_idx)->second.block_<<' '<<Table_new.find(r_idx)->second.data_<<endl;
-  Table_new.find(r_idx)->second.block_->udpate_data(Malloc(Table_new.find(r_idx)->second.size));
+  Table_new.find(r_idx)->second.block_->update_data(Malloc(Table_new.find(r_idx)->second.size));
 
 
   //TODO(junzhe) not lean, as size is stored in Table_sched as well.
