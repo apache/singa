@@ -1,9 +1,10 @@
 import numpy as np
+import argparse
+import os
 
 from singa import tensor
 from singa import autograd
 from singa import optimizer
-
 
 
 def load_data(path):
@@ -12,6 +13,7 @@ def load_data(path):
     x_test, y_test = f['x_test'], f['y_test']
     f.close()
     return (x_train, y_train), (x_test, y_test)
+
 
 def to_categorical(y, num_classes):
     '''
@@ -32,11 +34,13 @@ def to_categorical(y, num_classes):
     categorical=categorical.astype(np.float32)
     return categorical
 
+
 def preprocess(data):
     data=data.astype(np.float32)
     data /= 255
     data=np.expand_dims(data, axis=1)
     return data
+
 
 def accuracy(pred,target):
     y = np.argmax(pred, axis=1)
@@ -47,47 +51,51 @@ def accuracy(pred,target):
 
 if __name__ == '__main__':
 
-    batch_number=600
+    parser = argparse.ArgumentParser(description='Train CNN over MNIST')
+    parser.add_argument('file_path', type=str, help='the dataset path')
+    args = parser.parse_args()
+
+    assert os.path.exists(args.file_path), 'Pls download the MNIST dataset from' \
+     'https://github.com/mnielsen/neural-networks-and-deep-learning/raw/master/data/mnist.pkl.gz'
+
+    train, test = load_data(args.file_path)
+
+    batch_number = 600
     num_classes = 10
     epochs = 1
 
     sgd = optimizer.SGD(0.05)
 
-    train,test=load_data('/Users/wanqixue/Downloads/mnist.npz')
-    x_train=preprocess(train[0])
+    x_train = preprocess(train[0])
     y_train = to_categorical(train[1], num_classes)
 
     x_test=preprocess(test[0])
     y_test=to_categorical(test[1],num_classes)
-    print ('the shape of training data is',x_train.shape)
-    print ('the shape of training label is',y_train.shape)
+    print ('the shape of training data is', x_train.shape)
+    print ('the shape of training label is', y_train.shape)
     print ('the shape of testing data is', x_test.shape)
     print ('the shape of testing label is', y_test.shape)
 
     # operations initialization
-    conv1=autograd.Conv2d(3, 32)
-    conv2=autograd.Conv2d(32, 32)
-
-    w0 = tensor.Tensor(shape=(25088, 10), requires_grad=True, stores_grad=True)
-    w0.gaussian(0.0, 0.1)
-    b0 = tensor.Tensor(shape=(1, 10), requires_grad=True, stores_grad=True)
-    b0.set_value(0.0)
+    conv1 = autograd.Conv2d(3, 32)
+    conv2 = autograd.Conv2d(32, 32)
+    linear = autograd.Linear(32*28*28, 10)
 
 
-    def forward(x,t):
-        y=conv1(x)
-        y=autograd.relu(y)
-        y=conv2(y)
-        y=autograd.relu(y)
-        y=autograd.max_pool_2d(y)
-        y=autograd.flatten(y)
-        y=autograd.dense(y, w0, b0)
-        y=autograd.soft_max(y)
-        loss=autograd.cross_entropy(y, t)
+    def forward(x, t):
+        y = conv1(x)
+        y = autograd.relu(y)
+        y = conv2(y)
+        y = autograd.relu(y)
+        y = autograd.max_pool_2d(y)
+        y = autograd.flatten(y)
+        y = linear(y)
+        y = autograd.soft_max(y)
+        loss = autograd.cross_entropy(y, t)
         return loss, y
 
     for epoch in range(epochs):
-        for i in range(16):
+        for i in range(batch_number):
             inputs = tensor.Tensor(data=x_train[i * 100:(1 + i) * 100, :], requires_grad=False, stores_grad=False)
             targets = tensor.Tensor(data=y_train[i * 100:(1 + i) * 100, :], requires_grad=False, stores_grad=False)
 
