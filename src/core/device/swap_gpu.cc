@@ -28,6 +28,7 @@
 #include <tuple>        // std::tuple, std::get, std::tie, std::ignore
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
+#include <concrt.h>
 
 using namespace std;
 namespace singa {
@@ -843,7 +844,8 @@ void SwapGPU::Append(string blockInfo){
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
   //void* data_ = Table_meta.find(block_)->second.second.ptr;
-  cout<<"--NOTE: from SwapGPU, data_, block_ device_: "<<Table_block_data_.find(block_)->second<<' '<<block_<<' '<<this<<endl;
+  Concurrency::wait(1000);
+  cout<<"NOTE--: from SwapGPU, data_, block_ device_: "<<Table_block_data_.find(block_)->second<<' '<<block_<<' '<<this<<endl;
   if (!(Table_block_data_.find(block_) == Table_block_data_.end())){
     return Table_block_data_.find(block_)->second;
   } 
