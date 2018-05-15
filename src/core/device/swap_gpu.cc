@@ -22,13 +22,14 @@
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <chrono>
+#include <thread>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <tuple>        // std::tuple, std::get, std::tie, std::ignore
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
-#include <concrt.h>
+
 
 using namespace std;
 namespace singa {
@@ -844,10 +845,12 @@ void SwapGPU::Append(string blockInfo){
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
   //void* data_ = Table_meta.find(block_)->second.second.ptr;
-  Concurrency::wait(1000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   cout<<"NOTE--: from SwapGPU, data_, block_ device_: "<<Table_block_data_.find(block_)->second<<' '<<block_<<' '<<this<<endl;
   if (!(Table_block_data_.find(block_) == Table_block_data_.end())){
+    cout<<"return nullptr"<<endl;
     return Table_block_data_.find(block_)->second;
+
   } 
   return nullptr; //TODO(junzhe) attention, based on no change here.
 }
