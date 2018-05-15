@@ -844,7 +844,10 @@ void SwapGPU::Append(string blockInfo){
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
   //void* data_ = Table_meta.find(block_)->second.second.ptr;
   cout<<"--NOTE: from SwapGPU, data_, block_ device_: "<<Table_block_data_.find(block_)->second<<' '<<block_<<' '<<this<<endl;
-  return Table_block_data_.find(block_)->second; //TODO(junzhe) attention, based on no change here.
+  if (!(Table_block_data_.find(block_) == Table_block_data_.end())){
+    return Table_block_data_.find(block_)->second;
+  } 
+  return nullptr; //TODO(junzhe) attention, based on no change here.
 }
 
 void SwapGPU::SwapOut_idx(const int r_idx){
