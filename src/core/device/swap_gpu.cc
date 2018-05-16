@@ -702,7 +702,7 @@ size_t SwapGPU::GetAllocatedMem() {
 void* SwapGPU::Malloc(int size) {
 
   Test_sched_switch_swap();
-
+  cout<<"malloc after test"<<endl;
   void* ptr = nullptr;
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
@@ -710,6 +710,7 @@ void* SwapGPU::Malloc(int size) {
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
+  cout<<"malloc done"<<endl;
   return ptr;
 }
 
@@ -717,6 +718,7 @@ void* SwapGPU::Malloc(int size) {
 void SwapGPU::Free(void* ptr) {
 
   Test_sched_switch_swap();
+  cout<<"free after test"<<endl;
 
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
@@ -728,6 +730,7 @@ void SwapGPU::Free(void* ptr) {
   //vC12
   Table_block_data_.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
+  cout<<"free done"<<endl;
  
 }
 
