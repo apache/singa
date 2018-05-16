@@ -180,10 +180,6 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
             cout<<"error for process the onePriceMsg."<<endl;
             cout<<vec[i]<<endl;
         }
-        //cout<<onePieceMsgVec_[i].t<<" time if in double"<<endl;
-//        if (i>0){
-//            cout<<onePieceMsgVec_[i].t-onePieceMsgVec_[i-1].t<<" delta"<<endl;
-//        }
     }
     
     sort(onePieceMsgVec_.begin(),onePieceMsgVec_.end(),less_than_ptrIdx());
@@ -904,7 +900,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,stream2);
   
   meta.block_->update_data(meta.data_);
-  cout<<"-- update_data done"<<endl;
+  cout<<"-- update_data done(block_ and data_: )"<<meta.block_<<" "<<meta.data_<<endl;
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   //err = cudaMemcpyAsync(Table_meta.find(r_idx)->second.data_,Table_meta.find(r_gc)->second.cpu_ptr,Table_meta.find(r_gc)->second.size,cudaMemcpyHostToDevice,stream2);
 
