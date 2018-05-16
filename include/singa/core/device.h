@@ -308,6 +308,7 @@ class SwapGPU : public Device {
   int globeCounter = -1;
   int maxLen = 0;
   int location = 0;
+  int tempCounter = 0; //temp counter, to control # blocks to swap for debug purpose.
 
   cudaStream_t stream1; //swapOut stream
   cudaStream_t stream2; //swapIn stream
