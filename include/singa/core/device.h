@@ -108,6 +108,8 @@ class Device {
 
   int id() const { return id_; }
 
+  virtual void* GetRealGpuPtr(const Block* block_) = 0;
+
  private:
   Device() {};
 
@@ -125,7 +127,7 @@ class Device {
   virtual void Free(void* ptr) = 0;
   virtual void MakeMetaTable(Block* block,void* data_,int size) = 0;
   virtual void Append(string blockInfo) = 0;
-  virtual void* GetRealGpuPtr(const Block* block_) = 0;
+  
   virtual void SwapOut(const Block* block_) = 0;
   virtual void SwapIn(const Block* block_) = 0;
 
@@ -236,7 +238,9 @@ struct BM_new{
     Block* block_ = nullptr;
     void* data_ = nullptr;
     void* cpu_ptr = nullptr;
-    size_t size = 0;    
+    size_t size = 0;
+    cudaEvent_t out_event; 
+    cudaEvent_t in_event;   
     //TODO(junzhe) expandable event_t and stream_t
     //BlockMeta(Block* b, void* d, void* c, size_t s): block_(b), data_(d), cpu_ptr(c), size(s) {}
 };
@@ -300,11 +304,13 @@ class SwapGPU : public Device {
   //vec_block
   vector<string> vec_block;
 
-  int asyncSwapFlag =0; //0 for sync, 1 for async.
-  int gc =0; //global counter each time Malloc/Free, add 1.
-  int globeCounter=-1;
-  int maxLen =0;
-  int location=0;
+  int asyncSwapFlag = 0; //0 for sync, 1 for async.
+  int testFlag = 0; //0 means open for test, 1 means no need test anymore.
+  int gc = 0; //global counter each time Malloc/Free, add 1.
+  int globeCounter = -1;
+  int maxLen = 0;
+  int location = 0;
+  int tempCounter = 0; //temp counter, to control # blocks to swap for debug purpose.
 
   cudaStream_t stream1; //swapOut stream
   cudaStream_t stream2; //swapIn stream

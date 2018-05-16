@@ -22,12 +22,14 @@
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <chrono>
+#include <thread>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <tuple>        // std::tuple, std::get, std::tie, std::ignore
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
+
 
 using namespace std;
 namespace singa {
@@ -178,10 +180,6 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
             cout<<"error for process the onePriceMsg."<<endl;
             cout<<vec[i]<<endl;
         }
-        //cout<<onePieceMsgVec_[i].t<<" time if in double"<<endl;
-//        if (i>0){
-//            cout<<onePieceMsgVec_[i].t-onePieceMsgVec_[i-1].t<<" delta"<<endl;
-//        }
     }
     
     sort(onePieceMsgVec_.begin(),onePieceMsgVec_.end(),less_than_ptrIdx());
@@ -700,7 +698,7 @@ size_t SwapGPU::GetAllocatedMem() {
 void* SwapGPU::Malloc(int size) {
 
   Test_sched_switch_swap();
-
+  //cout<<"malloc after test"<<endl;
   void* ptr = nullptr;
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
@@ -708,6 +706,7 @@ void* SwapGPU::Malloc(int size) {
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
+  //cout<<"malloc done"<<endl;
   return ptr;
 }
 
@@ -715,6 +714,7 @@ void* SwapGPU::Malloc(int size) {
 void SwapGPU::Free(void* ptr) {
 
   Test_sched_switch_swap();
+  //cout<<"free after test"<<endl;
 
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
@@ -726,6 +726,7 @@ void SwapGPU::Free(void* ptr) {
   //vC12
   Table_block_data_.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
+  //cout<<"free done"<<endl;
  
 }
 
@@ -734,15 +735,16 @@ void SwapGPU::Test_sched_switch_swap(){
     do Test_sched_switch_swap during Malloc and Free.
   */
   ///test & schedule
- if (((gc+1)%300 == 0) && (asyncSwapFlag == 0)){
-   //TODO(junzhe) not lean, chances are globeCounter found more than 300 idx ago: redudant test.
-   cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
-   globeCounter = swap_test(vec_block,maxLen,location);
-   if (maxLen > 100) {
-     cout<<"compele test-swap:::::::::::::::::::::::::::::::::::::::::::::::::"<<endl;
-      cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
-      cout<<"size of Table_new: "<<Table_new.size()<<endl;
-      cout<<"impt numbers: "<<maxLen<<' '<<location<<' '<<globeCounter<<endl;
+ if (((gc+1)%300 == 0) && (asyncSwapFlag == 0) && (testFlag == 0)){
+  //TODO(junzhe) not lean, chances are globeCounter found more than 300 idx ago: redudant test.
+  cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
+  globeCounter = swap_test(vec_block,maxLen,location);
+  if (maxLen > 100) {
+    testFlag = 1;
+    cout<<"compele test-swap:::::::::::::::::::::::::::::::::::::::::::::::::"<<endl;
+    cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
+    cout<<"size of Table_new: "<<Table_new.size()<<endl;
+    cout<<"impt numbers: "<<maxLen<<' '<<location<<' '<<globeCounter<<endl;
    }
  }
 
@@ -767,6 +769,8 @@ void SwapGPU::Test_sched_switch_swap(){
       SwapIn_idx(r_idx);
       //SwapIn(Table_Block_ptr.find(r_idx)->second);
       cout<<"swapIn - print from Malloc"<<endl;
+      //cout<<"=========== update data_"<<endl;
+
     }
   }
 
@@ -804,6 +808,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   // if (((gc-location)%maxLen==69) or ((gc-location)%maxLen==60)or((gc-location)%maxLen==50)or((gc-location)%maxLen==36)){
   //   cout<<"should update Block_ "<<(gc-location)%maxLen<<endl;
   // }
+  //TODO(junzhe) to remove it.
   if (asyncSwapFlag == 1) {
     int r_gc = (gc-location)%maxLen;
     if (!(Table_Block_ptr.find(r_gc)==Table_Block_ptr.end())){
@@ -830,7 +835,7 @@ void SwapGPU::Append(string blockInfo){
       void* result;
       stringstream convert(v[1]);
       convert>>result;
-      cout<<"r_gc, gc and size ot Table_new "<<r_gc<<' '<<gc<<" "<<Table_new.size()<<endl;
+      //cout<<"r_gc, gc and size ot Table_new "<<r_gc<<' '<<gc<<" "<<Table_new.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
       Table_new.find(r_gc)->second.block_ = static_cast<Block*>(result);
       Table_new.find(r_gc)->second.data_ = Table_block_data_.find(static_cast<Block*>(result))->second;
@@ -842,45 +847,73 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
-  //void* data_ = Table_meta.find(block_)->second.second.ptr;
-  return Table_meta.find(block_)->second.second.ptr;
+  // //void* data_ = Table_meta.find(block_)->second.second.ptr;
+  // 
+  // cout<<"NOTE--: from SwapGPU, data_, block_ device_: "<<Table_block_data_.find(block_)->second<<' '<<block_<<' '<<this<<endl;
+  // if (!(Table_block_data_.find(block_) == Table_block_data_.end())){
+    
+  //   return Table_block_data_.find(block_)->second;
+
+  // } else {
+  //   cout<<"return nullptr"<<endl; 
+  // }
+  return nullptr; //TODO(junzhe) attention, based on no change here.
 }
 
 void SwapGPU::SwapOut_idx(const int r_idx){
-  cout<<"doing asynchrous swapOut"<<endl;
+  cout<<"doing asynchrous swapOut of r_idx: "<<r_idx<<' '<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();  
-  cout<<"before cudaMemcpyAsync"<<endl;
-  cudaStream_t stream3;
+  //cout<<"before cudaMemcpyAsync"<<endl;
+  //cudaStream_t stream3;
   //cudaEvent_t event1;
-  //cudaEventCreate (&event1);
+  
   cudaError_t err;
   //TODO(junzhe) not sure why not working.
   BM_new meta = Table_new.find(r_idx)->second;
-  err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,stream3);
-  //err = cudaMemcpyAsync(Table_meta.find(r_idx)->second.cpu_ptr,Table_meta.find(r_gc)->second.data_,Table_meta.find(r_gc)->second.size,cudaMemcpyDeviceToHost,stream3);
+  cudaEventCreate (&meta.out_event);
+  cout<<"right before cudaMemcpyAsync"<<endl;
+  err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,stream1);
+  cout<<"right before cudaMemcpyAsync"<<endl;
   //cudaEventRecord(event1,stream1);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  cout<<"time for asynchrous: "<<t2-t1<<endl;
+  //cout<<"time for asynchrous: "<<t2-t1<<endl;
   //cudaEventSynchronize(event1);
   //auto t4 = (std::chrono::system_clock::now()).time_since_epoch().count();
   //cout<<"time for asynchrous to complete: "<<t4-t1<<endl;
 }
 
 void SwapGPU::SwapIn_idx(const int r_idx){
+  
   //TODO(junzhe) not lean, as size is stored in Table_sched as well.
-  cout<<"doing asynchrous swapIn"<<endl;
+  //cout<<"doing asynchrous swapIn"<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cudaError_t err;
   cudaStream_t stream2;
   cudaEvent_t event2;
   cudaEventCreate (&event2);
   BM_new meta = Table_new.find(r_idx)->second;
+  //update gpu ptr. //TODO(junzhe) test funcionality of change data_
+  cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
+  void* ptr = nullptr;
+  pool_->Malloc((void**)&ptr, meta.size);
+  void* to_rm_ptr = meta.data_;
+  meta.data_ = ptr;
+  //auto tempPtr = Malloc(meta.size);
+  //meta.data_ = Malloc(Table_new.find(r_idx)->second.size);
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,stream2);
+  if (tempCounter <3){
+    meta.block_->update_data(meta.data_);
+    pool_->Free(to_rm_ptr);
+    tempCounter++;
+    cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
+  }
+  
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   //err = cudaMemcpyAsync(Table_meta.find(r_idx)->second.data_,Table_meta.find(r_gc)->second.cpu_ptr,Table_meta.find(r_gc)->second.size,cudaMemcpyHostToDevice,stream2);
 
   cudaEventRecord(event2,stream2);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  cout<<"time for asynchrous: "<<t2-t1<<endl;
+  //cout<<"time for asynchrous: "<<t2-t1<<endl;
 }
 
 void SwapGPU::SwapOut(const Block* block_){
