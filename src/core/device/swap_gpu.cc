@@ -864,14 +864,14 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   cout<<"doing asynchrous swapOut of r_idx: "<<r_idx<<' '<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();  
   //cout<<"before cudaMemcpyAsync"<<endl;
-  cudaStream_t stream3;
+  //cudaStream_t stream3;
   //cudaEvent_t event1;
   
   cudaError_t err;
   //TODO(junzhe) not sure why not working.
   BM_new meta = Table_new.find(r_idx)->second;
   cudaEventCreate (&meta.out_event);
-  err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,stream3);
+  err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,stream1);
   //err = cudaMemcpyAsync(Table_meta.find(r_idx)->second.cpu_ptr,Table_meta.find(r_gc)->second.data_,Table_meta.find(r_gc)->second.size,cudaMemcpyDeviceToHost,stream3);
   //cudaEventRecord(event1,stream1);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
