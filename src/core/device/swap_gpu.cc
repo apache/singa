@@ -894,14 +894,15 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
   pool_->Malloc((void**)&ptr, meta.size);
+  void* to_rm_ptr = meta.data_;
   meta.data_ = ptr;
   //auto tempPtr = Malloc(meta.size);
   //meta.data_ = Malloc(Table_new.find(r_idx)->second.size);
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,stream2);
   if (tempCounter <3){
     meta.block_->update_data(meta.data_);
+    pool_->Free(to_rm_ptr);
     tempCounter++;
-    
     cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
   }
   
