@@ -898,9 +898,12 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //auto tempPtr = Malloc(meta.size);
   //meta.data_ = Malloc(Table_new.find(r_idx)->second.size);
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,stream2);
+  if (tempCounter <2){
+    meta.block_->update_data(meta.data_);
+    tempCounter++;
+    cout<<"========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
+  }
   
-  //meta.block_->update_data(meta.data_);
-  cout<<"-- update_data done(block_ and data_: )"<<meta.block_<<" "<<meta.data_<<endl;
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   //err = cudaMemcpyAsync(Table_meta.find(r_idx)->second.data_,Table_meta.find(r_gc)->second.cpu_ptr,Table_meta.find(r_gc)->second.size,cudaMemcpyHostToDevice,stream2);
 
