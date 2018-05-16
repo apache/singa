@@ -862,7 +862,7 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
 }
 
 void SwapGPU::SwapOut_idx(const int r_idx){
-  cout<<"doing asynchrous swapOut"<<endl;
+  cout<<"doing asynchrous swapOut of r_idx: "<<r_idx<<' '<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();  
   //cout<<"before cudaMemcpyAsync"<<endl;
   cudaStream_t stream3;
@@ -892,8 +892,8 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cudaEventCreate (&event2);
   BM_new meta = Table_new.find(r_idx)->second;
   //update gpu ptr. //TODO(junzhe) test funcionality of change data_
-  cout<<"update block and data: "<<meta.block_<<' '<<meta.data_<<endl;
-  auto tempPtr = Malloc(Table_new.find(r_idx)->second.size);
+  cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
+  //auto tempPtr = Malloc(Table_new.find(r_idx)->second.size);
   //meta.data_ = Malloc(Table_new.find(r_idx)->second.size);
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,stream2);
   
