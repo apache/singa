@@ -65,6 +65,7 @@ from .proto import core_pb2
 from . import singa_wrap as singa
 from .device import get_default_device
 
+
 int32 = core_pb2.kInt
 float32 = core_pb2.kFloat32
 CTensor = singa.Tensor
@@ -107,7 +108,8 @@ class Tensor(object):
         self.requires_grad = requires_grad
         self.stores_grad = stores_grad
         if creator is None:
-            self.creator = Dummy(self)
+            from . import autograd
+            self.creator = autograd.Dummy(self)
         else:
             self.creator = creator
 
@@ -1254,105 +1256,3 @@ def copy_from_numpy(data, np_array):
     else:
         print('Not implemented yet for ', dt)
 
-
-class Operation(object):
-    '''
-    An operation includes the forward and backward function of
-    tensor calculation.
-
-    To add a specific operation Xxxx, subclass Operation and implement
-    forward() and backward(). Then implement a function xxxx which creates
-    a Xxxx instance and calls __call__ to do forward. The autograd engine
-    is able to do backward propagation by calling the backward() of Xxxx
-    automatically. Notice that the tensors are CTensor. NOT Python Tensor.
-    The arguments of forward() and backward() should only include CTensor args; 
-    '''
-
-    def __call__(self, *xs):
-        return self._do_forward(*xs)
-
-    def _do_forward(self, *xs):
-        '''
-        Do not call this function from user code. It is called by __call__().
-
-        Args:
-            xs, Tensor instance(s)
-
-        Returns:
-            Tensor instance(s)
-        '''
-        # TODO add the pre hook
-        assert all([isinstance(x, Tensor) for x in xs]), \
-            'xs should include only Tensor instances'
-
-        # need to do backward if any of its input arg needs gradient
-        self.requires_grad = any([x.requires_grad for x in xs])
-
-        self.src = []
-        for x in xs:
-            if x.stores_grad:
-                # store the tensor whose gradient needs be returned in
-                # backward(), e.g. if x is parameter
-                self.src.append((x.creator, id(x), x, x.stores_grad))
-            else:
-                # for intermediate tensors, they will be released soon;
-                # no need to store them --> use None
-                self.src.append((x.creator, id(x), None, x.stores_grad))
-
-        # get the CTensor (data) if the input arg is Tensor
-        xs = tuple(x.data for x in xs)
-        ys = self.forward(*xs)
-        if not isinstance(ys, tuple):
-            ys = (ys,)
-        # create Tensor based on CTensor(data);
-        # assume outputs are all Tensor instances
-        ys = tuple(Tensor(device=y.device,
-                          data=y,
-                          requires_grad=self.requires_grad,
-                          creator=self) for y in ys)
-        # map from python id to output index
-        self.y_id2idx = {id(y): i for i, y in enumerate(ys)}
-        # TODO add the post hook
-        return ys
-
-    def _do_backward(self, *dys):
-        dxs = self.backward(*dys)
-        if not isinstance(dxs, tuple):
-            dxs = (dxs,)
-        return dxs
-
-    def forward(self, *xs):
-        '''Forward propagation.
-
-        Args:
-            xs: input args consisting of only CTensors.
-
-        Returns:
-            CTensor instance(s)
-        '''
-        raise NotImplementedError
-
-    def backward(self, *dys):
-        ''' Backward propagation.
-
-        Args:
-            dys: input args consisting of only CTensors.
-
-        Returns:
-            CTensor instance(s)
-        '''
-        raise NotImplementedError
-
-
-class Dummy(Operation):
-    '''Dummy operation whice serves as a placehoder for autograd
-
-    Args:
-        name(string): set it for debug
-    '''
-
-    def __init__(self, tensor, name=None):
-        self.name = name
-        self.src = []
-        self.y_id2idx = {id(tensor): 0}
-        self.requires_grad = False

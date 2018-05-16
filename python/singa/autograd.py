@@ -3,7 +3,7 @@ from __future__ import division
 
 from functools import reduce
 from collections import Counter, deque
-from .tensor import Tensor, Dummy, Operation
+from .tensor import Tensor
 
 from singa import layer
 from singa.proto import model_pb2
@@ -13,6 +13,109 @@ import numpy as np
 import math
 
 CTensor = singa.Tensor
+
+
+class Operation(object):
+    '''
+    An operation includes the forward and backward function of
+    tensor calculation.
+
+    To add a specific operation Xxxx, subclass Operation and implement
+    forward() and backward(). Then implement a function xxxx which creates
+    a Xxxx instance and calls __call__ to do forward. The autograd engine
+    is able to do backward propagation by calling the backward() of Xxxx
+    automatically. Notice that the tensors are CTensor. NOT Python Tensor.
+    The arguments of forward() and backward() should only include CTensor args;
+    '''
+
+    def __call__(self, *xs):
+        return self._do_forward(*xs)
+
+    def _do_forward(self, *xs):
+        '''
+        Do not call this function from user code. It is called by __call__().
+
+        Args:
+            xs, Tensor instance(s)
+
+        Returns:
+            Tensor instance(s)
+        '''
+        # TODO add the pre hook
+        assert all([isinstance(x, Tensor) for x in xs]), \
+            'xs should include only Tensor instances'
+
+        # need to do backward if any of its input arg needs gradient
+        self.requires_grad = any([x.requires_grad for x in xs])
+
+        self.src = []
+        for x in xs:
+            if x.stores_grad:
+                # store the tensor whose gradient needs be returned in
+                # backward(), e.g. if x is parameter
+                self.src.append((x.creator, id(x), x, x.stores_grad))
+            else:
+                # for intermediate tensors, they will be released soon;
+                # no need to store them --> use None
+                self.src.append((x.creator, id(x), None, x.stores_grad))
+
+        # get the CTensor (data) if the input arg is Tensor
+        xs = tuple(x.data for x in xs)
+        ys = self.forward(*xs)
+        if not isinstance(ys, tuple):
+            ys = (ys,)
+        # create Tensor based on CTensor(data);
+        # assume outputs are all Tensor instances
+        ys = tuple(Tensor(device=y.device,
+                          data=y,
+                          requires_grad=self.requires_grad,
+                          creator=self) for y in ys)
+        # map from python id to output index
+        self.y_id2idx = {id(y): i for i, y in enumerate(ys)}
+        # TODO add the post hook
+        return ys
+
+    def _do_backward(self, *dys):
+        dxs = self.backward(*dys)
+        if not isinstance(dxs, tuple):
+            dxs = (dxs,)
+        return dxs
+
+    def forward(self, *xs):
+        '''Forward propagation.
+
+        Args:
+            xs: input args consisting of only CTensors.
+
+        Returns:
+            CTensor instance(s)
+        '''
+        raise NotImplementedError
+
+    def backward(self, *dys):
+        ''' Backward propagation.
+
+        Args:
+            dys: input args consisting of only CTensors.
+
+        Returns:
+            CTensor instance(s)
+        '''
+        raise NotImplementedError
+
+
+class Dummy(Operation):
+    '''Dummy operation whice serves as a placehoder for autograd
+
+    Args:
+        name(string): set it for debug
+    '''
+
+    def __init__(self, tensor, name=None):
+        self.name = name
+        self.src = []
+        self.y_id2idx = {id(tensor): 0}
+        self.requires_grad = False
 
 
 class ReLU(Operation):
@@ -338,33 +441,44 @@ class Linear(Operation):
     def __init__(self, in_features, out_features, bias=True):
         self.in_features = in_features
         self.out_features = out_features
-        w_shape = (in_features, out_features)
-        self.w = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        if bias:
-            b_shape = (1, out_features)
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+        self.w_shape = (in_features, out_features)
+        self.b_shape = (1, out_features)
+        self.bias = bias
         self.init_value = False
 
     def get_params(self):
-        if hasattr(self, 'b'):
+        assert self.init_value is True, 'must initialize before get_params()'
+        if self.bias:
             return (self.w, self.b)
         else:
             return self.w
 
+    def init_params(self, w, b=None):
+        if self.bias:
+            assert b is not None, 'must initialize bias.'
+            assert w.shape == self.w_shape, 'shape of parameters must match.'
+            assert b.shape == self.b_shape, 'shape of parameters must match.'
+            self.w = w
+            self.b = b
+        else:
+            assert b is None, 'cannot initialize bias.'
+            assert w.shape == self.w_shape, 'shape of parameters must match.'
+            self.w = w
+        self.init_value = True
+        return
+
     def __call__(self, x, flag=True):
         assert type(flag) is bool, 'flag can only be bool.'
-        self.flag = flag
         if self.init_value is False:
+            self.w = Tensor(shape=self.w_shape, requires_grad=True, stores_grad=True)
             std = math.sqrt(2.0 / (self.in_features + self.out_features))
             self.w.gaussian(0.0, std)
-            if hasattr(self, 'b'):
+            if self.bias:
+                self.b = Tensor(shape=self.b_shape, requires_grad=True, stores_grad=True)
                 self.b.set_value(0.0)
             self.init_value = True
-        return self._do_forward(x)
-
-    def _do_forward(self, x):
-        y = matmul(x, self.w, self.flag)
-        if hasattr(self, 'b'):
+        y = matmul(x, self.w, flag)
+        if self.bias:
             y = add_bias(y, self.b, axis=0)
         return y
 
