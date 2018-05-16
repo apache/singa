@@ -63,11 +63,11 @@ class Block {
   // Disabled as it is not used currently.
   // Block(void* ptr, size_t size, size_t offset, std::shared_ptr<atomic<int>>
   //  ref) : data_(ptr), size_(size), offset_(offset), ref_count_(ref) {}
-  void* mutable_data() ;
- 
-  const void* data() const;
+    void* mutable_data() ;
+   
+    const void* data() const;
 
-  void update_data(void* data_new) ;
+    const void* log_ptr() const; //for return **ptr only given block ptr
     
   size_t size() const { return size_; }
   size_t offset() const { return offset_; }
