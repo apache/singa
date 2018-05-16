@@ -894,12 +894,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //update gpu ptr. //TODO(junzhe) test funcionality of change data_
   cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
-  if (size > 0) {
-    CUDA_CHECK(cudaSetDevice(id_));
-    pool_->Malloc((void**)&ptr, size);
-    // TODO(wangwei) remove the memset.
-    CUDA_CHECK(cudaMemset(ptr, 0, size));
-  }
+  pool_->Malloc((void**)&ptr, meta.size);
   meta.data_ = ptr;
   //auto tempPtr = Malloc(meta.size);
   //meta.data_ = Malloc(Table_new.find(r_idx)->second.size);
