@@ -31,15 +31,13 @@ import numpy as np
 import os
 import argparse
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
 from singa import utils
 from singa import optimizer
 from singa import device
 from singa import tensor
-from singa.proto import core_pb2
 from caffe import caffe_net
 
-# import alexnet
+import cnn
 import vgg
 import resnet
 
@@ -139,7 +137,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         opt.register(p, specs)
 
     tx = tensor.Tensor((batch_size, 3, 32, 32), dev)
-    ty = tensor.Tensor((batch_size,), dev, core_pb2.kInt)
+    ty = tensor.Tensor((batch_size,), dev, tensor.int32)
     train_x, train_y, test_x, test_y = data
     num_train_batch = train_x.shape[0] // batch_size
     num_test_batch = test_x.shape[0] // batch_size
@@ -181,7 +179,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train dcnn for cifar10')
-    parser.add_argument('model', choices=['vgg', 'alexnet', 'resnet', 'caffe'],
+    parser.add_argument('model', choices=['vgg', 'cnn', 'resnet', 'caffe'],
                         default='vgg')
     parser.add_argument('data', default='cifar-10-batches-py')
     parser.add_argument('--use_cpu', action='store_true')
@@ -200,9 +198,9 @@ if __name__ == '__main__':
         # for cifar10_quick_train_test.prototxt
         # train((train_x, train_y, test_x, test_y), net, 18, caffe_lr, 0.004,
         #      use_cpu=args.use_cpu)
-    elif args.model == 'alexnet':
+    elif args.model == 'cnn':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
-        net = alexnet.create_net(args.use_cpu)
+        net = cnn.create_net(args.use_cpu)
         train((train_x, train_y, test_x, test_y), net, 2, alexnet_lr, 0.004,
               use_cpu=args.use_cpu)
     elif args.model == 'vgg':
