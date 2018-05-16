@@ -901,6 +901,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   if (tempCounter <3){
     meta.block_->update_data(meta.data_);
     tempCounter++;
+    
     cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
   }
   
