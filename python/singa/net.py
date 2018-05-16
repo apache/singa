@@ -182,7 +182,7 @@ class FeedForwardNet(object):
         Please use backprob() instead.
         The back progagation algorithm computes gradients but it does not train.
         '''
-        return backprob(x, y)
+        return self.backprob(x, y)
 
     def backprob(self, x, y):
         '''Run BP for one iteration.

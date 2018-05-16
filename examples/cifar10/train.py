@@ -39,7 +39,7 @@ from singa import tensor
 from singa.proto import core_pb2
 from caffe import caffe_net
 
-import alexnet
+# import alexnet
 import vgg
 import resnet
 
@@ -182,7 +182,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train dcnn for cifar10')
     parser.add_argument('model', choices=['vgg', 'alexnet', 'resnet', 'caffe'],
-                        default='alexnet')
+                        default='vgg')
     parser.add_argument('data', default='cifar-10-batches-py')
     parser.add_argument('--use_cpu', action='store_true')
     args = parser.parse_args()
