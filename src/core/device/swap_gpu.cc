@@ -702,7 +702,7 @@ size_t SwapGPU::GetAllocatedMem() {
 void* SwapGPU::Malloc(int size) {
 
   Test_sched_switch_swap();
-  cout<<"malloc after test"<<endl;
+  //cout<<"malloc after test"<<endl;
   void* ptr = nullptr;
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
@@ -710,7 +710,7 @@ void* SwapGPU::Malloc(int size) {
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
-  cout<<"malloc done"<<endl;
+  //cout<<"malloc done"<<endl;
   return ptr;
 }
 
@@ -718,7 +718,7 @@ void* SwapGPU::Malloc(int size) {
 void SwapGPU::Free(void* ptr) {
 
   Test_sched_switch_swap();
-  cout<<"free after test"<<endl;
+  //cout<<"free after test"<<endl;
 
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
@@ -730,7 +730,7 @@ void SwapGPU::Free(void* ptr) {
   //vC12
   Table_block_data_.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
-  cout<<"free done"<<endl;
+  //cout<<"free done"<<endl;
  
 }
 
@@ -905,7 +905,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   
   meta.block_->update_data(meta.data_);
   cout<<"-- update_data done"<<endl;
-  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   //err = cudaMemcpyAsync(Table_meta.find(r_idx)->second.data_,Table_meta.find(r_gc)->second.cpu_ptr,Table_meta.find(r_gc)->second.size,cudaMemcpyHostToDevice,stream2);
 
   cudaEventRecord(event2,stream2);
