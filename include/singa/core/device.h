@@ -302,11 +302,12 @@ class SwapGPU : public Device {
   //vec_block
   vector<string> vec_block;
 
-  int asyncSwapFlag =0; //0 for sync, 1 for async.
-  int gc =0; //global counter each time Malloc/Free, add 1.
-  int globeCounter=-1;
-  int maxLen =0;
-  int location=0;
+  int asyncSwapFlag = 0; //0 for sync, 1 for async.
+  int testFlag = 0; //0 means open for test, 1 means no need test anymore.
+  int gc = 0; //global counter each time Malloc/Free, add 1.
+  int globeCounter = -1;
+  int maxLen = 0;
+  int location = 0;
 
   cudaStream_t stream1; //swapOut stream
   cudaStream_t stream2; //swapIn stream
