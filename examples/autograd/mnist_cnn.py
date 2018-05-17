@@ -31,18 +31,18 @@ def to_categorical(y, num_classes):
     n = y.shape[0]
     categorical = np.zeros((n, num_classes))
     categorical[np.arange(n), y] = 1
-    categorical=categorical.astype(np.float32)
+    categorical = categorical.astype(np.float32)
     return categorical
 
 
 def preprocess(data):
-    data=data.astype(np.float32)
+    data = data.astype(np.float32)
     data /= 255
-    data=np.expand_dims(data, axis=1)
+    data = np.expand_dims(data, axis=1)
     return data
 
 
-def accuracy(pred,target):
+def accuracy(pred, target):
     y = np.argmax(pred, axis=1)
     t = np.argmax(target, axis=1)
     a = y == t
@@ -55,8 +55,9 @@ if __name__ == '__main__':
     parser.add_argument('file_path', type=str, help='the dataset path')
     args = parser.parse_args()
 
-    assert os.path.exists(args.file_path), 'Pls download the MNIST dataset from' \
-     'https://github.com/mnielsen/neural-networks-and-deep-learning/raw/master/data/mnist.pkl.gz'
+    assert os.path.exists(args.file_path), \
+        'Pls download the MNIST dataset from ' \
+        'https://github.com/mnielsen/neural-networks-and-deep-learning/raw/master/data/mnist.pkl.gz'
 
     train, test = load_data(args.file_path)
 
@@ -69,18 +70,17 @@ if __name__ == '__main__':
     x_train = preprocess(train[0])
     y_train = to_categorical(train[1], num_classes)
 
-    x_test=preprocess(test[0])
-    y_test=to_categorical(test[1],num_classes)
-    print ('the shape of training data is', x_train.shape)
-    print ('the shape of training label is', y_train.shape)
-    print ('the shape of testing data is', x_test.shape)
-    print ('the shape of testing label is', y_test.shape)
+    x_test = preprocess(test[0])
+    y_test = to_categorical(test[1], num_classes)
+    print('the shape of training data is', x_train.shape)
+    print('the shape of training label is', y_train.shape)
+    print('the shape of testing data is', x_test.shape)
+    print('the shape of testing label is', y_test.shape)
 
     # operations initialization
     conv1 = autograd.Conv2d(3, 32)
     conv2 = autograd.Conv2d(32, 32)
-    linear = autograd.Linear(32*28*28, 10)
-
+    linear = autograd.Linear(32 * 28 * 28, 10)
 
     def forward(x, t):
         y = conv1(x)
@@ -94,16 +94,19 @@ if __name__ == '__main__':
         loss = autograd.cross_entropy(y, t)
         return loss, y
 
+    autograd.training = True
     for epoch in range(epochs):
         for i in range(batch_number):
-            inputs = tensor.Tensor(data=x_train[i * 100:(1 + i) * 100, :], requires_grad=False, stores_grad=False)
-            targets = tensor.Tensor(data=y_train[i * 100:(1 + i) * 100, :], requires_grad=False, stores_grad=False)
+            inputs = tensor.Tensor(data=x_train[i * 100:(1 + i) * 100, :])
+            targets = tensor.Tensor(data=y_train[i * 100:(1 + i) * 100, :])
 
             loss, y = forward(inputs, targets)
 
-            accuracy_rate = accuracy(autograd.ctensor2numpy(y.data),autograd.ctensor2numpy(targets.data))
+            accuracy_rate = accuracy(autograd.ctensor2numpy(
+                y.data), autograd.ctensor2numpy(targets.data))
             if (i % 5 == 0):
-                print('accuracy is:', accuracy_rate,'loss is:', autograd.ctensor2numpy(loss.data)[0])
+                print('accuracy is:', accuracy_rate, 'loss is:',
+                      autograd.ctensor2numpy(loss.data)[0])
 
             in_grads = autograd.backward(loss)
 

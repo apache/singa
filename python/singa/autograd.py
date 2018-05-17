@@ -1,18 +1,18 @@
 
 from __future__ import division
 
-from functools import reduce
 from collections import Counter, deque
-from .tensor import Tensor
-
-from singa import layer
-from singa.proto import model_pb2
-from . import singa_wrap as singa
-
 import numpy as np
 import math
 
+from .tensor import Tensor
+from . import layer
+from singa.proto import model_pb2
+from . import singa_wrap as singa
+
+
 CTensor = singa.Tensor
+training = False
 
 
 class Operation(object):
@@ -20,12 +20,16 @@ class Operation(object):
     An operation includes the forward and backward function of
     tensor calculation.
 
-    To add a specific operation Xxxx, subclass Operation and implement
-    forward() and backward(). Then implement a function xxxx which creates
-    a Xxxx instance and calls __call__ to do forward. The autograd engine
-    is able to do backward propagation by calling the backward() of Xxxx
-    automatically. Notice that the tensors are CTensor. NOT Python Tensor.
-    The arguments of forward() and backward() should only include CTensor args;
+    Steps to add a specific operation Xxxx:
+    1. create a subclass of Operation, name it as Xxxx
+    2. if Xxxx is implemented using other Operations, then override
+       _do_forward() function;
+       if Xxxx is implemented using CTensor operations,
+       then override the forward() and backward(); The arguments of forward()
+       and backward() should only include CTensor;
+       if Xxxx is implemented by calling functions in layer.py, then override
+       __call__(), forward() and backward(). TODO(wangwei) avoid this complex
+       case.
     '''
 
     def __call__(self, *xs):
@@ -103,6 +107,9 @@ class Operation(object):
         '''
         raise NotImplementedError
 
+    def get_params(self):
+        return []
+
 
 class Dummy(Operation):
     '''Dummy operation whice serves as a placehoder for autograd
@@ -119,10 +126,6 @@ class Dummy(Operation):
 
 
 class ReLU(Operation):
-    def __call__(self, x, flag=True):
-        assert type(flag) is bool, 'flag can only be bool.'
-        self.flag=flag
-        return self._do_forward(x)
 
     def forward(self, x):
         '''
@@ -132,7 +135,7 @@ class ReLU(Operation):
         Returns:
             a new CTensor whose element y = x if x >= 0; otherwise 0;
         '''
-        if self.flag:
+        if training:
             self.input = x
         return singa.ReLU(x)
 
@@ -154,10 +157,6 @@ def relu(x):
 
 class Matmul(Operation):
     '''For matrix multiplication'''
-    def __call__(self, x, w, flag=True):
-        assert type(flag) is bool, 'flag can only be bool.'
-        self.flag=flag
-        return self._do_forward(x, w)
 
     def forward(self, x, w):
         '''Do forward propgation.
@@ -171,7 +170,7 @@ class Matmul(Operation):
         Returns:
             a CTensor for the result
         '''
-        if self.flag:
+        if training:
             self.input = (x, w)
         return singa.Mult(x, w)
 
@@ -187,13 +186,13 @@ class Matmul(Operation):
             singa.Mult(self.input[0].T(), dy)
 
 
-def matmul(x, w, flag=True):
-    return Matmul()(x, w, flag)[0]
+def matmul(x, w):
+    return Matmul()(x, w)[0]
 
 
 class AddBias(Operation):
     '''
-    Add Bias to each row / column of the Tensor, depending on the parameter axis.
+    Add Bias to each row / column of the Tensor, depending on the axis arg.
     '''
 
     def __init__(self, axis=0):
@@ -303,7 +302,8 @@ class CrossEntropy(Operation):
     def forward(self, x, t):
         '''
         Args:
-            x (CTensor): 1d or 2d tensor, the prediction data(output) of current network.
+            x (CTensor): 1d or 2d tensor, the prediction data(output)
+                         of current network.
             t (CTensor): 1d or 2d tensor, the target data for training.
 
         Returns:
@@ -320,12 +320,13 @@ class CrossEntropy(Operation):
     def backward(self, dy=1.0):
         '''
         Args:
-            dy (float or CTensor): scalar, accumulate gradient from outside of current network, usually
-            equal to 1.0
+            dy (float or CTensor): scalar, accumulate gradient from outside
+                                of current network, usually equal to 1.0
 
         Returns:
-            dx (CTensor): data for the dL /dx, L is the loss, x is the output of current network.
-            note that this is true for dy = 1.0
+            dx (CTensor): data for the dL /dx, L is the loss, x is the output
+                          of current network. note that this is true for
+                          dy = 1.0
         '''
         dx = singa.__div__(self.t, self.x)
         dx *= float(-1 / self.x.shape()[0])
@@ -351,17 +352,18 @@ def ctensor2numpy(x):
 
 
 class Conv2d(Operation):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, dilation=1, groups=1, bias=True,
-                 **kwargs):
+
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
+                 padding=0, dilation=1, groups=1, bias=True, **kwargs):
 
         inner_params = {'name': 'Conv2d',
-                          'border_mode': 'same',
-                          'cudnn_prefer': 'fastest',
-                          'workspace_byte_limit': 1024,
-                          'data_format': 'NCHW',
-                          'W_specs': {'init': 'xavier'},
-                          'b_specs': {'init': 'constant'},
-                          'input_sample_shape': None}
+                        'border_mode': 'same',
+                        'cudnn_prefer': 'fastest',
+                        'workspace_byte_limit': 1024,
+                        'data_format': 'NCHW',
+                        'W_specs': {'init': 'xavier'},
+                        'b_specs': {'init': 'constant'},
+                        'input_sample_shape': None}
         # TODO valid value of inner_params check
 
         for kwarg in kwargs:
@@ -369,7 +371,7 @@ class Conv2d(Operation):
                 raise TypeError('Keyword argument not understood:', kwarg)
             else:
                 inner_params[kwarg] = kwargs[kwarg]
-                
+
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.W_specs = inner_params['W_specs']
@@ -388,21 +390,30 @@ class Conv2d(Operation):
         if dilation != 1 or groups != 1:
             raise ValueError('Not implemented yet')
 
-        self.PyLayer = layer.Conv2D(inner_params['name'], nb_kernels=out_channels, kernel=kernel_size, stride=stride,
+        self.PyLayer = layer.Conv2D(inner_params['name'],
+                                    nb_kernels=out_channels,
+                                    kernel=kernel_size,
+                                    stride=stride,
                                     border_mode=inner_params['border_mode'],
-                 cudnn_prefer=inner_params['cudnn_prefer'], workspace_byte_limit=inner_params['workspace_byte_limit'],
-                 data_format=inner_params['data_format'], use_bias=bias, W_specs=self.W_specs, b_specs=self.b_specs,
-                 pad=pad, input_sample_shape=inner_params['input_sample_shape'])
+                                    cudnn_prefer=inner_params['cudnn_prefer'],
+                                    workspace_byte_limit=inner_params[
+                                        'workspace_byte_limit'],
+                                    data_format=inner_params['data_format'],
+                                    use_bias=bias,
+                                    W_specs=self.W_specs,
+                                    b_specs=self.b_specs,
+                                    pad=pad,
+                                    input_sample_shape=inner_params['input_sample_shape'])
 
     def get_params(self):
-        assert self.has_setup, \
-            'Must call setup() before get_params()'
-        params = self.PyLayer.layer.param_values()
-        return params
+        assert self.init_value is True, 'must initialize before get_params()'
+        if self.bias:
+            return (self.w, self.b)
+        else:
+            return self.w
 
-    def __call__(self, x, flag=True):
-        assert type(flag) is bool, 'flag can only be bool.'
-        if flag:
+    def __call__(self, x):
+        if training:
             self.flag = model_pb2.kTrain
         else:
             self.flag = model_pb2.kEval
@@ -413,15 +424,18 @@ class Conv2d(Operation):
         param_data = self.PyLayer.layer.param_values()
 
         if not hasattr(self, 'w'):
-            self.w = Tensor(device=param_data[0].device, data=param_data[0], requires_grad=True, stores_grad=True)
-            std = math.sqrt(2.0/(self.in_channels*self.kernel_size[0]*self.kernel_size[1]+self.out_channels))
+            self.w = Tensor(device=param_data[0].device, data=param_data[
+                            0], requires_grad=True, stores_grad=True)
+            std = math.sqrt(
+                2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] + self.out_channels))
             self.w.gaussian(0.0, std)
 
         xs = [x, self.w]
 
         if len(param_data) == 2:
             if not hasattr(self, 'b'):
-                self.b = Tensor(device=param_data[1].device, data=param_data[1], requires_grad=True, stores_grad=True)
+                self.b = Tensor(device=param_data[1].device, data=param_data[
+                                1], requires_grad=True, stores_grad=True)
                 self.b.set_value(0.0)
 
             xs.append(self.b)
@@ -434,10 +448,11 @@ class Conv2d(Operation):
 
     def backward(self, dy):
         ret = self.PyLayer.layer.Backward(self.flag, dy)
-        return (ret[0],)+ret[1]
+        return (ret[0],) + ret[1]
 
 
 class Linear(Operation):
+
     def __init__(self, in_features, out_features, bias=True):
         self.in_features = in_features
         self.out_features = out_features
@@ -453,47 +468,36 @@ class Linear(Operation):
         else:
             return self.w
 
-    def init_params(self, w, b=None):
-        if self.bias:
-            assert b is not None, 'must initialize bias.'
-            assert w.shape == self.w_shape, 'shape of parameters must match.'
-            assert b.shape == self.b_shape, 'shape of parameters must match.'
-            self.w = w
-            self.b = b
-        else:
-            assert b is None, 'cannot initialize bias.'
-            assert w.shape == self.w_shape, 'shape of parameters must match.'
-            self.w = w
-        self.init_value = True
-        return
-
-    def __call__(self, x, flag=True):
-        assert type(flag) is bool, 'flag can only be bool.'
+    def __call__(self, x):
         if self.init_value is False:
-            self.w = Tensor(shape=self.w_shape, requires_grad=True, stores_grad=True)
+            self.w = Tensor(shape=self.w_shape,
+                            requires_grad=True, stores_grad=True)
             std = math.sqrt(2.0 / (self.in_features + self.out_features))
             self.w.gaussian(0.0, std)
             if self.bias:
-                self.b = Tensor(shape=self.b_shape, requires_grad=True, stores_grad=True)
+                self.b = Tensor(shape=self.b_shape,
+                                requires_grad=True, stores_grad=True)
                 self.b.set_value(0.0)
             self.init_value = True
-        y = matmul(x, self.w, flag)
+        y = matmul(x, self.w)
         if self.bias:
             y = add_bias(y, self.b, axis=0)
         return y
 
 
 class MaxPool2d(Operation):
-    def __init__(self, kernel_size=3, stride=1, padding=0, dilation=1, return_indices=False, ceil_mode=False, **kwargs):
+
+    def __init__(self, kernel_size=3, stride=1, padding=0, dilation=1,
+                 return_indices=False, ceil_mode=False, **kwargs):
 
         inner_params = {'name': 'MaxPool2d',
-                          'border_mode': 'same',
-                          'data_format': 'NCHW',
-                          'input_sample_shape': None
-                          }
+                        'border_mode': 'same',
+                        'data_format': 'NCHW',
+                        'input_sample_shape': None
+                        }
 
         for kwarg in kwargs:
-            if kwarg not in allowed_kwargs:
+            if kwarg not in inner_params:
                 raise TypeError('Keyword argument not understood:', kwarg)
             else:
                 inner_params[kwarg] = kwargs[kwarg]
@@ -503,16 +507,18 @@ class MaxPool2d(Operation):
         else:
             pad = padding
 
-        if dilation != 1 or return_indices is not False or ceil_mode is not False:
+        if dilation != 1 or return_indices or ceil_mode:
             raise ValueError('Not implemented yet')
 
-        self.PyLayer = layer.Pooling2D(inner_params['name'], model_pb2.PoolingConf.MAX,
-                                           kernel_size, stride, inner_params['border_mode'],
-                                           pad, inner_params['data_format'], inner_params['input_sample_shape'])
+        self.PyLayer = layer.Pooling2D(inner_params['name'],
+                                       model_pb2.PoolingConf.MAX,
+                                       kernel_size, stride, inner_params[
+                                           'border_mode'],
+                                       pad, inner_params['data_format'],
+                                       inner_params['input_sample_shape'])
 
-    def __call__(self, x, flag=True):
-        assert type(flag) is bool, 'flag can only be bool.'
-        if flag:
+    def __call__(self, x):
+        if training:
             self.flag = model_pb2.kTrain
         else:
             self.flag = model_pb2.kEval
@@ -529,17 +535,19 @@ class MaxPool2d(Operation):
         return self.PyLayer.layer.Backward(0, dy)[0]
 
 
-def max_pool_2d(x, kernel_size=3, stride=1, padding=0, dilation=1, return_indices=False, ceil_mode=False, **kwargs):
-    return MaxPool2d(kernel_size, stride, padding, dilation, return_indices, ceil_mode, **kwargs)(x)[0]
+def max_pool_2d(x, kernel_size=3, stride=1, padding=0, dilation=1,
+                return_indices=False, ceil_mode=False, **kwargs):
+    return MaxPool2d(kernel_size, stride, padding, dilation, return_indices,
+                     ceil_mode, **kwargs)(x)[0]
 
 
 class Flatten(Operation):
-    def __init__(self, name='Flatten', axis=1, input_sample_shape=None):
-        self.PyLayer = layer.Flatten(name, axis, input_sample_shape)
 
-    def __call__(self, x, flag=True):
-        assert type(flag) is bool, 'flag can only be bool.'
-        if flag:
+    def __init__(self):
+        self.PyLayer = layer.Flatten('flatten', 1)
+
+    def __call__(self, x):
+        if training:
             self.flag = model_pb2.kTrain
         else:
             self.flag = model_pb2.kEval
@@ -554,8 +562,8 @@ class Flatten(Operation):
         return self.PyLayer.layer.Backward(0, dy)[0]
 
 
-def flatten(x, name='Flatten', axis=1, input_sample_shape=None):
-    return Flatten(name, axis, input_sample_shape)(x)[0]
+def flatten(x):
+    return Flatten()(x)[0]
 
 
 def infer_dependency(op):
