@@ -26,9 +26,9 @@ to SINGA for image classification.
 * Example
 
         # use cpu
-        $ python serve.py --use_cpu --parameter_file vgg11.pickle --depth 11 --use_cpu &
-        # use gpu
         $ python serve.py --use_cpu --parameter_file vgg11.pickle --depth 11 &
+        # use gpu
+        $ python serve.py --parameter_file vgg11.pickle --depth 11 &
 
   The parameter files for the following model and depth configuration pairs are provided:
   * Without batch-normalization, [11](https://s3-ap-southeast-1.amazonaws.com/dlfile/vgg/vgg11.tar.gz), [13](https://s3-ap-southeast-1.amazonaws.com/dlfile/vgg/vgg13.tar.gz), [16](https://s3-ap-southeast-1.amazonaws.com/dlfile/vgg/vgg16.tar.gz), [19](https://s3-ap-southeast-1.amazonaws.com/dlfile/vgg/vgg19.tar.gz)

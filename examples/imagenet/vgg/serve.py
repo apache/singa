@@ -63,7 +63,8 @@ def serve(net, label_map, dev, agent, topk=5):
                 img -= mean
                 img /= std
                 img = img.transpose((2, 0, 1))
-                img = img[:,(height-224)//2:(height+224)//2,(width-224)//2:(width+224)//2]
+                img = img[:,\
+                (height-224)//2:(height+224)//2,(width-224)//2:(width+224)//2]
                 images.copy_from_numpy(img)
                 print("input: ", images.l1())
                 # do prediction

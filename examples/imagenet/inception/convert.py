@@ -19,7 +19,6 @@ from __future__ import print_function
 
 import argparse
 import sys
-import cPickle as pickle
 import os
 
 import numpy as np
@@ -28,6 +27,10 @@ from tensorflow.python.platform import app
 import inception_v4
 import inception_v3
 
+try:
+    import cPickle as pickle
+except ModuleNotFoundError:
+    import pickle
 
 FLAGS = None
 
@@ -96,8 +99,8 @@ def convert(model, file_name):
             (any([e in file_name for e in [".index", ".meta", ".data"]]))):
             proposed_file = ".".join(file_name.split(".")[0:-1])
             v2_file_error_template = """
-    It's likely that this is a V2 checkpoint and you need to provide the filename
-    *prefix*.  Try removing the '.' and extension.  Try:
+    It's likely that this is a V2 checkpoint and you need to provide
+    the filename *prefix*.  Try removing the '.' and extension.  Try:
     inspect checkpoint --file_name = {}"""
         print(v2_file_error_template.format(proposed_file))
 

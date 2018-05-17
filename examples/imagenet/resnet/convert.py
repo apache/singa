@@ -20,10 +20,14 @@ using cPickle'''
 import os
 import torchfile
 import numpy as np
-import cPickle as pickle
 from argparse import ArgumentParser
 
 import model
+
+try:
+    import cPickle as pickle
+except ModuleNotFoundError:
+    import pickle
 
 verbose=False
 
@@ -32,11 +36,13 @@ def add_param(idx, name, val, params):
         assert name not in params, 'duplicated param %s' % name
         params[name] = val
     else:
-        assert params[idx].size() == val.size, 'size mismatch for %s: %s - %s' % (name, (params[idx].shape,), (val.shape,))
+        assert params[idx].size() == val.size,\
+        'size mismatch for %s: %s - %s'\
+        % (name, (params[idx].shape,), (val.shape,))
         params[idx].copy_from_numpy(val)
 
     if verbose:
-        print name, val.shape
+        print(name, val.shape)
 
 
 def conv(m, idx, params, param_names):
@@ -90,10 +96,11 @@ def traverse(m, idx, params, param_names):
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Convert params from torch to python '
-            'dict. \n resnet could have depth of 18, 34, 101, 152; \n wrn has depth 50; preact has depth 200; addbn has depth 50')
+            'dict. \n resnet could have depth of 18, 34, 101, 152; \n'
+            'wrn has depth 50; preact has depth 200; addbn has depth 50')
     parser.add_argument("infile", help="torch checkpoint file")
-    parser.add_argument("model", choices = ['resnet', 'wrn', 'preact', 'addbn'])
-    parser.add_argument("depth", type=int, choices = [18, 34, 50, 101, 152, 200])
+    parser.add_argument("model", choices=['resnet', 'wrn', 'preact', 'addbn'])
+    parser.add_argument("depth", type=int, choices=[18, 34, 50, 101, 152, 200])
     args = parser.parse_args()
 
     net = model.create_net(args.model, args.depth)
@@ -105,8 +112,8 @@ if __name__ == '__main__':
     traverse(m, 0, params, param_names)
     miss = [name for name in param_names if name not in params]
     if len(miss) > 0:
-        print 'The following params are missing from torch file'
-        print miss
+        print('The following params are missing from torch file')
+        print(miss)
 
     outfile = os.path.splitext(args.infile)[0] + '.pickle'
     with open(outfile, 'wb') as fd:

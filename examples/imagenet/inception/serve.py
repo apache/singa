@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-import model
-
 from singa import device
 from singa import tensor
 from singa import image_tool
@@ -28,8 +26,11 @@ import traceback
 from argparse import ArgumentParser
 import numpy as np
 
+import inception_v4
+import inception_v3
 
-def serve(agent, use_cpu, parameter_file, topk=5):
+
+def serve(agent, net, use_cpu, parameter_file, topk=5):
     if use_cpu:
         print('running with cpu')
         dev = device.get_default_device()
@@ -40,6 +41,11 @@ def serve(agent, use_cpu, parameter_file, topk=5):
     agent = agent
 
     print('Start intialization............')
+    # fix the bug when creating net
+    if net == 'v3':
+        model = inception_v3
+    else:
+        model = inception_v4
     net, _ = model.create_net(is_training=False)
     net.load(parameter_file, use_pickle=True)
     net.to_device(dev)
@@ -61,7 +67,9 @@ def serve(agent, use_cpu, parameter_file, topk=5):
                 height, width = img.size[0], img.size[1]
                 print(img.size)
                 crop_h, crop_w = int(height * ratio), int(width * ratio)
-                img = np.array(image_tool.crop(img, (crop_h, crop_w), 'center').resize((299, 299))).astype(np.float32) / float(255)
+                img = np.array(image_tool.crop(img,\
+                      (crop_h, crop_w), 'center').\
+                      resize((299, 299))).astype(np.float32) / float(255)
                 img -= 0.5
                 img *= 2
                 # img[:,:,[0,1,2]] = img[:,:,[2,1,0]]
@@ -94,11 +102,13 @@ def serve(agent, use_cpu, parameter_file, topk=5):
 def main():
     try:
         # Setup argument parser
-        parser = ArgumentParser(description="InceptionV4 for image classification")
+        parser = ArgumentParser(description=\
+                                "InceptionV3 and V4 for image classification")
+        parser.add_argument("--model", choices=['v3', 'v4'], default='v4')
         parser.add_argument("-p", "--port", default=9999, help="listen port")
         parser.add_argument("-C", "--use_cpu", action="store_true")
         parser.add_argument("--parameter_file", default="inception_v4.pickle",
-                help="relative path")
+                            help="relative path")
 
         # Process arguments
         args = parser.parse_args()
@@ -106,7 +116,7 @@ def main():
 
         # start to train
         agent = Agent(port)
-        serve(agent, args.use_cpu, args.parameter_file)
+        serve(agent, args.model, args.use_cpu, args.parameter_file)
         agent.stop()
 
     except SystemExit:

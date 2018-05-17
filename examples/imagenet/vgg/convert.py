@@ -21,10 +21,14 @@ as python dict using cPickle. Must install pytorch.
 import torch.utils.model_zoo as model_zoo
 
 import numpy as np
-import cPickle as pickle
 from argparse import ArgumentParser
 
 import model
+
+try:
+    import cPickle as pickle
+except ModuleNotFoundError:
+    import pickle
 
 
 model_urls = {
@@ -84,7 +88,8 @@ if __name__ == '__main__':
                 params[pname] = np.transpose(ary)
         else:
             print('param=%s is missing in the ckpt file' % pname)
-        assert pval.shape == params[pname].shape, 'shape mismatch for %s' % pname
+        assert pval.shape == params[pname].shape,\
+               'shape mismatch for %s' % pname
 
     with open(args.outfile, 'wb') as fd:
         pickle.dump(params, fd)
