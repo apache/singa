@@ -783,7 +783,7 @@ void SwapGPU::Test_sched_switch_swap(){
       auto last_meta = Table_new.find(Table_new.find(r_idx)->second.last_out_idx)->second;
       cudaEventSynchronize(last_meta.out_event);
       Table_data_block_.erase(last_meta.data_);
-      Table_block_data_.find(last_meta.block_) = nullptr;
+      Table_block_data_.find(last_meta.block_) = static_cast<void*>(nullptr);
       last_meta.block_->update_data(nullptr);
       pool_->Free(last_meta.data_);
       last_meta.data_ = nullptr;
@@ -882,7 +882,7 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
-  while (Table_block_data_.find(block_) == nullptr) {
+  while (Table_block_data_.find(block_) == static_cast<void*>(nullptr)) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1)); //sleep for 1 micro-sec each time.
     //TODO(junzhe) to verify if only the CPU stream sleeps, no the GPU swap stream
   }
