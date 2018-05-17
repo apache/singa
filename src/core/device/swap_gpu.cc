@@ -875,7 +875,7 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   //TODO(junzhe) not sure why not working.
   BM_new meta = Table_new.find(r_idx)->second;
   cudaEventCreate (&meta.out_event);
-  cout<<"right before cudaMemcpyAsync"<<endl;
+  cout<<"right before cudaMemcpyAsync Out"<<endl;
   err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,meta.out_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
   //cudaEventRecord(event1,stream1);
@@ -892,7 +892,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //cout<<"doing asynchrous swapIn"<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cudaError_t err;
-  cudaStream_t stream2;
+  //cudaStream_t stream2;
   cudaEvent_t event2;
   cudaEventCreate (&event2);
   BM_new meta = Table_new.find(r_idx)->second;
@@ -904,7 +904,9 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   meta.data_ = ptr;
   //auto tempPtr = Malloc(meta.size);
   //meta.data_ = Malloc(Table_new.find(r_idx)->second.size);
-  err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,stream2);
+  cout<<"right before cudaMemcpyAsync In"<<endl;
+  err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
+  cout<<"right after cudaMemcpyAsync"<<endl;
   if (tempCounter <3){
     meta.block_->update_data(meta.data_);
     pool_->Free(to_rm_ptr);
