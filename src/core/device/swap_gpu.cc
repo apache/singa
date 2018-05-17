@@ -885,8 +885,8 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //TODO(junzhe) to clean up free(), make it in somewhere else.
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cudaError_t err;
-  cudaEventCreate (&meta.in_event);
   BM_new meta = Table_new.find(r_idx)->second;
+  cudaEventCreate (&meta.in_event);
   cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
   pool_->Malloc((void**)&ptr, meta.size);
