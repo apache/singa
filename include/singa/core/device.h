@@ -224,15 +224,6 @@ class CudaGPU : public Device {
 ///SwapGPU
 struct BlockMeta{
     /*
-     block Meta, cpu, gpu.
-     */
-    size_t size;
-    void* ptr;
-    void* d_ptr; //not used for
-};
-
-struct BM_new{
-    /*
      block Meta.
      */
     Block* block_ = nullptr;
@@ -284,24 +275,15 @@ class SwapGPU : public Device {
  private:
   void Setup();
   ///Tables needed
-  //to replace Table_meta: r_idx->BlockMeta
-  map<int,BM_new>Table_new;
-
-  //meta, TODO(junzhe) if needed or not.
-  map<const Block*,pair<BlockMeta,BlockMeta>>Table_meta;
+  //r_idx->BlockMeta
+  map<int,BlockMeta>Table_meta;
 
   //for Free, info append. TODO(junzhe) if needed or not.
   map<void*, const Block*>Table_data_block_;
   map<const Block*, void*>Table_block_data_;
 
-  //r_idx --> meta, for geting GPU CPU data_. currently good for one iteration only.
-  map<const int,pair<BlockMeta,BlockMeta>>Table_meta_ridx;
-
   //schedule: idx--> r_idx,size,dir. int 0 means D2H, 1 means H2D.
   map<int,std::tuple<int,size_t,int>>Table_sched; 
-
-  //as Block* changes every iteration. r_idx -> Block_, should be updated every iteration.
-  map<int,Block*>Table_Block_ptr;
 
   //vec_block
   vector<string> vec_block;
@@ -312,10 +294,8 @@ class SwapGPU : public Device {
   int globeCounter = -1;
   int maxLen = 0;
   int location = 0;
-  int tempCounter = 0; //temp counter, to control # blocks to swap for debug purpose.
 
-  //cudaStream_t stream1; //swapOut stream
-  //cudaStream_t stream2; //swapIn stream
+  int tempCounter = 0; //temp counter, to control # blocks to swap for debug purpose.
 
  private:
   shared_ptr<DeviceMemPool> pool_;

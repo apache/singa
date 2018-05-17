@@ -597,21 +597,18 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
         //init only, update at MakeTableMeta.
         //Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
-        Table_Block_ptr[vec_swap_selct[i].r_idx] = nullptr;
-        cout<<"Table_Block_ptr "<<vec_swap_selct[i].r_idx<<" "<<Table_Block_ptr.find(vec_swap_selct[i].r_idx)->second<<endl;
         //cout<<"***Table_sched "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<endl;
         //cout<<"***Table_sched "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<endl;
         
       void* tempPtr = nullptr;
       cudaMallocHost(&tempPtr,vec_swap_selct[i].size); //pinned memory.
-      BM_new meta;
+      BlockMeta meta;
       meta.size = vec_swap_selct[i].size;
       meta.cpu_ptr = tempPtr;
       meta.out_stream = stream1;
       meta.in_stream = stream2;
-      Table_new[vec_swap_selct[i].r_idx] = meta;
+      Table_meta[vec_swap_selct[i].r_idx] = meta;
     }
-    cout<<"size of Table_Block_ptr "<<Table_Block_ptr.size()<<endl;
 
   //update globeCounter
   return gc+maxLen-(gc-location)%maxLen;
@@ -725,8 +722,6 @@ void SwapGPU::Free(void* ptr) {
     pool_->Free(ptr);
   }
 
-  //Apend info done at device.cc, TODO(junzhe) if remove below item.
-  Table_meta.erase(Table_data_block_.find(ptr)->second);
   //vC12
   Table_block_data_.erase(Table_data_block_.find(ptr)->second);
   Table_data_block_.erase(ptr);
@@ -747,7 +742,7 @@ void SwapGPU::Test_sched_switch_swap(){
     testFlag = 1;
     cout<<"compele test-swap:::::::::::::::::::::::::::::::::::::::::::::::::"<<endl;
     cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
-    cout<<"size of Table_new: "<<Table_new.size()<<endl;
+    cout<<"size of Table_meta: "<<Table_meta.size()<<endl;
     cout<<"impt numbers: "<<maxLen<<' '<<location<<' '<<globeCounter<<endl;
    }
  }
@@ -766,12 +761,10 @@ void SwapGPU::Test_sched_switch_swap(){
     if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
       SwapOut_idx(r_idx);
-      //SwapOut(Table_Block_ptr.find(r_idx)->second);
       cout<<"swapOut - print from Malloc"<<endl;
     } else {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
       SwapIn_idx(r_idx);
-      //SwapIn(Table_Block_ptr.find(r_idx)->second);
       cout<<"swapIn - print from Malloc"<<endl;
       //cout<<"=========== update data_"<<endl;
 
@@ -799,23 +792,6 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
-  
-  //Table_meta
-  BlockMeta cpu,gpu;
-  cpu.size = static_cast<size_t>(size);
-  gpu.size = static_cast<size_t>(size);
-  gpu.ptr = data_;
-  pair<BlockMeta,BlockMeta>meta = std::make_pair(cpu, gpu);
-  Table_meta[block_] = meta;
-
-  if (asyncSwapFlag == 1) {
-    int r_gc = (gc-location)%maxLen;
-    if (!(Table_Block_ptr.find(r_gc)==Table_Block_ptr.end())){
-      cout<<"good at "<<r_gc<<" size of Table_Block_ptr "<<Table_Block_ptr.size()<<endl;
-      //Table_Block_ptr.at((gc-location)%maxLen) = block_;
-    //Table_meta_ridx[(gc-location)%maxLen] = meta;
-    }
-  }
 
   Table_data_block_[data_] = block_;
   Table_block_data_[block_] = data_;
@@ -829,15 +805,15 @@ void SwapGPU::Append(string blockInfo){
   if (maxLen > 100) {
     int r_gc = (gc-location)%maxLen;
 
-    if (!(Table_new.find(r_gc)==Table_new.end())){
+    if (!(Table_meta.find(r_gc)==Table_meta.end())){
       vector<string> v = swap_split(blockInfo, " ");
       void* result;
       stringstream convert(v[1]);
       convert>>result;
-      //cout<<"r_gc, gc and size ot Table_new "<<r_gc<<' '<<gc<<" "<<Table_new.size()<<endl;
+      //cout<<"r_gc, gc and size ot Table_meta "<<r_gc<<' '<<gc<<" "<<Table_meta.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
-      Table_new.find(r_gc)->second.block_ = static_cast<Block*>(result);
-      Table_new.find(r_gc)->second.data_ = Table_block_data_.find(static_cast<Block*>(result))->second;
+      Table_meta.find(r_gc)->second.block_ = static_cast<Block*>(result);
+      Table_meta.find(r_gc)->second.data_ = Table_block_data_.find(static_cast<Block*>(result))->second;
     }
   }
 
@@ -854,7 +830,7 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   cout<<"doing asynchrous swapOut of r_idx: "<<r_idx<<' '<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();  
   cudaError_t err;
-  BM_new meta = Table_new.find(r_idx)->second;
+  BlockMeta meta = Table_meta.find(r_idx)->second;
   cudaEventCreate (&meta.out_event);
   cout<<"right before cudaMemcpyAsync Out"<<endl;
   err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,meta.out_stream);
@@ -871,7 +847,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //TODO(junzhe) to clean up free(), make it in somewhere else.
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cudaError_t err;
-  BM_new meta = Table_new.find(r_idx)->second;
+  BlockMeta meta = Table_meta.find(r_idx)->second;
   cudaEventCreate (&meta.in_event);
   cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
@@ -879,7 +855,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   void* to_rm_ptr = meta.data_;
   meta.data_ = ptr;
   //auto tempPtr = Malloc(meta.size);
-  //meta.data_ = Malloc(Table_new.find(r_idx)->second.size);
+  //meta.data_ = Malloc(Table_meta.find(r_idx)->second.size);
   cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
   cudaEventRecord(meta.in_event,meta.in_stream);
