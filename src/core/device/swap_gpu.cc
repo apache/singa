@@ -867,18 +867,13 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
 void SwapGPU::SwapOut_idx(const int r_idx){
   cout<<"doing asynchrous swapOut of r_idx: "<<r_idx<<' '<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();  
-  //cout<<"before cudaMemcpyAsync"<<endl;
-  //cudaStream_t stream3;
-  //cudaEvent_t event1;
-  
   cudaError_t err;
-  //TODO(junzhe) not sure why not working.
   BM_new meta = Table_new.find(r_idx)->second;
   cudaEventCreate (&meta.out_event);
   cout<<"right before cudaMemcpyAsync Out"<<endl;
   err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,meta.out_stream);
+  cudaEventRecord(meta.out_event,meta.out_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
-  //cudaEventRecord(event1,stream1);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
   //cudaEventSynchronize(event1);
@@ -887,16 +882,11 @@ void SwapGPU::SwapOut_idx(const int r_idx){
 }
 
 void SwapGPU::SwapIn_idx(const int r_idx){
-  
-  //TODO(junzhe) not lean, as size is stored in Table_sched as well.
-  //cout<<"doing asynchrous swapIn"<<endl;
+  //TODO(junzhe) to clean up free(), make it in somewhere else.
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cudaError_t err;
-  //cudaStream_t stream2;
-  cudaEvent_t event2;
-  cudaEventCreate (&event2);
+  cudaEventCreate (&meta.in_event);
   BM_new meta = Table_new.find(r_idx)->second;
-  //update gpu ptr. //TODO(junzhe) test funcionality of change data_
   cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
   pool_->Malloc((void**)&ptr, meta.size);
@@ -906,6 +896,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //meta.data_ = Malloc(Table_new.find(r_idx)->second.size);
   cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
+  cudaEventRecord(meta.in_event,meta.in_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
   if (tempCounter <3){
     meta.block_->update_data(meta.data_);
@@ -913,11 +904,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
     tempCounter++;
     cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
   }
-  
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  //err = cudaMemcpyAsync(Table_meta.find(r_idx)->second.data_,Table_meta.find(r_gc)->second.cpu_ptr,Table_meta.find(r_gc)->second.size,cudaMemcpyHostToDevice,stream2);
-
-  //cudaEventRecord(event2,stream2);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
 }
