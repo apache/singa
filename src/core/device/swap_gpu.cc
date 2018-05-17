@@ -86,22 +86,6 @@ struct less_than_iterIdx{
     }
 };
 
-//TODO(junzhe) redefinition.
-// struct lookUpElement{
-//     /*
-//      for memory pool Malloc look-up table.
-//      */
-//     int r_idx;
-//     int d_idx;
-//     size_t size;
-//     size_t offset;
-//     void* ptr;
-//     int Occupied; //0 is free, 1 is occupied.
-//     int crossItr; //c.
-//     int Occupied_backup; //c.
-//     int last_Occupied; //c. 1 means primary allocated, 2 means secondary.
-// };
-
 struct less_than_lookupIdx{
     /*
      sort lookUpElement by idx.
@@ -591,15 +575,11 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     cudaStream_t stream1;
     cudaStream_t stream2;
     for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
-        //for each selct block, i1 is start swapOut, i2p is start swapIn. junzhe on 5.4 
-        //TODO(junzhe) to verify above statement.
-        Table_sched[vec_swap_selct[i].i1] = std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0);
-        Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
-        //init only, update at MakeTableMeta.
-        //Table_Block_[vec_swap_selct[i].r_idx] = "nullptr";
-        //cout<<"***Table_sched "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<endl;
-        //cout<<"***Table_sched "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<endl;
-        
+      //for each selct block, i1 is start swapOut, i2p is start swapIn. junzhe on 5.4 
+      //TODO(junzhe) to verify above statement.
+      Table_sched[vec_swap_selct[i].i1] = std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0);
+      Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
+
       void* tempPtr = nullptr;
       cudaMallocHost(&tempPtr,vec_swap_selct[i].size); //pinned memory.
       BlockMeta meta;
@@ -610,7 +590,6 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       Table_meta[vec_swap_selct[i].r_idx] = meta;
     }
 
-  //update globeCounter
   return gc+maxLen-(gc-location)%maxLen;
 }
 
@@ -618,7 +597,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
 
 SwapGPU::~SwapGPU() {
-  //print out push-info
+  //print out push-info TODO(junzhe) can remove
   fstream file_block1("blockInfo.text", ios::in|ios::out|ios::app);
   for (int i=0; i< vec_block.size();i++){
       file_block1<<i<<' '<<vec_block[i]<<endl;
@@ -774,9 +753,8 @@ void SwapGPU::Test_sched_switch_swap(){
 }
 
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
-  /*make table and append vec_block.
-  this is only called once, right after Malloc.
-  Hence the malloc info is pushed here.
+  /*
+  Append info right after Malloc; make block_ - data_ pair wise table.
   */
 
   //append info
@@ -795,7 +773,6 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 
   Table_data_block_[data_] = block_;
   Table_block_data_[block_] = data_;
-
 }
 
 void SwapGPU::Append(string blockInfo){
