@@ -781,9 +781,9 @@ def softmax(t, out=None):
         the result Tensor
     '''
     if out is None:
-        return _call_singa_func(singa.SoftMax, t.singa_tensor)
+        return _call_singa_func(singa.SoftMax, t.data)
     else:
-        singa.SoftMax(t.singa_tensor, out.singa_tensor)
+        singa.SoftMax(t.data, out.data)
         return out
 
 
