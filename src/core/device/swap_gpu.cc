@@ -588,6 +588,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     cout<<"done"<<endl;
     ///make the Table_sched
     //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
+    cudaStream_t stream1;
+    cudaStream_t stream2;
     for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
         //for each selct block, i1 is start swapOut, i2p is start swapIn. junzhe on 5.4 
         //TODO(junzhe) to verify above statement.
@@ -605,6 +607,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       BM_new meta;
       meta.size = vec_swap_selct[i].size;
       meta.cpu_ptr = tempPtr;
+      meta.out_stream = stream1;
+      meta.in_stream = stream2;
       Table_new[vec_swap_selct[i].r_idx] = meta;
     }
     cout<<"size of Table_Block_ptr "<<Table_Block_ptr.size()<<endl;
@@ -640,7 +644,6 @@ SwapGPU::SwapGPU(int id) : Device(id, kNumCudaStream) {
   conf.add_device(id);
   pool_ = std::make_shared<Swap>(conf);
   Setup();
-  cudaStream_t stream1;
 
 }
 
@@ -873,7 +876,7 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   BM_new meta = Table_new.find(r_idx)->second;
   cudaEventCreate (&meta.out_event);
   cout<<"right before cudaMemcpyAsync"<<endl;
-  err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,stream1);
+  err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,meta.out_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
   //cudaEventRecord(event1,stream1);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();

@@ -240,7 +240,9 @@ struct BM_new{
     void* cpu_ptr = nullptr;
     size_t size = 0;
     cudaEvent_t out_event; 
-    cudaEvent_t in_event;   
+    cudaEvent_t in_event;
+    cudaStream_t out_stream;
+    cudaStream_t in_stream;   
     //TODO(junzhe) expandable event_t and stream_t
     //BlockMeta(Block* b, void* d, void* c, size_t s): block_(b), data_(d), cpu_ptr(c), size(s) {}
 };
