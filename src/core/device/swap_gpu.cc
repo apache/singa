@@ -319,9 +319,6 @@ struct onePairMsg_Swap{
     double t2;
     double t1p;
     double t2p;
-
-    int last_out_idx = 0; //last during swapOut
-    int last_in_idx = 0; //next during swapIn
     //onePairMsg(int n,size_t s, int r,int d):name(n),size(s),r_idx(r),d_idx(d){}
     //from LayerAppend (3) - r_idx, to next read/write (2) - d_idx
     onePairMsg_Swap(string p, size_t s, int i1, int i2, double t1, double t2): ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
@@ -447,7 +444,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     file_block3<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<vec_run[i].t<<endl;
   }
   vector<onePairMsg_Swap>vec_swap;
-  size_t sumSizeSwapAble = 0;
+  size_t sumSizeSwapAble =0;
   ///formulate swap items.
   cout<<"===============================print sorted run "<<maxIdx<<endl;
   for (int i =1; i<vec_run.size(); i++){
@@ -485,8 +482,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   size_t memLimit = 20000000; //75% of the maxLoad, for example.
   sort(vec_swap.begin(),vec_swap.end(),less_than_pri());
   vector<onePairMsg_Swap>vec_swap_selct;
-  size_t sumSizeToSwap = 0;
-  for (int i = 0; i<vec_swap.size(); i++){
+  size_t sumSizeToSwap=0;
+  for (int i =0; i<vec_swap.size(); i++){
       if ((maxLoad-sumSizeToSwap)>memLimit){
           vec_swap_selct.push_back(vec_swap[i]);
           sumSizeToSwap+=vec_swap[i].size;
@@ -506,10 +503,6 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     //t1 and t1', i1 and i1', sort by r_idx.
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap());
     for (int i =0; i<vec_swap_selct.size(); i++){
-      if (i>0){
-        //update for linked list 
-        vec_swap_selct[i].last_out_idx = vec_swap_selct[i].r_idx;
-      }
         int tempIdx=vec_swap_selct[i].r_idx;//idx ready to swapOut, pesudo code use time.
         if ((i>0) and (tempIdx<vec_swap_selct[i-1].i1p)){
             //last t1' bigger than this t1
@@ -548,10 +541,6 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
     ///step 1: overlap with next swapIn.
     for (int i =0; i<vec_swap_selct.size(); i++){
-      if (i<(vec_swap_selct.size()-1)){
-        //update for linked list 
-        vec_swap_selct[i].last_in_idx = vec_swap_selct[i+1].r_idx;
-      }
         int tempIdx=vec_swap_selct[i].d_idx; //idx at which to be used.
         double tempTime; //time need to be swapped in start.
         //condition, if overlap tempIdx later than next i2p, pull in swap in.
@@ -620,8 +609,6 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       meta.cpu_ptr = tempPtr;
       meta.out_stream = stream1;
       meta.in_stream = stream2;
-      meta.last_out_idx = vec_swap_selct[i].last_out_idx;
-      meta.last_in_idx = vec_swap_selct[i].last_in_idx;
       Table_new[vec_swap_selct[i].r_idx] = meta;
     }
     cout<<"size of Table_Block_ptr "<<Table_Block_ptr.size()<<endl;
@@ -778,29 +765,11 @@ void SwapGPU::Test_sched_switch_swap(){
     //cout<<"std::get<2>(Table_sched.find((gc-location)%maxLen)->second) "<<std::get<2>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
     if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
-      
-      //synchronize last one TODO(junzhe) verify here, changes and updates not lean; standardize the time to update
-      auto last_meta = Table_new.find(Table_new.find(r_idx)->second.last_out_idx)->second;
-      cudaEventSynchronize(last_meta.out_event);
-      Table_data_block_.erase(last_meta.data_);
-      Table_block_data_.find(last_meta.block_) = static_cast<void*>(nullptr);
-      last_meta.block_->update_data(nullptr);
-      pool_->Free(last_meta.data_);
-      last_meta.data_ = nullptr;
-
       SwapOut_idx(r_idx);
       //SwapOut(Table_Block_ptr.find(r_idx)->second);
       cout<<"swapOut - print from Malloc"<<endl;
     } else {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
-
-      //sycnchronize last one TODO(junzhe) this is not the earliest time to update Verify.
-      auto last_meta = Table_new.find(Table_new.find(r_idx)->second.last_out_idx)->second;
-      cudaEventSynchronize(last_meta.in_event);
-      Table_data_block_[last_meta.data_] = last_meta.block_;
-      Table_block_data_.find(last_meta.block_)->second = last_meta.data_;
-      last_meta.block_->update_data(last_meta.data_);
-
       SwapIn_idx(r_idx);
       //SwapIn(Table_Block_ptr.find(r_idx)->second);
       cout<<"swapIn - print from Malloc"<<endl;
@@ -882,10 +851,6 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
-  while (Table_block_data_.find(block_) == static_cast<void*>(nullptr)) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1)); //sleep for 1 micro-sec each time.
-    //TODO(junzhe) to verify if only the CPU stream sleeps, no the GPU swap stream
-  }
   // //void* data_ = Table_meta.find(block_)->second.second.ptr;
   // 
   // cout<<"NOTE--: from SwapGPU, data_, block_ device_: "<<Table_block_data_.find(block_)->second<<' '<<block_<<' '<<this<<endl;
@@ -920,27 +885,25 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //TODO(junzhe) to clean up free(), make it in somewhere else.
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cudaError_t err;
-  BM_new meta = Table_new.find(r_idx)->second;
   cudaEventCreate (&meta.in_event);
+  BM_new meta = Table_new.find(r_idx)->second;
   cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
-  
   void* ptr = nullptr;
   pool_->Malloc((void**)&ptr, meta.size);
   void* to_rm_ptr = meta.data_;
   meta.data_ = ptr;
-  Table_new.find(r_idx)->second.data_ = ptr; //updated in Table_new once its malloc, to update in other table
   //auto tempPtr = Malloc(meta.size);
   //meta.data_ = Malloc(Table_new.find(r_idx)->second.size);
   cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
   cudaEventRecord(meta.in_event,meta.in_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
-  // if (tempCounter <3){
-  //   meta.block_->update_data(meta.data_);
-  //   pool_->Free(to_rm_ptr);
-  //   tempCounter++;
-  //   cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
-  // }
+  if (tempCounter <3){
+    meta.block_->update_data(meta.data_);
+    pool_->Free(to_rm_ptr);
+    tempCounter++;
+    cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
+  }
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
