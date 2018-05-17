@@ -640,6 +640,7 @@ SwapGPU::SwapGPU(int id) : Device(id, kNumCudaStream) {
   conf.add_device(id);
   pool_ = std::make_shared<Swap>(conf);
   Setup();
+  cudaStream_t stream1;
 
 }
 
