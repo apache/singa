@@ -917,7 +917,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   //err = cudaMemcpyAsync(Table_meta.find(r_idx)->second.data_,Table_meta.find(r_gc)->second.cpu_ptr,Table_meta.find(r_gc)->second.size,cudaMemcpyHostToDevice,stream2);
 
-  cudaEventRecord(event2,stream2);
+  //cudaEventRecord(event2,stream2);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
 }
@@ -1049,7 +1049,7 @@ void SwapGPU::SwapIn(const Block* block_){
       Table_meta_ridx.find(std::get<0>(Table_sched.find((gc-location)%maxLen)->second))->second.second.ptr=gpu.ptr;
       auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cudaError_t err;
-     // cudaStream_t stream2;
+      cudaStream_t stream2;
       cudaEvent_t event2;
       cudaEventCreate (&event2);
       err = cudaMemcpyAsync(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice,stream2);
