@@ -242,7 +242,9 @@ struct BM_new{
     cudaEvent_t out_event; 
     cudaEvent_t in_event;
     cudaStream_t out_stream;
-    cudaStream_t in_stream;   
+    cudaStream_t in_stream;
+    int last_out_idx;
+    int last_in_idx;   
     //TODO(junzhe) expandable event_t and stream_t
     //BlockMeta(Block* b, void* d, void* c, size_t s): block_(b), data_(d), cpu_ptr(c), size(s) {}
 };

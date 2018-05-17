@@ -42,7 +42,12 @@ void* Block::mutable_data() {
       string temp = "Mutable "+tempStr2+" "+tempStr4;   
       ptrDevice_->AppendInfo(temp);
     }
-    //data_ = ptrDevice_->GetRealGpuPtrInfo(this);
+
+    if (data_ == nullptr) {
+      auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
+      cout<<"sleepped to get data_ updated"<<endl;
+    }
+    //data_ = 
     //ptrDevice_->SwapOutInfo(this);
     //ptrDevice_->SwapInInfo(this);
     //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
@@ -70,6 +75,11 @@ const void* Block::data() const {
       string tempStr4 = strm4.str();
       string temp = "Read "+tempStr2+" "+tempStr4;
       ptrDevice_->AppendInfo(temp);
+    }
+
+    if (data_ == nullptr) {
+      auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
+      cout<<"sleepped to get data_ updated"<<endl;
     }
     //test async, with size 13107200.
     // if (size_ ==13107200){
