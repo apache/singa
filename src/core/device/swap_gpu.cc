@@ -745,7 +745,7 @@ void SwapGPU::Test_sched_switch_swap(){
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
       SwapIn_idx(r_idx);
       cout<<"swapIn - print from Malloc"<<endl;
-      
+      //cout
 
     }
   }
