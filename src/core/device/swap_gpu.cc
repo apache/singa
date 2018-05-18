@@ -759,6 +759,10 @@ void SwapGPU::Test_sched_switch_swap(){
       cudaEventSynchronize(last_meta.in_event);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
+      last_meta.block_->update_data(nullptr);
+      Table_not_at_device[last_meta.block_] = 1;
+      pool_->Free(last_meta.data_);
+      last_meta.data_ = nullptr; //not really needed TODO(junzhe)
 
       SwapOut_idx(r_idx);
       cout<<"swapOut - print from Malloc"<<endl;
@@ -771,6 +775,9 @@ void SwapGPU::Test_sched_switch_swap(){
       cudaEventSynchronize(last_meta.in_event);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
+      last_meta.block_->update_data(last_meta.data_);
+      Table_not_at_device.erase(last_meta.block_);
+
       SwapIn_idx(r_idx);
       cout<<"swapIn - print from Malloc"<<endl;
       //cout
@@ -853,6 +860,7 @@ void SwapGPU::SwapOut_idx(const int r_idx){
 }
 
 void SwapGPU::SwapIn_idx(const int r_idx){
+  //logic: extra meta, swap, update meta in Table
   //TODO(junzhe) to clean up free(), make it in somewhere else.
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cudaError_t err;
@@ -863,20 +871,19 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   pool_->Malloc((void**)&ptr, meta.size);
   void* to_rm_ptr = meta.data_;
   meta.data_ = ptr;
-  //auto tempPtr = Malloc(meta.size);
-  //meta.data_ = Malloc(Table_meta.find(r_idx)->second.size);
   cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
   cudaEventRecord(meta.in_event,meta.in_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
-  if (tempCounter <3){
-    meta.block_->update_data(meta.data_);
-    pool_->Free(to_rm_ptr);
-    tempCounter++;
-    cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
-  }
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  
+  // if (tempCounter <3){
+  //   meta.block_->update_data(meta.data_);
+  //   pool_->Free(to_rm_ptr);
+  //   tempCounter++;
+  //   cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
+  // }
+  //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  //auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
 }
 
