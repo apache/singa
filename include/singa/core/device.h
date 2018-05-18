@@ -234,7 +234,6 @@ struct BlockMeta{
     cudaEvent_t in_event;
     cudaStream_t out_stream;
     cudaStream_t in_stream;   
-    //TODO(junzhe) expandable event_t and stream_t
     //BlockMeta(Block* b, void* d, void* c, size_t s): block_(b), data_(d), cpu_ptr(c), size(s) {}
 };
 /// Device able to Swap memory between Nvidia GPU and Swap
@@ -278,7 +277,7 @@ class SwapGPU : public Device {
   //r_idx->BlockMeta
   map<int,BlockMeta>Table_meta;
 
-  //for Free, info append. TODO(junzhe) if needed or not.
+  //for Free, info append.
   map<void*, const Block*>Table_data_block_;
   map<const Block*, void*>Table_block_data_;
 

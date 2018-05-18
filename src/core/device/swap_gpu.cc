@@ -701,10 +701,10 @@ void SwapGPU::Free(void* ptr) {
     pool_->Free(ptr);
   }
 
-  //vC12
-  Table_block_data_.erase(Table_data_block_.find(ptr)->second);
-  Table_data_block_.erase(ptr);
-  //cout<<"free done"<<endl;
+  // //vC12
+  // Table_block_data_.erase(Table_data_block_.find(ptr)->second);
+  // Table_data_block_.erase(ptr);
+  // //cout<<"free done"<<endl;
  
 }
 
@@ -771,7 +771,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 
-  Table_data_block_[data_] = block_;
+  //Table_data_block_[data_] = block_;
   Table_block_data_[block_] = data_;
 }
 
@@ -791,6 +791,8 @@ void SwapGPU::Append(string blockInfo){
       //TODO(junzhe) verify the length change, if go in, value update
       Table_meta.find(r_gc)->second.block_ = static_cast<Block*>(result);
       Table_meta.find(r_gc)->second.data_ = Table_block_data_.find(static_cast<Block*>(result))->second;
+      Table_block_data_.erase(static_cast<Block*>(result));
+      //Table_data_block_.erase(ptr);
     }
   }
 
