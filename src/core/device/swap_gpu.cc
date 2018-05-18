@@ -303,6 +303,9 @@ struct onePairMsg_Swap{
     double t2;
     double t1p;
     double t2p;
+
+    int last_out_idx = 0; //last during swapOut
+    int last_in_idx = 0; //next during swapIn
     //onePairMsg(int n,size_t s, int r,int d):name(n),size(s),r_idx(r),d_idx(d){}
     //from LayerAppend (3) - r_idx, to next read/write (2) - d_idx
     onePairMsg_Swap(string p, size_t s, int i1, int i2, double t1, double t2): ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
@@ -487,6 +490,10 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     //t1 and t1', i1 and i1', sort by r_idx.
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap());
     for (int i =0; i<vec_swap_selct.size(); i++){
+      if (i>0){
+        //update for linked list 
+        vec_swap_selct[i].last_out_idx = vec_swap_selct[i].r_idx;
+      }
         int tempIdx=vec_swap_selct[i].r_idx;//idx ready to swapOut, pesudo code use time.
         if ((i>0) and (tempIdx<vec_swap_selct[i-1].i1p)){
             //last t1' bigger than this t1
@@ -525,6 +532,10 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
     ///step 1: overlap with next swapIn.
     for (int i =0; i<vec_swap_selct.size(); i++){
+      if (i<(vec_swap_selct.size()-1)){
+        //update for linked list 
+        vec_swap_selct[i].last_in_idx = vec_swap_selct[i+1].r_idx;
+      }
         int tempIdx=vec_swap_selct[i].d_idx; //idx at which to be used.
         double tempTime; //time need to be swapped in start.
         //condition, if overlap tempIdx later than next i2p, pull in swap in.
@@ -587,6 +598,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       meta.cpu_ptr = tempPtr;
       meta.out_stream = stream1;
       meta.in_stream = stream2;
+      meta.last_out_idx = vec_swap_selct[i].last_out_idx;
+      meta.last_in_idx = vec_swap_selct[i].last_in_idx;
       Table_meta[vec_swap_selct[i].r_idx] = meta;
     }
 
@@ -739,10 +752,18 @@ void SwapGPU::Test_sched_switch_swap(){
     //cout<<"std::get<2>(Table_sched.find((gc-location)%maxLen)->second) "<<std::get<2>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
     if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
+
+      //synchronize last one TODO(junzhe) verify here, changes and updates not lean; standardize the time to update
+      auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_out_idx)->second;
+
       SwapOut_idx(r_idx);
       cout<<"swapOut - print from Malloc"<<endl;
     } else {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
+
+      //sycnchronize last one TODO(junzhe) this is not the earliest time to update Verify.
+      auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_in_idx)->second;
+
       SwapIn_idx(r_idx);
       cout<<"swapIn - print from Malloc"<<endl;
       //cout

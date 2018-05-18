@@ -233,7 +233,9 @@ struct BlockMeta{
     cudaEvent_t out_event; 
     cudaEvent_t in_event;
     cudaStream_t out_stream;
-    cudaStream_t in_stream;   
+    cudaStream_t in_stream; 
+    int last_out_idx;
+    int last_in_idx;   
     //BlockMeta(Block* b, void* d, void* c, size_t s): block_(b), data_(d), cpu_ptr(c), size(s) {}
 };
 /// Device able to Swap memory between Nvidia GPU and Swap
