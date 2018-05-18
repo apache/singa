@@ -755,6 +755,10 @@ void SwapGPU::Test_sched_switch_swap(){
 
       //synchronize last one TODO(junzhe) verify here, changes and updates not lean; standardize the time to update
       auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_out_idx)->second;
+      auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      cudaEventSynchronize(last_meta.in_event);
+      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
 
       SwapOut_idx(r_idx);
       cout<<"swapOut - print from Malloc"<<endl;
@@ -763,7 +767,10 @@ void SwapGPU::Test_sched_switch_swap(){
 
       //sycnchronize last one TODO(junzhe) this is not the earliest time to update Verify.
       auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_in_idx)->second;
-
+      auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      cudaEventSynchronize(last_meta.in_event);
+      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
       SwapIn_idx(r_idx);
       cout<<"swapIn - print from Malloc"<<endl;
       //cout
