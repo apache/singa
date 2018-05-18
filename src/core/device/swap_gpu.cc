@@ -269,13 +269,13 @@ vector<double> compute_peak(vector<onePieceMsg> vec_run, int& max_Idx, size_t& m
 
 int SwapInTime(size_t size){
     //yet to get the formula
-    int ans =0; //TODO(junzhe) used to be 9500 --> 19000 (unpinned vs pinned)
-    if (size==0) {ans = 19000;} else {ans = 0.13*size;}
+    int ans =0; //TODO(junzhe) used to be 0.13 --> 0.26 (unpinned vs pinned)
+    if (size==0) {ans = 9500;} else {ans = 0.26*size;}
     return ans;
 }
 int SwapOutTime(size_t size){
-    int ans =0; //TODO(junzhe) used to be 17000 --> 34000
-    if (size==0) {ans = 34000;} else {ans = 0.29*size;}
+    int ans =0; //TODO(junzhe) used to be 0.29 --> 0.58
+    if (size==0) {ans = 17000;} else {ans = 0.58*size;}
     return ans;
 }
 
@@ -770,7 +770,7 @@ void SwapGPU::Test_sched_switch_swap(){
       auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cudaEventSynchronize(last_meta.in_event);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
+      cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
       SwapIn_idx(r_idx);
       cout<<"swapIn - print from Malloc"<<endl;
       //cout
