@@ -491,7 +491,7 @@ class FeedForwardNet(object):
                     f = f + '.pickle'
             assert os.path.exists(f), 'file not exists %s w/o .pickle' % f
             with open(f, 'rb') as fd:
-                params = pickle.load(fd)
+                params = pickle.load(fd,encoding='iso-8859-1')
         else:
             print('NOTE: If your model was saved using pickle, '
                   'then set use_pickle=True for loading it')

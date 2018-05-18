@@ -48,7 +48,7 @@ class Data(object):
             train_ratio, split the text file into train and test sets, where
                 train_ratio of the characters are in the train set.
         '''
-        self.raw_data = open(fpath, 'r').read()  # read text file
+        self.raw_data = open(fpath, 'r',encoding='iso-8859-1').read()  # read text file
         chars = list(set(self.raw_data))
         self.vocab_size = len(chars)
         self.char_to_idx = {ch: i for i, ch in enumerate(chars)}
