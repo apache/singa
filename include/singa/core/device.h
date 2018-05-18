@@ -280,6 +280,7 @@ class SwapGPU : public Device {
   //for Free, info append.
   map<void*, const Block*>Table_data_block_;
   map<const Block*, void*>Table_block_data_;
+  map<const Block*, int>Table_not_at_device;
 
   //schedule: idx--> r_idx,size,dir. int 0 means D2H, 1 means H2D.
   map<int,std::tuple<int,size_t,int>>Table_sched; 

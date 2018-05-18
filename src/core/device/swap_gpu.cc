@@ -801,7 +801,9 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
-
+  while (!(Table_not_at_device.find(block_)==Table_not_at_device.end())){
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
   return nullptr; //TODO(junzhe) attention, based on no change here.
 }
 
