@@ -753,30 +753,34 @@ void SwapGPU::Test_sched_switch_swap(){
     if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
 
-      //synchronize last one TODO(junzhe) verify here, changes and updates not lean; standardize the time to update
-      auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_out_idx)->second;
-      auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      cudaEventSynchronize(last_meta.in_event);
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
-      last_meta.block_->update_data(nullptr);
-      Table_not_at_device[last_meta.block_] = 1;
-      pool_->Free(last_meta.data_);
-      last_meta.data_ = nullptr; //not really needed TODO(junzhe)
-
+      if (Table_meta.find(r_idx)->second.last_out_idx != 0) {
+        //synchronize last one TODO(junzhe) verify here, changes and updates not lean; standardize the time to update
+        auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_out_idx)->second;
+        auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+        cudaEventSynchronize(last_meta.in_event);
+        auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+        cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
+        last_meta.block_->update_data(nullptr);
+        Table_not_at_device[last_meta.block_] = 1;
+        pool_->Free(last_meta.data_);
+        last_meta.data_ = nullptr; //not really needed TODO(junzhe)
+      }
+     
       SwapOut_idx(r_idx);
       cout<<"swapOut - print from Malloc"<<endl;
     } else {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
 
-      //sycnchronize last one TODO(junzhe) this is not the earliest time to update Verify.
-      auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_in_idx)->second;
-      auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      cudaEventSynchronize(last_meta.in_event);
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
-      last_meta.block_->update_data(last_meta.data_);
-      Table_not_at_device.erase(last_meta.block_);
+      if (Table_meta.find(r_idx)->second.last_in_idx != 0) {
+        //sycnchronize last one TODO(junzhe) this is not the earliest time to update Verify.
+        auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_in_idx)->second;
+        auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+        cudaEventSynchronize(last_meta.in_event);
+        auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+        cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
+        last_meta.block_->update_data(last_meta.data_);
+        Table_not_at_device.erase(last_meta.block_);
+      }
 
       SwapIn_idx(r_idx);
       cout<<"swapIn - print from Malloc"<<endl;
