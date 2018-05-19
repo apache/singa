@@ -30,16 +30,12 @@ try:
 except ModuleNotFoundError:
     import pickle
 
-
+URL_PREFIX = 'https://download.pytorch.org/models/'
 model_urls = {
-    'vgg11': 'https://download.pytorch.org/models/vgg11-bbd30ac9.pth',
-    'vgg13': 'https://download.pytorch.org/models/vgg13-c768596a.pth',
-    'vgg16': 'https://download.pytorch.org/models/vgg16-397923af.pth',
-    'vgg19': 'https://download.pytorch.org/models/vgg19-dcbb9e9d.pth',
-    'vgg11_bn': 'https://download.pytorch.org/models/vgg11_bn-6002323d.pth',
-    'vgg13_bn': 'https://download.pytorch.org/models/vgg13_bn-abd245e5.pth',
-    'vgg16_bn': 'https://download.pytorch.org/models/vgg16_bn-6c64b313.pth',
-    'vgg19_bn': 'https://download.pytorch.org/models/vgg19_bn-c79401a0.pth',
+    'densenet121': URL_PREFIX + 'densenet121-a639ec97.pth',
+    'densenet169': URL_PREFIX + 'densenet169-b2777c0a.pth',
+    'densenet201': URL_PREFIX + 'densenet201-c1103571.pth',
+    'densenet161': URL_PREFIX + 'densenet161-8d451a50.pth',
 }
 
 
@@ -63,33 +59,32 @@ def rename(pname):
 if __name__ == '__main__':
     parser = ArgumentParser(description='Convert params from torch to python'
                             'dict. ')
-    parser.add_argument("depth", type=int, choices=[11, 13, 16, 19])
+    parser.add_argument("depth", type=int, choices=[121, 169, 201, 161])
     parser.add_argument("outfile")
-    parser.add_argument("--batchnorm", action='store_true',
-                        help='use batchnorm or not')
+    parser.add_argument('nb_classes', default=1000, type=int)
 
     args = parser.parse_args()
 
-    net = model.create_net(args.depth, 1000, args.batchnorm)
-    url = 'vgg%d' % args.depth
-    if args.batchnorm:
-        url += '_bn'
+    net = model.create_net(args.depth, args.nb_classes)
+    url = 'densenet%d' % args.depth
     torch_dict = model_zoo.load_url(model_urls[url])
     params = {'SINGA_VERSION': 1101}
-    # params = net.param_values()
-    for pname, pval in zip(net.param_names(), net.param_values()):
-        torch_name = rename(pname)
-        if torch_name in torch_dict:
-            ary = torch_dict[torch_name].numpy()
-            ary = np.array(ary, dtype=np.float32)
-            if len(ary.shape) == 4:
-                params[pname] = np.reshape(ary, (ary.shape[0], -1))
-            else:
-                params[pname] = np.transpose(ary)
+
+    # resolve dict keys name mismatch problem
+    print(len(net.param_names()), len(torch_dict.keys()))
+    for pname, pval, torch_name in\
+        zip(net.param_names(), net.param_values(), torch_dict.keys()):
+        #torch_name = rename(pname)
+        ary = torch_dict[torch_name].numpy()
+        ary = np.array(ary, dtype=np.float32)
+        if len(ary.shape) == 4:
+            params[pname] = np.reshape(ary, (ary.shape[0], -1))
         else:
-            print('param=%s is missing in the ckpt file' % pname)
-        assert pval.shape == params[pname].shape,\
-               'shape mismatch for %s' % pname
+            params[pname] = np.transpose(ary)
+        #pdb.set_trace()
+        assert pval.shape == params[pname].shape, 'shape mismatch for {0}, \
+               expected {1} in torch model, got {2} in singa model'.\
+               format(pname, params[pname].shape, pval.shape)
 
     with open(args.outfile, 'wb') as fd:
         pickle.dump(params, fd)

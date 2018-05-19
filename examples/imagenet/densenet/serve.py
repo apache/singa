@@ -24,6 +24,7 @@ from scipy.misc import imread
 from singa import device
 from singa import tensor
 from singa import image_tool
+
 from rafiki.agent import Agent, MsgType
 import model
 
@@ -41,9 +42,7 @@ def allowed_file(filename):
 
 def serve(net, label_map, dev, agent, topk=5):
     '''Serve to predict image labels.
-
     It prints the topk food names for each image.
-
     Args:
         label_map: a list of food names, corresponding to the index in meta_file
     '''
@@ -63,8 +62,8 @@ def serve(net, label_map, dev, agent, topk=5):
                 img -= mean
                 img /= std
                 img = img.transpose((2, 0, 1))
-                img = img[:,\
-                (height-224)//2:(height+224)//2,(width-224)//2:(width+224)//2]
+                img = img[:, (height-224)//2:(height+224)//2,
+                          (width-224)//2:(width+224)//2]
                 images.copy_from_numpy(img)
                 print("input: ", images.l1())
                 # do prediction
@@ -98,16 +97,16 @@ def serve(net, label_map, dev, agent, topk=5):
 def main():
     try:
         # Setup argument parser
-        parser = ArgumentParser(description="VGG inference")
+        parser = ArgumentParser(description='DenseNet inference')
 
         parser.add_argument("--port", default=9999, help="listen port")
         parser.add_argument("--use_cpu", action="store_true",
                             help="If set, load models onto CPU devices")
-        parser.add_argument("--parameter_file", default="")
-        parser.add_argument("--depth", type=int, choices=[11, 13, 16, 19],
-                            default='11')
-        parser.add_argument("--batchnorm", action='store_true',
-                            help='use batchnorm or not')
+        parser.add_argument("--parameter_file", default="densenet-121.pickle")
+        parser.add_argument("--depth", type=int, choices=[121, 169, 201, 161],
+                            default=121)
+
+        parser.add_argument('--nb_classes', default=1000, type=int)
 
         # Process arguments
         args = parser.parse_args()
@@ -116,7 +115,7 @@ def main():
         # start to train
         agent = Agent(port)
 
-        net = model.create_net(args.depth, 1000, args.batchnorm, args.use_cpu)
+        net = model.create_net(args.depth, args.nb_classes, 0, args.use_cpu)
         if args.use_cpu:
             print('Using CPU')
             dev = device.get_default_device()
@@ -124,17 +123,15 @@ def main():
             print('Using GPU')
             dev = device.create_cuda_gpu()
             net.to_device(dev)
+        print('start to load parameter_file')
         model.init_params(net, args.parameter_file)
         print('Finish loading models')
 
         labels = np.loadtxt('synset_words.txt', str, delimiter='\t ')
         serve(net, labels, dev, agent)
-
-        # acc = evaluate(net, '../val_list.txt',  'image/val', dev)
-        # print acc
-
         # wait the agent finish handling http request
         agent.stop()
+
     except SystemExit:
         return
     except:
