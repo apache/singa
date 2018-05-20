@@ -1011,7 +1011,6 @@ def einsum(ops, *args):
           [179 221]]]
     '''
 
-
     if len(ops) == 0:
         raise ValueError("No input operands")
 
@@ -1037,7 +1036,7 @@ def einsum(ops, *args):
     # to get all the indices in input
     outputall = sorted(list(set(inputops[0]) | set(inputops[1])))
 
-    ## Map indices to axis integers
+    # Map indices to axis integers
     sums = [outputall.index(x) for x in sums]
     broadcast_idA = [inputops[1].find(x) for x in broadcast_A]
     broadcast_idB = [inputops[0].find(x) for x in broadcast_B]
@@ -1045,9 +1044,12 @@ def einsum(ops, *args):
     broadcast_a = [B.shape[x] for x in broadcast_idA]
     broadcast_b = [A.shape[x] for x in broadcast_idB]
 
-    # get the the transpose and reshape parameter used in the elementwise calculation
-    transpose_A = [(list(inputops[0]) + broadcast_A).index(x) for x in outputall]
-    transpose_B = [(list(inputops[1]) + broadcast_B).index(x) for x in outputall]
+    # get the the transpose and reshape parameter used in the elementwise
+    # calculation
+    transpose_A = [(list(inputops[0]) + broadcast_A).index(x)
+                   for x in outputall]
+    transpose_B = [(list(inputops[1]) + broadcast_B).index(x)
+                   for x in outputall]
 
     reshape_A = list(A.shape) + broadcast_a
     reshape_B = list(B.shape) + broadcast_b
@@ -1055,8 +1057,10 @@ def einsum(ops, *args):
     A_ = to_numpy(A)
     B_ = to_numpy(B)
 
-    mult_A = np.repeat(A_, np.product(broadcast_a)).reshape(reshape_A).transpose(transpose_A)
-    mult_B = np.repeat(B_, np.product(broadcast_b)).reshape(reshape_B).transpose(transpose_B)
+    mult_A = np.repeat(A_, np.product(broadcast_a)).reshape(
+        reshape_A).transpose(transpose_A)
+    mult_B = np.repeat(B_, np.product(broadcast_b)).reshape(
+        reshape_B).transpose(transpose_B)
 
     if mult_A.shape != mult_B.shape:
         raise ValueError("Error: matrix dimension mismatch")
@@ -1071,9 +1075,6 @@ def einsum(ops, *args):
     res = from_numpy(res_)
 
     return res
-
-
-
 
 
 def div(lhs, rhs, ret=None):
@@ -1255,4 +1256,3 @@ def copy_from_numpy(data, np_array):
         data.CopyIntDataFromHostPtr(np_array)
     else:
         print('Not implemented yet for ', dt)
-

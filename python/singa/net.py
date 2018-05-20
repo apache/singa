@@ -60,6 +60,7 @@ from __future__ import absolute_import
 from builtins import zip
 from builtins import str
 from builtins import object
+import numpy as np
 import os
 
 from .proto.model_pb2 import kTrain, kEval
@@ -464,6 +465,8 @@ class FeedForwardNet(object):
             if f.endswith('.bin'):
                 f = f[0:-4]
             sp = snapshot.Snapshot(f, True, buffer_size)
+            v = tensor.from_numpy(np.array([__version__]))
+            params['SINGA_VERSION'] = v
             for (name, val) in zip(self.param_names(), self.param_values()):
                 val.to_host()
                 sp.write(name, val)
@@ -493,7 +496,7 @@ class FeedForwardNet(object):
                     f = f + '.pickle'
             assert os.path.exists(f), 'file not exists %s w/o .pickle' % f
             with open(f, 'rb') as fd:
-                params = pickle.load(fd,encoding='iso-8859-1')
+                params = pickle.load(fd, encoding='iso-8859-1')
         else:
             print('NOTE: If your model was saved using pickle, '
                   'then set use_pickle=True for loading it')
@@ -501,9 +504,13 @@ class FeedForwardNet(object):
                 f = f[0:-4]
             sp = snapshot.Snapshot(f, False, buffer_size)
             params = sp.read()
-        version = __version__
+
         if 'SINGA_VERSION' in params:
             version = params['SINGA_VERSION']
+            if isinstance(version, tensor.Tensor):
+                version = tensor.to_numpy(version)[0]
+        else:
+            version = 1100
         for name, val in zip(self.param_names(), self.param_values()):
             name = get_name(name)
             if name not in params:
