@@ -239,15 +239,21 @@ class FeedForwardNet(object):
         output layers.
 
         Currently only support nets with a single output layer
+        TODO(yujian) to handle multiple outputs from the network
 
         Args:
             x: input data, a single input Tensor or a dict: layer name -> Tensor
 
         Returns:
             a single output tensor as the prediction result.
+
         '''
+
         xx = self.forward(kEval, x)
-        return tensor.softmax(xx)
+        if type(xx) is dict:
+            return tensor.softmax(list(xx.values())[0])
+        else:
+            return tensor.softmax(xx)
 
     def topo_sort(self, layers, src_of_layer):
         '''Topology sort of layers.

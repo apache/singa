@@ -148,7 +148,7 @@ def create_net(shape, weight_path='bvlc_googlenet.pickle'):
     # layer
     for key, val in zip(net.param_names(), net.param_values()):
         # print key
-        if key == 'loss3/classifier_weight':
+        if key == 'loss3/classifier_weight' or key == 'loss3/classifier/weight':
             tmp = tensor.to_numpy(val)
             tmp = tmp.reshape(tmp.shape[::-1])
             val.copy_from_numpy(np.transpose(tmp))
