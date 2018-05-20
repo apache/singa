@@ -109,7 +109,7 @@ const void* Block::data() const {
 
 void Block::update_data(void* data_new) {
   data_ = data_new;
-  std::cout<<"results update_data: "<<this<<' '<<data_<<std::endl;
+  std::cout<<"results update_data:: "<<this<<' '<<data_<<std::endl;
 }
 
 

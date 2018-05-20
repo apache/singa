@@ -882,7 +882,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
   pool_->Malloc((void**)&ptr, meta.size);
-  cout<<"expected result update_data: "<<meta.block_<<" "<<ptr<<endl;
+  cout<<"expected results update_data: "<<meta.block_<<" "<<ptr<<endl;
   cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
   //void* to_rm_ptr = meta.data_;
   meta.data_ = ptr;
