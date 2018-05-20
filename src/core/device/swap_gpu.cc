@@ -848,6 +848,8 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
   reading_meta.block_->update_data(reading_meta.data_);
+  cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_meta.find(r_idx)->second.last_in_idx<<endl;
+
   Table_not_at_device.erase(reading_meta.block_);
 
   return nullptr; //TODO(junzhe) attention, based on no change here.
