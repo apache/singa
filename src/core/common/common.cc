@@ -46,7 +46,7 @@ void* Block::mutable_data() {
     if (data_ == nullptr) {
       cout<<"to sleep"<<endl;
       auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
-      cout<<"sleepped to get data_ updated: "<<block_<<' '<<data_<<endl;
+      cout<<"slept to get data_ updated: "<<this<<' '<<data_<<endl;
     }
     //data_ = ptrDevice_->GetRealGpuPtrInfo(this);
     //ptrDevice_->SwapOutInfo(this);
