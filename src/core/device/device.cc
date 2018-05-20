@@ -54,7 +54,7 @@ void Device::FreeBlock(Block* block) {
   if (block != nullptr) {
     //TODO(junzhe) to merge it
     auto tempPtr = block->mutable_data();
-    cout<<"FreeBlock: "<<block<<' '<<data_<<endl;
+    cout<<"FreeBlock: "<<block<<' '<<tempPtr<<endl;
     Free(tempPtr);
     //Free(block->mutable_data());
     
