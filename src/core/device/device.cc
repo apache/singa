@@ -52,7 +52,11 @@ Block* Device::NewBlock(int size) {
 // TODO(wangwei) return Block to the memory manager
 void Device::FreeBlock(Block* block) {
   if (block != nullptr) {
-    Free(block->mutable_data());
+    //TODO(junzhe) to merge it
+    auto tempPtr = block->mutable_data();
+    cout<<"FreeBlock: "<<block<<' '<<data_<<endl;
+    Free(tempPtr);
+    //Free(block->mutable_data());
     
     //Add Append for free here.
     stringstream strm1;
