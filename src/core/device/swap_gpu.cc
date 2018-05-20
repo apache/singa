@@ -755,13 +755,14 @@ void SwapGPU::Test_sched_switch_swap(){
 
       if (Table_meta.find(r_idx)->second.last_out_idx != 0) {
         //synchronize last one TODO(junzhe) verify here, changes and updates not lean; standardize the time to update
-        auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_out_idx)->second;
+        auto last_out_idx = Table_meta.find(r_idx)->second.last_out_idx;
+        auto last_meta = Table_meta.find(last_out_idx)->second;
         auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
         cudaEventSynchronize(last_meta.in_event);
         auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
         cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
         last_meta.block_->update_data(nullptr);
-        Table_not_at_device[last_meta.block_] = 1;
+        Table_not_at_device[last_meta.block_] = last_out_idx;
         pool_->Free(last_meta.data_);
         last_meta.data_ = nullptr; //not really needed TODO(junzhe)
       }
@@ -770,22 +771,21 @@ void SwapGPU::Test_sched_switch_swap(){
       cout<<"swapOut - print from Malloc"<<endl;
     } else {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
-
       if (Table_meta.find(r_idx)->second.last_in_idx != 0) {
         //sycnchronize last one TODO(junzhe) this is not the earliest time to update Verify.
         auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_in_idx)->second;
-        auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-        cudaEventSynchronize(last_meta.in_event);
-        auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-        cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
-        last_meta.block_->update_data(last_meta.data_);
-        Table_not_at_device.erase(last_meta.block_);
+        // if Table_not_at_device still contain it, means GetRealPtr function never sync it in advance.
+        if (!(Table_not_at_device.find(last_meta.block_)==Table_not_at_device.end())){
+          auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+          cudaEventSynchronize(last_meta.in_event);
+          auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+          cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
+          last_meta.block_->update_data(last_meta.data_);
+          Table_not_at_device.erase(last_meta.block_);
+        }
       }
-
       SwapIn_idx(r_idx);
       cout<<"swapIn - print from Malloc"<<endl;
-      //cout
-
     }
   }
 
@@ -840,10 +840,15 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
-  while (!(Table_not_at_device.find(block_)==Table_not_at_device.end())){
-    std::this_thread::sleep_for(std::chrono::milliseconds(500)); //TODO(junzhe) decrease it to less than 10.
-    cout<<"sleeping"<<endl;
-  }
+  //here should be not update_data()
+  auto reading_meta = Table_meta.find(Table_not_at_device.find(block_)->second)->second;
+  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  cudaEventSynchronize(reading_meta.in_event);
+  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
+  reading_meta.block_->update_data(reading_meta.data_);
+  Table_not_at_device.erase(reading_meta.block_);
+
   return nullptr; //TODO(junzhe) attention, based on no change here.
 }
 
