@@ -780,7 +780,7 @@ void SwapGPU::Test_sched_switch_swap(){
           cudaEventSynchronize(last_meta.in_event);
           auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
           cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
-          last_meta.block_->update_data(last_meta.data_);
+          //last_meta.block_->update_data(last_meta.data_);
           cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_meta.find(r_idx)->second.last_in_idx<<endl;
           Table_not_at_device.erase(last_meta.block_);
         }
@@ -847,7 +847,7 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
   cudaEventSynchronize(reading_meta.in_event);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
-  reading_meta.block_->update_data(reading_meta.data_);
+  //reading_meta.block_->update_data(reading_meta.data_);
   cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
 
   Table_not_at_device.erase(reading_meta.block_);
@@ -890,7 +890,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
   cudaEventRecord(meta.in_event,meta.in_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
-  
+  meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
   // if (tempCounter <3){
   //   meta.block_->update_data(meta.data_);
   //   pool_->Free(to_rm_ptr);
