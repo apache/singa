@@ -781,6 +781,7 @@ void SwapGPU::Test_sched_switch_swap(){
           auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
           cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
           last_meta.block_->update_data(last_meta.data_);
+          cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_meta.find(r_idx)->second.last_in_idx<<endl;
           Table_not_at_device.erase(last_meta.block_);
         }
       }
@@ -879,8 +880,8 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
   pool_->Malloc((void**)&ptr, meta.size);
-  cout<<"malloc due to swapIn "<<ptr<<endl;
-  void* to_rm_ptr = meta.data_;
+  cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
+  //void* to_rm_ptr = meta.data_;
   meta.data_ = ptr;
   cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
