@@ -879,6 +879,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
   pool_->Malloc((void**)&ptr, meta.size);
+  cout<<"malloc due to swapIn "<<ptr<<endl;
   void* to_rm_ptr = meta.data_;
   meta.data_ = ptr;
   cout<<"right before cudaMemcpyAsync In"<<endl;
