@@ -812,10 +812,12 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   strm4<<t2;
   string tempStr4 = strm4.str();
-  string blockInfo ="Malloc "+tempStr2+" "+tempStr1+" "+tempStr4;
-  Append(blockInfo);
+  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
 
   Table_Append[tempStr3] = tempStr2;
+  Append(blockInfo);
+
+  
   //Table_data_block_[data_] = block_;
   Table_block_data_[block_] = data_;
 }
