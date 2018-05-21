@@ -760,8 +760,8 @@ void SwapGPU::Test_sched_switch_swap(){
         auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
         cudaEventSynchronize(last_meta.in_event);
         auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-        cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
-        last_meta.block_->update_data(nullptr);
+        //cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
+        //last_meta.block_->update_data(nullptr);
         Table_not_at_device[last_meta.block_] = last_out_idx;
         pool_->Free(last_meta.data_);
         last_meta.data_ = nullptr; //not really needed TODO(junzhe)
@@ -779,9 +779,9 @@ void SwapGPU::Test_sched_switch_swap(){
           auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
           cudaEventSynchronize(last_meta.in_event);
           auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-          cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
+          //cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
           //last_meta.block_->update_data(last_meta.data_);
-          cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_meta.find(r_idx)->second.last_in_idx<<endl;
+          //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_meta.find(r_idx)->second.last_in_idx<<endl;
           Table_not_at_device.erase(last_meta.block_);
         }
       }
@@ -848,7 +848,7 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
   //reading_meta.block_->update_data(reading_meta.data_);
-  cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
+  //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
 
   Table_not_at_device.erase(reading_meta.block_);
 
@@ -856,7 +856,7 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
 }
 
 void SwapGPU::SwapOut_idx(const int r_idx){
-  cout<<"doing asynchrous swapOut of r_idx: "<<r_idx<<' '<<endl;
+  //cout<<"doing asynchrous swapOut of r_idx: "<<r_idx<<' '<<endl;
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();  
   cudaError_t err;
   BlockMeta meta = Table_meta.find(r_idx)->second;
@@ -866,6 +866,8 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   cudaEventRecord(meta.out_event,meta.out_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  cout<<"To update_data swap for (Out) "<<r_idx<<" "<<meta.block_<<" "<<nullptr<<endl;
+  meta.block_->update_data(nullptr); //TODO(junzhe) debug only, not the right place to update.
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
   //cudaEventSynchronize(event1);
   //auto t4 = (std::chrono::system_clock::now()).time_since_epoch().count();
@@ -879,18 +881,21 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cudaError_t err;
   BlockMeta meta = Table_meta.find(r_idx)->second;
   cudaEventCreate (&meta.in_event);
-  cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
+  //cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
   pool_->Malloc((void**)&ptr, meta.size);
-  cout<<"expected results update_data:: "<<meta.block_<<" "<<ptr<<endl;
-  cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
+  //cout<<"expected results update_data:: "<<meta.block_<<" "<<ptr<<endl;
+  //cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
   //void* to_rm_ptr = meta.data_;
   meta.data_ = ptr;
   cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
   cudaEventRecord(meta.in_event,meta.in_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
+  cout<<"To update_data swap for (In)"<<r_idx<<" "<<meta.block_<<" "<<nullptr<<endl;
   meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
+  
+
   // if (tempCounter <3){
   //   meta.block_->update_data(meta.data_);
   //   pool_->Free(to_rm_ptr);

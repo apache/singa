@@ -44,7 +44,7 @@ void* Block::mutable_data() {
     }
 
     if (data_ == nullptr) {
-      cout<<"to sleep"<<endl;
+      //cout<<"to sleep"<<endl;
       auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
       cout<<"slept to get data_ updated: "<<this<<' '<<data_<<endl;
     }
@@ -79,9 +79,9 @@ const void* Block::data() const {
     }
 
     if (data_ == nullptr) {
-      cout<<"to sleep"<<endl;
+      //cout<<"to sleep"<<endl;
       auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
-      cout<<"sleepped to get data_ updated"<<endl;
+      cout<<"slept to get data_ updated"<<endl;
     }
     //test async, with size 13107200.
     // if (size_ ==13107200){
