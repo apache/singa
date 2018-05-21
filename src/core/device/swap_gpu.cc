@@ -831,11 +831,12 @@ void SwapGPU::Append(string blockInfo){
       cout<<"not in Append"<<endl;
   }  
   auto data_str = Table_Append.find(v[1])->second;
+  string new_str;
   cout<<"PRINT__"<<v[0]<<' '<<data_str<<' '<<v[2]<<endl;
   if (v[0] == "Malloc") {
-    string new_str = v[0] + ' ' + data_str + ' ' + v[2] + ' ' + v[3];
+    new_str = v[0] + ' ' + data_str + ' ' + v[2] + ' ' + v[3];
   } else {
-    string new_str = v[0] + ' ' + data_str + ' ' + v[2];
+    new_str = v[0] + ' ' + data_str + ' ' + v[2];
   }
   
   cout<<blockInfo<<endl;
