@@ -866,7 +866,7 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   cudaEventRecord(meta.out_event,meta.out_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  cout<<"To update_data swap for (Out) "<<r_idx<<" "<<meta.block_<<" "<<nullptr<<endl;
+  cout<<"To update_data swap for (Out) "<<r_idx<<" "<<meta.block_<<" 0"<<endl;
   meta.block_->update_data(nullptr); //TODO(junzhe) debug only, not the right place to update.
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
   //cudaEventSynchronize(event1);
@@ -892,7 +892,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
   cudaEventRecord(meta.in_event,meta.in_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
-  cout<<"To update_data swap for (In)"<<r_idx<<" "<<meta.block_<<" "<<nullptr<<endl;
+  cout<<"To update_data swap for (In)"<<r_idx<<" "<<meta.block_<<" 0"<<endl;
   meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
   
 
