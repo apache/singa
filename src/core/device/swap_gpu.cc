@@ -802,6 +802,9 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   stringstream strm1;
   strm1<<size;
   string tempStr1 = strm1.str();
+  stringstream strm2;
+  strm2<<data_;
+  string tempStr2 = strm2.str();
   stringstream strm3;
   strm3<<block_;
   string tempStr3 = strm3.str();
@@ -809,14 +812,22 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   strm4<<t2;
   string tempStr4 = strm4.str();
-  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
+  string blockInfo ="Malloc "+tempStr2+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 
+  Table_Append[tempStr3] = tempStr2;
   //Table_data_block_[data_] = block_;
   Table_block_data_[block_] = data_;
+
+
 }
 
 void SwapGPU::Append(string blockInfo){
+  vector<string> v = swap_split(blockInfo, " ");
+  vector<string> v = swap_split(blockInfo, " ");
+  v[1] = Table_Append.find(v[1])->second;
+  string new_string = v[0]+" "+v[1]+" "+v[2];
+  cout<<"PRINT new_string"<<new_string<<endl;
   vec_block.push_back(blockInfo);
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
   //vC12 part
