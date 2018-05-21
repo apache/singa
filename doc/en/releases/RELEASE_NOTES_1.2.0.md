@@ -20,15 +20,16 @@ This release includes following features:
       * [SINGA-315] Reduce memory footprint by Python generator for parameter
       * [SINGA-316] Add SigmoidCrossEntropy
       * [SINGA-324] Extend RNN layer to accept variant seq length across batches
+      * [SINGA-326] Add Inception V4 for ImageNet classification
       * [SINGA-328] Add VGG models for ImageNet classification
       * [SINGA-329] Support layer freezing during training (fine-tuning)
       * [SINGA-346] Update cudnn from V5 to V7
       * [SINGA-349] Create layer operations for autograd
+      * [SINGA-363] Add DenseNet for Imagenet classification
 
   * Utility functions and CI
       * [SINGA-274] Improve Debian packaging with CPack
       * [SINGA-303] Create conda packages
-      * [SINGA-326] Add Inception V4 for ImageNet classification
       * [SINGA-337] Add test cases for code
       * [SINGA-348] Support autograd MLP Example
       * [SINGA-345] Update Jenkins and fix bugs in compliation
@@ -43,7 +44,6 @@ This release includes following features:
       * [SINGA-319] Fix link errors on the index page
       * [SINGA-352] Complete SINGA documentation in Chinese version
       * [SINGA-361] Add git instructions for contributors and committers
-      * [SINGA-363] Add DenseNet for Imagenet classification
 
   * Bugs fixed
       * [Singa-330] fix openblas building on i7 7700k
