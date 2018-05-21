@@ -835,9 +835,9 @@ void SwapGPU::Append(string blockInfo){
     int r_gc = (gc-location)%maxLen;
 
     if (!(Table_meta.find(r_gc)==Table_meta.end())){
-      vector<string> v = swap_split(blockInfo, " ");
+      vector<string> v1 = swap_split(blockInfo, " ");
       void* result;
-      stringstream convert(v[1]);
+      stringstream convert(v1[1]);
       convert>>result;
       //cout<<"r_gc, gc and size ot Table_meta "<<r_gc<<' '<<gc<<" "<<Table_meta.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
