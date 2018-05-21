@@ -849,7 +849,9 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
   cudaEventSynchronize(reading_meta.in_event);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
-  //reading_meta.block_->update_data(reading_meta.data_);
+  cout<<"To update_data swap for (In) "<<Table_not_at_device.find(block_)->second<<" "<<reading_meta.data_<<" 0"<<endl;
+  reading_meta.block_->update_data(reading_meta.data_);
+
   //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
 
   Table_not_at_device.erase(reading_meta.block_);
