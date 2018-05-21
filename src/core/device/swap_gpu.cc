@@ -825,7 +825,7 @@ void SwapGPU::Append(string blockInfo){
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
   //vC12 part
   vector<string> v = swap_split(blockInfo, " ");
-  if (Table_Append.find(v[1])==Table_Append.end(){
+  if (Table_Append.find(v[1])==Table_Append.end()){
       cout<<"not in Append"<<endl;
   }  
   if (maxLen > 100) {
