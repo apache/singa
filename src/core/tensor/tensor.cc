@@ -22,6 +22,8 @@
 #include "./tensor_math_opencl.h"
 #include <utility>
 
+#define Noaxis 9999
+
 namespace singa {
 
 Tensor::~Tensor() {
@@ -214,6 +216,20 @@ void Tensor::CopyData(const Tensor &src) {
   }
 }
 
+void Tensor::RepeatData(vector<int> repeats, int axis, int total_repeats, const Tensor &src) {
+  if(axis == Noaxis) {
+    CHECK_EQ(Size(), src.Size()*total_repeats);
+  } else {
+    CHECK_EQ(Size(), src.Size()*total_repeats/src.shape()[axis]);
+  }
+
+  CHECK(block_ != nullptr);
+  // Do repeat only if the src's block is already initialized.
+  if (src.block_ != nullptr) {
+    singa::RepeatDataToFrom(false, repeats, axis, this, src, Size(), 0, 0);
+  }
+}
+
 void Tensor::FromProto(const singa::TensorProto &proto) {
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
@@ -326,6 +342,29 @@ Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   //t.transpose_ = transpose_;
   t.strides_ = strides_;
   t.CopyData(*this);
+  return t;
+}
+
+Tensor Tensor::Repeat(vector<int> repeats, int axis, std::shared_ptr<Device> device) {
+  if (device == nullptr) device = device_;
+  Tensor t;
+  int total_repeats = 0;
+  if (axis == Noaxis) {
+    total_repeats = repeats[0];
+    t.shape_.push_back(Product(shape_)*total_repeats);
+  } else {
+    for (size_t i = 0; i < shape_[axis]; i++) {
+      if(repeats[i] < 0) {
+        LOG(FATAL) << "the repeats number is less than zero";
+      }
+      total_repeats += repeats[i];
+      t.shape_.push_back(Product(shape_)/shape_[axis]*total_repeats);
+    }
+  }
+  t.device_ = device_;
+  t.data_type_ = data_type_;
+  t.strides_.push_back(1);
+  t.RepeatData(repeats, axis, total_repeats, *this);
   return t;
 }
 
@@ -480,6 +519,56 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   } else {
     auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
     src_dev->CopyDataToFrom(to, from, nBytes, direct, (int)d_offset, (int)s_offset);
+  }
+}
+
+void RepeatDataToFrom(bool broadcast_flag, vector<int> repeats, int axis, 
+                      Tensor *dst, const Tensor &src, const size_t num, 
+                      const size_t dst_offset, const size_t src_offset) {
+  if (repeats.size() == 1) {
+    broadcast_flag = true;
+  }
+  if (repeats.size() > 1) {
+    if (axis == Noaxis) {
+      LOG(FATAL) << "When repeats parameter is sequence, axis cannot be None";
+    }
+  }
+  for (size_t i = 0; i < repeats.size(); i++){
+    CHECK_GE(repeats[i], 0);
+  }
+  auto width = SizeOf(src.data_type());
+  CHECK_EQ(width, SizeOf(dst->data_type()));
+  size_t nBytes = num * width;
+  auto d_offset = dst_offset * width;
+  auto s_offset = src_offset * width;
+  int chunk = width;
+  int axis_shape = 1;
+  if (axis == Noaxis){
+    axis_shape = 1;
+  } else {
+    axis_shape = src.shape()[axis];
+    for(size_t i = axis + 1; i < src.nDim(); i++) {
+      chunk *= src.shape()[i];
+    }
+  }
+  int shape_outer = Product(src.shape());
+  std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
+  Block *from = src.block(), *to = dst->block();
+  if (dst_dev->lang() != src_dev->lang()) {
+    // let the none cpp device conduct copy op
+    if (dst_dev->lang() == kCpp) {
+      src_dev->RepeatDataToFrom(to, from, nBytes, kDeviceToHost, broadcast_flag, axis_shape, 
+                                shape_outer, chunk, repeats, (int)d_offset, (int)s_offset);
+    } else if (src_dev->lang() == kCpp) {
+      dst_dev->RepeatDataToFrom(to, from, nBytes, kHostToDevice, broadcast_flag, axis_shape, 
+                                shape_outer, chunk, repeats, (int)d_offset, (int)s_offset);
+    } else {
+      LOG(FATAL) << "Not support mem repeat copy betwee Cuda and OpenCL device";
+    }
+  } else {
+    auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
+    src_dev->RepeatDataToFrom(to, from, nBytes, direct, broadcast_flag, axis_shape, 
+                              shape_outer, chunk, repeats, (int)d_offset, (int)s_offset);
   }
 }
 //============================================================================
