@@ -43,6 +43,7 @@ Block* Device::NewBlock(int size) {
     Block* block_ = new Block(ptr, size,0,this);
     //std::cout<<"(reference) from device.cc after, data_, block_ device: "<<ptr<<" "<<block_<<' '<<this<<std::endl;
     MakeMetaTable(block_,ptr,size); // make table and append vec_block.
+    cout<<"NewBlock: "<<block_<<' '<<ptr<<endl;
     return block_;
   } else {
     return nullptr;
