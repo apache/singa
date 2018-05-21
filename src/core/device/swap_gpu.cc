@@ -894,7 +894,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
   cudaEventRecord(meta.in_event,meta.in_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
-  cout<<"To update_data swap for (In)"<<r_idx<<" "<<meta.block_<<" 0"<<endl;
+  cout<<"To update_data swap for (In)"<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<endl;
   meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
   
 

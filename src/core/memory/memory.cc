@@ -98,7 +98,7 @@ void CnMemPool::Malloc(void **ptr, const size_t size) {
 
 void CnMemPool::Free(void *ptr) {
   CHECK(initialized_) << "Cannot free the memory as the pool is not initialzied";
-  cout<<"(normal)to free ptr "<<ptr<<endl;
+  //cout<<"(normal)to free ptr "<<ptr<<endl;
   cnmemStatus_t status = cnmemFree(ptr, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
       << " " << cnmemGetErrorString(status);
@@ -989,7 +989,7 @@ void Swap::Init(){
 }
 
 void Swap::Malloc(void** ptr, const size_t size){
-  cout<<"to malloc"<<endl;
+  //cout<<"to malloc"<<endl;
   cudaError_t status = cudaMalloc(ptr, size);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
   SwapMeta cpu,gpu;
@@ -1051,7 +1051,7 @@ void Swap::Malloc(void** ptr, const size_t size){
 }
 
 void Swap::Free(void *ptr) {
-  cout<<"to malloc"<<endl;
+  //cout<<"to malloc"<<endl;
   //input is real ptr
   cudaError_t status = cudaFree(ptr);
   CHECK_EQ(status, cudaError_t::cudaSuccess);
