@@ -829,6 +829,7 @@ void SwapGPU::Append(string blockInfo){
       convert>>result;
       //cout<<"r_gc, gc and size ot Table_meta "<<r_gc<<' '<<gc<<" "<<Table_meta.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
+      cout<<"To update Block_ at "<<r_gc<<' '<<gc<<' '<<static_cast<Block*>(result)<<Table_meta.find(r_gc)->second.block_<<endl;
       Table_meta.find(r_gc)->second.block_ = static_cast<Block*>(result);
       Table_meta.find(r_gc)->second.data_ = Table_block_data_.find(static_cast<Block*>(result))->second;
       Table_block_data_.erase(static_cast<Block*>(result));
