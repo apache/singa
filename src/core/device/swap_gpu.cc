@@ -832,7 +832,9 @@ void SwapGPU::Append(string blockInfo){
   }  
   auto data_str = Table_Append.find(v[1])->second;
   cout<<"PRINT__"<<v[0]<<' '<<data_str<<' '<<v[2]<<endl;
-  vec_block.push_back(blockInfo);
+  auto new_str = v[0] + ' ' + data_str + ' ' + v[2];
+  vec_block.push_back(new_str);
+
   if (maxLen > 100) {
     int r_gc = (gc-location)%maxLen;
 
