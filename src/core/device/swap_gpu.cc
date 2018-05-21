@@ -601,10 +601,11 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       meta.last_out_idx = vec_swap_selct[i].last_out_idx;
       meta.last_in_idx = vec_swap_selct[i].last_in_idx;
       Table_meta[vec_swap_selct[i].r_idx] = meta;
+      cout<<"Print of blockMeta: (r_idx,size,o,i) "<<vec_swap_selct[i].r_idx<<' '<<meta.size<<' '<<std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0)<<' '<<std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1)<<endl;
     }
 
   return gc+maxLen-(gc-location)%maxLen;
-}
+} //end of Swap_test()
 
 
 
