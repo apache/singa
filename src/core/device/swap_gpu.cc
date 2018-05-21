@@ -922,10 +922,10 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //cout<<"expected results update_data:: "<<meta.block_<<" "<<ptr<<endl;
   //cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
   //void* to_rm_ptr = meta.data_;
-  if (Table_new_data_.find(meta.data_)==Table_new_data_.end()){
+  if (Table_new_data_.find(meta.data_) == Table_new_data_.end()){
     cout<<"error in Table_new_data_ update"<<endl;
   }
-  Table_new_data_.find(meta.data_) = ptr;
+  Table_new_data_.find(meta.data_)->second = ptr;
   meta.data_ = ptr;
   cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
