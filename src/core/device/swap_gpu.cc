@@ -270,12 +270,12 @@ vector<double> compute_peak(vector<onePieceMsg> vec_run, int& max_Idx, size_t& m
 int SwapInTime(size_t size){
     //yet to get the formula
     int ans =0; //TODO(junzhe) used to be 0.13 --> 0.26 (unpinned vs pinned)
-    if (size==0) {ans = 9500;} else {ans = 0.26*size;}
+    if (size==0) {ans = 9500;} else {ans = 0.13*size;}
     return ans;
 }
 int SwapOutTime(size_t size){
     int ans =0; //TODO(junzhe) used to be 0.29 --> 0.58
-    if (size==0) {ans = 17000;} else {ans = 0.58*size;}
+    if (size==0) {ans = 17000;} else {ans = 0.29*size;}
     return ans;
 }
 
