@@ -824,7 +824,6 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 
 void SwapGPU::Append(string blockInfo){
   vector<string> v = swap_split(blockInfo, " ");
-  vector<string> v = swap_split(blockInfo, " ");
   v[1] = Table_Append.find(v[1])->second;
   string new_string = v[0]+" "+v[1]+" "+v[2];
   cout<<"PRINT new_string"<<new_string<<endl;
