@@ -601,7 +601,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       meta.last_out_idx = vec_swap_selct[i].last_out_idx;
       meta.last_in_idx = vec_swap_selct[i].last_in_idx;
       Table_meta[vec_swap_selct[i].r_idx] = meta;
-      cout<<"BlockMeta(r_idx,size,o,i) "<<vec_swap_selct[i].r_idx<<' '<<meta.size<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<endl;
+      cout<<"BlockMeta(r_idx,size,o,i) "<<vec_swap_selct[i].r_idx<<' '<<meta.size<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p;
+      cout<<"last_out and last_in: "<<meta.last_out_idx<<' '<<meta.last_out_idx<<endl;
     }
 
   return gc+maxLen-(gc-location)%maxLen;
@@ -764,7 +765,7 @@ void SwapGPU::Test_sched_switch_swap(){
         //cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
         //last_meta.block_->update_data(nullptr);
         Table_not_at_device[last_meta.block_] = last_out_idx;
-        cout<<"Created Table_not_at_device: "<<last_meta.block_<<' '<<last_out_idx;
+        cout<<"Created Table_not_at_device: "<<last_meta.block_<<' '<<last_out_idx<<endl;
         pool_->Free(last_meta.data_);
         last_meta.data_ = nullptr; //not really needed TODO(junzhe)
       }
