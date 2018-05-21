@@ -783,7 +783,7 @@ void SwapGPU::Test_sched_switch_swap(){
           //cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
           //last_meta.block_->update_data(last_meta.data_);
           //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_meta.find(r_idx)->second.last_in_idx<<endl;
-          Table_not_at_device.erase(last_meta.block_);
+          //Table_not_at_device.erase(last_meta.block_); //TODO(junzhe) shall not remove
         }
       }
       SwapIn_idx(r_idx);
@@ -878,7 +878,7 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
 
   //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
 
-  Table_not_at_device.erase(reading_meta.block_);
+  //Table_not_at_device.erase(reading_meta.block_); //TODO(junzhe) shall not remove
 
   return nullptr; //TODO(junzhe) attention, based on no change here.
 }
