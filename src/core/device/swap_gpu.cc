@@ -764,6 +764,7 @@ void SwapGPU::Test_sched_switch_swap(){
         //cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
         //last_meta.block_->update_data(nullptr);
         Table_not_at_device[last_meta.block_] = last_out_idx;
+        cout<<"Created Table_not_at_device: "<<last_meta.block_<<' '<<last_out_idx;
         pool_->Free(last_meta.data_);
         last_meta.data_ = nullptr; //not really needed TODO(junzhe)
       }
