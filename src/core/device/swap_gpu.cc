@@ -824,9 +824,12 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 
 void SwapGPU::Append(string blockInfo){
   vector<string> v = swap_split(blockInfo, " ");
+  cout<<blockInfo<<endl;
   v[1] = Table_Append.find(v[1])->second;
+  cout<<v[0]<<v[1]<<v[2]<<endl;
   string new_string = v[0]+" "+v[1]+" "+v[2];
   cout<<"PRINT new_string"<<new_string<<endl;
+  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   vec_block.push_back(blockInfo);
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
   //vC12 part
