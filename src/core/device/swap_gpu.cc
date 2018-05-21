@@ -767,10 +767,10 @@ void SwapGPU::Test_sched_switch_swap(){
         Table_not_at_device[last_meta.block_] = last_out_idx;
         cout<<"Created Table_not_at_device: "<<last_meta.block_<<' '<<last_out_idx<<endl;
         pool_->Free(last_meta.data_);
-        cout<<"Freed meta.data, if its nullptr:";
-        if (last_meta.data_ == nullptr){
-          cout<<"yes"<<endl;
-        }
+        // cout<<"Freed meta.data, if its nullptr:";
+        // if (last_meta.data_ == nullptr){
+        //   cout<<"yes"<<endl;
+        // }
         //last_meta.data_ = nullptr; //not really needed TODO(junzhe)
       }
      
@@ -838,16 +838,16 @@ void SwapGPU::Append(string blockInfo){
   }  
   auto data_str = Table_Append.find(v[1])->second;
   string new_str;
-  cout<<"PRINT__"<<v[0]<<' '<<data_str<<' '<<v[2]<<endl;
+  //cout<<"PRINT__"<<v[0]<<' '<<data_str<<' '<<v[2]<<endl;
   if (v[0] == "Malloc") {
     new_str = v[0] + ' ' + data_str + ' ' + v[2] + ' ' + v[3];
   } else {
     new_str = v[0] + ' ' + data_str + ' ' + v[2];
   }
   
-  cout<<blockInfo<<endl;
-  cout<<new_str<<endl;
-  cout<<blockInfo.length()<<' '<<new_str.length()<<endl;
+  //cout<<blockInfo<<endl;
+  //cout<<new_str<<endl;
+  //cout<<blockInfo.length()<<' '<<new_str.length()<<endl;
   vec_block.push_back(new_str);
 
   if (maxLen > 100) {
@@ -902,6 +902,7 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cout<<"To update_data swap for (Out) "<<r_idx<<" "<<meta.block_<<" 0"<<endl;
   meta.block_->update_data(nullptr); //mark nullptr here; no need to update meta.data_
+  Table_new_data_[meta.data_] = nullptr;
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
   //cudaEventSynchronize(event1);
   //auto t4 = (std::chrono::system_clock::now()).time_since_epoch().count();
@@ -921,6 +922,10 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //cout<<"expected results update_data:: "<<meta.block_<<" "<<ptr<<endl;
   //cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
   //void* to_rm_ptr = meta.data_;
+  if (Table_new_data_.find(meta.data_)==Table_new_data_.end()){
+    cout<<"error in Table_new_data_ update"<<endl;
+  }
+  Table_new_data_.find(meta.data_) = ptr;
   meta.data_ = ptr;
   cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
@@ -928,6 +933,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cout<<"right after cudaMemcpyAsync"<<endl;
   cout<<"To update_data swap for (In)"<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
   meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
+
   
 
   // if (tempCounter <3){
