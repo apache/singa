@@ -78,7 +78,7 @@ class Device {
   virtual void RepeatDataToFrom(Block* dst, Block* src, size_t nBytes,
                                 CopyDirection direct, bool broadcast_flag, 
                                 int axis_shape, int shape_outer, int chunk, 
-                                vector<int> repeats, int dst_offset, int src_offset);
+                                vector<size_t> repeats, int dst_offset, int src_offset);
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
                            size_t dst_offset = 0);

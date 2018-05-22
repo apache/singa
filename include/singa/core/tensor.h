@@ -165,7 +165,7 @@ class Tensor {
   /// Meta data would not be copied!
   void CopyData(const Tensor &other);
 
-  void RepeatData(vector<int> repeats, int axis, int total_repeats, const Tensor &other);
+  void RepeatData(vector<size_t> repeats, int axis, int total_repeats, const Tensor &other);
 
   /// Deserialize data, shape and transpose from protobuf object.
   void FromProto(const singa::TensorProto &proto);
@@ -177,7 +177,7 @@ class Tensor {
   /// device. If 'device' is nullptr, then clone it one the current device.
   Tensor Clone(std::shared_ptr<Device> device = nullptr) const;
 
-  Tensor Repeat(vector<int> repeats, int axis, std::shared_ptr<Device> device = nullptr) ;
+  Tensor Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> device = nullptr) ;
 
   // Tensor operations
 
@@ -291,7 +291,7 @@ Tensor Reshape(const Tensor &in, Shape &&s);
 void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
                     const size_t dst_offset = 0, const size_t src_offset = 0);
 
-void RepeatDataToFrom(bool broadcast_flag,  vector<int> repeats, int axis, 
+void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis, 
                       Tensor *dst, const Tensor &in, const size_t num, 
                       const size_t dst_offset = 0, const size_t src_offset = 0);
 

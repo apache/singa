@@ -216,8 +216,8 @@ void Tensor::CopyData(const Tensor &src) {
   }
 }
 
-void Tensor::RepeatData(vector<int> repeats, int axis, int total_repeats, const Tensor &src) {
-  if(axis == Noaxis) {
+void Tensor::RepeatData(vector<size_t> repeats, int axis, int total_repeats, const Tensor &src) {
+  if(repeats.size() == 1) {
     CHECK_EQ(Size(), src.Size()*total_repeats);
   } else {
     CHECK_EQ(Size(), src.Size()*total_repeats/src.shape()[axis]);
@@ -345,25 +345,44 @@ Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   return t;
 }
 
-Tensor Tensor::Repeat(vector<int> repeats, int axis, std::shared_ptr<Device> device) {
+Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> device) {
   if (device == nullptr) device = device_;
-  Tensor t;
+  vector<size_t> tshape;
   int total_repeats = 0;
   if (axis == Noaxis) {
     total_repeats = repeats[0];
-    t.shape_.push_back(Product(shape_)*total_repeats);
+    tshape.push_back(Product(shape_)*total_repeats);
   } else {
-    for (size_t i = 0; i < shape_[axis]; i++) {
-      if(repeats[i] < 0) {
-        LOG(FATAL) << "the repeats number is less than zero";
+    if (repeats.size() == 1){
+      total_repeats = repeats[0];
+      for (int i = 0; i < shape_.size(); i++) {
+        if (i == axis) {
+          tshape.push_back(shape_[i] * total_repeats);
+        } else {
+          tshape.push_back(shape_[i]);
+        }
       }
-      total_repeats += repeats[i];
-      t.shape_.push_back(Product(shape_)/shape_[axis]*total_repeats);
+    } else {
+      if (repeats.size() != shape_[axis]) {
+        LOG(FATAL) << "the repeats number doesn't match the axis";
+      }
+      for (size_t i = 0; i < shape_[axis]; i++) {
+        if(repeats[i] < 0) {
+          LOG(FATAL) << "the repeats number is less than zero";
+        }
+        total_repeats += repeats[i];
+      }
+      for (int i = 0; i < shape_.size(); i++){
+        if (i == axis) {
+          tshape.push_back(total_repeats);
+        } else{
+          tshape.push_back(shape_[i]);
+        }
+      }
     }
   }
-  t.device_ = device_;
-  t.data_type_ = data_type_;
-  t.strides_.push_back(1);
+  Tensor t(tshape, device_);
+  //t.strides_.push_back(1);
   t.RepeatData(repeats, axis, total_repeats, *this);
   return t;
 }
@@ -522,7 +541,7 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   }
 }
 
-void RepeatDataToFrom(bool broadcast_flag, vector<int> repeats, int axis, 
+void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis, 
                       Tensor *dst, const Tensor &src, const size_t num, 
                       const size_t dst_offset, const size_t src_offset) {
   if (repeats.size() == 1) {
@@ -543,15 +562,20 @@ void RepeatDataToFrom(bool broadcast_flag, vector<int> repeats, int axis,
   auto s_offset = src_offset * width;
   int chunk = width;
   int axis_shape = 1;
+  int shape_outer = 1;
   if (axis == Noaxis){
     axis_shape = 1;
+    shape_outer = Product(src.shape());
   } else {
+    for (size_t i = 0; i < axis; i++) {
+      shape_outer *= src.shape()[i];
+    }
     axis_shape = src.shape()[axis];
     for(size_t i = axis + 1; i < src.nDim(); i++) {
       chunk *= src.shape()[i];
     }
   }
-  int shape_outer = Product(src.shape());
+  
   std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
   Block *from = src.block(), *to = dst->block();
   if (dst_dev->lang() != src_dev->lang()) {
@@ -667,6 +691,7 @@ void Tensor::SetValue(const SType x) {
   CHECK_EQ(sizeof(SType), SizeOf(data_type_));
   //auto size = Size();
   auto ptr = block_;
+  
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // TODO(wangwei) cast x to DType
     device_->Exec([this, x, ptr](Context * ctx) {

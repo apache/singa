@@ -119,8 +119,11 @@ namespace singa{
     %template(CopyIntDataFromHostPtr) CopyDataFromHostPtr<int>;
 
     void CopyData(const Tensor &other);
+    void RepeatData(std::vector<size_t> repeats, int axis, int total_repeats, const Tensor &src);
     Tensor Clone() const;
+    Tensor Repeat(std::vector<size_t> repeats, int axis);
     Tensor T() const;
+
 
 #if USE_JAVA
     %rename(iAdd) operator+=(const Tensor &t);
@@ -156,6 +159,10 @@ namespace singa{
 
   void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
                       size_t src_offset = 0, size_t dst_offset = 0);
+
+  void RepeatDataToFrom(bool broadcast_flag, std::vector<size_t> repeats, int axis, 
+                        Tensor *dst, const Tensor &src, const size_t num, 
+                        const size_t dst_offset, const size_t src_offset);
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
 
