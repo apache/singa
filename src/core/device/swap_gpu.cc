@@ -126,7 +126,7 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
     for (int i=0;i<vec.size();i++) {
         vector<string> v = swap_split(vec[i], " ");
         if (v[0]=="Malloc"){
-            //change v[2] from str to size_t
+            //      .change v[2] from str to size_t
             size_t result;
             stringstream convert(v[2]);
             if (!(convert>>result)){
@@ -820,7 +820,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
 
-  Table_Append[tempStr3] = tempStr2;
+  Table_Append[tempStr3] = tempStr2;  //ch done. Table block_->data_ both in str.
   Append(blockInfo);
 
   
@@ -831,25 +831,16 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 void SwapGPU::Append(string blockInfo){
   
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
-  //vC12 part
+  //ch  add data_ at last, keep block at second.
   vector<string> v = swap_split(blockInfo, " ");
   if (Table_Append.find(v[1])==Table_Append.end()){
       cout<<"not in Append"<<endl;
   }  
   auto data_str = Table_Append.find(v[1])->second;
-  string new_str;
-  //cout<<"PRINT__"<<v[0]<<' '<<data_str<<' '<<v[2]<<endl;
-  if (v[0] == "Malloc") {
-    new_str = v[0] + ' ' + data_str + ' ' + v[2] + ' ' + v[3];
-  } else {
-    new_str = v[0] + ' ' + data_str + ' ' + v[2];
-  }
-  
-  //cout<<blockInfo<<endl;
-  //cout<<new_str<<endl;
-  //cout<<blockInfo.length()<<' '<<new_str.length()<<endl;
+  string new_str = blockInfo + ' ' + data_str;
   vec_block.push_back(new_str);
-
+  cout<<"PRINT_"<<new_str<<"_DONE"<<endl;
+  //ch verify at last
   if (maxLen > 100) {
     int r_gc = (gc-location)%maxLen;
 
