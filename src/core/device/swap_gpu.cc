@@ -412,8 +412,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
    //print out push-info
   fstream file_block2("vec_run.text", ios::in|ios::out|ios::app); //TODO(junzhe) debug only, can remove.
   for (int i = 0; i<vec_run.size();i++){
-    file_block2<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<vec_run[i].t<<endl;
-  }
+    file_block2<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<' '<<vec_run[i].data_<<endl;
+  } //changed to print ptr and data_
   //scale down idx
   for (int i=0; i<maxLen;i++){
       vec_run[i].idx = vec_run[i].idx - location;
