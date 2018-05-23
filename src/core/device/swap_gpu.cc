@@ -45,12 +45,13 @@ struct onePieceMsg{
     /*
      members: [ptr, size, MallocFree, idx]
      */
-    string ptr;
+    string ptr; //block_
+    string data_; //data_. //ch add data_ and change constructor
     size_t size;
     int MallocFree;
     int idx;
     double t;
-    onePieceMsg(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
+    onePieceMsg(string p, string d, size_t s, int M, int i):ptr(p),data_(d),size(s),MallocFree(M),idx(i){}
 };
 
 
@@ -126,35 +127,35 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
     for (int i=0;i<vec.size();i++) {
         vector<string> v = swap_split(vec[i], " ");
         if (v[0]=="Malloc"){
-            //      .change v[2] from str to size_t
+            //ch change onePieceMsg
             size_t result;
             stringstream convert(v[2]);
             if (!(convert>>result)){
                 result =-1;
                 cout<<"error for converting size from str to int."<<endl;
             }
-            onePieceMsg tempMsg(v[1],result, 1, i);
+            onePieceMsg tempMsg(v[1],v[4],result, 1, i);
             double tempTime;
             stringstream convert2(v[3]);
             convert2>>tempTime;
             tempMsg.t =tempTime;
             onePieceMsgVec_.push_back(tempMsg);
         }else if (v[0]=="Free"){
-            onePieceMsg tempMsg(v[1],-1, -1, i);
+            onePieceMsg tempMsg(v[1],v[3],-1, -1, i);
             double tempTime;
             stringstream convert2(v[2]);
             convert2>>tempTime;
             tempMsg.t =tempTime;
             onePieceMsgVec_.push_back(tempMsg);
         }else if (v[0]=="Mutable" or v[0]=="Read"){
-            onePieceMsg tempMsg(v[1],-1, 2, i);
+            onePieceMsg tempMsg(v[1],v[3],-1, 2, i);
             double tempTime;
             stringstream convert2(v[2]);
             convert2>>tempTime;
             tempMsg.t =tempTime;
             onePieceMsgVec_.push_back(tempMsg);
         }else if (v[0]=="Layer"){
-            onePieceMsg tempMsg(v[1],-1, 3, i);
+            onePieceMsg tempMsg(v[1],v[3],-1, 3, i);
             double tempTime;
             stringstream convert2(v[2]);
             convert2>>tempTime;
@@ -378,13 +379,13 @@ void load_update(vector<double>& vec_load,int old_idx, int plusMinus, size_t siz
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
   int idxRange =0;
-  vector<onePieceMsg> vec_pieceMsg = swap_strVec_2_pieceMsgVec(vec_block,idxRange);
+  vector<onePieceMsg> vec_pieceMsg = swap_strVec_2_pieceMsgVec(vec_block,idxRange); //ch done
   cout<<"size of vec_pieceMsg and vec_block are: "<<vec_pieceMsg.size()<<' '<<vec_block.size()<<endl;
   ///rep test
-  vector<size_t> vec_rep = Swap_piece2rep(vec_pieceMsg);
+  vector<size_t> vec_rep = Swap_piece2rep(vec_pieceMsg); //ch should no change
   //int idxRange3=0; //rename TODO
   //int maxLen=0, location =0;
-  repPatternDetector(vec_rep,maxLen,location);
+  repPatternDetector(vec_rep,maxLen,location); //ch should no change
   cout<<"maxLen and location are: "<<maxLen<<' '<<location<<endl;
   cout<<"test rep"<<endl;
   //Note here location not exactly start of one iteration, adjust to nearly start of one by restricting "Malloc"
@@ -401,7 +402,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"shift_counter is "<<shift_counter<<endl;
   cout<<"location changed to "<<location<<endl;
 
-  if (maxLen<100) {return -1;}
+  if (maxLen < 100) {return -1;} //return if maxLen < 100
   //TODO(junzhe) below belong to run() section
   ///cut into one iteration.
   sort(vec_pieceMsg.begin(),vec_pieceMsg.end(),less_than_Idx());
@@ -409,7 +410,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"time for one itr: "<<vec_run[vec_run.size()-1].t-vec_run[0].t<<endl;
   cout<<" to write vec_run for comparison, nothing wrong till here 5/13."<<endl;
    //print out push-info
-  fstream file_block2("vec_run.text", ios::in|ios::out|ios::app);
+  fstream file_block2("vec_run.text", ios::in|ios::out|ios::app); //TODO(junzhe) debug only, can remove.
   for (int i = 0; i<vec_run.size();i++){
     file_block2<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<vec_run[i].t<<endl;
   }
@@ -426,7 +427,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
    cout<<" to write vec_run2 for comparison, nothing wrong till here 5/13."<<endl;
    //print out push-info
-  fstream file_block3("vec_run2.text", ios::in|ios::out|ios::app);
+  fstream file_block3("vec_run2.text", ios::in|ios::out|ios::app); //TODO(junzhe) debug only, can remove.
   for (int i = 0; i<vec_run.size();i++){
     file_block3<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<vec_run[i].t<<endl;
   }
@@ -839,7 +840,6 @@ void SwapGPU::Append(string blockInfo){
   auto data_str = Table_Append.find(v[1])->second;
   string new_str = blockInfo + ' ' + data_str;
   vec_block.push_back(new_str);
-  cout<<"PRINT_"<<new_str<<"_DONE"<<endl;
   //ch verify at last
   if (maxLen > 100) {
     int r_gc = (gc-location)%maxLen;

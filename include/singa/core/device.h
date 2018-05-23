@@ -289,7 +289,7 @@ class SwapGPU : public Device {
   map<int,std::tuple<int,size_t,int>>Table_sched; 
 
   //vec_block
-  vector<string> vec_block;
+  vector<string>vec_block;
 
   int asyncSwapFlag = 0; //0 for sync, 1 for async.
   int testFlag = 0; //0 means open for test, 1 means no need test anymore.
