@@ -822,6 +822,7 @@ void SwapGPU::Append(string blockInfo){
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
   //vC12 part
   if (maxLen > 100) {
+    cout<<gc<<' '<<(gc-location)%maxLen<<' '<<blockInfo<<endl;
     int r_gc = (gc-location)%maxLen;
 
     if (!(Table_meta.find(r_gc)==Table_meta.end())){
@@ -838,7 +839,7 @@ void SwapGPU::Append(string blockInfo){
       //Table_data_block_.erase(ptr);
     }
   }
-  cout<<gc<<' '<<blockInfo<<endl;
+
   gc++;
 
 }
