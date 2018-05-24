@@ -424,7 +424,7 @@ Tensor Tensor::Transpose() const {
 
 //transpose with axes
 // TODO(wangwei) the shape and axes should match
-Tensor Tensor::Transpose(const vector<size_t>& axes) const {
+Tensor Tensor::Transpose(const vector<size_t> &axes) const {
   // if(axes.size() != shape_.size()){
   //   std::cout << "Warning: Size of input axes doesn't match size of shape" << std::endl;
   //   return void();

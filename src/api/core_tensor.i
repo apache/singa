@@ -100,8 +100,10 @@ namespace singa{
     const DataType data_type() const;
     const std::vector<size_t> &shape() const;
     const size_t shape(size_t idx) const;
-    size_t nDim() const;
     bool transpose() const;
+    size_t nDim() const;
+    Tensor Transpose() const;
+    Tensor Transpose(const std::vector<size_t> &axes) const;
     size_t Size() const;
     size_t MemSize() const;
     void Reshape(const std::vector<size_t> &shape);

@@ -165,6 +165,21 @@ class TestTensorMethods(unittest.TestCase):
         b = tensor.to_numpy(t)
         self.assertEqual(np.sum(a-b), 0.)
 
+    def test_transpose(self):
+        a = np.array([1.1,1.1,1.1,1.1,1.4,1.3,1.1,1.6,1.1,1.1,1.1,1.2])
+        a = np.reshape(a,(2,3,2))
+        ta = tensor.from_numpy(a)
+
+        A1 = np.transpose(a)
+        tA1 = tensor.transpose(ta)
+        TA1 = tensor.to_numpy(tA1)
+        A2 = np.transpose(a,[0,2,1])
+        tA2 = tensor.transpose(ta,[0,2,1])
+        TA2 = tensor.to_numpy(tA2)
+
+        self.assertAlmostEqual(np.sum(TA1 - A1), 0.,places=3)
+        self.assertAlmostEqual(np.sum(TA2 - A2), 0.,places=3)
+
     def test_einsum(self):
 
         a = np.array([1.1,1.1,1.1,1.1,1.4,1.3,1.1,1.6,1.1,1.1,1.1,1.2])
@@ -193,8 +208,8 @@ class TestTensorMethods(unittest.TestCase):
         ta_repeat2 = tensor.repeat(ta, 4, axis = 1)
         a_repeat2 = np.repeat(a, 4, axis = 1)
         Ta_repeat2 = tensor.to_numpy(ta_repeat2)
-        print(Ta_repeat2)
-        print(a_repeat2)
+        # print(Ta_repeat2)
+        # print(a_repeat2)
 
         self.assertAlmostEqual(np.sum(Ta_repeat1 - a_repeat1), 0., places=3)
         self.assertAlmostEqual(np.sum(Ta_repeat2 - a_repeat2), 0., places=3)

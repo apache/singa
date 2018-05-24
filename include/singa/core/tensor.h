@@ -189,7 +189,7 @@ class Tensor {
   Tensor Transpose() const;
 
   /// Change the axes
-  Tensor Transpose(const vector<size_t>& axes) const;
+  Tensor Transpose(const vector<size_t> &axes) const;
 
   /// Copy the meta info with data block shared.
   Tensor &operator=(const Tensor &in);

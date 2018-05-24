@@ -136,9 +136,20 @@ class Tensor(object):
         '''
         return self.data.transpose()
 
-    # def transpose(self):
-
-    #     return self.data
+    def transpose(self,axes = None):
+        '''
+        To transpose the tensor
+        '''
+        if axes == None:
+            tshape = [self.shape[x] for x in range(len(self.shape))]
+            self.shape = tuple(tshape)
+            self.data = self.data.Transpose()
+        else:
+            if(len(axes) != len(self.shape)):
+                raise ValueError('dimensions do not match')
+            tshape = [self.shape[x] for x in axes]
+            self.shape = tuple(tshape)
+            self.data = self.data.Transpose(list(axes))
 
     def size(self):  # TODO(wangwei) compute size
         '''
@@ -259,24 +270,61 @@ class Tensor(object):
         '''
         return _call_singa_func(self.data.Clone)
 
-    def repeat_(self, repeats, axis):
-        ret = CTensor()
-        if isinstance(repeats, int):
-            if axis == 9999:
+    def repeat(self, repeats, axis):
+        # ret = CTensor()
+        # if isinstance(repeats, int):
+        #     if axis == 9999:
+        #         Repeats = [repeats,]
+        #         ret = self.data.Repeat(Repeats, axis)
+        #     else:
+        #         Repeats = [repeats,]
+        #         ret = self.data.Repeat(Repeats, axis)
+            
+
+        # elif isinstance(repeats, tuple) or isinstance(repeats, list):
+        #     if axis == 9999:
+        #         ret = self.data.Repeat(list(repeats), axis)
+
+        #     elif axis >= 0:
+        #         ret = self.data.Repeat(list(repeats), axis)
+        # return ret
+
+        t_ndim = self.ndim()
+        if isinstance(repeats, int) or isinstance(repeats, long):
+            if repeats < 0:
+                raise ValueError("'repeats' should not be negative: {}".format(repeats))
+            if axis != None and axis < 0:
+                axis += t_ndim
+            # broadcast = True
+            if axis == None:
+                axis = 9999
+                self.shape = (product(self.shape)*repeats,)
                 Repeats = [repeats,]
-                ret = self.data.Repeat(Repeats, axis)
-            else:
+                self.data = self.data.Repeat(Repeats, axis)
+            elif axis >= 0:
+                t_shape = list(self.shape)
+                t_shape[axis] = self.shape[axis]*repeats
+                self.shape = tuple(t_shape)
                 Repeats = [repeats,]
-                ret = self.data.Repeat(Repeats, axis)
-            return ret
+                self.data = self.data.Repeat(Repeats, axis)
 
         elif isinstance(repeats, tuple) or isinstance(repeats, list):
-            if axis == 9999:
-                ret = self.data.Repeat(list(repeats), axis)
+            for rep in repeats:
+                if rep < 0:
+                    raise ValueError("'repeats' should be int or sequence: {}".format(repeats))
 
+            if axis != None and axis < 0:
+                axis += t_ndim
+            if axis == None:
+                axis = 9999
+                raise ValueError("when axis us None, 'repeats' should be int: {}".format(repeats))
             elif axis >= 0:
-                ret = self.data.Repeat(list(repeats), axis)
-            return ret
+                t_shape = list(self.shape)
+                t_shape[axis] = sum(repeats)
+                self.shape = tuple(t_shape)
+                self.data = self.data.Repeat(list(repeats), axis)
+        else:
+            raise ValueError('repeats should be int or sequence')
         
 
         
@@ -579,6 +627,20 @@ def reshape(t, s):
         the new Tensor
     '''
     return _call_singa_func(singa.Reshape, t.data, s)
+
+def Reshape(t,s):
+    ret = t.deepcopy()
+    ret.reshape(s)
+    return ret
+
+def transpose(t,axes = None):
+    '''
+    Returns:
+        the transposed tensor 
+    '''
+    ret = t.deepcopy()
+    ret.transpose(axes)
+    return ret
 
 
 def copy_data_to_from(dst, src, size, dst_offset=0, src_offset=0):
@@ -1082,26 +1144,50 @@ def einsum(ops, *args):
     reshape_A = list(A.shape) + broadcast_a
     reshape_B = list(B.shape) + broadcast_b
 
-    A_ = to_numpy(A)
-    B_ = to_numpy(B)
+    # A_ = to_numpy(A)
+    # B_ = to_numpy(B)
 
-    mult_A = np.repeat(A_, np.product(broadcast_a)).reshape(
-        reshape_A).transpose(transpose_A)
-    mult_B = np.repeat(B_, np.product(broadcast_b)).reshape(
-        reshape_B).transpose(transpose_B)
+    # mult_A = np.repeat(A_, np.product(broadcast_a)).reshape(
+    #     reshape_A).transpose(transpose_A)
+    # mult_B = np.repeat(B_, np.product(broadcast_b)).reshape(
+    #     reshape_B).transpose(transpose_B)
+
+    # if mult_A.shape != mult_B.shape:
+    #     raise ValueError("Error: matrix dimension mismatch")
+    # res_ = np.multiply(mult_A, mult_B)
+
+    # reduce the axis and find the final transpose for the output
+    # sum_R = sorted(sums, reverse=True)
+    # for i in sum_R:
+    #     res_ = res_.sum(axis=i)
+    # transpose_res = [sorted(list(outputops)).index(x) for x in list(outputops)]
+    # res_ = res_.transpose(transpose_res)
+    # res = from_numpy(res_)
+    # return res
+    if len(broadcast_a) == 0:
+        broadcast_a = [1]
+    if len(broadcast_b) == 0:
+        broadcast_b = [1]  
+    mult_A = repeat(A, product(broadcast_a))
+    mult_A.reshape(reshape_A)
+    mult_A = transpose(mult_A,transpose_A)
+    mult_B = repeat(B, product(broadcast_b))
+    mult_B.reshape(reshape_B)
+    mult_B = transpose(mult_B, transpose_B)
 
     if mult_A.shape != mult_B.shape:
         raise ValueError("Error: matrix dimension mismatch")
-    res_ = np.multiply(mult_A, mult_B)
-
-    # reduce the axis and find the final transpose for the output
+    res = eltwise_mult(mult_A, mult_B)
     sum_R = sorted(sums, reverse=True)
     for i in sum_R:
-        res_ = res_.sum(axis=i)
+        res = sum2(res, axis=i)
     transpose_res = [sorted(list(outputops)).index(x) for x in list(outputops)]
-    res_ = res_.transpose(transpose_res)
-    res = from_numpy(res_)
+    res = transpose(res, transpose_res)
+
     return res
+    
+
+
 
 def sum2(t, axis=None, out=None):
     '''Sum of tensor elements over given axis
@@ -1162,59 +1248,12 @@ def sum2(t, axis=None, out=None):
         return ret
 
 def repeat (t, repeats, axis = None):
-    t_ndim = t.ndim()
-    if isinstance(repeats, int):
-        if repeats < 0:
-            raise ValueError("'repeats' should not be negative: {}".format(repeats))
-        if axis != None and axis < 0:
-            axis += t_ndim
-        # broadcast = True
-        if axis == None:
-            axis = 9999
-            ret = Tensor()
-            ret.shape = (product(t.shape)*repeats,)
-            # Repeats = [repeats,]
-            ret.data = t.repeat_(repeats, axis)
-            # ret.data = t.data.Repeat(Repeats, axis)
-        elif axis >= 0:
-            ret = Tensor()
-            t_shape = list(t.shape)
-            t_shape[axis] = t.shape[axis]*repeats
-            print(t_shape)
-            ret.shape = tuple(t_shape)
-            print(ret.shape)
-            # Repeats = [repeats,]
-            ret.data = t.repeat_(repeats, axis)
-            # ret.data = t.data.Repeat(Repeats, axis)
-            print(ret.shape)
 
-    elif isinstance(repeats, tuple) or isinstance(repeats, list):
-        for rep in repeats:
-            if rep < 0:
-                raise ValueError("'repeats' should be int or sequence: {}".format(repeats))
-
-        if axis != None and axis < 0:
-            axis += t_ndim
-        if axis == None:
-            axis = 9999
-            ret = Tensor()
-            ret.shape = (sum(repeats), )
-            t_shape = list(t.shape)
-            ret.data = t.repeat_(repeats, axis)
-            #ret = t.data.Repeat(list(repeats), axis)
-            
-        elif axis >= 0:
-            ret = Tensor()
-            t_shape = list(t.shape)
-            t_shape[axis] = sum(repeats)
-            ret.shape = tuple(t_shape)
-            ret.data = t.repeat_(repeats, axis)
-            #ret = t.data.Repeat(list(repeats), axis)
-    else:
-        raise ValueError('repeats should be int or sequence')
+    ret = t.deepcopy()
+    ret.repeat(repeats,axis)
     return ret
-        
 
+        
 def tensordot (A,B,axes=2):
 
     """Returns the tensor multiplication of two tensors along specified axes.
@@ -1317,8 +1356,21 @@ def tensordot (A,B,axes=2):
     B_ = to_numpy(B)
     at_ = np.transpose(A_,newaxes_a).reshape(newshape_a)
     bt_ = np.transpose(B_,newaxes_b).reshape(newshape_b)
+    # print(at_)
+    # print(bt_)
     at = from_numpy(at_)
     bt = from_numpy(bt_)
+
+    # A = transpose(A, newaxes_a)
+    # B = transpose(B, newaxes_b)
+    # A = 
+    # at = Reshape(A, newshape_a)
+    # bt = Reshape(B, newshape_b)
+    # _at = to_numpy(at)
+    # _bt = to_numpy(bt)
+    # print(_at)
+    # print(_bt)
+
     res = mult(at,bt)
     if len(olda + oldb) == 0:
         olda = [1]
@@ -1326,7 +1378,7 @@ def tensordot (A,B,axes=2):
         res.reshape(tuple(olda + oldb))
     else:
         res.reshape(tuple(olda + oldb))
-    print(res.shape)
+    # print(res.shape)
     # res_ = np.dot(at_, bt_)
     # res = from_numpy(res_.reshape(olda + oldb))
     #reshape the result
