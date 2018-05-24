@@ -45,13 +45,12 @@ struct onePieceMsg{
     /*
      members: [ptr, size, MallocFree, idx]
      */
-    string ptr; //block_
-    string data_; //data_. //ch add data_ and change constructor
+    string ptr;
     size_t size;
     int MallocFree;
     int idx;
     double t;
-    onePieceMsg(string p, string d, size_t s, int M, int i):ptr(p),data_(d),size(s),MallocFree(M),idx(i){}
+    onePieceMsg(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
 };
 
 
@@ -127,35 +126,35 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
     for (int i=0;i<vec.size();i++) {
         vector<string> v = swap_split(vec[i], " ");
         if (v[0]=="Malloc"){
-            //ch change onePieceMsg
+            //change v[2] from str to size_t
             size_t result;
             stringstream convert(v[2]);
             if (!(convert>>result)){
                 result =-1;
                 cout<<"error for converting size from str to int."<<endl;
             }
-            onePieceMsg tempMsg(v[1],v[4],result, 1, i);
+            onePieceMsg tempMsg(v[1],result, 1, i);
             double tempTime;
             stringstream convert2(v[3]);
             convert2>>tempTime;
             tempMsg.t =tempTime;
             onePieceMsgVec_.push_back(tempMsg);
         }else if (v[0]=="Free"){
-            onePieceMsg tempMsg(v[1],v[3],-1, -1, i);
+            onePieceMsg tempMsg(v[1],-1, -1, i);
             double tempTime;
             stringstream convert2(v[2]);
             convert2>>tempTime;
             tempMsg.t =tempTime;
             onePieceMsgVec_.push_back(tempMsg);
         }else if (v[0]=="Mutable" or v[0]=="Read"){
-            onePieceMsg tempMsg(v[1],v[3],-1, 2, i);
+            onePieceMsg tempMsg(v[1],-1, 2, i);
             double tempTime;
             stringstream convert2(v[2]);
             convert2>>tempTime;
             tempMsg.t =tempTime;
             onePieceMsgVec_.push_back(tempMsg);
         }else if (v[0]=="Layer"){
-            onePieceMsg tempMsg(v[1],v[3],-1, 3, i);
+            onePieceMsg tempMsg(v[1],-1, 3, i);
             double tempTime;
             stringstream convert2(v[2]);
             convert2>>tempTime;
@@ -379,13 +378,13 @@ void load_update(vector<double>& vec_load,int old_idx, int plusMinus, size_t siz
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
   int idxRange =0;
-  vector<onePieceMsg> vec_pieceMsg = swap_strVec_2_pieceMsgVec(vec_block,idxRange); //ch done
+  vector<onePieceMsg> vec_pieceMsg = swap_strVec_2_pieceMsgVec(vec_block,idxRange);
   cout<<"size of vec_pieceMsg and vec_block are: "<<vec_pieceMsg.size()<<' '<<vec_block.size()<<endl;
   ///rep test
-  vector<size_t> vec_rep = Swap_piece2rep(vec_pieceMsg); //ch should no change
+  vector<size_t> vec_rep = Swap_piece2rep(vec_pieceMsg);
   //int idxRange3=0; //rename TODO
   //int maxLen=0, location =0;
-  repPatternDetector(vec_rep,maxLen,location); //ch should no change
+  repPatternDetector(vec_rep,maxLen,location);
   cout<<"maxLen and location are: "<<maxLen<<' '<<location<<endl;
   cout<<"test rep"<<endl;
   //Note here location not exactly start of one iteration, adjust to nearly start of one by restricting "Malloc"
@@ -402,7 +401,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"shift_counter is "<<shift_counter<<endl;
   cout<<"location changed to "<<location<<endl;
 
-  if (maxLen < 100) {return -1;} //return if maxLen < 100
+  if (maxLen<100) {return -1;}
   //TODO(junzhe) below belong to run() section
   ///cut into one iteration.
   sort(vec_pieceMsg.begin(),vec_pieceMsg.end(),less_than_Idx());
@@ -410,10 +409,10 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"time for one itr: "<<vec_run[vec_run.size()-1].t-vec_run[0].t<<endl;
   cout<<" to write vec_run for comparison, nothing wrong till here 5/13."<<endl;
    //print out push-info
-  fstream file_block2("vec_run.text", ios::in|ios::out|ios::app); //TODO(junzhe) debug only, can remove.
+  fstream file_block2("vec_run.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run.size();i++){
-    file_block2<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<' '<<vec_run[i].data_<<endl;
-  } //changed to print ptr and data_
+    file_block2<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<vec_run[i].t<<endl;
+  }
   //scale down idx
   for (int i=0; i<maxLen;i++){
       vec_run[i].idx = vec_run[i].idx - location;
@@ -427,7 +426,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
    cout<<" to write vec_run2 for comparison, nothing wrong till here 5/13."<<endl;
    //print out push-info
-  fstream file_block3("vec_run2.text", ios::in|ios::out|ios::app); //TODO(junzhe) debug only, can remove.
+  fstream file_block3("vec_run2.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run.size();i++){
     file_block3<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<vec_run[i].t<<endl;
   }
@@ -455,7 +454,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
           sumSizeSwapAble+=tempSwap.size;
           //onePairMsg_Swap(string p, size_t s, int i1, int i2, double t1, double t2): ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
 
-          cout<<"SwapItem: "<<tempSwap.ptr<<' '<<tempSwap.r_idx<<' '<<tempSwap.d_idx<<endl;
+          cout<<"SwapItem: "<<tempSwap.r_idx<<' '<<tempSwap.d_idx<<endl;
       } else {//cout<<endl;
           
       }
@@ -493,7 +492,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     for (int i =0; i<vec_swap_selct.size(); i++){
       if (i>0){
         //update for linked list 
-        vec_swap_selct[i].last_out_idx = vec_swap_selct[i-1].r_idx;
+        vec_swap_selct[i].last_out_idx = vec_swap_selct[i].r_idx;
       }
         int tempIdx=vec_swap_selct[i].r_idx;//idx ready to swapOut, pesudo code use time.
         if ((i>0) and (tempIdx<vec_swap_selct[i-1].i1p)){
@@ -602,8 +601,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       meta.last_out_idx = vec_swap_selct[i].last_out_idx;
       meta.last_in_idx = vec_swap_selct[i].last_in_idx;
       Table_meta[vec_swap_selct[i].r_idx] = meta;
-      cout<<"BlockMeta(r_idx,size,o,i) "<<vec_swap_selct[i].r_idx<<' '<<meta.size<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p;
-      cout<<" last_out and last_in: "<<meta.last_out_idx<<' '<<meta.last_out_idx<<endl;
+      cout<<"BlockMeta(r_idx,size,o,i) "<<vec_swap_selct[i].r_idx<<' '<<meta.size<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<endl;
     }
 
   return gc+maxLen-(gc-location)%maxLen;
@@ -766,13 +764,8 @@ void SwapGPU::Test_sched_switch_swap(){
         //cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
         //last_meta.block_->update_data(nullptr);
         Table_not_at_device[last_meta.block_] = last_out_idx;
-        cout<<"Created Table_not_at_device: "<<last_meta.block_<<' '<<last_out_idx<<endl;
         pool_->Free(last_meta.data_);
-        // cout<<"Freed meta.data, if its nullptr:";
-        // if (last_meta.data_ == nullptr){
-        //   cout<<"yes"<<endl;
-        // }
-        //last_meta.data_ = nullptr; //not really needed TODO(junzhe)
+        last_meta.data_ = nullptr; //not really needed TODO(junzhe)
       }
      
       SwapOut_idx(r_idx);
@@ -790,7 +783,7 @@ void SwapGPU::Test_sched_switch_swap(){
           //cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
           //last_meta.block_->update_data(last_meta.data_);
           //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_meta.find(r_idx)->second.last_in_idx<<endl;
-          //Table_not_at_device.erase(last_meta.block_); //TODO(junzhe) shall not remove
+          Table_not_at_device.erase(last_meta.block_);
         }
       }
       SwapIn_idx(r_idx);
@@ -809,9 +802,6 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   stringstream strm1;
   strm1<<size;
   string tempStr1 = strm1.str();
-  stringstream strm2;
-  strm2<<data_;
-  string tempStr2 = strm2.str();
   stringstream strm3;
   strm3<<block_;
   string tempStr3 = strm3.str();
@@ -820,27 +810,16 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   strm4<<t2;
   string tempStr4 = strm4.str();
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
-
-  Table_Append[tempStr3] = tempStr2;  //ch done. Table block_->data_ both in str.
   Append(blockInfo);
 
-  
   //Table_data_block_[data_] = block_;
   Table_block_data_[block_] = data_;
 }
 
 void SwapGPU::Append(string blockInfo){
-  
+  vec_block.push_back(blockInfo);
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
-  //ch  add data_ at last, keep block at second.
-  vector<string> v = swap_split(blockInfo, " ");
-  if (Table_Append.find(v[1])==Table_Append.end()){
-      cout<<"not in Append"<<endl;
-  }  
-  auto data_str = Table_Append.find(v[1])->second;
-  string new_str = blockInfo + ' ' + data_str;
-  vec_block.push_back(new_str);
-  //ch verify at last
+  //vC12 part
   if (maxLen > 100) {
     int r_gc = (gc-location)%maxLen;
 
@@ -875,7 +854,7 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
 
   //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
 
-  //Table_not_at_device.erase(reading_meta.block_); //TODO(junzhe) shall not remove
+  Table_not_at_device.erase(reading_meta.block_);
 
   return nullptr; //TODO(junzhe) attention, based on no change here.
 }
@@ -892,8 +871,7 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   cout<<"right after cudaMemcpyAsync"<<endl;
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cout<<"To update_data swap for (Out) "<<r_idx<<" "<<meta.block_<<" 0"<<endl;
-  meta.block_->update_data(nullptr); //mark nullptr here; no need to update meta.data_
-  Table_new_data_[meta.data_] = nullptr;
+  meta.block_->update_data(nullptr); //TODO(junzhe) debug only, not the right place to update.
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
   //cudaEventSynchronize(event1);
   //auto t4 = (std::chrono::system_clock::now()).time_since_epoch().count();
@@ -913,10 +891,6 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //cout<<"expected results update_data:: "<<meta.block_<<" "<<ptr<<endl;
   //cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
   //void* to_rm_ptr = meta.data_;
-  if (Table_new_data_.find(meta.data_) == Table_new_data_.end()){
-    cout<<"error in Table_new_data_ update"<<endl;
-  }
-  Table_new_data_.find(meta.data_)->second = ptr;
   meta.data_ = ptr;
   cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
@@ -924,7 +898,6 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cout<<"right after cudaMemcpyAsync"<<endl;
   cout<<"To update_data swap for (In)"<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
   meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
-
   
 
   // if (tempCounter <3){

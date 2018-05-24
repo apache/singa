@@ -283,13 +283,12 @@ class SwapGPU : public Device {
   map<void*, const Block*>Table_data_block_;
   map<const Block*, void*>Table_block_data_;
   map<const Block*, int>Table_not_at_device;  //int refers to its r_idx of the block/meta
-  map<string, string>Table_Append;  //Block_ -> data_ for Append, all in string
-  map<void*, void*>Table_new_data_; //old data_ ptr to new data_
+
   //schedule: idx--> r_idx,size,dir. int 0 means D2H, 1 means H2D.
   map<int,std::tuple<int,size_t,int>>Table_sched; 
 
   //vec_block
-  vector<string>vec_block;
+  vector<string> vec_block;
 
   int asyncSwapFlag = 0; //0 for sync, 1 for async.
   int testFlag = 0; //0 means open for test, 1 means no need test anymore.
