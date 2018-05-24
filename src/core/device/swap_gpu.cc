@@ -466,7 +466,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"============== select top a few to swap"<<endl;
   cout<<"maxIdx and maxLoad are: "<<maxIdx<<' '<<maxLoad<<endl;
   cout<<"sumSizeSwapAble: "<<sumSizeSwapAble<<endl;
-  size_t memLimit = 15000000; //changed from 20 to 15
+  size_t memLimit = 10000000; //changed from 20 to 15, 10
   sort(vec_swap.begin(),vec_swap.end(),less_than_pri());
   vector<onePairMsg_Swap>vec_swap_selct;
   size_t sumSizeToSwap=0;
@@ -601,7 +601,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       meta.last_out_idx = vec_swap_selct[i].last_out_idx;
       meta.last_in_idx = vec_swap_selct[i].last_in_idx;
       Table_meta[vec_swap_selct[i].r_idx] = meta;
-      cout<<"BlockMeta(r_idx,size,o,i) "<<vec_swap_selct[i].r_idx<<' '<<meta.size<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<endl;
+      cout<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<meta.size;
+      cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].last_out_idx<<' '<<vec_swap_selct[i].last_in_idx<<endl;
     }
 
   return gc+maxLen-(gc-location)%maxLen;
