@@ -130,7 +130,7 @@ def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
         dev = device.get_default_device()
     else:
         print('Using GPU')
-        dev = device.create_cuda_gpu_on(0)
+        dev = device.create_cuda_gpu_on(1)
 
     net.to_device(dev)
     opt = optimizer.SGD(momentum=0.9, weight_decay=weight_decay)
