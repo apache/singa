@@ -701,7 +701,7 @@ void* SwapGPU::Malloc(int size) {
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
-  cout<<"malloc done"<<endl;
+  //cout<<"malloc done"<<endl;
   return ptr;
 }
 
@@ -849,9 +849,9 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
   auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cudaEventSynchronize(reading_meta.in_event);
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
-  cout<<"To update_data swap for (In) "<<Table_not_at_device.find(block_)->second<<" "<<reading_meta.data_<<" 0"<<endl;
-  reading_meta.block_->update_data(reading_meta.data_);
+  //cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
+  //cout<<"To update_data swap for (In) "<<Table_not_at_device.find(block_)->second<<" "<<reading_meta.data_<<" 0"<<endl;
+  //reading_meta.block_->update_data(reading_meta.data_);
 
   //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
 
@@ -897,7 +897,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
   cudaEventRecord(meta.in_event,meta.in_stream);
   cout<<"right after cudaMemcpyAsync"<<endl;
-  cout<<"To update_data swap for (In)"<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
+  cout<<"To update_data swap for (In) "<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
   meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
   
 
