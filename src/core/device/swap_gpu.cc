@@ -492,7 +492,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     for (int i =0; i<vec_swap_selct.size(); i++){
       if (i>0){
         //update for linked list 
-        vec_swap_selct[i].last_out_idx = vec_swap_selct[i].r_idx;
+        vec_swap_selct[i-1].last_out_idx = vec_swap_selct[i].r_idx;
       }
         int tempIdx=vec_swap_selct[i].r_idx;//idx ready to swapOut, pesudo code use time.
         if ((i>0) and (tempIdx<vec_swap_selct[i-1].i1p)){
@@ -602,7 +602,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       meta.last_in_idx = vec_swap_selct[i].last_in_idx;
       Table_meta[vec_swap_selct[i].r_idx] = meta;
       cout<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<meta.size;
-      cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].last_out_idx<<' '<<vec_swap_selct[i].last_in_idx<<endl;
+      cout<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].last_out_idx<<' '<<vec_swap_selct[i].last_in_idx<<endl;
     }
 
   return gc+maxLen-(gc-location)%maxLen;
