@@ -492,7 +492,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     for (int i =0; i<vec_swap_selct.size(); i++){
       if (i>0){
         //update for linked list 
-        vec_swap_selct[i-1].last_out_idx = vec_swap_selct[i].r_idx;
+        vec_swap_selct[i].last_out_idx = vec_swap_selct[i-1].r_idx;
       }
         int tempIdx=vec_swap_selct[i].r_idx;//idx ready to swapOut, pesudo code use time.
         if ((i>0) and (tempIdx<vec_swap_selct[i-1].i1p)){
@@ -523,8 +523,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
             vec_swap_selct[i].i1p = tempIdx;//Note: here i1' is immediately at Malloc/Free.
             load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
         }
-        cout<<"old_idx and i1p: "<<old_idx<<' '<<tempIdx<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_run[old_idx].MallocFree<<" overhead "<<overhead<<endl;
-        cout<<"--------------size: "<<vec_swap_selct[i].size<<endl;
+        //cout<<"old_idx and i1p: "<<old_idx<<' '<<tempIdx<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_run[old_idx].MallocFree<<" overhead "<<overhead<<endl;
+        //cout<<"--------------size: "<<vec_swap_selct[i].size<<endl;
     } //for loop
     //cout<<"total overhead: "<<overhead<<endl;
     ///update swap-in index
