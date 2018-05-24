@@ -81,6 +81,7 @@ const void* Block::data() const {
 
     if (data_ == nullptr) {
       //cout<<"to sleep"<<endl;
+      cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
       auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
       cout<<"slept to get data_ updated"<<endl;
     }
