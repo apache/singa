@@ -838,7 +838,7 @@ void SwapGPU::Append(string blockInfo){
       //Table_data_block_.erase(ptr);
     }
   }
-
+  cout<<gc<<' '<<blockInfo<<endl;
   gc++;
 
 }
