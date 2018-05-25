@@ -839,6 +839,12 @@ void SwapGPU::Append(string blockInfo){
       //Table_data_block_.erase(ptr);
     }
   }
+  fstream file_block5("append.text", ios::in|ios::out|ios::app);
+  if (maxLen>100){
+    file_block5<<blockInfo<<' '<<(gc-1247)%612<<endl;
+  } else {
+    file_block5<<blockInfo<<' '<<(gc-1247)%612<<endl;
+  }
 
   gc++;
 
