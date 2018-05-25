@@ -590,7 +590,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       //TODO(junzhe) to verify above statement.
       Table_sched[vec_swap_selct[i].i1] = std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0);
       Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
-
+      //TODO(junzhe) looks size is not correct.
       cout<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 0'<<endl;
       cout<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 1'<<endl;
       void* tempPtr = nullptr;
@@ -753,6 +753,7 @@ void SwapGPU::Test_sched_switch_swap(){
   int relative_gc = (gc-location)%maxLen; //verified
   //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   if ((asyncSwapFlag == 1) && (!(Table_sched.find((gc-location)%maxLen) == Table_sched.end()))){
+    cout<<"scheduled swap: "<<(gc-location)%maxLen<<' '<<std::get<0>(Table_sched.find((gc-location)%maxLen)->second;
     //cout<<"std::get<2>(Table_sched.find((gc-location)%maxLen)->second) "<<std::get<2>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
     if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
