@@ -730,7 +730,7 @@ void* SwapGPU::Malloc(int size) {
 void SwapGPU::Free(void* ptr) {
 
   Test_sched_switch_swap();
-  //cout<<"free after test"<<endl;
+  cout<<"free after test"<<endl;
 
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
