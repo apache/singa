@@ -608,7 +608,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       fstream file_block7("sched.text", ios::in|ios::out|ios::app);
       file_block7<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 0'<<endl;
       file_block7<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 1'<<endl;
-      file_block7<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].ptr;
+      file_block7<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].ptr<<endl;
     }
 
   return gc+maxLen-(gc-location)%maxLen;
