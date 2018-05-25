@@ -489,6 +489,13 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     ///update swap-out idx
     //t1 and t1', i1 and i1', sort by r_idx.
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap());
+    //print only 
+    cout<<"print sorted slect blocks--------r_idx, d_idx, ptr"
+    for (int i =0; i<vec_swap_selct.size(); i++){
+      auto itm = vec_swap_selct[i]
+      cout<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.ptr<<endl;
+    }
+
     for (int i =0; i<vec_swap_selct.size(); i++){
       cout<<"Out sched r_idx,1,1p"<<vec_swap_selct[i].r_idx<<' ';
       if (i>0){
@@ -925,7 +932,6 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //   tempCounter++;
   //   cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
   // }
-  //std::this_thread::sleep_for(std::chrono::milliseconds(100));
   //auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
 }
