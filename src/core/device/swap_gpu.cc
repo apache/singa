@@ -490,6 +490,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     //t1 and t1', i1 and i1', sort by r_idx.
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap());
     for (int i =0; i<vec_swap_selct.size(); i++){
+      cout<<"Out sched r_idx,1,1p"<<vec_swap_selct[i].r_idx<<' ';
       if (i>0){
         //update for linked list 
         vec_swap_selct[i].last_out_idx = vec_swap_selct[i-1].r_idx;
@@ -523,6 +524,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
             vec_swap_selct[i].i1p = tempIdx;//Note: here i1' is immediately at Malloc/Free.
             load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
         }
+        cout<<vec_swap_selct[i].i1<<' 'vec_swap_selct[i].i1p<<endl;
         //cout<<"old_idx and i1p: "<<old_idx<<' '<<tempIdx<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_run[old_idx].MallocFree<<" overhead "<<overhead<<endl;
         //cout<<"--------------size: "<<vec_swap_selct[i].size<<endl;
     } //for loop
@@ -532,6 +534,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
     ///step 1: overlap with next swapIn.
     for (int i =0; i<vec_swap_selct.size(); i++){
+      cout<<"In sched r_idx,2p,2"<<vec_swap_selct[i].r_idx<<' ';
       if (i<(vec_swap_selct.size()-1)){
         //update for linked list 
         vec_swap_selct[i].last_in_idx = vec_swap_selct[i+1].r_idx;
@@ -553,8 +556,11 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         }
         vec_swap_selct[i].i2p = tempIdx;
         vec_swap_selct[i].t2p = tempTime; //Note here use tempTime
+      cout<<vec_swap_selct[i].i2p<<' 'vec_swap_selct[i].i2<<endl;
     }
     
+    cout<<"==== below update i2p ====="<<endl;
+
     ///step 2: change i2p to load exceeds limit, with overhead.
     //verify TODO(junzhe)
     for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
@@ -606,8 +612,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       cout<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<meta.size;
       cout<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].last_out_idx<<' '<<vec_swap_selct[i].last_in_idx<<endl;
       fstream file_block7("sched.text", ios::in|ios::out|ios::app);
-      file_block7<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 0'<<endl;
-      file_block7<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 1'<<endl;
+      file_block7<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<" 0"<<endl;
+      file_block7<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<" 1"<<endl;
       file_block7<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].ptr<<endl;
     }
 
@@ -744,6 +750,7 @@ void SwapGPU::Test_sched_switch_swap(){
     cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
     cout<<"size of Table_meta: "<<Table_meta.size()<<endl;
     cout<<"impt numbers: "<<maxLen<<' '<<location<<' '<<globeCounter<<endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
    }
  }
 
