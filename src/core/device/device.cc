@@ -68,8 +68,8 @@ void Device::RepeatDataToFrom(Block* dst, Block* src, size_t nBytes,
                               CopyDirection direct, bool broadcast_flag, 
                               int axis_shape, int shape_outer, int chunk, 
                               vector<size_t> repeats, int dst_offset, int src_offset) {
-  const char *src_data = reinterpret_cast<const char*>(src->data()) + dst_offset;
-  char *dst_data = reinterpret_cast<char*>(dst->mutable_data()) + src_offset;
+  const char *src_data = reinterpret_cast<const char*>(src->data()) + src_offset;
+  char *dst_data = reinterpret_cast<char*>(dst->mutable_data()) + dst_offset;
 
   for (int i = 0; i < shape_outer; i++) {
     for (int j = 0; j < axis_shape; j++) {

@@ -208,8 +208,6 @@ class TestTensorMethods(unittest.TestCase):
         ta_repeat2 = tensor.repeat(ta, 4, axis = 1)
         a_repeat2 = np.repeat(a, 4, axis = 1)
         Ta_repeat2 = tensor.to_numpy(ta_repeat2)
-        # print(Ta_repeat2)
-        # print(a_repeat2)
 
         self.assertAlmostEqual(np.sum(Ta_repeat1 - a_repeat1), 0., places=3)
         self.assertAlmostEqual(np.sum(Ta_repeat2 - a_repeat2), 0., places=3)

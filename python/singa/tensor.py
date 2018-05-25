@@ -271,24 +271,18 @@ class Tensor(object):
         return _call_singa_func(self.data.Clone)
 
     def repeat(self, repeats, axis):
-        # ret = CTensor()
-        # if isinstance(repeats, int):
-        #     if axis == 9999:
-        #         Repeats = [repeats,]
-        #         ret = self.data.Repeat(Repeats, axis)
-        #     else:
-        #         Repeats = [repeats,]
-        #         ret = self.data.Repeat(Repeats, axis)
-            
+        '''Repeat data of a tensor 
 
-        # elif isinstance(repeats, tuple) or isinstance(repeats, list):
-        #     if axis == 9999:
-        #         ret = self.data.Repeat(list(repeats), axis)
+        Args:
+            repeats(int or a sequence): the number that the tensor need to repeat for
+            axis (int):the axis to do repeat
+                       If it is None, then the repeated tensor will be flattened.If it isn't None,
+                       the repeats could be sequence, but it's size should match the axis's shape
 
-        #     elif axis >= 0:
-        #         ret = self.data.Repeat(list(repeats), axis)
-        # return ret
-
+        Return:
+            the tensor which has been repeated
+        
+        '''
         t_ndim = self.ndim()
         if isinstance(repeats, int) or isinstance(repeats, long):
             if repeats < 0:
@@ -1144,26 +1138,6 @@ def einsum(ops, *args):
     reshape_A = list(A.shape) + broadcast_a
     reshape_B = list(B.shape) + broadcast_b
 
-    # A_ = to_numpy(A)
-    # B_ = to_numpy(B)
-
-    # mult_A = np.repeat(A_, np.product(broadcast_a)).reshape(
-    #     reshape_A).transpose(transpose_A)
-    # mult_B = np.repeat(B_, np.product(broadcast_b)).reshape(
-    #     reshape_B).transpose(transpose_B)
-
-    # if mult_A.shape != mult_B.shape:
-    #     raise ValueError("Error: matrix dimension mismatch")
-    # res_ = np.multiply(mult_A, mult_B)
-
-    # reduce the axis and find the final transpose for the output
-    # sum_R = sorted(sums, reverse=True)
-    # for i in sum_R:
-    #     res_ = res_.sum(axis=i)
-    # transpose_res = [sorted(list(outputops)).index(x) for x in list(outputops)]
-    # res_ = res_.transpose(transpose_res)
-    # res = from_numpy(res_)
-    # return res
     if len(broadcast_a) == 0:
         broadcast_a = [1]
     if len(broadcast_b) == 0:
@@ -1352,24 +1326,19 @@ def tensordot (A,B,axes=2):
     newshape_b = (N2, N1)
     oldb = [b_shape[axis] for axis in notin]
     # do transpose and reshape to get the 2D matrix to do multiplication
-    A_ = to_numpy(A)
-    B_ = to_numpy(B)
-    at_ = np.transpose(A_,newaxes_a).reshape(newshape_a)
-    bt_ = np.transpose(B_,newaxes_b).reshape(newshape_b)
-    # print(at_)
-    # print(bt_)
-    at = from_numpy(at_)
-    bt = from_numpy(bt_)
+    # A_ = to_numpy(A)
+    # B_ = to_numpy(B)
+    # at_ = np.transpose(A_,newaxes_a).reshape(newshape_a)
+    # bt_ = np.transpose(B_,newaxes_b).reshape(newshape_b)
+    # at = from_numpy(at_)
+    # bt = from_numpy(bt_)
 
-    # A = transpose(A, newaxes_a)
-    # B = transpose(B, newaxes_b)
-    # A = 
-    # at = Reshape(A, newshape_a)
-    # bt = Reshape(B, newshape_b)
-    # _at = to_numpy(at)
-    # _bt = to_numpy(bt)
-    # print(_at)
-    # print(_bt)
+    A = transpose(A, newaxes_a)
+    B = transpose(B, newaxes_b)
+    A = add(A, 0)
+    B = add(B, 0)
+    at = Reshape(A, newshape_a)
+    bt = Reshape(B, newshape_b)
 
     res = mult(at,bt)
     if len(olda + oldb) == 0:
@@ -1378,10 +1347,7 @@ def tensordot (A,B,axes=2):
         res.reshape(tuple(olda + oldb))
     else:
         res.reshape(tuple(olda + oldb))
-    # print(res.shape)
-    # res_ = np.dot(at_, bt_)
-    # res = from_numpy(res_.reshape(olda + oldb))
-    #reshape the result
+
     return res
 
 def div(lhs, rhs, ret=None):
