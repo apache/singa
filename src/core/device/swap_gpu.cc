@@ -569,25 +569,26 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     cout<<"==== below update i2p ====="<<endl;
 
     ///step 2: change i2p to load exceeds limit, with overhead.
-    //verify TODO(junzhe)
-    for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
-        old_idx = vec_swap_selct[i].i2p;
-        load_update(vec_load,vec_swap_selct[i].i2p, 1,vec_swap_selct[i].size);
-        old_idx = load_over_limit(vec_load,memLimit,old_idx);
-        if (old_idx< vec_run.size()) {
-            while (vec_load[old_idx]>memLimit){
-                old_idx++;
-            }
-            //restore the update if there is over the limit
-            load_update(vec_load,vec_swap_selct[i].i2p,-1,vec_swap_selct[i].size);
-            //reapply to the just nice idx.
-            load_update(vec_load,old_idx,1,vec_swap_selct[i].size);
-            vec_swap_selct[i].i2p = old_idx;
-            overhead+=(vec_run[old_idx].t-vec_swap_selct[i].t2p);
-            //cout<<"overhead "<<vec_run[old_idx].t-vec_swap_selct[i].t2p<<endl;
-        }
-        cout<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2<<endl;
-    }
+    // TODO(junzhe) Here got problem, to follow up here.
+
+    // for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
+    //     old_idx = vec_swap_selct[i].i2p;
+    //     load_update(vec_load,vec_swap_selct[i].i2p, 1,vec_swap_selct[i].size);
+    //     old_idx = load_over_limit(vec_load,memLimit,old_idx);
+    //     if (old_idx< vec_run.size()) {
+    //         while (vec_load[old_idx]>memLimit){
+    //             old_idx++;
+    //         }
+    //         //restore the update if there is over the limit
+    //         load_update(vec_load,vec_swap_selct[i].i2p,-1,vec_swap_selct[i].size);
+    //         //reapply to the just nice idx.
+    //         load_update(vec_load,old_idx,1,vec_swap_selct[i].size);
+    //         vec_swap_selct[i].i2p = old_idx;
+    //         overhead+=(vec_run[old_idx].t-vec_swap_selct[i].t2p);
+    //         //cout<<"overhead "<<vec_run[old_idx].t-vec_swap_selct[i].t2p<<endl;
+    //     }
+    //     cout<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2<<endl;
+    // }
     //step 3: overhead due to potential overlapping. verify
     cout<<"verify if self overlapping"<<endl;
     for (int i =0; i<vec_swap_selct.size(); i++){
