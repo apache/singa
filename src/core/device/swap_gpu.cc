@@ -834,7 +834,7 @@ void SwapGPU::Test_sched_switch_swap(){
     //last_meta.block_->update_data(nullptr);
     Table_not_at_device[last_meta.block_] = last_out_r_idx; //TODO(junzhe) seems not needed
     pool_->Free(last_meta.data_);
-    last_meta.data_ = nullptr; //not really needed TODO(junzhe)
+    last_meta.data_ = nullptr; // not really needed TODO(junzhe)
     cout<<"scheduled swap: gc and r_idx (sync last) "<<(gc-location)%maxLen<<' '<<last_out_compl<<endl;
 
 
