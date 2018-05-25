@@ -490,7 +490,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     //t1 and t1', i1 and i1', sort by r_idx.
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap());
     //print only 
-    cout<<"print sorted slect blocks--------r_idx, d_idx, ptr"
+    cout<<"print sorted slect blocks--------r_idx, d_idx, ptr"<<endl;
     for (int i =0; i<vec_swap_selct.size(); i++){
       auto itm = vec_swap_selct[i]
       cout<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.ptr<<endl;
