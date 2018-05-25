@@ -235,7 +235,8 @@ struct BlockMeta{
     cudaStream_t out_stream;
     cudaStream_t in_stream; 
     int last_out_idx;
-    int last_in_idx;   
+    int last_in_idx;
+    int i2; // those last_in_idx = 0   
     //BlockMeta(Block* b, void* d, void* c, size_t s): block_(b), data_(d), cpu_ptr(c), size(s) {}
 };
 /// Device able to Swap memory between Nvidia GPU and Swap
@@ -296,8 +297,11 @@ class SwapGPU : public Device {
   int globeCounter = -1;
   int maxLen = 0;
   int location = 0;
+  int last_out_compl = 0; //used to synchronize last sent out block for each iteration.
+  int last_out_flag = 0;  //1 means not need to sync, 0 means synced.
+  int last_out_r_idx = 0;
 
-  int tempCounter = 0; //temp counter, to control # blocks to swap for debug purpose.
+  //int tempCounter = 0; //temp counter, to control # blocks to swap for debug purpose.
 
  private:
   shared_ptr<DeviceMemPool> pool_;

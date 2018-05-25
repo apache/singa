@@ -617,6 +617,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       meta.in_stream = stream2;
       meta.last_out_idx = vec_swap_selct[i].last_out_idx;
       meta.last_in_idx = vec_swap_selct[i].last_in_idx;
+      meta.i2 = vec_swap_selct[i].i2;
       Table_meta[vec_swap_selct[i].r_idx] = meta;
       cout<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<meta.size;
       cout<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].last_out_idx<<' '<<vec_swap_selct[i].last_in_idx<<endl;
@@ -730,7 +731,7 @@ void* SwapGPU::Malloc(int size) {
 void SwapGPU::Free(void* ptr) {
 
   Test_sched_switch_swap();
-  cout<<"free after test"<<endl;
+  //cout<<"free after test"<<endl;
 
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
@@ -740,7 +741,7 @@ void SwapGPU::Free(void* ptr) {
   // //vC12
   // Table_block_data_.erase(Table_data_block_.find(ptr)->second);
   // Table_data_block_.erase(ptr);
-  cout<<"free done"<<endl;
+  //cout<<"free done"<<endl;
  
 }
 
@@ -773,8 +774,7 @@ void SwapGPU::Test_sched_switch_swap(){
   int relative_gc = (gc-location)%maxLen; //verified
   //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   if ((asyncSwapFlag == 1) && (!(Table_sched.find((gc-location)%maxLen) == Table_sched.end()))){
-    cout<<"scheduled swap: "<<(gc-location)%maxLen<<' '<<std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
-    //cout<<"std::get<2>(Table_sched.find((gc-location)%maxLen)->second) "<<std::get<2>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
+    cout<<"scheduled swap: gc and r_idx "<<(gc-location)%maxLen<<' '<<std::get<0>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
     if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
 
@@ -790,10 +790,18 @@ void SwapGPU::Test_sched_switch_swap(){
         Table_not_at_device[last_meta.block_] = last_out_idx;
         pool_->Free(last_meta.data_);
         last_meta.data_ = nullptr; //not really needed TODO(junzhe)
+        cout<<"sync out "<<last_in_idx<<endl;
+      }
+      if (Table_meta.find(r_idx)->second.last_in_idx == 0){
+        //to sync last out item assume last out first in. TODO(junzhe)
+        last_out_flag = 1;
+        last_out_r_idx = r_idx;
+        last_out_compl = Table_meta.find(r_idx)->second.i2;
+        cout<<" very last out item, r_idx and i2 "<<r_idx<<' '<<last_out_compl<<endl;
       }
      
       SwapOut_idx(r_idx);
-      cout<<"swapOut - print from Malloc"<<endl;
+      cout<<"swapOut done"<<endl;
     } else {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
       if (Table_meta.find(r_idx)->second.last_in_idx != 0) {
@@ -811,8 +819,25 @@ void SwapGPU::Test_sched_switch_swap(){
         }
       }
       SwapIn_idx(r_idx);
-      cout<<"swapIn - print from Malloc"<<endl;
+      cout<<"swapIn done"<<endl;
     }
+  }
+  //sync last out item
+  if ((asyncSwapFlag == 1) && (relative_gc >= last_out_compl) && (last_out_flag == 1)){
+    last_out_flag = 0;
+    last_out_compl = 0; // above 2 can merge
+    auto last_meta = Table_meta.find(last_out_r_idx)->second;
+    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    cudaEventSynchronize(last_meta.in_event);
+    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    //cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
+    //last_meta.block_->update_data(nullptr);
+    Table_not_at_device[last_meta.block_] = last_out_r_idx; //TODO(junzhe) seems not needed
+    pool_->Free(last_meta.data_);
+    last_meta.data_ = nullptr; //not really needed TODO(junzhe)
+    cout<<"scheduled swap: gc and r_idx (sync last) "<<(gc-location)%maxLen<<' '<<last_out_compl<<endl;
+
+
   }
 
 }
@@ -927,7 +952,9 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cout<<"To update_data swap for (In) "<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
   meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
   
-
+  if (meta.last_in_idx == 0){
+    last_out_flag = 1;
+  }
   // if (tempCounter <3){
   //   meta.block_->update_data(meta.data_);
   //   pool_->Free(to_rm_ptr);

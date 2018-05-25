@@ -57,7 +57,7 @@ void Device::FreeBlock(Block* block) {
     auto tempPtr = block->mutable_data();
     cout<<"FreeBlock: "<<block<<' '<<tempPtr<<endl;
     Free(tempPtr);
-    cout<<"SwapGPU::Free() returned"<<endl;
+    //cout<<"SwapGPU::Free() returned"<<endl;
     //Free(block->mutable_data());
     
     //Add Append for free here.
