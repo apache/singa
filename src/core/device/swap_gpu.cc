@@ -790,7 +790,7 @@ void SwapGPU::Test_sched_switch_swap(){
         Table_not_at_device[last_meta.block_] = last_out_idx;
         pool_->Free(last_meta.data_);
         last_meta.data_ = nullptr; //not really needed TODO(junzhe)
-        cout<<"sync out "<<last_in_idx<<endl;
+        cout<<"sync out "<<last_out_idx<<endl;
       }
       if (Table_meta.find(r_idx)->second.last_in_idx == 0){
         //to sync last out item assume last out first in. TODO(junzhe)
