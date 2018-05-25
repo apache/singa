@@ -497,7 +497,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     }
 
     for (int i =0; i<vec_swap_selct.size(); i++){
-      cout<<"Out sched r_idx,1,1p"<<vec_swap_selct[i].r_idx<<' ';
+      cout<<"Out sched r_idx,1,1p "<<vec_swap_selct[i].r_idx<<' ';
       if (i>0){
         //update for linked list 
         vec_swap_selct[i].last_out_idx = vec_swap_selct[i-1].r_idx;
@@ -541,7 +541,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
     ///step 1: overlap with next swapIn.
     for (int i =0; i<vec_swap_selct.size(); i++){
-      cout<<"In sched r_idx,2p,2"<<vec_swap_selct[i].r_idx<<' ';
+      cout<<"In sched r_idx,2p "<<vec_swap_selct[i].r_idx<<' ';
       if (i<(vec_swap_selct.size()-1)){
         //update for linked list 
         vec_swap_selct[i].last_in_idx = vec_swap_selct[i+1].r_idx;
@@ -586,6 +586,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
             overhead+=(vec_run[old_idx].t-vec_swap_selct[i].t2p);
             //cout<<"overhead "<<vec_run[old_idx].t-vec_swap_selct[i].t2p<<endl;
         }
+        cout<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2<<endl;
     }
     //step 3: overhead due to potential overlapping. verify
     cout<<"verify if self overlapping"<<endl;
