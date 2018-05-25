@@ -524,7 +524,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
             vec_swap_selct[i].i1p = tempIdx;//Note: here i1' is immediately at Malloc/Free.
             load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
         }
-        cout<<vec_swap_selct[i].i1<<' 'vec_swap_selct[i].i1p<<endl;
+        cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
         //cout<<"old_idx and i1p: "<<old_idx<<' '<<tempIdx<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_run[old_idx].MallocFree<<" overhead "<<overhead<<endl;
         //cout<<"--------------size: "<<vec_swap_selct[i].size<<endl;
     } //for loop
@@ -556,7 +556,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         }
         vec_swap_selct[i].i2p = tempIdx;
         vec_swap_selct[i].t2p = tempTime; //Note here use tempTime
-      cout<<vec_swap_selct[i].i2p<<' 'vec_swap_selct[i].i2<<endl;
+      cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2<<endl;
     }
     
     cout<<"==== below update i2p ====="<<endl;
