@@ -492,7 +492,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     //print only 
     cout<<"print sorted slect blocks--------r_idx, d_idx, ptr"<<endl;
     for (int i =0; i<vec_swap_selct.size(); i++){
-      auto itm = vec_swap_selct[i]
+      auto itm = vec_swap_selct[i];
       cout<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.ptr<<endl;
     }
 
