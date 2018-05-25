@@ -582,7 +582,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     cout<<"total overhead: "<<overhead<<endl;
     cout<<"done"<<endl;
     ///make the Table_sched
-    //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
+    cout<<"map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D."<<endl;
     cudaStream_t stream1;
     cudaStream_t stream2;
     for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
@@ -591,6 +591,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       Table_sched[vec_swap_selct[i].i1] = std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0);
       Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
 
+      cout<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 0'<<endl;
+      cout<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 1'<<endl;
       void* tempPtr = nullptr;
       cudaMallocHost(&tempPtr,vec_swap_selct[i].size); //pinned memory.
       BlockMeta meta;
@@ -839,12 +841,9 @@ void SwapGPU::Append(string blockInfo){
       //Table_data_block_.erase(ptr);
     }
   }
+
   fstream file_block5("append.text", ios::in|ios::out|ios::app);
-  if (maxLen>100){
-    file_block5<<blockInfo<<' '<<(gc-1247)%612<<endl;
-  } else {
-    file_block5<<blockInfo<<' '<<(gc-1247)%612<<endl;
-  }
+  file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
 
   gc++;
 
