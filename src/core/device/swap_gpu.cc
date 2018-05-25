@@ -759,7 +759,7 @@ void SwapGPU::Test_sched_switch_swap(){
     cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
     cout<<"size of Table_meta: "<<Table_meta.size()<<endl;
     cout<<"impt numbers: "<<maxLen<<' '<<location<<' '<<globeCounter<<endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    //std::this_thread::sleep_for(std::chrono::milliseconds(5000));
    }
  }
 
