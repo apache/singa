@@ -447,7 +447,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       //condition for selecting condidates: 3->2, cross peak
       //from LayerAppend (3) - r_idx, to next read/write (2, and 4) - d_idx
       if ((vec_run[i-1].idx<maxIdx) && (vec_run[i].idx>maxIdx) && (vec_run[i-1].ptr ==vec_run[i].ptr) 
-        && (vec_run[i-1].MallocFree==3)&&((vec_run[i].MallocFree==2) or (vec_run[i].MallocFree==2)){
+        && (vec_run[i-1].MallocFree==3) && ((vec_run[i].MallocFree==2) or (vec_run[i].MallocFree==2))){
           //cout<<' '<<"selected"<<endl;
           onePairMsg_Swap tempSwap(vec_run[i].ptr,vec_run[i].size,vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
           //tempSwap.dt_o = tempSwap.d_time-tempSwap.r_time;
