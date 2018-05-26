@@ -120,8 +120,9 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
      convert vector of string into vector of onePieceMsg, sorted by ptr and then idx, and update idxRange to pieceMsgVec size.
      format of onePieceMsg [ptr, size/-1, flag, idx, timestamp]
      flag: 1 for malloc, -1 for free, 2 for mutable/read, 3 for layer
+     changed to on 5/26 TODO(junzhe): 1 for malloc, -1 for free, 2 for read, 3 for layer,4 for mutable
      */
-    
+    //TODO(junzhe) below can be lean.
     vector<onePieceMsg>onePieceMsgVec_;
     for (int i=0;i<vec.size();i++) {
         vector<string> v = swap_split(vec[i], " ");
@@ -146,7 +147,14 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
             convert2>>tempTime;
             tempMsg.t =tempTime;
             onePieceMsgVec_.push_back(tempMsg);
-        }else if (v[0]=="Mutable" or v[0]=="Read"){
+        }else if (v[0]=="Mutable"){
+            onePieceMsg tempMsg(v[1],-1, 4, i);
+            double tempTime;
+            stringstream convert2(v[2]);
+            convert2>>tempTime;
+            tempMsg.t =tempTime;
+            onePieceMsgVec_.push_back(tempMsg);
+        }else if (v[0]=="Read"){
             onePieceMsg tempMsg(v[1],-1, 2, i);
             double tempTime;
             stringstream convert2(v[2]);
@@ -437,8 +445,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   for (int i =1; i<vec_run.size(); i++){
       //cout<<vec_run[i-1].ptr<<' '<<vec_run[i-1].idx<<' '<<vec_run[i-1].MallocFree<<' '<<vec_run[i-1].size;
       //condition for selecting condidates: 3->2, cross peak
-      //from LayerAppend (3) - r_idx, to next read/write (2) - d_idx
-      if ((vec_run[i-1].idx<maxIdx) && (vec_run[i].idx>maxIdx) && (vec_run[i-1].ptr ==vec_run[i].ptr) && (vec_run[i-1].MallocFree==3)&&(vec_run[i].MallocFree==2)){
+      //from LayerAppend (3) - r_idx, to next read/write (2, and 4) - d_idx
+      if ((vec_run[i-1].idx<maxIdx) && (vec_run[i].idx>maxIdx) && (vec_run[i-1].ptr ==vec_run[i].ptr) 
+        && (vec_run[i-1].MallocFree==3)&&((vec_run[i].MallocFree==2) or (vec_run[i].MallocFree==2)){
           //cout<<' '<<"selected"<<endl;
           onePairMsg_Swap tempSwap(vec_run[i].ptr,vec_run[i].size,vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
           //tempSwap.dt_o = tempSwap.d_time-tempSwap.r_time;

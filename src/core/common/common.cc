@@ -42,22 +42,13 @@ void* Block::mutable_data() {
       string temp = "Mutable "+tempStr2+" "+tempStr4;   
       ptrDevice_->AppendInfo(temp);
     }
-
+    //TODO(junzhe) this should not happen, can verify and remove
     if (data_ == nullptr) {
       //cout<<"to sleep"<<endl;
       cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
       auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
       cout<<"slept to get data_ updated: "<<this<<' '<<data_<<endl;
     }
-    //data_ = ptrDevice_->GetRealGpuPtrInfo(this);
-    //ptrDevice_->SwapOutInfo(this);
-    //ptrDevice_->SwapInInfo(this);
-    //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
-
-    // std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
-    // auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
-    // auto temp2 = ptrDevice_->GetRealGpuPtr(this);
-    // std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<' '<<temp2<<std::endl;
 
     return static_cast<char*>(data_) + offset_;
   }
@@ -79,33 +70,14 @@ const void* Block::data() const {
       ptrDevice_->AppendInfo(temp);
     }
 
+    //TODO(junzhe) this should not happen, can verify and remove
     if (data_ == nullptr) {
       //cout<<"to sleep"<<endl;
       cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
       auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
       cout<<"slept to get data_ updated"<<endl;
     }
-    //test async, with size 13107200.
-    // if (size_ ==13107200){
-    //     std::cout<<"swap testing: to swap with size 13107200"<<std::endl;
-    //     ptrDevice_->SwapOutInfo(this);
-    //     std::cout<<"done"<<std::endl;
-    // }
-    //update the real ptr, not able to assign to data_ as const function
-    //void* data_2 = ptrDevice_->GetRealGpuPtrInfo(this);
-    //TODO(junzhe) used for testing phase only.
-    //ptrDevice_->SwapOutInfo(this);
-    //ptrDevice_->SwapInInfo(this);
-    //
-    //std::cout<<"data_ vs new ptr "<<data_<<' '<<ptrDevice_->GetRealGpuPtrInfo(this)<<std::endl;
-    //static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
-
-    // std::cout<<"-------NOTE: from common.cc, data_, block_, Device_ "<<data_<<" "<<this<<" "<<ptrDevice_<<std::endl;
-    // auto temp = ptrDevice_->GetRealGpuPtrInfo(this);
-    // auto temp2 = ptrDevice_->GetRealGpuPtr(this);
-    // std::cout<<"=======NOTE:  ptrDevice_->GetRealGpuPtrInfo(this) is here:      "<<temp<<' '<<temp2<<std::endl;
-    //CHECK_EQ(data_,ptrDevice_->GetRealGpuPtrInfo(this));
-    //return static_cast<char*>(ptrDevice_->GetRealGpuPtrInfo(this)) + offset_;
+    
     return static_cast<char*>(data_) + offset_;
   }
 
