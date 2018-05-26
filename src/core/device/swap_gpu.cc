@@ -419,7 +419,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
    //print out push-info
   fstream file_block2("vec_run.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run.size();i++){
-    file_block2<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<vec_run[i].t<<endl;
+    file_block2<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<endl;
   }
   //scale down idx
   for (int i=0; i<maxLen;i++){
