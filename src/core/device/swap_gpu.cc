@@ -436,9 +436,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
    //print out push-info
   fstream file_block3("vec_run.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run.size();i++){
-    vector<string> v_temp = swap_split(blockInfo, " ");
     void* b_temp;
-    stringstream convert(v_temp[1]);
+    stringstream convert(vec_run[i].ptr);
     convert>>b_temp;
     file_block3<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<' '<<(static_cast<Block*>(b_temp))->size()<<endl;
   }
