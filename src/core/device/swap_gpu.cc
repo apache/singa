@@ -899,12 +899,12 @@ void SwapGPU::Append(string blockInfo){
 
   //Append size_t of the block
   vector<string> v_temp = swap_split(blockInfo, " ");
-  Block* b_temp;
+  void* b_temp;
   stringstream convert(v_temp[1]);
   convert>>b_temp;
 
   fstream file_block5("append.text", ios::in|ios::out|ios::app);
-  file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<b_temp->size()<<endl;
+  file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<(static_cast<Block*>(b_temp))->size()<<endl;
 
   gc++;
 
