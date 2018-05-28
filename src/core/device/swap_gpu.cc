@@ -877,7 +877,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 void SwapGPU::Append(string blockInfo){
   vec_block.push_back(blockInfo);
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
-  //vC12 part
+
   if (maxLen > 100) {
     cout<<gc<<' '<<(gc-location)%maxLen<<' '<<blockInfo<<endl;
     int r_gc = (gc-location)%maxLen;
@@ -897,8 +897,14 @@ void SwapGPU::Append(string blockInfo){
     }
   }
 
+  //Append size_t of the block
+  vector<string> v_temp = swap_split(blockInfo, " ");
+  Block* b_temp;
+  stringstream convert(v_temp[1]);
+  convert>>b_temp;
+
   fstream file_block5("append.text", ios::in|ios::out|ios::app);
-  file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
+  file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<b_temp->size()<<endl;
 
   gc++;
 
