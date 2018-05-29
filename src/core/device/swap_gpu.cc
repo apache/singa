@@ -157,15 +157,6 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
  
     sort(onePieceMsgVec_.begin(),onePieceMsgVec_.end(),less_than_ptrIdx());
     idxRange = static_cast<int>(onePieceMsgVec_.size());
-    // ///add size for non-malloc block info
-    // size_t tempSize=0;
-    // for (int i=0;i<onePieceMsgVec_.size();i++){
-    //     if (onePieceMsgVec_[i].MallocFree==1){
-    //         tempSize = onePieceMsgVec_[i].size;
-    //     } else {
-    //         onePieceMsgVec_[i].size = tempSize;
-    //     }
-    // }
 
     return onePieceMsgVec_;
 }// end of strVec_2_pieceMsgVec function
@@ -396,13 +387,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   sort(vec_pieceMsg.begin(),vec_pieceMsg.end(),less_than_Idx());
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+maxLen]);
   cout<<"time for one itr: "<<vec_run[vec_run.size()-1].t-vec_run[0].t<<endl;
-  cout<<" to write vec_run for comparison, nothing wrong till here 5/13."<<endl;
-   //print out push-info
-  // fstream file_block2("vec_run.text", ios::in|ios::out|ios::app);
-  // for (int i = 0; i<vec_run.size();i++){
-  //   file_block2<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<endl;
-  // }
-  //scale down idx
+  // scale down idx
   for (int i=0; i<maxLen;i++){
       vec_run[i].idx = vec_run[i].idx - location;
   }
@@ -414,13 +399,14 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   //sort by ptr & idx
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
    cout<<" to write vec_run2 for comparison, nothing wrong till here 5/13."<<endl;
-   //print out push-info
+   //print out push-info, using vec_block instead. should be the same.
   fstream file_block3("vec_run.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run.size();i++){
-    void* b_temp;
-    stringstream convert(vec_run[i].ptr);
-    convert>>b_temp;
-    file_block3<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<' '<<(static_cast<Block*>(b_temp))->size()<<endl;
+    // void* b_temp;
+    // stringstream convert(vec_run[i].ptr);
+    // convert>>b_temp;
+    //file_block3<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<' '<<(static_cast<Block*>(b_temp))->size()<<endl;
+    file_block3<<i<<' '<<vec_block[i+location]<<endl;
   }
   vector<onePairMsg_Swap>vec_swap;
   size_t sumSizeSwapAble =0;
