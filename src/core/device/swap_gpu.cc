@@ -858,7 +858,7 @@ void SwapGPU::Append(string blockInfo){
     }
   }
   cout<<blockInfo<<endl;
-  cout<<static_cast<Block*>(block_temp))->size()<<endl;
+  cout<<(static_cast<Block*>(block_temp))->size()<<endl;
   cout<<"load: "<<global_load[-1]<<" len of blockInfo and global_load "<<vec_block.size()<<' '<<global_load.size()<<endl;
 
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
