@@ -25,6 +25,7 @@
 #include <thread>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include <string>
 #include <tuple>        // std::tuple, std::get, std::tie, std::ignore
 #include "singa/core/device.h"
@@ -739,6 +740,7 @@ void SwapGPU::Test_sched_switch_swap(){
     cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
     cout<<"size of Table_meta: "<<Table_meta.size()<<endl;
     cout<<"impt numbers: "<<maxLen<<' '<<location<<' '<<globeCounter<<endl;
+    cout<<"print max global_load: "<<global_load.size()<<' '<<max_element(global_load.begin(),global_load.end())<<endl;
     //std::this_thread::sleep_for(std::chrono::milliseconds(5000));
    }
  }
@@ -845,23 +847,36 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 }
 
 void SwapGPU::Append(string blockInfo){
+  // update global_load and blockInfo with size
   vector<string> v = swap_split(blockInfo, " ");
-  if (v.size() != 4) {
+  void* block_temp;
+  if (v[0] == "Malloc") {
     // malloc : flag, block_, size, t
     // others: insert size t.
-    void* block_temp;
     stringstream convert(v[1]);
     convert>>block_temp;
     stringstream strm1;
     strm1<<(static_cast<Block*>(block_temp))->size();
     string tempStr1 = strm1.str();
     blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
+    if (maxLen <= 100) {
+      global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+    }
+  } else if (v[0] == "Free") {
+    if (maxLen <= 100) {
+      global_load.push_back(global_load[-1]-(static_cast<Block*>(block_temp))->size());
+    }
+  } else {
+    if (maxLen <= 100) {
+      global_load.push_back(global_load[-1]);
+    }
   }
 
   vec_block.push_back(blockInfo);
-  fstream file_block5("append.text", ios::in|ios::out|ios::app);
-  file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
 
+  // fstream file_block5("append.text", ios::in|ios::out|ios::app);
+  // file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
+  // update Table_meta
   if (maxLen > 100) {
     cout<<gc<<' '<<(gc-location)%maxLen<<' '<<blockInfo<<endl;
     int r_gc = (gc-location)%maxLen;
@@ -945,12 +960,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   if (meta.last_in_idx == 0){
     last_out_flag = 1;
   }
-  // if (tempCounter <3){
-  //   meta.block_->update_data(meta.data_);
-  //   pool_->Free(to_rm_ptr);
-  //   tempCounter++;
-  //   cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
-  // }
+
   //auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
 }
