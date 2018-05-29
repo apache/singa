@@ -850,23 +850,25 @@ void SwapGPU::Append(string blockInfo){
   // update global_load and blockInfo with size
   vector<string> v = swap_split(blockInfo, " ");
   void* block_temp;
+  stringstream convert(v[1]);
+  convert>>block_temp;
+  stringstream strm1;
+  strm1<<(static_cast<Block*>(block_temp))->size();
+  string tempStr1 = strm1.str();
+  
   if (v[0] == "Malloc") {
     // malloc : flag, block_, size, t
     // others: insert size t.
-    stringstream convert(v[1]);
-    convert>>block_temp;
-    stringstream strm1;
-    strm1<<(static_cast<Block*>(block_temp))->size();
-    string tempStr1 = strm1.str();
-    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
     if (maxLen <= 100) {
       global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
     }
   } else if (v[0] == "Free") {
+    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
     if (maxLen <= 100) {
       global_load.push_back(global_load[-1]-(static_cast<Block*>(block_temp))->size());
     }
   } else {
+    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
     if (maxLen <= 100) {
       global_load.push_back(global_load[-1]);
     }
