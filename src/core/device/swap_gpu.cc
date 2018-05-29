@@ -847,19 +847,19 @@ void SwapGPU::Append(string blockInfo){
   if (maxLen < 100){
     if (v[0] == "Malloc"){
       if (global_load.size()>0){
-        global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+        global_load.push_back(global_load[global_load.size()-1]+(static_cast<Block*>(block_temp))->size());
       } else {
         global_load.push_back((static_cast<Block*>(block_temp))->size());
       }
     } else if (v[0] == "Free"){
-      global_load.push_back(global_load[-1]-(static_cast<Block*>(block_temp))->size());
+      global_load.push_back(global_load[global_load.size()-1]-(static_cast<Block*>(block_temp))->size());
     } else {
-      global_load.push_back(global_load[-1]);
+      global_load.push_back(global_load[global_load.size()-1]);
     }
   }
   cout<<blockInfo<<endl;
   cout<<(static_cast<Block*>(block_temp))->size()<<endl;
-  cout<<"load: "<<global_load[-1]<<" len of blockInfo and global_load "<<vec_block.size()<<' '<<global_load.size()<<endl;
+  cout<<"load: "<<global_load[global_load.size()-1]<<" len of blockInfo and global_load "<<vec_block.size()<<' '<<global_load.size()<<endl;
 
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   vec_block.push_back(blockInfo);
