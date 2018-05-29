@@ -878,15 +878,28 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 }
 
 void SwapGPU::Append(string blockInfo){
+  vector<string> v = swap_split(blockInfo, " ");
+  if (v.size() != 4) {
+    // malloc : flag, block_, size, t
+    // others: insert size t.
+    void* block_temp;
+    stringstream convert(v[1]);
+    convert>>block_temp;
+    stringstream strm1;
+    strm1<<(static_cast<Block*>(block_temp))->size();
+    string tempStr1 = strm1.str();
+    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr + ' ' + v[2];
+  }
+
   vec_block.push_back(blockInfo);
-  //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
+  fstream file_block5("append.text", ios::in|ios::out|ios::app);
+  file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
 
   if (maxLen > 100) {
     cout<<gc<<' '<<(gc-location)%maxLen<<' '<<blockInfo<<endl;
     int r_gc = (gc-location)%maxLen;
 
     if (!(Table_meta.find(r_gc)==Table_meta.end())){
-      vector<string> v = swap_split(blockInfo, " ");
       void* result;
       stringstream convert(v[1]);
       convert>>result;
@@ -900,15 +913,7 @@ void SwapGPU::Append(string blockInfo){
     }
   }
 
-  //Append size_t of the block
-  vector<string> v_temp = swap_split(blockInfo, " ");
-  void* b_temp;
-  stringstream convert(v_temp[1]);
-  convert>>b_temp;
-
-  fstream file_block5("append.text", ios::in|ios::out|ios::app);
-  file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<' '<<(static_cast<Block*>(b_temp))->size()<<endl;
-
+  //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
   gc++;
 
 }
