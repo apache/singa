@@ -376,7 +376,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   vector<double>vec_load(&global_load[location],&global_load[location+maxLen]);
   for (int i=0; i<vec_run.size(); i++){
     if (maxLoad<vec_load[i]){
-      maxLoad = vec_load[i]
+      maxLoad = vec_load[i];
       maxIdx = i;
     } 
   }
