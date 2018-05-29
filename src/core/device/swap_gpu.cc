@@ -888,7 +888,7 @@ void SwapGPU::Append(string blockInfo){
     stringstream strm1;
     strm1<<(static_cast<Block*>(block_temp))->size();
     string tempStr1 = strm1.str();
-    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr + ' ' + v[2];
+    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
   }
 
   vec_block.push_back(blockInfo);
