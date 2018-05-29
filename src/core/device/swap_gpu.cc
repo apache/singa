@@ -724,7 +724,7 @@ void SwapGPU::Test_sched_switch_swap(){
     cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
     cout<<"size of Table_meta: "<<Table_meta.size()<<endl;
     cout<<"impt numbers: "<<maxLen<<' '<<location<<' '<<globeCounter<<endl;
-    //std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    
    }
  }
 
@@ -857,7 +857,8 @@ void SwapGPU::Append(string blockInfo){
       global_load.push_back(global_load[-1]);
     }
   }
-
+  cout<<"load: "<<global_load[-1]<<endl;
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   vec_block.push_back(blockInfo);
   // fstream file_block5("append.text", ios::in|ios::out|ios::app);
   // file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
