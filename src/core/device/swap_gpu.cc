@@ -846,17 +846,26 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 
 void SwapGPU::Append(string blockInfo){
   vector<string> v = swap_split(blockInfo, " ");
+  void* block_temp;
+  stringstream convert(v[1]);
+  convert>>block_temp;
+  stringstream strm1;
+  //global_load.push_back((static_cast<Block*>(block_temp))->size());
   if (v.size() != 4) {
     // malloc : flag, block_, size, t
     // others: insert size t.
-    void* block_temp;
-    stringstream convert(v[1]);
-    convert>>block_temp;
-    stringstream strm1;
     strm1<<(static_cast<Block*>(block_temp))->size();
     string tempStr1 = strm1.str();
     blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
-    global_load.push_back((static_cast<Block*>(block_temp))->size());
+  }
+  if (maxLen < 100){
+    if (v[0] == "Malloc"){
+      global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+    } else if (v[0] == "Free"){
+      global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+    } else {
+      global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+    }
   }
 
   vec_block.push_back(blockInfo);
