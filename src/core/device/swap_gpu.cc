@@ -25,6 +25,8 @@
 #include <thread>
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <algorithm>
 #include <string>
 #include <tuple>        // std::tuple, std::get, std::tie, std::ignore
 #include "singa/core/device.h"
@@ -229,22 +231,17 @@ vector<double> compute_peak(vector<onePieceMsg> vec_run, int& max_Idx, size_t& m
     int maxIdx =0;
     size_t maxLoad =0;
     size_t load=0;
-    vector<double>vec_load;
+    vector<double>vec_load_total(&global_load[location],&global_load[location+maxLen]);
     for (int i=0; i<vec_run.size(); i++){
-        if(vec_run[i].MallocFree==1){
-            load=load+vec_run[i].size;
-        }else if (vec_run[i].MallocFree==-1){
-            load=load-vec_run[i].size; //TODO(junzhe) size
-        }
-        if (maxLoad<load){
-            maxLoad =load;
-            maxIdx = i;
-        }
-        vec_load.push_back(load);
+      if (maxLoad<vec_load_total[i]){
+        maxLoad = vec_load_total[i]
+        maxIdx = i;
+      } 
     }
     max_Idx = maxIdx;
     max_Load = maxLoad;
-    return vec_load;
+
+    return vec_load_total;
 }
 
 int SwapInTime(size_t size){
@@ -850,7 +847,7 @@ void SwapGPU::Append(string blockInfo){
   stringstream convert(v[1]);
   convert>>block_temp;
   stringstream strm1;
-  //global_load.push_back((static_cast<Block*>(block_temp))->size());
+  // insert size
   if (v.size() != 4) {
     // malloc : flag, block_, size, t
     // others: insert size t.
@@ -858,7 +855,7 @@ void SwapGPU::Append(string blockInfo){
     string tempStr1 = strm1.str();
     blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
   }
-
+  // update global load
   if (maxLen < 100){
     if (v[0] == "Malloc"){
       if (global_load.size()>0){
@@ -867,16 +864,16 @@ void SwapGPU::Append(string blockInfo){
         global_load.push_back((static_cast<Block*>(block_temp))->size());
       }
     } else if (v[0] == "Free"){
-      global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+      global_load.push_back(global_load[-1]-(static_cast<Block*>(block_temp))->size());
     } else {
-      global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+      global_load.push_back(global_load[-1]);
     }
   }
 
   vec_block.push_back(blockInfo);
-  fstream file_block5("append.text", ios::in|ios::out|ios::app);
-  file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
-
+  // fstream file_block5("append.text", ios::in|ios::out|ios::app);
+  // file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
+  // update Table_meta's block_
   if (maxLen > 100) {
     cout<<gc<<' '<<(gc-location)%maxLen<<' '<<blockInfo<<endl;
     int r_gc = (gc-location)%maxLen;
