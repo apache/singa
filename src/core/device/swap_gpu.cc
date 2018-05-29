@@ -740,7 +740,7 @@ void SwapGPU::Test_sched_switch_swap(){
     cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
     cout<<"size of Table_meta: "<<Table_meta.size()<<endl;
     cout<<"impt numbers: "<<maxLen<<' '<<location<<' '<<globeCounter<<endl;
-    cout<<max_element(global_load.begin(),global_load.end())<<endl;
+    //cout<<max_element(global_load.begin(),global_load.end())<<endl; TODO(junzhe) to verify value
     //std::this_thread::sleep_for(std::chrono::milliseconds(5000));
    }
  }
