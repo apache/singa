@@ -293,7 +293,7 @@ class SwapGPU : public Device {
   vector<string> vec_block;
 
   //global_load before maxLen > 100
-  vector<size_t>global_load;
+  vector<int>global_load;
 
   int asyncSwapFlag = 0; //0 for sync, 1 for async.
   int testFlag = 0; //0 means open for test, 1 means no need test anymore.
