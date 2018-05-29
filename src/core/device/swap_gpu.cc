@@ -226,24 +226,6 @@ struct less_than_Idx{
     }
 };
 
-vector<double> compute_peak(vector<onePieceMsg> vec_run, int& max_Idx, size_t& max_Load ){
-    //sort by idx
-    int maxIdx =0;
-    size_t maxLoad =0;
-    size_t load=0;
-    vector<double>vec_load_total(&global_load[location],&global_load[location+maxLen]);
-    for (int i=0; i<vec_run.size(); i++){
-      if (maxLoad<vec_load_total[i]){
-        maxLoad = vec_load_total[i]
-        maxIdx = i;
-      } 
-    }
-    max_Idx = maxIdx;
-    max_Load = maxLoad;
-
-    return vec_load_total;
-}
-
 int SwapInTime(size_t size){
     //yet to get the formula
     int ans =0; //TODO(junzhe) used to be 0.13 --> 0.26 (unpinned vs pinned)
@@ -388,10 +370,16 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   for (int i=0; i<maxLen;i++){
       vec_run[i].idx = vec_run[i].idx - location;
   }
-  ///get peak and idx
-  int maxIdx =0;
-  size_t maxLoad =0;
-  vector<double>vec_load = compute_peak(vec_run, maxIdx, maxLoad);//no longer valid here.
+  ///get peak and idx of vec_load, udpated with global_load
+  int maxIdx = 0;
+  size_t maxLoad = 0;
+  vector<double>vec_load(&global_load[location],&global_load[location+maxLen]);
+  for (int i=0; i<vec_run.size(); i++){
+    if (maxLoad<vec_load_total[i]){
+      maxLoad = vec_load_total[i]
+      maxIdx = i;
+    } 
+  }
 
   //sort by ptr & idx
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
