@@ -861,7 +861,7 @@ void SwapGPU::Append(string blockInfo){
   cout<<(static_cast<Block*>(block_temp))->size()<<endl;
   cout<<"load: "<<global_load[global_load.size()-1]<<" len of blockInfo and global_load "<<vec_block.size()<<' '<<global_load.size()<<endl;
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   vec_block.push_back(blockInfo);
   // fstream file_block5("append.text", ios::in|ios::out|ios::app);
   // file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
