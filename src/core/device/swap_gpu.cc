@@ -858,15 +858,20 @@ void SwapGPU::Append(string blockInfo){
     string tempStr1 = strm1.str();
     blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
   }
-  // if (maxLen < 100){
-  //   if (v[0] == "Malloc"){
-  //     global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
-  //   } else if (v[0] == "Free"){
-  //     global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
-  //   } else {
-  //     global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
-  //   }
-  // }
+
+  if (maxLen < 100){
+    if (v[0] == "Malloc"){
+      if (global_load.size()>0){
+        global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+      } else {
+        global_load.push_back((static_cast<Block*>(block_temp))->size());
+      }
+    } else if (v[0] == "Free"){
+      global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+    } else {
+      global_load.push_back(global_load[-1]+(static_cast<Block*>(block_temp))->size());
+    }
+  }
 
   vec_block.push_back(blockInfo);
   fstream file_block5("append.text", ios::in|ios::out|ios::app);
