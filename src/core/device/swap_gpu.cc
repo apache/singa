@@ -124,67 +124,48 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
      */
     //TODO(junzhe) below can be lean.
     vector<onePieceMsg>onePieceMsgVec_;
+    // version on 5/29, with equval blockInfo length: flag, block_, size, t
+
     for (int i=0;i<vec.size();i++) {
-        vector<string> v = swap_split(vec[i], " ");
-        if (v[0]=="Malloc"){
-            //change v[2] from str to size_t
-            size_t result;
-            stringstream convert(v[2]);
-            if (!(convert>>result)){
-                result =-1;
-                cout<<"error for converting size from str to int."<<endl;
-            }
-            onePieceMsg tempMsg(v[1],result, 1, i);
-            double tempTime;
-            stringstream convert2(v[3]);
-            convert2>>tempTime;
-            tempMsg.t =tempTime;
-            onePieceMsgVec_.push_back(tempMsg);
-        }else if (v[0]=="Free"){
-            onePieceMsg tempMsg(v[1],-1, -1, i);
-            double tempTime;
-            stringstream convert2(v[2]);
-            convert2>>tempTime;
-            tempMsg.t =tempTime;
-            onePieceMsgVec_.push_back(tempMsg);
-        }else if (v[0]=="Mutable"){
-            onePieceMsg tempMsg(v[1],-1, 4, i);
-            double tempTime;
-            stringstream convert2(v[2]);
-            convert2>>tempTime;
-            tempMsg.t =tempTime;
-            onePieceMsgVec_.push_back(tempMsg);
-        }else if (v[0]=="Read"){
-            onePieceMsg tempMsg(v[1],-1, 2, i);
-            double tempTime;
-            stringstream convert2(v[2]);
-            convert2>>tempTime;
-            tempMsg.t =tempTime;
-            onePieceMsgVec_.push_back(tempMsg);
-        }else if (v[0]=="Layer"){
-            onePieceMsg tempMsg(v[1],-1, 3, i);
-            double tempTime;
-            stringstream convert2(v[2]);
-            convert2>>tempTime;
-            tempMsg.t =tempTime;
-            onePieceMsgVec_.push_back(tempMsg);
-        } else{
-            cout<<"error for process the onePriceMsg."<<endl;
-            cout<<vec[i]<<endl;
-        }
+      vector<string> v = swap_split(vec[i], " ");
+      int MallocFree;
+      if (v[0]=="Malloc"){
+        MallocFree = 1;
+      }else if (v[0]=="Free"){
+        MallocFree = -1;
+      }else if (v[0]=="Mutable"){
+        MallocFree = 4;
+      }else if (v[0]=="Read"){ 
+        MallocFree = 2;
+      }else if (v[0]=="Layer"){
+        MallocFree = 3;
+      }
+      //onePieceMsg(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
+      size_t result;
+      stringstream convert(v[2]);
+      if (!(convert>>result)){
+          result =-1;
+          cout<<"error for converting size from str to int."<<endl;
+      }
+      onePieceMsg tempMsg(v[1],result, MallocFree, i);
+      double tempTime;
+      stringstream convert2(v[3]);
+      convert2>>tempTime;
+      tempMsg.t =tempTime;
+      onePieceMsgVec_.push_back(tempMsg);
     }
-    
+ 
     sort(onePieceMsgVec_.begin(),onePieceMsgVec_.end(),less_than_ptrIdx());
     idxRange = static_cast<int>(onePieceMsgVec_.size());
-    ///add size for non-malloc block info
-    size_t tempSize=0;
-    for (int i=0;i<onePieceMsgVec_.size();i++){
-        if (onePieceMsgVec_[i].MallocFree==1){
-            tempSize = onePieceMsgVec_[i].size;
-        } else {
-            onePieceMsgVec_[i].size = tempSize;
-        }
-    }
+    // ///add size for non-malloc block info
+    // size_t tempSize=0;
+    // for (int i=0;i<onePieceMsgVec_.size();i++){
+    //     if (onePieceMsgVec_[i].MallocFree==1){
+    //         tempSize = onePieceMsgVec_[i].size;
+    //     } else {
+    //         onePieceMsgVec_[i].size = tempSize;
+    //     }
+    // }
 
     return onePieceMsgVec_;
 }// end of strVec_2_pieceMsgVec function
