@@ -64,29 +64,6 @@ void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
       {src}, {dst});
 }
 
-void Device::RepeatDataToFrom(Block* dst, Block* src, size_t nBytes,
-                              CopyDirection direct, bool broadcast_flag, 
-                              int axis_shape, int shape_outer, int chunk, 
-                              vector<size_t> repeats, int dst_offset, int src_offset) {
-  const char *src_data = reinterpret_cast<const char*>(src->data()) + src_offset;
-  char *dst_data = reinterpret_cast<char*>(dst->mutable_data()) + dst_offset;
-
-  for (int i = 0; i < shape_outer; i++) {
-    for (int j = 0; j < axis_shape; j++) {
-      int temp = broadcast_flag ? repeats[0] : repeats[j];
-      for (int k = 0; k < temp; k++) {
-        this->Exec(
-            [this, dst_data, src_data, direct, chunk, repeats](Context* ctx) {
-              this->CopyToFrom(dst_data, src_data, chunk, direct, ctx);
-            },
-            {src}, {dst});
-        dst_data += chunk;
-      }
-      src_data += chunk;
-    }
-  }
-}
-
 void Device::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
                                  size_t dst_offset) {
   auto direct = lang_ == kCpp ? kHostToHost : kHostToDevice;

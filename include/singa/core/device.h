@@ -75,11 +75,6 @@ class Device {
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                       CopyDirection direction, int dst_offset, int src_offset);
 
-  virtual void RepeatDataToFrom(Block* dst, Block* src, size_t nBytes,
-                                CopyDirection direct, bool broadcast_flag, 
-                                int axis_shape, int shape_outer, int chunk, 
-                                vector<size_t> repeats, int dst_offset, int src_offset);
-
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
                            size_t dst_offset = 0);
   /// Submit the operation to the device, which may execute it right now or

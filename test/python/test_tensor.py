@@ -212,19 +212,19 @@ class TestTensorMethods(unittest.TestCase):
         self.assertAlmostEqual(np.sum(Ta_repeat1 - a_repeat1), 0., places=3)
         self.assertAlmostEqual(np.sum(Ta_repeat2 - a_repeat2), 0., places=3)
 
-    def test_sum2(self):
+    def test_sum(self):
         a = np.array([1.1,1.1,1.1,1.1,1.4,1.3,1.1,1.6,1.1,1.1,1.1,1.2])
         a = np.reshape(a,(2,3,2))
         ta = tensor.from_numpy(a)
 
         a_sum0 = np.sum(a)
-        ta_sum0 = tensor.sum2(ta)
+        ta_sum0 = tensor.sum(ta)
         Ta_sum0 = tensor.to_numpy(ta_sum0)
         a_sum1 = np.sum(a, axis = 1)
-        ta_sum1 = tensor.sum2(ta, axis = 1)
+        ta_sum1 = tensor.sum(ta, axis = 1)
         Ta_sum1 = tensor.to_numpy(ta_sum1)
         a_sum2 = np.sum(a, axis = 2)
-        ta_sum2 = tensor.sum2(ta, axis = 2)
+        ta_sum2 = tensor.sum(ta, axis = 2)
         Ta_sum2 = tensor.to_numpy(ta_sum2)
 
         self.assertAlmostEqual(np.sum(a_sum0 - Ta_sum0), 0., places=3)

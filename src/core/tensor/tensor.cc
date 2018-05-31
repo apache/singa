@@ -124,12 +124,7 @@ void Tensor::ResetLike(const Tensor &in) {
   strides_ = in.strides_;
 }
 
-// if tensor is not transposed yet i.e strides == 1,
-// then we simply change the shape and generate new default strides
-// if tensor is already transposed i.e strides != 1,
-// it should be copied to a new tensor with newly generated default strides
-// TODO(wangwei) raise error if the shape not match
-void Tensor::Reshape(const Shape &shape) {
+Tensor Tensor::Reshape(const Shape &shape) {
   if (strides_.size() == 0)
     strides_.push_back(1);
 
@@ -137,14 +132,27 @@ void Tensor::Reshape(const Shape &shape) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+    shape_ = shape;
+    generate_strides();
+    return *this;
+
   } else if (transpose()) {
-    LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
-  }
+    Tensor t(shape_, device_, data_type_);
+    t.block_ = t.device()->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+    singa::Transform(*this, &t);
+    t.shape_ = shape;
+    return t;
+ }
+
   shape_ = shape;
   generate_strides();
+  Tensor t(shape, device_, data_type_);
+  t.block_ = block_;
+  t.block_->IncRefCount();
+  return t;
 }
 
-void Tensor::Reshape(Shape &&shape) {
+Tensor Tensor::Reshape(Shape &&shape) {
   if (strides_.size() == 0)
     strides_.push_back(1);
 
@@ -152,11 +160,24 @@ void Tensor::Reshape(Shape &&shape) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+    shape_ = std::move(shape);
+    generate_strides();
+    return *this;
+
   } else if (transpose()) {
-    LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
-  }
-  shape_ = std::move(shape);
+    Tensor t(shape_, device_, data_type_);
+    t.block_ = t.device()->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+    singa::Transform(*this, &t);
+    t.shape_ = shape;
+    return t;
+ }
+
+  shape_ = shape;
   generate_strides();
+  Tensor t(shape, device_, data_type_);
+  t.block_ = block_;
+  t.block_->IncRefCount();
+  return t;
 }
 
 void Tensor::AsType(const DataType type) {
@@ -226,7 +247,7 @@ void Tensor::RepeatData(vector<size_t> repeats, int axis, int total_repeats, con
   CHECK(block_ != nullptr);
   // Do repeat only if the src's block is already initialized.
   if (src.block_ != nullptr) {
-    singa::RepeatDataToFrom(false, repeats, axis, this, src, Size(), 0, 0);
+    singa::RepeatDataToFrom(false, repeats, axis, this, src, Size());
   }
 }
 
@@ -234,10 +255,9 @@ void Tensor::FromProto(const singa::TensorProto &proto) {
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
   block_ = nullptr;
-  Shape shape;
-  for (uint32_t s : proto.shape()) shape.push_back(s);
+  for (uint32_t s : proto.shape()) shape_.push_back(s);
   data_type_ = proto.data_type();
-  Reshape(shape);
+  block_ = device_->NewBlock((int)(Product(shape()) * SizeOf(data_type_)));
   //transpose_ = proto.transpose();
   strides_.clear();
   for (int32_t s : proto.strides()) strides_.push_back(s);
@@ -477,13 +497,13 @@ Tensor &Tensor::operator=(Tensor &&in) {
 //yisen todo
 Tensor Reshape(const Tensor &in, const Shape &s) {
   Tensor out(in);
-  out.Reshape(s);
+  out = out.Reshape(s);
   return out;
 }
 
 Tensor Reshape(const Tensor &in, Shape &&s) {
   Tensor out(in);
-  out.Reshape(std::move(s));
+  out = out.Reshape(std::move(s));
   return out;
 }
 
@@ -542,12 +562,10 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
 }
 
 void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis, 
-                      Tensor *dst, const Tensor &src, const size_t num, 
-                      const size_t dst_offset, const size_t src_offset) {
+                      Tensor *dst, const Tensor &src, const size_t num) {
   if (repeats.size() == 1) {
     broadcast_flag = true;
-  }
-  if (repeats.size() > 1) {
+  } else if (repeats.size() > 1) {
     if (axis == Noaxis) {
       LOG(FATAL) << "When repeats parameter is sequence, axis cannot be None";
     }
@@ -557,9 +575,7 @@ void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
   }
   auto width = SizeOf(src.data_type());
   CHECK_EQ(width, SizeOf(dst->data_type()));
-  size_t nBytes = num * width;
-  auto d_offset = dst_offset * width;
-  auto s_offset = src_offset * width;
+  // size_t nBytes = num * width;
   int chunk = width;
   int axis_shape = 1;
   int shape_outer = 1;
@@ -575,26 +591,34 @@ void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
       chunk *= src.shape()[i];
     }
   }
-  
+  int dst_offset = 0;
+  int src_offset = 0;
   std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
   Block *from = src.block(), *to = dst->block();
-  if (dst_dev->lang() != src_dev->lang()) {
-    // let the none cpp device conduct copy op
-    if (dst_dev->lang() == kCpp) {
-      src_dev->RepeatDataToFrom(to, from, nBytes, kDeviceToHost, broadcast_flag, axis_shape, 
-                                shape_outer, chunk, repeats, (int)d_offset, (int)s_offset);
-    } else if (src_dev->lang() == kCpp) {
-      dst_dev->RepeatDataToFrom(to, from, nBytes, kHostToDevice, broadcast_flag, axis_shape, 
-                                shape_outer, chunk, repeats, (int)d_offset, (int)s_offset);
-    } else {
-      LOG(FATAL) << "Not support mem repeat copy betwee Cuda and OpenCL device";
+  for (int i = 0; i < shape_outer; i++) {
+    for (int j = 0; j < axis_shape; j++) {
+      int temp = broadcast_flag ? repeats[0] : repeats[j];
+      for (int k = 0; k < temp; k++) {
+        if (dst_dev->lang() != src_dev->lang()) {
+          // let the none cpp device conduct copy op
+          if (dst_dev->lang() == kCpp) {
+            src_dev->CopyDataToFrom(to, from, chunk, kDeviceToHost, dst_offset, src_offset);
+          } else if (src_dev->lang() == kCpp) {
+            dst_dev->CopyDataToFrom(to, from, chunk, kHostToDevice, dst_offset, src_offset);
+          } else {
+            LOG(FATAL) << "Not support mem repeat copy betwee Cuda and OpenCL device";
+          }
+        } else {
+          auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
+          src_dev->CopyDataToFrom(to, from, chunk, direct, dst_offset, src_offset);
+        }
+        dst_offset += chunk;
+      }
+      src_offset += chunk;
     }
-  } else {
-    auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
-    src_dev->RepeatDataToFrom(to, from, nBytes, direct, broadcast_flag, axis_shape, 
-                              shape_outer, chunk, repeats, (int)d_offset, (int)s_offset);
   }
 }
+
 //============================================================================
 /// typedef DType accroding to type value.
 /// DType would be used in the code block __VA_ARGS__.
@@ -729,6 +753,7 @@ GenUnaryTensorFn(Sign);
 GenUnaryTensorFn(Sqrt);
 GenUnaryTensorFn(Square);
 GenUnaryTensorFn(Tanh);
+GenUnaryTensorFn(Transform);
 
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                            \
   do {                                                                      \
@@ -977,7 +1002,7 @@ Tensor ConcatOn(const vector<Tensor> &in, int axis) {
       tmp.push_back(Reshape(t, {t.shape(0), t.Size() / t.shape(0)}));
     }
     auto ret = ConcatenateRows(tmp);
-    ret.Reshape(out_shape);
+    ret = ret.Reshape(out_shape);
     return ret;
   } else {
     for (const auto& t : in) {
@@ -987,7 +1012,7 @@ Tensor ConcatOn(const vector<Tensor> &in, int axis) {
       tmp.push_back(Reshape(t, {nrow, t.Size() / nrow}));
     }
     auto ret = ConcatenateColumns(tmp);
-    ret.Reshape(out_shape);
+    ret = ret.Reshape(out_shape);
     return ret;
   }
 }
@@ -1071,7 +1096,7 @@ Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis) 
     auto suffix = in.Size() / nrow / in.shape(axis);
     auto ret = SliceColumns(Reshape(in, {nrow, in.Size() / nrow}),
                             start * suffix, end * suffix);
-    ret.Reshape(out_shape);
+    ret = ret.Reshape(out_shape);
     return ret;
   }
 }

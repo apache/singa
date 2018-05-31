@@ -71,8 +71,6 @@ float32 = core_pb2.kFloat32
 CTensor = singa.Tensor
 
 
-
-
 class Tensor(object):
     '''Python Tensor, which wraps a swig converted Tensor from CPP Tensor.
 
@@ -140,16 +138,18 @@ class Tensor(object):
         '''
         To transpose the tensor
         '''
+        t = Tensor(self.shape, self.device, self.dtype)
         if axes == None:
-            tshape = [self.shape[x] for x in range(len(self.shape))]
-            self.shape = tuple(tshape)
-            self.data = self.data.Transpose()
+            tshape = [self.shape[x] for x in range(len(t.shape))]
+            t.shape = tuple(tshape)
+            t.data = self.data.Transpose()
         else:
             if(len(axes) != len(self.shape)):
                 raise ValueError('dimensions do not match')
             tshape = [self.shape[x] for x in axes]
-            self.shape = tuple(tshape)
-            self.data = self.data.Transpose(list(axes))
+            t.shape = tuple(tshape)
+            t.data = self.data.Transpose(list(axes))
+        return t
 
     def size(self):  # TODO(wangwei) compute size
         '''
@@ -172,10 +172,12 @@ class Tensor(object):
             shape (list<int>): new shape, which should have the same volumn as
                 the original shape.
         '''
+        t = Tensor(self.shape, self.device, self.dtype)
         assert product(self.shape) == product(shape), \
             'product of shape should be equal'
-        self.shape = shape
-        self.data.Reshape(list(shape))
+        t.shape = shape
+        t.data = self.data.Reshape(list(shape))
+        return t
 
     def reset_like(self, t):
         '''Reset the shape, dtype and device as the given tensor.
@@ -283,6 +285,7 @@ class Tensor(object):
             the tensor which has been repeated
         
         '''
+        t = Tensor()
         t_ndim = self.ndim()
         if isinstance(repeats, int) or isinstance(repeats, long):
             if repeats < 0:
@@ -292,15 +295,15 @@ class Tensor(object):
             # broadcast = True
             if axis == None:
                 axis = 9999
-                self.shape = (product(self.shape)*repeats,)
+                t.shape = (product(self.shape)*repeats,)
                 Repeats = [repeats,]
-                self.data = self.data.Repeat(Repeats, axis)
+                t.data = self.data.Repeat(Repeats, axis)
             elif axis >= 0:
                 t_shape = list(self.shape)
                 t_shape[axis] = self.shape[axis]*repeats
-                self.shape = tuple(t_shape)
+                t.shape = tuple(t_shape)
                 Repeats = [repeats,]
-                self.data = self.data.Repeat(Repeats, axis)
+                t.data = self.data.Repeat(Repeats, axis)
 
         elif isinstance(repeats, tuple) or isinstance(repeats, list):
             for rep in repeats:
@@ -315,13 +318,12 @@ class Tensor(object):
             elif axis >= 0:
                 t_shape = list(self.shape)
                 t_shape[axis] = sum(repeats)
-                self.shape = tuple(t_shape)
-                self.data = self.data.Repeat(list(repeats), axis)
+                t.shape = tuple(t_shape)
+                t.data = self.data.Repeat(list(repeats), axis)
         else:
             raise ValueError('repeats should be int or sequence')
-        
 
-        
+        return t     
 
     def T(self):
         ''' shallow copy, negate the transpose field.
@@ -623,8 +625,8 @@ def reshape(t, s):
     return _call_singa_func(singa.Reshape, t.data, s)
 
 def Reshape(t,s):
-    ret = t.deepcopy()
-    ret.reshape(s)
+
+    ret = t.reshape(s)
     return ret
 
 def transpose(t,axes = None):
@@ -632,8 +634,7 @@ def transpose(t,axes = None):
     Returns:
         the transposed tensor 
     '''
-    ret = t.deepcopy()
-    ret.transpose(axes)
+    ret = t.transpose(axes)
     return ret
 
 
@@ -795,24 +796,63 @@ def tanh(t):
     '''
     return _call_singa_func(singa.Tanh, t.data)
 
-
-def sum(t, axis=None):
-    '''Sum elements of the input tensor long the given axis.
+def sum(t, axis=None, out=None):
+    '''Sum of tensor elements over given axis
 
     Args:
-        t (Tensor): input Tensor
-        axis (int, optional): if None, the summation is done over all elements;
-            if axis is provided, then it is calculated along the given axis,
-            e.g. 0 -- sum each column; 1 -- sum each row.
+        t: Singa.tensor
+            The array_like tensor to be sumed
+        axis: None or int or tuple of ints, optional
+            Axis or axes along which a sum is performed.
+            The default, axis=None, will sum all of the elements of the input array.
+            If axis is negative it counts from the last to the first axis.
+            If axis is a tuple of ints, a sum is performed on all of the axes specified
+            in the tuple instead of a single axis or all the axes as before.
+        out:Singa.tensor optional
+            Alternative output array in which to place the result.
+            It must have the same shape as the expected output,
+            but the type of the output values will be cast if necessary.
 
-    Returns:
-        a float value as the sum of all elements, or a new Tensor
+    Return: sum_along_axis: tensor
+        A tensor with the same shape as t, with the specified axis removed.
+        If a is a 0-d array, or if axis is None, a scalar is returned.
+        If an output array is specified, a reference to out is returned
     '''
 
+    t_shape = t.shape
+    t_ndim = t.ndim()
+
     if axis is None:
-        return singa.SumAsFloat(t.data)
+        one = Tensor(t.shape, t.device)
+        one.set_value(1.0)
+        ret = tensordot(t, one, t_ndim)
+
+    if isinstance(axis,int):
+        if axis < 0:
+            axis += t_ndim
+
+        axis_shape = t_shape[axis]
+        axis_shape = int(axis_shape)
+        one = Tensor(shape = (axis_shape, ), device = t.device)
+        one.set_value(1.0)
+        ret = tensordot(t, one, axes=([axis],[0]))
+
+    if isinstance(axis,tuple):
+        l_axis = list(axis)
+        axis_shape = [t_shape[x] for x in axis]
+        axisshape = tuple(axis_shape)
+        one = Tensor(axisshape, t.device)
+        one.set_value(1.0)
+        one_axis = [x for x in range(one.ndim())]
+        ret = tensordot(t, one, (l_axis,one_axis))
+
+    if out is not None:
+        if out.shape != ret.shape:
+            raise ValueError('dimensions do not match')
+        out[:] = ret
+        return out
     else:
-        return _call_singa_func(singa.Sum, t.data, axis)
+        return ret
 
 
 def pow(t, x, out=None):
@@ -1143,10 +1183,10 @@ def einsum(ops, *args):
     if len(broadcast_b) == 0:
         broadcast_b = [1]  
     mult_A = repeat(A, product(broadcast_a))
-    mult_A.reshape(reshape_A)
+    mult_A = mult_A.reshape(reshape_A)
     mult_A = transpose(mult_A,transpose_A)
     mult_B = repeat(B, product(broadcast_b))
-    mult_B.reshape(reshape_B)
+    mult_B = mult_B.reshape(reshape_B)
     mult_B = transpose(mult_B, transpose_B)
 
     if mult_A.shape != mult_B.shape:
@@ -1154,77 +1194,26 @@ def einsum(ops, *args):
     res = eltwise_mult(mult_A, mult_B)
     sum_R = sorted(sums, reverse=True)
     for i in sum_R:
-        res = sum2(res, axis=i)
+        res = sum(res, axis=i)
     transpose_res = [sorted(list(outputops)).index(x) for x in list(outputops)]
     res = transpose(res, transpose_res)
 
     return res
     
 
-
-
-def sum2(t, axis=None, out=None):
-    '''Sum of tensor elements over given axis
-
-    Args:
-        t: Singa.tensor
-            The array_like tensor to be sumed
-        axis: None or int or tuple of ints, optional
-            Axis or axes along which a sum is performed.
-            The default, axis=None, will sum all of the elements of the input array.
-            If axis is negative it counts from the last to the first axis.
-            If axis is a tuple of ints, a sum is performed on all of the axes specified
-            in the tuple instead of a single axis or all the axes as before.
-        out:Singa.tensor optional
-            Alternative output array in which to place the result.
-            It must have the same shape as the expected output,
-            but the type of the output values will be cast if necessary.
-
-    Return: sum_along_axis: tensor
-        A tensor with the same shape as t, with the specified axis removed.
-        If a is a 0-d array, or if axis is None, a scalar is returned.
-        If an output array is specified, a reference to out is returned
-    '''
-
-    t_shape = t.shape
-    t_ndim = t.ndim()
-
-    if axis is None:
-        one = Tensor(t.shape, t.device)
-        one.set_value(1.0)
-        ret = tensordot(t, one, t_ndim)
-
-    if isinstance(axis,int):
-        if axis < 0:
-            axis += t_ndim
-
-        axis_shape = t_shape[axis]
-        axis_shape = int(axis_shape)
-        one = Tensor(shape = (axis_shape, ), device = t.device)
-        one.set_value(1.0)
-        ret = tensordot(t, one, axes=([axis],[0]))
-
-    if isinstance(axis,tuple):
-        l_axis = list(axis)
-        axis_shape = [t_shape[x] for x in axis]
-        axisshape = tuple(axis_shape)
-        one = Tensor(axisshape, t.device)
-        one.set_value(1.0)
-        one_axis = [x for x in range(one.ndim())]
-        ret = tensordot(t, one, (l_axis,one_axis))
-
-    if out is not None:
-        if out.shape != ret.shape:
-            raise ValueError('dimensions do not match')
-        out[:] = ret
-        return out
-    else:
-        return ret
-
 def repeat (t, repeats, axis = None):
+    '''Return the repeated tensor
+    Args:
+        t(tensor): the tensor to be repeated
+        repeats(int or a sequence): the number that the tensor need to repeat for
+        axis (int):the axis to do repeat
+                    If it is None, then the repeated tensor will be flattened.If it isn't None,
+                    the repeats could be sequence, but it's size should match the axis's shape
 
-    ret = t.deepcopy()
-    ret.repeat(repeats,axis)
+    Return:
+        the tensor which has been repeated
+    '''
+    ret = t.repeat(repeats,axis)
     return ret
 
         
@@ -1325,18 +1314,9 @@ def tensordot (A,B,axes=2):
         N1 *= b_shape[bx]
     newshape_b = (N2, N1)
     oldb = [b_shape[axis] for axis in notin]
-    # do transpose and reshape to get the 2D matrix to do multiplication
-    # A_ = to_numpy(A)
-    # B_ = to_numpy(B)
-    # at_ = np.transpose(A_,newaxes_a).reshape(newshape_a)
-    # bt_ = np.transpose(B_,newaxes_b).reshape(newshape_b)
-    # at = from_numpy(at_)
-    # bt = from_numpy(bt_)
 
     A = transpose(A, newaxes_a)
     B = transpose(B, newaxes_b)
-    A = add(A, 0)
-    B = add(B, 0)
     at = Reshape(A, newshape_a)
     bt = Reshape(B, newshape_b)
 
@@ -1344,9 +1324,9 @@ def tensordot (A,B,axes=2):
     if len(olda + oldb) == 0:
         olda = [1]
         oldb = [1]
-        res.reshape(tuple(olda + oldb))
+        res = res.reshape(tuple(olda + oldb))
     else:
-        res.reshape(tuple(olda + oldb))
+        res = res.reshape(tuple(olda + oldb))
 
     return res
 

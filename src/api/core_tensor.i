@@ -106,7 +106,7 @@ namespace singa{
     Tensor Transpose(const std::vector<size_t> &axes) const;
     size_t Size() const;
     size_t MemSize() const;
-    void Reshape(const std::vector<size_t> &shape);
+    Tensor Reshape(const std::vector<size_t> &shape);
     void ResetLike(const Tensor &t);
     void AsType(DataType type);
     void ToDevice(std::shared_ptr<singa::Device> dev);
@@ -163,8 +163,7 @@ namespace singa{
                       size_t src_offset = 0, size_t dst_offset = 0);
 
   void RepeatDataToFrom(bool broadcast_flag, std::vector<size_t> repeats, int axis, 
-                        Tensor *dst, const Tensor &src, const size_t num, 
-                        const size_t dst_offset, const size_t src_offset);
+                        Tensor *dst, const Tensor &src, const size_t num);
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
 

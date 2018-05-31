@@ -133,8 +133,8 @@ class Tensor {
   size_t MemSize() const { return block_->size(); }
 
   /// Reset the tensor shape, it may reallocate block, if MemSize() changes.
-  void Reshape(const Shape &shape);
-  void Reshape(Shape &&shape);
+  // void Reshape(const Shape &shape);
+  // void Reshape(Shape &&shape);
 
   /// Reset the shape, device, and data type as given tensor.
   /// If block size changes, then reallocate a new block.
@@ -190,6 +190,10 @@ class Tensor {
 
   /// Change the axes
   Tensor Transpose(const vector<size_t> &axes) const;
+
+  Tensor Reshape(const Shape &shape);
+
+  Tensor Reshape(Shape &&shape);
 
   /// Copy the meta info with data block shared.
   Tensor &operator=(const Tensor &in);
@@ -269,6 +273,7 @@ inline size_t Product(const Shape &shape, int start = 0, size_t len = 0) {
   return v;
 }
 
+
 inline void CheckDataTypeAndLang(const Tensor &in1, const Tensor &in2) {
   CHECK_EQ(in1.data_type(), in2.data_type());
   CHECK_EQ(in1.device()->lang(), in2.device()->lang());
@@ -292,8 +297,7 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
                     const size_t dst_offset = 0, const size_t src_offset = 0);
 
 void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis, 
-                      Tensor *dst, const Tensor &in, const size_t num, 
-                      const size_t dst_offset = 0, const size_t src_offset = 0);
+                      Tensor *dst, const Tensor &in, const size_t num);
 
 // =============Element-wise operations====================================
 Tensor Abs(const Tensor &in);
@@ -305,6 +309,7 @@ Tensor Sign(const Tensor &in);
 Tensor Sqrt(const Tensor &in);
 Tensor Square(const Tensor &in);
 Tensor Tanh(const Tensor &in);
+Tensor Transform(const Tensor &in);
 
 void Abs(const Tensor &in, Tensor *out);
 void Exp(const Tensor &in, Tensor *out);
@@ -315,6 +320,7 @@ void Sign(const Tensor &in, Tensor *out);
 void Sqrt(const Tensor &in, Tensor *out);
 void Square(const Tensor &in, Tensor *out);
 void Tanh(const Tensor &in, Tensor *out);
+void Transform(const Tensor &in, Tensor *out);
 
 /// Element-wise opeartion, out[i]=in[i]^x
 template <typename SType>
