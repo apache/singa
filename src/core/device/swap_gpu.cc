@@ -387,7 +387,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
    //print out push-info, using vec_block instead. should be the same.
   fstream file_block3("vec_run.text", ios::in|ios::out|ios::app);
   fstream file_block4("vec_run2.text", ios::in|ios::out|ios::app);
-  
+
   for (int i = 0; i<vec_run.size();i++){
     // void* b_temp;
     // stringstream convert(vec_run[i].ptr);
@@ -433,7 +433,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"============== select top a few to swap"<<endl;
   cout<<"maxIdx and maxLoad are: "<<maxIdx<<' '<<maxLoad<<endl;
   cout<<"sumSizeSwapAble: "<<sumSizeSwapAble<<endl;
-  size_t memLimit = 170000000; //changed from 20 to 15, 10
+  size_t memLimit = maxLoad*0.5; //changed from 20 to 15, 10
+  cout<<"memLimit: "<<memLimit<<endl;
   sort(vec_swap.begin(),vec_swap.end(),less_than_pri());
   vector<onePairMsg_Swap>vec_swap_selct;
   size_t sumSizeToSwap=0;
@@ -860,9 +861,9 @@ void SwapGPU::Append(string blockInfo){
       global_load.push_back(global_load[global_load.size()-1]);
     }
   }
-  cout<<blockInfo<<endl;
-  cout<<(static_cast<Block*>(block_temp))->size()<<endl;
-  cout<<"load: "<<global_load[global_load.size()-1]<<" len of blockInfo and global_load "<<vec_block.size()<<' '<<global_load.size()<<endl;
+  //cout<<blockInfo<<endl;
+  //cout<<(static_cast<Block*>(block_temp))->size()<<endl;
+  //cout<<"load: "<<global_load[global_load.size()-1]<<" len of blockInfo and global_load "<<vec_block.size()<<' '<<global_load.size()<<endl;
 
   //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   vec_block.push_back(blockInfo);
