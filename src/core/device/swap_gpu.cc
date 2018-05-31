@@ -421,8 +421,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       vec_swap.push_back(tempSwap);
       sumSizeSwappAble+=tempSwap.size;
       sumSizeSwappAble_2+=vec_run[i].size;
-      cout<<"Items Swappable: (r_idx, d_idx, MB, cat) "<<tempSwap.r_idx<<' '<<tempSwap.d_idx;
-      cout<<' '<<(float)(tempSwap.size)/(float)(1024*1024)<<' '<<tempSwap.cat<<endl;
+      cout<<"Items Swappable: (r_idx, d_idx, cat, MB, dt/us, PS) "<<tempSwap.r_idx<<' '<<tempSwap.d_idx;
+      cout<<"  ."<<tempSwap.cat<<".    "<<(float)(tempSwap.size)/(float)(1024*1024);
+      cout<<' '<<tempSwap.dt/1000<<' '<<tempSwap.pri<<endl;
     } 
   }
   cout<<"size vec_swap: "<<vec_swap.size()<<endl;
