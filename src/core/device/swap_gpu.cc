@@ -386,12 +386,14 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
    cout<<" to write vec_run2 for comparison, nothing wrong till here 5/13."<<endl;
    //print out push-info, using vec_block instead. should be the same.
   fstream file_block3("vec_run.text", ios::in|ios::out|ios::app);
+  fstream file_block4("vec_run2.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run.size();i++){
     // void* b_temp;
     // stringstream convert(vec_run[i].ptr);
     // convert>>b_temp;
     //file_block3<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<' '<<(static_cast<Block*>(b_temp))->size()<<endl;
     file_block3<<i<<' '<<vec_block[i+location]<<endl;
+    file_block4<<i<<' '<<vec_block[i+location+maxLen]<<endl;
   }
   vector<onePairMsg_Swap>vec_swap;
   size_t sumSizeSwapAble =0;
