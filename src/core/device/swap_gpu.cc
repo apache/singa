@@ -335,7 +335,7 @@ void load_update(vector<double>& vec_load,int old_idx, int plusMinus, size_t siz
 
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   //swap requirement
-  size_t memLimit = maxLoad*0.85; //changed from 20 to 15, 10
+  float memLimit_ratio = 0.85; //changed from 20 to 15, 10
   size_t smallest_block = 1<<20; //1 MB
 
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
@@ -436,6 +436,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"============== select top a few to swap"<<endl;
   cout<<"maxIdx and maxLoad are: "<<maxIdx<<' '<<maxLoad<<endl;
   cout<<"sumSizeSwapAble: "<<sumSizeSwapAble<<endl;
+  size_t memLimit = memLimit_ratio * maxLoad;
   cout<<"memLimit and smallest_block: "<<memLimit<<' '<<smallest_block<<endl;
   sort(vec_swap.begin(),vec_swap.end(),less_than_pri());
   vector<onePairMsg_Swap>vec_swap_selct;
