@@ -228,12 +228,12 @@ struct less_than_Idx{
 int SwapInTime(size_t size){
     //yet to get the formula
     int ans =0; //TODO(junzhe) used to be 0.13 --> 0.26 (unpinned vs pinned)
-    if (size==0) {ans = 9500;} else {ans = 0.26*size;}
+    if (size==0) {ans = 9500;} else {ans = 0.13*size;}
     return ans;
 }
 int SwapOutTime(size_t size){
     int ans =0; //TODO(junzhe) used to be 0.29 --> 0.58
-    if (size==0) {ans = 17000;} else {ans = 0.58*size;}
+    if (size==0) {ans = 17000;} else {ans = 0.29*size;}
     return ans;
 }
 
@@ -336,7 +336,7 @@ void load_update(vector<double>& vec_load,int old_idx, int plusMinus, size_t siz
 
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   //swap requirement
-  float memLimit_ratio = 0.85; //changed from 20 to 15, 10
+  float memLimit_ratio = 0.70; 
   size_t smallest_block = 1<<20; //1 MB
 
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
