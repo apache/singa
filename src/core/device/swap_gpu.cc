@@ -440,8 +440,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     if ((maxLoad-sumSizeToSwap)>memLimit){
       vec_swap_selct.push_back(vec_swap[i]);
       sumSizeToSwap+=vec_swap[i].size;
-      cout<<"Item selected: (r_idx, d_idx, MB, dt, cat) "<<tempSwap.r_idx<<' '<<tempSwap.d_idx;
-      cout<<' '<<(float)(tempSwap.size)/(float)(1024*1024)<<' '<<tempSwap.cat<<endl;
+      cout<<"Item selected: (r_idx, d_idx, MB, dt, cat) "<<vec_swap[i].r_idx<<' '<<vec_swap[i].d_idx;
+      cout<<' '<<(float)(tempSwap.size)/(float)(1024*1024)<<' '<<vec_swap[i].cat<<endl;
     } else {
       break;
     }
