@@ -401,6 +401,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   }
   vector<onePairMsg_Swap>vec_swap;
   size_t sumSizeSwapAble =0;
+  size_t sumSizeSwapAble_2 =0;
   ///formulate swapable items.
   cout<<"===============================print sorted run "<<maxIdx<<endl;
   for (int i =1; i<vec_run.size(); i++){
@@ -424,6 +425,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
           }
           vec_swap.push_back(tempSwap);
           sumSizeSwapAble+=tempSwap.size;
+          sumSizeSwapAble_2+=vec_run[i].size;
           //onePairMsg_Swap(string p, size_t s, int i1, int i2, double t1, double t2): ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
 
           cout<<"SwapItem: "<<tempSwap.r_idx<<' '<<tempSwap.d_idx<<endl;
@@ -435,7 +437,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   //TODO(junzhe) optimize the for loop.
   cout<<"============== select top a few to swap"<<endl;
   cout<<"maxIdx and maxLoad are: "<<maxIdx<<' '<<maxLoad<<endl;
-  cout<<"sumSizeSwapAble: "<<sumSizeSwapAble<<endl;
+  cout<<"sumSizeSwapAble: "<<sumSizeSwapAble/1024/1024<<' '<<sumSizeSwapAble_2/1024/1024<<endl;
   size_t memLimit = memLimit_ratio * maxLoad;
   cout<<"memLimit and smallest_block: "<<memLimit<<' '<<smallest_block<<endl;
   sort(vec_swap.begin(),vec_swap.end(),less_than_pri());
