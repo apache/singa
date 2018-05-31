@@ -433,7 +433,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"============== select top a few to swap"<<endl;
   cout<<"maxIdx and maxLoad are: "<<maxIdx<<' '<<maxLoad<<endl;
   cout<<"sumSizeSwapAble: "<<sumSizeSwapAble<<endl;
-  size_t memLimit = maxLoad*0.15; //changed from 20 to 15, 10
+  size_t memLimit = maxLoad*0.85; //changed from 20 to 15, 10
   cout<<"memLimit: "<<memLimit<<endl;
   sort(vec_swap.begin(),vec_swap.end(),less_than_pri());
   vector<onePairMsg_Swap>vec_swap_selct;
