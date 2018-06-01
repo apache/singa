@@ -468,7 +468,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       auto itm = vec_swap_selct[i];
       cout<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.ptr<<endl;
     }
-    // work on it 
+
     for (int i =0; i<vec_swap_selct.size(); i++){
       auto itm = vec_swap_selct[i];
       if (i>0){
@@ -503,21 +503,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       //       vec_swap_selct[i].i1p = tempIdx;//Note: here i1' is immediately at Malloc/Free.
       //       load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
       //   }
-
-
+      cout<<"Out sched r_idx, i1, i1p"<<vec_swap_selct[i].r_idx<<' ';
+      cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
     }
-    for (int i =0; i<vec_swap_selct.size(); i++){
-        int tempIdx; //declared above
-        //update i1p, compare with last swap and load
-        while ((vec_swap_selct[i].t1p>=vec_run[tempIdx].t) or ((vec_run[tempIdx].MallocFree!=1) and (vec_run[tempIdx].MallocFree!=-1))) {
-            tempIdx++; //TODO(junzhe) can speed up
-        }
-        
-        cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
-        //cout<<"old_idx and i1p: "<<old_idx<<' '<<tempIdx<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_run[old_idx].MallocFree<<" overhead "<<overhead<<endl;
-        //cout<<"--------------size: "<<vec_swap_selct[i].size<<endl;
-    } //for loop
-    //cout<<"total overhead: "<<overhead<<endl;
     ///update swap-in index
     //t2 and t2', i2 and i2'.
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
