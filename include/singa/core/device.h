@@ -279,7 +279,7 @@ class SwapGPU : public Device {
   ///Tables needed
   //r_idx->BlockMeta
   map<int,BlockMeta>Table_meta;
-
+  map<const Block*,BlockMeta>Table_block_meta; //TODO(junzhe) for measure speed only.
   //for Free, info append.
   map<void*, const Block*>Table_data_block_;
   map<const Block*, void*>Table_block_data_;
