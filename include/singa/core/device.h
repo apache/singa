@@ -68,8 +68,8 @@ class Device {
   
   void AppendInfo(string blockInfo);
   void* GetRealGpuPtrInfo(const Block* block_);
-  void SwapOutInfo(const Block* block_, size_t size);
-  void SwapInInfo(const Block* block_, size_t size);
+  void SwapOutInfo(const Block* block_);
+  void SwapInInfo(const Block* block_);
 
   /// Return the size (bytes) of memory in use
   /// TODO(wangwei) override this function for all devices.
@@ -128,8 +128,8 @@ class Device {
   virtual void MakeMetaTable(Block* block,void* data_,int size) = 0;
   virtual void Append(string blockInfo) = 0;
   
-  virtual void SwapOut(const Block* block_, size_t size) = 0;
-  virtual void SwapIn(const Block* block_, size_t size) = 0;
+  virtual void SwapOut(const Block* block_) = 0;
+  virtual void SwapIn(const Block* block_) = 0;
 
  protected:
   int id_ = 0;
@@ -174,8 +174,8 @@ class CppCPU : public Device {
   void MakeMetaTable(Block* block,void* data_,int size) override {}
   void Append(string blockInfo) override {}
   void* GetRealGpuPtr(const Block* block_) override {}
-  void SwapOut(const Block* block_, size_t size) override {}
-  void SwapIn(const Block* block_, size_t size) override {}
+  void SwapOut(const Block* block_) override {}
+  void SwapIn(const Block* block_) override {}
 };
 
 
@@ -209,8 +209,8 @@ class CudaGPU : public Device {
   void MakeMetaTable(Block* block,void* data_,int size) override {}
   void Append(string blockInfo) override;
   void* GetRealGpuPtr(const Block* block_) override;
-  void SwapOut(const Block* block_, size_t size) override;
-  void SwapIn(const Block* block_, size_t size) override;
+  void SwapOut(const Block* block_) override;
+  void SwapIn(const Block* block_) override;
 
  private:
   void Setup();
@@ -267,8 +267,8 @@ class SwapGPU : public Device {
   void Test_sched_switch_swap();
   void Append(string blockInfo) override;
   void* GetRealGpuPtr(const Block* block_) override;
-  void SwapOut(const Block* block_, size_t size) override;
-  void SwapIn(const Block* block_, size_t size) override;
+  void SwapOut(const Block* block_) override;
+  void SwapIn(const Block* block_) override;
 
   //changed to intake data_ instead
   void SwapOut_idx(const int r_idx);
@@ -362,8 +362,8 @@ protected:
   void MakeMetaTable(Block* block,void* data_,int size) override {}
   void Append(string blockInfo) override {}
   void* GetRealGpuPtr(const Block* block_) override {}
-  void SwapOut(const Block* block_, size_t size) override {}
-  void SwapIn(const Block* block_, size_t size) override {}
+  void SwapOut(const Block* block_) override {}
+  void SwapIn(const Block* block_) override {}
 
 
 private:

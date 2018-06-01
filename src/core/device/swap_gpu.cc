@@ -964,11 +964,11 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
 }
 
-void SwapGPU::SwapOut(const Block* block_, size_t size){
-  if (gc < 1000 && block_->size() > 1<<20) {
+void SwapGPU::SwapOut(const Block* block_){
+  if (gc < 1000 && block->size() > 1<<20) {
     fstream file_block5("speed.text", ios::in|ios::out|ios::app);
     BlockMeta meta;
-    meta.data_ = Table_block_data_.find(block_)->second;
+    meta.data_ = block_->mutable_data();
     void* tempPtr = nullptr;
     cudaMallocHost(&tempPtr,block_->size()); //pinned memory.
     meta.cpu_ptr = tempPtr;
@@ -977,12 +977,12 @@ void SwapGPU::SwapOut(const Block* block_, size_t size){
     cudaError_t err;
     err = cudaMemcpy(meta.cpu_ptr, meta.data_,block_->size(),cudaMemcpyDeviceToHost);
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    file_block5<<block_->size()<<' '<<t2-t1<<endl;
+    file_block5<<block->size()<<' '<<t2-t1<<endl;
     cout<<"swap out done at gc: "<<gc<<endl;
   }
 }
 
-void SwapGPU::SwapIn(const Block* block_, size_t size){
+void SwapGPU::SwapIn(const Block* block_){
 }
 
 
