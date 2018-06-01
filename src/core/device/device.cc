@@ -83,12 +83,12 @@ void* Device::GetRealGpuPtrInfo(const Block* block_){
   return GetRealGpuPtr(block_);
 }
 
-void Device::SwapOutInfo(const Block* block_){
-  SwapOut(block_);
+void Device::SwapOutInfo(const Block* block_, size_t size){
+  SwapOut(block_, size);
 }
 
-void Device::SwapInInfo(const Block* block_){
-  SwapIn(block_);
+void Device::SwapInInfo(const Block* block_, size_t size){
+  SwapIn(block_, size);
 }
 
 void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,

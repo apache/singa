@@ -964,8 +964,8 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
 }
 
-void SwapGPU::SwapOut(const Block* block_){
-  if (gc < 1000 && block->size() > 1<<20) {
+void SwapGPU::SwapOut(const Block* block_, size_t size){
+  if (gc < 1000 && block_->size() > 1<<20) {
     fstream file_block5("speed.text", ios::in|ios::out|ios::app);
     BlockMeta meta;
     meta.data_ = block_->mutable_data();
@@ -982,7 +982,7 @@ void SwapGPU::SwapOut(const Block* block_){
   }
 }
 
-void SwapGPU::SwapIn(const Block* block_){
+void SwapGPU::SwapIn(const Block* block_, size_t size){
 }
 
 
