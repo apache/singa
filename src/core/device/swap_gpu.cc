@@ -525,8 +525,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       itm.i2p = needIdx;
       itm.t2p = prepareTime;
       vec_swap_selct[i] = itm;
-      cout<<"In sched r_idx,2p "<<vec_swap_selct[i].r_idx<<' ';
-      cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2<<endl;
+      cout<<"In sched r_idx,i2, i2p "<<vec_swap_selct[i].r_idx<<' ';
+      cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].d_idx<<endl;
+      //Note: i2 is d_idx, but not assigned.
     }
     
     ///step 2: change i2p to load exceeds limit, with overhead.
