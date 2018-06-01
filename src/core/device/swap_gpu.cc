@@ -516,7 +516,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         //update for linked list 
         itm.last_in_idx = vec_swap_selct[i+1].r_idx;
       }
-      int needIdx;
+      int needIdx = itm.d_idx;
       if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
       double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
       while (prepareTime < vec_run[needIdx].t){
