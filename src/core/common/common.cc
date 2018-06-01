@@ -80,8 +80,8 @@ const void* Block::data() const {
       cout<<"slept to get data_ updated"<<endl;
     }
     //TODO(junzhe) for measurement only
-    ptrDevice_->SwapOutInfo(this);
-    ptrDevice_->SwapInInfo(this);
+    // ptrDevice_->SwapOutInfo(this);
+    // ptrDevice_->SwapInInfo(this);
 
     return static_cast<char*>(data_) + offset_;
   }

@@ -225,15 +225,17 @@ struct less_than_Idx{
     }
 };
 
-int SwapInTime(size_t size){
-    //yet to get the formula
-    int ans =0; //TODO(junzhe) used to be 0.13 --> 0.26 (unpinned vs pinned)
-    if (size==0) {ans = 9500;} else {ans = 0.13*size;}
+
+int SwapOutTime(size_t size){
+    int ans =0; //TODO(junzhe) used to be 0.29; new param as per vgg
+    if (size==0) {ans = 47200;} else {ans = 0.0756 * size + 47200;}
     return ans;
 }
-int SwapOutTime(size_t size){
-    int ans =0; //TODO(junzhe) used to be 0.29 --> 0.58
-    if (size==0) {ans = 17000;} else {ans = 0.29*size;}
+
+int SwapInTime(size_t size){
+    //yet to get the formula
+    int ans =0; //TODO(junzhe) used to be 0.13; new param as per vgg
+    if (size==0) {ans = 9700;} else {ans = 0.0823 * size + 9700;}
     return ans;
 }
 
