@@ -386,7 +386,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       maxIdx = i;
     } 
   }
-  size_t memLimit = memLimit_ratio * maxLoad;
+  size_t memLimit = maxLoad - 65<<20;//memLimit_ratio * maxLoad;
   //sort by ptr & idx
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
   //log vec_run and vec_run2, subsequent iteration for analysis only. TODO(junzhe)
