@@ -415,11 +415,11 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       } else {
         itm.pri = itm.dt * 1/itm.size;
       }
-      if (vec_run[i-1].MallocFree==4){
-        itm.cat = "A3"; // cat_A3
-      } else{
-        itm.cat = "A12"; // cat_A1 and cat_A2
-      }
+      //cat A
+      if (vec_run[i-1].MallocFree == 3){ itm.cat = "A1"; } 
+      if (vec_run[i-1].MallocFree == 2){ itm.cat = "A2"; } 
+      if (vec_run[i-1].MallocFree == 4){ itm.cat = "A3"; } 
+
       vec_swap.push_back(itm);
       sumSizeSwappAble+=itm.size;
       sumSizeSwappAble_2+=vec_run[i].size;
@@ -466,13 +466,21 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       auto itm = vec_swap_selct[i];
       cout<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.ptr<<endl;
     }
-
+    // work on it 
     for (int i =0; i<vec_swap_selct.size(); i++){
-      cout<<"Out sched r_idx,1,1p "<<vec_swap_selct[i].r_idx<<' ';
+      auto itm = vec_swap_selct[i];
       if (i>0){
         //update for linked list 
         vec_swap_selct[i].last_out_idx = vec_swap_selct[i-1].r_idx;
       }
+
+      cout<<"no problem"<<endl;
+
+
+    }
+    for (int i =0; i<vec_swap_selct.size(); i++){
+      cout<<"Out sched r_idx,1,1p "<<vec_swap_selct[i].r_idx<<' ';
+      
         int tempIdx=vec_swap_selct[i].r_idx;//idx ready to swapOut, pesudo code use time.
         if ((i>0) and (tempIdx<vec_swap_selct[i-1].i1p)){
             //last t1' bigger than this t1
