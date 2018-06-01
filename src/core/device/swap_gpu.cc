@@ -503,7 +503,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       //       vec_swap_selct[i].i1p = tempIdx;//Note: here i1' is immediately at Malloc/Free.
       //       load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
       //   }
-      cout<<"Out sched r_idx, i1, i1p"<<vec_swap_selct[i].r_idx<<' ';
+      cout<<"Out sched r_idx, i1, i1p "<<vec_swap_selct[i].r_idx<<' ';
       cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
     }
     ///update swap-in index
@@ -511,33 +511,24 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
     ///step 1: overlap with next swapIn.
     for (int i =0; i<vec_swap_selct.size(); i++){
-      cout<<"In sched r_idx,2p "<<vec_swap_selct[i].r_idx<<' ';
+      auto itm = vec_swap_selct[i];
       if (i<(vec_swap_selct.size()-1)){
         //update for linked list 
-        vec_swap_selct[i].last_in_idx = vec_swap_selct[i+1].r_idx;
+        itm.last_in_idx = vec_swap_selct[i+1].r_idx;
       }
-        int tempIdx=vec_swap_selct[i].d_idx; //idx at which to be used.
-        double tempTime; //time need to be swapped in start.
-        //condition, if overlap tempIdx later than next i2p, pull in swap in.
-        if ((i>0) and (tempIdx>vec_swap_selct[i-1].i2p)){
-            tempIdx = vec_swap_selct[i-1].i2p;
-            tempTime = vec_run[tempIdx].t - SwapInTime(vec_swap_selct[i].size);
-        } else{
-            tempTime = vec_swap_selct[i].d_time - SwapInTime(vec_swap_selct[i].size);
-        }
-        
-        //update i2p, t2p; not used for i2 and t2, with wait_till_aval function at data()
-        vec_swap_selct[i].i2 = tempIdx;
-        while ((tempTime<=vec_run[tempIdx].t) or ((vec_run[tempIdx].MallocFree!=1) and (vec_run[tempIdx].MallocFree!=-1))) {
-            tempIdx--; //TODO(junzhe) can speed up
-        }
-        vec_swap_selct[i].i2p = tempIdx;
-        vec_swap_selct[i].t2p = tempTime; //Note here use tempTime
+      int needIdx;
+      if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
+      double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
+      while (prepareTime < vec_run[needIdx].t){
+        needIdx--;
+      }
+      itm.i2p = needIdx;
+      itm.t2p = prepareTime;
+      vec_swap_selct[i] = itm;
+      cout<<"In sched r_idx,2p "<<vec_swap_selct[i].r_idx<<' ';
       cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2<<endl;
     }
     
-    cout<<"==== below update i2p ====="<<endl;
-
     ///step 2: change i2p to load exceeds limit, with overhead.
     // TODO(junzhe) Here got problem, to follow up here.
 
