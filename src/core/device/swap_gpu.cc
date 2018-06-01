@@ -975,9 +975,8 @@ void SwapGPU::SwapOut(const Block* block_){
     Table_block_meta[block_] = meta;
     auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
     cudaError_t err;
-    err = cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.size,cudaMemcpyHostToDevice);
+    err = cudaMemcpy(meta.cpu_ptr, meta.data_,block_->size(),cudaMemcpyDeviceToHost);
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    file_block3<<t2-t1<<" "<<gpu.size<<endl;
     file_block5<<block->size()<<' '<<t2-t1<<endl;
     cout<<"swap out done at gc: "<<gc<<endl;
   }
