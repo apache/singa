@@ -340,6 +340,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   //swap requirement
   float memLimit_ratio = 0.70; 
   size_t smallest_block = 1<<20; //1 MB
+  int data_buffer = 1; // used to control readyIdx
+  int mutable_data_buffer = 10;
 
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
   int idxRange =0;
@@ -471,45 +473,46 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       auto itm = vec_swap_selct[i];
       if (i>0){
         //update for linked list 
-        vec_swap_selct[i].last_out_idx = vec_swap_selct[i-1].r_idx;
+        itm.last_out_idx = vec_swap_selct[i-1].r_idx;
       }
+      int readyIdx = 0;
+      if (itm.cat == "A1") { readyIdx = itm.r_idx; }
+      if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
+      if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
 
-      cout<<"no problem"<<endl;
+      if (i > 0){
+        readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
+      }
+      itm.i1 = readyIdx;
+      itm.t1 = vec_run[readyIdx].t;
+      itm.t1p = itm.t1 + SwapOutTime(itm.size);
+      while (itm.t1p > vec_run[readyIdx].t){
+        readyIdx++;
+      }
+      itm.i1p = readyIdx;
+      vec_swap_selct[i] = itm;
+      // //update i1p again, with condideration of over limit. 
+      //   old_idx = load_over_limit(vec_load,memLimit,old_idx);
+      //TODO(juznhe) worse case is overlimit even before the first swap item.
+      //   if (old_idx<tempIdx){
+      //       //over limit before tempIdx, got overhead
+      //       vec_swap_selct[i].i1p = old_idx;
+      //       overhead+=(vec_swap_selct[i].t1p-vec_run[old_idx].t);
+      //       load_update(vec_load,old_idx,-1,vec_swap_selct[i].size);
+      //   } else {
+      //       vec_swap_selct[i].i1p = tempIdx;//Note: here i1' is immediately at Malloc/Free.
+      //       load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
+      //   }
 
 
     }
     for (int i =0; i<vec_swap_selct.size(); i++){
-      cout<<"Out sched r_idx,1,1p "<<vec_swap_selct[i].r_idx<<' ';
-      
-        int tempIdx=vec_swap_selct[i].r_idx;//idx ready to swapOut, pesudo code use time.
-        if ((i>0) and (tempIdx<vec_swap_selct[i-1].i1p)){
-            //last t1' bigger than this t1
-            tempIdx = vec_swap_selct[i-1].i1p; //alr at M/F idx, diff from pseudo code.
-        } else {
-            //round to next Malloc/Free
-            while ((vec_run[tempIdx].MallocFree!=1) and (vec_run[tempIdx].MallocFree!=-1)){
-                tempIdx++;
-            }
-        }
-        //update t1, t1p, i1
-        vec_swap_selct[i].i1=vec_run[tempIdx].idx;
-        vec_swap_selct[i].t1=vec_run[tempIdx].t;
-        vec_swap_selct[i].t1p = vec_swap_selct[i].t1+SwapOutTime(vec_swap_selct[i].size);
+     
         //update i1p, compare with last swap and load
         while ((vec_swap_selct[i].t1p>=vec_run[tempIdx].t) or ((vec_run[tempIdx].MallocFree!=1) and (vec_run[tempIdx].MallocFree!=-1))) {
             tempIdx++; //TODO(junzhe) can speed up
         }
-        //update i1p again, with condideration of over limit.
-        old_idx = load_over_limit(vec_load,memLimit,old_idx);//TODO(juznhe) worse case is overlimit even before the first swap item.
-        if (old_idx<tempIdx){
-            //over limit before tempIdx, got overhead
-            vec_swap_selct[i].i1p = old_idx;
-            overhead+=(vec_swap_selct[i].t1p-vec_run[old_idx].t);
-            load_update(vec_load,old_idx,-1,vec_swap_selct[i].size);
-        } else {
-            vec_swap_selct[i].i1p = tempIdx;//Note: here i1' is immediately at Malloc/Free.
-            load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
-        }
+        
         cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
         //cout<<"old_idx and i1p: "<<old_idx<<' '<<tempIdx<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_run[old_idx].MallocFree<<" overhead "<<overhead<<endl;
         //cout<<"--------------size: "<<vec_swap_selct[i].size<<endl;
