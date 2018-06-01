@@ -965,10 +965,10 @@ void SwapGPU::SwapIn_idx(const int r_idx){
 }
 
 void SwapGPU::SwapOut(const Block* block_){
-  if (gc < 1000 && block->size() > 1<<20) {
+  if (gc < 1000 && block_->size() > 1<<20) {
     fstream file_block5("speed.text", ios::in|ios::out|ios::app);
     BlockMeta meta;
-    meta.data_ = block_->mutable_data();
+    meta.data_ = Table_block_data_.find(block_)->second;
     void* tempPtr = nullptr;
     cudaMallocHost(&tempPtr,block_->size()); //pinned memory.
     meta.cpu_ptr = tempPtr;
@@ -977,7 +977,7 @@ void SwapGPU::SwapOut(const Block* block_){
     cudaError_t err;
     err = cudaMemcpy(meta.cpu_ptr, meta.data_,block_->size(),cudaMemcpyDeviceToHost);
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    file_block5<<block->size()<<' '<<t2-t1<<endl;
+    file_block5<<block_->size()<<' '<<t2-t1<<endl;
     cout<<"swap out done at gc: "<<gc<<endl;
   }
 }
