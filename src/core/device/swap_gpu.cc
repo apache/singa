@@ -439,6 +439,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   sort(vec_swap.begin(),vec_swap.end(),less_than_pri());
   vector<onePairMsg_Swap>vec_swap_selct;
   size_t sumSizeToSwap=0;
+  // can upgrade here TODO(junzhe)
   for (int i =0; i<vec_swap.size(); i++){
     if ((maxLoad-sumSizeToSwap)>memLimit){
       vec_swap_selct.push_back(vec_swap[i]);
@@ -452,13 +453,12 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"number of swap_selct: "<<vec_swap_selct.size()<<endl;
   cout<<"swap size in MB: "<<(float)(sumSizeToSwap)/(float)(1024*1024)<<endl;
 
-  ///planing swap in and swap out. version 3/4
-    cout<<"swap scheduling.===================="<<endl;
+  /// TO upgrade on 6/1 TODO(junzhe), based on version 3/4
+    cout<<"swap scheduling ===================="<<endl;
     double overhead=0;
     int old_idx=0; //book keep where the load track is.
     sort(vec_run.begin(),vec_run.end(),less_than_Idx());
-    ///update swap-out idx
-    //t1 and t1', i1 and i1', sort by r_idx.
+    ///update swap-out idx //t1 and t1', i1 and i1', sort by r_idx.
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap());
     //print only 
     cout<<"print sorted slect blocks--------r_idx, d_idx, ptr"<<endl;
@@ -719,9 +719,10 @@ void SwapGPU::Free(void* ptr) {
 void SwapGPU::Test_sched_switch_swap(){
   /*
     do Test_sched_switch_swap during Malloc and Free.
+    swap removed to DeploySwap
   */
   ///test & schedule
- if (((gc+1)%300 == 0) && (asyncSwapFlag == 0) && (testFlag == 0)){
+  if (((gc+1)%300 == 0) && (asyncSwapFlag == 0) && (testFlag == 0)){
   //TODO(junzhe) not lean, chances are globeCounter found more than 300 idx ago: redudant test.
   cout<<"gc, GC and vec_len before test: "<<gc<<' '<<globeCounter<<' '<<vec_block.size()<<endl;
   globeCounter = swap_test(vec_block,maxLen,location);
@@ -734,14 +735,38 @@ void SwapGPU::Test_sched_switch_swap(){
     
    }
  }
-
  ///switch flag;
  if (gc == globeCounter){
    asyncSwapFlag = 1;
    cout<<"switched flag for at "<<globeCounter<<endl;
  }
+}
 
- ///swap as per schedule
+void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
+  /*
+  Append info right after Malloc; make block_ - data_ pair wise table.
+  */
+
+  //append info
+  stringstream strm1;
+  strm1<<size;
+  string tempStr1 = strm1.str();
+  stringstream strm3;
+  strm3<<block_;
+  string tempStr3 = strm3.str();
+  stringstream strm4;
+  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  strm4<<t2;
+  string tempStr4 = strm4.str();
+  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
+  Append(blockInfo);
+
+  //Table_data_block_[data_] = block_;
+  Table_block_data_[block_] = data_;
+}
+
+void SwapGPU::DeploySwap(){
+   ///swap as per schedule
   int relative_gc = (gc-location)%maxLen; //verified
   //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   if ((asyncSwapFlag == 1) && (!(Table_sched.find((gc-location)%maxLen) == Table_sched.end()))){
@@ -807,33 +832,7 @@ void SwapGPU::Test_sched_switch_swap(){
     pool_->Free(last_meta.data_);
     last_meta.data_ = nullptr; // not really needed TODO(junzhe)
     cout<<"scheduled swap: gc and r_idx (sync last) "<<(gc-location)%maxLen<<' '<<last_out_compl<<endl;
-
-
   }
-
-}
-
-void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
-  /*
-  Append info right after Malloc; make block_ - data_ pair wise table.
-  */
-
-  //append info
-  stringstream strm1;
-  strm1<<size;
-  string tempStr1 = strm1.str();
-  stringstream strm3;
-  strm3<<block_;
-  string tempStr3 = strm3.str();
-  stringstream strm4;
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  strm4<<t2;
-  string tempStr4 = strm4.str();
-  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
-  Append(blockInfo);
-
-  //Table_data_block_[data_] = block_;
-  Table_block_data_[block_] = data_;
 }
 
 void SwapGPU::Append(string blockInfo){
@@ -890,7 +889,8 @@ void SwapGPU::Append(string blockInfo){
       //Table_data_block_.erase(ptr);
     }
   }
-
+  //deploy swap at every index.
+  DeploySwap();
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
   gc++;
 
