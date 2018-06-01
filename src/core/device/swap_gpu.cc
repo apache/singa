@@ -518,6 +518,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       }
       int needIdx = itm.d_idx;
       if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
+      itm.i2 = needIdx;
       double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
       while (prepareTime < vec_run[needIdx].t){
         needIdx--;
@@ -525,9 +526,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       itm.i2p = needIdx;
       itm.t2p = prepareTime;
       vec_swap_selct[i] = itm;
-      cout<<"In sched r_idx,i2, i2p "<<vec_swap_selct[i].r_idx<<' ';
-      cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].d_idx;
-      cout<<"---"<<vec_run[needIdx].t-prepareTime<<endl;
+      cout<<"In sched d_idx,i2, i2p "<<vec_swap_selct[i].d_idx<<' ';
+      cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2;
+      cout<<"---"<<vec_run[itm.i2].t-prepareTime<<endl;
       //Note: i2 is d_idx, but not assigned.
     }
     
