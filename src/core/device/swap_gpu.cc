@@ -507,7 +507,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
     }
     for (int i =0; i<vec_swap_selct.size(); i++){
-     
+        int tempIdx; //declared above
         //update i1p, compare with last swap and load
         while ((vec_swap_selct[i].t1p>=vec_run[tempIdx].t) or ((vec_run[tempIdx].MallocFree!=1) and (vec_run[tempIdx].MallocFree!=-1))) {
             tempIdx++; //TODO(junzhe) can speed up
