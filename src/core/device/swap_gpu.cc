@@ -400,7 +400,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   size_t sumSizeSwappAble =0;
   size_t sumSizeSwappAble_2 =0;
   ///formulate swappable items.
-  cout<<"==============================print swappable items "<<maxIdx<<end;
+  cout<<"==============================print swappable items "<<maxIdx<<endl;
   for (int i =1; i<vec_run.size(); i++){
     //SwapBlock(string p, size_t s, int i1, int i2, double t1, double t2): 
     //ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
