@@ -526,7 +526,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       itm.t2p = prepareTime;
       vec_swap_selct[i] = itm;
       cout<<"In sched r_idx,i2, i2p "<<vec_swap_selct[i].r_idx<<' ';
-      cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].d_idx<<endl;
+      cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].d_idx;
+      cout<<"---"<<vec_run[needIdx].t-prepareTime<<endl;
       //Note: i2 is d_idx, but not assigned.
     }
     
