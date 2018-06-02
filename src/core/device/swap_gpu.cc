@@ -526,7 +526,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       itm.i2p = needIdx;
       itm.t2p = prepareTime;
       vec_swap_selct[i] = itm;
-      cout<<"In sched d_idx,i2p, i2 "<<vec_swap_selct[i].d_idx<<' ';
+      cout<<"In sched r_idx,i2p, i2 "<<vec_swap_selct[i].r_idx<<' ';
       cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2;
       cout<<"---"<<vec_run[itm.i2].t-prepareTime<<endl;
       //Note: i2 is d_idx, but not assigned.
@@ -555,11 +555,11 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     //     cout<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2<<endl;
     // }
     //step 3: overhead due to potential overlapping. verify
-    cout<<"verify if self overlapping"<<endl;
-    for (int i =0; i<vec_swap_selct.size(); i++){
-        cout<<vec_swap_selct[i].t2p-vec_swap_selct[i].t1p<<endl;
-    }
-    cout<<"total overhead: "<<overhead<<endl;
+    // cout<<"verify if self overlapping"<<endl;
+    // for (int i =0; i<vec_swap_selct.size(); i++){
+    //     cout<<vec_swap_selct[i].t2p-vec_swap_selct[i].t1p<<endl;
+    // }
+    // cout<<"total overhead: "<<overhead<<endl;
 
 
     ///make the Table_sched; map<int,std::tuple<int,int,int>>
