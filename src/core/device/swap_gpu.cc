@@ -580,20 +580,20 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       if (Table_sched.find(itm.i2p) == Table_sched.end()){
         Table_sched[itm.i2p] = std::make_tuple(itm.r_idx,-1,1);      
       } else {
-        std::get<0>(Table_sched.find(itm.i1)->second) = itm.r_idx;
-        std::get<2>(Table_sched.find(itm.i1)->second) = 1;
+        std::get<0>(Table_sched.find(itm.i2p)->second) = itm.r_idx;
+        std::get<2>(Table_sched.find(itm.i2p)->second) = 1;
       }
       // i1p sync
-      if (Table_sched.find(itm.i2p) == Table_sched.end()){
-        Table_sched[itm.i2p] = std::make_tuple(-1,itm.r_idx,-1);
+      if (Table_sched.find(itm.i1p) == Table_sched.end()){
+        Table_sched[itm.i1p] = std::make_tuple(-1,itm.r_idx,-1);
       } else {
-        std::get<1>(Table_sched.find(itm.i1)->second) = itm.r_idx;
+        std::get<1>(Table_sched.find(itm.i1p)->second) = itm.r_idx;
       }
       //i2 sync
       if (Table_sched.find(itm.i2p) == Table_sched.end()){
         Table_sched[itm.i2p] = std::make_tuple(-1,itm.r_idx,-1);
       } else {
-        std::get<1>(Table_sched.find(itm.i1)->second) = itm.r_idx;
+        std::get<1>(Table_sched.find(itm.i2p)->second) = itm.r_idx;
       }
 
       // //TODO(junzhe) looks size is not correct.
@@ -621,7 +621,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     cout<<"print Table_sched, idx, r_idx, sync, direction"<<endl;
     for (int i =0; i<maxLen; i++){
       if (!(Table_sched.find(i) == Table_sched.end())){
-        cout<<i<<" ";
+        cout<<i<<"-->";
         cout<<std::get<0>(Table_sched.find(i)->second)<<" ";
         cout<<std::get<1>(Table_sched.find(i)->second)<<" ";
         cout<<std::get<2>(Table_sched.find(i)->second)<<endl;
