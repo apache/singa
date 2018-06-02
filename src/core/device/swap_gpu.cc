@@ -620,7 +620,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     cout<<"size of Table_sched =================="<<Table_sched.size()<<endl;
     cout<<"print Table_sched, idx, r_idx, sync, direction"<<endl;
     for (int i =0; i<maxLen; i++){
-      if !(Table_sched.find(i) == Table_sched.end()){
+      if (!(Table_sched.find(i) == Table_sched.end())){
         cout<<i<<" ";
         cout<<std::get<0>(Table_sched.find(itm.i1)->second)<<" ";
         cout<<std::get<1>(Table_sched.find(itm.i1)->second)<<" ";
