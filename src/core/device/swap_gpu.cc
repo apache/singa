@@ -590,10 +590,10 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         std::get<1>(Table_sched.find(itm.i1p)->second) = itm.r_idx;
       }
       //i2 sync
-      if (Table_sched.find(itm.i2p) == Table_sched.end()){
-        Table_sched[itm.i2p] = std::make_tuple(-1,itm.r_idx,-1);
+      if (Table_sched.find(itm.i2) == Table_sched.end()){
+        Table_sched[itm.i2] = std::make_tuple(-1,itm.r_idx,-1);
       } else {
-        std::get<1>(Table_sched.find(itm.i2p)->second) = itm.r_idx;
+        std::get<1>(Table_sched.find(itm.i2)->second) = itm.r_idx;
       }
 
       // //TODO(junzhe) looks size is not correct.
