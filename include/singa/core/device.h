@@ -287,8 +287,9 @@ class SwapGPU : public Device {
   map<const Block*, int>Table_not_at_device;  //int refers to its r_idx of the block/meta
   //map<const Block*, size_t>Table_block_size;  //Table block_ -> size TODO(junzhe) no need, can call block_->size()
 
-  //schedule: idx--> r_idx,sync_r_idx,dir. int 0 means D2H, 1 means H2D.
+  //schedule: idx--> r_idx, dir, sync_r_idx,dir. int 0 means D2H, 1 means H2D.
   map<int,std::tuple<int,int,int>>Table_sched; // changed to with sync_r_idx
+
 
   //vec_block
   vector<string>vec_block;

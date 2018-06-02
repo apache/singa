@@ -564,36 +564,38 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
     ///make the Table_sched; map<int,std::tuple<int,int,int>>
     // in this version: i1 swap, i1p sync; i2p swap, i2 sync.
-    //idx--> r_idx,sync_r_idx,dir. int 0 means D2H, 1 means H2D.
+    //idx--> r_idx, dir; sync_r_idx,dir. int 0 means D2H, 1 means H2D.
     cudaStream_t stream1;
     cudaStream_t stream2;
     for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
       auto itm = vec_swap_selct[i];
       //i1 swap
       if (Table_sched.find(itm.i1) == Table_sched.end()){
-        Table_sched[itm.i1] = std::make_tuple(itm.r_idx,-1,0);
+        Table_sched[itm.i1] = std::make_tuple(itm.r_idx,0,-1,-1);
       } else {
         std::get<0>(Table_sched.find(itm.i1)->second) = itm.r_idx;
-        std::get<2>(Table_sched.find(itm.i1)->second) = 0;
+        std::get<1>(Table_sched.find(itm.i1)->second) = 0;
       }
       //i2p swap
       if (Table_sched.find(itm.i2p) == Table_sched.end()){
-        Table_sched[itm.i2p] = std::make_tuple(itm.r_idx,-1,1);      
+        Table_sched[itm.i2p] = std::make_tuple(itm.r_idx,1,-1,-1);      
       } else {
         std::get<0>(Table_sched.find(itm.i2p)->second) = itm.r_idx;
-        std::get<2>(Table_sched.find(itm.i2p)->second) = 1;
+        std::get<1>(Table_sched.find(itm.i2p)->second) = 1;
       }
       // i1p sync
       if (Table_sched.find(itm.i1p) == Table_sched.end()){
-        Table_sched[itm.i1p] = std::make_tuple(-1,itm.r_idx,-1);
+        Table_sched[itm.i1p] = std::make_tuple(-1,-1,itm.r_idx,0);
       } else {
-        std::get<1>(Table_sched.find(itm.i1p)->second) = itm.r_idx;
+        std::get<2>(Table_sched.find(itm.i1p)->second) = itm.r_idx;
+        std::get<3>(Table_sched.find(itm.i1p)->second) = 0; 
       }
       //i2 sync
       if (Table_sched.find(itm.i2) == Table_sched.end()){
-        Table_sched[itm.i2] = std::make_tuple(-1,itm.r_idx,-1);
+        Table_sched[itm.i2] = std::make_tuple(-1,-1,itm.r_idx,1);
       } else {
-        std::get<1>(Table_sched.find(itm.i2)->second) = itm.r_idx;
+        std::get<2>(Table_sched.find(itm.i2)->second) = itm.r_idx;
+        std::get<3>(Table_sched.find(itm.i1p)->second) = 1;
       }
 
       // //TODO(junzhe) looks size is not correct.
@@ -624,7 +626,8 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         cout<<i<<"-->";
         cout<<std::get<0>(Table_sched.find(i)->second)<<" ";
         cout<<std::get<1>(Table_sched.find(i)->second)<<" ";
-        cout<<std::get<2>(Table_sched.find(i)->second)<<endl;
+        cout<<std::get<2>(Table_sched.find(i)->second)<<" ";
+        cout<<std::get<3>(Table_sched.find(i)->second)<<endl;
       }
     }
   return gc+maxLen-(gc-location)%maxLen;
@@ -800,7 +803,7 @@ void SwapGPU::DeploySwap(){
   //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
   if ((asyncSwapFlag == 1) && (!(Table_sched.find((gc-location)%maxLen) == Table_sched.end()))){
     cout<<"scheduled swap: gc and r_idx "<<(gc-location)%maxLen<<' '<<std::get<0>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
-    if (std::get<2>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
+    if (std::get<1>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
       int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
 
       if (Table_meta.find(r_idx)->second.last_out_idx != 0) {
