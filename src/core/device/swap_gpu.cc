@@ -526,14 +526,15 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       itm.i2p = needIdx;
       itm.t2p = prepareTime;
       vec_swap_selct[i] = itm;
-      cout<<"In sched d_idx,i2, i2p "<<vec_swap_selct[i].d_idx<<' ';
+      cout<<"In sched d_idx,i2p, i2 "<<vec_swap_selct[i].d_idx<<' ';
       cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2;
       cout<<"---"<<vec_run[itm.i2].t-prepareTime<<endl;
       //Note: i2 is d_idx, but not assigned.
     }
     
     ///step 2: change i2p to load exceeds limit, with overhead.
-    // TODO(junzhe) Here got problem, to follow up here.
+    // TODO(junzhe) Here got problem, to follow up here: 
+    //overlimit 2 places, overlaping check, overhead compt.
 
     // for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
     //     old_idx = vec_swap_selct[i].i2p;
