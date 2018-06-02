@@ -622,9 +622,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     for (int i =0; i<maxLen; i++){
       if (!(Table_sched.find(i) == Table_sched.end())){
         cout<<i<<" ";
-        cout<<std::get<0>(Table_sched.find(itm.i1)->second)<<" ";
-        cout<<std::get<1>(Table_sched.find(itm.i1)->second)<<" ";
-        cout<<std::get<2>(Table_sched.find(itm.i1)->second)<<endl;
+        cout<<std::get<0>(Table_sched.find(i)->second)<<" ";
+        cout<<std::get<1>(Table_sched.find(i)->second)<<" ";
+        cout<<std::get<2>(Table_sched.find(i)->second)<<endl;
       }
     }
   return gc+maxLen-(gc-location)%maxLen;
