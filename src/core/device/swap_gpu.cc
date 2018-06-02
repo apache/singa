@@ -805,7 +805,7 @@ void SwapGPU::DeploySwap(){
     auto swap_idx = std::get<0>(Table_sched.find(r_gc)->second);
     auto swap_dir = std::get<1>(Table_sched.find(r_gc)->second);
     auto sync_idx = std::get<2>(Table_sched.find(r_gc)->second);
-    auto swap_dir = std::get<3>(Table_sched.find(r_gc)->second);
+    auto sync_dir = std::get<3>(Table_sched.find(r_gc)->second);
     if (swap_dir == 0){ SwapOut_idx(swap_idx); 
       cout<<"Swap Out "<<swap_idx<<endl;
     }
