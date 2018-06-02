@@ -560,19 +560,45 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
         cout<<vec_swap_selct[i].t2p-vec_swap_selct[i].t1p<<endl;
     }
     cout<<"total overhead: "<<overhead<<endl;
-    cout<<"done"<<endl;
-    ///make the Table_sched
-    cout<<"map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D."<<endl;
+
+
+    ///make the Table_sched; map<int,std::tuple<int,int,int>>
+    // in this version: i1 swap, i1p sync; i2p swap, i2 sync.
+    //idx--> r_idx,sync_r_idx,dir. int 0 means D2H, 1 means H2D.
     cudaStream_t stream1;
     cudaStream_t stream2;
     for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
-      //for each selct block, i1 is start swapOut, i2p is start swapIn. junzhe on 5.4 
-      //TODO(junzhe) to verify above statement.
-      Table_sched[vec_swap_selct[i].i1] = std::make_tuple(vec_swap_selct[i].r_idx, vec_swap_selct[i].size,0);
-      Table_sched[vec_swap_selct[i].i2p] = std::make_tuple(vec_swap_selct[i].r_idx,vec_swap_selct[i].size,1);
-      //TODO(junzhe) looks size is not correct.
-      cout<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 0'<<endl;
-      cout<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 1'<<endl;
+      auto itm = vec_swap_selct[i];
+      //i1 swap
+      if (Table_sched.find(itm.i1) == Table_sched.end()){
+        std::get<0>(Table_sched.find(itm.i1)->second) = itm.r_idx;
+        std::get<2>(Table_sched.find(itm.i1)->second) = 0;
+      } else {
+        Table_sched[itm.i1] = std::make_tuple(itm.r_idx,-1,0);
+      }
+      //i2p swap
+      if (Table_sched.find(itm.i2p) == Table_sched.end()){
+        std::get<0>(Table_sched.find(itm.i1)->second) = itm.r_idx;
+        std::get<2>(Table_sched.find(itm.i1)->second) = 1;
+      } else {
+        Table_sched[itm.i2p] = std::make_tuple(itm.r_idx,-1,1);
+      }
+      // i1p sync
+      if (Table_sched.find(itm.i2p) == Table_sched.end()){
+        std::get<1>(Table_sched.find(itm.i1)->second) = itm.r_idx;
+      } else {
+        Table_sched[itm.i2p] = std::make_tuple(-1,itm.r_idx,-1);
+      }
+      //i2 sync
+      if (Table_sched.find(itm.i2p) == Table_sched.end()){
+        std::get<1>(Table_sched.find(itm.i1)->second) = itm.r_idx;
+      } else {
+        Table_sched[itm.i2p] = std::make_tuple(-1,itm.r_idx,-1);
+      }
+
+      // //TODO(junzhe) looks size is not correct.
+      // cout<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 0'<<endl;
+      // cout<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 1'<<endl;
       void* tempPtr = nullptr;
       cudaMallocHost(&tempPtr,vec_swap_selct[i].size); //pinned memory.
       BlockMeta meta;
@@ -591,7 +617,16 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       file_block7<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<" 1"<<endl;
       file_block7<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].ptr<<endl;
     }
-
+    cout<<"size of Table_sched =================="<<Table_sched.size()<<endl;
+    cout<<"print Table_sched, idx, r_idx, sync, direction"<<endl;
+    for (int i =0; i<maxLen; i++){
+      if !(Table_sched.find(i) == Table_sched.end()){
+        cout<<i<<" ";
+        cout<<std::get<0>(Table_sched.find(itm.i1)->second)<<" ";
+        cout<<std::get<1>(Table_sched.find(itm.i1)->second)<<" ";
+        cout<<std::get<2>(Table_sched.find(itm.i1)->second)<<endl;
+      }
+    }
   return gc+maxLen-(gc-location)%maxLen;
 } //end of Swap_test()
 
