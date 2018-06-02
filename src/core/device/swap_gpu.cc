@@ -798,73 +798,41 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 }
 
 void SwapGPU::DeploySwap(){
-   ///swap as per schedule
-  int relative_gc = (gc-location)%maxLen; //verified
-  //map<int,std::tuple<int,size_t,int>>Table_sched; //schedule, int 0 means D2H, 1 means H2D.
-  if ((asyncSwapFlag == 1) && (!(Table_sched.find((gc-location)%maxLen) == Table_sched.end()))){
-    cout<<"scheduled swap: gc and r_idx "<<(gc-location)%maxLen<<' '<<std::get<0>(Table_sched.find((gc-location)%maxLen)->second)<<endl;
-    if (std::get<1>(Table_sched.find((gc-location)%maxLen)->second) == 0) {
-      int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
-
-      if (Table_meta.find(r_idx)->second.last_out_idx != 0) {
-        //synchronize last one TODO(junzhe) verify here, changes and updates not lean; standardize the time to update
-        auto last_out_idx = Table_meta.find(r_idx)->second.last_out_idx;
-        auto last_meta = Table_meta.find(last_out_idx)->second;
-        auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-        cudaEventSynchronize(last_meta.in_event);
-        auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-        //cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
-        //last_meta.block_->update_data(nullptr);
-        Table_not_at_device[last_meta.block_] = last_out_idx;
-        pool_->Free(last_meta.data_);
-        last_meta.data_ = nullptr; //not really needed TODO(junzhe)
-        cout<<"sync out "<<last_out_idx<<endl;
-      }
-      if (Table_meta.find(r_idx)->second.last_in_idx == 0){
-        //to sync last out item assume last out first in. TODO(junzhe)
-        last_out_flag = 1;
-        last_out_r_idx = r_idx;
-        last_out_compl = Table_meta.find(r_idx)->second.i2;
-        cout<<" very last out item, r_idx and i2 "<<r_idx<<' '<<last_out_compl<<endl;
-      }
-     
-      SwapOut_idx(r_idx);
-      cout<<"swapOut done"<<endl;
-    } else {
-      int r_idx = std::get<0>(Table_sched.find((gc-location)%maxLen)->second);
-      if (Table_meta.find(r_idx)->second.last_in_idx != 0) {
-        //sycnchronize last one TODO(junzhe) this is not the earliest time to update Verify.
-        auto last_meta = Table_meta.find(Table_meta.find(r_idx)->second.last_in_idx)->second;
-        // if Table_not_at_device still contain it, means GetRealPtr function never sync it in advance.
-        if (!(Table_not_at_device.find(last_meta.block_)==Table_not_at_device.end())){
-          auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-          cudaEventSynchronize(last_meta.in_event);
-          auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-          //cout<<"sync time spent: (SwapIn) "<<t2-t1<<endl;
-          //last_meta.block_->update_data(last_meta.data_);
-          //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_meta.find(r_idx)->second.last_in_idx<<endl;
-          Table_not_at_device.erase(last_meta.block_);
-        }
-      }
-      SwapIn_idx(r_idx);
-      cout<<"swapIn done"<<endl;
+   ///swap as per schedule: this version: both out and in sync
+  int r_gc = (gc-location)%maxLen; 
+  if ((asyncSwapFlag == 1) && (!(Table_sched.find(r_gc) == Table_sched.end()))){
+    cout<<"--------sched action: "<<endl;
+    auto swap_idx = std::get<0>(Table_sched.find(r_gc)->second);
+    auto swap_dir = std::get<1>(Table_sched.find(r_gc)->second);
+    auto sync_idx = std::get<2>(Table_sched.find(r_gc)->second);
+    auto swap_dir = std::get<3>(Table_sched.find(r_gc)->second);
+    if (swap_dir == 0){ SwapOut_idx(swap_idx); 
+      cout<<"Swap Out "<<swap_idx<<endl;
     }
-  }
-  //sync last out item
-  if ((asyncSwapFlag == 1) && (relative_gc >= last_out_compl) && (last_out_flag == 1)){
-    last_out_flag = 0;
-    last_out_compl = 0; // above 2 can merge
-    auto last_meta = Table_meta.find(last_out_r_idx)->second;
-    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    cudaEventSynchronize(last_meta.in_event);
-    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    //cout<<"sync time spent: (SwapOut) "<<t2-t1<<endl;
-    //last_meta.block_->update_data(nullptr);
-    Table_not_at_device[last_meta.block_] = last_out_r_idx; //TODO(junzhe) seems not needed
-    pool_->Free(last_meta.data_);
-    last_meta.data_ = nullptr; // not really needed TODO(junzhe)
-    cout<<"scheduled swap: gc and r_idx (sync last) "<<(gc-location)%maxLen<<' '<<last_out_compl<<endl;
-  }
+    if (swap_dir == 1){ SwapIn_idx(swap_idx); 
+      cout<<"Swap In "<<swap_idx<<endl;
+    }
+    //TODO(junzhe) verify sync what else to be done
+    if (sync_dir == 0){
+      auto last_meta = Table_meta.find(sync_idx)->second;
+      auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      cudaEventSynchronize(last_meta.in_event);
+      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      Table_not_at_device[last_meta.block_] = sync_idx; //TODO(junzhe) double check if needed.
+      pool_->Free(last_meta.data_);
+      last_meta.data_ = nullptr; //not really needed TODO(junzhe)
+      cout<<"sync out "<<sync_idx<<endl;
+    }
+    if (sync_dir == 1){
+      //if (!(Table_not_at_device.find(last_meta.block_)==Table_not_at_device.end())){ TODO(junzhe)
+      auto last_meta = Table_meta.find(sync_idx)->second;
+      auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      cudaEventSynchronize(last_meta.out_event);
+      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+      Table_not_at_device.erase(last_meta.block_);
+      cout<<"sync in "<<sync_idx<<endl;
+    }
+  } 
 }
 
 void SwapGPU::Append(string blockInfo){
