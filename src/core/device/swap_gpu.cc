@@ -801,7 +801,7 @@ void SwapGPU::DeploySwap(){
    ///swap as per schedule: this version: both out and in sync
   int r_gc = (gc-location)%maxLen; 
   if ((asyncSwapFlag == 1) && (!(Table_sched.find(r_gc) == Table_sched.end()))){
-    cout<<"--------sched action: "<<endl;
+    cout<<"--------sched action at "<<r_gc<<endl;
     auto swap_idx = std::get<0>(Table_sched.find(r_gc)->second);
     auto swap_dir = std::get<1>(Table_sched.find(r_gc)->second);
     auto sync_idx = std::get<2>(Table_sched.find(r_gc)->second);
@@ -832,6 +832,7 @@ void SwapGPU::DeploySwap(){
       Table_not_at_device.erase(last_meta.block_);
       cout<<"sync in "<<sync_idx<<endl;
     }
+    cout<<"-------"<<endl;
   } 
 }
 
