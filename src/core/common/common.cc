@@ -50,8 +50,6 @@ void* Block::mutable_data() {
       cout<<"slept to get data_ updated: "<<this<<' '<<data_<<endl;
     }
     
-
-
     return static_cast<char*>(data_) + offset_;
   }
 
