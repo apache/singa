@@ -86,7 +86,7 @@ const void* Block::data() const {
     return static_cast<char*>(data_) + offset_;
   }
 
-const void* Block::get_data() const {
+void* Block::get_data() {
   return data_;
 }
 

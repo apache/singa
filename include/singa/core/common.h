@@ -67,7 +67,7 @@ class Block {
  
   const void* data() const;
   
-  const void* get_data() const;
+  void* get_data() ;
 
   void update_data(void* data_new) ;
     
