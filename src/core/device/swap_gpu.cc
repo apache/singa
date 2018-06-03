@@ -820,6 +820,7 @@ void SwapGPU::DeploySwap(){
       cudaEventSynchronize(last_meta.in_event);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       Table_not_at_device[last_meta.block_] = sync_idx; //TODO(junzhe) double check if needed.
+      cout<<"to free data_"<<last_meta.data_<<endl;
       pool_->Free(last_meta.data_);
       last_meta.data_ = nullptr; //not really needed TODO(junzhe)
       cout<<"sync out "<<sync_idx<<endl;
@@ -954,16 +955,6 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cout<<"right after cudaMemcpyAsync"<<endl;
   cout<<"To update_data swap for (In) "<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
   meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
-  
-  // if (meta.last_in_idx == 0){
-  //   last_out_flag = 1;
-  // }
-  // if (tempCounter <3){
-  //   meta.block_->update_data(meta.data_);
-  //   pool_->Free(to_rm_ptr);
-  //   tempCounter++;
-  //   cout<<"---========got real update:"<<meta.block_<<" "<<meta.data_<<endl;
-  // }
   //auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
 }
