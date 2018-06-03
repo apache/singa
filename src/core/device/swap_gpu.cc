@@ -265,8 +265,8 @@ struct SwapBlock{
     double t1p;
     double t2p;
 
-    int last_out_idx = 0; //last during swapOut
-    int last_in_idx = 0; //next during swapIn
+    //int last_out_idx = 0; //last during swapOut
+    //int last_in_idx = 0; //next during swapIn
     //onePairMsg(int n,size_t s, int r,int d):name(n),size(s),r_idx(r),d_idx(d){}
     //from LayerAppend (3) - r_idx, to next read/write (2) - d_idx
     SwapBlock(string p, size_t s, int i1, int i2, double t1, double t2): ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
@@ -388,7 +388,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       maxIdx = i;
     } 
   }
-  size_t memLimit = maxLoad - (65<<20);//memLimit_ratio * maxLoad;
+  size_t memLimit = maxLoad - (62<<20);//memLimit_ratio * maxLoad;
   //sort by ptr & idx
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
   //log vec_run and vec_run2, subsequent iteration for analysis only. TODO(junzhe)
@@ -471,10 +471,10 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
     for (int i =0; i<vec_swap_selct.size(); i++){
       auto itm = vec_swap_selct[i];
-      if (i>0){
-        //update for linked list 
-        itm.last_out_idx = vec_swap_selct[i-1].r_idx;
-      }
+      // if (i>0){
+      //   //update for linked list 
+      //   itm.last_out_idx = vec_swap_selct[i-1].r_idx;
+      // }
       int readyIdx = 0;
       if (itm.cat == "A1") { readyIdx = itm.r_idx; }
       if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
@@ -512,10 +512,10 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     ///step 1: overlap with next swapIn.
     for (int i =0; i<vec_swap_selct.size(); i++){
       auto itm = vec_swap_selct[i];
-      if (i<(vec_swap_selct.size()-1)){
-        //update for linked list 
-        itm.last_in_idx = vec_swap_selct[i+1].r_idx;
-      }
+      // if (i<(vec_swap_selct.size()-1)){
+      //   //update for linked list 
+      //   itm.last_in_idx = vec_swap_selct[i+1].r_idx;
+      // }
       int needIdx = itm.d_idx;
       if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
       itm.i2 = needIdx;
@@ -602,18 +602,19 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       // cout<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 0'<<endl;
       // cout<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 1'<<endl;
       void* tempPtr = nullptr;
-      cudaMallocHost(&tempPtr,vec_swap_selct[i].size); //pinned memory.
+      cudaMallocHost(&tempPtr,itm.size); //pinned memory.
       BlockMeta meta;
-      meta.size = vec_swap_selct[i].size;
+      meta.size = itm.size;
       meta.cpu_ptr = tempPtr;
       meta.out_stream = stream1;
       meta.in_stream = stream2;
-      meta.last_out_idx = vec_swap_selct[i].last_out_idx;
-      meta.last_in_idx = vec_swap_selct[i].last_in_idx;
-      meta.i2 = vec_swap_selct[i].i2;
-      Table_meta[vec_swap_selct[i].r_idx] = meta;
+      //meta.last_out_idx = vec_swap_selct[i].last_out_idx;
+      //meta.last_in_idx = vec_swap_selct[i].last_in_idx;
+      //meta.i2 = vec_swap_selct[i].i2;
+      Table_meta[itm.r_idx] = meta;
+
       cout<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<meta.size;
-      cout<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].last_out_idx<<' '<<vec_swap_selct[i].last_in_idx<<endl;
+      cout<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<endl;
       fstream file_block7("sched.text", ios::in|ios::out|ios::app);
       file_block7<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<" 0"<<endl;
       file_block7<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<" 1"<<endl;
@@ -954,9 +955,9 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   cout<<"To update_data swap for (In) "<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
   meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
   
-  if (meta.last_in_idx == 0){
-    last_out_flag = 1;
-  }
+  // if (meta.last_in_idx == 0){
+  //   last_out_flag = 1;
+  // }
   // if (tempCounter <3){
   //   meta.block_->update_data(meta.data_);
   //   pool_->Free(to_rm_ptr);
