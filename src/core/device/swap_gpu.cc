@@ -742,11 +742,7 @@ void SwapGPU::Free(void* ptr) {
     pool_->Free(ptr);
   }
 
-  // //vC12
-  // Table_block_data_.erase(Table_data_block_.find(ptr)->second);
-  // Table_data_block_.erase(ptr);
-  //cout<<"free done"<<endl;
- 
+  //cout<<"free done"<<endl; 
 }
 
 void SwapGPU::Test_sched_switch_swap(){
@@ -794,8 +790,7 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
   string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4;
   Append(blockInfo);
 
-  //Table_data_block_[data_] = block_;
-  Table_block_data_[block_] = data_;
+  
 }
 
 void SwapGPU::DeploySwap(){
@@ -820,6 +815,7 @@ void SwapGPU::DeploySwap(){
       cudaEventSynchronize(last_meta.in_event);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       Table_not_at_device[last_meta.block_] = sync_idx; //TODO(junzhe) double check if needed.
+      last_meta.block_->update_data(nullptr);
       cout<<"to free data_"<<last_meta.data_<<endl;
       pool_->Free(last_meta.data_);
       last_meta.data_ = nullptr; //not really needed TODO(junzhe)
@@ -832,6 +828,7 @@ void SwapGPU::DeploySwap(){
       cudaEventSynchronize(last_meta.out_event);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       Table_not_at_device.erase(last_meta.block_);
+      last_meta.block_->update_data(last_meta.data_);
       cout<<"sync in "<<sync_idx<<endl;
     }
     cout<<"-------"<<endl;
@@ -840,15 +837,15 @@ void SwapGPU::DeploySwap(){
 
 void SwapGPU::Append(string blockInfo){
   vector<string> v = swap_split(blockInfo, " ");
-  void* block_temp;
+  void* tempPtr;
   stringstream convert(v[1]);
-  convert>>block_temp;
-  stringstream strm1;
-  // insert size
+  convert>>tempPtr;
+  auto tempBlock_ = static_cast<Block*>(tempPtr);
+  
+  // insert size, malloc : flag, block_, size, t; others: insert size t.
   if (v.size() != 4) {
-    // malloc : flag, block_, size, t
-    // others: insert size t.
-    strm1<<(static_cast<Block*>(block_temp))->size();
+    stringstream strm1;
+    strm1<<tempBlock_->size();
     string tempStr1 = strm1.str();
     blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
   }
@@ -856,40 +853,35 @@ void SwapGPU::Append(string blockInfo){
   if (maxLen < 100){
     if (v[0] == "Malloc"){
       if (global_load.size()>0){
-        global_load.push_back(global_load[global_load.size()-1]+(static_cast<Block*>(block_temp))->size());
+        global_load.push_back(global_load[global_load.size()-1]+tempBlock_->size());
       } else {
-        global_load.push_back((static_cast<Block*>(block_temp))->size());
+        global_load.push_back(tempBlock_->size());
       }
     } else if (v[0] == "Free"){
-      global_load.push_back(global_load[global_load.size()-1]-(static_cast<Block*>(block_temp))->size());
+      global_load.push_back(global_load[global_load.size()-1]-tempBlock_->size());
     } else {
       global_load.push_back(global_load[global_load.size()-1]);
     }
   }
   //cout<<blockInfo<<endl;
-  //cout<<(static_cast<Block*>(block_temp))->size()<<endl;
+  //cout<<tempBlock_->size()<<endl;
   //cout<<"load: "<<global_load[global_load.size()-1]<<" len of blockInfo and global_load "<<vec_block.size()<<' '<<global_load.size()<<endl;
 
   //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   vec_block.push_back(blockInfo);
   // fstream file_block5("append.text", ios::in|ios::out|ios::app);
   // file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
-  // update Table_meta's block_
+
+  // update Table_meta's block_ and data_
   if (maxLen > 100) {
     //cout<<gc<<' '<<(gc-location)%maxLen<<' '<<blockInfo<<endl;
     int r_gc = (gc-location)%maxLen;
-
     if (!(Table_meta.find(r_gc)==Table_meta.end())){
-      void* result;
-      stringstream convert(v[1]);
-      convert>>result;
       //cout<<"r_gc, gc and size ot Table_meta "<<r_gc<<' '<<gc<<" "<<Table_meta.size()<<endl;
       //TODO(junzhe) verify the length change, if go in, value update
-      cout<<"To update Block_ at "<<r_gc<<' '<<gc<<' '<<static_cast<Block*>(result)<<Table_meta.find(r_gc)->second.block_<<endl;
-      Table_meta.find(r_gc)->second.block_ = static_cast<Block*>(result);
-      Table_meta.find(r_gc)->second.data_ = Table_block_data_.find(static_cast<Block*>(result))->second;
-      Table_block_data_.erase(static_cast<Block*>(result));
-      //Table_data_block_.erase(ptr);
+      cout<<"To update Block_ at "<<r_gc<<' '<<gc<<' '<<tempBlock_<<' '<<tempBlock_->get_data()<<endl;
+      Table_meta.find(r_gc)->second.block_ = tempBlock_;
+      Table_meta.find(r_gc)->second.data_ = tempBlock_->get_data();
     }
   }
   //deploy swap at every index.
@@ -922,13 +914,13 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   cudaError_t err;
   BlockMeta meta = Table_meta.find(r_idx)->second;
   cudaEventCreate (&meta.out_event);
-  cout<<"right before cudaMemcpyAsync Out"<<endl;
+  //cout<<"right before cudaMemcpyAsync Out"<<endl;
   err = cudaMemcpyAsync(meta.cpu_ptr,meta.data_,meta.size,cudaMemcpyDeviceToHost,meta.out_stream);
   cudaEventRecord(meta.out_event,meta.out_stream);
-  cout<<"right after cudaMemcpyAsync"<<endl;
+  //cout<<"right after cudaMemcpyAsync"<<endl;
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
   cout<<"To update_data swap for (Out) "<<r_idx<<" "<<meta.block_<<" 0"<<endl;
-  meta.block_->update_data(nullptr); //TODO(junzhe) debug only, not the right place to update.
+  
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
   //cudaEventSynchronize(event1);
   //auto t4 = (std::chrono::system_clock::now()).time_since_epoch().count();
@@ -963,7 +955,7 @@ void SwapGPU::SwapOut(const Block* block_){
   if (gc < 1000 && block_->size() > 1<<20) {
     fstream file_block5("speed.text", ios::in|ios::out|ios::app);
     BlockMeta meta;
-    meta.data_ = Table_block_data_.find(block_)->second;
+    meta.data_ = meta.block_->get_data();
     void* tempPtr = nullptr;
     cudaMallocHost(&tempPtr,block_->size()); //pinned memory.
     meta.cpu_ptr = tempPtr;

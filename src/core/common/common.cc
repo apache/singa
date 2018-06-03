@@ -86,6 +86,10 @@ const void* Block::data() const {
     return static_cast<char*>(data_) + offset_;
   }
 
+const void* Block::get_data() const {
+  return data_;
+}
+
 void Block::update_data(void* data_new) {
   data_ = data_new;
   std::cout<<"results update_data:: "<<this<<' '<<data_<<std::endl;

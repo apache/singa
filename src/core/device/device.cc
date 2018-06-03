@@ -43,7 +43,7 @@ Block* Device::NewBlock(int size) {
     Block* block_ = new Block(ptr, size,0,this);
     //std::cout<<"(reference) from device.cc after, data_, block_ device: "<<ptr<<" "<<block_<<' '<<this<<std::endl;
     MakeMetaTable(block_,ptr,size); // make table and append vec_block.
-    //cout<<"NewBlock: "<<block_<<' '<<ptr<<endl;
+    cout<<"NewBlock: "<<block_<<' '<<ptr<<endl;
     return block_;
   } else {
     return nullptr;
@@ -55,7 +55,7 @@ void Device::FreeBlock(Block* block) {
   if (block != nullptr) {
     //TODO(junzhe) to merge it
     auto tempPtr = block->mutable_data();
-    //cout<<"FreeBlock: "<<block<<' '<<tempPtr<<endl;
+    cout<<"FreeBlock: "<<block<<' '<<tempPtr<<endl;
     Free(tempPtr);
     //cout<<"SwapGPU::Free() returned"<<endl;
     //Free(block->mutable_data());

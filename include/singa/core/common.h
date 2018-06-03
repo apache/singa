@@ -66,6 +66,8 @@ class Block {
   void* mutable_data() ;
  
   const void* data() const;
+  
+  const void* get_data() const;
 
   void update_data(void* data_new) ;
     
