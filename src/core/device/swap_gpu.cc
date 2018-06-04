@@ -405,8 +405,8 @@ void SwapGPU::swap_plan(){
   // vector<onePieceMsg>vec_run(&vec_pieceMsg[location+maxLen],&vec_pieceMsg[location+2*maxLen]);
   // vector<onePieceMsg>vec_run_2(&vec_pieceMsg[location+2*maxLen],&vec_pieceMsg[location+3*maxLen]);
   //3 iterations
-  vector<onePieceMsg>vec_run_t(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
-  cout<<"time for 3 itr: "<<vec_run_t[vec_run_t.size()-1].t-vec_run_t[0].t<<endl;
+  vector<onePieceMsg>vec_run_3(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
+  cout<<"time for 3 itr: "<<vec_run_3[vec_run_3.size()-1].t-vec_run_3[0].t<<endl;
   ///get peak and idx of vec_load, updated with global_load
   int maxIdx = 0;
   size_t maxLoad = 0;
@@ -429,15 +429,15 @@ void SwapGPU::swap_plan(){
   cout<<"memLimit and maxLoad are: "<<memLimit<<' '<<maxLoad<<endl;
   cout<<"range: "<<vec_load[overLimit_.first]<<" "<<vec_load[overLimit_.second]<<endl;
   //sort by ptr & idx
-  sort(vec_run_t.begin(),vec_run_t.end(),less_than_ptrIdx());
+  sort(vec_run_3.begin(),vec_run_3.end(),less_than_ptrIdx());
 
   //for analysis only. TODO(junzhe)
   fstream file_block3("vec_run_simple.text", ios::in|ios::out|ios::app);
-  fstream file_block4("vec_run_t.text", ios::in|ios::out|ios::app);
+  fstream file_block4("vec_run_3.text", ios::in|ios::out|ios::app);
   // fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
-  for (int i = 0; i<vec_run_t.size();i++){
+  for (int i = 0; i<vec_run_3.size();i++){
     file_block3<<i<<' '<<vec_block[i+location]<<endl;
-    file_block4<<i<<' '<<vec_run_t[i].ptr<<' '<<vec_run_t[i].idx<<vec_run_t[i].MallocFree<<endl;
+    file_block4<<i<<' '<<vec_run_3[i].ptr<<' '<<vec_run_3[i].idx<<vec_run_3[i].MallocFree<<endl;
     //file_block4<<i<<' '<<vec_block[i+location+maxLen]<<endl;
   }
   //
