@@ -424,14 +424,15 @@ void SwapGPU::swap_plan(){
   cout<<"memLimit and maxLoad are: "<<memLimit<<' '<<maxLoad<<endl;
   cout<<"range: "<<vec_load[overLimit_.first]<<" "<<vec_load[overLimit_.second]<<endl;
   //sort by ptr & idx
-  sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
+  sort(vec_run_t.begin(),vec_run_t.end(),less_than_ptrIdx());
 
   //for analysis only. TODO(junzhe)
   fstream file_block3("vec_run_t.text", ios::in|ios::out|ios::app);
-  // fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
+  fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
   // fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run_t.size();i++){
     file_block3<<i<<' '<<vec_block[i+location]<<endl;
+    file_block4<<i<<' '<<vec_run_t[i]<<endl;
     //file_block4<<i<<' '<<vec_block[i+location+maxLen]<<endl;
   }
   //
