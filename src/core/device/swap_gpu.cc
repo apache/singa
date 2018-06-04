@@ -312,28 +312,36 @@ struct less_than_Idx_Swap_rvs{
     }
 };
 
-int load_over_limit(vector<double>vec_load, size_t memLimit, int old_idx){
-    //TODO(junzhe) reduce time complexity
-    for (int i = old_idx; i<vec_load.size();i++){
-        if (vec_load[i]>=memLimit){
-            return i;
-        }
+
+pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start_idx, int end_idx){
+  //input: vec_load, memLimit, range [start_idx, end_idx)
+  //return range overlimit [first_over_limit, first_below_limit)
+  int first_over_limit = start_idx;
+  int first_below_limit = end_idx;
+
+  for (int i = start_idx; i < end_idx; i++){
+    if (vec_load[i] > memLimit){
+      first_over_limit = i;
+      break;
     }
-    return static_cast<int>(vec_load.size()); //TODO(junzhe) to reset between comp t1' and t2'
+  }
+
+  for (int i = first_over_limit; i < end_idx; i++){
+    if (vec_load[i] <= memLimit){
+      first_below_limit = i;
+      break;
+    }
+  }
+
+  return smake_pair(first_over_limit, first_below_limit);
 }
 
 
-void load_update(vector<double>& vec_load,int old_idx, int plusMinus, size_t size){
-    for (int i = old_idx; i<vec_load.size();i++){
-        //cout<<"plusMinus "<<plusMinus<<endl;
-        if (plusMinus ==1){
-            //cout<<"yes its 1"<<endl;
-            vec_load[i]=vec_load[i]+static_cast<double>(size);
-        } else {
-            //cout<<"no its not 1"<<endl;
-            vec_load[i]=vec_load[i]-static_cast<double>(size);
-        }
-    }
+void load_update(vector<double>& vec_load,int start_idx, int end_idx int plusMinus, size_t size){
+  //update load [start_idx, end_idx) by plusMinus*size
+  for (int i = start_idx; i<end_idx; i++){
+    vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+  }
 }
 
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
@@ -349,7 +357,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"size of vec_pieceMsg and vec_block are: "<<vec_pieceMsg.size()<<' '<<vec_block.size()<<endl;
   ///rep test
   vector<size_t> vec_rep = Swap_piece2rep(vec_pieceMsg);
-  //int idxRange3=0; //rename TODO
+  //int idxRange3=0; //rename TODO(junzhe)
   //int maxLen=0, location =0;
   repPatternDetector(vec_rep,maxLen,location);
   cout<<"maxLen and location are: "<<maxLen<<' '<<location<<endl;
@@ -362,7 +370,6 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       shift_counter = i; 
       break;
     }
-
   }
   location =location+shift_counter;
   cout<<"shift_counter is "<<shift_counter<<endl;
@@ -378,7 +385,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   for (int i=0; i<maxLen;i++){
       vec_run[i].idx = vec_run[i].idx - location;
   }
-  ///get peak and idx of vec_load, udpated with global_load
+  ///get peak and idx of vec_load, updated with global_load
   int maxIdx = 0;
   size_t maxLoad = 0;
   vector<double>vec_load(&global_load[location],&global_load[location+maxLen]);
@@ -432,8 +439,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   }
   cout<<"size vec_swap: "<<vec_swap.size()<<endl;
 
-  ///select the top a few that can meet swap load
-  //TODO(junzhe) optimize the for loop.
+  ///SwapBlock selection
   cout<<"============== select top a few to swap"<<endl;
   cout<<"maxIdx and maxLoad are: "<<maxIdx<<' '<<maxLoad<<endl;
   cout<<"sumSizeSwappAble: "<<(float)(sumSizeSwappAble)/(float)(1024*1024)<<' '<<sumSizeSwappAble_2/1024/1024<<endl;
@@ -455,45 +461,39 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"number of swap_selct: "<<vec_swap_selct.size()<<endl;
   cout<<"swap size in MB: "<<(float)(sumSizeToSwap)/(float)(1024*1024)<<endl;
 
-  /// TO upgrade on 6/1 TODO(junzhe), based on version 3/4
-    cout<<"swap scheduling ===================="<<endl;
-    double overhead=0;
-    int old_idx=0; //book keep where the load track is.
-    sort(vec_run.begin(),vec_run.end(),less_than_Idx());
-    ///update swap-out idx //t1 and t1', i1 and i1', sort by r_idx.
-    sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap());
-    //print only 
-    cout<<"print sorted slect blocks--------r_idx, d_idx, ptr"<<endl;
-    for (int i =0; i<vec_swap_selct.size(); i++){
-      auto itm = vec_swap_selct[i];
-      cout<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.ptr<<endl;
+  ///SwapBlock scheduling - TO upgrade on 6/1 TODO(junzhe), based on version 3/4
+  double overhead = 0;
+  sort(vec_run.begin(),vec_run.end(),less_than_Idx());
+  ///update swap-out idx //t1 and t1', i1 and i1p, sort by r_idx.
+  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap());
+  //print only 
+  cout<<"print sorted slect blocks--------r_idx, d_idx, ptr"<<endl;
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    auto itm = vec_swap_selct[i];
+    cout<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.ptr<<endl;
+  }
+
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    auto itm = vec_swap_selct[i];
+    int readyIdx = 0;
+    if (itm.cat == "A1") { readyIdx = itm.r_idx; }
+    if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
+    if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
+
+    if (i > 0){
+      readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
     }
-
-    for (int i =0; i<vec_swap_selct.size(); i++){
-      auto itm = vec_swap_selct[i];
-      // if (i>0){
-      //   //update for linked list 
-      //   itm.last_out_idx = vec_swap_selct[i-1].r_idx;
-      // }
-      int readyIdx = 0;
-      if (itm.cat == "A1") { readyIdx = itm.r_idx; }
-      if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
-      if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
-
-      if (i > 0){
-        readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
-      }
-      itm.i1 = readyIdx;
-      itm.t1 = vec_run[readyIdx].t;
-      itm.t1p = itm.t1 + SwapOutTime(itm.size);
-      while (itm.t1p > vec_run[readyIdx].t){
-        readyIdx++;
-      }
-      itm.i1p = readyIdx;
-      vec_swap_selct[i] = itm;
+    itm.i1 = readyIdx;
+    itm.t1 = vec_run[readyIdx].t;
+    itm.t1p = itm.t1 + SwapOutTime(itm.size);
+    while (itm.t1p > vec_run[readyIdx].t){
+      readyIdx++;
+    }
+    itm.i1p = readyIdx;
+    vec_swap_selct[i] = itm;
       // //update i1p again, with condideration of over limit. 
       //   old_idx = load_over_limit(vec_load,memLimit,old_idx);
-      //TODO(juznhe) worse case is overlimit even before the first swap item.
+      //TODO(junzhe) worse case is overlimit even before the first swap item.
       //   if (old_idx<tempIdx){
       //       //over limit before tempIdx, got overhead
       //       vec_swap_selct[i].i1p = old_idx;
@@ -503,34 +503,30 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
       //       vec_swap_selct[i].i1p = tempIdx;//Note: here i1' is immediately at Malloc/Free.
       //       load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
       //   }
-      cout<<"Out sched r_idx, i1, i1p "<<vec_swap_selct[i].r_idx<<' ';
-      cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
+    cout<<"Out sched r_idx, i1, i1p "<<vec_swap_selct[i].r_idx<<' ';
+    cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
+  }
+  ///update swap-in index
+  //t2 and t2', i2 and i2'.
+  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
+  ///step 1: overlap with next swapIn.
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    auto itm = vec_swap_selct[i];
+    int needIdx = itm.d_idx;
+    if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
+    itm.i2 = needIdx;
+    double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
+    while (prepareTime < vec_run[needIdx].t){
+      needIdx--;
     }
-    ///update swap-in index
-    //t2 and t2', i2 and i2'.
-    sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
-    ///step 1: overlap with next swapIn.
-    for (int i =0; i<vec_swap_selct.size(); i++){
-      auto itm = vec_swap_selct[i];
-      // if (i<(vec_swap_selct.size()-1)){
-      //   //update for linked list 
-      //   itm.last_in_idx = vec_swap_selct[i+1].r_idx;
-      // }
-      int needIdx = itm.d_idx;
-      if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
-      itm.i2 = needIdx;
-      double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
-      while (prepareTime < vec_run[needIdx].t){
-        needIdx--;
-      }
-      itm.i2p = needIdx;
-      itm.t2p = prepareTime;
-      vec_swap_selct[i] = itm;
-      cout<<"In sched r_idx,i2p, i2 "<<vec_swap_selct[i].r_idx<<' ';
-      cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2;
-      cout<<"---"<<vec_run[itm.i2].t-prepareTime<<endl;
-      //Note: i2 is d_idx, but not assigned.
-    }
+    itm.i2p = needIdx;
+    itm.t2p = prepareTime;
+    vec_swap_selct[i] = itm;
+    cout<<"In sched r_idx,i2p, i2 "<<vec_swap_selct[i].r_idx<<' ';
+    cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2;
+    cout<<"---"<<vec_run[itm.i2].t-prepareTime<<endl;
+    //Note: i2 is d_idx, but not assigned.
+  }
     
     ///step 2: change i2p to load exceeds limit, with overhead.
     // TODO(junzhe) Here got problem, to follow up here: 
@@ -562,75 +558,73 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     // cout<<"total overhead: "<<overhead<<endl;
 
 
-    ///make the Table_sched; map<int,std::tuple<int,int,int>>
-    // in this version: i1 swap, i1p sync; i2p swap, i2 sync.
-    //idx--> r_idx, dir; sync_r_idx,dir. int 0 means D2H, 1 means H2D.
-    cudaStream_t stream1;
-    cudaStream_t stream2;
-    for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
-      auto itm = vec_swap_selct[i];
-      //i1 swap
-      if (Table_sched.find(itm.i1) == Table_sched.end()){
-        Table_sched[itm.i1] = std::make_tuple(itm.r_idx,0,-1,-1);
-      } else {
-        std::get<0>(Table_sched.find(itm.i1)->second) = itm.r_idx;
-        std::get<1>(Table_sched.find(itm.i1)->second) = 0;
-      }
-      //i2p swap
-      if (Table_sched.find(itm.i2p) == Table_sched.end()){
-        Table_sched[itm.i2p] = std::make_tuple(itm.r_idx,1,-1,-1);      
-      } else {
-        std::get<0>(Table_sched.find(itm.i2p)->second) = itm.r_idx;
-        std::get<1>(Table_sched.find(itm.i2p)->second) = 1;
-      }
-      // i1p sync
-      if (Table_sched.find(itm.i1p) == Table_sched.end()){
-        Table_sched[itm.i1p] = std::make_tuple(-1,-1,itm.r_idx,0);
-      } else {
-        std::get<2>(Table_sched.find(itm.i1p)->second) = itm.r_idx;
-        std::get<3>(Table_sched.find(itm.i1p)->second) = 0; 
-      }
-      //i2 sync
-      if (Table_sched.find(itm.i2) == Table_sched.end()){
-        Table_sched[itm.i2] = std::make_tuple(-1,-1,itm.r_idx,1);
-      } else {
-        std::get<2>(Table_sched.find(itm.i2)->second) = itm.r_idx;
-        std::get<3>(Table_sched.find(itm.i1p)->second) = 1;
-      }
-
-      // //TODO(junzhe) looks size is not correct.
-      // cout<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 0'<<endl;
-      // cout<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<' 1'<<endl;
-      void* tempPtr = nullptr;
-      cudaMallocHost(&tempPtr,itm.size); //pinned memory.
-      BlockMeta meta;
-      meta.size = itm.size;
-      meta.cpu_ptr = tempPtr;
-      meta.out_stream = stream1;
-      meta.in_stream = stream2;
-      //meta.last_out_idx = vec_swap_selct[i].last_out_idx;
-      //meta.last_in_idx = vec_swap_selct[i].last_in_idx;
-      //meta.i2 = vec_swap_selct[i].i2;
-      Table_meta[itm.r_idx] = meta;
-
-      cout<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<meta.size;
-      cout<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<endl;
-      fstream file_block7("sched.text", ios::in|ios::out|ios::app);
-      file_block7<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<" 0"<<endl;
-      file_block7<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<" 1"<<endl;
-      file_block7<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].ptr<<endl;
+  ///make the Table_sched; map<int,std::tuple<int,int,int>>
+  // in this version: i1 swap, i1p sync; i2p swap, i2 sync.
+  //idx--> r_idx, dir; sync_r_idx,dir. int 0 means D2H, 1 means H2D.
+  cudaStream_t stream1;
+  cudaStream_t stream2;
+  for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
+    auto itm = vec_swap_selct[i];
+    //i1 swap
+    if (Table_sched.find(itm.i1) == Table_sched.end()){
+      Table_sched[itm.i1] = std::make_tuple(itm.r_idx,0,-1,-1);
+    } else {
+      std::get<0>(Table_sched.find(itm.i1)->second) = itm.r_idx;
+      std::get<1>(Table_sched.find(itm.i1)->second) = 0;
     }
-    cout<<"size of Table_sched =================="<<Table_sched.size()<<endl;
-    cout<<"print Table_sched, idx, r_idx, sync, direction"<<endl;
-    for (int i =0; i<maxLen; i++){
-      if (!(Table_sched.find(i) == Table_sched.end())){
-        cout<<i<<"-->";
-        cout<<std::get<0>(Table_sched.find(i)->second)<<" ";
-        cout<<std::get<1>(Table_sched.find(i)->second)<<" ";
-        cout<<std::get<2>(Table_sched.find(i)->second)<<" ";
-        cout<<std::get<3>(Table_sched.find(i)->second)<<endl;
-      }
+    //i2p swap
+    if (Table_sched.find(itm.i2p) == Table_sched.end()){
+      Table_sched[itm.i2p] = std::make_tuple(itm.r_idx,1,-1,-1);      
+    } else {
+      std::get<0>(Table_sched.find(itm.i2p)->second) = itm.r_idx;
+      std::get<1>(Table_sched.find(itm.i2p)->second) = 1;
     }
+    // i1p sync
+    if (Table_sched.find(itm.i1p) == Table_sched.end()){
+      Table_sched[itm.i1p] = std::make_tuple(-1,-1,itm.r_idx,0);
+    } else {
+      std::get<2>(Table_sched.find(itm.i1p)->second) = itm.r_idx;
+      std::get<3>(Table_sched.find(itm.i1p)->second) = 0; 
+    }
+    //i2 sync
+    if (Table_sched.find(itm.i2) == Table_sched.end()){
+      Table_sched[itm.i2] = std::make_tuple(-1,-1,itm.r_idx,1);
+    } else {
+      std::get<2>(Table_sched.find(itm.i2)->second) = itm.r_idx;
+      std::get<3>(Table_sched.find(itm.i1p)->second) = 1;
+    }
+
+    ///Make Table_meta
+    void* tempPtr = nullptr;
+    cudaMallocHost(&tempPtr,itm.size); //pinned memory.
+    BlockMeta meta;
+    meta.size = itm.size;
+    meta.cpu_ptr = tempPtr;
+    meta.out_stream = stream1;
+    meta.in_stream = stream2;
+    //meta.last_out_idx = vec_swap_selct[i].last_out_idx;
+    //meta.last_in_idx = vec_swap_selct[i].last_in_idx;
+    //meta.i2 = vec_swap_selct[i].i2;
+    Table_meta[itm.r_idx] = meta;
+
+    cout<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<meta.size;
+    cout<<' '<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i2p<<endl;
+    fstream file_block7("sched.text", ios::in|ios::out|ios::app);
+    file_block7<<"Table_sched: "<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<" 0"<<endl;
+    file_block7<<"Table_sched: "<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].size<<" 1"<<endl;
+    file_block7<<"BlockMeta(r_idx,size,o,i,last_out,last_in) "<<vec_swap_selct[i].r_idx<<' '<<vec_swap_selct[i].ptr<<endl;
+  }
+  cout<<"size of Table_sched =================="<<Table_sched.size()<<endl;
+  cout<<"print Table_sched, idx, r_idx, sync, direction"<<endl;
+  for (int i =0; i<maxLen; i++){
+    if (!(Table_sched.find(i) == Table_sched.end())){
+      cout<<i<<"-->";
+      cout<<std::get<0>(Table_sched.find(i)->second)<<" ";
+      cout<<std::get<1>(Table_sched.find(i)->second)<<" ";
+      cout<<std::get<2>(Table_sched.find(i)->second)<<" ";
+      cout<<std::get<3>(Table_sched.find(i)->second)<<endl;
+    }
+  }
   return gc+maxLen-(gc-location)%maxLen;
 } //end of Swap_test()
 
