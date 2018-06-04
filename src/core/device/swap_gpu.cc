@@ -394,7 +394,7 @@ void SwapGPU::swap_plan(){
   // scale down idx, to middle iteration.
   cout<<"location, maxLen for scaledown: "<<location<<' '<<maxLen<<endl;
   int max_idx=0, min_idx=0;
-  for (int i=0; i<maxLen;i++){
+  for (int i=0; i<vec_pieceMsg.size();i++){
     vec_pieceMsg[i].idx = vec_pieceMsg[i].idx - location - maxLen;
     max_idx = max(vec_pieceMsg[i].idx, max_idx);
     min_idx = min(vec_pieceMsg[i].idx, min_idx);
