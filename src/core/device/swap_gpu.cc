@@ -419,7 +419,7 @@ void SwapGPU::swap_plan(){
   }
   //load before swap
   fstream file_block9("load_0.text", ios::in|ios::out|ios::app);
-  for (int i=0; i<vec_run.size(); i++){
+  for (int i=0; i<maxLen; i++){
     file_block9<<vec_load[i]<<endl;
   }
   //set limit, get over-limit
