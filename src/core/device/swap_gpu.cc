@@ -436,7 +436,7 @@ void SwapGPU::swap_plan(){
   fstream file_block4("vec_run_3.text", ios::in|ios::out|ios::app);
   // fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run_3.size();i++){
-    file_block3<<i<<' '<<vec_block[i+location]<<endl;
+    file_block3<<vec_run_3[i].idx<<' '<<vec_block[i+location]<<endl;
     file_block4<<i<<' '<<vec_run_3[i].ptr<<' '<<vec_run_3[i].idx<<vec_run_3[i].MallocFree<<endl;
     //file_block4<<i<<' '<<vec_block[i+location+maxLen]<<endl;
   }
