@@ -326,9 +326,9 @@ pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start
     }
   }
 
-  for (int i = first_over_limit; i < end_idx; i++){
-    if (vec_load[i] <= memLimit){
-      first_below_limit = i;
+  for (int i = end_idx; i > first_over_limit; i--){
+    if (vec_load[i] > memLimit){
+      first_below_limit = i-1;
       break;
     }
   }
