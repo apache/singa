@@ -407,7 +407,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     }
   }
   cout<<"print load=====================================done"<<endl;
-  size_t memLimit = maxLoad - (62<<20);//memLimit_ratio * maxLoad;
+  size_t memLimit = 165<<20; //maxLoad - (62<<20);//memLimit_ratio * maxLoad;
   auto overLimit_ = load_over_limit(vec_load,memLimit,0,vec_run.size());
   cout<<"init_over_limit_range "<<overLimit_.first<<' '<<overLimit_.second<<endl;
   cout<<"memLimit and maxLoad are: "<<memLimit<<' '<<maxLoad<<endl;
