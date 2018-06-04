@@ -397,7 +397,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   }
   //print load TODO(junzhe)
   cout<<"print load======================================="<<endl;
+  fstream file_block9("load_0.text", ios::in|ios::out|ios::app);
   for (int i=0; i<vec_run.size(); i++){
+    file_block9<<vec_load[i]<<endl;
     cout<<vec_load[i]<<' ';
     if (i%100 == 0){
       cout<<endl;
@@ -540,8 +542,16 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2;
     cout<<"---"<<vec_run[itm.i2].t-prepareTime<<endl;
     //Note: i2 is d_idx, but not assigned.
+    //update load as per decided i1p and i2p. TODO(junzhe) update at i2p or i2p+1
+    load_update(vec_load,memLimit,itm.i1p,itm.i2p+1,-1,itm.size);
   }
-    
+
+  fstream file_block10("load_1.text", ios::in|ios::out|ios::app);
+  for (int i=0; i<vec_run.size(); i++){
+    file_block10<<vec_load[i]<<endl;
+  }
+  
+  
     ///step 2: change i2p to load exceeds limit, with overhead.
     // TODO(junzhe) Here got problem, to follow up here: 
     //overlimit 2 places, overlaping check, overhead compt.
