@@ -350,7 +350,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
 
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
-  int idxRange =0;
+  int idxRange = 0;
   vector<onePieceMsg> vec_pieceMsg = swap_strVec_2_pieceMsgVec(vec_block,idxRange);
   cout<<"size of vec_pieceMsg & vec_block: "<<vec_pieceMsg.size()<<' '<<vec_block.size()<<endl;
   ///rep test
@@ -362,7 +362,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
   cout<<"test rep"<<endl;
   //Note here location not exactly start of one iteration, 
   //adjust to nearly start of one by restricting "Malloc"
-  int shift_counter =0;
+  int shift_counter = 0;
   for (int i=0;i<maxLen;i++){
     vector<string> v = swap_split(vec_block[location+i], " ");
     if (v[0]=="Malloc"){
@@ -387,7 +387,7 @@ void SwapGPU::swap_plan(){
   int data_buffer = 1; // used to control readyIdx
   int mutable_data_buffer = 10;
 
-  int idxRange =0;
+  int idxRange = 0;
   vector<onePieceMsg> vec_pieceMsg = swap_strVec_2_pieceMsgVec(vec_block,idxRange);
   cout<<"size of vec_pieceMsg & vec_block: "<<vec_pieceMsg.size()<<' '<<vec_block.size()<<endl;
   sort(vec_pieceMsg.begin(),vec_pieceMsg.end(),less_than_Idx());
@@ -396,22 +396,22 @@ void SwapGPU::swap_plan(){
   int max_idx=0, min_idx=0;
   for (int i=0; i<maxLen;i++){
     vec_pieceMsg[i].idx = vec_pieceMsg[i].idx - location - maxLen;
-    max_idx = max(vec_pieceMsg[i].idx, min_idx);
+    max_idx = max(vec_pieceMsg[i].idx, max_idx);
     min_idx = min(vec_pieceMsg[i].idx, min_idx);
   }
   cout<<"max_idx and min_idx "<<max_idx<<' '<<min_idx<<endl;
   //cut into vec_run 0, vec_run, vec_run 2
-  vector<onePieceMsg>vec_run_0(&vec_pieceMsg[location],&vec_pieceMsg[location+maxLen]);
-  vector<onePieceMsg>vec_run(&vec_pieceMsg[location+maxLen],&vec_pieceMsg[location+2*maxLen]);
-  vector<onePieceMsg>vec_run_2(&vec_pieceMsg[location+2*maxLen],&vec_pieceMsg[location+3*maxLen]);
+  // vector<onePieceMsg>vec_run_0(&vec_pieceMsg[location],&vec_pieceMsg[location+maxLen]);
+  // vector<onePieceMsg>vec_run(&vec_pieceMsg[location+maxLen],&vec_pieceMsg[location+2*maxLen]);
+  // vector<onePieceMsg>vec_run_2(&vec_pieceMsg[location+2*maxLen],&vec_pieceMsg[location+3*maxLen]);
   //3 iterations
   vector<onePieceMsg>vec_run_t(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
-  cout<<"time for one itr: "<<vec_run[vec_run.size()-1].t-vec_run[0].t<<endl;
+  cout<<"time for 3 itr: "<<vec_run_t[vec_run_t.size()-1].t-vec_run_t[0].t<<endl;
   ///get peak and idx of vec_load, updated with global_load
   int maxIdx = 0;
   size_t maxLoad = 0;
   vector<double>vec_load(&global_load[location],&global_load[location+maxLen]);
-  for (int i=0; i<vec_run.size(); i++){
+  for (int i=0; i<maxLen; i++){
     if (maxLoad<vec_load[i]){
       maxLoad = vec_load[i];
       maxIdx = i;
@@ -424,7 +424,7 @@ void SwapGPU::swap_plan(){
   }
   //set limit, get over-limit
   size_t memLimit = 165<<20; //maxLoad - (62<<20);//memLimit_ratio * maxLoad;
-  auto overLimit_ = load_over_limit(vec_load,memLimit,0,vec_run.size());
+  auto overLimit_ = load_over_limit(vec_load,memLimit,0,maxLen);
   cout<<"init_over_limit_range "<<overLimit_.first<<' '<<overLimit_.second<<endl;
   cout<<"memLimit and maxLoad are: "<<memLimit<<' '<<maxLoad<<endl;
   cout<<"range: "<<vec_load[overLimit_.first]<<" "<<vec_load[overLimit_.second]<<endl;
@@ -432,8 +432,8 @@ void SwapGPU::swap_plan(){
   sort(vec_run_t.begin(),vec_run_t.end(),less_than_ptrIdx());
 
   //for analysis only. TODO(junzhe)
-  fstream file_block3("vec_run_t.text", ios::in|ios::out|ios::app);
-  fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
+  fstream file_block3("vec_run_simple.text", ios::in|ios::out|ios::app);
+  fstream file_block4("vec_run_t.text", ios::in|ios::out|ios::app);
   // fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run_t.size();i++){
     file_block3<<i<<' '<<vec_block[i+location]<<endl;
