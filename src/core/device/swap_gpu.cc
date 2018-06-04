@@ -396,6 +396,9 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     } 
   }
   size_t memLimit = maxLoad - (62<<20);//memLimit_ratio * maxLoad;
+  auto overLimit_ = load_over_limit(vec_load,memLimit,0,vec_run.size());
+  cout<<"init_over_limit_range "<<overLimit_.first<<' '<<overLimit_.second<<endl;
+  
   //sort by ptr & idx
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
   //log vec_run and vec_run2, subsequent iteration for analysis only. TODO(junzhe)
