@@ -392,9 +392,14 @@ void SwapGPU::swap_plan(){
   cout<<"size of vec_pieceMsg & vec_block: "<<vec_pieceMsg.size()<<' '<<vec_block.size()<<endl;
   sort(vec_pieceMsg.begin(),vec_pieceMsg.end(),less_than_Idx());
   // scale down idx, to middle iteration.
+  cout<<"location, maxLen for scaledown: "<<location<<' '<<maxLen<<endl;
+  int max_idx=0, min_idx=0;
   for (int i=0; i<maxLen;i++){
-      vec_pieceMsg[i].idx = vec_pieceMsg[i].idx - location - maxLen;
+    vec_pieceMsg[i].idx = vec_pieceMsg[i].idx - location - maxLen;
+    max_idx = max(vec_pieceMsg[i].idx, min_idx);
+    min_idx = min(vec_pieceMsg[i].idx, min_idx);
   }
+  cout<<"max_idx and min_idx "<<max_idx<<' '<<min_idx<<endl;
   //cut into vec_run 0, vec_run, vec_run 2
   vector<onePieceMsg>vec_run_0(&vec_pieceMsg[location],&vec_pieceMsg[location+maxLen]);
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location+maxLen],&vec_pieceMsg[location+2*maxLen]);
@@ -432,7 +437,7 @@ void SwapGPU::swap_plan(){
   // fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run_t.size();i++){
     file_block3<<i<<' '<<vec_block[i+location]<<endl;
-    file_block4<<i<<' '<<vec_run_t[i].ptr<<' '<<vec_run_t[i].idx<<endl;
+    file_block4<<i<<' '<<vec_run_t[i].ptr<<' '<<vec_run_t[i].idx<<vec_run_t[i].MallocFree<<endl;
     //file_block4<<i<<' '<<vec_block[i+location+maxLen]<<endl;
   }
   //
