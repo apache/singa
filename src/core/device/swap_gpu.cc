@@ -400,7 +400,7 @@ void SwapGPU::swap_plan(){
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location+maxLen],&vec_pieceMsg[location+2*maxLen]);
   vector<onePieceMsg>vec_run_2(&vec_pieceMsg[location+2*maxLen],&vec_pieceMsg[location+3*maxLen]);
   //3 iterations
-  vector<onePieceMsg>vec_run_t(&vec_pieceMsg[location+2*maxLen],&vec_pieceMsg[location+3*maxLen]);
+  vector<onePieceMsg>vec_run_t(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
   cout<<"time for one itr: "<<vec_run[vec_run.size()-1].t-vec_run[0].t<<endl;
   ///get peak and idx of vec_load, updated with global_load
   int maxIdx = 0;
