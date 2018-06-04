@@ -543,7 +543,7 @@ int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
     cout<<"---"<<vec_run[itm.i2].t-prepareTime<<endl;
     //Note: i2 is d_idx, but not assigned.
     //update load as per decided i1p and i2p. TODO(junzhe) update at i2p or i2p+1
-    load_update(vec_load,memLimit,itm.i1p,itm.i2p+1,-1,itm.size);
+    load_update(vec_load,itm.i1p,itm.i2p+1,-1,itm.size);
   }
 
   fstream file_block10("load_1.text", ios::in|ios::out|ios::app);
