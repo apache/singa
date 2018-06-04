@@ -333,11 +333,11 @@ pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start
     }
   }
 
-  return smake_pair(first_over_limit, first_below_limit);
+  return std::make_pair(first_over_limit, first_below_limit);
 }
 
 
-void load_update(vector<double>& vec_load,int start_idx, int end_idx int plusMinus, size_t size){
+void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size){
   //update load [start_idx, end_idx) by plusMinus*size
   for (int i = start_idx; i<end_idx; i++){
     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
