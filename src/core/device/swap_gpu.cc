@@ -524,6 +524,8 @@ void SwapGPU::swap_plan(){
   auto start_idx = belowLimit_.second;
   auto end_idx = belowLimit_.first + maxLen; //TODO(junzhe) these 2 +1 or not?
   cout<<"below is for cat_B"<<endl;
+
+  auto vec_load_ideal_B = vec_load_ideal;
   for (int i =1; i<vec_run.size(); i++){
     if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
         && (vec_run[i-1].ptr ==vec_run[i].ptr) 
@@ -547,8 +549,14 @@ void SwapGPU::swap_plan(){
       cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
       cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
       //TODO(junzhe) temp add
+
       load_update(vec_load_ideal_B,itm.r_idx,itm.d_idx+6,-1,itm.size,maxLen);
     }
+  }
+
+  fstream file_load_ideal_B("load_ideal_B.text", ios::in|ios::out|ios::app);
+  for (int i=0; i<maxLen; i++){
+    file_load_ideal_B<<vec_load_ideal_B[i]<<endl;
   }
 }
 
