@@ -337,26 +337,26 @@ pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start
 }
 
 pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int start_idx, int end_idx, int maxIdx){
-  //input: vec_load, memLimit, range [start_idx, end_idx)
+  //input: vec_load, memLimit, range [start_idx, end_idx]
   //return range overlimit [first_over_limit, first_below_limit)
   int first_below_limit = maxIdx;
-  int first_over_limit = maxIdx;
+  int last_below_limit = maxIdx;
 
   for (int i = first_below_limit; i > start_idx; i--){
     if (vec_load[i] > memLimit){
-      first_over_limit = i;
+      first_below_limit = i+1;
       break;
     }
   }
 
   for (int i = first_over_limit; i < end_idx; i++){
     if (vec_load[i] > memLimit){
-      first_below_limit = i-1;
+      last_below_limit = i-1;
       break;
     }
   }
 
-  return std::make_pair(first_below_limit, first_over_limit);
+  return std::make_pair(first_below_limit, last_below_limit);
 }
 
 void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size){
