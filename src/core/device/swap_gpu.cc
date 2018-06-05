@@ -359,10 +359,19 @@ pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int star
   return std::make_pair(first_below_limit, last_below_limit);
 }
 
-void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size){
+void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
   //update load [start_idx, end_idx) by plusMinus*size
-  for (int i = start_idx; i<end_idx; i++){
-    vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+  if (start_idx < end_idx){
+    for (int i = start_idx; i<end_idx; i++){
+      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+    }
+  } else {
+    for (int i = start_idx; i < maxLen; i++){
+      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+    }
+    for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
+      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+    }
   }
 }
 
@@ -504,7 +513,7 @@ void SwapGPU::swap_plan(){
     auto itm = vec_swap[i];
     if (itm.cat == "A1") auto_buffer = data_buffer;
     if (itm.cat == "A2") auto_buffer = mutable_data_buffer;
-    load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size);
+    load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
   }
   fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
   for (int i=0; i<maxLen; i++){
