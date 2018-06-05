@@ -359,20 +359,11 @@ pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int star
   return std::make_pair(first_below_limit, last_below_limit);
 }
 
-void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
+void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size){
   //update load [start_idx, end_idx) by plusMinus*size
-  //if (start_idx < end_idx){
-    for (int i = start_idx; i<end_idx; i++){
-      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-    }
-  // } else {
-  //   for (int i = end_idx; i<maxLen; i++){
-  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-  //   }
-  //   for (int i = 0; i<start_idx; i++){ //TODO(junzhe) does not include start_idx here, NOTE
-  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-  //   }
-  // }
+  for (int i = start_idx; i<end_idx; i++){
+    vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+  }
 }
 
 
@@ -513,7 +504,7 @@ void SwapGPU::swap_plan(){
     auto itm = vec_swap[i];
     if (itm.cat == "A1") auto_buffer = data_buffer;
     if (itm.cat == "A2") auto_buffer = mutable_data_buffer;
-    load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
+    load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size);
   }
   fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
   for (int i=0; i<maxLen; i++){
@@ -524,7 +515,6 @@ void SwapGPU::swap_plan(){
   auto start_idx = belowLimit_.second;
   auto end_idx = belowLimit_.first + maxLen; //TODO(junzhe) these 2 +1 or not?
   cout<<"below is for cat_B"<<endl;
-  auto vec_load_ideal_B = vec_load_ideal;
   for (int i =1; i<vec_run.size(); i++){
     if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
         && (vec_run[i-1].ptr ==vec_run[i].ptr) 
@@ -547,15 +537,7 @@ void SwapGPU::swap_plan(){
       cout<<"Items Swappable_cat_B: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
       cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
       cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
-      int auto_buffer = 0;
-      if (itm.cat == "B1") auto_buffer = data_buffer;
-      if (itm.cat == "B2") auto_buffer = mutable_data_buffer;
-      load_update(vec_load_ideal_B,itm.r_idx,itm.d_idx+auto_buffer,-1,itm.size,maxLen);
     }
-  }
-  fstream file_load_ideal_B("load_ideal_B.text", ios::in|ios::out|ios::app);
-  for (int i=0; i<maxLen; i++){
-    file_load_ideal_B<<vec_load_ideal_B[i]<<endl;
   }
 }
 
