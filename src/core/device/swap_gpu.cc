@@ -564,6 +564,7 @@ void SwapGPU::swap_plan(){
   for (int i=0; i<maxLen; i++){
     file_load_ideal_B<<vec_load_ideal_B[i]<<endl;
   }
+  cout<<"done with swap_plan..."<<endl;
 }
 
 
