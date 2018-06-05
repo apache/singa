@@ -375,6 +375,25 @@ void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMi
   }
 }
 
+vector<double> load_update_value(vector<double> vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
+  //update load [start_idx, end_idx) by plusMinus*size
+  auto vec_load_update = vec_load;
+  if (start_idx < end_idx){
+    for (int i = start_idx; i<end_idx; i++){
+      vec_load_update[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+    }
+  } else {
+    for (int i = start_idx; i < maxLen; i++){
+      vec_load_update[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+    }
+    for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
+      vec_load_update[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+    }
+  }
+  return vec_load_update;
+}
+
+
 
 
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
@@ -514,6 +533,7 @@ void SwapGPU::swap_plan(){
     if (itm.cat == "A2") auto_buffer = data_buffer;
     if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
     //load_update(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
+    vec_load = load_update_value(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
   }
   // fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
   // for (int i=0; i<maxLen; i++){
