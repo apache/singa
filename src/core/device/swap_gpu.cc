@@ -477,12 +477,12 @@ void SwapGPU::swap_plan(){
   }
   //load of ideal
   auto vec_load_ideal = vec_load;
-  for (int i =0; i<vec_swap_selct.size(); i++){
+  for (int i =0; i<vec_swap.size(); i++){
     int auto_buffer = 0;
     auto itm = vec_swap[i];
-    if itm.cat == "A1" { auto_buffer = data_buffer;}
-    if itm.cat == "A2" { auto_buffer = mutable_data_buffer;}
-    load_update(vec_load_ideal,itm.r_idx+auto_buffer,d_idx,-1,itm.size);
+    if itm.cat == "A1" auto_buffer = data_buffer;
+    if itm.cat == "A2" auto_buffer = mutable_data_buffer;
+    load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size);
   }
   fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
   for (int i=0; i<maxLen; i++){
