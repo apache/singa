@@ -551,19 +551,19 @@ void SwapGPU::swap_plan(){
     }
   }
 
-  //load of ideal_B
-  auto vec_load_ideal_B = vec_load;
-  for (int i =0; i<vec_swap.size(); i++){
-    int auto_buffer = 0;
-    auto itm = vec_swap[i];
-    if ((itm.cat == "A2") or (itm.cat == "B2")) auto_buffer = data_buffer;
-    if ((itm.cat == "A3") or (itm.cat == "B3")) auto_buffer = mutable_data_buffer;
-    load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
-  }
-  fstream file_load_ideal_B("load_ideal_B.text", ios::in|ios::out|ios::app);
-  for (int i=0; i<maxLen; i++){
-    file_load_ideal_B<<vec_load_ideal_B[i]<<endl;
-  }
+  // //load of ideal_B
+  // auto vec_load_ideal_B = vec_load;
+  // for (int i =0; i<vec_swap.size(); i++){
+  //   int auto_buffer = 0;
+  //   auto itm = vec_swap[i];
+  //   if ((itm.cat == "A2") or (itm.cat == "B2")) auto_buffer = data_buffer;
+  //   if ((itm.cat == "A3") or (itm.cat == "B3")) auto_buffer = mutable_data_buffer;
+  //   load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
+  // }
+  // fstream file_load_ideal_B("load_ideal_B.text", ios::in|ios::out|ios::app);
+  // for (int i=0; i<maxLen; i++){
+  //   file_load_ideal_B<<vec_load_ideal_B[i]<<endl;
+  // }
   cout<<"done with swap_plan..."<<endl;
 }
 
