@@ -525,7 +525,7 @@ void SwapGPU::swap_plan(){
   auto end_idx = belowLimit_.first + maxLen; //TODO(junzhe) these 2 +1 or not?
   cout<<"below is for cat_B"<<endl;
 
-  auto vec_load_ideal_B = vec_load_ideal;
+ 
   for (int i =1; i<vec_run.size(); i++){
     if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
         && (vec_run[i-1].ptr ==vec_run[i].ptr) 
@@ -542,22 +542,28 @@ void SwapGPU::swap_plan(){
       if (vec_run[i-1].MallocFree == 2){ itm.cat = "B2"; } 
       if (vec_run[i-1].MallocFree == 4){ itm.cat = "B3"; } 
 
-      //vec_swap.push_back(itm);
+      vec_swap.push_back(itm);
       //sumSizeSwappAble+=itm.size;
       //sumSizeSwappAble_2+=vec_run[i].size;
       cout<<"Items Swappable_cat_B: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
       cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
       cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
-      //TODO(junzhe) temp add
-
-      load_update(vec_load_ideal_B,itm.r_idx,itm.d_idx+6,-1,itm.size,maxLen);
     }
   }
 
-  // fstream file_load_ideal_B("load_ideal_B.text", ios::in|ios::out|ios::app);
-  // for (int i=0; i<maxLen; i++){
-  //   file_load_ideal_B<<vec_load_ideal_B[i]<<endl;
-  // }
+  //load of ideal_B
+  auto vec_load_ideal_B = vec_load;
+  for (int i =0; i<vec_swap.size(); i++){
+    int auto_buffer = 0;
+    auto itm = vec_swap[i];
+    if ((itm.cat == "A2") or (itm.cat == "B2")) auto_buffer = data_buffer;
+    if ((itm.cat == "A3") or (itm.cat == "B3")) auto_buffer = mutable_data_buffer;
+    load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
+  }
+  fstream file_load_ideal_B("load_ideal_B.text", ios::in|ios::out|ios::app);
+  for (int i=0; i<maxLen; i++){
+    file_load_ideal_B<<vec_load_ideal_B[i]<<endl;
+  }
 }
 
 
