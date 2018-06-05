@@ -480,8 +480,8 @@ void SwapGPU::swap_plan(){
   for (int i =0; i<vec_swap.size(); i++){
     int auto_buffer = 0;
     auto itm = vec_swap[i];
-    if itm.cat == "A1" auto_buffer = data_buffer;
-    if itm.cat == "A2" auto_buffer = mutable_data_buffer;
+    if (itm.cat == "A1") auto_buffer = data_buffer;
+    if (itm.cat == "A2") auto_buffer = mutable_data_buffer;
     load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size);
   }
   fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
