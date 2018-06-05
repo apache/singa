@@ -361,18 +361,19 @@ pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int star
 
 void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
   //update load [start_idx, end_idx) by plusMinus*size
-  if (start_idx < end_idx){
+  // if (start_idx < end_idx){
     for (int i = start_idx; i<end_idx; i++){
-      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+      //vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+      vec_load[i] = 10;
     }
-  } else {
-    for (int i = start_idx; i < maxLen; i++){
-      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-    }
-    for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
-      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-    }
-  }
+  // } else {
+  //   for (int i = start_idx; i < maxLen; i++){
+  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+  //   }
+  //   for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
+  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+  //   }
+  // }
 }
 
 vector<double> load_update_value(vector<double> vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
