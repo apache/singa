@@ -507,23 +507,23 @@ void SwapGPU::swap_plan(){
     file_load_current<<vec_load[i]<<endl;
   }
   //load of ideal
-  auto vec_load_ideal = vec_load;
-  for (int i =0; i<vec_swap.size(); i++){
-    int auto_buffer = 0;
-    auto itm = vec_swap[i];
-    if (itm.cat == "A1") auto_buffer = data_buffer;
-    if (itm.cat == "A2") auto_buffer = mutable_data_buffer;
-    load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
-  }
-  fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
-  for (int i=0; i<maxLen; i++){
-    file_load_ideal<<vec_load_ideal[i]<<endl;
-  }
-  auto belowLimit_ = load_below_limit(vec_load_ideal,100<<20,0,maxLen,maxIdx);
-  cout<<"init_below_limit_range "<<belowLimit_.first<<' '<<belowLimit_.second<<endl;
-  auto start_idx = belowLimit_.second;
-  auto end_idx = belowLimit_.first + maxLen; //TODO(junzhe) these 2 +1 or not?
-  cout<<"below is for cat_B"<<endl;
+  // auto vec_load_ideal = vec_load;
+  // for (int i =0; i<vec_swap.size(); i++){
+  //   int auto_buffer = 0;
+  //   auto itm = vec_swap[i];
+  //   if (itm.cat == "A1") auto_buffer = data_buffer;
+  //   if (itm.cat == "A2") auto_buffer = mutable_data_buffer;
+  //   load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
+  // }
+  // fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
+  // for (int i=0; i<maxLen; i++){
+  //   file_load_ideal<<vec_load_ideal[i]<<endl;
+  // }
+  // auto belowLimit_ = load_below_limit(vec_load_ideal,100<<20,0,maxLen,maxIdx);
+  // cout<<"init_below_limit_range "<<belowLimit_.first<<' '<<belowLimit_.second<<endl;
+  // auto start_idx = belowLimit_.second;
+  // auto end_idx = belowLimit_.first + maxLen; //TODO(junzhe) these 2 +1 or not?
+  // cout<<"below is for cat_B"<<endl;
 
  
   for (int i =1; i<vec_run.size(); i++){
