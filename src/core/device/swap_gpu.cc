@@ -511,7 +511,7 @@ void SwapGPU::swap_plan(){
     file_load_ideal<<vec_load_ideal[i]<<endl;
   }
   auto belowLimit_ = load_below_limit(vec_load,100<<20,0,maxLen,maxIdx);
-  cout<<"init_over_limit_range "<<belowLimit_.first<<' '<<belowLimit_2.second<<endl;
+  cout<<"init_over_limit_range "<<belowLimit_.first<<' '<<belowLimit_.second<<endl;
   auto start_idx = belowLimit_.second;
   auto end_idx = belowLimit_.first + maxLen; //TODO(junzhe) these 2 +1 or not?
   cout<<"below is for cat_B"<<endl;
