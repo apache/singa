@@ -349,7 +349,7 @@ pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int star
     }
   }
 
-  for (int i = first_over_limit; i < end_idx; i++){
+  for (int i = last_below_limit; i < end_idx; i++){
     if (vec_load[i] > memLimit){
       last_below_limit = i-1;
       break;
