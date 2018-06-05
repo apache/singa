@@ -384,8 +384,8 @@ void SwapGPU::swap_plan(){
   cout<<":::::::::::::::::::::::::start swap_plan()"<<endl;
   float memLimit_ratio = 0.70; 
   size_t smallest_block = 1<<20; //1 MB
-  int data_buffer = 1; // used to control readyIdx
-  int mutable_data_buffer = 10;
+  int data_buffer = 4; // used to control readyIdx
+  int mutable_data_buffer = 6;
 
   int idxRange = 0;
   vector<onePieceMsg> vec_pieceMsg = swap_strVec_2_pieceMsgVec(vec_block,idxRange);
@@ -402,11 +402,11 @@ void SwapGPU::swap_plan(){
   cout<<"max_idx and min_idx "<<max_idx<<' '<<min_idx<<endl;
   //cut into vec_run 0, vec_run, vec_run 2
   // vector<onePieceMsg>vec_run_0(&vec_pieceMsg[location],&vec_pieceMsg[location+maxLen]);
-  vector<onePieceMsg>vec_run(&vec_pieceMsg[location+maxLen],&vec_pieceMsg[location+2*maxLen]);
+  //vector<onePieceMsg>vec_run(&vec_pieceMsg[location+maxLen],&vec_pieceMsg[location+2*maxLen]);
   // vector<onePieceMsg>vec_run_2(&vec_pieceMsg[location+2*maxLen],&vec_pieceMsg[location+3*maxLen]);
-  //3 iterations
-  vector<onePieceMsg>vec_run_3(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
-  cout<<"time for 3 itr: "<<vec_run_3[vec_run_3.size()-1].t-vec_run_3[0].t<<endl;
+  //3 iterations, now named as vec_run
+  vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
+  cout<<"time for 3 itr: "<<vec_run[vec_run.size()-1].t-vec_run[0].t<<endl;
   ///get peak and idx of vec_load, updated with global_load
   int maxIdx = 0;
   size_t maxLoad = 0;
@@ -417,11 +417,7 @@ void SwapGPU::swap_plan(){
       maxIdx = i;
     } 
   }
-  //load before swap
-  fstream file_block9("load_0.text", ios::in|ios::out|ios::app);
-  for (int i=0; i<maxLen; i++){
-    file_block9<<vec_load[i]<<endl;
-  }
+
   //set limit, get over-limit
   size_t memLimit = 165<<20; //maxLoad - (62<<20);//memLimit_ratio * maxLoad;
   auto overLimit_ = load_over_limit(vec_load,memLimit,0,maxLen);
@@ -429,15 +425,15 @@ void SwapGPU::swap_plan(){
   cout<<"memLimit and maxLoad are: "<<memLimit<<' '<<maxLoad<<endl;
   cout<<"range: "<<vec_load[overLimit_.first]<<" "<<vec_load[overLimit_.second]<<endl;
   //sort by ptr & idx
-  sort(vec_run_3.begin(),vec_run_3.end(),less_than_ptrIdx());
+  //sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
   //for analysis only. TODO(junzhe)
   //fstream file_block3("vec_run_simple.text", ios::in|ios::out|ios::app);
-  fstream file_block4("vec_run_3.text", ios::in|ios::out|ios::app);
+  fstream file_block4("vec_run.text", ios::in|ios::out|ios::app);
   // fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
-  for (int i = 0; i<vec_run_3.size();i++){
-    //file_block3<<vec_run_3[i].idx<<' '<<vec_block[i+location]<<endl;
-    file_block4<<vec_run_3[i].idx<<' '<<vec_run_3[i].MallocFree<<' '<<vec_run_3[i].ptr<<' '<<vec_run_3[i].size<<endl;
+  for (int i = 0; i<vec_run.size();i++){
+    //file_block3<<vec_run[i].idx<<' '<<vec_block[i+location]<<endl;
+    file_block4<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<' '<<vec_run[i].size<<endl;
     //file_block4<<i<<' '<<vec_block[i+location+maxLen]<<endl;
   }
   //
@@ -474,7 +470,25 @@ void SwapGPU::swap_plan(){
     } 
   }
   cout<<"size vec_swap: "<<vec_swap.size()<<endl;
-
+  //load before swap, write in
+  fstream file_load_current("load_current.text", ios::in|ios::out|ios::app);
+  for (int i=0; i<maxLen; i++){
+    file_load_current<<vec_load[i]<<endl;
+  }
+  //load of ideal
+  auto vec_load_ideal = vec_load;
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    int auto_buffer = 0;
+    auto itm = vec_swap[i];
+    if itm.cat == "A1" { auto_buffer = data_buffer;}
+    if itm.cat == "A2" { auto_buffer = mutable_data_buffer;}
+    load_update(vec_load_ideal,itm.r_idx+auto_buffer,d_idx,-1,itm.size);
+  }
+  fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
+  for (int i=0; i<maxLen; i++){
+    file_load_ideal<<vec_load_ideal[i]<<endl;
+  }
+  
 
 }
 
