@@ -515,10 +515,10 @@ void SwapGPU::swap_plan(){
     if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
     load_update(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
   }
-  fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
-  for (int i=0; i<maxLen; i++){
-    file_load_ideal<<vec_load[i]<<endl;
-  }
+  // fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
+  // for (int i=0; i<maxLen; i++){
+  //   file_load_ideal<<vec_load[i]<<endl;
+  // }
   cout<<"load_ideal done"<<endl;
   //load of ideal TODO(junzhe) solve memory issue
   // auto vec_load_ideal = vec_load;
