@@ -402,7 +402,7 @@ void SwapGPU::swap_plan(){
   cout<<"max_idx and min_idx "<<max_idx<<' '<<min_idx<<endl;
   //cut into vec_run 0, vec_run, vec_run 2
   // vector<onePieceMsg>vec_run_0(&vec_pieceMsg[location],&vec_pieceMsg[location+maxLen]);
-  // vector<onePieceMsg>vec_run(&vec_pieceMsg[location+maxLen],&vec_pieceMsg[location+2*maxLen]);
+  vector<onePieceMsg>vec_run(&vec_pieceMsg[location+maxLen],&vec_pieceMsg[location+2*maxLen]);
   // vector<onePieceMsg>vec_run_2(&vec_pieceMsg[location+2*maxLen],&vec_pieceMsg[location+3*maxLen]);
   //3 iterations
   vector<onePieceMsg>vec_run_3(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
@@ -430,7 +430,7 @@ void SwapGPU::swap_plan(){
   cout<<"range: "<<vec_load[overLimit_.first]<<" "<<vec_load[overLimit_.second]<<endl;
   //sort by ptr & idx
   sort(vec_run_3.begin(),vec_run_3.end(),less_than_ptrIdx());
-
+  sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
   //for analysis only. TODO(junzhe)
   //fstream file_block3("vec_run_simple.text", ios::in|ios::out|ios::app);
   fstream file_block4("vec_run_3.text", ios::in|ios::out|ios::app);
@@ -441,6 +441,39 @@ void SwapGPU::swap_plan(){
     //file_block4<<i<<' '<<vec_block[i+location+maxLen]<<endl;
   }
   //
+    vector<SwapBlock>vec_swap;
+  size_t sumSizeSwappAble =0;
+  size_t sumSizeSwappAble_2 =0;
+  ///formulate swappable items.
+  cout<<"==============================print swappable items "<<maxIdx<<endl;
+  for (int i =1; i<vec_run.size(); i++){
+    //SwapBlock(string p, size_t s, int i1, int i2, double t1, double t2): 
+    //ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
+    if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<maxIdx) && (vec_run[i].idx>maxIdx) 
+      && (vec_run[i-1].ptr ==vec_run[i].ptr) 
+      && ((vec_run[i-1].MallocFree==3) or (vec_run[i-1].MallocFree==2) or (vec_run[i-1].MallocFree==4)))
+    {
+      SwapBlock itm(vec_run[i].ptr,vec_run[i].size,vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
+      itm.dt = itm.d_time-itm.r_time-SwapOutTime(itm.size)-SwapOutTime(itm.size);
+      if (itm.dt>=0){
+        itm.pri = itm.dt * itm.size;
+      } else {
+        itm.pri = itm.dt * 1/itm.size;
+      }
+      //cat A
+      if (vec_run[i-1].MallocFree == 3){ itm.cat = "A1"; } 
+      if (vec_run[i-1].MallocFree == 2){ itm.cat = "A2"; } 
+      if (vec_run[i-1].MallocFree == 4){ itm.cat = "A3"; } 
+
+      vec_swap.push_back(itm);
+      sumSizeSwappAble+=itm.size;
+      sumSizeSwappAble_2+=vec_run[i].size;
+      cout<<"Items Swappable: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
+      cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
+      cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
+    } 
+  }
+  cout<<"size vec_swap: "<<vec_swap.size()<<endl;
 
 
 }
