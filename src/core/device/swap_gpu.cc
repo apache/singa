@@ -546,6 +546,8 @@ void SwapGPU::swap_plan(){
       cout<<"Items Swappable_cat_B: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
       cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
       cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
+      //TODO(junzhe) temp add
+      load_update(vec_load_ideal_B,itm.r_idx,itm.d_idx+6,-1,itm.size,maxLen);
     }
   }
 }
