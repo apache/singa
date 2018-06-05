@@ -488,10 +488,10 @@ void SwapGPU::swap_plan(){
   for (int i=0; i<maxLen; i++){
     file_load_ideal<<vec_load_ideal[i]<<endl;
   }
-  auto overLimit_ = load_over_limit(vec_load,100<<20,0,maxLen);
-  cout<<"init_over_limit_range "<<overLimit_.first<<' '<<overLimit_.second<<endl;
-  auto start_idx = overlimit_.first;
-  auto end_idx = overLimit_.second + maxLen;
+  auto overLimit_2 = load_over_limit(vec_load,100<<20,0,maxLen);
+  cout<<"init_over_limit_range "<<overLimit_2.first<<' '<<overLimit_2.second<<endl;
+  auto start_idx = overlimit_2.first;
+  auto end_idx = overLimit_2.second + maxLen;
   cout<<"below is for cat_B"<<endl;
   for (int i =1; i<vec_run.size(); i++){
     if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
