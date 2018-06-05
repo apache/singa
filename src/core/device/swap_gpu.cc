@@ -336,6 +336,28 @@ pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start
   return std::make_pair(first_over_limit, first_below_limit);
 }
 
+pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int start_idx, int end_idx, int maxIdx){
+  //input: vec_load, memLimit, range [start_idx, end_idx)
+  //return range overlimit [first_over_limit, first_below_limit)
+  int first_below_limit = maxIdx;
+  int first_over_limit = maxIdx;
+
+  for (int i = first_below_limit; i > start_idx; i--){
+    if (vec_load[i] > memLimit){
+      first_over_limit = i;
+      break;
+    }
+  }
+
+  for (int i = first_over_limit; i < end_idx; i++){
+    if (vec_load[i] > memLimit){
+      first_below_limit = i-1;
+      break;
+    }
+  }
+
+  return std::make_pair(first_below_limit, first_over_limit);
+}
 
 void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size){
   //update load [start_idx, end_idx) by plusMinus*size
@@ -488,10 +510,10 @@ void SwapGPU::swap_plan(){
   for (int i=0; i<maxLen; i++){
     file_load_ideal<<vec_load_ideal[i]<<endl;
   }
-  auto overLimit_2 = load_over_limit(vec_load,100<<20,0,maxLen);
-  cout<<"init_over_limit_range "<<overLimit_2.first<<' '<<overLimit_2.second<<endl;
-  auto start_idx = overLimit_2.first;
-  auto end_idx = overLimit_2.second + maxLen;
+  auto belowLimit_ = load_below_limit(vec_load,100<<20,0,maxLen);
+  cout<<"init_over_limit_range "<<belowLimit_.first<<' '<<overLimit_2.second<<endl;
+  auto start_idx = belowLimit_.second;
+  auto end_idx = belowLimit_.first + maxLen; //TODO(junzhe) these 2 +1 or not?
   cout<<"below is for cat_B"<<endl;
   for (int i =1; i<vec_run.size(); i++){
     if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
