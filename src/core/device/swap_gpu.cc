@@ -506,7 +506,21 @@ void SwapGPU::swap_plan(){
   for (int i=0; i<maxLen; i++){
     file_load_current<<vec_load[i]<<endl;
   }
-  //load of ideal
+
+  //update just on vec_load
+  for (int i =0; i<vec_swap.size(); i++){
+    int auto_buffer = 0;
+    auto itm = vec_swap[i];
+    if (itm.cat == "A2") auto_buffer = data_buffer;
+    if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
+    load_update(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
+  }
+  fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
+  for (int i=0; i<maxLen; i++){
+    file_load_ideal<<vec_load[i]<<endl;
+  }
+  cout<<"load_ideal done"<<endl;
+  //load of ideal TODO(junzhe) solve memory issue
   // auto vec_load_ideal = vec_load;
   // for (int i =0; i<vec_swap.size(); i++){
   //   int auto_buffer = 0;
@@ -524,34 +538,34 @@ void SwapGPU::swap_plan(){
   // auto start_idx = belowLimit_.second;
   // auto end_idx = belowLimit_.first + maxLen; //TODO(junzhe) these 2 +1 or not?
   // cout<<"below is for cat_B"<<endl;
-  int start_idx = 400;
-  int end_idx = 2;
+  // int start_idx = 400;
+  // int end_idx = 2;
  
-  for (int i =1; i<vec_run.size(); i++){
-    if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
-        && (vec_run[i-1].ptr ==vec_run[i].ptr) 
-        && ((vec_run[i-1].MallocFree==3) or (vec_run[i-1].MallocFree==2) or (vec_run[i-1].MallocFree==4))){
-      SwapBlock itm(vec_run[i].ptr,vec_run[i].size,vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
-      itm.dt = itm.d_time-itm.r_time-SwapOutTime(itm.size)-SwapOutTime(itm.size);
-      // if (itm.dt>=0){
-      //   itm.pri = itm.dt * itm.size;
-      // } else {
-      //   itm.pri = itm.dt * 1/itm.size;
-      // }
-      //cat A
-      if (vec_run[i-1].MallocFree == 3){ itm.cat = "B1"; } 
-      if (vec_run[i-1].MallocFree == 2){ itm.cat = "B2"; } 
-      if (vec_run[i-1].MallocFree == 4){ itm.cat = "B3"; } 
+  // for (int i =1; i<vec_run.size(); i++){
+  //   if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
+  //       && (vec_run[i-1].ptr ==vec_run[i].ptr) 
+  //       && ((vec_run[i-1].MallocFree==3) or (vec_run[i-1].MallocFree==2) or (vec_run[i-1].MallocFree==4))){
+  //     SwapBlock itm(vec_run[i].ptr,vec_run[i].size,vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
+  //     itm.dt = itm.d_time-itm.r_time-SwapOutTime(itm.size)-SwapOutTime(itm.size);
+  //     // if (itm.dt>=0){
+  //     //   itm.pri = itm.dt * itm.size;
+  //     // } else {
+  //     //   itm.pri = itm.dt * 1/itm.size;
+  //     // }
+  //     //cat A
+  //     if (vec_run[i-1].MallocFree == 3){ itm.cat = "B1"; } 
+  //     if (vec_run[i-1].MallocFree == 2){ itm.cat = "B2"; } 
+  //     if (vec_run[i-1].MallocFree == 4){ itm.cat = "B3"; } 
 
-      vec_swap.push_back(itm);
-      //sumSizeSwappAble+=itm.size;
-      //sumSizeSwappAble_2+=vec_run[i].size;
-      cout<<"Items Swappable_cat_B: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
-      cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
-      cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
-    }
-  }
-  cout<<"size vec_swap: "<<vec_swap.size()<<endl;
+  //     vec_swap.push_back(itm);
+  //     //sumSizeSwappAble+=itm.size;
+  //     //sumSizeSwappAble_2+=vec_run[i].size;
+  //     cout<<"Items Swappable_cat_B: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
+  //     cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
+  //     cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
+  //   }
+  // }
+  // cout<<"size vec_swap: "<<vec_swap.size()<<endl;
   // //load of ideal_B TODO(junzhe) to trouble shoot
   // auto vec_load_3rd = vec_load;
   // for (int i =0; i<vec_swap.size(); i++){
