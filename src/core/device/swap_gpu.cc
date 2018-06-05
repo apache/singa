@@ -554,10 +554,10 @@ void SwapGPU::swap_plan(){
     }
   }
 
-  fstream file_load_ideal_B("load_ideal_B.text", ios::in|ios::out|ios::app);
-  for (int i=0; i<maxLen; i++){
-    file_load_ideal_B<<vec_load_ideal_B[i]<<endl;
-  }
+  // fstream file_load_ideal_B("load_ideal_B.text", ios::in|ios::out|ios::app);
+  // for (int i=0; i<maxLen; i++){
+  //   file_load_ideal_B<<vec_load_ideal_B[i]<<endl;
+  // }
 }
 
 
