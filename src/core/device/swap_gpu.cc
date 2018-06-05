@@ -524,7 +524,8 @@ void SwapGPU::swap_plan(){
   // auto start_idx = belowLimit_.second;
   // auto end_idx = belowLimit_.first + maxLen; //TODO(junzhe) these 2 +1 or not?
   // cout<<"below is for cat_B"<<endl;
-
+  int start_idx = 400;
+  int end_idx = 2;
  
   for (int i =1; i<vec_run.size(); i++){
     if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
