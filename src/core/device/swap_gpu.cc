@@ -533,7 +533,7 @@ void SwapGPU::swap_plan(){
     if (itm.cat == "A2") auto_buffer = data_buffer;
     if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
     //load_update(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
-    vec_load = load_update_value(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
+    //vec_load = load_update_value(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
   }
   // fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
   // for (int i=0; i<maxLen; i++){
