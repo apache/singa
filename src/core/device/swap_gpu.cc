@@ -493,29 +493,30 @@ void SwapGPU::swap_plan(){
   auto start_idx = overlimit_.first;
   auto end_idx = overLimit_.second + maxLen;
   cout<<"below is for cat_B"<<endl;
-  if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
-      && (vec_run[i-1].ptr ==vec_run[i].ptr) 
-      && ((vec_run[i-1].MallocFree==3) or (vec_run[i-1].MallocFree==2) or (vec_run[i-1].MallocFree==4))){
-    SwapBlock itm(vec_run[i].ptr,vec_run[i].size,vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
-    itm.dt = itm.d_time-itm.r_time-SwapOutTime(itm.size)-SwapOutTime(itm.size);
-    // if (itm.dt>=0){
-    //   itm.pri = itm.dt * itm.size;
-    // } else {
-    //   itm.pri = itm.dt * 1/itm.size;
-    // }
-    //cat A
-    if (vec_run[i-1].MallocFree == 3){ itm.cat = "B1"; } 
-    if (vec_run[i-1].MallocFree == 2){ itm.cat = "B2"; } 
-    if (vec_run[i-1].MallocFree == 4){ itm.cat = "B3"; } 
+  for (int i =1; i<vec_run.size(); i++){
+    if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<start_idx) && (vec_run[i].idx>end_idx) 
+        && (vec_run[i-1].ptr ==vec_run[i].ptr) 
+        && ((vec_run[i-1].MallocFree==3) or (vec_run[i-1].MallocFree==2) or (vec_run[i-1].MallocFree==4))){
+      SwapBlock itm(vec_run[i].ptr,vec_run[i].size,vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
+      itm.dt = itm.d_time-itm.r_time-SwapOutTime(itm.size)-SwapOutTime(itm.size);
+      // if (itm.dt>=0){
+      //   itm.pri = itm.dt * itm.size;
+      // } else {
+      //   itm.pri = itm.dt * 1/itm.size;
+      // }
+      //cat A
+      if (vec_run[i-1].MallocFree == 3){ itm.cat = "B1"; } 
+      if (vec_run[i-1].MallocFree == 2){ itm.cat = "B2"; } 
+      if (vec_run[i-1].MallocFree == 4){ itm.cat = "B3"; } 
 
-    //vec_swap.push_back(itm);
-    //sumSizeSwappAble+=itm.size;
-    //sumSizeSwappAble_2+=vec_run[i].size;
-    cout<<"Items Swappable_cat_B: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
-    cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
-    cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
+      //vec_swap.push_back(itm);
+      //sumSizeSwappAble+=itm.size;
+      //sumSizeSwappAble_2+=vec_run[i].size;
+      cout<<"Items Swappable_cat_B: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
+      cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
+      cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
+    }
   }
-
 }
 
 
