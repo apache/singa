@@ -361,20 +361,19 @@ pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int star
 
 void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
   //update load [start_idx, end_idx) by plusMinus*size
-  // if (start_idx < end_idx){
+  if (start_idx < end_idx){
     cout<<start_idx<<' '<<end_idx<<endl;
     for (int i = start_idx; i<end_idx; i++){
-      //vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-      vec_load[i] = 10;
+      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
     }
-  // } else {
-  //   for (int i = start_idx; i < maxLen; i++){
-  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-  //   }
-  //   for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
-  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-  //   }
-  // }
+  } else {
+    for (int i = start_idx; i < maxLen; i++){
+      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+    }
+    for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
+      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+    }
+  }
 }
 
 vector<double> load_update_value(vector<double> vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
@@ -462,7 +461,9 @@ void SwapGPU::swap_plan(){
   ///get peak and idx of vec_load, updated with global_load
   int maxIdx = 0;
   size_t maxLoad = 0;
-  vector<double>vec_load(&global_load[location],&global_load[location+maxLen]);
+  //vec_load is 3 itr runs.
+  vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
+  // get max and idx from first itr.
   for (int i=0; i<maxLen; i++){
     if (maxLoad<vec_load[i]){
       maxLoad = vec_load[i];
@@ -534,7 +535,7 @@ void SwapGPU::swap_plan(){
     auto itm = vec_swap[i];
     if (itm.cat == "A2") auto_buffer = data_buffer;
     if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
-    load_update(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
+    load_update(vec_load,itm.r_idx+auto_buffer+maxLen,itm.d_idx+maxLen,-1,itm.size,maxLen);
     //vec_load = load_update_value(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
   }
   // fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
