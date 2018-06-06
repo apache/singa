@@ -461,9 +461,9 @@ void SwapGPU::swap_plan(){
   //sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
   //for analysis only. TODO(junzhe)
-  //fstream file_block3("vec_run_simple.text", ios::in|ios::out|ios::app);
-  fstream file_block4("vec_run.text", ios::in|ios::out|ios::app);
-  // fstream file_block4("vec_run_2.text", ios::in|ios::out|ios::app);
+  //fstream file_block3("vec_run_simple.csv", ios::in|ios::out|ios::app);
+  fstream file_block4("vec_run.csv", ios::in|ios::out|ios::app);
+  // fstream file_block4("vec_run_2.csv", ios::in|ios::out|ios::app);
   for (int i = 0; i<vec_run.size();i++){
     //file_block3<<vec_run[i].idx<<' '<<vec_block[i+location]<<endl;
     file_block4<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].ptr<<' '<<vec_run[i].size<<endl;
@@ -503,7 +503,7 @@ void SwapGPU::swap_plan(){
   }
   cout<<"size vec_swap: "<<vec_swap.size()<<endl;
   //load before swap, write in
-  fstream file_load_current("load_current.text", ios::in|ios::out|ios::app);
+  fstream file_load_current("load_current.csv", ios::in|ios::out|ios::app);
   for (int i=0; i<maxLen; i++){
     file_load_current<<vec_load[i]<<endl;
   }
@@ -518,7 +518,7 @@ void SwapGPU::swap_plan(){
     //vec_load = load_update_value(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
   }
   auto vec_load_ideal = vec_load;
-  fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
+  fstream file_load_ideal("load_ideal.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_ideal<<vec_load_ideal[i]<<endl;
   }
@@ -569,7 +569,69 @@ void SwapGPU::swap_plan(){
     auto itm = vec_swap_selct[i];
     cout<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.ptr<<endl;
   }
+  // update i1p
+  cout<<"below is i1p--------------------------------"<<endl;
+  for (int i = 0; i<vec_swap_selct.size(); i++){
+    auto itm = vec_swap_selct[i];
+    int readyIdx = 0;
+    if (itm.cat == "A1") { readyIdx = itm.r_idx; }
+    if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
+    if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
 
+    if (i > 0){
+      readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
+    }
+    itm.i1 = readyIdx;
+    itm.t1 = vec_run[readyIdx].t;
+    itm.t1p = itm.t1 + SwapOutTime(itm.size);
+    while (itm.t1p > vec_run[readyIdx].t){
+      readyIdx++;
+    }
+    itm.i1p = readyIdx;
+    vec_swap_selct[i] = itm;
+      // //update i1p again, with condideration of over limit. 
+      //   old_idx = load_over_limit(vec_load,memLimit,old_idx);
+      //TODO(junzhe) worse case is overlimit even before the first swap item.
+      //   if (old_idx<tempIdx){
+      //       //over limit before tempIdx, got overhead
+      //       vec_swap_selct[i].i1p = old_idx;
+      //       overhead+=(vec_swap_selct[i].t1p-vec_run[old_idx].t);
+      //       load_update(vec_load,old_idx,-1,vec_swap_selct[i].size);
+      //   } else {
+      //       vec_swap_selct[i].i1p = tempIdx;//Note: here i1' is immediately at Malloc/Free.
+      //       load_update(vec_load,tempIdx,-1,vec_swap_selct[i].size);
+      //   }
+    cout<<"Out sched r_idx, i1, i1p "<<vec_swap_selct[i].r_idx<<' ';
+    cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
+  }
+  cout<<"below is i2p--------------------------------"<<endl;
+  ///update swap-in index
+  //t2 and t2', i2 and i2'.
+  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
+  ///step 1: overlap with next swapIn.
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    auto itm = vec_swap_selct[i];
+    int needIdx = itm.d_idx;
+    if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
+    itm.i2 = needIdx;
+    double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
+    while (prepareTime < vec_run[needIdx].t){
+      needIdx--;
+    }
+    itm.i2p = needIdx;
+    itm.t2p = prepareTime;
+    vec_swap_selct[i] = itm;
+    cout<<"In sched r_idx,i2p, i2 "<<vec_swap_selct[i].r_idx<<' ';
+    cout<<vec_swap_selct[i].i2p<<' '<<vec_swap_selct[i].i2;
+    cout<<"---"<<vec_run[itm.i2].t-prepareTime<<endl;
+    //Note: i2 is d_idx, but not assigned.
+    //update load as per decided i1p and i2p. TODO(junzhe) update at i2p or i2p+1
+    load_update(vec_load,itm.i1p+maxLen,itm.i2p+1+maxLen,-1,itm.size); //TODO(junzhe) range, right boundary
+  }
+  fstream file_block10("load_1.csv", ios::in|ios::out|ios::app);
+  for (int i=maxLen; i<maxLen*2; i++){
+    file_block10<<vec_load[i]<<endl;
+  }
   //load of ideal TODO(junzhe) solve memory issue
   // auto vec_load_ideal = vec_load;
   // for (int i =0; i<vec_swap.size(); i++){
@@ -579,7 +641,7 @@ void SwapGPU::swap_plan(){
   //   if (itm.cat == "A2") auto_buffer = mutable_data_buffer;
   //   load_update(vec_load_ideal,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
   // }
-  // fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
+  // fstream file_load_ideal("load_ideal.csv", ios::in|ios::out|ios::app);
   // for (int i=0; i<maxLen; i++){
   //   file_load_ideal<<vec_load_ideal[i]<<endl;
   // }
@@ -629,7 +691,7 @@ void SwapGPU::swap_plan(){
   //     load_update(vec_load_3rd,itm.r_idx,itm.d_idx+auto_buffer,-1,itm.size,maxLen);
   //   } 
   // }
-  // fstream file_load_3rd("load_3rd.text", ios::in|ios::out|ios::app);
+  // fstream file_load_3rd("load_3rd.csv", ios::in|ios::out|ios::app);
   // for (int i=0; i<maxLen; i++){
   //   file_load_3rd<<vec_load_3rd[i]<<endl;
   // }
@@ -643,7 +705,7 @@ void SwapGPU::swap_plan(){
 
 SwapGPU::~SwapGPU() {
   //print out push-info TODO(junzhe) can remove
-  fstream file_block1("blockInfo.text", ios::in|ios::out|ios::app);
+  fstream file_block1("blockInfo.csv", ios::in|ios::out|ios::app);
   for (int i=0; i< vec_block.size();i++){
       file_block1<<i<<' '<<vec_block[i]<<endl;
   }
@@ -876,7 +938,7 @@ void SwapGPU::Append(string blockInfo){
 
   //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   vec_block.push_back(blockInfo);
-  // fstream file_block5("append.text", ios::in|ios::out|ios::app);
+  // fstream file_block5("append.csv", ios::in|ios::out|ios::app);
   // file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
 
   // update Table_meta's block_ and data_
@@ -961,7 +1023,7 @@ void SwapGPU::SwapIn_idx(const int r_idx){
 
 void SwapGPU::SwapOut(const Block* block_){
   if (gc < 1000 && block_->size() > 1<<20) {
-    fstream file_block5("speed.text", ios::in|ios::out|ios::app);
+    fstream file_block5("speed.csv", ios::in|ios::out|ios::app);
     BlockMeta meta;
     meta.data_ = meta.block_->get_data();
     void* tempPtr = nullptr;
@@ -979,7 +1041,7 @@ void SwapGPU::SwapOut(const Block* block_){
 
 void SwapGPU::SwapIn(const Block* block_){
   if (gc < 1000 && block_->size() > 1<<20) {
-    fstream file_block5("speed.text", ios::in|ios::out|ios::app);
+    fstream file_block5("speed.csv", ios::in|ios::out|ios::app);
     BlockMeta meta = Table_block_meta.find(block_)->second;
     auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
     cudaError_t err;
