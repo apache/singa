@@ -626,7 +626,7 @@ void SwapGPU::swap_plan(){
     cout<<"---"<<vec_run[itm.i2].t-prepareTime<<endl;
     //Note: i2 is d_idx, but not assigned.
     //update load as per decided i1p and i2p. TODO(junzhe) update at i2p or i2p+1
-    load_update(vec_load,itm.i1p+maxLen,itm.i2p+1+maxLen,-1,itm.size); //TODO(junzhe) range, right boundary
+    load_update(vec_load,itm.i1p+maxLen,itm.i2p+1+maxLen,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
   }
   fstream file_block10("load_1.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
