@@ -253,6 +253,7 @@ struct SwapBlock{
     int d_idx; //in idx
     double r_time; // out time
     double d_time; //in time
+    double dto; //t2-t1
     double dt; //delta t: t2'-t1'
     double pri;  //look at here if big enough TODO(junzhe)
     //below as per planned.
@@ -272,13 +273,13 @@ struct SwapBlock{
     SwapBlock(string p, size_t s, int i1, int i2, double t1, double t2): ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
 };
 
-struct less_than_dt{
+struct less_than_dto{
     /*
      sort SwapBlock by dt, descending
      */
     inline bool operator() (const SwapBlock& struct1, const SwapBlock& struct2)
     {
-        return (struct1.dt>struct2.dt);
+        return (struct1.dto>struct2.dto);
     }
 };
 
@@ -394,7 +395,7 @@ vector<double> load_update_value(vector<double> vec_load,int start_idx, int end_
   return vec_load_update;
 }
 
-
+docker run
 
 
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
@@ -490,9 +491,8 @@ void SwapGPU::swap_plan(){
     //file_block4<<i<<' '<<vec_block[i+location+maxLen]<<endl;
   }
   //
-    vector<SwapBlock>vec_swap;
+  vector<SwapBlock>vec_swap;
   size_t sumSizeSwappAble =0;
-  size_t sumSizeSwappAble_2 =0;
   ///formulate swappable items.
   cout<<"==============================print swappable items "<<maxIdx<<endl;
   for (int i =1; i<vec_run.size(); i++){
@@ -503,6 +503,7 @@ void SwapGPU::swap_plan(){
       && ((vec_run[i-1].MallocFree==3) or (vec_run[i-1].MallocFree==2) or (vec_run[i-1].MallocFree==4)))
     {
       SwapBlock itm(vec_run[i].ptr,vec_run[i].size,vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
+      itm.dto = itm.d_time-itm.r_time;
       itm.dt = itm.d_time-itm.r_time-SwapOutTime(itm.size)-SwapOutTime(itm.size);
       if (itm.dt>=0){
         itm.pri = itm.dt * itm.size;
@@ -516,7 +517,6 @@ void SwapGPU::swap_plan(){
 
       vec_swap.push_back(itm);
       sumSizeSwappAble+=itm.size;
-      sumSizeSwappAble_2+=vec_run[i].size;
       cout<<"Items Swappable: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
       cout<<" ||  ."<<itm.cat<<".    "<<(float)(itm.size)/(float)(1024*1024);
       cout<<' '<<itm.dt/1000<<' '<<itm.pri<<endl;
@@ -538,11 +538,21 @@ void SwapGPU::swap_plan(){
     load_update(vec_load,itm.r_idx+auto_buffer+maxLen,itm.d_idx+maxLen,-1,itm.size,maxLen);
     //vec_load = load_update_value(vec_load,itm.r_idx+auto_buffer,itm.d_idx,-1,itm.size,maxLen);
   }
+  auto vec_load_ideal = vec_load;
   fstream file_load_ideal("load_ideal.text", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
-    file_load_ideal<<vec_load[i]<<endl;
+    file_load_ideal<<vec_load_ideal[i]<<endl;
   }
-  cout<<"load_ideal done"<<endl;
+  int maxIdx_ideal = 0;
+  size_t maxLoad_ideal = 0;
+  // get max and idx from first itr.
+  for (int i=maxLen; i<maxLen*2; i++){
+    if (maxLoad<vec_load_ideal[i]){
+      maxLoad_ideal = vec_load_ideal[i];
+      maxIdx_ideal = i;
+    } 
+  }
+  cout<<"load_ideal done, new max: "<<maxLoad_ideal<<" at "<<maxIdx_ideal<<endl;
   //load of ideal TODO(junzhe) solve memory issue
   // auto vec_load_ideal = vec_load;
   // for (int i =0; i<vec_swap.size(); i++){
