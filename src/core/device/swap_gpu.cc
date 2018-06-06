@@ -377,27 +377,8 @@ void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMi
   }
 }
 
-vector<double> load_update_value(vector<double> vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
-  //update load [start_idx, end_idx) by plusMinus*size
-  auto vec_load_update = vec_load;
-  if (start_idx < end_idx){
-    for (int i = start_idx; i<end_idx; i++){
-      vec_load_update[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-    }
-  } else {
-    for (int i = start_idx; i < maxLen; i++){
-      vec_load_update[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-    }
-    for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
-      vec_load_update[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-    }
-  }
-  return vec_load_update;
-}
-
 
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
-
 
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
   int idxRange = 0;
@@ -550,7 +531,45 @@ void SwapGPU::swap_plan(){
       maxIdx_ideal = i;
     } 
   }
+  maxIdx_ideal = maxIdx_ideal - maxLen;
   cout<<"load_ideal done, new max: "<<maxLoad_ideal<<" at "<<maxIdx_ideal<<endl;
+
+  auto swapLoad = maxLoad - maxLoad_ideal;
+  sort(vec_swap.begin(),vec_swap.end(),less_than_dto());
+  vector<SwapBlock>vec_swap_selct;
+  size_t sumSizeToSwap = 0;
+  ///SwapBlock selection
+  cout<<"============== select top a few to swap"<<endl;
+  cout<<"maxIdx and maxLoad are: "<<maxIdx<<' '<<maxLoad<<endl;
+  cout<<"sumSizeSwappAble: "<<(float)(sumSizeSwappAble)/(float)(1024*1024)<<' '<<sumSizeSwappAble_2/1024/1024<<endl;
+  cout<<"memLimit and smallest_block: "<<memLimit<<' '<<smallest_block<<endl;
+  // can upgrade here TODO(junzhe), now changed to select by dto
+  for (int i =0; i<vec_swap.size(); i++){
+    if ((maxLoad-sumSizeToSwap)>memLimit){
+      vec_swap_selct.push_back(vec_swap[i]);
+      sumSizeToSwap+=vec_swap[i].size;
+      cout<<"Item selected: (r_idx, d_idx, MB, dt, cat) "<<vec_swap[i].r_idx<<' '<<vec_swap[i].d_idx;
+      cout<<' '<<(float)(vec_swap[i].size)/(float)(1024*1024)<<' '<<vec_swap[i].dt/1000<<' '<<vec_swap[i].cat<<endl;
+    } else {
+      break;
+    }
+  }
+
+  cout<<"number of swap_selct: "<<vec_swap_selct.size()<<endl;
+  cout<<"swap size in MB: "<<(float)(sumSizeToSwap)/(float)(1024*1024)<<endl;
+
+  ///SwapBlock scheduling - TO upgrade on 6/1 TODO(junzhe), based on version 3/4
+  double overhead = 0;
+  sort(vec_run.begin(),vec_run.end(),less_than_Idx());
+  ///update swap-out idx //t1 and t1', i1 and i1p, sort by r_idx.
+  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap());
+  //print only 
+  cout<<"print sorted slect blocks--------r_idx, d_idx, ptr"<<endl;
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    auto itm = vec_swap_selct[i];
+    cout<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.ptr<<endl;
+  }
+
   //load of ideal TODO(junzhe) solve memory issue
   // auto vec_load_ideal = vec_load;
   // for (int i =0; i<vec_swap.size(); i++){
