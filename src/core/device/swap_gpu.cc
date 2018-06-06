@@ -545,7 +545,7 @@ void SwapGPU::swap_plan(){
   size_t maxLoad_ideal = 0;
   // get max and idx from first itr.
   for (int i=maxLen; i<maxLen*2; i++){
-    if (maxLoad<vec_load_ideal[i]){
+    if (maxLoad_ideal<vec_load_ideal[i]){
       maxLoad_ideal = vec_load_ideal[i];
       maxIdx_ideal = i;
     } 
