@@ -395,8 +395,6 @@ vector<double> load_update_value(vector<double> vec_load,int start_idx, int end_
   return vec_load_update;
 }
 
-docker run
-
 
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
