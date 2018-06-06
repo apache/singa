@@ -604,6 +604,22 @@ void SwapGPU::swap_plan(){
   cout<<"load_ideal done, new max: (load_1)"<<maxLoad_1<<" at "<<maxIdx_1<<endl;
 
 
+  ///SwapBlock schedule load_15:
+  sort(vec_run.begin(),vec_run.end(),less_than_Idx());
+  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
+  auto vec_load_15 = vec_load;
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    int auto_buffer = 0;
+    auto itm = vec_swap_selct[i];
+    if (itm.cat == "A2") auto_buffer = data_buffer;
+    if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
+    load_update(vec_load_15, itm.r_idx+auto_buffer+maxLen, itm.d_idx+maxLen, -1, itm.size, maxLen);
+  }
+  fstream file_load_15("load_15.csv", ios::in|ios::out|ios::app);
+  for (int i=maxLen; i<maxLen*2; i++){
+    file_load_15<<vec_load_15[i]<<endl;
+  }
+
   ///SwapBlock scheduling load_2: consideration of overlimit, TODO(junzhe) comp overhead.
   sort(vec_run.begin(),vec_run.end(),less_than_Idx());
   sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
