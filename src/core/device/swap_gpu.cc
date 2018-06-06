@@ -362,19 +362,18 @@ pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int star
 
 void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
   //update load [start_idx, end_idx) by plusMinus*size
-  if (start_idx < end_idx){
-    cout<<start_idx<<' '<<end_idx<<endl;
-    for (int i = start_idx; i<end_idx; i++){
-      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-    }
-  } else {
-    for (int i = start_idx; i < maxLen; i++){
-      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-    }
-    for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
-      vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-    }
+  //if (start_idx < end_idx){
+  for (int i = start_idx; i<end_idx; i++){
+    vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
   }
+  // } else {
+  //   for (int i = start_idx; i < maxLen; i++){
+  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+  //   }
+  //   for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
+  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
+  //   }
+  // }
 }
 
 
@@ -628,10 +627,10 @@ void SwapGPU::swap_plan(){
       readyIdx++;
     }
     load_update(vec_load_2,readyIdx+maxLen,2*maxLen,-1,itm.size,maxLen);
-    auto overLimit_ = load_over_limit(vec_load,memLimit,0,maxLen);
+    auto overLimit_ = load_over_limit(vec_load_2,memLimit,maxLen,maxLen*2);
     if (overLimit_.first <= readyIdx){
+      load_update(vec_load_2, overLimit_.first+maxLen, readyIdx+1+maxLen,1,itm.size, maxLen); //TODO(junzhe) double verify
       readyIdx = overLimit_.first - 1;
-      load_update(vec_load_2,readyIdx+maxLen,overLimit_.first+maxLen,1,itm.size,maxLen); //TODO(junzhe) verify boundary.
     }
     itm.i1p = readyIdx;
     vec_swap_selct[i] = itm;
