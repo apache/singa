@@ -541,7 +541,7 @@ void SwapGPU::swap_plan(){
   ///SwapBlock selection
   cout<<"============== select top a few to swap"<<endl;
   cout<<"maxIdx and maxLoad are: "<<maxIdx<<' '<<maxLoad<<endl;
-  cout<<"sumSizeSwappAble: "<<(float)(sumSizeSwappAble)/(float)(1024*1024)<<' '<<sumSizeSwappAble_2/1024/1024<<endl;
+  cout<<"sumSizeSwappAble: "<<(float)(sumSizeSwappAble)/(float)(1024*1024)<<endl;
   cout<<"memLimit and smallest_block: "<<memLimit<<' '<<smallest_block<<endl;
   // can upgrade here TODO(junzhe), now changed to select by dto
   for (int i =0; i<vec_swap.size(); i++){
