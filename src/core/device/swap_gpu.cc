@@ -629,7 +629,7 @@ void SwapGPU::swap_plan(){
     load_update(vec_load_2,readyIdx+maxLen,2*maxLen,-1,itm.size,maxLen);
     auto overLimit_ = load_over_limit(vec_load_2,memLimit,maxLen,maxLen*2);
     if (overLimit_.first <= readyIdx){
-      load_update(vec_load_2, overLimit_.first+maxLen, readyIdx+1+maxLen,1,itm.size, maxLen); //TODO(junzhe) double verify
+      load_update(vec_load_2, overLimit_.first+maxLen, readyIdx+1+maxLen,-1,itm.size, maxLen); //TODO(junzhe) double verify
       readyIdx = overLimit_.first - 1;
     }
     itm.i1p = readyIdx;
