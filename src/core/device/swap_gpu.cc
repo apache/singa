@@ -640,7 +640,7 @@ void SwapGPU::swap_plan(){
   }
   fstream file_block11("load_2.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
-    file_block10<<vec_load_2[i]<<endl;
+    file_block11<<vec_load_2[i]<<endl;
   }
   //cout<<"below is i1p--------------------------------"<<endl;
   // ///SwapBlock scheduling - TO upgrade on 6/1 TODO(junzhe), based on version 3/4
