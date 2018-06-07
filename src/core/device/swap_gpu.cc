@@ -345,14 +345,14 @@ pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int star
 
   for (int i = first_below_limit+maxLen; i > start_idx+maxLen; i--){
     if (vec_load[i] > memLimit){
-      first_below_limit = i+1=maxLen;
+      first_below_limit = i+1-maxLen;
       break;
     }
   }
 
   for (int i = last_below_limit+maxLen; i < end_idx+maxLen; i++){
     if (vec_load[i] > memLimit){
-      last_below_limit = i-1=maxLen;
+      last_below_limit = i-1-maxLen;
       break;
     }
   }
