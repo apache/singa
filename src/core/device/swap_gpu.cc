@@ -360,16 +360,16 @@ pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int star
   return std::make_pair(first_below_limit, last_below_limit);
 }
 
-pair<double,int> load_peak(vector<double>vec_load,int maxLen){
-  double maxLoad = 0;
-  int maxIdx = 0;
+pair<double,int> load_peak(vector<double>vec_load_test,int maxLen){
+  double maxLoad_test = 0;
+  int maxIdx_test = 0;
   for (int i = maxLen; i < maxLen*2; i++){
-    if (maxLoad < vec_load[i]){
-      maxLoad = vec_load[i];
-      maxIdx = i - maxLen;
+    if (maxLoad_test < vec_load_test[i]){
+      maxLoad_test = vec_load_test[i];
+      maxIdx_test = i - maxLen;
     } 
   }
-  return std::make_pair(maxIdx,maxLoad);
+  return std::make_pair(maxIdx_test,maxLoad_test);
 }
 
 void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
