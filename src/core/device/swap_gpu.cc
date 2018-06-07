@@ -625,6 +625,8 @@ void SwapGPU::swap_plan(){
   sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
   auto vec_load_2 = vec_load;
   //update i1p
+  auto overLimit_3 = load_over_limit(vec_load,maxLoad_ideal,maxLen,maxLen*2);
+  cout<<"limit for load_2 "<<maxLoad_ideal<<" over during ("<<overLimit_3.first<<' '<<overLimit_3.second<<")"<<endl;
   cout<<"below is i1p--------------------------------load_2"<<endl;
   for (int i = 0; i<vec_swap_selct.size(); i++){
     auto itm = vec_swap_selct[i];
@@ -644,10 +646,10 @@ void SwapGPU::swap_plan(){
     }
     auto tempI1p = readyIdx; //without verify with over_limit
     load_update(vec_load_2,readyIdx+maxLen,2*maxLen,-1,itm.size,maxLen);
-    auto overLimit_ = load_over_limit(vec_load_2,maxLoad_ideal,maxLen,maxLen*2);
+    auto overLimit_1 = load_over_limit(vec_load_2,maxLoad_ideal,maxLen,maxLen*2);
     auto overLimit_2 = load_over_limit(vec_load_2,maxLoad_ideal,maxLen,maxLen+readyIdx+1);
     cout<<"r_idx "<<itm.r_idx<<" ||i1 "<<itm.i1<<" ||tempI1p "<<tempI1p;
-    cout<<" ||overLimit with tempPtr "<<overLimit_.first<<" "<<overLimit_.second;
+    cout<<" ||overLimit with tempPtr "<<overLimit_1.first<<" "<<overLimit_1.second;
     cout<<" ||overLimit with tempPtr_2 "<<overLimit_2.first<<" "<<overLimit_2.second<<endl;
     if (overLimit_.first <= readyIdx){
       load_update(vec_load_2, overLimit_.first-1+maxLen, readyIdx+1+maxLen,-1,itm.size, maxLen); //TODO(junzhe) double verify
