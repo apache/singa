@@ -454,6 +454,8 @@ void SwapGPU::swap_plan(){
   
   vector<SwapBlock>vec_swap;
   size_t load_swap = 0;
+
+
   ///formulate swappable items.
   cout<<"==============================print swappable items "<<maxIdx<<endl;
   for (int i =1; i<vec_run.size(); i++){
@@ -489,6 +491,7 @@ void SwapGPU::swap_plan(){
   for (int i=0; i<maxLen; i++){
     file_load_current<<vec_load[i]<<endl;
   }
+
 
   ///load ideal, swap all vec_swap, list possible memory by one-swap
   auto vec_load_ideal = vec_load;
@@ -539,7 +542,7 @@ void SwapGPU::swap_plan(){
   cout<<"number of swap_selct: "<<vec_swap_selct.size()<<endl;
   cout<<"swap size in MB: "<<(float)(sumSizeToSwap)/(float)(1024*1024)<<endl;
 
-  ///SwapBlock scheduling load_1: without considering overlimit, no overhead introduced
+  ///load_1: without considering overlimit, no overhead introduced
   sort(vec_run.begin(),vec_run.end(),less_than_Idx());
   sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
   auto vec_load_1 = vec_load;
@@ -613,7 +616,6 @@ void SwapGPU::swap_plan(){
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_15<<vec_load_15[i]<<endl;
   }
-
   ///SwapBlock scheduling load_2: consideration of overlimit, TODO(junzhe) comp overhead.
   sort(vec_run.begin(),vec_run.end(),less_than_Idx());
   sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
