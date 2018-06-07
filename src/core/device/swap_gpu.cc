@@ -438,7 +438,7 @@ void SwapGPU::swap_plan(){
   }
 
   //set limit, get over-limit
-  size_t memLimit = 165<<20; //maxLoad - (62<<20);//memLimit_ratio * maxLoad;
+  size_t memLimit = 550<<20; //maxLoad - (62<<20);//memLimit_ratio * maxLoad;
   auto overLimit_ = load_over_limit(vec_load,memLimit,0,maxLen,maxLen);
 
   cout<<"init_over_limit_range "<<overLimit_.first<<' '<<overLimit_.second<<endl;
