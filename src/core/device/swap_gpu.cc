@@ -314,7 +314,7 @@ struct less_than_Idx_Swap_rvs{
 };
 
 
-pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start_idx, int end_idx){
+pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start_idx, int end_idx,int maxLen){
   //input: vec_load, memLimit, range [start_idx, end_idx)
   //return range overlimit [first_over_limit, first_below_limit)
   int first_over_limit = start_idx;
@@ -337,7 +337,7 @@ pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start
   return std::make_pair(first_over_limit, first_below_limit);
 }
 
-pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int start_idx, int end_idx, int maxIdx){
+pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int start_idx, int end_idx, int maxIdx,int maxLen){
   //input: vec_load, memLimit, range [start_idx, end_idx]
   //return range overlimit [first_over_limit, first_below_limit)
   int first_below_limit = maxIdx;
@@ -439,7 +439,7 @@ void SwapGPU::swap_plan(){
 
   //set limit, get over-limit
   size_t memLimit = 165<<20; //maxLoad - (62<<20);//memLimit_ratio * maxLoad;
-  auto overLimit_ = load_over_limit(vec_load,memLimit,0,maxLen);
+  auto overLimit_ = load_over_limit(vec_load,memLimit,0,maxLen,maxLen);
 
   cout<<"init_over_limit_range "<<overLimit_.first<<' '<<overLimit_.second<<endl;
   cout<<"memLimit and maxLoad are: "<<memLimit<<' '<<maxLoad<<endl;
@@ -625,7 +625,7 @@ void SwapGPU::swap_plan(){
   sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
   auto vec_load_2 = vec_load;
   //update i1p
-  auto overLimit_3 = load_over_limit(vec_load,maxLoad_ideal,0,maxLen);
+  auto overLimit_3 = load_over_limit(vec_load,maxLoad_ideal,0,maxLen,maxLen);
   cout<<"limit for load_2 "<<maxLoad_ideal<<" over during ("<<overLimit_3.first-maxLen<<' '<<overLimit_3.second-maxLen<<")"<<endl;
   cout<<"below is i1p--------------------------------load_2"<<endl;
   for (int i = 0; i<vec_swap_selct.size(); i++){
@@ -646,8 +646,8 @@ void SwapGPU::swap_plan(){
     }
     auto tempI1p = readyIdx; //without verify with over_limit
     load_update(vec_load_2,readyIdx,maxLen,-1,itm.size,maxLen);
-    auto overLimit_1 = load_over_limit(vec_load_2,maxLoad_ideal,0,maxLen);
-    auto overLimit_2 = load_over_limit(vec_load_2,maxLoad_ideal,0,readyIdx+1);
+    auto overLimit_1 = load_over_limit(vec_load_2,maxLoad_ideal,0,maxLen,maxLen);
+    auto overLimit_2 = load_over_limit(vec_load_2,maxLoad_ideal,0,readyIdx+1,maxLen);
     cout<<"r_idx "<<itm.r_idx<<" ||i1 "<<itm.i1<<" ||tempI1p "<<tempI1p;
     cout<<" ||overLimit with tempPtr "<<overLimit_1.first-maxLen<<" "<<overLimit_1.second;
     cout<<" ||overLimit with tempPtr_2 "<<overLimit_2.first<<" "<<overLimit_2.second<<endl;
