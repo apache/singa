@@ -360,18 +360,6 @@ pair<int,int> load_below_limit(vector<double>vec_load, size_t memLimit, int star
   return std::make_pair(first_below_limit, last_below_limit);
 }
 
-pair<double,int> load_peak(vector<double>vec_load_test,int maxLen){
-  double maxLoad_test = 0;
-  int maxIdx_test = 0;
-  for (int i = maxLen; i < maxLen*2; i++){
-    if (maxLoad_test < vec_load_test[i]){
-      maxLoad_test = vec_load_test[i];
-      maxIdx_test = i - maxLen;
-    } 
-  }
-  return std::make_pair(maxIdx_test,maxLoad_test);
-}
-
 void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
   //update load [start_idx, end_idx) by plusMinus*size
   //if (start_idx < end_idx){
@@ -439,12 +427,15 @@ void SwapGPU::swap_plan(){
   }
   //3 iterations of vec_run and vec_load, maxIdx and maxLoad
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
-  
+  int maxIdx = 0;
+  size_t maxLoad = 0;
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
-  auto max_current = load_peak(vec_load,maxLen);
-  size_t maxLoad = max_current.first;
-  int maxIdx = max_current.second;
-  cout<<"------------------print max_load: (current) "<<maxLoad<<" "<<maxIdx<<endl;
+  for (int i=0; i<maxLen; i++){
+    if (maxLoad<vec_load[i]){
+      maxLoad = vec_load[i];
+      maxIdx = i;
+    } 
+  }
 
   //set limit, get over-limit, not for planning, just for info at this stage.
   size_t memLimit = 550<<20; //maxLoad - (62<<20);//memLimit_ratio * maxLoad;
@@ -515,11 +506,18 @@ void SwapGPU::swap_plan(){
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_ideal<<vec_load_ideal[i]<<endl;
   }
+  int maxIdx_ideal = 0;
+  size_t maxLoad_ideal = 0;
+  // get max and idx from first itr.
+  for (int i=maxLen; i<maxLen*2; i++){
+    if (maxLoad_ideal<vec_load_ideal[i]){
+      maxLoad_ideal = vec_load_ideal[i];
+      maxIdx_ideal = i;
+    } 
+  }
+  maxIdx_ideal = maxIdx_ideal - maxLen;
+  cout<<"load_ideal done, new max: "<<maxLoad_ideal<<" at "<<maxIdx_ideal<<endl;
 
-  auto max_ideal = load_peak(vec_load_ideal,maxLen);
-  size_t maxLoad_ideal = max_ideal.first;
-  int maxIdx_ideal = max_ideal.second;
-  cout<<"------------------print max_load: (ideal) "<<maxLoad_ideal<<" "<<maxIdx_ideal<<endl;
 
   ///SwapBlock selection based on max load_ideal, based on dto rather than pri.
   auto swapLoad = maxLoad - maxLoad_ideal;
@@ -590,11 +588,17 @@ void SwapGPU::swap_plan(){
   for (int i=maxLen; i<maxLen*2; i++){
     file_block10<<vec_load_1[i]<<endl;
   }
-
-  auto max_1 = load_peak(vec_load_1,maxLen);
-  size_t maxLoad_1 = max_1.first;
-  int maxIdx_1 = max_1.second;
-  cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
+  int maxIdx_1 = 0;
+  size_t maxLoad_1 = 0;
+  // get max and idx from first itr.
+  for (int i=maxLen; i<maxLen*2; i++){
+    if (maxLoad_1<vec_load_1[i]){
+      maxLoad_1 = vec_load_1[i];
+      maxIdx_1 = i;
+    } 
+  }
+  maxIdx_1 = maxIdx_1 - maxLen;
+  cout<<"load_ideal done, new max: (load_1)"<<maxLoad_1<<" at "<<maxIdx_1<<endl;
 
 
   ///SwapBlock schedule load_15:
@@ -612,11 +616,6 @@ void SwapGPU::swap_plan(){
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_15<<vec_load_15[i]<<endl;
   }
-  auto max_15 = load_peak(vec_load_15,maxLen);
-  size_t maxLoad_15 = max_15.first;
-  int maxIdx_15 = max_15.second;
-  cout<<"------------------print max_load: (15) "<<maxLoad_15<<" "<<maxIdx_15<<endl;
-
   ///SwapBlock scheduling load_2: consideration of overlimit, TODO(junzhe) comp overhead.
   sort(vec_run.begin(),vec_run.end(),less_than_Idx());
   sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
