@@ -465,6 +465,8 @@ void SwapGPU::swap_plan(){
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
   ///formulate swappable items.
   cout<<"==============================print swappable items "<<maxIdx<<endl;
+  vector<SwapBlock>vec_swap;
+  size_t load_swap = 0;
   for (int i =1; i<vec_run.size(); i++){
     //SwapBlock(string p, size_t s, int i1, int i2, double t1, double t2): 
     //ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
