@@ -441,21 +441,63 @@ void SwapGPU::swap_plan(){
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
   
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
-  
+    //load before swap, write in
+  fstream file_load_current("load_current.csv", ios::in|ios::out|ios::app);
+  for (int i=0; i<maxLen; i++){
+    file_load_current<<vec_load[i]<<endl;
+  }
   cout<<"build from scratch:::::::::::::::;"<<endl;
   auto max_current = load_peak(vec_load,maxLen);
   size_t maxLoad = max_current.first;
   int maxIdx = max_current.second;
   cout<<"------------------print max_load: (current) "<<maxLoad<<" "<<maxIdx<<endl;
-  auto overlimit_ = load_over_limit(vec_load,550<<20,0,maxLen,maxLen);
-  cout<<"------------------print overlimit_ range: (550 MB) "<<overlimit_.first<<" "<<overlimit_.second<<endl;
-  load_update(vec_load,0, maxLen, -1, 100<<20,maxLen);
-  auto max_current1 = load_peak(vec_load,maxLen);
-  size_t maxLoad1 = max_current1.first;
-  int maxIdx1 = max_current1.second;
-  cout<<"------------------print max_load: (current) "<<maxLoad1<<" "<<maxIdx1<<endl;
-  auto overlimit_1 = load_over_limit(vec_load,450<<20,0,maxLen,maxLen);
-  cout<<"------------------print overlimit_ range: (550 MB) "<<overlimit_1.first<<" "<<overlimit_1.second<<endl;
+  // auto overlimit_ = load_over_limit(vec_load,550<<20,0,maxLen,maxLen);
+  // cout<<"------------------print overlimit_ range: (550 MB) "<<overlimit_.first<<" "<<overlimit_.second<<endl;
+  // load_update(vec_load,0, maxLen, -1, 100<<20,maxLen);
+  // auto max_current1 = load_peak(vec_load,maxLen);
+  // size_t maxLoad1 = max_current1.first;
+  // int maxIdx1 = max_current1.second;
+  // cout<<"------------------print max_load: (current) "<<maxLoad1<<" "<<maxIdx1<<endl;
+  // auto overlimit_1 = load_over_limit(vec_load,450<<20,0,maxLen,maxLen);
+  // cout<<"------------------print overlimit_ range: (550 MB) "<<overlimit_1.first<<" "<<overlimit_1.second<<endl;
+
+  //sort by ptr & idx
+  sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
+  ///formulate swappable items.
+  cout<<"==============================print swappable items "<<maxIdx<<endl;
+  for (int i =1; i<vec_run.size(); i++){
+    //SwapBlock(string p, size_t s, int i1, int i2, double t1, double t2): 
+    //ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
+    if ((vec_run[i].size >= smallest_block) && (vec_run[i-1].idx<maxIdx) && (vec_run[i].idx>maxIdx) 
+      && (vec_run[i-1].ptr ==vec_run[i].ptr) 
+      && ((vec_run[i-1].MallocFree==3) or (vec_run[i-1].MallocFree==2) or (vec_run[i-1].MallocFree==4)))
+    {
+      SwapBlock itm(vec_run[i].ptr, vec_run[i].size, vec_run[i-1].idx, vec_run[i].idx, vec_run[i-1].t, vec_run[i].t);
+      itm.dto = itm.d_time-itm.r_time;
+      itm.dt = itm.d_time-itm.r_time-SwapOutTime(itm.size)-SwapOutTime(itm.size);
+      if (itm.dt>=0){
+        itm.pri = itm.dt * itm.size;
+      } else {
+        itm.pri = itm.dt * 1/itm.size;
+      }
+      //cat A
+      if (vec_run[i-1].MallocFree == 3){ itm.cat = "A1"; } 
+      if (vec_run[i-1].MallocFree == 2){ itm.cat = "A2"; } 
+      if (vec_run[i-1].MallocFree == 4){ itm.cat = "A3"; } 
+
+      vec_swap.push_back(itm);
+      load_swap+=itm.size;
+      cout<<"Items Swappable: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
+      cout<<" ||  "<<itm.cat<<"  ||"<<(float)(itm.size)/(float)(1024*1024);
+      cout<<' ||'<<itm.dt/1000<<' '<<itm.pri<<endl;
+    } 
+  }
+  cout<<"size vec_swap: "<<vec_swap.size()<<endl;
+
+
+
+
+
   cout<<"done with swap_plan..."<<endl;
 }
 
