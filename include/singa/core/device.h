@@ -250,9 +250,10 @@ struct SwapBlock{
     int d_idx; //in idx
     double r_time; // out time
     double d_time; //in time
-    double dto; //t2-t1
     double dt; //delta t: t2'-t1'
     double pri;  //look at here if big enough TODO(junzhe)
+    double dto; //t2-t1
+    double wdto = 0; //t2-t1 weighted by swap_load
     //below as per planned.
     int i1;
     int i1p;

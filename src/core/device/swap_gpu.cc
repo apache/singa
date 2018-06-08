@@ -239,16 +239,23 @@ int SwapInTime(size_t size){
     return ans;
 }
 
-
-
-
 struct less_than_dto{
     /*
-     sort SwapBlock by dt, descending
+     sort SwapBlock by dto, descending
      */
     inline bool operator() (const SwapBlock& struct1, const SwapBlock& struct2)
     {
         return (struct1.dto>struct2.dto);
+    }
+};
+
+struct less_than_wdto{
+    /*
+     sort SwapBlock by weighted dto, descending
+     */
+    inline bool operator() (const SwapBlock& struct1, const SwapBlock& struct2)
+    {
+        return (struct1.wdto>struct2.wdto);
     }
 };
 
@@ -365,6 +372,16 @@ vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,
   }
   if (mode == "pri"){
     sort(vec_swap.begin(),vec_swap.end(),less_than_pri());  
+  }
+  if (mode == "wdto"){
+    //TODO(junzhe) time complexity
+    for (int i = 0; i < vec_swap,size(); i++){
+      auto itm = vec_swap[i];
+      for (int j = itm.r_idx; j < itm.d_idx; j++){
+        itm.wdto += global_load[j+location] - memLimit;
+      }
+    }
+    sort(vec_swap.begin(),vec_swap.end(),less_than_wdto()); 
   }
   size_t load_swap_selct = 0;
   for (int i =0; i<vec_swap.size(); i++){
@@ -518,8 +535,18 @@ void SwapGPU::swap_plan(){
     file_load_pri_ideal<<vec_load_pri_ideal[i]<<endl;
   }
   tempMax_ = load_peak(vec_load_pri_ideal,maxLen);
-  cout<<"------------------print max_load: (dto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
+  cout<<"------------------print max_load: (pri ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
 
+  /// select till maxLoad_ideal, wdto
+  auto vec_swap_wdto = swap_select(vec_swap,maxLoad,maxLoad_ideal,"wdto");
+  cout<<"size of vec_swap_wdto: "<<vec_swap_wdto.size()<<endl;
+  auto vec_load_wdto_ideal = swap_load_ideal(vec_load,vec_swap_wdto);
+    fstream file_load_wdto_ideal("load_wdto_ideal.csv", ios::in|ios::out|ios::app);
+  for (int i=maxLen; i<maxLen*2; i++){
+    file_load_wdto_ideal<<vec_load_wdto_ideal[i]<<endl;
+  }
+  auto tempMax_ = load_peak(vec_load_wdto_ideal,maxLen);
+  cout<<"------------------print max_load: (wdto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
 
   ///load_1, swap_select, no overhead introduced, to select which mode.
 
