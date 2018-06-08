@@ -239,6 +239,32 @@ struct BlockMeta{
     //int i2; // those last_in_idx = 0   
     //BlockMeta(Block* b, void* d, void* c, size_t s): block_(b), data_(d), cpu_ptr(c), size(s) {}
 };
+
+struct SwapBlock{
+
+    string ptr;
+    string cat;  //A1, A2, A3...
+    int name;
+    size_t size;
+    int r_idx; //out idx
+    int d_idx; //in idx
+    double r_time; // out time
+    double d_time; //in time
+    double dto; //t2-t1
+    double dt; //delta t: t2'-t1'
+    double pri;  //look at here if big enough TODO(junzhe)
+    //below as per planned.
+    int i1;
+    int i1p;
+    int i2;
+    int i2p;
+    double t1;
+    double t2;
+    double t1p;
+    double t2p;
+    SwapBlock(string p, size_t s, int i1, int i2, double t1, double t2): 
+    ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
+};
 /// Device able to Swap memory between Nvidia GPU and Swap
 class SwapGPU : public Device {
  public:
@@ -265,6 +291,8 @@ class SwapGPU : public Device {
   void MakeMetaTable(Block* block,void* data_,int size) override;
   int swap_test(vector<string>vec_block,int &maxLen, int &location);
   void swap_plan();
+  vector<SwapBlock> swap_select(double memLimit,string mode);
+  vecotr<double> swap_load_ideal(vector<SwapBlock> vec_swap_selct);
   void Test_sched_switch_swap();
   void DeploySwap();
   void Append(string blockInfo) override;
@@ -299,12 +327,12 @@ class SwapGPU : public Device {
   int globeCounter = -1;
   int maxLen = 0;
   int location = 0;
-  // int last_out_compl = 0; //used to synchronize last sent out block for each iteration.
-  // int last_out_flag = 0;  //1 means not need to sync, 0 means synced.
-  // int last_out_r_idx = 0;
-
-  //int tempCounter = 0; //temp counter, to control # blocks to swap for debug purpose.
-
+  //design requirement
+  float memLimit_ratio = 0.70; 
+  size_t smallest_block = 1<<20; //1 MB
+  int data_buffer = 4; // used to control readyIdx
+  int mutable_data_buffer = 6;
+  
  private:
   shared_ptr<DeviceMemPool> pool_;
 };
