@@ -292,7 +292,7 @@ class SwapGPU : public Device {
   int swap_test(vector<string>vec_block,int &maxLen, int &location);
   void swap_plan();
   vector<SwapBlock> swap_select(double memLimit,string mode);
-  vecotr<double> swap_load_ideal(vector<SwapBlock> vec_swap_selct);
+  vector<double> swap_load_ideal(vector<SwapBlock> vec_swap_selct);
   void Test_sched_switch_swap();
   void DeploySwap();
   void Append(string blockInfo) override;
@@ -332,7 +332,7 @@ class SwapGPU : public Device {
   size_t smallest_block = 1<<20; //1 MB
   int data_buffer = 4; // used to control readyIdx
   int mutable_data_buffer = 6;
-  
+
  private:
   shared_ptr<DeviceMemPool> pool_;
 };
