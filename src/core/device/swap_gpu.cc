@@ -447,7 +447,7 @@ void SwapGPU::swap_plan(){
   cout<<"------------------print max_load: (current) "<<maxLoad<<" "<<maxIdx<<endl;
 
   //set limit, get over-limit, not for planning, just for info at this stage.
-  size_t memLimit = 550<<20; //maxLoad - (62<<20);//memLimit_ratio * maxLoad;
+  size_t memLimit = 165<<20; //maxLoad - (62<<20);//memLimit_ratio * maxLoad;
   auto overLimit_ = load_over_limit(vec_load,memLimit,0,maxLen,maxLen);
 
   cout<<"init_over_limit_range "<<overLimit_.first<<' '<<overLimit_.second<<endl;
@@ -523,7 +523,7 @@ void SwapGPU::swap_plan(){
 
   ///SwapBlock selection based on max load_ideal, based on dto rather than pri.
   auto swapLoad = maxLoad - maxLoad_ideal;
-  memLimit = maxLoad - swapLoad; //NOTE: update memLimit.
+  // memLimit = maxLoad - swapLoad; //NOTE: update memLimit.
   sort(vec_swap.begin(),vec_swap.end(),less_than_dto());
   vector<SwapBlock>vec_swap_selct;
   size_t sumSizeToSwap = 0;
@@ -617,50 +617,50 @@ void SwapGPU::swap_plan(){
   int maxIdx_15 = max_15.second;
   cout<<"------------------print max_load: (15) "<<maxLoad_15<<" "<<maxIdx_15<<endl;
 
-  ///SwapBlock scheduling load_2: consideration of overlimit, TODO(junzhe) comp overhead.
-  sort(vec_run.begin(),vec_run.end(),less_than_Idx());
-  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
-  auto vec_load_2 = vec_load;
-  //update i1p
-  auto overLimit_3 = load_over_limit(vec_load,maxLoad_ideal,0,maxLen,maxLen);
-  cout<<"limit for load_2 "<<maxLoad_ideal<<" over during ("<<overLimit_3.first<<' '<<overLimit_3.second<<")"<<endl;
-  cout<<"below is i1p--------------------------------load_2"<<endl;
-  for (int i = 0; i<vec_swap_selct.size(); i++){
-    auto itm = vec_swap_selct[i];
-    int readyIdx = 0;
-    if (itm.cat == "A1") { readyIdx = itm.r_idx; }
-    if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
-    if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
+  // ///SwapBlock scheduling load_2: consideration of overlimit, TODO(junzhe) comp overhead.
+  // sort(vec_run.begin(),vec_run.end(),less_than_Idx());
+  // sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
+  // auto vec_load_2 = vec_load;
+  // //update i1p
+  // auto overLimit_3 = load_over_limit(vec_load,maxLoad_ideal,0,maxLen,maxLen);
+  // cout<<"limit for load_2 "<<maxLoad_ideal<<" over during ("<<overLimit_3.first<<' '<<overLimit_3.second<<")"<<endl;
+  // cout<<"below is i1p--------------------------------load_2"<<endl;
+  // for (int i = 0; i<vec_swap_selct.size(); i++){
+  //   auto itm = vec_swap_selct[i];
+  //   int readyIdx = 0;
+  //   if (itm.cat == "A1") { readyIdx = itm.r_idx; }
+  //   if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
+  //   if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
 
-    if (i > 0){
-      readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
-    }
-    itm.i1 = readyIdx;
-    itm.t1 = vec_run[readyIdx].t;
-    itm.t1p = itm.t1 + SwapOutTime(itm.size);
-    while (itm.t1p > vec_run[readyIdx].t){
-      readyIdx++;
-    }
-    auto tempI1p = readyIdx; //without verify with over_limit
-    load_update(vec_load_2,readyIdx,maxLen,-1,itm.size,maxLen);
-    auto overLimit_1 = load_over_limit(vec_load_2,maxLoad_ideal,0,maxLen,maxLen);
-    auto overLimit_2 = load_over_limit(vec_load_2,maxLoad_ideal,0,readyIdx+1,maxLen);
-    cout<<"r_idx "<<itm.r_idx<<" ||i1 "<<itm.i1<<" ||tempI1p "<<tempI1p;
-    cout<<" ||overLimit with tempPtr "<<overLimit_1.first-maxLen<<" "<<overLimit_1.second;
-    cout<<" ||overLimit with tempPtr_2 "<<overLimit_2.first<<" "<<overLimit_2.second<<endl;
-    if (overLimit_.first <= readyIdx){
-      load_update(vec_load_2, overLimit_.first-1, readyIdx+1,-1,itm.size, maxLen); //TODO(junzhe) double verify
-      readyIdx = overLimit_.first - 1;
-    }
-    itm.i1p = readyIdx;
-    vec_swap_selct[i] = itm;
-    // cout<<"Out sched r_idx, i1, i1p "<<vec_swap_selct[i].r_idx<<' ';
-    // cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
-  }
-  fstream file_block11("load_2.csv", ios::in|ios::out|ios::app);
-  for (int i=maxLen; i<maxLen*2; i++){
-    file_block11<<vec_load_2[i]<<endl;
-  }
+  //   if (i > 0){
+  //     readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
+  //   }
+  //   itm.i1 = readyIdx;
+  //   itm.t1 = vec_run[readyIdx].t;
+  //   itm.t1p = itm.t1 + SwapOutTime(itm.size);
+  //   while (itm.t1p > vec_run[readyIdx].t){
+  //     readyIdx++;
+  //   }
+  //   auto tempI1p = readyIdx; //without verify with over_limit
+  //   load_update(vec_load_2,readyIdx,maxLen,-1,itm.size,maxLen);
+  //   auto overLimit_1 = load_over_limit(vec_load_2,maxLoad_ideal,0,maxLen,maxLen);
+  //   auto overLimit_2 = load_over_limit(vec_load_2,maxLoad_ideal,0,readyIdx+1,maxLen);
+  //   cout<<"r_idx "<<itm.r_idx<<" ||i1 "<<itm.i1<<" ||tempI1p "<<tempI1p;
+  //   cout<<" ||overLimit with tempPtr "<<overLimit_1.first-maxLen<<" "<<overLimit_1.second;
+  //   cout<<" ||overLimit with tempPtr_2 "<<overLimit_2.first<<" "<<overLimit_2.second<<endl;
+  //   if (overLimit_.first <= readyIdx){
+  //     load_update(vec_load_2, overLimit_.first-1, readyIdx+1,-1,itm.size, maxLen); //TODO(junzhe) double verify
+  //     readyIdx = overLimit_.first - 1;
+  //   }
+  //   itm.i1p = readyIdx;
+  //   vec_swap_selct[i] = itm;
+  //   // cout<<"Out sched r_idx, i1, i1p "<<vec_swap_selct[i].r_idx<<' ';
+  //   // cout<<vec_swap_selct[i].i1<<' '<<vec_swap_selct[i].i1p<<endl;
+  // }
+  // fstream file_block11("load_2.csv", ios::in|ios::out|ios::app);
+  // for (int i=maxLen; i<maxLen*2; i++){
+  //   file_block11<<vec_load_2[i]<<endl;
+  // }
 
   cout<<"done with swap_plan..."<<endl;
 }
