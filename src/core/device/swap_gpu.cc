@@ -357,7 +357,7 @@ void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMi
   // }
 }
 
-vector<SwapBlock> SwapGPU::swap_select(double memLimit,string mode){
+vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,double memLimit,string mode){
   vector<SwapBlock>vec_swap_selct;
   vector<SwapBlock>vec_swap_reject;
   if (mode == "dto"){
@@ -368,7 +368,7 @@ vector<SwapBlock> SwapGPU::swap_select(double memLimit,string mode){
   }
   size_t load_swap_selct = 0;
   for (int i =0; i<vec_swap.size(); i++){
-    if ((maxLoad-maxLimit)>load_swap_selct){
+    if ((maxLoad-memLimit)>load_swap_selct){
       vec_swap_selct.push_back(vec_swap[i]);
       load_swap_selct+=vec_swap[i].size;  
       //cout<<"Item selected: (r_idx, d_idx, dto) "<<vec_swap[i].r_idx<<"  "<<vec_swap[i].d_idx<<"  "<<static_cast<int>(vec_swap[i].dto/1000000)<<endl;
@@ -499,7 +499,7 @@ void SwapGPU::swap_plan(){
   cout<<"------------------print max_load: (ideal) "<<maxLoad_ideal<<" "<<maxIdx_ideal<<endl;
 
   /// select till maxLoad_ideal, dto
-  auto vec_swap_dto = swap_select(maxLoad_ideal,"dto");
+  auto vec_swap_dto = swap_select(vec_swap,maxLoad,maxLoad_ideal,"dto");
   cout<<"size of vec_swap_dto: "<<vec_swap_dto.size()<<endl;
   auto vec_load_dto_ideal = swap_load_ideal(vec_swap_dto);
     fstream file_load_dto_ideal("load_dto_ideal.csv", ios::in|ios::out|ios::app);
@@ -510,7 +510,7 @@ void SwapGPU::swap_plan(){
   cout<<"------------------print max_load: (dto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
 
   /// select till maxLoad_ideal, pri
-  auto vec_swap_pri = swap_select(maxLoad_ideal,"pri");
+  auto vec_swap_pri = swap_select(vec_swap,maxLoad,maxLoad_ideal,"pri");
   cout<<"size of vec_swap_pri: "<<vec_swap_dto.size()<<endl;
   auto vec_load_pri_ideal = swap_load_ideal(vec_swap_pri);
     fstream file_load_pri_ideal("load_pri_ideal.csv", ios::in|ios::out|ios::app);

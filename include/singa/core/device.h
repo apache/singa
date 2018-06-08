@@ -291,7 +291,7 @@ class SwapGPU : public Device {
   void MakeMetaTable(Block* block,void* data_,int size) override;
   int swap_test(vector<string>vec_block,int &maxLen, int &location);
   void swap_plan();
-  vector<SwapBlock> swap_select(double memLimit,string mode);
+  vector<SwapBlock> swap_select(vector<SwapBlock>vec_swap,double maxLoad,double memLimit,string mode);
   vector<double> swap_load_ideal(vector<SwapBlock> vec_swap_selct);
   void Test_sched_switch_swap();
   void DeploySwap();
