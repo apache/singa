@@ -384,7 +384,7 @@ vector<double> SwapGPU::swap_load_ideal(vector<double>vec_load,vector<SwapBlock>
   auto vec_load_return = vec_load;
   for (int i =0; i<vec_swap_selct.size(); i++){
     int auto_buffer = 0;
-    auto itm = vec_swap_swap[i];
+    auto itm = vec_swap_selct[i];
     if (itm.cat == "A2") auto_buffer = data_buffer;
     if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
     load_update(vec_load_return, itm.r_idx+auto_buffer, itm.d_idx, -1, itm.size, maxLen);
