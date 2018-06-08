@@ -380,11 +380,11 @@ vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,
   return vec_swap_selct;
 }
 
-vector<double> SwapGPU::swap_load_ideal(vector<SwapBlock> vec_swap_selct){
+vector<double> SwapGPU::swap_load_ideal(vector<double>vec_load,vector<SwapBlock> vec_swap_selct){
   auto vec_load_return = vec_load;
   for (int i =0; i<vec_swap_selct.size(); i++){
     int auto_buffer = 0;
-    auto itm = vec_swap[i];
+    auto itm = vec_swap_swap[i];
     if (itm.cat == "A2") auto_buffer = data_buffer;
     if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
     load_update(vec_load_return, itm.r_idx+auto_buffer, itm.d_idx, -1, itm.size, maxLen);
@@ -487,7 +487,7 @@ void SwapGPU::swap_plan(){
   cout<<"size vec_swap: "<<vec_swap.size()<<endl;
 
   ///load ideal, swap all vec_swap, lest possible memory by one-swap
-  auto vec_load_ideal = swap_load_ideal(vec_swap);
+  auto vec_load_ideal = swap_load_ideal(vec_load,vec_swap);
   fstream file_load_ideal("load_ideal.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_ideal<<vec_load_ideal[i]<<endl;
@@ -501,7 +501,7 @@ void SwapGPU::swap_plan(){
   /// select till maxLoad_ideal, dto
   auto vec_swap_dto = swap_select(vec_swap,maxLoad,maxLoad_ideal,"dto");
   cout<<"size of vec_swap_dto: "<<vec_swap_dto.size()<<endl;
-  auto vec_load_dto_ideal = swap_load_ideal(vec_swap_dto);
+  auto vec_load_dto_ideal = swap_load_ideal(vec_load,vec_swap_dto);
     fstream file_load_dto_ideal("load_dto_ideal.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_dto_ideal<<vec_load_dto_ideal[i]<<endl;
@@ -512,7 +512,7 @@ void SwapGPU::swap_plan(){
   /// select till maxLoad_ideal, pri
   auto vec_swap_pri = swap_select(vec_swap,maxLoad,maxLoad_ideal,"pri");
   cout<<"size of vec_swap_pri: "<<vec_swap_dto.size()<<endl;
-  auto vec_load_pri_ideal = swap_load_ideal(vec_swap_pri);
+  auto vec_load_pri_ideal = swap_load_ideal(vec_load,vec_swap_pri);
     fstream file_load_pri_ideal("load_pri_ideal.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_pri_ideal<<vec_load_pri_ideal[i]<<endl;
