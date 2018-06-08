@@ -388,6 +388,41 @@ void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMi
   // }
 }
 
+vector<SwapBlock> swap_select(vector<double> vec_load, vector<SwapBlock> vec_swap, double memLimit, int maxLen, string mode){
+  vector<SwapBlock>vec_swap_selct;
+  vector<SwapBlock>vec_swap_reject;
+  if (mode == "dto"){
+    sort(vec_swap.begin(),vec_swap.end(),less_than_dto());  
+  }
+  if (mode == "pri"){
+    sort(vec_swap.begin(),vec_swap.end(),less_than_pri());  
+  }
+  size_t load_swap_selct = 0;
+  for (int i =0; i<vec_swap.size(); i++){
+    if ((maxLoad-maxLimit)>load_swap_selct){
+      vec_swap_selct.push_back(vec_swap[i]);
+      load_swap_selct+=vec_swap[i].size;  
+      //cout<<"Item selected: (r_idx, d_idx, dto) "<<vec_swap[i].r_idx<<"  "<<vec_swap[i].d_idx<<"  "<<static_cast<int>(vec_swap[i].dto/1000000)<<endl;
+    } else {
+      //break; TODO(junzhe) to resume break
+      vec_swap_reject.push_back(vec_swap[i]);
+    }
+  }
+  return vec_swap_selct;
+}
+
+vector<double> swap_load_ideal(vector<double> vec_load,vector<SwapBlock> vec_swap_selct){
+  auto vec_load_ideal = vec_load;
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    int auto_buffer = 0;
+    auto itm = vec_swap[i];
+    if (itm.cat == "A2") auto_buffer = data_buffer;
+    if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
+    load_update(vec_load_ideal, itm.r_idx+auto_buffer, itm.d_idx, -1, itm.size, maxLen);
+  }
+  return vec_load_ideal;
+}
+
 
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
@@ -488,14 +523,7 @@ void SwapGPU::swap_plan(){
   cout<<"size vec_swap: "<<vec_swap.size()<<endl;
 
   ///load ideal, swap all vec_swap, lest possible memory by one-swap
-  auto vec_load_ideal = vec_load;
-  for (int i =0; i<vec_swap.size(); i++){
-    int auto_buffer = 0;
-    auto itm = vec_swap[i];
-    if (itm.cat == "A2") auto_buffer = data_buffer;
-    if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
-    load_update(vec_load_ideal, itm.r_idx+auto_buffer, itm.d_idx, -1, itm.size, maxLen);
-  }
+  auto vec_load_ideal = swap_load_ideal(vec_load,vec_swap);
   fstream file_load_ideal("load_ideal.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_ideal<<vec_load_ideal[i]<<endl;
@@ -505,97 +533,80 @@ void SwapGPU::swap_plan(){
   size_t maxLoad_ideal = max_ideal.first;
   int maxIdx_ideal = max_ideal.second;
   cout<<"------------------print max_load: (ideal) "<<maxLoad_ideal<<" "<<maxIdx_ideal<<endl;
-  
-  /// select till maxLoad_ideal
-  sort(vec_swap.begin(),vec_swap.end(),less_than_dto());
-  vector<SwapBlock>vec_swap_selct;
-  vector<SwapBlock>vec_swap_reject;
-  size_t load_swap_selct = 0;
-  for (int i =0; i<vec_swap.size(); i++){
-    if ((maxLoad-maxLoad_ideal)>load_swap_selct){
-      vec_swap_selct.push_back(vec_swap[i]);
-      load_swap_selct+=vec_swap[i].size;  
-      cout<<"Item selected: (r_idx, d_idx, dto) "<<vec_swap[i].r_idx<<"  "<<vec_swap[i].d_idx<<"  "<<static_cast<int>(vec_swap[i].dto/1000000)<<endl;
-    } else {
-      //break; TODO(junzhe) to resume break
-      vec_swap_reject.push_back(vec_swap[i]);
-    }
-  }
-  cout<<"size of vec_swap_selct: "<<vec_swap_selct.size()<<endl;
-  cout<<"size of vec_swap_reject: "<<vec_swap_reject.size()<<endl;
-  for (int i =0; i<vec_swap_reject.size(); i++){
-    auto itm = vec_swap_reject[i];
-    cout<<"Item rejected: (r_idx, d_idx,dto) "<<itm.r_idx<<"  "<<itm.d_idx<<"  "<<static_cast<int>(itm.dto/1000000)<<endl;
-  }
 
-  ///load_1_ideal,swap_selct, mem limited by maxLoad_ideal
-  auto vec_load_1_ideal = vec_load;
-  for (int i =0; i<vec_swap_selct.size(); i++){
-    int auto_buffer = 0;
-    auto itm = vec_swap_selct[i];
-    if (itm.cat == "A2") auto_buffer = data_buffer;
-    if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
-    load_update(vec_load_1_ideal, itm.r_idx+auto_buffer, itm.d_idx, -1, itm.size, maxLen);
-  }
-  fstream file_load_1_ideal("load_1_ideal.csv", ios::in|ios::out|ios::app);
+  /// select till maxLoad_ideal, dto
+  auto vec_swap_dto = swap_selct(vec_load,vec_swap,maxLoad_ideal,maxLen,"dto");
+  cout<<"size of vec_swap_dto: "<<vec_swap_dto.size()<<endl;
+  auto vec_load_dto_ideal = swap_load_ideal(vec_load,vec_swap_dto);
+    fstream file_load_dto_ideal("load_dto_ideal.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
-    file_load_1_ideal<<vec_load_1_ideal[i]<<endl;
+    file_load_dto_ideal<<vec_load_dto_ideal[i]<<endl;
   }
-  auto max_1_ideal = load_peak(vec_load_1_ideal,maxLen);
-  size_t maxLoad_1_ideal = max_1_ideal.first;
-  int maxIdx_1_ideal = max_1_ideal.second;
-  cout<<"------------------print max_load: (1 ideal) "<<maxLoad_1_ideal<<" "<<maxIdx_1_ideal<<endl;
+  auto tempMax_ = load_peak(vec_load_dto_ideal,maxLen);
+  cout<<"------------------print max_load: (dto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
 
-
-  ///load_1, swap_select, no overhead introduced
-  auto vec_load_1 = vec_load;
-  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
-  //update i1p
-  cout<<"below is i1p--------------------------------load_1"<<endl;
-  for (int i = 0; i<vec_swap_selct.size(); i++){
-    auto itm = vec_swap_selct[i];
-    int readyIdx = 0;
-    if (itm.cat == "A1") { readyIdx = itm.r_idx; }
-    if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
-    if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
-
-    if (i > 0){
-      readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
-    }
-    itm.i1 = readyIdx;
-    itm.t1 = vec_run[readyIdx].t;
-    itm.t1p = itm.t1 + SwapOutTime(itm.size);
-    while (itm.t1p > vec_run[readyIdx].t){
-      readyIdx++;
-    }
-    itm.i1p = readyIdx;
-    vec_swap_selct[i] = itm;
-  }
-  //update i2p
-  cout<<"below is i2p--------------------------------"<<endl;
-  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
-  for (int i =0; i<vec_swap_selct.size(); i++){
-    auto itm = vec_swap_selct[i];
-    int needIdx = itm.d_idx;
-    if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
-    itm.i2 = needIdx;
-    double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
-    while (prepareTime < vec_run[needIdx].t){
-      needIdx--;
-    }
-    itm.i2p = needIdx;
-    itm.t2p = prepareTime;
-    vec_swap_selct[i] = itm;
-    load_update(vec_load_1,itm.i1p,itm.i2p+1,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
-  }
-  fstream file_block10("load_1.csv", ios::in|ios::out|ios::app);
+  /// select till maxLoad_ideal, pri
+  auto vec_swap_pri = swap_selct(vec_load,vec_swap,maxLoad_ideal,maxLen,"pri");
+  cout<<"size of vec_swap_pri: "<<vec_swap_dto.size()<<endl;
+  auto vec_load_pri_ideal = swap_load_ideal(vec_load,vec_swap_pri);
+    fstream file_load_pri_ideal("load_pri_ideal.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
-    file_block10<<vec_load_1[i]<<endl;
+    file_load_pri_ideal<<vec_load_pri_ideal[i]<<endl;
   }
-  auto max_1 = load_peak(vec_load_1,maxLen);
-  size_t maxLoad_1 = max_1.first;
-  int maxIdx_1 = max_1.second;
-  cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
+  tempMax_ = load_peak(vec_load_pri_ideal,maxLen);
+  cout<<"------------------print max_load: (dto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
+
+
+  ///load_1, swap_select, no overhead introduced, to select which mode.
+
+  // auto vec_load_1 = vec_load;
+  // sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); //sort by r_idx.
+  // //update i1p
+  // cout<<"below is i1p--------------------------------load_1"<<endl;
+  // for (int i = 0; i<vec_swap_selct.size(); i++){
+  //   auto itm = vec_swap_selct[i];
+  //   int readyIdx = 0;
+  //   if (itm.cat == "A1") { readyIdx = itm.r_idx; }
+  //   if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
+  //   if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
+
+  //   if (i > 0){
+  //     readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
+  //   }
+  //   itm.i1 = readyIdx;
+  //   itm.t1 = vec_run[readyIdx].t;
+  //   itm.t1p = itm.t1 + SwapOutTime(itm.size);
+  //   while (itm.t1p > vec_run[readyIdx].t){
+  //     readyIdx++;
+  //   }
+  //   itm.i1p = readyIdx;
+  //   vec_swap_selct[i] = itm;
+  // }
+  // //update i2p
+  // cout<<"below is i2p--------------------------------"<<endl;
+  // sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
+  // for (int i =0; i<vec_swap_selct.size(); i++){
+  //   auto itm = vec_swap_selct[i];
+  //   int needIdx = itm.d_idx;
+  //   if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
+  //   itm.i2 = needIdx;
+  //   double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
+  //   while (prepareTime < vec_run[needIdx].t){
+  //     needIdx--;
+  //   }
+  //   itm.i2p = needIdx;
+  //   itm.t2p = prepareTime;
+  //   vec_swap_selct[i] = itm;
+  //   load_update(vec_load_1,itm.i1p,itm.i2p+1,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+  // }
+  // fstream file_block10("load_1.csv", ios::in|ios::out|ios::app);
+  // for (int i=maxLen; i<maxLen*2; i++){
+  //   file_block10<<vec_load_1[i]<<endl;
+  // }
+  // auto max_1 = load_peak(vec_load_1,maxLen);
+  // size_t maxLoad_1 = max_1.first;
+  // int maxIdx_1 = max_1.second;
+  // cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
 
 
 
