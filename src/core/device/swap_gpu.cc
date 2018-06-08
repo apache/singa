@@ -375,7 +375,7 @@ vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,
   }
   if (mode == "wdto"){
     //TODO(junzhe) time complexity
-    for (int i = 0; i < vec_swap,size(); i++){
+    for (int i = 0; i < vec_swap.size(); i++){
       auto itm = vec_swap[i];
       for (int j = itm.r_idx; j < itm.d_idx; j++){
         itm.wdto += global_load[j+location] - memLimit;
@@ -545,7 +545,7 @@ void SwapGPU::swap_plan(){
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_wdto_ideal<<vec_load_wdto_ideal[i]<<endl;
   }
-  auto tempMax_ = load_peak(vec_load_wdto_ideal,maxLen);
+  tempMax_ = load_peak(vec_load_wdto_ideal,maxLen);
   cout<<"------------------print max_load: (wdto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
 
   ///load_1, swap_select, no overhead introduced, to select which mode.
