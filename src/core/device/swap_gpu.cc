@@ -455,7 +455,7 @@ void SwapGPU::swap_plan(){
   int maxIdx1 = max_current1.second;
   cout<<"------------------print max_load: (current) "<<maxLoad1<<" "<<maxIdx1<<endl;
   auto overlimit_1 = load_over_limit(vec_load,450<<20,0,maxLen,maxLen);
-  out<<"------------------print overlimit_ range: (550 MB) "<<overlimit_1.first<<" "<<overlimit_1.second<<endl;
+  cout<<"------------------print overlimit_ range: (550 MB) "<<overlimit_1.first<<" "<<overlimit_1.second<<endl;
   cout<<"done with swap_plan..."<<endl;
 }
 
