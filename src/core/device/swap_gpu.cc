@@ -369,7 +369,7 @@ pair<double,int> load_peak(vector<double>vec_load_test,int maxLen){
       maxIdx_test = i - maxLen;
     } 
   }
-  return std::make_pair(maxIdx_test,maxLoad_test);
+  return std::make_pair(maxLoad_test,maxIdx_test);
 }
 
 void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
