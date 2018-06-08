@@ -451,15 +451,6 @@ void SwapGPU::swap_plan(){
   size_t maxLoad = max_current.first;
   int maxIdx = max_current.second;
   cout<<"------------------print max_load: (current) "<<maxLoad<<" "<<maxIdx<<endl;
-  // auto overlimit_ = load_over_limit(vec_load,550<<20,0,maxLen,maxLen);
-  // cout<<"------------------print overlimit_ range: (550 MB) "<<overlimit_.first<<" "<<overlimit_.second<<endl;
-  // load_update(vec_load,0, maxLen, -1, 100<<20,maxLen);
-  // auto max_current1 = load_peak(vec_load,maxLen);
-  // size_t maxLoad1 = max_current1.first;
-  // int maxIdx1 = max_current1.second;
-  // cout<<"------------------print max_load: (current) "<<maxLoad1<<" "<<maxIdx1<<endl;
-  // auto overlimit_1 = load_over_limit(vec_load,450<<20,0,maxLen,maxLen);
-  // cout<<"------------------print overlimit_ range: (550 MB) "<<overlimit_1.first<<" "<<overlimit_1.second<<endl;
 
   //sort by ptr & idx
   sort(vec_run.begin(),vec_run.end(),less_than_ptrIdx());
@@ -524,7 +515,7 @@ void SwapGPU::swap_plan(){
     if ((maxLoad-maxLoad_ideal)>load_swap_selct){
       vec_swap_selct.push_back(vec_swap[i]);
       load_swap_selct+=vec_swap[i].size;  
-      cout<<"Item selected: (r_idx, d_idx, dto) "<<vec_swap[i].r_idx<<"  "<<vec_swap[i].d_idx<<"  "<<vec_swap[i].dto/1000<<endl;
+      cout<<"Item selected: (r_idx, d_idx, dto) "<<vec_swap[i].r_idx<<"  "<<vec_swap[i].d_idx<<"  "<<static_cast<int>(vec_swap[i].dto/1000000)<<endl;
     } else {
       //break; TODO(junzhe) to resume break
       vec_swap_reject.push_back(vec_swap[i]);
@@ -534,7 +525,7 @@ void SwapGPU::swap_plan(){
   cout<<"size of vec_swap_reject: "<<vec_swap_reject.size()<<endl;
   for (int i =0; i<vec_swap_reject.size(); i++){
     auto itm = vec_swap_reject[i];
-    cout<<"Item rejected: (r_idx, d_idx,dto) "<<itm.r_idx<<"  "<<itm.d_idx<<"  "<<itm.dto/1000<<endl;
+    cout<<"Item rejected: (r_idx, d_idx,dto) "<<itm.r_idx<<"  "<<itm.d_idx<<"  "<<static_cast<int>(itm.dto/1000000)<<endl;
   }
 
   ///load_1_ideal,swap_selct, mem limited by maxLoad_ideal
