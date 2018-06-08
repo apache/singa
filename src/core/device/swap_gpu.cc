@@ -408,9 +408,9 @@ vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,
   } else {
     sort(vec_swap.begin(),vec_swap.end(),less_than_r_idx_ready());
     auto temp_load = global_load
-    for (int i =0; i<vec_swap.size(); i++){
-      
-    }
+    // for (int i =0; i<vec_swap.size(); i++){
+
+    // }
 
   }
   
@@ -477,7 +477,7 @@ void SwapGPU::swap_plan(){
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
   
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
-  origin_load(&global_load[location],&global_load[location+3*maxLen]);
+  origin_load = vec_load;
     //load before swap, write in
   fstream file_load_current("load_current.csv", ios::in|ios::out|ios::app);
   for (int i=0; i<maxLen; i++){
