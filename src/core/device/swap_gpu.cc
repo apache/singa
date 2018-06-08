@@ -496,7 +496,7 @@ void SwapGPU::swap_plan(){
   }
   cout<<"size vec_swap: "<<vec_swap.size()<<endl;
 
-  ///load ideal, swap all vec_swap, list possible memory by one-swap
+  ///load ideal, swap all vec_swap, lest possible memory by one-swap
   auto vec_load_ideal = vec_load;
   for (int i =0; i<vec_swap.size(); i++){
     int auto_buffer = 0;
@@ -530,9 +530,19 @@ void SwapGPU::swap_plan(){
     }
   }
   cout<<"size of vec_swap_selct: "<<vec_swap_selct.size()<<endl;
-  ///load_1_ideal
+  ///load_1_ideal,swap_selct, mem limited by maxLoad_ideal
   auto vec_load_1_ideal = vec_load;
-
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    int auto_buffer = 0;
+    auto itm = vec_swap_selct[i];
+    if (itm.cat == "A2") auto_buffer = data_buffer;
+    if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
+    load_update(vec_load_ideal, itm.r_idx+auto_buffer, itm.d_idx, -1, itm.size, maxLen);
+  }
+  fstream file_load_ideal("load_ideal.csv", ios::in|ios::out|ios::app);
+  for (int i=maxLen; i<maxLen*2; i++){
+    file_load_ideal<<vec_load_ideal[i]<<endl;
+  }
 
   cout<<"done with swap_plan..."<<endl;
 }
