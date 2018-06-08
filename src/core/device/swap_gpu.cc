@@ -240,23 +240,33 @@ int SwapInTime(size_t size){
 }
 
 struct less_than_dto{
-    /*
-     sort SwapBlock by dto, descending
-     */
-    inline bool operator() (const SwapBlock& struct1, const SwapBlock& struct2)
-    {
-        return (struct1.dto>struct2.dto);
-    }
+  /*
+   sort SwapBlock by dto, descending
+   */
+  inline bool operator() (const SwapBlock& struct1, const SwapBlock& struct2)
+  {
+    return (struct1.dto>struct2.dto);
+  }
 };
 
 struct less_than_wdto{
-    /*
-     sort SwapBlock by weighted dto, descending
-     */
-    inline bool operator() (const SwapBlock& struct1, const SwapBlock& struct2)
-    {
-        return (struct1.wdto>struct2.wdto);
-    }
+  /*
+   sort SwapBlock by weighted dto, descending
+   */
+  inline bool operator() (const SwapBlock& struct1, const SwapBlock& struct2)
+  {
+    return (struct1.wdto>struct2.wdto);
+  }
+};
+
+struct less_than_r_idx_ready{
+  /*
+   sort SwapBlock by r_idx_ready, ascending
+   */
+  inline bool operator() (const SwapBlock& struct1, const SwapBlock& struct2)
+  {
+    return (struct1.r_idx_ready<struct2.r_idx_ready);
+  }
 };
 
 struct less_than_pri{
@@ -383,17 +393,27 @@ vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,
     }
     sort(vec_swap.begin(),vec_swap.end(),less_than_wdto()); 
   }
-  size_t load_swap_selct = 0;
-  for (int i =0; i<vec_swap.size(); i++){
-    if ((maxLoad-memLimit)>load_swap_selct){
-      vec_swap_selct.push_back(vec_swap[i]);
-      load_swap_selct+=vec_swap[i].size;  
-      //cout<<"Item selected: (r_idx, d_idx, dto) "<<vec_swap[i].r_idx<<"  "<<vec_swap[i].d_idx<<"  "<<static_cast<int>(vec_swap[i].dto/1000000)<<endl;
-    } else {
-      //break; TODO(junzhe) to resume break
-      vec_swap_reject.push_back(vec_swap[i]);
+  if (mode != "r_idx"){
+    size_t load_swap_selct = 0;
+    for (int i =0; i<vec_swap.size(); i++){
+      if ((maxLoad-memLimit)>load_swap_selct){
+        vec_swap_selct.push_back(vec_swap[i]);
+        load_swap_selct+=vec_swap[i].size;  
+        //cout<<"Item selected: (r_idx, d_idx, dto) "<<vec_swap[i].r_idx<<"  "<<vec_swap[i].d_idx<<"  "<<static_cast<int>(vec_swap[i].dto/1000000)<<endl;
+      } else {
+        //break; TODO(junzhe) to resume break
+        vec_swap_reject.push_back(vec_swap[i]);
+      }
     }
+  } else {
+    sort(vec_swap.begin(),vec_swap.end(),less_than_r_idx_ready());
+    auto temp_load = global_load
+    for (int i =0; i<vec_swap.size(); i++){
+      
+    }
+
   }
+  
   return vec_swap_selct;
 }
 
@@ -457,6 +477,7 @@ void SwapGPU::swap_plan(){
   vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
   
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
+  origin_load(&global_load[location],&global_load[location+3*maxLen]);
     //load before swap, write in
   fstream file_load_current("load_current.csv", ios::in|ios::out|ios::app);
   for (int i=0; i<maxLen; i++){
@@ -490,9 +511,9 @@ void SwapGPU::swap_plan(){
         itm.pri = itm.dt * 1/itm.size;
       }
       //cat A
-      if (vec_run[i-1].MallocFree == 3){ itm.cat = "A1"; } 
-      if (vec_run[i-1].MallocFree == 2){ itm.cat = "A2"; } 
-      if (vec_run[i-1].MallocFree == 4){ itm.cat = "A3"; } 
+      if (vec_run[i-1].MallocFree == 3){ itm.cat = "A1"; itm.r_idx_ready = itm.r_idx; } 
+      if (vec_run[i-1].MallocFree == 2){ itm.cat = "A2"; itm.r_idx_ready = itm.r_idx + data_buffer;} 
+      if (vec_run[i-1].MallocFree == 4){ itm.cat = "A3"; itm.r_idx_ready = itm.r_idx + mutable_data_buffer;} 
 
       vec_swap.push_back(itm);
       load_swap+=itm.size;

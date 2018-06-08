@@ -254,6 +254,7 @@ struct SwapBlock{
     double pri;  //look at here if big enough TODO(junzhe)
     double dto; //t2-t1
     double wdto = 0; //t2-t1 weighted by swap_load
+    double r_idx_ready;
     //below as per planned.
     int i1;
     int i1p;
@@ -321,7 +322,7 @@ class SwapGPU : public Device {
   //vec_block
   vector<string>vec_block;
   vector<double>global_load;
-
+  vector<double>origin_load; //vec_load 3 itr. TODO(junzhe) to delete vec_load, global_load after use.
   int asyncSwapFlag = 0; //0 for sync, 1 for async.
   int testFlag = 0; //0 means open for test, 1 means no need test anymore.
   int gc = 0; //global counter each time Malloc/Free, add 1.
