@@ -543,7 +543,7 @@ void SwapGPU::swap_plan(){
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_1_ideal<<vec_load_1_ideal[i]<<endl;
   }
-  auto max_ideal = load_peak(vec_load_1_ideal,maxLen);
+  auto max_1_ideal = load_peak(vec_load_1_ideal,maxLen);
   size_t maxLoad_1_ideal = max_1_ideal.first;
   int maxIdx_1_ideal = max_1_ideal.second;
   cout<<"------------------print max_load: (1 ideal) "<<maxLoad_1_ideal<<" "<<maxIdx_1_ideal<<endl;
