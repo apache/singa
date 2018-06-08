@@ -537,13 +537,16 @@ void SwapGPU::swap_plan(){
     auto itm = vec_swap_selct[i];
     if (itm.cat == "A2") auto_buffer = data_buffer;
     if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
-    load_update(vec_load_ideal, itm.r_idx+auto_buffer, itm.d_idx, -1, itm.size, maxLen);
+    load_update(vec_load_1_ideal, itm.r_idx+auto_buffer, itm.d_idx, -1, itm.size, maxLen);
   }
-  fstream file_load_ideal("load_ideal.csv", ios::in|ios::out|ios::app);
+  fstream file_load_1_ideal("load_1_ideal.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
-    file_load_ideal<<vec_load_ideal[i]<<endl;
+    file_load_1_ideal<<vec_load_1_ideal[i]<<endl;
   }
-
+  auto max_ideal = load_peak(vec_load_1_ideal,maxLen);
+  size_t maxLoad_1_ideal = max_1_ideal.first;
+  int maxIdx_1_ideal = max_1_ideal.second;
+  cout<<"------------------print max_load: (1 ideal) "<<maxLoad_1_ideal<<" "<<maxIdx_1_ideal<<endl;
   cout<<"done with swap_plan..."<<endl;
 }
 
