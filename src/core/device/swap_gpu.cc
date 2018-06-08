@@ -518,19 +518,24 @@ void SwapGPU::swap_plan(){
   /// select till maxLoad_ideal
   sort(vec_swap.begin(),vec_swap.end(),less_than_dto());
   vector<SwapBlock>vec_swap_selct;
+  vector<SwapBlock>vec_swap_reject;
   size_t load_swap_selct = 0;
   for (int i =0; i<vec_swap.size(); i++){
     if ((maxLoad-maxLoad_ideal)>load_swap_selct){
       vec_swap_selct.push_back(vec_swap[i]);
       load_swap_selct+=vec_swap[i].size;  
-      cout<<"Item selected: (r_idx, d_idx, MB, dt, cat) "<<vec_swap[i].r_idx<<' '<<vec_swap[i].d_idx;
-      cout<<' '<<(float)(vec_swap[i].size)/(float)(1024*1024)<<' '<<vec_swap[i].dt/1000<<' '<<vec_swap[i].cat<<endl;
+      cout<<"Item selected: (r_idx, d_idx, dto) "<<vec_swap[i].r_idx<<"  "<<vec_swap[i].d_idx<<"  "<<vec_swap[i].dto/1000<<endl;
     } else {
-      break;
+      //break; TODO(junzhe) to resume break
+      vec_swap_reject.push_back(vec_swap[i]);
     }
   }
   cout<<"size of vec_swap_selct: "<<vec_swap_selct.size()<<endl;
-
+  cout<<"size of vec_swap_reject: "<<vec_swap_reject.size()<<endl;
+  for (int i =0; i<vec_swap_reject.size(); i++){
+    auto itm = vec_swap_reject[i];
+    cout<<"Item rejected: (r_idx, d_idx,dto) "<<itm.r_idx<<"  "<<itm.d_idx<<"  "<<itm.dto/1000<<endl;
+  }
 
   ///load_1_ideal,swap_selct, mem limited by maxLoad_ideal
   auto vec_load_1_ideal = vec_load;
