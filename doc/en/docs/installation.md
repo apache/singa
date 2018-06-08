@@ -18,15 +18,15 @@ SINGA.
         conda install -c nusdbsystem singa-gpu
 
 
-    It is equivalent to
+      It is equivalent to
 
-        conda install -c nusdbsystem singa=1.1.1=py36_cuda9.0-cudnn7.1.2
+          conda install -c nusdbsystem singa=1.1.1=py36_cuda9.0-cudnn7.1.2
 
-    CUDA 9.0 must be installed before executing the above command. Singa
-    packages for other CUDA versions are also available. The following instruction
-    lists all the available Singa packages.
+      CUDA 9.0 must be installed before executing the above command. Singa
+      packages for other CUDA versions are also available. The following instruction
+      lists all the available Singa packages.
 
-        conda search -c nusdbsystem singa
+          conda search -c nusdbsystem singa
 
 If there is no error message from
 

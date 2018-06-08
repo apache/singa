@@ -21,6 +21,8 @@ Welcome to Apache SINGA
 Recent News
 -----------
 
+* **Version 1.2.0** is now available, 6 June, 2087. `Download SINGA v1.2.0 <downloads.html>`_
+
 * **Version 1.1.0** is now available, 12 Feb, 2017. `Download SINGA v1.1.0 <downloads.html>`_
 
 * A tutorial on SINGA V1 will be given at `SGInnovate <https://www.eventbrite.sg/e/ai-eveningssginnovate-apache-singa-tickets-31505061487>`_, on 23 March, 2017
@@ -57,9 +59,9 @@ Recent News
 
 Getting Started
 ---------------
-* Try SINGA on `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ or via `Docker <https://hub.docker.com/r/nusdbsystem/singa/>`_.
+* `Install SINGA <docs/installation.html>`_ via conda, apt-get, or from source.
 
-* Install SINGA via `python wheel files <./docs/installation.html#from-wheel>`_, `Debian packages <./docs/installation.html#from-debian-package>`_ or from `source <./docs/installation.html#from-source>`_.
+* Try SINGA on `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ or via `Docker <https://hub.docker.com/r/nusdbsystem/singa/>`_.
 
 * Refer to the `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ for some basic examples and the `model zoo page <./docs/model_zoo/index.html>`_ for more examples.
 
@@ -105,8 +107,8 @@ Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_
 .. toctree::
    :hidden:
 
-   downloads
    docs/index
+   downloads
 
 .. toctree::
    :hidden:

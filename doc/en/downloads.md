@@ -2,8 +2,26 @@
 
 * Latest code: please clone the dev branch from [Github](https://github.com/apache/incubator-singa)
 
+* v1.2.0 (6 June 2018):
+    * [Apache SINGA 1.2.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
+      [\[SHA512\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512
+      [\[KEYS\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.2.0/KEYS)
+    * [Release Notes 1.2.0](releases/RELEASE_NOTES_1.2.0.html)
+    * New features and major updates,
+        * Implement autograd (currently support MLP model)
+        * Upgrade PySinga to support Python 3
+        * Improve the Tensor class with the stride field
+        * Upgrade cuDNN from V5 to V7
+        * Add VGG, Inception V4, ResNet, and DenseNet for ImageNet classification
+        * Create alias for conda packages
+        * Complete documentation in Chinese
+        * Add instructions for running Singa on Windoes
+        * Update the compilation, CI; Fix some bugs
+
+
+
 * v1.1.0 (12 February 2017):
-     * [Apache SINGA 1.1.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz)
+    * [Apache SINGA 1.1.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz)
       [\[MD5\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.md5)
       [\[KEYS\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.1.0/KEYS)
     * [Release Notes 1.1.0](releases/RELEASE_NOTES_1.1.0.html)
