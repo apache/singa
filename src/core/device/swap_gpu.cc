@@ -496,8 +496,42 @@ void SwapGPU::swap_plan(){
   }
   cout<<"size vec_swap: "<<vec_swap.size()<<endl;
 
+  ///load ideal, swap all vec_swap, list possible memory by one-swap
+  auto vec_load_ideal = vec_load;
+  for (int i =0; i<vec_swap.size(); i++){
+    int auto_buffer = 0;
+    auto itm = vec_swap[i];
+    if (itm.cat == "A2") auto_buffer = data_buffer;
+    if (itm.cat == "A3") auto_buffer = mutable_data_buffer;
+    load_update(vec_load_ideal, itm.r_idx+auto_buffer, itm.d_idx, -1, itm.size, maxLen);
+  }
+  fstream file_load_ideal("load_ideal.csv", ios::in|ios::out|ios::app);
+  for (int i=maxLen; i<maxLen*2; i++){
+    file_load_ideal<<vec_load_ideal[i]<<endl;
+  }
 
-
+  auto max_ideal = load_peak(vec_load_ideal,maxLen);
+  size_t maxLoad_ideal = max_ideal.first;
+  int maxIdx_ideal = max_ideal.second;
+  cout<<"------------------print max_load: (ideal) "<<maxLoad_ideal<<" "<<maxIdx_ideal<<endl;
+  
+  /// select till maxLoad_ideal
+  sort(vec_swap.begin(),vec_swap.end(),less_than_dto());
+  vector<SwapBlock>vec_swap_selct;
+  size_t load_swap_selct = 0;
+  for (int i =0; i<vec_swap.size(); i++){
+    if ((maxLoad-maxLoad_ideal)>load_swap_selct){
+      vec_swap_selct.push_back(vec_swap[i]);
+      load_swap_selct+=vec_swap[i].size;  
+      cout<<"Item selected: (r_idx, d_idx, MB, dt, cat) "<<vec_swap[i].r_idx<<' '<<vec_swap[i].d_idx;
+      cout<<' '<<(float)(vec_swap[i].size)/(float)(1024*1024)<<' '<<vec_swap[i].dt/1000<<' '<<vec_swap[i].cat<<endl;
+    } else {
+      break;
+    }
+  }
+  cout<<"size of vec_swap_selct: "<<vec_swap_selct.size()<<endl;
+  ///load_1_ideal
+  auto vec_load_1_ideal = vec_load;
 
 
   cout<<"done with swap_plan..."<<endl;
