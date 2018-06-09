@@ -388,13 +388,14 @@ vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,
     for (int i = 0; i < vec_swap.size(); i++){
       auto itm = vec_swap[i];
       for (int j = itm.r_idx; j < itm.d_idx; j++){
-        itm.wdto += global_load[j+location] - memLimit;
+        itm.wdto += origin_load[i+maxLen] - memLimit;
       }
     }
     sort(vec_swap.begin(),vec_swap.end(),less_than_wdto()); 
   }
-  if (mode != "r_idx"){
-    size_t load_swap_selct = 0;
+
+  size_t load_swap_selct = 0;
+  if (mode != "r_idx"){  
     for (int i =0; i<vec_swap.size(); i++){
       if ((maxLoad-memLimit)>load_swap_selct){
         vec_swap_selct.push_back(vec_swap[i]);
@@ -406,8 +407,13 @@ vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,
       }
     }
   } else {
-    sort(vec_swap.begin(),vec_swap.end(),less_than_r_idx_ready());
-    auto temp_load = global_load
+    //TODO(junzhe) other than
+    // sort(vec_swap.begin(),vec_swap.end(),less_than_r_idx_ready());
+    // auto temp_load = origin_load;
+    // int i = 0;
+    // while ((maxLoad-memLimit)>load_swap_selct){
+
+    // }
     // for (int i =0; i<vec_swap.size(); i++){
 
     // }
