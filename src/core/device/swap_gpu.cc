@@ -620,22 +620,32 @@ void SwapGPU::swap_plan(){
   cout<<"------------------print max_load: (wdto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
 
   /// load_1 no overhead, based on pri
-  auto vec_swap_selct = vec_swap_pri;
-  auto vec_load_temp = origin_load;
+  //auto vec_swap_pri = vec_swap_pri;
+  auto vec_load_pri = origin_load;
+  auto vec_load_dto = origin_load;
+  auto vec_load_wdto = origin_load;
+
   double overhead = 0;
-  //double memLimit = 0;
-  swap_sched(vec_swap_selct, vec_load_temp,overhead,0,"no-overhead");
+  swap_sched(vec_swap_pri, vec_load_pri,overhead,0,"no-overhead");
+  swap_sched(vec_swap_dto, vec_load_dto,overhead,0,"no-overhead");
+  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,0,"no-overhead");
 
-
-
-  fstream file_block10("load_1.csv", ios::in|ios::out|ios::app);
+  fstream file_block10("load_1_pri.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
-    file_block10<<vec_load_temp[i]<<endl;
+    file_block10<<vec_load_pri[i]<<endl;
   }
-  auto max_1 = load_peak(vec_load_temp,maxLen);
-  size_t maxLoad_1 = max_1.first;
-  int maxIdx_1 = max_1.second;
-  cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
+  fstream file_block11("load_1_dto.csv", ios::in|ios::out|ios::app);
+  for (int i=maxLen; i<maxLen*2; i++){
+    file_block11<<vec_load_dto[i]<<endl;
+  }
+  fstream file_block12("load_1_wdto.csv", ios::in|ios::out|ios::app);
+  for (int i=maxLen; i<maxLen*2; i++){
+    file_block12<<vec_load_wdto[i]<<endl;
+  }
+  // auto max_1 = load_peak(vec_load_temp,maxLen);
+  // size_t maxLoad_1 = max_1.first;
+  // int maxIdx_1 = max_1.second;
+  // cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
 
 
 
