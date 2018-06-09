@@ -21,7 +21,7 @@ Welcome to Apache SINGA
 Recent News
 -----------
 
-* **Version 1.2.0** is now available, 6 June, 2087. `Download SINGA v1.2.0 <downloads.html>`_
+* **Version 1.2.0** is now available, 6 June, 2018. `Download SINGA v1.2.0 <downloads.html>`_
 
 * **Version 1.1.0** is now available, 12 Feb, 2017. `Download SINGA v1.1.0 <downloads.html>`_
 

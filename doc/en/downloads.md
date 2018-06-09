@@ -4,7 +4,7 @@
 
 * v1.2.0 (6 June 2018):
     * [Apache SINGA 1.2.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
-      [\[SHA512\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512
+      [\[SHA512\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512)
       [\[KEYS\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.2.0/KEYS)
     * [Release Notes 1.2.0](releases/RELEASE_NOTES_1.2.0.html)
     * New features and major updates,

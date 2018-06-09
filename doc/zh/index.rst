@@ -23,6 +23,8 @@ SINGA 中文文档
 最新动态
 -----------
 
+* **版本 1.2.0** 于2018年6月6日发布. `下载页面 <../en/downloads.html>`_
+
 * **版本 1.1.0** 于2017年2月12日发布. `下载页面 <../en/downloads.html>`_
 
 * 关于SINGA V1的讲座在 `SGInnovate <https://www.eventbrite.sg/e/ai-eveningssginnovate-apache-singa-tickets-31505061487>`_ 举行, 时间：2017年3月23日
