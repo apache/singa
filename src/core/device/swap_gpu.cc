@@ -43,17 +43,7 @@ const cudaMemcpyKind copyKind[] = {cudaMemcpyHostToHost, cudaMemcpyHostToDevice,
 ///functions to be used
 ///Section for structs and respective sorting function:
 // onePieceMsg, onePairMsg, oneIterMsg, version 11/30 3pm
-struct onePieceMsg{
-    /*
-     members: [ptr, size, MallocFree, idx]
-     */
-    string ptr;
-    size_t size;
-    int MallocFree;
-    int idx;
-    double t;
-    onePieceMsg(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
-};
+
 
 
 struct less_than_ptrIdx{
@@ -447,8 +437,6 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
   // }
 
   ///load_1, swap_select, no overhead introduced, to select which mode.
-
-  auto vec_load_temp = origin_load;
   
   //update i1p
   cout<<"below is i1p--------------------------------load_1"<<endl;
@@ -535,7 +523,8 @@ void SwapGPU::swap_plan(){
     vec_pieceMsg[i].idx = vec_pieceMsg[i].idx - location - maxLen;
   }
   //3 iterations of vec_run and vec_load, maxIdx and maxLoad
-  vector<onePieceMsg>vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
+  vector<onePieceMsg>temp_vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
+  vec_run = temp_vec_run;
   
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
   origin_load = vec_load;

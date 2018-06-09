@@ -222,6 +222,18 @@ class CudaGPU : public Device {
 /// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
 
 ///SwapGPU
+struct onePieceMsg{
+    /*
+     members: [ptr, size, MallocFree, idx]
+     */
+    string ptr;
+    size_t size;
+    int MallocFree;
+    int idx;
+    double t;
+    onePieceMsg(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
+};
+
 struct BlockMeta{
     /*
      block Meta.
@@ -234,10 +246,6 @@ struct BlockMeta{
     cudaEvent_t in_event;
     cudaStream_t out_stream;
     cudaStream_t in_stream; 
-    //int last_out_idx;
-    //int last_in_idx;
-    //int i2; // those last_in_idx = 0   
-    //BlockMeta(Block* b, void* d, void* c, size_t s): block_(b), data_(d), cpu_ptr(c), size(s) {}
 };
 
 struct SwapBlock{
@@ -324,6 +332,7 @@ class SwapGPU : public Device {
   vector<string>vec_block;
   vector<double>global_load;
   vector<double>origin_load; //vec_load 3 itr. TODO(junzhe) to delete vec_load, global_load after use.
+  vector<onePieceMsg>vec_run;
   int asyncSwapFlag = 0; //0 for sync, 1 for async.
   int testFlag = 0; //0 means open for test, 1 means no need test anymore.
   int gc = 0; //global counter each time Malloc/Free, add 1.
