@@ -616,7 +616,7 @@ void SwapGPU::swap_plan(){
         j++;
       }
       if (itm.free == -1){
-        itm.free = maxLen;
+        itm.free = std::min(maxLen,itm.free);
       }
       vec_swap.push_back(itm);
       load_swap+=itm.size;
