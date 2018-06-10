@@ -477,11 +477,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); 
     for (int i = 0; i<vec_swap_selct.size(); i++){
       auto itm = vec_swap_selct[i];
-      int readyIdx = 0;
-      if (itm.cat == "A1") { readyIdx = itm.r_idx; }
-      if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
-      if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
-
+      int readyIdx = itm.r_idx_ready;
       if (i > 0){
         readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
       }
@@ -494,7 +490,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       load_update(vec_load_temp,readyIdx+1,maxLen,-1,itm.size,maxLen);
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.first != -1) && (tempOverLimit_.first <= readyIdx)) { 
-        load_update(vec_load_temp,tempOverLimit_.first,readyIdx+1,-1,itm.size,maxLen);
+        load_update(vec_load_temp,tempOverLimit_.first-1,readyIdx+1,-1,itm.size,maxLen);
         readyIdx = tempOverLimit_.first -1; //TODO(junzhe) boundary
       }
       itm.i1p = readyIdx;
