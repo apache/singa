@@ -607,7 +607,17 @@ void SwapGPU::swap_plan(){
       if (vec_run[i-1].MallocFree == 3){ itm.cat = "A1"; itm.r_idx_ready = itm.r_idx; } 
       if (vec_run[i-1].MallocFree == 2){ itm.cat = "A2"; itm.r_idx_ready = itm.r_idx + data_buffer;} 
       if (vec_run[i-1].MallocFree == 4){ itm.cat = "A3"; itm.r_idx_ready = itm.r_idx + mutable_data_buffer;} 
-
+      int j = i;
+      while (vec_run[j].ptr == vec_runp[i].ptr){
+        if (vec_run[j].MallocFree == -1){
+          itm.free = vec_run[j].idx;
+          break;
+        }
+        j++;
+      }
+      if (itm.free == -1){
+        itm.free = maxLen;
+      }
       vec_swap.push_back(itm);
       load_swap+=itm.size;
       cout<<"Items Swappable: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
