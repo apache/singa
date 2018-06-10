@@ -492,6 +492,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
         readyIdx++;
       }
       load_update(vec_load_temp,readyIdx+1,maxLen,-1,itm.size,maxLen);
+      auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.first != -1) && (tempOverLimit_.first <= readyIdx)) { 
         load_update(vec_load_temp,tempOverLimit_.first,readyIdx+1,-1,itm.size,maxLen);
         readyIdx = tempOverLimit_.first -1; //TODO(junzhe) boundary
