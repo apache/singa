@@ -677,9 +677,15 @@ void SwapGPU::swap_plan(){
   auto vec_load_wdto = origin_load;
 
   double overhead = 0;
-  swap_sched(vec_swap_pri, vec_load_pri,overhead,0,"no-overhead");
-  swap_sched(vec_swap_dto, vec_load_dto,overhead,0,"no-overhead");
-  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,0,"no-overhead");
+  swap_sched(vec_swap_pri, vec_load_pri,overhead,0,"stick-to-limit");
+  cout<<"load 2 overhead pri: "<<overhead<<endl;
+  overhead = 0;
+  swap_sched(vec_swap_dto, vec_load_dto,overhead,0,"stick-to-limit");
+  cout<<"load 2 overhead dto: "<<overhead<<endl;
+  overhead = 0;
+  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,0,"stick-to-limit");
+  cout<<"load 2 overhead wdto: "<<overhead<<endl;
+
 
   fstream file_block10("load_1_pri.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
