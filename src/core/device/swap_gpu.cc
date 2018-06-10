@@ -508,7 +508,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       }
       itm.i2p = needIdx;
       itm.t2p = prepareTime;
-      load_update(vec_load_temp,itm.i2p,maxLen,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+      load_update(vec_load_temp,itm.i2p,itm.free,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.second != -1) && (vec_run[tempOverLimit_.second].t > itm.t2p)) {
         overhead+=(vec_run[tempOverLimit_.second].t - itm.t2p);
