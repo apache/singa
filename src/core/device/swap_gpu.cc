@@ -508,7 +508,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       }
       itm.i2p = needIdx;
       itm.t2p = prepareTime;
-      load_update(vec_load_temp,itm.i2p,maxLen,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+      load_update(vec_load_temp,itm.i2p,itm.free,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.second != -1) && (vec_run[tempOverLimit_.second].t > itm.t2p)) {
         overhead+=(vec_run[tempOverLimit_.second].t - itm.t2p);
@@ -608,7 +608,7 @@ void SwapGPU::swap_plan(){
       if (vec_run[i-1].MallocFree == 2){ itm.cat = "A2"; itm.r_idx_ready = itm.r_idx + data_buffer;} 
       if (vec_run[i-1].MallocFree == 4){ itm.cat = "A3"; itm.r_idx_ready = itm.r_idx + mutable_data_buffer;} 
       int j = i;
-      while (vec_run[j].ptr == vec_runp[i].ptr){
+      while (vec_run[j].ptr == vec_run[i].ptr){
         if (vec_run[j].MallocFree == -1){
           itm.free = vec_run[j].idx;
           break;
