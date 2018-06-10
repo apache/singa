@@ -490,7 +490,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       load_update(vec_load_temp,readyIdx+1,maxLen,-1,itm.size,maxLen);
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.first != -1) && (tempOverLimit_.first <= readyIdx)) { 
-        load_update(vec_load_temp,tempOverLimit_.first,readyIdx+2,-1,itm.size,maxLen);
+        load_update(vec_load_temp,tempOverLimit_.first-1,readyIdx+1,-1,itm.size,maxLen);
         readyIdx = tempOverLimit_.first -1; //TODO(junzhe) boundary
       }
       itm.i1p = readyIdx;
@@ -685,7 +685,7 @@ void SwapGPU::swap_plan(){
   }
   fstream file_block11("load_1_dto.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
-    file_block11<<vec_load_dto[i]<<endl;
+overhead    file_block11<<vec_load_dto[i]<<endl;
   }
   fstream file_block12("load_1_wdto.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
