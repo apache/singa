@@ -485,12 +485,12 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       itm.t1 = vec_run[readyIdx].t;
       itm.t1p = itm.t1 + SwapOutTime(itm.size);
       while (itm.t1p > vec_run[readyIdx].t){
-        readyIdx++;
+        readyIdx++; //ready means when able to finish swapOut, w/ or w/o overhead.
       }
       load_update(vec_load_temp,readyIdx+1,maxLen,-1,itm.size,maxLen);
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.first != -1) && (tempOverLimit_.first <= readyIdx)) { 
-        load_update(vec_load_temp,tempOverLimit_.first-1,readyIdx+1,-1,itm.size,maxLen);
+        load_update(vec_load_temp,tempOverLimit_.first,readyIdx+2,-1,itm.size,maxLen);
         readyIdx = tempOverLimit_.first -1; //TODO(junzhe) boundary
       }
       itm.i1p = readyIdx;
