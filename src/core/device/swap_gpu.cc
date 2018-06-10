@@ -310,7 +310,7 @@ pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start
     }
   }
   if (first_over_limit == start_idx) first_over_limit = -1;
-  if (first_below_limit == end_idx;) first_below_limit = -1;
+  if (first_below_limit == end_idx) first_below_limit = -1;
 
   return std::make_pair(first_over_limit, first_below_limit);
 }
@@ -501,7 +501,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
         }
         itm.i1p = readyIdx;
       }
-      load_update(vec_load_temp,itm.ip1+1,maxLen,-1,itm.size,maxLen);
+      load_update(vec_load_temp,itm.i1p+1,maxLen,-1,itm.size,maxLen);
       vec_swap_selct[i] = itm;
     }
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
