@@ -309,6 +309,8 @@ pair<int,int> load_over_limit(vector<double>vec_load, size_t memLimit, int start
       break;
     }
   }
+  if (first_over_limit == start_idx) first_over_limit = -1;
+  if (first_below_limit == end_idx;) first_below_limit = -1;
 
   return std::make_pair(first_over_limit, first_below_limit);
 }
@@ -428,54 +430,103 @@ vector<double> SwapGPU::swap_load_ideal(vector<double>vec_load,vector<SwapBlock>
 void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double memLimit,string mode){
   /*
     update i1p, i2p and overhead time based on mode, such as no overhead or stick to limit.
-  */
-  //sort by r_idx for i1p update
-  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); 
-  // if (mode == "no-overhead"){
-  // }
-  // if (mode == "stick-to-limit"){
-  // }
+  */ 
+  //TODO(junzhe) wordy, can merge in common part.
+  if (mode == "no-overhead"){
+    //update i1p
+    //cout<<"below is i1p--------------------------------load_1"<<endl;
+    //sort by r_idx for i1p update
+    sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); 
+    for (int i = 0; i<vec_swap_selct.size(); i++){
+      auto itm = vec_swap_selct[i];
+      int readyIdx = 0;
+      if (itm.cat == "A1") { readyIdx = itm.r_idx; }
+      if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
+      if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
 
-  ///load_1, swap_select, no overhead introduced, to select which mode.
+      if (i > 0){
+        readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
+      }
+      itm.i1 = readyIdx;
+      itm.t1 = vec_run[readyIdx].t;
+      itm.t1p = itm.t1 + SwapOutTime(itm.size);
+      while (itm.t1p > vec_run[readyIdx].t){
+        readyIdx++;
+      }
+      itm.i1p = readyIdx;
+      vec_swap_selct[i] = itm;
+    }
+    //update i2p
+    //cout<<"below is i2p--------------------------------"<<endl;
+    sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
+    for (int i =0; i<vec_swap_selct.size(); i++){
+      auto itm = vec_swap_selct[i];
+      int needIdx = itm.d_idx;
+      if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
+      itm.i2 = needIdx;
+      double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
+      while (prepareTime < vec_run[needIdx].t){
+        needIdx--;
+      }
+      itm.i2p = needIdx;
+      itm.t2p = prepareTime;
+      vec_swap_selct[i] = itm;
+      load_update(vec_load_temp,itm.i1p,itm.i2p+1,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+    }
+
+    }
+  if (mode == "stick-to-limit"){
+    sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); 
+    for (int i = 0; i<vec_swap_selct.size(); i++){
+      auto itm = vec_swap_selct[i];
+      int readyIdx = 0;
+      if (itm.cat == "A1") { readyIdx = itm.r_idx; }
+      if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
+      if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
+
+      if (i > 0){
+        readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
+      }
+      itm.i1 = readyIdx;
+      itm.t1 = vec_run[readyIdx].t;
+      itm.t1p = itm.t1 + SwapOutTime(itm.size);
+      auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
+      if ((tempOverLimit_.first != -1) && (vec_run[tempOverLimit_.first-1].t < itm.t1p)) {
+        overhead+=(itm.t1p-vec_run[tempOverLimit_.first-1].t);
+        itm.i1p = tempOverLimit_.first-1;
+        //no need to update load to check over_limit, as at before i1p, no free yet.
+      } else {
+        while (itm.t1p > vec_run[readyIdx].t){
+        readyIdx++;
+        }
+        itm.i1p = readyIdx;
+      }
+      load_update(vec_load_temp,itm.ip1+1,maxLen,-1,itm.size,maxLen);
+      vec_swap_selct[i] = itm;
+    }
+    sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
+    for (int i =0; i<vec_swap_selct.size(); i++){
+      auto itm = vec_swap_selct[i];
+      int needIdx = itm.d_idx;
+      if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
+      itm.i2 = needIdx;
+      double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
+      while (prepareTime < vec_run[needIdx].t){
+        needIdx--;
+      }
+      itm.i2p = needIdx;
+      itm.t2p = prepareTime;
+      load_update(vec_load_temp,itm.i2p,maxLen,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+      auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
+      if ((tempOverLimit_.second != -1) && (vec_run[tempOverLimit_.second].t > itm.t2p)) {
+        overhead+=(vec_run[tempOverLimit_.second].t - itm.t2p);
+        load_update(vec_load_temp,itm.i2p,tempOverLimit_.second,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+        itm.i2p = tempOverLimit_.second;
+      }
+      vec_swap_selct[i] = itm;
+    }
+  }
   
-  //update i1p
-  cout<<"below is i1p--------------------------------load_1"<<endl;
-  for (int i = 0; i<vec_swap_selct.size(); i++){
-    auto itm = vec_swap_selct[i];
-    int readyIdx = 0;
-    if (itm.cat == "A1") { readyIdx = itm.r_idx; }
-    if (itm.cat == "A2") { readyIdx = itm.r_idx + data_buffer; }
-    if (itm.cat == "A3") { readyIdx = itm.r_idx + mutable_data_buffer; }
-
-    if (i > 0){
-      readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
-    }
-    itm.i1 = readyIdx;
-    itm.t1 = vec_run[readyIdx].t;
-    itm.t1p = itm.t1 + SwapOutTime(itm.size);
-    while (itm.t1p > vec_run[readyIdx].t){
-      readyIdx++;
-    }
-    itm.i1p = readyIdx;
-    vec_swap_selct[i] = itm;
-  }
-  //update i2p
-  cout<<"below is i2p--------------------------------"<<endl;
-  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
-  for (int i =0; i<vec_swap_selct.size(); i++){
-    auto itm = vec_swap_selct[i];
-    int needIdx = itm.d_idx;
-    if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
-    itm.i2 = needIdx;
-    double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
-    while (prepareTime < vec_run[needIdx].t){
-      needIdx--;
-    }
-    itm.i2p = needIdx;
-    itm.t2p = prepareTime;
-    vec_swap_selct[i] = itm;
-    load_update(vec_load_temp,itm.i1p,itm.i2p+1,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
-  }
 }
 
 
