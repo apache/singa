@@ -685,7 +685,7 @@ void SwapGPU::swap_plan(){
   }
   fstream file_block11("load_1_dto.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
-overhead    file_block11<<vec_load_dto[i]<<endl;
+    file_block11<<vec_load_dto[i]<<endl;
   }
   fstream file_block12("load_1_wdto.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
