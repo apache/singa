@@ -262,7 +262,7 @@ struct SwapBlock{
     double pri;  //look at here if big enough TODO(junzhe)
     double dto; //t2-t1
     double wdto = 0; //t2-t1 weighted by swap_load
-    double r_idx_ready;
+    double r_idx_ready; //r_idx + buffer, could be set during selection.
     //below as per planned.
     int i1;
     int i1p;

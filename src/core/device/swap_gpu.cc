@@ -434,7 +434,6 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
   //TODO(junzhe) wordy, can merge in common part.
   if (mode == "no-overhead"){
     //update i1p
-    //cout<<"below is i1p--------------------------------load_1"<<endl;
     //sort by r_idx for i1p update
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); 
     for (int i = 0; i<vec_swap_selct.size(); i++){
@@ -457,7 +456,6 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       vec_swap_selct[i] = itm;
     }
     //update i2p
-    //cout<<"below is i2p--------------------------------"<<endl;
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
     for (int i =0; i<vec_swap_selct.size(); i++){
       auto itm = vec_swap_selct[i];
@@ -490,18 +488,15 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       itm.i1 = readyIdx;
       itm.t1 = vec_run[readyIdx].t;
       itm.t1p = itm.t1 + SwapOutTime(itm.size);
-      auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
-      if ((tempOverLimit_.first != -1) && (vec_run[tempOverLimit_.first-1].t < itm.t1p)) {
-        overhead+=(itm.t1p-vec_run[tempOverLimit_.first-1].t);
-        itm.i1p = tempOverLimit_.first-1;
-        //no need to update load to check over_limit, as at before i1p, no free yet.
-      } else {
-        while (itm.t1p > vec_run[readyIdx].t){
+      while (itm.t1p > vec_run[readyIdx].t){
         readyIdx++;
-        }
-        itm.i1p = readyIdx;
       }
-      load_update(vec_load_temp,itm.i1p+1,maxLen,-1,itm.size,maxLen);
+      load_update(vec_load_temp,readyIdx+1,maxLen,-1,itm.size,maxLen);
+      if ((tempOverLimit_.first != -1) && (tempOverLimit_.first <= readyIdx)) { 
+        load_update(vec_load_temp,tempOverLimit_.first,readyIdx+1,-1,itm.size,maxLen);
+        readyIdx = tempOverLimit_.first -1; //TODO(junzhe) boundary
+      }
+      itm.i1p = readyIdx;
       vec_swap_selct[i] = itm;
     }
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
@@ -579,7 +574,7 @@ void SwapGPU::swap_plan(){
   
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
   origin_load = vec_load;
-    //load before swap, write in
+  //load before swap, write in
   fstream file_load_current("load_current.csv", ios::in|ios::out|ios::app);
   for (int i=0; i<maxLen; i++){
     file_load_current<<vec_load[i]<<endl;
@@ -675,15 +670,15 @@ void SwapGPU::swap_plan(){
   auto vec_load_pri = origin_load;
   auto vec_load_dto = origin_load;
   auto vec_load_wdto = origin_load;
-
+  string mode = "stick-to-limit";
   double overhead = 0;
-  swap_sched(vec_swap_pri, vec_load_pri,overhead,500<<20,"stick-to-limit");
+  swap_sched(vec_swap_pri, vec_load_pri,overhead,500<<20, mode);
   cout<<"load 2 overhead pri: "<<overhead<<endl;
   overhead = 0;
-  swap_sched(vec_swap_dto, vec_load_dto,overhead,500<<20,"stick-to-limit");
+  swap_sched(vec_swap_dto, vec_load_dto,overhead,500<<20,mode);
   cout<<"load 2 overhead dto: "<<overhead<<endl;
   overhead = 0;
-  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,500<<20,"stick-to-limit");
+  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,500<<20,mode);
   cout<<"load 2 overhead wdto: "<<overhead<<endl;
 
 
