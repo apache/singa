@@ -496,8 +496,8 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
 
       }
       auto tempOverLimit_2 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
-      cout<<"after update overlimit: "<<tempOverLimit_2.first<<endl;
       itm.i1p = readyIdx;
+      cout<<"after update overlimit: "<<tempOverLimit_2.first<<' '<<itm.i1p<<endl;
       vec_swap_selct[i] = itm;
     }
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
@@ -696,25 +696,25 @@ void SwapGPU::swap_plan(){
   swap_sched(vec_swap_pri, vec_load_pri,overhead,500<<20, mode);
   cout<<"load 2 overhead pri: "<<overhead<<endl;
   overhead = 0;
-  // swap_sched(vec_swap_dto, vec_load_dto,overhead,500<<20,mode);
-  // cout<<"load 2 overhead dto: "<<overhead<<endl;
-  // overhead = 0;
-  // swap_sched(vec_swap_wdto, vec_load_wdto,overhead,500<<20,mode);
-  // cout<<"load 2 overhead wdto: "<<overhead<<endl;
+  swap_sched(vec_swap_dto, vec_load_dto,overhead,500<<20,mode);
+  cout<<"load 2 overhead dto: "<<overhead<<endl;
+  overhead = 0;
+  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,500<<20,mode);
+  cout<<"load 2 overhead wdto: "<<overhead<<endl;
 
 
   fstream file_block10("load_1_pri.csv", ios::in|ios::out|ios::app);
   for (int i=maxLen; i<maxLen*2; i++){
     file_block10<<vec_load_pri[i]<<endl;
   }
-  // fstream file_block11("load_1_dto.csv", ios::in|ios::out|ios::app);
-  // for (int i=maxLen; i<maxLen*2; i++){
-  //   file_block11<<vec_load_dto[i]<<endl;
-  // }
-  // fstream file_block12("load_1_wdto.csv", ios::in|ios::out|ios::app);
-  // for (int i=maxLen; i<maxLen*2; i++){
-  //   file_block12<<vec_load_wdto[i]<<endl;
-  // }
+  fstream file_block11("load_1_dto.csv", ios::in|ios::out|ios::app);
+  for (int i=maxLen; i<maxLen*2; i++){
+    file_block11<<vec_load_dto[i]<<endl;
+  }
+  fstream file_block12("load_1_wdto.csv", ios::in|ios::out|ios::app);
+  for (int i=maxLen; i<maxLen*2; i++){
+    file_block12<<vec_load_wdto[i]<<endl;
+  }
   // auto max_1 = load_peak(vec_load_temp,maxLen);
   // size_t maxLoad_1 = max_1.first;
   // int maxIdx_1 = max_1.second;
