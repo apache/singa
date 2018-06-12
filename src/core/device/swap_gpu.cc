@@ -487,7 +487,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       while (itm.t1p > vec_run[readyIdx].t){
         readyIdx++; //ready means when able to finish swapOut, w/ or w/o overhead.
       }
-      load_update(vec_load_temp,readyIdx+1,maxLen,-1,itm.size,maxLen);
+      load_update(vec_load_temp,readyIdx+1,itm.d_idx,-1,itm.size,maxLen);
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.first != -1) && (tempOverLimit_.first <= readyIdx)) { 
         load_update(vec_load_temp,tempOverLimit_.first-1,readyIdx+1,-1,itm.size,maxLen);
@@ -508,7 +508,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       }
       itm.i2p = needIdx;
       itm.t2p = prepareTime;
-      load_update(vec_load_temp,itm.i2p,maxLen,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+      load_update(vec_load_temp,itm.i2p,imt.d_idx,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.second != -1) && (vec_run[tempOverLimit_.second].t > itm.t2p)) {
         overhead+=(vec_run[tempOverLimit_.second].t - itm.t2p);
