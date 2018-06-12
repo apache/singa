@@ -663,7 +663,7 @@ void SwapGPU::swap_plan(){
   size_t maxLoad_ideal = max_ideal.first;
   int maxIdx_ideal = max_ideal.second;
   cout<<"------------------print max_load: (ideal) "<<maxLoad_ideal<<" "<<maxIdx_ideal<<endl;
-
+  maxLoad_ideal = 400;
   /// select till maxLoad_ideal, dto
   auto vec_swap_dto = swap_select(vec_swap,maxLoad,maxLoad_ideal,"dto");
   cout<<"size of vec_swap_dto: "<<vec_swap_dto.size()<<endl;
@@ -702,7 +702,7 @@ void SwapGPU::swap_plan(){
   auto vec_load_pri = origin_load;
   auto vec_load_dto = origin_load;
   auto vec_load_wdto = origin_load;
-  string mode = "no-overhead";//"stick-to-limit";
+  string mode = "stick-to-limit";
   double overhead = 0;
   swap_sched(vec_swap_pri, vec_load_pri,overhead,550<<20, mode);
   cout<<"load 2 overhead pri: "<<overhead<<endl;
