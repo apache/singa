@@ -506,37 +506,41 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       cout<<"end: overlimit first and i1p "<<tempOverLimit_2.first<<' '<<itm.i1p<<endl;
       vec_swap_selct[i] = itm;
     }
-    // sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
-    // cout<<"right over limit ===================="<<endl;
-    // for (int i =0; i<vec_swap_selct.size(); i++){
-    //   auto itm = vec_swap_selct[i];
-    //   int needIdx = itm.d_idx;
-    //   if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
-    //   itm.i2 = needIdx;
-    //   double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
-    //   while (prepareTime < vec_run[needIdx].t){
-    //     needIdx--;
-    //   }
-    //   itm.i2p = needIdx;
-    //   itm.t2p = prepareTime;
-    //   auto tempOverLimit_0 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
-    //   cout<<"before come back (right over limit): "<<tempOverLimit_0.second<<endl;
-    //   load_update(vec_load_temp,itm.i2p,itm.d_idx,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
-    //   auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
-    //   cout<<"after come back (right over limit): "<<tempOverLimit_.second<<endl;
-    //   if (tempOverLimit_.second > 0){
-    //     cout<<itm.r_idx<<' '<<itm.d_idx<<"||"<<itm.i1<<' '<<itm.i1p<<' '<<itm.i2p<<' '<<itm.i2<<endl;
-    //   }
+    sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
+    cout<<"right over limit ===================="<<endl;
+    for (int i =0; i<vec_swap_selct.size(); i++){
+      auto itm = vec_swap_selct[i];
+      int needIdx = itm.d_idx;
+      cout<<"change of needIdx: "<<needIdx;
+      if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
+      cout<<"||compare with last i2p "<<needIdx;
+      itm.i2 = needIdx;
+      double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
+      while (prepareTime < vec_run[needIdx].t){
+        needIdx--;
+      }
+      needIdx = std::max(needIdx,maxIdx);
+      cout<<"||count swap in "<<needIdx;
+      itm.i2p = needIdx;
+      itm.t2p = prepareTime;
+      auto tempOverLimit_0 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
+      cout<<"(((before come back (right over limit): "<<tempOverLimit_0.second<<endl;
+      load_update(vec_load_temp,itm.i2p,itm.d_idx,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+      auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
+      cout<<"after come back (right over limit): "<<tempOverLimit_.second<<endl;
+      if (tempOverLimit_.second > 0){
+        cout<<itm.r_idx<<' '<<itm.d_idx<<"||"<<itm.i1<<' '<<itm.i1p<<' '<<itm.i2p<<' '<<itm.i2<<endl;
+      }
 
-    //   if ((tempOverLimit_.second != -1) && (vec_run[tempOverLimit_.second].t > itm.t2p)) {
-    //     overhead+=(vec_run[tempOverLimit_.second].t - itm.t2p);
-    //     load_update(vec_load_temp,itm.i2p,tempOverLimit_.second,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
-    //     itm.i2p = tempOverLimit_.second;
-    //     auto tempOverLimit_2 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
-    //     cout<<"after consider overlimit (right over limit): "<<tempOverLimit_2.second<<endl;
-    //   }
-    //   vec_swap_selct[i] = itm;
-    // }
+      if ((tempOverLimit_.second != -1) && (vec_run[tempOverLimit_.second].t > itm.t2p)) {
+        overhead+=(vec_run[tempOverLimit_.second].t - itm.t2p);
+        load_update(vec_load_temp,itm.i2p,tempOverLimit_.second,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+        itm.i2p = tempOverLimit_.second;
+        auto tempOverLimit_2 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
+        cout<<"after consider overlimit (right over limit): "<<tempOverLimit_2.second<<endl;
+      }
+      vec_swap_selct[i] = itm;
+    }
   }
   
 }
