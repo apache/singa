@@ -703,14 +703,14 @@ void SwapGPU::swap_plan(){
   for (int i=maxLen; i<maxLen*2; i++){
     file_block10<<vec_load_pri[i]<<endl;
   }
-  fstream file_block11("load_1_dto.csv", ios::in|ios::out|ios::app);
-  for (int i=maxLen; i<maxLen*2; i++){
-    file_block11<<vec_load_dto[i]<<endl;
-  }
-  fstream file_block12("load_1_wdto.csv", ios::in|ios::out|ios::app);
-  for (int i=maxLen; i<maxLen*2; i++){
-    file_block12<<vec_load_wdto[i]<<endl;
-  }
+  // fstream file_block11("load_1_dto.csv", ios::in|ios::out|ios::app);
+  // for (int i=maxLen; i<maxLen*2; i++){
+  //   file_block11<<vec_load_dto[i]<<endl;
+  // }
+  // fstream file_block12("load_1_wdto.csv", ios::in|ios::out|ios::app);
+  // for (int i=maxLen; i<maxLen*2; i++){
+  //   file_block12<<vec_load_wdto[i]<<endl;
+  // }
   // auto max_1 = load_peak(vec_load_temp,maxLen);
   // size_t maxLoad_1 = max_1.first;
   // int maxIdx_1 = max_1.second;
