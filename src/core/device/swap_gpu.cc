@@ -706,13 +706,13 @@ void SwapGPU::swap_plan(){
   auto vec_load_wdto = origin_load;
   string mode = "stick-to-limit";
   double overhead_pri = 0;
-  swap_sched(vec_swap_pri, vec_load_pri,overhead,450<<20, mode);
+  swap_sched(vec_swap_pri, vec_load_pri,overhead_pri,450<<20, mode);
   
   double overhead_dto = 0;
-  swap_sched(vec_swap_dto, vec_load_dto,overhead,450<<20,mode);
+  swap_sched(vec_swap_dto, vec_load_dto,overhead_dto,450<<20,mode);
   
   double overhead_wdto = 0;
-  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,450<<20,mode);
+  swap_sched(vec_swap_wdto, vec_load_wdto,overhead_wdto,450<<20,mode);
   
 
 
