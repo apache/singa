@@ -733,8 +733,6 @@ void SwapGPU::swap_plan(){
   int maxIdx_1 = max_1.second;
   cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
 
-  (float)(itm.size)/(float)(1024*1024)
-
   cout<<"done with swap_plan..."<<endl;
   cout<<"load 2 overhead pri: "<<(float)(overhead_pri)/(float)(1000000)<<endl;
   cout<<"load 2 overhead dto: "<<(float)(overhead_dto)/(float)(1000000)<<endl;
