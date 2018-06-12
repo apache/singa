@@ -663,7 +663,7 @@ void SwapGPU::swap_plan(){
   size_t maxLoad_ideal = max_ideal.first;
   int maxIdx_ideal = max_ideal.second;
   cout<<"------------------print max_load: (ideal) "<<maxLoad_ideal<<" "<<maxIdx_ideal<<endl;
-  maxLoad_ideal = 400;
+  //maxLoad_ideal = 400;
   /// select till maxLoad_ideal, dto
   auto vec_swap_dto = swap_select(vec_swap,maxLoad,maxLoad_ideal,"dto");
   cout<<"size of vec_swap_dto: "<<vec_swap_dto.size()<<endl;
@@ -734,6 +734,11 @@ void SwapGPU::swap_plan(){
 
 
   cout<<"done with swap_plan..."<<endl;
+  auto t1 = vec_run[0].t;
+  auto t2 = vec_run[maxLen].t;
+  auto t3 = vec_run[maxLen*2].t;
+  auto t4 = vec_run[maxLen*3-1].t;
+  cout<<"iteration time spent: "<<(t2-t1)/1000000<<" "<<(t3-t2)/1000000<<" "<<(t2-t1)/1000000<<endl;
 }
 
 
