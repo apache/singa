@@ -486,6 +486,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       itm.i1 = readyIdx;
       itm.t1 = vec_run[readyIdx].t;
       itm.t1p = itm.t1 + SwapOutTime(itm.size);
+      total_swapOutTime+=SwapOutTime(itm.size);
       while (itm.t1p > vec_run[readyIdx].t){ //TODO(junzhe) reduce time complexity.
         readyIdx++; //ready means when able to finish swapOut, w/ or w/o overhead.
       }
@@ -516,6 +517,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       cout<<"||compare with last i2p "<<needIdx;
       itm.i2 = needIdx;
       double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
+      total_swapOutTime+=SwapInTime(itm.size);
       while (prepareTime < vec_run[needIdx].t){
         needIdx--;
       }
@@ -703,15 +705,15 @@ void SwapGPU::swap_plan(){
   auto vec_load_dto = origin_load;
   auto vec_load_wdto = origin_load;
   string mode = "stick-to-limit";
-  double overhead = 0;
-  swap_sched(vec_swap_pri, vec_load_pri,overhead,550<<20, mode);
-  cout<<"load 2 overhead pri: "<<overhead<<endl;
-  overhead = 0;
-  swap_sched(vec_swap_dto, vec_load_dto,overhead,550<<20,mode);
-  cout<<"load 2 overhead dto: "<<overhead<<endl;
-  overhead = 0;
-  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,550<<20,mode);
-  cout<<"load 2 overhead wdto: "<<overhead<<endl;
+  double overhead_pri = 0;
+  swap_sched(vec_swap_pri, vec_load_pri,overhead,450<<20, mode);
+  
+  double overhead_dto = 0;
+  swap_sched(vec_swap_dto, vec_load_dto,overhead,450<<20,mode);
+  
+  double overhead_wdto = 0;
+  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,450<<20,mode);
+  
 
 
   fstream file_block10("load_1_pri.csv", ios::in|ios::out|ios::app);
@@ -734,6 +736,11 @@ void SwapGPU::swap_plan(){
 
 
   cout<<"done with swap_plan..."<<endl;
+  cout<<"load 2 overhead pri: "<<overhead_pri/1000000<<endl;
+  cout<<"load 2 overhead dto: "<<overhead_dto/1000000<<endl;
+  cout<<"load 2 overhead wdto: "<<overhead_wdto/1000000<<endl;
+  cout<<"total_swapOutTime: "<<total_swapOutTime/1000000<<endl;
+  cout<<"total_swapInTime: "<<total_swapInTime/1000000<<endl;
   auto t1 = vec_run[0].t;
   auto t2 = vec_run[maxLen].t;
   auto t3 = vec_run[maxLen*2].t;

@@ -347,6 +347,8 @@ class SwapGPU : public Device {
   int mutable_data_buffer = 6;
   double maxLoad;
   int maxIdx;
+  double total_swapInTime = 0;
+  double total_swapOutTime = 0;
 
  private:
   shared_ptr<DeviceMemPool> pool_;
