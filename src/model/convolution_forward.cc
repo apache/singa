@@ -1,6 +1,10 @@
-#include <iostream>
+#include <string>
 #include <cudnn.h>
+#include "./layer/cudnn_convolution.h"
+#include "./layer/cudnn_utils.h"
+#include "singa/utils/logging.h"
 
+namespace singa{
 struct ConvHandle{
     size_t kernel_w_;
     size_t pad_w_;
@@ -15,8 +19,9 @@ struct ConvHandle{
     bool bias_term_;
 
     size_t workspace_byte_limit_;
-    string prefer_;
+    std::string prefer_;
 };
+
 
 struct CudnnConvHandle{
     cudnnTensorDescriptor_t x_desc_ ;
@@ -37,6 +42,7 @@ struct CudnnConvHandle{
     size_t conv_width_;
     size_t batchsize;
 };
+
 
 // Done in conv2d.__init__()
 ConvHandle SetupConv(const size_t in_channels, const LayerConf &conf){
@@ -60,8 +66,6 @@ ConvHandle SetupConv(const size_t in_channels, const LayerConf &conf){
             << "CudnnConvolution only supports four algorithm preferences: fastest, "
                "limited_workspace, no_workspace and autotune";
 
-    // store intermediate data, i.e., input tensor
-    //std::stack<Tensor> buf_;
 
     // kernel_size, pad, and stride are repeated fields.
     if (conv_conf.kernel_size_size() > 0) {
@@ -133,7 +137,7 @@ ConvHandle SetupConv(const size_t in_channels, const LayerConf &conf){
             workspace_byte_limit_,
             prefer_,
     };
-}
+};
 
 
 
@@ -291,10 +295,10 @@ CudnnConvHandle InitCudnn(const Tensor &input, const ConvHandle ch){
             conv_width_,
             batchsize,
     };
+};
 
-}
-
-Tensor CudnnConvForward(Tensor x, Tensor W, Tensor b, const ConvHandle ch, const CudnnConvHandle cch){
+Tensor CudnnConvForward(const Tensor x, const Tensor W, const Tensor b,
+                        const ConvHandle ch, const CudnnConvHandle cch){
     CHECK_EQ(x.device()->lang(), kCuda);
     CHECK_EQ(x.nDim(), 4u);
     CHECK_EQ(x.shape()[0],cch.batchsize);
@@ -308,7 +312,7 @@ Tensor CudnnConvForward(Tensor x, Tensor W, Tensor b, const ConvHandle ch, const
     Shape shape{cch.batchsize, ch.num_filters_, cch.conv_height_, cch.conv_width_};
     Tensor output(shape, dev, dtype);
 
-    output.device()->Exec([x, output](Context *ctx) {
+    output.device()->Exec([output, x, W, cch](Context *ctx) {
         Block *inblock = x.block(), *outblock = output.block(),
                 *wblock = W.block();
         float alpha = 1.f, beta = 0.f;
@@ -321,7 +325,7 @@ Tensor CudnnConvForward(Tensor x, Tensor W, Tensor b, const ConvHandle ch, const
     }, {x.block(), W.block()}, {output.block()}, cch.workspace_.block());
 
     if (ch.bias_term_) {
-        output.device()->Exec([output](Context *ctx) {
+        output.device()->Exec([output, b, cch](Context *ctx) {
             float beta = 1.f, alpha = 1.0f;
             Block *outblock = output.block(), *bblock = b.block();
             cudnnAddTensor(ctx->cudnn_handle, &alpha, cch.bias_desc_,
@@ -330,17 +334,17 @@ Tensor CudnnConvForward(Tensor x, Tensor W, Tensor b, const ConvHandle ch, const
         }, {output.block(), b.block()}, {output.block()});
     }
     return output;
-}
+};
 
 // input Tensor W for Reset dW purpose, can avoid this later.
-Tensor CudnnConvBackwardW(Tensor dy, Tensor x, Tensor W, CudnnConvHandle cch){
+Tensor CudnnConvBackwardW(const Tensor dy, const Tensor x, const Tensor W, const CudnnConvHandle cch){
     CHECK_EQ(dy.device()->lang(), kCuda);
     CHECK_EQ(dy.nDim(), 4u);
 
     Tensor dW;
     dW.ResetLike(W);
 
-    dy.device()->Exec([dy, dW, x](Context *ctx) {
+    dy.device()->Exec([dW, dy, x, W, cch](Context *ctx) {
     Block *inblock = x.block(), *dyblock = dy.block(),
             *dwblock = dW.block();
     float alpha = 1.f, beta = 0.f;
@@ -353,17 +357,17 @@ Tensor CudnnConvBackwardW(Tensor dy, Tensor x, Tensor W, CudnnConvHandle cch){
     }, {dy.block(), x.block()}, {dW.block(), cch.workspace_.block()});
 
     return dW;
-}
+};
 
 // input Tensor b for Reset db purpose, can avoid this later.
-Tensor CudnnConvBackwardb(Tensor dy, Tensor b, CudnnConvHandle cch){
+Tensor CudnnConvBackwardb(const Tensor dy, const Tensor b, const CudnnConvHandle cch){
     CHECK_EQ(dy.device()->lang(), kCuda);
     CHECK_EQ(dy.nDim(), 4u);
 
     Tensor db;
     db.ResetLike(b);
 
-    dy.device()->Exec([dy, db](Context *ctx) {
+    dy.device()->Exec([db, dy, b, cch](Context *ctx) {
         Block *dyblock = dy.block(), *dbblock = db.block();
         float alpha = 1.f, beta = 0.f;
         cudnnConvolutionBackwardBias(ctx->cudnn_handle, &alpha, cch.y_desc_,
@@ -371,17 +375,16 @@ Tensor CudnnConvBackwardb(Tensor dy, Tensor b, CudnnConvHandle cch){
                                      dbblock->mutable_data());
     }, {dy.block()}, {db.block()});
     return db;
-}
+};
 
-// input Tensor x for Reset dx purpose, can avoid this later.
-Tensor CudnnConvBackwardx(Tensor dy, Tensor W, Tensor x, CudnnConvHandle cch){
+Tensor CudnnConvBackwardx(const Tensor dy, const Tensor W, const Tensor x, const CudnnConvHandle cch){
     CHECK_EQ(dy.device()->lang(), kCuda);
     CHECK_EQ(dy.nDim(), 4u);
 
     Tensor dx;
     dx.ResetLike(x);
 
-    dy.device()->Exec([dx, dy](Context *ctx) {
+    dy.device()->Exec([dx, dy, W, cch](Context *ctx) {
         Block *wblock = W.block(), *dyblock = dy.block(),
                 *dxblock = dx.block();
         float alpha = 1.f, beta = 0.f;
@@ -394,5 +397,8 @@ Tensor CudnnConvBackwardx(Tensor dy, Tensor W, Tensor x, CudnnConvHandle cch){
     }, {dy.block(), W.block()}, {dx.block(), cch.workspace_.block()});
 
     return dx;
-}
+};
+
+} //namespace_singa
+
 
