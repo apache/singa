@@ -517,7 +517,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       cout<<"||compare with last i2p "<<needIdx;
       itm.i2 = needIdx;
       double prepareTime = vec_run[needIdx].t - SwapInTime(itm.size);
-      total_swapOutTime+=SwapInTime(itm.size);
+      total_swapInTime+=SwapInTime(itm.size);
       while (prepareTime < vec_run[needIdx].t){
         needIdx--;
       }
