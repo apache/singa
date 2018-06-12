@@ -739,8 +739,8 @@ void SwapGPU::swap_plan(){
   cout<<"load 2 overhead pri: "<<(float)(overhead_pri)/(float)(1000000)<<endl;
   cout<<"load 2 overhead dto: "<<(float)(overhead_dto)/(float)(1000000)<<endl;
   cout<<"load 2 overhead wdto: "<<(float)(overhead_wdto)/(float)(1000000)<<endl;
-  cout<<"total_swapOutTime: "<<(float)(total_swapOutTime)/(float)(1000000)<<endl;
-  cout<<"total_swapInTime: "<<(float)(total_swapInTime)/(float)(1000000)<<endl;
+  cout<<"total_swapOutTime: "<<(float)(total_swapOutTime)/(float)(3000000)<<endl;
+  cout<<"total_swapInTime: "<<(float)(total_swapInTime)/(float)(3000000)<<endl;
   auto t1 = vec_run[0].t;
   auto t2 = vec_run[maxLen].t;
   auto t3 = vec_run[maxLen*2].t;
