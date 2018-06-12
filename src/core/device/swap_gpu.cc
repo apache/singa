@@ -733,19 +733,19 @@ void SwapGPU::swap_plan(){
   int maxIdx_1 = max_1.second;
   cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
 
-
+  (float)(itm.size)/(float)(1024*1024)
 
   cout<<"done with swap_plan..."<<endl;
-  cout<<"load 2 overhead pri: "<<overhead_pri/1000000<<endl;
-  cout<<"load 2 overhead dto: "<<overhead_dto/1000000<<endl;
-  cout<<"load 2 overhead wdto: "<<overhead_wdto/1000000<<endl;
-  cout<<"total_swapOutTime: "<<total_swapOutTime/1000000<<endl;
-  cout<<"total_swapInTime: "<<total_swapInTime/1000000<<endl;
+  cout<<"load 2 overhead pri: "<<(float)(overhead_pri)/(float)(1000000)<<endl;
+  cout<<"load 2 overhead dto: "<<(float)(overhead_dto)/(float)(1000000)<<endl;
+  cout<<"load 2 overhead wdto: "<<(float)(overhead_wdto)/(float)(1000000)<<endl;
+  cout<<"total_swapOutTime: "<<(float)(total_swapOutTime)/(float)(1000000)<<endl;
+  cout<<"total_swapInTime: "<<(float)(total_swapInTime)/(float)(1000000)<<endl;
   auto t1 = vec_run[0].t;
   auto t2 = vec_run[maxLen].t;
   auto t3 = vec_run[maxLen*2].t;
   auto t4 = vec_run[maxLen*3-1].t;
-  cout<<"iteration time spent: "<<(t2-t1)/1000000<<" "<<(t3-t2)/1000000<<" "<<(t2-t1)/1000000<<endl;
+  cout<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t2-t1)/(float)(1000000)<<endl;
 }
 
 
