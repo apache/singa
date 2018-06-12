@@ -645,7 +645,7 @@ void SwapGPU::swap_plan(){
       // }
       vec_swap.push_back(itm);
       load_swap+=itm.size;
-      cout<<"Items Swappable: (r_idx, d_idx, free, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx<<' '<<itm.free;
+      cout<<"Items Swappable: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
       cout<<" ||  "<<itm.cat<<"  ||"<<(float)(itm.size)/(float)(1024*1024);
       cout<<' ||'<<itm.dt/1000<<' '<<itm.pri<<endl;
     } 
