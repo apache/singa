@@ -726,10 +726,10 @@ void SwapGPU::swap_plan(){
   for (int i=maxLen; i<maxLen*2; i++){
     file_block12<<vec_load_wdto[i]<<endl;
   }
-  // auto max_1 = load_peak(vec_load_temp,maxLen);
-  // size_t maxLoad_1 = max_1.first;
-  // int maxIdx_1 = max_1.second;
-  // cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
+  auto max_1 = load_peak(vec_load_pri,maxLen);
+  size_t maxLoad_1 = max_1.first;
+  int maxIdx_1 = max_1.second;
+  cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
 
 
 
