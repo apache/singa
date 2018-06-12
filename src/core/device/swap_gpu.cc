@@ -527,9 +527,9 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       cout<<"(((before come back (right over limit): "<<tempOverLimit_0.second<<endl;
       load_update(vec_load_temp,itm.i2p,itm.d_idx,1,itm.size,maxLen); //TODO(junzhe) range, right boundary
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
-      cout<<"after come back (right over limit): "<<tempOverLimit_.second<<endl;
+      cout<<"|||after come back (right over limit): "<<tempOverLimit_.second<<endl;
       if (tempOverLimit_.second > 0){
-        cout<<itm.r_idx<<' '<<itm.d_idx<<"||"<<itm.i1<<' '<<itm.i1p<<' '<<itm.i2p<<' '<<itm.i2<<endl;
+        cout<<itm.r_idx<<' '<<itm.d_idx<<"||"<<itm.i1<<' '<<itm.i1p<<' '<<itm.i2p<<' '<<itm.i2<<")))"<<endl;
       }
 
       if ((tempOverLimit_.second != -1) && (vec_run[tempOverLimit_.second].t > itm.t2p)) {
@@ -537,6 +537,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
         load_update(vec_load_temp,itm.i2p,tempOverLimit_.second,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
         itm.i2p = tempOverLimit_.second;
         auto tempOverLimit_2 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
+        cout<<"||count overlimit "<<itm.i2p<<endl;
         cout<<"after consider overlimit (right over limit): "<<tempOverLimit_2.second<<endl;
       }
       vec_swap_selct[i] = itm;
