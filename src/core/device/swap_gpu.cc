@@ -491,8 +491,12 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.first != -1) && (tempOverLimit_.first <= readyIdx)) { 
         load_update(vec_load_temp,tempOverLimit_.first-1,readyIdx+1,-1,itm.size,maxLen);
+        cout<<itm.r_idx<<' '<<itm.d_idx<<"||"<<itm.i1<<' '<<readyIdx<<' '<<tempOverLimit_.first<<endl;
         readyIdx = tempOverLimit_.first -1; //TODO(junzhe) boundary
+
       }
+      auto tempOverLimit_2 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
+      cout<<"after update overlimit: "<<tempOverLimit_2.first<<endl;
       itm.i1p = readyIdx;
       vec_swap_selct[i] = itm;
     }
@@ -692,11 +696,11 @@ void SwapGPU::swap_plan(){
   swap_sched(vec_swap_pri, vec_load_pri,overhead,500<<20, mode);
   cout<<"load 2 overhead pri: "<<overhead<<endl;
   overhead = 0;
-  swap_sched(vec_swap_dto, vec_load_dto,overhead,500<<20,mode);
-  cout<<"load 2 overhead dto: "<<overhead<<endl;
-  overhead = 0;
-  swap_sched(vec_swap_wdto, vec_load_wdto,overhead,500<<20,mode);
-  cout<<"load 2 overhead wdto: "<<overhead<<endl;
+  // swap_sched(vec_swap_dto, vec_load_dto,overhead,500<<20,mode);
+  // cout<<"load 2 overhead dto: "<<overhead<<endl;
+  // overhead = 0;
+  // swap_sched(vec_swap_wdto, vec_load_wdto,overhead,500<<20,mode);
+  // cout<<"load 2 overhead wdto: "<<overhead<<endl;
 
 
   fstream file_block10("load_1_pri.csv", ios::in|ios::out|ios::app);
