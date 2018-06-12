@@ -519,7 +519,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       while (prepareTime < vec_run[needIdx].t){
         needIdx--;
       }
-      needIdx = std::max(needIdx,maxIdx);
+      needIdx = std::max(needIdx,maxIdx+1);
       cout<<"||count swap in "<<needIdx;
       itm.i2p = needIdx;
       itm.t2p = prepareTime;
@@ -534,8 +534,8 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
 
       if ((tempOverLimit_.second != -1) && (vec_run[tempOverLimit_.second].t > itm.t2p)) {
         overhead+=(vec_run[tempOverLimit_.second].t - itm.t2p);
-        load_update(vec_load_temp,itm.i2p,tempOverLimit_.second,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
-        itm.i2p = tempOverLimit_.second;
+        load_update(vec_load_temp,itm.i2p,tempOverLimit_.second+1,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
+        itm.i2p = tempOverLimit_.second+1;
         auto tempOverLimit_2 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       }
       cout<<"||count overlimit "<<itm.i2p<<endl;
