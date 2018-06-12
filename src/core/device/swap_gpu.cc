@@ -494,14 +494,14 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       if ((tempOverLimit_.first != -1) && (tempOverLimit_.first <= readyIdx)) { 
         load_update(vec_load_temp,tempOverLimit_.first-1,readyIdx+1,-1,itm.size,maxLen);
-        cout<<"((("<<itm.r_idx<<' '<<itm.d_idx<<"||"<<itm.i1<<' '<<readyIdx<<' '<<tempOverLimit_.first<<")))"<<endl;
+        cout<<"((("<<itm.r_idx<<' '<<itm.d_idx<<"||"<<itm.i1<<' '<<readyIdx<<' '<<tempOverLimit_.first<<")))";
         readyIdx = tempOverLimit_.first -1; //TODO(junzhe) boundary
 
       }
       cout<<"||count over limit "<<readyIdx<<endl;
       auto tempOverLimit_2 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
       itm.i1p = readyIdx;
-      cout<<"after update overlimit: "<<tempOverLimit_2.first<<' '<<itm.i1p<<endl;
+      cout<<"end: overlimit first and i1p "<<tempOverLimit_2.first<<' '<<itm.i1p<<endl;
       vec_swap_selct[i] = itm;
     }
     // sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
