@@ -345,6 +345,8 @@ class SwapGPU : public Device {
   size_t smallest_block = 1<<20; //1 MB
   int data_buffer = 4; // used to control readyIdx
   int mutable_data_buffer = 6;
+  double maxLoad;
+  int maxIdx;
 
  private:
   shared_ptr<DeviceMemPool> pool_;

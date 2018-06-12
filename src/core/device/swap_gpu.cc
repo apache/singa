@@ -486,9 +486,11 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
       itm.i1 = readyIdx;
       itm.t1 = vec_run[readyIdx].t;
       itm.t1p = itm.t1 + SwapOutTime(itm.size);
-      while (itm.t1p > vec_run[readyIdx].t){
+      while (itm.t1p > vec_run[readyIdx].t){ //TODO(junzhe) reduce time complexity.
         readyIdx++; //ready means when able to finish swapOut, w/ or w/o overhead.
       }
+      //get min compare with maxIdx and readyIdx.
+      readyIdx = std::min(maxIdx,readyIdx);
       cout<<"||count swap time "<<readyIdx;
       load_update(vec_load_temp,readyIdx+1,itm.d_idx,-1,itm.size,maxLen);
       auto tempOverLimit_ = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
@@ -596,8 +598,8 @@ void SwapGPU::swap_plan(){
   }
   cout<<"build from scratch:::::::::::::::;"<<endl;
   auto max_current = load_peak(vec_load,maxLen);
-  size_t maxLoad = max_current.first;
-  int maxIdx = max_current.second;
+  maxLoad = max_current.first;
+  maxIdx = max_current.second;
   cout<<"------------------print max_load: (current) "<<maxLoad<<" "<<maxIdx<<endl;
 
   //sort by ptr & idx
