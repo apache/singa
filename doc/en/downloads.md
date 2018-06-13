@@ -15,8 +15,9 @@
         * Add VGG, Inception V4, ResNet, and DenseNet for ImageNet classification
         * Create alias for conda packages
         * Complete documentation in Chinese
-        * Add instructions for running Singa on Windoes
-        * Update the compilation, CI; Fix some bugs
+        * Add instructions for running Singa on Windows
+        * Update the compilation, CI
+        * Fix some bugs
 
 
 
