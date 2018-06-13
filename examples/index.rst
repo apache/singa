@@ -23,7 +23,11 @@ Model Zoo
 
    cifar10/README
    char-rnn/README
+   mnist/README
    imagenet/alexnet/README
+   imagenet/densenet/README
    imagenet/googlenet/README
-
+   imagenet/inception/README
+   imagenet/resnet/README
+   imagenet/vgg/README
 

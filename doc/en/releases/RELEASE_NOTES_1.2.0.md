@@ -46,7 +46,7 @@ This release includes following features:
       * [SINGA-361] Add git instructions for contributors and committers
 
   * Bugs fixed
-      * [Singa-330] fix openblas building on i7 7700k
+      * [SINGA-330] fix openblas building on i7 7700k
       * [SINGA-331] Fix the bug of tensor division operation
       * [SINGA-350] Error from python3 test
       * [SINGA-356] Error using travis tool to build SINGA on mac os
