@@ -3,7 +3,7 @@
 //#include "./layer/cudnn_convolution.h"
 //#include "./layer/cudnn_utils.h"
 //#include "singa/utils/logging.h"
-#include "./convolution_forward.h"
+#include "./convolution_functions.h"
 
 namespace singa{
 

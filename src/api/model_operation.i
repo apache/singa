@@ -1,59 +1,26 @@
-/* interface file for swig */
-
 %module model_operation
-%include "std_string.i"
 
 %{
 #include "../src/model/convolution_functions.h"
+using singa::Tensor;
+using singa::CudnnConvHandle;
 %}
-
 namespace singa{
-extern struct ConvHandle{
-    size_t kernel_w_;
-    size_t pad_w_;
-    size_t stride_w_;
-    size_t kernel_h_;
-    size_t pad_h_;
-    size_t stride_h_;
 
-    size_t channels_;
-    size_t num_filters_;
+struct ConvHandle{};
 
-    bool bias_term_;
+struct CudnnConvHandle{};
 
-    size_t workspace_byte_limit_;
-    std::string prefer_;
-};
-
-struct CudnnConvHandle{
-    cudnnTensorDescriptor_t x_desc_ ;
-    cudnnTensorDescriptor_t y_desc_ ;
-    cudnnTensorDescriptor_t bias_desc_ ;
-    cudnnFilterDescriptor_t filter_desc_ ;
-    cudnnConvolutionDescriptor_t conv_desc_ ;
-    cudnnConvolutionFwdAlgo_t fp_alg_;
-    cudnnConvolutionBwdFilterAlgo_t bp_filter_alg_;
-    cudnnConvolutionBwdDataAlgo_t bp_data_alg_;
-
-    size_t workspace_count_;
-    Tensor workspace_;
-
-    size_t height_;
-    size_t width_;
-    size_t conv_height_;
-    size_t conv_width_;
-    size_t batchsize;
-};
-
-extern ConvHandle SetupConv(const size_t in_channels, const LayerConf &conf);
+ConvHandle SetupConv(const size_t in_channels, const LayerConf &conf);
 
 CudnnConvHandle InitCudnn(const Tensor &input, const ConvHandle ch);
 
-Tensor CudnnConvForward(const Tensor x, const Tensor W, const Tensor b,
+Tensor CudnnConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
                         const ConvHandle ch, const CudnnConvHandle cch);
 
-Tensor CudnnConvBackwardW(const Tensor dy, const Tensor x, const Tensor W, const CudnnConvHandle cch);
+Tensor CudnnConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const CudnnConvHandle cch);
 
-Tensor CudnnConvBackwardb(const Tensor dy, const Tensor b, const CudnnConvHandle cch);
+Tensor CudnnConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle cch);
 
-Tensor CudnnConvBackwardx(const Tensor dy, const Tensor W, const Tensor x, const CudnnConvHandle cch);
+Tensor CudnnConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandle cch);
+}
