@@ -595,7 +595,11 @@ void SwapGPU::swap_plan(){
   //3 iterations of vec_run and vec_load, maxIdx and maxLoad
   vector<onePieceMsg>temp_vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
   vec_run = temp_vec_run;
-  
+  fstream file_vec_run("vec_run.csv", ios::in|ios::out|ios::app);
+  for (int i =0; i<vec_run.size();i++){
+    file_vec_run<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].t<<' '<<vec_run[i].t-tempTime2<<endl;
+    tempTime2 = vec_run[i].t;
+  }
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
   origin_load = vec_load;
   //load before swap, write in
@@ -634,17 +638,7 @@ void SwapGPU::swap_plan(){
       if (vec_run[i-1].MallocFree == 3){ itm.cat = "A1"; itm.r_idx_ready = itm.r_idx; } 
       if (vec_run[i-1].MallocFree == 2){ itm.cat = "A2"; itm.r_idx_ready = itm.r_idx + data_buffer;} 
       if (vec_run[i-1].MallocFree == 4){ itm.cat = "A3"; itm.r_idx_ready = itm.r_idx + mutable_data_buffer;} 
-      // int j = i;
-      // while ((vec_run[j].ptr == vec_run[i].ptr) && (j<vec_run.size())){
-      //   if (vec_run[j].MallocFree == -1){
-      //     itm.free = vec_run[j].idx;
-      //     break;
-      //   }
-      //   j++;
-      // }
-      // if (itm.free == -1){
-      //   itm.free = std::min(maxLen,itm.free);
-      // }
+
       vec_swap.push_back(itm);
       load_swap+=itm.size;
       cout<<"Items Swappable: (r_idx, d_idx, cat, MB, dt/us, PS) || "<<itm.r_idx<<' '<<itm.d_idx;
