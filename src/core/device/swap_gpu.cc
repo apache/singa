@@ -1007,7 +1007,7 @@ void SwapGPU::Append(string blockInfo){
       Table_meta.find(r_gc)->second.data_ = tempBlock_->get_data();
     }
   }
-  if ((maxLen>100) && (gc-location)%(maxLen) == 0)){
+  if ((maxLen>100) && ((gc-location)%(maxLen) == 0)){
     if (tempTime != 0){
       fstream file_time("itr_time.csv", ios::in|ios::out|ios::app);
       auto t_now = (std::chrono::system_clock::now()).time_since_epoch().count();
