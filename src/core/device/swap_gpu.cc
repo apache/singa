@@ -599,7 +599,8 @@ void SwapGPU::swap_plan(){
   vec_run = temp_vec_run;
   fstream file_vec_run("vec_run.csv", ios::in|ios::out|ios::app);
   for (int i =0; i<vec_run.size();i++){
-    file_vec_run<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].t<<' '<<vec_run[i].t-tempTime2<<endl;
+    //file_vec_run<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].t<<' '<<vec_run[i].t-tempTime2<<endl;
+    file_vec_run<<i<<' '<<vec_run[i].t<<' '<<vec_run[i].t-tempTime2<<endl;
     tempTime2 = vec_run[i].t;
   }
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
