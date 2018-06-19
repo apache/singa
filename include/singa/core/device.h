@@ -352,6 +352,7 @@ class SwapGPU : public Device {
   double tempTime = 0;
   double tempTime2 = 0;
   double tempTime_baseline; //vec_run[0] time
+  double global_time_remover = 0; //take out time by swap, test, sched, I/O, etc.
 
  private:
   shared_ptr<DeviceMemPool> pool_;

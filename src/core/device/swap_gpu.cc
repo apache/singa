@@ -870,6 +870,7 @@ void SwapGPU::Test_sched_switch_swap(){
     do Test_sched_switch_swap during Malloc and Free.
     swap removed to DeploySwap
   */
+  auto t_1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   ///test & schedule
   if (((gc+1)%300 == 0) && (asyncSwapFlag == 0) && (testFlag == 0)){
   //TODO(junzhe) not lean, chances are globeCounter found more than 300 idx ago: redudant test.
@@ -890,6 +891,9 @@ void SwapGPU::Test_sched_switch_swap(){
   asyncSwapFlag = 1;
   cout<<"switched flag for at "<<globeCounter<<endl;
  }
+ auto t_2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+ global_time_remover+=(t_2-t1);
+
 }
 
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
@@ -959,18 +963,34 @@ void SwapGPU::DeploySwap(){
 }
 
 void SwapGPU::Append(string blockInfo){
+
+  // insert size, malloc : flag, block_, size, t; others: insert size t; calibrate time.
+  //TODO(junzhe) changed 6/19 to verify.
   vector<string> v = swap_split(blockInfo, " ");
   void* tempPtr;
   stringstream convert(v[1]);
   convert>>tempPtr;
   auto tempBlock_ = static_cast<Block*>(tempPtr);
-  
-  // insert size, malloc : flag, block_, size, t; others: insert size t.
+  stringstream strm1;
+  strm1<<tempBlock_->size();
+  string tempStr1 = strm1.str();
+  double tempTime;
   if (v.size() != 4) {
-    stringstream strm1;
-    strm1<<tempBlock_->size();
-    string tempStr1 = strm1.str();
-    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
+    stringstream convert2(v[2]);
+    convert2>>tempTime;
+    tempTime = tempTime - global_time_remover;
+    stringstream strm4;   
+    strm4<<tempTime;
+    string tempStr4 = strm4.str();
+    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + strm4;
+  } else {
+    stringstream convert2(v[3]);
+    convert2>>tempTime;
+    tempTime = tempTime - global_time_remover;
+    stringstream strm4;   
+    strm4<<tempTime;
+    string tempStr4 = strm4.str();
+    blockInfo = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + strm4;
   }
   // update global load
   if (maxLen < 100){
