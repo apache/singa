@@ -743,7 +743,10 @@ void SwapGPU::swap_plan(){
   auto t2 = vec_run[maxLen].t;
   auto t3 = vec_run[maxLen*2].t;
   auto t4 = vec_run[maxLen*3-1].t;
-  cout<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t2-t1)/(float)(1000000)<<endl;
+  cout<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t4-t3)/(float)(1000000)<<endl;
+  fstream file_time("itr_time.csv", ios::in|ios::out|ios::app);
+  file_time<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t4-t3)/(float)(1000000)<<endl;
+
 }
 
 
@@ -757,6 +760,9 @@ SwapGPU::~SwapGPU() {
   for (int i=0; i< vec_block.size();i++){
       file_block1<<i<<' '<<vec_block[i]<<endl;
   }
+
+  fstream file_time("itr_time.csv", ios::in|ios::out|ios::app);
+  file_time<<"=============================="<<endl;
   //main body
   if (ctx_.cublas_handle) CUBLAS_CHECK(cublasDestroy(ctx_.cublas_handle));
   if (ctx_.curand_generator)
@@ -1001,6 +1007,16 @@ void SwapGPU::Append(string blockInfo){
       Table_meta.find(r_gc)->second.data_ = tempBlock_->get_data();
     }
   }
+  if ((maxLen>100) && (gc-location)%(maxLen) == 0)){
+    if (tempTime != 0){
+      fstream file_time("itr_time.csv", ios::in|ios::out|ios::app);
+      auto t_now = (std::chrono::system_clock::now()).time_since_epoch().count();
+      file_time<<(float)(t_now - tempTime)/(float)(1000000)<<endl;
+      
+    }
+    tempTime = (std::chrono::system_clock::now()).time_since_epoch().count();
+  }
+
   //deploy swap at every index.
   DeploySwap();
   //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
