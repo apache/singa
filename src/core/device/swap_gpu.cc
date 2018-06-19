@@ -744,7 +744,7 @@ void SwapGPU::swap_plan(){
   fstream file_time("itr_time.csv", ios::in|ios::out|ios::app);
   file_time<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t4-t3)/(float)(1000000)<<endl;
   file_time<<"iteration time spent: "<<t2-t1<<" "<<t3-t2<<" "<<t4-t3<<endl;
-  file_time<<"idx "<<0<<" "<<maxLen<<" "<<maxLen*2<<" "<<maxLen*3-1<<enedl;
+  file_time<<"idx "<<0<<" "<<maxLen<<" "<<maxLen*2<<" "<<maxLen*3-1<<endl;
   file_time<<"value"<<t1<<" "<<t2<<" "<<t3<<" "<<t4<<endl;
 }
 
