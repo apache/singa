@@ -4,87 +4,18 @@
 //#include "./layer/cudnn_utils.h"
 //#include "singa/utils/logging.h"
 #include "./convolution_functions.h"
-
+#include<iostream>
 namespace singa{
 
 // Done in conv2d.__init__()
-ConvHandle SetupConv(const size_t in_channels, const LayerConf &conf){
-
-    size_t kernel_w_, pad_w_, stride_w_;
-    size_t kernel_h_, pad_h_, stride_h_;
-
-    size_t channels_, num_filters_;
-
-    bool bias_term_;
-
-    size_t workspace_byte_limit_;
-    string prefer_;
-
-    ConvolutionConf conv_conf = conf.convolution_conf();
-
-    workspace_byte_limit_ = conv_conf.workspace_byte_limit() << 20;
-    prefer_ = ToLowerCase(conv_conf.prefer());
-    CHECK(prefer_ == "fastest" || prefer_ == "limited_workspace" ||
-          prefer_ == "no_workspace" || prefer_ == "autotune")
-            << "CudnnConvolution only supports four algorithm preferences: fastest, "
-               "limited_workspace, no_workspace and autotune";
-
-
-    // kernel_size, pad, and stride are repeated fields.
-    if (conv_conf.kernel_size_size() > 0) {
-    if (conv_conf.kernel_size_size() == 1) {
-    kernel_w_ = kernel_h_ = conv_conf.kernel_size(0);
-    } else {
-    kernel_w_ = conv_conf.kernel_size(0);
-    kernel_h_ = conv_conf.kernel_size(1);
-    }
-    } else {
-    kernel_w_ = conv_conf.kernel_w();
-    kernel_h_ = conv_conf.kernel_h();
-    }
-    CHECK_GT(kernel_w_, 0u);
-    CHECK_GT(kernel_h_, 0u);
-
-    if (conv_conf.pad_size() > 0) {
-    if (conv_conf.pad_size() == 1) {
-    pad_w_ = pad_h_ = conv_conf.pad(0);
-    } else {
-    pad_w_ = conv_conf.pad(0);
-    pad_h_ = conv_conf.pad(1);
-    }
-    } else {
-    pad_w_ = conv_conf.pad_w();
-    pad_h_ = conv_conf.pad_h();
-    }
-    CHECK_GE(pad_w_, 0u);
-    CHECK_GE(pad_h_, 0u);
-
-    const int kStrideDefault = 1;
-    if (conv_conf.stride_size() > 0) {
-    if (conv_conf.stride_size() == 1) {
-    stride_w_ = stride_h_ = conv_conf.stride(0);
-    } else {
-    stride_w_ = conv_conf.stride(0);
-    stride_h_ = conv_conf.stride(1);
-    }
-    } else {
-    stride_w_ = kStrideDefault;
-    stride_h_ = kStrideDefault;
-    if (conv_conf.has_stride_w()) {
-    stride_w_ = conv_conf.stride_w();
-    }
-    if (conv_conf.has_stride_h()) {
-    stride_h_ = conv_conf.stride_h();
-    }
-    }
-    CHECK_GT(stride_w_, 0u);
-    CHECK_GE(stride_h_, 0u);  // 0 for 1D conv
-
-    channels_ = in_channels;
-    num_filters_ = conv_conf.num_output();
-    bias_term_ = conv_conf.bias_term();
-
-    return ConvHandle{
+ConvHandle SetupConv(
+    const size_t kernel_h_, const size_t kernel_w_,
+    const size_t pad_h_, const size_t pad_w_,
+    const size_t stride_h_,const size_t stride_w_,
+    const size_t channels_, const size_t num_filters_,
+    const bool bias_term_ , const size_t workspace_byte_limit_,
+    const std::string prefer_){
+	 return ConvHandle{
             kernel_w_,
             pad_w_,
             stride_w_,
@@ -101,7 +32,6 @@ ConvHandle SetupConv(const size_t in_channels, const LayerConf &conf){
             prefer_,
     };
 };
-
 
 
 // Done in conv2d.__call__():
@@ -126,11 +56,11 @@ CudnnConvHandle InitCudnn(const Tensor &input, const ConvHandle ch){
     size_t width_;
     size_t conv_height_;
     size_t conv_width_;
-
+    
     DataType dtype = input.data_type();
     auto dev = input.device();
     Context *ctx = dev->context(0);
-
+    
     size_t batchsize, channels_;
     batchsize = input.shape(0);
     channels_ = input.shape(1);
@@ -143,7 +73,7 @@ CudnnConvHandle InitCudnn(const Tensor &input, const ConvHandle ch){
     if (ch.stride_h_ > 0)
         conv_height_ = (height_ + 2 * ch.pad_h_ - ch.kernel_h_) / ch.stride_h_ + 1;
     conv_width_ = (width_ + 2 * ch.pad_w_ - ch.kernel_w_) / ch.stride_w_ + 1;
-
+    
     CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_desc_));
     CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_desc_));
     if (ch.bias_term_)
@@ -197,7 +127,7 @@ CudnnConvHandle InitCudnn(const Tensor &input, const ConvHandle ch){
         CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
                 ctx->cudnn_handle, filter_desc_, y_desc_, conv_desc_, x_desc_,
                 bwd_data_pref, ch.workspace_byte_limit_, &bp_data_alg_));
-    } else if (ch.prefer_ == "autotune") {
+        } else if (ch.prefer_ == "autotune") {
         const int topk = 1;
         int num_fp_alg, num_bp_filt_alg, num_bp_data_alg;
         cudnnConvolutionFwdAlgoPerf_t fp_alg_perf[topk];
