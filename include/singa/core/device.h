@@ -351,6 +351,7 @@ class SwapGPU : public Device {
   double total_swapOutTime = 0;
   double tempTime = 0;
   double tempTime2 = 0;
+  double tempTime_baseline; //vec_run[0] time
 
  private:
   shared_ptr<DeviceMemPool> pool_;

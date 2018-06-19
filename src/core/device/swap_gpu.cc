@@ -589,8 +589,10 @@ void SwapGPU::swap_plan(){
   cout<<"size of vec_pieceMsg & vec_block: "<<vec_pieceMsg.size()<<' '<<vec_block.size()<<endl;
   sort(vec_pieceMsg.begin(),vec_pieceMsg.end(),less_than_Idx());
   // scale down idx, to middle iteration.
+  tempTime_baseline = vec_pieceMsg[location].t;
   for (int i=0; i<vec_pieceMsg.size();i++){
     vec_pieceMsg[i].idx = vec_pieceMsg[i].idx - location - maxLen;
+    vec_pieceMsg[i].t = vec_pieceMsg[i].t - tempTime_baseline;
   }
   //3 iterations of vec_run and vec_load, maxIdx and maxLoad
   vector<onePieceMsg>temp_vec_run(&vec_pieceMsg[location],&vec_pieceMsg[location+3*maxLen]);
@@ -741,7 +743,7 @@ void SwapGPU::swap_plan(){
   fstream file_time("itr_time.csv", ios::in|ios::out|ios::app);
   file_time<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t4-t3)/(float)(1000000)<<endl;
   file_time<<"iteration time spent: "<<t2-t1<<" "<<t3-t2<<" "<<t4-t3<<endl;
-  
+
 }
 
 
