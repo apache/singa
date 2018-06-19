@@ -892,7 +892,7 @@ void SwapGPU::Test_sched_switch_swap(){
   cout<<"switched flag for at "<<globeCounter<<endl;
  }
  auto t_2 = (std::chrono::system_clock::now()).time_since_epoch().count();
- global_time_remover+=(t_2-t1);
+ global_time_remover+=(t_2-t_1);
 
 }
 
@@ -982,7 +982,7 @@ void SwapGPU::Append(string blockInfo){
     stringstream strm4;   
     strm4<<tempTime;
     string tempStr4 = strm4.str();
-    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + strm4;
+    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + tempStrm4;
   } else {
     stringstream convert2(v[3]);
     convert2>>tempTime;
@@ -990,7 +990,7 @@ void SwapGPU::Append(string blockInfo){
     stringstream strm4;   
     strm4<<tempTime;
     string tempStr4 = strm4.str();
-    blockInfo = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + strm4;
+    blockInfo = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + tempStrm4;
   }
   // update global load
   if (maxLen < 100){
