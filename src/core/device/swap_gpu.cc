@@ -982,7 +982,7 @@ void SwapGPU::Append(string blockInfo){
     stringstream strm4;   
     strm4<<tempTime;
     string tempStr4 = strm4.str();
-    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + tempStrm4;
+    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + tempStr4;
   } else {
     stringstream convert2(v[3]);
     convert2>>tempTime;
@@ -990,7 +990,7 @@ void SwapGPU::Append(string blockInfo){
     stringstream strm4;   
     strm4<<tempTime;
     string tempStr4 = strm4.str();
-    blockInfo = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + tempStrm4;
+    blockInfo = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + tempStr4;
   }
   // update global load
   if (maxLen < 100){
