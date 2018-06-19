@@ -729,7 +729,8 @@ void SwapGPU::swap_plan(){
   size_t maxLoad_1 = max_1.first;
   int maxIdx_1 = max_1.second;
   cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
-
+  //change back order by Idx.
+  sort(vec_run.begin(),vec_run.end(),less_than_Idx());
   cout<<"done with swap_plan..."<<endl;
   cout<<"load 2 overhead pri: "<<(float)(overhead_pri)/(float)(1000000)<<endl;
   cout<<"load 2 overhead dto: "<<(float)(overhead_dto)/(float)(1000000)<<endl;
@@ -745,7 +746,7 @@ void SwapGPU::swap_plan(){
   file_time<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t4-t3)/(float)(1000000)<<endl;
   file_time<<"iteration time spent: "<<t2-t1<<" "<<t3-t2<<" "<<t4-t3<<endl;
   file_time<<"idx "<<0<<" "<<maxLen<<" "<<maxLen*2<<" "<<maxLen*3-1<<endl;
-  file_time<<"value"<<t1<<" "<<t2<<" "<<t3<<" "<<t4<<endl;
+  file_time<<"value "<<t1<<" "<<t2<<" "<<t3<<" "<<t4<<endl;
 }
 
 
