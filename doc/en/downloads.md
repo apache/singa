@@ -6,7 +6,8 @@
 
     % gpg --import KEYS
     % gpg --verify downloaded_file.asc downloaded_file
-
+  
+  You can also check the SHA512 or MD5 values to see if the download is completed.
 
 * v1.2.0 (6 June 2018):
     * [Apache SINGA 1.2.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
@@ -30,9 +31,9 @@
 
 * v1.1.0 (12 February 2017):
     * [Apache SINGA 1.1.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz)
-      [\[MD5\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.md5)
-      [\[KEYS\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.1.0/KEYS)
-      [\[ASC\]]()
+      [\[MD5\]](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.md5)
+      [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/1.1.0/KEYS)
+      [\[ASC\]](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.asc)
     * [Release Notes 1.1.0](releases/RELEASE_NOTES_1.1.0.html)
     * New features and major updates,
         * Create Docker images (CPU and GPU versions)
