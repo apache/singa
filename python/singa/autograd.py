@@ -583,6 +583,105 @@ class Flatten(Operation):
 def flatten(x):
     return Flatten()(x)[0]
 
+class Conv2d_GPU(Operation):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
+                 padding=0, dilation=1, groups=1, bias=True, **kwargs):
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        if isinstance(kernel_size, int):
+            self.kernel_size = (kernel_size, kernel_size)
+        elif isinstance(kernel_size, tuple):
+            self.kernel_size = kernel_size
+        else:
+            raise TypeError('Wrong kernel_size type.')
+        
+        if isinstance(stride, int):
+            self.stride = (stride,stride)
+        elif isinstance(stride, tuple):
+            self.stride = stride
+        else:
+            raise TypeError('Wrong stride type.')
+
+        if isinstance(padding, int):
+            self.padding = (padding,padding)
+        elif isinstance(padding, tuple):
+            self.padding = padding
+        else:
+            raise TypeError('Wrong padding type.')
+
+        if dilation != 1 or groups != 1:
+            raise ValueError('Not implemented yet')
+
+        self.bias = bias
+
+        inner_params = {'cudnn_prefer': 'fastest', 'workspace_byte_limit': 1024}
+        # TODO valid value of inner_params check
+
+        for kwarg in kwargs:
+            if kwarg not in inner_params:
+                raise TypeError('Keyword argument not understood:', kwarg)
+            else:
+                inner_params[kwarg] = kwargs[kwarg]
+
+        self.convhandle = singa.SetupConv(self.kernel_size[0], self.kernel_size[1],
+        			self.padding[0], self.padding[1], self.stride[0], self.stride[1],
+        			self.bias, inner_params['workspace_byte_limit']*1024*1024,
+        			inner_params['cudnn_prefer'])
+        
+        w_shape = (self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1])
+        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
+        std = math.sqrt(
+                2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] + self.out_channels))
+        self.W.gaussian(0.0, std)
+
+        if self.bias:
+            b_shape = (self.out_channels,)
+        else:
+            b_shape = (1,) #to keep consistency when to do forward.
+        self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+        self.b.set_value(0.0)
+
+
+    def __call__(self, x):
+        assert x.ndim() == 4, 'The dimensions of input should be 4D.'
+        assert x.shape[1] == self.in_channels, 'in_channels dismatched.'
+        assert 0 == 0, 'invalid padding.'
+    	# TODO valid padding check.
+
+    	if not hasattr (self, cudnnconvhandle):
+    	    self.cudnnconvhandle = singa.InitCudnn(x.data, self.convhandle)
+    	elif x.shape[0] != self.cudnnconvhandle.batchsize:
+    	    self.cudnnconvhandle = singa.InitCudnn(x.data, self.convhandle)
+
+    	self.dev = x.device
+
+    	self.W.to_device(self.dev)
+    	xs = [x, self.W]
+    	
+    	self.b.to_device(self.dev)
+    	xs.append(self.b)
+    	return self._do_forward(*xs)[0]
+
+    def forward(self, *xs):
+        if training:
+    	    self.x = xs[0]
+        return singa.CudnnConvForward(xs[0], xs[1], xs[2], self.convhandle, self.cudnnconvhandle)
+
+    def backward(self, dy):
+        assert training is True and hasattr(self, x), 'Please set \'trainging\' as True before do BP. '
+
+        # todo check device?
+        dy.ToDevice(self.dev)
+
+        dx = singa.CudnnConvBackwardx(dy, self.W, self.x, self.cch)
+        dW = singa.CudnnConvBackwardW(dy, self.x, self.W, self.cch)
+        if self.bias:
+    	    db = singa.CudnnConvBackwardb(dy, self.b, self.cch)
+    	    return dx, dW, db
+        else:
+    	    return dx, dW
 
 def infer_dependency(op):
     '''

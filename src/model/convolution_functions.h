@@ -48,7 +48,7 @@ ConvHandle SetupConv(
     const size_t pad_h_, const size_t pad_w_,
     const size_t stride_h_,const size_t stride_w_,
     const size_t channels_, const size_t num_filters_,
-    const bool bias_term_ = true ,const size_t workspace_byte_limit_=1024*1024,
+    const bool bias_term_ = true ,const size_t workspace_byte_limit_=1024*1024*1024,
     const std::string prefer_="fastest");
 
 void testInitCudnn(const Tensor &input, const ConvHandle ch);
