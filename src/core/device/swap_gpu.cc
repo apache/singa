@@ -142,7 +142,10 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
       double tempTime;
       stringstream convert2(v[3]);
       convert2>>tempTime;
-      tempMsg.t =tempTime;
+      double time_remover;
+      stringstream convert3(v[4]);
+      convert3>>time_remover;
+      tempMsg.time_remover = time_remover;
       onePieceMsgVec_.push_back(tempMsg);
     }
  
@@ -600,8 +603,8 @@ void SwapGPU::swap_plan(){
   fstream file_vec_run("vec_run.csv", ios::in|ios::out|ios::app);
   for (int i =0; i<vec_run.size();i++){
     //file_vec_run<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].t<<' '<<vec_run[i].t-tempTime2<<endl;
-    file_vec_run<<i<<' '<<vec_run[i].t<<' '<<vec_run[i].t-tempTime2<<endl;
-    tempTime2 = vec_run[i].t;
+    file_vec_run<<i<<' '<<vec_run[i].t<<' '<<vec_run[i].time_remover<<endl;
+    //tempTime2 = vec_run[i].t;
   }
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
   origin_load = vec_load;
@@ -892,6 +895,7 @@ void SwapGPU::Test_sched_switch_swap(){
   cout<<"switched flag for at "<<globeCounter<<endl;
  }
  auto t_2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+
  global_time_remover+=(t_2-t_1);
 
 }
@@ -974,23 +978,13 @@ void SwapGPU::Append(string blockInfo){
   stringstream strm1;
   strm1<<tempBlock_->size();
   string tempStr1 = strm1.str();
-  double tempTime;
+  stringstream strm4;   
+  strm4<<global_time_remover;
+  string tempStr4 = strm4.str();
   if (v.size() != 4) {
-    stringstream convert2(v[2]);
-    convert2>>tempTime;
-    tempTime = tempTime - global_time_remover;
-    stringstream strm4;   
-    strm4<<tempTime;
-    string tempStr4 = strm4.str();
-    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + tempStr4;
+    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 +' '+ v[2] +' ' + tempStr4;
   } else {
-    stringstream convert2(v[3]);
-    convert2>>tempTime;
-    tempTime = tempTime - global_time_remover;
-    stringstream strm4;   
-    strm4<<tempTime;
-    string tempStr4 = strm4.str();
-    blockInfo = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + tempStr4;
+    blockInfo = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + v[3] + ' ' + tempStr4;
   }
   // update global load
   if (maxLen < 100){

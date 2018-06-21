@@ -231,6 +231,7 @@ struct onePieceMsg{
     int MallocFree;
     int idx;
     double t;
+    double time_remover; //global_time_remover for visibility
     onePieceMsg(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
 };
 
