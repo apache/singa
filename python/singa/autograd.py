@@ -672,7 +672,7 @@ class Conv2d_GPU(Operation):
         return singa.CudnnConvForward(xs[0], xs[1], xs[2], self.convhandle, self.cudnnconvhandle)
 
     def backward(self, dy):
-        assert training is True and hasattr(self, 'x'), 'Please set \'trainging\' as True before do BP. '
+        assert training is True and hasattr(self, 'x'), 'Please set \'training\' as True before do BP. '
 
         # todo check device?
         dy.ToDevice(self.dev)
