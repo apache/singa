@@ -616,7 +616,7 @@ class Conv2d_GPU(Operation):
 
         self.bias = bias
 
-        inner_params = {'cudnn_prefer': 'fastest', 'workspace_byte_limit': 1024}
+        inner_params = {'cudnn_prefer': 'fastest', 'workspace_MB_limit': 1024}
         # TODO valid value of inner_params check
 
         for kwarg in kwargs:
@@ -627,7 +627,8 @@ class Conv2d_GPU(Operation):
 
         self.convhandle = singa.SetupConv(self.kernel_size[0], self.kernel_size[1],
         			self.padding[0], self.padding[1], self.stride[0], self.stride[1],
-        			self.bias, inner_params['workspace_byte_limit']*1024*1024,
+        			self.in_channels, self.out_channels, self.bias, 
+                                inner_params['workspace_MB_limit']*1024*1024,
         			inner_params['cudnn_prefer'])
         
         w_shape = (self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1])
@@ -650,10 +651,13 @@ class Conv2d_GPU(Operation):
         assert 0 == 0, 'invalid padding.'
     	# TODO valid padding check.
 
-    	if not hasattr (self, cudnnconvhandle):
+    	if not hasattr (self, 'cudnnconvhandle'):
     	    self.cudnnconvhandle = singa.InitCudnn(x.data, self.convhandle)
     	elif x.shape[0] != self.cudnnconvhandle.batchsize:
     	    self.cudnnconvhandle = singa.InitCudnn(x.data, self.convhandle)
+        
+        if training:
+            self.x = x
 
     	self.dev = x.device
 
@@ -665,20 +669,18 @@ class Conv2d_GPU(Operation):
     	return self._do_forward(*xs)[0]
 
     def forward(self, *xs):
-        if training:
-    	    self.x = xs[0]
         return singa.CudnnConvForward(xs[0], xs[1], xs[2], self.convhandle, self.cudnnconvhandle)
 
     def backward(self, dy):
-        assert training is True and hasattr(self, x), 'Please set \'trainging\' as True before do BP. '
+        assert training is True and hasattr(self, 'x'), 'Please set \'trainging\' as True before do BP. '
 
         # todo check device?
         dy.ToDevice(self.dev)
 
-        dx = singa.CudnnConvBackwardx(dy, self.W, self.x, self.cch)
-        dW = singa.CudnnConvBackwardW(dy, self.x, self.W, self.cch)
+        dx = singa.CudnnConvBackwardx(dy, self.W.data, self.x.data, self.cudnnconvhandle)
+        dW = singa.CudnnConvBackwardW(dy, self.x.data, self.W.data, self.cudnnconvhandle)
         if self.bias:
-    	    db = singa.CudnnConvBackwardb(dy, self.b, self.cch)
+    	    db = singa.CudnnConvBackwardb(dy, self.b.data, self.cudnnconvhandle)
     	    return dx, dW, db
         else:
     	    return dx, dW
