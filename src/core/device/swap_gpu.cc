@@ -142,10 +142,7 @@ vector<onePieceMsg> swap_strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
       double tempTime;
       stringstream convert2(v[3]);
       convert2>>tempTime;
-      double time_remover;
-      stringstream convert3(v[4]);
-      convert3>>time_remover;
-      tempMsg.time_remover = time_remover;
+      tempMsg.t =tempTime;
       onePieceMsgVec_.push_back(tempMsg);
     }
  
@@ -603,8 +600,8 @@ void SwapGPU::swap_plan(){
   fstream file_vec_run("vec_run.csv", ios::in|ios::out|ios::app);
   for (int i =0; i<vec_run.size();i++){
     //file_vec_run<<vec_run[i].idx<<' '<<vec_run[i].MallocFree<<' '<<vec_run[i].t<<' '<<vec_run[i].t-tempTime2<<endl;
-    file_vec_run<<i<<' '<<vec_run[i].t<<' '<<vec_run[i].time_remover<<endl;
-    //tempTime2 = vec_run[i].t;
+    file_vec_run<<i<<' '<<vec_run[i].t<<' '<<vec_run[i].t-tempTime2<<endl;
+    tempTime2 = vec_run[i].t;
   }
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
   origin_load = vec_load;
@@ -873,7 +870,6 @@ void SwapGPU::Test_sched_switch_swap(){
     do Test_sched_switch_swap during Malloc and Free.
     swap removed to DeploySwap
   */
-  auto t_1 = (std::chrono::system_clock::now()).time_since_epoch().count();
   ///test & schedule
   if (((gc+1)%300 == 0) && (asyncSwapFlag == 0) && (testFlag == 0)){
   //TODO(junzhe) not lean, chances are globeCounter found more than 300 idx ago: redudant test.
@@ -894,10 +890,6 @@ void SwapGPU::Test_sched_switch_swap(){
   asyncSwapFlag = 1;
   cout<<"switched flag for at "<<globeCounter<<endl;
  }
- auto t_2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-
- global_time_remover+=(t_2-t_1);
-
 }
 
 void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
@@ -967,24 +959,18 @@ void SwapGPU::DeploySwap(){
 }
 
 void SwapGPU::Append(string blockInfo){
-
-  // insert size, malloc : flag, block_, size, t; others: insert size t; calibrate time.
-  //TODO(junzhe) changed 6/19 to verify.
   vector<string> v = swap_split(blockInfo, " ");
   void* tempPtr;
   stringstream convert(v[1]);
   convert>>tempPtr;
   auto tempBlock_ = static_cast<Block*>(tempPtr);
-  stringstream strm1;
-  strm1<<tempBlock_->size();
-  string tempStr1 = strm1.str();
-  stringstream strm4;   
-  strm4<<global_time_remover;
-  string tempStr4 = strm4.str();
+  
+  // insert size, malloc : flag, block_, size, t; others: insert size t.
   if (v.size() != 4) {
-    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 +' '+ v[2] +' ' + tempStr4;
-  } else {
-    blockInfo = v[0] + ' ' + v[1] + ' ' + v[2] + ' ' + v[3] + ' ' + tempStr4;
+    stringstream strm1;
+    strm1<<tempBlock_->size();
+    string tempStr1 = strm1.str();
+    blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
   }
   // update global load
   if (maxLen < 100){
