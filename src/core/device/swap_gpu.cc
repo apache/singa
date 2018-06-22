@@ -606,6 +606,11 @@ void SwapGPU::swap_plan(){
   vector<double>vec_load(&global_load[location],&global_load[location+3*maxLen]);
   origin_load = vec_load;
   //load before swap, write in
+  fstream file_load_origin("load_origin.csv", ios::in|ios::out|ios::app);
+  for (int i=0; i<origin_load.size(); i++){
+    file_load_origin<<origin_load[i]<<endl;
+  }
+
   fstream file_load_current("load_current.csv", ios::in|ios::out|ios::app);
   for (int i=0; i<maxLen; i++){
     file_load_current<<vec_load[i]<<endl;
