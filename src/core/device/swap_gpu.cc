@@ -995,7 +995,7 @@ void SwapGPU::Append(string blockInfo){
   if (asyncSwapFlag == 1){
     vec_block_fresh.push_back(blockInfo);
   }
-  if ((maxLen>100)&&((gc-globeCounter)==3*maxLen)){
+  if ((maxLen>100)&&((gc-globeCounter+1)==3*maxLen)){
     fstream file_block_fresh("vec_block_fresh.csv", ios::in|ios::out|ios::app);
     for (int i =0; i<vec_block_fresh.size();i++){
       file_block_fresh<<vec_block_fresh[i]<<endl;
