@@ -992,6 +992,15 @@ void SwapGPU::Append(string blockInfo){
 
   //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   vec_block.push_back(blockInfo);
+  if (asyncSwapFlag == 1){
+    vec_block_fresh.push_back(blockInfo);
+  }
+  if ((gc-GC)==3*maxLen){
+    fstream file_block_fresh("vec_block_fresh.csv", ios::in|ios::out|ios::app);
+    for (int i =0; i<vec_block_fresh.size();i++){
+      file_block_fresh<<vec_block_fresh[i]<<endl;
+    }
+  }
   // fstream file_block5("append.csv", ios::in|ios::out|ios::app);
   // file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
 
