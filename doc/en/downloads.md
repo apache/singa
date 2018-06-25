@@ -1,7 +1,5 @@
 ## Download SINGA
 
-* Latest code: please clone the dev branch from [Github](https://github.com/apache/incubator-singa)
-
 * To verify the downloaded tar.gz file, download the KEY and ASC files and then execute the following commands
 
     % gpg --import KEYS
@@ -9,11 +7,13 @@
   
   You can also check the SHA512 or MD5 values to see if the download is completed.
 
+
+
 * v1.2.0 (6 June 2018):
     * [Apache SINGA 1.2.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
-      [\[SHA512\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512)
-      [\[KEYS\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.2.0/KEYS)
-      [\[ASC\]](https://dist.apache.org/repos/dist/release/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.asc)
+      [\[SHA512\]](https://www.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512)
+      [\[KEYS\]](https://www.apache.org/dist/incubator/singa/1.2.0/KEYS)
+      [\[ASC\]](https://www.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.asc)
     * [Release Notes 1.2.0](releases/RELEASE_NOTES_1.2.0.html)
     * New features and major updates,
         * Implement autograd (currently support MLP model)
