@@ -2,8 +2,8 @@
 
 * To verify the downloaded tar.gz file, download the KEY and ASC files and then execute the following commands
 
-    % gpg --import KEYS
-    % gpg --verify downloaded_file.asc downloaded_file
+        % gpg --import KEYS
+        % gpg --verify downloaded_file.asc downloaded_file
   
   You can also check the SHA512 or MD5 values to see if the download is completed.
 
