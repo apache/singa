@@ -999,7 +999,7 @@ void SwapGPU::Append(string blockInfo){
   vec_block.push_back(blockInfo);
   fstream file_vec_run_5("vec_run_5.csv", ios::in|ios::out|ios::app);
   
-  file_vec_run_5<<gc<<' '<<blockInfo<endl;
+  file_vec_run_5<<gc<<' '<<blockInfo<<endl;
   
   if (asyncSwapFlag == 1){
     vec_block_fresh.push_back(blockInfo);
