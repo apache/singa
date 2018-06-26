@@ -4,6 +4,7 @@
 //#include "./layer/cudnn_utils.h"
 //#include "singa/utils/logging.h"
 #include "./convolution_functions.h"
+#include "./layer/convolution.h"
 #include<iostream>
 namespace singa{
 
@@ -290,6 +291,165 @@ Tensor CudnnConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, co
     }, {dy.block(), W.block()}, {dx.block(), cch.workspace_.block()});
 
     return dx;
+};
+
+CpuConvHandle InitCpuHandle(const Tensor &input, const ConvHandle ch){
+    size_t height_;
+    size_t width_;
+    size_t conv_height_;
+    size_t conv_width_;    
+    size_t batchsize;
+    size_t channels_;
+
+    size_t col_height_;
+    size_t col_width_;
+
+    batchsize = input.shape(0);
+    channels_ = input.shape(1);
+    height_ = input.shape(2);
+    width_ = input.shape(3);
+
+    CHECK(channels_ == ch.channels_)<<"the number of input channels mismatched.";
+
+    conv_height_ = 1;
+    if (ch.stride_h_ > 0)
+        conv_height_ = (height_ + 2 * ch.pad_h_ - ch.kernel_h_) / ch.stride_h_ + 1;
+    conv_width_ = (width_ + 2 * ch.pad_w_ - ch.kernel_w_) / ch.stride_w_ + 1;
+
+    col_height_ = ch.channels_ * ch.kernel_w_ * ch.kernel_h_;
+    col_width_ = conv_height_ * conv_width_;
+
+    return CpuConvHandle{
+        height_,
+        width_,
+        conv_height_,
+        conv_width_,
+        batchsize,
+
+        col_height_,
+        col_width_
+    };
+};
+
+Convolution C;
+
+Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b,
+                        const ConvHandle ch, const CpuConvHandle cch){
+    CHECK_EQ(x.device()->lang(), kCpp);
+    CHECK_EQ(x.nDim(), 4u);
+    CHECK_EQ(x.shape()[0],cch.batchsize);
+    CHECK_EQ(x.shape()[1],ch.channels_);
+    CHECK_EQ(x.shape()[2],cch.height_);
+    CHECK_EQ(x.shape()[3],cch.width_);
+
+    size_t imagesize = x.Size() / cch.batchsize;
+
+    Shape w_shape= W.shape();
+    Shape b_shape= b.shape();
+
+    W.Reshape(Shape{ch.num_filters_, cch.col_height_});
+    if (ch.bias_term_)
+      b.Reshape(Shape{ch.num_filters_});
+
+    DataType dtype = x.data_type();
+    auto dev = x.device();
+    Shape shape{cch.batchsize, ch.num_filters_, cch.conv_height_, cch.conv_width_};
+    Tensor output(shape, dev, dtype);
+
+    Tensor col_data(Shape{cch.col_height_, cch.col_width_});//broadcasted image
+
+    float *data_col = new float[cch.col_height_ * cch.col_width_];
+    auto in_data = x.data<float>();
+    for (size_t num = 0; num < cch.batchsize; num++) {
+      C.Im2col(in_data + num * imagesize, ch.channels_, cch.height_, cch.width_, ch.kernel_h_,
+            ch.kernel_w_, ch.pad_h_, ch.pad_w_, ch.stride_h_, ch.stride_w_, data_col);
+      col_data.CopyDataFromHostPtr(data_col, cch.col_height_ * cch.col_width_);
+      Tensor each = Mult(W, col_data);
+      if (ch.bias_term_) {
+          AddColumn(b, &each);
+        }
+      CopyDataToFrom(&output, each, each.Size(), num * each.Size());
+  }
+  W.Reshape(w_shape);
+  b.Reshape(b_shape);
+  return output;
+}; 
+
+Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, 
+    const ConvHandle ch, const CpuConvHandle cch){
+    CHECK_EQ(dy.device()->lang(), kCpp);
+    CHECK_EQ(dy.nDim(), 4u);
+
+    Shape w_shape= W.shape();
+    W.Reshape(Shape{ch.num_filters_, cch.col_height_});
+
+    Tensor dx;
+    dx.ResetLike(x);
+    
+    size_t imagesize = x.Size() / cch.batchsize;
+    float *dx_b = new float[imagesize];
+
+    for (size_t num = 0; num < cch.batchsize; num++) {
+      Tensor grad_b(Shape{ch.num_filters_, cch.conv_height_ * cch.conv_width_});
+      CopyDataToFrom(&grad_b, dy, grad_b.Size(), 0, num * grad_b.Size());
+      Tensor dcol_b = Mult(W.T(), grad_b);
+      auto dcol_data = dcol_b.data<float>();
+      C.Col2im(dcol_data, ch.channels_, cch.height_, cch.width_, ch.kernel_h_, ch.kernel_w_, ch.pad_h_,
+           ch.pad_w_, ch.stride_h_, ch.stride_w_, dx_b);
+      dx.CopyDataFromHostPtr(dx_b, imagesize, num * imagesize);
+    }
+  W.Reshape(w_shape); 
+  return dx;
+};
+
+Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, 
+    const ConvHandle ch, const CpuConvHandle cch){
+    CHECK_EQ(dy.device()->lang(), kCpp);
+    CHECK_EQ(dy.nDim(), 4u);
+
+    size_t imagesize = x.Size() / cch.batchsize;
+
+    Tensor dW;
+    dW.ResetLike(W);
+    dW.SetValue(0.0f);
+    
+    Shape w_shape= W.shape();
+    dW.Reshape(Shape{ch.num_filters_, cch.col_height_});
+
+    Tensor col_data(Shape{cch.col_height_, cch.col_width_});//broadcasted image
+
+    float *data_col = new float[cch.col_height_ * cch.col_width_];
+    auto in_data = dy.data<float>();
+    for (size_t num = 0; num < cch.batchsize; num++) {
+      C.Im2col(in_data + num * imagesize, ch.channels_, cch.height_, cch.width_, ch.kernel_h_,
+            ch.kernel_w_, ch.pad_h_, ch.pad_w_, ch.stride_h_, ch.stride_w_, data_col);
+      col_data.CopyDataFromHostPtr(data_col, cch.col_height_ * cch.col_width_);
+      Tensor grad_b(Shape{ch.num_filters_, cch.conv_height_ * cch.conv_width_});
+      CopyDataToFrom(&grad_b, dy, grad_b.Size(), 0, num * grad_b.Size());
+      dW += Mult(grad_b, col_data.T());
+    }
+   dW.Reshape(w_shape);
+    //dW.Reshape(Shape{ch.num_filters_,ch.channels_ , ch.kernel_w_ , ch.kernel_h_});
+   return dW;
+};
+
+Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle ch, const CpuConvHandle cch){
+    CHECK_EQ(dy.device()->lang(), kCpp);
+    CHECK_EQ(dy.nDim(), 4u);
+
+    Tensor db;
+    db.ResetLike(b);
+
+    auto tmpshp = Shape{cch.batchsize * ch.num_filters_, dy.Size() / (cch.batchsize * ch.num_filters_)};
+    Tensor tmp1 = Reshape(dy, tmpshp);
+
+    Tensor tmp2(Shape{cch.batchsize * ch.num_filters_});
+    SumColumns(tmp1, &tmp2);
+    Tensor tmp3 = Reshape(tmp2, Shape{cch.batchsize, ch.num_filters_});
+
+    SumRows(tmp3, &db);
+
+    return db;
 };
 
 } //namespace_singa

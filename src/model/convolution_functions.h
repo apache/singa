@@ -43,6 +43,20 @@ struct CudnnConvHandle{
     size_t batchsize;
 };
 
+struct CpuConvHandle{
+    size_t height_;
+    size_t width_;
+    size_t conv_height_;
+    size_t conv_width_;
+    size_t batchsize;
+
+    size_t col_height_;
+    size_t col_width_;
+
+};
+
+    
+
 ConvHandle SetupConv(
     const size_t kernel_h_, const size_t kernel_w_,
     const size_t pad_h_, const size_t pad_w_,
@@ -63,5 +77,19 @@ Tensor CudnnConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, co
 Tensor CudnnConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle cch);
 
 Tensor CudnnConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandle cch);
+
+
+CpuConvHandle InitCpuHandle(const Tensor &input, const ConvHandle ch);
+
+Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b,
+                        const ConvHandle ch, const CpuConvHandle cch);
+
+Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, 
+    const ConvHandle ch, const CpuConvHandle cch);
+
+Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, 
+    const ConvHandle ch, const CpuConvHandle cch);
+
+Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle ch, const CpuConvHandle cch);
 
 }
