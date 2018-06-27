@@ -1,47 +1,38 @@
 %module model_operation
 
 %{
-#include "../src/model/convolution_functions.h"
+#include "../src/model/operation/convolution_related.h"
 %}
 namespace singa{
 
-struct ConvHandle{};
+struct Recorder{size_t batchsize;};
 
-struct CudnnConvHandle{size_t batchsize;};
-
-struct CpuConvHandle{};
-
-ConvHandle SetupConv(
-    const size_t kernel_h_, const size_t kernel_w_,
-    const size_t pad_h_, const size_t pad_w_,
-    const size_t stride_h_,const size_t stride_w_,
-    const size_t channels_, const size_t num_filters_,
-    const bool bias_term_ = true, const size_t workspace_byte_limit_ =1024*1024*1024,
-    const std::string prefer_="fastest");
-
-CudnnConvHandle InitCudnn(const Tensor &input, const ConvHandle ch);
-
-Tensor CudnnConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
-                        const ConvHandle ch, const CudnnConvHandle cch);
-
-Tensor CudnnConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const CudnnConvHandle cch);
-
-Tensor CudnnConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle cch);
-
-Tensor CudnnConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandle cch);
+struct CudnnConvHandles{};
 
 
-CpuConvHandle InitCpuHandle(const Tensor &input, const ConvHandle ch);
+Recorder SetupRecorder(const Tensor &input, const std::vector<size_t> kernel_size, 
+	                const std::vector<size_t> stride, const std::vector<size_t> padding,
+	                const size_t in_channels, const size_t out_channels,
+	                const bool bias_term_);
 
-Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b,
-                        const ConvHandle ch, const CpuConvHandle cch);
+CudnnConvHandles InitCudnnConvHandles(const Tensor &input, const Recorder r, 
+     const size_t workspace_byte_limit_=1024*1024*1024, const std::string prefer_="fastest");
 
-Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, 
-    const ConvHandle ch, const CpuConvHandle cch);
+Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const Recorder r, const CudnnConvHandles cch);
 
-Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, 
-    const ConvHandle ch, const CpuConvHandle cch);
+Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandles cch);
 
-Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle ch, const CpuConvHandle cch);
+Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const CudnnConvHandles cch);
+
+Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandles cch);
+
+
+Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const Recorder r);
+
+Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const Recorder r);
+
+Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const Recorder r);
+
+Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const Recorder r);
 
 }
