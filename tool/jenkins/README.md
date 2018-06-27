@@ -1,3 +1,21 @@
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
 # Jenkins CI Support
 
 ## Introduction
@@ -52,7 +70,7 @@ The building script can do the following tasks:
     Execute shell - command - ``git push https://<username:token>@github.com/nusdbsystem/incubator-singa.git -f``
 
   * create conda package and upload it to anaconda cloud
-    Execute shell - command 
+    Execute shell - command
 
         /root/miniconda/bin/conda-build tool/conda/singa
         /root/miniconda/bin/anaconda -t <ANACONDA_UPLOAD_TOKEN> upload -u nusdbsystem -l main /root/miniconda/linux-64/singa-*.so.*.tar.bz2 --force
@@ -125,7 +143,7 @@ It does the following tasks,
 The Jenkins job configuration is similar as above except the following fields,
 
 * Source Code Management - Git - Additional Behaviors - Include Region `doc/*`
-* Build - Execute Shell - Command 
+* Build - Execute Shell - Command
 
       bash -ex tool/jenkins/gen_doc.sh
 
@@ -135,12 +153,12 @@ The Jenkins job configuration is similar as above except the following fields,
 
 The docker images used for testing also be used for document generation.
 We have to manually configure something inside the docker container.
-First, we start the container 
+First, we start the container
 
     $docker run --name singa-doc -d <docker image>
     # docker network connect jenkins singa-doc
     $ docker exec -it singa-doc /bin/bash
-    
+
 Next, we do the first commit to the svn repo.
 
     $ svn co https://svn.apache.org/repos/asf/incubator/singa/site/trunk
