@@ -669,20 +669,22 @@ class Conv2D(Operation):
     	return self._do_forward(*xs)[0]
 
     def forward(self, *xs):
-        if gpu:
-            
+        if self.dev.lang()==1: #kCuda = 1           
             if not hasattr(self, 'cudnnconvhandles'):
-                self.cudnnconvhandles=InitCudnnConvHandles(xs[0], self.recorder, 
+                self.cudnnconvhandles=singa.InitCudnnConvHandles(xs[0], self.recorder, 
                     self.inner_params['workspace_MB_limit']*1024*1024, self.inner_params['cudnn_prefer'])
             elif self.reset:
-                self.cudnnconvhandles=InitCudnnConvHandles(xs[0], self.recorder, 
+                self.cudnnconvhandles=singa.InitCudnnConvHandles(xs[0], self.recorder, 
                     self.inner_params['workspace_MB_limit']*1024*1024, self.inner_params['cudnn_prefer'])
 
             return singa.GpuConvForward(xs[0], xs[1], xs[2], self.recorder, self.cudnnconvhandles)
 
-        if cpu:
-
+        elif self.dev.lang()==0: #kCpp = 0
             return singa.CpuConvForward(xs[0], xs[1], xs[2], self.recorder)
+
+        else:
+            TypeError('Not implemented yet')
+
 
     def backward(self, dy):
         assert training is True and hasattr(self, 'x'), 'Please set training as True before do BP. '
@@ -690,7 +692,7 @@ class Conv2D(Operation):
         # todo check device?
         dy.ToDevice(self.dev)
 
-        if gpu:
+        if self.dev.lang()==1: #kCuda = 1 
             dx = singa.GpuConvBackwardx(dy, self.W.data, self.x.data, self.cudnnconvhandles)
             dW = singa.GpuConvBackwardW(dy, self.x.data, self.W.data, self.cudnnconvhandles)
             if self.bias:
@@ -699,7 +701,7 @@ class Conv2D(Operation):
             else:
         	    return dx, dW
 
-        if cpu:
+        elif self.dev.lang()==0: #kCpp = 0
             dx = singa.CpuConvBackwardx(dy, self.W.data, self.x.data, self.recorder)
             dW = singa.CpuConvBackwardW(dy, self.x.data, self.W.data, self.recorder)
             if self.bias:
@@ -707,6 +709,8 @@ class Conv2D(Operation):
                 return dx, dW, db
             else:
                 return dx, dW
+        else:
+            TypeError('Not implemented yet')
 
 def infer_dependency(op):
     '''

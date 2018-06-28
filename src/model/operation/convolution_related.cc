@@ -318,6 +318,20 @@ CudnnConvHandles InitCudnnConvHandles(const Tensor &input, const Recorder r, con
                      << workspace_byte_limit_ << ")";
     workspace_ = Tensor(Shape{workspace_count_}, dev, dtype);
 
+    return CudnnConvHandles{
+    	x_desc_,
+        y_desc_,
+        bias_desc_,
+        filter_desc_,
+        conv_desc_,
+        fp_alg_,
+        bp_filter_alg_,
+        bp_data_alg_,
+
+        workspace_count_,
+        workspace_,
+    };
+
 };
 
 Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const Recorder r, const CudnnConvHandles cch){

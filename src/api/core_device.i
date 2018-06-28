@@ -43,11 +43,14 @@ namespace std{
 
 namespace singa{
 
+enum LangType {kCpp, kCuda, kOpencl,kNumDeviceType};
+
 class Device {
  public:
   virtual void SetRandSeed(unsigned seed) = 0;
   std::shared_ptr<Device> host();
   int id() const;
+  LangType lang() const;
 };
 
 class Platform {
