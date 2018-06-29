@@ -19,7 +19,6 @@
 SINGA 中文文档
 ==============
 
-
 最新动态
 -----------
 
@@ -57,32 +56,20 @@ SINGA 中文文档
 
 SINGA 入门
 ---------------
-* 无需安装，直接使用 `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ or via `Docker <https://hub.docker.com/r/nusdbsystem/singa/>`_.
+* 安装SINGA，通过 `conda <../en/docs/installation.html>`_, apt-get, 或者源码.
 
-* 安装SINGA，通过 `conda <../en/docs/installation.html#from-conda>`_, `Debian packages <../en/docs/installation.html#from-debian-package>`_  或者 `源码 <../en/docs/installation.html#from-source>`_.
+* 在 `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ 上, 或者通过 `Docker <https://hub.docker.com/r/nusdbsystem/singa/>`_ 试用 SINGA.
 
-* 更多操作和实例，参考 `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ 
+* 更多操作和实例，参考 `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ 以及 `模型库页面  <./docs/model_zoo/index.html>`_ 了解更多例子.
 
-.. |logo1| image:: _static/github.png
-   :scale: 100%
-   :align: middle
-   :target: https://github.com/apache/incubator-singa
-.. |logo2| image:: _static/awsmp.gif 
-   :scale: 100%
-   :align: middle
-   :target: https://aws.amazon.com/marketplace/seller-profile?id=5bcac385-12c4-4802-aec7-351e09b77b4c
-.. |logo3| image:: _static/docker.png
-   :scale: 50%
-   :align: middle
-   :target: https://hub.docker.com/r/nusdbsystem/singa/
-.. |logo4| image:: _static/jupyter.png
+.. |logo| image:: _static/jupyter.png
    :scale: 25%
    :align: middle
    :target: http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb
 
-+---------+---------+---------+---------+
-| |logo1| | |logo2| | |logo3| | |logo4| |
-+---------+---------+---------+---------+
++---------+
+| |logo|  |
++---------+
 
 文档
 -------------
@@ -117,8 +104,8 @@ SINGA 入门
 .. toctree::
    :hidden:
 
-   downloads
    docs/index
+   downloads
 
 .. toctree::
    :hidden:
