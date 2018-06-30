@@ -88,7 +88,7 @@ class Operation(object):
             ys = (ys,)
         # create Tensor based on CTensor(data);
         # assume outputs are all Tensor instances
-        ys = tuple(Tensor(device=y.device,
+        ys = tuple(Tensor(device=y.device(),
                           data=y,
                           requires_grad=self.requires_grad,
                           creator=self) for y in ys)
@@ -442,7 +442,7 @@ class Conv2d(Operation):
         param_data = self.PyLayer.layer.param_values()
 
         if not hasattr(self, 'w'):
-            self.w = Tensor(device=param_data[0].device, data=param_data[
+            self.w = Tensor(device=param_data[0].device(), data=param_data[
                             0], requires_grad=True, stores_grad=True)
             std = math.sqrt(
                 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] + self.out_channels))
@@ -452,7 +452,7 @@ class Conv2d(Operation):
 
         if len(param_data) == 2:
             if not hasattr(self, 'b'):
-                self.b = Tensor(device=param_data[1].device, data=param_data[
+                self.b = Tensor(device=param_data[1].device(), data=param_data[
                                 1], requires_grad=True, stores_grad=True)
                 self.b.set_value(0.0)
 
@@ -638,79 +638,75 @@ class Conv2D(Operation):
         else:
             #to keep consistency when to do forward.
             self.b = Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
-        
-        self.reset = False
 
-    def __call__(self, x):
-        assert x.ndim() == 4, 'The dimensions of input should be 4D.'
-        assert x.shape[1] == self.in_channels, 'in_channels dismatched.'
-        assert 0 == 0, 'invalid padding.'
-    	# TODO valid padding check.
+    def __call__(self, x): 
+        if not hasattr(self, 'device_id'):
+            self.device_id = x.device.id()
+        else:
+            assert self.device_id == x.device.id(),'Not the same device.'
 
-    	if not hasattr (self, 'recorder'):
-    	    self.recorder = singa.SetupRecorder(x.data, self.kernel_size, self.stride,
-                                self.padding, self.in_channels, self.out_channels, self.bias)
-    	elif x.shape[0] != self.recorder.batchsize:
-    	    self.recorder = singa.SetupRecorder(x.data, self.kernel_size, self.stride,
-                                self.padding, self.in_channels, self.out_channels, self.bias)
-            self.reset = True
-        
-        if training:
-            self.x = x
+        if self.W.device.id() != self.device_id:
+            self.W.to_device(x.device)
 
-    	self.dev = x.device
-
-    	self.W.to_device(self.dev)
-    	xs = [x, self.W]
-    	
         if self.bias:
-    	   self.b.to_device(self.dev)
-    	xs.append(self.b)
+            if self.b.device.id() != self.device_id:
+                self.b.to_device(x.device)
+
+    	xs = [x, self.W, self.b]
+
     	return self._do_forward(*xs)[0]
 
     def forward(self, *xs):
-        if self.dev.lang()==1: #kCuda = 1           
-            if not hasattr(self, 'cudnnconvhandles'):
-                self.cudnnconvhandles=singa.InitCudnnConvHandles(xs[0], self.recorder, 
-                    self.inner_params['workspace_MB_limit']*1024*1024, self.inner_params['cudnn_prefer'])
-            elif self.reset:
-                self.cudnnconvhandles=singa.InitCudnnConvHandles(xs[0], self.recorder, 
-                    self.inner_params['workspace_MB_limit']*1024*1024, self.inner_params['cudnn_prefer'])
+        assert xs[0].nDim() == 4, 'The dimensions of input should be 4D.'
+        assert xs[0].shape()[1] == self.in_channels, 'in_channels dismatched.'
+        #assert (xs[0].shape()[2]+2*self.padding[0]-self.kernel_size[0]-1)%self.stride[0] == 0, 'invalid padding.'
+        assert 0==0, 'invalid padding'
 
-            return singa.GpuConvForward(xs[0], xs[1], xs[2], self.recorder, self.cudnnconvhandles)
+        if training:
+            self.x = xs[0]
 
-        elif self.dev.lang()==0: #kCpp = 0
-            return singa.CpuConvForward(xs[0], xs[1], xs[2], self.recorder)
+        if self.device_id == -1:
+            if not hasattr (self, 'handles'):
+                self.handles = singa.ConvHandles(xs[0], self.kernel_size, self.stride,
+                               self.padding, self.in_channels, self.out_channels, self.bias)
+            elif xs[0].shape()[0] != self.handles.batchsize:
+                self.handles = singa.ConvHandles(xs[0], self.kernel_size, self.stride,
+                               self.padding, self.in_channels, self.out_channels, self.bias)
+            return singa.CpuConvForward(xs[0], xs[1], xs[2], self.handles)
 
         else:
-            TypeError('Not implemented yet')
-
+            if not hasattr(self, 'handles'):
+                self.handles = singa.CudnnConvHandles(xs[0], self.kernel_size, self.stride,
+                               self.padding, self.in_channels, self.out_channels, self.bias,
+                               self.inner_params['workspace_MB_limit']*1024*1024, self.inner_params['cudnn_prefer'])
+            elif xs[0].shape()[0] != self.handles.batchsize:
+                self.handles = singa.CudnnConvHandles(xs[0], self.kernel_size, self.stride,
+                               self.padding, self.in_channels, self.out_channels, self.bias,
+                               self.inner_params['workspace_MB_limit']*1024*1024, self.inner_params['cudnn_prefer'])
+            return singa.GpuConvForward(xs[0], xs[1], xs[2], self.handles)
 
     def backward(self, dy):
         assert training is True and hasattr(self, 'x'), 'Please set training as True before do BP. '
 
-        # todo check device?
-        dy.ToDevice(self.dev)
+        if dy.device().id() != self.device_id:
+            dy.ToDevice(self.x.device())
 
-        if self.dev.lang()==1: #kCuda = 1 
-            dx = singa.GpuConvBackwardx(dy, self.W.data, self.x.data, self.cudnnconvhandles)
-            dW = singa.GpuConvBackwardW(dy, self.x.data, self.W.data, self.cudnnconvhandles)
+        if self.device_id == -1: 
+            dx = singa.CpuConvBackwardx(dy, self.W.data, self.x, self.handles)
+            dW = singa.CpuConvBackwardW(dy, self.x, self.W.data, self.handles)
             if self.bias:
-        	    db = singa.GpuConvBackwardb(dy, self.b.data, self.cudnnconvhandles)
-        	    return dx, dW, db
-            else:
-        	    return dx, dW
-
-        elif self.dev.lang()==0: #kCpp = 0
-            dx = singa.CpuConvBackwardx(dy, self.W.data, self.x.data, self.recorder)
-            dW = singa.CpuConvBackwardW(dy, self.x.data, self.W.data, self.recorder)
-            if self.bias:
-                db = singa.CpuConvBackwardb(dy, self.b.data, self.recorder)
+                db = singa.CpuConvBackwardb(dy, self.b.data, self.handles)
                 return dx, dW, db
             else:
                 return dx, dW
         else:
-            TypeError('Not implemented yet')
+            dx = singa.GpuConvBackwardx(dy, self.W.data, self.x, self.handles)
+            dW = singa.GpuConvBackwardW(dy, self.x, self.W.data, self.handles)
+            if self.bias:
+                db = singa.GpuConvBackwardb(dy, self.b.data, self.handles)
+                return dx, dW, db
+            else:
+                return dx, dW
 
 def infer_dependency(op):
     '''
@@ -813,7 +809,7 @@ def backward(y, dy=None):
             if y_stores_grad:
                 # store the gradient for final return, e.g. if x is parameter
                 g = not_ready[src_op][y_idx]
-                gradients[y] = Tensor(device=g.device, data=g)
+                gradients[y] = Tensor(device=g.device(), data=g)
             dependency[src_op] -= 1
             if src_op.requires_grad is True:
                 if dependency[src_op] == 0:

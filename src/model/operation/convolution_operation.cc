@@ -1,30 +1,13 @@
-#include "./convolution_related.h"
+#include "./convolution_operation.h"
 #include "../layer/convolution.h"
 #include<iostream>
 
 namespace singa{
 
-Recorder SetupRecorder(const Tensor &input, const std::vector<size_t> kernel_size, 
+ConvHandles::ConvHandles(const Tensor &input, const std::vector<size_t> kernel_size, 
 	                const std::vector<size_t> stride, const std::vector<size_t> padding,
 	                const size_t in_channels, const size_t out_channels,
 	                const bool bias_term_){
-	size_t kernel_w_;
-    size_t pad_w_;
-    size_t stride_w_;
-    size_t kernel_h_;
-    size_t pad_h_;
-    size_t stride_h_;
-
-    size_t height_;
-    size_t width_;
-    size_t conv_height_;
-    size_t conv_width_;
-    size_t batchsize;
-
-    size_t col_height_;
-    size_t col_width_;
-    size_t imagesize;
-
     kernel_h_=kernel_size[0];
     kernel_w_=kernel_size[1];
 
@@ -33,6 +16,9 @@ Recorder SetupRecorder(const Tensor &input, const std::vector<size_t> kernel_siz
 
     stride_h_=stride[0];
     stride_w_=stride[1];
+
+    channels_=in_channels;
+    num_filters_=out_channels;
 
 	batchsize = input.shape(0);
 	CHECK(input.shape(1) == in_channels)<<"the number of input channels mismatched.";
@@ -47,177 +33,13 @@ Recorder SetupRecorder(const Tensor &input, const std::vector<size_t> kernel_siz
     col_height_ = in_channels * kernel_w_ * kernel_h_;
     col_width_ = conv_height_ * conv_width_;
     imagesize = input.Size() / batchsize;
-
-    return Recorder{
-    	kernel_w_,
-        pad_w_,
-        stride_w_,
-        kernel_h_,
-        pad_h_,
-        stride_h_,
-
-        in_channels,
-        out_channels,
-
-        bias_term_,
-
-        height_,
-        width_,
-        conv_height_,
-        conv_width_,
-        batchsize,
-
-        col_height_,
-        col_width_,
-        imagesize
-    };
 };	
 
-Convolution C;
-
-Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const Recorder r){
-	CHECK_EQ(x.device()->lang(), kCpp);
-
-	CHECK(x.shape(1) == r.channels_ && x.shape(2) == r.height_ &&
-    x.shape(3) == r.width_) << "input sample shape should not change";
-
-    CHECK(W.shape(0) == r.num_filters_ && W.shape(1) == r.channels_ && 
-    W.shape(2) == r.kernel_h_ && W.shape(3) == r.kernel_w_) << "weights shape should not change";
-
-    Shape w_shape= W.shape();
-    Shape b_shape= b.shape();
-
-    W.Reshape(Shape{r.num_filters_, r.col_height_});
-    if (r.bias_term_)
-      b.Reshape(Shape{r.num_filters_});
-
-    DataType dtype = x.data_type();
-    auto dev = x.device();
-    Shape shape{r.batchsize, r.num_filters_, r.conv_height_, r.conv_width_};
-    Tensor output(shape, dev, dtype);
-
-    Tensor col_data(Shape{r.col_height_, r.col_width_});//broadcasted image
-
-    float *data_col = new float[r.col_height_ * r.col_width_];
-    auto in_data = x.data<float>();
-    for (size_t num = 0; num < r.batchsize; num++) {
-      C.Im2col(in_data + num * r.imagesize, r.channels_, r.height_, r.width_, r.kernel_h_,
-            r.kernel_w_, r.pad_h_, r.pad_w_, r.stride_h_, r.stride_w_, data_col);    
-
-      col_data.CopyDataFromHostPtr(data_col, r.col_height_ * r.col_width_);
-      Tensor each = Mult(W, col_data);
-      if (r.bias_term_) {
-          AddColumn(b, &each);
-        }
-      CopyDataToFrom(&output, each, each.Size(), num * each.Size());
-    };
-  W.Reshape(w_shape);
-  b.Reshape(b_shape);
-  return output;
-}; 
-
-Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const Recorder r){
-    CHECK_EQ(dy.device()->lang(), kCpp);
-    
-    CHECK(dy.shape(1) == r.num_filters_ && dy.shape(2) == r.conv_height_ &&
-    dy.shape(3) == r.conv_width_) << "input gradients shape should not change";
-
-    CHECK(W.shape(0) == r.num_filters_ && W.shape(1) == r.channels_ && 
-    W.shape(2) == r.kernel_h_ && W.shape(3) == r.kernel_w_) << "weights shape should not change";
-
-    Shape w_shape= W.shape();
-    W.Reshape(Shape{r.num_filters_, r.col_height_});
-
-    Tensor dx;
-    dx.ResetLike(x);
-    
-    float *dx_b = new float[r.imagesize];
-
-    for (size_t num = 0; num < r.batchsize; num++) {
-      Tensor grad_b(Shape{r.num_filters_, r.conv_height_ * r.conv_width_});
-      CopyDataToFrom(&grad_b, dy, grad_b.Size(), 0, num * grad_b.Size());
-      Tensor dcol_b = Mult(W.T(), grad_b);
-      auto dcol_data = dcol_b.data<float>();
-      C.Col2im(dcol_data, r.channels_, r.height_, r.width_, r.kernel_h_, r.kernel_w_, r.pad_h_,
-           r.pad_w_, r.stride_h_, r.stride_w_, dx_b);
-      dx.CopyDataFromHostPtr(dx_b, r.imagesize, num * r.imagesize);
-    }
-  W.Reshape(w_shape); 
-  return dx;
-};
-
-Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const Recorder r){
-    CHECK_EQ(dy.device()->lang(), kCpp);
-    
-    CHECK(dy.shape(1) == r.num_filters_ && dy.shape(2) == r.conv_height_ &&
-    dy.shape(3) == r.conv_width_) << "input gradients shape should not change";
-
-    CHECK(x.shape(1) == r.channels_ && x.shape(2) == r.height_ &&
-    x.shape(3) == r.width_) << "input sample shape should not change";
-
-    Tensor dW;
-    dW.ResetLike(W);
-    dW.SetValue(0.0f);
-    
-    Shape w_shape= W.shape();
-    dW.Reshape(Shape{r.num_filters_, r.col_height_});
-
-    Tensor col_data(Shape{r.col_height_, r.col_width_});//broadcasted image
-
-    float *data_col = new float[r.col_height_ * r.col_width_];
-    auto in_data = dy.data<float>();
-    for (size_t num = 0; num < r.batchsize; num++) {
-      C.Im2col(in_data + num * r.imagesize, r.channels_, r.height_, r.width_, r.kernel_h_,
-            r.kernel_w_, r.pad_h_, r.pad_w_, r.stride_h_, r.stride_w_, data_col);
-      col_data.CopyDataFromHostPtr(data_col, r.col_height_ * r.col_width_);
-      Tensor grad_b(Shape{r.num_filters_, r.conv_height_ * r.conv_width_});
-      CopyDataToFrom(&grad_b, dy, grad_b.Size(), 0, num * grad_b.Size());
-      dW += Mult(grad_b, col_data.T());
-    }
-   dW.Reshape(w_shape);
-   return dW;
-};
-
-Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const Recorder r){
-    CHECK_EQ(dy.device()->lang(), kCpp);
-    
-    CHECK(dy.shape(1) == r.num_filters_ && dy.shape(2) == r.conv_height_ &&
-    dy.shape(3) == r.conv_width_) << "input gradients shape should not change";
-	
-	CHECK(b.shape(0) == r.num_filters_)<< "bias shape should not change";
-
-    Tensor db;
-    db.ResetLike(b);
-
-    auto tmpshp = Shape{r.batchsize * r.num_filters_, dy.Size() / (r.batchsize * r.num_filters_)};
-    Tensor tmp1 = Reshape(dy, tmpshp);
-
-    Tensor tmp2(Shape{r.batchsize * r.num_filters_});
-    SumColumns(tmp1, &tmp2);
-    Tensor tmp3 = Reshape(tmp2, Shape{r.batchsize, r.num_filters_});
-
-    SumRows(tmp3, &db);
-
-    return db;
-};
-
-CudnnConvHandles InitCudnnConvHandles(const Tensor &input, const Recorder r, const size_t workspace_byte_limit_,
-    				const std::string prefer_){
-
-	CHECK(input.shape(0) == r.batchsize && input.shape(1) == r.channels_ && input.shape(2) == r.height_ &&
-    input.shape(3) == r.width_) << "input sample shape dismatched";
-
-	cudnnTensorDescriptor_t x_desc_ ;
-    cudnnTensorDescriptor_t y_desc_ ;
-    cudnnTensorDescriptor_t bias_desc_ ;
-    cudnnFilterDescriptor_t filter_desc_ ;
-    cudnnConvolutionDescriptor_t conv_desc_ ;
-    cudnnConvolutionFwdAlgo_t fp_alg_;
-    cudnnConvolutionBwdFilterAlgo_t bp_filter_alg_;
-    cudnnConvolutionBwdDataAlgo_t bp_data_alg_;
-
-    size_t workspace_count_;
-    Tensor workspace_; 
+CudnnConvHandles::CudnnConvHandles(const Tensor &input, const std::vector<size_t> kernel_size, 
+                    const std::vector<size_t> stride, const std::vector<size_t> padding,
+                    const size_t in_channels, const size_t out_channels,const bool bias_term_, 
+                    const size_t workspace_byte_limit_,const std::string prefer_)
+                    :ConvHandles(input, kernel_size, stride, padding, in_channels, out_channels, bias_term_){
 
     DataType dtype = input.data_type();
     auto dev = input.device();
@@ -225,29 +47,29 @@ CudnnConvHandles InitCudnnConvHandles(const Tensor &input, const Recorder r, con
 
     CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_desc_));
     CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_desc_));
-    if (r.bias_term_)
+    if (bias_term_)
         CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc_));
     CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc_));
     CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc_));
 
 
     CUDNN_CHECK(cudnnSetTensor4dDescriptor(x_desc_, CUDNN_TENSOR_NCHW,
-                                           GetCudnnDataType(dtype), r.batchsize,
-                                           r.channels_, r.height_, r.width_));
+                                           GetCudnnDataType(dtype), batchsize,
+                                           channels_, height_, width_));
     CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-            y_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), r.batchsize,
-            r.num_filters_, r.conv_height_, r.conv_width_));
-    if (r.bias_term_)
+            y_desc_, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), batchsize,
+            num_filters_, conv_height_, conv_width_));
+    if (bias_term_)
         CUDNN_CHECK(cudnnSetTensor4dDescriptor(bias_desc_, CUDNN_TENSOR_NCHW,
                                                GetCudnnDataType(dtype), 1,
-                                               r.num_filters_, 1, 1));
-    CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc_, r.pad_h_, r.pad_w_,
-                                                r.stride_h_, r.stride_w_, 1, 1,
+                                               num_filters_, 1, 1));
+    CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc_, pad_h_, pad_w_,
+                                                stride_h_, stride_w_, 1, 1,
                                                 CUDNN_CROSS_CORRELATION,
                                                 GetCudnnDataType(dtype)));
     CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc_, GetCudnnDataType(dtype),
-                                           CUDNN_TENSOR_NCHW, r.num_filters_,
-                                           r.channels_, r.kernel_h_, r.kernel_w_));
+                                           CUDNN_TENSOR_NCHW, num_filters_,
+                                           channels_, kernel_h_, kernel_w_));
     if (prefer_ == "fastest" || prefer_ == "limited_workspace" ||
         prefer_ == "no_workspace") {
         cudnnConvolutionFwdPreference_t fwd_pref;
@@ -317,30 +139,143 @@ CudnnConvHandles InitCudnnConvHandles(const Tensor &input, const Recorder r, con
                      << ") is larger than the expected Bytes ("
                      << workspace_byte_limit_ << ")";
     workspace_ = Tensor(Shape{workspace_count_}, dev, dtype);
-
-    return CudnnConvHandles{
-    	x_desc_,
-        y_desc_,
-        bias_desc_,
-        filter_desc_,
-        conv_desc_,
-        fp_alg_,
-        bp_filter_alg_,
-        bp_data_alg_,
-
-        workspace_count_,
-        workspace_,
-    };
-
 };
 
-Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const Recorder r, const CudnnConvHandles cch){
+Convolution C;
+
+Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandles ch){
+	CHECK_EQ(x.device()->lang(), kCpp);
+
+	CHECK(x.shape(1) == ch.channels_ && x.shape(2) == ch.height_ &&
+    x.shape(3) == ch.width_) << "input sample shape should not change";
+
+    CHECK(W.shape(0) == ch.num_filters_ && W.shape(1) == ch.channels_ && 
+    W.shape(2) == ch.kernel_h_ && W.shape(3) == ch.kernel_w_) << "weights shape should not change";
+
+    Shape w_shape= W.shape();
+    Shape b_shape= b.shape();
+
+    W.Reshape(Shape{ch.num_filters_, ch.col_height_});
+    if (ch.bias_term_)
+      b.Reshape(Shape{ch.num_filters_});
+
+    DataType dtype = x.data_type();
+    auto dev = x.device();
+    Shape shape{ch.batchsize, ch.num_filters_, ch.conv_height_, ch.conv_width_};
+    Tensor output(shape, dev, dtype);
+
+    Tensor col_data(Shape{ch.col_height_, ch.col_width_});//broadcasted image
+
+    float *data_col = new float[ch.col_height_ * ch.col_width_];
+    auto in_data = x.data<float>();
+    for (size_t num = 0; num < ch.batchsize; num++) {
+      C.Im2col(in_data + num * ch.imagesize, ch.channels_, ch.height_, ch.width_, ch.kernel_h_,
+            ch.kernel_w_, ch.pad_h_, ch.pad_w_, ch.stride_h_, ch.stride_w_, data_col);    
+
+      col_data.CopyDataFromHostPtr(data_col, ch.col_height_ * ch.col_width_);
+      Tensor each = Mult(W, col_data);
+      if (ch.bias_term_) {
+          AddColumn(b, &each);
+        }
+      CopyDataToFrom(&output, each, each.Size(), num * each.Size());
+    };
+  W.Reshape(w_shape);
+  b.Reshape(b_shape);
+  return output;
+}; 
+
+Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const ConvHandles ch){
+    CHECK_EQ(dy.device()->lang(), kCpp);
+    
+    CHECK(dy.shape(1) == ch.num_filters_ && dy.shape(2) == ch.conv_height_ &&
+    dy.shape(3) == ch.conv_width_) << "input gradients shape should not change";
+
+    CHECK(W.shape(0) == ch.num_filters_ && W.shape(1) == ch.channels_ && 
+    W.shape(2) == ch.kernel_h_ && W.shape(3) == ch.kernel_w_) << "weights shape should not change";
+
+    Shape w_shape= W.shape();
+    W.Reshape(Shape{ch.num_filters_, ch.col_height_});
+
+    Tensor dx;
+    dx.ResetLike(x);
+    
+    float *dx_b = new float[ch.imagesize];
+
+    for (size_t num = 0; num < ch.batchsize; num++) {
+      Tensor grad_b(Shape{ch.num_filters_, ch.conv_height_ * ch.conv_width_});
+      CopyDataToFrom(&grad_b, dy, grad_b.Size(), 0, num * grad_b.Size());
+      Tensor dcol_b = Mult(W.T(), grad_b);
+      auto dcol_data = dcol_b.data<float>();
+      C.Col2im(dcol_data, ch.channels_, ch.height_, ch.width_, ch.kernel_h_, ch.kernel_w_, ch.pad_h_,
+           ch.pad_w_, ch.stride_h_, ch.stride_w_, dx_b);
+      dx.CopyDataFromHostPtr(dx_b, ch.imagesize, num * ch.imagesize);
+    }
+  W.Reshape(w_shape); 
+  return dx;
+};
+
+Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const ConvHandles ch){
+    CHECK_EQ(dy.device()->lang(), kCpp);
+    
+    CHECK(dy.shape(1) == ch.num_filters_ && dy.shape(2) == ch.conv_height_ &&
+    dy.shape(3) == ch.conv_width_) << "input gradients shape should not change";
+
+    CHECK(x.shape(1) == ch.channels_ && x.shape(2) == ch.height_ &&
+    x.shape(3) == ch.width_) << "input sample shape should not change";
+
+    Tensor dW;
+    dW.ResetLike(W);
+    dW.SetValue(0.0f);
+    
+    Shape w_shape= W.shape();
+    dW.Reshape(Shape{ch.num_filters_, ch.col_height_});
+
+    Tensor col_data(Shape{ch.col_height_, ch.col_width_});//broadcasted image
+
+    float *data_col = new float[ch.col_height_ * ch.col_width_];
+    auto in_data = dy.data<float>();
+    for (size_t num = 0; num < ch.batchsize; num++) {
+      C.Im2col(in_data + num * ch.imagesize, ch.channels_, ch.height_, ch.width_, ch.kernel_h_,
+            ch.kernel_w_, ch.pad_h_, ch.pad_w_, ch.stride_h_, ch.stride_w_, data_col);
+      col_data.CopyDataFromHostPtr(data_col, ch.col_height_ * ch.col_width_);
+      Tensor grad_b(Shape{ch.num_filters_, ch.conv_height_ * ch.conv_width_});
+      CopyDataToFrom(&grad_b, dy, grad_b.Size(), 0, num * grad_b.Size());
+      dW += Mult(grad_b, col_data.T());
+    }
+   dW.Reshape(w_shape);
+   return dW;
+};
+
+Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandles ch){
+    CHECK_EQ(dy.device()->lang(), kCpp);
+    
+    CHECK(dy.shape(1) == ch.num_filters_ && dy.shape(2) == ch.conv_height_ &&
+    dy.shape(3) == ch.conv_width_) << "input gradients shape should not change";
+	
+	CHECK(b.shape(0) == ch.num_filters_)<< "bias shape should not change";
+
+    Tensor db;
+    db.ResetLike(b);
+
+    auto tmpshp = Shape{ch.batchsize * ch.num_filters_, dy.Size() / (ch.batchsize * ch.num_filters_)};
+    Tensor tmp1 = Reshape(dy, tmpshp);
+
+    Tensor tmp2(Shape{ch.batchsize * ch.num_filters_});
+    SumColumns(tmp1, &tmp2);
+    Tensor tmp3 = Reshape(tmp2, Shape{ch.batchsize, ch.num_filters_});
+
+    SumRows(tmp3, &db);
+
+    return db;
+};
+
+Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandles cch){
 	CHECK_EQ(x.device()->lang(), kCuda);
 
     DataType dtype = x.data_type();
     auto dev = x.device();
 
-    Shape shape{r.batchsize, r.num_filters_, r.conv_height_, r.conv_width_};
+    Shape shape{cch.batchsize, cch.num_filters_, cch.conv_height_, cch.conv_width_};
     Tensor output(shape, dev, dtype);
 
     output.device()->Exec([output, x, W, cch](Context *ctx) {
@@ -355,7 +290,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const R
                                 cch.y_desc_, outblock->mutable_data());
     }, {x.block(), W.block()}, {output.block()}, cch.workspace_.block());
 
-    if (r.bias_term_) {
+    if (cch.bias_term_) {
         output.device()->Exec([output, b, cch](Context *ctx) {
             float beta = 1.f, alpha = 1.0f;
             Block *outblock = output.block(), *bblock = b.block();
