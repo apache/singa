@@ -107,7 +107,7 @@ void traverse_next(const Tensor& x,
 };
 
 template <typename DType>
-void TraverseUnary(const Tensor &in, Tensor* out, std::function<DType(DType)> func) {
+void traverse_unary(const Tensor &in, Tensor* out, std::function<DType(DType)> func) {
   DType *outPtr = static_cast<DType *>(out->block()->mutable_data());
   const DType *inPtr = static_cast<const DType *>(in.block()->data());
   vector<int> traversal_info = generate_traversal_info(in);
@@ -120,7 +120,7 @@ void TraverseUnary(const Tensor &in, Tensor* out, std::function<DType(DType)> fu
 }
 
 template <typename DType>
-void TraverseBinary(const Tensor &in1, const Tensor &in2, Tensor* out,
+void traverse_binary(const Tensor &in1, const Tensor &in2, Tensor* out,
                     std::function<DType(DType, DType)> func) {
   DType *outPtr = static_cast<DType *>(out->block()->mutable_data());
   const DType *in1Ptr = static_cast<const DType *>(in1.block()->data());
@@ -146,7 +146,7 @@ void TraverseBinary(const Tensor &in1, const Tensor &in2, Tensor* out,
 
 template <>
 void Abs<float, lang::Cpp>(const Tensor& in, Tensor* out, Context *ctx) {
-  TraverseUnary<float>(in, out, [](float x) {return fabs(x);});
+  traverse_unary<float>(in, out, [](float x) {return fabs(x);});
 }
 
 template <>
@@ -154,7 +154,7 @@ void Add<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out, Context
   auto add_lambda = [&x](float a) {
     return (a + x);
   };
-  TraverseUnary<float>(in, out, add_lambda);
+  traverse_unary<float>(in, out, add_lambda);
 }
 
 template <>
@@ -163,7 +163,7 @@ void Add<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out, Co
   auto add_lambda_binary = [](float a, float b) {
     return (a + b);
   };
-  TraverseBinary<float>(in1, in2, out, add_lambda_binary);
+  traverse_binary<float>(in1, in2, out, add_lambda_binary);
 
 }
 
@@ -176,7 +176,7 @@ void Clamp<float, lang::Cpp>(const float low, const float high,
     else if (a > high) {return high;}
     else {return a;}
   };
-  TraverseUnary<float>(in, out, clamp_lambda);
+  traverse_unary<float>(in, out, clamp_lambda);
 }
 
 template <>
@@ -219,7 +219,7 @@ void EltwiseMult<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
   auto eltwisemult_lambda = [&x](float a) {
     return (a * x);
   };
-  TraverseUnary<float>(in, out, eltwisemult_lambda);
+  traverse_unary<float>(in, out, eltwisemult_lambda);
 }
 
 template <>
@@ -228,12 +228,12 @@ void EltwiseMult<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor*
   auto eltwisemult_lambda_binary = [](float a, float b) {
     return (a * b);
   };
-  TraverseBinary<float>(in1, in2, out, eltwisemult_lambda_binary);
+  traverse_binary<float>(in1, in2, out, eltwisemult_lambda_binary);
 }
 
 template <>
 void Exp<float, lang::Cpp>(const Tensor& in, Tensor *out, Context *ctx) {
-  TraverseUnary<float>(in, out, [](float x) {return exp(x);});
+  traverse_unary<float>(in, out, [](float x) {return exp(x);});
 }
 
 template <>
@@ -242,7 +242,7 @@ void GE<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
   auto ge_lambda = [&x](float a) {
     return (a >= x) ? 1.f : 0.f;
   };
-  TraverseUnary<float>(in, out, ge_lambda);
+  traverse_unary<float>(in, out, ge_lambda);
 }
 
 template <>
@@ -251,7 +251,7 @@ void GE<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
   auto ge_lambda_binary = [](float a, float b) {
     return (a >= b) ? 1.f : 0.f;
   };
-  TraverseBinary<float>(in1, in2, out, ge_lambda_binary);
+  traverse_binary<float>(in1, in2, out, ge_lambda_binary);
 }
 
 template <>
@@ -260,7 +260,7 @@ void GT<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
   auto gt_lambda = [&x](float a) {
     return (a > x) ? 1.f : 0.f;
   };
-  TraverseUnary<float>(in, out, gt_lambda);
+  traverse_unary<float>(in, out, gt_lambda);
 }
 
 template <>
@@ -269,7 +269,7 @@ void GT<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
   auto gt_lambda_binary = [](float a, float b) {
     return (a > b) ? 1.f : 0.f;
   };
-  TraverseBinary<float>(in1, in2, out, gt_lambda_binary);
+  traverse_binary<float>(in1, in2, out, gt_lambda_binary);
 }
 
 template <>
@@ -278,7 +278,7 @@ void LE<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
   auto le_lambda = [&x](float a) {
     return (a <= x) ? 1.f : 0.f;
   };
-  TraverseUnary<float>(in, out, le_lambda);
+  traverse_unary<float>(in, out, le_lambda);
 }
 
 template <>
@@ -287,7 +287,7 @@ void LE<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
   auto le_lambda_binary = [](float a, float b) {
     return (a <= b) ? 1.f : 0.f;
   };
-  TraverseBinary<float>(in1, in2, out, le_lambda_binary);
+  traverse_binary<float>(in1, in2, out, le_lambda_binary);
 }
 
 template <>
@@ -311,7 +311,7 @@ void LT<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
   auto lt_lambda = [&x](float a) {
     return (a < x) ? 1.f : 0.f;
   };
-  TraverseUnary<float>(in, out, lt_lambda);
+  traverse_unary<float>(in, out, lt_lambda);
 }
 
 
@@ -321,12 +321,12 @@ void LT<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
   auto lt_lambda_binary = [](float a, float b) {
     return (a < b) ? 1.f : 0.f;
   };
-  TraverseBinary<float>(in1, in2, out, lt_lambda_binary);
+  traverse_binary<float>(in1, in2, out, lt_lambda_binary);
 }
 
 template <>
 void Pow<float, lang::Cpp>(const Tensor& in, const float x, Tensor *out, Context *ctx) {
-  TraverseUnary<float>(in, out, [x](float y) {return pow(y, x);});
+  traverse_unary<float>(in, out, [x](float y) {return pow(y, x);});
 }
 
 template <>
@@ -335,7 +335,7 @@ void Pow<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
   auto pow_lambda_binary = [](float a, float b) {
     return pow(a, b);
   };
-  TraverseBinary<float>(in1, in2, out, pow_lambda_binary);
+  traverse_binary<float>(in1, in2, out, pow_lambda_binary);
 }
 
 template <>
@@ -344,7 +344,7 @@ void ReLU<float, lang::Cpp>(const Tensor& in, Tensor* out,
   auto relu_lambda = [](float a) {
     return (a >= 0.f) ? a : 0.f;
   };
-  TraverseUnary<float>(in, out, relu_lambda);
+  traverse_unary<float>(in, out, relu_lambda);
 }
 
 template <>
@@ -367,7 +367,7 @@ void Sigmoid<float, lang::Cpp>(const Tensor& in, Tensor* out,
   auto sigmoid_lambda = [](float a) {
     return 1.f / (1.f + exp(-a));
   };
-  TraverseUnary<float>(in, out, sigmoid_lambda);
+  traverse_unary<float>(in, out, sigmoid_lambda);
 }
 
 template <>
@@ -376,7 +376,7 @@ void Sign<float, lang::Cpp>(const Tensor& in, Tensor* out,
   auto sign_lambda = [](float a) {
     return (a > 0) - (a < 0);
   };
-  TraverseUnary<float>(in, out, sign_lambda);
+  traverse_unary<float>(in, out, sign_lambda);
 }
 
 template <>
@@ -401,7 +401,7 @@ void Sub<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
   auto sub_lambda_binary = [](float a, float b) {
     return (a - b);
   };
-  TraverseBinary<float>(in1, in2, out, sub_lambda_binary);
+  traverse_binary<float>(in1, in2, out, sub_lambda_binary);
 }
 
 // sum all elements of input into out
@@ -423,7 +423,21 @@ void Tanh<float, lang::Cpp>(const Tensor& in, Tensor* out,
   auto tanh_lambda = [](float a) {
     return tanh(a);
   };
-  TraverseUnary<float>(in, out, tanh_lambda);
+  traverse_unary<float>(in, out, tanh_lambda);
+}
+
+template <>
+void Transform<float, lang::Cpp>(const Tensor& in, Tensor* out,
+                            Context *ctx) {
+  float *outPtr = static_cast<float *>(out->block()->mutable_data());
+  const float *inPtr = static_cast<const float *>(in.block()->data());
+  vector<int> traversal_info = generate_traversal_info(in);
+  vector<int> shape_multipliers = generate_shape_multipliers(in);
+
+  for (size_t i = 0; i < in.Size(); i++) {
+    outPtr[i] = inPtr[traversal_info[in.shape().size()]];
+    traverse_next(in, shape_multipliers, traversal_info, i + 1);
+  }
 }
 
 template <>
