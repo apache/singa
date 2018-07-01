@@ -124,61 +124,41 @@ void Tensor::ResetLike(const Tensor &in) {
   strides_ = in.strides_;
 }
 
-Tensor Tensor::Reshape(const Shape &shape) {
-  if (strides_.size() == 0)
-    strides_.push_back(1);
+// if tensor is not transposed yet i.e strides == 1,
+// then we simply change the shape and generate new default strides
+// if tensor is already transposed i.e strides != 1,
+// it should be copied to a new tensor with newly generated default strides
+// TODO(wangwei) raise error if the shape not match
 
-  if (Product(shape_) != Product(shape)) {
-    if (block_ != nullptr && block_->DecRefCount() == 0)
-      device_->FreeBlock(block_);
-    block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-    shape_ = shape;
-    generate_strides();
-    return *this;
+// void Tensor::Reshape(const Shape &shape) {
+//   if (strides_.size() == 0)
+//     strides_.push_back(1);
 
-  } else if (transpose()) {
-    Tensor t(shape_, device_, data_type_);
-    t.block_ = t.device()->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-    singa::Transform(*this, &t);
-    t.shape_ = shape;
-    return t;
- }
+//   if (Product(shape_) != Product(shape)) {
+//     if (block_ != nullptr && block_->DecRefCount() == 0)
+//       device_->FreeBlock(block_);
+//     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+//   } else if (transpose()) {
+//     LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
+//   }
+//   shape_ = shape;
+//   generate_strides();
+// }
 
-  shape_ = shape;
-  generate_strides();
-  Tensor t(shape, device_, data_type_);
-  t.block_ = block_;
-  t.block_->IncRefCount();
-  return t;
-}
+// void Tensor::Reshape(Shape &&shape) {
+//   if (strides_.size() == 0)
+//     strides_.push_back(1);
 
-Tensor Tensor::Reshape(Shape &&shape) {
-  if (strides_.size() == 0)
-    strides_.push_back(1);
-
-  if (Product(shape_) != Product(shape)) {
-    if (block_ != nullptr && block_->DecRefCount() == 0)
-      device_->FreeBlock(block_);
-    block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-    shape_ = std::move(shape);
-    generate_strides();
-    return *this;
-
-  } else if (transpose()) {
-    Tensor t(shape_, device_, data_type_);
-    t.block_ = t.device()->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-    singa::Transform(*this, &t);
-    t.shape_ = shape;
-    return t;
- }
-
-  shape_ = shape;
-  generate_strides();
-  Tensor t(shape, device_, data_type_);
-  t.block_ = block_;
-  t.block_->IncRefCount();
-  return t;
-}
+//   if (Product(shape_) != Product(shape)) {
+//     if (block_ != nullptr && block_->DecRefCount() == 0)
+//       device_->FreeBlock(block_);
+//     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+//   } else if (transpose()) {
+//     LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
+//   }
+//   shape_ = std::move(shape);
+//   generate_strides();
+// }
 
 void Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
@@ -356,15 +336,6 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
   }
 }
 
-Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
-  if (device == nullptr) device = device_;
-  Tensor t(shape_, device_, data_type_);
-  //t.transpose_ = transpose_;
-  t.strides_ = strides_;
-  t.CopyData(*this);
-  return t;
-}
-
 Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> device) {
   if (device == nullptr) device = device_;
   vector<size_t> tshape;
@@ -407,7 +378,15 @@ Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> 
   return t;
 }
 
-//yisen todo
+Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
+  if (device == nullptr) device = device_;
+  Tensor t(shape_, device_, data_type_);
+  //t.transpose_ = transpose_;
+  t.strides_ = strides_;
+  t.CopyData(*this);
+  return t;
+}
+
 Tensor Tensor::T() const {
   // this function only works for 2d tensors
   CHECK_EQ(shape_.size(), 2u);
@@ -494,18 +473,17 @@ Tensor &Tensor::operator=(Tensor &&in) {
   return *this;
 }
 
-//yisen todo
-Tensor Reshape(const Tensor &in, const Shape &s) {
-  Tensor out(in);
-  out = out.Reshape(s);
-  return out;
-}
+// Tensor Reshape(const Tensor &in, const Shape &s) {
+//   // Tensor out(in);
+//   // out.Reshape(s);
+//   return out;
+// }
 
-Tensor Reshape(const Tensor &in, Shape &&s) {
-  Tensor out(in);
-  out = out.Reshape(std::move(s));
-  return out;
-}
+// Tensor Reshape(const Tensor &in, Shape &&s) {
+//   // Tensor out(in);
+//   // out.Reshape(std::move(s));
+//   return out;
+// }
 
 #define GenUnaryTensorArgMemberFn(op, fn) \
   Tensor &Tensor::op(const Tensor &in) {  \
@@ -753,7 +731,6 @@ GenUnaryTensorFn(Sign);
 GenUnaryTensorFn(Sqrt);
 GenUnaryTensorFn(Square);
 GenUnaryTensorFn(Tanh);
-GenUnaryTensorFn(Transform);
 
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                            \
   do {                                                                      \

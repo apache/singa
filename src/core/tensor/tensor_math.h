@@ -258,6 +258,7 @@ template <typename DType, typename Lang>
 void Transform(const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Transform Not Implemented";
 }
+
 // **************************************
 // Random functions
 // **************************************

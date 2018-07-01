@@ -133,8 +133,8 @@ class Tensor {
   size_t MemSize() const { return block_->size(); }
 
   /// Reset the tensor shape, it may reallocate block, if MemSize() changes.
-  // void Reshape(const Shape &shape);
-  // void Reshape(Shape &&shape);
+  Tensor Reshape(const Shape &shape);
+  Tensor Reshape(Shape &&shape);
 
   /// Reset the shape, device, and data type as given tensor.
   /// If block size changes, then reallocate a new block.
@@ -190,10 +190,6 @@ class Tensor {
 
   /// Change the axes
   Tensor Transpose(const vector<size_t> &axes) const;
-
-  Tensor Reshape(const Shape &shape);
-
-  Tensor Reshape(Shape &&shape);
 
   /// Copy the meta info with data block shared.
   Tensor &operator=(const Tensor &in);
@@ -309,7 +305,6 @@ Tensor Sign(const Tensor &in);
 Tensor Sqrt(const Tensor &in);
 Tensor Square(const Tensor &in);
 Tensor Tanh(const Tensor &in);
-Tensor Transform(const Tensor &in);
 
 void Abs(const Tensor &in, Tensor *out);
 void Exp(const Tensor &in, Tensor *out);
@@ -320,7 +315,6 @@ void Sign(const Tensor &in, Tensor *out);
 void Sqrt(const Tensor &in, Tensor *out);
 void Square(const Tensor &in, Tensor *out);
 void Tanh(const Tensor &in, Tensor *out);
-void Transform(const Tensor &in, Tensor *out);
 
 /// Element-wise opeartion, out[i]=in[i]^x
 template <typename SType>

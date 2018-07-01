@@ -427,20 +427,6 @@ void Tanh<float, lang::Cpp>(const Tensor& in, Tensor* out,
 }
 
 template <>
-void Transform<float, lang::Cpp>(const Tensor& in, Tensor* out,
-                            Context *ctx) {
-  float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  const float *inPtr = static_cast<const float *>(in.block()->data());
-  vector<int> traversal_info = generate_traversal_info(in);
-  vector<int> shape_multipliers = generate_shape_multipliers(in);
-
-  for (size_t i = 0; i < in.Size(); i++) {
-    outPtr[i] = inPtr[traversal_info[in.shape().size()]];
-    traverse_next(in, shape_multipliers, traversal_info, i + 1);
-  }
-}
-
-template <>
 void Bernoulli<float, lang::Cpp>(const float p, Tensor* out,
                                  Context *ctx) {
   std::bernoulli_distribution distribution(p);
