@@ -129,3 +129,34 @@ TEST(TensorClass, T) {
   EXPECT_EQ(t.shape()[1],  o.shape()[0]);
 }
 
+TEST(TensorClass, Repeat) {
+  float data[] = {1.0f, 2.0f, 3.0f};
+  Tensor t(Shape{3});
+  t.CopyDataFromHostPtr(data, 3);
+
+  Tensor o = t.Repeat(vector <size_t>{2},9999);
+  const float* dptr = static_cast<const float*>(o.block()->data());
+  EXPECT_FLOAT_EQ(1.0f, dptr[0]);
+  EXPECT_FLOAT_EQ(1.0f, dptr[1]);
+  EXPECT_FLOAT_EQ(2.0f, dptr[2]);
+  EXPECT_FLOAT_EQ(2.0f, dptr[3]);
+  EXPECT_FLOAT_EQ(3.0f, dptr[4]);
+  EXPECT_FLOAT_EQ(3.0f, dptr[5]);
+}
+
+TEST(TensorCLass, RepeatData) {
+  float data[] = {1.0f, 2.0f, 3.0f};
+  Tensor t(Shape{3});
+  t.CopyDataFromHostPtr(data, 3);
+
+  Tensor o(Shape{6});
+  o.RepeatData({2},9999,2,t);
+  const float* dptr = static_cast<const float*>(o.block()->data());
+  EXPECT_FLOAT_EQ(1.0f, dptr[0]);
+  EXPECT_FLOAT_EQ(1.0f, dptr[1]);
+  EXPECT_FLOAT_EQ(2.0f, dptr[2]);
+  EXPECT_FLOAT_EQ(2.0f, dptr[3]);
+  EXPECT_FLOAT_EQ(3.0f, dptr[4]);
+  EXPECT_FLOAT_EQ(3.0f, dptr[5]);
+}
+

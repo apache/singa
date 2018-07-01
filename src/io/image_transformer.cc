@@ -229,7 +229,7 @@ namespace singa {
             }
           }
         }
-        output.Reshape(Shape{channel, crop_height, crop_width});
+        output = Reshape(output, Shape{channel, crop_height, crop_width});
         output.CopyDataFromHostPtr<float>(out, crop_height * crop_width * channel);
         delete[] out;
       } else if (image_dim_order == "HWC") {
@@ -247,7 +247,7 @@ namespace singa {
             }
           }
         }
-        output.Reshape(Shape{crop_height, crop_width, channel});
+        output = Reshape(output, Shape{crop_height, crop_width, channel});
         output.CopyDataFromHostPtr<float>(out, crop_height * crop_width * channel);
         delete[] out;
       } else {
@@ -266,7 +266,7 @@ namespace singa {
           out[out_idx] = in[in_idx];
         }
       }
-      output.Reshape(Shape{crop_height, crop_width});
+      output = Reshape(output, Shape{crop_height, crop_width});
       output.CopyDataFromHostPtr<float>(out, crop_height * crop_width);
       delete[] out;
     }
@@ -304,7 +304,7 @@ namespace singa {
             }
           }
         }
-        output.Reshape(Shape{channel, height, width});
+        output = Reshape(output, Shape{channel, height, width});
         output.CopyDataFromHostPtr<float>(out, height * width * channel);
         delete[] out;
       } else if (image_dim_order == "HWC") {
@@ -325,7 +325,7 @@ namespace singa {
             }
           }
         }
-        output.Reshape(Shape{height, width, channel});
+        output = Reshape(output, Shape{height, width, channel});
         output.CopyDataFromHostPtr<float>(out, height * width * channel);
         delete[] out;
       } else {
@@ -347,7 +347,7 @@ namespace singa {
           out[out_idx] = in[in_idx];
         }
       }
-      output.Reshape(Shape{height, width});
+      output = Reshape(output, Shape{height, width});
       output.CopyDataFromHostPtr<float>(out, height * width);
       delete[] out;
     }

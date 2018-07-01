@@ -100,11 +100,13 @@ namespace singa{
     const DataType data_type() const;
     const std::vector<size_t> &shape() const;
     const size_t shape(size_t idx) const;
-    size_t nDim() const;
     bool transpose() const;
+    size_t nDim() const;
+    Tensor Transpose() const;
+    Tensor Transpose(const std::vector<size_t> &axes) const;
     size_t Size() const;
     size_t MemSize() const;
-    void Reshape(const std::vector<size_t> &shape);
+    Tensor Reshape(const std::vector<size_t> &shape);
     void ResetLike(const Tensor &t);
     void AsType(DataType type);
     void ToDevice(std::shared_ptr<singa::Device> dev);
@@ -119,8 +121,11 @@ namespace singa{
     %template(CopyIntDataFromHostPtr) CopyDataFromHostPtr<int>;
 
     void CopyData(const Tensor &other);
+    void RepeatData(std::vector<size_t> repeats, int axis, int total_repeats, const Tensor &src);
     Tensor Clone() const;
+    Tensor Repeat(std::vector<size_t> repeats, int axis);
     Tensor T() const;
+
 
 #if USE_JAVA
     %rename(iAdd) operator+=(const Tensor &t);
@@ -156,6 +161,9 @@ namespace singa{
 
   void CopyDataToFrom(Tensor *dst, const Tensor &src, size_t num,
                       size_t src_offset = 0, size_t dst_offset = 0);
+
+  void RepeatDataToFrom(bool broadcast_flag, std::vector<size_t> repeats, int axis, 
+                        Tensor *dst, const Tensor &src, const size_t num);
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
 

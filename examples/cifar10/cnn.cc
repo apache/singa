@@ -144,7 +144,7 @@ void Train(int num_epoch, string data_dir) {
     auto train = data.ReadTrainData();
     size_t nsamples = train.first.shape(0);
     auto mtrain =
-        Reshape(train.first, Shape{nsamples, train.first.Size() / nsamples});
+         Reshape(train.first, Shape{nsamples, train.first.Size() / nsamples});
     const Tensor& mean = Average(mtrain, 0);
     SubRow(mean, &mtrain);
     train_x = Reshape(mtrain, train.first.shape());

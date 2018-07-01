@@ -22,6 +22,8 @@
 #include "./tensor_math_opencl.h"
 #include <utility>
 
+#define Noaxis 9999
+
 namespace singa {
 
 Tensor::~Tensor() {
@@ -215,6 +217,20 @@ void Tensor::CopyData(const Tensor &src) {
   }
 }
 
+void Tensor::RepeatData(vector<size_t> repeats, int axis, int total_repeats, const Tensor &src) {
+  if(repeats.size() == 1) {
+    CHECK_EQ(Size(), src.Size()*total_repeats);
+  } else {
+    CHECK_EQ(Size(), src.Size()*total_repeats/src.shape()[axis]);
+  }
+
+  CHECK(block_ != nullptr);
+  // Do repeat only if the src's block is already initialized.
+  if (src.block_ != nullptr) {
+    singa::RepeatDataToFrom(false, repeats, axis, this, src, Size());
+  }
+}
+
 void Tensor::FromProto(const singa::TensorProto &proto) {
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
@@ -320,6 +336,48 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
   }
 }
 
+Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> device) {
+  if (device == nullptr) device = device_;
+  vector<size_t> tshape;
+  int total_repeats = 0;
+  if (axis == Noaxis) {
+    total_repeats = repeats[0];
+    tshape.push_back(Product(shape_)*total_repeats);
+  } else {
+    if (repeats.size() == 1){
+      total_repeats = repeats[0];
+      for (int i = 0; i < shape_.size(); i++) {
+        if (i == axis) {
+          tshape.push_back(shape_[i] * total_repeats);
+        } else {
+          tshape.push_back(shape_[i]);
+        }
+      }
+    } else {
+      if (repeats.size() != shape_[axis]) {
+        LOG(FATAL) << "the repeats number doesn't match the axis";
+      }
+      for (size_t i = 0; i < shape_[axis]; i++) {
+        if(repeats[i] < 0) {
+          LOG(FATAL) << "the repeats number is less than zero";
+        }
+        total_repeats += repeats[i];
+      }
+      for (int i = 0; i < shape_.size(); i++){
+        if (i == axis) {
+          tshape.push_back(total_repeats);
+        } else{
+          tshape.push_back(shape_[i]);
+        }
+      }
+    }
+  }
+  Tensor t(tshape, device_);
+  //t.strides_.push_back(1);
+  t.RepeatData(repeats, axis, total_repeats, *this);
+  return t;
+}
+
 Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   if (device == nullptr) device = device_;
   Tensor t(shape_, device_, data_type_);
@@ -365,7 +423,7 @@ Tensor Tensor::Transpose() const {
 
 //transpose with axes
 // TODO(wangwei) the shape and axes should match
-Tensor Tensor::Transpose(const vector<size_t>& axes) const {
+Tensor Tensor::Transpose(const vector<size_t> &axes) const {
   // if(axes.size() != shape_.size()){
   //   std::cout << "Warning: Size of input axes doesn't match size of shape" << std::endl;
   //   return void();
@@ -480,6 +538,65 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
     src_dev->CopyDataToFrom(to, from, nBytes, direct, (int)d_offset, (int)s_offset);
   }
 }
+
+void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis, 
+                      Tensor *dst, const Tensor &src, const size_t num) {
+  if (repeats.size() == 1) {
+    broadcast_flag = true;
+  } else if (repeats.size() > 1) {
+    if (axis == Noaxis) {
+      LOG(FATAL) << "When repeats parameter is sequence, axis cannot be None";
+    }
+  }
+  for (size_t i = 0; i < repeats.size(); i++){
+    CHECK_GE(repeats[i], 0);
+  }
+  auto width = SizeOf(src.data_type());
+  CHECK_EQ(width, SizeOf(dst->data_type()));
+  // size_t nBytes = num * width;
+  int chunk = width;
+  int axis_shape = 1;
+  int shape_outer = 1;
+  if (axis == Noaxis){
+    axis_shape = 1;
+    shape_outer = Product(src.shape());
+  } else {
+    for (size_t i = 0; i < axis; i++) {
+      shape_outer *= src.shape()[i];
+    }
+    axis_shape = src.shape()[axis];
+    for(size_t i = axis + 1; i < src.nDim(); i++) {
+      chunk *= src.shape()[i];
+    }
+  }
+  int dst_offset = 0;
+  int src_offset = 0;
+  std::shared_ptr<Device> src_dev = src.device(), dst_dev = dst->device();
+  Block *from = src.block(), *to = dst->block();
+  for (int i = 0; i < shape_outer; i++) {
+    for (int j = 0; j < axis_shape; j++) {
+      int temp = broadcast_flag ? repeats[0] : repeats[j];
+      for (int k = 0; k < temp; k++) {
+        if (dst_dev->lang() != src_dev->lang()) {
+          // let the none cpp device conduct copy op
+          if (dst_dev->lang() == kCpp) {
+            src_dev->CopyDataToFrom(to, from, chunk, kDeviceToHost, dst_offset, src_offset);
+          } else if (src_dev->lang() == kCpp) {
+            dst_dev->CopyDataToFrom(to, from, chunk, kHostToDevice, dst_offset, src_offset);
+          } else {
+            LOG(FATAL) << "Not support mem repeat copy betwee Cuda and OpenCL device";
+          }
+        } else {
+          auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
+          src_dev->CopyDataToFrom(to, from, chunk, direct, dst_offset, src_offset);
+        }
+        dst_offset += chunk;
+      }
+      src_offset += chunk;
+    }
+  }
+}
+
 //============================================================================
 /// typedef DType accroding to type value.
 /// DType would be used in the code block __VA_ARGS__.
@@ -576,6 +693,7 @@ void Tensor::SetValue(const SType x) {
   CHECK_EQ(sizeof(SType), SizeOf(data_type_));
   //auto size = Size();
   auto ptr = block_;
+  
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // TODO(wangwei) cast x to DType
     device_->Exec([this, x, ptr](Context * ctx) {
@@ -862,7 +980,7 @@ Tensor ConcatOn(const vector<Tensor> &in, int axis) {
       tmp.push_back(Reshape(t, {t.shape(0), t.Size() / t.shape(0)}));
     }
     auto ret = ConcatenateRows(tmp);
-    ret.Reshape(out_shape);
+    ret = ret.Reshape(out_shape);
     return ret;
   } else {
     for (const auto& t : in) {
@@ -872,7 +990,7 @@ Tensor ConcatOn(const vector<Tensor> &in, int axis) {
       tmp.push_back(Reshape(t, {nrow, t.Size() / nrow}));
     }
     auto ret = ConcatenateColumns(tmp);
-    ret.Reshape(out_shape);
+    ret = ret.Reshape(out_shape);
     return ret;
   }
 }
@@ -956,7 +1074,7 @@ Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis) 
     auto suffix = in.Size() / nrow / in.shape(axis);
     auto ret = SliceColumns(Reshape(in, {nrow, in.Size() / nrow}),
                             start * suffix, end * suffix);
-    ret.Reshape(out_shape);
+    ret = ret.Reshape(out_shape);
     return ret;
   }
 }
