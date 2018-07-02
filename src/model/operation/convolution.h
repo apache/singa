@@ -7,7 +7,7 @@
 
 namespace singa{
 
-struct ConvHandles{
+struct ConvHandle{
     size_t kernel_w_;
     size_t pad_w_;
     size_t stride_w_;
@@ -30,14 +30,14 @@ struct ConvHandles{
     size_t col_width_;
     size_t imagesize;
 
-    ConvHandles(const Tensor &input, const std::vector<size_t> kernel_size, 
+    ConvHandle(const Tensor &input, const std::vector<size_t> kernel_size, 
                     const std::vector<size_t> stride, const std::vector<size_t> padding,
                     const size_t in_channels, const size_t out_channels,
-                    const bool bias_term_);
+                    const bool bias);
 
 };
 
-struct CudnnConvHandles:ConvHandles{
+struct CudnnConvHandle:ConvHandle{
 	cudnnTensorDescriptor_t x_desc_ ;
     cudnnTensorDescriptor_t y_desc_ ;
     cudnnTensorDescriptor_t bias_desc_ ;
@@ -50,29 +50,29 @@ struct CudnnConvHandles:ConvHandles{
     size_t workspace_count_;
     Tensor workspace_;
 
-    CudnnConvHandles(const Tensor &input, const std::vector<size_t> kernel_size, 
+    CudnnConvHandle(const Tensor &input, const std::vector<size_t> kernel_size, 
                     const std::vector<size_t> stride, const std::vector<size_t> padding,
                     const size_t in_channels, const size_t out_channels,
-                    const bool bias_term_, const size_t workspace_byte_limit_=1024*1024*1024,
+                    const bool bias, const size_t workspace_byte_limit_=1024*1024*1024,
                     const std::string prefer_="fastest");
 };
 
-Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandles ch);
+Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &ch);
 
-Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const ConvHandles ch);
+Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const ConvHandle &ch);
 
-Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const ConvHandles ch);
+Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const ConvHandle &ch);
 
-Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandles ch);
+Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch);
 
 
-Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandles cch);
+Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch);
 
-Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandles cch);
+Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandle &cch);
 
-Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const CudnnConvHandles cch);
+Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const CudnnConvHandle &cch);
 
-Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandles cch);
+Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle &cch);
 
 
 }

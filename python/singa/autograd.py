@@ -369,105 +369,6 @@ def ctensor2numpy(x):
     return np_array.reshape(x.shape())
 
 
-class Conv2d(Operation):
-
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True, **kwargs):
-
-        inner_params = {'name': 'Conv2d',
-                        'border_mode': 'same',
-                        'cudnn_prefer': 'fastest',
-                        'workspace_byte_limit': 1024,
-                        'data_format': 'NCHW',
-                        'W_specs': {'init': 'xavier'},
-                        'b_specs': {'init': 'constant'},
-                        'input_sample_shape': None}
-        # TODO valid value of inner_params check
-
-        for kwarg in kwargs:
-            if kwarg not in inner_params:
-                raise TypeError('Keyword argument not understood:', kwarg)
-            else:
-                inner_params[kwarg] = kwargs[kwarg]
-
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.W_specs = inner_params['W_specs']
-        self.b_specs = inner_params['b_specs']
-
-        if isinstance(kernel_size, int):
-            self.kernel_size = (kernel_size, kernel_size)
-        else:
-            self.kernel_size = kernel_size
-
-        if padding == 0:
-            pad = None
-        else:
-            pad = padding
-
-        if dilation != 1 or groups != 1:
-            raise ValueError('Not implemented yet')
-
-        self.PyLayer = layer.Conv2D(inner_params['name'],
-                                    nb_kernels=out_channels,
-                                    kernel=kernel_size,
-                                    stride=stride,
-                                    border_mode=inner_params['border_mode'],
-                                    cudnn_prefer=inner_params['cudnn_prefer'],
-                                    workspace_byte_limit=inner_params[
-                                        'workspace_byte_limit'],
-                                    data_format=inner_params['data_format'],
-                                    use_bias=bias,
-                                    W_specs=self.W_specs,
-                                    b_specs=self.b_specs,
-                                    pad=pad,
-                                    input_sample_shape=inner_params['input_sample_shape'])
-
-    def get_params(self):
-        assert self.init_value is True, 'must initialize before get_params()'
-        if self.bias:
-            return (self.w, self.b)
-        else:
-            return self.w
-
-    def __call__(self, x):
-        if training:
-            self.flag = model_pb2.kTrain
-        else:
-            self.flag = model_pb2.kEval
-
-        if not self.PyLayer.has_setup:
-            self.PyLayer.setup(x.shape[1:])
-
-        param_data = self.PyLayer.layer.param_values()
-
-        if not hasattr(self, 'w'):
-            self.w = Tensor(device=param_data[0].device(), data=param_data[
-                            0], requires_grad=True, stores_grad=True)
-            std = math.sqrt(
-                2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] + self.out_channels))
-            self.w.gaussian(0.0, std)
-
-        xs = [x, self.w]
-
-        if len(param_data) == 2:
-            if not hasattr(self, 'b'):
-                self.b = Tensor(device=param_data[1].device(), data=param_data[
-                                1], requires_grad=True, stores_grad=True)
-                self.b.set_value(0.0)
-
-            xs.append(self.b)
-
-        xs = tuple(xs)
-        return self._do_forward(*xs)[0]
-
-    def forward(self, *xs):
-        return self.PyLayer.layer.Forward(self.flag, xs[0])
-
-    def backward(self, dy):
-        ret = self.PyLayer.layer.Backward(self.flag, dy)
-        return (ret[0],) + ret[1]
-
 class MaxPool2d(Operation):
 
     def __init__(self, kernel_size=3, stride=1, padding=0, dilation=1,
@@ -548,80 +449,11 @@ class Flatten(Operation):
 def flatten(x):
     return Flatten()(x)[0]
 
-class CONV2D(Operation):
-    '''def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True, **kwargs):
 
-        self.in_channels = in_channels
-        self.out_channels = out_channels
+class _Conv2D(Operation):
 
-        if isinstance(kernel_size, int):
-            self.kernel_size = (kernel_size, kernel_size)
-        elif isinstance(kernel_size, tuple):
-            self.kernel_size = kernel_size
-        else:
-            raise TypeError('Wrong kernel_size type.')
-        
-        if isinstance(stride, int):
-            self.stride = (stride,stride)
-        elif isinstance(stride, tuple):
-            self.stride = stride
-        else:
-            raise TypeError('Wrong stride type.')
-
-        if isinstance(padding, int):
-            self.padding = (padding,padding)
-        elif isinstance(padding, tuple):
-            self.padding = padding
-        else:
-            raise TypeError('Wrong padding type.')
-
-        if dilation != 1 or groups != 1:
-            raise ValueError('Not implemented yet')
-
-        self.bias = bias
-
-        self.inner_params = {'cudnn_prefer': 'fastest', 'workspace_MB_limit': 1024}
-        # TODO valid value of inner_params check
-
-        for kwarg in kwargs:
-            if kwarg not in self.inner_params:
-                raise TypeError('Keyword argument not understood:', kwarg)
-            else:
-                self.inner_params[kwarg] = kwargs[kwarg]
-        
-        w_shape = (self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1])
-        self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
-        std = math.sqrt(
-                2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] + self.out_channels))
-        self.W.gaussian(0.0, std)
-
-        if self.bias:
-            b_shape = (self.out_channels,)
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
-        else:
-            #to keep consistency when to do forward.
-            self.b = Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
-
-    def __call__(self, x): 
-        if not hasattr(self, 'device_id'):
-            self.device_id = x.device.id()
-        else:
-            assert self.device_id == x.device.id(),'Not the same device.'
-
-        if self.W.device.id() != self.device_id:
-            self.W.to_device(x.device)
-
-        if self.bias:
-            if self.b.device.id() != self.device_id:
-                self.b.to_device(x.device)
-
-    	xs = [x, self.W, self.b]
-
-    	return self._do_forward(*xs)[0]'''
-    def __init__(self, handles):
-        self.handles = handles
+    def __init__(self, handle):
+        self.handle = handle
 
     def forward(self, x, W, b):
         #assert x.nDim() == 4, 'The dimensions of input should be 4D.'
@@ -631,39 +463,46 @@ class CONV2D(Operation):
         #assert 0 == 0, 'invalid padding'
 
         if training:
-            self.inputs = (x,W,b)
+            self.inputs = (x, W, b)
 
-        if self.handles.device_id == -1:
-            return singa.CpuConvForward(x, W, b, self.handles)
+        if self.handle.device_id == -1:
+            return singa.CpuConvForward(x, W, b, self.handle)
 
         else:
-            return singa.GpuConvForward(x, W, b, self.handles)
+            return singa.GpuConvForward(x, W, b, self.handle)
 
     def backward(self, dy):
-        assert training is True and hasattr(self, 'inputs'), 'Please set training as True before do BP. '
+        assert training is True and hasattr(
+            self, 'inputs'), 'Please set training as True before do BP. '
 
-        if dy.device().id() != self.handles.device_id:
-            dy.ToDevice(self.x.device())
+        if dy.device().id() != self.handle.device_id:
+            dy.ToDevice(self.inputs[0].device())
 
-        if self.handles.device_id == -1: 
-            dx = singa.CpuConvBackwardx(dy, self.inputs[1], self.inputs[0], self.handles)
-            dW = singa.CpuConvBackwardW(dy, self.inputs[0], self.inputs[1], self.handles)
-            if self.handles.bias:
-                db = singa.CpuConvBackwardb(dy, self.inputs[2], self.handles)
+        if self.handle.device_id == -1:
+            dx = singa.CpuConvBackwardx(
+                dy, self.inputs[1], self.inputs[0], self.handle)
+            dW = singa.CpuConvBackwardW(
+                dy, self.inputs[0], self.inputs[1], self.handle)
+            if self.handle.bias_term_:
+                db = singa.CpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
             else:
-                return dx, dW
+                return dx, dW, None
         else:
-            dx = singa.GpuConvBackwardx(dy, self.inputs[1], self.inputs[0], self.handles)
-            dW = singa.GpuConvBackwardW(dy, self.inputs[0], self.inputs[1], self.handles)
-            if self.handles.bias:
-                db = singa.GpuConvBackwardb(dy, self.inputs[2], self.handles)
+            dx = singa.GpuConvBackwardx(
+                dy, self.inputs[1], self.inputs[0], self.handle)
+            dW = singa.GpuConvBackwardW(
+                dy, self.inputs[0], self.inputs[1], self.handle)
+            if self.handle.bias_term_:
+                db = singa.GpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
             else:
-                return dx, dW
+                return dx, dW, None
 
-def conv2d(x,W,b,handles):
-    return CONV2D(handles)(x,W,b)[0]
+
+def conv2d(x, W, b, handle):
+    return _Conv2D(handle)(x, W, b)[0]
+
 
 def infer_dependency(op):
     '''
@@ -776,27 +615,33 @@ def backward(y, dy=None):
 
     return gradients
 
-class newlayer(object):
+
+class NewLayer(object):
+
     def __init__(self):
         pass
 
-    def device_check(*inputs):
-        pass
+    def device_check(self, *inputs):
+        x_device = inputs[0].device
+        for var in inputs:
+            if var.device.id() != x_device:
+                var.to_device(x_device)
 
 
-class Linear(newlayer):
+class Linear(NewLayer):
+
     def __init__(self, in_features, out_features, bias=True):
         #self.in_features = in_features
         #self.out_features = out_features
         w_shape = (in_features, out_features)
         b_shape = (1, out_features)
         self.bias = bias
-        
+
         self.W = Tensor(shape=w_shape,
                         requires_grad=True, stores_grad=True)
         std = math.sqrt(2.0 / (in_features + out_features))
         self.W.gaussian(0.0, std)
-        
+
         if self.bias:
             self.b = Tensor(shape=b_shape,
                             requires_grad=True, stores_grad=True)
@@ -812,7 +657,9 @@ class Linear(newlayer):
             y = add_bias(y, self.b, axis=0)
         return y
 
-class Conv2D(newlayer):
+
+class Conv2D(NewLayer):
+
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=True, **kwargs):
 
@@ -825,16 +672,16 @@ class Conv2D(newlayer):
             self.kernel_size = kernel_size
         else:
             raise TypeError('Wrong kernel_size type.')
-        
+
         if isinstance(stride, int):
-            self.stride = (stride,stride)
+            self.stride = (stride, stride)
         elif isinstance(stride, tuple):
             self.stride = stride
         else:
             raise TypeError('Wrong stride type.')
 
         if isinstance(padding, int):
-            self.padding = (padding,padding)
+            self.padding = (padding, padding)
         elif isinstance(padding, tuple):
             self.padding = padding
         else:
@@ -845,7 +692,8 @@ class Conv2D(newlayer):
 
         self.bias = bias
 
-        self.inner_params = {'cudnn_prefer': 'fastest', 'workspace_MB_limit': 1024}
+        self.inner_params = {'cudnn_prefer': 'fastest',
+                             'workspace_MB_limit': 1024}
         # TODO valid value of inner_params check
 
         for kwarg in kwargs:
@@ -853,46 +701,49 @@ class Conv2D(newlayer):
                 raise TypeError('Keyword argument not understood:', kwarg)
             else:
                 self.inner_params[kwarg] = kwargs[kwarg]
-        
-        w_shape = (self.out_channels, self.in_channels, self.kernel_size[0], self.kernel_size[1])
+
+        w_shape = (self.out_channels, self.in_channels,
+                   self.kernel_size[0], self.kernel_size[1])
         self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
         std = math.sqrt(
-                2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] + self.out_channels))
+            2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] + self.out_channels))
         self.W.gaussian(0.0, std)
 
         if self.bias:
             b_shape = (self.out_channels,)
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+            self.b = Tensor(shape=b_shape, requires_grad=True,
+                            stores_grad=True)
             self.b.set_value(0.0)
         else:
-            #to keep consistency when to do forward.
-            self.b = Tensor(data=CTensor([1]), requires_grad=False, stores_grad=False)
+            # to keep consistency when to do forward.
+            self.b = Tensor(data=CTensor(
+                [1]), requires_grad=False, stores_grad=False)
             self.b.set_value(0.0)
 
     def __call__(self, x):
+        assert x.shape[1] == self.in_channels,'in_channels dismatched'
+        assert (x.shape[2]+2*self.padding[0]-self.kernel_size[0])%self.stride[0] == 0, 'invalid padding or strides.'
+        assert (x.shape[3]+2*self.padding[1]-self.kernel_size[1])%self.stride[1] == 0, 'invalid padding or stride.'
+
         self.device_check(x, self.W, self.b)
 
         if x.device.id() == -1:
-            if not hasattr (self, 'handles'):
-                self.handles = singa.ConvHandles(x.data, self.kernel_size, self.stride,
-                               self.padding, self.in_channels, self.out_channels, self.bias)
-            elif x.shape[0] != self.handles.batchsize:
-                self.handles = singa.ConvHandles(x.data, self.kernel_size, self.stride,
-                               self.padding, self.in_channels, self.out_channels, self.bias)
+            if not hasattr(self, 'handle'):
+                self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
+                                                 self.padding, self.in_channels, self.out_channels, self.bias)
+            elif x.shape[0] != self.handle.batchsize:
+                self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
+                                                 self.padding, self.in_channels, self.out_channels, self.bias)
         else:
-            if not hasattr(self, 'handles'):
-                self.handles = singa.CudnnConvHandles(x.data, self.kernel_size, self.stride,
-                               self.padding, self.in_channels, self.out_channels, self.bias,
-                               self.inner_params['workspace_MB_limit']*1024*1024, self.inner_params['cudnn_prefer'])
-            elif x.shape[0] != self.handles.batchsize:
-                self.handles = singa.CudnnConvHandles(x.data, self.kernel_size, self.stride,
-                               self.padding, self.in_channels, self.out_channels, self.bias,
-                               self.inner_params['workspace_MB_limit']*1024*1024, self.inner_params['cudnn_prefer'])
-        self.handles.device_id= x.device.id()
-        self.handles.bias=self.bias # can simplified
-        y = conv2d(x, self.W, self.b, self.handles)
+            if not hasattr(self, 'handle'):
+                self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
+                                                      self.padding, self.in_channels, self.out_channels, self.bias,
+                                                      self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
+            elif x.shape[0] != self.handle.batchsize:
+                self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
+                                                      self.padding, self.in_channels, self.out_channels, self.bias,
+                                                      self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
+        self.handle.device_id = x.device.id()
+
+        y = conv2d(x, self.W, self.b, self.handle)
         return y
-
-
-
-

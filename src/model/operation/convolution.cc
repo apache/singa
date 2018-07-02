@@ -1,13 +1,13 @@
-#include "./convolution_operation.h"
+#include "./convolution.h"
 #include "../layer/convolution.h"
 #include<iostream>
 
 namespace singa{
 
-ConvHandles::ConvHandles(const Tensor &input, const std::vector<size_t> kernel_size, 
+ConvHandle::ConvHandle(const Tensor &input, const std::vector<size_t> kernel_size, 
 	                const std::vector<size_t> stride, const std::vector<size_t> padding,
 	                const size_t in_channels, const size_t out_channels,
-	                const bool bias_term_){
+	                const bool bias){
     kernel_h_=kernel_size[0];
     kernel_w_=kernel_size[1];
 
@@ -19,6 +19,8 @@ ConvHandles::ConvHandles(const Tensor &input, const std::vector<size_t> kernel_s
 
     channels_=in_channels;
     num_filters_=out_channels;
+
+    bias_term_ = bias;
 
 	batchsize = input.shape(0);
 	CHECK(input.shape(1) == in_channels)<<"the number of input channels mismatched.";
@@ -35,11 +37,11 @@ ConvHandles::ConvHandles(const Tensor &input, const std::vector<size_t> kernel_s
     imagesize = input.Size() / batchsize;
 };	
 
-CudnnConvHandles::CudnnConvHandles(const Tensor &input, const std::vector<size_t> kernel_size, 
+CudnnConvHandle::CudnnConvHandle(const Tensor &input, const std::vector<size_t> kernel_size, 
                     const std::vector<size_t> stride, const std::vector<size_t> padding,
                     const size_t in_channels, const size_t out_channels,const bool bias_term_, 
                     const size_t workspace_byte_limit_,const std::string prefer_)
-                    :ConvHandles(input, kernel_size, stride, padding, in_channels, out_channels, bias_term_){
+                    :ConvHandle(input, kernel_size, stride, padding, in_channels, out_channels, bias_term_){
 
     DataType dtype = input.data_type();
     auto dev = input.device();
@@ -143,7 +145,7 @@ CudnnConvHandles::CudnnConvHandles(const Tensor &input, const std::vector<size_t
 
 Convolution C;
 
-Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandles ch){
+Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &ch){
 	CHECK_EQ(x.device()->lang(), kCpp);
 
 	CHECK(x.shape(1) == ch.channels_ && x.shape(2) == ch.height_ &&
@@ -153,7 +155,9 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandles 
     W.shape(2) == ch.kernel_h_ && W.shape(3) == ch.kernel_w_) << "weights shape should not change";
 
     Shape w_shape= W.shape();
-    Shape b_shape= b.shape();
+    Shape b_shape;
+    if (ch.bias_term_)
+      b_shape= b.shape();
 
     W.Reshape(Shape{ch.num_filters_, ch.col_height_});
     if (ch.bias_term_)
@@ -180,11 +184,12 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandles 
       CopyDataToFrom(&output, each, each.Size(), num * each.Size());
     };
   W.Reshape(w_shape);
-  b.Reshape(b_shape);
+  if (ch.bias_term_)
+    b.Reshape(b_shape);
   return output;
 }; 
 
-Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const ConvHandles ch){
+Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const ConvHandle &ch){
     CHECK_EQ(dy.device()->lang(), kCpp);
     
     CHECK(dy.shape(1) == ch.num_filters_ && dy.shape(2) == ch.conv_height_ &&
@@ -214,7 +219,7 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const Conv
   return dx;
 };
 
-Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const ConvHandles ch){
+Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const ConvHandle &ch){
     CHECK_EQ(dy.device()->lang(), kCpp);
     
     CHECK(dy.shape(1) == ch.num_filters_ && dy.shape(2) == ch.conv_height_ &&
@@ -246,7 +251,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
    return dW;
 };
 
-Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandles ch){
+Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch){
     CHECK_EQ(dy.device()->lang(), kCpp);
     
     CHECK(dy.shape(1) == ch.num_filters_ && dy.shape(2) == ch.conv_height_ &&
@@ -269,7 +274,7 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandles ch)
     return db;
 };
 
-Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandles cch){
+Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch){
 	CHECK_EQ(x.device()->lang(), kCuda);
 
     DataType dtype = x.data_type();
@@ -303,7 +308,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const C
     return output;
 };
 
-Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandles cch){
+Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandle &cch){
     CHECK_EQ(dy.device()->lang(), kCuda);
 
     Tensor dx;
@@ -324,7 +329,7 @@ Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, cons
     return dx;
 };
 
-Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const CudnnConvHandles cch){
+Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const CudnnConvHandle &cch){
     CHECK_EQ(dy.device()->lang(), kCuda);
 
     Tensor dW;
@@ -346,7 +351,7 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
 };
 
 // input Tensor b for Reset db purpose, can avoid this later.
-Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandles cch){
+Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle &cch){
     CHECK_EQ(dy.device()->lang(), kCuda);
 
     Tensor db;

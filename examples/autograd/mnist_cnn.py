@@ -100,7 +100,7 @@ if __name__ == '__main__':
     print('the shape of testing label is', y_test.shape)
 
     # operations initialization
-    conv1 = autograd.Conv2D(1, 32, 3, padding=1)
+    conv1 = autograd.Conv2D(1, 32, 3, padding=1, bias=False)
     conv2 = autograd.Conv2D(32, 32, 3, padding=1)
     linear = autograd.Linear(32 * 28 * 28, 10)
 
