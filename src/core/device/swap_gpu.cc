@@ -891,7 +891,7 @@ void SwapGPU::Test_sched_switch_swap(){
  }
  ///switch flag;
  if (gc == globeCounter){
-  swap_plan();
+  // swap_plan();
   asyncSwapFlag = 1;
   cout<<"switched flag for at "<<globeCounter<<endl;
  }
