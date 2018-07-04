@@ -893,11 +893,11 @@ void SwapGPU::Test_sched_switch_swap(){
  if (gc == globeCounter){
   // swap_plan();
   vector<double>vec_load2(&global_load[location],&global_load[location+3*maxLen]);
-  origin_load2 = vec_load2;
+  origin_load = vec_load2;
   //load before swap, write in
   fstream file_load_origin("load_origin.csv", ios::in|ios::out|ios::app);
-  for (int i=0; i<origin_load2.size(); i++){
-    file_load_origin<<origin_load2[i]<<endl;
+  for (int i=0; i<origin_load.size(); i++){
+    file_load_origin<<origin_load[i]<<endl;
   }
   asyncSwapFlag = 1;
   cout<<"switched flag for at "<<globeCounter<<endl;
