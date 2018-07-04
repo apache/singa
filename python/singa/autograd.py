@@ -463,7 +463,10 @@ class _Conv2D(Operation):
         #assert 0 == 0, 'invalid padding'
 
         if training:
-            self.inputs = (x, W, b)
+            if self.handle.bias_term_:
+                self.inputs = (x, W, b)
+            else:
+                self.inputs = (x, W)
 
         if self.handle.device_id == -1:
             return singa.CpuConvForward(x, W, b, self.handle)
@@ -717,32 +720,33 @@ class Conv2D(NewLayer):
         else:
             # to keep consistency when to do forward.
             self.b = Tensor(data=CTensor(
-                [1]), requires_grad=False, stores_grad=False)
-            self.b.set_value(0.0)
+                []), requires_grad=False, stores_grad=False)
 
     def __call__(self, x):
-        assert x.shape[1] == self.in_channels,'in_channels dismatched'
-        assert (x.shape[2]+2*self.padding[0]-self.kernel_size[0])%self.stride[0] == 0, 'invalid padding or strides.'
-        assert (x.shape[3]+2*self.padding[1]-self.kernel_size[1])%self.stride[1] == 0, 'invalid padding or stride.'
+        assert x.shape[1] == self.in_channels, 'in_channels dismatched'
+        assert (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]
+                ) % self.stride[0] == 0, 'invalid padding or strides.'
+        assert (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]
+                ) % self.stride[1] == 0, 'invalid padding or stride.'
 
         self.device_check(x, self.W, self.b)
 
         if x.device.id() == -1:
             if not hasattr(self, 'handle'):
                 self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
-                                                 self.padding, self.in_channels, self.out_channels, self.bias)
+                                               self.padding, self.in_channels, self.out_channels, self.bias)
             elif x.shape[0] != self.handle.batchsize:
                 self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
-                                                 self.padding, self.in_channels, self.out_channels, self.bias)
+                                               self.padding, self.in_channels, self.out_channels, self.bias)
         else:
             if not hasattr(self, 'handle'):
                 self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                      self.padding, self.in_channels, self.out_channels, self.bias,
-                                                      self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
+                                                    self.padding, self.in_channels, self.out_channels, self.bias,
+                                                    self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
             elif x.shape[0] != self.handle.batchsize:
                 self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                      self.padding, self.in_channels, self.out_channels, self.bias,
-                                                      self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
+                                                    self.padding, self.in_channels, self.out_channels, self.bias,
+                                                    self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
         self.handle.device_id = x.device.id()
 
         y = conv2d(x, self.W, self.b, self.handle)

@@ -46,16 +46,6 @@ class Convolution : public Layer {
 
   void ToDevice(std::shared_ptr<Device> device) override;
 
-  void Im2col(const float* data_im, const int channels, const int height,
-              const int width, const int kernel_h, const int kernel_w,
-              const int pad_h, const int pad_w, const int stride_h,
-              const int stride_w, float* data_col);
-
-  void Col2im(const float* data_col, const int channels, const int height,
-              const int width, const int kernel_h, const int kernel_w,
-              const int pad_h, const int pad_w, const int stride_h,
-              const int stride_w, float* data_im);
-
   const std::vector<Tensor> param_values() override {
     if (bias_term_)
       return std::vector<Tensor>{weight_, bias_};
@@ -97,5 +87,16 @@ class Convolution : public Layer {
   bool bias_term_;
   vector<size_t> out_sample_shape_;
 };
+
+void Im2col(const float* data_im, const int channels, const int height,
+            const int width, const int kernel_h, const int kernel_w,
+            const int pad_h, const int pad_w, const int stride_h,
+            const int stride_w, float* data_col);
+
+void Col2im(const float* data_col, const int channels, const int height,
+            const int width, const int kernel_h, const int kernel_w,
+            const int pad_h, const int pad_w, const int stride_h,
+            const int stride_w, float* data_im);
+            
 }  // namespace singa
 #endif  // SRC_MODEL_LAYER_CONVOLUTION_H_

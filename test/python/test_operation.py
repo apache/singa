@@ -48,7 +48,7 @@ class TestPythonOperation(unittest.TestCase):
 
         # forward without bias
         y_without_bias = conv_without_bias_0(gpu_input_tensor)
-        self.check_shape(y.shape, (2, 1, 2, 2))
+        self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
 
     def test_conv2d_cpu(self):
         # (in_channels, out_channels, kernel_size)
@@ -68,7 +68,7 @@ class TestPythonOperation(unittest.TestCase):
 
         # forward without bias
         y_without_bias = conv_without_bias_1(cpu_input_tensor)
-        self.check_shape(y.shape, (2, 1, 2, 2))
+        self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
 
 if __name__ == '__main__':
     unittest.main()

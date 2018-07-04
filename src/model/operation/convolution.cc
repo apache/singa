@@ -1,10 +1,10 @@
 #include "./convolution.h"
-// #include "../layer/convolution.h"
-#include<iostream>
+#include "../layer/convolution.h"
+
 
 namespace singa {
 
-ConvHandle::ConvHandle(const Tensor &input, const std::vector<size_t> kernel_size,
+ConvHandle::ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                        const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                        const size_t in_channels, const size_t out_channels,
                        const bool bias) {
@@ -37,7 +37,7 @@ ConvHandle::ConvHandle(const Tensor &input, const std::vector<size_t> kernel_siz
   imagesize = input.Size() / batchsize;
 }
 
-// Convolution C;
+
 
 Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &ch) {
   CHECK_EQ(x.device()->lang(), kCpp);
@@ -67,7 +67,7 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &
   float *data_col = new float[ch.col_height_ * ch.col_width_];
   auto in_data = x.data<float>();
   for (size_t num = 0; num < ch.batchsize; num++) {
-    C.Im2col(in_data + num * ch.imagesize, ch.channels_, ch.height_, ch.width_, ch.kernel_h_,
+    Im2col(in_data + num * ch.imagesize, ch.channels_, ch.height_, ch.width_, ch.kernel_h_,
              ch.kernel_w_, ch.pad_h_, ch.pad_w_, ch.stride_h_, ch.stride_w_, data_col);
 
     col_data.CopyDataFromHostPtr(data_col, ch.col_height_ * ch.col_width_);
@@ -105,7 +105,7 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const Conv
     CopyDataToFrom(&grad_b, dy, grad_b.Size(), 0, num * grad_b.Size());
     Tensor dcol_b = Mult(W.T(), grad_b);
     auto dcol_data = dcol_b.data<float>();
-    C.Col2im(dcol_data, ch.channels_, ch.height_, ch.width_, ch.kernel_h_, ch.kernel_w_, ch.pad_h_,
+    Col2im(dcol_data, ch.channels_, ch.height_, ch.width_, ch.kernel_h_, ch.kernel_w_, ch.pad_h_,
              ch.pad_w_, ch.stride_h_, ch.stride_w_, dx_b);
     dx.CopyDataFromHostPtr(dx_b, ch.imagesize, num * ch.imagesize);
   }
@@ -134,7 +134,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
   float *data_col = new float[ch.col_height_ * ch.col_width_];
   auto in_data = dy.data<float>();
   for (size_t num = 0; num < ch.batchsize; num++) {
-    C.Im2col(in_data + num * ch.imagesize, ch.channels_, ch.height_, ch.width_, ch.kernel_h_,
+    Im2col(in_data + num * ch.imagesize, ch.channels_, ch.height_, ch.width_, ch.kernel_h_,
              ch.kernel_w_, ch.pad_h_, ch.pad_w_, ch.stride_h_, ch.stride_w_, data_col);
     col_data.CopyDataFromHostPtr(data_col, ch.col_height_ * ch.col_width_);
     Tensor grad_b(Shape{ch.num_filters_, ch.conv_height_ * ch.conv_width_});
@@ -171,9 +171,9 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch)
 #ifdef USE_CUDNN
 CudnnConvHandle::CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                                  const std::vector<size_t>& stride, const std::vector<size_t>& padding,
-                                 const size_t in_channels, const size_t out_channels, const bool bias_term_,
+                                 const size_t in_channels, const size_t out_channels, const bool bias,
                                  const size_t workspace_byte_limit_, const std::string& prefer_)
-  : ConvHandle(input, kernel_size, stride, padding, in_channels, out_channels, bias_term_) {
+  : ConvHandle(input, kernel_size, stride, padding, in_channels, out_channels, bias) {
 
   DataType dtype = input.data_type();
   auto dev = input.device();
@@ -295,7 +295,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const C
   Shape shape{cch.batchsize, cch.num_filters_, cch.conv_height_, cch.conv_width_};
   Tensor output(shape, dev, dtype);
 
-  output.device()->Exec([output, x, W, cch](Context * ctx) {
+  output.device()->Exec([&output, &x, &W, &cch](Context * ctx) {
     Block *inblock = x.block(), *outblock = output.block(),
            *wblock = W.block();
     float alpha = 1.f, beta = 0.f;
@@ -308,7 +308,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const C
   }, {x.block(), W.block()}, {output.block()}, cch.workspace_.block());
 
   if (cch.bias_term_) {
-    output.device()->Exec([output, b, cch](Context * ctx) {
+    output.device()->Exec([&output, &b, &cch](Context * ctx) {
       float beta = 1.f, alpha = 1.0f;
       Block *outblock = output.block(), *bblock = b.block();
       cudnnAddTensor(ctx->cudnn_handle, &alpha, cch.bias_desc_,
@@ -326,7 +326,7 @@ Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, cons
   Tensor dx;
   dx.ResetLike(x);
 
-  dy.device()->Exec([dx, dy, W, cch](Context * ctx) {
+  dy.device()->Exec([&dx, &dy, &W, &cch](Context * ctx) {
     Block *wblock = W.block(), *dyblock = dy.block(),
            *dxblock = dx.block();
     float alpha = 1.f, beta = 0.f;
@@ -347,7 +347,7 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
   Tensor dW;
   dW.ResetLike(W);
 
-  dy.device()->Exec([dW, dy, x, W, cch](Context * ctx) {
+  dy.device()->Exec([&dW, &dy, &x, &cch](Context * ctx) {
     Block *inblock = x.block(), *dyblock = dy.block(),
            *dwblock = dW.block();
     float alpha = 1.f, beta = 0.f;
@@ -369,7 +369,7 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle
   Tensor db;
   db.ResetLike(b);
 
-  dy.device()->Exec([db, dy, b, cch](Context * ctx) {
+  dy.device()->Exec([&db, &dy, &cch](Context * ctx) {
     Block *dyblock = dy.block(), *dbblock = db.block();
     float alpha = 1.f, beta = 0.f;
     cudnnConvolutionBackwardBias(ctx->cudnn_handle, &alpha, cch.y_desc_,

@@ -3,12 +3,12 @@
 
 #include <string>
 #include <vector>
+#include "singa/core/tensor.h"
 #include "singa/utils/logging.h"
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
-// #include "../layer/cudnn_convolution.h"
-// #include "../layer/cudnn_utils.h"
+#include "../layer/cudnn_utils.h"
 #endif // USE_CUDNN
 
 
@@ -21,7 +21,7 @@ class ConvHandle {
              const std::vector<size_t>& stride, const std::vector<size_t>& padding,
              const size_t in_channels, const size_t out_channels,
              const bool bias);
- protected:
+ 
   size_t kernel_w_;
   size_t pad_w_;
   size_t stride_w_;
@@ -66,12 +66,12 @@ class CudnnConvHandle: public ConvHandle {
                   const std::string& prefer_ = "fastest");
   ~CudnnConvHandle();
   // TODO(wangwei) add the destructor
- protected:
-  cudnnTensorDescriptor_t x_desc_ ;
-  cudnnTensorDescriptor_t y_desc_ ;
-  cudnnTensorDescriptor_t bias_desc_ ;
-  cudnnFilterDescriptor_t filter_desc_ ;
-  cudnnConvolutionDescriptor_t conv_desc_ ;
+ 
+  cudnnTensorDescriptor_t x_desc_ = nullptr;
+  cudnnTensorDescriptor_t y_desc_ = nullptr;
+  cudnnTensorDescriptor_t bias_desc_ = nullptr;
+  cudnnFilterDescriptor_t filter_desc_ = nullptr;
+  cudnnConvolutionDescriptor_t conv_desc_ = nullptr;
   cudnnConvolutionFwdAlgo_t fp_alg_;
   cudnnConvolutionBwdFilterAlgo_t bp_filter_alg_;
   cudnnConvolutionBwdDataAlgo_t bp_data_alg_;
