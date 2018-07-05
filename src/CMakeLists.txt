@@ -58,6 +58,7 @@ AUX_SOURCE_DIRECTORY(model/optimizer model_source)
 AUX_SOURCE_DIRECTORY(model/loss model_source)
 AUX_SOURCE_DIRECTORY(model/metric model_source)
 AUX_SOURCE_DIRECTORY(model/updater model_source)
+AUX_SOURCE_DIRECTORY(model/operation model_source)
 LIST(APPEND singa_sources ${model_source})
 
 

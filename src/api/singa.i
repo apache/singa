@@ -29,4 +29,5 @@
 %include "model_optimizer.i"
 %include "model_loss.i"
 %include "model_metric.i"
+%include "model_operation.i"
 %include "io_snapshot.i"

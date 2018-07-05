@@ -26,6 +26,8 @@ import numpy as np
 
 if __name__ == '__main__':
 
+    autograd.training = True
+
     # prepare training data in numpy array
 
     # generate the boundary
@@ -60,7 +62,7 @@ if __name__ == '__main__':
     label = to_categorical(label, 2).astype(np.float32)
     print('train_data_shape:', data.shape)
     print('train_label_shape:', label.shape)
-
+    
     inputs = Tensor(data=data)
     target = Tensor(data=label)
 

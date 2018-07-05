@@ -194,7 +194,7 @@ void Convolution::ToDevice(std::shared_ptr<Device> device) {
   bias_.ToDevice(device);
 }
 
-void Convolution::Im2col(const float *data_im, const int channels,
+void Im2col(const float *data_im, const int channels,
                          const int height, const int width,
                          const int kernel_h, const int kernel_w,
                          const int pad_h, const int pad_w,
@@ -221,7 +221,7 @@ void Convolution::Im2col(const float *data_im, const int channels,
   }
 }
 
-void Convolution::Col2im(const float *data_col, const int channels,
+void Col2im(const float *data_col, const int channels,
                          const int height, const int width,
                          const int kernel_h, const int kernel_w,
                          const int pad_h, const int pad_w,

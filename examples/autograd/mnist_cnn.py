@@ -21,9 +21,12 @@ import numpy as np
 import argparse
 import os
 
+import singa
 from singa import tensor
 from singa import autograd
 from singa import optimizer
+
+singa.layer.engine = 'singacpp'
 
 
 def load_data(path):
@@ -97,8 +100,8 @@ if __name__ == '__main__':
     print('the shape of testing label is', y_test.shape)
 
     # operations initialization
-    conv1 = autograd.Conv2d(3, 32)
-    conv2 = autograd.Conv2d(32, 32)
+    conv1 = autograd.Conv2D(1, 32, 3, padding=1, bias=False)
+    conv2 = autograd.Conv2D(32, 32, 3, padding=1)
     linear = autograd.Linear(32 * 28 * 28, 10)
 
     def forward(x, t):
@@ -121,8 +124,8 @@ if __name__ == '__main__':
 
             loss, y = forward(inputs, targets)
 
-            accuracy_rate = accuracy(autograd.ctensor2numpy(
-                y.data), autograd.ctensor2numpy(targets.data))
+            accuracy_rate = accuracy(autograd.ctensor2numpy(y.data),
+                                     autograd.ctensor2numpy(targets.data))
             if (i % 5 == 0):
                 print('accuracy is:', accuracy_rate, 'loss is:',
                       autograd.ctensor2numpy(loss.data)[0])
