@@ -22,26 +22,26 @@ class ConvHandle {
              const size_t in_channels, const size_t out_channels,
              const bool bias);
  
-  size_t kernel_w_;
-  size_t pad_w_;
-  size_t stride_w_;
-  size_t kernel_h_;
-  size_t pad_h_;
-  size_t stride_h_;
+  size_t kernel_w;
+  size_t pad_w;
+  size_t stride_w;
+  size_t kernel_h;
+  size_t pad_h;
+  size_t stride_h;
 
-  size_t channels_;
-  size_t num_filters_;
+  size_t channels;
+  size_t num_filters;
 
-  bool bias_term_;
+  bool bias_term;
 
-  size_t height_;
-  size_t width_;
-  size_t conv_height_;
-  size_t conv_width_;
+  size_t height;
+  size_t width;
+  size_t conv_height;
+  size_t conv_width;
   size_t batchsize;
 
-  size_t col_height_;
-  size_t col_width_;
+  size_t col_height;
+  size_t col_width;
   size_t imagesize;
 };
 
@@ -62,22 +62,22 @@ class CudnnConvHandle: public ConvHandle {
   CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                   const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                   const size_t in_channels, const size_t out_channels,
-                  const bool bias, const size_t workspace_byte_limit_ = 1024 * 1024 * 1024,
-                  const std::string& prefer_ = "fastest");
+                  const bool bias, const size_t workspace_byte_limit = 1024 * 1024 * 1024,
+                  const std::string& prefer = "fastest");
   ~CudnnConvHandle();
   // TODO(wangwei) add the destructor
  
-  cudnnTensorDescriptor_t x_desc_ = nullptr;
-  cudnnTensorDescriptor_t y_desc_ = nullptr;
-  cudnnTensorDescriptor_t bias_desc_ = nullptr;
-  cudnnFilterDescriptor_t filter_desc_ = nullptr;
-  cudnnConvolutionDescriptor_t conv_desc_ = nullptr;
-  cudnnConvolutionFwdAlgo_t fp_alg_;
-  cudnnConvolutionBwdFilterAlgo_t bp_filter_alg_;
-  cudnnConvolutionBwdDataAlgo_t bp_data_alg_;
+  cudnnTensorDescriptor_t x_desc = nullptr;
+  cudnnTensorDescriptor_t y_desc = nullptr;
+  cudnnTensorDescriptor_t bias_desc = nullptr;
+  cudnnFilterDescriptor_t filter_desc = nullptr;
+  cudnnConvolutionDescriptor_t conv_desc = nullptr;
+  cudnnConvolutionFwdAlgo_t fp_alg;
+  cudnnConvolutionBwdFilterAlgo_t bp_filter_alg;
+  cudnnConvolutionBwdDataAlgo_t bp_data_alg;
 
-  size_t workspace_count_;
-  Tensor workspace_;
+  size_t workspace_count;
+  Tensor workspace;
 };
 
 Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch);

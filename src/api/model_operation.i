@@ -5,28 +5,26 @@
 %}
 namespace singa{
 
-struct ConvHandle{
-
-		size_t batchsize;
-        const bool bias_term_;
-
-		ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
+class ConvHandle {
+ public:
+  ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
              const std::vector<size_t>& stride, const std::vector<size_t>& padding,
              const size_t in_channels, const size_t out_channels,
              const bool bias);
-              	};
+  bool bias_term;
+  size_t batchsize;
+};
 
 struct CudnnConvHandle{
-
-		size_t batchsize;
-        const bool bias_term_;
-		
-		CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
+ public:
+	CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                   const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                   const size_t in_channels, const size_t out_channels,
-                  const bool bias, const size_t workspace_byte_limit_ = 1024 * 1024 * 1024,
-                  const std::string& prefer_ = "fastest");
-                };
+                  const bool bias, const size_t workspace_byte_limit = 1024 * 1024 * 1024,
+                  const std::string& prefer = "fastest");
+  bool bias_term;
+  size_t batchsize; 
+};
 
 Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch);
 

@@ -463,7 +463,7 @@ class _Conv2D(Operation):
         #assert 0 == 0, 'invalid padding'
 
         if training:
-            if self.handle.bias_term_:
+            if self.handle.bias_term:
                 self.inputs = (x, W, b)
             else:
                 self.inputs = (x, W)
@@ -486,7 +486,7 @@ class _Conv2D(Operation):
                 dy, self.inputs[1], self.inputs[0], self.handle)
             dW = singa.CpuConvBackwardW(
                 dy, self.inputs[0], self.inputs[1], self.handle)
-            if self.handle.bias_term_:
+            if self.handle.bias_term:
                 db = singa.CpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
             else:
@@ -496,7 +496,7 @@ class _Conv2D(Operation):
                 dy, self.inputs[1], self.inputs[0], self.handle)
             dW = singa.GpuConvBackwardW(
                 dy, self.inputs[0], self.inputs[1], self.handle)
-            if self.handle.bias_term_:
+            if self.handle.bias_term:
                 db = singa.GpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
             else:
