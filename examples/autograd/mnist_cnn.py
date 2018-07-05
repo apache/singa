@@ -135,7 +135,5 @@ if __name__ == '__main__':
                 print('accuracy is:', accuracy_rate, 'loss is:',
                       tensor.to_numpy(loss)[0])
 
-            in_grads = autograd.backward(loss)
-
-            for param in in_grads:
-                sgd.apply(0, in_grads[param], param, '')
+            for p, gp in autograd.backward(loss):
+                sgd.apply(0, gp, p, '')

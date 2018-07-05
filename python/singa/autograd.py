@@ -538,6 +538,13 @@ def infer_dependency(op):
     return dependency_count
 
 
+def gradients(y, dy=None):
+    grads = {}  # mapping: x->dx if x.stores_grad
+    for p, dp in backward(y, dy):
+        gradients[p] = dp
+    return grads
+
+
 def backward(y, dy=None):
     '''
     Run the backward propagation starting at y.
@@ -566,7 +573,7 @@ def backward(y, dy=None):
     # ready is a queue of (operation, dy list)
     ready = deque([(y.creator, (dy,))])
     not_ready = {}  # mapping: op->[dy]
-    gradients = {}  # mapping: x->dx if x.stores_grad
+
     if y.stores_grad:
         gradients[y] = dy
 
@@ -608,7 +615,8 @@ def backward(y, dy=None):
             if y_stores_grad:
                 # store the gradient for final return, e.g. if x is parameter
                 g = not_ready[src_op][y_idx]
-                gradients[y] = Tensor(device=g.device(), data=g)
+                tg = Tensor(device=g.device(), data=g)
+                yield (y, tg)
             dependency[src_op] -= 1
             if src_op.requires_grad is True:
                 if dependency[src_op] == 0:
@@ -616,10 +624,8 @@ def backward(y, dy=None):
                         ready.append((src_op, not_ready[src_op]))
                     del not_ready[src_op]
 
-    return gradients
 
-
-class NewLayer(object):
+class Layer(object):
 
     def __init__(self):
         pass
@@ -631,7 +637,7 @@ class NewLayer(object):
                 var.to_device(x_device)
 
 
-class Linear(NewLayer):
+class Linear(Layer):
 
     def __init__(self, in_features, out_features, bias=True):
         #self.in_features = in_features
@@ -661,7 +667,7 @@ class Linear(NewLayer):
         return y
 
 
-class Conv2D(NewLayer):
+class Conv2D(Layer):
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=True, **kwargs):
