@@ -21,12 +21,10 @@ import numpy as np
 import argparse
 import os
 
-import singa
+from singa import device
 from singa import tensor
 from singa import autograd
 from singa import optimizer
-
-singa.layer.engine = 'singacpp'
 
 
 def load_data(path):
@@ -75,11 +73,18 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Train CNN over MNIST')
     parser.add_argument('file_path', type=str, help='the dataset path')
+    parser.add_argument('--use_cpu', action='store_true')
     args = parser.parse_args()
 
     assert os.path.exists(args.file_path), \
-        'Pls download the MNIST dataset from ' \
-        'https://github.com/mnielsen/neural-networks-and-deep-learning/raw/master/data/mnist.pkl.gz'
+        'Pls download the MNIST dataset from '
+
+    if args.use_cpu:
+        print('Using CPU')
+        dev = device.get_default_device()
+    else:
+        print('Using GPU')
+        dev = device.create_cuda_gpu()
 
     train, test = load_data(args.file_path)
 
@@ -119,16 +124,16 @@ if __name__ == '__main__':
     autograd.training = True
     for epoch in range(epochs):
         for i in range(batch_number):
-            inputs = tensor.Tensor(data=x_train[i * 100:(1 + i) * 100, :])
-            targets = tensor.Tensor(data=y_train[i * 100:(1 + i) * 100, :])
+            inputs = tensor.Tensor(device=dev, data=x_train[i * 100:(1 + i) * 100])
+            targets = tensor.Tensor(device=dev, data=y_train[i * 100:(1 + i) * 100])
 
             loss, y = forward(inputs, targets)
 
-            accuracy_rate = accuracy(autograd.ctensor2numpy(y.data),
-                                     autograd.ctensor2numpy(targets.data))
+            accuracy_rate = accuracy(tensor.to_numpy(y),
+                                     tensor.to_numpy(targets))
             if (i % 5 == 0):
                 print('accuracy is:', accuracy_rate, 'loss is:',
-                      autograd.ctensor2numpy(loss.data)[0])
+                      tensor.to_numpy(loss)[0])
 
             in_grads = autograd.backward(loss)
 

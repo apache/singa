@@ -79,7 +79,7 @@ void CudnnConvolution::InitCudnn(const Tensor &input) {
   CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc_, pad_h_, pad_w_,
               stride_h_, stride_w_, 1, 1,  // dilation x and y
               CUDNN_CROSS_CORRELATION
-#if CUDNN_MAJOR == 5
+#if CUDNN_MAJOR >= 7
               , GetCudnnDataType(dtype)
 #endif  // CUDNN_MAJOR
                                              ));

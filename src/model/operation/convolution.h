@@ -5,6 +5,7 @@
 #include <vector>
 #include "singa/core/tensor.h"
 #include "singa/utils/logging.h"
+#include "singa/singa_config.h"
 
 #ifdef USE_CUDNN
 #include <cudnn.h>

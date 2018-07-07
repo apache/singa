@@ -199,8 +199,11 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input, const std::vector<size_t>&
                                            num_filters, 1, 1));
   CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_h, pad_w,
               stride_h, stride_w, 1, 1,
-              CUDNN_CROSS_CORRELATION,
-              GetCudnnDataType(dtype)));
+              CUDNN_CROSS_CORRELATION
+#if CUDNN_MAJOR >= 7
+              , GetCudnnDataType(dtype)
+#endif
+              ));
   CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc, GetCudnnDataType(dtype),
                                          CUDNN_TENSOR_NCHW, num_filters,
                                          channels, kernel_h, kernel_w));

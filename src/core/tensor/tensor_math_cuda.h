@@ -791,6 +791,12 @@ void Sqrt<float, lang::Cuda>(const Tensor& in, Tensor* out,
   const float* inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
+#if CUDNN_MAJOR < 7
+  size_t num = in.Size();
+  cuda::sqrt(num, inPtr, outPtr, ctx->stream);
+
+#else
+
   float alpha1 = 1.0;
   float alpha2 = 0.0;
   float beta = 0.0;
@@ -800,6 +806,7 @@ void Sqrt<float, lang::Cuda>(const Tensor& in, Tensor* out,
                 (void*)(&alpha2), in_desc, inPtr,
                 (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
                ));
+#endif  // CUDNN_MAJOR < 7
 }
 
 /// Element-wise operation, out[i]=in[i]^2
@@ -832,54 +839,6 @@ void Square<float, lang::Cuda>(const Tensor& in, Tensor* out,
 //   // const float* inPtr = static_cast<const float*>(in.data());
 //   // cuda::sum(num, inPtr, out, ctx->stream);
 // }
-
-template <>
-void Sum<float, lang::Cuda>(const Tensor& in, float* out,
-                            Context* ctx) {
-  const float* inPtr = static_cast<const float*>(in.block()->data());
-
-  //reduce all axes to 1 for cudnnReduce, e.g. Tensor A with shape (2,4) will be reduced to (1)
-  Shape reduced_shape = {1};
-  Tensor t(reduced_shape, in.device(), in.data_type());
-  float* tPtr = static_cast<float*>(t.block()->mutable_data());
-  vector<int> reduce_all_axes = generate_shape_cuda(in);
-  for (size_t n = 0; n < reduce_all_axes.size(); ++n) {
-    reduce_all_axes[n] = 1;
-  }
-
-  //reduce_desc
-  cudnnReduceTensorDescriptor_t reduce_desc;
-  cudnnReduceTensorOp_t reduce_op = CUDNN_REDUCE_TENSOR_ADD;
-  cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
-  cudnnNanPropagation_t cudnn_propagation = CUDNN_PROPAGATE_NAN;
-  cudnnReduceTensorIndices_t cudnn_indices = CUDNN_REDUCE_TENSOR_NO_INDICES;
-  cudnnIndicesType_t cudnn_indices_type = CUDNN_32BIT_INDICES;
-  check_cudnn(cudnnCreateReduceTensorDescriptor(&reduce_desc));
-  check_cudnn(cudnnSetReduceTensorDescriptor(reduce_desc, reduce_op, cudnn_dtype,
-                                 cudnn_propagation, cudnn_indices, cudnn_indices_type));
-
-  //instantiate 2 new tensors to use new blocks as memory instead of cudaMalloc
-  size_t reduction_size_int = Product(in.shape());
-  Shape reduction_size = {reduction_size_int * 100};
-  Tensor indices(reduction_size, in.device(), in.data_type());
-  Tensor workspace(reduction_size, in.device(), in.data_type());
-  size_t indices_bytes = indices.block()->size() * 100;
-  size_t workspace_bytes = workspace.block()->size() * 100;
-  size_t* indicesPtr = static_cast<size_t*>(indices.block()->mutable_data());
-  float* workspacePtr = static_cast<float*>(workspace.block()->mutable_data());
-  //void* indicesPtr{nullptr}; void* workspacePtr{nullptr};
-  //cudaMalloc(&indicesPtr, indices_bytes); cudaMalloc(&workspacePtr, workspace_bytes);
-
-  float alpha = 1.0;
-  float beta = 0.0;
-  check_cudnn(cudnnReduceTensor(ctx->cudnn_handle, reduce_desc,
-                    indicesPtr, indices_bytes, workspacePtr, workspace_bytes,
-                    (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                    (void*)(&beta), generate_tensor_nd_desc(t), tPtr
-                   ));
-
-  *out = tPtr[0];
-}
 
 
 /// Element-wise operation, out[i]=tanh([in[i])
@@ -949,7 +908,7 @@ void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out,
                          (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
                          (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
                         ));
-  
+
 }
 
 // ================Random functions===========================================
@@ -1232,6 +1191,63 @@ void RowMax<float, lang::Cuda>(const Tensor& in, Tensor* out,
     cuda::RowMax(nrow, ncol, inPtr, outPtr, ctx->stream);
   }
 }
+
+
+// must put this function after Set and Dot functions due to the error from
+// instantiation before specialization
+template <>
+void Sum<float, lang::Cuda>(const Tensor& in, float* out,
+                            Context* ctx) {
+#if CUDNN_MAJOR < 7
+  Tensor one(in.shape(), in.device(), in.data_type());
+  Set<float, lang::Cuda>(float(1), &one, ctx);
+  Dot<float, lang::Cuda>(in, one, out, ctx);
+#else
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  //reduce all axes to 1 for cudnnReduce, e.g. Tensor A with shape (2,4) will be reduced to (1)
+  Shape reduced_shape = {1};
+  Tensor t(reduced_shape, in.device(), in.data_type());
+  float* tPtr = static_cast<float*>(t.block()->mutable_data());
+  vector<int> reduce_all_axes = generate_shape_cuda(in);
+  for (size_t n = 0; n < reduce_all_axes.size(); ++n) {
+    reduce_all_axes[n] = 1;
+  }
+
+  //reduce_desc
+  cudnnReduceTensorDescriptor_t reduce_desc;
+  cudnnReduceTensorOp_t reduce_op = CUDNN_REDUCE_TENSOR_ADD;
+  cudnnDataType_t cudnn_dtype = CUDNN_DATA_FLOAT;
+  cudnnNanPropagation_t cudnn_propagation = CUDNN_PROPAGATE_NAN;
+  cudnnReduceTensorIndices_t cudnn_indices = CUDNN_REDUCE_TENSOR_NO_INDICES;
+  cudnnIndicesType_t cudnn_indices_type = CUDNN_32BIT_INDICES;
+  check_cudnn(cudnnCreateReduceTensorDescriptor(&reduce_desc));
+  check_cudnn(cudnnSetReduceTensorDescriptor(reduce_desc, reduce_op, cudnn_dtype,
+                                 cudnn_propagation, cudnn_indices, cudnn_indices_type));
+
+  //instantiate 2 new tensors to use new blocks as memory instead of cudaMalloc
+  size_t reduction_size_int = Product(in.shape());
+  Shape reduction_size = {reduction_size_int * 100};
+  Tensor indices(reduction_size, in.device(), in.data_type());
+  Tensor workspace(reduction_size, in.device(), in.data_type());
+  size_t indices_bytes = indices.block()->size() * 100;
+  size_t workspace_bytes = workspace.block()->size() * 100;
+  size_t* indicesPtr = static_cast<size_t*>(indices.block()->mutable_data());
+  float* workspacePtr = static_cast<float*>(workspace.block()->mutable_data());
+  //void* indicesPtr{nullptr}; void* workspacePtr{nullptr};
+  //cudaMalloc(&indicesPtr, indices_bytes); cudaMalloc(&workspacePtr, workspace_bytes);
+
+  float alpha = 1.0;
+  float beta = 0.0;
+  check_cudnn(cudnnReduceTensor(ctx->cudnn_handle, reduce_desc,
+                    indicesPtr, indices_bytes, workspacePtr, workspace_bytes,
+                    (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
+                    (void*)(&beta), generate_tensor_nd_desc(t), tPtr
+                   ));
+
+  *out = tPtr[0];
+#endif  // CUDNN_MAJOR < 7
+}
+
 
 }  // namespace singa
 

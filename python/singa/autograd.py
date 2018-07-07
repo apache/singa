@@ -741,12 +741,10 @@ class Conv2D(NewLayer):
         else:
             if not hasattr(self, 'handle'):
                 self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                    self.padding, self.in_channels, self.out_channels, self.bias,
-                                                    self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
+                                                    self.padding, self.in_channels, self.out_channels, self.bias)
             elif x.shape[0] != self.handle.batchsize:
                 self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                    self.padding, self.in_channels, self.out_channels, self.bias,
-                                                    self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
+                                                    self.padding, self.in_channels, self.out_channels, self.bias)
         self.handle.device_id = x.device.id()
 
         y = conv2d(x, self.W, self.b, self.handle)

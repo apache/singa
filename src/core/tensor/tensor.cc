@@ -346,7 +346,7 @@ Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> 
   } else {
     if (repeats.size() == 1){
       total_repeats = repeats[0];
-      for (int i = 0; i < shape_.size(); i++) {
+      for (size_t i = 0; i < shape_.size(); i++) {
         if (i == axis) {
           tshape.push_back(shape_[i] * total_repeats);
         } else {
@@ -363,7 +363,7 @@ Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> 
         }
         total_repeats += repeats[i];
       }
-      for (int i = 0; i < shape_.size(); i++){
+      for (size_t i = 0; i < shape_.size(); i++){
         if (i == axis) {
           tshape.push_back(total_repeats);
         } else{
