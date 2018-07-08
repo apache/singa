@@ -5,6 +5,7 @@
 %include "std_string.i"
 %{
 #include "../src/model/operation/convolution.h"
+#include "../src/model/operation/batchnorm.h"
 %}
 namespace singa {
 
@@ -48,4 +49,34 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle
 
 #endif  // USE_CUDNN
 
+class BatchNormHandle{
+  public:
+    BatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean_, const Tensor& RunningVariance_);
+
+    size_t batchsize;
+    Tensor runningMean_;
+    Tensor runningVariance_;
+
+};
+
+
+class CudnnBatchNormHandle: public BatchNormHandle{
+    public:
+      CudnnBatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean_, const Tensor& RunningVariance_);
+
+    size_t batchsize;
+    Tensor runningMean_;
+    Tensor runningVariance_;
+};
+
+Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale_, const Tensor& bnBias_, 
+   std::vector<Tensor>& cache, CudnnBatchNormHandle &cbnh);
+
+Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale_, const Tensor& bnBias_, const CudnnBatchNormHandle &cbnh);
+
+std::vector<Tensor> GpuBatchNormBackward(const Tensor& dy,
+  const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
+     
+
 }
+

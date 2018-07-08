@@ -27,7 +27,7 @@ from .tensor import Tensor
 from . import layer
 from singa.proto import model_pb2
 from . import singa_wrap as singa
-
+#from .tensor import einsum
 
 CTensor = singa.Tensor
 training = False
@@ -415,6 +415,14 @@ class SoftMax(Operation):
         out = out_1 - out_2
         dx = CTensor(out_1.shape)
         dx.CopyFloatDataFromHostPtr(out.flatten())
+        '''grad = Tensor(data=dy)
+        output = Tensor(data=self.output)
+        out_1 = einsum('ki,ki->ki', grad, output)
+        medium_out = einsum('ki,kj->kij', output, output)
+        out_2 = einsum('kij,kj->ki', medium_out, grad)
+        out = out_1 - out_2
+        dx = CTensor(out_1.data.shape)
+        dx.CopyFloatDataFromHostPtr(out.data.flatten())'''
         if self.axis == 0:
             return dx
         elif self.axis == 1:
@@ -761,3 +769,73 @@ class Conv2D(Layer):
 
         y = conv2d(x, self.W, self.b, self.handle)
         return y
+
+class BatchNorm2d(NewLayer):
+    def __init__(self, num_features, momentum = 0.9):
+        self.channels = num_features
+        self.momentum = momentum
+
+        param_shape = (self.channels,)
+
+        self.scale = Tensor(shape=param_shape, requires_grad=True, stores_grad=True)
+        self.scale.set_value(1.0)
+
+        self.bias =  Tensor(shape=param_shape, requires_grad=True, stores_grad=True)
+        self.bias.set_value(0.0)
+
+        self.runningmean = Tensor(shape=param_shape, requires_grad=False, stores_grad=False)
+        self.runningvariance = Tensor(shape=param_shape, requires_grad=False, stores_grad=False)
+
+    def __call__(self, x):
+        assert x.shape[1] == self.channels, 'number of channels dismatched.'
+
+        self.device_check(x, self.scale, self.bias, self.runningmean,self.runningvariance)
+
+        if x.device.id() == -1:
+            raise NotImplementedError
+
+        else:
+            if not hasattr(self, 'handle'):
+                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data, self.runningmean.data, self.runningvariance.data)
+            elif x.shape[0] != self.handle.batchsize:
+                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data, self.runningmean.data, self.runningvariance.data)
+        self.handle.device_id = x.device.id()
+
+        y = batchnorm2d(x, self.scale, self.bias, self.handle)
+        return y
+
+
+class _BatchNorm2d(Operation):
+    def __init(self, handle):
+        self.handle = handle
+
+    def forward(self, x, scale, bias):
+        if training:
+            self.cache=(x,)
+            if self.handle.device_id == -1:
+                raise NotImplementedError
+            else:
+                return singa.GpuBatchNormForwardTraining(x, scale, bias, self.cache, self.handle)
+
+        else:
+            if self.handle.device_id == -1:
+                raise NotImplementedError
+            else:
+                return singa.GpuBatchNormForwardInference(x, scale, bias ,self.handle)
+
+    def backward(self, dy):
+        assert training is True and hasattr(
+            self, 'cahce'), 'Please set training as True before do BP. '
+
+        if dy.device().id() != self.handle.device_id:
+            dy.ToDevice(self.cache[0].device())
+
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            dx, ds, db = singa.GpuBatchNormBackward(dy, self.cache, self.handle)
+            return dx, ds, db
+
+
+def batchnorm2d(x, scale, bias, handle):
+    return _BatchNorm2d(handle)(x, scale, bias)[0]

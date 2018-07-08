@@ -70,5 +70,22 @@ class TestPythonOperation(unittest.TestCase):
         y_without_bias = conv_without_bias_1(cpu_input_tensor)
         self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
 
+    def test_batchnorm2d_gpu(self):
+        batchnorm_0 = autograd.BatchNorm2d(3)
+
+        gpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
+        gpu_input_tensor.gaussian(0.0, 1.0)
+
+        dy = CTensor([2, 3, 3, 3])
+        singa.Gaussian(0.0, 1.0, dy)
+
+        y=batchnorm_0(gpu_input_tensor)
+        dx, ds, db = y.creator.backward(dy)
+
+        self.check_shape(y.shape, (2, 3, 3, 3))
+        self.check_shape(dx.shape(), (2, 3, 3, 3))
+        self.check_shape(dx.shape(), (3,))
+        self.check_shape(db.shape(), (3,))
+
 if __name__ == '__main__':
     unittest.main()

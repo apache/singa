@@ -167,7 +167,7 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
               saveVarBlock->data()));
 
         },
-        {dx.block(), grad.block(), bnScale_.block(), resultSaveMean_.block(),
+        {x.block(), grad.block(), bnScale_.block(), resultSaveMean_.block(),
          resultSaveVariance_.block()},
         {dx.block(), dbnScale_.block(), dbnBias_.block()});
   } else {
