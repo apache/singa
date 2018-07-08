@@ -110,23 +110,23 @@ if __name__ == '__main__':
     linear = autograd.Linear(32 * 28 * 28, 10)
 
     def forward(x, t):
+        '''
         y = conv1(x)
         y = autograd.relu(y)
         y = conv2(y)
         y = autograd.relu(y)
         y = autograd.max_pool_2d(y)
-        y = autograd.flatten(y)
+        '''
+        y = autograd.flatten(x)
         y = linear(y)
         loss = autograd.softmax_cross_entropy(y, t)
         return loss, y
 
     autograd.training = True
-    for epoch in range(epochs):
+    for epoch in range(50):
         for i in range(batch_number):
-            inputs = tensor.Tensor(device=dev, data=x_train[
-                                   i * 100:(1 + i) * 100])
-            targets = tensor.Tensor(device=dev, data=y_train[
-                                    i * 100:(1 + i) * 100])
+            inputs = tensor.Tensor(device=dev, data=x_train[ i * 100:(1 + i) * 100], stores_grad=False)
+            targets = tensor.Tensor(device=dev, data=y_train[i * 100:(1 + i) * 100], requires_grad=False, stores_grad=False)
 
             loss, y = forward(inputs, targets)
 
@@ -136,5 +136,5 @@ if __name__ == '__main__':
                 print('accuracy is:', accuracy_rate, 'loss is:',
                       tensor.to_numpy(loss)[0])
 
-            for p, gp in autograd.backward(loss):
-                sgd.apply(0, gp, p, '')
+            # for p, gp in autograd.backward(loss):
+            #    sgd.apply(0, gp, p, '')
