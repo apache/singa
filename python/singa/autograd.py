@@ -40,14 +40,8 @@ class Operation(object):
 
     Steps to add a specific operation Xxxx:
     1. create a subclass of Operation, name it as Xxxx
-    2. if Xxxx is implemented using other Operations, then override
-       _do_forward() function;
-       if Xxxx is implemented using CTensor operations,
-       then override the forward() and backward(); The arguments of forward()
+    2. override the forward() and backward(); The arguments of forward()
        and backward() should only include CTensor;
-       if Xxxx is implemented by calling functions in layer.py, then override
-       __call__(), forward() and backward(). TODO(wangwei) avoid this complex
-       case.
     '''
 
     def __call__(self, *xs):
@@ -311,9 +305,9 @@ def soft_max(x, axis=0):
     return SoftMax(axis)(x)[0]
 
 
-class CrossEntropy(Operation):
+class NLL(Operation):
     '''
-    Calculte CrossEntropy loss for a batch of training data.
+    Calculte negative log likelihood loss for a batch of training data.
 
     '''
 
@@ -356,8 +350,24 @@ class CrossEntropy(Operation):
             pass  # TODO, broadcast elementwise multiply seems not support
 
 
-def cross_entropy(y, t):
-    return CrossEntropy()(y, t)[0]
+def nll(y, t):
+    return NLL()(y, t)[0]
+
+
+class SoftMaxCrossEntropy(Operation):
+
+    def forward(self, x, t):
+        self.p = singa.SoftMax(x)
+        self.t = t
+        return singa.CrossEntropyFwd(self.p, t)
+
+    def backward(self, dy=1.0):
+        return singa.SoftmaxCrossEntropyBwd(self.p, self.t)
+
+
+def softmax_cross_entropy(x, t):
+    # x is the logits and t is the ground truth; both are 2D.
+    return SoftMaxCrossEntropy()(x, t)[0]
 
 
 def ctensor2numpy(x):

@@ -325,4 +325,7 @@ namespace singa{
 
   Tensor SoftMax(const Tensor &in);
   void SoftMax(const Tensor &in, Tensor *out);
+
+  const Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
+  const Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
 }

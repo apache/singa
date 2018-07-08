@@ -117,15 +117,16 @@ if __name__ == '__main__':
         y = autograd.max_pool_2d(y)
         y = autograd.flatten(y)
         y = linear(y)
-        y = autograd.soft_max(y)
-        loss = autograd.cross_entropy(y, t)
+        loss = autograd.softmax_cross_entropy(y, t)
         return loss, y
 
     autograd.training = True
     for epoch in range(epochs):
         for i in range(batch_number):
-            inputs = tensor.Tensor(device=dev, data=x_train[i * 100:(1 + i) * 100])
-            targets = tensor.Tensor(device=dev, data=y_train[i * 100:(1 + i) * 100])
+            inputs = tensor.Tensor(device=dev, data=x_train[
+                                   i * 100:(1 + i) * 100])
+            targets = tensor.Tensor(device=dev, data=y_train[
+                                    i * 100:(1 + i) * 100])
 
             loss, y = forward(inputs, targets)
 
