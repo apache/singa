@@ -40,14 +40,8 @@ class Operation(object):
 
     Steps to add a specific operation Xxxx:
     1. create a subclass of Operation, name it as Xxxx
-    2. if Xxxx is implemented using other Operations, then override
-       _do_forward() function;
-       if Xxxx is implemented using CTensor operations,
-       then override the forward() and backward(); The arguments of forward()
+    2. override the forward() and backward(); The arguments of forward()
        and backward() should only include CTensor;
-       if Xxxx is implemented by calling functions in layer.py, then override
-       __call__(), forward() and backward(). TODO(wangwei) avoid this complex
-       case.
     '''
 
     def __call__(self, *xs):
@@ -311,9 +305,9 @@ def soft_max(x, axis=0):
     return SoftMax(axis)(x)[0]
 
 
-class CrossEntropy(Operation):
+class NLL(Operation):
     '''
-    Calculte CrossEntropy loss for a batch of training data.
+    Calculte negative log likelihood loss for a batch of training data.
 
     '''
 
@@ -356,8 +350,27 @@ class CrossEntropy(Operation):
             pass  # TODO, broadcast elementwise multiply seems not support
 
 
-def cross_entropy(y, t):
-    return CrossEntropy()(y, t)[0]
+def nll(y, t):
+    return NLL()(y, t)[0]
+
+
+class SoftMaxCrossEntropy(Operation):
+
+    def forward(self, x, t):
+        self.p = singa.SoftMax(x)
+        self.t = t
+        loss = CTensor((1,), self.p.device())
+        ret = singa.CrossEntropyFwd(self.p, t)
+        loss.SetFloatValue(singa.SumAsFloat(ret) / x.shape()[0])
+        return loss
+
+    def backward(self, dy=1.0):
+        return singa.SoftmaxCrossEntropyBwd(self.p, self.t), None
+
+
+def softmax_cross_entropy(x, t):
+    # x is the logits and t is the ground truth; both are 2D.
+    return SoftMaxCrossEntropy()(x, t)[0]
 
 
 def ctensor2numpy(x):
@@ -427,23 +440,20 @@ def max_pool_2d(x, kernel_size=3, stride=1, padding=0, dilation=1,
 
 class Flatten(Operation):
 
-    def __init__(self):
-        self.PyLayer = layer.Flatten('flatten', 1)
+    def __init(self, start_axis=1):
+        # flatten all axis after (inclusive) start_axis
+        self.start_axis = start_axis
+        assert start_axis == 1, 'must flatten into 2d array not'
 
-    def __call__(self, x):
-        if training:
-            self.flag = model_pb2.kTrain
-        else:
-            self.flag = model_pb2.kEval
-        if not self.PyLayer.has_setup:
-            self.PyLayer.setup(x.shape[1:])
-        return self._do_forward(x)
-
-    def forward(self, *xs):
-        return self.PyLayer.layer.Forward(self.flag, xs[0])
+    def forward(self, x):
+        # TODO Do flatten start from axis != 1
+        self.shape = list(x.shape())
+        y = x.Reshape((x.shape()[0], x.Size() // x.shape()[0]))
+        return y
 
     def backward(self, dy):
-        return self.PyLayer.layer.Backward(0, dy)[0]
+        dx = dy.Reshape(self.shape)
+        return dx
 
 
 def flatten(x):
@@ -623,6 +633,7 @@ def backward(y, dy=None):
                     if not isinstance(src_op, Dummy):
                         ready.append((src_op, not_ready[src_op]))
                     del not_ready[src_op]
+        del op  # delete the operation to free all tensors from this op
 
 
 class Layer(object):

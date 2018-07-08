@@ -292,7 +292,7 @@ Tensor Reshape(const Tensor &in, Shape &&s);
 void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
                     const size_t dst_offset = 0, const size_t src_offset = 0);
 
-void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis, 
+void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
                       Tensor *dst, const Tensor &in, const size_t num);
 
 // =============Element-wise operations====================================
@@ -508,6 +508,10 @@ void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss);
 
 void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
 
+/// To be called by pysinga autograd operations;
+/// swig ignores the const qualifier http://www.swig.org/Doc3.0/SWIGPlus.html#SWIGPlus_const
+const Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
+const Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
 
 /// Return a tensor consisting of rows ([start, end)) from 'in'. It copies the
 /// values from 'in'. 'in' ia a 2D Tensor.
