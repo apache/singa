@@ -440,23 +440,20 @@ def max_pool_2d(x, kernel_size=3, stride=1, padding=0, dilation=1,
 
 class Flatten(Operation):
 
-    def __init__(self):
-        self.PyLayer = layer.Flatten('flatten', 1)
+    def __init(self, start_axis=1):
+        # flatten all axis after (inclusive) start_axis
+        self.start_axis = start_axis
+        assert start_axis == 1, 'must flatten into 2d array not'
 
-    def __call__(self, x):
-        if training:
-            self.flag = model_pb2.kTrain
-        else:
-            self.flag = model_pb2.kEval
-        if not self.PyLayer.has_setup:
-            self.PyLayer.setup(x.shape[1:])
-        return self._do_forward(x)
-
-    def forward(self, *xs):
-        return self.PyLayer.layer.Forward(self.flag, xs[0])
+    def forward(self, x):
+        # TODO Do flatten start from axis != 1
+        self.shape = list(x.shape())
+        y = x.Reshape((x.shape()[0], x.Size() // x.shape()[0]))
+        return y
 
     def backward(self, dy):
-        return self.PyLayer.layer.Backward(0, dy)[0]
+        dx = dy.Reshape(self.shape)
+        return dx
 
 
 def flatten(x):
@@ -636,6 +633,7 @@ def backward(y, dy=None):
                     if not isinstance(src_op, Dummy):
                         ready.append((src_op, not_ready[src_op]))
                     del not_ready[src_op]
+        del op  # delete the operation to free all tensors from this op
 
 
 class Layer(object):

@@ -1314,6 +1314,7 @@ Tensor Tensor::Reshape(const Shape &shape) {
   if (strides_.size() == 0)
     strides_.push_back(1);
 
+  // TODO(wangwei) remove this condition and report error if size changes.
   if (Product(shape_) != Product(shape)) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
@@ -1328,14 +1329,16 @@ Tensor Tensor::Reshape(const Shape &shape) {
     singa::Transform(*this, &t);
     t.shape_ = shape;
     return t;
+  } else {
+    Tensor t;
+    t.shape_ = shape;
+    t.device_ = device_;
+    t.data_type_ = data_type;
+    t.block_ = block_;  // be careful about the block inference (mem leaking)
+    t.block_->IncRefCount();
+    t.generate_strides();
+    return t;
   }
-
-  shape_ = shape;
-  generate_strides();
-  Tensor t(shape, device_, data_type_);
-  t.block_ = block_;
-  t.block_->IncRefCount();
-  return t;
 }
 
 Tensor Tensor::Reshape(Shape &&shape) {
@@ -1356,14 +1359,16 @@ Tensor Tensor::Reshape(Shape &&shape) {
     singa::Transform(*this, &t);
     t.shape_ = shape;
     return t;
+  } else {
+    Tensor t;
+    t.shape_ = shape;
+    t.device_ = device_;
+    t.data_type_ = data_type;
+    t.block_ = block_;  // be careful about the block inference (mem leaking)
+    t.block_->IncRefCount();
+    t.generate_strides();
+    return t;
   }
-
-  shape_ = shape;
-  generate_strides();
-  Tensor t(shape, device_, data_type_);
-  t.block_ = block_;
-  t.block_->IncRefCount();
-  return t;
 }
 
 Tensor Reshape(const Tensor &in, const Shape &s) {
