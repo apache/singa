@@ -1333,7 +1333,7 @@ Tensor Tensor::Reshape(const Shape &shape) {
     Tensor t;
     t.shape_ = shape;
     t.device_ = device_;
-    t.data_type_ = data_type;
+    t.data_type_ = data_type_;
     t.block_ = block_;  // be careful about the block inference (mem leaking)
     t.block_->IncRefCount();
     t.generate_strides();
@@ -1363,7 +1363,7 @@ Tensor Tensor::Reshape(Shape &&shape) {
     Tensor t;
     t.shape_ = shape;
     t.device_ = device_;
-    t.data_type_ = data_type;
+    t.data_type_ = data_type_;
     t.block_ = block_;  // be careful about the block inference (mem leaking)
     t.block_->IncRefCount();
     t.generate_strides();

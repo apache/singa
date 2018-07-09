@@ -77,7 +77,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     assert os.path.exists(args.file_path), \
-        'Pls download the MNIST dataset from '
+        'Pls download the MNIST dataset from https://s3.amazonaws.com/img-datasets/mnist.npz'
 
     if args.use_cpu:
         print('Using CPU')
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     num_classes = 10
     epochs = 1
 
-    sgd = optimizer.SGD(0.05)
+    sgd = optimizer.SGD(0.001)
 
     x_train = preprocess(train[0])
     y_train = to_categorical(train[1], num_classes)
@@ -109,15 +109,16 @@ if __name__ == '__main__':
     conv2 = autograd.Conv2D(32, 32, 3, padding=1)
     linear = autograd.Linear(32 * 28 * 28, 10)
 
+
     def forward(x, t):
-        '''
+        
         y = conv1(x)
         y = autograd.relu(y)
+        y = autograd.max_pool_2d(y)
         y = conv2(y)
         y = autograd.relu(y)
         y = autograd.max_pool_2d(y)
-        '''
-        y = autograd.flatten(x)
+        y=autograd.flatten(y)
         y = linear(y)
         loss = autograd.softmax_cross_entropy(y, t)
         return loss, y
@@ -127,7 +128,7 @@ if __name__ == '__main__':
         for i in range(batch_number):
             inputs = tensor.Tensor(device=dev, data=x_train[ i * 100:(1 + i) * 100], stores_grad=False)
             targets = tensor.Tensor(device=dev, data=y_train[i * 100:(1 + i) * 100], requires_grad=False, stores_grad=False)
-
+            
             loss, y = forward(inputs, targets)
 
             accuracy_rate = accuracy(tensor.to_numpy(y),
@@ -135,6 +136,12 @@ if __name__ == '__main__':
             if (i % 5 == 0):
                 print('accuracy is:', accuracy_rate, 'loss is:',
                       tensor.to_numpy(loss)[0])
+            
+            for p, gp in autograd.backward(loss):
+                sgd.apply(epoch, gp, p, '')
+            
+            
 
-            # for p, gp in autograd.backward(loss):
-            #    sgd.apply(0, gp, p, '')
+            
+            
+
