@@ -37,9 +37,9 @@ const Tensor OpenclConvolution::Forward(int flag, const Tensor &input) {
   auto data_type = input.data_type();
   auto device = input.device();
 
-   // TODO(wangwei) update the layer config if the input sample shape changes
+  // TODO(wangwei) update the layer config if the input sample shape changes
   CHECK(input.shape(1) == channels_ && input.shape(2) == height_ &&
-      input.shape(3) == width_) << "input sample shape should not change";
+        input.shape(3) == width_) << "input sample shape should not change";
 
   Shape shape{batchsize, num_filters_, conv_height_, conv_width_};
   Tensor output(shape, device, data_type);
@@ -48,16 +48,16 @@ const Tensor OpenclConvolution::Forward(int flag, const Tensor &input) {
   for (size_t b = 0; b < batchsize; b++) {
     int offset = b * imagesize;
 
-    col_data.device()->Exec([input, offset, col_data, this](Context* ctx) mutable {
+    col_data.device()->Exec([input, offset, col_data, this](Context * ctx) mutable {
 
       this->Im2Col(input.block(), offset,
-                   height_, width_,
-                   kernel_h_, kernel_w_,
-                   pad_h_, pad_w_,
-                   stride_h_, stride_w_,
-                   conv_height_, conv_width_,
-                   0, channels_,
-                   col_data.block(), ctx);
+      height_, width_,
+      kernel_h_, kernel_w_,
+      pad_h_, pad_w_,
+      stride_h_, stride_w_,
+      conv_height_, conv_width_,
+      0, channels_,
+      col_data.block(), ctx);
     },
     {input.block()},
     {col_data.block()});
@@ -116,16 +116,17 @@ OpenclConvolution::Backward(int flag, const Tensor &grad) {
     int im_offset = b * imagesize;
     int col_offset = 0; // Always keep this to zero.
 
-    col_data.device()->Exec([src_data, col_data, im_offset, col_offset, this](Context* ctx) mutable {
+    col_data.device()->Exec([src_data, col_data, im_offset, col_offset,
+    this](Context * ctx) mutable {
 
       this->Im2Col(src_data.block(), im_offset,
-                   height_, width_,
-                   kernel_h_, kernel_w_,
-                   pad_h_, pad_w_,
-                   stride_h_, stride_w_,
-                   conv_height_, conv_width_,
-                   col_offset, channels_,
-                   col_data.block(), ctx);
+      height_, width_,
+      kernel_h_, kernel_w_,
+      pad_h_, pad_w_,
+      stride_h_, stride_w_,
+      conv_height_, conv_width_,
+      col_offset, channels_,
+      col_data.block(), ctx);
     },
     {src_data.block()},
     {col_data.block()});
@@ -134,19 +135,20 @@ OpenclConvolution::Backward(int flag, const Tensor &grad) {
                   grad.device(), grad.data_type());
     CopyDataToFrom(&grad_b, grad, grad_b.Size(), 0, b * grad_b.Size());
 
-    dw += Mult(grad_b, col_data.T());
-    Tensor dcol_b = Mult(weight_.T(), grad_b);
+    dw += Mult(grad_b, Transpose(col_data));
+    Tensor dcol_b = Mult(Transpose(weight_), grad_b);
 
-    dx.device()->Exec([dcol_b, dx, im_offset, col_offset, this](Context* ctx) mutable {
+    dx.device()->Exec([dcol_b, dx, im_offset, col_offset,
+    this](Context * ctx) mutable {
 
       this->Col2Im(dcol_b.block(), col_offset,
-                   height_, width_,
-                   kernel_h_, kernel_w_,
-                   pad_h_, pad_w_,
-                   stride_h_, stride_w_,
-                   conv_height_, conv_width_,
-                   im_offset, channels_,
-                   dx.block(), ctx);
+      height_, width_,
+      kernel_h_, kernel_w_,
+      pad_h_, pad_w_,
+      stride_h_, stride_w_,
+      conv_height_, conv_width_,
+      im_offset, channels_,
+      dx.block(), ctx);
     },
     {dcol_b.block()},
     {dx.block()});

@@ -57,45 +57,36 @@ class Tensor {
  public:
   ~Tensor();
   Tensor();
-  explicit Tensor(Shape &&shape, DataType dtype = kFloat32);
+
+  /// Constructor using default device.
   explicit Tensor(const Shape &shape, DataType dtype = kFloat32);
 
-  Tensor(Shape &&shape,
-         std::shared_ptr<Device> dev,
-         DataType dtype = kFloat32);
+  /// Constructor with shape, device and data type
   Tensor(const Shape &shape,
          std::shared_ptr<Device> dev,
          DataType dtype = kFloat32);
 
-  /// Copy Tensor to share the internal data.  No deep copy.
+  /// Copy constructor.  No deep copy.
   Tensor(const Tensor &from);
-  /// Copy Tensor to share the internal data.  No deep copy.
-  /// For 2 tensors sharing same block but different strides.
-  Tensor(const Tensor &from, Shape &new_shape, vector<int> &new_strides);
-  /// Copy Tensor to share the internal data.  No deep copy.
+
+  /// Move constructor.  No deep copy.
   Tensor(Tensor &&from);
+
+  // --------------------------------------------------------------------------
+  // ---Following methods return info of the class without making any changes--
+  // --------------------------------------------------------------------------
 
   /// For functions in xx_math.cc to access the block.
   /// Users should not operate against Block directly.
   /// block_ is allocated in constructors.
   Block *block() const { return block_; }
-  void SetBlock(Block *block);
 
   std::shared_ptr<Device> device() const { return device_; }
 
-  /// return immutable Tensor values with given type.
+  /// Return immutable Tensor values with given type.
   template <typename SType>
   const SType *data() const {
     return static_cast<const SType *>(block()->data());
-  }
-
-  /// used for swig code to convert Tensor into numpy array.
-  /// It gets data into 'value'
-  template <typename SType>
-  void GetValue(SType *value, const size_t num) {
-    CHECK(device_ == defaultDevice);
-    const SType* ptr = data<SType>();
-    for (size_t i = 0; i < num; i++) value[i] = ptr[i];
   }
 
   /// data type, including kFloat16, kFloat32, kInt
@@ -113,28 +104,55 @@ class Tensor {
   bool empty() const { return nDim() == 0; }
 
   /// Check if the tensor's last stride==1
-  bool transpose() const { return (strides_.back() != 1); }
+  bool transpose() const {
+    if (!strides_.empty()) {
+      auto last = strides_.front();
+      for (auto s : strides_) {
+        if (s > last)
+          return true;
+        last = s;
+      }
+    }
+    return false;
+  }
 
   const vector<int>& strides() const { return strides_; }
 
-  /// return true if the content of the tensor is initialized
+  /// Return true if the content of the tensor is initialized
   bool initailized() const {
     return block_ != nullptr && block_->initialized();
   }
 
-  /// return number of total elements
+  /// Return number of total elements
   size_t Size() const {
     if (block_ == nullptr) return 0u;
     CHECK_EQ(block_->size() % SizeOf(data_type_), 0u);
     return block_->size() / SizeOf(data_type_);
   }
 
-  /// return memory size (i.e., Bytes)
+  /// Return memory size (i.e., Bytes)
   size_t MemSize() const { return block_->size(); }
 
-  /// Reset the tensor shape, it may reallocate block, if MemSize() changes.
-  Tensor Reshape(const Shape &shape);
-  Tensor Reshape(Shape &&shape);
+  /// used for swig code to convert Tensor into numpy array.
+  /// It gets data into 'value'
+  template <typename SType>
+  void GetValue(SType *value, const size_t num) {
+    CHECK(device_ == defaultDevice);
+    const SType* ptr = data<SType>();
+    for (size_t i = 0; i < num; i++) value[i] = ptr[i];
+  }
+
+  /// Serialize data, shape and transpose to protobuf object.
+  void ToProto(singa::TensorProto *proto) const;
+
+  /// Return average L1 norm
+  float L1() const;
+
+  /// Return average L2 norm
+  float L2() const;
+  // --------------------------------------------------------------------------
+  // ---Following methods changes the internal members
+  // --------------------------------------------------------------------------
 
   /// Reset the shape, device, and data type as given tensor.
   /// If block size changes, then reallocate a new block.
@@ -155,6 +173,8 @@ class Tensor {
   template <typename SType>
   void SetValue(const SType x);
 
+  void SetShape(const Shape& shape);
+
   /// For init the tensor values, copy 'num' elements from 'src' to the internal
   /// memory with 'offset' (elements).
   template <typename SType>
@@ -165,46 +185,41 @@ class Tensor {
   /// Meta data would not be copied!
   void CopyData(const Tensor &other);
 
-  void RepeatData(vector<size_t> repeats, int axis, int total_repeats, const Tensor &other);
-
   /// Deserialize data, shape and transpose from protobuf object.
   void FromProto(const singa::TensorProto &proto);
 
-  /// Serialize data, shape and transpose to protobuf object.
-  void ToProto(singa::TensorProto *proto) const;
+
+  /// TODO(wangwei) merge RepeatData into  Repeat?
+  void RepeatData(const vector<size_t>& repeats, int axis, int total_repeats,
+                  const Tensor &other);
+
+  // --------------------------------------------------------------------------
+  // ---Following methods returns a new Tensor without change original tensor
+  // --------------------------------------------------------------------------
+
+  Tensor Repeat(const vector<size_t>& repeats, int axis,
+                std::shared_ptr<Device> device = nullptr);
 
   /// return an exactly the same Tensor with data been deep copied to the given
   /// device. If 'device' is nullptr, then clone it one the current device.
   Tensor Clone(std::shared_ptr<Device> device = nullptr) const;
 
-  Tensor Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> device = nullptr) ;
-
-  // Tensor operations
-
-  /// Matrix transpose.  Valid only if shape.size() == 2.
-  /// No data copy, just set the transpose_ filed of the returned tensor.
-  Tensor T() const;
-
-  /// Reverse the shape vector
-  Tensor Transpose() const;
-
-  /// Change the axes
-  Tensor Transpose(const vector<size_t> &axes) const;
-
-  /// Copy the meta info with data block shared.
+  // --------------------------------------------------------------------------
+  // ---Following methods change the tensor and return itself
+  // --------------------------------------------------------------------------
+  /// Copy assignment
   Tensor &operator=(const Tensor &in);
 
-  /// Copy the meta info with data block shared.
+  /// Move assignment
   Tensor &operator=(Tensor &&in);
 
   Tensor &operator+=(const Tensor &in);
-  // void operator+=(Tensor&& in);
+
   Tensor &operator-=(const Tensor &in);
-  // void operator-=(Tensor&& in);
+
   Tensor &operator*=(const Tensor &in);
-  // void operator*=(Tensor&& in);
+
   Tensor &operator/=(const Tensor &in);
-  // void operator/=(Tensor&& in);
 
   // Scalar operations.
 
@@ -224,10 +239,19 @@ class Tensor {
   template <typename SType>
   Tensor &operator/=(const SType x);
 
-  /// Return average L1 norm
-  float L1() const;
-  /// Return average L2 norm
-  float L2() const;
+  /// change the shape (and stride); the block may be reallocated.
+  Tensor &Reshape(const Shape &shape);
+
+  /// Matrix transpose.  Valid only if shape.size() == 2.
+  Tensor& T();
+
+  /// Reverse the shape vector
+  Tensor& Transpose();
+
+  /// Change the axes
+  Tensor& Transpose(const vector<size_t> &axes);
+
+ protected:
 
   //generate strides automatically if stride field is not passed
   void generate_strides() {
@@ -259,10 +283,10 @@ class Tensor {
   vector<int> strides_ = {};
 }; //end of tensor class
 
+
 inline size_t Product(const Shape &shape, int start = 0, size_t len = 0) {
   if (len == 0) len = shape.size();
-  if (len == 0)
-    return 0;
+  if (len == 0) return 0;
   CHECK_LE(len, shape.size());
   size_t v = 1;
   for (unsigned int i = start; i < len; i++) v *= shape[i];
@@ -275,24 +299,31 @@ inline void CheckDataTypeAndLang(const Tensor &in1, const Tensor &in2) {
   CHECK_EQ(in1.device()->lang(), in2.device()->lang());
 }
 
+
 template <typename FromType, typename ToType>
 ToType TypeCast(const FromType &x) {
   // TODO(wangwei) cast fp16; prevent some casts, e.g., float to char
   return static_cast<ToType>(x);
 }
 
-Tensor Reshape(const Tensor &in, const Shape &s);
-Tensor Reshape(const Tensor &in, Shape &&s);
 
-// For tensors with sparse content, e.g., missing columns or rows.
-// class SparseTensor : public Tensor {};
+/// Reshape the given tensor and generate a new tensor,
+/// which shares the memory with in if possible
+Tensor Reshape(const Tensor &in, const Shape &s);
+
+/// Reverse the shape vector
+Tensor Transpose(const Tensor& in);
+
+/// Change the axes
+Tensor Transpose(const Tensor& in, const vector<size_t> &axes);
 
 /// Copy 'num' elements of src to dst.
 /// The first 'src_offset' ('dst_offset') elements will be skipped.
 void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
                     const size_t dst_offset = 0, const size_t src_offset = 0);
 
-void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
+
+void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int axis,
                       Tensor *dst, const Tensor &in, const size_t num);
 
 // =============Element-wise operations====================================
@@ -411,6 +442,8 @@ void Div(const SType x, const Tensor &in, Tensor *out);
 
 template <typename SType = float>
 SType Sum(const Tensor &in);
+
+
 // ============Matrix (row/column) operations==================================
 /// Average elements in the Tensor, currently only support vector and matrix.
 /// if 'axis' is 0, average all rows into a single row
@@ -510,8 +543,8 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p);
 
 /// To be called by pysinga autograd operations;
 /// swig ignores the const qualifier http://www.swig.org/Doc3.0/SWIGPlus.html#SWIGPlus_const
-const Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
-const Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
+Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
+Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
 
 /// Return a tensor consisting of rows ([start, end)) from 'in'. It copies the
 /// values from 'in'. 'in' ia a 2D Tensor.
@@ -519,7 +552,8 @@ Tensor CopyRows(const Tensor &in, const size_t start, const size_t end);
 /// Alias of CopyRows
 Tensor SliceRows(const Tensor &in, const size_t start, const size_t end);
 /// Slice the input tensor along the give axis to generate a new tensor
-Tensor SliceOn(const Tensor &in, const size_t start, const size_t end, int axis);
+Tensor SliceOn(const Tensor &in, const size_t start, const size_t end,
+               int axis);
 /// Return a tensor consisting of columns ([start, end)) from 'in'. It copies
 /// the values from 'in'. 'in' is a  2D Tensor.
 Tensor CopyColumns(const Tensor &in, const size_t start, const size_t end);

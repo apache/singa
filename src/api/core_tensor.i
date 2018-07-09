@@ -101,12 +101,11 @@ namespace singa{
     const std::vector<size_t> &shape() const;
     const size_t shape(size_t idx) const;
     bool transpose() const;
-    size_t nDim() const;
-    Tensor Transpose() const;
-    Tensor Transpose(const std::vector<size_t> &axes) const;
+    size_t nDim() const;    
+
     size_t Size() const;
     size_t MemSize() const;
-    Tensor Reshape(const std::vector<size_t> &shape);
+    
     void ResetLike(const Tensor &t);
     void AsType(DataType type);
     void ToDevice(std::shared_ptr<singa::Device> dev);
@@ -122,10 +121,10 @@ namespace singa{
 
     void CopyData(const Tensor &other);
     void RepeatData(std::vector<size_t> repeats, int axis, int total_repeats, const Tensor &src);
+    
     Tensor Clone() const;
     Tensor Repeat(std::vector<size_t> repeats, int axis);
-    Tensor T() const;
-
+    
 
 #if USE_JAVA
     %rename(iAdd) operator+=(const Tensor &t);
@@ -166,6 +165,10 @@ namespace singa{
                         Tensor *dst, const Tensor &src, const size_t num);
 
   Tensor Reshape(const Tensor &in, const std::vector<size_t> &s);
+  Tensor Transpose(const Tensor &in, const std::vector<size_t> &axes);
+
+  %rename(DefaultTranspose) Transpose(const Tensor &in);
+  Tensor Transpose(const Tensor &in);
 
   Tensor Abs(const Tensor &t);
   Tensor Exp(const Tensor &t);
@@ -326,6 +329,6 @@ namespace singa{
   Tensor SoftMax(const Tensor &in);
   void SoftMax(const Tensor &in, Tensor *out);
 
-  const Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
-  const Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
+  Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
+  Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
 }

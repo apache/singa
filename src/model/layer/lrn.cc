@@ -52,8 +52,7 @@ const Tensor LRN::Forward(int flag, const Tensor& input) {
                    std::min(input.shape(1), c + local_size_ / 2 + 1));
       window = Square(window);
 
-      Tensor tmp, ch;
-      tmp.Reshape(Shape{input.shape(2) * input.shape(3)});
+      Tensor ch, tmp(Shape{input.shape(2) * input.shape(3)});
       SumRows(window, &tmp);
 
       tmp *= alpha_;
@@ -97,8 +96,7 @@ const std::pair<Tensor, vector<Tensor>> LRN::Backward(int flag,
         Tensor window =
             CopyRows(image, std::max(0, static_cast<int>(c) - local_size_ / 2),
                      std::min(grad.shape(1), c + local_size_ / 2 + 1));
-        Tensor tmp;
-        tmp.Reshape(Shape{grad.shape(2) * grad.shape(3)});
+        Tensor tmp(Shape{grad.shape(2) * grad.shape(3)});
         window = Square(window);
         SumRows(window, &tmp);
         tmp *= alpha_;
@@ -126,8 +124,7 @@ const std::pair<Tensor, vector<Tensor>> LRN::Backward(int flag,
         Tensor window =
             CopyRows(image, std::max(0, static_cast<int>(c) - local_size_ / 2),
                      std::min(grad.shape(1), c + local_size_ / 2 + 1));
-        Tensor tmpr;
-        tmpr.Reshape(Shape{grad.shape(2) * grad.shape(3)});
+        Tensor tmpr(Shape{grad.shape(2) * grad.shape(3)});
         SumRows(window, &tmpr);
         tmpr.Reshape(Shape{grad.shape(2), grad.shape(3)});
         channels.push_back(tmpr);

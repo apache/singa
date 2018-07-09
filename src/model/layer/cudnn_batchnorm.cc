@@ -39,8 +39,8 @@ void CudnnBatchNorm::ToDevice(std::shared_ptr<Device> device) {
 
 void CudnnBatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   BatchNorm::Setup(in_sample, conf);
-  resultSaveMean_.Reshape(Shape{channels_});
-  resultSaveVariance_.Reshape(Shape{channels_});
+  resultSaveMean_.SetShape(Shape{channels_});
+  resultSaveVariance_.SetShape(Shape{channels_});
 }
 
 void CudnnBatchNorm::InitCudnn(const Shape& shape, DataType dtype) {

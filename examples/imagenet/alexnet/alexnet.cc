@@ -174,7 +174,7 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
   size_t b = 0;
   size_t n_read;
   Timer timer, ttr;
-  Tensor prefetch_x, prefetch_y;
+  Tensor prefetch_x(Shape{batchsize, 3, kCropSize, kCropSize}), prefetch_y(Shape{batchsize}, kInt);
   string binfile = bin_folder + "/train1.bin";
   timer.Tick();
   data.LoadData(kTrain, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read,

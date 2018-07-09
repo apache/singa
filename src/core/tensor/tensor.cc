@@ -21,6 +21,7 @@
 #include "./tensor_math_cuda.h"
 #include "./tensor_math_opencl.h"
 #include <utility>
+#include <algorithm>
 
 #define Noaxis 9999
 
@@ -45,13 +46,7 @@ Tensor::Tensor(const Shape &shape, DataType dtype)
     block_ = device_->NewBlock((int)size);
   generate_strides();
 }
-Tensor::Tensor(Shape &&shape, DataType dtype)
-  : data_type_(dtype), device_(defaultDevice), shape_(shape) {
-  size_t size = Product(shape_) * SizeOf(data_type_);
-  if (size)
-    block_ = device_->NewBlock((int)size);
-  generate_strides();
-}
+
 
 //non-strided constructors with device
 Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
@@ -62,55 +57,23 @@ Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
     block_ = device_->NewBlock((int)size);
   generate_strides();
 }
-Tensor::Tensor(Shape &&shape, std::shared_ptr<Device> device, DataType dtype)
-  : data_type_(dtype), device_(device), shape_(shape) {
-  size_t size = Product(shape_) * SizeOf(data_type_);
-  if (size)
-    block_ = device_->NewBlock((int)size);
-  generate_strides();
-}
 
 
-Tensor::Tensor(const Tensor &in)
-  : //transpose_(in.transpose_),
-    data_type_(in.data_type_),
-    device_(in.device_),
-    block_(in.block()),
-    shape_(in.shape_),
-    strides_(in.strides_) {
+Tensor::Tensor(const Tensor &in) : data_type_(in.data_type_),
+  device_(in.device_),  block_(in.block()),  shape_(in.shape_),
+  strides_(in.strides_) {
   if (block_ != nullptr)
     block_->IncRefCount();
 }
 
-//strided constructor taking in a tensor, shape and strides
-Tensor::Tensor(const Tensor &in, Shape &new_shape, vector<int> &new_strides)
-  : //transpose_(in.transpose_),
-    data_type_(in.data_type_),
-    device_(in.device_),
-    block_(in.block()),
-    shape_(new_shape),
-    strides_(new_strides) {
-  if (block_ != nullptr)
-    block_->IncRefCount();
-}
 
-Tensor::Tensor(Tensor &&in)
-  : //transpose_(in.transpose_),
-    data_type_(in.data_type_),
-    device_(in.device_),
-    shape_(std::move(in.shape_)),
-    strides_(in.strides_) {
+Tensor::Tensor(Tensor &&in) : data_type_(in.data_type_),
+  device_(in.device_), shape_(std::move(in.shape_)),
+  strides_(std::move(in.strides_)) {
   block_ = in.block_;
   in.block_ = nullptr;
 }
 
-
-void Tensor::SetBlock(Block *block) {
-  LOG(WARNING) << "Pls avoid using this function, which may have side-effect.";
-  if (block_ != nullptr)
-    if (block_->DecRefCount()) device_->FreeBlock(block_);
-  block_ = block;
-}
 
 void Tensor::ResetLike(const Tensor &in) {
   if (block_ == nullptr || device_ != in.device_ || MemSize() != in.MemSize()) {
@@ -124,41 +87,16 @@ void Tensor::ResetLike(const Tensor &in) {
   strides_ = in.strides_;
 }
 
-// if tensor is not transposed yet i.e strides == 1,
-// then we simply change the shape and generate new default strides
-// if tensor is already transposed i.e strides != 1,
-// it should be copied to a new tensor with newly generated default strides
-// TODO(wangwei) raise error if the shape not match
+void Tensor::SetShape(const Shape& shape) {
+  if (Product(shape_) != Product(shape)) {
+    if (block_ != nullptr && block_->DecRefCount() == 0)
+      device_->FreeBlock(block_);
+    block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+  }
+  shape_ = shape;
+  generate_strides();
+}
 
-// void Tensor::Reshape(const Shape &shape) {
-//   if (strides_.size() == 0)
-//     strides_.push_back(1);
-
-//   if (Product(shape_) != Product(shape)) {
-//     if (block_ != nullptr && block_->DecRefCount() == 0)
-//       device_->FreeBlock(block_);
-//     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-//   } else if (transpose()) {
-//     LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
-//   }
-//   shape_ = shape;
-//   generate_strides();
-// }
-
-// void Tensor::Reshape(Shape &&shape) {
-//   if (strides_.size() == 0)
-//     strides_.push_back(1);
-
-//   if (Product(shape_) != Product(shape)) {
-//     if (block_ != nullptr && block_->DecRefCount() == 0)
-//       device_->FreeBlock(block_);
-//     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-//   } else if (transpose()) {
-//     LOG(FATAL) << "Reshape Error: Reshape called on tranposed tensor. Not implemented yet." ;
-//   }
-//   shape_ = std::move(shape);
-//   generate_strides();
-// }
 
 void Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
@@ -217,7 +155,8 @@ void Tensor::CopyData(const Tensor &src) {
   }
 }
 
-void Tensor::RepeatData(vector<size_t> repeats, int axis, int total_repeats, const Tensor &src) {
+void Tensor::RepeatData(const vector<size_t>& repeats, int axis, int total_repeats,
+                        const Tensor &src) {
   if (repeats.size() == 1) {
     CHECK_EQ(Size(), src.Size()*total_repeats);
   } else {
@@ -336,7 +275,8 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
   }
 }
 
-Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> device) {
+Tensor Tensor::Repeat(const vector<size_t>& repeats, int axis,
+                      std::shared_ptr<Device> device) {
   if (device == nullptr) device = device_;
   vector<size_t> tshape;
   int total_repeats = 0;
@@ -346,7 +286,7 @@ Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> 
   } else {
     if (repeats.size() == 1) {
       total_repeats = repeats[0];
-      for (size_t i = 0; i < shape_.size(); i++) {
+      for (int i = 0; i < static_cast<int>(shape_.size()); i++) {
         if (i == axis) {
           tshape.push_back(shape_[i] * total_repeats);
         } else {
@@ -363,7 +303,7 @@ Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> 
         }
         total_repeats += repeats[i];
       }
-      for (size_t i = 0; i < shape_.size(); i++) {
+      for (int i = 0; i < static_cast<int>(shape_.size()); i++) {
         if (i == axis) {
           tshape.push_back(total_repeats);
         } else {
@@ -387,68 +327,53 @@ Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   return t;
 }
 
-Tensor Tensor::T() const {
+Tensor& Tensor::T() {
   // this function only works for 2d tensors
   CHECK_EQ(shape_.size(), 2u);
-  Tensor t;
-  t.device_ = device_;
-  t.data_type_ = data_type_;
-  t.shape_.push_back(shape_[1]);
-  t.shape_.push_back(shape_[0]);
-  t.strides_.clear();
-  t.strides_.push_back(strides_[1]);
-  t.strides_.push_back(strides_[0]);
-  t.block_ = block_;
-  block_->IncRefCount();
-  return t;
+  Transpose();
+  return *this;
 }
 
 //normal transpose without axes
-Tensor Tensor::Transpose() const {
-  // if(shape_.size() != strides_.size())
-  //   generate_strides();
-
-  Tensor t;
-  t.device_ = device_;
-  t.data_type_ = data_type_;
-  t.strides_.clear();
-  for (size_t n = 0; n < shape_.size(); ++n) {
-    t.shape_.push_back(shape_[shape_.size() - n - 1]);
-    t.strides_.push_back(strides_[shape_.size() - n - 1]);
-  }
-  t.block_ = block_;
-  block_->IncRefCount();
-  return t;
+Tensor& Tensor::Transpose() {
+  std::reverse(shape_.begin(), shape_.end());
+  std::reverse(strides_.begin(), strides_.end());
+  return *this;
 }
 
 //transpose with axes
-// TODO(wangwei) the shape and axes should match
-Tensor Tensor::Transpose(const vector<size_t> &axes) const {
-  // if(axes.size() != shape_.size()){
-  //   std::cout << "Warning: Size of input axes doesn't match size of shape" << std::endl;
-  //   return void();
-  // }
-  // if(shape_.size() != strides_.size())
-  //   generate_strides();
+Tensor& Tensor::Transpose(const vector<size_t> &axes) {
+  CHECK_EQ(axes.size(), shape_.size()) <<
+                                       "Tranpose axes's length should be equal to shape";
 
-  Tensor t;
-  t.device_ = device_;
-  t.data_type_ = data_type_;
-  t.strides_.clear();
+  auto shape = shape_;
+  auto strides = strides_;
+  shape_.clear();
+  strides_.clear();
   for (size_t n = 0; n < axes.size(); ++n) {
-    t.shape_.push_back(shape_[axes[n]]);
-    t.strides_.push_back(strides_[axes[n]]);
+    shape_.push_back(shape[axes[n]]);
+    strides_.push_back(strides[axes[n]]);
   }
-  t.block_ = block_;
-  block_->IncRefCount();
-  return t;
+  return *this;
+}
+
+//normal transpose without axes
+Tensor Transpose(const Tensor& in) {
+  Tensor out(in);
+  out.Transpose();
+  return out;
+}
+
+//transpose with axes
+Tensor Transpose(const Tensor& in, const vector<size_t> &axes) {
+  Tensor out(in);
+  out.Transpose(axes);
+  return out;
 }
 
 Tensor &Tensor::operator=(const Tensor &in) {
-  // LOG(ERROR) << "= const &";
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
-  //transpose_ = in.transpose_;
   strides_ = in.strides_;
   data_type_ = in.data_type_;
   shape_ = in.shape_;
@@ -460,11 +385,9 @@ Tensor &Tensor::operator=(const Tensor &in) {
 }
 
 Tensor &Tensor::operator=(Tensor &&in) {
-  // LOG(ERROR) << "= &&";
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
-  //transpose_ = in.transpose_;
-  strides_ = std::move(in.strides_);
+    strides_ = std::move(in.strides_);
   data_type_ = in.data_type_;
   shape_ = std::move(in.shape_);
   device_ = in.device_;
@@ -473,17 +396,6 @@ Tensor &Tensor::operator=(Tensor &&in) {
   return *this;
 }
 
-// Tensor Reshape(const Tensor &in, const Shape &s) {
-//   // Tensor out(in);
-//   // out.Reshape(s);
-//   return out;
-// }
-
-// Tensor Reshape(const Tensor &in, Shape &&s) {
-//   // Tensor out(in);
-//   // out.Reshape(std::move(s));
-//   return out;
-// }
 
 #define GenUnaryTensorArgMemberFn(op, fn) \
   Tensor &Tensor::op(const Tensor &in) {  \
@@ -539,7 +451,7 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   }
 }
 
-void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
+void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int axis,
                       Tensor *dst, const Tensor &src, const size_t num) {
   if (repeats.size() == 1) {
     broadcast_flag = true;
@@ -561,11 +473,11 @@ void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
     axis_shape = 1;
     shape_outer = Product(src.shape());
   } else {
-    for (size_t i = 0; i < axis; i++) {
+    for (int i = 0; i < axis; i++) {
       shape_outer *= src.shape()[i];
     }
     axis_shape = src.shape()[axis];
-    for (size_t i = axis + 1; i < src.nDim(); i++) {
+    for (int i = axis + 1; i < static_cast<int>(src.nDim()); i++) {
       chunk *= src.shape()[i];
     }
   }
@@ -912,7 +824,7 @@ template <typename SType>
 void AddColumn(const SType alpha, const SType beta, const Tensor &v,
                Tensor *M) {
   if (M->transpose()) {
-    Tensor X = M->T();
+    Tensor X = Transpose(*M);
     AddRow(v, &X);
   } else {
     CHECK_EQ(M->nDim(), 2u);
@@ -935,7 +847,7 @@ void AddRow(const Tensor &v, Tensor *M) { AddRow(1, 1, v, M); }
 template <typename SType>
 void AddRow(const SType alpha, const SType beta, const Tensor &v, Tensor *M) {
   if (M->transpose()) {
-    Tensor X = M->T();
+    Tensor X = Transpose(*M);
     AddColumn(v, &X);
   } else {
     CHECK_EQ(M->nDim(), 2u);
@@ -980,7 +892,7 @@ Tensor ConcatOn(const vector<Tensor> &in, int axis) {
       tmp.push_back(Reshape(t, {t.shape(0), t.Size() / t.shape(0)}));
     }
     auto ret = ConcatenateRows(tmp);
-    ret = ret.Reshape(out_shape);
+    ret.Reshape(out_shape);
     return ret;
   } else {
     for (const auto& t : in) {
@@ -990,7 +902,7 @@ Tensor ConcatOn(const vector<Tensor> &in, int axis) {
       tmp.push_back(Reshape(t, {nrow, t.Size() / nrow}));
     }
     auto ret = ConcatenateColumns(tmp);
-    ret = ret.Reshape(out_shape);
+    ret.Reshape(out_shape);
     return ret;
   }
 }
@@ -1059,7 +971,8 @@ Tensor CopyRows(const Tensor &in, const size_t start, const size_t end) {
 }
 
 
-Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis) {
+Tensor SliceOn(const Tensor&in, const size_t start, const size_t end,
+               int axis) {
   Shape out_shape = in.shape();
   out_shape[axis] = end - start;
   if (axis == 0) {
@@ -1074,7 +987,7 @@ Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis) 
     auto suffix = in.Size() / nrow / in.shape(axis);
     auto ret = SliceColumns(Reshape(in, {nrow, in.Size() / nrow}),
                             start * suffix, end * suffix);
-    ret = ret.Reshape(out_shape);
+    ret.Reshape(out_shape);
     return ret;
   }
 }
@@ -1145,7 +1058,7 @@ void SubRow(const Tensor &v, Tensor *M) { AddRow(-1, 1, v, M); }
 
 void SumColumns(const Tensor &M, Tensor *v) {
   if (M.transpose()) {
-    Tensor X = M.T();
+    Tensor X = Transpose(M);
     SumRows(X, v);
   } else {
     CHECK_EQ(M.nDim(), 2u);
@@ -1160,7 +1073,7 @@ void SumColumns(const Tensor &M, Tensor *v) {
 }
 void SumRows(const Tensor &M, Tensor *v) {
   if (M.transpose()) {
-    Tensor X = M.T();
+    Tensor X = Transpose(M);
     SumColumns(X, v);
   } else {
     CHECK_EQ(M.nDim(), 2u);
@@ -1170,7 +1083,7 @@ void SumRows(const Tensor &M, Tensor *v) {
 
     Tensor one(Shape{nb_row}, M.device(), M.data_type());
     one.SetValue(1.0f);  // TODO(wangwei) cast type
-    Tensor X = M.T();
+    Tensor X = Transpose(M);
     Mult(X, one, v);
   }
 }
@@ -1268,13 +1181,13 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 // ************************
 // Misc.
 // ************************
-const Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t) {
+Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t) {
   Tensor loss({p.shape(0)}, p.device(), p.data_type());
   ComputeCrossEntropy(p, t, &loss);
   return loss;
 }
 
-const Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t) {
+Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t) {
   auto g = p.Clone();
   SoftmaxCrossEntropyBwd(t, &g);
   return g;
@@ -1310,75 +1223,25 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
   });
 }
 
-Tensor Tensor::Reshape(const Shape &shape) {
-  if (strides_.size() == 0)
-    strides_.push_back(1);
 
-  // TODO(wangwei) remove this condition and report error if size changes.
-  if (Product(shape_) != Product(shape)) {
-    if (block_ != nullptr && block_->DecRefCount() == 0)
-      device_->FreeBlock(block_);
-    block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
+// if tensor is not transposed yet, we change the shape and generate new strides
+// if tensor is already transposed, we reallocate the memory and generate strides
+Tensor& Tensor::Reshape(const Shape &shape) {
+  if (transpose()) {
+    Tensor t(shape, device_, data_type_);
+    singa::Transform(*this, &t);
+    shape_ = shape;
+    std::swap(t.block_, block_);
+  } else {
     shape_ = shape;
     generate_strides();
-    return *this;
-
-  } else if (transpose()) {
-    Tensor t(shape_, device_, data_type_);
-    t.block_ = t.device()->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-    singa::Transform(*this, &t);
-    t.shape_ = shape;
-    return t;
-  } else {
-    Tensor t;
-    t.shape_ = shape;
-    t.device_ = device_;
-    t.data_type_ = data_type_;
-    t.block_ = block_;  // be careful about the block inference (mem leaking)
-    t.block_->IncRefCount();
-    t.generate_strides();
-    return t;
   }
-}
-
-Tensor Tensor::Reshape(Shape &&shape) {
-  if (strides_.size() == 0)
-    strides_.push_back(1);
-
-  if (Product(shape_) != Product(shape)) {
-    if (block_ != nullptr && block_->DecRefCount() == 0)
-      device_->FreeBlock(block_);
-    block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-    shape_ = std::move(shape);
-    generate_strides();
-    return *this;
-
-  } else if (transpose()) {
-    Tensor t(shape_, device_, data_type_);
-    t.block_ = t.device()->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
-    singa::Transform(*this, &t);
-    t.shape_ = shape;
-    return t;
-  } else {
-    Tensor t;
-    t.shape_ = shape;
-    t.device_ = device_;
-    t.data_type_ = data_type_;
-    t.block_ = block_;  // be careful about the block inference (mem leaking)
-    t.block_->IncRefCount();
-    t.generate_strides();
-    return t;
-  }
+  return *this;
 }
 
 Tensor Reshape(const Tensor &in, const Shape &s) {
   Tensor out(in);
   return out.Reshape(s);
-}
-
-Tensor Reshape(const Tensor &in, Shape &&s) {
-  Tensor out(in);
-  return out.Reshape(std::move(s));
 }
 
 }  // namespace singa

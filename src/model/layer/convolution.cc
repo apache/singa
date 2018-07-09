@@ -96,9 +96,9 @@ void Convolution::Setup(const Shape &in_sample, const LayerConf &conf) {
   col_width_ = conv_height_ * conv_width_;
 
   // Setup shape of weight_ and bias_
-  weight_.Reshape(Shape{num_filters_, col_height_});
+  weight_.SetShape(Shape{num_filters_, col_height_});
   if (bias_term_)
-    bias_.Reshape(Shape{num_filters_});
+    bias_.SetShape(Shape{num_filters_});
   // Assume the order of param is: weight, bias
   for (const auto &spec : conf.param()) param_specs_.push_back(spec);
 }
@@ -174,8 +174,8 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
     col_data.CopyDataFromHostPtr(data_col, col_height_ * col_width_);
     Tensor grad_b(Shape{num_filters_, conv_height_ * conv_width_});
     CopyDataToFrom(&grad_b, grad, grad_b.Size(), 0, b * grad_b.Size());
-    dw += Mult(grad_b, col_data.T());
-    Tensor dcol_b = Mult(weight_.T(), grad_b);
+    dw += Mult(grad_b, Transpose(col_data));
+    Tensor dcol_b = Mult(Transpose(weight_), grad_b);
     auto dcol_data = dcol_b.data<float>();
     Col2im(dcol_data, channels_, height_, width_, kernel_h_, kernel_w_, pad_h_,
            pad_w_, stride_h_, stride_w_, dx_b);

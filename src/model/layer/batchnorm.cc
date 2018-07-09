@@ -44,7 +44,7 @@ void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   else
     is_2d_ = false;
 
-  bnScale_.Reshape(Shape{channels_});
+  bnScale_.SetShape(Shape{channels_});
   bnBias_.ResetLike(bnScale_);
   runningMean_.ResetLike(bnScale_);
   runningVariance_.ResetLike(bnScale_);
@@ -68,19 +68,18 @@ void BatchNorm::ToDevice(std::shared_ptr<Device> device) {
 const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
   Tensor x = input.Clone();
   x.Reshape(Shape{input.shape(0), input.Size() / input.shape(0)});
-  Tensor output, mean, var, xnorm;
+  Tensor output;
   output.ResetLike(x);
   // TODO(wangwei) input sample shape check
-
   if ((flag & kTrain) == kTrain) {  // forward for train
     if (is_2d_) {                   // batchnorm_per_activation mode
-      mean = Average(x, 0);
+      auto mean = Average(x, 0);
       runningMean_ *= 1.0f - factor_;
       Axpy(factor_, mean, &runningMean_);
-      xnorm = x.Clone();
+      auto xnorm = x.Clone();
       SubRow(mean, &xnorm);
       xnorm = Square(xnorm);
-      var = Average(xnorm, 0);
+      auto var = Average(xnorm, 0);
       runningVariance_ *= 1.0f - factor_;
       Axpy(factor_, var, &runningVariance_);
       Tensor tmp = var.Clone();
@@ -102,7 +101,7 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
     }
   } else {         // forward for test
     if (is_2d_) {  // batchnorm_per_activation mode
-      xnorm = x.Clone();
+      auto xnorm = x.Clone();
       SubRow(runningMean_, &xnorm);
       Tensor tmp = runningVariance_.Clone();
       tmp = Sqrt(tmp);
@@ -134,7 +133,7 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
       scale.Reshape(Shape{channels_ * height_ * width_});
       bias.Reshape(Shape{channels_ * height_ * width_});
 
-      xnorm = x.Clone();
+      auto xnorm = x.Clone();
       SubRow(mean, &xnorm);
       var = Sqrt(var);
       var += 1e-6f;

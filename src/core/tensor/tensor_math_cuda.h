@@ -54,34 +54,23 @@ cudnn requires tensor dimensions to fulfill 1 requirement:
            Tensor B has shape (2,3,4), cudnn requires shape of {1,2,3,4} to be the input
 */
 vector<int> generate_shape_cuda(const Tensor& x) {
-  Shape shape_ = x.shape();
+  Shape shape = x.shape();
+  CHECK_LE(shape.size(), 5) << "Dimensions (shape) beyond 5 are currently not supported" ;
   vector<int> shape_arr;
-  if (shape_.size() <= 4) {
-    for (size_t n = 0; n < 4 - shape_.size(); ++n) {
+  if (shape.size() <= 4) {
+    for (int n = 0; n < 4 - shape.size(); ++n) {
       shape_arr.push_back(1);
     }
-    for (size_t n = 0; n < shape_.size(); ++n) {
-      shape_arr.push_back(shape_.at(n));
-    }
-    return shape_arr;
-  } else if (shape_.size() == 5) {
-    for (size_t n = 0; n < shape_.size(); ++n) {
-      shape_arr.push_back(shape_.at(n));
-    }
-    return shape_arr;
-  } else {
-    LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
   }
+  for(auto x: shape)
+    shape_arr.push_back(static_cast<int>(x));
   return shape_arr;
 }
 
 int generate_dim_cuda(const Tensor& x) {
+  CHECK_LE(x.nDim(), 5) << "Dimensions (shape) beyond 5 are currently not supported" ;
   if (x.shape().size() <= 4) {return 4;}
-  else if (x.shape().size() == 5) {return 5;}
-  else {
-    LOG(FATAL) << "Dimensions (shape) beyond 5 are currently not supported" ;
-  }
-  return 0;
+  else {return 5;}
 }
 
 /*
@@ -94,29 +83,17 @@ int generate_dim_cuda(const Tensor& x) {
     and stride {9, 9, 3, 1} or {9, 9, 1, 3} to be the inputs
   */
 vector<int> generate_strides_cuda(const Tensor& x) {
-  Shape shape_ = x.shape();
-  vector<int> strides_ = x.strides();
+  Shape shape = x.shape();
+  auto& strides = x.strides();
   vector<int> strides_arr;
-  int product = 1;
-  for (size_t n = 0; n < (shape_.size()); ++n) {
-    product *= shape_[n];
-  }
-  if (shape_.size() <= 4) {
-    for (size_t n = 0; n < 4 - shape_.size(); ++n) {
+  int product = Product(shape);
+  if (shape.size() <= 4) {
+    for (int n = 0; n < 4 - shape.size(); ++n) {
       strides_arr.push_back(product);
     }
-    for (size_t n = 0; n < strides_.size(); ++n) {
-      strides_arr.push_back(strides_[n]);
-    }
-    return strides_arr;
-  } else if (shape_.size() == 5) {
-    for (size_t n = 0; n < strides_.size(); ++n) {
-      strides_arr.push_back(strides_[n]);
-    }
-    return strides_arr;
-  } else {
-    LOG(FATAL) << "Dimensions (strides) beyond 5 are currently not supported" ;
   }
+  for(auto x : strides)
+    strides_arr.push_back(static_cast<int>(x));
   return strides_arr;
 }
 
@@ -241,6 +218,22 @@ void Sub<float, lang::Cuda>(const Tensor& in1,
   }
 }
 
+template <>
+void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out,
+                             Context* ctx) {
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+
+  float alpha = 1.0;
+  float beta = 0.0;
+
+  check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
+                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
+                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                        ));
+
+}
+
 /// Element-wise operation, clamp every element into [low, high]
 /// if x>high, then x=high; if x<low, then x=low.
 template <>
@@ -254,14 +247,7 @@ void Clamp<float, lang::Cuda>(const float low,
   if (in.strides() == out->strides()) {
     cuda::clamp(num, low, high, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::clamp(num, low, high, outPtr, outPtr, ctx->stream);
   }
 }
@@ -280,36 +266,18 @@ void Div<float, lang::Cuda>(const Tensor& in1,
   if (!in1.transpose() && !in2.transpose() && (in1.strides() == in2.strides())) {
     cuda::div(num, inPtr1, inPtr2, outPtr, ctx->stream);
   } else { //else we check whether in1 or in2 or both are transposed
-    float alpha = 1.0;
-    float beta = 0.0;
-
     if (in1.transpose() && in2.transpose()) {
       Tensor t(in1.shape(), in1.device(), in1.data_type());
+      Transform<float, lang::Cuda>(in1, &t, ctx);
+      Transform<float, lang::Cuda>(in2, out, ctx);
+
       float* tPtr = static_cast<float*>(t.block()->mutable_data());
-
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in1), inPtr1,
-                           (void*)(&beta), generate_tensor_nd_desc(t), tPtr
-                          ));
-
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in2), inPtr2,
-                           (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                          ));
       cuda::div(num, tPtr, outPtr, outPtr, ctx->stream);
-
     } else if (in1.transpose()) {
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in1), inPtr1,
-                           (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                          ));
+      Transform<float, lang::Cuda>(in1, out, ctx);
       cuda::div(num, outPtr, inPtr2, outPtr, ctx->stream);
-
     } else if (in2.transpose()) {
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in2), inPtr2,
-                           (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                          ));
+      Transform<float, lang::Cuda>(in2, out, ctx);
       cuda::div(num, inPtr1, outPtr, outPtr, ctx->stream);
     }
   }
@@ -325,14 +293,7 @@ void Div<float, lang::Cuda>(const float x, const Tensor& in,
   if (in.strides() == out->strides()) {
     cuda::div(num, x, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::div(num, x, outPtr, outPtr, ctx->stream);
   }
 }
@@ -366,36 +327,17 @@ void EltwiseMult<float, lang::Cuda>(const Tensor& in1,
   if (!in1.transpose() && !in2.transpose() && (in1.strides() == in2.strides())) {
     cuda::mult(num, inPtr1, inPtr2, outPtr, ctx->stream);
   } else { //else we check whether in1 or in2 or both are transposed
-    float alpha = 1.0;
-    float beta = 0.0;
-
     if (in1.transpose() && in2.transpose()) {
       Tensor t(in1.shape(), in1.device(), in1.data_type());
+      Transform<float, lang::Cuda>(in1, &t, ctx);
+      Transform<float, lang::Cuda>(in2, out, ctx);
       float* tPtr = static_cast<float*>(t.block()->mutable_data());
-
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in1), inPtr1,
-                           (void*)(&beta), generate_tensor_nd_desc(t), tPtr
-                          ));
-
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in2), inPtr2,
-                           (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                          ));
       cuda::mult(num, tPtr, outPtr, outPtr, ctx->stream);
-
     } else if (in1.transpose()) {
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in1), inPtr1,
-                           (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                          ));
+      Transform<float, lang::Cuda>(in1, out, ctx);
       cuda::mult(num, outPtr, inPtr2, outPtr, ctx->stream);
-
     } else if (in2.transpose()) {
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in2), inPtr2,
-                           (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                          ));
+      Transform<float, lang::Cuda>(in2, out, ctx);
       cuda::mult(num, inPtr1, outPtr, outPtr, ctx->stream);
     }
   }
@@ -413,14 +355,7 @@ void Exp<float, lang::Cuda>(const Tensor& in, Tensor* out,
   if (in.strides() == out->strides()) {
     cuda::exp(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::exp(num, outPtr, outPtr, ctx->stream);
   }
 }
@@ -435,14 +370,7 @@ void GE<float, lang::Cuda>(const Tensor& in, const float x,
   if (in.strides() == out->strides()) {
     cuda::ge(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::ge(num, outPtr, x, outPtr, ctx->stream);
   }
 }
@@ -451,10 +379,7 @@ void GE<float, lang::Cuda>(const Tensor& in1, const Tensor& in2,
                            Tensor* out, Context* ctx) {
   Sub<float, lang::Cuda>(in1, in2, out, ctx);
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  // const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  // const float* inPtr2 = static_cast<const float*>(in2.block()->data());
   const size_t num = in1.Size();
-  //cuda::ge(num, inPtr1, inPtr2, outPtr, ctx->stream);
   cuda::ge(num, outPtr, 0.0, outPtr, ctx->stream);
 }
 
@@ -469,14 +394,7 @@ void GT<float, lang::Cuda>(const Tensor& in, const float x,
   if (in.strides() == out->strides()) {
     cuda::gt(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::gt(num, outPtr, x, outPtr, ctx->stream);
   }
 }
@@ -485,10 +403,7 @@ void GT<float, lang::Cuda>(const Tensor& in1, const Tensor& in2,
                            Tensor* out, Context* ctx) {
   Sub<float, lang::Cuda>(in1, in2, out, ctx);
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  // const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  // const float* inPtr2 = static_cast<const float*>(in2.block()->data());
   const size_t num = in1.Size();
-  //cuda::gt(num, inPtr1, inPtr2, outPtr, ctx->stream);
   cuda::gt(num, outPtr, 0.0, outPtr, ctx->stream);
 }
 
@@ -502,14 +417,7 @@ void LE<float, lang::Cuda>(const Tensor& in, const float x,
   if (in.strides() == out->strides()) {
     cuda::le(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::le(num, outPtr, x, outPtr, ctx->stream);
   }
 }
@@ -518,10 +426,7 @@ void LE<float, lang::Cuda>(const Tensor& in1, const Tensor& in2,
                            Tensor* out, Context* ctx) {
   Sub<float, lang::Cuda>(in1, in2, out, ctx);
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  // const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  // const float* inPtr2 = static_cast<const float*>(in2.block()->data());
   const size_t num = in1.Size();
-  //cuda::le(num, inPtr1, inPtr2, outPtr, ctx->stream);
   cuda::le(num, outPtr, 0.0, outPtr, ctx->stream);
 }
 
@@ -536,14 +441,7 @@ void Log<float, lang::Cuda>(const Tensor& in, Tensor* out,
   if (in.strides() == out->strides()) {
     cuda::log(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::log(num, outPtr, outPtr, ctx->stream);
   }
 }
@@ -558,14 +456,7 @@ void LT<float, lang::Cuda>(const Tensor& in, const float x,
   if (in.strides() == out->strides()) {
     cuda::lt(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::lt(num, outPtr, x, outPtr, ctx->stream);
   }
 }
@@ -574,10 +465,7 @@ void LT<float, lang::Cuda>(const Tensor& in1, const Tensor& in2,
                            Tensor* out, Context* ctx) {
   Sub<float, lang::Cuda>(in1, in2, out, ctx);
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  // const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  // const float* inPtr2 = static_cast<const float*>(in2.block()->data());
   const size_t num = in1.Size();
-  //cuda::lt(num, inPtr1, inPtr2, outPtr, ctx->stream);
   cuda::lt(num, outPtr, 0.0, outPtr, ctx->stream);
 }
 
@@ -592,14 +480,7 @@ void Pow<float, lang::Cuda>(const Tensor& in, const float x,
   if (in.strides() == out->strides()) {
     cuda::pow(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::pow(num, outPtr, x, outPtr, ctx->stream);
   }
 }
@@ -617,36 +498,17 @@ void Pow<float, lang::Cuda>(const Tensor& in1,
   if (!in1.transpose() && !in2.transpose() && (in1.strides() == in2.strides())) {
     cuda::pow(num, inPtr1, inPtr2, outPtr, ctx->stream);
   } else { //else we check whether in1 or in2 or both are transposed
-    float alpha = 1.0;
-    float beta = 0.0;
-
     if (in1.transpose() && in2.transpose()) {
       Tensor t(in1.shape(), in1.device(), in1.data_type());
       float* tPtr = static_cast<float*>(t.block()->mutable_data());
-
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in1), inPtr1,
-                           (void*)(&beta), generate_tensor_nd_desc(t), tPtr
-                          ));
-
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in2), inPtr2,
-                           (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                          ));
+      Transform<float, lang::Cuda>(in1, &t, ctx);
+      Transform<float, lang::Cuda>(in2, out, ctx);
       cuda::pow(num, tPtr, outPtr, outPtr, ctx->stream);
-
     } else if (in1.transpose()) {
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in1), inPtr1,
-                           (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                          ));
+      Transform<float, lang::Cuda>(in1, out, ctx);
       cuda::pow(num, outPtr, inPtr2, outPtr, ctx->stream);
-
     } else if (in2.transpose()) {
-      check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                           (void*)(&alpha), generate_tensor_nd_desc(in2), inPtr2,
-                           (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                          ));
+      Transform<float, lang::Cuda>(in2, out, ctx);
       cuda::pow(num, inPtr1, outPtr, outPtr, ctx->stream);
     }
   }
@@ -694,14 +556,7 @@ void ReLU<float, lang::Cuda>(const Tensor& in, Tensor* out,
   if (in.strides() == out->strides()) {
     cuda::relu(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::relu(num, outPtr, outPtr, ctx->stream);
   }
 }
@@ -749,14 +604,7 @@ void Sigmoid<float, lang::Cuda>(const Tensor& in, Tensor* out,
   if (in.strides() == out->strides()) {
     cuda::sigmoid(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::sigmoid(num, outPtr, outPtr, ctx->stream);
   }
 }
@@ -772,14 +620,7 @@ void Sign<float, lang::Cuda>(const Tensor& in, Tensor* out,
   if (in.strides() == out->strides()) {
     cuda::sign(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::sign(num, outPtr, outPtr, ctx->stream);
   }
 }
@@ -788,15 +629,14 @@ void Sign<float, lang::Cuda>(const Tensor& in, Tensor* out,
 template <>
 void Sqrt<float, lang::Cuda>(const Tensor& in, Tensor* out,
                              Context* ctx) {
-  const float* inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
 #if CUDNN_MAJOR < 7
+  Transform<float, lang::Cuda>(in, out, ctx);
   size_t num = in.Size();
-  cuda::sqrt(num, inPtr, outPtr, ctx->stream);
-
+  cuda::sqrt(num, outPtr, outPtr, ctx->stream);
 #else
-
+  const float* inPtr = static_cast<const float*>(in.block()->data());
   float alpha1 = 1.0;
   float alpha2 = 0.0;
   float beta = 0.0;
@@ -820,14 +660,7 @@ void Square<float, lang::Cuda>(const Tensor& in, Tensor* out,
   if (in.strides() == out->strides()) {
     cuda::square(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::square(num, outPtr, outPtr, ctx->stream);
   }
 }
@@ -883,32 +716,9 @@ void Tanh<float, lang::Cuda>(const Tensor& in, Tensor* out,
   if (in.strides() == out->strides()) {
     cuda::tanh(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, out, ctx);
     cuda::tanh(num, outPtr, outPtr, ctx->stream);
   }
-}
-
-template <>
-void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out,
-                             Context* ctx) {
-  const float* inPtr = static_cast<const float*>(in.block()->data());
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
-
-  float alpha = 1.0;
-  float beta = 0.0;
-
-  check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
-
 }
 
 // ================Random functions===========================================
@@ -1175,16 +985,7 @@ void RowMax<float, lang::Cuda>(const Tensor& in, Tensor* out,
 
   if (in.transpose()) {
     Tensor t(in.shape(), in.device(), in.data_type());
-    float* tPtr = static_cast<float*>(t.block()->mutable_data());
-
-    float alpha = 1.0;
-    float beta = 0.0;
-
-    check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(t), tPtr
-                        ));
-
+    Transform<float, lang::Cuda>(in, &t, ctx);
     const float* tPtr_const = static_cast<const float*>(t.block()->data());
     cuda::RowMax(nrow, ncol, tPtr_const, outPtr, ctx->stream);
   } else {

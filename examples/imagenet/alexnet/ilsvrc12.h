@@ -43,6 +43,12 @@
 using std::string;
 using namespace singa::io;
 namespace singa {
+
+ /// size for resizing
+const size_t kImageSize = 256;
+const size_t kImageNBytes = 3 * kImageSize * kImageSize;
+/// size for cropping
+const size_t kCropSize = 227;
 /// For reading ILSVRC2012 image data as tensors.
 class ILSVRC {
  public:
@@ -105,11 +111,7 @@ class ILSVRC {
   void WriteMean(Tensor &mean, string path);
 
  private:
-  /// size for resizing
-  const size_t kImageSize = 256;
-  const size_t kImageNBytes = 3 * kImageSize * kImageSize;
-  /// size for cropping
-  const size_t kCropSize = 227;
+ 
   Tensor mean;
   string last_read_file = "";
 
@@ -299,9 +301,7 @@ std::thread ILSVRC::AsyncLoadData(int flag, string file, size_t read_size,
 
 size_t ILSVRC::LoadData(int flag, string file, size_t read_size, Tensor *x,
                         Tensor *y, size_t *n_read, int nthreads) {
-  x->Reshape(Shape{read_size, 3, kCropSize, kCropSize});
-  y->AsType(kInt);
-  y->Reshape(Shape{read_size});
+  
   if (file != last_read_file) {
     if (reader != nullptr) {
       reader->Close();

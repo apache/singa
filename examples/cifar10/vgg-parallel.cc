@@ -223,20 +223,20 @@ void Train(float lr, int num_epoch, string data_dir) {
     train_y = train.second;
 
     LOG(INFO) << "Slicing training data...";
-    train_x_1.Reshape(Shape{nsamples / 2, train.first.shape(1),
+    train_x_1 = Tensor(Shape{nsamples / 2, train.first.shape(1),
         train.first.shape(2), train.first.shape(3)});
     LOG(INFO) << "Copying first data slice...";
     CopyDataToFrom(&train_x_1, train_x, train_x.Size() / 2);
-    train_x_2.Reshape(Shape{nsamples / 2, train.first.shape(1),
+    train_x_2 = Tensor(Shape{nsamples / 2, train.first.shape(1),
         train.first.shape(2), train.first.shape(3)});
     LOG(INFO) << "Copying second data slice...";
     CopyDataToFrom(&train_x_2, train_x, train_x.Size() / 2, 0,
                    train_x.Size() / 2);
-    train_y_1.Reshape(Shape{nsamples / 2});
+    train_y_1 = Tensor(Shape{nsamples / 2});
     train_y_1.AsType(kInt);
     LOG(INFO) << "Copying first label slice...";
     CopyDataToFrom(&train_y_1, train_y, train_y.Size() / 2);
-    train_y_2.Reshape(Shape{nsamples / 2});
+    train_y_2 = Tensor(Shape{nsamples / 2});
     train_y_2.AsType(kInt);
     LOG(INFO) << "Copying second label slice...";
     CopyDataToFrom(&train_y_2, train_y, train_y.Size() / 2, 0,

@@ -84,7 +84,7 @@ if __name__ == '__main__':
         dev = device.get_default_device()
     else:
         print('Using GPU')
-        dev = device.create_cuda_gpu()
+        dev = device.create_cuda_gpu_on(1)
 
     train, test = load_data(args.file_path)
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     num_classes = 10
     epochs = 1
 
-    sgd = optimizer.SGD(0.001)
+    sgd = optimizer.SGD(0.01)
 
     x_train = preprocess(train[0])
     y_train = to_categorical(train[1], num_classes)
@@ -111,7 +111,6 @@ if __name__ == '__main__':
 
 
     def forward(x, t):
-        
         y = conv1(x)
         y = autograd.relu(y)
         y = autograd.max_pool_2d(y)
@@ -124,11 +123,11 @@ if __name__ == '__main__':
         return loss, y
 
     autograd.training = True
-    for epoch in range(50):
+    for epoch in range(epochs):
         for i in range(batch_number):
             inputs = tensor.Tensor(device=dev, data=x_train[ i * 100:(1 + i) * 100], stores_grad=False)
             targets = tensor.Tensor(device=dev, data=y_train[i * 100:(1 + i) * 100], requires_grad=False, stores_grad=False)
-            
+
             loss, y = forward(inputs, targets)
 
             accuracy_rate = accuracy(tensor.to_numpy(y),
@@ -136,12 +135,6 @@ if __name__ == '__main__':
             if (i % 5 == 0):
                 print('accuracy is:', accuracy_rate, 'loss is:',
                       tensor.to_numpy(loss)[0])
-            
+
             for p, gp in autograd.backward(loss):
                 sgd.apply(epoch, gp, p, '')
-            
-            
-
-            
-            
-

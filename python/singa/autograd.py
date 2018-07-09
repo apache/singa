@@ -33,6 +33,126 @@ CTensor = singa.Tensor
 training = False
 
 
+
+def infer_dependency(op):
+    '''
+    Infer the dependency of all operations with the
+    given op as the last operation.
+
+    Operation A is depending on B is A uses the output(s) of B.
+
+    Args:
+        op: an Operation instance, e.g. the loss operation.
+
+    Return:
+        a Counter instance with the operation as the key,
+        and the number of operations that are depending on it as the value
+    '''
+    # dependency = {}
+    dependency_count = Counter()
+    queue = deque([op])
+    while len(queue) > 0:
+        cur_op = queue.pop()
+        for src_op, _, _, _ in cur_op.src:
+            if src_op not in dependency_count and \
+                    (not isinstance(src_op, Dummy)):
+                # dependency[src_op] = [Counter() for _ in src_op.y_id2idx]
+                dependency_count[src_op] = 0
+                queue.append(src_op)
+            # y_idx = src_op.y_id2idx[x_id]
+            # dependency[src_op][y_idx][cur_op] += 1
+            dependency_count[src_op] += 1
+    return dependency_count
+
+
+def gradients(y, dy=None):
+    grads = {}  # mapping: x->dx if x.stores_grad
+    for p, dp in backward(y, dy):
+        gradients[p] = dp
+    return grads
+
+
+def backward(y, dy=None):
+    '''
+    Run the backward propagation starting at y.
+
+    Args:
+        y: a Tensor instance, usually the loss
+        dy: a number or a Tensor instance, for the gradient of the
+            objective/loss w.r.t y, usually 1.0
+
+    Return:
+        a dictionary storing the gradient tensors of all tensors
+        whose stores_grad is true (e.g. parameter tensors)
+    '''
+    dependency = infer_dependency(y.creator)
+    assert y.size() == 1, 'y must be a Tensor with a single value;'\
+        'size of y is % d' % y.size()
+
+    # by default the dy is a tensor with 1.0 for each sample;
+    if dy is None:
+        dy = float(1.0)
+    elif isinstance(dy, Tensor):
+        dy = dy.data
+    else:
+        dy = float(dy)
+
+    # ready is a queue of (operation, dy list)
+    ready = deque([(y.creator, (dy,))])
+    not_ready = {}  # mapping: op->[dy]
+
+    if y.stores_grad:
+        gradients[y] = dy
+
+    while len(ready) > 0:
+        op, dys = ready.pop()
+        if not op.requires_grad or isinstance(op, Dummy):
+            continue
+        # if not isinstance(op, tensor.Dummy):
+        dxs = op._do_backward(*dys)
+        # TODO src and dx must match
+        assert len(op.src) == len(dxs), \
+            'the number of src ops (=%d) and dx (=%d) not match' \
+            % (len(op.src), len(dxs))
+        for (src_op, x_id, y, y_stores_grad), dx in zip(op.src, dxs):
+            # prefix x is w.r.t op; prefix y is w.r.t src_op.
+            # x_id is the python id of one input arg of src_op, denoted as x.
+            # y_idx (below) is the index of x among the outputs of src_op.
+            # not_ready[src_op][y_idx] records the intermediate gradient
+            # of the y_idx'th output of src_op. 'intermediate gradient'
+            # indicates that if this output is used in multiple children
+            # operations, then we have to add the graident (dx) from all these
+            # children operations. When src_op is ready, it means that
+            # the gradient of all its outputs are available, i.e. all children
+            # operations have been backwarded.
+            # y is None if y.stores_grad is false; otherwise it is a Tensor
+            y_idx = src_op.y_id2idx[x_id]
+            if src_op not in not_ready:
+                # src_op may have mulitple outputs
+                not_ready[src_op] = [None for _ in src_op.y_id2idx]
+                not_ready[src_op][y_idx] = dx
+            else:
+                dxs = not_ready[src_op]
+                if dxs[y_idx] is None:
+                    dxs[y_idx] = dx
+                else:
+                    # add the gradient from another children operation that
+                    # uses y_idx'th output of src_op as input arg
+                    dxs[y_idx] += dx
+            if y_stores_grad:
+                # store the gradient for final return, e.g. if x is parameter
+                g = not_ready[src_op][y_idx]
+                tg = Tensor(device=g.device(), data=g)
+                yield (y, tg)
+            dependency[src_op] -= 1
+            if src_op.requires_grad is True:
+                if dependency[src_op] == 0:
+                    if not isinstance(src_op, Dummy):
+                        ready.append((src_op, not_ready[src_op]))
+                    del not_ready[src_op]
+        del op  # delete the operation to free all tensors from this op
+
+
 class Operation(object):
     '''
     An operation includes the forward and backward function of
@@ -194,8 +314,8 @@ class Matmul(Operation):
         Returns:
             a tuple for (dx, dw)
         '''
-        return singa.Mult(dy, self.input[1].T()), \
-            singa.Mult(self.input[0].T(), dy)
+        return singa.Mult(dy, singa.DefaultTranspose(self.input[1])), \
+            singa.Mult(singa.DefaultTranspose(self.input[0]), dy)
 
 
 def matmul(x, w):
@@ -268,12 +388,12 @@ class SoftMax(Operation):
             the result Tensor
         '''
         if self.axis == 1:
-            x = x.T()
+            x = singa.DefaultTranspose(x)
         self.output = singa.SoftMax(x)
         if self.axis == 0:
             return self.output
         elif self.axis == 1:
-            return self.output.T()
+            return singa.DefaultTranspose(self.output)
 
     def backward(self, dy):
         '''
@@ -286,7 +406,7 @@ class SoftMax(Operation):
         '''
         # calculations are made on numpy array
         if self.axis == 1:
-            dy = dy.T()
+            dy = singa.DefaultTranspose(dy)
         grad = ctensor2numpy(dy)
         output = ctensor2numpy(self.output)
         out_1 = np.einsum('ki,ki->ki', grad, output)
@@ -298,14 +418,14 @@ class SoftMax(Operation):
         if self.axis == 0:
             return dx
         elif self.axis == 1:
-            return dx.T()
+            return singa.DefaultTranspose(dx)
 
 
 def soft_max(x, axis=0):
     return SoftMax(axis)(x)[0]
 
 
-class NLL(Operation):
+class CrossEntropy(Operation):
     '''
     Calculte negative log likelihood loss for a batch of training data.
 
@@ -350,12 +470,11 @@ class NLL(Operation):
             pass  # TODO, broadcast elementwise multiply seems not support
 
 
-def nll(y, t):
-    return NLL()(y, t)[0]
+def cross_entropy(y, t):
+    return CrossEntropy()(y, t)[0]
 
 
 class SoftMaxCrossEntropy(Operation):
-
     def forward(self, x, t):
         self.p = singa.SoftMax(x)
         self.t = t
@@ -365,7 +484,8 @@ class SoftMaxCrossEntropy(Operation):
         return loss
 
     def backward(self, dy=1.0):
-        return singa.SoftmaxCrossEntropyBwd(self.p, self.t), None
+        dx = singa.SoftmaxCrossEntropyBwd(self.p, self.t)
+        return singa.DivFloat(dx, float(self.p.shape()[0])), None
 
 
 def softmax_cross_entropy(x, t):
@@ -448,11 +568,11 @@ class Flatten(Operation):
     def forward(self, x):
         # TODO Do flatten start from axis != 1
         self.shape = list(x.shape())
-        y = x.Reshape((x.shape()[0], x.Size() // x.shape()[0]))
+        y = singa.Reshape(x, (x.shape()[0], x.Size() // x.shape()[0]))
         return y
 
     def backward(self, dy):
-        dx = dy.Reshape(self.shape)
+        dx = singa.Reshape(dy, self.shape)
         return dx
 
 
@@ -466,11 +586,7 @@ class _Conv2D(Operation):
         self.handle = handle
 
     def forward(self, x, W, b):
-        #assert x.nDim() == 4, 'The dimensions of input should be 4D.'
-        #assert x.shape()[1] == self.in_channels, 'in_channels dismatched.'
-        #assert (xs[0].shape()[2]+2*self.padding[0]-self.kernel_size[0])%self.stride[0] == 0, 'invalid padding.'
-        #assert (xs[0].shape()[3]+2*self.padding[1]-self.kernel_size[1])%self.stride[1] == 0, 'invalid padding'
-        #assert 0 == 0, 'invalid padding'
+        assert x.nDim() == 4, 'The dimensions of input should be 4D.'
 
         if training:
             if self.handle.bias_term:
@@ -517,125 +633,6 @@ def conv2d(x, W, b, handle):
     return _Conv2D(handle)(x, W, b)[0]
 
 
-def infer_dependency(op):
-    '''
-    Infer the dependency of all operations with the
-    given op as the last operation.
-
-    Operation A is depending on B is A uses the output(s) of B.
-
-    Args:
-        op: an Operation instance, e.g. the loss operation.
-
-    Return:
-        a Counter instance with the operation as the key,
-        and the number of operations that are depending on it as the value
-    '''
-    # dependency = {}
-    dependency_count = Counter()
-    queue = deque([op])
-    while len(queue) > 0:
-        cur_op = queue.pop()
-        for src_op, _, _, _ in cur_op.src:
-            if src_op not in dependency_count and \
-                    (not isinstance(src_op, Dummy)):
-                # dependency[src_op] = [Counter() for _ in src_op.y_id2idx]
-                dependency_count[src_op] = 0
-                queue.append(src_op)
-            # y_idx = src_op.y_id2idx[x_id]
-            # dependency[src_op][y_idx][cur_op] += 1
-            dependency_count[src_op] += 1
-    return dependency_count
-
-
-def gradients(y, dy=None):
-    grads = {}  # mapping: x->dx if x.stores_grad
-    for p, dp in backward(y, dy):
-        gradients[p] = dp
-    return grads
-
-
-def backward(y, dy=None):
-    '''
-    Run the backward propagation starting at y.
-
-    Args:
-        y: a Tensor instance, usually the loss
-        dy: a number or a Tensor instance, for the gradient of the
-            objective/loss w.r.t y, usually 1.0
-
-    Return:
-        a dictionary storing the gradient tensors of all tensors
-        whose stores_grad is true (e.g. parameter tensors)
-    '''
-    dependency = infer_dependency(y.creator)
-    assert y.size() == 1, 'y must be a Tensor with a single value;'\
-        'size of y is % d' % y.size()
-
-    # by default the dy is a tensor with 1.0 for each sample;
-    if dy is None:
-        dy = float(1.0)
-    elif isinstance(dy, Tensor):
-        dy = dy.data
-    else:
-        dy = float(dy)
-
-    # ready is a queue of (operation, dy list)
-    ready = deque([(y.creator, (dy,))])
-    not_ready = {}  # mapping: op->[dy]
-
-    if y.stores_grad:
-        gradients[y] = dy
-
-    while len(ready) > 0:
-        op, dys = ready.pop()
-        if not op.requires_grad or isinstance(op, Dummy):
-            continue
-        # if not isinstance(op, tensor.Dummy):
-        dxs = op._do_backward(*dys)
-        # TODO src and dx must match
-        assert len(op.src) == len(dxs), \
-            'the number of src ops (=%d) and dx (=%d) not match' \
-            % (len(op.src), len(dxs))
-        for (src_op, x_id, y, y_stores_grad), dx in zip(op.src, dxs):
-            # prefix x is w.r.t op; prefix y is w.r.t src_op.
-            # x_id is the python id of one input arg of src_op, denoted as x.
-            # y_idx (below) is the index of x among the outputs of src_op.
-            # not_ready[src_op][y_idx] records the intermediate gradient
-            # of the y_idx'th output of src_op. 'intermediate gradient'
-            # indicates that if this output is used in multiple children
-            # operations, then we have to add the graident (dx) from all these
-            # children operations. When src_op is ready, it means that
-            # the gradient of all its outputs are available, i.e. all children
-            # operations have been backwarded.
-            # y is None if y.stores_grad is false; otherwise it is a Tensor
-            y_idx = src_op.y_id2idx[x_id]
-            if src_op not in not_ready:
-                # src_op may have mulitple outputs
-                not_ready[src_op] = [None for _ in src_op.y_id2idx]
-                not_ready[src_op][y_idx] = dx
-            else:
-                dxs = not_ready[src_op]
-                if dxs[y_idx] is None:
-                    dxs[y_idx] = dx
-                else:
-                    # add the gradient from another children operation that
-                    # uses y_idx'th output of src_op as input arg
-                    dxs[y_idx] += dx
-            if y_stores_grad:
-                # store the gradient for final return, e.g. if x is parameter
-                g = not_ready[src_op][y_idx]
-                tg = Tensor(device=g.device(), data=g)
-                yield (y, tg)
-            dependency[src_op] -= 1
-            if src_op.requires_grad is True:
-                if dependency[src_op] == 0:
-                    if not isinstance(src_op, Dummy):
-                        ready.append((src_op, not_ready[src_op]))
-                    del not_ready[src_op]
-        del op  # delete the operation to free all tensors from this op
-
-
 class Layer(object):
 
     def __init__(self):
@@ -651,8 +648,6 @@ class Layer(object):
 class Linear(Layer):
 
     def __init__(self, in_features, out_features, bias=True):
-        #self.in_features = in_features
-        #self.out_features = out_features
         w_shape = (in_features, out_features)
         b_shape = (1, out_features)
         self.bias = bias

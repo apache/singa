@@ -253,7 +253,7 @@ void Tanh(const Tensor &in, Tensor *out, Context *ctx) {
 
 /// similar to cudnnTransformTensor
 /// copies the data from one tensor to another tensor with a different layout
-/// the tensors must have the same dimensions but not necessarily the same strides 
+/// the tensors must have the same dimensions but not necessarily the same strides
 template <typename DType, typename Lang>
 void Transform(const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Transform Not Implemented";

@@ -43,7 +43,7 @@ void LocalUpdater::Apply(int step, const string& name, Tensor& grad,
   int nth = dev_index_[name]++;
   auto key = std::make_pair(nth, name);
   if (grad_buffer_[key].Size() != grad.Size()) {
-    grad_buffer_[key].Reshape(grad.shape());
+    grad_buffer_[key].SetShape(grad.shape());
     grad_buffer_[key].AsType(grad.data_type());
   }
   grad_buffer_[key].CopyData(grad);
@@ -56,7 +56,7 @@ void LocalUpdater::Apply(int step, const string& name, Tensor& grad,
     }
   } else {
     if (param_buffer_[name].Size() != value.Size()) {
-      param_buffer_[name].Reshape(value.shape());
+      param_buffer_[name].SetShape(value.shape());
       param_buffer_[name].AsType(value.data_type());
       param_buffer_[name].CopyData(value);
       sum_[name].ResetLike(param_buffer_[name]);

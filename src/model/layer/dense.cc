@@ -40,11 +40,11 @@ void Dense::Setup(const Shape& in_sample, const LayerConf &conf) {
   transpose_ = dense_conf.transpose();
   bias_term_ = dense_conf.bias_term();
   if (transpose_)  // was {vdim_, hdim} by zhaojing?
-    weight_.Reshape(Shape{hdim_, vdim_});
+    weight_.SetShape(Shape{hdim_, vdim_});
   else
-    weight_.Reshape(Shape{vdim_, hdim_});
+    weight_.SetShape(Shape{vdim_, hdim_});
   if (bias_term_)
-    bias_.Reshape(Shape{hdim_});
+    bias_.SetShape(Shape{hdim_});
   for (auto specs: conf.param())
     param_specs_.push_back(specs);
 }
@@ -55,7 +55,7 @@ const Tensor Dense::Forward(int flag, const Tensor &input) {
   Tensor output;
   CHECK_EQ(input.nDim(), 2u);
   if (transpose_)  // use the transposed version of weight_ for computing
-    output = Mult(input, weight_.T());
+    output = Mult(input, Transpose(weight_));
   else
     output = Mult(input, weight_);
   if (bias_term_)
@@ -81,10 +81,10 @@ const std::pair<Tensor, vector<Tensor>> Dense::Backward(int flag,
   }
   if (transpose_) {
     dx = Mult(grad, weight_);
-    dw = Mult(grad.T(), src_data);
+    dw = Mult(Transpose(grad), src_data);
   } else {
-    dx = Mult(grad, weight_.T());
-    dw = Mult(src_data.T(), grad);
+    dx = Mult(grad, Transpose(weight_));
+    dw = Mult(Transpose(src_data), grad);
   }
   param_grad.push_back(dw);
   if (bias_term_)

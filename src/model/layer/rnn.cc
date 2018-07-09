@@ -79,7 +79,7 @@ void RNN::Setup(const Shape& in_sample, const LayerConf &conf) {
       dim = hidden_size_ * (hidden_size_ +  hidden_size_ + 2);
     weight_size += mult * dim;
   }
-  weight_.Reshape(Shape{weight_size});
+  weight_.SetShape(Shape{weight_size});
 }
 
 const vector<Tensor> RNN::Forward(int flag, const vector<Tensor>& inputs) {

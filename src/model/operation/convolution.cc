@@ -4,7 +4,8 @@
 
 namespace singa {
 
-ConvHandle::ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
+ConvHandle::ConvHandle(const Tensor &input,
+                       const std::vector<size_t>& kernel_size,
                        const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                        const size_t in_channels, const size_t out_channels,
                        const bool bias) {
@@ -23,7 +24,8 @@ ConvHandle::ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_si
   bias_term = bias;
 
   batchsize = input.shape(0);
-  CHECK(input.shape(1) == in_channels) << "the number of input channels mismatched.";
+  CHECK(input.shape(1) == in_channels) <<
+                                       "the number of input channels mismatched.";
   height = input.shape(2);
   width = input.shape(3);
 
@@ -39,14 +41,16 @@ ConvHandle::ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_si
 
 
 
-Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &ch) {
+Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b,
+                      const ConvHandle &ch) {
   CHECK_EQ(x.device()->lang(), kCpp);
 
   CHECK(x.shape(1) == ch.channels && x.shape(2) == ch.height &&
         x.shape(3) == ch.width) << "input sample shape should not change";
 
   CHECK(W.shape(0) == ch.num_filters && W.shape(1) == ch.channels &&
-        W.shape(2) == ch.kernel_h && W.shape(3) == ch.kernel_w) << "weights shape should not change";
+        W.shape(2) == ch.kernel_h
+        && W.shape(3) == ch.kernel_w) << "weights shape should not change";
 
   Shape w_shape = W.shape();
   Shape b_shape;
@@ -67,8 +71,9 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &
   float *data_col = new float[ch.col_height * ch.col_width];
   auto in_data = x.data<float>();
   for (size_t num = 0; num < ch.batchsize; num++) {
-    Im2col(in_data + num * ch.imagesize, ch.channels, ch.height, ch.width, ch.kernel_h,
-             ch.kernel_w, ch.pad_h, ch.pad_w, ch.stride_h, ch.stride_w, data_col);
+    Im2col(in_data + num * ch.imagesize, ch.channels, ch.height, ch.width,
+           ch.kernel_h,
+           ch.kernel_w, ch.pad_h, ch.pad_w, ch.stride_h, ch.stride_w, data_col);
 
     col_data.CopyDataFromHostPtr(data_col, ch.col_height * ch.col_width);
     Tensor each = Mult(W, col_data);
@@ -83,14 +88,16 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &
   return output;
 }
 
-Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const ConvHandle &ch) {
+Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
+                        const ConvHandle &ch) {
   CHECK_EQ(dy.device()->lang(), kCpp);
 
   CHECK(dy.shape(1) == ch.num_filters && dy.shape(2) == ch.conv_height &&
         dy.shape(3) == ch.conv_width) << "input gradients shape should not change";
 
   CHECK(W.shape(0) == ch.num_filters && W.shape(1) == ch.channels &&
-        W.shape(2) == ch.kernel_h && W.shape(3) == ch.kernel_w) << "weights shape should not change";
+        W.shape(2) == ch.kernel_h
+        && W.shape(3) == ch.kernel_w) << "weights shape should not change";
 
   Shape w_shape = W.shape();
   W.Reshape(Shape{ch.num_filters, ch.col_height});
@@ -103,17 +110,19 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x, const Conv
   for (size_t num = 0; num < ch.batchsize; num++) {
     Tensor grad_b(Shape{ch.num_filters, ch.conv_height * ch.conv_width});
     CopyDataToFrom(&grad_b, dy, grad_b.Size(), 0, num * grad_b.Size());
-    Tensor dcol_b = Mult(W.T(), grad_b);
+    Tensor dcol_b = Mult(Transpose(W), grad_b);
     auto dcol_data = dcol_b.data<float>();
-    Col2im(dcol_data, ch.channels, ch.height, ch.width, ch.kernel_h, ch.kernel_w, ch.pad_h,
-             ch.pad_w, ch.stride_h, ch.stride_w, dx_b);
+    Col2im(dcol_data, ch.channels, ch.height, ch.width, ch.kernel_h, ch.kernel_w,
+           ch.pad_h,
+           ch.pad_w, ch.stride_h, ch.stride_w, dx_b);
     dx.CopyDataFromHostPtr(dx_b, ch.imagesize, num * ch.imagesize);
   }
   W.Reshape(w_shape);
   return dx;
 }
 
-Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const ConvHandle &ch) {
+Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
+                        const ConvHandle &ch) {
   CHECK_EQ(dy.device()->lang(), kCpp);
 
   CHECK(dy.shape(1) == ch.num_filters && dy.shape(2) == ch.conv_height &&
@@ -134,18 +143,20 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
   float *data_col = new float[ch.col_height * ch.col_width];
   auto in_data = dy.data<float>();
   for (size_t num = 0; num < ch.batchsize; num++) {
-    Im2col(in_data + num * ch.imagesize, ch.channels, ch.height, ch.width, ch.kernel_h,
-             ch.kernel_w, ch.pad_h, ch.pad_w, ch.stride_h, ch.stride_w, data_col);
+    Im2col(in_data + num * ch.imagesize, ch.channels, ch.height, ch.width,
+           ch.kernel_h,
+           ch.kernel_w, ch.pad_h, ch.pad_w, ch.stride_h, ch.stride_w, data_col);
     col_data.CopyDataFromHostPtr(data_col, ch.col_height * ch.col_width);
     Tensor grad_b(Shape{ch.num_filters, ch.conv_height * ch.conv_width});
     CopyDataToFrom(&grad_b, dy, grad_b.Size(), 0, num * grad_b.Size());
-    dW += Mult(grad_b, col_data.T());
+    dW += Mult(grad_b, Transpose(col_data));
   }
   dW.Reshape(w_shape);
   return dW;
 }
 
-Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch) {
+Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b,
+                        const ConvHandle &ch) {
   CHECK_EQ(dy.device()->lang(), kCpp);
 
   CHECK(dy.shape(1) == ch.num_filters && dy.shape(2) == ch.conv_height &&
@@ -169,11 +180,13 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch)
 };
 
 #ifdef USE_CUDNN
-CudnnConvHandle::CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
+CudnnConvHandle::CudnnConvHandle(const Tensor &input,
+                                 const std::vector<size_t>& kernel_size,
                                  const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                                  const size_t in_channels, const size_t out_channels, const bool bias,
                                  const size_t workspace_byte_limit, const std::string& prefer)
-  : ConvHandle(input, kernel_size, stride, padding, in_channels, out_channels, bias) {
+  : ConvHandle(input, kernel_size, stride, padding, in_channels, out_channels,
+               bias) {
 
   DataType dtype = input.data_type();
   auto dev = input.device();
@@ -203,7 +216,7 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input, const std::vector<size_t>&
 #if CUDNN_MAJOR >= 7
               , GetCudnnDataType(dtype)
 #endif
-              ));
+                                             ));
   CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc, GetCudnnDataType(dtype),
                                          CUDNN_TENSOR_NCHW, num_filters,
                                          channels, kernel_h, kernel_w));
@@ -268,8 +281,8 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input, const std::vector<size_t>&
                 ctx->cudnn_handle, x_desc, y_desc, conv_desc, filter_desc,
                 bp_filter_alg, &bp_filter_byte));
   workspace_count = std::max(std::max(fp_byte, bp_data_byte), bp_filter_byte) /
-                     sizeof(float) +
-                     1;
+                    sizeof(float) +
+                    1;
   if (workspace_count * sizeof(float) > workspace_byte_limit)
     LOG(WARNING) << "The required memory for workspace ("
                  << workspace_count * sizeof(float)
@@ -289,7 +302,8 @@ CudnnConvHandle::~CudnnConvHandle() {
   if (y_desc != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_desc));
 }
 
-Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch) {
+Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
+                      const CudnnConvHandle &cch) {
   CHECK_EQ(x.device()->lang(), kCuda);
 
   DataType dtype = x.data_type();
@@ -323,7 +337,8 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const C
   return output;
 }
 
-Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, const CudnnConvHandle &cch) {
+Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x,
+                        const CudnnConvHandle &cch) {
   CHECK_EQ(dy.device()->lang(), kCuda);
 
   Tensor dx;
@@ -344,7 +359,8 @@ Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x, cons
   return dx;
 }
 
-Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, const CudnnConvHandle &cch) {
+Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
+                        const CudnnConvHandle &cch) {
   CHECK_EQ(dy.device()->lang(), kCuda);
 
   Tensor dW;
@@ -366,7 +382,8 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
 }
 
 // input Tensor b for Reset db purpose, can avoid this later.
-Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle &cch) {
+Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b,
+                        const CudnnConvHandle &cch) {
   CHECK_EQ(dy.device()->lang(), kCuda);
 
   Tensor db;
