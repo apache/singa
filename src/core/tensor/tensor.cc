@@ -218,10 +218,10 @@ void Tensor::CopyData(const Tensor &src) {
 }
 
 void Tensor::RepeatData(vector<size_t> repeats, int axis, int total_repeats, const Tensor &src) {
-  if(repeats.size() == 1) {
+  if (repeats.size() == 1) {
     CHECK_EQ(Size(), src.Size()*total_repeats);
   } else {
-    CHECK_EQ(Size(), src.Size()*total_repeats/src.shape()[axis]);
+    CHECK_EQ(Size(), src.Size()*total_repeats / src.shape()[axis]);
   }
 
   CHECK(block_ != nullptr);
@@ -344,7 +344,7 @@ Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> 
     total_repeats = repeats[0];
     tshape.push_back(Product(shape_)*total_repeats);
   } else {
-    if (repeats.size() == 1){
+    if (repeats.size() == 1) {
       total_repeats = repeats[0];
       for (size_t i = 0; i < shape_.size(); i++) {
         if (i == axis) {
@@ -358,15 +358,15 @@ Tensor Tensor::Repeat(vector<size_t> repeats, int axis, std::shared_ptr<Device> 
         LOG(FATAL) << "the repeats number doesn't match the axis";
       }
       for (size_t i = 0; i < shape_[axis]; i++) {
-        if(repeats[i] < 0) {
+        if (repeats[i] < 0) {
           LOG(FATAL) << "the repeats number is less than zero";
         }
         total_repeats += repeats[i];
       }
-      for (size_t i = 0; i < shape_.size(); i++){
+      for (size_t i = 0; i < shape_.size(); i++) {
         if (i == axis) {
           tshape.push_back(total_repeats);
-        } else{
+        } else {
           tshape.push_back(shape_[i]);
         }
       }
@@ -539,7 +539,7 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
   }
 }
 
-void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis, 
+void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
                       Tensor *dst, const Tensor &src, const size_t num) {
   if (repeats.size() == 1) {
     broadcast_flag = true;
@@ -548,7 +548,7 @@ void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
       LOG(FATAL) << "When repeats parameter is sequence, axis cannot be None";
     }
   }
-  for (size_t i = 0; i < repeats.size(); i++){
+  for (size_t i = 0; i < repeats.size(); i++) {
     CHECK_GE(repeats[i], 0);
   }
   auto width = SizeOf(src.data_type());
@@ -557,7 +557,7 @@ void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
   int chunk = width;
   int axis_shape = 1;
   int shape_outer = 1;
-  if (axis == Noaxis){
+  if (axis == Noaxis) {
     axis_shape = 1;
     shape_outer = Product(src.shape());
   } else {
@@ -565,7 +565,7 @@ void RepeatDataToFrom(bool broadcast_flag, vector<size_t> repeats, int axis,
       shape_outer *= src.shape()[i];
     }
     axis_shape = src.shape()[axis];
-    for(size_t i = axis + 1; i < src.nDim(); i++) {
+    for (size_t i = axis + 1; i < src.nDim(); i++) {
       chunk *= src.shape()[i];
     }
   }
@@ -693,7 +693,7 @@ void Tensor::SetValue(const SType x) {
   CHECK_EQ(sizeof(SType), SizeOf(data_type_));
   //auto size = Size();
   auto ptr = block_;
-  
+
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // TODO(wangwei) cast x to DType
     device_->Exec([this, x, ptr](Context * ctx) {
@@ -1268,6 +1268,18 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 // ************************
 // Misc.
 // ************************
+const Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t) {
+  Tensor loss({p.shape(0)}, p.device(), p.data_type());
+  ComputeCrossEntropy(p, t, &loss);
+  return loss;
+}
+
+const Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t) {
+  auto g = p.Clone();
+  SoftmaxCrossEntropyBwd(t, &g);
+  return g;
+}
+
 void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
   CHECK_LE(p.nDim(), 2u);
   CHECK_LE(t.nDim(), 2u);
@@ -1302,6 +1314,7 @@ Tensor Tensor::Reshape(const Shape &shape) {
   if (strides_.size() == 0)
     strides_.push_back(1);
 
+  // TODO(wangwei) remove this condition and report error if size changes.
   if (Product(shape_) != Product(shape)) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
@@ -1316,14 +1329,16 @@ Tensor Tensor::Reshape(const Shape &shape) {
     singa::Transform(*this, &t);
     t.shape_ = shape;
     return t;
- }
-
-  shape_ = shape;
-  generate_strides();
-  Tensor t(shape, device_, data_type_);
-  t.block_ = block_;
-  t.block_->IncRefCount();
-  return t;
+  } else {
+    Tensor t;
+    t.shape_ = shape;
+    t.device_ = device_;
+    t.data_type_ = data_type_;
+    t.block_ = block_;  // be careful about the block inference (mem leaking)
+    t.block_->IncRefCount();
+    t.generate_strides();
+    return t;
+  }
 }
 
 Tensor Tensor::Reshape(Shape &&shape) {
@@ -1344,14 +1359,16 @@ Tensor Tensor::Reshape(Shape &&shape) {
     singa::Transform(*this, &t);
     t.shape_ = shape;
     return t;
- }
-
-  shape_ = shape;
-  generate_strides();
-  Tensor t(shape, device_, data_type_);
-  t.block_ = block_;
-  t.block_->IncRefCount();
-  return t;
+  } else {
+    Tensor t;
+    t.shape_ = shape;
+    t.device_ = device_;
+    t.data_type_ = data_type_;
+    t.block_ = block_;  // be careful about the block inference (mem leaking)
+    t.block_->IncRefCount();
+    t.generate_strides();
+    return t;
+  }
 }
 
 Tensor Reshape(const Tensor &in, const Shape &s) {
