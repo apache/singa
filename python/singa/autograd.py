@@ -382,60 +382,33 @@ def ctensor2numpy(x):
     return np_array.reshape(x.shape())
 
 
-class MaxPool2d(Operation):
+class _MaxPool2D(Operation):
 
-    def __init__(self, kernel_size=3, stride=1, padding=0, dilation=1,
-                 return_indices=False, ceil_mode=False, **kwargs):
+    def __init__(self, handle):
+        self.handle = handle
 
-        inner_params = {'name': 'MaxPool2d',
-                        'border_mode': 'same',
-                        'data_format': 'NCHW',
-                        'input_sample_shape': None
-                        }
-
-        for kwarg in kwargs:
-            if kwarg not in inner_params:
-                raise TypeError('Keyword argument not understood:', kwarg)
-            else:
-                inner_params[kwarg] = kwargs[kwarg]
-
-        if padding == 0:
-            pad = None
+    def forward(self, x):
+        if self.handle.device_id == -1:
+            raise NotImplementedError
         else:
-            pad = padding
+            y = singa.GpuPoolingForward(x, self.handle)
 
-        if dilation != 1 or return_indices or ceil_mode:
-            raise ValueError('Not implemented yet')
-
-        self.PyLayer = layer.Pooling2D(inner_params['name'],
-                                       model_pb2.PoolingConf.MAX,
-                                       kernel_size, stride, inner_params[
-                                           'border_mode'],
-                                       pad, inner_params['data_format'],
-                                       inner_params['input_sample_shape'])
-
-    def __call__(self, x):
         if training:
-            self.flag = model_pb2.kTrain
-        else:
-            self.flag = model_pb2.kEval
+            self.cache = (x, y)
 
-        if not self.PyLayer.has_setup:
-            self.PyLayer.setup(x.shape[1:])
-
-        return self._do_forward(x)
-
-    def forward(self, *xs):
-        return self.PyLayer.layer.Forward(self.flag, xs[0])
+        return y
 
     def backward(self, dy):
-        return self.PyLayer.layer.Backward(0, dy)[0]
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            dx = singa.GpuPoolingBackward(
+                dy, self.cache[0], self.cache[1], self.handle)
+        return dx
 
 
-def max_pool_2d(x, kernel_size=3, stride=1, padding=0, dilation=1,
-                return_indices=False, ceil_mode=False, **kwargs):
-    return MaxPool2d(kernel_size, stride, padding, dilation, return_indices,
-                     ceil_mode, **kwargs)(x)[0]
+def max_pool_2d(x, handle):
+    return _MaxPool2D(handle)(x)[0]
 
 
 class Flatten(Operation):
@@ -758,11 +731,83 @@ class Conv2D(Layer):
         else:
             if not hasattr(self, 'handle'):
                 self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                    self.padding, self.in_channels, self.out_channels, self.bias)
+                                                    self.padding, self.in_channels, self.out_channels, self.bias,
+                                                    self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
             elif x.shape[0] != self.handle.batchsize:
                 self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                    self.padding, self.in_channels, self.out_channels, self.bias)
+                                                    self.padding, self.in_channels, self.out_channels, self.bias,
+                                                    self.inner_params['workspace_MB_limit'] * 1024 * 1024, self.inner_params['cudnn_prefer'])
+
         self.handle.device_id = x.device.id()
 
         y = conv2d(x, self.W, self.b, self.handle)
+        return y
+
+
+class MaxPool2D(Layer):
+
+    def __init__(self, kernel_size, stride=None, padding=0, dilation=1,
+                 return_indices=False, ceil_mode=False):
+        if isinstance(kernel_size, int):
+            self.kernel_size = (kernel_size, kernel_size)
+        elif isinstance(kernel_size, tuple):
+            self.kernel_size = kernel_size
+        else:
+            raise TypeError('Wrong kernel_size type.')
+
+        if stride is None:
+            self.stride = self.kernel_size
+        elif isinstance(stride, int):
+            self.stride = (stride, stride)
+        elif isinstance(stride, tuple):
+            self.stride = stride
+        else:
+            raise TypeError('Wrong stride type.')
+
+        if isinstance(padding, int):
+            self.padding = (padding, padding)
+        elif isinstance(padding, tuple):
+            self.padding = padding
+        else:
+            raise TypeError('Wrong padding type.')
+
+        if dilation != 1:
+            raise ValueError('Not implemented yet')
+
+        if return_indices is not False:
+            raise ValueError('Not implemented yet')
+
+        self.ceil_mode = ceil_mode
+
+    def __call__(self, x):
+        if self.ceil_mode:
+            out_shape_h = int(math.ceil(
+                (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) / self.stride[0])) + 1
+            out_shape_w = int(math.ceil(
+                (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]) / self.stride[1])) + 1
+        else:
+            out_shape_h = int(
+                (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) // self.stride[0]) + 1
+            out_shape_w = int(
+                (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]) // self.stride[1]) + 1
+        if x.device.id() == -1:
+            if not hasattr(self, 'handle'):
+                self.handle = singa.PoolingHandle(x.data, self.kernel_size, self.stride,
+                                                  self.padding, self.ceil_mode, 'MAX')
+            elif x.shape[0] != self.handle.batchsize or out_shape_h != self.handle.pooled_height or \
+            out_shape_w != self.handle.pooled_width:
+                self.handle = singa.PoolingHandle(x.data, self.kernel_size, self.stride,
+                                                  self.padding, self.ceil_mode, 'MAX')
+        else:
+            if not hasattr(self, 'handle'):
+                self.handle = singa.CudnnPoolingHandle(x.data, self.kernel_size, self.stride,
+                                                       self.padding, self.ceil_mode, 'MAX', False)  # False for nan_prop
+            elif x.shape[0] != self.handle.batchsize or out_shape_h != self.handle.pooled_height or \
+            out_shape_w != self.handle.pooled_width:
+                self.handle = singa.CudnnPoolingHandle(x.data, self.kernel_size, self.stride,
+                                                       self.padding, self.ceil_mode, 'MAX', False)  # False for nan_prop
+               
+        self.handle.device_id = x.device.id()
+
+        y = max_pool_2d(x, self.handle)
         return y

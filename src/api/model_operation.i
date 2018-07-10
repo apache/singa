@@ -5,6 +5,7 @@
 %include "std_string.i"
 %{
 #include "../src/model/operation/convolution.h"
+#include "../src/model/operation/pooling.h"
 %}
 namespace singa {
 
@@ -26,6 +27,19 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
 
 Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch);
 
+
+class PoolingHandle {
+ public:
+  PoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
+                const std::vector<size_t>& stride, const std::vector<size_t>& padding,
+                const bool ceil_mode = false, const std::string pooling_method = "MAX");
+
+  size_t batchsize;
+
+  size_t pooled_height;
+  size_t pooled_width;
+};
+
 #if USE_CUDNN
 class CudnnConvHandle: public ConvHandle {
  public:
@@ -46,6 +60,25 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
 
 Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle &cch);
 
+
+class CudnnPoolingHandle : public PoolingHandle {
+ public:
+  CudnnPoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
+                     const std::vector<size_t>& stride, const std::vector<size_t>& padding,
+                     const bool ceil_mode = false, const std::string pooling_method = "MAX",
+                     const bool NaN_prop = false);
+
+  size_t batchsize;
+  
+  size_t pooled_height;
+  size_t pooled_width;
+};
+
+Tensor GpuPoolingForward(const Tensor &x, const CudnnPoolingHandle &cph);
+
+Tensor GpuPoolingBackward(const Tensor &dy, const Tensor& x, const Tensor& y,
+                          const CudnnPoolingHandle &cph);
+
 #endif  // USE_CUDNN
 
-}
+}  //namespace singa
