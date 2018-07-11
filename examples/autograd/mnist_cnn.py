@@ -84,7 +84,7 @@ if __name__ == '__main__':
         dev = device.get_default_device()
     else:
         print('Using GPU')
-        dev = device.create_cuda_gpu_on(1)
+        dev = device.create_cuda_gpu()
 
     train, test = load_data(args.file_path)
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     num_classes = 10
     epochs = 1
 
-    sgd = optimizer.SGD(0.01)
+    sgd = optimizer.SGD(0.001)
 
     x_train = preprocess(train[0])
     y_train = to_categorical(train[1], num_classes)
@@ -110,27 +110,32 @@ if __name__ == '__main__':
     conv2 = autograd.Conv2D(32, 32, 3, padding=1)
     bn2 = autograd.BatchNorm(32)
     linear = autograd.Linear(32 * 28 * 28, 10)
-
+    pooling1 = autograd.MaxPool2D(3, 1, padding=1)
+    pooling2 = autograd.MaxPool2D(3, 1, padding=1)
 
     def forward(x, t):
         y = conv1(x)
         y = autograd.relu(y)
         y = bn1(y)
         y = autograd.max_pool_2d(y)
+        y = pooling1(y)
+
         y = conv2(y)
-        y = bn2(y)
         y = autograd.relu(y)
-        y = autograd.max_pool_2d(y)
-        y=autograd.flatten(y)
+        y = bn2(y)
+        y = pooling2(y)
+        y = autograd.flatten(y)
         y = linear(y)
         loss = autograd.softmax_cross_entropy(y, t)
         return loss, y
 
     autograd.training = True
-    for epoch in range(epochs):
+    for epoch in range(50):
         for i in range(batch_number):
-            inputs = tensor.Tensor(device=dev, data=x_train[ i * 100:(1 + i) * 100], stores_grad=False)
-            targets = tensor.Tensor(device=dev, data=y_train[i * 100:(1 + i) * 100], requires_grad=False, stores_grad=False)
+            inputs = tensor.Tensor(device=dev, data=x_train[
+                                   i * 100:(1 + i) * 100], stores_grad=False)
+            targets = tensor.Tensor(device=dev, data=y_train[
+                                    i * 100:(1 + i) * 100], requires_grad=False, stores_grad=False)
 
             loss, y = forward(inputs, targets)
 
