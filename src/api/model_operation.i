@@ -27,6 +27,17 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
 
 Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch);
 
+
+
+class BatchNormHandle{
+  public:
+    BatchNormHandle(const float momentum, const Tensor& input);
+
+    size_t batchsize;
+};
+
+
+
 #if USE_CUDNN
 class CudnnConvHandle: public ConvHandle {
  public:
@@ -47,36 +58,25 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W, cons
 
 Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle &cch);
 
-#endif  // USE_CUDNN
 
-class BatchNormHandle{
-  public:
-    BatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean, const Tensor& RunningVariance);
-
-    size_t batchsize;
-    Tensor runningMean;
-    Tensor runningVariance;
-
-};
 
 
 class CudnnBatchNormHandle: public BatchNormHandle{
     public:
-      CudnnBatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean, const Tensor& RunningVariance);
+      CudnnBatchNormHandle(const float momentum, const Tensor& input);
 
     size_t batchsize;
-    Tensor runningMean;
-    Tensor runningVariance;
 };
 
-Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias, 
-   const std::vector<Tensor>& cache, CudnnBatchNormHandle &cbnh);
+const vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh, 
+  const Tensor& x, const Tensor& bnScale, const Tensor& bnBias, Tensor& running_mean, Tensor& running_var);
 
-Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias, const CudnnBatchNormHandle &cbnh);
+Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh, const Tensor& x, 
+  const Tensor& bnScale, const Tensor& bnBias,  const Tensor& running_mean, const Tensor& running_var);
 
-std::vector<Tensor> GpuBatchNormBackward(const Tensor& dy,
-  const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
+const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh, 
+  const Tensor& dy, const Tensor& x, const Tensor& bnScale, const Tensor& mean, const Tensor& var);
      
-
+#endif  // USE_CUDNN
 }
 

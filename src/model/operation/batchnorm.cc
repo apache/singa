@@ -2,8 +2,7 @@
 
 namespace singa {
 
-BatchNormHandle::BatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean,
-                                 const Tensor& RunningVariance) {
+BatchNormHandle::BatchNormHandle(const float momentum, const Tensor& input) {
   factor = momentum;
   batchsize = input.shape(0);
   channels = input.shape(1);
@@ -18,12 +17,11 @@ BatchNormHandle::BatchNormHandle(const float momentum, const Tensor& input, cons
   } else {
     LOG(FATAL) << "The dimension of input should either be 4D or 2D.";
   }
-  runningMean = RunningMean;
-  runningVariance = RunningVariance;
 };
 
-CudnnBatchNormHandle::CudnnBatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean,
-    const Tensor& RunningVariance): BatchNormHandle(momentum, input, RunningMean, RunningVariance) {
+#if USE_CUDNN
+CudnnBatchNormHandle::CudnnBatchNormHandle(const float momentum,
+    const Tensor& input): BatchNormHandle(momentum, input) {
   if (is_2d)
     mode = CUDNN_BATCHNORM_PER_ACTIVATION;
   else
@@ -40,85 +38,77 @@ CudnnBatchNormHandle::CudnnBatchNormHandle(const float momentum, const Tensor& i
                                          1, 1));
 };
 
-Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
-                                   const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh) {
+Tensor GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh,
+                                   const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
+                                   Tensor& running_mean, Tensor& running_var) {
   CHECK_EQ(x.device()->lang(), kCuda);
   CHECK_EQ(bnScale.device()->lang(), kCuda);
   CHECK_EQ(bnBias.device()->lang(), kCuda);
-  CHECK_EQ(cbnh.runningMean.device()->lang(), kCuda);
-  CHECK_EQ(cbnh.runningVariance.device()->lang(), kCuda);
-  CHECK_EQ(cache[1].device()->lang(), kCuda);  //resultmean
-  CHECK_EQ(cache[2].device()->lang(), kCuda);  //resultvariance
+  CHECK_EQ(runningMean.device()->lang(), kCuda);
+  CHECK_EQ(runningVariance.device()->lang(), kCuda);
+
+  Tensor mean, var;
+  mean.ResetLike(running_mean);
+  var.ResetLike(running_var);
 
   Shape shape = x.shape();
-  Tensor output;
-  Tensor input;  //for unification of 2d and 4d cases.
+
+  Tensor input = x;  //for unification of 2d and 4d cases.
   if (cbnh.is_2d)
-    input = Reshape(x, Shape{shape.at(0), shape.at(1), 1, 1});
-  else
-    input = x;
+    input.Reshape(Shape{shape.at(0), shape.at(1), 1, 1});
+
+  Tensor output;
   output.ResetLike(x);
 
   output.device()->Exec(
-  [&output, &input, &bnScale, &bnBias, &cache, &cbnh](Context * ctx) {
-    Block* inBlock = input.block(), * outBlock = output.block(),
-           * saveMeanBlock = cache[1].block(),
-             * saveVarBlock = cache[2].block(),
-               * runningMeanBlock = cbnh.runningMean.block(),
-                 * runningVarBlock = cbnh.runningVariance.block(),
-                   * bnScaleBlock = bnScale.block(),
-                     * bnBiasBlock = bnBias.block();
+  [&](Context * ctx) {
     const float alpha = 1.0f, beta = 0.0f;
     double epsilon = CUDNN_BN_MIN_EPSILON;
     CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
                   ctx->cudnn_handle, cbnh.mode, &alpha, &beta, cbnh.shape_desc,
-                  inBlock->data(), cbnh.shape_desc, outBlock->mutable_data(),
-                  cbnh.param_desc, bnScaleBlock->data(), bnBiasBlock->data(), cbnh.factor,
-                  runningMeanBlock->mutable_data(), runningVarBlock->mutable_data(),
-                  epsilon, saveMeanBlock->mutable_data(),
-                  saveVarBlock->mutable_data()));
+                  input.block()->data(), cbnh.shape_desc, output.block()->mutable_data(),
+                  cbnh.param_desc, bnScale.block()->data(), bnBias.block()->data(), cbnh.factor,
+                  running_mean.block()->mutable_data(), running_var.block()->mutable_data(),
+                  epsilon, mean.block()->mutable_data(),
+                  var.block()->mutable_data()));
   },
-  {input.block(), bnScale.block(), bnBias.block()},
-  { output.block(), cbnh.runningMean.block(), cbnh.runningVariance.block(),
-    cache[1].block(), cache[2].block()
+  {input.block(), bnScale.block(), bnBias.block(), running_mean.block(), running_var.block()}, {
+    output.block(), running_mean.block(), running_var.block(),
+    mean.block(), var.block()
   });
   if (cbnh.is_2d) output.Reshape(Shape{shape.at(0), shape.at(1)});
-  return output;
+  return {output, mean, var};
 };
 
-Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
-                                    const CudnnBatchNormHandle &cbnh) {
+Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
+                                    const Tensor& x, const Tensor& bnScale,
+                                    const Tensor& bnBias, const Tensor& running_mean, const Tensor& running_var) {
   CHECK_EQ(x.device()->lang(), kCuda);
   CHECK_EQ(bnScale.device()->lang(), kCuda);
   CHECK_EQ(bnBias.device()->lang(), kCuda);
-  CHECK_EQ(cbnh.runningMean.device()->lang(), kCuda);
-  CHECK_EQ(cbnh.runningVariance.device()->lang(), kCuda);
+  CHECK_EQ(cbnh.running_mean.device()->lang(), kCuda);
+  CHECK_EQ(cbnh.running_variance.device()->lang(), kCuda);
 
   Shape shape = x.shape();
-  Tensor output;
-  Tensor input;  //for unification of 2d and 4d cases.
+
+  Tensor input = x;  //for unification of 2d and 4d cases.
   if (cbnh.is_2d)
-    input = Reshape(x, Shape{shape.at(0), shape.at(1), 1, 1});
-  else
-    input = x;
+    input.Reshape(Shape{shape.at(0), shape.at(1), 1, 1});
+
+  Tensor output;
   output.ResetLike(x);
   output.device()->Exec(
-  [&output, &input, &bnScale, &bnBias, &cbnh](Context * ctx) {
-    Block* inBlock = input.block(), * outBlock = output.block(),
-           * runningMeanBlock = cbnh.runningMean.block(),
-             * runningVarBlock = cbnh.runningVariance.block(),
-               * bnScaleBlock = bnScale.block(),
-                 * bnBiasBlock = bnBias.block();
+  [&](Context * ctx) {
     const float alpha = 1.0f, beta = 0.0f;
     double epsilon = CUDNN_BN_MIN_EPSILON;
     CUDNN_CHECK(cudnnBatchNormalizationForwardInference(
                   ctx->cudnn_handle, cbnh.mode, &alpha, &beta, cbnh.shape_desc,
-                  inBlock->data(), cbnh.shape_desc, outBlock->mutable_data(),
-                  cbnh.param_desc, bnScaleBlock->data(), bnBiasBlock->data(),
-                  runningMeanBlock->data(), runningVarBlock->data(), epsilon));
-  },
-  { input.block(), bnScale.block(), bnBias.block(), cbnh.runningMean.block(),
-    cbnh.runningVariance.block()
+                  input.block()->data(), cbnh.shape_desc, output.block()->mutable_data(),
+                  cbnh.param_desc, bnScale.block()->data(), bnBias.block()->data(),
+                  running_mean.block()->data(), running_var.block()->data(), epsilon));
+  }, {
+    input.block(), bnScale.block(), bnBias.block(), running_mean.block(),
+    running_variance.block()
   },
   {output.block()});
   if (cbnh.is_2d) output.Reshape(Shape{shape.at(0), shape.at(1)});
@@ -126,52 +116,43 @@ Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, cons
 };
 
 
-std::vector<Tensor> GpuBatchNormBackward(const Tensor& dy, const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh) {
+std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
+    const Tensor& dy, const Tensor& x, const Tensor& bnScale, const Tensor& mean,
+    const Tensor& var) {
   CHECK_EQ(dy.device()->lang(), kCuda);
-  CHECK_EQ(cache[0].device()->lang(), kCuda);
-  CHECK_EQ(cache[1].device()->lang(), kCuda);
-  CHECK_EQ(cache[2].device()->lang(), kCuda);
-  CHECK_EQ(cache[3].device()->lang(), kCuda);
+  CHECK_EQ(x.device()->lang(), kCuda);
+  CHECK_EQ(bnScale.device()->lang(), kCuda);
+  CHECK_EQ(mean.device()->lang(), kCuda);
+  CHECK_EQ(var.device()->lang(), kCuda);
 
   vector<Tensor> out_grads;
   Tensor dx;
   dx.ResetLike(dy);
 
   Tensor dbnScale;
-  dbnScale.ResetLike(cache[3]);
+  dbnScale.ResetLike(bnScale);
 
   Tensor dbnBias;
-  dbnBias.ResetLike(cache[3]);
-  //dbnBias.ResetLike(bnBias);
+  dbnBias.ResetLike(bnScale);
 
   dx.device()->Exec(
-  [&dx, &dbnScale, &dbnBias, &dy, &cache, &cbnh](Context * ctx) {
-    Block* dyblock = dy.block(), * dxblock = dx.block(),
-           * xblock = cache[0].block(), * bnScaleBlock = cache[3].block(),
-             * dbnScaleBlock = dbnScale.block(),
-               * dbnBiasBlock = dbnBias.block(),
-                 * saveMeanBlock = cache[1].block(),
-                   * saveVarBlock = cache[2].block();
+  [&](Context * ctx) {
+    
     const float alpha = 1.0f, beta = .0f;
     double epsilon = CUDNN_BN_MIN_EPSILON;
     CUDNN_CHECK(cudnnBatchNormalizationBackward(
                   ctx->cudnn_handle, cbnh.mode, &alpha, &beta, &alpha, &beta,
-                  cbnh.shape_desc, xblock->data(), cbnh.shape_desc, dyblock->data(),
-                  cbnh.shape_desc, dxblock->mutable_data(), cbnh.param_desc,
-                  bnScaleBlock->data(), dbnScaleBlock->mutable_data(),
-                  dbnBiasBlock->mutable_data(), epsilon, saveMeanBlock->data(),
-                  saveVarBlock->data()));
-  },
-  { cache[0].block(), dy.block(), cache[3].block(), cache[1].block(),
-    cache[2].block()
-  },
+                  cbnh.shape_desc, x.block()->data(), cbnh.shape_desc, dy.block()->data(),
+                  cbnh.shape_desc, dx.block()->mutable_data(), cbnh.param_desc,
+                  bnScale.block()->data(), dbnScale.block()->mutable_data(),
+                  dbnBias.block()->mutable_data(), epsilon, mean.block()->data(),
+                  var.block()->data()));
+  }, {x.block(), dy.block(), bnScale.block(), mean.block(), var.block()},
   {dx.block(), dbnScale.block(), dbnBias.block()});
 
   if (cbnh.is_2d) dx.Reshape(Shape{dx.shape().at(0), dx.shape().at(1)});
-  out_grads.push_back(dx);
-  out_grads.push_back(dbnScale);
-  out_grads.push_back(dbnBias);
-  return out_grads;
+  
+  return {dx, dbnScale, dbnBias};
 };
 
 }

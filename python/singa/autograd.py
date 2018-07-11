@@ -33,7 +33,6 @@ CTensor = singa.Tensor
 training = False
 
 
-
 def infer_dependency(op):
     '''
     Infer the dependency of all operations with the
@@ -483,6 +482,7 @@ def cross_entropy(y, t):
 
 
 class SoftMaxCrossEntropy(Operation):
+
     def forward(self, x, t):
         self.p = singa.SoftMax(x)
         self.t = t
@@ -771,7 +771,7 @@ class Conv2D(Layer):
         return y
 
 
-class BatchNorm2d(NewLayer):
+class BatchNorm2d(Layer):
 
     def __init__(self, num_features, momentum=0.9):
         self.channels = num_features
@@ -787,16 +787,16 @@ class BatchNorm2d(NewLayer):
                            requires_grad=True, stores_grad=True)
         self.bias.set_value(0.0)
 
-        self.runningmean = Tensor(
+        self.running_mean = Tensor(
             shape=param_shape, requires_grad=False, stores_grad=False)
-        self.runningvariance = Tensor(
+        self.running_var = Tensor(
             shape=param_shape, requires_grad=False, stores_grad=False)
 
     def __call__(self, x):
         assert x.shape[1] == self.channels, 'number of channels dismatched.'
 
         self.device_check(x, self.scale, self.bias,
-                          self.runningmean, self.runningvariance)
+                          self.running_mean, self.running_var)
 
         if x.device.id() == -1:
             raise NotImplementedError
@@ -804,39 +804,40 @@ class BatchNorm2d(NewLayer):
         else:
             if not hasattr(self, 'handle'):
                 self.handle = singa.CudnnBatchNormHandle(
-                    self.momentum, x.data, self.runningmean.data, self.runningvariance.data)
+                    self.momentum, x.data)
             elif x.shape[0] != self.handle.batchsize:
                 self.handle = singa.CudnnBatchNormHandle(
-                    self.momentum, x.data, self.runningmean.data, self.runningvariance.data)
+                    self.momentum, x.data)
         self.handle.device_id = x.device.id()
 
-        y = batchnorm2d(x, self.scale, self.bias, self.handle)
+        y = batchnorm2d(x, self.scale, self.bias,
+                        self.running_mean, self.running_var, self.handle)
         return y
 
 
 class _BatchNorm2d(Operation):
 
-    def __init__(self, handle):
+    def __init__(self, running_mean, running_var, handle):
+        self.running_mean = running_mean.data
+        self.running_var = running_var.data
         self.handle = handle
 
     def forward(self, x, scale, bias):
         if training:
-            resultmean = CTensor([scale.shape(0)])
-            resultvariance = CTensor([scale.shape(0)])
-            self.cache = (x, resultmean, resultvariance, scale)
 
             if self.handle.device_id == -1:
                 raise NotImplementedError
             else:
-                resultmean.ToDevice(x.device())
-                resultvariance.ToDevice(x.device())
-                return singa.GpuBatchNormForwardTraining(x, scale, bias, self.cache, self.handle)
-
+                y, mean, var = singa.GpuBatchNormForwardTraining(self.handle,
+                                                                 x, scale, bias, self.running_mean, self.running_var)
+                self.cache = (x, scale, mean, var)
         else:
             if self.handle.device_id == -1:
                 raise NotImplementedError
             else:
-                return singa.GpuBatchNormForwardInference(x, scale, bias, self.handle)
+                y, _, _ = singa.GpuBatchNormForwardInference(
+                    self.handle, x, scale, bias, self.running_mean, self.running_var)
+        return y
 
     def backward(self, dy):
         assert training is True and hasattr(
@@ -848,10 +849,11 @@ class _BatchNorm2d(Operation):
         if self.handle.device_id == -1:
             raise NotImplementedError
         else:
+            x, scale, mean, var = self.cache
             dx, ds, db = singa.GpuBatchNormBackward(
-                dy, self.cache, self.handle)
+                self.handle, dy, x, scale, mean, var)
             return dx, ds, db
 
 
-def batchnorm2d(x, scale, bias, handle):
-    return _BatchNorm2d(handle)(x, scale, bias)[0]
+def batchnorm2d(x, scale, bias, running_mean, running_var, handle):
+    return _BatchNorm2d(running_mean, running_var, handle)(x, scale, bias)[0]

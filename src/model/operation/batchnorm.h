@@ -12,8 +12,8 @@
 namespace singa {
 
 class BatchNormHandle {
-public:
-  BatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean, const Tensor& RunningVariance);
+ public:
+  BatchNormHandle(const float momentum, const Tensor& input);
 
   float factor;
 
@@ -21,10 +21,6 @@ public:
   size_t channels;
   size_t height;
   size_t width;
-
-  Tensor runningMean;
-  Tensor runningVariance;
-
   bool is_2d;
   //bool train = true;
 };
@@ -39,8 +35,8 @@ public:
 #ifdef USE_CUDNN
 
 class CudnnBatchNormHandle: public BatchNormHandle {
-public:
-  CudnnBatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean, const Tensor& RunningVariance);
+ public:
+  CudnnBatchNormHandle(const float momentum, const Tensor& input);
 
   //~CudnnBatchNormHandle();
 
@@ -49,13 +45,17 @@ public:
   cudnnTensorDescriptor_t param_desc = nullptr;
 };
 
-Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
-                                   const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
+const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle
+    &cbnh, const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
+    Tensor& running_mean, Tensor& running_var);
 
-Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
-                                    const CudnnBatchNormHandle &cbnh);
+Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
+                                    const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
+                                    const Tensor& running_mean, const Tensor& running_var);
 
-std::vector<Tensor> GpuBatchNormBackward(const Tensor& dy, const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
+const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
+    const Tensor& dy, const Tensor& x, const Tensor& bnScale, const Tensor& mean,
+    const Tensor& var);
 
 #endif  // USE_CUDNN
 
