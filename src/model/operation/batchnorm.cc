@@ -8,8 +8,8 @@ BatchNormHandle::BatchNormHandle(const float momentum, const Tensor& input, cons
   batchsize = input.shape(0);
   channels = input.shape(1);
   if (input.nDim() == 4u) {
-    height = input.shape(2);
-    width = input.shape(3);
+    height = input.shape().at(2);
+    width = input.shape().at(3);
     is_2d = false;
   } else if (input.nDim() == 2u) {
     height = 1;
@@ -41,7 +41,14 @@ CudnnBatchNormHandle::CudnnBatchNormHandle(const float momentum, const Tensor& i
 };
 
 Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
-                                   std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh) {
+                                   const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh) {
+  CHECK_EQ(x.device()->lang(), kCuda);
+  CHECK_EQ(bnScale.device()->lang(), kCuda);
+  CHECK_EQ(bnBias.device()->lang(), kCuda);
+  CHECK_EQ(cbnh.runningMean.device()->lang(), kCuda);
+  CHECK_EQ(cbnh.runningVariance.device()->lang(), kCuda);
+  CHECK_EQ(cache[1].device()->lang(), kCuda);  //resultmean
+  CHECK_EQ(cache[2].device()->lang(), kCuda);  //resultvariance
 
   Shape shape = x.shape();
   Tensor output;
@@ -51,17 +58,6 @@ Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const
   else
     input = x;
   output.ResetLike(x);
-
-  Tensor resultSaveMean;
-  Tensor resultSaveVariance;
-
-  resultSaveMean.Reshape(Shape{cbnh.channels});
-  resultSaveVariance.Reshape(Shape{cbnh.channels});
-
-  cache.push_back(resultSaveMean);
-  cache.push_back(resultSaveVariance);
-  cache.push_back(bnScale);
-  //cache={x, mean, var, scale}
 
   output.device()->Exec(
   [&output, &input, &bnScale, &bnBias, &cache, &cbnh](Context * ctx) {
@@ -92,6 +88,12 @@ Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const
 
 Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
                                     const CudnnBatchNormHandle &cbnh) {
+  CHECK_EQ(x.device()->lang(), kCuda);
+  CHECK_EQ(bnScale.device()->lang(), kCuda);
+  CHECK_EQ(bnBias.device()->lang(), kCuda);
+  CHECK_EQ(cbnh.runningMean.device()->lang(), kCuda);
+  CHECK_EQ(cbnh.runningVariance.device()->lang(), kCuda);
+
   Shape shape = x.shape();
   Tensor output;
   Tensor input;  //for unification of 2d and 4d cases.
@@ -125,6 +127,11 @@ Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, cons
 
 
 std::vector<Tensor> GpuBatchNormBackward(const Tensor& dy, const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh) {
+  CHECK_EQ(dy.device()->lang(), kCuda);
+  CHECK_EQ(cache[0].device()->lang(), kCuda);
+  CHECK_EQ(cache[1].device()->lang(), kCuda);
+  CHECK_EQ(cache[2].device()->lang(), kCuda);
+  CHECK_EQ(cache[3].device()->lang(), kCuda);
 
   vector<Tensor> out_grads;
   Tensor dx;

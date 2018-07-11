@@ -79,12 +79,12 @@ class TestPythonOperation(unittest.TestCase):
         dy = CTensor([2, 3, 3, 3])
         singa.Gaussian(0.0, 1.0, dy)
 
-        y=batchnorm_0(gpu_input_tensor)
+        y = batchnorm_0(gpu_input_tensor)
         dx, ds, db = y.creator.backward(dy)
 
         self.check_shape(y.shape, (2, 3, 3, 3))
         self.check_shape(dx.shape(), (2, 3, 3, 3))
-        self.check_shape(dx.shape(), (3,))
+        self.check_shape(ds.shape(), (3,))
         self.check_shape(db.shape(), (3,))
 
 if __name__ == '__main__':

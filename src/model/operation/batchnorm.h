@@ -50,7 +50,7 @@ public:
 };
 
 Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
-                                   std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
+                                   const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
 
 Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
                                     const CudnnBatchNormHandle &cbnh);

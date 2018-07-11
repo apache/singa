@@ -70,7 +70,7 @@ class CudnnBatchNormHandle: public BatchNormHandle{
 };
 
 Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias, 
-   std::vector<Tensor>& cache, CudnnBatchNormHandle &cbnh);
+   const std::vector<Tensor>& cache, CudnnBatchNormHandle &cbnh);
 
 Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias, const CudnnBatchNormHandle &cbnh);
 

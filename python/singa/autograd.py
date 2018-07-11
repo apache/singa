@@ -770,35 +770,44 @@ class Conv2D(Layer):
         y = conv2d(x, self.W, self.b, self.handle)
         return y
 
+
 class BatchNorm2d(NewLayer):
-    def __init__(self, num_features, momentum = 0.9):
+
+    def __init__(self, num_features, momentum=0.9):
         self.channels = num_features
         self.momentum = momentum
 
         param_shape = (self.channels,)
 
-        self.scale = Tensor(shape=param_shape, requires_grad=True, stores_grad=True)
+        self.scale = Tensor(shape=param_shape,
+                            requires_grad=True, stores_grad=True)
         self.scale.set_value(1.0)
 
-        self.bias =  Tensor(shape=param_shape, requires_grad=True, stores_grad=True)
+        self.bias = Tensor(shape=param_shape,
+                           requires_grad=True, stores_grad=True)
         self.bias.set_value(0.0)
 
-        self.runningmean = Tensor(shape=param_shape, requires_grad=False, stores_grad=False)
-        self.runningvariance = Tensor(shape=param_shape, requires_grad=False, stores_grad=False)
+        self.runningmean = Tensor(
+            shape=param_shape, requires_grad=False, stores_grad=False)
+        self.runningvariance = Tensor(
+            shape=param_shape, requires_grad=False, stores_grad=False)
 
     def __call__(self, x):
         assert x.shape[1] == self.channels, 'number of channels dismatched.'
 
-        self.device_check(x, self.scale, self.bias, self.runningmean,self.runningvariance)
+        self.device_check(x, self.scale, self.bias,
+                          self.runningmean, self.runningvariance)
 
         if x.device.id() == -1:
             raise NotImplementedError
 
         else:
             if not hasattr(self, 'handle'):
-                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data, self.runningmean.data, self.runningvariance.data)
+                self.handle = singa.CudnnBatchNormHandle(
+                    self.momentum, x.data, self.runningmean.data, self.runningvariance.data)
             elif x.shape[0] != self.handle.batchsize:
-                self.handle = singa.CudnnBatchNormHandle(self.momentum, x.data, self.runningmean.data, self.runningvariance.data)
+                self.handle = singa.CudnnBatchNormHandle(
+                    self.momentum, x.data, self.runningmean.data, self.runningvariance.data)
         self.handle.device_id = x.device.id()
 
         y = batchnorm2d(x, self.scale, self.bias, self.handle)
@@ -806,26 +815,32 @@ class BatchNorm2d(NewLayer):
 
 
 class _BatchNorm2d(Operation):
-    def __init(self, handle):
+
+    def __init__(self, handle):
         self.handle = handle
 
     def forward(self, x, scale, bias):
         if training:
-            self.cache=(x,)
+            resultmean = CTensor([scale.shape(0)])
+            resultvariance = CTensor([scale.shape(0)])
+            self.cache = (x, resultmean, resultvariance, scale)
+
             if self.handle.device_id == -1:
                 raise NotImplementedError
             else:
+                resultmean.ToDevice(x.device())
+                resultvariance.ToDevice(x.device())
                 return singa.GpuBatchNormForwardTraining(x, scale, bias, self.cache, self.handle)
 
         else:
             if self.handle.device_id == -1:
                 raise NotImplementedError
             else:
-                return singa.GpuBatchNormForwardInference(x, scale, bias ,self.handle)
+                return singa.GpuBatchNormForwardInference(x, scale, bias, self.handle)
 
     def backward(self, dy):
         assert training is True and hasattr(
-            self, 'cahce'), 'Please set training as True before do BP. '
+            self, 'cache'), 'Please set training as True before do BP. '
 
         if dy.device().id() != self.handle.device_id:
             dy.ToDevice(self.cache[0].device())
@@ -833,7 +848,8 @@ class _BatchNorm2d(Operation):
         if self.handle.device_id == -1:
             raise NotImplementedError
         else:
-            dx, ds, db = singa.GpuBatchNormBackward(dy, self.cache, self.handle)
+            dx, ds, db = singa.GpuBatchNormBackward(
+                dy, self.cache, self.handle)
             return dx, ds, db
 
 
