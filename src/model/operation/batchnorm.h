@@ -9,24 +9,24 @@
 #include "../layer/cudnn_utils.h" // check_cudnn
 #endif // USE_CUDNN 
 
-namespace singa{
+namespace singa {
 
-class BatchNormHandle{
-  public:
-  	BatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean_, const Tensor& RunningVariance_);
+class BatchNormHandle {
+public:
+  BatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean, const Tensor& RunningVariance);
 
-  	float factor_;
-  	size_t channels_;
-  	size_t batchsize;
+  float factor;
 
-  	Tensor runningMean_;
-  	Tensor runningVariance_;
+  size_t batchsize;
+  size_t channels;
+  size_t height;
+  size_t width;
 
-  	bool is_2d_ ;
-  	//bool train = true;
+  Tensor runningMean;
+  Tensor runningVariance;
 
-  	size_t height_;
-  	size_t width_;
+  bool is_2d;
+  //bool train = true;
 };
 
 //Tensor CpuBatchNormForwardTraining();
@@ -38,22 +38,22 @@ class BatchNormHandle{
 
 #ifdef USE_CUDNN
 
-class CudnnBatchNormHandle: public BatchNormHandle{
-    public:
-      CudnnBatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean_, const Tensor& RunningVariance_);
+class CudnnBatchNormHandle: public BatchNormHandle {
+public:
+  CudnnBatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean, const Tensor& RunningVariance);
 
-      //~CudnnBatchNormHandle();
+  //~CudnnBatchNormHandle();
 
-      cudnnBatchNormMode_t mode_;
-      cudnnTensorDescriptor_t shape_desc_ = nullptr;
-      cudnnTensorDescriptor_t param_desc_ = nullptr;
+  cudnnBatchNormMode_t mode;
+  cudnnTensorDescriptor_t shape_desc = nullptr;
+  cudnnTensorDescriptor_t param_desc = nullptr;
 };
 
-Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale_, const Tensor& bnBias_, 
-  std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
+Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
+                                   std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
 
-Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale_, const Tensor& bnBias_, 
-	const CudnnBatchNormHandle &cbnh);
+Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
+                                    const CudnnBatchNormHandle &cbnh);
 
 std::vector<Tensor> GpuBatchNormBackward(const Tensor& dy, const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
 

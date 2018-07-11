@@ -51,28 +51,28 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle
 
 class BatchNormHandle{
   public:
-    BatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean_, const Tensor& RunningVariance_);
+    BatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean, const Tensor& RunningVariance);
 
     size_t batchsize;
-    Tensor runningMean_;
-    Tensor runningVariance_;
+    Tensor runningMean;
+    Tensor runningVariance;
 
 };
 
 
 class CudnnBatchNormHandle: public BatchNormHandle{
     public:
-      CudnnBatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean_, const Tensor& RunningVariance_);
+      CudnnBatchNormHandle(const float momentum, const Tensor& input, const Tensor& RunningMean, const Tensor& RunningVariance);
 
     size_t batchsize;
-    Tensor runningMean_;
-    Tensor runningVariance_;
+    Tensor runningMean;
+    Tensor runningVariance;
 };
 
-Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale_, const Tensor& bnBias_, 
+Tensor GpuBatchNormForwardTraining(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias, 
    std::vector<Tensor>& cache, CudnnBatchNormHandle &cbnh);
 
-Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale_, const Tensor& bnBias_, const CudnnBatchNormHandle &cbnh);
+Tensor GpuBatchNormForwardInference(const Tensor& x, const Tensor& bnScale, const Tensor& bnBias, const CudnnBatchNormHandle &cbnh);
 
 std::vector<Tensor> GpuBatchNormBackward(const Tensor& dy,
   const std::vector<Tensor>& cache, const CudnnBatchNormHandle &cbnh);
