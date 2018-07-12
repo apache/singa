@@ -23,6 +23,7 @@
 #include <utility>
 #include <algorithm>
 
+
 #define Noaxis 9999
 
 namespace singa {
@@ -871,7 +872,7 @@ void DivColumn(const Tensor &v, Tensor *M) {
   MultColumn(inv, M);
 }
 
-Tensor ConcatOn(const vector<Tensor> &in, int axis) {
+Tensor ConcatOn(const std::vector<Tensor> &in, int axis) {
   vector<Tensor> tmp;
   Shape out_shape = in[0].shape();
   size_t dim = in[0].shape().size();

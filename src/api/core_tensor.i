@@ -227,6 +227,9 @@ namespace singa{
   template <typename DType> Tensor operator>=(const Tensor &t, const DType x);
   %template(opge) operator>= <float>;
 
+  Tensor ConcatOn(const std::vector<Tensor> &in, int axis);
+  Tensor SliceOn(const Tensor&in, const size_t start, const size_t end, int axis);
+
 
   /* ========== Arithmetic operations ========== */
   %rename(__add__) operator+(const Tensor &lhs, const Tensor &rhs);

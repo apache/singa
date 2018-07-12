@@ -485,7 +485,7 @@ def ctensor2numpy(x):
 
 class Flatten(Operation):
 
-    def __init(self, start_axis=1):
+    def __init__(self, start_axis=1):
         # flatten all axis after (inclusive) start_axis
         self.start_axis = start_axis
         assert start_axis == 1, 'must flatten into 2d array not'
@@ -543,6 +543,37 @@ class Linear(Layer):
         if self.bias:
             y = add_bias(y, self.b, axis=0)
         return y
+
+
+class Concat(Operation):
+
+    def __init__(self, axis=0):
+        self.axis = axis
+
+    def forward(self, *xs):
+        if training:
+            offset = 0
+            self.slice_point = []
+            for t in xs:
+                offset += t.shape()[self.axis]
+                self.slice_point.append(offset)
+        return singa.ConcatOn(xs, self.axis)
+
+    def backward(self, dy):
+        assert hasattr(
+            self, 'slice_point'), 'Please set training as True before do BP. '
+        assert self.slice_point[-1] == dy.shape()[self.axis], 'Shape dismatched.'
+        dxs = []
+        last_offset = 0
+        for p in self.slice_point:
+            dxs.append(singa.SliceOn(dy, last_offset, p, self.axis))
+            last_offset = p
+        return tuple(dxs)
+
+
+def concat(*xs):
+    # TODO changable axis
+    return Concat()(*xs)
 
 
 class _Conv2D(Operation):
