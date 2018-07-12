@@ -557,7 +557,8 @@ class Concat(Operation):
             for t in xs:
                 offset += t.shape()[self.axis]
                 self.slice_point.append(offset)
-        return singa.ConcatOn(xs, self.axis)
+        x = singa.VecTensor(list(xs))
+        return singa.ConcatOn(x, self.axis)
 
     def backward(self, dy):
         assert hasattr(
@@ -571,9 +572,9 @@ class Concat(Operation):
         return tuple(dxs)
 
 
-def concat(*xs):
-    # TODO changable axis
-    return Concat()(*xs)
+def concat(xs, axis=0):
+    # xs is a tuple of multiple Tensors
+    return Concat(axis)(*xs)[0]
 
 
 class _Conv2D(Operation):
@@ -741,7 +742,8 @@ class BatchNorm(Layer):
             shape=param_shape, requires_grad=False, stores_grad=False)
 
     def __call__(self, x):
-        assert x.shape[1] == self.channels, 'number of channels dismatched.'
+        assert x.shape[1] == self.channels, 'number of channels dismatched. %d vs %d' % (
+            x.shape[1], self.channels)
 
         self.device_check(x, self.scale, self.bias,
                           self.running_mean, self.running_var)

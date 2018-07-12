@@ -107,7 +107,8 @@ if __name__ == '__main__':
     # operations initialization
     conv1 = autograd.Conv2D(1, 32, 3, padding=1, bias=False)
     bn1 = autograd.BatchNorm(32)
-    conv2 = autograd.Conv2D(32, 32, 3, padding=1)
+    conv21 = autograd.Conv2D(32, 16, 3, padding=1)
+    conv22 = autograd.Conv2D(32, 16, 3, padding=1)
     bn2 = autograd.BatchNorm(32)
     linear = autograd.Linear(32 * 28 * 28, 10)
     pooling1 = autograd.MaxPooling2D(3, 1, padding=1)
@@ -118,8 +119,10 @@ if __name__ == '__main__':
         y = autograd.relu(y)
         y = bn1(y)
         y = pooling1(y)
-
-        y = conv2(y)
+        y1 = conv21(y)
+        y2 = conv22(y)
+        y = autograd.concat((y1, y2), 1)
+        y = bn2(y)
         y = autograd.relu(y)
         y = bn2(y)
         y = pooling2(y)
