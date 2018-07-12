@@ -7,6 +7,7 @@
 #include "../src/model/operation/convolution.h"
 #include "../src/model/operation/batchnorm.h"
 %}
+
 namespace singa {
 
 class ConvHandle {
@@ -68,15 +69,15 @@ class CudnnBatchNormHandle: public BatchNormHandle{
     size_t batchsize;
 };
 
-const vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh, 
+const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh,
   const Tensor& x, const Tensor& bnScale, const Tensor& bnBias, Tensor& running_mean, Tensor& running_var);
 
-Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh, const Tensor& x, 
+Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh, const Tensor& x,
   const Tensor& bnScale, const Tensor& bnBias,  const Tensor& running_mean, const Tensor& running_var);
 
-const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh, 
+const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
   const Tensor& dy, const Tensor& x, const Tensor& bnScale, const Tensor& mean, const Tensor& var);
-     
+
 #endif  // USE_CUDNN
 }
 

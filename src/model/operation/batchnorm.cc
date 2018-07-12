@@ -19,7 +19,7 @@ BatchNormHandle::BatchNormHandle(const float momentum, const Tensor& input) {
   }
 };
 
-#if USE_CUDNN
+#ifdef USE_CUDNN
 CudnnBatchNormHandle::CudnnBatchNormHandle(const float momentum,
     const Tensor& input): BatchNormHandle(momentum, input) {
   if (is_2d)
@@ -38,14 +38,14 @@ CudnnBatchNormHandle::CudnnBatchNormHandle(const float momentum,
                                          1, 1));
 };
 
-Tensor GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh,
+const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh,
                                    const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
                                    Tensor& running_mean, Tensor& running_var) {
   CHECK_EQ(x.device()->lang(), kCuda);
   CHECK_EQ(bnScale.device()->lang(), kCuda);
   CHECK_EQ(bnBias.device()->lang(), kCuda);
-  CHECK_EQ(runningMean.device()->lang(), kCuda);
-  CHECK_EQ(runningVariance.device()->lang(), kCuda);
+  CHECK_EQ(running_mean.device()->lang(), kCuda);
+  CHECK_EQ(running_var.device()->lang(), kCuda);
 
   Tensor mean, var;
   mean.ResetLike(running_mean);
@@ -78,7 +78,7 @@ Tensor GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh,
   });
   if (cbnh.is_2d) output.Reshape(Shape{shape.at(0), shape.at(1)});
   return {output, mean, var};
-};
+}
 
 Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
                                     const Tensor& x, const Tensor& bnScale,
@@ -86,8 +86,8 @@ Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
   CHECK_EQ(x.device()->lang(), kCuda);
   CHECK_EQ(bnScale.device()->lang(), kCuda);
   CHECK_EQ(bnBias.device()->lang(), kCuda);
-  CHECK_EQ(cbnh.running_mean.device()->lang(), kCuda);
-  CHECK_EQ(cbnh.running_variance.device()->lang(), kCuda);
+  CHECK_EQ(running_mean.device()->lang(), kCuda);
+  CHECK_EQ(running_var.device()->lang(), kCuda);
 
   Shape shape = x.shape();
 
@@ -106,17 +106,13 @@ Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
                   input.block()->data(), cbnh.shape_desc, output.block()->mutable_data(),
                   cbnh.param_desc, bnScale.block()->data(), bnBias.block()->data(),
                   running_mean.block()->data(), running_var.block()->data(), epsilon));
-  }, {
-    input.block(), bnScale.block(), bnBias.block(), running_mean.block(),
-    running_variance.block()
-  },
+  }, { input.block(), bnScale.block(), bnBias.block(), running_mean.block(), running_var.block() },
   {output.block()});
-  if (cbnh.is_2d) output.Reshape(Shape{shape.at(0), shape.at(1)});
   return output;
-};
+}
 
 
-std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
+const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
     const Tensor& dy, const Tensor& x, const Tensor& bnScale, const Tensor& mean,
     const Tensor& var) {
   CHECK_EQ(dy.device()->lang(), kCuda);
@@ -137,7 +133,7 @@ std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
 
   dx.device()->Exec(
   [&](Context * ctx) {
-    
+
     const float alpha = 1.0f, beta = .0f;
     double epsilon = CUDNN_BN_MIN_EPSILON;
     CUDNN_CHECK(cudnnBatchNormalizationBackward(
@@ -151,8 +147,9 @@ std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
   {dx.block(), dbnScale.block(), dbnBias.block()});
 
   if (cbnh.is_2d) dx.Reshape(Shape{dx.shape().at(0), dx.shape().at(1)});
-  
-  return {dx, dbnScale, dbnBias};
-};
 
+  return {dx, dbnScale, dbnBias};
+}
+
+#endif  //USE_CUDNN
 }

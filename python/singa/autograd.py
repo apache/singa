@@ -771,7 +771,7 @@ class Conv2D(Layer):
         return y
 
 
-class BatchNorm2d(Layer):
+class BatchNorm(Layer):
 
     def __init__(self, num_features, momentum=0.9):
         self.channels = num_features
@@ -810,12 +810,12 @@ class BatchNorm2d(Layer):
                     self.momentum, x.data)
         self.handle.device_id = x.device.id()
 
-        y = batchnorm2d(x, self.scale, self.bias,
+        y = batchnorm(x, self.scale, self.bias,
                         self.running_mean, self.running_var, self.handle)
         return y
 
 
-class _BatchNorm2d(Operation):
+class _BatchNorm(Operation):
 
     def __init__(self, running_mean, running_var, handle):
         self.running_mean = running_mean.data
@@ -855,5 +855,5 @@ class _BatchNorm2d(Operation):
             return dx, ds, db
 
 
-def batchnorm2d(x, scale, bias, running_mean, running_var, handle):
-    return _BatchNorm2d(running_mean, running_var, handle)(x, scale, bias)[0]
+def batchnorm(x, scale, bias, running_mean, running_var, handle):
+    return _BatchNorm(running_mean, running_var, handle)(x, scale, bias)[0]

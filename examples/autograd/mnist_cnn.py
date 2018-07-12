@@ -106,15 +106,19 @@ if __name__ == '__main__':
 
     # operations initialization
     conv1 = autograd.Conv2D(1, 32, 3, padding=1, bias=False)
+    bn1 = autograd.BatchNorm(32)
     conv2 = autograd.Conv2D(32, 32, 3, padding=1)
+    bn2 = autograd.BatchNorm(32)
     linear = autograd.Linear(32 * 28 * 28, 10)
 
 
     def forward(x, t):
         y = conv1(x)
         y = autograd.relu(y)
+        y = bn1(y)
         y = autograd.max_pool_2d(y)
         y = conv2(y)
+        y = bn2(y)
         y = autograd.relu(y)
         y = autograd.max_pool_2d(y)
         y=autograd.flatten(y)
