@@ -12,10 +12,10 @@
 namespace singa {
 
 class PoolingHandle {
-public:
+ public:
   PoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                 const std::vector<size_t>& stride, const std::vector<size_t>& padding,
-                const bool ceil_mode = false, const std::string pooling_method = "MAX");
+                const bool is_max = true);
 
   size_t kernel_w;
   size_t pad_w;
@@ -32,29 +32,28 @@ public:
   size_t pooled_height;
   size_t pooled_width;
 
-  std::string method;
+  bool is_max_pooling;
 };
 
 #ifdef USE_CUDNN
 class CudnnPoolingHandle : public PoolingHandle {
-public:
+ public:
   CudnnPoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                      const std::vector<size_t>& stride, const std::vector<size_t>& padding,
-                     const bool ceil_mode = false, const std::string pooling_method = "MAX",
-                     const bool NaN_prop = false);
+                     const bool is_max = true);
   ~CudnnPoolingHandle();
 
   cudnnTensorDescriptor_t x_desc = nullptr;
   cudnnTensorDescriptor_t y_desc = nullptr;
   cudnnPoolingDescriptor_t pool_desc = nullptr;
-  cudnnNanPropagation_t nan_prop;
+  cudnnNanPropagation_t nan_prop = CUDNN_PROPAGATE_NAN;
 
 };
 
-Tensor GpuPoolingForward(const Tensor &x, const CudnnPoolingHandle &cph);
+Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x);
 
-Tensor GpuPoolingBackward(const Tensor &dy, const Tensor& x, const Tensor& y,
-                          const CudnnPoolingHandle &cph);
+Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy,
+                          const Tensor& x, const Tensor& y);
 
 #endif  //USE_CUDNN
 

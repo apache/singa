@@ -110,8 +110,8 @@ if __name__ == '__main__':
     conv2 = autograd.Conv2D(32, 32, 3, padding=1)
     bn2 = autograd.BatchNorm(32)
     linear = autograd.Linear(32 * 28 * 28, 10)
-    pooling1 = autograd.MaxPool2D(3, 1, padding=1)
-    pooling2 = autograd.MaxPool2D(3, 1, padding=1)
+    pooling1 = autograd.MaxPooling2D(3, 1, padding=1)
+    pooling2 = autograd.AvgPooling2D(3, 1, padding=1)
 
     def forward(x, t):
         y = conv1(x)
@@ -130,7 +130,7 @@ if __name__ == '__main__':
         return loss, y
 
     autograd.training = True
-    for epoch in range(50):
+    for epoch in range(epochs):
         for i in range(batch_number):
             inputs = tensor.Tensor(device=dev, data=x_train[
                                    i * 100:(1 + i) * 100], stores_grad=False)

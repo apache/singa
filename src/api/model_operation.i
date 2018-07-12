@@ -43,7 +43,7 @@ class PoolingHandle {
  public:
   PoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                 const std::vector<size_t>& stride, const std::vector<size_t>& padding,
-                const bool ceil_mode = false, const std::string pooling_method = "MAX");
+                const bool is_max=true);
 
   size_t batchsize;
 
@@ -94,8 +94,7 @@ class CudnnPoolingHandle : public PoolingHandle {
  public:
   CudnnPoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                      const std::vector<size_t>& stride, const std::vector<size_t>& padding,
-                     const bool ceil_mode = false, const std::string pooling_method = "MAX",
-                     const bool NaN_prop = false);
+                     const bool is_max=true);
 
   size_t batchsize;
   
@@ -103,10 +102,9 @@ class CudnnPoolingHandle : public PoolingHandle {
   size_t pooled_width;
 };
 
-Tensor GpuPoolingForward(const Tensor &x, const CudnnPoolingHandle &cph);
+Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x);
 
-Tensor GpuPoolingBackward(const Tensor &dy, const Tensor& x, const Tensor& y,
-                          const CudnnPoolingHandle &cph);
+Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy, const Tensor& x, const Tensor& y);
 
 #endif  // USE_CUDNN
 

@@ -483,35 +483,6 @@ def ctensor2numpy(x):
     return np_array.reshape(x.shape())
 
 
-class _MaxPool2D(Operation):
-
-    def __init__(self, handle):
-        self.handle = handle
-
-    def forward(self, x):
-        if self.handle.device_id == -1:
-            raise NotImplementedError
-        else:
-            y = singa.GpuPoolingForward(x, self.handle)
-
-        if training:
-            self.cache = (x, y)
-
-        return y
-
-    def backward(self, dy):
-        if self.handle.device_id == -1:
-            raise NotImplementedError
-        else:
-            dx = singa.GpuPoolingBackward(
-                dy, self.cache[0], self.cache[1], self.handle)
-        return dx
-
-
-def max_pool_2d(x, handle):
-    return _MaxPool2D(handle)(x)[0]
-
-
 class Flatten(Operation):
 
     def __init(self, start_axis=1):
@@ -532,6 +503,46 @@ class Flatten(Operation):
 
 def flatten(x):
     return Flatten()(x)[0]
+
+
+class Layer(object):
+
+    def __init__(self):
+        pass
+
+    def device_check(self, *inputs):
+        x_device = inputs[0].device
+        for var in inputs:
+            if var.device.id() != x_device:
+                var.to_device(x_device)
+
+
+class Linear(Layer):
+
+    def __init__(self, in_features, out_features, bias=True):
+        w_shape = (in_features, out_features)
+        b_shape = (1, out_features)
+        self.bias = bias
+
+        self.W = Tensor(shape=w_shape,
+                        requires_grad=True, stores_grad=True)
+        std = math.sqrt(2.0 / (in_features + out_features))
+        self.W.gaussian(0.0, std)
+
+        if self.bias:
+            self.b = Tensor(shape=b_shape,
+                            requires_grad=True, stores_grad=True)
+            self.b.set_value(0.0)
+
+    def __call__(self, x):
+        if self.bias:
+            self.device_check(x, self.W, self.b)
+        else:
+            self.device_check(x, self.W)
+        y = matmul(x, self.W)
+        if self.bias:
+            y = add_bias(y, self.b, axis=0)
+        return y
 
 
 class _Conv2D(Operation):
@@ -583,48 +594,8 @@ class _Conv2D(Operation):
                 return dx, dW, None
 
 
-def conv2d(x, W, b, handle):
+def conv2d(handle, x, W, b):
     return _Conv2D(handle)(x, W, b)[0]
-
-
-class Layer(object):
-
-    def __init__(self):
-        pass
-
-    def device_check(self, *inputs):
-        x_device = inputs[0].device
-        for var in inputs:
-            if var.device.id() != x_device:
-                var.to_device(x_device)
-
-
-class Linear(Layer):
-
-    def __init__(self, in_features, out_features, bias=True):
-        w_shape = (in_features, out_features)
-        b_shape = (1, out_features)
-        self.bias = bias
-
-        self.W = Tensor(shape=w_shape,
-                        requires_grad=True, stores_grad=True)
-        std = math.sqrt(2.0 / (in_features + out_features))
-        self.W.gaussian(0.0, std)
-
-        if self.bias:
-            self.b = Tensor(shape=b_shape,
-                            requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
-
-    def __call__(self, x):
-        if self.bias:
-            self.device_check(x, self.W, self.b)
-        else:
-            self.device_check(x, self.W)
-        y = matmul(x, self.W)
-        if self.bias:
-            y = add_bias(y, self.b, axis=0)
-        return y
 
 
 class Conv2D(Layer):
@@ -713,11 +684,8 @@ class Conv2D(Layer):
                                                     self.padding, self.in_channels, self.out_channels, self.bias)
         self.handle.device_id = x.device.id()
 
-        y = conv2d(x, self.W, self.b, self.handle)
+        y = conv2d(self.handle, x, self.W, self.b)
         return y
-
-
-<< << << < HEAD
 
 
 class BatchNorm(Layer):
@@ -759,14 +727,14 @@ class BatchNorm(Layer):
                     self.momentum, x.data)
         self.handle.device_id = x.device.id()
 
-        y = batchnorm(x, self.scale, self.bias,
-                      self.running_mean, self.running_var, self.handle)
+        y = batchnorm(self.handle, x, self.scale, self.bias,
+                      self.running_mean, self.running_var)
         return y
 
 
 class _BatchNorm(Operation):
 
-    def __init__(self, running_mean, running_var, handle):
+    def __init__(self, handle, running_mean, running_var):
         self.running_mean = running_mean.data
         self.running_var = running_var.data
         self.handle = handle
@@ -804,14 +772,42 @@ class _BatchNorm(Operation):
             return dx, ds, db
 
 
-def batchnorm(x, scale, bias, running_mean, running_var, handle):
-    return _BatchNorm(running_mean, running_var, handle)(x, scale, bias)[0]
+def batchnorm(handle, x, scale, bias, running_mean, running_var):
+    return _BatchNorm(handle, running_mean, running_var, handle)(x, scale, bias)[0]
 
 
-class MaxPool2D(Layer):
+class _Pooling2D(Operation):
 
-    def __init__(self, kernel_size, stride=None, padding=0, dilation=1,
-                 return_indices=False, ceil_mode=False):
+    def __init__(self, handle):
+        self.handle = handle
+
+    def forward(self, x):
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            y = singa.GpuPoolingForward(self.handle, x)
+
+        if training:
+            self.cache = (x, y)
+
+        return y
+
+    def backward(self, dy):
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            dx = singa.GpuPoolingBackward(self.handle,
+                                          dy, self.cache[0], self.cache[1])
+        return dx
+
+
+def pooling_2d(handle, x):
+    return _Pooling2D(handle)(x)[0]
+
+
+class Pooling2D(Layer):
+
+    def __init__(self, kernel_size, stride=None, padding=0, is_max=True):
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
         elif isinstance(kernel_size, tuple):
@@ -825,6 +821,8 @@ class MaxPool2D(Layer):
             self.stride = (stride, stride)
         elif isinstance(stride, tuple):
             self.stride = stride
+            assert stride[0] > 0 or (kernel_size[0] == 1 and padding[
+                0] == 0), 'stride[0]=0, but kernel_size[0]=%d, padding[0]=%d' % (kernel_size[0], padding[0])
         else:
             raise TypeError('Wrong stride type.')
 
@@ -835,43 +833,62 @@ class MaxPool2D(Layer):
         else:
             raise TypeError('Wrong padding type.')
 
-        if dilation != 1:
-            raise ValueError('Not implemented yet')
-
-        if return_indices is not False:
-            raise ValueError('Not implemented yet')
-
-        self.ceil_mode = ceil_mode
+        self.is_max = is_max
 
     def __call__(self, x):
-        if self.ceil_mode:
-            out_shape_h = int(math.ceil(
-                (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) / self.stride[0])) + 1
-            out_shape_w = int(math.ceil(
-                (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]) / self.stride[1])) + 1
-        else:
-            out_shape_h = int(
-                (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) // self.stride[0]) + 1
-            out_shape_w = int(
-                (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]) // self.stride[1]) + 1
+
+        out_shape_h = int(
+            (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]) // self.stride[0]) + 1
+        out_shape_w = int(
+            (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]) // self.stride[1]) + 1
         if x.device.id() == -1:
             if not hasattr(self, 'handle'):
-                self.handle = singa.PoolingHandle(x.data, self.kernel_size, self.stride,
-                                                  self.padding, self.ceil_mode, 'MAX')
+                self.handle = singa.PoolingHandle(
+                    x.data, self.kernel_size, self.stride, self.padding, self.is_max)
             elif x.shape[0] != self.handle.batchsize or out_shape_h != self.handle.pooled_height or \
                     out_shape_w != self.handle.pooled_width:
                 self.handle = singa.PoolingHandle(x.data, self.kernel_size, self.stride,
-                                                  self.padding, self.ceil_mode, 'MAX')
+                                                  self.padding, self.is_max)
         else:
             if not hasattr(self, 'handle'):
                 self.handle = singa.CudnnPoolingHandle(x.data, self.kernel_size, self.stride,
-                                                       self.padding, self.ceil_mode, 'MAX', False)  # False for nan_prop
+                                                       self.padding, self.is_max)  # False for nan_prop
             elif x.shape[0] != self.handle.batchsize or out_shape_h != self.handle.pooled_height or \
                     out_shape_w != self.handle.pooled_width:
                 self.handle = singa.CudnnPoolingHandle(x.data, self.kernel_size, self.stride,
-                                                       self.padding, self.ceil_mode, 'MAX', False)  # False for nan_prop
+                                                       self.padding, self.is_max)  # False for nan_prop
 
         self.handle.device_id = x.device.id()
 
-        y = max_pool_2d(x, self.handle)
+        y = pooling_2d(self.handle, x)
         return y
+
+
+class MaxPooling2D(Pooling2D):
+
+    def __init__(self, kernel_size, stride=None, padding=0):
+        super(MaxPooling2D, self).__init__(kernel_size, stride, padding, True)
+
+
+class AvgPooling2D(Pooling2D):
+
+    def __init__(self, kernel_size, stride=None, padding=0):
+        super(AvgPooling2D, self).__init__(kernel_size, stride, padding, False)
+
+
+class MaxPooling1D(Pooling2D):
+
+    def __init__(self, kernel_size, stride=None, padding=0):
+        if stride is None:
+            stride = kernel_size
+        super(MaxPooling2D, self).__init__(
+            (1, kernel_size), (0, stride), (0, padding), True)
+
+
+class AvgPooling1D(Pooling2D):
+
+    def __init__(self, kernel_size, stride=None, padding=0):
+        if stride is None:
+            stride = kernel_size
+        super(MaxPooling2D, self).__init__(
+            (1, kernel_size), (0, stride), (0, padding), False)
