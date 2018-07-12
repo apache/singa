@@ -39,7 +39,7 @@ CudnnPoolingHandle::CudnnPoolingHandle(const Tensor &input,
                                        const bool is_max)
   : PoolingHandle(input, kernel_size, stride, padding, is_max) {
 
-#nan_prop = CUDNN_NOT_PROPAGATE_NAN;
+//nan_prop = CUDNN_NOT_PROPAGATE_NAN;
 
   DataType dtype = input.data_type();
 
@@ -73,7 +73,7 @@ CudnnPoolingHandle::~CudnnPoolingHandle() {
 }
 
 
-Tensor GpuPoolingForward(const Tensor &x, const CudnnPoolingHandle &cph) {
+Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x) {
   CHECK_EQ(x.device()->lang(), kCuda);
   CHECK_EQ(x.nDim(), 4u);
 
@@ -89,8 +89,8 @@ Tensor GpuPoolingForward(const Tensor &x, const CudnnPoolingHandle &cph) {
   return output;
 }
 
-Tensor GpuPoolingBackward(const Tensor &dy, const Tensor& x, const Tensor& y,
-                          const CudnnPoolingHandle &cph) {
+Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy,
+                          const Tensor& x, const Tensor& y) {
   CHECK_EQ(dy.device()->lang(), kCuda);
   CHECK_EQ(dy.nDim(), 4u);
 

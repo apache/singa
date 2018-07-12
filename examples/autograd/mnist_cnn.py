@@ -117,7 +117,6 @@ if __name__ == '__main__':
         y = conv1(x)
         y = autograd.relu(y)
         y = bn1(y)
-        y = autograd.max_pool_2d(y)
         y = pooling1(y)
 
         y = conv2(y)

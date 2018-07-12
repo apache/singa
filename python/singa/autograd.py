@@ -773,7 +773,7 @@ class _BatchNorm(Operation):
 
 
 def batchnorm(handle, x, scale, bias, running_mean, running_var):
-    return _BatchNorm(handle, running_mean, running_var, handle)(x, scale, bias)[0]
+    return _BatchNorm(handle, running_mean, running_var)(x, scale, bias)[0]
 
 
 class _Pooling2D(Operation):
