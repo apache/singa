@@ -121,7 +121,6 @@ const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
   CHECK_EQ(mean.device()->lang(), kCuda);
   CHECK_EQ(var.device()->lang(), kCuda);
 
-  vector<Tensor> out_grads;
   Tensor dx;
   dx.ResetLike(dy);
 

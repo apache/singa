@@ -572,12 +572,12 @@ class Concat(Operation):
         return tuple(dxs)
 
 
-def concat(xs, axis=0):
+def cat(xs, axis=0):
     # xs is a tuple of multiple Tensors
     return Concat(axis)(*xs)[0]
 
 
-class _Conv2D(Operation):
+class _Conv2d(Operation):
 
     def __init__(self, handle):
         self.handle = handle
@@ -627,10 +627,10 @@ class _Conv2D(Operation):
 
 
 def conv2d(handle, x, W, b):
-    return _Conv2D(handle)(x, W, b)[0]
+    return _Conv2d(handle)(x, W, b)[0]
 
 
-class Conv2D(Layer):
+class Conv2d(Layer):
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=True, **kwargs):
@@ -693,10 +693,6 @@ class Conv2D(Layer):
 
     def __call__(self, x):
         assert x.shape[1] == self.in_channels, 'in_channels dismatched'
-        assert (x.shape[2] + 2 * self.padding[0] - self.kernel_size[0]
-                ) % self.stride[0] == 0, 'invalid padding or strides.'
-        assert (x.shape[3] + 2 * self.padding[1] - self.kernel_size[1]
-                ) % self.stride[1] == 0, 'invalid padding or stride.'
 
         self.device_check(x, self.W, self.b)
 
@@ -720,7 +716,7 @@ class Conv2D(Layer):
         return y
 
 
-class BatchNorm(Layer):
+class BatchNorm2d(Layer):
 
     def __init__(self, num_features, momentum=0.9):
         self.channels = num_features
@@ -765,7 +761,7 @@ class BatchNorm(Layer):
         return y
 
 
-class _BatchNorm(Operation):
+class _BatchNorm2d(Operation):
 
     def __init__(self, handle, running_mean, running_var):
         self.running_mean = running_mean.data
@@ -805,11 +801,11 @@ class _BatchNorm(Operation):
             return dx, ds, db
 
 
-def batchnorm(handle, x, scale, bias, running_mean, running_var):
+def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
     return _BatchNorm(handle, running_mean, running_var)(x, scale, bias)[0]
 
 
-class _Pooling2D(Operation):
+class _Pooling2d(Operation):
 
     def __init__(self, handle):
         self.handle = handle
@@ -838,7 +834,7 @@ def pooling_2d(handle, x):
     return _Pooling2D(handle)(x)[0]
 
 
-class Pooling2D(Layer):
+class Pooling2d(Layer):
 
     def __init__(self, kernel_size, stride=None, padding=0, is_max=True):
         if isinstance(kernel_size, int):
@@ -897,31 +893,31 @@ class Pooling2D(Layer):
         return y
 
 
-class MaxPooling2D(Pooling2D):
+class MaxPool2d(Pooling2D):
 
     def __init__(self, kernel_size, stride=None, padding=0):
-        super(MaxPooling2D, self).__init__(kernel_size, stride, padding, True)
+        super(MaxPool2d, self).__init__(kernel_size, stride, padding, True)
 
 
-class AvgPooling2D(Pooling2D):
+class AvgPool2d(Pooling2D):
 
     def __init__(self, kernel_size, stride=None, padding=0):
-        super(AvgPooling2D, self).__init__(kernel_size, stride, padding, False)
+        super(AvgPool2d, self).__init__(kernel_size, stride, padding, False)
 
 
-class MaxPooling1D(Pooling2D):
+class MaxPool1d(Pooling2D):
 
     def __init__(self, kernel_size, stride=None, padding=0):
         if stride is None:
             stride = kernel_size
-        super(MaxPooling2D, self).__init__(
+        super(MaxPool2d, self).__init__(
             (1, kernel_size), (0, stride), (0, padding), True)
 
 
-class AvgPooling1D(Pooling2D):
+class AvgPool1d(Pooling2D):
 
     def __init__(self, kernel_size, stride=None, padding=0):
         if stride is None:
             stride = kernel_size
-        super(MaxPooling2D, self).__init__(
+        super(MaxPool2d, self).__init__(
             (1, kernel_size), (0, stride), (0, padding), False)
