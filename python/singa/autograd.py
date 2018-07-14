@@ -350,7 +350,7 @@ def add_bias(x, b, axis=0):
 class Add(Operation):
 
     def forward(self, a, b):
-        return a + b
+        return singa.__add__(a, b)
 
     def backward(self, dy):
         return dy, dy
@@ -469,22 +469,24 @@ def cross_entropy(y, t):
 
 class SoftMaxCrossEntropy(Operation):
 
-    def forward(self, x, t):
+    def __init__(self, t):
+        self.t = t.data
+
+    def forward(self, x):
         self.p = singa.SoftMax(x)
-        self.t = t
         loss = CTensor((1,), self.p.device())
-        ret = singa.CrossEntropyFwd(self.p, t)
+        ret = singa.CrossEntropyFwd(self.p, self.t)
         loss.SetFloatValue(singa.SumAsFloat(ret) / x.shape()[0])
         return loss
 
     def backward(self, dy=1.0):
         dx = singa.SoftmaxCrossEntropyBwd(self.p, self.t)
-        return singa.DivFloat(dx, float(self.p.shape()[0])), None
+        return singa.DivFloat(dx, float(self.p.shape()[0]))
 
 
 def softmax_cross_entropy(x, t):
     # x is the logits and t is the ground truth; both are 2D.
-    return SoftMaxCrossEntropy()(x, t)[0]
+    return SoftMaxCrossEntropy(t)(x)[0]
 
 
 def ctensor2numpy(x):
@@ -769,7 +771,7 @@ class BatchNorm2d(Layer):
                     self.momentum, x.data)
         self.handle.device_id = x.device.id()
 
-        y = batchnorm(self.handle, x, self.scale, self.bias,
+        y = batchnorm_2d(self.handle, x, self.scale, self.bias,
                       self.running_mean, self.running_var)
         return y
 
@@ -794,7 +796,7 @@ class _BatchNorm2d(Operation):
             if self.handle.device_id == -1:
                 raise NotImplementedError
             else:
-                y, _, _ = singa.GpuBatchNormForwardInference(
+                y = singa.GpuBatchNormForwardInference(
                     self.handle, x, scale, bias, self.running_mean, self.running_var)
         return y
 
@@ -815,7 +817,7 @@ class _BatchNorm2d(Operation):
 
 
 def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
-    return _BatchNorm(handle, running_mean, running_var)(x, scale, bias)[0]
+    return _BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
 
 
 class _Pooling2d(Operation):
@@ -844,7 +846,7 @@ class _Pooling2d(Operation):
 
 
 def pooling_2d(handle, x):
-    return _Pooling2D(handle)(x)[0]
+    return _Pooling2d(handle)(x)[0]
 
 
 class Pooling2d(Layer):
@@ -894,11 +896,11 @@ class Pooling2d(Layer):
         else:
             if not hasattr(self, 'handle'):
                 self.handle = singa.CudnnPoolingHandle(x.data, self.kernel_size, self.stride,
-                                                       self.padding, self.is_max)  # False for nan_prop
+                                                       self.padding, self.is_max)
             elif x.shape[0] != self.handle.batchsize or out_shape_h != self.handle.pooled_height or \
                     out_shape_w != self.handle.pooled_width:
                 self.handle = singa.CudnnPoolingHandle(x.data, self.kernel_size, self.stride,
-                                                       self.padding, self.is_max)  # False for nan_prop
+                                                       self.padding, self.is_max)
 
         self.handle.device_id = x.device.id()
 
@@ -906,19 +908,19 @@ class Pooling2d(Layer):
         return y
 
 
-class MaxPool2d(Pooling2D):
+class MaxPool2d(Pooling2d):
 
     def __init__(self, kernel_size, stride=None, padding=0):
         super(MaxPool2d, self).__init__(kernel_size, stride, padding, True)
 
 
-class AvgPool2d(Pooling2D):
+class AvgPool2d(Pooling2d):
 
     def __init__(self, kernel_size, stride=None, padding=0):
         super(AvgPool2d, self).__init__(kernel_size, stride, padding, False)
 
 
-class MaxPool1d(Pooling2D):
+class MaxPool1d(Pooling2d):
 
     def __init__(self, kernel_size, stride=None, padding=0):
         if stride is None:
@@ -927,7 +929,7 @@ class MaxPool1d(Pooling2D):
             (1, kernel_size), (0, stride), (0, padding), True)
 
 
-class AvgPool1d(Pooling2D):
+class AvgPool1d(Pooling2d):
 
     def __init__(self, kernel_size, stride=None, padding=0):
         if stride is None:

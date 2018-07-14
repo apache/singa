@@ -29,9 +29,10 @@ class Optimizer(object):
     """
 
     def __init__(self, config):
-        self.config = config
+        self.default_config = config
         self.step = 0
         self.param2config = {}
+        self.param2state = {}
 
     def update(self, param, grad):
         r"""Update the param values with given gradients.
@@ -126,7 +127,9 @@ class SGD(Optimizer):
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
-        group = self.param2group[param]
+        group = self.default_config
+        if param in self.param2config:
+            group = self.param2config[param]
         weight_decay = group['weight_decay']
         momentum = group['momentum']
         dampening = group['dampening']
@@ -135,7 +138,9 @@ class SGD(Optimizer):
         if weight_decay != 0:
             grad += param * weight_decay
         if momentum != 0:
-            param_state = self.state[param]
+            if param not in self.param2state:
+                self.param2state[param] = {}
+            param_state = self.param2state[param]
             if 'momentum_buffer' not in param_state:
                 buf = param_state[
                     'momentum_buffer'] = tensor.zeros_like(param)

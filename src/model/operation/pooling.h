@@ -13,24 +13,24 @@ namespace singa {
 
 class PoolingHandle {
  public:
-  PoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
-                const std::vector<size_t>& stride, const std::vector<size_t>& padding,
+  PoolingHandle(const Tensor &input, const std::vector<int>& kernel_size,
+                const std::vector<int>& stride, const std::vector<int>& padding,
                 const bool is_max = true);
 
-  size_t kernel_w;
-  size_t pad_w;
-  size_t stride_w;
-  size_t kernel_h;
-  size_t pad_h;
-  size_t stride_h;
+  int kernel_w;
+  int pad_w;
+  int stride_w;
+  int kernel_h;
+  int pad_h;
+  int stride_h;
 
-  size_t batchsize;
-  size_t channels;
-  size_t height;
-  size_t width;
+  int batchsize;
+  int channels;
+  int height;
+  int width;
 
-  size_t pooled_height;
-  size_t pooled_width;
+  int pooled_height;
+  int pooled_width;
 
   bool is_max_pooling;
 };
@@ -38,8 +38,8 @@ class PoolingHandle {
 #ifdef USE_CUDNN
 class CudnnPoolingHandle : public PoolingHandle {
  public:
-  CudnnPoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
-                     const std::vector<size_t>& stride, const std::vector<size_t>& padding,
+  CudnnPoolingHandle(const Tensor &input, const std::vector<int>& kernel_size,
+                     const std::vector<int>& stride, const std::vector<int>& padding,
                      const bool is_max = true);
   ~CudnnPoolingHandle();
 

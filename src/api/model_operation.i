@@ -41,14 +41,14 @@ class BatchNormHandle{
 
 class PoolingHandle {
  public:
-  PoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
-                const std::vector<size_t>& stride, const std::vector<size_t>& padding,
+  PoolingHandle(const Tensor &input, const std::vector<int>& kernel_size,
+                const std::vector<int>& stride, const std::vector<int>& padding,
                 const bool is_max=true);
 
-  size_t batchsize;
+  int batchsize;
 
-  size_t pooled_height;
-  size_t pooled_width;
+  int pooled_height;
+  int pooled_width;
 };
 
 
@@ -92,14 +92,14 @@ const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
 
 class CudnnPoolingHandle : public PoolingHandle {
  public:
-  CudnnPoolingHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
-                     const std::vector<size_t>& stride, const std::vector<size_t>& padding,
+  CudnnPoolingHandle(const Tensor &input, const std::vector<int>& kernel_size,
+                     const std::vector<int>& stride, const std::vector<int>& padding,
                      const bool is_max=true);
 
-  size_t batchsize;
-  
-  size_t pooled_height;
-  size_t pooled_width;
+  int batchsize;
+
+  int pooled_height;
+  int pooled_width;
 };
 
 Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x);

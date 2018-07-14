@@ -4,8 +4,8 @@
 namespace singa {
 
 PoolingHandle::PoolingHandle(const Tensor &input,
-                             const std::vector<size_t>& kernel_size,
-                             const std::vector<size_t>& stride, const std::vector<size_t>& padding,
+                             const std::vector<int>& kernel_size,
+                             const std::vector<int>& stride, const std::vector<int>& padding,
                              const bool is_max) {
   kernel_h = kernel_size[0];
   kernel_w = kernel_size[1];
@@ -24,18 +24,19 @@ PoolingHandle::PoolingHandle(const Tensor &input,
   pooled_height = 1;
 
   if (stride_h > 0)
-    pooled_height =
-      static_cast<size_t>((height + 2 * pad_h - kernel_h) / stride_h) + 1;
-  pooled_width =
-    static_cast<size_t>((width + 2 * pad_w - kernel_w) / stride_w) + 1;
+    pooled_height = std::floor(
+      ((height + 2 * pad_h - kernel_h) / stride_h)) + 1;
+  pooled_width = std::floor(
+    ((width + 2 * pad_w - kernel_w) / stride_w)) + 1;
   is_max_pooling = is_max;
 }
 
 #ifdef USE_CUDNN
 
 CudnnPoolingHandle::CudnnPoolingHandle(const Tensor &input,
-                                       const std::vector<size_t>& kernel_size,
-                                       const std::vector<size_t>& stride, const std::vector<size_t>& padding,
+                                       const std::vector<int>& kernel_size,
+                                       const std::vector<int>& stride,
+                                       const std::vector<int>& padding,
                                        const bool is_max)
   : PoolingHandle(input, kernel_size, stride, padding, is_max) {
 
@@ -51,14 +52,13 @@ CudnnPoolingHandle::CudnnPoolingHandle(const Tensor &input,
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(x_desc, CUDNN_TENSOR_NCHW,
                                          GetCudnnDataType(dtype), batchsize,
                                          channels, height, width));
+  // LOG(ERROR) << batchsize << " " << channels << " " << pooled_height << " " << pooled_width;
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(
                 y_desc, CUDNN_TENSOR_NCHW, GetCudnnDataType(dtype), batchsize, channels,
                 pooled_height, pooled_width));
-  auto pool_method = CUDNN_POOLING_MAX;
+  auto pool_method = CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING;
   if (is_max)
     pool_method = CUDNN_POOLING_MAX;
-  else
-    pool_method = CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING;
 
   CUDNN_CHECK(cudnnSetPooling2dDescriptor(pool_desc, pool_method, nan_prop,
                                           kernel_h, kernel_w, pad_h, pad_w,
