@@ -347,6 +347,19 @@ def add_bias(x, b, axis=0):
     return AddBias(axis)(x, b)[0]
 
 
+class Add(Operation):
+
+    def forward(self, a, b):
+        return a + b
+
+    def backward(self, dy):
+        return dy, dy
+
+
+def add(a, b):
+    return Add()(a, b)[0]
+
+
 class SoftMax(Operation):
     '''
     Apply SoftMax for each row of the Tensor or each column of the Tensor

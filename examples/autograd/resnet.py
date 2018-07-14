@@ -23,6 +23,10 @@
 from singa import autograd
 from singa import tensor
 from singa import device
+from singa import utils
+from singa import optimizer
+
+import numpy as np
 
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
@@ -60,7 +64,7 @@ class BasicBlock(autograd.Layer):
         if self.downsample is not None:
             residual = self.downsample(x)
 
-        out += residual
+        out = autograd.add(out, residual)
         out = autograd.relu(out)
 
         return out
@@ -101,7 +105,7 @@ class Bottleneck(autograd.Layer):
         if self.downsample is not None:
             residual = self.downsample(x)
 
-        out += residual
+        out = autograd.add(out, residual)
         out = autograd.relu(out)
 
         return out
@@ -217,10 +221,109 @@ def resnet152(pretrained=False, **kwargs):
     return model
 
 
-if __name__ == '__main__':
+def load_dataset(filepath):
+    print('Loading data file %s' % filepath)
+    with open(filepath, 'rb') as fd:
+        try:
+            cifar10 = pickle.load(fd, encoding='latin1')
+        except TypeError:
+            cifar10 = pickle.load(fd)
+    image = cifar10['data'].astype(dtype=np.uint8)
+    image = image.reshape((-1, 3, 32, 32))
+    label = np.asarray(cifar10['labels'], dtype=np.uint8)
+    label = label.reshape(label.size, 1)
+    return image, label
 
+
+def load_train_data(dir_path, num_batches=5):
+    labels = []
+    batchsize = 10000
+    images = np.empty((num_batches * batchsize, 3, 32, 32), dtype=np.uint8)
+    for did in range(1, num_batches + 1):
+        fname_train_data = dir_path + "/data_batch_{}".format(did)
+        image, label = load_dataset(fname_train_data)
+        images[(did - 1) * batchsize:did * batchsize] = image
+        labels.extend(label)
+    images = np.array(images, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32)
+    return images, labels
+
+
+def load_test_data(dir_path):
+    images, labels = load_dataset(dir_path + "/test_batch")
+    return np.array(images,  dtype=np.float32), np.array(labels, dtype=np.int32)
+
+
+def accuracy(pred, target):
+    y = np.argmax(pred, axis=1)
+    t = np.argmax(target, axis=1)
+    a = y == t
+    return np.array(a, 'int').sum() / float(len(t))
+
+
+def train(data, net, max_epoch, get_lr, weight_decay=1e-5, batch_size=100):
+    print('Start intialization............')
+    dev = device.create_cuda_gpu()
+
+    opt = optimizer.SGD(momentum=0.9, weight_decay=weight_decay)
+
+    tx = tensor.Tensor((batch_size, 3, 32, 32), dev)
+    ty = tensor.Tensor((batch_size,), dev, tensor.int32)
+    train_x, train_y, test_x, test_y = data
+    num_train_batch = train_x.shape[0] // batch_size
+    num_test_batch = test_x.shape[0] // batch_size
+    idx = np.arange(train_x.shape[0], dtype=np.int32)
+    for epoch in range(max_epoch):
+        np.random.shuffle(idx)
+        loss, acc = 0.0, 0.0
+        print('Epoch %d' % epoch)
+        autograd.training = True
+        for b in range(num_train_batch):
+            x = train_x[idx[b * batch_size: (b + 1) * batch_size]]
+            y = train_y[idx[b * batch_size: (b + 1) * batch_size]]
+            tx.copy_from_numpy(x)
+            ty.copy_from_numpy(y)
+            x = net(tx)
+            loss = autograd.softmax_cross_entropy(x, ty)
+            np_loss = tensor.to_numpy(loss)
+            acc += accuracy(tensor.to_numpy(x), y)
+
+            for p, g in autograd.backwards(loss):
+                opt.apply_with_lr(epoch, get_lr(epoch), g, p)
+            # update progress bar
+            utils.update_progress(b * 1.0 / num_train_batch,
+                                  'training loss = %f' % (np_loss[0]))
+
+        loss, acc = 0.0, 0.0
+        autograd.training = True
+        for b in range(num_test_batch):
+            x = test_x[b * batch_size: (b + 1) * batch_size]
+            y = test_y[b * batch_size: (b + 1) * batch_size]
+            tx.copy_from_numpy(x)
+            ty.copy_from_numpy(y)
+            x = net(tx)
+            l = autograd.softmax_cross_entropy(x, ty)
+            loss += tensor.to_numpy(l)[0]
+            acc += accuracy(x, y)
+
+        print('test loss = %f, test accuracy = %f' %
+              ((loss / num_test_batch), (acc / num_test_batch)))
+
+
+def resnet_lr(epoch):
+    if epoch < 81:
+        return 0.1
+    elif epoch < 122:
+        return 0.01
+    else:
+        return 0.001
+
+
+if __name__ == '__main__':
     model = resnet18()
-    x = tensor.Tensor((16, 3, 224, 224), device.create_cuda_gpu())
-    x.set_value(float(0.1))
-    autograd.training = True
-    y = model(x)
+    train_x, train_y = load_train_data()
+    test_x, test_y = load_test_data()
+    mean = np.average(train_x, axis=0)
+    train_x -= mean
+    test_x -= mean
+    train(model, (train_x, train_y, test_x, test_y), 10, resnet_lr)

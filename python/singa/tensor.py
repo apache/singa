@@ -602,6 +602,18 @@ def from_raw_tensors(tt):
     return ret
 
 
+def zeros_like(t):
+    ret = Tensor(t.shape, t.device, t.dtype)
+    ret.set_value(float(0))
+    return ret
+
+
+def ones_like(t):
+    ret = Tensor(t.shape, t.device, t.dtype)
+    ret.set_value(float(1))
+    return ret
+
+
 def product(shape):
     return reduce(lambda x, y: x * y, shape)
 
