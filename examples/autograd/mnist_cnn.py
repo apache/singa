@@ -24,7 +24,7 @@ import os
 from singa import device
 from singa import tensor
 from singa import autograd
-from singa import optimizer
+from singa import opt
 
 
 def load_data(path):
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     num_classes = 10
     epochs = 1
 
-    sgd = optimizer.SGD(0.001)
+    sgd = opt.SGD(lr=0.01)
 
     x_train = preprocess(train[0])
     y_train = to_categorical(train[1], num_classes)
@@ -105,14 +105,14 @@ if __name__ == '__main__':
     print('the shape of testing label is', y_test.shape)
 
     # operations initialization
-    conv1 = autograd.Conv2D(1, 32, 3, padding=1, bias=False)
-    bn1 = autograd.BatchNorm(32)
-    conv21 = autograd.Conv2D(32, 16, 3, padding=1)
-    conv22 = autograd.Conv2D(32, 16, 3, padding=1)
-    bn2 = autograd.BatchNorm(32)
+    conv1 = autograd.Conv2d(1, 32, 3, padding=1, bias=False)
+    bn1 = autograd.BatchNorm2d(32)
+    conv21 = autograd.Conv2d(32, 16, 3, padding=1)
+    conv22 = autograd.Conv2d(32, 16, 3, padding=1)
+    bn2 = autograd.BatchNorm2d(32)
     linear = autograd.Linear(32 * 28 * 28, 10)
-    pooling1 = autograd.MaxPooling2D(3, 1, padding=1)
-    pooling2 = autograd.AvgPooling2D(3, 1, padding=1)
+    pooling1 = autograd.MaxPool2d(3, 1, padding=1)
+    pooling2 = autograd.AvgPool2d(3, 1, padding=1)
 
     def forward(x, t):
         y = conv1(x)
@@ -121,7 +121,7 @@ if __name__ == '__main__':
         y = pooling1(y)
         y1 = conv21(y)
         y2 = conv22(y)
-        y = autograd.concat((y1, y2), 1)
+        y = autograd.cat((y1, y2), 1)
         y = bn2(y)
         y = autograd.relu(y)
         y = bn2(y)
@@ -148,4 +148,6 @@ if __name__ == '__main__':
                       tensor.to_numpy(loss)[0])
 
             for p, gp in autograd.backward(loss):
-                sgd.apply(epoch, gp, p, '')
+                sgd.update(p, gp)
+
+            sgd.step()
