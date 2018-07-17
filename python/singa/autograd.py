@@ -798,7 +798,7 @@ class BatchNorm2d(Layer):
         self.handle.device_id = x.device.id()
 
         y = batchnorm_2d(self.handle, x, self.scale, self.bias,
-                      self.running_mean, self.running_var)
+                         self.running_mean, self.running_var)
         return y
 
 
@@ -962,3 +962,41 @@ class AvgPool1d(Pooling2d):
             stride = kernel_size
         super(MaxPool2d, self).__init__(
             (1, kernel_size), (0, stride), (0, padding), False)
+
+
+class _RNN(Operation):
+
+    def __init__(self, handle):
+        self.handle = handle
+
+    def forward(self, X, W):
+
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            if training:
+                out, self.cache = singa.GpuRNNForwardTraining(
+                    self.handle, X, W)
+            else:
+                out = singa.GpuRNNForwardInference(self.handle, X, W)
+            return out
+
+    def backward(self, dY):
+        assert training is True and hasattr(
+            self, 'cache'), 'Please set training as True before do BP. '
+
+        if dY.device().id() != self.handle.device_id:
+            dY.ToDevice(self.inputs[0].device())
+
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            dX, dW = singa.GpuRNNBackward(self.handle, dY, self.cache)
+            return dX, dW
+
+
+def rnn():
+    pass
+
+
+class RNN(Layer):
