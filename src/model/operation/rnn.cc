@@ -263,24 +263,21 @@ vector<Tensor> SplitOutput(size_t num, size_t dim,
   return outputs;
 };
 
-std::vector<std::vector<Tensor>> GpuRNNForwardTraining(const CudnnRNNHandle &crh, const vector<Tensor> &inputs, const Tensor &W) {
-  DataType dtype = inputs.at(0).data_type();
-  auto dev = inputs.at(0).device();
+std::vector<Tensor> GpuRNNForwardTraining(const CudnnRNNHandle &crh, const Tensor &input, const Tensor &hx, const Tensor &cx, const Tensor &W) {
+  DataType dtype = input.data_type();
+  auto dev = input.at(0).device();
 
-  CHECK_GT(inputs.size(), 1u + crh.has_cell_);
-  size_t num_x = inputs.size() - crh.has_cell_ - 1;
-  Tensor input = MergeInputs(num_x, inputs);
 
   Shape outshape{input.Size() * crh.hidden_size_ / crh.input_size_ * crh.num_directions_};
   Tensor output(outshape, dev, dtype);
   // LOG(INFO) << "output size " << output.Size();
-  Tensor hx = inputs.at(num_x);
+
   Shape state_shape{crh.num_stacks_ * crh.num_directions_, crh.batch_size_, crh.hidden_size_};
+  CHECK_EQ(hx.shape(), state_shape);
   Tensor hy(state_shape, dev, dtype);
 
-  Tensor cy, cx;
+  Tensor cy;
   if (crh.has_cell_) {
-    cx = inputs.at(num_x + 1);
     cy.ResetLike(hy);
   }
 
@@ -330,39 +327,23 @@ std::vector<std::vector<Tensor>> GpuRNNForwardTraining(const CudnnRNNHandle &crh
   },
   {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace, rspace});
 
-  auto outputs =
-    SplitOutput(num_x, crh.hidden_size_ * crh.num_directions_, inputs, output);
-  outputs.push_back(hy);
-  if (crh.has_cell_) outputs.push_back(cy);
-
-  std::vector<Tensor> cache;
-  cache.push_back(input);
-  cache.push_back(output);
-  cache.push_back(hx);
-  cache.push_back(cx);
-  cache.push_back(W);
-
-  return {outputs, cache};
+  return {output, hy, cy};
 };
 
-std::vector<Tensor> GpuRNNForwardInference(const CudnnRNNHandle &crh, const vector<Tensor> &inputs, const Tensor &W) {
-  DataType dtype = inputs.at(0).data_type();
-  auto dev = inputs.at(0).device();
-
-  CHECK_GT(inputs.size(), 1u + crh.has_cell_);
-  size_t num_x = inputs.size() - crh.has_cell_ - 1;
-  Tensor input = MergeInputs(num_x, inputs);
+std::vector<Tensor> GpuRNNForwardInference(const CudnnRNNHandle &crh, const Tensor &input, const Tensor &hx, const Tensor &cx, const Tensor &W) {
+  DataType dtype = input.data_type();
+  auto dev = input.device();
 
   Shape outshape{input.Size() * crh.hidden_size_ / crh.input_size_ * crh.num_directions_};
   Tensor output(outshape, dev, dtype);
   // LOG(INFO) << "output size " << output.Size();
-  Tensor hx = inputs.at(num_x);
+
   Shape state_shape{crh.num_stacks_ * crh.num_directions_, crh.batch_size_, crh.hidden_size_};
+  CHECK_EQ(hx.shape(), state_shape);
   Tensor hy(state_shape, dev, dtype);
 
-  Tensor cy, cx;
+  Tensor cy;
   if (crh.has_cell_) {
-    cx = inputs.at(num_x + 1);
     cy.ResetLike(hy);
   }
 
@@ -405,15 +386,10 @@ std::vector<Tensor> GpuRNNForwardInference(const CudnnRNNHandle &crh, const vect
     // clang-format on
   }, {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace});
 
-  auto outputs =
-    SplitOutput(num_x, crh.hidden_size_ * crh.num_directions_, inputs, output);
-  outputs.push_back(hy);
-  if (crh.has_cell_) outputs.push_back(cy);
-
-  return outputs;
+  return {output, hy, cy};
 };
 
-std::pair<vector<Tensor>, Tensor> GpuRNNBackward(const CudnnRNNHandle &crh, const vector<Tensor> &grads, const vector<Tensor> &cache) {
+std::vector<Tensor> GpuRNNBackward(const CudnnRNNHandle &crh, const vector<Tensor> &dY, const Tensor &dh, const Tensor &dc, const vector<Tensor> &cache) {
   const Tensor x = cache[0];
   const Tensor y = cache[1];
   const Tensor hx = cache[2];
@@ -423,24 +399,24 @@ std::pair<vector<Tensor>, Tensor> GpuRNNBackward(const CudnnRNNHandle &crh, cons
   auto dev = y.device();
   auto dtype = y.data_type();
 
-  CHECK_GT(grads.size(), 1u + crh.has_cell_);
-  size_t num_dy = grads.size() - crh.has_cell_ - 1;
-  CHECK_EQ(num_dy, crh.seq_length_);
-  const Tensor dy = MergeInputs(num_dy, grads);
-  CHECK_EQ(dy.Size(), y.Size());
-  const Tensor dhy = grads.at(num_dy);
-  Tensor dcy;
-  if (crh.has_cell_)
-    dcy = grads.at(num_dy + 1);
+  
+  CHECK_EQ(dY.Size(), y.Size());
+
 
   Shape xshape{y.Size() * crh.input_size_ / crh.hidden_size_ / crh.num_directions_};
+  CHECK_EQ(x.shape(), xshape)
   Tensor dx(xshape, dev, dtype);
+  
   Tensor dw(W.shape(), dev, dtype);
+  
   Shape state_shape{crh.num_stacks_ * crh.num_directions_, crh.batch_size_, crh.hidden_size_};
+  CHECK_EQ(hx.shape(), state_shape)
   Tensor dhx(state_shape, dev, dtype);
+  
   Tensor dcx;
   if (crh.has_cell_)
     dcx.ResetLike(dhx);
+  
   dw.SetValue(0.0f);
   Block *yb = y.block(), *dyb = dy.block(), *dhyb = dhy.block(),
          *dcyb = dcy.block(), *xb = x.block(), *cxb = cx.block(),
@@ -483,12 +459,7 @@ std::pair<vector<Tensor>, Tensor> GpuRNNBackward(const CudnnRNNHandle &crh, cons
   {yb, dyb, dhyb, dcyb, xb, wb, wspace, rspace},
   {dxb, dwb, dhxb, dcxb, wspace, rspace});
 
-  auto data_grads = SplitOutput(num_dy, crh.input_size_, grads, dx);
-  data_grads.push_back(dhx);
-  if (crh.has_cell_)
-    data_grads.push_back(dcx);
-
-  return std::make_pair(data_grads, dw);
+  return {dx, dhx, dcx, dw};
 };
 
 #endif  // USE_CUDNN

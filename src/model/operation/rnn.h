@@ -69,18 +69,17 @@ public:
   Tensor reserve_space_;
   Tensor dropout_state_;
 };
-
 Tensor MergeInputs(size_t num, const vector<Tensor> &in);
 
 vector<Tensor> SplitOutput(size_t num, size_t dim,
                            const vector<Tensor> &in,
                            const Tensor output);
 
-std::vector<std::vector<Tensor>> GpuRNNForwardTraining(const CudnnRNNHandle &crh, const vector<Tensor> &inputs, const Tensor &W);
+std::vector<Tensor> GpuRNNForwardTraining(const CudnnRNNHandle &crh, const Tensor &input, const Tensor &hx, const Tensor &cx, const Tensor &W) ;
 
-std::vector<Tensor> GpuRNNForwardInference(const CudnnRNNHandle &crh, const vector<Tensor> &inputs, const Tensor &W);
+std::vector<Tensor> GpuRNNForwardInference(const CudnnRNNHandle &crh, const Tensor &input, const Tensor &hx, const Tensor &cx, const Tensor &W);
 
-std::pair<vector<Tensor>, Tensor> GpuRNNBackward(const CudnnRNNHandle &crh, const vector<Tensor> &grads, const vector<Tensor> &cache);
+std::vector<Tensor> GpuRNNBackward(const CudnnRNNHandle &crh, const vector<Tensor> &dY, const Tensor &dh, const Tensor &dc, const vector<Tensor> &cache);
 
 #endif  // USE_CUDNN
 
