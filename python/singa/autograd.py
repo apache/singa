@@ -992,8 +992,8 @@ class _RNN(Operation):
         # hout_cout: (hout, cout) if lstm, else (hout,)
         # hout, cout of shape (num_layers * num_directions, batch,
         # hidden_size)
-        oututs= 1dTo3d(Y)
-        
+        oututs= _1dTo3d(Y)
+
         if self.rnn_mode != 'lstm':
             return outputs, hout
         else:
@@ -1003,7 +1003,7 @@ class _RNN(Operation):
         assert training is True and hasattr(
             self, 'cache'), 'Please set training as True before do BP. '
 
-        dY_1d= 3dTo1d(dY)
+        dY_1d= _3dTo1d(dY)
 
         if dY_1d.device().id() != self.handle.device_id:
             dY_1d.ToDevice(self.cache[0].device())
@@ -1014,7 +1014,7 @@ class _RNN(Operation):
             dX_1d, dhout, dcout, dW = singa.GpuRNNBackward(
                 self.handle, dY_1d, dh, dc, self.cache)
 
-        dX = 1dTo3d(dX_1d)
+        dX = _1dTo3d(dX_1d)
 
         if self.rnn_mode != 'lstm':
             return dX, dhout, dW
@@ -1064,7 +1064,7 @@ class RNN(Layer):
             W_Size *= mult * w_size
 
         self.W_Size = W_Size
-        self.W = Tensor(shape=(W_Size,), requires_grad=True, stores_grad=True)
+        self.W = Tensor(shape=(W_Size,), requires_grad=True, stores_grad=True) # TODO: assign value of Wi separately
         self.W.uniform(0.0, 1.0)
 
     def __call__(self, inputs, h0, c0=None):
@@ -1078,17 +1078,23 @@ class RNN(Layer):
             assert c0 is not None, 'Please input c0.'
             self.device_check(h0, c0)
 
-        self.handle = signa.CudnnRNNHandle(inputs.data, *SOME_PARAMETERS*)
+        if not hasattr(self, 'handle'):
+            self.handle = signa.CudnnRNNHandle(inputs.data, self.input_size, self.hidden_size, self.num_layers,
+                self.rnn_mode, self.dropout, self.bidirectional, self.W_Size)
+        elif inputs.shape[0] != self.handle.seq_length_ or inputs.shape[1] != self.handle.batch_size_:
+            self.handle = signa.CudnnRNNHandle(inputs.data, self.input_size, self.hidden_size, self.num_layers,
+                self.rnn_mode, self.dropout, self.bidirectional, self.W_Size)
+
         self.handle.device_id = inputs.device.id()
 
-        X= 3dTo1d(inputs)
+        X= _3dTo1d(inputs)
         outputs = rnn(self.handle, X, h0, c0, self.W)
         return outputs
 
-def 3dTo1d(self, inputs):
+def _3dTo1d(self, inputs):
     pass
 
-def 1dTo3d(self, *args):
+def _1dTo3d(self, *args):
     pass
 
 class LSTM(RNN):

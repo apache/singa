@@ -16,8 +16,8 @@ namespace singa {
 
 class RNNHandle {
 public:
-  RNNHandle(const size_t Input_size, const size_t Hidden_size, const size_t Num_stacks,
-            const std::string Rnn_mode, const float Dropout, const bool bidirectional);
+  RNNHandle(const Tensor &input, const size_t Input_size, const size_t Hidden_size, const size_t Num_stacks,
+                     const std::string Rnn_mode, const float Dropout, const bool bidirectional, const size_t Weight_size);
 
   size_t input_size_;
   size_t hidden_size_;
@@ -29,21 +29,22 @@ public:
   bool has_cell_;
   size_t weight_size;
 
-  size_t batch_size_ = 0;
-  size_t seq_length_ = 0;
-  size_t max_length_ = 0;
+  size_t batch_size_;
+  size_t seq_length_;
+
 };
 
 #ifdef USE_CUDNN
 
 class CudnnRNNHandle: public RNNHandle {
 public:
-  CudnnRNNHandle(const vector<Tensor> &inputs, const size_t Input_size, const size_t Hidden_size, const size_t Num_stacks,
-                 const std::string Rnn_mode, const float Dropout, const bool bidirectional);
-  void UpdateStates(size_t num_x, const vector<Tensor> &inputs);
+  CudnnRNNHandle(const Tensor &input, const size_t Input_size, const size_t Hidden_size, const size_t Num_stacks,
+                const std::string Rnn_mode, const float Dropout, const bool bidirectional, const size_t Weight_size);
+  ~CudnnRNNHandle();
+
   void DestroyIODescriptors();
-  void UpdateIODescriptors(size_t len, const vector<Tensor> &inputs);
-  void ResetHiddenAndCellDescriptors(size_t batch_size);
+  void UpdateIODescriptors(const Tensor &input);
+  void ResetHiddenAndCellDescriptors() ;
   void SetRNNDescriptor(shared_ptr<Device> dev);
   void UpdateSpaces(size_t seq_length, shared_ptr<Device> dev);
 
@@ -79,7 +80,7 @@ std::vector<Tensor> GpuRNNForwardTraining(const CudnnRNNHandle &crh, const Tenso
 
 std::vector<Tensor> GpuRNNForwardInference(const CudnnRNNHandle &crh, const Tensor &input, const Tensor &hx, const Tensor &cx, const Tensor &W);
 
-std::vector<Tensor> GpuRNNBackward(const CudnnRNNHandle &crh, const vector<Tensor> &dY, const Tensor &dh, const Tensor &dc, const vector<Tensor> &cache);
+std::vector<Tensor> GpuRNNBackward(const CudnnRNNHandle &crh, const Tensor &dY, const Tensor &dhy, const Tensor &dcy, const vector<Tensor> &cache);
 
 #endif  // USE_CUDNN
 

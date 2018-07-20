@@ -7,7 +7,7 @@
 #include "../src/model/operation/convolution.h"
 #include "../src/model/operation/batchnorm.h"
 #include "../src/model/operation/pooling.h"
-
+#include "../src/model/operation/rnn.h"
 %}
 
 namespace singa {
@@ -51,6 +51,14 @@ class PoolingHandle {
   int pooled_width;
 };
 
+class RNNHandle {
+public:
+  RNNHandle(const Tensor &input, const size_t Input_size, const size_t Hidden_size, const size_t Num_stacks,
+                     const std::string Rnn_mode, const float Dropout, const bool bidirectional, const size_t Weight_size);
+
+  size_t batch_size_;
+  size_t seq_length_;
+};
 
 #if USE_CUDNN
 class CudnnConvHandle: public ConvHandle {
@@ -105,6 +113,24 @@ class CudnnPoolingHandle : public PoolingHandle {
 Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x);
 
 Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy, const Tensor& x, const Tensor& y);
+
+
+class CudnnRNNHandle: public RNNHandle {
+public:
+  CudnnRNNHandle(const Tensor &input, const size_t Input_size, const size_t Hidden_size, const size_t Num_stacks,
+                const std::string Rnn_mode, const float Dropout, const bool bidirectional, const size_t Weight_size);
+
+  size_t batch_size_;
+  size_t seq_length_;
+  
+};
+
+std::vector<Tensor> GpuRNNForwardTraining(const CudnnRNNHandle &crh, const Tensor &input, const Tensor &hx, const Tensor &cx, const Tensor &W) ;
+
+std::vector<Tensor> GpuRNNForwardInference(const CudnnRNNHandle &crh, const Tensor &input, const Tensor &hx, const Tensor &cx, const Tensor &W);
+
+std::vector<Tensor> GpuRNNBackward(const CudnnRNNHandle &crh, const Tensor &dY, const Tensor &dhy, const Tensor &dcy, const std::vector<Tensor> &cache);
+
 
 #endif  // USE_CUDNN
 
