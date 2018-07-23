@@ -56,7 +56,7 @@ To install conda-build (after installing miniconda)
 To build the CPU version of SINGA
 
     export BUILD_STR=cpu
-    conda build tool/conda/singa/ --python3.6 (or --python2.7)
+    conda build tool/conda/singa/ --python 3.6 (or --python 2.7)
 
 The above commands have been tested on Ubuntu 16.04 and Mac OSX.
 Refer to the [Travis-CI page](https://travis-ci.org/apache/incubator-singa) for more information.
@@ -66,7 +66,7 @@ To build the GPU version of SINGA
 
     export BUILD_STR=cudax.y-cudnna.b.c (e.g. cuda9.0-cudnn7.1.2)
     export CUDNN_PATH=<path to cudnn folder>
-    conda build tool/conda/singa/ --python3.6 (or --python2.7)
+    conda build tool/conda/singa/ --python 3.6 (or --python 2.7)
 
 The commands for building on GPU platforms have been tested on Ubuntu 16.04 (cuDNN>=7 and CUDA>=9).
 [Nvidia's Docker image](https://hub.docker.com/r/nvidia/cuda/) provides the building
