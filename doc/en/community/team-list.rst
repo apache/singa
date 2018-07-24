@@ -78,7 +78,7 @@ The SINGA community has developers mainly from National University of Singapore,
 +--------------------+--------------------------------+-----------------------------------------------+
 | Kaiping Zheng      | kaiping@apache.org             | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Moaz Reyad         | moaz@apache.org                | National University of Singapore              |
+| Moaz Reyad         | moaz@apache.org                | University of Genoa                           |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Chang Yao          | yaochang2009@gmail.com         | yzBigdata                                     |
 +--------------------+--------------------------------+-----------------------------------------------+
