@@ -772,7 +772,7 @@ class BatchNorm2d(Layer):
         self.handle.device_id = x.device.id()
 
         y = batchnorm_2d(self.handle, x, self.scale, self.bias,
-                      self.running_mean, self.running_var)
+                         self.running_mean, self.running_var)
         return y
 
 
@@ -936,3 +936,195 @@ class AvgPool1d(Pooling2d):
             stride = kernel_size
         super(MaxPool2d, self).__init__(
             (1, kernel_size), (0, stride), (0, padding), False)
+
+
+class _RNN(Operation):
+
+    def __init__(self, handle):
+        self.handle = handle
+
+    def forward(self, X, W):
+
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            if training:
+                out, self.cache = singa.GpuRNNForwardTraining(
+                    self.handle, X, W)
+            else:
+                out = singa.GpuRNNForwardInference(self.handle, X, W)
+            return out
+
+    def backward(self, dY):
+        assert training is True and hasattr(
+            self, 'cache'), 'Please set training as True before do BP. '
+
+        if dY.device().id() != self.handle.device_id:
+            dY.ToDevice(self.inputs[0].device())
+
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            dX, dW = singa.GpuRNNBackward(self.handle, dY, self.cache)
+            return dX, dW
+
+
+# def rnn():
+  #  pass
+
+
+# class RNN(Layer):
+
+class Tanh(Operation):
+
+    def forward(self, x):
+        out = singa.Tanh(x)
+        if training:
+            self.cache = (out,)
+        return out
+
+    def backward(self, dy):
+        dx = singa.__mul__(self.cache[0], self.cache[0])
+        dx = singa.MultFloat(dx, -1.0)
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+
+def tanh(x):
+    return Tanh()(x)[0]
+
+
+class Sigmoid(Operation):
+
+    def forward(self, x):
+        out = singa.Sigmoid(x)
+        if training:
+            self.cache = (out,)
+        return out
+
+    def backward(self, dy):
+        dx = singa.MultFloat(self.cache[0], -1.0)
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.__mul__(self.cache[0], dx)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+
+def sigmoid(x):
+    return Sigmoid()(x)[0]
+
+
+class ElemMatmul(Operation):
+
+    def forward(self, x1, x2):
+        if training:
+            self.cache = (x1, x2)
+        return singa.__mul__(x1, x2)
+
+    def backward(self, dy):
+        dx1 = singa.__mul__(dy, self.cache[1])
+        dx2 = singa.__mul__(dy, self.cache[0])
+        return dx1, dx2
+
+
+def elemmatmul(x, y):
+    return ElemMatmul()(x, y)[0]
+
+
+class LSTM(Layer):
+
+    def __init__(self, input_size, hidden_size, num_layers=1, bias=True, batch_first=False, dropout=0, bidirectional=False):
+        Wx_shape = (input_size, hidden_size)
+        self.Wx = []
+        for i in range(4):
+            w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+            w.gaussian(0.0, 1.0)
+            self.Wx.append(w)
+
+        Wh_shape = (hidden_size, hidden_size)
+        self.Wh = []
+        for i in range(4):
+            w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+            w.gaussian(0.0, 1.0)
+            self.Wh.append(w)
+
+        Bx_shape = (hidden_size,)
+        self.Bx = []
+        for i in range(4):
+            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+            b.set_value(0.0)
+            self.Bx.append(b)
+
+        Bh_shape = (hidden_size,)
+        self.Bh = []
+        for i in range(4):
+            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+            b.set_value(0.0)
+            self.Bh.append(b)
+
+    def __call__(self, h0, c0, *xs):
+        batchsize = xs[0].shape[0]
+        self.out = []
+        h, c = rnn_step_forward(
+            xs[0], h0, c0, self.Wx, self.Wh, self.Bx, self.Bh)
+        self.out.append(h)
+        for x in xs[1:]:
+            assert x.shape[0] == batchsize
+            h.creator=Dummy(h)# Need Reset Creator, cut the connection between t and t+1
+            c.creator=Dummy(c)# Need Reset Creator, cut the connection between t and t+1
+            h, c = rnn_step_forward(
+                x, h, c, self.Wx, self.Wh, self.Bx, self.Bh)
+            self.out.append(h)
+        return self.out, h, c
+
+    def rnn_step_forward(self, x, h, c, Wx, Wh, Bx, Bh):
+        y1 = matmul(x, Wx[0])
+        y1 = add_bias(y1, Bx[0], axis=0)
+        y2 = matmul(h, Wh[0])
+        y2 = add_bias(y2, Bh[0], axis=0)
+        i = add(y1, y2)
+        i = sigmoid(i)
+
+        y1 = matmul(x, Wx[1])
+        y1 = add_bias(y1, Bx[1], axis=0)
+        y2 = matmul(h, Wh[1])
+        y2 = add_bias(y2, Bh[1], axis=0)
+        f = add(y1, y2)
+        f = sigmoid(f)
+
+        y1 = matmul(x, Wx[2])
+        y1 = add_bias(y1, Bx[2], axis=0)
+        y2 = matmul(h, Wh[2])
+        y2 = add_bias(y2, Bh[2], axis=0)
+        o = add(y1, y2)
+        o = sigmoid(o)
+
+        y1 = matmul(x, Wx[3])
+        y1 = add_bias(y1, Bx[3], axis=0)
+        y2 = matmul(h, Wh[3])
+        y2 = add_bias(y2, Bh[3], axis=0)
+        g = add(y1, y2)
+        g = tanh(g)
+
+        cout1 = elemmatmul(f, c)
+        cout2 = elemmatmul(i, g)
+        cout = add(cout1 + cout2)
+
+        hout = tanh(cout)
+        hout = elemmatmul(o, hout)
+        return hout, cout
+
+    def lstm_backward(self, *dys):
+        assert len(dys) == len(self.out)
+        grads = dict()
+        for i in len(self.out):
+            h = self.out.pop()
+            dy = dys.pop()
+            # Need Reset Creator, cut the connection between t and t+1
+            for p, gp in backward(h, dy.data):
+                if grads.has_key(id(p)):
+                    grads[id(p)] += p
+                else:
+                    grads[id(p)] = p
+        return grads
