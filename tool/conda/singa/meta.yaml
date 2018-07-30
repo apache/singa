@@ -22,7 +22,8 @@ package:
   version: "{{ GIT_DESCRIBE_TAG }}"
 
 source:
-  path: /home/wangwei/incubator-singa/
+  # path: /home/wangwei/incubator-singa/
+  git_url: https://github.com/apache/incubator-singa.git
 
 build:
   number: 0
