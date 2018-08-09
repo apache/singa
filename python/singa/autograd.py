@@ -64,7 +64,10 @@ def infer_dependency(op):
 def gradients(y, dy=None):
     grads = {}  # mapping: x->dx if x.stores_grad
     for p, dp in backward(y, dy):
-        gradients[p] = dp
+        if not grads.has_key(p):
+            grads[p] = dp
+        else: 
+            grads[p] += dp
     return grads
 
 
@@ -96,7 +99,13 @@ def backward(y, dy=None):
     not_ready = {}  # mapping: op->[dy]
 
     if y.stores_grad:
-        gradients[y] = dy
+        #gradients[y] = dy
+        if isinstance(dy, float):
+            g=np.array(dy)
+        else:
+            g=dy
+        tg = Tensor(device=g.device(), data=g)
+        yield (y, tg)
 
     while len(ready) > 0:
         op, dys = ready.pop()
@@ -135,7 +144,12 @@ def backward(y, dy=None):
                     dxs[y_idx] += dx
             if y_stores_grad:
                 # store the gradient for final return, e.g. if x is parameter
-                g = not_ready[src_op][y_idx]
+
+                # g = not_ready[src_op][y_idx]
+
+                g = dx # connot confirm that the gradient of a parameter is calculated completely. May disobey some optimize algorithms as the engine transmit 
+                       # a gradient (partly) once it is calculated which may cause wrongly records of some optimizer parameters.
+
                 tg = Tensor(device=g.device(), data=g)
                 yield (y, tg)
             dependency[src_op] -= 1
