@@ -54,11 +54,18 @@ def infer_dependency(op):
         for src_op, _, _, _ in cur_op.src:
             if src_op not in dependency_count:
                 # dependency[src_op] = [Counter() for _ in src_op.y_id2idx]
-                dependency_count[src_op] = 0
-                queue.append(src_op)
+                if isinstance(src_op, Dummy):
+                    # only when a Dummy operator needs store grads, its dependency needs to be counted.
+                    if src_op.stores_grad:
+                        dependency_count[src_op] = 0
+                        queue.append(src_op)
+                else:
+                    dependency_count[src_op] = 0
+                    queue.append(src_op)
             # y_idx = src_op.y_id2idx[x_id]
             # dependency[src_op][y_idx][cur_op] += 1
-            dependency_count[src_op] += 1
+            if dependency_count.has_key(src_op):
+                dependency_count[src_op] += 1
     return dependency_count
 
 
@@ -127,6 +134,11 @@ def backward(y, dy=None):
             # the gradient of all its outputs are available, i.e. all children
             # operations have been backwarded.
             # y is None if y.stores_grad is false; otherwise it is a Tensor
+
+            if isinstance(src_op, Dummy):
+                if not src_op.stores_grad:
+                    continue
+                    
             y_idx = src_op.y_id2idx[x_id]
             if src_op not in not_ready:
                 # src_op may have mulitple outputs
@@ -253,6 +265,7 @@ class Dummy(Operation):
         self.name = name
         self.src = []
         self.y_id2idx = {id(tensor): 0}
+        self.stores_grad = tensor.stores_grad
         self.requires_grad = False
 
 
