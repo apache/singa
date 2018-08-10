@@ -44,14 +44,15 @@ def infer_dependency(op):
         a Counter instance with the operation as the key,
         and the number of operations that are depending on it as the value
     '''
-    # dependency = {}
+    # not count the dependency of current op.
+    # if the current op is not a terminal op, then this function may just
+    # count dependency of a branch.
     dependency_count = Counter()
     queue = deque([op])
     while len(queue) > 0:
         cur_op = queue.pop()
         for src_op, _, _, _ in cur_op.src:
-            if src_op not in dependency_count and \
-                    (not isinstance(src_op, Dummy)):
+            if src_op not in dependency_count:
                 # dependency[src_op] = [Counter() for _ in src_op.y_id2idx]
                 dependency_count[src_op] = 0
                 queue.append(src_op)
@@ -64,10 +65,7 @@ def infer_dependency(op):
 def gradients(y, dy=None):
     grads = {}  # mapping: x->dx if x.stores_grad
     for p, dp in backward(y, dy):
-        if not grads.has_key(p):
-            grads[p] = dp
-        else: 
-            grads[p] += dp
+        grads[p] = dp
     return grads
 
 
@@ -142,20 +140,21 @@ def backward(y, dy=None):
                     # add the gradient from another children operation that
                     # uses y_idx'th output of src_op as input arg
                     dxs[y_idx] += dx
-            if y_stores_grad:
-                # store the gradient for final return, e.g. if x is parameter
-
-                # g = not_ready[src_op][y_idx]
-
-                g = dx # connot confirm that the gradient of a parameter is calculated completely. May disobey some optimize algorithms as the engine transmit 
-                       # a gradient (partly) once it is calculated which may cause wrongly records of some optimizer parameters.
-
-                tg = Tensor(device=g.device(), data=g)
-                yield (y, tg)
+            
             dependency[src_op] -= 1
+
+            if y_stores_grad:
+                if dependency[src_op] == 0:
+                    # store the gradient for final return, e.g. if x is parameter
+                    # may cause a delay output, as only after src_op is ready then output, not the current outlet of src_op is ready then output.
+                    g = not_ready[src_op][y_idx]
+                    tg = Tensor(device=g.device(), data=g)
+                    yield (y, tg)
+
             if src_op.requires_grad is True:
                 if dependency[src_op] == 0:
                     if not isinstance(src_op, Dummy):
+                        #Dummy can be in not_ready list but cannot be in ready list.
                         ready.append((src_op, not_ready[src_op]))
                     del not_ready[src_op]
         del op  # delete the operation to free all tensors from this op
