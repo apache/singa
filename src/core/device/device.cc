@@ -17,6 +17,9 @@
  */
 
 #include "singa/core/device.h"
+#include <chrono>
+#include <iostream>
+#include <fstream>
 
 namespace singa {
 Device::Device(int id, int num_executors)
@@ -37,7 +40,11 @@ Block* Device::NewBlock(int size) {
     << "from size_t to int. In that case, the size is too large.";
   if (size > 0) {
     void* ptr = Malloc(size);
-    return new Block(ptr, size);
+    Block* block_ = new Block(ptr, size,0,this);
+    //std::cout<<"(reference) from device.cc after, data_, block_ device: "<<ptr<<" "<<block_<<' '<<this<<std::endl;
+    MakeMetaTable(block_,ptr,size); // make table and append vec_block.
+    //cout<<"NewBlock: "<<block_<<' '<<ptr<<endl;
+    return block_;
   } else {
     return nullptr;
   }
@@ -46,9 +53,42 @@ Block* Device::NewBlock(int size) {
 // TODO(wangwei) return Block to the memory manager
 void Device::FreeBlock(Block* block) {
   if (block != nullptr) {
-    Free(block->mutable_data());
+    //TODO(junzhe) to merge it
+    auto tempPtr = block->mutable_data();
+    //cout<<"FreeBlock: "<<block<<' '<<tempPtr<<endl;
+    Free(tempPtr);
+    //cout<<"SwapGPU::Free() returned"<<endl;
+    //Free(block->mutable_data());
+    
+    //Add Append for free here.
+    stringstream strm1;
+    strm1<<block;
+    string tempStr1 = strm1.str();
+    stringstream strm4;
+    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    strm4<<t2;
+    string tempStr4 = strm4.str();
+    string blockInfo ="Free "+tempStr1+" "+tempStr4;
+    Append(blockInfo);
+
     delete block;
   }
+}
+
+void Device::AppendInfo(string blockInfo){
+  Append(blockInfo);
+}
+
+void* Device::GetRealGpuPtrInfo(const Block* block_){
+  return GetRealGpuPtr(block_);
+}
+
+void Device::SwapOutInfo(const Block* block_){
+  SwapOut(block_);
+}
+
+void Device::SwapInInfo(const Block* block_){
+  SwapIn(block_);
 }
 
 void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,

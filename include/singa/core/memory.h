@@ -23,6 +23,17 @@
 #include <atomic>
 #include "singa/proto/core.pb.h"
 #include "singa/singa_config.h"
+//for SmartMemPool
+#include <stdio.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <fstream>
+#include <stdlib.h>     /* malloc, free, rand */
+#include <map>
+using namespace std;
 
 #ifdef USE_CUDA
 #include "cnmem.h"
@@ -38,7 +49,10 @@ class DeviceMemPool {
  public:
   virtual void Malloc(void** ptr, const size_t size)  = 0;
   virtual void Free(void* ptr)  = 0;
-
+  virtual void Append(string blockInfo) = 0;
+  
+  virtual void SwapOut(void* data_) = 0;
+  virtual void SwapIn(void* data_) = 0;
   /// Return a pair for free and total memory managed by this pool.
   virtual std::pair<size_t, size_t> GetMemUsage() {
     return std::make_pair(0u, 0u);
@@ -60,7 +74,10 @@ class CnMemPool : public DeviceMemPool {
 
   void Malloc(void** ptr, const size_t size);
   void Free(void* ptr);
-
+    void Append(string blockInfo){}
+    
+  void SwapOut(void* data_) override {}
+  void SwapIn(void* data_) override {}
   std::pair<size_t, size_t> GetMemUsage() override;
 
   // release all memory and set cnmem manager to unintialized
@@ -85,7 +102,127 @@ class CudaMemPool : public DeviceMemPool {
  public:
   void Malloc(void** ptr, const size_t size) override;
   void Free(void* ptr) override;
+void Append(string blockInfo){}
+
+  void SwapOut(void* data_) override {}
+  void SwapIn(void* data_) override {}
 };
+
+//for SmartMemPool
+struct lookUpElement{
+    /*
+     for memory pool Malloc look-up table.
+     */
+    int r_idx;
+    int d_idx;
+    size_t size;
+    size_t offset;
+    void* ptr;
+    int Occupied; //0 is free, 1 is occupied.
+    int crossItr; 
+    int Occupied_backup; 
+};
+
+///class mem-pool SmartMemPool
+class SmartMemPool: public DeviceMemPool {
+public:
+    SmartMemPool(const MemPoolConf &conf); //constructor
+    //TODO(junzhe) in Singa, void Malloc( void**, size_t); change to cudaMalloc and cudaFree.
+    void Malloc(void** ptr, const size_t size);
+    void Free(void* ptr);
+    ~SmartMemPool();
+    void getMaxLoad(void);
+    std::pair<size_t, size_t> GetMemUsage() override;
+    void Append(string blockInfo);
+    
+  void SwapOut(void* data_) override {}
+  void SwapIn(void* data_) override {}
+protected:
+    void Init();
+private:
+    MemPoolConf conf_;
+    // whether the (global) memory pool has been initialized
+    bool initialized_ = false;
+    // lock on the initialized variable
+    std::mutex mtx_;
+
+    string colorMethod;
+    int mallocFlag =0; //0 for cudaMalloc, 1 for coloringMalloc
+    int gc =0; //global counter each time Malloc/Free, add 1.
+    int globeCounter=-1;
+    int loadLogFlag =1; //record when its 1.
+    void* ptrPool = NULL;
+    int idxRange = 0;
+    size_t offset = 0;
+    size_t offsetCrossItr=0; //cross iteration offset.
+    int maxLen =0;
+    int location=0;
+    vector<string> vec;
+    vector<string> vec_block_RW;
+    vector<string> vec_block_RWMF;
+    map<int,int>Table_r2d; //full duration info, cross-iteration duration.
+    map<int,int>Table_d2r;
+    //map<int,lookUpElement>Table_r2Ver;
+    vector<pair<int,lookUpElement>>Vec_r2Ver; //b. replace Table_r2Ver
+    map<int, pair<size_t,size_t>>Table_load; //gc, <cudaLoad, colorLoad>
+    map<void*,size_t>Table_p2s; //For tracking load in Free. add when allocate, delete when deallocate.
+    map<void*,int>Table_p2r; //ptr for arrival idx, for look up Table during free
+    int checkPoint=300; //for reduce number of test.
+    size_t maxTotalLoad;
+    size_t maxMemUsage;
+    float memRatio;
+};
+
+
+//for Swap
+struct swapLookUpElement{
+    /*
+    book keep the block info and status
+     */
+    void* data_ = nullptr;
+    void* realGpuPtr = nullptr;
+    void* realCpuPtr = nullptr;
+
+    int location; //1 is at GPU, 2 is at CPU. 3 on the way C2G, 4 on the way G2C.
+    size_t size; //size may used as of now.
+};
+
+struct SwapMeta{
+    /*
+     for copy between block and info.
+     */
+    size_t swapSize;
+    void* ptr;
+    void* d_ptr; //not used for
+};
+
+class Swap : public DeviceMemPool {
+public:
+    Swap(const MemPoolConf &conf); //constructor
+    //TODO(junzhe) in Singa, void Malloc( void**, size_t); change to cudaMalloc and cudaFree.
+    void Malloc(void** ptr, const size_t size);
+    void Free(void* ptr);
+    ~Swap();
+    void getMaxLoad(void);
+    std::pair<size_t, size_t> GetMemUsage() override;
+    void Append(string blockInfo);
+    
+    void SwapOut(void* data_);
+    void SwapIn(void* data_);
+protected:
+    void Init();
+private:
+    MemPoolConf conf_;
+    // whether the (global) memory pool has been initialized
+    bool initialized_ = false;
+    // lock on the initialized variable
+    std::mutex mtx_; 
+    vector<string> vec_block;
+    size_t swapLimit = 1<<23; //8MB
+    map<void*,swapLookUpElement>Table_id2LookUpElement; //old TODO(junzhe) remove
+    map<void*,pair<SwapMeta,SwapMeta>>Table_Meta;
+};
+
 #endif
 }  // namespace singa
 #endif  // SINGA_CORE_MEMORY_H_
