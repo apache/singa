@@ -89,7 +89,7 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 IF (USE_CUDA)
     include(ExternalProject)
     ExternalProject_Add(cnmem
-        GIT_REPOSITORY "https://github.com/nusdbsystem/cnmem.git"
+        GIT_REPOSITORY "https://github.com/junzhezhang/cnmem.git"
         GIT_TAG "master"
         SOURCE_DIR "cnmem/"
         CONFIGURE_COMMAND "${CMAKE_COMMAND}"
