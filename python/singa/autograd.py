@@ -87,6 +87,7 @@ def backward(y, dy=None):
         a dictionary storing the gradient tensors of all tensors
         whose stores_grad is true (e.g. parameter tensors)
     '''
+    assert isinstance(y, Tensor), 'wrong input type.'
     dependency = infer_dependency(y.creator)
     assert y.size() == 1, 'y must be a Tensor with a single value;'\
         'size of y is % d' % y.size()
@@ -170,6 +171,7 @@ def backward(y, dy=None):
                         ready.append((src_op, not_ready[src_op]))
                     del not_ready[src_op]
         del op  # delete the operation to free all tensors from this op
+
 
 
 class Operation(object):
@@ -962,3 +964,75 @@ class AvgPool1d(Pooling2d):
             stride = kernel_size
         super(MaxPool2d, self).__init__(
             (1, kernel_size), (0, stride), (0, padding), False)
+
+
+class Tanh(Operation):
+
+    def forward(self, x):
+        out = singa.Tanh(x)
+        if training:
+            self.cache = (out,)
+        return out
+
+    def backward(self, dy):
+        dx = singa.__mul__(self.cache[0], self.cache[0])
+        dx = singa.MultFloat(dx, -1.0)
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+
+def tanh(x):
+    return Tanh()(x)[0]
+
+
+def add_all(*xs):
+    assert len(xs) > 2
+    y=add(xs[0],xs[1])
+    for x in xs[2:]:
+        y=add(y, x)
+    return
+
+
+class Vanilla_RNN(Layer):
+
+    def __init__(self, input_size, hidden_size, num_layers=1, nonlinearity='tanh', bias=True, batch_first=False, dropout=0, bidirectional=False):
+        self.nonlinearity=nonlinearity
+
+        Wx_shape = (input_size, hidden_size)
+        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx.gaussian(0.0, 1.0)
+
+        Wh_shape = (hidden_size, hidden_size)
+        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh.gaussian(0.0, 1.0)
+
+        B_shape=(hidden_size,)
+        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
+        self.b.set_value(0.0)
+
+    def __call__(self, h0, *xs):
+        batchsize=xs[0].shape[0]
+        self.out=[]
+        h = self.step_forward(xs[0], h0, self.Wx, self.Wh, self.b)
+        self.out.append(h)
+        for x in xs[1:]:
+            assert x.shape[0] == batchsize
+            h = self.step_forward(x, h, self.Wx, self.Wh, self.b)
+            self.out.append(h)
+        return self.out
+
+    def step_forward(self, x, h, Wx, Wh, b):
+        y1=matmul(x, Wx)
+        y2=matmul(h, Wh)
+        y=add(y1,y2)
+        y=add_bias(y,b,axis=0)
+        if self.nonlinearity == 'tanh':
+            y=tanh(y)
+        elif self.nonlinearity == 'relu':
+            y=relu(y)
+        else:
+            raise ValueError
+        return y
+
+
