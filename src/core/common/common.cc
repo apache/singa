@@ -28,27 +28,28 @@
 namespace singa {
 
 void* Block::mutable_data() {
+    //TODO(junzhe) go back to enable it after device done
     //std::cout<<"mutable_data() "<<this<<' '<<data_<<std::endl;
     initialized_ = true;
-    if (ptrDevice_!=nullptr){
-      //Append info.
-      stringstream strm2;
-      strm2<<this;
-      string tempStr2 = strm2.str();
-      stringstream strm4;
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      strm4<<t2;
-      string tempStr4 = strm4.str();
-      string temp = "Mutable "+tempStr2+" "+tempStr4;   
-      ptrDevice_->AppendInfo(temp);
-    }
-    //TODO(junzhe) this should not happen, can verify and remove
-    if (data_ == nullptr) {
-      //cout<<"to sleep"<<endl;
-      cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
-      auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
-      cout<<"slept to get data_ updated: "<<this<<' '<<data_<<endl;
-    }
+    // if (ptrDevice_!=nullptr){
+    //   //Append info.
+    //   stringstream strm2;
+    //   strm2<<this;
+    //   string tempStr2 = strm2.str();
+    //   stringstream strm4;
+    //   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    //   strm4<<t2;
+    //   string tempStr4 = strm4.str();
+    //   string temp = "Mutable "+tempStr2+" "+tempStr4;   
+    //   ptrDevice_->AppendInfo(temp);
+    // }
+    // //TODO(junzhe) this should not happen, can verify and remove
+    // if (data_ == nullptr) {
+    //   //cout<<"to sleep"<<endl;
+    //   cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
+    //   auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
+    //   cout<<"slept to get data_ updated: "<<this<<' '<<data_<<endl;
+    // }
     
     return static_cast<char*>(data_) + offset_;
   }
@@ -56,30 +57,28 @@ void* Block::mutable_data() {
 
 const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
-    //std::cout<<"data() "<<this<<' '<<data_<<std::endl;
-    if (ptrDevice_!=nullptr){
-      //Append info.
-      stringstream strm2;
-      strm2<<this;
-      string tempStr2 = strm2.str();
-      stringstream strm4;
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      strm4<<t2;
-      string tempStr4 = strm4.str();
-      string temp = "Read "+tempStr2+" "+tempStr4;
-      ptrDevice_->AppendInfo(temp);
-    }
+    //TODO(junzhe) go back to enable it after device done
+    // if (ptrDevice_!=nullptr){
+    //   //Append info.
+    //   stringstream strm2;
+    //   strm2<<this;
+    //   string tempStr2 = strm2.str();
+    //   stringstream strm4;
+    //   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    //   strm4<<t2;
+    //   string tempStr4 = strm4.str();
+    //   string temp = "Read "+tempStr2+" "+tempStr4;
+    //   ptrDevice_->AppendInfo(temp);
+    // }
 
-    //TODO(junzhe) this should not happen, can verify and remove
-    if (data_ == nullptr) {
-      //cout<<"to sleep"<<endl;
-      cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
-      auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
-      cout<<"slept to get data_ updated"<<endl;
-    }
-    //TODO(junzhe) for measurement only
-    // ptrDevice_->SwapOutInfo(this);
-    // ptrDevice_->SwapInInfo(this);
+    // //TODO(junzhe) this should not happen, can verify and remove
+    // if (data_ == nullptr) {
+    //   //cout<<"to sleep"<<endl;
+    //   cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
+    //   auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
+    //   cout<<"slept to get data_ updated"<<endl;
+    // }
+
 
     return static_cast<char*>(data_) + offset_;
   }
