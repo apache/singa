@@ -6,6 +6,8 @@ from singa import singa_wrap as singa
 from singa import device
 from singa import autograd
 
+import numpy as np
+
 autograd.training = True
 
 CTensor = singa.Tensor
@@ -21,6 +23,31 @@ def _tuple_to_string(t):
     lt = [str(x) for x in t]
     return '(' + ', '.join(lt) + ')'
 
+def prepare_inputs_targets_for_rnn_test():
+        x_0 = np.random.random((2, 3)).astype(np.float32)
+        x_1 = np.random.random((2, 3)).astype(np.float32)
+        x_2 = np.random.random((2, 3)).astype(np.float32)
+
+        h_0 = np.random.random((2, 1)).astype(
+            np.float32)  # (2,1) rather than (2,)
+
+        t_0 = np.random.random((2, 2)).astype(np.float32)
+        t_1 = np.random.random((2, 2)).astype(np.float32)
+        t_2 = np.random.random((2, 2)).astype(np.float32)
+
+        x0 = tensor.Tensor(device=gpu_dev, data=x_0)
+        x1 = tensor.Tensor(device=gpu_dev, data=x_1)
+        x2 = tensor.Tensor(device=gpu_dev, data=x_2)
+
+        h0 = tensor.Tensor(device=gpu_dev, data=h_0)
+
+        t0 = tensor.Tensor(device=gpu_dev, data=t_0)
+        t1 = tensor.Tensor(device=gpu_dev, data=t_1)
+        t2 = tensor.Tensor(device=gpu_dev, data=t_2)
+
+        inputs = [x0, x1, x2]
+        targets = [t0, t1, t2]
+        return inputs, targets, h0
 
 class TestPythonOperation(unittest.TestCase):
 
@@ -32,8 +59,8 @@ class TestPythonOperation(unittest.TestCase):
 
     def test_conv2d_gpu(self):
         # (in_channels, out_channels, kernel_size)
-        conv_0 = autograd.Conv2D(3, 1, 2)
-        conv_without_bias_0 = autograd.Conv2D(3, 1, 2, bias=False)
+        conv_0 = autograd.Conv2d(3, 1, 2)
+        conv_without_bias_0 = autograd.Conv2d(3, 1, 2, bias=False)
 
         gpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
         gpu_input_tensor.gaussian(0.0, 1.0)
@@ -52,8 +79,8 @@ class TestPythonOperation(unittest.TestCase):
 
     def test_conv2d_cpu(self):
         # (in_channels, out_channels, kernel_size)
-        conv_1 = autograd.Conv2D(3, 1, 2)
-        conv_without_bias_1 = autograd.Conv2D(3, 1, 2, bias=False)
+        conv_1 = autograd.Conv2d(3, 1, 2)
+        conv_without_bias_1 = autograd.Conv2d(3, 1, 2, bias=False)
 
         cpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=cpu_dev)
         cpu_input_tensor.gaussian(0.0, 1.0)
@@ -86,6 +113,143 @@ class TestPythonOperation(unittest.TestCase):
         self.check_shape(dx.shape(), (2, 3, 3, 3))
         self.check_shape(ds.shape(), (3,))
         self.check_shape(db.shape(), (3,))
+
+    def test_vanillaRNN_gpu_tiny_ops(self):
+        # gradients shape check.
+        inputs, target, h0 = prepare_inputs_targets_for_rnn_test()
+        rnn = autograd.Vanilla_RNN(3, 2)
+
+        hs, _ = rnn(h0, *inputs)
+
+        loss = autograd.softmax_cross_entropy(hs[0], target[0])
+        for i in range(1, len(hs)):
+            l = autograd.softmax_cross_entropy(hs[i], target[i])
+            loss = autograd.add(loss, l)
+        # d=autograd.infer_dependency(loss.creator)
+        # print(d)
+        for t, dt in autograd.backward(loss):
+            self.check_shape(t.shape, dt.shape)
+
+    def test_LSTM_gpu_tiny_ops(self):
+        # gradients shape check.
+        inputs, target, h0 = prepare_inputs_targets_for_rnn_test()
+        c_0 = np.random.random((2, 1)).astype(np.float32)
+        c0 = tensor.Tensor(device=gpu_dev, data=c_0)
+
+        rnn = autograd.LSTM(3, 2)
+
+        hs, _, _ = rnn(h0, c0, *inputs)
+        loss = autograd.softmax_cross_entropy(hs[0], target[0])
+
+        for i in range(1, len(hs)):
+            l = autograd.softmax_cross_entropy(hs[i], target[i])
+            loss = autograd.add(loss, l)
+        # d=autograd.infer_dependency(loss.creator)
+        # print(d)
+        for t, dt in autograd.backward(loss):
+            self.check_shape(t.shape, dt.shape)
+
+    def test_numerical_gradients_check_for_vallina_rnn(self):
+        inputs, target, h0 = prepare_inputs_targets_for_rnn_test()
+
+        rnn = autograd.Vanilla_RNN(3, 2)
+
+        hs, _ = rnn(h0, *inputs)
+
+        loss1 = autograd.softmax_cross_entropy(hs[0], target[0])
+        for i in range(1, len(hs)):
+            l = autograd.softmax_cross_entropy(hs[i], target[i])
+            loss1 = autograd.add(loss1, l)
+        grads = autograd.gradients(loss1)
+
+        # autograd gradients for dL/dWx[0][0]
+        d1 = tensor.to_numpy(grads[rnn.Wx])[0][0]
+        #print('autograd result of dL/dWx[0][0] is ', d1)
+
+
+        length = 0.01
+        diff = np.array([1, 0, 0, 0, 0, 0]) * length
+        diff = np.reshape(diff, (3, 2))
+        diff = tensor.from_numpy(diff)
+        diff.to_device(gpu_dev)
+
+        rnn.Wx += diff
+        hs, _ = rnn(h0, *inputs)
+        #hs=rnn(h0, x0,x1)
+        loss2_p = autograd.softmax_cross_entropy(hs[0], target[0])
+        for i in range(1, len(hs)):
+            l = autograd.softmax_cross_entropy(hs[i], target[i])
+            loss2_p = autograd.add(loss2_p, l)
+
+        rnn.Wx -= diff
+        rnn.Wx -= diff
+        hs, _ = rnn(h0, *inputs)
+        #hs=rnn(h0, x0,x1)
+        loss2_n = autograd.softmax_cross_entropy(hs[0], target[0])
+        for i in range(1, len(hs)):
+            l = autograd.softmax_cross_entropy(hs[i], target[i])
+            loss2_n = autograd.add(loss2_n, l)
+
+        loss2_p_np = tensor.to_numpy(loss2_p)
+        loss2_n_np = tensor.to_numpy(loss2_n)
+        # Numerical gradients for dL/dWx[0][0]
+        d2 = (loss2_p_np - loss2_n_np) / 2 / length
+        #print('numerical calculation dL/dWx[0][0] is ', (loss2_p_np-loss2_n_np)/2/length)
+
+        self.assertAlmostEqual(np.sum(d1 - d2), 0., places=3)
+
+    def test_numerical_gradients_check_for_lstm(self):
+        inputs, target, h0 = prepare_inputs_targets_for_rnn_test()
+        c_0 = np.random.random((2, 1)).astype(np.float32)
+        c0 = tensor.Tensor(device=gpu_dev, data=c_0)
+
+        rnn = autograd.LSTM(3, 2)
+
+        hs, _, _ = rnn(h0, c0, *inputs)
+
+        loss1 = autograd.softmax_cross_entropy(hs[0], target[0])
+        for i in range(1, len(hs)):
+            l = autograd.softmax_cross_entropy(hs[i], target[i])
+            loss1 = autograd.add(loss1, l)
+        grads = autograd.gradients(loss1)
+
+        # autograd gradients for dL/dWx[0][0]
+        d1 = tensor.to_numpy(grads[rnn.Wx[0]])[0][0]
+        #print('autograd result of dL/dWx[0][0] is ', d1)
+
+
+        length = 0.01
+        diff = np.array([1, 0, 0, 0, 0, 0]) * length
+        diff = np.reshape(diff, (3, 2))
+        diff = tensor.from_numpy(diff)
+        diff.to_device(gpu_dev)
+
+        rnn.Wx[0] += diff
+        hs, _, _ = rnn(h0, c0, *inputs)
+        #hs=rnn(h0, x0,x1)
+        loss2_p = autograd.softmax_cross_entropy(hs[0], target[0])
+        for i in range(1, len(hs)):
+            l = autograd.softmax_cross_entropy(hs[i], target[i])
+            loss2_p = autograd.add(loss2_p, l)
+
+        rnn.Wx[0] -= diff
+        rnn.Wx[0] -= diff
+        hs, _, _ = rnn(h0, c0, *inputs)
+        #hs=rnn(h0, x0,x1)
+        loss2_n = autograd.softmax_cross_entropy(hs[0], target[0])
+        for i in range(1, len(hs)):
+            l = autograd.softmax_cross_entropy(hs[i], target[i])
+            loss2_n = autograd.add(loss2_n, l)
+
+        loss2_p_np = tensor.to_numpy(loss2_p)
+        loss2_n_np = tensor.to_numpy(loss2_n)
+        # Numerical gradients for dL/dWx[0][0]
+        d2 = (loss2_p_np - loss2_n_np) / 2 / length
+        #print('numerical calculation dL/dWx[0][0] is ', (loss2_p_np-loss2_n_np)/2/length)
+
+        self.assertAlmostEqual(np.sum(d1 - d2), 0., places=3)
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -62,7 +62,7 @@ class TestPythonLayer(unittest.TestCase):
 
         raw_x = np.arange(9, dtype=np.float32) + 1
         x = tensor.from_numpy(raw_x)
-        x.reshape((1, 1, 3, 3))
+        x = x.reshape((1, 1, 3, 3))
         w = np.array([1, 1, 0, 0, 0, -1, 0, 1, 0], dtype=np.float32)
         params[0].copy_from_numpy(w)
         params[1].set_value(1.0)
