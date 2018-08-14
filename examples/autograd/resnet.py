@@ -227,8 +227,8 @@ def resnet152(pretrained=False, **kwargs):
 if __name__ == '__main__':
     model = resnet18()
     print('Start intialization............')
-    dev = device.create_cuda_gpu_on(1)
-
+    dev = device.create_cuda_gpu_on(0)
+    #dev = device.create_cuda_gpu()
     niters = 200
     batch_size = 16
     IMG_SIZE = 224
@@ -248,5 +248,5 @@ if __name__ == '__main__':
             loss = autograd.softmax_cross_entropy(x, ty)
             for p, g in autograd.backward(loss):
                 # print(p.shape, g.shape)
-                # sgd.update(p, g)
-                pass
+                sgd.update(p, g)
+                #pass

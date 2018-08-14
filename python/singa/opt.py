@@ -30,7 +30,7 @@ class Optimizer(object):
 
     def __init__(self, config):
         self.default_config = config
-        self.step = 0
+        self.iter = 0
         self.param2config = {}
         self.param2state = {}
 
@@ -46,7 +46,7 @@ class Optimizer(object):
 
     def step(self):
         r"""To increment the step counter"""
-        self.step += 1
+        self.iter += 1
 
     def register(self, param_group, config):
         for param in param_group:
