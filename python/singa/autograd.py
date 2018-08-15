@@ -1060,7 +1060,7 @@ class Vanilla_RNN(RNN):
         self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
         self.b.set_value(0.0)
 
-        #self.params= (self.Wx, self.Wh, self.b)
+        self.params= (self.Wx, self.Wh, self.b)
 
     def __call__(self, h0, *xs):
         inputs=xs+(h0,)
@@ -1078,9 +1078,9 @@ class Vanilla_RNN(RNN):
         return out, h
 
     def step_forward(self, x, h, Wx, Wh, b):
-        y1 = matmul(x, Wx)
         y2 = matmul(h, Wh)
-        y = add(y1, y2)
+        y1 = matmul(x, Wx)
+        y = add(y2, y1)
         y = add_bias(y, b, axis=0)
         if self.nonlinearity == 'tanh':
             y = tanh(y)
@@ -1124,7 +1124,7 @@ class LSTM(RNN):
             b.set_value(0.0)
             self.Bh.append(b)
 
-        #self.params=self.Wx + self.Wh + self.Bx + self.Bh
+        self.params=self.Wx + self.Wh + self.Bx + self.Bh
 
     def __call__(self, h0, c0, *xs):
         inputs=xs+(h0,c0)
