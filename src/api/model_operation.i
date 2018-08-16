@@ -58,6 +58,9 @@ public:
 
   size_t batch_size_;
   size_t seq_length_;
+  size_t input_size_;
+  size_t hidden_size_;
+  std::string rnn_mode_;
 };
 
 #if USE_CUDNN
@@ -122,6 +125,9 @@ public:
 
   size_t batch_size_;
   size_t seq_length_;
+  size_t input_size_;
+  size_t hidden_size_;
+  std::string rnn_mode_;
   
 };
 

@@ -1,5 +1,5 @@
 #include "./rnn.h"
-
+#include<iostream>
 namespace singa {
 
 RNNHandle::RNNHandle(const Tensor &input, const size_t Input_size, const size_t Hidden_size, const size_t Num_stacks,
@@ -203,6 +203,7 @@ void CudnnRNNHandle::SetRNNDescriptor(shared_ptr<Device> dev) {
   CUDNN_CHECK(cudnnGetRNNParamsSize(ctx->cudnn_handle, rnn_desc_, x_descs_[0],
                                     &weight_size_, dtype_));
   // check the size manually calculated
+  //std::cout<<weight_size_<<weight_size<<sizeof(float)<<std::endl;
   CHECK_EQ(weight_size_, weight_size * sizeof(float));
   int filter_dim[3] = {static_cast<int>(weight_size_), 1, 1};
   CUDNN_CHECK(cudnnCreateFilterDescriptor(&weight_desc_));
