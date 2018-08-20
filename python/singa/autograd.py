@@ -23,6 +23,7 @@ from collections import Counter, deque
 import numpy as np
 import math
 
+from singa import tensor
 from .tensor import Tensor
 from . import layer
 from singa.proto import model_pb2
@@ -798,7 +799,7 @@ class BatchNorm2d(Layer):
         self.handle.device_id = x.device.id()
 
         y = batchnorm_2d(self.handle, x, self.scale, self.bias,
-                      self.running_mean, self.running_var)
+                         self.running_mean, self.running_var)
         return y
 
 
@@ -962,3 +963,163 @@ class AvgPool1d(Pooling2d):
             stride = kernel_size
         super(MaxPool2d, self).__init__(
             (1, kernel_size), (0, stride), (0, padding), False)
+
+
+class _RNN(Operation):
+
+    def __init__(self, handle):
+        self.handle = handle
+
+    #def forward(self, X, h0, c0, W):
+    def forward(self, X, h0, W, c0=None):
+        # X of shape (seq_len, batch, input_size)
+        # h0_c0: (h0, c0) if lstm, else (h0,)
+        # h0, c0 of shape (num_layers * num_directions, batch, hidden_size)
+        if c0 is None:
+            assert self.handle.rnn_mode_ != 'lstm'
+            c0= CTensor([]) # CTensor([]) and Tensor cx are the same?
+
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            if training:
+                Y, hout, cout = singa.GpuRNNForwardTraining(
+                    self.handle, X, h0, c0, W)
+                self.cache=(X, Y, h0, c0, W)
+            else:
+                Y, hout, cout = singa.GpuRNNForwardInference(
+                    self.handle, X, h0, c0, W)
+
+        # Y of shape (seq_len, batch, hidden_size * num_directions)
+        # hout_cout: (hout, cout) if lstm, else (hout,)
+        # hout, cout of shape (num_layers * num_directions, batch,
+        # hidden_size)
+        
+        #oututs= _1dTo3d(Y)
+        shape=(self.handle.seq_length_, self.handle.batch_size_, self.handle.hidden_size_)
+        outputs = singa.Reshape(Y, shape)
+
+        if self.handle.rnn_mode_ != 'lstm':
+            return outputs, hout
+        else:
+            return outputs, hout, cout
+
+    def backward(self, dY, dh=CTensor([]), dc=CTensor([])):
+        assert training is True and hasattr(
+            self, 'cache'), 'Please set training as True before do BP. '
+
+        #dY_1d= _3dTo1d(dY)
+
+        if dY.device().id() != self.handle.device_id:
+            dY.ToDevice(self.cache[0].device())
+
+        if self.handle.device_id == -1:
+            raise NotImplementedError
+        else:
+            dX_1d, dhout, dcout, dW = singa.GpuRNNBackward(
+                self.handle, dY, dh, dc, self.cache)
+
+        #dX = _1dTo3d(dX_1d)
+        shape=(self.handle.seq_length_, self.handle.batch_size_, self.handle.input_size_)
+        dX = singa.Reshape(dX_1d, shape)
+
+        if self.handle.rnn_mode_ != 'lstm':
+            return dX, dhout, dW
+        else:
+            return dX, dhout, dW, dcout
+
+
+#def rnn(handle, x, h0, c0, W):
+  #  return _RNN(handle)(x, h0, c0, W)
+
+def rnn(handle, x, h0, W, c0):
+    if c0 is None:
+        return _RNN(handle)(x, h0, W)
+    else:
+        return _RNN(handle)(x, h0, W, c0)
+
+
+class RNN(Layer):
+
+    def __init__(self, input_size, hidden_size, num_layers=1, bias=True, batch_first=False, dropout=0, bidirectional=False, rnn_mode='tanh'):
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.bias = bias
+        self.batch_first = batch_first
+        self.dropout = dropout
+        self.bidirectional = bidirectional
+        self.rnn_mode = rnn_mode
+
+        if bias is not True or batch_first is not False:
+            raise NotImplementedError
+
+        mult = 1
+        if self.rnn_mode == 'tanh' or self.rnn_mode == 'relu':
+            mult *= 1
+        elif self.rnn_mode == 'lstm':
+            mult *= 4
+        elif self.rnn_mode == 'gru':
+            mult *= 3
+        else:
+            raise ValueError
+
+        if self.bidirectional:
+            mult *= 2
+
+        W_Size = 0
+        for k in range(num_layers):
+            if k == 0:
+                w_size = self.hidden_size * \
+                    (self.input_size + self.hidden_size + 2)
+            else:
+                w_size = self.hidden_size * \
+                    (self.hidden_size + self.hidden_size + 2)
+            W_Size += mult * w_size
+
+        self.W_Size = W_Size
+        self.W = Tensor(shape=(W_Size,), requires_grad=True, stores_grad=True) # TODO: assign value of Wi separately
+        self.W.uniform(0.0, 1.0)
+
+    def __call__(self, inputs, h0, c0=None):
+        # inputs of shape (seq_len, batch, input_size)
+        # h0_c0: (h0, c0) if lstm, else (h0,)
+        # h0, c0 of shape (num_layers * num_directions, batch, hidden_size)
+
+        self.device_check(inputs, h0, self.W)
+
+        if self.rnn_mode == 'lstm':
+            assert c0 is not None, 'Please input c0.'
+            self.device_check(h0, c0)
+        else:
+            assert c0 is None, 'only lstm needs input c0'
+
+        if not hasattr(self, 'handle'):
+            self.handle = singa.CudnnRNNHandle(inputs.data, self.input_size, self.hidden_size, self.num_layers,
+                self.rnn_mode, self.dropout, self.bidirectional, self.W_Size)
+        elif inputs.shape[0] != self.handle.seq_length_ or inputs.shape[1] != self.handle.batch_size_:
+            self.handle = singa.CudnnRNNHandle(inputs.data, self.input_size, self.hidden_size, self.num_layers,
+                self.rnn_mode, self.dropout, self.bidirectional, self.W_Size)
+
+        self.handle.device_id = inputs.device.id()
+
+        #X= _3dTo1d(inputs)
+        X=inputs
+        outputs = rnn(self.handle, X, h0, self.W, c0)
+        #outputs = rnn(self.handle, X, h0,  self.W)
+        #outputs=tensor.to_numpy(outputs[0])
+        #print(outputs.shape)
+        #print(outputs)
+        return outputs
+
+
+class LSTM(RNN):
+
+    def __init__(self, input_size, hidden_size, num_layers=1, bias=True, batch_first=False, dropout=0, bidirectional=False):
+        super(LSTM, self).__init__(input_size, hidden_size, num_layers, bias, batch_first, dropout, bidirectional, rnn_mode='lstm')
+
+
+class GRU(RNN):
+
+    def __init__(self, input_size, hidden_size, num_layers=1, bias=True, batch_first=False, dropout=0, bidirectional=False):
+        super(GRU, self).__init__(input_size, hidden_size, num_layers, bias, batch_first, dropout, bidirectional, rnn_mode='gru')
