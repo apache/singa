@@ -303,7 +303,7 @@ class SwapGPU : public Device {
   int swap_test(vector<string>vec_block,int &maxLen, int &location);
   void swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double memLimit,string mode);
   void swap_plan();
-  vector<SwapBlock> swap_select(vector<SwapBlock>vec_swap,double maxLoad,double memLimit,string mode);
+  vector<SwapBlock> swap_select(vector<SwapBlock>vec_swap,vector<double> tempLoad,double memLimit,string mode);
   vector<double> swap_load_ideal(vector<double>vec_load,vector<SwapBlock> vec_swap_selct);
   void Test_sched_switch_swap();
   void DeploySwap();
@@ -332,7 +332,7 @@ class SwapGPU : public Device {
   //vec_block
   vector<string>vec_block; //iteration 0-3
   vector<string>vec_block_fresh; //iteration 4 5 6
-  vector<double>global_load;
+  vector<double>global_load; // from begining
   vector<double>origin_load; //vec_load 3 itr. TODO(junzhe) to delete vec_load, global_load after use.
   vector<onePieceMsg>vec_run;
   int asyncSwapFlag = 0; //0 for sync, 1 for async.

@@ -352,21 +352,12 @@ pair<double,int> load_peak(vector<double>vec_load_test,int maxLen){
 
 void load_update(vector<double>& vec_load,int start_idx, int end_idx, int plusMinus, size_t size,int maxLen){
   //update load [start_idx, end_idx) by plusMinus*size
-  //if (start_idx < end_idx){
   for (int i = start_idx+maxLen; i<end_idx+maxLen; i++){
     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
   }
-  // } else {
-  //   for (int i = start_idx; i < maxLen; i++){
-  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-  //   }
-  //   for (int i = 0; i < end_idx; i++){ //TODO(junzhe) NOTE, end_idx excluded
-  //     vec_load[i] = vec_load[i] + static_cast<double>(size) * plusMinus;
-  //   }
-  // }
 }
 
-vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,double memLimit,string mode){
+vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,vector<double> tempLoad,double memLimit,string mode){
   vector<SwapBlock>vec_swap_selct;
   vector<SwapBlock>vec_swap_reject;
   if (mode == "dto"){
@@ -386,30 +377,14 @@ vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,double maxLoad,
     sort(vec_swap.begin(),vec_swap.end(),less_than_wdto()); 
   }
 
-  size_t load_swap_selct = 0;
-  if (mode != "r_idx"){  
-    for (int i =0; i<vec_swap.size(); i++){
-      if ((maxLoad-memLimit)>load_swap_selct){
-        vec_swap_selct.push_back(vec_swap[i]);
-        load_swap_selct+=vec_swap[i].size;  
-        //cout<<"Item selected: (r_idx, d_idx, dto) "<<vec_swap[i].r_idx<<"  "<<vec_swap[i].d_idx<<"  "<<static_cast<int>(vec_swap[i].dto/1000000)<<endl;
-      } else {
-        //break; TODO(junzhe) to resume break
-        vec_swap_reject.push_back(vec_swap[i]);
-      }
+  for (int i=0; i<vec_swap.size(); i++){
+    load_update(tempLoad,0,maxLen,-1,vec_swap[i].size,maxLen);
+    vec_swap_selct.push_back(vec_swap[i]);
+    auto max_current = load_peak(tempLoad,maxLen);
+    newMaxLoad = max_current.first;
+    if (newMaxLoad < memLimit){
+      break;
     }
-  } else {
-    //TODO(junzhe) other modes not done yet
-    // sort(vec_swap.begin(),vec_swap.end(),less_than_r_idx_ready());
-    // auto temp_load = origin_load;
-    // int i = 0;
-    // while ((maxLoad-memLimit)>load_swap_selct){
-
-    // }
-    // for (int i =0; i<vec_swap.size(); i++){
-
-    // }
-
   }
   
   return vec_swap_selct;
@@ -669,29 +644,30 @@ void SwapGPU::swap_plan(){
   cout<<"------------------print max_load: (ideal) "<<maxLoad_ideal<<" "<<maxIdx_ideal<<endl;
   //maxLoad_ideal = 400;
   /// select till maxLoad_ideal, dto
-  auto vec_swap_dto = swap_select(vec_swap,maxLoad,maxLoad_ideal,"dto");
-  cout<<"size of vec_swap_dto: "<<vec_swap_dto.size()<<endl;
-  auto vec_load_dto_ideal = swap_load_ideal(vec_load,vec_swap_dto);
-    fstream file_load_dto_ideal("load_dto_ideal.csv", ios::in|ios::out|ios::app);
-  for (int i=maxLen; i<maxLen*2; i++){
-    file_load_dto_ideal<<vec_load_dto_ideal[i]<<endl;
-  }
-  auto tempMax_ = load_peak(vec_load_dto_ideal,maxLen);
-  cout<<"------------------print max_load: (dto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
+  // auto vec_swap_dto = swap_select(vec_swap,maxLoad,maxLoad_ideal,"dto");
+  // cout<<"size of vec_swap_dto: "<<vec_swap_dto.size()<<endl;
+  // auto vec_load_dto_ideal = swap_load_ideal(vec_load,vec_swap_dto);
+  //   fstream file_load_dto_ideal("load_dto_ideal.csv", ios::in|ios::out|ios::app);
+  // for (int i=maxLen; i<maxLen*2; i++){
+  //   file_load_dto_ideal<<vec_load_dto_ideal[i]<<endl;
+  // }
+  // auto tempMax_ = load_peak(vec_load_dto_ideal,maxLen);
+  // cout<<"------------------print max_load: (dto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
 
-  /// select till maxLoad_ideal, pri
-  auto vec_swap_pri = swap_select(vec_swap,maxLoad,maxLoad_ideal,"pri");
-  cout<<"size of vec_swap_pri: "<<vec_swap_dto.size()<<endl;
-  auto vec_load_pri_ideal = swap_load_ideal(vec_load,vec_swap_pri);
-    fstream file_load_pri_ideal("load_pri_ideal.csv", ios::in|ios::out|ios::app);
-  for (int i=maxLen; i<maxLen*2; i++){
-    file_load_pri_ideal<<vec_load_pri_ideal[i]<<endl;
-  }
-  tempMax_ = load_peak(vec_load_pri_ideal,maxLen);
-  cout<<"------------------print max_load: (pri ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
+  // /// select till maxLoad_ideal, pri
+  // auto vec_swap_pri = swap_select(vec_swap,maxLoad,maxLoad_ideal,"pri");
+  // cout<<"size of vec_swap_pri: "<<vec_swap_dto.size()<<endl;
+  // auto vec_load_pri_ideal = swap_load_ideal(vec_load,vec_swap_pri);
+  //   fstream file_load_pri_ideal("load_pri_ideal.csv", ios::in|ios::out|ios::app);
+  // for (int i=maxLen; i<maxLen*2; i++){
+  //   file_load_pri_ideal<<vec_load_pri_ideal[i]<<endl;
+  // }
+  // tempMax_ = load_peak(vec_load_pri_ideal,maxLen);
+  // cout<<"------------------print max_load: (pri ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
 
   /// select till maxLoad_ideal, wdto
-  auto vec_swap_wdto = swap_select(vec_swap,maxLoad,maxLoad_ideal,"wdto");
+  auto tempLoad = origin_load;
+  auto vec_swap_wdto = swap_select(vec_swap,tempLoad,maxLoad_ideal*1.4,"wdto");
   cout<<"size of vec_swap_wdto: "<<vec_swap_wdto.size()<<endl;
   auto vec_load_wdto_ideal = swap_load_ideal(vec_load,vec_swap_wdto);
     fstream file_load_wdto_ideal("load_wdto_ideal.csv", ios::in|ios::out|ios::app);
@@ -707,51 +683,52 @@ void SwapGPU::swap_plan(){
   auto vec_load_dto = origin_load;
   auto vec_load_wdto = origin_load;
   string mode = "stick-to-limit";
-  double overhead_pri = 0;
-  swap_sched(vec_swap_pri, vec_load_pri,overhead_pri,450<<20, mode);
+  // double overhead_pri = 0;
+  // swap_sched(vec_swap_pri, vec_load_pri,overhead_pri,450<<20, mode);
   
-  double overhead_dto = 0;
-  swap_sched(vec_swap_dto, vec_load_dto,overhead_dto,450<<20,mode);
+  // double overhead_dto = 0;
+  // swap_sched(vec_swap_dto, vec_load_dto,overhead_dto,450<<20,mode);
   
   double overhead_wdto = 0;
   swap_sched(vec_swap_wdto, vec_load_wdto,overhead_wdto,450<<20,mode);
   
 
 
-  fstream file_block10("load_1_pri.csv", ios::in|ios::out|ios::app);
-  for (int i=maxLen; i<maxLen*2; i++){
-    file_block10<<vec_load_pri[i]<<endl;
-  }
-  fstream file_block11("load_1_dto.csv", ios::in|ios::out|ios::app);
-  for (int i=maxLen; i<maxLen*2; i++){
-    file_block11<<vec_load_dto[i]<<endl;
-  }
-  fstream file_block12("load_1_wdto.csv", ios::in|ios::out|ios::app);
-  for (int i=maxLen; i<maxLen*2; i++){
-    file_block12<<vec_load_wdto[i]<<endl;
-  }
-  auto max_1 = load_peak(vec_load_pri,maxLen);
-  size_t maxLoad_1 = max_1.first;
-  int maxIdx_1 = max_1.second;
-  cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
-  //change back order by Idx.
-  sort(vec_run.begin(),vec_run.end(),less_than_Idx());
-  cout<<"done with swap_plan..."<<endl;
-  cout<<"load 2 overhead pri: "<<(float)(overhead_pri)/(float)(1000000)<<endl;
-  cout<<"load 2 overhead dto: "<<(float)(overhead_dto)/(float)(1000000)<<endl;
-  cout<<"load 2 overhead wdto: "<<(float)(overhead_wdto)/(float)(1000000)<<endl;
-  cout<<"total_swapOutTime: "<<(float)(total_swapOutTime)/(float)(3000000)<<endl;
-  cout<<"total_swapInTime: "<<(float)(total_swapInTime)/(float)(3000000)<<endl;
-  auto t1 = vec_run[0].t;
-  auto t2 = vec_run[maxLen].t;
-  auto t3 = vec_run[maxLen*2].t;
-  auto t4 = vec_run[maxLen*3-1].t;
-  cout<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t4-t3)/(float)(1000000)<<endl;
-  fstream file_time("itr_time.csv", ios::in|ios::out|ios::app);
-  file_time<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t4-t3)/(float)(1000000)<<endl;
-  file_time<<"iteration time spent: "<<t2-t1<<" "<<t3-t2<<" "<<t4-t3<<endl;
-  file_time<<"idx "<<0<<" "<<maxLen<<" "<<maxLen*2<<" "<<maxLen*3-1<<endl;
-  file_time<<"value "<<t1<<" "<<t2<<" "<<t3<<" "<<t4<<endl;
+  // fstream file_block10("load_1_pri.csv", ios::in|ios::out|ios::app);
+  // for (int i=maxLen; i<maxLen*2; i++){
+  //   file_block10<<vec_load_pri[i]<<endl;
+  // }
+  // fstream file_block11("load_1_dto.csv", ios::in|ios::out|ios::app);
+  // for (int i=maxLen; i<maxLen*2; i++){
+  //   file_block11<<vec_load_dto[i]<<endl;
+  // }
+  // fstream file_block12("load_1_wdto.csv", ios::in|ios::out|ios::app);
+  // for (int i=maxLen; i<maxLen*2; i++){
+  //   file_block12<<vec_load_wdto[i]<<endl;
+  // }
+  //TODO(junzhe) below verification to be done later.
+  // auto max_1 = load_peak(vec_load_pri,maxLen);
+  // size_t maxLoad_1 = max_1.first;
+  // int maxIdx_1 = max_1.second;
+  // cout<<"------------------print max_load: (1) "<<maxLoad_1<<" "<<maxIdx_1<<endl;
+  // //change back order by Idx.
+  // sort(vec_run.begin(),vec_run.end(),less_than_Idx());
+  // cout<<"done with swap_plan..."<<endl;
+  // cout<<"load 2 overhead pri: "<<(float)(overhead_pri)/(float)(1000000)<<endl;
+  // cout<<"load 2 overhead dto: "<<(float)(overhead_dto)/(float)(1000000)<<endl;
+  // cout<<"load 2 overhead wdto: "<<(float)(overhead_wdto)/(float)(1000000)<<endl;
+  // cout<<"total_swapOutTime: "<<(float)(total_swapOutTime)/(float)(3000000)<<endl;
+  // cout<<"total_swapInTime: "<<(float)(total_swapInTime)/(float)(3000000)<<endl;
+  // auto t1 = vec_run[0].t;
+  // auto t2 = vec_run[maxLen].t;
+  // auto t3 = vec_run[maxLen*2].t;
+  // auto t4 = vec_run[maxLen*3-1].t;
+  // cout<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t4-t3)/(float)(1000000)<<endl;
+  // fstream file_time("itr_time.csv", ios::in|ios::out|ios::app);
+  // file_time<<"iteration time spent: "<<(float)(t2-t1)/(float)(1000000)<<" "<<(float)(t3-t2)/(float)(1000000)<<" "<<(float)(t4-t3)/(float)(1000000)<<endl;
+  // file_time<<"iteration time spent: "<<t2-t1<<" "<<t3-t2<<" "<<t4-t3<<endl;
+  // file_time<<"idx "<<0<<" "<<maxLen<<" "<<maxLen*2<<" "<<maxLen*3-1<<endl;
+  // file_time<<"value "<<t1<<" "<<t2<<" "<<t3<<" "<<t4<<endl;
 }
 
 
