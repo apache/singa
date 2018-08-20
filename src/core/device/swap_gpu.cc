@@ -381,7 +381,7 @@ vector<SwapBlock> SwapGPU::swap_select(vector<SwapBlock>vec_swap,vector<double> 
     load_update(tempLoad,0,maxLen,-1,vec_swap[i].size,maxLen);
     vec_swap_selct.push_back(vec_swap[i]);
     auto max_current = load_peak(tempLoad,maxLen);
-    newMaxLoad = max_current.first;
+    auto newMaxLoad = max_current.first;
     if (newMaxLoad < memLimit){
       break;
     }
@@ -674,7 +674,7 @@ void SwapGPU::swap_plan(){
   for (int i=maxLen; i<maxLen*2; i++){
     file_load_wdto_ideal<<vec_load_wdto_ideal[i]<<endl;
   }
-  tempMax_ = load_peak(vec_load_wdto_ideal,maxLen);
+  auto tempMax_ = load_peak(vec_load_wdto_ideal,maxLen);
   cout<<"------------------print max_load: (wdto ideal) "<<tempMax_.first<<" "<<tempMax_.second<<endl;
 
   /// load_1 no overhead, based on pri
