@@ -693,7 +693,6 @@ void SwapGPU::swap_plan(){
   swap_sched(vec_swap_wdto, vec_load_wdto,overhead_wdto,450<<20,mode);
   
 
-
   // fstream file_block10("load_1_pri.csv", ios::in|ios::out|ios::app);
   // for (int i=maxLen; i<maxLen*2; i++){
   //   file_block10<<vec_load_pri[i]<<endl;
@@ -867,7 +866,7 @@ void SwapGPU::Test_sched_switch_swap(){
  }
  ///switch flag; next idx
  if ((gc+1) == globeCounter){
-    // swap_plan();
+    swap_plan();
     vector<double>vec_load2(&global_load[location],&global_load[location+3*maxLen]);
     origin_load = vec_load2;
     //load before swap, write in
