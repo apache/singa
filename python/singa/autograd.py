@@ -684,6 +684,14 @@ class Conv2d(Layer):
         self.in_channels = in_channels
         self.out_channels = out_channels
 
+        self.groups = groups
+
+        assert self.groups >= 1 and self.in_channels % self.groups == 0, 'please set reasonable groups.'
+
+        # each group should contribute equally to the output feature maps. shown as the later part of
+        # the following judgement.
+        assert self.out_channels >= self.groups and self.out_channels % self.groups == 0, 'out_channels and groups dismatched.'
+
         if isinstance(kernel_size, int):
             self.kernel_size = (kernel_size, kernel_size)
         elif isinstance(kernel_size, tuple):
@@ -705,7 +713,7 @@ class Conv2d(Layer):
         else:
             raise TypeError('Wrong padding type.')
 
-        if dilation != 1 or groups != 1:
+        if dilation != 1:
             raise ValueError('Not implemented yet')
 
         self.bias = bias
@@ -720,11 +728,15 @@ class Conv2d(Layer):
             else:
                 self.inner_params[kwarg] = kwargs[kwarg]
 
-        w_shape = (self.out_channels, self.in_channels,
+        w_shape = (self.out_channels, int(self.in_channels / self.groups),
                    self.kernel_size[0], self.kernel_size[1])
+
         self.W = Tensor(shape=w_shape, requires_grad=True, stores_grad=True)
+        # std = math.sqrt(
+        # 2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] +
+        # self.out_channels))
         std = math.sqrt(
-            2.0 / (self.in_channels * self.kernel_size[0] * self.kernel_size[1] + self.out_channels))
+            2.0 / (w_shape[1] * self.kernel_size[0] * self.kernel_size[1] + self.out_channels))
         self.W.gaussian(0.0, std)
 
         if self.bias:
@@ -743,22 +755,40 @@ class Conv2d(Layer):
         self.device_check(x, self.W, self.b)
 
         if x.device.id() == -1:
-            if not hasattr(self, 'handle'):
-                self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
-                                               self.padding, self.in_channels, self.out_channels, self.bias)
-            elif x.shape[0] != self.handle.batchsize:
-                self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
-                                               self.padding, self.in_channels, self.out_channels, self.bias)
+            if self.groups != 1:
+                raise ValueError('Not implemented yet')
+            else:
+                if not hasattr(self, 'handle'):
+                    self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
+                                                   self.padding, self.in_channels, self.out_channels, self.bias)
+                elif x.shape[0] != self.handle.batchsize:
+                    self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
+                                                   self.padding, self.in_channels, self.out_channels, self.bias)
         else:
             if not hasattr(self, 'handle'):
                 self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                    self.padding, self.in_channels, self.out_channels, self.bias)
+                                                    self.padding, self.in_channels, self.out_channels, self.bias, self.groups)
             elif x.shape[0] != self.handle.batchsize:
                 self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                    self.padding, self.in_channels, self.out_channels, self.bias)
+                                                    self.padding, self.in_channels, self.out_channels, self.bias, self.groups)
         self.handle.device_id = x.device.id()
 
         y = conv2d(self.handle, x, self.W, self.b)
+        return y
+
+
+class SeparableConv2d(Layer):
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0):
+
+        self.mapping_spacial_conv = Conv2d(
+            in_channels, in_channels, kernel_size, stride, padding, groups=in_channels, bias=False)
+
+        self.mapping_depth_conv = Conv2d(in_channels, out_channels, 1, bias=False)
+
+    def __call__(self, x):
+        y = self.mapping_spacial_conv(x)
+        y = self.mapping_depth_conv(y)
         return y
 
 

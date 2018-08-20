@@ -99,6 +99,28 @@ class TestPythonOperation(unittest.TestCase):
         y_without_bias = conv_without_bias_1(cpu_input_tensor)
         self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
 
+    def test_SeparableConv2d_gpu(self):
+        separ_conv=autograd.SeparableConv2d(8, 16, 3, padding=1)
+
+        x=np.random.random((10,8,28,28)).astype(np.float32)
+        x=tensor.Tensor(device=gpu_dev, data=x)
+
+        #y = separ_conv(x)
+        y1 = separ_conv.mapping_spacial_conv(x)
+        y2 = separ_conv.mapping_depth_conv(y1)
+        
+        dy1, dW_depth, _ = y2.creator.backward(y2.data)
+        dx, dW_spacial, _ = y1.creator.backward(dy1)
+
+        self.check_shape(y2.shape, (10, 16, 28, 28))
+
+        self.check_shape(dy1.shape(), (10, 8, 28, 28))
+        self.check_shape(dW_depth.shape(), (16, 8, 1, 1)) 
+
+        self.check_shape(dx.shape(), (10, 8, 28, 28))
+        self.check_shape(dW_spacial.shape(), (8, 1, 3, 3))
+
+
     def test_batchnorm2d_gpu(self):
         batchnorm_0 = autograd.BatchNorm2d(3)
 

@@ -17,12 +17,12 @@ namespace singa {
 
 class ConvHandle {
 
- public:
+public:
   ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
              const std::vector<size_t>& stride, const std::vector<size_t>& padding,
              const size_t in_channels, const size_t out_channels,
              const bool bias);
- 
+
   size_t kernel_w;
   size_t pad_w;
   size_t stride_w;
@@ -59,15 +59,15 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch)
 
 #ifdef USE_CUDNN
 class CudnnConvHandle: public ConvHandle {
- public:
+public:
   CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                   const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                   const size_t in_channels, const size_t out_channels,
-                  const bool bias, const size_t workspace_byte_limit = 1024 * 1024 * 1024,
+                  const bool bias, const size_t groups = 1, const size_t workspace_byte_limit = 1024 * 1024 * 1024,
                   const std::string& prefer = "fastest");
   ~CudnnConvHandle();
   // TODO(wangwei) add the destructor
- 
+
   cudnnTensorDescriptor_t x_desc = nullptr;
   cudnnTensorDescriptor_t y_desc = nullptr;
   cudnnTensorDescriptor_t bias_desc = nullptr;

@@ -184,6 +184,7 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input,
                                  const std::vector<size_t>& kernel_size,
                                  const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                                  const size_t in_channels, const size_t out_channels, const bool bias,
+                                 const size_t groups,
                                  const size_t workspace_byte_limit, const std::string& prefer)
   : ConvHandle(input, kernel_size, stride, padding, in_channels, out_channels,
                bias) {
@@ -198,7 +199,6 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input,
     CUDNN_CHECK(cudnnCreateTensorDescriptor(&bias_desc));
   CUDNN_CHECK(cudnnCreateFilterDescriptor(&filter_desc));
   CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
-
 
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(x_desc, CUDNN_TENSOR_NCHW,
                                          GetCudnnDataType(dtype), batchsize,
@@ -217,9 +217,14 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input,
               , GetCudnnDataType(dtype)
 #endif
                                              ));
+  if (CUDNN_MAJOR >= 7 && groups > 1) {
+    CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, groups));
+  }
+  else if (groups > 1) {LOG(FATAL) << "The current version of cuDNN not support grouped convolution.";};
+
   CUDNN_CHECK(cudnnSetFilter4dDescriptor(filter_desc, GetCudnnDataType(dtype),
                                          CUDNN_TENSOR_NCHW, num_filters,
-                                         channels, kernel_h, kernel_w));
+                                         channels / groups, kernel_h, kernel_w));
   if (prefer == "fastest" || prefer == "limited_workspace" ||
       prefer == "no_workspace") {
     cudnnConvolutionFwdPreference_t fwd_pref;
@@ -289,6 +294,7 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input,
                  << ") is larger than the expected Bytes ("
                  << workspace_byte_limit << ")";
   workspace = Tensor(Shape{workspace_count}, dev, dtype);
+
 }
 
 CudnnConvHandle::~CudnnConvHandle() {

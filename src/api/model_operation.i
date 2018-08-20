@@ -58,7 +58,7 @@ class CudnnConvHandle: public ConvHandle {
   CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                   const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                   const size_t in_channels, const size_t out_channels,
-                  const bool bias, const size_t workspace_byte_limit = 1024 * 1024 * 1024,
+                  const bool bias, const size_t groups = 1, const size_t workspace_byte_limit = 1024 * 1024 * 1024,
                   const std::string& prefer = "fastest");
   bool bias_term;
   size_t batchsize;
