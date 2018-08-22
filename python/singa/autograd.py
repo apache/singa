@@ -55,7 +55,8 @@ def infer_dependency(op):
             if src_op not in dependency_count:
                 # dependency[src_op] = [Counter() for _ in src_op.y_id2idx]
                 if isinstance(src_op, Dummy):
-                    # only when a Dummy operator needs store grads, its dependency needs to be counted.
+                    # only when a Dummy operator needs store grads, its
+                    # dependency needs to be counted.
                     if src_op.stores_grad:
                         dependency_count[src_op] = 0
                         queue.append(src_op)
@@ -87,6 +88,7 @@ def backward(y, dy=None):
         a dictionary storing the gradient tensors of all tensors
         whose stores_grad is true (e.g. parameter tensors)
     '''
+    assert isinstance(y, Tensor), 'wrong input type.'
     dependency = infer_dependency(y.creator)
     assert y.size() == 1, 'y must be a Tensor with a single value;'\
         'size of y is % d' % y.size()
@@ -106,9 +108,9 @@ def backward(y, dy=None):
     if y.stores_grad:
         #gradients[y] = dy
         if isinstance(dy, float):
-            g=np.array(dy)
+            g = np.array(dy)
         else:
-            g=dy
+            g = dy
         tg = Tensor(device=g.device(), data=g)
         yield (y, tg)
 
@@ -138,7 +140,7 @@ def backward(y, dy=None):
             if isinstance(src_op, Dummy):
                 if not src_op.stores_grad:
                     continue
-                    
+
             y_idx = src_op.y_id2idx[x_id]
             if src_op not in not_ready:
                 # src_op may have mulitple outputs
@@ -152,13 +154,15 @@ def backward(y, dy=None):
                     # add the gradient from another children operation that
                     # uses y_idx'th output of src_op as input arg
                     dxs[y_idx] += dx
-            
+
             dependency[src_op] -= 1
 
             if y_stores_grad:
                 if dependency[src_op] == 0:
                     # store the gradient for final return, e.g. if x is parameter
-                    # may cause a delay output, as only after src_op is ready then output, not the current outlet of src_op is ready then output.
+                    # may cause a delay output, as only after src_op is ready
+                    # then output, not the current outlet of src_op is ready
+                    # then output.
                     g = not_ready[src_op][y_idx]
                     tg = Tensor(device=g.device(), data=g)
                     yield (y, tg)
@@ -166,7 +170,8 @@ def backward(y, dy=None):
             if src_op.requires_grad is True:
                 if dependency[src_op] == 0:
                     if not isinstance(src_op, Dummy):
-                        #Dummy can be in not_ready list but cannot be in ready list.
+                        # Dummy can be in not_ready list but cannot be in ready
+                        # list.
                         ready.append((src_op, not_ready[src_op]))
                     del not_ready[src_op]
         del op  # delete the operation to free all tensors from this op
@@ -798,7 +803,7 @@ class BatchNorm2d(Layer):
         self.handle.device_id = x.device.id()
 
         y = batchnorm_2d(self.handle, x, self.scale, self.bias,
-                      self.running_mean, self.running_var)
+                         self.running_mean, self.running_var)
         return y
 
 
@@ -962,3 +967,215 @@ class AvgPool1d(Pooling2d):
             stride = kernel_size
         super(MaxPool2d, self).__init__(
             (1, kernel_size), (0, stride), (0, padding), False)
+
+
+class Tanh(Operation):
+
+    def forward(self, x):
+        out = singa.Tanh(x)
+        if training:
+            self.cache = (out,)
+        return out
+
+    def backward(self, dy):
+        dx = singa.__mul__(self.cache[0], self.cache[0])
+        dx = singa.MultFloat(dx, -1.0)
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+
+def tanh(x):
+    return Tanh()(x)[0]
+
+
+class Sigmoid(Operation):
+
+    def forward(self, x):
+        out = singa.Sigmoid(x)
+        if training:
+            self.cache = (out,)
+        return out
+
+    def backward(self, dy):
+        dx = singa.MultFloat(self.cache[0], -1.0)
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.__mul__(self.cache[0], dx)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+
+def sigmoid(x):
+    return Sigmoid()(x)[0]
+
+
+class ElemMatmul(Operation):
+
+    def forward(self, x1, x2):
+        if training:
+            self.cache = (x1, x2)
+        return singa.__mul__(x1, x2)
+
+    def backward(self, dy):
+        dx1 = singa.__mul__(dy, self.cache[1])
+        dx2 = singa.__mul__(dy, self.cache[0])
+        return dx1, dx2
+
+
+def elemmatmul(x, y):
+    return ElemMatmul()(x, y)[0]
+
+
+def add_all(*xs):
+    assert len(xs) > 2
+    y = add(xs[0], xs[1])
+    for x in xs[2:]:
+        y = add(y, x)
+    return
+
+class RNN(Layer):
+    def __init__(self):
+        raise NotImplementedError
+
+    def __call__(self):
+        raise NotImplementedError
+
+    def step_forward(self):
+        raise NotImplementedError
+
+class Vanilla_RNN(RNN):
+
+    def __init__(self, input_size, hidden_size, num_layers=1, nonlinearity='tanh', bias=True, batch_first=False, dropout=0, bidirectional=False):
+        self.nonlinearity = nonlinearity
+
+        Wx_shape = (input_size, hidden_size)
+        self.Wx = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+        self.Wx.gaussian(0.0, 1.0)
+
+        Wh_shape = (hidden_size, hidden_size)
+        self.Wh = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+        self.Wh.gaussian(0.0, 1.0)
+
+        B_shape = (hidden_size,)
+        self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
+        self.b.set_value(0.0)
+
+        self.params= (self.Wx, self.Wh, self.b)
+
+    def __call__(self, h0, *xs):
+        inputs=xs+(h0,)
+        self.device_check(*inputs)
+        #self.device_check(inputs[0], *self.params)
+        self.device_check(inputs[0], self.Wx, self.Wh, self.b)
+        batchsize = xs[0].shape[0]
+        out = []
+        h = self.step_forward(xs[0], h0, self.Wx, self.Wh, self.b)
+        out.append(h)
+        for x in xs[1:]:
+            assert x.shape[0] == batchsize
+            h = self.step_forward(x, h, self.Wx, self.Wh, self.b)
+            out.append(h)
+        return out, h
+
+    def step_forward(self, x, h, Wx, Wh, b):
+        y2 = matmul(h, Wh)
+        y1 = matmul(x, Wx)
+        y = add(y2, y1)
+        y = add_bias(y, b, axis=0)
+        if self.nonlinearity == 'tanh':
+            y = tanh(y)
+        elif self.nonlinearity == 'relu':
+            y = relu(y)
+        else:
+            raise ValueError
+        return y
+
+
+class LSTM(RNN):
+
+    def __init__(self, input_size, hidden_size, nonlinearity='tanh', num_layers=1, bias=True, batch_first=False, dropout=0, bidirectional=False):
+        self.nonlinearity = nonlinearity
+
+        Wx_shape = (input_size, hidden_size)
+        self.Wx = []
+        for i in range(4):
+            w = Tensor(shape=Wx_shape, requires_grad=True, stores_grad=True)
+            w.gaussian(0.0, 1.0)
+            self.Wx.append(w)
+
+        Wh_shape = (hidden_size, hidden_size)
+        self.Wh = []
+        for i in range(4):
+            w = Tensor(shape=Wh_shape, requires_grad=True, stores_grad=True)
+            w.gaussian(0.0, 1.0)
+            self.Wh.append(w)
+
+        Bx_shape = (hidden_size,)
+        self.Bx = []
+        for i in range(4):
+            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+            b.set_value(0.0)
+            self.Bx.append(b)
+
+        Bh_shape = (hidden_size,)
+        self.Bh = []
+        for i in range(4):
+            b = Tensor(shape=Bx_shape, requires_grad=True, stores_grad=True)
+            b.set_value(0.0)
+            self.Bh.append(b)
+
+        self.params=self.Wx + self.Wh + self.Bx + self.Bh
+
+    def __call__(self, h0, c0, *xs):
+        inputs=xs+(h0,c0)
+        self.device_check(*inputs)
+        #self.device_check(inputs[0], *self.params)
+        self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))
+        batchsize = xs[0].shape[0]
+        out = []
+        h, c = self.step_forward(
+            xs[0], h0, c0, self.Wx, self.Wh, self.Bx, self.Bh)
+        out.append(h)
+        for x in xs[1:]:
+            assert x.shape[0] == batchsize
+            h, c = self.step_forward(
+                x, h, c, self.Wx, self.Wh, self.Bx, self.Bh)
+            out.append(h)
+        return out, h, c
+
+    def step_forward(self, x, h, c, Wx, Wh, Bx, Bh):
+        y1 = matmul(x, Wx[0])
+        y1 = add_bias(y1, Bx[0], axis=0)
+        y2 = matmul(h, Wh[0])
+        y2 = add_bias(y2, Bh[0], axis=0)
+        i = add(y1, y2)
+        i = sigmoid(i)
+
+        y1 = matmul(x, Wx[1])
+        y1 = add_bias(y1, Bx[1], axis=0)
+        y2 = matmul(h, Wh[1])
+        y2 = add_bias(y2, Bh[1], axis=0)
+        f = add(y1, y2)
+        f = sigmoid(f)
+
+        y1 = matmul(x, Wx[2])
+        y1 = add_bias(y1, Bx[2], axis=0)
+        y2 = matmul(h, Wh[2])
+        y2 = add_bias(y2, Bh[2], axis=0)
+        o = add(y1, y2)
+        o = sigmoid(o)
+
+        y1 = matmul(x, Wx[3])
+        y1 = add_bias(y1, Bx[3], axis=0)
+        y2 = matmul(h, Wh[3])
+        y2 = add_bias(y2, Bh[3], axis=0)
+        g = add(y1, y2)
+        g = tanh(g)
+
+        cout1 = elemmatmul(f, c)
+        cout2 = elemmatmul(i, g)
+        cout = add(cout1, cout2)
+
+        hout = tanh(cout)
+        hout = elemmatmul(o, hout)
+        return hout, cout
