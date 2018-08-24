@@ -106,8 +106,8 @@ class TestPythonOperation(unittest.TestCase):
         x=tensor.Tensor(device=gpu_dev, data=x)
 
         #y = separ_conv(x)
-        y1 = separ_conv.mapping_spacial_conv(x)
-        y2 = separ_conv.mapping_depth_conv(y1)
+        y1 = separ_conv.spacial_conv(x)
+        y2 = separ_conv.depth_conv(y1)
         
         dy1, dW_depth, _ = y2.creator.backward(y2.data)
         dx, dW_spacial, _ = y1.creator.backward(dy1)
