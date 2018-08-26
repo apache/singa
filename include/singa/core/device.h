@@ -265,14 +265,14 @@ struct SwapBlock{
     double r_idx_ready; //r_idx + buffer, could be set during selection.
     //int free = -1; //when it is freed 
     //below as per planned.
-    int i1;
-    int i1p;
-    int i2;
-    int i2p;
-    double t1;
-    double t2;
-    double t1p;
-    double t2p;
+    int i1 = 0;
+    int i1p = 0;
+    int i2 = 0;
+    int i2p = 0;
+    double t1 = 0;
+    double t2 = 0;
+    double t1p = 0;
+    double t2p = 0;
     SwapBlock(string p, size_t s, int i1, int i2, double t1, double t2): 
     ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
 };
@@ -299,16 +299,37 @@ class SwapGPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-  void MakeMetaTable(Block* block,void* data_,int size) override;
+
+  //append info after Malloc, pair.
+  void MakeMetaTable(Block* block,void* data_,int size) override; 
+
+  //test iteration, return GC
   int swap_test(vector<string>vec_block,int &maxLen, int &location);
+
+  //schedule algo
   void swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double memLimit,string mode);
+  
+  //entire plan, from swap_select() to swap_sched()
   void swap_plan();
+
+  //selection algo
   vector<SwapBlock> swap_select(vector<SwapBlock>vec_swap,vector<double> tempLoad,double memLimit,string mode);
+  
+  //load profile as per synchronous swap.
   vector<double> swap_load_ideal(vector<double>vec_load,vector<SwapBlock> vec_swap_selct);
+  
+  //all the testing, without swap, during Append()
   void Test_sched_switch_swap();
+
+  //swap, during Append()
   void DeploySwap();
+
+  //Append at every index: malloc, free, read, mutable
   void Append(string blockInfo) override;
+
+  //in case gpu ptr wrong. TODO(junzhe) to verify if needed.
   void* GetRealGpuPtr(const Block* block_) override;
+
   void SwapOut(const Block* block_) override;
   void SwapIn(const Block* block_) override;
 
@@ -337,11 +358,13 @@ class SwapGPU : public Device {
   vector<onePieceMsg>vec_run;
   int asyncSwapFlag = 0; //0 for sync, 1 for async.
   int testFlag = 0; //0 means open for test, 1 means no need test anymore.
-  int gc = 0; //global counter each time Malloc/Free, add 1.
+  int gc = 0; //global counter, index, add 1 after each Malloc/Free/read/write.
   int globeCounter = -1;
   int maxLen = 0;
   int location = 0;
-  //design requirement
+  int three_more_location = 0; //location at 3 more iterations later.
+  int three_more_globeCounter = -1; //
+  //design requirement TODO(junzhe)
   float memLimit_ratio = 0.70; 
   size_t smallest_block = 1<<20; //1 MB
   int data_buffer = 4; // used to control readyIdx
