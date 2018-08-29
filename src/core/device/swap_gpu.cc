@@ -405,7 +405,7 @@ vector<double> SwapGPU::swap_load_ideal(vector<double>vec_load,vector<SwapBlock>
   return vec_load_return;
 }
 
-void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double memLimit,string mode){
+void SwapGPU::swap_sched(vector<SwapBlock>&vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double memLimit,string mode){
   /*
     update i1p, i2p and overhead time based on mode, such as no overhead or stick to limit.
   */ 
@@ -417,7 +417,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
     for (int i = 0; i<vec_swap_selct.size(); i++){
       auto itm = vec_swap_selct[i];
       int readyIdx = itm.r_idx_ready;
-      cout<<"["<<itm.size<<"] ";
+      cout<<itm.r_idx<<" ["<<itm.size<<"] ";
       cout<<readyIdx;
       if (i > 0){
         readyIdx = std::max(readyIdx,vec_swap_selct[i-1].i1p);
@@ -445,11 +445,11 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
         // cout<<" ((("<<itm.r_idx<<' '<<itm.d_idx<<"||"<<itm.i1<<' '<<readyIdx<<' '<<tempOverLimit_.first<<")))";
         readyIdx = tempOverLimit_.first - 1; //TODO(junzhe) boundary
         overhead+=(itm.t1p-vec_run[readyIdx+maxLen].t);
-        cout<<"==== overhead added "<<itm.t1p-vec_run[readyIdx+maxLen].t<<endl;
-        cout<<"time spent "<<SwapOutTime(itm.size)<<endl;
-        cout<<"so time "<<itm.t1<<endl;
-        cout<<"eo 1 time "<<itm.t1p<<endl;
-        cout<<"eo 2 time "<<vec_run[readyIdx+maxLen].t<<endl;
+        cout<<"==== overhead added "<<itm.t1p-vec_run[readyIdx+maxLen].t<<"... ";
+        // cout<<"time spent "<<SwapOutTime(itm.size)<<endl;
+        // cout<<"so time "<<itm.t1<<endl;
+        // cout<<"eo 1 time "<<itm.t1p<<endl;
+        // cout<<"eo 2 time "<<vec_run[readyIdx+maxLen].t<<endl;
 
       }
       cout<<" -> "<<readyIdx<<endl;   
@@ -463,6 +463,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
     sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap_rvs());
     for (int i =0; i<vec_swap_selct.size(); i++){
       auto itm = vec_swap_selct[i];
+      cout<<itm.r_idx<<" ["<<itm.size<<"] ";
       int needIdx = itm.d_idx;
       cout<<needIdx;
       if (i > 0){ needIdx = std::min(needIdx,vec_swap_selct[i-1].i2p); }
@@ -489,7 +490,7 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
 
       if ((tempOverLimit_3.second != -1) && (vec_run[tempOverLimit_3.second+maxLen].t > itm.t2p)) {
         overhead+=(vec_run[tempOverLimit_3.second+maxLen].t - itm.t2p);
-        cout<<"==== overhead added "<<vec_run[tempOverLimit_3.second+maxLen].t - itm.t2p<<endl;
+        cout<<"==== overhead added "<<vec_run[tempOverLimit_3.second+maxLen].t - itm.t2p<<"... ";
         load_update(vec_load_temp,itm.i2p,tempOverLimit_3.second+1,-1,itm.size,maxLen); //TODO(junzhe) range, right boundary
         itm.i2p = tempOverLimit_3.second+1;
         auto tempOverLimit_4 = load_over_limit(vec_load_temp,memLimit,0,maxLen,maxLen);
@@ -548,6 +549,95 @@ void SwapGPU::swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_loa
 }
 
 
+void SwapGPU::swap_construct_tables(vector<SwapBlock>vec_swap_selct){
+  cudaStream_t stream1;
+  cudaStream_t stream2;
+  cout<<"---------------print all 1, 1', 2', 2-----------"<<endl;
+  sort(vec_swap_selct.begin(),vec_swap_selct.end(),less_than_Idx_Swap()); 
+  //for each swap select, make Table_sched and Table_meta
+  // for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
+  for (int i =0; i<vec_swap_selct.size(); i++){
+    auto itm = vec_swap_selct[i];
+    if (itm.r_idx >= 0){
+    //TODO(junzhe) for time being, remove negative r_idx itms.
+      cout<<itm.r_idx<<" || "<<itm.i1<<" "<<itm.i1p<<" "<<itm.i2p<<" "<<itm.i2<<endl;
+      //i1 swap
+      if (Table_sched.find(itm.i1) == Table_sched.end()){
+        Table_sched[itm.i1] = std::make_tuple(itm.r_idx,0,-1,-1);
+      } else {
+        std::get<0>(Table_sched.find(itm.i1)->second) = itm.r_idx;
+        std::get<1>(Table_sched.find(itm.i1)->second) = 0;
+      }
+      //i2p swap
+      if (Table_sched.find(itm.i2p) == Table_sched.end()){
+        Table_sched[itm.i2p] = std::make_tuple(itm.r_idx,1,-1,-1);      
+      } else {
+        std::get<0>(Table_sched.find(itm.i2p)->second) = itm.r_idx;
+        std::get<1>(Table_sched.find(itm.i2p)->second) = 1;
+      }
+      // i1p sync
+      if (Table_sched.find(itm.i1p) == Table_sched.end()){
+        Table_sched[itm.i1p] = std::make_tuple(-1,-1,itm.r_idx,0);
+      } else {
+        std::get<2>(Table_sched.find(itm.i1p)->second) = itm.r_idx;
+        std::get<3>(Table_sched.find(itm.i1p)->second) = 0; 
+      }
+      //i2 sync
+      if (Table_sched.find(itm.i2) == Table_sched.end()){
+        Table_sched[itm.i2] = std::make_tuple(-1,-1,itm.r_idx,1);
+      } else {
+        std::get<2>(Table_sched.find(itm.i2)->second) = itm.r_idx;
+        std::get<3>(Table_sched.find(itm.i1p)->second) = 1;
+      }
+
+      ///Make Table_meta
+      void* tempPtr = nullptr;
+      cudaMallocHost(&tempPtr,itm.size); //pinned memory.
+      BlockMeta meta;
+      meta.size = itm.size;
+      meta.cpu_ptr = tempPtr;
+      meta.out_stream = stream1;
+      meta.in_stream = stream2;
+      //meta.last_out_idx = vec_swap_selct[i].last_out_idx;
+      //meta.last_in_idx = vec_swap_selct[i].last_in_idx;
+      //meta.i2 = vec_swap_selct[i].i2;
+      Table_meta[itm.r_idx] = meta;
+    }
+
+  }
+  cout<<"---------------print all 1, 1', 2', 2-----------"<<endl;
+  cout<<"size of Table_meta: "<<Table_meta.size()<<endl;
+  cout<<"size of Table_sched =================="<<Table_sched.size()<<endl;
+  cout<<"print Table_sched, idx, r_idx, sync, direction"<<endl;
+  for (int i = -500; i<maxLen; i++){
+    if (!(Table_sched.find(i) == Table_sched.end())){
+      cout<<i<<"-->";
+      cout<<std::get<0>(Table_sched.find(i)->second)<<" ";
+      cout<<std::get<1>(Table_sched.find(i)->second)<<" ";
+      cout<<std::get<2>(Table_sched.find(i)->second)<<" ";
+      cout<<std::get<3>(Table_sched.find(i)->second)<<endl;
+    }
+  }
+
+}
+
+void SwapGPU::swap_update_tables(Block* tempBlock_){
+  // update Table_meta's block_ and data_; update once atfer swap test is passed.
+  //TODO(junzhe) should not be able to update negative r_idx, as of now.
+  if (testFlag == 1) {
+    //cout<<gc<<' '<<(gc-location)%maxLen<<' '<<blockInfo<<endl;
+    int r_gc = (gc-location)%maxLen;
+    if (!(Table_meta.find(r_gc)==Table_meta.end())){
+      //cout<<"r_gc, gc and size ot Table_meta "<<r_gc<<' '<<gc<<" "<<Table_meta.size()<<endl;
+      //TODO(junzhe) verify the length change, if go in, value update
+      // cout<<"To update Block_ at "<<r_gc<<' '<<gc<<' '<<tempBlock_<<' '<<tempBlock_->get_data()<<endl;
+      Table_meta.find(r_gc)->second.block_ = tempBlock_;
+      Table_meta.find(r_gc)->second.data_ = tempBlock_->get_data();
+    }
+  }
+
+}
+
 int SwapGPU::swap_test(vector<string>vec_block,int &maxLen, int &location){
 
   ///vec_str (vec_block) to vec_pieceMsg, sort by ptr and idx.
@@ -592,6 +682,15 @@ void SwapGPU::swap_plan(){
   for (int i=0; i<vec_pieceMsg.size();i++){
     vec_pieceMsg[i].idx = vec_pieceMsg[i].idx - three_more_location - maxLen;
     vec_pieceMsg[i].t = vec_pieceMsg[i].t - tempTime_baseline;
+  }
+
+  // build opsSqn, and sizeSqn
+  // cout<<"------printing sequenc--------"<<endl;
+  vector<onePieceMsg>one_itr(&vec_pieceMsg[location+4*maxLen],&vec_pieceMsg[location+5*maxLen]);
+  for (int i =0; i<one_itr.size();i++){
+    opsSequence.push_back(one_itr[i].MallocFree);
+    sizeSequence.push_back(one_itr[i].size);
+    // cout<<one_itr[i].MallocFree<<' '<<one_itr[i].size<<endl;
   }
   //3 iterations of vec_run and vec_load, maxIdx and maxLoad
   vector<onePieceMsg>temp_vec_run(&vec_pieceMsg[location+3*maxLen],&vec_pieceMsg[location+6*maxLen]);
@@ -715,9 +814,10 @@ void SwapGPU::swap_plan(){
 
   /// select till maxLoad_ideal, wdto
   auto tempLoad = origin_load;
-  auto memLimit_wdto = 350<<20;
+  auto memLimit_wdto = 550<<20;
   //TODO(junzhe) memLimit = maxLoad_ideal*1.4
   auto vec_swap_wdto = swap_select(vec_swap,tempLoad,memLimit_wdto,"wdto");
+  // vec_swap_selct_global = vec_swap_wdto;
   cout<<"size of vec_swap_wdto: "<<vec_swap_wdto.size()<<endl;
   // auto vec_load_wdto_ideal = swap_load_ideal(vec_load,vec_swap_wdto);
     // fstream file_load_wdto_ideal("load_wdto_ideal.csv", ios::in|ios::out|ios::app);
@@ -741,7 +841,9 @@ void SwapGPU::swap_plan(){
   
   double overhead_wdto = 0;
   swap_sched(vec_swap_wdto, vec_load_wdto,overhead_wdto,memLimit_wdto,mode);
-  
+
+  swap_construct_tables(vec_swap_wdto);
+
 
   // fstream file_block10("load_1_pri.csv", ios::in|ios::out|ios::app);
   // for (int i=maxLen; i<maxLen*2; i++){
@@ -910,8 +1012,6 @@ void SwapGPU::Test_sched_switch_swap(){
       three_more_globeCounter = globeCounter + 3*maxLen;
       three_more_location = location + 3*maxLen;
       cout<<"compele test-swap:::::::::::::::::::::::::::::::::::::::::::::::::"<<endl;
-      cout<<"size of Table_sched: "<<Table_sched.size()<<endl;
-      cout<<"size of Table_meta: "<<Table_meta.size()<<endl;
       cout<<"impt numbers (maxLen, location, GC) "<<maxLen<<' '<<location<<' '<<globeCounter<<endl;
       
    }
@@ -956,50 +1056,57 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 }
 
 void SwapGPU::DeploySwap(){
-   ///swap as per schedule: this version: both out and in sync
+   ///swap and sync as per schedule.
   int r_gc = (gc-location)%maxLen; 
+
   if ((asyncSwapFlag == 1) && (!(Table_sched.find(r_gc) == Table_sched.end()))){
     cout<<"--------sched action at "<<r_gc<<endl;
     auto swap_idx = std::get<0>(Table_sched.find(r_gc)->second);
     auto swap_dir = std::get<1>(Table_sched.find(r_gc)->second);
     auto sync_idx = std::get<2>(Table_sched.find(r_gc)->second);
     auto sync_dir = std::get<3>(Table_sched.find(r_gc)->second);
-    if (swap_dir == 0){ SwapOut_idx(swap_idx); 
-      cout<<"Swap Out "<<swap_idx<<endl;
+    if (swap_dir == 0){ 
+      SwapOut_idx(swap_idx); 
+      cout<<"----Swap Out "<<swap_idx<<endl;
     }
-    if (swap_dir == 1){ SwapIn_idx(swap_idx); 
-      cout<<"Swap In "<<swap_idx<<endl;
+    if (swap_dir == 1){ 
+      SwapIn_idx(swap_idx); 
+      cout<<"----Swap In "<<swap_idx<<endl;
     }
     //TODO(junzhe) verify sync what else to be done
     if (sync_dir == 0){
+      ///sync swap-out, including sync, update block's data_ to nullptr, free data_, update meta.
       auto last_meta = Table_meta.find(sync_idx)->second;
       auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cudaEventSynchronize(last_meta.in_event);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      Table_not_at_device[last_meta.block_] = sync_idx; //TODO(junzhe) double check if needed.
+
+      // Table_not_at_device[last_meta.block_] = sync_idx; //TODO(junzhe) double check if needed.
+
       last_meta.block_->update_data(nullptr);
-      cout<<"to free data_"<<last_meta.data_<<endl;
+      // cout<<"to free data_"<<last_meta.data_<<endl;
       pool_->Free(last_meta.data_);
       last_meta.data_ = nullptr; //not really needed TODO(junzhe)
-      cout<<"sync out "<<sync_idx<<endl;
+      cout<<"----sync out "<<sync_idx<<endl;
       Table_meta.find(sync_idx)->second = last_meta;
     }
     if (sync_dir == 1){
+      ///sync swap-in, including sync, update block's data_ to new gpu address, update meta.
       //if (!(Table_not_at_device.find(last_meta.block_)==Table_not_at_device.end())){ TODO(junzhe)
       auto last_meta = Table_meta.find(sync_idx)->second;
       auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
       cudaEventSynchronize(last_meta.out_event);
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      Table_not_at_device.erase(last_meta.block_);
+      // Table_not_at_device.erase(last_meta.block_);
       last_meta.block_->update_data(last_meta.data_);
-      cout<<"sync in "<<sync_idx<<endl;
+      cout<<"----sync in "<<sync_idx<<endl;
       Table_meta.find(sync_idx)->second = last_meta;
     }
-    cout<<"-------"<<endl;
   } 
 }
 
 void SwapGPU::Append(string blockInfo){
+
   vector<string> v = swap_split(blockInfo, " ");
   void* tempPtr;
   stringstream convert(v[1]);
@@ -1013,6 +1120,7 @@ void SwapGPU::Append(string blockInfo){
     string tempStr1 = strm1.str();
     blockInfo = v[0] + ' ' + v[1] + ' ' + tempStr1 + ' ' + v[2];
   }
+
   // update global load
   if (maxLen < maxLen_threshold){
     if (v[0] == "Malloc"){
@@ -1027,36 +1135,29 @@ void SwapGPU::Append(string blockInfo){
       global_load.push_back(global_load[global_load.size()-1]);
     }
   }
+
+  //append into vec_block
+  vec_block.push_back(blockInfo);
+
+
   //cout<<blockInfo<<endl;
   //cout<<tempBlock_->size()<<endl;
   //cout<<"load: "<<global_load[global_load.size()-1]<<" len of blockInfo and global_load "<<vec_block.size()<<' '<<global_load.size()<<endl;
-
   //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-  vec_block.push_back(blockInfo);
-  if (asyncSwapFlag == 1){
-    vec_block_fresh.push_back(blockInfo);
-  }
-  if ((maxLen>maxLen_threshold)&&((gc-globeCounter+1)==3*maxLen)){
-    fstream file_block_fresh("vec_block_fresh.csv", ios::in|ios::out|ios::app);
-    for (int i =0; i<vec_block_fresh.size();i++){
-      file_block_fresh<<vec_block_fresh[i]<<endl;
-    }
-  }
+  
+  // if (asyncSwapFlag == 1){
+  //   vec_block_fresh.push_back(blockInfo);
+  // }
+  // if ((maxLen>maxLen_threshold)&&((gc-globeCounter+1)==3*maxLen)){
+  //   fstream file_block_fresh("vec_block_fresh.csv", ios::in|ios::out|ios::app);
+  //   for (int i =0; i<vec_block_fresh.size();i++){
+  //     file_block_fresh<<vec_block_fresh[i]<<endl;
+  //   }
+  // }
   // fstream file_block5("append.csv", ios::in|ios::out|ios::app);
   // file_block5<<gc<<' '<<blockInfo<<' '<<(gc-1247)%612<<endl;
 
-  // update Table_meta's block_ and data_
-  if (maxLen > maxLen_threshold) {
-    //cout<<gc<<' '<<(gc-location)%maxLen<<' '<<blockInfo<<endl;
-    int r_gc = (gc-location)%maxLen;
-    if (!(Table_meta.find(r_gc)==Table_meta.end())){
-      //cout<<"r_gc, gc and size ot Table_meta "<<r_gc<<' '<<gc<<" "<<Table_meta.size()<<endl;
-      //TODO(junzhe) verify the length change, if go in, value update
-      cout<<"To update Block_ at "<<r_gc<<' '<<gc<<' '<<tempBlock_<<' '<<tempBlock_->get_data()<<endl;
-      Table_meta.find(r_gc)->second.block_ = tempBlock_;
-      Table_meta.find(r_gc)->second.data_ = tempBlock_->get_data();
-    }
-  }
+  //print time duration per iteration
   if ((maxLen>maxLen_threshold) && ((gc-location)%(maxLen) == 0)){
     if (tempTime != 0){
       fstream file_time("itr_time.csv", ios::in|ios::out|ios::app);
@@ -1066,6 +1167,18 @@ void SwapGPU::Append(string blockInfo){
     }
     tempTime = (std::chrono::system_clock::now()).time_since_epoch().count();
   }
+
+  //check if last iteration, TODO(junzhe) further verify with MallocFree.
+  if (asyncSwapFlag == 1){
+    int r_gc = (gc-location)%maxLen;
+    if (tempBlock_->size() != sizeSequence[r_gc]){
+      asyncSwapFlag = 0;
+      cout<<"!!!! asyncSwapFlag changed back to 0"<<endl;
+    }
+  }
+
+  //update Table_meta
+  swap_update_tables(tempBlock_);
 
   //deploy swap at every index.
   DeploySwap();
@@ -1078,18 +1191,18 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
-  //here should be not update_data()
-  auto reading_meta = Table_meta.find(Table_not_at_device.find(block_)->second)->second;
-  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  cudaEventSynchronize(reading_meta.in_event);
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  //cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
-  //cout<<"To update_data swap for (In) "<<Table_not_at_device.find(block_)->second<<" "<<reading_meta.data_<<" 0"<<endl;
-  //reading_meta.block_->update_data(reading_meta.data_);
+  // //here should be not update_data()
+  // auto reading_meta = Table_meta.find(Table_not_at_device.find(block_)->second)->second;
+  // auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  // cudaEventSynchronize(reading_meta.in_event);
+  // auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  // //cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
+  // //cout<<"To update_data swap for (In) "<<Table_not_at_device.find(block_)->second<<" "<<reading_meta.data_<<" 0"<<endl;
+  // //reading_meta.block_->update_data(reading_meta.data_);
 
-  //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
+  // //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
 
-  Table_not_at_device.erase(reading_meta.block_);
+  // Table_not_at_device.erase(reading_meta.block_);
 
   return nullptr; //TODO(junzhe) attention, based on no change here.
 }
@@ -1105,7 +1218,8 @@ void SwapGPU::SwapOut_idx(const int r_idx){
   cudaEventRecord(meta.out_event,meta.out_stream);
   //cout<<"right after cudaMemcpyAsync"<<endl;
   auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  cout<<"To update_data swap for (Out) "<<r_idx<<" "<<meta.block_<<" 0"<<endl;
+  // cout<<"To update_data swap for (Out) "<<r_idx<<" "<<meta.block_<<" 0"<<endl;
+  //update meta's out_event
   Table_meta.find(r_idx)->second = meta;
   //cout<<"time for asynchrous: "<<t2-t1<<endl;
   //cudaEventSynchronize(event1);
@@ -1127,11 +1241,12 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
   //void* to_rm_ptr = meta.data_;
   meta.data_ = ptr;
-  cout<<"right before cudaMemcpyAsync In"<<endl;
+  // cout<<"right before cudaMemcpyAsync In"<<endl;
   err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
   cudaEventRecord(meta.in_event,meta.in_stream);
-  cout<<"right after cudaMemcpyAsync"<<endl;
-  cout<<"To update_data swap for (In) "<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
+  // cout<<"right after cudaMemcpyAsync"<<endl;
+  // cout<<"To update_data swap for (In) "<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
+  //upadte meta's new gpu addr, in_event
   Table_meta.find(r_idx)->second = meta;
   //meta.block_->update_data(meta.data_); //TODO(junzhe) debug only, not the right place to update.
   //auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();

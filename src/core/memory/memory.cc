@@ -98,10 +98,12 @@ void CnMemPool::Malloc(void **ptr, const size_t size) {
 
 void CnMemPool::Free(void *ptr) {
   CHECK(initialized_) << "Cannot free the memory as the pool is not initialzied";
-  //cout<<"(normal)to free ptr "<<ptr<<endl;
+  // cout<<"to free ptr "<<ptr<<endl;
   cnmemStatus_t status = cnmemFree(ptr, NULL);
+  // cout<<"done cnmemFree "<<endl;
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
       << " " << cnmemGetErrorString(status);
+  // cout<<"done status check"<<endl;
 }
 
 // ===========================================================================

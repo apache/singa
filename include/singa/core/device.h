@@ -300,33 +300,41 @@ class SwapGPU : public Device {
   /// Free cpu memory.
   void Free(void* ptr) override;
 
+  //Append at every index: malloc, free, read, mutable
+  void Append(string blockInfo) override;
+
   //append info after Malloc, pair.
   void MakeMetaTable(Block* block,void* data_,int size) override; 
+
+  //all the testing, without swap, during Append()
+  void Test_sched_switch_swap();
 
   //test iteration, return GC
   int swap_test(vector<string>vec_block,int &maxLen, int &location);
 
-  //schedule algo
-  void swap_sched(vector<SwapBlock>vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double memLimit,string mode);
-  
-  //entire plan, from swap_select() to swap_sched()
+  //entire plan, from swap_select() to swap_sched(), swap_deploy_tables()
   void swap_plan();
 
   //selection algo
   vector<SwapBlock> swap_select(vector<SwapBlock>vec_swap,vector<double> tempLoad,double memLimit,string mode);
+
+  //schedule algo
+  void swap_sched(vector<SwapBlock>&vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double memLimit,string mode);
   
-  //load profile as per synchronous swap.
-  vector<double> swap_load_ideal(vector<double>vec_load,vector<SwapBlock> vec_swap_selct);
-  
-  //all the testing, without swap, during Append()
-  void Test_sched_switch_swap();
+  //make tables Table_sched and Table_meta
+  void swap_construct_tables(vector<SwapBlock>vec_swap_selct);
+
+  //update Table_meta, during Append()
+  void swap_update_tables(Block* tempBlock_);
 
   //swap, during Append()
   void DeploySwap();
 
-  //Append at every index: malloc, free, read, mutable
-  void Append(string blockInfo) override;
 
+
+  //load profile as per synchronous swap.
+  vector<double> swap_load_ideal(vector<double>vec_load,vector<SwapBlock> vec_swap_selct);
+  
   //in case gpu ptr wrong. TODO(junzhe) to verify if needed.
   void* GetRealGpuPtr(const Block* block_) override;
 
@@ -349,6 +357,7 @@ class SwapGPU : public Device {
   //schedule: idx--> r_idx, dir; sync_r_idx,dir. int 0 means D2H, 1 means H2D.
   map<int,std::tuple<int,int,int,int>>Table_sched; // changed to with sync_r_idx
 
+  // vector<SwapBlock>vec_swap_selct_global;
 
   //vec_block
   vector<string>vec_block; //iteration 0-3
@@ -356,6 +365,8 @@ class SwapGPU : public Device {
   vector<double>global_load; // from begining
   vector<double>origin_load; //vec_load 3 itr. TODO(junzhe) to delete vec_load, global_load after use.
   vector<onePieceMsg>vec_run;
+  vector<int>opsSequence; //sequence of operations of one middle iteration
+  vector<size_t>sizeSequence; //size of all operations of one middle iteration
   int asyncSwapFlag = 0; //0 for sync, 1 for async.
   int testFlag = 0; //0 means open for test, 1 means no need test anymore.
   int gc = 0; //global counter, index, add 1 after each Malloc/Free/read/write.
