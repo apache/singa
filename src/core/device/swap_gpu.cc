@@ -587,7 +587,7 @@ void SwapGPU::swap_construct_tables(vector<SwapBlock>vec_swap_selct){
         Table_sched[itm.i2] = std::make_tuple(-1,-1,itm.r_idx,1);
       } else {
         std::get<2>(Table_sched.find(itm.i2)->second) = itm.r_idx;
-        std::get<3>(Table_sched.find(itm.i1p)->second) = 1;
+        std::get<3>(Table_sched.find(itm.i2)->second) = 1;
       }
 
       ///Make Table_meta
@@ -605,7 +605,7 @@ void SwapGPU::swap_construct_tables(vector<SwapBlock>vec_swap_selct){
     // }
 
   }
-  cout<<"---------------print all 1, 1', 2', 2-----------"<<endl;
+  cout<<"---------------print all 1, 1', 2', 2-----------DONE"<<endl;
   cout<<"size of Table_meta: "<<Table_meta.size()<<endl;
   cout<<"size of Table_sched =================="<<Table_sched.size()<<endl;
   cout<<"print Table_sched, idx, r_idx, sync, direction"<<endl;
@@ -623,9 +623,10 @@ void SwapGPU::swap_construct_tables(vector<SwapBlock>vec_swap_selct){
 
 void SwapGPU::swap_update_tables(Block* tempBlock_){
   // update Table_meta's block_ and data_; update once atfer swap test is passed.
-  //TODO(junzhe) should not be able to update negative r_idx, as of now.
+  // enable to update negative r_idx. 
+  // it's safe in below procedure, as r_gc and r_gc_n should never be the same.
   if (testFlag == 1) {
-    //cout<<gc<<' '<<(gc-location)%maxLen<<' '<<blockInfo<<endl;
+    //update positive r_idx
     int r_gc = (gc-location)%maxLen;
     if (!(Table_meta.find(r_gc)==Table_meta.end())){
       //cout<<"r_gc, gc and size ot Table_meta "<<r_gc<<' '<<gc<<" "<<Table_meta.size()<<endl;
@@ -633,6 +634,16 @@ void SwapGPU::swap_update_tables(Block* tempBlock_){
       // cout<<"To update Block_ at "<<r_gc<<' '<<gc<<' '<<tempBlock_<<' '<<tempBlock_->get_data()<<endl;
       Table_meta.find(r_gc)->second.block_ = tempBlock_;
       Table_meta.find(r_gc)->second.data_ = tempBlock_->get_data();
+    }
+
+    //update negative r_idx
+    int r_gc_n = r_gc - maxLen;
+    if (!(Table_meta.find(r_gc_n)==Table_meta.end())){
+      //cout<<"r_gc, gc and size ot Table_meta "<<r_gc<<' '<<gc<<" "<<Table_meta.size()<<endl;
+      //TODO(junzhe) verify the length change, if go in, value update
+      // cout<<"To update Block_ at "<<r_gc<<' '<<gc<<' '<<tempBlock_<<' '<<tempBlock_->get_data()<<endl;
+      Table_meta.find(r_gc_n)->second.block_ = tempBlock_;
+      Table_meta.find(r_gc_n)->second.data_ = tempBlock_->get_data();
     }
   }
 
@@ -1058,51 +1069,68 @@ void SwapGPU::MakeMetaTable(Block* block_,void* data_,int size){
 void SwapGPU::DeploySwap(){
    ///swap and sync as per schedule.
   int r_gc = (gc-location)%maxLen; 
+  int r_gc_n = r_gc - maxLen;
 
-  if ((asyncSwapFlag == 1) && (!(Table_sched.find(r_gc) == Table_sched.end()))){
-    cout<<"--------sched action at "<<r_gc<<endl;
-    auto swap_idx = std::get<0>(Table_sched.find(r_gc)->second);
-    auto swap_dir = std::get<1>(Table_sched.find(r_gc)->second);
-    auto sync_idx = std::get<2>(Table_sched.find(r_gc)->second);
-    auto sync_dir = std::get<3>(Table_sched.find(r_gc)->second);
-    if (swap_dir == 0){ 
-      SwapOut_idx(swap_idx); 
-      cout<<"----Swap Out "<<swap_idx<<endl;
+  if (asyncSwapFlag == 1){
+    if ((gc < three_more_globeCounter + maxLen) && (!(Table_sched.find(r_gc_n) == Table_sched.end()))) {
+      cout<<"condition A"<<endl;
+      DeploySwap_exec(r_gc_n);
     }
-    if (swap_dir == 1){ 
-      SwapIn_idx(swap_idx); 
-      cout<<"----Swap In "<<swap_idx<<endl;
+    if ((gc >= three_more_globeCounter + maxLen) && (!(Table_sched.find(r_gc_n) == Table_sched.end()))) {
+      cout<<"condition B"<<endl;
+      DeploySwap_exec(r_gc_n);
     }
-    //TODO(junzhe) verify sync what else to be done
-    if (sync_dir == 0){
-      ///sync swap-out, including sync, update block's data_ to nullptr, free data_, update meta.
-      auto last_meta = Table_meta.find(sync_idx)->second;
-      auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      cudaEventSynchronize(last_meta.in_event);
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    if ((gc >= three_more_globeCounter + maxLen) && (!(Table_sched.find(r_gc) == Table_sched.end()))) {
+      cout<<"condition C"<<endl;
+      DeploySwap_exec(r_gc);
+    }
+  }
+}
 
-      // Table_not_at_device[last_meta.block_] = sync_idx; //TODO(junzhe) double check if needed.
 
-      last_meta.block_->update_data(nullptr);
-      // cout<<"to free data_"<<last_meta.data_<<endl;
-      pool_->Free(last_meta.data_);
-      last_meta.data_ = nullptr; //not really needed TODO(junzhe)
-      cout<<"----sync out "<<sync_idx<<endl;
-      Table_meta.find(sync_idx)->second = last_meta;
-    }
-    if (sync_dir == 1){
-      ///sync swap-in, including sync, update block's data_ to new gpu address, update meta.
-      //if (!(Table_not_at_device.find(last_meta.block_)==Table_not_at_device.end())){ TODO(junzhe)
-      auto last_meta = Table_meta.find(sync_idx)->second;
-      auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      cudaEventSynchronize(last_meta.out_event);
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      // Table_not_at_device.erase(last_meta.block_);
-      last_meta.block_->update_data(last_meta.data_);
-      cout<<"----sync in "<<sync_idx<<endl;
-      Table_meta.find(sync_idx)->second = last_meta;
-    }
-  } 
+void SwapGPU::DeploySwap_exec(int r_gc){
+  cout<<"--------sched action at "<<r_gc<<endl;
+  auto swap_idx = std::get<0>(Table_sched.find(r_gc)->second);
+  auto swap_dir = std::get<1>(Table_sched.find(r_gc)->second);
+  auto sync_idx = std::get<2>(Table_sched.find(r_gc)->second);
+  auto sync_dir = std::get<3>(Table_sched.find(r_gc)->second);
+  if (swap_dir == 0){ 
+    SwapOut_idx(swap_idx); 
+    cout<<"----Swap Out "<<swap_idx<<endl;
+  }
+  if (swap_dir == 1){ 
+    SwapIn_idx(swap_idx); 
+    cout<<"----Swap In "<<swap_idx<<endl;
+  }
+  //TODO(junzhe) verify sync what else to be done
+  if (sync_dir == 0){
+    ///sync swap-out, including sync, update block's data_ to nullptr, free data_, update meta.
+    auto last_meta = Table_meta.find(sync_idx)->second;
+    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    cudaEventSynchronize(last_meta.in_event);
+    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+
+    Table_not_at_device[last_meta.block_] = sync_idx; //TODO(junzhe) double check if needed.
+
+    last_meta.block_->update_data(nullptr);
+    // cout<<"to free data_"<<last_meta.data_<<endl;
+    pool_->Free(last_meta.data_);
+    last_meta.data_ = nullptr; //not really needed TODO(junzhe)
+    cout<<"----sync out "<<sync_idx<<endl;
+    Table_meta.find(sync_idx)->second = last_meta;
+  }
+  if (sync_dir == 1){
+    ///sync swap-in, including sync, update block's data_ to new gpu address, update meta.
+    //if (!(Table_not_at_device.find(last_meta.block_)==Table_not_at_device.end())){ TODO(junzhe)
+    auto last_meta = Table_meta.find(sync_idx)->second;
+    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    cudaEventSynchronize(last_meta.out_event);
+    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    Table_not_at_device.erase(last_meta.block_);
+    last_meta.block_->update_data(last_meta.data_);
+    cout<<"----sync in "<<sync_idx<<endl;
+    Table_meta.find(sync_idx)->second = last_meta;
+  }
 }
 
 void SwapGPU::Append(string blockInfo){
@@ -1191,6 +1219,37 @@ void SwapGPU::Append(string blockInfo){
 }
 
 void* SwapGPU::GetRealGpuPtr(const Block* block_){
+  // in case that block is at host memory, swapIn ad hoc.
+  auto r_idx = Table_not_at_device.find(block_)->second;
+
+  // auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  cudaError_t err;
+  BlockMeta meta = Table_meta.find(r_idx)->second;
+  cudaEventCreate (&meta.in_event);
+  //cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
+  void* ptr = nullptr;
+  pool_->Malloc((void**)&ptr, meta.size);
+  //cout<<"expected results update_data:: "<<meta.block_<<" "<<ptr<<endl;
+  //cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
+  //void* to_rm_ptr = meta.data_;
+  meta.data_ = ptr;
+  // cout<<"right before cudaMemcpyAsync In"<<endl;
+  err = cudaMemcpyAsync(meta.data_,meta.cpu_ptr,meta.size,cudaMemcpyHostToDevice,meta.in_stream);
+  cudaEventRecord(meta.in_event,meta.in_stream);
+  // cout<<"right after cudaMemcpyAsync"<<endl;
+  // cout<<"To update_data swap for (In) "<<r_idx<<" "<<meta.block_<<" "<<meta.data_<<' '<<ptr<<endl;
+  //upadte meta's new gpu addr, in_event
+  
+
+  // auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  cudaEventSynchronize(meta.out_event);
+  // auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+  // Table_not_at_device.erase(block_);
+  // last_meta.block_->update_data(last_meta.data_);
+  // cout<<"----sync in "<<sync_idx<<endl;
+  // Table_meta.find(sync_idx)->second = last_meta;
+  Table_meta.find(r_idx)->second = meta;
+
   // //here should be not update_data()
   // auto reading_meta = Table_meta.find(Table_not_at_device.find(block_)->second)->second;
   // auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
@@ -1199,12 +1258,13 @@ void* SwapGPU::GetRealGpuPtr(const Block* block_){
   // //cout<<"GetRealGpuPtr, overhead is: "<<t2-t1<<endl;
   // //cout<<"To update_data swap for (In) "<<Table_not_at_device.find(block_)->second<<" "<<reading_meta.data_<<" 0"<<endl;
   // //reading_meta.block_->update_data(reading_meta.data_);
-
   // //cout<<"last_meta r_idx::::::malloc due to swapIn ( "<<Table_not_at_device.find(block_)->second<<endl;
-
   // Table_not_at_device.erase(reading_meta.block_);
+  // block_->update_data(static_cast<Block*>(ptr));
+  
+  cout<<"print ptr from function GetRealGpuPtr() "<<ptr<<endl;
 
-  return nullptr; //TODO(junzhe) attention, based on no change here.
+  return ptr; //TODO(junzhe) attention, based on no change here.
 }
 
 void SwapGPU::SwapOut_idx(const int r_idx){

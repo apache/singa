@@ -48,7 +48,9 @@ void* Block::mutable_data() {
       //cout<<"to sleep"<<endl;
       cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
       auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
-      cout<<"slept to get data_ updated: "<<this<<' '<<data_<<endl;
+      cout<<"print returned tempData_ "<<tempData_<<endl;
+      // cout<<"slept to get data_ updated: (mutable_data) "<<this<<' '<<data_<<endl;
+      return static_cast<char*>(tempData_) + offset_;
     }
     
     return static_cast<char*>(data_) + offset_;
@@ -76,7 +78,9 @@ const void* Block::data() const {
       //cout<<"to sleep"<<endl;
       cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
       auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
-      cout<<"slept to get data_ updated"<<endl;
+      cout<<"print returned tempData_ "<<tempData_<<endl;
+      // cout<<"slept to get data_ updated: (data) "<<this<<' '<<data_<<endl;
+      return static_cast<char*>(tempData_) + offset_;
     }
 
 

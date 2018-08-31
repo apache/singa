@@ -327,8 +327,11 @@ class SwapGPU : public Device {
   //update Table_meta, during Append()
   void swap_update_tables(Block* tempBlock_);
 
-  //swap, during Append()
+  //swap/sync during Append()
   void DeploySwap();
+
+  //exec DelpoySwap
+  void DeploySwap_exec(int r_gc);
 
 
 
