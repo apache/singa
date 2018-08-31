@@ -558,7 +558,7 @@ void SwapGPU::swap_construct_tables(vector<SwapBlock>vec_swap_selct){
   // for (int i = static_cast<int>(vec_swap_selct.size()-1);i>=0; i--){
   for (int i =0; i<vec_swap_selct.size(); i++){
     auto itm = vec_swap_selct[i];
-    if (itm.r_idx >= 0){
+    // if (itm.r_idx >= 0){
     //TODO(junzhe) for time being, remove negative r_idx itms.
       cout<<itm.r_idx<<" || "<<itm.i1<<" "<<itm.i1p<<" "<<itm.i2p<<" "<<itm.i2<<endl;
       //i1 swap
@@ -602,7 +602,7 @@ void SwapGPU::swap_construct_tables(vector<SwapBlock>vec_swap_selct){
       //meta.last_in_idx = vec_swap_selct[i].last_in_idx;
       //meta.i2 = vec_swap_selct[i].i2;
       Table_meta[itm.r_idx] = meta;
-    }
+    // }
 
   }
   cout<<"---------------print all 1, 1', 2', 2-----------"<<endl;
