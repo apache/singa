@@ -520,6 +520,30 @@ def softmax_cross_entropy(x, t):
     return SoftMaxCrossEntropy(t)(x)[0]
 
 
+class MeanSquareError(Operation):
+
+    def forward(self, x, t):
+        self.err = singa.__sub__(x, t)
+        sqr = singa.Square(self.err)
+        loss = CTensor((1,), x.device())
+        loss.SetFloatValue(singa.SumAsFloat(sqr) / x.shape()[0] / 2)
+        return loss
+
+    def backward(self, dy=1.0):
+        dx = self.err
+        dx *= float(1 / self.err.shape()[0])
+        if isinstance(dy, float):
+            # dtype of dy: float
+            dx *= dy
+            return dx, None
+        elif isinstance(dy, CTensor):
+            pass  # TODO, broadcast elementwise multiply seems not support
+
+
+def mean_square_error(x, t):
+    return MeanSquareError()(x, t)[0]
+
+
 def ctensor2numpy(x):
     '''
     To be used in SoftMax Operation.
@@ -1063,7 +1087,9 @@ def add_all(*xs):
         y = add(y, x)
     return
 
+
 class RNN(Layer):
+
     def __init__(self):
         raise NotImplementedError
 
@@ -1072,6 +1098,7 @@ class RNN(Layer):
 
     def step_forward(self):
         raise NotImplementedError
+
 
 class Vanilla_RNN(RNN):
 
@@ -1090,10 +1117,10 @@ class Vanilla_RNN(RNN):
         self.b = Tensor(shape=B_shape, requires_grad=True, stores_grad=True)
         self.b.set_value(0.0)
 
-        self.params= (self.Wx, self.Wh, self.b)
+        self.params = (self.Wx, self.Wh, self.b)
 
     def __call__(self, h0, *xs):
-        inputs=xs+(h0,)
+        inputs = xs + (h0,)
         self.device_check(*inputs)
         #self.device_check(inputs[0], *self.params)
         self.device_check(inputs[0], self.Wx, self.Wh, self.b)
@@ -1154,10 +1181,10 @@ class LSTM(RNN):
             b.set_value(0.0)
             self.Bh.append(b)
 
-        self.params=self.Wx + self.Wh + self.Bx + self.Bh
+        self.params = self.Wx + self.Wh + self.Bx + self.Bh
 
     def __call__(self, h0, c0, *xs):
-        inputs=xs+(h0,c0)
+        inputs = xs + (h0, c0)
         self.device_check(*inputs)
         #self.device_check(inputs[0], *self.params)
         self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))

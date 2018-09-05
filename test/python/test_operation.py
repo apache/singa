@@ -250,5 +250,21 @@ class TestPythonOperation(unittest.TestCase):
 
             self.gradients_check(lstm_forward, param, auto_grad)
 
+    def test_MeanSquareError(self):
+        X=np.array([4.3,5.4,3.3,3.6,5.7,6.0]).reshape(3,2).astype(np.float32)
+        T=np.array([4.4,5.3,3.2,3.7,5.4,6.3]).reshape(3,2).astype(np.float32)
+        x=tensor.from_numpy(X)
+        t=tensor.from_numpy(T)
+        x.to_device(gpu_dev)
+        t.to_device(gpu_dev)
+
+        loss= autograd.mean_square_error(x,t)
+        dx=loss.creator.backward()[0]
+
+        loss_np=tensor.to_numpy(loss)
+        self.assertAlmostEqual(loss_np, 0.0366666, places=4)
+        self.check_shape(dx.shape(), (3, 2))
+    
+
 if __name__ == '__main__':
     unittest.main()
