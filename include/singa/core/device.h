@@ -365,6 +365,7 @@ class SwapGPU : public Device {
   //vec_block
   vector<string>vec_block; //iteration 0-3
   vector<string>vec_block_fresh; //iteration 4 5 6
+  vector<string>vec_block_mf; //itr 8 9 10
   vector<double>global_load; // from begining
   vector<double>origin_load; //vec_load 3 itr. TODO(junzhe) to delete vec_load, global_load after use.
   vector<onePieceMsg>vec_run;

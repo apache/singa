@@ -42,7 +42,6 @@ const cudaMemcpyKind copyKind[] = {cudaMemcpyHostToHost, cudaMemcpyHostToDevice,
 
 ///functions to be used
 ///Section for structs and respective sorting function:
-// onePieceMsg, onePairMsg, oneIterMsg, version 11/30 3pm
 
 
 
@@ -924,7 +923,8 @@ SwapGPU::SwapGPU(int id) : Device(id, kNumCudaStream) {
 
   MemPoolConf conf;
   conf.add_device(id);
-  pool_ = std::make_shared<Swap>(conf);
+  //TODO(junzhe) note that it has been <Swap> for building SwapGPU, which doesnt matter.
+  pool_ = std::make_shared<SwapPool>(conf); 
   Setup();
 
 }
@@ -987,6 +987,26 @@ void* SwapGPU::Malloc(int size) {
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Malloc((void**)&ptr, size);
+
+    ///append vec_block_mf
+    if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) < three_more_globeCounter)
+      && ((gc - maxLen) >= three_more_globeCounter)){
+      string tempStr1 ="Malloc ";
+      stringstream strm2;
+      strm2<<ptr;
+      string tempStr2 = strm2.str();
+      stringstream strm3;
+      strm3<<size;
+      string tempStr3 = strm3.str();
+      string temp = tempStr1+tempStr2+" "+tempStr3;
+      vec_block_mf.push_back(temp);
+    }
+    //record mf semantics after swap plan done
+    if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) < three_more_globeCounter)){
+      fstream file_mf_one_itr("mf_one_itr.csv", ios::in|ios::out|ios::app);
+      file_mf_one_itr<<"Malloc "<<ptr<<" "<<size;
+      file_mf_one_itr<<endl;
+    }
     // TODO(wangwei) remove the memset.
     CUDA_CHECK(cudaMemset(ptr, 0, size));
   }
@@ -1000,6 +1020,21 @@ void SwapGPU::Free(void* ptr) {
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Free(ptr);
+    ///append vec_block_mf
+    if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) < three_more_globeCounter)
+      && ((gc - maxLen) >= three_more_globeCounter)){
+      string tempStr1 ="Free ";
+      stringstream strm2;
+      strm2<<ptr;
+      string tempStr2 = strm2.str();
+      string temp = tempStr1+tempStr2;
+      vec_block_mf.push_back(temp);
+    }
+
+    if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) < three_more_globeCounter)){
+      fstream file_mf_one_itr("mf_one_itr.csv", ios::in|ios::out|ios::app);
+      file_mf_one_itr<<"Free "<<ptr<<endl;
+    }
   }
 
   //cout<<"free done"<<endl; 
@@ -1115,6 +1150,21 @@ void SwapGPU::DeploySwap_exec(int r_gc){
     last_meta.block_->update_data(nullptr);
     // cout<<"to free data_"<<last_meta.data_<<endl;
     pool_->Free(last_meta.data_);
+    ///append vec_block_mf
+    if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) < three_more_globeCounter)
+      && ((gc - maxLen) >= three_more_globeCounter)){
+      string tempStr1 ="Free ";
+      stringstream strm2;
+      strm2<<last_meta.data_;
+      string tempStr2 = strm2.str();
+      string temp = tempStr1+tempStr2;
+      vec_block_mf.push_back(temp);
+    }
+
+    if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) < three_more_globeCounter)){
+      fstream file_mf_one_itr("mf_one_itr.csv", ios::in|ios::out|ios::app);
+      file_mf_one_itr<<"Free "<<last_meta.data_<<" SwapOut(Sync)"<<endl;
+    }
     last_meta.data_ = nullptr; //not really needed TODO(junzhe)
     cout<<"----sync out "<<sync_idx<<endl;
     Table_meta.find(sync_idx)->second = last_meta;
@@ -1213,8 +1263,24 @@ void SwapGPU::Append(string blockInfo){
 
   //test moved from start of malloc/free to end of append, only gc+1 changed
   Test_sched_switch_swap();
-  //NOTE: this gc++ includes read/write and AppendLayer as well, in addition to malloc/free.
+  //NOTE: this gc includes read/write and AppendLayer as well, in addition to malloc/free.
   gc++;
+  if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) == three_more_globeCounter)){
+    cout<<"==================to call PoolOpt"<<endl;
+    fstream file_mf_8910("mf_8910.csv", ios::in|ios::out|ios::app);
+    for (int i = 0; i< vec_block_mf.size();i++){
+      file_mf_8910<<vec_block_mf[i]<<endl;
+    }
+    cout<<"len of vec_block_mf: "<<vec_block_mf.size()<<endl;
+    pool_->PoolOpt(vec_block_mf);
+    cout<<"==================to call PoolOpt done"<<endl;
+  }
+
+  if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) < three_more_globeCounter) 
+    && ((gc - three_more_globeCounter)%maxLen == 0)){
+      fstream file_mf_one_itr("mf_one_itr.csv", ios::in|ios::out|ios::app);
+      file_mf_one_itr<<"-----new itr------"<<endl;
+  }
 
 }
 
@@ -1297,6 +1363,23 @@ void SwapGPU::SwapIn_idx(const int r_idx){
   //cout<<"update block and data of r_idx: "<<r_idx<<' '<<meta.block_<<' '<<meta.data_<<endl;
   void* ptr = nullptr;
   pool_->Malloc((void**)&ptr, meta.size);
+  ///append vec_block_mf
+  if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) < three_more_globeCounter)
+    && ((gc - maxLen) >= three_more_globeCounter)){
+    string tempStr1 ="Malloc ";
+    stringstream strm2;
+    strm2<<ptr;
+    string tempStr2 = strm2.str();
+    stringstream strm3;
+    strm3<<meta.size;
+    string tempStr3 = strm3.str();
+    string temp = tempStr1+tempStr2+" "+tempStr3;
+    vec_block_mf.push_back(temp);
+  }
+  if ((asyncSwapFlag == 1) && ((gc - 4*maxLen) < three_more_globeCounter)){
+    fstream file_mf_one_itr("mf_one_itr.csv", ios::in|ios::out|ios::app);
+    file_mf_one_itr<<"Malloc "<<ptr<<" "<<meta.size<<" swapIn"<<endl;
+  }
   //cout<<"expected results update_data:: "<<meta.block_<<" "<<ptr<<endl;
   //cout<<"malloc due to swapIn ("<<r_idx<<") "<<ptr<<endl;
   //void* to_rm_ptr = meta.data_;

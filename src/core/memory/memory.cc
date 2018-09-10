@@ -139,8 +139,8 @@ Vertex::Vertex(int n, size_t s, int r1, int d1){
 
 
 ///Section for structs and respective sorting function:
-// onePieceMsg, onePairMsg, oneIterMsg, version 11/30 3pm
-struct onePieceMsg{
+// onePieceMsg_pool, onePairMsg, oneIterMsg, version 11/30 3pm
+struct onePieceMsg_pool{
     /*
      members: [ptr, size, MallocFree, idx]
      */
@@ -148,15 +148,15 @@ struct onePieceMsg{
     size_t size;
     int MallocFree;
     int idx;
-    onePieceMsg(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
+    onePieceMsg_pool(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
 };
 
 
 struct less_than_ptrIdx{
     /*
-     sort onePieceMsg by ptr and then idx.
+     sort onePieceMsg_pool by ptr and then idx.
      */
-    inline bool operator() (const onePieceMsg& struct1, const onePieceMsg& struct2)
+    inline bool operator() (const onePieceMsg_pool& struct1, const onePieceMsg_pool& struct2)
     {
         return ((struct1.ptr<struct2.ptr)||((struct1.ptr==struct2.ptr)&&(struct1.idx<struct2.idx)));
     }
@@ -247,11 +247,11 @@ vector<string> split(string s, string delimiter) {
 //vector of pairMsg is used in run.
 //vector of iterMsg is used in test.
 
-vector<onePieceMsg> strVec_2_pieceMsgVec(vector<string> vec, int &idxRange){
+vector<onePieceMsg_pool> strVec_2_pieceMsgVec(vector<string> vec, int &idxRange){
     /*
-     convert vector of string into vector of onePieceMsg, sorted by ptr and then idx, and update idxRange to pieceMsgVec size.
+     convert vector of string into vector of onePieceMsg_pool, sorted by ptr and then idx, and update idxRange to pieceMsgVec size.
      */
-    vector<onePieceMsg>onePieceMsgVec_;
+    vector<onePieceMsg_pool>onePieceMsg_poolVec_;
     for (int i=0;i<vec.size();i++) {
         vector<string> v = split(vec[i], " ");
         if (v[0]=="Malloc"){
@@ -262,24 +262,24 @@ vector<onePieceMsg> strVec_2_pieceMsgVec(vector<string> vec, int &idxRange){
                 result =-1;
                 cout<<"error for converting size from str to int."<<endl;
             }
-            onePieceMsg tempMsg(v[1],result, 1, i);
-            onePieceMsgVec_.push_back(tempMsg);
+            onePieceMsg_pool tempMsg(v[1],result, 1, i);
+            onePieceMsg_poolVec_.push_back(tempMsg);
         }else if (v[0]=="Free"){
-            onePieceMsg tempMsg(v[1],-1, -1, i);
-            onePieceMsgVec_.push_back(tempMsg);
+            onePieceMsg_pool tempMsg(v[1],-1, -1, i);
+            onePieceMsg_poolVec_.push_back(tempMsg);
         }else {
             cout<<"error for process the onePriceMsg."<<endl;
         }
     }
     
-    sort(onePieceMsgVec_.begin(),onePieceMsgVec_.end(),less_than_ptrIdx());
-    idxRange = static_cast<int>(onePieceMsgVec_.size());
+    sort(onePieceMsg_poolVec_.begin(),onePieceMsg_poolVec_.end(),less_than_ptrIdx());
+    idxRange = static_cast<int>(onePieceMsg_poolVec_.size());
 
-    return onePieceMsgVec_;
+    return onePieceMsg_poolVec_;
 }// end of strVec_2_pieceMsgVec function
 
 
-pair<vector<onePairMsg>,vector<onePairMsg>> pieceMsgVec_2_pairOfPairMsgVec(vector<onePieceMsg>onePieceMsgVec_, int idxRange){
+pair<vector<onePairMsg>,vector<onePairMsg>> pieceMsgVec_2_pairOfPairMsgVec(vector<onePieceMsg_pool>onePieceMsg_poolVec_, int idxRange){
     /*
      pairMsg is grouped into 1. normal blocks 2. cross-iteration blocks.
      */
@@ -288,27 +288,27 @@ pair<vector<onePairMsg>,vector<onePairMsg>> pieceMsgVec_2_pairOfPairMsgVec(vecto
     int i=0;
     
     //while loop processes a pair at each time, if got a pair.
-    while (i<(onePieceMsgVec_.size()-1)){
+    while (i<(onePieceMsg_poolVec_.size()-1)){
         //condition A: start with free. do nothing.
-        if (onePieceMsgVec_[i].MallocFree==-1){
+        if (onePieceMsg_poolVec_[i].MallocFree==-1){
             i+=1;
         }
         //condition B: start with Malloc, next item same ptr and is free.
-        if ((onePieceMsgVec_[i].MallocFree==1)&& (onePieceMsgVec_[i+1].MallocFree==-1)&&((onePieceMsgVec_[i].ptr==onePieceMsgVec_[i+1].ptr))){
-            onePairMsg tempPair(onePieceMsgVec_[i].idx,onePieceMsgVec_[i].size,onePieceMsgVec_[i].idx,onePieceMsgVec_[i+1].idx);
+        if ((onePieceMsg_poolVec_[i].MallocFree==1)&& (onePieceMsg_poolVec_[i+1].MallocFree==-1)&&((onePieceMsg_poolVec_[i].ptr==onePieceMsg_poolVec_[i+1].ptr))){
+            onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i+1].idx);
             onePairMsgVec_1.push_back(tempPair);
             i+=2;
         }
         // condition C: start with Malloc, no free.
-        if ((onePieceMsgVec_[i].MallocFree==1)&&(onePieceMsgVec_[i].ptr!=onePieceMsgVec_[i+1].ptr)){
-            onePairMsg tempPair(onePieceMsgVec_[i].idx,onePieceMsgVec_[i].size,onePieceMsgVec_[i].idx,idxRange);
+        if ((onePieceMsg_poolVec_[i].MallocFree==1)&&(onePieceMsg_poolVec_[i].ptr!=onePieceMsg_poolVec_[i+1].ptr)){
+            onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,idxRange);
             onePairMsgVec_2.push_back(tempPair);
             i+=1;
         }
     }//end of while
     //condition D: if still left with the last item
-    if ((i<onePieceMsgVec_.size())&&(onePieceMsgVec_[i+1].MallocFree==1)){
-        onePairMsg tempPair(onePieceMsgVec_[i].idx,onePieceMsgVec_[i].size,onePieceMsgVec_[i].idx,idxRange);
+    if ((i<onePieceMsg_poolVec_.size())&&(onePieceMsg_poolVec_[i+1].MallocFree==1)){
+        onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,idxRange);
         onePairMsgVec_2.push_back(tempPair);
         i+=1;
     }
@@ -514,8 +514,8 @@ vector<Vertex> colorSomeVertices(vector<onePairMsg> pairMsgVec_, size_t &offset,
 ///get cross-iteration duration pairs
 pair<map<int,int>,map<int,int>> cross_itr_durations(vector<string>vec_double, int location, int maxLen, int &doubleRange){
     
-    vector<onePieceMsg>onePieceMsgVec_2 = strVec_2_pieceMsgVec(vec_double,doubleRange);
-    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_2=pieceMsgVec_2_pairOfPairMsgVec(onePieceMsgVec_2,doubleRange);
+    vector<onePieceMsg_pool>onePieceMsg_poolVec_2 = strVec_2_pieceMsgVec(vec_double,doubleRange);
+    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_2=pieceMsgVec_2_pairOfPairMsgVec(onePieceMsg_poolVec_2,doubleRange);
     
     map<int,int>Table_r2d; //full duration info, cross-iteration duration.
     map<int,int>Table_d2r;
@@ -536,8 +536,8 @@ vector<Vertex> run(vector<string>vec, int &idxRange, size_t &offset, size_t &off
      update idxRange, offset.
      time complexity: O(n^2) where n is maxLen.
      */
-    vector<onePieceMsg>onePieceMsgVec_ = strVec_2_pieceMsgVec(vec,idxRange);
-    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_=pieceMsgVec_2_pairOfPairMsgVec(onePieceMsgVec_,idxRange);
+    vector<onePieceMsg_pool>onePieceMsg_poolVec_ = strVec_2_pieceMsgVec(vec,idxRange);
+    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_=pieceMsgVec_2_pairOfPairMsgVec(onePieceMsg_poolVec_,idxRange);
     //1. normal blocks 2. cross-iteration blocks.
     vector<onePairMsg>pairMsgVec_1 = pairOfPairMsgVec_.first;
     vector<onePairMsg>pairMsgVec_2 = pairOfPairMsgVec_.second;
@@ -643,8 +643,8 @@ int test(vector<string>vec3, int &maxLen, int &location){
      */
     cout<<"====================== test ========================="<<endl;
     int idxRange3=0;
-    vector<onePieceMsg>onePieceMsgVec_3 =strVec_2_pieceMsgVec(vec3,idxRange3);
-    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_=pieceMsgVec_2_pairOfPairMsgVec(onePieceMsgVec_3,idxRange3);
+    vector<onePieceMsg_pool>onePieceMsg_poolVec_3 =strVec_2_pieceMsgVec(vec3,idxRange3);
+    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_=pieceMsgVec_2_pairOfPairMsgVec(onePieceMsg_poolVec_3,idxRange3);
     vector<size_t>rep=pairOfPairMsgVec_2_repSeq(pairOfPairMsgVec_);
     
     //get repeated sub vector.
@@ -976,13 +976,13 @@ void SmartMemPool::Append(string blockInfo) {
     vec_block_RWMF.push_back(blockInfo);
 }
 
-///Swap:
-Swap::Swap(const MemPoolConf &conf){
+///SwapPool
+SwapPool::SwapPool(const MemPoolConf &conf){
     conf_ = conf;
 }
 
-void Swap::Init(){
-  //TODO(junzhe) Note, this is dummy here, not catter multiple GPU.
+void SwapPool::Init(){
+
   mtx_.lock();
   if(!initialized_){
     initialized_ =true;
@@ -990,203 +990,252 @@ void Swap::Init(){
   mtx_.unlock();
 }
 
-void Swap::Malloc(void** ptr, const size_t size){
-  //cout<<"to malloc"<<endl;
-  cudaError_t status = cudaMalloc(ptr, size);
-  CHECK_EQ(status, cudaError_t::cudaSuccess);
-  SwapMeta cpu,gpu;
-  cpu.swapSize = size;
-  gpu.swapSize = size;
-  gpu.ptr = *ptr;
-  pair<SwapMeta,SwapMeta>meta = std::make_pair(cpu, gpu);
-  Table_Meta[*ptr] = meta;
 
- swapLookUpElement temp;
- temp.size = size;
- Table_id2LookUpElement[*ptr] = temp;
-  //  int i = 0;
-  // if (!(Table_id2LookUpElement.find(*ptr)==Table_id2LookUpElement.end())){
-  //     i = i + 1;
-  //     temp.data_ = *ptr +i*sizeof(char); 
-  //     while(!(Table_id2LookUpElement.find(temp.data_)==Table_id2LookUpElement.end())){
-  //       //TODO(swap) verify this loop, can simplify as well.
-  //       i = i + 1
-  //       temp.data_ = *ptr +i*sizeof(char);
-  //     }
-  // } else {
-  //     temp.data_ = *ptr;
+void SwapPool::PoolOpt(vector<string> &vec_mf) {
+  //TODO(junzhe) redo 9/17
+
+  ///process vec_mf of 3itr into blocks,maxLen
+  //assume format of string: MF ptr size;
+  //onePieceMsg_pool verified
+  // for (int i = 0; i< vec_mf.size();i++){
+  //   cout<<"print mf "<<i<<' '<<vec_mf[i]<<endl;
   // }
-  // temp.realGpuPtr = *ptr;
-  // temp.location = 1;
-  // temp.size = size;
+  // cout<<"===================print done"<<endl;
+  vector<onePieceMsg_pool>onePieceMsg_poolVec_;
+  maxLen_mf = vec_mf.size()/3;
+  cout<<"maxLen_mf "<<maxLen_mf<<endl;
+  cout<<"len of vec_mf "<<vec_mf.size()<<endl;
+  for (int i = 0;i < vec_mf.size();i++){
+    vector<string> v = split(vec_mf[i], " ");
+    // cout<<"print mf "<<i<<' '<<vec_mf[i]<<endl;
+    // cout<<"||"<<v[0]<<"||"<<v[1]<<"||"<<endl;
 
-  // create before swap.
-  // if (size>swapLimit){
-  //   temp.realCpuPtr = malloc(size);
-  // }
-  // stringstream strm1;
-  // strm1<<size;
-  // string tempStr1 = strm1.str();
-  // stringstream strm2;
-  // strm2<<i;
-  // string tempStr2 = strm2.str();
-  // stringstream strm3;
-  // strm3<<data_;
-  // string tempStr3 = strm3.str();
-  // stringstream strm4;
-  // strm4<<temp.realGpuPtr;
-  // string tempStr4 = strm4.str();
-  stringstream strm1;
-  strm1<<size;
-  string tempStr1 = strm1.str();
-  stringstream strm3;
-  strm3<<*ptr;
-  string tempStr3 = strm3.str();
-  stringstream strm4;
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  strm4<<t2;
-  string tempStr4 = strm4.str();
-  string blockInfo ="Malloc "+tempStr3+" "+tempStr1+" "+tempStr4+" (data_&size)";
-  //string blockInfo ="Malloc: size "+tempStr1+", i "+tempStr2+", data_ "+tempStr3+",  realGpuPtr "+tempStr4;
-  vec_block.push_back(blockInfo);
-  //Table_id2LookUpElement[temp.data_]=temp;
-}
-
-void Swap::Free(void *ptr) {
-  //cout<<"to malloc"<<endl;
-  //input is real ptr
-  cudaError_t status = cudaFree(ptr);
-  CHECK_EQ(status, cudaError_t::cudaSuccess);
-  stringstream strm1;
-  strm1<<ptr;
-  string tempStr1 = strm1.str();
-  stringstream strm4;
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  strm4<<t2;
-  string tempStr4 = strm4.str();
-  string blockInfo ="Free "+tempStr1+" "+tempStr4;
-  vec_block.push_back(blockInfo);
-  Table_Meta.erase(ptr);
-
-  Table_id2LookUpElement.erase(ptr);
-}
-
-void Swap::Append(string blockInfo) {
-     //TODO(junzhe) add idx later
-    vec_block.push_back(blockInfo);
-
-}
-
-
-void Swap::SwapOut(void* data_){
-    printf("A. to swapOut\n");
-    auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    size_t swapSize = Table_Meta.find(data_)->second.second.swapSize;
-    Table_Meta.find(data_)->second.first.ptr = malloc(swapSize);
-    SwapMeta cpu, gpu;
-    cpu = Table_Meta.find(data_)->second.first;
-    gpu = Table_Meta.find(data_)->second.second;
-    cudaError_t err;
-    err=cudaMemcpy(cpu.ptr,gpu.ptr,gpu.swapSize,cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess)
-      {
-      fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
-      exit(EXIT_FAILURE);
+    if (v[0]=="Malloc"){
+      //convert v[2] from str to size_t
+      size_t result;
+      stringstream convert(v[2]);
+      // cout<<"1"<<endl;
+      if (!(convert>>result)){
+        result =-1;
+        cout<<"error for converting size from str to int."<<endl;
       }
-    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    fstream file_block3("blockInfo_swapOut.text", ios::in|ios::out|ios::app);
-    file_block3<<t2-t1<<" "<<swapSize<<endl;
-    printf("B. swapOut done.\n");
-    //cout<<"before free: "<<data_<<endl;
-    cudaFree(data_);
-    //cout<<"after free: "<<data_<<endl;
+      // cout<<"2"<<endl;
+      onePieceMsg_pool tempMsg(v[1],result, 1, i-maxLen_mf);
+      // cout<<"3"<<endl;
+      onePieceMsg_poolVec_.push_back(tempMsg);
+      // cout<<"4"<<endl;
+    }else if (v[0]=="Free"){
+      // cout<<"1"<<endl;
+      onePieceMsg_pool tempMsg(v[1],-1, -1, i-maxLen_mf);
+      // cout<<"2"<<endl;
+      onePieceMsg_poolVec_.push_back(tempMsg);
+      // cout<<"3"<<endl;
+    }else {
+      cout<<"error for process the onePriceMsg."<<endl;
+      // cout<<i<<" "<<v[0]<<"||"<<vec_mf[i]<<endl;
+    }
+  }
+  sort(onePieceMsg_poolVec_.begin(),onePieceMsg_poolVec_.end(),less_than_ptrIdx());
+  // cout<<"===================print done(2nd loop)"<<endl;
+  // for (int i = 0;i < vec_mf.size();i++){
+
+  
+  //pair
+  vector<onePairMsg>pairMsgVec_;
+  int i = 0;
+  // cout<<"before while loop"<<endl;
+
+  while (i<(onePieceMsg_poolVec_.size()-1)){
+    
+    // cout<<i<<" before 1st if"<<endl;
+    if (onePieceMsg_poolVec_[i].MallocFree==-1){
+      //condition A: start with free. do nothing.
+      i+=1;
+      // cout<<i<<" condition A"<<endl;
+    } else {
+        if ((onePieceMsg_poolVec_[i].MallocFree==1)&& (onePieceMsg_poolVec_[i+1].MallocFree==-1)
+          &&((onePieceMsg_poolVec_[i].ptr==onePieceMsg_poolVec_[i+1].ptr))){
+          //condition B: start with Malloc, next item same ptr and is free.
+          if ((onePieceMsg_poolVec_[i].idx >=0 && onePieceMsg_poolVec_[i].idx <maxLen_mf)
+            ||(onePieceMsg_poolVec_[i+1].idx >=0 && onePieceMsg_poolVec_[i+1].idx <maxLen_mf)){
+            //condition B1: at least one of the index in range [0,maxLen_mf]
+            onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i+1].idx);
+            pairMsgVec_.push_back(tempPair); 
+            // cout<<i<<" condition B"<<endl;
+          }
+          i+=2; //no matter in the middle iteration or not, plus 2.
+        } else {
+          //condiction C: not one pair, single one.
+          i+=1;
+          // cout<<" condiction C"<<endl;
+          //       if ((onePieceMsg_poolVec_[i].MallocFree==1)&&(onePieceMsg_poolVec_[i].ptr!=onePieceMsg_poolVec_[i+1].ptr)){
+          //     // onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,idxRange);
+          //     // onePairMsgVec_2.push_back(tempPair);
+          //     i+=1;
+          //     cout<<i<<" condition C"<<endl;
+          // }
+        }
+    } 
+  }
+  sort(pairMsgVec_.begin(),pairMsgVec_.end(),less_than_size_rIdx());
+  // cout<<"after while loop"<<endl;
+  cout<<"size of pairs "<<pairMsgVec_.size()<<endl;
+
+
+  ///get E, V of the blocks， coloring
+  //V
+  int m = static_cast<int>(pairMsgVec_.size());
+  vector<Vertex>vertices;
+  for (int i=0; i<m;i++){
+    Vertex tempVertex(pairMsgVec_[i].name,pairMsgVec_[i].size,pairMsgVec_[i].r_idx,pairMsgVec_[i].d_idx);
+    vertices.push_back(tempVertex);
+  }
+
+  //E and coloring
+  
+  int offset = 0;
+  int **adj;
+  adj = new int*[m]; //TODO(junzhe) should be deleted somewhere.
+  // build edges with values 1 and 0; combine with mergeSeg and FFallocation in the loop.
+  for (int i=0; i<m;i++){
+    adj[i] = new int[m];
+    for (int j=0; j<m;j++){
+      if ((max(vertices[i].r,vertices[j].r))<(min(vertices[i].d,vertices[j].d))
+        || (min(vertices[i].d,vertices[j].d)<0 && 
+        min(vertices[i].d,vertices[j].d)+2*maxLen_mf< max(vertices[i].r,vertices[j].r))){
+        //TODO(junzhe) verify after ||
+        adj[i][j]=1;
+        if (vertices[j].colorRange.second){ //as second never be 0, if not empty.
+          vertices[i].colorOccupied.push_back(vertices[j].colorRange);
+        }
+      }
+      else { 
+        adj[i][j]=0; 
+      }
+    }
+    
+    vector<pair<size_t,size_t>>colorMerged = mergeSeg(vertices[i].colorOccupied);
+
+    // vertices[i].colorRange = FFallocation(colorMerged,vertices[i].size, local_offset);
+    vertices[i].colorRange = BFallocation(colorMerged,vertices[i].size, offset);
+
+    //update of offset, largest memory footprint as well.
+    if (vertices[i].colorRange.second >=offset){
+      offset = vertices[i].colorRange.second+1;
+    }
+  }//end of for loop.
+  cout<<"offset is "<<offset<<endl;
+  cout<<"===================to print vertices"<<endl;
+  cout<<"a, d, size, color["<<endl;
+  for (int i=0; i<m;i++){
+    cout<<"("<<vertices[i].r<<","<<vertices[i].d<<") "<<vertices[i].size<<" "<<vertices[i].colorRange.first<<endl;
+  }
+  cout<<"===================to print vertices done"<<endl;
+
+  ///Make pool, and make table
+  cudaMalloc(&ptrPool,offset); //poolSize or memory foot print  offset.
+  cout<<"ptrPool is: "<<ptrPool<<endl;
+
+  for (int i=0; i<vertices.size();i++){
+    lookUpElement temp;
+    temp.r_idx = vertices[i].r;
+    temp.d_idx = vertices[i].d;
+    temp.size = vertices[i].size;
+    temp.offset = vertices[i].colorRange.first;
+    temp.ptr = (void*)((char*)ptrPool+temp.offset*sizeof(char));
+    temp.Occupied = 0;
+    Table_r2v[vertices[i].r] = temp;
+  }
+  cout<<"===================Table_r2v done"<<endl;
+  poolFlag = 1;
+    
 }
 
-void Swap::SwapIn(void* data_){
-  printf("1. to swapIn.\n");
-  auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  SwapMeta cpu, gpu;
-  cpu = Table_Meta.find(data_)->second.first;
-  gpu = Table_Meta.find(data_)->second.second;
-  gpu.ptr=nullptr;
-  cudaError_t status = cudaMalloc(&gpu.ptr, gpu.swapSize);
-  CHECK_EQ(status, cudaError_t::cudaSuccess);
-  Table_Meta.find(data_)->second.second.ptr=gpu.ptr;
-  //cout<<"after alloc:1 "<<Table_Meta.find(data_)->second.second.ptr<<endl;
-  cudaError_t err;
-  err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
-  printf("2. swapIn done.\n");
-  free(cpu.ptr);
-  //
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  fstream file_block3("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
-  file_block3<<t2-t1<<" "<<gpu.swapSize<<endl;
-
-
-//below works  
-  // SwapMeta cpu, gpu;
-  // cpu.swapSize=Table_id2LookUpElement.find(data_)->second.size;
-  // cpu.ptr=malloc(cpu.swapSize);
-  // gpu=cpu;
-  // cudaMalloc(&gpu.ptr,cpu.swapSize);
+void SwapPool::Malloc(void** ptr, const size_t size){
   
-  // cudaError_t err;
-  // err=cudaMemcpy(gpu.ptr, cpu.ptr ,cpu.swapSize,cudaMemcpyHostToDevice);
-  // printf("2. swapIn done.\n");
+  void* allocatedPtr =nullptr;
+  
+  if (poolFlag == 0) {
+    cudaError_t status = cudaMalloc(ptr, size);
+    CHECK_EQ(status, cudaError_t::cudaSuccess);
+  } else {
+    //POOLFLAG = 1 
+    if (pc < maxLen_mf){
+      if ((Table_r2v.find(pc-maxLen_mf) == Table_r2v.end()) || (!(size == Table_r2v.find(pc-maxLen_mf)->second.size))){
+        //not in table of negative r_idx
+        cudaError_t status = cudaMalloc(ptr, size);
+        CHECK_EQ(status, cudaError_t::cudaSuccess);
+      } else{
+        //in the table of negative r_idx
+        auto tempMeta = Table_r2v.find(pc-maxLen_mf)->second;
+        allocatedPtr = tempMeta.ptr;
+        *ptr = allocatedPtr;
+        Table_p2r[allocatedPtr]=pc-maxLen_mf; 
 
-///below partial copy 
-  // SwapMeta h_meta;
-  // SwapMeta* d_meta;
-  // h_meta.swapSize=Table_id2LookUpElement.find(data_)->second.size;
-  // h_meta.h_ptr=malloc(h_meta.swapSize);
-  // cudaMalloc(d_meta,sizeof(SwapMeta));
-  // cudaMemcpy(d_meta,&h_meta,sizeof(SwapMeta),cudaMemcpyHostToDevice);
+      }
+    } else{
+      //8 9 10
+      int r_pc = pc%maxLen_mf;
+      if ((Table_r2v.find(r_pc) == Table_r2v.end()) || (!(size == Table_r2v.find(r_pc)->second.size))){
+        //not here, should be abnormal
+        cudaError_t status = cudaMalloc(ptr, size);
+        CHECK_EQ(status, cudaError_t::cudaSuccess);
+      } else{
+        //in the table
+        auto tempMeta = Table_r2v.find(r_pc)->second;
+        allocatedPtr = tempMeta.ptr;
+        *ptr = allocatedPtr;
+        Table_p2r[allocatedPtr]=r_pc; 
 
-  // void** d_ptr;
-  // cudaMalloc()
-  // void* h_ptr=malloc(tempSize);
+      }
+    }
+  }
 
-///below is to swapIn swapped out items
-    // auto t1 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    // size_t tempSize = Table_id2LookUpElement.find(data_)->second.size;
-    // void** tempPtr;
-    // cudaMalloc(tempPtr,tempSize);
-    // cout<<"1. to swapIn."<<endl;
-    // cudaError_t err;
-    // err=cudaMemcpy(*tempPtr, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
-    // if (err != cudaSuccess)
-    //   {
-    //   fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
-    //   exit(EXIT_FAILURE);
-    //   }
-    // //cudaMemcpy(data_, Table_id2LookUpElement.find(data_)->second.realCpuPtr ,Table_id2LookUpElement.find(data_)->second.size,cudaMemcpyHostToDevice);
-    // auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    // fstream file_block4("blockInfo_swapIn.text", ios::in|ios::out|ios::app);
-    // file_block4<<t2-t1<<" "<<tempSize<<endl;
-    // cudaFree(*tempPtr);
-    // free(Table_id2LookUpElement.find(data_)->second.realCpuPtr);
-    // cout<<"testing after SwapIn"<<endl;
-    // printf("2. swapIn done.\n");
- 
+
+    pc++;     
+  }
+
+
+void SwapPool::Free(void *ptr) {
+  if (poolFlag == 0){
+    cudaError_t status = cudaFree(ptr);
+    CHECK_EQ(status, cudaError_t::cudaSuccess);
+  } else{
+    if (Table_p2r.find(ptr)==Table_p2r.end()){
+      cudaError_t status = cudaFree(ptr);
+      CHECK_EQ(status, cudaError_t::cudaSuccess);
+    }
+    
+  }
+
+}
+
+void SwapPool::Append(string blockInfo) {
+  //NA
+}
+
+
+void SwapPool::SwapOut(void* data_){
+  //NA
+}
+
+void SwapPool::SwapIn(void* data_){
+  //NA 
 }
 
 void getMaxLoad (){
   //empty
 }
 
-std::pair<size_t, size_t> Swap::GetMemUsage() {
+std::pair<size_t, size_t> SwapPool::GetMemUsage() {
   //empty
   return std::make_pair(0, 0);
 }
 
-Swap::~Swap(){
-  //put in notes
-    fstream file_block1("blockInfo.text", ios::in|ios::out|ios::app);
-    for (int i=0; i< vec_block.size();i++){
-        file_block1<<vec_block[i]<<endl;
-    }
-   
+SwapPool::~SwapPool(){
+  //NA  
 }
+
 }
 
 #endif

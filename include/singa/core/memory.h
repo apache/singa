@@ -50,6 +50,8 @@ class DeviceMemPool {
   virtual void Malloc(void** ptr, const size_t size)  = 0;
   virtual void Free(void* ptr)  = 0;
   virtual void Append(string blockInfo) = 0;
+
+  virtual void PoolOpt(vector<string> &vec_mf) = 0;
   
   virtual void SwapOut(void* data_) = 0;
   virtual void SwapIn(void* data_) = 0;
@@ -74,7 +76,9 @@ class CnMemPool : public DeviceMemPool {
 
   void Malloc(void** ptr, const size_t size);
   void Free(void* ptr);
-    void Append(string blockInfo){}
+  void Append(string blockInfo){}
+
+  void PoolOpt(vector<string> &vec_mf) override {}
     
   void SwapOut(void* data_) override {}
   void SwapIn(void* data_) override {}
@@ -102,7 +106,9 @@ class CudaMemPool : public DeviceMemPool {
  public:
   void Malloc(void** ptr, const size_t size) override;
   void Free(void* ptr) override;
-void Append(string blockInfo){}
+  void Append(string blockInfo){}
+
+  void PoolOpt(vector<string> &vec_mf) override {}
 
   void SwapOut(void* data_) override {}
   void SwapIn(void* data_) override {}
@@ -134,9 +140,11 @@ public:
     void getMaxLoad(void);
     std::pair<size_t, size_t> GetMemUsage() override;
     void Append(string blockInfo);
+
+    void PoolOpt(vector<string> &vec_mf) override {}
     
-  void SwapOut(void* data_) override {}
-  void SwapIn(void* data_) override {}
+    void SwapOut(void* data_) override {}
+    void SwapIn(void* data_) override {}
 protected:
     void Init();
 private:
@@ -196,19 +204,22 @@ struct SwapMeta{
     void* d_ptr; //not used for
 };
 
-class Swap : public DeviceMemPool {
+class SwapPool : public DeviceMemPool {
 public:
-    Swap(const MemPoolConf &conf); //constructor
+    SwapPool(const MemPoolConf &conf); //constructor
     //TODO(junzhe) in Singa, void Malloc( void**, size_t); change to cudaMalloc and cudaFree.
     void Malloc(void** ptr, const size_t size);
     void Free(void* ptr);
-    ~Swap();
+    ~SwapPool();
     void getMaxLoad(void);
     std::pair<size_t, size_t> GetMemUsage() override;
     void Append(string blockInfo);
     
     void SwapOut(void* data_);
     void SwapIn(void* data_);
+
+    //PoolOpt() construct pool based on MF info after Swap constructed.
+    void PoolOpt(vector<string> &vec_mf);
 protected:
     void Init();
 private:
@@ -219,8 +230,15 @@ private:
     std::mutex mtx_; 
     vector<string> vec_block;
     size_t swapLimit = 1<<23; //8MB
-    map<void*,swapLookUpElement>Table_id2LookUpElement; //old TODO(junzhe) remove
-    map<void*,pair<SwapMeta,SwapMeta>>Table_Meta;
+    int poolFlag = 0;
+    int pc = 0;
+    int maxLen_mf = 0;
+    void* ptrPool = nullptr;
+    map<void*,int>Table_p2r; //ptr for arrival idx, for look up Table during free
+    map<int,lookUpElement>Table_r2v; //r-> vertex
+    vector<pair<int,lookUpElement>>Vec_r2Ver; //Table_r2Ver No need anymore, replaced by Table_r2v TODO(junzhe)
+    // map<void*,swapLookUpElement>Table_id2LookUpElement; //old TODO(junzhe) remove
+    // map<void*,pair<SwapMeta,SwapMeta>>Table_Meta;
 };
 
 #endif
