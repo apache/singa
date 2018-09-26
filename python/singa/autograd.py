@@ -448,7 +448,7 @@ class SoftMax(Operation):
             return singa.DefaultTranspose(dx)
 
 
-def soft_max(x, axis=0):
+def softmax(x, axis=0):
     return SoftMax(axis)(x)[0]
 
 
@@ -540,7 +540,7 @@ class MeanSquareError(Operation):
             pass  # TODO, broadcast elementwise multiply seems not support
 
 
-def mean_square_error(x, t):
+def mse_loss(x, t):
     return MeanSquareError()(x, t)[0]
 
 
@@ -1076,7 +1076,8 @@ class ElemMatmul(Operation):
         return dx1, dx2
 
 
-def elemmatmul(x, y):
+def mul(x, y):
+    # do pointwise multiplication
     return ElemMatmul()(x, y)[0]
 
 
@@ -1088,7 +1089,7 @@ def add_all(*xs):
     return
 
 
-class RNN(Layer):
+class RNN_Base(Layer):
 
     def __init__(self):
         raise NotImplementedError
@@ -1100,7 +1101,7 @@ class RNN(Layer):
         raise NotImplementedError
 
 
-class Vanilla_RNN(RNN):
+class RNN(RNN_Base):
 
     def __init__(self, input_size, hidden_size, num_layers=1, nonlinearity='tanh', bias=True, batch_first=False, dropout=0, bidirectional=False):
         self.nonlinearity = nonlinearity
@@ -1119,7 +1120,10 @@ class Vanilla_RNN(RNN):
 
         self.params = (self.Wx, self.Wh, self.b)
 
-    def __call__(self, h0, *xs):
+    def __call__(self, xs, h0):
+        # xs: a tuple or list of input tensors
+        if not isinstance(xs, tuple):
+            xs = tuple(xs)
         inputs = xs + (h0,)
         self.device_check(*inputs)
         #self.device_check(inputs[0], *self.params)
@@ -1148,7 +1152,7 @@ class Vanilla_RNN(RNN):
         return y
 
 
-class LSTM(RNN):
+class LSTM(RNN_Base):
 
     def __init__(self, input_size, hidden_size, nonlinearity='tanh', num_layers=1, bias=True, batch_first=False, dropout=0, bidirectional=False):
         self.nonlinearity = nonlinearity
@@ -1183,8 +1187,11 @@ class LSTM(RNN):
 
         self.params = self.Wx + self.Wh + self.Bx + self.Bh
 
-    def __call__(self, h0, c0, *xs):
-        inputs = xs + (h0, c0)
+    def __call__(self, xs, (h0, c0)):
+        # xs: a tuple or list of input tensors
+        if not isinstance(xs, list):
+            xs = list(xs)
+        inputs = xs + list((h0, c0))
         self.device_check(*inputs)
         #self.device_check(inputs[0], *self.params)
         self.device_check(inputs[0], *(self.Wx + self.Wh + self.Bx + self.Bh))
@@ -1229,10 +1236,10 @@ class LSTM(RNN):
         g = add(y1, y2)
         g = tanh(g)
 
-        cout1 = elemmatmul(f, c)
-        cout2 = elemmatmul(i, g)
+        cout1 = mul(f, c)
+        cout2 = mul(i, g)
         cout = add(cout1, cout2)
 
         hout = tanh(cout)
-        hout = elemmatmul(o, hout)
+        hout = mul(o, hout)
         return hout, cout

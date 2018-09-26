@@ -141,9 +141,9 @@ class TestPythonOperation(unittest.TestCase):
     def test_vanillaRNN_gpu_tiny_ops_shape_check(self):
         # gradients shape check.
         inputs, target, h0 = prepare_inputs_targets_for_rnn_test()
-        rnn = autograd.Vanilla_RNN(3, 2)
+        rnn = autograd.RNN(3, 2)
 
-        hs, _ = rnn(h0, *inputs)
+        hs, _ = rnn(inputs, h0)
 
         loss = autograd.softmax_cross_entropy(hs[0], target[0])
         for i in range(1, len(hs)):
@@ -162,7 +162,7 @@ class TestPythonOperation(unittest.TestCase):
 
         rnn = autograd.LSTM(3, 2)
 
-        hs, _, _ = rnn(h0, c0, *inputs)
+        hs, _, _ = rnn(inputs, (h0, c0))
         loss = autograd.softmax_cross_entropy(hs[0], target[0])
 
         for i in range(1, len(hs)):
@@ -206,10 +206,10 @@ class TestPythonOperation(unittest.TestCase):
     def test_numerical_gradients_check_for_vallina_rnn(self):
         inputs, target, h0 = prepare_inputs_targets_for_rnn_test()
 
-        rnn = autograd.Vanilla_RNN(3, 2)
+        rnn = autograd.RNN(3, 2)
 
         def valinna_rnn_forward():
-            hs, _ = rnn(h0, *inputs)
+            hs, _ = rnn(inputs, h0)
 
             loss = autograd.softmax_cross_entropy(hs[0], target[0])
             for i in range(1, len(hs)):
@@ -234,7 +234,7 @@ class TestPythonOperation(unittest.TestCase):
         rnn = autograd.LSTM(3, 2)
 
         def lstm_forward():
-            hs, _, _ = rnn(h0, c0, *inputs)
+            hs, _, _ = rnn(inputs, (h0, c0))
 
             loss = autograd.softmax_cross_entropy(hs[0], target[0])
             for i in range(1, len(hs)):
@@ -258,7 +258,7 @@ class TestPythonOperation(unittest.TestCase):
         x.to_device(gpu_dev)
         t.to_device(gpu_dev)
 
-        loss= autograd.mean_square_error(x,t)
+        loss= autograd.mse_loss(x,t)
         dx=loss.creator.backward()[0]
 
         loss_np=tensor.to_numpy(loss)
