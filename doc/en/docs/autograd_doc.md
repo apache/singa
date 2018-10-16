@@ -1,22 +1,22 @@
 ﻿# singa.autograd
 
-This part will present an overview of how autograd works and give a simple example of neuron network which implemented by using autograd API. 
+This part will present an overview of how autograd works and give a simple example of neuron network which is implemented by using autograd API. 
 ## Autograd Mechanics
-To get clear about how autograd system works, we should understand three important concepts in this system, they are `singa.tensor.Tensor` , `singa.autograd.Operation`, and `singa.autograd.Layer`.  For briefness, these three classes will be denoted as `tensor`, `operation`, and `layer`.
+To get clear about how autograd system works, we should understand three important abstracts in this system, they are `singa.tensor.Tensor` , `singa.autograd.Operation`, and `singa.autograd.Layer`.  For briefness, these three classes will be denoted as `tensor`, `operation`, and `layer`.
 ### Tensor
 The class `tensor` has three attributes which are important in autograd system, they are `.creator`, `.requires_grad`, and `.stores_grad`.
--  `tensor.creator` should be an `operation` object. It records the particular `operation` which generates the `tensor ` itself.
--  `.requires_grad` and `.stores_grad` are both boolean indicator. These two attributes record whether a `tensor` needs gradients and whether gradients of a  `tensor` need to be stored when do backpropagation. It should be noted that if `.stores_grad` is true, then `.requires_grad` must be true， not vice versa.
+-  `tensor.creator` is an `operation` object. It records the particular `operation` which generates the `tensor ` itself.
+-  `.requires_grad` and `.stores_grad` are both boolean indicators. These two attributes record whether a `tensor` needs gradients and whether gradients of a  `tensor` need to be stored when do backpropagation. For example, output `tensor` of `Conv2d` needs gradient but no need to store gradient. In contrast, parameter `tensor` of `Conv2d` not only require gradients but also need to store gradients. For those input `tensor` of a network, e.g., a batch of images, since it don't require gradient and don't need to store gradient, both of the two indicators,  `.requires_grad` and `.stores_grad`, should be set as False.
+It should be noted that if `.stores_grad` is true, then `.requires_grad` must be true, not vice versa.
 ### Operation
-`operation` is the fundamental element of computation graph. A `operation` takes one or more `tensor` as input, and then output one or more `tensor`. The class `operation` has four important member functions:
- 1.  `._do_forward()` Inputs and outputs of this function are both  `tensor`. This function will be invoked when the `operation` is called. So this function can be considered being controlled indirectly by users when they define their networks. This function mainly do two things: 
-        - record source of the `operaiton`. Those inputs `tensor` contain their `creator` information, which are the source `operation` of current operation. Current `operation` keeps those information in the attribute `.src`. The designed autograd engine can control backward flow according to `operation.src`.
-        - do calculation by calling member function `.forward()`, which will be introduced later.
- 2.  `._do_backward()` Unlike `._do_forward()` is controlled by users to some extent, `._do_backward()` is in the charge of autograd engine. This kind of function don't take `tensor` as input, but instead, takes `tensor.data`. The effect of this function is to do calculation, by invoking `.backward()`
- 4. `.forward()` and `.backward()` These two functions take `tensor.data` as inputs, and output `Ctensor`, which is the same type with `tensor.data`. To add a specific operation, subclass `operation` should implement their own `.forward()` and `.backward()`.
+A `operation` takes one or more `tensor` as input, and then output one or more `tensor`. when a  `operation` is called, mainly two processes happen:
+   1. record source of the `operaiton`. Those inputs `tensor` contain their `creator` information, which are the source `operation` of current operation. Current `operation` keeps those information in the attribute `.src`. The designed autograd engine can control backward flow according to `operation.src`.
+     2. do calculation by calling member function `.forward()`
+
+The class `operation` has two important member functions, `.forward()` and `.backward()`. These two functions take `tensor.data` as inputs, and output `Ctensor`, which is the same type with `tensor.data`. To add a specific operation, subclass `operation` should implement their own `.forward()` and `.backward()`.
 ### Layer
-For those operations contain parameters like weights which are `tensor`  requiring update, we package them into a new class, `layer`. Users should initialize a `layer` before invoking it.
-When a `layer` is called, it will sent inputs `tensor` together with parameter `tensor` to corresponding operation, constructing the computation graph. We find that although a `layer` is called, there will be one more `operation` in computation graph rather than a `layer`.
+For those operations containing parameters, e.g., the weight or bias tensors, we package them into a new class, `layer`. Users should initialize a `layer` before invoking it.
+When a `layer` is called, it will send inputs `tensor` together with the parameter `tensor` to the corresponding operation to construct the computation graph. One layer may call multiple operations. 
 ## Python API
 ## Example
 The following codes implement a Xception Net using autograd API. They can be found in source code of SINGA at 
@@ -32,6 +32,7 @@ import numpy as np
 from tqdm import trange
 ```
 ### 2. Create model
+Firstly, we create the basic module, named `Block`, which occurs repeatedly in Xception architecture. The `Block` class consists of  `SeparableConv2d`, `ReLU`, `BatchNorm2d` and `MaxPool2d`. It also has linear residual connections. 
 ```
 class Block(autograd.Layer):
 
@@ -89,8 +90,11 @@ class Block(autograd.Layer):
             skip = x
         y = autograd.add(y, skip)
         return y
-
-
+```
+The second step is to build a `Xception` class. 
+When do initialization, we create all sublayers which containing parameters. 
+In member function `feature()`, we input a `tensor`, which contains information of training data(images), then `feature()` will output their representations. Those extracted features will then be sent to `logits` function to do classification. 
+```
 class Xception(autograd.Layer):
     """
     Xception optimized for the ImageNet dataset, as specified in
@@ -197,8 +201,13 @@ We can create a Xception Net by the following command:
 `model = Xception(num_classes=1000)`
 
 ### 3. Sample data
+Sampling virtual images and labels by numpy.random.
+Those virtual images are in shape (3, 299, 299).
+The training batch size is set as 16.
+To transfer information from numpy array to SINGA `tensor`, We should firstly create SINGA `tensor`, e.g., tx and ty,  then call their member function `copy_from_numpy`.
 ```
 IMG_SIZE = 299
+batch_size = 16
 tx = tensor.Tensor((batch_size, 3, IMG_SIZE, IMG_SIZE), dev)
 ty = tensor.Tensor((batch_size,), dev, tensor.int32)
 x = np.random.randn(batch_size, 3, IMG_SIZE, IMG_SIZE).astype(np.float32)
@@ -208,9 +217,9 @@ ty.copy_from_numpy(y)
 ```
 
 ### 4. Set learning parameters and create optimizer
+The number of iterations is set as 20 while optimizer is chosen as SGD with learning rate=0.1, momentum=0.9 and weight_decay=1e-5.
 ```
 niters = 20
-batch_size = 16
 sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
 ```
 ### 5. Train model
