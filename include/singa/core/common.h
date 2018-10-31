@@ -56,8 +56,8 @@ class Device;
 /// Block represent a chunk of memory (on device or host).
 class Block {
  public:
-  Block(void* ptr, size_t size, size_t offset = 0, Device* ptrDevice = nullptr)
-      : data_(ptr), size_(size), offset_(offset), ptrDevice_(ptrDevice) {
+  Block(void* ptr, size_t size, size_t offset = 0, Device* ptr_device = nullptr)
+      : data_(ptr), size_(size), offset_(offset), ptr_device_(ptr_device) {
     ref_count_ = 1;  // std::make_shared<std::atomic<int>>(1);
   }
   // Disabled as it is not used currently.
@@ -90,7 +90,7 @@ class Block {
   void* data_ = nullptr;
   size_t size_ = 0;
   size_t offset_ = 0;
-  Device* ptrDevice_;
+  Device* ptr_device_;
   bool initialized_ = false;
   // Disabled as it is not used currently.
   // std::shared_ptr<std::atomic<int>> ref_count_ = nullptr;

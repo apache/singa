@@ -41,9 +41,7 @@ Block* Device::NewBlock(int size) {
   if (size > 0) {
     void* ptr = Malloc(size);
     Block* block_ = new Block(ptr, size,0,this);
-    //std::cout<<"(reference) from device.cc after, data_, block_ device: "<<ptr<<" "<<block_<<' '<<this<<std::endl;
-    MakeMetaTable(block_,ptr,size); // make table and append vec_block.
-    //cout<<"NewBlock: "<<block_<<' '<<ptr<<endl;
+    AppendAfterMalloc(block_,ptr,size); // make table and append vec_block.
     return block_;
   } else {
     return nullptr;
@@ -53,22 +51,18 @@ Block* Device::NewBlock(int size) {
 // TODO(wangwei) return Block to the memory manager
 void Device::FreeBlock(Block* block) {
   if (block != nullptr) {
-    //TODO(junzhe) to merge it
     auto tempPtr = block->mutable_data();
-    //cout<<"FreeBlock: "<<block<<' '<<tempPtr<<endl;
     Free(tempPtr);
-    //cout<<"SwapGPU::Free() returned"<<endl;
-    //Free(block->mutable_data());
     
-    //Add Append for free here.
+    //append block info for free operation.
     stringstream strm1;
     strm1<<block;
-    string tempStr1 = strm1.str();
+    string temp_str1 = strm1.str();
     stringstream strm4;
     auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
     strm4<<t2;
-    string tempStr4 = strm4.str();
-    string blockInfo ="Free "+tempStr1+" "+tempStr4;
+    string temp_str4 = strm4.str();
+    string blockInfo ="Free "+temp_str1+" "+temp_str4;
     Append(blockInfo);
 
     delete block;
@@ -79,17 +73,10 @@ void Device::AppendInfo(string blockInfo){
   Append(blockInfo);
 }
 
-void* Device::GetRealGpuPtrInfo(const Block* block_){
-  return GetRealGpuPtr(block_);
+void* Device::UpdateGpuPtrInfo(const Block* block_){
+  return UpdateGpuPtr(block_);
 }
 
-void Device::SwapOutInfo(const Block* block_){
-  SwapOut(block_);
-}
-
-void Device::SwapInInfo(const Block* block_){
-  SwapIn(block_);
-}
 
 void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                             CopyDirection direct, int dst_offset,

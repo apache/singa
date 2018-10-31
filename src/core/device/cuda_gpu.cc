@@ -127,17 +127,10 @@ void CudaGPU::Append(string blockInfo){
     pool_->Append(blockInfo);
 }
 
-void* CudaGPU::GetRealGpuPtr(const Block* block_){
+void* CudaGPU::UpdateGpuPtr(const Block* block_){
   return nullptr;
 }
 
-void CudaGPU::SwapOut(const Block* block_){
-  
-}
-
-void CudaGPU::SwapIn(const Block* block_){
-  
-}
 
 }  // namespace singa
 #endif  // USE_CUDA

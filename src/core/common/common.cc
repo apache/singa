@@ -22,34 +22,28 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-//TODO(junzhe) ifdef to counter verify
-///only include mutable_data() and data()
 
 namespace singa {
 
 void* Block::mutable_data() {
-    //TODO(junzhe) go back to enable it after device done
-    //std::cout<<"mutable_data() "<<this<<' '<<data_<<std::endl;
     initialized_ = true;
-    if (ptrDevice_!=nullptr){
-      //Append info.
+
+    //Append block info: opt_type, ptr, time_stamp
+    if (ptr_device_!=nullptr){
       stringstream strm2;
       strm2<<this;
-      string tempStr2 = strm2.str();
+      string temp_str2 = strm2.str();
       stringstream strm4;
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       strm4<<t2;
-      string tempStr4 = strm4.str();
-      string temp = "Mutable "+tempStr2+" "+tempStr4;   
-      ptrDevice_->AppendInfo(temp);
+      string temp_str4 = strm4.str();
+      string temp = "Mutable "+temp_str2+" "+temp_str4;   
+      ptr_device_->AppendInfo(temp);
     }
-    //TODO(junzhe) this should not happen, can verify and remove
+
+    //update ptr after swap in done, if variable is not swapped back yet as expected.
     if (data_ == nullptr) {
-      //cout<<"to sleep"<<endl;
-      cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
-      auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
-      cout<<"print returned tempData_ "<<tempData_<<endl;
-      // cout<<"slept to get data_ updated: (mutable_data) "<<this<<' '<<data_<<endl;
+      auto tempData_ = ptr_device_->UpdateGpuPtrInfo(this);
       return static_cast<char*>(tempData_) + offset_;
     }
     
@@ -59,41 +53,38 @@ void* Block::mutable_data() {
 
 const void* Block::data() const {
     CHECK(initialized_) << "Must initialize data before reading it";
-    //TODO(junzhe) go back to enable it after device done
-    if (ptrDevice_!=nullptr){
+
+    //Append block info: opt_type, ptr, time_stamp
+    if (ptr_device_!=nullptr){
       //Append info.
       stringstream strm2;
       strm2<<this;
-      string tempStr2 = strm2.str();
+      string temp_str2 = strm2.str();
       stringstream strm4;
       auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
       strm4<<t2;
-      string tempStr4 = strm4.str();
-      string temp = "Read "+tempStr2+" "+tempStr4;
-      ptrDevice_->AppendInfo(temp);
+      string temp_str4 = strm4.str();
+      string temp = "Read "+temp_str2+" "+temp_str4;
+      ptr_device_->AppendInfo(temp);
     }
 
-    //TODO(junzhe) this should not happen, can verify and remove
+    //update ptr after swap in done, if variable is not swapped back yet as expected.
     if (data_ == nullptr) {
-      //cout<<"to sleep"<<endl;
-      cout<<"before GetRealGpuPtr, block_ and data_: "<<this<<' '<<data_<<endl;
-      auto tempData_ = ptrDevice_->GetRealGpuPtrInfo(this);
-      cout<<"print returned tempData_ "<<tempData_<<endl;
-      // cout<<"slept to get data_ updated: (data) "<<this<<' '<<data_<<endl;
+      auto tempData_ = ptr_device_->UpdateGpuPtrInfo(this);
       return static_cast<char*>(tempData_) + offset_;
     }
-
 
     return static_cast<char*>(data_) + offset_;
   }
 
 void* Block::get_data() {
+  //get data without calling data(), to avoid append block info.
   return data_;
 }
 
 void Block::update_data(void* data_new) {
+  //update data_, after the swap in completes.
   data_ = data_new;
-  std::cout<<"results update_data:: "<<this<<' '<<data_<<std::endl;
 }
 
 

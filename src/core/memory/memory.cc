@@ -118,75 +118,55 @@ void CudaMemPool::Free(void *ptr) {
 }
 
 //for SmartMemPool
-///vertex of the graph.
-class Vertex {
-public:
-    int name;
-    size_t size;
-    int r; //arrive
-    int d; //depart
-    int crossItr =0;
-    Vertex(int,size_t,int,int);
-    pair<size_t, size_t> colorRange;
-    vector<pair<size_t, size_t>> colorOccupied;
-};
-Vertex::Vertex(int n, size_t s, int r1, int d1){
-    name =n;
-    size = s;
-    r = r1;
-    d = d1;
-}//end of class Vertex
-
 
 ///Section for structs and respective sorting function:
-// onePieceMsg_pool, onePairMsg, oneIterMsg, version 11/30 3pm
-struct onePieceMsg_pool{
+// PoolOptInfo, PoolBlockLifeTime, PoolOptSimplifiedInfo
+struct PoolOptInfo{
     /*
-     members: [ptr, size, MallocFree, idx]
+     members: [ptr, size, operation_type, idx]
      */
     string ptr;
     size_t size;
-    int MallocFree;
+    int operation_type;
     int idx;
-    onePieceMsg_pool(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
+    PoolOptInfo(string p, size_t s, int M, int i):ptr(p),size(s),operation_type(M),idx(i){}
 };
 
 
-struct less_than_ptrIdx{
-    /*
-     sort onePieceMsg_pool by ptr and then idx.
-     */
-    inline bool operator() (const onePieceMsg_pool& struct1, const onePieceMsg_pool& struct2)
-    {
-        return ((struct1.ptr<struct2.ptr)||((struct1.ptr==struct2.ptr)&&(struct1.idx<struct2.idx)));
-    }
+struct sort_by_ptr_idx_ascending{
+  /*
+   sort PoolOptInfo by ptr and then idx.
+   */
+  inline bool operator() (const PoolOptInfo& struct1, const PoolOptInfo& struct2)
+  {
+    return ((struct1.ptr<struct2.ptr)||((struct1.ptr==struct2.ptr)&&(struct1.idx<struct2.idx)));
+  }
 };
 
 
-struct oneIterMsg{
+struct PoolOptSimplifiedInfo{
     /*
-     members: [idx, MallocFree, size_delta]
+     members: [idx, operation_type, size_delta]
      */
     size_t size_delta;// type as size_t in case size if large.
-    int MallocFree;
+    int operation_type;
     int idx;
-    oneIterMsg(size_t s, int M, int i):size_delta(s),MallocFree(M),idx(i){}
+    PoolOptSimplifiedInfo(size_t s, int M, int i):size_delta(s),operation_type(M),idx(i){}
 };
 
 
-struct less_than_iterIdx{
-    /*
-     sort oneIterMsg by Idx.
-     */
-    inline bool operator() (const oneIterMsg& struct1, const oneIterMsg& struct2)
-    {
-        return (struct1.idx<struct2.idx);
-    }
+struct sort_by_itr_idx_ascending{
+  /*
+   sort PoolOptSimplifiedInfo by Idx.
+   */
+  inline bool operator() (const PoolOptSimplifiedInfo& struct1, const PoolOptSimplifiedInfo& struct2)
+  {
+    return (struct1.idx<struct2.idx);
+  }
 };
 
 
-//TODO(junzhe) to replace vertex with onePairMsg, try combine other structs as well.
-struct onePairMsg{
+struct PoolBlockLifeTime{
     /*
      members: [name (r_idx), size, r_idx, d_idx]
      */
@@ -194,66 +174,54 @@ struct onePairMsg{
     size_t size;
     int r_idx;
     int d_idx;
-    onePairMsg(int n,size_t s, int r,int d):name(n),size(s),r_idx(r),d_idx(d){}
+    PoolBlockLifeTime(int n,size_t s, int r,int d):name(n),size(s),r_idx(r),d_idx(d){}
 };
 
 
-struct less_than_size{
-    /*
-     sort onePairMsg by descending size.
-     */
-    inline bool operator() (const onePairMsg& struct1, const onePairMsg& struct2)
-    {
-        return (struct1.size>struct2.size);
-    }
+struct sort_by_size_descending{
+  /*
+  sort PoolBlockLifeTime by descending size.
+  */
+  inline bool operator() (const PoolBlockLifeTime& struct1, const PoolBlockLifeTime& struct2)
+  {
+    return (struct1.size>struct2.size);
+  }
 };
 
-struct less_than_size_rIdx{
-    /*
-     sort onePairMsg by descending size and r_idx
-     */
-    inline bool operator() (const onePairMsg& struct1, const onePairMsg& struct2)
-    {
-        return ((struct1.size>struct2.size)||((struct1.size==struct2.size)&&(struct1.r_idx<struct2.r_idx)));
-    }
-};
-
-struct less_than_lookupIdx{
-    /*
-     sort lookUpElement by idx.
-     */
-    inline bool operator() (const lookUpElement& struct1, const lookUpElement& struct2)
-    {
-        return (struct1.r_idx<struct2.r_idx);
-    }
+struct sort_by_size_r_idx_descending{
+  /*
+  sort PoolBlockLifeTime by descending size and r_idx
+  */
+  inline bool operator() (const PoolBlockLifeTime& struct1, const PoolBlockLifeTime& struct2)
+  {
+    return ((struct1.size>struct2.size)||((struct1.size==struct2.size)&&(struct1.r_idx<struct2.r_idx)));
+  }
 };
 
 
-/// string delimiter
-vector<string> split(string s, string delimiter) {
-    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
-    string token;
-    vector<string> res;
-    while ((pos_end = s.find(delimiter, pos_start)) != string::npos) {
-        token = s.substr(pos_start, pos_end - pos_start);
-        pos_start = pos_end + delim_len;
-        res.push_back(token);
-    }
-    res.push_back(s.substr(pos_start));
-    return res;
+vector<string> SplitString(string s, string delimiter) {
+  /// string delimiter
+  size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+  string token;
+  vector<string> res;
+  while ((pos_end = s.find(delimiter, pos_start)) != string::npos) {
+    token = s.substr(pos_start, pos_end - pos_start);
+    pos_start = pos_end + delim_len;
+    res.push_back(token);
+  }
+  res.push_back(s.substr(pos_start));
+  return res;
 }
 
-///Section of converting text file -->vector of Sring --> pieceMsg -->pairMsg -->iterMsg
-//vector of pairMsg is used in run.
-//vector of iterMsg is used in test.
 
-vector<onePieceMsg_pool> strVec_2_pieceMsgVec(vector<string> vec, int &idxRange){
+vector<PoolOptInfo> PoolOptSeqStrToStruct(vector<string> vec, int &idx_range){
     /*
-     convert vector of string into vector of onePieceMsg_pool, sorted by ptr and then idx, and update idxRange to pieceMsgVec size.
+     convert vector of string into vector of PoolOptInfo, 
+     sorted by ptr and then idx, and update idx_range to pieceMsgVec size.
      */
-    vector<onePieceMsg_pool>onePieceMsg_poolVec_;
+    vector<PoolOptInfo>vec_pool_opt_info;
     for (int i=0;i<vec.size();i++) {
-        vector<string> v = split(vec[i], " ");
+        vector<string> v = SplitString(vec[i], " ");
         if (v[0]=="Malloc"){
             //convert v[2] from str to size_t
             size_t result;
@@ -262,410 +230,346 @@ vector<onePieceMsg_pool> strVec_2_pieceMsgVec(vector<string> vec, int &idxRange)
                 result =-1;
                 cout<<"error for converting size from str to int."<<endl;
             }
-            onePieceMsg_pool tempMsg(v[1],result, 1, i);
-            onePieceMsg_poolVec_.push_back(tempMsg);
+            PoolOptInfo tempMsg(v[1],result, 1, i);
+            vec_pool_opt_info.push_back(tempMsg);
         }else if (v[0]=="Free"){
-            onePieceMsg_pool tempMsg(v[1],-1, -1, i);
-            onePieceMsg_poolVec_.push_back(tempMsg);
+            PoolOptInfo tempMsg(v[1],-1, -1, i);
+            vec_pool_opt_info.push_back(tempMsg);
         }else {
             cout<<"error for process the onePriceMsg."<<endl;
         }
     }
     
-    sort(onePieceMsg_poolVec_.begin(),onePieceMsg_poolVec_.end(),less_than_ptrIdx());
-    idxRange = static_cast<int>(onePieceMsg_poolVec_.size());
+    sort(vec_pool_opt_info.begin(),vec_pool_opt_info.end(),sort_by_ptr_idx_ascending());
+    idx_range = static_cast<int>(vec_pool_opt_info.size());
 
-    return onePieceMsg_poolVec_;
-}// end of strVec_2_pieceMsgVec function
+    return vec_pool_opt_info;
+}
 
 
-pair<vector<onePairMsg>,vector<onePairMsg>> pieceMsgVec_2_pairOfPairMsgVec(vector<onePieceMsg_pool>onePieceMsg_poolVec_, int idxRange){
-    /*
-     pairMsg is grouped into 1. normal blocks 2. cross-iteration blocks.
-     */
-    vector<onePairMsg>onePairMsgVec_1;
-    vector<onePairMsg>onePairMsgVec_2;
-    int i=0;
-    
-    //while loop processes a pair at each time, if got a pair.
-    while (i<(onePieceMsg_poolVec_.size()-1)){
-        //condition A: start with free. do nothing.
-        if (onePieceMsg_poolVec_[i].MallocFree==-1){
-            i+=1;
-        }
-        //condition B: start with Malloc, next item same ptr and is free.
-        if ((onePieceMsg_poolVec_[i].MallocFree==1)&& (onePieceMsg_poolVec_[i+1].MallocFree==-1)&&((onePieceMsg_poolVec_[i].ptr==onePieceMsg_poolVec_[i+1].ptr))){
-            onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i+1].idx);
-            onePairMsgVec_1.push_back(tempPair);
-            i+=2;
-        }
-        // condition C: start with Malloc, no free.
-        if ((onePieceMsg_poolVec_[i].MallocFree==1)&&(onePieceMsg_poolVec_[i].ptr!=onePieceMsg_poolVec_[i+1].ptr)){
-            onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,idxRange);
-            onePairMsgVec_2.push_back(tempPair);
-            i+=1;
-        }
-    }//end of while
-    //condition D: if still left with the last item
-    if ((i<onePieceMsg_poolVec_.size())&&(onePieceMsg_poolVec_[i+1].MallocFree==1)){
-        onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,idxRange);
-        onePairMsgVec_2.push_back(tempPair);
+pair<vector<PoolBlockLifeTime>,vector<PoolBlockLifeTime>> PoolOptInfoToBlockLifeTime(vector<PoolOptInfo>vec_pool_opt_info, int idx_range){
+  /*
+  convert vector of opt info into vector of block life time
+  return a pair of vectors: 1. normal blocks 2. cross-iteration blocks.
+  */
+  vector<PoolBlockLifeTime>vec_block_life_time1;
+  vector<PoolBlockLifeTime>vec_block_life_time2;
+  int i=0;
+  
+  //while loop processes a pair at each time, if got a pair.
+  while (i<(vec_pool_opt_info.size()-1)){
+    //condition: start with free. do nothing.
+    if (vec_pool_opt_info[i].operation_type==-1){
         i+=1;
     }
-
-    //sort both pairVec
-    sort(onePairMsgVec_1.begin(),onePairMsgVec_1.end(),less_than_size_rIdx());
-    sort(onePairMsgVec_2.begin(),onePairMsgVec_2.end(),less_than_size_rIdx());
-    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_(onePairMsgVec_1,onePairMsgVec_2);
-    
-    return pairOfPairMsgVec_;
-}//end of pieceMsgVec_2_pairOfPairMsgVec function
-
-///Section of coloring algorithm. mergeSeg and then FFallocation when building edges of the graph.
-vector<pair<size_t, size_t>>  mergeSeg(vector<pair<size_t,size_t>> colorOccupied){
-    /*
-     version 12/9 11am -- modify to accomodate unsigned int/size_t
-     input:the collection of color ranges that is once occupied by some block during a block's life time.
-     function: merge consecutive/overlapping segments of colorOccupied
-     output: merged segments in ascending order.
-     time complexity: O(n) for run, O(n^2) for verify section(optional), where n is size of colorOccupied.
-     */
-    sort(colorOccupied.begin(), colorOccupied.end());
-    
-    if(colorOccupied.size()<=1){
-        return colorOccupied;
+    //condition: start with Malloc, next item same ptr and is free.
+    if ((vec_pool_opt_info[i].operation_type==1)&& (vec_pool_opt_info[i+1].operation_type==-1)&&((vec_pool_opt_info[i].ptr==vec_pool_opt_info[i+1].ptr))){
+      PoolBlockLifeTime temp_block_life_time(vec_pool_opt_info[i].idx,vec_pool_opt_info[i].size,vec_pool_opt_info[i].idx,vec_pool_opt_info[i+1].idx);
+      vec_block_life_time1.push_back(temp_block_life_time);
+      i+=2;
     }
-    
-    int m = 0;
-    while (m<(colorOccupied.size()-1)){
-        
-        if ((colorOccupied[m].second +2)> colorOccupied[m+1].first){
-            pair<int,int>tempItem(colorOccupied[m].first,max(colorOccupied[m].second,colorOccupied[m+1].second));
-            //remove m+1 and m
-            colorOccupied.erase(colorOccupied.begin()+m+1);
-            colorOccupied.erase(colorOccupied.begin()+m);
-            //insert the combined range
-            colorOccupied.insert(colorOccupied.begin()+m,tempItem);
-        }else{
-            m+=1;
-        }
-    }//end of while loop
-    
-    //verify if mergeSeg is completed. O(n^2) optional
-//    if(colorOccupied.size()>1){
-//        for (int i=0;i<(colorOccupied.size()-1);i++){
-//            if(colorOccupied[i].second>=colorOccupied[i+1].first){
-//                cout<<"error in mergeSeg"<<endl;
-//            }
-//        }
-//    }
-    
-    return colorOccupied;
-}//end of mergeSeg function
-
-
-pair<size_t,size_t> FFallocation(vector<pair<size_t,size_t>> colorMerged,size_t size, size_t local_offset){
-    /*
-     version 12/2 4pm
-     First Fit weighted coloring
-     return a pair standing for colorRange.
-     local_offset shifts the returned colorRange, allowing multiple run().
-     local_offset not changable, whereas offset is changable.
-     */
-    // condition A: if no occupied, put after the local_offset
-    if (colorMerged.size()==0){
-        return pair<size_t,size_t>(0+local_offset,size-1+local_offset);
+    // condition: start with Malloc, no free.
+    if ((vec_pool_opt_info[i].operation_type==1)&&(vec_pool_opt_info[i].ptr!=vec_pool_opt_info[i+1].ptr)){
+      PoolBlockLifeTime temp_block_life_time(vec_pool_opt_info[i].idx,vec_pool_opt_info[i].size,vec_pool_opt_info[i].idx,idx_range);
+      vec_block_life_time2.push_back(temp_block_life_time);
+      i+=1;
     }
-    
-    // condition B: able to fit before first block, after the local_offset
-    if ((size+local_offset)<(colorMerged[0].first+1)){
-        return pair<size_t,size_t>(0+local_offset,size-1+local_offset);
-    }
-    
-    size_t yLocation= -1;
-    if (colorMerged.size()>1) {
-        int n = 0;
-        while (n<(colorMerged.size()-1)){
-            // condition C: able to fit in between middle blocks.
-            if ((colorMerged[n+1].first-colorMerged[n].second-1)>=size){
-                yLocation = colorMerged[n].second+1;
-                break;
-            }
-            n+=1;
-        }//end of while loop.
-        // condition D: allocate after the last block.
-        if (yLocation == -1){
-            yLocation = colorMerged[colorMerged.size()-1].second+1;
-        }
-    }// end of if loop, conditon C and D.
-    
-    // condition E: colorMeger len =1, allocate after the last block.
-    if (colorMerged.size()==1){
-        yLocation = colorMerged[0].second+1;
-    }
-    
-    if (yLocation==-1){
-        cout<<"error in FFallocation!!!"<<endl;
-    }
-    
-    return pair<size_t,size_t>(yLocation,yLocation+size-1);
-}//end of FFallocation function
+  }//end of while
+  //condition: if still left with the last item
+  if ((i<vec_pool_opt_info.size())&&(vec_pool_opt_info[i+1].operation_type==1)){
+    PoolBlockLifeTime temp_block_life_time(vec_pool_opt_info[i].idx,vec_pool_opt_info[i].size,vec_pool_opt_info[i].idx,idx_range);
+    vec_block_life_time2.push_back(temp_block_life_time);
+    i+=1;
+  }
 
-
-pair<size_t,size_t> BFallocation(vector<pair<size_t,size_t>> colorMerged,size_t size, size_t local_offset){
-    /*
-     version 12/11 1pm
-     Best Fit allocation, input and output same as FFallocation
-     */
-    // condition A: if no occupied, put after the local_offset
-    if (colorMerged.size()==0){
-        return pair<size_t,size_t>(0+local_offset,size-1+local_offset);
-    }
-    //condition B: if size=1, able to fit before the first block
-    if ((colorMerged.size()==1)&&((size+local_offset)<(colorMerged[0].first+1))){
-        return pair<size_t,size_t>(0+local_offset,size-1+local_offset);
-    }
-    
-    //condition C: else of B
-    if ((colorMerged.size()==1)&&((size+local_offset)>=(colorMerged[0].first+1))){
-        return pair<size_t,size_t>(colorMerged[0].second+1,colorMerged[0].second+size);
-    }
-    
-    //condition D and E:
-    size_t yLocation=-1;
-    pair<int, size_t>tempHole(-1,-1); // n, hole size between n and n+1
-    if (colorMerged.size()>1) {
-        int n = 0;
-        while (n<(colorMerged.size()-1)){
-            // condition C: able to fit in between middle blocks. select smallest.
-            if (((colorMerged[n+1].first-colorMerged[n].second-1)>=size)&&((colorMerged[n+1].first-colorMerged[n].second-1)<tempHole.second)){
-                tempHole.first=n;
-                tempHole.second=colorMerged[n+1].first-colorMerged[n].second-1;
-            }
-            n+=1;
-        }//end of while loop.
-        
-        if(tempHole.first==-1){
-            // condition D: allocate after the last block.
-            yLocation = colorMerged[colorMerged.size()-1].second+1;
-        }else{
-            //condition E: best fit in the smallest hole.
-            yLocation = colorMerged[tempHole.first].second+1;
-            
-        }
-    }// end of if loop, conditon D and E.
-    
-    if (yLocation==-1){
-        cout<<"error in BFallocation!"<<endl;
-    }
-    
-    return pair<size_t,size_t>(yLocation,yLocation+size-1);
-}
-
-vector<Vertex> colorSomeVertices(vector<onePairMsg> pairMsgVec_, size_t &offset,string colorMethod){
-    /*
-     color all or 1/2 vertices using mergeSeg() and FFallocation(), with update offset.
-     time complexity: O(n^2).
-     */
-    size_t local_offset = offset; //feed into FFallocation, shall never change.
-    int m = static_cast<int>(pairMsgVec_.size());
-    //init all vertices
-    vector<Vertex>vertices;
-    for (int i=0; i<m;i++){
-        Vertex tempVertex(pairMsgVec_[i].name,pairMsgVec_[i].size,pairMsgVec_[i].r_idx,pairMsgVec_[i].d_idx);
-        vertices.push_back(tempVertex);
-
-    }
-
-    int **adj;
-    adj = new int*[m]; //TODO(junzhe) should be deleted somewhere.
-    // build edges with values 1 and 0; combine with mergeSeg and FFallocation in the loop.
-    for (int i=0; i<m;i++){
-        adj[i] = new int[m];
-        for (int j=0; j<m;j++){
-            if ((max(vertices[i].r,vertices[j].r))<(min(vertices[i].d,vertices[j].d))){
-                adj[i][j]=1;
-                if (vertices[j].colorRange.second){ //as second never be 0, if not empty.
-                    vertices[i].colorOccupied.push_back(vertices[j].colorRange);
-                }
-            }
-            else { adj[i][j]=0; }
-        }
-        
-        vector<pair<size_t,size_t>>colorMerged = mergeSeg(vertices[i].colorOccupied);
-       
-        if(colorMethod=="FF"){
-            vertices[i].colorRange = FFallocation(colorMerged,vertices[i].size, local_offset);
-            
-        }else{ //BF
-            vertices[i].colorRange = BFallocation(colorMerged,vertices[i].size, local_offset);
-        }
-
-        //update of offset, largest memory footprint as well.
-        if (vertices[i].colorRange.second >=offset){
-            offset = vertices[i].colorRange.second+1;
-        }
-    }//end of for loop.
-    
-    return vertices;
-}
-
-
-///get cross-iteration duration pairs
-pair<map<int,int>,map<int,int>> cross_itr_durations(vector<string>vec_double, int location, int maxLen, int &doubleRange){
-    
-    vector<onePieceMsg_pool>onePieceMsg_poolVec_2 = strVec_2_pieceMsgVec(vec_double,doubleRange);
-    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_2=pieceMsgVec_2_pairOfPairMsgVec(onePieceMsg_poolVec_2,doubleRange);
-    
-    map<int,int>Table_r2d; //full duration info, cross-iteration duration.
-    map<int,int>Table_d2r;
-    for (int i=0;i<pairOfPairMsgVec_2.first.size();i++){
-        if(pairOfPairMsgVec_2.first[i].r_idx<maxLen){
-            Table_r2d[pairOfPairMsgVec_2.first[i].r_idx] =pairOfPairMsgVec_2.first[i].d_idx%maxLen;
-            Table_d2r[pairOfPairMsgVec_2.first[i].d_idx%maxLen]=pairOfPairMsgVec_2.first[i].r_idx;
-        }
-    }
-    
-    return pair<map<int,int>,map<int,int>>(Table_r2d,Table_d2r);
-}
-
-/// main run funtion
-vector<Vertex> run(vector<string>vec, int &idxRange, size_t &offset, size_t &offsetCrossItr,string colorMethod){
-    /*
-     run function, input vector of strings, return colored vertices,
-     update idxRange, offset.
-     time complexity: O(n^2) where n is maxLen.
-     */
-    vector<onePieceMsg_pool>onePieceMsg_poolVec_ = strVec_2_pieceMsgVec(vec,idxRange);
-    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_=pieceMsgVec_2_pairOfPairMsgVec(onePieceMsg_poolVec_,idxRange);
-    //1. normal blocks 2. cross-iteration blocks.
-    vector<onePairMsg>pairMsgVec_1 = pairOfPairMsgVec_.first;
-    vector<onePairMsg>pairMsgVec_2 = pairOfPairMsgVec_.second;
+  //sort both pair
+  sort(vec_block_life_time1.begin(),vec_block_life_time1.end(),sort_by_size_r_idx_descending());
+  sort(vec_block_life_time2.begin(),vec_block_life_time2.end(),sort_by_size_r_idx_descending());
+  pair<vector<PoolBlockLifeTime>,vector<PoolBlockLifeTime>>pair_vec_block_life_time(vec_block_life_time1,vec_block_life_time2);
   
-    vector<Vertex>vertices_2 = colorSomeVertices(pairMsgVec_2,offset,colorMethod);
-    for (int i=0; i<vertices_2.size();i++){
-      vertices_2[i].crossItr = 1;
-    }
-    offsetCrossItr = offset;
-    offset = offsetCrossItr*2;
-    vector<Vertex>vertices = colorSomeVertices(pairMsgVec_1,offset,colorMethod);
-    //merge
-    vertices.insert(vertices.end(),vertices_2.begin(),vertices_2.end());
+  return pair_vec_block_life_time;
+}
 
-    return vertices;
+///Section implementing coloring algorithm.
+vector<pair<size_t, size_t>>  MergeColoredSegments(vector<pair<size_t,size_t>> vec_color_preoccupied){
+  /*
+  merge consecutive/overlapping segments of vec_color_preoccupied
+  input:the collection of color ranges that is once occupied by some block during a block's life time.
+  output: merged segments in ascending order.
+  time complexity: O(n) for run, O(n^2) for verify section(optional), where n is size of vec_color_preoccupied.
+  */
+  sort(vec_color_preoccupied.begin(), vec_color_preoccupied.end());
+  
+  if(vec_color_preoccupied.size()<=1){
+    return vec_color_preoccupied;
+  }
+  
+  int m = 0;
+  while (m<(vec_color_preoccupied.size()-1)){
+    if ((vec_color_preoccupied[m].second +2)> vec_color_preoccupied[m+1].first){
+      pair<int,int>tempItem(vec_color_preoccupied[m].first,max(vec_color_preoccupied[m].second,vec_color_preoccupied[m+1].second));
+      //remove m+1 and m
+      vec_color_preoccupied.erase(vec_color_preoccupied.begin()+m+1);
+      vec_color_preoccupied.erase(vec_color_preoccupied.begin()+m);
+      //insert the combined range
+      vec_color_preoccupied.insert(vec_color_preoccupied.begin()+m,tempItem);
+    }else{
+        m+=1;
+    }
+  }//end of while loop
+   
+  return vec_color_preoccupied;
+}
+
+
+pair<size_t,size_t> FirstFitAllocation(vector<pair<size_t,size_t>> vec_color_merged,size_t size, size_t local_offset){
+  /*
+   First Fit weighted coloring
+   return a pair standing for color_range.
+   local_offset shifts the returned color_range, allowing multiple Plan().
+   local_offset not changable, whereas offset is changable.
+   */
+  // condition: if no occupied, put after the local_offset
+  if (vec_color_merged.size()==0){
+    return pair<size_t,size_t>(0+local_offset,size-1+local_offset);
+  }
+  
+  // condition: able to fit before first block, after the local_offset
+  if ((size+local_offset)<(vec_color_merged[0].first+1)){
+    return pair<size_t,size_t>(0+local_offset,size-1+local_offset);
+  }
+  
+  size_t y_location= -1;
+  if (vec_color_merged.size()>1) {
+    int n = 0;
+    while (n<(vec_color_merged.size()-1)){
+      // condition: able to fit in between middle blocks.
+      if ((vec_color_merged[n+1].first-vec_color_merged[n].second-1)>=size){
+        y_location = vec_color_merged[n].second+1;
+        break;
+      }
+      n+=1;
+    }//end of while loop.
+    // condition: allocate after the last block.
+    if (y_location == -1){
+      y_location = vec_color_merged[vec_color_merged.size()-1].second+1;
+    }
+  }// end of if loop, conditon C and D.
+  
+  // condition: colorMeger len =1, allocate after the last block.
+  if (vec_color_merged.size()==1){
+    y_location = vec_color_merged[0].second+1;
+  }
+  
+  if (y_location==-1){
+    cout<<"error in FirstFitAllocation!!!"<<endl;
+  }
+  
+  return pair<size_t,size_t>(y_location,y_location+size-1);
+}
+
+
+pair<size_t,size_t> BestFitAllocation(vector<pair<size_t,size_t>> vec_color_merged,size_t size, size_t local_offset){
+  /*
+   Best Fit allocation, input and output same as FirstFitAllocation
+  */
+  // condition: if no occupied, put after the local_offset
+  if (vec_color_merged.size()==0){
+    return pair<size_t,size_t>(0+local_offset,size-1+local_offset);
+  }
+  //condition: if size=1, able to fit before the first block
+  if ((vec_color_merged.size()==1)&&((size+local_offset)<(vec_color_merged[0].first+1))){
+    return pair<size_t,size_t>(0+local_offset,size-1+local_offset);
+  }
+  
+  //condition: lese of second condition
+  if ((vec_color_merged.size()==1)&&((size+local_offset)>=(vec_color_merged[0].first+1))){
+    return pair<size_t,size_t>(vec_color_merged[0].second+1,vec_color_merged[0].second+size);
+  }
+  
+  size_t y_location=-1;
+  pair<int, size_t>temp_hole(-1,-1); // n, hole size between n and n+1
+  if (vec_color_merged.size()>1) {
+    int n = 0;
+    while (n<(vec_color_merged.size()-1)){
+      // condition: able to fit in between middle blocks. select smallest.
+      if (((vec_color_merged[n+1].first-vec_color_merged[n].second-1)>=size)&&((vec_color_merged[n+1].first-vec_color_merged[n].second-1)<temp_hole.second)){
+        temp_hole.first=n;
+        temp_hole.second=vec_color_merged[n+1].first-vec_color_merged[n].second-1;
+      }
+      n+=1;
+    }//end of while loop.
+    
+    if(temp_hole.first==-1){
+      // condition: allocate after the last block.
+      y_location = vec_color_merged[vec_color_merged.size()-1].second+1;
+    }else{
+      //condition: best fit in the smallest hole.
+      y_location = vec_color_merged[temp_hole.first].second+1;       
+    }
+  }// end of if loop, conditon D and E.
+  
+  if (y_location==-1){
+    cout<<"error in BestFitAllocation!"<<endl;
+  }
+  
+  return pair<size_t,size_t>(y_location,y_location+size-1);
+}
+
+vector<Vertex> AssignColorToVertices(vector<PoolBlockLifeTime> vec_block_life_time, size_t &offset,string color_method){
+  /*
+   color all or 1/2 vertices using MergeColoredSegments() and FirstFitAllocation(), with updated offset.
+   time complexity: O(n^2).
+  */
+  size_t local_offset = offset; //feed into FirstFitAllocation, shall never change.
+  int m = static_cast<int>(vec_block_life_time.size());
+  //init all vertices
+  vector<Vertex>vertices;
+  for (int i=0; i<m;i++){
+    Vertex temp_vertex(vec_block_life_time[i].name,vec_block_life_time[i].size,vec_block_life_time[i].r_idx,vec_block_life_time[i].d_idx);
+    vertices.push_back(temp_vertex);
+  }
+
+  int **adj;
+  adj = new int*[m];
+  // build edges with values 1 and 0; combine with mergeSeg and FirstFitAllocation in the loop.
+  for (int i=0; i<m;i++){
+    adj[i] = new int[m];
+    for (int j=0; j<m;j++){
+      if ((max(vertices[i].r,vertices[j].r))<(min(vertices[i].d,vertices[j].d))){
+        adj[i][j]=1;
+        if (vertices[j].color_range.second){ //as second never be 0, if not empty.
+          vertices[i].vec_color_preoccupied.push_back(vertices[j].color_range);
+        }
+      }
+      else { adj[i][j]=0; }
+    }
+    
+    vector<pair<size_t,size_t>>vec_color_merged = MergeColoredSegments(vertices[i].vec_color_preoccupied);
+   
+    if(color_method=="FF"){
+      vertices[i].color_range = FirstFitAllocation(vec_color_merged,vertices[i].size, local_offset);
+        
+    }else{ //BF
+      vertices[i].color_range = BestFitAllocation(vec_color_merged,vertices[i].size, local_offset);
+    }
+
+    //update of offset, largest memory footprint as well.
+    if (vertices[i].color_range.second >=offset){
+      offset = vertices[i].color_range.second+1;
+    }
+  }//end of for loop.
+  
+  return vertices;
+}
+
+
+pair<map<int,int>,map<int,int>> GetCrossIterationBlocks(vector<string>vec_double, int location_2nd_iteration, int iteration_length, int &double_range){
+  ///get cross-iteration duration blocks
+  vector<PoolOptInfo>vec_pool_opt_info2 = PoolOptSeqStrToStruct(vec_double,double_range);
+  pair<vector<PoolBlockLifeTime>,vector<PoolBlockLifeTime>>pair_vec_block_life_time2=PoolOptInfoToBlockLifeTime(vec_pool_opt_info2,double_range);
+  
+  map<int,int>table_ridx_to_didx; //full duration info, cross-iteration duration.
+  map<int,int>table_didx_to_ridx;
+  for (int i=0;i<pair_vec_block_life_time2.first.size();i++){
+    if(pair_vec_block_life_time2.first[i].r_idx<iteration_length){
+      table_ridx_to_didx[pair_vec_block_life_time2.first[i].r_idx] =pair_vec_block_life_time2.first[i].d_idx%iteration_length;
+      table_didx_to_ridx[pair_vec_block_life_time2.first[i].d_idx%iteration_length]=pair_vec_block_life_time2.first[i].r_idx;
+    }
+  }
+  
+  return pair<map<int,int>,map<int,int>>(table_ridx_to_didx,table_didx_to_ridx);
 }
 
 
 ///Section of test functions.
-vector<size_t> pairOfPairMsgVec_2_repSeq(pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_){
-    int counter_1M=0; int counter_1F=0; int counter_2=0;
-    vector<onePairMsg>onePairMsgVec_1 = pairOfPairMsgVec_.first;
-    vector<onePairMsg>onePairMsgVec_2 = pairOfPairMsgVec_.second;
-    vector<oneIterMsg>oneIterMsgVec_;
-    for (int i =0; i<onePairMsgVec_1.size(); i++){
-        oneIterMsg tempIterM(onePairMsgVec_1[i].size,1,onePairMsgVec_1[i].r_idx);
-        oneIterMsgVec_.push_back(tempIterM);
-        counter_1M++;
-        
-        size_t temp_s_d = static_cast<size_t>(onePairMsgVec_1[i].d_idx-onePairMsgVec_1[i].r_idx);
-        oneIterMsg tempIterF(temp_s_d,-1,onePairMsgVec_1[i].d_idx);
-        oneIterMsgVec_.push_back(tempIterF);
-        counter_1F++;
-    }
-    
-    for (int i =0; i<onePairMsgVec_2.size(); i++){
-        oneIterMsg tempIterM(onePairMsgVec_2[i].size,1,onePairMsgVec_2[i].r_idx);
-        oneIterMsgVec_.push_back(tempIterM);
-        counter_2++;
-    }
-    
-    sort(oneIterMsgVec_.begin(),oneIterMsgVec_.end(),less_than_iterIdx());
-    //only after sort then can create rep.
-    vector<size_t>rep; // vector of size_delta, name it as rep for simlisity.
-    for (int i =0; i<oneIterMsgVec_.size(); i++){
-        rep.push_back(oneIterMsgVec_[i].size_delta);
-    }
+vector<size_t> PoolOptSeqRepeatableTestPreProcess(pair<vector<PoolBlockLifeTime>,vector<PoolBlockLifeTime>>pair_vec_block_life_time){
+  /*
+  pre process pair of vector of block life time info, for ease of repeatable test.
+  */
+  vector<PoolBlockLifeTime>vec_block_life_time1 = pair_vec_block_life_time.first;
+  vector<PoolBlockLifeTime>vec_block_life_time2 = pair_vec_block_life_time.second;
+  vector<PoolOptSimplifiedInfo>vec_pool_opt_simplified_info;
 
-    return rep;
-}//end of pairOfPairMsgVec_2_repSeq function
+  //process Malloc and Free pair, i.e. normal blocks
+  for (int i =0; i<vec_block_life_time1.size(); i++){
+    PoolOptSimplifiedInfo tempIterM(vec_block_life_time1[i].size,1,vec_block_life_time1[i].r_idx);
+    vec_pool_opt_simplified_info.push_back(tempIterM);
+    size_t temp_s_d = static_cast<size_t>(vec_block_life_time1[i].d_idx-vec_block_life_time1[i].r_idx);
+    PoolOptSimplifiedInfo tempIterF(temp_s_d,-1,vec_block_life_time1[i].d_idx);
+    vec_pool_opt_simplified_info.push_back(tempIterF);
+  }
+  
+  //process Malloc-only blocks, i.e. cross-iteration blocks
+  for (int i =0; i<vec_block_life_time2.size(); i++){
+    PoolOptSimplifiedInfo tempIterM(vec_block_life_time2[i].size,1,vec_block_life_time2[i].r_idx);
+    vec_pool_opt_simplified_info.push_back(tempIterM);
+  }
+  
+  //sort then can create vec_rep.
+  sort(vec_pool_opt_simplified_info.begin(),vec_pool_opt_simplified_info.end(),sort_by_itr_idx_ascending());
+  vector<size_t>vec_rep; // vector of size_delta, name it as vec_rep for simlisity.
+  for (int i =0; i<vec_pool_opt_simplified_info.size(); i++){
+    vec_rep.push_back(vec_pool_opt_simplified_info[i].size_delta);
+  }
 
-
-vector<size_t> maxRepeatedSeg(vector<size_t>rep, int idxRange, int &maxLen, int &location){
-    /*
-     get max repeated non-overlapping Seg of a vector, return the repeated segment,
-     update maxLen, and location of where Seg starts to repeat.
-     brtue force method using equal()
-     time complexity O(n^2)
-     */
-    for (int i=0; i<idxRange;i++){
-        for (int len=1; len<(idxRange-i);len++){
-            if((equal(rep.begin()+i,rep.begin()+i-1+len,rep.begin()+i+len))&&(maxLen<len)) {
-                maxLen = len;
-                location = i;
-                cout<<"maxLen increased, lcoation and maxLen: ("<<location<<","<<maxLen<<")"<<endl;
-            }
-        }
-    }
-    //TODO(junzhe) verify the subSeq returned, below poped up error in vgg.
-    vector<size_t>subSeq(&rep[location],&rep[location+maxLen]);
-    if(!(equal(rep.begin()+location,rep.begin()+maxLen-1+location,subSeq.begin()) && equal(rep.begin()+location+maxLen,rep.begin()+2*maxLen-1+location,subSeq.begin()))){
-        cout<<"error in get the maxRep"<<endl;
-    }
-    return subSeq;
+  return vec_rep;
 }
 
 
-void verifyAndCut (vector<size_t>subSeq, int &maxLen, int &location){
-    /*
-     to cut, in case the repeated Seg contains multiple iterations.
-     */
-    int tempMaxLen=0;
-    int tempLocation =0;
-    int tempIdxRange = maxLen;
-    
-    vector<size_t>tempSubSeq = maxRepeatedSeg(subSeq,tempIdxRange,tempMaxLen, tempLocation);
-    //TODO(junzhe), tunable threshold.
-    int threshold =50;
-    if (tempMaxLen>threshold){
-        maxLen = tempMaxLen;
-        location += tempLocation;
-        cout<<"max length get cut"<<endl;
+vector<size_t> PoolRepeatableTest(vector<size_t>rep, int idx_range, int &iteration_length, int &location_2nd_iteration){
+  /*
+  get max repeated non-overlapping Seg of a vector, return the repeated segment,
+  update iteration_length, and location_2nd_iteration of where Seg starts to repeat.
+  brtue force method using equal()
+  time complexity O(n^2)
+  */
+  for (int i=0; i<idx_range;i++){
+    for (int len=1; len<(idx_range-i);len++){
+      if((equal(rep.begin()+i,rep.begin()+i-1+len,rep.begin()+i+len))&&(iteration_length<len)) {
+        iteration_length = len;
+        location_2nd_iteration = i;
+      }
     }
-    cout<<tempMaxLen<<endl;
+  }
+  //obtain sub_sequence based on iteration_length and location_2nd_iteration
+  vector<size_t>sub_sequence(&rep[location_2nd_iteration],&rep[location_2nd_iteration+iteration_length]);
+  if(!(equal(rep.begin()+location_2nd_iteration,rep.begin()+iteration_length-1+location_2nd_iteration,sub_sequence.begin()) && equal(rep.begin()+location_2nd_iteration+iteration_length,rep.begin()+2*iteration_length-1+location_2nd_iteration,sub_sequence.begin()))){
+    cout<<"error in get the maxRep"<<endl;
+  }
+
+  return sub_sequence;
 }
 
 
-//main function of test
-int test(vector<string>vec3, int &maxLen, int &location){
+void VerifyRepeatableTest(vector<size_t>sub_sequence, int &iteration_length, int &location_2nd_iteration){
     /*
-     main function of test, returns globeCounter, which is when flag shall be switched,
-     update maxLen and location of where the repeated Seg starts.
-     */
-    cout<<"====================== test ========================="<<endl;
-    int idxRange3=0;
-    vector<onePieceMsg_pool>onePieceMsg_poolVec_3 =strVec_2_pieceMsgVec(vec3,idxRange3);
-    pair<vector<onePairMsg>,vector<onePairMsg>>pairOfPairMsgVec_=pieceMsgVec_2_pairOfPairMsgVec(onePieceMsg_poolVec_3,idxRange3);
-    vector<size_t>rep=pairOfPairMsgVec_2_repSeq(pairOfPairMsgVec_);
+     to cut, in case the repeated Segment returned by PoolRepeatableTest contains multiple iterations.
+    */
+    int temp_iteration_length = 0;
+    int temp_location_2nd_iteration = 0;
+    int temp_idx_range = iteration_length;
     
-    //get repeated sub vector.
-    vector<size_t>subSeq = maxRepeatedSeg(rep,idxRange3,maxLen,location);
-    //cout<<subSeq.size()<<endl;
-    verifyAndCut(subSeq, maxLen, location);
-    int globeCounter=-1;
-    if (maxLen>100){ //TODO(junzhe) tunable threshold.
-        cout<<"new location and maxLen: "<<location<<' '<<maxLen<<endl;
-        globeCounter = idxRange3+maxLen-(idxRange3-location)%maxLen;
+    //verify by testing its subsequence again
+    vector<size_t>tempsub_sequence = PoolRepeatableTest(sub_sequence,temp_idx_range,temp_iteration_length, temp_location_2nd_iteration);
+    
+    //tunable threshold.
+    int threshold = 50;
+    
+    if (temp_iteration_length>threshold){
+        iteration_length = temp_iteration_length;
+        location_2nd_iteration += temp_location_2nd_iteration;
     }
-    return globeCounter;
 }
+
 
 ///verify if coloring got overlapping
-void overlap_test(vector<Vertex> vertices){
+void OverlapVerification(vector<Vertex> vertices){
     size_t s = vertices.size();
     int i,j;
     for (i=0; i<s; i++){
         for (j=i+1; j<s; j++){
-            if (((max(vertices[i].r,vertices[j].r))<(min(vertices[i].d,vertices[j].d)))&& ((max(vertices[i].colorRange.first,vertices[j].colorRange.first))<(1+min(vertices[i].colorRange.second,vertices[j].colorRange.second)))){
+            if (((max(vertices[i].r,vertices[j].r))<(min(vertices[i].d,vertices[j].d)))&& ((max(vertices[i].color_range.first,vertices[j].color_range.first))<(1+min(vertices[i].color_range.second,vertices[j].color_range.second)))){
                 cout<<"error overlapping"<<endl;
             }
         }
@@ -674,13 +578,11 @@ void overlap_test(vector<Vertex> vertices){
 
 
 SmartMemPool::SmartMemPool(const MemPoolConf &conf){
-    //TODO(junzhe) to figure out what to do here.
-    colorMethod = "BF";
+    color_method = "BF";
     conf_ = conf;
 }
 
 void SmartMemPool::Init(){
-  //TODO(junzhe) Note, this is dummy here, not catter multiple GPU.
   mtx_.lock();
   if(!initialized_){
     initialized_ =true;
@@ -689,291 +591,332 @@ void SmartMemPool::Init(){
 }
 
 
+
+int SmartMemPool::Detection(vector<string>vec_string_test, int &iteration_length, int &location_2nd_iteration){
+  /*
+  Testing repeatability from raw operation sequence
+  returns global_index_threshold, which is when flag shall be switched,
+  update iteration_length and location_2nd_iteration of where the repeated Seg starts.
+  */
+  int idx_range_test=0;
+  vector<PoolOptInfo>vec_pool_opt_info3 = PoolOptSeqStrToStruct(vec_string_test,idx_range_test);
+  pair<vector<PoolBlockLifeTime>,vector<PoolBlockLifeTime>>pair_vec_block_life_time = PoolOptInfoToBlockLifeTime(vec_pool_opt_info3,idx_range_test);
+  vector<size_t>vec_rep = PoolOptSeqRepeatableTestPreProcess(pair_vec_block_life_time);
+  
+  //repeatable test with verification
+  vector<size_t>sub_sequence = PoolRepeatableTest(vec_rep,idx_range_test,iteration_length,location_2nd_iteration);
+  VerifyRepeatableTest(sub_sequence, iteration_length, location_2nd_iteration);
+  
+  //update global_index_threshold if test past, i.e. iteration_length exceed certain threshold
+  if (iteration_length>100){ //tunable threshold.
+    global_index_threshold = idx_range_test+iteration_length-(idx_range_test-location_2nd_iteration)%iteration_length;
+  }
+  return global_index_threshold;
+}
+
+
+/// main run funtion
+vector<Vertex> SmartMemPool::Plan(vector<string>vec, int &idx_range, size_t &offset, size_t &offset_cross_iteration,string color_method){
+  /*
+  Planning, i.e. Assign Color to Vertices from raw operation sequence info.
+  input vector of strings, return colored vertices,
+  update idx_range, offset.
+  time complexity: O(n^2) where n is iteration_length.
+  */
+
+  vector<PoolOptInfo>vec_pool_opt_info = PoolOptSeqStrToStruct(vec,idx_range);
+  pair<vector<PoolBlockLifeTime>,vector<PoolBlockLifeTime>>pair_vec_block_life_time=PoolOptInfoToBlockLifeTime(vec_pool_opt_info,idx_range);
+  
+  //coloring normal blocks and cross-iteration blocks separately, cannot be miss-matched.
+  vector<PoolBlockLifeTime>vec_block_life_time1 = pair_vec_block_life_time.first;
+  vector<PoolBlockLifeTime>vec_block_life_time2 = pair_vec_block_life_time.second;
+
+  //color cross-iteration blocks
+  vector<Vertex>vertices_2 = AssignColorToVertices(vec_block_life_time2,offset,color_method);
+
+  for (int i=0; i<vertices_2.size();i++){
+    vertices_2[i].cross_iteration = 1;
+  }
+  //update offset
+  offset_cross_iteration = offset;
+  offset = offset_cross_iteration*2;
+  //color normal blocks
+  vector<Vertex>vertices = AssignColorToVertices(vec_block_life_time1,offset,color_method);
+  
+  //merge after coloring
+  vertices.insert(vertices.end(),vertices_2.begin(),vertices_2.end());
+
+  return vertices;
+}
+
+
 ///Malloc
 void SmartMemPool::Malloc(void** ptr, const size_t size){
-    /*
-     1. switch flag when gc == globeCounter, construct lookup table and malloc the whole pool.
-     2. if flag=0, malloc/cudaMalloc, collect vec string
-     3. if flag=1, look up table, malloc/cudaMalloc if not in the Table
-     4. test repeated sequence every 100 blocks, update globeCounter.
-     */
+  /*
+   1. switch flag when global_index == global_index_threshold, construct lookup table and malloc the whole pool.
+   2. if flag=0, malloc/cudaMalloc, collect vec string
+   3. if flag=1, look up table, malloc/cudaMalloc if not in the Table
+   4. test repeated sequence every 100 blocks, update global_index_threshold.
+   */
 
-    //TODO(junzhe) Note, this is dummy here, not catter multiple GPU.
-    //fstream file("memInfo.text", ios::in|ios::out|ios::app); //a.
-    //file<<gc<<' '<<"Malloc"; //a.
-    if (!initialized_){
+  if (!initialized_){
     Init();
   }
 
-    void* allocatedPtr = NULL; //ptr to be returned
-    
-    if (gc == globeCounter){
-        /// 1. switch flag when gc == globeCounter, construct lookup table and malloc the whole pool.
-        
-        mallocFlag=1;
-        cout<<"switched to color-malloc"<<endl;
-        vector<string>vec_run(&vec[location],&vec[location+maxLen]);
-        
-        vector<Vertex>vertices = run(vec_run, idxRange,offset,offsetCrossItr, colorMethod);
+  void* allocated_ptr = NULL; //ptr to be returned
 
-        //here to verify if the coloring got overlapping. TODO(junzhe) optional
-        //overlap_test(vertices);
-        
-        //obtain the cross-iteration duration info
-        int doubleRange=0;
-        vector<string>vec_double(&vec[location],&vec[location+2*maxLen]);
-        pair<map<int,int>,map<int,int>>pairs =cross_itr_durations(vec_double, location,maxLen,doubleRange);
-        Table_r2d = pairs.first;
-        Table_d2r = pairs.second;
-        
-        //update ptrPool
-        cudaMalloc(&ptrPool,offset); //poolSize or memory foot print  offset.
-        cout<<"ptrPool is: "<<ptrPool<<endl;
+  /// 1. switch flag when global_index == global_index_threshold, construct lookup table and malloc the whole pool.    
+  if (global_index == global_index_threshold){
 
-        //b.  below 2 loops: vec_r2Ver to replace Table_r2Ver
-        for (int i=0; i<idxRange; i++){
-            lookUpElement tempElement;
-            Vec_r2Ver.push_back(make_pair(i,tempElement));
-        }
-        for (int i=0; i<vertices.size(); i++){
-            lookUpElement temp;
-            temp.r_idx =vertices[i].r;
-            temp.d_idx =Table_r2d.find(vertices[i].r)->second;
-            temp.size =vertices[i].size;
-            temp.offset=vertices[i].colorRange.first;
-            temp.ptr = (void*)((char*)ptrPool+temp.offset*sizeof(char));
-            temp.Occupied =0;
-            temp.crossItr = vertices[i].crossItr;
-            temp.Occupied_backup =0; 
-            //build tables for lookup.
-            Vec_r2Ver[vertices[i].r].second= temp;
-        }
+    malloc_flag = 1;
+    vector<string>vec_raw_opt_info(&vec[location_2nd_iteration],&vec[location_2nd_iteration+iteration_length]);
+    
+    //color vertices
+    vector<Vertex>vertices = Plan(vec_raw_opt_info,idx_range,offset,offset_cross_iteration,color_method);
+
+    //here to verify if the coloring got overlapping. for verify purpose only.
+    //OverlapVerification(vertices);
+    
+    //obtain the cross-iteration duration info
+    int double_range=0;
+    vector<string>vec_double(&vec[location_2nd_iteration],&vec[location_2nd_iteration+2*iteration_length]);
+    pair<map<int,int>,map<int,int>>pairs =GetCrossIterationBlocks(vec_double,location_2nd_iteration,iteration_length,double_range);
+    table_ridx_to_didx = pairs.first;
+    table_didx_to_ridx = pairs.second;
+    
+    //make pool
+    cudaMalloc(&ptr_pool,offset); //poolSize or memory foot print  offset.
+
+    //make vec_block_meta for lookup purpose after pool is constructed
+    for (int i=0; i<idx_range; i++){
+        PoolBlockMeta tempElement;
+        vec_block_meta.push_back(make_pair(i,tempElement));
     }
-    
-    if(mallocFlag==0){
-        ///  2. if flag=0, malloc/cudaMalloc
-        cudaMalloc(ptr, size);
-        allocatedPtr = *ptr;
-        //update load
-        if(loadLogFlag==1){
-            if (gc>0){
-                Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first+size,Table_load.find(gc-1)->second.second);
-            }else{ //very first block
-                Table_load[gc]=make_pair(size,0);
-            }
-        }
-        //push_back the string for later test and run.
-        string tempStr1 ="Malloc ";
-        stringstream strm2;
-        strm2<<allocatedPtr;
-        string tempStr2 = strm2.str();
-        stringstream strm3;
-        strm3<<size;
-        string tempStr3 = strm3.str();
-        string temp = tempStr1+tempStr2+" "+tempStr3;
-        vec.push_back(temp);
-        //file<<" Condition M1, addr: "<<*ptr<<endl;  //a.
-    }else{
-        /// 3. if flag=1, look up table.
-        int lookupIdx = (gc-location)%maxLen;
-        if ((Vec_r2Ver[lookupIdx].second.size ==size)&&(Vec_r2Ver[lookupIdx].second.Occupied*Vec_r2Ver[lookupIdx].second.Occupied_backup==0)){
-             if (Vec_r2Ver[lookupIdx].second.Occupied==0){
-                //condition M2, normal and crossItr's primary.
-                //assign ptr and mark as occupied, and add in ptr2rIdx
-                allocatedPtr = Vec_r2Ver[lookupIdx].second.ptr;
-                Vec_r2Ver[lookupIdx].second.Occupied= 1;
-                Table_p2r[allocatedPtr]=lookupIdx;                
-                //update load
-                if(loadLogFlag==1){
-                  Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second+size);
-                }
-                //file<<" Condition M2, addr: "<<*ptr<<endl;  //a.
-              }else if ((Vec_r2Ver[lookupIdx].second.crossItr==1) && (Vec_r2Ver[lookupIdx].second.Occupied==1) && (Vec_r2Ver[lookupIdx].second.Occupied_backup ==0)) {
-                //condition M4, crossItr's backup
-                allocatedPtr = (void*)((char*)Vec_r2Ver[lookupIdx].second.ptr+offsetCrossItr*sizeof(char));
-                Vec_r2Ver[lookupIdx].second.Occupied_backup=1;
-                Table_p2r[allocatedPtr]=lookupIdx;
-                //update load
-                if(loadLogFlag==1){
-                  Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second+size);
-                }
-                //file<<" Condition M4, addr: "<<*ptr<<endl;  //a.
-              }
-        }else{  //condition M3, size not proper or both occupied.
-                cudaMalloc(ptr, size);
-                allocatedPtr = *ptr;       
-                //update load
-                if(loadLogFlag==1){
-                  Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first+size,Table_load.find(gc-1)->second.second);
-                }
-                //file<<" Condition M3, addr: "<<*ptr<<endl;  //a.
-        } 
-    } //end of loop for flag=1
-    
-    ///4. test repeated sequence every 100 blocks, update globeCounter.
-    if (((gc+1)%300==0) && (mallocFlag==0) && (globeCounter==-1)&&(gc+2>checkPoint)){
-        cout<<"gc and GC before test: "<<gc<<' '<<globeCounter<<endl;
-        globeCounter = test(vec,maxLen,location);
-        checkPoint=checkPoint*2;
+    for (int i=0; i<vertices.size(); i++){
+        PoolBlockMeta temp;
+        temp.r_idx =vertices[i].r;
+        temp.d_idx =table_ridx_to_didx.find(vertices[i].r)->second;
+        temp.size =vertices[i].size;
+        temp.offset=vertices[i].color_range.first;
+        temp.ptr = (void*)((char*)ptr_pool+temp.offset*sizeof(char));
+        temp.occupied =0;
+        temp.cross_iteration = vertices[i].cross_iteration;
+        temp.occupied_backup =0; 
+        //build tables for lookup.
+        vec_block_meta[vertices[i].r].second= temp;
     }
-    
-    ///get load info, when gc == GC+2maxLen
-    if (gc==(globeCounter+2*maxLen)&& (globeCounter>0)){
-        getMaxLoad();
-        loadLogFlag=0;
+  }
+  ///  2. if flag=0, malloc/cudaMalloc, accumulate vec_info at the beginning iterations.
+  if(malloc_flag ==0){    
+    cudaMalloc(ptr, size);
+    allocated_ptr = *ptr;
+    //update load
+    if(load_flag==1){
+      if (global_index>0){
+        table_load[global_index]=make_pair(table_load.find(global_index-1)->second.first+size,table_load.find(global_index-1)->second.second);
+      }else{ //very first block
+        table_load[global_index]=make_pair(size,0);
+      }
     }
-    
-    gc++;
-    Table_p2s[allocatedPtr]=size; //update it for load tracking purpose.
-    *ptr = allocatedPtr;
-    ///update block_RWMF
-    string tempStr1 ="Malloc ";
+    //push_back the string for later test and run.
+    string temp_str1 ="Malloc ";
     stringstream strm2;
-    strm2<<allocatedPtr;
-    string tempStr2 = strm2.str();
+    strm2<<allocated_ptr;
+    string temp_str2 = strm2.str();
     stringstream strm3;
     strm3<<size;
-    string tempStr3 = strm3.str();
-    string temp = tempStr1+tempStr2+" "+tempStr3;
-    ///below time can be removed TODO(junzhe)
-    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    stringstream strm4;
-    strm4<<now;
-    string tempStr4 = strm4.str();
-    temp = temp+" "+tempStr4;
-    vec_block_RWMF.push_back(temp);
+    string temp_str3 = strm3.str();
+    string temp = temp_str1+temp_str2+" "+temp_str3;
+    vec.push_back(temp);
+  }else{
+
+    /// 3. if flag=1, look up table.
+    int lookup_idx = (global_index-location_2nd_iteration)%iteration_length;
+    if ((vec_block_meta[lookup_idx].second.size ==size)&&(vec_block_meta[lookup_idx].second.occupied*vec_block_meta[lookup_idx].second.occupied_backup==0)){
+     if (vec_block_meta[lookup_idx].second.occupied==0){
+        //condition: normal and cross_iteration's primary.
+        //assign ptr and mark as occupied, and add in ptr2rIdx
+        allocated_ptr = vec_block_meta[lookup_idx].second.ptr;
+        vec_block_meta[lookup_idx].second.occupied= 1;
+        table_ptr_to_ridx[allocated_ptr]=lookup_idx;                
+        //update load
+        if(load_flag==1){
+          table_load[global_index]=make_pair(table_load.find(global_index-1)->second.first,table_load.find(global_index-1)->second.second+size);
+        }
+      }else if ((vec_block_meta[lookup_idx].second.cross_iteration==1) && (vec_block_meta[lookup_idx].second.occupied==1) && (vec_block_meta[lookup_idx].second.occupied_backup ==0)) {
+        //condition: cross_iteration's backup
+        allocated_ptr = (void*)((char*)vec_block_meta[lookup_idx].second.ptr+offset_cross_iteration*sizeof(char));
+        vec_block_meta[lookup_idx].second.occupied_backup=1;
+        table_ptr_to_ridx[allocated_ptr]=lookup_idx;
+        //update load
+        if(load_flag==1){
+          table_load[global_index]=make_pair(table_load.find(global_index-1)->second.first,table_load.find(global_index-1)->second.second+size);
+        }
+      }
+    }else{  
+      //condition: size not proper or both occupied.
+      cudaMalloc(ptr, size);
+      allocated_ptr = *ptr;       
+      //update load
+      if(load_flag==1){
+        table_load[global_index]=make_pair(table_load.find(global_index-1)->second.first+size,table_load.find(global_index-1)->second.second);
+      }
+    } 
+  } //end of loop for flag=1
+    
+  ///4. test repeated sequence every 300 index, update global_index_threshold.
+  if (((global_index+1)%300==0) && (malloc_flag ==0) && (global_index_threshold==-1)&&(global_index+2>check_point)){
+    global_index_threshold = Detection(vec,iteration_length,location_2nd_iteration);
+    check_point=check_point*2;
+  }
+    
+  ///get load info, when global_index == global_index+2iteration_length
+  if (global_index==(global_index_threshold+2*iteration_length)&& (global_index_threshold>0)){
+    GetMaxLoad();
+    load_flag=0;
+  }
+    
+  global_index++;
+  //update it for load tracking purpose.
+  table_ptr_to_size[allocated_ptr]=size; 
+ 
+  //update *ptr
+  *ptr = allocated_ptr;
+  
+  ///update block_RWMF
+  string temp_str1 ="Malloc ";
+  stringstream strm2;
+  strm2<<allocated_ptr;
+  string temp_str2 = strm2.str();
+  stringstream strm3;
+  strm3<<size;
+  string temp_str3 = strm3.str();
+  string temp = temp_str1+temp_str2+" "+temp_str3;
+  int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  stringstream strm4;
+  strm4<<now;
+  string temp_str4 = strm4.str();
+  temp = temp+" "+temp_str4;
+  vec_block_rw_mf.push_back(temp);
 }
 
 ///Free
 void SmartMemPool::Free(void* ptr){
     
-    //fstream file("memInfo.text", ios::in|ios::out|ios::app); //a.
-    //file<<gc<<' '<<"Free"; //a.
-    
-    size_t deallocatedSize = Table_p2s.find(ptr)->second;
-    
-    if ((globeCounter==-1)||(gc<globeCounter)){
-        //push_back the string for later test and run.
-        string tempStr1 ="Free ";
-        stringstream strm2;
-        strm2<<ptr;
-        string tempStr2 = strm2.str();
-        string temp = tempStr1+tempStr2;
-        vec.push_back(temp);
-        
-        //file<<" Condition F1, addr: "<<ptr<<endl;  //a.
-        //update load before free
-        if(loadLogFlag==1){
-            Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first-deallocatedSize,Table_load.find(gc-1)->second.second);
-        }
-        /// before flag switch, for sure all free shall be done by free()
-        cudaFree(ptr);
-    }else{
-        if (!(Table_p2r.find(ptr)==Table_p2r.end())){
-            int resp_rIdx = Table_p2r.find(ptr)->second;
-            Table_p2r.erase(ptr);
-            
-            if (ptr == Vec_r2Ver[resp_rIdx].second.ptr){
-              //Condition F2, from M2
-              Vec_r2Ver[resp_rIdx].second.Occupied =0; //freed, able to allocate again.
-              //file<<" Condition F2, addr: "<<ptr<<endl;  //a.
-            }else if (ptr == (void*)((char*)Vec_r2Ver[resp_rIdx].second.ptr+offsetCrossItr*sizeof(char))){
-              //Condition F4, from M4
-              Vec_r2Ver[resp_rIdx].second.Occupied_backup =0;
-              //file<<" Condition F4, addr: "<<ptr<<endl;  //a.
-            } else{
-              //Condition F5, from M2, M4 but idx switched.
-              if (((float)((char*)ptr-((char*)ptrPool+offsetCrossItr*sizeof(char)))>0) && ((float)((char*)ptr-((char*)ptrPool+2*offsetCrossItr*sizeof(char)))<0)){
-                     Vec_r2Ver[resp_rIdx].second.Occupied_backup =0;
-              }else{
-                     Vec_r2Ver[resp_rIdx].second.Occupied =0;
-              }
-            }
-            //update load
-             if(loadLogFlag==1){
-                 Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first,Table_load.find(gc-1)->second.second-deallocatedSize);
-             }
-        }else{
-          //update load
-          if(loadLogFlag==1){
-              Table_load[gc]=make_pair(Table_load.find(gc-1)->second.first-deallocatedSize,Table_load.find(gc-1)->second.second);
-          }
-          //file<<" Condition F3, addr: "<<ptr<<endl;  //a.
-          cudaFree(ptr);
-        }
-            
-    }
-    gc++;
-    ///update block_RWMF
-    string tempStr1 ="Free ";
+  size_t deallocatedSize = table_ptr_to_size.find(ptr)->second;
+  
+  /// at the begining iterations, via cudaFree, accumulate opt info.  
+  if ((global_index_threshold==-1)||(global_index<global_index_threshold)){
+    //push_back the string for later test and run.
+    string temp_str1 ="Free ";
     stringstream strm2;
     strm2<<ptr;
-    string tempStr2 = strm2.str();
-    string temp = tempStr1+tempStr2;
-    ///below time can be removed TODO(junzhe)
-    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    stringstream strm4;
-    strm4<<now;
-    string tempStr4 = strm4.str();
-    temp = temp+" "+tempStr4;
-    vec_block_RWMF.push_back(temp);
+    string temp_str2 = strm2.str();
+    string temp = temp_str1+temp_str2;
+    vec.push_back(temp);
+    
+    //update load before free
+    if(load_flag==1){
+      table_load[global_index]=make_pair(table_load.find(global_index-1)->second.first-deallocatedSize,table_load.find(global_index-1)->second.second);
+    }
+    // before flag switch, for sure all free shall be done by free()
+    cudaFree(ptr);
+  }else{
+    /// cases that no need accumulating opt info
+
+    /// free a ptr that is in the memory pool
+    if (!(table_ptr_to_ridx.find(ptr)==table_ptr_to_ridx.end())){
+      int resp_rIdx = table_ptr_to_ridx.find(ptr)->second;
+      table_ptr_to_ridx.erase(ptr);
+      
+      if (ptr == vec_block_meta[resp_rIdx].second.ptr){
+        vec_block_meta[resp_rIdx].second.occupied =0; //freed, able to allocate again.
+      }else if (ptr == (void*)((char*)vec_block_meta[resp_rIdx].second.ptr+offset_cross_iteration*sizeof(char))){
+        vec_block_meta[resp_rIdx].second.occupied_backup =0;
+      } else{
+        if (((float)((char*)ptr-((char*)ptr_pool+offset_cross_iteration*sizeof(char)))>0) && ((float)((char*)ptr-((char*)ptr_pool+2*offset_cross_iteration*sizeof(char)))<0)){
+          vec_block_meta[resp_rIdx].second.occupied_backup =0;
+        }else{
+          vec_block_meta[resp_rIdx].second.occupied =0;
+        }
+      }
+      //update load
+       if(load_flag==1){
+           table_load[global_index]=make_pair(table_load.find(global_index-1)->second.first,table_load.find(global_index-1)->second.second-deallocatedSize);
+       }
+    }else{
+      /// free a ptr that is NOT in the memory pool
+      
+      //update load
+      if(load_flag==1){
+          table_load[global_index]=make_pair(table_load.find(global_index-1)->second.first-deallocatedSize,table_load.find(global_index-1)->second.second);
+      }
+      cudaFree(ptr);
+    }
+            
+  }
+
+  global_index++;
+
+  ///update block_RWMF
+  string temp_str1 ="Free ";
+  stringstream strm2;
+  strm2<<ptr;
+  string temp_str2 = strm2.str();
+  string temp = temp_str1+temp_str2;
+  int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  stringstream strm4;
+  strm4<<now;
+  string temp_str4 = strm4.str();
+  temp = temp+" "+temp_str4;
+  vec_block_rw_mf.push_back(temp);
 }//end of Free.
 
 
 SmartMemPool::~SmartMemPool(){
-    fstream file_block1("blockInfo_RW.text", ios::in|ios::out|ios::app);
-    fstream file_block2("blockInfo_RWMF.text", ios::in|ios::out|ios::app);
-    for (int i=0; i< vec_block_RW.size();i++){
-        file_block1<<vec_block_RW[i]<<endl;
-    }
-    for (int i=0; i< vec_block_RWMF.size();i++){
-        file_block2<<vec_block_RWMF[i]<<endl;
-    }
-    cudaFree(ptrPool);
-    //TODO(junzhe) verify what else shall be cleaned up.
+
+  fstream file_block1("blockInfo_RW.text", ios::in|ios::out|ios::app);
+  fstream file_block2("blockInfo_RWMF.text", ios::in|ios::out|ios::app);
+  for (int i=0; i< vec_block_rw.size();i++){
+    file_block1<<vec_block_rw[i]<<endl;
+  }
+  for (int i=0; i< vec_block_rw_mf.size();i++){
+    file_block2<<vec_block_rw_mf[i]<<endl;
+  }
+  cudaFree(ptr_pool);
+
 }
 
-void SmartMemPool::getMaxLoad(){
+void SmartMemPool::GetMaxLoad(){
     
-    vector<size_t>cudaLoadLog;
-    for (int i=0; i<Table_load.size();i++){
-        cudaLoadLog.push_back(Table_load.find(i)->second.first);
-    }
-    size_t maxCudaLoad = *max_element(cudaLoadLog.begin(),cudaLoadLog.end());
-    int idxMaxCudaLoad = static_cast<int>(distance(cudaLoadLog.begin(),max_element(cudaLoadLog.begin(),cudaLoadLog.end())));
-    
-    vector<size_t>colorLoadLog;
-    for (int i=0; i<Table_load.size();i++){
-        colorLoadLog.push_back(Table_load.find(i)->second.second);
-    }
-    size_t maxColorLoad = *max_element(colorLoadLog.begin(),colorLoadLog.end());
-    int idxMaxColorLoad = static_cast<int>(distance(colorLoadLog.begin(),max_element(colorLoadLog.begin(),colorLoadLog.end())));
-    size_t offsetCudaLoad = Table_load.find(idxMaxColorLoad)->second.first;
-    
-    maxTotalLoad = max(maxCudaLoad,maxColorLoad+offsetCudaLoad);
-    maxMemUsage = max(maxCudaLoad,offset+offsetCudaLoad);
-    memRatio = (float)maxMemUsage/(float)maxTotalLoad;
-    
-    cout<<"=============================memory usage stats print: ================================"<<endl;
-    cout<<"maxColorLoad vs memPoolSize: (at idx "<<idxMaxColorLoad<<")"<<endl;
-    cout<<maxColorLoad<<endl;
-    cout<<offset<<endl;
-    cout<<"maxTotalLoad vs maxCudaLoad(at idx "<<idxMaxCudaLoad<<") maxMemUsage"<<endl;
-    cout<<maxTotalLoad<<endl;
-    cout<<maxCudaLoad<<endl;
-    cout<<maxMemUsage<<endl;
-    cout<<"memRatio: "<<memRatio<<endl;   
+  vector<size_t>vec_load_log;
+  for (int i=0; i<table_load.size();i++){
+      vec_load_log.push_back(table_load.find(i)->second.first);
+  }
+  size_t max_cuda_load = *max_element(vec_load_log.begin(),vec_load_log.end());
+  int idx_max_cuda_load = static_cast<int>(distance(vec_load_log.begin(),max_element(vec_load_log.begin(),vec_load_log.end())));
+  
+  vector<size_t>vec_color_load;
+  for (int i=0; i<table_load.size();i++){
+      vec_color_load.push_back(table_load.find(i)->second.second);
+  }
+  size_t max_color_load = *max_element(vec_color_load.begin(),vec_color_load.end());
+  int idx_max_color_load = static_cast<int>(distance(vec_color_load.begin(),max_element(vec_color_load.begin(),vec_color_load.end())));
+  size_t offset_color_load = table_load.find(idx_max_color_load)->second.first;
+  
+  max_total_load = max(max_cuda_load,max_color_load+offset_color_load);
+  max_mem_usage = max(max_cuda_load,offset+offset_color_load);
+  
 }
 
 std::pair<size_t, size_t> SmartMemPool::GetMemUsage() {
-  //TODO(junzhe) note here the pair is different from that of CnMemPool.
-  return std::make_pair(maxMemUsage, maxTotalLoad);
+  //note here the pair is different from that of CnMemPool.
+  return std::make_pair(max_mem_usage, max_total_load);
 }
     
 void SmartMemPool::Append(string blockInfo) {
-     //TODO(junzhe) add idx later
-    vec_block_RW.push_back(blockInfo);
-    vec_block_RWMF.push_back(blockInfo);
+  vec_block_rw.push_back(blockInfo);
+  vec_block_rw_mf.push_back(blockInfo);
 }
 
 ///SwapPool
@@ -992,121 +935,86 @@ void SwapPool::Init(){
 
 
 void SwapPool::PoolOpt(vector<string> &vec_mf) {
-  //TODO(junzhe) redo 9/17
 
-  ///process vec_mf of 3itr into blocks,maxLen
-  //assume format of string: MF ptr size;
-  //onePieceMsg_pool verified
-  // for (int i = 0; i< vec_mf.size();i++){
-  //   cout<<"print mf "<<i<<' '<<vec_mf[i]<<endl;
-  // }
-  // cout<<"===================print done"<<endl;
-  vector<onePieceMsg_pool>onePieceMsg_poolVec_;
-  maxLen_mf = vec_mf.size()/3;
-  cout<<"maxLen_mf "<<maxLen_mf<<endl;
-  cout<<"len of vec_mf "<<vec_mf.size()<<endl;
+  vector<PoolOptInfo>vec_pool_opt_info;
+  iteration_length_mf = vec_mf.size()/3; //cos input vec_mf is of 3 iteration 
+
+  //convert raw opt info into struct: PoolOptInfo
   for (int i = 0;i < vec_mf.size();i++){
-    vector<string> v = split(vec_mf[i], " ");
-    // cout<<"print mf "<<i<<' '<<vec_mf[i]<<endl;
-    // cout<<"||"<<v[0]<<"||"<<v[1]<<"||"<<endl;
+    vector<string> v = SplitString(vec_mf[i], " ");
 
     if (v[0]=="Malloc"){
-      //convert v[2] from str to size_t
       size_t result;
       stringstream convert(v[2]);
-      // cout<<"1"<<endl;
       if (!(convert>>result)){
-        result =-1;
+        result = -1;
         cout<<"error for converting size from str to int."<<endl;
       }
-      // cout<<"2"<<endl;
-      onePieceMsg_pool tempMsg(v[1],result, 1, i-maxLen_mf);
-      // cout<<"3"<<endl;
-      onePieceMsg_poolVec_.push_back(tempMsg);
-      // cout<<"4"<<endl;
+      PoolOptInfo tempMsg(v[1],result, 1, i-iteration_length_mf);
+      vec_pool_opt_info.push_back(tempMsg);
     }else if (v[0]=="Free"){
-      // cout<<"1"<<endl;
-      onePieceMsg_pool tempMsg(v[1],-1, -1, i-maxLen_mf);
-      // cout<<"2"<<endl;
-      onePieceMsg_poolVec_.push_back(tempMsg);
-      // cout<<"3"<<endl;
+      PoolOptInfo tempMsg(v[1],-1, -1, i-iteration_length_mf);
+      vec_pool_opt_info.push_back(tempMsg);
     }else {
       cout<<"error for process the onePriceMsg."<<endl;
-      // cout<<i<<" "<<v[0]<<"||"<<vec_mf[i]<<endl;
     }
   }
-  sort(onePieceMsg_poolVec_.begin(),onePieceMsg_poolVec_.end(),less_than_ptrIdx());
-  // cout<<"===================print done(2nd loop)"<<endl;
-  // for (int i = 0;i < vec_mf.size();i++){
-
+  //sort by ptr and then idx
+  sort(vec_pool_opt_info.begin(),vec_pool_opt_info.end(),sort_by_ptr_idx_ascending());
   
-  //pair
-  vector<onePairMsg>pairMsgVec_;
+  //convert into block lifetime
+  vector<PoolBlockLifeTime>vec_block_life_time;
   int i = 0;
-  // cout<<"before while loop"<<endl;
 
-  while (i<(onePieceMsg_poolVec_.size()-1)){
+  while (i<(vec_pool_opt_info.size()-1)){
     
-    // cout<<i<<" before 1st if"<<endl;
-    if (onePieceMsg_poolVec_[i].MallocFree==-1){
-      //condition A: start with free. do nothing.
+    if (vec_pool_opt_info[i].operation_type==-1){
+      //condition: start with free. do nothing.
       i+=1;
-      // cout<<i<<" condition A"<<endl;
     } else {
-        if ((onePieceMsg_poolVec_[i].MallocFree==1)&& (onePieceMsg_poolVec_[i+1].MallocFree==-1)
-          &&((onePieceMsg_poolVec_[i].ptr==onePieceMsg_poolVec_[i+1].ptr))){
-          //condition B: start with Malloc, next item same ptr and is free.
-          if ((onePieceMsg_poolVec_[i].idx >=0 && onePieceMsg_poolVec_[i].idx <maxLen_mf)
-            ||(onePieceMsg_poolVec_[i+1].idx >=0 && onePieceMsg_poolVec_[i+1].idx <maxLen_mf)){
-            //condition B1: at least one of the index in range [0,maxLen_mf]
-            onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i+1].idx);
-            pairMsgVec_.push_back(tempPair); 
-            // cout<<i<<" condition B"<<endl;
-          }
-          i+=2; //no matter in the middle iteration or not, plus 2.
-        } else {
-          //condiction C: not one pair, single one.
-          i+=1;
-          // cout<<" condiction C"<<endl;
-          //       if ((onePieceMsg_poolVec_[i].MallocFree==1)&&(onePieceMsg_poolVec_[i].ptr!=onePieceMsg_poolVec_[i+1].ptr)){
-          //     // onePairMsg tempPair(onePieceMsg_poolVec_[i].idx,onePieceMsg_poolVec_[i].size,onePieceMsg_poolVec_[i].idx,idxRange);
-          //     // onePairMsgVec_2.push_back(tempPair);
-          //     i+=1;
-          //     cout<<i<<" condition C"<<endl;
-          // }
+      if ((vec_pool_opt_info[i].operation_type==1)&& (vec_pool_opt_info[i+1].operation_type==-1)
+        &&((vec_pool_opt_info[i].ptr==vec_pool_opt_info[i+1].ptr))){
+        //condition: start with Malloc, next item same ptr and is free.
+        if ((vec_pool_opt_info[i].idx >=0 && vec_pool_opt_info[i].idx <iteration_length_mf)
+          ||(vec_pool_opt_info[i+1].idx >=0 && vec_pool_opt_info[i+1].idx <iteration_length_mf)){
+          //condition: at least one of the index in range [0,iteration_length_mf]
+          PoolBlockLifeTime temp_block_life_time(vec_pool_opt_info[i].idx,vec_pool_opt_info[i].size,vec_pool_opt_info[i].idx,vec_pool_opt_info[i+1].idx);
+          vec_block_life_time.push_back(temp_block_life_time); 
         }
+        i+=2; //no matter in the middle iteration or not, plus 2.
+      } else {
+        //condiction: not one pair, Malloc-only block, no free..
+        i+=1;
+      }
     } 
   }
-  sort(pairMsgVec_.begin(),pairMsgVec_.end(),less_than_size_rIdx());
-  // cout<<"after while loop"<<endl;
-  cout<<"size of pairs "<<pairMsgVec_.size()<<endl;
+  sort(vec_block_life_time.begin(),vec_block_life_time.end(),sort_by_size_r_idx_descending());
 
 
   ///get E, V of the blocks， coloring
   //V
-  int m = static_cast<int>(pairMsgVec_.size());
+  int m = static_cast<int>(vec_block_life_time.size());
   vector<Vertex>vertices;
   for (int i=0; i<m;i++){
-    Vertex tempVertex(pairMsgVec_[i].name,pairMsgVec_[i].size,pairMsgVec_[i].r_idx,pairMsgVec_[i].d_idx);
-    vertices.push_back(tempVertex);
+    Vertex temp_vertex(vec_block_life_time[i].name,vec_block_life_time[i].size,vec_block_life_time[i].r_idx,vec_block_life_time[i].d_idx);
+    vertices.push_back(temp_vertex);
   }
 
-  //E and coloring
-  
+  //E and coloring  
   int offset = 0;
   int **adj;
-  adj = new int*[m]; //TODO(junzhe) should be deleted somewhere.
-  // build edges with values 1 and 0; combine with mergeSeg and FFallocation in the loop.
+  adj = new int*[m];
+
+  // build edges with values 1 and 0; combine with mergeSeg and FirstFitAllocation in the loop.
   for (int i=0; i<m;i++){
     adj[i] = new int[m];
     for (int j=0; j<m;j++){
       if ((max(vertices[i].r,vertices[j].r))<(min(vertices[i].d,vertices[j].d))
         || (min(vertices[i].d,vertices[j].d)<0 && 
-        min(vertices[i].d,vertices[j].d)+2*maxLen_mf< max(vertices[i].r,vertices[j].r))){
-        //TODO(junzhe) verify after ||
+        min(vertices[i].d,vertices[j].d)+2*iteration_length_mf< max(vertices[i].r,vertices[j].r))){
         adj[i][j]=1;
-        if (vertices[j].colorRange.second){ //as second never be 0, if not empty.
-          vertices[i].colorOccupied.push_back(vertices[j].colorRange);
+        if (vertices[j].color_range.second){ //as second never be 0, if not empty.
+          vertices[i].vec_color_preoccupied.push_back(vertices[j].color_range);
         }
       }
       else { 
@@ -1114,98 +1022,93 @@ void SwapPool::PoolOpt(vector<string> &vec_mf) {
       }
     }
     
-    vector<pair<size_t,size_t>>colorMerged = mergeSeg(vertices[i].colorOccupied);
+    vector<pair<size_t,size_t>>vec_color_merged = MergeColoredSegments(vertices[i].vec_color_preoccupied);
 
-    // vertices[i].colorRange = FFallocation(colorMerged,vertices[i].size, local_offset);
-    vertices[i].colorRange = BFallocation(colorMerged,vertices[i].size, offset);
+    // vertices[i].color_range = FirstFitAllocation(vec_color_merged,vertices[i].size, local_offset);
+    vertices[i].color_range = BestFitAllocation(vec_color_merged,vertices[i].size, offset);
 
     //update of offset, largest memory footprint as well.
-    if (vertices[i].colorRange.second >=offset){
-      offset = vertices[i].colorRange.second+1;
+    if (vertices[i].color_range.second >=offset){
+      offset = vertices[i].color_range.second+1;
     }
   }//end of for loop.
-  cout<<"offset is "<<offset<<endl;
-  cout<<"===================to print vertices"<<endl;
-  cout<<"a, d, size, color["<<endl;
+
+  //delete adj, the edges
   for (int i=0; i<m;i++){
-    cout<<"("<<vertices[i].r<<","<<vertices[i].d<<") "<<vertices[i].size<<" "<<vertices[i].colorRange.first<<endl;
+    delete[] adj[i]; 
   }
-  cout<<"===================to print vertices done"<<endl;
+  delete[] adj;
 
-  ///Make pool, and make table
-  cudaMalloc(&ptrPool,offset); //poolSize or memory foot print  offset.
-  cout<<"ptrPool is: "<<ptrPool<<endl;
+  //make pool
+  cudaMalloc(&ptr_pool,offset); //poolSize or memory foot print  offset.
 
+  //make table
   for (int i=0; i<vertices.size();i++){
-    lookUpElement temp;
-    temp.r_idx = vertices[i].r;
-    temp.d_idx = vertices[i].d;
-    temp.size = vertices[i].size;
-    temp.offset = vertices[i].colorRange.first;
-    temp.ptr = (void*)((char*)ptrPool+temp.offset*sizeof(char));
-    temp.Occupied = 0;
-    Table_r2v[vertices[i].r] = temp;
+    PoolBlockMeta itm;
+    itm.r_idx = vertices[i].r;
+    itm.d_idx = vertices[i].d;
+    itm.size = vertices[i].size;
+    itm.offset = vertices[i].color_range.first;
+    itm.ptr = (void*)((char*)ptr_pool+itm.offset*sizeof(char));
+    itm.occupied = 0;
+    table_pool_meta[vertices[i].r] = itm;
   }
-  cout<<"===================Table_r2v done"<<endl;
-  poolFlag = 1;
+  pool_flag = 1;
     
 }
 
 void SwapPool::Malloc(void** ptr, const size_t size){
   
-  void* allocatedPtr =nullptr;
+  void* allocated_ptr =nullptr;
   
-  if (poolFlag == 0) {
+  if (pool_flag == 0) {
     cudaError_t status = cudaMalloc(ptr, size);
     CHECK_EQ(status, cudaError_t::cudaSuccess);
   } else {
-    //POOLFLAG = 1 
-    if (pc < maxLen_mf){
-      if ((Table_r2v.find(pc-maxLen_mf) == Table_r2v.end()) || (!(size == Table_r2v.find(pc-maxLen_mf)->second.size))){
+    //pool_flag = 1 
+    if (pool_index < iteration_length_mf){
+      if ((table_pool_meta.find(pool_index - iteration_length_mf) == table_pool_meta.end()) || (!(size == table_pool_meta.find(pool_index - iteration_length_mf)->second.size))){
         //not in table of negative r_idx
         cudaError_t status = cudaMalloc(ptr, size);
         CHECK_EQ(status, cudaError_t::cudaSuccess);
       } else{
         //in the table of negative r_idx
-        auto tempMeta = Table_r2v.find(pc-maxLen_mf)->second;
-        allocatedPtr = tempMeta.ptr;
-        *ptr = allocatedPtr;
-        Table_p2r[allocatedPtr]=pc-maxLen_mf; 
+        auto temp_meta = table_pool_meta.find(pool_index - iteration_length_mf)->second;
+        allocated_ptr = temp_meta.ptr;
+        *ptr = allocated_ptr;
+        table_ptr_to_ridx[allocated_ptr]=pool_index - iteration_length_mf; 
 
       }
     } else{
-      //8 9 10
-      int r_pc = pc%maxLen_mf;
-      if ((Table_r2v.find(r_pc) == Table_r2v.end()) || (!(size == Table_r2v.find(r_pc)->second.size))){
+      //8 9 10th iteration
+      int r_pool_index = pool_index%iteration_length_mf;
+      if ((table_pool_meta.find(r_pool_index) == table_pool_meta.end()) || (!(size == table_pool_meta.find(r_pool_index)->second.size))){
         //not here, should be abnormal
         cudaError_t status = cudaMalloc(ptr, size);
         CHECK_EQ(status, cudaError_t::cudaSuccess);
       } else{
         //in the table
-        auto tempMeta = Table_r2v.find(r_pc)->second;
-        allocatedPtr = tempMeta.ptr;
-        *ptr = allocatedPtr;
-        Table_p2r[allocatedPtr]=r_pc; 
-
+        auto temp_meta = table_pool_meta.find(r_pool_index)->second;
+        allocated_ptr = temp_meta.ptr;
+        *ptr = allocated_ptr;
+        table_ptr_to_ridx[allocated_ptr]=r_pool_index; 
       }
     }
   }
 
-
-    pc++;     
+    pool_index++;     
   }
 
 
 void SwapPool::Free(void *ptr) {
-  if (poolFlag == 0){
+  if (pool_flag == 0){
     cudaError_t status = cudaFree(ptr);
     CHECK_EQ(status, cudaError_t::cudaSuccess);
   } else{
-    if (Table_p2r.find(ptr)==Table_p2r.end()){
+    if (table_ptr_to_ridx.find(ptr)==table_ptr_to_ridx.end()){
       cudaError_t status = cudaFree(ptr);
       CHECK_EQ(status, cudaError_t::cudaSuccess);
     }
-    
   }
 
 }
@@ -1215,15 +1118,7 @@ void SwapPool::Append(string blockInfo) {
 }
 
 
-void SwapPool::SwapOut(void* data_){
-  //NA
-}
-
-void SwapPool::SwapIn(void* data_){
-  //NA 
-}
-
-void getMaxLoad (){
+void GetMaxLoad (){
   //empty
 }
 

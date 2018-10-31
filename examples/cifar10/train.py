@@ -39,7 +39,7 @@ from singa import tensor
 from singa.proto import core_pb2
 from caffe import caffe_net
 
-import alexnet
+import cnn
 import vgg
 import resnet
 

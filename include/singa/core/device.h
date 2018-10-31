@@ -66,10 +66,8 @@ class Device {
   /// Called by Tensor.
   void FreeBlock(Block* block);
   
-  void AppendInfo(string blockInfo);
-  void* GetRealGpuPtrInfo(const Block* block_);
-  void SwapOutInfo(const Block* block_);
-  void SwapInInfo(const Block* block_);
+  void AppendInfo(string block_info);
+  void* UpdateGpuPtrInfo(const Block* block_ptr);
 
   /// Return the size (bytes) of memory in use
   /// TODO(wangwei) override this function for all devices.
@@ -108,7 +106,7 @@ class Device {
 
   int id() const { return id_; }
 
-  virtual void* GetRealGpuPtr(const Block* block_) = 0;
+  virtual void* UpdateGpuPtr(const Block* block_ptr) = 0;
 
  private:
   Device() {};
@@ -125,11 +123,8 @@ class Device {
 
   /// Free device memory.
   virtual void Free(void* ptr) = 0;
-  virtual void MakeMetaTable(Block* block,void* data_,int size) = 0;
-  virtual void Append(string blockInfo) = 0;
-  
-  virtual void SwapOut(const Block* block_) = 0;
-  virtual void SwapIn(const Block* block_) = 0;
+  virtual void AppendAfterMalloc(Block* block,void* data_ptr,int size) = 0;
+  virtual void Append(string block_info) = 0;
 
  protected:
   int id_ = 0;
@@ -171,11 +166,10 @@ class CppCPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-  void MakeMetaTable(Block* block,void* data_,int size) override {}
-  void Append(string blockInfo) override {}
-  void* GetRealGpuPtr(const Block* block_) override {}
-  void SwapOut(const Block* block_) override {}
-  void SwapIn(const Block* block_) override {}
+  void AppendAfterMalloc(Block* block,void* data_ptr,int size) override {}
+  void Append(string block_info) override {}
+  void* UpdateGpuPtr(const Block* block_ptr) override {}
+
 };
 
 
@@ -206,11 +200,9 @@ class CudaGPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-  void MakeMetaTable(Block* block,void* data_,int size) override {}
-  void Append(string blockInfo) override;
-  void* GetRealGpuPtr(const Block* block_) override;
-  void SwapOut(const Block* block_) override;
-  void SwapIn(const Block* block_) override;
+  void AppendAfterMalloc(Block* block,void* data_ptr,int size) override {}
+  void Append(string block_info) override;
+  void* UpdateGpuPtr(const Block* block_ptr) override;
 
  private:
   void Setup();
@@ -222,21 +214,21 @@ class CudaGPU : public Device {
 /// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
 
 ///SwapGPU
-struct onePieceMsg{
+struct DeviceOptInfo{
     /*
-     members: [ptr, size, MallocFree, idx]
+     members: [ptr, size, operation_type, idx]
      */
     string ptr;
     size_t size;
-    int MallocFree;
+    int operation_type;
     int idx;
     double t;
-    onePieceMsg(string p, size_t s, int M, int i):ptr(p),size(s),MallocFree(M),idx(i){}
+    DeviceOptInfo(string p, size_t s, int M, int i):ptr(p),size(s),operation_type(M),idx(i){}
 };
 
 struct BlockMeta{
     /*
-     block Meta.
+     meta of swapping memory blocks
      */
     Block* block_ = nullptr;
     void* data_ = nullptr;
@@ -249,34 +241,39 @@ struct BlockMeta{
 };
 
 struct SwapBlock{
-
+    /*
+    meta of candidate blocks
+    */
     string ptr;
-    string cat;  //A1, A2, A3...
+    string cat; //sub category of the candidate blocks, read-read, write-read, etc.
     int name;
     size_t size;
+    //index of last read/write before swap out, and first read/write after swap in
     int r_idx; //out idx
     int d_idx; //in idx
+    //index of last read/write before swap out, and first read/write after swap in
     double r_time; // out time
     double d_time; //in time
-    double dt; //delta t: t2'-t1'
-    double pri;  //look at here if big enough TODO(junzhe)
-    double dto; //t2-t1
-    double wdto = 0; //t2-t1 weighted by swap_load
-    double r_idx_ready; //r_idx + buffer, could be set during selection.
-    //int free = -1; //when it is freed 
-    //below as per planned.
-    int i1 = 0;
-    int i1p = 0;
-    int i2 = 0;
-    int i2p = 0;
-    double t1 = 0;
-    double t2 = 0;
-    double t1p = 0;
-    double t2p = 0;
-    SwapBlock(string p, size_t s, int i1, int i2, double t1, double t2): 
-    ptr(p), size(s), r_idx(i1),d_idx(i2),r_time(t1), d_time(t2) {}
+    double DOA; //Duation of Absence
+    double AOA;  //Area of Absence
+    double DOA_origin; //t2-t1, DOA without taking out time spent
+    double WDOA = 0; //weighted DOA
+    double majority_voting = 0;
+    int r_idx_ready; //r_idx + buffer
+
+    //below are index and time for scheduling
+    int idx_out_start  = 0;
+    int idx_out_end = 0;
+    int idx_in_end = 0;
+    int idx_in_start = 0;
+    double t_out_start = 0;
+    double t_out_end = 0;
+    double t_in_end  = 0;
+    double t_in_start = 0;
+    SwapBlock(string p, size_t s, int idx_out_start, int idx_in_end, double t_out_start, double t_in_end): 
+    ptr(p), size(s), r_idx(idx_out_start),d_idx(idx_in_end),r_time(t_out_start), d_time(t_in_end) {}
 };
-/// Device able to Swap memory between Nvidia GPU and Swap
+/// Device able to Swap memory between Nvidia GPU and CPU
 class SwapGPU : public Device {
  public:
   ~SwapGPU();
@@ -300,98 +297,92 @@ class SwapGPU : public Device {
   /// Free cpu memory.
   void Free(void* ptr) override;
 
-  //Append at every index: malloc, free, read, mutable
-  void Append(string blockInfo) override;
+  //Append at every index: free, read, mutable
+  void Append(string block_info) override;
 
-  //append info after Malloc, pair.
-  void MakeMetaTable(Block* block,void* data_,int size) override; 
+  //append info after Malloc, as Block* is not available till Malloc() done.
+  void AppendAfterMalloc(Block* block,void* data_ptr,int size) override; 
 
-  //all the testing, without swap, during Append()
-  void Test_sched_switch_swap();
+  //Detection and Plan
+  void DetectionPlan();
 
   //test iteration, return GC
-  int swap_test(vector<string>vec_block,int &maxLen, int &location);
+  int Detection(vector<string>vec_block,int &iteration_length, int &location_of_2nd_iteration);
 
-  //entire plan, from swap_select() to swap_sched(), swap_deploy_tables()
-  void swap_plan();
+  //entire plan, from SelectBlock() to Scheduling(), BuildMetaTables()
+  void Plan();
 
-  //selection algo
-  vector<SwapBlock> swap_select(vector<SwapBlock>vec_swap,vector<double> tempLoad,double memLimit,string mode);
+  //block selection algo
+  vector<SwapBlock> SelectBlock(vector<SwapBlock>vec_swap,vector<double> temp_load,double mem_limit,string mode);
 
   //schedule algo
-  void swap_sched(vector<SwapBlock>&vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double memLimit,string mode);
+  void Scheduling(vector<SwapBlock>&vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double mem_limit,string mode);
   
-  //make tables Table_sched and Table_meta
-  void swap_construct_tables(vector<SwapBlock>vec_swap_selct);
+  //make tables table_sched and table_meta
+  void BuildMetaTables(vector<SwapBlock>vec_swap_selct);
 
-  //update Table_meta, during Append()
-  void swap_update_tables(Block* tempBlock_);
+  //update table_meta, during Append()
+  void UpdateMetaTables(Block* block_ptr);
 
   //swap/sync during Append()
   void DeploySwap();
 
   //exec DelpoySwap
-  void DeploySwap_exec(int r_gc);
-
-
+  void DeploySwapExec(int relative_counter);
 
   //load profile as per synchronous swap.
-  vector<double> swap_load_ideal(vector<double>vec_load,vector<SwapBlock> vec_swap_selct);
+  vector<double> GetIdealLoad(vector<double>vec_load,vector<SwapBlock> vec_swap_selct);
   
-  //in case gpu ptr wrong. TODO(junzhe) to verify if needed.
-  void* GetRealGpuPtr(const Block* block_) override;
+  //in case gpu ptr wrong, updated it after swap_in ad hoc
+  void* UpdateGpuPtr(const Block* block_ptr) override;
 
-  void SwapOut(const Block* block_) override;
-  void SwapIn(const Block* block_) override;
+  //Swap Synchronous, for early iterations
+  void SwapOutSynchronous(const Block* block_ptr);
+  void SwapInSynchronous(const Block* block_ptr);
 
-  //changed to intake data_ instead
-  void SwapOut_idx(const int r_idx);
-  void SwapIn_idx(const int r_idx);
+  //Swap asynchronous, for middle iteraions
+  void SwapOut(const int idx);
+  void SwapIn(const int idx);
 
  private:
   void Setup();
-  ///Tables needed
-  //r_idx->BlockMeta
-  map<int,BlockMeta>Table_meta;
-  map<const Block*,BlockMeta>Table_block_meta; //TODO(junzhe) for measure speed only.
-  map<const Block*, int>Table_not_at_device;  //int refers to its r_idx of the block/meta
-  //map<const Block*, size_t>Table_block_size;  //Table block_ -> size TODO(junzhe) no need, can call block_->size()
 
-  //schedule: idx--> r_idx, dir; sync_r_idx,dir. int 0 means D2H, 1 means H2D.
-  map<int,std::tuple<int,int,int,int>>Table_sched; // changed to with sync_r_idx
-
-  // vector<SwapBlock>vec_swap_selct_global;
+  map<int,BlockMeta>table_meta;
+  map<const Block*,BlockMeta>table_block_meta; //for measure speed only.
+  map<const Block*, int>table_not_at_device;  //int refers to its r_idx of the block/meta
+  map<int,std::tuple<int,int,int,int>>table_sched; // changed to with sync_r_idx
 
   //vec_block
-  vector<string>vec_block; //iteration 0-3
-  vector<string>vec_block_fresh; //iteration 4 5 6
-  vector<string>vec_block_mf; //itr 8 9 10
-  vector<double>global_load; // from begining
-  vector<double>origin_load; //vec_load 3 itr. TODO(junzhe) to delete vec_load, global_load after use.
-  vector<onePieceMsg>vec_run;
-  vector<int>opsSequence; //sequence of operations of one middle iteration
-  vector<size_t>sizeSequence; //size of all operations of one middle iteration
-  int asyncSwapFlag = 0; //0 for sync, 1 for async.
-  int testFlag = 0; //0 means open for test, 1 means no need test anymore.
-  int gc = 0; //global counter, index, add 1 after each Malloc/Free/read/write.
-  int globeCounter = -1;
-  int maxLen = 0;
-  int location = 0;
-  int three_more_location = 0; //location at 3 more iterations later.
-  int three_more_globeCounter = -1; //
-  //design requirement TODO(junzhe)
-  float memLimit_ratio = 0.70; 
+  vector<string>vec_block; //iterations for Detection, i.e. detect iterations.
+  vector<string>vec_block_fresh; //iterations that are used for Planning,
+  vector<string>vec_block_mf; //iterations used to construct pool
+  vector<double>global_load; // load from begining
+  vector<double>origin_load; //3 iteration load, for planning.
+  vector<DeviceOptInfo>vec_run;
+  vector<int>operation_sequence; //sequence of operations of one middle iteration
+  vector<size_t>size_sequence; //size of all operations of one middle iteration
+
+  int async_swap_flag = 0; //0 for sync, 1 for async.
+  int past_test_flag = 0; //0 means need to test, 1 means no need test anymore.
+  int global_index = 0; //global counter, index, add 1 after each Malloc/Free/read/write.
+  int global_index_threshold = -1;
+  int iteration_length = 0;
+  int location_of_2nd_iteration = 0; //index of start of 2nd iteration
+  int location_of_5th_iteration = 0; //index of start of 5th iteration
+  int three_more_iteration_global_index_threshold = -1;
+
+  //design specs
+  float mem_limit_ratio = 0.70; 
   size_t smallest_block = 1<<20; //1 MB
   int data_buffer = 4; // used to control readyIdx
   int mutable_data_buffer = 6;
-  double maxLoad;
-  int maxIdx;
-  double total_swapInTime = 0;
-  double total_swapOutTime = 0;
-  double tempTime = 0;
-  double tempTime2 = 0;
-  double tempTime_baseline; //vec_run[0] time
-  int maxLen_threshold = 1000;
+  double max_load;
+  int max_idx;
+  double total_swap_in_time = 0;
+  double total_swap_out_time = 0;
+  double temp_time = 0;
+  double temp_time_baseline; //vec_run[0] time
+  int iteration_length_threshold = 1000;
 
  private:
   shared_ptr<DeviceMemPool> pool_;
@@ -447,11 +438,9 @@ protected:
   /// Converts the void pointer into a Buffer object, then deletes the object.
   /// This has the effect of freeing up device memory.
   void Free(void* ptr) override;
-  void MakeMetaTable(Block* block,void* data_,int size) override {}
-  void Append(string blockInfo) override {}
-  void* GetRealGpuPtr(const Block* block_) override {}
-  void SwapOut(const Block* block_) override {}
-  void SwapIn(const Block* block_) override {}
+  void AppendAfterMalloc(Block* block,void* data_ptr,int size) override {}
+  void Append(string block_info) override {}
+  void* UpdateGpuPtr(const Block* block_ptr) override {}
 
 
 private:
