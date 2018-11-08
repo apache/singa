@@ -33,6 +33,10 @@ CTensor = singa.Tensor
 training = False
 
 
+
+
+
+
 def infer_dependency(op):
     '''
     Infer the dependency of all operations with the
@@ -50,7 +54,8 @@ def infer_dependency(op):
     dependency_count = Counter()
     queue = deque([op])
     while len(queue) > 0:
-        cur_op = queue.pop()
+	cur_op = queue.pop()
+	#print(cur_op)
         for src_op, _, _, _ in cur_op.src:
             if src_op not in dependency_count:
                 # dependency[src_op] = [Counter() for _ in src_op.y_id2idx]
@@ -75,6 +80,156 @@ def gradients(y, dy=None):
     for p, dp in backward(y, dy):
         grads[p] = dp
     return grads
+
+
+
+def get_onnx_model(y, dy=None):
+    ######################
+    ##onnx
+    # from __future__ import absolute_import
+    # from __future__ import division
+    # from __future__ import print_function
+    # from __future__ import unicode_literals
+    import onnx
+    from onnx import helper
+    from onnx import AttributeProto, TensorProto, GraphProto
+    from onnx import numpy_helper
+    import numpy as np
+    from singa import tensor
+    X = helper.make_tensor_value_info('X', TensorProto.FLOAT, [1, 2])
+    Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT, [1, 2])
+    node = []
+    ######################
+
+    dependency = infer_dependency(y.creator)
+
+    assert y.size() == 1, 'y must be a Tensor with a single value;' \
+                          'size of y is % d' % y.size()
+
+    # by default the dy is a tensor with 1.0 for each sample;
+    if dy is None:
+        dy = float(1.0)
+    elif isinstance(dy, Tensor):
+        dy = dy.data
+    else:
+        dy = float(dy)
+
+    # ready is a queue of (operation, dy list)
+    ready = deque([(y.creator, (dy,))])
+    not_ready = {}  # mapping: op->[dy]
+    gradients = {}  # mapping: x->dx if x.stores_grad
+    if y.stores_grad:
+        gradients[y] = dy
+
+    while len(ready) > 0:
+        op, dys = ready.pop()
+        if not op.requires_grad or isinstance(op, Dummy):
+            continue
+        # if not isinstance(op, tensor.Dummy):
+        dxs = op._do_backward(*dys)
+        ##############################
+        cur = str(op).split('.')[-1].split(' ')[0]
+        pre = str(op.src[0][0]).split('.')[-1].split(' ')[0]
+        cc = str(op).split(' ')[-1]
+        pc = str(op.src[0][0]).split(' ')[-1]
+        cstrd = str(op) + str(dependency[op])
+        pstrd = str(op.src[0][0]) + str(dependency[op.src[0][0]])
+        cstr = str(op)
+        pstr = str(op.src[0][0])
+        # print()
+
+        # print('dep', dependency)
+        # print('cstr', cstr)
+        # print('pstr', pstr)
+
+        if (pre == 'Dummy'): pstr = pre = 'X'
+        if (op.param['name'] == 'LeakyRelu'):
+            node = [onnx.helper.make_node('LeakyRelu', inputs=[pstr], outputs=[cstr], )] + node
+        elif (op.param['name'] == 'Softmax'):
+            node = [onnx.helper.make_node('Softmax', inputs=[pstr], outputs=['Y'], )] + node
+        elif (op.param['name'] == 'AddBias'):
+            node = [onnx.helper.make_node('Add', inputs=[pstr, pstrd + 'b'], outputs=[cstr], )] + node
+            
+	    b = ctensor2numpy(op.param['b'])
+	    
+            node = [onnx.helper.make_node('Constant', inputs=[], outputs=[pstrd + 'b'],
+                                          value=numpy_helper.from_array(b))] + node
+        elif (op.param['name'] == 'Add'):
+            node = [onnx.helper.make_node('Add', inputs=[pstr, str(op.src[1][0])], outputs=[cstr], )] + node
+            # print('in add',str(op.src[1][0]))
+        elif (op.param['name'] == 'MatMul'):
+            node = [onnx.helper.make_node('MatMul', inputs=[pstr, pstrd + 'w'], outputs=[cstr], )] + node
+            w = ctensor2numpy(op.param['w'])
+            node = [onnx.helper.make_node('Constant', inputs=[], outputs=[pstrd + 'w'],
+                                          value=numpy_helper.from_array(w))] + node
+        elif (op.param['name'] == 'linear'):
+            pass
+            '''
+            node = [onnx.helper.make_node('MatMul', inputs=[pstr, pstrd + 'w'], outputs=[cstr], )] + node
+            w = tensor.to_numpy(Tensor(data=op.param['w'], device=op.param['w'].device))
+            node = [onnx.helper.make_node('Constant', inputs=[], outputs=[pstrd + 'w'],
+                                          value=numpy_helper.from_array(w))] + node
+            b = tensor.to_numpy(Tensor(data=op.param['w'], device=op.param['w'].device))
+            node = [onnx.helper.make_node('Constant', inputs=[], outputs=[pstrd + 'w'],
+                                          value=numpy_helper.from_array(w))] + node
+            '''
+        elif (op.param['name'] == 'Flatten'):
+            node = [onnx.helper.make_node('Flatten', inputs=[pstr], outputs=[cstr], )] + node
+        else:
+            pass
+            #print("extra name is:", op.param['name'])
+        # print('op param',op.param)
+        # print('cur',str(op).split('.')[-1].split(' ')[0])
+        # print('pre',str(op.src[0][0]).split('.')[-1].split(' ')[0])
+        # print('cur',str(op))
+        # print('pre',str(op.src))
+        # print('--end--')
+        ##################################
+        # TODO src and dx must match
+        assert len(op.src) == len(dxs), \
+            'the number of src ops (=%d) and dx (=%d) not match' \
+            % (len(op.src), len(dxs))
+        for (src_op, x_id, y, y_stores_grad), dx in zip(op.src, dxs):
+            # prefix x is w.r.t op; prefix y is w.r.t src_op.
+            # x_id is the python id of one input arg of src_op, denoted as x.
+            # y_idx (below) is the index of x among the outputs of src_op.
+            # not_ready[src_op][y_idx] records the intermediate gradient
+            # of the y_idx'th output of src_op. 'intermediate gradient'
+            # indicates that if this output is used in multiple children
+            # operations, then we have to add the graident (dx) from all these
+            # children operations. When src_op is ready, it means that
+            # the gradient of all its outputs are available, i.e. all children
+            # operations have been backwarded.
+            # y is None if y.stores_grad is false; otherwise it is a Tensor
+            y_idx = src_op.y_id2idx[x_id]
+            if src_op not in not_ready:
+                # src_op may have mulitple outputs
+                not_ready[src_op] = [None for _ in src_op.y_id2idx]
+                not_ready[src_op][y_idx] = dx
+            else:
+                dxs = not_ready[src_op]
+                if dxs[y_idx] is None:
+                    dxs[y_idx] = dx
+                else:
+                    # add the gradient from another children operation that
+                    # uses y_idx'th output of src_op as input arg
+                    dxs[y_idx] += dx
+            if y_stores_grad:
+                # store the gradient for final return, e.g. if x is parameter
+                g = not_ready[src_op][y_idx]
+                #gradients[y] = Tensor(device=g.device, data=g)
+            dependency[src_op] -= 1
+            if src_op.requires_grad is True:
+                if dependency[src_op] == 0:
+                    if not isinstance(src_op, Dummy):
+                        ready.append((src_op, not_ready[src_op]))
+                    del not_ready[src_op]
+    ###############################################
+    model_def = helper.make_model(helper.make_graph(node, "t", [X], [Y], ), producer_name='o')
+    onnx.checker.check_model(model_def)
+    ###############################################
+    return model_def
+
 
 
 def backward(y, dy=None):
@@ -120,6 +275,7 @@ def backward(y, dy=None):
             continue
         # if not isinstance(op, tensor.Dummy):
         dxs = op._do_backward(*dys)
+	#print('backward',op)
         # TODO src and dx must match
         assert len(op.src) == len(dxs), \
             'the number of src ops (=%d) and dx (=%d) not match' \
@@ -283,7 +439,8 @@ class ReLU(Operation):
         Returns:
             a new CTensor whose element y = x if x >= 0; otherwise 0;
         '''
-        if training:
+        self.param={'name':'LeakyRelu','x':x,'alpha':0.0}
+	if training:
             self.input = x
         return singa.ReLU(x)
 
@@ -314,6 +471,7 @@ class Matmul(Operation):
         Returns:
             a CTensor for the result
         '''
+	self.param = {'name':'MatMul','w':w,'x':x}
         if training:
             self.input = (x, w)
         return singa.Mult(x, w)
@@ -344,6 +502,7 @@ class AddBias(Operation):
         Args:
             axis: 0 or 1, default is 0.
         '''
+	self.param = {'name':'AddBias','axis':axis}
         self.axis = axis
 
     def forward(self, x, b):
@@ -354,6 +513,8 @@ class AddBias(Operation):
         Return:
             the result Tensor
         '''
+	self.param['x'] = x
+        self.param['b'] = b
         if self.axis == 0:
             singa.AddRow(b, x)
         elif self.axis == 1:
@@ -381,6 +542,7 @@ def add_bias(x, b, axis=0):
 class Add(Operation):
 
     def forward(self, a, b):
+	self.param = {'name': 'Add'}
         return singa.__add__(a, b)
 
     def backward(self, dy):
@@ -399,6 +561,7 @@ class SoftMax(Operation):
 
     def __init__(self, axis=0):
         self.axis = axis
+	self.param={'name':'Softmax','axis':axis}
 
     def forward(self, x):
         '''
@@ -407,6 +570,7 @@ class SoftMax(Operation):
         Returns:
             the result Tensor
         '''
+	self.param['x']=x
         if self.axis == 1:
             x = singa.DefaultTranspose(x)
         self.output = singa.SoftMax(x)
@@ -458,6 +622,7 @@ class CrossEntropy(Operation):
     '''
 
     def forward(self, x, t):
+	self.param = {'name': 'CrossEntropy'}
         '''
         Args:
             x (CTensor): 1d or 2d tensor, the prediction data(output)
@@ -557,6 +722,7 @@ class Flatten(Operation):
 
     def __init__(self, start_axis=1):
         # flatten all axis after (inclusive) start_axis
+	self.param={'name':'Flatten'}
         self.start_axis = start_axis
         assert start_axis == 1, 'must flatten into 2d array not'
 
