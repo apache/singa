@@ -23,6 +23,7 @@
 #include <curand.h>
 #include <chrono>
 #include <iostream>
+#include <string>
 #include "singa/core/device.h"
 #include "singa/utils/cuda_utils.h"
 namespace singa {
@@ -121,6 +122,15 @@ void CudaGPU::Free(void* ptr) {
     pool_->Free(ptr);
   }
 }
+
+void CudaGPU::Append(string blockInfo){
+    pool_->Append(blockInfo);
+}
+
+void* CudaGPU::UpdateGpuPtr(const Block* block_){
+  return nullptr;
+}
+
 
 }  // namespace singa
 #endif  // USE_CUDA

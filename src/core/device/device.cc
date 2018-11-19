@@ -17,6 +17,9 @@
  */
 
 #include "singa/core/device.h"
+#include <chrono>
+#include <iostream>
+#include <fstream>
 
 namespace singa {
 Device::Device(int id, int num_executors)
@@ -37,7 +40,9 @@ Block* Device::NewBlock(int size) {
     << "from size_t to int. In that case, the size is too large.";
   if (size > 0) {
     void* ptr = Malloc(size);
-    return new Block(ptr, size);
+    Block* block_ = new Block(ptr, size,0,this);
+    AppendAfterMalloc(block_,ptr,size); // make table and append vec_block.
+    return block_;
   } else {
     return nullptr;
   }
@@ -46,10 +51,32 @@ Block* Device::NewBlock(int size) {
 // TODO(wangwei) return Block to the memory manager
 void Device::FreeBlock(Block* block) {
   if (block != nullptr) {
-    Free(block->mutable_data());
+    auto tempPtr = block->mutable_data();
+    Free(tempPtr);
+    
+    //append block info for free operation.
+    stringstream strm1;
+    strm1<<block;
+    string temp_str1 = strm1.str();
+    stringstream strm4;
+    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
+    strm4<<t2;
+    string temp_str4 = strm4.str();
+    string blockInfo ="Free "+temp_str1+" "+temp_str4;
+    Append(blockInfo);
+
     delete block;
   }
 }
+
+void Device::AppendInfo(string blockInfo){
+  Append(blockInfo);
+}
+
+void* Device::UpdateGpuPtrInfo(const Block* block_){
+  return UpdateGpuPtr(block_);
+}
+
 
 void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                             CopyDirection direct, int dst_offset,
