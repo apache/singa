@@ -35,7 +35,7 @@ requirements:
   build:
     - swig 3.0.10
     - openblas 0.2.19
-    - protobuf >=3.2.0
+    - protobuf 3.6.1
     - glog 0.3.4
     - libgfortran 3.0.0 # [osx]
     - gcc 4.8.5 # [linux]
@@ -45,7 +45,7 @@ requirements:
 
   run:
     - openblas 0.2.19
-    - protobuf >=3.2.0
+    - protobuf 3.6.1
     - glog 0.3.4
     - libgfortran 3.0.0 # [osx]
     - libgcc 4.8.5 # [linux]
