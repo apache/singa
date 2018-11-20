@@ -1187,8 +1187,10 @@ class LSTM(RNN_Base):
 
         self.params = self.Wx + self.Wh + self.Bx + self.Bh
 
-    def __call__(self, xs, (h0, c0)):
+    def __call__(self, xs, h0_c0):
         # xs: a tuple or list of input tensors
+        # h0_c0: a tuple of (h0, c0)
+        h0, c0 = h0_c0
         if not isinstance(xs, list):
             xs = list(xs)
         inputs = xs + list((h0, c0))
