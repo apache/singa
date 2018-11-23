@@ -22,15 +22,14 @@ learning rate, weight decay, max_epoch, parameter initialization, etc.
 from __future__ import print_function
 from builtins import zip
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), '../../build/python'))
-
 from singa import layer
 from singa import initializer
 from singa import metric
 from singa import loss
 from singa import net as ffnet
 
-ffnet.verbose=True
+# ffnet.verbose=True
+
 
 def ConvBnReLU(net, name, nb_filers, sample_shape=None):
     net.add(layer.Conv2D(name + '_1', nb_filers, 3, 1, pad=1,
