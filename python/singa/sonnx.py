@@ -41,6 +41,15 @@ from . import singa_wrap as singa
 from autograd import *
 
 def onnx_model_init(inputs,name = 'singonnx.pkl'):
+    '''
+    load onnx model graph and load weights
+    input:
+    input data and file name of onnx model
+
+    return:
+     a graph node dictionary
+     model: graph model
+    '''
     f = open(name, 'rb')
     model = pickle.load(f)
     a = {}
@@ -52,6 +61,14 @@ def onnx_model_init(inputs,name = 'singonnx.pkl'):
     return a,model
 
 def onnx_loss(a,model,target):
+    '''
+    input:
+    a graph node dictionary
+    model: graph model
+    target: label
+
+    load other nodes of onnx
+    '''
     for i in model.graph.node:
         if (i.op_type == 'Constant'):
             pass
@@ -74,6 +91,15 @@ def onnx_loss(a,model,target):
 
 
 def get_onnx_model(y, dy=None):
+    '''
+	get onnx model from singa computational graph
+	Args:
+        y: a Tensor instance, usually the loss
+        dy: a number or a Tensor instance, for the gradient of the
+            objective/loss w.r.t y, usually 1.0
+        Return:
+        loss for onnx model
+    '''
     ######################
     import onnx
     from onnx import helper
