@@ -30,22 +30,11 @@ import numpy as np
 #import caffe2.python.onnx.backend as backend
 import pickle
 autograd.training = True
-
-# prepare training data in numpy array
-
-# generate the boundary
-f = lambda x: (5 * x + 1)
-bd_x = np.linspace(-1., 1, 2)
-bd_y = f(bd_x)
-# generate the training data
-#x = np.random.uniform(-1, 1, 4)
-x = np.array([0,0.5,-0.5,0.1])
-#print(x)
-y = f(x)# + 2 * np.random.randn(len(x))
-# convert training data to 2d space
-label = np.asarray([5 * a + 1 > b for (a, b) in zip(x, y)])
-data = np.array([[a, b] for (a, b) in zip(x, y)], dtype=np.float32)
-
+np.random.seed(0)
+data = np.random.randn(4,3).astype(np.float32)
+label = np.random.randint(0,2,(4)).astype(int)
+print(label)
+print(data.shape,label.shape)
 def to_categorical(y, num_classes):
     '''
     Converts a class vector (integers) to binary class matrix.
@@ -62,26 +51,26 @@ def to_categorical(y, num_classes):
     categorical[np.arange(n), y] = 1
     return categorical
 
-label = to_categorical(label, 2).astype(np.float32)
+label = to_categorical(label, 3).astype(np.float32)
 print('train_data_shape:', data.shape)
 print('train_label_shape:', label.shape)
 
 inputs = Tensor(data=data)
 target = Tensor(data=label)
 
-w0 = Tensor(shape=(2, 2), requires_grad=True, stores_grad=True)
+w0 = Tensor(shape=(3, 3), requires_grad=True, stores_grad=True)
 w0.gaussian(0.0, 0.1)
-b0 = Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
+b0 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
 b0.set_value(0.0)
 
-w1 = Tensor(shape=(2, 2), requires_grad=True, stores_grad=True)
+w1 = Tensor(shape=(3, 3), requires_grad=True, stores_grad=True)
 w1.gaussian(0.0, 0.1)
-b1 = Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
+b1 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
 b1.set_value(0.0)
 
-w2 = Tensor(shape=(2, 2), requires_grad=True, stores_grad=True)
+w2 = Tensor(shape=(3, 3), requires_grad=True, stores_grad=True)
 w2.gaussian(0.0, 0.1)
-b2 = Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
+b2 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
 b2.set_value(0.0)
 
 
@@ -102,7 +91,8 @@ for i in range(1):
     loss = autograd.cross_entropy(x3, target)
     gradient = autograd.backward(loss)
     for p, gp in gradient:
-        gp.reshape(p.shape)
+        #print(p.shape,gp.shape)
+        #gp.reshape(p.shape)
         sgd.apply(0, gp, p, '')
     if (i % 100 == 0):
         print('training loss = ', tensor.to_numpy(loss)[0])

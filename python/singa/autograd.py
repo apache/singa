@@ -85,7 +85,6 @@ def gradients(y, dy=None):
 
 
 
-
 def backward(y, dy=None):
     '''
     Run the backward propagation starting at y.
@@ -356,7 +355,7 @@ class AddBias(Operation):
         Args:
             axis: 0 or 1, default is 0.
         '''
-	self.param = {'name':'AddBias','axis':axis}
+	self.param = {'name':'Add','axis':axis}
         self.axis = axis
 
     def forward(self, x, b):
