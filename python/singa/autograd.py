@@ -586,6 +586,25 @@ class Layer(object):
             if var.device.id() != x_device:
                 var.to_device(x_device)
 
+    def find_sublayers(self):
+        sublayers=[]
+        for attr in self.__dict__:
+            if isinstance(self.__dict__[attr], Layer):
+                sublayers.append((attr, self.__dict__[attr]))
+        return sublayers
+
+    def get_params(self):
+        sublayers=self.find_sublayers()
+        params=dict()
+        for sublayer_name, sublayer in sublayers:
+            params[sublayer_name]=sublayer.get_params()
+        return params
+
+    def set_params(self, **parameters):
+        for parameter_name in parameters:
+            assert isinstance(self.__dict__[parameter_name],Layer)
+            self.__dict__[parameter_name].set_params(**parameters[parameter_name])
+
 
 class Linear(Layer):
 
@@ -800,6 +819,26 @@ class Conv2d(Layer):
         y = conv2d(self.handle, x, self.W, self.b)
         return y
 
+    def get_params(self):
+        if self.bias:
+            return {'W':self.W,'b':self.b}
+        else:
+            return {'W':self.W}
+
+    def set_params(self, **parameters):
+        allow_params=['W','b']
+        for parameter_name in parameters:
+            assert parameter_name in allow_params,'please input allowed parameters.'
+            if parameter_name is 'b':
+                self.bias=True
+            if isinstance(parameters[parameter_name], Tensor):
+                assert parameters[parameter_name].shape == self.__dict__[parameter_name].shape, 'Shape dismatched.'
+                self.__dict__[parameter_name].reset_like(parameters[parameter_name])
+            elif isinstance(parameters[parameter_name], np.ndarray):
+                assert parameters[parameter_name].shape == self.__dict__[parameter_name].shape, 'Shape dismatched.'
+                self.__dict__[parameter_name].copy_from_numpy(parameters[parameter_name])
+            else:
+                raise ValueError('parameters should be Tensor or Numpy array.')
 
 class SeparableConv2d(Layer):
 
