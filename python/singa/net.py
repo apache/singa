@@ -472,7 +472,7 @@ class FeedForwardNet(object):
                 f = f[0:-4]
             sp = snapshot.Snapshot(f, True, buffer_size)
             v = tensor.from_numpy(np.array([__version__]))
-            params['SINGA_VERSION'] = v
+            sp.write('SINGA_VERSION', v)
             for (name, val) in zip(self.param_names(), self.param_values()):
                 val.to_host()
                 sp.write(name, val)
