@@ -55,7 +55,6 @@ def infer_dependency(op):
     queue = deque([op])
     while len(queue) > 0:
 	cur_op = queue.pop()
-	#print(cur_op)
         for src_op, _, _, _ in cur_op.src:
             if src_op not in dependency_count:
                 # dependency[src_op] = [Counter() for _ in src_op.y_id2idx]
@@ -128,7 +127,6 @@ def backward(y, dy=None):
             continue
         # if not isinstance(op, tensor.Dummy):
         dxs = op._do_backward(*dys)
-	#print('backward',op)
         # TODO src and dx must match
         assert len(op.src) == len(dxs), \
             'the number of src ops (=%d) and dx (=%d) not match' \

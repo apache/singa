@@ -25,12 +25,12 @@ from singa import tensor
 from singa.tensor import Tensor
 from singa import autograd
 from singa import optimizer
-import numpy as np
 import onnx
+from onnx import helper
+from onnx import AttributeProto, TensorProto, GraphProto
 from onnx import numpy_helper
 
 from collections import Counter, deque
-import numpy as np
 import math
 
 from .tensor import Tensor
@@ -40,7 +40,7 @@ from . import singa_wrap as singa
 #from .tensor import einsum
 from autograd import *
 
-def onnx_model_init(inputs,name = 'singonnx.pkl'):
+def onnx_model_init(inputs,name):
     '''
     load onnx model graph and load weights
     input:
@@ -101,12 +101,7 @@ def get_onnx_model(y, dy=None):
         loss for onnx model
     '''
     ######################
-    import onnx
-    from onnx import helper
-    from onnx import AttributeProto, TensorProto, GraphProto
-    from onnx import numpy_helper
-    import numpy as np
-    from singa import tensor
+
     X = helper.make_tensor_value_info('X', TensorProto.FLOAT, [1, 2])
     Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT, [1, 2])
     node = []

@@ -17,8 +17,6 @@
 # under the License.
 #
 
-
-
 from singa import tensor
 from singa.tensor import Tensor
 from singa import autograd
@@ -70,4 +68,5 @@ for epoch in range(1):
         sgd.apply(0, gp, p, '')
     if (epoch % 100 == 0):
         print('training loss = ', tensor.to_numpy(loss)[0])
+
 
