@@ -3,13 +3,8 @@ import numpy as np
 from os import listdir
 from os.path import isfile, join
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
-from torchvision import datasets, transforms
 import numpy as np
-import time
-import os
 import torch.nn as nn
 
 data = torch.from_numpy(np.ones((4,3)).astype(np.float32))

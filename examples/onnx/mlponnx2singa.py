@@ -61,25 +61,7 @@ sgd = optimizer.SGD(0.00)
 
 # training process
 for epoch in range(1):
-    #loss = sonnx.onnx_loss(a,model,target)
-    for i in model.graph.node:
-        if (i.op_type == 'Constant'):
-            pass
-            # do nothing
-        if (i.op_type == 'LeakyRelu'):
-            a[str(i.output[0])] = autograd.relu(a[str(i.input[0])])
-        elif (i.op_type == 'Relu'):
-            a[str(i.output[0])] = autograd.relu(a[str(i.input[0])])
-        elif (i.op_type == 'Softmax'):
-            a[str(i.output[0])] = autograd.softmax(a[str(i.input[0])])
-        elif (i.op_type == 'Add'):
-            if(str(i.input[1])[-1] == 'b'):
-                a[str(i.output[0])] = autograd.add_bias(a[str(i.input[0])], a[str(i.input[1])])
-            else:
-                a[str(i.output[0])] = autograd.add(a[str(i.input[0])],a[str(i.input[1])])
-        elif (i.op_type == 'MatMul'):
-            a[str(i.output[0])] = autograd.matmul(a[str(i.input[0])], a[str(i.input[1])])
-    loss = autograd.cross_entropy(a['Y'], target)
+    loss = sonnx.onnx_loss(a,model,target)
     if (epoch % 100 == 0):
         print('training loss = ', tensor.to_numpy(loss)[0])
 
