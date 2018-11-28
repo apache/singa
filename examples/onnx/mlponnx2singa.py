@@ -23,6 +23,7 @@ from singa import autograd
 from singa import optimizer
 import numpy as np
 from singa import sonnx
+
 autograd.training = True
 np.random.seed(0)
 data = np.random.randn(4,3).astype(np.float32)
@@ -54,18 +55,31 @@ inputs = Tensor(data=data)
 target = Tensor(data=label)
 
 
-a,model = sonnx.onnx_model_init(inputs,'singonnx.pkl')
-
+a,model = sonnx.onnx_model_init(inputs,'pytorch.onnx')
 
 sgd = optimizer.SGD(0.00)
 
 # training process
 for epoch in range(1):
-    loss = sonnx.onnx_loss(a,model,target)
-    gradient = autograd.backward(loss)
-    for p, gp in gradient:
-        gp.reshape(p.shape)
-        sgd.apply(0, gp, p, '')
+    #loss = sonnx.onnx_loss(a,model,target)
+    for i in model.graph.node:
+        if (i.op_type == 'Constant'):
+            pass
+            # do nothing
+        if (i.op_type == 'LeakyRelu'):
+            a[str(i.output[0])] = autograd.relu(a[str(i.input[0])])
+        elif (i.op_type == 'Relu'):
+            a[str(i.output[0])] = autograd.relu(a[str(i.input[0])])
+        elif (i.op_type == 'Softmax'):
+            a[str(i.output[0])] = autograd.softmax(a[str(i.input[0])])
+        elif (i.op_type == 'Add'):
+            if(str(i.input[1])[-1] == 'b'):
+                a[str(i.output[0])] = autograd.add_bias(a[str(i.input[0])], a[str(i.input[1])])
+            else:
+                a[str(i.output[0])] = autograd.add(a[str(i.input[0])],a[str(i.input[1])])
+        elif (i.op_type == 'MatMul'):
+            a[str(i.output[0])] = autograd.matmul(a[str(i.input[0])], a[str(i.input[1])])
+    loss = autograd.cross_entropy(a['Y'], target)
     if (epoch % 100 == 0):
         print('training loss = ', tensor.to_numpy(loss)[0])
 

@@ -50,13 +50,12 @@ def onnx_model_init(inputs,name):
      a graph node dictionary
      model: graph model
     '''
-    f = open(name, 'rb')
-    model = pickle.load(f)
+    model = onnx.load('singa.onnx')
     a = {}
     a['X'] = inputs
     for i in model.graph.node:
         if (i.op_type == 'Constant'):
-            a[str(i.output[0])] = tensor.from_numpy(numpy_helper.to_array(i.attribute[0].t))
+            a[str(i.output[0])] = tensor.from_numpy(onnx.numpy_helper.to_array(i.attribute[0].t))
             a[str(i.output[0])].stores_grad = True
     return a,model
 
@@ -74,6 +73,8 @@ def onnx_loss(a,model,target):
             pass
             # do nothing
         if (i.op_type == 'LeakyRelu'):
+            a[str(i.output[0])] = autograd.relu(a[str(i.input[0])])
+        elif (i.op_type == 'Relu'):
             a[str(i.output[0])] = autograd.relu(a[str(i.input[0])])
         elif (i.op_type == 'Softmax'):
             a[str(i.output[0])] = autograd.softmax(a[str(i.input[0])])

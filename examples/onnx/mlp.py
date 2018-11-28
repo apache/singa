@@ -25,6 +25,7 @@ from singa import autograd
 from singa import optimizer
 from singa import *
 from singa import sonnx
+import onnx
 
 import numpy as np
 import pickle
@@ -97,6 +98,5 @@ for i in range(1):
 
 model=sonnx.get_onnx_model(loss)
 
-with open('singonnx.pkl', 'wb') as output:
-    pickle.dump(model,output)
+onnx.save(model, 'singa.onnx')
 
