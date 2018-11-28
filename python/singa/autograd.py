@@ -587,7 +587,8 @@ class Layer(object):
                 var.to_device(x_device)
 
     def find_sublayers(self):
-        # return a list whose elements are in form of (attribute_name, sublayer)
+        # return a list whose elements are in form of (attribute_name,
+        # sublayer)
         sublayers = []
         for attr in self.__dict__:
             if isinstance(self.__dict__[attr], Layer):
@@ -607,12 +608,19 @@ class Layer(object):
         # examples: Layer.set_params(W=np.ones((in, out), dtype=np.float32)),
         # Layer.set_params(**{'block1':{'linear1':{'W':np.ones((in, out),
         # dtype=np.float32)}}})
-        for parameter_name in parameters:
-            assert isinstance(self.__dict__[parameter_name], Layer)
-            self.__dict__[parameter_name].set_params(
-                **parameters[parameter_name])
+        for (parameter_name, parameter_value) in parameters.items():
+            #assert isinstance(self.__dict__[parameter_name], Layer)
+            assert parameter_name in self.__dict__, 'please input correct parameters.'
+            if isinstance(self.__dict__[parameter_name], Layer):
+                self.__dict__[parameter_name].set_params(
+                    **parameters[parameter_name])
+            elif isinstance(self.__dict__[parameter_name], Tensor):
+                self.set_one_param(parameter_name, parameter_value)
+            else:
+                raise ValueError('please input correct parameters.')
 
     def set_one_param(self, parameter_name, parameter_value):
+        assert parameter_name in self.allow_params, 'please input allowed parameters.'
         assert parameter_value.shape == self.__dict__[
             parameter_name].shape, 'Shape dismatched.'
         if isinstance(parameter_value, Tensor):
@@ -663,12 +671,11 @@ class Linear(Layer):
         # input should be either a PyTensor or numpy ndarray.
         # examples: Linear.set_params(W=np.ones((in, out), dtype=np.float32)),
         # Linear.set_params(**{'W':np.ones((in, out), dtype=np.float32)})
-        allow_params = ['W', 'b']
-        for (parameter_name, parameter_value) in parameters.items():
-            assert parameter_name in allow_params, 'please input allowed parameters.'
+        self.allow_params = ['W', 'b']
+        super(Linear, self).set_params(**parameters)
+        for parameter_name in parameters:
             if parameter_name is 'b':
                 self.bias = True
-            self.set_one_param(parameter_name, parameter_value)
 
 
 class Concat(Operation):
@@ -867,12 +874,11 @@ class Conv2d(Layer):
         # input should be either a PyTensor or numpy ndarray.
         # examples: Conv2d.set_params(W=np.ones((n, c, h, w), dtype=np.float32)),
         #          Conv2d.set_params(**{'W':np.ones((n, c, h, w), dtype=np.float32)})
-        allow_params = ['W', 'b']
-        for (parameter_name, parameter_value) in parameters.items():
-            assert parameter_name in allow_params, 'please input allowed parameters.'
+        self.allow_params = ['W', 'b']
+        super(Conv2d, self).set_params(**parameters)
+        for parameter_name in parameters:
             if parameter_name is 'b':
                 self.bias = True
-            self.set_one_param(parameter_name, parameter_value)
 
 
 class SeparableConv2d(Layer):
@@ -942,10 +948,8 @@ class BatchNorm2d(Layer):
         # input should be either a PyTensor or numpy ndarray.
         # examples: Batchnorm2d.set_params(scale=np.ones((1,), dtype=np.float32)),
         #          Batchnorm2d.set_params(**{'bias':np.ones((1), dtype=np.float32)})
-        allow_params = ['scale', 'bias']
-        for (parameter_name, parameter_value) in parameters.items():
-            assert parameter_name in allow_params, 'please input allowed parameters.'
-            self.set_one_param(parameter_name, parameter_value)
+        self.allow_params = ['scale', 'bias']
+        super(BatchNorm2d, self).set_params(**parameters)
 
 
 class _BatchNorm2d(Operation):
