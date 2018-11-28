@@ -612,6 +612,18 @@ class Layer(object):
             self.__dict__[parameter_name].set_params(
                 **parameters[parameter_name])
 
+    def set_one_param(self, parameter_name, parameter_value):
+        assert parameter_value.shape == self.__dict__[
+            parameter_name].shape, 'Shape dismatched.'
+        if isinstance(parameter_value, Tensor):
+            self.__dict__[parameter_name].reset_like(
+                parameter_value)
+        elif isinstance(parameter_value, np.ndarray):
+            self.__dict__[parameter_name].copy_from_numpy(
+                parameter_value)
+        else:
+            raise ValueError('parameters should be Tensor or Numpy array.')
+
 
 class Linear(Layer):
 
@@ -652,22 +664,11 @@ class Linear(Layer):
         # examples: Linear.set_params(W=np.ones((in, out), dtype=np.float32)),
         # Linear.set_params(**{'W':np.ones((in, out), dtype=np.float32)})
         allow_params = ['W', 'b']
-        for parameter_name in parameters:
+        for (parameter_name, parameter_value) in parameters.items():
             assert parameter_name in allow_params, 'please input allowed parameters.'
             if parameter_name is 'b':
                 self.bias = True
-            if isinstance(parameters[parameter_name], Tensor):
-                assert parameters[parameter_name].shape == self.__dict__[
-                    parameter_name].shape, 'Shape dismatched.'
-                self.__dict__[parameter_name].reset_like(
-                    parameters[parameter_name])
-            elif isinstance(parameters[parameter_name], np.ndarray):
-                assert parameters[parameter_name].shape == self.__dict__[
-                    parameter_name].shape, 'Shape dismatched.'
-                self.__dict__[parameter_name].copy_from_numpy(
-                    parameters[parameter_name])
-            else:
-                raise ValueError('parameters should be Tensor or Numpy array.')
+            self.set_one_param(parameter_name, parameter_value)
 
 
 class Concat(Operation):
@@ -867,22 +868,11 @@ class Conv2d(Layer):
         # examples: Conv2d.set_params(W=np.ones((n, c, h, w), dtype=np.float32)),
         #          Conv2d.set_params(**{'W':np.ones((n, c, h, w), dtype=np.float32)})
         allow_params = ['W', 'b']
-        for parameter_name in parameters:
+        for (parameter_name, parameter_value) in parameters.items():
             assert parameter_name in allow_params, 'please input allowed parameters.'
             if parameter_name is 'b':
                 self.bias = True
-            if isinstance(parameters[parameter_name], Tensor):
-                assert parameters[parameter_name].shape == self.__dict__[
-                    parameter_name].shape, 'Shape dismatched.'
-                self.__dict__[parameter_name].reset_like(
-                    parameters[parameter_name])
-            elif isinstance(parameters[parameter_name], np.ndarray):
-                assert parameters[parameter_name].shape == self.__dict__[
-                    parameter_name].shape, 'Shape dismatched.'
-                self.__dict__[parameter_name].copy_from_numpy(
-                    parameters[parameter_name])
-            else:
-                raise ValueError('parameters should be Tensor or Numpy array.')
+            self.set_one_param(parameter_name, parameter_value)
 
 
 class SeparableConv2d(Layer):
@@ -953,20 +943,9 @@ class BatchNorm2d(Layer):
         # examples: Batchnorm2d.set_params(scale=np.ones((1,), dtype=np.float32)),
         #          Batchnorm2d.set_params(**{'bias':np.ones((1), dtype=np.float32)})
         allow_params = ['scale', 'bias']
-        for parameter_name in parameters:
+        for (parameter_name, parameter_value) in parameters.items():
             assert parameter_name in allow_params, 'please input allowed parameters.'
-            if isinstance(parameters[parameter_name], Tensor):
-                assert parameters[parameter_name].shape == self.__dict__[
-                    parameter_name].shape, 'Shape dismatched.'
-                self.__dict__[parameter_name].reset_like(
-                    parameters[parameter_name])
-            elif isinstance(parameters[parameter_name], np.ndarray):
-                assert parameters[parameter_name].shape == self.__dict__[
-                    parameter_name].shape, 'Shape dismatched.'
-                self.__dict__[parameter_name].copy_from_numpy(
-                    parameters[parameter_name])
-            else:
-                raise ValueError('parameters should be Tensor or Numpy array.')
+            self.set_one_param(parameter_name, parameter_value)
 
 
 class _BatchNorm2d(Operation):
