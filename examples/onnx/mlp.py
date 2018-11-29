@@ -74,7 +74,6 @@ b2 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
 b2.set_value(0.0)
 
 
-
 sgd = optimizer.SGD(0.00)
 
 # training process
@@ -96,7 +95,7 @@ for i in range(1):
         print('training loss = ', tensor.to_numpy(loss)[0])
 
 
-model=sonnx.get_onnx_model(loss)
+model=sonnx.get_onnx_model(loss,inputs,target)
 
 onnx.save(model, 'singa.onnx')
 

@@ -91,7 +91,7 @@ def onnx_loss(a,model,target):
 
 
 
-def get_onnx_model(y, dy=None):
+def get_onnx_model(y,inputs,target, dy=None):
     '''
 	get onnx model from singa computational graph
 	Args:
@@ -103,8 +103,8 @@ def get_onnx_model(y, dy=None):
     '''
     ######################
 
-    X = helper.make_tensor_value_info('X', TensorProto.FLOAT, [1, 2])
-    Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT, [1, 2])
+    X = helper.make_tensor_value_info('X', TensorProto.FLOAT,inputs.shape)
+    Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT,target.shape)
     node = []
     ######################
 
