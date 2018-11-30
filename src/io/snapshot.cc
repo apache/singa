@@ -48,7 +48,7 @@ Snapshot::Snapshot(const std::string& prefix, Mode mode, int max_param_size /*in
     text_reader_ptr->Open(prefix + ".desc");
     std::string key, val;
     while (text_reader_ptr->Read(&key, &val)) {
-      if (key == "SINGA_VERSION")
+      if (key == "0")
         version_ = std::stoi(val);
     }
     delete text_reader_ptr;
@@ -59,11 +59,13 @@ Snapshot::Snapshot(const std::string& prefix, Mode mode, int max_param_size /*in
         <<" or " << prefix + " .model (used by 1.0.0)";
     singa::TensorProto tp;
     while (bin_reader_ptr_->Read(&key, &val)) {
+      /*
       if (key == "SINGA_VERSION") {
         CHECK(version_ == std::stoi(val)) << key << " in .bin and .desc mismatch: "
           << val << " (bin) vs " << version_ << " (desc)";
         continue;
       }
+      */
 
       CHECK(param_names_.count(key) == 0);
       param_names_.insert(key);
