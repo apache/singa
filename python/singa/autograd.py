@@ -55,6 +55,7 @@ def infer_dependency(op):
     queue = deque([op])
     while len(queue) > 0:
 	cur_op = queue.pop()
+	#print(cur_op)
         for src_op, _, _, _ in cur_op.src:
             if src_op not in dependency_count:
                 # dependency[src_op] = [Counter() for _ in src_op.y_id2idx]
@@ -127,6 +128,7 @@ def backward(y, dy=None):
             continue
         # if not isinstance(op, tensor.Dummy):
         dxs = op._do_backward(*dys)
+	#print('backward',op)
         # TODO src and dx must match
         assert len(op.src) == len(dxs), \
             'the number of src ops (=%d) and dx (=%d) not match' \
@@ -290,7 +292,6 @@ class ReLU(Operation):
         Returns:
             a new CTensor whose element y = x if x >= 0; otherwise 0;
         '''
-        self.param={'name':'LeakyRelu','x':x,'alpha':0.0}
 	if training:
             self.input = x
         return singa.ReLU(x)
@@ -322,7 +323,6 @@ class Matmul(Operation):
         Returns:
             a CTensor for the result
         '''
-	self.param = {'name':'MatMul','w':w,'x':x}
         if training:
             self.input = (x, w)
         return singa.Mult(x, w)
@@ -353,7 +353,6 @@ class AddBias(Operation):
         Args:
             axis: 0 or 1, default is 0.
         '''
-	self.param = {'name':'Add','axis':axis}
         self.axis = axis
 
     def forward(self, x, b):
@@ -364,8 +363,6 @@ class AddBias(Operation):
         Return:
             the result Tensor
         '''
-	self.param['x'] = x
-        self.param['b'] = b
         if self.axis == 0:
             singa.AddRow(b, x)
         elif self.axis == 1:
@@ -393,7 +390,6 @@ def add_bias(x, b, axis=0):
 class Add(Operation):
 
     def forward(self, a, b):
-	self.param = {'name': 'Add'}
         return singa.__add__(a, b)
 
     def backward(self, dy):
@@ -412,7 +408,6 @@ class SoftMax(Operation):
 
     def __init__(self, axis=0):
         self.axis = axis
-	self.param={'name':'Softmax','axis':axis}
 
     def forward(self, x):
         '''
@@ -421,7 +416,6 @@ class SoftMax(Operation):
         Returns:
             the result Tensor
         '''
-	self.param['x']=x
         if self.axis == 1:
             x = singa.DefaultTranspose(x)
         self.output = singa.SoftMax(x)
@@ -473,7 +467,6 @@ class CrossEntropy(Operation):
     '''
 
     def forward(self, x, t):
-	self.param = {'name': 'CrossEntropy'}
         '''
         Args:
             x (CTensor): 1d or 2d tensor, the prediction data(output)
@@ -573,7 +566,6 @@ class Flatten(Operation):
 
     def __init__(self, start_axis=1):
         # flatten all axis after (inclusive) start_axis
-	self.param={'name':'Flatten'}
         self.start_axis = start_axis
         assert start_axis == 1, 'must flatten into 2d array not'
 
@@ -1260,3 +1252,4 @@ class LSTM(RNN_Base):
         hout = tanh(cout)
         hout = mul(o, hout)
         return hout, cout
+

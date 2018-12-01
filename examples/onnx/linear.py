@@ -28,6 +28,7 @@ from singa import sonnx
 import onnx
 
 import numpy as np
+import pickle
 autograd.training = True
 np.random.seed(0)
 data = np.random.randn(4,3).astype(np.float32)
@@ -57,20 +58,9 @@ print('train_label_shape:', label.shape)
 inputs = Tensor(data=data)
 target = Tensor(data=label)
 
-w0 = Tensor(shape=(3, 3), requires_grad=True, stores_grad=True)
-w0.gaussian(0.0, 0.1)
-b0 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
-b0.set_value(0.0)
-
-w1 = Tensor(shape=(3, 3), requires_grad=True, stores_grad=True)
-w1.gaussian(0.0, 0.1)
-b1 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
-b1.set_value(0.0)
-
-w2 = Tensor(shape=(3, 3), requires_grad=True, stores_grad=True)
-w2.gaussian(0.0, 0.1)
-b2 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
-b2.set_value(0.0)
+linear1 = autograd.Linear(3, 3)
+linear2 = autograd.Linear(3, 3)
+linear3 = autograd.Linear(3, 3)
 
 
 
@@ -78,13 +68,10 @@ sgd = optimizer.SGD(0.00)
 
 # training process
 for i in range(1):
-    x = autograd.matmul(inputs, w0)
-    x = autograd.add_bias(x, b0)
+    x = linear1(inputs)
     x = autograd.relu(x)
-    x2 = autograd.matmul(x, w2)
-    x2 = autograd.add_bias(x2, b2)
-    x1 = autograd.matmul(x, w1)
-    x1 = autograd.add_bias(x1, b1)
+    x1 = linear2(x)
+    x2 = linear3(x)
     x3 = autograd.add(x1, x2)
     x3 = autograd.softmax(x3)
     loss = autograd.cross_entropy(x3, target)
@@ -99,6 +86,6 @@ for i in range(1):
 
 model=sonnx.get_onnx_model(loss,inputs,target)
 
-onnx.save(model, 'singa.onnx')
+onnx.save(model, 'linear.onnx')
 
 
