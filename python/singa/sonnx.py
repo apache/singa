@@ -29,7 +29,6 @@ import onnx
 from onnx import helper
 from onnx import AttributeProto, TensorProto, GraphProto
 from onnx import numpy_helper
-
 from collections import Counter, deque
 import math
 
@@ -41,7 +40,8 @@ from . import singa_wrap as singa
 from autograd import *
 from singa.tensor import to_numpy
 
-def onnx_model_init(inputs,name):
+
+def onnx_model_init(inputs, path):
     '''
     load onnx model graph and load weights
     input:
@@ -51,16 +51,18 @@ def onnx_model_init(inputs,name):
      a graph node dictionary
      model: graph model
     '''
-    model = onnx.load('singa.onnx')
-    a = {}
-    a['X'] = inputs
+    print('path:', path)
+    model = onnx.load(path)
+    modeldic = {}
+    modeldic['X'] = inputs
     for i in model.graph.node:
         if (i.op_type == 'Constant'):
-            a[str(i.output[0])] = tensor.from_numpy(onnx.numpy_helper.to_array(i.attribute[0].t))
-            a[str(i.output[0])].stores_grad = True
-    return a,model
+            modeldic[str(i.output[0])] = tensor.from_numpy(onnx.numpy_helper.to_array(i.attribute[0].t))
+            modeldic[str(i.output[0])].stores_grad = True
+    return modeldic, model
 
-def find_add(output,model):
+
+def find_add(output, model):
     ans = []
     for idx, i in enumerate(model.graph.node):
         for j in i.input:
@@ -68,63 +70,72 @@ def find_add(output,model):
                 ans.append(idx)
     return ans
 
-def find_shape(input,model):
+
+def find_shape(input, model):
     for i in model.graph.node:
-        if(i.op_type == 'Constant' and i.output[0]==input):
+        if (i.op_type == 'Constant' and i.output[0] == input):
             return onnx.numpy_helper.to_array(i.attribute[0].t).shape
 
 
-def combine_node(a,model):
-    for idx,i in enumerate(model.graph.node):
+def combine_node(modeldic, model):
+    for idx, i in enumerate(model.graph.node):
         if (i.op_type == 'MatMul'):
-            addlist = find_add(i.output[0],model)
-            if(len(addlist) > 1 or len(addlist)==0):continue
+            addlist = find_add(i.output[0], model)
+            if (len(addlist) > 1 or len(addlist) == 0): continue
             addidx = addlist[0]
-            if(i.name == "not_requires_grad" and model.graph.node[addidx].name == "not_requires_grad"):continue
+            if (i.name == "not_requires_grad" and model.graph.node[addidx].name == "not_requires_grad"): continue
             model.graph.node[idx].output[0] = model.graph.node[addidx].output[0]
             model.graph.node[idx].input.append(model.graph.node[addidx].input[1])
             model.graph.node[idx].op_type = 'Linear'
-            model.graph.node[addidx].op_type='removed'
+            model.graph.node[addidx].op_type = 'removed'
 
-    linear={}
+    linear = {}
     for i in model.graph.node:
         if (i.op_type == 'Linear'):
-            shape = find_shape(i.input[1],model)
+            shape = find_shape(i.input[1], model)
             linear[str(i.output[0])] = autograd.Linear(shape[0], shape[1])
-            linear[str(i.output[0])].w = a[str(i.input[1])]
-            linear[str(i.output[0])].b = a[str(i.input[2])]
+            linear[str(i.output[0])].w = modeldic[str(i.input[1])]
+            linear[str(i.output[0])].b = modeldic[str(i.input[2])]
+
+    return linear, model
+
+class ONNX_model(Layer):
+    def __init__(self,inputs,path):
+        super(ONNX_model, self).__init__()
+        self.modeldic, self.model = onnx_model_init(inputs, path)
+        self.linear, self.model = combine_node(self.modeldic, self.model)
+
+    def __call__(self,target):
+        '''
+            input:
+            a graph node dictionary
+            model: graph model
+            target: label
+
+            load other nodes of onnx
+            '''
+        linear, model,modeldic = self.linear, self.model,self.modeldic
+
+        for i in model.graph.node:
+            if (i.op_type == 'Constant'):
+                pass
+                # do nothing
+            if (i.op_type == 'Relu'):
+                modeldic[str(i.output[0])] = autograd.relu(modeldic[str(i.input[0])])
+            elif (i.op_type == 'Softmax'):
+                modeldic[str(i.output[0])] = autograd.softmax(modeldic[str(i.input[0])])
+            elif (i.op_type == 'Add'):
+                modeldic[str(i.output[0])] = autograd.add(modeldic[str(i.input[0])], modeldic[str(i.input[1])])
+            elif (i.op_type == 'MatMul'):
+                modeldic[str(i.output[0])] = autograd.matmul(modeldic[str(i.input[0])], modeldic[str(i.input[1])])
+            elif (i.op_type == 'Linear'):
+                modeldic[str(i.output[0])] = linear[str(i.output[0])](modeldic[str(i.input[0])])
+
+        loss = autograd.cross_entropy(modeldic['Y'], target)
+        return loss
 
 
-    return linear,model
 
-def onnx_loss(a,model,target):
-    '''
-    input:
-    a graph node dictionary
-    model: graph model
-    target: label
-
-    load other nodes of onnx
-    '''
-
-    linear, model = combine_node(a,model)
-    for i in model.graph.node:
-        if (i.op_type == 'Constant'):
-            pass
-            # do nothing
-        if (i.op_type == 'Relu'):
-            a[str(i.output[0])] = autograd.relu(a[str(i.input[0])])
-        elif (i.op_type == 'Softmax'):
-            a[str(i.output[0])] = autograd.softmax(a[str(i.input[0])])
-        elif (i.op_type == 'Add'):
-            a[str(i.output[0])] = autograd.add(a[str(i.input[0])],a[str(i.input[1])])
-        elif (i.op_type == 'MatMul'):
-            a[str(i.output[0])] = autograd.matmul(a[str(i.input[0])], a[str(i.input[1])])
-        elif (i.op_type == 'Linear'):
-            a[str(i.output[0])] = linear[str(i.output[0])](a[str(i.input[0])])
-
-    loss = autograd.cross_entropy(a['Y'], target)
-    return loss
 
 
 
@@ -160,7 +171,7 @@ def get_onnx_model(y,inputs,target):
         if curop in supportOp:
             if not op.requires_grad:name = "not_requires_grad"
             else:name=''
-            if (prefname == 'Dummy'): pre[0] = 'X'
+            if (isinstance(op.src[0][0], Dummy)): pre[0] = 'X'
             if (curop in singatoonnx): curop = singatoonnx[curop]
             if (lastop):
                 node = [onnx.helper.make_node(curop, inputs=pre, outputs=['Y'],name=name )] + node
@@ -169,7 +180,7 @@ def get_onnx_model(y,inputs,target):
                 node = [onnx.helper.make_node(curop, inputs=pre, outputs=[cur],name=name )] + node
                 num = 1
                 while(True):
-                    if (len(pre) > num and preop[num] == 'Dummy' and op.src[num][2] is not None):
+                    if (len(pre) > num and isinstance(op.src[num][0],Dummy) and op.src[num][2] is not None):
                         dummy = to_numpy(op.src[num][2])
                         node = [onnx.helper.make_node('Constant', inputs=[], outputs=[pre[num]],
                                                       value=numpy_helper.from_array(dummy))] + node

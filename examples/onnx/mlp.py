@@ -90,8 +90,6 @@ for i in range(1):
     loss = autograd.cross_entropy(x3, target)
     gradient = autograd.backward(loss)
     for p, gp in gradient:
-        #print(p.shape,gp.shape)
-        #gp.reshape(p.shape)
         sgd.apply(0, gp, p, '')
     if (i % 100 == 0):
         print('training loss = ', tensor.to_numpy(loss)[0])
@@ -99,6 +97,6 @@ for i in range(1):
 
 model=sonnx.get_onnx_model(loss,inputs,target)
 
-onnx.save(model, 'singa.onnx')
+onnx.save(model, 'mlp.onnx')
 
 
