@@ -25,7 +25,7 @@ Web Access
 
 The following is a link to the online source repository.
 
-* https://git-wip-us.apache.org/repos/asf?p=incubator-singa.git;a=summary
+* https://gitbox.apache.org/repos/asf?p=incubator-singa.git
 
 Contributors
 ------------
@@ -42,15 +42,23 @@ Contributors are encouraged to rebase their commits onto the latest master befor
 Committers
 ----------
 
+* To connect your Apache account with your Github account, Please follow the instructions on: https://gitbox.apache.org/setup/. After that you can directly merge PRs using GitHub’s UI.
+
 To merge pull request https://github.com/apache/incubator-singa/pull/xxx, the following instructions should be executed,
 
 .. code-block:: bash
 
     git clone https://github.com/apache/incubator-singa.git
-    git remote add asf https://git-wip-us.apache.org/repos/asf/incubator-singa.git
+    git remote add asf https://gitbox.apache.org/repos/asf/incubator-singa.git
     # optional
     git pull asf master:master
     git fetch origin pull/xxx/head:prxxx
     git merge prxxx
     git push asf master:master
+
+* To migrate from git-wip-us.apache.org to Gitbox: If you already cloned the SINGA repository from the old repo https://git-wip-us.apache.org/repos/asf/incubator-singa.git, you can update the master by:
+
+.. code-block:: bash
+
+    git remote set-url origin git@github.com/apache/singa.git
 
