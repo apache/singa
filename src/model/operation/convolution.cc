@@ -17,6 +17,9 @@ ConvHandle::ConvHandle(const Tensor &input,
 
   stride_h = stride[0];
   stride_w = stride[1];
+  padding_h = padding[0];
+  padding_w = padding[1];
+
 
   channels = in_channels;
   num_filters = out_channels;

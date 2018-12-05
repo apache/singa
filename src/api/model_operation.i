@@ -20,6 +20,13 @@ class ConvHandle {
              const bool bias);
   bool bias_term;
   size_t batchsize;
+  size_t pad_w;
+  size_t pad_h;
+  size_t stride_h;
+  size_t stride_w;
+  size_t padding_h;
+  size_t padding_w;
+  
 };
 
 Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &ch);
