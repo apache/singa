@@ -39,9 +39,9 @@ from . import singa_wrap as singa
 #from .tensor import einsum
 from autograd import *
 from singa.tensor import to_numpy
+from autograd import _Conv2d
 
-
-def onnx_model_init(inputs, path):
+def onnx_model_init(path):
     '''
     load onnx model graph and load weights
     input:
@@ -54,7 +54,6 @@ def onnx_model_init(inputs, path):
     print('path:', path)
     model = onnx.load(path)
     modeldic = {}
-    modeldic['X'] = inputs
     for i in model.graph.node:
         if (i.op_type == 'Constant'):
             modeldic[str(i.output[0])] = tensor.from_numpy(onnx.numpy_helper.to_array(i.attribute[0].t))
@@ -77,6 +76,7 @@ def find_shape(input, model):
             return onnx.numpy_helper.to_array(i.attribute[0].t).shape
 
 
+
 def combine_node(modeldic, model):
     for idx, i in enumerate(model.graph.node):
         if (i.op_type == 'MatMul'):
@@ -89,23 +89,31 @@ def combine_node(modeldic, model):
             model.graph.node[idx].op_type = 'Linear'
             model.graph.node[addidx].op_type = 'removed'
 
-    linear = {}
+    layer = {}
     for i in model.graph.node:
         if (i.op_type == 'Linear'):
             shape = find_shape(i.input[1], model)
-            linear[str(i.output[0])] = autograd.Linear(shape[0], shape[1])
-            linear[str(i.output[0])].w = modeldic[str(i.input[1])]
-            linear[str(i.output[0])].b = modeldic[str(i.input[2])]
+            layer[str(i.output[0])] = autograd.Linear(shape[0], shape[1])
+            layer[str(i.output[0])].set_params(W=modeldic[str(i.input[1])])
+            layer[str(i.output[0])].set_params(b=modeldic[str(i.input[2])])
 
-    return linear, model
+    for i in model.graph.node:
+        if (i.op_type == 'Conv'):
+            shape = find_shape(i.input[1], model)
+            layer[str(i.output[0])] = autograd.Conv2d(shape[1], shape[0],shape[2],padding=int(i.attribute[0].ints[0]))
+            print(shape)
+            layer[str(i.output[0])].set_params(W=modeldic[str(i.input[1])])
+            layer[str(i.output[0])].set_params(b=modeldic[str(i.input[2])])
 
-class ONNX_model(Layer):
-    def __init__(self,inputs,path):
-        super(ONNX_model, self).__init__()
-        self.modeldic, self.model = onnx_model_init(inputs, path)
-        self.linear, self.model = combine_node(self.modeldic, self.model)
+    return layer, model
 
-    def __call__(self,target):
+class ONNXm(Layer):
+    def __init__(self,path):
+        super(ONNXm, self).__init__()
+        self.modeldic, self.model = onnx_model_init(path)
+        self.layer, self.model = combine_node(self.modeldic, self.model)
+
+    def __call__(self,inputs):
         '''
             input:
             a graph node dictionary
@@ -114,30 +122,43 @@ class ONNX_model(Layer):
 
             load other nodes of onnx
             '''
-        linear, model,modeldic = self.linear, self.model,self.modeldic
-
+        layer, model,oper = self.layer, self.model,self.modeldic
+        self.modeldic['X'] = inputs
         for i in model.graph.node:
             if (i.op_type == 'Constant'):
                 pass
                 # do nothing
             if (i.op_type == 'Relu'):
-                modeldic[str(i.output[0])] = autograd.relu(modeldic[str(i.input[0])])
+                oper[str(i.output[0])] = autograd.relu(oper[str(i.input[0])])
             elif (i.op_type == 'Softmax'):
-                modeldic[str(i.output[0])] = autograd.softmax(modeldic[str(i.input[0])])
+                oper[str(i.output[0])] = autograd.softmax(oper[str(i.input[0])])
             elif (i.op_type == 'Add'):
-                modeldic[str(i.output[0])] = autograd.add(modeldic[str(i.input[0])], modeldic[str(i.input[1])])
+                oper[str(i.output[0])] = autograd.add(oper[str(i.input[0])], oper[str(i.input[1])])
             elif (i.op_type == 'MatMul'):
-                modeldic[str(i.output[0])] = autograd.matmul(modeldic[str(i.input[0])], modeldic[str(i.input[1])])
+                oper[str(i.output[0])] = autograd.matmul(oper[str(i.input[0])], oper[str(i.input[1])])
             elif (i.op_type == 'Linear'):
-                modeldic[str(i.output[0])] = linear[str(i.output[0])](modeldic[str(i.input[0])])
+                oper[str(i.output[0])] = layer[str(i.output[0])](oper[str(i.input[0])])
+            elif (i.op_type == 'Conv'):
+                #print(tensor.to_numpy(oper[str(i.input[0])]).shape)
+                #print(i.output[0])
+                oper[str(i.output[0])] = layer[str(i.output[0])](oper[str(i.input[0])])
+            elif (i.op_type == 'Flatten'):
+                oper[str(i.output[0])] = autograd.flatten(oper[str(i.input[0])])
+            elif(i.op_type == 'Concat'):
+                oper[str(i.output[0])] = autograd.cat((oper[str(i.input[0])], oper[str(i.input[1])]),int(i.attribute[0].i))
+            elif(i.op_type == 'Tanh'):
+                oper[str(i.output[0])] = autograd.tanh(oper[str(i.input[0])])
+            elif (i.op_type == 'Sigmoid'):
+                oper[str(i.output[0])] = autograd.sigmoid(oper[str(i.input[0])])
+            elif (i.op_type == 'Mul'):
+                oper[str(i.output[0])] = autograd.mul(oper[str(i.input[0])],oper[str(i.input[1])])
+        print('finish farward')
+        return oper['Y']
 
-        loss = autograd.cross_entropy(modeldic['Y'], target)
-        return loss
 
 
-
-
-
+def from_onnx_model(path):
+    return ONNXm(path)
 
 def get_onnx_model(y,inputs,target):
     '''
@@ -157,8 +178,8 @@ def get_onnx_model(y,inputs,target):
 
     ready = deque([y.creator])
 
-    supportOp = set(['ReLU','SoftMax','Add','AddBias','Matmul','Flatten'])
-    singatoonnx = {'SoftMax':'Softmax','AddBias':'Add','Matmul':'MatMul','ReLU':'Relu'}
+    supportOp = set(['ReLU', 'SoftMax', 'Add', 'AddBias', 'Matmul', 'Flatten', '_Conv2d', 'Concat', 'ElemMatmul','Sigmoid','Tanh'])
+    singatoonnx = {'SoftMax':'Softmax','AddBias':'Add','Matmul':'MatMul','ReLU':'Relu','_Conv2d':'Conv','ElemMatmul':'Mul'}
     lastop=True
     while len(ready) > 0:
         op = ready.pop()
@@ -167,7 +188,9 @@ def get_onnx_model(y,inputs,target):
         cur = str(op)
         pre = [str(i[0]) for i in op.src]
         preop = [str(i[0]).split('.')[-1].split(' ')[0] for i in op.src]
-        prefname = preop[0]
+        #print('op',op)
+        #print('op scr', op.src)
+        #print('-------')
         if curop in supportOp:
             if not op.requires_grad:name = "not_requires_grad"
             else:name=''
@@ -177,15 +200,22 @@ def get_onnx_model(y,inputs,target):
                 node = [onnx.helper.make_node(curop, inputs=pre, outputs=['Y'],name=name )] + node
                 lastop = False
             else:
-                node = [onnx.helper.make_node(curop, inputs=pre, outputs=[cur],name=name )] + node
-                num = 1
-                while(True):
-                    if (len(pre) > num and isinstance(op.src[num][0],Dummy) and op.src[num][2] is not None):
-                        dummy = to_numpy(op.src[num][2])
-                        node = [onnx.helper.make_node('Constant', inputs=[], outputs=[pre[num]],
-                                                      value=numpy_helper.from_array(dummy))] + node
-                        num+=1
-                    else:break
+                if(isinstance(op,Concat)):
+                    node = [onnx.helper.make_node(curop, inputs=pre, outputs=[cur], name=name,axis=int(op.axis))] + node
+                elif(isinstance(op,_Conv2d)):
+                    pads=[op.handle.padding_h,op.handle.padding_h,op.handle.padding_h,op.handle.padding_h]
+                    stride=[op.handle.stride_h,op.handle.stride_w]
+                    node = [onnx.helper.make_node(curop, inputs=pre, outputs=[cur], name=name, pads=pads,strides=stride)] + node
+                else:
+                    node = [onnx.helper.make_node(curop, inputs=pre, outputs=[cur],name=name )] + node
+            num = 1
+            while(True):
+                if (len(pre) > num and isinstance(op.src[num][0],Dummy) and op.src[num][2] is not None):
+                    dummy = to_numpy(op.src[num][2])
+                    node = [onnx.helper.make_node('Constant', inputs=[], outputs=[pre[num]],
+                                                  value=numpy_helper.from_array(dummy))] + node
+                    num+=1
+                else:break
         if not op.requires_grad:continue
         for (src_op, x_id, y, y_stores_grad) in op.src:
             dependency[src_op] -= 1
@@ -195,5 +225,6 @@ def get_onnx_model(y,inputs,target):
     model_def = helper.make_model(helper.make_graph(node, "t", [X], [Y], ), producer_name='o')
     onnx.checker.check_model(model_def)
     return model_def
+
 
 
