@@ -120,6 +120,7 @@ Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_
    develop/contribute-code
    develop/contribute-docs
    develop/how-to-release
+   develop/maturity-model-assessment
 
 .. toctree::
    :hidden:
