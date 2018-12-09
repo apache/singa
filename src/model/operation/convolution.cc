@@ -221,7 +221,7 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input,
 #endif
                                              ));
   if (CUDNN_MAJOR >= 7 && groups > 1) {
-    CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, groups));
+    //CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, groups));
   }
   else if (groups > 1) {LOG(FATAL) << "The current version of cuDNN not support grouped convolution.";};
 

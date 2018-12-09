@@ -67,4 +67,3 @@ for epoch in range(1):
         print('training loss = ', tensor.to_numpy(loss)[0])
 
 
-

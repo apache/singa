@@ -99,4 +99,3 @@ model=sonnx.get_onnx_model(loss,inputs,target)
 
 onnx.save(model, 'mlp.onnx')
 
-
