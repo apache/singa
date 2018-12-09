@@ -40,13 +40,13 @@ The dependencies are:
 * Protocol Buffers
 	* Download a suitable version such as 2.6.1: https://github.com/google/protobuf/releases/tag/v2.6.1 .	
 	* Download both protobuf-2.6.1.zip and protoc-2.6.1-win32.zip . 
-	* Extract both of them in dependecies folder. Add the path to protoc executable to the system path, or use full path when calling it.
+	* Extract both of them in dependencies folder. Add the path to protoc executable to the system path, or use full path when calling it.
 	* Open the Visual Studio solution which can be found in vsproject folder.
 	* Change the build settings to Release and x64.
 	* build libprotobuf project. 
 * Openblas
 	* Download a suitable source version such as 0.2.20 from http://www.openblas.net 
-	* Extract the source in the dependecies folder.
+	* Extract the source in the dependencies folder.
 	* If you don't have Perl installed, download a perl environment such as Strawberry Perl (http://strawberryperl.com/)
 	* Build the Visual Studio solution by running this command in the source folder:
 
@@ -300,12 +300,12 @@ In addition to the dependencies in section 1 above, we will need the following:
 5.2.2 Building singa-kernel
 ---------------------------	
 
-* Create a new Visual Studio projcet of type "CUDA 9.1 Runtime". Give it a name such as singa-kernel.
+* Create a new Visual Studio project of type "CUDA 9.1 Runtime". Give it a name such as singa-kernel.
 * The project comes with an initial file called kernel.cu. Remove this file from the project.
 * Add this file: src/core/tensor/math_kernel.cu 
 * In the project settings:
 
-	* Set Platfrom Toolset to "Visual Studio 2015 (v140)"
+	* Set Platform Toolset to "Visual Studio 2015 (v140)"
 	* Set Configuration Type to " Static Library (.lib)"
 	* In the Include Directories, add build/include.
 

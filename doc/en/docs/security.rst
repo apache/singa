@@ -15,26 +15,9 @@
    specific language governing permissions and limitations
    under the License.
 
+Security
+========
 
-Documentation
-=============
+Users can report security vulnerabilities to Apache Security Team: http://www.apache.org/security/ 
 
-.. toctree::
-
-   installation
-   software_stack
-   device
-   tensor
-   layer
-   net
-   initializer
-   loss
-   metric
-   optimizer
-   data
-   image_tool
-   snapshot
-   converter
-   utils
-   model_zoo/index
-   security
+SINGA is creating a new team for security. More details will be added soon.
