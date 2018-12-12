@@ -43,13 +43,9 @@ from autograd import _Conv2d,_Pooling2d,_BatchNorm2d
 
 def onnx_model_init(path):
     '''
-    load onnx model graph and load weights
-    input:
-    input data and file name of onnx model
+    input path
 
-    return:
-     a graph node dictionary
-     model: graph model
+    return: model and model dictionary
     '''
     print('path:', path)
     model = onnx.load(path)
@@ -62,6 +58,9 @@ def onnx_model_init(path):
 
 
 def find_add(output, model):
+    '''
+    #utils for combine operators to layers
+    '''
     ans = []
     for idx, i in enumerate(model.graph.node):
         for j in i.input:
@@ -71,6 +70,9 @@ def find_add(output, model):
 
 
 def find_shape(input, model):
+    '''
+    # find weight shape for layers
+    '''
     for i in model.graph.node:
         if (i.op_type == 'Constant' and i.output[0] == input):
             return onnx.numpy_helper.to_array(i.attribute[0].t).shape
@@ -78,6 +80,9 @@ def find_shape(input, model):
 
 
 def combine_node(modeldic, model):
+    '''
+    # for combine operators to layers
+    '''
     for idx, i in enumerate(model.graph.node):
         if (i.op_type == 'MatMul'):
             addlist = find_add(i.output[0], model)
@@ -129,19 +134,13 @@ class ONNXm(Layer):
 
     def __call__(self,inputs):
         '''
-            input:
-            a graph node dictionary
-            model: graph model
-            target: label
-
+            input: input for singa model
             load other nodes of onnx
             '''
+        supportLayer = ['Linear','Conv','MaxPool','AveragePool','BatchNormalization']
         layer, model,oper = self.layer, self.model,self.modeldic
         self.modeldic['X'] = inputs
         for i in model.graph.node:
-            if (i.op_type == 'Constant'):
-                pass
-                # do nothing
             if (i.op_type == 'Relu'):
                 oper[str(i.output[0])] = autograd.relu(oper[str(i.input[0])])
             elif (i.op_type == 'Softmax'):
@@ -150,12 +149,6 @@ class ONNXm(Layer):
                 oper[str(i.output[0])] = autograd.add(oper[str(i.input[0])], oper[str(i.input[1])])
             elif (i.op_type == 'MatMul'):
                 oper[str(i.output[0])] = autograd.matmul(oper[str(i.input[0])], oper[str(i.input[1])])
-            elif (i.op_type == 'Linear'):
-                oper[str(i.output[0])] = layer[str(i.output[0])](oper[str(i.input[0])])
-            elif (i.op_type == 'Conv'):
-                #print(tensor.to_numpy(oper[str(i.input[0])]).shape)
-                #print(i.output[0])
-                oper[str(i.output[0])] = layer[str(i.output[0])](oper[str(i.input[0])])
             elif (i.op_type == 'Flatten'):
                 oper[str(i.output[0])] = autograd.flatten(oper[str(i.input[0])])
             elif(i.op_type == 'Concat'):
@@ -166,11 +159,7 @@ class ONNXm(Layer):
                 oper[str(i.output[0])] = autograd.sigmoid(oper[str(i.input[0])])
             elif (i.op_type == 'Mul'):
                 oper[str(i.output[0])] = autograd.mul(oper[str(i.input[0])],oper[str(i.input[1])])
-            elif (i.op_type == 'MaxPool'):
-                oper[str(i.output[0])] = layer[str(i.output[0])](oper[str(i.input[0])])
-            elif (i.op_type == 'AveragePool'):
-                oper[str(i.output[0])] = layer[str(i.output[0])](oper[str(i.input[0])])
-            elif (i.op_type == 'BatchNormalization'):
+            elif (i.op_type in supportLayer):
                 oper[str(i.output[0])] = layer[str(i.output[0])](oper[str(i.input[0])])
         print('finish farward')
         return oper['Y']
