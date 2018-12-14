@@ -1,7 +1,6 @@
 #include "./convolution.h"
 #include "../layer/convolution.h"
 
-
 namespace singa {
 
 ConvHandle::ConvHandle(const Tensor &input,
@@ -37,9 +36,51 @@ ConvHandle::ConvHandle(const Tensor &input,
   col_height = in_channels * kernel_w * kernel_h;
   col_width = conv_height * conv_width;
   imagesize = input.Size() / batchsize;
+
+
+
+#ifdef USE_MKLDNN
+  const int groups = 1; // only groups 1 is supported for now
+  dtype = GetMKLDNNDataType(input.data_type());
+
+  x_dims = {(int)input.shape(0),(int)in_channels, (int)input.shape(2),(int)input.shape(3)};
+  b_dims = {(int)out_channels};
+  s_dims = {(int)stride_h, (int)stride_w};
+  p_dims = {(int)pad_h, (int)pad_w};
+  o_dims = {(int)input.shape(0),(int)out_channels, (int)conv_height,(int)conv_width};
+  w_dims = {groups, (int)out_channels/groups, (int)in_channels/groups, (int)kernel_size[0], (int)kernel_size[1] };
+
+  x_md = new mkldnn::memory::desc( x_dims, dtype, mkldnn::memory::format::nchw);
+  w_md = new mkldnn::memory::desc( w_dims, dtype, mkldnn::memory::format::goihw);
+  b_md = new mkldnn::memory::desc( b_dims, dtype, mkldnn::memory::format::x);
+  y_md = new mkldnn::memory::desc( o_dims, dtype, mkldnn::memory::format::nchw);
+
+  // convolution forward primitive descriptor is shared between forward and backward process
+  conv_d = new mkldnn::convolution_forward::desc(
+      mkldnn::prop_kind::forward_inference, mkldnn::convolution_direct, *x_md,
+      *w_md, *b_md, *y_md, s_dims,
+      p_dims, p_dims, mkldnn::padding_kind::zero);
+
+  auto eng = *input.device()->context(0)->engine;
+  conv_pd = new mkldnn::convolution_forward::primitive_desc(*conv_d, eng);
+
+  // mkldnn calculate dw and db in one go, a workaround to be compatible with singa api
+  db = new Tensor(Shape{num_filters}, input.device(), input.data_type() );
+
+#endif // USE_MKLDNN
 }
 
-
+ConvHandle::~ConvHandle() {
+#ifdef USE_MKLDNN
+  delete(x_md);
+  delete(w_md);
+  delete(b_md);
+  delete(y_md);
+  delete(conv_d);
+  delete(conv_pd);
+  delete(db);
+#endif // USE_MKLDNN
+}
 
 Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b,
                       const ConvHandle &ch) {
@@ -52,6 +93,40 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b,
         W.shape(2) == ch.kernel_h
         && W.shape(3) == ch.kernel_w) << "weights shape should not change";
 
+#ifdef USE_MKLDNN
+
+  DataType dtype = x.data_type();
+  auto dev = x.device();
+
+  Shape shape{ch.batchsize, ch.num_filters, ch.conv_height, ch.conv_width};
+  Tensor output(shape, dev, dtype);
+
+  output.device()->Exec([&output, &x, &W, &b, &ch](Context * ctx) {
+    Block *inblock = x.block(), *outblock = output.block(), *wblock = W.block(), *bblock = b.block();
+
+    try {
+      using namespace mkldnn;
+
+      auto eng = *ctx->engine;
+      auto x_mem = memory({{{ch.x_dims}, ch.dtype, memory::format::nchw}, eng}, inblock->mutable_data());
+      auto w_mem = memory({{{ch.w_dims}, ch.dtype, memory::format::goihw}, eng},  wblock->mutable_data());
+      auto b_mem = memory({{{ch.b_dims}, ch.dtype, memory::format::x},    eng},  bblock->mutable_data());
+      auto y_mem = memory(ch.conv_pd->dst_primitive_desc(), outblock->mutable_data());
+
+      auto conv_fwd = convolution_forward(*ch.conv_pd, x_mem, w_mem, b_mem, y_mem);
+
+      stream(stream::kind::eager).submit({conv_fwd}).wait();
+    }
+    catch (mkldnn::error &e) {
+      singa::InitLogging("");
+      LOG(FATAL) << "MKLDNN conv fwd " << "Status: " << e.status << " Message: " << e.message;
+    }
+
+  }, {x.block(), W.block(), b.block()}, {output.block()});
+
+  return output;
+
+#else // ifndef USE_MKLDNN
   Shape w_shape = W.shape();
   Shape b_shape;
   if (ch.bias_term)
@@ -86,6 +161,7 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b,
   if (ch.bias_term)
     b.Reshape(b_shape);
   return output;
+#endif  // USE_MKLDNN
 }
 
 Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
@@ -99,6 +175,42 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
         W.shape(2) == ch.kernel_h
         && W.shape(3) == ch.kernel_w) << "weights shape should not change";
 
+
+#ifdef USE_MKLDNN
+
+  Tensor dx;
+  dx.ResetLike(x);
+
+  dy.device()->Exec([&x, &dx, &dy, &W, &ch](Context *ctx) {
+    Block *wblock = W.block(), *dyblock = dy.block(), *dxblock = dx.block(), *inblock = x.block();
+
+    try {
+      auto eng = *ctx->engine;
+      using namespace mkldnn;
+      auto x_mem = memory({{{ch.x_dims}, ch.dtype, memory::format::nchw}, eng}, inblock->mutable_data());
+      auto w_mem = memory({{{ch.w_dims}, ch.dtype, memory::format::goihw}, eng}, wblock->mutable_data());
+      auto dx_mem = memory({{{ch.x_dims}, ch.dtype, memory::format::nchw}, eng}, dxblock->mutable_data());
+      auto dy_mem = memory({{{ch.o_dims}, ch.dtype, memory::format::nchw}, eng}, dyblock->mutable_data());
+
+
+      auto conv_bwd_data_d = convolution_backward_data::desc(convolution_direct, *ch.x_md, *ch.w_md, *ch.y_md, ch.s_dims,
+                                                             ch.p_dims, ch.p_dims, padding_kind::zero);
+      auto conv_bwd_data_pd = convolution_backward_data::primitive_desc(conv_bwd_data_d, eng, *ch.conv_pd);
+      auto conv_bwd_data = convolution_backward_data(conv_bwd_data_pd, dy_mem, w_mem, dx_mem);
+
+
+      stream(stream::kind::eager).submit({conv_bwd_data}).wait();
+    }
+    catch (mkldnn::error &e) {
+      singa::InitLogging("");
+      LOG(FATAL) << "MKLDNN conv fwd " << "Status: " << e.status << " Message: " << e.message;
+    }
+
+  }, {x.block(), dy.block(), W.block()}, {dx.block()});
+
+  return dx;
+
+#else // ifndef USE_MKLDNN
   Shape w_shape = W.shape();
   W.Reshape(Shape{ch.num_filters, ch.col_height});
 
@@ -119,6 +231,7 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
   }
   W.Reshape(w_shape);
   return dx;
+#endif  // USE_MKLDNN
 }
 
 Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
@@ -131,6 +244,40 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
   CHECK(x.shape(1) == ch.channels && x.shape(2) == ch.height &&
         x.shape(3) == ch.width) << "input sample shape should not change";
 
+#ifdef USE_MKLDNN
+  Tensor dW;
+  dW.ResetLike(W);
+
+  dy.device()->Exec([&x, &dy, &dW, &ch](Context *ctx) {
+    Block *dwblock = dW.block(), *dyblock = dy.block(), *inblock = x.block(), *dbblock = ch.db->block();
+
+    try {
+      auto eng = *ctx->engine;
+      using namespace mkldnn;
+
+      auto x_mem = memory({{{ch.x_dims}, ch.dtype, memory::format::nchw}, eng}, inblock->mutable_data());
+      auto dy_mem = memory({{{ch.o_dims}, ch.dtype, memory::format::nchw}, eng}, dyblock->mutable_data());
+      auto dw_mem = memory({{{ch.w_dims}, ch.dtype, memory::format::goihw}, eng}, dwblock->mutable_data());
+      auto db_mem = memory({{{ch.b_dims}, ch.dtype, memory::format::x}, eng}, dbblock->mutable_data());
+
+      auto conv_dw_d = convolution_backward_weights::desc(convolution_direct, *ch.x_md, *ch.w_md, *ch.b_md, *ch.y_md,
+                                                          ch.s_dims, ch.p_dims, ch.p_dims, padding_kind::zero);
+      auto conv_dw_pd = convolution_backward_weights::primitive_desc(conv_dw_d, eng, *ch.conv_pd);
+      auto conv_dw = convolution_backward_weights(conv_dw_pd, x_mem, dy_mem, dw_mem, db_mem);
+
+      mkldnn::stream(mkldnn::stream::kind::eager).submit({conv_dw}).wait();
+    }
+    catch (mkldnn::error &e) {
+      singa::InitLogging("");
+      LOG(FATAL) << "MKLDNN Conv backward W " << "Status: " << e.status << " Message: " << e.message;
+    }
+
+  }, {x.block(), dy.block(), W.block()}, {dW.block()});
+
+  return dW;
+
+
+#else // USE_MKLDNN
   Tensor dW;
   dW.ResetLike(W);
   dW.SetValue(0.0f);
@@ -153,6 +300,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
   }
   dW.Reshape(w_shape);
   return dW;
+#endif // USE_MKLDNN
 }
 
 Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b,
@@ -164,6 +312,10 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b,
 
   CHECK(b.shape(0) == ch.num_filters) << "bias shape should not change";
 
+#ifdef USE_MKLDNN
+  Tensor db = ch.db->Clone();
+  return db;
+#else // USE_MKLDNN
   Tensor db;
   db.ResetLike(b);
 
@@ -177,6 +329,7 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b,
   SumRows(tmp3, &db);
 
   return db;
+#endif // USE_MKLDNN
 };
 
 #ifdef USE_CUDNN
