@@ -75,7 +75,7 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
         for b in range(num_train_batch):
             # positive phase
             tdata = tensor.from_numpy(
-                    train_x[(b * batch_size):((b + 1) * batch_size), :])
+                train_x[(b * batch_size):((b + 1) * batch_size), :])
             tdata.to_device(dev)
             tposhidprob = tensor.mult(tdata, tweight)
             tposhidprob.add_row(thbias)
@@ -104,7 +104,8 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
             opt.apply_with_lr(epoch, lr / batch_size, tgvbias, tvbias, 'vb')
             opt.apply_with_lr(epoch, lr / batch_size, tghbias, thbias, 'hb')
 
-        print('training errorsum = %f' % (trainerrorsum))
+        print('training erroraverage = %f' %
+              (tensor.to_numpy(trainerrorsum) / train_x.shape[0]))
 
         tvaliddata = tensor.from_numpy(valid_x)
         tvaliddata.to_device(dev)
@@ -120,7 +121,8 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
         tvalidnegdata = tensor.sigmoid(tvalidnegdata)
 
         validerrorsum = tensor.sum(tensor.square((tvaliddata - tvalidnegdata)))
-        print('valid errorsum = %f' % (validerrorsum))
+        print('valid erroraverage = %f' %
+              (tensor.to_numpy(validerrorsum) / valid_x.shape[0]))
 
 
 if __name__ == '__main__':
@@ -130,5 +132,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     assert os.path.exists(args.file), 'Pls download the MNIST dataset from' \
-            'https://github.com/mnielsen/neural-networks-and-deep-learning/raw/master/data/mnist.pkl.gz'
+        'https://github.com/mnielsen/neural-networks-and-deep-learning/raw/master/data/mnist.pkl.gz'
     train(args.file, args.use_gpu)

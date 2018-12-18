@@ -1259,7 +1259,7 @@ def tensordot(A, B, axes=2):
     # when axes is 2 and A,B are shape (3,2,4) and (2,4,5), it will return a
     # matrix in shape(3,5)
 
-    if type(axes) == int or type(axes) == long:
+    if type(axes) == int:
         axes_A = list(range(-axes, 0))
         axes_B = list(range(0, axes))
         axes_B = axes_B
