@@ -31,6 +31,7 @@ Documentation
    loss
    metric
    optimizer
+   autograd
    data
    image_tool
    snapshot
@@ -38,3 +39,4 @@ Documentation
    utils
    model_zoo/index
    security
+   
