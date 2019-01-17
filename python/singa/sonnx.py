@@ -58,84 +58,85 @@ class ONNXm(Layer):
             if (i.op_type == 'Constant'):
                 modeldic[str(i.output[0])] = tensor.from_numpy(onnx.numpy_helper.to_array(i.attribute[0].t))
                 modeldic[str(i.output[0])].stores_grad = True
+
         return modeldic, model
 
     @staticmethod
-    def combine_node(self,modeldic, model):
+    def combine_node(self,modeldic):
         '''
         # for combine operators to layers
         '''
-        for idx, i in enumerate(model.graph.node):
+
+        for idx, i in enumerate(self.model.graph.node):
             if (i.op_type == 'MatMul'):
-                addlist = self.find_add(i.output[0], model)
-                if (len(addlist) > 1 or len(addlist) == 0): continue
+                addlist = self.find_add(i.output[0])
+                if (len(addlist) == 0): continue
+                if (len(addlist) > 1): continue
                 addidx = addlist[0]
-                if (i.name == "not_requires_grad" and model.graph.node[addidx].name == "not_requires_grad"): continue
-                model.graph.node[idx].output[0] = model.graph.node[addidx].output[0]
-                model.graph.node[idx].input.append(model.graph.node[addidx].input[1])
-                model.graph.node[idx].op_type = 'Linear'
-                model.graph.node[addidx].op_type = 'removed'
+                if (i.name == "not_requires_grad" and self.model.graph.node[addidx].name == "not_requires_grad"): continue
+                self.model.graph.node[idx].output[0] = self.model.graph.node[addidx].output[0]
+                self.model.graph.node[idx].input.append(self.model.graph.node[addidx].input[1])
+                self.model.graph.node[idx].op_type = 'Linear'
+                self.model.graph.node[addidx].op_type = 'removed'
 
-        layer = {}
-        for i in model.graph.node:
+        self.layer = {}
+        for i in self.model.graph.node:
             if (i.op_type == 'Linear'):
-                shape = self.find_shape(i.input[1], model)
-                layer[str(i.output[0])] = autograd.Linear(shape[0], shape[1])
-                layer[str(i.output[0])].set_params(W=modeldic[str(i.input[1])])
-                layer[str(i.output[0])].set_params(b=modeldic[str(i.input[2])])
+                shape = self.find_shape(i.input[1])
+                self.layer[str(i.output[0])] = autograd.Linear(shape[0], shape[1])
+                self.layer[str(i.output[0])].set_params(W=tensor.to_numpy(modeldic[str(i.input[1])]))
+                self.layer[str(i.output[0])].set_params(b=tensor.to_numpy(modeldic[str(i.input[2])]))
 
-        for i in model.graph.node:
+
+        for i in self.model.graph.node:
             if (i.op_type == 'Conv'):
-                shape = self.find_shape(i.input[1], model)
-                layer[str(i.output[0])] = autograd.Conv2d(shape[1], shape[0], shape[2],
+                shape = self.find_shape(i.input[1])
+                self.layer[str(i.output[0])] = autograd.Conv2d(shape[1], shape[0], shape[2],
                                                           padding=int(i.attribute[0].ints[0]))
-                layer[str(i.output[0])].set_params(W=modeldic[str(i.input[1])])
-                layer[str(i.output[0])].set_params(b=modeldic[str(i.input[2])])
+                self.layer[str(i.output[0])].set_params(W=tensor.to_numpy(modeldic[str(i.input[1])].clone()))
+                self.layer[str(i.output[0])].set_params(b=tensor.to_numpy(modeldic[str(i.input[2])].clone()))
 
-        for i in model.graph.node:
+        for i in self.model.graph.node:
             if (i.op_type == 'MaxPool'):
                 k = (int(i.attribute[0].ints[0]), int(i.attribute[0].ints[0]))
-                layer[str(i.output[0])] = autograd.MaxPool2d(k, int(i.attribute[2].ints[0]),
+                self.layer[str(i.output[0])] = autograd.MaxPool2d(k, int(i.attribute[2].ints[0]),
                                                              padding=int(i.attribute[1].ints[0]))
-        for i in model.graph.node:
+        for i in self.model.graph.node:
             if (i.op_type == 'AveragePool'):
                 k = (int(i.attribute[0].ints[0]), int(i.attribute[0].ints[0]))
-                layer[str(i.output[0])] = autograd.AvgPool2d(k, int(i.attribute[2].ints[0]),
+                self.layer[str(i.output[0])] = autograd.AvgPool2d(k, int(i.attribute[2].ints[0]),
                                                              padding=int(i.attribute[1].ints[0]))
-        for i in model.graph.node:
+        for i in self.model.graph.node:
             if (i.op_type == 'BatchNormalization'):
-                shape = self.find_shape(i.input[1], model)
-                layer[str(i.output[0])] = autograd.BatchNorm2d(shape[0])
-                layer[str(i.output[0])].set_params(scale=modeldic[str(i.input[1])])
-                layer[str(i.output[0])].set_params(bias=modeldic[str(i.input[2])])
+                shape = self.find_shape(i.input[1])
+                self.layer[str(i.output[0])] = autograd.BatchNorm2d(shape[0])
+                self.layer[str(i.output[0])].set_params(scale=tensor.to_numpy(modeldic[str(i.input[1])].clone()))
+                self.layer[str(i.output[0])].set_params(bias=tensor.to_numpy(modeldic[str(i.input[2])].clone()))
 
-        return layer, model
 
-    @staticmethod
-    def find_add(output, model):
+    def find_add(self,output):
         '''
         #utils for combine operators to layers
         '''
         ans = []
-        for idx, i in enumerate(model.graph.node):
+        for idx, i in enumerate(self.model.graph.node):
             for j in i.input:
                 if j == output and i.op_type == 'Add':
                     ans.append(idx)
-        return ans
+                    return ans
 
-    @staticmethod
-    def find_shape(input, model):
+    def find_shape(self,input):
         '''
         # find weight shape for layers
         '''
-        for i in model.graph.node:
+        for i in self.model.graph.node:
             if (i.op_type == 'Constant' and i.output[0] == input):
                 return onnx.numpy_helper.to_array(i.attribute[0].t).shape
 
     def __init__(self,path):
         super(ONNXm, self).__init__()
         self.modeldic, self.model = self.onnx_model_init(path)
-        self.layer, self.model = self.combine_node(self,self.modeldic, self.model)
+        self.combine_node(self,self.modeldic)
 
     def __call__(self,inputs):
         '''
@@ -143,8 +144,11 @@ class ONNXm(Layer):
             load other nodes of onnx
             '''
         supportLayer = ['Linear','Conv','MaxPool','AveragePool','BatchNormalization']
+        #supportLayer = ['Conv', 'MaxPool', 'AveragePool', 'BatchNormalization']
         layer, model,oper = self.layer, self.model,self.modeldic
-        self.modeldic['X'] = inputs
+
+        for counter,i in enumerate(model.graph.input):
+            oper[i.name] = inputs[counter]
         for i in model.graph.node:
             if (i.op_type == 'Relu'):
                 oper[str(i.output[0])] = autograd.relu(oper[str(i.input[0])])
@@ -166,14 +170,18 @@ class ONNXm(Layer):
                 oper[str(i.output[0])] = autograd.mul(oper[str(i.input[0])],oper[str(i.input[1])])
             elif (i.op_type in supportLayer):
                 oper[str(i.output[0])] = layer[str(i.output[0])](oper[str(i.input[0])])
-        print('finish farward')
-        return oper['Y']
-
-
+            elif (i.op_type == 'CrossEntropy'):
+                oper[str(i.output[0])] = autograd.cross_entropy(oper[str(i.input[0])],oper[str(i.input[1])])
+            elif (i.op_type == 'SoftMaxCrossEntropy'):
+                oper[str(i.output[0])] = autograd.softmax_cross_entropy(oper[str(i.input[0])], oper[str(i.input[1])])
+        out =[]
+        for counter,i in enumerate(model.graph.output):
+            out.append(self.modeldic[i.name])
+        return out
 
 
     @staticmethod
-    def get_onnx_model(y,inputs,target):
+    def to_onnx_model(y,inputs):
 
         '''
         get onnx model from singa computational graph
@@ -182,19 +190,23 @@ class ONNXm(Layer):
             Return:
             loss for onnx model
         '''
-        X = helper.make_tensor_value_info('X', TensorProto.FLOAT,inputs.shape)
-        Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT,target.shape)
+        X,Y = [],[]
         node = []
-        dependency = infer_dependency(y.creator)
+        dependencylist=[]
+        for counter,i in enumerate(y):
+            dependency = infer_dependency(i.creator)
+            dependencylist.append(dependency)
+            yi = i.creator
+            yi.end = True
+            ready = deque([yi])
+            Y = [helper.make_tensor_value_info('Y'+str(counter), TensorProto.FLOAT, i.shape)]
 
-        assert y.size() == 1, 'y must be a Tensor with a single value;' \
-                              'size of y is % d' % y.size()
-
-        ready = deque([y.creator])
-
-        supportOp = set(['ReLU', 'SoftMax', 'Add', 'AddBias', 'Matmul', 'Flatten', '_Conv2d', 'Concat', 'ElemMatmul','Sigmoid','Tanh','_Pooling2d','_BatchNorm2d'])
-        singatoonnx = {'SoftMax':'Softmax','AddBias':'Add','Matmul':'MatMul','ReLU':'Relu','_Conv2d':'Conv','ElemMatmul':'Mul','_Pooling2d':'MaxPool','_BatchNorm2d':'BatchNormalization'}
-        lastop=True
+        supportOp = set(['ReLU', 'SoftMax', 'Add', 'AddBias', 'Matmul', 'Flatten', '_Conv2d', 'Concat', 'ElemMatmul','Sigmoid','Tanh','_Pooling2d','_BatchNorm2d','CrossEntropy','SoftMaxCrossEntropy'])
+        #singatoonnx = {'SoftMax':'Softmax','AddBias':'Add','Matmul':'MatMul','ReLU':'Relu','_Conv2d':'Conv','ElemMatmul':'Mul','_Pooling2d':'MaxPool','_BatchNorm2d':'BatchNormalization','CrossEntropy':'Or','SoftMaxCrossEntropy':'Xor'}
+        singatoonnx = {'SoftMax': 'Softmax', 'AddBias': 'Add', 'Matmul': 'MatMul', 'ReLU': 'Relu', '_Conv2d': 'Conv',
+                       'ElemMatmul': 'Mul', '_Pooling2d': 'MaxPool', '_BatchNorm2d': 'BatchNormalization'}
+        lastop=0
+        counterX = 0
         while len(ready) > 0:
             op = ready.pop()
             if isinstance(op, Dummy):continue
@@ -206,13 +218,20 @@ class ONNXm(Layer):
             #print('op scr', op.src)
             #print('-------')
             if curop in supportOp:
-                if not op.requires_grad:name = "not_requires_grad"
+                if not op.requires_grad:
+                    name = "not_requires_grad"
+                    print('not requres')
                 else:name=''
-                if (isinstance(op.src[0][0], Dummy)): pre[0] = 'X'
                 if (curop in singatoonnx): curop = singatoonnx[curop]
-                if (lastop):
-                    node = [onnx.helper.make_node(curop, inputs=pre, outputs=['Y'],name=name )] + node
-                    lastop = False
+                if (hasattr(op, 'end')):
+                    if(isinstance(op,SoftMaxCrossEntropy)):
+                        # singa.autograd.SoftMaxCrossEntropy does not have dummy in op.src
+                        X = [helper.make_tensor_value_info(str(op.t), TensorProto.FLOAT,
+                                                           inputs[len(inputs) - 1 - counterX].shape)] + X
+                        pre.append(str(op.t))
+                        counterX += 1
+                    node = [onnx.helper.make_node(curop, inputs=pre, outputs=['Y'+str(lastop)],name=name )] + node
+                    lastop+=1
                 else:
                     if(isinstance(op,Concat)):
                         node = [onnx.helper.make_node(curop, inputs=pre, outputs=[cur], name=name,axis=int(op.axis))] + node
@@ -221,7 +240,6 @@ class ONNXm(Layer):
                         stride=[op.handle.stride_h,op.handle.stride_w]
                         node = [onnx.helper.make_node(curop, inputs=pre, outputs=[cur], name=name, pads=pads,strides=stride)] + node
                     elif(isinstance(op,_Pooling2d)):
-
                         k = [op.handle.kernel_h, op.handle.kernel_w]
                         s = [op.handle.stride_h, op.handle.stride_w]
                         p = [op.handle.pad_h,op.handle.pad_h, op.handle.pad_w,op.handle.pad_w]
@@ -243,27 +261,38 @@ class ONNXm(Layer):
                                                       value=numpy_helper.from_array(dummy1))] + node
                     else:
                         node = [onnx.helper.make_node(curop, inputs=pre, outputs=[cur],name=name )] + node
-                num = 1
+                num = 0
                 while(True):
                     if (len(op.src) > num and isinstance(op.src[num][0],Dummy) and op.src[num][2] is not None):
                         dummy = to_numpy(op.src[num][2])
                         node = [onnx.helper.make_node('Constant', inputs=[], outputs=[pre[num]],
                                                       value=numpy_helper.from_array(dummy))] + node
-                        num+=1
-                    else:break
+                    elif (len(op.src) > num and isinstance(op.src[num][0], Dummy) and op.src[num][2] is None):
+                        #X = [helper.make_tensor_value_info(pre[num], TensorProto.FLOAT,inputs[len(inputs)-1-counterX].shape)]+X
+                        X = [helper.make_tensor_value_info(pre[num], TensorProto.FLOAT,
+                                                           inputs[len(inputs) - 1 - counterX].shape)] + X
+                        counterX+=1
+
+                    num+=1
+                    if(len(op.src) <= num):break
             if not op.requires_grad:continue
             for (src_op, x_id, y, y_stores_grad) in op.src:
+                for i in range(len(dependencylist)):
+                    if(src_op in dependencylist[i]):
+                        dependency = dependencylist[i]
+                        break
                 dependency[src_op] -= 1
                 if src_op.requires_grad is True:
                     if dependency[src_op] == 0:
                         if not isinstance(src_op, Dummy):ready.append((src_op))
-        model_def = helper.make_model(helper.make_graph(node, "t", [X], [Y], ), producer_name='o')
-        onnx.checker.check_model(model_def)
+        model_def = helper.make_model(helper.make_graph(node, "t", X, Y, ), producer_name='o')
+        #onnx.checker.check_model(model_def)
         return model_def
 
 
 def from_onnx_model(path):
     return ONNXm(path)
+
 
 
 

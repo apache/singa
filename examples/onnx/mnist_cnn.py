@@ -92,7 +92,7 @@ if __name__ == '__main__':
     num_classes = 10
     epochs = 1
 
-    sgd = opt.SGD(lr=0.01)
+    sgd = opt.SGD(lr=0.0)
 
     x_train = preprocess(train[0])
     y_train = to_categorical(train[1], num_classes)
@@ -114,43 +114,46 @@ if __name__ == '__main__':
     bn = autograd.BatchNorm2d(32)
 
     def forward(x, t):
+
         y = conv1(x)
+
         y = autograd.tanh(y)
         y1 = conv21(y)
         y2 = conv22(y)
         y = autograd.cat((y1, y2), 1)
         y = autograd.sigmoid(y)
         y = bn(y)
+
         y = autograd.relu(y)
         y = autograd.mul(y,y)
+
         y = pooling1(y)
+
         y = autograd.sigmoid(y)
+
         y = pooling2(y)
+
         y = autograd.flatten(y)
         y = linear(y)
         loss = autograd.softmax_cross_entropy(y, t)
         return loss, y
 
     autograd.training = True
-    for epoch in range(epochs):
-        for i in range(batch_number):
-            inputs = tensor.Tensor(device=dev, data=x_train[
-                                   i * 100:(1 + i) * 100], stores_grad=False)
-            targets = tensor.Tensor(device=dev, data=y_train[
-                                    i * 100:(1 + i) * 100], requires_grad=False, stores_grad=False)
+    for epoch in range(1):
+        inputs = tensor.Tensor(device=dev, data=x_train[:100], stores_grad=False)
+        targets = tensor.Tensor(device=dev, data=y_train[:100], requires_grad=False, stores_grad=False)
 
-            loss, y = forward(inputs, targets)
+        loss, y = forward(inputs, targets)
 
 
-            accuracy_rate = accuracy(tensor.to_numpy(y),
-                                     tensor.to_numpy(targets))
-            if (i % 5 == 0):
-                print('accuracy is:', accuracy_rate, 'loss is:',
-                      tensor.to_numpy(loss)[0])
-            for p, gp in autograd.backward(loss):
-                sgd.update(p, gp)
+        accuracy_rate = accuracy(tensor.to_numpy(y),
+                                 tensor.to_numpy(targets))
+        print('accuracy is:', accuracy_rate, 'loss is:',tensor.to_numpy(loss)[0])
+        for p, gp in autograd.backward(loss):
+            sgd.update(p, gp)
 
-            model = sonnx.get_onnx_model(loss, inputs, targets)
-            onnx.save(model, 'cnn.onnx')
-            break
+model = sonnx.ONNXm.to_onnx_model([loss], [inputs,targets])
+onnx.save(model, 'cnn.onnx')
+
+
 

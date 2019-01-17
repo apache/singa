@@ -51,16 +51,16 @@ def to_categorical(y, num_classes):
     categorical[np.arange(n), y] = 1
     return categorical
 
-label = to_categorical(label, 3).astype(np.float32)
+label = to_categorical(label, 2).astype(np.float32)
 print('train_data_shape:', data.shape)
 print('train_label_shape:', label.shape)
 
 inputs = Tensor(data=data)
 target = Tensor(data=label)
 
-linear1 = autograd.Linear(3, 3)
-linear2 = autograd.Linear(3, 3)
-linear3 = autograd.Linear(3, 3)
+linear1 = autograd.Linear(3, 2)
+linear2 = autograd.Linear(2, 2)
+linear3 = autograd.Linear(2, 2)
 
 
 
@@ -82,7 +82,8 @@ for i in range(1):
         print('training loss = ', tensor.to_numpy(loss)[0])
 
 
-model=sonnx.get_onnx_model(loss,inputs,target)
+model=sonnx.ONNXm.to_onnx_model([loss],[inputs,target])
 
 onnx.save(model, 'linear.onnx')
+
 

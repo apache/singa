@@ -47,7 +47,7 @@ def to_categorical(y, num_classes):
     categorical[np.arange(n), y] = 1
     return categorical
 
-label = to_categorical(label, 3).astype(np.float32)
+label = to_categorical(label, 2).astype(np.float32)
 print('train_data_shape:', data.shape)
 print('train_label_shape:', label.shape)
 
@@ -55,15 +55,15 @@ inputs = Tensor(data=data)
 target = Tensor(data=label)
 
 
-model = sonnx.from_onnx_model('linear.onnx')
+model = sonnx.from_onnx_model('mlp.onnx')
 print('finish init')
 sgd = optimizer.SGD(0.00)
 
 # training process
 for epoch in range(1):
-    y = model(inputs)
-    loss = autograd.cross_entropy(y, target)
+    outputs = model([inputs,target])
     if (epoch % 100 == 0):
-        print('training loss = ', tensor.to_numpy(loss)[0])
+        print('training loss = ', tensor.to_numpy(outputs[0])[0])
+
 
 
