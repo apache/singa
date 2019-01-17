@@ -41,13 +41,17 @@ TEST(OperationBatchNorm, ForwardInference) {
   Tensor beta(Shape{2});
   beta.CopyDataFromHostPtr(beta_, 2);
 
-  Tensor moving_mean(Shape{});
-  Tensor moving_var(Shape{});
+  const float mean_[] = {2, 3};
+  Tensor moving_mean(Shape{2});
+  moving_mean.CopyDataFromHostPtr(mean_, 2);
 
+  const float var_[] = {1, 1};
+  Tensor moving_var(Shape{2});
+  moving_var.CopyDataFromHostPtr(var_, 2);
 
   // momentum
   BatchNormHandle batch_norm_handle(0u,in);
-  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, in, alpha, beta, moving_mean,moving_var);
+  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, in, alpha, beta, moving_mean, moving_var);
 
 
   const float *outptr = y.data<float>();
@@ -83,8 +87,14 @@ TEST(OperationBatchNorm, ForwardInference4D) {
   Tensor beta(Shape{2});
   beta.CopyDataFromHostPtr(beta_, 2);
 
-  Tensor moving_mean(Shape{});
-  Tensor moving_var(Shape{});
+
+  const float mean_[] = { 0.02650639, -0.04573606};
+  Tensor moving_mean(Shape{2});
+  moving_mean.CopyDataFromHostPtr(mean_, 2);
+
+  const float var_[] = {0.00546934, 0.01202502};
+  Tensor moving_var(Shape{2});
+  moving_var.CopyDataFromHostPtr(var_, 2);
 
   // momentum
   BatchNormHandle batch_norm_handle(0.0f,in);
@@ -166,6 +176,11 @@ TEST(OperationBatchNorm, ForwardTraining) {
 
   // training operation calculate the running mean and var for backward
   auto ret1 = CpuBatchNormForwardTraining(batch_norm_handle, x, alpha, beta, running_mean, running_var);
+  const float *yptr = ret1[0].data<float>();
+  EXPECT_NEAR(-1.0f, yptr[0], 1e-4f);
+  EXPECT_NEAR(-1.0f, yptr[1], 1e-4f);
+  EXPECT_NEAR(1.0f, yptr[2], 1e-4f);
+  EXPECT_NEAR(1.0f, yptr[3], 1e-4f);
   const float *meanptr = ret1[1].data<float>();
   EXPECT_NEAR(1.4f, meanptr[0], 1e-4f);
   EXPECT_NEAR(2.1f, meanptr[1], 1e-4f);

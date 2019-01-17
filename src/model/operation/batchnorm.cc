@@ -63,25 +63,31 @@ BatchNormHandle::BatchNormHandle(const float momentum, const Tensor& input) {
 
     Tensor w = get_bn_weight_from(bnScale, bnBias);
 
-    y.device()->Exec([&y, &x, &w, &bnh](Context *ctx) {
+    y.device()->Exec([&y, &x, &running_mean, &running_var, &w, &bnh](Context *ctx) {
       try {
         auto eng = *ctx->engine;
         using namespace mkldnn;
         auto x_mem = memory({{{bnh.x_dims}, bnh.dtype, bnh.data_memory_format}, eng}, x.block()->mutable_data());
         auto y_mem = memory({{{bnh.y_dims}, bnh.dtype, bnh.data_memory_format}, eng}, y.block()->mutable_data());
 
-        auto bn_fwd_d = batch_normalization_forward::desc(forward_inference, *bnh.x_md, bnh.epsilon, use_scale_shift);
+        // indicates using scale&bias and running mean&var
+        auto flags = use_scale_shift | use_global_stats;
+        auto bn_fwd_d = batch_normalization_forward::desc(forward_inference, *bnh.x_md, bnh.epsilon, flags);
         auto bn_fwd_pd = batch_normalization_forward::primitive_desc(bn_fwd_d, eng);
 
+        auto m_mem = memory(bn_fwd_pd.mean_primitive_desc(), running_mean.block()->mutable_data());
+        auto v_mem = memory(bn_fwd_pd.variance_primitive_desc(), running_var.block()->mutable_data());
         auto w_mem = memory(bn_fwd_pd.weights_primitive_desc(), w.block()->mutable_data());
 
-        auto bn = batch_normalization_forward(bn_fwd_pd, x_mem, w_mem, y_mem);
+        // inputs require explicitly be indicated by casting according to
+        // https://intel.github.io/mkl-dnn/structmkldnn_1_1batch__normalization__forward.html
+        auto bn = batch_normalization_forward(bn_fwd_pd, x_mem, (const primitive::at)m_mem, (const primitive::at)v_mem, w_mem, y_mem);
 
         stream(stream::kind::eager).submit({bn}).wait();
       }
       catch (mkldnn::error &e) {
         InitLogging("");
-        LOG(FATAL) << "MKLDNN Batch Norm" << "Status: " << e.status << " Message: " << e.message;
+        LOG(FATAL) << "MKLDNN Batch Norm " << "Status: " << e.status << " Message: " << e.message;
       }
 
     }, {y.block(), x.block(), w.block()}, {y.block()});
@@ -262,7 +268,8 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle
 Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
                                     const Tensor& x, const Tensor& bnScale,
                                     const Tensor& bnBias, const Tensor& running_mean, const Tensor& running_var) {
-  CHECK_EQ(x.device()->lang(), kCuda);
+  CHECK_EQ(x.device()->lang(), kCuda);WANG YUE
+
   CHECK_EQ(bnScale.device()->lang(), kCuda);
   CHECK_EQ(bnBias.device()->lang(), kCuda);
   CHECK_EQ(running_mean.device()->lang(), kCuda);
