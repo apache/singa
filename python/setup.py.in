@@ -66,6 +66,7 @@ setup(
         'flask>=0.10.1',
         'flask_cors>=3.0.2',
         'pillow>=2.3.0',
+        'onnx>=1.3.0',
         'future',
     #    'xmlrunner',
         'tqdm',
