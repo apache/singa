@@ -30,6 +30,7 @@ Device::Device(int id, int num_executors)
   host_ = defaultDevice;
 }
 
+
 void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
                     const vector<Block*> write_blocks, bool use_rand_generator) {
   // TODO(wangwei) execute operations scheduled by the scheduler.
@@ -46,6 +47,7 @@ void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_block
         //std::cout << "read," << *it << "," <<(*it)->size() << "," << now<<"," << texec1-texec0<<std::endl;
         //outfile << "read," << *it << "," <<(*it)->size() << "," << now<<"," << texec1-texec0<< "\n";
         outfile << "read," << *it << "," <<(*it)->size() << "," << now<<"\n";
+        Append(InfoBlock(*it,(*it)->size(),2,-1,now));
     }
     for(auto it = write_blocks.begin(); it != write_blocks.end(); it++){
         long long now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -53,6 +55,7 @@ void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_block
         //std::cout << "mutable," << *it << "," <<(*it)->size() << "," << now<<"," << texec1-texec0 <<std::endl;
         //outfile << "mutable," << *it << "," <<(*it)->size() << "," << now<<"," << texec1-texec0 << "\n";
         outfile << "mutable," << *it << "," <<(*it)->size() << "," << now<< "\n";
+        Append(InfoBlock(*it,(*it)->size(),4,-1,now));
     }
 
     outfile.close();
@@ -73,6 +76,7 @@ Block* Device::NewBlock(int size) {
     //cout << "malloc," << newblock << "," << size << ","<<now<<endl;
       outfile << "malloc," << newblock << "," <<size << "," << now << "\n";
       outfile.close();
+      Append(InfoBlock(newblock,size,1,-1,now));
     return newblock;
   } else {
     return nullptr;
@@ -88,7 +92,7 @@ void Device::FreeBlock(Block* block) {
       //cout << "free," << block << "," << block->size() << ","<<now<<endl;
       outfile << "free," << block << "," << block->size() << "," << now << "\n";
       outfile.close();
-
+      Append(InfoBlock(block,block->size(),-1,-1,now));
       delete block;
   }
 }
