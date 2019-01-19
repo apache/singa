@@ -24,7 +24,6 @@
 #include <string>
 #include <functional>
 #include <memory>
-#include <map>
 
 #include "singa/singa_config.h"
 #include "singa/core/common.h"
@@ -44,141 +43,129 @@ using std::vector;
 using std::string;
 using std::function;
 using std::shared_ptr;
-using namespace std;
+
 namespace singa {
 
-
-
-struct InfoBlock{
-    Block* ptr;
-    int s;
-    int op;
-    int idx;
-    long long t;
-    InfoBlock(Block* p, int s, int op, int i,long long t):ptr(p),s(s),op(op),idx(i),t(t){}
-};
 /// Allocate memory and execute Tensor operations.
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
-class Device {
-  public:
-  // Device() = default;
-  virtual ~Device() {}
-  /// Constructor with device ID, num of executors (e.g., cuda streams),
-  /// max mem size to use (in MB)
-  Device(int id, int num_executors);
+    class Device {
+    public:
+        // Device() = default;
+        virtual ~Device() {}
+        /// Constructor with device ID, num of executors (e.g., cuda streams),
+        /// max mem size to use (in MB)
+        Device(int id, int num_executors);
 
-  virtual void SetRandSeed(unsigned seed) = 0;
+        virtual void SetRandSeed(unsigned seed) = 0;
 
-  /// Called by Tensor.
-  Block* NewBlock(int size);
+        /// Called by Tensor.
+        Block* NewBlock(int size);
 
-  /// Called by Tensor.
-  void FreeBlock(Block* block);
+        /// Called by Tensor.
+        void FreeBlock(Block* block);
 
-  /// Return the size (bytes) of memory in use
-  /// TODO(wangwei) override this function for all devices.
-  virtual size_t GetAllocatedMem() {
-    return 0u;
-  }
+        /// Return the size (bytes) of memory in use
+        /// TODO(wangwei) override this function for all devices.
+        virtual size_t GetAllocatedMem() {
+          return 0u;
+        }
 
-  /// Copy data within or across devices.
-  virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-                      CopyDirection direction, int dst_offset, int src_offset);
+        /// Copy data within or across devices.
+        virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
+                                    CopyDirection direction, int dst_offset, int src_offset);
 
-  void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
-                           size_t dst_offset = 0);
-  /// Submit the operation to the device, which may execute it right now or
-  /// delay it depending on the scheduler.
-  void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
-                    const vector<Block*> write_blocks,
-                    bool use_rand_generator = false);
+        void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
+                                 size_t dst_offset = 0);
+        /// Submit the operation to the device, which may execute it right now or
+        /// delay it depending on the scheduler.
+        void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
+                  const vector<Block*> write_blocks,
+                  bool use_rand_generator = false);
 
-  // Wait for one event.
-  // void WaitFor();
+        // Wait for one event.
+        // void WaitFor();
 
-  /// wait for all operations submitted to this device.
-  void Sync();
+        /// wait for all operations submitted to this device.
+        void Sync();
 
-  /// Return the programming language for this device.
-  LangType lang() const {
-    return lang_;
-  }
+        /// Return the programming language for this device.
+        LangType lang() const {
+          return lang_;
+        }
 
-  virtual std::shared_ptr<Device> host() const { return host_;}
+        virtual std::shared_ptr<Device> host() const { return host_;}
 
-  Context* context(int k) {
-    return &ctx_;
-  }
+        Context* context(int k) {
+          return &ctx_;
+        }
 
-  int id() const { return id_; }
-    virtual void Append(InfoBlock b) = 0;
+        int id() const { return id_; }
 
- private:
-  Device() {};
+    private:
+        Device() {};
 
- protected:
-  /// Execute one operation on one executor.
-  virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
+    protected:
+        /// Execute one operation on one executor.
+        virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
 
-  virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                          CopyDirection direction, Context* ctx) = 0;
+        virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                                CopyDirection direction, Context* ctx) = 0;
 
-  /// Allocate device memory.
-  virtual void* Malloc(int size) = 0;
+        /// Allocate device memory.
+        virtual void* Malloc(int size) = 0;
 
-  /// Free device memory.
-  virtual void Free(void* ptr) = 0;
+        /// Free device memory.
+        virtual void Free(void* ptr) = 0;
 
- protected:
-  int id_ = 0;
-  int num_executors_ = 0;
-  unsigned seed_ = 0;
-  // Scheduler* scheduler_ = nullptr;
-  // VirtualMemory* vm_ = nullptr;
-  /// Programming language type, could be kCpp, kCuda, kOpencl
-  LangType lang_;
-  // SafeQueue<Operation> op_queue_;
-  // SafeQueue<Operation> op_log_;
-  /// The host device
-  std::shared_ptr<Device> host_;
-  // TODO(wangwei) define multiple contexts, one per executor
-  Context ctx_;
-};
+    protected:
+        int id_ = 0;
+        int num_executors_ = 0;
+        unsigned seed_ = 0;
+        // Scheduler* scheduler_ = nullptr;
+        // VirtualMemory* vm_ = nullptr;
+        /// Programming language type, could be kCpp, kCuda, kOpencl
+        LangType lang_;
+        // SafeQueue<Operation> op_queue_;
+        // SafeQueue<Operation> op_log_;
+        /// The host device
+        std::shared_ptr<Device> host_;
+        // TODO(wangwei) define multiple contexts, one per executor
+        Context ctx_;
+    };
 
 /// a singleton CppDevice as the host for all devices.
-extern std::shared_ptr<Device> defaultDevice;
+    extern std::shared_ptr<Device> defaultDevice;
 
 /// Represent a CPU device which may have multiple threads/executors.
 /// It runs cpp code.
-class CppCPU : public Device {
- public:
-  ~CppCPU() {};
-  CppCPU();
+    class CppCPU : public Device {
+    public:
+        ~CppCPU() {};
+        CppCPU();
 
-  std::shared_ptr<Device> host() const override { return defaultDevice;}
-  void SetRandSeed(unsigned seed) override;
+        std::shared_ptr<Device> host() const override { return defaultDevice;}
+        void SetRandSeed(unsigned seed) override;
 
- protected:
-  void DoExec(function<void(Context*)>&& fn, int executor) override;
+    protected:
+        void DoExec(function<void(Context*)>&& fn, int executor) override;
 
-  void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                  CopyDirection direction, Context* ctx) override;
+        void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                        CopyDirection direction, Context* ctx) override;
 
-  /// Allocate cpu memory.
-  void* Malloc(int size) override;
+        /// Allocate cpu memory.
+        void* Malloc(int size) override;
 
-  /// Free cpu memory.
-  void Free(void* ptr) override;
-    void Append(InfoBlock b) override {}
-};
+        /// Free cpu memory.
+        void Free(void* ptr) override;
+    };
 
 
 // Implement Device using OpenCL libs.
 // class OpenclDevice : public Device { };
 
 #ifdef USE_CUDA
-// Represent a Nvidia GPU which runs cuda code.
+    // Represent a Nvidia GPU which runs cuda code.
 class CudaGPU : public Device {
  public:
   ~CudaGPU();
@@ -201,7 +188,6 @@ class CudaGPU : public Device {
 
   /// Free cpu memory.
   void Free(void* ptr) override;
-  void Append(InfoBlock b) override {}
 
  private:
   void Setup();
@@ -212,193 +198,11 @@ class CudaGPU : public Device {
 
 /// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
 
-///SwapGPU
-
-
-struct DeviceOptInfo{
-    /*
-     members: [ptr, size, operation_type, idx]
-     */
-    string ptr;
-    size_t size;
-    int operation_type;
-    int idx;
-    double t;
-    DeviceOptInfo(string p, size_t s, int M, int i):ptr(p),size(s),operation_type(M),idx(i){}
-};
-
-struct BlockMeta{
-    /*
-     meta of swapping memory blocks
-     */
-    Block* block_ = nullptr;
-    void* data_ = nullptr;
-    void* cpu_ptr = nullptr;
-    size_t size = 0;
-    cudaEvent_t out_event;
-    cudaEvent_t in_event;
-    cudaStream_t out_stream;
-    cudaStream_t in_stream;
-};
-
-struct SwapBlock{
-    /*
-    meta of candidate blocks
-    */
-    string ptr;
-    string cat; //sub category of the candidate blocks, read-read, write-read, etc.
-    int name;
-    size_t size;
-    //index of last read/write before swap out, and first read/write after swap in
-    int r_idx; //out idx
-    int d_idx; //in idx
-    //index of last read/write before swap out, and first read/write after swap in
-    double r_time; // out time
-    double d_time; //in time
-    double DOA; //Duation of Absence
-    double AOA;  //Area of Absence
-    double DOA_origin; //t2-t1, DOA without taking out time spent
-    double WDOA = 0; //weighted DOA
-    double majority_voting = 0;
-    int r_idx_ready; //r_idx + buffer
-
-    //below are index and time for scheduling
-    int idx_out_start  = 0;
-    int idx_out_end = 0;
-    int idx_in_end = 0;
-    int idx_in_start = 0;
-    double t_out_start = 0;
-    double t_out_end = 0;
-    double t_in_end  = 0;
-    double t_in_start = 0;
-    SwapBlock(string p, size_t s, int idx_out_start, int idx_in_end, double t_out_start, double t_in_end):
-    ptr(p), size(s), r_idx(idx_out_start),d_idx(idx_in_end),r_time(t_out_start), d_time(t_in_end) {}
-};
-/// Device able to Swap memory between Nvidia GPU and CPU
-class SwapGPU : public Device {
- public:
-  ~SwapGPU();
-  /// Construct the device using default mem pool setting.
-  SwapGPU(int id = 0);
-  /// Construct the device given the physical device ID and memory pool.
-  SwapGPU(int id, std::shared_ptr<DeviceMemPool> pool);
-
-  void SetRandSeed(unsigned seed) override;
-  size_t GetAllocatedMem() override;
-
- protected:
-  void DoExec(function<void(Context*)>&& fn, int executor) override;
-
-  void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                  CopyDirection direction, Context* ctx) override;
-
-  /// Allocate cpu memory.
-  void* Malloc(int size) override;
-
-  /// Free cpu memory.
-  void Free(void* ptr) override;
-
-  //Append at every index: free, read, mutable
-  void Append(InfoBlock b) override;
-
-  //append info after Malloc, as Block* is not available till Malloc() done.
-  void AppendAfterMalloc(Block* block,void* data_ptr,int size);
-
-  //Detection and Plan
-  void DetectionPlan();
-
-  //test iteration, return GC
-  int Detection(vector<string>vec_block,int &iteration_length, int &location_of_2nd_iteration);
-
-  //entire plan, from SelectBlock() to Scheduling(), BuildMetaTables()
-  void Plan();
-
-  //block selection algo
-  vector<SwapBlock> SelectBlock(vector<SwapBlock>vec_swap,vector<double> temp_load,double mem_limit,string mode);
-
-  //schedule algo
-  void Scheduling(vector<SwapBlock>&vec_swap_selct, vector<double>&vec_load_temp,double &overhead,double mem_limit,string mode);
-
-  //make tables table_sched and table_meta
-  void BuildMetaTables(vector<SwapBlock>vec_swap_selct);
-
-  //update table_meta, during Append()
-  void UpdateMetaTables(Block* block_ptr);
-
-  //swap/sync during Append()
-  void DeploySwap();
-
-  //exec DelpoySwap
-  void DeploySwapExec(int relative_counter);
-
-  //load profile as per synchronous swap.
-  vector<double> GetIdealLoad(vector<double>vec_load,vector<SwapBlock> vec_swap_selct);
-
-  //in case gpu ptr wrong, updated it after swap_in ad hoc
-  void* UpdateGpuPtr(const Block* block_ptr);
-
-  //Swap Synchronous, for early iterations
-  void SwapOutSynchronous(const Block* block_ptr);
-  void SwapInSynchronous(const Block* block_ptr);
-
-  //Swap asynchronous, for middle iteraions
-  void SwapOut(const int idx);
-  void SwapIn(const int idx);
-
- private:
-  void Setup();
-
-  map<int,BlockMeta>table_meta;
-  map<const Block*,BlockMeta>table_block_meta; //for measure speed only.
-  map<const Block*, int>table_not_at_device;  //int refers to its r_idx of the block/meta
-  map<int,std::tuple<int,int,int,int>>table_sched; // changed to with sync_r_idx
-
-  //vec_block
-  vector<InfoBlock>vecBlock;
-  vector<string>vec_block; //iterations for Detection, i.e. detect iterations.
-  vector<string>vec_block_fresh; //iterations that are used for Planning,
-  vector<string>vec_block_mf; //iterations used to construct pool
-  vector<double>global_load; // load from begining
-  vector<double>origin_load; //3 iteration load, for planning.
-  vector<DeviceOptInfo>vec_run;
-  vector<int>operation_sequence; //sequence of operations of one middle iteration
-  vector<size_t>size_sequence; //size of all operations of one middle iteration
-
-  int async_swap_flag = 0; //0 for sync, 1 for async.
-  int past_test_flag = 0; //0 means need to test, 1 means no need test anymore.
-  int global_index = 0; //global counter, index, add 1 after each Malloc/Free/read/write.
-  int global_index_threshold = -1;
-  int iteration_length = 0;
-  int location_of_2nd_iteration = 0; //index of start of 2nd iteration
-  int location_of_5th_iteration = 0; //index of start of 5th iteration
-  int three_more_iteration_global_index_threshold = -1;
-
-  //design specs
-  float mem_limit_ratio = 0.70;
-  size_t smallest_block = 1<<20; //1 MB
-  int data_buffer = 4; // used to control readyIdx
-  int mutable_data_buffer = 6;
-  double max_load;
-  int max_idx;
-  double total_swap_in_time = 0;
-  double total_swap_out_time = 0;
-  double temp_time = 0;
-  double temp_time_baseline; //vec_run[0] time
-  int iteration_length_threshold = 1000;
-
- private:
-  shared_ptr<DeviceMemPool> pool_;
-};
-
-
-
-
-
 #endif  // USE_CUDA
 
 #ifdef USE_OPENCL
 
-// Implement Device using OpenCL libs.
+    // Implement Device using OpenCL libs.
 class OpenclDevice : public singa::Device {
 public:
 
@@ -444,7 +248,6 @@ protected:
   /// Converts the void pointer into a Buffer object, then deletes the object.
   /// This has the effect of freeing up device memory.
   void Free(void* ptr) override;
-  void Append(InfoBlock b) override {}
 
 private:
 
@@ -457,16 +260,16 @@ private:
 /// If CUDA or OPENCL are not enabled, then the respective related methods should
 /// return something that indicates their absence (for example, 0 devices);
 /// however they should always be available regardless of compile-time switches.
-class Platform {
-public:
+    class Platform {
+    public:
 
-  /// Return the default host device
-  static std::shared_ptr<Device> GetDefaultDevice() {
-    return defaultDevice;
-  }
+        /// Return the default host device
+        static std::shared_ptr<Device> GetDefaultDevice() {
+          return defaultDevice;
+        }
 
 #ifdef USE_CUDA
-  /// Return the number of total available GPUs
+        /// Return the number of total available GPUs
   static int GetNumGPUs();
 
   /// Return the device IDs of available GPUs.
@@ -488,7 +291,7 @@ public:
   /// Create a set of CudaGPU Device using given GPU IDs.
   static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
-  
+
   /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
   /// This function checks the availability of GPU #device_id.
   /// It attempts to create a context on the device by calling cudaFree(0).
@@ -508,10 +311,10 @@ public:
 
 #ifdef USE_OPENCL
 
-  const int GetNumOpenclPlatforms();
-  
+        const int GetNumOpenclPlatforms();
+
   const int GetNumOpenclDevices();
-  
+
   static const std::shared_ptr<Device> GetDefaultOpenclDevice();
 
   /// Create a \p num_devices set of valid OpenCL devices, regardless of
@@ -530,7 +333,7 @@ public:
 //  CreateOpenclDevices(const vector<int> &id);
 #endif // USE_OPENCL
 
-};
+    };
 
 
 }  // namespace singa
