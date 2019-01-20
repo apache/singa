@@ -66,7 +66,6 @@ class Device {
   /// Called by Tensor.
   void FreeBlock(Block* block);
   
-  void AppendInfo(string block_info);
   void* UpdateGpuPtrInfo(const Block* block_ptr);
 
   /// Return the size (bytes) of memory in use
@@ -107,7 +106,7 @@ class Device {
   int id() const { return id_; }
 
   virtual void* UpdateGpuPtr(const Block* block_ptr) = 0;
-
+  virtual void Append(DeviceOptInfoToAppend dev_opt_info) = 0;
  private:
   Device() {};
 
@@ -124,7 +123,7 @@ class Device {
   /// Free device memory.
   virtual void Free(void* ptr) = 0;
   virtual void AppendAfterMalloc(Block* block,void* data_ptr,int size) = 0;
-  virtual void Append(string block_info) = 0;
+  
 
  protected:
   int id_ = 0;
@@ -154,6 +153,7 @@ class CppCPU : public Device {
 
   std::shared_ptr<Device> host() const override { return defaultDevice;}
   void SetRandSeed(unsigned seed) override;
+  void Append(DeviceOptInfoToAppend dev_opt_info) override {}
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
@@ -167,7 +167,7 @@ class CppCPU : public Device {
   /// Free cpu memory.
   void Free(void* ptr) override;
   void AppendAfterMalloc(Block* block,void* data_ptr,int size) override {}
-  void Append(string block_info) override {}
+
   void* UpdateGpuPtr(const Block* block_ptr) override {}
 
 };
@@ -188,6 +188,8 @@ class CudaGPU : public Device {
 
   void SetRandSeed(unsigned seed) override;
   size_t GetAllocatedMem() override;
+  void Append(DeviceOptInfoToAppend dev_opt_info) override {}
+
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
@@ -201,7 +203,6 @@ class CudaGPU : public Device {
   /// Free cpu memory.
   void Free(void* ptr) override;
   void AppendAfterMalloc(Block* block,void* data_ptr,int size) override {}
-  void Append(string block_info) override;
   void* UpdateGpuPtr(const Block* block_ptr) override;
 
  private:
@@ -284,6 +285,8 @@ class SwapGPU : public Device {
 
   void SetRandSeed(unsigned seed) override;
   size_t GetAllocatedMem() override;
+  //Append at every index: free, read, mutable
+  void Append(DeviceOptInfoToAppend dev_opt_info) override;
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;
@@ -295,10 +298,7 @@ class SwapGPU : public Device {
   void* Malloc(int size) override;
 
   /// Free cpu memory.
-  void Free(void* ptr) override;
-
-  //Append at every index: free, read, mutable
-  void Append(string block_info) override;
+  void Free(void* ptr) override; 
 
   //append info after Malloc, as Block* is not available till Malloc() done.
   void AppendAfterMalloc(Block* block,void* data_ptr,int size) override; 
@@ -408,7 +408,7 @@ public:
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
                       CopyDirection direction, int dst_offset = 0,
                       int src_offset = 0) override;
-
+  void Append(DeviceOptInfoToAppend dev_opt_info) override {}
 protected:
   /// The OpenCL device that this object represents.
   /// Each OpenclDevice contains exactly one cl::Device for the lifetime of the
@@ -439,7 +439,7 @@ protected:
   /// This has the effect of freeing up device memory.
   void Free(void* ptr) override;
   void AppendAfterMalloc(Block* block,void* data_ptr,int size) override {}
-  void Append(string block_info) override {}
+  
   void* UpdateGpuPtr(const Block* block_ptr) override {}
 
 

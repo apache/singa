@@ -55,23 +55,18 @@ void Device::FreeBlock(Block* block) {
     Free(tempPtr);
     
     //append block info for free operation.
-    stringstream strm1;
-    strm1<<block;
-    string temp_str1 = strm1.str();
-    stringstream strm4;
-    auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-    strm4<<t2;
-    string temp_str4 = strm4.str();
-    string blockInfo ="Free "+temp_str1+" "+temp_str4;
-    Append(blockInfo);
+    stringstream strm;
+    strm<<block;
+    string temp_str = strm.str();
+    DeviceOptInfoToAppend dev_opt_info("Free", temp_str,block->size());
+    auto t = (std::chrono::system_clock::now()).time_since_epoch().count();
+    dev_opt_info.t = t;
+    Append(dev_opt_info);
 
     delete block;
   }
 }
 
-void Device::AppendInfo(string blockInfo){
-  Append(blockInfo);
-}
 
 void* Device::UpdateGpuPtrInfo(const Block* block_){
   return UpdateGpuPtr(block_);

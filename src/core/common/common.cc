@@ -30,15 +30,13 @@ void* Block::mutable_data() {
 
     //Append block info: opt_type, ptr, time_stamp
     if (ptr_device_!=nullptr){
-      stringstream strm2;
-      strm2<<this;
-      string temp_str2 = strm2.str();
-      stringstream strm4;
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      strm4<<t2;
-      string temp_str4 = strm4.str();
-      string temp = "Mutable "+temp_str2+" "+temp_str4;   
-      ptr_device_->AppendInfo(temp);
+      stringstream strm;
+      strm<<this;
+      string temp_str = strm.str();
+      DeviceOptInfoToAppend dev_opt_info("Mutable", temp_str,size());
+      auto t = (std::chrono::system_clock::now()).time_since_epoch().count();
+      dev_opt_info.t = t;
+      ptr_device_->Append(dev_opt_info);
     }
 
     //update ptr after swap in done, if variable is not swapped back yet as expected.
@@ -56,16 +54,13 @@ const void* Block::data() const {
 
     //Append block info: opt_type, ptr, time_stamp
     if (ptr_device_!=nullptr){
-      //Append info.
-      stringstream strm2;
-      strm2<<this;
-      string temp_str2 = strm2.str();
-      stringstream strm4;
-      auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-      strm4<<t2;
-      string temp_str4 = strm4.str();
-      string temp = "Read "+temp_str2+" "+temp_str4;
-      ptr_device_->AppendInfo(temp);
+      stringstream strm;
+      strm<<this;
+      string temp_str = strm.str();
+      DeviceOptInfoToAppend dev_opt_info("Read", temp_str,size());
+      auto t = (std::chrono::system_clock::now()).time_since_epoch().count();
+      dev_opt_info.t = t;
+      ptr_device_->Append(dev_opt_info);
     }
 
     //update ptr after swap in done, if variable is not swapped back yet as expected.

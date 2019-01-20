@@ -53,6 +53,9 @@ typedef struct _Opencl { } Opencl;
 }  // namespace lang
 
 class Device;
+struct DeviceOptInfoToAppend;
+
+
 /// Block represent a chunk of memory (on device or host).
 class Block {
  public:
@@ -95,6 +98,16 @@ class Block {
   // Disabled as it is not used currently.
   // std::shared_ptr<std::atomic<int>> ref_count_ = nullptr;
   std::atomic<int> ref_count_;
+};
+
+// struct for Append purpose in device class.
+struct DeviceOptInfoToAppend{
+    string operation_type;
+    string block_ptr;
+    int size;
+    long t = (std::chrono::system_clock::now()).time_since_epoch().count();
+
+    DeviceOptInfoToAppend(string opt_type, string ptr,int s):operation_type(opt_type),block_ptr(ptr),size(s){}
 };
 
 typedef struct _Context {

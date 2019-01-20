@@ -123,10 +123,6 @@ void CudaGPU::Free(void* ptr) {
   }
 }
 
-void CudaGPU::Append(string blockInfo){
-    pool_->Append(blockInfo);
-}
-
 void* CudaGPU::UpdateGpuPtr(const Block* block_){
   return nullptr;
 }

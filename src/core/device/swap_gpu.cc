@@ -904,18 +904,13 @@ void SwapGPU::AppendAfterMalloc(Block* block_ptr,void* data_ptr,int size){
   */
 
   //append info
-  stringstream strm1;
-  strm1<<size;
-  string temp_str1 = strm1.str();
-  stringstream strm3;
-  strm3<<block_ptr;
-  string temp_str3 = strm3.str();
-  stringstream strm4;
-  auto t2 = (std::chrono::system_clock::now()).time_since_epoch().count();
-  strm4<<t2;
-  string temp_str4 = strm4.str();
-  string block_info ="Malloc "+temp_str3+" "+temp_str1+" "+temp_str4;
-  Append(block_info);
+  stringstream strm;
+  strm<<block_ptr;
+  string temp_str = strm.str();
+  DeviceOptInfoToAppend dev_opt_info("Malloc", temp_str,size);
+  auto t = (std::chrono::system_clock::now()).time_since_epoch().count();
+  dev_opt_info.t = t;
+  Append(dev_opt_info);
   
 }
 
@@ -994,42 +989,23 @@ void SwapGPU::DeploySwapExec(int r_global_index){
   }
 }
 
-void SwapGPU::Append(string block_info){
-  /*
-  Append Operation block info after each operation
-  Meantime execute following operations:
-    insert size for non-malloc operations
-    update global memory load
-    control swap flag on and off
-    update table_meta and table_sched
-    deploy swap at every index.
-    test moved from start of malloc/free to end of append, only global_index+1 changed
-    call PoolOpt to Construct Pool
-  */
+void SwapGPU::Append(DeviceOptInfoToAppend dev_opt_info){
 
-  vector<string> v = SplitOptString(block_info, " ");
+  //convert block_ptr from string to Block*
   void* temp_ptr;
-  stringstream convert(v[1]);
+  stringstream convert(dev_opt_info.block_ptr);
   convert>>temp_ptr;
   auto block_ptr = static_cast<Block*>(temp_ptr);
-  
-  // insert size, malloc : flag, block_, size, t; others: insert size t.
-  if (v.size() != 4) {
-    stringstream strm1;
-    strm1<<block_ptr->size();
-    string temp_str1 = strm1.str();
-    block_info = v[0] + ' ' + v[1] + ' ' + temp_str1 + ' ' + v[2];
-  }
 
   // update global load
   if (iteration_length < iteration_length_threshold){
-    if (v[0] == "Malloc"){
+    if (dev_opt_info.operation_type == "Malloc"){
       if (global_load.size()>0){
         global_load.push_back(global_load[global_load.size()-1]+block_ptr->size());
       } else {
         global_load.push_back(block_ptr->size());
       }
-    } else if (v[0] == "Free"){
+    } else if (dev_opt_info.operation_type  == "Free"){
       global_load.push_back(global_load[global_load.size()-1]-block_ptr->size());
     } else {
       global_load.push_back(global_load[global_load.size()-1]);
@@ -1037,6 +1013,15 @@ void SwapGPU::Append(string block_info){
   }
 
   //append into vec_block
+  stringstream strm1;
+  strm1<<dev_opt_info.size;
+  string temp_str1 = strm1.str();
+  stringstream strm4;
+  strm4<<dev_opt_info.t;
+  string temp_str4 = strm4.str();
+  string block_info = dev_opt_info.operation_type + " " + dev_opt_info.block_ptr + " " +
+  temp_str1 + " " + temp_str4;
+  //cout<<"1 "<<block_info<<endl;
   vec_block.push_back(block_info);
 
   //change swap flag on and off
@@ -1066,6 +1051,8 @@ void SwapGPU::Append(string block_info){
   }
 
 }
+
+
 
 void* SwapGPU::UpdateGpuPtr(const Block* block_ptr){
   /*
