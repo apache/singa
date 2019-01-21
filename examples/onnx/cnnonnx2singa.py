@@ -118,9 +118,11 @@ if __name__ == '__main__':
     for epoch in range(1):
         inputs = tensor.Tensor(device=dev, data=x_train[0:100], stores_grad=False)
         targets = tensor.Tensor(device=dev, data=y_train[0:100], requires_grad=False, stores_grad=False)
-        outputs = rep.run([inputs, targets])
-        print('outputs',tensor.to_numpy(outputs[0])[0])
+        y = rep.run([inputs])
+        loss = autograd.softmax_cross_entropy(y[0], targets)
+        print('outputs',tensor.to_numpy(loss)[0])
 
 #####backend run only one time
-outputs = sonnx.Backend.run_model(model,[inputs,targets])
-print('training loss = ', tensor.to_numpy(outputs[0])[0])
+y = sonnx.Backend.run_model(model,[inputs])
+loss = autograd.softmax_cross_entropy(y[0], targets)
+print('training loss = ', tensor.to_numpy(loss)[0])

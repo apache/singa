@@ -73,8 +73,8 @@ for i in range(1):
     x1 = linear2(x)
     x2 = linear3(x)
     x3 = autograd.add(x1, x2)
-    x3 = autograd.softmax(x3)
-    loss = autograd.cross_entropy(x3, target)
+    y = autograd.softmax(x3)
+    loss = autograd.cross_entropy(y, target)
     gradient = autograd.backward(loss)
     for p, gp in gradient:
         sgd.apply(0, gp, p, '')
@@ -82,7 +82,7 @@ for i in range(1):
         print('training loss = ', tensor.to_numpy(loss)[0])
 
 
-model=sonnx.to_onnx_model([loss],[inputs,target])
+model=sonnx.to_onnx_model([inputs],[y])
 
 onnx.save(model, 'linear.onnx')
 

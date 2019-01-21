@@ -184,10 +184,6 @@ class Backend(backend):
                 oper[str(i.output[0])] = autograd.mul(oper[str(i.input[0])],oper[str(i.input[1])])
             elif (i.op_type in supportLayer):
                 oper[str(i.output[0])] = layer[str(i.output[0])](oper[str(i.input[0])])
-            elif (i.op_type == 'CrossEntropy'):
-                oper[str(i.output[0])] = autograd.cross_entropy(oper[str(i.input[0])],oper[str(i.input[1])])
-            elif (i.op_type == 'SoftMaxCrossEntropy'):
-                oper[str(i.output[0])] = autograd.softmax_cross_entropy(oper[str(i.input[0])], oper[str(i.input[1])])
         out =[]
         for counter,i in enumerate(model.graph.output):
             out.append(modeldic[i.name])
@@ -195,7 +191,7 @@ class Backend(backend):
 
 
 
-def to_onnx_model(y,inputs):
+def to_onnx_model(inputs,y):
 
     '''
     get onnx model from singa computational graph
@@ -215,8 +211,8 @@ def to_onnx_model(y,inputs):
         ready = deque([yi])
         Y = [helper.make_tensor_value_info('Y'+str(counter), TensorProto.FLOAT, i.shape)]
 
-    supportOp = set(['ReLU', 'SoftMax', 'Add', 'AddBias', 'Matmul', 'Flatten', '_Conv2d', 'Concat', 'ElemMatmul','Sigmoid','Tanh','_Pooling2d','_BatchNorm2d','CrossEntropy','SoftMaxCrossEntropy'])
-    #singatoonnx = {'SoftMax':'Softmax','AddBias':'Add','Matmul':'MatMul','ReLU':'Relu','_Conv2d':'Conv','ElemMatmul':'Mul','_Pooling2d':'MaxPool','_BatchNorm2d':'BatchNormalization','CrossEntropy':'Or','SoftMaxCrossEntropy':'Xor'}
+    supportOp = set(['ReLU', 'SoftMax', 'Add', 'AddBias', 'Matmul', 'Flatten', '_Conv2d', 'Concat', 'ElemMatmul','Sigmoid','Tanh','_Pooling2d','_BatchNorm2d'])
+    #singatoonnx = {'SoftMax':'Softmax','AddBias':'Add','Matmul':'MatMul','ReLU':'Relu','_Conv2d':'Conv','ElemMatmul':'Mul','_Pooling2d':'MaxPool','_BatchNorm2d':'BatchNormalization'}
     singatoonnx = {'SoftMax': 'Softmax', 'AddBias': 'Add', 'Matmul': 'MatMul', 'ReLU': 'Relu', '_Conv2d': 'Conv',
                    'ElemMatmul': 'Mul', '_Pooling2d': 'MaxPool', '_BatchNorm2d': 'BatchNormalization'}
     lastop=0
