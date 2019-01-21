@@ -23,6 +23,7 @@ from singa import autograd
 from singa import optimizer
 import numpy as np
 from singa import sonnx
+import onnx
 
 autograd.training = True
 np.random.seed(0)
@@ -54,16 +55,20 @@ print('train_label_shape:', label.shape)
 inputs = Tensor(data=data)
 target = Tensor(data=label)
 
+model = onnx.load('mlp.onnx')
 
-model = sonnx.from_onnx_model('mlp.onnx')
 print('finish init')
 sgd = optimizer.SGD(0.00)
 
+
+#####backend run multiple times
 # training process
+rep = sonnx.BackendRep(model)
 for epoch in range(1):
-    outputs = model([inputs,target])
+    outputs = rep.run([inputs,target])
     if (epoch % 100 == 0):
         print('training loss = ', tensor.to_numpy(outputs[0])[0])
 
-
-
+#####backend run only one time
+outputs = sonnx.Backend.run_model(model,[inputs,target])
+print('training loss = ', tensor.to_numpy(outputs[0])[0])

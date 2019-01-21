@@ -152,7 +152,7 @@ if __name__ == '__main__':
         for p, gp in autograd.backward(loss):
             sgd.update(p, gp)
 
-model = sonnx.ONNXm.to_onnx_model([loss], [inputs,targets])
+model = sonnx.to_onnx_model([loss], [inputs,targets])
 onnx.save(model, 'cnn.onnx')
 
 
