@@ -49,123 +49,123 @@ namespace singa {
 /// Allocate memory and execute Tensor operations.
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
-    class Device {
-    public:
-        // Device() = default;
-        virtual ~Device() {}
-        /// Constructor with device ID, num of executors (e.g., cuda streams),
-        /// max mem size to use (in MB)
-        Device(int id, int num_executors);
+class Device {
+  public:
+  // Device() = default;
+  virtual ~Device() {}
+  /// Constructor with device ID, num of executors (e.g., cuda streams),
+  /// max mem size to use (in MB)
+  Device(int id, int num_executors);
 
-        virtual void SetRandSeed(unsigned seed) = 0;
+  virtual void SetRandSeed(unsigned seed) = 0;
 
-        /// Called by Tensor.
-        Block* NewBlock(int size);
+  /// Called by Tensor.
+  Block* NewBlock(int size);
 
-        /// Called by Tensor.
-        void FreeBlock(Block* block);
+  /// Called by Tensor.
+  void FreeBlock(Block* block);
 
-        /// Return the size (bytes) of memory in use
-        /// TODO(wangwei) override this function for all devices.
-        virtual size_t GetAllocatedMem() {
-          return 0u;
-        }
+  /// Return the size (bytes) of memory in use
+  /// TODO(wangwei) override this function for all devices.
+  virtual size_t GetAllocatedMem() {
+    return 0u;
+  }
 
-        /// Copy data within or across devices.
-        virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-                                    CopyDirection direction, int dst_offset, int src_offset);
+  /// Copy data within or across devices.
+  virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
+                      CopyDirection direction, int dst_offset, int src_offset);
 
-        void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
-                                 size_t dst_offset = 0);
-        /// Submit the operation to the device, which may execute it right now or
-        /// delay it depending on the scheduler.
-        void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
-                  const vector<Block*> write_blocks,
-                  bool use_rand_generator = false);
+  void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
+                           size_t dst_offset = 0);
+  /// Submit the operation to the device, which may execute it right now or
+  /// delay it depending on the scheduler.
+  void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
+                    const vector<Block*> write_blocks,
+                    bool use_rand_generator = false);
 
-        // Wait for one event.
-        // void WaitFor();
+  // Wait for one event.
+  // void WaitFor();
 
-        /// wait for all operations submitted to this device.
-        void Sync();
+  /// wait for all operations submitted to this device.
+  void Sync();
 
-        /// Return the programming language for this device.
-        LangType lang() const {
-          return lang_;
-        }
+  /// Return the programming language for this device.
+  LangType lang() const {
+    return lang_;
+  }
 
-        virtual std::shared_ptr<Device> host() const { return host_;}
+  virtual std::shared_ptr<Device> host() const { return host_;}
 
-        Context* context(int k) {
-          return &ctx_;
-        }
+  Context* context(int k) {
+    return &ctx_;
+  }
 
-        int id() const { return id_; }
+  int id() const { return id_; }
 
-    private:
-        Device() {};
+ private:
+  Device() {};
 
-    protected:
-        /// Execute one operation on one executor.
-        virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
+ protected:
+  /// Execute one operation on one executor.
+  virtual void DoExec(function<void(Context*)>&& fn, int executor) = 0;
 
-        virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                                CopyDirection direction, Context* ctx) = 0;
+  virtual void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                          CopyDirection direction, Context* ctx) = 0;
 
-        /// Allocate device memory.
-        virtual void* Malloc(int size) = 0;
+  /// Allocate device memory.
+  virtual void* Malloc(int size) = 0;
 
-        /// Free device memory.
-        virtual void Free(void* ptr) = 0;
+  /// Free device memory.
+  virtual void Free(void* ptr) = 0;
 
-    protected:
-        int id_ = 0;
-        int num_executors_ = 0;
-        unsigned seed_ = 0;
-        // Scheduler* scheduler_ = nullptr;
-        // VirtualMemory* vm_ = nullptr;
-        /// Programming language type, could be kCpp, kCuda, kOpencl
-        LangType lang_;
-        // SafeQueue<Operation> op_queue_;
-        // SafeQueue<Operation> op_log_;
-        /// The host device
-        std::shared_ptr<Device> host_;
-        // TODO(wangwei) define multiple contexts, one per executor
-        Context ctx_;
-    };
+ protected:
+  int id_ = 0;
+  int num_executors_ = 0;
+  unsigned seed_ = 0;
+  // Scheduler* scheduler_ = nullptr;
+  // VirtualMemory* vm_ = nullptr;
+  /// Programming language type, could be kCpp, kCuda, kOpencl
+  LangType lang_;
+  // SafeQueue<Operation> op_queue_;
+  // SafeQueue<Operation> op_log_;
+  /// The host device
+  std::shared_ptr<Device> host_;
+  // TODO(wangwei) define multiple contexts, one per executor
+  Context ctx_;
+};
 
 /// a singleton CppDevice as the host for all devices.
-    extern std::shared_ptr<Device> defaultDevice;
+extern std::shared_ptr<Device> defaultDevice;
 
 /// Represent a CPU device which may have multiple threads/executors.
 /// It runs cpp code.
-    class CppCPU : public Device {
-    public:
-        ~CppCPU() {};
-        CppCPU();
+class CppCPU : public Device {
+ public:
+  ~CppCPU() {};
+  CppCPU();
 
-        std::shared_ptr<Device> host() const override { return defaultDevice;}
-        void SetRandSeed(unsigned seed) override;
+  std::shared_ptr<Device> host() const override { return defaultDevice;}
+  void SetRandSeed(unsigned seed) override;
 
-    protected:
-        void DoExec(function<void(Context*)>&& fn, int executor) override;
+ protected:
+  void DoExec(function<void(Context*)>&& fn, int executor) override;
 
-        void CopyToFrom(void* dst, const void* src, size_t nBytes,
-                        CopyDirection direction, Context* ctx) override;
+  void CopyToFrom(void* dst, const void* src, size_t nBytes,
+                  CopyDirection direction, Context* ctx) override;
 
-        /// Allocate cpu memory.
-        void* Malloc(int size) override;
+  /// Allocate cpu memory.
+  void* Malloc(int size) override;
 
-        /// Free cpu memory.
-        void Free(void* ptr) override;
-    };
+  /// Free cpu memory.
+  void Free(void* ptr) override;
+};
 
 
 // Implement Device using OpenCL libs.
 // class OpenclDevice : public Device { };
 
 #ifdef USE_CUDA
-    // Represent a Nvidia GPU which runs cuda code.
+// Represent a Nvidia GPU which runs cuda code.
 class CudaGPU : public Device {
  public:
   ~CudaGPU();
@@ -202,7 +202,7 @@ class CudaGPU : public Device {
 
 #ifdef USE_OPENCL
 
-    // Implement Device using OpenCL libs.
+// Implement Device using OpenCL libs.
 class OpenclDevice : public singa::Device {
 public:
 
@@ -260,16 +260,16 @@ private:
 /// If CUDA or OPENCL are not enabled, then the respective related methods should
 /// return something that indicates their absence (for example, 0 devices);
 /// however they should always be available regardless of compile-time switches.
-    class Platform {
-    public:
+class Platform {
+public:
 
-        /// Return the default host device
-        static std::shared_ptr<Device> GetDefaultDevice() {
-          return defaultDevice;
-        }
+  /// Return the default host device
+  static std::shared_ptr<Device> GetDefaultDevice() {
+    return defaultDevice;
+  }
 
 #ifdef USE_CUDA
-        /// Return the number of total available GPUs
+  /// Return the number of total available GPUs
   static int GetNumGPUs();
 
   /// Return the device IDs of available GPUs.
@@ -291,7 +291,7 @@ private:
   /// Create a set of CudaGPU Device using given GPU IDs.
   static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
-
+  
   /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
   /// This function checks the availability of GPU #device_id.
   /// It attempts to create a context on the device by calling cudaFree(0).
@@ -311,10 +311,10 @@ private:
 
 #ifdef USE_OPENCL
 
-        const int GetNumOpenclPlatforms();
-
+  const int GetNumOpenclPlatforms();
+  
   const int GetNumOpenclDevices();
-
+  
   static const std::shared_ptr<Device> GetDefaultOpenclDevice();
 
   /// Create a \p num_devices set of valid OpenCL devices, regardless of
@@ -333,7 +333,7 @@ private:
 //  CreateOpenclDevices(const vector<int> &id);
 #endif // USE_OPENCL
 
-    };
+};
 
 
 }  // namespace singa
