@@ -47,9 +47,9 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
+        #'Programming Language :: Python :: 2',
+        #'Programming Language :: Python :: 2.6',
+        #'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         ],
 
@@ -59,18 +59,18 @@ setup(
 
     # py_modules=["singa"],
 
-    install_requires=[
-        'numpy>=1.11.0',
-        'protobuf>=3',
-        'unittest-xml-reporting',
-        'flask>=0.10.1',
-        'flask_cors>=3.0.2',
-        'pillow>=2.3.0',
-        'future',
-    #    'xmlrunner',
-        'tqdm',
-    #    'ipywidgets',
-        ],
+    #install_requires=[
+    #    'numpy>=1.11.0',
+    #    'protobuf==3.6.1',
+    #    'unittest-xml-reporting',
+    #    'flask>=0.10.1',
+    #    'flask_cors>=3.0.2',
+    #    'pillow>=2.3.0',
+    #    'future',
+    #    'tqdm',
+    #    'openblas==0.2.19',
+    #    'glog==0.3.4',
+    #    ],
 
     #List additional groups of dependencies here (e.g. development
     #dependencies). You can install these using the following syntax,
