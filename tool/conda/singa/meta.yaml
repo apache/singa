@@ -23,7 +23,7 @@ package:
 
 source:
   # path: /path to/incubator-singa/
-  git_url: https://github.com/nusdbsystem/incubator-singa.git
+  git_url: https://github.com/apache/incubator-singa.git
 
 build:
   number: 0
