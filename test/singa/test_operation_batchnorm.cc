@@ -238,9 +238,9 @@ TEST(OperationBatchNorm, Backward) {
 
 
   const auto &dbnScaleShape = ret2[1].shape();
-  EXPECT_EQ(2u, dbnScaleShape[1]);
+  EXPECT_EQ(2u, dbnScaleShape[0]);
   const auto &dbnBiasShape = ret2[2].shape();
-  EXPECT_EQ(2u, dbnBiasShape[1]);
+  EXPECT_EQ(2u, dbnBiasShape[0]);
   const float *dbnScaleptr = ret2[1].data<float>();
   EXPECT_NEAR(-2.0f, dbnScaleptr[0], 1e-4f);
   EXPECT_NEAR(-2.0f, dbnScaleptr[1], 1e-4f);

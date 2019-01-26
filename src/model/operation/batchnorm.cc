@@ -159,7 +159,7 @@ const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
   // combine scale and bias to construct weight tensor in required format for backward
   Tensor w = get_bn_weight_from(bnScale, bnBias);
 
-  Tensor dw(Shape{bnScale.Size(),bnBias.Size()});
+  Tensor dw(Shape{bnScale.Size(), 2});
 
   dx.device()->Exec([&dw, &x, &dx, &y, &dy, &w, &mean, &var, &bnh](Context *ctx) {
 
@@ -195,8 +195,12 @@ const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
   }, {x.block(), dy.block(), mean.block(), var.block()},
   {dx.block(), dw.block()});
 
-  Tensor dbnScale = CopyRows(dw, 0, bnScale.Size());
-  Tensor dbnBias = CopyRows(dw, 1, bnBias.Size());
+  Tensor dbnScale = CopyRows(dw, 0, bnScale.Size()).Reshape({bnScale.Size()});
+  Tensor dbnBias = CopyRows(dw, 1, bnBias.Size()).Reshape({bnBias.Size()});
+  CHECK(dbnScale.nDim() == bnScale.nDim()) << "dbnScale ndim not match bnScale";
+  CHECK(dbnBias.nDim() == bnBias.nDim()) << "dbnScale ndim not match bnScale";
+  CHECK(dbnScale.shape()[0] == bnScale.shape()[0]) << "dbnScale shape not match bnScale";
+  CHECK(dbnBias.shape()[0] == bnBias.shape()[0]) << "dbnBias shape not match bnBias";
 
   return {dx, dbnScale, dbnBias};
   }
