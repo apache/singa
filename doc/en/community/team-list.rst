@@ -48,35 +48,35 @@ The SINGA community has developers mainly from National University of Singapore,
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
 | Anh Dinh           | dinhtta@apache.org             | National University of Singapore              |                        |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Jinyang Gao        | jinyang@apache.org             | National University of Singapore              |                        |
+| Jinyang Gao        | jinyang@apache.org             | Alibaba              |                        | PPMC
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Xin Ji             | jixin@comp.nus.edu.sg          | National University of Singapore              |                        |
+| Xin Ji             | jixin@comp.nus.edu.sg          | Visenze, Singapore              |                        |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
 | Chonho Lee         | chonho@gmail.com               | Osaka University                              |                        |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
 | Zhaojing Luo       | zhaojing@apache.org            | National University of Singapore              |                        |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Beng Chin Ooi      | ooibc@comp.nus.edu.sg          | National University of Singapore              |                        |
+| Beng Chin Ooi      | ooibc@comp.nus.edu.sg          | National University of Singapore              | PPMC                       |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Kian-Lee Tan       | tankl@apache.org               | National University of Singapore              |                        |
+| Kian-Lee Tan       | tankl@apache.org               | National University of Singapore              | PPMC                       |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Anthony K. H. Tung | atung@comp.nus.edu.sg          | National University of Singapore              |                        |
+| Anthony K. H. Tung | atung@comp.nus.edu.sg          | National University of Singapore              | PPMC                       |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Ji Wang            | wangji@comp.nus.edu.sg         | National University of Singapore              |                        |
+| Ji Wang            | wangji@comp.nus.edu.sg         | MZH Technology, China              |  PPMC                      |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Sheng Wang         | wangsh@apache.org              | National University of Singapore              |                        |
+| Sheng Wang         | wangsh@apache.org              | Alibaba              | PPMC                       |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Wei Wang           | wangwei@apache.org             | National University of Singapore              |                        |
+| Wei Wang           | wangwei@apache.org             | National University of Singapore              | PPMC                       |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
 | Yuan Wang          | wangyuan@corp.netease.com      | NetEase                                       |                        |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Wenfeng Wu         | wuwf@comp.nus.edu.sg           | National University of Singapore              |                        |
+| Wenfeng Wu         | wuwf@comp.nus.edu.sg           | Freelancer, China              |                        |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Zhongle Xie        | zhongle@apache.org             | National University of Singapore              |                        |
+| Zhongle Xie        | zhongle@apache.org             | National University of Singapore              |  PPMC                      |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
 | Meihui Zhang       | meihui_zhang@sutd.edu.sg       | Singapore University of Technology and Design |                        |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
-| Kaiping Zheng      | kaiping@apache.org             | National University of Singapore              |                        |
+| Kaiping Zheng      | kaiping@apache.org             | National University of Singapore              |  PPMC                      |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
 | Moaz Reyad         | moaz@apache.org                | University of Genoa                           | Committer              |
 +--------------------+--------------------------------+-----------------------------------------------+------------------------+
