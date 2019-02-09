@@ -272,7 +272,7 @@ class TestPythonOperation(unittest.TestCase):
         x.to_device(gpu_dev)
 
         result=autograd.abs(x)
-        Err=XT-rerult
+        Err=XT-result
         dx=result.creator.backward()[0]
 
         for ii in Err.flatten():
@@ -286,7 +286,7 @@ class TestPythonOperation(unittest.TestCase):
         x.to_device(gpu_dev)
 
         result=autograd.exp(x)
-        Err=XT-rerult
+        Err=XT-result
         dx=result.creator.backward()[0]
 
         for ii in Err.flatten():
@@ -300,7 +300,7 @@ class TestPythonOperation(unittest.TestCase):
         x.to_device(gpu_dev)
 
         result=autograd.LeakyRelu(x)
-        Err=XT-rerult
+        Err=XT-result
         dx=result.creator.backward()[0]
 
         for ii in Err.flatten():
