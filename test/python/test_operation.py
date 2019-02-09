@@ -264,6 +264,48 @@ class TestPythonOperation(unittest.TestCase):
         loss_np=tensor.to_numpy(loss)
         self.assertAlmostEqual(loss_np, 0.0366666, places=4)
         self.check_shape(dx.shape(), (3, 2))
+        
+    def test_Abs(self):
+        X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
+        XT=np.array([0.8,1.2,3.3,3.6,0.5,0.5]).reshape(3,2).astype(np.float32)
+        x=tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+
+        result=autograd.abs(x)
+        Err=XT-rerult
+        dx=result.creator.backward()[0]
+
+        for ii in Err.flatten():
+            self.assertAlmostEquals(ii,0., places=3)
+        self.check_shape(dx.shape(), (3, 2))
+        
+    def test_Exp(self):
+        X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
+        XT=np.array([2.2255409,0.22313017,27.112638,0.02732372,0.60653067,1.6487212]).reshape(3,2).astype(np.float32)
+        x=tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+
+        result=autograd.exp(x)
+        Err=XT-rerult
+        dx=result.creator.backward()[0]
+
+        for ii in Err.flatten():
+            self.assertAlmostEquals(ii,0., places=3)
+        self.check_shape(dx.shape(), (3, 2))
+        
+    def test_LeakyRelu(self):
+        X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
+        XT=np.array([0.8,-0.012,3.3,-0.036,-0.005,0.5]).reshape(3,2).astype(np.float32)
+        x=tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+
+        result=autograd.LeakyRelu(x)
+        Err=XT-rerult
+        dx=result.creator.backward()[0]
+
+        for ii in Err.flatten():
+            self.assertAlmostEquals(ii,0., places=3)
+        self.check_shape(dx.shape(), (3, 2))
     
 
 if __name__ == '__main__':
