@@ -1336,3 +1336,55 @@ class LSTM(RNN_Base):
         hout = tanh(cout)
         hout = mul(o, hout)
         return hout, cout
+    
+class Abs(Operation):
+
+    def forward(self, a):
+        if training:
+            self.input = a
+        return singa.Abs(a)
+
+    def backward(self, dy):
+        dx = singa.Sign(self.input)
+        return singa.__mul__(dy, dx)
+
+def abs(a):
+    return Abs()(a)[0]
+
+class Exp(Operation):
+
+    def forward(self, a):
+        if training:
+            self.input = a
+        return singa.Exp(a)
+
+    def backward(self, dy):
+        dx = singa.Exp(self.input)
+        return singa.__mul__(dy, dx)
+
+def exp(a):
+    return Exp()(a)[0]
+
+class LeakyRelu(Operation):
+
+    def forward(self, x, a):
+        if training:
+            self.input = x
+        x1 = singa.LTFloat(x, 0.0)
+        x1 = singa.__mul__(x, x1)
+        x1 = singa.MultFloat(x1, a)  
+        x2 = singa.ReLU(x)
+        x1 = singa.__add__(x1, x2)
+        return x1
+
+    def backward(self, dy, a):
+        
+        dx1 = singa.GTFloat(self.input, 0.0)
+        dx2 = singa.LTFloat(self.input, 0.0)
+        dx2 = singa.MultFloat(x1, a) 
+        dx =  singa.__add__(x1, x2) 
+        return singa.__mul__(dy, dx)
+
+
+def leakyrelu(x,a=0.01):
+    return LeakyRelu()(x,a)[0]
