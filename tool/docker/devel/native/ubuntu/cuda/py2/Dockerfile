@@ -16,7 +16,7 @@
 #
 # 
 # Change tags to build with different cuda/cudnn versions:
-FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
+FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
 
 # install dependencies
 RUN apt-get update \
@@ -25,7 +25,6 @@ RUN apt-get update \
         build-essential \
         autoconf \
         libtool \
-        cmake \
         libprotobuf-dev \
         libopenblas-dev \
         libpcre3-dev \
@@ -47,6 +46,11 @@ RUN apt-get update \
         setuptools \
         protobuf \
         future \
+    # install cmake 3.14 to correctly find Cuda 10
+    && apt remove -y cmake \
+    && wget https://github.com/Kitware/CMake/releases/download/v3.14.0-rc2/cmake-3.14.0-rc2.tar.gz -P /tmp/ \
+    && tar -xf /tmp/cmake-3.14.0-rc2.tar.gz -C /tmp/ \
+    && cd /tmp/cmake-3.14.0-rc2/ && ./bootstrap && make -j4 && make install && cd - \
     # install swig > 3.0.10 for ubuntu < 16.04
     # RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz && \
     #     tar zxf swig-3.0.10.tar.gz && cd swig-3.0.10 && \
