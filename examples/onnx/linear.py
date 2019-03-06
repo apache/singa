@@ -85,5 +85,3 @@ for i in range(1):
 model=sonnx.to_onnx_model([inputs],[y])
 
 onnx.save(model, 'linear.onnx')
-
-

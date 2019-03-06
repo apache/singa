@@ -21,4 +21,4 @@ class Mlp(nn.Module):
 
 model = Mlp()
 print(model(data))
-torch.onnx.export(model, data, "pytorch.onnx",verbose=True, input_names=['X'], output_names=['Y'])
+torch.onnx.export(model, data, "pytorch.onnx",verbose=True, input_names=['X0'], output_names=['Y0'])

@@ -21,6 +21,7 @@ from singa import tensor
 from singa.tensor import Tensor
 from singa import autograd
 from singa import optimizer
+from singa import device
 import numpy as np
 from singa import sonnx
 import onnx
@@ -56,6 +57,7 @@ inputs = Tensor(data=data)
 target = Tensor(data=label)
 
 model = onnx.load('mlp.onnx')
+dev = device.get_default_device()
 
 print('finish init')
 sgd = optimizer.SGD(0.00)
@@ -63,7 +65,7 @@ sgd = optimizer.SGD(0.00)
 
 #####backend run multiple times
 # training process
-rep = sonnx.BackendRep(model)
+rep = sonnx.BackendRep(model,dev)
 for epoch in range(1):
     outputs = rep.run([inputs])
     loss = autograd.cross_entropy(outputs[0], target)
@@ -71,6 +73,6 @@ for epoch in range(1):
         print('training loss = ', tensor.to_numpy(loss)[0])
 
 #####backend run only one time
-outputs = sonnx.Backend.run_model(model,[inputs])
+outputs = sonnx.Backend.run_model(model,[inputs],dev)
 loss = autograd.cross_entropy(outputs[0], target)
 print('training loss = ', tensor.to_numpy(loss)[0])

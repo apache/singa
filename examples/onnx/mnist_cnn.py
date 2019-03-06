@@ -18,7 +18,6 @@
 #
 
 import numpy as np
-import argparse
 import os
 
 from singa import device
@@ -78,7 +77,7 @@ if __name__ == '__main__':
     print(file_path)
     assert os.path.exists(file_path), \
         'Pls download the MNIST dataset from https://s3.amazonaws.com/img-datasets/mnist.npz'
-    use_cpu=False	
+    use_cpu=False
     if use_cpu:
         print('Using CPU')
         dev = device.get_default_device()
@@ -105,36 +104,33 @@ if __name__ == '__main__':
     print('the shape of testing label is', y_test.shape)
 
     # operations initialization
-    conv1 = autograd.Conv2d(1, 32, 3, padding=1)
-    conv21 = autograd.Conv2d(32, 16, 3, padding=1)
-    conv22 = autograd.Conv2d(32, 16, 3, padding=1)
-    linear = autograd.Linear(32 * 28 * 28, 10)
+    conv1 = autograd.Conv2d(1, 1, 3, padding=1)
+    conv21 = autograd.Conv2d(1, 5, 3, padding=1)
+    conv22 = autograd.Conv2d(1, 5, 3, padding=1)
     pooling1 = autograd.MaxPool2d(3, 1, padding=1)
-    pooling2 = autograd.AvgPool2d(3, 1, padding=1)
-    bn = autograd.BatchNorm2d(32)
+    pooling2 = autograd.AvgPool2d(28, 1, padding=0)
+    linear=autograd.Linear(10,10)
+    bn = autograd.BatchNorm2d(10)
 
     def forward(x, t):
-
         y = conv1(x)
-
         y = autograd.tanh(y)
         y1 = conv21(y)
         y2 = conv22(y)
         y = autograd.cat((y1, y2), 1)
         y = autograd.sigmoid(y)
         y = bn(y)
-
         y = autograd.relu(y)
         y = autograd.mul(y,y)
-
         y = pooling1(y)
-
         y = autograd.sigmoid(y)
 
         y = pooling2(y)
 
+        print(tensor.to_numpy(y).shape)
         y = autograd.flatten(y)
-        y = linear(y)
+        y=linear(y)
+        print(tensor.to_numpy(y).shape)
         loss = autograd.softmax_cross_entropy(y, t)
         return loss, y
 
@@ -152,8 +148,5 @@ if __name__ == '__main__':
         for p, gp in autograd.backward(loss):
             sgd.update(p, gp)
 
-model = sonnx.to_onnx_model([inputs],[y])
+model = sonnx.to_onnx_model([inputs],y)
 onnx.save(model, 'cnn.onnx')
-
-
-

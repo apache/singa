@@ -95,8 +95,6 @@ for i in range(1):
         print('training loss = ', tensor.to_numpy(loss)[0])
 
 
-model=sonnx.to_onnx_model([inputs],[y])
+model=sonnx.to_onnx_model([inputs],y)
 
 onnx.save(model, 'mlp.onnx')
-
-

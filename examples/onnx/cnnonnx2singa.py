@@ -18,8 +18,6 @@
 #
 
 import numpy as np
-import argparse
-import os
 
 from singa import device
 from singa import tensor
@@ -28,6 +26,8 @@ from singa import opt
 from singa import sonnx
 import onnx
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 def load_data(path):
     f = np.load(path)
@@ -103,14 +103,9 @@ if __name__ == '__main__':
     print('the shape of testing data is', x_test.shape)
     print('the shape of testing label is', y_test.shape)
 
-    # operations initialization
-    conv1 = autograd.Conv2d(1, 32, 3, padding=1)
-    conv21 = autograd.Conv2d(32, 16, 3, padding=1)
-    conv22 = autograd.Conv2d(32, 16, 3, padding=1)
-    linear = autograd.Linear(32 * 28 * 28, 10)
 
     model = onnx.load('cnn.onnx')
-    rep = sonnx.BackendRep(model)
+    rep = sonnx.BackendRep(model,dev)
     #####backend run multiple times
     print('finish init')
     autograd.training = True
@@ -118,11 +113,11 @@ if __name__ == '__main__':
     for epoch in range(1):
         inputs = tensor.Tensor(device=dev, data=x_train[0:100], stores_grad=False)
         targets = tensor.Tensor(device=dev, data=y_train[0:100], requires_grad=False, stores_grad=False)
-        y = rep.run([inputs])
-        loss = autograd.softmax_cross_entropy(y[0], targets)
+        y0 = rep.run([inputs])[0]
+        loss = autograd.softmax_cross_entropy(y0,targets)
         print('outputs',tensor.to_numpy(loss)[0])
 
 #####backend run only one time
-y = sonnx.Backend.run_model(model,[inputs])
-loss = autograd.softmax_cross_entropy(y[0], targets)
+y0 = sonnx.Backend.run_model(model,[inputs],dev)[0]
+loss = autograd.softmax_cross_entropy(y0, targets)
 print('training loss = ', tensor.to_numpy(loss)[0])
