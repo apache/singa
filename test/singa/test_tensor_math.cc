@@ -25,11 +25,11 @@ using singa::Device;
 class TestTensorMath : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    a.Reshape(singa::Shape{6});
-    b.Reshape(singa::Shape{6});
-    c.Reshape(singa::Shape{6, 1});
-    d.Reshape(singa::Shape{3, 2});
-    e.Reshape(singa::Shape{3, 2});
+    a.SetShape(singa::Shape{6});
+    b.SetShape(singa::Shape{6});
+    c.SetShape(singa::Shape{6, 1});
+    d.SetShape(singa::Shape{3, 2});
+    e.SetShape(singa::Shape{3, 2});
 
     a.CopyDataFromHostPtr<float>(dat1, 6);
     b.CopyDataFromHostPtr<float>(dat2, 6);

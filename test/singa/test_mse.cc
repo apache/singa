@@ -28,8 +28,8 @@ using singa::Tensor;
 class TestMSE : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    p.Reshape(singa::Shape{2, 3});
-    t.Reshape(singa::Shape{2, 3});
+    p.SetShape(singa::Shape{2, 3});
+    t.SetShape(singa::Shape{2, 3});
     p.CopyDataFromHostPtr(pdat, sizeof(pdat) / sizeof(float));
     t.CopyDataFromHostPtr(tdat, sizeof(pdat) / sizeof(float));
   }

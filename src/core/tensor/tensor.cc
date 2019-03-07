@@ -1228,6 +1228,8 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
 // if tensor is not transposed yet, we change the shape and generate new strides
 // if tensor is already transposed, we reallocate the memory and generate strides
 Tensor& Tensor::Reshape(const Shape &shape) {
+  // Check original shape's volume is same with the new one
+  CHECK_EQ(Product(shape), Product(shape_));
   if (transpose()) {
     Tensor t(shape, device_, data_type_);
     singa::Transform(*this, &t);
