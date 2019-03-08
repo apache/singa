@@ -76,12 +76,11 @@ RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER singa 
 # build incubator singa
-RUN git clone https://github.com/dcslin/incubator-singa.git $HOME/incubator-singa \
+RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
     && cd $HOME/incubator-singa \
-    && git checkout SINGA-429-cmake-flag \
     && mkdir build && cd build \
     && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
-#RUN cd $HOME/incubator-singa/build && make && sudo make install
+RUN cd $HOME/incubator-singa/build && make && sudo make install
 
 EXPOSE 22
 

@@ -77,7 +77,7 @@ USER singa
 # build incubator singa
 RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
     && cd $HOME/incubator-singa && mkdir build && cd build \
-    && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON .. \
+    && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_MKLDNN=ON -DUSE_PYTHON3=ON .. \
     && cd $HOME/incubator-singa/build && make && sudo make install
 
 EXPOSE 22
