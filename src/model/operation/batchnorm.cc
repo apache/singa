@@ -272,8 +272,7 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle
 Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
                                     const Tensor& x, const Tensor& bnScale,
                                     const Tensor& bnBias, const Tensor& running_mean, const Tensor& running_var) {
-  CHECK_EQ(x.device()->lang(), kCuda);WANG YUE
-
+  CHECK_EQ(x.device()->lang(), kCuda);
   CHECK_EQ(bnScale.device()->lang(), kCuda);
   CHECK_EQ(bnBias.device()->lang(), kCuda);
   CHECK_EQ(running_mean.device()->lang(), kCuda);
