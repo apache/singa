@@ -54,6 +54,12 @@ RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz -P /tmp/ \
     # ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
     # ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
     # config ssh service
+# install mkldnn
+RUN git clone https://github.com/intel/mkl-dnn.git /tmp/mkl-dnn \
+    && cd /tmp/mkl-dnn \
+    && cd scripts && ./prepare_mkl.sh && cd .. \
+    && mkdir -p build && cd build && cmake $CMAKE_OPTIONS .. \
+    && make && make install
 RUN mkdir /var/run/sshd \
     && echo 'root:singa' | chpasswd \
     # for ubuntu 14.04

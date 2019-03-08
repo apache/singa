@@ -55,6 +55,12 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.12.2/cmake-3.12.2
     # ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
     # ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
     # config ssh service
+# install mkldnn
+RUN git clone https://github.com/intel/mkl-dnn.git /tmp/mkl-dnn \
+    && cd /tmp/mkl-dnn \
+    && cd scripts && ./prepare_mkl.sh && cd .. \
+    && mkdir -p build && cd build && cmake $CMAKE_OPTIONS .. \
+    && make && make install
 RUN mkdir /var/run/sshd \
     && echo 'root:singa' | chpasswd \
     # for ubuntu 14.04
@@ -66,15 +72,15 @@ RUN mkdir /var/run/sshd \
     # dump environment variables into files, so that ssh can see also
     && env | grep _ >> /etc/environment \ 
     && useradd -m singa && echo 'singa:singa' | chpasswd && adduser singa sudo
-RUN echo 'username ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER singa 
 # build incubator singa
-RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
-    && cd $HOME/incubator-singa && mkdir build && cd build \
-    && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON ..
-    # fix cmake generated line with invalid linebreak, error: missing separator
-    #RUN perl -0777 -i -pe 's/\n +/ /gs' $HOME/incubator-singa/build/python/CMakeFiles/_singa_wrap.dir/flags.make
+RUN git clone https://github.com/dcslin/incubator-singa.git $HOME/incubator-singa \
+    && cd $HOME/incubator-singa \
+    && git checkout SINGA-429-cmake-flag \
+    && mkdir build && cd build \
+    && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
 #RUN cd $HOME/incubator-singa/build && make && sudo make install
 
 EXPOSE 22
