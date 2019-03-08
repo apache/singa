@@ -35,6 +35,8 @@ RUN apt-get update \
         python3-dev \
         python3-pip \
         python3-setuptools \
+        libgoogle-glog-dev \
+        sudo \
     && apt-get clean \
     && apt-get autoremove \
     && apt-get autoclean \
@@ -62,14 +64,15 @@ RUN mkdir /var/run/sshd \
     && sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd \
     # dump environment variables into files, so that ssh can see also
     && env | grep _ >> /etc/environment \
-    && useradd -m singa && echo 'singa:singa' | chpasswd 
+    && useradd -m singa && echo 'singa:singa' | chpasswd && adduser singa sudo
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER singa 
 # build incubator singa
 RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
     && cd $HOME/incubator-singa && mkdir build && cd build \
-    && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON .. \
-    && cd $HOME/incubator-singa/build && make && make install
+    && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON .. \
+    && cd $HOME/incubator-singa/build && make && sudo make install
 
 EXPOSE 22
 

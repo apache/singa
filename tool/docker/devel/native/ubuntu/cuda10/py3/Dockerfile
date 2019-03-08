@@ -35,6 +35,8 @@ RUN apt-get update \
         python3-dev \
         python3-pip \
         python3-setuptools \
+        libgoogle-glog-dev \
+        sudo \
     && apt-get clean \
     && apt-get autoremove \
     && apt-get autoclean \
@@ -64,6 +66,7 @@ RUN mkdir /var/run/sshd \
     # dump environment variables into files, so that ssh can see also
     && env | grep _ >> /etc/environment \ 
     && useradd -m singa && echo 'singa:singa' | chpasswd && adduser singa sudo
+RUN echo 'username ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 USER singa 
 # build incubator singa
@@ -72,7 +75,7 @@ RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-sing
     && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON ..
     # fix cmake generated line with invalid linebreak, error: missing separator
     #RUN perl -0777 -i -pe 's/\n +/ /gs' $HOME/incubator-singa/build/python/CMakeFiles/_singa_wrap.dir/flags.make
-RUN cd $HOME/incubator-singa/build && make && make install
+#RUN cd $HOME/incubator-singa/build && make && sudo make install
 
 EXPOSE 22
 
