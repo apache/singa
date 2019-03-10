@@ -105,19 +105,13 @@ if __name__ == '__main__':
 
 
     model = onnx.load('cnn.onnx')
-    rep = sonnx.BackendRep(model,dev)
-    #####backend run multiple times
+    rep = sonnx.prepare(model, dev)
     print('finish init')
     autograd.training = True
     # training process
     for epoch in range(1):
         inputs = tensor.Tensor(device=dev, data=x_train[0:100], stores_grad=False)
         targets = tensor.Tensor(device=dev, data=y_train[0:100], requires_grad=False, stores_grad=False)
-        y0 = rep.run([inputs])[0]
+        y0 = rep.run([inputs])
         loss = autograd.softmax_cross_entropy(y0,targets)
         print('outputs',tensor.to_numpy(loss)[0])
-
-#####backend run only one time
-y0 = sonnx.Backend.run_model(model,[inputs],dev)[0]
-loss = autograd.softmax_cross_entropy(y0, targets)
-print('training loss = ', tensor.to_numpy(loss)[0])

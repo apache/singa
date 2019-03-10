@@ -145,8 +145,8 @@ if __name__ == '__main__':
         accuracy_rate = accuracy(tensor.to_numpy(y),
                                  tensor.to_numpy(targets))
         print('accuracy is:', accuracy_rate, 'loss is:',tensor.to_numpy(loss)[0])
-        for p, gp in autograd.backward(loss):
-            sgd.update(p, gp)
+        #for p, gp in autograd.backward(loss):
+        #    sgd.update(p, gp)
 
 model = sonnx.to_onnx_model([inputs],y)
 onnx.save(model, 'cnn.onnx')

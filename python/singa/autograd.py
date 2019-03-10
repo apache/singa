@@ -90,8 +90,8 @@ def backward(y, dy=None):
     '''
     assert isinstance(y, Tensor), 'wrong input type.'
     dependency = infer_dependency(y.creator)
-    assert y.size() == 1, 'y must be a Tensor with a single value;'\
-        'size of y is % d' % y.size()
+    assert y.size() == 1, 'y must be a Tensor with a single value;' \
+                          'size of y is % d' % y.size()
 
     # by default the dy is a tensor with 1.0 for each sample;
     if dy is None:
@@ -121,6 +121,7 @@ def backward(y, dy=None):
         # if not isinstance(op, tensor.Dummy):
         dxs = op._do_backward(*dys)
         # TODO src and dx must match
+
         assert len(op.src) == len(dxs), \
             'the number of src ops (=%d) and dx (=%d) not match' \
             % (len(op.src), len(dxs))
@@ -186,6 +187,15 @@ class Operation(object):
     2. override the forward() and backward(); The arguments of forward()
        and backward() should only include CTensor;
     '''
+    op_count = 0
+
+    def __init__(self, name=None):
+        if name is None:
+            self.name = '{}#{}'.format(
+                self.__class__.__name__, Operation.op_count)
+            Operation.op_count += 1
+        else:
+            self.name = name
 
     def __call__(self, *xs):
         return self._do_forward(*xs)
@@ -267,7 +277,7 @@ class Dummy(Operation):
     '''
 
     def __init__(self, tensor, name=None):
-        self.name = name
+        super(Dummy,self).__init__(name)
         self.src = []
         self.y_id2idx = {id(tensor): 0}
         self.stores_grad = tensor.stores_grad
@@ -276,6 +286,8 @@ class Dummy(Operation):
 
 class ReLU(Operation):
 
+    def __init__(self):
+        super(ReLU,self).__init__()
     def forward(self, x):
         '''
         Args:
@@ -304,7 +316,8 @@ def relu(x):
 
 class Matmul(Operation):
     '''For matrix multiplication'''
-
+    def __init__(self):
+        super(Matmul,self).__init__()
     def forward(self, x, w):
         '''Do forward propgation.
         Store the x(or w) if w(or x) requires gradient.
@@ -326,7 +339,7 @@ class Matmul(Operation):
             a tuple for (dx, dw)
         '''
         return singa.Mult(dy, singa.DefaultTranspose(self.input[1])), \
-            singa.Mult(singa.DefaultTranspose(self.input[0]), dy)
+               singa.Mult(singa.DefaultTranspose(self.input[0]), dy)
 
 
 def matmul(x, w):
@@ -344,6 +357,7 @@ class AddBias(Operation):
         Args:
             axis: 0 or 1, default is 0.
         '''
+        super(AddBias,self).__init__()
         self.axis = axis
 
     def forward(self, x, b):
@@ -379,7 +393,8 @@ def add_bias(x, b, axis=0):
 
 
 class Add(Operation):
-
+    def __init__(self):
+        super(Add,self).__init__()
     def forward(self, a, b):
         return singa.__add__(a, b)
 
@@ -398,6 +413,7 @@ class SoftMax(Operation):
     '''
 
     def __init__(self, axis=0):
+        super(SoftMax,self).__init__()
         self.axis = axis
 
     def forward(self, x):
@@ -453,6 +469,8 @@ def softmax(x, axis=0):
 
 
 class CrossEntropy(Operation):
+    def __init__(self):
+        super(CrossEntropy,self).__init__()
     '''
     Calculte negative log likelihood loss for a batch of training data.
     '''
@@ -501,6 +519,7 @@ def cross_entropy(y, t):
 class SoftMaxCrossEntropy(Operation):
 
     def __init__(self, t):
+        super(SoftMaxCrossEntropy,self).__init__()
         self.t = t.data
 
     def forward(self, x):
@@ -521,6 +540,8 @@ def softmax_cross_entropy(x, t):
 
 
 class MeanSquareError(Operation):
+    def __init__(self):
+        super(MeanSquareError,self).__init__()
 
     def forward(self, x, t):
         self.err = singa.__sub__(x, t)
@@ -556,6 +577,7 @@ def ctensor2numpy(x):
 class Flatten(Operation):
 
     def __init__(self, start_axis=1):
+        super(Flatten,self).__init__()
         # flatten all axis after (inclusive) start_axis
         self.start_axis = start_axis
         assert start_axis == 1, 'must flatten into 2d array not'
@@ -681,6 +703,7 @@ class Linear(Layer):
 class Concat(Operation):
 
     def __init__(self, axis=0):
+        super(Concat,self).__init__()
         self.axis = axis
 
     def forward(self, *xs):
@@ -713,6 +736,7 @@ def cat(xs, axis=0):
 class _Conv2d(Operation):
 
     def __init__(self, handle):
+        super(_Conv2d,self).__init__()
         self.handle = handle
 
     def forward(self, x, W, b):
@@ -723,7 +747,6 @@ class _Conv2d(Operation):
                 self.inputs = (x, W, b)
             else:
                 self.inputs = (x, W)
-
         if self.handle.device_id == -1:
             return singa.CpuConvForward(x, W, b, self.handle)
 
@@ -759,8 +782,12 @@ class _Conv2d(Operation):
                 return dx, dW, None
 
 
-def conv2d(handle, x, W, b):
-    return _Conv2d(handle)(x, W, b)[0]
+
+def conv2d(handle, x, W, b=None):
+    if b is None:
+        return _Conv2d(handle)(x, W)[0]
+    else:
+        return _Conv2d(handle)(x, W, b)[0]
 
 
 class Conv2d(Layer):
@@ -833,8 +860,8 @@ class Conv2d(Layer):
             self.b.set_value(0.0)
         else:
             # to keep consistency when to do forward.
-            self.b = Tensor(data=CTensor(
-                []), requires_grad=False, stores_grad=False)
+            self.b = None
+            # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
 
     def __call__(self, x):
         assert x.shape[1] == self.in_channels, 'in_channels dismatched'
@@ -846,18 +873,28 @@ class Conv2d(Layer):
                 raise ValueError('Not implemented yet')
             else:
                 if not hasattr(self, 'handle'):
-                    self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
-                                                   self.padding, self.in_channels, self.out_channels, self.bias)
+                    self.handle = singa.ConvHandle(x.data, self.kernel_size,
+                                                   self.stride, self.padding,
+                                                   self.in_channels,
+                                                   self.out_channels, self.bias)
                 elif x.shape[0] != self.handle.batchsize:
-                    self.handle = singa.ConvHandle(x.data, self.kernel_size, self.stride,
-                                                   self.padding, self.in_channels, self.out_channels, self.bias)
+                    self.handle = singa.ConvHandle(x.data, self.kernel_size,
+                                                   self.stride, self.padding,
+                                                   self.in_channels,
+                                                   self.out_channels, self.bias)
         else:
             if not hasattr(self, 'handle'):
-                self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                    self.padding, self.in_channels, self.out_channels, self.bias, self.groups)
+                self.handle = singa.CudnnConvHandle(x.data, self.kernel_size,
+                                                    self.stride, self.padding,
+                                                    self.in_channels,
+                                                    self.out_channels,
+                                                    self.bias, self.groups)
             elif x.shape[0] != self.handle.batchsize:
-                self.handle = singa.CudnnConvHandle(x.data, self.kernel_size, self.stride,
-                                                    self.padding, self.in_channels, self.out_channels, self.bias, self.groups)
+                self.handle = singa.CudnnConvHandle(x.data, self.kernel_size,
+                                                    self.stride, self.padding,
+                                                    self.in_channels,
+                                                    self.out_channels,
+                                                    self.bias, self.groups)
         self.handle.device_id = x.device.id()
 
         y = conv2d(self.handle, x, self.W, self.b)
@@ -946,34 +983,42 @@ class BatchNorm2d(Layer):
     def set_params(self, **parameters):
         # set parameters for BatchNorm2d Layer
         # input should be either a PyTensor or numpy ndarray.
-        # examples: Batchnorm2d.set_params(scale=np.ones((1,), dtype=np.float32)),
-        #          Batchnorm2d.set_params(**{'bias':np.ones((1), dtype=np.float32)})
+        # examples:
+        #   Batchnorm2d.set_params(scale=np.ones((1,), dtype=np.float32)),
+        #   Batchnorm2d.set_params(**{'bias':np.ones((1), dtype=np.float32)})
         self.allow_params = ['scale', 'bias']
         super(BatchNorm2d, self).set_params(**parameters)
 
 
 class _BatchNorm2d(Operation):
 
-    def __init__(self, handle, running_mean, running_var):
-        self.running_mean = running_mean.data
-        self.running_var = running_var.data
+    def __init__(self, handle, name=None):
+        super(_BatchNorm2d,self).__init__(name)
         self.handle = handle
 
-    def forward(self, x, scale, bias):
+    def forward(self, x, scale, bias, running_mean, running_var):
+        self.running_mean=running_mean
+        self.running_var=running_var
         if training:
 
             if self.handle.device_id == -1:
                 raise NotImplementedError
             else:
                 y, mean, var = singa.GpuBatchNormForwardTraining(self.handle,
-                                                                 x, scale, bias, self.running_mean, self.running_var)
+                                                                 x,
+                                                                 scale,
+                                                                 bias,
+                                                                 running_mean,
+                                                                 running_var)
+
                 self.cache = (x, scale, mean, var)
         else:
             if self.handle.device_id == -1:
                 raise NotImplementedError
             else:
                 y = singa.GpuBatchNormForwardInference(
-                    self.handle, x, scale, bias, self.running_mean, self.running_var)
+                    self.handle, x, scale, bias, self.running_mean,
+                    self.running_var)
         return y
 
     def backward(self, dy):
@@ -993,12 +1038,13 @@ class _BatchNorm2d(Operation):
 
 
 def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
-    return _BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
+    return _BatchNorm2d(handle)(x, scale, bias, running_mean, running_var)[0]
 
 
 class _Pooling2d(Operation):
 
     def __init__(self, handle):
+        super(_Pooling2d,self).__init__()
         self.handle = handle
 
     def forward(self, x):
@@ -1115,7 +1161,8 @@ class AvgPool1d(Pooling2d):
 
 
 class Tanh(Operation):
-
+    def __init__(self):
+        super(Tanh,self).__init__()
     def forward(self, x):
         out = singa.Tanh(x)
         if training:
@@ -1135,7 +1182,8 @@ def tanh(x):
 
 
 class Sigmoid(Operation):
-
+    def __init__(self):
+        super(Sigmoid,self).__init__()
     def forward(self, x):
         out = singa.Sigmoid(x)
         if training:
@@ -1155,7 +1203,8 @@ def sigmoid(x):
 
 
 class ElemMatmul(Operation):
-
+    def __init__(self):
+        super(ElemMatmul,self).__init__()
     def forward(self, x1, x2):
         if training:
             self.cache = (x1, x2)
@@ -1245,7 +1294,9 @@ class RNN(RNN_Base):
 
 class LSTM(RNN_Base):
 
-    def __init__(self, input_size, hidden_size, nonlinearity='tanh', num_layers=1, bias=True, batch_first=False, dropout=0, bidirectional=False):
+    def __init__(self, input_size, hidden_size, nonlinearity='tanh',
+                 num_layers=1, bias=True, batch_first=False, dropout=0,
+                 bidirectional=False):
         self.nonlinearity = nonlinearity
 
         Wx_shape = (input_size, hidden_size)
@@ -1336,4 +1387,3 @@ class LSTM(RNN_Base):
         hout = tanh(cout)
         hout = mul(o, hout)
         return hout, cout
-

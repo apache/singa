@@ -63,16 +63,11 @@ print('finish init')
 sgd = optimizer.SGD(0.00)
 
 
-#####backend run multiple times
 # training process
-rep = sonnx.BackendRep(model,dev)
+rep = sonnx.prepare(model, dev)
 for epoch in range(1):
     outputs = rep.run([inputs])
-    loss = autograd.cross_entropy(outputs[0], target)
+    loss = autograd.cross_entropy(outputs, target)
     if (epoch % 100 == 0):
         print('training loss = ', tensor.to_numpy(loss)[0])
 
-#####backend run only one time
-outputs = sonnx.Backend.run_model(model,[inputs],dev)
-loss = autograd.cross_entropy(outputs[0], target)
-print('training loss = ', tensor.to_numpy(loss)[0])

@@ -18,272 +18,359 @@
 #
 
 
-
 from __future__ import division
-from singa import tensor
-from singa import autograd
-from onnx import helper,checker
-from onnx import AttributeProto, TensorProto, GraphProto
+
+from collections import deque
+from onnx import helper, checker
+from onnx import TensorProto
 from onnx import numpy_helper
-from  onnx.backend.base import BackendRep as backendRep
-from  onnx.backend.base import Backend as backend
-from collections import Counter, deque
+from onnx.backend.base import BackendRep as backendRep
+from onnx.backend.base import Backend as backend
+from onnx.backend.base import namedtupledict
 
 from . import singa_wrap as singa
-from autograd import *
-from autograd import _Conv2d,_Pooling2d,_BatchNorm2d
-#if not import, there will be an error
-from singa.tensor import to_numpy
+import autograd
+
+import tensor
+from device import create_cuda_gpu_on, get_default_device
 
 
-class BackendRep(backendRep):
-    def __init__(self,model,device):
-        self.model, self.modeldic = Backend.onnx_model_init(model,device)
-        self.handledic={}
-    def run(self,inputs):
-        self.y,self.modeldic=Backend.run(self.model, self.modeldic,inputs,self.handledic)
-        return self.y
-
-
-
-class Backend(backend):
+class Handle(object):
 
     @staticmethod
-    def convhandle(name,handledic,x,model):
-        if(name in handledic):return handledic
-        i = Backend.find_name(model,name)
+    def conv(inputs, attrs):
+        # inputs: a list of the input tensors
+        kernel = tuple(attrs['kernel_shape'])
+        padding = tuple(attrs['pads'])
+        stride = tuple(attrs['strides'])
+        group = 1
+        bias = len(inputs) == 3
+        x = inputs[0]
+        x_shape = inputs[0].shape
+        in_channels = x_shape[1]
+        w_shape = inputs[1].shape
+        out_channels = w_shape[0]
+        assert w_shape[1] == in_channels // group
 
-        shape = Backend.find_shape(model,i.input[1])
-        cin,cout,k=shape[1], shape[0], (shape[2],shape[2])
-        padding=(int(i.attribute[1].ints[0]),int(i.attribute[1].ints[0]))
-        stride=(int(i.attribute[2].ints[0]),int(i.attribute[2].ints[0]))
-
-        handledic[name] = singa.CudnnConvHandle(x.data, k, stride,padding, cin, cout, True)
-        handledic[name].device_id = x.device.id()
-        return handledic
-
-
-    @staticmethod
-    def MaxPool2dhandle(name,handledic,x,model):
-        if(name in handledic):return handledic
-        i = Backend.find_name(model,name)
-        k = (int(i.attribute[0].ints[0]),int(i.attribute[0].ints[0]))
-        padding=(int(i.attribute[1].ints[0]),int(i.attribute[1].ints[0]))
-        stride=(int(i.attribute[2].ints[0]),int(i.attribute[2].ints[0]))
-
-        handledic[name] = singa.CudnnPoolingHandle(x.data, k, stride, padding, True)
-        handledic[name].device_id = x.device.id()
-        return handledic
-
-    @staticmethod
-    def AveragePoolhandle(name,handledic,x,model):
-        if(name in handledic):return handledic
-        i = Backend.find_name(model,name)
-        k = (int(i.attribute[0].ints[0]),int(i.attribute[0].ints[0]))
-        padding=(int(i.attribute[1].ints[0]),int(i.attribute[1].ints[0]))
-        stride=(int(i.attribute[2].ints[0]),int(i.attribute[2].ints[0]))
-
-        handledic[name] = singa.CudnnPoolingHandle(x.data, k, stride, padding, False)
-        handledic[name].device_id = x.device.id()
-        return handledic
+        if inputs[0].device.id() == -1:
+            if group != 1:
+                raise NotImplementedError
+            else:
+                handle = singa.ConvHandle(x.data, kernel, stride, padding,
+                                          in_channels, out_channels, bias)
+            handle.device_id = inputs[0].device.id()
+        else:
+            handle = singa.CudnnConvHandle(x.data, kernel, stride, padding,
+                                           in_channels, out_channels, bias,
+                                           group)
+            handle.device_id = inputs[0].device.id()
+        return handle
 
     @staticmethod
-    def BatchNormalizationhandle(name,handledic,x,model):
-        if(name in handledic):return handledic
-        handledic[name] = singa.CudnnBatchNormHandle(0.9, x.data)
-        handledic[name].device_id = x.device.id()
-        return handledic
-
-
-
-
-
+    def max_pool(inputs, attrs):
+        x = inputs[0]
+        kernel = tuple(attrs['kernel_shape'])
+        padding = tuple(attrs['pads'])
+        stride = tuple(attrs['strides'])
+        if x.device.id() == -1:
+            handle = singa.PoolingHandle(x.data, kernel, stride, padding, True)
+            handle.device_id = inputs[0].device.id()
+        else:
+            handle = singa.CudnnPoolingHandle(x.data, kernel, stride, padding,
+                                              True)
+            handle.device_id = inputs[0].device.id()
+        return handle
 
     @staticmethod
-    def onnx_model_init(model,device):
+    def avg_pool(inputs, attrs):
+        x = inputs[0]
+        kernel = tuple(attrs['kernel_shape'])
+        padding = tuple(attrs['pads'])
+        stride = tuple(attrs['strides'])
+        if x.device.id() == -1:
+            handle = singa.PoolingHandle(x.data, kernel, stride, padding, False)
+            handle.device_id = inputs[0].device.id()
+        else:
+            handle = singa.CudnnPoolingHandle(x.data, kernel, stride, padding,
+                                              False)
+            handle.device_id = inputs[0].device.id()
+        return handle
+
+    @staticmethod
+    def batchnorm(inputs, attrs):
+        x = inputs[0]
+        factor = attrs['momentum']
+        if x.device.id() == -1:
+            raise NotImplementedError
+        else:
+            handle = singa.CudnnBatchNormHandle(factor, x.data)
+            handle.device_id = inputs[0].device.id()
+        return handle
+
+UnaryOp = {'Relu': autograd.relu,
+           'Softmax': autograd.softmax,
+           'Flatten': autograd.flatten,
+           'Tanh': autograd.tanh,
+           'Sigmoid': autograd.sigmoid}
+BinaryOp = {'Add': autograd.add,
+            'Mul': autograd.mul,
+            'MatMul': autograd.matmul}
+
+OtherOp = {'Conv': (Handle.conv, autograd.conv2d),
+           'MaxPool': (Handle.max_pool, autograd.pooling_2d),
+           'AveragePool': (Handle.avg_pool, autograd.pooling_2d),
+           'BatchNormalization': (Handle.batchnorm, autograd.batchnorm_2d)
+           }
+
+
+class SingaBackendRep(backendRep):
+
+    def __init__(self, model, device, tensor_dict):
         '''
-        input model
-
-        return: model and model dictionary
+        Args:
+            model: onnx model proto
+            device: singa device
+            tensor_dict: dict for weight tensors
         '''
-
-        modeldic = {}
-        for i in model.graph.node:
-            if (i.op_type == 'Constant'):
-                modeldic[str(i.output[0])] = tensor.Tensor(device=device,data=numpy_helper.to_array(i.attribute[0].t),requires_grad=True, stores_grad=True)
-
-        return model,modeldic
-
+        self.model = model
+        self.device = device
+        self.tensor_dict = tensor_dict
+        self.handle_dict = {}
 
     @staticmethod
-    def find_name(model,name):
-        for i in model.graph.node:
-            if (i.name == name):
-                return i
-
-
-    @staticmethod
-    def find_shape(model,input):
+    def run_node(node, tensors, handles):
         '''
-        # find weight shape for layers
+        Args:
+            node: onnx node proto
+            tensors: dict from tensor name to tensor
+            handles: dict from node name to handle
         '''
-        for i in model.graph.node:
-            if (i.op_type == 'Constant' and i.output[0] == input):
-                return numpy_helper.to_array(i.attribute[0].t).shape
+        inputs = [tensors[x] for x in node.input]
+        outputs = node.output
+        attrs = attribute2dict(node)
+        op = node.op_type
+        if op in UnaryOp:
+            tensors[outputs[0]] = UnaryOp[op](inputs[0])
+        elif op in BinaryOp:
+            tensors[outputs[0]] = BinaryOp[op](inputs[0], inputs[1])
+        elif op in OtherOp:
+            handle, forward = OtherOp[op]
+            if node.name not in handles:
+                handles[node.name] = handle(inputs, attrs)
+            tensors[outputs[0]] = forward(handles[node.name], *inputs)
+        elif op == 'Concat':
+            tensors[outputs[0]] = autograd.cat(tuple(inputs), attrs['axis'])
+        else:
+            raise NotImplementedError('Not supported op: {}'.format(op))
+
+    def run(self, input):
+        # input_dict: dict from input name to numpy array
+        tensors = self.tensor_dict.copy()
+        key=self.model.graph.input[0].name
+        oname = self.model.graph.output[0].name
+        tensors[key] = input[0]
+
+        for node in self.model.graph.node:
+            if(node.op_type!="Constant"):
+                SingaBackendRep.run_node(node, tensors, self.handle_dict)
+        return tensors[oname]
 
 
-    @staticmethod
-    def run_model(model,inputs,device):
-        model, modeldic  = Backend.onnx_model_init(model,device)
-        return Backend.run(model, modeldic,inputs)[0]
+def attribute2dict(node):
+    # create a dictionary from the node attribute name to value
+    attr = {}
+    for a in node.attribute:
+        attr[a.name] = helper.get_attribute_value(a)
+    return attr
 
-    @staticmethod
-    def run(model, modeldic,inputs,handledic={}):
+
+class SingaBackend(backend):
+
+    @classmethod
+    def prepare(cls,
+                model,  # type: ModelProto
+                device,  # type: Text
+                **kwargs  # type: Any
+                ):  # type: (...) -> Optional[BackendRep]
         '''
-            input: input for singa model
-            load other nodes of onnx
-            '''
-        supportLayer = ['Conv','MaxPool','AveragePool','BatchNormalization']
-        oper=modeldic
-        autograd.training = True
-        for counter,i in enumerate(model.graph.input):
-            oper[i.name] = inputs[counter]
-        for i in model.graph.node:
-            if (i.op_type == 'Relu'):
-                oper[str(i.output[0])] = autograd.relu(oper[str(i.input[0])])
-            elif (i.op_type == 'Softmax'):
-                oper[str(i.output[0])] = autograd.softmax(oper[str(i.input[0])])
-            elif (i.op_type == 'Add'):
-                oper[str(i.output[0])] = autograd.add(oper[str(i.input[0])], oper[str(i.input[1])])
-            elif (i.op_type == 'MatMul'):
-                oper[str(i.output[0])] = autograd.matmul(oper[str(i.input[0])], oper[str(i.input[1])])
-            elif (i.op_type == 'Flatten'):
-                oper[str(i.output[0])] = autograd.flatten(oper[str(i.input[0])])
-            elif(i.op_type == 'Concat'):
-                oper[str(i.output[0])] = autograd.cat((oper[str(i.input[0])], oper[str(i.input[1])]),int(i.attribute[0].i))
-            elif(i.op_type == 'Tanh'):
-                oper[str(i.output[0])] = autograd.tanh(oper[str(i.input[0])])
-            elif (i.op_type == 'Sigmoid'):
-                oper[str(i.output[0])] = autograd.sigmoid(oper[str(i.input[0])])
-            elif (i.op_type == 'Mul'):
-                oper[str(i.output[0])] = autograd.mul(oper[str(i.input[0])],oper[str(i.input[1])])
-            elif (i.op_type == 'Conv'):
-                handledic = Backend.convhandle(i.name,handledic,oper[str(i.input[0])],model)
-                oper[str(i.output[0])] = autograd.conv2d(handledic[i.name],oper[str(i.input[0])].clone(),oper[str(i.input[1])].clone(),oper[str(i.input[2])].clone())
-            elif (i.op_type == 'MaxPool'):
-                handledic = Backend.MaxPool2dhandle(i.name,handledic,oper[str(i.input[0])],model)
-                oper[str(i.output[0])] = autograd.pooling_2d(handledic[i.name],oper[str(i.input[0])])
-            elif (i.op_type == 'AveragePool'):
-                handledic = Backend.AveragePoolhandle(i.name,handledic,oper[str(i.input[0])],model)
-                oper[str(i.output[0])] = autograd.pooling_2d(handledic[i.name],oper[str(i.input[0])])
-            elif (i.op_type == 'BatchNormalization'):
-                handledic = Backend.BatchNormalizationhandle(i.name,handledic,oper[str(i.input[0])],model)
-                oper[str(i.output[0])] = autograd.batchnorm_2d(handledic[i.name],oper[str(i.input[0])],oper[str(i.input[1])],oper[str(i.input[2])],oper[str(i.input[3])],oper[str(i.input[4])])
-        out =[]
-        for counter,i in enumerate(model.graph.output):
-            out.append(oper[i.name])
-        return out,oper
+        Args:
+            model: onnx model proto
+            device: 'CPU' or 'GPU'
+        Return:
+            SingaBackendRep instance
+        '''
+        super(SingaBackend, cls).prepare(model, device, **kwargs)
+        name2tensor = {}
+        for node in model.graph.node:
+            if (node.op_type == 'Constant'):
+                data = helper.get_attribute_value(node.attribute[0])
+                requires_grad, stores_grad = True, True
+                if len(node.attribute) == 3:
+                    requires_grad = helper.get_attribute_value(
+                        node.attribute[1])
+                    stores_grad = helper.get_attribute_value(node.attribute[2])
+                t = tensor.Tensor(device=device,
+                                  data=numpy_helper.to_array(data),
+                                  requires_grad=requires_grad,
+                                  stores_grad=stores_grad)
+
+                name2tensor[node.output[0]] = t
+
+        return SingaBackendRep(model, device, name2tensor)
+
+    @classmethod
+    def run_node(cls, node, inputs, device, outputs_info=None, **kwargs):
+        '''
+        Args:
+            node: onnx node proto
+            inputs: dictionary of name to numpy array; the names should match
+                node inputs
+        Return:
+            a named tuple for the output tensors
+        '''
+        super(SingaBackend, cls).run_node(node, inputs, device)
+        handles = {}
+        SingaBackendRep.run_node(node, inputs, handles)
+        output_vals = [tensors[x] for x in node.outputs]
+        return namedtupledict('Outputs', node.outputs)(*output_vals)
+
+    @classmethod
+    def supports_device(cls, device):  # type: (Text) -> bool
+        if device == 'CPU' or device == 'CUDA':
+            return True
+        return False
 
 
+run_model = SingaBackend.run_model
+run_node = SingaBackend.run_node
+supports_device = SingaBackend.supports_device
+prepare = SingaBackend.prepare
 
-def to_onnx_model(inputs,y):
 
+def to_onnx_model(inputs, y, model_name='sonnx'):
     '''
     get onnx model from singa computational graph
     Args:
-        y: a Tensor instance, usually the loss
-        Return:
-        loss for onnx model
+        inputs: a list of input tensors (each is initialized with a name)
+        y: a Tensor instance, usually the output of the graph
+    Return:
+        the onnx model
     '''
-    X,Y = [],[]
     node = []
-    dependency = infer_dependency(y.creator)
-    yi = y.creator
-    yi.end = True
-    ready = deque([yi])
-    Y = [helper.make_tensor_value_info('Y'+str(0), TensorProto.FLOAT, y.shape)]
+    inputsx=inputs
+    dependency = autograd.infer_dependency(y.creator)
+    ready = deque([y.creator])
 
-    supportOp = set(['ReLU', 'SoftMax', 'Add', 'AddBias', 'Matmul', 'Flatten', '_Conv2d', 'Concat', 'ElemMatmul','Sigmoid','Tanh','_Pooling2d','_BatchNorm2d'])
-    singatoonnx = {'SoftMax': 'Softmax', 'AddBias': 'Add', 'Matmul': 'MatMul', 'ReLU': 'Relu', '_Conv2d': 'Conv',
-                   'ElemMatmul': 'Mul', '_Pooling2d': 'MaxPool', '_BatchNorm2d': 'BatchNormalization'}
-    lastop=0
-    counterX = 0
+    def output_name(op, index):
+        return '{}:{}'.format(op.name, index)
+
+    input_ids = set(id(x) for x in inputs)
+    X = []
+    Y = [helper.make_tensor_value_info(
+        output_name(y.creator, 0), TensorProto.FLOAT, y.shape)]
+
     while len(ready) > 0:
         op = ready.pop()
-        if isinstance(op, Dummy):continue
+        assert not isinstance(op, autograd.Dummy)
+        outputs = [output_name(op, idx)
+                   for _, idx in op.y_id2idx.items()]
+        inputs = [output_name(srcop, srcop.y_id2idx[yid]) for (srcop, yid, _, _) in op.src]
         curop = str(op).split('.')[-1].split(' ')[0]
-        cur = str(op)
-        pre = [str(i[0]) for i in op.src]
-        preop = [str(i[0]).split('.')[-1].split(' ')[0] for i in op.src]
-        #print('op',op)
-        #print('op scr', op.src)
-        #print('-------')
-        layercnt=0
-        if curop in supportOp:
-            name=str(op)+str(layercnt)
-            layercnt+=1
-            if (curop in singatoonnx): curop = singatoonnx[curop]
-            if (hasattr(op, 'end')):
-                if(isinstance(op,SoftMaxCrossEntropy)):
-                    # singa.autograd.SoftMaxCrossEntropy does not have dummy in op.src
-                    X = [helper.make_tensor_value_info(str(op.t), TensorProto.FLOAT,
-                                                       inputs[len(inputs) - 1 - counterX].shape)] + X
-                    pre.append(str(op.t))
-                    counterX += 1
-                node = [helper.make_node(curop, inputs=pre, outputs=['Y'+str(lastop)],name=name )] + node
-                lastop+=1
+        if isinstance(op, autograd.Concat):
+            node.append(helper.make_node('Concat',
+                                         inputs=inputs,
+                                         outputs=outputs,
+                                         name=op.name,
+                                         axis=op.axis))
+        elif isinstance(op, autograd._Conv2d):
+            pads = [op.handle.padding_h, op.handle.padding_h,
+                    op.handle.padding_h, op.handle.padding_h]
+            stride = [op.handle.stride_h, op.handle.stride_w]
+            k = [op.handle.kernel_h, op.handle.kernel_w]
+            node.append(helper.make_node('Conv',
+                                         inputs=inputs,
+                                         outputs=outputs,
+                                         name=op.name,
+                                         kernel_shape=k,
+                                         pads=pads,
+                                         strides=stride))
+            # TODO groups
+        elif isinstance(op, autograd._Pooling2d):
+            k = [op.handle.kernel_h, op.handle.kernel_w]
+            s = [op.handle.stride_h, op.handle.stride_w]
+            p = [op.handle.pad_h, op.handle.pad_h,
+                 op.handle.pad_w, op.handle.pad_w]
+            if (op.handle.is_max_pooling):
+                node.append(helper.make_node('MaxPool',
+                                             inputs=inputs,
+                                             outputs=outputs,
+                                             name=op.name,
+                                             kernel_shape=k,
+                                             pads=p,
+                                             strides=s))
             else:
-                if(isinstance(op,Concat)):
-                    node = [helper.make_node(curop, inputs=pre, outputs=[cur], name=name,axis=int(op.axis))] + node
-                elif(isinstance(op,_Conv2d)):
-                    pads=[op.handle.padding_h,op.handle.padding_h,op.handle.padding_h,op.handle.padding_h]
-                    stride=[op.handle.stride_h,op.handle.stride_w]
-                    k = [op.handle.kernel_h, op.handle.kernel_w]
-                    node = [helper.make_node(curop, inputs=pre, outputs=[cur], name=name, kernel_shape=k,pads=pads,strides=stride)] + node
-                elif(isinstance(op,_Pooling2d)):
-                    k = [op.handle.kernel_h, op.handle.kernel_w]
-                    s = [op.handle.stride_h, op.handle.stride_w]
-                    p = [op.handle.pad_h,op.handle.pad_h, op.handle.pad_w,op.handle.pad_w]
-                    if (op.handle.is_max_pooling):
-                        node = [helper.make_node(curop, inputs=pre, outputs=[cur], name=name,kernel_shape=k,pads=p,strides=s)] + node
-                    else:
-                        node = [helper.make_node('AveragePool', inputs=pre, outputs=[cur], name=name, kernel_shape=k,
-                                                 pads=p, strides=s)] + node
-                elif (isinstance(op, _BatchNorm2d)):
-                    pre.append(cur + 'op.running_mean')
-                    pre.append(cur + 'op.running_var')
-                    dummy0 = to_numpy(tensor.Tensor(device=op.running_mean.device(), data=op.running_mean))
-                    dummy1 = to_numpy(tensor.Tensor(device=op.running_var.device(), data=op.running_var))
-                    node = [helper.make_node(curop, inputs=pre, outputs=[cur], name=name)] + node
+                node.append(helper.make_node('AveragePool',
+                                             inputs=inputs,
+                                             outputs=outputs,
+                                             name=op.name,
+                                             kernel_shape=k,
+                                             pads=p,
+                                             strides=s))
+        elif (isinstance(op, autograd._BatchNorm2d)):
+            dummy0 = tensor.to_numpy(tensor.Tensor(device=op.running_mean.device(), data=op.running_mean))
+            dummy1 = tensor.to_numpy(tensor.Tensor(device=op.running_var.device(), data=op.running_var))
+            node.append(helper.make_node('BatchNormalization',
+                                         inputs=inputs,
+                                         outputs=outputs,
+                                         name=op.name,
+                                         momentum=0.9))
+            dummy0=helper.make_node('Constant', inputs=[], outputs=[inputs[3]],
+                             value=numpy_helper.from_array(dummy0))
+            dummy1=helper.make_node('Constant', inputs=[], outputs=[inputs[4]],
+                                    value=numpy_helper.from_array(dummy1))
+            node.append(dummy0)
+            node.append(dummy1)
+        else:
+            singa2onnx = {'SoftMax': 'Softmax',
+                          'AddBias': 'Add',
+                          'Add': 'Add',
+                          'Matmul': 'MatMul',
+                          'ReLU': 'Relu',
+                          'ElemMatmul': 'Mul',
+                          'Flatten':'Flatten',
+                          'Tanh':'Tanh'}
+            if(curop in singa2onnx):onnx_op = singa2onnx[curop]
+            else:onnx_op = curop
+            node.append(helper.make_node(onnx_op,
+                                         inputs=inputs,
+                                         outputs=outputs,
+                                         name=op.name))
 
-                    node = [helper.make_node('Constant', inputs=[], outputs=[pre[3]],
-                                             value=numpy_helper.from_array(dummy0))] + node
-                    node = [helper.make_node('Constant', inputs=[], outputs=[pre[4]],
-                                             value=numpy_helper.from_array(dummy1))] + node
+
+        for srcop, yid, y, _ in op.src:
+            dependency[srcop] -= 1
+            if dependency[srcop] == 0:
+                if isinstance(srcop, autograd.Dummy):
+                    if yid not in input_ids:
+                        tmp = helper.make_node(
+                            'Constant',
+                            inputs=[],
+                            outputs=[output_name(srcop, srcop.y_id2idx[yid])],
+                            value=helper.make_tensor(
+                                name=op.name,
+                                data_type=TensorProto.FLOAT,
+                                dims=y.shape,
+                                vals=tensor.to_numpy(y).flatten().astype(float))
+                        )
+                        node.append(tmp)
                 else:
-                    node = [helper.make_node(curop, inputs=pre, outputs=[cur],name=name )] + node
-            num = 0
-            while(True):
-                if (len(op.src) > num and isinstance(op.src[num][0],Dummy) and op.src[num][2] is not None):
-                    dummy = to_numpy(op.src[num][2])
-                    node = [helper.make_node('Constant', inputs=[], outputs=[pre[num]],
-                                             value=numpy_helper.from_array(dummy))] + node
-                elif (len(op.src) > num and isinstance(op.src[num][0], Dummy) and op.src[num][2] is None):
-                    X = [helper.make_tensor_value_info(pre[num], TensorProto.FLOAT,
-                                                       inputs[len(inputs) - 1 - counterX].shape)] + X
-                    counterX+=1
+                    ready.append(srcop)
 
-                num+=1
-                if(len(op.src) <= num):break
-        for (src_op, x_id, y, y_stores_grad) in op.src:
-            dependency[src_op] -= 1
-            if src_op.requires_grad is True:
-                if dependency[src_op] == 0:
-                    if not isinstance(src_op, Dummy):ready.append((src_op))
-    model_def = helper.make_model(helper.make_graph(node, "t", X, Y, ), producer_name='o')
-    checker.check_model(model_def)
-    return model_def
-
-
-
-
+    for x in inputsx:
+        dtype = TensorProto.FLOAT
+        if y.dtype == tensor.int32:
+            dtype = TensorProto.INT
+        X.append(helper.make_tensor_value_info(inputs[0] , dtype, x.shape))
+    onnx_model = helper.make_model(helper.make_graph(node[::-1],model_name, X, Y))
+    checker.check_model(onnx_model)
+    return onnx_model
