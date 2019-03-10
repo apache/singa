@@ -39,6 +39,10 @@
 #include "singa/utils/opencl_utils.h"
 #endif // USE_OPENCL
 
+#ifdef USE_MKLDNN
+#include "singa/utils/mkldnn_utils.h"
+#endif  // USE_MKLDNN
+
 using std::vector;
 using std::string;
 using std::function;
@@ -141,7 +145,7 @@ extern std::shared_ptr<Device> defaultDevice;
 /// It runs cpp code.
 class CppCPU : public Device {
  public:
-  ~CppCPU() {};
+  ~CppCPU();
   CppCPU();
 
   std::shared_ptr<Device> host() const override { return defaultDevice;}

@@ -38,6 +38,31 @@ class BatchNormHandle{
     size_t batchsize;
 };
 
+#if USE_MKLDNN
+
+
+Tensor CpuBatchNormForwardInference(const BatchNormHandle &bnh,
+                                    const Tensor &x,
+                                    const Tensor &bnScale,
+                                    const Tensor &bnBias,
+                                    Tensor &running_mean,
+                                    Tensor &running_var);
+
+const std::vector<Tensor> CpuBatchNormForwardTraining(const BatchNormHandle &bnh,
+                                                      const Tensor &x,
+                                                      const Tensor &bnScale,
+                                                      const Tensor &bnBias,
+                                                      Tensor &running_mean,
+                                                      Tensor &running_var);
+
+const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
+                                                const Tensor &y, const Tensor &dy,
+                                                const Tensor &x,
+                                                const Tensor &bnScale, const Tensor &bnBias,
+                                                const Tensor &mean, const Tensor &var);
+
+#endif  //USE_MKLDNN
+
 
 class PoolingHandle {
  public:
@@ -51,6 +76,12 @@ class PoolingHandle {
   int pooled_width;
 };
 
+#if USE_MKLDNN
+
+Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x);
+Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &dy,
+                            const Tensor& x, const Tensor& y);
+#endif  //USE_MKLDNN
 
 #if USE_CUDNN
 class CudnnConvHandle: public ConvHandle {

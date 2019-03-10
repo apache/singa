@@ -100,6 +100,7 @@ for the instructions of installing them on Ubuntu 16.04.
     * `USE_PYTHON=ON`, used for compiling PySINGA
     * `USE_PYTHON3=ON`, used for compiling with Python 3 support. (The default is Python 2)
     * `USE_OPENCL=ON`, used for compiling with OpenCL support
+    * `USE_MKLDNN=ON`, used for compiling with Intel MKL-dnn support
     * `PACKAGE=ON`, used for building the Debian package
     * `ENABLE_TEST`, used for compiling unit test cases
 
@@ -203,6 +204,21 @@ To build SINGA with OpenCL support (tested on SINGA 1.1):
 
     $ cmake -DUSE_OPENCL=ON ..
     $ make
+    
+#### USE_MKLDNN
+
+User can enable MKL-DNN to enhance the performance of CPU computation.
+
+Installation guide of MKL-DNN could be found [here](https://github.com/intel/mkl-dnn#installation).
+
+SINGA has been tested over MKL-DNN v0.17.2.
+
+To build SINGA with MKL-DNN support:
+
+    # Dependent libs are installed already
+    $ cmake -DUSE_MKLDNN=ON ..
+    $ make
+
 
 #### PACKAGE
 
