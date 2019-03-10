@@ -16,7 +16,7 @@
 #
 # 
 # Change tags to build with different cuda/cudnn versions:
-FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
+FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
 
 # install dependencies
 RUN apt-get update \
@@ -25,12 +25,12 @@ RUN apt-get update \
         build-essential \
         autoconf \
         libtool \
-        cmake \
         libprotobuf-dev \
         libopenblas-dev \
         libpcre3-dev \
         protobuf-compiler \
         wget \
+        swig \
         openssh-server \
         python3-dev \
         python3-pip \
@@ -47,10 +47,11 @@ RUN apt-get update \
         setuptools \
         protobuf \
         future
-# install swig > 3.0.10
-RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz -P /tmp/ \
-    && tar zxf /tmp/swig-3.0.10.tar.gz -C /tmp/ \
-    && cd /tmp/swig-3.0.10 && ./configure && make && make install
+# install cmake to correctly find Cuda 10
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.12.2/cmake-3.12.2.tar.gz -P /tmp/ \
+    && tar zxf /tmp/cmake-3.12.2.tar.gz -C /tmp/ \
+    && cd /tmp/cmake-3.12.2/ && ./bootstrap && make -j4 && make install
+    # set environment
     # ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
     # ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
     # config ssh service
@@ -69,16 +70,17 @@ RUN mkdir /var/run/sshd \
     # SSH login fix. Otherwise user is kicked off after login
     && sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd \
     # dump environment variables into files, so that ssh can see also
-    && env | grep _ >> /etc/environment \
+    && env | grep _ >> /etc/environment \ 
     && useradd -m singa && echo 'singa:singa' | chpasswd && adduser singa sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER singa 
 # build incubator singa
 RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
-    && cd $HOME/incubator-singa && mkdir build && cd build \
-    && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_MKLDNN=ON -DUSE_PYTHON3=ON .. \
-    && cd $HOME/incubator-singa/build && make && sudo make install
+    && cd $HOME/incubator-singa \
+    && mkdir build && cd build \
+    && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
+RUN cd $HOME/incubator-singa/build && make && sudo make install
 
 EXPOSE 22
 
