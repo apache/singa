@@ -226,7 +226,7 @@ class SingaBackend(backend):
         '''
         Args:
             node: onnx node proto
-            inputs: dictionary of singa tensor array; the names should match
+            inputs: list of singa tensor array; the names should match
                 node inputs
         Return:
             a named tuple for the output tensors
