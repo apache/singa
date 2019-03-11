@@ -26,7 +26,8 @@
 |runtime| Ubuntu16.04|runtime|CPU|-|3.6|
 |conda-cuda9.0| Ubuntu16.04|devel|GPU|CUDA9.0+CUDNN7.1.2|3.6|
 |cuda9.0-py2| Ubuntu16.04|devel|GPU|CUDA9.0+CUDNN7.1.2|2.7|
-|cuda9.0-py3| Ubuntu16.04|devel|GPU|CUDA9.0+CUDNN7.1.2|3.6|
+|cuda9.0-py3| Ubuntu18.04|devel|GPU|CUDA9.0+CUDNN7.1.2|3.6|
+|cuda10.0-py3| Ubuntu18.04|devel|GPU|CUDA10.0+CUDNN7.4.2|3.6|
 
 runtime and conda-xxx image has installed miniconda3;
 cudaxxx images have installed all depedent libs using apt-get.
