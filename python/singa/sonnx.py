@@ -258,8 +258,8 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
     dependency = autograd.infer_dependency(y.creator)
     ready = deque([y.creator])
 
-    def output_name(op):
-        return '{}'.format(op.name)
+    def output_name(op,extra=''):
+        return '{}'.format(op.name+str(extra))
 
     input_ids = set(id(x) for x in inputs)
     X = []
@@ -274,8 +274,9 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
     while len(ready) > 0:
         op = ready.pop()
         assert not isinstance(op, autograd.Dummy)
-        outputs = [output_name(op)
-                   for _, idx in op.y_id2idx.items()]
+        outputs = [output_name(op)for _, idx in op.y_id2idx.items()]
+        if(len(outputs)!=1):
+            outputs = [output_name(op,idx)for _, idx in op.y_id2idx.items()]
         inputs = [output_name(srcop) for (srcop, yid, _, _) in op.src]
         curop = str(op).split('.')[-1].split(' ')[0]
         if isinstance(op, autograd.Concat):
@@ -319,14 +320,21 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
                                              pads=p,
                                              strides=s))
         elif (isinstance(op, autograd._BatchNorm2d)):
-            print(op,op.src)
+            #[(<singa.autograd.Sigmoid object at 0x7fd5ec09cb90>, 140556764852432, None, False),
+            # (<singa.autograd.Dummy object at 0x7fd5ec09c390>, 140556764824208,
+            # <singa.tensor.Tensor object at 0x7fd5ec09c290>, True),
+            # (<singa.autograd.Dummy object at 0x7fd5ec09c490>, 140556764824528,
+            # <singa.tensor.Tensor object at 0x7fd5ec09c3d0>, True),
+            # (<singa.autograd.Dummy object at 0x7fd5ec09c590>, 140556764824784, None, False),
+            # (<singa.autograd.Dummy object at 0x7fd5ec09c690>, 140556764825040, None, False)])
+            # two dummy operators do not have values, so take the values from handle
             dummy0 = tensor.to_numpy(tensor.Tensor(device=op.running_mean.device(), data=op.running_mean))
             dummy1 = tensor.to_numpy(tensor.Tensor(device=op.running_var.device(), data=op.running_var))
             node.append(helper.make_node('BatchNormalization',
                                          inputs=inputs,
                                          outputs=outputs,
                                          name=op.name,
-                                         momentum=0.9))
+                                         momentum=op.handle.factor))
             dummy0=helper.make_node('Constant', inputs=[], outputs=[inputs[3]],
                                     value=numpy_helper.from_array(dummy0))
             dummy1=helper.make_node('Constant', inputs=[], outputs=[inputs[4]],

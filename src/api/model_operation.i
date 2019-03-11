@@ -74,12 +74,16 @@ class CudnnConvHandle: public ConvHandle {
                   const std::string& prefer = "fastest");
   bool bias_term;
   size_t batchsize;
-    size_t pad_w;
+  size_t pad_w;
   size_t pad_h;
   size_t stride_h;
   size_t stride_w;
   size_t padding_h;
   size_t padding_w;
+  size_t kernel_h;
+  size_t kernel_w;
+  size_t channels;
+  size_t num_filters;
 };
 
 Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch);
@@ -96,6 +100,7 @@ class CudnnBatchNormHandle: public BatchNormHandle{
       CudnnBatchNormHandle(const float momentum, const Tensor& input);
     size_t channels;
     size_t batchsize;
+    float factor;
 };
 
 const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh,
@@ -118,6 +123,14 @@ class CudnnPoolingHandle : public PoolingHandle {
 
   int pooled_height;
   int pooled_width;
+  int kernel_h;
+  int kernel_w;
+  int pad_h;
+  int pad_w;
+
+  int stride_h;
+  int stride_w;
+
 };
 
 Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x);
