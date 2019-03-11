@@ -166,14 +166,17 @@ class SingaBackendRep(backendRep):
     def run(self, input):
         # input_dict: dict from input name to numpy array
         tensors = self.tensor_dict.copy()
-        key=self.model.graph.input[0].name
-        oname = self.model.graph.output[0].name
-        tensors[key] = input[0]
+        for i in range(len(input)):
+            key=self.model.graph.input[i].name
+            tensors[key] = input[i]
 
         for node in self.model.graph.node:
             if(node.op_type!="Constant"):
                 SingaBackendRep.run_node(node, tensors, self.handle_dict)
-        return tensors[oname]
+        y=[]
+        for i in self.model.graph.output:
+            y.append(tensors[i.name])
+        return y
 
 
 def attribute2dict(node):
@@ -189,13 +192,13 @@ class SingaBackend(backend):
     @classmethod
     def prepare(cls,
                 model,  # type: ModelProto
-                device,  # type: Text
+                device,  # type: singa device
                 **kwargs  # type: Any
                 ):  # type: (...) -> Optional[BackendRep]
         '''
         Args:
             model: onnx model proto
-            device: 'CPU' or 'GPU'
+            device: singa device
         Return:
             SingaBackendRep instance
         '''
@@ -223,7 +226,7 @@ class SingaBackend(backend):
         '''
         Args:
             node: onnx node proto
-            inputs: dictionary of name to numpy array; the names should match
+            inputs: dictionary of singa tensor array; the names should match
                 node inputs
         Return:
             a named tuple for the output tensors
@@ -234,11 +237,6 @@ class SingaBackend(backend):
         output_vals = [tensors[x] for x in node.outputs]
         return namedtupledict('Outputs', node.outputs)(*output_vals)
 
-    @classmethod
-    def supports_device(cls, device):  # type: (Text) -> bool
-        if device == 'CPU' or device == 'CUDA':
-            return True
-        return False
 
 
 run_model = SingaBackend.run_model
@@ -257,24 +255,28 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
         the onnx model
     '''
     node = []
-    inputsx=inputs
     dependency = autograd.infer_dependency(y.creator)
     ready = deque([y.creator])
 
-    def output_name(op, index):
-        return '{}:{}'.format(op.name, index)
+    def output_name(op):
+        return '{}'.format(op.name)
 
     input_ids = set(id(x) for x in inputs)
     X = []
+    for x in inputs:
+        dtype = TensorProto.FLOAT
+        if y.dtype == tensor.int32:
+            dtype = TensorProto.INT
+        X.append(helper.make_tensor_value_info(x.name, dtype, x.shape))
     Y = [helper.make_tensor_value_info(
-        output_name(y.creator, 0), TensorProto.FLOAT, y.shape)]
+        output_name(y.creator), TensorProto.FLOAT, y.shape)]
 
     while len(ready) > 0:
         op = ready.pop()
         assert not isinstance(op, autograd.Dummy)
-        outputs = [output_name(op, idx)
+        outputs = [output_name(op)
                    for _, idx in op.y_id2idx.items()]
-        inputs = [output_name(srcop, srcop.y_id2idx[yid]) for (srcop, yid, _, _) in op.src]
+        inputs = [output_name(srcop) for (srcop, yid, _, _) in op.src]
         curop = str(op).split('.')[-1].split(' ')[0]
         if isinstance(op, autograd.Concat):
             node.append(helper.make_node('Concat',
@@ -317,6 +319,7 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
                                              pads=p,
                                              strides=s))
         elif (isinstance(op, autograd._BatchNorm2d)):
+            print(op,op.src)
             dummy0 = tensor.to_numpy(tensor.Tensor(device=op.running_mean.device(), data=op.running_mean))
             dummy1 = tensor.to_numpy(tensor.Tensor(device=op.running_var.device(), data=op.running_var))
             node.append(helper.make_node('BatchNormalization',
@@ -325,7 +328,7 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
                                          name=op.name,
                                          momentum=0.9))
             dummy0=helper.make_node('Constant', inputs=[], outputs=[inputs[3]],
-                             value=numpy_helper.from_array(dummy0))
+                                    value=numpy_helper.from_array(dummy0))
             dummy1=helper.make_node('Constant', inputs=[], outputs=[inputs[4]],
                                     value=numpy_helper.from_array(dummy1))
             node.append(dummy0)
@@ -355,7 +358,7 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
                         tmp = helper.make_node(
                             'Constant',
                             inputs=[],
-                            outputs=[output_name(srcop, srcop.y_id2idx[yid])],
+                            outputs=[output_name(srcop)],
                             value=helper.make_tensor(
                                 name=op.name,
                                 data_type=TensorProto.FLOAT,
@@ -366,11 +369,6 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
                 else:
                     ready.append(srcop)
 
-    for x in inputsx:
-        dtype = TensorProto.FLOAT
-        if y.dtype == tensor.int32:
-            dtype = TensorProto.INT
-        X.append(helper.make_tensor_value_info(inputs[0] , dtype, x.shape))
     onnx_model = helper.make_model(helper.make_graph(node[::-1],model_name, X, Y))
     checker.check_model(onnx_model)
     return onnx_model

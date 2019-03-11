@@ -112,6 +112,6 @@ if __name__ == '__main__':
     for epoch in range(1):
         inputs = tensor.Tensor(device=dev, data=x_train[0:100], stores_grad=False)
         targets = tensor.Tensor(device=dev, data=y_train[0:100], requires_grad=False, stores_grad=False)
-        y0 = rep.run([inputs])
+        y0 = rep.run([inputs])[0]
         loss = autograd.softmax_cross_entropy(y0,targets)
         print('outputs',tensor.to_numpy(loss)[0])

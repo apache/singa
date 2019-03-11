@@ -66,7 +66,7 @@ sgd = optimizer.SGD(0.00)
 # training process
 rep = sonnx.prepare(model, dev)
 for epoch in range(1):
-    outputs = rep.run([inputs])
+    outputs = rep.run([inputs])[0]
     loss = autograd.cross_entropy(outputs, target)
     if (epoch % 100 == 0):
         print('training loss = ', tensor.to_numpy(loss)[0])
