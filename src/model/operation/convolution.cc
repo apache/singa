@@ -17,9 +17,6 @@ ConvHandle::ConvHandle(const Tensor &input,
 
   stride_h = stride[0];
   stride_w = stride[1];
-  padding_h = padding[0];
-  padding_w = padding[1];
-
 
   channels = in_channels;
   num_filters = out_channels;
@@ -221,7 +218,7 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input,
 #endif
                                              ));
   if (CUDNN_MAJOR >= 7 && groups > 1) {
-    CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, groups));
+    //CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, groups));
   }
   else if (groups > 1) {LOG(FATAL) << "The current version of cuDNN not support grouped convolution.";};
 

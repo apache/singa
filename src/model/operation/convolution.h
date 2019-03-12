@@ -29,9 +29,6 @@ public:
   size_t kernel_h;
   size_t pad_h;
   size_t stride_h;
-  
- size_t padding_h;
- size_t padding_w;
 
   size_t channels;
   size_t num_filters;

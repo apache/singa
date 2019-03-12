@@ -23,8 +23,6 @@ class ConvHandle {
   size_t pad_h;
   size_t stride_h;
   size_t stride_w;
-  size_t padding_h;
-  size_t padding_w;
   
 };
 
@@ -78,8 +76,6 @@ class CudnnConvHandle: public ConvHandle {
   size_t pad_h;
   size_t stride_h;
   size_t stride_w;
-  size_t padding_h;
-  size_t padding_w;
   size_t kernel_h;
   size_t kernel_w;
   size_t channels;

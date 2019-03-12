@@ -286,8 +286,8 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
                                          name=op.name,
                                          axis=op.axis))
         elif isinstance(op, autograd._Conv2d):
-            pads = [op.handle.padding_h, op.handle.padding_h,
-                    op.handle.padding_h, op.handle.padding_h]
+            pads = [op.handle.pad_h, op.handle.pad_h,
+                    op.handle.pad_h, op.handle.pad_h]
             stride = [op.handle.stride_h, op.handle.stride_w]
             k = [op.handle.kernel_h, op.handle.kernel_w]
             node.append(helper.make_node('Conv',
@@ -320,14 +320,6 @@ def to_onnx_model(inputs, y, model_name='sonnx'):
                                              pads=p,
                                              strides=s))
         elif (isinstance(op, autograd._BatchNorm2d)):
-            #[(<singa.autograd.Sigmoid object at 0x7fd5ec09cb90>, 140556764852432, None, False),
-            # (<singa.autograd.Dummy object at 0x7fd5ec09c390>, 140556764824208,
-            # <singa.tensor.Tensor object at 0x7fd5ec09c290>, True),
-            # (<singa.autograd.Dummy object at 0x7fd5ec09c490>, 140556764824528,
-            # <singa.tensor.Tensor object at 0x7fd5ec09c3d0>, True),
-            # (<singa.autograd.Dummy object at 0x7fd5ec09c590>, 140556764824784, None, False),
-            # (<singa.autograd.Dummy object at 0x7fd5ec09c690>, 140556764825040, None, False)])
-            # two dummy operators do not have values, so take the values from handle
             dummy0 = tensor.to_numpy(tensor.Tensor(device=op.running_mean.device(), data=op.running_mean))
             dummy1 = tensor.to_numpy(tensor.Tensor(device=op.running_var.device(), data=op.running_var))
             node.append(helper.make_node('BatchNormalization',
