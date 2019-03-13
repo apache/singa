@@ -195,8 +195,11 @@ const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
   }, {x.block(), dy.block(), mean.block(), var.block()},
   {dx.block(), dw.block()});
 
-  Tensor dbnScale = CopyRows(dw, 0, bnScale.Size()).Reshape({bnScale.Size()});
-  Tensor dbnBias = CopyRows(dw, 1, bnBias.Size()).Reshape({bnBias.Size()});
+  singa::Tensor dbnScale(bnScale.shape());
+  CopyDataToFrom(&dbnScale, dw, bnScale.Size(), 0, 0);
+  singa::Tensor dbnBias(bnBias.shape());
+  CopyDataToFrom(&dbnBias, dw, bnBias.Size(), 0, bnScale.Size());
+
   CHECK(dbnScale.nDim() == bnScale.nDim()) << "dbnScale ndim not match bnScale";
   CHECK(dbnBias.nDim() == bnBias.nDim()) << "dbnScale ndim not match bnScale";
   CHECK(dbnScale.shape()[0] == bnScale.shape()[0]) << "dbnScale shape not match bnScale";
