@@ -25,7 +25,6 @@ RUN apt-get update \
         build-essential \
         autoconf \
         libtool \
-        cmake \
         libprotobuf-dev \
         libopenblas-dev \
         libpcre3-dev \
@@ -37,6 +36,7 @@ RUN apt-get update \
         python3-setuptools \
         libgoogle-glog-dev \
         sudo \
+        cmake \
     && apt-get clean \
     && apt-get autoremove \
     && apt-get autoclean \
@@ -47,23 +47,23 @@ RUN apt-get update \
         setuptools \
         protobuf \
         future
+
 # install swig > 3.0.10
 RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz -P /tmp/ \
     && tar zxf /tmp/swig-3.0.10.tar.gz -C /tmp/ \
     && cd /tmp/swig-3.0.10 && ./configure && make && make install
-    # ENV CMAKE_INCLUDE_PATH /usr/local/cuda/include:${CMAKE_INCLUDE_PATH}
-    # ENV CMAKE_LIBRARY_PATH /usr/local/cuda/lib64:${CMAKE_LIBRARY_PATH}
-    # config ssh service
+
 # install mkldnn
-RUN git clone https://github.com/intel/mkl-dnn.git /tmp/mkl-dnn \
-    && cd /tmp/mkl-dnn \
+RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
+    && tar zxf /tmp/v0.18.tar.gz -C /tmp/ \
+    && cd /tmp/mkl-dnn-0.18/ \
     && cd scripts && ./prepare_mkl.sh && cd .. \
-    && mkdir -p build && cd build && cmake $CMAKE_OPTIONS .. \
+    && mkdir -p build && cd build && cmake .. \
     && make && make install
+
+# config ssh service
 RUN mkdir /var/run/sshd \
     && echo 'root:singa' | chpasswd \
-    # for ubuntu 14.04
-    # RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
     # for ubuntu 16.04 prohibit
     && sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
     # SSH login fix. Otherwise user is kicked off after login
@@ -76,10 +76,12 @@ RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER singa 
 # build incubator singa
 RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
-    && cd $HOME/incubator-singa && mkdir build && cd build \
-    && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_MKLDNN=ON -DUSE_PYTHON3=ON .. \
-    && cd $HOME/incubator-singa/build && make && sudo make install
+    && cd $HOME/incubator-singa \
+    && mkdir build && cd build \
+    && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_MKLDNN=ON -DUSE_PYTHON3=ON ..
+RUN cd $HOME/incubator-singa/build && make && sudo make install
 
+WORKDIR /home/singa/incubator-singa
 EXPOSE 22
 
 CMD ["/usr/sbin/sshd", "-D"]

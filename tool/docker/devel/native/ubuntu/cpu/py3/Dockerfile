@@ -14,9 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# 
-# Change tags to build with different cuda/cudnn versions:
-FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
+
+FROM ubuntu:18.04
 
 # install dependencies
 RUN apt-get update \
@@ -37,6 +36,7 @@ RUN apt-get update \
         python3-setuptools \
         libgoogle-glog-dev \
         sudo \
+        cmake \
     && apt-get clean \
     && apt-get autoremove \
     && apt-get autoclean \
@@ -47,11 +47,6 @@ RUN apt-get update \
         setuptools \
         protobuf \
         future
-
-# install cmake to correctly find Cuda 10
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.12.2/cmake-3.12.2.tar.gz -P /tmp/ \
-    && tar zxf /tmp/cmake-3.12.2.tar.gz -C /tmp/ \
-    && cd /tmp/cmake-3.12.2/ && ./bootstrap && make -j4 && make install
 
 # install mkldnn
 RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
@@ -69,7 +64,7 @@ RUN mkdir /var/run/sshd \
     # SSH login fix. Otherwise user is kicked off after login
     && sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd \
     # dump environment variables into files, so that ssh can see also
-    && env | grep _ >> /etc/environment \
+    # && env | grep _ >> /etc/environment \ 
     && useradd -m singa && echo 'singa:singa' | chpasswd && adduser singa sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
@@ -78,10 +73,11 @@ USER singa
 RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
     && cd $HOME/incubator-singa \
     && mkdir build && cd build \
-    && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
+    && cmake -DENABLE_TEST=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
 RUN cd $HOME/incubator-singa/build && make && sudo make install
 
 WORKDIR /home/singa/incubator-singa
 EXPOSE 22
 
 CMD ["/usr/sbin/sshd", "-D"]
+
