@@ -27,34 +27,38 @@ source:
 
 build:
   number: 0
-  string: py{{py}}_{{ environ.get('BUILD_STR', 'cpu') }}
-  script_env:
-    - CUDNN_PATH
+  string: {{ build_str }}
+  # py{{py}}_{{ environ.get('BUILD_STR', 'cpu') }}
 
 requirements:
   build:
-    - swig 3.0.10
-    - openblas 0.2.19
-    - protobuf 3.2.0
-    - glog 0.3.4
-    - libgfortran 3.0.0 # [osx]
-    - gcc 4.8.5 # [linux]
+    - {{ compiler('cxx') }}
+    - {{ compiler('c') }}
+    - cmake >=3.12.2
+    - make # [unix]
+
+  host:
+    - swig 3.0.12
+    - openblas 0.3.3
+    - protobuf 3.4.0
+    - glog 0.3.5
     - python 3.6*
-    - numpy 1.12.0
+    - numpy 1.16.0
+    - cudnn {{ cudnn }}       # ['cudnn' in build_str]
+    - mkl-dnn {{ mkldnn }}
 
   run:
-    - openblas 0.2.19
-    - protobuf 3.2.0
-    - glog 0.3.4
-    - libgfortran 3.0.0 # [osx]
-    - libgcc 4.8.5 # [linux]
+    - {{ pin_compatible('libopenblas', max_pin='x.x') }}
+    - {{ pin_compatible('libprotobuf', max_pin='x.x') }}
+    - {{ pin_compatible('glog', max_pin='x.x') }}
+    - {{ pin_compatible('numpy', max_pin='x.x') }}
+    - {{ pin_compatible('mkl-dnn', max_pin='x.x') }}
+    - cudnn {{ cudnn }}       # ['cudnn' in build_str]
     - python 3.6*
-    - numpy >=1.12.0
-    - flask >=0.10.1
-    - flask-cors >=3.0.2
-    - pillow >=2.3.0
-    - future >=0.16.0
+    - pillow
+    - future
     - tqdm
+
 
 test:
   source_files:

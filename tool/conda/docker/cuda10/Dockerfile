@@ -16,7 +16,7 @@
 #
 
 # Change tags to build with different cuda/cudnn versions:
-FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
+FROM nvidia/cuda:10.0-devel-ubuntu16.04
 
 # install dependencies
 RUN apt-get update \
@@ -45,8 +45,6 @@ RUN apt-get update \
     # config ssh service
     && mkdir /var/run/sshd \
     && echo 'root:singa' | chpasswd \
-    # for ubuntu 14.04
-    # RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
     # for ubuntu 16.04 prohibit
     && sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
     # SSH login fix. Otherwise user is kicked off after login

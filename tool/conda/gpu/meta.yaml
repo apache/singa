@@ -23,7 +23,7 @@ package:
 
 requirements:
   run:
-    - singa 1.2.0 py36_cuda9.0_cudnn7.1.2
+    - singa 1.2.0 cudnn7.3.1_cuda10.0
 
 about:
   home: http://singa.apache.org/

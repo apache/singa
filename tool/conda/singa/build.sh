@@ -23,23 +23,22 @@ export CMAKE_PREFIX_PATH=$PREFIX:$CMAKE_PREFIX_PATH
 export CMAKE_INCLUDE_PATH=$PREFIX/include:$CMAKE_INCLUDE_PATH
 export CMAKE_LIBRARY_PATH=$PREFIX/lib:$CMAKE_LIBRARY_PATH
 
-echo "----------------------$CUDNN_PATH---------------"
 
-if [ -z ${CUDNN_PATH+x} ]; then
+
+# USE_PYTHON3=OFF
+# PY3K is set by conda
+# if  [ "$PY3K" == "1" ]; then USE_PYTHON3=ON; fi
+
+if [ -z ${CUDA+x} ]; then
 	USE_CUDA=OFF
 else
 	USE_CUDA=ON
-	cp $CUDNN_PATH/include/* $PREFIX/include/ 
-	cp -P $CUDNN_PATH/lib64/libcudnn.so* $PREFIX/lib/
 fi
-
-USE_PYTHON3=OFF
-# PY3K is set by conda
-if  [ "$PY3K" == "1" ]; then USE_PYTHON3=ON; fi
 
 
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA -DUSE_PYTHON3=$USE_PYTHON3 ..
+cmake -DCMAKE_INSTALL_PREFIX=$PREFIX -DUSE_CUDA=$USE_CUDA \
+	-DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
 make
 make install

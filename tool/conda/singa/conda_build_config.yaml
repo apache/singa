@@ -17,16 +17,16 @@
 # under the License.
 #
 
-
-package:
-  name: singa-cpu
-  version: 1.2.0
-
-requirements:
-  run:
-    - singa 1.2.0 cpu
-
-about:
-  home: http://singa.apache.org/
-  license: Apache V2
-  summary: SINGA is an Apache Incubating project for providing distributed deep learning. Apache disclaimers http://singa.apache.org/en/index.html#disclaimers
+c_compiler_version:         # [linux]
+    - 5.4                   # [linux]
+cxx_compiler_version:       # [linux]
+    - 5.4                   # [linux]
+cudnn:                      # [linux]
+    - "7.3.1 cuda10.0_0"    # [environ.get("CUDA")=="10.0"]
+    - "7.3.1 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
+mkldnn:
+    - 0.14
+build_str:
+    - "cudnn7.3.1_cuda10.0" # [environ.get("CUDA")=="10.0"]
+    - "cudnn7.3.1_cuda9.0"  # [environ.get("CUDA")=="9.0"]
+    - "cpu"                 # [environ.get("CUDA")== ""]
