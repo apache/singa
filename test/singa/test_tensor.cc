@@ -121,7 +121,8 @@ TEST(TensorClass, Clone) {
 TEST(TensorClass, T) {
   Tensor t(Shape{2,3});
   EXPECT_FALSE(t.transpose());
-  Tensor o = t.T();
+  Tensor o = t.T(); // o = t = {3,2}
+  t.T(); // t = {2,3}
   EXPECT_EQ(true, o.transpose());
   EXPECT_EQ(t.block(), o.block());
   EXPECT_EQ(t.data_type(), o.data_type());
