@@ -44,7 +44,7 @@ requirements:
     - glog 0.3.5
     - python 3.6*
     - numpy 1.16.0
-    - cudnn {{ cudnn }}       # ['cudnn' in build_str]
+    - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - mkl-dnn {{ mkldnn }}
 
   run:
@@ -53,7 +53,7 @@ requirements:
     - {{ pin_compatible('glog', max_pin='x.x') }}
     - {{ pin_compatible('numpy', max_pin='x.x') }}
     - {{ pin_compatible('mkl-dnn', max_pin='x.x') }}
-    - cudnn {{ cudnn }}       # ['cudnn' in build_str]
+    - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - python 3.6*
     - pillow
     - future
