@@ -57,8 +57,8 @@ vector<int> generate_shape_cuda(const Tensor& x) {
   Shape shape = x.shape();
   CHECK_LE(shape.size(), 5) << "Dimensions (shape) beyond 5 are currently not supported" ;
   vector<int> shape_arr;
-  if (shape.size() <= 4) {
-    for (int n = 0; n < 4 - shape.size(); ++n) {
+  if (shape.size() < 4) {
+    for (int n = 0; n < 4 - int(shape.size()); ++n) {
       shape_arr.push_back(1);
     }
   }
@@ -87,8 +87,8 @@ vector<int> generate_strides_cuda(const Tensor& x) {
   auto& strides = x.strides();
   vector<int> strides_arr;
   int product = Product(shape);
-  if (shape.size() <= 4) {
-    for (int n = 0; n < 4 - shape.size(); ++n) {
+  if (shape.size() < 4) {
+    for (int n = 0; n < 4 - int(shape.size()); ++n) {
       strides_arr.push_back(product);
     }
   }

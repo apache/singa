@@ -64,6 +64,17 @@ TEST_F(TestTensorMath, MemberExp) {
   EXPECT_NEAR(exp(3.0f), dptr1[2], 1e-5);
 }
 
+TEST_F(TestTensorMath, MemberExpStrideCpp) {
+  auto x = singa::Tensor(singa::Shape{2, 1, 3});
+  auto y = singa::Transpose(x, {1, 2, 0});
+  Exp(singa::Reshape(a, singa::Shape{1, 3, 2}), &y);
+  const float *dptr1 = y.data<float>();
+  EXPECT_NEAR(exp(dat1[0]), dptr1[0], 1e-5);
+  EXPECT_NEAR(exp(dat1[4]), dptr1[2], 1e-5);
+  EXPECT_NEAR(exp(dat1[3]), dptr1[4], 1e-5);
+}
+
+
 TEST_F(TestTensorMath, MemberLog) {
   Tensor p = Log(a);
   const float *dptr1 = p.data<float>();
@@ -835,6 +846,21 @@ TEST_F(TestTensorMath, CopyColumnsCpp) {
 }
 
 #ifdef USE_CUDA
+
+TEST_F(TestTensorMath, MemberExpStrideCuda) {
+  auto dev = std::make_shared<singa::CudaGPU>();
+  a.ToDevice(dev);
+  auto x = singa::Tensor(singa::Shape{2, 1, 3});
+  x.ToDevice(dev);
+  d.CopyDataFromHostPtr<float>(dat1, 6);
+  auto y = singa::Transpose(x, {1, 2, 0});
+  Exp(singa::Reshape(a, singa::Shape{1, 3, 2}), &y);
+  y.ToHost();
+  const float *dptr1 = y.data<float>();
+  EXPECT_NEAR(exp(dat1[0]), dptr1[0], 1e-5);
+  EXPECT_NEAR(exp(dat1[4]), dptr1[2], 1e-5);
+  EXPECT_NEAR(exp(dat1[3]), dptr1[4], 1e-5);
+}
 
 TEST_F(TestTensorMath, ConcatenateRowsCuda) {
   auto dev = std::make_shared<singa::CudaGPU>();

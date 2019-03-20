@@ -1237,8 +1237,8 @@ Tensor& Tensor::Reshape(const Shape &shape) {
     std::swap(t.block_, block_);
   } else {
     shape_ = shape;
-    generate_strides();
   }
+  generate_strides();
   return *this;
 }
 
