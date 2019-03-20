@@ -57,13 +57,14 @@ vector<int> generate_shape_cuda(const Tensor& x) {
   Shape shape = x.shape();
   CHECK_LE(shape.size(), 5) << "Dimensions (shape) beyond 5 are currently not supported" ;
   vector<int> shape_arr;
-  if (shape.size() <= 4) {
-    for (int n = 0; n < 4 - shape.size(); ++n) {
+  if (shape.size() < 4) {
+    for (int n = 0; n < 4 - int(shape.size()); ++n) {
       shape_arr.push_back(1);
     }
   }
-  for(auto x: shape)
+  for(auto x: shape) {
     shape_arr.push_back(static_cast<int>(x));
+  }
   return shape_arr;
 }
 
@@ -84,11 +85,11 @@ int generate_dim_cuda(const Tensor& x) {
   */
 vector<int> generate_strides_cuda(const Tensor& x) {
   Shape shape = x.shape();
-  auto& strides = x.strides();
+  auto& strides = x.stride();
   vector<int> strides_arr;
   int product = Product(shape);
-  if (shape.size() <= 4) {
-    for (int n = 0; n < 4 - shape.size(); ++n) {
+  if (shape.size() < 4) {
+    for (int n = 0; n < 4 - int(shape.size()); ++n) {
       strides_arr.push_back(product);
     }
   }
@@ -100,11 +101,30 @@ vector<int> generate_strides_cuda(const Tensor& x) {
 cudnnTensorDescriptor_t generate_tensor_nd_desc(const Tensor& x) {
   cudnnTensorDescriptor_t x_desc;
   check_cudnn(cudnnCreateTensorDescriptor(&x_desc));
+  // LOG(INFO) << vec2str(x.shape());
+  // LOG(INFO) << vec2str(x.stride());
+  auto st = x.stride();
+  std::vector<size_t> sh;
+  bool reshape = false;
+  for(size_t i = 0; i < st.size(); i++) {
+    if (st[i] == 0) {
+      sh.push_back(1);
+      reshape = true;
+    } else {
+      sh.push_back(x.shape(i));
+    }
+  }
+  auto y = x;
+  if (reshape)
+    y = Reshape(x, sh);
+  auto shape = generate_shape_cuda(y);
+  auto stride = generate_strides_cuda(y);
+ 
+  // LOG(INFO) << vec2str(shape);
+  // LOG(INFO) << vec2str(stride);
+  // LOG(INFO) << "";
   check_cudnn(cudnnSetTensorNdDescriptor(x_desc, CUDNN_DATA_FLOAT,
-                             generate_dim_cuda(x),
-                             generate_shape_cuda(x).data(),
-                             generate_strides_cuda(x).data()
-                            ));
+    generate_dim_cuda(y), shape.data(), stride.data()));
 
   return x_desc;
 }
@@ -244,7 +264,7 @@ void Clamp<float, lang::Cuda>(const float low,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
   //if both in and out strides are the same, we proceed to normal cuda::clamp
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::clamp(num, low, high, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -263,7 +283,7 @@ void Div<float, lang::Cuda>(const Tensor& in1,
 
   //if both in1 and in2 are not transposed, and have the same strides,
   //we proceed to normal cuda::div
-  if (!in1.transpose() && !in2.transpose() && (in1.strides() == in2.strides())) {
+  if (!in1.transpose() && !in2.transpose() && (in1.stride() == in2.stride())) {
     cuda::div(num, inPtr1, inPtr2, outPtr, ctx->stream);
   } else { //else we check whether in1 or in2 or both are transposed
     if (in1.transpose() && in2.transpose()) {
@@ -290,7 +310,7 @@ void Div<float, lang::Cuda>(const float x, const Tensor& in,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::div(num, x, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -324,7 +344,7 @@ void EltwiseMult<float, lang::Cuda>(const Tensor& in1,
 
   //if both in1 and in2 are not transposed, and have the same strides,
   //we proceed to normal cuda::mult
-  if (!in1.transpose() && !in2.transpose() && (in1.strides() == in2.strides())) {
+  if (!in1.transpose() && !in2.transpose() && (in1.stride() == in2.stride())) {
     cuda::mult(num, inPtr1, inPtr2, outPtr, ctx->stream);
   } else { //else we check whether in1 or in2 or both are transposed
     if (in1.transpose() && in2.transpose()) {
@@ -352,7 +372,7 @@ void Exp<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::exp(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -367,7 +387,7 @@ void GE<float, lang::Cuda>(const Tensor& in, const float x,
   const float* inPtr = static_cast<const float*>(in.block()->data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::ge(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -391,7 +411,7 @@ void GT<float, lang::Cuda>(const Tensor& in, const float x,
   const float* inPtr = static_cast<const float*>(in.block()->data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::gt(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -414,7 +434,7 @@ void LE<float, lang::Cuda>(const Tensor& in, const float x,
   const float* inPtr = static_cast<const float*>(in.block()->data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::le(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -438,7 +458,7 @@ void Log<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::log(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -453,7 +473,7 @@ void LT<float, lang::Cuda>(const Tensor& in, const float x,
   const float* inPtr = static_cast<const float*>(in.block()->data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::lt(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -477,7 +497,7 @@ void Pow<float, lang::Cuda>(const Tensor& in, const float x,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::pow(num, inPtr, x, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -495,7 +515,7 @@ void Pow<float, lang::Cuda>(const Tensor& in1,
 
   //if both in1 and in2 are not transposed, and have the same strides,
   //we proceed to normal cuda::pow
-  if (!in1.transpose() && !in2.transpose() && (in1.strides() == in2.strides())) {
+  if (!in1.transpose() && !in2.transpose() && (in1.stride() == in2.stride())) {
     cuda::pow(num, inPtr1, inPtr2, outPtr, ctx->stream);
   } else { //else we check whether in1 or in2 or both are transposed
     if (in1.transpose() && in2.transpose()) {
@@ -553,7 +573,7 @@ void ReLU<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::relu(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -601,7 +621,7 @@ void Sigmoid<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::sigmoid(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -617,7 +637,7 @@ void Sign<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::sign(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -657,7 +677,7 @@ void Square<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::square(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
@@ -713,7 +733,7 @@ void Tanh<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cuda::tanh(num, inPtr, outPtr, ctx->stream);
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);

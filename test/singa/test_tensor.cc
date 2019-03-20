@@ -22,8 +22,8 @@ using singa::Tensor;
 using singa::Shape;
 using singa::Device;
 
-TEST(TensorTest, TestConstructor) {
-  singa::Tensor float_t(singa::Shape{2,3});
+TEST(TensorClass, Constructor) {
+  singa::Tensor float_t(singa::Shape{2, 3});
   EXPECT_EQ(6u, float_t.Size());
   EXPECT_EQ(sizeof(float) * 6, float_t.MemSize());
   EXPECT_EQ(singa::kFloat32, float_t.data_type());
@@ -33,7 +33,7 @@ TEST(TensorTest, TestConstructor) {
 
   EXPECT_NE(float_t.device(), nullptr);
 
-  singa::Tensor float16_t(Shape{2,3}, singa::kFloat16);
+  singa::Tensor float16_t(Shape{2, 3}, singa::kFloat16);
   EXPECT_EQ(singa::kFloat16, float16_t.data_type());
   EXPECT_EQ(6u, float16_t.Size());
   EXPECT_EQ(12u, float16_t.block()->size());
@@ -53,18 +53,18 @@ TEST(TensorTest, TestConstructor) {
 
 TEST(TensorClass, Reshape) {
   Tensor t;
-  t.SetShape(Shape{2,3});
-  EXPECT_TRUE((Shape{2,3} == t.shape()));
+  t.Resize(Shape{2, 3});
+  EXPECT_TRUE((Shape{2, 3} == t.shape()));
 
-  t.SetShape(Shape{3,3, 4});
-  EXPECT_TRUE((Shape{3,3, 4} == t.shape()));
+  t.Resize(Shape{3, 3, 4});
+  EXPECT_TRUE((Shape{3, 3, 4} == t.shape()));
 
-  t.SetShape(Shape{12});
+  t.Resize(Shape{12});
   EXPECT_TRUE((Shape{12} == t.shape()));
 
   Tensor o;
   EXPECT_TRUE(o.shape() != t.shape());
-  o.SetShape(Shape{3, 3});
+  o.Resize(Shape{3, 3});
   EXPECT_TRUE(o.shape() != t.shape());
 }
 
@@ -76,7 +76,7 @@ TEST(TensorClass, AsType) {
 }
 
 TEST(TensorClass, ToDevice) {
-  Tensor t(Shape{2,3});
+  Tensor t(Shape{2, 3});
   EXPECT_EQ(singa::defaultDevice, t.device());
   auto dev = std::make_shared<singa::CppCPU>();
   t.ToDevice(dev);
@@ -119,7 +119,7 @@ TEST(TensorClass, Clone) {
 }
 
 TEST(TensorClass, T) {
-  Tensor t(Shape{2,3});
+  Tensor t(Shape{2, 3});
   EXPECT_FALSE(t.transpose());
   Tensor o = t.T(); // o = t = {3,2}
   t.T(); // t = {2,3}
@@ -135,7 +135,7 @@ TEST(TensorClass, Repeat) {
   Tensor t(Shape{3});
   t.CopyDataFromHostPtr(data, 3);
 
-  Tensor o = t.Repeat(vector <size_t>{2},9999);
+  Tensor o = t.Repeat(vector <size_t> {2}, 9999);
   const float* dptr = static_cast<const float*>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(1.0f, dptr[1]);
@@ -145,13 +145,13 @@ TEST(TensorClass, Repeat) {
   EXPECT_FLOAT_EQ(3.0f, dptr[5]);
 }
 
-TEST(TensorCLass, RepeatData) {
+TEST(TensorClass, RepeatData) {
   float data[] = {1.0f, 2.0f, 3.0f};
   Tensor t(Shape{3});
   t.CopyDataFromHostPtr(data, 3);
 
   Tensor o(Shape{6});
-  o.RepeatData({2},9999,2,t);
+  o.RepeatData({2}, 9999, 2, t);
   const float* dptr = static_cast<const float*>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(1.0f, dptr[1]);
@@ -161,3 +161,63 @@ TEST(TensorCLass, RepeatData) {
   EXPECT_FLOAT_EQ(3.0f, dptr[5]);
 }
 
+TEST(TensorClass, Broadcast) {
+  {
+    Tensor a1(Shape{2, 3, 4, 5}), b1(Shape{5});
+    auto c1 = Broadcast(a1, b1.shape()).shape();
+    auto c2 = Broadcast(b1, a1.shape()).shape();
+    EXPECT_EQ(c1[0], 2);
+    EXPECT_EQ(c1[1], 3);
+    EXPECT_EQ(c1[2], 4);
+    EXPECT_EQ(c1[3], 5);
+
+    EXPECT_EQ(c2[0], 2);
+    EXPECT_EQ(c2[1], 3);
+    EXPECT_EQ(c2[2], 4);
+    EXPECT_EQ(c2[3], 5);
+  }
+  {
+    Tensor a1(Shape{4, 5}), b1(Shape{2, 3, 4, 5});
+    auto c1 = Broadcast(a1, b1.shape()).shape();
+    auto c2 = Broadcast(b1, a1.shape()).shape();
+    EXPECT_EQ(c1[0], 2);
+    EXPECT_EQ(c1[1], 3);
+    EXPECT_EQ(c1[2], 4);
+    EXPECT_EQ(c1[3], 5);
+
+    EXPECT_EQ(c2[0], 2);
+    EXPECT_EQ(c2[1], 3);
+    EXPECT_EQ(c2[2], 4);
+    EXPECT_EQ(c2[3], 5);
+  }
+  {
+    Tensor a1(Shape{1, 4, 5}), b1(Shape{2, 3, 1, 1});
+    auto c1 = Broadcast(a1, b1.shape()).shape();
+    auto c2 = Broadcast(b1, a1.shape()).shape();
+ 
+    EXPECT_EQ(c1[0], 2);
+    EXPECT_EQ(c1[1], 3);
+    EXPECT_EQ(c1[2], 4);
+    EXPECT_EQ(c1[3], 5);
+
+    EXPECT_EQ(c2[0], 2);
+    EXPECT_EQ(c2[1], 3);
+    EXPECT_EQ(c2[2], 4);
+    EXPECT_EQ(c2[3], 5);
+  }
+  {
+    Tensor a1(Shape{3, 4, 5}), b1(Shape{2, 1, 1, 1});
+    auto c1 = Broadcast(a1, b1.shape()).shape();
+    auto c2 = Broadcast(b1, a1.shape()).shape();
+ 
+    EXPECT_EQ(c1[0], 2);
+    EXPECT_EQ(c1[1], 3);
+    EXPECT_EQ(c1[2], 4);
+    EXPECT_EQ(c1[3], 5);
+
+    EXPECT_EQ(c2[0], 2);
+    EXPECT_EQ(c2[1], 3);
+    EXPECT_EQ(c2[2], 4);
+    EXPECT_EQ(c2[3], 5);
+  }
+}

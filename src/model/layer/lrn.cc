@@ -60,6 +60,7 @@ const Tensor LRN::Forward(int flag, const Tensor& input) {
       tmp = Pow(tmp, beta_);
 
       ch = CopyRows(image, c, c + 1);
+      ch.Reshape(tmp.shape());
       ch = ch / tmp;
       ch.Reshape(Shape{input.shape(2), input.shape(3)});
       channels.push_back(ch);
@@ -135,6 +136,7 @@ const std::pair<Tensor, vector<Tensor>> LRN::Backward(int flag,
     }
     Tensor tmp2 = ConcatenateRows(images);
     tmp2 *= (-2.0f * beta_ * alpha_);
+    tmp2.Reshape(x.shape());
     tmp2 = tmp2 * x;
     dx = dx + tmp2;
     dx.Reshape(grad.shape());

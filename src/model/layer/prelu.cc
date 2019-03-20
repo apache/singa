@@ -64,6 +64,7 @@ const Tensor PReLU::Forward(int flag, const Tensor &input) {
     } else {
       LOG(FATAL) << "Incorrect input format for prelu layer.";
     }
+    temp.Reshape(input.shape());
     output = input * ((input > 0.f) + temp);
   } else {
     // share the first param of Tensor A along all channels
