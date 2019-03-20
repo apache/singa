@@ -29,9 +29,9 @@ using singa::Tensor;
 class TestSoftmaxCrossEntropy : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    p.SetShape(singa::Shape{2, 4});
-    t.SetShape(singa::Shape{2, 1});
-    ta.SetShape(singa::Shape{2, 4});
+    p.Resize(singa::Shape{2, 4});
+    t.Resize(singa::Shape{2, 1});
+    ta.Resize(singa::Shape{2, 4});
   }
   const float pdat[8] = {0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f };
   const int tdat[2] = {0, 2};

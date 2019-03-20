@@ -36,7 +36,7 @@ Tensor::~Tensor() {
 
 Tensor::Tensor() {
   device_ = defaultDevice;
-  strides_ = {1};
+  stride_ = {1};
 }
 
 //non-strided constructors
@@ -45,7 +45,7 @@ Tensor::Tensor(const Shape &shape, DataType dtype)
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock((int)size);
-  generate_strides();
+  generate_stride();
 }
 
 
@@ -56,13 +56,13 @@ Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock((int)size);
-  generate_strides();
+  generate_stride();
 }
 
 
 Tensor::Tensor(const Tensor &in) : data_type_(in.data_type_),
   device_(in.device_),  block_(in.block()),  shape_(in.shape_),
-  strides_(in.strides_) {
+  stride_(in.stride_) {
   if (block_ != nullptr)
     block_->IncRefCount();
 }
@@ -70,13 +70,13 @@ Tensor::Tensor(const Tensor &in) : data_type_(in.data_type_),
 
 Tensor::Tensor(Tensor &&in) : data_type_(in.data_type_),
   device_(in.device_), shape_(std::move(in.shape_)),
-  strides_(std::move(in.strides_)) {
+  stride_(std::move(in.stride_)) {
   block_ = in.block_;
   in.block_ = nullptr;
 }
 
 
-void Tensor::ResetLike(const Tensor &in) {
+Tensor& Tensor::ResetLike(const Tensor &in) {
   if (block_ == nullptr || device_ != in.device_ || MemSize() != in.MemSize()) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
@@ -85,30 +85,39 @@ void Tensor::ResetLike(const Tensor &in) {
     block_ = device_->NewBlock((int)in.MemSize());
   }
   shape_ = in.shape_;
-  strides_ = in.strides_;
+  stride_ = in.stride_;
+  return *this;
 }
 
-void Tensor::SetShape(const Shape& shape) {
-  if (Product(shape_) != Product(shape)) {
+Tensor& Tensor::Resize(const Shape& shape) {
+  if (Size() != Product(shape)) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = device_->NewBlock((int)(Product(shape) * SizeOf(data_type_)));
   }
   shape_ = shape;
-  generate_strides();
+  generate_stride();
+  return *this;
+}
+
+Tensor Resize(const Tensor& in, const Shape& shape) {
+  Tensor out(in);
+  out.Resize(shape);
+  return out;
 }
 
 
-void Tensor::AsType(const DataType type) {
+Tensor& Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
     block_ = device_->NewBlock((int)(Product(shape_) * SizeOf(type)));
     data_type_ = type;
   }
+  return *this;
 }
 
-void Tensor::ToDevice(std::shared_ptr<Device> dst) {
+Tensor& Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is restricted. May compare against device ID?
   if (device_ != dst) {
     Tensor tmp(shape_, dst, data_type_);
@@ -120,10 +129,12 @@ void Tensor::ToDevice(std::shared_ptr<Device> dst) {
     tmp.block_ = nullptr;
     device_ = dst;
   }
+  return *this;
 }
 
-void Tensor::ToHost() {
+Tensor& Tensor::ToHost() {
   if (device_ != defaultDevice) ToDevice(device_->host());
+  return *this;
 }
 
 template <typename DType>
@@ -179,8 +190,8 @@ void Tensor::FromProto(const singa::TensorProto &proto) {
   data_type_ = proto.data_type();
   block_ = device_->NewBlock((int)(Product(shape()) * SizeOf(data_type_)));
   //transpose_ = proto.transpose();
-  strides_.clear();
-  for (int32_t s : proto.strides()) strides_.push_back(s);
+  stride_.clear();
+  for (int32_t s : proto.stride()) stride_.push_back(s);
   switch (data_type_) {
   case kFloat32: {
     std::unique_ptr<float[]> data_ptr(new float[Product(shape_)]);
@@ -230,9 +241,9 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
   }
   proto->set_data_type(data_type_);
   //proto->set_transpose(transpose_);
-  proto->clear_strides();
-  for (auto s : strides_) {
-    proto->add_strides(s);
+  proto->clear_stride();
+  for (auto s : stride_) {
+    proto->add_stride(s);
   }
   switch (data_type_) {
   case kFloat32: {
@@ -314,7 +325,7 @@ Tensor Tensor::Repeat(const vector<size_t>& repeats, int axis,
     }
   }
   Tensor t(tshape, device_);
-  //t.strides_.push_back(1);
+  //t.stride_.push_back(1);
   t.RepeatData(repeats, axis, total_repeats, *this);
   return t;
 }
@@ -323,9 +334,34 @@ Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
   if (device == nullptr) device = device_;
   Tensor t(shape_, device_, data_type_);
   //t.transpose_ = transpose_;
-  t.strides_ = strides_;
+  t.stride_ = stride_;
   t.CopyData(*this);
   return t;
+}
+
+Tensor& Tensor::Broadcast(const Shape& shape) {
+  // TODO(wangwei) do we need to transform the mem layout if the tensor was
+  // transposed?
+  auto m = shape_.size() - 1, n = shape.size() - 1;
+  for (size_t i = 0; i <= std::min(m, n); i++) {
+    if ((shape.at(n-i) != shape_.at(m-i)) && (shape.at(n - i) != 1)) {
+      CHECK_EQ(shape_.at(m - i), 1) << "i= " << i;
+      shape_.at(m - i) = shape.at(n - i);
+      stride_.at(m - i) = 0;
+    }
+  }
+  if (m < n) {
+    for (size_t i = m + 1; i <= n; i++) {
+      shape_.emplace(shape_.begin(), shape.at(n - i));
+      stride_.emplace(stride_.begin(), 0);
+    }
+  }
+  return *this;
+}
+
+Tensor Broadcast(const Tensor& in, const Shape& shape) {
+  Tensor out(in);
+  return out.Broadcast(shape);
 }
 
 Tensor& Tensor::T() {
@@ -338,7 +374,7 @@ Tensor& Tensor::T() {
 //normal transpose without axes
 Tensor& Tensor::Transpose() {
   std::reverse(shape_.begin(), shape_.end());
-  std::reverse(strides_.begin(), strides_.end());
+  std::reverse(stride_.begin(), stride_.end());
   return *this;
 }
 
@@ -348,12 +384,12 @@ Tensor& Tensor::Transpose(const vector<size_t> &axes) {
                                        "Tranpose axes's length should be equal to shape";
 
   auto shape = shape_;
-  auto strides = strides_;
+  auto stride = stride_;
   shape_.clear();
-  strides_.clear();
+  stride_.clear();
   for (size_t n = 0; n < axes.size(); ++n) {
     shape_.push_back(shape[axes[n]]);
-    strides_.push_back(strides[axes[n]]);
+    stride_.push_back(stride[axes[n]]);
   }
   return *this;
 }
@@ -375,7 +411,7 @@ Tensor Transpose(const Tensor& in, const vector<size_t> &axes) {
 Tensor &Tensor::operator=(const Tensor &in) {
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
-  strides_ = in.strides_;
+  stride_ = in.stride_;
   data_type_ = in.data_type_;
   shape_ = in.shape_;
   device_ = in.device_;
@@ -388,7 +424,7 @@ Tensor &Tensor::operator=(const Tensor &in) {
 Tensor &Tensor::operator=(Tensor &&in) {
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
-    strides_ = std::move(in.strides_);
+  stride_ = std::move(in.stride_);
   data_type_ = in.data_type_;
   shape_ = std::move(in.shape_);
   device_ = in.device_;
@@ -659,14 +695,33 @@ GenUnaryTensorFn(Transform);
 
 #define GenBinaryTensorFn(op, fn)                              \
   Tensor op(const Tensor &lhs, const Tensor &rhs) {            \
-    Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());    \
-    fn(lhs, rhs, &ret);                                        \
-    return ret;                                                \
+    if (lhs.shape() != rhs.shape()) {                          \
+      auto lhs_ = Broadcast(lhs, rhs.shape());                 \
+      auto rhs_ = Broadcast(rhs, lhs.shape());                 \
+      Tensor ret(lhs_.shape(), lhs.device(), lhs.data_type()); \
+      fn(lhs_, rhs_, &ret);                                      \
+      return ret;                                              \
+    } else {                                                   \
+      Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());  \
+      fn(lhs, rhs, &ret);                                      \
+      return ret;                                              \
+    }                                                          \
   }                                                            \
   void fn(const Tensor &lhs, const Tensor &rhs, Tensor *ret) { \
-    EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                  \
+    CHECK_EQ(lhs.device(), ret->device());                     \
+    CHECK_EQ(rhs.device(), ret->device());                     \
+    if (lhs.shape() != rhs.shape()) {                          \
+      auto lhs_ = Broadcast(lhs, rhs.shape());                 \
+      auto rhs_ = Broadcast(rhs, lhs.shape());                 \
+      CHECK(lhs_.shape() == ret->shape());                    \
+      EltwiseBinaryTensorFn(fn, lhs_, rhs_, ret);              \
+    } else {                                                   \
+      CHECK(lhs.shape() == ret->shape());                      \
+      EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                \
+    }                                                          \
   }
 
+// boradcasting operations: https://github.com/onnx/onnx/blob/master/docs/Broadcasting.md
 GenBinaryTensorFn(operator+, Add);
 GenBinaryTensorFn(operator-, Sub);
 GenBinaryTensorFn(operator*, EltwiseMult);
@@ -676,6 +731,7 @@ GenBinaryTensorFn(operator<, LT);
 GenBinaryTensorFn(operator<=, LE);
 GenBinaryTensorFn(operator>, GT);
 GenBinaryTensorFn(operator>=, GE);
+
 #define EltwiseTensorScalarFn(fn, t, x, ret)                            \
   do {                                                                  \
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {  \
@@ -1225,11 +1281,12 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
 }
 
 
-// if tensor is not transposed yet, we change the shape and generate new strides
-// if tensor is already transposed, we reallocate the memory and generate strides
+// if tensor is not transposed yet, we change the shape and generate new stride
+// if tensor is already transposed, we reallocate the memory and generate stride
 Tensor& Tensor::Reshape(const Shape &shape) {
-  // Check original shape's volume is same with the new one
-  CHECK_EQ(Product(shape), Product(shape_));
+  // Check original volumn with the new one
+  // do not use Product(shape_) due to stride 0 from broadcasting.
+  CHECK_EQ(Product(shape), Size());
   if (transpose()) {
     Tensor t(shape, device_, data_type_);
     singa::Transform(*this, &t);
@@ -1238,7 +1295,7 @@ Tensor& Tensor::Reshape(const Shape &shape) {
   } else {
     shape_ = shape;
   }
-  generate_strides();
+  generate_stride();
   return *this;
 }
 

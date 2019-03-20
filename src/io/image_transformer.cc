@@ -226,7 +226,7 @@ Tensor crop(Tensor& input, const size_t crop_height, const size_t crop_width,
           }
         }
       }
-      output.SetShape(Shape{channel, crop_height, crop_width});
+      output.Resize(Shape{channel, crop_height, crop_width});
       output.CopyDataFromHostPtr<float>(out, crop_height * crop_width * channel);
       delete[] out;
     } else if (image_dim_order == "HWC") {
@@ -244,7 +244,7 @@ Tensor crop(Tensor& input, const size_t crop_height, const size_t crop_width,
           }
         }
       }
-      output.SetShape(Shape{crop_height, crop_width, channel});
+      output.Resize(Shape{crop_height, crop_width, channel});
       output.CopyDataFromHostPtr<float>(out, crop_height * crop_width * channel);
       delete[] out;
     } else {
@@ -263,7 +263,7 @@ Tensor crop(Tensor& input, const size_t crop_height, const size_t crop_width,
         out[out_idx] = in[in_idx];
       }
     }
-    output.SetShape(Shape{crop_height, crop_width});
+    output.Resize(Shape{crop_height, crop_width});
     output.CopyDataFromHostPtr<float>(out, crop_height * crop_width);
     delete[] out;
   }
@@ -301,7 +301,7 @@ Tensor mirror(Tensor& input, const bool horizontal_mirror,
           }
         }
       }
-      output.SetShape(Shape{channel, height, width});
+      output.Resize(Shape{channel, height, width});
       output.CopyDataFromHostPtr<float>(out, height * width * channel);
       delete[] out;
     } else if (image_dim_order == "HWC") {
@@ -322,7 +322,7 @@ Tensor mirror(Tensor& input, const bool horizontal_mirror,
           }
         }
       }
-      output.SetShape(Shape{height, width, channel});
+      output.Resize(Shape{height, width, channel});
       output.CopyDataFromHostPtr<float>(out, height * width * channel);
       delete[] out;
     } else {
@@ -344,7 +344,7 @@ Tensor mirror(Tensor& input, const bool horizontal_mirror,
         out[out_idx] = in[in_idx];
       }
     }
-    output.SetShape(Shape{height, width});
+    output.Resize(Shape{height, width});
     output.CopyDataFromHostPtr<float>(out, height * width);
     delete[] out;
   }

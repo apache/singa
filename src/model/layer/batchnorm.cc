@@ -44,7 +44,7 @@ void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   else
     is_2d_ = false;
 
-  bnScale_.SetShape(Shape{channels_});
+  bnScale_.Resize(Shape{channels_});
   bnBias_.ResetLike(bnScale_);
   runningMean_.ResetLike(bnScale_);
   runningVariance_.ResetLike(bnScale_);

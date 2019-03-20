@@ -136,7 +136,7 @@ const std::pair<Tensor, vector<Tensor>> LRN::Backward(int flag,
     }
     Tensor tmp2 = ConcatenateRows(images);
     tmp2 *= (-2.0f * beta_ * alpha_);
-    //  tmp2.Reshape(x.shape());
+    tmp2.Reshape(x.shape());
     tmp2 = tmp2 * x;
     dx = dx + tmp2;
     dx.Reshape(grad.shape());

@@ -19,15 +19,15 @@
 #define SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_
 
 #include "./tensor_math.h"
-#include "./stacktrace.h"
+//#include "./stacktrace.h"
 #include <cfloat>
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
 #include <math.h>
-#include <algorithm> 
-#include <sstream> 
-#include <iterator> 
-#include <iostream> 
+#include <algorithm>
+#include <sstream>
+#include <iterator>
+#include <iostream>
 
 #ifdef USE_CBLAS
 #include <cblas.h>
@@ -108,7 +108,7 @@ void traverse_next(const Tensor& x,
   update_base_index(x, traversal_info);
   traversal_info[x.shape().size() + 1] = determine_order(shape_multipliers, counter);
   traversal_info[x.shape().size()] = traversal_info[traversal_info[x.shape().size() + 1]] +
-                                     x.strides()[x.strides().size() - traversal_info[x.shape().size() + 1] - 1];
+                                     x.stride()[x.stride().size() - traversal_info[x.shape().size() + 1] - 1];
 };
 
 inline int next_offset(int offset, const vector<size_t>& shape, const vector<int>& stride, vector<int> *index) {
@@ -138,18 +138,18 @@ void traverse_unary(const Tensor & in, Tensor * out, std::function<DType(DType)>
     traverse_next(in, shape_multipliers, traversal_info, i + 1);
   }
   */
-  CHECK_EQ(in.Size(), out->Size());
-  if (in.strides() == out->strides()) {
+  CHECK(in.shape() == out->shape());
+  if (in.stride() == out->stride()) {
     for (size_t i = 0; i < in.Size(); i++)
       outPtr[i] = func(inPtr[i]);
   } else {
     LOG(INFO) << "not equal stride";
     size_t in_offset = 0, out_offset = 0;
     vector<int> in_idx(in.nDim(), 0), out_idx(out->nDim(), 0);
-    for (size_t i = 0; i < in.Size(); i++) {
+    for (size_t i = 0; i < Product(in.shape()); i++) {
       outPtr[out_offset] = func(inPtr[in_offset]);
-      out_offset = next_offset(out_offset, out->shape(), out->strides(), &out_idx);
-      in_offset = next_offset(in_offset, in.shape(), in.strides(), &in_idx);
+      out_offset = next_offset(out_offset, out->shape(), out->stride(), &out_idx);
+      in_offset = next_offset(in_offset, in.shape(), in.stride(), &in_idx);
     }
   }
 }
@@ -174,23 +174,24 @@ void traverse_binary(const Tensor &in1, const Tensor &in2, Tensor* out,
     traverse_next(in2, shape_multipliers_in2, traversal_info_in2, i + 1);
   }
   */
-  CHECK_EQ(in1.Size(), out->Size());
-  CHECK_EQ(in2.Size(), out->Size());
-  if ((in1.strides() == out->strides()) && (in2.strides() == in1.strides())) {
-    for (size_t i = 0; i < in1.Size(); i++)
+  auto prod = Product(in1.shape());
+  CHECK(in1.shape() == out->shape());
+  CHECK(in2.shape() == out->shape());
+  if ((in1.stride() == out->stride()) && (in2.stride() == in1.stride())) {
+    for (size_t i = 0; i < prod; i++)
       outPtr[i] = func(in1Ptr[i], in2Ptr[i]);
   } else {
     /*
     LOG(INFO) << "not equal stride";
     std::ostringstream s1, s2, s3, s4, s5, s6;
-    std::copy(in1.strides().begin(), in1.strides().end(), std::ostream_iterator<int>(s1, ", ")); 
-    std::copy(in2.strides().begin(), in2.strides().end(), std::ostream_iterator<int>(s2, ", ")); 
-    std::copy(out->strides().begin(), out->strides().end(), std::ostream_iterator<int>(s3, ", ")); 
+    std::copy(in1.stride().begin(), in1.stride().end(), std::ostream_iterator<int>(s1, ", "));
+    std::copy(in2.stride().begin(), in2.stride().end(), std::ostream_iterator<int>(s2, ", "));
+    std::copy(out->stride().begin(), out->stride().end(), std::ostream_iterator<int>(s3, ", "));
 
-    std::copy(in1.shape().begin(), in1.shape().end(), std::ostream_iterator<int>(s4, ", ")); 
-    std::copy(in2.shape().begin(), in2.shape().end(), std::ostream_iterator<int>(s5, ", ")); 
-    std::copy(out->shape().begin(), out->shape().end(), std::ostream_iterator<int>(s6, ", ")); 
- 
+    std::copy(in1.shape().begin(), in1.shape().end(), std::ostream_iterator<int>(s4, ", "));
+    std::copy(in2.shape().begin(), in2.shape().end(), std::ostream_iterator<int>(s5, ", "));
+    std::copy(out->shape().begin(), out->shape().end(), std::ostream_iterator<int>(s6, ", "));
+
     LOG(INFO) << s1.str() << ": " << s4.str();
     LOG(INFO) << s2.str() << ": " << s5.str();
     LOG(INFO) << s3.str() << ": " << s6.str();
@@ -199,11 +200,11 @@ void traverse_binary(const Tensor &in1, const Tensor &in2, Tensor* out,
 
     size_t in1_offset = 0, in2_offset = 0, out_offset = 0;
     vector<int> in1_idx(in1.nDim(), 0), in2_idx(in2.nDim(), 0), out_idx(out->nDim(), 0);
-    for (size_t i = 0; i < in1.Size(); i++) {
+    for (size_t i = 0; i < prod; i++) {
       outPtr[out_offset] = func(in1Ptr[in1_offset], in2Ptr[in2_offset]);
-      out_offset = next_offset(out_offset, out->shape(), out->strides(), &out_idx);
-      in1_offset = next_offset(in1_offset, in1.shape(), in1.strides(), &in1_idx);
-      in2_offset = next_offset(in2_offset, in2.shape(), in2.strides(), &in2_idx);
+      out_offset = next_offset(out_offset, out->shape(), out->stride(), &out_idx);
+      in1_offset = next_offset(in1_offset, in1.shape(), in1.stride(), &in1_idx);
+      in2_offset = next_offset(in2_offset, in2.shape(), in2.stride(), &in2_idx);
       // LOG(INFO) <<  in1_offset << ", " << in2_offset << ", " << out_offset;
     }
   }
@@ -513,20 +514,20 @@ void DGMM<float, lang::Cpp>(const bool side_right,
 
   if (side_right) {
     for (size_t r = 0; r < nrow; r++) {
-      size_t in_offset = M.strides()[0] * r, out_offset = out->strides()[0] * r;
+      size_t in_offset = M.stride()[0] * r, out_offset = out->stride()[0] * r;
       for (size_t c = 0; c < ncol; c++) {
         outPtr[out_offset] = MPtr[in_offset] * vPtr[c];
-        in_offset += M.strides()[1];
-        out_offset += out->strides()[1];
+        in_offset += M.stride()[1];
+        out_offset += out->stride()[1];
       }
     }
   } else {
     for (size_t r = 0; r < nrow; r++) {
-      size_t in_offset = M.strides()[0] * r, out_offset = out->strides()[0] * r;
+      size_t in_offset = M.stride()[0] * r, out_offset = out->stride()[0] * r;
       for (size_t c = 0; c < ncol; c++) {
         outPtr[out_offset] = MPtr[in_offset] * vPtr[r];
-        in_offset += M.strides()[1];
-        out_offset += out->strides()[1];
+        in_offset += M.stride()[1];
+        out_offset += out->stride()[1];
       }
     }
   }
@@ -552,7 +553,7 @@ void Asum<float, lang::Cpp>(const Tensor& in, float *out,
 // void Axpy<float, lang::Cpp>(const float alpha,
 //                             const Tensor& in, Tensor *out, Context *ctx) {
 //   //check input tensor for strides first
-//   if (in.strides() == out->strides()) {
+//   if (in.stride() == out->stride()) {
 //     const float *inPtr = static_cast<const float *>(in.block()->data());
 //     float *outPtr = static_cast<float *>(out->block()->mutable_data());
 //     cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
@@ -569,7 +570,7 @@ void Axpy<float, lang::Cpp>(const float alpha,
   const float *inPtr = static_cast<const float *>(in.block()->data());
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
   } else {
     //LOG(FATAL) << "Axpy, input and output strides do not match." ;
@@ -584,7 +585,7 @@ void Axpy<float, lang::Cpp>(const float alpha,
 // void Axpy<float, lang::Cpp>(const float alpha,
 //                            const Tensor& in, Tensor *out, Context *ctx) {
 //  //check input tensor for strides first
-//  if (in.strides() == out->strides()) {
+//  if (in.stride() == out->stride()) {
 //    const float *inPtr = static_cast<const float *>(in.block()->data());
 //    float *outPtr = static_cast<float *>(out->block()->mutable_data());
 //    cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
