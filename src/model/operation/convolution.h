@@ -20,11 +20,11 @@ namespace singa {
 
 class ConvHandle {
 
-public:
+ public:
   ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
              const std::vector<size_t>& stride, const std::vector<size_t>& padding,
              const size_t in_channels, const size_t out_channels,
-             const bool bias);
+             const bool bias, const size_t groups = 1);
 
   ~ConvHandle();
 
@@ -37,6 +37,7 @@ public:
 
   size_t channels;
   size_t num_filters;
+  size_t group;
 
   bool bias_term;
 
@@ -59,14 +60,14 @@ public:
   mkldnn::memory::dims o_dims;
   mkldnn::memory::dims w_dims;
 
-  const mkldnn::memory::desc *x_md;
-  const mkldnn::memory::desc *w_md;
-  const mkldnn::memory::desc *b_md;
-  const mkldnn::memory::desc *y_md;
-  const mkldnn::convolution_forward::desc *conv_d;
-  const mkldnn::convolution_forward::primitive_desc *conv_pd;
+  const mkldnn::memory::desc *x_md = nullptr;
+  const mkldnn::memory::desc *w_md = nullptr;
+  const mkldnn::memory::desc *b_md = nullptr;
+  const mkldnn::memory::desc *y_md = nullptr;
+  const mkldnn::convolution_forward::desc *conv_d = nullptr;
+  const mkldnn::convolution_forward::primitive_desc *conv_pd = nullptr;
 
-  const Tensor *db;
+  const Tensor *db = nullptr;
 #endif // USE_MKLDNN
 };
 
@@ -83,7 +84,7 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch)
 
 #ifdef USE_CUDNN
 class CudnnConvHandle: public ConvHandle {
-public:
+ public:
   CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                   const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                   const size_t in_channels, const size_t out_channels,

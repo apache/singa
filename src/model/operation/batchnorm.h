@@ -14,9 +14,9 @@
 
 // combine scale and bias into weight format recognised by mkldnn api
 static inline singa::Tensor get_bn_weight_from(const singa::Tensor &s, const singa::Tensor &b) {
-  singa::Tensor w(singa::Shape{s.Size(),b.Size()});
-  CopyDataToFrom(&w, s,s.Size(),0,0);
-  CopyDataToFrom(&w, b,b.Size(),s.Size(),0);
+  singa::Tensor w(singa::Shape{s.Size(), b.Size()});
+  CopyDataToFrom(&w, s, s.Size(), 0, 0);
+  CopyDataToFrom(&w, b, b.Size(), s.Size(), 0);
   return w;
 }
 
@@ -42,10 +42,10 @@ class BatchNormHandle {
   mkldnn::memory::data_type dtype;
   mkldnn::memory::dims x_dims;
   mkldnn::memory::dims y_dims;
-  mkldnn::memory::desc *x_md;
-  mkldnn::memory::desc *dx_md;
-  mkldnn::batch_normalization_forward::desc *bn_fwd_d;
-  mkldnn::batch_normalization_forward::primitive_desc *bn_fwd_pd;
+  mkldnn::memory::desc *x_md = nullptr;
+  mkldnn::memory::desc *dx_md = nullptr;
+  mkldnn::batch_normalization_forward::desc *bn_fwd_d = nullptr;
+  mkldnn::batch_normalization_forward::primitive_desc *bn_fwd_pd = nullptr;
   float epsilon;
   mkldnn::memory::format data_memory_format;
 #endif //USE_MKLDNN
@@ -54,19 +54,19 @@ class BatchNormHandle {
 
 #ifdef USE_MKLDNN
 
-  Tensor
-  CpuBatchNormForwardInference(const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
-                               Tensor &running_mean, Tensor &running_var);
+Tensor
+CpuBatchNormForwardInference(const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
+                             Tensor &running_mean, Tensor &running_var);
 
-  const std::vector<Tensor>
-  CpuBatchNormForwardTraining(const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
-                              Tensor &running_mean, Tensor &running_var);
+const std::vector<Tensor>
+CpuBatchNormForwardTraining(const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
+                            Tensor &running_mean, Tensor &running_var);
 
-  const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
-                                                  const Tensor &y, const Tensor &dy,
-                                                  const Tensor &x,
-                                                  const Tensor &bnScale, const Tensor &bnBias,
-                                                  const Tensor &mean, const Tensor &var);
+const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
+    const Tensor &y, const Tensor &dy,
+    const Tensor &x,
+    const Tensor &bnScale, const Tensor &bnBias,
+    const Tensor &mean, const Tensor &var);
 
 #endif // USE_MKLDNN
 
