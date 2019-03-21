@@ -24,7 +24,7 @@ from singa import optimizer
 import numpy as np
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     autograd.training = True
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     # generate the boundary
     f = lambda x: (5 * x + 1)
-    bd_x = np.linspace(-1., 1, 200)
+    bd_x = np.linspace(-1.0, 1, 200)
     bd_y = f(bd_x)
     # generate the training data
     x = np.random.uniform(-1, 1, 400)
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     data = np.array([[a, b] for (a, b) in zip(x, y)], dtype=np.float32)
 
     def to_categorical(y, num_classes):
-        '''
+        """
         Converts a class vector (integers) to binary class matrix.
 
         Args
@@ -52,16 +52,16 @@ if __name__ == '__main__':
 
         Return
             A binary matrix representation of the input.
-        '''
-        y = np.array(y, dtype='int')
+        """
+        y = np.array(y, dtype="int")
         n = y.shape[0]
         categorical = np.zeros((n, num_classes))
         categorical[np.arange(n), y] = 1
         return categorical
 
     label = to_categorical(label, 2).astype(np.float32)
-    print('train_data_shape:', data.shape)
-    print('train_label_shape:', label.shape)
+    print("train_data_shape:", data.shape)
+    print("train_label_shape:", label.shape)
 
     inputs = Tensor(data=data)
     target = Tensor(data=label)
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         x = autograd.softmax(x)
         loss = autograd.cross_entropy(x, target)
         for p, gp in autograd.backward(loss):
-            sgd.apply(0, gp, p, '')
+            sgd.apply(0, gp, p, "")
 
-        if (i % 100 == 0):
-            print('training loss = ', tensor.to_numpy(loss)[0])
+        if i % 100 == 0:
+            print("training loss = ", tensor.to_numpy(loss)[0])

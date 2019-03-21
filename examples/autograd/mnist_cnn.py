@@ -29,14 +29,14 @@ from singa import opt
 
 def load_data(path):
     f = np.load(path)
-    x_train, y_train = f['x_train'], f['y_train']
-    x_test, y_test = f['x_test'], f['y_test']
+    x_train, y_train = f["x_train"], f["y_train"]
+    x_test, y_test = f["x_test"], f["y_test"]
     f.close()
     return (x_train, y_train), (x_test, y_test)
 
 
 def to_categorical(y, num_classes):
-    '''
+    """
     Converts a class vector (integers) to binary class matrix.
 
     Args
@@ -46,8 +46,8 @@ def to_categorical(y, num_classes):
 
     Return
         A binary matrix representation of the input.
-    '''
-    y = np.array(y, dtype='int')
+    """
+    y = np.array(y, dtype="int")
     n = y.shape[0]
     categorical = np.zeros((n, num_classes))
     categorical[np.arange(n), y] = 1
@@ -66,24 +66,25 @@ def accuracy(pred, target):
     y = np.argmax(pred, axis=1)
     t = np.argmax(target, axis=1)
     a = y == t
-    return np.array(a, 'int').sum() / float(len(t))
+    return np.array(a, "int").sum() / float(len(t))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Train CNN over MNIST')
-    parser.add_argument('file_path', type=str, help='the dataset path')
-    parser.add_argument('--use_cpu', action='store_true')
+    parser = argparse.ArgumentParser(description="Train CNN over MNIST")
+    parser.add_argument("file_path", type=str, help="the dataset path")
+    parser.add_argument("--use_cpu", action="store_true")
     args = parser.parse_args()
 
-    assert os.path.exists(args.file_path), \
-        'Pls download the MNIST dataset from https://s3.amazonaws.com/img-datasets/mnist.npz'
+    assert os.path.exists(
+        args.file_path
+    ), "Pls download the MNIST dataset from https://s3.amazonaws.com/img-datasets/mnist.npz"
 
     if args.use_cpu:
-        print('Using CPU')
+        print("Using CPU")
         dev = device.get_default_device()
     else:
-        print('Using GPU')
+        print("Using GPU")
         dev = device.create_cuda_gpu()
 
     train, test = load_data(args.file_path)
@@ -99,10 +100,10 @@ if __name__ == '__main__':
 
     x_test = preprocess(test[0])
     y_test = to_categorical(test[1], num_classes)
-    print('the shape of training data is', x_train.shape)
-    print('the shape of training label is', y_train.shape)
-    print('the shape of testing data is', x_test.shape)
-    print('the shape of testing label is', y_test.shape)
+    print("the shape of training data is", x_train.shape)
+    print("the shape of training label is", y_train.shape)
+    print("the shape of testing data is", x_test.shape)
+    print("the shape of testing label is", y_test.shape)
 
     # operations initialization
     conv1 = autograd.Conv2d(1, 32, 3, padding=1, bias=False)
@@ -134,18 +135,30 @@ if __name__ == '__main__':
     autograd.training = True
     for epoch in range(epochs):
         for i in range(batch_number):
-            inputs = tensor.Tensor(device=dev, data=x_train[
-                                   i * 100:(1 + i) * 100], stores_grad=False)
-            targets = tensor.Tensor(device=dev, data=y_train[
-                                    i * 100:(1 + i) * 100], requires_grad=False, stores_grad=False)
+            inputs = tensor.Tensor(
+                device=dev,
+                data=x_train[i * 100 : (1 + i) * 100],
+                stores_grad=False,
+            )
+            targets = tensor.Tensor(
+                device=dev,
+                data=y_train[i * 100 : (1 + i) * 100],
+                requires_grad=False,
+                stores_grad=False,
+            )
 
             loss, y = forward(inputs, targets)
 
-            accuracy_rate = accuracy(tensor.to_numpy(y),
-                                     tensor.to_numpy(targets))
-            if (i % 5 == 0):
-                print('accuracy is:', accuracy_rate, 'loss is:',
-                      tensor.to_numpy(loss)[0])
+            accuracy_rate = accuracy(
+                tensor.to_numpy(y), tensor.to_numpy(targets)
+            )
+            if i % 5 == 0:
+                print(
+                    "accuracy is:",
+                    accuracy_rate,
+                    "loss is:",
+                    tensor.to_numpy(loss)[0],
+                )
 
             for p, gp in autograd.backward(loss):
                 sgd.update(p, gp)
