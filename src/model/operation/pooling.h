@@ -47,12 +47,12 @@ class PoolingHandle {
   mkldnn::memory::dims k_dims;
   mkldnn::memory::dims p_dims;
   mkldnn::algorithm pooling_algo;
-  const mkldnn::memory::desc *x_md;
-  const mkldnn::memory::desc *y_md;
-  const mkldnn::pooling_forward::desc *pool_fwd_d;
-  const mkldnn::pooling_forward::primitive_desc *pool_fwd_pd;
-  const mkldnn::memory::primitive_desc *pool_ws_d;
-  const mkldnn::memory *ws_mem;
+  const mkldnn::memory::desc *x_md = nullptr;
+  const mkldnn::memory::desc *y_md = nullptr;
+  const mkldnn::pooling_forward::desc *pool_fwd_d = nullptr;
+  const mkldnn::pooling_forward::primitive_desc *pool_fwd_pd = nullptr;
+  const mkldnn::memory::primitive_desc *pool_ws_d = nullptr;
+  const mkldnn::memory *ws_mem = nullptr;
 #endif // USE_MKLDNN
 };
 
@@ -60,7 +60,7 @@ class PoolingHandle {
 
 Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x);
 Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &dy,
-                            const Tensor& x, const Tensor& y);
+                          const Tensor& x, const Tensor& y);
 
 #endif // USE_MKLDNN
 

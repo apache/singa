@@ -87,10 +87,10 @@ class Tensor(object):
                      grad but not store grad; But if a tensor stores grad
                      then it must require grad.
     '''
-
+    tensor_count = 0
     def __init__(self, shape=(), device=None, dtype=float32,
                  data=None, requires_grad=True, stores_grad=False,
-                 creator=None):
+                 creator=None,name=None):
         if device is None:
             device = get_default_device()
         if isinstance(data, np.ndarray):
@@ -107,9 +107,14 @@ class Tensor(object):
         self.dtype = self.data.data_type()
         self.requires_grad = requires_grad
         self.stores_grad = stores_grad
+        if name is None:
+            self.name = 'Dummy#{}'.format(Tensor.tensor_count)
+            Tensor.tensor_count += 1
+        else:
+            self.name = name
         if creator is None:
             from . import autograd
-            self.creator = autograd.Dummy(self)
+            self.creator = autograd.Dummy(self,name)
         else:
             self.creator = creator
 
@@ -472,9 +477,9 @@ class Tensor(object):
             x (float or Tensor):
         '''
         if isinstance(x, Tensor):
-            self.data /= x.data
+            self.data *= (1.0/x.data)
         else:
-            self.data /= float(x)
+            self.data *= (1.0/float(x))
         return self
 
     '''

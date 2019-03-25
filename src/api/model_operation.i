@@ -17,9 +17,18 @@ class ConvHandle {
   ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
              const std::vector<size_t>& stride, const std::vector<size_t>& padding,
              const size_t in_channels, const size_t out_channels,
-             const bool bias);
+             const bool bias, const size_t groups);
   bool bias_term;
   size_t batchsize;
+  size_t pad_w;
+  size_t pad_h;
+  size_t stride_h;
+  size_t stride_w;
+  size_t kernel_h;
+  size_t kernel_w;
+  size_t channels;
+  size_t num_filters;
+  size_t group;
 };
 
 Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b, const ConvHandle &ch);
@@ -71,9 +80,15 @@ class PoolingHandle {
                 const bool is_max=true);
 
   int batchsize;
-
+  int stride_h;
+  int stride_w;
+  int kernel_h;
+  int kernel_w;
+  int pad_h;
+  int pad_w;
   int pooled_height;
   int pooled_width;
+  bool is_max_pooling;
 };
 
 #if USE_MKLDNN
@@ -93,6 +108,15 @@ class CudnnConvHandle: public ConvHandle {
                   const std::string& prefer = "fastest");
   bool bias_term;
   size_t batchsize;
+  size_t pad_w;
+  size_t pad_h;
+  size_t stride_h;
+  size_t stride_w;
+  size_t kernel_h;
+  size_t kernel_w;
+  size_t channels;
+  size_t num_filters;
+  size_t group;
 };
 
 Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch);
@@ -107,8 +131,9 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle
 class CudnnBatchNormHandle: public BatchNormHandle{
     public:
       CudnnBatchNormHandle(const float momentum, const Tensor& input);
-
+    size_t channels;
     size_t batchsize;
+    float factor;
 };
 
 const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh,
@@ -131,6 +156,14 @@ class CudnnPoolingHandle : public PoolingHandle {
 
   int pooled_height;
   int pooled_width;
+  int kernel_h;
+  int kernel_w;
+  int pad_h;
+  int pad_w;
+
+  int stride_h;
+  int stride_w;
+
 };
 
 Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x);
