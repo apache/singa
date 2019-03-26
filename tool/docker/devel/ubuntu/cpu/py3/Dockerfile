@@ -76,6 +76,9 @@ RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-sing
     && cmake -DENABLE_TEST=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
 RUN cd $HOME/incubator-singa/build && make && sudo make install
 
+# fix linker could not find /usr/local/lib/libmklml_intel.so
+RUN sudo ldconfig
+
 WORKDIR /home/singa/incubator-singa
 EXPOSE 22
 
