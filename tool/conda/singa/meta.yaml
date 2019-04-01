@@ -22,11 +22,13 @@ package:
   version: "{{ GIT_DESCRIBE_TAG }}"
 
 source:
-  # path: /path to/incubator-singa/
+  # path: ../../../
   git_url: https://github.com/apache/incubator-singa.git
 
 build:
   number: 0
+  script_env:
+    - CUDA   # E.g., export CUDA=9.0
   string: {{ build_str }}
   # py{{py}}_{{ environ.get('BUILD_STR', 'cpu') }}
 

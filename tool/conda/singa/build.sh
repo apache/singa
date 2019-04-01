@@ -29,7 +29,8 @@ export CMAKE_LIBRARY_PATH=$PREFIX/lib:$CMAKE_LIBRARY_PATH
 # PY3K is set by conda
 # if  [ "$PY3K" == "1" ]; then USE_PYTHON3=ON; fi
 
-if [ -z ${CUDA+x} ]; then
+# if [ -z ${CUDA+x} ]; then
+if [ -z "$CUDA" ]; then
 	USE_CUDA=OFF
 else
 	USE_CUDA=ON
