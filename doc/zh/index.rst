@@ -75,7 +75,7 @@ SINGA 入门
 -------------
 
 * `这里 <docs.html>`_ 列出了文档和 Python API.
-* `C++ APIs <http://www.comp.nus.edu.sg/~dbsystem/singa/api/>`_ 由 Doxygen 生成.
+* `C++ APIs <../doxygen/html/index.html>`_ 由 Doxygen 生成.
 * 研究出版物清单可在 `此处 <http://www.comp.nus.edu.sg/~dbsystem/singa/research/publication/>`_ 查阅.
 
 如何贡献

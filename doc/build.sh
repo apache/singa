@@ -36,4 +36,5 @@ if [ "$1"x = "html"x ]; then
     $SPHINXBUILD -b html -c . -d $BUILDDIR/doctree ${LANG_ARR[i]} $BUILDDIR/html/${LANG_ARR[i]}
   done
   echo "<script language=\"javascript\" type=\"text/javascript\">window.location.href='en/index.html';</script>" > $BUILDDIR/html/index.html
+  ( cat Doxyfile ; echo "OUTPUT_DIRECTORY=$BUILDDIR/html/doxygen" ) | doxygen - 
 fi
