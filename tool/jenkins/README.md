@@ -103,7 +103,7 @@ We provide different Singa [Dockerfiles](../docker/README.md) for Jenkins to use
 
 To run the docker images,
 
-    nvidia-docker run --name <node name> -d <Image ID> -P
+    nvidia-docker run --name <node name> -P -d <Image ID>
 
 To add the container into a network for easy access
 
@@ -124,9 +124,9 @@ Notice that Oracle username and account are required to luanch the node by Jenki
 The working nodes (or Docker containers) are configured in Jenkins-Manage Jenkins-Mange Nodes.
 Each node should configure the following environment variable
 
-    export CUDNN_PATH=<path to cudnn folder>
+    export CUDA=<cuda version, e.g., 9.0>
 
-where the cudnn folder should include `inlcude/cudnn.h` and `lib64/libcudnn.so*`. [Dockerfiles](../docker/README.md) are provided to create the working nodes.
+[Dockerfiles](../conda/docker) are provided to create the working nodes.
 
 ## Configure Jenkins for Singa Website Updates
 
