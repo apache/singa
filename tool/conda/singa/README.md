@@ -23,28 +23,20 @@
 
 ## Environment variables
 
-Build string is a part of the conda package specification. We include the cuda and cudnn version in it if Singa is compiled with CUDA enabled.
+We export the CUDA version if Singa is compiled with CUDA enabled. The cuDNN version is fixed by Singa and cuDNN is installed from [anaconda cloud](https://anaconda.org/anaconda/cudnn).
 
-	# for singa with gpu, e.g. cuda8.0-cudnn7.0.5
-    export BUILD_STR=cudax.y-cudnna.b.c
+    # for singa with gpu, e.g. cuda9.0-cudnn7.3.1
+    export CUDA=9.0
 
-    # for singa running only on cpu
-    export BUILD_STR=cpu
-
-
-To package Singa with CUDA and CUDNN,
-
-    export CUDNN_PATH=<path to cudnn folder>
-
-this folder should include a subfolder `include/cudnn.h` for the header file, and another subfolder `lib64` for the shared libraries. The BUILD_STR and CUDNN_PATH must be consistent. For example, if CUDNN_PATH is set, then BUILD_STR must be like cudax.y-cudnna.b.c. CUDNN must be provided if we want to compiled Singa with CUDA enabled.
+For CPU-only version, we do not export CUDA.
 
 ## Instruction
 
 After exporting the environment variables, execute the following command to compile Singa and package it
 
-    conda-build .  --python 3.6  (or 2.7)
+    conda-build .  --python 3.6
 
-You will see the package path from the screen output.
+You will see the package path from the screen output, e.g., `xx/yy/singa-1.2.0-cpu.tar.bz2` or `xx/yy/singa-1.2.0-cudnn7.3.1_cuda9.0.tar.bz2`.
 
 To clean the cache
 
