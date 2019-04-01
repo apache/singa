@@ -91,4 +91,4 @@ RUN cd $HOME/incubator-singa/build && make && sudo make install
 WORKDIR /home/singa/incubator-singa
 EXPOSE 22
 
-CMD ["/usr/sbin/sshd", "-D"]
+CMD ["sudo", "/usr/sbin/sshd", "-D"]
