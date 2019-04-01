@@ -43,7 +43,6 @@ RUN apt-get update \
         python3-pip \
         python3-setuptools \
         libgoogle-glog-dev \
-        sudo \
         cmake \
     && apt-get clean \
     && apt-get autoremove \
@@ -77,19 +76,16 @@ RUN mkdir /var/run/sshd \
     # SSH login fix. Otherwise user is kicked off after login
     && sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd \
     # dump environment variables into files, so that ssh can see also
-    && env | grep _ >> /etc/environment \
-    && useradd -m singa && echo 'singa:singa' | chpasswd && adduser singa sudo
-RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+    && env | grep _ >> /etc/environment
 
-USER singa 
 # build incubator singa
 RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
     && cd $HOME/incubator-singa \
     && mkdir build && cd build \
     && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_MKLDNN=ON -DUSE_PYTHON3=ON ..
-RUN cd $HOME/incubator-singa/build && make && sudo make install
+RUN cd $HOME/incubator-singa/build && make && make install
 
-WORKDIR /home/singa/incubator-singa
+WORKDIR $HOME/incubator-singa
 EXPOSE 22
 
-CMD ["sudo", "/usr/sbin/sshd", "-D"]
+CMD ["/usr/sbin/sshd", "-D"]
