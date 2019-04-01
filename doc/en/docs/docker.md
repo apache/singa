@@ -31,17 +31,15 @@ Dockerfile folder, e.g., tool/docker/devel/
 
 The `<TAG>` is named as
 
-    devel|runtime[-OS][-CUDA|MKLDNN][-CUDNN]
+    devel|runtime[-CUDA|CPU][-CUDNN]
 
 * devel: development images with all dependent libs' header files installed and SINGA's source code; runtime: the minimal images which can run SINGA programs.
-* OS: ubuntu18.04, ubuntu16.04, centos6
 * CUDA: cuda10.0, cuda9.0
 * CUDNN: cudnn7
-* MKLDNN: mkldnn0.18
 
 Here are some example tags:
 
-`devel-cuda9-cudnn7`, `devel-cuda9-cudnn7`, `devel-cuda10-cudnn7`, `devel-mkldnn0.18`, `devel-centos6`, `runtime`
+`devel-cuda9-cudnn7`, `devel-cuda9-cudnn7`, `devel-cuda10-cudnn7`, `devel-cpu`, `runtime-gpu` and `runtime-cpu`
 
 
 Please follow the existing Dockefiles under tool/docker/ to create other Dockefiles.
