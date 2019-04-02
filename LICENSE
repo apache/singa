@@ -296,6 +296,7 @@ license and copyright terms herein.
 =====================================================================
 SINGA bundles the following under MIT license:
 cmake/ThirdParty/FindOpenCL.cmake
+Open Neural Network Exchange
 
 Copyright (c) 2010-2016 Institute for Microelectronics,
                         Institute for Analysis and Scientific Computing, TU Wien.
@@ -303,6 +304,9 @@ Portions of this software are copyright by UChicago Argonne, LLC.
 Argonne National Laboratory, with facilities in the state of Illinois,
 is owned by The United States Government, and operated by UChicago Argonne, LLC
 under provision of a contract with the Department of Energy.
+
+Copyright (c) ONNX Project Contributors.
+All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -419,3 +423,21 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+=====================================================================
+SINGA bundles the following under Apache License v2.0:
+mkl-dnn
+
+Copyright 2017-2018 Intel Corporation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
