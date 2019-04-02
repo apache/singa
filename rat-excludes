@@ -1,13 +1,1 @@
 rat-excludes
-Doxyfile
-Makefile.*
-configure
-.gitignore
-doc/*
-config/*
-\.dirstamp
-config.*
-stamp-h1
-.*\.conf
-.*\.md
-control
