@@ -1,20 +1,3 @@
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
-
 """ This file contains different utility functions that are not connected
 in anyway to the networks presented in the tutorials, but rather help in
 processing the outputs into a more understandable way.
@@ -38,9 +21,14 @@ def scale_to_unit_interval(ndar, eps=1e-8):
     return ndar
 
 
-def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
-                       scale_rows_to_unit_interval=True,
-                       output_pixel_vals=True):
+def tile_raster_images(
+    X,
+    img_shape,
+    tile_shape,
+    tile_spacing=(0, 0),
+    scale_rows_to_unit_interval=True,
+    output_pixel_vals=True,
+):
     """
     Transform an array with one flattened image per row, into an array in
     which images are reshaped and layed out like tiles on a floor.
@@ -93,17 +81,19 @@ def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
         assert len(X) == 4
         # Create an output numpy ndarray to store the image
         if output_pixel_vals:
-            out_array = numpy.zeros((out_shape[0], out_shape[1], 4),
-                                    dtype='uint8')
+            out_array = numpy.zeros(
+                (out_shape[0], out_shape[1], 4), dtype="uint8"
+            )
         else:
-            out_array = numpy.zeros((out_shape[0], out_shape[1], 4),
-                                    dtype=X.dtype)
+            out_array = numpy.zeros(
+                (out_shape[0], out_shape[1], 4), dtype=X.dtype
+            )
 
-        #colors default to 0, alpha defaults to 1 (opaque)
+        # colors default to 0, alpha defaults to 1 (opaque)
         if output_pixel_vals:
             channel_defaults = [0, 0, 0, 255]
         else:
-            channel_defaults = [0., 0., 0., 1.]
+            channel_defaults = [0.0, 0.0, 0.0, 1.0]
 
         for i in range(4):
             if X[i] is None:
@@ -111,17 +101,21 @@ def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
                 # dtype
                 dt = out_array.dtype
                 if output_pixel_vals:
-                    dt = 'uint8'
-                out_array[:, :, i] = numpy.zeros(
-                    out_shape,
-                    dtype=dt
-                ) + channel_defaults[i]
+                    dt = "uint8"
+                out_array[:, :, i] = (
+                    numpy.zeros(out_shape, dtype=dt) + channel_defaults[i]
+                )
             else:
                 # use a recurrent call to compute the channel and store it
                 # in the output
                 out_array[:, :, i] = tile_raster_images(
-                    X[i], img_shape, tile_shape, tile_spacing,
-                    scale_rows_to_unit_interval, output_pixel_vals)
+                    X[i],
+                    img_shape,
+                    tile_shape,
+                    tile_spacing,
+                    scale_rows_to_unit_interval,
+                    output_pixel_vals,
+                )
         return out_array
 
     else:
@@ -132,7 +126,7 @@ def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
         # generate a matrix to store the output
         dt = X.dtype
         if output_pixel_vals:
-            dt = 'uint8'
+            dt = "uint8"
         out_array = numpy.zeros(out_shape, dtype=dt)
 
         for tile_row in range(tile_shape[0]):
@@ -144,7 +138,8 @@ def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
                         # do this by calling the `scale_to_unit_interval`
                         # function
                         this_img = scale_to_unit_interval(
-                            this_x.reshape(img_shape))
+                            this_x.reshape(img_shape)
+                        )
                     else:
                         this_img = this_x.reshape(img_shape)
                     # add the slice to the corresponding position in the
@@ -153,7 +148,7 @@ def tile_raster_images(X, img_shape, tile_shape, tile_spacing=(0, 0),
                     if output_pixel_vals:
                         c = 255
                     out_array[
-                        tile_row * (H + Hs): tile_row * (H + Hs) + H,
-                        tile_col * (W + Ws): tile_col * (W + Ws) + W
-                    ] = this_img * c
+                        tile_row * (H + Hs) : tile_row * (H + Hs) + H,
+                        tile_col * (W + Ws) : tile_col * (W + Ws) + W,
+                    ] = (this_img * c)
         return out_array
