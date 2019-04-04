@@ -50,4 +50,4 @@ The folder structure is like
     level3: Dockerfile, CUDA|MKLDNN
 
 
-For example, the path of the Dockerfile for `devel-cuda9-cudnn7` is `tool/docker/devel/ubuntu/cuda9/py3/Dockerfile`.
+For example, the path of the Dockerfile for `devel-cuda9-cudnn7` is `tool/docker/devel/ubuntu/cuda9/Dockerfile`.
