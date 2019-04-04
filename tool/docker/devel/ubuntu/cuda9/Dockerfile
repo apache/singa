@@ -64,7 +64,6 @@ RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz -P /tmp/ \
 RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
     && tar zxf /tmp/v0.18.tar.gz -C /tmp/ \
     && cd /tmp/mkl-dnn-0.18/ \
-    && cd scripts && ./prepare_mkl.sh && cd .. \
     && mkdir -p build && cd build && cmake .. \
     && make && make install
 

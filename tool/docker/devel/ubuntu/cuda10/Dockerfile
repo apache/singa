@@ -63,7 +63,6 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.12.2/cmake-3.12.2
 RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
     && tar zxf /tmp/v0.18.tar.gz -C /tmp/ \
     && cd /tmp/mkl-dnn-0.18/ \
-    && cd scripts && ./prepare_mkl.sh && cd .. \
     && mkdir -p build && cd build && cmake .. \
     && make && make install
 

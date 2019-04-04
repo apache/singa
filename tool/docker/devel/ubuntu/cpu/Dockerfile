@@ -51,7 +51,6 @@ RUN apt-get update \
 RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
     && tar zxf /tmp/v0.18.tar.gz -C /tmp/ \
     && cd /tmp/mkl-dnn-0.18/ \
-    && cd scripts && ./prepare_mkl.sh && cd .. \
     && mkdir -p build && cd build && cmake .. \
     && make && make install
 
@@ -68,9 +67,6 @@ RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-sing
     && mkdir build && cd build \
     && cmake -DENABLE_TEST=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
 RUN cd $HOME/incubator-singa/build && make && make install
-
-# fix linker could not find /usr/local/lib/libmklml_intel.so
-RUN ldconfig
 
 WORKDIR $HOME/incubator-singa
 EXPOSE 22
