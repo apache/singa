@@ -30,8 +30,7 @@ echo "###################"
 echo "###################"
 echo "build singa:cudax.y"
 echo "###################"
-docker build tool/docker/devel/native/ubuntu/cuda/py2 --force-rm -t nusdbsystem/singa:cuda10.0-cudnn7.4.2-py2
-docker build tool/docker/devel/native/ubuntu/cuda/py3 --force-rm -t nusdbsystem/singa:cuda10.0-cudnn7.4.2-py3
+docker build tool/docker/devel/native/ubuntu/cuda9 --force-rm -t nusdbsystem/singa:cuda9-cudnn7
 
 if [ $1 = "PUSH" ]; then
   echo "##########################################"
