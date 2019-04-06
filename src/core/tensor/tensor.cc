@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 #include "singa/core/tensor.h"
-#include "singa/utils/stacktrace.h"
+// #include "singa/utils/stacktrace.h"
 #include "./tensor_math.h"
 #include "./tensor_math_cpp.h"
 #include "./tensor_math_cuda.h"
@@ -345,8 +345,8 @@ Tensor& Tensor::Broadcast(const Shape& shape) {
   // transposed?
   auto m = shape_.size() - 1, n = shape.size() - 1;
   for (size_t i = 0; i <= std::min(m, n); i++) {
-    if ((shape.at(n-i) != shape_.at(m-i)) && (shape.at(n - i) != 1)) {
-      CHECK_EQ(shape_.at(m - i), 1) << "i= " << i << "\n" << Backtrace();
+    if ((shape.at(n - i) != shape_.at(m - i)) && (shape.at(n - i) != 1)) {
+      CHECK_EQ(shape_.at(m - i), 1) << "i= " << i << "\n"; // << Backtrace();
       shape_.at(m - i) = shape.at(n - i);
       stride_.at(m - i) = 0;
     }
