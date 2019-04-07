@@ -65,7 +65,7 @@ Getting Started
 ---------------
 * `Install SINGA <docs/installation.html>`_ via conda, apt-get, or from source.
 
-* Try SINGA on `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ or via `Docker <https://hub.docker.com/r/nusdbsystem/singa/>`_.
+* Try SINGA on `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ or via `Docker <https://hub.docker.com/r/apache/singa/>`_.
 
 * Refer to the `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ for some basic examples and the `model zoo page <./docs/model_zoo/index.html>`_ for more examples.
 
