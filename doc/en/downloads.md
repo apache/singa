@@ -26,9 +26,23 @@
   You can also check the SHA512 or MD5 values to see if the download is completed.
 
 
+* v2.0.0 (20 April 2019):
+    * [Apache SINGA 2.0.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/2.0.0/apache-singa-incubating-2.0.0.tar.gz)
+      [\[SHA512\]](https://www.apache.org/dist/incubator/singa/2.0.0/apache-singa-incubating-2.0.0.tar.gz.sha512)
+      [\[KEYS\]](https://www.apache.org/dist/incubator/singa/2.0.0/KEYS)
+      [\[ASC\]](https://www.apache.org/dist/incubator/singa/2.0.0/apache-singa-incubating-2.0.0.tar.gz.asc)
+    * [Release Notes 2.0.0](releases/RELEASE_NOTES_2.0.0.html)
+    * New features and major updates,
+      * Enhance autograd (for Convolution networks and recurrent networks)
+      * Support ONNX
+      * Improve the CPP operations via Intel MKL DNN lib
+      * Implement tensor broadcasting
+      * Move Docker images under Apache user name
+      * Update depdent lib versions in conda-build config
+       
 
 * v1.2.0 (6 June 2018):
-    * [Apache SINGA 1.2.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
+    * [Apache SINGA 1.2.0](https://archive.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
       [\[SHA512\]](https://www.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512)
       [\[KEYS\]](https://www.apache.org/dist/incubator/singa/1.2.0/KEYS)
       [\[ASC\]](https://www.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.asc)
@@ -48,7 +62,7 @@
 
 
 * v1.1.0 (12 February 2017):
-    * [Apache SINGA 1.1.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz)
+    * [Apache SINGA 1.1.0](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.md5)
       [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/1.1.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.asc)

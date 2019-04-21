@@ -20,6 +20,7 @@ Welcome to Apache SINGA
 
 Recent News
 -----------
+* **Version 2.0.0** is now available, 20 April, 2019. `Download SINGA v2.0.0 <downloads.html>`_
 
 * SINGA was presented at `DISI, University of Trento, Italy <https://www.disi.unitn.it/>`_ on 14 December 2018.
 

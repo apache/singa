@@ -36,11 +36,7 @@ SINGA.
         conda install -c nusdbsystem singa-gpu
 
 
-      It is equivalent to
-
-          conda install -c nusdbsystem singa=1.1.1=py36_cuda9.0_cudnn7.1.2
-
-      CUDA 9.0 must be installed before executing the above command. Singa
+      CUDA driver (for CUDA >=9.0) must be installed before executing the above command. Singa
       packages for other CUDA versions are also available. The following instruction
       lists all the available Singa packages.
 
@@ -73,18 +69,15 @@ To install conda-build (after installing miniconda)
 
 To build the CPU version of SINGA
 
-    export BUILD_STR=cpu
-    conda build tool/conda/singa/ --python 3.6 (or --python 2.7)
-
+    conda build tool/conda/singa/ --python 3.6
 The above commands have been tested on Ubuntu 16.04 and Mac OSX.
 Refer to the [Travis-CI page](https://travis-ci.org/apache/incubator-singa) for more information.
 
 
 To build the GPU version of SINGA
 
-    export BUILD_STR=cudax.y-cudnna.b.c (e.g. cuda9.0-cudnn7.1.2)
-    export CUDNN_PATH=<path to cudnn folder>
-    conda build tool/conda/singa/ --python 3.6 (or --python 2.7)
+    export CUDA=x.y (e.g. 9.0)
+    conda build tool/conda/singa/ --python 3.6
 
 The commands for building on GPU platforms have been tested on Ubuntu 16.04 (cuDNN>=7 and CUDA>=9).
 [Nvidia's Docker image](https://hub.docker.com/r/nvidia/cuda/) provides the building
@@ -115,7 +108,6 @@ for the instructions of installing them on Ubuntu 16.04.
 
     * `USE_MODULES=ON`, used if protobuf and blas are not installed a prior
     * `USE_CUDA=ON`, used if CUDA and cuDNN is available
-    * `USE_PYTHON=ON`, used for compiling PySINGA
     * `USE_PYTHON3=ON`, used for compiling with Python 3 support. (The default is Python 2)
     * `USE_OPENCL=ON`, used for compiling with OpenCL support
     * `USE_MKLDNN=ON`, used for compiling with Intel MKL-dnn support
