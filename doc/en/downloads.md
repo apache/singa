@@ -33,12 +33,12 @@
       [\[ASC\]](https://www.apache.org/dist/incubator/singa/2.0.0/apache-singa-incubating-2.0.0.tar.gz.asc)
     * [Release Notes 2.0.0](releases/RELEASE_NOTES_2.0.0.html)
     * New features and major updates,
-      * Enhance autograd (for Convolution networks and recurrent networks)
-      * Support ONNX
-      * Improve the CPP operations via Intel MKL DNN lib
-      * Implement tensor broadcasting
-      * Move Docker images under Apache user name
-      * Update depdent lib versions in conda-build config
+        * Enhance autograd (for Convolution networks and recurrent networks)
+        * Support ONNX
+        * Improve the CPP operations via Intel MKL DNN lib
+        * Implement tensor broadcasting
+        * Move Docker images under Apache user name
+        * Update depdent lib versions in conda-build config
        
 
 * v1.2.0 (6 June 2018):
