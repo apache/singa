@@ -23,6 +23,7 @@ Example usage::
 
     import image_tool
     from PIL import Image
+    from singa.data import ImageBatchIter
 
     tool = image_tool.ImageTool()
 
