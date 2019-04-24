@@ -43,9 +43,9 @@
 
 * v1.2.0 (6 June 2018):
     * [Apache SINGA 1.2.0](https://archive.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
-      [\[SHA512\]](https://www.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512)
-      [\[KEYS\]](https://www.apache.org/dist/incubator/singa/1.2.0/KEYS)
-      [\[ASC\]](https://www.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.asc)
+      [\[SHA512\]](https://archive.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512)
+      [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/1.2.0/KEYS)
+      [\[ASC\]](https://archive.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.asc)
     * [Release Notes 1.2.0](releases/RELEASE_NOTES_1.2.0.html)
     * New features and major updates,
         * Implement autograd (currently support MLP model)
