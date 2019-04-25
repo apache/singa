@@ -26,3 +26,4 @@ These are the mailing lists that have been established for this project. For eac
 
         "Development", "dev@singa.incubator.apache.org", "`Subscribe <mailto:dev-subscribe@singa.incubator.apache.org>`_", "`Unsubscribe <mailto:dev-unsubscribe@singa.incubator.apache.org.>`_", "`mail-archives.apache.org <http://mail-archives.apache.org/mod_mbox/singa-dev/>`_"
         "Commits", "commits@singa.incubator.apache.org", "`Subscribe <mailto:commits-subscribe@singa.incubator.apache.org>`_", "`Unsubscribe <mailto:commits-unsubscribe@singa.incubator.apache.org>`_", "`mail-archives.apache.org  <http://mail-archives.apache.org/mod_mbox/singa-commits/>`_"
+        "Security", "security@singa.apache.org", private, private, private
