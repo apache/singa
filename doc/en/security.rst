@@ -18,6 +18,6 @@
 Security
 ========
 
-Users can report security vulnerabilities to Apache Security Team: http://www.apache.org/security/ 
+Users can report security vulnerabilities to `SINGA Security Team Mail List <mailto:security@singa.apache.org>`_.
 
-SINGA is creating a new team for security. More details will be added soon.
+
