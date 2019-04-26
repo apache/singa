@@ -16,12 +16,7 @@
     specific language governing permissions and limitations
     under the License.
 -->
----
-name: DenseNet models on ImageNet
-SINGA version: 1.1.1
-SINGA commit:
-license: https://github.com/pytorch/vision/blob/master/torchvision/models/densenet.py
----
+
 
 # Image Classification using DenseNet
 
