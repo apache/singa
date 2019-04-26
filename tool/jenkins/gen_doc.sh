@@ -28,7 +28,7 @@ conda update singa
 COMMIT=`git rev-parse --short HEAD`
 cd doc
 # generate the html files
-./build.sh html
+bash build.sh html
 # checkout the current website files
 svn co https://svn.apache.org/repos/asf/incubator/singa/site/trunk
 # overwrite the existing files

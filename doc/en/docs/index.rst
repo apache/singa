@@ -23,6 +23,7 @@ Documentation
 
    installation
    software_stack
+   benchmark
    device
    tensor
    layer
