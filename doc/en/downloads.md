@@ -18,7 +18,7 @@
 -->
 ## Download SINGA
 
-* To verify the downloaded tar.gz file, download the KEY and ASC files and then execute the following commands
+* To verify the downloaded tar.gz file, download the [KEYS](https://www.apache.org/dist/incubator/singa/KEYS) and ASC files and then execute the following commands
 
         % gpg --import KEYS
         % gpg --verify downloaded_file.asc downloaded_file
@@ -29,7 +29,6 @@
 * v2.0.0 (20 April 2019):
     * [Apache SINGA 2.0.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/2.0.0/apache-singa-incubating-2.0.0.tar.gz)
       [\[SHA512\]](https://www.apache.org/dist/incubator/singa/2.0.0/apache-singa-incubating-2.0.0.tar.gz.sha512)
-      [\[KEYS\]](https://www.apache.org/dist/incubator/singa/2.0.0/KEYS)
       [\[ASC\]](https://www.apache.org/dist/incubator/singa/2.0.0/apache-singa-incubating-2.0.0.tar.gz.asc)
     * [Release Notes 2.0.0](releases/RELEASE_NOTES_2.0.0.html)
     * New features and major updates,
@@ -44,7 +43,6 @@
 * v1.2.0 (6 June 2018):
     * [Apache SINGA 1.2.0](https://archive.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
       [\[SHA512\]](https://archive.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512)
-      [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/1.2.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.asc)
     * [Release Notes 1.2.0](releases/RELEASE_NOTES_1.2.0.html)
     * New features and major updates,
@@ -64,7 +62,6 @@
 * v1.1.0 (12 February 2017):
     * [Apache SINGA 1.1.0](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.md5)
-      [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/1.1.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.asc)
     * [Release Notes 1.1.0](releases/RELEASE_NOTES_1.1.0.html)
     * New features and major updates,
@@ -88,7 +85,6 @@
 * v1.0.0 (8 September 2016):
     * [Apache SINGA 1.0.0](https://archive.apache.org/dist/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz.md5)
-      [\[KEYS\]](https://archive.apache.org/dist/incubator/singa//1.0.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz.asc)
     * [Release Notes 1.0.0](releases/RELEASE_NOTES_1.0.0.html)
     * New features and major updates,
@@ -108,7 +104,6 @@
 * v0.3.0 (20 April 2016):
     * [Apache SINGA 0.3.0](https://archive.apache.org/dist/incubator/singa/0.3.0/apache-singa-incubating-0.3.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/0.3.0/apache-singa-incubating-0.3.0.tar.gz.md5)
-      [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/0.3.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/0.3.0/apache-singa-incubating-0.3.0.tar.gz.asc)
     * [Release Notes 0.3.0](releases/RELEASE_NOTES_0.3.0.html)
     * New features and major updates,
@@ -126,7 +121,6 @@
 * v0.2.0 (14 January 2016):
     * [Apache SINGA 0.2.0](https://archive.apache.org/dist/incubator/singa/0.2.0/apache-singa-incubating-0.2.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/0.2.0/apache-singa-incubating-0.2.0.tar.gz.md5)
-      [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/0.2.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/0.2.0/apache-singa-incubating-0.2.0.tar.gz.asc)
     * [Release Notes 0.2.0](releases/RELEASE_NOTES_0.2.0.html)
     * New features and major updates,
@@ -146,7 +140,6 @@
 * v0.1.0 (8 October 2015):
     * [Apache SINGA 0.1.0](https://archive.apache.org/dist/incubator/singa/apache-singa-incubating-0.1.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/apache-singa-incubating-0.1.0.tar.gz.md5)
-      [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/apache-singa-incubating-0.1.0.tar.gz.asc)
     * [Amazon EC2 image](https://console.aws.amazon.com/ec2/v2/home?region=ap-southeast-1#LaunchInstanceWizard:ami=ami-b41001e6)
     * [Release Notes 0.1.0](releases/RELEASE_NOTES_0.1.0.html)
