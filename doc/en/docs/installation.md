@@ -96,7 +96,7 @@ for the instructions of installing them on Ubuntu 16.04.
 
 * cmake (>=2.8)
 * gcc (>=4.8.1)
-* google protobuf (>=2.5)
+* google protobuf (>=2.5 <3.0)
 * blas (tested with openblas >=0.2.10)
 * swig(>=3.0.10) for compiling PySINGA
 * numpy(>=1.11.0) for compiling PySINGA
