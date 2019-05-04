@@ -20,32 +20,32 @@ FROM ubuntu:18.04
 # install dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        git \
-        build-essential \
-        autoconf \
-        libtool \
-        libprotobuf-dev \
-        libopenblas-dev \
-        libpcre3-dev \
-        protobuf-compiler \
-        wget \
-        swig \
-        openssh-server \
-        python3-dev \
-        python3-pip \
-        python3-setuptools \
-        libgoogle-glog-dev \
-        cmake \
+    git \
+    build-essential \
+    autoconf \
+    libtool \
+    libprotobuf-dev \
+    libopenblas-dev \
+    libpcre3-dev \
+    protobuf-compiler \
+    wget \
+    swig \
+    openssh-server \
+    python3-dev \
+    python3-pip \
+    python3-setuptools \
+    libgoogle-glog-dev \
+    cmake \
     && apt-get clean \
     && apt-get autoremove \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install -U --no-cache \
-        wheel \
-        numpy \
-        setuptools \
-        protobuf \
-        future
+    wheel \
+    numpy \
+    setuptools \
+    protobuf \
+    future
 
 # install mkldnn
 RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
@@ -62,13 +62,13 @@ RUN mkdir /var/run/sshd \
     && mkdir /root/.ssh
 
 # build incubator singa
-RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
-    && cd $HOME/incubator-singa \
+RUN git clone https://github.com/apache/incubator-singa.git /incubator-singa \
+    && cd /incubator-singa \
     && mkdir build && cd build \
     && cmake -DENABLE_TEST=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
-RUN cd $HOME/incubator-singa/build && make && make install
+RUN cd /incubator-singa/build && make && make install
 
-WORKDIR $HOME/incubator-singa
+WORKDIR /incubator-singa
 EXPOSE 22
 
 CMD ["/usr/sbin/sshd", "-D"]
