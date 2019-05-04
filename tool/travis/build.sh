@@ -34,6 +34,7 @@ conda build tool/conda/singa --python 3.6
 conda install --use-local singa
 cd test/python
 $HOME/miniconda/bin/python run.py
+echo $?
 
 if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
   # install and run unittest
