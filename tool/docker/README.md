@@ -28,15 +28,17 @@
 
 Users can pull the Docker images from Dockerhub via
 
-    docker pull apache/singa:devel
+    sudo docker pull apache/singa:1.2.0-cpu-devel-ubuntu18.04
     # or
-    docker pull apache/singa:devel-cuda
+    sudo docker pull apache/singa:1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04
+    
+    For more versions see [here](https://hub.docker.com/r/apache/singa/tags)
 
 Run the docker container using
 
-    docker run -it apache/singa:devel /bin/bash
+    docker run -it apache/singa:1.2.0-cpu-devel-ubuntu18.04 /bin/bash
     # or
-    docker run -it apache/singa:devel-cuda /bin/bash
+    docker run -it apache/singa:1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04 /bin/bash
 
 The latest SINGA code is under the `incubator-singa` folder.
 
