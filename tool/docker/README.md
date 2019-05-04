@@ -28,7 +28,7 @@
 
 Users can pull the Docker images from Dockerhub via
 
-    sudo docker pull apache/singa:1.2.0-cpu-devel-ubuntu18.04
+    sudo docker pull apache/singa:1.2.0-cpu-runtime-ubuntu16.04
     # or
     sudo docker pull apache/singa:1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04
     
@@ -36,7 +36,7 @@ Users can pull the Docker images from Dockerhub via
 
 Run the docker container using
 
-    docker run -it apache/singa:1.2.0-cpu-devel-ubuntu18.04 /bin/bash
+    docker run -it apache/singa:1.2.0-cpu-runtime-ubuntu16.04 /bin/bash
     # or
     docker run -it apache/singa:1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04 /bin/bash
 
