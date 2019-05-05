@@ -111,7 +111,7 @@ Rafiki is a sub module of SINGA. Please cite the following paper if you use Rafi
 
 * Wei Wang, Jinyang Gao, Meihui Zhang, Sheng Wang, Gang Chen, Teck Khim Ng, Beng Chin Ooi, Jie Shao, Moaz Reyad. `Rafiki: Machine Learning as an Analytics Service System <http://www.vldb.org/pvldb/vol12/p128-wang.pdf>`_. `VLDB 2019 <http://vldb.org/2019/>`_ (`BibTex <https://dblp.org/rec/bib2/journals/pvldb/WangWGZCNOS18.bib>`_).
 
-Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_, `yzBigData <http://www.yzbigdata.com/en/index.html>`_ and `Shentilium <https://shentilium.com/>`_ are using SINGA for their applications.
+Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_, `yzBigData <http://www.yzbigdata.com/en/index.html>`_, `Shentilium <https://shentilium.com/>`_, `Foodlg <http://www.foodlg.com/>`_ and `Medilot <https://medilot.com/technologies>`_ are using SINGA for their applications.
 
 .. toctree::
    :hidden:
