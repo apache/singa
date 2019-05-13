@@ -39,9 +39,7 @@ Example usage::
     dev = device.get_default_device()
     x.to_device(dev)  # move the data to a gpu device
 
-    r = tensor.relu(x)
-
-    s = tensor.to_numpy(r)  # tensor -> numpy array
+    s = tensor.to_numpy(x)  # tensor -> numpy array
 
 There are two sets of tensor functions,
 

@@ -25,9 +25,10 @@ Example usage::
 
     from singa import tensor
     from singa import loss
+    import numpy as np
 
     x = tensor.Tensor((3, 5))
-    x.uniform(0, 1)  # randomly genearte the prediction activation
+    x.uniform(0, 1)  # randomly generate the prediction activation
     y = tensor.from_numpy(np.array([0, 1, 3], dtype=np.int))  # set the truth
 
     f = loss.SoftmaxCrossEntropy()
