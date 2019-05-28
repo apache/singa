@@ -37,26 +37,26 @@ requirements:
     - {{ compiler('cxx') }}
     - {{ compiler('c') }}
     - cmake >=3.12.2
-    - make # [unix]
+    - make # [unix]    
 
   host:
     - swig 3.0.12
     - openblas 0.3.3
-    - protobuf 3.4.0
-    - glog 0.3.5
-    - python 3.6*
+    - protobuf 3.6.1
+    - glog 0.3.5    
     - numpy 1.16.0
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - mkl-dnn {{ mkldnn }}
+    - python {{ python }}
 
-  run:
-    - {{ pin_compatible('libopenblas', max_pin='x.x') }}
-    - {{ pin_compatible('libprotobuf', max_pin='x.x') }}
+  run:    
     - {{ pin_compatible('glog', max_pin='x.x') }}
     - {{ pin_compatible('numpy', max_pin='x.x') }}
     - {{ pin_compatible('mkl-dnn', max_pin='x.x') }}
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
-    - python 3.6*
+    - python {{ python }}
+    - libprotobuf 3.6.1
+    - libopenblas 0.3.3
     - pillow
     - future
     - tqdm
