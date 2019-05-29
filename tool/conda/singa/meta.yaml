@@ -29,7 +29,7 @@ build:
   number: 0
   script_env:
     - CUDA   # E.g., export CUDA=9.0
-  string: {{ build_str }}
+  string: {{ build_str }}_py{{ py }}
   # py{{py}}_{{ environ.get('BUILD_STR', 'cpu') }}
 
 requirements:
@@ -37,19 +37,19 @@ requirements:
     - {{ compiler('cxx') }}
     - {{ compiler('c') }}
     - cmake >=3.12.2
-    - make # [unix]    
+    - make # [unix]
 
   host:
     - swig 3.0.12
     - openblas 0.3.3
     - protobuf 3.6.1
-    - glog 0.3.5    
+    - glog 0.3.5
     - numpy 1.16.0
     - cudnn {{ cudnn }}       # ['cudnn' in str(build_str)]
     - mkl-dnn {{ mkldnn }}
     - python {{ python }}
 
-  run:    
+  run:
     - {{ pin_compatible('glog', max_pin='x.x') }}
     - {{ pin_compatible('numpy', max_pin='x.x') }}
     - {{ pin_compatible('mkl-dnn', max_pin='x.x') }}
