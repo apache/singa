@@ -33,8 +33,11 @@ if [ "$1"x = "html"x ]; then
   cp README.md en/develop/contribute-docs.md
   for (( i=0; i<${#LANG_ARR[@]}; i++)) do
     echo "building language ${LANG_ARR[i]} ..."
-    $SPHINXBUILD -b html -c . -d $BUILDDIR/doctree ${LANG_ARR[i]} $BUILDDIR/html/${LANG_ARR[i]}
+    if [ ${LANG_ARR[i]} = "en" ]; then
+      $SPHINXBUILD -b html -c . -d $BUILDDIR/doctree ${LANG_ARR[i]} $BUILDDIR/html
+    else
+      $SPHINXBUILD -b html -c ${LANG_ARR[i]} -d $BUILDDIR/doctree ${LANG_ARR[i]} $BUILDDIR/html/${LANG_ARR[i]}
+    fi  
   done
-  echo "<script language=\"javascript\" type=\"text/javascript\">window.location.href='en/index.html';</script>" > $BUILDDIR/html/index.html
   ( cat Doxyfile ; echo "OUTPUT_DIRECTORY=$BUILDDIR/html/doxygen" ) | doxygen - 
 fi
