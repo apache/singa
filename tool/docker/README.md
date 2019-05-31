@@ -21,8 +21,12 @@
 
 ## Available tags
 
-* `devel`, with SINGA and the development packages installed on Ubuntu16.04 (no GPU)
-* `devel-cuda`, with SINGA, CUDA8.0, CUDNN5, and other development packages installed on Ubuntu16.04
+* `1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04`
+* `1.2.0-cuda10.0-cudnn7.4.2-ubuntu16.04`
+* `1.2.0-cuda9.0-cudnn7.4.2-devel-ubuntu16.04`
+* `1.2.0-cuda9.0-cudnn7.4.2-ubuntu16.04`
+* `1.2.0-cpu-devel-ubuntu18.04`
+* `1.2.0-cpu-runtime-ubuntu16.04`
 
 ## Use the existing Docker images
 
