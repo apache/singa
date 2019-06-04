@@ -21,12 +21,11 @@
 
 ## Available tags
 
-* `1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04`
-* `1.2.0-cuda10.0-cudnn7.4.2-ubuntu16.04`
-* `1.2.0-cuda9.0-cudnn7.4.2-devel-ubuntu16.04`
-* `1.2.0-cuda9.0-cudnn7.4.2-ubuntu16.04`
-* `1.2.0-cpu-devel-ubuntu18.04`
-* `1.2.0-cpu-runtime-ubuntu16.04`
+* `2.0.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04`
+* `2.0.0-cuda9.0-cudnn7.4.2-devel-ubuntu16.04`
+* `2.0.0-cuda9.0-cudnn7.4.2-ubuntu16.04`
+* `2.0.0-cpu-devel-ubuntu18.04`
+* `2.0.0-cpu-ubuntu16.04`
 
 ## Use the existing Docker images
 
