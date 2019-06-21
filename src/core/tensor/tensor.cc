@@ -654,6 +654,18 @@ void Tensor::SetValue(const SType x) {
 template void Tensor::SetValue<float>(const float x);
 template void Tensor::SetValue<int>(const int x);
 
+template <typename SType>
+void Tensor::GetValue(SType *value, const size_t num) {
+  CHECK(device_ == defaultDevice);
+  Tensor t(shape_, device_, data_type_);
+  // transform function arrange data in memory considering stride
+  Transform(*this, &t);
+  auto ptr=static_cast<const float*>(t.block()->data());
+  for (size_t i = 0; i < num; i++) value[i] = ptr[i];
+}
+template void Tensor::GetValue<float>(float *value, const size_t num);
+template void Tensor::GetValue<int>(int *value, const size_t num);
+
 #define EltwiseUnaryTensorFn(fn, t, ret)                               \
   do {                                                                 \
     TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, { \
@@ -1290,8 +1302,9 @@ Tensor& Tensor::Reshape(const Shape &shape) {
   CHECK_EQ(Product(shape), Size());
   if (transpose()) {
     Tensor t(shape, device_, data_type_);
-    singa::Transform(*this, &t);
     shape_ = shape;
+    // `Transform` after assigning new shape, to keep this and t consistent
+    singa::Transform(*this, &t);
     std::swap(t.block_, block_);
   } else {
     shape_ = shape;

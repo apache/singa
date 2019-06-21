@@ -137,11 +137,7 @@ class Tensor {
   /// used for swig code to convert Tensor into numpy array.
   /// It gets data into 'value'
   template <typename SType>
-  void GetValue(SType *value, const size_t num) {
-    CHECK(device_ == defaultDevice);
-    const SType* ptr = data<SType>();
-    for (size_t i = 0; i < num; i++) value[i] = ptr[i];
-  }
+  void GetValue(SType *value, const size_t num);
 
   /// Serialize data, shape and transpose to protobuf object.
   void ToProto(singa::TensorProto *proto) const;
