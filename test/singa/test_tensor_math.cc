@@ -368,6 +368,43 @@ TEST_F(TensorMath, ReshapeCpp) {
   EXPECT_EQ(p.shape(0), 4u);
   EXPECT_EQ(p.shape(1), 1u);
   for (int i = 0; i < 4; i++) EXPECT_FLOAT_EQ(ptr[i], 0.3f);
+
+  // test transpose then reshape
+  // {2,3,2} => {2,2,3} => {2,6}
+  Tensor t2(Shape{2,3,2});
+  t2.SetValue(0.2f);
+  t2.Transpose({2,0,1});
+  EXPECT_EQ(t2.shape(0), 2u);
+  EXPECT_EQ(t2.shape(1), 2u);
+  EXPECT_EQ(t2.shape(2), 3u);
+
+  t2.Reshape(Shape{2,6});
+  EXPECT_EQ(t2.shape(0), 2u);
+  EXPECT_EQ(t2.shape(1), 6u);
+}
+
+
+TEST_F(TensorMath, TransposeCpp) {
+  Tensor t(Shape{2,3,2});
+  const float dat1[12] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f };
+  t.CopyDataFromHostPtr(dat1, 12);
+
+  t.Transpose({2,0,1});
+//  const float *dptr = t.data<float>();
+  float dptr[12];
+  t.GetValue(dptr,12);
+  EXPECT_FLOAT_EQ(1.0f, dptr[0]);
+  EXPECT_FLOAT_EQ(3.0f, dptr[1]);
+  EXPECT_FLOAT_EQ(5.0f, dptr[2]);
+  EXPECT_FLOAT_EQ(7.0f, dptr[3]);
+  EXPECT_FLOAT_EQ(9.0f, dptr[4]);
+  EXPECT_FLOAT_EQ(11.0f,dptr[5]);
+  EXPECT_FLOAT_EQ(2.0f, dptr[6]);
+  EXPECT_FLOAT_EQ(4.0f, dptr[7]);
+  EXPECT_FLOAT_EQ(6.0f, dptr[8]);
+  EXPECT_FLOAT_EQ(8.0f, dptr[9]);
+  EXPECT_FLOAT_EQ(10.0f,dptr[10]);
+  EXPECT_FLOAT_EQ(12.0f,dptr[11]);
 }
 
 
