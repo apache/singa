@@ -659,8 +659,8 @@ void Tensor::GetValue(SType *value, const size_t num) {
   CHECK(device_ == defaultDevice);
   Tensor t(shape_, device_, data_type_);
   // transform function arrange data in memory considering stride
-  Transform(*this, &t);
-  auto ptr=static_cast<const float*>(t.block()->data());
+  singa::Transform(*this, &t);
+  auto ptr = static_cast<const SType*>(t.block()->data());
   for (size_t i = 0; i < num; i++) value[i] = ptr[i];
 }
 template void Tensor::GetValue<float>(float *value, const size_t num);
@@ -1301,11 +1301,10 @@ Tensor& Tensor::Reshape(const Shape &shape) {
   // do not use Product(shape_) due to stride 0 from broadcasting.
   CHECK_EQ(Product(shape), Size());
   if (transpose()) {
-    Tensor t(shape, device_, data_type_);
-    shape_ = shape;
-    // `Transform` after assigning new shape, to keep this and t consistent
+    Tensor t(shape_t , device_, data_type_);
     singa::Transform(*this, &t);
     std::swap(t.block_, block_);
+    shape_ = shape;
   } else {
     shape_ = shape;
   }
