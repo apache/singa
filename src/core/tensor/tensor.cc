@@ -1301,7 +1301,7 @@ Tensor& Tensor::Reshape(const Shape &shape) {
   // do not use Product(shape_) due to stride 0 from broadcasting.
   CHECK_EQ(Product(shape), Size());
   if (transpose()) {
-    Tensor t(shape_t , device_, data_type_);
+    Tensor t(shape_, device_, data_type_);
     singa::Transform(*this, &t);
     std::swap(t.block_, block_);
     shape_ = shape;
