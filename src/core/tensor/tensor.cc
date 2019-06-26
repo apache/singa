@@ -599,6 +599,12 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int ax
         { __VA_ARGS__ }                                        \
         break;                                                 \
       }                                                        \
+      case ((kInt << _SwitchShift) + kCpp): {              \
+        typedef float DType;                                   \
+        typedef lang::Cpp Lang;                                \
+        { __VA_ARGS__ }                                        \
+        break;                                                 \
+      }                                                        \
       case ((kFloat32 << _SwitchShift) + kOpencl): {           \
         typedef float DType;                                   \
         typedef lang::Opencl Lang;                             \

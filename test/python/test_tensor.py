@@ -155,11 +155,10 @@ class TestTensorMethods(unittest.TestCase):
         self.assertEqual(tensor.average(y), 2.)
 
     def test_numpy_convert(self):
-        # todo: Unknown combination of data type kInt and language kCpp
-        # a = np.asarray([[1, 0, 0], [0, 1, 0]], dtype=np.int)
-        # t = tensor.from_numpy(a)
-        # b = tensor.to_numpy(t)
-        # self.assertEqual(np.sum(a-b), 0)
+        a = np.asarray([[1, 0, 0], [0, 1, 0]], dtype=np.int)
+        t = tensor.from_numpy(a)
+        b = tensor.to_numpy(t)
+        self.assertEqual(np.sum(a-b), 0)
 
         a = np.asarray([[1, 0, 0], [0, 1, 0]], dtype=np.float32)
         t = tensor.from_numpy(a)
