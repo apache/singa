@@ -26,7 +26,6 @@ import math
 from .tensor import Tensor
 from . import singa_wrap as singa
 
-# from .tensor import einsum
 
 CTensor = singa.Tensor
 training = False
@@ -1605,8 +1604,8 @@ class LeakyRelu(Operation):
         # TODO(wangwei) check the correctness
         dx1 = singa.GTFloat(self.input, 0.0)
         dx2 = singa.LTFloat(self.input, 0.0)
-        dx2 = singa.MultFloat(x1, self.a)
-        dx = singa.__add__(x1, x2)
+        dx2 = singa.MultFloat(dx2, self.a)
+        dx = singa.__add__(dx1, dx2)
         return singa.__mul__(dy, dx)
 
 
