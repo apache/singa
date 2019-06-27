@@ -20,6 +20,11 @@ Welcome to Apache SINGA
 
 Recent News
 -----------
+
+* SINGA participated in mentoring the Google Summer of Code 2019 project `SpamAssassin : Statistical Classifier Plugin <https://summerofcode.withgoogle.com/projects/#5612088771215360>`_ .
+
+* SINGA participated at `EU FOSSA Apache Hackathon <https://eufossa.github.io/apache-hackathon-2019/>`_ in Brussels on 4 and 5 May 2019.
+
 * **Version 2.0.0** is now available, 20 April, 2019. `Download SINGA v2.0.0 <downloads.html>`_
 
 * SINGA was presented at `DISI, University of Trento, Italy <https://www.disi.unitn.it/>`_ on 14 December 2018.
