@@ -278,7 +278,7 @@ class TestPythonOperation(unittest.TestCase):
         loss= autograd.mse_loss(x,t)
         dx=loss.creator.backward()[0]
 
-        loss_np=tensor.to_numpy(loss)
+        loss_np=tensor.to_numpy(loss)[0]
         self.assertAlmostEqual(loss_np, 0.0366666, places=4)
         self.check_shape(dx.shape(), (3, 2))
         
@@ -289,25 +289,23 @@ class TestPythonOperation(unittest.TestCase):
         x.to_device(gpu_dev)
 
         result=autograd.abs(x)
-        Err=XT-result
-        dx=result.creator.backward()[0]
+        dx=result.creator.backward(x.data)
 
-        for ii in Err.flatten():
-            self.assertAlmostEquals(ii,0., places=3)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
         
     def test_Exp(self):
         X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
-        XT=np.array([2.2255409,0.22313017,27.112638,0.02732372,0.60653067,1.6487212]).reshape(3,2).astype(np.float32)
+        XT=np.exp(X)
         x=tensor.from_numpy(X)
         x.to_device(gpu_dev)
 
         result=autograd.exp(x)
-        Err=XT-result
-        dx=result.creator.backward()[0]
+        print("exp")
+        print(result)
+        dx=result.creator.backward(x.data)
 
-        for ii in Err.flatten():
-            self.assertAlmostEquals(ii,0., places=3)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
         
     def test_LeakyRelu(self):
@@ -316,14 +314,13 @@ class TestPythonOperation(unittest.TestCase):
         x=tensor.from_numpy(X)
         x.to_device(gpu_dev)
 
-        result=autograd.LeakyRelu(x)
-        Err=XT-result
-        dx=result.creator.backward()[0]
+        result=autograd.leakyrelu(x)
 
-        for ii in Err.flatten():
-            self.assertAlmostEquals(ii,0., places=3)
+        dx=result.creator.backward(x.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
-    
+
 
 if __name__ == '__main__':
     unittest.main()
