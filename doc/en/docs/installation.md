@@ -127,7 +127,44 @@ After compiling SINGA with ENABLE_TEST=ON, you can run the unit tests by
 You can see all the testing cases with testing results. If SINGA passes all
 tests, then you have successfully installed SINGA.
 
+### Use native tools to Build SINGA on Centos7
+Building from source will be different for Centos7 as package names differ.Follow the instructions given below.
 
+#### Installing dependencies
+Basic packages/libraries
+
+    sudo yum install freetype-devel libXft-devel ncurses-devel openblas-devel blas-devel lapack devel atlas-devel kernel-headers unzip wget pkgconfig zip zlib-devel libcurl-devel cmake curl unzip dh-autoreconf git python-devel glog-devel protobuf-devel
+For build-essential
+
+    sudo yum group install "Development Tools"
+For installing swig
+
+    sudo yum install pcre-devel
+    wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz
+    tar xvzf swig-3.0.10.tar.gz
+    cd swig-3.0.10.tar.gz
+    ./configure --prefix=${RUN}
+    make
+    make install
+ For installing gfortran
+
+    sudo yum install centos-release-scl-rh
+    sudo yum --enablerepo=centos-sclo-rh-testing install devtoolset-7-gcc-gfortran
+For installing pip and other packages
+
+    sudo yum install epel-release
+    sudo yum install python-pip
+    pip install matplotlib numpy pandas scikit-learn pydot
+    
+#### Installation
+Follow steps 1-5 of _Use native tools to build SINGA on Ubuntu_
+
+#### Testing
+You can run the unit tests by,
+
+    $ ./bin/test_singa
+You can see all the testing cases with testing results. If SINGA passes all
+tests, then you have successfully installed SINGA.
 ### Compile SINGA on Windows
 
 Instructions for building on Windows with Python support can be found [here](install_win.html).
