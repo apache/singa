@@ -788,7 +788,7 @@ class _Conv2d(Operation):
         super(_Conv2d, self).__init__()
         self.handle = handle
 
-    def forward(self, x, W, b):
+    def forward(self, x, W, b=None):
         assert x.nDim() == 4, "The dimensions of input should be 4D."
 
         if training:
@@ -796,6 +796,12 @@ class _Conv2d(Operation):
                 self.inputs = (x, W, b)
             else:
                 self.inputs = (x, W)
+
+        if not self.handle.bias_term:
+            # create empty bias tensor for Cpp API
+            b = CTensor((self.handle.num_filters,), x.device())
+            b.SetFloatValue(0.0)
+
         if isinstance(self.handle, singa.CudnnConvHandle):
             return singa.GpuConvForward(x, W, b, self.handle)
         else:
@@ -924,16 +930,22 @@ class Conv2d(Layer):
         )
         self.W.gaussian(0.0, std)
 
-        b_shape = (self.out_channels,)
-        # forward method required bias variable to proceed (dummy b tensor)
-        self.b = Tensor(shape=b_shape, requires_grad=self.bias, stores_grad=self.bias)
-        self.b.set_value(0.0)
-
+        if self.bias:
+            b_shape = (self.out_channels,)
+            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
+            self.b.set_value(0.0)
+        else:
+            # to keep consistency when to do forward.
+            self.b = None
+            # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
 
     def __call__(self, x):
         assert x.shape[1] == self.in_channels, "in_channels mismatched"
 
-        self.device_check(x, self.W, self.b)
+        if self.bias:
+            self.device_check(x, self.W, self.b)
+        else:
+            self.device_check(x, self.W)
 
         if x.device.id() == -1:
             if self.group != 1:
