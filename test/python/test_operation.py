@@ -84,8 +84,11 @@ class TestPythonOperation(unittest.TestCase):
         gpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
         gpu_input_tensor.gaussian(0.0, 1.0)
 
+        dy = tensor.Tensor(shape=(2, 1, 2, 2), device=gpu_dev)
+        dy.gaussian(0.0, 1.0)
+
         y = conv_0(gpu_input_tensor)  # PyTensor
-        dx, dW, db = y.creator.backward(dy)  # CTensor
+        dx, dW, db = y.creator.backward(dy.data)  # CTensor
 
         self.check_shape(y.shape, (2, 1, 2, 2))
         self.check_shape(dx.shape(), (2, 3, 3, 3))
@@ -117,25 +120,28 @@ class TestPythonOperation(unittest.TestCase):
         self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
 
     def test_SeparableConv2d_gpu(self):
+        # SeparableConv2d(in_channels, out_channels, kernel_size)
         separ_conv=autograd.SeparableConv2d(8, 16, 3, padding=1)
 
         x=np.random.random((10,8,28,28)).astype(np.float32)
         x=tensor.Tensor(device=gpu_dev, data=x)
 
-        #y = separ_conv(x)
-        y1 = separ_conv.spacial_conv(x)
-        y2 = separ_conv.depth_conv(y1)
-        
+        y1 = separ_conv.depthwise_conv(x)
+        y2 = separ_conv.point_conv(y1)
+
         dy1, dW_depth, _ = y2.creator.backward(y2.data)
         dx, dW_spacial, _ = y1.creator.backward(dy1)
 
         self.check_shape(y2.shape, (10, 16, 28, 28))
 
         self.check_shape(dy1.shape(), (10, 8, 28, 28))
-        self.check_shape(dW_depth.shape(), (16, 8, 1, 1)) 
+        self.check_shape(dW_depth.shape(), (16, 8, 1, 1))
 
         self.check_shape(dx.shape(), (10, 8, 28, 28))
         self.check_shape(dW_spacial.shape(), (8, 1, 3, 3))
+
+        y = separ_conv(x)
+        self.check_shape(y.shape, (10, 16, 28, 28))
 
 
     def test_batchnorm2d_gpu(self):
@@ -144,8 +150,7 @@ class TestPythonOperation(unittest.TestCase):
         gpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
         gpu_input_tensor.gaussian(0.0, 1.0)
 
-        dy = CTensor([2, 3, 3, 3])
-        singa.Gaussian(0.0, 1.0, dy)
+        dy = gpu_input_tensor.clone().data
 
         y = batchnorm_0(gpu_input_tensor)
         dx, ds, db = y.creator.backward(dy)
@@ -301,8 +306,6 @@ class TestPythonOperation(unittest.TestCase):
         x.to_device(gpu_dev)
 
         result=autograd.exp(x)
-        print("exp")
-        print(result)
         dx=result.creator.backward(x.data)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)

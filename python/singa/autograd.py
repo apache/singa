@@ -788,7 +788,7 @@ class _Conv2d(Operation):
         super(_Conv2d, self).__init__()
         self.handle = handle
 
-    def forward(self, x, W, b):
+    def forward(self, x, W, b=None):
         assert x.nDim() == 4, "The dimensions of input should be 4D."
 
         if training:
@@ -796,6 +796,12 @@ class _Conv2d(Operation):
                 self.inputs = (x, W, b)
             else:
                 self.inputs = (x, W)
+
+        if not self.handle.bias_term:
+            # create empty bias tensor for Cpp API
+            b = CTensor((self.handle.num_filters,), x.device())
+            b.SetFloatValue(0.0)
+
         if isinstance(self.handle, singa.CudnnConvHandle):
             return singa.GpuConvForward(x, W, b, self.handle)
         else:
@@ -934,9 +940,12 @@ class Conv2d(Layer):
             # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
 
     def __call__(self, x):
-        assert x.shape[1] == self.in_channels, "in_channels dismatched"
+        assert x.shape[1] == self.in_channels, "in_channels mismatched"
 
-        self.device_check(x, self.W, self.b)
+        if self.bias:
+            self.device_check(x, self.W, self.b)
+        else:
+            self.device_check(x, self.W)
 
         if x.device.id() == -1:
             if self.group != 1:
@@ -1097,16 +1106,16 @@ class _BatchNorm2d(Operation):
         self.running_var = running_var
         if training:
 
-            if isinstance(self.handle, singa.BatchNormHandle):
-                y, mean, var = singa.CpuBatchNormForwardTraining(
-                    self.handle, x, scale, bias, running_mean, running_var
-                )
-                self.cache = (x, scale, mean, var)
-            else:
+            if isinstance(self.handle, singa.CudnnBatchNormHandle):
                 y, mean, var = singa.GpuBatchNormForwardTraining(
                     self.handle, x, scale, bias, running_mean, running_var
                 )
 
+                self.cache = (x, scale, mean, var)
+            else:
+                y, mean, var = singa.CpuBatchNormForwardTraining(
+                    self.handle, x, scale, bias, running_mean, running_var
+                )
                 self.cache = (x, scale, mean, var)
         else:
             if isinstance(self.handle, singa.CudnnBatchNormHandle):

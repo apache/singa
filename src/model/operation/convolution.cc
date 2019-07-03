@@ -365,6 +365,7 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input,
   DataType dtype = input.data_type();
   auto dev = input.device();
   Context *ctx = dev->context(0);
+  channels_per_filter = channels/groups;
 
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&x_desc));
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&y_desc));
@@ -486,7 +487,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
   CHECK(x.shape(1) == cch.channels && x.shape(2) == cch.height &&
         x.shape(3) == cch.width) << "input sample shape should not change";
 
-  CHECK(W.shape(0) == cch.num_filters && W.shape(1) == cch.channels &&
+  CHECK(W.shape(0) == cch.num_filters && W.shape(1) == cch.channels_per_filter &&
         W.shape(2) == cch.kernel_h
         && W.shape(3) == cch.kernel_w) << "weights shape should not change";
 
