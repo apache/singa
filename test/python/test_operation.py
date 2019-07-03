@@ -84,8 +84,11 @@ class TestPythonOperation(unittest.TestCase):
         gpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
         gpu_input_tensor.gaussian(0.0, 1.0)
 
+        dy = tensor.Tensor(shape=(2, 1, 2, 2), device=gpu_dev)
+        dy.gaussian(0.0, 1.0)
+
         y = conv_0(gpu_input_tensor)  # PyTensor
-        dx, dW, db = y.creator.backward(dy)  # CTensor
+        dx, dW, db = y.creator.backward(dy.data)  # CTensor
 
         self.check_shape(y.shape, (2, 1, 2, 2))
         self.check_shape(dx.shape(), (2, 3, 3, 3))
