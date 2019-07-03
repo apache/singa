@@ -19,11 +19,11 @@
 
 package:
   name: singa-gpu
-  version: 1.2.0
+  version: 2.0.0
 
 requirements:
   run:
-    - singa 1.2.0 cudnn7.3.1_cuda10.0
+    - singa 2.0.0 cudnn7.3.1_cuda10.0_py37
 
 about:
   home: http://singa.apache.org/

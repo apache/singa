@@ -66,8 +66,8 @@ requirements:
 test:
   source_files:
     - test/python/*.py
-  test:
-    - python run.py
+  commands:
+    - cd test/python && python run.py
 
 about:
   home: http://singa.apache.org/

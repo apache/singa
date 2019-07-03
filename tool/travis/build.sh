@@ -31,9 +31,9 @@ export CONDA_BLD_PATH=~/conda-bld-$suffix
 mkdir $CONDA_BLD_PATH
 
 conda build tool/conda/singa --python 3.6
-conda install --use-local singa
-cd test/python
-$HOME/miniconda/bin/python run.py
+# conda install --use-local singa
+# cd test/python
+# $HOME/miniconda/bin/python run.py
 
 if [[ "$TRAVIS_SECURE_ENV_VARS" == "false" ]];
   # install and run unittest

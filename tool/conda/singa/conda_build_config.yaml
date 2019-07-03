@@ -21,6 +21,9 @@ c_compiler_version:         # [linux]
     - 5.4                   # [linux]
 cxx_compiler_version:       # [linux]
     - 5.4                   # [linux]
+# https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html#macos-sdk
+CONDA_BUILD_SYSROOT:
+    - "/tmp/MacOSX10.9.sdk" # [osx]
 cudnn:                      # [linux]
     - "7.3.1 cuda10.0_0"    # [environ.get("CUDA")=="10.0"]
     - "7.3.1 cuda9.0_0"     # [environ.get("CUDA")=="9.0"]
