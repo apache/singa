@@ -924,17 +924,14 @@ class Conv2d(Layer):
         )
         self.W.gaussian(0.0, std)
 
-        if self.bias:
-            b_shape = (self.out_channels,)
-            self.b = Tensor(shape=b_shape, requires_grad=True, stores_grad=True)
-            self.b.set_value(0.0)
-        else:
-            # to keep consistency when to do forward.
-            self.b = None
-            # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
+        b_shape = (self.out_channels,)
+        # forward method required bias variable to proceed (dummy b tensor)
+        self.b = Tensor(shape=b_shape, requires_grad=self.bias, stores_grad=self.bias)
+        self.b.set_value(0.0)
+
 
     def __call__(self, x):
-        assert x.shape[1] == self.in_channels, "in_channels dismatched"
+        assert x.shape[1] == self.in_channels, "in_channels mismatched"
 
         self.device_check(x, self.W, self.b)
 

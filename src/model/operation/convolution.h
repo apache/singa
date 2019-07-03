@@ -124,6 +124,7 @@ class CudnnConvHandle: public ConvHandle {
 
   size_t workspace_count;
   Tensor workspace;
+  size_t channels_per_filter;
 };
 
 Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch);
