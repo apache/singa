@@ -1094,16 +1094,16 @@ class _BatchNorm2d(Operation):
         self.running_var = running_var
         if training:
 
-            if isinstance(self.handle, singa.BatchNormHandle):
-                y, mean, var = singa.CpuBatchNormForwardTraining(
-                    self.handle, x, scale, bias, running_mean, running_var
-                )
-                self.cache = (x, scale, mean, var)
-            else:
+            if isinstance(self.handle, singa.CudnnBatchNormHandle):
                 y, mean, var = singa.GpuBatchNormForwardTraining(
                     self.handle, x, scale, bias, running_mean, running_var
                 )
 
+                self.cache = (x, scale, mean, var)
+            else:
+                y, mean, var = singa.CpuBatchNormForwardTraining(
+                    self.handle, x, scale, bias, running_mean, running_var
+                )
                 self.cache = (x, scale, mean, var)
         else:
             if isinstance(self.handle, singa.CudnnBatchNormHandle):

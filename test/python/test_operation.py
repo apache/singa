@@ -147,8 +147,7 @@ class TestPythonOperation(unittest.TestCase):
         gpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
         gpu_input_tensor.gaussian(0.0, 1.0)
 
-        dy = CTensor([2, 3, 3, 3])
-        singa.Gaussian(0.0, 1.0, dy)
+        dy = gpu_input_tensor.clone().data
 
         y = batchnorm_0(gpu_input_tensor)
         dx, ds, db = y.creator.backward(dy)
