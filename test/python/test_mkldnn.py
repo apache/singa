@@ -40,7 +40,7 @@ class TestPythonOperation(unittest.TestCase):
         dy = singa_wrap.Tensor(dy_shape)
         dy.CopyFloatDataFromHostPtr([0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.4])
 
-        handle = singa_wrap.ConvHandle(x, (3, 3), (2, 2), (1, 1), 1, 1, True)
+        handle = singa_wrap.ConvHandle(x, (3, 3), (2, 2), (1, 1), 1, 1, True, 1)
         y = singa_wrap.CpuConvForward(x, W, b, handle)
 
         self.assertListEqual([2, 1, 2, 2], list(y.shape()))
