@@ -20,17 +20,15 @@ from builtins import str
 
 from singa import tensor
 from singa import singa_wrap as singa
-from singa import device
 from singa import autograd
+
+from cuda_helper import gpu_dev, cpu_dev
 
 import numpy as np
 
 autograd.training = True
 
 CTensor = singa.Tensor
-
-gpu_dev = device.create_cuda_gpu()
-cpu_dev = device.get_default_device()
 
 dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
