@@ -26,11 +26,9 @@ import numpy as np
 
 import singa.tensor as tensor
 import singa.optimizer as opt
-import singa.device as device
 from singa import singa_wrap
 
-if singa_wrap.USE_CUDA:
-    cuda = device.create_cuda_gpu()
+from cuda_helper import gpu_dev as cuda
 
 
 def np_adam(plist, glist, mlist, vlist, lr, t, b1=0.9, b2=0.999):
