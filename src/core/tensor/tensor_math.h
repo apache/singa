@@ -277,7 +277,7 @@ void Sum(const Tensor &in, DType *out, Context *ctx) {
   template <typename DType, typename Lang>                    \
   void fn(const Tensor &in, Tensor *out, Context *ctx) {      \
     std::string str = stringfn;                               \
-    str += " Not Implemented";                               \
+    str += " Not Implemented";                                \
     LOG(FATAL) << str;                                        \
   }
 
