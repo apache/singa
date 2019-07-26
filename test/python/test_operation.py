@@ -442,11 +442,11 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
-    def test_Sinh_gpu(self):
+    def test_Sinh_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
         XT = np.sinh(X)
         x = tensor.from_numpy(X)
-        x.to_device(gpu_dev)
+        x.to_device(cpu_dev)
 
         result = autograd.sinh(x)
         dx = result.creator.backward(x.data)
