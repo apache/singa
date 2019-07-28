@@ -396,7 +396,7 @@ class HardSigmoid(Operation):
         mask1 = singa.LTFloat(x, 1.0)
 
         mask = singa.__mul__(mask0,mask1)
-        return singa.MultFloat(mask, self.alpha)
+        return singa.__mul__(singa.MultFloat(mask, self.alpha),dy)
 
 def hardsigmoid(x,alpha=0.2,gamma=0.5):
     return HardSigmoid(alpha,gamma)(x)[0]
