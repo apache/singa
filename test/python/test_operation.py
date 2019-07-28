@@ -322,6 +322,27 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
 
+    def test_Identity_cpu(self):
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        y = x.copy()
+        x = tensor.from_numpy(x)
+        x.to_device(cpu_dev)
 
+        result = autograd.identity(x)
+        dx = result.creator.backward(x.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        self.check_shape(dx.shape(), (3, 2))
+    def test_Identity_gpu(self):
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        y = x.copy()
+        x = tensor.from_numpy(x)
+        x.to_device(gpu_dev)
+
+        result = autograd.identity(x)
+        dx = result.creator.backward(x.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        self.check_shape(dx.shape(), (3, 2))
 if __name__ == '__main__':
     unittest.main()
