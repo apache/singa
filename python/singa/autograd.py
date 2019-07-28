@@ -358,6 +358,39 @@ def relu(x):
     return ReLU()(x)[0]
 
 
+class SeLU(Operation):
+    def __init__(self,alpha=1.67326,gamma=1.0507):
+        super(SeLU, self).__init__()
+        self.alpha=alpha
+        self.gamma=gamma
+
+    def forward(self, x):
+        #y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0
+        if training:
+            self.input = x
+        x1 = singa.LTFloat(x, 0.0)
+        x1 = singa.__mul__(x, x1)
+        x1 = singa.MultFloat(singa.SubFloat(singa.MultFloat(singa.Exp(x1),self.alpha),self.alpha),self.gamma)
+        x2 = singa.ReLU(x)
+        x2 = singa.MultFloat(x2,self.gamma)
+        x1 = singa.__add__(x1, x2)
+        return x1
+
+    def backward(self, dy):
+        dx1mask = singa.LTFloat(self.input, 0.0)
+        dx1 = singa.MultFloat(singa.Exp(self.input), self.gamma*self.alpha)
+        dx1 = singa.__mul__(dx1mask, dx1)
+
+        dx2mask = singa.GTFloat(self.input, 0.0)
+        dx2 = singa.MultFloat(dx2mask, self.gamma)
+
+        dx = singa.__add__(dx1, dx2)
+        return singa.__mul__(dy, dx)
+
+def selu(x,alpha=1.67326,gamma=1.0507):
+    return SeLU(alpha,gamma)(x)[0]
+
+
 class Matmul(Operation):
     """For matrix multiplication"""
 

@@ -322,6 +322,43 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
 
+ 
+    def test_SeLU_cpu(self):
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        #y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0
+        a=1.67326
+        g=1.0507
+        x0 = x.copy()
+        x0=((x0<=0)*x0)
+        x1 = x.copy()
+        x1=((x1>=0)*x1)
+        y = g*(a*np.exp(x0)-a)+x1*g
+        x = tensor.from_numpy(x)
+        x.to_device(cpu_dev)
+
+        result = autograd.selu(x,a,g)
+        dx = result.creator.backward(x.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        self.check_shape(dx.shape(), (3, 2))
+    def test_SeLU_gpu(self):
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        #y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0
+        a=1.67326
+        g=1.0507
+        x0 = x.copy()
+        x0=((x0<=0)*x0)
+        x1 = x.copy()
+        x1=((x1>=0)*x1)
+        y = g*(a*np.exp(x0)-a)+x1*g
+        x = tensor.from_numpy(x)
+        x.to_device(gpu_dev)
+
+        result = autograd.selu(x,a,g)
+        dx = result.creator.backward(x.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        self.check_shape(dx.shape(), (3, 2))
 
 if __name__ == '__main__':
     unittest.main()
