@@ -358,6 +358,51 @@ def relu(x):
     return ReLU()(x)[0]
 
 
+class HardSigmoid(Operation):
+    def __init__(self,alpha=0.2,gamma=0.5):
+        super(HardSigmoid, self).__init__()
+        self.alpha=alpha
+        self.gamma=gamma
+
+    def forward(self, x):
+        """Do forward propgation.
+        #y = max(0, min(1, alpha * x + gamma))
+        Args:
+            x (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        if training:
+            self.input = x
+
+        x = singa.AddFloat(singa.MultFloat(x,self.alpha),self.gamma)
+        x = singa.ReLU(x)
+        mask = singa.LTFloat(x, 1.0)
+        mask2 = singa.GEFloat(x, 1.0)
+
+        ans = singa.__add__(singa.__mul__(x, mask),mask2)
+        return singa.ReLU(ans)
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            a (CTensor) dx
+        """
+
+        x = singa.AddFloat(singa.MultFloat(self.input,self.alpha),self.gamma)
+        mask0 = singa.GTFloat(x, 0.0)
+        mask1 = singa.LTFloat(x, 1.0)
+
+        mask = singa.__mul__(mask0,mask1)
+        return singa.MultFloat(mask, self.alpha)
+
+def hardsigmoid(x,alpha=0.2,gamma=0.5):
+    return HardSigmoid(alpha,gamma)(x)[0]
+
+
+
 class Matmul(Operation):
     """For matrix multiplication"""
 
