@@ -610,6 +610,15 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
+    def test_Sign(self):
+        X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
+        XT=np.sign(X)
+        x=tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+        
+        result=autograd.sign(x)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
+
 
 if __name__ == '__main__':
     unittest.main()
