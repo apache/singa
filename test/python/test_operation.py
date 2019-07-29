@@ -322,6 +322,35 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
 
+    def test_Less_gpu(self):
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        y = np.less(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
 
+        result = autograd.less(x0,x1)
+        dx0,dx1 = result.creator.backward(x0.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), [[1.,0.],[1.,0.],[0.,0.]], decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), [[1.,0.],[1.,0.],[0.,0.]], decimal=5)
+
+    def test_Less_cpu(self):
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        y = np.less(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+
+        result = autograd.less(x0,x1)
+        dx0,dx1 = result.creator.backward(x0.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), [[1.,0.],[1.,0.],[0.,0.]], decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), [[1.,0.],[1.,0.],[0.,0.]], decimal=5)
 if __name__ == '__main__':
     unittest.main()
