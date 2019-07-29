@@ -610,6 +610,17 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
+    def test_Sqrt(self):
+        X=np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        XT=numpy.sqrt(X)
+        x=tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+
+        result=autograd.sqrt(x)
+        dx=result.creator.backward(x.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
+        self.check_shape(dx.shape(), (3, 2))
 
 if __name__ == '__main__':
     unittest.main()

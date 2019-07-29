@@ -1828,3 +1828,23 @@ class LeakyRelu(Operation):
 
 def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
+
+
+class Sqrt(Operation):
+    def __init__(self):
+        super(Sqrt, self).__init__()  
+    
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Sqrt(x)
+​
+    def backward(self, dy):
+        dx = singa.PowFloat(self.input,-0.5)
+        dx = singa.MultFloat(dx,0.5)
+        dx = singa.__mul__(dy, dx)
+        return dx
+​
+
+def sqrt(x):
+    return Sqrt()(x)[0]
