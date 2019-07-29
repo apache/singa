@@ -39,12 +39,10 @@ CnMemPool::CnMemPool(int numDevices, size_t init_size, size_t max_size) {
     conf_.add_device(i);
   conf_.set_init_size(init_size);
   conf_.set_max_size(max_size);
-  CHECK_LT(++pool_count, 2) << "CnMemPool must be used as a singleton.";
 }
 
 CnMemPool::CnMemPool(const MemPoolConf &conf) {
   conf_ = conf;
-  CHECK_LT(++pool_count, 2) << "CnMemPool must be used as a singleton.";
 }
 
 void CnMemPool::Init() {
