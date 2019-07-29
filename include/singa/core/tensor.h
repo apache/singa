@@ -345,7 +345,18 @@ Tensor Sigmoid(const Tensor &in);
 Tensor Sign(const Tensor &in);
 Tensor Sqrt(const Tensor &in);
 Tensor Square(const Tensor &in);
+Tensor Cos(const Tensor &in);
+Tensor Cosh(const Tensor &in);
+Tensor Acos(const Tensor &in);
+Tensor Acosh(const Tensor &in);
+Tensor Sin(const Tensor &in);
+Tensor Sinh(const Tensor &in);
+Tensor Asin(const Tensor &in);
+Tensor Asinh(const Tensor &in);
+Tensor Tan(const Tensor &in);
 Tensor Tanh(const Tensor &in);
+Tensor Atan(const Tensor &in);
+Tensor Atanh(const Tensor &in);
 Tensor Transform(const Tensor &in);
 
 void Abs(const Tensor &in, Tensor *out);
@@ -356,7 +367,18 @@ void Sigmoid(const Tensor &in, Tensor *out);
 void Sign(const Tensor &in, Tensor *out);
 void Sqrt(const Tensor &in, Tensor *out);
 void Square(const Tensor &in, Tensor *out);
+void Cos(const Tensor &in, Tensor *out);
+void Cosh(const Tensor &in, Tensor *out);
+void Acos(const Tensor &in, Tensor *out);
+void Acosh(const Tensor &in, Tensor *out);
+void Sin(const Tensor &in, Tensor *out);
+void Sinh(const Tensor &in, Tensor *out);
+void Asin(const Tensor &in, Tensor *out);
+void Asinh(const Tensor &in, Tensor *out);
+void Tan(const Tensor &in, Tensor *out);
 void Tanh(const Tensor &in, Tensor *out);
+void Atan(const Tensor &in, Tensor *out);
+void Atanh(const Tensor &in, Tensor *out);
 void Transform(const Tensor &in, Tensor *out);
 
 /// Element-wise opeartion, out[i]=in[i]^x
