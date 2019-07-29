@@ -152,13 +152,6 @@ __global__ void KernelAbs(const size_t n, const float *in, float *out) {
   }
 }
 
-__global__ void KernelTanh(const size_t n, const float *in, float *out) {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
-       i += blockDim.x * gridDim.x) {
-    out[i] = tanhf(in[i]);
-  }
-}
-
 __global__ void KernelSoftplus(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -355,6 +348,30 @@ __global__ void KernelSoftmaxCrossEntropyBwd(const bool int_target, const size_t
   }
 }
 
+//cuda unary elementwise ops kernel template 
+#define GenUnaryCudaKernel(fn,kernelfn,cudafn)                                \
+  __global__ void kernelfn(const size_t n, const float *in, float *out) {     \
+    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;                \
+         i += blockDim.x * gridDim.x) {                                       \
+      out[i] = cudafn(in[i]);                                                 \
+    }                                                                         \
+  }                                                                           \
+  void fn(const size_t n, const float *in, float *out, cudaStream_t s) {      \
+    kernelfn <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);             \
+  }
+
+GenUnaryCudaKernel(cos,KernelCos,cosf);
+GenUnaryCudaKernel(cosh,KernelCosh,coshf);
+GenUnaryCudaKernel(acos,KernelAcos,acosf);
+GenUnaryCudaKernel(acosh,KernelAcosh,acoshf);
+GenUnaryCudaKernel(sin,KernelSin,sinf);
+GenUnaryCudaKernel(sinh,KernelSinh,sinhf);
+GenUnaryCudaKernel(asin,KernelAsin,asinf);
+GenUnaryCudaKernel(asinh,KernelAsinh,asinhf);
+GenUnaryCudaKernel(tan,KernelTan,tanf);
+GenUnaryCudaKernel(tanh,KernelTanh,tanhf);
+GenUnaryCudaKernel(atan,KernelAtan,atanf);
+GenUnaryCudaKernel(atanh,KernelAtanh,atanhf);
 
 
 // ********************************
@@ -387,10 +404,6 @@ void sqrt(const size_t n, const float *in, float *out, cudaStream_t s) {
 
 void square(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelSquare <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);
-}
-
-void tanh(const size_t n, const float *in, float *out, cudaStream_t s) {
-  KernelTanh <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);
 }
 
 void relu(const size_t n, const float *in, float *out, cudaStream_t s) {
@@ -629,7 +642,6 @@ __global__ void kernel_tanh_grad(const float *src_data, float *des_data,
     des_data[index] = (1.0f - src_data[index] * src_data[index]);
   }
 }
-
 
 __global__ void kernel_softplus_grad(const float *src_data, float *des_data,
                                      int n) {

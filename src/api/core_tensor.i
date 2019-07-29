@@ -178,7 +178,18 @@ namespace singa{
   Tensor Sign(const Tensor &t);
   Tensor Sqrt(const Tensor &t);
   Tensor Square(const Tensor &t);
+  Tensor Cos(const Tensor &t);
+  Tensor Cosh(const Tensor &t);
+  Tensor Acos(const Tensor &t);
+  Tensor Acosh(const Tensor &t);
+  Tensor Sin(const Tensor &t);
+  Tensor Sinh(const Tensor &t);
+  Tensor Asin(const Tensor &t);
+  Tensor Asinh(const Tensor &t);
+  Tensor Tan(const Tensor &t);
   Tensor Tanh(const Tensor &t);
+  Tensor Atan(const Tensor &t);
+  Tensor Atanh(const Tensor &t);
 
   Tensor Sum(const Tensor &t, int axis);
   template <typename SType> SType Sum(const Tensor &t);
