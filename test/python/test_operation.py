@@ -610,6 +610,18 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
+    def test_Log(self):
+        X=np.array([1, np.e, np.e**2, np.e**4]).reshape(2,2).astype(np.float32)
+        XT=np.log(X)
+        x=tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+
+        result=autograd.log(x)
+        dx=result.creator.backward(x.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
+        self.check_shape(dx.shape(), (2, 2))  
+        
 
 if __name__ == '__main__':
     unittest.main()
