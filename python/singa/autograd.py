@@ -1579,6 +1579,22 @@ def abs(a):
     return Abs()(a)[0]
 
 
+class Div(Operation):
+    def _init_(self):
+        super(Div, self)._init_()    
+    
+    def forward(self, a, b):    
+        if training:
+            self.input = (a, b)
+            return singa.__div__(a, b)
+
+    def backward(self, dy):
+        return singa.__div__(dy, self.input[0]), singa.__mul__(dy, self.input[1])
+
+def div(a, b):
+    return Div()(a,b)[0]
+
+
 class Exp(Operation):
     def forward(self, a):
         if training:
