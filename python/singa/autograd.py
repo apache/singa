@@ -1337,6 +1337,214 @@ class Tanh(Operation):
 def tanh(x):
     return Tanh()(x)[0]
 
+class Cos(Operation):
+    def __init__(self):
+        super(Cos, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Cos(x)
+
+    def backward(self, dy):
+        dx = singa.Sin(self.input)
+        dx = singa.MultFloat(dx, -1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def cos(x):
+    return Cos()(x)[0]
+
+class Cosh(Operation):
+    def __init__(self):
+        super(Cosh, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Cosh(x)
+
+    def backward(self, dy):
+        dx = singa.Sinh(self.input)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def cosh(x):
+    return Cosh()(x)[0]
+
+class Acos(Operation):
+    def __init__(self):
+        super(Acos, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Acos(x)
+
+    def backward(self, dy):
+        dx = singa.Square(self.input)
+        dx = singa.MultFloat(dx, -1.0)         
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.PowFloat(dx, -0.5)
+        dx = singa.MultFloat(dx, -1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def acos(x):
+    return Acos()(x)[0]
+
+class Acosh(Operation):
+    def __init__(self):
+        super(Acosh, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Acosh(x)
+
+    def backward(self, dy):
+        dx = singa.SubFloat(self.input, 1.0)
+        dx = singa.Sqrt(dx)
+        temp = singa.AddFloat(self.input, 1.0)
+        temp = singa.Sqrt(temp)
+        dx = singa.__mul__(dx, temp)
+        dx = singa.PowFloat(dx, -1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def acosh(x):
+    return Acosh()(x)[0]
+
+class Sin(Operation):
+    def __init__(self):
+        super(Sin, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Sin(x)
+
+    def backward(self, dy):
+        dx = singa.Cos(self.input)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def sin(x):
+    return Sin()(x)[0]
+
+class Sinh(Operation):
+    def __init__(self):
+        super(Sinh, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Sinh(x)
+
+    def backward(self, dy):
+        dx = singa.Cosh(self.input)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def sinh(x):
+    return Sinh()(x)[0]
+
+class Asin(Operation):
+    def __init__(self):
+        super(Asin, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Asin(x)
+
+    def backward(self, dy):
+        dx = singa.Square(self.input)
+        dx = singa.MultFloat(dx, -1.0)         
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.PowFloat(dx, -0.5)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def asin(x):
+    return Asin()(x)[0]
+
+class Asinh(Operation):
+    def __init__(self):
+        super(Asinh, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Asinh(x)
+
+    def backward(self, dy):
+        dx = singa.Square(self.input)
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.PowFloat(dx, -0.5)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def asinh(x):
+    return Asinh()(x)[0]
+
+class Tan(Operation):
+    def __init__(self):
+        super(Tan, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Tan(x)
+
+    def backward(self, dy):
+        dx = singa.Cos(self.input)
+        dx = singa.Square(dx)
+        dx = singa.PowFloat(dx, -1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def tan(x):
+    return Tan()(x)[0]
+
+class Atan(Operation):
+    def __init__(self):
+        super(Atan, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Atan(x)
+
+    def backward(self, dy):
+        dx = singa.Square(self.input)
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.PowFloat(dx, -1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def atan(x):
+    return Atan()(x)[0]
+
+class Atanh(Operation):
+    def __init__(self):
+        super(Atanh, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Atanh(x)
+
+    def backward(self, dy):
+        dx = singa.Square(self.input)
+        dx = singa.MultFloat(dx, -1.0)         
+        dx = singa.AddFloat(dx, 1.0)
+        dx = singa.PowFloat(dx, -1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def atanh(x):
+    return Atanh()(x)[0]
 
 class Sigmoid(Operation):
     def __init__(self):
