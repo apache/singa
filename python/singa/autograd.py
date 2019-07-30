@@ -358,6 +358,48 @@ def relu(x):
     return ReLU()(x)[0]
 
 
+class Elu(Operation):
+    def __init__(self,alpha=1):
+        super(Elu, self).__init__()
+        self.alpha=alpha
+
+    def forward(self, x):
+        """Do forward propgation.
+        Store the x if requires gradient.
+        Args:
+            x (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        #f(x) = alpha * (exp(x) - 1.) for x < 0, f(x) = x for x >= 0
+        if training:
+            self.input = x
+        x1 = singa.LTFloat(x, 0.0)
+        x1 = singa.__mul__(x, x1)
+        x1 = singa.SubFloat(singa.Exp(x1),self.alpha)
+        x2 = singa.ReLU(x)
+        x1 = singa.__add__(x1, x2)
+        return x1
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            a tuple for dx
+        """
+        dx1mask = singa.LTFloat(self.input, 0.0)
+        dx1 = singa.MultFloat(singa.Exp(self.input), self.alpha)
+        dx1 = singa.__mul__(dx1mask, dx1)
+
+        dx2mask = singa.GTFloat(self.input, 0.0)
+
+        dx = singa.__add__(dx1, dx2mask)
+        return singa.__mul__(dy, dx)
+
+def elu(x,alpha=1):
+    return Elu(alpha)(x)[0]
+
 class Matmul(Operation):
     """For matrix multiplication"""
 
