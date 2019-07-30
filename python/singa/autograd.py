@@ -1828,3 +1828,27 @@ class LeakyRelu(Operation):
 
 def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
+
+
+class SoftPlus(Operation):
+    def __init__(self):
+        super(SoftPlus, self).__init__()  
+    
+    def forward(self, x):
+    #f(x) = ln(exp(x) + 1)
+        if training:
+            self.input = x
+        x1 = singa.AddFloat(singa.Exp(x),1.0)
+        y = singa.Log(x1)
+        
+        return y
+​
+    def backward(self, dy):
+        dx = singa.AddFloat(singa.Exp(self.input),1.0)
+        dx = singa.Div(singa.Exp(self.input),dx)
+        dx = singa.__mul__(dy, dx)
+        return dx
+​
+
+def softplus(x):
+    return SoftPlus()(x)[0]
