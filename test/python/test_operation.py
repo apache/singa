@@ -610,6 +610,18 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
+    def test_SoftSign(self):
+        X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
+        XT=X/(1 + np.abs(X))
+
+        x=tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+
+        result=autograd.softsign(x)
+        dx=result.creator.backward(x.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
+        self.check_shape(dx.shape(), (3, 2))
 
 if __name__ == '__main__':
     unittest.main()
