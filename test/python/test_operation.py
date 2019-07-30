@@ -615,9 +615,12 @@ class TestPythonOperation(unittest.TestCase):
         XT=np.sign(X)
         x=tensor.from_numpy(X)
         x.to_device(gpu_dev)
-        
+    
         result=autograd.sign(x)
+        dx=result.creator.backward(x.data)
+
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
+        np.testing.assert_almost_equal(dx,0)
 
 
 if __name__ == '__main__':
