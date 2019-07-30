@@ -1845,7 +1845,7 @@ class SoftPlus(Operation):
 ​
     def backward(self, dy):
         dx = singa.AddFloat(singa.Exp(self.input),1.0)
-        dx = singa.Div(singa.Exp(self.input),dx)
+        dx = singa.__div__(singa.Exp(self.input),dx)
         dx = singa.__mul__(dy, dx)
         return dx
 ​
