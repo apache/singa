@@ -344,11 +344,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.cos(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.cos, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.cos, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Cos_gpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -361,11 +361,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.cos(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.cos, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.cos, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Cosh_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -378,11 +378,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.cosh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.cosh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.cosh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Cosh_gpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -395,11 +395,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.cosh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.cosh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.cosh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Acos_cpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -412,11 +412,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.acos(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arccos, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arccos, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Acos_gpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -429,11 +429,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.acos(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arccos, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arccos, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Acosh_cpu(self):
         X = np.array([1.1, 1.5, 1.9, 2.2, 2.5, 2.8]).reshape(3, 2).astype(np.float32)
@@ -446,11 +446,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.acosh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arccosh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arccosh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Acosh_gpu(self):
         X = np.array([1.1, 1.5, 1.9, 2.2, 2.5, 2.8]).reshape(3, 2).astype(np.float32)
@@ -463,11 +463,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.acosh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arccosh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arccosh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Sin_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -480,11 +480,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.sin(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.sin, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.sin, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Sin_gpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -497,11 +497,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.sin(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.sin, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.sin, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Sinh_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -514,11 +514,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.sinh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.sinh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.sinh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Sinh_gpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -531,11 +531,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.sinh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.sinh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.sinh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Asin_cpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -548,11 +548,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.asin(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arcsin, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arcsin, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Asin_gpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -565,11 +565,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.asin(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arcsin, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arcsin, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Asinh_cpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -582,11 +582,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.asinh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arcsinh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arcsinh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Asinh_gpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -599,11 +599,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.asinh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arcsinh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arcsinh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Tan_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -616,11 +616,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.tan(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.tan, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.tan, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Tan_gpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -633,11 +633,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.tan(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.tan, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.tan, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Tanh_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -650,11 +650,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.tanh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.tanh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.tanh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Tanh_gpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -667,11 +667,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.tanh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.tanh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.tanh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Atan_cpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -684,11 +684,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.atan(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arctan, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arctan, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Atan_gpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -701,11 +701,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.atan(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arctan, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arctan, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Atanh_cpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -718,11 +718,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(cpu_dev)
 
         result = autograd.atanh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arctanh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arctanh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
     def test_Atanh_gpu(self):
         X = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
@@ -735,11 +735,11 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.atanh(x)
-        dx_singa = result.creator.backward(dy.data)
-        dx_numpy = numpy_unary_ops_backward(np.arctanh, X, DY)
+        dx = result.creator.backward(dy.data)
+        DX = numpy_unary_ops_backward(np.arctanh, X, DY)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx_singa)), dx_numpy, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=2)
 
 
 if __name__ == '__main__':
