@@ -611,16 +611,25 @@ class TestPythonOperation(unittest.TestCase):
         self.check_shape(dx.shape(), (3, 2))
 
     def test_SoftPlus(self):
-        X=np.array([1.0,2.0,3.0,4.0,5.0,6.0]).reshape(3,2).astype(np.float32)
-        XT=np.log(np.exp(X) + 1)
-        x=tensor.from_numpy(X)
+        x=np.array([1.0,2.0,3.0,4.0,5.0,6.0]).reshape(3,2).astype(np.float32)/10
+        h=(1e-5)
+        xt=x+h
+
+        y=np.log(np.exp(x) + 1)
+        yt=np.log(np.exp(xt) + 1)
+
+
+        x=tensor.from_numpy(x)
         x.to_device(gpu_dev)
-
         result=autograd.softplus(x)
-        dx=result.creator.backward(x.data)
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
-        self.check_shape(dx.shape(), (3, 2))
+        dy=tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+        dy.to_device(gpu_dev)
+        dx=result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), (yt-y)/h, decimal=2)
+
 
 if __name__ == '__main__':
     unittest.main()
