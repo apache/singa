@@ -1845,7 +1845,7 @@ class SoftSign(Operation):
 ​
     def backward(self, dy):
         dx = singa.AddFloat(singa.Abs(self.input),1.0)
-        dx = singa.Square(dx)
+        dx = singa.PowFloat(singa.Square(dx),-1.0)
         dx = singa.__mul__(dy, dx)
         return dx
 ​
