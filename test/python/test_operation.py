@@ -332,7 +332,7 @@ class TestPythonOperation(unittest.TestCase):
         x1.to_device(gpu_dev)
 
         result = autograd.equal(x0,x1)
- 
+
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
     def test_Equal_cpu(self):
         x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)

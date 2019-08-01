@@ -380,7 +380,7 @@ class Equal(Operation):
         Returns:
             a tuple for (dx, dx1)
         """
-        assert('no backward function')
+        assert 0,('no backward function for equal')
         return None
 
 def equal(x,y):
