@@ -371,8 +371,6 @@ class Equal(Operation):
        """
         m = singa.__sub__(x,y)
         cur = singa.__mul__(singa.GEFloat(m,0),singa.LEFloat(m,0))
-        if training:
-            self.cache = cur
         return cur
 
     def backward(self, dy):
@@ -382,7 +380,8 @@ class Equal(Operation):
         Returns:
             a tuple for (dx, dx1)
         """
-        return (self.cache,self.cache)
+        assert('no backward function')
+        return None
 
 def equal(x,y):
     return Equal()(x,y)[0]
