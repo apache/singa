@@ -382,7 +382,8 @@ class Less(Operation):
         Returns:
             a tuple for (dx0, dx1)
         """
-        return (self.cache,self.cache)
+        assert 0,('no backward function for less')
+        return None
 
 def less(x,y):
     return Less()(x,y)[0]
