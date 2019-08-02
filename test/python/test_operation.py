@@ -611,17 +611,24 @@ class TestPythonOperation(unittest.TestCase):
         self.check_shape(dx.shape(), (3, 2))
 
     def test_Log(self):
-        X=np.array([1, np.e, np.e**2, np.e**4]).reshape(2,2).astype(np.float32)
-        XT=np.log(X)
-        x=tensor.from_numpy(X)
+        x=np.array([0.1,1.0,0.4,1.4,0.9,2.0]).reshape(3,2).astype(np.float32)
+        h=0.0001
+        xt=x+h
+
+        y=np.log(x)
+        yt=np.log(xt)
+
+        x=tensor.from_numpy(x)
         x.to_device(gpu_dev)
-
         result=autograd.log(x)
-        dx=result.creator.backward(x.data)
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
-        self.check_shape(dx.shape(), (2, 2))  
-        
+        dy=tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+        dy.to_device(gpu_dev)
+        dx=result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), (yt-y)/h, decimal=2)
+
 
 if __name__ == '__main__':
     unittest.main()
