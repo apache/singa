@@ -25,7 +25,7 @@ using namespace std;
 namespace singa {
 
 #ifdef USE_CUDA
-
+ 
 std::vector<std::shared_ptr<Device> > Platform::UsedDevice;
 std::mutex Platform::mtx_;
 int Platform::GetNumGPUs() {
