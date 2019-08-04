@@ -16,39 +16,88 @@
     specific language governing permissions and limitations
     under the License.
 -->
+
 # How to Contribute to Documentation
 
-
 ## Website
+
 This document gives step-by-step instructions for deploying [SINGA website](http://singa.incubator.apache.org).
 
-SINGA website is built by [Sphinx](http://www.sphinx-doc.org) >=1.4.4 from a source tree stored in git: https://github.com/apache/incubator-singa/tree/master/doc.
+SINGA website is built by [Sphinx](http://www.sphinx-doc.org) from a source tree stored in the [git repo](https://github.com/apache/incubator-singa/tree/master/doc).
 
 To install Sphinx:
 
-    $ pip install -U Sphinx
+    pip install -U Sphinx==1.5.6
 
 To install the markdown support for Sphinx:
 
-    $ pip install recommonmark
+    pip install recommonmark==0.5.0
 
 To install the rtd theme:
 
-    $ pip install sphinx_rtd_theme
+    pip install sphinx_rtd_theme==0.4.3
 
 You can build the website by executing the following command from the doc folder:
 
-    $ ./build.sh html
+    ./build.sh html
 
-Committers can update the [SINGA website](http://singa.apache.org/en/index.html) by following these steps:
+Committers can update the [SINGA website](http://singa.apache.org/en/index.html) by copying the updated files to the [website repo](https://github.com/apache/incubator-singa-site) (suppose the site repo is ~/incubator-singa-sit)
 
-    $ cd _build
-    $ svn co https://svn.apache.org/repos/asf/incubator/singa/site/trunk
-    $ cp -r html/* trunk
-    # svn add <newly added html files>
-    $ svn commit -m "commit messages" --username  <committer ID> --password <password>
+    cd _build
+    rsync --checksum -rvh html/ ~/incubator-singa-site/
+    cd ~/incubator-singa-site
+    git commit -m "update xxxx"
+    git push
 
+We fix the versions of the libs in order to generate the same (checksum) html file if the source file is not changed. Otherwise, everytime we build the documentation, the html file of the same source file could be different. As a result, many html files in the site repo need updating.
+
+## Python API
 
 ## CPP API
 
 To generate docs, run "doxygen" from the doc folder (Doxygen >= 1.8 recommended)
+
+## Using Visual Studio Code (vscode)
+
+### Preview
+
+The document files (rst and md files) can be previewed in vscode via the [reStructuredText Extension](https://docs.restructuredtext.net/).
+
+1. Install the extension in vscode.
+2. Install the dependent libs. All libs required to build the website should be installed (see the above instructions). In addition, there are two more libs to be installed.
+
+        pip install sphinx-autobuild=0.7.1
+        pip install doc8=0.8.0
+3. Configure the conf path for `restructuredtext.confPath` to the [conf.py](./conf.py)
+
+### Docstring Snippet
+
+[autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring) generates the docstring of functions, classes, etc. Choose the DocString Format to `google`.
+
+### Spell Check
+
+[Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker) can be configured to check the comments of the code, or .md and .rst files.
+
+To do spell check only for comments of Python code, add the following snippet via `File - Preferences - User Snippets - python.json`
+
+    "cspell check" : {
+    "prefix": "cspell",
+    "body": [
+        "# Directives for doing spell check only for python and c/cpp comments",
+        "# cSpell:includeRegExp #.* ",
+        "# cSpell:includeRegExp (\"\"\"|''')[^\1]*\1",
+        "# cSpell: CStyleComment",
+    ],
+    "description": "# spell check only for python comments"
+    }
+
+To do spell check only for comments of Cpp code, add the following snippet via `File - Preferences - User Snippets - cpp.json`
+
+    "cspell check" : {
+    "prefix": "cspell",
+    "body": [
+        "// Directive for doing spell check only for cpp comments",
+        "// cSpell:includeRegExp CStyleComment",
+    ],
+    "description": "# spell check only for cpp comments"
+    }

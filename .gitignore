@@ -13,3 +13,4 @@ thirdparty/*
 !thirdparty/install.sh
 test/samples/
 .idea
+doc/_build/*

@@ -19,6 +19,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Directives for doing spell check only for python comments
+# cSpell:includeRegExp #.* 
+# cSpell:includeRegExp ("""|''')[^]*
+
 # This file is execfile()d with the current directory set to its
 # containing dir.
 #
@@ -71,7 +75,7 @@ source_suffix = ['.rst', '.md']
 # source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = 'en/index'
 
 # General information about the project.
 project = u'incubator-singa'
