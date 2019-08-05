@@ -33,33 +33,22 @@ CTensor = singa.Tensor
 dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
 
+
 def eval_numerical_gradient_b(f, x, y, reverse = False):
     h = 0.00001
     grad = np.zeros(x.shape)
-    if not reverse:
-        fx = f(x, y)
-        it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
-        while not it.finished:
-            ix = it.multi_index
-            old_value = x[ix]
-            x[ix] = old_value + h # increment by h
-            fxh = f(x,y) # evaluate f(x + h)
-            x[ix] = old_value # restore to previous value (very important!) 
-            grad[ix] = (fxh - fx) / h # the slope
-            it.iternext() # step to next dimension
-        return grad
-    else:
-        fx = f(x, y)
-        it = np.nditer(y, flags=['multi_index'], op_flags=['readwrite'])
-        while not it.finished:
-            iy = it.multi_index
-            old_value = y[iy]
-            y[iy] = old_value + h # increment by h
-            fyh = f(x,y) # evaluate f(y + h)
-            y[iy] = old_value # restore to previous value (very important!) 
-            grad[iy] = (fyh - fx) / h
-            it.iternext()
-        return grad
+    t = y if reverse else x
+    fx = f(x, y)
+    it = np.nditer(t, flags=['multi_index'], op_flags=['readwrite'])
+    while not it.finished:
+        _it = it.multi_index
+        old_value = t[_it]
+        t[_it] = old_value + h # increment by h
+        fth = f(x, y) # evaluate f(x + h)
+        t[_it] = old_value # restore to previous value (very important!) 
+        grad[_it] = (fth - fx) / h # the slope
+        it.iternext() # step to next dimension
+    return grad
 
         
 def _tuple_to_string(t):
