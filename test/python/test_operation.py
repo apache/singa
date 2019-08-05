@@ -610,6 +610,28 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
+    def test_Pow(self):
+        x0 = np.array([0.1, 0.2, 0.1, 0.21, 0.1, 0.2]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([1.0, 2.0, 1.0, 2.1, 1.0, 2.0]).reshape(3, 2).astype(np.float32)
+        y=np.power(x0,x1)
+        f = lambda x,y : np.sum(np.power(x0,x1))
+        grad_x0 = eval_numerical_gradient_b(f, x0, x1, reverse = False)
+        grad_x1 = eval_numerical_gradient_b(f, x0, x1, reverse = True)
+
+        x0=tensor.from_numpy(x0)
+        x1=tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+        result=autograd.pow(x0,x1)
+
+        dy=tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+        dy.to_device(gpu_dev)
+        dx0,dx1=result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad_x0, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad_x1, decimal=2)
+
 
 if __name__ == '__main__':
     unittest.main()
