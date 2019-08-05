@@ -136,13 +136,10 @@ const vector<shared_ptr<Device> > Platform::CreateCudaGPUsOn(
     for (int i = 0; i < count; i++) UsedDevice.push_back(nullptr);
   }
   auto pool = std::make_shared<CnMemPool>(conf);
+  vector<shared_ptr<Device> > ret;
   for (size_t i = 0; i < devices.size(); i++) {
     if (UsedDevice[devices[i]] == nullptr)
       UsedDevice[devices[i]] = std::make_shared<CudaGPU>(devices[i], pool);
-  }
-  vector<shared_ptr<Device> > ret;
-  for (size_t i = 0; i < devices.size(); i++) {
-    int count = Platform::GetNumGPUs();
     ret.push_back(UsedDevice[devices[i]]);
   }
   mtx_.unlock();
