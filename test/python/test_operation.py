@@ -33,7 +33,35 @@ CTensor = singa.Tensor
 dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
 
+def eval_numerical_gradient_b(f, x, y, reverse = False):
+    h = 0.00001
+    grad = np.zeros(x.shape)
+    if not reverse:
+        fx = f(x, y)
+        it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
+        while not it.finished:
+            ix = it.multi_index
+            old_value = x[ix]
+            x[ix] = old_value + h # increment by h
+            fxh = f(x,y) # evaluate f(x + h)
+            x[ix] = old_value # restore to previous value (very important!) 
+            grad[ix] = (fxh - fx) / h # the slope
+            it.iternext() # step to next dimension
+        return grad
+    else:
+        fx = f(x, y)
+        it = np.nditer(y, flags=['multi_index'], op_flags=['readwrite'])
+        while not it.finished:
+            iy = it.multi_index
+            old_value = y[iy]
+            y[iy] = old_value + h # increment by h
+            fyh = f(x,y) # evaluate f(y + h)
+            y[iy] = old_value # restore to previous value (very important!) 
+            grad[iy] = (fyh - fx) / h
+            it.iternext()
+        return grad
 
+        
 def _tuple_to_string(t):
     lt = [str(x) for x in t]
     return '(' + ', '.join(lt) + ')'
@@ -321,22 +349,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
-
-    def test_Sub(self):
-        X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
-        Y=np.array([4.4,5.3,3.2,3.7,5.4,6.3]).reshape(3,2).astype(np.float32)
-        x = tensor.from_numpy(X)
-        y = tensor.from_numpy(Y)
-        x.to_device(gpu_dev) 
-        y.to_device(gpu_dev) 
-
-        result=autograd.sub(x,y)
-        dx=result.creator.backward(x.data)[0]  
-
-        result_np=np.subtract(X,Y)      
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), result_np)
-        self.check_shape(dx.shape(), (3, 2)) 
-        
+       
     def test_Cos_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
         XT = np.cos(X)
@@ -624,6 +637,28 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
+
+    def test_Sub(self):
+        x0 = np.array([0.007, -0.05, 0.002, -0.001, 0.003, 0.004]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
+        y=np.subtract(x0,x1)
+        f = lambda x,y : np.sum(np.subtract(x,y))
+        grad_x0 = eval_numerical_gradient_b(f, x0, x1, reverse = False)
+        grad_x1 = eval_numerical_gradient_b(f, x0, x1, reverse = True)
+
+        x0=tensor.from_numpy(x0)
+        x1=tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+        result=autograd.sub(x0,x1)
+
+        dy=tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+        dy.to_device(gpu_dev)
+        dx0,dx1=result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad_x0, decimal=2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad_x1, decimal=2)
 
 
 if __name__ == '__main__':
