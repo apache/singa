@@ -1828,3 +1828,22 @@ class LeakyRelu(Operation):
 
 def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
+
+
+class Greater(Operation):
+    def __init__(self):
+        super(Greater, self).__init__()
+
+    def forward(self, x,y):
+        cur = singa.GTFloat(singa.__sub__(x,y),0.0)
+        if training:
+            self.cache = cur
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no backward function for greater')
+        return None
+
+
+def greater(x,y):
+    return Greater()(x,y)[0]
