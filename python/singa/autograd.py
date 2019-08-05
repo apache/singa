@@ -1797,7 +1797,15 @@ class Div(Operation):
             return singa.__div__(a, b)
 
     def backward(self, dy):
-        return singa.__div__(dy, self.input[0]), singa.__mul__(dy, self.input[1])
+        #dy/dx0 = b^(-1)
+        #dy/dx1 = (-a)*b^(-2)
+        da = singa.__mul__(dy, singa.PowFloat(self.input[1],-1.0))
+
+        db1 = singa.PowFloat(singa.Square(self.input[1]),-1.0)
+        db1 = singa.__mul__(db1, singa.MultFloat(self.input[0], -1.0))
+        db = singa.__mul__(dy, db1)
+
+        return da,db
 
 def div(a, b):
     return Div()(a,b)[0]
@@ -1844,3 +1852,5 @@ class LeakyRelu(Operation):
 
 def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
+
+
