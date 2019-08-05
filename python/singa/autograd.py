@@ -1801,7 +1801,7 @@ class Div(Operation):
         #dy/dx1 = (-a)*b^(-2)
         da = singa.__mul__(dy, singa.PowFloat(self.input[1],-1.0))
 
-        db1 = singa.PowFloat(singa.Square(self.input[1]),-1.0)
+        db1 = singa.PowFloat(self.input[1], -2.0)
         db1 = singa.__mul__(db1, singa.MultFloat(self.input[0], -1.0))
         db = singa.__mul__(dy, db1)
 
