@@ -34,23 +34,6 @@ dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
 
 
-def eval_numerical_gradient(f, x):
-    h = 0.0001
-    fx = f(x) # evaluate function value at original point
-    grad = np.zeros(    x.shape)
-    it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
-    while not it.finished:
-        ix = it.multi_index
-        old_value = x[ix]
-        x[ix] = old_value + h # increment by h
-        fxh = f(x) # evalute f(x + h)
-        x[ix] = old_value
-        grad[ix] = (fxh - fx) / h # the slope
-        it.iternext()
-
-    return grad
-    
-
 def _tuple_to_string(t):
     lt = [str(x) for x in t]
     return '(' + ', '.join(lt) + ')'
@@ -627,25 +610,46 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
-    def test_SoftSign(self):
+    def test_SoftSign_cpu(self):
         # y = x / (1 + np.abs(x))
-        x=np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        XT = X/(1 + np.absolute(X))
+        DY = np.ones((3, 2), dtype = np.float32)
 
-        y=x/(1 + np.abs(x))
-        f = lambda x : np.sum(x/(1 + np.abs(x)))
-        grad = eval_numerical_gradient(f,x)
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
 
-        x=tensor.from_numpy(x)
+        result = autograd.softsign(x)
+        dx = result.creator.backward(dy.data)
+
+        G = 1.0/np.square(np.absolute(X)+1.0)
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+    
+    def test_SoftSign_gpu(self):
+        # y = x / (1 + np.abs(x))
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        XT = X/(1 + np.absolute(X))
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
         x.to_device(gpu_dev)
-        result=autograd.softsign(x)
-
-        dy=tensor.from_numpy(np.ones((3,2)).astype(np.float32))
         dy.to_device(gpu_dev)
-        dx=result.creator.backward(dy.data)
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=2)
+        result = autograd.softsign(x)
+        dx = result.creator.backward(dy.data)
 
+        G = 1.0/np.square(np.absolute(X)+1.0)
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+    
 
 if __name__ == '__main__':
     unittest.main()
