@@ -25,8 +25,15 @@
 #ifdef USE_CUDA
 
 namespace singa {
-std::atomic<int> CnMemPool::pool_count(0);
 std::pair<size_t, size_t> CnMemPool::GetMemUsage() {
+  size_t free, total;
+  auto status = cnmemMemGetInfo(&free, &total, NULL);
+  CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
+    << cnmemGetErrorString(status);
+  return std::make_pair(free, total);
+}
+std::pair<size_t, size_t> CnMemPool::GetMemUsage(int id) {
+  CHECK_EQ(cudaSetDevice(id), cudaError_t::cudaSuccess);
   size_t free, total;
   auto status = cnmemMemGetInfo(&free, &total, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
@@ -48,7 +55,7 @@ CnMemPool::CnMemPool(const MemPoolConf &conf) {
 void CnMemPool::Init() {
   mtx_.lock();
   if (!initialized_) {
-    const size_t kNBytesPerMB = (1u << 20);
+    const size_t kNBytesPerMB = (1u << 10);
     CHECK_GE(conf_.device_size(), 1);
     cnmemDevice_t *settingPtr = new cnmemDevice_t[conf_.device_size()];
     CHECK_GT(conf_.init_size(), 0u);
@@ -77,7 +84,6 @@ CnMemPool::~CnMemPool() {
     CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
         << " " << cnmemGetErrorString(status);
     initialized_ = false;
-    --pool_count;
   }
   mtx_.unlock();
 }
