@@ -1837,7 +1837,7 @@ class Sign(Operation):
         return singa.Sign(a)
 
     def backward(self, dy):
-        dx = 0
+        dx = singa.MultFloat(dy, 0.0)
         return dx
 
 
