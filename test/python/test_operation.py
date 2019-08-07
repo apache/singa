@@ -610,25 +610,44 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
-    def test_Log(self):
-        x=np.array([0.1,1.0,0.4,1.4,0.9,2.0]).reshape(3,2).astype(np.float32)
-        h=0.0001
-        xt=x+h
+    def test_Log_cpu(self):
+        X = np.array([0.1,1.0,0.4,1.4,0.9,2.0]).reshape(3,2).astype(np.float32)
+        XT = np.log(X)
+        DY = np.ones((3, 2), dtype = np.float32)
 
-        y=np.log(x)
-        yt=np.log(xt)
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
 
-        x=tensor.from_numpy(x)
+        result = autograd.log(x)
+        dx = result.creator.backward(dy.data)
+        #dx = 1/x
+        G = 1.0 / X
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+    
+    def test_Log_gpu(self):
+        X = np.array([0.1,1.0,0.4,1.4,0.9,2.0]).reshape(3,2).astype(np.float32)
+        XT = np.log(X)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
         x.to_device(gpu_dev)
-        result=autograd.log(x)
-
-        dy=tensor.from_numpy(np.ones((3,2)).astype(np.float32))
         dy.to_device(gpu_dev)
-        dx=result.creator.backward(dy.data)
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), (yt-y)/h, decimal=2)
+        result = autograd.log(x)
+        dx = result.creator.backward(dy.data)
+        #dx = 1/x
+        G = 1.0 / X
+        DX = np.multiply(G, DY)
 
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
+        
 if __name__ == '__main__':
     unittest.main()
