@@ -34,23 +34,6 @@ dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
 
 
-def eval_numerical_gradient(f, x):
-    h = 0.0001
-    fx = f(x) # evaluate function value at original point
-    grad = np.zeros(    x.shape)
-    it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
-    while not it.finished:
-        ix = it.multi_index
-        old_value = x[ix]
-        x[ix] = old_value + h # increment by h
-        fxh = f(x) # evalute f(x + h)
-        x[ix] = old_value
-        grad[ix] = (fxh - fx) / h # the slope
-        it.iternext()
-
-    return grad
-
-
 def _tuple_to_string(t):
     lt = [str(x) for x in t]
     return '(' + ', '.join(lt) + ')'
