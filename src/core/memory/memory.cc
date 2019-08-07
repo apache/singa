@@ -55,7 +55,7 @@ CnMemPool::CnMemPool(const MemPoolConf &conf) {
 void CnMemPool::Init() {
   mtx_.lock();
   if (!initialized_) {
-    const size_t kNBytesPerMB = (1u << 10);
+    const size_t kNBytesPerMB = (1u << 20);
     CHECK_GE(conf_.device_size(), 1);
     cnmemDevice_t *settingPtr = new cnmemDevice_t[conf_.device_size()];
     CHECK_GT(conf_.init_size(), 0u);
