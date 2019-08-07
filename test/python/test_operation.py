@@ -627,24 +627,44 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
-    def test_Sqrt(self):
-        x=np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+    def test_Sqrt_cpu(self):
+        X = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        XT = np.sqrt(X)
+        DY = np.ones((3, 2), dtype = np.float32)
 
-        y=np.sqrt(x)
-        f = lambda x : np.sum(np.sqrt(x))
-        grad = eval_numerical_gradient(f,x)
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
 
-        x=tensor.from_numpy(x)
+        result = autograd.sqrt(x)
+        dx = result.creator.backward(dy.data)
+
+        G = 0.5 * np.power(X, -0.5)
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)    
+
+    def test_Sqrt_gpu(self):
+        X = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        XT = np.sqrt(X)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
         x.to_device(gpu_dev)
-        result=autograd.sqrt(x)
-
-        dy=tensor.from_numpy(np.ones((3,2)).astype(np.float32))
         dy.to_device(gpu_dev)
-        dx=result.creator.backward(dy.data)
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=2)
+        result = autograd.sqrt(x)
+        dx = result.creator.backward(dy.data)
 
+        G = 0.5 * np.power(X, -0.5)
+        DX = np.multiply(G, DY)
 
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+    
+    
 if __name__ == '__main__':
     unittest.main()
