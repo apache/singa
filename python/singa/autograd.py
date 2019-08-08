@@ -1832,7 +1832,7 @@ def leakyrelu(x, a=0.01):
 
 class Sub(Operation):
     def __init__(self):
-        super(Sub, self)._init_()    
+        super(Sub, self).__init__()    
     
     def forward(self, a, b):    
         if training:
