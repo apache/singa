@@ -778,6 +778,56 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
+    def test_Div_cpu(self):
+        X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
+        XT = np.divide(X0, X1)
+
+        DY = np.ones((3, 2), dtype = np.float32)
+        x0 = tensor.from_numpy(X0)
+        x1 = tensor.from_numpy(X1)
+        dy = tensor.from_numpy(DY)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.div(x0, x1)
+        dx0, dx1 = result.creator.backward(dy.data)
+
+        G0 = 1.0 / X1
+        DX0 = np.multiply(G0, DY)
+        G1 = np.divide(-X0, np.square(X1))
+        DX1 = np.multiply(G1, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
+    
+    def test_Div_gpu(self):
+        X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
+        XT = np.divide(X0, X1)
+
+        DY = np.ones((3, 2), dtype = np.float32)
+        x0 = tensor.from_numpy(X0)
+        x1 = tensor.from_numpy(X1)
+        dy = tensor.from_numpy(DY)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.div(x0, x1)
+        dx0, dx1 = result.creator.backward(dy.data)
+
+        G0 = 1.0 / X1
+        DX0 = np.multiply(G0, DY)
+        G1 = np.divide(-X0, np.square(X1))
+        DX1 = np.multiply(G1, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
+
 
 if __name__ == '__main__':
     unittest.main()
