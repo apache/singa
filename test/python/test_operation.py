@@ -656,6 +656,6 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
 
-        
+
 if __name__ == '__main__':
     unittest.main()
