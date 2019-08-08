@@ -622,7 +622,6 @@ class TestPythonOperation(unittest.TestCase):
 
         result = autograd.sign(x)
         dx = result.creator.backward(dy.data)
-        #dx = [x/|x|]'
         DX = np.multiply(DY,0)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
@@ -641,7 +640,6 @@ class TestPythonOperation(unittest.TestCase):
 
         result = autograd.sign(x)
         dx = result.creator.backward(dy.data)
-        #dx = [x/|x|]'
         DX = np.multiply(DY,0)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)

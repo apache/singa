@@ -1831,6 +1831,9 @@ def leakyrelu(x, a=0.01):
 
 
 class Sign(Operation):
+    def __init__(self):
+        super(Sign, self).__init__()
+
     def forward(self, a):
         if training:
             self.input = a
