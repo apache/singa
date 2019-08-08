@@ -45,7 +45,7 @@ def prepare_inputs_targets_for_rnn_test():
     x_2 = np.random.random((2, 3)).astype(np.float32)
 
     h_0 = np.zeros((2, 2)).astype(
-        np.float32)  
+        np.float32)
 
     t_0 = np.random.random((2, 2)).astype(np.float32)
     t_1 = np.random.random((2, 2)).astype(np.float32)
@@ -284,7 +284,7 @@ class TestPythonOperation(unittest.TestCase):
         loss_np=tensor.to_numpy(loss)[0]
         self.assertAlmostEqual(loss_np, 0.0366666, places=4)
         self.check_shape(dx.shape(), (3, 2))
-        
+
     def test_Abs(self):
         X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
         XT=np.array([0.8,1.2,3.3,3.6,0.5,0.5]).reshape(3,2).astype(np.float32)
@@ -296,7 +296,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
-        
+
     def test_Exp(self):
         X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
         XT=np.exp(X)
@@ -308,7 +308,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
-        
+
     def test_LeakyRelu(self):
         X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
         XT=np.array([0.8,-0.012,3.3,-0.036,-0.005,0.5]).reshape(3,2).astype(np.float32)
@@ -612,9 +612,9 @@ class TestPythonOperation(unittest.TestCase):
 
     def test_Div_cpu(self):
         X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
-        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)       
+        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
         XT = np.divide(X0, X1)
-        
+
         DY = np.ones((3, 2), dtype = np.float32)
         x0 = tensor.from_numpy(X0)
         x1 = tensor.from_numpy(X1)
@@ -626,7 +626,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.div(x0, x1)
         dx0, dx1 = result.creator.backward(dy.data)
 
-        G0 =  1.0/ X1
+        G0 = 1.0 / X1
         DX0 = np.multiply(G0, DY)
         G1 = np.divide(-X0, np.square(X1))
         DX1 = np.multiply(G1, DY)
@@ -637,9 +637,9 @@ class TestPythonOperation(unittest.TestCase):
 
     def test_Div_gpu(self):
         X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
-        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)       
+        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
         XT = np.divide(X0, X1)
-        
+
         DY = np.ones((3, 2), dtype = np.float32)
         x0 = tensor.from_numpy(X0)
         x1 = tensor.from_numpy(X1)
@@ -651,7 +651,7 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.div(x0, x1)
         dx0, dx1 = result.creator.backward(dy.data)
 
-        G0 =  1.0/ X1
+        G0 = 1.0 / X1
         DX0 = np.multiply(G0, DY)
         G1 = np.divide(-X0, np.square(X1))
         DX1 = np.multiply(G1, DY)
@@ -659,7 +659,7 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
-    
+
 
 if __name__ == '__main__':
     unittest.main()
