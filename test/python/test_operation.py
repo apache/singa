@@ -34,23 +34,6 @@ dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
 
 
-def eval_numerical_gradient_b(f, x, y, reverse = False):
-    h = 0.00001
-    grad = np.zeros(x.shape)
-    t = y if reverse else x
-    fx = f(x, y)
-    it = np.nditer(t, flags=['multi_index'], op_flags=['readwrite'])
-    while not it.finished:
-        _it = it.multi_index
-        old_value = t[_it]
-        t[_it] = old_value + h # increment by h
-        fth = f(x, y) # evaluate f(x + h)
-        t[_it] = old_value # restore to previous value (very important!) 
-        grad[_it] = (fth - fx) / h # the slope
-        it.iternext() # step to next dimension
-    return grad
-
-
 def _tuple_to_string(t):
     lt = [str(x) for x in t]
     return '(' + ', '.join(lt) + ')'
@@ -627,28 +610,56 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
-    def test_Div(self):
-        x0 = np.array([0.007, -0.05, 0.002, -0.001, 0.003, 0.004]).reshape(3, 2).astype(np.float32)
-        x1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
-        y=np.divide(x0,x1)
-        f = lambda x,y : np.sum(np.divide(x,y))
-        grad_x0 = eval_numerical_gradient_b(f, x0, x1, reverse = False)
-        grad_x1 = eval_numerical_gradient_b(f, x0, x1, reverse = True)
+    def test_Div_cpu(self):
+        X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)       
+        XT = np.divide(X0, X1)
+        
+        DY = np.ones((3, 2), dtype = np.float32)
+        x0 = tensor.from_numpy(X0)
+        x1 = tensor.from_numpy(X1)
+        dy = tensor.from_numpy(DY)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
 
-        x0=tensor.from_numpy(x0)
-        x1=tensor.from_numpy(x1)
+        result = autograd.div(x0, x1)
+        dx0, dx1 = result.creator.backward(dy.data)
+
+        G0 =  1.0/ X1
+        DX0 = np.multiply(G0, DY)
+        G1 = np.divide(-X0, np.square(X1))
+        DX1 = np.multiply(G1, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
+
+    def test_Div_gpu(self):
+        X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)       
+        XT = np.divide(X0, X1)
+        
+        DY = np.ones((3, 2), dtype = np.float32)
+        x0 = tensor.from_numpy(X0)
+        x1 = tensor.from_numpy(X1)
+        dy = tensor.from_numpy(DY)
         x0.to_device(gpu_dev)
         x1.to_device(gpu_dev)
-        result=autograd.div(x0,x1)
-
-        dy=tensor.from_numpy(np.ones((3,2)).astype(np.float32))
         dy.to_device(gpu_dev)
-        dx0,dx1=result.creator.backward(dy.data)
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad_x0, decimal=2)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad_x1, decimal=2)
+        result = autograd.div(x0, x1)
+        dx0, dx1 = result.creator.backward(dy.data)
 
+        G0 =  1.0/ X1
+        DX0 = np.multiply(G0, DY)
+        G1 = np.divide(-X0, np.square(X1))
+        DX1 = np.multiply(G1, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
+    
 
 if __name__ == '__main__':
     unittest.main()
