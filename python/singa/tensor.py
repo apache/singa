@@ -468,20 +468,8 @@ class Tensor(object):
             self.data *= float(x)
         return self
 
-    def __idiv__(self, x):
-        ''' inplace element-wise division by a tensor or a float value.
-
-        Args:
-            x (float or Tensor):
-        '''
-        if isinstance(x, Tensor):
-            self.data *= (1.0/x.data)
-        else:
-            self.data *= (1.0/float(x))
-        return self
-
     def __itruediv__(self, x):
-        ''' For python3: inplace element-wise division by a tensor or a float value.
+        ''' inplace element-wise division by a tensor or a float value.
 
         Args:
             x (float or Tensor):
