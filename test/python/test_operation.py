@@ -814,6 +814,7 @@ class TestPythonOperation(unittest.TestCase):
         x1.to_device(gpu_dev)
         dy.to_device(gpu_dev)
 
+
         result = autograd.sub(x0, x1)
         dx0, dx1 = result.creator.backward(dy.data)
         DX0 = np.multiply(DY, 1.0)
@@ -822,6 +823,56 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
+        
+    def test_Pow_cpu(self):
+        X0 = np.array([7, 5, 0.2, 0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([-1.0, 2.0, -1.0, -2.1, 1.0, -2.0]).reshape(3, 2).astype(np.float32)
+        XT = np.power(X0, X1)
+        
+        DY = np.ones((3, 2), dtype = np.float32)
+        x0 = tensor.from_numpy(X0)
+        x1 = tensor.from_numpy(X1)
+        dy = tensor.from_numpy(DY)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.pow(x0, x1)
+        dx0, dx1 = result.creator.backward(dy.data)
+
+        G0 =  np.multiply(X1, np.power(X0, (X1 - 1.0)) )
+        DX0 = np.multiply(G0, DY)
+        G1 = np.multiply(np.power(X0, X1), np.log(X0) )
+        DX1 = np.multiply(G1, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=4)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=4)
+
+    def test_Pow_gpu(self):
+        X0 = np.array([7, 5, 0.2, 0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([-1.0, 2.0, -1.0, -2.1, 1.0, -2.0]).reshape(3, 2).astype(np.float32)
+        XT = np.power(X0, X1)
+        
+        DY = np.ones((3, 2), dtype = np.float32)
+        x0 = tensor.from_numpy(X0)
+        x1 = tensor.from_numpy(X1)
+        dy = tensor.from_numpy(DY)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.pow(x0, x1)
+        dx0, dx1 = result.creator.backward(dy.data)
+
+        G0 =  np.multiply(X1, np.power(X0, (X1 - 1.0)) )
+        DX0 = np.multiply(G0, DY)
+        G1 = np.multiply(np.power(X0, X1), np.log(X0) )
+        DX1 = np.multiply(G1, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=4)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=4)
 
     def test_SoftSign_cpu(self):
         # y = x / (1 + np.abs(x))
