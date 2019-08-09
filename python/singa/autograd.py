@@ -1842,12 +1842,66 @@ class SoftSign(Operation):
         y = singa.__div__(x,x1)
         
         return y
-​
+      
     def backward(self, dy):
         dx = singa.AddFloat(singa.Abs(self.input),1.0)
         dx = singa.PowFloat(singa.Square(dx),-1.0)
         dx = singa.__mul__(dy, dx)
         return dx
-​
+      
 def softsign(x):
     return SoftSign()(x)[0]
+
+class Sqrt(Operation):
+    def __init__(self):
+        super(Sqrt, self).__init__()  
+    
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Sqrt(x)
+
+    def backward(self, dy):
+        dx = singa.PowFloat(self.input,-0.5)
+        dx = singa.MultFloat(dx,0.5)
+
+def sqrt(x):
+    return Sqrt()(x)[0]
+  
+class SoftPlus(Operation):
+    def __init__(self):
+        super(SoftPlus, self).__init__()  
+    
+    def forward(self, x):
+    #f(x) = ln(exp(x) + 1)
+        if training:
+            self.input = x
+        x1 = singa.AddFloat(singa.Exp(x),1.0)
+        y = singa.Log(x1)    
+        return y
+
+    def backward(self, dy):
+        dx = singa.Exp(singa.MultFloat(self.input, -1.0))
+        dx = singa.PowFloat(singa.AddFloat(dx,1.0),-1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+      
+def softplus(x):
+    return SoftPlus()(x)[0]
+
+class Sub(Operation):
+    def __init__(self):
+        super(Sub, self).__init__()    
+    
+    def forward(self, a, b):    
+        if training:
+            self.input = (a, b)
+            return singa.__sub__(a, b)
+
+    def backward(self, dy):
+        return dy, singa.MultFloat(dy, -1.0)
+
+
+def sub(a, b):
+    return Sub()(a,b)[0]
