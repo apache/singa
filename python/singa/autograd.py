@@ -1830,6 +1830,28 @@ def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
 
 
+class SoftSign(Operation):
+    def __init__(self):
+        super(SoftSign, self).__init__()  
+    
+    def forward(self, x):
+    # y = x / (1 + np.abs(x))
+        if training:
+            self.input = x
+        x1 = singa.AddFloat(singa.Abs(x),1.0)
+        y = singa.__div__(x,x1)
+        
+        return y
+      
+    def backward(self, dy):
+        dx = singa.AddFloat(singa.Abs(self.input),1.0)
+        dx = singa.PowFloat(singa.Square(dx),-1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+      
+def softsign(x):
+    return SoftSign()(x)[0]
+
 class Sqrt(Operation):
     def __init__(self):
         super(Sqrt, self).__init__()  
