@@ -1829,6 +1829,7 @@ class LeakyRelu(Operation):
 def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
 
+  
 class Pow(Operation):
     def __init__(self):
         super(Pow, self).__init__()
@@ -1850,6 +1851,28 @@ class Pow(Operation):
 def pow(a, b):
     return Pow()(a,b)[0]
 
+class SoftSign(Operation):
+    def __init__(self):
+        super(SoftSign, self).__init__()  
+    
+    def forward(self, x):
+    # y = x / (1 + np.abs(x))
+        if training:
+            self.input = x
+        x1 = singa.AddFloat(singa.Abs(x),1.0)
+        y = singa.__div__(x,x1)
+        
+        return y
+      
+    def backward(self, dy):
+        dx = singa.AddFloat(singa.Abs(self.input),1.0)
+        dx = singa.PowFloat(singa.Square(dx),-1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+      
+def softsign(x):
+    return SoftSign()(x)[0]
+
 class Sqrt(Operation):
     def __init__(self):
         super(Sqrt, self).__init__()  
@@ -1867,6 +1890,28 @@ class Sqrt(Operation):
 
 def sqrt(x):
     return Sqrt()(x)[0]
+  
+class SoftPlus(Operation):
+    def __init__(self):
+        super(SoftPlus, self).__init__()  
+    
+    def forward(self, x):
+    #f(x) = ln(exp(x) + 1)
+        if training:
+            self.input = x
+        x1 = singa.AddFloat(singa.Exp(x),1.0)
+        y = singa.Log(x1)    
+        return y
+
+    def backward(self, dy):
+        dx = singa.Exp(singa.MultFloat(self.input, -1.0))
+        dx = singa.PowFloat(singa.AddFloat(dx,1.0),-1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+      
+def softplus(x):
+    return SoftPlus()(x)[0]
 
 class Sub(Operation):
     def __init__(self):

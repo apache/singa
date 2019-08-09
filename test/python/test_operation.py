@@ -817,7 +817,6 @@ class TestPythonOperation(unittest.TestCase):
 
         result = autograd.sub(x0, x1)
         dx0, dx1 = result.creator.backward(dy.data)
-
         DX0 = np.multiply(DY, 1.0)
         DX1 = np.multiply(DY, -1.0)
 
@@ -875,6 +874,86 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=4)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=4)
 
+    def test_SoftSign_cpu(self):
+        # y = x / (1 + np.abs(x))
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        XT = X/(1 + np.absolute(X))
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.softsign(x)
+        dx = result.creator.backward(dy.data)
+
+        G = 1.0/np.square(np.absolute(X)+1.0)
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+    
+    def test_SoftSign_gpu(self):
+        # y = x / (1 + np.abs(x))
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        XT = X/(1 + np.absolute(X))
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.softsign(x)
+        dx = result.creator.backward(dy.data)
+
+        G = 1.0/np.square(np.absolute(X)+1.0)
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def test_SoftPlus_cpu(self):
+        #y = np.log(np.exp(x) + 1)
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        XT = np.log(np.exp(X) + 1)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.softplus(x)
+        dx = result.creator.backward(dy.data)
+        #dx = 1 / (1 + exp(-x))
+        G = 1.0 / (1.0 + np.exp(-X))
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+    
+    def test_SoftPlus_gpu(self):
+        #y = np.log(np.exp(x) + 1)
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        XT = np.log(np.exp(X) + 1)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.softplus(x)
+        dx = result.creator.backward(dy.data)
+        #dx = 1 / (1 + exp(-x))
+        G = 1.0 / (1.0 + np.exp(-X))
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+    
     def test_Sqrt_cpu(self):
         X = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
         XT = np.sqrt(X)
