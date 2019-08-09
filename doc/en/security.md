@@ -16,10 +16,7 @@
     specific language governing permissions and limitations
     under the License.
 -->
-# How to Contribute to SINGA
 
-As with any open source project, there are several ways you can help:
+# Security
 
-* Join the [mailing list](http://singa.apache.org/en/community/mail-lists.html) and answer other user's questions.
-* [Help with the documentation](http://singa.apache.org/en/develop/contribute-docs.html) by updating webpages that are lacking or unclear.
-* [Contribute code to SINGA](http://singa.apache.org/en/develop/contribute-code.html) by fixing errors or adding new features. [All issues are tracked](http://singa.apache.org/en/community/issue-tracking.html) on the JIRA system.
+Users can report security vulnerabilities to `SINGA Security Team Mail List <mailto:security@singa.apache.org>`_.

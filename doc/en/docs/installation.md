@@ -85,7 +85,7 @@ Install Docker on your local host machine following the [instructions](https://d
 
 ## From source
 
-You can [build and install SINGA]() from the source code using native building tools or conda-build, on local host OS or in a Docker container.
+You can [build and install SINGA](../develop/build.md) from the source code using native building tools or conda-build, on local host OS or in a Docker container.
 
 ## FAQ
 

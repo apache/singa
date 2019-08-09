@@ -23,21 +23,9 @@ Documentation
 
    installation
    software_stack
-   benchmark
    device
    tensor
-   layer
-   net
-   initializer
-   loss
-   metric
-   optimizer
    autograd
-   data
-   image_tool
-   snapshot
-   converter
-   utils
+   onnx
+   benchmark
    model_zoo/index
-   security
-   

@@ -1,3 +1,22 @@
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+
 # Build SINGA from Source
 
 
@@ -7,6 +26,7 @@ The source files could be downloaded either as a
     $ git clone https://github.com/apache/incubator-singa.git
     $ cd incubator-singa/
 
+If you want to contribute code to SINGA, refer to [this page]() for the steps and requirements.
 
 ## Use Conda to build SINGA
 
@@ -59,7 +79,7 @@ Each specific SINGA package is identified by the version and build string. To in
 
     conda install -c <anaconda username> -c conda-forge singa=2.1.0.dev=cpu_py36
 
-To make the installation command simple, we create the following additional packages which depend on the latest CPU and GPU SINGA packages. 
+To make the installation command simple, you can create the following additional packages which depend on the latest CPU and GPU SINGA packages. 
 
     # for singa-cpu
     conda build tool/conda/cpu/  --python=3.6
@@ -88,7 +108,7 @@ To build SINGA with GPU, MKLDNN, Python and unit tests, run the following instru
     pip install . 
     
 The details of the CMake options are explained in the last section of this page.
-The last command install the Python package. You can also run `pip install -e .`, which creates symlinks instead of copying files into python the site-package folder.
+The last command install the Python package. You can also run `pip install -e .`, which creates symlinks instead of copying the Python files into the site-package folder.
 
 If SINGA is compiled with ENABLE_TEST=ON, you can run the unit tests by
 
@@ -97,10 +117,13 @@ If SINGA is compiled with ENABLE_TEST=ON, you can run the unit tests by
 You can see all the testing cases with testing results. If SINGA passes all
 tests, then you have successfully installed SINGA.
 
+
 ## Use native tools to Build SINGA on Centos7
+
 Building from source will be different for Centos7 as package names differ.Follow the instructions given below.
 
 ### Installing dependencies
+
 Basic packages/libraries
 
     sudo yum install freetype-devel libXft-devel ncurses-devel openblas-devel blas-devel lapack devel atlas-devel kernel-headers unzip wget pkgconfig zip zlib-devel libcurl-devel cmake curl unzip dh-autoreconf git python-devel glog-devel protobuf-devel
@@ -142,7 +165,7 @@ Instructions for building on Windows with Python support can be found [here](ins
 
 ## More details about the compilation options
 
-### USE_MODULES
+### USE_MODULES (deprecated)
 
 If protobuf and openblas are not installed, you can compile SINGA together with them
 
@@ -164,7 +187,7 @@ the following environment variables
 
 ### USE_PYTHON
 
-Similar to compile CPP code, PySINGA is compiled by
+Option for compiling the Python wrapper for SINGA,
 
     $ cmake -DUSE_PYTHON=ON ..
     $ make
@@ -178,7 +201,7 @@ Users are encouraged to install the CUDA and
 [cuDNN](https://developer.nvidia.com/cudnn) for running SINGA on GPUs to
 get better performance.
 
-SINGA has been tested over CUDA 9, and cuDNN 7.  If cuDNN is
+SINGA has been tested over CUDA 9/10, and cuDNN 7.  If cuDNN is
 installed into non-system folder, e.g. /home/bob/local/cudnn/, the following
 commands should be executed for cmake and the runtime to find it
 
@@ -249,19 +272,14 @@ This setting is used to build the Debian package. Set PACKAGE=ON and build the p
 
 ## FAQ
 
-* Q: Error from 'import singa' using PySINGA installed from wheel.
+* Q: Error from 'import singa'
 
-    A: Please check the detailed error from `python -c  "from singa import _singa_wrap"`. Sometimes it is
-    caused by the dependent libraries, e.g. there are multiple versions of protobuf, missing of cudnn, numpy version mismatch. Following
-    steps show the solutions for different cases
-    1. Check the cudnn and cuda and gcc versions, cudnn5 and cuda7.5 and gcc4.8/4.9 are preferred. if gcc is 5.0, then downgrade it.
-       If cudnn is missing or not match with the wheel version, you can download the correct version of cudnn into ~/local/cudnn/ and
+    A: Please check the detailed error from `python -c  "from singa import _singa_wrap"`. Sometimes it is caused by the dependent libraries, e.g. there are multiple versions of protobuf, missing of cudnn, numpy version mismatch. Following steps show the solutions for different cases
+    1. Check the cudnn and cuda. If cudnn is missing or not match with the wheel version, you can download the correct version of cudnn into ~/local/cudnn/ and
 
             $ echo "export LD_LIBRARY_PATH=/home/<yourname>/local/cudnn/lib64:$LD_LIBRARY_PATH" >> ~/.bashrc
 
-    2. If it is the problem related to protobuf, then download the newest whl files which have [compiled protobuf and openblas into the whl](https://issues.apache.org/jira/browse/SINGA-255) file of PySINGA.
-       Or you can install protobuf from source into a local folder, say ~/local/;
-       Decompress the tar file, and then
+    2. If it is the problem related to protobuf. You can install protobuf (3.6.1) from source into a local folder, say ~/local/; Decompress the tar file, and then
 
             $ ./configure --prefix=/home/<yourname>local
             $ make && make install
@@ -366,7 +384,7 @@ This setting is used to build the Debian package. Set PACKAGE=ON and build the p
 
     After this, you can build glog again.
 
-* Q: When using virtual environment, everytime I run pip install, it would reinstall numpy. However, the numpy would not be used when I `import numpy`
+* Q: When using virtual environment, every time I run pip install, it would reinstall numpy. However, the numpy would not be used when I `import numpy`
 
     A: It could be caused by the `PYTHONPATH` which should be set to empty when you are using virtual environment to avoid the conflicts with the path of
     the virtual environment.
@@ -377,7 +395,7 @@ This setting is used to build the Debian package. Set PACKAGE=ON and build the p
 
         $ export CPLUS_INCLUDE_PATH=`python -c "import numpy; print numpy.get_include()"`:$CPLUS_INCLUDE_PATH
 
-* Q: When I run PySINGA in Mac OS X, I got the error "Fatal Python error: PyThreadState_Get: no current thread  Abort trap: 6"
+* Q: When I run SINGA in Mac OS X, I got the error "Fatal Python error: PyThreadState_Get: no current thread  Abort trap: 6"
 
     A: This error happens typically when you have multiple version of Python on your system and you installed SINGA via pip (this problem is resolved for installation via conda),
     e.g, the one comes with the OS and the one installed by Homebrew. The Python linked by PySINGA must be the same as the Python interpreter.
