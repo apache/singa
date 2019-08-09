@@ -33,7 +33,7 @@ CTensor = singa.Tensor
 dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
 
-
+        
 def _tuple_to_string(t):
     lt = [str(x) for x in t]
     return '(' + ', '.join(lt) + ')'
@@ -321,7 +321,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
-
+       
     def test_Cos_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
         XT = np.cos(X)
@@ -777,6 +777,52 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def test_Sub_cpu(self):
+        X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
+        XT = np.subtract(X0, X1)
+        
+        DY = np.ones((3, 2), dtype = np.float32)
+        x0 = tensor.from_numpy(X0)
+        x1 = tensor.from_numpy(X1)
+        dy = tensor.from_numpy(DY)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.sub(x0, x1)
+        dx0, dx1 = result.creator.backward(dy.data)
+
+        DX0 = np.multiply(DY, 1.0)
+        DX1 = np.multiply(DY, -1.0)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
+
+    def test_Sub_gpu(self):
+        X0 = np.array([7, -5, 0.2, -0.1, 0.3, 4]).reshape(3, 2).astype(np.float32)
+        X1 = np.array([0.6, -1.3, 0.1, -0.1, 0.4, 0.3]).reshape(3, 2).astype(np.float32)
+        XT = np.subtract(X0, X1)
+        
+        DY = np.ones((3, 2), dtype = np.float32)
+        x0 = tensor.from_numpy(X0)
+        x1 = tensor.from_numpy(X1)
+        dy = tensor.from_numpy(DY)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.sub(x0, x1)
+        dx0, dx1 = result.creator.backward(dy.data)
+
+        DX0 = np.multiply(DY, 1.0)
+        DX1 = np.multiply(DY, -1.0)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
 
 
 if __name__ == '__main__':
