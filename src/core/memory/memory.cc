@@ -25,8 +25,15 @@
 #ifdef USE_CUDA
 
 namespace singa {
-std::atomic<int> CnMemPool::pool_count(0);
 std::pair<size_t, size_t> CnMemPool::GetMemUsage() {
+  size_t free, total;
+  auto status = cnmemMemGetInfo(&free, &total, NULL);
+  CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
+    << cnmemGetErrorString(status);
+  return std::make_pair(free, total);
+}
+std::pair<size_t, size_t> CnMemPool::GetMemUsage(int id) {
+  CHECK_EQ(cudaSetDevice(id), cudaError_t::cudaSuccess);
   size_t free, total;
   auto status = cnmemMemGetInfo(&free, &total, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
@@ -39,12 +46,10 @@ CnMemPool::CnMemPool(int numDevices, size_t init_size, size_t max_size) {
     conf_.add_device(i);
   conf_.set_init_size(init_size);
   conf_.set_max_size(max_size);
-  CHECK_LT(++pool_count, 2) << "CnMemPool must be used as a singleton.";
 }
 
 CnMemPool::CnMemPool(const MemPoolConf &conf) {
   conf_ = conf;
-  CHECK_LT(++pool_count, 2) << "CnMemPool must be used as a singleton.";
 }
 
 void CnMemPool::Init() {
@@ -79,7 +84,6 @@ CnMemPool::~CnMemPool() {
     CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
         << " " << cnmemGetErrorString(status);
     initialized_ = false;
-    --pool_count;
   }
   mtx_.unlock();
 }
