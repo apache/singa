@@ -21,51 +21,51 @@ FROM nvidia/cuda:9.0-devel-ubuntu16.04
 ENV CUDNN_VERSION 7.4.2.24
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libcudnn7=$CUDNN_VERSION-1+cuda9.0 \
-    libcudnn7-dev=$CUDNN_VERSION-1+cuda9.0 && \
+        libcudnn7=$CUDNN_VERSION-1+cuda9.0 \
+        libcudnn7-dev=$CUDNN_VERSION-1+cuda9.0 && \
     apt-mark hold libcudnn7 && \
     rm -rf /var/lib/apt/lists/*
 
 # install dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    git \
-    build-essential \
-    autoconf \
-    libtool \
-    libprotobuf-dev \
-    libopenblas-dev \
-    libpcre3-dev \
-    protobuf-compiler \
-    wget \
-    openssh-server \
-    python3-dev \
-    python3-pip \
-    python3-setuptools \
-    libgoogle-glog-dev \
-    cmake \
+        git \
+        build-essential \
+        autoconf \
+        libtool \
+        libprotobuf-dev \
+        libopenblas-dev \
+        libpcre3-dev \
+        protobuf-compiler \
+        wget \
+        openssh-server \
+        python3-dev \
+        python3-pip \
+        python3-setuptools \
+        libgoogle-glog-dev \
+        cmake \
     && apt-get clean \
     && apt-get autoremove \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* \
     && pip3 install -U --no-cache \
-    wheel \
-    numpy \
-    setuptools \
-    protobuf \
-    future
+        wheel \
+        numpy \
+        setuptools \
+        protobuf \
+        future
 
 # install swig > 3.0.10
 RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz -P /tmp/ \
     && tar zxf /tmp/swig-3.0.10.tar.gz -C /tmp/ \
-    && cd /tmp/swig-3.0.10 && ./configure && make && make install
+    && cd /tmp/swig-3.0.10 && ./configure && make -j4 && make install
 
 # install mkldnn
 RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
     && tar zxf /tmp/v0.18.tar.gz -C /tmp/ \
     && cd /tmp/mkl-dnn-0.18/ \
     && mkdir -p build && cd build && cmake .. \
-    && make && make install
+    && make -j4 && make install
 
 # config ssh service
 RUN mkdir /var/run/sshd \
@@ -77,14 +77,40 @@ RUN mkdir /var/run/sshd \
     # dump environment variables into files, so that ssh can see also
     && env | grep _ >> /etc/environment
 
-# build singa
-RUN git clone https://github.com/apache/singa.git $HOME/singa \
-    && cd $HOME/singa \
+# start of TC
+RUN apt-get update && apt-get install -y unzip libgmp3-dev automake curl
+
+RUN wget https://repo.anaconda.com/archive/Anaconda3-5.1.0-Linux-x86_64.sh -O anaconda.sh && \
+    chmod +x anaconda.sh && \
+    ./anaconda.sh -b -p /root/conda && \
+    rm anaconda.sh 
+
+RUN . /root/conda/bin/activate && \
+    conda update -y -n base conda && \
+    conda create -y --name tc_build python=3.6 && \
+    conda activate tc_build && \
+    conda install -y pyyaml mkl-include pytest && \
+    conda install -y -c nicolasvasilache llvm-trunk halide && \
+    conda install -y -c pytorch pytorch=0.4.0 torchvision cuda90 && \
+    conda remove -y cudatoolkit --force
+
+
+RUN cd /root/ && git clone https://github.com/dcslin/TensorComprehensions.git --recursive
+
+ENV CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda
+
+ENV CLANG_PREFIX /root/conda/envs/tc_build
+RUN cd /root/TensorComprehensions && . /root/conda/bin/activate && conda activate tc_build && ./build.sh
+## end of TC
+
+# build incubator singa
+RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
+    && cd $HOME/incubator-singa \
     && mkdir build && cd build \
     && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_MKLDNN=ON -DUSE_PYTHON3=ON ..
-RUN cd $HOME/singa/build && make && make install
+RUN cd $HOME/incubator-singa/build && make && make install
 
-WORKDIR $HOME/singa
+WORKDIR $HOME/incubator-singa
 EXPOSE 22
 
 CMD ["/usr/sbin/sshd", "-D"]

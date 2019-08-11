@@ -53,3 +53,4 @@
 // #cmakedefine CUDNN_VERSION @CUDNN_VERSION@
 
 #cmakedefine USE_MKLDNN
+#cmakedefine USE_TC

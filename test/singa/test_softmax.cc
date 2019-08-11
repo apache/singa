@@ -95,6 +95,9 @@ TEST(Softmax, Backward) {
     for (size_t j = 0; j < col; j++)
       dx[i * col + j] = (grad[i * col + j] - sigma[i]) * yptr[i * col +j];
   EXPECT_FLOAT_EQ(dx[0], xptr[0]);
+  EXPECT_FLOAT_EQ(dx[1], xptr[1]);
+  EXPECT_FLOAT_EQ(dx[2], xptr[2]);
+  EXPECT_FLOAT_EQ(dx[3], xptr[3]);
   EXPECT_FLOAT_EQ(dx[4], xptr[4]);
   EXPECT_FLOAT_EQ(dx[5], xptr[5]);
   delete[] dx;

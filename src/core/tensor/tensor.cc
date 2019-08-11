@@ -27,6 +27,12 @@
 
 #define Noaxis 9999
 
+#ifdef USE_TC
+// namespace is already exist in singa
+// aliasing to avoid duplicates
+namespace tclang = lang;
+#endif // USE_TC
+
 namespace singa {
 
 Tensor::~Tensor() {
@@ -1333,5 +1339,112 @@ Tensor Reshape(const Tensor &in, const Shape &s) {
   Tensor out(in);
   return out.Reshape(s);
 }
+
+
+#ifdef USE_TC
+/// tc integration start
+struct SingaDLManagedTensor {
+  Tensor handle;
+  DLManagedTensor tensor;
+};
+
+void deleter(DLManagedTensor *arg) {
+  delete static_cast<SingaDLManagedTensor *>(arg->manager_ctx);
+}
+
+static DLDataType getDLDataType(const Tensor &t) {
+  DLDataType dtype;
+  dtype.lanes = 1;
+  dtype.bits = SizeOf(t.data_type()) * 8;
+  switch (t.data_type()) {
+  case kFloat32:
+    dtype.code = DLDataTypeCode::kDLFloat;
+    break;
+  default:
+    throw std::logic_error("only kFloat32 is supported for dlpack conversion");
+    break;
+  }
+  return dtype;
+}
+
+static DLContext getDLContext(const Tensor &tensor, const int64_t &device_id) {
+  DLContext ctx;
+  ctx.device_id = device_id;
+  if (tensor.device()->lang() == kCuda) {
+    ctx.device_type = DLDeviceType::kDLGPU;
+  } else {
+    ctx.device_type = DLDeviceType::kDLCPU;
+  }
+  return ctx;
+}
+
+// This function returns a shared_ptr to memory managed DLpack tensor
+// constructed out of ATen tensor
+DLManagedTensor *toDLPack(const Tensor &src) {
+  SingaDLManagedTensor *singaDLManagedTensor(new SingaDLManagedTensor);
+  singaDLManagedTensor->handle = src;
+  singaDLManagedTensor->tensor.manager_ctx = singaDLManagedTensor;
+  singaDLManagedTensor->tensor.deleter = &deleter;
+  singaDLManagedTensor->tensor.dl_tensor.data = src.block()->mutable_data();
+  int64_t device_id = src.device()->id();
+  singaDLManagedTensor->tensor.dl_tensor.ctx = getDLContext(src, device_id);
+  singaDLManagedTensor->tensor.dl_tensor.ndim = src.nDim();
+  singaDLManagedTensor->tensor.dl_tensor.dtype = getDLDataType(src);
+
+  auto shapeVec =
+      new std::vector<int64_t>(src.shape().begin(), src.shape().end());
+  singaDLManagedTensor->tensor.dl_tensor.shape = shapeVec->data();
+
+  auto strideVec =
+      new std::vector<int64_t>(src.stride().begin(), src.stride().end());
+  singaDLManagedTensor->tensor.dl_tensor.strides = strideVec->data();
+
+  singaDLManagedTensor->tensor.dl_tensor.byte_offset = 0;
+  return &(singaDLManagedTensor->tensor);
+}
+
+// prepare output
+std::vector<tc::DLTensorUPtr>
+inferOutputTensorInfo(const std::string &tc, const std::string &entryPoint,
+                      const std::vector<Tensor> &inputs) {
+  auto parsedTcs = tc::detail::parse(tc);
+  if (parsedTcs.count(entryPoint) != 1u) {
+    TC_CHECK_GE(parsedTcs.size(), 1u)
+        << "No TC was parsed, should have thrown earlier";
+    throw tclang::ErrorReport(parsedTcs.begin()->second)
+        << "\nattempting to access undefined entryPoint: " << entryPoint;
+  }
+  auto inputDLTensors = makeDLConstTensors(inputs);
+  return makeDLTensorVector(tc::detail::inferOutputTensorInfo(
+      parsedTcs.at(entryPoint), extractRawPtrs(inputDLTensors)));
+}
+
+std::vector<Tensor> prepareOutputs(const std::string &tc,
+                                   const std::string &entryPoint,
+                                   const std::vector<Tensor> &inputs) {
+  std::vector<Tensor> outputs;
+  auto outTensorInfo = inferOutputTensorInfo(tc, entryPoint, inputs);
+  if (outTensorInfo.size() == 0) {
+    return outputs;
+  }
+  TC_CHECK_GE(inputs.size(), 1u)
+      << "NYI: Need >= 1 input tensors to determine "
+      << "backend and prepare ATen outputs. Add an overload with just an ATen "
+      << "backend";
+
+  auto dev = inputs[0].device();
+  auto dtype = inputs[0].data_type();
+  for (size_t i = 0; i < outTensorInfo.size(); ++i) {
+    tc::TensorInfo info(outTensorInfo[i]);
+    Shape shape(info.shape.begin(), info.shape.end());
+
+    Tensor tmp(shape, dev, dtype);
+    outputs.push_back(tmp);
+  }
+  return outputs;
+}
+/// tc integration end
+#endif // USE_TC
+
 
 }  // namespace singa
