@@ -58,14 +58,14 @@ RUN apt-get update \
 # install swig > 3.0.10
 RUN wget http://prdownloads.sourceforge.net/swig/swig-3.0.10.tar.gz -P /tmp/ \
     && tar zxf /tmp/swig-3.0.10.tar.gz -C /tmp/ \
-    && cd /tmp/swig-3.0.10 && ./configure && make && make install
+    && cd /tmp/swig-3.0.10 && ./configure && make -j8 && make install
 
 # install mkldnn
 RUN wget https://github.com/intel/mkl-dnn/archive/v0.18.tar.gz -P /tmp/ \
     && tar zxf /tmp/v0.18.tar.gz -C /tmp/ \
     && cd /tmp/mkl-dnn-0.18/ \
     && mkdir -p build && cd build && cmake .. \
-    && make && make install
+    && make -j8 && make install
 
 # config ssh service
 RUN mkdir /var/run/sshd \
@@ -83,6 +83,61 @@ RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-sing
     && mkdir build && cd build \
     && cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_MKLDNN=ON -DUSE_PYTHON3=ON ..
 RUN cd $HOME/incubator-singa/build && make && make install
+
+
+# start of TC
+RUN apt-get update && apt-get install -y libgmp3-dev cmake automake libtool
+
+RUN wget https://repo.anaconda.com/archive/Anaconda3-5.1.0-Linux-x86_64.sh -O anaconda.sh && \
+    chmod +x anaconda.sh && \
+    ./anaconda.sh -b -p /root/conda && \
+    rm anaconda.sh 
+
+RUN . /root/conda/bin/activate && \
+    conda update -y -n base conda && \
+    conda create -y --name tc_build python=3.6 && \
+    conda activate tc_build && \
+    conda install -y pyyaml mkl-include pytest && \
+    conda install -y -c nicolasvasilache llvm-trunk halide && \
+    conda install -y -c pytorch pytorch=0.4.0 torchvision cuda90 && \
+    conda remove -y cudatoolkit --force
+
+RUN cd /root/ && git clone https://github.com/dcslin/TensorComprehensions.git --recursive && \
+    cd TensorComprehensions
+
+ENV CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda
+
+RUN apt-get remove -y libprotobuf-dev protobuf-compiler && \
+    apt-get update && \
+    apt-get install -y unzip automake curl less
+
+ENV CLANG_PREFIX /root/conda/envs/tc_build
+RUN cd /root/TensorComprehensions && . /root/conda/bin/activate && conda activate tc_build && ./build.sh
+
+############# singa build
+# protobuf
+RUN cd /root/TensorComprehensions/third-party/googlelibraries/protobuf-3.5.2 \ 
+    && ./autogen.sh \ 
+    && ./configure \ 
+    && make -j8 \ 
+    && make check \ 
+    && make install \ 
+    && ldconfig
+
+# isl
+RUN cd /root/TensorComprehensions/third-party/islpp \ 
+    && ./autogen.sh \ 
+    && ./configure \ 
+    && make -j8 \ 
+    && make install
+
+# gflags
+RUN cd /root/TensorComprehensions/third-party/googlelibraries/gflags \ 
+    && mkdir build && cd build \ 
+    && cmake .. \ 
+    && make -j8 \ 
+    && make install
+# end of TC
 
 WORKDIR $HOME/incubator-singa
 EXPOSE 22

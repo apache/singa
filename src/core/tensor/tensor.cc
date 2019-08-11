@@ -21,11 +21,20 @@
 #include "./tensor_math_cpp.h"
 #include "./tensor_math_cuda.h"
 #include "./tensor_math_opencl.h"
+
 #include <utility>
 #include <algorithm>
 
+#include <tc/core/check.h>
+#include <tc/core/compiler.h>
+#include <tc/core/tc_executor.h>
+#include <tc/core/tensor.h>
 
 #define Noaxis 9999
+
+// namespace is already exist in singa
+// aliasing to avoid duplicates
+namespace tclang = lang;
 
 namespace singa {
 
@@ -1333,5 +1342,184 @@ Tensor Reshape(const Tensor &in, const Shape &s) {
   Tensor out(in);
   return out.Reshape(s);
 }
+
+
+/// tc integration start
+struct SingaDLManagedTensor {
+  Tensor handle;
+  DLManagedTensor tensor;
+};
+
+void deleter(DLManagedTensor *arg) {
+  delete static_cast<SingaDLManagedTensor *>(arg->manager_ctx);
+}
+
+static DLDataType getDLDataType(const Tensor &t) {
+  DLDataType dtype;
+  dtype.lanes = 1;
+  // TODO: get the number of bytes of the datatype
+  // dtype.bits = t.data_type() * 8;
+  dtype.bits = 4 * 8;
+  switch (t.data_type()) {
+  case kFloat32:
+    dtype.code = DLDataTypeCode::kDLFloat;
+    break;
+  default:
+    throw std::logic_error("only kFloat32 is supported for dlpack conversion");
+    break;
+  }
+  return dtype;
+}
+
+static DLContext getDLContext(const Tensor &tensor, const int64_t &device_id) {
+  DLContext ctx;
+  ctx.device_id = device_id;
+  ctx.device_type = DLDeviceType::kDLGPU;
+  // TODO: fix this
+  // if (tensor.is_cuda()) {
+  //  ctx.device_type = DLDeviceType::kDLGPU;
+  //} else {
+  //  ctx.device_type = DLDeviceType::kDLCPU;
+  //}
+  return ctx;
+}
+
+// This function returns a shared_ptr to memory managed DLpack tensor
+// constructed out of ATen tensor
+DLManagedTensor *toDLPack(const Tensor &src) {
+  SingaDLManagedTensor *singaDLManagedTensor(new SingaDLManagedTensor);
+  singaDLManagedTensor->handle = src;
+  singaDLManagedTensor->tensor.manager_ctx = singaDLManagedTensor;
+  singaDLManagedTensor->tensor.deleter = &deleter;
+  singaDLManagedTensor->tensor.dl_tensor.data = src.block()->mutable_data();
+  int64_t device_id = 0;
+  // TODO: fix this
+  // if (src.is_cuda()) {
+  //  device_id = src.get_device();
+  //}
+  singaDLManagedTensor->tensor.dl_tensor.ctx = getDLContext(src, device_id);
+  singaDLManagedTensor->tensor.dl_tensor.ndim = src.nDim();
+  singaDLManagedTensor->tensor.dl_tensor.dtype = getDLDataType(src);
+
+  auto shapeVec =
+      new std::vector<int64_t>(src.shape().begin(), src.shape().end());
+  singaDLManagedTensor->tensor.dl_tensor.shape = shapeVec->data();
+
+  auto strideVec =
+      new std::vector<int64_t>(src.stride().begin(), src.stride().end());
+  singaDLManagedTensor->tensor.dl_tensor.strides = strideVec->data();
+
+  singaDLManagedTensor->tensor.dl_tensor.byte_offset = 0;
+  return &(singaDLManagedTensor->tensor);
+}
+
+// prepare output
+std::vector<tc::DLTensorUPtr>
+inferOutputTensorInfo(const std::string &tc, const std::string &entryPoint,
+                      const std::vector<Tensor> &inputs) {
+  auto parsedTcs = tc::detail::parse(tc);
+  if (parsedTcs.count(entryPoint) != 1u) {
+    TC_CHECK_GE(parsedTcs.size(), 1u)
+        << "No TC was parsed, should have thrown earlier";
+    throw tclang::ErrorReport(parsedTcs.begin()->second)
+        << "\nattempting to access undefined entryPoint: " << entryPoint;
+  }
+  auto inputDLTensors = makeDLConstTensors(inputs);
+  return makeDLTensorVector(tc::detail::inferOutputTensorInfo(
+      parsedTcs.at(entryPoint), extractRawPtrs(inputDLTensors)));
+}
+
+std::vector<Tensor> prepareOutputs(const std::string &tc,
+                                   const std::string &entryPoint,
+                                   const std::vector<Tensor> &inputs) {
+  std::vector<Tensor> outputs;
+  auto outTensorInfo = inferOutputTensorInfo(tc, entryPoint, inputs);
+  if (outTensorInfo.size() == 0) {
+    return outputs;
+  }
+  TC_CHECK_GE(inputs.size(), 1u)
+      << "NYI: Need >= 1 input tensors to determine "
+      << "backend and prepare ATen outputs. Add an overload with just an ATen "
+      << "backend";
+
+  auto dev = inputs[0].device();
+  auto dtype = inputs[0].data_type();
+  for (size_t i = 0; i < outTensorInfo.size(); ++i) {
+    tc::TensorInfo info(outTensorInfo[i]);
+    Shape shape(info.shape.begin(), info.shape.end());
+
+    Tensor tmp(shape, dev, dtype);
+    outputs.push_back(tmp);
+  }
+  return outputs;
+}
+
+// examples of TC operations
+Tensor SoftMaxTC(const Tensor &in) {
+  std::string tc = 
+    
+    R"TC(
+def softmax(float(N, D) I) -> (O, expsum, maxVal) {
+    maxVal(n) max=!     I(n, d)
+    expsum(n)   +=! exp(I(n, d) - maxVal(n))
+         O(n, d) =  exp(I(n, d) - maxVal(n)) / expsum(n)
+}
+)TC";
+  auto naiveOptions =
+      tc::CudaBackend::MappingOptionsType::makeNaiveMappingOptions();
+  auto pExecutor =
+      singa::compileTC<tc::CudaBackend>(tc, "softmax", {in}, {naiveOptions});
+  auto outputs = singa::prepareOutputs(tc, "softmax", {in});
+  singa::runTC(*pExecutor, {in}, outputs);
+  return outputs[0];
+}
+
+Tensor ReluTC(const Tensor &in) {
+  std::string tc = R"TC(
+def relu(float(B,M) I) -> (O1){
+  O1(b, m) = fmax(I(b, m), 0)
+}
+  )TC";
+  auto naiveOptions =
+      tc::CudaBackend::MappingOptionsType::makeNaiveMappingOptions();
+  auto pExecutor =
+      singa::compileTC<tc::CudaBackend>(tc, "relu", {in}, {naiveOptions});
+  auto outputs = singa::prepareOutputs(tc, "relu", {in});
+  singa::runTC(*pExecutor, {in}, outputs);
+  return outputs[0];
+}
+
+Tensor MatMulTC(const Tensor &in1, const Tensor &in2) {
+  std::string tc = R"TC(
+def matmul(float(M,N) A, float(N,K) B) -> (output) {
+  output(i, j) +=! A(i, kk) * B(kk, j)
+}
+  )TC";
+  auto naiveOptions =
+      tc::CudaBackend::MappingOptionsType::makeNaiveMappingOptions();
+  auto pExecutor = singa::compileTC<tc::CudaBackend>(tc, "matmul", {in1, in2},
+                                                     {naiveOptions});
+  auto outputs = singa::prepareOutputs(tc, "matmul", {in1, in2});
+  singa::runTC(*pExecutor, {in1, in2}, outputs);
+  return outputs[0];
+}
+
+Tensor FCTC(const Tensor &x, const Tensor &W, const Tensor &b) {
+  std::string tc = R"TC(
+def fc(float(B,M) I, float(N,M) W1, float(N) B1) -> (O1) {
+  O1(b, n) +=! I(b, m) * W1(n, m)
+  O1(b, n) = O1(b, n) + B1(n)
+}
+  )TC";
+  auto naiveOptions =
+      tc::CudaBackend::MappingOptionsType::makeNaiveMappingOptions();
+  auto pExecutor =
+      singa::compileTC<tc::CudaBackend>(tc, "fc", {x, W, b}, {naiveOptions});
+  auto outputs = singa::prepareOutputs(tc, "fc", {x, W, b});
+  singa::runTC(*pExecutor, {x, W, b}, outputs);
+  return outputs[0];
+}
+/// tc integration end
+
 
 }  // namespace singa

@@ -23,6 +23,14 @@
 #include <tuple>
 #include <memory>
 
+#include <dlpack/dlpack.h>
+#include <tc/core/tensor.h>
+#include <tc/utils/compiler_options.h>
+#include <tc/core/compiler.h>
+#include <tc/core/utils/time.h>
+#include <tc/core/cuda/cuda_backend.h>
+#include <tc/core/cuda/cuda_tc_executor.h>
+
 #include "singa/core/common.h"
 #include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
@@ -147,6 +155,7 @@ class Tensor {
 
   /// Return average L2 norm
   float L2() const;
+
   // --------------------------------------------------------------------------
   // ---Following methods changes the internal data
   // --------------------------------------------------------------------------
@@ -603,6 +612,90 @@ Tensor ConcatRows(const vector<Tensor> &in);
 Tensor ConcatenateColumns(const vector<Tensor> &in);
 /// Alias name for function ConcatenateColumns
 Tensor ConcatColumns(const vector<Tensor> &in);
+
+
+
+
+/// tc integration start
+DLManagedTensor *toDLPack(const Tensor &src);
+// Tensor fromDLPack(const DLManagedTensor* src);
+
+inline std::vector<tc::DLTensorUPtr>
+makeDLTensors(const std::vector<Tensor> &tensors);
+
+template <typename Backend>
+std::unique_ptr<typename Backend::ExecutorType>
+compileTC(const std::string &tc, const std::string &entryPoint,
+          const std::vector<Tensor> &inputs,
+          const typename Backend::MappingOptionsType &options,
+          const tc::CompilerOptions &compilerOptions = tc::CompilerOptions());
+
+std::vector<tc::DLTensorUPtr>
+inferOutputTensorInfo(const std::string &tc, const std::string &entryPoint,
+                      const std::vector<Tensor> &inputs);
+
+std::vector<Tensor> prepareOutputs(const std::string &tc,
+                                   const std::string &entryPoint,
+                                   const std::vector<Tensor> &inputs);
+
+template <typename Executor>
+void runTC(const Executor &executor, const std::vector<Tensor> &inputs,
+           std::vector<Tensor> &outputs);
+
+// tensor comprehension operations
+Tensor SoftMaxTC(const Tensor &in);
+Tensor ReluTC(const Tensor &in);
+Tensor MatMulTC(const Tensor &in1, const Tensor &in2);
+Tensor FCTC(const Tensor &x, const Tensor &W, const Tensor &b);
+
+// makeDLConstTensors implementation
+inline std::vector<tc::DLConstTensorUPtr>
+makeDLConstTensors(const std::vector<Tensor> &tensors) {
+  std::vector<tc::DLConstTensorUPtr> dlTensors;
+  for (auto tensor : tensors) {
+    auto dlMTensor = toDLPack(tensor);
+    dlTensors.push_back(tc::makeDLConstTensor(&(dlMTensor->dl_tensor)));
+    dlMTensor->deleter(dlMTensor);
+  }
+  return dlTensors;
+}
+
+// makeDLTensors implementation
+inline std::vector<tc::DLTensorUPtr>
+makeDLTensors(const std::vector<Tensor> &tensors) {
+  std::vector<tc::DLTensorUPtr> dlTensors;
+  for (auto tensor : tensors) {
+    auto dlMTensor = toDLPack(tensor);
+    dlTensors.push_back(tc::makeDLTensor(&(dlMTensor->dl_tensor)));
+    dlMTensor->deleter(dlMTensor);
+  }
+  return dlTensors;
+}
+
+// compile implementation
+template <typename Backend>
+std::unique_ptr<typename Backend::ExecutorType>
+compileTC(const std::string &tc, const std::string &entryPoint,
+          const std::vector<Tensor> &inputs,
+          const typename Backend::MappingOptionsType &options,
+          const tc::CompilerOptions &compilerOptions) {
+  auto inputDLTensors = makeDLConstTensors(inputs);
+  return tc::compile<Backend>(tc, entryPoint, extractRawPtrs(inputDLTensors),
+                              options, compilerOptions);
+}
+
+// run implementation
+template <typename Executor>
+void runTC(const Executor &executor, const std::vector<Tensor> &inputs,
+           std::vector<Tensor> &outputs) {
+  auto inputDLTensors = makeDLConstTensors(inputs);
+  auto outputDLTensors = makeDLTensors(outputs);
+  return executor.run(extractRawPtrs(inputDLTensors),
+                      extractRawPtrs(outputDLTensors));
+}
+
+/// tc integration end
+
 }  // namespace singa
 
 #endif  // SINGA_CORE_TENSOR_H_
