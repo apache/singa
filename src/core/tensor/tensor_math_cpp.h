@@ -453,14 +453,28 @@ void Sum<float, lang::Cpp>(const Tensor& in, float *out,
   *out = s;
 }
 
-template <>
-void Tanh<float, lang::Cpp>(const Tensor& in, Tensor* out,
-                            Context *ctx) {
-  auto tanh_lambda = [](float a) {
-    return tanh(a);
-  };
-  traverse_unary<float>(in, out, tanh_lambda);
-}
+#define GenUnaryTensorCppFn(fn,cppfn)                         \
+  template <>                                                 \
+  void fn<float, lang::Cpp>(const Tensor& in, Tensor* out,    \
+                              Context *ctx) {                 \
+    auto fn_lambda = [](float a) {                            \
+      return cppfn(a);                                        \
+    };                                                        \
+    traverse_unary<float>(in, out, fn_lambda);                \
+  }
+
+GenUnaryTensorCppFn(Cos,cos);
+GenUnaryTensorCppFn(Cosh,cosh);
+GenUnaryTensorCppFn(Acos,acos);
+GenUnaryTensorCppFn(Acosh,acosh);
+GenUnaryTensorCppFn(Sin,sin);
+GenUnaryTensorCppFn(Sinh,sinh);
+GenUnaryTensorCppFn(Asin,asin);
+GenUnaryTensorCppFn(Asinh,asinh);
+GenUnaryTensorCppFn(Tan,tan);
+GenUnaryTensorCppFn(Tanh,tanh);
+GenUnaryTensorCppFn(Atan,atan);
+GenUnaryTensorCppFn(Atanh,atanh);
 
 template <>
 void Transform<float, lang::Cpp>(const Tensor& in, Tensor* out,

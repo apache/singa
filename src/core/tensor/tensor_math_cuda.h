@@ -726,20 +726,33 @@ void Square<float, lang::Cuda>(const Tensor& in, Tensor* out,
 //   cudnnDestroyActivationDescriptor(act_desc);
 // }
 
-template <>
-void Tanh<float, lang::Cuda>(const Tensor& in, Tensor* out,
-                             Context* ctx) {
-  const float* inPtr = static_cast<const float*>(in.block()->data());
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  const size_t num = in.Size();
-
-  if (in.stride() == out->stride()) {
-    cuda::tanh(num, inPtr, outPtr, ctx->stream);
-  } else { //else we transform in to out to store first
-    Transform<float, lang::Cuda>(in, out, ctx);
-    cuda::tanh(num, outPtr, outPtr, ctx->stream);
+#define GenUnaryTensorCudaFn(fn,cudafn)                                  \
+  template <>                                                            \
+  void fn<float, lang::Cuda>(const Tensor& in, Tensor* out,              \
+                               Context* ctx) {                           \
+    const float* inPtr = static_cast<const float*>(in.block()->data());  \
+    float* outPtr = static_cast<float*>(out->block()->mutable_data());   \
+    const size_t num = in.Size();                                        \
+    if (in.stride() == out->stride()) {                                  \
+      cuda::cudafn(num, inPtr, outPtr, ctx->stream);                     \
+    } else {                                                             \
+      Transform<float, lang::Cuda>(in, out, ctx);                        \
+      cuda::cudafn(num, outPtr, outPtr, ctx->stream);                    \
+    }                                                                    \
   }
-}
+
+GenUnaryTensorCudaFn(Cos,cos);
+GenUnaryTensorCudaFn(Cosh,cosh);
+GenUnaryTensorCudaFn(Acos,acos);
+GenUnaryTensorCudaFn(Acosh,acosh);
+GenUnaryTensorCudaFn(Sin,sin);
+GenUnaryTensorCudaFn(Sinh,sinh);
+GenUnaryTensorCudaFn(Asin,asin);
+GenUnaryTensorCudaFn(Asinh,asinh);
+GenUnaryTensorCudaFn(Tan,tan);
+GenUnaryTensorCudaFn(Tanh,tanh);
+GenUnaryTensorCudaFn(Atan,atan);
+GenUnaryTensorCudaFn(Atanh,atanh);
 
 // ================Random functions===========================================
 /// Each element of out would be 1 with prob p and 0 with 1-p. 0<= p <= 1
