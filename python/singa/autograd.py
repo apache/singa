@@ -328,6 +328,8 @@ class Dummy(Operation):
         return "{}_g".format(self.name)
 
 
+
+
 class ReLU(Operation):
     def __init__(self):
         super(ReLU, self).__init__()
@@ -357,6 +359,46 @@ class ReLU(Operation):
 def relu(x):
     return ReLU()(x)[0]
 
+class Clip(Operation):
+    def __init__(self,min,max):
+        super(Clip, self).__init__()
+        self.max=max
+        self.min=min
+
+    def forward(self, x):
+        """
+        Args:
+            x(CTensor): input tensor, min: float, max:float
+        Returns:
+            np.clip(x,min,max)
+        """
+
+        mask0 = singa.LTFloat(x, self.min)
+        mask1 = singa.GTFloat(x, self.max)
+        mask00 = singa.MultFloat(mask0,self.min)
+        mask11 = singa.MultFloat(mask1,self.max)
+
+        mask2 = singa.LEFloat(x, self.max)
+        mask3 = singa.GEFloat(x, self.min)
+        maskm = singa.__mul__(mask2,mask3)
+
+        if training:
+            self.mask = maskm
+
+        return singa.__add__(singa.__add__(singa.__mul__(maskm,x),mask00),mask11)
+
+    def backward(self, dy):
+        """
+        Args:
+            dy(CTensor): dL / dy
+        Returns:
+            dx(CTensor): dL / dx = dy
+        """
+        return singa.__mul__(dy, self.mask)
+
+
+def clip(x,min,max):
+    return Clip(min,max)(x)[0]
 
 class Matmul(Operation):
     """For matrix multiplication"""
@@ -1829,7 +1871,32 @@ class LeakyRelu(Operation):
 def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
 
-  
+class PRelu(Operation):
+    def __init__(self):
+        super(PRelu, self).__init__()
+
+    def forward(self, x,slope):
+        if training:
+            self.input = x
+            self.slope=slope
+        x1 = singa.LTFloat(x, 0.0)
+        x1 = singa.__mul__(x, x1)
+        x1 = singa.__mul__(x1, slope)
+        x2 = singa.ReLU(x)
+        x1 = singa.__add__(x1, x2)
+        return x1
+
+    def backward(self, dy):
+        dx1mask = singa.GEFloat(self.input, 0.0)
+        dx2mask = singa.LTFloat(self.input, 0.0)
+        dx2 = singa.__mul__(dx2mask, self.slope)
+        dx = singa.__add__(dx1mask, dx2)
+        return singa.__mul__(dy, dx),singa.__mul__(dy, singa.__mul__(dx2mask,self.input))
+
+def prelu(x,slope):
+    return PRelu()(x,slope)[0]
+
+
 class Pow(Operation):
     def __init__(self):
         super(Pow, self).__init__()

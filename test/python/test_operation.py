@@ -991,7 +991,63 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
-    
-    
+
+    def test_prelu_cpu(self):
+        x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
+        slope = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        y = np.clip(x, 0, np.inf) + np.clip(x, -np.inf, 0) * slope
+        dy = np.ones((3, 2), dtype = np.float32)
+        x0=x.copy()
+        x0[x0>0]=1
+        x0[x0<1]=0
+        grad0=x0+(1-x0)*slope
+        grad1 = (1-x0)*x
+
+
+        x = tensor.from_numpy(x)
+        slope = tensor.from_numpy(slope)
+        dy = tensor.from_numpy(dy)
+        x.to_device(cpu_dev)
+        slope.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.prelu(x,slope)
+        dx0,dx1 = result.creator.backward(dy.data)
+
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_prelu_gpu(self):
+        x = np.array([0.1,-1.0,-0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
+        slope = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        y = np.clip(x, 0, np.inf) + np.clip(x, -np.inf, 0) * slope
+        dy = np.ones((3, 2), dtype = np.float32)
+        x0=x.copy()
+        x0[x0>0]=1
+        x0[x0<1]=0
+        grad0=x0+(1-x0)*slope
+        grad1 = (1-x0)*x
+
+
+        x = tensor.from_numpy(x)
+        slope = tensor.from_numpy(slope)
+        dy = tensor.from_numpy(dy)
+        x.to_device(gpu_dev)
+        slope.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.prelu(x,slope)
+        dx0,dx1 = result.creator.backward(dy.data)
+
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+
+
+
 if __name__ == '__main__':
     unittest.main()
