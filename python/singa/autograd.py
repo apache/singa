@@ -372,10 +372,11 @@ class HardSigmoid(Operation):
         Returns:
             a CTensor for the result
         """
-        if training:
-            self.input = x
 
         x = singa.AddFloat(singa.MultFloat(x,self.alpha),self.gamma)
+        if training:
+            self.cache = x
+
         x = singa.ReLU(x)
         mask = singa.LTFloat(x, 1.0)
         mask2 = singa.GEFloat(x, 1.0)
@@ -391,9 +392,9 @@ class HardSigmoid(Operation):
             a (CTensor) dx
         """
 
-        x = singa.AddFloat(singa.MultFloat(self.input,self.alpha),self.gamma)
-        mask0 = singa.GTFloat(x, 0.0)
-        mask1 = singa.LTFloat(x, 1.0)
+
+        mask0 = singa.GTFloat(self.cache, 0.0)
+        mask1 = singa.LTFloat(self.cache, 1.0)
 
         mask = singa.__mul__(mask0,mask1)
         return singa.__mul__(singa.MultFloat(mask, self.alpha),dy)

@@ -33,20 +33,7 @@ CTensor = singa.Tensor
 dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
 
-def eval_numerical_gradient(f, x):
-    h = 0.00001
-    fx = f(x) # evaluate function value at original point
-    grad = np.zeros(x.shape)
-    it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
-    while not it.finished:
-        ix = it.multi_index
-        old_value = x[ix]
-        x[ix] = old_value + h # increment by h
-        fxh = f(x) # evalute f(x + h)
-        x[ix] = old_value # restore to previous value (very important!)
-        grad[ix] = (fxh - fx) / h # the slope
-        it.iternext() # step to next dimension
-    return grad
+
 def _tuple_to_string(t):
     lt = [str(x) for x in t]
     return '(' + ', '.join(lt) + ')'
@@ -321,7 +308,43 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
-        
+
+        def test_HardSigmoid_cpu(self):
+            x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        #y = max(0, min(1, alpha * x + gamma))
+        a=0.2
+        g=0.5
+        y = np.clip(x * 0.2 + 0.5, 0, 1)
+        grad=(0<(np.clip(x * 0.2 + 0.5, 0, 1)) * (np.clip(x * 0.2 + 0.5, 0, 1)<1))*0.2
+        x = tensor.from_numpy(x)
+        x.to_device(cpu_dev)
+
+        result = autograd.hardsigmoid(x,a,g)
+        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+
+        dx = result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+
+    def test_HardSigmoid_gpu(self):
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        a=0.2
+        g=0.5
+        y = np.clip(x * 0.2 + 0.5, 0, 1)
+        grad=(0<(np.clip(x * 0.2 + 0.5, 0, 1)) * (np.clip(x * 0.2 + 0.5, 0, 1)<1))*0.2
+
+
+        x = tensor.from_numpy(x)
+        x.to_device(gpu_dev)
+        result = autograd.hardsigmoid(x,a,g)
+        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+        dy.to_device(gpu_dev)
+        dx = result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+
     def test_LeakyRelu(self):
         X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
         XT=np.array([0.8,-0.012,3.3,-0.036,-0.005,0.5]).reshape(3,2).astype(np.float32)
@@ -334,42 +357,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
-    def test_HardSigmoid_cpu(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        #y = max(0, min(1, alpha * x + gamma))
-        a=0.2
-        g=0.5
-        lossf=lambda x:np.sum(np.clip(x * 0.2 + 0.5, 0, 1))
-        y = np.clip(x * 0.2 + 0.5, 0, 1)
-        grad=eval_numerical_gradient(lossf,x)
-        x = tensor.from_numpy(x)
-        x.to_device(cpu_dev)
 
-        result = autograd.hardsigmoid(x,a,g)
-        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
-
-        dx = result.creator.backward(dy.data)
-
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=2)
-
-    def test_HardSigmoid_gpu(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        a=0.2
-        g=0.5
-        lossf=lambda x:np.sum(np.clip(x * 0.2 + 0.5, 0, 1))
-        y = np.clip(x * 0.2 + 0.5, 0, 1)
-        grad=eval_numerical_gradient(lossf,x)
-        x = tensor.from_numpy(x)
-        x.to_device(gpu_dev)
-
-        result = autograd.hardsigmoid(x,a,g)
-        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
-        dy.to_device(gpu_dev)
-        dx = result.creator.backward(dy.data)
-
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=2)
 
 if __name__ == '__main__':
     unittest.main()
