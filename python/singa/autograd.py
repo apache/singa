@@ -374,9 +374,9 @@ class SeLU(Operation):
         #y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0
         if training:
             self.input = x
-        x1 = singa.LTFloat(x, 0.0)
+        x1 = singa.LEFloat(x, 0.0)
         x1 = singa.__mul__(x, x1)
-        x1 = singa.MultFloat(singa.SubFloat(singa.MultFloat(singa.Exp(x1),self.alpha),self.alpha),self.gamma)
+        x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1), 1.0), self.alpha * self.gamma)
         x2 = singa.ReLU(x)
         x2 = singa.MultFloat(x2,self.gamma)
         x1 = singa.__add__(x1, x2)
@@ -389,7 +389,7 @@ class SeLU(Operation):
         Returns:
             dx
         """
-        dx1mask = singa.LTFloat(self.input, 0.0)
+        dx1mask = singa.LEFloat(self.input, 0.0)
         dx1 = singa.MultFloat(singa.Exp(self.input), self.gamma*self.alpha)
         dx1 = singa.__mul__(dx1mask, dx1)
 
