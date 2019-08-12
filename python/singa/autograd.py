@@ -376,7 +376,7 @@ class Elu(Operation):
             self.input = x
         x1 = singa.LTFloat(x, 0.0)
         x1 = singa.__mul__(x, x1)
-        x1 = singa.SubFloat(singa.Exp(x1),self.alpha)
+        x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1),1.0),self.alpha)
         x2 = singa.ReLU(x)
         x1 = singa.__add__(x1, x2)
         return x1
@@ -392,7 +392,7 @@ class Elu(Operation):
         dx1 = singa.MultFloat(singa.Exp(self.input), self.alpha)
         dx1 = singa.__mul__(dx1mask, dx1)
 
-        dx2mask = singa.GTFloat(self.input, 0.0)
+        dx2mask = singa.GEFloat(self.input, 0.0)
 
         dx = singa.__add__(dx1, dx2mask)
         return singa.__mul__(dy, dx)
