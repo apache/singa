@@ -17,13 +17,20 @@
 # under the License.
 #
 
+{% set version = "2.1.0.dev" %}
+
 package:
   name: singa-gpu
-  version: 2.0.0
+  version: {{ version }}
 
 requirements:
   run:
-    - singa 2.0.0 cudnn7.3.1_cuda10.0_py37
+    - singa {{ version }} cudnn7.3.1_cuda10.0_py{{ py }}
+
+build:
+  number: 0
+  string: py{{ py }}
+ 
 
 about:
   home: http://singa.apache.org/

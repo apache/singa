@@ -698,8 +698,19 @@ GenUnaryTensorFn(Sigmoid);
 GenUnaryTensorFn(Sign);
 GenUnaryTensorFn(Sqrt);
 GenUnaryTensorFn(Square);
-GenUnaryTensorFn(Tanh);
 GenUnaryTensorFn(Transform);
+GenUnaryTensorFn(Cos);
+GenUnaryTensorFn(Cosh);
+GenUnaryTensorFn(Acos);
+GenUnaryTensorFn(Acosh);
+GenUnaryTensorFn(Sin);
+GenUnaryTensorFn(Sinh);
+GenUnaryTensorFn(Asin);
+GenUnaryTensorFn(Asinh);
+GenUnaryTensorFn(Tan);
+GenUnaryTensorFn(Tanh);
+GenUnaryTensorFn(Atan);
+GenUnaryTensorFn(Atanh);
 
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                            \
   do {                                                                      \

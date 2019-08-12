@@ -33,6 +33,6 @@ python:
     - 3.6
     - 3.7
 build_str:
-    - "cudnn7.3.1_cuda10.0" # [environ.get("CUDA")=="10.0"]
-    - "cudnn7.3.1_cuda9.0"  # [environ.get("CUDA")=="9.0"]
-    - "cpu"                 # [environ.get("CUDA", "")== ""]
+    - "cudnn7.3.1_cuda10.0"   # [environ.get("CUDA")=="10.0"]
+    - "cudnn7.3.1_cuda9.0"    # [environ.get("CUDA")=="9.0"]
+    - "cpu"              # [environ.get("CUDA", "")== ""]

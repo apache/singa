@@ -272,11 +272,27 @@ void Sum(const Tensor &in, DType *out, Context *ctx) {
   LOG(FATAL) << "Sum Not Implemented";
 }
 
-/// out[i]=tanh(in[i])
-template <typename DType, typename Lang>
-void Tanh(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Tanh Not Implemented";
-}
+/// out[i]=fn(in[i])
+#define GenUnaryNotImplemented(fn,stringfn)                   \
+  template <typename DType, typename Lang>                    \
+  void fn(const Tensor &in, Tensor *out, Context *ctx) {      \
+    std::string str = stringfn;                               \
+    str += " Not Implemented";                                \
+    LOG(FATAL) << str;                                        \
+  }
+
+GenUnaryNotImplemented(Cos,"Cos");
+GenUnaryNotImplemented(Cosh,"Cosh");
+GenUnaryNotImplemented(Acos,"Acos");
+GenUnaryNotImplemented(Acosh,"Acosh");
+GenUnaryNotImplemented(Sin,"Sin");
+GenUnaryNotImplemented(Sinh,"Sinh");
+GenUnaryNotImplemented(Asin,"Asin");
+GenUnaryNotImplemented(Asinh,"Asinh");
+GenUnaryNotImplemented(Tan,"Tan");
+GenUnaryNotImplemented(Tanh,"Tanh");
+GenUnaryNotImplemented(Atan,"Atan");
+GenUnaryNotImplemented(Atanh,"Atanh");
 
 /// similar to cudnnTransformTensor
 /// copies the data from one tensor to another tensor with a different layout
