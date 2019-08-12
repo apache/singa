@@ -322,7 +322,38 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
-        
+
+        def test_Identity_cpu(self):
+            x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        y = x.copy()
+        grad=np.ones(x.shape)
+        x = tensor.from_numpy(x)
+        x.to_device(cpu_dev)
+
+        result = autograd.identity(x)
+        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+        dy.to_device(cpu_dev)
+        dx = result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+        self.check_shape(dx.shape(), (3, 2))
+    def test_Identity_gpu(self):
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        y = x.copy()
+        grad=np.ones(x.shape)
+        x = tensor.from_numpy(x)
+        x.to_device(gpu_dev)
+
+        result = autograd.identity(x)
+        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+        dy.to_device(gpu_dev)
+        dx = result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+        self.check_shape(dx.shape(), (3, 2))
+
     def test_LeakyRelu(self):
         X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
         XT=np.array([0.8,-0.012,3.3,-0.036,-0.005,0.5]).reshape(3,2).astype(np.float32)
@@ -336,37 +367,5 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
 
-    def test_Identity_cpu(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        y = x.copy()
-        lossf=lambda x:np.sum(x)
-        grad=eval_numerical_gradient(lossf,x)
-        x = tensor.from_numpy(x)
-        x.to_device(cpu_dev)
-
-        result = autograd.identity(x)
-        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
-        dy.to_device(cpu_dev)
-        dx = result.creator.backward(dy.data)
-
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=2)
-        self.check_shape(dx.shape(), (3, 2))
-    def test_Identity_gpu(self):
-        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
-        y = x.copy()
-        lossf=lambda x:np.sum(x)
-        grad=eval_numerical_gradient(lossf,x)
-        x = tensor.from_numpy(x)
-        x.to_device(gpu_dev)
-
-        result = autograd.identity(x)
-        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
-        dy.to_device(gpu_dev)
-        dx = result.creator.backward(dy.data)
-
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=2)
-        self.check_shape(dx.shape(), (3, 2))
 if __name__ == '__main__':
     unittest.main()
