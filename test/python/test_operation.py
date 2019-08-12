@@ -33,20 +33,6 @@ CTensor = singa.Tensor
 dy = CTensor([2, 1, 2, 2])
 singa.Gaussian(0.0, 1.0, dy)
 
-def eval_numerical_gradient(f, x):
-    h = 0.00001
-    fx = f(x) # evaluate function value at original point
-    grad = np.zeros(x.shape)
-    it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
-    while not it.finished:
-        ix = it.multi_index
-        old_value = x[ix]
-        x[ix] = old_value + h # increment by h
-        fxh = f(x) # evalute f(x + h)
-        x[ix] = old_value # restore to previous value (very important!)
-        grad[ix] = (fxh - fx) / h # the slope
-        it.iternext() # step to next dimension
-    return grad
 
 def _tuple_to_string(t):
     lt = [str(x) for x in t]
@@ -323,8 +309,8 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
 
-        def test_Identity_cpu(self):
-            x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+    def test_Identity_cpu(self):
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
         y = x.copy()
         grad=np.ones(x.shape)
         x = tensor.from_numpy(x)
