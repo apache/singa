@@ -16,7 +16,8 @@
     specific language governing permissions and limitations
     under the License.
 -->
-## Download SINGA
+
+# Download SINGA
 
 * To verify the downloaded tar.gz file, download the [KEYS](https://www.apache.org/dist/incubator/singa/KEYS) and ASC files and then execute the following commands
 

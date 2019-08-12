@@ -46,11 +46,11 @@ The SINGA community has developers mainly from National University of Singapore,
 +--------------------+--------------------------------+-----------------------------------------------+
 | Haibo Chen         | hzchenhaibo@corp.netease.com   | NetEase                                       |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Anh Dinh           | dinhtta@apache.org             | National University of Singapore              |
+| Anh Dinh           | dinhtta@apache.org             | Singapore University of Technology and Design |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Jinyang Gao        | jinyang@apache.org             | National University of Singapore              |
+| Jinyang Gao        | jinyang@apache.org             | DAMO Academy, Alibaba Group                   |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Xin Ji             | jixin@comp.nus.edu.sg          | National University of Singapore              |
+| Xin Ji             | jixin@comp.nus.edu.sg          | Visenze                                       |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Chonho Lee         | chonho@gmail.com               | Osaka University                              |
 +--------------------+--------------------------------+-----------------------------------------------+
@@ -62,9 +62,9 @@ The SINGA community has developers mainly from National University of Singapore,
 +--------------------+--------------------------------+-----------------------------------------------+
 | Anthony K. H. Tung | atung@comp.nus.edu.sg          | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Ji Wang            | wangji@comp.nus.edu.sg         | National University of Singapore              |
+| Ji Wang            | wangji@comp.nus.edu.sg         | Hangzhou MZH Technologies                     |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Sheng Wang         | wangsh@apache.org              | National University of Singapore              |
+| Sheng Wang         | wangsh@apache.org              | DAMO Academy, Alibaba Group                   |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Wei Wang           | wangwei@apache.org             | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
@@ -72,13 +72,24 @@ The SINGA community has developers mainly from National University of Singapore,
 +--------------------+--------------------------------+-----------------------------------------------+
 | Wenfeng Wu         | wuwf@comp.nus.edu.sg           | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Zhongle Xie        | zhongle@apache.org             | National University of Singapore              |
+| Zhongle Xie        | zhongle@apache.org             | Hangzhou MZH Technologies                     |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Meihui Zhang       | meihui_zhang@sutd.edu.sg       | Singapore University of Technology and Design |
+| Meihui Zhang       | meihui_zhang@sutd.edu.sg       | Beijing Institute of Technology               |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Kaiping Zheng      | kaiping@apache.org             | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Moaz Reyad         | moaz@apache.org                | University of Genoa                           |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Chang Yao          | yaochang2009@gmail.com         | yzBigdata                                     |
+| Chang Yao          | yaochang2009@gmail.com         | Hangzhou MZH Technologies                     |
 +--------------------+--------------------------------+-----------------------------------------------+
+
+
+
+How to become a SINGA committer
+--------------------------------
+
+SINGA committers are members that have write access to SINGA code and documentation repositories. They can contribute by themselves and accept other contributions.
+
+Becoming a SINGA committer requires understanding the Apache Way and being an active member in the SINGA project. An active member participates on mailing lists, answers questions, contributes code, tests and documentation, presents SINGA in talks and seminars, verifies releases and report issues or feature requests.
+
+New committers can be suggested by current committers or PPMC members, and voted upon by the PPMC according to Apache guidelines. You can start by talking to other committers and ask for their advice and guidance.

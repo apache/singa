@@ -94,13 +94,12 @@ Documentation
 How to contribute
 ----------------------
 
-* Please subscribe to our development mailing list dev-subscribe@singa.incubator.apache.org.
+As with any open source project, there are several ways you can help:
 
-* If you find any issues using SINGA, please report it to the `Issue Tracker <https://issues.apache.org/jira/browse/singa>`_.
+* Join the [mailing list](http://singa.apache.org/en/community/mail-lists.html) and answer other user's questions.
+* [Help with the documentation](http://singa.apache.org/en/develop/contribute-docs.html) by updating webpages that are lacking or unclear.
+* [Contribute code to SINGA](http://singa.apache.org/en/develop/contribute-code.html) by fixing errors or adding new features. [All issues are tracked](http://singa.apache.org/en/community/issue-tracking.html) on the JIRA system.
 
-* You can also contact with `SINGA committers <community/team-list.html>`_ directly.
-
-More details on contributing to SINGA is described `here <develop/how-contribute.html>`_ .
 
 History
 ------------
@@ -118,6 +117,7 @@ Rafiki is a sub module of SINGA. Please cite the following paper if you use Rafi
 
 Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_, `yzBigData <http://www.yzbigdata.com/en/index.html>`_, `Shentilium <https://shentilium.com/>`_, `Foodlg <http://www.foodlg.com/>`_ and `Medilot <https://medilot.com/technologies>`_ are using SINGA for their applications.
 
+
 .. toctree::
    :hidden:
 
@@ -130,8 +130,6 @@ Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_
    :maxdepth: 2
    :caption: Development
 
-   develop/schedule
-   develop/how-contribute
    develop/contribute-code
    develop/contribute-docs
    develop/how-to-release
@@ -146,8 +144,6 @@ Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_
    community/issue-tracking
    community/team-list
 
-
-
 License
 ----------
 SINGA is released under `Apache License Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
@@ -156,4 +152,3 @@ Disclaimers
 -----------
 
 Apache SINGA is an effort undergoing incubation at The Apache Software Foundation (ASF), sponsored by the Apache Incubator. Incubation is required of all newly accepted projects until a further review indicates that the infrastructure, communications, and decision making process have stabilized in a manner consistent with other successful ASF projects. While incubation status is not necessarily a reflection of the completeness or stability of the code, it does indicate that the project has yet to be fully endorsed by the ASF.
-
