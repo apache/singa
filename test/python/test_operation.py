@@ -308,19 +308,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         self.check_shape(dx.shape(), (3, 2))
-        
-    def test_LeakyRelu(self):
-        X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
-        XT=np.array([0.8,-0.012,3.3,-0.036,-0.005,0.5]).reshape(3,2).astype(np.float32)
-        x=tensor.from_numpy(X)
-        x.to_device(gpu_dev)
 
-        result=autograd.leakyrelu(x)
-
-        dx=result.creator.backward(x.data)
-
-        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
-        self.check_shape(dx.shape(), (3, 2))
 
     def test_Elu_cpu(self):
         #f(x) = alpha * (exp(x) - 1.) for x < 0, f(x) = x for x >= 0
@@ -351,6 +339,20 @@ class TestPythonOperation(unittest.TestCase):
         dx = result.creator.backward(dy.data)
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+        
+    def test_LeakyRelu(self):
+        X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
+        XT=np.array([0.8,-0.012,3.3,-0.036,-0.005,0.5]).reshape(3,2).astype(np.float32)
+        x=tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+
+        result=autograd.leakyrelu(x)
+
+        dx=result.creator.backward(x.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
+        self.check_shape(dx.shape(), (3, 2))
+
 
 if __name__ == '__main__':
     unittest.main()
