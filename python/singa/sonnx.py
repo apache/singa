@@ -72,20 +72,15 @@ class SingaFrontend(object):
     # beceuase singa's operators are different from onnx.
     # we define a dict for the name projection
     _rename_operators = {
-        'SoftMax': 'Softmax',
-        'AddBias': 'Add',
-        'Add': 'Add',
-        'Matmul': 'Mul',
-        'ReLU': 'Relu',
-        'ElemMatmul': 'Mul',
-        'Flatten': 'Flatten',
-        'Tanh': 'Tanh',
-        'Sigmoid': 'Sigmoid',
-        'Concat': 'Concat',
         '_Conv2d': 'Conv',
+        'ReLU': 'Relu',
+        'Dummy': 'Constant',
         'MaxPool2d': 'MaxPool',
         'AvgPool2d':  'AveragePool',
-        'Dummy': 'Constant',
+        'SoftMax': 'Softmax',
+        'Sigmoid': 'Sigmoid',
+        'Add': 'Add',
+        'Matmul': 'Mul',
         '_BatchNorm2d': 'BatchNormalization',
         'Concat': 'Concat',
     }
@@ -94,8 +89,7 @@ class SingaFrontend(object):
     # each indicates a function name
     _special_operators = {
         '_Conv2d': '_create_conv_pool',
-        'MaxPool2d': '_create_conv_pool',
-        'AvgPool2d': '_create_conv_pool',
+        '_Pooling2d': '_create_conv_pool',
         'Dummy': '_create_dummy',
         '_BatchNorm2d': '_create_batch_norm',
         'Concat': '_create_concat'
@@ -200,6 +194,10 @@ class SingaFrontend(object):
             node.attribute.append(
                 helper.make_attribute('group', op.handle.group)
             )
+        elif op.handle.is_max_pooling:
+            node.op_type = cls._rename_operators.get('MaxPool2d')
+        else:
+            node.op_type = cls._rename_operators.get('AvgPool2d')
         return node
 
     @classmethod
@@ -211,7 +209,6 @@ class SingaFrontend(object):
         :rtype: the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
-
         node.attribute.extend([helper.make_attribute(
             'value', helper.make_tensor(
                 name=op.name,
@@ -260,23 +257,24 @@ class SingaFrontend(object):
         topol = postorderRecursive(y.creator, y)
         # since tensor's name might change
         # we record its id
-        input_tensors = {id(x): x for x in inputs}
+        input_tensors = {id(x):x for x in inputs}
         X = []
         Y = [helper.make_tensor_value_info(y.name, TensorProto.FLOAT, y.shape)]
-
+        
         for op, yid, op_t in topol:
-            if yid not in input_tensors:
-                graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
-            elif yid is not None:
+            optype = cls._get_singa_op_type(op)
+            if yid in input_tensors and optype == 'Dummy':
                 # find the input by its id
                 op_t = input_tensors[yid]
                 dtype = TensorProto.FLOAT
                 if op_t.dtype == tensor.int32:
                     dtype = TensorProto.INT
                 X.append(helper.make_tensor_value_info(op.name, dtype, op_t.shape))
-
+            else:
+                graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
+                
         graph_def.input.extend(X)
-        graph_def.output.extend(Y)
+        graph_def.output.extend(Y)    
         return graph_def
 
     @classmethod
@@ -292,7 +290,6 @@ class SingaFrontend(object):
         model = helper.make_model(cls.singa_to_onnx_graph(
             inputs, y, model_name="sonnx"), producer_name='sonnx',
             opset_imports=[opset_id])
-        # print('The model is:\n{}'.format(model))
         checker.check_model(model)
         return model
 
@@ -338,16 +335,14 @@ class SingaBackend(Backend):
     _rename_operators = {
         'Relu': 'relu',
         'Softmax': 'softmax',
-        'Flatten': 'flatten',
-        'Tanh': 'tanh',
         'Sigmoid': 'sigmoid',
-        'Add': 'add_bias',
-        'Mul': 'mul',
-        'MatMul': 'matmul',
+        'Add': 'add',
+        'Mul': 'Matmul',
         'Conv': 'conv2d',
         'MaxPool': 'pooling_2d',
         'AveragePool': 'pooling_2d',
         'BatchNormalization': 'batchnorm_2d',
+        'Concat': 'Concat',
     }
 
     # this dict indicates the operators that need extra handle
@@ -357,7 +352,8 @@ class SingaBackend(Backend):
         'MaxPool': '_create_max_avg_pool',
         'AveragePool': '_create_max_avg_pool',
         'BatchNormalization': '_create_batchnorm',
-        'Concat': '_create_concat'
+        'Concat': '_create_concat',
+        'Mul': '_create_matmul',
     }
 
     @classmethod
@@ -438,7 +434,7 @@ class SingaBackend(Backend):
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
         return handle, forward
 
-    @staticmethod
+    @classmethod
     def _create_batchnorm(cls, onnx_node, inputs, opset_version):
         """
         get the batch norm operator from onnx node
@@ -454,7 +450,38 @@ class SingaBackend(Backend):
             raise NotImplementedError
         else:
             handle = singa.CudnnBatchNormHandle(factor, x.data)
-        return handle
+
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
+        return handle, forward
+
+    @classmethod
+    def _create_concat(cls, onnx_node, inputs, opset_version):
+        """
+        get the concat operator from onnx node
+        :type onnx_node: a given onnx node
+        :type inputs: the input tensor
+        :type opset_version: the opset version
+        :rtype: the handle of singa operator
+        :rtype: the autograd of singa operator
+        """
+        x = inputs[0]
+        factor = onnx_node.attrs["axis"]
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
+        return None, forward(axis=factor)
+    
+    @classmethod
+    def _create_matmul(cls, onnx_node, inputs, opset_version):
+        """
+        get the concat operator from onnx node
+        :type onnx_node: a given onnx node
+        :type inputs: the input tensor
+        :type opset_version: the opset version
+        :rtype: the handle of singa operator
+        :rtype: the autograd of singa operator
+        """
+        x = inputs[0]
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
+        return None, forward()
 
     @classmethod
     def run_node(cls, onnx_node, tensor_map, device=cpu_dev, opset_version=_known_opset_version):
@@ -514,7 +541,9 @@ class SingaBackend(Backend):
         :rtype: a dict of tensors
         :rtype: a list of SingaOps('name', 'op', 'handle', 'forward')
         """
-        optimized_model = optimizer.optimize(onnx_model)
+        # todo check the reason of Segmentation fault (core dumped)
+        # optimized_model = optimizer.optimize(onnx_model)
+        optimized_model = onnx_model
         tensor_map = {}
         singa_ops = []
         singa_op = collections.namedtuple('SingaOps', ['name', 'op', 'handle', 'forward'])
@@ -606,7 +635,6 @@ class SingaRep(BackendRep):
         for i in self.model.graph.output:
             y.append(tensors[i.name])
         return y
-
 
 run_node = SingaBackend.run_node
 prepare = SingaBackend.prepare
