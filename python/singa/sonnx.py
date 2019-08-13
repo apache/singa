@@ -422,7 +422,7 @@ class SingaBackend(Backend):
         padding = tuple(onnx_node.attrs["pads"][0:2])
         stride = tuple(onnx_node.attrs["strides"])
 
-        is_max = onnx_node == 'MaxPool'
+        is_max = onnx_node.op_type == 'MaxPool'
         x = inputs[0]
         if x.device.id() == -1:
             handle = singa.PoolingHandle(x.data, kernel, stride, padding, is_max)

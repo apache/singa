@@ -169,19 +169,20 @@ class TestPythonOnnxFrontend(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
-    # def test_max_pool(self):
-    #     x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
-    #     x.gaussian(0.0, 1.0)
-    #     y = autograd.MaxPool2d(3, 1, 2)(x)
+    def test_max_pool(self):
+        x = tensor.Tensor(shape=(2, 3, 4, 4), device=gpu_dev)
+        x.gaussian(0.0, 1.0)
+        y = autograd.MaxPool2d(2, 2, 0)(x)
+        
+        # frontend
+        model = sonnx.to_onnx([x], [y])
+        # print('The model is:\n{}'.format(model))
 
-    #     # frontend
-    #     model = sonnx.to_onnx([x], [y])
+        # backend
+        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        y_t = sg_ir.run([x])
 
-    #     # backend
-    #     sg_ir = sonnx.prepare(model, device=gpu_dev)
-    #     y_t = sg_ir.run([x])
-
-    #     np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
     # def test_batch_norm(self):
     #     x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
