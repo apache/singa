@@ -17,9 +17,14 @@
 # under the License.
 #
 
+# https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#templating-with-jinja
+# {% set data = load_setup_py_data(setup_file='../../../python/singa/setup.py', from_recipe_dir=True) %}
+
+{% set version = "2.1.0.dev" %}
+
 package:
   name: singa
-  version: "{{ GIT_DESCRIBE_TAG }}"
+  version: {{ version }}
 
 source:
   # path: ../../../
@@ -28,9 +33,8 @@ source:
 build:
   number: 0
   script_env:
-    - CUDA   # E.g., export CUDA=9.0
+    - CUDA   # run `export CUDA=9.0` in the terminal
   string: {{ build_str }}_py{{ py }}
-  # py{{py}}_{{ environ.get('BUILD_STR', 'cpu') }}
 
 requirements:
   build:

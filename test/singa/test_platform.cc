@@ -20,9 +20,22 @@
 #include "gtest/gtest.h"
 #include "singa/core/device.h"
 #include "singa/core/tensor.h"
-
+#include <iostream>
+using namespace std;
 #ifdef USE_CUDA
 using singa::Platform;
+
+TEST(Platform, CreateMultDevice) {
+  int n = Platform::GetNumGPUs();
+  auto devs = Platform::CreateCudaGPUs(n);
+  for (int i= 0;i < devs.size();i++) {
+    auto b = devs[i]->NewBlock(512+512*(2-i));
+    EXPECT_EQ(512+512*(2-i), devs[i]->GetAllocatedMem());
+    devs[i]->FreeBlock(b);
+  }
+}
+
+
 TEST(Platform, NumGPUs) {
   int n = Platform::GetNumGPUs();
   EXPECT_GE(n, 0);
@@ -68,15 +81,7 @@ TEST(Platform, CreateDevice) {
   }
 }
 
-TEST(Platform, CreateMultDevice) {
-  int n = Platform::GetNumGPUs();
-  auto devs = Platform::CreateCudaGPUs(n);
-  for (auto dev : devs) {
-    auto b = dev->NewBlock(32);
-    EXPECT_LE(32u, dev->GetAllocatedMem());
-    dev->FreeBlock(b);
-  }
-}
+
 
 TEST(Platform, CreatTensor) {
   auto cuda = Platform::CreateCudaGPUs(1)[0];
