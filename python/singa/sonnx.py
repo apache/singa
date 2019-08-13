@@ -67,7 +67,7 @@ class SingaFrontend(object):
     """
 
     # This number indicates the target onnx operator set version
-    _target_opset_version = 3
+    _target_opset_version = 10
 
     # beceuase singa's operators are different from onnx.
     # we define a dict for the name projection
@@ -94,6 +94,11 @@ class SingaFrontend(object):
         '_BatchNorm2d': '_create_batch_norm',
         'Concat': '_create_concat'
     }
+
+    # some ops(such as batchnorm) has inputs we cannot handle directly, 
+    # so we record these items firstly so that we can handle then 
+    # at other place.  
+    _unhandled_operators = {}
 
     @classmethod
     def _get_singa_op_inputs_outputs(cls, op):
@@ -159,12 +164,34 @@ class SingaFrontend(object):
         :type op_t: the tensor of the operator
         :rtype: the onnx node
         """
+        nodes = []
+        # firstly we add the running mean and var nodes
+        running_values = [op.running_mean, op.running_var]
+        for srcop, _, y, _ in op.src:
+            if y is None and srcop.name in cls._unhandled_operators:
+                node = cls._common_singa_tensor_to_onnx_node(srcop, op_t)
+                running_value = running_values.pop(0)
+                vals = tensor.to_numpy(tensor.from_raw_tensor(running_value)).astype(float)
+                node.attribute.extend([helper.make_attribute(
+                    'value', helper.make_tensor(
+                        name=srcop.name,
+                        data_type=TensorProto.FLOAT,
+                        dims=[len(vals)],
+                        vals=vals,
+                    )
+                )])
+                nodes.append(node)
+        
+        # then we add the batchnorm op itself
+        epsilon = 1e-5 # the epsilon value used in singa
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
-
         node.attribute.extend([
             helper.make_attribute('momentum', op.handle.factor),
+            helper.make_attribute('epsilon', epsilon),
         ])
-        return node
+        nodes.append(node)
+
+        return nodes
 
     @classmethod
     def _create_conv_pool(cls, op, op_t):
@@ -208,6 +235,10 @@ class SingaFrontend(object):
         :type op_t: the tensor of the operator
         :rtype: the onnx node
         """
+        # for batchnorm, the running mean and var's op_t is None, we just return
+        if op_t is None:
+            cls._unhandled_operators[op.name] = op
+            return None
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
         node.attribute.extend([helper.make_attribute(
             'value', helper.make_tensor(
@@ -239,6 +270,7 @@ class SingaFrontend(object):
         nodes = translator(op, op_t)
         if not isinstance(nodes, collections.Iterable):
             nodes = [nodes]
+        nodes = [node for node in nodes if node is not None]
         return nodes
 
     @classmethod
@@ -258,11 +290,13 @@ class SingaFrontend(object):
         # since tensor's name might change
         # we record its id
         input_tensors = {id(x):x for x in inputs}
+        # print(input_tensors)
         X = []
         Y = [helper.make_tensor_value_info(y.name, TensorProto.FLOAT, y.shape)]
         
         for op, yid, op_t in topol:
             optype = cls._get_singa_op_type(op)
+            # print(op.name, cls._get_singa_op_type(op), op_t, optype, yid)
             if yid in input_tensors and optype == 'Dummy':
                 # find the input by its id
                 op_t = input_tensors[yid]
@@ -290,6 +324,7 @@ class SingaFrontend(object):
         model = helper.make_model(cls.singa_to_onnx_graph(
             inputs, y, model_name="sonnx"), producer_name='sonnx',
             opset_imports=[opset_id])
+        # print('The model is:\n{}'.format(model))
         checker.check_model(model)
         return model
 
@@ -328,7 +363,7 @@ class OnnxAttributes(dict):
 class SingaBackend(Backend):
 
     # This number indicates the onnx operator set version
-    _known_opset_version = 3
+    _known_opset_version = 10
 
     # beceuase singa's operators are different from onnx.
     # we define a dict for the name projection
@@ -635,6 +670,8 @@ class SingaRep(BackendRep):
         for i in self.model.graph.output:
             y.append(tensors[i.name])
         return y
+
+    
 
 run_node = SingaBackend.run_node
 prepare = SingaBackend.prepare
