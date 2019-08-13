@@ -1568,9 +1568,9 @@ def sigmoid(x):
     return Sigmoid()(x)[0]
 
 
-class ElemMatmul(Operation):
+class Mul(Operation):
     def __init__(self):
-        super(ElemMatmul, self).__init__()
+        super(Mul, self).__init__()
 
     def forward(self, x1, x2):
         if training:
@@ -1582,10 +1582,9 @@ class ElemMatmul(Operation):
         dx2 = singa.__mul__(dy, self.cache[0])
         return dx1, dx2
 
-
 def mul(x, y):
     # do pointwise multiplication
-    return ElemMatmul()(x, y)[0]
+    return Mul()(x, y)[0]
 
 
 def add_all(*xs):
