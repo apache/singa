@@ -1011,7 +1011,7 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
 
-    def test_prelu_gpu(self):
+    def test_reshape_gpu(self):
         x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
         y = x.reshape(2,3)
         dy = np.ones((3, 2), dtype = np.float32)
