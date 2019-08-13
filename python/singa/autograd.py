@@ -1852,3 +1852,107 @@ class Div(Operation):
     
 def div(a, b):
     return Div()(a,b)[0]
+  
+    
+class Pow(Operation):
+    def __init__(self):
+        super(Pow, self).__init__()
+
+    def forward(self, a, b):
+        if training:
+            self.input = (a, b)
+        return singa.Pow(a, b)
+
+    def backward(self, dy):
+        da1=singa.__mul__(self.input[1], singa.Pow(self.input[0], singa.SubFloat(self.input[1],1.0)))
+        da=singa.__mul__(da1, dy)
+
+        db1=singa.__mul__(singa.Pow(self.input[0],self.input[1]), singa.Log(self.input[0]))
+        db=singa.__mul__(db1, dy)
+
+        return da, db
+
+def pow(a, b):
+    return Pow()(a,b)[0]
+
+    
+class SoftSign(Operation):
+    def __init__(self):
+        super(SoftSign, self).__init__()  
+    
+    def forward(self, x):
+    # y = x / (1 + np.abs(x))
+        if training:
+            self.input = x
+        x1 = singa.AddFloat(singa.Abs(x),1.0)
+        y = singa.__div__(x,x1)
+        
+        return y
+      
+    def backward(self, dy):
+        dx = singa.AddFloat(singa.Abs(self.input),1.0)
+        dx = singa.PowFloat(singa.Square(dx),-1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+      
+def softsign(x):
+    return SoftSign()(x)[0]
+
+
+class Sqrt(Operation):
+    def __init__(self):
+        super(Sqrt, self).__init__()  
+    
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Sqrt(x)
+      
+    def backward(self, dy):
+        dx = singa.PowFloat(self.input,-0.5)
+        dx = singa.MultFloat(dx,0.5)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def sqrt(x):
+    return Sqrt()(x)[0]
+  
+
+class SoftPlus(Operation):
+    def __init__(self):
+        super(SoftPlus, self).__init__()  
+    
+    def forward(self, x):
+    #f(x) = ln(exp(x) + 1)
+        if training:
+            self.input = x
+        x1 = singa.AddFloat(singa.Exp(x),1.0)
+        y = singa.Log(x1)    
+        return y
+
+    def backward(self, dy):
+        dx = singa.Exp(singa.MultFloat(self.input, -1.0))
+        dx = singa.PowFloat(singa.AddFloat(dx,1.0),-1.0)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+      
+def softplus(x):
+    return SoftPlus()(x)[0]
+
+
+class Sub(Operation):
+    def __init__(self):
+        super(Sub, self).__init__()    
+    
+    def forward(self, a, b):    
+        if training:
+            self.input = (a, b)
+            return singa.__sub__(a, b)
+
+    def backward(self, dy):
+        return dy, singa.MultFloat(dy, -1.0)
+
+
+def sub(a, b):
+    return Sub()(a,b)[0]

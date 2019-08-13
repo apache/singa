@@ -43,6 +43,9 @@ class DeviceMemPool {
   virtual std::pair<size_t, size_t> GetMemUsage() {
     return std::make_pair(0u, 0u);
   }
+  virtual std::pair<size_t, size_t> GetMemUsage(int id) {
+    return std::make_pair(0u, 0u);
+  }
   virtual ~DeviceMemPool(){};
 
  protected:
@@ -62,6 +65,7 @@ class CnMemPool : public DeviceMemPool {
   void Free(void* ptr);
 
   std::pair<size_t, size_t> GetMemUsage() override;
+  std::pair<size_t, size_t> GetMemUsage(int id) override;
 
   // release all memory and set cnmem manager to unintialized
   ~CnMemPool();
@@ -78,7 +82,6 @@ class CnMemPool : public DeviceMemPool {
   // lock on the initialized variable
   std::mutex mtx_;
 
-  static std::atomic<int> pool_count;
 };
 
 class CudaMemPool : public DeviceMemPool {
