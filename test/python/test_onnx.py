@@ -103,6 +103,7 @@ class TestPythonOnnxFrontend(unittest.TestCase):
 
         # frontend
         model = sonnx.to_onnx([x], [y])
+        # print('The model is:\n{}'.format(model))
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
@@ -144,7 +145,7 @@ class TestPythonOnnxFrontend(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x1, x2])[0]
+        y_t = sg_ir.run([x1, x2])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
@@ -165,7 +166,7 @@ class TestPythonOnnxFrontend(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x1, x2])[0]
+        y_t = sg_ir.run([x1, x2])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
@@ -199,6 +200,71 @@ class TestPythonOnnxFrontend(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
+    def test_inference(self):
+        x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
+        x.gaussian(0.0, 1.0)
+        x1 = autograd.Conv2d(3, 1, 2)(x)
+        y = autograd.Conv2d(1, 1, 2)(x1)
+        
+        # frontend
+        model = sonnx.to_onnx([x], [y])
+        # print('The model is:\n{}'.format(model))
+
+        # backend
+        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        y_t = sg_ir.run([x], last_layers=-1)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(x1), tensor.to_numpy(y_t[0]), decimal=5)
+
+    # def test_retraining(self):
+    #     x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
+    #     x.gaussian(0.0, 1.0)
+    #     x1 = autograd.Conv2d(3, 1, 2)(x)
+    #     y = autograd.Conv2d(1, 1, 2)(x1)
+    #     dy = tensor.Tensor(device=gpu_dev, data=np.random.random((2, 1, 1, 1)).astype(np.float32))
+    #     dx, dW, db = autograd.backward(y, dy)  # CTensor
+    #     print(y.shape)
+
+    #     dy = tensor.Tensor(shape=(2, 1, 1, 1), device=gpu_dev)
+    #     dy.gaussian(0.0, 1.0)
+        
+    #     # frontend
+    #     model = sonnx.to_onnx([x], [y])
+    #     # print('The model is:\n{}'.format(model))
+
+    #     # backend
+    #     sg_ir = sonnx.prepare(model, device=gpu_dev)
+    #     for idx, tens in enumerate(sg_ir.tensor_map):
+    #         tens.stores_grad = False
+    #         sg_ir.tensor_map[idx] = tens
+    #     y_t = sg_ir.run([x])
+
+
+    #     self.check_shape(y.shape, (2, 1, 2, 2))
+    #     self.check_shape(dx.shape(), (2, 3, 3, 3))
+    #     self.check_shape(dW.shape(), (1, 3, 2, 2))
+    #     self.check_shape(db.shape(), (1,))
+
+    #     # forward without bias
+    #     y_without_bias = conv_without_bias_0(gpu_input_tensor)
+    #     self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
+
+    #     np.testing.assert_array_almost_equal(tensor.to_numpy(x1), tensor.to_numpy(y_t[0]), decimal=5)
+
+    # def test_transfer_learning(self):
+    #     x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
+    #     x.gaussian(0.0, 1.0)
+    #     y = autograd.BatchNorm2d(3)(x)
+
+    #     # frontend
+    #     model = sonnx.to_onnx([x], [y])
+    #     print('The model is:\n{}'.format(model))
+
+    #     # backend
+    #     sg_ir = sonnx.prepare(model, device=gpu_dev)
+    #     y_t = sg_ir.run([x])
+
+    #     np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
 if __name__ == '__main__':
     unittest.main()
