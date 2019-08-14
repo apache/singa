@@ -2273,7 +2273,6 @@ def div(a, b):
     return Div()(a,b)[0]
 
 
-
 class Shape(Operation):
     def __init__(self):
         super(Shape, self).__init__()
@@ -2316,3 +2315,33 @@ class Max(Operation):
 def max(a,b):
     return Max()(a,b)[0]
 
+class GEMM(Operation):
+    def __init__(self, alpha, beta, transA, transB):
+        self.alpha = alpha
+        self.beta = beta
+        self.transA = transA
+        self.transB = transB
+        super(GEMM, self).__init__()
+
+    def forward(self, A, B, C):
+        if self.transA:
+            A = singa.Transpose(A)
+        if self.transB:
+            B = singa.Transpose(B)
+        if training:
+            self.A = A
+            self.B = B
+        
+        singa.MultWithScale(self.alpha, A, B, self.beta, C)
+        return C
+
+    def backward(self, dY):
+        dC = dY * self.beta
+        dA = Mult(DY, singa.Transpose(B))
+        dB = Mult(singa.Transpose(A), DY)
+        del self.A
+        del self.B
+        return dA, dB, dC
+
+def gemm(alpha, transA, A, transB, B, beta, C):
+    return GEMM(alpha, beta, transA, transB)(A, B, C)[0]
