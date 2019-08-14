@@ -74,6 +74,30 @@ class TestPythonOperation(unittest.TestCase):
                                               _tuple_to_string(expect))
                          )
 
+
+    def test_Greater_cpu(self):
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        y = np.greater(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+
+        result = autograd.greater(x0,x1)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+    def test_Greater_gpu(self):
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        y = np.greater(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+        result = autograd.greater(x0,x1)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
     def test_conv2d_gpu(self):
         # (in_channels, out_channels, kernel_size)
         conv_0 = autograd.Conv2d(3, 1, 2)
