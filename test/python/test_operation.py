@@ -983,7 +983,7 @@ class TestPythonOperation(unittest.TestCase):
 
         result = autograd.softplus(x)
         dx = result.creator.backward(dy.data)
-        #dx = 1 / (1 + exp(-x))
+
         G = 1.0 / (1.0 + np.exp(-X))
         DX = np.multiply(G, DY)
 
@@ -1003,7 +1003,7 @@ class TestPythonOperation(unittest.TestCase):
 
         result = autograd.softplus(x)
         dx = result.creator.backward(dy.data)
-        #dx = 1 / (1 + exp(-x))
+        
         G = 1.0 / (1.0 + np.exp(-X))
         DX = np.multiply(G, DY)
 
@@ -1047,6 +1047,26 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def test_Sign_cpu(self):
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        XT = np.sign(X)
+
+        result = autograd.sign(x)
+        dx = result.creator.backward(dy.data)
+        DX = np.multiply(DY,0)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    
+    def test_Sign_gpu(self):
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        XT = np.sign(X)
+        
+        result = autograd.sign(x)
+        dx = result.creator.backward(dy.data)
+        DX = np.multiply(DY,0)
 
     def test_Log_cpu(self):
         X = np.array([0.1,1.0,0.4,1.4,0.9,2.0]).reshape(3,2).astype(np.float32)
@@ -1161,6 +1181,5 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
 
-    
 if __name__ == '__main__':
     unittest.main()

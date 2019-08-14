@@ -1903,7 +1903,25 @@ class LeakyRelu(Operation):
 def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
 
-  
+
+class Sign(Operation):
+    def __init__(self):
+        super(Sign, self).__init__()
+
+    def forward(self, a):
+        if training:
+            self.input = a
+        return singa.Sign(a)
+
+    def backward(self, dy):
+        dx = singa.MultFloat(dy, 0.0)
+        return dx
+
+
+def sign(a):
+    return Sign()(a)[0]
+
+    
 class Pow(Operation):
     def __init__(self):
         super(Pow, self).__init__()
