@@ -83,7 +83,7 @@ class SingaFrontend(object):
         'Matmul': 'Mul',
         '_BatchNorm2d': 'BatchNormalization',
         'Concat': 'Concat',
-        'Flatten': 'Flatten', 
+        'Flatten': 'Flatten',
     }
 
     # this dict indicates the operators that need extra handle
@@ -94,12 +94,12 @@ class SingaFrontend(object):
         'Dummy': '_create_dummy',
         '_BatchNorm2d': '_create_batch_norm',
         'Concat': '_create_concat',
-        'Flatten': '_create_flatten', 
+        'Flatten': '_create_flatten',
     }
 
-    # some ops(such as batchnorm) has inputs we cannot handle directly, 
-    # so we record these items firstly so that we can handle then 
-    # at other place.  
+    # some ops(such as batchnorm) has inputs we cannot handle directly,
+    # so we record these items firstly so that we can handle then
+    # at other place.
     _unhandled_operators = {}
 
     @classmethod
@@ -198,9 +198,9 @@ class SingaFrontend(object):
                     )
                 )])
                 nodes.append(node)
-        
+
         # then we add the batchnorm op itself
-        epsilon = 1e-5 # the epsilon value used in singa
+        epsilon = 1e-5  # the epsilon value used in singa
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
         node.attribute.extend([
             helper.make_attribute('momentum', op.handle.factor),
@@ -306,11 +306,11 @@ class SingaFrontend(object):
         topol = postorderRecursive(y.creator, y)
         # since tensor's name might change
         # we record its id
-        input_tensors = {id(x):x for x in inputs}
+        input_tensors = {id(x): x for x in inputs}
         # print(input_tensors)
         X = []
         Y = [helper.make_tensor_value_info(y.name, TensorProto.FLOAT, y.shape)]
-        
+
         for op, yid, op_t in topol:
             optype = cls._get_singa_op_type(op)
             # print(op.name, cls._get_singa_op_type(op), op_t, optype, yid)
@@ -323,9 +323,9 @@ class SingaFrontend(object):
                 X.append(helper.make_tensor_value_info(op.name, dtype, op_t.shape))
             else:
                 graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
-                
+
         graph_def.input.extend(X)
-        graph_def.output.extend(Y)    
+        graph_def.output.extend(Y)
         return graph_def
 
     @classmethod
@@ -395,7 +395,7 @@ class SingaBackend(Backend):
         'AveragePool': 'pooling_2d',
         'BatchNormalization': 'batchnorm_2d',
         'Concat': 'Concat',
-        'Flatten': 'Flatten', 
+        'Flatten': 'Flatten',
     }
 
     # this dict indicates the operators that need extra handle
@@ -407,7 +407,7 @@ class SingaBackend(Backend):
         'BatchNormalization': '_create_batchnorm',
         'Concat': '_create_concat',
         'Mul': '_create_matmul',
-        'Flatten' : '_create_flatten',
+        'Flatten': '_create_flatten',
     }
 
     @classmethod
@@ -537,7 +537,7 @@ class SingaBackend(Backend):
         factor = onnx_node.attrs["axis"]
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
         return None, forward(start_axis=factor)
-    
+
     @classmethod
     def _create_matmul(cls, onnx_node, inputs, opset_version):
         """
@@ -564,7 +564,7 @@ class SingaBackend(Backend):
         """
         assert len(onnx_node.inputs) == len(inputs), "{}: expected {} but got {}".format(
             onnx_node.op_type, len(onnx_node.inputs), len(inputs))
-        
+
         handle, forward = cls._onnx_node_to_singa_op(onnx_node, inputs, opset_version)
         return cls._run_node(onnx_node, inputs, handle, forward, opset_version)
 
@@ -630,7 +630,10 @@ class SingaBackend(Backend):
         # todo check the reason of Segmentation fault (core dumped)
         # optimized_model = optimizer.optimize(onnx_model)
         optimized_model = onnx_model
+        # this tensor_nap contains all tensors, including outputs of each op
         tensor_map = {}
+        # this weights only contains the tensors which have stored the gradients
+        weights = {}
         singa_ops = []
         singa_op = collections.namedtuple('SingaOps', ['name', 'op', 'handle', 'forward'])
         # init the input as tensors
@@ -645,12 +648,14 @@ class SingaBackend(Backend):
             node = OnnxNode(node)
             if node.op_type == "Constant":
                 requires_grad, stores_grad = True, True
-                tensor_map[node.name] = tensor.Tensor(
+                tmp_tensor = tensor.Tensor(
                     device=device,
                     data=numpy_helper.to_array(node.attrs['value']),
                     requires_grad=requires_grad,
                     stores_grad=stores_grad,
                 )
+                tensor_map[node.name] = tmp_tensor
+                weights[node.name] = tmp_tensor
             else:
                 handle, forward = cls._onnx_node_to_singa_op(node, tensor_map, opset_version)
                 singa_ops.extend([singa_op(node.name, node, handle, forward)])
@@ -660,7 +665,7 @@ class SingaBackend(Backend):
                 inputs = [tensor_map[x] for x in node.inputs]
                 outputs = cls._run_node(node, inputs, handle, forward, opset_version)
                 tensor_map.update(outputs)
-        return tensor_map, singa_ops
+        return weights, singa_ops
 
     @classmethod
     def _onnx_node_to_singa_op(cls, onnx_node, tensor_map, opset_version):
@@ -710,11 +715,10 @@ class SingaRep(BackendRep):
         self.model = model
         self.tensor_map = tensor_map
         # this each item of singa_ops is: ('name', 'op', 'handle', 'forward')
-        # the name is a string, op is OnnxNode, 
+        # the name is a string, op is OnnxNode,
         # handle is Singa handle to store the tensor into singa operator
         # the forward is singa autograd operator
         self.singa_ops = singa_ops
-
 
     def run(self, inputs, **kwargs):
         """
@@ -726,25 +730,38 @@ class SingaRep(BackendRep):
         tensors = self.tensor_map.copy()
         # last_layers means we run this model until the last #N layers
         last_layers = kwargs.get('last_layers', len(self.singa_ops))
+        # whether return all outputs
+        all_outputs = kwargs.get('all_outputs', False)
+        # get a specific op by its name
+        op_name = kwargs.get('op_name', None)
+
+        # the dict will be returned
+        ret_outputs = collections.OrderedDict()
         for x, val in zip(self.model.graph.input, inputs):
             tensors[x.name] = val
         for _, op, handle, forward in self.singa_ops[:last_layers]:
             inputs = [tensors[x] for x in op.inputs]
             outputs = forward(*inputs) if handle is None else forward(handle, *inputs)
-            for (key, val) in zip(op.outputs, [outputs]):
+            if not isinstance(outputs, collections.Iterable):
+                outputs = [outputs]
+            for (key, val) in zip(op.outputs, outputs):
                 tensors[key] = val
-        
-        # we think the last output of the topological sorting list is the real output
-        if not isinstance(outputs, collections.Iterable):
-            outputs = [outputs]
-        # y = []
-        # for i in self.model.graph.output:
-        #     y.append(tensors[i.name])
-        return outputs
 
+        if op_name is not None:
+            if op_name in outputs:
+                return outputs[op_name]
+            else:
+                raise RuntimeError(
+                    "The op_name {} does not exist, please check. The available op_names are: {}" %
+                    (op_name, [val for key, val in op_name.items()]))
 
+        # return all outputs if all_outputs==True
+        # else return last outputs
+        if all_outputs:
+            return ret_outputs
+        else:
+            return outputs
 
-    
 
 run_node = SingaBackend.run_node
 prepare = SingaBackend.prepare
