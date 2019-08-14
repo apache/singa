@@ -440,6 +440,23 @@ def add_bias(x, b, axis=0):
     return AddBias(axis)(x, b)[0]
 
 
+class Reshape(Operation):
+    def __init__(self,shape):
+        super(Reshape, self).__init__()
+        self.shape=list(shape)
+
+    def forward(self, x):
+        self.cache=x.shape()
+        return singa.Reshape(x, self.shape)
+
+    def backward(self, dy):
+        return singa.Reshape(dy, self.cache)
+
+
+def reshape(a,shape):
+    return Reshape(shape)(a)[0]
+
+
 class Add(Operation):
     def __init__(self):
         super(Add, self).__init__()
