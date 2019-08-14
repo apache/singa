@@ -390,6 +390,32 @@ def less(x,y):
 
 
 
+class Identity(Operation):
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, x):
+        """
+        Args:
+            x(CTensor): input tensor
+        Returns:
+            x(CTensor): equal to input tensor
+        """
+        return x
+
+    def backward(self, dy):
+        """
+        Args:
+            dy(CTensor): dL / dy
+        Returns:
+            dx(CTensor): dL / dx = dy;
+        """
+        return dy
+
+
+def identity(x):
+    return Identity()(x)[0]
+
 class Matmul(Operation):
     """For matrix multiplication"""
 
