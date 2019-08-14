@@ -1945,3 +1945,29 @@ class Sub(Operation):
 
 def sub(a, b):
     return Sub()(a,b)[0]
+
+
+class Max(Operation):
+    def __init__(self):
+        super(Max, self).__init__()    
+
+    def forward(self, a, b):
+        m = singa.__sub__(a,b)
+        mask0 = singa.GTFloat(m,0) 
+        mask00 = singa.__mul__(singa.GEFloat(m,0),a)
+        mask1 = singa.LTFloat(m,0)
+        mask11=singa.__mul__(mask1,b)
+        mask = singa.__add__(mask00,mask11)
+        
+        if training:
+            self.mask = mask
+            self.mask0 = mask0
+            self.mask1 = mask1
+        return mask
+
+    def backward(self, dy):
+        return (self.mask0, self.mask1)
+   
+        
+def max(a,b):
+    return Max()(a,b)[0]
