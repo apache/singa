@@ -953,7 +953,44 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
-    
+
+
+    def test_unsqueeze_cpu(self):
+        x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(1,2,3).astype(np.float32)
+        y = x.reshape(1, 1, 2, 3, 1)
+        dy = np.ones((1, 1, 2, 3, 1), dtype = np.float32)
+        grad = dy.reshape(1,2,3)
+
+        x = tensor.from_numpy(x)
+        dy = tensor.from_numpy(dy)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.unsqueeze(x,[0, 4])
+        dx = result.creator.backward(dy.data)
+
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+
+    def test_unsqueeze_gpu(self):
+        x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(1,2,3).astype(np.float32)
+        y = x.reshape(1, 1, 2, 3, 1)
+        dy = np.ones((1, 1, 2, 3, 1), dtype = np.float32)
+        grad = dy.reshape(1,2,3)
+
+        x = tensor.from_numpy(x)
+        dy = tensor.from_numpy(dy)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.unsqueeze(x,[0, 4])
+        dx = result.creator.backward(dy.data)
+
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+
     def test_Sqrt_cpu(self):
         X = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
         XT = np.sqrt(X)
