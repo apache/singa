@@ -97,6 +97,50 @@ class TestPythonOperation(unittest.TestCase):
         y_without_bias = conv_without_bias_0(gpu_input_tensor)
         self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
 
+    def test_sum_cpu(self):
+        x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
+        x1 = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        y = x+x1
+        dy = np.ones((3, 2), dtype = np.float32)
+        grad0=dy
+        grad1=dy
+        x = tensor.from_numpy(x)
+        x1 = tensor.from_numpy(x1)
+        dy = tensor.from_numpy(dy)
+        x.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.sum(x,x1)
+        dx0,dx1 = result.creator.backward(dy.data)
+
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_sum_gpu(self):
+        x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
+        x1 = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        y = x+x1
+        dy = np.ones((3, 2), dtype = np.float32)
+        grad0=dy
+        grad1=dy
+        x = tensor.from_numpy(x)
+        x1 = tensor.from_numpy(x1)
+        dy = tensor.from_numpy(dy)
+        x.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.sum(x,x1)
+        dx0,dx1 = result.creator.backward(dy.data)
+
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
     def test_conv2d_cpu(self):
         # (in_channels, out_channels, kernel_size)
         conv_1 = autograd.Conv2d(3, 1, 2)
