@@ -357,6 +357,38 @@ class ReLU(Operation):
 def relu(x):
     return ReLU()(x)[0]
 
+class Less(Operation):
+    def __init__(self):
+        super(Less, self).__init__()
+
+    def forward(self, x,y):
+        """Do forward propgation.
+        Store the [x<y] if requires gradient.
+        Args:
+            x (CTensor): matrix
+            y (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        cur = singa.LTFloat(singa.__sub__(x,y),0)
+        if training:
+            self.cache = cur
+        return cur
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            a tuple for (dx0, dx1)
+        """
+        assert 0,('no backward function for less')
+        return None
+
+def less(x,y):
+    return Less()(x,y)[0]
+
+
 
 class Matmul(Operation):
     """For matrix multiplication"""
