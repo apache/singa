@@ -1925,6 +1925,7 @@ class Pow(Operation):
 def pow(a, b):
     return Pow()(a,b)[0]
 
+    
 class SoftSign(Operation):
     def __init__(self):
         super(SoftSign, self).__init__()  
@@ -1947,6 +1948,7 @@ class SoftSign(Operation):
 def softsign(x):
     return SoftSign()(x)[0]
 
+
 class Sqrt(Operation):
     def __init__(self):
         super(Sqrt, self).__init__()  
@@ -1965,6 +1967,7 @@ class Sqrt(Operation):
 def sqrt(x):
     return Sqrt()(x)[0]
   
+
 class SoftPlus(Operation):
     def __init__(self):
         super(SoftPlus, self).__init__()  
@@ -1987,6 +1990,7 @@ class SoftPlus(Operation):
 def softplus(x):
     return SoftPlus()(x)[0]
 
+
 class Sub(Operation):
     def __init__(self):
         super(Sub, self).__init__()    
@@ -2002,3 +2006,22 @@ class Sub(Operation):
 
 def sub(a, b):
     return Sub()(a,b)[0]
+
+
+class Log(Operation):
+    def __init__(self):
+        super(Log, self).__init__()  
+    
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Log(x)
+​
+    def backward(self, dy):
+        dx = singa.PowFloat(self.input,-1)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+​
+def log(x):
+    return Log()(x)[0]

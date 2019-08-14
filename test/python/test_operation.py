@@ -1048,6 +1048,33 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
+    def test_Log_cpu(self):
+        X = np.array([0.1,1.0,0.4,1.4,0.9,2.0]).reshape(3,2).astype(np.float32)
+        XT = np.log(X)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        result = autograd.log(x)
+        dx = result.creator.backward(dy.data)
+        #dx = 1/x
+        G = 1.0 / X
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+    
+    def test_Log_gpu(self):
+        X = np.array([0.1,1.0,0.4,1.4,0.9,2.0]).reshape(3,2).astype(np.float32)
+        XT = np.log(X)
+
+        result = autograd.log(x)
+        dx = result.creator.backward(dy.data)
+        #dx = 1/x
+        G = 1.0 / X
+        DX = np.multiply(G, DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+        
     def test_mul_cpu(self):
         x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
         x1 = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
