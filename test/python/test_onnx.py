@@ -36,7 +36,7 @@ import numpy as np
 autograd.training = True
 
 
-class TestPythonOnnxFrontend(unittest.TestCase):
+class TestPythonOnnx(unittest.TestCase):
 
     def test_conv2d(self):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
@@ -200,6 +200,22 @@ class TestPythonOnnxFrontend(unittest.TestCase):
         y_t = sg_ir.run([x])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+    
+    def test_linear(self):
+        x = tensor.Tensor(shape=(2, 20), device=gpu_dev)
+        x.gaussian(0.0, 1.0)
+        y = autograd.Linear(20, 1)(x)
+
+        # frontend
+        model = sonnx.to_onnx([x], [y])
+        # print('The model is:\n{}'.format(model))
+
+        # # backend
+        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        y_t = sg_ir.run([x])
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+
 
     def test_inference(self):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
@@ -250,7 +266,6 @@ class TestPythonOnnxFrontend(unittest.TestCase):
         for p, gp in autograd.backward(loss):
             sgd.update(p, gp)
         sgd.step()
-
 
     def test_transfer_learning(self):
         # forward

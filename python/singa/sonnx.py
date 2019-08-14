@@ -84,6 +84,7 @@ class SingaFrontend(object):
         '_BatchNorm2d': 'BatchNormalization',
         'Concat': 'Concat',
         'Flatten': 'Flatten',
+        'AddBias': 'Add',
     }
 
     # this dict indicates the operators that need extra handle
