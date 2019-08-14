@@ -343,9 +343,10 @@ class Mean(Operation):
         if training:
             self.l = len(l)
         assert(len(l)>0);
-        x = l[0]
-        for i in range(1,len(l)):
-            x +=l[i]
+        x = singa.Tensor(list(l[0].shape()),l[0].device())
+        x.SetFloatValue(0.0)
+        for i in range(len(l)):
+            x+=l[i]
         return singa.MultFloat(x,1/len(l))
 
     def backward(self, dy):
