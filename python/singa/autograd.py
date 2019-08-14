@@ -1587,6 +1587,24 @@ def mul(x, y):
     # do pointwise multiplication
     return ElemMatmul()(x, y)[0]
 
+class Transpose(Operation):
+    def __init__(self,perm):
+        super(Transpose, self).__init__()
+        self.perm=list(perm)
+
+    def forward(self, x):
+        return singa.Transpose(x, self.perm)
+
+    def backward(self, dy):
+        cur=[]
+        for i in range(len(self.perm)):
+            cur+=[self.perm.index(i)]
+        return singa.Transpose(dy, cur)
+
+
+def transpose(x,shape):
+    return Transpose(shape)(x)[0]
+
 
 def add_all(*xs):
     assert len(xs) > 2
