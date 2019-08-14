@@ -328,6 +328,38 @@ class Dummy(Operation):
         return "{}_g".format(self.name)
 
 
+class Mean(Operation):
+    def __init__(self):
+        super(Mean, self).__init__()
+
+    def forward(self, *l):
+        """
+        Args:
+            l: a list of CTensor
+            element-wise mean operator
+        Returns:
+            a new CTensor
+        """
+        if training:
+            self.l = len(l)
+        assert(len(l)>0);
+        x = l[0]
+        for i in range(1,len(l)):
+            x +=l[i]
+        return singa.MultFloat(x,1/len(l))
+
+    def backward(self, dy):
+        """
+        Args:
+            dy(CTensor): dL / dy
+        Returns:
+            a list of dx(CTensor)
+        """
+        return [singa.MultFloat(dy,1/self.l)]*self.l
+
+def mean(*l):
+    return Mean()(*l)[0]
+
 class ReLU(Operation):
     def __init__(self):
         super(ReLU, self).__init__()
