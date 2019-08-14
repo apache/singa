@@ -357,6 +357,38 @@ class ReLU(Operation):
 def relu(x):
     return ReLU()(x)[0]
 
+class Less(Operation):
+    def __init__(self):
+        super(Less, self).__init__()
+
+    def forward(self, x,y):
+        """Do forward propgation.
+        Store the [x<y] if requires gradient.
+        Args:
+            x (CTensor): matrix
+            y (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        cur = singa.LTFloat(singa.__sub__(x,y),0)
+        if training:
+            self.cache = cur
+        return cur
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            a tuple for (dx0, dx1)
+        """
+        assert 0,('no backward function for less')
+        return None
+
+def less(x,y):
+    return Less()(x,y)[0]
+
+
 
 class Identity(Operation):
     def __init__(self):
@@ -464,6 +496,23 @@ class AddBias(Operation):
 
 def add_bias(x, b, axis=0):
     return AddBias(axis)(x, b)[0]
+
+
+class Reshape(Operation):
+    def __init__(self,shape):
+        super(Reshape, self).__init__()
+        self.shape=list(shape)
+
+    def forward(self, x):
+        self.cache=x.shape()
+        return singa.Reshape(x, self.shape)
+
+    def backward(self, dy):
+        return singa.Reshape(dy, self.cache)
+
+
+def reshape(a,shape):
+    return Reshape(shape)(a)[0]
 
 
 class Add(Operation):
@@ -1594,9 +1643,9 @@ def sigmoid(x):
     return Sigmoid()(x)[0]
 
 
-class ElemMatmul(Operation):
+class Mul(Operation):
     def __init__(self):
-        super(ElemMatmul, self).__init__()
+        super(Mul, self).__init__()
 
     def forward(self, x1, x2):
         if training:
@@ -1608,10 +1657,9 @@ class ElemMatmul(Operation):
         dx2 = singa.__mul__(dy, self.cache[0])
         return dx1, dx2
 
-
 def mul(x, y):
     # do pointwise multiplication
-    return ElemMatmul()(x, y)[0]
+    return Mul()(x, y)[0]
 
 
 def add_all(*xs):
