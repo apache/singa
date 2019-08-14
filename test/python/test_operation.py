@@ -914,6 +914,44 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
+
+    def test_squeeze_cpu(self):
+        x = np.random.randn(3,1,2,1,1)
+        y = x.reshape(3, 2,1)
+        dy = np.random.randn(3, 2,1)
+        grad = dy.reshape(3,1,2,1,1)
+
+
+        x = tensor.from_numpy(x)
+        dy = tensor.from_numpy(dy)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.squeeze(x,[1,3])
+        dx = result.creator.backward(dy.data)
+
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+
+    def test_squeeze_gpu(self):
+        x = np.random.randn(3,1,2,1,1)
+        y = x.reshape(3,2,1)
+        dy = np.random.randn(3, 2,1)
+        grad = dy.reshape(3,1,2,1,1)
+
+
+        x = tensor.from_numpy(x)
+        dy = tensor.from_numpy(dy)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.squeeze(x,[1,3])
+        dx = result.creator.backward(dy.data)
+
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
     def test_SoftPlus_cpu(self):
         #y = np.log(np.exp(x) + 1)
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)

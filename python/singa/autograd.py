@@ -1563,6 +1563,26 @@ class Sigmoid(Operation):
         dx = singa.__mul__(dy, dx)
         return dx
 
+class Squeeze(Operation):
+    def __init__(self,axis=[0]):
+        super(Squeeze, self).__init__()
+        self.axis=axis
+
+
+    def forward(self, x):
+        self.cache=x.shape()
+        cur = list(self.cache)
+        for i in self.axis:
+            assert(len(cur) > i and cur[i] == 1),'invalid axis'
+            cur.pop(i)
+        return singa.Reshape(x, cur)
+
+    def backward(self, dy):
+        return singa.Reshape(dy, self.cache)
+
+
+def squeeze(x,axis=[0]):
+    return Squeeze(axis)(x)[0]
 
 def sigmoid(x):
     return Sigmoid()(x)[0]
