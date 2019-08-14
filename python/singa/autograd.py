@@ -372,19 +372,15 @@ class Clip(Operation):
         Returns:
             np.clip(x,min,max)
         """
-
         mask0 = singa.LTFloat(x, self.min)
         mask1 = singa.GTFloat(x, self.max)
         mask00 = singa.MultFloat(mask0,self.min)
         mask11 = singa.MultFloat(mask1,self.max)
-
         mask2 = singa.LEFloat(x, self.max)
         mask3 = singa.GEFloat(x, self.min)
         maskm = singa.__mul__(mask2,mask3)
-
         if training:
             self.mask = maskm
-
         return singa.__add__(singa.__add__(singa.__mul__(maskm,x),mask00),mask11)
 
     def backward(self, dy):
