@@ -998,9 +998,9 @@ class TestPythonOperation(unittest.TestCase):
         x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
         x1 = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
         y = x*x1
-        dy = np.ones((3, 2), dtype = np.float32)
-        grad0=x1
-        grad1=x
+        dy = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        grad0=x1*dy
+        grad1=x*dy
 
 
         x = tensor.from_numpy(x)
@@ -1022,9 +1022,9 @@ class TestPythonOperation(unittest.TestCase):
         x = np.array([0.1,-1.0,0.4,4.0,-0.9,9.0]).reshape(3,2).astype(np.float32)
         x1 = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
         y = x*x1
-        dy = np.ones((3, 2), dtype = np.float32)
-        grad0=x1
-        grad1=x
+        dy = np.array([0.1,1.0,0.4,4.0,0.9,9.0]).reshape(3,2).astype(np.float32)
+        grad0=x1*dy
+        grad1=x*dy
 
 
         x = tensor.from_numpy(x)
