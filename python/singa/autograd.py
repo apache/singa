@@ -2178,6 +2178,31 @@ def sub(a, b):
     return Sub()(a,b)[0]
 
 
+class Min(Operation):
+    def __init__(self):
+        super(Min, self).__init__()    
+    
+    def forward(self, a, b):
+        m = singa.__sub__(a,b)
+        mask0 = singa.LTFloat(m,0) 
+        mask00 = singa.__mul__(singa.LEFloat(m,0),a)
+        mask1 = singa.GTFloat(m,0)
+        mask11=singa.__mul__(mask1,b)
+        mask = singa.__add__(mask00,mask11)
+        
+        if training:
+            self.mask0 = mask0
+            self.mask1 = mask1
+        
+        return mask
+
+    def backward(self, dy):
+        return (self.mask0,self.mask1)
+
+        
+def min(a,b):
+    return Min()(a,b)[0]
+
 class Log(Operation):
     def __init__(self):
         super(Log, self).__init__()
