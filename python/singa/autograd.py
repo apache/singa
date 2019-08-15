@@ -23,6 +23,7 @@ from collections import Counter, deque
 import numpy as np
 import math
 
+from singa import tensor
 from .tensor import Tensor
 from . import singa_wrap as singa
 
@@ -2217,3 +2218,21 @@ class Div(Operation):
     
 def div(a, b):
     return Div()(a,b)[0]
+
+
+class Shape(Operation):
+    def __init__(self):
+        super(Shape, self).__init__()
+
+    def forward(self, x):
+        cur=list(x.shape())
+        cur=tensor.from_numpy(np.array(cur))
+        cur.to_device(x.device())
+        return cur.data
+
+    def backward(self, dy):
+        return list(dy.shape())
+
+        
+def shape(x):
+    return Shape()(x)[0]
