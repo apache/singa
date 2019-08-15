@@ -26,6 +26,7 @@ from collections import deque, OrderedDict
 from . import singa_wrap as singa
 from . import autograd
 from . import tensor
+from . import device
 
 import itertools
 import collections
@@ -39,7 +40,6 @@ from onnx.helper import make_tensor, make_tensor_value_info
 from onnx.backend.base import Backend, Device, DeviceType, namedtupledict, BackendRep, namedtupledict
 import onnx
 import numpy as np
-from cuda_helper import gpu_dev, cpu_dev
 
 
 def postorderRecursive(root, root_t):
@@ -85,6 +85,7 @@ class SingaFrontend(object):
         'Concat': 'Concat',
         'Flatten': 'Flatten',
         'AddBias': 'Add',
+        'GEMM': 'Gemm',
     }
 
     # this dict indicates the operators that need extra handle
@@ -96,6 +97,7 @@ class SingaFrontend(object):
         '_BatchNorm2d': '_create_batch_norm',
         'Concat': '_create_concat',
         'Flatten': '_create_flatten',
+        'GEMM': '_create_gemm',
     }
 
     # some ops(such as batchnorm) has inputs we cannot handle directly,
@@ -162,7 +164,7 @@ class SingaFrontend(object):
     @classmethod
     def _create_flatten(cls, op, op_t):
         """
-        get a onnx node from singa Concat operator
+        get a onnx node from singa flatten operator
         :type op: a given operator
         :type op_t: the tensor of the operator
         :rtype: the onnx node
@@ -172,6 +174,25 @@ class SingaFrontend(object):
         node.attribute.extend([
             helper.make_attribute('axis', op.start_axis),
         ])
+        return node
+
+    @classmethod
+    def _create_gemm(cls, op, op_t):
+        """
+        get a onnx node from singa gemm operator
+        :type op: a given operator
+        :type op_t: the tensor of the operator
+        :rtype: the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('alpha', op.alpha),
+            helper.make_attribute('beta', op.beta),
+            helper.make_attribute('transA', op.transA),
+            helper.make_attribute('transB', op.transB),
+        ])
+
         return node
 
     @classmethod
@@ -397,6 +418,7 @@ class SingaBackend(Backend):
         'BatchNormalization': 'batchnorm_2d',
         'Concat': 'Concat',
         'Flatten': 'Flatten',
+        'Gemm': 'GEMM',
     }
 
     # this dict indicates the operators that need extra handle
@@ -409,6 +431,7 @@ class SingaBackend(Backend):
         'Concat': '_create_concat',
         'Mul': '_create_matmul',
         'Flatten': '_create_flatten',
+        'Gemm': '_create_gemm',
     }
 
     @classmethod
@@ -525,6 +548,24 @@ class SingaBackend(Backend):
         return None, forward(axis=factor)
 
     @classmethod
+    def _create_gemm(cls, onnx_node, inputs, opset_version):
+        """
+        get the concat operator from onnx node
+        :type onnx_node: a given onnx node
+        :type inputs: the input tensor
+        :type opset_version: the opset version
+        :rtype: the handle of singa operator
+        :rtype: the autograd of singa operator
+        """
+        x = inputs[0]
+        alpha = onnx_node.attrs["alpha"]
+        beta = onnx_node.attrs["beta"]
+        transA = onnx_node.attrs["transA"]
+        transB = onnx_node.attrs["transB"]
+        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
+        return None, forward(alpha=alpha, beta=beta, transA=transA, transB=transB)
+
+    @classmethod
     def _create_flatten(cls, onnx_node, inputs, opset_version):
         """
         get the concat operator from onnx node
@@ -588,7 +629,7 @@ class SingaBackend(Backend):
         return outputs_dict
 
     @classmethod
-    def prepare(cls, model, device=cpu_dev, **kwargs):
+    def prepare(cls, model, device, **kwargs):
         """
         get the batch norm operator from onnx node
         :type onnx_node: a given onnx node
@@ -648,7 +689,7 @@ class SingaBackend(Backend):
         for node in optimized_model.graph.node:
             node = OnnxNode(node)
             if node.op_type == "Constant":
-                requires_grad, stores_grad = True, True
+                requires_grad, stores_grad = False, False
                 tmp_tensor = tensor.Tensor(
                     device=device,
                     data=numpy_helper.to_array(node.attrs['value']),
@@ -727,8 +768,6 @@ class SingaRep(BackendRep):
         :type inputs: a given operator
         :rtype: the onnx node
         """
-        # run the handle by the order of the list(the list is Topological Sorting)
-        tensors = self.tensor_map.copy()
         # last_layers means we run this model until the last #N layers
         last_layers = kwargs.get('last_layers', len(self.singa_ops))
         # whether return all outputs
@@ -738,15 +777,17 @@ class SingaRep(BackendRep):
 
         # the dict will be returned
         ret_outputs = collections.OrderedDict()
+        # run the handle by the order of the list(the list is Topological Sorting)
         for x, val in zip(self.model.graph.input, inputs):
-            tensors[x.name] = val
+            self.tensor_map[x.name] = val
         for _, op, handle, forward in self.singa_ops[:last_layers]:
-            inputs = [tensors[x] for x in op.inputs]
+            inputs = [self.tensor_map[x] for x in op.inputs]
             outputs = forward(*inputs) if handle is None else forward(handle, *inputs)
             if not isinstance(outputs, collections.Iterable):
                 outputs = [outputs]
             for (key, val) in zip(op.outputs, outputs):
-                tensors[key] = val
+                self.tensor_map[key] = val
+                ret_outputs[key] = val
 
         if op_name is not None:
             if op_name in outputs:
