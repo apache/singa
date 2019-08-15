@@ -1960,9 +1960,9 @@ class Min(Operation):
         mask = singa.__add__(mask00,mask11)
         
         if training:
-            self.mask = mask
             self.mask0 = mask0
             self.mask1 = mask1
+        
         return mask
 
     def backward(self, dy):
