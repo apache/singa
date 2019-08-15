@@ -327,6 +327,39 @@ class Dummy(Operation):
     def grad_name(self, idx):
         return "{}_g".format(self.name)
 
+class Mean(Operation):
+    def __init__(self):
+        super(Mean, self).__init__()
+
+    def forward(self, *l):
+        """
+        Args:
+            l: a list of CTensor
+            element-wise mean operator
+        Returns:
+            a new CTensor
+        """
+        if training:
+            self.l = len(l)
+        assert(len(l)>0);
+        x = singa.Tensor(list(l[0].shape()),l[0].device())
+        x.SetFloatValue(0.0)
+        for i in range(len(l)):
+            x+=l[i]
+        return singa.MultFloat(x,1/len(l))
+
+    def backward(self, dy):
+        """
+        Args:
+            dy(CTensor): dL / dy
+        Returns:
+            a list of dx(CTensor)
+        """
+        return [singa.MultFloat(dy,1/self.l)]*self.l
+
+def mean(*l):
+    return Mean()(*l)[0]
+
 
 class ReLU(Operation):
     def __init__(self):
@@ -357,6 +390,91 @@ class ReLU(Operation):
 def relu(x):
     return ReLU()(x)[0]
 
+
+class Less(Operation):
+    def __init__(self):
+        super(Less, self).__init__()
+
+    def forward(self, x,y):
+        """Do forward propgation.
+        Store the [x<y] if requires gradient.
+        Args:
+            x (CTensor): matrix
+            y (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        cur = singa.LTFloat(singa.__sub__(x,y),0)
+        if training:
+            self.cache = cur
+        return cur
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            a tuple for (dx0, dx1)
+        """
+        assert 0,('no backward function for less')
+        return None
+
+def less(x,y):
+    return Less()(x,y)[0]
+
+
+
+
+
+
+
+class Clip(Operation):
+    def __init__(self,min,max):
+        super(Clip, self).__init__()
+        self.max=max
+        self.min=min
+    def forward(self, x):
+        """
+        Args:
+            x(CTensor): input tensor
+        Returns:
+            np.clip(x,min,max)
+        """
+        mask0 = singa.LTFloat(x, self.min)
+        mask1 = singa.GTFloat(x, self.max)
+        mask00 = singa.MultFloat(mask0,self.min)
+        mask11 = singa.MultFloat(mask1,self.max)
+        mask2 = singa.LEFloat(x, self.max)
+        mask3 = singa.GEFloat(x, self.min)
+        maskm = singa.__mul__(mask2,mask3)
+        if training:
+            self.mask = maskm
+        return singa.__add__(singa.__add__(singa.__mul__(maskm,x),mask00),mask11)
+
+    def backward(self, dy):
+        return singa.__mul__(dy, self.mask)
+
+def clip(x,min,max):
+    return Clip(min,max)(x)[0]
+
+class Identity(Operation):
+    def __init__(self):
+        super(Identity, self).__init__()
+    def forward(self,x):
+        return x
+
+    def backward(self, dy):
+        """
+        Args:
+            dy(CTensor): dL / dy
+        Returns:
+            dx(CTensor): dL / dx = dy;
+        """
+        return dy
+
+
+def identity(x):
+    return Identity()(x)[0]
 
 class Matmul(Operation):
     """For matrix multiplication"""
@@ -393,7 +511,36 @@ class Matmul(Operation):
 def matmul(x, w):
     return Matmul()(x, w)[0]
 
+class Greater(Operation):
+    def __init__(self):
+        super(Greater, self).__init__()
 
+    def forward(self, x,y):
+        """Do forward propgation.
+        Store the [x>y] if requires gradient.
+        Args:
+            x (CTensor): matrix
+            y (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        cur = singa.GTFloat(singa.__sub__(x,y),0)
+        if training:
+            self.cache = cur
+        return cur
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            a tuple for (dx0, dx1)
+        """
+        assert 0,('no backward function for greater')
+        return None
+
+def greater(x,y):
+    return Greater()(x,y)[0]
 class AddBias(Operation):
     """
     Add Bias to each row / column of the Tensor, depending on the axis arg.
@@ -533,6 +680,26 @@ class SoftMax(Operation):
 def softmax(x, axis=0):
     return SoftMax(axis)(x)[0]
 
+class Sum(Operation):
+    def __init__(self):
+        super(Sum, self).__init__()
+
+    def forward(self, *l):
+        if training:
+            self.l = len(l)
+        assert(len(l)>0);
+        x = singa.Tensor(list(l[0].shape()),l[0].device())
+        x.SetFloatValue(0.0)
+        for i in range(len(l)):
+            x+=l[i]
+        return x
+
+    def backward(self, dy):
+        return [dy]*self.l
+
+
+def sum(*l):
+    return Sum()(*l)[0]
 
 class CrossEntropy(Operation):
     def __init__(self):
@@ -1585,9 +1752,9 @@ def sigmoid(x):
     return Sigmoid()(x)[0]
 
 
-class ElemMatmul(Operation):
+class Mul(Operation):
     def __init__(self):
-        super(ElemMatmul, self).__init__()
+        super(Mul, self).__init__()
 
     def forward(self, x1, x2):
         if training:
@@ -1600,9 +1767,50 @@ class ElemMatmul(Operation):
         return dx1, dx2
 
 
+class Unsqueeze(Operation):
+    def __init__(self,axis):
+        super(Unsqueeze, self).__init__()
+        if(type(axis) is int):
+            self.axis=list(axis)
+        else:
+            self.axis=axis
+
+    def forward(self, x):
+        self.cache=x.shape()
+        cur = list(self.cache)
+        for i in self.axis:
+            cur.insert(i,1)
+        return singa.Reshape(x, cur)
+
+    def backward(self, dy):
+        return singa.Reshape(dy, self.cache)
+
+
+def unsqueeze(x,axis=-1):
+    return Unsqueeze(axis)(x)[0]
+
+
 def mul(x, y):
     # do pointwise multiplication
-    return ElemMatmul()(x, y)[0]
+    return Mul()(x, y)[0]
+
+class Transpose(Operation):
+    def __init__(self,perm):
+        super(Transpose, self).__init__()
+        self.perm=list(perm)
+
+    def forward(self, x):
+        return singa.Transpose(x, self.perm)
+
+    def backward(self, dy):
+        cur=[]
+        for i in range(len(self.perm)):
+            cur+=[self.perm.index(i)]
+        return singa.Transpose(dy, cur)
+
+
+def transpose(x,shape):
+    return Transpose(shape)(x)[0]
 
 
 def add_all(*xs):
@@ -1846,7 +2054,25 @@ class LeakyRelu(Operation):
 def leakyrelu(x, a=0.01):
     return LeakyRelu(a)(x)[0]
 
-  
+
+class Sign(Operation):
+    def __init__(self):
+        super(Sign, self).__init__()
+
+    def forward(self, a):
+        if training:
+            self.input = a
+        return singa.Sign(a)
+
+    def backward(self, dy):
+        dx = singa.MultFloat(dy, 0.0)
+        return dx
+
+
+def sign(a):
+    return Sign()(a)[0]
+
+
 class Pow(Operation):
     def __init__(self):
         super(Pow, self).__init__()
@@ -1867,6 +2093,7 @@ class Pow(Operation):
 
 def pow(a, b):
     return Pow()(a,b)[0]
+
 
 class SoftSign(Operation):
     def __init__(self):
@@ -1890,6 +2117,7 @@ class SoftSign(Operation):
 def softsign(x):
     return SoftSign()(x)[0]
 
+
 class Sqrt(Operation):
     def __init__(self):
         super(Sqrt, self).__init__()  
@@ -1908,6 +2136,7 @@ class Sqrt(Operation):
 def sqrt(x):
     return Sqrt()(x)[0]
   
+
 class SoftPlus(Operation):
     def __init__(self):
         super(SoftPlus, self).__init__()  
@@ -1929,6 +2158,7 @@ class SoftPlus(Operation):
       
 def softplus(x):
     return SoftPlus()(x)[0]
+
 
 class Sub(Operation):
     def __init__(self):
@@ -1971,3 +2201,44 @@ class Min(Operation):
         
 def min(a,b):
     return Min()(a,b)[0]
+
+class Log(Operation):
+    def __init__(self):
+        super(Log, self).__init__()
+
+    def forward(self, x):
+        if training:
+            self.input = x
+        return singa.Log(x)
+    def backward(self, dy):
+        dx = singa.PowFloat(self.input,-1)
+        dx = singa.__mul__(dy, dx)
+        return dx
+
+def log(x):
+    return Log()(x)[0]
+
+
+class Div(Operation):
+    def __init__(self):
+        super(Div, self).__init__()
+
+    def forward(self, a, b):
+        if training:
+            self.input = (a, b)
+        return singa.__div__(a, b)
+
+    def backward(self, dy):
+        #dy/dx_0 = b^(-1)
+        #dy/dx_1 = (-a)*b^(-2)
+        da = singa.__mul__(dy, singa.PowFloat(self.input[1],-1.0))
+
+        db1 = singa.PowFloat(self.input[1], -2.0)
+        db1 = singa.__mul__(db1, singa.MultFloat(self.input[0], -1.0))
+        db = singa.__mul__(dy, db1)
+
+        return da,db
+
+
+def div(a, b):
+    return Div()(a,b)[0]
