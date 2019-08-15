@@ -2236,7 +2236,7 @@ class Max(Operation):
             self.mask0 = mask0
             self.mask1 = mask1
 
-            return mask
+        return mask
 
     def backward(self, dy):
         return (self.mask0, self.mask1)
