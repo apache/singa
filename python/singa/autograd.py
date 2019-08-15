@@ -26,6 +26,7 @@ import math
 from singa import tensor
 from .tensor import Tensor
 from . import singa_wrap as singa
+import copy
 
 
 CTensor = singa.Tensor
@@ -611,10 +612,17 @@ class Add(Operation):
         super(Add, self).__init__()
 
     def forward(self, a, b):
+        self.shape0=list(a.shape())
+        self.shape1=list(b.shape())
         return singa.__add__(a, b)
 
     def backward(self, dy):
-        return dy, dy
+        if(type(dy)==float):return dy,dy
+        db=CTensor(list(dy.shape()), dy.device())
+        db.CopyData(dy)
+        for i in range(len(self.shape0)-len(self.shape1)):
+            db=singa.Sum(db, 0)
+        return dy, db
 
 
 def add(a, b):

@@ -1586,6 +1586,33 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
 
+    def test_add(self):
+        def test_helper(gpu=False):
+            #only two dimensions support
+            x = np.random.randn(3,2)
+            b = np.random.randn(2)
+            dy=np.random.randn(3,2)
+            y = x+b
+            gradx=dy
+            dif=len(list(x.shape))-len(list(b.shape))
+            if dif==0:
+                gradb=dy
+            else:
+                gradb=dy.sum(axis=tuple(np.arange(dif)))
+            x = tensor.from_numpy(x)
+            b = tensor.from_numpy(b)
+            dy = tensor.from_numpy(dy)
+            if(gpu):
+                x.to_device(gpu_dev)
+                b.to_device(gpu_dev)
+                dy.to_device(gpu_dev)
+            result = autograd.add(x,b)
+            dx,db = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), gradx, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(db)), gradb, decimal=5)
+        test_helper(False)
+        test_helper(True)
 
 if __name__ == '__main__':
     unittest.main()
