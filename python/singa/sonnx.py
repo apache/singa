@@ -111,53 +111,6 @@ class SingaFrontend(object):
     _unhandled_operators = {}
 
     @classmethod
-    def _get_singa_op_inputs_outputs(cls, op):
-        """
-        get inputs and outputs from a given operator
-        Args:
-            op: a given operator
-        Returns: 
-            inputs and outputs of the op
-        """
-        outputs = [op.output_name(idx) for yid, idx in op.y_id2idx.items()]
-        inputs = [srcop.output_name(srcop.y_id2idx[yid])
-                  for (srcop, yid, _, _) in op.src]
-        return inputs, outputs
-
-    @classmethod
-    def _get_singa_op_type(cls, op):
-        """
-        get the operator type from a given operator
-        Args:
-            op: a given operator
-        Returns: 
-            operator type
-        """
-        return type(op).__name__
-
-    @classmethod
-    def _common_singa_tensor_to_onnx_node(cls, op, op_t):
-        """
-        get a onnx node from a singa operator, prepare its type, inputs and outputs
-        Args:
-            op: a given operator
-        Args:
-            op: the tensor of the operator
-        Returns: the onnx node
-        """
-        node_def = NodeProto()
-        node_def.name = op.name
-
-        optype = cls._get_singa_op_type(op)
-        node_def.op_type = cls._rename_operators.get(optype, optype)
-
-        inputs, outputs = cls._get_singa_op_inputs_outputs(op)
-        node_def.input.extend(inputs)
-        node_def.output.extend(outputs)
-
-        return node_def
-
-    @classmethod
     def _create_concat(cls, op, op_t):
         """
         get a onnx node from singa Concat operator
@@ -322,6 +275,28 @@ class SingaFrontend(object):
         return node
 
     @classmethod
+    def _common_singa_tensor_to_onnx_node(cls, op, op_t):
+        """
+        get a onnx node from a singa operator, prepare its type, inputs and outputs
+        Args:
+            op: a given operator
+        Args:
+            op: the tensor of the operator
+        Returns: the onnx node
+        """
+        node_def = NodeProto()
+        node_def.name = op.name
+
+        optype = cls._get_singa_op_type(op)
+        node_def.op_type = cls._rename_operators.get(optype, optype)
+
+        inputs, outputs = cls._get_singa_op_inputs_outputs(op)
+        node_def.input.extend(inputs)
+        node_def.output.extend(outputs)
+
+        return node_def
+
+    @classmethod
     def singa_op_to_onnx_node(cls, op, op_t):
         """
         get a onnx node from singa operator
@@ -405,6 +380,31 @@ class SingaFrontend(object):
         checker.check_model(model)
         return model
 
+    @classmethod
+    def _get_singa_op_inputs_outputs(cls, op):
+        """
+        get inputs and outputs from a given operator
+        Args:
+            op: a given operator
+        Returns: 
+            inputs and outputs of the op
+        """
+        outputs = [op.output_name(idx) for yid, idx in op.y_id2idx.items()]
+        inputs = [srcop.output_name(srcop.y_id2idx[yid])
+                  for (srcop, yid, _, _) in op.src]
+        return inputs, outputs
+
+    @classmethod
+    def _get_singa_op_type(cls, op):
+        """
+        get the operator type from a given operator
+        Args:
+            op: a given operator
+        Returns: 
+            operator type
+        """
+        return type(op).__name__
+
 
 class OnnxNode(object):
     """
@@ -457,7 +457,7 @@ class SingaBackend(Backend):
         'Concat': 'Concat',
         'Flatten': 'Flatten',
         'Gemm': 'GEMM',
-        'Reshape' : 'Reshape',
+        'Reshape': 'Reshape',
         'Sum': 'Sum',
     }
 
@@ -665,6 +665,48 @@ class SingaBackend(Backend):
         return None, forward()
 
     @classmethod
+    def _common_onnx_node_to_singa_op(cls, onnx_node, inputs, opset_version):
+        """
+        get a common singa operator(only autograd) from a onnx node
+        other special operators also can call this func to get autograd
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            tensor_map: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            a dict of tensors
+        Returns: 
+            a list of SingaOps('name', 'op', 'handle', 'forward')
+        """
+        onnx_op_type = onnx_node.op_type
+        autograd_op = getattr(autograd, cls._rename_operators.get(onnx_op_type, onnx_op_type))
+        return None, autograd_op
+
+    @classmethod
+    def _onnx_node_to_singa_op(cls, onnx_node, tensor_map, opset_version):
+        """
+        get a singa operator(handle and autograd) from a onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            tensor_map: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            a dict of tensors
+        Returns: 
+            a list of SingaOps('name', 'op', 'handle', 'forward')
+        """
+        if onnx_node.op_type in cls._special_operators:
+            translator = getattr(cls, cls._special_operators[onnx_node.op_type])
+        else:
+            translator = cls._common_onnx_node_to_singa_op
+        inputs = [tensor_map[in_name] for in_name in onnx_node.inputs]
+        return translator(onnx_node, inputs, opset_version)
+
+    @classmethod
     def run_node(cls, onnx_node, inputs, opset_version=_known_opset_version):
         """
         run a single singa operator from a onnx node
@@ -707,42 +749,6 @@ class SingaBackend(Backend):
         for (key, val) in zip(onnx_node.outputs, outputs):
             outputs_dict[key] = val
         return outputs_dict
-
-    @classmethod
-    def prepare(cls, model, device, **kwargs):
-        """
-        get the batch norm operator from onnx node
-        Args:
-            onnx_node: a given onnx node
-        Args:
-            tensor_map: the input tensor
-        Args:
-            device: the used device
-        Args:
-            opset_version: the opset version
-        Returns: 
-            a list of output values
-        """
-        super(SingaBackend, cls).prepare(model, device, **kwargs)
-        # check the opset version and ir version
-        opset_version = None
-        for imp in model.opset_import:
-            if not imp.HasField("domain") or imp.domain == "":
-                opset_version = imp.version
-                if imp.version > cls._known_opset_version:
-                    warnings.warn("This version of singa targets ONNX operator set version {}, but the model we are trying to import uses version {}.  We will try to import it anyway, but if the model uses operators which had BC-breaking changes in the intervening versions, import will fail.".format(cls._known_opset_version, imp.version))
-            else:
-                warnings.warn(
-                    "Unrecognized operator set {}".format(imp.domain))
-        if opset_version is None:
-            if model.ir_version >= 0x00000003:
-                raise RuntimeError(
-                    "Model with IR version >= 3 did not specify ONNX operator set version (singa requires it)")
-            else:
-                opset_version = 1
-        tensor_map, singa_ops = cls._onnx_model_to_singa_net(
-            model, device, opset_version)
-        return SingaRep(model, tensor_map, singa_ops)
 
     @classmethod
     def _onnx_model_to_singa_net(cls, onnx_model, device, opset_version):
@@ -800,46 +806,40 @@ class SingaBackend(Backend):
         return weights, singa_ops
 
     @classmethod
-    def _onnx_node_to_singa_op(cls, onnx_node, tensor_map, opset_version):
+    def prepare(cls, model, device, **kwargs):
         """
-        get a singa operator(handle and autograd) from a onnx node
+        get the batch norm operator from onnx node
         Args:
             onnx_node: a given onnx node
         Args:
             tensor_map: the input tensor
         Args:
-            opset_version: the opset version
-        Returns: 
-            a dict of tensors
-        Returns: 
-            a list of SingaOps('name', 'op', 'handle', 'forward')
-        """
-        if onnx_node.op_type in cls._special_operators:
-            translator = getattr(cls, cls._special_operators[onnx_node.op_type])
-        else:
-            translator = cls._common_onnx_node_to_singa_op
-        inputs = [tensor_map[in_name] for in_name in onnx_node.inputs]
-        return translator(onnx_node, inputs, opset_version)
-
-    @classmethod
-    def _common_onnx_node_to_singa_op(cls, onnx_node, inputs, opset_version):
-        """
-        get a common singa operator(only autograd) from a onnx node
-        other special operators also can call this func to get autograd
-        Args:
-            onnx_node: a given onnx node
-        Args:
-            tensor_map: the input tensor
+            device: the used device
         Args:
             opset_version: the opset version
         Returns: 
-            a dict of tensors
-        Returns: 
-            a list of SingaOps('name', 'op', 'handle', 'forward')
+            a list of output values
         """
-        onnx_op_type = onnx_node.op_type
-        autograd_op = getattr(autograd, cls._rename_operators.get(onnx_op_type, onnx_op_type))
-        return None, autograd_op
+        super(SingaBackend, cls).prepare(model, device, **kwargs)
+        # check the opset version and ir version
+        opset_version = None
+        for imp in model.opset_import:
+            if not imp.HasField("domain") or imp.domain == "":
+                opset_version = imp.version
+                if imp.version > cls._known_opset_version:
+                    warnings.warn("This version of singa targets ONNX operator set version {}, but the model we are trying to import uses version {}.  We will try to import it anyway, but if the model uses operators which had BC-breaking changes in the intervening versions, import will fail.".format(cls._known_opset_version, imp.version))
+            else:
+                warnings.warn(
+                    "Unrecognized operator set {}".format(imp.domain))
+        if opset_version is None:
+            if model.ir_version >= 0x00000003:
+                raise RuntimeError(
+                    "Model with IR version >= 3 did not specify ONNX operator set version (singa requires it)")
+            else:
+                opset_version = 1
+        tensor_map, singa_ops = cls._onnx_model_to_singa_net(
+            model, device, opset_version)
+        return SingaRep(model, tensor_map, singa_ops)
 
 
 class SingaRep(BackendRep):
