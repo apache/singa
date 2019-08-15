@@ -73,8 +73,6 @@ try:
     import pickle
 except ImportError:
     import cPickle as pickle
-
-
 '''For display training information, e.g L1 value of layer data'''
 verbose = False
 
@@ -149,7 +147,7 @@ class FeedForwardNet(object):
         else:
             self.out_sample_shape_of_layer[lyr.name] = [out_shape]
         self.layers.append(lyr)
-        print((lyr.name, out_shape))
+        # print((lyr.name, out_shape))
         return lyr
 
     def param_values(self):
@@ -303,8 +301,7 @@ class FeedForwardNet(object):
                 dictionary: layer name -> output tensor(s)
         '''
         if self.ordered_layers is None:
-            self.ordered_layers = self.topo_sort(
-                self.layers, self.src_of_layer)
+            self.ordered_layers = self.topo_sort(self.layers, self.src_of_layer)
         if type(x) is dict:
             input_of_layer = x
         else:
@@ -351,8 +348,8 @@ class FeedForwardNet(object):
                 disp_src = '+'.join([src.name for src in srcs])
                 disp_src += '-->' + cur.name
                 if type(out) is list:
-                    print('%s: %s' % (disp_src,
-                                      ' '.join([str(o.l1()) for o in out])))
+                    print('%s: %s' %
+                          (disp_src, ' '.join([str(o.l1()) for o in out])))
                 else:
                     print('%s: %f' % (disp_src, out.l1()))
             output_of_layer[cur.name] = out
@@ -430,8 +427,8 @@ class FeedForwardNet(object):
                     [dst.name for dst in self.dst_of_layer[cur.name]])
                 disp_src += '-->' + cur.name
                 if type(outs) is list:
-                    print('%s: %s' % (disp_src,
-                                      ' '.join([str(o.l1()) for o in outs])))
+                    print('%s: %s' %
+                          (disp_src, ' '.join([str(o.l1()) for o in outs])))
                 else:
                     print('%s: %f' % (disp_src, outs.l1()))
             if type(outs) is list:
@@ -492,8 +489,8 @@ class FeedForwardNet(object):
             return name
 
         if use_pickle:
-            print('NOTE: If your model was saved using Snapshot, '
-                  'then set use_pickle=False for loading it')
+            # print('NOTE: If your model was saved using Snapshot, '
+            #       'then set use_pickle=False for loading it')
             if not os.path.exists(f):
                 # guess the correct path
                 if f.endswith('.pickle'):
@@ -504,8 +501,8 @@ class FeedForwardNet(object):
             with open(f, 'rb') as fd:
                 params = pickle.load(fd, encoding='iso-8859-1')
         else:
-            print('NOTE: If your model was saved using pickle, '
-                  'then set use_pickle=True for loading it')
+            # print('NOTE: If your model was saved using pickle, '
+            #      'then set use_pickle=True for loading it')
             if f.endswith('.bin'):
                 f = f[0:-4]
             sp = snapshot.Snapshot(f, False, buffer_size)
@@ -529,6 +526,6 @@ class FeedForwardNet(object):
                     val.copy_from_numpy(params[name])
             except AssertionError as err:
                 print('Error from copying values for param: %s' % name)
-                print(('shape of param vs checkpoint',
-                       val.shape, params[name].shape))
+                print(('shape of param vs checkpoint', val.shape,
+                       params[name].shape))
                 raise err

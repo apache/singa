@@ -20,7 +20,6 @@ from builtins import str
 import unittest
 import numpy as np
 
-
 from singa import layer
 from singa import tensor
 from singa.proto import model_pb2
@@ -34,10 +33,10 @@ def _tuple_to_string(t):
 class TestPythonLayer(unittest.TestCase):
 
     def check_shape(self, actual, expect):
-        self.assertEqual(actual, expect, 'shape mismatch, actual shape is %s'
-                         ' exepcted is %s' % (_tuple_to_string(actual),
-                                              _tuple_to_string(expect))
-                         )
+        self.assertEqual(
+            actual, expect, 'shape mismatch, actual shape is %s'
+            ' expected is %s' %
+            (_tuple_to_string(actual), _tuple_to_string(expect)))
 
     def setUp(self):
         layer.engine = 'singacpp'
@@ -47,15 +46,26 @@ class TestPythonLayer(unittest.TestCase):
 
     def test_conv2D_shape(self):
         in_sample_shape = (3, 224, 224)
-        conv = layer.Conv2D('conv', 64, 3, 1, W_specs=self.w, b_specs=self.b,
+        conv = layer.Conv2D('conv',
+                            64,
+                            3,
+                            1,
+                            W_specs=self.w,
+                            b_specs=self.b,
                             input_sample_shape=in_sample_shape)
         out_sample_shape = conv.get_output_sample_shape()
         self.check_shape(out_sample_shape, (64, 224, 224))
 
     def test_conv2D_forward_backward(self):
         in_sample_shape = (1, 3, 3)
-        conv = layer.Conv2D('conv', 1, 3, 2, W_specs=self.w, b_specs=self.b,
-                            pad=1, input_sample_shape=in_sample_shape)
+        conv = layer.Conv2D('conv',
+                            1,
+                            3,
+                            2,
+                            W_specs=self.w,
+                            b_specs=self.b,
+                            pad=1,
+                            input_sample_shape=in_sample_shape)
         # cuda = device.create_cuda_gpu()
         # conv.to_device(cuda)
         params = conv.param_values()
@@ -91,15 +101,7 @@ class TestPythonLayer(unittest.TestCase):
         self.assertAlmostEqual(dy[1] * w[4], dx[2])
         self.assertAlmostEqual(dy[0] * w[7] + dy[2] * w[1], dx[3])
         self.assertAlmostEqual(
-            dy[0] *
-            w[8] +
-            dy[1] *
-            w[6] +
-            dy[2] *
-            w[2] +
-            dy[3] *
-            w[0],
-            dx[4])
+            dy[0] * w[8] + dy[1] * w[6] + dy[2] * w[2] + dy[3] * w[0], dx[4])
         self.assertAlmostEqual(dy[1] * w[7] + dy[3] * w[1], dx[5])
         self.assertAlmostEqual(dy[2] * w[4], dx[6])
         self.assertAlmostEqual(dy[2] * w[5] + dy[3] * w[3], dx[7])
@@ -110,15 +112,8 @@ class TestPythonLayer(unittest.TestCase):
         self.assertAlmostEqual(dy[2] * raw_x[4], dw[2])
         self.assertAlmostEqual(dy[1] * raw_x[1] + dy[3] * raw_x[7], dw[3])
         self.assertAlmostEqual(
-            dy[0] *
-            raw_x[0] +
-            dy[1] *
-            raw_x[2] +
-            dy[2] *
-            raw_x[6] +
-            dy[3] *
-            raw_x[8],
-            dw[4], 5)
+            dy[0] * raw_x[0] + dy[1] * raw_x[2] + dy[2] * raw_x[6] +
+            dy[3] * raw_x[8], dw[4], 5)
         self.assertAlmostEqual(dy[0] * raw_x[1] + dy[2] * raw_x[7], dw[5])
         self.assertAlmostEqual(dy[1] * raw_x[4], dw[6])
         self.assertAlmostEqual(dy[0] * raw_x[3] + dy[1] * raw_x[5], dw[7])
@@ -126,35 +121,52 @@ class TestPythonLayer(unittest.TestCase):
 
     def test_conv1D(self):
         in_sample_shape = (224,)
-        conv = layer.Conv1D('conv', 64, 3, 1, W_specs=self.w, b_specs=self.b,
-                            pad=1, input_sample_shape=in_sample_shape)
+        conv = layer.Conv1D('conv',
+                            64,
+                            3,
+                            1,
+                            W_specs=self.w,
+                            b_specs=self.b,
+                            pad=1,
+                            input_sample_shape=in_sample_shape)
         out_sample_shape = conv.get_output_sample_shape()
-        self.check_shape(out_sample_shape, (64, 224,))
+        self.check_shape(out_sample_shape, (
+            64,
+            224,
+        ))
 
     def test_max_pooling2D(self):
         in_sample_shape = (64, 225, 225)
-        pooling = layer.MaxPooling2D('pool', 3, 2,
+        pooling = layer.MaxPooling2D('pool',
+                                     3,
+                                     2,
                                      input_sample_shape=in_sample_shape)
         out_sample_shape = pooling.get_output_sample_shape()
         self.check_shape(out_sample_shape, (64, 112, 112))
 
     def test_max_pooling1D(self):
         in_sample_shape = (225,)
-        pooling = layer.MaxPooling1D('pool', 3, 2,
+        pooling = layer.MaxPooling1D('pool',
+                                     3,
+                                     2,
                                      input_sample_shape=in_sample_shape)
         out_sample_shape = pooling.get_output_sample_shape()
         self.check_shape(out_sample_shape, (112,))
 
     def test_avg_pooling2D(self):
         in_sample_shape = (64, 225, 225)
-        pooling = layer.AvgPooling2D('pool', 3, 2,
+        pooling = layer.AvgPooling2D('pool',
+                                     3,
+                                     2,
                                      input_sample_shape=in_sample_shape)
         out_sample_shape = pooling.get_output_sample_shape()
         self.check_shape(out_sample_shape, (64, 112, 112))
 
     def test_avg_pooling1D(self):
         in_sample_shape = (224,)
-        pooling = layer.AvgPooling1D('pool', 3, 2,
+        pooling = layer.AvgPooling1D('pool',
+                                     3,
+                                     2,
                                      input_sample_shape=in_sample_shape)
         out_sample_shape = pooling.get_output_sample_shape()
         self.check_shape(out_sample_shape, (112,))
@@ -198,9 +210,10 @@ class TestPythonLayer(unittest.TestCase):
         input_sample_shape = (64, 1, 12)
         flatten = layer.Flatten('flat', input_sample_shape=input_sample_shape)
         out_sample_shape = flatten.get_output_sample_shape()
-        self.check_shape(out_sample_shape, (64 * 1 * 12, ))
+        self.check_shape(out_sample_shape, (64 * 1 * 12,))
 
-        flatten = layer.Flatten('flat', axis=2,
+        flatten = layer.Flatten('flat',
+                                axis=2,
                                 input_sample_shape=input_sample_shape)
         out_sample_shape = flatten.get_output_sample_shape()
         self.check_shape(out_sample_shape, (12,))
@@ -252,10 +265,12 @@ class TestPythonLayer(unittest.TestCase):
 
     def test_split(self):
         in_sample_shape = (3, 224, 224)
-        split = layer.Split('split', num_output=3,
+        split = layer.Split('split',
+                            num_output=3,
                             input_sample_shape=in_sample_shape)
         out_sample_shape = split.get_output_sample_shape()
         self.check_shape(out_sample_shape, [in_sample_shape] * 3)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -49,7 +49,7 @@ Tensor member functions
 Tensor module functions
     which accept Tensor instances as arguments and return Tensor instances.
 
-Every Tesor instance must be initialized before reading data from it.
+Every Tensor instance must be initialized before reading data from it.
 """
 from __future__ import division
 from __future__ import print_function
@@ -475,9 +475,9 @@ class Tensor(object):
             x (float or Tensor):
         '''
         if isinstance(x, Tensor):
-            self.data *= (1.0/x.data)
+            self.data /= x.data
         else:
-            self.data *= (1.0/float(x))
+            self.data /= float(x)
         return self
 
     '''
