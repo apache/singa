@@ -22,7 +22,8 @@ from __future__ import division
 from collections import Counter, deque
 import numpy as np
 import math
-
+from singa import tensor
+from singa import singa_wrap as singa
 from .tensor import Tensor
 from . import singa_wrap as singa
 
@@ -1563,29 +1564,37 @@ class Sigmoid(Operation):
         dx = singa.__mul__(dy, dx)
         return dx
 
-class Squeeze(Operation):
-    def __init__(self,axis=[0]):
-        super(Squeeze, self).__init__()
-        self.axis=axis
+def sigmoid(x):
+    return Sigmoid()(x)[0]
 
+
+class Squeeze(Operation):
+    def __init__(self,axis=[]):
+        super(Squeeze, self).__init__()
+        if(axis==[]):
+            self.axis=[-1]
+        else:
+            self.axis=axis
 
     def forward(self, x):
         self.cache=x.shape()
         cur = list(self.cache)
-        for i in self.axis:
-            assert(len(cur) > i and cur[i] == 1),'invalid axis'
-            cur.pop(i)
+        if(self.axis[0]==-1):
+            cur=list(filter(lambda i: i != 1, self.cache))
+        else:
+            for i in self.axis:
+                assert(len(cur) > i and cur[i] == 1),'invalid axis'
+                cur.pop(i)
         return singa.Reshape(x, cur)
 
     def backward(self, dy):
         return singa.Reshape(dy, self.cache)
 
 
-def squeeze(x,axis=[0]):
+def squeeze(x,axis=[]):
     return Squeeze(axis)(x)[0]
 
-def sigmoid(x):
-    return Sigmoid()(x)[0]
+
 
 
 class ElemMatmul(Operation):
