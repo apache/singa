@@ -90,8 +90,8 @@ class CNN:
     def __init__(self):
         self.conv1 = autograd.Conv2d(1, 20, 5, padding=0)
         self.conv2 = autograd.Conv2d(20, 50, 5, padding=0)
-        self.linear1 = autograd.Linear(4 * 4 * 50, 500)
-        self.linear2 = autograd.Linear(500, 10)
+        self.linear1 = autograd.Linear(4 * 4 * 50, 500, bias=False)
+        self.linear2 = autograd.Linear(500, 10, bias=False)
         self.pooling1 = autograd.MaxPool2d(2, 2, padding=0)
         self.pooling2 = autograd.MaxPool2d(2, 2, padding=0)
 
@@ -167,7 +167,8 @@ def re_train(onnx_model,
     sg_ir = sonnx.prepare(onnx_model, device=dev)
     for idx, tens in sg_ir.tensor_map.items():
         # allow the tensors to be updated
-        tens.stores_grad = False
+        tens.requires_grad = True
+        tens.stores_grad= True
         sg_ir.tensor_map[idx] = tens
 
     for i in range(epochs):
