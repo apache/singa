@@ -320,7 +320,46 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
-        
+
+
+    def test_Mean_gpu(self):
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        y = (x0+x1)/2
+        grad=np.ones(x0.shape)/2
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+
+        result = autograd.mean(x0,x1)
+        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+        dy.to_device(gpu_dev)
+        dx0,dx1 = result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad, decimal=5)
+
+    def test_Mean_cpu(self):
+        x0 = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+        y = (x0+x1)/2
+        grad=np.ones(x0.shape)/2
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+
+        result = autograd.mean(x0,x1)
+        dy = tensor.from_numpy(np.ones((3,2)).astype(np.float32))
+        dy.to_device(cpu_dev)
+        dx0,dx1 = result.creator.backward(dy.data)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad, decimal=5)
+
     def test_Exp(self):
         X=np.array([0.8,-1.2,3.3,-3.6,-0.5,0.5]).reshape(3,2).astype(np.float32)
         XT=np.exp(X)
