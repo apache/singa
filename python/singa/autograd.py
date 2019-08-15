@@ -481,7 +481,36 @@ class Matmul(Operation):
 def matmul(x, w):
     return Matmul()(x, w)[0]
 
+class Greater(Operation):
+    def __init__(self):
+        super(Greater, self).__init__()
 
+    def forward(self, x,y):
+        """Do forward propgation.
+        Store the [x>y] if requires gradient.
+        Args:
+            x (CTensor): matrix
+            y (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        cur = singa.GTFloat(singa.__sub__(x,y),0)
+        if training:
+            self.cache = cur
+        return cur
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            a tuple for (dx0, dx1)
+        """
+        assert 0,('no backward function for greater')
+        return None
+
+def greater(x,y):
+    return Greater()(x,y)[0]
 class AddBias(Operation):
     """
     Add Bias to each row / column of the Tensor, depending on the axis arg.
