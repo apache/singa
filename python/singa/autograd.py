@@ -541,6 +541,7 @@ class Greater(Operation):
 
 def greater(x,y):
     return Greater()(x,y)[0]
+
 class AddBias(Operation):
     """
     Add Bias to each row / column of the Tensor, depending on the axis arg.
@@ -2242,3 +2243,29 @@ class Div(Operation):
 
 def div(a, b):
     return Div()(a,b)[0]
+
+
+class Max(Operation):
+    def __init__(self):
+        super(Max, self).__init__()
+
+    def forward(self, a, b):
+        m = singa.__sub__(a,b)
+        mask0 = singa.GTFloat(m,0)
+        mask00 = singa.__mul__(singa.GEFloat(m,0),a)
+        mask1 = singa.LTFloat(m,0)
+        mask11=singa.__mul__(mask1,b)
+        mask = singa.__add__(mask00,mask11)
+
+        if training:
+            self.mask0 = mask0
+            self.mask1 = mask1
+
+        return mask
+
+    def backward(self, dy):
+        return (self.mask0, self.mask1)
+
+
+def max(a,b):
+    return Max()(a,b)[0]
