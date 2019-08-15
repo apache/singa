@@ -456,7 +456,7 @@ class Clip(Operation):
 
 def clip(x,min,max):
     return Clip(min,max)(x)[0]
-  
+
 class Identity(Operation):
     def __init__(self):
         super(Identity, self).__init__()
@@ -2072,7 +2072,7 @@ class Sign(Operation):
 def sign(a):
     return Sign()(a)[0]
 
-    
+
 class Pow(Operation):
     def __init__(self):
         super(Pow, self).__init__()
@@ -2094,7 +2094,7 @@ class Pow(Operation):
 def pow(a, b):
     return Pow()(a,b)[0]
 
-    
+
 class SoftSign(Operation):
     def __init__(self):
         super(SoftSign, self).__init__()  
@@ -2177,10 +2177,35 @@ def sub(a, b):
     return Sub()(a,b)[0]
 
 
+class Min(Operation):
+    def __init__(self):
+        super(Min, self).__init__()    
+    
+    def forward(self, a, b):
+        m = singa.__sub__(a,b)
+        mask0 = singa.LTFloat(m,0) 
+        mask00 = singa.__mul__(singa.LEFloat(m,0),a)
+        mask1 = singa.GTFloat(m,0)
+        mask11=singa.__mul__(mask1,b)
+        mask = singa.__add__(mask00,mask11)
+        
+        if training:
+            self.mask0 = mask0
+            self.mask1 = mask1
+        
+        return mask
+
+    def backward(self, dy):
+        return (self.mask0,self.mask1)
+
+        
+def min(a,b):
+    return Min()(a,b)[0]
+
 class Log(Operation):
     def __init__(self):
-        super(Log, self).__init__()  
-    
+        super(Log, self).__init__()
+
     def forward(self, x):
         if training:
             self.input = x
@@ -2196,9 +2221,9 @@ def log(x):
 
 class Div(Operation):
     def __init__(self):
-        super(Div, self).__init__()    
-    
-    def forward(self, a, b):    
+        super(Div, self).__init__()
+
+    def forward(self, a, b):
         if training:
             self.input = (a, b)
         return singa.__div__(a, b)
@@ -2214,6 +2239,6 @@ class Div(Operation):
 
         return da,db
 
-    
+
 def div(a, b):
     return Div()(a,b)[0]
