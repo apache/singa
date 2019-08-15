@@ -468,7 +468,7 @@ class Tensor(object):
             self.data *= float(x)
         return self
 
-    def __idiv__(self, x):
+    def __itruediv__(self, x):
         ''' inplace element-wise division by a tensor or a float value.
 
         Args:

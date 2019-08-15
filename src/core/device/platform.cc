@@ -20,11 +20,14 @@
 #include "singa/core/device.h"
 #include "singa/singa_config.h"
 #include "singa/utils/opencl_utils.h"
-
+#include <iostream>
+using namespace std;
 namespace singa {
 
 #ifdef USE_CUDA
-
+ 
+std::vector<std::shared_ptr<Device> > Platform::UsedDevice;
+std::mutex Platform::mtx_;
 int Platform::GetNumGPUs() {
   int count;
   CUDA_CHECK(cudaGetDeviceCount(&count));
@@ -118,23 +121,28 @@ Platform::CreateCudaGPUs(const size_t num_devices, size_t init_size) {
   return CreateCudaGPUsOn(use_gpus, init_size);
 }
 
-const vector<shared_ptr<Device>>
-Platform::CreateCudaGPUsOn(const vector<int> &devices, size_t init_size) {
+const vector<shared_ptr<Device> > Platform::CreateCudaGPUsOn(
+    const vector<int>& devices, size_t init_size) {
   MemPoolConf conf;
-  if (init_size > 0)
-    conf.set_init_size(init_size);
+  if (init_size > 0) conf.set_init_size(init_size);
   size_t bytes = conf.init_size() << 20;
   for (auto device : devices) {
     conf.add_device(device);
     CHECK_LE(bytes, Platform::GetGPUMemSize(device).first);
   }
-  auto pool = std::make_shared<CnMemPool>(conf);
-
-  vector<shared_ptr<Device> > ret;
-  for (auto device : devices) {
-    auto dev = std::make_shared<CudaGPU>(device, pool);
-    ret.push_back(dev);
+  mtx_.lock();
+  if (UsedDevice.size() == 0) {
+    int count = Platform::GetNumGPUs();
+    for (int i = 0; i < count; i++) UsedDevice.push_back(nullptr);
   }
+  auto pool = std::make_shared<CnMemPool>(conf);
+  vector<shared_ptr<Device> > ret;
+  for (size_t i = 0; i < devices.size(); i++) {
+    if (UsedDevice[devices[i]] == nullptr)
+      UsedDevice[devices[i]] = std::make_shared<CudaGPU>(devices[i], pool);
+    ret.push_back(UsedDevice[devices[i]]);
+  }
+  mtx_.unlock();
   return ret;
 }
 
