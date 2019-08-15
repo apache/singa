@@ -1767,6 +1767,30 @@ class Mul(Operation):
         dx2 = singa.__mul__(dy, self.cache[0])
         return dx1, dx2
 
+
+class Unsqueeze(Operation):
+    def __init__(self,axis):
+        super(Unsqueeze, self).__init__()
+        if(type(axis) is int):
+            self.axis=list(axis)
+        else:
+            self.axis=axis
+
+    def forward(self, x):
+        self.cache=x.shape()
+        cur = list(self.cache)
+        for i in self.axis:
+            cur.insert(i,1)
+        return singa.Reshape(x, cur)
+
+    def backward(self, dy):
+        return singa.Reshape(dy, self.cache)
+
+
+def unsqueeze(x,axis=-1):
+    return Unsqueeze(axis)(x)[0]
+
+
 def mul(x, y):
     # do pointwise multiplication
     return Mul()(x, y)[0]
