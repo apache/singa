@@ -140,12 +140,12 @@ def train(model,
             accuracy_rate = accuracy(tensor.to_numpy(output_batch),
                                      tensor.to_numpy(target_batch))
 
-            sgd = opt.SGD(lr=0.0001)
+            sgd = opt.SGD(lr=0.001)
             for p, gp in autograd.backward(loss):
                 sgd.update(p, gp)
             sgd.step()
 
-            if (i * b) % 200 == 0:
+            if b % 1e2 == 0:
                 print("acc %6.2f loss, %6.2f" %
                       (accuracy_rate, tensor.to_numpy(loss)[0]))
     print("training completed")
@@ -155,8 +155,19 @@ def train(model,
 def make_onnx(x, y):
     return sonnx.to_onnx([x], [y])
 
+class Infer:
+    def __init__(self, sg_ir):
+        self.sg_ir = sg_ir
+        for idx, tens in sg_ir.tensor_map.items():
+            # allow the tensors to be updated
+            tens.requires_grad = True
+            tens.stores_grad= True
+            sg_ir.tensor_map[idx] = tens
 
-def re_train(onnx_model,
+    def forward(self, x):
+        return sg_ir.run([x])[0]
+
+def re_train(sg_ir,
              x,
              y,
              epochs=1,
@@ -164,12 +175,7 @@ def re_train(onnx_model,
              dev=device.get_default_device()):
     batch_number = x.shape[0] // batch_size
 
-    sg_ir = sonnx.prepare(onnx_model, device=dev)
-    for idx, tens in sg_ir.tensor_map.items():
-        # allow the tensors to be updated
-        tens.requires_grad = True
-        tens.stores_grad= True
-        sg_ir.tensor_map[idx] = tens
+    new_model = Infer(sg_ir)
 
     for i in range(epochs):
         for b in range(batch_number):
@@ -179,7 +185,7 @@ def re_train(onnx_model,
             x_batch = tensor.Tensor(device=dev, data=x[l_idx:r_idx])
             target_batch = tensor.Tensor(device=dev, data=y[l_idx:r_idx])
 
-            output_batch = sg_ir.run([x_batch])[0]
+            output_batch = new_model.forward(x_batch)
 
             loss = autograd.softmax_cross_entropy(output_batch, target_batch)
             accuracy_rate = accuracy(tensor.to_numpy(output_batch),
@@ -190,11 +196,63 @@ def re_train(onnx_model,
                 sgd.update(p, gp)
             sgd.step()
 
-            if (i * b) % 200 == 0:
+            if b % 1e2 == 0:
                 print("acc %6.2f loss, %6.2f" %
                       (accuracy_rate, tensor.to_numpy(loss)[0]))
     print("re-training completed")
-    return sg_ir
+    return new_model
+
+class Trans:
+    def __init__(self, sg_ir, last_layers):
+        self.sg_ir = sg_ir
+        self.last_layers = last_layers
+        self.append_linear1 = autograd.Linear(500, 128, bias=False)
+        self.append_linear2 = autograd.Linear(128, 32, bias=False)
+        self.append_linear3 = autograd.Linear(32, 10, bias=False)
+
+    def forward(self, x):
+        y = sg_ir.run([x], last_layers=self.last_layers)[0]
+        y = self.append_linear1(y)
+        y = autograd.relu(y)
+        y = self.append_linear2(y)
+        y = autograd.relu(y)
+        y = self.append_linear3(y)
+        y = autograd.relu(y)
+        return y
+
+def transfer_learning(sg_ir,
+             x,
+             y,
+             epochs=1,
+             batch_size=64,
+             dev=device.get_default_device()):
+    batch_number = x.shape[0] // batch_size
+
+    trans_model = Trans(sg_ir, -1)
+
+    for i in range(epochs):
+        for b in range(batch_number):
+            l_idx = b * batch_size
+            r_idx = (b + 1) * batch_size
+
+            x_batch = tensor.Tensor(device=dev, data=x[l_idx:r_idx])
+            target_batch = tensor.Tensor(device=dev, data=y[l_idx:r_idx])
+            output_batch = trans_model.forward(x_batch)
+
+            loss = autograd.softmax_cross_entropy(output_batch, target_batch)
+            accuracy_rate = accuracy(tensor.to_numpy(output_batch),
+                                     tensor.to_numpy(target_batch))
+
+            sgd = opt.SGD(lr=0.07)
+            for p, gp in autograd.backward(loss):
+                sgd.update(p, gp)
+            sgd.step()
+
+            if b % 1e2 == 0:
+                print("acc %6.2f loss, %6.2f" %
+                      (accuracy_rate, tensor.to_numpy(loss)[0]))
+    print("transfer-learning completed")
+    return trans_model
 
 
 def test(model, x, y, batch_size=64, dev=device.get_default_device()):
@@ -208,7 +266,7 @@ def test(model, x, y, batch_size=64, dev=device.get_default_device()):
         x_batch = tensor.Tensor(device=dev, data=x[l_idx:r_idx])
         target_batch = tensor.Tensor(device=dev, data=y[l_idx:r_idx])
 
-        output_batch = model.run([x_batch])[0]
+        output_batch = model.forward(x_batch)
         result += accuracy(tensor.to_numpy(output_batch),
                            tensor.to_numpy(target_batch))
 
@@ -237,13 +295,25 @@ if __name__ == "__main__":
     # Save the ONNX model
     model_path = os.path.join('/', 'tmp', 'mnist.onnx')
     onnx.save(onnx_model, model_path)
+    print('The model is saved.')
 
     # load the ONNX model
     onnx_model = onnx.load(model_path)
-    # print('The model is:\n{}'.format(onnx_model))
-    model = re_train(onnx_model, train_x, train_y, dev=dev)
+    sg_ir = sonnx.prepare(onnx_model, device=dev)
 
-    print('The model is saved.')
-    # do testing
+    # inference
     autograd.training = False
-    test(model, valid_x, valid_y, dev=dev)
+    print('The inference result is:')
+    test(Infer(sg_ir), valid_x, valid_y, dev=dev)
+
+    # re-training
+    autograd.training = True
+    new_model = re_train(sg_ir, train_x, train_y, dev=dev)
+    autograd.training = False
+    test(new_model, valid_x, valid_y, dev=dev)
+
+    # transfer-learning
+    autograd.training = True
+    new_model = transfer_learning(sg_ir, train_x, train_y, dev=dev)
+    autograd.training = False
+    test(new_model, valid_x, valid_y, dev=dev)

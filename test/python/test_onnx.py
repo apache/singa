@@ -315,7 +315,8 @@ class TestPythonOnnx(unittest.TestCase):
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         for idx, tens in sg_ir.tensor_map.items():
-            tens.stores_grad = False
+            tens.requires_grad = True
+            tens.stores_grad= True
             sg_ir.tensor_map[idx] = tens
         # forward
         y_o = sg_ir.run([x])[0]
@@ -347,9 +348,6 @@ class TestPythonOnnx(unittest.TestCase):
 
         # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        for idx, tens in sg_ir.tensor_map.items():
-            tens.stores_grad = False
-            sg_ir.tensor_map[idx] = tens
         # forward
         x1 = sg_ir.run([x], last_layers=-1)[0]
         x2 = autograd.Conv2d(1, 1, 2)(x1)
