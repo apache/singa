@@ -681,6 +681,26 @@ class SoftMax(Operation):
 def softmax(x, axis=0):
     return SoftMax(axis)(x)[0]
 
+class Sum(Operation):
+    def __init__(self):
+        super(Sum, self).__init__()
+
+    def forward(self, *l):
+        if training:
+            self.l = len(l)
+        assert(len(l)>0);
+        x = singa.Tensor(list(l[0].shape()),l[0].device())
+        x.SetFloatValue(0.0)
+        for i in range(len(l)):
+            x+=l[i]
+        return x
+
+    def backward(self, dy):
+        return [dy]*self.l
+
+
+def sum(*l):
+    return Sum()(*l)[0]
 
 class CrossEntropy(Operation):
     def __init__(self):
