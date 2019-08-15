@@ -45,9 +45,12 @@ import numpy as np
 def postorderRecursive(root, root_t):
     """
     return a list by the topological ordering (postorder of Depth-first search)
-    :type root: singa operator
-    :type root_t: tensor
-    :rtype: deque[int]
+    Args:
+        root: singa operator
+    Args:
+        root_t: tensor
+    Returns: 
+        deque[int]
     """
 
     def recursive(root, yid, root_t, res):
@@ -109,8 +112,10 @@ class SingaFrontend(object):
     def _get_singa_op_inputs_outputs(cls, op):
         """
         get inputs and outputs from a given operator
-        :type op: a given operator
-        :rtype: inputs and outputs of the op
+        Args:
+            op: a given operator
+        Returns: 
+            inputs and outputs of the op
         """
         outputs = [op.output_name(idx) for yid, idx in op.y_id2idx.items()]
         inputs = [srcop.output_name(srcop.y_id2idx[yid])
@@ -121,8 +126,10 @@ class SingaFrontend(object):
     def _get_singa_op_type(cls, op):
         """
         get the operator type from a given operator
-        :type op: a given operator
-        :rtype: operator type
+        Args:
+            op: a given operator
+        Returns: 
+            operator type
         """
         return type(op).__name__
 
@@ -130,9 +137,11 @@ class SingaFrontend(object):
     def _common_singa_tensor_to_onnx_node(cls, op, op_t):
         """
         get a onnx node from a singa operator, prepare its type, inputs and outputs
-        :type op: a given operator
-        :type op: the tensor of the operator
-        :rtype: the onnx node
+        Args:
+            op: a given operator
+        Args:
+            op: the tensor of the operator
+        Returns: the onnx node
         """
         node_def = NodeProto()
         node_def.name = op.name
@@ -150,9 +159,12 @@ class SingaFrontend(object):
     def _create_concat(cls, op, op_t):
         """
         get a onnx node from singa Concat operator
-        :type op: a given operator
-        :type op_t: the tensor of the operator
-        :rtype: the onnx node
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
 
@@ -165,9 +177,12 @@ class SingaFrontend(object):
     def _create_flatten(cls, op, op_t):
         """
         get a onnx node from singa flatten operator
-        :type op: a given operator
-        :type op_t: the tensor of the operator
-        :rtype: the onnx node
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
 
@@ -180,9 +195,12 @@ class SingaFrontend(object):
     def _create_gemm(cls, op, op_t):
         """
         get a onnx node from singa gemm operator
-        :type op: a given operator
-        :type op_t: the tensor of the operator
-        :rtype: the onnx node
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
 
@@ -199,9 +217,12 @@ class SingaFrontend(object):
     def _create_batch_norm(cls, op, op_t):
         """
         get a onnx node from singa _BatchNorm2d operator
-        :type op: a given operator
-        :type op_t: the tensor of the operator
-        :rtype: the onnx node
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
         """
         nodes = []
         # firstly we add the running mean and var nodes
@@ -236,9 +257,12 @@ class SingaFrontend(object):
     def _create_conv_pool(cls, op, op_t):
         """
         get a onnx node from singa _Conv2d and _Pooling2d operator
-        :type op: a given operator
-        :type op_t: the tensor of the operator
-        :rtype: the onnx node
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
         """
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
 
@@ -270,9 +294,12 @@ class SingaFrontend(object):
     def _create_dummy(cls, op, op_t):
         """
         get a onnx node from singa dummy (constant)
-        :type op: a given operator
-        :type op_t: the tensor of the operator
-        :rtype: the onnx node
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
         """
         # for batchnorm, the running mean and var's op_t is None, we just return
         if op_t is None:
@@ -296,9 +323,12 @@ class SingaFrontend(object):
     def singa_op_to_onnx_node(cls, op, op_t):
         """
         get a onnx node from singa operator
-        :type op: a given operator
-        :type op_t: the tensor of the operator
-        :rtype: the onnx node
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
         """
         optype = cls._get_singa_op_type(op)
         # wether the operator needs special handler
@@ -316,9 +346,12 @@ class SingaFrontend(object):
     def singa_to_onnx_graph(cls, inputs, y, model_name="sonnx"):
         """
         get onnx model from singa computational graph
-        :type inputs: a list of input tensors (each is initialized with a name)
-        :type y: a list of tensors, usually the outputs of the graph
-        :rtype: the onnx model
+        Args:
+            inputs: a list of input tensors (each is initialized with a name)
+        Args:
+            y: a list of tensors, usually the outputs of the graph
+        Returns: 
+            the onnx model
         """
         assert len(y) == 1  # assume there is only one output
         y = y[0]
@@ -354,9 +387,12 @@ class SingaFrontend(object):
     def singa_to_onnx_model(cls, inputs, y, model_name="sonnx"):
         """
         get onnx model from singa computational graph
-        :type inputs: a list of input tensors (each is initialized with a name)
-        :type y: a list of tensors, usually the outputs of the graph
-        :rtype: the onnx model
+        Args:
+            inputs: a list of input tensors (each is initialized with a name)
+        Args:
+            y: a list of tensors, usually the outputs of the graph
+        Returns: 
+            the onnx model
         """
         opset_id = OperatorSetIdProto()
         opset_id.version = cls._target_opset_version
@@ -438,11 +474,16 @@ class SingaBackend(Backend):
     def _create_conv(cls, onnx_node, inputs, opset_version):
         """
         get the conv operator from onnx node
-        :type onnx_node: a given onnx node
-        :type inputs: the input tensor
-        :type opset_version: the opset version
-        :rtype: handle, the handle of singa operator
-        :rtype: forward, the autograd of singa operator
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
         padding = tuple(onnx_node.attrs["pads"][0:2])
@@ -490,11 +531,16 @@ class SingaBackend(Backend):
     def _create_max_avg_pool(cls, onnx_node, inputs, opset_version):
         """
         get the max or avg pool operator from onnx node
-        :type onnx_node: a given onnx node
-        :type inputs: the input tensor
-        :type opset_version: the opset version
-        :rtype: handle, the handle of singa operator
-        :rtype: forward, the autograd of singa operator
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
         padding = tuple(onnx_node.attrs["pads"][0:2])
@@ -516,11 +562,11 @@ class SingaBackend(Backend):
     def _create_batchnorm(cls, onnx_node, inputs, opset_version):
         """
         get the batch norm operator from onnx node
-        :type onnx_node: a given onnx node
-        :type inputs: the input tensor
-        :type opset_version: the opset version
-        :rtype: the handle of singa operator
-        :rtype: the autograd of singa operator
+        Args:onnx_node: a given onnx node
+        Args:inputs: the input tensor
+        Args:opset_version: the opset version
+        Returns: the handle of singa operator
+        Returns: the autograd of singa operator
         """
         x = inputs[0]
         factor = onnx_node.attrs["momentum"]
@@ -536,11 +582,16 @@ class SingaBackend(Backend):
     def _create_concat(cls, onnx_node, inputs, opset_version):
         """
         get the concat operator from onnx node
-        :type onnx_node: a given onnx node
-        :type inputs: the input tensor
-        :type opset_version: the opset version
-        :rtype: the handle of singa operator
-        :rtype: the autograd of singa operator
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            the handle of singa operator
+        Returns: 
+            the autograd of singa operator
         """
         x = inputs[0]
         factor = onnx_node.attrs["axis"]
@@ -551,11 +602,16 @@ class SingaBackend(Backend):
     def _create_gemm(cls, onnx_node, inputs, opset_version):
         """
         get the concat operator from onnx node
-        :type onnx_node: a given onnx node
-        :type inputs: the input tensor
-        :type opset_version: the opset version
-        :rtype: the handle of singa operator
-        :rtype: the autograd of singa operator
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            the handle of singa operator
+        Returns: 
+            the autograd of singa operator
         """
         x = inputs[0]
         alpha = onnx_node.attrs["alpha"]
@@ -569,11 +625,16 @@ class SingaBackend(Backend):
     def _create_flatten(cls, onnx_node, inputs, opset_version):
         """
         get the concat operator from onnx node
-        :type onnx_node: a given onnx node
-        :type inputs: the input tensor
-        :type opset_version: the opset version
-        :rtype: the handle of singa operator
-        :rtype: the autograd of singa operator
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            the handle of singa operator
+        Returns: 
+            the autograd of singa operator
         """
         x = inputs[0]
         factor = onnx_node.attrs["axis"]
@@ -584,11 +645,16 @@ class SingaBackend(Backend):
     def _create_matmul(cls, onnx_node, inputs, opset_version):
         """
         get the concat operator from onnx node
-        :type onnx_node: a given onnx node
-        :type inputs: the input tensor
-        :type opset_version: the opset version
-        :rtype: the handle of singa operator
-        :rtype: the autograd of singa operator
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            the handle of singa operator
+        Returns: 
+            the autograd of singa operator
         """
         x = inputs[0]
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
@@ -598,11 +664,16 @@ class SingaBackend(Backend):
     def run_node(cls, onnx_node, inputs, opset_version=_known_opset_version):
         """
         run a single singa operator from a onnx node
-        :type onnx_node: a given onnx node
-        :type inputs: the input tensor
-        :type device: the used device
-        :type opset_version: the opset version
-        :rtype: list, the output of the 
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            device: the used device
+        Args:
+            opset_version: the opset version
+        Returns: 
+            list, the output of the 
         """
         assert len(onnx_node.inputs) == len(inputs), "{}: expected {} but got {}".format(
             onnx_node.op_type, len(onnx_node.inputs), len(inputs))
@@ -614,11 +685,16 @@ class SingaBackend(Backend):
     def _run_node(cls, onnx_node, inputs, handle, forward, opset_version=_known_opset_version):
         """
         run a single singa operator from a onnx node
-        :type inputs: the input tensor
-        :type handle: the handle of singa operator
-        :type forward: the forward of singa operator
-        :type opset_version: the opset version
-        :rtype: list, the output of the 
+        Args:inputs: 
+            the input tensor
+        Args:handle: 
+            the handle of singa operator
+        Args:forward: 
+            the forward of singa operator
+        Args:
+            opset_version: the opset version
+        Returns: 
+            list, the output of the 
         """
         outputs = forward(*inputs) if handle is None else forward(handle, *inputs)
         if not isinstance(outputs, collections.Iterable):
@@ -632,11 +708,16 @@ class SingaBackend(Backend):
     def prepare(cls, model, device, **kwargs):
         """
         get the batch norm operator from onnx node
-        :type onnx_node: a given onnx node
-        :type tensor_map: the input tensor
-        :type device: the used device
-        :type opset_version: the opset version
-        :rtype: a list of output values
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            tensor_map: the input tensor
+        Args:
+            device: the used device
+        Args:
+            opset_version: the opset version
+        Returns: 
+            a list of output values
         """
         super(SingaBackend, cls).prepare(model, device, **kwargs)
         # check the opset version and ir version
@@ -663,11 +744,16 @@ class SingaBackend(Backend):
     def _onnx_model_to_singa_net(cls, onnx_model, device, opset_version):
         """
         get all intermediate tensors and operators from onnx model
-        :type onnx_model: a given onnx model
-        :type device: the used device
-        :type opset_version: the opset version
-        :rtype: a dict of tensors
-        :rtype: a list of SingaOps('name', 'op', 'handle', 'forward')
+        Args:
+            onnx_model: a given onnx model
+        Args:
+            device: the used device
+        Args:
+            opset_version: the opset version
+        Returns:
+            a dict of tensors
+        Returns:
+            a list of SingaOps('name', 'op', 'handle', 'forward')
         """
         # todo check the reason of Segmentation fault (core dumped)
         # optimized_model = optimizer.optimize(onnx_model)
@@ -713,11 +799,16 @@ class SingaBackend(Backend):
     def _onnx_node_to_singa_op(cls, onnx_node, tensor_map, opset_version):
         """
         get a singa operator(handle and autograd) from a onnx node
-        :type onnx_node: a given onnx node
-        :type tensor_map: the input tensor
-        :type opset_version: the opset version
-        :rtype: a dict of tensors
-        :rtype: a list of SingaOps('name', 'op', 'handle', 'forward')
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            tensor_map: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            a dict of tensors
+        Returns: 
+            a list of SingaOps('name', 'op', 'handle', 'forward')
         """
         if onnx_node.op_type in cls._special_operators:
             translator = getattr(cls, cls._special_operators[onnx_node.op_type])
@@ -731,11 +822,16 @@ class SingaBackend(Backend):
         """
         get a common singa operator(only autograd) from a onnx node
         other special operators also can call this func to get autograd
-        :type onnx_node: a given onnx node
-        :type tensor_map: the input tensor
-        :type opset_version: the opset version
-        :rtype: a dict of tensors
-        :rtype: a list of SingaOps('name', 'op', 'handle', 'forward')
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            tensor_map: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            a dict of tensors
+        Returns: 
+            a list of SingaOps('name', 'op', 'handle', 'forward')
         """
         onnx_op_type = onnx_node.op_type
         autograd_op = getattr(autograd, cls._rename_operators.get(onnx_op_type, onnx_op_type))
@@ -749,9 +845,12 @@ class SingaRep(BackendRep):
         the user can run the forward of the singa model by run func,
         or, the user can append more layers after the singa_ops to do
         the transfer learning
-        :type model: a given operator
-        :type tensor_map: the tensor of the operator
-        :type singa_ops: the tensor of the operator
+        Args:
+            model: a given operator
+        Args:
+            tensor_map: the tensor of the operator
+        Args:
+            singa_ops: the tensor of the operator
         """
         super(SingaRep, self).__init__()
         self.model = model
@@ -765,8 +864,10 @@ class SingaRep(BackendRep):
     def run(self, inputs, **kwargs):
         """
         run the forward of singa model
-        :type inputs: a given operator
-        :rtype: the onnx node
+        Args:
+            inputs: a given operator
+        Returns: 
+            the onnx node
         """
         # last_layers means we run this model until the last #N layers
         last_layers = kwargs.get('last_layers', len(self.singa_ops))
