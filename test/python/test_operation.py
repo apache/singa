@@ -459,7 +459,7 @@ class TestPythonOperation(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT)
         self.check_shape(dx.shape(), (3, 2))
-       
+
     def test_Cos_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
         XT = np.cos(X)
@@ -1221,12 +1221,20 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.transpose(x,(1,2,0))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
 
 
     def test_Sign_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
         XT = np.sign(X)
+        DY = np.ones((3, 2), dtype = np.float32)
 
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
         result = autograd.sign(x)
         dx = result.creator.backward(dy.data)
         DX = np.multiply(DY,0)
@@ -1238,16 +1246,27 @@ class TestPythonOperation(unittest.TestCase):
     def test_Sign_gpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
         XT = np.sign(X)
-        
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
         result = autograd.sign(x)
         dx = result.creator.backward(dy.data)
         DX = np.multiply(DY,0)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
     def test_Log_cpu(self):
         X = np.array([0.1,1.0,0.4,1.4,0.9,2.0]).reshape(3,2).astype(np.float32)
         XT = np.log(X)
         DY = np.ones((3, 2), dtype = np.float32)
 
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
         result = autograd.log(x)
         dx = result.creator.backward(dy.data)
         #dx = 1/x
@@ -1260,7 +1279,12 @@ class TestPythonOperation(unittest.TestCase):
     def test_Log_gpu(self):
         X = np.array([0.1,1.0,0.4,1.4,0.9,2.0]).reshape(3,2).astype(np.float32)
         XT = np.log(X)
+        DY = np.ones((3, 2), dtype = np.float32)
 
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
         result = autograd.log(x)
         dx = result.creator.backward(dy.data)
         #dx = 1/x

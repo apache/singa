@@ -460,8 +460,7 @@ def clip(x,min,max):
 class Identity(Operation):
     def __init__(self):
         super(Identity, self).__init__()
-            x(CTensor): equal to input tensor
-        """
+    def forward(self,x):
         return x
 
     def backward(self, dy):
@@ -2186,13 +2185,11 @@ class Log(Operation):
         if training:
             self.input = x
         return singa.Log(x)
-​
     def backward(self, dy):
         dx = singa.PowFloat(self.input,-1)
         dx = singa.__mul__(dy, dx)
         return dx
 
-​
 def log(x):
     return Log()(x)[0]
 
