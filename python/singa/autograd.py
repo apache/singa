@@ -2325,9 +2325,9 @@ class GEMM(Operation):
 
     def forward(self, A, B, C):
         if self.transA:
-            A = singa.Transpose(A)
+            A = singa.DefaultTranspose(A)
         if self.transB:
-            B = singa.Transpose(B)
+            B = singa.DefaultTranspose(B)
         if training:
             self.A = A
             self.B = B
@@ -2336,9 +2336,13 @@ class GEMM(Operation):
         return C
 
     def backward(self, dY):
-        dC = dY * self.beta
-        dA = Mult(DY, singa.Transpose(B))
-        dB = Mult(singa.Transpose(A), DY)
+        dC = singa.MultFloat(dY, self.beta)
+        tB = singa.DefaultTranspose(self.B)
+        tA = singa.DefaultTranspose(self.A)
+        dA = singa.Mult(dY, tB)
+        dB = singa.Mult(tA, dY)
+        dA *= self.alpha
+        dB *= self.alpha
         del self.A
         del self.B
         return dA, dB, dC

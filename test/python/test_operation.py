@@ -1480,10 +1480,10 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
 
-    def test_gemm(gpu):
-        A = np.random.rand((2, 3))
-        B = np.random.rand((3, 4))
-        C = np.random.rand((2, 4))
+    def gemm_test(self, gpu):
+        A = np.random.rand(2, 3)
+        B = np.random.rand(3, 4)
+        C = np.random.rand(2, 4)
         alpha = 1.0
         beta = 2.0
         Y = np.matmul(A, B) * alpha + beta * C
@@ -1496,10 +1496,11 @@ class TestPythonOperation(unittest.TestCase):
             tB.to_device(gpu_dev)
             tC.to_device(gpu_dev)
         tY = autograd.gemm(alpha, False, tA, False, tB, beta, tC)
+        tC = tensor.from_numpy(C)
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(tY), Y, decimal=5)
 
-        dY = np.random.rand((2, 4))
+        dY = np.random.rand(2, 4)
         dA = np.matmul(dY, B.T) * alpha
         dB = np.matmul(A.T, dY) * alpha
         dC = dY * beta
@@ -1507,8 +1508,10 @@ class TestPythonOperation(unittest.TestCase):
         tdY = tensor.from_numpy(dY)
         if gpu:
             tdY.to_device(gpu_dev)
+            tC.to_device(gpu_dev)
 
-        tdA, tdB, tdC = tY.creator.backward(tdY)
+
+        tdA, tdB, tdC = tY.creator.backward(tdY.data)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdA)), dA, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdB)), dB, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdC)), dC, decimal=5)
@@ -1518,21 +1521,27 @@ class TestPythonOperation(unittest.TestCase):
         tY = autograd.gemm(alpha, False, tC, True, tB, beta, tA)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tY), Y, decimal=5)
 
+        dY = np.random.rand(2, 3)
+        tdY = tensor.from_numpy(dY)
+        if gpu:
+            tdY.to_device(gpu_dev)
+
         dA = dY * beta
         dC = np.matmul(dY, B) * alpha
         dB = np.matmul(C.T, dY) * alpha
 
-        tdC, tdB, tdA = tY.creator.backward(tensor.from_numpy(tdY))
+        tdC, tdB, tdA = tY.creator.backward(tdY.data)
+
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdA)), dA, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdB)), dB, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(tdC)), dC, decimal=5)
 
 
-    def test_gemm_cpu():
-        test_gemm(False)
+    def test_gemm_cpu(self):
+        self.gemm_test(False)
 
-    def test_gemm_gpu():
-        test_gemm(True)
+    def test_gemm_gpu(self):
+        self.gemm_test(True)
 
     def test_squeeze(self):
         def squeeze_helper(gpu=False):
