@@ -1446,7 +1446,7 @@ class TestPythonOperation(unittest.TestCase):
                 x.to_device(gpu_dev)
                 dy.to_device(gpu_dev)
 
-            result = autograd.squeeze(x)
+            result = autograd.squeeze(x,[1,3,4])
             dx = result.creator.backward(dy.data)
 
             np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)

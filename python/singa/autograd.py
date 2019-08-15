@@ -2201,14 +2201,17 @@ class Squeeze(Operation):
 
     def forward(self, x):
         self.cache=x.shape()
-        cur = list(self.cache)
+        newshape = []
         if(self.axis==[]):
-            cur=list(filter(lambda i: i != 1, self.cache))
+            newshape=list(filter(lambda i: i != 1, self.cache))
         else:
             for i in self.axis:
-                assert(len(cur) > i and cur[i] == 1),'invalid axis'
-                cur.pop(i)
-        return singa.Reshape(x, cur)
+                assert i < len(self.cache)
+                assert self.cache[i] == 1, "the length of axis {} is {}, which should be 1".format(i, self.cache[i])
+            for ind,v in enumerate(self.cache):
+                if ind not in self.axis:
+                    newshape.append(v)
+        return singa.Reshape(x, newshape)
 
     def backward(self, dy):
         return singa.Reshape(dy, self.cache)
