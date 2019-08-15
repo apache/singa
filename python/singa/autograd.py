@@ -328,6 +328,8 @@ class Dummy(Operation):
         return "{}_g".format(self.name)
 
 
+
+
 class ReLU(Operation):
     def __init__(self):
         super(ReLU, self).__init__()
@@ -356,6 +358,7 @@ class ReLU(Operation):
 
 def relu(x):
     return ReLU()(x)[0]
+
 
 class Less(Operation):
     def __init__(self):
@@ -390,15 +393,42 @@ def less(x,y):
 
 
 
-class Identity(Operation):
-    def __init__(self):
-        super(Identity, self).__init__()
 
+
+
+
+class Clip(Operation):
+    def __init__(self,min,max):
+        super(Clip, self).__init__()
+        self.max=max
+        self.min=min
     def forward(self, x):
         """
         Args:
             x(CTensor): input tensor
         Returns:
+            np.clip(x,min,max)
+        """
+        mask0 = singa.LTFloat(x, self.min)
+        mask1 = singa.GTFloat(x, self.max)
+        mask00 = singa.MultFloat(mask0,self.min)
+        mask11 = singa.MultFloat(mask1,self.max)
+        mask2 = singa.LEFloat(x, self.max)
+        mask3 = singa.GEFloat(x, self.min)
+        maskm = singa.__mul__(mask2,mask3)
+        if training:
+            self.mask = maskm
+        return singa.__add__(singa.__add__(singa.__mul__(maskm,x),mask00),mask11)
+
+    def backward(self, dy):
+        return singa.__mul__(dy, self.mask)
+
+def clip(x,min,max):
+    return Clip(min,max)(x)[0]
+  
+class Identity(Operation):
+    def __init__(self):
+        super(Identity, self).__init__()
             x(CTensor): equal to input tensor
         """
         return x

@@ -930,6 +930,7 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), DX0, decimal=4)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=4)
 
+
     def test_SoftSign_cpu(self):
         # y = x / (1 + np.abs(x))
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
@@ -1048,8 +1049,6 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
-
-
     def test_transpose_cpu(self):
         x = np.random.randn(3,2,1)
         y = x.transpose(1,2,0)
@@ -1078,6 +1077,7 @@ class TestPythonOperation(unittest.TestCase):
         dy.to_device(gpu_dev)
 
         result = autograd.transpose(x,(1,2,0))
+
 
     def test_Sign_cpu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
