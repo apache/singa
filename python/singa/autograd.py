@@ -2194,6 +2194,30 @@ def log(x):
     return Log()(x)[0]
 
 
+class Squeeze(Operation):
+    def __init__(self,axis=[]):
+        super(Squeeze, self).__init__()
+        self.axis=axis
+
+    def forward(self, x):
+        self.cache=x.shape()
+        cur = list(self.cache)
+        if(self.axis==[]):
+            cur=list(filter(lambda i: i != 1, self.cache))
+        else:
+            for i in self.axis:
+                assert(len(cur) > i and cur[i] == 1),'invalid axis'
+                cur.pop(i)
+        return singa.Reshape(x, cur)
+
+    def backward(self, dy):
+        return singa.Reshape(dy, self.cache)
+
+
+def squeeze(x,axis=[]):
+    return Squeeze(axis)(x)[0]
+
+
 class Div(Operation):
     def __init__(self):
         super(Div, self).__init__()    

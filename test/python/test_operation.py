@@ -1432,5 +1432,27 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
 
 
+
+    def test_squeeze(self):
+        def squeeze_helper(gpu=False):
+            x = np.random.randn(3,1,2,1,1)
+            y = x.reshape(3, 2)
+            dy = np.random.randn(3, 2)
+            grad = dy.reshape(3,1,2,1,1)
+
+            x = tensor.from_numpy(x)
+            dy = tensor.from_numpy(dy)
+            if(gpu):
+                x.to_device(gpu_dev)
+                dy.to_device(gpu_dev)
+
+            result = autograd.squeeze(x)
+            dx = result.creator.backward(dy.data)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+        squeeze_helper(False)
+        squeeze_helper(True)
+
 if __name__ == '__main__':
     unittest.main()
