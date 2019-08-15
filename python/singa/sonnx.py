@@ -89,6 +89,8 @@ class SingaFrontend(object):
         'Flatten': 'Flatten',
         'AddBias': 'Add',
         'GEMM': 'Gemm',
+        'Reshape': 'Reshape',
+        'Sum': 'Sum',
     }
 
     # this dict indicates the operators that need extra handle
@@ -455,6 +457,8 @@ class SingaBackend(Backend):
         'Concat': 'Concat',
         'Flatten': 'Flatten',
         'Gemm': 'GEMM',
+        'Reshape' : 'Reshape',
+        'Sum': 'Sum',
     }
 
     # this dict indicates the operators that need extra handle
@@ -601,7 +605,7 @@ class SingaBackend(Backend):
     @classmethod
     def _create_gemm(cls, onnx_node, inputs, opset_version):
         """
-        get the concat operator from onnx node
+        get the gemm operator from onnx node
         Args:
             onnx_node: a given onnx node
         Args:
@@ -624,7 +628,7 @@ class SingaBackend(Backend):
     @classmethod
     def _create_flatten(cls, onnx_node, inputs, opset_version):
         """
-        get the concat operator from onnx node
+        get the flatten operator from onnx node
         Args:
             onnx_node: a given onnx node
         Args:
@@ -644,7 +648,7 @@ class SingaBackend(Backend):
     @classmethod
     def _create_matmul(cls, onnx_node, inputs, opset_version):
         """
-        get the concat operator from onnx node
+        get the matmul operator from onnx node
         Args:
             onnx_node: a given onnx node
         Args:
