@@ -167,7 +167,6 @@ def backward(y, dy=None):
 
             op_dep[src_op] -= 1
             tensor_dep[x_id] -= 1
-
             if y_stores_grad and tensor_dep[x_id] == 0:
                 # store the gradient for final return, e.g. for parameters.
                 # it may cause a delay to yield. Only after src_op's all
@@ -319,7 +318,7 @@ class Dummy(Operation):
         super(Dummy, self).__init__(name)
         self.src = []
         self.y_id2idx = {id(tensor): 0}
-        self.stores_grad = tensor.stores_grad
+        self.tensor = tensor
         self.requires_grad = False
 
     def output_name(self, idx):
@@ -327,6 +326,10 @@ class Dummy(Operation):
 
     def grad_name(self, idx):
         return "{}_g".format(self.name)
+
+
+    def __getattr__(self, name):
+        return self.tensor.name
 
 class Mean(Operation):
     def __init__(self):
