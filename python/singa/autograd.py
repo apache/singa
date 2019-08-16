@@ -2224,6 +2224,41 @@ def log(x):
     return Log()(x)[0]
 
 
+class HardSigmoid(Operation):
+    def __init__(self,alpha=0.2,gamma=0.5):
+        super(HardSigmoid, self).__init__()
+        self.alpha=alpha
+        self.gamma=gamma
+
+    def forward(self, x):
+        """Do forward propgation.
+        #y = max(0, min(1, alpha * x + gamma))
+        Args:
+            x (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        x = singa.AddFloat(singa.MultFloat(x,self.alpha),self.gamma)
+        if training:
+            self.cache = x
+
+        x = singa.ReLU(x)
+        mask1 = singa.LTFloat(x, 1.0)
+        mask2 = singa.GEFloat(x, 1.0)
+
+        ans = singa.__add__(singa.__mul__(x, mask1),mask2)
+        return singa.ReLU(ans)
+
+    def backward(self, dy):
+        mask0 = singa.GTFloat(self.cache, 0.0)
+        mask1 = singa.LTFloat(self.cache, 1.0)
+        mask = singa.__mul__(mask0,mask1)
+        return singa.__mul__(singa.MultFloat(mask, self.alpha),dy)
+
+def hardsigmoid(x,alpha=0.2,gamma=0.5):
+    return HardSigmoid(alpha,gamma)(x)[0]
+
+
 class Squeeze(Operation):
     def __init__(self,axis=[]):
         super(Squeeze, self).__init__()

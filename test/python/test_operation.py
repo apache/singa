@@ -1587,5 +1587,27 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), DX1, decimal=5)
 
 
+def test_HardSigmoid(self):
+    def test_helper(gpu=False):
+        x = np.random.randn(3, 2)
+        #y = max(0, min(1, alpha * x + gamma))
+        a=0.2
+        g=0.5
+        y = np.clip(x * 0.2 + 0.5, 0, 1)
+        grad=(0<(np.clip(x * 0.2 + 0.5, 0, 1)) * (np.clip(x * 0.2 + 0.5, 0, 1)<1))*0.2
+        x = tensor.from_numpy(x)
+        if(gpu):
+            x.to_device(gpu_dev)
+        result = autograd.hardsigmoid(x,a,g)
+        dy = tensor.from_numpy(np.random.randn((3,2)).astype(np.float32))
+        dx = result.creator.backward(dy.data)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+    test_helper(False)
+    test_helper(True)
+
+
+
+
 if __name__ == '__main__':
     unittest.main()
