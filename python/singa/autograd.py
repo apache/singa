@@ -329,7 +329,7 @@ class Dummy(Operation):
 
 
     def __getattr__(self, name):
-        return self.tensor.name
+        return self.tensor.__getattribute__(name)
 
 class Mean(Operation):
     def __init__(self):
