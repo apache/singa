@@ -2319,3 +2319,24 @@ class Max(Operation):
 def max(a,b):
     return Max()(a,b)[0]
 
+
+class And(Operation):
+    def __init__(self):
+        super(And, self).__init__()
+
+    def forward(self, a, b):
+        m = singa.__div__(a,b)
+
+        mask0 = singa.GEFloat(m,1)
+        mask1 = singa.LEFloat(m,1)
+        cur = singa.__mul__(mask0,mask1)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient')
+        return None
+
+def _and(a,b):
+    return And()(a,b)[0]
+
