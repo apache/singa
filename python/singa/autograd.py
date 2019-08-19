@@ -612,8 +612,10 @@ class Add(Operation):
         super(Add, self).__init__()
 
     def forward(self, a, b):
+        #up till now, the dimensions of tensor a and b should less than 3
         self.shape0=list(a.shape())
         self.shape1=list(b.shape())
+        assert(len(self.shape0) <= 2 and len(self.shape1) <= 2),"up till now, the dimensions of tensor a and b should less than 3"
         return singa.__add__(a, b)
 
     def backward(self, dy):
