@@ -609,29 +609,35 @@ def reshape(a,shape):
     return Reshape(shape)(a)[0]
 
 class PRelu(Operation):
+
     def __init__(self):
         super(PRelu, self).__init__()
 
-    def forward(self, x,slope):
+    def forward(self, x, slope):
+        mask0 = singa.LTFloat(x, 0.0)
         if training:
             self.input = x
-            self.slope=slope
-        x1 = singa.LTFloat(x, 0.0)
-        x1 = singa.__mul__(x, x1)
-        x1 = singa.__mul__(x1, slope)
+            self.slope = slope
+            self.mask0 = mask0
+        x1 = singa.__mul__(x, mask0)
+        x1 *= slope
         x2 = singa.ReLU(x)
-        x1 = singa.__add__(x1, x2)
+        x1 += x2
         return x1
 
     def backward(self, dy):
         dx1mask = singa.GEFloat(self.input, 0.0)
-        dx2mask = singa.LTFloat(self.input, 0.0)
-        dx2 = singa.__mul__(dx2mask, self.slope)
+        dx2 = singa.__mul__(self.mask0, self.slope)
         dx = singa.__add__(dx1mask, dx2)
-        return singa.__mul__(dy, dx),singa.__mul__(dy, singa.__mul__(dx2mask,self.input))
+        return singa.__mul__(dy, dx), singa.__mul__(dy,
+                                                    singa.__mul__(
+                                                        self.mask0, self.input))
 
-def prelu(x,slope):
-    return PRelu()(x,slope)[0]
+
+def prelu(x, slope):
+    return PRelu()(x, slope)[0]
+
+
 
 class Add(Operation):
     def __init__(self):
