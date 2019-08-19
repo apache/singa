@@ -2354,3 +2354,35 @@ class Max(Operation):
 def max(a,b):
     return Max()(a,b)[0]
 
+
+class Or(Operation):
+    def __init__(self):
+        super(Or, self).__init__()
+
+    def forward(self, a, b):
+        #find equal element-wise
+        m = singa.__sub__(a,b)
+        m0 = singa.GEFloat(m,0)
+        m1 = singa.LEFloat(m,0)
+        mask0 = singa.__mul__(m0, m1)
+
+        #find 0 element-wise
+        n = singa.__add__(a,b)
+        n0 = singa.GEFloat(n,0)
+        n1 = singa.LEFloat(n,0)
+        mask1 = singa.__mul__(n0, n1)
+
+        #find equal 0 element-wise
+        n = singa.__mul__(mask0, mask1)
+        cur = singa.LEFloat(n, 0)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient for backward function')
+        return None
+
+
+def _or(a,b):
+    return Or()(a,b)[0]
+
