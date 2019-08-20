@@ -784,7 +784,7 @@ class SingaBackend(Backend):
         Args:
             opset_version: the opset version
         Returns: 
-            list, the output of the 
+            list, the output of the
         """
         # since reshape acutally only needs one input tensor
         # but onnx regard its shape as another tensor, we need to ommit it
@@ -793,7 +793,7 @@ class SingaBackend(Backend):
         outputs = forward(*inputs) if handle is None else forward(handle, *inputs)
         if not isinstance(outputs, collections.Iterable):
             outputs = [outputs]
-        outputs_dict = {}
+        outputs_dict = collections.OrderedDict()
         for (key, val) in zip(onnx_node.outputs, outputs):
             outputs_dict[key] = val
         return outputs_dict
