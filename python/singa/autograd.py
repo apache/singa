@@ -2354,3 +2354,21 @@ class Max(Operation):
 def max(a,b):
     return Max()(a,b)[0]
 
+
+class Not(Operation):
+    def __init__(self):
+        super(Not, self).__init__()
+
+    def forward(self, x):
+        mask0 = singa.GEFloat(x,0)
+        mask1 = singa.LEFloat(x,0)
+        cur = singa.__mul__(mask0,mask1)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient for backward function')
+        return None
+
+def _not(x):
+    return Not()(x)[0]

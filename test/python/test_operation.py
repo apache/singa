@@ -1606,7 +1606,27 @@ def test_HardSigmoid(self):
     test_helper(False)
     test_helper(True)
 
+    def test_not_cpu(self):
+        x = np.array([1.0, -1.0, 0, -0.1, 0, -7.0]).reshape(3, 2).astype(np.float32)
 
+        y = np.logical_not(x)
+        x = tensor.from_numpy(x)
+        x.to_device(cpu_dev)
+
+        result = autograd._not(x)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_not_gpu(self):
+        x = np.array([1.0, -1.0, 0, -0.1, 0, -7.0]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_not(x)
+        x = tensor.from_numpy(x)
+        x.to_device(gpu_dev)
+
+        result = autograd._not(x)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
 
 if __name__ == '__main__':
