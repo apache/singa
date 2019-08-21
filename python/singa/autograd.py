@@ -2354,3 +2354,35 @@ class Max(Operation):
 def max(a,b):
     return Max()(a,b)[0]
 
+
+class Xor(Operation):
+    def __init__(self):
+        super(Xor, self).__init__()
+
+    def forward(self, a, b):
+        #find element with value =0
+        m0 = singa.__mul__(a,b)
+
+        m00 = singa.GEFloat(m0,0)
+        m01 = singa.LEFloat(m0,0)
+        m1 = singa.__mul__(m00, m01)
+
+        #find element-wise value =0
+        m2 = singa.__add__(a,b)
+
+        #find y=np.logical_xor(x)
+        n = singa.__mul__(m1, m2)
+        n0 = singa.GTFloat(n,0)
+        n1 = singa.LTFloat(n,0)
+
+        cur = singa.__add__(n0, n1)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient for backward function')
+        return None
+
+
+def _xor(a,b):
+    return Xor()(a,b)[0]
