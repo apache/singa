@@ -21,7 +21,7 @@ from builtins import str
 from singa import tensor
 from singa import singa_wrap as singa
 from singa import autograd
-
+from singa import singa_wrap
 from cuda_helper import gpu_dev, cpu_dev
 
 import numpy as np
@@ -1608,7 +1608,7 @@ class TestPythonOperation(unittest.TestCase):
         test_helper(False)
         test_helper(True)
 
-
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_prelu(self):
         def hepler(gpu):
             x = np.random.randn(3, 2)
@@ -1634,6 +1634,101 @@ class TestPythonOperation(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
         hepler(False)
         hepler(True)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_SeLU(self):
+        def test_helper(gpu):
+            x = np.random.randn(3, 2)
+            a=0.2
+            g=0.3
+            y = np.clip(x, 0, np.inf) * g + (np.exp(np.clip(x, -np.inf, 0)) - 1) * a * g
+            dy=np.random.randn(3, 2)
+            grad = (np.exp(np.clip(x, -np.inf, 0))) * g
+            grad[x<=0]=grad[x<=0]*a
+            grad*=dy
+            x = tensor.from_numpy(x)
+
+
+            result = autograd.selu(x,a,g)
+            dy = tensor.from_numpy(dy)
+            if(gpu):
+                dy.to_device(gpu_dev)
+                x.to_device(gpu_dev)
+            dx = result.creator.backward(dy.data)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+        test_helper(False)
+        test_helper(True)
+
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_Equal(self):
+        def test_helper(gpu):
+            x0 = np.random.randn(3, 2)
+            x1 = np.random.randn(3, 2)
+            y = np.equal(x0,x1)
+            x0 = tensor.from_numpy(x0)
+            x1 = tensor.from_numpy(x1)
+            if(gpu):
+                x0.to_device(gpu_dev)
+                x1.to_device(gpu_dev)
+
+            result = autograd.equal(x0,x1)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        test_helper(False)
+        test_helper(True)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_Elu(self):
+        def test_helper(gpu):
+            #f(x) = alpha * (exp(x) - 1.) for x < 0, f(x) = x for x >= 0
+            x = np.random.randn(3, 2)
+            y = np.clip(x, 0, np.inf) + (np.exp(np.clip(x, -np.inf, 0)) - 1) * 1.0
+            dy=np.random.randn(3, 2)
+            grad=np.exp(np.clip(x, -np.inf, 0))*dy
+
+            x = tensor.from_numpy(x)
+            result = autograd.elu(x)
+            dy = tensor.from_numpy(dy)
+            if(gpu):
+                dy.to_device(gpu_dev)
+                x.to_device(gpu_dev)
+            dx = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+        test_helper(False)
+        test_helper(True)
+
+    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+    def test_add(self):
+        def test_helper(gpu=False):
+            #only two dimensions support
+            x = np.random.randn(3,2)
+            b = np.random.randn(2)
+            dy=np.random.randn(3,2)
+            y = x+b
+            gradx=dy
+            dif=len(list(x.shape))-len(list(b.shape))
+            if dif==0:
+                gradb=dy
+            else:
+                gradb=dy.sum(axis=tuple(np.arange(dif)))
+            x = tensor.from_numpy(x)
+            b = tensor.from_numpy(b)
+            dy = tensor.from_numpy(dy)
+            if(gpu):
+                x.to_device(gpu_dev)
+                b.to_device(gpu_dev)
+                dy.to_device(gpu_dev)
+            result = autograd.add(x,b)
+            dx,db = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), gradx, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(db)), gradb, decimal=5)
+        test_helper(False)
+        test_helper(True)
 
 
 
