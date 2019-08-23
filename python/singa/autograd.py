@@ -2329,6 +2329,7 @@ class Shape(Operation):
 def shape(x):
     return Shape()(x)[0]
 
+
 class Max(Operation):
     def __init__(self):
         super(Max, self).__init__()
@@ -2354,3 +2355,107 @@ class Max(Operation):
 def max(a,b):
     return Max()(a,b)[0]
 
+
+class And(Operation):
+    def __init__(self):
+        super(And, self).__init__()
+
+    def forward(self, a, b):
+        m = singa.__div__(a,b)
+
+        mask0 = singa.GEFloat(m,1)
+        mask1 = singa.LEFloat(m,1)
+        cur = singa.__mul__(mask0,mask1)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient')
+        return None
+
+def _and(a,b):
+    return And()(a,b)[0]
+
+
+class Or(Operation):
+    def __init__(self):
+        super(Or, self).__init__()
+
+    def forward(self, a, b):
+        #find equal element-wise
+        m = singa.__sub__(a,b)
+        m0 = singa.GEFloat(m,0)
+        m1 = singa.LEFloat(m,0)
+        mask0 = singa.__mul__(m0, m1)
+
+        #find 0 element-wise
+        n = singa.__add__(a,b)
+        n0 = singa.GEFloat(n,0)
+        n1 = singa.LEFloat(n,0)
+        mask1 = singa.__mul__(n0, n1)
+
+        #find equal 0 element-wise
+        n = singa.__mul__(mask0, mask1)
+        cur = singa.LEFloat(n, 0)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient for backward function')
+        return None
+
+
+def _or(a,b):
+    return Or()(a,b)[0]
+
+
+class Not(Operation):
+    def __init__(self):
+        super(Not, self).__init__()
+
+    def forward(self, x):
+        mask0 = singa.GEFloat(x,0)
+        mask1 = singa.LEFloat(x,0)
+        cur = singa.__mul__(mask0,mask1)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient for backward function')
+        return None
+
+def _not(x):
+    return Not()(x)[0]
+
+
+class Xor(Operation):
+    def __init__(self):
+        super(Xor, self).__init__()
+
+    def forward(self, a, b):
+        #find element with value =0
+        m0 = singa.__mul__(a,b)
+
+        m00 = singa.GEFloat(m0,0)
+        m01 = singa.LEFloat(m0,0)
+        m1 = singa.__mul__(m00, m01)
+
+        #find element-wise value =0
+        m2 = singa.__add__(a,b)
+
+        #find y=np.logical_xor(x)
+        n = singa.__mul__(m1, m2)
+        n0 = singa.GTFloat(n,0)
+        n1 = singa.LTFloat(n,0)
+
+        cur = singa.__add__(n0, n1)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient for backward function')
+        return None
+
+
+def _xor(a,b):
+    return Xor()(a,b)[0]

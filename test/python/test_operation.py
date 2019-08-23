@@ -1606,8 +1606,112 @@ def test_HardSigmoid(self):
     test_helper(False)
     test_helper(True)
 
+    def test_and_cpu(self):
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+    
+        y = np.logical_and(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+    
+        result = autograd._and(x0,x1)
+    
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
+    def test_and_gpu(self):
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+    
+        y = np.logical_and(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+    
+        result = autograd._and(x0,x1)
+    
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
+    def test_or_cpu(self):
+        x0 = np.array([1.0, 1.0, 2.0, -3.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([-1.0, 0, 2.0, 4.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_or(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+
+        result = autograd._or(x0,x1)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_or_gpu(self):
+        x0 = np.array([1.0, 1.0, 2.0, -3.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([-1.0, 0, 2.0, 4.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_or(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+
+        result = autograd._or(x0,x1)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_not_cpu(self):
+        x = np.array([1.0, -1.0, 0, -0.1, 0, -7.0]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_not(x)
+        x = tensor.from_numpy(x)
+        x.to_device(cpu_dev)
+
+        result = autograd._not(x)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_not_gpu(self):
+        x = np.array([1.0, -1.0, 0, -0.1, 0, -7.0]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_not(x)
+        x = tensor.from_numpy(x)
+        x.to_device(gpu_dev)
+
+        result = autograd._not(x)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_xor_cpu(self):
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 9.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_xor(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+
+        result = autograd._xor(x0,x1)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_xor_gpu(self):
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 9.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_xor(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+
+        result = autograd._xor(x0,x1)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        
 
 if __name__ == '__main__':
     unittest.main()
