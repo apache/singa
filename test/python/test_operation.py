@@ -1608,9 +1608,8 @@ class TestPythonOperation(unittest.TestCase):
         test_helper(False)
         test_helper(True)
 
-    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_prelu(self):
-        def hepler(gpu):
+        def test_helper(gpu):
             x = np.random.randn(3, 2)
             slope = np.random.randn(3, 2)
             y = np.clip(x, 0, np.inf) + np.clip(x, -np.inf, 0) * slope
@@ -1632,10 +1631,10 @@ class TestPythonOperation(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
-        hepler(False)
-        hepler(True)
+        test_helper(False)
+        if(singa_wrap.USE_CUDA):
+            test_helper(True)
 
-    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_SeLU(self):
         def test_helper(gpu):
             x = np.random.randn(3, 2)
@@ -1648,7 +1647,6 @@ class TestPythonOperation(unittest.TestCase):
             grad*=dy
             x = tensor.from_numpy(x)
 
-
             result = autograd.selu(x,a,g)
             dy = tensor.from_numpy(dy)
             if(gpu):
@@ -1659,10 +1657,10 @@ class TestPythonOperation(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
         test_helper(False)
-        test_helper(True)
+        if(singa_wrap.USE_CUDA):
+            test_helper(True)
 
 
-    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_Equal(self):
         def test_helper(gpu):
             x0 = np.random.randn(3, 2)
@@ -1678,9 +1676,9 @@ class TestPythonOperation(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
         test_helper(False)
-        test_helper(True)
+        if(singa_wrap.USE_CUDA):
+            test_helper(True)
 
-    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
     def test_Elu(self):
         def test_helper(gpu):
             #f(x) = alpha * (exp(x) - 1.) for x < 0, f(x) = x for x >= 0
@@ -1698,10 +1696,11 @@ class TestPythonOperation(unittest.TestCase):
             dx = result.creator.backward(dy.data)
             np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
-        test_helper(False)
-        test_helper(True)
 
-    @unittest.skipIf(not singa_wrap.USE_CUDA, 'CUDA is not enabled')
+        test_helper(False)
+        if(singa_wrap.USE_CUDA):
+            test_helper(True)
+
     def test_add(self):
         def test_helper(gpu=False):
             #only two dimensions support
@@ -1728,7 +1727,8 @@ class TestPythonOperation(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), gradx, decimal=5)
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(db)), gradb, decimal=5)
         test_helper(False)
-        test_helper(True)
+        if(singa_wrap.USE_CUDA):
+            test_helper(True)
 
 
 

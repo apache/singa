@@ -649,7 +649,9 @@ class Add(Operation):
         return singa.__add__(a, b)
 
     def backward(self, dy):
-        if(type(dy)==float):return dy,dy
+        if(type(dy)==float):
+            assert self.shape0==self.shape1,('should have same shape')
+            return dy,dy
         db=CTensor(list(dy.shape()), dy.device())
         db.CopyData(dy)
         for i in range(len(self.shape0)-len(self.shape1)):
@@ -677,10 +679,10 @@ class Elu(Operation):
         if training:
             self.input = x
         x1 = singa.LTFloat(x, 0.0)
-        x1 = singa.__mul__(x, x1)
+        x1 *= x
         x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1),1.0),self.alpha)
         x2 = singa.ReLU(x)
-        x1 = singa.__add__(x1, x2)
+        x1 += x2
         return x1
 
     def backward(self, dy):
@@ -691,13 +693,14 @@ class Elu(Operation):
             a tuple for dx
         """
         dx1mask = singa.LTFloat(self.input, 0.0)
-        dx1 = singa.MultFloat(singa.Exp(self.input), self.alpha)
-        dx1 = singa.__mul__(dx1mask, dx1)
+        dx = singa.MultFloat(singa.Exp(self.input), self.alpha)
+        dx *= dx1mask
 
         dx2mask = singa.GEFloat(self.input, 0.0)
 
-        dx = singa.__add__(dx1, dx2mask)
-        return singa.__mul__(dy, dx)
+        dx += dx2mask
+        dx *= dy
+        return dx
 
 def elu(x,alpha=1):
     return Elu(alpha)(x)[0]
@@ -751,11 +754,11 @@ class SeLU(Operation):
         if training:
             self.input = x
         x1 = singa.LEFloat(x, 0.0)
-        x1 = singa.__mul__(x, x1)
+        x1 *= x
         x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1), 1.0), self.alpha * self.gamma)
         x2 = singa.ReLU(x)
         x2 = singa.MultFloat(x2,self.gamma)
-        x1 = singa.__add__(x1, x2)
+        x1 += x2
         return x1
 
     def backward(self, dy):
@@ -773,7 +776,8 @@ class SeLU(Operation):
         dx2 = singa.MultFloat(dx2mask, self.gamma)
 
         dx = singa.__add__(dx1, dx2)
-        return singa.__mul__(dy, dx)
+        dx *= dy
+        return dx
 
 def selu(x,alpha=1.67326,gamma=1.0507):
     return SeLU(alpha,gamma)(x)[0]
