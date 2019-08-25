@@ -90,11 +90,11 @@ class Tensor {
   }
 
   /// data type, including kFloat16, kFloat32, kInt
-  const DataType data_type() const { return data_type_; }
+  DataType data_type() const { return data_type_; }
 
   const Shape &shape() const { return shape_; }
 
-  const size_t shape(const size_t idx) const {
+  size_t shape(const size_t idx) const {
     CHECK_LT(idx, shape_.size());
     return shape_.at(idx);
   }

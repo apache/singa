@@ -64,7 +64,7 @@ class CSVDecoder : public Decoder {
   }
   std::vector<Tensor> Decode(std::string value) override;
 
-  const bool has_label() const { return has_label_; }
+  bool has_label() const { return has_label_; }
 
  private:
   /// if ture the first value is the label
