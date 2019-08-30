@@ -31,5 +31,8 @@ matrix:
 install:
   - travis_wait bash -ex tool/travis/depends.sh
 
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
 script:
   - bash -ex tool/travis/build.sh
