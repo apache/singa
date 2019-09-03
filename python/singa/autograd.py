@@ -608,20 +608,180 @@ class Reshape(Operation):
 def reshape(a,shape):
     return Reshape(shape)(a)[0]
 
+class PRelu(Operation):
+
+    def __init__(self):
+        super(PRelu, self).__init__()
+
+    def forward(self, x, slope):
+        mask0 = singa.LTFloat(x, 0.0)
+        if training:
+            self.input = x
+            self.slope = slope
+            self.mask0 = mask0
+        x1 = singa.__mul__(x, mask0)
+        x1 *= slope
+        x2 = singa.ReLU(x)
+        x1 += x2
+        return x1
+
+    def backward(self, dy):
+        dx1mask = singa.GEFloat(self.input, 0.0)
+        dx2 = singa.__mul__(self.mask0, self.slope)
+        dx = singa.__add__(dx1mask, dx2)
+        return singa.__mul__(dy, dx), singa.__mul__(dy,
+                                                    singa.__mul__(
+                                                        self.mask0, self.input))
+
+
+def prelu(x, slope):
+    return PRelu()(x, slope)[0]
 
 class Add(Operation):
     def __init__(self):
         super(Add, self).__init__()
 
     def forward(self, a, b):
+        #up till now, the dimensions of tensor a and b should less than 3
+        self.shape0=list(a.shape())
+        self.shape1=list(b.shape())
+        assert(len(self.shape0) <= 2 and len(self.shape1) <= 2),"up till now, the dimensions of tensor a and b should less than 3"
         return singa.__add__(a, b)
 
     def backward(self, dy):
-        return dy, dy
+        if(type(dy)==float):
+            assert self.shape0==self.shape1,('should have same shape')
+            return dy,dy
+        db=CTensor(list(dy.shape()), dy.device())
+        db.CopyData(dy)
+        for i in range(len(self.shape0)-len(self.shape1)):
+            db=singa.Sum(db, 0)
+        return dy, db
 
 
 def add(a, b):
     return Add()(a, b)[0]
+
+class Elu(Operation):
+    def __init__(self,alpha=1):
+        super(Elu, self).__init__()
+        self.alpha=alpha
+
+    def forward(self, x):
+        """Do forward propgation.
+        Store the x if requires gradient.
+        Args:
+            x (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        #f(x) = alpha * (exp(x) - 1.) for x < 0, f(x) = x for x >= 0
+        if training:
+            self.input = x
+        x1 = singa.LTFloat(x, 0.0)
+        x1 *= x
+        x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1),1.0),self.alpha)
+        x2 = singa.ReLU(x)
+        x1 += x2
+        return x1
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            a tuple for dx
+        """
+        dx1mask = singa.LTFloat(self.input, 0.0)
+        dx = singa.MultFloat(singa.Exp(self.input), self.alpha)
+        dx *= dx1mask
+
+        dx2mask = singa.GEFloat(self.input, 0.0)
+
+        dx += dx2mask
+        dx *= dy
+        return dx
+
+def elu(x,alpha=1):
+    return Elu(alpha)(x)[0]
+
+
+class Equal(Operation):
+    def __init__(self):
+        super(Equal, self).__init__()
+
+    def forward(self, x,y):
+        """Do forward propgation.
+       Store the x if requires gradient.
+       Args:
+           x (CTensor): matrix
+       Returns:
+           a CTensor for the result
+       """
+        m = singa.__sub__(x,y)
+        cur = singa.__mul__(singa.GEFloat(m,0),singa.LEFloat(m,0))
+        return cur
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            a tuple for (dx, dx1)
+        """
+        assert 0,('no backward function for equal')
+        return None
+
+def equal(x,y):
+    return Equal()(x,y)[0]
+
+
+class SeLU(Operation):
+    def __init__(self,alpha=1.67326,gamma=1.0507):
+        super(SeLU, self).__init__()
+        self.alpha=alpha
+        self.gamma=gamma
+
+    def forward(self, x):
+        """Do forward propgation.
+        Store the x if x requires gradient.
+        Args:
+            x (CTensor): matrix
+        Returns:
+            a CTensor for the result
+        """
+        #y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0
+        if training:
+            self.input = x
+        x1 = singa.LEFloat(x, 0.0)
+        x1 *= x
+        x1 = singa.MultFloat(singa.SubFloat(singa.Exp(x1), 1.0), self.alpha * self.gamma)
+        x2 = singa.ReLU(x)
+        x2 = singa.MultFloat(x2,self.gamma)
+        x1 += x2
+        return x1
+
+    def backward(self, dy):
+        """
+        Args:
+            dy (CTensor): data for the dL / dy, L is the loss
+        Returns:
+            dx
+        """
+        dx1mask = singa.LEFloat(self.input, 0.0)
+        dx1 = singa.MultFloat(singa.Exp(self.input), self.gamma*self.alpha)
+        dx1 = singa.__mul__(dx1mask, dx1)
+
+        dx2mask = singa.GTFloat(self.input, 0.0)
+        dx2 = singa.MultFloat(dx2mask, self.gamma)
+
+        dx = singa.__add__(dx1, dx2)
+        dx *= dy
+        return dx
+
+def selu(x,alpha=1.67326,gamma=1.0507):
+    return SeLU(alpha,gamma)(x)[0]
+
 
 
 class SoftMax(Operation):
