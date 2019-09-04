@@ -2619,3 +2619,19 @@ class Xor(Operation):
 
 def _xor(a,b):
     return Xor()(a,b)[0]
+
+
+class Negative(Operation):
+    def __init__(self):
+        super(Negative, self).__init__()
+
+    def forward(self, x):
+        #y=-x
+        return singa.MultFloat(x, -1)
+
+    def backward(self, dy):
+        return singa.MultFloat(dy, -1)
+
+
+def negative(x):
+    return Negative()(x)[0]
