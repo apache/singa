@@ -36,6 +36,11 @@ AUX_SOURCE_DIRECTORY(core/scheduler core_source)
 AUX_SOURCE_DIRECTORY(core/tensor core_source)
 LIST(APPEND singa_sources ${core_source})
 
+IF (USE_DIST)
+    AUX_SOURCE_DIRECTORY(dist dist_source)
+    LIST(APPEND singa_sources ${dist_source})
+ENDIF (USE_DIST)
+
 IF (USE_CUDA)
     FILE(GLOB_RECURSE cuda_source core "*.cu")
     SET(FLAGS_BACKUP ${CMAKE_CXX_FLAGS})
