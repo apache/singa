@@ -345,4 +345,26 @@ namespace singa{
 
   Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
   Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
+
+  /* ============ Tensor Comprehensions ============ */
+  /* /root/incubator-singa/build/src/api/singa_wrap.cxx:14938:166: error: use of deleted function */
+  /* due to below issue, abort this approach
+  std::vector<Tensor> prepareOutputs(
+      const std::string& tc,
+      const std::string& entryPoint,
+      const std::vector<Tensor>& inputs);
+
+  template <typename Executor>
+  void runTC( const Executor& executor, const std::vector<Tensor>& inputs, std::vector<Tensor>& outputs);
+  %template(runTCCuda) runTC<tc::CudaTcExecutor>;
+
+  template <typename Backend>
+  std::unique_ptr<typename Backend::ExecutorType> compileTC(
+      const std::string& tc,
+      const std::string& entryPoint,
+      const std::vector<Tensor>& inputs,
+      const typename Backend::MappingOptionsType& options,
+      const tc::CompilerOptions& compilerOptions = tc::CompilerOptions());
+  %template(compileTCCuda) compileTC<tc::CudaBackend>;
+  */
 }

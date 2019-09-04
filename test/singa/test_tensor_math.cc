@@ -18,6 +18,22 @@
 
 #include "gtest/gtest.h"
 #include "singa/core/tensor.h"
+
+#include <iostream>
+
+// tensor comprehensions
+#include <tc/core/cuda/cuda_mapping_options.h>
+#include <ATen/ATen.h>
+#include <tc/examples/common.h>
+#include <tc/aten/aten.h>
+#include <tc/aten/aten_autotuner.h>
+#include <tc/aten/aten_compiler.h>
+#include <tc/autotuner/genetic_search.h>
+#include <tc/core/check.h>
+#include <tc/core/cuda/cuda_tc_executor.h>
+#include <tc/core/flags.h>
+// tensor comprehensions
+
 using singa::Tensor;
 using singa::Shape;
 using singa::Device;
@@ -39,6 +55,156 @@ class TensorMath : public ::testing::Test {
   const float dat1[6] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
   const float dat2[6] = {1.1f, 2.1f, 3.1f, 4.1f, 5.1f, 6.1f};
 };
+
+// tensor comprehensions starts
+// smoke test on ATen tensordot
+TEST_F(TensorMath, TCATenTensordot) {
+  std::string tc = R"TC(
+def tensordot(float(N, C1, C2, H, W) I0,
+              float(N, C2, C3, H, W) I1)  -> (O)
+{
+    O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
+}
+  )TC";
+
+  auto naiveOptions =
+      tc::CudaBackend::MappingOptionsType::makeNaiveMappingOptions();
+
+  at::Tensor I0 = makeATenTensor<tc::CudaBackend>({16, 8, 16, 17, 25});
+  at::Tensor I1 = makeATenTensor<tc::CudaBackend>({16, 16, 2, 17, 25});
+
+  auto pExecutor = tc::aten::compile<tc::CudaBackend>(tc, "tensordot", {I0, I1},
+                                                      {naiveOptions});
+  auto outputs = tc::aten::prepareOutputs(tc, "tensordot", {I0, I1});
+
+  tc::aten::run(*pExecutor, {I0, I1}, outputs);
+}
+
+// compare dlpack tensor conversion between aten, singa
+TEST_F(TensorMath, TCToDLPack) {
+  at::Tensor I0 = makeATenTensor<tc::CudaBackend>({3, 4, 5});
+  auto dl_target = at::toDLPack(I0);
+
+  auto cuda = std::make_shared<singa::CudaGPU>();
+  singa::Tensor t1(singa::Shape{3, 4, 5}, cuda);
+  t1.SetValue(1.1f);
+  auto dl_output = toDLPack(t1);
+
+  EXPECT_EQ(dl_target->dl_tensor.ndim, dl_output->dl_tensor.ndim);
+  EXPECT_EQ(dl_target->dl_tensor.dtype.code, dl_output->dl_tensor.dtype.code);
+  EXPECT_EQ(dl_target->dl_tensor.dtype.bits, dl_output->dl_tensor.dtype.bits);
+  EXPECT_EQ(dl_target->dl_tensor.dtype.lanes, dl_output->dl_tensor.dtype.lanes);
+  EXPECT_EQ(dl_target->dl_tensor.shape[0], dl_output->dl_tensor.shape[0]);
+  EXPECT_EQ(dl_target->dl_tensor.shape[1], dl_output->dl_tensor.shape[1]);
+  EXPECT_EQ(dl_target->dl_tensor.shape[2], dl_output->dl_tensor.shape[2]);
+  EXPECT_EQ(dl_target->dl_tensor.strides[0], dl_output->dl_tensor.strides[0]);
+  EXPECT_EQ(dl_target->dl_tensor.strides[1], dl_output->dl_tensor.strides[1]);
+  EXPECT_EQ(dl_target->dl_tensor.strides[2], dl_output->dl_tensor.strides[2]);
+  EXPECT_EQ(dl_target->dl_tensor.byte_offset, dl_output->dl_tensor.byte_offset);
+}
+
+TEST_F(TensorMath, TCTensordot) {
+  auto cuda = std::make_shared<singa::CudaGPU>();
+  singa::Tensor t1(singa::Shape{16, 8, 16, 17, 25}, cuda);
+  singa::Tensor t2(singa::Shape{16, 16, 2, 17, 25}, cuda);
+
+  t1.SetValue(1.1f);
+  t2.SetValue(1.2f);
+
+  std::string tc = R"TC(
+def tensordot(float(N, C1, C2, H, W) I0,
+              float(N, C2, C3, H, W) I1)  -> (O)
+{
+    O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
+}
+  )TC";
+
+  auto naiveOptions =
+      tc::CudaBackend::MappingOptionsType::makeNaiveMappingOptions();
+
+  auto pExecutor = singa::compileTC<tc::CudaBackend>(tc, "tensordot", {t1, t2},
+                                                     {naiveOptions});
+  auto outputs = singa::prepareOutputs(tc, "tensordot", {t1, t2});
+  singa::runTC(*pExecutor, {t1, t2}, outputs);
+}
+
+TEST_F(TensorMath, TCRelu) {
+  auto cuda = std::make_shared<singa::CudaGPU>();
+  singa::Tensor t1(singa::Shape{2, 2}, cuda);
+
+  const float dat1[4] = {-1.0f, 1.0f, -2.0f, 3.0f};
+  t1.CopyDataFromHostPtr<float>(dat1, 4);
+
+  auto o1 = ReluTC(t1).ToHost();
+  EXPECT_EQ(o1.shape(0), 2);
+  EXPECT_EQ(o1.shape(1), 2);
+  const float *dptr = o1.data<float>();
+  EXPECT_FLOAT_EQ(0.0f, dptr[0]);
+  EXPECT_FLOAT_EQ(1.0f, dptr[1]);
+  EXPECT_FLOAT_EQ(0.0f, dptr[2]);
+  EXPECT_FLOAT_EQ(3.0f, dptr[3]);
+}
+
+TEST_F(TensorMath, TCMatmul) {
+  auto cuda = std::make_shared<singa::CudaGPU>();
+  singa::Tensor t1(singa::Shape{2, 2}, cuda);
+  singa::Tensor t2(singa::Shape{2, 2}, cuda);
+  t1.SetValue(1.1f);
+  t2.SetValue(1.2f);
+
+  auto o1 = MatMulTC(t1, t2).ToHost();
+  EXPECT_EQ(o1.shape(0), 2);
+  EXPECT_EQ(o1.shape(1), 2);
+  const float *dptr = o1.data<float>();
+  EXPECT_FLOAT_EQ(2.64f, dptr[0]);
+  EXPECT_FLOAT_EQ(2.64f, dptr[1]);
+  EXPECT_FLOAT_EQ(2.64f, dptr[2]);
+  EXPECT_FLOAT_EQ(2.64f, dptr[3]);
+}
+
+TEST_F(TensorMath, TCFC) {
+  auto cuda = std::make_shared<singa::CudaGPU>();
+  singa::Tensor x(singa::Shape{2, 3}, cuda);
+  singa::Tensor W(singa::Shape{4, 3}, cuda);
+  singa::Tensor b(singa::Shape{4}, cuda);
+  x.SetValue(1.1f);
+  W.SetValue(1.2f);
+  b.SetValue(1.3f);
+
+  auto o1 = FCTC(x, W, b).ToHost();
+  EXPECT_EQ(o1.shape(0), 2);
+  EXPECT_EQ(o1.shape(1), 4);
+  const float *dptr = o1.data<float>();
+  EXPECT_FLOAT_EQ(5.26f, dptr[0]);
+  EXPECT_FLOAT_EQ(5.26f, dptr[1]);
+  EXPECT_FLOAT_EQ(5.26f, dptr[2]);
+  EXPECT_FLOAT_EQ(5.26f, dptr[3]);
+  EXPECT_FLOAT_EQ(5.26f, dptr[4]);
+  EXPECT_FLOAT_EQ(5.26f, dptr[5]);
+  EXPECT_FLOAT_EQ(5.26f, dptr[6]);
+  EXPECT_FLOAT_EQ(5.26f, dptr[7]);
+}
+
+TEST_F(TensorMath, TCSoftmax) {
+  auto cuda = std::make_shared<singa::CudaGPU>();
+  singa::Tensor t1(singa::Shape{1,2}, cuda);
+
+  const float dat1[2] = {1.0f, 2.0f};
+  t1.CopyDataFromHostPtr<float>(dat1, 2);
+
+  auto output=SoftMaxTC(t1);
+  output.ToHost();
+
+  auto optr1=output.data<float>();
+
+  EXPECT_EQ(output.shape(0), 1);
+  EXPECT_EQ(output.shape(1), 2);
+  const float *dptr1 = output.data<float>();
+  EXPECT_NEAR(0.26894142f, dptr1[0], 1e-5);
+  EXPECT_NEAR(0.73105858f, dptr1[1], 1e-5);
+}
+// Tensor comprehensions ends
+
 
 TEST_F(TensorMath, AbsCpp) {
   Tensor aa = a.Clone();
