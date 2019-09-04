@@ -18,11 +18,11 @@
 #ifndef SINGA_CORE_MATH_H_
 #define SINGA_CORE_MATH_H_
 #include <type_traits>
-#include <string> 
-#include <algorithm> 
-#include <sstream> 
-#include <iterator> 
-#include <iostream> 
+#include <string>
+#include <algorithm>
+#include <sstream>
+#include <iterator>
+#include <iostream>
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
 #include "singa/utils/logging.h"
@@ -55,30 +55,30 @@ namespace singa {
 /// 7. Use size_t for the number of elements, rows or columns.
 /// 8. Use the same name for the Tensor and Tensor level math functions.
 
-const std::string vec2str(const std::vector<int>& vec){
-  std::ostringstream vts; 
+const std::string vec2str(const std::vector<int>& vec) {
+  std::ostringstream vts;
   if (!vec.empty())  {
-  // Convert all but the last element to avoid a trailing "," 
-    std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(vts, ", ")); 
+    // Convert all but the last element to avoid a trailing ","
+    std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(vts, ", "));
   }
   return vts.str();
 }
 
-const std::string vec2str(const std::vector<size_t>& vec){
-  std::ostringstream vts; 
+const std::string vec2str(const std::vector<size_t>& vec) {
+  std::ostringstream vts;
   if (!vec.empty())  {
-  // Convert all but the last element to avoid a trailing "," 
-    std::copy(vec.begin(), vec.end(), std::ostream_iterator<size_t>(vts, ", ")); 
+    // Convert all but the last element to avoid a trailing ","
+    std::copy(vec.begin(), vec.end(), std::ostream_iterator<size_t>(vts, ", "));
   }
   return vts.str();
 }
-	  
-			                      
+
+
 
 // **************************************
 // // Element-wise functions
-// // Cpp tensors support multi-dimensional broadcasting; 
-// // Cuda supports unidirectional broadcasting, 
+// // Cpp tensors support multi-dimensional broadcasting;
+// // Cuda supports unidirectional broadcasting,
 // // i.e., the lhs and the output have the same shape
 // // **************************************
 
@@ -387,7 +387,7 @@ void GEMV(const DType alpha,
 /// if matrix_lef_side is true, do M*v; else do v*M
 template <typename DType, typename Lang>
 void DGMM(const bool side_right,
-  const Tensor &M, const Tensor &v, Tensor *out, Context *ctx) {
+          const Tensor &M, const Tensor &v, Tensor *out, Context *ctx) {
   LOG(FATAL) << "DGMM Not Implemented";
 }
 
@@ -398,6 +398,11 @@ void GEMM(const DType alpha,
           const Tensor &A, const Tensor &B, const DType beta, Tensor *C,
           Context *ctx) {
   LOG(FATAL) << "GEMM Not Implemented";
+}
+
+template <typename DType, typename Lang>
+void SoftMax(const Tensor &in, Tensor *out, Context* ctx) {
+  LOG(FATAL) << "Not Implemented";
 }
 
 //yisen todo
