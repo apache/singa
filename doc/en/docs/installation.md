@@ -65,11 +65,11 @@ Install Docker on your local host machine following the [instructions](https://d
 
 1. CPU-only. 
 
-       docker run -it apache/singa:nightly-cpu /bin/bash
+       docker run -it apache/singa:2.0.0-cpu /bin/bash
 
 2. With GPU enabled. Install [Nvidia-Docker](https://github.com/NVIDIA/nvidia-docker) after install Docker.
 
-        nvidia-docker run -it apache/singa:nightly-gpu /bin/bash
+        nvidia-docker run -it apache/singa:2.0.0-gpu /bin/bash
 
 3. For the complete list of SINGA Docker images (tags), visit the [docker hub site](https://hub.docker.com/r/apache/singa/). For each docker image, the tag is named as
         
@@ -81,7 +81,8 @@ Install Docker on your local host machine following the [instructions](https://d
     | `cpu` | the image cannot run on GPUs |  'cpu' |
     | `gpu` | the image can run on Nvidia GPUs| 'gpu', or 'cudax.x-cudnnx.x' e.g., 'cuda10.0-cudnn7.3'|
     | `devel`| indicator for development|if absent SINGA Python package is installed for runtime only; if present, the building environment is also created, you can recompile SINGA from source at '/root/incubator-singa'
-    |
+
+* Please note that using the nightly built images is not recommended excpet for SINGA development and testing. Using an official release is recommended. Official releases have version numbers such as '2.0.0' and '1.2.0'.
 
 ## From source
 
