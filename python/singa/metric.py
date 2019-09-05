@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 # =============================================================================
-'''This module includes a set of metric classes for evaluating the model's
+"""This module includes a set of metric classes for evaluating the model's
 performance. The specific metric classes could be converted from C++
 implmentation or implemented directly using Python.
 
@@ -24,16 +24,17 @@ Example usage::
 
     from singa import tensor
     from singa import metric
+    import numpy as np
 
     x = tensor.Tensor((3, 5))
     x.uniform(0, 1)  # randomly genearte the prediction activation
-    x = tensor.SoftMax(x)  # normalize the prediction into probabilities
+    x = tensor.Softmax(x)  # normalize the prediction into probabilities
     y = tensor.from_numpy(np.array([0, 1, 3], dtype=np.int))  # set the truth
 
     f = metric.Accuracy()
     acc = f.evaluate(x, y)  # averaged accuracy over all 3 samples in x
 
-'''
+"""
 from __future__ import division
 from __future__ import absolute_import
 
@@ -46,19 +47,19 @@ import numpy as np
 
 
 class Metric(object):
-    '''Base metric class.
+    """Base metric class.
 
     Subclasses that wrap the C++ loss classes can use the inherited foward,
     and evaluate functions of this base class. Other subclasses need
     to override these functions. Users need to feed in the **predictions** and
     ground truth to get the metric values.
-    '''
+    """
 
     def __init__(self):
         self.swig_metric = None
 
     def forward(self, x, y):
-        '''Compute the metric for each sample.
+        """Compute the metric for each sample.
 
         Args:
             x (Tensor): predictions, one row per sample
@@ -66,43 +67,42 @@ class Metric(object):
 
         Returns:
             a tensor of floats, one per sample
-        '''
-        return tensor.from_raw_tensor(
-            self.swig_metric.Forward(x.data, y.data))
+        """
+        return tensor.from_raw_tensor(self.swig_metric.Forward(x.data, y.data))
 
     def evaluate(self, x, y):
-        '''Compute the averaged metric over all samples.
+        """Compute the averaged metric over all samples.
 
         Args:
             x (Tensor): predictions, one row per sample
             y (Tensor): ground truth values, one row per sample
         Returns:
             a float value for the averaged metric
-        '''
+        """
         return self.swig_metric.Evaluate(x.data, y.data)
 
 
 class Accuracy(Metric):
-    '''Compute the top one accuracy for single label prediction tasks.
+    """Compute the top one accuracy for single label prediction tasks.
 
     It calls the C++ functions to do the calculation.
-    '''
+    """
 
     def __init__(self):
         self.swig_metric = singa.Accuracy()
 
 
 class Precision(Metric):
-    '''Make the top-k labels of max probability as the prediction
+    """Make the top-k labels of max probability as the prediction
 
     Compute the precision against the groundtruth labels
-    '''
+    """
 
     def __init__(self, top_k):
         self.top_k = top_k
 
     def forward(self, x, y):
-        '''Compute the precision for each sample.
+        """Compute the precision for each sample.
 
         Convert tensor to numpy for computation
 
@@ -112,7 +112,7 @@ class Precision(Metric):
 
         Returns:
             a tensor of floats, one per sample
-        '''
+        """
 
         dev = x.device
         x.to_host()
@@ -122,7 +122,7 @@ class Precision(Metric):
         y_np = tensor.to_numpy(y)
 
         # Sort in descending order
-        pred_np = np.argsort(-x_np)[:, 0:self.top_k]
+        pred_np = np.argsort(-x_np)[:, 0 : self.top_k]
 
         prcs_np = np.zeros(pred_np.shape[0], dtype=np.float32)
 
@@ -143,29 +143,29 @@ class Precision(Metric):
         return precision
 
     def evaluate(self, x, y):
-        '''Compute the averaged precision over all samples.
+        """Compute the averaged precision over all samples.
 
         Args:
             x (Tensor): predictions, one row per sample
             y (Tensor): ground truth values, one row per sample
         Returns:
             a float value for the averaged metric
-        '''
+        """
 
         return tensor.average(self.forward(x, y))
 
 
 class Recall(Metric):
-    '''Make the top-k labels of max probability as the prediction
+    """Make the top-k labels of max probability as the prediction
 
     Compute the recall against the groundtruth labels
-    '''
+    """
 
     def __init__(self, top_k):
         self.top_k = top_k
 
     def forward(self, x, y):
-        '''Compute the recall for each sample.
+        """Compute the recall for each sample.
 
         Convert tensor to numpy for computation
 
@@ -175,7 +175,7 @@ class Recall(Metric):
 
         Returns:
             a tensor of floats, one per sample
-        '''
+        """
 
         dev = x.device
         x.to_host()
@@ -185,7 +185,7 @@ class Recall(Metric):
         y_np = tensor.to_numpy(y)
 
         # Sort in descending order
-        pred_np = np.argsort(-x_np)[:, 0:self.top_k]
+        pred_np = np.argsort(-x_np)[:, 0 : self.top_k]
 
         recall_np = np.zeros(pred_np.shape[0], dtype=np.float32)
 
@@ -206,13 +206,13 @@ class Recall(Metric):
         return recall
 
     def evaluate(self, x, y):
-        '''Compute the averaged precision over all samples.
+        """Compute the averaged precision over all samples.
 
         Args:
             x (Tensor): predictions, one row per sample
             y (Tensor): ground truth values, one row per sample
         Returns:
             a float value for the averaged metric
-        '''
+        """
 
         return tensor.average(self.forward(x, y))

@@ -39,9 +39,7 @@ Example usage::
     dev = device.get_default_device()
     x.to_device(dev)  # move the data to a gpu device
 
-    r = tensor.relu(x)
-
-    s = tensor.to_numpy(r)  # tensor -> numpy array
+    s = tensor.to_numpy(x)  # tensor -> numpy array
 
 There are two sets of tensor functions,
 
@@ -87,10 +85,10 @@ class Tensor(object):
                      grad but not store grad; But if a tensor stores grad
                      then it must require grad.
     '''
-
+    tensor_count = 0
     def __init__(self, shape=(), device=None, dtype=float32,
                  data=None, requires_grad=True, stores_grad=False,
-                 creator=None):
+                 creator=None,name=None):
         if device is None:
             device = get_default_device()
         if isinstance(data, np.ndarray):
@@ -107,9 +105,14 @@ class Tensor(object):
         self.dtype = self.data.data_type()
         self.requires_grad = requires_grad
         self.stores_grad = stores_grad
+        if name is None:
+            self.name = 'Dummy#{}'.format(Tensor.tensor_count)
+            Tensor.tensor_count += 1
+        else:
+            self.name = name
         if creator is None:
             from . import autograd
-            self.creator = autograd.Dummy(self)
+            self.creator = autograd.Dummy(self,name)
         else:
             self.creator = creator
 
@@ -465,7 +468,7 @@ class Tensor(object):
             self.data *= float(x)
         return self
 
-    def __idiv__(self, x):
+    def __itruediv__(self, x):
         ''' inplace element-wise division by a tensor or a float value.
 
         Args:

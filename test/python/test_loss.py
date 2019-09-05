@@ -57,7 +57,7 @@ class TestLoss(unittest.TestCase):
         l2 = sqe.evaluate(True, self.x, self.y)
 
         l = 0.5 * (self.y_np - self.x_np) ** 2
-        self.assertAlmostEqual(l1.l1(), l2)
+        self.assertAlmostEqual(l1.l1(), tensor.to_numpy(l2).flatten()[0])
         self.assertAlmostEqual(l1.l1(), np.average(l))
         
     def test_softmax_cross_entropy(self):

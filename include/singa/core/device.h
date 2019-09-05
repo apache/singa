@@ -24,6 +24,7 @@
 #include <string>
 #include <functional>
 #include <memory>
+#include <mutex>
 
 #include "singa/singa_config.h"
 #include "singa/core/common.h"
@@ -38,6 +39,10 @@
 #ifdef USE_OPENCL
 #include "singa/utils/opencl_utils.h"
 #endif // USE_OPENCL
+
+#ifdef USE_MKLDNN
+#include "singa/utils/mkldnn_utils.h"
+#endif  // USE_MKLDNN
 
 using std::vector;
 using std::string;
@@ -141,7 +146,7 @@ extern std::shared_ptr<Device> defaultDevice;
 /// It runs cpp code.
 class CppCPU : public Device {
  public:
-  ~CppCPU() {};
+  ~CppCPU();
   CppCPU();
 
   std::shared_ptr<Device> host() const override { return defaultDevice;}
@@ -291,7 +296,8 @@ public:
   /// Create a set of CudaGPU Device using given GPU IDs.
   static const std::vector<std::shared_ptr<Device>>
   CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
-  
+
+  static std::vector<std::shared_ptr<Device> > UsedDevice;
   /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
   /// This function checks the availability of GPU #device_id.
   /// It attempts to create a context on the device by calling cudaFree(0).
@@ -307,6 +313,7 @@ public:
   /// the permission. cudaFree(0) is one of those with no side effect,
   /// except the context initialization.
   static bool CheckDevice(const int device_id);
+  static std::mutex mtx_;
 #endif // USE_CUDA
 
 #ifdef USE_OPENCL

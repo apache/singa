@@ -16,23 +16,60 @@
     specific language governing permissions and limitations
     under the License.
 -->
-# SINGA Docker Images
-
-## Availabe images
+# Docker Images
 
 
-| Tag | OS version | devel/runtime | Device|CUDA/CUDNN|Python|
-|:----|:-----------|:--------------|:------|:---------|:-----|
-|runtime| Ubuntu16.04|runtime|CPU|-|3.6|
-|conda-cuda9.0| Ubuntu16.04|devel|GPU|CUDA9.0+CUDNN7.1.2|3.6|
-|cuda9.0-py2| Ubuntu16.04|devel|GPU|CUDA9.0+CUDNN7.1.2|2.7|
-|cuda9.0-py3| Ubuntu16.04|devel|GPU|CUDA9.0+CUDNN7.1.2|3.6|
+## Available tags
 
-runtime and conda-xxx image has installed miniconda3;
-cudaxxx images have installed all depedent libs using apt-get.
+* `devel`, with SINGA and the development packages installed on Ubuntu16.04 (no GPU)
+* `devel-cuda`, with SINGA, CUDA8.0, CUDNN5, and other development packages installed on Ubuntu16.04
 
-## Usage
+## Use the existing Docker images
 
-    docker pull nusdbsystem/singa:<Tag>
-    docker run -it nusdbsystem/singa:<Tag> /bin/bash
-    nvidia-docker run -it nusdbsystem/singa:<Tag> /bin/bash
+Users can pull the Docker images from Dockerhub via
+
+    docker pull apache/singa:1.2.0-cpu-devel-ubuntu18.04 
+    # or
+    docker pull apache/singa:1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04
+    
+    For more versions see [here](https://hub.docker.com/r/apache/singa/tags)
+
+Run the docker container using
+
+    docker run -it apache/singa:1.2.0-cpu-devel-ubuntu18.04 /bin/bash
+    # or
+    docker run -it apache/singa:1.2.0-cuda10.0-cudnn7.4.2-devel-ubuntu18.04 /bin/bash
+
+The latest SINGA code is under the `incubator-singa` folder.
+
+***Warning*** The code will be under root/incubator-singa for 1.2.0-cpu-devel-ubuntu18.04.
+
+## Create new Docker images from Dockerfile
+
+New Docker images could be created by executing the following command within the
+Dockerfile folder, e.g., tool/docker/devel/
+
+    docker build -t singa:<TAG> -f Dockerfile
+
+The `<TAG>` is named as
+
+    devel|runtime[-CUDA|CPU][-CUDNN]
+
+* devel: development images with all dependent libs' header files installed and SINGA's source code; runtime: the minimal images which can run SINGA programs.
+* CUDA: cuda10.0, cuda9.0
+* CUDNN: cudnn7
+
+Here are some example tags:
+
+`devel-cuda9-cudnn7`, `devel-cuda9-cudnn7`, `devel-cuda10-cudnn7`, `devel-cpu`, `runtime-gpu` and `runtime-cpu`
+
+
+Please follow the existing Dockefiles under tool/docker/ to create other Dockefiles.
+The folder structure is like
+
+    level1: devel|runtime
+    level2: Dockerfile, OS
+    level3: Dockerfile, CUDA|MKLDNN
+
+
+For example, the path of the Dockerfile for `devel-cuda9-cudnn7` is `tool/docker/devel/ubuntu/cuda9/Dockerfile`.

@@ -103,20 +103,21 @@ class Tensor {
 
   bool empty() const { return nDim() == 0; }
 
-  /// Check if the tensor's last stride==1
+  /// The stride should decrease except dim with stride=0 due to broadcasting
   bool transpose() const {
-    if (!strides_.empty()) {
-      auto last = strides_.front();
-      for (auto s : strides_) {
-        if (s > last)
+    if (!stride_.empty()) {
+      auto last = stride_.front();
+      for (auto s : stride_) {
+        if (s > last && last > 0)  
           return true;
-        last = s;
+        if (s > 0)
+          last = s;
       }
     }
     return false;
   }
 
-  const vector<int>& strides() const { return strides_; }
+  const vector<int>& stride() const { return stride_; }
 
   /// Return true if the content of the tensor is initialized
   bool initailized() const {
@@ -136,11 +137,7 @@ class Tensor {
   /// used for swig code to convert Tensor into numpy array.
   /// It gets data into 'value'
   template <typename SType>
-  void GetValue(SType *value, const size_t num) {
-    CHECK(device_ == defaultDevice);
-    const SType* ptr = data<SType>();
-    for (size_t i = 0; i < num; i++) value[i] = ptr[i];
-  }
+  void GetValue(SType *value, const size_t num);
 
   /// Serialize data, shape and transpose to protobuf object.
   void ToProto(singa::TensorProto *proto) const;
@@ -151,29 +148,12 @@ class Tensor {
   /// Return average L2 norm
   float L2() const;
   // --------------------------------------------------------------------------
-  // ---Following methods changes the internal members
+  // ---Following methods changes the internal data
   // --------------------------------------------------------------------------
-
-  /// Reset the shape, device, and data type as given tensor.
-  /// If block size changes, then reallocate a new block.
-  /// The previous block would be deleted.
-  void ResetLike(const Tensor &t);
-
-  /// Reset the data type, it would reallocate block if type changes.
-  void AsType(const DataType type);
-
-  /// Reset the device.
-  /// If the target device is a diff device, then do deep data copy.
-  void ToDevice(std::shared_ptr<Device> dev);
-
-  /// Equivalent to ToDevice(host_dev).
-  void ToHost();
 
   /// Set each element of the tensor to be x
   template <typename SType>
   void SetValue(const SType x);
-
-  void SetShape(const Shape& shape);
 
   /// For init the tensor values, copy 'num' elements from 'src' to the internal
   /// memory with 'offset' (elements).
@@ -242,6 +222,10 @@ class Tensor {
   /// change the shape (and stride); the block may be reallocated.
   Tensor &Reshape(const Shape &shape);
 
+
+  /// Resize the memory and return itself
+  Tensor& Resize(const Shape& shape);
+
   /// Matrix transpose.  Valid only if shape.size() == 2.
   Tensor& T();
 
@@ -251,13 +235,32 @@ class Tensor {
   /// Change the axes
   Tensor& Transpose(const vector<size_t> &axes);
 
+  /// Return a view of the input tensor whose shape is broadcasted to be
+  /// compitable with the given shape
+  Tensor& Broadcast(const Shape& shape);
+
+  /// Reset the shape, device, and data type as given tensor.
+  /// If block size changes, then reallocate a new block.
+  /// The previous block would be deleted.
+  Tensor& ResetLike(const Tensor &t);
+
+  /// Reset the data type, it would reallocate block if type changes.
+  Tensor& AsType(const DataType type);
+
+  /// Reset the device.
+  /// If the target device is a diff device, then do deep data copy.
+  Tensor& ToDevice(std::shared_ptr<Device> dev);
+
+  /// Equivalent to ToDevice(host_dev).
+  Tensor& ToHost();
+
  protected:
 
   //generate strides automatically if stride field is not passed
-  void generate_strides() {
-    strides_.clear();
+  void generate_stride() {
+    stride_.clear();
     if (shape_.size() == 0) {
-      strides_.push_back(1);
+      stride_.push_back(1);
       return;
     }
 
@@ -265,12 +268,12 @@ class Tensor {
     int cumulative_product = 1;
     for (size_t n = 0; n < shape_.size(); ++n) {
       cumulative_product = cumulative_product * shape_[n];
-      strides_.push_back(dim / cumulative_product);
+      stride_.push_back(dim / cumulative_product);
     }
   }
 
   void set_strides(const vector<int> new_strides) {
-    strides_ = new_strides;
+    stride_ = new_strides;
   }
 
  protected:
@@ -280,7 +283,7 @@ class Tensor {
   /// If you want to get an allocated Block, use block() instead of block_.
   Block *block_ = nullptr;
   Shape shape_ = {};
-  vector<int> strides_ = {};
+  vector<int> stride_ = {};
 }; //end of tensor class
 
 
@@ -306,13 +309,20 @@ ToType TypeCast(const FromType &x) {
   return static_cast<ToType>(x);
 }
 
+Tensor Boradcast(const Shape& shape);
 
-/// Reshape the given tensor and generate a new tensor,
+/// Reshape the given tensor and generate a new tensor; the total vol should match
 /// which shares the memory with in if possible
 Tensor Reshape(const Tensor &in, const Shape &s);
 
+Tensor Resize(const Tensor &in, const Shape &s);
+
 /// Reverse the shape vector
 Tensor Transpose(const Tensor& in);
+
+/// Return a view of the input tensor whose shape is broadcasted to be
+/// compitable with the given shape
+Tensor Broadcast(const Tensor& in, const Shape& shape);
 
 /// Change the axes
 Tensor Transpose(const Tensor& in, const vector<size_t> &axes);
@@ -335,7 +345,18 @@ Tensor Sigmoid(const Tensor &in);
 Tensor Sign(const Tensor &in);
 Tensor Sqrt(const Tensor &in);
 Tensor Square(const Tensor &in);
+Tensor Cos(const Tensor &in);
+Tensor Cosh(const Tensor &in);
+Tensor Acos(const Tensor &in);
+Tensor Acosh(const Tensor &in);
+Tensor Sin(const Tensor &in);
+Tensor Sinh(const Tensor &in);
+Tensor Asin(const Tensor &in);
+Tensor Asinh(const Tensor &in);
+Tensor Tan(const Tensor &in);
 Tensor Tanh(const Tensor &in);
+Tensor Atan(const Tensor &in);
+Tensor Atanh(const Tensor &in);
 Tensor Transform(const Tensor &in);
 
 void Abs(const Tensor &in, Tensor *out);
@@ -346,7 +367,18 @@ void Sigmoid(const Tensor &in, Tensor *out);
 void Sign(const Tensor &in, Tensor *out);
 void Sqrt(const Tensor &in, Tensor *out);
 void Square(const Tensor &in, Tensor *out);
+void Cos(const Tensor &in, Tensor *out);
+void Cosh(const Tensor &in, Tensor *out);
+void Acos(const Tensor &in, Tensor *out);
+void Acosh(const Tensor &in, Tensor *out);
+void Sin(const Tensor &in, Tensor *out);
+void Sinh(const Tensor &in, Tensor *out);
+void Asin(const Tensor &in, Tensor *out);
+void Asinh(const Tensor &in, Tensor *out);
+void Tan(const Tensor &in, Tensor *out);
 void Tanh(const Tensor &in, Tensor *out);
+void Atan(const Tensor &in, Tensor *out);
+void Atanh(const Tensor &in, Tensor *out);
 void Transform(const Tensor &in, Tensor *out);
 
 /// Element-wise opeartion, out[i]=in[i]^x

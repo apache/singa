@@ -1,3 +1,23 @@
+/*********************************************************
+*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*
+************************************************************/
 #ifndef SINGA_MODEL_OPERATION_CONVOLUTION_H_
 #define SINGA_MODEL_OPERATION_CONVOLUTION_H_
 
@@ -12,16 +32,21 @@
 #include "../layer/cudnn_utils.h"
 #endif // USE_CUDNN
 
+#ifdef USE_MKLDNN
+#include <mkldnn.hpp>
+#endif // USE_MKLDNN
 
 namespace singa {
 
 class ConvHandle {
 
-public:
+ public:
   ConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
              const std::vector<size_t>& stride, const std::vector<size_t>& padding,
              const size_t in_channels, const size_t out_channels,
-             const bool bias);
+             const bool bias, const size_t groups = 1);
+
+  ~ConvHandle();
 
   size_t kernel_w;
   size_t pad_w;
@@ -32,6 +57,7 @@ public:
 
   size_t channels;
   size_t num_filters;
+  size_t group;
 
   bool bias_term;
 
@@ -44,6 +70,25 @@ public:
   size_t col_height;
   size_t col_width;
   size_t imagesize;
+
+#ifdef USE_MKLDNN
+  mkldnn::memory::data_type dtype;
+  mkldnn::memory::dims b_dims;
+  mkldnn::memory::dims s_dims;
+  mkldnn::memory::dims p_dims;
+  mkldnn::memory::dims x_dims;
+  mkldnn::memory::dims o_dims;
+  mkldnn::memory::dims w_dims;
+
+  const mkldnn::memory::desc *x_md = nullptr;
+  const mkldnn::memory::desc *w_md = nullptr;
+  const mkldnn::memory::desc *b_md = nullptr;
+  const mkldnn::memory::desc *y_md = nullptr;
+  const mkldnn::convolution_forward::desc *conv_d = nullptr;
+  const mkldnn::convolution_forward::primitive_desc *conv_pd = nullptr;
+
+  const Tensor *db = nullptr;
+#endif // USE_MKLDNN
 };
 
 
@@ -59,7 +104,7 @@ Tensor CpuConvBackwardb(const Tensor &dy, const Tensor &b, const ConvHandle &ch)
 
 #ifdef USE_CUDNN
 class CudnnConvHandle: public ConvHandle {
-public:
+ public:
   CudnnConvHandle(const Tensor &input, const std::vector<size_t>& kernel_size,
                   const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                   const size_t in_channels, const size_t out_channels,
@@ -79,6 +124,7 @@ public:
 
   size_t workspace_count;
   Tensor workspace;
+  size_t channels_per_filter;
 };
 
 Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b, const CudnnConvHandle &cch);

@@ -19,10 +19,15 @@
 #define SINGA_CORE_TENSOR_TENSOR_MATH_CPP_H_
 
 #include "./tensor_math.h"
+//#include "./stacktrace.h"
 #include <cfloat>
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
 #include <math.h>
+#include <algorithm>
+#include <sstream>
+#include <iterator>
+#include <iostream>
 
 #ifdef USE_CBLAS
 #include <cblas.h>
@@ -103,13 +108,28 @@ void traverse_next(const Tensor& x,
   update_base_index(x, traversal_info);
   traversal_info[x.shape().size() + 1] = determine_order(shape_multipliers, counter);
   traversal_info[x.shape().size()] = traversal_info[traversal_info[x.shape().size() + 1]] +
-                                     x.strides()[x.strides().size() - traversal_info[x.shape().size() + 1] - 1];
+                                     x.stride()[x.stride().size() - traversal_info[x.shape().size() + 1] - 1];
 };
 
+inline int next_offset(int offset, const vector<size_t>& shape, const vector<int>& stride, vector<int> *index) {
+  for (int k = shape.size() - 1; k >= 0; k--) {
+    if (index->at(k) + 1 < int(shape.at(k))) {
+      offset += stride.at(k);
+      index->at(k) += 1;
+      break;
+    }
+    index->at(k) = 0;
+    offset -= stride.at(k) * (shape.at(k) - 1);
+  }
+  return offset;
+}
+
 template <typename DType>
-void traverse_unary(const Tensor &in, Tensor* out, std::function<DType(DType)> func) {
+void traverse_unary(const Tensor & in, Tensor * out, std::function<DType(DType)> func) {
+
   DType *outPtr = static_cast<DType *>(out->block()->mutable_data());
   const DType *inPtr = static_cast<const DType *>(in.block()->data());
+  /*
   vector<int> traversal_info = generate_traversal_info(in);
   vector<int> shape_multipliers = generate_shape_multipliers(in);
 
@@ -117,14 +137,31 @@ void traverse_unary(const Tensor &in, Tensor* out, std::function<DType(DType)> f
     outPtr[i] = func(inPtr[traversal_info[in.shape().size()]]);
     traverse_next(in, shape_multipliers, traversal_info, i + 1);
   }
+  */
+  CHECK(in.shape() == out->shape());
+  if (in.stride() == out->stride()) {
+    for (size_t i = 0; i < in.Size(); i++)
+      outPtr[i] = func(inPtr[i]);
+  } else {
+    LOG(INFO) << "not equal stride";
+    size_t in_offset = 0, out_offset = 0;
+    vector<int> in_idx(in.nDim(), 0), out_idx(out->nDim(), 0);
+    for (size_t i = 0; i < Product(in.shape()); i++) {
+      outPtr[out_offset] = func(inPtr[in_offset]);
+      out_offset = next_offset(out_offset, out->shape(), out->stride(), &out_idx);
+      in_offset = next_offset(in_offset, in.shape(), in.stride(), &in_idx);
+    }
+  }
 }
+
 
 template <typename DType>
 void traverse_binary(const Tensor &in1, const Tensor &in2, Tensor* out,
-                    std::function<DType(DType, DType)> func) {
+                     std::function<DType(DType, DType)> func) {
   DType *outPtr = static_cast<DType *>(out->block()->mutable_data());
   const DType *in1Ptr = static_cast<const DType *>(in1.block()->data());
   const DType *in2Ptr = static_cast<const DType *>(in2.block()->data());
+  /*
   vector<int> traversal_info_in1 = generate_traversal_info(in1);
   vector<int> traversal_info_in2 = generate_traversal_info(in2);
   vector<int> shape_multipliers_in1 = generate_shape_multipliers(in1);
@@ -135,6 +172,41 @@ void traverse_binary(const Tensor &in1, const Tensor &in2, Tensor* out,
                      in2Ptr[traversal_info_in2[in2.shape().size()]]);
     traverse_next(in1, shape_multipliers_in1, traversal_info_in1, i + 1);
     traverse_next(in2, shape_multipliers_in2, traversal_info_in2, i + 1);
+  }
+  */
+  auto prod = Product(in1.shape());
+  CHECK(in1.shape() == out->shape());
+  CHECK(in2.shape() == out->shape());
+  if ((in1.stride() == out->stride()) && (in2.stride() == in1.stride())) {
+    for (size_t i = 0; i < prod; i++)
+      outPtr[i] = func(in1Ptr[i], in2Ptr[i]);
+  } else {
+    /*
+    LOG(INFO) << "not equal stride";
+    std::ostringstream s1, s2, s3, s4, s5, s6;
+    std::copy(in1.stride().begin(), in1.stride().end(), std::ostream_iterator<int>(s1, ", "));
+    std::copy(in2.stride().begin(), in2.stride().end(), std::ostream_iterator<int>(s2, ", "));
+    std::copy(out->stride().begin(), out->stride().end(), std::ostream_iterator<int>(s3, ", "));
+
+    std::copy(in1.shape().begin(), in1.shape().end(), std::ostream_iterator<int>(s4, ", "));
+    std::copy(in2.shape().begin(), in2.shape().end(), std::ostream_iterator<int>(s5, ", "));
+    std::copy(out->shape().begin(), out->shape().end(), std::ostream_iterator<int>(s6, ", "));
+
+    LOG(INFO) << s1.str() << ": " << s4.str();
+    LOG(INFO) << s2.str() << ": " << s5.str();
+    LOG(INFO) << s3.str() << ": " << s6.str();
+    LOG(INFO) << Backtrace();
+    */
+
+    size_t in1_offset = 0, in2_offset = 0, out_offset = 0;
+    vector<int> in1_idx(in1.nDim(), 0), in2_idx(in2.nDim(), 0), out_idx(out->nDim(), 0);
+    for (size_t i = 0; i < prod; i++) {
+      outPtr[out_offset] = func(in1Ptr[in1_offset], in2Ptr[in2_offset]);
+      out_offset = next_offset(out_offset, out->shape(), out->stride(), &out_idx);
+      in1_offset = next_offset(in1_offset, in1.shape(), in1.stride(), &in1_idx);
+      in2_offset = next_offset(in2_offset, in2.shape(), in2.stride(), &in2_idx);
+      // LOG(INFO) <<  in1_offset << ", " << in2_offset << ", " << out_offset;
+    }
   }
 }
 
@@ -182,35 +254,15 @@ void Clamp<float, lang::Cpp>(const float low, const float high,
 template <>
 void Div<float, lang::Cpp>(const float x, const Tensor& in, Tensor* out,
                            Context *ctx) {
-  const float *inPtr = static_cast<const float *>(in.block()->data());
-  float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  vector<int> traversal_info = generate_traversal_info(in);
-  vector<int> shape_multipliers = generate_shape_multipliers(in);
-
-  for (size_t i = 0; i < in.Size(); i++) {
-    CHECK_NE(inPtr[traversal_info[in.shape().size()]], 0.f);
-    outPtr[i] = x / inPtr[traversal_info[in.shape().size()]];
-    traverse_next(in, shape_multipliers, traversal_info, i + 1);
-  }
+  auto const_div = [&x](float a) {CHECK_NE(a, 0.f); return x / a;};
+  traverse_unary<float>(in, out, const_div);
 }
 
 template <>
 void Div<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
                            Tensor* out, Context *ctx) {
-  float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  const float *in1Ptr = static_cast<const float *>(in1.block()->data());
-  const float *in2Ptr = static_cast<const float *>(in2.block()->data());
-  vector<int> traversal_info_in1 = generate_traversal_info(in1);
-  vector<int> traversal_info_in2 = generate_traversal_info(in2);
-  vector<int> shape_multipliers_in1 = generate_shape_multipliers(in1);
-  vector<int> shape_multipliers_in2 = generate_shape_multipliers(in2);
-
-  for (size_t i = 0; i < in1.Size(); i++) {
-    CHECK_NE(in2Ptr[traversal_info_in2[in2.shape().size()]], 0.f);
-    outPtr[i] = in1Ptr[traversal_info_in1[in1.shape().size()]] / in2Ptr[traversal_info_in2[in2.shape().size()]];
-    traverse_next(in1, shape_multipliers_in1, traversal_info_in1, i + 1);
-    traverse_next(in2, shape_multipliers_in2, traversal_info_in2, i + 1);
-  }
+  auto binary_div = [](float a, float b) {CHECK_NE(b, 0.f); return a / b;};
+  traverse_binary<float>(in1, in2, out, binary_div);
 }
 
 template <>
@@ -293,16 +345,8 @@ void LE<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
 template <>
 void Log<float, lang::Cpp>(const Tensor& in, Tensor* out,
                            Context *ctx) {
-  float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  const float *inPtr = static_cast<const float *>(in.block()->data());
-  vector<int> traversal_info = generate_traversal_info(in);
-  vector<int> shape_multipliers = generate_shape_multipliers(in);
-
-  for (size_t i = 0; i < in.Size(); i++) {
-    CHECK_GT(inPtr[traversal_info[in.shape().size()]], 0.f);
-    outPtr[i] = log(inPtr[traversal_info[in.shape().size()]]);
-    traverse_next(in, shape_multipliers, traversal_info, i + 1);
-  }
+  auto ulog = [](float a) {CHECK_GT(a, 0.f); return log(a);};
+  traverse_unary<float>(in, out, ulog);
 }
 
 template <>
@@ -382,16 +426,8 @@ void Sign<float, lang::Cpp>(const Tensor& in, Tensor* out,
 template <>
 void Sqrt<float, lang::Cpp>(const Tensor& in, Tensor* out,
                             Context *ctx) {
-  float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  const float *inPtr = static_cast<const float *>(in.block()->data());
-  vector<int> traversal_info = generate_traversal_info(in);
-  vector<int> shape_multipliers = generate_shape_multipliers(in);
-
-  for (size_t i = 0; i < in.Size(); i++) {
-    CHECK_GE(inPtr[traversal_info[in.shape().size()]], 0.f);
-    outPtr[i] = sqrt(inPtr[traversal_info[in.shape().size()]]);
-    traverse_next(in, shape_multipliers, traversal_info, i + 1);
-  }
+  auto usqrt = [](float a) {CHECK_GE(a, 0.f); return sqrt(a);};
+  traverse_unary<float>(in, out, usqrt);
 }
 
 template <>
@@ -417,27 +453,34 @@ void Sum<float, lang::Cpp>(const Tensor& in, float *out,
   *out = s;
 }
 
-template <>
-void Tanh<float, lang::Cpp>(const Tensor& in, Tensor* out,
-                            Context *ctx) {
-  auto tanh_lambda = [](float a) {
-    return tanh(a);
-  };
-  traverse_unary<float>(in, out, tanh_lambda);
-}
+#define GenUnaryTensorCppFn(fn,cppfn)                         \
+  template <>                                                 \
+  void fn<float, lang::Cpp>(const Tensor& in, Tensor* out,    \
+                              Context *ctx) {                 \
+    auto fn_lambda = [](float a) {                            \
+      return cppfn(a);                                        \
+    };                                                        \
+    traverse_unary<float>(in, out, fn_lambda);                \
+  }
+
+GenUnaryTensorCppFn(Cos,cos);
+GenUnaryTensorCppFn(Cosh,cosh);
+GenUnaryTensorCppFn(Acos,acos);
+GenUnaryTensorCppFn(Acosh,acosh);
+GenUnaryTensorCppFn(Sin,sin);
+GenUnaryTensorCppFn(Sinh,sinh);
+GenUnaryTensorCppFn(Asin,asin);
+GenUnaryTensorCppFn(Asinh,asinh);
+GenUnaryTensorCppFn(Tan,tan);
+GenUnaryTensorCppFn(Tanh,tanh);
+GenUnaryTensorCppFn(Atan,atan);
+GenUnaryTensorCppFn(Atanh,atanh);
 
 template <>
 void Transform<float, lang::Cpp>(const Tensor& in, Tensor* out,
-                            Context *ctx) {
-  float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  const float *inPtr = static_cast<const float *>(in.block()->data());
-  vector<int> traversal_info = generate_traversal_info(in);
-  vector<int> shape_multipliers = generate_shape_multipliers(in);
-
-  for (size_t i = 0; i < in.Size(); i++) {
-    outPtr[i] = inPtr[traversal_info[in.shape().size()]];
-    traverse_next(in, shape_multipliers, traversal_info, i + 1);
-  }
+                                 Context *ctx) {
+  auto identity = [](float a) {return a;};
+  traverse_unary<float>(in, out, identity);
 }
 
 template <>
@@ -482,23 +525,23 @@ void DGMM<float, lang::Cpp>(const bool side_right,
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
   const size_t nrow = M.shape(0);
   const size_t ncol = M.shape(1);
-  vector<int> traversal_info = generate_traversal_info(M);
-  vector<int> shape_multipliers = generate_shape_multipliers(M);
 
   if (side_right) {
     for (size_t r = 0; r < nrow; r++) {
-      size_t offset = r * ncol;
+      size_t in_offset = M.stride()[0] * r, out_offset = out->stride()[0] * r;
       for (size_t c = 0; c < ncol; c++) {
-        outPtr[traversal_info[M.shape().size()]] = MPtr[traversal_info[M.shape().size()]] * vPtr[c];
-        traverse_next(M, shape_multipliers, traversal_info, offset + c + 1);
+        outPtr[out_offset] = MPtr[in_offset] * vPtr[c];
+        in_offset += M.stride()[1];
+        out_offset += out->stride()[1];
       }
     }
   } else {
     for (size_t r = 0; r < nrow; r++) {
-      size_t offset = r * ncol;
+      size_t in_offset = M.stride()[0] * r, out_offset = out->stride()[0] * r;
       for (size_t c = 0; c < ncol; c++) {
-        outPtr[traversal_info[M.shape().size()]] = MPtr[traversal_info[M.shape().size()]] * vPtr[r];
-        traverse_next(M, shape_multipliers, traversal_info, offset + c + 1);
+        outPtr[out_offset] = MPtr[in_offset] * vPtr[r];
+        in_offset += M.stride()[1];
+        out_offset += out->stride()[1];
       }
     }
   }
@@ -524,7 +567,7 @@ void Asum<float, lang::Cpp>(const Tensor& in, float *out,
 // void Axpy<float, lang::Cpp>(const float alpha,
 //                             const Tensor& in, Tensor *out, Context *ctx) {
 //   //check input tensor for strides first
-//   if (in.strides() == out->strides()) {
+//   if (in.stride() == out->stride()) {
 //     const float *inPtr = static_cast<const float *>(in.block()->data());
 //     float *outPtr = static_cast<float *>(out->block()->mutable_data());
 //     cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
@@ -541,7 +584,7 @@ void Axpy<float, lang::Cpp>(const float alpha,
   const float *inPtr = static_cast<const float *>(in.block()->data());
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
 
-  if (in.strides() == out->strides()) {
+  if (in.stride() == out->stride()) {
     cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
   } else {
     //LOG(FATAL) << "Axpy, input and output strides do not match." ;
@@ -556,7 +599,7 @@ void Axpy<float, lang::Cpp>(const float alpha,
 // void Axpy<float, lang::Cpp>(const float alpha,
 //                            const Tensor& in, Tensor *out, Context *ctx) {
 //  //check input tensor for strides first
-//  if (in.strides() == out->strides()) {
+//  if (in.stride() == out->stride()) {
 //    const float *inPtr = static_cast<const float *>(in.block()->data());
 //    float *outPtr = static_cast<float *>(out->block()->mutable_data());
 //    cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);

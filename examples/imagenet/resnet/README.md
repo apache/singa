@@ -16,18 +16,12 @@
     specific language governing permissions and limitations
     under the License.
 -->
----
-name: Resnets on ImageNet
-SINGA version: 1.1
-SINGA commit: 45ec92d8ffc1fa1385a9307fdf07e21da939ee2f
-parameter_url: https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-18.tar.gz
-license: Apache V2, https://github.com/facebook/fb.resnet.torch/blob/master/LICENSE
----
+
 
 # Image Classification using Residual Networks
 
 
-In this example, we convert Residual Networks trained on [Torch](https://github.com/facebook/fb.resnet.torch) to SINGA for image classification.
+In this example, we convert Residual Networks trained on [Torch](https://github.com/facebook/fb.resnet.torch) to SINGA for image classification. Tested on [SINGA commit] with the [parameters pretrained by Torch](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-18.tar.gz)
 
 ## Instructions
 

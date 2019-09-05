@@ -1,3 +1,21 @@
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
 # Docker Images
 
 
@@ -31,28 +49,23 @@ Dockerfile folder, e.g., tool/docker/devel/
 
 The `<TAG>` is named as
 
-    devel|runtime[-OS][-CUDA|OPENCL][-CUDNN]
+    devel|runtime[-CUDA|CPU][-CUDNN]
 
 * devel: development images with all dependent libs' header files installed and SINGA's source code; runtime: the minimal images which can run SINGA programs.
-* OS: ubuntu, ubuntu14.04, centos, centos6
-* CUDA: cuda, cuda8.0, cuda7.0
-* CUDNN: cudnn, cudnn5, cudnn4
-* OPENCL: opencl, opencl1.2
+* CUDA: cuda10.0, cuda9.0
+* CUDNN: cudnn7
 
-By default, if the version is not included in the tag, the latest stable version is used.
-The default OS is Ubuntu. The version is the latest stable version (e.g., 16.04 for now).
-For -cuda version, the **cudnn** is included by default. Their versions are also the latest stable version, i.e., cuda8.0 and cudnn5 for now.
+Here are some example tags:
 
-Here are some example tags,
+`devel-cuda9-cudnn7`, `devel-cuda9-cudnn7`, `devel-cuda10-cudnn7`, `devel-cpu`, `runtime-gpu` and `runtime-cpu`
 
-`devel`, `devel-cuda`, `runtime`, `runtime-cuda`, `devel-centos7-cuda`, `devel-ubuntu14.04`, `devel-ubuntu14.04-cuda7.5-cudnn4`
 
 Please follow the existing Dockefiles under tool/docker/ to create other Dockefiles.
 The folder structure is like
 
     level1: devel|runtime
     level2: Dockerfile, OS
-    level3: Dockerfile, CUDA|OPENCL
-    level4: CUDNN
+    level3: Dockerfile, CUDA|MKLDNN
 
-For example, the path of the Dockerfile for `devel-cuda` is `tool/docker/devel/cuda/Dockerfile`.
+
+For example, the path of the Dockerfile for `devel-cuda9-cudnn7` is `tool/docker/devel/ubuntu/cuda9/Dockerfile`.

@@ -177,8 +177,8 @@ class TestTensorMethods(unittest.TestCase):
         tA2 = tensor.transpose(ta,[0,2,1])
         TA2 = tensor.to_numpy(tA2)
 
-        self.assertAlmostEqual(np.sum(TA1 - A1), 0.,places=3)
-        self.assertAlmostEqual(np.sum(TA2 - A2), 0.,places=3)
+        np.testing.assert_array_almost_equal(TA1, A1)
+        np.testing.assert_array_almost_equal(TA2, A2)
 
     def test_einsum(self):
 
@@ -240,12 +240,33 @@ class TestTensorMethods(unittest.TestCase):
         res1 = np.tensordot(a, a, axes = 1)
         tres1 = tensor.tensordot(ta, ta, axes = 1)
         Tres1 = tensor.to_numpy(tres1)
+        self.assertAlmostEqual(np.sum(Tres1 - res1), 0., places=3)
+        np.testing.assert_array_almost_equal(Tres1, res1)
+
         res2 = np.tensordot(a, a, axes = ([0,1],[2,1]))
         tres2 = tensor.tensordot(ta, ta, axes = ([0,1],[2,1]))
-        Tres2 = tensor.to_numpy(tres2)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tres2), res2)
 
-        self.assertAlmostEqual(np.sum(Tres1 - res1), 0., places=3)
-        self.assertAlmostEqual(np.sum(Tres2 - res2), 0., places=3)
+    def test_reshape(self):
+        a = np.array([[[1.1, 1.1, 1.4], [1.1, 1.1, 1.1]], [[1.1, 1.1, 1.3], [1.6, 1.1, 1.2]]])
+        ta = tensor.from_numpy(a)
+        tb = tensor.reshape(ta, [2,6])
+        self.assertAlmostEqual(tb.shape[0], 2., places=3)
+        self.assertAlmostEqual(tb.shape[1], 6., places=3)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tb), a.reshape((2,6)))
+
+    def test_transpose_then_reshape(self):
+        a = np.array([[[1.1, 1.1], [1.1, 1.1], [1.4, 1.3]], [[1.1, 1.6], [1.1, 1.1], [1.1, 1.2]]])
+        TRANSPOSE_AXES=(2,0,1)
+        RESHAPE_DIMS=(2,6)
+
+        ta = tensor.from_numpy(a)
+        ta = ta.transpose(TRANSPOSE_AXES)
+        ta = ta.reshape(RESHAPE_DIMS)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(ta), np.reshape( a.transpose(TRANSPOSE_AXES), RESHAPE_DIMS))
+
+
 
 
 if __name__ == '__main__':

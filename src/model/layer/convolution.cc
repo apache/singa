@@ -96,9 +96,9 @@ void Convolution::Setup(const Shape &in_sample, const LayerConf &conf) {
   col_width_ = conv_height_ * conv_width_;
 
   // Setup shape of weight_ and bias_
-  weight_.SetShape(Shape{num_filters_, col_height_});
+  weight_.Resize(Shape{num_filters_, col_height_});
   if (bias_term_)
-    bias_.SetShape(Shape{num_filters_});
+    bias_.Resize(Shape{num_filters_});
   // Assume the order of param is: weight, bias
   for (const auto &spec : conf.param()) param_specs_.push_back(spec);
 }

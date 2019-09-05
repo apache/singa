@@ -39,6 +39,10 @@
 #include "singa/utils/opencl_utils.h"
 #endif  // USE_OPENCL
 
+#ifdef USE_MKLDNN
+#include <mkldnn.hpp>
+#endif  // USE_MKLDNN
+
 using std::atomic;
 
 namespace singa {
@@ -110,6 +114,10 @@ typedef struct _Context {
   // This stores the context ID of the OpenCL context controlled by ViennaCL.
   long vcl_ctx_id;
 #endif
+
+#ifdef USE_MKLDNN
+  mkldnn::engine *engine;
+#endif  // USE_MKLDNN
 
 } Context;
 

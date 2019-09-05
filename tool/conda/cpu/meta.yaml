@@ -17,15 +17,20 @@
 # under the License.
 #
 
+{% set version = "2.1.0.dev" %}
 
 package:
   name: singa-cpu
-  version: 1.2.0
+  version: {{ version }}
 
 requirements:
   run:
-    - singa 1.2.0 py36_cpu
+    - singa {{ version }} cpu_py{{ py }}
 
+build:
+  number: 0
+  string: py{{ py }}
+ 
 about:
   home: http://singa.apache.org/
   license: Apache V2

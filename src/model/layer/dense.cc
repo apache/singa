@@ -40,11 +40,11 @@ void Dense::Setup(const Shape& in_sample, const LayerConf &conf) {
   transpose_ = dense_conf.transpose();
   bias_term_ = dense_conf.bias_term();
   if (transpose_)  // was {vdim_, hdim} by zhaojing?
-    weight_.SetShape(Shape{hdim_, vdim_});
+    weight_.Resize(Shape{hdim_, vdim_});
   else
-    weight_.SetShape(Shape{vdim_, hdim_});
+    weight_.Resize(Shape{vdim_, hdim_});
   if (bias_term_)
-    bias_.SetShape(Shape{hdim_});
+    bias_.Resize(Shape{hdim_});
   for (auto specs: conf.param())
     param_specs_.push_back(specs);
 }

@@ -18,6 +18,11 @@
 #ifndef SINGA_CORE_MATH_H_
 #define SINGA_CORE_MATH_H_
 #include <type_traits>
+#include <string> 
+#include <algorithm> 
+#include <sstream> 
+#include <iterator> 
+#include <iostream> 
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
 #include "singa/utils/logging.h"
@@ -50,10 +55,32 @@ namespace singa {
 /// 7. Use size_t for the number of elements, rows or columns.
 /// 8. Use the same name for the Tensor and Tensor level math functions.
 
+const std::string vec2str(const std::vector<int>& vec){
+  std::ostringstream vts; 
+  if (!vec.empty())  {
+  // Convert all but the last element to avoid a trailing "," 
+    std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(vts, ", ")); 
+  }
+  return vts.str();
+}
+
+const std::string vec2str(const std::vector<size_t>& vec){
+  std::ostringstream vts; 
+  if (!vec.empty())  {
+  // Convert all but the last element to avoid a trailing "," 
+    std::copy(vec.begin(), vec.end(), std::ostream_iterator<size_t>(vts, ", ")); 
+  }
+  return vts.str();
+}
+	  
+			                      
 
 // **************************************
-// Element-wise functions
-// **************************************
+// // Element-wise functions
+// // Cpp tensors support multi-dimensional broadcasting; 
+// // Cuda supports unidirectional broadcasting, 
+// // i.e., the lhs and the output have the same shape
+// // **************************************
 
 /// out[i] = |in[i]|
 template <typename DType, typename Lang>
@@ -245,11 +272,27 @@ void Sum(const Tensor &in, DType *out, Context *ctx) {
   LOG(FATAL) << "Sum Not Implemented";
 }
 
-/// out[i]=tanh(in[i])
-template <typename DType, typename Lang>
-void Tanh(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Tanh Not Implemented";
-}
+/// out[i]=fn(in[i])
+#define GenUnaryNotImplemented(fn,stringfn)                   \
+  template <typename DType, typename Lang>                    \
+  void fn(const Tensor &in, Tensor *out, Context *ctx) {      \
+    std::string str = stringfn;                               \
+    str += " Not Implemented";                                \
+    LOG(FATAL) << str;                                        \
+  }
+
+GenUnaryNotImplemented(Cos,"Cos");
+GenUnaryNotImplemented(Cosh,"Cosh");
+GenUnaryNotImplemented(Acos,"Acos");
+GenUnaryNotImplemented(Acosh,"Acosh");
+GenUnaryNotImplemented(Sin,"Sin");
+GenUnaryNotImplemented(Sinh,"Sinh");
+GenUnaryNotImplemented(Asin,"Asin");
+GenUnaryNotImplemented(Asinh,"Asinh");
+GenUnaryNotImplemented(Tan,"Tan");
+GenUnaryNotImplemented(Tanh,"Tanh");
+GenUnaryNotImplemented(Atan,"Atan");
+GenUnaryNotImplemented(Atanh,"Atanh");
 
 /// similar to cudnnTransformTensor
 /// copies the data from one tensor to another tensor with a different layout

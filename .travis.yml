@@ -15,27 +15,18 @@
 # limitations under the License.
 #
 
-# to use container for building
 sudo: required
 language: cpp
-
-
 
 matrix:
   include:
   - os: osx
     compiler: clang
+    # system cblas will be used by cmake for other xcode versions
     osx_image: xcode8
   - os: linux
     dist: trusty
     compiler: gcc
-#
-#addons:
-#  apt:
-#    packages:
-#      - libopenblas-dev
-#      - libprotobuf-dev
-#      - protobuf-compiler
 
 install:
   - travis_wait bash -ex tool/travis/depends.sh

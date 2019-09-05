@@ -127,6 +127,7 @@ class SGD(Optimizer):
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
+        assert param.shape == grad.shape, ("shape mismatch", param.shape, grad.shape)
         group = self.default_config
         if param in self.param2config:
             group = self.param2config[param]

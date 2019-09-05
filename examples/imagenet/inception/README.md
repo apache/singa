@@ -16,18 +16,10 @@
     specific language governing permissions and limitations
     under the License.
 -->
----
-name: Inception V4 on ImageNet
-SINGA version: 1.1.1
-SINGA commit:
-parameter_url: https://s3-ap-southeast-1.amazonaws.com/dlfile/inception_v4.tar.gz
-parameter_sha1: 5fdd6f5d8af8fd10e7321d9b38bb87ef14e80d56
-license: https://github.com/tensorflow/models/tree/master/slim
----
 
 # Image Classification using Inception V4
 
-In this example, we convert Inception V4 trained on Tensorflow to SINGA for image classification.
+In this example, we convert Inception V4 trained on Tensorflow to SINGA for image classification. Tested on SINGA version 1.1.1 with [parameters pretrained by tensorflow](https://s3-ap-southeast-1.amazonaws.com/dlfile/inception_v4.tar.gz).
 
 ## Instructions
 
