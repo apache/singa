@@ -27,7 +27,6 @@ Mentors
 ==================   ============
 Name                 Email
 ==================   ============
-Daniel Dai           daijy@apache.org
 Ted Dunning          tdunning@apache.org
 Alan Gates           gates@apache.org
 Thejas Nair          thejas@apache.org
@@ -39,57 +38,66 @@ Developers
 
 The SINGA community has developers mainly from National University of Singapore, Zhejiang University, NetEase, Osaka University, yzBigData, etc.
 
+PPMC
+----
+
 +--------------------+--------------------------------+-----------------------------------------------+
 | Name               | Email                          | Organization                                  |
 +====================+================================+===============================================+
-| Gang Chen          | cg@zju.edu.cn                  | Zhejiang University                           |
-+--------------------+--------------------------------+-----------------------------------------------+
-| Haibo Chen         | hzchenhaibo@corp.netease.com   | NetEase                                       |
+| Gang Chen          | cg@apache.org                  | Zhejiang University                           |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Anh Dinh           | dinhtta@apache.org             | Singapore University of Technology and Design |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Jinyang Gao        | jinyang@apache.org             | DAMO Academy, Alibaba Group                   |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Xin Ji             | jixin@comp.nus.edu.sg          | Visenze                                       |
-+--------------------+--------------------------------+-----------------------------------------------+
-| Chonho Lee         | chonho@gmail.com               | Osaka University                              |
-+--------------------+--------------------------------+-----------------------------------------------+
 | Zhaojing Luo       | zhaojing@apache.org            | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Beng Chin Ooi      | ooibc@comp.nus.edu.sg          | National University of Singapore              |
+| Beng Chin Ooi      | ooibc@apache.org               | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Kian-Lee Tan       | tankl@apache.org               | National University of Singapore              |
-+--------------------+--------------------------------+-----------------------------------------------+
-| Anthony K. H. Tung | atung@comp.nus.edu.sg          | National University of Singapore              |
-+--------------------+--------------------------------+-----------------------------------------------+
-| Ji Wang            | wangji@comp.nus.edu.sg         | Hangzhou MZH Technologies                     |
+| Kian-Lee Tan       | tankianlee@apache.org          | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Sheng Wang         | wangsh@apache.org              | DAMO Academy, Alibaba Group                   |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Wei Wang           | wangwei@apache.org             | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Yuan Wang          | wangyuan@corp.netease.com      | NetEase                                       |
-+--------------------+--------------------------------+-----------------------------------------------+
-| Wenfeng Wu         | wuwf@comp.nus.edu.sg           | National University of Singapore              |
-+--------------------+--------------------------------+-----------------------------------------------+
 | Zhongle Xie        | zhongle@apache.org             | Hangzhou MZH Technologies                     |
-+--------------------+--------------------------------+-----------------------------------------------+
-| Meihui Zhang       | meihui_zhang@sutd.edu.sg       | Beijing Institute of Technology               |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Kaiping Zheng      | kaiping@apache.org             | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Moaz Reyad         | moaz@apache.org                | University of Genoa                           |
+| Moaz Reyad         | moaz@apache.org                | Université Grenoble Alpes                     |
++--------------------+--------------------------------+-----------------------------------------------+
+
+Committers
+----------
+
++--------------------+--------------------------------+-----------------------------------------------+
+| Name               | Email                          | Organization                                  |
++====================+================================+===============================================+
+| Chonho Lee         | chonho@apache.org              | Osaka University                              |
++--------------------+--------------------------------+-----------------------------------------------+
+| Wanqi Xue          | xuewanqi@apache.org            | National University of Singapore              |
++--------------------+--------------------------------+-----------------------------------------------+
+
+Contributors
+------------
+
++--------------------+--------------------------------+-----------------------------------------------+
+| Name               | Email                          | Organization                                  |
++====================+================================+===============================================+
+| Haibo Chen         | hzchenhaibo@corp.netease.com   | NetEase                                       |
++--------------------+--------------------------------+-----------------------------------------------+
+| Xin Ji             | jixin@comp.nus.edu.sg          | Visenze, Singapore                            |
++--------------------+--------------------------------+-----------------------------------------------+
+| Anthony K. H. Tung | atung@comp.nus.edu.sg          | National University of Singapore              |
++--------------------+--------------------------------+-----------------------------------------------+
+| Ji Wang            | wangji@comp.nus.edu.sg         | Hangzhou MZH Technologies                     |
++--------------------+--------------------------------+-----------------------------------------------+
+| Yuan Wang          | wangyuan@corp.netease.com      | NetEase                                       |
++--------------------+--------------------------------+-----------------------------------------------+
+| Wenfeng Wu         | wuwf@comp.nus.edu.sg           | Freelancer, China                             |
++--------------------+--------------------------------+-----------------------------------------------+
+| Meihui Zhang       | meihui_zhang@sutd.edu.sg       | Beijing Institute of Technology               |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Chang Yao          | yaochang2009@gmail.com         | Hangzhou MZH Technologies                     |
 +--------------------+--------------------------------+-----------------------------------------------+
 
-
-
-How to become a SINGA committer
---------------------------------
-
-SINGA committers are members that have write access to SINGA code and documentation repositories. They can contribute by themselves and accept other contributions.
-
-Becoming a SINGA committer requires understanding the Apache Way and being an active member in the SINGA project. An active member participates on mailing lists, answers questions, contributes code, tests and documentation, presents SINGA in talks and seminars, verifies releases and report issues or feature requests.
-
-New committers can be suggested by current committers or PPMC members, and voted upon by the PPMC according to Apache guidelines. You can start by talking to other committers and ask for their advice and guidance.

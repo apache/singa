@@ -18,6 +18,8 @@
 * under the License.
 *
 ************************************************************/
+#include <cctype>
+
 #include "./convolution.h"
 #include "../layer/convolution.h"
 
@@ -358,10 +360,15 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input,
                                  const std::vector<size_t>& stride, const std::vector<size_t>& padding,
                                  const size_t in_channels, const size_t out_channels, const bool bias,
                                  const size_t groups,
-                                 const size_t workspace_byte_limit, const std::string& prefer)
+                                 const size_t workspace_byte_limit, const std::string& prefer_)
   : ConvHandle(input, kernel_size, stride, padding, in_channels, out_channels,
                bias, groups) {
-
+  std::string prefer = prefer_;
+  if (const char* env_p = std::getenv("CUDNN_CONV_ALG")) {
+    prefer = std::string(env_p);
+    std::transform(prefer.begin(), prefer.end(), prefer.begin(), tolower);
+    LOG(INFO) << "CUDNN_CONV_ALG: " << prefer;
+  }
   DataType dtype = input.data_type();
   auto dev = input.device();
   Context *ctx = dev->context(0);
@@ -445,7 +452,7 @@ CudnnConvHandle::CudnnConvHandle(const Tensor &input,
                   &num_bp_data_alg, bp_data_perf));
     bp_data_alg = bp_data_perf[0].algo;
   } else {
-    LOG(FATAL) << "Preferred algorithm is not available!";
+    LOG(FATAL) << "Preferred algorithm is not available :" << prefer;
   }
 
   size_t fp_byte, bp_data_byte, bp_filter_byte;

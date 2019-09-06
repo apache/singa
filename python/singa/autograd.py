@@ -1172,7 +1172,7 @@ class _Conv2d(Operation):
                 db = singa.GpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
             else:
-                return dx, dW, None
+                return dx, dW
         else:
             dx = singa.CpuConvBackwardx(
                 dy, self.inputs[1], self.inputs[0], self.handle
@@ -1184,7 +1184,7 @@ class _Conv2d(Operation):
                 db = singa.CpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
             else:
-                return dx, dW, None
+                return dx, dW
 
 def conv2d(handle, x, W, b=None):
     if b is None:
@@ -1289,6 +1289,7 @@ class Conv2d(Layer):
             # Tensor(data=CTensor([]), requires_grad=False, stores_grad=False)
 
     def __call__(self, x):
+
         assert x.shape[1] == self.in_channels, "in_channels mismatched"
 
         if self.bias:
@@ -1397,9 +1398,12 @@ class BatchNorm2d(Layer):
         self.running_mean = Tensor(
             shape=param_shape, requires_grad=False, stores_grad=False
         )
+        self.running_mean.set_value(0.0)
+
         self.running_var = Tensor(
             shape=param_shape, requires_grad=False, stores_grad=False
         )
+        self.running_var.set_value(1.0)
 
     def __call__(self, x):
         assert x.shape[1] == self.channels, (
@@ -1446,46 +1450,47 @@ class BatchNorm2d(Layer):
 
 
 class _BatchNorm2d(Operation):
-    def __init__(self, handle, name=None):
+    def __init__(self, handle, running_mean, running_var, name=None):
         super(_BatchNorm2d, self).__init__(name)
         self.handle = handle
+        self.running_mean = running_mean.data
+        self.running_var = running_var.data
 
-    def forward(self, x, scale, bias, running_mean, running_var):
-        self.running_mean = running_mean
-        self.running_var = running_var
+    def forward(self, x, scale, bias):
         if training:
-
-            if isinstance(self.handle, singa.CudnnBatchNormHandle):
-                y, mean, var = singa.GpuBatchNormForwardTraining(
-                    self.handle, x, scale, bias, running_mean, running_var
-                )
-
-                self.cache = (x, scale, mean, var)
-            else:
+            if (type(self.handle) == singa.BatchNormHandle):
                 y, mean, var = singa.CpuBatchNormForwardTraining(
-                    self.handle, x, scale, bias, running_mean, running_var
+                    self.handle, x, scale, bias, self.running_mean, self.running_var
                 )
-                self.cache = (x, scale, mean, var)
-        else:
-            if isinstance(self.handle, singa.CudnnBatchNormHandle):
-                y = singa.GpuBatchNormForwardInference(
-                    self.handle,
-                    x,
-                    scale,
-                    bias,
-                    running_mean,
-                    running_var,
-                )
+
+                self.cache = (x, scale, mean, var, y, bias)
             else:
+                y, mean, var = singa.GpuBatchNormForwardTraining(
+                    self.handle, x, scale, bias, self.running_mean, self.running_var
+                )
+
+                self.cache = (x, scale, mean, var)
+
+        else:
+
+            if (type(self.handle) == singa.BatchNormHandle):
                 y = singa.CpuBatchNormForwardInference(
                     self.handle,
                     x,
                     scale,
                     bias,
-                    running_mean,
-                    running_var,
+                    self.running_mean,
+                    self.running_var,
                 )
-
+            else:
+                y = singa.GpuBatchNormForwardInference(
+                    self.handle,
+                    x,
+                    scale,
+                    bias,
+                    self.running_mean,
+                    self.running_var,
+                )
         return y
 
     def backward(self, dy):
@@ -1493,13 +1498,16 @@ class _BatchNorm2d(Operation):
             self, "cache"
         ), "Please set training as True before do BP. "
 
-        x, scale, mean, var = self.cache
-        if isinstance(self.handle, singa.CudnnBatchNormHandle):
-            dx, ds, db = singa.GpuBatchNormBackward(
-                self.handle, dy, x, scale, mean, var
+
+
+        if (type(self.handle) == singa.BatchNormHandle):
+            x, scale, mean, var, y, bias = self.cache
+            dx, ds, db = singa.CpuBatchNormBackwardx(
+                self.handle, y, dy, x, scale, bias, mean, var
             )
         else:
-            dx, ds, db = singa.CpuBatchNormBackward(
+            x, scale, mean, var = self.cache
+            dx, ds, db = singa.GpuBatchNormBackward(
                 self.handle, dy, x, scale, mean, var
             )
             
@@ -1507,7 +1515,7 @@ class _BatchNorm2d(Operation):
 
 
 def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
-    return _BatchNorm2d(handle)(x, scale, bias, running_mean, running_var)[0]
+    return _BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
 
 
 class _Pooling2d(Operation):
