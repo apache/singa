@@ -98,6 +98,29 @@ class TestPythonOperation(unittest.TestCase):
         result = autograd.greater(x0,x1)
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
+    def test_conv2d_cpu(self):
+        # (in_channels, out_channels, kernel_size)
+        conv_0 = autograd.Conv2d(3, 1, 2)
+        conv_without_bias_0 = autograd.Conv2d(3, 1, 2, bias=False)
+
+        cpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=cpu_dev)
+        cpu_input_tensor.gaussian(0.0, 1.0)
+
+        dy = tensor.Tensor(shape=(2, 1, 2, 2), device=cpu_dev)
+        dy.gaussian(0.0, 1.0)
+
+        y = conv_0(cpu_input_tensor)  # PyTensor
+        dx, dW, db = y.creator.backward(dy.data)  # CTensor
+
+        self.check_shape(y.shape, (2, 1, 2, 2))
+        self.check_shape(dx.shape(), (2, 3, 3, 3))
+        self.check_shape(dW.shape(), (1, 3, 2, 2))
+        self.check_shape(db.shape(), (1,))
+
+        # forward without bias
+        y_without_bias = conv_without_bias_0(cpu_input_tensor)
+        self.check_shape(y_without_bias.shape, (2, 1, 2, 2))
+
     def test_conv2d_gpu(self):
         # (in_channels, out_channels, kernel_size)
         conv_0 = autograd.Conv2d(3, 1, 2)
@@ -195,8 +218,8 @@ class TestPythonOperation(unittest.TestCase):
         y1 = separ_conv.depthwise_conv(x)
         y2 = separ_conv.point_conv(y1)
 
-        dy1, dW_depth, _ = y2.creator.backward(y2.data)
-        dx, dW_spacial, _ = y1.creator.backward(dy1)
+        dy1, dW_depth = y2.creator.backward(y2.data)
+        dx, dW_spacial = y1.creator.backward(dy1)
 
         self.check_shape(y2.shape, (10, 16, 28, 28))
 
@@ -209,6 +232,21 @@ class TestPythonOperation(unittest.TestCase):
         y = separ_conv(x)
         self.check_shape(y.shape, (10, 16, 28, 28))
 
+    def test_batchnorm2d_cpu(self):
+        batchnorm_0 = autograd.BatchNorm2d(3)
+
+        cpu_input_tensor = tensor.Tensor(shape=(2, 3, 3, 3), device=cpu_dev)
+        cpu_input_tensor.gaussian(0.0, 1.0)
+
+        dy = cpu_input_tensor.clone().data
+
+        y = batchnorm_0(cpu_input_tensor)
+        dx, ds, db = y.creator.backward(dy)
+
+        self.check_shape(y.shape, (2, 3, 3, 3))
+        self.check_shape(dx.shape(), (2, 3, 3, 3))
+        self.check_shape(ds.shape(), (3,))
+        self.check_shape(db.shape(), (3,))
 
     def test_batchnorm2d_gpu(self):
         batchnorm_0 = autograd.BatchNorm2d(3)

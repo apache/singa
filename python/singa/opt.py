@@ -19,6 +19,7 @@
 It replaces the old optimizers from optimizer.py'''
 
 from singa import tensor
+from . import singa_wrap as singa
 
 
 class Optimizer(object):
@@ -127,7 +128,8 @@ class SGD(Optimizer):
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
-        assert param.shape == grad.shape, ("shape mismatch", param.shape, grad.shape)
+        assert param.shape == grad.shape, ("shape mismatch",
+                                           param.shape, grad.shape)
         group = self.default_config
         if param in self.param2config:
             group = self.param2config[param]
@@ -156,3 +158,33 @@ class SGD(Optimizer):
             else:
                 grad = buf
         param -= grad * group['lr']
+
+
+class DistOpt(object):
+
+    def __init__(self, opt=SGD(), nDev=1):
+        # The class is designed to wrap an optimizer to do disttributed training.
+        # opt: The optimizer to be wrapped. nDev: number of devices(GPUs) a
+        # process will control/use.
+
+        # world_size: total number of processes.
+        # rank_in_local: local rank of a process on the current node.
+        # rank_in_global: global rank of a process
+
+        self.opt = opt
+        self.communicator = singa.Communicator(nDev)
+        self.world_size = self.communicator.totalMPIRanksInGlobal
+        self.rank_in_local = self.communicator.MPIRankInLocal
+        self.rank_in_global = self.communicator.MPIRankInGlobal
+
+    def update(self, param, grad):
+        # singa.synch(grad.data, self.communicator)
+        # grad /= self.communicator.totalMPIRanksInGlobal
+        grad = self.all_reduce(grad)
+        #param -= grad * self.lr
+        self.opt.update(param, grad)
+
+    def all_reduce(self, tensor):
+        singa.synch(tensor.data, self.communicator)
+        tensor /= self.world_size
+        return tensor

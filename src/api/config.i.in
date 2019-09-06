@@ -24,6 +24,7 @@
 #cmakedefine01 USE_PYTHON
 #cmakedefine01 USE_MKLDNN
 #cmakedefine01 USE_JAVA
+#cmakedefine01 USE_DIST
 #cmakedefine CUDNN_VERSION ${CUDNN_VERSION}
 
 // SINGA version

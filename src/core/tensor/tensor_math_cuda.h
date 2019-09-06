@@ -62,7 +62,7 @@ vector<int> generate_shape_cuda(const Tensor& x) {
       shape_arr.push_back(1);
     }
   }
-  for(auto x: shape) {
+  for (auto x : shape) {
     shape_arr.push_back(static_cast<int>(x));
   }
   return shape_arr;
@@ -93,7 +93,7 @@ vector<int> generate_strides_cuda(const Tensor& x) {
       strides_arr.push_back(product);
     }
   }
-  for(auto x : strides)
+  for (auto x : strides)
     strides_arr.push_back(static_cast<int>(x));
   return strides_arr;
 }
@@ -106,7 +106,7 @@ cudnnTensorDescriptor_t generate_tensor_nd_desc(const Tensor& x) {
   auto st = x.stride();
   std::vector<size_t> sh;
   bool reshape = false;
-  for(size_t i = 0; i < st.size(); i++) {
+  for (size_t i = 0; i < st.size(); i++) {
     if (st[i] == 0) {
       sh.push_back(1);
       reshape = true;
@@ -119,12 +119,12 @@ cudnnTensorDescriptor_t generate_tensor_nd_desc(const Tensor& x) {
     y = Reshape(x, sh);
   auto shape = generate_shape_cuda(y);
   auto stride = generate_strides_cuda(y);
- 
+
   // LOG(INFO) << vec2str(shape);
   // LOG(INFO) << vec2str(stride);
   // LOG(INFO) << "";
   check_cudnn(cudnnSetTensorNdDescriptor(x_desc, CUDNN_DATA_FLOAT,
-    generate_dim_cuda(y), shape.data(), stride.data()));
+                                         generate_dim_cuda(y), shape.data(), stride.data()));
 
   return x_desc;
 }
@@ -133,9 +133,9 @@ cudnnOpTensorDescriptor_t generate_op_desc(cudnnOpTensorOp_t op) {
   cudnnOpTensorDescriptor_t op_desc;
   check_cudnn(cudnnCreateOpTensorDescriptor(&op_desc));
   check_cudnn(cudnnSetOpTensorDescriptor(op_desc, op,
-                             CUDNN_DATA_FLOAT,
-                             CUDNN_PROPAGATE_NAN
-                            ));
+                                         CUDNN_DATA_FLOAT,
+                                         CUDNN_PROPAGATE_NAN
+                                        ));
 
   return op_desc;
 }
@@ -154,10 +154,10 @@ void Abs<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float beta = 0.0;
   cudnnTensorDescriptor_t in_desc = generate_tensor_nd_desc(in);
   check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_MAX),
-                (void*)(&alpha1), in_desc, inPtr,
-                (void*)(&alpha2), in_desc, inPtr,
-                (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-               ));
+                            (void*)(&alpha1), in_desc, inPtr,
+                            (void*)(&alpha2), in_desc, inPtr,
+                            (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                           ));
   cudnnDestroyTensorDescriptor(in_desc);
 }
 
@@ -167,7 +167,7 @@ void Set<float, lang::Cuda>(const float x, Tensor* out,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
   check_cudnn(cudnnSetTensor(ctx->cudnn_handle, generate_tensor_nd_desc(*out),
-                 outPtr, (void*)(&x)));
+                             outPtr, (void*)(&x)));
 }
 
 template <>
@@ -179,9 +179,9 @@ void Add<float, lang::Cuda>(const Tensor& in, const float x,
 
   float alpha = 1.0, beta = 1.0;
   check_cudnn(cudnnAddTensor(ctx->cudnn_handle,
-                 (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                 (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                ));
+                             (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
+                             (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                            ));
 }
 
 /// out = in1 + in2
@@ -198,16 +198,16 @@ void Add<float, lang::Cuda>(const Tensor& in1,
 
   if ((in1.nDim() == in2.nDim()) || (in2.nDim() == 1)) {
     check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-                  (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
-                  (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-                  (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                 ));
+                              (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
+                              (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
+                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                             ));
   } else {
     check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-                  (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
-                  (void*)(&alpha2), generate_tensor_nd_desc(in1), inPtr2,
-                  (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                 ));
+                              (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
+                              (void*)(&alpha2), generate_tensor_nd_desc(in1), inPtr2,
+                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                             ));
   }
 }
 
@@ -225,22 +225,22 @@ void Sub<float, lang::Cuda>(const Tensor& in1,
 
   if ((in1.nDim() == in2.nDim()) || (in2.nDim() == 1)) {
     check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-                  (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
-                  (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-                  (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                 ));
+                              (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
+                              (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
+                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                             ));
   } else {
     check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-                  (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
-                  (void*)(&alpha2), generate_tensor_nd_desc(in1), inPtr2,
-                  (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                 ));
+                              (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
+                              (void*)(&alpha2), generate_tensor_nd_desc(in1), inPtr2,
+                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                             ));
   }
 }
 
 template <>
 void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out,
-                             Context* ctx) {
+                                  Context* ctx) {
   const float* inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
@@ -248,9 +248,9 @@ void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float beta = 0.0;
 
   check_cudnn(cudnnTransformTensor(ctx->cudnn_handle,
-                         (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                         (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                        ));
+                                   (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
+                                   (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                                  ));
 
 }
 
@@ -327,9 +327,9 @@ void EltwiseMult<float, lang::Cuda>(const Tensor& in,
 
   float alpha = x, beta = 0.0;
   check_cudnn(cudnnAddTensor(ctx->cudnn_handle,
-                 (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                 (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                ));
+                             (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
+                             (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                            ));
 }
 
 /// out = in1 * in2
@@ -662,10 +662,10 @@ void Sqrt<float, lang::Cuda>(const Tensor& in, Tensor* out,
   float beta = 0.0;
   cudnnTensorDescriptor_t in_desc = generate_tensor_nd_desc(in);
   check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_SQRT),
-                (void*)(&alpha1), in_desc, inPtr,
-                (void*)(&alpha2), in_desc, inPtr,
-                (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-               ));
+                            (void*)(&alpha1), in_desc, inPtr,
+                            (void*)(&alpha2), in_desc, inPtr,
+                            (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                           ));
 #endif  // CUDNN_MAJOR < 7
 }
 
@@ -925,6 +925,22 @@ void GEMM<float, lang::Cuda>(const float alpha,
 }
 
 template <>
+void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx) {
+  cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_FAST;
+  cudnnSoftmaxMode_t mode = CUDNN_SOFTMAX_MODE_INSTANCE;
+
+  const float * inPtr = static_cast<const float*>(in.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+
+  float alpha = 1.0;
+  float beta = 0.0;
+
+  check_cudnn(cudnnSoftmaxForward(ctx->cudnn_handle, algorithm, mode,
+                                  (void*)(&alpha), generate_tensor_nd_desc(in), inPtr, (void*)(&beta)
+                                  , generate_tensor_nd_desc(*out), outPtr));
+}
+
+template <>
 void ComputeCrossEntropy<float, lang::Cuda>(bool int_target,
     const size_t batchsize,
     const size_t dim, const Block* p,
@@ -1056,7 +1072,7 @@ void Sum<float, lang::Cuda>(const Tensor& in, float* out,
   cudnnIndicesType_t cudnn_indices_type = CUDNN_32BIT_INDICES;
   check_cudnn(cudnnCreateReduceTensorDescriptor(&reduce_desc));
   check_cudnn(cudnnSetReduceTensorDescriptor(reduce_desc, reduce_op, cudnn_dtype,
-                                 cudnn_propagation, cudnn_indices, cudnn_indices_type));
+              cudnn_propagation, cudnn_indices, cudnn_indices_type));
 
   //instantiate 2 new tensors to use new blocks as memory instead of cudaMalloc
   size_t reduction_size_int = Product(in.shape());
@@ -1073,10 +1089,10 @@ void Sum<float, lang::Cuda>(const Tensor& in, float* out,
   float alpha = 1.0;
   float beta = 0.0;
   check_cudnn(cudnnReduceTensor(ctx->cudnn_handle, reduce_desc,
-                    indicesPtr, indices_bytes, workspacePtr, workspace_bytes,
-                    (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                    (void*)(&beta), generate_tensor_nd_desc(t), tPtr
-                   ));
+                                indicesPtr, indices_bytes, workspacePtr, workspace_bytes,
+                                (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
+                                (void*)(&beta), generate_tensor_nd_desc(t), tPtr
+                               ));
 
   *out = tPtr[0];
 #endif  // CUDNN_MAJOR < 7
