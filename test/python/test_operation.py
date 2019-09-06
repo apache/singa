@@ -1825,5 +1825,44 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
+    def test_reciprocal_cpu(self):
+        X = np.array([0.1,0,0.4,1.-4,0.9,-2.0]).reshape(3,2).astype(np.float32)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.reciprocal(x)
+        dx = result.creator.backward(dy.data)
+        #dy/dx = -1/x**2
+        with np.errstate(divide='ignore'):
+            XT = np.reciprocal(X)
+            DX = -1/np.square(X)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def test_reciprocal_gpu(self):
+        X = np.array([0.1,0,0.4,1.-4,0.9,-2.0]).reshape(3,2).astype(np.float32)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.reciprocal(x)
+        dx = result.creator.backward(dy.data)
+        #dy/dx = -1/x**2
+        with np.errstate(divide='ignore'):
+            XT = np.reciprocal(X)
+            DX = -1/np.square(X)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+
 if __name__ == '__main__':
     unittest.main()

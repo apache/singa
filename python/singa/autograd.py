@@ -2643,3 +2643,24 @@ class Negative(Operation):
 
 def negative(x):
     return Negative()(x)[0]
+
+
+class Reciprocal(Operation):
+    def __init__(self):
+        super(Reciprocal, self).__init__()
+
+    def forward(self, x):
+        #y=1/x elementwise
+        if training:
+            self.input = x
+
+        return singa.PowFloat(x, -1)
+
+    def backward(self, dy):
+        #dy/dx = -1/x**2
+        dx = singa.MultFloat(singa.PowFloat(self.input, -2), -1)
+        return singa.__mul__(dy, dx)
+
+
+def reciprocal(x):
+    return Reciprocal()(x)[0]
