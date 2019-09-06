@@ -19,6 +19,7 @@
 
 from singa import opt
 from mnist_cnn import *
+import multiprocessing
 
 def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
     data_per_rank = dataset_x.shape[0] // world_size
@@ -28,9 +29,18 @@ def data_partition(dataset_x, dataset_y, rank_in_global, world_size):
 
 if __name__ == '__main__':
 
+    # Generate a NCCL ID to be used for collective communication
+    nccl_id = singa.NcclIdHolder()
+
     sgd = opt.SGD(lr=0.04, momentum=0.9, weight_decay=1e-5)    
- 
+
+    gpu_per_node = 8
     max_epoch = 10
     batch_size = 64
 
-    train_mnist_cnn(sgd=sgd, max_epoch=max_epoch, batch_size=batch_size, DIST=True, data_partition=data_partition)
+    process = []
+    for gpu_num in range(0, gpu_per_node):        
+        process.append(multiprocessing.Process(target=train_mnist_cnn, args=(sgd, max_epoch, batch_size, True, data_partition, gpu_num, gpu_per_node, nccl_id))) 
+
+    for p in process:
+        p.start()
