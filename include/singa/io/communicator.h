@@ -51,23 +51,32 @@ namespace singa{
   }                                                 \
 } while(0)
 
+class NcclIdHolder {
+public:
+  ncclUniqueId id;
+  NcclIdHolder(); 
+  ~NcclIdHolder();
+};
 
 class Communicator {
 public:
   int MPIRankInGlobal;
   int totalMPIRanksInGlobal;
   int MPIRankInLocal;
-  int nDev;
-  cudaStream_t* s;
-  ncclComm_t* comms;
+  bool UseMPI;
 
-  Communicator(int nDev);
+  ncclUniqueId id;
+  cudaStream_t s;
+  ncclComm_t comm;
+
+  Communicator();
+  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder);
   ~Communicator();
-  void allReduce(int size, void** sendbuff, void** recvbuff);
+  void allReduce(int size, void* sendbuff, void* recvbuff);
   void wait();
 };
 
-void synch(Tensor &t1, Communicator &c);
+void synch(Tensor &t, Communicator &c);
 
 }
 

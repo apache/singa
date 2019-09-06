@@ -46,14 +46,46 @@ static void getHostName(char* hostname, int maxlen) {
   }
 }
 
+NcclIdHolder::NcclIdHolder(){
+  ncclGetUniqueId(&id); 
+} // end of constructor 
 
-Communicator::Communicator(int nDev): nDev(nDev){
+NcclIdHolder::~NcclIdHolder(){  
+} 
+
+// contructer for application with python multi-processing module
+Communicator::Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder){
+
+  // this contructor is for NCCL WITHOUT MPI
+  UseMPI = false;
+
+  // Determine the rank of the collective communication
+  totalMPIRanksInGlobal=gpu_per_node;
+  MPIRankInLocal=gpu_num;
+  MPIRankInGlobal=gpu_num;
+
+  // copy the nccl unqiue id from the input id holder
+  id = holder.id;
+
+  // setup cuda stream and nccl communicator
+  CUDA_CHECK(cudaSetDevice(gpu_num));
+  CUDA_CHECK(cudaStreamCreate(&s));
+  NCCLCHECK(ncclCommInitRank(&comm, gpu_per_node, id, gpu_num));
+
+} // end of constructor 
+
+// contructer for application with MPI
+Communicator::Communicator(){
+
+  // this contructor is for NCCL WITH MPI
+  UseMPI = true;
+
+  // MPI initialization
   MPICHECK(MPI_Init(NULL, NULL));
-  // get MPI Global Ranks and total Ranks
   MPICHECK(MPI_Comm_rank(MPI_COMM_WORLD, &MPIRankInGlobal));
   MPICHECK(MPI_Comm_size(MPI_COMM_WORLD, &totalMPIRanksInGlobal));
 
-  //calculating MPIRankInLocal which is used in selecting a GPU
+  // calculating MPIRankInLocal which is used in selecting a GPU
   MPIRankInLocal=0;
   uint64_t hostHashs[totalMPIRanksInGlobal];
   char hostname[1024];
@@ -66,76 +98,44 @@ Communicator::Communicator(int nDev): nDev(nDev){
      if (hostHashs[p] == hostHashs[MPIRankInGlobal]) MPIRankInLocal++;
   }
 
-  //std::cout<<"l rank " << MPIRankInLocal << "\n";
-
-  //picking GPUs based on MPIRankInLocal
-  //create cuda stream s
-  s = (cudaStream_t*)malloc(sizeof(cudaStream_t)*nDev);
-  for (int i = 0; i < nDev; ++i) {
-    CUDA_CHECK(cudaSetDevice(MPIRankInLocal*nDev + i));
-    CUDA_CHECK(cudaStreamCreate(s+i));
-  }
-
-  // create nccl comms 
-  ncclUniqueId id;
-  comms=(ncclComm_t*)malloc(sizeof(ncclComm_t)*nDev);
-  
-
-  //generating NCCL unique nccl ID at one process and broadcasting it to all
+  // generating NCCL unique nccl ID at one process and broadcasting it to all
   if (MPIRankInGlobal == 0) ncclGetUniqueId(&id);
   MPICHECK(MPI_Bcast((void *)&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD));
 
+  // setup cuda stream and nccl communicator
+  CUDA_CHECK(cudaSetDevice(MPIRankInLocal));
+  CUDA_CHECK(cudaStreamCreate(&s));
+  NCCLCHECK(ncclCommInitRank(&comm, totalMPIRanksInGlobal, id, MPIRankInGlobal));
 
-  //initializing NCCL, group API is required around ncclCommInitRank as it is
-  //called across multiple GPUs in each thread/process
-  NCCLCHECK(ncclGroupStart());
-  for (int i=0; i<nDev; i++) {
-    CUDA_CHECK(cudaSetDevice(MPIRankInLocal*nDev + i));
-    NCCLCHECK(ncclCommInitRank(comms+i,
-                               totalMPIRanksInGlobal*nDev,
-                               id, 
-    						     MPIRankInGlobal*nDev + i));
-  }
-  NCCLCHECK(ncclGroupEnd());
 } // end of constructor 
 
 
-void Communicator::allReduce(int size, void** sendbuff, void** recvbuff)
+void Communicator::allReduce(int size, void* sendbuff, void* recvbuff)
 {
-  //calling NCCL communication API. Group API is required when using
-  //multiple devices per thread/process
-  NCCLCHECK(ncclGroupStart());
-  for (int i=0; i<nDev; i++)
-     NCCLCHECK(ncclAllReduce((const void*)sendbuff[i],
-                             (void*)recvbuff[i],
-    						   size,
+  NCCLCHECK(ncclAllReduce((const void*)sendbuff,
+                             (void*)recvbuff,
+    						 size,
                              ncclFloat,
                              ncclSum,
-                             comms[i], 
-                             s[i]));
-  NCCLCHECK(ncclGroupEnd());
+                             comm, 
+                             s));
 }
 
 void Communicator::wait(){
   //synchronizing on CUDA stream to complete NCCL communication
-  for (int i=0; i<nDev; i++)
-    CUDA_CHECK(cudaStreamSynchronize(s[i]));
+  CUDA_CHECK(cudaStreamSynchronize(s));
 }
 
 Communicator::~Communicator(){
-  free(s);
-  free(comms);
-  MPICHECK(MPI_Finalize());
+  //finalizing NCCL
+  ncclCommDestroy(comm);
+  if (UseMPI == true) MPICHECK(MPI_Finalize());
 }
 
-void synch(Tensor &t1, Communicator &c){
-
-  void* addr1=t1.block()->mutable_data();
-
-  void* addr[1] = {addr1};
-  c.allReduce(t1.Size(), addr, addr);
+void synch(Tensor &t, Communicator &c){
+  void* addr = t.block()->mutable_data();
+  c.allReduce(t.Size(), addr, addr);
   c.wait();
-
 }
 
 }

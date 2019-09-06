@@ -162,7 +162,7 @@ class SGD(Optimizer):
 
 class DistOpt(object):
 
-    def __init__(self, opt=SGD(), nDev=1):
+    def __init__(self, opt=SGD(), nccl_id=None, gpu_num=None, gpu_per_node=None):
         # The class is designed to wrap an optimizer to do disttributed training.
         # opt: The optimizer to be wrapped. nDev: number of devices(GPUs) a
         # process will control/use.
@@ -172,19 +172,21 @@ class DistOpt(object):
         # rank_in_global: global rank of a process
 
         self.opt = opt
-        self.communicator = singa.Communicator(nDev)
+        if nccl_id is None:
+            # constructure for application using MPI
+            self.communicator = singa.Communicator()
+        else:
+            # constructor for application using python multi-process module
+            self.communicator = singa.Communicator(gpu_num, gpu_per_node, nccl_id)
+
         self.world_size = self.communicator.totalMPIRanksInGlobal
         self.rank_in_local = self.communicator.MPIRankInLocal
         self.rank_in_global = self.communicator.MPIRankInGlobal
 
     def update(self, param, grad):
-        # singa.synch(grad.data, self.communicator)
-        # grad /= self.communicator.totalMPIRanksInGlobal
-        grad = self.all_reduce(grad)
-        #param -= grad * self.lr
+        self.all_reduce(grad)
         self.opt.update(param, grad)
 
     def all_reduce(self, tensor):
         singa.synch(tensor.data, self.communicator)
         tensor /= self.world_size
-        return tensor
