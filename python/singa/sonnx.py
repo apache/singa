@@ -538,8 +538,8 @@ class SingaBackend(Backend):
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
         padding = tuple(onnx_node.attrs["pads"][0:2])
-        stride = tuple(onnx_node.attrs["strides"])
-        group = onnx_node.attrs["group"]
+        stride = tuple(onnx_node.attrs["strides"]) if "strides" in onnx_node.attrs else (1,1)
+        group = onnx_node.attrs["group"] if "group" in onnx_node.attrs else 1
 
         bias = len(inputs) == 3
         x = inputs[0]
@@ -595,7 +595,7 @@ class SingaBackend(Backend):
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
         padding = tuple(onnx_node.attrs["pads"][0:2])
-        stride = tuple(onnx_node.attrs["strides"])
+        stride = tuple(onnx_node.attrs["strides"]) if "strides" in onnx_node.attrs else (1,1)
 
         is_max = onnx_node.op_type == 'MaxPool'
         x = inputs[0]
@@ -769,6 +769,7 @@ class SingaBackend(Backend):
             onnx_node.op_type, len(onnx_node.inputs), len(inputs))
 
         handle, forward = cls._onnx_node_to_singa_op(onnx_node, inputs, opset_version)
+        inputs = [inputs[x] for x in onnx_node.inputs]
         return cls._run_node(onnx_node, inputs, handle, forward, opset_version)
 
     @classmethod
