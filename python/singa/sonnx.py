@@ -64,6 +64,83 @@ def postorderRecursive(root, root_t):
     return res
 
 
+def force_unicode(s):
+    """
+    return string of a bytes
+    ! borrow from onnx
+    Args:
+        s: string or bytes
+    Returns: 
+        string
+    """
+    try:
+        return s.decode('utf-8')
+    except AttributeError:
+        return s
+
+def get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape, strides_spatial, output_spatial_shape):
+    """
+    return padding shape of conv2d or pooling,
+    ! borrow from onnx
+    Args:
+        auto_pad: string
+    Args:
+        input_spatial_shape: list[int]
+    Args:
+        kernel_spatial_shape: list[int]
+    Args:
+        strides_spatial: list[int]
+    Args:
+        output_spatial_shape: list[int]
+    Returns: 
+        list[int]
+    """
+    pad_shape = [0] * len(input_spatial_shape)
+    if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
+        for i in range(len(input_spatial_shape)):
+            pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
+                kernel_spatial_shape[i] - input_spatial_shape[i]
+            if (pad_shape[i] % 2) == 0: 
+                pad_shape[i] = pad_shape[i] // 2
+            else:
+                # once the padding is odd, it means we must add extra padding at one end of the input
+                raise ValueError("Not implemented two directional padding")
+    elif auto_pad == 'VALID':
+        pass
+    return pad_shape
+
+
+def get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape, strides_spatial):
+    """
+    return output shape of conv2d or pooling,
+    ! borrow from onnx
+    Args:
+        auto_pad: string
+    Args:
+        input_spatial_shape: list[int]
+    Args:
+        kernel_spatial_shape: list[int]
+    Args:
+        strides_spatial: list[int]
+    Returns: 
+        list[int]
+    """
+    out_shape = [0] * len(input_spatial_shape)
+    if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
+        for i in range(len(input_spatial_shape)):
+            out_shape[i] = int(
+                np.ceil(
+                    float(
+                        input_spatial_shape[i])
+                    / float(
+                        strides_spatial[i])))
+    elif auto_pad == 'VALID':
+        for i in range(len(input_spatial_shape)):
+            out_shape[i] = int(np.ceil(float(input_spatial_shape[i] - (kernel_spatial_shape[i] - 1)) / float(strides_spatial[i])))
+    return out_shape
+
+
+
 class SingaFrontend(object):
     """
     This class provides mthods to convert model from singa to onnx. 
@@ -268,9 +345,11 @@ class SingaFrontend(object):
             helper.make_attribute('strides', s),
         ])
         if cls._get_singa_op_type(op) == '_Conv2d':
-            node.attribute.append(
-                helper.make_attribute('group', op.handle.group)
-            )
+            node.op_type = cls._rename_operators.get('_Conv2d')
+            node.attribute.extend([
+                helper.make_attribute('group', op.handle.group),
+            ])
+
         elif op.handle.is_max_pooling:
             node.op_type = cls._rename_operators.get('MaxPool2d')
         else:
@@ -537,9 +616,19 @@ class SingaBackend(Backend):
             forward, the autograd of singa operator
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
-        padding = tuple(onnx_node.attrs["pads"][0:2])
-        stride = tuple(onnx_node.attrs["strides"]) if "strides" in onnx_node.attrs else (1,1)
+        # todo: we only support the padding with tuple
+        padding = tuple(onnx_node.attrs["pads"][0:2]) if "pads" in onnx_node.attrs else (0, 0)
+        stride = tuple(onnx_node.attrs["strides"]) if "strides" in onnx_node.attrs else (1, 1)
+        dilation = onnx_node.attrs["dilations"] if "dilations" in onnx_node.attrs else 1
         group = onnx_node.attrs["group"] if "group" in onnx_node.attrs else 1
+
+        # not support dilation
+        if dilation != 1:
+            raise ValueError("Not implemented yet")
+
+        # only support 2d
+        if len(kernel) != 2:
+            raise ValueError("Not implemented yet")
 
         bias = len(inputs) == 3
         x = inputs[0]
@@ -594,8 +683,21 @@ class SingaBackend(Backend):
             forward, the autograd of singa operator
         """
         kernel = tuple(onnx_node.attrs["kernel_shape"])
-        padding = tuple(onnx_node.attrs["pads"][0:2])
-        stride = tuple(onnx_node.attrs["strides"]) if "strides" in onnx_node.attrs else (1,1)
+        # todo: we only support the padding with tuple
+        padding = tuple(onnx_node.attrs["pads"][0:2]) if "pads" in onnx_node.attrs else (0, 0)
+        stride = tuple(onnx_node.attrs["strides"]) if "strides" in onnx_node.attrs else (1, 1)
+        if "auto_pad" in onnx_node.attrs:
+            auto_pad = force_unicode(onnx_node.attrs['auto_pad'])
+            out_shape = get_output_shape(auto_pad,  inputs[0].shape[2:], kernel, stride)
+            padding = get_pad_shape(auto_pad, inputs[0].shape[2:], kernel, stride, out_shape)
+
+        # not support count_include_pad and auto_pad
+        if "count_include_pad" in onnx_node.attrs or "ceil_mode" in onnx_node.attrs:
+            raise ValueError("Not implemented yet")
+
+        # only support 2d
+        if len(kernel) != 2:
+            raise ValueError("Not implemented yet")
 
         is_max = onnx_node.op_type == 'MaxPool'
         x = inputs[0]

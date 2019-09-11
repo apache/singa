@@ -214,7 +214,6 @@ class TestPythonOnnx(unittest.TestCase):
         # # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
         y_t = sg_ir.run([x1])
-        print(tensor.to_numpy(y_t[0]))
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
