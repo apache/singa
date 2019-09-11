@@ -32,6 +32,7 @@ from onnx.helper import make_tensor, make_tensor_value_info, make_node, make_gra
 from cuda_helper import gpu_dev, cpu_dev
 
 import numpy as np
+import itertools
 
 autograd.training = True
 
@@ -159,6 +160,233 @@ class TestPythonOnnxBackend(unittest.TestCase):
                                                 [171., 183.]]]]).astype(np.float32)
         expect(node_with_asymmetric_padding, inputs=[x, W], outputs=[y_with_asymmetric_padding],
                name='test_conv_with_strides_and_asymmetric_padding')
+
+    def test_averagepool_2d_precomputed_pads(self):  # type: () -> None
+        """
+        input_shape: [1, 1, 5, 5]
+        output_shape: [1, 1, 5, 5]
+        pad_shape: [4, 4] -> [2, 2, 2, 2] by axis
+        """
+        node = onnx.helper.make_node(
+            'AveragePool',
+            inputs=['x'],
+            outputs=['y'],
+            kernel_shape=[5, 5],
+            pads=[2, 2, 2, 2]
+
+        )
+        x = np.array([[[
+            [1, 2, 3, 4, 5],
+            [6, 7, 8, 9, 10],
+            [11, 12, 13, 14, 15],
+            [16, 17, 18, 19, 20],
+            [21, 22, 23, 24, 25],
+        ]]]).astype(np.float32)
+        y = np.array([[[[7, 7.5, 8, 8.5, 9],
+                        [9.5, 10, 10.5, 11, 11.5],
+                        [12, 12.5, 13, 13.5, 14],
+                        [14.5, 15, 15.5, 16, 16.5],
+                        [17, 17.5, 18, 18.5, 19]]]]).astype(np.float32)
+
+        expect(node, inputs=[x], outputs=[y], name='test_averagepool_2d_precomputed_pads')
+
+    def test_averagepool_2d_precomputed_strides(self):  # type: () -> None
+        """
+        input_shape: [1, 1, 5, 5]
+        output_shape: [1, 1, 2, 2]
+        """
+        node = onnx.helper.make_node(
+            'AveragePool',
+            inputs=['x'],
+            outputs=['y'],
+            kernel_shape=[2, 2],
+            strides=[2, 2]
+        )
+        x = np.array([[[
+            [1, 2, 3, 4, 5],
+            [6, 7, 8, 9, 10],
+            [11, 12, 13, 14, 15],
+            [16, 17, 18, 19, 20],
+            [21, 22, 23, 24, 25],
+        ]]]).astype(np.float32)
+        y = np.array([[[[4, 6],
+                        [14, 16]]]]).astype(np.float32)
+
+        expect(node, inputs=[x], outputs=[y], name='test_averagepool_2d_precomputed_strides')
+
+
+    def test_averagepool_2d_precomputed_same_upper(self):  # type: () -> None
+        """
+        input_shape: [1, 1, 5, 5]
+        output_shape: [1, 1, 3, 3]
+        pad_shape: [2, 2] -> [1, 1, 1, 1] by axis
+        """
+        node = onnx.helper.make_node(
+            'AveragePool',
+            inputs=['x'],
+            outputs=['y'],
+            kernel_shape=[3, 3],
+            strides=[2, 2],
+            auto_pad='SAME_UPPER'
+        )
+        x = np.array([[[
+            [1, 2, 3, 4, 5],
+            [6, 7, 8, 9, 10],
+            [11, 12, 13, 14, 15],
+            [16, 17, 18, 19, 20],
+            [21, 22, 23, 24, 25],
+        ]]]).astype(np.float32)
+        y = np.array([[[[4, 5.5, 7],
+                        [11.5, 13, 14.5],
+                        [19, 20.5, 22]]]]).astype(np.float32)
+
+        expect(node, inputs=[x], outputs=[y], name='test_averagepool_2d_precomputed_same_upper')
+
+
+    def test_averagepool_2d_default(self):  # type: () -> None
+        """
+        input_shape: [1, 3, 32, 32]
+        output_shape: [1, 3, 31, 31]
+        """
+        node = onnx.helper.make_node(
+            'AveragePool',
+            inputs=['x'],
+            outputs=['y'],
+            kernel_shape=[2, 2],
+        )
+        x = np.random.randn(1, 3, 32, 32).astype(np.float32)
+        x_shape = np.shape(x)
+        kernel_shape = (2, 2)
+        strides = (1, 1)
+        out_shape = get_output_shape('VALID', x_shape[2:], kernel_shape, strides)
+        padded = x
+        y = pool(padded, x_shape, kernel_shape, strides, out_shape, (0, 0), 'AVG')
+
+        expect(node, inputs=[x], outputs=[y], name='test_averagepool_2d_default')
+
+    def test_averagepool_2d_pads(self):  # type: () -> None
+        """
+        input_shape: [1, 3, 28, 28]
+        output_shape: [1, 3, 30, 30]
+        pad_shape: [4, 4] -> [2, 2, 2, 2] by axis
+        """
+        node = onnx.helper.make_node(
+            'AveragePool',
+            inputs=['x'],
+            outputs=['y'],
+            kernel_shape=[3, 3],
+            pads=[2, 2, 2, 2]
+        )
+        x = np.random.randn(1, 3, 28, 28).astype(np.float32)
+        x_shape = np.shape(x)
+        kernel_shape = (3, 3)
+        strides = (1, 1)
+        pad_bottom = 2
+        pad_top = 2
+        pad_right = 2
+        pad_left = 2
+        pad_shape = [pad_top + pad_bottom, pad_left + pad_right]
+        out_shape = get_output_shape('VALID', np.add(x_shape[2:], pad_shape), kernel_shape, strides)
+        padded = np.pad(x, ((0, 0), (0, 0), (pad_top, pad_bottom), (pad_left, pad_right)), mode='constant',
+                        constant_values=np.nan)
+        y = pool(padded, x_shape, kernel_shape, strides, out_shape, pad_shape, 'AVG')
+
+        expect(node, inputs=[x], outputs=[y], name='test_averagepool_2d_pads')
+
+    def test_averagepool_2d_strides(self):  # type: () -> None
+        """
+        input_shape: [1, 3, 32, 32]
+        output_shape: [1, 3, 10, 10]
+        """
+        node = onnx.helper.make_node(
+            'AveragePool',
+            inputs=['x'],
+            outputs=['y'],
+            kernel_shape=[5, 5],
+            strides=[3, 3]
+        )
+        x = np.random.randn(1, 3, 32, 32).astype(np.float32)
+        x_shape = np.shape(x)
+        kernel_shape = (5, 5)
+        strides = (3, 3)
+        out_shape = get_output_shape('VALID', x_shape[2:], kernel_shape, strides)
+        padded = x
+        y = pool(padded, x_shape, kernel_shape, strides, out_shape, (0, 0), 'AVG')
+
+        expect(node, inputs=[x], outputs=[y], name='test_averagepool_2d_strides')
+
+    
+
+# return padding shape of conv2d or pooling
+def get_pad_shape(auto_pad,  # type: Text
+                  input_spatial_shape,  # type: Sequence[int]
+                  kernel_spatial_shape,  # type: Sequence[int]
+                  strides_spatial,  # type: Sequence[int]
+                  output_spatial_shape  # type: Sequence[int]
+                  ):  # type: (...) -> Sequence[int]
+    pad_shape = [0] * len(input_spatial_shape)
+    if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
+        for i in range(len(input_spatial_shape)):
+            pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
+                kernel_spatial_shape[i] - input_spatial_shape[i]
+    elif auto_pad == 'VALID':
+        pass
+    return pad_shape
+
+# return output shape of conv2d or pooling
+def get_output_shape(auto_pad,  # type: Text
+                     input_spatial_shape,  # type: Sequence[int]
+                     kernel_spatial_shape,  # type: Sequence[int]
+                     strides_spatial  # type: Sequence[int]
+                     ):  # type: (...) -> Sequence[int]
+    out_shape = [0] * len(input_spatial_shape)
+    if auto_pad in ('SAME_UPPER', 'SAME_LOWER'):
+        for i in range(len(input_spatial_shape)):
+            out_shape[i] = int(
+                np.ceil(
+                    float(
+                        input_spatial_shape[i])
+                    / float(
+                        strides_spatial[i])))
+    elif auto_pad == 'VALID':
+        for i in range(len(input_spatial_shape)):
+            out_shape[i] = int(np.ceil(float(input_spatial_shape[i] - (kernel_spatial_shape[i] - 1)) / float(strides_spatial[i])))
+    return out_shape
+
+
+def pool(padded,  # type: np.ndarray
+         x_shape,  # type: Sequence[int]
+         kernel_shape,  # type: Sequence[int]
+         strides_shape,  # type: Sequence[int]
+         out_shape,  # type: Sequence[int]
+         pad_shape,  # type: Sequence[int]
+         pooling_type,  # type: Text
+         count_include_pad=0  # type: int
+         ):  # type: (...) -> np.ndarray
+    spatial_size = len(x_shape) - 2
+    y = np.zeros([x_shape[0], x_shape[1]] + list(out_shape))
+
+    for shape in itertools.product(range(x_shape[0]), range(x_shape[1]), *[range(int(
+            (x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) / strides_shape[i] + 1)) for i in range(spatial_size)]):
+        window = padded[shape[0], shape[1]]
+        window_vals = np.array([window[i] for i in list(
+            itertools.product(
+                *[range(strides_shape[i] * shape[i + 2], strides_shape[i] * shape[i + 2] + kernel_shape[i]) for i in
+                  range(spatial_size)])
+        )])
+        if pooling_type == 'AVG':
+            f = np.average
+        elif pooling_type == 'MAX':
+            f = np.max
+        else:
+            raise NotImplementedError(
+                'Pooling type {} does not support. Should be AVG, MAX'.format(pooling_type))
+
+        if count_include_pad == 1 and pooling_type == 'AVG':
+            y[shape] = f(window_vals)
+        else:
+            y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
+    return y.astype(np.float32)
 
 if __name__ == '__main__':
     unittest.main()
