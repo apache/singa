@@ -722,7 +722,7 @@ class SingaBackend(Backend):
         Returns: the autograd of singa operator
         """
         x = inputs[0]
-        factor = onnx_node.attrs["momentum"]
+        factor = onnx_node.attrs["momentum"] if "momentum" in onnx_node.attrs else 0.9
         if x.device.id() == -1:
             raise NotImplementedError
         else:

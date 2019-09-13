@@ -692,7 +692,7 @@ class Sum(Operation):
     def forward(self, *l):
         if training:
             self.l = len(l)
-        assert(len(l)>0);
+        assert(len(l)>0)
         x = singa.Tensor(list(l[0].shape()),l[0].device())
         x.SetFloatValue(0.0)
         for i in range(len(l)):
