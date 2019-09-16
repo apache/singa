@@ -165,8 +165,8 @@ class SingaFrontend(object):
         'Concat': 'Concat',
         'Flatten': 'Flatten',
         'AddBias': 'Add',
-        # 'GEMM': 'Gemm',
-        # 'Reshape': 'Reshape',
+        'GEMM': 'Gemm',
+        'Reshape': 'Reshape',
         'Sum': 'Sum',
     }
 
@@ -179,8 +179,8 @@ class SingaFrontend(object):
         '_BatchNorm2d': '_create_batch_norm',
         'Concat': '_create_concat',
         'Flatten': '_create_flatten',
-        # 'GEMM': '_create_gemm',
-        # 'Reshape': '_create_reshape',
+        'GEMM': '_create_gemm',
+        'Reshape': '_create_reshape',
     }
 
     # some ops(such as batchnorm) has inputs we cannot handle directly,
@@ -567,8 +567,8 @@ class SingaBackend(Backend):
         'BatchNormalization': 'batchnorm_2d',
         'Concat': 'Concat',
         'Flatten': 'Flatten',
-        # 'Gemm': 'GEMM',
-        # 'Reshape': 'Reshape',
+        'Gemm': 'GEMM',
+        'Reshape': 'Reshape',
         'Sum': 'sum',
     }
 
@@ -582,8 +582,8 @@ class SingaBackend(Backend):
         'Concat': '_create_concat',
         'Mul': '_create_matmul',
         'Flatten': '_create_flatten',
-        # 'Gemm': '_create_gemm',
-        # 'Reshape': '_create_reshape',
+        'Gemm': '_create_gemm',
+        'Reshape': '_create_reshape',
     }
 
     @classmethod
@@ -747,6 +747,8 @@ class SingaBackend(Backend):
             the autograd of singa operator
         """
         factor = onnx_node.attrs["axis"]
+        if factor < 0:
+            factor = len(inputs[0].shape) + factor # in order to support the negative axis
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
         return None, forward(axis=factor)
 
