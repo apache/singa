@@ -767,6 +767,145 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[data_0, data_1], outputs=[result],
                name='test_sum_two_inputs')
 
+    def test_relu(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Relu',
+            inputs=['x'],
+            outputs=['y'],
+        )
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.clip(x, 0, np.inf)
+
+        expect(node, inputs=[x], outputs=[y],
+               name='test_relu')
+
+    def test_sigmoid(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Sigmoid',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = 1.0 / (1.0 + np.exp(np.negative(x)))  # expected output [0.26894143, 0.5, 0.7310586]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_sigmoid_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = 1.0 / (1.0 + np.exp(np.negative(x)))
+        expect(node, inputs=[x], outputs=[y],
+               name='test_sigmoid')
+
+    def test_softmax(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Softmax',
+            inputs=['x'],
+            outputs=['y'],
+        )
+        x = np.array([[-1, 0, 1]]).astype(np.float32)
+        # expected output [[0.09003058, 0.24472848, 0.66524094]]
+        y = np.exp(x) / np.sum(np.exp(x), axis=1)
+        print(y)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_softmax_example')
+
+    # def test_softmax_axis(self):  # type: () -> None
+    #     def softmax_2d(x):  # type: (np.ndarray) -> np.ndarray
+    #         max_x = np.max(x, axis=1).reshape((-1, 1))
+    #         exp_x = np.exp(x - max_x)
+    #         return exp_x / np.sum(exp_x, axis=1).reshape((-1, 1))
+
+    #     x = np.array([[0, 1, 2, 3], [10000, 10001, 10002, 10003]]).astype(np.float32)
+    #     # expected output [[0.0320586, 0.08714432, 0.23688284, 0.64391428],
+    #     #                 [0.0320586, 0.08714432, 0.23688284, 0.64391428]]
+    #     y = softmax_2d(x)
+
+    #     node = onnx.helper.make_node(
+    #         'Softmax',
+    #         inputs=['x'],
+    #         outputs=['y'],
+    #     )
+    #     expect(node, inputs=[x], outputs=[y],
+    #            name='test_softmax_large_number')
+
+    #     x = np.abs(np.random.randn(3, 4, 5).astype(np.float32))
+    #     node = onnx.helper.make_node(
+    #         'Softmax',
+    #         inputs=['x'],
+    #         outputs=['y'],
+    #         axis=0,
+    #     )
+    #     y = softmax_2d(x.reshape(1, 60)).reshape(3, 4, 5)
+    #     expect(node, inputs=[x], outputs=[y],
+    #            name='test_softmax_axis_0')
+
+        # node = onnx.helper.make_node(
+        #     'Softmax',
+        #     inputs=['x'],
+        #     outputs=['y'],
+        #     axis=1,
+        # )
+        # y = softmax_2d(x.reshape(3, 20)).reshape(3, 4, 5)
+        # expect(node, inputs=[x], outputs=[y],
+        #        name='test_softmax_axis_1')
+
+        # # default axis is 1
+        # node = onnx.helper.make_node(
+        #     'Softmax',
+        #     inputs=['x'],
+        #     outputs=['y'],
+        # )
+        # expect(node, inputs=[x], outputs=[y],
+        #        name='test_softmax_default_axis')
+
+        # node = onnx.helper.make_node(
+        #     'Softmax',
+        #     inputs=['x'],
+        #     outputs=['y'],
+        #     axis=2,
+        # )
+        # y = softmax_2d(x.reshape(12, 5)).reshape(3, 4, 5)
+        # expect(node, inputs=[x], outputs=[y],
+        #        name='test_softmax_axis_2')
+
+        # node = onnx.helper.make_node(
+        #     'Softmax',
+        #     inputs=['x'],
+        #     outputs=['y'],
+        #     axis=-1,
+        # )
+        # y = softmax_2d(x.reshape(12, 5)).reshape(3, 4, 5)
+        # expect(node, inputs=[x], outputs=[y],
+        #        name='test_softmax_negative_axis')
+
+    def test_matmul(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'MatMul',
+            inputs=['a', 'b'],
+            outputs=['c'],
+        )
+
+        # 2d
+        a = np.random.randn(3, 4).astype(np.float32)
+        b = np.random.randn(4, 3).astype(np.float32)
+        c = np.matmul(a, b)
+        expect(node, inputs=[a, b], outputs=[c],
+               name='test_matmul_2d')
+
+        # # 3d not support 3d
+        # a = np.random.randn(2, 3, 4).astype(np.float32)
+        # b = np.random.randn(2, 4, 3).astype(np.float32)
+        # c = np.matmul(a, b)
+        # expect(node, inputs=[a, b], outputs=[c],
+        #        name='test_matmul_3d')
+
+        # # 4d not support 4d
+        # a = np.random.randn(1, 2, 3, 4).astype(np.float32)
+        # b = np.random.randn(1, 2, 4, 3).astype(np.float32)
+        # c = np.matmul(a, b)
+        # expect(node, inputs=[a, b], outputs=[c],
+        #        name='test_matmul_4d')
+
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
                   input_spatial_shape,  # type: Sequence[int]
