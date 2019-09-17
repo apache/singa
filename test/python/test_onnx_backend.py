@@ -664,22 +664,22 @@ class TestPythonOnnxBackend(unittest.TestCase):
                 expect(node, inputs=[v for v in values], outputs=[output],
                        name='test_concat_' + test_case + '_axis_negative_' + str(abs(i)))
 
-    def test_flatten(self):  # type: () -> None
-        shape = (2, 3, 4, 5)
-        a = np.random.random_sample(shape).astype(np.float32)
+    # def test_flatten(self):  # type: () -> None
+    #     shape = (2, 3, 4, 5)
+    #     a = np.random.random_sample(shape).astype(np.float32)
 
-        for i in range(len(shape)):
-            node = onnx.helper.make_node(
-                'Flatten',
-                inputs=['a'],
-                outputs=['b'],
-                axis=i,
-            )
+    #     for i in range(len(shape)):
+    #         node = onnx.helper.make_node(
+    #             'Flatten',
+    #             inputs=['a'],
+    #             outputs=['b'],
+    #             axis=i,
+    #         )
 
-            new_shape = (1, -1) if i == 0 else (np.prod(shape[0:i]).astype(int), -1)
-            b = np.reshape(a, new_shape)
-            expect(node, inputs=[a], outputs=[b],
-                   name='test_flatten_axis' + str(i))
+    #         new_shape = (1, -1) if i == 0 else (np.prod(shape[0:i]).astype(int), -1)
+    #         b = np.reshape(a, new_shape)
+    #         expect(node, inputs=[a], outputs=[b],
+    #                name='test_flatten_axis' + str(i))
 
     # def test_flatten_with_default_axis(self):  # type: () -> None
     #     node = onnx.helper.make_node(
@@ -711,6 +711,61 @@ class TestPythonOnnxBackend(unittest.TestCase):
     #         b = np.reshape(a, new_shape)
     #         expect(node, inputs=[a], outputs=[b],
     #                name='test_flatten_negative_axis' + str(abs(i)))
+
+
+    def test_add(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Add',
+            inputs=['x', 'y'],
+            outputs=['sum'],
+        )
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(3, 4, 5).astype(np.float32)
+        expect(node, inputs=[x, y], outputs=[x + y],
+               name='test_add')
+
+    def test_add_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Add',
+            inputs=['x', 'y'],
+            outputs=['sum'],
+        )
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(5).astype(np.float32)
+        expect(node, inputs=[x, y], outputs=[x + y],
+               name='test_add_bcast')
+
+    def test_sum(self):  # type: () -> None
+        data_0 = np.array([3, 0, 2]).astype(np.float32)
+        data_1 = np.array([1, 3, 4]).astype(np.float32)
+        data_2 = np.array([2, 6, 6]).astype(np.float32)
+        result = np.array([6, 9, 12]).astype(np.float32)
+        node = onnx.helper.make_node(
+            'Sum',
+            inputs=['data_0', 'data_1', 'data_2'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0, data_1, data_2], outputs=[result],
+               name='test_sum_example')
+
+        node = onnx.helper.make_node(
+            'Sum',
+            inputs=['data_0'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0], outputs=[data_0],
+               name='test_sum_one_input')
+
+        result = np.add(data_0, data_1)
+        node = onnx.helper.make_node(
+            'Sum',
+            inputs=['data_0', 'data_1'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0, data_1], outputs=[result],
+               name='test_sum_two_inputs')
 
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
