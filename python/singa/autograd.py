@@ -817,12 +817,17 @@ class Flatten(Operation):
         super(Flatten, self).__init__()
         # flatten all axis after (inclusive) start_axis
         self.start_axis = start_axis
-        assert start_axis == 1, "must flatten into 2d array not"
 
     def forward(self, x):
-        # TODO Do flatten start from axis != 1
         self.shape = list(x.shape())
-        y = singa.Reshape(x, (x.shape()[0], x.Size() // x.shape()[0]))
+        shape, axis = self.shape, self.start_axis
+        # the start_axis must be within this range (0, r-1)
+        assert axis <= len(
+            shape)-1 or axis >= 0, "the start_axis must be within (0, %d-1)" % len(shape)
+        new_shape = (1, np.prod(shape)) if axis == 0 else (
+            *shape[0:axis], np.prod(shape[axis:]).astype(int))
+        print(new_shape)
+        y = singa.Reshape(x, new_shape)
         return y
 
     def backward(self, dy):

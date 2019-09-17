@@ -791,6 +791,9 @@ class SingaBackend(Backend):
             the autograd of singa operator
         """
         factor = onnx_node.attrs["axis"]
+        if factor < 0:
+            factor = len(inputs[0].shape) + factor # in order to support the negative axis
+        
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
         return None, forward(start_axis=factor)
 
