@@ -2529,11 +2529,8 @@ class And(Operation):
         super(And, self).__init__()
 
     def forward(self, a, b):
-        m = singa.__div__(a,b)
-
-        mask0 = singa.GEFloat(m,1)
-        mask1 = singa.LEFloat(m,1)
-        cur = singa.__mul__(mask0,mask1)
+        m = singa.__mul__(a, b)
+        cur = singa.PowFloat(singa.Sign(m), 2)
 
         return cur
 
@@ -2550,21 +2547,8 @@ class Or(Operation):
         super(Or, self).__init__()
 
     def forward(self, a, b):
-        #find equal element-wise
-        m = singa.__sub__(a,b)
-        m0 = singa.GEFloat(m,0)
-        m1 = singa.LEFloat(m,0)
-        mask0 = singa.__mul__(m0, m1)
-
-        #find 0 element-wise
-        n = singa.__add__(a,b)
-        n0 = singa.GEFloat(n,0)
-        n1 = singa.LEFloat(n,0)
-        mask1 = singa.__mul__(n0, n1)
-
-        #find equal 0 element-wise
-        n = singa.__mul__(mask0, mask1)
-        cur = singa.LEFloat(n, 0)
+        m = singa.__add__(singa.PowFloat(singa.Sign(a), 2.0), singa.PowFloat(singa.Sign(b), 2.0))
+        cur = singa.Sign(m) 
 
         return cur
 
@@ -2601,22 +2585,8 @@ class Xor(Operation):
         super(Xor, self).__init__()
 
     def forward(self, a, b):
-        #find element with value =0
-        m0 = singa.__mul__(a,b)
-
-        m00 = singa.GEFloat(m0,0)
-        m01 = singa.LEFloat(m0,0)
-        m1 = singa.__mul__(m00, m01)
-
-        #find element-wise value =0
-        m2 = singa.__add__(a,b)
-
-        #find y=np.logical_xor(x)
-        n = singa.__mul__(m1, m2)
-        n0 = singa.GTFloat(n,0)
-        n1 = singa.LTFloat(n,0)
-
-        cur = singa.__add__(n0, n1)
+        m = singa.__sub__(singa.PowFloat(singa.Sign(a), 2.0), singa.PowFloat(singa.Sign(b), 2.0))
+        cur = singa.PowFloat(singa.Sign(m), 2.0)    
 
         return cur
 
