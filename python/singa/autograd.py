@@ -388,7 +388,8 @@ class ReLU(Operation):
             dx(CTensor): dL / dx = dy if x >= 0; otherwise 0;
         """
         dx = singa.GTFloat(self.input, 0.0)
-        return singa.__mul__(dy, dx)
+        dx *= dy
+        return dx
 
 
 def relu(x):
@@ -1687,7 +1688,7 @@ class Tanh(Operation):
         dx = singa.__mul__(self.cache[0], self.cache[0])
         dx = singa.MultFloat(dx, -1.0)
         dx = singa.AddFloat(dx, 1.0)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 
@@ -1706,7 +1707,7 @@ class Cos(Operation):
     def backward(self, dy):
         dx = singa.Sin(self.input)
         dx = singa.MultFloat(dx, -1.0)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def cos(x):
@@ -1723,7 +1724,7 @@ class Cosh(Operation):
 
     def backward(self, dy):
         dx = singa.Sinh(self.input)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def cosh(x):
@@ -1744,7 +1745,7 @@ class Acos(Operation):
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -0.5)
         dx = singa.MultFloat(dx, -1.0)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def acos(x):
@@ -1766,7 +1767,7 @@ class Acosh(Operation):
         temp = singa.Sqrt(temp)
         dx = singa.__mul__(dx, temp)
         dx = singa.PowFloat(dx, -1.0)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def acosh(x):
@@ -1783,7 +1784,7 @@ class Sin(Operation):
 
     def backward(self, dy):
         dx = singa.Cos(self.input)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def sin(x):
@@ -1800,7 +1801,7 @@ class Sinh(Operation):
 
     def backward(self, dy):
         dx = singa.Cosh(self.input)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def sinh(x):
@@ -1820,7 +1821,7 @@ class Asin(Operation):
         dx = singa.MultFloat(dx, -1.0)         
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -0.5)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def asin(x):
@@ -1839,7 +1840,7 @@ class Asinh(Operation):
         dx = singa.Square(self.input)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -0.5)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def asinh(x):
@@ -1858,7 +1859,7 @@ class Tan(Operation):
         dx = singa.Cos(self.input)
         dx = singa.Square(dx)
         dx = singa.PowFloat(dx, -1.0)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def tan(x):
@@ -1877,7 +1878,7 @@ class Atan(Operation):
         dx = singa.Square(self.input)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -1.0)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def atan(x):
@@ -1897,7 +1898,7 @@ class Atanh(Operation):
         dx = singa.MultFloat(dx, -1.0)         
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.PowFloat(dx, -1.0)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 def atanh(x):
@@ -1917,7 +1918,7 @@ class Sigmoid(Operation):
         dx = singa.MultFloat(self.cache[0], -1.0)
         dx = singa.AddFloat(dx, 1.0)
         dx = singa.__mul__(self.cache[0], dx)
-        dx = singa.__mul__(dy, dx)
+        dx *= dy
         return dx
 
 
@@ -2178,7 +2179,8 @@ class Abs(Operation):
 
     def backward(self, dy):
         dx = singa.Sign(self.input)
-        return singa.__mul__(dy, dx)
+        dx *= dy
+        return dx
 
 
 def abs(a):
@@ -2193,7 +2195,8 @@ class Exp(Operation):
 
     def backward(self, dy):
         dx = singa.Exp(self.input)
-        return singa.__mul__(dy, dx)
+        dx *= dy
+        return dx
 
 
 def exp(a):
@@ -2221,7 +2224,8 @@ class LeakyRelu(Operation):
         dx2 = singa.LTFloat(self.input, 0.0)
         dx2 = singa.MultFloat(dx2, self.a)
         dx = singa.__add__(dx1, dx2)
-        return singa.__mul__(dy, dx)
+        dx *= dy
+        return dx
 
 
 def leakyrelu(x, a=0.01):
