@@ -138,7 +138,7 @@ def augmentation(x, batch_size):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
     return x
 
-def train_mnist_cnn(sgd, dev, max_epoch, batch_size, DIST_MPI=False, data_partition=None):
+def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None, gpu_num=None, gpu_per_node=None, nccl_id=None):
 
     # Prepare training and valadiation data
     train_x, train_y, test_x, test_y = load_dataset()
@@ -151,13 +151,18 @@ def train_mnist_cnn(sgd, dev, max_epoch, batch_size, DIST_MPI=False, data_partit
     train_x = train_x / 255
     test_x = test_x / 255
 
-    if DIST_MPI:
+    if DIST:
+        # For Distributed GPU Training
+        sgd = opt.DistOpt(sgd, nccl_id=nccl_id, gpu_num=gpu_num, gpu_per_node=gpu_per_node)
+        dev = device.create_cuda_gpu_on(sgd.rank_in_local)
         # Dataset partition for distributed training
         train_x, train_y = data_partition(train_x, train_y, sgd.rank_in_global, sgd.world_size)
         test_x, test_y = data_partition(test_x, test_y, sgd.rank_in_global, sgd.world_size)
         world_size = sgd.world_size
     else:
-    	world_size = 1
+        # For Single GPU
+        dev = device.create_cuda_gpu()
+        world_size = 1
 
     # create model
     model = CNN()
@@ -168,7 +173,7 @@ def train_mnist_cnn(sgd, dev, max_epoch, batch_size, DIST_MPI=False, data_partit
     num_test_batch = test_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
 
-    if DIST_MPI:
+    if DIST:
         #Sychronize the initial parameters
         autograd.training = True
         x = np.random.randn(batch_size, 1, IMG_SIZE, IMG_SIZE).astype(np.float32)
@@ -185,7 +190,7 @@ def train_mnist_cnn(sgd, dev, max_epoch, batch_size, DIST_MPI=False, data_partit
         start_time = time.time()
         np.random.shuffle(idx)
 
-        if ((DIST_MPI == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.rank_in_global == 0)):
             print('Starting Epoch %d:' % (epoch))
 
         # Training Phase
@@ -207,14 +212,14 @@ def train_mnist_cnn(sgd, dev, max_epoch, batch_size, DIST_MPI=False, data_partit
             for p, g in autograd.backward(loss):
                 sgd.update(p, g)
 
-        if DIST_MPI:
+        if DIST:
             # Reduce the Evaluation Accuracy and Loss from Multiple Devices
             reducer = tensor.Tensor((1,), dev, tensor.float32)
             train_correct = reduce_variable(train_correct, sgd, reducer)
             train_loss = reduce_variable(train_loss, sgd, reducer)
 
         # Output the Training Loss and Accuracy
-        if ((DIST_MPI == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.rank_in_global == 0)):
             print('Training loss = %f, training accuracy = %f' % (train_loss, train_correct / (num_train_batch*batch_size*world_size)), flush=True)
 
         # Evaluation Phase
@@ -227,20 +232,19 @@ def train_mnist_cnn(sgd, dev, max_epoch, batch_size, DIST_MPI=False, data_partit
             out_test = model.forward(tx)
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
-        if DIST_MPI:
+        if DIST:
             # Reduce the Evaulation Accuracy from Multiple Devices
             test_correct = reduce_variable(test_correct, sgd, reducer)
 
         # Output the Evaluation Accuracy
-        if ((DIST_MPI == False) or (sgd.rank_in_global == 0)):
+        if ((DIST == False) or (sgd.rank_in_global == 0)):
             print('Evaluation accuracy = %f, Elapsed Time = %fs' % (test_correct / (num_test_batch*batch_size*world_size), time.time() - start_time ), flush=True)
 
 if __name__ == '__main__':
 
     sgd = opt.SGD(lr=0.005, momentum=0.9, weight_decay=1e-5)
-    dev = device.create_cuda_gpu_on(0) 
 
     max_epoch = 10
     batch_size = 64
 
-    train_mnist_cnn(sgd=sgd, dev=dev, max_epoch=max_epoch, batch_size=batch_size)
+    train_mnist_cnn(sgd=sgd, max_epoch=max_epoch, batch_size=batch_size)

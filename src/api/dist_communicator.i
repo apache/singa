@@ -31,15 +31,22 @@ namespace singa{
 
 #if USE_DIST
 
+class NcclIdHolder {
+public:
+  ncclUniqueId id;
+  NcclIdHolder(); 
+};
+
 class Communicator {
 public:
   int MPIRankInGlobal;
   int totalMPIRanksInGlobal;
   int MPIRankInLocal;
-  Communicator(int nDev);
+  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder);
+  Communicator();
 };
 
-void synch(Tensor &t1, Communicator &c);
+void synch(Tensor &t, Communicator &c);
 
 #endif  // USE_DIST
 

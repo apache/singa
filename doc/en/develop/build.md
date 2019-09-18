@@ -43,7 +43,7 @@ To build the CPU version of SINGA
 
     conda build tool/conda/singa/
 
-The above commands have been tested on Ubuntu 16.04 and Mac OSX.
+The above commands have been tested on Ubuntu (14.04, 16.04 and 18.04) and macOS 10.11.
 Refer to the [Travis-CI page](https://travis-ci.org/apache/incubator-singa) for more information.
 
 ### Build GPU Version
