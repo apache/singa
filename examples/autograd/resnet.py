@@ -249,7 +249,7 @@ if __name__ == "__main__":
     dev = device.create_cuda_gpu_on(0)
     # dev = device.create_cuda_gpu()
     niters = 100
-    batch_size = 16
+    batch_size = 32
     IMG_SIZE = 224
     sgd = opt.SGD(lr=0.1, momentum=0.9, weight_decay=1e-5)
 
@@ -263,25 +263,30 @@ if __name__ == "__main__":
 
     import time
 
+    dev.Sync()
     start = time.time()
     fd = 0
     softmax = 0
     update = 0
     with trange(niters) as t:
         for b in t:
+            dev.Sync()
             tick = time.time()
             x = model(tx)
+            dev.Sync()
             fd += time.time() - tick
             tick = time.time()
             loss = autograd.softmax_cross_entropy(x, ty)
+            dev.Sync()
             softmax += time.time() - tick
             for p, g in autograd.backward(loss):
-                # print(p.shape, g.shape)
+                # dev.Sync()  # this "for" loops for a large number of times, so can slow down
                 tick = time.time()
                 sgd.update(p, g)
+                # dev.Sync()  # this "for" loops for a large number of times, so can slow down
                 update += time.time() - tick
-                # pass
-            
+
+    dev.Sync()            
     end = time.time()
     throughput = niters * batch_size / (end - start)
     print("Throughput = {} per second".format(throughput))
