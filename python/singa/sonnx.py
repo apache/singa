@@ -168,6 +168,18 @@ class SingaFrontend(object):
         # 'GEMM': 'Gemm',
         'Reshape': 'Reshape',
         'Sum': 'Sum',
+        'cos': 'Cos',
+        'cosh': 'Cosh',
+        'sin': 'Sin',
+        'sinh': 'Sinh',
+        'tan': 'Tan',
+        'tanh': 'Tanh',
+        'acos': 'Acos',
+        'acosh': 'Acosh',
+        'asin': 'Asin',
+        'asinh': 'Asinh',
+        'atan': 'Atan',
+        'atanh': 'Atanh',
     }
 
     # this dict indicates the operators that need extra handle
@@ -589,6 +601,18 @@ class SingaBackend(Backend):
         # 'Gemm': 'GEMM',
         'Reshape': 'Reshape',
         'Sum': 'sum',
+        'Cos': 'cos',
+        'Cosh': 'cosh',
+        'Sin': 'sin',
+        'Sinh': 'sinh',
+        'Tan': 'tan',
+        'Tanh': 'tanh',
+        'Acos': 'acos',
+        'Acosh': 'acosh',
+        'Asin': 'asin',
+        'Asinh': 'asinh',
+        'Atan': 'atan',
+        'Atanh': 'atanh',
     }
 
     # this dict indicates the operators that need extra handle

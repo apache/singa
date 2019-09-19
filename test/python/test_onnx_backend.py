@@ -906,6 +906,210 @@ class TestPythonOnnxBackend(unittest.TestCase):
         # expect(node, inputs=[a, b], outputs=[c],
         #        name='test_matmul_4d')
 
+    def test_cos(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Cos',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.cos(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_cos_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.cos(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_cos')
+
+    def test_cosh(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Cosh',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.cosh(x)  # expected output [1.54308069,  1.,  1.54308069]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_cosh_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.cosh(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_cosh')
+
+    def test_Sin(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Sin',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.sin(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_sin_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.sin(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_sin')
+
+    def test_Sinh(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Sinh',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.sinh(x)  # expected output [-1.17520118,  0.,  1.17520118]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_sinh_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.sinh(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_sinh')
+
+    def test_Tan(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Tan',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.tan(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_tan_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.tan(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_tan')
+
+    def test_Tanh(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Tanh',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.tanh(x)  # expected output [-0.76159418, 0., 0.76159418]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_tanh_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.tanh(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_tanh')
+
+    def test_Acos(self):  # type: () -> None      
+        node = onnx.helper.make_node(
+            'Acos',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-0.5, 0, 0.5]).astype(np.float32)
+        y = np.arccos(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_acos_example')
+
+        x = np.random.rand(3, 4, 5).astype(np.float32)
+        y = np.arccos(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_acos')      
+
+    def test_Acosh(self):  # type: () -> None  
+        node = onnx.helper.make_node(
+            'Acosh',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([10, np.e, 1]).astype(np.float32)
+        y = np.arccosh(x)  # expected output [2.99322295,  1.65745449,  0.]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_acosh_example')
+
+        x = np.random.uniform(1.0, 10.0, (3, 4, 5)).astype(np.float32)
+        y = np.arccosh(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_acosh')     
+
+    def test_Asin(self):  # type: () -> None  
+        node = onnx.helper.make_node(
+            'Asin',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-0.5, 0, 0.5]).astype(np.float32)
+        y = np.arcsin(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_asin_example')
+
+        x = np.random.rand(3, 4, 5).astype(np.float32)
+        y = np.arcsin(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_asin')
+
+    def test_Asinh(self):  # type: () -> None  
+        node = onnx.helper.make_node(
+            'Asinh',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.arcsinh(x)  # expected output [-0.88137358,  0.,  0.88137358]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_asinh_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.arcsinh(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_asinh')
+
+    def test_Atan(self):  # type: () -> None  
+        node = onnx.helper.make_node(
+            'Atan',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.arctan(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_atan_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.arctan(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_atan')
+
+    def test_Atanh(self):  # type: () -> None  
+        node = onnx.helper.make_node(
+            'Atanh',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-0.5, 0, 0.5]).astype(np.float32)
+        y = np.arctanh(x)  # expected output [-0.54930615,  0.,  0.54930615]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_atanh_example')
+
+        x = np.random.uniform(0.0, 1.0, (3, 4, 5)).astype(np.float32)
+        y = np.arctanh(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_atanh')
+
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
                   input_spatial_shape,  # type: Sequence[int]
