@@ -247,7 +247,6 @@ if __name__ == "__main__":
     model = resnet50()
     print("Start intialization............")
     dev = device.create_cuda_gpu_on(0)
-    # dev = device.create_cuda_gpu()
     niters = 100
     batch_size = 32
     IMG_SIZE = 224
@@ -280,10 +279,10 @@ if __name__ == "__main__":
             dev.Sync()
             softmax += time.time() - tick
             for p, g in autograd.backward(loss):
-                # dev.Sync()  # this "for" loops for a large number of times, so can slow down
+                dev.Sync()  # this "for" loops for a large number of times, so can slow down
                 tick = time.time()
                 sgd.update(p, g)
-                # dev.Sync()  # this "for" loops for a large number of times, so can slow down
+                dev.Sync()  # this "for" loops for a large number of times, so can slow down
                 update += time.time() - tick
 
     dev.Sync()            
