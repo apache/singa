@@ -640,8 +640,12 @@ class SingaBackend(Backend):
         Returns: the handle of singa operator
         Returns: the autograd of singa operator
         """
-        shape = tuple(tensor.to_numpy(inputs[1]).astype(np.int32))
-        _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
+        shape = tensor.to_numpy(inputs[1]).astype(np.int32).tolist()
+        # handle the shape with -1
+        hidden_shape = int(np.prod(inputs[0].shape) // np.abs(np.prod(shape)))
+        shape = [s if s != -1 else hidden_shape for s in shape]
+        _, forward = cls._common_onnx_node_to_singa_op(
+            onnx_node, inputs, opset_version)
         return _, forward(shape)
 
     @classmethod
@@ -855,7 +859,7 @@ class SingaBackend(Backend):
         Returns: 
             the autograd of singa operator
         """
-        factor = onnx_node.attrs["axis"]
+        factor = onnx_node.attrs["axis"] if "axis" in onnx_node.attrs else 1
         if factor < 0:
             factor = len(inputs[0].shape) + factor # in order to support the negative axis
         
@@ -1021,7 +1025,7 @@ class SingaBackend(Backend):
                 # we must know the shape of ouput
                 # becasue it will become the input of next layer
                 # so we need to init a new tensor with the same shape with the output
-                inputs = [tensor_map[x] for x in node.inputs]
+                inputs = [tensor_map[x].clone() for x in node.inputs]
                 outputs = cls._run_node(node, inputs, handle, forward, opset_version)
                 tensor_map.update(outputs)
         return weights, singa_ops
@@ -1108,6 +1112,8 @@ class SingaRep(BackendRep):
             self.tensor_map[x.name] = val
         for _, op, handle, forward in self.singa_ops[:last_layers]:
             inputs = [self.tensor_map[x] for x in op.inputs]
+            if op.op_type == 'Reshape':
+                inputs = [inputs[0]]
             outputs = forward(*inputs) if handle is None else forward(handle, *inputs)
             if not isinstance(outputs, collections.Iterable):
                 outputs = [outputs]

@@ -606,27 +606,27 @@ class TestPythonOnnxBackend(unittest.TestCase):
     #            name='test_batchnorm_epsilon')
 
     
-    # def test_reshape(self):  # type: () -> None
-    #     original_shape = [2, 3, 4]
-    #     test_cases = {
-    #         'reordered_dims': np.array([4, 2, 3], dtype=np.int64),
-    #         'reduced_dims': np.array([3, 8], dtype=np.int64),
-    #         'extended_dims': np.array([3, 2, 2, 2], dtype=np.int64),
-    #         'one_dim': np.array([24], dtype=np.int64),
-    #         'negative_dim': np.array([6, -1, 2], dtype=np.int64),
-    #     }
-    #     data = np.random.random_sample(original_shape).astype(np.float32)
+    def test_reshape(self):  # type: () -> None
+        original_shape = [2, 3, 4]
+        test_cases = {
+            'reordered_dims': np.array([4, 2, 3], dtype=np.int64),
+            'reduced_dims': np.array([3, 8], dtype=np.int64),
+            'extended_dims': np.array([3, 2, 2, 2], dtype=np.int64),
+            'one_dim': np.array([24], dtype=np.int64),
+            'negative_dim': np.array([6, -1, 2], dtype=np.int64),
+        }
+        data = np.random.random_sample(original_shape).astype(np.float32)
 
-    #     for test_name, shape in test_cases.items():
-    #         node = onnx.helper.make_node(
-    #             'Reshape',
-    #             inputs=['data', 'shape'],
-    #             outputs=['reshaped'],
-    #         )
+        for test_name, shape in test_cases.items():
+            node = onnx.helper.make_node(
+                'Reshape',
+                inputs=['data', 'shape'],
+                outputs=['reshaped'],
+            )
 
-    #         reshaped = np.reshape(data, shape)
-    #         expect(node, inputs=[data, shape], outputs=[reshaped],
-    #                name='test_reshape_' + test_name)
+            reshaped = np.reshape(data, shape)
+            expect(node, inputs=[data, shape], outputs=[reshaped],
+                   name='test_reshape_' + test_name)
 
     def test_concat(self):  # type: () -> None
         test_cases = {
@@ -664,53 +664,54 @@ class TestPythonOnnxBackend(unittest.TestCase):
                 expect(node, inputs=[v for v in values], outputs=[output],
                        name='test_concat_' + test_case + '_axis_negative_' + str(abs(i)))
 
-    # def test_flatten(self):  # type: () -> None
-    #     shape = (2, 3, 4, 5)
-    #     a = np.random.random_sample(shape).astype(np.float32)
+    def test_flatten(self):  # type: () -> None
+        shape = (2, 3, 4, 5)
+        a = np.random.random_sample(shape).astype(np.float32)
 
-    #     for i in range(len(shape)):
-    #         node = onnx.helper.make_node(
-    #             'Flatten',
-    #             inputs=['a'],
-    #             outputs=['b'],
-    #             axis=i,
-    #         )
+        for i in range(len(shape)):
+            node = onnx.helper.make_node(
+                'Flatten',
+                inputs=['a'],
+                outputs=['b'],
+                axis=i,
+            )
 
-    #         new_shape = (1, -1) if i == 0 else (np.prod(shape[0:i]).astype(int), -1)
-    #         b = np.reshape(a, new_shape)
-    #         expect(node, inputs=[a], outputs=[b],
-    #                name='test_flatten_axis' + str(i))
+            new_shape = (1, -1) if i == 0 else (np.prod(shape[0:i]).astype(int), -1)
+            print(i, new_shape)
+            b = np.reshape(a, new_shape)
+            expect(node, inputs=[a], outputs=[b],
+                   name='test_flatten_axis' + str(i))
 
-    # def test_flatten_with_default_axis(self):  # type: () -> None
-    #     node = onnx.helper.make_node(
-    #         'Flatten',
-    #         inputs=['a'],
-    #         outputs=['b'],  # Default value for axis: axis=1
-    #     )
+    def test_flatten_with_default_axis(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Flatten',
+            inputs=['a'],
+            outputs=['b'],  # Default value for axis: axis=1
+        )
 
-    #     shape = (5, 4, 3, 2)
-    #     a = np.random.random_sample(shape).astype(np.float32)
-    #     new_shape = (5, 24)
-    #     b = np.reshape(a, new_shape)
-    #     expect(node, inputs=[a], outputs=[b],
-    #            name='test_flatten_default_axis')
+        shape = (5, 4, 3, 2)
+        a = np.random.random_sample(shape).astype(np.float32)
+        new_shape = (5, 24)
+        b = np.reshape(a, new_shape)
+        expect(node, inputs=[a], outputs=[b],
+               name='test_flatten_default_axis')
 
-    # def test_flatten_negative_axis(self):  # type: () -> None
-    #     shape = (2, 3, 4, 5)
-    #     a = np.random.random_sample(shape).astype(np.float32)
+    def test_flatten_negative_axis(self):  # type: () -> None
+        shape = (2, 3, 4, 5)
+        a = np.random.random_sample(shape).astype(np.float32)
 
-    #     for i in range(-len(shape), 0):
-    #         node = onnx.helper.make_node(
-    #             'Flatten',
-    #             inputs=['a'],
-    #             outputs=['b'],
-    #             axis=i,
-    #         )
+        for i in range(-len(shape), 0):
+            node = onnx.helper.make_node(
+                'Flatten',
+                inputs=['a'],
+                outputs=['b'],
+                axis=i,
+            )
 
-    #         new_shape = (np.prod(shape[0:i]).astype(int), -1)
-    #         b = np.reshape(a, new_shape)
-    #         expect(node, inputs=[a], outputs=[b],
-    #                name='test_flatten_negative_axis' + str(abs(i)))
+            new_shape = (np.prod(shape[0:i]).astype(int), -1)
+            b = np.reshape(a, new_shape)
+            expect(node, inputs=[a], outputs=[b],
+                   name='test_flatten_negative_axis' + str(abs(i)))
 
 
     def test_add(self):  # type: () -> None
@@ -805,7 +806,6 @@ class TestPythonOnnxBackend(unittest.TestCase):
         x = np.array([[-1, 0, 1]]).astype(np.float32)
         # expected output [[0.09003058, 0.24472848, 0.66524094]]
         y = np.exp(x) / np.sum(np.exp(x), axis=1)
-        print(y)
         expect(node, inputs=[x], outputs=[y],
                name='test_softmax_example')
 

@@ -242,21 +242,21 @@ class TestPythonOnnx(unittest.TestCase):
 
     #     np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
-    # def test_reshape(self):
-    #     x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
-    #     x = tensor.from_numpy(x)
-    #     x.to_device(gpu_dev)
-    #     y = autograd.Reshape((2, 3))(x)[0]
+    def test_reshape(self):
+        x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
+        x = tensor.from_numpy(x)
+        x.to_device(gpu_dev)
+        y = autograd.Reshape((2, 3))(x)[0]
 
-    #     # frontend
-    #     model = sonnx.to_onnx([x], [y])
-    #     # print('The model is:\n{}'.format(model))
+        # frontend
+        model = sonnx.to_onnx([x], [y])
+        # print('The model is:\n{}'.format(model))
 
-    #     # # backend
-    #     sg_ir = sonnx.prepare(model, device=gpu_dev)
-    #     y_t = sg_ir.run([x])
+        # # backend
+        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        y_t = sg_ir.run([x])
 
-    #     np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
     def test_sum(self):
         x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)

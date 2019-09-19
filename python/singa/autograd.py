@@ -824,9 +824,9 @@ class Flatten(Operation):
         # the start_axis must be within this range (0, r-1)
         assert axis <= len(
             shape)-1 or axis >= 0, "the start_axis must be within (0, %d-1)" % len(shape)
-        new_shape = (1, np.prod(shape)) if axis == 0 else (
-            *shape[0:axis], np.prod(shape[axis:]).astype(int))
-        print(new_shape)
+        # calculate the new shape
+        new_shape = (1, int(np.prod(shape))) if axis == 0 else (
+            int(np.prod(shape[0:axis]).astype(int)), int(np.prod(shape[axis:]).astype(int)))
         y = singa.Reshape(x, new_shape)
         return y
 
