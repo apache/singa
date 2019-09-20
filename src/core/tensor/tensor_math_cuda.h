@@ -324,12 +324,8 @@ void EltwiseMult<float, lang::Cuda>(const Tensor& in,
                                     const float x, Tensor* out, Context* ctx) {
   const float* inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-
-  float alpha = x, beta = 0.0;
-  check_cudnn(cudnnAddTensor(ctx->cudnn_handle,
-                             (void*)(&alpha), generate_tensor_nd_desc(in), inPtr,
-                             (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                            ));
+  const size_t num = in.Size();
+  cuda::mult(num, inPtr, x, outPtr, ctx->stream);
 }
 
 /// out = in1 * in2

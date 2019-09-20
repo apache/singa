@@ -139,7 +139,7 @@ class SGD(Optimizer):
         nesterov = group['nesterov']
 
         if weight_decay != 0:
-            grad += param * weight_decay
+            singa.Axpy(weight_decay, param.data, grad.data)
         if momentum != 0:
             if param not in self.param2state:
                 self.param2state[param] = {}
@@ -148,16 +148,16 @@ class SGD(Optimizer):
                 buf = param_state[
                     'momentum_buffer'] = tensor.zeros_like(param)
                 buf *= momentum
-                buf += grad
+                singa.Axpy(1.0, grad.data, buf.data)
             else:
                 buf = param_state['momentum_buffer']
                 buf *= momentum
-                buf += (1 - dampening) * grad
+                singa.Axpy(1.0 - dampening, grad.data, buf.data)
             if nesterov:
-                grad += momentum * buf
+                singa.Axpy(momentum, buf.data, grad.data)
             else:
                 grad = buf
-        param -= grad * group['lr']
+        singa.Axpy(-group['lr'], grad.data, param.data)
 
 
 class DistOpt(object):
