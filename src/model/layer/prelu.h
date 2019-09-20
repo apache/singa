@@ -46,7 +46,7 @@ class PReLU : public Layer {
 
   void ToDevice(std::shared_ptr<Device> device);
 
-  const bool Channel_shared() const { return channel_shared_; }
+  bool Channel_shared() const { return channel_shared_; }
   const Tensor A() const { return a_; }
   const std::string Format() const { return format_; }
 
