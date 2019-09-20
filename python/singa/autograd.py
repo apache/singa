@@ -419,7 +419,7 @@ class Less(Operation):
         Args:
             dy (CTensor): data for the dL / dy, L is the loss
         """
-        assert 0,('no backward function for less')
+        assert False,('no backward function for less')
 
 def less(x,y):
     return Less()(x,y)[0]
@@ -536,7 +536,7 @@ class Greater(Operation):
         Args:
             dy (CTensor): data for the dL / dy, L is the loss
         """
-        assert 0,('no backward function for greater')
+        assert False,('no backward function for greater')
 
 def greater(x,y):
     return Greater()(x,y)[0]
@@ -725,7 +725,7 @@ class Equal(Operation):
         Args:
             dy (CTensor): data for the dL / dy, L is the loss
         """
-        assert 0,('no backward function for equal')
+        assert False,('no backward function for equal')
 
 def equal(x,y):
     return Equal()(x,y)[0]
@@ -1654,7 +1654,7 @@ class MaxPool1d(Pooling2d):
     def __init__(self, kernel_size, stride=None, padding=0):
         if stride is None:
             stride = kernel_size
-        super(MaxPool2d, self).__init__(
+        super(MaxPool1d, self).__init__(
             (1, kernel_size), (0, stride), (0, padding), True
         )
 
@@ -1663,7 +1663,7 @@ class AvgPool1d(Pooling2d):
     def __init__(self, kernel_size, stride=None, padding=0):
         if stride is None:
             stride = kernel_size
-        super(MaxPool2d, self).__init__(
+        super(AvgPool1d, self).__init__(
             (1, kernel_size), (0, stride), (0, padding), False
         )
 

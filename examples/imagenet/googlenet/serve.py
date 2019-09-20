@@ -20,14 +20,12 @@ https://github.com/BVLC/caffe/blob/master/models/bvlc_googlenet/
 from __future__ import print_function
 from builtins import zip
 from builtins import str
-import os
 import sys
 import time
 import numpy as np
-import threading
 import traceback
 from argparse import ArgumentParser
-from scipy.misc import imread, imresize
+from scipy.misc import imread
 import numpy as np
 
 from singa.layer import Layer, Conv2D, Activation, MaxPooling2D, AvgPooling2D,\

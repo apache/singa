@@ -21,7 +21,7 @@ from __future__ import print_function
 from builtins import zip
 from builtins import range
 from singa.layer import Conv2D, Activation, MaxPooling2D, AvgPooling2D,\
-        Split, Merge, Flatten, Dense, BatchNormalization, Softmax
+        Split, Merge, Flatten, Dense, BatchNormalization
 from singa import net as ffnet
 from singa import initializer
 from singa import layer
@@ -140,7 +140,7 @@ def stage(sid, net, num_blk, inplane, midplane, outplane, stride, block, preact=
         block('stage%d-blk%d' % (sid, i), net, outplane, midplane, outplane, 1, preact, add_bn)
 
 def init_params(net, weight_path=None):
-    if weight_path == None:
+    if weight_path is None:
         for pname, pval in zip(net.param_names(), net.param_values()):
             print(pname, pval.shape)
             if 'conv' in pname and len(pval.shape) > 1:
@@ -261,7 +261,7 @@ def create_wide_resnet(depth=50):
     return net
 
 
-def create_net(name, depth, use_cpu):
+def create_net(name, depth, use_cpu=True):
     if use_cpu:
         layer.engine = 'singacpp'
     if name == 'resnet':

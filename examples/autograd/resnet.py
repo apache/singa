@@ -28,17 +28,6 @@ from singa import opt
 import numpy as np
 from tqdm import trange
 
-
-__all__ = [
-    "ResNet",
-    "resnet18",
-    "resnet34",
-    "resnet50",
-    "resnet101",
-    "resnet152",
-]
-
-
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
     return autograd.Conv2d(
@@ -242,6 +231,14 @@ def resnet152(pretrained=False, **kwargs):
 
     return model
 
+__all__ = [
+    'ResNet',
+    'resnet18',
+    'resnet34',
+    'resnet50',
+    'resnet101',
+    'resnet152',
+]
 
 if __name__ == "__main__":
     model = resnet50()
@@ -268,7 +265,7 @@ if __name__ == "__main__":
     softmax = 0
     update = 0
     with trange(niters) as t:
-        for b in t:
+        for _ in t:
             dev.Sync()
             tick = time.time()
             x = model(tx)
@@ -287,11 +284,11 @@ if __name__ == "__main__":
 
     dev.Sync()            
     end = time.time()
-    throughput = niters * batch_size / (end - start)
+    throughput = float(niters * batch_size) / (end - start)
     print("Throughput = {} per second".format(throughput))
-    titer = (end - start) / niters
-    tforward = fd / niters
-    tsoftmax = softmax / niters
+    titer = (end - start) / float(niters)
+    tforward = float(fd) / float(niters)
+    tsoftmax = float(softmax) / float(niters)
     tbackward = titer - tforward - tsoftmax
-    tsgd = update / niters
+    tsgd = float(update) / float(niters)
     print("Total={}, forward={}, softmax={}, backward={}, sgd={}".format(titer, tforward, tsoftmax, tbackward, tsgd))

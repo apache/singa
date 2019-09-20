@@ -809,11 +809,11 @@ void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
       for (size_t j = 0; j < dim; j++) {
         sum += tPtr[i * dim + j];
       }
-      float loss = 0.f;
+      float loss_value = 0.f;
       for (size_t j = 0, offset = i * dim; j < dim; j++, offset++) {
-        loss -= tPtr[offset] / sum * std::log((std::max)(pPtr[offset], FLT_MIN));
+        loss_value -= tPtr[offset] / sum * std::log((std::max)(pPtr[offset], FLT_MIN));
       }
-      lossPtr[i] = loss;
+      lossPtr[i] = loss_value;
     }
   }
 }

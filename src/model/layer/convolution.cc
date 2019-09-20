@@ -227,7 +227,7 @@ void Col2im(const float *data_col, const int channels,
                          const int pad_h, const int pad_w,
                          const int stride_h, const int stride_w,
                          float *data_im) {
-  memset(data_im, 0, height * width * channels * sizeof(float));
+  memset(data_im, 0, (unsigned long) height * width * channels * sizeof(float));
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int width_col  = ( width + 2 * pad_w - kernel_w) / stride_w + 1;
   int channels_col = channels * kernel_h * kernel_w;
