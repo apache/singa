@@ -59,7 +59,7 @@ if __name__ == "__main__":
     softmax = 0
     update = 0
     with trange(niters) as t:
-        for b in t:
+        for _ in t:
             dev.Sync()
             tick = time.time()
             x = model(tx)
@@ -78,12 +78,12 @@ if __name__ == "__main__":
 
     dev.Sync()            
     end = time.time()
-    throughput = sgd.world_size * niters * batch_size / (end - start)
-    titer = (end - start) / niters
-    tforward = fd / niters
-    tsoftmax = softmax / niters
+    throughput = float(sgd.world_size * niters * batch_size) / (end - start)
+    titer = (end - start) / float(niters)
+    tforward = float(fd) / float(niters)
+    tsoftmax = float(softmax) / float(niters)
     tbackward = titer - tforward - tsoftmax
-    tsgd = update / niters
+    tsgd = float(update) / float(niters)
 
     if (sgd.rank_in_global == 0):
         print("\nThroughput = {} per second".format(throughput), flush=True)

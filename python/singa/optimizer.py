@@ -170,7 +170,6 @@ class Optimizer(object):
             updated parameter value
         '''
         assert False, 'This is the base function, pls call the subclass func'
-        return value
 
     def apply(self, epoch, grad, value, name=None, step=-1):
         '''Do update assuming the learning rate generator is set.
@@ -380,7 +379,6 @@ class Regularizer(object):
 
     def apply(self, epoch, value, grad, step=-1):
         assert False, 'Not Implemented. Call the subclass function.'
-        return grad
 
 
 class CppRegularizer(Regularizer):

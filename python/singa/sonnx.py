@@ -26,7 +26,6 @@ from collections import deque
 from . import singa_wrap as singa
 from . import autograd
 from . import tensor
-from . import device
 
 import collections
 
@@ -657,7 +656,6 @@ class SingaBackend(Backend):
         Returns: 
             the autograd of singa operator
         """
-        x = inputs[0]
         alpha = onnx_node.attrs["alpha"]
         beta = onnx_node.attrs["beta"]
         transA = False if onnx_node.attrs["transA"] == 0 else True
@@ -941,8 +939,8 @@ class SingaRep(BackendRep):
                 return outputs[op_name]
             else:
                 raise RuntimeError(
-                    "The op_name {} does not exist, please check. The available op_names are: {}" %
-                    (op_name, [val for key, val in op_name.items()]))
+                    "The op_name {} does not exist, please check. The available op_names are: {}".format(
+                        op_name, [val for key, val in op_name.items()]))
 
         # return all outputs if all_outputs==True
         # else return last outputs

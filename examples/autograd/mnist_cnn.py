@@ -23,15 +23,10 @@ from singa import tensor
 from singa import device
 from singa import opt
 import numpy as np
-from tqdm import trange
 import os
 import sys
 import gzip
 import codecs
-try:
-    import pickle
-except ImportError:
-    import cPickle as pickle
 import time
 
 class CNN:

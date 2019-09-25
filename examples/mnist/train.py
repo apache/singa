@@ -48,7 +48,6 @@ def train(data_file, use_gpu, num_epoch=10, batch_size=100):
     weight_decay = 0.0002
     hdim = 1000
     vdim = 784
-    opt = optimizer.SGD(momentum=0.8, weight_decay=weight_decay)
 
     tweight = tensor.Tensor((vdim, hdim))
     tweight.gaussian(0.0, 0.1)

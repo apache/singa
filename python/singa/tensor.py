@@ -142,7 +142,7 @@ class Tensor(object):
         To transpose the tensor
         '''
         t = Tensor(self.shape, self.device, self.dtype)
-        if axes == None:
+        if axes is None:
             tshape = [self.shape[x] for x in range(len(t.shape))]
             t.shape = tuple(tshape)
             t.data = singa.DefaultTranspose(self.data)
@@ -298,7 +298,7 @@ class Tensor(object):
             if axis != None and axis < 0:
                 axis += t_ndim
             # broadcast = True
-            if axis == None:
+            if axis is None:
                 axis = 9999
                 t.shape = (product(self.shape) * repeats,)
                 Repeats = [repeats, ]
@@ -318,8 +318,7 @@ class Tensor(object):
 
             if axis != None and axis < 0:
                 axis += t_ndim
-            if axis == None:
-                axis = 9999
+            if axis is None:
                 raise ValueError(
                     "when axis us None, 'repeats' should be int: {}".format(repeats))
             elif axis >= 0:
@@ -1265,7 +1264,6 @@ def tensordot(A, B, axes=2):
     if type(axes) == int:
         axes_A = list(range(-axes, 0))
         axes_B = list(range(0, axes))
-        axes_B = axes_B
     else:
         axes_A, axes_B = axes
     # when axes is a pair of sequences of integers.For example, A is in shape(3,2,4),
