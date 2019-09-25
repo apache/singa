@@ -2495,6 +2495,7 @@ class Shape(Operation):
 def shape(x):
     return Shape()(x)[0]
 
+
 class Max(Operation):
     def __init__(self):
         super(Max, self).__init__()
@@ -2520,3 +2521,114 @@ class Max(Operation):
 def max(a,b):
     return Max()(a,b)[0]
 
+
+class And(Operation):
+    def __init__(self):
+        super(And, self).__init__()
+
+    def forward(self, a, b):
+        m = singa.__mul__(a, b)
+        cur = singa.PowFloat(singa.Sign(m), 2)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient')
+        return None
+
+def _and(a,b):
+    return And()(a,b)[0]
+
+
+class Or(Operation):
+    def __init__(self):
+        super(Or, self).__init__()
+
+    def forward(self, a, b):
+        m = singa.__add__(singa.PowFloat(singa.Sign(a), 2.0), singa.PowFloat(singa.Sign(b), 2.0))
+        cur = singa.Sign(m) 
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient for backward function')
+        return None
+
+
+def _or(a,b):
+    return Or()(a,b)[0]
+
+
+class Not(Operation):
+    def __init__(self):
+        super(Not, self).__init__()
+
+    def forward(self, x):
+        mask0 = singa.GEFloat(x,0)
+        mask1 = singa.LEFloat(x,0)
+        cur = singa.__mul__(mask0,mask1)
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient for backward function')
+        return None
+
+def _not(x):
+    return Not()(x)[0]
+
+
+class Xor(Operation):
+    def __init__(self):
+        super(Xor, self).__init__()
+
+    def forward(self, a, b):
+        m = singa.__sub__(singa.PowFloat(singa.Sign(a), 2.0), singa.PowFloat(singa.Sign(b), 2.0))
+        cur = singa.PowFloat(singa.Sign(m), 2.0)    
+
+        return cur
+
+    def backward(self, dy):
+        assert 0,('no gradient for backward function')
+        return None
+
+
+def _xor(a,b):
+    return Xor()(a,b)[0]
+
+
+class Negative(Operation):
+    def __init__(self):
+        super(Negative, self).__init__()
+
+    def forward(self, x):
+        #y=-x
+        return singa.MultFloat(x, -1)
+
+    def backward(self, dy):
+        return singa.MultFloat(dy, -1)
+
+
+def negative(x):
+    return Negative()(x)[0]
+
+
+class Reciprocal(Operation):
+    def __init__(self):
+        super(Reciprocal, self).__init__()
+
+    def forward(self, x):
+        #y=1/x elementwise
+        if training:
+            self.input = x
+
+        return singa.PowFloat(x, -1)
+
+    def backward(self, dy):
+        #dy/dx = -1/x**2
+        dx = singa.MultFloat(singa.PowFloat(self.input, -2), -1)
+        return singa.__mul__(dy, dx)
+
+
+def reciprocal(x):
+    return Reciprocal()(x)[0]

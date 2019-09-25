@@ -1685,89 +1685,183 @@ class TestPythonOperation(unittest.TestCase):
             grad*=dy
             x = tensor.from_numpy(x)
 
-            result = autograd.selu(x,a,g)
-            dy = tensor.from_numpy(dy)
-            if(gpu):
-                dy.to_device(gpu_dev)
-                x.to_device(gpu_dev)
-            dx = result.creator.backward(dy.data)
+    def test_and_cpu(self):
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+    
+        y = np.logical_and(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+    
+        result = autograd._and(x0,x1)
+    
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
-        test_helper(False)
-        if(singa_wrap.USE_CUDA):
-            test_helper(True)
+    def test_and_gpu(self):
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+    
+        y = np.logical_and(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+    
+        result = autograd._and(x0,x1)
+    
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
+    def test_or_cpu(self):
+        x0 = np.array([1.0, 1.0, 2.0, -3.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([-1.0, 0, 2.0, 4.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
 
-    def test_Equal(self):
-        def test_helper(gpu):
-            x0 = np.random.randn(3, 2)
-            x1 = np.random.randn(3, 2)
-            y = np.equal(x0,x1)
-            x0 = tensor.from_numpy(x0)
-            x1 = tensor.from_numpy(x1)
-            if(gpu):
-                x0.to_device(gpu_dev)
-                x1.to_device(gpu_dev)
+        y = np.logical_or(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
 
-            result = autograd.equal(x0,x1)
+        result = autograd._or(x0,x1)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-        test_helper(False)
-        if(singa_wrap.USE_CUDA):
-            test_helper(True)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
-    def test_Elu(self):
-        def test_helper(gpu):
-            #f(x) = alpha * (exp(x) - 1.) for x < 0, f(x) = x for x >= 0
-            x = np.random.randn(3, 2)
-            y = np.clip(x, 0, np.inf) + (np.exp(np.clip(x, -np.inf, 0)) - 1) * 1.0
-            dy=np.random.randn(3, 2)
-            grad=np.exp(np.clip(x, -np.inf, 0))*dy
+    def test_or_gpu(self):
+        x0 = np.array([1.0, 1.0, 2.0, -3.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([-1.0, 0, 2.0, 4.0, 0, -7.0]).reshape(3, 2).astype(np.float32)
 
-            x = tensor.from_numpy(x)
-            result = autograd.elu(x)
-            dy = tensor.from_numpy(dy)
-            if(gpu):
-                dy.to_device(gpu_dev)
-                x.to_device(gpu_dev)
-            dx = result.creator.backward(dy.data)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), grad, decimal=5)
+        y = np.logical_or(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
 
-        test_helper(False)
-        if(singa_wrap.USE_CUDA):
-            test_helper(True)
+        result = autograd._or(x0,x1)
 
-    def test_add(self):
-        def test_helper(gpu=False):
-            #only two dimensions support
-            x = np.random.randn(3,2)
-            b = np.random.randn(2)
-            dy=np.random.randn(3,2)
-            y = x+b
-            gradx=dy
-            dif=len(list(x.shape))-len(list(b.shape))
-            if dif==0:
-                gradb=dy
-            else:
-                gradb=dy.sum(axis=tuple(np.arange(dif)))
-            x = tensor.from_numpy(x)
-            b = tensor.from_numpy(b)
-            dy = tensor.from_numpy(dy)
-            if(gpu):
-                x.to_device(gpu_dev)
-                b.to_device(gpu_dev)
-                dy.to_device(gpu_dev)
-            result = autograd.add(x,b)
-            dx,db = result.creator.backward(dy.data)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), gradx, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(db)), gradb, decimal=5)
-        test_helper(False)
-        if(singa_wrap.USE_CUDA):
-            test_helper(True)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
+    def test_not_cpu(self):
+        x = np.array([1.0, -1.0, 0, -0.1, 0, -7.0]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_not(x)
+        x = tensor.from_numpy(x)
+        x.to_device(cpu_dev)
+
+        result = autograd._not(x)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_not_gpu(self):
+        x = np.array([1.0, -1.0, 0, -0.1, 0, -7.0]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_not(x)
+        x = tensor.from_numpy(x)
+        x.to_device(gpu_dev)
+
+        result = autograd._not(x)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_xor_cpu(self):
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 9.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_xor(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(cpu_dev)
+        x1.to_device(cpu_dev)
+
+        result = autograd._xor(x0,x1)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_xor_gpu(self):
+        x0 = np.array([0, -0.3, -0.1, 0.1, 0.5, 9.0]).reshape(3, 2).astype(np.float32)
+        x1 = np.array([0, -0.3, 0, 0.1, 0, 0.9]).reshape(3, 2).astype(np.float32)
+
+        y = np.logical_xor(x0,x1)
+        x0 = tensor.from_numpy(x0)
+        x1 = tensor.from_numpy(x1)
+        x0.to_device(gpu_dev)
+        x1.to_device(gpu_dev)
+
+        result = autograd._xor(x0,x1)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+        
+    def test_negative_cpu(self):
+        X = np.array([0.1,0,0.4,1.-4,0.9,-2.0]).reshape(3,2).astype(np.float32)
+        XT = np.negative(X)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.negative(x)
+        dx = result.creator.backward(dy.data)
+        DX = np.negative(DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def test_negative_gpu(self):
+        X = np.array([0.1,0,0.4,1.-4,0.9,-2.0]).reshape(3,2).astype(np.float32)
+        XT = np.negative(X)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.negative(x)
+        dx = result.creator.backward(dy.data)
+        DX = np.negative(DY)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def test_reciprocal_cpu(self):
+        X = np.array([0.1,0,0.4,1.-4,0.9,-2.0]).reshape(3,2).astype(np.float32)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(cpu_dev)
+        dy.to_device(cpu_dev)
+
+        result = autograd.reciprocal(x)
+        dx = result.creator.backward(dy.data)
+        #dy/dx = -1/x**2
+        with np.errstate(divide='ignore'):
+            XT = np.reciprocal(X)
+            DX = -1/np.square(X)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def test_reciprocal_gpu(self):
+        X = np.array([0.1,0,0.4,1.-4,0.9,-2.0]).reshape(3,2).astype(np.float32)
+        DY = np.ones((3, 2), dtype = np.float32)
+
+        x = tensor.from_numpy(X)
+        dy = tensor.from_numpy(DY)
+        x.to_device(gpu_dev)
+        dy.to_device(gpu_dev)
+
+        result = autograd.reciprocal(x)
+        dx = result.creator.backward(dy.data)
+        #dy/dx = -1/x**2
+        with np.errstate(divide='ignore'):
+            XT = np.reciprocal(X)
+            DX = -1/np.square(X)
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
 
 if __name__ == '__main__':
