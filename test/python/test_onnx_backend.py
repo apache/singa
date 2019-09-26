@@ -1322,7 +1322,6 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_sqrt')
 
-
     def test_log(self):  # type: () -> None
         node = onnx.helper.make_node(
             'Log',
@@ -1339,6 +1338,32 @@ class TestPythonOnnxBackend(unittest.TestCase):
         y = np.log(x)
         expect(node, inputs=[x], outputs=[y],
                name='test_log')
+
+    def test_greater(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Greater',
+            inputs=['x', 'y'],
+            outputs=['greater'],
+        )
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(3, 4, 5).astype(np.float32)
+        z = np.greater(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_greater')
+
+    def test_greater_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Greater',
+            inputs=['x', 'y'],
+            outputs=['greater'],
+        )
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(5).astype(np.float32)
+        z = np.greater(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_greater_bcast')
 
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text

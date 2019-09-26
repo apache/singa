@@ -183,6 +183,7 @@ class SingaFrontend(object):
         'Sub' : 'Sub',
         'Sqrt' : 'Sqrt',
         'Log' : 'Log',
+        'Greater' : 'Greater',
     }
 
     # this dict indicates the operators that need extra handle
@@ -667,6 +668,7 @@ class SingaBackend(Backend):
         'Sub' : 'sub',
         'Sqrt' : 'sqrt',
         'Log' : 'log',
+        'Greater' : 'greater',
     }
 
     # this dict indicates the operators that need extra handle
