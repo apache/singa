@@ -114,7 +114,7 @@ def crop_and_resize(img, patch, position):
     box = (left, upper, right, bottom)
     new_img = img.crop(box)
 
-    new_img = img.resize(patch, Image.BILINEAR)
+    new_img = new_img.resize(patch, Image.BILINEAR)
     # print box+crop
     # print "crop to box %d,%d,%d,%d and scale to %d,%d" % (box+crop)
     return new_img
@@ -326,7 +326,7 @@ class ImageTool(object):
             raise Exception('num_case must be in [1,5]')
         for img in self.imgs:
 
-            if num_case > 0 and num_case < 5:
+            if num_case < 5:
                 positions = get_list_sample(positions, num_case)
 
             for position in positions:
@@ -361,12 +361,12 @@ class ImageTool(object):
         for img in self.imgs:
             size = img.size
             if size[0] > size[1]:
-                if num_case > 0 and num_case < 3:
+                if num_case < 3:
                     positions = get_list_sample(positions_horizental, num_case)
                 else:
                     positions = positions_horizental
             else:
-                if num_case > 0 and num_case < 3:
+                if num_case < 3:
                     positions = get_list_sample(positions_vertical, num_case)
                 else:
                     positions = positions_vertical

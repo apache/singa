@@ -42,7 +42,7 @@ class Flatten : public Layer {
   const std::pair<Tensor, vector<Tensor> > Backward(
       int flag, const Tensor &grad) override;
 
-  const int Axis() const { return axis_; }
+  int Axis() const { return axis_; }
   const Shape input_shape() const { return input_shape_; }
 
  protected:

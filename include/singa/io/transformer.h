@@ -56,12 +56,12 @@ class ImageTransformer: public Transformer {
 
   Tensor Apply(int flag, Tensor& input) override;
 
-  const bool featurewise_center() const { return featurewise_center_; }
-  const bool featurewise_std_norm() const { return featurewise_std_norm_; }
-  const bool horizontal_mirror() const { return horizontal_mirror_; }
-  const int resize_height() const { return resize_height_; }
-  const int resize_width() const { return resize_width_; }
-  const float rescale() const { return rescale_; }
+  bool featurewise_center() const { return featurewise_center_; }
+  bool featurewise_std_norm() const { return featurewise_std_norm_; }
+  bool horizontal_mirror() const { return horizontal_mirror_; }
+  int resize_height() const { return resize_height_; }
+  int resize_width() const { return resize_width_; }
+  float rescale() const { return rescale_; }
   const Shape crop_shape() const { return crop_shape_; }
   const string image_dim_order() const { return image_dim_order_; }
 

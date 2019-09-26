@@ -48,6 +48,7 @@ class Device {
   virtual void SetRandSeed(unsigned seed) = 0;
   std::shared_ptr<Device> host();
   int id() const;
+  virtual void Sync();
 };
 
 class Platform {

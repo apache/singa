@@ -92,7 +92,7 @@ class Device {
   // void WaitFor();
 
   /// wait for all operations submitted to this device.
-  void Sync();
+  virtual void Sync();
 
   /// Return the programming language for this device.
   LangType lang() const {
@@ -181,6 +181,7 @@ class CudaGPU : public Device {
 
   void SetRandSeed(unsigned seed) override;
   size_t GetAllocatedMem() override;
+  void Sync() override;
 
  protected:
   void DoExec(function<void(Context*)>&& fn, int executor) override;

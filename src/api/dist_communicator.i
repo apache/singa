@@ -21,14 +21,33 @@
 
 /*interface file for swig */
 
-%module singa_wrap
-%include "config.i"
-%include "core_tensor.i"
-%include "core_device.i"
-%include "model_layer.i"
-%include "model_optimizer.i"
-%include "model_loss.i"
-%include "model_metric.i"
-%include "model_operation.i"
-%include "io_snapshot.i"
-%include "dist_communicator.i"
+%module dist_communicator
+
+%{
+#include "singa/io/communicator.h"
+%}
+
+namespace singa{
+
+#if USE_DIST
+
+class NcclIdHolder {
+public:
+  ncclUniqueId id;
+  NcclIdHolder(); 
+};
+
+class Communicator {
+public:
+  int MPIRankInGlobal;
+  int totalMPIRanksInGlobal;
+  int MPIRankInLocal;
+  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder);
+  Communicator();
+};
+
+void synch(Tensor &t, Communicator &c);
+
+#endif  // USE_DIST
+
+}

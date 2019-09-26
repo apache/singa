@@ -21,23 +21,16 @@
 from __future__ import division
 
 import warnings
-from collections import deque, OrderedDict
+from collections import deque
 
 from . import singa_wrap as singa
 from . import autograd
 from . import tensor
-from . import device
 
-import itertools
 import collections
-import logging
-import re
 
-from enum import Enum
-from onnx import (defs, checker, helper, numpy_helper, mapping, optimizer,
-                  ModelProto, GraphProto, NodeProto, AttributeProto, TensorProto, OperatorSetIdProto)
-from onnx.helper import make_tensor, make_tensor_value_info
-from onnx.backend.base import Backend, Device, DeviceType, namedtupledict, BackendRep, namedtupledict
+from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto, TensorProto, OperatorSetIdProto)
+from onnx.backend.base import Backend, BackendRep
 import onnx
 import numpy as np
 
@@ -815,9 +808,16 @@ class SingaBackend(Backend):
         Returns: 
             the autograd of singa operator
         """
+<<<<<<< HEAD
         factor = onnx_node.attrs["axis"] if "axis" in onnx_node.attrs else 0
         if factor < 0:
             factor = len(inputs[0].shape) + factor # in order to support the negative axis
+=======
+        alpha = onnx_node.attrs["alpha"]
+        beta = onnx_node.attrs["beta"]
+        transA = False if onnx_node.attrs["transA"] == 0 else True
+        transB = False if onnx_node.attrs["transB"] == 0 else True
+>>>>>>> master
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
         return None, forward(axis=factor)
 
@@ -1126,8 +1126,8 @@ class SingaRep(BackendRep):
                 return outputs[op_name]
             else:
                 raise RuntimeError(
-                    "The op_name {} does not exist, please check. The available op_names are: {}" %
-                    (op_name, [val for key, val in op_name.items()]))
+                    "The op_name {} does not exist, please check. The available op_names are: {}".format(
+                        op_name, [val for key, val in op_name.items()]))
 
         # return all outputs if all_outputs==True
         # else return last outputs

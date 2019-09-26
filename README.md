@@ -36,6 +36,11 @@ Distributed deep learning system
 
 * [JIRA tickets](https://issues.apache.org/jira/browse/SINGA)
 
+## Code Analysis:
+![LGTM Alerts](https://img.shields.io/lgtm/alerts/github/apache/incubator-singa)
+![LGTM C++ Grade](https://img.shields.io/lgtm/grade/cpp/github/apache/incubator-singa)
+![LGTM Python Grade](https://img.shields.io/lgtm/grade/python/github/apache/incubator-singa)
+
 ## Mailing Lists
 
 * [Development Mailing List](mailto:dev-subscribe@singa.incubator.apache.org) ([Archive](http://mail-archives.apache.org/mod_mbox/singa-dev/))

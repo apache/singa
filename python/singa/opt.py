@@ -19,6 +19,7 @@
 It replaces the old optimizers from optimizer.py'''
 
 from singa import tensor
+from . import singa_wrap as singa
 
 
 class Optimizer(object):
@@ -127,7 +128,8 @@ class SGD(Optimizer):
                 grad(Tensor): param gradients; the values may be updated
                         in this function; cannot use it anymore
         """
-        assert param.shape == grad.shape, ("shape mismatch", param.shape, grad.shape)
+        assert param.shape == grad.shape, ("shape mismatch",
+                                           param.shape, grad.shape)
         group = self.default_config
         if param in self.param2config:
             group = self.param2config[param]
@@ -137,7 +139,7 @@ class SGD(Optimizer):
         nesterov = group['nesterov']
 
         if weight_decay != 0:
-            grad += param * weight_decay
+            singa.Axpy(weight_decay, param.data, grad.data)
         if momentum != 0:
             if param not in self.param2state:
                 self.param2state[param] = {}
@@ -146,13 +148,45 @@ class SGD(Optimizer):
                 buf = param_state[
                     'momentum_buffer'] = tensor.zeros_like(param)
                 buf *= momentum
-                buf += grad
+                singa.Axpy(1.0, grad.data, buf.data)
             else:
                 buf = param_state['momentum_buffer']
                 buf *= momentum
-                buf += (1 - dampening) * grad
+                singa.Axpy(1.0 - dampening, grad.data, buf.data)
             if nesterov:
-                grad += momentum * buf
+                singa.Axpy(momentum, buf.data, grad.data)
             else:
                 grad = buf
-        param -= grad * group['lr']
+        singa.Axpy(-group['lr'], grad.data, param.data)
+
+
+class DistOpt(object):
+
+    def __init__(self, opt=SGD(), nccl_id=None, gpu_num=None, gpu_per_node=None):
+        # The class is designed to wrap an optimizer to do disttributed training.
+        # opt: The optimizer to be wrapped. nDev: number of devices(GPUs) a
+        # process will control/use.
+
+        # world_size: total number of processes.
+        # rank_in_local: local rank of a process on the current node.
+        # rank_in_global: global rank of a process
+
+        self.opt = opt
+        if nccl_id is None:
+            # constructure for application using MPI
+            self.communicator = singa.Communicator()
+        else:
+            # constructor for application using python multi-process module
+            self.communicator = singa.Communicator(gpu_num, gpu_per_node, nccl_id)
+
+        self.world_size = self.communicator.totalMPIRanksInGlobal
+        self.rank_in_local = self.communicator.MPIRankInLocal
+        self.rank_in_global = self.communicator.MPIRankInGlobal
+
+    def update(self, param, grad):
+        self.all_reduce(grad)
+        self.opt.update(param, grad)
+
+    def all_reduce(self, tensor):
+        singa.synch(tensor.data, self.communicator)
+        tensor /= self.world_size

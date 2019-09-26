@@ -57,7 +57,7 @@ if __name__ == "__main__":
  */
 """
         fout.write(license)
-		fout.write("#ifdef USE_OPENCL\n\n")
+        fout.write("#ifdef USE_OPENCL\n\n")
         fout.write("#include <string>\n\n")
         fout.write("namespace singa {\n namespace opencl {\n")
         for name, path in iteritems(files):

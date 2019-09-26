@@ -18,8 +18,8 @@
 * under the License.
 *
 ************************************************************/
-//#ifndef SINGA_MODEL_OPERATION_BATCHNORM_H_
-//#define SINGA_MODEL_OPERATION_BATCHNORM_H_
+#ifndef SINGA_MODEL_OPERATION_BATCHNORM_H_
+#define SINGA_MODEL_OPERATION_BATCHNORM_H_
 
 #include <vector>
 #include "singa/core/tensor.h"
@@ -119,3 +119,5 @@ const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
 #endif  // USE_CUDNN
 
 }  // namespace singa
+
+#endif // SINGA_MODEL_OPERATION_BATCHNORM_H_

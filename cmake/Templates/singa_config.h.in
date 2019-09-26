@@ -36,6 +36,8 @@
 
 #cmakedefine ENABLE_DIST
 
+#cmakedefine USE_DIST
+
 // lmdb
 #cmakedefine USE_LMDB
 
