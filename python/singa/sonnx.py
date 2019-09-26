@@ -177,6 +177,7 @@ class SingaFrontend(object):
         'SeLU' : 'Selu',
         'Elu' : 'Elu',
         'Equal': 'Equal',
+        'Less': 'Less',
     }
 
     # this dict indicates the operators that need extra handle
@@ -654,7 +655,8 @@ class SingaBackend(Backend):
         'Atanh': 'atanh',
         'Selu' : 'SeLU',
         'Elu' : 'Elu',
-        'Equal': 'Equal',
+        'Equal': 'equal',
+        'Less': 'less',
     }
 
     # this dict indicates the operators that need extra handle
@@ -672,7 +674,6 @@ class SingaBackend(Backend):
         'Softmax': '_create_softmax',
         'Selu': '_create_selu',
         'Elu': '_create_elu',
-        'Equal': '_create_equal',
     }
 
     @classmethod

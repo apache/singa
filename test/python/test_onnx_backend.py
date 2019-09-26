@@ -1201,6 +1201,33 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_equal_bcast')
 
+
+    def test_less(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Less',
+            inputs=['x', 'y'],
+            outputs=['less'],
+        )
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(3, 4, 5).astype(np.float32)
+        z = np.less(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_less')
+
+    def test_less_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Less',
+            inputs=['x', 'y'],
+            outputs=['less'],
+        )
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(5).astype(np.float32)
+        z = np.less(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_less_bcast')
+
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
                   input_spatial_shape,  # type: Sequence[int]
