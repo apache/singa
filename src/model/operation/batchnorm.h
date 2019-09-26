@@ -96,6 +96,8 @@ const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
 class CudnnBatchNormHandle: public BatchNormHandle {
  public:
   CudnnBatchNormHandle(const float momentum, const Tensor& input);
+  CudnnBatchNormHandle(const float momentum, const Tensor &input,
+                       const std::string overrideModeName);
 
   //~CudnnBatchNormHandle();
 

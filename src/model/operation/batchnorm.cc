@@ -261,6 +261,34 @@ CudnnBatchNormHandle::CudnnBatchNormHandle(const float momentum,
                                          1, 1));
 };
 
+
+CudnnBatchNormHandle::CudnnBatchNormHandle(const float momentum,
+                                           const Tensor &input,
+                                           const std::string overrideModeName)
+    : BatchNormHandle(momentum, input) {
+  if (overrideModeName == "per_activation") {
+    mode = CUDNN_BATCHNORM_PER_ACTIVATION;
+  } else {
+    mode = CUDNN_BATCHNORM_SPATIAL;
+    if (const char *env_p = std::getenv("CUDNN_BATCHNORM_ALG")) {
+      std::string alg = std::string(env_p);
+      std::transform(alg.begin(), alg.end(), alg.begin(), toupper);
+      if (alg == "CUDNN_BATCHNORM_SPATIAL_PERSISTENT")
+        mode = CUDNN_BATCHNORM_SPATIAL_PERSISTENT;
+      LOG(INFO) << " CUDNN_BATCHNORM_ALG: " << alg;
+    }
+  }
+  DataType dtype = input.data_type();
+  CUDNN_CHECK(cudnnCreateTensorDescriptor(&shape_desc));
+  CUDNN_CHECK(cudnnCreateTensorDescriptor(&param_desc));
+  CUDNN_CHECK(cudnnSetTensor4dDescriptor(shape_desc, CUDNN_TENSOR_NCHW,
+                                         GetCudnnDataType(dtype), batchsize,
+                                         channels, height, width));
+  CUDNN_CHECK(cudnnSetTensor4dDescriptor(param_desc, CUDNN_TENSOR_NCHW,
+                                         GetCudnnDataType(dtype), 1, channels,
+                                         1, 1));
+};
+
 const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle &cbnh,
     const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
     Tensor& running_mean, Tensor& running_var) {

@@ -152,6 +152,7 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b, const CudnnConvHandle
 class CudnnBatchNormHandle: public BatchNormHandle{
     public:
       CudnnBatchNormHandle(const float momentum, const Tensor& input);
+      CudnnBatchNormHandle(const float momentum, const Tensor& input, const std::string overrideModeName);
     size_t channels;
     size_t batchsize;
     float factor;
