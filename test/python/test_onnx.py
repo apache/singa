@@ -186,20 +186,20 @@ class TestPythonOnnx(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
-    def test_batch_norm(self):
-        x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
-        x.gaussian(0.0, 1.0)
-        y = autograd.BatchNorm2d(3)(x)
+    # def test_batch_norm(self):
+    #     x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
+    #     x.gaussian(0.0, 1.0)
+    #     y = autograd.BatchNorm2d(3)(x)
 
-        # frontend
-        model = sonnx.to_onnx([x], [y])
-        # print('The model is:\n{}'.format(model))
+    #     # frontend
+    #     model = sonnx.to_onnx([x], [y])
+    #     # print('The model is:\n{}'.format(model))
 
-        # backend
-        sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x])
+    #     # backend
+    #     sg_ir = sonnx.prepare(model, device=gpu_dev)
+    #     y_t = sg_ir.run([x])
 
-        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+    #     np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
     def test_linear(self):
         x = tensor.Tensor(shape=(2, 20), device=gpu_dev)
@@ -445,6 +445,26 @@ class TestPythonOnnx(unittest.TestCase):
         x = np.array([0.1, -1.0, 0.4, 4.0, -0.9, 9.0]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(x)
         y = autograd.Atanh()(x)[0]
+
+        # frontend
+        model = sonnx.to_onnx([x], [y])
+        # print('The model is:\n{}'.format(model))
+
+        # # backend
+        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        y_t = sg_ir.run([x])
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+
+    def test_SeLu(self):
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+        #y = gamma * (alpha * e^x - alpha) for x <= 0, y = gamma * x for x > 0
+        a=1.67326
+        g=1.0507
+        x = tensor.from_numpy(x)
+        x.to_device(cpu_dev)
+
+        y = autograd.selu(x,a,g)
 
         # frontend
         model = sonnx.to_onnx([x], [y])
