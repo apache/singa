@@ -178,6 +178,7 @@ class SingaFrontend(object):
         'Elu' : 'Elu',
         'Equal': 'Equal',
         'Less': 'Less',
+        'Sign' : 'Sign',
     }
 
     # this dict indicates the operators that need extra handle
@@ -657,6 +658,7 @@ class SingaBackend(Backend):
         'Elu' : 'Elu',
         'Equal': 'equal',
         'Less': 'less',
+        'Sign': 'sign',
     }
 
     # this dict indicates the operators that need extra handle
@@ -675,7 +677,7 @@ class SingaBackend(Backend):
         'Selu': '_create_selu',
         'Elu': '_create_elu',
     }
-
+   
     @classmethod
     def _create_equal(cls, onnx_node, inputs, opset_version):
         """
@@ -1117,8 +1119,7 @@ class SingaBackend(Backend):
         # init the input as tensors
         for x in optimized_model.graph.input:
             x_shape = tuple(dim.dim_value for dim in x.type.tensor_type.shape.dim)
-            # tmp_tensor = tensor.Tensor(shape=x_shape, device=device)
-            tmp_tensor = tensor.from_numpy(np.zeros(x_shape, dtype=np.float32))
+            tmp_tensor = tensor.from_numpy(np.random.randn(*x_shape).astype(np.float32))
             tmp_tensor.to_device(device)
             tensor_map[x.name] = tmp_tensor
         # convert constant nodes to tensor, other nodes to handler

@@ -1228,6 +1228,18 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_less_bcast')
 
+    def test_sign(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Sign',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array(range(-5, 6)).astype(np.float32)
+        y = np.sign(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_sign')
+
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
                   input_spatial_shape,  # type: Sequence[int]
