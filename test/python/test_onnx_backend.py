@@ -1428,6 +1428,52 @@ class TestPythonOnnxBackend(unittest.TestCase):
         y = np.log(np.exp(x) + 1)
         expect(node, inputs=[x], outputs=[y],
                name='test_softplus')
+    def test_softsign(self):
+        node = onnx.helper.make_node(
+            'Softsign',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.array([-0.5, 0, 0.5]).astype(np.float32)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_softsign_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = x / (1 + np.abs(x))
+        expect(node, inputs=[x], outputs=[y],
+               name='test_softsign')
+
+    def test_mean(self):
+        data_0 = np.array([3, 0, 2]).astype(np.float32)
+        data_1 = np.array([1, 3, 4]).astype(np.float32)
+        data_2 = np.array([2, 6, 6]).astype(np.float32)
+        result = np.array([2, 3, 4]).astype(np.float32)
+        node = onnx.helper.make_node(
+            'Mean',
+            inputs=['data_0', 'data_1', 'data_2'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0, data_1, data_2], outputs=[result],
+               name='test_mean_example')
+
+        node = onnx.helper.make_node(
+            'Mean',
+            inputs=['data_0'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0], outputs=[data_0],
+               name='test_mean_one_input')
+
+        result = np.divide(np.add(data_0, data_1), 2.)
+        node = onnx.helper.make_node(
+            'Mean',
+            inputs=['data_0', 'data_1'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0, data_1], outputs=[result],
+               name='test_mean_two_inputs')
 
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text

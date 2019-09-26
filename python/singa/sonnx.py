@@ -187,6 +187,8 @@ class SingaFrontend(object):
         'HardSigmoid': 'HardSigmoid',
         'Identity': 'Identity',
         'SoftPlus': 'Softplus',
+        'SoftSign': 'Softsign',
+        'Mean': 'Mean',
     }
 
     # this dict indicates the operators that need extra handle
@@ -695,6 +697,8 @@ class SingaBackend(Backend):
         'HardSigmoid': 'HardSigmoid',
         'Identity': 'identity',
         'Softplus': 'softplus',
+        'Softsign': 'softsign',
+        'Mean': 'mean',
     }
 
     # this dict indicates the operators that need extra handle
