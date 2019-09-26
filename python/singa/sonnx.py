@@ -175,6 +175,7 @@ class SingaFrontend(object):
         'atan': 'Atan',
         'atanh': 'Atanh',
         'SeLU' : 'Selu',
+        'Elu' : 'Elu',
     }
 
     # this dict indicates the operators that need extra handle
@@ -190,12 +191,31 @@ class SingaFrontend(object):
         'Reshape': '_create_reshape',
         'SoftMax': '_create_softmax',
         'SeLU': '_create_selu',
+        'Elu' : '_create_elu',
     }
 
     # some ops(such as batchnorm) has inputs we cannot handle directly,
     # so we record these items firstly so that we can handle then
     # at other place.
     _unhandled_operators = {}
+
+    @classmethod
+    def _create_elu(cls, op, op_t):
+        """
+        get a onnx node from singa elu operator
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('alpha', op.alpha),
+        ])
+        return node
 
     @classmethod
     def _create_selu(cls, op, op_t):
@@ -632,6 +652,7 @@ class SingaBackend(Backend):
         'Atan': 'atan',
         'Atanh': 'atanh',
         'Selu' : 'SeLU',
+        'Elu' : 'Elu',
     }
 
     # this dict indicates the operators that need extra handle
@@ -648,12 +669,33 @@ class SingaBackend(Backend):
         'Reshape': '_create_reshape',
         'Softmax': '_create_softmax',
         'Selu': '_create_selu',
+        'Elu': '_create_elu',
     }
+
+    @classmethod
+    def _create_elu(cls, onnx_node, inputs, opset_version):
+        """
+        get the elu operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        alpha = onnx_node.getattr("alpha", 1.)
+        _, forward = cls._common_onnx_node_to_singa_op(
+            onnx_node, inputs, opset_version)
+        return _, forward(alpha)
 
     @classmethod
     def _create_selu(cls, onnx_node, inputs, opset_version):
         """
-        get the conv operator from onnx node
+        get the selu operator from onnx node
         Args:
             onnx_node: a given onnx node
         Args:
