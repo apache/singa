@@ -808,16 +808,13 @@ class SingaBackend(Backend):
         Returns: 
             the autograd of singa operator
         """
-<<<<<<< HEAD
         factor = onnx_node.attrs["axis"] if "axis" in onnx_node.attrs else 0
         if factor < 0:
             factor = len(inputs[0].shape) + factor # in order to support the negative axis
-=======
         alpha = onnx_node.attrs["alpha"]
         beta = onnx_node.attrs["beta"]
         transA = False if onnx_node.attrs["transA"] == 0 else True
         transB = False if onnx_node.attrs["transB"] == 0 else True
->>>>>>> master
         _, forward = cls._common_onnx_node_to_singa_op(onnx_node, inputs, opset_version)
         return None, forward(axis=factor)
 
