@@ -181,6 +181,8 @@ class SingaFrontend(object):
         'Sign' : 'Sign',
         'Div' : 'Div',
         'Sub' : 'Sub',
+        'Sqrt' : 'Sqrt',
+        'Log' : 'Log',
     }
 
     # this dict indicates the operators that need extra handle
@@ -663,6 +665,8 @@ class SingaBackend(Backend):
         'Sign': 'sign',
         'Div' : 'div',
         'Sub' : 'sub',
+        'Sqrt' : 'sqrt',
+        'Log' : 'log',
     }
 
     # this dict indicates the operators that need extra handle

@@ -1305,7 +1305,40 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_sub_bcast')
 
+    def test_sqrt(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Sqrt',
+            inputs=['x'],
+            outputs=['y'],
+        )
 
+        x = np.array([1, 4, 9]).astype(np.float32)
+        y = np.sqrt(x)  # expected output [1., 2., 3.]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_sqrt_example')
+
+        x = np.abs(np.random.randn(3, 4, 5).astype(np.float32))
+        y = np.sqrt(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_sqrt')
+
+
+    def test_log(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Log',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([1, 10]).astype(np.float32)
+        y = np.log(x)  # expected output [0., 2.30258512]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_log_example')
+
+        x = np.exp(np.random.randn(3, 4, 5).astype(np.float32))
+        y = np.log(x)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_log')
 
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
