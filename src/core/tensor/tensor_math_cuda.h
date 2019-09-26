@@ -937,6 +937,26 @@ void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx) {
 }
 
 template <>
+void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx, const std::string modeName) {
+  cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_FAST;
+  cudnnSoftmaxMode_t mode = CUDNN_SOFTMAX_MODE_INSTANCE;
+
+  if (modeName == "channel"){
+    mode = CUDNN_SOFTMAX_MODE_CHANNEL;
+  }
+
+  const float * inPtr = static_cast<const float*>(in.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+
+  float alpha = 1.0;
+  float beta = 0.0;
+
+  check_cudnn(cudnnSoftmaxForward(ctx->cudnn_handle, algorithm, mode,
+                                  (void*)(&alpha), generate_tensor_nd_desc(in), inPtr, (void*)(&beta)
+                                  , generate_tensor_nd_desc(*out), outPtr));
+}
+
+template <>
 void ComputeCrossEntropy<float, lang::Cuda>(bool int_target,
     const size_t batchsize,
     const size_t dim, const Block* p,

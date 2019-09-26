@@ -712,6 +712,32 @@ GenUnaryTensorFn(Tanh);
 GenUnaryTensorFn(Atan);
 GenUnaryTensorFn(Atanh);
 
+GenUnaryTensorFn(SoftMax);
+
+// use variadic to pass params
+void SoftMax(const Tensor &in, Tensor *out, const std::string modeName) {
+  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+    out->device()->Exec(
+        [in, out, modeName](Context *ctx) {
+          SoftMax<DType, Lang>(in, out, ctx, modeName);
+        },
+        {in.block()}, {out->block()});
+  });
+}
+
+Tensor SoftMax(const Tensor &in, const std::string modeName) {
+  Tensor ret(in.shape(), in.device(), in.data_type());
+  auto *retptr = &ret;
+  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+    retptr->device()->Exec(
+        [in, retptr, modeName](Context *ctx) {
+          SoftMax<DType, Lang>(in, retptr, ctx, modeName);
+        },
+        {in.block()}, {retptr->block()});
+  });
+  return ret;
+}
+
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                            \
   do {                                                                      \
     TYPE_LANG_SWITCH(lhs.data_type(), DType, lhs.device()->lang(), Lang, {  \
@@ -868,11 +894,13 @@ Tensor Sum(const Tensor &M, int axis) {
   }
 }
 
+/*
 Tensor SoftMax(const Tensor &in) {
   Tensor out(in.shape(), in.device(), in.data_type());
   SoftMax(in, &out);
   return out;
 }
+*/
 
 Tensor RowMax(const Tensor &in) {
   Tensor ret({in.shape(0)}, in.device(), in.data_type());
@@ -887,6 +915,7 @@ Tensor RowMax(const Tensor &in) {
   return ret;
 }
 
+/*
 void SoftMax(const Tensor &in, Tensor *out) {
   CHECK_LE(in.nDim(), 2u);
   out->CopyData(in);
@@ -904,6 +933,7 @@ void SoftMax(const Tensor &in, Tensor *out) {
   DivColumn(tmp, out);
   out->Reshape(in.shape());
 }
+*/
 
 void AddColumn(const Tensor &v, Tensor *M) { AddColumn(1, 1, v, M); }
 /// Add column 'v' onto each column of matrix M;
