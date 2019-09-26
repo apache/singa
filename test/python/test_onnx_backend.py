@@ -1397,6 +1397,38 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_hardsigmoid_default')
 
+    def test_identity(self):
+        node = onnx.helper.make_node(
+            'Identity',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        data = np.array([[[
+            [1, 2],
+            [3, 4],
+        ]]], dtype=np.float32)
+
+        expect(node, inputs=[data], outputs=[data],
+               name='test_identity')
+
+    def test_softplus(self):
+        node = onnx.helper.make_node(
+            'Softplus',
+            inputs=['x'],
+            outputs=['y'],
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.log(np.exp(x) + 1)  # expected output [0.31326166, 0.69314718, 1.31326163]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_softplus_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.log(np.exp(x) + 1)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_softplus')
+
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
                   input_spatial_shape,  # type: Sequence[int]

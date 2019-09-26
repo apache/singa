@@ -174,17 +174,19 @@ class SingaFrontend(object):
         'asinh': 'Asinh',
         'atan': 'Atan',
         'atanh': 'Atanh',
-        'SeLU' : 'Selu',
-        'Elu' : 'Elu',
+        'SeLU': 'Selu',
+        'Elu': 'Elu',
         'Equal': 'Equal',
         'Less': 'Less',
-        'Sign' : 'Sign',
-        'Div' : 'Div',
-        'Sub' : 'Sub',
-        'Sqrt' : 'Sqrt',
-        'Log' : 'Log',
-        'Greater' : 'Greater',
-        'HardSigmoid' : 'HardSigmoid',
+        'Sign': 'Sign',
+        'Div': 'Div',
+        'Sub': 'Sub',
+        'Sqrt': 'Sqrt',
+        'Log': 'Log',
+        'Greater': 'Greater',
+        'HardSigmoid': 'HardSigmoid',
+        'Identity': 'Identity',
+        'SoftPlus': 'Softplus',
     }
 
     # this dict indicates the operators that need extra handle
@@ -691,6 +693,8 @@ class SingaBackend(Backend):
         'Log' : 'log',
         'Greater' : 'greater',
         'HardSigmoid': 'HardSigmoid',
+        'Identity': 'identity',
+        'Softplus': 'softplus',
     }
 
     # this dict indicates the operators that need extra handle
