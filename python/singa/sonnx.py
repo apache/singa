@@ -179,6 +179,8 @@ class SingaFrontend(object):
         'Equal': 'Equal',
         'Less': 'Less',
         'Sign' : 'Sign',
+        'Div' : 'Div',
+        'Sub' : 'Sub',
     }
 
     # this dict indicates the operators that need extra handle
@@ -659,6 +661,8 @@ class SingaBackend(Backend):
         'Equal': 'equal',
         'Less': 'less',
         'Sign': 'sign',
+        'Div' : 'div',
+        'Sub' : 'sub',
     }
 
     # this dict indicates the operators that need extra handle

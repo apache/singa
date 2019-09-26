@@ -1240,6 +1240,73 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_sign')
 
+    def test_div(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Div',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
+
+        x = np.array([3, 4]).astype(np.float32)
+        y = np.array([1, 2]).astype(np.float32)
+        z = x / y  # expected output [3., 2.]
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_div_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.rand(3, 4, 5).astype(np.float32) + 1.0
+        z = x / y
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_div')
+
+    # #todo, support div broadcast
+    # def test_div_broadcast(self):  # type: () -> None
+    #     node = onnx.helper.make_node(
+    #         'Div',
+    #         inputs=['x', 'y'],
+    #         outputs=['z'],
+    #     )
+
+    #     x = np.random.randn(3, 4, 5).astype(np.float32)
+    #     y = np.random.rand(5).astype(np.float32) + 1.0
+    #     z = x / y
+    #     expect(node, inputs=[x, y], outputs=[z],
+    #            name='test_div_bcast')
+
+    def test_sub(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Sub',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
+
+        x = np.array([1, 2, 3]).astype(np.float32)
+        y = np.array([3, 2, 1]).astype(np.float32)
+        z = x - y  # expected output [-2., 0., 2.]
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_sub_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(3, 4, 5).astype(np.float32)
+        z = x - y
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_sub')
+
+    def test_sub_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Sub',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(5).astype(np.float32)
+        z = x - y
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_sub_bcast')
+
+
+
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
                   input_spatial_shape,  # type: Sequence[int]
