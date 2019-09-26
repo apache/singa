@@ -189,6 +189,7 @@ class SingaFrontend(object):
         'SoftPlus': 'Softplus',
         'SoftSign': 'Softsign',
         'Mean': 'Mean',
+        'Pow': 'Pow',
     }
 
     # this dict indicates the operators that need extra handle
@@ -699,6 +700,7 @@ class SingaBackend(Backend):
         'Softplus': 'softplus',
         'Softsign': 'softsign',
         'Mean': 'mean',
+        'Pow': 'pow',
     }
 
     # this dict indicates the operators that need extra handle

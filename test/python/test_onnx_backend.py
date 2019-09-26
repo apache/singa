@@ -1475,6 +1475,50 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[data_0, data_1], outputs=[result],
                name='test_mean_two_inputs')
 
+    def test_pow(self):
+        node = onnx.helper.make_node(
+            'Pow',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
+
+        x = np.array([1, 2, 5]).astype(np.float32)
+        y = np.array([4, 5, 2]).astype(np.float32) # todo, not exactly same
+        z = np.power(x, y)  # expected output [1., 32., 729.]
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_pow_example')
+
+        x = np.arange(24).reshape(2, 3, 4).astype(np.float32) # todo, cannot too big here
+        y = np.random.randn(2, 3, 4).astype(np.float32)
+        z = np.power(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_pow')
+
+    # def test_pow_broadcast(self):  # type: () -> None
+    #     node = onnx.helper.make_node(
+    #         'Pow',
+    #         inputs=['x', 'y'],
+    #         outputs=['z'],
+    #     )
+
+    #     x = np.array([1, 2, 3]).astype(np.float32)
+    #     y = np.array(2).astype(np.float32)
+    #     z = np.power(x, y)  # expected output [1., 4., 9.]
+    #     expect(node, inputs=[x, y], outputs=[z],
+    #            name='test_pow_bcast_scalar')
+
+    #     node = onnx.helper.make_node(
+    #         'Pow',
+    #         inputs=['x', 'y'],
+    #         outputs=['z'],
+    #     )
+    #     x = np.array([[1, 2, 3], [4, 5, 6]]).astype(np.float32)
+    #     y = np.array([1, 2, 3]).astype(np.float32)
+    #     # expected output [[1, 4, 27], [4, 25, 216]]
+    #     z = np.power(x, y).astype(np.float32)
+    #     expect(node, inputs=[x, y], outputs=[z],
+    #            name='test_pow_bcast_array')
+
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
                   input_spatial_shape,  # type: Sequence[int]
