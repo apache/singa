@@ -197,6 +197,7 @@ namespace singa{
 
   Tensor Average(const Tensor &t, int axis);
   Tensor SoftMax(const Tensor &t);
+  Tensor SoftMax(const Tensor &t, const std::string modeName);
 
   Tensor Pow(const Tensor &base, const Tensor &exp);
 
@@ -342,6 +343,8 @@ namespace singa{
 
   Tensor SoftMax(const Tensor &in);
   void SoftMax(const Tensor &in, Tensor *out);
+  Tensor SoftMax(const Tensor &in, const std::string modeName);
+  void SoftMax(const Tensor &in, Tensor *out, const std::string modeName);
 
   Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t);
   Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t);
