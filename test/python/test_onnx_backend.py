@@ -677,7 +677,6 @@ class TestPythonOnnxBackend(unittest.TestCase):
             )
 
             new_shape = (1, -1) if i == 0 else (np.prod(shape[0:i]).astype(int), -1)
-            print(i, new_shape)
             b = np.reshape(a, new_shape)
             expect(node, inputs=[a], outputs=[b],
                    name='test_flatten_axis' + str(i))
@@ -809,35 +808,35 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_softmax_example')
 
-    # def test_softmax_axis(self):  # type: () -> None
-    #     def softmax_2d(x):  # type: (np.ndarray) -> np.ndarray
-    #         max_x = np.max(x, axis=1).reshape((-1, 1))
-    #         exp_x = np.exp(x - max_x)
-    #         return exp_x / np.sum(exp_x, axis=1).reshape((-1, 1))
+    def test_softmax_axis(self):  # type: () -> None
+        def softmax_2d(x):  # type: (np.ndarray) -> np.ndarray
+            max_x = np.max(x, axis=1).reshape((-1, 1))
+            exp_x = np.exp(x - max_x)
+            return exp_x / np.sum(exp_x, axis=1).reshape((-1, 1))
 
-    #     x = np.array([[0, 1, 2, 3], [10000, 10001, 10002, 10003]]).astype(np.float32)
-    #     # expected output [[0.0320586, 0.08714432, 0.23688284, 0.64391428],
-    #     #                 [0.0320586, 0.08714432, 0.23688284, 0.64391428]]
-    #     y = softmax_2d(x)
+        x = np.array([[0, 1, 2, 3], [10000, 10001, 10002, 10003]]).astype(np.float32)
+        # expected output [[0.0320586, 0.08714432, 0.23688284, 0.64391428],
+        #                 [0.0320586, 0.08714432, 0.23688284, 0.64391428]]
+        y = softmax_2d(x)
 
-    #     node = onnx.helper.make_node(
-    #         'Softmax',
-    #         inputs=['x'],
-    #         outputs=['y'],
-    #     )
-    #     expect(node, inputs=[x], outputs=[y],
-    #            name='test_softmax_large_number')
+        node = onnx.helper.make_node(
+            'Softmax',
+            inputs=['x'],
+            outputs=['y'],
+        )
+        expect(node, inputs=[x], outputs=[y],
+               name='test_softmax_large_number')
 
-    #     x = np.abs(np.random.randn(3, 4, 5).astype(np.float32))
-    #     node = onnx.helper.make_node(
-    #         'Softmax',
-    #         inputs=['x'],
-    #         outputs=['y'],
-    #         axis=0,
-    #     )
-    #     y = softmax_2d(x.reshape(1, 60)).reshape(3, 4, 5)
-    #     expect(node, inputs=[x], outputs=[y],
-    #            name='test_softmax_axis_0')
+        # x = np.abs(np.random.randn(3, 4, 5).astype(np.float32))
+        # node = onnx.helper.make_node(
+        #     'Softmax',
+        #     inputs=['x'],
+        #     outputs=['y'],
+        #     axis=0,
+        # )
+        # y = softmax_2d(x.reshape(1, 60)).reshape(3, 4, 5)
+        # expect(node, inputs=[x], outputs=[y],
+        #        name='test_softmax_axis_0')
 
         # node = onnx.helper.make_node(
         #     'Softmax',
