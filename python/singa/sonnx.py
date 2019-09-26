@@ -184,6 +184,7 @@ class SingaFrontend(object):
         'Sqrt' : 'Sqrt',
         'Log' : 'Log',
         'Greater' : 'Greater',
+        'HardSigmoid' : 'HardSigmoid',
     }
 
     # this dict indicates the operators that need extra handle
@@ -200,12 +201,32 @@ class SingaFrontend(object):
         'SoftMax': '_create_softmax',
         'SeLU': '_create_selu',
         'Elu' : '_create_elu',
+        'HardSigmoid': '_create_hardsigmoid',
     }
 
     # some ops(such as batchnorm) has inputs we cannot handle directly,
     # so we record these items firstly so that we can handle then
     # at other place.
     _unhandled_operators = {}
+
+    @classmethod
+    def _create_hardsigmoid(cls, op, op_t):
+        """
+        get a onnx node from singa elu operator
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('alpha', op.alpha),
+            helper.make_attribute('beta', op.gamma),
+        ])
+        return node
 
     @classmethod
     def _create_elu(cls, op, op_t):
@@ -669,6 +690,7 @@ class SingaBackend(Backend):
         'Sqrt' : 'sqrt',
         'Log' : 'log',
         'Greater' : 'greater',
+        'HardSigmoid': 'HardSigmoid',
     }
 
     # this dict indicates the operators that need extra handle
@@ -686,7 +708,29 @@ class SingaBackend(Backend):
         'Softmax': '_create_softmax',
         'Selu': '_create_selu',
         'Elu': '_create_elu',
+        'HardSigmoid': '_create_hardsigmoid',
     }
+
+    @classmethod
+    def _create_hardsigmoid(cls, onnx_node, inputs, opset_version):
+        """
+        get the HardSigmoid operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        alpha = onnx_node.getattr("alpha", 0.2)
+        beta = onnx_node.getattr("beta", 0.5)
+        _, forward = cls._common_onnx_node_to_singa_op(
+            onnx_node, inputs, opset_version)
+        return _, forward(alpha, beta)
    
     @classmethod
     def _create_equal(cls, onnx_node, inputs, opset_version):

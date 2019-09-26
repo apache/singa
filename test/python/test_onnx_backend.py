@@ -1365,6 +1365,38 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_greater_bcast')
 
+    def test_hardsigmoid(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'HardSigmoid',
+            inputs=['x'],
+            outputs=['y'],
+            alpha=0.5,
+            beta=0.6
+        )
+
+        x = np.array([-1, 0, 1]).astype(np.float32)
+        y = np.clip(x * 0.5 + 0.6, 0, 1)  # expected output [0.1, 0.6, 1.]
+        expect(node, inputs=[x], outputs=[y],
+               name='test_hardsigmoid_example')
+
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.clip(x * 0.5 + 0.6, 0, 1)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_hardsigmoid')
+
+    def test_hardsigmoid_default(self):  # type: () -> None
+        default_alpha = 0.2
+        default_beta = 0.5
+        node = onnx.helper.make_node(
+            'HardSigmoid',
+            inputs=['x'],
+            outputs=['y'],
+        )
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.clip(x * default_alpha + default_beta, 0, 1)
+        expect(node, inputs=[x], outputs=[y],
+               name='test_hardsigmoid_default')
+
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
                   input_spatial_shape,  # type: Sequence[int]
