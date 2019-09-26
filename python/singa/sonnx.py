@@ -176,6 +176,7 @@ class SingaFrontend(object):
         'atanh': 'Atanh',
         'SeLU' : 'Selu',
         'Elu' : 'Elu',
+        'Equal': 'Equal',
     }
 
     # this dict indicates the operators that need extra handle
@@ -653,6 +654,7 @@ class SingaBackend(Backend):
         'Atanh': 'atanh',
         'Selu' : 'SeLU',
         'Elu' : 'Elu',
+        'Equal': 'Equal',
     }
 
     # this dict indicates the operators that need extra handle
@@ -670,7 +672,27 @@ class SingaBackend(Backend):
         'Softmax': '_create_softmax',
         'Selu': '_create_selu',
         'Elu': '_create_elu',
+        'Equal': '_create_equal',
     }
+
+    @classmethod
+    def _create_equal(cls, onnx_node, inputs, opset_version):
+        """
+        get the equal operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        _, forward = cls._common_onnx_node_to_singa_op(
+            onnx_node, inputs, opset_version)
+        return _, forward()
 
     @classmethod
     def _create_elu(cls, onnx_node, inputs, opset_version):

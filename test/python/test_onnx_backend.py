@@ -43,7 +43,7 @@ def expect(node, inputs, outputs, name, opset_version=_default_opset_version):
     input_tensors = {}
     # prepare input tensors
     for key, val in zip(onnx_node.inputs, inputs):
-        x = tensor.from_numpy(val)
+        x = tensor.from_numpy(val.astype(np.float32)) # very important! must be float
         x.to_device(gpu_dev)
         input_tensors[key] = x
     outputs_dict = sonnx.run_node(onnx_node, input_tensors, opset_version)
@@ -1173,6 +1173,33 @@ class TestPythonOnnxBackend(unittest.TestCase):
         y = np.clip(x, 0, np.inf) + (np.exp(np.clip(x, -np.inf, 0)) - 1) * default_alpha
         expect(node, inputs=[x], outputs=[y],
                name='test_elu_default')
+
+    def test_equal(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Equal',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
+
+        x = (np.random.randn(3, 4, 5) * 10).astype(np.int32)
+        y = (np.random.randn(3, 4, 5) * 10).astype(np.int32)
+        z = np.equal(x, y)
+
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_equal')
+
+    def test_equal_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Equal',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
+
+        x = (np.random.randn(3, 4, 5) * 10).astype(np.int32)
+        y = (np.random.randn(5) * 10).astype(np.int32)
+        z = np.equal(x, y).astype(np.int32) # need to convert to int type
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_equal_bcast')
 
 # return padding shape of conv2d or pooling
 def get_pad_shape(auto_pad,  # type: Text
