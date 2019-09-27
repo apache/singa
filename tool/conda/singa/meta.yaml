@@ -27,8 +27,8 @@ package:
   version: {{ version }}
 
 source:
-  # path: ../../../
-  git_url: https://github.com/apache/incubator-singa.git
+  path: ../../../
+  # git_url: https://github.com/apache/incubator-singa.git
 
 build:
   number: 0
