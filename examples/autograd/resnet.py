@@ -115,6 +115,9 @@ class Bottleneck(autograd.Layer):
         return out
 
 
+__all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
+
+
 class ResNet(autograd.Layer):
     def __init__(self, block, layers, num_classes=1000):
         self.inplanes = 64
@@ -231,14 +234,6 @@ def resnet152(pretrained=False, **kwargs):
 
     return model
 
-__all__ = [
-    'ResNet',
-    'resnet18',
-    'resnet34',
-    'resnet50',
-    'resnet101',
-    'resnet152',
-]
 
 if __name__ == "__main__":
     model = resnet50()

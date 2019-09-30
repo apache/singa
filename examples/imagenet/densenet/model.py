@@ -21,8 +21,6 @@ https://github.com/pytorch/vision/blob/master/torchvision/models/densenet.py
 from singa import initializer
 from singa import layer
 from singa import net as ffnet
-from singa import loss
-from singa import metric
 from singa.layer import Conv2D, Activation, MaxPooling2D,\
     AvgPooling2D, Split, Concat, Flatten, BatchNormalization
 

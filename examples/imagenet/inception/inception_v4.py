@@ -68,8 +68,8 @@ def block_reduction_a(blk, net):
     s = net.add(Split('%s/Split' % blk, 3))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 384, 3, 2,
                  border_mode='VALID', src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 192, 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_3x3' % blk, 224, 3)
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 192, 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_3x3' % blk, 224, 3)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, 256, 3, 2,
                  border_mode='VALID')
     br2 = net.add(MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk, 3, 2,
@@ -82,15 +82,15 @@ def block_inception_b(blk, net):
     # By default use stride=1 and SAME padding
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 384, 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 192, 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 224, (1, 7))
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 192, 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 224, (1, 7))
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, 256, (7, 1))
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, 192, 1, src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, 192, (7, 1))
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, 224, (1, 7))
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, 224, (7, 1))
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, 192, 1, src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, 192, (7, 1))
+    conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, 224, (1, 7))
+    conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, 224, (7, 1))
     br2 = conv2d(net, '%s/Branch_2/Conv2d_0e_1x7' % blk, 256, (1, 7))
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, 128, 1)
     return net.add(Concat('%s/Concat' % blk, 1), [br0, br1, br2, br3])
 
@@ -99,12 +99,12 @@ def block_reduction_b(blk, net):
     """Builds Reduction-B block for Inception v4 network."""
     # By default use stride=1 and SAME padding
     s = net.add(Split('%s/Split' % blk, 3))
-    br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 192, 1, src=s)
+    conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 192, 1, src=s)
     br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 192, 3, 2,
                  border_mode='VALID')
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 256, 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 256, (1, 7))
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, 320, (7, 1))
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 256, 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 256, (1, 7))
+    conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, 320, (7, 1))
     br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, 320, 3, 2,
                  border_mode='VALID')
     br2 = net.add(MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk, 3, 2,
@@ -118,21 +118,21 @@ def block_inception_c(blk, net):
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 256, 1, src=s)
 
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 384, 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 384, 1, src=s)
     br1 = net.add(Split('%s/Branch_1/Split' % blk, 2))
     br10 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x3' % blk, 256, (1, 3), src=br1)
     br11 = conv2d(net, '%s/Branch_1/Conv2d_0c_3x1' % blk, 256, (3, 1), src=br1)
     br1 = net.add(Concat('%s/Branch_1/Concat' % blk, 1), [br10, br11])
 
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, 384, 1, src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_3x1' % blk, 448, (3, 1))
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_1x3' % blk, 512, (1, 3))
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, 384, 1, src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_3x1' % blk, 448, (3, 1))
+    conv2d(net, '%s/Branch_2/Conv2d_0c_1x3' % blk, 512, (1, 3))
     br2 = net.add(Split('%s/Branch_2/Split' % blk, 2))
     br20 = conv2d(net, '%s/Branch_2/Conv2d_0d_1x3' % blk, 256, (1, 3), src=br2)
     br21 = conv2d(net, '%s/Branch_2/Conv2d_0e_3x1' % blk, 256, (3, 1), src=br2)
     br2 = net.add(Concat('%s/Branch_2/Concat' % blk, 1), [br20, br21])
 
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, 256, 1)
     return net.add(Concat('%s/Concat' % blk, 1), [br0, br1, br2, br3])
 
@@ -204,12 +204,12 @@ def inception_v4_base(sample_shape, final_endpoint='Inception/Mixed_7d',
     # 73 x 73 x 160
     blk = name + '/Mixed_4a'
     s = net.add(Split('%s/Split' % blk, 2))
-    br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 64, 1, src=s)
+    conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 64, 1, src=s)
     br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 96, 3,
                  border_mode='VALID')
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 64, 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 64, (1, 7))
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, 64, (7, 1))
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 64, 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 64, (1, 7))
+    conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, 64, (7, 1))
     br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, 96, 3,
                  border_mode='VALID')
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1), [br0, br1])

@@ -425,11 +425,6 @@ def less(x,y):
     return Less()(x,y)[0]
 
 
-
-
-
-
-
 class Clip(Operation):
     def __init__(self,min,max):
         super(Clip, self).__init__()
@@ -1996,7 +1991,7 @@ class RNN_Base(Layer):
     def __call__(self):
         raise NotImplementedError
 
-    def step_forward(self):
+    def step_forward(self, x=None, h=None, c=None, Wx=None, Wh=None, Bx=None, Bh=None, b=None):
         raise NotImplementedError
 
 
@@ -2533,8 +2528,8 @@ class And(Operation):
         return cur
 
     def backward(self, dy):
-        assert 0,('no gradient')
-        return None
+        assert False,('no gradient for backward function')
+
 
 def _and(a,b):
     return And()(a,b)[0]
@@ -2551,8 +2546,7 @@ class Or(Operation):
         return cur
 
     def backward(self, dy):
-        assert 0,('no gradient for backward function')
-        return None
+        assert False,('no gradient for backward function')
 
 
 def _or(a,b):
@@ -2571,8 +2565,8 @@ class Not(Operation):
         return cur
 
     def backward(self, dy):
-        assert 0,('no gradient for backward function')
-        return None
+        assert False,('no gradient for backward function')
+
 
 def _not(x):
     return Not()(x)[0]
@@ -2589,8 +2583,7 @@ class Xor(Operation):
         return cur
 
     def backward(self, dy):
-        assert 0,('no gradient for backward function')
-        return None
+        assert False,('no gradient for backward function')
 
 
 def _xor(a,b):
