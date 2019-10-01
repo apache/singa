@@ -713,23 +713,23 @@ GenUnaryTensorFn(Atan);
 GenUnaryTensorFn(Atanh);
 
 // use variadic to pass params
-void SoftMax(const Tensor &in, Tensor *out, const std::string modeName) {
+void SoftMax(const Tensor &in, Tensor *out, int axis) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     out->device()->Exec(
-        [in, out, modeName](Context *ctx) {
-          SoftMax<DType, Lang>(in, out, ctx, modeName);
+        [in, out, axis](Context *ctx) {
+          SoftMax<DType, Lang>(in, out, ctx, axis);
         },
         {in.block()}, {out->block()});
   });
 }
 
-Tensor SoftMax(const Tensor &in, const std::string modeName) {
+Tensor SoftMax(const Tensor &in, int axis) {
   Tensor ret(in.shape(), in.device(), in.data_type());
   auto *retptr = &ret;
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     retptr->device()->Exec(
-        [in, retptr, modeName](Context *ctx) {
-          SoftMax<DType, Lang>(in, retptr, ctx, modeName);
+        [in, retptr, axis](Context *ctx) {
+          SoftMax<DType, Lang>(in, retptr, ctx, axis);
         },
         {in.block()}, {retptr->block()});
   });

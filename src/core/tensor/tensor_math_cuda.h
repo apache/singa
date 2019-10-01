@@ -936,24 +936,35 @@ void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx) {
                                   , generate_tensor_nd_desc(*out), outPtr));
 }
 
+// add axis to softmax API according to ONNX specification
+// https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softmax
 template <>
-void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx, const std::string modeName) {
-  cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_FAST;
-  cudnnSoftmaxMode_t mode = CUDNN_SOFTMAX_MODE_INSTANCE;
+void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx, int axis) {
+  // {a_0, a_1, ..., a_k-1, a_k, ... a_n-1}
+  // reshape to  
+  // { a_0 * a_1 * ... a_k-1, a_k * ... a_n-1 }
+  // shicong
+  
+  // assert axis \in {-r, r-1}
+  CHECK_LE(axis, (int)in.shape().size()-1 );
+  CHECK_GE(axis, -1*(int)in.nDim() );
 
-  if (modeName == "channel"){
-    mode = CUDNN_SOFTMAX_MODE_CHANNEL;
+  Shape original_shape = in.shape();
+  if (axis < 0) axis = in.shape().size() + axis;
+
+  Shape coerced_shape = {1, 1};
+  for (int i = 0; i < in.shape().size(); i++) {
+      if (i < axis)
+        coerced_shape[0] *= in.shape()[i];
+      else
+        coerced_shape[1] *= in.shape()[i];
   }
+  Tensor in_reshaped = Reshape(in, coerced_shape);
+  out->Reshape(coerced_shape);
 
-  const float * inPtr = static_cast<const float*>(in.block()->data());
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  SoftMax<float, lang::Cuda>(in_reshaped, out, ctx);
 
-  float alpha = 1.0;
-  float beta = 0.0;
-
-  check_cudnn(cudnnSoftmaxForward(ctx->cudnn_handle, algorithm, mode,
-                                  (void*)(&alpha), generate_tensor_nd_desc(in), inPtr, (void*)(&beta)
-                                  , generate_tensor_nd_desc(*out), outPtr));
+  out->Reshape(original_shape);
 }
 
 template <>

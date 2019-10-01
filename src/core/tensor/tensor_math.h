@@ -406,7 +406,7 @@ void SoftMax(const Tensor &in, Tensor *out, Context* ctx) {
 }
 
 template <typename DType, typename Lang>
-void SoftMax(const Tensor &in, Tensor *out, Context* ctx, const std::string modeName) {
+void SoftMax(const Tensor &in, Tensor *out, Context* ctx, int axis) {
   LOG(FATAL) << "Not Implemented";
 }
 

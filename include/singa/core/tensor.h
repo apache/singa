@@ -504,12 +504,12 @@ void MultColumn(const Tensor &v, Tensor *M);
 void MultRow(const Tensor &v, Tensor *M);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
 Tensor SoftMax(const Tensor &in);
-Tensor SoftMax(const Tensor &in, const std::string modeName);
+Tensor SoftMax(const Tensor &in, int axis);
 
 Tensor RowMax(const Tensor &in);
 /// Do softmax for each row. 'in' could be a 1-d or 2-d Tensor.
 void SoftMax(const Tensor &in, Tensor *out);
-void SoftMax(const Tensor &in, Tensor *out, const std::string modeName);
+void SoftMax(const Tensor &in, Tensor *out, int axis);
 /// Sub column 'v' by each column of matrix M
 void SubColumn(const Tensor &v, Tensor *M);
 /// Sub row 'v' by each row of matrix M; write results into 'out'
