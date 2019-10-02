@@ -101,10 +101,10 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     blk = V3 + '/Mixed_5b'
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(48), 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(48), 1, src=s)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_5x5' % blk, depth(64), 5)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(96), 3)
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(96), 3)
     br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_3x3' % blk, depth(96), 3)
     net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, depth(32), 1)
@@ -117,12 +117,12 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     blk = V3 + '/Mixed_5c'
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x1' % blk, depth(48), 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_1x1' % blk, depth(48), 1, src=s)
     br1 = conv2d(net, '%s/Branch_1/Conv_1_0c_5x5' % blk, depth(64), 5)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(96), 3)
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(96), 3)
     br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_3x3' % blk, depth(96), 3)
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), src=s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), src=s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, depth(64), 1)
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1),
                               [br0, br1, br2, br3])
@@ -133,12 +133,12 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     blk = V3 + '/Mixed_5d'
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(48), 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(48), 1, src=s)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_5x5' % blk, depth(64), 5)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(96), 3)
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(96), 3)
     br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_3x3' % blk, depth(96), 3)
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk,  3, 1), s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk,  3, 1), s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, depth(64), 1)
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1),
                               [br0, br1, br2, br3])
@@ -150,8 +150,8 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     s = net.add(Split('%s/Split' % blk, 3))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_1x1' % blk, depth(384), 3, 2,
                  border_mode='VALID', src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_3x3' % blk, depth(96), 3)
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(64), 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_3x3' % blk, depth(96), 3)
     br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_1x1' % blk, depth(96), 3, 2,
                  border_mode='VALID')
     br2 = net.add(MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk, 3, 2,
@@ -164,16 +164,15 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     blk = V3 + '/Mixed_6b'
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(192), 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(128), 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(128), [1, 7])
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(128), 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(128), [1, 7])
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, depth(192), [7, 1])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(128), [1, 1],
-                 src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, depth(128), [7, 1])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, depth(128), [1, 7])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, depth(128), [7, 1])
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(128), [1, 1], src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, depth(128), [7, 1])
+    conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, depth(128), [1, 7])
+    conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, depth(128), [7, 1])
     br2 = conv2d(net, '%s/Branch_2/Conv2d_0e_1x7' % blk, depth(192), [1, 7])
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, depth(192), [1, 1])
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1),
                               [br0, br1, br2, br3])
@@ -185,17 +184,15 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(192), [1, 1],
                  src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(160), [1, 1],
-                 src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(160), [1, 7])
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(160), [1, 1], src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(160), [1, 7])
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, depth(192), [7, 1])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(160), [1, 1],
-                 src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, depth(160), [7, 1])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, depth(160), [1, 7])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, depth(160), [7, 1])
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(160), [1, 1], src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, depth(160), [7, 1])
+    conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, depth(160), [1, 7])
+    conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, depth(160), [7, 1])
     br2 = conv2d(net, '%s/Branch_2/Conv2d_0e_1x7' % blk, depth(192), [1, 7])
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, depth(192), [1, 1])
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1),
                               [br0, br1, br2, br3])
@@ -207,17 +204,15 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(192), [1, 1],
                  src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(160), [1, 1],
-                 src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(160), [1, 7])
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(160), [1, 1], src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(160), [1, 7])
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, depth(192), [7, 1])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(160), [1, 1],
-                 src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, depth(160), [7, 1])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, depth(160), [1, 7])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, depth(160), [7, 1])
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(160), [1, 1], src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, depth(160), [7, 1])
+    conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, depth(160), [1, 7])
+    conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, depth(160), [7, 1])
     br2 = conv2d(net, '%s/Branch_2/Conv2d_0e_1x7' % blk, depth(192), [1, 7])
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, depth(192), [1, 1])
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1),
                               [br0, br1, br2, br3])
@@ -228,17 +223,15 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(192), [1, 1],
                  src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(192), [1, 1],
-                 src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(192), [1, 7])
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(192), [1, 1], src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(192), [1, 7])
     br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, depth(192), [7, 1])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(192), [1, 1],
-                 src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, depth(192), [7, 1])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, depth(192), [1, 7])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, depth(192), [7, 1])
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(192), [1, 1], src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_7x1' % blk, depth(192), [7, 1])
+    conv2d(net, '%s/Branch_2/Conv2d_0c_1x7' % blk, depth(192), [1, 7])
+    conv2d(net, '%s/Branch_2/Conv2d_0d_7x1' % blk, depth(192), [7, 1])
     br2 = conv2d(net, '%s/Branch_2/Conv2d_0e_1x7' % blk, depth(192), [1, 7])
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, depth(192), [1, 1])
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1),
                               [br0, br1, br2, br3])
@@ -248,14 +241,12 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     # mixed_8: 8 x 8 x 1280.
     blk = V3 + '/Mixed_7a'
     s = net.add(Split('%s/Split' % blk, 3))
-    br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(192), [1, 1],
-                 src=s)
+    conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(192), [1, 1], src=s)
     br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, depth(320), [3, 3], 2,
                  border_mode='VALID')
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(192), [1, 1],
-                 src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(192), [1, 7])
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, depth(192), [7, 1])
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(192), [1, 1], src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, depth(192), [1, 7])
+    conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, depth(192), [7, 1])
     br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, depth(192), [3, 3], 2,
                  border_mode='VALID')
     br2 = net.add(MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk, 3, 2,
@@ -268,22 +259,22 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     blk = V3 + '/Mixed_7b'
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(320), 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(384), 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(384), 1, src=s)
     s1 = net.add(Split('%s/Branch_1/Split1' % blk, 2))
     br11 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x3' % blk, depth(384), [1, 3],
                   src=s1)
     br12 = conv2d(net, '%s/Branch_1/Conv2d_0b_3x1' % blk, depth(384), [3, 1],
                   src=s1)
     br1 = net.add(Concat('%s/Branch_1/Concat1' % blk, 1),  [br11, br12])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(448), 1, src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(384), 3)
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(448), 1, src=s)
+    conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(384), 3)
     s2 = net.add(Split('%s/Branch_2/Split2' % blk, 2))
     br21 = conv2d(net, '%s/Branch_2/Conv2d_0c_1x3' % blk, depth(384), [1, 3],
                   src=s2)
     br22 = conv2d(net, '%s/Branch_2/Conv2d_0d_3x1' % blk, depth(384), [3, 1],
                   src=s2)
     br2 = net.add(Concat('%s/Branch_2/Concat2' % blk, 1),  [br21, br22])
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), src=s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), src=s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, depth(192), [1, 1])
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1),
                               [br0, br1, br2, br3])
@@ -294,23 +285,23 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     blk = V3 + '/Mixed_7c'
     s = net.add(Split('%s/Split' % blk, 4))
     br0 = conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, depth(320), 1, src=s)
-    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(384), 1, src=s)
+    conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, depth(384), 1, src=s)
     s1 = net.add(Split('%s/Branch_1/Split1' % blk, 2))
     br11 = conv2d(net, '%s/Branch_1/Conv2d_0b_1x3' % blk, depth(384), [1, 3],
                   src=s1)
     br12 = conv2d(net, '%s/Branch_1/Conv2d_0c_3x1' % blk, depth(384), [3, 1],
                   src=s1)
     br1 = net.add(Concat('%s/Branch_1/Concat1' % blk, 1),  [br11, br12])
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(448), [1, 1],
+    conv2d(net, '%s/Branch_2/Conv2d_0a_1x1' % blk, depth(448), [1, 1],
                  src=s)
-    br2 = conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(384), [3, 3])
+    conv2d(net, '%s/Branch_2/Conv2d_0b_3x3' % blk, depth(384), [3, 3])
     s2 = net.add(Split('%s/Branch_2/Split2' % blk, 2))
     br21 = conv2d(net, '%s/Branch_2/Conv2d_0c_1x3' % blk, depth(384), [1, 3],
                   src=s2)
     br22 = conv2d(net, '%s/Branch_2/Conv2d_0d_3x1' % blk, depth(384), [3, 1],
                   src=s2)
     br2 = net.add(Concat('%s/Branch_2/Concat2' % blk, 1),  [br21, br22])
-    br3 = net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), src=s)
+    net.add(AvgPooling2D('%s/Branch_3/AvgPool_0a_3x3' % blk, 3, 1), src=s)
     br3 = conv2d(net, '%s/Branch_3/Conv2d_0b_1x1' % blk, depth(192), [1, 1])
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1),
                               [br0, br1, br2, br3])
@@ -319,7 +310,7 @@ def inception_v3_base(name, sample_shape, final_endpoint, aux_endpoint,
     return net, end_points
 
 
-def create_net(num_classes=1001, sample_shape=(3, 299, 299),
+def create_net(num_classes=1001, sample_shape=(3, 299, 299), is_training=True,
                final_endpoint='InceptionV3/Mixed_7c',
                aux_endpoint='InceptionV3/Mixed_6e',
                dropout_keep_prob=0.8):
@@ -327,6 +318,7 @@ def create_net(num_classes=1001, sample_shape=(3, 299, 299),
 
     Args:
         num_classes: number of predicted classes.
+        is_training: whether is training or not.
         dropout_keep_prob: float, the fraction to keep before final layer.
         final_endpoint: 'InceptionV3/Mixed_7d',
         aux_endpoint:

@@ -116,10 +116,10 @@ def create_net(shape, weight_path='bvlc_googlenet.pickle'):
     net = ffnet.FeedForwardNet()
     net.add(Conv2D('conv1/7x7_s2', 64, 7, 2, pad=3, input_sample_shape=shape))
     c1 = net.add(Activation('conv1/relu_7x7'))
-    pool1 = pool(net, c1, 'pool1/3x3_s2', 3, 2)
+    pool(net, c1, 'pool1/3x3_s2', 3, 2)
     norm1 = net.add(LRN('pool1/norm1', 5, 0.0001, 0.75))
     c3x3r = conv(net, norm1 , 'conv2', 64, 1, suffix='3x3_reduce')
-    c3x3 = conv(net, c3x3r, 'conv2', 192, 3, pad=1, suffix='3x3')
+    conv(net, c3x3r, 'conv2', 192, 3, pad=1, suffix='3x3')
     norm2 = net.add(LRN('conv2/norm2', 5, 0.0001, 0.75))
     pool2 = pool(net, norm2, 'pool2/3x3_s2', 3, 2)
 
@@ -133,11 +133,11 @@ def create_net(shape, weight_path='bvlc_googlenet.pickle'):
     i4e=inception(net, i4d, 'inception_4e', 256, 160, 320, 32, 128, 128)
     pool4=pool(net, i4e,'pool4/3x3_s2', 3, 2)
     i5a=inception(net, pool4, 'inception_5a', 256, 160, 320, 32, 128, 128)
-    i5b=inception(net, i5a, 'inception_5b', 384, 192, 384, 48, 128, 128)
-    pool5=net.add(AvgPooling2D('pool5/7x7_s1', 7, 1, pad=0))
-    drop5=net.add(Dropout('drop', 0.4))
-    flat=net.add(Flatten('flat'))
-    dense=net.add(Dense('loss3/classifier', 1000))
+    inception(net, i5a, 'inception_5b', 384, 192, 384, 48, 128, 128)
+    net.add(AvgPooling2D('pool5/7x7_s1', 7, 1, pad=0))
+    net.add(Dropout('drop', 0.4))
+    net.add(Flatten('flat'))
+    net.add(Dense('loss3/classifier', 1000))
     # prob=net.add(Softmax('softmax'))
 
     net.load(weight_path, use_pickle=True)
@@ -161,7 +161,6 @@ def serve(agent, use_cpu, parameter_file, topk=5):
     else:
         print("runing with gpu")
         dev = device.create_cuda_gpu()
-    agent = agent
 
     print('Start intialization............')
     net = create_net((3, 224, 224), parameter_file)
@@ -197,9 +196,12 @@ def serve(agent, use_cpu, parameter_file, topk=5):
                 idx = np.argsort(-prob)[0:topk]
                 for i in idx:
                     response += "%s:%s<br/>" % (labels[i], prob[i])
-            except:
+            except Exception:
                 traceback.print_exc()
                 response = "Sorry, system error during prediction."
+            except SystemExit:
+                traceback.print_exc()
+                response = "Sorry, error triggered sys.exit() during prediction."
             agent.push(MsgType.kResponse, response)
         elif MsgType.kCommandStop.equal(msg_type):
                 print('get stop command')
@@ -233,7 +235,7 @@ def main():
 
     except SystemExit:
         return
-    except:
+    except Exception:
         traceback.print_exc()
         sys.stderr.write("  for help use --help \n\n")
         return 2

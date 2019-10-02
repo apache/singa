@@ -71,5 +71,5 @@ if __name__ == "__main__":
                 fout.write(src)
                 fout.write("\";")
         fout.write("\n } //  namespace opencl \n} //  namespace singa\n\n")
-		fout.write("#endif")
+        fout.write("#endif")
         fout.close()

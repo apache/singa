@@ -75,9 +75,12 @@ def serve(net, label_map, dev, agent, topk=5):
                 for i in range(topk):
                     response += "%s:%f <br/>" % (label_map[idx[i]],
                                                  prob[idx[i]])
-            except:
+            except Exception:
                 traceback.print_exc()
-                response = "sorry, system error during prediction."
+                response = "Sorry, system error during prediction."
+            except SystemExit:
+                traceback.print_exc()
+                response = "Sorry, error triggered sys.exit() during prediction."
             agent.push(MsgType.kResponse, response)
         elif msg.is_command():
             if MsgType.kCommandStop.equal(msg):
@@ -134,7 +137,7 @@ def main():
 
     except SystemExit:
         return
-    except:
+    except Exception:
         traceback.print_exc()
         sys.stderr.write("  for help use --help \n\n")
         return 2

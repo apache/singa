@@ -21,13 +21,13 @@
 from __future__ import division
 
 import warnings
-from collections import deque
 
 from . import singa_wrap as singa
 from . import autograd
 from . import tensor
 
 import collections
+deque = collections.deque
 
 from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto, TensorProto, OperatorSetIdProto)
 from onnx.backend.base import Backend, BackendRep
