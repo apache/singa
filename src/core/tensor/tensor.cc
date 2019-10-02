@@ -711,6 +711,31 @@ GenUnaryTensorFn(Tan);
 GenUnaryTensorFn(Tanh);
 GenUnaryTensorFn(Atan);
 GenUnaryTensorFn(Atanh);
+GenUnaryTensorFn(SoftMax);
+
+// use variadic to pass params
+void SoftMax(const Tensor &in, Tensor *out, int axis) {
+  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+    out->device()->Exec(
+        [in, out, axis](Context *ctx) {
+          SoftMax<DType, Lang>(in, out, ctx, axis);
+        },
+        {in.block()}, {out->block()});
+  });
+}
+
+Tensor SoftMax(const Tensor &in, int axis) {
+  Tensor ret(in.shape(), in.device(), in.data_type());
+  auto *retptr = &ret;
+  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+    retptr->device()->Exec(
+        [in, retptr, axis](Context *ctx) {
+          SoftMax<DType, Lang>(in, retptr, ctx, axis);
+        },
+        {in.block()}, {retptr->block()});
+  });
+  return ret;
+}
 
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                            \
   do {                                                                      \
@@ -868,12 +893,6 @@ Tensor Sum(const Tensor &M, int axis) {
   }
 }
 
-Tensor SoftMax(const Tensor &in) {
-  Tensor out(in.shape(), in.device(), in.data_type());
-  SoftMax(in, &out);
-  return out;
-}
-
 Tensor RowMax(const Tensor &in) {
   Tensor ret({in.shape(0)}, in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
@@ -885,24 +904,6 @@ Tensor RowMax(const Tensor &in) {
     }, {in.block()}, {ret.block()});
   });
   return ret;
-}
-
-void SoftMax(const Tensor &in, Tensor *out) {
-  CHECK_LE(in.nDim(), 2u);
-  out->CopyData(in);
-  size_t nrow = 1, ncol = in.Size(), size = ncol;
-  if (in.nDim() == 2u) {
-    nrow = in.shape(0);
-    ncol = size / nrow;
-    out->Reshape(Shape{nrow, ncol});
-  }
-  Tensor tmp = RowMax(*out);
-  SubColumn(tmp, out);
-  Exp(*out, out);
-
-  SumColumns(*out, &tmp);
-  DivColumn(tmp, out);
-  out->Reshape(in.shape());
 }
 
 void AddColumn(const Tensor &v, Tensor *M) { AddColumn(1, 1, v, M); }

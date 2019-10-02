@@ -176,6 +176,22 @@ TEST_F(TensorMath, SoftMaxCpp) {
   EXPECT_NEAR(exp(2) / (exp(1) + exp(2)), dptr2[1], 1e-5);
 }
 
+TEST_F(TensorMath, SoftMaxOnAxis) {
+  Tensor in(Shape{2,2,2,2}, std::make_shared<singa::CudaGPU>() );
+  Gaussian(0.0f, 1.0f, &in);
+
+  // -4, -3, -2, -1, 0, 1, 2, 3
+  Tensor out = SoftMax(in, 1);
+  out = SoftMax(in, -4);
+  out = SoftMax(in, -3);
+  out = SoftMax(in, -2);
+  out = SoftMax(in, -1);
+  out = SoftMax(in, 0);
+  out = SoftMax(in, 1);
+  out = SoftMax(in, 2);
+  out = SoftMax(in, 3);
+}
+
 TEST_F(TensorMath, LTCpp) {
   Tensor p1 = a < 2.0f;
   const float *dptr1 = p1.data<float>();
