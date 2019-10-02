@@ -101,6 +101,8 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node_without_padding, inputs=[x, W], outputs=[y_without_padding],
                name='test_basic_conv_without_padding')
 
+        
+
     def test_conv2d_with_strides(self):  # type: () -> None
 
         x = np.array([[[[0., 1., 2., 3., 4.],  # (1, 1, 7, 5) input tensor
@@ -527,83 +529,73 @@ class TestPythonOnnxBackend(unittest.TestCase):
 
         expect(node, inputs=[x], outputs=[y], name='test_maxpool_2d_strides')
 
-    # def test_batchnorm(self):  # type: () -> None
-    #     def _batchnorm_test_mode(x, s, bias, mean, var, epsilon=1e-5):  # type: ignore
-    #         dims_x = len(x.shape)
-    #         dim_ones = (1,) * (dims_x - 2)
-    #         s = s.reshape(-1, *dim_ones)
-    #         bias = bias.reshape(-1, *dim_ones)
-    #         mean = mean.reshape(-1, *dim_ones)
-    #         var = var.reshape(-1, *dim_ones)
-    #         return s * (x - mean) / np.sqrt(var + epsilon) + bias
+    def test_batchnorm(self):  # type: () -> None
+        def _batchnorm_test_mode(x, s, bias, mean, var, epsilon=1e-5):  # type: ignore
+            dims_x = len(x.shape)
+            dim_ones = (1,) * (dims_x - 2)
+            s = s.reshape(-1, *dim_ones)
+            bias = bias.reshape(-1, *dim_ones)
+            mean = mean.reshape(-1, *dim_ones)
+            var = var.reshape(-1, *dim_ones)
+            return s * (x - mean) / np.sqrt(var + epsilon) + bias
 
-    #     def _batchnorm_forward(X, gamma, beta, mu, var, epsilon=1e-5):
-    #         n_X, c_X, h_X, w_X = X.shape
-    #         X_flat = X.reshape(n_X, c_X*h_X*w_X)
+        def _batchnorm_forward(X, gamma, beta, mu, var, epsilon=1e-5):
+            n_X, c_X, h_X, w_X = X.shape
+            X_flat = X.reshape(n_X, c_X*h_X*w_X)
 
-    #         # mu = np.mean(X_flat, axis=0)
-    #         # var = np.var(X_flat, axis=0)
-    #         X_norm = (X_flat - mu)/np.sqrt(var + epsilon)
+            # mu = np.mean(X_flat, axis=0)
+            # var = np.var(X_flat, axis=0)
+            X_norm = (X_flat - mu)/np.sqrt(var + epsilon)
 
-    #         out = gamma * X_norm + beta
-    #         return out
+            out = gamma * X_norm + beta
+            return out
 
-    #     # input size: (1, 2, 1, 3)
-    #     x = np.random.randn(1, 3, 3, 3).astype(np.float32)
-    #     n_X, c_X, h_X, w_X = x.shape
-    #     X_flat = x.reshape(n_X, c_X*h_X*w_X)
-    #     s = np.random.randn(*X_flat.shape).astype(np.float32)
-    #     bias = np.random.randn(*X_flat.shape).astype(np.float32)
-    #     mean = np.mean(X_flat, axis=0)
-    #     var = np.var(X_flat, axis=0)
-    #     y = s * (X_flat - mean)/np.sqrt(var + 1e-5) + bias
-    #     y = y.reshape(x.shape)
+        def _batchnorm_test_mode(x, s, bias, mean, var, epsilon=1e-5):  # type: ignore
+            dims_x = len(x.shape)
+            dim_ones = (1,) * (dims_x - 2)
+            s = s.reshape(-1, *dim_ones)
+            bias = bias.reshape(-1, *dim_ones)
+            mean = mean.reshape(-1, *dim_ones)
+            var = var.reshape(-1, *dim_ones)
+            return s * (x - mean) / np.sqrt(var + epsilon) + bias
 
-        
-    #     x_t = tensor.from_numpy(x)
-    #     x_t.to_device(gpu_dev)
-    #     s_t = tensor.from_numpy(s)
-    #     s_t.to_device(gpu_dev)
-    #     bias_t = tensor.from_numpy(bias)
-    #     bias_t.to_device(gpu_dev)
-    #     mean_t = tensor.from_numpy(mean)
-    #     mean_t.to_device(gpu_dev)
-    #     var_t = tensor.from_numpy(var)
-    #     var_t.to_device(gpu_dev)
+        # input size: (1, 2, 1, 3)
+        x = np.array([[[[-1, 0, 1]], [[2, 3, 4]]]]).astype(np.float32)
+        s = np.array([1.0, 1.5]).astype(np.float32)
+        bias = np.array([0, 1]).astype(np.float32)
+        mean = np.array([0, 3]).astype(np.float32)
+        var = np.array([1, 1.5]).astype(np.float32)
+        y = _batchnorm_test_mode(x, s, bias, mean, var).astype(np.float32)
 
-    #     handle = singa.CudnnBatchNormHandle(0.9, x_t.data)
-    #     y_t = autograd.batchnorm_2d(handle, x_t, s_t, bias_t, mean_t, var_t)
-    #     print(y)
-    #     print(tensor.to_numpy(y_t))
-    #     node = onnx.helper.make_node(
-    #         'BatchNormalization',
-    #         inputs=['x', 'scale', 'B', 'mean', 'var'],
-    #         outputs=['y'],
-    #     )
+        node = onnx.helper.make_node(
+            'BatchNormalization',
+            inputs=['x', 's', 'bias', 'mean', 'var'],
+            outputs=['y'],
+        )
 
-    #     # output size: (1, 2, 1, 3)
-    #     expect(node, inputs=[x, s, bias, mean, var], outputs=[y],
-    #            name='test_batchnorm_example')
+        # output size: (1, 2, 1, 3)
+        expect(node, inputs=[x, s, bias, mean, var], outputs=[y],
+               name='test_batchnorm_example')
 
-    #     # input size: (2, 3, 4, 5)
-    #     x = np.random.randn(2, 3, 4, 5).astype(np.float32)
-    #     s = np.random.randn(3).astype(np.float32)
-    #     bias = np.random.randn(3).astype(np.float32)
-    #     mean = np.random.randn(3).astype(np.float32)
-    #     var = np.random.rand(3).astype(np.float32)
-    #     epsilon = 1e-2
-    #     y = _batchnorm_test_mode(x, s, bias, mean, var, epsilon).astype(np.float32)
+        # input size: (2, 3, 4, 5)
+        x = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        s = np.random.randn(3).astype(np.float32)
+        bias = np.random.randn(3).astype(np.float32)
+        mean = np.random.randn(3).astype(np.float32)
+        var = np.random.rand(3).astype(np.float32)
+        epsilon = 1e-2
+        y = _batchnorm_test_mode(x, s, bias, mean, var, epsilon).astype(np.float32)
 
-    #     node = onnx.helper.make_node(
-    #         'BatchNormalization',
-    #         inputs=['x', 's', 'bias', 'mean', 'var'],
-    #         outputs=['y'],
-    #         epsilon=epsilon,
-    #     )
+        node = onnx.helper.make_node(
+            'BatchNormalization',
+            inputs=['x', 's', 'bias', 'mean', 'var'],
+            outputs=['y'],
+            epsilon=epsilon,
+        )
 
-    #     # output size: (2, 3, 4, 5)
-    #     expect(node, inputs=[x, s, bias, mean, var], outputs=[y],
-    #            name='test_batchnorm_epsilon')
+        # output size: (2, 3, 4, 5)
+        expect(node, inputs=[x, s, bias, mean, var], outputs=[y],
+               name='test_batchnorm_epsilon')
 
     
     def test_reshape(self):  # type: () -> None
