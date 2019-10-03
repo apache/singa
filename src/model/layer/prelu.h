@@ -50,7 +50,7 @@ class PReLU : public Layer {
   const Tensor A() const { return a_; }
   const std::string Format() const { return format_; }
 
-  void Set_a(Tensor a) {
+  void Set_a(const Tensor& a) {
     a_.ResetLike(a);
     a_.CopyData(a);
   }
