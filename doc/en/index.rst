@@ -23,6 +23,13 @@ Recent News
 
 * Food(lg), the mobile app to `help patients with prediabetes <https://ssi.nus.edu.sg/ntfgh/>`_, is powered by SINGA and this app can now be downloaded on the `APP Store <https://apps.apple.com/us/app/food-lg/id1213299378>`_ or `Google Play <https://play.google.com/store/apps/details?id=com.nusidmi.foodlg&hl=en_SG>`_. Watch this `video <https://www.youtube.com/watch?v=MHp-saJiP-0>`_ of Food(lg) for more details.
 
+* A tutorial on SINGA was given at Singapore Infocomm Media Development Authority (IMDA), 16 August, 2019. Snapshots of the tutorial:
+
+.. image:: _static/images/imda2019_1.png
+   :width: 45%
+.. image:: _static/images/imda2019_2.png
+   :width: 45%
+
 * SINGA participated in mentoring the Google Summer of Code 2019 project `SpamAssassin : Statistical Classifier Plugin <https://summerofcode.withgoogle.com/projects/#5612088771215360>`_ .
 
 * SINGA participated at `EU FOSSA Apache Hackathon <https://eufossa.github.io/apache-hackathon-2019/>`_ in Brussels on 4 and 5 May 2019.
