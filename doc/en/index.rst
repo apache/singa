@@ -23,6 +23,13 @@ Recent News
 
 * Food(lg), the mobile app to `help patients with prediabetes <https://ssi.nus.edu.sg/ntfgh/>`_, is powered by SINGA and this app can now be downloaded on the `APP Store <https://apps.apple.com/us/app/food-lg/id1213299378>`_ or `Google Play <https://play.google.com/store/apps/details?id=com.nusidmi.foodlg&hl=en_SG>`_. Watch this `video <https://www.youtube.com/watch?v=MHp-saJiP-0>`_ of Food(lg) for more details.
 
+* A tutorial on SINGA was given at Singapore Infocomm Media Development Authority (IMDA), 16 August, 2019. Snapshots of the tutorial:
+
+.. image:: _static/images/imda2019_1.png
+   :width: 45%
+.. image:: _static/images/imda2019_2.png
+   :width: 45%
+
 * SINGA participated in mentoring the Google Summer of Code 2019 project `SpamAssassin : Statistical Classifier Plugin <https://summerofcode.withgoogle.com/projects/#5612088771215360>`_ .
 
 * SINGA participated at `EU FOSSA Apache Hackathon <https://eufossa.github.io/apache-hackathon-2019/>`_ in Brussels on 4 and 5 May 2019.
@@ -109,9 +116,9 @@ History
 SINGA was initiated by the DB System Group at National University of Singapore in 2014, in collaboration with the database group of Zhejiang University.
 Please cite the following two papers if you use SINGA in your research:
 
-* B. C. Ooi, K.-L. Tan, S. Wang, W. Wang, Q. Cai, G. Chen, J. Gao, Z. Luo, A. K. H. Tung, Y. Wang, Z. Xie, M. Zhang, and K. Zheng. `SINGA: A distributed deep learning platform <http://www.comp.nus.edu.sg/~ooibc/singaopen-mm15.pdf>`_. ACM Multimedia (Open Source Software Competition) 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-oss.txt>`_).
+* B\. C\. Ooi, K.-L. Tan, S. Wang, W. Wang, Q. Cai, G. Chen, J. Gao, Z. Luo, A. K. H. Tung, Y. Wang, Z. Xie, M. Zhang, and K. Zheng. `SINGA: A distributed deep learning platform <http://www.comp.nus.edu.sg/~ooibc/singaopen-mm15.pdf>`_. ACM Multimedia (Open Source Software Competition) 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-oss.txt>`_).
 
-* W. Wang, G. Chen, T. T. A. Dinh, B. C. Ooi, K.-L.Tan, J. Gao, and S. Wang. `SINGA: putting deep learning in the hands of multimedia users <http://www.comp.nus.edu.sg/~ooibc/singa-mm15.pdf>`_. ACM Multimedia 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-singa.txt>`_, `Slides <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/mm2015.ppt>`_).
+* W\. Wang, G. Chen, T. T. A. Dinh, B. C. Ooi, K.-L.Tan, J. Gao, and S. Wang. `SINGA: putting deep learning in the hands of multimedia users <http://www.comp.nus.edu.sg/~ooibc/singa-mm15.pdf>`_. ACM Multimedia 2015 (`BibTex <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/bib-singa.txt>`_, `Slides <http://www.comp.nus.edu.sg/~dbsystem/singa/assets/file/mm2015.ppt>`_).
 
 Rafiki is a sub module of SINGA. Please cite the following paper if you use Rafiki in your research:
 
