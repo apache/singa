@@ -29,43 +29,42 @@ from cuda_helper import gpu_dev, cpu_dev
 
 
 class TestAPI(unittest.TestCase):
-    # this tests cpp softmax api directly from SWIG wrapper
     def test_softmax_api(self):
-        def run_test(org_shape, axis, aft_shape):
+        def _run_test(org_shape, axis, aft_shape):
             x_0 = np.random.random(org_shape).astype(np.float32)
             x0 = tensor.Tensor(device=gpu_dev, data=x_0)
 
             # test with axis
             y0 = tensor._call_singa_func(singa_api.SoftMax, x0.data, axis)
 
-            # test with manual reshape
-            y1 = tensor.softmax(x0.reshape(aft_shape))
+            # test with numpy
+            x_0 = x_0.reshape(aft_shape)
+            y1 = np.divide(np.exp(x_0), np.sum(np.exp(x_0),axis=1).reshape(x_0.shape[0],1) ) # 2d softmax
             y1 = y1.reshape(org_shape)
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(y0),
-                                                 tensor.to_numpy(y1),
-                                                 decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(y0), y1)
 
-        run_test([2, 2], 1, [2, 2])
-        run_test([2, 2], 0, [1, 4])
-        run_test([2, 2], -1, [2, 2])
-        run_test([2, 2], -2, [1, 4])
 
-        run_test([2, 2, 2], 2, [4, 2])
-        run_test([2, 2, 2], 1, [2, 4])
-        run_test([2, 2, 2], 0, [1, 8])
-        run_test([2, 2, 2], -1, [4, 2])
-        run_test([2, 2, 2], -2, [2, 4])
-        run_test([2, 2, 2], -3, [1, 8])
+        _run_test([2, 2], 1, [2, 2])
+        _run_test([2, 2], 0, [1, 4])
+        _run_test([2, 2], -1, [2, 2])
+        _run_test([2, 2], -2, [1, 4])
 
-        run_test([2, 2, 2, 2], 3, [8, 2])
-        run_test([2, 2, 2, 2], 2, [4, 4])
-        run_test([2, 2, 2, 2], 1, [2, 8])
-        run_test([2, 2, 2, 2], 0, [1, 16])
-        run_test([2, 2, 2, 2], -1, [8, 2])
-        run_test([2, 2, 2, 2], -2, [4, 4])
-        run_test([2, 2, 2, 2], -3, [2, 8])
-        run_test([2, 2, 2, 2], -4, [1, 16])
+        _run_test([2, 2, 2], 2, [4, 2])
+        _run_test([2, 2, 2], 1, [2, 4])
+        _run_test([2, 2, 2], 0, [1, 8])
+        _run_test([2, 2, 2], -1, [4, 2])
+        _run_test([2, 2, 2], -2, [2, 4])
+        _run_test([2, 2, 2], -3, [1, 8])
+
+        _run_test([2, 2, 2, 2], 3, [8, 2])
+        _run_test([2, 2, 2, 2], 2, [4, 4])
+        _run_test([2, 2, 2, 2], 1, [2, 8])
+        _run_test([2, 2, 2, 2], 0, [1, 16])
+        _run_test([2, 2, 2, 2], -1, [8, 2])
+        _run_test([2, 2, 2, 2], -2, [4, 4])
+        _run_test([2, 2, 2, 2], -3, [2, 8])
+        _run_test([2, 2, 2, 2], -4, [1, 16])
 
 
 if __name__ == '__main__':

@@ -925,6 +925,20 @@ void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx) {
   cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_FAST;
   cudnnSoftmaxMode_t mode = CUDNN_SOFTMAX_MODE_INSTANCE;
 
+  /*
+   * tensor tmp is for generating cudnn descriptor
+   *   as for cudnn softmax, it required shape of {N, C, 1, 1}
+   *   while helper func `generate_shape_cuda` generate shape of {1, 1, N, C}
+   *   Thus this part serve similar purpose as `generate_shape_cuda` but in reverse manner
+  */
+  CHECK_LE(in.shape().size(), 5) << "Dimensions (shape) beyond 5 are currently not supported" ;
+  auto tmp = in;
+  while (tmp.shape().size() < 4) {
+    auto s = tmp.shape();
+    s.push_back(1);
+    tmp.Reshape(s);
+  }
+
   const float * inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
@@ -932,8 +946,8 @@ void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx) {
   float beta = 0.0;
 
   check_cudnn(cudnnSoftmaxForward(ctx->cudnn_handle, algorithm, mode,
-                                  (void*)(&alpha), generate_tensor_nd_desc(in), inPtr, (void*)(&beta)
-                                  , generate_tensor_nd_desc(*out), outPtr));
+                                  (void*)(&alpha), generate_tensor_nd_desc(tmp), inPtr, (void*)(&beta)
+                                  , generate_tensor_nd_desc(tmp), outPtr));
 }
 
 // add axis to softmax API according to ONNX specification
