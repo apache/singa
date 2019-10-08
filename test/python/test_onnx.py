@@ -735,25 +735,25 @@ class TestPythonOnnx(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
-    # def test_clip(self):
-    #     x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
+    def test_clip(self):
+        x = np.array([-0.9, -0.3, -0.1, 0.1, 0.5, 0.9]).reshape(3, 2).astype(np.float32)
 
-    #     x = tensor.from_numpy(x)
-    #     min = -0.5
-    #     max = 0.5
-    #     x.to_device(gpu_dev)
+        x = tensor.from_numpy(x)
+        min = -0.5
+        max = 0.5
+        x.to_device(gpu_dev)
 
-    #     y = autograd.clip(x, min, max)
+        y = autograd.clip(x, min, max)
 
-    #     # frontend
-    #     model = sonnx.to_onnx([x, min, max], [y])
-    #     print('The model is:\n{}'.format(model))
+        # frontend
+        model = sonnx.to_onnx([x, min, max], [y])
+        # print('The model is:\n{}'.format(model))
 
-    #     # # backend
-    #     sg_ir = sonnx.prepare(model, device=gpu_dev)
-    #     y_t = sg_ir.run([x, min, max])
+        # # backend
+        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        y_t = sg_ir.run([x, min, max])
 
-    #     np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
 
     def test_prelu(self):

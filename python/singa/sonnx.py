@@ -140,7 +140,7 @@ class SingaFrontend(object):
     """
 
     # This number indicates the target onnx operator set version
-    _target_opset_version = 10
+    _target_opset_version = 11
 
     # beceuase singa's operators are different from onnx.
     # we define a dict for the name projection
@@ -190,7 +190,7 @@ class SingaFrontend(object):
         'SoftSign': 'Softsign',
         'Mean': 'Mean',
         'Pow': 'Pow',
-        # 'Clip': 'Clip',
+        'Clip': 'Clip',
         'PRelu': 'PRelu',
         'Mul': 'Mul',
         'Transpose': 'Transpose',
@@ -729,7 +729,7 @@ class OnnxAttributes(dict):
 class SingaBackend(Backend):
 
     # This number indicates the onnx operator set version
-    _known_opset_version = 10
+    _known_opset_version = 11
 
     # beceuase singa's operators are different from onnx.
     # we define a dict for the name projection
@@ -832,28 +832,30 @@ class SingaBackend(Backend):
             onnx_node, inputs, opset_version)
         return _, forward(perm)
 
-    # @classmethod
-    # def _create_clip(cls, onnx_node, inputs, opset_version):
-    #     """
-    #     get the clip operator from onnx node
-    #     Args:
-    #         onnx_node: a given onnx node
-    #     Args:
-    #         inputs: the input tensor
-    #     Args:
-    #         opset_version: the opset version
-    #     Returns: 
-    #         handle, the handle of singa operator
-    #     Returns: 
-    #         forward, the autograd of singa operator
-    #     """
-    #     min = float(tensor.to_numpy(inputs[1]).astype(np.float32))
-    #     max = float(tensor.to_numpy(inputs[2]).astype(np.float32))
-    #     print(inputs)
-    #     # handle the shape with -1
-    #     _, forward = cls._common_onnx_node_to_singa_op(
-    #         onnx_node, inputs, opset_version)
-    #     return _, forward(min, max)
+    @classmethod
+    def _create_clip(cls, onnx_node, inputs, opset_version):
+        """
+        get the clip operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        min_max = [None, None]
+        idx = 1
+        for inp in range(1, len(onnx_node.inputs)):
+            if onnx_node.inputs[inp] != "":
+                min_max[inp-1] = float(tensor.to_numpy(inputs[idx]).astype(np.float32))
+                idx+=1
+        _, forward = cls._common_onnx_node_to_singa_op(
+            onnx_node, inputs, opset_version)
+        return _, forward(*min_max)
 
 
     @classmethod
@@ -1259,10 +1261,11 @@ class SingaBackend(Backend):
         Returns: 
             list, the output of the 
         """
-        assert len(onnx_node.inputs) == len(inputs), "{}: expected {} but got {}".format(
-            onnx_node.op_type, len(onnx_node.inputs), len(inputs))
+        valid_inputs = [x for x in onnx_node.inputs if x != ""]
+        assert len(valid_inputs) == len(inputs), "{}: expected {} but got {}".format(
+            onnx_node.op_type, len(valid_inputs), len(inputs))
 
-        inputs = [inputs[x] for x in onnx_node.inputs]
+        inputs = [inputs[x] for x in valid_inputs]
         handle, forward = cls._onnx_node_to_singa_op(onnx_node, inputs, opset_version)
         return cls._run_node(onnx_node, inputs, handle, forward, opset_version)
 
