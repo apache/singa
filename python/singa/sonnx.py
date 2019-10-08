@@ -190,7 +190,7 @@ class SingaFrontend(object):
         'SoftSign': 'Softsign',
         'Mean': 'Mean',
         'Pow': 'Pow',
-        'Clip': 'Clip',
+        # 'Clip': 'Clip',
         'PRelu': 'PRelu',
         'Mul': 'Mul',
         'Transpose': 'Transpose',
@@ -953,8 +953,11 @@ class SingaBackend(Backend):
             the autograd of singa operator
         """
         shape = tensor.to_numpy(inputs[1]).astype(np.int32).tolist()
+        # handle the shape with 0
+        i_shape = inputs[0].shape
+        shape = [i_shape[i] if i < len(i_shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
         # handle the shape with -1
-        hidden_shape = int(np.prod(inputs[0].shape) // np.abs(np.prod(shape)))
+        hidden_shape = int(np.prod(i_shape) // np.abs(np.prod(shape)))
         shape = [s if s != -1 else hidden_shape for s in shape]
         _, forward = cls._common_onnx_node_to_singa_op(
             onnx_node, inputs, opset_version)
@@ -1053,7 +1056,7 @@ class SingaBackend(Backend):
 
         # not support count_include_pad and auto_pad
         if "count_include_pad" in onnx_node.attrs or "ceil_mode" in onnx_node.attrs:
-            raise ValueError("Not implemented yet")
+            raise ValueError("Not implemented yet for count_include_pad or ceil_mode")
 
         # only support 2d
         if len(kernel) != 2:
