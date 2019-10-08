@@ -2343,30 +2343,52 @@ def sub(a, b):
     return Sub()(a,b)[0]
 
 
+ # optimize min to support multi inputs
 class Min(Operation):
     def __init__(self):
-        super(Min, self).__init__()    
+        super(Min, self).__init__()
+        self.masks = []    
     
-    def forward(self, a, b):
-        m = singa.__sub__(a,b)
-        mask0 = singa.LTFloat(m,0) 
-        mask00 = singa.__mul__(singa.LEFloat(m,0),a)
-        mask1 = singa.GTFloat(m,0)
-        mask11=singa.__mul__(mask1,b)
-        mask = singa.__add__(mask00,mask11)
-        
-        if training:
-            self.mask0 = mask0
-            self.mask1 = mask1
-        
-        return mask
+    def _min(self, a, b):
+        m = singa.__sub__(a, b)
+        mask0 = singa.LEFloat(m, 0)
+        mask1 = singa.GTFloat(m, 0)
+        res = singa.__add__(singa.__mul__(mask0, a), singa.__mul__(mask1, b))
+        return res, (mask0, mask1)
+
+    def forward(self, *x):
+        assert(len(x)>0)
+        self.l = len(x)
+        if len(x) == 1:
+            res, masks = self._min(x[0], x[0])
+            self.masks.append(masks)
+            return x[0]
+        res, masks = self._min(x[0], x[1])
+        self.masks.append(masks)
+        for i in range(2, len(x)):
+            res, masks = self._min(res, x[i])
+            self.masks.append(masks)
+        return res
 
     def backward(self, dy):
-        return (self.mask0,self.mask1)
+        if self.l == 1:
+            return self.masks[0][0]
+        else:
+            ret = []
+            cumulation = None
+            for mask0, mask1 in self.masks[::-1]:
+                if not cumulation:
+                    ret.insert(0, mask1)
+                    cumulation = mask0
+                else:
+                    ret.insert(0, singa.__mul__(cumulation, mask1))
+                    cumulation = singa.__mul__(cumulation, mask0)
+            ret.insert(0, cumulation)
+            return tuple(ret)
 
-        
-def min(a,b):
-    return Min()(a,b)[0]
+
+def min(*l):
+    return Min()(*l)[0]
 
 class Log(Operation):
     def __init__(self):
@@ -2490,32 +2512,51 @@ class Shape(Operation):
 def shape(x):
     return Shape()(x)[0]
 
-
+# optimize max to support multi inputs
 class Max(Operation):
     def __init__(self):
         super(Max, self).__init__()
+        self.masks = []
 
-    def forward(self, a, b):
-        m = singa.__sub__(a,b)
-        mask0 = singa.GTFloat(m,0)
-        mask00 = singa.__mul__(singa.GEFloat(m,0),a)
-        mask1 = singa.LTFloat(m,0)
-        mask11=singa.__mul__(mask1,b)
-        mask = singa.__add__(mask00,mask11)
-
-        if training:
-            self.mask0 = mask0
-            self.mask1 = mask1
-
-        return mask
+    def _max(self, a, b):
+        m = singa.__sub__(a, b)
+        mask0 = singa.GEFloat(m, 0)
+        mask1 = singa.LTFloat(m, 0)
+        res = singa.__add__(singa.__mul__(mask0, a), singa.__mul__(mask1, b))
+        return res, (mask0, mask1)
+        
+    def forward(self, *x):
+        assert(len(x)>0)
+        self.l = len(x)
+        if len(x) == 1:
+            res, masks = self._max(x[0], x[0])
+            self.masks.append(masks)
+            return x[0]
+        res, masks = self._max(x[0], x[1])
+        self.masks.append(masks)
+        for i in range(2, len(x)):
+            res, masks = self._max(res, x[i])
+            self.masks.append(masks)
+        return res
 
     def backward(self, dy):
-        return (self.mask0, self.mask1)
+        if self.l == 1:
+            return self.masks[0][0]
+        else:
+            ret = []
+            cumulation = None
+            for mask0, mask1 in self.masks[::-1]:
+                if not cumulation:
+                    ret.insert(0, mask1)
+                    cumulation = mask0
+                else:
+                    ret.insert(0, singa.__mul__(cumulation, mask1))
+                    cumulation = singa.__mul__(cumulation, mask0)
+            ret.insert(0, cumulation)
+            return tuple(ret)
 
-
-def max(a,b):
-    return Max()(a,b)[0]
-
+def max(*l):
+    return Max()(*l)[0]
 
 class And(Operation):
     def __init__(self):
