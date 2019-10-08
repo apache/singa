@@ -300,7 +300,7 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle
     mean.block(), var.block()
   });
   if (cbnh.is_2d) output.Reshape(Shape{shape.at(0), shape.at(1)});
-  return {output, mean, var};
+  return {output, mean, var, running_mean, running_var};
 }
 
 Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
