@@ -1107,6 +1107,20 @@ TEST_F(TensorMath, CopyColumnsCuda) {
                       dat1[i * a.shape(1) + j + 1]);
 }
 
+TEST_F(TensorMath, RowMaxCuda) {
+  auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor x1(Shape{2,2}, dev);
+  const float data1[4] = {1.0f, 2.0f, 3.0f, 4.0f};
+  x1.CopyDataFromHostPtr<float>(data1,4);
+
+  auto y2 = RowMax(x1);
+  y2.Reshape({2,1});
+  y2.ToHost();
+  const float *dptr1 = y2.data<float>();
+  EXPECT_EQ(dptr1[0], 2);
+  EXPECT_EQ(dptr1[1], 4);
+}
+
 
 TEST_F(TensorMath, BroadcastCuda) {
   auto dev = std::make_shared<singa::CudaGPU>();

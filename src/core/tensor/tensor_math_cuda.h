@@ -975,6 +975,11 @@ void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx, int
   Tensor in_reshaped = Reshape(in, coerced_shape);
   out->Reshape(coerced_shape);
 
+  // optimise by minus x - x.max()
+  auto in_max = RowMax(in_reshaped);
+  in_max.Reshape({coerced_shape[0],1});
+  in_reshaped = in_reshaped - in_max;
+
   SoftMax<float, lang::Cuda>(in_reshaped, out, ctx);
 
   out->Reshape(original_shape);

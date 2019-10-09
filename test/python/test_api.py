@@ -32,6 +32,7 @@ class TestAPI(unittest.TestCase):
     def test_softmax_api(self):
         def _run_test(org_shape, axis, aft_shape):
             x_0 = np.random.random(org_shape).astype(np.float32)
+            x_0 = x_0 + 1000
             x0 = tensor.Tensor(device=gpu_dev, data=x_0)
 
             # test with axis
@@ -39,6 +40,7 @@ class TestAPI(unittest.TestCase):
 
             # test with numpy
             x_0 = x_0.reshape(aft_shape)
+            x_0 = x_0 - np.max(x_0)
             y1 = np.divide(np.exp(x_0), np.sum(np.exp(x_0),axis=1).reshape(x_0.shape[0],1) ) # 2d softmax
             y1 = y1.reshape(org_shape)
 
