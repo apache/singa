@@ -20,8 +20,8 @@ from builtins import object
 
 from multiprocessing import Process, Queue
 from flask import Flask,request, send_from_directory, jsonify
-from flask_cors import CORS, cross_origin
-import os, traceback, sys
+from flask_cors import cross_origin
+import os, traceback
 import time
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import CombinedMultiDict, MultiDict
@@ -132,7 +132,10 @@ def getDataFromInfoQueue(need_return=False):
 def index():
     try:
         req=send_from_directory(os.getcwd(),"index.html", mimetype='text/html')
-    except:
+    except Exception:
+        traceback.print_exc()
+        return "error"
+    except SystemExit:
         traceback.print_exc()
         return "error"
     return req
@@ -144,9 +147,12 @@ def getAllData():
     global data_
     try:
         getDataFromInfoQueue()
-    except:
+    except Exception:
         traceback.print_exc()
-        return failure("Internal Error")
+        return failure("Internal Error - Triggered Exception")
+    except SystemExit:
+        traceback.print_exc()
+        return failure("Internal Error - Triggered SystemExit")
     return success(data_)
 
 
@@ -156,14 +162,20 @@ def getTopKData():
     global data_
     try:
         k = int(request.args.get("k", top_k_))
-    except:
+    except Exception:
         traceback.print_exc()
-        return failure("k should be integer")
+        return failure("k should be integer - Triggered Exception")
+    except SystemExit:
+        traceback.print_exc()
+        return failure("k should be integer - Triggered SystemExit")
     try:
         getDataFromInfoQueue()
-    except:
+    except Exception:
         traceback.print_exc()
-        return failure("Internal Error")
+        return failure("Internal Error - Triggered Exception")
+    except SystemExit:
+        traceback.print_exc()
+        return failure("Internal Error - Triggered SystemExit")
     return success(data_[-k:])
 
 @app.route("/api", methods=['POST'])
@@ -178,9 +190,12 @@ def api():
         msg,response=getDataFromInfoQueue(True)
         deleteFiles(files)
         return response
-    except:
+    except Exception:
         traceback.print_exc()
-        return failure("Internal Error")
+        return failure("Internal Error - Triggered Exception")
+    except SystemExit:
+        traceback.print_exc()
+        return failure("Internal Error - Triggered SystemExit")
 
 @app.route("/command/<name>", methods=['GET','POST'])
 @cross_origin()
@@ -191,9 +206,12 @@ def command(name):
         command_queue_.put((command,""))
         msg,response=getDataFromInfoQueue(True)
         return response
-    except:
+    except Exception:
         traceback.print_exc()
-        return failure("Internal Error")
+        return failure("Internal Error - Triggered Exception")
+    except SystemExit:
+        traceback.print_exc()
+        return failure("Internal Error - Triggered SystemExit")
 
 def success(data=""):
     '''return success status in json format'''
