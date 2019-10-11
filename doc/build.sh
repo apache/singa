@@ -35,6 +35,7 @@ if [ "$1"x = "html"x ]; then
     echo "building language ${LANG_ARR[i]} ..."
     if [ ${LANG_ARR[i]} = "en" ]; then
       $SPHINXBUILD -b html -c . -d $BUILDDIR/doctree ${LANG_ARR[i]} $BUILDDIR/html
+      $SPHINXBUILD -b html -c . -d $BUILDDIR/doctree ${LANG_ARR[i]} $BUILDDIR/html/${LANG_ARR[i]}
     else
       $SPHINXBUILD -b html -c ${LANG_ARR[i]} -d $BUILDDIR/doctree ${LANG_ARR[i]} $BUILDDIR/html/${LANG_ARR[i]}
     fi  
