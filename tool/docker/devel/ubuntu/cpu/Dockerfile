@@ -62,13 +62,13 @@ RUN mkdir /var/run/sshd \
     && mkdir /root/.ssh
 
 # build incubator singa
-RUN git clone https://github.com/apache/incubator-singa.git $HOME/incubator-singa \
-    && cd $HOME/incubator-singa \
+RUN git clone https://github.com/apache/incubator-singa.git /incubator-singa \
+    && cd /incubator-singa \
     && mkdir build && cd build \
     && cmake -DENABLE_TEST=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
-RUN cd $HOME/incubator-singa/build && make && make install
+RUN cd /incubator-singa/build && make && make install
 
-WORKDIR $HOME/incubator-singa
+WORKDIR /incubator-singa
 EXPOSE 22
 
 CMD ["/usr/sbin/sshd", "-D"]
