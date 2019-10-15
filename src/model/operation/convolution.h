@@ -32,9 +32,6 @@
 #include "../layer/cudnn_utils.h"
 #endif // USE_CUDNN
 
-#ifdef USE_MKLDNN
-#include <mkldnn.hpp>
-#endif // USE_MKLDNN
 
 namespace singa {
 
@@ -71,24 +68,6 @@ class ConvHandle {
   size_t col_width;
   size_t imagesize;
 
-#ifdef USE_MKLDNN
-  mkldnn::memory::data_type dtype;
-  mkldnn::memory::dims b_dims;
-  mkldnn::memory::dims s_dims;
-  mkldnn::memory::dims p_dims;
-  mkldnn::memory::dims x_dims;
-  mkldnn::memory::dims o_dims;
-  mkldnn::memory::dims w_dims;
-
-  const mkldnn::memory::desc *x_md = nullptr;
-  const mkldnn::memory::desc *w_md = nullptr;
-  const mkldnn::memory::desc *b_md = nullptr;
-  const mkldnn::memory::desc *y_md = nullptr;
-  const mkldnn::convolution_forward::desc *conv_d = nullptr;
-  const mkldnn::convolution_forward::primitive_desc *conv_pd = nullptr;
-
-  const Tensor *db = nullptr;
-#endif // USE_MKLDNN
 };
 
 

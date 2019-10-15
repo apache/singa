@@ -39,9 +39,6 @@
 #include "singa/utils/opencl_utils.h"
 #endif  // USE_OPENCL
 
-#ifdef USE_MKLDNN
-#include <mkldnn.hpp>
-#endif  // USE_MKLDNN
 
 using std::atomic;
 
@@ -115,9 +112,6 @@ typedef struct _Context {
   long vcl_ctx_id;
 #endif
 
-#ifdef USE_MKLDNN
-  mkldnn::engine *engine;
-#endif  // USE_MKLDNN
 
 } Context;
 

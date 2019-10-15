@@ -24,16 +24,10 @@ std::shared_ptr<Device> defaultDevice=std::make_shared<CppCPU>();
 
 CppCPU::CppCPU() : Device(-1, 1) {
   lang_ = kCpp;
-#ifdef USE_MKLDNN
-  ctx_.engine = new mkldnn::engine(mkldnn::engine::cpu, 0);
-#endif //USE_MKLDNN
   //host_ = nullptr;
 }
 
 CppCPU::~CppCPU() {
-#ifdef USE_MKLDNN
-  delete(ctx_.engine);
-#endif //USE_MKLDNN
 
 };
 

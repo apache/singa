@@ -24,9 +24,6 @@
 #include <string>
 #include "singa/core/tensor.h"
 
-#ifdef USE_MKLDNN
-#include <mkldnn.hpp>
-#endif // USE_MKLDNN
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
@@ -59,30 +56,8 @@ class PoolingHandle {
 
   bool is_max_pooling;
 
-#ifdef USE_MKLDNN
-  mkldnn::memory::data_type dtype;
-  mkldnn::memory::dims x_dims;
-  mkldnn::memory::dims y_dims;
-  mkldnn::memory::dims s_dims;
-  mkldnn::memory::dims k_dims;
-  mkldnn::memory::dims p_dims;
-  mkldnn::algorithm pooling_algo;
-  const mkldnn::memory::desc *x_md = nullptr;
-  const mkldnn::memory::desc *y_md = nullptr;
-  const mkldnn::pooling_forward::desc *pool_fwd_d = nullptr;
-  const mkldnn::pooling_forward::primitive_desc *pool_fwd_pd = nullptr;
-  const mkldnn::memory::primitive_desc *pool_ws_d = nullptr;
-  const mkldnn::memory *ws_mem = nullptr;
-#endif // USE_MKLDNN
 };
 
-#ifdef USE_MKLDNN
-
-Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x);
-Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &dy,
-                          const Tensor& x, const Tensor& y);
-
-#endif // USE_MKLDNN
 
 #ifdef USE_CUDNN
 class CudnnPoolingHandle : public PoolingHandle {

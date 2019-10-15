@@ -66,7 +66,6 @@ OPTION(USE_OPENCL "Use OpenCL" OFF)
 OPTION(ENABLE_DIST "Enable distributed training" OFF)
 OPTION(DISABLE_WARNINGS "Disable warnings under windows" ON)
 OPTION(USE_MODULES "Compile dependent libs as submodules together with singa" OFF)
-OPTION(USE_MKLDNN "Use mkl-dnn libs" OFF)
 OPTION(USE_DIST "Use nccl distributed module" OFF)
 
 # TODO: remove all USE_CBLAS in codes
