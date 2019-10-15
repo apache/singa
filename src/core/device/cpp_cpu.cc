@@ -24,11 +24,18 @@ std::shared_ptr<Device> defaultDevice=std::make_shared<CppCPU>();
 
 CppCPU::CppCPU() : Device(-1, 1) {
   lang_ = kCpp;
+#ifdef USE_DNNL
+  ctx_.engine = new dnnl::engine(dnnl::engine::kind::cpu, 0);
+  ctx_.stream = new dnnl::engine_stream(*ctx_.engine);
+#endif // USE_DNNL
   //host_ = nullptr;
 }
 
 CppCPU::~CppCPU() {
-
+#ifdef USE_DNNL
+  delete(ctx_.engine);
+  delete(ctx_.stream);
+#endif // USE_DNNL
 };
 
 void CppCPU::SetRandSeed(unsigned seed) {
