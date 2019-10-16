@@ -112,8 +112,8 @@ typedef struct _Context {
 #endif // USE_CUDA
 
 #ifdef USE_DNNL
-  dnnl::engine *engine;
-  dnnl::stream *stream;
+  dnnl::engine engine;
+  dnnl::stream stream;
 #endif // USE_DNNL
 
 #ifdef USE_OPENCL
