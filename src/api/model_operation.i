@@ -68,6 +68,21 @@ class BatchNormHandle{
     size_t batchsize;
 };
 
+#if USE_DNNL
+Tensor CpuBatchNormForwardInference(const BatchNormHandle &bnh,
+                                    const Tensor &x,
+                                    const Tensor &bnScale,
+                                    const Tensor &bnBias,
+                                    Tensor &running_mean,
+                                    Tensor &running_var);
+
+const std::vector<Tensor> CpuBatchNormForwardTraining(const BatchNormHandle &bnh,
+                                                      const Tensor &x,
+                                                      const Tensor &bnScale,
+                                                      const Tensor &bnBias,
+                                                      Tensor &running_mean,
+                                                      Tensor &running_var);
+#endif //USE_DNNL
 
 
 class PoolingHandle {

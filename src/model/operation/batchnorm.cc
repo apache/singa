@@ -40,12 +40,133 @@ BatchNormHandle::BatchNormHandle(const float momentum, const Tensor& input) {
     LOG(FATAL) << "The dimension of input should either be 4D or 2D.";
   }
 
+#ifdef USE_DNNL
+  epsilon = 1e-5f;
+  x_dims = dnnl::memory::dims(input.shape().begin(), input.shape().end());
+
+  // support f32 only
+  auto dtype_ = memory::data_type::f32;
+  memory::format_tag format_tag_ = get_dnnl_format_tag(input);
+  x_md  = dnnl::memory::desc({x_dims}, dtype_, format_tag_);
+
+  // add to 
+  bn_fwd_training_d = new dnnl::batch_normalization_forward::desc(dnnl::prop_kind::forward_training,
+     x_md, epsilon, dnnl::normalization_flags::use_scale_shift);
+
+  auto eng = input.device()->context(0)->engine;
+  bn_fwd_training_pd = new dnnl::batch_normalization_forward::primitive_desc(*bn_fwd_training_d, eng);
+
+#endif // USE_DNNL
 
 };
 
 
 BatchNormHandle::~BatchNormHandle() {
+  delete(bn_fwd_training_d);
+  delete(bn_fwd_training_pd);
 }
+
+#ifdef USE_DNNL
+
+Tensor CpuBatchNormForwardInference(const BatchNormHandle &bnh, const Tensor& x, const Tensor& bnScale, const Tensor& bnBias,
+    Tensor& running_mean, Tensor& running_var) {
+
+  CHECK_EQ(x.device()->lang(), kCpp);
+  Tensor y;
+  y.ResetLike(x);
+
+
+  Tensor w = get_bn_weight_from(bnScale, bnBias);
+
+  y.device()->Exec([&y, &x, &running_mean, &running_var, &w, &bnh](Context * ctx) {
+    auto eng = ctx->engine;
+    using namespace dnnl;
+
+    auto x_mem = memory(bnh.x_md, eng, x.block()->mutable_data());
+    auto y_mem = memory(bnh.x_md, eng, y.block()->mutable_data());
+    // indicates using scale&bias and running mean&var
+    auto flags_ = normalization_flags::use_scale_shift | normalization_flags::use_global_stats;
+
+    auto bn_fwd_d = batch_normalization_forward::desc(prop_kind::forward_inference, bnh.x_md, bnh.epsilon, flags_);
+    auto bn_fwd_pd = batch_normalization_forward::primitive_desc(bn_fwd_d, eng);
+    auto m_mem = memory(bn_fwd_pd.mean_desc(), eng, running_mean.block()->mutable_data());
+    auto v_mem = memory(bn_fwd_pd.variance_desc(), eng, running_var.block()->mutable_data());
+    auto w_mem = memory(bn_fwd_pd.weights_desc(), eng, w.block()->mutable_data());
+
+    // execution
+    batch_normalization_forward(bn_fwd_pd).execute(ctx->stream, {
+      {DNNL_ARG_SRC, x_mem},
+      {DNNL_ARG_DST, y_mem},
+      {DNNL_ARG_SCALE_SHIFT, w_mem},
+      {DNNL_ARG_MEAN, m_mem},
+      {DNNL_ARG_VARIANCE, v_mem}
+      });
+    ctx->stream.wait();
+
+    },
+    {x.block(), w.block(), running_mean.block(), running_var.block()},
+    {y.block(), running_mean.block(), running_var.block()}
+  );
+
+  return y;
+
+}
+
+const std::vector<Tensor>
+CpuBatchNormForwardTraining(const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
+                            Tensor &running_mean, Tensor &running_var) {
+
+  Tensor y;
+  y.ResetLike(x);
+
+  // mean and var for local batch
+  Tensor mean;
+  mean.ResetLike(running_mean);
+  Tensor var;
+  var.ResetLike(running_var);
+
+  // combine scale and bias to construct weight tensor in required format for backward
+  Tensor w = get_bn_weight_from(bnScale, bnBias);
+
+  y.device()->Exec([&x, &y, &mean, &var, &w, &running_mean, &running_var, &bnh](Context * ctx) {
+
+    auto eng = ctx->engine;
+    using namespace dnnl;
+
+    auto x_mem = memory(bnh.x_md, eng, x.block()->mutable_data());
+    auto y_mem = memory(bnh.x_md, eng, y.block()->mutable_data());
+    auto m_mem = memory(bnh.bn_fwd_training_pd->mean_desc(), eng, mean.block()->mutable_data());
+    auto v_mem = memory(bnh.bn_fwd_training_pd->variance_desc(), eng, var.block()->mutable_data());
+    auto w_mem = memory(bnh.bn_fwd_training_pd->weights_desc(), eng, w.block()->mutable_data());
+
+    batch_normalization_forward(*bnh.bn_fwd_training_pd).execute(ctx->stream, {
+      {DNNL_ARG_SRC, x_mem},
+      {DNNL_ARG_DST, y_mem},
+      {DNNL_ARG_SCALE_SHIFT, w_mem},
+      {DNNL_ARG_MEAN, m_mem},
+      {DNNL_ARG_VARIANCE, v_mem}
+    });
+    ctx->stream.wait();
+
+    // local implemented running mean as mkldnn does not support it yet:
+    // https://github.com/intel/mkl-dnn/issues/371
+    // https://github.com/intel/mkl-dnn/issues/517
+    // https://arxiv.org/pdf/1502.03167.pdf
+    auto s=x.shape();
+    s[1]=1;
+    float p = Product(s); // for unbiased variance
+    running_mean = running_mean * (1 - bnh.factor) + mean * bnh.factor;
+    running_var = running_var * (1 - bnh.factor) + var * (p/(p-1)) * bnh.factor;
+  },
+  {x.block(), w.block(), running_mean.block(), running_var.block()},
+  {y.block(), running_mean.block(), running_var.block(), mean.block(), var.block()}
+  );
+
+  return {y, running_mean, running_var, mean, var};
+}
+
+
+#endif // USE_DNNL
 
 
 #ifdef USE_CUDNN

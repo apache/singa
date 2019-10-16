@@ -29,6 +29,17 @@
 #include "../layer/cudnn_utils.h" // check_cudnn
 #endif // USE_CUDNN
 
+#ifdef USE_DNNL
+#include <singa/utils/dnnl_utils.h>
+
+// combine scale and bias into weight format required by dnnl
+static inline singa::Tensor get_bn_weight_from(const singa::Tensor &s, const singa::Tensor &b) {
+  singa::Tensor w(singa::Shape{s.Size(), b.Size()});
+  CopyDataToFrom(&w, s, s.Size(), 0, 0);
+  CopyDataToFrom(&w, b, b.Size(), s.Size(), 0);
+  return w;
+}
+#endif // USE_DNNL
 
 namespace singa {
 
@@ -45,7 +56,32 @@ class BatchNormHandle {
   size_t width;
   bool is_2d;
   //bool train = true;
+
+#ifdef USE_DNNL
+  float epsilon;
+  dnnl::memory::dims x_dims;
+  dnnl::memory::desc x_md;
+  // as no default constructor, we need to declare it as pointer
+  dnnl::batch_normalization_forward::desc *bn_fwd_training_d;
+  dnnl::batch_normalization_forward::primitive_desc *bn_fwd_training_pd;
+#endif // USE_DNNL
 };
+
+#ifdef USE_DNNL
+Tensor
+CpuBatchNormForwardInference(const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
+                             Tensor &running_mean, Tensor &running_var);
+
+const std::vector<Tensor>
+CpuBatchNormForwardTraining(const BatchNormHandle &bnh, const Tensor &x, const Tensor &bnScale, const Tensor &bnBias,
+                            Tensor &running_mean, Tensor &running_var);
+
+const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
+    const Tensor &y, const Tensor &dy,
+    const Tensor &x,
+    const Tensor &bnScale, const Tensor &bnBias,
+    const Tensor &mean, const Tensor &var);
+#endif // USE_DNNL
 
 
 
