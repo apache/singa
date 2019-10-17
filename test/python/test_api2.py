@@ -121,7 +121,6 @@ class TestAPI(unittest.TestCase):
         rm_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
         rv_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
         _run_training(x_0, s_0, b_0, rm_0, rv_0, m_0=1.0)
-    '''
         _run_training(x_0, s_0, b_0, rm_0, rv_0, m_0=0.0)
         _run_training(x_0, s_0, b_0, rm_0, rv_0, m_0=0.2)
 
@@ -132,7 +131,6 @@ class TestAPI(unittest.TestCase):
         rm_0 = np.random.random((1, c, 1, 1)).astype(np.float32)
         rv_0 = np.random.random((1, c, 1, 1)).astype(np.float32)
         _run_training(x_0, s_0, b_0, rm_0, rv_0, m_0=0.2)
-'''
 
     def test_batchnorm_testing(self):
         def _run_testing(x_0, s_0, b_0, rm_0, rv_0, m_0=0.1):
@@ -171,6 +169,38 @@ class TestAPI(unittest.TestCase):
         rm_0 = np.random.random((1, c, 1, 1)).astype(np.float32)
         rv_0 = np.random.random((1, c, 1, 1)).astype(np.float32)
         _run_testing(x_0, s_0, b_0, rm_0, rv_0, m_0=1.0)
+
+
+    def test_batchnorm_backward(self):
+        def _run_testing(y_0, dy_0, x_0, scale_0, bias_0, mean_0, var_0, m_0=0.1):
+            (dx_1_c, dscale_1_c, dbias_1_c) = _np_bn_bwd(x_0, s_0, b_0, rm_0, rv_0, momentum=m_0)
+
+            hndl = singa_api.BatchNormHandle(m_0, _np_to_pyTensor(x_0).data)
+
+            (dx_2_c, dscale_2_c, dbias_2_c) = singa_api.CpuBatchNormBackwardx(
+                hndl,
+                _np_to_pyTensor(y_0).data,
+                _np_to_pyTensor(dy_0).data,
+                _np_to_pyTensor(x_0).data,
+                _np_to_pyTensor(scale_0).data,
+                _np_to_pyTensor(bias_0).data,
+                _np_to_pyTensor(mean_0).data,
+                _np_to_pyTensor(var_0).data,
+                )
+
+
+
+        x_0 = np.array( [1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20], dtype=np.float32).reshape((2, 2, 2, 2))
+        y_0 = np.array( [1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20], dtype=np.float32).reshape((2, 2, 2, 2))
+        dy_0 = np.array( [1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20], dtype=np.float32).reshape((2, 2, 2, 2))
+
+        scale_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
+        bias_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
+        mean_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
+        var_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
+        _run_testing(y_0, dy_0, x_0, scale_0, bias_0, mean_0, var_0, m_0=0.1)
+
+        return
 
 
 if __name__ == '__main__':

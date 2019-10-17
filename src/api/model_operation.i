@@ -82,6 +82,12 @@ const std::vector<Tensor> CpuBatchNormForwardTraining(const BatchNormHandle &bnh
                                                       const Tensor &bnBias,
                                                       Tensor &running_mean,
                                                       Tensor &running_var);
+
+const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
+                                                const Tensor &y, const Tensor &dy,
+                                                const Tensor &x,
+                                                const Tensor &bnScale, const Tensor &bnBias,
+                                                const Tensor &mean, const Tensor &var);
 #endif //USE_DNNL
 
 

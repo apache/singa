@@ -27,57 +27,59 @@ using namespace singa;
 
 #ifdef USE_DNNL
 TEST(DNNLOperationBatchNorm, ForwardInference) {
-  const float x_data[] = {1, 2,
-                          3, 4};
-  Tensor in(Shape{2, 2});
-  in.CopyDataFromHostPtr(x_data, 2 * 2);
-
-  const float alpha_[] = {1, 1};
+  Tensor x(Shape{2,2});
   Tensor alpha(Shape{2});
-  alpha.CopyDataFromHostPtr(alpha_, 2);
-
-  const float beta_[] = {2, 2};
   Tensor beta(Shape{2});
-  beta.CopyDataFromHostPtr(beta_, 2);
-
-  const float mean_[] = {2, 3};
   Tensor moving_mean(Shape{2});
-  moving_mean.CopyDataFromHostPtr(mean_, 2);
-
-  const float var_[] = {1, 1};
   Tensor moving_var(Shape{2});
-  moving_var.CopyDataFromHostPtr(var_, 2);
 
-  BatchNormHandle batch_norm_handle(0u,in);
-  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, in, alpha, beta, moving_mean, moving_var);
+  Gaussian(0.0f, 1.0f, &x);
+  Gaussian(0.0f, 1.0f, &alpha);
+  Gaussian(0.0f, 1.0f, &beta);
+  Gaussian(0.0f, 1.0f, &moving_mean);
+  Gaussian(0.0f, 1.0f, &moving_var);
+
+  BatchNormHandle batch_norm_handle(0u,x);
+  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, x, alpha, beta, moving_mean, moving_var);
 }
 
 TEST(DNNLOperationBatchNorm, ForwardTraining) {
-  const float x_data[] = {1, 2,
-                          3, 4};
-  Tensor in(Shape{2, 2});
-  in.CopyDataFromHostPtr(x_data, 2 * 2);
-
-  const float alpha_[] = {1, 1};
+  Tensor x(Shape{2,2});
   Tensor alpha(Shape{2});
-  alpha.CopyDataFromHostPtr(alpha_, 2);
-
-  const float beta_[] = {2, 2};
   Tensor beta(Shape{2});
-  beta.CopyDataFromHostPtr(beta_, 2);
-
-  const float mean_[] = {2, 3};
   Tensor moving_mean(Shape{2});
-  moving_mean.CopyDataFromHostPtr(mean_, 2);
-
-  const float var_[] = {1, 1};
   Tensor moving_var(Shape{2});
-  moving_var.CopyDataFromHostPtr(var_, 2);
 
-  BatchNormHandle batch_norm_handle(0u,in);
-  auto outputs = CpuBatchNormForwardTraining(batch_norm_handle, in, alpha, beta, moving_mean, moving_var);
+  Gaussian(0.0f, 1.0f, &x);
+  Gaussian(0.0f, 1.0f, &alpha);
+  Gaussian(0.0f, 1.0f, &beta);
+  Gaussian(0.0f, 1.0f, &moving_mean);
+  Gaussian(0.0f, 1.0f, &moving_var);
+
+  BatchNormHandle batch_norm_handle(0u,x);
+  auto outputs = CpuBatchNormForwardTraining(batch_norm_handle, x, alpha, beta, moving_mean, moving_var);
 }
 
+TEST(DNNLOperationBatchNorm, Backward) {
+  Tensor x(Shape{2,2});
+  Tensor y(Shape{2,2});
+  Tensor dy(Shape{2,2});
+  Tensor alpha(Shape{2});
+  Tensor beta(Shape{2});
+  Tensor moving_mean(Shape{2});
+  Tensor moving_var(Shape{2});
+
+  Gaussian(0.0f, 1.0f, &x);
+  Gaussian(0.0f, 1.0f, &y);
+  Gaussian(0.0f, 1.0f, &dy);
+  Gaussian(0.0f, 1.0f, &alpha);
+  Gaussian(0.0f, 1.0f, &beta);
+  Gaussian(0.0f, 1.0f, &moving_mean);
+  Gaussian(0.0f, 1.0f, &moving_var);
+
+  BatchNormHandle batch_norm_handle(0u,x);
+  auto outputs = CpuBatchNormBackwardx( batch_norm_handle, y, dy, x, alpha, beta, moving_mean, moving_var);
+}
 
 #endif // USE_DNNL
 
