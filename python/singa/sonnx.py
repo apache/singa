@@ -29,7 +29,7 @@ from . import tensor
 
 import collections
 
-from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto, TensorProto, OperatorSetIdProto)
+from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto, TensorProto, OperatorSetIdProto, optimizer)
 from onnx.backend.base import Backend, BackendRep
 import onnx
 import numpy as np
@@ -663,6 +663,7 @@ class SingaFrontend(object):
             inputs, y, model_name="sonnx"), producer_name='sonnx',
             opset_imports=[opset_id])
         # print('The model is:\n{}'.format(model))
+        model = optimizer.optimize(model)
         checker.check_model(model)
         return model
 
@@ -1312,8 +1313,7 @@ class SingaBackend(Backend):
             a list of SingaOps('name', 'op', 'handle', 'forward')
         """
         # todo check the reason of Segmentation fault (core dumped)
-        # optimized_model = optimizer.optimize(onnx_model)
-        optimized_model = onnx_model
+        optimized_model = onnx.utils.polish_model(onnx_model)
         # this tensor_nap contains all tensors, including outputs of each op
         tensor_map = {}
         # this weights only contains the tensors which have stored the gradients
