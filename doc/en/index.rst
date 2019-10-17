@@ -21,7 +21,7 @@ Welcome to Apache SINGA
 Recent News
 -----------
 
-* SINGA has graduated as a Top-Level Project (TLP) of the Apache Software Foundation on 16 Oct 2019.
+* SINGA graduated as a Top-Level Project (TLP) of the Apache Software Foundation on 16 Oct 2019.
 
 * Food(lg), the mobile app to `help patients with prediabetes <https://ssi.nus.edu.sg/ntfgh/>`_, is powered by SINGA and this app can now be downloaded on the `APP Store <https://apps.apple.com/us/app/food-lg/id1213299378>`_ or `Google Play <https://play.google.com/store/apps/details?id=com.nusidmi.foodlg&hl=en_SG>`_. Watch this `video <https://www.youtube.com/watch?v=MHp-saJiP-0>`_ of Food(lg) for more details.
 
@@ -58,7 +58,7 @@ Recent News
 
 * **Version 0.2.0** is now available, 14 Jan, 2016. `Download SINGA v0.2.0 <downloads.html>`_.
 
-* SINGA will be presented at `Strata+Hadoop <http://strataconf.com/big-data-conference-sg-2015/public/schedule/detail/45123>`_ on 2 Dec, 2015
+* SINGA was presented at `Strata+Hadoop <http://strataconf.com/big-data-conference-sg-2015/public/schedule/detail/45123>`_ on 2 Dec, 2015
 
 * SINGA was presented at `ACM Multimedia <http://www.acmmm.org/2015/at-a-glance/>`_ Best Paper session and Open Source Software Competition session, 26-30 Oct, 2015 (`Slides <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/mm2015.ppt>`_)
 
