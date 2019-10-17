@@ -2046,6 +2046,70 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
+    def test_add_broadcast(self):
+        for dev_type in [gpu_dev, cpu_dev]:
+            x = np.random.randn(3, 4, 5).astype(np.float32)
+            x1 = np.random.randn(5).astype(np.float32)
+            y = x+x1
+            dy = np.ones((3, 4, 5), dtype = np.float32)
+            grad0=dy
+            grad1=np.ones((5), dtype = np.float32)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev_type)
+            x1.to_device(dev_type)
+            dy.to_device(dev_type)
+
+            result = autograd.add(x,x1)
+            dx0, dx1 = result.creator.backward(dy.data)
+
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_and_broadcast(self):
+        for dev_type in [gpu_dev, cpu_dev]:
+            x = np.random.randn(3, 4, 5).astype(np.float32)
+            x1 = np.random.randn(5).astype(np.float32)
+            y = np.logical_and(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev_type)
+            x1.to_device(dev_type)
+
+            result = autograd.and(x,x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_or_broadcast(self):
+        for dev_type in [gpu_dev, cpu_dev]:
+            x = np.random.randn(3, 4, 5).astype(np.float32)
+            x1 = np.random.randn(5).astype(np.float32)
+            y = np.logical_or(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev_type)
+            x1.to_device(dev_type)
+
+            result = autograd.or(x,x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_xor_broadcast(self):
+        for dev_type in [gpu_dev, cpu_dev]:
+            x = np.random.randn(3, 4, 5).astype(np.float32)
+            x1 = np.random.randn(5).astype(np.float32)
+            y = np.logical_xor(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev_type)
+            x1.to_device(dev_type)
+
+            result = autograd.xor(x,x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
 if __name__ == '__main__':
     unittest.main()
