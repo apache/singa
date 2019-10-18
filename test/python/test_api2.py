@@ -27,6 +27,9 @@ from singa import tensor
 from singa import device
 cpu_dev = device.get_default_device()
 
+def _np_bn_bwd_gradient_check(y, dy, x, s, b, rm, rv, momentum=0.1):
+    # TODO
+    return
 
 def _np_bn_training(x, scale, bias, rm, rv, momentum=0.1, e=1e-5):
     channel = x.shape[1]
@@ -50,6 +53,7 @@ def _np_bn_training(x, scale, bias, rm, rv, momentum=0.1, e=1e-5):
     rv = momentum * batch_v_unbiased + (1 - momentum) * rv
 
     # https://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#cudnnBatchNormalizationForwardTraining
+    # this value is useful for bwd computation
     resultSaveInvVariance = 1 / np.sqrt(batch_v)
     return y_norm, rm, rv, batch_m, resultSaveInvVariance
 
@@ -173,7 +177,7 @@ class TestAPI(unittest.TestCase):
 
     def test_batchnorm_backward(self):
         def _run_testing(y_0, dy_0, x_0, scale_0, bias_0, mean_0, var_0, m_0=0.1):
-            (dx_1_c, dscale_1_c, dbias_1_c) = _np_bn_bwd(x_0, s_0, b_0, rm_0, rv_0, momentum=m_0)
+            dx_1_np = _np_bn_bwd_gradient_check(y_0, dy_0, x_0, scale_0, bias_0, mean_0, var_0, momentum=m_0)
 
             hndl = singa_api.BatchNormHandle(m_0, _np_to_pyTensor(x_0).data)
 
@@ -189,10 +193,9 @@ class TestAPI(unittest.TestCase):
                 )
 
 
-
-        x_0 = np.array( [1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20], dtype=np.float32).reshape((2, 2, 2, 2))
-        y_0 = np.array( [1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20], dtype=np.float32).reshape((2, 2, 2, 2))
-        dy_0 = np.array( [1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20], dtype=np.float32).reshape((2, 2, 2, 2))
+        x_0 = np.array([1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20], dtype=np.float32).reshape((2, 2, 2, 2))
+        y_0 = np.array([1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20], dtype=np.float32).reshape((2, 2, 2, 2))
+        dy_0 = np.array([1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20], dtype=np.float32).reshape((2, 2, 2, 2))
 
         scale_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
         bias_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
