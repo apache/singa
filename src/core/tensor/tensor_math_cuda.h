@@ -925,6 +925,20 @@ void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx) {
   cudnnSoftmaxAlgorithm_t algorithm = CUDNN_SOFTMAX_FAST;
   cudnnSoftmaxMode_t mode = CUDNN_SOFTMAX_MODE_INSTANCE;
 
+  /*
+   * tensor tmp is for generating cudnn descriptor
+   *   as for cudnn softmax, it required shape of {N, C, 1, 1}
+   *   while helper func `generate_shape_cuda` generate shape of {1, 1, N, C}
+   *   Thus this part serve similar purpose as `generate_shape_cuda` but in reverse manner
+  */
+  CHECK_LE(in.shape().size(), 5) << "Dimensions (shape) beyond 5 are currently not supported" ;
+  auto tmp = in;
+  while (tmp.shape().size() < 4) {
+    auto s = tmp.shape();
+    s.push_back(1);
+    tmp.Reshape(s);
+  }
+
   const float * inPtr = static_cast<const float*>(in.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
@@ -932,8 +946,43 @@ void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx) {
   float beta = 0.0;
 
   check_cudnn(cudnnSoftmaxForward(ctx->cudnn_handle, algorithm, mode,
-                                  (void*)(&alpha), generate_tensor_nd_desc(in), inPtr, (void*)(&beta)
-                                  , generate_tensor_nd_desc(*out), outPtr));
+                                  (void*)(&alpha), generate_tensor_nd_desc(tmp), inPtr, (void*)(&beta)
+                                  , generate_tensor_nd_desc(tmp), outPtr));
+}
+
+// add axis to softmax API according to ONNX specification
+// https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softmax
+template <>
+void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx, int axis) {
+  // {a_0, a_1, ..., a_k-1, a_k, ... a_n-1}
+  // reshape to  
+  // { a_0 * a_1 * ... a_k-1, a_k * ... a_n-1 }
+  
+  // assert axis \in {-r, r-1}
+  CHECK_LE(axis, (int)in.shape().size()-1 );
+  CHECK_GE(axis, -1*(int)in.nDim() );
+
+  Shape original_shape = in.shape();
+  if (axis < 0) axis = in.shape().size() + axis;
+
+  Shape coerced_shape = {1, 1};
+  for (int i = 0; i < in.shape().size(); i++) {
+      if (i < axis)
+        coerced_shape[0] *= in.shape()[i];
+      else
+        coerced_shape[1] *= in.shape()[i];
+  }
+  Tensor in_reshaped = Reshape(in, coerced_shape);
+  out->Reshape(coerced_shape);
+
+  // optimise by minus x - x.max()
+  auto in_max = RowMax(in_reshaped);
+  in_max.Reshape({coerced_shape[0],1});
+  in_reshaped = in_reshaped - in_max;
+
+  SoftMax<float, lang::Cuda>(in_reshaped, out, ctx);
+
+  out->Reshape(original_shape);
 }
 
 template <>

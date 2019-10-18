@@ -405,6 +405,11 @@ void SoftMax(const Tensor &in, Tensor *out, Context* ctx) {
   LOG(FATAL) << "Not Implemented";
 }
 
+template <typename DType, typename Lang>
+void SoftMax(const Tensor &in, Tensor *out, Context* ctx, int axis) {
+  LOG(FATAL) << "Not Implemented";
+}
+
 //yisen todo
 template <typename DType, typename Lang>
 void ComputeCrossEntropy(bool int_target, const size_t batchsize,
