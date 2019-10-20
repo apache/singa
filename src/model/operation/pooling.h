@@ -30,6 +30,10 @@
 #include "../layer/cudnn_utils.h"
 #endif
 
+#ifdef USE_DNNL
+#include <singa/utils/dnnl_utils.h>
+#endif // USE_DNNL
+
 namespace singa {
 
 class PoolingHandle {
@@ -56,7 +60,21 @@ class PoolingHandle {
 
   bool is_max_pooling;
 
+#ifdef USE_DNNL
+dnnl::memory::desc x_md;
+dnnl::memory::desc y_md;
+dnnl::memory ws_mem;
+dnnl::pooling_forward::primitive_desc pool_fwd_pd;
+dnnl::pooling_backward::primitive_desc pool_bwd_pd;
+#endif // USE_DNNL
+
 };
+
+#ifdef USE_DNNL
+Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x);
+Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &dy,
+                              const Tensor& x, const Tensor& y);
+#endif // USE_DNNL
 
 
 #ifdef USE_CUDNN

@@ -49,7 +49,7 @@ BatchNormHandle::BatchNormHandle(const float momentum, const Tensor& input) {
   memory::format_tag format_tag_ = get_dnnl_format_tag(input);
   x_md  = dnnl::memory::desc({x_dims}, dtype_, format_tag_);
 
-  // add to 
+  // add to
   bn_fwd_training_d = new dnnl::batch_normalization_forward::desc(dnnl::prop_kind::forward_training,
      x_md, epsilon, dnnl::normalization_flags::use_scale_shift);
 
