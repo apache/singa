@@ -32,6 +32,10 @@
 #include "../layer/cudnn_utils.h"
 #endif // USE_CUDNN
 
+#ifdef USE_DNNL
+#include <singa/utils/dnnl_utils.h>
+#endif // USE_DNNL
+
 
 namespace singa {
 
@@ -67,6 +71,25 @@ class ConvHandle {
   size_t col_height;
   size_t col_width;
   size_t imagesize;
+
+#ifdef USE_DNNL
+  dnnl::memory::data_type dtype;
+  dnnl::memory::dims b_dims;
+  dnnl::memory::dims s_dims;
+  dnnl::memory::dims p_dims;
+  dnnl::memory::dims x_dims;
+  dnnl::memory::dims o_dims;
+  dnnl::memory::dims w_dims;
+  
+  dnnl::memory::desc x_md;
+  dnnl::memory::desc w_md;
+  dnnl::memory::desc b_md;
+  dnnl::memory::desc y_md;
+  dnnl::convolution_forward::desc *conv_d;
+  dnnl::convolution_forward::primitive_desc *conv_pd;
+  
+  Tensor *db;
+#endif // USE_DNNL
 
 };
 
