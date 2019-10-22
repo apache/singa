@@ -693,6 +693,7 @@ void Amax<float, lang::Cpp>(const Tensor& in, size_t *out,
   }
   *out = maxPos;
 }
+
 template <>
 void Amin<float, lang::Cpp>(const Tensor& in, size_t *out,
                             Context *ctx) {
