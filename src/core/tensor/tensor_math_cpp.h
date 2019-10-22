@@ -424,6 +424,24 @@ void Sign<float, lang::Cpp>(const Tensor& in, Tensor* out,
 }
 
 template <>
+void SoftPlus<float, lang::Cpp>(const Tensor& in, Tensor* out,
+                                Context *ctx) {
+  auto softplus_lambda = [](float a) {
+    return log(1.f + exp(a));
+  };
+  traverse_unary<float>(in, out, softplus_lambda);
+}
+
+template <>
+void SoftSign<float, lang::Cpp>(const Tensor& in, Tensor* out,
+                                Context *ctx) {
+  auto softsign_lambda = [](float a) {
+    return a / (1.f + fabs(a));
+  };
+  traverse_unary<float>(in, out, softsign_lambda);
+}
+
+template <>
 void Sqrt<float, lang::Cpp>(const Tensor& in, Tensor* out,
                             Context *ctx) {
   auto usqrt = [](float a) {CHECK_GE(a, 0.f); return sqrt(a);};

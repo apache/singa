@@ -695,6 +695,8 @@ GenUnaryTensorFn(Exp);
 GenUnaryTensorFn(Log);
 GenUnaryTensorFn(ReLU);
 GenUnaryTensorFn(Sigmoid);
+GenUnaryTensorFn(SoftPlus);
+GenUnaryTensorFn(SoftSign);
 GenUnaryTensorFn(Sign);
 GenUnaryTensorFn(Sqrt);
 GenUnaryTensorFn(Square);
