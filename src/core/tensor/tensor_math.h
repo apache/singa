@@ -237,7 +237,7 @@ void Sigmoid(const Tensor &in, Tensor *out, Context *ctx) {
 /// out[i] = log(exp(in[i]) + 1)
 template <typename DType, typename Lang>
 void SoftPlus(const Tensor &in, Tensor *out, Context *ctx) {
-  LOG(FATAL) << "Sign Not Implemented";
+  LOG(FATAL) << "SoftPlus Not Implemented";
 }
 
 /// out[i] = in[i] / (abs(in[i]) + 1)
