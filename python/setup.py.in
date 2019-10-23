@@ -28,10 +28,10 @@ setup(
 
     description='A General Deep Learning System',
 
-    url='https://github.com/apache/incubator-singa',
+    url='https://github.com/apache/singa',
 
-    author='Apache SINGA (incubating)',
-    author_email='dev@singa.incubator.apache.org',
+    author='Apache SINGA',
+    author_email='dev@singa.apache.org',
 
     license='Apache 2',
 

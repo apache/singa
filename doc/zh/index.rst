@@ -60,12 +60,12 @@ SINGA 入门
 
 * 在 `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ 上, 或者通过 `Docker <https://hub.docker.com/r/nusdbsystem/singa/>`_ 试用 SINGA.
 
-* 更多操作和实例，参考 `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ 以及 `模型库页面  <./docs/model_zoo/index.html>`_ 了解更多例子.
+* 更多操作和实例，参考 `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ 以及 `模型库页面  <./docs/model_zoo/index.html>`_ 了解更多例子.
 
 .. |logo| image:: _static/jupyter.png
    :scale: 25%
    :align: middle
-   :target: http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb
+   :target: http://nbviewer.jupyter.org/github/apache/singa/blob/master/doc/en/docs/notebook/index.ipynb
 
 +---------+
 | |logo|  |
@@ -81,7 +81,7 @@ SINGA 入门
 如何贡献
 ----------------------
 
-* 请订阅我们的开发邮件列表 dev-subscribe@singa.incubator.apache.org.
+* 请订阅我们的开发邮件列表 dev-subscribe@singa.apache.org.
 
 * 如果您发现使用 SINGA 的任何问题，请将其报告给 `Issue Tracker <https://issues.apache.org/jira/browse/singa>`_.
 
@@ -133,7 +133,3 @@ SINGA 入门
 ----------
 SINGA 在 `Apache License Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_ 许可证下发布.
 
-免责声明（英文）
---------------------
-
-Apache SINGA is an effort undergoing incubation at The Apache Software Foundation (ASF), sponsored by the Apache Incubator. Incubation is required of all newly accepted projects until a further review indicates that the infrastructure, communications, and decision making process have stabilized in a manner consistent with other successful ASF projects. While incubation status is not necessarily a reflection of the completeness or stability of the code, it does indicate that the project has yet to be fully endorsed by the ASF.

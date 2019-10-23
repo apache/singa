@@ -26,14 +26,14 @@ ___
 
 以下是指向在线源代码库的链接.
 
-* [https://git-wip-us.apache.org/repos/asf?p=incubator-singa.git;a=summary](https://git-wip-us.apache.org/repos/asf?p=incubator-singa.git;a=summary)
+* [https://git-wip-us.apache.org/repos/asf?p=singa.git;a=summary](https://git-wip-us.apache.org/repos/asf?p=singa.git;a=summary)
 
 
 ## 提交者的上游 Upstream
 
 提交者需要将上游 upstream 端点设置为 Apache git（而不是github）的 repo 地址, 例如,
 
-    $ git remote add asf https://git-wip-us.apache.org/repos/asf/incubator-singa.git
+    $ git remote add asf https://git-wip-us.apache.org/repos/asf/singa.git
 
 然后你（提交者）可以用这种方式推送你的代码,
 

@@ -81,9 +81,9 @@ Requirements
 
 .. code-block:: bash
 
-	git clone https://github.com/apache/incubator-singa.git
+	git clone https://github.com/apache/singa.git
 
-	cd incubator-singa
+	cd singa
 	mkdir build
 	cd build
 
