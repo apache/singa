@@ -25,10 +25,10 @@ import math
 
 from singa import singa_wrap as singa_api
 from singa import tensor
-from singa import device
 from cuda_helper import gpu_dev, cpu_dev
 
-# helper fn
+
+# helper
 def _np_to_pyTensor(_np):
     return tensor.Tensor(device=cpu_dev, data=_np)
 
@@ -144,6 +144,9 @@ class TestAPI(unittest.TestCase):
         y0 = tensor.Tensor(device=gpu_dev, data=y_0)
         x1 = x0.transpose([3, 2, 1, 0])
 
+        #print(x1.shape)
+        #print(y0.shape)
+
         z0 = x1 * y0
         np.testing.assert_array_almost_equal(tensor.to_numpy(z0),
                                              x_0.transpose() * y_0)
@@ -158,6 +161,8 @@ class TestAPI(unittest.TestCase):
 
             x1 = x0.transpose(axis1)
             y1 = y0.transpose(axis2)
+            #print(x1.shape)
+            #print(y1.shape)
 
             z0 = x1 * y1
             np.testing.assert_array_almost_equal(
@@ -188,6 +193,7 @@ class TestAPI(unittest.TestCase):
 
 
     def test_batchnorm_training(self):
+
         def _np_bn_training(x, scale, bias, rm, rv, momentum=0.1, e=1e-5):
             channel = x.shape[1]
             np.testing.assert_array_almost_equal(scale.shape, (1, channel, 1, 1))
