@@ -80,7 +80,7 @@ Install Docker on your local host machine following the [instructions](https://d
     | `version`| SINGA version | 'nightly', '2.0.0', '1.2.0'| 
     | `cpu` | the image cannot run on GPUs |  'cpu' |
     | `gpu` | the image can run on Nvidia GPUs| 'gpu', or 'cudax.x-cudnnx.x' e.g., 'cuda10.0-cudnn7.3'|
-    | `devel`| indicator for development|if absent SINGA Python package is installed for runtime only; if present, the building environment is also created, you can recompile SINGA from source at '/root/incubator-singa'
+    | `devel`| indicator for development|if absent SINGA Python package is installed for runtime only; if present, the building environment is also created, you can recompile SINGA from source at '/root/singa'
 
 * Please note that using the nightly built images is not recommended excpet for SINGA development and testing. Using an official release is recommended. Official releases have version numbers such as '2.0.0' and '1.2.0'.
 

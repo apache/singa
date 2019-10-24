@@ -84,12 +84,12 @@ Getting Started
 
 * Try SINGA on `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ or via `Docker <https://hub.docker.com/r/apache/singa/>`_.
 
-* Refer to the `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ for some basic examples and the `model zoo page <./docs/model_zoo/index.html>`_ for more examples.
+* Refer to the `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ for some basic examples and the `model zoo page <./docs/model_zoo/index.html>`_ for more examples.
 
 .. |logo| image:: _static/jupyter.png
    :scale: 25%
    :align: middle
-   :target: http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb
+   :target: http://nbviewer.jupyter.org/github/apache/singa/blob/master/doc/en/docs/notebook/index.ipynb
 
 +---------+
 | |logo|  |
@@ -158,8 +158,3 @@ Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_
 License
 ----------
 SINGA is released under `Apache License Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
-
-Disclaimers
------------
-
-Apache SINGA is an effort undergoing incubation at The Apache Software Foundation (ASF), sponsored by the Apache Incubator. Incubation is required of all newly accepted projects until a further review indicates that the infrastructure, communications, and decision making process have stabilized in a manner consistent with other successful ASF projects. While incubation status is not necessarily a reflection of the completeness or stability of the code, it does indicate that the project has yet to be fully endorsed by the ASF.

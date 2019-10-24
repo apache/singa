@@ -52,7 +52,7 @@ For those operations that require parameters, we package them into a new class, 
 
 ## Examples
 
-Multiple examples are provided in the [example folder](https://github.com/apache/incubator-singa/tree/master/examples/autograd). We explain two representative examples here.
+Multiple examples are provided in the [example folder](https://github.com/apache/singa/tree/master/examples/autograd). We explain two representative examples here.
 
 ### Operation only
 
@@ -106,7 +106,7 @@ for i in range(10):
 
 ### Operation + Layer
 
-The following [example](https://github.com/apache/incubator-singa/blob/master/examples/autograd/mnist_cnn.py) implements a CNN model using layers provided by the autograd module.
+The following [example](https://github.com/apache/singa/blob/master/examples/autograd/mnist_cnn.py) implements a CNN model using layers provided by the autograd module.
 
 #### Create the layers
 
