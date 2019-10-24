@@ -248,15 +248,15 @@ void SoftMax<float, lang::Cpp>(const Tensor& in, Tensor* out, Context *ctx, int 
 
 
   auto md = dnnl::memory::desc({coerced_shape[0], coerced_shape[1]}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::ab);
-  auto in_mem = dnnl::memory(md, ctx->engine, in_reshaped.block()->mutable_data());
-  auto out_mem = dnnl::memory(md, ctx->engine, out->block()->mutable_data());
+  auto in_mem = dnnl::memory(md, ctx->dnnl_engine, in_reshaped.block()->mutable_data());
+  auto out_mem = dnnl::memory(md, ctx->dnnl_engine, out->block()->mutable_data());
 
 
   auto softmax_desc = dnnl::softmax_forward::desc(dnnl::prop_kind::forward_scoring, md, 1);
-  auto softmax_prim_desc = dnnl::softmax_forward::primitive_desc(softmax_desc, ctx->engine);
+  auto softmax_prim_desc = dnnl::softmax_forward::primitive_desc(softmax_desc, ctx->dnnl_engine);
   auto softmax = dnnl::softmax_forward(softmax_prim_desc);
-  softmax.execute(ctx->stream, {{DNNL_ARG_SRC, in_mem}, {DNNL_ARG_DST, out_mem}});
-  ctx->stream.wait();
+  softmax.execute(ctx->dnnl_stream, {{DNNL_ARG_SRC, in_mem}, {DNNL_ARG_DST, out_mem}});
+  ctx->dnnl_stream.wait();
 
   out->Reshape(original_shape);
 }

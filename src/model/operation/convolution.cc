@@ -88,7 +88,7 @@ ConvHandle::ConvHandle(const Tensor &input,
         dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_direct,
         x_md, w_md, b_md, y_md, s_dims, p_dims, p_dims);
 
-    auto eng = input.device()->context(0)->engine;
+    auto eng = input.device()->context(0)->dnnl_engine;
     conv_pd = new dnnl::convolution_forward::primitive_desc(*conv_d, eng);
 
     // dnnl calculate dw and db in one go, a workaround to be compatible with
@@ -129,18 +129,18 @@ Tensor CpuConvForward(const Tensor &x, Tensor &W,  Tensor &b,
 
         using namespace dnnl;
 
-        auto eng = ctx->engine;
+        auto eng = ctx->dnnl_engine;
         auto x_mem = memory(ch.x_md, eng, x.block()->mutable_data());
         auto w_mem = memory(ch.w_md, eng, W.block()->mutable_data());
         auto b_mem = memory(ch.b_md, eng, b.block()->mutable_data());
         auto y_mem = memory(ch.y_md, eng, output.block()->mutable_data());
 
         convolution_forward(*ch.conv_pd)
-            .execute(ctx->stream, {{DNNL_ARG_SRC, x_mem},
+            .execute(ctx->dnnl_stream, {{DNNL_ARG_SRC, x_mem},
                                    {DNNL_ARG_WEIGHTS, w_mem},
                                    {DNNL_ARG_BIAS, b_mem},
                                    {DNNL_ARG_DST, y_mem}});
-        ctx->stream.wait();
+        ctx->dnnl_stream.wait();
       },
       {x.block(), W.block(), b.block()}, {output.block()});
 
@@ -200,7 +200,7 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
 
   dy.device()->Exec(
       [&x, &dx, &dy, &W, &ch](Context *ctx) {
-        auto eng = ctx->engine;
+        auto eng = ctx->dnnl_engine;
         using namespace dnnl;
         auto x_mem = memory(ch.x_md, eng, x.block()->mutable_data());
         auto w_mem = memory(ch.w_md, eng, W.block()->mutable_data());
@@ -214,10 +214,10 @@ Tensor CpuConvBackwardx(const Tensor &dy, Tensor &W, const Tensor &x,
             conv_bwd_data_d, eng, *ch.conv_pd);
 
         convolution_backward_data(conv_bwd_data_pd)
-            .execute(ctx->stream, {{DNNL_ARG_DIFF_DST, dy_mem},
+            .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, dy_mem},
                                    {DNNL_ARG_WEIGHTS, w_mem},
                                    {DNNL_ARG_DIFF_SRC, dx_mem}});
-        ctx->stream.wait();
+        ctx->dnnl_stream.wait();
 
       },
       {x.block(), dy.block(), W.block()}, {dx.block()});
@@ -264,7 +264,7 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
 
   dy.device()->Exec(
       [&x, &dy, &dW, &ch](Context *ctx) {
-        auto eng = ctx->engine;
+        auto eng = ctx->dnnl_engine;
         using namespace dnnl;
 
         auto x_mem = memory(ch.x_md, eng, x.block()->mutable_data());
@@ -279,11 +279,11 @@ Tensor CpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
         auto conv_dw_pd = convolution_backward_weights::primitive_desc(
             conv_dw_d, eng, *ch.conv_pd);
         convolution_backward_weights(conv_dw_pd)
-            .execute(ctx->stream, {{DNNL_ARG_DIFF_DST, dy_mem},
+            .execute(ctx->dnnl_stream, {{DNNL_ARG_DIFF_DST, dy_mem},
                                    {DNNL_ARG_SRC, x_mem},
                                    {DNNL_ARG_DIFF_WEIGHTS, dw_mem},
                                    {DNNL_ARG_DIFF_BIAS, db_mem}});
-        ctx->stream.wait();
+        ctx->dnnl_stream.wait();
 
       },
       {x.block(), dy.block(), W.block()}, {dW.block()});

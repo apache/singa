@@ -71,7 +71,7 @@ PoolingHandle::PoolingHandle(const Tensor &input,
   auto pool_fwd_d = dnnl::pooling_forward::desc( dnnl::prop_kind::forward_training, pooling_algo, x_md, y_md, s_dims, k_dims, p_dims, p_dims);
   auto pool_bwd_d = dnnl::pooling_backward::desc(pooling_algo, x_md,y_md,s_dims,k_dims,p_dims,p_dims);
 
-  auto eng = input.device()->context(0)->engine;
+  auto eng = input.device()->context(0)->dnnl_engine;
   pool_fwd_pd = dnnl::pooling_forward::primitive_desc(pool_fwd_d, eng);
   pool_bwd_pd = dnnl::pooling_backward::primitive_desc(pool_bwd_d, eng, pool_fwd_pd);
 
@@ -92,18 +92,18 @@ Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x) {
            }, x.device(), x.data_type());
 
   y.device()->Exec([&y, &x, &ph](Context * ctx) {
-      auto eng = ctx->engine;
+      auto eng = ctx->dnnl_engine;
       using namespace dnnl;
 
       memory x_mem(ph.x_md,eng,x.block()->mutable_data());
       memory y_mem(ph.y_md,eng,y.block()->mutable_data());
 
-      pooling_forward(ph.pool_fwd_pd).execute(ctx->stream, {
+      pooling_forward(ph.pool_fwd_pd).execute(ctx->dnnl_stream, {
 	{DNNL_ARG_SRC, x_mem},
 	{DNNL_ARG_DST, y_mem},
 	{DNNL_ARG_WORKSPACE, ph.ws_mem}
       });
-      ctx->stream.wait();
+      ctx->dnnl_stream.wait();
   }, {x.block()}, {y.block()});
 
   return y;
@@ -117,18 +117,18 @@ Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &grad,
   in_grad.ResetLike(x);
 
   in_grad.device()->Exec([&in_grad, &grad, &ph](Context * ctx) {
-    auto eng = ctx->engine;
+    auto eng = ctx->dnnl_engine;
     using namespace dnnl;
 
     memory dx_mem(ph.x_md,eng,in_grad.block()->mutable_data());
     memory dy_mem(ph.y_md,eng,grad.block()->mutable_data());
 
-    pooling_backward(ph.pool_bwd_pd).execute(ctx->stream,{
+    pooling_backward(ph.pool_bwd_pd).execute(ctx->dnnl_stream,{
       {DNNL_ARG_DIFF_DST, dx_mem},
       {DNNL_ARG_DIFF_SRC, dy_mem},
       {DNNL_ARG_WORKSPACE, ph.ws_mem}
     });
-    ctx->stream.wait();
+    ctx->dnnl_stream.wait();
   }, {x.block(), y.block(), grad.block()}, {in_grad.block()});
 
   return in_grad;

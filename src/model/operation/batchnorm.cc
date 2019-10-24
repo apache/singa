@@ -53,7 +53,7 @@ BatchNormHandle::BatchNormHandle(const float momentum, const Tensor& input) {
   bn_fwd_training_d = new dnnl::batch_normalization_forward::desc(dnnl::prop_kind::forward_training,
      x_md, epsilon, dnnl::normalization_flags::use_scale_shift);
 
-  auto eng = input.device()->context(0)->engine;
+  auto eng = input.device()->context(0)->dnnl_engine;
   bn_fwd_training_pd = new dnnl::batch_normalization_forward::primitive_desc(*bn_fwd_training_d, eng);
 
 #endif // USE_DNNL
@@ -81,7 +81,7 @@ Tensor CpuBatchNormForwardInference(const BatchNormHandle &bnh, const Tensor& x,
   Tensor w = get_bn_weight_from(bnScale, bnBias);
 
   y.device()->Exec([&y, &x, &running_mean, &running_var, &w, &bnh](Context * ctx) {
-    auto eng = ctx->engine;
+    auto eng = ctx->dnnl_engine;
     using namespace dnnl;
 
     auto x_mem = memory(bnh.x_md, eng, x.block()->mutable_data());
@@ -96,14 +96,14 @@ Tensor CpuBatchNormForwardInference(const BatchNormHandle &bnh, const Tensor& x,
     auto w_mem = memory(bn_fwd_pd.weights_desc(), eng, w.block()->mutable_data());
 
     // execution
-    batch_normalization_forward(bn_fwd_pd).execute(ctx->stream, {
+    batch_normalization_forward(bn_fwd_pd).execute(ctx->dnnl_stream, {
       {DNNL_ARG_SRC, x_mem},
       {DNNL_ARG_DST, y_mem},
       {DNNL_ARG_SCALE_SHIFT, w_mem},
       {DNNL_ARG_MEAN, m_mem},
       {DNNL_ARG_VARIANCE, v_mem}
       });
-    ctx->stream.wait();
+    ctx->dnnl_stream.wait();
 
     },
     {x.block(), w.block(), running_mean.block(), running_var.block()},
@@ -132,7 +132,7 @@ CpuBatchNormForwardTraining(const BatchNormHandle &bnh, const Tensor &x, const T
 
   y.device()->Exec([&x, &y, &mean, &var, &w, &running_mean, &running_var, &bnh](Context * ctx) {
 
-    auto eng = ctx->engine;
+    auto eng = ctx->dnnl_engine;
     using namespace dnnl;
 
     auto x_mem = memory(bnh.x_md, eng, x.block()->mutable_data());
@@ -141,14 +141,14 @@ CpuBatchNormForwardTraining(const BatchNormHandle &bnh, const Tensor &x, const T
     auto v_mem = memory(bnh.bn_fwd_training_pd->variance_desc(), eng, var.block()->mutable_data());
     auto w_mem = memory(bnh.bn_fwd_training_pd->weights_desc(), eng, w.block()->mutable_data());
 
-    batch_normalization_forward(*bnh.bn_fwd_training_pd).execute(ctx->stream, {
+    batch_normalization_forward(*bnh.bn_fwd_training_pd).execute(ctx->dnnl_stream, {
       {DNNL_ARG_SRC, x_mem},
       {DNNL_ARG_DST, y_mem},
       {DNNL_ARG_SCALE_SHIFT, w_mem},
       {DNNL_ARG_MEAN, m_mem},
       {DNNL_ARG_VARIANCE, v_mem}
     });
-    ctx->stream.wait();
+    ctx->dnnl_stream.wait();
 
     // local implemented running mean as mkldnn does not support it yet:
     // https://github.com/intel/mkl-dnn/issues/371
@@ -183,7 +183,7 @@ const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
   dw.ResetLike(w);
 
   dx.device()->Exec([&dw, &x, &dx, &y, &dy, &w, &mean, &var, &bnh](Context * ctx) {
-    auto eng = ctx->engine;
+    auto eng = ctx->dnnl_engine;
     using namespace dnnl;
 
     auto x_mem = memory(bnh.x_md, eng, x.block()->mutable_data());
@@ -200,15 +200,16 @@ const std::vector<Tensor> CpuBatchNormBackwardx(const BatchNormHandle &bnh,
 
     auto dw_mem = memory(bn_bwd_pd.diff_weights_desc(), eng, dw.block()->mutable_data());
 
-    batch_normalization_backward(bn_bwd_pd).execute(ctx->stream, {
+    batch_normalization_backward(bn_bwd_pd).execute(ctx->dnnl_stream, {
       {DNNL_ARG_SRC, x_mem},
+      {DNNL_ARG_DIFF_SRC, dx_mem},
       {DNNL_ARG_DIFF_DST, dy_mem},
       {DNNL_ARG_MEAN, m_mem},
       {DNNL_ARG_VARIANCE, v_mem},
-      {DNNL_ARG_DIFF_SRC, dx_mem},
       {DNNL_ARG_DIFF_SCALE_SHIFT, dw_mem},
       {DNNL_ARG_SCALE_SHIFT, w_mem}
     });
+    ctx->dnnl_stream.wait();
 
   }, {x.block(), dy.block(), mean.block(), var.block()},
   {dx.block(), dw.block()});

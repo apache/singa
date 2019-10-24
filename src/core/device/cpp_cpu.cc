@@ -25,8 +25,8 @@ std::shared_ptr<Device> defaultDevice=std::make_shared<CppCPU>();
 CppCPU::CppCPU() : Device(-1, 1) {
   lang_ = kCpp;
 #ifdef USE_DNNL
-  ctx_.engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
-  ctx_.stream = dnnl::stream(ctx_.engine);
+  ctx_.dnnl_engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
+  ctx_.dnnl_stream = dnnl::stream(ctx_.dnnl_engine);
 #endif // USE_DNNL
   //host_ = nullptr;
 }
