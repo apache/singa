@@ -38,7 +38,7 @@ TEST(DNNLOperationPooling, Forward) {
   PoolingHandle pool_handle(in, {2, 2}, {1,1}, {0,0}, true);
   Tensor out1 = CpuPoolingForward(pool_handle, in);
 }
-TEST(OperationPooling, ForwardAverage) {
+TEST(DNNLOperationPooling, ForwardAverage) {
   const size_t batchsize = 2, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f,
                                           4.0f, 5.0f, 6.0f,
@@ -55,7 +55,7 @@ TEST(OperationPooling, ForwardAverage) {
   Tensor out1 = CpuPoolingForward(pool_handle, in);
 }
 
-TEST(OperationPooling, Backward) {
+TEST(DNNLOperationPooling, Backward) {
   // src_data
   const size_t batchsize = 2, c = 1, src_h = 3, src_w = 3;
   const float x[batchsize * c * src_h * src_w] = {
@@ -78,7 +78,7 @@ TEST(OperationPooling, Backward) {
 
   Tensor in_grad = CpuPoolingBackward(pool_handle, grad, in, out);
 }
-TEST(OperationPooling, BackwardAvg) {
+TEST(DNNLOperationPooling, BackwardAvg) {
   // src_data
   const size_t batchsize = 2, c = 1, src_h = 3, src_w = 3;
   const float x[batchsize * c * src_h * src_w] = {

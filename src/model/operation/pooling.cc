@@ -124,8 +124,8 @@ Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &grad,
     memory dy_mem(ph.y_md,eng,grad.block()->mutable_data());
 
     pooling_backward(ph.pool_bwd_pd).execute(ctx->dnnl_stream,{
-      {DNNL_ARG_DIFF_DST, dx_mem},
-      {DNNL_ARG_DIFF_SRC, dy_mem},
+      {DNNL_ARG_DIFF_DST, dy_mem},
+      {DNNL_ARG_DIFF_SRC, dx_mem},
       {DNNL_ARG_WORKSPACE, ph.ws_mem}
     });
     ctx->dnnl_stream.wait();
