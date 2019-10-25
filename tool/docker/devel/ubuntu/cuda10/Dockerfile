@@ -75,8 +75,8 @@ RUN mkdir /var/run/sshd \
 RUN git clone https://github.com/apache/singa.git $HOME/singa \
     && cd $HOME/singa \
     && mkdir build && cd build \
-    && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_MKLDNN=ON ..
-RUN cd $HOME/singa/build && make && make install
+    && /usr/local/bin/cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_PYTHON3=ON -DUSE_DNNL=ON ..
+RUN cd $HOME/incubator-singa/build && make && make install
 
 WORKDIR $HOME/singa
 EXPOSE 22
