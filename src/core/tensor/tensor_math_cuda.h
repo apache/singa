@@ -641,6 +641,38 @@ void Sign<float, lang::Cuda>(const Tensor& in, Tensor* out,
   }
 }
 
+// out[i] = softplus(in[i])
+template <>
+void SoftPlus<float, lang::Cuda>(const Tensor& in, Tensor* out,
+                                 Context* ctx) {
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const size_t num = in.Size();
+
+  if (in.stride() == out->stride()) {
+    cuda::softplus(num, inPtr, outPtr, ctx->stream);
+  } else { //else we transform in to out to store first
+    Transform<float, lang::Cuda>(in, out, ctx);
+    cuda::softplus(num, outPtr, outPtr, ctx->stream);
+  }
+}
+
+// out[i] = softsign(in[i])
+template <>
+void SoftSign<float, lang::Cuda>(const Tensor& in, Tensor* out,
+                                 Context* ctx) {
+  const float* inPtr = static_cast<const float*>(in.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const size_t num = in.Size();
+
+  if (in.stride() == out->stride()) {
+    cuda::softsign(num, inPtr, outPtr, ctx->stream);
+  } else { //else we transform in to out to store first
+    Transform<float, lang::Cuda>(in, out, ctx);
+    cuda::softsign(num, outPtr, outPtr, ctx->stream);
+  }
+}
+
 // Element-wise operation, out[i]=sqrt([in[i])
 template <>
 void Sqrt<float, lang::Cuda>(const Tensor& in, Tensor* out,
