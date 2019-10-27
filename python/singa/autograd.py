@@ -1455,7 +1455,7 @@ class _BatchNorm2d(Operation):
 
                 self.cache = (x, scale, mean, var, y, bias)
             else:
-                y, mean, var = singa.GpuBatchNormForwardTraining(
+                y, mean, var, self.running_mean, self.running_var = singa.GpuBatchNormForwardTraining(
                     self.handle, x, scale, bias, self.running_mean, self.running_var
                 )
 
