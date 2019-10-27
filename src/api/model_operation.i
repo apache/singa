@@ -109,6 +109,12 @@ class PoolingHandle {
   bool is_max_pooling;
 };
 
+#if USE_CUDNN
+Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x);
+Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &dy,
+                              const Tensor& x, const Tensor& y);
+#endif //USE_DNNL
+
 
 #if USE_CUDNN
 class CudnnConvHandle: public ConvHandle {
