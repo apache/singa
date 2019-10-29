@@ -87,29 +87,30 @@ class TestAPI(unittest.TestCase):
                                                             momentum=m_0)
 
             # singa api
+            rm_t = _np_to_pyTensor(rm_0)
+            rv_t = _np_to_pyTensor(rv_0)
             hndl = singa_api.CudnnBatchNormHandle(m_0,
                                                   _np_to_pyTensor(x_0).data)
-            (y_2_c, bm_2_c, bv_2_c, rm_2_c,
-             rv_2_c) = singa_api.GpuBatchNormForwardTraining(
+            (y_2_c, bm_2_c, bv_2_c) = singa_api.GpuBatchNormForwardTraining(
                  hndl,
                  _np_to_pyTensor(x_0).data,
                  _np_to_pyTensor(s_0).data,
                  _np_to_pyTensor(b_0).data,
-                 _np_to_pyTensor(rm_0).data,
-                 _np_to_pyTensor(rv_0).data)
+                 rm_t.data,
+                 rv_t.data)
 
             np.testing.assert_array_almost_equal(
                 y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)))
             np.testing.assert_array_almost_equal(
                 bm_1, tensor.to_numpy(_cTensor_to_pyTensor(bm_2_c)))
             np.testing.assert_array_almost_equal(
-                rm_1, tensor.to_numpy(_cTensor_to_pyTensor(rm_2_c)))
+                rm_1, tensor.to_numpy(rm_t))
             #print(bv_1)
             #print(tensor.to_numpy(_cTensor_to_pyTensor(bv_2_c)))
             np.testing.assert_array_almost_equal(
                 bv_1, tensor.to_numpy(_cTensor_to_pyTensor(bv_2_c)), decimal=3)
             np.testing.assert_array_almost_equal(
-                rv_1, tensor.to_numpy(_cTensor_to_pyTensor(rv_2_c)), decimal=4)
+                rv_1, tensor.to_numpy(rv_t), decimal=4)
             return
 
         x_0 = np.array(
