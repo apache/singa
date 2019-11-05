@@ -114,6 +114,7 @@ def accuracy(pred, target):
 def reduce_variable(variable, dist_opt, reducer):
     reducer.copy_from_numpy(variable)
     singa.synch(reducer.data, dist_opt.communicator)
+    dist_opt.wait()
     output=tensor.to_numpy(reducer)
     return output
 
@@ -204,8 +205,15 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
             loss = autograd.softmax_cross_entropy(out, ty)               
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
+            plist = []
             for p, g in autograd.backward(loss):
-                sgd.update(p, g)
+                if DIST:
+                    sgd.all_reduce(g)
+                plist.append((p, g))
+            if DIST:
+                sgd.wait()
+            for p, g in plist:
+                sgd.update(p, g)  
 
         if DIST:
             # Reduce the Evaluation Accuracy and Loss from Multiple Devices

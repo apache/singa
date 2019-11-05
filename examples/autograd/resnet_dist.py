@@ -69,12 +69,17 @@ if __name__ == "__main__":
             loss = autograd.softmax_cross_entropy(x, ty)
             dev.Sync()
             softmax += time.time() - tick
+            plist = []
             for p, g in autograd.backward(loss):
-                dev.Sync()  # this "for" loops for a large number of times, so can slow down
+                #dev.Sync()  # this Sync affects the concurrency and hence omitted
                 tick = time.time()
-                sgd.update(p, g)
-                dev.Sync()  # this "for" loops for a large number of times, so can slow down
+                sgd.all_reduce(g)
+                #dev.Sync()  # this Sync affects the concurrency and hence omitted
                 update += time.time() - tick
+                plist.append((p, g))
+            sgd.wait()
+            for p, g in plist:
+                sgd.update(p, g)  
 
     dev.Sync()            
     end = time.time()

@@ -58,7 +58,6 @@ Communicator::Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &ho
 
   // this contructor is for NCCL WITHOUT MPI
   UseMPI = false;
-
   // Determine the rank of the collective communication
   totalMPIRanksInGlobal=gpu_per_node;
   MPIRankInLocal=gpu_num;
@@ -69,8 +68,9 @@ Communicator::Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &ho
 
   // setup cuda stream and nccl communicator
   CUDA_CHECK(cudaSetDevice(gpu_num));
-  CUDA_CHECK(cudaStreamCreate(&s));
+  cudaStreamCreateWithPriority(&s,cudaStreamNonBlocking,0);
   NCCLCHECK(ncclCommInitRank(&comm, gpu_per_node, id, gpu_num));
+  cudaEventCreateWithFlags(&event, cudaEventBlockingSync | cudaEventDisableTiming);
 
 } // end of constructor 
 
@@ -79,7 +79,7 @@ Communicator::Communicator(){
 
   // this contructor is for NCCL WITH MPI
   UseMPI = true;
-
+  cudaEventCreate(&event);
   // MPI initialization
   MPICHECK(MPI_Init(NULL, NULL));
   MPICHECK(MPI_Comm_rank(MPI_COMM_WORLD, &MPIRankInGlobal));
@@ -104,21 +104,28 @@ Communicator::Communicator(){
 
   // setup cuda stream and nccl communicator
   CUDA_CHECK(cudaSetDevice(MPIRankInLocal));
-  CUDA_CHECK(cudaStreamCreate(&s));
+  cudaStreamCreateWithPriority(&s,cudaStreamNonBlocking,0);
   NCCLCHECK(ncclCommInitRank(&comm, totalMPIRanksInGlobal, id, MPIRankInGlobal));
+  cudaEventCreateWithFlags(&event, cudaEventBlockingSync | cudaEventDisableTiming);
 
 } // end of constructor 
 
 
 void Communicator::allReduce(int size, void* sendbuff, void* recvbuff)
 {
+
+  // record the event of the default cuda stream and follow it
+  cudaEventRecord(event, NULL);
+  cudaStreamWaitEvent(s, event, 0);
+
   NCCLCHECK(ncclAllReduce((const void*)sendbuff,
                              (void*)recvbuff,
-    						 size,
+    						             size,
                              ncclFloat,
                              ncclSum,
                              comm, 
                              s));
+
 }
 
 void Communicator::wait(){
@@ -135,7 +142,7 @@ Communicator::~Communicator(){
 void synch(Tensor &t, Communicator &c){
   void* addr = t.block()->mutable_data();
   c.allReduce(t.Size(), addr, addr);
-  c.wait();
+  //c.wait();
 }
 
 }

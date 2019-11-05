@@ -184,9 +184,11 @@ class DistOpt(object):
         self.rank_in_global = self.communicator.MPIRankInGlobal
 
     def update(self, param, grad):
-        self.all_reduce(grad)
+        grad /= self.world_size
         self.opt.update(param, grad)
 
     def all_reduce(self, tensor):
         singa.synch(tensor.data, self.communicator)
-        tensor /= self.world_size
+
+    def wait(self):
+        self.communicator.wait()
