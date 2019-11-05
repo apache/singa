@@ -23,6 +23,7 @@
 #ifdef USE_CUDA
 #include <cmath>
 #include <algorithm>
+#include <vector>
 #include <cfloat>
 #include "./math_kernel.h"
 
@@ -68,6 +69,40 @@ __global__ void KernelSum(const size_t n, const float *in, float *out) {
   *out = aux[0];
 }
 */
+
+__global__ void KernelBroadcastTo(const size_t n, size_t nDim, const float *in,const float* shape, const float* stride, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+
+    int shape_accu = n;
+    size_t offset = 0;
+    int remains = i;
+
+    for (int k = 0; k < nDim; k++) {
+      shape_accu = shape_accu/shape[k];
+      int idx = remains/shape_accu;
+      remains = remains%shape_accu;
+      offset = offset + idx*stride[k];
+    }
+    out[i] = in[offset];
+
+
+    /* this code wont run in parallel
+    size_t offset = 0;
+    for (int k = nDim - 1; k >= 0; k--) {
+      if (index[k] + 1 < int(shape[k])) {
+        offset += stride[k];
+        index[k] += 1;
+        break;
+      }
+      index[k] = 0;
+      offset -= stride[k] * (shape[k] - 1);
+    }
+
+    out[i] = in[offset];
+    */
+  }
+}
 
 __global__ void KernelAdd(const size_t n, const float *in1, const float *in2,
                           float *out) {
@@ -428,6 +463,10 @@ void pow(const size_t n, const float *in, const float x, float *out,
 void add(const size_t n, const float *in, const float x, float *out,
          cudaStream_t s) {
   KernelAdd <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, x, out);
+}
+
+void broadcast_to(const size_t n, size_t nDim,const float *in,const float* shape, const float* stride, float *out, cudaStream_t s) {
+  KernelBroadcastTo <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, nDim, in, shape, stride, out);
 }
 
 void mult(const size_t n, const float *in, const float x, float *out,

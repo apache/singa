@@ -754,6 +754,15 @@ Tensor SoftMax(const Tensor &in, int axis) {
       auto lhs_ = Broadcast(lhs, rhs.shape());                 \
       auto rhs_ = Broadcast(rhs, lhs.shape());                 \
       Tensor ret(lhs_.shape(), lhs.device(), lhs.data_type()); \
+\
+        std::cout << "\naft bc lhs_ ";\
+      for (auto const &i : lhs_.stride())\
+        std::cout << i << " ";\
+\
+        std::cout << "\naft bc rhs_ ";\
+      for (auto const &i : rhs_.stride())\
+        std::cout << i << " ";\
+\
       fn(lhs_, rhs_, &ret);                                      \
       return ret;                                              \
     } else {                                                   \

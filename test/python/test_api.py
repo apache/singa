@@ -29,6 +29,7 @@ from cuda_helper import gpu_dev, cpu_dev
 
 
 class TestAPI(unittest.TestCase):
+
     def test_softmax_api(self):
         def _run_test(org_shape, axis, aft_shape):
             x_0 = np.random.random(org_shape).astype(np.float32)
@@ -67,6 +68,39 @@ class TestAPI(unittest.TestCase):
         _run_test([2, 2, 2, 2], -2, [4, 4])
         _run_test([2, 2, 2, 2], -3, [2, 8])
         _run_test([2, 2, 2, 2], -4, [1, 16])
+
+    def test_tensor_add_api(self):
+
+        def _run_test(s1, s2):
+            x_0 = np.random.random(s1).astype(np.float32)
+            y_0 = np.random.random(s2).astype(np.float32)
+            x0 = tensor.Tensor(device=gpu_dev, data=x_0)
+            y0 = tensor.Tensor(device=gpu_dev, data=y_0)
+
+            z0 = tensor._call_singa_func(singa_api.__add__, x0.data,y0.data)
+
+            #print(s1,s2,tensor.to_numpy(z0).shape)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(z0), x_0+y_0)
+            return
+
+        #_run_test([6],[1])
+        #_run_test([3,2],[1])
+        #_run_test([3,1,2],[3,1,1])
+        #_run_test([2,3,4,5],[5])
+        _run_test([2,3,4,5],[1,1,1])
+        #_run_test([2,3,4,5],[1,1,1,1])
+
+
+        ## cudnn bad param
+        _run_test([3,1,2,1],[3,1,2])
+        #_run_test([4,5],[2,3,4,5]) # 45+2345=2345
+        #_run_test([2,3,4,5],[4,5]) # 45+2345=2345
+        #_run_test([1,4,5],[2,3,1,1]) # 145+2311=2345
+        #_run_test([3,4,5],[2,1,1,1]) # 345+2111=2345
+
+
+
+
 
 
 if __name__ == '__main__':
