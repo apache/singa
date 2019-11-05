@@ -115,12 +115,12 @@ void Communicator::allReduce(int size, void* sendbuff, void* recvbuff)
 {
 
   // record the event of the default cuda stream and follow it
-  cudaEventRecord(event, NULL);
-  cudaStreamWaitEvent(s, event, 0);
+  CUDA_CHECK(cudaEventRecord(event, NULL));
+  CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
 
   NCCLCHECK(ncclAllReduce((const void*)sendbuff,
                              (void*)recvbuff,
-    						             size,
+                 size,
                              ncclFloat,
                              ncclSum,
                              comm, 
