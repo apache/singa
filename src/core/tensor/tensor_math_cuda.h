@@ -186,6 +186,27 @@ void Add<float, lang::Cuda>(const Tensor& in, const float x,
                             ));
 }
 
+inline Tensor get_broadcasted_tensor(const Tensor& in1, Context* ctx){
+  Tensor in1Bc(in1.shape(), in1.device(), in1.data_type());
+  Tensor shape(Shape{in1.nDim()}, in1.device(), in1.data_type());
+  Tensor stride(Shape{in1.nDim()}, in1.device(), in1.data_type());
+  const vector<float> strideVec(in1.stride().begin(), in1.stride().end());
+  const vector<float> shapeVec(in1.shape().begin(), in1.shape().end());
+  shape.CopyDataFromHostPtr(shapeVec.data(), in1.nDim());
+  stride.CopyDataFromHostPtr(strideVec.data(), in1.nDim());
+
+  const float* shapePtr = static_cast<const float*>(shape.block()->data());
+  const float* stridePtr = static_cast<const float*>(stride.block()->data());
+  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
+  float* inBcPtr1 = static_cast<float*>(in1Bc.block()->mutable_data());
+
+  const size_t n = Product(in1Bc.shape());
+
+  cuda::broadcast_to(n, in1.nDim(), inPtr1, shapePtr, stridePtr, inBcPtr1, ctx->stream);
+
+  return in1Bc;
+}
+
 /// out = in1 + in2
 template <>
 void Add<float, lang::Cuda>(const Tensor& in1,
@@ -206,22 +227,8 @@ void Add<float, lang::Cuda>(const Tensor& in1,
                               (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
                              ));
   } else {
-    Tensor in1Bc(out->shape(), out->device(), out->data_type());
-    Tensor shape(Shape{in1.nDim()}, in1.device(), in1.data_type());
-    Tensor stride(Shape{in1.nDim()}, in1.device(), in1.data_type());
-    const vector<float> strideVec(in1.stride().begin(), in1.stride().end());
-    const vector<float> shapeVec(in1.shape().begin(), in1.shape().end());
-    shape.CopyDataFromHostPtr(shapeVec.data(), in1.nDim());
-    stride.CopyDataFromHostPtr(strideVec.data(), in1.nDim());
-
-    const float* shapePtr = static_cast<const float*>(shape.block()->data());
-    const float* stridePtr = static_cast<const float*>(stride.block()->data());
+    Tensor in1Bc = get_broadcasted_tensor(in1, ctx);
     float* inBcPtr1 = static_cast<float*>(in1Bc.block()->mutable_data());
-
-    const size_t n = Product(in1Bc.shape());
-
-    cuda::broadcast_to(n, in1.nDim(), inPtr1, shapePtr, stridePtr, inBcPtr1, ctx->stream);
-
 
     check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
                               (void*)(&alpha1), generate_tensor_nd_desc(in1Bc), inBcPtr1,
