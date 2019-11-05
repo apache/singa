@@ -1129,7 +1129,7 @@ TEST_F(TensorMath, BroadcastCuda) {
   x.SetValue(1.0f);
   a.ToDevice(dev);
   {
-    auto y = a + x; //6+1
+    auto y = a + x;
     y.ToHost();
     const float *dptr = y.data<float>();
     EXPECT_FLOAT_EQ(2.0f, dptr[0]);
@@ -1139,7 +1139,7 @@ TEST_F(TensorMath, BroadcastCuda) {
 
   e.ToDevice(dev);
   {
-    auto y = e + x;//32+1
+    auto y = e + x;
     y.ToHost();
     const float *dptr = y.data<float>();
     EXPECT_FLOAT_EQ(2.0f, dptr[0]);
@@ -1151,7 +1151,7 @@ TEST_F(TensorMath, BroadcastCuda) {
   {
     Tensor q(Shape{3, 1, 1}, dev);
     q.CopyDataFromHostPtr(dat1, 3);
-    auto z = p + q;//312+311
+    auto z = p + q;
     z.ToHost();
     const float *dptr = z.data<float>();
     EXPECT_FLOAT_EQ(2.0f, dptr[0]);
@@ -1165,7 +1165,7 @@ TEST_F(TensorMath, BroadcastCuda) {
   {
     Tensor q(Shape{2}, dev);
     q.CopyDataFromHostPtr(dat1, 2);
-    auto z = p + q;//312+2
+    auto z = p + q;
     EXPECT_EQ(z.shape().size(), 3);
     EXPECT_EQ(z.shape(0), 3);
     EXPECT_EQ(z.shape(1), 1);
@@ -1179,42 +1179,10 @@ TEST_F(TensorMath, BroadcastCuda) {
     EXPECT_FLOAT_EQ(6.0f, dptr[4]);
     EXPECT_FLOAT_EQ(8.0f, dptr[5]);
   }
-}
-TEST_F(TensorMath, BroadcastCuda2) {
-  auto dev = std::make_shared<singa::CudaGPU>();
-  auto p = Reshape(e, Shape{3, 1, 2});
-  p.ToDevice(dev);
-  /*
-  {
-    Tensor q(Shape{2}, dev);
-    q.CopyDataFromHostPtr(dat1, 2);
-    auto z = p + q;//312+2
-    EXPECT_EQ(z.shape().size(), 3);
-    EXPECT_EQ(z.shape(0), 3);
-    EXPECT_EQ(z.shape(1), 1);
-    EXPECT_EQ(z.shape(2), 2);
-    z.ToHost();
-    const float *dptr = z.data<float>();
-    EXPECT_FLOAT_EQ(2.0f, dptr[0]);
-    EXPECT_FLOAT_EQ(4.0f, dptr[1]);
-    EXPECT_FLOAT_EQ(4.0f, dptr[2]);
-    EXPECT_FLOAT_EQ(6.0f, dptr[3]);
-    EXPECT_FLOAT_EQ(6.0f, dptr[4]);
-    EXPECT_FLOAT_EQ(8.0f, dptr[5]);
-  }
-  */
   {
     Tensor q(Shape{3, 1, 2, 1}, dev);
-
-  for (auto const& i: p.stride())
-    std::cout<<i<<" lhs\n";
-  for (auto const& i: q.stride())
-    std::cout<<i<<" rhs\n";
-  const float dat3[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-
     q.CopyDataFromHostPtr(dat1, 6);
-auto z = p + q; // 312 + 3121
-    //auto z = Add(p,q); // 312 + 3121
+    auto z = p + q;
     z.ToHost();
     EXPECT_EQ(z.shape().size(), 4);
     EXPECT_EQ(z.shape(0), 3);
@@ -1222,12 +1190,6 @@ auto z = p + q; // 312 + 3121
     EXPECT_EQ(z.shape(2), 2);
     EXPECT_EQ(z.shape(3), 2);
     const float *dptr = z.data<float>();
-    std::cout<<"\n";
-    for (int i = 0; i<36; i++){
-      std::cout<<dptr[i]<< ", ";
-    }
-    std::cout<<"\n";
-
     EXPECT_FLOAT_EQ(2.0f, dptr[0]);
     EXPECT_FLOAT_EQ(3.0f, dptr[1]);
     EXPECT_FLOAT_EQ(3.0f, dptr[2]);
@@ -1236,200 +1198,6 @@ auto z = p + q; // 312 + 3121
     EXPECT_FLOAT_EQ(7.0f, dptr[17]);
     EXPECT_FLOAT_EQ(7.0f, dptr[18]);
     EXPECT_FLOAT_EQ(8.0f, dptr[19]);
-    /*
-  */
   }
-}
-
-#define check_cudnn(expression)                              \
-  {                                                          \
-    cudnnStatus_t status = (expression);                     \
-    if (status != CUDNN_STATUS_SUCCESS) {                    \
-      LOG(FATAL) << "Error on line " << __LINE__ << ": "     \
-                 << cudnnGetErrorString(status) << " ";      \
-    }                                                        \
-  }
-
-TEST_F(TensorMath, BroadcastCuda4) {
-  auto dev = std::make_shared<singa::CudaGPU>();
-  float alpha1 = 1.0;
-  float alpha2 = 1.0;
-  float beta = 0.0;
-  cudnnOpTensorDescriptor_t op_desc;
-  check_cudnn(cudnnCreateOpTensorDescriptor(&op_desc));
-  check_cudnn(cudnnSetOpTensorDescriptor(op_desc, CUDNN_OP_TENSOR_ADD,
-                                         CUDNN_DATA_FLOAT,
-                                         CUDNN_PROPAGATE_NAN
-                                        ));
-
-
-  // setup tensor
-  Tensor lhs(Shape{3,1,2},dev);
-  Tensor rhs(Shape{3,1,2,1},dev);
-  Tensor out(Shape{3,3,2,2},dev);
-
-  lhs.CopyDataFromHostPtr(dat1, 6);
-  rhs.CopyDataFromHostPtr(dat1, 6);
-
-  cudnnTensorDescriptor_t lhs_desc;
-  check_cudnn(cudnnCreateTensorDescriptor(&lhs_desc));
-  vector<int> lhs_shape {3,3,2,2};
-  vector<int> lhs_stride{0,2,0,1}; //1312
-  check_cudnn(cudnnSetTensorNdDescriptor(lhs_desc, CUDNN_DATA_FLOAT, 4,lhs_shape.data(), lhs_stride.data()));
-  std::cout<< "set lhs tesnor desc ok\n";
-
-  cudnnTensorDescriptor_t rhs_desc;
-  check_cudnn(cudnnCreateTensorDescriptor(&rhs_desc));
-  vector<int> rhs_shape {3,3,2,2};
-  vector<int> rhs_stride{2,0,1,0}; // 3121
-  check_cudnn(cudnnSetTensorNdDescriptor(rhs_desc, CUDNN_DATA_FLOAT, 4,rhs_shape.data(), rhs_stride.data()));
-  std::cout<< "set rhs tesnor desc ok\n";
-
-  cudnnTensorDescriptor_t out_desc;
-  check_cudnn(cudnnCreateTensorDescriptor(&out_desc));
-  vector<int> out_shape{3,3,2,2};
-  vector<int> out_stride{12,4,2,1};
-  check_cudnn(cudnnSetTensorNdDescriptor(out_desc, CUDNN_DATA_FLOAT, 4,out_shape.data(), out_stride.data()));
-  std::cout<< "set out tesnor desc ok\n";
-
-  const float* lhsPtr = static_cast<const float*>(lhs.block()->data());
-  const float* rhsPtr = static_cast<const float*>(rhs.block()->data());
-        float* outPtr = static_cast<float*>      (out.block()->mutable_data());
-  check_cudnn(cudnnOpTensor(dev->context(0)->cudnn_handle, op_desc,
-                            (void*)(&alpha1), lhs_desc, lhsPtr,
-                            (void*)(&alpha2), rhs_desc, rhsPtr,
-                            (void*)(&beta), out_desc, outPtr
-                           ));
-  std::cout<< "run op ok\n";
-  return;
-}
-
-TEST_F(TensorMath, BroadcastCuda3) {
-
-  auto dev = std::make_shared<singa::CudaGPU>();
-  /*
-  const float dat36[36] = {
-    1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
-    1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
-    1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
-    1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
-    1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
-    1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
-  };
-  */
-
-  const float dat36[36] = {1.0f,2.0f, 1.0f,2.0f, 3.0f,4.0f, 3.0f,4.0f, 5.0f,6.0f, 5.0f,6.0f, 1.0f,2.0f, 1.0f,2.0f, 3.0f,4.0f, 3.0f,4.0f, 5.0f,6.0f, 5.0f,6.0f, 1.0f,2.0f, 1.0f,2.0f, 3.0f,4.0f, 3.0f,4.0f, 5.0f,6.0f, 5.0f,6.0f};
-  const float rhs_dat_36[36] = {1.0f, 1.0f, 2.0f, 2.0f, 1.0f, 1.0f, 2.0f, 2.0f, 1.0f, 1.0f, 2.0f, 2.0f, 3.0f, 3.0f, 4.0f, 4.0f, 3.0f, 3.0f, 4.0f, 4.0f, 3.0f, 3.0f, 4.0f, 4.0f, 5.0f, 5.0f, 6.0f, 6.0f, 5.0f, 5.0f, 6.0f, 6.0f, 5.0f, 5.0f, 6.0f, 6};
-
-  Tensor out(Shape{3,3,2,2},dev);
-  Tensor lhs(Shape{3,1,2,1},dev);
-  lhs.CopyDataFromHostPtr(dat1, 6);
-
-
-  /*
-  float lhs_get_value[36];
-  auto lhs_ = singa::Broadcast(lhs, out.shape());
-  auto lhs__ = singa::Transform(lhs_);
-  lhs_.GetValue(lhs_get_value, 36);
-  lhs_.ToHost();
-
-  EXPECT_EQ(lhs_.shape().size(), 4);
-  EXPECT_EQ(lhs_.shape(0), 3);
-  EXPECT_EQ(lhs_.shape(1), 3);
-  EXPECT_EQ(lhs_.shape(2), 2);
-  EXPECT_EQ(lhs_.shape(3), 2);
-  EXPECT_EQ(lhs_.stride().size(), 4);
-  EXPECT_EQ(lhs_.stride(0), 2);
-  EXPECT_EQ(lhs_.stride(1), 0);
-  EXPECT_EQ(lhs_.stride(2), 1);
-  EXPECT_EQ(lhs_.stride(3), 0);
-  */
-
-  /*
-
-    std::cout<<"\nlhs get value";
-  for (auto const &i: lhs_get_value){
-    std::cout<<i<<", ";
-  }
-    std::cout<<"\n";
-    */
-
-
-  /*
-  Tensor lhs(Shape{3,3,2,2},dev);
-  lhs.CopyDataFromHostPtr(dat36, 36);
-  */
-
-
-  /*
-
-  Tensor rhs(Shape{3,1,2,1},dev);
-  rhs.CopyDataFromHostPtr(dat1, 6);
-
-
-  const float* lhsPtr = static_cast<const float*>(lhs.block()->data());
-  const float* rhsPtr = static_cast<const float*>(rhs.block()->data());
-        float* outPtr = static_cast<float*>      (out.block()->mutable_data());
-
-  float alpha1 = 1.0;
-  float alpha2 = 1.0;
-  float beta = 0.0;
-
-  cudnnTensorDescriptor_t lhs_desc;
-  check_cudnn(cudnnCreateTensorDescriptor(&lhs_desc));
-  vector<int> lhs_shape{1,3,1,2};
-  vector<int> lhs_stride{6,2,2,1};
-  */
-  /*
-  vector<int> lhs_shape{3,3,2,2};
-  vector<int> lhs_stride{12,4,2,1};
-  check_cudnn(cudnnSetTensorNdDescriptor(lhs_desc, CUDNN_DATA_FLOAT, 4,lhs_shape.data(), lhs_stride.data()));
-  std::cout<< "set lhs tesnor desc ok\n";
-
-  cudnnTensorDescriptor_t rhs_desc;
-  check_cudnn(cudnnCreateTensorDescriptor(&rhs_desc));
-  vector<int> rhs_shape{3,1,2,1};
-  vector<int> rhs_stride{2,2,1,1};
-  check_cudnn(cudnnSetTensorNdDescriptor(rhs_desc, CUDNN_DATA_FLOAT, 4,rhs_shape.data(), rhs_stride.data()));
-  std::cout<< "set rhs tesnor desc ok\n";
-
-  cudnnTensorDescriptor_t out_desc;
-  check_cudnn(cudnnCreateTensorDescriptor(&out_desc));
-  vector<int> out_shape{3,3,2,2};
-  vector<int> out_stride{12,4,2,1};
-  check_cudnn(cudnnSetTensorNdDescriptor(out_desc, CUDNN_DATA_FLOAT, 4,out_shape.data(), out_stride.data()));
-  std::cout<< "set out tesnor desc ok\n";
-
-  cudnnOpTensorDescriptor_t op_desc;
-  check_cudnn(cudnnCreateOpTensorDescriptor(&op_desc));
-  check_cudnn(cudnnSetOpTensorDescriptor(op_desc, CUDNN_OP_TENSOR_ADD,
-                                         CUDNN_DATA_FLOAT,
-                                         CUDNN_PROPAGATE_NAN
-                                        ));
-
-  std::cout<< "set op desc ok\n";
-
-  check_cudnn(cudnnOpTensor(dev->context(0)->cudnn_handle, op_desc,
-                            (void*)(&alpha1), lhs_desc, lhsPtr,
-                            (void*)(&alpha2), rhs_desc, rhsPtr,
-                            (void*)(&beta), out_desc, outPtr
-                           ));
-  std::cout<< "run op ok\n";
-    out.ToHost();
-    EXPECT_EQ(out.shape().size(), 4);
-    EXPECT_EQ(out.shape(0), 3);
-    EXPECT_EQ(out.shape(1), 3);
-    EXPECT_EQ(out.shape(2), 2);
-    EXPECT_EQ(out.shape(3), 2);
-    const float *dptr = out.data<float>();
-    EXPECT_FLOAT_EQ(2.0f, dptr[0]);
-    EXPECT_FLOAT_EQ(3.0f, dptr[1]);
-    EXPECT_FLOAT_EQ(3.0f, dptr[2]);
-    EXPECT_FLOAT_EQ(4.0f, dptr[3]);
-    EXPECT_FLOAT_EQ(4.0f, dptr[4]);
-    EXPECT_FLOAT_EQ(5.0f, dptr[5]);
-    EXPECT_FLOAT_EQ(5.0f, dptr[6]);
-    EXPECT_FLOAT_EQ(6.0f, dptr[7]);
-    */
 }
 #endif

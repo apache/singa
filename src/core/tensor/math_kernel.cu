@@ -23,7 +23,6 @@
 #ifdef USE_CUDA
 #include <cmath>
 #include <algorithm>
-#include <vector>
 #include <cfloat>
 #include "./math_kernel.h"
 
@@ -73,7 +72,6 @@ __global__ void KernelSum(const size_t n, const float *in, float *out) {
 __global__ void KernelBroadcastTo(const size_t n, size_t nDim, const float *in,const float* shape, const float* stride, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
-
     int shape_accu = n;
     size_t offset = 0;
     int remains = i;
@@ -85,22 +83,6 @@ __global__ void KernelBroadcastTo(const size_t n, size_t nDim, const float *in,c
       offset = offset + idx*stride[k];
     }
     out[i] = in[offset];
-
-
-    /* this code wont run in parallel
-    size_t offset = 0;
-    for (int k = nDim - 1; k >= 0; k--) {
-      if (index[k] + 1 < int(shape[k])) {
-        offset += stride[k];
-        index[k] += 1;
-        break;
-      }
-      index[k] = 0;
-      offset -= stride[k] * (shape[k] - 1);
-    }
-
-    out[i] = in[offset];
-    */
   }
 }
 

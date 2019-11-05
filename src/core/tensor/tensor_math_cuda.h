@@ -98,29 +98,12 @@ vector<int> generate_strides_cuda(const Tensor& x) {
   return strides_arr;
 }
 
-inline vector<int> prepend_shape(const Shape &in){
-  vector<int> out(in.begin(), in.end());
-  while(out.size() < 4){
-    out.insert(out.begin(), 1);
-  }
-  return out;
-}
-
-inline vector<int> prepend_stride(const vector<int> &in){
-  vector<int> out(in.begin(), in.end());
-  while(out.size() < 4){
-    out.insert(out.begin(), 0);
-  }
-  return out;
-}
 
 cudnnTensorDescriptor_t generate_tensor_nd_desc(const Tensor& x) {
   cudnnTensorDescriptor_t x_desc;
   check_cudnn(cudnnCreateTensorDescriptor(&x_desc));
-  LOG(INFO) << vec2str(x.shape());
-  LOG(INFO) << vec2str(x.stride());
-  /*
-  */
+  // LOG(INFO) << vec2str(x.shape());
+  // LOG(INFO) << vec2str(x.stride());
   auto st = x.stride();
   std::vector<size_t> sh;
   bool reshape = false;
@@ -139,14 +122,9 @@ cudnnTensorDescriptor_t generate_tensor_nd_desc(const Tensor& x) {
   auto shape = generate_shape_cuda(y);
   auto stride = generate_strides_cuda(y);
 
-  /*
-  auto shape = prepend_shape(x.shape());
-  auto stride = prepend_stride(x.stride());
-  */
-
-  LOG(INFO) << vec2str(shape);
-  LOG(INFO) << vec2str(stride);
-  LOG(INFO) << "";
+  // LOG(INFO) << vec2str(shape);
+  // LOG(INFO) << vec2str(stride);
+  // LOG(INFO) << "";
   check_cudnn(cudnnSetTensorNdDescriptor(x_desc, CUDNN_DATA_FLOAT,
                                          generate_dim_cuda(y), shape.data(), stride.data()));
 
@@ -212,36 +190,45 @@ void Add<float, lang::Cuda>(const Tensor& in, const float x,
 template <>
 void Add<float, lang::Cuda>(const Tensor& in1,
                             const Tensor& in2, Tensor* out, Context* ctx) {
-  Tensor in1Bc(out->shape(), out->device(), out->data_type());
-
-  Tensor shape(Shape{in1.nDim()}, in1.device(), in1.data_type());
-  Tensor stride(Shape{in1.nDim()}, in1.device(), in1.data_type());
-  const vector<float> strideVec(in1.stride().begin(), in1.stride().end());
-  const vector<float> shapeVec(in1.shape().begin(), in1.shape().end());
-  shape.CopyDataFromHostPtr(shapeVec.data(), in1.nDim());
-  stride.CopyDataFromHostPtr(strideVec.data(), in1.nDim());
-
-  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  const float* shapePtr = static_cast<const float*>(shape.block()->data());
-  const float* stridePtr = static_cast<const float*>(stride.block()->data());
-  float* inBcPtr1 = static_cast<float*>(in1Bc.block()->mutable_data());
-
-  const size_t n = Product(in1Bc.shape());
-
-  cuda::broadcast_to(n, in1.nDim(), inPtr1, shapePtr, stridePtr, inBcPtr1, ctx->stream);
-
-  const float* inPtr2 = static_cast<const float*>(in2.block()->data());
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
 
   float alpha1 = 1.0;
   float alpha2 = 1.0;
   float beta = 0.0;
+
+  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
+  const float* inPtr2 = static_cast<const float*>(in2.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+
+  if ((in1.nDim() == 1) || (in2.nDim() == 1)) {
+    check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
+                              (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
+                              (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
+                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                             ));
+  } else {
+    Tensor in1Bc(out->shape(), out->device(), out->data_type());
+    Tensor shape(Shape{in1.nDim()}, in1.device(), in1.data_type());
+    Tensor stride(Shape{in1.nDim()}, in1.device(), in1.data_type());
+    const vector<float> strideVec(in1.stride().begin(), in1.stride().end());
+    const vector<float> shapeVec(in1.shape().begin(), in1.shape().end());
+    shape.CopyDataFromHostPtr(shapeVec.data(), in1.nDim());
+    stride.CopyDataFromHostPtr(strideVec.data(), in1.nDim());
+
+    const float* shapePtr = static_cast<const float*>(shape.block()->data());
+    const float* stridePtr = static_cast<const float*>(stride.block()->data());
+    float* inBcPtr1 = static_cast<float*>(in1Bc.block()->mutable_data());
+
+    const size_t n = Product(in1Bc.shape());
+
+    cuda::broadcast_to(n, in1.nDim(), inPtr1, shapePtr, stridePtr, inBcPtr1, ctx->stream);
+
 
     check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
                               (void*)(&alpha1), generate_tensor_nd_desc(in1Bc), inBcPtr1,
                               (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
                               (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
                              ));
+  }
 }
 
 /// out = in1 - in2
@@ -988,9 +975,9 @@ void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx) {
 template <>
 void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx, int axis) {
   // {a_0, a_1, ..., a_k-1, a_k, ... a_n-1}
-  // reshape to  
+  // reshape to
   // { a_0 * a_1 * ... a_k-1, a_k * ... a_n-1 }
-  
+
   // assert axis \in {-r, r-1}
   CHECK_LE(axis, (int)in.shape().size()-1 );
   CHECK_GE(axis, -1*(int)in.nDim() );
