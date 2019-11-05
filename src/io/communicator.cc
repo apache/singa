@@ -68,9 +68,9 @@ Communicator::Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &ho
 
   // setup cuda stream and nccl communicator
   CUDA_CHECK(cudaSetDevice(gpu_num));
-  cudaStreamCreateWithPriority(&s,cudaStreamNonBlocking,0);
+  CUDA_CHECK(cudaStreamCreateWithPriority(&s, cudaStreamNonBlocking, 0));
   NCCLCHECK(ncclCommInitRank(&comm, gpu_per_node, id, gpu_num));
-  cudaEventCreateWithFlags(&event, cudaEventBlockingSync | cudaEventDisableTiming);
+  CUDA_CHECK(cudaEventCreateWithFlags(&event, cudaEventBlockingSync | cudaEventDisableTiming));
 
 } // end of constructor 
 
@@ -104,9 +104,9 @@ Communicator::Communicator(){
 
   // setup cuda stream and nccl communicator
   CUDA_CHECK(cudaSetDevice(MPIRankInLocal));
-  cudaStreamCreateWithPriority(&s,cudaStreamNonBlocking,0);
+  CUDA_CHECK(cudaStreamCreateWithPriority(&s, cudaStreamNonBlocking, 0));
   NCCLCHECK(ncclCommInitRank(&comm, totalMPIRanksInGlobal, id, MPIRankInGlobal));
-  cudaEventCreateWithFlags(&event, cudaEventBlockingSync | cudaEventDisableTiming);
+  CUDA_CHECK(cudaEventCreateWithFlags(&event, cudaEventBlockingSync | cudaEventDisableTiming));
 
 } // end of constructor 
 
