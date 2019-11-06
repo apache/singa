@@ -68,7 +68,7 @@ public:
   ncclUniqueId id;
   cudaStream_t s;
   ncclComm_t comm;
-
+  cudaEvent_t event;
   Communicator();
   Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder);
   ~Communicator();

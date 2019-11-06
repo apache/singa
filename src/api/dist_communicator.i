@@ -44,6 +44,7 @@ public:
   int MPIRankInLocal;
   Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder);
   Communicator();
+  void wait();
 };
 
 void synch(Tensor &t, Communicator &c);
