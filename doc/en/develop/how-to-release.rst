@@ -65,7 +65,7 @@ Prepare DISCLAIMER file
 Package the release
 -------------------
 
-The release should be packaged into : apache-singa-incubating-xx.xx.xx.tar.gz
+The release should be packaged into : apache-singa-xx.xx.xx.tar.gz
          + src/
          + README
          + LICENSE
@@ -78,7 +78,7 @@ Upload the release
 -------------------
 
 The release is uploaded to the RM’s Apache page: people.apache.org/~ID/...
-        + apache-singa-incubating-xx.xx.xx.tar.gz
+        + apache-singa-xx.xx.xx.tar.gz
         + KEY
         + XX.acs
         + XX.md5
@@ -102,29 +102,29 @@ Make the internal announcements
 
 Template for singa-dev@ voting:
 
-To: dev@singa.incubator.apache.org
-Subject: [VOTE] Release apache-singa-X.Y.Z-incubating (release candidate N)
+To: dev@singa.apache.org
+Subject: [VOTE] Release apache-singa-X.Y.Z (release candidate N)
 
 Hi all,
 
-I have created a build for Apache SINGA X.Y.Z-incubating, release candidate N.
+I have created a build for Apache SINGA X.Y.Z, release candidate N.
 
 The artifacts to be voted on are located here:
-https://dist.apache.org/repos/dist/dev/incubator/singa/apache-singa-X.Y.Z-incubating-rcN/
+https://dist.apache.org/repos/dist/dev/incubator/singa/apache-singa-X.Y.Z-rcN/
 
 The hashes of the artifacts are as follows:
-apache-singa-X.Y.Z-incubating.tar.gz.md5 XXXX
-apache-singa-X.Y.Z-incubating.tar.gz.sha256 XXXX
+apache-singa-X.Y.Z.tar.gz.md5 XXXX
+apache-singa-X.Y.Z.tar.gz.sha256 XXXX
 
 Release artifacts are signed with the following key:
 https://people.apache.org/keys/committer/{Apache ID of the Release Manager}.asc
 
 and the signature file is:
-apache-singa-X.Y.Z-incubating.tar.gz.asc
+apache-singa-X.Y.Z.tar.gz.asc
 
 Please vote on releasing this package. The vote is open for at least 72 hours and passes if a majority of at least three +1 votes are cast.
 
-[ ] +1 Release this package as Apache SINGA X.Y.Z-incubating
+[ ] +1 Release this package as Apache SINGA X.Y.Z
 [ ]  0 I don't feel strongly about it, but I'm okay with the release
 [ ] -1 Do not release this package because...
 
@@ -136,7 +136,7 @@ Here is my vote:
 
 Wait at least 48 hours for test responses
 
-Any PPMC, committer or contributor can test features for releasing, and feedback. Based on that, PPMC will decide whether start a vote.
+Any PMC, committer or contributor can test features for releasing, and feedback. Based on that, PMC will decide whether start a vote.
 
 Call a vote in dev
 ------------------
@@ -148,7 +148,7 @@ Call a vote in dev@singa.apache.org
 Vote Check
 ----------
 
-All PPMC members and committers should check these before vote +1 :
+All PMC members and committers should check these before vote +1 :
 
 
 Call for a vote in Apache IPMC
@@ -162,8 +162,8 @@ Vote result mail
 Template for singa-dev@ voting (results):
 
 
-Subject: [RESULT] [VOTE] Release apache-singa-X.Y.Z-incubating (release candidate N)
-To: dev@singa.incubator.apache.org
+Subject: [RESULT] [VOTE] Release apache-singa-X.Y.Z (release candidate N)
+To: dev@singa.apache.org
 
 Thanks to everyone who has voted and given their comments. The tally is as follows.
 
@@ -176,7 +176,7 @@ N non-binding +1s:
 No 0s or -1s.
 
 I am delighted to announce that the proposal to release
-Apache SINGA X.Y.Z-incubating has passed.
+Apache SINGA X.Y.Z has passed.
 
 I'll now start a vote on the general list. Those of you in the IPMC, please recast your vote on the new thread.
 
@@ -186,7 +186,7 @@ Template for general@ voting - results
 
 
 To: general@incubator.apache.org
-Subject: [RESULT] [VOTE] Release Apache SINGA X.Y.Z (incubating)
+Subject: [RESULT] [VOTE] Release Apache SINGA X.Y.Z
 
 Thanks everyone for their votes and comments.
 
@@ -211,14 +211,14 @@ Publish release
 Template for ANNOUNCING the release
 
 To: announce@apache.org, dev@singa.apache.org
-Subject: [ANNOUNCE] Apache SINGA (incubating) X.Y.Z released
+Subject: [ANNOUNCE] Apache SINGA X.Y.Z released
 
-We are pleased to announce that SINGA (incubating) X.Y.Z is released. 
+We are pleased to announce that SINGA X.Y.Z is released. 
 
 SINGA is a general distributed deep learning platform for training big deep learning models over large datasets. It is designed with an intuitive programming model based on the layer abstraction. SINGA supports a wide variety of popular deep learning models.
 
 The release is available at:
-http://singa.incubator.apache.org/downloads.html
+http://singa.apache.org/downloads.html
 
 The main features of this release include XXX
 
