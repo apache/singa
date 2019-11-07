@@ -105,10 +105,10 @@ class TestAPI(unittest.TestCase):
         _run_test(singa_api.__mul__,np.multiply,[2,3,4,5],[1,1,1])
         _run_test(singa_api.__mul__,np.multiply,[2,3,4,5],[1,1,1,1])
         _run_test(singa_api.__mul__,np.multiply,[3,1,2,1],[3,1,2])
-        _run_test(singa_api.__add__,np.add,[4,5],[2,3,4,5]) # 45+2345=2345
-        _run_test(singa_api.__add__,np.add,[2,3,4,5],[4,5]) # 45+2345=2345
-        _run_test(singa_api.__add__,np.add,[1,4,5],[2,3,1,1]) # 145+2311=2345
-        _run_test(singa_api.__add__,np.add,[3,4,5],[2,1,1,1]) # 345+2111=2345
+        _run_test(singa_api.__mul__,np.multiply,[4,5],[2,3,4,5]) # 45+2345=2345
+        _run_test(singa_api.__mul__,np.multiply,[2,3,4,5],[4,5]) # 45+2345=2345
+        _run_test(singa_api.__mul__,np.multiply,[1,4,5],[2,3,1,1]) # 145+2311=2345
+        _run_test(singa_api.__mul__,np.multiply,[3,4,5],[2,1,1,1]) # 345+2111=2345
 
     def test_transpose_and_mul(self):
         s1 = [3,2,1,1]
