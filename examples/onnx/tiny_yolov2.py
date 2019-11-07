@@ -53,6 +53,6 @@ if __name__ == "__main__":
     model_path = load_model()
     onnx_model = onnx.load(model_path)
     # set batch size
-    onnx_model = update_batch_size(onnx_model, 64)
+    onnx_model = update_batch_size(onnx_model, 16)
     sg_ir = sonnx.prepare(onnx_model, device=dev)
     

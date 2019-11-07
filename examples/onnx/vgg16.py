@@ -17,14 +17,14 @@ from onnx.tools import update_model_dims
 
 
 def load_model():
-    model_url = 'https://s3.amazonaws.com/onnx-model-zoo/mobilenet/mobilenetv2-1.0/mobilenetv2-1.0.tar.gz'
+    model_url = 'https://s3.amazonaws.com/onnx-model-zoo/vgg/vgg16/vgg16.tar.gz'
     model_path = read_model_file(check_exist_or_download(model_url))
     return model_path
 
 
 def read_model_file(path):
     download_dir = '/tmp/'
-    model_name = 'mobilenetv2-1.0/./mobilenetv2-1.0.onnx'
+    model_name = 'vgg16/./vgg16.onnx'
     filename = os.path.join(download_dir, model_name)
     with tarfile.open(path, 'r') as t:
         t.extractall(path=download_dir)
