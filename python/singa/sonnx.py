@@ -989,12 +989,13 @@ class SingaBackend(Backend):
         group = onnx_node.getattr('group', 1)
 
         # not support dilation
-        if dilation != 1:
-            raise ValueError("Not implemented yet")
+        
+        if dilation != 1 and list(dilation) != [1, 1]:
+            raise ValueError("Not implemented yet for dilation")
 
         # only support 2d
         if len(kernel) != 2:
-            raise ValueError("Not implemented yet")
+            raise ValueError("Not implemented yet for 2d")
 
         bias = len(inputs) == 3
         x = inputs[0]
