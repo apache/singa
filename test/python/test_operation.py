@@ -38,6 +38,23 @@ def _tuple_to_string(t):
     lt = [str(x) for x in t]
     return '(' + ', '.join(lt) + ')'
 
+def axis_helper(y_shape, x_shape):
+    """
+    check which axes the x has been broadcasted
+    Args:
+        y_shape: the shape of result
+        x_shape: the shape of x
+    Return:
+        a tuple refering the axes 
+    """
+    res = []
+    j = len(x_shape)-1
+    for i in range(len(y_shape)-1, -1, -1):
+        if j < 0 or x_shape[j] != y_shape[i]:
+            res.append(i)
+        j-=1
+    return tuple(res[::-1])
+
 
 def prepare_inputs_targets_for_rnn_test():
     x_0 = np.random.random((2, 3)).astype(np.float32)
@@ -2046,70 +2063,542 @@ class TestPythonOperation(unittest.TestCase):
         np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
-    def test_add_broadcast(self):
-        for dev_type in [gpu_dev, cpu_dev]:
-            x = np.random.randn(3, 4, 5).astype(np.float32)
-            x1 = np.random.randn(5).astype(np.float32)
-            y = x+x1
-            dy = np.ones((3, 4, 5), dtype = np.float32)
-            grad0=dy
-            grad1=np.ones((5), dtype = np.float32)
-
-            x = tensor.from_numpy(x)
-            x1 = tensor.from_numpy(x1)
-            dy = tensor.from_numpy(dy)
-            x.to_device(dev_type)
-            x1.to_device(dev_type)
-            dy.to_device(dev_type)
-
-            result = autograd.add(x,x1)
-            dx0, dx1 = result.creator.backward(dy.data)
-
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
-
-    def test_and_broadcast(self):
-        for dev_type in [gpu_dev, cpu_dev]:
-            x = np.random.randn(3, 4, 5).astype(np.float32)
-            x1 = np.random.randn(5).astype(np.float32)
+    def test_and_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]), # 3d vs 1d
+            ([3, 4, 5], [4, 5]), # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]), # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]), # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6]) # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = (np.random.randn(*in1) > 0).astype(np.float32)
+            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
             y = np.logical_and(x, x1)
 
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
-            x.to_device(dev_type)
-            x1.to_device(dev_type)
+            x.to_device(dev)
+            x1.to_device(dev)
 
-            result = autograd.and(x,x1)
+            result = autograd._and(x,x1)
             np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
-    def test_or_broadcast(self):
-        for dev_type in [gpu_dev, cpu_dev]:
-            x = np.random.randn(3, 4, 5).astype(np.float32)
-            x1 = np.random.randn(5).astype(np.float32)
+    def test_and_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = (np.random.randn(*in1) > 0).astype(np.float32)
+            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
+            y = np.logical_and(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev)
+            x1.to_device(dev)
+
+            result = autograd._and(x,x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_or_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = (np.random.randn(*in1) > 0).astype(np.float32)
+            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
             y = np.logical_or(x, x1)
 
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
-            x.to_device(dev_type)
-            x1.to_device(dev_type)
+            x.to_device(dev)
+            x1.to_device(dev)
 
-            result = autograd.or(x,x1)
+            result = autograd._or(x, x1)
             np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
 
-    def test_xor_broadcast(self):
-        for dev_type in [gpu_dev, cpu_dev]:
-            x = np.random.randn(3, 4, 5).astype(np.float32)
-            x1 = np.random.randn(5).astype(np.float32)
+    def test_or_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = (np.random.randn(*in1) > 0).astype(np.float32)
+            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
+            y = np.logical_or(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev)
+            x1.to_device(dev)
+
+            result = autograd._or(x, x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_xor_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = (np.random.randn(*in1) > 0).astype(np.float32)
+            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
             y = np.logical_xor(x, x1)
 
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
-            x.to_device(dev_type)
-            x1.to_device(dev_type)
+            x.to_device(dev)
+            x1.to_device(dev)
 
-            result = autograd.xor(x,x1)
+            result = autograd._xor(x, x1)
             np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_xor_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = (np.random.randn(*in1) > 0).astype(np.float32)
+            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
+            y = np.logical_xor(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev)
+            x1.to_device(dev)
+
+            result = autograd._xor(x, x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_xor_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = (np.random.randn(*in1) > 0).astype(np.float32)
+            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
+            y = np.logical_xor(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev)
+            x1.to_device(dev)
+
+            result = autograd._xor(x, x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_xor_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = (np.random.randn(*in1) > 0).astype(np.float32)
+            x1 = (np.random.randn(*in2) > 0).astype(np.float32)
+            y = np.logical_xor(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev)
+            x1.to_device(dev)
+
+            result = autograd._xor(x, x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_greater_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = np.greater(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev)
+            x1.to_device(dev)
+
+            result = autograd.greater(x, x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_greater_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = np.greater(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev)
+            x1.to_device(dev)
+
+            result = autograd.greater(x, x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_less_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = np.less(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev)
+            x1.to_device(dev)
+
+            result = autograd.less(x, x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_less_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = np.less(x, x1)
+
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            x.to_device(dev)
+            x1.to_device(dev)
+
+            result = autograd.less(x, x1)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+
+    def test_add_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = x + x1
+
+            dy = np.random.randn(*y.shape)
+            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape))
+            grad1 = np.sum(dy, axis=axis_helper(y.shape, x1.shape))
+            
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            x1.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.add(x,x1)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_add_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = x + x1
+
+            dy = np.random.randn(*y.shape)
+            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape))
+            grad1 = np.sum(dy, axis=axis_helper(y.shape, x1.shape))
+            
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            x1.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.add(x,x1)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_sub_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = x - x1
+
+            dy = np.random.randn(*y.shape)
+            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape))
+            grad1 = np.sum(-dy, axis=axis_helper(y.shape, x1.shape))
+            
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            x1.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.sub(x,x1)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+
+    def test_sub_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = x - x1
+
+            dy = np.random.randn(*y.shape)
+            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape))
+            grad1 = np.sum(-dy, axis=axis_helper(y.shape, x1.shape))
+            
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            x1.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.sub(x,x1)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_mul_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = x * x1
+
+            dy = np.random.randn(*y.shape)
+            grad0 = np.sum(x1 * dy, axis=axis_helper(y.shape, x.shape))
+            grad1 = np.sum(x * dy, axis=axis_helper(y.shape, x1.shape))
+            
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            x1.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.mul(x,x1)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_mul_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = x * x1
+
+            dy = np.random.randn(*y.shape)
+            grad0 = np.sum(x1 * dy, axis=axis_helper(y.shape, x.shape))
+            grad1 = np.sum(x * dy, axis=axis_helper(y.shape, x1.shape))
+            
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            x1.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.mul(x,x1)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_div_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = x / x1
+
+            dy = np.random.randn(*y.shape)
+            grad0 = np.sum(np.power(x1, -1) * dy, axis=axis_helper(y.shape, x.shape))
+            grad1 = np.sum(x * - np.power(x1, -2) * dy, axis=axis_helper(y.shape, x1.shape))
+            
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            x1.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.div(x,x1)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_div_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32)
+            y = x / x1
+
+            dy = np.random.randn(*y.shape)
+            grad0 = np.sum(np.power(x1, -1) * dy, axis=axis_helper(y.shape, x.shape))
+            grad1 = np.sum(x * - np.power(x1, -2) * dy, axis=axis_helper(y.shape, x1.shape))
+            
+            x = tensor.from_numpy(x)
+            x1 = tensor.from_numpy(x1)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            x1.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.div(x,x1)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    # def test_pow_broadcast_gpu(self):
+    #     pass
+
+    # def test_pow_broadcast_cpu(self):
+    #     pass
+
+    # def test_mean_broadcast_gpu(self):
+    #     pass
+
+    # def test_sum_broadcast_gpu(self):
+    #     pass
+
+    # def test_max_broadcast_gpu(self):
+    #     pass
+
+    # def test_min_broadcast_gpu(self):
+    #     pass
+   
+    # def test_prelu_broadcast_gpu(self):
+    #     pass
+
+    # def test_gemm_broadcast_gpu(self):
+    #     pass
 
 if __name__ == '__main__':
     unittest.main()
