@@ -1,8 +1,10 @@
 {
   "docs": {
-    "Docusaurus": ["doc1"],
-    "First Category": ["doc2"],
-    "Second Category": ["doc3"]
+    "Documentation": [
+      "Documentation/installation",
+      "Documentation/software_stack",
+      "Documentation/device"
+    ]
   },
   "docs-other": {
     "First Category": ["doc4", "doc5"]
