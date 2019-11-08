@@ -1,8 +1,6 @@
 /**
- * Copyright (c) 2017-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
+Pages: The website/pages directory
+contains example top-level pages for the site.
  */
 
 const React = require('react');
