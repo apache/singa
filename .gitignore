@@ -1,4 +1,9 @@
+.DS_Store
+
+*.pyc
+__pycache__
 *.swp
+
 *.o
 *.bin
 *.a
@@ -8,9 +13,13 @@
 *.pb.h
 *.pb.cc
 *.cxx
+
 build/
 thirdparty/*
 !thirdparty/install.sh
 test/samples/
 .idea
+
+# Sphinx and Doxygen Doc-Site
 doc/_build/*
+doc/en/docs/model_zoo/
