@@ -69,10 +69,6 @@ if __name__ == "__main__":
             loss = autograd.softmax_cross_entropy(x, ty)
             dev.Sync()
             softmax += time.time() - tick
-            plist = []
-            acc = 0
-            glist = []
-            tsize = []
             sgd.backward_and_update(loss)
 
     dev.Sync()            
