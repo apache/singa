@@ -30,6 +30,7 @@
 #include <mpi.h>
 
 #include "singa/core/tensor.h"
+using std::vector;
 
 namespace singa{
 
@@ -64,19 +65,29 @@ public:
   int totalMPIRanksInGlobal;
   int MPIRankInLocal;
   bool UseMPI;
+  float *fusedSendBuff;
+  float *fusedRecvBuff;
+  size_t maxSize;
 
   ncclUniqueId id;
   cudaStream_t s;
+  cudaStream_t c;
   ncclComm_t comm;
   cudaEvent_t event;
-  Communicator();
-  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder);
+
+  Communicator(int limit);
+  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int size);
   ~Communicator();
-  void allReduce(int size, void* sendbuff, void* recvbuff);
+  void synch(Tensor &t);
+  void fusedSynch(vector<Tensor> &t);
   void wait();
+
+private:
+  void allReduce(int size, void* sendbuff, void* recvbuff);
+  void setup(int gpu_num);
+
 };
 
-void synch(Tensor &t, Communicator &c);
 
 }
 
