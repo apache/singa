@@ -69,17 +69,7 @@ if __name__ == "__main__":
             loss = autograd.softmax_cross_entropy(x, ty)
             dev.Sync()
             softmax += time.time() - tick
-            plist = []
-            for p, g in autograd.backward(loss):
-                #dev.Sync()  # this Sync affects the concurrency and hence omitted
-                tick = time.time()
-                sgd.all_reduce(g)
-                #dev.Sync()  # this Sync affects the concurrency and hence omitted
-                update += time.time() - tick
-                plist.append((p, g))
-            sgd.wait()
-            for p, g in plist:
-                sgd.update(p, g)  
+            sgd.backward_and_update(loss)
 
     dev.Sync()            
     end = time.time()
@@ -88,9 +78,8 @@ if __name__ == "__main__":
     tforward = float(fd) / float(niters)
     tsoftmax = float(softmax) / float(niters)
     tbackward = titer - tforward - tsoftmax
-    tsgd = float(update) / float(niters)
 
     if (sgd.rank_in_global == 0):
         print("\nThroughput = {} per second".format(throughput), flush=True)
-        print("Total={}, forward={}, softmax={}, backward={}, sgd={}".format(
-        titer, tforward, tsoftmax, tbackward, tsgd), flush=True)
+        print("Total={}, forward={}, softmax={}, backward={}".format(
+        titer, tforward, tsoftmax, tbackward), flush=True)
