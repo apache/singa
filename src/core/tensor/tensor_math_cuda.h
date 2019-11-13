@@ -227,22 +227,22 @@ void Add<float, lang::Cuda>(const Tensor& in1,
   for(const auto &i: in2.stride())
     strideProduct *= i;
 
+  const float* _inPtr1;
+  cudnnTensorDescriptor_t in1NdDesc;
   if (strideProduct != 0) {
-    check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-                              (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
-                              (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                             ));
+    _inPtr1 = inPtr1;
+    in1NdDesc = generate_tensor_nd_desc(in1);
   } else {
     Tensor in1Bc = get_broadcasted_tensor(in1, ctx);
-    float* inBcPtr1 = static_cast<float*>(in1Bc.block()->mutable_data());
-
-    check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-                              (void*)(&alpha1), generate_tensor_nd_desc(in1Bc), inBcPtr1,
-                              (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                             ));
+    _inPtr1 = static_cast<const float*>(in1Bc.block()->data());
+    in1NdDesc = generate_tensor_nd_desc(in1Bc);
   }
+
+  check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
+                            (void*)(&alpha1), in1NdDesc, _inPtr1,
+                            (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
+                            (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                           ));
 }
 
 /// out = in1 - in2
@@ -264,22 +264,22 @@ void Sub<float, lang::Cuda>(const Tensor& in1,
   for(const auto &i: in2.stride())
     strideProduct *= i;
 
+  const float* _inPtr1;
+  cudnnTensorDescriptor_t in1NdDesc;
   if (strideProduct != 0) {
-    check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-                              (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
-                              (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                             ));
+    _inPtr1 = inPtr1;
+    in1NdDesc = generate_tensor_nd_desc(in1);
   } else {
     Tensor in1Bc = get_broadcasted_tensor(in1, ctx);
-    float* inBcPtr1 = static_cast<float*>(in1Bc.block()->mutable_data());
-
-    check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-                              (void*)(&alpha1), generate_tensor_nd_desc(in1Bc), inBcPtr1,
-                              (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                             ));
+    _inPtr1 = static_cast<const float*>(in1Bc.block()->data());
+    in1NdDesc = generate_tensor_nd_desc(in1Bc);
   }
+
+  check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
+                            (void*)(&alpha1), in1NdDesc, _inPtr1,
+                            (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
+                            (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                           ));
 }
 
 template <>
@@ -392,22 +392,22 @@ void EltwiseMult<float, lang::Cuda>(const Tensor& in1,
   for(const auto &i: in2.stride())
     strideProduct *= i;
 
+  const float* _inPtr1;
+  cudnnTensorDescriptor_t in1NdDesc;
   if (strideProduct != 0) {
-    check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_MUL),
-                              (void*)(&alpha1), generate_tensor_nd_desc(in1), inPtr1,
-                              (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                             ));
+    _inPtr1 = inPtr1;
+    in1NdDesc = generate_tensor_nd_desc(in1);
   } else {
     Tensor in1Bc = get_broadcasted_tensor(in1, ctx);
-    float* inBcPtr1 = static_cast<float*>(in1Bc.block()->mutable_data());
-
-    check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_MUL),
-                              (void*)(&alpha1), generate_tensor_nd_desc(in1Bc), inBcPtr1,
-                              (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-                              (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-                             ));
+    _inPtr1 = static_cast<const float*>(in1Bc.block()->data());
+    in1NdDesc = generate_tensor_nd_desc(in1Bc);
   }
+
+  check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_MUL),
+                            (void*)(&alpha1), in1NdDesc, _inPtr1,
+                            (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
+                            (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
+                           ));
 }
 
 

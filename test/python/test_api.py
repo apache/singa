@@ -118,13 +118,34 @@ class TestAPI(unittest.TestCase):
 
         x0 = tensor.Tensor(device=gpu_dev, data=x_0)
         y0 = tensor.Tensor(device=gpu_dev, data=y_0)
-        x1 = x0.transpose()
+        x1 = x0.transpose([3,2,1,0])
 
+        #print(x1.shape)
+        #print(y0.shape)
 
         z0 = x1 * y0
-        #print(tensor.to_numpy(z0))
-        #print(x_0.transpose() * y_0)
         np.testing.assert_array_almost_equal(tensor.to_numpy(z0), x_0.transpose()*y_0 )
+
+    def test_transpose_and_mul_2(self):
+        s1 = [1,5,1,3]
+        s2 = [3,1,1,4]
+        axis0=[3,2,1,0] # 3121
+        axis1=[1,0,2,3] # 1314
+        x_0 = np.random.random(s1).astype(np.float32)
+        y_0 = np.random.random(s2).astype(np.float32)
+
+        x0 = tensor.Tensor(device=gpu_dev, data=x_0)
+        y0 = tensor.Tensor(device=gpu_dev, data=y_0)
+
+        x1 = x0.transpose(axis0)
+        y1 = y0.transpose(axis1)
+        #print(x1.shape)
+        #print(y1.shape)
+
+        z0 = x1 * y1
+        np.testing.assert_array_almost_equal(tensor.to_numpy(z0), x_0.transpose(axis0)*y_0.transpose(axis1) )
+        np.testing.assert_array_almost_equal(z0.shape, [3,3,5,4])
+
 
 
 
