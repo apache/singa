@@ -162,7 +162,7 @@ __global__ void KernelSoftplus(const size_t n, const float *in, float *out) {
 __global__ void KernelSoftsign(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
-    out[i] = in[i] / (std::fabsf(in[i]) + 1);
+    out[i] = in[i] / (max(in[i], -in[i]) + 1);
   }
 }
 
