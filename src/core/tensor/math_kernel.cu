@@ -158,6 +158,14 @@ __global__ void KernelSoftplus(const size_t n, const float *in, float *out) {
     out[i] = logf(1 + expf(in[i]));
   }
 }
+  
+__global__ void KernelSoftsign(const size_t n, const float *in, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = in[i] / (std::fabsf(in[i]) + 1);
+  }
+}
+
 __global__ void KernelSquare(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -412,9 +420,15 @@ void relu(const size_t n, const float *in, float *out, cudaStream_t s) {
 void sigmoid(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelSigmoid <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);
 }
+
 void softplus(const size_t n, const float *in, float *out, cudaStream_t s) {
   KernelSoftplus <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);
 }
+
+void softsign(const size_t n, const float *in, float *out, cudaStream_t s) {
+  KernelSoftplus <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);
+}
+
 void clamp(const size_t n, const float low, const float high, const float *in,
            float *out, cudaStream_t s) {
   KernelClamp <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, low, high, in, out);
