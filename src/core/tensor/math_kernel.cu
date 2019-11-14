@@ -426,7 +426,7 @@ void softplus(const size_t n, const float *in, float *out, cudaStream_t s) {
 }
 
 void softsign(const size_t n, const float *in, float *out, cudaStream_t s) {
-  KernelSoftplus <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);
+  KernelSoftsign <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, in, out);
 }
 
 void clamp(const size_t n, const float low, const float high, const float *in,
