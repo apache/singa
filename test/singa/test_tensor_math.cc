@@ -1228,4 +1228,35 @@ TEST_F(TensorMath, BroadcastCuda) {
   }
   */
 }
+
+TEST_F(TensorMath, SoftPlusCuda) {
+  auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor x(Shape{2}, dev);
+  const float data[2] = {0.0f, 1.0f};
+  x.CopyDataFromHostPtr<float>(data, 2);
+
+  auto y = SoftPlus(x);
+  y.Reshape({2,1});
+  y.ToHost();
+
+  const float *dptr = y.data<float>();
+  EXPECT_EQ(dptr[0], log(2.0f));
+  EXPECT_EQ(dptr[1], log(exp(1) + 1.0f));
+}
+
+TEST_F(TensorMath, SoftSignCuda) {
+  auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor x(Shape{2}, dev);
+  const float data[2] = {0.0f, 1.0f};
+  x.CopyDataFromHostPtr<float>(data, 2);
+
+  auto y = SoftSign(x);
+  y.Reshape({2,1});
+  y.ToHost();
+
+  const float *dptr = y.data<float>();
+  EXPECT_EQ(dptr[0], 0.0f);
+  EXPECT_EQ(dptr[1], 1.0f / 3);
+}
+
 #endif
