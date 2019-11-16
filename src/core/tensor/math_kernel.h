@@ -57,6 +57,7 @@ void atanh(const size_t n, const float *in, float *out, cudaStream_t s);
 void relu(const size_t n, const float *in, float *out, cudaStream_t s);
 void sigmoid(const size_t n, const float *in, float *out, cudaStream_t s);
 void softplus(const size_t n, const float *in, float *out, cudaStream_t s);
+void softsign(const size_t n, const float *in, float *out, cudaStream_t s);
 void clamp(const size_t n, const float low, const float high, const float *in,
            float *out, cudaStream_t s);
 
@@ -96,10 +97,6 @@ void le(const size_t num, const float *in, const float x, float *out,
 void le(const size_t num, const float *in1, const float *in2, float *out,
         cudaStream_t s);
 
-void softplus(const size_t n, const float *in, float *out,
-              cudaStream_t s);
-void softsign(const size_t n, const float *in, float *out,
-              cudaStream_t s);
 
 // 2 inputs
 void pow(const size_t n, const float *in1, const float *in2, float *out,
