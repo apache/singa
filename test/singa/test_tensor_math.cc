@@ -123,7 +123,7 @@ TEST_F(TensorMath, SignCpp) {
 TEST_F(TensorMath, SoftPlusCpp) {
   Tensor aa = a.Clone();
   Tensor cc = aa - 1.0f;
-  const float *dptr = aa.data<float>();
+  const float *dptr = cc.data<float>();
   EXPECT_NEAR(0.0f, dptr[0], 1e-5);
   EXPECT_NEAR(1.0f, dptr[1], 1e-5);
 
@@ -136,7 +136,7 @@ TEST_F(TensorMath, SoftPlusCpp) {
 TEST_F(TensorMath, SoftSignCpp) {
   Tensor aa = a.Clone();
   Tensor cc = aa - 1.0f;
-  const float *dptr = aa.data<float>();
+  const float *dptr = cc.data<float>();
   EXPECT_NEAR(0.0f, dptr[0], 1e-5);
   EXPECT_NEAR(1.0f, dptr[1], 1e-5);
 
