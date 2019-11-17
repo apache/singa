@@ -143,7 +143,7 @@ TEST_F(TensorMath, SoftSignCpp) {
   Tensor p = SoftSign(cc);
   const float *dptr1 = p.data<float>();
   EXPECT_EQ(0.0f, dptr1[0]);
-  EXPECT_EQ(1.0f / 3, dptr1[1]);
+  EXPECT_EQ(0.5f, dptr1[1]);
 }
 
 TEST_F(TensorMath, SqrtCpp) {
@@ -1256,7 +1256,7 @@ TEST_F(TensorMath, SoftSignCuda) {
 
   const float *dptr = y.data<float>();
   EXPECT_EQ(dptr[0], 0.0f);
-  EXPECT_EQ(dptr[1], 1.0f / 3);
+  EXPECT_EQ(dptr[1], 0.5f);
 }
 
 #endif
