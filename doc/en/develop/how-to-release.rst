@@ -23,7 +23,7 @@ This is a guide for the release preparing process in SINGA.
 Select a release manager
 ------------------------
 
-The release manager (RM) is the coordinator for the release process. It is the RM's signature (.asc) that is uploaded together with the release. The RM generates KEY (RSA 4096-bit) and uploads it to a public key server. The RM needs to get his key endorsed (signed) by other Apache user, to be connected to the web of trust. He should first ask the mentor to help signing his key. http://www.apache.org/dev/release-signing.html
+The release manager (RM) is the coordinator for the release process. It is the RM's signature (.asc) that is uploaded together with the release. The RM generates KEY (RSA 4096-bit) and uploads it to a public key server. The RM needs to get his key endorsed (signed) by other Apache user, to be connected to the web of trust. http://www.apache.org/dev/release-signing.html
  
 Check:
         + The codebase does not include third-party code which is not compatible to APL
@@ -58,10 +58,6 @@ Prepare README file
         + List of dependencies.
         + Mail list, website, etc. Any information useful for user to start.
 
-Prepare DISCLAIMER file
------------------------
-        + modify from http://incubator.apache.org/guides/branding.html#disclaimers
-
 Package the release
 -------------------
 
@@ -71,7 +67,6 @@ The release should be packaged into : apache-singa-xx.xx.xx.tar.gz
          + LICENSE
          + NOTICE
          + RELEASE_NOTES
-         + DISCLAIMER
          + ...
 
 Upload the release
@@ -86,7 +81,7 @@ The release is uploaded to the RM’s Apache page: people.apache.org/~ID/...
 Roll out artifacts to mirrors 
 -----------------------------
 
-svn add to “dist/release/incubator/singa”
+svn add to “dist/release/singa”
 
 Delete old artifacts (automatically archived)
 
@@ -110,7 +105,7 @@ Hi all,
 I have created a build for Apache SINGA X.Y.Z, release candidate N.
 
 The artifacts to be voted on are located here:
-https://dist.apache.org/repos/dist/dev/incubator/singa/apache-singa-X.Y.Z-rcN/
+https://dist.apache.org/repos/dist/dev/singa/apache-singa-X.Y.Z-rcN/
 
 The hashes of the artifacts are as follows:
 apache-singa-X.Y.Z.tar.gz.md5 XXXX
@@ -143,18 +138,10 @@ Call a vote in dev
 
 Call a vote in dev@singa.apache.org
 
-
-
 Vote Check
 ----------
 
 All PMC members and committers should check these before vote +1 :
-
-
-Call for a vote in Apache IPMC
-------------------------------
-
-Call a vote in general@incubator.apache.org
 
 Vote result mail
 ----------------
@@ -183,27 +170,6 @@ I'll now start a vote on the general list. Those of you in the IPMC, please reca
 {SINGA Team Member Name} 
 
 Template for general@ voting - results
-
-
-To: general@incubator.apache.org
-Subject: [RESULT] [VOTE] Release Apache SINGA X.Y.Z
-
-Thanks everyone for their votes and comments.
-
-I'm delighted to announce that this vote passes with the following results:
-
-N binding +1s:
-<names>
-
-N non-binding +1s:
-<names>
-
-No 0s or -1s.
-
-We’ll now roll the release out to the mirrors.
-
-{SINGA Team Member Name} 
-
 
 Publish release
 ---------------
