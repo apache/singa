@@ -47,6 +47,8 @@ public:
   Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int limit);
   void synch(Tensor &t);
   void fusedSynch(std::vector<Tensor> &t);
+  void synchHalf(Tensor &t);
+  void fusedSynchHalf(std::vector<Tensor> &t);
   void wait();
 };
 

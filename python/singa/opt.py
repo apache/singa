@@ -171,6 +171,10 @@ class DistOpt(object):
         # The class is designed to wrap an optimizer to do disttributed training.
         # opt: The optimizer to be wrapped. nDev: number of devices(GPUs) a
         # process will control/use.
+        # nccl_id: an nccl id holder object for a unique communication id
+        # gpu_num: the GPU id in a single node
+        # gpu_per_node: the number of GPUs in a single node
+        # buffSize: the buffSize used in nccl communicator, default is 16 MB
 
         # world_size: total number of processes.
         # rank_in_local: local rank of a process on the current node.
@@ -199,10 +203,19 @@ class DistOpt(object):
         tensor = singa.VecTensor(tensor)
         self.communicator.fusedSynch(tensor)
 
+    def all_reduce_half(self, tensor):
+        self.communicator.synchHalf(tensor)
+
+    def fused_all_reduce_half(self, tensor):
+        tensor = singa.VecTensor(tensor)
+        self.communicator.fusedSynchHalf(tensor)
+
     def wait(self):
         self.communicator.wait()
 
     def backward_and_update(self, loss, threshold = 2097152):
+        # backward propagation from the loss and parameter update
+        # it applies tensor fusion which fuses all the tensor smaller than the threshold value
         plist = []
         acc = 0
         glist = []
@@ -221,6 +234,34 @@ class DistOpt(object):
             plist.append((p, g))
         if glist:
             self.fused_all_reduce(glist)
+        self.wait()
+        for p, g in plist:
+            self.update(p, g)  
+
+    def backward_and_update_half(self, loss, threshold = 2097152, clipping = False, clip_Value = 100):
+        # THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
+        # It converts the gradients to 16 bits half precision format before allreduce
+        # To assist training, this functions provide an option to perform gradient clipping
+        plist = []
+        acc = 0
+        glist = []
+        for p, g in autograd.backward(loss):
+            if clipping:
+                g = autograd.clip(g, -clip_Value, clip_Value)
+            if g.size() > threshold:
+                # larger than threshold -> reduced directly
+                self.all_reduce_half(g.data)
+            else:
+                # smaller than threshold -> accumulate
+                glist.append(g.data)                    
+                acc += g.size()
+                if (acc > threshold):
+                    self.fused_all_reduce_half(glist)
+                    acc = 0
+                    glist = []
+            plist.append((p, g))
+        if glist:
+            self.fused_all_reduce_half(glist)
         self.wait()
         for p, g in plist:
             self.update(p, g)  
