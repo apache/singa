@@ -25,12 +25,12 @@
 
   您还可以检查SHA512或MD5值以查看下载是否已完成
 
-* v1.2.0 (2018年6月6日):
-    * [Apache SINGA 1.2.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
+* Incubating v1.2.0 (2018年6月6日):
+    * [Apache SINGA 1.2.0 (incubating)](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz)
       [\[SHA512\]](https://www.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.sha512)
       [\[KEYS\]](https://www.apache.org/dist/incubator/singa/1.2.0/KEYS)
       [\[ASC\]](https://www.apache.org/dist/incubator/singa/1.2.0/apache-singa-incubating-1.2.0.tar.gz.asc)
-    * [发行说明 1.2.0](releases/RELEASE_NOTES_1.2.0.html)
+    * [发行说明 1.2.0 (incubating)](releases/RELEASE_NOTES_1.2.0.html)
     * 新功能和主要更新,
         * 实现 autograd (目前支持MLP模型)
         * 升级 PySinga 以支持 Python 3
@@ -45,12 +45,12 @@
 
 
 
-* v1.1.0 (2017年2月12日):
-     * [Apache SINGA 1.1.0](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz)
+* Incubating v1.1.0 (2017年2月12日):
+     * [Apache SINGA 1.1.0 (incubating)](http://www.apache.org/dyn/closer.cgi/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.md5)
       [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/1.1.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/1.1.0/apache-singa-incubating-1.1.0.tar.gz.asc)
-    * [发行说明 1.1.0](releases/RELEASE_NOTES_1.1.0.html)
+    * [发行说明 1.1.0 (incubating)](releases/RELEASE_NOTES_1.1.0.html)
     * 新功能和主要更新,
         * 创建 Docker 镜像（CPU和GPU版本）
         * 为 SINGA 创建 Amazon AMI（CPU版本）
@@ -69,12 +69,12 @@
 
 
 
-* v1.0.0 (2016年9月8日):
-    * [Apache SINGA 1.0.0](https://archive.apache.org/dist/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz)
+* Incubating v1.0.0 (2016年9月8日):
+    * [Apache SINGA 1.0.0 (incubating)](https://archive.apache.org/dist/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz.md5)
       [\[KEYS\]](https://archive.apache.org/dist/incubator/singa//1.0.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/1.0.0/apache-singa-incubating-1.0.0.tar.gz.asc)
-    * [发行说明 1.0.0](releases/RELEASE_NOTES_1.0.0.html)
+    * [发行说明 1.0.0 (incubating)](releases/RELEASE_NOTES_1.0.0.html)
     * 新功能和主要更新,
         * 用于支持更多机器学习模型的张量抽象.
         * 设备抽象运行在不同的硬件设备上，包括CPU，（Nvidia / AMD）GPU 和 FPGA（将在更高版本中测试）.
@@ -89,12 +89,12 @@
         * 整合 Travis-CI
 
 
-* v0.3.0 (2016年4月20日):
-    * [Apache SINGA 0.3.0](https://archive.apache.org/dist/incubator/singa/0.3.0/apache-singa-incubating-0.3.0.tar.gz)
+* Incubating v0.3.0 (2016年4月20日):
+    * [Apache SINGA 0.3.0 (incubating)](https://archive.apache.org/dist/incubator/singa/0.3.0/apache-singa-incubating-0.3.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/0.3.0/apache-singa-incubating-0.3.0.tar.gz.md5)
       [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/0.3.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/0.3.0/apache-singa-incubating-0.3.0.tar.gz.asc)
-    * [发行说明 0.3.0](releases/RELEASE_NOTES_0.3.0.html)
+    * [发行说明 0.3.0 (incubating)](releases/RELEASE_NOTES_0.3.0.html)
     * 新功能和主要更新,
         * [在 GPU 集群上](v0.3.0/gpu.html) 可以在 GPU 集群上训练深度学习模型.
         * [Python 包装器的改进](v0.3.0/python.html) 使得配置工作变得很容易, 包括神经网络和 SGD 算法.
@@ -107,12 +107,12 @@
 
 
 
-* v0.2.0 (2016年1月14日):
-    * [Apache SINGA 0.2.0](https://archive.apache.org/dist/incubator/singa/0.2.0/apache-singa-incubating-0.2.0.tar.gz)
+* Incubating v0.2.0 (2016年1月14日):
+    * [Apache SINGA 0.2.0 (incubating)](https://archive.apache.org/dist/incubator/singa/0.2.0/apache-singa-incubating-0.2.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/0.2.0/apache-singa-incubating-0.2.0.tar.gz.md5)
       [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/0.2.0/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/0.2.0/apache-singa-incubating-0.2.0.tar.gz.asc)
-    * [发行说明 0.2.0](releases/RELEASE_NOTES_0.2.0.html)
+    * [发行说明 0.2.0 (incubating)](releases/RELEASE_NOTES_0.2.0.html)
     * 新功能和主要更新,
         * [在 GPU 上进行训练](v0.2.0/gpu.html) 可以在具有多个 GPU 卡的单个节点上对复杂模型进行训练.
         * [混合神经网络划分](v0.2.0/hybrid.html) 同时支持数据和模型并行.
@@ -127,13 +127,13 @@
         * 为 IO 操作添加 Store 类.
 
 
-* v0.1.0 (2015年10月8日):
-    * [Apache SINGA 0.1.0](https://archive.apache.org/dist/incubator/singa/apache-singa-incubating-0.1.0.tar.gz)
+* Incubating v0.1.0 (2015年10月8日):
+    * [Apache SINGA 0.1.0 (incubating)](https://archive.apache.org/dist/incubator/singa/apache-singa-incubating-0.1.0.tar.gz)
       [\[MD5\]](https://archive.apache.org/dist/incubator/singa/apache-singa-incubating-0.1.0.tar.gz.md5)
       [\[KEYS\]](https://archive.apache.org/dist/incubator/singa/KEYS)
       [\[ASC\]](https://archive.apache.org/dist/incubator/singa/apache-singa-incubating-0.1.0.tar.gz.asc)
     * [Amazon EC2 image](https://console.aws.amazon.com/ec2/v2/home?region=ap-southeast-1#LaunchInstanceWizard:ami=ami-b41001e6)
-    * [发行说明 0.1.0](releases/RELEASE_NOTES_0.1.0.html)
+    * [发行说明 0.1.0 (incubating)](releases/RELEASE_NOTES_0.1.0.html)
     * 主要功能包括,
         * 使用 GNU build 程序进行安装
         * 用 zookeeper 进行工作管理的脚本
