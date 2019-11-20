@@ -348,6 +348,20 @@ __global__ void KernelSoftmaxCrossEntropyBwd(const bool int_target, const size_t
   }
 }
 
+__global__ void KernelFloat2Half(const size_t n, const float *in, __half *out) {
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = __float2half_rn(in[i]);
+  }
+}
+
+__global__ void KernelHalf2Float(const size_t n, const __half *in, float *out) {
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = __half2float(in[i]);
+  }
+}
+
 //cuda unary elementwise ops kernel template 
 #define GenUnaryCudaKernel(fn,kernelfn,cudafn)                                \
   __global__ void kernelfn(const size_t n, const float *in, float *out) {     \
@@ -377,6 +391,14 @@ GenUnaryCudaKernel(atanh,KernelAtanh,atanhf);
 // ********************************
 // Functions call kernels
 // ********************************
+
+void float2half(const size_t n, const float *in, __half *out, cudaStream_t s) {
+  KernelFloat2Half <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void half2float(const size_t n, const __half *in, float *out, cudaStream_t s) {
+  KernelHalf2Float <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
 
 void set(const size_t n, const float v, float *out, cudaStream_t s) {
   KernelSet <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, v, out);
