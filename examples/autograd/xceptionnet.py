@@ -85,6 +85,9 @@ class Block(autograd.Layer):
         return y
 
 
+__all__ = ['Xception']
+
+
 class Xception(autograd.Layer):
     """
     Xception optimized for the ImageNet dataset, as specified in
@@ -186,7 +189,6 @@ class Xception(autograd.Layer):
         x = self.logits(x)
         return x
 
-__all__ = ['xception']
 
 if __name__ == '__main__':
     model = Xception(num_classes=1000)
@@ -212,6 +214,4 @@ if __name__ == '__main__':
             x = model(tx)
             loss = autograd.softmax_cross_entropy(x, ty)
             for p, g in autograd.backward(loss):
-                # print(p.shape, g.shape)
                 sgd.update(p, g)
-                # pass

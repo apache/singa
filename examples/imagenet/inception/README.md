@@ -25,7 +25,7 @@ In this example, we convert Inception V4 trained on Tensorflow to SINGA for imag
 
 * Download the parameter checkpoint file
 
-        $ wget
+        $ wget https://s3-ap-southeast-1.amazonaws.com/dlfile/inception_v4.tar.gz
         $ tar xvf inception_v4.tar.gz
 
 * Download [synset_word.txt](https://github.com/BVLC/caffe/blob/master/data/ilsvrc12/get_ilsvrc_aux.sh) file.

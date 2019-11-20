@@ -32,7 +32,6 @@ import os
 import argparse
 from tqdm import trange
 
-from singa import utils
 from singa import optimizer
 from singa import device
 from singa import tensor

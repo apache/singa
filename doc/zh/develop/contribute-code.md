@@ -23,14 +23,14 @@ Github pull requests 用于实施讨论，例如代码审查和代码合并.
 
 工作流程是
 
-* Fork [SINGA Github repository](https://github.com/apache/incubator-singa) 到你自己的 Github 帐户.
+* Fork [SINGA Github repository](https://github.com/apache/singa) 到你自己的 Github 帐户.
 
 * Clone 你自己的 fork, 创建一个新的 branch (例如, feature-foo or fixbug-foo),
  进行这项工作. 完成你的工作后，
  [rebase](https://git-scm.com/book/en/v2/Git-Branching-Rebasing) 
 它到当前最新的 master 并 push commits 到你自己的 Github 帐户 (新 branch).
 
-* 针对 apache / incubator-singa 的 master branch 打开一个 pull request.
+* 针对 apache / singa 的 master branch 打开一个 pull request.
 PR 标题应该是 SINGA-xxxx 的格式，其中 SINGA-xxxx 是相关的JIRA编号，
 标题可以是 JIRA 的标题或描述 PR 本身的更具体的标题, 例如，"SINGA-6 Implement thread-safe singleton". 
 详细描述可以从 JIRA 复制.

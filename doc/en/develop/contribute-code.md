@@ -56,12 +56,12 @@ used for implementation discussions, e.g., code review and code merge.
 ## Git Workflow
 
 
-1. Fork the [SINGA Github repository](https://github.com/apache/incubator-singa) to your own Github account. 
+1. Fork the [SINGA Github repository](https://github.com/apache/singa) to your own Github account. 
 
 2. Clone the **repo** (short for repository) from your Github
 
-       git clone https://github.com/<Github account>/incubator-singa.git
-       git remote add apache https://github.com/apache/incubator-singa.git
+       git clone https://github.com/<Github account>/singa.git
+       git remote add apache https://github.com/apache/singa.git
 
 3. Create a new branch (e.g., `feature-foo` or `fixbug-foo`), work on it and commit your code. 
       
@@ -90,7 +90,7 @@ used for implementation discussions, e.g., code review and code merge.
        git rebase master
        git push origin feature-foo:feature-foo
 
-6. Open a pull request (PR) against the master branch of apache/incubator-singa on Github website. The PR title should be the JIRA ticket title. If you want to inform other contributors who worked on the same files, you can find the file(s) on Github and click "Blame" to see a line-by-line annotation of who changed the code last.  Then, you can add @username in the PR description to ping them immediately. Please state that the contribution is your original work and that you license the work to the project under the project's open source license. Further commits (e.g., bug fix) to your new branch will be added to this pull request automatically by Github.
+6. Open a pull request (PR) against the master branch of apache/singa on Github website. The PR title should be the JIRA ticket title. If you want to inform other contributors who worked on the same files, you can find the file(s) on Github and click "Blame" to see a line-by-line annotation of who changed the code last.  Then, you can add @username in the PR description to ping them immediately. Please state that the contribution is your original work and that you license the work to the project under the project's open source license. Further commits (e.g., bug fix) to your new branch will be added to this pull request automatically by Github.
 
 7. Wait for committers to review the PR. If no conflicts and errors, the committers will merge it with the master branch. The merge should **a) not use rebase b) disable fast forward merge c) check the commit message format and test the code/feature**. During this time, the master of SINGA may have been updated by others, and then you need to [merge the latest master](https://docs.fast.ai/dev/git.html#how-to-keep-your-feature-branch-up-to-date) to resolve conflicts. Some people [rebase the PR onto the latest master](https://github.com/edx/edx-platform/wiki/How-to-Rebase-a-Pull-Request) instead of merging. However, if other developers fetch this PR to add new features and then send PR, the rebase operation would introduce **duplicate commits** (with different hash) in the future PR. See [The Golden Rule of Rebasing](https://www.atlassian.com/git/tutorials/merging-vs-rebasing) for the details of when to avoid using rebase. Another simple solution to update the PR (to fix conflicts or commit errors) is to checkout a new branch from the latest master branch of Apache SINGAS repo; copy and paste the updated/added code; commit and send a new PR.
 

@@ -38,7 +38,6 @@ def serve(agent, net, use_cpu, parameter_file, topk=5):
     else:
         print("runing with gpu")
         dev = device.create_cuda_gpu()
-    agent = agent
 
     print('Start intialization............')
     # fix the bug when creating net
@@ -83,9 +82,12 @@ def serve(agent, net, use_cpu, parameter_file, topk=5):
                 idx = np.argsort(-prob)[0:topk]
                 for i in idx:
                     response += "%s:%s<br/>" % (labels[i], prob[i])
-            except:
+            except Exception:
                 traceback.print_exc()
                 response = "Sorry, system error during prediction."
+            except SystemExit:
+                traceback.print_exc()
+                response = "Sorry, error triggered sys.exit() during prediction."
             agent.push(MsgType.kResponse, response)
         elif MsgType.kCommandStop.equal(msg_type):
                 print('get stop command')
@@ -121,7 +123,7 @@ def main():
 
     except SystemExit:
         return
-    except:
+    except Exception:
         traceback.print_exc()
         sys.stderr.write("  for help use --help \n\n")
         return 2

@@ -30,10 +30,10 @@ Conda是Python，CPP和其他软件包的软件包管理员。
 
 ## 从源码安装
 
-源文件可以被下载为[tar.gz 文件](https://dist.apache.org/repos/dist/dev/incubator/singa/)，或者为一个git仓库：
+源文件可以被下载为[tar.gz 文件](https://dist.apache.org/repos/dist/dev/singa/)，或者为一个git仓库：
 
-		$ git clone https://github.com/apache/incubator-singa.git
-		$ cd incubator-singa/
+		$ git clone https://github.com/apache/singa.git
+		$ cd singa/
 
 ### 由conda创建SINGA
 
@@ -48,7 +48,7 @@ Conda-build是一款构建工具，可以安装anaconda云中的相关库并执�
 		export BUILD_STR=cpu
 		conda build tool/conda/singa/ --python3.6 (or --python2.7)
 
-上面的指令已在Ubuntu 16.04和Mac OSX上测试过。更多信息请参考[Travis-CI页面](https://travis-ci.org/apache/incubator-singa)。
+上面的指令已在Ubuntu 16.04和Mac OSX上测试过。更多信息请参考[Travis-CI页面](https://travis-ci.org/apache/singa)。
 
 创建GPU版本的SINGA
 
@@ -67,7 +67,7 @@ Conda-build是一款构建工具，可以安装anaconda云中的相关库并执�
 
 编译和运行SINGA需要以下库。
 有关在Ubuntu 16.04上安装它们的说明，
-请参阅SINGA [Dockerfiles](https://github.com/apache/incubator-singa/blob/master/tool/docker/)。
+请参阅SINGA [Dockerfiles](https://github.com/apache/singa/blob/master/tool/docker/)。
 
 * cmake (>=2.8)
 * gcc (>=4.8.1) or Clang
@@ -77,7 +77,7 @@ Conda-build是一款构建工具，可以安装anaconda云中的相关库并执�
 * numpy(>=1.11.0) for compiling PySINGA
 
 
-1. 在incubator-singa目录下创建一个`build`文件夹并进入其中
+1. 在singa目录下创建一个`build`文件夹并进入其中
 2. 运行 `cmake [options] ..`
   默认情况下除了`USE_PYTHON`，其他所有可选项都是OFF
 

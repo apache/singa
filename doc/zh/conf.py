@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# incubator-singa documentation build configuration file, created by
+# singa documentation build configuration file, created by
 # sphinx-quickstart on Sat Jul  9 20:36:57 2016.
 #
 # Licensed to the Apache Software Foundation (ASF) under one
@@ -40,7 +40,6 @@ import sys
 sys.path.append(os.path.abspath('../python/'))
 sys.path.append(os.path.abspath('../build/python/'))
 
-
 # -- General configuration ------------------------------------------------
 from recommonmark.parser import CommonMarkParser
 
@@ -74,9 +73,9 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'incubator-singa'
+project = u'singa'
 copyright = u'2019 The Apache Software Foundation. All rights reserved. Apache SINGA, Apache, the Apache feather logo, and the Apache SINGA project logos are trademarks of The Apache Software Foundation. All other marks mentioned may be trademarks or registered trademarks of their respective owners.'
-author = u'Apache Incubator'
+author = u'Apache Software Foundation'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -138,7 +137,6 @@ pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
-
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -264,29 +262,28 @@ htmlhelp_basename = 'singadoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-     # The paper size ('letterpaper' or 'a4paper').
-     #
-     # 'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #
+    # 'papersize': 'letterpaper',
 
-     # The font size ('10pt', '11pt' or '12pt').
-     #
-     # 'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #
+    # 'pointsize': '10pt',
 
-     # Additional stuff for the LaTeX preamble.
-     #
-     # 'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #
+    # 'preamble': '',
 
-     # Latex figure (float) alignment
-     #
-     # 'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'incubator-singa.tex', u'incubator-singa Documentation',
-     u'moaz', 'manual'),
+    (master_doc, 'singa.tex', u'singa Documentation', u'moaz', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -315,20 +312,15 @@ latex_documents = [
 #
 # latex_domain_indices = True
 
-
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'incubator-singa', u'incubator-singa Documentation',
-     [author], 1)
-]
+man_pages = [(master_doc, 'singa', u'singa Documentation', [author], 1)]
 
 # If true, show URL addresses after external links.
 #
 # man_show_urls = False
-
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -336,9 +328,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'incubator-singa', u'incubator-singa Documentation',
-     author, 'incubator-singa', 'One line description of project.',
-     'Miscellaneous'),
+    (master_doc, 'singa', u'singa Documentation', author, 'singa',
+     'One line description of project.', 'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.

@@ -27,8 +27,8 @@ package:
   version: {{ version }}
 
 source:
-  # path: ../../../
-  git_url: https://github.com/apache/incubator-singa.git
+  path: ../../../
+  # git_url: https://github.com/apache/singa.git
 
 build:
   number: 0
@@ -77,4 +77,4 @@ about:
   home: http://singa.apache.org/
   license: Apache V2
   license_file: LICENSE
-  summary: SINGA is an Apache Incubating project for providing distributed deep learning. Apache disclaimers http://singa.apache.org/en/index.html#disclaimers
+  summary: SINGA is an Apache project for distributed deep learning.

@@ -21,9 +21,9 @@
 
 ## Website
 
-This document gives step-by-step instructions for deploying [SINGA website](http://singa.incubator.apache.org).
+This document gives step-by-step instructions for deploying [SINGA website](http://singa.apache.org).
 
-SINGA website is built by [Sphinx](http://www.sphinx-doc.org) from a source tree stored in the [git repo](https://github.com/apache/incubator-singa/tree/master/doc).
+SINGA website is built by [Sphinx](http://www.sphinx-doc.org) from a source tree stored in the [git repo](https://github.com/apache/singa/tree/master/doc).
 
 To install Sphinx:
 
@@ -41,11 +41,11 @@ You can build the website by executing the following command from the doc folder
 
     ./build.sh html
 
-Committers can update the [SINGA website](http://singa.apache.org/en/index.html) by copying the updated files to the [website repo](https://github.com/apache/incubator-singa-site) (suppose the site repo is ~/incubator-singa-sit)
+Committers can update the [SINGA website](http://singa.apache.org/en/index.html) by copying the updated files to the [website repo](https://github.com/apache/singa-site) (suppose the site repo is ~/singa-sit)
 
     cd _build
-    rsync --checksum -rvh html/ ~/incubator-singa-site/
-    cd ~/incubator-singa-site
+    rsync --checksum -rvh html/ ~/singa-site/
+    cd ~/singa-site
     git commit -m "update xxxx"
     git push
 

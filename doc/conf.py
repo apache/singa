@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# incubator-singa documentation build configuration file, created by
+# singa documentation build configuration file, created by
 # sphinx-quickstart on Sat Jul  9 20:36:57 2016.
 #
 # Licensed to the Apache Software Foundation (ASF) under one
@@ -74,12 +74,12 @@ source_suffix = ['.rst', '.md']
 # source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'en/index'
+master_doc = 'index'
 
 # General information about the project.
-project = u'incubator-singa'
+project = u'singa'
 copyright = u'2019 The Apache Software Foundation. All rights reserved. Apache SINGA, Apache, the Apache feather logo, and the Apache SINGA project logos are trademarks of The Apache Software Foundation. All other marks mentioned may be trademarks or registered trademarks of their respective owners.'
-author = u'Apache Incubator'
+author = u'Apache Software Foundation'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -287,8 +287,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'incubator-singa.tex', u'incubator-singa Documentation',
-     u'moaz', 'manual'),
+    (master_doc, 'singa.tex', u'singa Documentation', u'moaz', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -321,8 +320,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, 'incubator-singa', u'incubator-singa Documentation',
-              [author], 1)]
+man_pages = [(master_doc, 'singa', u'singa Documentation', [author], 1)]
 
 # If true, show URL addresses after external links.
 #
@@ -334,8 +332,8 @@ man_pages = [(master_doc, 'incubator-singa', u'incubator-singa Documentation',
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'incubator-singa', u'incubator-singa Documentation', author,
-     'incubator-singa', 'One line description of project.', 'Miscellaneous'),
+    (master_doc, 'singa', u'singa Documentation', author, 'singa',
+     'One line description of project.', 'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
