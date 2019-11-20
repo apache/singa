@@ -1179,7 +1179,6 @@ TEST_F(TensorMath, BroadcastCuda) {
     EXPECT_FLOAT_EQ(6.0f, dptr[4]);
     EXPECT_FLOAT_EQ(8.0f, dptr[5]);
   }
-/*
   {
     Tensor q(Shape{3, 1, 2, 1}, dev);
     q.CopyDataFromHostPtr(dat1, 6);
@@ -1200,6 +1199,5 @@ TEST_F(TensorMath, BroadcastCuda) {
     EXPECT_FLOAT_EQ(7.0f, dptr[18]);
     EXPECT_FLOAT_EQ(8.0f, dptr[19]);
   }
-  */
 }
 #endif

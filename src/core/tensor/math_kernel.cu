@@ -69,6 +69,23 @@ __global__ void KernelSum(const size_t n, const float *in, float *out) {
 }
 */
 
+__global__ void KernelBroadcastTo(const size_t n, size_t nDim, const float *in,const float* shape, const float* stride, float *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    int shape_accu = n;
+    size_t offset = 0;
+    int remains = i;
+
+    for (int k = 0; k < nDim; k++) {
+      shape_accu = shape_accu/shape[k];
+      int idx = remains/shape_accu;
+      remains = remains%shape_accu;
+      offset = offset + idx*stride[k];
+    }
+    out[i] = in[offset];
+  }
+}
+
 __global__ void KernelAdd(const size_t n, const float *in1, const float *in2,
                           float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
@@ -450,6 +467,10 @@ void pow(const size_t n, const float *in, const float x, float *out,
 void add(const size_t n, const float *in, const float x, float *out,
          cudaStream_t s) {
   KernelAdd <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, x, out);
+}
+
+void broadcast_to(const size_t n, size_t nDim,const float *in,const float* shape, const float* stride, float *out, cudaStream_t s) {
+  KernelBroadcastTo <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF>>> (n, nDim, in, shape, stride, out);
 }
 
 void mult(const size_t n, const float *in, const float x, float *out,
