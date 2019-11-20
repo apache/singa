@@ -19,7 +19,7 @@
 # Base unbuntu 16.04 image
 FROM nvidia/cuda:9.0-devel-ubuntu16.04
 
-MAINTAINER incubator-singa dev@singa.incubator.apache.org
+MAINTAINER singa dev@singa.apache.org
 
 # install dependencies
 RUN apt-get update \

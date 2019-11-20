@@ -57,11 +57,11 @@ class Dense : public Layer {
   const Tensor& weight() const { return weight_; }
   const Tensor& bias() const { return bias_; }
 
-  void set_weight(Tensor w) {
+  void set_weight(const Tensor& w) {
     weight_.ResetLike(w);
     weight_.CopyData(w);
   }
-  void set_bias(Tensor b) {
+  void set_bias(const Tensor& b) {
     bias_.ResetLike(b);
     bias_.CopyData(b);
   }

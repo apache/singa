@@ -22,13 +22,13 @@ FROM nvidia/cuda:7.5-cudnn5-devel-centos6
 # install dependencies
 RUN yum -y update \
     && yum install -y \
-        git \
-        wget \
-        openssh-server \
-        cmake \
+    git \
+    wget \
+    openssh-server \
+    cmake \
     && yum clean all \
     # download singa source
-    # RUN git clone https://github.com/apache/incubator-singa.git
+    # RUN git clone https://github.com/apache/singa.git
     # config ssh service
     && mkdir /var/run/sshd \
     && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \

@@ -30,6 +30,8 @@
 #include <mpi.h>
 
 #include "singa/core/tensor.h"
+#include "cuda_fp16.h"
+using std::vector;
 
 namespace singa{
 
@@ -64,19 +66,36 @@ public:
   int totalMPIRanksInGlobal;
   int MPIRankInLocal;
   bool UseMPI;
+  float *fusedSendBuff;
+  float *fusedRecvBuff;
+  __half *fusedSendBuffHalf;
+  __half *fusedRecvBuffHalf;
+  size_t maxSize;
 
   ncclUniqueId id;
+  // cuda stream s is for nccl all reduce
   cudaStream_t s;
+  // cuda streams c1 and c2 are mainly for data copy to and from memory buffers
+  cudaStream_t c1;
+  cudaStream_t c2;
   ncclComm_t comm;
+  cudaEvent_t event;
 
-  Communicator();
-  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder);
+  Communicator(int limit);
+  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int size);
   ~Communicator();
-  void allReduce(int size, void* sendbuff, void* recvbuff);
+  void synch(Tensor &t);
+  void fusedSynch(vector<Tensor> &t);
+  void synchHalf(Tensor &t);
+  void fusedSynchHalf(vector<Tensor> &t);
   void wait();
+
+private:
+  void allReduce(int size, void* sendbuff, void* recvbuff, ncclDataType_t ncclType);
+  void setup(int gpu_num);
+
 };
 
-void synch(Tensor &t, Communicator &c);
 
 }
 

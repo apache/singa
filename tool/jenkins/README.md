@@ -38,7 +38,7 @@ Change Jenkins time zone by executing the following code in 'Mange jenkins' -> '
 Create a multi-configuration project and configure project as follows:
 
 ### Description
-This job automatically pulls latest commits from Apache incubator-singa github repository, then for different environments
+This job automatically pulls latest commits from Apache singa github repository, then for different environments
 
 * compile and test Singa on GPUs
 * generate conda package of Singa with CUDA enabled
@@ -47,10 +47,10 @@ This job automatically pulls latest commits from Apache incubator-singa github r
 
 ### General
   * Discard old builds - Max # of builds to keep - 50
-  * GitHub project - ``https://github.com/apache/incubator-singa``
+  * GitHub project - ``https://github.com/apache/singa``
 
 ### Source Code Management
-  * Git - Repository URL - ``https://github.com/apache/incubator-singa``
+  * Git - Repository URL - ``https://github.com/apache/singa``
   * Git - Branch Specifier - ``*/master``
 
 ### Build Triggers
@@ -67,7 +67,7 @@ The building script can do the following tasks:
     Execute shell - command - ``bash -ex tool/jenkins/test.sh``
 
   * update another github repo with the new commits to invoke travis (for cpu test and conda package generation)
-    Execute shell - command - ``git push https://<username:token>@github.com/nusdbsystem/incubator-singa.git -f``
+    Execute shell - command - ``git push https://<username:token>@github.com/nusdbsystem/singa.git -f``
 
   * create conda package and upload it to anaconda cloud
     Execute shell - command
@@ -161,7 +161,7 @@ First, we start the container
 
 Next, we do the first commit to the svn repo.
 
-    $ svn co https://svn.apache.org/repos/asf/incubator/singa/site/trunk
+    $ svn co https://svn.apache.org/repos/asf/singa/site/trunk
     # update ~/.subversion/config to set 'store-password=yes'
     # to set password free commit, we have to do a manual commit at first.
     # change any file (add spaces) inside trunk/ to commit a message

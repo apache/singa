@@ -113,13 +113,14 @@ def accuracy(pred, target):
 # Function to all reduce NUMPY Accuracy and Loss from Multiple Devices
 def reduce_variable(variable, dist_opt, reducer):
     reducer.copy_from_numpy(variable)
-    singa.synch(reducer.data, dist_opt.communicator)
+    dist_opt.all_reduce(reducer.data)
+    dist_opt.wait()
     output=tensor.to_numpy(reducer)
     return output
 
 # Function to sychronize SINGA TENSOR initial model parameters
 def sychronize(tensor, dist_opt):
-    singa.synch(tensor.data, dist_opt.communicator)
+    dist_opt.all_reduce(tensor.data)
     tensor /= dist_opt.world_size
 
 # Data augmentation
@@ -134,7 +135,6 @@ def augmentation(x, batch_size):
     return x
 
 def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None, gpu_num=None, gpu_per_node=None, nccl_id=None):
-
     # Prepare training and valadiation data
     train_x, train_y, test_x, test_y = load_dataset()
     IMG_SIZE = 28
@@ -204,8 +204,10 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
             loss = autograd.softmax_cross_entropy(out, ty)               
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
-            for p, g in autograd.backward(loss):
-                sgd.update(p, g)
+            if DIST:
+                sgd.backward_and_update(loss, threshold = 50000)
+            else:
+                sgd.backward_and_update(loss)
 
         if DIST:
             # Reduce the Evaluation Accuracy and Loss from Multiple Devices

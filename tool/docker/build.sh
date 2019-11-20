@@ -18,7 +18,7 @@
 # * limitations under the License.
 # */
 
-# build all docker images, must be exected under the root directory, i.e., incubator-singa/
+# build all docker images, must be exected under the root directory, i.e., singa/
 # ./build.sh PUSH would push the images to dockerhub/nusdbsystem and then delete the local image
 #   (used by Jenkins to avoid dangling images from multiple building)
 

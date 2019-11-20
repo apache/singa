@@ -81,9 +81,9 @@ Add the numpy header path to the compiler flags, for example:
 
 .. code-block:: bash
 
-	git clone https://github.com/apache/incubator-singa.git
+	git clone https://github.com/apache/singa.git
 
-	cd incubator-singa
+	cd singa
 	mkdir build
 	cd build
 

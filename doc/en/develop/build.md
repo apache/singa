@@ -21,10 +21,10 @@
 
 
 The source files could be downloaded either as a
-[tar.gz file](https://dist.apache.org/repos/dist/dev/incubator/singa/), or as a git repo
+[tar.gz file](https://dist.apache.org/repos/dist/dev/singa/), or as a git repo
 
-    $ git clone https://github.com/apache/incubator-singa.git
-    $ cd incubator-singa/
+    $ git clone https://github.com/apache/singa.git
+    $ cd singa/
 
 If you want to contribute code to SINGA, refer to [this page]() for the steps and requirements.
 
@@ -44,7 +44,7 @@ To build the CPU version of SINGA
     conda build tool/conda/singa/
 
 The above commands have been tested on Ubuntu (14.04, 16.04 and 18.04) and macOS 10.11.
-Refer to the [Travis-CI page](https://travis-ci.org/apache/incubator-singa) for more information.
+Refer to the [Travis-CI page](https://travis-ci.org/apache/singa) for more information.
 
 ### Build GPU Version
 
@@ -96,11 +96,11 @@ Therefore, when you run
 
 ## Use native tools to build SINGA on Ubuntu
 
-Refer to SINGA [Dockerfiles](https://github.com/apache/incubator-singa/blob/master/tool/docker/devel/ubuntu/cuda9/Dockerfile#L30)
+Refer to SINGA [Dockerfiles](https://github.com/apache/singa/blob/master/tool/docker/devel/ubuntu/cuda9/Dockerfile#L30)
 for the instructions of installing the dependent libraries on Ubuntu 16.04. You can also create a Docker container using the [devel images]() and build SINGA inside the container.
 To build SINGA with GPU, MKLDNN, Python and unit tests, run the following instructions
 
-    mkdir build    # at the root of incubator-singa folder
+    mkdir build    # at the root of singa folder
     cd build
     cmake -DENABLE_TEST=ON -DUSE_CUDA=ON -DUSE_MKLDNN=ON -DUSE_PYTHON3=ON ..
     make
