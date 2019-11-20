@@ -21,50 +21,39 @@ The SINGA Team
 
 A successful project requires many people to play many roles. Some members write code or documentation, while others are valuable as testers, submitting patches and suggestions.
 
-Mentors
--------
-
-==================   ============
-Name                 Email
-==================   ============
-Ted Dunning          tdunning@apache.org
-Alan Gates           gates@apache.org
-Thejas Nair          thejas@apache.org
-==================   ============
-
-
-Developers
-----------
-
 The SINGA community has developers mainly from National University of Singapore, Zhejiang University, NetEase, Osaka University, yzBigData, etc.
 
-PPMC
-----
+PMC
+---
 
 +--------------------+--------------------------------+-----------------------------------------------+
 | Name               | Email                          | Organization                                  |
 +====================+================================+===============================================+
-| Gang Chen          | cg@apache.org                  | Zhejiang University                           |
-+--------------------+--------------------------------+-----------------------------------------------+
 | Anh Dinh           | dinhtta@apache.org             | Singapore University of Technology and Design |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Jinyang Gao        | jinyang@apache.org             | DAMO Academy, Alibaba Group                   |
-+--------------------+--------------------------------+-----------------------------------------------+
-| Zhaojing Luo       | zhaojing@apache.org            | National University of Singapore              |
+| Alan Gates         | gates@apache.org               | Apache Software Foundation                    |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Beng Chin Ooi      | ooibc@apache.org               | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Kian-Lee Tan       | tankianlee@apache.org          | National University of Singapore              |
+| Gang Chen          | cg@apache.org                  | Zhejiang University                           |
 +--------------------+--------------------------------+-----------------------------------------------+
-| Sheng Wang         | wangsh@apache.org              | DAMO Academy, Alibaba Group                   |
-+--------------------+--------------------------------+-----------------------------------------------+
-| Wei Wang           | wangwei@apache.org             | National University of Singapore              |
-+--------------------+--------------------------------+-----------------------------------------------+
-| Zhongle Xie        | zhongle@apache.org             | Hangzhou MZH Technologies                     |
+| Jinyang Gao        | jinyang@apache.org             | DAMO Academy, Alibaba Group                   |
 +--------------------+--------------------------------+-----------------------------------------------+
 | Kaiping Zheng      | kaiping@apache.org             | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
+| Kian-Lee Tan       | tankianlee@apache.org          | National University of Singapore              |
++--------------------+--------------------------------+-----------------------------------------------+
 | Moaz Reyad         | moaz@apache.org                | Université Grenoble Alpes                     |
++--------------------+--------------------------------+-----------------------------------------------+
+| Ted Dunning        | tdunning@apache.org            | Apache Software Foundation                    |
++--------------------+--------------------------------+-----------------------------------------------+
+| Thejas Nair        | thejas@apache.org              | Apache Software Foundation                    |
++--------------------+--------------------------------+-----------------------------------------------+
+| Wei Wang           | wangwei@apache.org             | National University of Singapore              |
++--------------------+--------------------------------+-----------------------------------------------+
+| Zhaojing Luo       | zhaojing@apache.org            | National University of Singapore              |
++--------------------+--------------------------------+-----------------------------------------------+
+| Zhongle Xie        | zhongle@apache.org             | Hangzhou MZH Technologies                     |
 +--------------------+--------------------------------+-----------------------------------------------+
 
 Committers
@@ -75,7 +64,11 @@ Committers
 +====================+================================+===============================================+
 | Chonho Lee         | chonho@apache.org              | Osaka University                              |
 +--------------------+--------------------------------+-----------------------------------------------+
+| Sheng Wang         | wangsh@apache.org              | DAMO Academy, Alibaba Group                   |
++--------------------+--------------------------------+-----------------------------------------------+
 | Wanqi Xue          | xuewanqi@apache.org            | National University of Singapore              |
++--------------------+--------------------------------+-----------------------------------------------+
+| Xiangrui Cai       | caixr@apache.org               | National University of Singapore              |
 +--------------------+--------------------------------+-----------------------------------------------+
 
 Contributors

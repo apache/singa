@@ -176,6 +176,22 @@ TEST_F(TensorMath, SoftMaxCpp) {
   EXPECT_NEAR(exp(2) / (exp(1) + exp(2)), dptr2[1], 1e-5);
 }
 
+TEST_F(TensorMath, SoftMaxOnAxis) {
+  Tensor in(Shape{2,2,2,2}, std::make_shared<singa::CudaGPU>() );
+  Gaussian(0.0f, 1.0f, &in);
+
+  // -4, -3, -2, -1, 0, 1, 2, 3
+  Tensor out = SoftMax(in, 1);
+  out = SoftMax(in, -4);
+  out = SoftMax(in, -3);
+  out = SoftMax(in, -2);
+  out = SoftMax(in, -1);
+  out = SoftMax(in, 0);
+  out = SoftMax(in, 1);
+  out = SoftMax(in, 2);
+  out = SoftMax(in, 3);
+}
+
 TEST_F(TensorMath, LTCpp) {
   Tensor p1 = a < 2.0f;
   const float *dptr1 = p1.data<float>();
@@ -1091,6 +1107,20 @@ TEST_F(TensorMath, CopyColumnsCuda) {
                       dat1[i * a.shape(1) + j + 1]);
 }
 
+TEST_F(TensorMath, RowMaxCuda) {
+  auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor x1(Shape{2,2}, dev);
+  const float data1[4] = {1.0f, 2.0f, 3.0f, 4.0f};
+  x1.CopyDataFromHostPtr<float>(data1,4);
+
+  auto y2 = RowMax(x1);
+  y2.Reshape({2,1});
+  y2.ToHost();
+  const float *dptr1 = y2.data<float>();
+  EXPECT_EQ(dptr1[0], 2);
+  EXPECT_EQ(dptr1[1], 4);
+}
+
 
 TEST_F(TensorMath, BroadcastCuda) {
   auto dev = std::make_shared<singa::CudaGPU>();
@@ -1149,7 +1179,6 @@ TEST_F(TensorMath, BroadcastCuda) {
     EXPECT_FLOAT_EQ(6.0f, dptr[4]);
     EXPECT_FLOAT_EQ(8.0f, dptr[5]);
   }
-/*
   {
     Tensor q(Shape{3, 1, 2, 1}, dev);
     q.CopyDataFromHostPtr(dat1, 6);
@@ -1170,6 +1199,5 @@ TEST_F(TensorMath, BroadcastCuda) {
     EXPECT_FLOAT_EQ(7.0f, dptr[18]);
     EXPECT_FLOAT_EQ(8.0f, dptr[19]);
   }
-  */
 }
 #endif

@@ -919,7 +919,8 @@ class SoftMaxCrossEntropy(Operation):
 
     def backward(self, dy=1.0):
         dx = singa.SoftmaxCrossEntropyBwd(self.p, self.t)
-        return singa.DivFloat(dx, float(self.p.shape()[0]))
+        dx /= float(self.p.shape()[0])
+        return dx
 
 
 def softmax_cross_entropy(x, t):

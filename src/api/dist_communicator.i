@@ -22,6 +22,7 @@
 /*interface file for swig */
 
 %module dist_communicator
+%include "std_vector.i"
 
 %{
 #include "singa/io/communicator.h"
@@ -42,11 +43,15 @@ public:
   int MPIRankInGlobal;
   int totalMPIRanksInGlobal;
   int MPIRankInLocal;
-  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder);
-  Communicator();
+  Communicator(int limit);
+  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int limit);
+  void synch(Tensor &t);
+  void fusedSynch(std::vector<Tensor> &t);
+  void synchHalf(Tensor &t);
+  void fusedSynchHalf(std::vector<Tensor> &t);
+  void wait();
 };
 
-void synch(Tensor &t, Communicator &c);
 
 #endif  // USE_DIST
 

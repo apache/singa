@@ -21,6 +21,8 @@ Welcome to Apache SINGA
 Recent News
 -----------
 
+* SINGA graduated as a Top-Level Project (TLP) of the Apache Software Foundation on 16 Oct 2019.
+
 * Food(lg), the mobile app to `help patients with prediabetes <https://ssi.nus.edu.sg/ntfgh/>`_, is powered by SINGA and this app can now be downloaded on the `APP Store <https://apps.apple.com/us/app/food-lg/id1213299378>`_ or `Google Play <https://play.google.com/store/apps/details?id=com.nusidmi.foodlg&hl=en_SG>`_. Watch this `video <https://www.youtube.com/watch?v=MHp-saJiP-0>`_ of Food(lg) for more details.
 
 * A tutorial on SINGA was given at Singapore Infocomm Media Development Authority (IMDA), 16 August, 2019. Snapshots of the tutorial:
@@ -56,7 +58,7 @@ Recent News
 
 * **Version 0.2.0** is now available, 14 Jan, 2016. `Download SINGA v0.2.0 <downloads.html>`_.
 
-* SINGA will be presented at `Strata+Hadoop <http://strataconf.com/big-data-conference-sg-2015/public/schedule/detail/45123>`_ on 2 Dec, 2015
+* SINGA was presented at `Strata+Hadoop <http://strataconf.com/big-data-conference-sg-2015/public/schedule/detail/45123>`_ on 2 Dec, 2015
 
 * SINGA was presented at `ACM Multimedia <http://www.acmmm.org/2015/at-a-glance/>`_ Best Paper session and Open Source Software Competition session, 26-30 Oct, 2015 (`Slides <http://www.comp.nus.edu.sg/~dbsystem/singa//assets/file/mm2015.ppt>`_)
 
@@ -82,12 +84,12 @@ Getting Started
 
 * Try SINGA on `AWS <https://aws.amazon.com/marketplace/pp/B01NAUAWZW>`_ or via `Docker <https://hub.docker.com/r/apache/singa/>`_.
 
-* Refer to the `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ for some basic examples and the `model zoo page <./docs/model_zoo/index.html>`_ for more examples.
+* Refer to the `Jupyter notebooks <http://nbviewer.jupyter.org/github/apache/singa/blob/master/doc/en/docs/notebook/index.ipynb>`_ for some basic examples and the `model zoo page <./docs/model_zoo/index.html>`_ for more examples.
 
 .. |logo| image:: _static/jupyter.png
    :scale: 25%
    :align: middle
-   :target: http://nbviewer.jupyter.org/github/apache/incubator-singa/blob/master/doc/en/docs/notebook/index.ipynb
+   :target: http://nbviewer.jupyter.org/github/apache/singa/blob/master/doc/en/docs/notebook/index.ipynb
 
 +---------+
 | |logo|  |
@@ -156,8 +158,3 @@ Companies like `NetEase <http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html>`_
 License
 ----------
 SINGA is released under `Apache License Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
-
-Disclaimers
------------
-
-Apache SINGA is an effort undergoing incubation at The Apache Software Foundation (ASF), sponsored by the Apache Incubator. Incubation is required of all newly accepted projects until a further review indicates that the infrastructure, communications, and decision making process have stabilized in a manner consistent with other successful ASF projects. While incubation status is not necessarily a reflection of the completeness or stability of the code, it does indicate that the project has yet to be fully endorsed by the ASF.

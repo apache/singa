@@ -22,9 +22,9 @@
 #ifdef USE_DIST
 
 #include "singa/io/communicator.h"
+#include "./math_kernel.h"
 
 namespace singa{
-
 
 static uint64_t getHostHash(const char* string) {
   // Based on DJB2, result = result * 33 + char
@@ -54,11 +54,11 @@ NcclIdHolder::~NcclIdHolder(){
 } 
 
 // contructer for application with python multi-processing module
-Communicator::Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder){
+Communicator::Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int buffSize){
 
+  maxSize = (size_t) buffSize;
   // this contructor is for NCCL WITHOUT MPI
   UseMPI = false;
-
   // Determine the rank of the collective communication
   totalMPIRanksInGlobal=gpu_per_node;
   MPIRankInLocal=gpu_num;
@@ -68,15 +68,14 @@ Communicator::Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &ho
   id = holder.id;
 
   // setup cuda stream and nccl communicator
-  CUDA_CHECK(cudaSetDevice(gpu_num));
-  CUDA_CHECK(cudaStreamCreate(&s));
-  NCCLCHECK(ncclCommInitRank(&comm, gpu_per_node, id, gpu_num));
+  setup(gpu_num);
 
 } // end of constructor 
 
 // contructer for application with MPI
-Communicator::Communicator(){
+Communicator::Communicator(int buffSize){
 
+  maxSize = (size_t) buffSize;
   // this contructor is for NCCL WITH MPI
   UseMPI = true;
 
@@ -102,41 +101,173 @@ Communicator::Communicator(){
   if (MPIRankInGlobal == 0) ncclGetUniqueId(&id);
   MPICHECK(MPI_Bcast((void *)&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD));
 
-  // setup cuda stream and nccl communicator
-  CUDA_CHECK(cudaSetDevice(MPIRankInLocal));
-  CUDA_CHECK(cudaStreamCreate(&s));
-  NCCLCHECK(ncclCommInitRank(&comm, totalMPIRanksInGlobal, id, MPIRankInGlobal));
+  // setup cuda stream and nccl communicator  
+  setup(MPIRankInLocal);
 
 } // end of constructor 
 
+void Communicator::setup(int gpu_num){
 
-void Communicator::allReduce(int size, void* sendbuff, void* recvbuff)
+  CUDA_CHECK(cudaSetDevice(gpu_num));
+  NCCLCHECK(ncclCommInitRank(&comm, totalMPIRanksInGlobal, id, MPIRankInGlobal));
+  CUDA_CHECK(cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking));
+  CUDA_CHECK(cudaStreamCreateWithFlags(&c1, cudaStreamNonBlocking));
+  CUDA_CHECK(cudaStreamCreateWithFlags(&c2, cudaStreamNonBlocking));
+  CUDA_CHECK(cudaMalloc(&fusedSendBuff, maxSize * sizeof(float)));
+  CUDA_CHECK(cudaMalloc(&fusedRecvBuff, maxSize * sizeof(float)));
+  CUDA_CHECK(cudaMalloc(&fusedSendBuffHalf, maxSize * sizeof(__half)));
+  CUDA_CHECK(cudaMalloc(&fusedRecvBuffHalf, maxSize * sizeof(__half)));
+  CUDA_CHECK(cudaEventCreateWithFlags(&event, cudaEventBlockingSync | cudaEventDisableTiming));
+
+}
+
+void Communicator::allReduce(int size, void* sendbuff, void* recvbuff, ncclDataType_t ncclType)
 {
+
   NCCLCHECK(ncclAllReduce((const void*)sendbuff,
                              (void*)recvbuff,
-    						 size,
-                             ncclFloat,
+                             size,
+                             ncclType,
                              ncclSum,
                              comm, 
                              s));
+
 }
 
 void Communicator::wait(){
-  //synchronizing on CUDA stream to complete NCCL communication
-  CUDA_CHECK(cudaStreamSynchronize(s));
+  //synchronizing on all the CUDA streams used by communicator
+  CUDA_CHECK(cudaEventRecord(event, s));
+  CUDA_CHECK(cudaStreamWaitEvent(NULL, event, 0));
+  CUDA_CHECK(cudaEventRecord(event, c1));
+  CUDA_CHECK(cudaStreamWaitEvent(NULL, event, 0));
+  CUDA_CHECK(cudaEventRecord(event, c2));
+  CUDA_CHECK(cudaStreamWaitEvent(NULL, event, 0));
 }
 
 Communicator::~Communicator(){
   //finalizing NCCL
   ncclCommDestroy(comm);
   if (UseMPI == true) MPICHECK(MPI_Finalize());
+  CUDA_CHECK(cudaFree(fusedSendBuff));
+  CUDA_CHECK(cudaFree(fusedRecvBuff));
+  CUDA_CHECK(cudaFree(fusedSendBuffHalf));
+  CUDA_CHECK(cudaFree(fusedRecvBuffHalf));
+  CUDA_CHECK(cudaStreamDestroy(s));
+  CUDA_CHECK(cudaStreamDestroy(c1));
+  CUDA_CHECK(cudaStreamDestroy(c2));
+
 }
 
-void synch(Tensor &t, Communicator &c){
-  void* addr = t.block()->mutable_data();
-  c.allReduce(t.Size(), addr, addr);
-  c.wait();
+
+void Communicator::fusedSynch(vector<Tensor> &t){
+
+  // record the event of the default cuda stream and follow it
+  CUDA_CHECK(cudaEventRecord(event, NULL));
+  CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
+  
+  size_t offset = 0;
+
+  //memory copy to fusedBuff
+  for (size_t i = 0; i < t.size(); i++)
+  {
+    CUDA_CHECK(cudaMemcpyAsync((void*) (fusedSendBuff + offset), (const void*) t[i].block()->mutable_data(), t[i].Size() * sizeof(float), cudaMemcpyDeviceToDevice, c1));
+    offset += t[i].Size();
+  }
+
+  // wait for the memcpy to complete
+  CUDA_CHECK(cudaEventRecord(event, c1));
+  CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
+
+  allReduce((int) offset, (void*) fusedSendBuff, (void*) fusedRecvBuff, ncclFloat);
+
+  // wait for the allreduce to complete
+  CUDA_CHECK(cudaEventRecord(event, s));
+  CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
+
+  //copy data back to tensors after allreduce
+  offset = 0;
+  for (size_t i = 0; i < t.size(); i++)
+  {
+    CUDA_CHECK(cudaMemcpyAsync((void*) t[i].block()->mutable_data(), (const void*) (fusedRecvBuff + offset), t[i].Size() * sizeof(float), cudaMemcpyDeviceToDevice, c1));
+    offset += t[i].Size();
+  }
+
 }
+
+void Communicator::synch(Tensor &t){
+
+  // record the event of the default cuda stream and follow it
+  CUDA_CHECK(cudaEventRecord(event, NULL));
+  CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
+
+  void* addr = t.block()->mutable_data();
+  allReduce(t.Size(), addr, addr, ncclFloat);
+
+}
+
+void Communicator::fusedSynchHalf(vector<Tensor> &t){
+
+  // record the event of the default cuda stream and follow it
+  CUDA_CHECK(cudaEventRecord(event, NULL));
+  CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
+  
+  size_t offset = 0;
+
+  //memory copy to fusedBuff
+  for (size_t i = 0; i < t.size(); i++)
+  {
+    CUDA_CHECK(cudaMemcpyAsync((void*) (fusedSendBuff + offset), (const void*) t[i].block()->mutable_data(), t[i].Size() * sizeof(float), cudaMemcpyDeviceToDevice, c1));
+    offset += t[i].Size();
+  }
+
+  cuda::float2half(offset, fusedSendBuff, fusedSendBuffHalf, c1);
+
+  // wait for the memcpy to complete
+  CUDA_CHECK(cudaEventRecord(event, c1));
+  CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
+
+  allReduce((int) offset, (void*) fusedSendBuffHalf, (void*) fusedRecvBuffHalf, ncclHalf);
+
+  // wait for the allreduce to complete
+  CUDA_CHECK(cudaEventRecord(event, s));
+  CUDA_CHECK(cudaStreamWaitEvent(c2, event, 0));
+
+  cuda::half2float(offset, fusedRecvBuffHalf, fusedRecvBuff, c2);
+
+  //copy data back to tensors after allreduce
+  offset = 0;
+  for (size_t i = 0; i < t.size(); i++)
+  {
+    CUDA_CHECK(cudaMemcpyAsync((void*) t[i].block()->mutable_data(), (const void*) (fusedRecvBuff + offset), t[i].Size() * sizeof(float), cudaMemcpyDeviceToDevice, c2));
+    offset += t[i].Size();
+  }
+
+}
+
+void Communicator::synchHalf(Tensor &t){
+
+  float* addr = static_cast<float*>(t.block()->mutable_data());
+
+  // record the event of the default cuda stream and follow it
+  CUDA_CHECK(cudaEventRecord(event, NULL));
+  CUDA_CHECK(cudaStreamWaitEvent(c1, event, 0));
+
+  cuda::float2half(t.Size(), addr, fusedSendBuffHalf, c1);
+
+  // wait for conversion to half precision complete
+  CUDA_CHECK(cudaEventRecord(event, c1));
+  CUDA_CHECK(cudaStreamWaitEvent(s, event, 0));
+
+  allReduce(t.Size(), (void*) fusedSendBuffHalf, (void*) fusedRecvBuffHalf, ncclHalf);
+
+  // wait for the allreduce to complete
+  CUDA_CHECK(cudaEventRecord(event, s));
+  CUDA_CHECK(cudaStreamWaitEvent(c2, event, 0));
+
+  cuda::half2float(t.Size(), fusedRecvBuffHalf, addr, c2);
+
+}
+
 
 }
 

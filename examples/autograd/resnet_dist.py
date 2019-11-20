@@ -69,12 +69,7 @@ if __name__ == "__main__":
             loss = autograd.softmax_cross_entropy(x, ty)
             dev.Sync()
             softmax += time.time() - tick
-            for p, g in autograd.backward(loss):
-                dev.Sync()  # this "for" loops for a large number of times, so can slow down
-                tick = time.time()
-                sgd.update(p, g)
-                dev.Sync()  # this "for" loops for a large number of times, so can slow down
-                update += time.time() - tick
+            sgd.backward_and_update(loss)
 
     dev.Sync()            
     end = time.time()
@@ -83,9 +78,8 @@ if __name__ == "__main__":
     tforward = float(fd) / float(niters)
     tsoftmax = float(softmax) / float(niters)
     tbackward = titer - tforward - tsoftmax
-    tsgd = float(update) / float(niters)
 
     if (sgd.rank_in_global == 0):
         print("\nThroughput = {} per second".format(throughput), flush=True)
-        print("Total={}, forward={}, softmax={}, backward={}, sgd={}".format(
-        titer, tforward, tsoftmax, tbackward, tsgd), flush=True)
+        print("Total={}, forward={}, softmax={}, backward={}".format(
+        titer, tforward, tsoftmax, tbackward), flush=True)

@@ -38,7 +38,7 @@ Run the docker container using
     # or
     docker run -it apache/singa:devel-cuda /bin/bash
 
-The latest SINGA code is under the `incubator-singa` folder.
+The latest SINGA code is under the `singa` folder.
 
 ## Create new Docker images from Dockerfile
 
