@@ -158,7 +158,15 @@ __global__ void KernelClamp(const size_t n, const float low, const float high,
 __global__ void KernelRelu(const size_t n, const float *in, float *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
-    out[i] = max(in[i], 0.0f);
+    out[i] = in[i] > 0 ? in[i] : 0.0f;
+  }
+}
+
+__global__ void KernelReLUBackward(const size_t n, const float *in1, const float *in2,
+                         float *out) {
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = in2[i] > 0 ? in1[i] : 0.0f;
   }
 }
 
@@ -486,6 +494,11 @@ void div(const size_t n, const float x, const float *in, float *out,
 void threshold(const size_t n, const float x, const float *in, float *out,
                cudaStream_t s) {
   KernelThreshold <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, x, in, out);
+}
+
+void relubackward(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s) {
+  KernelReLUBackward <<<ceil(num / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (num, in1, in2, out);
 }
 
 void gt(const size_t num, const float *in, const float x, float *out,

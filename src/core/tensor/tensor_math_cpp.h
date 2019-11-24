@@ -284,6 +284,15 @@ void EltwiseMult<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor*
 }
 
 template <>
+void ReLUBackward<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
+                          Context *ctx) {
+  auto relubackward_lambda = [](float a, float b) {
+    return (b > 0) ? a : 0.f;
+  };
+  traverse_binary<float>(in1, in2, out, relubackward_lambda);
+}
+
+template <>
 void Exp<float, lang::Cpp>(const Tensor& in, Tensor *out, Context *ctx) {
   traverse_unary<float>(in, out, [](float x) {return exp(x);});
 }

@@ -786,6 +786,7 @@ GenBinaryTensorFn(operator<, LT);
 GenBinaryTensorFn(operator<=, LE);
 GenBinaryTensorFn(operator>, GT);
 GenBinaryTensorFn(operator>=, GE);
+GenBinaryTensorFn(ReLUBackward, ReLUBackward);
 
 #define EltwiseTensorScalarFn(fn, t, x, ret)                            \
   do {                                                                  \

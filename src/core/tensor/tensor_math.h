@@ -145,6 +145,13 @@ void EltwiseMult(const Tensor &in1, const Tensor &in2, Tensor *out,
   LOG(FATAL) << "EltwiseMult-Pair Not Implemented";
 }
 
+/// out[i]=(in2[i]>0)?in1[i]:0.f
+template <typename DType, typename Lang>
+void ReLUBackward(const Tensor &in1, const Tensor &in2, Tensor *out,
+        Context *ctx) {
+  LOG(FATAL) << "ReLUBackward Not Implemented";
+}
+
 /// Base is e, Neper number. out[i]=exp(in[i])
 template <typename DType, typename Lang>
 void Exp(const Tensor &in, Tensor *out, Context *ctx) {

@@ -581,6 +581,16 @@ void Pow<float, lang::Cuda>(const Tensor& in1,
   }
 }
 
+template <>
+void ReLUBackward<float, lang::Cuda>(const Tensor& in1, const Tensor& in2,
+                           Tensor* out, Context* ctx) {
+  const float * in1Ptr = static_cast<const float*>(in1.block()->data());
+  const float * in2Ptr = static_cast<const float*>(in2.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  const size_t num = in1.Size();
+  cuda::relubackward(num, in1Ptr, in2Ptr, outPtr, ctx->stream);
+}
+
 /// Element-wise operation, out[i]=max(0, in[i])
 // template <>
 // void ReLU<float, lang::Cuda>(const Tensor& in, Tensor* out,
