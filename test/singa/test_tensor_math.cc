@@ -129,8 +129,8 @@ TEST_F(TensorMath, SoftPlusCpp) {
 
   Tensor p = SoftPlus(cc);
   const float *dptr1 = p.data<float>();
-  EXPECT_EQ(log(2.0f), dptr1[0]);
-  EXPECT_EQ(log(exp(1) + 1.0f), dptr1[1]);
+  EXPECT_NEAR(log(2.0f), dptr1[0], 1e-5);
+  EXPECT_NEAR(log(exp(1) + 1.0f), dptr1[1], 1e-5);
 }
 
 TEST_F(TensorMath, SoftSignCpp) {
@@ -1240,8 +1240,8 @@ TEST_F(TensorMath, SoftPlusCuda) {
   y.ToHost();
 
   const float *dptr = y.data<float>();
-  EXPECT_EQ(dptr[0], log(2.0f));
-  EXPECT_EQ(dptr[1], log(exp(1) + 1.0f));
+  EXPECT_NEAR(dptr[0], log(2.0f), 1e-5);
+  EXPECT_NEAR(dptr[1], log(exp(1) + 1.0f), 1e-5);
 }
 
 TEST_F(TensorMath, SoftSignCuda) {
