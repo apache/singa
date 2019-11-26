@@ -2342,9 +2342,9 @@ class TestPythonOperation(unittest.TestCase):
             y = x + x1
 
             dy = np.random.randn(*y.shape)
-            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape))
-            grad1 = np.sum(dy, axis=axis_helper(y.shape, x1.shape))
-            
+            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum(dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
+
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
             dy = tensor.from_numpy(dy)
@@ -2373,8 +2373,8 @@ class TestPythonOperation(unittest.TestCase):
             y = x + x1
 
             dy = np.random.randn(*y.shape)
-            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape))
-            grad1 = np.sum(dy, axis=axis_helper(y.shape, x1.shape))
+            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum(dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
             
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
@@ -2404,8 +2404,8 @@ class TestPythonOperation(unittest.TestCase):
             y = x - x1
 
             dy = np.random.randn(*y.shape)
-            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape))
-            grad1 = np.sum(-dy, axis=axis_helper(y.shape, x1.shape))
+            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum(-dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
             
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
@@ -2436,8 +2436,8 @@ class TestPythonOperation(unittest.TestCase):
             y = x - x1
 
             dy = np.random.randn(*y.shape)
-            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape))
-            grad1 = np.sum(-dy, axis=axis_helper(y.shape, x1.shape))
+            grad0 = np.sum(dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum(-dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
             
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
@@ -2467,8 +2467,8 @@ class TestPythonOperation(unittest.TestCase):
             y = x * x1
 
             dy = np.random.randn(*y.shape)
-            grad0 = np.sum(x1 * dy, axis=axis_helper(y.shape, x.shape))
-            grad1 = np.sum(x * dy, axis=axis_helper(y.shape, x1.shape))
+            grad0 = np.sum(x1 * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum(x * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
             
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
@@ -2498,8 +2498,8 @@ class TestPythonOperation(unittest.TestCase):
             y = x * x1
 
             dy = np.random.randn(*y.shape)
-            grad0 = np.sum(x1 * dy, axis=axis_helper(y.shape, x.shape))
-            grad1 = np.sum(x * dy, axis=axis_helper(y.shape, x1.shape))
+            grad0 = np.sum(x1 * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum(x * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
             
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
@@ -2525,12 +2525,12 @@ class TestPythonOperation(unittest.TestCase):
         ]
         for in1, in2 in cases:
             x = np.random.randn(*in1).astype(np.float32)
-            x1 = np.random.randn(*in2).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32) + 1.0
             y = x / x1
 
             dy = np.random.randn(*y.shape)
-            grad0 = np.sum(np.power(x1, -1) * dy, axis=axis_helper(y.shape, x.shape))
-            grad1 = np.sum(x * - np.power(x1, -2) * dy, axis=axis_helper(y.shape, x1.shape))
+            grad0 = np.sum(np.power(x1, -1) * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum(x * - np.power(x1, -2) * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
             
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
@@ -2544,6 +2544,7 @@ class TestPythonOperation(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+            break
 
     def test_div_broadcast_cpu(self):
         dev = cpu_dev
@@ -2556,12 +2557,12 @@ class TestPythonOperation(unittest.TestCase):
         ]
         for in1, in2 in cases:
             x = np.random.randn(*in1).astype(np.float32)
-            x1 = np.random.randn(*in2).astype(np.float32)
+            x1 = np.random.randn(*in2).astype(np.float32) + 1.0
             y = x / x1
 
             dy = np.random.randn(*y.shape)
-            grad0 = np.sum(np.power(x1, -1) * dy, axis=axis_helper(y.shape, x.shape))
-            grad1 = np.sum(x * - np.power(x1, -2) * dy, axis=axis_helper(y.shape, x1.shape))
+            grad0 = np.sum(np.power(x1, -1) * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum(x * - np.power(x1, -2) * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
             
             x = tensor.from_numpy(x)
             x1 = tensor.from_numpy(x1)
@@ -2577,28 +2578,134 @@ class TestPythonOperation(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
 
     # def test_pow_broadcast_gpu(self):
-    #     pass
+    #     dev = gpu_dev
+    #     cases = [
+    #         ([3, 4, 5], [5]),  # 3d vs 1d
+    #         ([3, 4, 5], [4, 5]),  # 3d vs 2d
+    #         ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+    #         ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+    #         ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+    #     ]
+    #     for in1, in2 in cases:
+    #         x = np.random.randint(1, 10, size=in1).astype(np.float32)
+    #         x1 = np.random.randint(1, 5, size=in2).astype(np.float32)
+    #         y = np.power(x, x1).astype(np.float32)
+
+    #         dy = np.random.randn(*y.shape)
+    #         grad0 = np.sum(x1 * np.power(x, x1-1) * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+    #         grad1 = np.sum(np.power(x, x1) * np.log(x) * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
+            
+    #         x = tensor.from_numpy(x)
+    #         x1 = tensor.from_numpy(x1)
+    #         dy = tensor.from_numpy(dy)
+    #         x.to_device(dev)
+    #         x1.to_device(dev)
+    #         dy.to_device(dev)
+
+    #         result = autograd.pow(x,x1)
+    #         dx0,dx1 = result.creator.backward(dy.data)
+    #         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+    #         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+    #         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
 
     # def test_pow_broadcast_cpu(self):
-    #     pass
+    #     dev = cpu_dev
+    #     cases = [
+    #         ([3, 4, 5], [5]),  # 3d vs 1d
+    #         ([3, 4, 5], [4, 5]),  # 3d vs 2d
+    #         ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+    #         ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+    #         ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+    #     ]
+    #     for in1, in2 in cases:
+    #         x = np.random.randint(1, 10, size=in1).astype(np.float32)
+    #         x1 = np.random.randint(1, 5, size=in2).astype(np.float32)
+    #         y = np.power(x, x1).astype(np.float32)
 
-    # def test_mean_broadcast_gpu(self):
-    #     pass
+    #         dy = np.random.randn(*y.shape)
+    #         grad0 = np.sum(x1 * np.power(x, x1-1) * dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+    #         grad1 = np.sum(np.power(x, x1) * np.log(x) * dy, axis=axis_helper(y.shape, x1.shape)).reshape(x1.shape)
+            
+    #         x = tensor.from_numpy(x)
+    #         x1 = tensor.from_numpy(x1)
+    #         dy = tensor.from_numpy(dy)
+    #         x.to_device(dev)
+    #         x1.to_device(dev)
+    #         dy.to_device(dev)
 
-    # def test_sum_broadcast_gpu(self):
-    #     pass
+    #         result = autograd.pow(x,x1)
+    #         dx0,dx1 = result.creator.backward(dy.data)
+    #         np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+    #         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+    #         np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
 
-    # def test_max_broadcast_gpu(self):
-    #     pass
+    def test_prelu_broadcast_gpu(self):
+        dev = gpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            slope = np.random.randn(*in2).astype(np.float32)
+            y = np.clip(x, 0, np.inf) + np.clip(x, -np.inf, 0) * slope
 
-    # def test_min_broadcast_gpu(self):
-    #     pass
-   
-    # def test_prelu_broadcast_gpu(self):
-    #     pass
+            dy = np.random.randn(*y.shape)
+            x0 = x.copy()
+            x0[x0 > 0] = 1
+            x0[x0 < 1] = 0
+            grad0 = np.sum((x0+(1-x0)*slope)*dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum((1-x0)*x*dy, axis=axis_helper(y.shape, slope.shape)).reshape(slope.shape)
+            
+            x = tensor.from_numpy(x)
+            slope = tensor.from_numpy(slope)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            slope.to_device(dev)
+            dy.to_device(dev)
 
-    # def test_gemm_broadcast_gpu(self):
-    #     pass
+            result = autograd.prelu(x,slope)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
+
+    def test_prelu_broadcast_cpu(self):
+        dev = cpu_dev
+        cases = [
+            ([3, 4, 5], [5]),  # 3d vs 1d
+            ([3, 4, 5], [4, 5]),  # 3d vs 2d
+            ([3, 4, 5, 6], [5, 6]),  # 4d vs 2d
+            ([3, 4, 5, 6], [4, 5, 6]),  # 4d vs 3d
+            ([1, 4, 1, 6], [3, 1, 5, 6])  # 4d vs 4d
+        ]
+        for in1, in2 in cases:
+            x = np.random.randn(*in1).astype(np.float32)
+            slope = np.random.randn(*in2).astype(np.float32)
+            y = np.clip(x, 0, np.inf) + np.clip(x, -np.inf, 0) * slope
+
+            dy = np.random.randn(*y.shape)
+            x0 = x.copy()
+            x0[x0 > 0] = 1
+            x0[x0 < 1] = 0
+            grad0 = np.sum((x0+(1-x0)*slope)*dy, axis=axis_helper(y.shape, x.shape)).reshape(x.shape)
+            grad1 = np.sum((1-x0)*x*dy, axis=axis_helper(y.shape, slope.shape)).reshape(slope.shape)
+            
+            x = tensor.from_numpy(x)
+            slope = tensor.from_numpy(slope)
+            dy = tensor.from_numpy(dy)
+            x.to_device(dev)
+            slope.to_device(dev)
+            dy.to_device(dev)
+
+            result = autograd.prelu(x,slope)
+            dx0,dx1 = result.creator.backward(dy.data)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(result), y, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
+            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
 
 if __name__ == '__main__':
     unittest.main()

@@ -32,6 +32,41 @@ CTensor = singa.Tensor
 training = False
 
 
+def axis_helper(y_shape, x_shape):
+    """
+    check which axes the x has been broadcasted
+    Args:
+        y_shape: the shape of result
+        x_shape: the shape of x
+    Return:
+        a tuple refering the axes 
+    """
+    res = []
+    j = len(x_shape)-1
+    for i in range(len(y_shape)-1, -1, -1):
+        if j < 0 or x_shape[j] != y_shape[i]:
+            res.append(i)
+        j-=1
+    return tuple(res[::-1])
+
+def back_broadcast(y_shape, x_shape, x):
+    """
+    for a brodcasted tensor, restore its shape of x from y_shape to x_shape
+    Args:
+        y_shape: the shape of result
+        x_shape: the shape of x
+        x: the input
+    Return:
+        a tensor
+    """
+    if y_shape != x_shape:
+        x = tensor.from_raw_tensor(x)
+        axis = axis_helper(y_shape, x_shape)
+        x = tensor.sum(x, axis)
+        x = tensor.reshape(x, x_shape)
+        x = x.data
+    return x
+
 def infer_dependency(op):
     """
     Infer the dependency of all operations with the
@@ -599,57 +634,63 @@ def reshape(a,shape):
     return Reshape(shape)(a)[0]
 
 class PRelu(Operation):
-
     def __init__(self):
         super(PRelu, self).__init__()
 
     def forward(self, x, slope):
         mask0 = singa.LTFloat(x, 0.0)
+        res = singa.__mul__(x, mask0)
+        res = singa.__mul__(res, slope)
+        res += singa.ReLU(x)
         if training:
             self.input = x
             self.slope = slope
             self.mask0 = mask0
-        x1 = singa.__mul__(x, mask0)
-        x1 *= slope
-        x2 = singa.ReLU(x)
-        x1 += x2
-        return x1
+            self.shape0 = list(x.shape())
+            self.shape1 = list(slope.shape())
+            self.shape3 = list(res.shape())
+        return res
 
     def backward(self, dy):
         dx1mask = singa.GEFloat(self.input, 0.0)
         dx2 = singa.__mul__(self.mask0, self.slope)
         dx = singa.__add__(dx1mask, dx2)
-        return singa.__mul__(dy, dx), singa.__mul__(dy,
-                                                    singa.__mul__(
-                                                        self.mask0, self.input))
+        dx = singa.__mul__(dy, dx)
+        dslope = singa.__mul__(dy, singa.__mul__(self.mask0, self.input))
+        if(type(dy) == float) or self.shape0 == self.shape1:
+            assert self.shape0 == self.shape1, ('should have same shape')
+            return dx, dslope
+        # handle broadcast
+        dx = back_broadcast(self.shape3, self.shape0, dx)
+        dslope = back_broadcast(self.shape3, self.shape1, dslope)
+        return dx, dslope
 
 
 def prelu(x, slope):
     return PRelu()(x, slope)[0]
+
 
 class Add(Operation):
     def __init__(self):
         super(Add, self).__init__()
 
     def forward(self, a, b):
-        #up till now, the dimensions of tensor a and b should less than 3
-        self.shape0=list(a.shape())
-        self.shape1=list(b.shape())
-
-        # fix for convolution, tensor has 4 dims
-        assert( (len(self.shape0) <= 2 and len(self.shape1) <= 2) or (self.shape0 == self.shape1) ),"up till now, the dimensions of tensor a and b should less than 3"
-        
-        return singa.__add__(a, b)
+        res = singa.__add__(a, b)
+        if training:
+            self.shape0 = list(a.shape())
+            self.shape1 = list(b.shape())
+            self.shape3 = list(res.shape())
+        return res
 
     def backward(self, dy):
-        if(type(dy)==float):
-            assert self.shape0==self.shape1,('should have same shape')
-            return dy,dy
-        db=CTensor(list(dy.shape()), dy.device())
-        db.CopyData(dy)
-        for i in range(len(self.shape0)-len(self.shape1)):
-            db=singa.Sum(db, 0)
-        return dy, db
+        dx0, dx1 = dy, dy
+        if(type(dy) == float) or self.shape0 == self.shape1:
+            assert self.shape0 == self.shape1, ('should have same shape')
+            return dx0, dx1
+        # handle broadcast
+        dx0 = back_broadcast(self.shape3, self.shape0, dx0)
+        dx1 = back_broadcast(self.shape3, self.shape1, dx1)
+        return dx0, dx1
 
 
 def add(a, b):
@@ -1920,15 +1961,25 @@ class Mul(Operation):
     def __init__(self):
         super(Mul, self).__init__()
 
-    def forward(self, x1, x2):
+    def forward(self, a, b):
+        res = singa.__mul__(a, b)
         if training:
-            self.cache = (x1, x2)
-        return singa.__mul__(x1, x2)
+            self.input = (a, b)
+            self.shape0 = list(a.shape())
+            self.shape1 = list(b.shape())
+            self.shape3 = list(res.shape())
+        return res
 
     def backward(self, dy):
-        dx1 = singa.__mul__(dy, self.cache[1])
-        dx2 = singa.__mul__(dy, self.cache[0])
-        return dx1, dx2
+        dx0 = singa.__mul__(dy, self.input[1])
+        dx1 = singa.__mul__(dy, self.input[0])
+        if(type(dy) == float) or self.shape0 == self.shape1:
+            assert self.shape0 == self.shape1, ('should have same shape')
+            return dx0, dx1
+        # handle broadcast
+        dx0 = back_broadcast(self.shape3, self.shape0, dx0)
+        dx1 = back_broadcast(self.shape3, self.shape1, dx1)
+        return dx0, dx1
 
 
 class Unsqueeze(Operation):
@@ -2245,18 +2296,26 @@ class Pow(Operation):
         super(Pow, self).__init__()
 
     def forward(self, a, b):
+        res = singa.Pow(a, b)
         if training:
             self.input = (a, b)
-        return singa.Pow(a, b)
+            self.shape0 = list(a.shape())
+            self.shape1 = list(b.shape())
+            self.shape3 = list(res.shape())
+        return res
 
     def backward(self, dy):
-        da1=singa.__mul__(self.input[1], singa.Pow(self.input[0], singa.SubFloat(self.input[1],1.0)))
-        da=singa.__mul__(da1, dy)
-
-        db1=singa.__mul__(singa.Pow(self.input[0],self.input[1]), singa.Log(self.input[0]))
-        db=singa.__mul__(db1, dy)
-
-        return da, db
+        da1 = singa.__mul__(self.input[1], singa.Pow(self.input[0], singa.SubFloat(self.input[1], 1.0)))
+        dx0 = singa.__mul__(da1, dy)
+        db1 = singa.__mul__(singa.Pow(self.input[0], self.input[1]), singa.Log(self.input[0]))
+        dx1 = singa.__mul__(db1, dy)
+        if(type(dy) == float) or self.shape0 == self.shape1:
+            assert self.shape0 == self.shape1, ('should have same shape')
+            return dx0, dx1
+        # handle broadcast
+        dx0 = back_broadcast(self.shape3, self.shape0, dx0)
+        dx1 = back_broadcast(self.shape3, self.shape1, dx1)
+        return dx0, dx1
 
 def pow(a, b):
     return Pow()(a,b)[0]
@@ -2331,14 +2390,24 @@ class Sub(Operation):
     def __init__(self):
         super(Sub, self).__init__()    
     
-    def forward(self, a, b):    
+    def forward(self, a, b):
+        res = singa.__sub__(a, b)
         if training:
-            self.input = (a, b)
-            return singa.__sub__(a, b)
+            self.shape0 = list(a.shape())
+            self.shape1 = list(b.shape())
+            self.shape3 = list(res.shape())
+        return res
 
     def backward(self, dy):
-        return dy, singa.MultFloat(dy, -1.0)
-
+        dx0 = dy
+        dx1 = singa.MultFloat(dy, -1.0)
+        if(type(dy) == float) or self.shape0 == self.shape1:
+            assert self.shape0 == self.shape1, ('should have same shape')
+            return dx0, dx1
+        # handle broadcast
+        dx0 = back_broadcast(self.shape3, self.shape0, dx0)
+        dx1 = back_broadcast(self.shape3, self.shape1, dx1)
+        return dx0, dx1
 
 def sub(a, b):
     return Sub()(a,b)[0]
@@ -2475,20 +2544,28 @@ class Div(Operation):
         super(Div, self).__init__()
 
     def forward(self, a, b):
+        res = singa.__mul__(a, singa.PowFloat(b, -1.0))
+        # res = singa.__div__(a, b)
         if training:
-            self.input = (a, b)
-        return singa.__div__(a, b)
+            self.input = (singa.MultFloat(a, -1.0), singa.PowFloat(b, -1.0)) # -a, 1/b
+            self.shape0 = list(a.shape())
+            self.shape1 = list(b.shape())
+            self.shape3 = list(res.shape())
+        return res
 
     def backward(self, dy):
         #dy/dx_0 = b^(-1)
         #dy/dx_1 = (-a)*b^(-2)
-        da = singa.__mul__(dy, singa.PowFloat(self.input[1],-1.0))
-
-        db1 = singa.PowFloat(self.input[1], -2.0)
-        db1 = singa.__mul__(db1, singa.MultFloat(self.input[0], -1.0))
-        db = singa.__mul__(dy, db1)
-
-        return da,db
+        dx0 = singa.__mul__(dy, self.input[1])
+        dx1 = singa.__mul__(self.input[0], singa.PowFloat(self.input[1], 2.0))
+        dx1 = singa.__mul__(dy, dx1)
+        if(type(dy) == float) or self.shape0 == self.shape1:
+            assert self.shape0 == self.shape1, ('should have same shape')
+            return dx0, dx1
+        # handle broadcast
+        dx0 = back_broadcast(self.shape3, self.shape0, dx0)
+        dx1 = back_broadcast(self.shape3, self.shape1, dx1)
+        return dx0, dx1
 
 
 def div(a, b):
