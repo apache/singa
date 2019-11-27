@@ -343,6 +343,8 @@ Tensor Log(const Tensor &in);
 Tensor ReLU(const Tensor &in);
 Tensor Sigmoid(const Tensor &in);
 Tensor Sign(const Tensor &in);
+Tensor SoftPlus(const Tensor &in);
+Tensor SoftSign(const Tensor &in);
 Tensor Sqrt(const Tensor &in);
 Tensor Square(const Tensor &in);
 Tensor Cos(const Tensor &in);
@@ -365,6 +367,8 @@ void Log(const Tensor &in, Tensor *out);
 void ReLU(const Tensor &in, Tensor *out);
 void Sigmoid(const Tensor &in, Tensor *out);
 void Sign(const Tensor &in, Tensor *out);
+void SoftPlus(const Tensor &in, Tensor *out);
+void SoftSign(const Tensor &in, Tensor *out);
 void Sqrt(const Tensor &in, Tensor *out);
 void Square(const Tensor &in, Tensor *out);
 void Cos(const Tensor &in, Tensor *out);
@@ -380,6 +384,10 @@ void Tanh(const Tensor &in, Tensor *out);
 void Atan(const Tensor &in, Tensor *out);
 void Atanh(const Tensor &in, Tensor *out);
 void Transform(const Tensor &in, Tensor *out);
+
+/// Element-wise operation, out[i]= (in2[i] > 0) ? in1[i] : 0.f
+Tensor ReLUBackward(const Tensor &in1, const Tensor& in2);
+void ReLUBackward(const Tensor &in1, const Tensor& in2, Tensor *out);
 
 /// Element-wise opeartion, out[i]=in[i]^x
 template <typename SType>

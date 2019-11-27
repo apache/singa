@@ -36,9 +36,8 @@ namespace singa {
 /// device programming language, e.g., Langice::kCpp, Langice::kCuda
 ///
 /// TODO(wangwei) Clean the functions to make the function APIs consistent:
-/// 1. All function names should be like XxxYyy or XY, i.e., capitablize the
-/// first
-///    letter.
+/// 1. All function names should be like XxxYyy or XY, i.e., capitalize the
+/// first letter.
 /// 2. Order functions based on function name in alphabetical order.
 /// 3. Function arguments order is [const basic type] [const Tensor] [mutable
 /// Tensor].
@@ -145,6 +144,13 @@ void EltwiseMult(const Tensor &in1, const Tensor &in2, Tensor *out,
   LOG(FATAL) << "EltwiseMult-Pair Not Implemented";
 }
 
+/// out[i]=(in2[i]>0)?in1[i]:0.f
+template <typename DType, typename Lang>
+void ReLUBackward(const Tensor &in1, const Tensor &in2, Tensor *out,
+        Context *ctx) {
+  LOG(FATAL) << "ReLUBackward Not Implemented";
+}
+
 /// Base is e, Neper number. out[i]=exp(in[i])
 template <typename DType, typename Lang>
 void Exp(const Tensor &in, Tensor *out, Context *ctx) {
@@ -163,7 +169,7 @@ void LE(const Tensor &in1, const Tensor &in2, Tensor *out,
         Context *ctx) {
   LOG(FATAL) << "Tensor-Tensor LE Not Implemented";
 }
-/// Natual logarithm, the base is e, Neper number out[i]=log(in[i]).
+/// Natural logarithm, the base is e, Neper number out[i]=log(in[i]).
 template <typename DType, typename Lang>
 void Log(const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Log Not Implemented";
@@ -233,6 +239,18 @@ void Set(const DType x, Tensor *out, Context *ctx) {
 template <typename DType, typename Lang>
 void Sigmoid(const Tensor &in, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Sigmoid Not Implemented";
+}
+
+/// out[i] = log(exp(in[i]) + 1)
+template <typename DType, typename Lang>
+void SoftPlus(const Tensor &in, Tensor *out, Context *ctx) {
+  LOG(FATAL) << "SoftPlus Not Implemented";
+}
+
+/// out[i] = in[i] / (abs(in[i]) + 1)
+template <typename DType, typename Lang>
+void SoftSign(const Tensor &in, Tensor *out, Context *ctx) {
+  LOG(FATAL) << "SoftSign Not Implemented";
 }
 
 /// out[i] = sign(in[i])
