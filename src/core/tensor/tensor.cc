@@ -737,30 +737,6 @@ Tensor SoftMax(const Tensor &in, int axis) {
   return ret;
 }
 
-// use variadic to pass params
-void SoftMax(const Tensor &in, Tensor *out, int axis) {
-  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    out->device()->Exec(
-        [in, out, axis](Context *ctx) {
-          SoftMax<DType, Lang>(in, out, ctx, axis);
-        },
-        {in.block()}, {out->block()});
-  });
-}
-
-Tensor SoftMax(const Tensor &in, int axis) {
-  Tensor ret(in.shape(), in.device(), in.data_type());
-  auto *retptr = &ret;
-  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    retptr->device()->Exec(
-        [in, retptr, axis](Context *ctx) {
-          SoftMax<DType, Lang>(in, retptr, ctx, axis);
-        },
-        {in.block()}, {retptr->block()});
-  });
-  return ret;
-}
-
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                            \
   do {                                                                      \
     TYPE_LANG_SWITCH(lhs.data_type(), DType, lhs.device()->lang(), Lang, {  \
