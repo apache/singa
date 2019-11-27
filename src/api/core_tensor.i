@@ -191,6 +191,8 @@ namespace singa{
   Tensor Atan(const Tensor &t);
   Tensor Atanh(const Tensor &t);
 
+  Tensor ReLUBackward(const Tensor &in1, const Tensor& in2);
+
   Tensor Sum(const Tensor &t, int axis);
   template <typename SType> SType Sum(const Tensor &t);
   %template(SumAsFloat) Sum<float>;

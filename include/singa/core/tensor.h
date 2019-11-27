@@ -381,6 +381,10 @@ void Atan(const Tensor &in, Tensor *out);
 void Atanh(const Tensor &in, Tensor *out);
 void Transform(const Tensor &in, Tensor *out);
 
+/// Element-wise operation, out[i]= (in2[i] > 0) ? in1[i] : 0.f
+Tensor ReLUBackward(const Tensor &in1, const Tensor& in2);
+void ReLUBackward(const Tensor &in1, const Tensor& in2, Tensor *out);
+
 /// Element-wise opeartion, out[i]=in[i]^x
 template <typename SType>
 Tensor Pow(const Tensor &in, const SType x);

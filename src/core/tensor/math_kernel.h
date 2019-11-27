@@ -77,6 +77,9 @@ void div(const size_t n, const float x, const float *in, float *out,
 void threshold(const size_t n, const float x, const float *in, float *out,
                cudaStream_t s);
 
+void relubackward(const size_t num, const float *in1, const float *in2, float *out,
+        cudaStream_t s);
+
 void gt(const size_t num, const float *in, const float x, float *out,
         cudaStream_t s);
 void gt(const size_t num, const float *in1, const float *in2, float *out,
