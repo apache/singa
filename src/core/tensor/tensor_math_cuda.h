@@ -337,27 +337,36 @@ void Div<float, lang::Cuda>(const Tensor& in1,
   const float* inPtr1 = static_cast<const float*>(in1.block()->data());
   const float* inPtr2 = static_cast<const float*>(in2.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  const size_t num = in1.Size();
+  const size_t num = out->Size();
+
 
   //if both in1 and in2 are not transposed, and have the same strides,
   //we proceed to normal cuda::div
   if (!in1.transpose() && !in2.transpose() && (in1.stride() == in2.stride())) {
     cuda::div(num, inPtr1, inPtr2, outPtr, ctx->stream);
   } else { //else we check whether in1 or in2 or both are transposed
-    if (in1.transpose() && in2.transpose()) {
-      Tensor t(in1.shape(), in1.device(), in1.data_type());
-      Transform<float, lang::Cuda>(in1, &t, ctx);
-      Transform<float, lang::Cuda>(in2, out, ctx);
 
-      float* tPtr = static_cast<float*>(t.block()->mutable_data());
-      cuda::div(num, tPtr, outPtr, outPtr, ctx->stream);
-    } else if (in1.transpose()) {
-      Transform<float, lang::Cuda>(in1, out, ctx);
-      cuda::div(num, outPtr, inPtr2, outPtr, ctx->stream);
-    } else if (in2.transpose()) {
-      Transform<float, lang::Cuda>(in2, out, ctx);
-      cuda::div(num, inPtr1, outPtr, outPtr, ctx->stream);
+    int strideProduct = 1;
+    for(const auto &i: in1.stride())
+      strideProduct *= i;
+
+    Tensor in1Bc;
+    Tensor in2Bc;
+    if(strideProduct == 0 || in1.transpose()){
+      in1Bc = get_broadcasted_tensor(in1,ctx);
+      inPtr1 = static_cast<const float*>(in1Bc.block()->data());
     }
+
+    strideProduct = 1;
+    for(const auto &i: in2.stride())
+      strideProduct *= i;
+
+    if(strideProduct == 0 || in2.transpose()){
+      in2Bc = get_broadcasted_tensor(in2,ctx);
+      inPtr2 = static_cast<const float*>(in2Bc.block()->data());
+    }
+
+    cuda::div(num, inPtr1, inPtr2, outPtr, ctx->stream);
   }
 }
 
@@ -587,26 +596,35 @@ void Pow<float, lang::Cuda>(const Tensor& in1,
   const float* inPtr1 = static_cast<const float*>(in1.block()->data());
   const float* inPtr2 = static_cast<const float*>(in2.block()->data());
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  const size_t num = in1.Size();
+  const size_t num = out->Size();
 
   //if both in1 and in2 are not transposed, and have the same strides,
   //we proceed to normal cuda::pow
   if (!in1.transpose() && !in2.transpose() && (in1.stride() == in2.stride())) {
     cuda::pow(num, inPtr1, inPtr2, outPtr, ctx->stream);
   } else { //else we check whether in1 or in2 or both are transposed
-    if (in1.transpose() && in2.transpose()) {
-      Tensor t(in1.shape(), in1.device(), in1.data_type());
-      float* tPtr = static_cast<float*>(t.block()->mutable_data());
-      Transform<float, lang::Cuda>(in1, &t, ctx);
-      Transform<float, lang::Cuda>(in2, out, ctx);
-      cuda::pow(num, tPtr, outPtr, outPtr, ctx->stream);
-    } else if (in1.transpose()) {
-      Transform<float, lang::Cuda>(in1, out, ctx);
-      cuda::pow(num, outPtr, inPtr2, outPtr, ctx->stream);
-    } else if (in2.transpose()) {
-      Transform<float, lang::Cuda>(in2, out, ctx);
-      cuda::pow(num, inPtr1, outPtr, outPtr, ctx->stream);
+
+    int strideProduct = 1;
+    for(const auto &i: in1.stride())
+      strideProduct *= i;
+
+    Tensor in1Bc;
+    Tensor in2Bc;
+    if(strideProduct == 0 || in1.transpose()){
+      in1Bc = get_broadcasted_tensor(in1,ctx);
+      inPtr1 = static_cast<const float*>(in1Bc.block()->data());
     }
+
+    strideProduct = 1;
+    for(const auto &i: in2.stride())
+      strideProduct *= i;
+
+    if(strideProduct == 0 || in2.transpose()){
+      in2Bc = get_broadcasted_tensor(in2,ctx);
+      inPtr2 = static_cast<const float*>(in2Bc.block()->data());
+    }
+
+    cuda::pow(num, inPtr1, inPtr2, outPtr, ctx->stream);
   }
 }
 
