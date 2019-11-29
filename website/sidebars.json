@@ -1,9 +1,9 @@
 {
   "docs": {
-    "Documentation": [
-      "Documentation/installation",
-      "Documentation/software_stack",
-      "Documentation/device"
+    "GettingStarted": [
+      "installation",
+      "software_stack",
+      "device"
     ]
   },
   "docs-other": {

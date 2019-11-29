@@ -30,15 +30,15 @@ const siteConfig = {
   //   baseUrl: '/test-site/',
 
   // Used for publishing and more
-  projectName: 'website-for-apache-singa',
-  organizationName: 'Apache-AND-DB-System-NUS',
+  projectName: 'singa', // cd to /website/build/singa/ to serve
+  organizationName: 'apache',
   // For top-level user or org sites, the organization is still the same.
   // e.g., for the https://JoelMarcey.github.io site, it would be set like...
   //   organizationName: 'JoelMarcey'
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
-    {doc: 'Documentation/installation', label: 'Docs'},
+    {doc: 'installation', label: 'Docs'},
     {doc: 'doc4', label: 'API'},
     {page: 'help', label: 'Help'},
     {blog: true, label: 'News'},
