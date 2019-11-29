@@ -3,6 +3,8 @@ id: software_stack
 title: Software Stack
 ---
 
+<!--- Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements.  See the NOTICE file distributed with this work for additional information regarding copyright ownership.  The ASF licenses this file to you under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the License for the specific language governing permissions and limitations under the License.  -->
+
 SINGA's software stack includes three major components, namely, core, IO and
 model. Figure 1 illustrates these components together with the hardware.
 The core component provides memory management and tensor operations;
@@ -17,7 +19,7 @@ general machine learning models.
 
 ## Core
 
-[Tensor](tensor.html) and [Device](device.html) are two core abstractions in SINGA. Tensor class represents a
+[Tensor](tensor.md) and [Device](device.md) are two core abstractions in SINGA. Tensor class represents a
 multi-dimensional array, which stores model variables and provides linear algebra
 operations for machine learning
 algorithms, including matrix multiplication and random functions. Each tensor
@@ -62,7 +64,7 @@ operations (xxxMath).
 
 Optimizations in terms of speed and memory could be implemented by Device, which
 manages both operation execution and memory malloc/free. More optimization details
-would be described in the [Device page](device.html).
+would be described in the [Device page](device.md).
 
 
 ## Model
@@ -70,22 +72,22 @@ would be described in the [Device page](device.html).
 On top of the Tensor and Device abstractions, SINGA provides some higher level
 classes for machine learning modules.
 
-* [Layer](layer.html) and its subclasses are specific for neural networks. Every layer provides
+* [Layer](layer.md) and its subclasses are specific for neural networks. Every layer provides
   functions for forward propagating features and backward propagating gradients w.r.t the training loss functions.
   They wraps the complex layer operations so that users can easily create neural nets
   by connecting a set of layers.
 
-* [Initializer](initializer.html) and its subclasses provide variant methods of initializing
+* [Initializer](initializer.md) and its subclasses provide variant methods of initializing
   model parameters (stored in Tensor instances), following Uniform, Gaussian, etc.
 
-* [Loss](loss.html) and its subclasses defines the training objective loss functions.
+* [Loss](loss.md) and its subclasses defines the training objective loss functions.
   Both functions of computing the loss values and computing the gradient of the prediction w.r.t the
   objective loss are implemented. Example loss functions include squared error and cross entropy.
 
-* [Metric](metric.html) and its subclasses provide the function to measure the
+* [Metric](metric.md) and its subclasses provide the function to measure the
   performance of the model, e.g., the accuracy.
 
-* [Optimizer](optimizer.html) and its subclasses implement the methods for updating
+* [Optimizer](optimizer.md) and its subclasses implement the methods for updating
   model parameter values using parameter gradients, including SGD, AdaGrad, RMSProp etc.
 
 

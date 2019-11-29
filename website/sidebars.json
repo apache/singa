@@ -1,9 +1,10 @@
 {
   "docs": {
-    "GettingStarted": [
+    "Getting Started": [
       "installation",
       "software_stack",
-      "device"
+      "device",
+      "tensor"
     ]
   },
   "docs-other": {

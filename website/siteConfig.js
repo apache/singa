@@ -56,7 +56,8 @@ const siteConfig = {
 
   /* Colors for website */
   colors: {
-    primaryColor: "#1A2B34",
+    // primaryColor: "#1A2B34",
+    primaryColor: "#0058ae",
     secondaryColor: "#808080" // 2nd layer of toolbar in smaller screen
   },
 
@@ -79,7 +80,8 @@ const siteConfig = {
 
   highlight: {
     // Highlight.js theme to use for syntax highlighting in code blocks.
-    theme: 'default',
+    theme: 'atom-one-dark',
+    // theme: "tomorrow",
   },
 
   // Add custom scripts here that would be placed in <script> tags.
@@ -107,6 +109,8 @@ const siteConfig = {
   // You may provide arbitrary config keys to be used as needed by your
   // template. For example, if you need your repo's URL...
   //   repoUrl: 'https://github.com/facebook/test-site',
+
+  scrollToTop: true,
 };
 
 module.exports = siteConfig;
