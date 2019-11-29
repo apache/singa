@@ -20,6 +20,8 @@ const users = [
   },
 ];
 
+const GITHUB_URL = "https://github.com/apache/singa/";
+
 const siteConfig = {
   title: 'Apache SINGA', // Title for your website.
   tagline: 'Distributed deep learning system',
@@ -28,6 +30,9 @@ const siteConfig = {
   // For github.io type URLs, you would set the url and baseUrl like:
   //   url: 'https://facebook.github.io',
   //   baseUrl: '/test-site/',
+
+  // display an edit button for docs markdowns
+  editUrl: `${GITHUB_URL}/blob/master/docs/`,
 
   // Used for publishing and more
   projectName: 'singa', // cd to /website/build/singa/ to serve
@@ -39,7 +44,7 @@ const siteConfig = {
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
     {doc: 'installation', label: 'Docs'},
-    {doc: 'doc4', label: 'API'},
+    //{doc: 'doc4', label: 'API'},
     {page: 'help', label: 'Help'},
     {blog: true, label: 'News'},
     {href: repoUrl, label: 'GitHub'},
@@ -104,7 +109,7 @@ const siteConfig = {
   // enableUpdateBy: true,
 
   // Show documentation's last update time.
-  // enableUpdateTime: true,
+  enableUpdateTime: true,
 
   // You may provide arbitrary config keys to be used as needed by your
   // template. For example, if you need your repo's URL...
