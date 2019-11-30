@@ -31,7 +31,12 @@
   },
   "community": {
     "Community": [
-      "security"
+      "source-repository",
+      "mail-lists",
+      "issue-tracking",
+      "security",
+      "team-list",
+      "history-singa"
     ]
   }
 }
