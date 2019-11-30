@@ -2,11 +2,13 @@
   "docs": {
     "Getting Started": [
       "installation",
-      "software_stack",
+      "software-stack",
+      "benchmark-train"
+    ],
+    "Guides": [
       "device",
       "tensor",
-      "autograd",
-      "benchmark_train"
+      "autograd"
     ],
     "Model Zoo": [
       "model-zoo-cnn-cifar10",
@@ -18,6 +20,18 @@
       "model-zoo-imagenet-inception",
       "model-zoo-imagenet-resnet",
       "model-zoo-imagenet-vgg"
+    ],
+    "Development": [
+      "download-singa",
+      "build",
+      "contribute-code",
+      "contribute-docs",
+      "how-to-release"
+    ]
+  },
+  "community": {
+    "Community": [
+      "security"
     ]
   }
 }
