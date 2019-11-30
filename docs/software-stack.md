@@ -1,5 +1,5 @@
 ---
-id: software_stack
+id: software-stack
 title: Software Stack
 ---
 

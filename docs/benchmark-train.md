@@ -1,5 +1,5 @@
 ---
-id: benchmark_train
+id: benchmark-train
 title: Benchmark for Distributed Training
 ---
 
