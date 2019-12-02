@@ -7,13 +7,119 @@ is the main configuration file used by Docusaurus.
 // site configuration options.
 
 // List of projects/orgs using your project for the users page.
+// this field is used by example the pages/en/index.js 
+// and pages/en/users.js files provided
 const users = [
   {
-    caption: 'User1',
+    caption: 'NetEase',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/undraw_open_source.svg',
-    infoLink: 'https://www.facebook.com',
+    image: '/img/NetEase.jpg',
+    infoLink: 'http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html',
+    pinned: true,
+  },
+  {
+    caption: 'yzBigData',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/yzBigData.png',
+    infoLink: 'http://www.yzbigdata.com/',
+    pinned: true,
+  },
+  {
+    caption: 'Shentilium',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/shentilium.png',
+    infoLink: 'https://shentilium.com/',
+    pinned: true,
+  },
+  {
+    caption: 'Foodlg',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/foodlg.png',
+    infoLink: 'http://www.foodlg.com/',
+    pinned: true,
+  },
+  {
+    caption: 'Medilot',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/medilot.svg',
+    infoLink: 'https://medilot.com/technologies',
+    pinned: true,
+  },
+  {
+    caption: 'MZH Tech',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/mzhtech.png',
+    infoLink: 'http://www.mzhtechnologies.com/index.html',
+    pinned: true,
+  },
+  {
+    caption: 'NUH SG',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/nuhlogo.jpg',
+    infoLink: 'https://www.nuh.com.sg/Pages/Home.aspx',
+    pinned: true,
+  },
+  {
+    caption: 'SGH SG',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/sgh.png',
+    infoLink: 'https://www.sgh.com.sg/',
+    pinned: true,
+  },
+  {
+    caption: 'TTSH SG',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/TTSH_Logo.gif',
+    infoLink: 'https://www.ttsh.com.sg/Pages/default.aspx',
+    pinned: true,
+  },
+  {
+    caption: 'JurongHealth SG',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/juronghealth.png',
+    infoLink: 'https://www.juronghealthcampus.com.sg/',
+    pinned: true,
+  },
+  {
+    caption: 'Carnegie Tech',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/carnegietech.png',
+    infoLink: 'https://www.carnegietechnologies.com/',
+    pinned: true,
+  },
+  {
+    caption: 'CBRE',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/CBRE.jpg',
+    infoLink: 'http://www.cbre.com',
+    pinned: true,
+  },
+  {
+    caption: 'Noblis',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/noblis.png',
+    infoLink: 'https://noblis.org/',
+    pinned: true,
+  },
+  {
+    caption: 'CitiGroup',
+    // You will need to prepend the image path with your baseUrl
+    // if it is not '/', like: '/test-site/img/image.jpg'.
+    image: '/img/citigroup-logo.jpg',
+    infoLink: 'https://www.citigroup.com/citi/',
     pinned: true,
   },
 ];
@@ -48,6 +154,8 @@ const siteConfig = {
     {blog: true, label: 'News'},
     {href: repoUrl, label: 'GitHub'},
     //{search: true},
+    // Determines language drop down position among links
+    // { languages: true },
   ],
 
   // If you have users set above, you add it here:
