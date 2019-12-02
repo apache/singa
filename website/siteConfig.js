@@ -6,8 +6,6 @@ is the main configuration file used by Docusaurus.
 // See https://docusaurus.io/docs/site-config for all the possible
 // site configuration options.
 
-const repoUrl = 'https://github.com/apache/singa'
-
 // List of projects/orgs using your project for the users page.
 const users = [
   {
@@ -20,7 +18,7 @@ const users = [
   },
 ];
 
-const GITHUB_URL = "https://github.com/apache/singa/";
+const repoUrl = 'https://github.com/apache/singa'
 
 const siteConfig = {
   title: 'Apache SINGA', // Title for your website.
@@ -32,7 +30,8 @@ const siteConfig = {
   //   baseUrl: '/test-site/',
 
   // display an edit button for docs markdowns
-  editUrl: `${GITHUB_URL}/blob/master/docs/`,
+  // TODO: change the path after merging with main repo
+  editUrl: `${repoUrl}/blob/master/docs/`,
 
   // Used for publishing and more
   projectName: 'singa', // cd to /website/build/singa/ to serve
@@ -65,6 +64,15 @@ const siteConfig = {
     primaryColor: "#0058ae",
     secondaryColor: "#808080" // 2nd layer of toolbar in smaller screen
   },
+
+  /* Blog setting */
+  blogSidebarCount: "ALL", // int N or string "ALL"
+  blogSidebarTitle: { default: 'Recent News', all: 'All News' },
+
+  /* Twitter share at bottom of Blog/News */
+  twitter: true,
+  twitterUsername: 'ApacheSINGA',
+  twitterImage: 'img/singa-logo.png',
 
   /* Custom fonts for website */
   /*
