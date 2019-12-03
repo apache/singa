@@ -67,14 +67,14 @@ const siteConfig = {
   users,
 
   /* path to images for header/footer */
-  headerIcon: 'img/singa-logo.png',
+  headerIcon: 'img/singa.png',
   footerIcon: 'img/singa-logo-square.png',
   favicon: 'img/favicon.ico',
 
   /* Colors for website */
   colors: {
     // many of the colors are over-written in custom.css
-    primaryColor: '#5c6976', // gray
+    primaryColor: '#904600',
     secondaryColor: "#808080" // 2nd layer of toolbar in smaller screen
   },
 
