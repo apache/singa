@@ -1,16 +1,274 @@
-/* your custom css */
+/*
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
 
-@media only screen and (min-device-width: 360px) and (max-device-width: 736px) {
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License
+*/
+
+
+/*** from jest docusaurus jest.css ***/
+
+/* change main webpage link color */
+.mainContainer a {
+  text-decoration: none;
+  color: #904600;
 }
 
-@media only screen and (min-width: 1024px) {
+/* header navigation */
+.fixedHeaderContainer {
+  background-color: white;
 }
 
-@media only screen and (max-width: 1023px) {
+.navigationSlider .slidingNav ul li a,
+.fixedHeaderContainer header h3 {
+  color: #545454;
 }
 
-@media only screen and (min-width: 1400px) {
+div.navigationSlider .slidingNav ul {
+  background: #ffffff;
 }
 
-@media only screen and (min-width: 1500px) {
+.navigationSlider .slidingNav ul li a {
+  color: #545454;
+}
+
+.navigationSlider .slidingNav ul li a:focus,
+.navigationSlider .slidingNav ul li a:hover,
+.navigationSlider .slidingNav ul li.siteNavGroupActive a {
+  background: #ffffff;
+  color: #545454;
+}
+
+.navigationSlider .slidingNav ul li.siteNavItemActive a {
+  background: #545454;
+  color: white;
+}
+
+/* Search input background color */
+.reactNavSearchWrapper input#search_input_react {
+  background-color: #aaaaaa;
+}
+
+
+/*** from docusaurus 1.x css ***/
+
+
+.testimonials img {
+  border-radius: 50%;
+}
+
+table td:first-child > code {
+  white-space: nowrap;
+}
+
+.showcase {
+  align-items: center;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.showcase .link {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 180px;
+  margin: 5px;
+  padding: 5px;
+}
+
+.showcase .link:hover {
+  text-decoration: underline;
+}
+
+.showcase .link .caption {
+  line-height: 20px;
+  height: 20px;
+}
+
+.showcase .link img {
+  max-height: 110px;
+  padding: 20px;
+  width: 110px;
+  align-self: center;
+}
+
+@media only screen and (max-width: 735px) {
+  .showcase .link {
+    height: 134px;
+  }
+
+  .showcase .link img {
+    max-height: 64px;
+    padding: 20px;
+    width: 64px;
+  }
+}
+
+.announcement {
+  background-color: #20232a;
+  color: #fff;
+  font-weight: bold;
+  font-size: 24px;
+  padding: 48px;
+  margin: 0 auto -40px;
+  text-align: center;
+}
+
+.announcement-inner {
+  margin: 0 auto;
+  max-width: 768px;
+}
+
+/* landing page hero background */
+.index-hero {
+  background-color: #2b3137;
+  background-image: url("/img/unsplash-ocean.jpg");
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Do not repeat the image */
+  background-size: cover; /* Resize the background image to cover the entire container */
+  padding: 48px;
+}
+
+/* .backdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width:100%;
+  height:100%;
+  background-color: #000;
+  opacity: 0.6;
+} */
+
+.index-hero-inner {
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 0 20px;
+}
+
+.index-hero-project-tagline {
+  color: #fff;
+  font-size: 48px;
+  margin: 0;
+}
+
+.index-hero-project-keywords {
+  color: $primaryColor;
+}
+
+@keyframes jackInTheBox {
+  from {
+    opacity: 0;
+    transform: scale(0.1) rotate(30deg);
+    transform-origin: center bottom;
+  }
+
+  50% {
+    transform: rotate(-10deg);
+  }
+
+  70% {
+    transform: rotate(3deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.index-hero-logo {
+  animation-duration: 2s;
+  animation-name: jackInTheBox;
+  margin-top: 20px;
+  padding: 20px;
+  padding-left: 0;
+  width: 500px;
+}
+
+.index-ctas {
+  margin-top: 24px;
+}
+
+.index-ctas-get-started-button {
+  border-radius: 8px;
+  border-width: 2px;
+  color: #fff;
+  font-size: 24px;
+  font-weight: bold;
+  margin-right: 24px;
+  padding: 18px 36px;
+}
+
+.index-ctas-github-button {
+  vertical-align: sub;
+}
+
+@media only screen and (max-width: 768px) {
+  .announcement {
+    font-size: 18px;
+    padding: 20px;
+  }
+
+  .index-hero {
+    padding: 20px;
+  }
+
+  .index-hero-inner {
+    padding: 0;
+  }
+
+  .index-hero-project-tagline {
+    font-size: 36px;
+    text-align: center;
+  }
+
+  .index-hero-logo {
+    display: block;
+    float: none;
+    margin: 0 auto;
+  }
+
+  .index-ctas {
+    text-align: center;
+  }
+
+  .index-ctas-github-button {
+    display: none;
+  }
+}
+
+/* landing page blockImage style */
+.imageAlignTop .blockImage {
+  max-width: 60%;
+}
+
+.imageAlignTop .blockImage img {
+  height: 150px;
+}
+
+@media only screen and (max-width: 768px) {
+  .gridBlock .blockElement.imageAlignTop {
+    margin-bottom: 80px;
+  }
+}
+
+.docImage {
+  margin: 3rem auto;
+  max-width: 400px;
 }
