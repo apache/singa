@@ -33,6 +33,12 @@ const Showcase = require(`${process.cwd()}/core/Showcase.js`);
 // TODO: add <translate> tags
 // const translate = require('../../server/translate.js').translate;
 
+const siteConfig = require(`${process.cwd()}/siteConfig.js`);
+
+function docUrl(doc, language) {
+  return siteConfig.baseUrl + 'docs/' + (language ? language + '/' : '') + doc;
+}
+
 function HomeSplash(props) {
   const {siteConfig, language} = props;
 
@@ -56,7 +62,7 @@ function HomeSplash(props) {
         <div className="index-ctas">
           <a
             className="button index-ctas-get-started-button"
-            href={`${siteConfig.baseUrl}docs/${language}/installation`}>
+            href={`${docUrl("installation", language)}`}>
             Get Started
           </a>
           <span className="index-ctas-github-button">
@@ -105,7 +111,7 @@ class Index extends React.Component {
                 },
                 {
                   content: `Apache SINGA v2.0.0 has AutoML features, a Healthcare
-                   [model zoo](${siteConfig.baseUrl}docs/${this.props.language}/model-zoo-char-rnn),
+                   [model zoo](${docUrl("model-zoo-cnn-cifar10", language)}),
                     and facility for porting other models onto SINGA`,
                   image: `${siteConfig.baseUrl}img/undraw_web_development_w2vv.svg`,
                   imageAlign: 'top',
