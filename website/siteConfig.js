@@ -57,10 +57,12 @@ const siteConfig = {
     {doc: 'source-repository', label: 'Community'},
     // {page: 'help', label: 'Help'},
     {blog: true, label: 'News'},
-    {href: repoUrl, label: 'GitHub'},
-    //{search: true},
+    {search: true},
     // Determines language drop down position among links
-    // { languages: true },
+    { languages: true },
+    // can change help.js to apache.js, optional
+    {href: repoUrl, label: 'GitHub'},
+
   ],
 
   // If you have users set above, you add it here:
@@ -104,7 +106,13 @@ const siteConfig = {
   */
 
   // This copyright info is used in /core/Footer.js and blog RSS/Atom feeds.
-  copyright: `Copyright © ${new Date().getFullYear()} Apache SINGA`,
+  copyright: `Copyright © ${new Date().getFullYear()}
+   The Apache Software Foundation. All rights reserved.
+   Apache SINGA, Apache, the Apache feather logo, and
+   the Apache SINGA project logos are trademarks of The
+   Apache Software Foundation. All other marks mentioned
+   may be trademarks or registered trademarks of their
+   respective owners.`,
 
   highlight: {
     // Highlight.js theme to use for syntax highlighting in code blocks.
@@ -134,9 +142,8 @@ const siteConfig = {
   // Show documentation's last update time.
   enableUpdateTime: true,
 
-  // You may provide arbitrary config keys to be used as needed by your
-  // template. For example, if you need your repo's URL...
-  //   repoUrl: 'https://github.com/facebook/test-site',
+  // pass down the repoUrl to footer etc
+  repoUrl,
 
   scrollToTop: true,
 };

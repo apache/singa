@@ -27,6 +27,12 @@
   padding: 30px 0 !important;
 }
 
+/* Apache Footer */
+.ApacheOpenSource img {
+  max-width: 60%;
+  margin: 0 auto;
+}
+
 /*** from jest docusaurus jest.css ***/
 
 /* change main webpage link color */
