@@ -17,6 +17,11 @@
   under the License
 */
 
+/* mainContainer landing page */
+.mainContainer .container .wrapper {
+  /* border: 2px purple solid; */
+  max-width: 1100px !important;
+}
 
 /*** from jest docusaurus jest.css ***/
 
@@ -70,6 +75,13 @@ div.navigationSlider .slidingNav ul {
 
 table td:first-child > code {
   white-space: nowrap;
+}
+
+/* indexpage users showcase section */
+.productShowcaseSection {
+  /* border: 1px blue solid; */
+  max-width: 1100px !important;
+  margin: 0 auto;
 }
 
 .showcase {
