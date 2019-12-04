@@ -24,7 +24,7 @@ module.exports = [
     caption: 'NetEase',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/NetEase.jpg',
+    image: '/img/users/NetEase.jpg',
     infoLink: 'http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html',
     pinned: true,
   },
@@ -32,23 +32,23 @@ module.exports = [
     caption: 'yzBigData',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/yzBigData.png',
+    image: '/img/users/yzBigData.png',
     infoLink: 'http://www.yzbigdata.com/',
-    pinned: true,
+    pinned: false,
   },
   {
     caption: 'Shentilium',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/shentilium.png',
+    image: '/img/users/shentilium.png',
     infoLink: 'https://shentilium.com/',
-    pinned: true,
+    pinned: false,
   },
   {
     caption: 'Foodlg',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/foodlg.png',
+    image: '/img/users/foodlg.png',
     infoLink: 'http://www.foodlg.com/',
     pinned: true,
   },
@@ -56,7 +56,7 @@ module.exports = [
     caption: 'Medilot',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/medilot.svg',
+    image: '/img/users/medilot.svg',
     infoLink: 'https://medilot.com/technologies',
     pinned: true,
   },
@@ -64,7 +64,7 @@ module.exports = [
     caption: 'MZH Tech',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/mzhtech.png',
+    image: '/img/users/mzhtech.png',
     infoLink: 'http://www.mzhtechnologies.com/index.html',
     pinned: true,
   },
@@ -72,7 +72,7 @@ module.exports = [
     caption: 'NUH SG',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/nuhlogo.jpg',
+    image: '/img/users/nuhlogo.jpg',
     infoLink: 'https://www.nuh.com.sg/Pages/Home.aspx',
     pinned: true,
   },
@@ -80,7 +80,7 @@ module.exports = [
     caption: 'SGH SG',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/sgh.png',
+    image: '/img/users/sgh.png',
     infoLink: 'https://www.sgh.com.sg/',
     pinned: true,
   },
@@ -88,7 +88,7 @@ module.exports = [
     caption: 'TTSH SG',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/TTSH_Logo.gif',
+    image: '/img/users/TTSH_Logo.gif',
     infoLink: 'https://www.ttsh.com.sg/Pages/default.aspx',
     pinned: true,
   },
@@ -96,15 +96,15 @@ module.exports = [
     caption: 'JurongHealth SG',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/juronghealth.png',
+    image: '/img/users/juronghealth.png',
     infoLink: 'https://www.juronghealthcampus.com.sg/',
     pinned: true,
   },
   {
-    caption: 'Carnegie Tech',
+    caption: 'Carnegie Technologies',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/carnegietech.png',
+    image: '/img/users/carnegietech.png',
     infoLink: 'https://www.carnegietechnologies.com/',
     pinned: true,
   },
@@ -112,7 +112,7 @@ module.exports = [
     caption: 'CBRE',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/CBRE.jpg',
+    image: '/img/users/CBRE.jpg',
     infoLink: 'http://www.cbre.com',
     pinned: true,
   },
@@ -120,7 +120,7 @@ module.exports = [
     caption: 'Noblis',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/noblis.png',
+    image: '/img/users/noblis.png',
     infoLink: 'https://noblis.org/',
     pinned: true,
   },
@@ -128,7 +128,7 @@ module.exports = [
     caption: 'CitiGroup',
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/citigroup-logo.jpg',
+    image: '/img/users/citigroup-logo.jpg',
     infoLink: 'https://www.citigroup.com/citi/',
     pinned: true,
   },

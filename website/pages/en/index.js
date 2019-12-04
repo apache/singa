@@ -39,6 +39,10 @@ function docUrl(doc, language) {
   return siteConfig.baseUrl + 'docs/' + (language ? language + '/' : '') + doc;
 }
 
+function pageUrl(page, language) {
+  return siteConfig.baseUrl + (language ? language + '/' : '') + page;
+}
+
 function HomeSplash(props) {
   const {siteConfig, language} = props;
 
@@ -131,13 +135,13 @@ class Index extends React.Component {
               Who is Using Apache SINGA?
             </h2>
             <p>
-              Apache SINGA powers many organizations and companies...
+              Apache SINGA powers the following organizations and companies...
             </p>
             <Showcase users={pinnedUsersToShowcase} />
             <div className="more-users">
               <a
                 className="button"
-                href={`${siteConfig.baseUrl}${this.props.language}/users`}>
+                href={`${pageUrl("users", language)}`}>
                 All Apache SINGA Users
               </a>
             </div>

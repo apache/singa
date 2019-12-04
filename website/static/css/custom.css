@@ -85,25 +85,32 @@ table td:first-child > code {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 180px;
+  height: 120px;
+  width: 250px;
   margin: 5px;
+  margin-bottom: 20px;
   padding: 5px;
+  /* border: 2px red solid; */
 }
 
 .showcase .link:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .showcase .link .caption {
   line-height: 20px;
   height: 20px;
+  /* border: 1px yellow solid; */
 }
 
 .showcase .link img {
-  max-height: 110px;
+  width: auto;
+  height : auto;
+  max-height: 100%;
+  max-width: 80%;
   padding: 20px;
-  width: 110px;
   align-self: center;
+  /* border: 1px green solid; */
 }
 
 @media only screen and (max-width: 735px) {
