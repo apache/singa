@@ -104,7 +104,10 @@ class Index extends React.Component {
           </div>
         </div>
         <div className="mainContainer">
-          <Container padding={['bottom', 'top']}>
+          <Container
+            padding={['bottom', 'top']}
+            className="mainPageContainer"
+          >
             <GridBlock
               contents={[
                 {
@@ -120,7 +123,11 @@ class Index extends React.Component {
               layout="twoColumn"
             />
           </Container>
-          <Container padding={['bottom', 'top']} background="light">
+          <Container
+            padding={['bottom', 'top']}
+            className="mainPageContainer"
+            background="light"
+          >
             <GridBlock
               contents={[
                 {
@@ -138,7 +145,7 @@ class Index extends React.Component {
           </Container>
           <div className="productShowcaseSection paddingBottom">
             <h2 style={{ color: "#904600" }}>
-              Who is Using Apache SINGA?
+              Users of Apache SINGA
             </h2>
             <p>
               Apache SINGA powers the following organizations and companies...

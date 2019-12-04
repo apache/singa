@@ -23,6 +23,10 @@
   max-width: 1100px !important;
 }
 
+.mainPageContainer {
+  padding: 30px 0 !important;
+}
+
 /*** from jest docusaurus jest.css ***/
 
 /* change main webpage link color */
