@@ -66,6 +66,10 @@ const siteConfig = {
   // If you have users set above, you add it here:
   users,
 
+  // disable showing the title 
+  // in the header next to the header icon
+  disableHeaderTitle: true,
+
   /* path to images for header/footer */
   headerIcon: 'img/singa.png',
   footerIcon: 'img/singa-logo-square.png',
