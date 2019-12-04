@@ -91,8 +91,12 @@ class Index extends React.Component {
         <HomeSplash siteConfig={siteConfig} language={language} />
         <div className="announcement">
           <div className="announcement-inner">
-           {`Apache SINGA is an Apache Top Level Project, open source distributed training platform
-            for deep learning and machine learning models`}
+            Apache SINGA is an {' '}
+            <a href="https://blogs.apache.org/foundation/entry/the-apache-software-foundation-announces57">
+              Apache Top Level Project
+            </a>
+            , open source distributed training platform
+            for deep learning and machine learning models
           </div>
         </div>
         <div className="mainContainer">

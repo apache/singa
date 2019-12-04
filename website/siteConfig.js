@@ -55,7 +55,7 @@ const siteConfig = {
   headerLinks: [
     {doc: 'installation', label: 'Docs'},
     {doc: 'source-repository', label: 'Community'},
-    {page: 'help', label: 'Help'},
+    // {page: 'help', label: 'Help'},
     {blog: true, label: 'News'},
     {href: repoUrl, label: 'GitHub'},
     //{search: true},
@@ -84,8 +84,6 @@ const siteConfig = {
 
   /* Twitter share at bottom of Blog/News */
   twitter: true,
-  twitterUsername: 'ApacheSINGA',
-  twitterImage: 'img/singa-logo.png',
 
   /* Custom fonts for website */
   /*
@@ -118,8 +116,9 @@ const siteConfig = {
   cleanUrl: true,
 
   // Open Graph and Twitter card images.
-  ogImage: 'img/undraw_online.svg',
-  twitterImage: 'img/undraw_tweetstorm.svg',
+  ogImage: 'img/singa_twitter_banner.jpeg',
+  twitterUsername: 'ApacheSINGA',
+  twitterImage: 'img/singa_twitter_banner.jpeg',
 
   // For sites with a sizable amount of content, set collapsible to true.
   // Expand/collapse the links and subcategories under categories.

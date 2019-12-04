@@ -47,7 +47,7 @@ div.navigationSlider .slidingNav ul {
 .navigationSlider .slidingNav ul li a:focus,
 .navigationSlider .slidingNav ul li a:hover,
 .navigationSlider .slidingNav ul li.siteNavGroupActive a {
-  background: #ffffff;
+  background: #f7f7f7;
   color: #545454;
 }
 
@@ -122,7 +122,7 @@ table td:first-child > code {
   background-color: #20232a;
   color: #fff;
   font-weight: bold;
-  font-size: 24px;
+  font-size: 18px;
   padding: 48px;
   margin: 0 auto -40px;
   text-align: center;
