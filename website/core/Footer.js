@@ -164,7 +164,7 @@ class Footer extends React.Component {
           </a>
           <section
             className="copyright"
-            style={{ maxWidth: "50%", margin: "0 auto" }}
+            style={{ maxWidth: "60%", margin: "0 auto" }}
           >
             {this.props.config.copyright}
           </section>
