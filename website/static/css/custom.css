@@ -61,6 +61,12 @@ div.navigationSlider .slidingNav ul {
   background-color: #aaaaaa;
 }
 
+/* hide the h2 text after the logo */
+/* Logo */
+.headerTitleWithLogo {
+  display: none !important;
+}
+
 
 /*** from docusaurus 1.x css ***/
 
