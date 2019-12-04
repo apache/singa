@@ -104,7 +104,7 @@ class Index extends React.Component {
                   content: `Apache SINGA focused on [distributed](https://dl.acm.org/citation.cfm?doid=2733373.2807410)
                    deep learning by partitioning the model and data onto nodes in a cluster and
                     [parallelize](https://dl.acm.org/citation.cfm?doid=2733373.2806232) the training`,
-                  image: `${siteConfig.baseUrl}img/undraw_mind_map_cwng.svg`,
+                  image: `${siteConfig.baseUrl}img/overview.png`,
                   imageAlign: 'top',
                   imageAlt: 'Distributed Learning',
                   title: 'Distributed Learning',
@@ -113,7 +113,7 @@ class Index extends React.Component {
                   content: `Apache SINGA v2.0.0 has AutoML features, a Healthcare
                    [model zoo](${docUrl("model-zoo-cnn-cifar10", language)}),
                     and facility for porting other models onto SINGA`,
-                  image: `${siteConfig.baseUrl}img/undraw_web_development_w2vv.svg`,
+                  image: `${siteConfig.baseUrl}img/singav1-sw.png`,
                   imageAlign: 'top',
                   imageAlt: 'AutoML and Model Zoo',
                   title: 'AutoML and Model Zoo',
