@@ -265,3 +265,53 @@ class DistOpt(object):
         self.wait()
         for p, g in plist:
             self.update(p, g)  
+
+    def backward_and_partial_update(self, loss, threshold = 2097152):
+        # THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
+        # It performs asychronous training where one parameter partition is all-reduced per iteration
+        # The size of the parameter partition depends on the threshold value
+        # self.partial is the counter to determine which partition to perform all-reduce
+        if not hasattr(self, "partial"):
+            self.partial = 0
+        self.partial += 1
+        k = 0
+        plist = []
+        acc = 0
+        tenlist = []
+        reduced = []
+        for p, g in autograd.backward(loss):
+            # every parameters update locally
+            self.opt.update(p, g)
+            # then do the partial parameter sychronization
+            if p.size() > threshold:
+                # larger than threshold -> reduced directly
+                # k is the partition number of the full gradient set
+                k += 1
+                if (k == self.partial):
+                    self.all_reduce(p.data)
+                    reduced.append(p)
+            else:
+                # smaller than threshold -> accumulate
+                plist.append(p.data)
+                tenlist.append(p)
+                acc += p.size()
+                if (acc > threshold):
+                    k += 1
+                    if (k == self.partial):
+                        self.fused_all_reduce(plist)
+                        reduced = tenlist
+                    acc = 0
+                    plist = []
+                    tenlist = []
+        if plist:
+            k += 1
+            if (k == self.partial):
+                self.fused_all_reduce(plist)
+                reduced = tenlist
+        self.wait()
+        # the all-reduced parameters needed to be averaged
+        for r in reduced:
+            r /= self.world_size
+        # the counter returns to zero after a cycle of partial update
+        if (k == self.partial):
+            self.partial = 0

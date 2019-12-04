@@ -121,6 +121,7 @@ def reduce_variable(variable, dist_opt, reducer):
 # Function to sychronize SINGA TENSOR initial model parameters
 def sychronize(tensor, dist_opt):
     dist_opt.all_reduce(tensor.data)
+    dist_opt.wait()
     tensor /= dist_opt.world_size
 
 # Data augmentation

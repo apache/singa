@@ -284,6 +284,15 @@ void EltwiseMult<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor*
 }
 
 template <>
+void ReLUBackward<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
+                          Context *ctx) {
+  auto relubackward_lambda = [](float a, float b) {
+    return (b > 0) ? a : 0.f;
+  };
+  traverse_binary<float>(in1, in2, out, relubackward_lambda);
+}
+
+template <>
 void Exp<float, lang::Cpp>(const Tensor& in, Tensor *out, Context *ctx) {
   traverse_unary<float>(in, out, [](float x) {return exp(x);});
 }
@@ -421,6 +430,24 @@ void Sign<float, lang::Cpp>(const Tensor& in, Tensor* out,
     return (a > 0) - (a < 0);
   };
   traverse_unary<float>(in, out, sign_lambda);
+}
+
+template <>
+void SoftPlus<float, lang::Cpp>(const Tensor& in, Tensor* out,
+                                Context *ctx) {
+  auto softplus_lambda = [](float a) {
+    return log(1.f + exp(a));
+  };
+  traverse_unary<float>(in, out, softplus_lambda);
+}
+
+template <>
+void SoftSign<float, lang::Cpp>(const Tensor& in, Tensor* out,
+                                Context *ctx) {
+  auto softsign_lambda = [](float a) {
+    return a / (1.f + fabs(a));
+  };
+  traverse_unary<float>(in, out, softsign_lambda);
 }
 
 template <>
@@ -693,6 +720,7 @@ void Amax<float, lang::Cpp>(const Tensor& in, size_t *out,
   }
   *out = maxPos;
 }
+
 template <>
 void Amin<float, lang::Cpp>(const Tensor& in, size_t *out,
                             Context *ctx) {

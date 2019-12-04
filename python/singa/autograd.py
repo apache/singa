@@ -422,9 +422,7 @@ class ReLU(Operation):
         Returns:
             dx(CTensor): dL / dx = dy if x >= 0; otherwise 0;
         """
-        dx = singa.GTFloat(self.input, 0.0)
-        dx *= dy
-        return dx
+        return singa.ReLUBackward(dy, self.input)
 
 
 def relu(x):
