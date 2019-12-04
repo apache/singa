@@ -207,95 +207,6 @@ inline Tensor get_broadcasted_tensor(const Tensor& in1, Context* ctx){
   return in1Bc;
 }
 
-/// out = in1 + in2
-template <>
-void Add<float, lang::Cuda>(const Tensor& in1,
-                            const Tensor& in2, Tensor* out, Context* ctx) {
-
-  float alpha1 = 1.0;
-  float alpha2 = 1.0;
-  float beta = 0.0;
-
-  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  const float* inPtr2 = static_cast<const float*>(in2.block()->data());
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
-
-  // In the simplest case, use the most efficient cuda math kernal
-  if ((!in1.transpose() && !in2.transpose()) && (in1.stride() == in2.stride()) && in1.nDim() == in2.nDim()){
-      cuda::add(in1.Size(), inPtr1, inPtr2, outPtr, ctx->stream);
-    } 
-  else { // else we use the cudnn with broadcast function
-  	  // if stride has 0, the tensor is broadcasted.
-  	  int strideProduct = 1;
-  	  for(const auto &i: in1.stride())
-  	    strideProduct *= i;
-  	  for(const auto &i: in2.stride())
-  	    strideProduct *= i;
-
-  	  const float* _inPtr1;
-  	  cudnnTensorDescriptor_t in1NdDesc;
-  	  if (strideProduct != 0) {
-  	    _inPtr1 = inPtr1;
-  	    in1NdDesc = generate_tensor_nd_desc(in1);
-  	  } else {
-  	    Tensor in1Bc = get_broadcasted_tensor(in1, ctx);
-  	    _inPtr1 = static_cast<const float*>(in1Bc.block()->data());
-  	    in1NdDesc = generate_tensor_nd_desc(in1Bc);
-  	  }
-
-  	  check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-  	                            (void*)(&alpha1), in1NdDesc, _inPtr1,
-  	                            (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-  	                            (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-  	                           ));
-  	}
-
-}
-
-/// out = in1 - in2
-template <>
-void Sub<float, lang::Cuda>(const Tensor& in1,
-                            const Tensor& in2, Tensor* out, Context* ctx) {
-  float alpha1 = 1.0;
-  float alpha2 = -1.0;
-  float beta = 0.0;
-
-  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  const float* inPtr2 = static_cast<const float*>(in2.block()->data());
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
-
-  // In the simplest case, use the most efficient cuda math kernal
-  if ((!in1.transpose() && !in2.transpose()) && (in1.stride() == in2.stride()) && in1.nDim() == in2.nDim()){
-      cuda::sub(in1.Size(), inPtr1, inPtr2, outPtr, ctx->stream);
-    } 
-  else { // else we use the cudnn with broadcast function
-  	  // if stride has 0, the tensor is broadcasted.
-  	  int strideProduct = 1;
-  	  for(const auto &i: in1.stride())
-  	    strideProduct *= i;
-  	  for(const auto &i: in2.stride())
-  	    strideProduct *= i;
-
-  	  const float* _inPtr1;
-  	  cudnnTensorDescriptor_t in1NdDesc;
-  	  if (strideProduct != 0) {
-  	    _inPtr1 = inPtr1;
-  	    in1NdDesc = generate_tensor_nd_desc(in1);
-  	  } else {
-  	    Tensor in1Bc = get_broadcasted_tensor(in1, ctx);
-  	    _inPtr1 = static_cast<const float*>(in1Bc.block()->data());
-  	    in1NdDesc = generate_tensor_nd_desc(in1Bc);
-  	  }
-
-  	  check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_ADD),
-  	                            (void*)(&alpha1), in1NdDesc, _inPtr1,
-  	                            (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-  	                            (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-  	                           ));
-  	}
-
-}
-
 template <>
 void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out,
                                   Context* ctx) {
@@ -312,6 +223,75 @@ void Transform<float, lang::Cuda>(const Tensor& in, Tensor* out,
 
 }
 
+/// add sub div mul pow on two tensors
+#define GenBinaryMathFn(fn, kernel)                                            \
+  template <>                                                                  \
+  void fn<float, lang::Cuda>(const Tensor &in1, const Tensor &in2,             \
+                             Tensor *out, Context *ctx) {                      \
+    const float *inPtr1 = static_cast<const float *>(in1.block()->data());     \
+    const float *inPtr2 = static_cast<const float *>(in2.block()->data());     \
+    float *outPtr = static_cast<float *>(out->block()->mutable_data());        \
+    const size_t num = out->Size();                                            \
+                                                                               \
+    int strideProduct1 = 1;                                                    \
+    for (const auto &i : in1.stride())                                         \
+      strideProduct1 *= i;                                                     \
+                                                                               \
+    int strideProduct2 = 1;                                                    \
+    for (const auto &i : in2.stride())                                         \
+      strideProduct2 *= i;                                                     \
+                                                                               \
+    if ((strideProduct1 * strideProduct2) != 0) {                              \
+                                                                               \
+      if (!in1.transpose() && !in2.transpose() &&                              \
+          (in1.stride() == in2.stride())) {                                    \
+        kernel(num, inPtr1, inPtr2, outPtr, ctx->stream);                      \
+      } else {                                                                 \
+        if (in1.transpose() && in2.transpose()) {                              \
+          Tensor t(in1.shape(), in1.device(), in1.data_type());                \
+          Transform<float, lang::Cuda>(in1, &t, ctx);                          \
+          Transform<float, lang::Cuda>(in2, out, ctx);                         \
+                                                                               \
+          float *tPtr = static_cast<float *>(t.block()->mutable_data());       \
+          kernel(num, tPtr, outPtr, outPtr, ctx->stream);                      \
+        } else if (in1.transpose()) {                                          \
+          Transform<float, lang::Cuda>(in1, out, ctx);                         \
+          kernel(num, outPtr, inPtr2, outPtr, ctx->stream);                    \
+        } else if (in2.transpose()) {                                          \
+          Transform<float, lang::Cuda>(in2, out, ctx);                         \
+          kernel(num, inPtr1, outPtr, outPtr, ctx->stream);                    \
+        }                                                                      \
+      }                                                                        \
+    } else {                                                                   \
+                                                                               \
+      Tensor in1Bc;                                                            \
+      Tensor in2Bc;                                                            \
+      if (strideProduct1 == 0) {                                               \
+        in1Bc = get_broadcasted_tensor(in1, ctx);                              \
+        inPtr1 = static_cast<const float *>(in1Bc.block()->data());            \
+      }                                                                        \
+                                                                               \
+      if (strideProduct2 == 0) {                                               \
+        in2Bc = get_broadcasted_tensor(in2, ctx);                              \
+        inPtr2 = static_cast<const float *>(in2Bc.block()->data());            \
+      }                                                                        \
+                                                                               \
+      kernel(num, inPtr1, inPtr2, outPtr, ctx->stream);                        \
+    }                                                                          \
+  }
+
+/// out = in1 * in2
+GenBinaryMathFn(EltwiseMult, cuda::mult);
+/// out = in1 + in2
+GenBinaryMathFn(Add, cuda::add);
+/// out = in1 - in2
+GenBinaryMathFn(Sub, cuda::sub);
+/// out = in1 / in2
+GenBinaryMathFn(Div, cuda::div);
+/// out = in1 ^ in2
+GenBinaryMathFn(Pow, cuda::pow);
+
+
 /// Element-wise operation, clamp every element into [low, high]
 /// if x>high, then x=high; if x<low, then x=low.
 template <>
@@ -327,37 +307,6 @@ void Clamp<float, lang::Cuda>(const float low,
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
     cuda::clamp(num, low, high, outPtr, outPtr, ctx->stream);
-  }
-}
-
-/// out = in1 / in2
-template <>
-void Div<float, lang::Cuda>(const Tensor& in1,
-                            const Tensor& in2, Tensor* out, Context* ctx) {
-  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  const float* inPtr2 = static_cast<const float*>(in2.block()->data());
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  const size_t num = in1.Size();
-
-  //if both in1 and in2 are not transposed, and have the same strides,
-  //we proceed to normal cuda::div
-  if (!in1.transpose() && !in2.transpose() && (in1.stride() == in2.stride())) {
-    cuda::div(num, inPtr1, inPtr2, outPtr, ctx->stream);
-  } else { //else we check whether in1 or in2 or both are transposed
-    if (in1.transpose() && in2.transpose()) {
-      Tensor t(in1.shape(), in1.device(), in1.data_type());
-      Transform<float, lang::Cuda>(in1, &t, ctx);
-      Transform<float, lang::Cuda>(in2, out, ctx);
-
-      float* tPtr = static_cast<float*>(t.block()->mutable_data());
-      cuda::div(num, tPtr, outPtr, outPtr, ctx->stream);
-    } else if (in1.transpose()) {
-      Transform<float, lang::Cuda>(in1, out, ctx);
-      cuda::div(num, outPtr, inPtr2, outPtr, ctx->stream);
-    } else if (in2.transpose()) {
-      Transform<float, lang::Cuda>(in2, out, ctx);
-      cuda::div(num, inPtr1, outPtr, outPtr, ctx->stream);
-    }
   }
 }
 
@@ -384,59 +333,6 @@ void EltwiseMult<float, lang::Cuda>(const Tensor& in,
   float* outPtr = static_cast<float*>(out->block()->mutable_data());
   const size_t num = in.Size();
   cuda::mult(num, inPtr, x, outPtr, ctx->stream);
-}
-
-/// out = in1 * in2
-template <>
-void EltwiseMult<float, lang::Cuda>(const Tensor& in1,
-                                    const Tensor& in2, Tensor* out,
-                                    Context* ctx) {
-  float alpha1 = 1.0;
-  float alpha2 = 1.0;
-  float beta = 0.0;
-  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  const float* inPtr2 = static_cast<const float*>(in2.block()->data());
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  const size_t num = in1.Size();
-
-  int strideProduct = 1;
-  for(const auto &i: in1.stride())
-    strideProduct *= i;
-  for(const auto &i: in2.stride())
-    strideProduct *= i;
-
-  const float* _inPtr1;
-  cudnnTensorDescriptor_t in1NdDesc;
-  if (strideProduct != 0) { //When there is no need to broadcast, use the efficient kernal
-  	if (!in1.transpose() && !in2.transpose() && (in1.stride() == in2.stride())) {
-  	  cuda::mult(num, inPtr1, inPtr2, outPtr, ctx->stream);
-  	} else { //else we check whether in1 or in2 or both are transposed
-  	  if (in1.transpose() && in2.transpose()) {
-  	    Tensor t(in1.shape(), in1.device(), in1.data_type());
-  	    Transform<float, lang::Cuda>(in1, &t, ctx);
-  	    Transform<float, lang::Cuda>(in2, out, ctx);
-
-  	    float* tPtr = static_cast<float*>(t.block()->mutable_data());
-  	    cuda::mult(num, tPtr, outPtr, outPtr, ctx->stream);
-  	  } else if (in1.transpose()) {
-  	    Transform<float, lang::Cuda>(in1, out, ctx);
-  	    cuda::mult(num, outPtr, inPtr2, outPtr, ctx->stream);
-  	  } else if (in2.transpose()) {
-  	    Transform<float, lang::Cuda>(in2, out, ctx);
-  	    cuda::mult(num, inPtr1, outPtr, outPtr, ctx->stream);
-  	  }
-  	}
-  } else { //When we need broadcasting:
-  	Tensor in1Bc = get_broadcasted_tensor(in1, ctx);
-  	_inPtr1 = static_cast<const float*>(in1Bc.block()->data());
-  	in1NdDesc = generate_tensor_nd_desc(in1Bc);
-  	check_cudnn(cudnnOpTensor(ctx->cudnn_handle, generate_op_desc(CUDNN_OP_TENSOR_MUL),
-  	                          (void*)(&alpha1), in1NdDesc, _inPtr1,
-  	                          (void*)(&alpha2), generate_tensor_nd_desc(in2), inPtr2,
-  	                          (void*)(&beta), generate_tensor_nd_desc(*out), outPtr
-  	                         ));
-  }
-
 }
 
 
@@ -578,35 +474,6 @@ void Pow<float, lang::Cuda>(const Tensor& in, const float x,
   } else { //else we transform in to out to store first
     Transform<float, lang::Cuda>(in, out, ctx);
     cuda::pow(num, outPtr, x, outPtr, ctx->stream);
-  }
-}
-/// Element-wise operation, out[i] = in1[i]^in2[i]
-template <>
-void Pow<float, lang::Cuda>(const Tensor& in1,
-                            const Tensor& in2, Tensor* out, Context* ctx) {
-  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
-  const float* inPtr2 = static_cast<const float*>(in2.block()->data());
-  float* outPtr = static_cast<float*>(out->block()->mutable_data());
-  const size_t num = in1.Size();
-
-  //if both in1 and in2 are not transposed, and have the same strides,
-  //we proceed to normal cuda::pow
-  if (!in1.transpose() && !in2.transpose() && (in1.stride() == in2.stride())) {
-    cuda::pow(num, inPtr1, inPtr2, outPtr, ctx->stream);
-  } else { //else we check whether in1 or in2 or both are transposed
-    if (in1.transpose() && in2.transpose()) {
-      Tensor t(in1.shape(), in1.device(), in1.data_type());
-      float* tPtr = static_cast<float*>(t.block()->mutable_data());
-      Transform<float, lang::Cuda>(in1, &t, ctx);
-      Transform<float, lang::Cuda>(in2, out, ctx);
-      cuda::pow(num, tPtr, outPtr, outPtr, ctx->stream);
-    } else if (in1.transpose()) {
-      Transform<float, lang::Cuda>(in1, out, ctx);
-      cuda::pow(num, outPtr, inPtr2, outPtr, ctx->stream);
-    } else if (in2.transpose()) {
-      Transform<float, lang::Cuda>(in2, out, ctx);
-      cuda::pow(num, inPtr1, outPtr, outPtr, ctx->stream);
-    }
   }
 }
 
@@ -1088,7 +955,7 @@ void SoftMax<float, lang::Cuda>(const Tensor &in, Tensor *out, Context* ctx, int
   if (axis < 0) axis = in.shape().size() + axis;
 
   Shape coerced_shape = {1, 1};
-  for (int i = 0; i < in.shape().size(); i++) {
+  for (std::size_t i = 0, max = in.shape().size(); i != max; ++i) {
       if (i < axis)
         coerced_shape[0] *= in.shape()[i];
       else
