@@ -17,36 +17,36 @@
   under the License.
 */
 
-const React = require('react');
+const React = require("react")
 
-const CompLibrary = require('../../core/CompLibrary.js');
+const CompLibrary = require("../../core/CompLibrary.js")
 
-const Container = CompLibrary.Container;
-const GridBlock = CompLibrary.GridBlock;
+const Container = CompLibrary.Container
+const GridBlock = CompLibrary.GridBlock
 
 function Help(props) {
-  const {config: siteConfig, language = ''} = props;
-  const {baseUrl, docsUrl} = siteConfig;
-  const docsPart = `${docsUrl ? `${docsUrl}/` : ''}`;
-  const langPart = `${language ? `${language}/` : ''}`;
-  const docUrl = doc => `${baseUrl}${docsPart}${langPart}${doc}`;
+  const { config: siteConfig, language = "" } = props
+  const { baseUrl, docsUrl } = siteConfig
+  const docsPart = `${docsUrl ? `${docsUrl}/` : ""}`
+  const langPart = `${language ? `${language}/` : ""}`
+  const docUrl = doc => `${baseUrl}${docsPart}${langPart}${doc}`
 
   const supportLinks = [
     {
       content: `Learn more using the [documentation on this site.](${docUrl(
-        'doc1.html',
+        "doc1.html"
       )})`,
-      title: 'Browse Docs',
+      title: "Browse Docs",
     },
     {
-      content: 'Ask questions about the documentation and project',
-      title: 'Join the community',
+      content: "Ask questions about the documentation and project",
+      title: "Join the community",
     },
     {
       content: "Find out what's new with this project",
-      title: 'Stay up to date',
+      title: "Stay up to date",
     },
-  ];
+  ]
 
   return (
     <div className="docMainWrapper wrapper">
@@ -60,7 +60,7 @@ function Help(props) {
         </div>
       </Container>
     </div>
-  );
+  )
 }
 
-module.exports = Help;
+module.exports = Help

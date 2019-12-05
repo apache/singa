@@ -25,17 +25,17 @@
 */
 
 // List of projects/orgs using your project for the users page.
-// this field is used by example the pages/en/index.js 
+// this field is used by example the pages/en/index.js
 // and pages/en/users.js files provided
-const users = require('./data/users')
+const users = require("./data/users")
 
-const repoUrl = 'https://github.com/apache/singa'
+const repoUrl = "https://github.com/apache/singa"
 
 const siteConfig = {
-  title: 'Apache SINGA', // Title for your website.
-  tagline: 'Distributed deep learning system',
-  url: 'https://singa.apache.org/', // Your website URL
-  baseUrl: '/', // Base URL for your project */
+  title: "Apache SINGA", // Title for your website.
+  tagline: "Distributed deep learning system",
+  url: "https://singa.apache.org/", // Your website URL
+  baseUrl: "/", // Base URL for your project */
   // For github.io type URLs, you would set the url and baseUrl like:
   //   url: 'https://facebook.github.io',
   //   baseUrl: '/test-site/',
@@ -45,48 +45,47 @@ const siteConfig = {
   editUrl: `${repoUrl}/blob/master/docs/`,
 
   // Used for publishing and more
-  projectName: 'singa', // cd to /website/build/singa/ to serve
-  organizationName: 'apache',
+  projectName: "singa", // cd to /website/build/singa/ to serve
+  organizationName: "apache",
   // For top-level user or org sites, the organization is still the same.
   // e.g., for the https://JoelMarcey.github.io site, it would be set like...
   //   organizationName: 'JoelMarcey'
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
-    {doc: 'installation', label: 'Docs'},
-    {doc: 'source-repository', label: 'Community'},
+    { doc: "installation", label: "Docs" },
+    { doc: "source-repository", label: "Community" },
     // {page: 'help', label: 'Help'},
-    {blog: true, label: 'News'},
-    {search: true},
+    { blog: true, label: "News" },
+    { search: true },
     // Determines language drop down position among links
     { languages: true },
     // can change help.js to apache.js, optional
-    {href: repoUrl, label: 'GitHub'},
-
+    { href: repoUrl, label: "GitHub" },
   ],
 
   // If you have users set above, you add it here:
   users,
 
-  // disable showing the title 
+  // disable showing the title
   // in the header next to the header icon
   disableHeaderTitle: true,
 
   /* path to images for header/footer */
-  headerIcon: 'img/singa.png',
-  footerIcon: 'img/singa-logo-square.png',
-  favicon: 'img/favicon.ico',
+  headerIcon: "img/singa.png",
+  footerIcon: "img/singa-logo-square.png",
+  favicon: "img/favicon.ico",
 
   /* Colors for website */
   colors: {
     // many of the colors are over-written in custom.css
-    primaryColor: '#904600',
-    secondaryColor: "#808080" // 2nd layer of toolbar in smaller screen
+    primaryColor: "#904600",
+    secondaryColor: "#808080", // 2nd layer of toolbar in smaller screen
   },
 
   /* Blog setting */
   blogSidebarCount: "ALL", // int N or string "ALL"
-  blogSidebarTitle: { default: 'Recent News', all: 'All News' },
+  blogSidebarTitle: { default: "Recent News", all: "All News" },
 
   /* Twitter share at bottom of Blog/News */
   twitter: true,
@@ -116,21 +115,21 @@ const siteConfig = {
 
   highlight: {
     // Highlight.js theme to use for syntax highlighting in code blocks.
-    theme: 'atom-one-dark',
+    theme: "atom-one-dark",
   },
 
   // Add custom scripts here that would be placed in <script> tags.
-  scripts: ['https://buttons.github.io/buttons.js'],
+  scripts: ["https://buttons.github.io/buttons.js"],
 
   // On page navigation for the current documentation page.
-  onPageNav: 'separate',
+  onPageNav: "separate",
   // No .html extensions for paths.
   cleanUrl: true,
 
   // Open Graph and Twitter card images.
-  ogImage: 'img/singa_twitter_banner.jpeg',
-  twitterUsername: 'ApacheSINGA',
-  twitterImage: 'img/singa_twitter_banner.jpeg',
+  ogImage: "img/singa_twitter_banner.jpeg",
+  twitterUsername: "ApacheSINGA",
+  twitterImage: "img/singa_twitter_banner.jpeg",
 
   // For sites with a sizable amount of content, set collapsible to true.
   // Expand/collapse the links and subcategories under categories.
@@ -146,6 +145,6 @@ const siteConfig = {
   repoUrl,
 
   scrollToTop: true,
-};
+}
 
-module.exports = siteConfig;
+module.exports = siteConfig

@@ -23,28 +23,28 @@
  index.js is the landing page
 */
 
-const React = require('react');
+const React = require("react")
 
-const CompLibrary = require('../../core/CompLibrary.js');
+const CompLibrary = require("../../core/CompLibrary.js")
 
-const Container = CompLibrary.Container;
-const GridBlock = CompLibrary.GridBlock;
-const Showcase = require(`${process.cwd()}/core/Showcase.js`);
+const Container = CompLibrary.Container
+const GridBlock = CompLibrary.GridBlock
+const Showcase = require(`${process.cwd()}/core/Showcase.js`)
 // TODO: add <translate> tags
 // const translate = require('../../server/translate.js').translate;
 
-const siteConfig = require(`${process.cwd()}/siteConfig.js`);
+const siteConfig = require(`${process.cwd()}/siteConfig.js`)
 
 function docUrl(doc, language) {
-  return siteConfig.baseUrl + 'docs/' + (language ? language + '/' : '') + doc;
+  return siteConfig.baseUrl + "docs/" + (language ? language + "/" : "") + doc
 }
 
 function pageUrl(page, language) {
-  return siteConfig.baseUrl + (language ? language + '/' : '') + page;
+  return siteConfig.baseUrl + (language ? language + "/" : "") + page
 }
 
 function HomeSplash(props) {
-  const {siteConfig, language} = props;
+  const { siteConfig, language } = props
 
   return (
     <div className="index-hero">
@@ -66,7 +66,8 @@ function HomeSplash(props) {
         <div className="index-ctas">
           <a
             className="button index-ctas-get-started-button"
-            href={`${docUrl("installation", language)}`}>
+            href={`${docUrl("installation", language)}`}
+          >
             Get Started
           </a>
           <span className="index-ctas-github-button">
@@ -82,49 +83,46 @@ function HomeSplash(props) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 class Index extends React.Component {
   render() {
-    const {config: siteConfig, language = 'en'} = this.props;
-    const pinnedUsersToShowcase = siteConfig.users.filter(user => user.pinned);
+    const { config: siteConfig, language = "en" } = this.props
+    const pinnedUsersToShowcase = siteConfig.users.filter(user => user.pinned)
 
     return (
       <div>
         <HomeSplash siteConfig={siteConfig} language={language} />
         <div className="announcement">
           <div className="announcement-inner">
-            Apache SINGA is an {' '}
+            Apache SINGA is an{" "}
             <a href="https://blogs.apache.org/foundation/entry/the-apache-software-foundation-announces57">
               Apache Top Level Project
             </a>
-            , open source distributed training platform
-            for deep learning and machine learning models
+            , open source distributed training platform for deep learning and
+            machine learning models
           </div>
         </div>
         <div className="mainContainer">
-          <Container
-            padding={['bottom', 'top']}
-            className="mainPageContainer"
-          >
+          <Container padding={["bottom", "top"]} className="mainPageContainer">
             <GridBlock
               contents={[
                 {
                   content: `Apache SINGA focuses on [distributed](https://dl.acm.org/citation.cfm?doid=2733373.2807410)
                    deep learning by partitioning the model and data onto nodes in a cluster and
                     [parallelize](https://dl.acm.org/citation.cfm?doid=2733373.2806232) the training`,
-                  imageAlign: 'left',
+                  imageAlign: "left",
                   image: `${siteConfig.baseUrl}img/overview.png`,
-                  imageAlt: 'Distributed Learning',
-                  title: 'Distributed Learning',
+                  imageAlt: "Distributed Learning",
+                  title: "Distributed Learning",
                 },
               ]}
               layout="twoColumn"
             />
           </Container>
           <Container
-            padding={['bottom', 'top']}
+            padding={["bottom", "top"]}
             className="mainPageContainer"
             background="light"
           >
@@ -134,35 +132,31 @@ class Index extends React.Component {
                   content: `Apache SINGA v2.0.0 has AutoML features, a Healthcare
                    [model zoo](${docUrl("model-zoo-cnn-cifar10", language)}),
                     and facility for porting other models onto SINGA`,
-                  imageAlign: 'right',
+                  imageAlign: "right",
                   image: `${siteConfig.baseUrl}img/singav1-sw.png`,
-                  imageAlt: 'AutoML and Model Zoo',
-                  title: 'AutoML and Model Zoo',
+                  imageAlt: "AutoML and Model Zoo",
+                  title: "AutoML and Model Zoo",
                 },
               ]}
               layout="twoColumn"
             />
           </Container>
           <div className="productShowcaseSection paddingBottom">
-            <h2 style={{ color: "#904600" }}>
-              Users of Apache SINGA
-            </h2>
+            <h2 style={{ color: "#904600" }}>Users of Apache SINGA</h2>
             <p>
               Apache SINGA powers the following organizations and companies...
             </p>
             <Showcase users={pinnedUsersToShowcase} />
             <div className="more-users">
-              <a
-                className="button"
-                href={`${pageUrl("users", language)}`}>
+              <a className="button" href={`${pageUrl("users", language)}`}>
                 All Apache SINGA Users
               </a>
             </div>
           </div>
         </div>
       </div>
-    );
+    )
   }
 }
 
-module.exports = Index;
+module.exports = Index

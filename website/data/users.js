@@ -21,115 +21,115 @@ module.exports = [
   // Please contact SINGA team if you
   // want to feature your usage of Apache SINGA
   {
-    caption: 'NetEase',
+    caption: "NetEase",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/NetEase.jpg',
-    infoLink: 'http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html',
+    image: "/img/users/NetEase.jpg",
+    infoLink: "http://tech.163.com/17/0602/17/CLUL016I00098GJ5.html",
     pinned: true,
   },
   {
-    caption: 'yzBigData',
+    caption: "yzBigData",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/yzBigData.png',
-    infoLink: 'http://www.yzbigdata.com/',
+    image: "/img/users/yzBigData.png",
+    infoLink: "http://www.yzbigdata.com/",
     pinned: false,
   },
   {
-    caption: 'Shentilium',
+    caption: "Shentilium",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/shentilium.png',
-    infoLink: 'https://shentilium.com/',
+    image: "/img/users/shentilium.png",
+    infoLink: "https://shentilium.com/",
     pinned: false,
   },
   {
-    caption: 'Foodlg',
+    caption: "Foodlg",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/foodlg.png',
-    infoLink: 'http://www.foodlg.com/',
+    image: "/img/users/foodlg.png",
+    infoLink: "http://www.foodlg.com/",
     pinned: true,
   },
   {
-    caption: 'Medilot',
+    caption: "Medilot",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/medilot.svg',
-    infoLink: 'https://medilot.com/technologies',
+    image: "/img/users/medilot.svg",
+    infoLink: "https://medilot.com/technologies",
     pinned: true,
   },
   {
-    caption: 'MZH Tech',
+    caption: "MZH Tech",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/mzhtech.png',
-    infoLink: 'http://www.mzhtechnologies.com/index.html',
+    image: "/img/users/mzhtech.png",
+    infoLink: "http://www.mzhtechnologies.com/index.html",
     pinned: true,
   },
   {
-    caption: 'NUH SG',
+    caption: "NUH SG",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/nuhlogo.jpg',
-    infoLink: 'https://www.nuh.com.sg/Pages/Home.aspx',
+    image: "/img/users/nuhlogo.jpg",
+    infoLink: "https://www.nuh.com.sg/Pages/Home.aspx",
     pinned: true,
   },
   {
-    caption: 'SGH SG',
+    caption: "SGH SG",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/sgh.png',
-    infoLink: 'https://www.sgh.com.sg/',
+    image: "/img/users/sgh.png",
+    infoLink: "https://www.sgh.com.sg/",
     pinned: true,
   },
   {
-    caption: 'TTSH SG',
+    caption: "TTSH SG",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/TTSH_Logo.gif',
-    infoLink: 'https://www.ttsh.com.sg/Pages/default.aspx',
+    image: "/img/users/TTSH_Logo.gif",
+    infoLink: "https://www.ttsh.com.sg/Pages/default.aspx",
     pinned: true,
   },
   {
-    caption: 'JurongHealth SG',
+    caption: "JurongHealth SG",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/juronghealth.png',
-    infoLink: 'https://www.juronghealthcampus.com.sg/',
+    image: "/img/users/juronghealth.png",
+    infoLink: "https://www.juronghealthcampus.com.sg/",
     pinned: true,
   },
   {
-    caption: 'Carnegie Technologies',
+    caption: "Carnegie Technologies",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/carnegietech.png',
-    infoLink: 'https://www.carnegietechnologies.com/',
+    image: "/img/users/carnegietech.png",
+    infoLink: "https://www.carnegietechnologies.com/",
     pinned: true,
   },
   {
-    caption: 'CBRE',
+    caption: "CBRE",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/CBRE.jpg',
-    infoLink: 'http://www.cbre.com',
+    image: "/img/users/CBRE.jpg",
+    infoLink: "http://www.cbre.com",
     pinned: true,
   },
   {
-    caption: 'Noblis',
+    caption: "Noblis",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/noblis.png',
-    infoLink: 'https://noblis.org/',
+    image: "/img/users/noblis.png",
+    infoLink: "https://noblis.org/",
     pinned: true,
   },
   {
-    caption: 'CitiGroup',
+    caption: "CitiGroup",
     // You will need to prepend the image path with your baseUrl
     // if it is not '/', like: '/test-site/img/image.jpg'.
-    image: '/img/users/citigroup-logo.jpg',
-    infoLink: 'https://www.citigroup.com/citi/',
+    image: "/img/users/citigroup-logo.jpg",
+    infoLink: "https://www.citigroup.com/citi/",
     pinned: true,
   },
-];
+]

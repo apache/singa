@@ -21,22 +21,22 @@
  next to the title in the header
 */
 
-const React = require('react');
+const React = require("react")
 
-const CompLibrary = require('../../core/CompLibrary');
+const CompLibrary = require("../../core/CompLibrary")
 
-const Container = CompLibrary.Container;
+const Container = CompLibrary.Container
 
-const CWD = process.cwd();
+const CWD = process.cwd()
 // versions post docusaurus-upgrade Nov 2019
-const versions = require(`${CWD}/versions.json`);
+const versions = require(`${CWD}/versions.json`)
 // versions pre docusaurus-upgrade Nov 2019
-const oldversions = require(`${CWD}/oldversions.json`);
+const oldversions = require(`${CWD}/oldversions.json`)
 
 function Versions(props) {
-  const {config: siteConfig} = props;
-  const latestVersion = versions[0];
-  const repoUrl = `https://github.com/${siteConfig.organizationName}/${siteConfig.projectName}`;
+  const { config: siteConfig } = props
+  const latestVersion = versions[0]
+  const repoUrl = `https://github.com/${siteConfig.organizationName}/${siteConfig.projectName}`
   return (
     <div className="docMainWrapper wrapper">
       <Container className="mainContainer versionsContainer">
@@ -53,16 +53,18 @@ function Versions(props) {
                 <td>
                   <a
                     href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
-                      props.language ? props.language + '/' : ''
-                    }installation`}>
+                      props.language ? props.language + "/" : ""
+                    }installation`}
+                  >
                     Documentation
                   </a>
                 </td>
                 <td>
                   <a
                     href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
-                      props.language ? props.language + '/' : ''
-                    }releases/RELEASE_NOTES_${latestVersion}.html`}>
+                      props.language ? props.language + "/" : ""
+                    }releases/RELEASE_NOTES_${latestVersion}.html`}
+                  >
                     Release Notes
                   </a>
                 </td>
@@ -70,7 +72,10 @@ function Versions(props) {
             </tbody>
           </table>
           <h3 id="rc">Pre-release versions</h3>
-          <p>Latest unreleased <i>(next)</i> documentation and code of Apache SINGA</p>
+          <p>
+            Latest unreleased <i>(next)</i> documentation and code of Apache
+            SINGA
+          </p>
           <table className="versions">
             <tbody>
               <tr>
@@ -78,8 +83,9 @@ function Versions(props) {
                 <td>
                   <a
                     href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
-                      props.language ? props.language + '/' : ''
-                    }next/installation`}>
+                      props.language ? props.language + "/" : ""
+                    }next/installation`}
+                  >
                     Documentation
                   </a>
                 </td>
@@ -91,13 +97,17 @@ function Versions(props) {
           </table>
           <h3 id="archive">Past Versions</h3>
           <p>Here you can find previous versions of Apache SINGA</p>
-          <p>Please refer to {' '}
+          <p>
+            Please refer to{" "}
             <a
               href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
-                props.language ? props.language + '/' : ''
-              }download-singa#incubating-v010-8-october-2015`}>
+                props.language ? props.language + "/" : ""
+              }download-singa#incubating-v010-8-october-2015`}
+            >
               this page
-            </a> for detailed release notes of previous versions.</p>
+            </a>{" "}
+            for detailed release notes of previous versions.
+          </p>
           <table className="versions">
             <tbody>
               {versions.map(
@@ -108,21 +118,23 @@ function Versions(props) {
                       <td>
                         <a
                           href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
-                            props.language ? props.language + '/' : ''
-                          }${version}/installation`}>
+                            props.language ? props.language + "/" : ""
+                          }${version}/installation`}
+                        >
                           Documentation
                         </a>
                       </td>
                       <td>
                         <a
                           href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
-                            props.language ? props.language + '/' : ''
-                          }releases/RELEASE_NOTES_${version}.html`}>
+                            props.language ? props.language + "/" : ""
+                          }releases/RELEASE_NOTES_${version}.html`}
+                        >
                           Release Notes
                         </a>
                       </td>
                     </tr>
-                  ),
+                  )
               )}
               {oldversions.map(
                 version =>
@@ -130,15 +142,17 @@ function Versions(props) {
                     <tr key={version}>
                       <th>{version}</th>
                       <td>
-                        <a
-                          href={`${siteConfig.baseUrl}v${version}/`}>                          Documentation
+                        <a href={`${siteConfig.baseUrl}v${version}/`}>
+                          {" "}
+                          Documentation
                         </a>
                       </td>
                       <td>
                         <a
                           href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
-                            props.language ? props.language + '/' : ''
-                          }releases/RELEASE_NOTES_${version}.html`}>
+                            props.language ? props.language + "/" : ""
+                          }releases/RELEASE_NOTES_${version}.html`}
+                        >
                           Release Notes
                         </a>
                       </td>
@@ -148,15 +162,15 @@ function Versions(props) {
             </tbody>
           </table>
           <p>
-            You can find past versions of this project on{' '}
+            You can find past versions of this project on{" "}
             <a href={repoUrl}>GitHub</a>.
           </p>
         </div>
       </Container>
     </div>
-  );
+  )
 }
 
-Versions.title = 'Versions';
+Versions.title = "Versions"
 
-module.exports = Versions;
+module.exports = Versions

@@ -19,10 +19,10 @@
 
 /* does not work on development server... */
 
-const React = require("react");
+const React = require("react")
 
-class ErrorPage extends React.Component {  
-  render() {    
+class ErrorPage extends React.Component {
+  render() {
     return (
       <div className="error-page">
         <div className="error-message">
@@ -33,11 +33,10 @@ class ErrorPage extends React.Component {
           </div>
         </div>
       </div>
-    );
+    )
   }
 }
 
 ErrorPage.title = "Page Not Found"
 
-
-module.exports = ErrorPage;
+module.exports = ErrorPage
