@@ -18,3 +18,8 @@ website/i18n/*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+.vscode
+
+# using yarn workspace
+website/yarn.lock
