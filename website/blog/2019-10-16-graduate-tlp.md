@@ -6,9 +6,9 @@ authorURL: https://twitter.com/ApacheSINGA
 
 The Apache Software Foundation (ASF) recently [announced](https://blogs.apache.org/foundation/entry/the-apache-software-foundation-announces57) Apache SINGA as a Top-Level Project.
 
->The Apache Software Foundation (ASF), the all-volunteer developers, stewards, and incubators of more than 350 Open Source projects and initiatives, announced today Apache® SINGA™ as a Top-Level Project (TLP).
-
->Apache SINGA is an Open Source distributed, scalable machine learning library. The project was originally developed in 2014 at the National University of Singapore, and was submitted to the Apache Incubator in March 2015.
+> The Apache Software Foundation (ASF), the all-volunteer developers, stewards, and incubators of more than 350 Open Source projects and initiatives, announced today Apache® SINGA™ as a Top-Level Project (TLP).
+>
+> Apache SINGA is an Open Source distributed, scalable machine learning library. The project was originally developed in 2014 at the National University of Singapore, and was submitted to the Apache Incubator in March 2015.
 
 <!--truncate-->
 
@@ -18,7 +18,6 @@ ASF tweeted the offical annoucement on Nov 4th 2019,
 <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 To read more about the official blog post from the ASF, please go to this URL https://blogs.apache.org/foundation/entry/the-apache-software-foundation-announces57
-
 
 **Overview on Apache SINGA**
 

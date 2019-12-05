@@ -8,4 +8,3 @@ title: Initializer
 ## Python API
 
 ## CPP API
-

@@ -5,12 +5,12 @@ title: How to Contribute to Documentation
 
 <!--- Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements.  See the NOTICE file distributed with this work for additional information regarding copyright ownership.  The ASF licenses this file to you under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the License for the specific language governing permissions and limitations under the License.  -->
 
-
 ## Docusaurus Website
 
 This website was created with [Docusaurus](https://docusaurus.io/).
 
 1. Start from the SINGA root directory, `cd` to the website directory and install any website specific dependencies by `yarn install`.
+
 ```sh
 $ cd website       # Only needed if you are not already in the website directory
 # Install dependencies
@@ -18,6 +18,7 @@ $ yarn
 ```
 
 2.  Run a development server with hot-reloading to check changes by running `yarn start` in the website directory.
+
 ```sh
 # Start the site
 $ yarn start
@@ -27,11 +28,9 @@ $ yarn start
 
 All the docs are located in the `SINGA_ROOT/singa-site/docs/` folder.
 
-
 ## Website (old version)
 
-This document gives step-by-step instructions for deploying [SINGA website](http://singa.apache.org).
-SINGA website is built by [Sphinx](http://www.sphinx-doc.org) from a source tree stored in the [git repo](https://github.com/apache/singa/tree/master/doc).
+This document gives step-by-step instructions for deploying [SINGA website](http://singa.apache.org). SINGA website is built by [Sphinx](http://www.sphinx-doc.org) from a source tree stored in the [git repo](https://github.com/apache/singa/tree/master/doc).
 
 To install Sphinx:
 
@@ -71,12 +70,13 @@ To generate docs, run "doxygen" from the doc folder (Doxygen >= 1.8 recommended)
 
 The document files (rst and md files) can be previewed in vscode via the [reStructuredText Extension](https://docs.restructuredtext.net/).
 
-1. Install the extension in vscode.
-2. Install the dependent libs. All libs required to build the website should be installed (see the above instructions). In addition, there are two more libs to be installed.
+1.  Install the extension in vscode.
+2.  Install the dependent libs. All libs required to build the website should be installed (see the above instructions). In addition, there are two more libs to be installed.
 
         pip install sphinx-autobuild=0.7.1
         pip install doc8=0.8.0
-3. Configure the conf path for `restructuredtext.confPath` to the [conf.py](./conf.py)
+
+3.  Configure the conf path for `restructuredtext.confPath` to the [conf.py](./conf.py)
 
 ### Docstring Snippet
 

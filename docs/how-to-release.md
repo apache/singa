@@ -10,16 +10,17 @@ This is a guide for the release preparing process in SINGA.
 ## Select a release manager
 
 The release manager (RM) is the coordinator for the release process. It is the RM's signature (.asc) that is uploaded together with the release. The RM generates KEY (RSA 4096-bit) and uploads it to a public key server. The RM needs to get his key endorsed (signed) by other Apache user, to be connected to the web of trust. http://www.apache.org/dev/release-signing.html
- 
+
 Check:
+
 - The codebase does not include third-party code which is not compatible to APL
 - The dependencies are compatible with APL. GNU-like licenses are NOT compatible
 - All source files written by us MUST include the Apache license header: http://www.apache.org/legal/src-headers.html. There's a script in there which helps propagating the header to all files.
-- The build process is error-free. 
+- The build process is error-free.
 - Unit tests are included (as much as possible)
 - The Jupyter notebooks are working with the new release
-- The online documentation on the Apache website is up to date. 
-        
+- The online documentation on the Apache website is up to date.
+
 ## Prepare LICENSE file
 
 copy and paste this http://apache.org/licenses/LICENSE-2.0.txt
@@ -27,15 +28,16 @@ copy and paste this http://apache.org/licenses/LICENSE-2.0.txt
 ## Prepare NOTICE file
 
 - Use this template: http://apache.org/legal/src-headers.html#notice
-- If we include any third party code  in the release package which is not APL, must state it at the end of the NOTICE file.
+- If we include any third party code in the release package which is not APL, must state it at the end of the NOTICE file.
 - Example: http://apache.org/licenses/example-NOTICE.txt
 
 ## Prepare RELEASE_NOTES file
 
 - Introduction, Features, Bugs (link to JIRA), Changes (N/A for first erlease), Dependency list, Incompatibility issues.
-- Follow this example:  http://commons.apache.org/proper/commons-digester/commons-digester-3.0/RELEASE-NOTES.txt
+- Follow this example: http://commons.apache.org/proper/commons-digester/commons-digester-3.0/RELEASE-NOTES.txt
 
 ## Prepare README file
+
 - How to build, run test, run examples
 - List of dependencies.
 - Mail list, website, etc. Any information useful for user to start.
@@ -43,6 +45,7 @@ copy and paste this http://apache.org/licenses/LICENSE-2.0.txt
 ## Package the release
 
 The release should be packaged into : apache-singa-xx.xx.xx.tar.gz
+
 - src/
 - README
 - LICENSE
@@ -53,12 +56,13 @@ The release should be packaged into : apache-singa-xx.xx.xx.tar.gz
 ## Upload the release
 
 The release is uploaded to the RM’s Apache page: people.apache.org/~ID/...
+
 - apache-singa-xx.xx.xx.tar.gz
 - KEY
 - XX.acs
 - XX.md5
 
-## Roll out artifacts to mirrors 
+## Roll out artifacts to mirrors
 
 svn add to “dist/release/singa”
 
@@ -66,9 +70,7 @@ Delete old artifacts (automatically archived)
 
 ## Update the Download page
 
-The tar.gz file MUST be downloaded from mirror, using closer.cgi script
-other artifacts MUST be downloaded from main Apache site
-Good idea to update EC2 image and make it available for download as well
+The tar.gz file MUST be downloaded from mirror, using closer.cgi script other artifacts MUST be downloaded from main Apache site Good idea to update EC2 image and make it available for download as well
 
 ## Make the internal announcements
 
@@ -103,9 +105,9 @@ Please vote on releasing this package. The vote is open for at least 72 hours an
 
 Here is my vote:
 
-+1 
++1
 
-{SINGA Team Member Name} 
+{SINGA Team Member Name}
 ```
 
 Wait at least 48 hours for test responses
@@ -143,9 +145,8 @@ Apache SINGA X.Y.Z has passed.
 
 I'll now start a vote on the general list. Those of you in the IPMC, please recast your vote on the new thread.
 
-{SINGA Team Member Name} 
+{SINGA Team Member Name}
 ```
-
 
 ## Publish release
 
@@ -155,7 +156,7 @@ Template for ANNOUNCING the release
 To: announce@apache.org, dev@singa.apache.org
 Subject: [ANNOUNCE] Apache SINGA X.Y.Z released
 
-We are pleased to announce that SINGA X.Y.Z is released. 
+We are pleased to announce that SINGA X.Y.Z is released.
 
 SINGA is a general distributed deep learning platform for training big deep learning models over large datasets. It is designed with an intuitive programming model based on the layer abstraction. SINGA supports a wide variety of popular deep learning models.
 
@@ -164,8 +165,8 @@ http://singa.apache.org/downloads.html
 
 The main features of this release include XXX
 
-We look forward to hearing your feedbacks, suggestions, and contributions to the project. 
+We look forward to hearing your feedbacks, suggestions, and contributions to the project.
 
-On behalf of the SINGA team, 
+On behalf of the SINGA team,
 {SINGA Team Member Name}
 ```
