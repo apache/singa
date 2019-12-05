@@ -1,7 +1,8 @@
 {
-  "name": "apache-singa-site",
+  "name": "apache-singa-site-website-subdir",
   "license": "Apache-2.0",
   "version": "2.0.0",
+  "description": "website subdir of Apache SINGA",
   "scripts": {
     "examples": "docusaurus-examples",
     "start": "docusaurus-start",
@@ -12,6 +13,6 @@
     "rename-version": "docusaurus-rename-version"
   },
   "dependencies": {
-    "docusaurus": "^1.14.2"
+    "docusaurus": "^1.14.3"
   }
 }
