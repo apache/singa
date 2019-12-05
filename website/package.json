@@ -1,8 +1,8 @@
 {
-  "name": "apache-singa-site-website-subdir",
+  "name": "apache-singa-docs-site-website-subdir",
   "license": "Apache-2.0",
   "version": "2.0.0",
-  "description": "website subdir of Apache SINGA",
+  "description": "(do not change the name of this yarn workspace) website subdir of apache-singa-docs-site",
   "scripts": {
     "examples": "docusaurus-examples",
     "start": "docusaurus-start",
