@@ -1,0 +1,42 @@
+{
+  "version-2.0.0-docs": {
+    "Getting Started": [
+      "version-2.0.0-installation",
+      "version-2.0.0-software-stack",
+      "version-2.0.0-benchmark-train"
+    ],
+    "Guides": [
+      "version-2.0.0-device",
+      "version-2.0.0-tensor",
+      "version-2.0.0-autograd"
+    ],
+    "Model Zoo": [
+      "version-2.0.0-model-zoo-cnn-cifar10",
+      "version-2.0.0-model-zoo-char-rnn",
+      "version-2.0.0-model-zoo-rbm-mnist",
+      "version-2.0.0-model-zoo-imagenet-alexnet",
+      "version-2.0.0-model-zoo-imagenet-densenet",
+      "version-2.0.0-model-zoo-imagenet-googlenet",
+      "version-2.0.0-model-zoo-imagenet-inception",
+      "version-2.0.0-model-zoo-imagenet-resnet",
+      "version-2.0.0-model-zoo-imagenet-vgg"
+    ],
+    "Development": [
+      "version-2.0.0-download-singa",
+      "version-2.0.0-build",
+      "version-2.0.0-contribute-code",
+      "version-2.0.0-contribute-docs",
+      "version-2.0.0-how-to-release"
+    ]
+  },
+  "version-2.0.0-community": {
+    "Community": [
+      "version-2.0.0-source-repository",
+      "version-2.0.0-mail-lists",
+      "version-2.0.0-issue-tracking",
+      "version-2.0.0-security",
+      "version-2.0.0-team-list",
+      "version-2.0.0-history-singa"
+    ]
+  }
+}
