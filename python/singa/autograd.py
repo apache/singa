@@ -626,7 +626,12 @@ def add_bias(x, b, axis=0):
 class Reshape(Operation):
     def __init__(self,shape):
         super(Reshape, self).__init__()
-        self.shape=list(shape)
+        # handle the shape with 0
+        i_shape = list(shape)
+        shape = [i_shape[i] if i < len(i_shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
+        # handle the shape with -1
+        hidden_shape = int(np.prod(i_shape) // np.abs(np.prod(shape)))
+        self.shape=[s if s != -1 else hidden_shape for s in shape]
 
     def forward(self, x):
         self.cache=x.shape()
@@ -1493,13 +1498,16 @@ class BatchNorm2d(Layer):
 
 
 class _BatchNorm2d(Operation):
-    def __init__(self, handle, running_mean, running_var, name=None):
+    def __init__(self, handle, running_mean, running_var, scale, bias, name=None):
         super(_BatchNorm2d, self).__init__(name)
         self.handle = handle
         self.running_mean = running_mean.data
         self.running_var = running_var.data
+        self.scale = scale.data
+        self.bias = bias.data
 
-    def forward(self, x, scale, bias):
+    def forward(self, x):
+        scale, bias = self.scale, self.bias
         if training:
             if (type(self.handle) == singa.BatchNormHandle):
                 y, mean, var = singa.CpuBatchNormForwardTraining(
@@ -1558,7 +1566,7 @@ class _BatchNorm2d(Operation):
 
 
 def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
-    return _BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
+    return _BatchNorm2d(handle, running_mean, running_var, scale, bias)(x)[0]
 
 
 class _Pooling2d(Operation):

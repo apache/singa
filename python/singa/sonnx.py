@@ -20,6 +20,11 @@
 
 from __future__ import division
 
+import numpy as np
+import onnx.utils
+import onnx
+from onnx.backend.base import Backend, BackendRep
+from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto, TensorProto, OperatorSetIdProto, optimizer)
 import warnings
 
 from . import singa_wrap as singa
@@ -28,11 +33,6 @@ from . import tensor
 
 import collections
 deque = collections.deque
-
-from onnx import (checker, helper, numpy_helper, GraphProto, NodeProto, TensorProto, OperatorSetIdProto, optimizer)
-from onnx.backend.base import Backend, BackendRep
-import onnx
-import numpy as np
 
 
 def postorderRecursive(root, root_t):
@@ -211,7 +211,7 @@ class SingaFrontend(object):
         '_Conv2d': '_create_conv_pool',
         '_Pooling2d': '_create_conv_pool',
         'Dummy': '_create_dummy',
-        '_BatchNorm2d': '_create_batch_norm',
+        '_BatchNorm2d': '_create_batchnorm',
         'Concat': '_create_concat',
         'Flatten': '_create_flatten',
         # 'GEMM': '_create_gemm',
@@ -222,6 +222,18 @@ class SingaFrontend(object):
         'HardSigmoid': '_create_hardsigmoid',
         'Clip': '_create_clip',
         'Transpose': '_create_transpose',
+    }
+
+    # operators with bool output
+    _bool_operators = {
+        'Equal': TensorProto.BOOL,
+        'Greater': TensorProto.BOOL,
+        'Less': TensorProto.BOOL,
+        'And': TensorProto.BOOL,
+        'Not': TensorProto.BOOL,
+        'Or': TensorProto.BOOL,
+        'Xor': TensorProto.BOOL,
+        'Shape': TensorProto.INT64,
     }
 
     # some ops(such as batchnorm) has inputs we cannot handle directly,
@@ -359,22 +371,22 @@ class SingaFrontend(object):
         # make the shape node
         # because the reshape in singa does not provide its shape as input tensor
         shape_node_name = op.name+":shape"
-        shape_node = NodeProto()
-        shape_node.name = shape_node_name
-        shape_node.op_type = cls._rename_operators.get("Dummy", "Dummy")
-        shape_node.output.extend([shape_node_name])
-        shape_node.attribute.extend([helper.make_attribute(
-            'value', helper.make_tensor(
-                name=shape_node_name,
-                data_type=TensorProto.FLOAT,
-                dims=[len(op_t.shape)],
-                vals=op_t.shape,
-            )
-        )])
+        # shape_node = NodeProto()
+        # shape_node.name = shape_node_name
+        # shape_node.op_type = cls._rename_operators.get("Dummy", "Dummy")
+        # shape_node.output.extend([shape_node_name])
+        # shape_node.attribute.extend([helper.make_attribute(
+        #     'value', helper.make_tensor(
+        #         name=shape_node_name,
+        #         data_type=TensorProto.FLOAT,
+        #         dims=[len(op_t.shape)],
+        #         vals=op_t.shape,
+        #     )
+        # )])
         # make the reshape node
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
         node.input.extend([shape_node_name])
-        return [shape_node, node]
+        return node
 
     @classmethod
     def _create_concat(cls, op, op_t):
@@ -453,7 +465,7 @@ class SingaFrontend(object):
     #     return node
 
     @classmethod
-    def _create_batch_norm(cls, op, op_t):
+    def _create_batchnorm(cls, op, op_t):
         """
         get a onnx node from singa _BatchNorm2d operator
         Args:
@@ -463,33 +475,41 @@ class SingaFrontend(object):
         Returns: 
             the onnx node
         """
-        nodes = []
-        # firstly we add the running mean and var nodes
-        running_values = [op.running_mean, op.running_var]
-        for srcop, _, y, _ in op.src:
-            if y is None and srcop.name in cls._unhandled_operators:
-                node = cls._common_singa_tensor_to_onnx_node(srcop, op_t)
-                running_value = running_values.pop(0)
-                vals = tensor.to_numpy(tensor.from_raw_tensor(running_value)).astype(float)
-                node.attribute.extend([helper.make_attribute(
-                    'value', helper.make_tensor(
-                        name=srcop.name,
-                        data_type=TensorProto.FLOAT,
-                        dims=[len(vals)],
-                        vals=vals,
-                    )
-                )])
-                nodes.append(node)
-
-        # then we add the batchnorm op itself
+        # first, we init batchnorm node
         epsilon = 1e-5  # the epsilon value used in singa
-        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
-        node.attribute.extend([
+        bn_node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+        bn_node.attribute.extend([
             helper.make_attribute('momentum', op.handle.factor),
             helper.make_attribute('epsilon', epsilon),
         ])
-        nodes.append(node)
+        # then we add nodes of scal, bias, mean, var 
+        nodes = []
+        running_values = {
+            "scale": op.scale,
+            "bias": op.bias,
+            "mean": op.running_mean,
+            "var": op.running_var
+        }
+        for tmp_name, running_value in running_values.items():
+            node_name = op.name+":"+tmp_name
+            bn_node.input.append(node_name)
+            # running_value.ToHost()
+            # running_value = running_value.GetFloatValue(int(running_value.Size()))
+            # node = NodeProto()
+            # node.name = node_name
+            # node.op_type = cls._rename_operators.get("Dummy", "Dummy")
+            # node.output.extend([node_name])
+            # node.attribute.extend([helper.make_attribute(
+            #     'value', helper.make_tensor(
+            #         name=node_name,
+            #         data_type=TensorProto.FLOAT,
+            #         dims=[len(running_value)],
+            #         vals=running_value,
+            #     )
+            # )])
+            # nodes.append(node)
 
+        nodes.append(bn_node)
         return nodes
 
     @classmethod
@@ -542,10 +562,6 @@ class SingaFrontend(object):
         Returns: 
             the onnx node
         """
-        # for batchnorm, the running mean and var's op_t is None, we just return
-        if op_t is None:
-            cls._unhandled_operators[op.name] = op
-            return None
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
         node.attribute.extend([helper.make_attribute(
             'value', helper.make_tensor(
@@ -627,7 +643,11 @@ class SingaFrontend(object):
         input_tensors = {id(x): x for x in inputs}
         # print(input_tensors)
         X = []
-        Y = [helper.make_tensor_value_info(y.name, TensorProto.FLOAT, y.shape)]
+        optype = cls._get_singa_op_type(y.creator)
+        y_dtype = TensorProto.FLOAT
+        if optype in cls._bool_operators:
+            y_dtype = cls._bool_operators[optype]
+        Y = [helper.make_tensor_value_info(y.name, y_dtype, y.shape)]
 
         for op, yid, op_t in topol:
             optype = cls._get_singa_op_type(op)
@@ -639,6 +659,29 @@ class SingaFrontend(object):
                 if op_t.dtype == tensor.int32:
                     dtype = TensorProto.INT32
                 X.append(helper.make_tensor_value_info(op.name, dtype, op_t.shape))
+            # because the inputs of batchnorm and reshape are differnet with onnx
+            # we need to add these inputs into onnx model mannully
+            elif yid in input_tensors and optype == '_BatchNorm2d': 
+                # batchnorm add scale, bias, mean, var as inputs
+                running_values = {
+                    "scale": op.scale,
+                    "bias": op.bias,
+                    "mean": op.running_mean,
+                    "var": op.running_var
+                }
+                for tmp_name, running_value in running_values.items():
+                    node_name = op.name+":"+tmp_name
+                    tmp_device = running_value.device()
+                    running_value.ToHost()
+                    np_running_value = running_value.GetFloatValue(int(running_value.Size()))
+                    running_value.ToDevice(tmp_device)
+                    X.append(helper.make_tensor_value_info(node_name, TensorProto.FLOAT, np_running_value.shape))
+                graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
+            elif yid in input_tensors and optype == 'Reshape': 
+                # reshape add shape
+                node_name = op.name+":shape"
+                X.append(helper.make_tensor_value_info(node_name, TensorProto.FLOAT, [len(op.shape)]))
+                graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
             else:
                 graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
 
@@ -747,7 +790,7 @@ class SingaBackend(Backend):
         'Concat': 'Concat',
         'Flatten': 'Flatten',
         # 'Gemm': 'GEMM',
-        'Reshape': 'Reshape',
+        'Reshape': 'reshape',
         'Sum': 'sum',
         'Cos': 'cos',
         'Cosh': 'cosh',
@@ -955,16 +998,9 @@ class SingaBackend(Backend):
         Returns: 
             the autograd of singa operator
         """
-        shape = tensor.to_numpy(inputs[1]).astype(np.int32).tolist()
-        # handle the shape with 0
-        i_shape = inputs[0].shape
-        shape = [i_shape[i] if i < len(i_shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
-        # handle the shape with -1
-        hidden_shape = int(np.prod(i_shape) // np.abs(np.prod(shape)))
-        shape = [s if s != -1 else hidden_shape for s in shape]
         _, forward = cls._common_onnx_node_to_singa_op(
             onnx_node, inputs, opset_version)
-        return _, forward(shape)
+        return _, forward
 
     @classmethod
     def _create_conv(cls, onnx_node, inputs, opset_version):
@@ -1288,7 +1324,7 @@ class SingaBackend(Backend):
         """
         # since reshape acutally only needs one input tensor
         # but onnx regard its shape as another tensor, we need to ommit it
-        if onnx_node.op_type in ['Reshape', 'Clip']:
+        if onnx_node.op_type in ['Clip']:
             inputs = [inputs[0]]
         outputs = forward(*inputs) if handle is None else forward(handle, *inputs)
         if not isinstance(outputs, collections.Iterable):
@@ -1313,8 +1349,9 @@ class SingaBackend(Backend):
         Returns:
             a list of SingaOps('name', 'op', 'handle', 'forward')
         """
-        # todo check the reason of Segmentation fault (core dumped)
         optimized_model = onnx.utils.polish_model(onnx_model)
+        # print('The model is:\n{}'.format(optimized_model))
+        # optimized_model = onnx_model
         # this tensor_nap contains all tensors, including outputs of each op
         tensor_map = {}
         # this weights only contains the tensors which have stored the gradients
@@ -1430,7 +1467,7 @@ class SingaRep(BackendRep):
         ret_outputs = collections.OrderedDict()
         # run the handle by the order of the list(the list is Topological Sorting)
         for x, val in zip(self.model.graph.input, inputs):
-            self.tensor_map[x.name] = val
+            self.tensor_map[x.name] = val        
         for _, op, handle, forward in self.singa_ops[:last_layers]:
             inputs = [self.tensor_map[x] for x in op.inputs]
             outputs = _run_node(op, inputs, handle, forward)

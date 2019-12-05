@@ -186,20 +186,39 @@ class TestPythonOnnx(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
-    # def test_batch_norm(self):
-    #     x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
-    #     x.gaussian(0.0, 1.0)
-    #     y = autograd.BatchNorm2d(3)(x)
+    def test_batch_norm(self):
+        x = np.array([[[[-1, 0, 1]], [[2, 3, 4]]]]).astype(np.float32)
+        s = np.array([1.0, 1.5]).astype(np.float32)
+        bias = np.array([0, 1]).astype(np.float32)
+        mean = np.array([0, 3]).astype(np.float32)
+        var = np.array([1, 1.5]).astype(np.float32)
 
-    #     # frontend
-    #     model = sonnx.to_onnx([x], [y])
-    #     # print('The model is:\n{}'.format(model))
+        x = tensor.from_numpy(x)
+        x.to_device(gpu_dev)
+        s = tensor.from_numpy(s)
+        s.to_device(gpu_dev)
 
-    #     # backend
-    #     sg_ir = sonnx.prepare(model, device=gpu_dev)
-    #     y_t = sg_ir.run([x])
+        bias = tensor.from_numpy(bias)
+        mean = tensor.from_numpy(mean)
+        var = tensor.from_numpy(var)
 
-    #     np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+        bias.to_device(gpu_dev)
+        mean.to_device(gpu_dev)
+        var.to_device(gpu_dev)
+
+        handle = singa.CudnnBatchNormHandle(0.9, x.data)
+        y = autograd.batchnorm_2d(handle, x, s,
+                                  bias, mean, var)
+
+        # frontend
+        model = sonnx.to_onnx([x, s, bias, mean, var], [y])
+        # print('The model is:\n{}'.format(model))
+
+        # backend
+        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        y_t = sg_ir.run([x, s, bias, mean, var])
+
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
     def test_linear(self):
         x = tensor.Tensor(shape=(2, 20), device=gpu_dev)
@@ -249,12 +268,12 @@ class TestPythonOnnx(unittest.TestCase):
         y = autograd.Reshape((2, 3))(x)[0]
 
         # frontend
-        model = sonnx.to_onnx([x], [y])
+        model = sonnx.to_onnx([x, (2, 3)], [y])
         # print('The model is:\n{}'.format(model))
 
         # # backend
         sg_ir = sonnx.prepare(model, device=gpu_dev)
-        y_t = sg_ir.run([x])
+        y_t = sg_ir.run([x, (2, 3)])
 
         np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
 
