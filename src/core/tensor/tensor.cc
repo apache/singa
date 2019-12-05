@@ -695,6 +695,8 @@ GenUnaryTensorFn(Exp);
 GenUnaryTensorFn(Log);
 GenUnaryTensorFn(ReLU);
 GenUnaryTensorFn(Sigmoid);
+GenUnaryTensorFn(SoftPlus);
+GenUnaryTensorFn(SoftSign);
 GenUnaryTensorFn(Sign);
 GenUnaryTensorFn(Sqrt);
 GenUnaryTensorFn(Square);
@@ -786,6 +788,7 @@ GenBinaryTensorFn(operator<, LT);
 GenBinaryTensorFn(operator<=, LE);
 GenBinaryTensorFn(operator>, GT);
 GenBinaryTensorFn(operator>=, GE);
+GenBinaryTensorFn(ReLUBackward, ReLUBackward);
 
 #define EltwiseTensorScalarFn(fn, t, x, ret)                            \
   do {                                                                  \
@@ -963,7 +966,7 @@ Tensor ConcatOn(const std::vector<Tensor> &in, int axis) {
   vector<Tensor> tmp;
   Shape out_shape = in[0].shape();
   size_t dim = in[0].shape().size();
-  CHECK_GE(dim, 2u) << " Only work for tensor of dim >=2 ";
+  // CHECK_GE(dim, 2u) << " Only work for tensor of dim >=2 ";
   size_t size = in[0].Size() / in[0].shape(axis);
   size_t new_size = 0u;
   for (const auto& t : in) {

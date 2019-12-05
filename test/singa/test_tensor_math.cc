@@ -120,6 +120,32 @@ TEST_F(TensorMath, SignCpp) {
   EXPECT_EQ(1.0f, dptr1[2]);
 }
 
+TEST_F(TensorMath, SoftPlusCpp) {
+  Tensor aa = a.Clone();
+  Tensor cc = aa - 1.0f;
+  const float *dptr = cc.data<float>();
+  EXPECT_NEAR(0.0f, dptr[0], 1e-5);
+  EXPECT_NEAR(1.0f, dptr[1], 1e-5);
+
+  Tensor p = SoftPlus(cc);
+  const float *dptr1 = p.data<float>();
+  EXPECT_NEAR(log(2.0f), dptr1[0], 1e-5);
+  EXPECT_NEAR(log(exp(1) + 1.0f), dptr1[1], 1e-5);
+}
+
+TEST_F(TensorMath, SoftSignCpp) {
+  Tensor aa = a.Clone();
+  Tensor cc = aa - 1.0f;
+  const float *dptr = cc.data<float>();
+  EXPECT_NEAR(0.0f, dptr[0], 1e-5);
+  EXPECT_NEAR(1.0f, dptr[1], 1e-5);
+
+  Tensor p = SoftSign(cc);
+  const float *dptr1 = p.data<float>();
+  EXPECT_EQ(0.0f, dptr1[0]);
+  EXPECT_EQ(0.5f, dptr1[1]);
+}
+
 TEST_F(TensorMath, SqrtCpp) {
   Tensor p = Sqrt(a);
   const float *dptr1 = p.data<float>();
@@ -1200,4 +1226,35 @@ TEST_F(TensorMath, BroadcastCuda) {
     EXPECT_FLOAT_EQ(8.0f, dptr[19]);
   }
 }
+
+TEST_F(TensorMath, SoftPlusCuda) {
+  auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor x(Shape{2}, dev);
+  const float data[2] = {0.0f, 1.0f};
+  x.CopyDataFromHostPtr<float>(data, 2);
+
+  auto y = SoftPlus(x);
+  y.Reshape({2,1});
+  y.ToHost();
+
+  const float *dptr = y.data<float>();
+  EXPECT_NEAR(dptr[0], log(2.0f), 1e-5);
+  EXPECT_NEAR(dptr[1], log(exp(1) + 1.0f), 1e-5);
+}
+
+TEST_F(TensorMath, SoftSignCuda) {
+  auto dev = std::make_shared<singa::CudaGPU>();
+  Tensor x(Shape{2}, dev);
+  const float data[2] = {0.0f, 1.0f};
+  x.CopyDataFromHostPtr<float>(data, 2);
+
+  auto y = SoftSign(x);
+  y.Reshape({2,1});
+  y.ToHost();
+
+  const float *dptr = y.data<float>();
+  EXPECT_EQ(dptr[0], 0.0f);
+  EXPECT_EQ(dptr[1], 0.5f);
+}
+
 #endif
