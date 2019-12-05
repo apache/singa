@@ -157,4 +157,6 @@ function Versions(props) {
   );
 }
 
+Versions.title = 'Versions';
+
 module.exports = Versions;
