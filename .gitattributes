@@ -1,0 +1,55 @@
+# Why do you want this ?
+# Because Git will see diffs between files shared between Linux and Windows
+# due to differences in line ending handling ( Windows uses CRLF and Unix LF)
+
+# There is a convenient collection of ready to use .gitattributes
+# files for the most popular programming languages.
+# It's useful to get you started
+# from Danial Jomphe (https://stackoverflow.com/a/10855862)
+# and ajdruff/fix-git-line-endings
+# https://gist.github.com/ajdruff/16427061a41ca8c08c05992a6c74f59e
+
+
+
+# Auto detect text files and perform LF normalization
+*        text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+# (Convert crlf => lf)
+*.cs     text diff=csharp
+*.java   text diff=java
+*.html   text diff=html
+*.css    text
+*.js     text
+*.jsx    text
+*.yml    text
+*.sql    text
+*.md     text
+
+*.php text
+*.json text
+*.htm text
+*.xml text
+*.txt text
+*.ini text
+*.inc text
+*.pl text
+*.rb text
+*.py text
+*.scm text
+.htaccess text
+
+*.sh text
+
+*.csproj text merge=union
+*.sln    text merge=union eol=crlf
+
+*.docx   diff=astextplain
+*.DOCX   diff=astextplain
+
+# absolute paths are ok, as are globs
+/**/postinst* text eol=lf
+
+# paths that don't start with / are treated relative to the .gitattributes folder
+relative/path/*.txt text eol=lf

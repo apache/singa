@@ -1,12 +1,20 @@
-.DS_Store
-
-node_modules
+# dependencies
+/node_modules
+website/node_modules
 
 lib/core/metadata.js
 lib/core/MetadataBlog.js
 
 website/translated_docs
+
+# production
 website/build/
-website/yarn.lock
-website/node_modules
+
 website/i18n/*
+
+# misc
+.DS_Store
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
