@@ -10,4 +10,4 @@ SINGA uses [JIRA](https://www.atlassian.com/software/jira) a J2EE-based, issue t
 
 Issues, bugs, and feature requests should be submitted to the following issue tracking system for this project.
 
-* https://issues.apache.org/jira/browse/singa
+- https://issues.apache.org/jira/browse/singa

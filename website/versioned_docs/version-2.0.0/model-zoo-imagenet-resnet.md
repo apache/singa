@@ -9,10 +9,13 @@ original_id: model-zoo-imagenet-resnet
 In this example, we convert Residual Networks trained on [Torch](https://github.com/facebook/fb.resnet.torch) to SINGA for image classification. Tested with the [parameters pretrained by Torch](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-18.tar.gz)
 
 ## Instructions
+
 > Please `cd` to `singa/examples/imagenet/resnet/` for the following commands
 
 ### Download
+
 Download one parameter checkpoint file (see below) and the synset word file of ImageNet into this folder, e.g.,
+
 ```shell
 $ wget https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-18.tar.gz
 $ wget https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/synset_words.txt
@@ -20,11 +23,13 @@ $ tar xvf resnet-18.tar.gz
 ```
 
 ### Usage
+
 ```shell
 $ python serve.py -h
 ```
 
 ### Example
+
 ```shell
 # use cpu
 $ python serve.py --use_cpu --parameter_file resnet-18.pickle --model resnet --depth 18 &
@@ -33,12 +38,14 @@ $ python serve.py --parameter_file resnet-18.pickle --model resnet --depth 18 &
 ```
 
 The parameter files for the following model and depth configuration pairs are provided:
-  * resnet (original resnet), [18](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-18.tar.gz)|[34](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-34.tar.gz)|[101](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-101.tar.gz)|[152](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-152.tar.gz)
-  * addbn (resnet with a batch normalization layer after the addition), [50](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-50.tar.gz)
-  * wrn (wide resnet), [50](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/wrn-50-2.tar.gz)
-  * preact (resnet with pre-activation) [200](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-200.tar.gz)
+
+- resnet (original resnet), [18](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-18.tar.gz)|[34](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-34.tar.gz)|[101](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-101.tar.gz)|[152](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-152.tar.gz)
+- addbn (resnet with a batch normalization layer after the addition), [50](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-50.tar.gz)
+- wrn (wide resnet), [50](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/wrn-50-2.tar.gz)
+- preact (resnet with pre-activation) [200](https://s3-ap-southeast-1.amazonaws.com/dlfile/resnet/resnet-200.tar.gz)
 
 ### Submit images for classification
+
 ```shell
 $ curl -i -F image=@image1.jpg http://localhost:9999/api
 $ curl -i -F image=@image2.jpg http://localhost:9999/api
@@ -49,10 +56,10 @@ image1.jpg, image2.jpg and image3.jpg should be downloaded before executing the 
 
 ## Details
 
-The parameter files were extracted from the original [torch files](https://github.com/facebook/fb.resnet.torch/tree/master/pretrained) via
-the convert.py program.
+The parameter files were extracted from the original [torch files](https://github.com/facebook/fb.resnet.torch/tree/master/pretrained) via the convert.py program.
 
 Usage:
+
 ```
 $ python convert.py -h
 ```
