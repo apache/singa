@@ -11,7 +11,7 @@
   },
   "overrides": [
     {
-      "files": ["js/**/*.js", "website/**/*.js"],
+      "files": ["website/**/*.js"],
       "parserOptions": {
         "jsx": true
       },
