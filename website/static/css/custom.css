@@ -126,7 +126,7 @@ table td:first-child > code {
 
 .showcase .link img {
   width: auto;
-  height : auto;
+  height: 52px;
   max-height: 100%;
   max-width: 80%;
   padding: 20px;
@@ -137,6 +137,7 @@ table td:first-child > code {
 @media only screen and (max-width: 735px) {
   .showcase .link {
     height: 134px;
+    max-width: 120px;
   }
 
   .showcase .link img {
