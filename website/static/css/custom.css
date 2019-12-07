@@ -165,7 +165,7 @@ table td:first-child > code {
 /* landing page hero background */
 .index-hero {
   background-color: #2b3137;
-  background-image: url("/img/unsplash-ocean.jpg");
+  background-image: url("/img/ocean-by-ricardo-resende-unsplash-webscaled.jpeg");
   background-position: center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
   background-size: cover; /* Resize the background image to cover the entire container */
