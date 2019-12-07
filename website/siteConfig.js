@@ -34,7 +34,9 @@ const repoUrl = "https://github.com/apache/singa"
 const siteConfig = {
   title: "Apache SINGA", // Title for your website.
   tagline: "Distributed deep learning system",
-  url: "https://singa.apache.org/", // Your website URL
+  // temp staging github page using feynmanDNA's github
+  url: "https://feynmandna.github.io",
+  // url: "https://singa.apache.org", // Your website URL
   baseUrl: "/", // Base URL for your project */
   // For github.io type URLs, you would set the url and baseUrl like:
   //   url: 'https://facebook.github.io',

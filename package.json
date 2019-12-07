@@ -24,6 +24,7 @@
     "eslint-plugin-markdown": "^1.0.0-beta.3",
     "eslint-plugin-prettier": "^3.0.1",
     "eslint-plugin-react": "^7.17.0",
+    "husky": "^3.1.0",
     "lint-staged": "^9.5.0",
     "prettier": "^1.19.1",
     "remark-cli": "^7.0.1",
@@ -58,13 +59,20 @@
     "lint-staged": "lint-staged"
   },
   "lint-staged": {
-    "website/pages/en/*.js": [
-      "eslint --format=codeframe --fix",
+    "*.{js,jsx}": [
+      "yarn run lint:website",
+      "yarn run prettier:js",
       "git add"
     ],
-    "website/core/*.js": [
-      "eslint --format=codeframe --fix",
+    "*.md": [
+      "yarn run lint:docs",
+      "yarn run prettier:md",
       "git add"
     ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
   }
 }
