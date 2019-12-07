@@ -109,7 +109,7 @@ table td:first-child > code {
   height: 120px;
   width: 250px;
   margin: 5px;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   padding: 5px;
   /* border: 2px red solid; */
 }
@@ -119,8 +119,9 @@ table td:first-child > code {
 }
 
 .showcase .link .caption {
-  line-height: 20px;
-  height: 20px;
+  line-height: 14px;
+  height: 14px;
+  font-size: 12px;
   /* border: 1px yellow solid; */
 }
 
