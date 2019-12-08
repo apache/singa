@@ -210,6 +210,13 @@ class DistOpt(object):
         tensor = singa.VecTensor(tensor)
         self.communicator.fusedSynchHalf(tensor)
 
+    def sparsification(self, tensor, accumulation, spars, topK, corr):
+        self.communicator.sparsification(tensor, accumulation, spars, topK, corr)
+
+    def fused_sparsification(self, tensor, accumulation, spars, topK, corr):
+        tensor = singa.VecTensor(tensor)
+        self.communicator.fusedSparsification(tensor, accumulation, spars, topK, corr)
+
     def wait(self):
         self.communicator.wait()
 
@@ -315,3 +322,52 @@ class DistOpt(object):
         # the counter returns to zero after a cycle of partial update
         if (k == self.partial):
             self.partial = 0
+
+    def backward_and_spars_update(self, loss, threshold = 2097152, spars = 0.01, topK = False, corr = True):
+        # THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
+        # It performs sparsification based on the absolute threshold
+        # When topK is False, it sparsifies the gradient with absolute value >= spars
+        # When topK is True, it sparsifies a fraction of total gradient number equals to spars:
+        # The flag corr determine whether to use the local accumulate gradient for correction
+        # For example, when spars = 0.01, it sparsifies 1 % of the total gradient elements 
+        if not hasattr(self, "sparsInit"):
+            self.gradAccumulation = []
+            self.sparsInit = False
+        plist = []
+        acc = 0
+        k = -1
+        glist = []
+        for p, g in autograd.backward(loss):
+            if g.size() > threshold:
+                # larger than threshold -> reduced directly
+                k += 1
+                if not self.sparsInit:
+                    # create a tensor for the gradient accumulation
+                    self.gradAccumulation.append(tensor.Tensor((g.size(),), p.device, p.dtype))
+                    self.gradAccumulation[k].set_value(0.0)
+                self.sparsification(g.data, self.gradAccumulation[k].data, spars, topK, corr)
+            else:
+                # smaller than threshold -> accumulate
+                glist.append(g.data)                    
+                acc += g.size()
+                if (acc > threshold):
+                    k += 1
+                    if not self.sparsInit:
+                        # create a tensor for the gradient accumulation
+                        self.gradAccumulation.append(tensor.Tensor((acc,), p.device, p.dtype))
+                        self.gradAccumulation[k].set_value(0.0)
+                    self.fused_sparsification(glist, self.gradAccumulation[k].data, spars, topK, corr)
+                    acc = 0
+                    glist = []
+            plist.append((p, g))
+        if glist:
+            k += 1
+            if not self.sparsInit:
+                # create a tensor for the gradient accumulation
+                self.gradAccumulation.append(tensor.Tensor((acc,), p.device, p.dtype))
+                self.gradAccumulation[k].set_value(0.0)
+            self.fused_sparsification(glist, self.gradAccumulation[k].data, spars, topK, corr)
+        self.wait()
+        for p, g in plist:
+            self.update(p, g)
+        self.sparsInit = True

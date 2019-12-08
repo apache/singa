@@ -395,6 +395,27 @@ __global__ void KernelHalf2Float(const size_t n, const __half *in, float *out) {
   }
 }
 
+__global__ void KernelSparsAbs(const size_t n, const float threshold, const float *in, float *out) {
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = fabs(in[i]) >= threshold ? in[i] : 0.0f;
+  }
+}
+
+__global__ void KernelSparsIndex(const size_t n, const float *in, int *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = in[i] == 0.0f ? 0 : i + 1;
+  }
+}
+
+__global__ void KernelGenerateIndex(const size_t n, int *out) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
+    out[i] = i + 1;
+  }
+}
+
 //cuda unary elementwise ops kernel template 
 #define GenUnaryCudaKernel(fn,kernelfn,cudafn)                                \
   __global__ void kernelfn(const size_t n, const float *in, float *out) {     \
@@ -431,6 +452,48 @@ void float2half(const size_t n, const float *in, __half *out, cudaStream_t s) {
 
 void half2float(const size_t n, const __half *in, float *out, cudaStream_t s) {
   KernelHalf2Float <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void sparsabs(const size_t n, const float threshold, const float *in, float *out, cudaStream_t s) {
+  KernelSparsAbs <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, threshold, in, out);
+}
+
+void sparsindex(const size_t n, const float *in, int *out, cudaStream_t s) {
+  KernelSparsIndex <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, in, out);
+}
+
+void generateindex(const size_t n, int *out, cudaStream_t s) {
+  KernelGenerateIndex <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, out);
+}
+
+template<typename T>
+struct eq_zero
+{
+    __host__ __device__
+    bool operator()(const T x)
+    {
+        return x == T(0);
+    }
+};
+
+void removezeroval(const size_t n, float *in, cudaStream_t s) {
+  thrust::remove_if(thrust::cuda::par.on(s), in, in + n, eq_zero<float>());
+}
+
+void removezeroidx(const size_t n, int *in, cudaStream_t s, int *address) {
+  *address = (int)(thrust::remove_if(thrust::cuda::par.on(s), in, in + n, eq_zero<int>()) - in);  
+}
+
+struct absgreater : public thrust::binary_function<float,float,bool>
+{
+  thrust::maximum<int> max;
+  __host__ __device__ bool operator()(const float &lhs, const float &rhs) const {
+     return max(lhs, -lhs) > max(rhs, -rhs);
+  }
+};
+
+void sortbykey(const size_t n, float *key, int *value, cudaStream_t s) {
+  thrust::sort_by_key(thrust::cuda::par.on(s), key, key + n, value, absgreater());
 }
 
 void set(const size_t n, const float v, float *out, cudaStream_t s) {

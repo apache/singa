@@ -49,6 +49,8 @@ public:
   void fusedSynch(std::vector<Tensor> &t);
   void synchHalf(Tensor &t);
   void fusedSynchHalf(std::vector<Tensor> &t);
+  void sparsification(Tensor &t, Tensor &accumulation, float sparsThreshold, bool topK, bool corr);
+  void fusedSparsification(std::vector<Tensor> &, Tensor &accumulation, float sparsThreshold, bool topK, bool corr);
   void wait();
 };
 

@@ -21,9 +21,13 @@
 #ifndef SRC_CORE_TENSOR__MATH_KERNEL_H_
 #define SRC_CORE_TENSOR__MATH_KERNEL_H_
 
-#include "cuda_fp16.h"
 #include "singa/singa_config.h"
 #ifdef USE_CUDA
+
+#include <thrust/remove.h>
+#include <thrust/sort.h>
+#include <thrust/execution_policy.h>
+#include "cuda_fp16.h"
 
 /// TODO(wangwei) Clean the function APIs as commented in tensor_math.h
 ///  Add 'Context *ctx' as an argument of all cuda functions.
@@ -134,6 +138,18 @@ void RowMax(const size_t nrow, const size_t ncol, const float *inPtr,
 void float2half(const size_t n, const float *in, __half *out, cudaStream_t s);
 
 void half2float(const size_t n, const __half *in, float *out, cudaStream_t s);
+
+void sparsabs(const size_t n, const float threshold, const float *in, float *out, cudaStream_t s);
+
+void sparsindex(const size_t n, const float *in, int *out, cudaStream_t s);
+
+void generateindex(const size_t n, int *out, cudaStream_t s);
+
+void removezeroval(const size_t n, float *in, cudaStream_t s);
+
+void removezeroidx(const size_t n, int *in, cudaStream_t s, int *address);
+
+void sortbykey(const size_t n, float *key, int *value, cudaStream_t s);
 
 }  // cuda
 

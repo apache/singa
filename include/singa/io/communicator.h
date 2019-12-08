@@ -31,9 +31,19 @@
 
 #include "singa/core/tensor.h"
 #include "cuda_fp16.h"
+#include <cusparse.h>
 using std::vector;
 
 namespace singa{
+
+#define CUSPARSE_CHECK(cmd) do {                    \
+  cusparseStatus_t e = cmd;                         \
+  if (e != CUSPARSE_STATUS_SUCCESS) {               \
+    printf("Falied: Cusparse Error %s:%d '%d'\n",   \
+        __FILE__,__LINE__, int(e));                 \
+    exit(EXIT_FAILURE);                             \
+  }                                                 \
+} while(0)
 
 #define MPICHECK(cmd) do {                          \
   int e = cmd;                                      \
@@ -65,12 +75,29 @@ public:
   int MPIRankInGlobal;
   int totalMPIRanksInGlobal;
   int MPIRankInLocal;
-  bool UseMPI;
+
+  Communicator(int limit);
+  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int size);
+  ~Communicator();
+  void synch(Tensor &t);
+  void fusedSynch(vector<Tensor> &t);
+  void synchHalf(Tensor &t);
+  void fusedSynchHalf(vector<Tensor> &t);
+  void fusedSparsification(vector<Tensor> &t, Tensor &accumulation, float sparsThreshold, bool topK, bool corr);
+  void sparsification(Tensor &t, Tensor &accumulation, float sparsThreshold, bool topK, bool corr);
+  void wait();
+
+private:
+  void allReduce(int size, void* sendbuff, void* recvbuff, ncclDataType_t ncclType);
+  void setup();
+  void sparsInit();
+  void valSparsAllReduce(size_t num, float* accumulation, bool corr);
+  void topKSparsAllReduce(size_t num, float* accumulation, bool corr);
+
   float *fusedSendBuff;
   float *fusedRecvBuff;
   __half *fusedSendBuffHalf;
   __half *fusedRecvBuffHalf;
-  size_t maxSize;
 
   ncclUniqueId id;
   // cuda stream s is for nccl all reduce
@@ -81,18 +108,22 @@ public:
   ncclComm_t comm;
   cudaEvent_t event;
 
-  Communicator(int limit);
-  Communicator(int gpu_num, int gpu_per_node, const NcclIdHolder &holder, int size);
-  ~Communicator();
-  void synch(Tensor &t);
-  void fusedSynch(vector<Tensor> &t);
-  void synchHalf(Tensor &t);
-  void fusedSynchHalf(vector<Tensor> &t);
-  void wait();
+  bool UseMPI;
+  size_t maxSize;
 
-private:
-  void allReduce(int size, void* sendbuff, void* recvbuff, ncclDataType_t ncclType);
-  void setup(int gpu_num);
+  // sparsification
+  cusparseHandle_t cusparse_handle;
+  cusparseMatDescr_t descrC;
+  bool sparsInitialized;
+  int *xInd;
+  float *xVal;
+  int *nnz;
+  int *nnzAll;
+  float threshold;
+  float *sparsSendBuff;
+  float *sparsRecvBuff;
+  float *backupBuff;
+  int *fusedIndex;
 
 };
 
