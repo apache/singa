@@ -23,3 +23,6 @@ test/samples/
 # Sphinx and Doxygen Doc-Site
 doc/_build/*
 doc/en/docs/model_zoo/
+# rename doc/ to archived-docs-site/
+archived-docs-site/_build/*
+archived-docs-site/en/docs/model_zoo/
