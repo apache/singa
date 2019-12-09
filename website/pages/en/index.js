@@ -51,7 +51,7 @@ function HomeSplash(props) {
       {/* Increase the network loading priority of the background image. */}
       <img
         style={{ display: "none" }}
-        src={`${siteConfig.baseUrl}img/unsplash-ocean.jpg`}
+        src={`${siteConfig.baseUrl}img/sg-botanic-coleen-rivas-unsplash.jpg`}
         alt="increase priority"
       />
       <div className="index-hero-inner">
