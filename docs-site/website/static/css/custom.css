@@ -1,0 +1,340 @@
+/*
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License
+*/
+
+/* mainContainer landing page */
+.mainContainer .container .wrapper {
+  /* border: 2px purple solid; */
+  max-width: 1100px !important;
+}
+
+.mainPageContainer {
+  padding: 30px 0 !important;
+}
+
+/* Apache Footer */
+.ApacheOpenSource img {
+  max-width: 30%;
+  margin: 0 auto;
+}
+
+/*** from jest docusaurus jest.css ***/
+
+/* change main webpage link color */
+.mainContainer a {
+  text-decoration: none;
+  color: #904600;
+}
+
+/* header navigation */
+.fixedHeaderContainer {
+  background-color: white;
+}
+
+.navigationSlider .slidingNav ul li a,
+.fixedHeaderContainer header h3 {
+  color: #20232a;
+}
+
+div.navigationSlider .slidingNav ul {
+  background: #ffffff;
+}
+
+.navigationSlider .slidingNav ul li a {
+  color: #20232a;
+}
+
+.navigationSlider .slidingNav ul li a:focus,
+.navigationSlider .slidingNav ul li a:hover,
+.navigationSlider .slidingNav ul li.siteNavGroupActive a {
+  background: #f7f7f7;
+  color: #545454;
+}
+
+.navigationSlider .slidingNav ul li.siteNavItemActive a {
+  background: #545454;
+  color: white;
+}
+
+/* Search input background color */
+.reactNavSearchWrapper input#search_input_react {
+  background-color: #aaaaaa;
+}
+
+/*** from docusaurus 1.x css ***/
+
+
+.testimonials img {
+  border-radius: 50%;
+}
+
+table td:first-child > code {
+  white-space: nowrap;
+}
+
+/* indexpage users showcase section */
+.productShowcaseSection {
+  /* border: 1px blue solid; */
+  max-width: 1100px !important;
+  margin: 0 auto;
+}
+
+.showcase {
+  align-items: center;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.showcase .link {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 120px;
+  width: 250px;
+  margin: 5px;
+  margin-bottom: 15px;
+  padding: 5px;
+  /* border: 2px red solid; */
+}
+
+.showcase .link:hover {
+  text-decoration: none;
+}
+
+.showcase .link .caption {
+  line-height: 14px;
+  height: 14px;
+  font-size: 12px;
+  /* border: 1px yellow solid; */
+}
+
+.showcase .link img {
+  width: auto;
+  height: 52px;
+  max-height: 100%;
+  max-width: 80%;
+  padding: 20px;
+  align-self: center;
+  /* border: 1px green solid; */
+}
+
+@media only screen and (max-width: 735px) {
+  .showcase .link {
+    height: 134px;
+    max-width: 120px;
+  }
+
+  .showcase .link img {
+    max-height: 64px;
+    padding: 20px;
+    width: 64px;
+  }
+}
+
+.announcement {
+  background-color: #20232a;
+  color: #fff;
+  font-weight: bold;
+  font-size: 18px;
+  padding: 48px;
+  margin: 0 auto -40px;
+  text-align: center;
+}
+
+.announcement-inner {
+  margin: 0 auto;
+  max-width: 768px;
+}
+
+/* landing page hero background */
+.index-hero {
+  background-color: #2b3137;
+  background-image: url("/img/ocean-by-ricardo-resende-unsplash-webscaled.jpeg");
+  background-position: center; /* Center the image */
+  background-repeat: no-repeat; /* Do not repeat the image */
+  background-size: cover; /* Resize the background image to cover the entire container */
+  padding: 48px;
+}
+
+/* .backdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width:100%;
+  height:100%;
+  background-color: #000;
+  opacity: 0.6;
+} */
+
+.index-hero-inner {
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 0 20px;
+}
+
+.index-hero-project-tagline {
+  color: #fff;
+  font-size: 36px;
+  margin: 0;
+}
+
+.index-hero-project-keywords {
+  color: $primaryColor;
+}
+
+@keyframes jackInTheBox {
+  from {
+    opacity: 0;
+    transform: scale(0.1) rotate(30deg);
+    transform-origin: center bottom;
+  }
+
+  50% {
+    transform: rotate(-10deg);
+  }
+
+  70% {
+    transform: rotate(3deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.index-hero-logo {
+  animation-duration: 2s;
+  animation-name: jackInTheBox;
+  margin-top: 20px;
+  padding: 20px;
+  padding-left: 0;
+  width: 500px;
+}
+
+.index-ctas {
+  margin-top: 24px;
+}
+
+.index-ctas-get-started-button {
+  border-radius: 8px;
+  border-width: 2px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  margin-right: 24px;
+  padding: 18px 36px;
+}
+
+.index-ctas-github-button {
+  vertical-align: sub;
+}
+
+@media only screen and (max-width: 768px) {
+  .announcement {
+    font-size: 18px;
+    padding: 20px;
+  }
+
+  .index-hero {
+    padding: 20px;
+  }
+
+  .index-hero-inner {
+    padding: 0;
+  }
+
+  .index-hero-project-tagline {
+    font-size: 36px;
+    text-align: center;
+  }
+
+  .index-hero-logo {
+    display: block;
+    float: none;
+    margin: 0 auto;
+  }
+
+  .index-ctas {
+    text-align: center;
+  }
+
+  .index-ctas-github-button {
+    display: none;
+  }
+}
+
+/* landing page blockImage style */
+.imageAlignTop .blockImage {
+  max-width: 60%;
+}
+
+.imageAlignTop .blockImage img {
+  height: 150px;
+}
+
+@media only screen and (max-width: 768px) {
+  .gridBlock .blockElement.imageAlignTop {
+    margin-bottom: 80px;
+  }
+}
+
+.docImage {
+  margin: 3rem auto;
+  max-width: 400px;
+}
+
+/* custom 404 page */
+.error-page .error-message-container {
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 40px;
+  max-width: 1400px;
+  width: 87%;
+}
+.error-page .error-message {
+  min-height: 90vh;
+  background: white;
+}
+.error-page .error-message span {
+  color: $primaryColor;
+  font-size: 8.8em;
+  font-weight: 700;
+  display: inline-block;
+  margin-top: 10vh;
+  text-align: center;
+  display: block;
+}
+.error-page .error-message p {
+  color: black;
+  margin-top: 50px;
+  font-size: 1.6em;
+  text-align: center;
+}
+
+.error-page .error-message a {
+ margin-bottom: 50px;
+ font-size: 1.6em;
+ text-align: center;
+ display: block;
+ text-decoration: underline;
+}

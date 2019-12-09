@@ -1,0 +1,10 @@
+.cache
+package.json
+yarn.lock
+package-lock.json
+public
+node_modules
+build
+.docusaurus
+dist
+i18n/

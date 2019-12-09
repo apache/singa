@@ -1,0 +1,20 @@
+node_modules/*
+
+# Ignore markdown files and examples
+content/*
+
+# Ignore built files
+public/*
+
+# Ignore examples
+examples/*
+
+node_modules
+
+**/node_modules/**
+
+website/blog
+website/build
+website/node_modules
+website/i18n/*.js
+website/translated_docs

@@ -1,0 +1,42 @@
+{
+  "docs": {
+    "Getting Started": [
+      "installation",
+      "software-stack",
+      "benchmark-train"
+    ],
+    "Guides": [
+      "device",
+      "tensor",
+      "autograd"
+    ],
+    "Model Zoo": [
+      "model-zoo-cnn-cifar10",
+      "model-zoo-char-rnn",
+      "model-zoo-rbm-mnist",
+      "model-zoo-imagenet-alexnet",
+      "model-zoo-imagenet-densenet",
+      "model-zoo-imagenet-googlenet",
+      "model-zoo-imagenet-inception",
+      "model-zoo-imagenet-resnet",
+      "model-zoo-imagenet-vgg"
+    ],
+    "Development": [
+      "download-singa",
+      "build",
+      "contribute-code",
+      "contribute-docs",
+      "how-to-release"
+    ]
+  },
+  "community": {
+    "Community": [
+      "source-repository",
+      "mail-lists",
+      "issue-tracking",
+      "security",
+      "team-list",
+      "history-singa"
+    ]
+  }
+}

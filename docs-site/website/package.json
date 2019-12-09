@@ -1,0 +1,18 @@
+{
+  "name": "apache-singa-docs-site-website-subdir",
+  "license": "Apache-2.0",
+  "version": "2.0.0",
+  "description": "(do not change the name of this yarn workspace) website subdir of apache-singa-docs-site",
+  "scripts": {
+    "examples": "docusaurus-examples",
+    "start": "docusaurus-start",
+    "build": "docusaurus-build",
+    "publish-gh-pages": "docusaurus-publish",
+    "write-translations": "docusaurus-write-translations",
+    "version": "docusaurus-version",
+    "rename-version": "docusaurus-rename-version"
+  },
+  "dependencies": {
+    "docusaurus": "^1.14.3"
+  }
+}
