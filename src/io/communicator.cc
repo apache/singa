@@ -297,7 +297,15 @@ void Communicator::synchHalf(Tensor &t){
 
 }
 
-void Communicator::sparsification(Tensor &t, Tensor &accumulation, float sparsThreshold, bool topK, bool corr){
+void Communicator::sparsification(Tensor &t, Tensor &accumulation, float sparsThreshold, bool topK){
+  _sparsification(t, &accumulation, sparsThreshold, topK);
+}
+
+void Communicator::sparsification(Tensor &t, float sparsThreshold, bool topK){
+  _sparsification(t, (Tensor *) NULL, sparsThreshold, topK);
+}
+
+void Communicator::_sparsification(Tensor &t, Tensor* accumulation, float sparsThreshold, bool topK){
 
   // threshold for sprasification
   threshold = sparsThreshold;
@@ -309,17 +317,32 @@ void Communicator::sparsification(Tensor &t, Tensor &accumulation, float sparsTh
   //memory copy to fusedBuff
   CUDA_CHECK(cudaMemcpyAsync((void*) fusedSendBuff, (const void*) t.block()->mutable_data(), t.Size() * sizeof(float), cudaMemcpyDeviceToDevice, c1));
 
-  if (topK == false)
-    valSparsAllReduce(t.Size(), (float*) accumulation.block()->mutable_data(), corr);
+  float *accumPtr;
+
+  if (accumulation != NULL)
+  	accumPtr = (float*) accumulation->block()->mutable_data();
   else
-    topKSparsAllReduce(t.Size(), (float*) accumulation.block()->mutable_data(), corr);
+  	accumPtr = NULL;
+
+  if (topK == false)
+    valSparsAllReduce(t.Size(), accumPtr);
+  else
+    topKSparsAllReduce(t.Size(), accumPtr);
 
   //copy data back to tensor after allreduce
   CUDA_CHECK(cudaMemcpyAsync((void*) t.block()->mutable_data(), (const void*) fusedRecvBuff, t.Size() * sizeof(float), cudaMemcpyDeviceToDevice, c2));
 
 }
 
-void Communicator::fusedSparsification(vector<Tensor> &t, Tensor &accumulation, float sparsThreshold, bool topK, bool corr){
+void Communicator::fusedSparsification(vector<Tensor> &t, Tensor &accumulation, float sparsThreshold, bool topK){
+  _fusedSparsification(t, &accumulation, sparsThreshold, topK);
+}
+
+void Communicator::fusedSparsification(vector<Tensor> &t, float sparsThreshold, bool topK){
+  _fusedSparsification(t, (Tensor *) NULL, sparsThreshold, topK);
+}
+
+void Communicator::_fusedSparsification(vector<Tensor> &t, Tensor* accumulation, float sparsThreshold, bool topK){
 
   // threshold for sprasification
   threshold = sparsThreshold;
@@ -337,10 +360,17 @@ void Communicator::fusedSparsification(vector<Tensor> &t, Tensor &accumulation, 
     offset += t[i].Size();
   }
 
-  if (topK == false)
-    valSparsAllReduce(offset, (float*) accumulation.block()->mutable_data(), corr);
+  float *accumPtr;
+
+  if (accumulation != NULL)
+  	accumPtr = (float*) accumulation->block()->mutable_data();
   else
-    topKSparsAllReduce(offset, (float*) accumulation.block()->mutable_data(), corr);    
+  	accumPtr = NULL;
+
+  if (topK == false)
+    valSparsAllReduce(offset, accumPtr);
+  else
+    topKSparsAllReduce(offset, accumPtr);    
 
   //copy data back to tensors after allreduce
   offset = 0;
@@ -352,12 +382,12 @@ void Communicator::fusedSparsification(vector<Tensor> &t, Tensor &accumulation, 
 
 }
 
-void Communicator::valSparsAllReduce(size_t num, float* accumulation, bool corr){
+void Communicator::valSparsAllReduce(size_t num, float* accumulation){
 
   if (sparsInitialized == false)
     sparsInit();
 
-  if (corr == true)
+  if (accumulation != NULL)
   {
     // backup the fusedSendBuff
   	CUDA_CHECK(cudaMemcpyAsync((void*) backupBuff, (const void*) fusedSendBuff, num, cudaMemcpyDeviceToDevice, c1));
@@ -369,7 +399,7 @@ void Communicator::valSparsAllReduce(size_t num, float* accumulation, bool corr)
   cuda::sparsabs(num, threshold, fusedSendBuff, fusedSendBuff, c1);
 
   // output the gradient accumulation
-  if (corr == true)
+  if (accumulation != NULL)
 	cuda::sub(num, backupBuff, fusedSendBuff, accumulation, c1);
 
   // produce the index of the sparse array
@@ -439,13 +469,13 @@ void Communicator::valSparsAllReduce(size_t num, float* accumulation, bool corr)
 
 }
 
-void Communicator::topKSparsAllReduce(size_t num, float* accumulation, bool corr){
+void Communicator::topKSparsAllReduce(size_t num, float* accumulation){
 
   if (sparsInitialized == false)
     sparsInit();
 
   // use gradient accumulation
-  if (corr == true)
+  if (accumulation != NULL)
   {
     // backup the fusedSendBuff
   	CUDA_CHECK(cudaMemcpyAsync((void*) backupBuff, (const void*) fusedSendBuff, num, cudaMemcpyDeviceToDevice, c1));
@@ -462,7 +492,7 @@ void Communicator::topKSparsAllReduce(size_t num, float* accumulation, bool corr
 
   // output the gradient accumulation
   float alpha = 1.0;
-  if (corr == true)
+  if (accumulation != NULL)
   {
   	CUDA_CHECK(cudaMemsetAsync(accumulation, 0, num *sizeof(float) , c1));
   	CUSPARSE_CHECK(cusparseSetStream(cusparse_handle, c1));

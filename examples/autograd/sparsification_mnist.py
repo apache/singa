@@ -41,7 +41,7 @@ if __name__ == '__main__':
     # Use sparsification with parameters 
     topK = False               # When topK = False, Sparsification based on a constant absolute threshold
     corr = False               # If True, uses local accumulate gradient for the correction
-    sparsThreshold = 0.01       # The constant absolute threshold for sparsification 
+    sparsThreshold = 0.01      # The constant absolute threshold for sparsification 
 
     process = []
     for gpu_num in range(0, gpu_per_node):        

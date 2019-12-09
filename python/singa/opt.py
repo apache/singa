@@ -210,12 +210,18 @@ class DistOpt(object):
         tensor = singa.VecTensor(tensor)
         self.communicator.fusedSynchHalf(tensor)
 
-    def sparsification(self, tensor, accumulation, spars, topK, corr):
-        self.communicator.sparsification(tensor, accumulation, spars, topK, corr)
+    def sparsification(self, tensor, accumulation, spars, topK):
+        if accumulation is None:
+            self.communicator.sparsification(tensor, spars, topK)
+        else:
+            self.communicator.sparsification(tensor, accumulation, spars, topK)
 
-    def fused_sparsification(self, tensor, accumulation, spars, topK, corr):
+    def fused_sparsification(self, tensor, accumulation, spars, topK):
         tensor = singa.VecTensor(tensor)
-        self.communicator.fusedSparsification(tensor, accumulation, spars, topK, corr)
+        if accumulation is None:
+            self.communicator.fusedSparsification(tensor, spars, topK)
+        else:
+            self.communicator.fusedSparsification(tensor, accumulation, spars, topK)
 
     def wait(self):
         self.communicator.wait()
@@ -330,7 +336,7 @@ class DistOpt(object):
         # When topK is True, it sparsifies a fraction of total gradient number equals to spars:
         # The flag corr determine whether to use the local accumulate gradient for correction
         # For example, when spars = 0.01, it sparsifies 1 % of the total gradient elements 
-        if not hasattr(self, "sparsInit"):
+        if ((not hasattr(self, "sparsInit")) and corr):
             self.gradAccumulation = []
             self.sparsInit = False
         plist = []
@@ -341,32 +347,41 @@ class DistOpt(object):
             if g.size() > threshold:
                 # larger than threshold -> reduced directly
                 k += 1
-                if not self.sparsInit:
+                if (corr and (not self.sparsInit)):
                     # create a tensor for the gradient accumulation
                     self.gradAccumulation.append(tensor.Tensor((g.size(),), p.device, p.dtype))
                     self.gradAccumulation[k].set_value(0.0)
-                self.sparsification(g.data, self.gradAccumulation[k].data, spars, topK, corr)
+                if corr:
+                    self.sparsification(g.data, self.gradAccumulation[k].data, spars, topK)
+                else:
+                    self.sparsification(g.data, None, spars, topK)
             else:
                 # smaller than threshold -> accumulate
                 glist.append(g.data)                    
                 acc += g.size()
                 if (acc > threshold):
                     k += 1
-                    if not self.sparsInit:
+                    if (corr and (not self.sparsInit)):
                         # create a tensor for the gradient accumulation
                         self.gradAccumulation.append(tensor.Tensor((acc,), p.device, p.dtype))
                         self.gradAccumulation[k].set_value(0.0)
-                    self.fused_sparsification(glist, self.gradAccumulation[k].data, spars, topK, corr)
+                    if corr:
+                        self.fused_sparsification(glist, self.gradAccumulation[k].data, spars, topK)
+                    else:
+                        self.fused_sparsification(glist, None, spars, topK)
                     acc = 0
                     glist = []
             plist.append((p, g))
         if glist:
             k += 1
-            if not self.sparsInit:
+            if (corr and (not self.sparsInit)):
                 # create a tensor for the gradient accumulation
                 self.gradAccumulation.append(tensor.Tensor((acc,), p.device, p.dtype))
                 self.gradAccumulation[k].set_value(0.0)
-            self.fused_sparsification(glist, self.gradAccumulation[k].data, spars, topK, corr)
+            if corr:
+                self.fused_sparsification(glist, self.gradAccumulation[k].data, spars, topK)
+            else:
+                self.fused_sparsification(glist, None, spars, topK)
         self.wait()
         for p, g in plist:
             self.update(p, g)

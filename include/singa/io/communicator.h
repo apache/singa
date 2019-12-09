@@ -83,16 +83,20 @@ public:
   void fusedSynch(vector<Tensor> &t);
   void synchHalf(Tensor &t);
   void fusedSynchHalf(vector<Tensor> &t);
-  void fusedSparsification(vector<Tensor> &t, Tensor &accumulation, float sparsThreshold, bool topK, bool corr);
-  void sparsification(Tensor &t, Tensor &accumulation, float sparsThreshold, bool topK, bool corr);
+  void fusedSparsification(vector<Tensor> &t, Tensor &accumulation, float sparsThreshold, bool topK);
+  void fusedSparsification(vector<Tensor> &t, float sparsThreshold, bool topK);
+  void sparsification(Tensor &t, Tensor &accumulation, float sparsThreshold, bool topK);
+  void sparsification(Tensor &t, float sparsThreshold, bool topK);
   void wait();
 
 private:
   void allReduce(int size, void* sendbuff, void* recvbuff, ncclDataType_t ncclType);
   void setup();
   void sparsInit();
-  void valSparsAllReduce(size_t num, float* accumulation, bool corr);
-  void topKSparsAllReduce(size_t num, float* accumulation, bool corr);
+  void _fusedSparsification(vector<Tensor> &t, Tensor* accumulation, float sparsThreshold, bool topK);
+  void _sparsification(Tensor &t, Tensor* accumulation, float sparsThreshold, bool topK);
+  void valSparsAllReduce(size_t num, float* accumulation);
+  void topKSparsAllReduce(size_t num, float* accumulation);
 
   float *fusedSendBuff;
   float *fusedRecvBuff;
