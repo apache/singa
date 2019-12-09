@@ -49,7 +49,8 @@
     }
   },
   "scripts": {
-    "clean:reset": "rimraf ./node_modules/ ./yarn.lock website/node_modules/ website/yarn.lock website/build/",
+    "reset:clean": "rimraf ./node_modules/ ./yarn.lock website/node_modules/ website/yarn.lock website/build/",
+    "reset:filewatcher": "echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p",
     "start:website": "yarn workspace apache-singa-docs-site-website-subdir start",
     "build:website": "yarn workspace apache-singa-docs-site-website-subdir build",
     "prettier:js": "prettier --write \"**/*.{js,ts}\"",

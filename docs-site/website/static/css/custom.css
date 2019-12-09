@@ -43,7 +43,9 @@
 
 /* header navigation */
 .fixedHeaderContainer {
-  background-color: white;
+  background-color: #f4f6f6;
+  /* box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23); */
+  box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12);
 }
 
 .navigationSlider .slidingNav ul li a,
@@ -52,24 +54,25 @@
 }
 
 div.navigationSlider .slidingNav ul {
-  background: #ffffff;
+  background: #f4f6f6;
 }
 
 .navigationSlider .slidingNav ul li a {
   color: #20232a;
+  transition: color 0.2s ease-out;
 }
 
 .navigationSlider .slidingNav ul li a:focus,
 .navigationSlider .slidingNav ul li a:hover,
 .navigationSlider .slidingNav ul li.siteNavGroupActive a {
-  background: #f7f7f7;
-  color: #545454;
+  background: #f4f6f6;
+  color: $primaryColor;
 }
 
-.navigationSlider .slidingNav ul li.siteNavItemActive a {
-  background: #545454;
-  color: white;
-}
+/* .navigationSlider .slidingNav ul li.siteNavItemActive a { */
+  /* background: #545454; */
+  /* color: white; */
+/* } */
 
 /* Search input background color */
 .reactNavSearchWrapper input#search_input_react {
@@ -153,7 +156,7 @@ table td:first-child > code {
   color: #fff;
   font-weight: bold;
   font-size: 18px;
-  padding: 48px;
+  padding: 28px;
   margin: 0 auto -40px;
   text-align: center;
 }
@@ -163,14 +166,18 @@ table td:first-child > code {
   max-width: 768px;
 }
 
+.announcement-inner a {
+  color: orange;
+}
+
 /* landing page hero background */
 .index-hero {
   background-color: #2b3137;
-  background-image: url("/img/ocean-by-ricardo-resende-unsplash-webscaled.jpeg");
+  background-image: url("/img/sg-botanic-coleen-rivas-unsplash.jpg");
   background-position: center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
   background-size: cover; /* Resize the background image to cover the entire container */
-  padding: 48px;
+  padding: 0px 48px 48px 48px;
 }
 
 /* .backdrop {

@@ -43,8 +43,8 @@ const siteConfig = {
   //   baseUrl: '/test-site/',
 
   // display an edit button for docs markdowns
-  // TODO: change the path after merging with main repo
-  editUrl: `${repoUrl}/blob/master/docs/`,
+  // docs path after merging with main repo
+  editUrl: `${repoUrl}/blob/master/docs-site/docs/`,
 
   // Used for publishing and more
   projectName: "singa", // cd to /website/build/singa/ to serve
