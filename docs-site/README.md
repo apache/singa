@@ -1,20 +1,42 @@
-# Apache SINGA docs-site
+# Apache SINGA docs-site (README still work in progress)
 
-## yarn package name
+## Docusaurus Website Local Set Up
 
-`apache-singa-docs-site`
+This website was created with [Docusaurus](https://docusaurus.io/).
 
-website workspace name: `apache-singa-docs-site-website-subdir`
+You need at least `node` and `yarn` to get started with setting up a local development environment.
 
-refer to this page for writing this README: https://github.com/apache/pulsar/tree/master/site2
-
-# Start Development Server
+1. Start from the SINGA root directory, install any website specific dependencies by `yarn install`.
 
 ```sh
-yarn run start:website
+# Install dependencies
+$ yarn install
 ```
 
+2.  Run a development server with hot-reloading to check changes by running `yarn start` in the website directory.
+
+```sh
+# Start the site
+$ yarn run start:website
+```
+
+## Docs for the Docusaurus Site
+
+All the docs are located in the `SINGA_ROOT/docs-site/docs/` folder.
+
+documentation for older versions of Apache SINGA, which you can edit in `website/versioned_docs`
+
+## News for the Docusaurus Site
+
+All the news are located in the `SINGA_ROOT/docs-site/website/blog/` folder.
+
+**refer to this page for writing this README: https://github.com/apache/pulsar/tree/master/site2**
+
 # Editing Content
+
+## Static assets
+
+Static assets used in documents and blog/news should go into `docs/assets` and `website/blog/assets`
 
 ## Editing an existing docs page
 
@@ -158,33 +180,6 @@ For more information about the navigation bar, click [here](https://docusaurus.i
 
 For more information about custom pages, click [here](https://docusaurus.io/docs/en/custom-pages).
 
-# Full Documentation
+## Deploy
 
-Full documentation can be found on the [website](https://docusaurus.io/).
-
-=== from Jest
-
-#### Additional Workflow for any changes made to website or docs
-
-If you are making changes to the website or documentation, test the website folder and run the server to check if your changes are being displayed accurately.
-
-1.  Locate to the website directory and install any website specific dependencies by typing in `yarn`. Following steps are to be followed for this purpose from the root directory.
-    ```sh-session
-    $ cd website       # Only needed if you are not already in the website directory
-    $ yarn
-    $ yarn start
-    ```
-1.  You can run a development server to check if the changes you made are being displayed accurately by running `yarn start` in the website directory.
-
-The Jest website also offers documentation for older versions of Jest, which you can edit in `website/versioned_docs`. After making changes to the current documentation in `docs`, please check if any older versions of the documentation have a copy of the file where the change is also relevant and apply the changes to the `versioned_docs` as well.
-
-=== from pulsar
-
-=== general gotchas
-
-- cd to /website/build/singa/ to serve
-- 1.1.0 and 0.3 old versions in singa-site DO NOT have translations (other than v0.3.0/zh/docs/index.html)
-- TODO: move the singa-site folders to the build folders
-- Static assets used in documents and blogs should go into docs/assets and website/blog/assets
-
-for docusaurus 1x console log in react components will only show in live dev server terminal
+cd to /website/build/singa/ to serve

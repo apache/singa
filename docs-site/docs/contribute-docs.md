@@ -9,24 +9,29 @@ title: How to Contribute to Documentation
 
 This website was created with [Docusaurus](https://docusaurus.io/).
 
-1. Start from the SINGA root directory, `cd` to the website directory and install any website specific dependencies by `yarn install`.
+You need at least `node` and `yarn` to get started with setting up a local development environment.
+
+1. Start from the SINGA root directory, install any website specific dependencies by `yarn install`.
 
 ```sh
-$ cd website       # Only needed if you are not already in the website directory
 # Install dependencies
-$ yarn
+$ yarn install
 ```
 
 2.  Run a development server with hot-reloading to check changes by running `yarn start` in the website directory.
 
 ```sh
 # Start the site
-$ yarn start
+$ yarn run start:website
 ```
 
 ## Docs for the Docusaurus Site
 
-All the docs are located in the `SINGA_ROOT/singa-site/docs/` folder.
+All the docs are located in the `SINGA_ROOT/docs-site/docs/` folder.
+
+## News for the Docusaurus Site
+
+All the news are located in the `SINGA_ROOT/docs-site/website/blog/` folder.
 
 ## Website (old version)
 
@@ -58,15 +63,15 @@ Committers can update the [SINGA website](http://singa.apache.org/en/index.html)
 
 We fix the versions of the libs in order to generate the same (checksum) html file if the source file is not changed. Otherwise, everytime we build the documentation, the html file of the same source file could be different. As a result, many html files in the site repo need updating.
 
-## Python API
+### Python API
 
-## CPP API
+### CPP API
 
 To generate docs, run "doxygen" from the doc folder (Doxygen >= 1.8 recommended)
 
-## Using Visual Studio Code (vscode)
+### Using Visual Studio Code (vscode)
 
-### Preview
+#### Preview
 
 The document files (rst and md files) can be previewed in vscode via the [reStructuredText Extension](https://docs.restructuredtext.net/).
 
@@ -78,11 +83,11 @@ The document files (rst and md files) can be previewed in vscode via the [reStru
 
 3.  Configure the conf path for `restructuredtext.confPath` to the [conf.py](./conf.py)
 
-### Docstring Snippet
+#### Docstring Snippet
 
 [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring) generates the docstring of functions, classes, etc. Choose the DocString Format to `google`.
 
-### Spell Check
+#### Spell Check
 
 [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker) can be configured to check the comments of the code, or .md and .rst files.
 
