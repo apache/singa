@@ -626,8 +626,11 @@ def add_bias(x, b, axis=0):
 class Reshape(Operation):
     def __init__(self,shape):
         super(Reshape, self).__init__()
-        # handle the shape with 0
+        if isinstance(shape, tensor.Tensor):
+            shape = np.asarray(tensor.to_numpy(shape).astype(np.int32)).tolist()
         i_shape = list(shape)
+
+        # handle the shape with 0
         shape = [i_shape[i] if i < len(i_shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
         # handle the shape with -1
         hidden_shape = int(np.prod(i_shape) // np.abs(np.prod(shape)))

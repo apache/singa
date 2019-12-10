@@ -692,18 +692,18 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[x + y],
                name='test_add')
 
-    # def test_add_broadcast(self):  # type: () -> None
-    #     node = onnx.helper.make_node(
-    #         'Add',
-    #         inputs=['x', 'y'],
-    #         outputs=['sum'],
-    #     )
+    def test_add_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Add',
+            inputs=['x', 'y'],
+            outputs=['sum'],
+        )
 
-    #     # todo, we don't support 3d here
-    #     x = np.random.randn(3, 4, 5).astype(np.float32)
-    #     y = np.random.randn(5).astype(np.float32)
-    #     expect(node, inputs=[x, y], outputs=[x + y],
-    #            name='test_add_bcast')
+        # todo, we don't support 3d here
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(5).astype(np.float32)
+        expect(node, inputs=[x, y], outputs=[x + y],
+               name='test_add_bcast')
 
     def test_sum(self):  # type: () -> None
         data_0 = np.array([3, 0, 2]).astype(np.float32)
@@ -1370,22 +1370,22 @@ class TestPythonOnnxBackend(unittest.TestCase):
         data_2 = np.array([2, 5, 3]).astype(np.float32)
         result = np.array([3, 5, 4]).astype(np.float32)
         # todo, not support 3 inputs
-        # node = onnx.helper.make_node(
-        #     'Max',
-        #     inputs=['data_0', 'data_1', 'data_2'],
-        #     outputs=['result'],
-        # )
-        # expect(node, inputs=[data_0, data_1, data_2], outputs=[result],
-        #        name='test_max_example')
+        node = onnx.helper.make_node(
+            'Max',
+            inputs=['data_0', 'data_1', 'data_2'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0, data_1, data_2], outputs=[result],
+               name='test_max_example')
 
         # todo, not support 1 inputs
-        # node = onnx.helper.make_node(
-        #     'Max',
-        #     inputs=['data_0'],
-        #     outputs=['result'],
-        # )
-        # expect(node, inputs=[data_0], outputs=[data_0],
-        #        name='test_max_one_input')
+        node = onnx.helper.make_node(
+            'Max',
+            inputs=['data_0'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0], outputs=[data_0],
+               name='test_max_one_input')
 
         result = np.maximum(data_0, data_1)
         node = onnx.helper.make_node(
@@ -1401,21 +1401,21 @@ class TestPythonOnnxBackend(unittest.TestCase):
         data_1 = np.array([1, 4, 4]).astype(np.float32)
         data_2 = np.array([2, 5, 0]).astype(np.float32)
         result = np.array([1, 2, 0]).astype(np.float32)
-        # node = onnx.helper.make_node(
-        #     'Min',
-        #     inputs=['data_0', 'data_1', 'data_2'],
-        #     outputs=['result'],
-        # )
-        # expect(node, inputs=[data_0, data_1, data_2], outputs=[result],
-        #        name='test_min_example')
+        node = onnx.helper.make_node(
+            'Min',
+            inputs=['data_0', 'data_1', 'data_2'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0, data_1, data_2], outputs=[result],
+               name='test_min_example')
 
-        # node = onnx.helper.make_node(
-        #     'Min',
-        #     inputs=['data_0'],
-        #     outputs=['result'],
-        # )
-        # expect(node, inputs=[data_0], outputs=[data_0],
-        #        name='test_min_one_input')
+        node = onnx.helper.make_node(
+            'Min',
+            inputs=['data_0'],
+            outputs=['result'],
+        )
+        expect(node, inputs=[data_0], outputs=[data_0],
+               name='test_min_one_input')
 
         result = np.minimum(data_0, data_1)
         node = onnx.helper.make_node(
@@ -1477,48 +1477,48 @@ class TestPythonOnnxBackend(unittest.TestCase):
         z = np.logical_and(x, y)
         expect(node, inputs=[x, y], outputs=[z],
                name='test_and4d')
-    # todo, not support
-    # def test_and_broadcast(self):  # type: () -> None
-    #     node = onnx.helper.make_node(
-    #         'And',
-    #         inputs=['x', 'y'],
-    #         outputs=['and'],
-    #     )
+               
+    def test_and_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'And',
+            inputs=['x', 'y'],
+            outputs=['and'],
+        )
 
-    #     # 3d vs 1d
-    #     x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
-    #     y = (np.random.randn(5) > 0).astype(np.bool)
-    #     z = np.logical_and(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_and_bcast3v1d')
+        # 3d vs 1d
+        x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
+        y = (np.random.randn(5) > 0).astype(np.bool)
+        z = np.logical_and(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_and_bcast3v1d')
 
-    #     # 3d vs 2d
-    #     x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
-    #     y = (np.random.randn(4, 5) > 0).astype(np.bool)
-    #     z = np.logical_and(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_and_bcast3v2d')
+        # 3d vs 2d
+        x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
+        y = (np.random.randn(4, 5) > 0).astype(np.bool)
+        z = np.logical_and(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_and_bcast3v2d')
 
-    #     # 4d vs 2d
-    #     x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
-    #     y = (np.random.randn(5, 6) > 0).astype(np.bool)
-    #     z = np.logical_and(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_and_bcast4v2d')
+        # 4d vs 2d
+        x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
+        y = (np.random.randn(5, 6) > 0).astype(np.bool)
+        z = np.logical_and(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_and_bcast4v2d')
 
-    #     # 4d vs 3d
-    #     x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
-    #     y = (np.random.randn(4, 5, 6) > 0).astype(np.bool)
-    #     z = np.logical_and(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_and_bcast4v3d')
+        # 4d vs 3d
+        x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
+        y = (np.random.randn(4, 5, 6) > 0).astype(np.bool)
+        z = np.logical_and(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_and_bcast4v3d')
 
-    #     # 4d vs 4d
-    #     x = (np.random.randn(1, 4, 1, 6) > 0).astype(np.bool)
-    #     y = (np.random.randn(3, 1, 5, 6) > 0).astype(np.bool)
-    #     z = np.logical_and(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_and_bcast4v4d')
+        # 4d vs 4d
+        x = (np.random.randn(1, 4, 1, 6) > 0).astype(np.bool)
+        y = (np.random.randn(3, 1, 5, 6) > 0).astype(np.bool)
+        z = np.logical_and(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_and_bcast4v4d')
 
     def test_or(self):
         node = onnx.helper.make_node(
@@ -1548,48 +1548,47 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_or4d')
 
-    # todo, not support
-    # def test_or_broadcast(self):  # type: () -> None
-    #     node = onnx.helper.make_node(
-    #         'Or',
-    #         inputs=['x', 'y'],
-    #         outputs=['or'],
-    #     )
+    def test_or_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Or',
+            inputs=['x', 'y'],
+            outputs=['or'],
+        )
 
-    #     # 3d vs 1d
-    #     x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
-    #     y = (np.random.randn(5) > 0).astype(np.bool)
-    #     z = np.logical_or(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_or_bcast3v1d')
+        # 3d vs 1d
+        x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
+        y = (np.random.randn(5) > 0).astype(np.bool)
+        z = np.logical_or(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_or_bcast3v1d')
 
-    #     # 3d vs 2d
-    #     x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
-    #     y = (np.random.randn(4, 5) > 0).astype(np.bool)
-    #     z = np.logical_or(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_or_bcast3v2d')
+        # 3d vs 2d
+        x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
+        y = (np.random.randn(4, 5) > 0).astype(np.bool)
+        z = np.logical_or(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_or_bcast3v2d')
 
-    #     # 4d vs 2d
-    #     x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
-    #     y = (np.random.randn(5, 6) > 0).astype(np.bool)
-    #     z = np.logical_or(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_or_bcast4v2d')
+        # 4d vs 2d
+        x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
+        y = (np.random.randn(5, 6) > 0).astype(np.bool)
+        z = np.logical_or(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_or_bcast4v2d')
 
-    #     # 4d vs 3d
-    #     x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
-    #     y = (np.random.randn(4, 5, 6) > 0).astype(np.bool)
-    #     z = np.logical_or(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_or_bcast4v3d')
+        # 4d vs 3d
+        x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
+        y = (np.random.randn(4, 5, 6) > 0).astype(np.bool)
+        z = np.logical_or(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_or_bcast4v3d')
 
-    #     # 4d vs 4d
-    #     x = (np.random.randn(1, 4, 1, 6) > 0).astype(np.bool)
-    #     y = (np.random.randn(3, 1, 5, 6) > 0).astype(np.bool)
-    #     z = np.logical_or(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_or_bcast4v4d')
+        # 4d vs 4d
+        x = (np.random.randn(1, 4, 1, 6) > 0).astype(np.bool)
+        y = (np.random.randn(3, 1, 5, 6) > 0).astype(np.bool)
+        z = np.logical_or(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_or_bcast4v4d')
 
     def test_xor(self):  # type: () -> None
         node = onnx.helper.make_node(
@@ -1619,48 +1618,47 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_xor4d')
 
-    # todo, not support
-    # def test_xor_broadcast(self):  # type: () -> None
-    #     node = onnx.helper.make_node(
-    #         'Xor',
-    #         inputs=['x', 'y'],
-    #         outputs=['xor'],
-    #     )
+    def test_xor_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Xor',
+            inputs=['x', 'y'],
+            outputs=['xor'],
+        )
 
-    #     # 3d vs 1d
-    #     x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
-    #     y = (np.random.randn(5) > 0).astype(np.bool)
-    #     z = np.logical_xor(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_xor_bcast3v1d')
+        # 3d vs 1d
+        x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
+        y = (np.random.randn(5) > 0).astype(np.bool)
+        z = np.logical_xor(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_xor_bcast3v1d')
 
-    #     # 3d vs 2d
-    #     x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
-    #     y = (np.random.randn(4, 5) > 0).astype(np.bool)
-    #     z = np.logical_xor(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_xor_bcast3v2d')
+        # 3d vs 2d
+        x = (np.random.randn(3, 4, 5) > 0).astype(np.bool)
+        y = (np.random.randn(4, 5) > 0).astype(np.bool)
+        z = np.logical_xor(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_xor_bcast3v2d')
 
-    #     # 4d vs 2d
-    #     x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
-    #     y = (np.random.randn(5, 6) > 0).astype(np.bool)
-    #     z = np.logical_xor(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_xor_bcast4v2d')
+        # 4d vs 2d
+        x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
+        y = (np.random.randn(5, 6) > 0).astype(np.bool)
+        z = np.logical_xor(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_xor_bcast4v2d')
 
-    #     # 4d vs 3d
-    #     x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
-    #     y = (np.random.randn(4, 5, 6) > 0).astype(np.bool)
-    #     z = np.logical_xor(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_xor_bcast4v3d')
+        # 4d vs 3d
+        x = (np.random.randn(3, 4, 5, 6) > 0).astype(np.bool)
+        y = (np.random.randn(4, 5, 6) > 0).astype(np.bool)
+        z = np.logical_xor(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_xor_bcast4v3d')
 
-    #     # 4d vs 4d
-    #     x = (np.random.randn(1, 4, 1, 6) > 0).astype(np.bool)
-    #     y = (np.random.randn(3, 1, 5, 6) > 0).astype(np.bool)
-    #     z = np.logical_xor(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_xor_bcast4v4d')
+        # 4d vs 4d
+        x = (np.random.randn(1, 4, 1, 6) > 0).astype(np.bool)
+        y = (np.random.randn(3, 1, 5, 6) > 0).astype(np.bool)
+        z = np.logical_xor(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_xor_bcast4v4d')
 
     def test_not(self):
         node = onnx.helper.make_node(
@@ -1718,7 +1716,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_reciprocal')
 
-    #  def test_batchnorm(self):  # type: () -> None
+    # def test_batchnorm(self):  # type: () -> None
     #     def _batchnorm_test_mode(x, s, bias, mean, var, epsilon=1e-5):  # type: ignore
     #         dims_x = len(x.shape)
     #         dim_ones = (1,) * (dims_x - 2)
@@ -1867,42 +1865,39 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
             name='test_div')
 
-    # #todo, support div broadcast
-    # def test_div_broadcast(self):  # type: () -> None
-    #     node = onnx.helper.make_node(
-    #         'Div',
-    #         inputs=['x', 'y'],
-    #         outputs=['z'],
-    #     )
+    def test_div_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Div',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
 
-    #     x = np.random.randn(3, 4, 5).astype(np.float32)
-    #     y = np.random.rand(5).astype(np.float32) + 1.0
-    #     z = x / y
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_div_bcast')
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.rand(5).astype(np.float32) + 1.0
+        z = x / y
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_div_bcast')
 
-    # todo, support div broadcast
-    # def test_pow(self):
-    #     node = onnx.helper.make_node(
-    #         'Pow',
-    #         inputs=['x', 'y'],
-    #         outputs=['z'],
-    #     )
+    def test_pow(self):
+        node = onnx.helper.make_node(
+            'Pow',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
 
-    #     x = np.array([1, 2, 3]).astype(np.float32)
-    #     y = np.array([4, 5, 6]).astype(np.float32)  # todo, not exactly same
-    #     z = np.power(x, y)  # expected output [1., 32., 729.]
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_pow_example')
+        x = np.array([1, 2, 3]).astype(np.float32)
+        y = np.array([4, 5, 6]).astype(np.float32)  # todo, not exactly same
+        z = np.power(x, y)  # expected output [1., 32., 729.]
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_pow_example')
 
-    #     x = np.arange(24).reshape(2, 3, 4).astype(
-    #         np.float32)  # todo, cannot too big here
-    #     y = np.random.randn(2, 3, 4).astype(np.float32)
-    #     z = np.power(x, y)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_pow')
+        x = np.arange(24).reshape(2, 3, 4).astype(
+            np.float32)  # todo, cannot too big here
+        y = np.random.randn(2, 3, 4).astype(np.float32)
+        z = np.power(x, y)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_pow')
 
-    # #todo, not support pow broadcast
     # def test_pow_broadcast(self):  # type: () -> None
     #     node = onnx.helper.make_node(
     #         'Pow',
@@ -2021,52 +2016,51 @@ class TestPythonOnnxBackend(unittest.TestCase):
                name='test_prelu_example')
 
     #todo, not support prelu broadcast
-    # def test_prelu_broadcast(self):  # type: () -> None
-    #     node = onnx.helper.make_node(
-    #         'PRelu',
-    #         inputs=['x', 'slope'],
-    #         outputs=['y'],
-    #     )
+    def test_prelu_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'PRelu',
+            inputs=['x', 'slope'],
+            outputs=['y'],
+        )
 
-    #     x = np.random.randn(3, 4, 5).astype(np.float32)
-    #     slope = np.random.randn(5).astype(np.float32)
-    #     y = np.clip(x, 0, np.inf) + np.clip(x, -np.inf, 0) * slope
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        slope = np.random.randn(5).astype(np.float32)
+        y = np.clip(x, 0, np.inf) + np.clip(x, -np.inf, 0) * slope
 
-    #     expect(node, inputs=[x, slope], outputs=[y],
-    #            name='test_prelu_broadcast')
+        expect(node, inputs=[x, slope], outputs=[y],
+               name='test_prelu_broadcast')
 
-    # def test_mul(self):
-    #     node = onnx.helper.make_node(
-    #         'Mul',
-    #         inputs=['x', 'y'],
-    #         outputs=['z'],
-    #     )
+    def test_mul(self):
+        node = onnx.helper.make_node(
+            'Mul',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
 
-    #     x = np.array([1, 2, 3]).astype(np.float32)
-    #     y = np.array([4, 5, 6]).astype(np.float32)
-    #     z = x * y  # expected output [4., 10., 18.]
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_mul_example')
+        x = np.array([1, 2, 3]).astype(np.float32)
+        y = np.array([4, 5, 6]).astype(np.float32)
+        z = x * y  # expected output [4., 10., 18.]
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_mul_example')
 
-    #     x = np.random.randn(3, 4, 5).astype(np.float32)
-    #     y = np.random.randn(3, 4, 5).astype(np.float32)
-    #     z = x * y
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_mul')
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(3, 4, 5).astype(np.float32)
+        z = x * y
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_mul')
 
-    # # not support
-    # # def test_mul_broadcast(self):  # type: () -> None
-    # #     node = onnx.helper.make_node(
-    # #         'Mul',
-    # #         inputs=['x', 'y'],
-    # #         outputs=['z'],
-    # #     )
+    def test_mul_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Mul',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
 
-    # #     x = np.random.randn(3, 4, 5).astype(np.float32)
-    # #     y = np.random.randn(5).astype(np.float32)
-    # #     z = x * y
-    # #     expect(node, inputs=[x, y], outputs=[z],
-    # #            name='test_mul_bcast')
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.random.randn(5).astype(np.float32)
+        z = x * y
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_mul_bcast')
 
 
 # return padding shape of conv2d or pooling
