@@ -253,6 +253,10 @@ table td:first-child > code {
   background-color: $primaryColor;
 }
 
+.index-ctas-get-started-button:hover {
+  background: none;
+}
+
 .index-ctas-github-button {
   vertical-align: sub;
 }
@@ -292,12 +296,18 @@ table td:first-child > code {
 }
 
 /* landing page blockImage style */
+/* for img aligned on top */
 .imageAlignTop .blockImage {
   max-width: 60%;
 }
 
 .imageAlignTop .blockImage img {
   height: 150px;
+}
+
+/* for img aligned on the side */
+.imageAlignSide .blockImage img {
+  box-shadow: 0 0 36px rgba(0,0,0,0.12);
 }
 
 @media only screen and (max-width: 768px) {
