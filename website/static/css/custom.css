@@ -43,7 +43,7 @@
 
 /* header navigation */
 .fixedHeaderContainer {
-  background-color: #f4f6f6;
+  background-color: #f9ffff;
   /* box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23); */
   box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12);
 }
@@ -54,7 +54,7 @@
 }
 
 div.navigationSlider .slidingNav ul {
-  background: #f4f6f6;
+  background: #f9ffff;
 }
 
 .navigationSlider .slidingNav ul li a {
@@ -65,7 +65,7 @@ div.navigationSlider .slidingNav ul {
 .navigationSlider .slidingNav ul li a:focus,
 .navigationSlider .slidingNav ul li a:hover,
 .navigationSlider .slidingNav ul li.siteNavGroupActive a {
-  background: #f4f6f6;
+  background: #f9ffff;
   color: $primaryColor;
 }
 
@@ -246,10 +246,11 @@ table td:first-child > code {
   border-radius: 8px;
   border-width: 2px;
   color: #fff;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   margin-right: 24px;
-  padding: 18px 36px;
+  padding: 16px 24px;
+  background-color: $primaryColor;
 }
 
 .index-ctas-github-button {
