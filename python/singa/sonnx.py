@@ -1335,6 +1335,23 @@ class SingaBackend(Backend):
         return outputs_dict
 
     @classmethod
+    def _onnx_node_to_singa_tensor(cls, node_infos, tensor_map, device):
+        """
+        init the singa tensor from onnx infos
+        Args:
+            node_infos: a given onnx model
+        Args:
+            tensor_map: the tensor map
+        Args:
+            device: the used device
+        """
+        for x in node_infos:
+            x_shape = tuple(dim.dim_value for dim in x.type.tensor_type.shape.dim)
+            tmp_tensor = tensor.from_numpy(np.random.randn(*x_shape).astype(np.float32))
+            tmp_tensor.to_device(device)
+            tensor_map[x.name] = tmp_tensor
+
+    @classmethod
     def _onnx_model_to_singa_net(cls, onnx_model, device, opset_version):
         """
         get all intermediate tensors and operators from onnx model
@@ -1349,21 +1366,19 @@ class SingaBackend(Backend):
         Returns:
             a list of SingaOps('name', 'op', 'handle', 'forward')
         """
-        optimized_model = onnx.utils.polish_model(onnx_model)
+        #  runs model checker, optimizer, shape inference engine 
+        optimized_model = onnx.utils.polish_model(onnx_model) 
         # print('The model is:\n{}'.format(optimized_model))
-        # optimized_model = onnx_model
         # this tensor_nap contains all tensors, including outputs of each op
         tensor_map = {}
         # this weights only contains the tensors which have stored the gradients
         weights = {}
         singa_ops = []
         singa_op = collections.namedtuple('SingaOps', ['name', 'op', 'handle', 'forward'])
-        # init the input as tensors
-        for x in optimized_model.graph.input:
-            x_shape = tuple(dim.dim_value for dim in x.type.tensor_type.shape.dim)
-            tmp_tensor = tensor.from_numpy(np.random.randn(*x_shape).astype(np.float32))
-            tmp_tensor.to_device(device)
-            tensor_map[x.name] = tmp_tensor
+        # init the input, output, and intermidate nodes as singa tensors 
+        cls._onnx_node_to_singa_tensor(optimized_model.graph.input, tensor_map, device)
+        cls._onnx_node_to_singa_tensor(optimized_model.graph.output, tensor_map, device)
+        cls._onnx_node_to_singa_tensor(optimized_model.graph.value_info, tensor_map, device)
         # convert constant nodes to tensor, other nodes to handler
         for node in optimized_model.graph.node:
             node = OnnxNode(node)
@@ -1384,8 +1399,8 @@ class SingaBackend(Backend):
                 # we must know the shape of ouput
                 # becasue it will become the input of next layer
                 # so we need to init a new tensor with the same shape with the output
-                outputs = cls._run_node(node, inputs, handle, forward, opset_version)
-                tensor_map.update(outputs)
+                # outputs = cls._run_node(node, inputs, handle, forward, opset_version)
+                # tensor_map.update(outputs)
         return weights, singa_ops
 
     @classmethod
