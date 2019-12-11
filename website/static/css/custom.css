@@ -24,7 +24,7 @@
 }
 
 .mainPageContainer {
-  padding: 30px 0 !important;
+  padding: 55px 0 !important;
 }
 
 /* Apache Footer */
@@ -156,7 +156,7 @@ table td:first-child > code {
   color: #20232a;
   font-weight: 500;
   font-size: 18px;
-  padding: 28px;
+  padding: 32px;
   margin: 0 auto -40px;
   text-align: center;
 }
@@ -167,7 +167,7 @@ table td:first-child > code {
 }
 
 .announcement-inner a {
-  color: orange;
+  color: $primaryColor;
 }
 
 /* landing page hero background */
@@ -254,7 +254,8 @@ table td:first-child > code {
 }
 
 .index-ctas-get-started-button:hover {
-  background: none;
+  background: #f7f7f7;
+  color: $primaryColor;
 }
 
 .index-ctas-github-button {
@@ -307,7 +308,8 @@ table td:first-child > code {
 
 /* for img aligned on the side */
 .imageAlignSide .blockImage img {
-  box-shadow: 0 0 36px rgba(0,0,0,0.11);
+  /* box-shadow: 0 0 36px rgba(0,0,0,0.11); */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
 }
 
 @media only screen and (max-width: 768px) {

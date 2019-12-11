@@ -81,7 +81,7 @@ const siteConfig = {
   /* Colors for website */
   colors: {
     // many of the colors are over-written in custom.css
-    primaryColor: "#904600",
+    primaryColor: "#d27400",
     secondaryColor: "#808080", // 2nd layer of toolbar in smaller screen
   },
 
