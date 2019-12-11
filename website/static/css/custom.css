@@ -156,7 +156,7 @@ table td:first-child > code {
   color: #20232a;
   font-weight: 500;
   font-size: 18px;
-  padding: 32px;
+  padding: 36px;
   margin: 0 auto -40px;
   text-align: center;
 }
@@ -177,7 +177,7 @@ table td:first-child > code {
   background-position: center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
   background-size: cover; /* Resize the background image to cover the entire container */
-  padding: 0px 48px 48px 48px;
+  padding: 48px;
 }
 
 /* .backdrop {
@@ -200,7 +200,7 @@ table td:first-child > code {
 
 .index-hero-project-tagline {
   color: #fff;
-  font-size: 36px;
+  font-size: 42px;
   margin: 0;
 }
 
@@ -240,6 +240,7 @@ table td:first-child > code {
 
 .index-ctas {
   margin-top: 24px;
+  margin-bottom: 24px;
 }
 
 .index-ctas-get-started-button {
