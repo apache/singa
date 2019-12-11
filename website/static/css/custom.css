@@ -38,12 +38,12 @@
 /* change main webpage link color */
 .mainContainer a {
   text-decoration: none;
-  color: #904600;
+  color: $primaryColor;
 }
 
 /* header navigation */
 .fixedHeaderContainer {
-  background-color: #f9ffff;
+  background-color: #fff;
   /* box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23); */
   box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12);
 }
@@ -54,7 +54,7 @@
 }
 
 div.navigationSlider .slidingNav ul {
-  background: #f9ffff;
+  background: #fff;
 }
 
 .navigationSlider .slidingNav ul li a {
@@ -65,7 +65,7 @@ div.navigationSlider .slidingNav ul {
 .navigationSlider .slidingNav ul li a:focus,
 .navigationSlider .slidingNav ul li a:hover,
 .navigationSlider .slidingNav ul li.siteNavGroupActive a {
-  background: #f9ffff;
+  background: #fff;
   color: $primaryColor;
 }
 
@@ -152,9 +152,9 @@ table td:first-child > code {
 }
 
 .announcement {
-  background-color: #20232a;
-  color: #fff;
-  font-weight: bold;
+  background-color: #f7f7f7;
+  color: #20232a;
+  font-weight: 500;
   font-size: 18px;
   padding: 28px;
   margin: 0 auto -40px;
@@ -307,7 +307,7 @@ table td:first-child > code {
 
 /* for img aligned on the side */
 .imageAlignSide .blockImage img {
-  box-shadow: 0 0 36px rgba(0,0,0,0.12);
+  box-shadow: 0 0 36px rgba(0,0,0,0.11);
 }
 
 @media only screen and (max-width: 768px) {
