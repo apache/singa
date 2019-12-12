@@ -46,7 +46,7 @@ def expect(node, inputs, outputs, name, opset_version=_default_opset_version):
     # prepare input tensors
     for key, val in zip(input_labels, inputs):
         # very important! must be float
-        if not isinstance(val, np.ndarray):
+        if not isinstance(val, np.ndarray) or len(val.shape) == 0:
             val = np.array([val])
         x = tensor.from_numpy(val.astype(np.float32))
         x.to_device(gpu_dev)
@@ -1716,54 +1716,58 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_reciprocal')
 
-    # def test_batchnorm(self):  # type: () -> None
-    #     def _batchnorm_test_mode(x, s, bias, mean, var, epsilon=1e-5):  # type: ignore
-    #         dims_x = len(x.shape)
-    #         dim_ones = (1,) * (dims_x - 2)
-    #         s = s.reshape(-1, *dim_ones)
-    #         bias = bias.reshape(-1, *dim_ones)
-    #         mean = mean.reshape(-1, *dim_ones)
-    #         var = var.reshape(-1, *dim_ones)
-    #         return s * (x - mean) / np.sqrt(var + epsilon) + bias
+    def test_batchnorm(self):  # type: () -> None
+        # we changed this test cases
+        # according to the paper https://arxiv.org/pdf/1502.03167.pdf
+        def _batchnorm_test_mode(x, s, bias, mean, var, momentum=0.9, epsilon=1e-5):  # type: ignore
+            dims_x = len(x.shape)
+            dim_ones = (1,) * (dims_x - 2)
+            s = s.reshape(-1, *dim_ones)
+            bias = bias.reshape(-1, *dim_ones)
+            mean = mean.reshape(-1, *dim_ones)
+            var = var.reshape(-1, *dim_ones)
+            batch_m = x.mean(axis=(0, 2, 3), keepdims=True)
+            batch_v = x.var(axis=(0, 2, 3), keepdims=True)
+            return s * (x - batch_m) / np.sqrt(batch_v + epsilon) + bias
 
-    #     # input size: (1, 2, 1, 3)
-    #     x = np.array([[[[-1, 0, 1]], [[2, 3, 4]]]]).astype(np.float32)
-    #     s = np.array([1.0, 1.5]).astype(np.float32)
-    #     bias = np.array([0, 1]).astype(np.float32)
-    #     mean = np.array([0, 3]).astype(np.float32)
-    #     var = np.array([1, 1.5]).astype(np.float32)
-    #     y = _batchnorm_test_mode(x, s, bias, mean, var).astype(np.float32)
+        # input size: (1, 2, 1, 3)
+        x = np.array([[[[-1, 0, 1]], [[2, 3, 4]]]]).astype(np.float32)
+        s = np.array([1.0, 1.5]).astype(np.float32)
+        bias = np.array([0, 1]).astype(np.float32)
+        mean = np.array([0, 3]).astype(np.float32)
+        var = np.array([1, 1.5]).astype(np.float32)
+        y = _batchnorm_test_mode(x, s, bias, mean, var).astype(np.float32)
 
-    #     node = onnx.helper.make_node(
-    #         'BatchNormalization',
-    #         inputs=['x', 's', 'bias', 'mean', 'var'],
-    #         outputs=['y'],
-    #     )
+        node = onnx.helper.make_node(
+            'BatchNormalization',
+            inputs=['x', 's', 'bias', 'mean', 'var'],
+            outputs=['y'],
+        )
 
-    #     # output size: (1, 2, 1, 3)
-    #     expect(node, inputs=[x, s, bias, mean, var], outputs=[y],
-    #            name='test_batchnorm_example')
+        # output size: (1, 2, 1, 3)
+        expect(node, inputs=[x, s, bias, mean, var], outputs=[y],
+               name='test_batchnorm_example')
 
-    #     # input size: (2, 3, 4, 5)
-    #     x = np.random.randn(2, 3, 4, 5).astype(np.float32)
-    #     s = np.random.randn(3).astype(np.float32)
-    #     bias = np.random.randn(3).astype(np.float32)
-    #     mean = np.random.randn(3).astype(np.float32)
-    #     var = np.random.rand(3).astype(np.float32)
-    #     epsilon = 1e-2
-    #     y = _batchnorm_test_mode(
-    #         x, s, bias, mean, var, epsilon).astype(np.float32)
+        # input size: (2, 3, 4, 5)
+        x = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        s = np.random.randn(3).astype(np.float32)
+        bias = np.random.randn(3).astype(np.float32)
+        mean = np.random.randn(3).astype(np.float32)
+        var = np.random.rand(3).astype(np.float32)
+        epsilon = 1e-2
+        y = _batchnorm_test_mode(
+            x, s, bias, mean, var, epsilon).astype(np.float32)
 
-    #     node = onnx.helper.make_node(
-    #         'BatchNormalization',
-    #         inputs=['x', 's', 'bias', 'mean', 'var'],
-    #         outputs=['y'],
-    #         epsilon=epsilon,
-    #     )
+        node = onnx.helper.make_node(
+            'BatchNormalization',
+            inputs=['x', 's', 'bias', 'mean', 'var'],
+            outputs=['y'],
+            epsilon=epsilon,
+        )
 
-    #     # output size: (2, 3, 4, 5)
-    #     expect(node, inputs=[x, s, bias, mean, var], outputs=[y],
-    #            name='test_batchnorm_epsilon')
+        # output size: (2, 3, 4, 5)
+        expect(node, inputs=[x, s, bias, mean, var], outputs=[y],
+               name='test_batchnorm_epsilon')
 
     # def test_softmax(self):  # type: () -> None
     #     node = onnx.helper.make_node(
@@ -1898,30 +1902,30 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_pow')
 
-    # def test_pow_broadcast(self):  # type: () -> None
-    #     node = onnx.helper.make_node(
-    #         'Pow',
-    #         inputs=['x', 'y'],
-    #         outputs=['z'],
-    #     )
+    def test_pow_broadcast(self):  # type: () -> None
+        node = onnx.helper.make_node(
+            'Pow',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
 
-    #     x = np.array([1, 2, 3]).astype(np.float32)
-    #     y = np.array(2).astype(np.float32)
-    #     z = np.power(x, y)  # expected output [1., 4., 9.]
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_pow_bcast_scalar')
+        x = np.array([1, 2, 3]).astype(np.float32)
+        y = np.array(2).astype(np.float32)
+        z = np.power(x, y)  # expected output [1., 4., 9.]
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_pow_bcast_scalar')
 
-    #     node = onnx.helper.make_node(
-    #         'Pow',
-    #         inputs=['x', 'y'],
-    #         outputs=['z'],
-    #     )
-    #     x = np.array([[1, 2, 3], [4, 5, 6]]).astype(np.float32)
-    #     y = np.array([1, 2, 3]).astype(np.float32)
-    #     # expected output [[1, 4, 27], [4, 25, 216]]
-    #     z = np.power(x, y).astype(np.float32)
-    #     expect(node, inputs=[x, y], outputs=[z],
-    #            name='test_pow_bcast_array')
+        node = onnx.helper.make_node(
+            'Pow',
+            inputs=['x', 'y'],
+            outputs=['z'],
+        )
+        x = np.array([[1, 2, 3], [4, 5, 6]]).astype(np.float32)
+        y = np.array([1, 2, 3]).astype(np.float32)
+        # expected output [[1, 4, 27], [4, 25, 216]]
+        z = np.power(x, y).astype(np.float32)
+        expect(node, inputs=[x, y], outputs=[z],
+               name='test_pow_bcast_array')
 
     def test_clip(self):
         node = onnx.helper.make_node(
