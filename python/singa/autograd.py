@@ -837,7 +837,7 @@ class SoftMax(Operation):
     according to the parameter axis.
     """
 
-    def __init__(self, axis=0):
+    def __init__(self, axis=1):
         super(SoftMax, self).__init__()
         self.axis = axis
 
@@ -848,13 +848,8 @@ class SoftMax(Operation):
         Returns:
             the result Tensor
         """
-        if self.axis == 1:
-            x = singa.DefaultTranspose(x)
-        self.output = singa.SoftMax(x)
-        if self.axis == 0:
-            return self.output
-        elif self.axis == 1:
-            return singa.DefaultTranspose(self.output)
+        self.output = singa.SoftMax(x, self.axis)
+        return self.output
 
     def backward(self, dy):
         """
