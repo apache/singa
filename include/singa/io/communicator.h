@@ -123,6 +123,8 @@ private:
   float *xVal;
   int *nnz;
   int *nnzAll;
+  int *nnzGPU;
+  int *nnzAllGPU;
   float threshold;
   float *sparsSendBuff;
   float *sparsRecvBuff;

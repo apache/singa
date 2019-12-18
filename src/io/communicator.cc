@@ -127,16 +127,16 @@ void Communicator::sparsInit(){
   CUDA_CHECK(cudaSetDevice(MPIRankInLocal));
   CUDA_CHECK(cudaMalloc(&sparsRecvBuff, (int) (maxSize * sizeof(float) * totalMPIRanksInGlobal)));
   CUDA_CHECK(cudaMalloc(&sparsSendBuff, (int) (maxSize * sizeof(float))));
-  CUDA_CHECK(cudaMalloc(&backupBuff, (int) (maxSize * sizeof(float))));
-  CUDA_CHECK(cudaMalloc(&fusedIndex, (int) (maxSize * sizeof(int))));
+  CUDA_CHECK(cudaMalloc(&backupBuff, maxSize * sizeof(float)));
+  CUDA_CHECK(cudaMalloc(&fusedIndex, maxSize * sizeof(int)));
   CUDA_CHECK(cudaMalloc(&xInd, (int) (sizeof(int) * maxSize)));
   CUDA_CHECK(cudaMalloc(&xVal, (int) (sizeof(float) * maxSize)));
   CUSPARSE_CHECK(cusparseCreate(&cusparse_handle));
   CUSPARSE_CHECK(cusparseSetStream(cusparse_handle, c2));
   nnz = (int*) malloc(sizeof(int));
   nnzAll = (int*) malloc(sizeof(int) * totalMPIRanksInGlobal);
-  CUDA_CHECK(cudaHostRegister(nnz, sizeof(int), cudaHostRegisterDefault));
-  CUDA_CHECK(cudaHostRegister(nnzAll, sizeof(int) * totalMPIRanksInGlobal, cudaHostRegisterDefault));
+  CUDA_CHECK(cudaMalloc(&nnzGPU, sizeof(int) * totalMPIRanksInGlobal));
+  CUDA_CHECK(cudaMalloc(&nnzAllGPU, sizeof(int) * totalMPIRanksInGlobal));
   sparsInitialized = true;
 
 }
@@ -183,6 +183,8 @@ Communicator::~Communicator(){
     CUDA_CHECK(cudaFree(fusedIndex));
     CUDA_CHECK(cudaFree(xInd));
     CUDA_CHECK(cudaFree(xVal));
+    CUDA_CHECK(cudaFree(nnzGPU));
+    CUDA_CHECK(cudaFree(nnzAllGPU));
   }
 
 }
@@ -389,10 +391,10 @@ void Communicator::valSparsAllReduce(size_t num, float* accumulation){
 
   if (accumulation != NULL)
   {
-    // backup the fusedSendBuff
-  	CUDA_CHECK(cudaMemcpyAsync((void*) backupBuff, (const void*) fusedSendBuff, num, cudaMemcpyDeviceToDevice, c1));
     // add the previous accumulation
   	cuda::add(num, fusedSendBuff, accumulation, fusedSendBuff, c1);
+    // backup the fusedSendBuff
+  	CUDA_CHECK(cudaMemcpyAsync((void*) backupBuff, (const void*) fusedSendBuff, sizeof(float) * num, cudaMemcpyDeviceToDevice, c1));
   }
 
   // sparsification based on threshold
@@ -400,7 +402,7 @@ void Communicator::valSparsAllReduce(size_t num, float* accumulation){
 
   // output the gradient accumulation
   if (accumulation != NULL)
-	cuda::sub(num, backupBuff, fusedSendBuff, accumulation, c1);
+	  cuda::sub(num, backupBuff, fusedSendBuff, accumulation, c1);
 
   // produce the index of the sparse array
   cuda::sparsindex(num, fusedSendBuff, fusedIndex, c1);
@@ -408,23 +410,27 @@ void Communicator::valSparsAllReduce(size_t num, float* accumulation){
   // remove zero of index to become sprase array and get the num of non-zero nnz
   cuda::removezeroidx(num, fusedIndex, c1, nnz);
 
+  CUDA_CHECK(cudaMemcpyAsync((void*) nnzGPU, (const void*) nnz, sizeof(int), cudaMemcpyHostToDevice, c1));
+
   // all-gather all the nnz from different ranks
-  NCCLCHECK(ncclAllGather((const void*)nnz,
-                             (void*)nnzAll,
+  NCCLCHECK(ncclAllGather((const void*)nnzGPU,
+                             (void*)nnzAllGPU,
                              1,
                              ncclInt,
                              comm, 
                              c1));
 
-  CUDA_CHECK(cudaStreamSynchronize(c1));
+  CUDA_CHECK(cudaMemcpyAsync((void*) nnzAll, (const void*) nnzAllGPU, sizeof(int) * totalMPIRanksInGlobal, cudaMemcpyDeviceToHost, c1));
 
-  // remove zero of values to become sprase array
-  cuda::removezeroval(num, fusedSendBuff, c1);
+  CUDA_CHECK(cudaStreamSynchronize(c1));
 
   int nnzMax = 0;
   for (int i = 0; i < totalMPIRanksInGlobal; i++)
       if(nnzAll[i] > nnzMax)
           nnzMax = nnzAll[i];
+
+  // remove zero of values to become sprase array
+  cuda::removezeroval(num, fusedSendBuff, c1);
 
   CUDA_CHECK(cudaMemcpyAsync((void*) (sparsSendBuff), (const void*) fusedIndex, sizeof(int) * (*nnz), cudaMemcpyDeviceToDevice, c1));
   CUDA_CHECK(cudaMemcpyAsync((void*) (sparsSendBuff + (*nnz)), (const void*) fusedSendBuff, sizeof(float) * (*nnz), cudaMemcpyDeviceToDevice, c1));
@@ -477,10 +483,10 @@ void Communicator::topKSparsAllReduce(size_t num, float* accumulation){
   // use gradient accumulation
   if (accumulation != NULL)
   {
-    // backup the fusedSendBuff
-  	CUDA_CHECK(cudaMemcpyAsync((void*) backupBuff, (const void*) fusedSendBuff, num, cudaMemcpyDeviceToDevice, c1));
     // add the previous accumulation
   	cuda::add(num, fusedSendBuff, accumulation, fusedSendBuff, c1);
+    // backup the fusedSendBuff
+  	CUDA_CHECK(cudaMemcpyAsync((void*) backupBuff, (const void*) fusedSendBuff, sizeof(float) * num, cudaMemcpyDeviceToDevice, c1));
   }
 
   // generate an index and sort the fusedSendBuff from large to small values
@@ -494,7 +500,7 @@ void Communicator::topKSparsAllReduce(size_t num, float* accumulation){
   float alpha = 1.0;
   if (accumulation != NULL)
   {
-  	CUDA_CHECK(cudaMemsetAsync(accumulation, 0, num *sizeof(float) , c1));
+  	CUDA_CHECK(cudaMemsetAsync(accumulation, 0, num * sizeof(float) , c1));
   	CUSPARSE_CHECK(cusparseSetStream(cusparse_handle, c1));
   	CUSPARSE_CHECK(cusparseSaxpyi(cusparse_handle,
   	               				nnzMax,

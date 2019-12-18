@@ -329,13 +329,32 @@ class DistOpt(object):
         if (k == self.partial):
             self.partial = 0
 
-    def backward_and_spars_update(self, loss, threshold = 2097152, spars = 0.01, topK = False, corr = True):
-        # THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
-        # It performs sparsification based on the absolute threshold
-        # When topK is False, it sparsifies the gradient with absolute value >= spars
-        # When topK is True, it sparsifies a fraction of total gradient number equals to spars:
-        # The flag corr determine whether to use the local accumulate gradient for correction
-        # For example, when spars = 0.01, it sparsifies 1 % of the total gradient elements 
+    def backward_and_spars_update(self, loss, threshold = 2097152, spars = 0.05, topK = False, corr = True):
+        r"""THIS IS A EXPERIMENTAL FUNCTION FOR RESEARCH PURPOSE:
+        Performs backward propagation from the loss and parameter update with sparsification.
+        It fuses the tensors with size smaller than the threshold value to reduce network latency, as well
+        as using sparsification scheme to transfer only gradient elements which are significant.
+
+        Arguments:
+                loss(Tensor): loss is the objective function of the deep learning model 
+                optimization, e.g. for classification problem it can be the output of the
+                softmax_cross_entropy function.
+                threshold(int): threshold is a parameter to control performance in fusing
+                the tensors. For the tensors of sizes smaller than threshold, they are to
+                be accumulated and fused before the all reduce operation. For the tensors 
+                of its size larger than the threshold value, they are to be reduced directly
+                without fusion.
+                spars(float): a parameter to control sparsity as defined below 
+                topK(bool): When topK is False, it sparsifies the gradient with absolute 
+                value >= sparsWhen topK is True, it sparsifies a fraction of total gradient
+                number equals to spars,  E.g. when spars = 0.01, it sparsifies 1 % of the
+                total gradient elements
+                corr(bool): whether to use the local accumulate gradient for correction
+
+        Attributes:
+                self.sparsInit: A counter to determine which partition to perform all-reduce.
+                self.gradAccumulation: Local gradient accumulation
+        """
         if ((not hasattr(self, "sparsInit")) and corr):
             self.gradAccumulation = []
             self.sparsInit = False

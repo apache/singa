@@ -395,6 +395,7 @@ __global__ void KernelHalf2Float(const size_t n, const __half *in, float *out) {
   }
 }
 
+//kernal used by the threshold based sparsification
 __global__ void KernelSparsAbs(const size_t n, const float threshold, const float *in, float *out) {
   for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -402,6 +403,7 @@ __global__ void KernelSparsAbs(const size_t n, const float threshold, const floa
   }
 }
 
+//kernal used by the threshold based sparsification
 __global__ void KernelSparsIndex(const size_t n, const float *in, int *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -409,6 +411,7 @@ __global__ void KernelSparsIndex(const size_t n, const float *in, int *out) {
   }
 }
 
+//kernal used by the topK based sparsification
 __global__ void KernelGenerateIndex(const size_t n, int *out) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
@@ -466,22 +469,16 @@ void generateindex(const size_t n, int *out, cudaStream_t s) {
   KernelGenerateIndex <<<ceil(n / CU1DBLOCKF), CU1DBLOCKF, 0, s>>> (n, out);
 }
 
-template<typename T>
-struct eq_zero
-{
-    __host__ __device__
-    bool operator()(const T x)
-    {
-        return x == T(0);
-    }
-};
-
+//used by the threshold based sparsification
 void removezeroval(const size_t n, float *in, cudaStream_t s) {
-  thrust::remove_if(thrust::cuda::par.on(s), in, in + n, eq_zero<float>());
+  thrust::remove(thrust::cuda::par.on(s), in, in + n, float(0));
 }
 
+//used by the threshold based sparsification
 void removezeroidx(const size_t n, int *in, cudaStream_t s, int *address) {
-  *address = (int)(thrust::remove_if(thrust::cuda::par.on(s), in, in + n, eq_zero<int>()) - in);  
+  thrust::remove(thrust::cuda::par.on(s), in, in + n, int(0));  
+  int a = thrust::count(thrust::cuda::par.on(s), in, in + n, int(0));
+  *address = n - a;
 }
 
 struct absgreater : public thrust::binary_function<float,float,bool>
@@ -492,6 +489,7 @@ struct absgreater : public thrust::binary_function<float,float,bool>
   }
 };
 
+//used by the topK based sparsification
 void sortbykey(const size_t n, float *key, int *value, cudaStream_t s) {
   thrust::sort_by_key(thrust::cuda::par.on(s), key, key + n, value, absgreater());
 }

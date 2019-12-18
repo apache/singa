@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # Generate a NCCL ID to be used for collective communication
     nccl_id = singa.NcclIdHolder()
 
-    gpu_per_node = 4
+    gpu_per_node = 8
     max_epoch = 10
     batch_size = 64
 
@@ -40,8 +40,8 @@ if __name__ == '__main__':
 
     # Use sparsification with parameters 
     topK = False               # When topK = False, Sparsification based on a constant absolute threshold
-    corr = False               # If True, uses local accumulate gradient for the correction
-    sparsThreshold = 0.01      # The constant absolute threshold for sparsification 
+    corr = True               # If True, uses local accumulate gradient for the correction
+    sparsThreshold = 0.05      # The constant absolute threshold for sparsification 
 
     process = []
     for gpu_num in range(0, gpu_per_node):        
