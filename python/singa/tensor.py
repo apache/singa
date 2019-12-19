@@ -184,6 +184,9 @@ class Tensor(object):
         return t
 
     def reset_like(self, t):
+        self.reset_like_(t)
+
+    def reset_like_(self, t):
         '''Reset the shape, dtype and device as the given tensor.
 
         Args:
@@ -233,6 +236,9 @@ class Tensor(object):
         return self.data.L1()
 
     def set_value(self, x):
+        self.set_value_(x)
+
+    def set_value_(self, x):
         '''Set all elements of the tensor to be the give value.
 
         Args:
@@ -242,7 +248,7 @@ class Tensor(object):
         # if isinstance(x, float):
         self.data.SetFloatValue(float(x))
 
-    def copy_from_numpy(self, np_array, offset=0):
+    def copy_from_numpy_(self, np_array, offset=0):
         ''' Copy the data from the numpy array.
 
         Args:
@@ -260,7 +266,15 @@ class Tensor(object):
         else:
             print('Not implemented yet for ', dt)
 
+    def copy_from_numpy(self, np_array, offset=0):
+        print("DEPRECATED copy_from_numpy(), use copy_from_numpy_() instead")
+        self.copy_from_numpy_(np_array, offset=0)
+
     def copy_data(self, t):
+        print("DEPRECATED copy_data(), use copy_data_() instead")
+        self.copy_data_(t)
+
+    def copy_data_(self, t):
         '''Copy data from other Tensor instance.
 
         Args:
@@ -277,6 +291,10 @@ class Tensor(object):
         return _call_singa_func(self.data.Clone)
 
     def repeat(self, repeats, axis):
+        print("DEPRECATED repeat(), use repeat_() instead")
+        self.repeat_(repeats, axis)
+
+    def repeat_(self, repeats, axis):
         '''Repeat data of a tensor 
 
         Args:
@@ -340,6 +358,9 @@ class Tensor(object):
         return _call_singa_func(singa.DefaultTranspose, self.data)
 
     def copy(self):
+        self.copy()
+
+    def copy_(self):
         '''shallow copy calls copy constructor of singa::Tensor
         '''
         return _call_singa_func(CTensor, self.data)
@@ -353,6 +374,10 @@ class Tensor(object):
         return self.clone()
 
     def bernoulli(self, p):
+        self.bernoulli_(self)
+
+
+    def bernoulli_(self, p):
         '''Sample 0/1 for each element according to the given probability.
 
         Args:
@@ -361,6 +386,9 @@ class Tensor(object):
         singa.Bernoulli(float(p), self.data)
 
     def gaussian(self, mean, std):
+        self.gaussian_(mean, std)
+
+    def gaussian_(self, mean, std):
         '''Generate a value for each element following a Gaussian distribution.
 
         Args:
@@ -370,6 +398,9 @@ class Tensor(object):
         singa.Gaussian(float(mean), float(std), self.data)
 
     def uniform(self, low, high):
+        self.uniform_(low, high)
+
+    def uniform_(self, low, high):
         '''Generate a value for each element following a uniform distribution.
 
         Args:
@@ -379,6 +410,9 @@ class Tensor(object):
         singa.Uniform(float(low), float(high), self.data)
 
     def add_column(self, v):
+        self.add_column_(v)
+
+    def add_column_(self, v):
         '''Add a tensor to each column of this tensor.
 
         Args:
@@ -387,6 +421,9 @@ class Tensor(object):
         singa.AddColumn(v.data, self.data)
 
     def add_row(self, v):
+        self.add_row_(v)
+
+    def add_row_(self, v):
         '''Add a tensor to each row of this tensor.
 
         Args:
@@ -586,6 +623,9 @@ class Tensor(object):
         one.set_value(lhs)
         one /= self
         return one
+
+    def __repr__(self):
+        return np.array2string(to_numpy(self))
 
 ''' python functions for global functions in Tensor.h
 '''

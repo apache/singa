@@ -99,7 +99,12 @@ class Tensor {
     return shape_.at(idx);
   }
 
-  size_t nDim() const { return shape_.size(); }
+  size_t nDim() const {
+    LOG(WARNING) << "DEPRECATED nDim(). use n_dim() instead";
+    return shape_.size();
+  }
+
+  size_t n_dim() const { return shape_.size(); }
 
   bool empty() const { return nDim() == 0; }
 
@@ -108,7 +113,7 @@ class Tensor {
     if (!stride_.empty()) {
       auto last = stride_.front();
       for (auto s : stride_) {
-        if (s > last && last > 0)  
+        if (s > last && last > 0)
           return true;
         if (s > 0)
           last = s;
@@ -126,27 +131,48 @@ class Tensor {
 
   /// Return number of total elements
   size_t Size() const {
+    LOG(WARNING) << "DEPRECATED Size(). use size() instead";
+    if (block_ == nullptr) return 0u;
+    CHECK_EQ(block_->size() % SizeOf(data_type_), 0u);
+    return block_->size() / SizeOf(data_type_);
+  }
+
+  size_t size() const {
     if (block_ == nullptr) return 0u;
     CHECK_EQ(block_->size() % SizeOf(data_type_), 0u);
     return block_->size() / SizeOf(data_type_);
   }
 
   /// Return memory size (i.e., Bytes)
-  size_t MemSize() const { return block_->size(); }
+  size_t MemSize() const {
+    LOG(WARNING) << "DEPRECATED MemSize(). use mem_size() instead";
+    return block_->size();
+  }
+
+  size_t mem_size() const { return block_->size(); }
 
   /// used for swig code to convert Tensor into numpy array.
   /// It gets data into 'value'
   template <typename SType>
   void GetValue(SType *value, const size_t num);
 
+  template <typename SType>
+  void get_value(SType *value, const size_t num);
+
   /// Serialize data, shape and transpose to protobuf object.
   void ToProto(singa::TensorProto *proto) const;
+
+  void to_proto(singa::TensorProto *proto) const;
 
   /// Return average L1 norm
   float L1() const;
 
+  float l1() const;
+
   /// Return average L2 norm
   float L2() const;
+
+  float l2() const;
   // --------------------------------------------------------------------------
   // ---Following methods changes the internal data
   // --------------------------------------------------------------------------
@@ -178,7 +204,7 @@ class Tensor {
   // --------------------------------------------------------------------------
 
   Tensor Repeat(const vector<size_t>& repeats, int axis,
-                std::shared_ptr<Device> device = nullptr);
+                std::shared_ptr<Device> device = nullptr, bool inplace=false);
 
   /// return an exactly the same Tensor with data been deep copied to the given
   /// device. If 'device' is nullptr, then clone it one the current device.
@@ -308,8 +334,6 @@ ToType TypeCast(const FromType &x) {
   // TODO(wangwei) cast fp16; prevent some casts, e.g., float to char
   return static_cast<ToType>(x);
 }
-
-Tensor Boradcast(const Shape& shape);
 
 /// Reshape the given tensor and generate a new tensor; the total vol should match
 /// which shares the memory with in if possible
