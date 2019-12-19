@@ -135,7 +135,8 @@ def augmentation(x, batch_size):
             x[data_num, :, :, :] = x[data_num, :, :, ::-1]
     return x
 
-def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None, gpu_num=None, gpu_per_node=None, nccl_id=None):
+def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None, 
+                    gpu_num=None, gpu_per_node=None, nccl_id=None, spars=0, topK=False, corr=True):
     # Prepare training and valadiation data
     train_x, train_y, test_x, test_y = load_dataset()
     IMG_SIZE = 28
@@ -206,7 +207,10 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
             if DIST:
-                sgd.backward_and_update(loss, threshold = 50000)
+                if (spars == 0):
+                    sgd.backward_and_update(loss, threshold = 50000)
+                else:
+                    sgd.backward_and_spars_update(loss, spars = spars, topK = topK, corr = corr)
             else:
                 sgd.backward_and_update(loss)
 
