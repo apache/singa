@@ -459,10 +459,11 @@ def less(x,y):
 
 
 class Clip(Operation):
-    def __init__(self,min,max):
+    def __init__(self, min, max):
         super(Clip, self).__init__()
-        self.max=max
-        self.min=min
+        self.max = max
+        self.min = min
+
     def forward(self, x):
         """
         Args:
@@ -470,22 +471,29 @@ class Clip(Operation):
         Returns:
             np.clip(x,min,max)
         """
-        mask0 = singa.LTFloat(x, self.min)
-        mask1 = singa.GTFloat(x, self.max)
-        mask00 = singa.MultFloat(mask0,self.min)
-        mask11 = singa.MultFloat(mask1,self.max)
-        mask2 = singa.LEFloat(x, self.max)
-        mask3 = singa.GEFloat(x, self.min)
-        maskm = singa.__mul__(mask2,mask3)
-        if training:
-            self.mask = maskm
-        return singa.__add__(singa.__add__(singa.__mul__(maskm,x),mask00),mask11)
+        self.mask = singa.Tensor(list(x.shape()), x.device())
+        self.mask.SetFloatValue(1.0)
+
+        if self.min is not None:
+            mask0 = singa.LTFloat(x, self.min)
+            mask1 = singa.GEFloat(x, self.min)
+            self.mask = singa.__mul__(mask1, self.mask)
+            x = singa.__add__(singa.MultFloat(mask0, self.min), singa.__mul__(mask1, x))
+
+        if self.max is not None:
+            mask0 = singa.GTFloat(x, self.max)
+            mask1 = singa.LEFloat(x, self.max)
+            self.mask = singa.__mul__(mask1, self.mask)
+            x = singa.__add__(singa.MultFloat(mask0, self.max), singa.__mul__(mask1, x))
+                    
+        return x
 
     def backward(self, dy):
         return singa.__mul__(dy, self.mask)
 
-def clip(x,min,max):
-    return Clip(min,max)(x)[0]
+
+def clip(x, min, max):
+    return Clip(min, max)(x)[0]
 
 class Identity(Operation):
     def __init__(self):
@@ -618,11 +626,21 @@ def add_bias(x, b, axis=0):
 class Reshape(Operation):
     def __init__(self,shape):
         super(Reshape, self).__init__()
-        self.shape=list(shape)
+        if isinstance(shape, tensor.Tensor):
+            self.shape = np.asarray(tensor.to_numpy(shape).astype(np.int32)).tolist()
+        else:
+            self.shape = list(shape)
 
     def forward(self, x):
-        self.cache=x.shape()
-        return singa.Reshape(x, self.shape)
+        _shape = x.shape()
+        shape = self.shape
+        # handle the shape with 0
+        shape = [_shape[i] if i < len(_shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
+        # handle the shape with -1
+        hidden_shape = int(np.prod(_shape) // np.abs(np.prod(shape)))
+        self.cache=[s if s != -1 else hidden_shape for s in shape]
+
+        return singa.Reshape(x, self.cache)
 
     def backward(self, dy):
         return singa.Reshape(dy, self.cache)
@@ -819,7 +837,7 @@ class SoftMax(Operation):
     according to the parameter axis.
     """
 
-    def __init__(self, axis=0):
+    def __init__(self, axis=1):
         super(SoftMax, self).__init__()
         self.axis = axis
 
@@ -830,13 +848,8 @@ class SoftMax(Operation):
         Returns:
             the result Tensor
         """
-        if self.axis == 1:
-            x = singa.DefaultTranspose(x)
-        self.output = singa.SoftMax(x)
-        if self.axis == 0:
-            return self.output
-        elif self.axis == 1:
-            return singa.DefaultTranspose(self.output)
+        self.output = singa.SoftMax(x, self.axis)
+        return self.output
 
     def backward(self, dy):
         """
@@ -881,7 +894,7 @@ class Sum(Operation):
     def forward(self, *l):
         if training:
             self.l = len(l)
-        assert(len(l)>0);
+        assert(len(l)>0)
         x = singa.Tensor(list(l[0].shape()),l[0].device())
         x.SetFloatValue(0.0)
         for i in range(len(l)):
@@ -1007,12 +1020,17 @@ class Flatten(Operation):
         super(Flatten, self).__init__()
         # flatten all axis after (inclusive) start_axis
         self.start_axis = start_axis
-        assert start_axis == 1, "must flatten into 2d array not"
 
     def forward(self, x):
-        # TODO Do flatten start from axis != 1
         self.shape = list(x.shape())
-        y = singa.Reshape(x, (x.shape()[0], x.Size() // x.shape()[0]))
+        shape, axis = self.shape, self.start_axis
+        # the start_axis must be within this range (0, r-1)
+        assert axis <= len(
+            shape)-1 or axis >= 0, "the start_axis must be within (0, %d-1)" % len(shape)
+        # calculate the new shape
+        new_shape = (1, int(np.prod(shape))) if axis == 0 else (
+            int(np.prod(shape[0:axis]).astype(int)), int(np.prod(shape[axis:]).astype(int)))
+        y = singa.Reshape(x, new_shape)
         return y
 
     def backward(self, dy):
@@ -1480,13 +1498,16 @@ class BatchNorm2d(Layer):
 
 
 class _BatchNorm2d(Operation):
-    def __init__(self, handle, running_mean, running_var, name=None):
+    def __init__(self, handle, running_mean, running_var, scale, bias, name=None):
         super(_BatchNorm2d, self).__init__(name)
         self.handle = handle
         self.running_mean = running_mean.data
         self.running_var = running_var.data
+        self.scale = scale.data
+        self.bias = bias.data
 
-    def forward(self, x, scale, bias):
+    def forward(self, x):
+        scale, bias = self.scale, self.bias
         if training:
             if (type(self.handle) == singa.BatchNormHandle):
                 y, mean, var = singa.CpuBatchNormForwardTraining(
@@ -1545,7 +1566,7 @@ class _BatchNorm2d(Operation):
 
 
 def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
-    return _BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
+    return _BatchNorm2d(handle, running_mean, running_var, scale, bias)(x)[0]
 
 
 class _Pooling2d(Operation):
