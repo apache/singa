@@ -485,29 +485,12 @@ class SingaFrontend(object):
         # then we add nodes of scal, bias, mean, var 
         nodes = []
         running_values = {
-            "scale": op.scale,
-            "bias": op.bias,
             "mean": op.running_mean,
             "var": op.running_var
         }
         for tmp_name, running_value in running_values.items():
             node_name = op.name+":"+tmp_name
             bn_node.input.append(node_name)
-            # running_value.ToHost()
-            # running_value = running_value.GetFloatValue(int(running_value.Size()))
-            # node = NodeProto()
-            # node.name = node_name
-            # node.op_type = cls._rename_operators.get("Dummy", "Dummy")
-            # node.output.extend([node_name])
-            # node.attribute.extend([helper.make_attribute(
-            #     'value', helper.make_tensor(
-            #         name=node_name,
-            #         data_type=TensorProto.FLOAT,
-            #         dims=[len(running_value)],
-            #         vals=running_value,
-            #     )
-            # )])
-            # nodes.append(node)
 
         nodes.append(bn_node)
         return nodes
@@ -664,8 +647,6 @@ class SingaFrontend(object):
             elif yid in input_tensors and optype == '_BatchNorm2d': 
                 # batchnorm add scale, bias, mean, var as inputs
                 running_values = {
-                    "scale": op.scale,
-                    "bias": op.bias,
                     "mean": op.running_mean,
                     "var": op.running_var
                 }
@@ -1396,11 +1377,6 @@ class SingaBackend(Backend):
                 inputs = [tensor_map[x].clone() for x in node.inputs]
                 handle, forward = cls._onnx_node_to_singa_op(node, inputs, opset_version)
                 singa_ops.extend([singa_op(node.name, node, handle, forward)])
-                # we must know the shape of ouput
-                # becasue it will become the input of next layer
-                # so we need to init a new tensor with the same shape with the output
-                # outputs = cls._run_node(node, inputs, handle, forward, opset_version)
-                # tensor_map.update(outputs)
         return weights, singa_ops
 
     @classmethod
@@ -1482,7 +1458,7 @@ class SingaRep(BackendRep):
         ret_outputs = collections.OrderedDict()
         # run the handle by the order of the list(the list is Topological Sorting)
         for x, val in zip(self.model.graph.input, inputs):
-            self.tensor_map[x.name] = val        
+            self.tensor_map[x.name] = val
         for _, op, handle, forward in self.singa_ops[:last_layers]:
             inputs = [self.tensor_map[x] for x in op.inputs]
             outputs = _run_node(op, inputs, handle, forward)
