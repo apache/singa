@@ -1498,16 +1498,13 @@ class BatchNorm2d(Layer):
 
 
 class _BatchNorm2d(Operation):
-    def __init__(self, handle, running_mean, running_var, scale, bias, name=None):
+    def __init__(self, handle, running_mean, running_var, name=None):
         super(_BatchNorm2d, self).__init__(name)
         self.handle = handle
         self.running_mean = running_mean.data
         self.running_var = running_var.data
-        self.scale = scale.data
-        self.bias = bias.data
 
-    def forward(self, x):
-        scale, bias = self.scale, self.bias
+    def forward(self, x, scale, bias):
         if training:
             if (type(self.handle) == singa.BatchNormHandle):
                 y, mean, var = singa.CpuBatchNormForwardTraining(
@@ -1566,7 +1563,7 @@ class _BatchNorm2d(Operation):
 
 
 def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
-    return _BatchNorm2d(handle, running_mean, running_var, scale, bias)(x)[0]
+    return _BatchNorm2d(handle, running_mean, running_var)(x, scale, bias)[0]
 
 
 class _Pooling2d(Operation):
