@@ -100,7 +100,6 @@ class Tensor {
   }
 
   size_t nDim() const {
-    LOG(WARNING) << "DEPRECATED nDim(). use n_dim() instead";
     return shape_.size();
   }
 
@@ -131,10 +130,7 @@ class Tensor {
 
   /// Return number of total elements
   size_t Size() const {
-    LOG(WARNING) << "DEPRECATED Size(). use size() instead";
-    if (block_ == nullptr) return 0u;
-    CHECK_EQ(block_->size() % SizeOf(data_type_), 0u);
-    return block_->size() / SizeOf(data_type_);
+    return size();
   }
 
   size_t size() const {
@@ -145,7 +141,6 @@ class Tensor {
 
   /// Return memory size (i.e., Bytes)
   size_t MemSize() const {
-    LOG(WARNING) << "DEPRECATED MemSize(). use mem_size() instead";
     return block_->size();
   }
 
@@ -204,7 +199,7 @@ class Tensor {
   // --------------------------------------------------------------------------
 
   Tensor Repeat(const vector<size_t>& repeats, int axis,
-                std::shared_ptr<Device> device = nullptr, bool inplace=false);
+                std::shared_ptr<Device> device = nullptr);
 
   /// return an exactly the same Tensor with data been deep copied to the given
   /// device. If 'device' is nullptr, then clone it one the current device.
@@ -334,6 +329,8 @@ ToType TypeCast(const FromType &x) {
   // TODO(wangwei) cast fp16; prevent some casts, e.g., float to char
   return static_cast<ToType>(x);
 }
+
+Tensor Boradcast(const Shape& shape);
 
 /// Reshape the given tensor and generate a new tensor; the total vol should match
 /// which shares the memory with in if possible

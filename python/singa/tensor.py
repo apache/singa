@@ -184,9 +184,6 @@ class Tensor(object):
         return t
 
     def reset_like(self, t):
-        self.reset_like_(t)
-
-    def reset_like_(self, t):
         '''Reset the shape, dtype and device as the given tensor.
 
         Args:
@@ -235,10 +232,7 @@ class Tensor(object):
         '''
         return self.data.L1()
 
-    def set_value(self, x):
-        self.set_value_(x)
-
-    def set_value_(self, x):
+    def set_value(self, x, inplace=True):
         '''Set all elements of the tensor to be the give value.
 
         Args:
@@ -246,9 +240,13 @@ class Tensor(object):
         '''
         # assert type(x) == float, 'set value only accepts float input'
         # if isinstance(x, float):
+        if not inplace:
+            # return new tensor filled with value
+            raise NotImplementedError
+
         self.data.SetFloatValue(float(x))
 
-    def copy_from_numpy_(self, np_array, offset=0):
+    def copy_from_numpy(self, np_array, offset=0):
         ''' Copy the data from the numpy array.
 
         Args:
@@ -266,15 +264,7 @@ class Tensor(object):
         else:
             print('Not implemented yet for ', dt)
 
-    def copy_from_numpy(self, np_array, offset=0):
-        print("DEPRECATED copy_from_numpy(), use copy_from_numpy_() instead")
-        self.copy_from_numpy_(np_array, offset=0)
-
     def copy_data(self, t):
-        print("DEPRECATED copy_data(), use copy_data_() instead")
-        self.copy_data_(t)
-
-    def copy_data_(self, t):
         '''Copy data from other Tensor instance.
 
         Args:
@@ -290,11 +280,7 @@ class Tensor(object):
         '''
         return _call_singa_func(self.data.Clone)
 
-    def repeat(self, repeats, axis):
-        print("DEPRECATED repeat(), use repeat_() instead")
-        self.repeat_(repeats, axis)
-
-    def repeat_(self, repeats, axis):
+    def repeat(self, repeats, axis, inplace=False):
         '''Repeat data of a tensor 
 
         Args:
@@ -307,6 +293,9 @@ class Tensor(object):
             the tensor which has been repeated
 
         '''
+        if inplace:
+            raise NotImplementedError
+
         t = Tensor()
         t_ndim = self.ndim()
         if isinstance(repeats, int) or isinstance(repeats, long):
@@ -374,10 +363,10 @@ class Tensor(object):
         return self.clone()
 
     def bernoulli(self, p):
-        self.bernoulli_(self)
+        self.set_bernoulli(self)
 
 
-    def bernoulli_(self, p):
+    def set_bernoulli(self, p):
         '''Sample 0/1 for each element according to the given probability.
 
         Args:
@@ -386,9 +375,9 @@ class Tensor(object):
         singa.Bernoulli(float(p), self.data)
 
     def gaussian(self, mean, std):
-        self.gaussian_(mean, std)
+        self.set_gaussian(mean, std)
 
-    def gaussian_(self, mean, std):
+    def set_gaussian(self, mean, std):
         '''Generate a value for each element following a Gaussian distribution.
 
         Args:
@@ -398,9 +387,9 @@ class Tensor(object):
         singa.Gaussian(float(mean), float(std), self.data)
 
     def uniform(self, low, high):
-        self.uniform_(low, high)
+        self.set_uniform(low, high)
 
-    def uniform_(self, low, high):
+    def set_uniform(self, low, high):
         '''Generate a value for each element following a uniform distribution.
 
         Args:
