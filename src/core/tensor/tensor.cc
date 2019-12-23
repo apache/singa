@@ -288,6 +288,10 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
   }
 }
 
+void Tensor::to_proto(singa::TensorProto *proto) const {
+  ToProto(proto);
+}
+
 Tensor Tensor::Repeat(const vector<size_t>& repeats, int axis,
                       std::shared_ptr<Device> device) {
   if (device == nullptr) device = device_;
@@ -631,6 +635,10 @@ float Tensor::L1() const {
   return nrm / Size();
 }
 
+float Tensor::l1() const {
+  return L1();
+}
+
 /// L2 norm, Do not use Nrm2 (name conflict).
 float Tensor::L2() const {
   float nrm = 0.0f;
@@ -642,6 +650,10 @@ float Tensor::L2() const {
     }, {this->block()}, {});
   });
   return nrm / Size();
+}
+
+float Tensor::l2() const {
+  return L2();
 }
 
 template <typename SType>
@@ -671,6 +683,14 @@ void Tensor::GetValue(SType *value, const size_t num) {
 }
 template void Tensor::GetValue<float>(float *value, const size_t num);
 template void Tensor::GetValue<int>(int *value, const size_t num);
+
+
+template <typename SType>
+void Tensor::get_value(SType *value, const size_t num) {
+  GetValue(value, num);
+}
+template void Tensor::get_value<float>(float *value, const size_t num);
+template void Tensor::get_value<int>(int *value, const size_t num);
 
 #define EltwiseUnaryTensorFn(fn, t, ret)                               \
   do {                                                                 \
@@ -862,9 +882,10 @@ Tensor Average(const Tensor &M, int axis) {
   // }
   if (axis == 0) {
     return Sum(M, 0) / (1.0f * M.shape(0));
-  } else {
-    CHECK_EQ(axis, 1);
+  } else if (axis == 1) {
     return Sum(M, 1) / (1.0f * M.shape(1));
+  } else {
+    LOG(FATAL) << "Not currently support Sum over axis = " << axis;
   }
 }
 // TODO(wangwei) conside async exec
@@ -888,11 +909,12 @@ Tensor Sum(const Tensor &M, int axis) {
     Tensor out(Shape{M.shape(1)}, M.device(), M.data_type());
     SumRows(M, &out);
     return out;
-  } else {
-    CHECK_EQ(axis, 1) << "Not support Sum over axis = " << axis;
+  } else if(axis == 1) {
     Tensor out(Shape{M.shape(0)}, M.device(), M.data_type());
     SumColumns(M, &out);
     return out;
+  } else {
+    LOG(FATAL) << "Not currently support Sum over axis = " << axis;
   }
 }
 
