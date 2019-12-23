@@ -347,9 +347,6 @@ class Tensor(object):
         return _call_singa_func(singa.DefaultTranspose, self.data)
 
     def copy(self):
-        self.copy()
-
-    def copy_(self):
         '''shallow copy calls copy constructor of singa::Tensor
         '''
         return _call_singa_func(CTensor, self.data)
