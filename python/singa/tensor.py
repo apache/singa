@@ -396,9 +396,6 @@ class Tensor(object):
         singa.Uniform(float(low), float(high), self.data)
 
     def add_column(self, v):
-        self.add_column_(v)
-
-    def add_column_(self, v):
         '''Add a tensor to each column of this tensor.
 
         Args:
@@ -407,9 +404,6 @@ class Tensor(object):
         singa.AddColumn(v.data, self.data)
 
     def add_row(self, v):
-        self.add_row_(v)
-
-    def add_row_(self, v):
         '''Add a tensor to each row of this tensor.
 
         Args:
