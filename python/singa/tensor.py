@@ -280,8 +280,8 @@ class Tensor(object):
         '''
         return _call_singa_func(self.data.Clone)
 
-    def repeat(self, repeats, axis, inplace=False):
-        '''Repeat data of a tensor 
+    def repeat(self, repeats, axis):
+        '''()Repeat data of a tensor 
 
         Args:
             repeats(int or a sequence): the number that the tensor need to repeat for
@@ -293,9 +293,6 @@ class Tensor(object):
             the tensor which has been repeated
 
         '''
-        if inplace:
-            raise NotImplementedError
-
         t = Tensor()
         t_ndim = self.ndim()
         if isinstance(repeats, int) or isinstance(repeats, long):
@@ -359,44 +356,46 @@ class Tensor(object):
         '''
         return self.clone()
 
-    def bernoulli(self, p):
-        self.set_bernoulli(self)
-
-
-    def set_bernoulli(self, p):
+    def bernoulli(self, p, inplace=True):
         '''Sample 0/1 for each element according to the given probability.
 
         Args:
             p (float): with probability p, each element is sample to 1.
         '''
+        if not inplace:
+            # return new tensor
+            raise NotImplementedError
+
         singa.Bernoulli(float(p), self.data)
 
-    def gaussian(self, mean, std):
-        self.set_gaussian(mean, std)
-
-    def set_gaussian(self, mean, std):
+    def gaussian(self, mean, std, inplace=True):
         '''Generate a value for each element following a Gaussian distribution.
 
         Args:
             mean (float): mean of the distribution
             std (float): standard variance of the distribution
         '''
+        if not inplace:
+            # return new tensor
+            raise NotImplementedError
+
         singa.Gaussian(float(mean), float(std), self.data)
 
-    def uniform(self, low, high):
-        self.set_uniform(low, high)
-
-    def set_uniform(self, low, high):
+    def uniform(self, low, high, inplace=True):
         '''Generate a value for each element following a uniform distribution.
 
         Args:
             low (float): the lower bound
             high (float): the hight bound
         '''
+        if not inplace:
+            # return new tensor
+            raise NotImplementedError
+
         singa.Uniform(float(low), float(high), self.data)
 
     def add_column(self, v):
-        '''Add a tensor to each column of this tensor.
+        '''(DEPRECATED, use broadcast)Add a tensor to each column of this tensor.
 
         Args:
             v (Tensor): a Tensor to be added as a column to this tensor.
@@ -404,7 +403,7 @@ class Tensor(object):
         singa.AddColumn(v.data, self.data)
 
     def add_row(self, v):
-        '''Add a tensor to each row of this tensor.
+        '''(DEPRECATED, use broadcast)Add a tensor to each row of this tensor.
 
         Args:
             v (Tensor): a Tensor to be added as a row to this tensor.
@@ -412,7 +411,7 @@ class Tensor(object):
         singa.AddRow(v.data, self.data)
 
     def div_column(self, v):
-        '''Divide each column of this tensor by v.
+        '''(DEPRECATED, use broadcast)Divide each column of this tensor by v.
 
         Args:
             v (Tensor): 1d tensor of the same length the column of self.
@@ -420,7 +419,7 @@ class Tensor(object):
         singa.DivColumn(v.data, self.data)
 
     def div_row(self, v):
-        '''Divide each row of this tensor by v.
+        '''(DEPRECATED, use broadcast)Divide each row of this tensor by v.
 
         Args:
             v (Tensor): 1d tensor of the same length the row of self.
@@ -428,7 +427,7 @@ class Tensor(object):
         singa.DivRow(v.data, self.data)
 
     def mult_column(self, v):
-        '''Multiply each column of this tensor by v element-wisely.
+        '''(DEPRECATED, use broadcast)Multiply each column of this tensor by v element-wisely.
 
         Args:
             v (Tensor): 1d tensor of the same length the column of self.
@@ -436,7 +435,7 @@ class Tensor(object):
         singa.MultColumn(v.data, self.data)
 
     def mult_row(self, v):
-        '''Multiply each row of this tensor by v element-wisely.
+        '''(DEPRECATED, use broadcast)Multiply each row of this tensor by v element-wisely.
 
         Args:
             v (Tensor): 1d tensor of the same length the row of self.
