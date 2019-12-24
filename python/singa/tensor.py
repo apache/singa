@@ -281,7 +281,7 @@ class Tensor(object):
         return _call_singa_func(self.data.Clone)
 
     def repeat(self, repeats, axis):
-        '''()Repeat data of a tensor 
+        '''Repeat data of a tensor 
 
         Args:
             repeats(int or a sequence): the number that the tensor need to repeat for
