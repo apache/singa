@@ -93,13 +93,13 @@ def get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape, strides_s
         for i in range(len(input_spatial_shape)):
             pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
                 kernel_spatial_shape[i] - input_spatial_shape[i]
-            if (pad_shape[i] % 2) == 0: 
+            if (pad_shape[i] % 2) == 0:
                 pad_shape[i] = pad_shape[i] // 2
-            else:
-                # once the padding is odd, it means we must add extra padding at one end of the input
-                raise ValueError("Not implemented two directional padding")
     elif auto_pad == 'VALID':
         pass
+    if pad_shape[0] != pad_shape[1]:
+        # once the padding is odd, it means we must add extra padding at one end of the input
+        raise ValueError("Not implemented two directional padding")
     return pad_shape
 
 
@@ -281,20 +281,20 @@ class SingaFrontend(object):
             # moidfy the input of clip
             clip_node.input.append(node_name)
 
-            node = NodeProto()
-            node.name = node_name
-            node.op_type = cls._rename_operators.get("Dummy", "Dummy")
-            node.output.extend([node_name])
+            # node = NodeProto()
+            # node.name = node_name
+            # node.op_type = cls._rename_operators.get("Dummy", "Dummy")
+            # node.output.extend([node_name])
 
-            node.attribute.extend([helper.make_attribute(
-                'value', helper.make_tensor(
-                    name=node_name,
-                    data_type=TensorProto.FLOAT,
-                    dims=[1],
-                    vals=[getattr(op,tmp_name)],
-                )
-            )])
-            nodes.append(node)
+            # node.attribute.extend([helper.make_attribute(
+            #     'value', helper.make_tensor(
+            #         name=node_name,
+            #         data_type=TensorProto.FLOAT,
+            #         dims=[1],
+            #         vals=[getattr(op,tmp_name)],
+            #     )
+            # )])
+            # nodes.append(node)
 
         # then we add the clip op itself
         nodes.append(clip_node)
@@ -371,19 +371,6 @@ class SingaFrontend(object):
         # make the shape node
         # because the reshape in singa does not provide its shape as input tensor
         shape_node_name = op.name+":shape"
-        # shape_node = NodeProto()
-        # shape_node.name = shape_node_name
-        # shape_node.op_type = cls._rename_operators.get("Dummy", "Dummy")
-        # shape_node.output.extend([shape_node_name])
-        # shape_node.attribute.extend([helper.make_attribute(
-        #     'value', helper.make_tensor(
-        #         name=shape_node_name,
-        #         data_type=TensorProto.FLOAT,
-        #         dims=[len(op_t.shape)],
-        #         vals=op_t.shape,
-        #     )
-        # )])
-        # make the reshape node
         node = cls._common_singa_tensor_to_onnx_node(op, op_t)
         node.input.extend([shape_node_name])
         return node
@@ -682,6 +669,13 @@ class SingaFrontend(object):
                 node_name = op.name+":shape"
                 X.append(helper.make_tensor_value_info(node_name, TensorProto.FLOAT, [len(op.shape)]))
                 graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
+            elif yid in input_tensors and optype == 'Clip': 
+                # Clip add min and max
+                node_name = op.name+":min"
+                X.append(helper.make_tensor_value_info(node_name, TensorProto.FLOAT, [1]))
+                node_name = op.name+":max"
+                X.append(helper.make_tensor_value_info(node_name, TensorProto.FLOAT, [1]))
+                graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
             else:
                 graph_def.node.extend(cls.singa_op_to_onnx_node(op, op_t))
 
@@ -820,7 +814,7 @@ class SingaBackend(Backend):
         'Softsign': 'softsign',
         'Mean': 'mean',
         'Pow': 'pow',
-        'Clip': 'Clip',
+        'Clip': 'clip',
         'PRelu': 'prelu',
         'Mul': 'mul',
         'Transpose': 'Transpose',
@@ -891,15 +885,9 @@ class SingaBackend(Backend):
         Returns: 
             forward, the autograd of singa operator
         """
-        min_max = [None, None]
-        idx = 1
-        for inp in range(1, len(onnx_node.inputs)):
-            if onnx_node.inputs[inp] != "":
-                min_max[inp-1] = float(tensor.to_numpy(inputs[idx]).astype(np.float32))
-                idx+=1
         _, forward = cls._common_onnx_node_to_singa_op(
             onnx_node, inputs, opset_version)
-        return _, forward(*min_max)
+        return _, forward
 
 
     @classmethod
@@ -1091,7 +1079,7 @@ class SingaBackend(Backend):
         stride = tuple(onnx_node.getattr('strides', (1, 1)))
         if "auto_pad" in onnx_node.attrs:
             auto_pad = force_unicode(onnx_node.attrs['auto_pad'])
-            out_shape = get_output_shape(auto_pad,  inputs[0].shape[2:], kernel, stride)
+            out_shape = get_output_shape(auto_pad, inputs[0].shape[2:], kernel, stride)
             padding = get_pad_shape(auto_pad, inputs[0].shape[2:], kernel, stride, out_shape)
 
         # not support count_include_pad and auto_pad
@@ -1324,8 +1312,6 @@ class SingaBackend(Backend):
         """
         # since reshape acutally only needs one input tensor
         # but onnx regard its shape as another tensor, we need to ommit it
-        if onnx_node.op_type in ['Clip']:
-            inputs = [inputs[0]]
         outputs = forward(*inputs) if handle is None else forward(handle, *inputs)
         if not isinstance(outputs, collections.Iterable):
             outputs = [outputs]
@@ -1480,9 +1466,12 @@ class SingaRep(BackendRep):
 
         # the dict will be returned
         ret_outputs = collections.OrderedDict()
+        if len(self.model.graph.input) != len(inputs):
+            raise RuntimeError("The length of graph input is different from the tensor input: %d, %d" %
+                               (len(self.model.graph.input), len(inputs)))
         # run the handle by the order of the list(the list is Topological Sorting)
         for x, val in zip(self.model.graph.input, inputs):
-            self.tensor_map[x.name] = val        
+            self.tensor_map[x.name] = val
         for _, op, handle, forward in self.singa_ops[:last_layers]:
             inputs = [self.tensor_map[x] for x in op.inputs]
             outputs = _run_node(op, inputs, handle, forward)
