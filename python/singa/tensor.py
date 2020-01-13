@@ -247,6 +247,7 @@ class Tensor(object):
 
 
         self.data.SetFloatValue(float(x))
+        return self
 
     def copy_from_numpy(self, np_array, offset=0):
         ''' Copy the data from the numpy array.
@@ -369,6 +370,7 @@ class Tensor(object):
             raise NotImplementedError
 
         singa.Bernoulli(float(p), self.data)
+        return self
 
     def gaussian(self, mean, std, inplace=True):
         '''Generate a value for each element following a Gaussian distribution.
@@ -382,6 +384,7 @@ class Tensor(object):
             raise NotImplementedError
 
         singa.Gaussian(float(mean), float(std), self.data)
+        return self
 
     def uniform(self, low, high, inplace=True):
         '''Generate a value for each element following a uniform distribution.
@@ -395,6 +398,7 @@ class Tensor(object):
             raise NotImplementedError
 
         singa.Uniform(float(low), float(high), self.data)
+        return self
 
     @deprecated(reason="use broadcast instead")
     def add_column(self, v):
