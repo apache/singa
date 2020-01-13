@@ -52,6 +52,7 @@ RUN apt-get update \
     numpy \
     setuptools \
     protobuf \
+    Deprecated \
     future
 
 # install cmake to correctly find Cuda 10

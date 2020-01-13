@@ -55,6 +55,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+from deprecated import deprecated
 from builtins import object
 import numpy as np
 from functools import reduce
@@ -244,6 +245,7 @@ class Tensor(object):
             # return new tensor filled with value
             raise NotImplementedError
 
+
         self.data.SetFloatValue(float(x))
 
     def copy_from_numpy(self, np_array, offset=0):
@@ -394,6 +396,7 @@ class Tensor(object):
 
         singa.Uniform(float(low), float(high), self.data)
 
+    @deprecated(reason="use broadcast instead")
     def add_column(self, v):
         '''(DEPRECATED, use broadcast)Add a tensor to each column of this tensor.
 
@@ -402,6 +405,7 @@ class Tensor(object):
         '''
         singa.AddColumn(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def add_row(self, v):
         '''(DEPRECATED, use broadcast)Add a tensor to each row of this tensor.
 
@@ -410,6 +414,7 @@ class Tensor(object):
         '''
         singa.AddRow(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def div_column(self, v):
         '''(DEPRECATED, use broadcast)Divide each column of this tensor by v.
 
@@ -418,6 +423,7 @@ class Tensor(object):
         '''
         singa.DivColumn(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def div_row(self, v):
         '''(DEPRECATED, use broadcast)Divide each row of this tensor by v.
 
@@ -426,6 +432,7 @@ class Tensor(object):
         '''
         singa.DivRow(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def mult_column(self, v):
         '''(DEPRECATED, use broadcast)Multiply each column of this tensor by v element-wisely.
 
@@ -434,6 +441,7 @@ class Tensor(object):
         '''
         singa.MultColumn(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def mult_row(self, v):
         '''(DEPRECATED, use broadcast)Multiply each row of this tensor by v element-wisely.
 

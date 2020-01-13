@@ -45,6 +45,7 @@ RUN apt-get update \
     numpy \
     setuptools \
     protobuf \
+    Deprecated \
     future
 
 # install mkldnn
