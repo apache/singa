@@ -46,3 +46,5 @@ else
   # upload the package onto anaconda cloud
   anaconda -t $ANACONDA_UPLOAD_TOKEN upload -u $USER -l main $CONDA_BLD_PATH/$OS/singa-*.tar.bz2 --force
 fi
+
+echo "this is a test"
