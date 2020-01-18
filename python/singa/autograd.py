@@ -1199,7 +1199,7 @@ class _Conv2d(Operation):
             b = CTensor((self.handle.num_filters,), x.device())
             b.SetFloatValue(0.0)
 
-        if isinstance(self.handle, singa.CudnnConvHandle):
+        if singa.USE_CUDA:
             return singa.GpuConvForward(x, W, b, self.handle)
         else:
             return singa.CpuConvForward(x, W, b, self.handle)
@@ -1209,7 +1209,7 @@ class _Conv2d(Operation):
             self, "inputs"
         ), "Please set training as True before do BP. "
         
-        if isinstance(self.handle, singa.CudnnConvHandle):
+        if singa.USE_CUDA:
             dx = singa.GpuConvBackwardx(
                 dy, self.inputs[1], self.inputs[0], self.handle
             )
@@ -1572,7 +1572,7 @@ class _Pooling2d(Operation):
         self.handle = handle
 
     def forward(self, x):
-        if isinstance(self.handle, singa.CudnnPoolingHandle):
+        if singa.USE_CUDA:
             y = singa.GpuPoolingForward(self.handle, x)
         else:
             y = singa.CpuPoolingForward(self.handle, x)
@@ -1583,7 +1583,7 @@ class _Pooling2d(Operation):
         return y
 
     def backward(self, dy):
-        if isinstance(self.handle, singa.CudnnPoolingHandle):
+        if singa.USE_CUDA:
             dx = singa.GpuPoolingBackward(
                 self.handle, dy, self.cache[0], self.cache[1]
             )
