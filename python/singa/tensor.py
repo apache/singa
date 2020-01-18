@@ -55,6 +55,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+from deprecated import deprecated
 from builtins import object
 import numpy as np
 from functools import reduce
@@ -232,7 +233,7 @@ class Tensor(object):
         '''
         return self.data.L1()
 
-    def set_value(self, x):
+    def set_value(self, x, inplace=True):
         '''Set all elements of the tensor to be the give value.
 
         Args:
@@ -240,7 +241,13 @@ class Tensor(object):
         '''
         # assert type(x) == float, 'set value only accepts float input'
         # if isinstance(x, float):
+        if not inplace:
+            # return new tensor filled with value
+            raise NotImplementedError
+
+
         self.data.SetFloatValue(float(x))
+        return self
 
     def copy_from_numpy(self, np_array, offset=0):
         ''' Copy the data from the numpy array.
@@ -352,74 +359,95 @@ class Tensor(object):
         '''
         return self.clone()
 
-    def bernoulli(self, p):
+    def bernoulli(self, p, inplace=True):
         '''Sample 0/1 for each element according to the given probability.
 
         Args:
             p (float): with probability p, each element is sample to 1.
         '''
-        singa.Bernoulli(float(p), self.data)
+        if not inplace:
+            # return new tensor
+            raise NotImplementedError
 
-    def gaussian(self, mean, std):
+        singa.Bernoulli(float(p), self.data)
+        return self
+
+    def gaussian(self, mean, std, inplace=True):
         '''Generate a value for each element following a Gaussian distribution.
 
         Args:
             mean (float): mean of the distribution
             std (float): standard variance of the distribution
         '''
-        singa.Gaussian(float(mean), float(std), self.data)
+        if not inplace:
+            # return new tensor
+            raise NotImplementedError
 
-    def uniform(self, low, high):
+        singa.Gaussian(float(mean), float(std), self.data)
+        return self
+
+    def uniform(self, low, high, inplace=True):
         '''Generate a value for each element following a uniform distribution.
 
         Args:
             low (float): the lower bound
             high (float): the hight bound
         '''
-        singa.Uniform(float(low), float(high), self.data)
+        if not inplace:
+            # return new tensor
+            raise NotImplementedError
 
+        singa.Uniform(float(low), float(high), self.data)
+        return self
+
+    @deprecated(reason="use broadcast instead")
     def add_column(self, v):
-        '''Add a tensor to each column of this tensor.
+        '''(DEPRECATED, use broadcast)Add a tensor to each column of this tensor.
 
         Args:
             v (Tensor): a Tensor to be added as a column to this tensor.
         '''
         singa.AddColumn(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def add_row(self, v):
-        '''Add a tensor to each row of this tensor.
+        '''(DEPRECATED, use broadcast)Add a tensor to each row of this tensor.
 
         Args:
             v (Tensor): a Tensor to be added as a row to this tensor.
         '''
         singa.AddRow(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def div_column(self, v):
-        '''Divide each column of this tensor by v.
+        '''(DEPRECATED, use broadcast)Divide each column of this tensor by v.
 
         Args:
             v (Tensor): 1d tensor of the same length the column of self.
         '''
         singa.DivColumn(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def div_row(self, v):
-        '''Divide each row of this tensor by v.
+        '''(DEPRECATED, use broadcast)Divide each row of this tensor by v.
 
         Args:
             v (Tensor): 1d tensor of the same length the row of self.
         '''
         singa.DivRow(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def mult_column(self, v):
-        '''Multiply each column of this tensor by v element-wisely.
+        '''(DEPRECATED, use broadcast)Multiply each column of this tensor by v element-wisely.
 
         Args:
             v (Tensor): 1d tensor of the same length the column of self.
         '''
         singa.MultColumn(v.data, self.data)
 
+    @deprecated(reason="use broadcast instead")
     def mult_row(self, v):
-        '''Multiply each row of this tensor by v element-wisely.
+        '''(DEPRECATED, use broadcast)Multiply each row of this tensor by v element-wisely.
 
         Args:
             v (Tensor): 1d tensor of the same length the row of self.
@@ -586,6 +614,9 @@ class Tensor(object):
         one.set_value(lhs)
         one /= self
         return one
+
+    def __repr__(self):
+        return np.array2string(to_numpy(self))
 
 ''' python functions for global functions in Tensor.h
 '''

@@ -154,6 +154,25 @@ class TestTensorMethods(unittest.TestCase):
         y = 2 / x
         self.assertEqual(tensor.average(y), 2.)
 
+    def test_tensor_inplace_api(self):
+        """ tensor inplace methods alter internal state and also return self
+        """
+        x = tensor.Tensor((3,))
+        y = x.set_value(1)
+        self.assertTrue(y is x)
+
+        x = tensor.Tensor((3,))
+        y = x.uniform(1,2)
+        self.assertTrue(y is x)
+
+        x = tensor.Tensor((3,))
+        y = x.bernoulli(1)
+        self.assertTrue(y is x)
+
+        x = tensor.Tensor((3,))
+        y = x.gaussian(1,2)
+        self.assertTrue(y is x)
+
     def test_numpy_convert(self):
         a = np.asarray([[1, 0, 0], [0, 1, 0]], dtype=np.int)
         t = tensor.from_numpy(a)

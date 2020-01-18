@@ -235,7 +235,7 @@ void Tensor::FromProto(const singa::TensorProto &proto) {
   }
 }
 
-void Tensor::ToProto(singa::TensorProto *proto) const {
+void Tensor::to_proto(singa::TensorProto *proto) const {
   proto->clear_shape();
   for (auto s : shape_) {
     proto->add_shape(s);
@@ -286,6 +286,10 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
   */
   default: { LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_); }
   }
+}
+
+void Tensor::ToProto(singa::TensorProto *proto) const {
+  to_proto(proto);
 }
 
 Tensor Tensor::Repeat(const vector<size_t>& repeats, int axis,
@@ -619,7 +623,7 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int ax
   } while (0)
 
 // =============Element-wise operations====================================
-float Tensor::L1() const {
+float Tensor::l1() const {
   float nrm = 0.0f;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec([&nrm, this](Context * ctx) {
@@ -631,8 +635,13 @@ float Tensor::L1() const {
   return nrm / Size();
 }
 
+// DEPRECATED use l1()
+float Tensor::L1() const {
+  return l1();
+}
+
 /// L2 norm, Do not use Nrm2 (name conflict).
-float Tensor::L2() const {
+float Tensor::l2() const {
   float nrm = 0.0f;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec([&nrm, this](Context * ctx) {
@@ -643,6 +652,12 @@ float Tensor::L2() const {
   });
   return nrm / Size();
 }
+
+// DEPRECATED use l2()
+float Tensor::L2() const {
+  return l2();
+}
+
 
 template <typename SType>
 void Tensor::SetValue(const SType x) {
@@ -660,14 +675,23 @@ void Tensor::SetValue(const SType x) {
 template void Tensor::SetValue<float>(const float x);
 template void Tensor::SetValue<int>(const int x);
 
+
 template <typename SType>
-void Tensor::GetValue(SType *value, const size_t num) {
+void Tensor::get_value(SType *value, const size_t num) {
   CHECK(device_ == defaultDevice);
   Tensor t(shape_, device_, data_type_);
   // transform function arrange data in memory considering stride
   singa::Transform(*this, &t);
   auto ptr = static_cast<const SType*>(t.block()->data());
   for (size_t i = 0; i < num; i++) value[i] = ptr[i];
+}
+template void Tensor::get_value<float>(float *value, const size_t num);
+template void Tensor::get_value<int>(int *value, const size_t num);
+
+// DEPRECATED
+template <typename SType>
+void Tensor::GetValue(SType *value, const size_t num) {
+  get_value(value, num);
 }
 template void Tensor::GetValue<float>(float *value, const size_t num);
 template void Tensor::GetValue<int>(int *value, const size_t num);
@@ -880,9 +904,10 @@ Tensor Average(const Tensor &M, int axis) {
   // }
   if (axis == 0) {
     return Sum(M, 0) / (1.0f * M.shape(0));
-  } else {
-    CHECK_EQ(axis, 1);
+  } else if (axis == 1) {
     return Sum(M, 1) / (1.0f * M.shape(1));
+  } else {
+    LOG(FATAL) << "Not currently support Sum over axis = " << axis;
   }
 }
 // TODO(wangwei) conside async exec
@@ -906,11 +931,12 @@ Tensor Sum(const Tensor &M, int axis) {
     Tensor out(Shape{M.shape(1)}, M.device(), M.data_type());
     SumRows(M, &out);
     return out;
-  } else {
-    CHECK_EQ(axis, 1) << "Not support Sum over axis = " << axis;
+  } else if(axis == 1) {
     Tensor out(Shape{M.shape(0)}, M.device(), M.data_type());
     SumColumns(M, &out);
     return out;
+  } else {
+    LOG(FATAL) << "Not currently support Sum over axis = " << axis;
   }
 }
 

@@ -143,7 +143,7 @@ void traverse_unary(const Tensor & in, Tensor * out, std::function<DType(DType)>
     for (size_t i = 0; i < in.Size(); i++)
       outPtr[i] = func(inPtr[i]);
   } else {
-    LOG(INFO) << "not equal stride";
+    // LOG(INFO) << "not equal stride";
     size_t in_offset = 0, out_offset = 0;
     vector<int> in_idx(in.nDim(), 0), out_idx(out->nDim(), 0);
     for (size_t i = 0; i < Product(in.shape()); i++) {
