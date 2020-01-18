@@ -715,29 +715,47 @@ GenUnaryTensorFn(Atan);
 GenUnaryTensorFn(Atanh);
 GenUnaryTensorFn(SoftMax);
 
-// use variadic to pass params
+// add axis to softmax API according to ONNX specification
+// https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softmax
 void SoftMax(const Tensor &in, Tensor *out, int axis) {
-  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    out->device()->Exec(
-        [in, out, axis](Context *ctx) {
-          SoftMax<DType, Lang>(in, out, ctx, axis);
-        },
-        {in.block()}, {out->block()});
-  });
+  // {a_0, a_1, ..., a_k-1, a_k, ... a_n-1}
+  // reshape to
+  // { a_0 * a_1 * ... a_k-1, a_k * ... a_n-1 }
+
+  // assert axis \in {-r, r-1}
+  CHECK_LE(axis, (int)in.shape().size()-1 );
+  CHECK_GE(axis, -1*(int)in.nDim() );
+
+  Shape original_shape = in.shape();
+  if (axis < 0) axis = in.shape().size() + axis;
+
+  Shape coerced_shape = {1, 1};
+  for (std::size_t i = 0, max = in.shape().size(); i != max; ++i) {
+      if (i < axis)
+        coerced_shape[0] *= in.shape()[i];
+      else
+        coerced_shape[1] *= in.shape()[i];
+  }
+  Tensor in_reshaped = Reshape(in, coerced_shape);
+  out->Reshape(coerced_shape);
+
+  // optimise by minus x - x.max()
+  auto in_max = RowMax(in_reshaped);
+  in_max.Reshape({coerced_shape[0],1});
+  in_reshaped = in_reshaped - in_max;
+
+  SoftMax(in_reshaped, out);
+
+  out->Reshape(original_shape);
 }
 
 Tensor SoftMax(const Tensor &in, int axis) {
   Tensor ret(in.shape(), in.device(), in.data_type());
   auto *retptr = &ret;
-  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    retptr->device()->Exec(
-        [in, retptr, axis](Context *ctx) {
-          SoftMax<DType, Lang>(in, retptr, ctx, axis);
-        },
-        {in.block()}, {retptr->block()});
-  });
+  SoftMax(in, retptr, axis);
   return ret;
 }
+
 
 #define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                            \
   do {                                                                      \
