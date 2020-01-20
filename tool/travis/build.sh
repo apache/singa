@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 set -ex
 
 # anaconda login user name
@@ -29,6 +28,15 @@ conda config --set anaconda_upload no
 suffix=$TRAVIS_JOB_NUMBER  #`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
 export CONDA_BLD_PATH=~/conda-bld-$suffix
 mkdir $CONDA_BLD_PATH
+
+pylint $(find python/ test/python/ -name '*.py')
+LINTRESULT=$?
+if [ $LINTRESULT == 0 ]; then
+  echo "pylint passed"
+else
+  echo "pylint not passed"
+  exit $LINTRESULT
+fi
 
 conda build tool/conda/singa --python 3.6
 conda build tool/conda/singa --python 3.7
