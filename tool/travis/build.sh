@@ -29,26 +29,15 @@ suffix=$TRAVIS_JOB_NUMBER  #`TZ=Asia/Singapore date +%Y-%m-%d-%H-%M-%S`
 export CONDA_BLD_PATH=~/conda-bld-$suffix
 mkdir $CONDA_BLD_PATH
 
-# pylint
-pylint $(find example/ python/ test/python/ -name '*.py')
+# linting
+bash tool/linting/linting.sh
 LINTRESULT=$?
 if [ $LINTRESULT == 0 ]; then
-  echo "pylint passed"
+  echo "linting passed"
 else
-  echo "pylint not passed"
+  echo "linting not passed"
   exit $LINTRESULT
 fi
-
-# cpplint
-CPPLINTRESULT=$(cpplint --quiet $(find src/ include/ test/singa/ -name *.cc -or -name *.h) )
-if [[ $CPPLINTRESULT ]]; then
-  echo $CPPLINTRESULT
-  echo "cpplint not passed"
-  exit 1
-else
-  echo "cpplint passed"
-fi
-
 
 conda build tool/conda/singa --python 3.6
 conda build tool/conda/singa --python 3.7
