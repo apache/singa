@@ -37,3 +37,4 @@ conda config --add channels conda-forge
 
 # linting
 conda install pylint
+conda install cpplint
