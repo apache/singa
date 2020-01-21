@@ -925,9 +925,8 @@ class CrossEntropy(Operation):
         Returns:
             loss (CTensor): scalar.
         """
-        loss = CTensor((1,))
-        loss_data = -singa.SumAsFloat(singa.__mul__(t, singa.Log(x)))
-        loss.SetFloatValue(loss_data / x.shape()[0])
+        loss = singa.SumAll(singa.__mul__(t, singa.Log(x)))
+        loss /= -x.shape()[0]
         self.x = x
         self.t = t
         self.input = (x, t)
@@ -944,7 +943,7 @@ class CrossEntropy(Operation):
                           dy = 1.0
         """
         dx = singa.__div__(self.t, self.x)
-        dx *= float(-1 / self.x.shape()[0])
+        dx *= float(-1.0 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
             dx *= dy
@@ -964,9 +963,9 @@ class SoftMaxCrossEntropy(Operation):
 
     def forward(self, x):
         self.p = singa.SoftMax(x)
-        loss = CTensor((1,), self.p.device())
         ret = singa.CrossEntropyFwd(self.p, self.t)
-        loss.SetFloatValue(singa.SumAsFloat(ret) / x.shape()[0])
+        loss = singa.SumAll(ret)
+        loss /= x.shape()[0]
         return loss
 
     def backward(self, dy=1.0):
@@ -987,8 +986,8 @@ class MeanSquareError(Operation):
     def forward(self, x, t):
         self.err = singa.__sub__(x, t)
         sqr = singa.Square(self.err)
-        loss = CTensor((1,), x.device())
-        loss.SetFloatValue(singa.SumAsFloat(sqr) / x.shape()[0] / 2)
+        loss = singa.SumAll(sqr)
+        loss /= (x.shape()[0] * 2)
         return loss
 
     def backward(self, dy=1.0):

@@ -649,6 +649,19 @@ void Dot<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
     LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet." ;
   }
 }
+template <>
+void Dot<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
+                           Tensor *out, Context *ctx) {
+  //check input tensor for strides first
+  if (!(in1.transpose()) && !(in2.transpose())) {
+    const float *in1Ptr = static_cast<const float *>(in1.block()->data());
+    const float *in2Ptr = static_cast<const float *>(in2.block()->data());
+    float* outPtr = static_cast<float*>(out->block()->mutable_data());
+    *outPtr = cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
+  } else {
+    LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet." ;
+  }
+}
 
 template <>
 void Scale<float, lang::Cpp>(const float x, Tensor *out,
