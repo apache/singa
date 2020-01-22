@@ -187,17 +187,23 @@ def train_mnist_cnn(sgd,
         world_size = sgd.world_size
     else:
         # For Single GPU
-        dev = device.create_cuda_gpu()
+        dev = device.create_cuda_gpu_on(0)
         world_size = 1
+
+    print("pass0")
 
     # create model
     model = CNN()
+
+    print("pass0a")
 
     tx = tensor.Tensor((batch_size, 1, IMG_SIZE, IMG_SIZE), dev, tensor.float32)
     ty = tensor.Tensor((batch_size, num_classes), dev, tensor.int32)
     num_train_batch = train_x.shape[0] // batch_size
     num_test_batch = test_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
+
+    print("pass1")
 
     if DIST:
         #Sychronize the initial parameters
@@ -211,6 +217,8 @@ def train_mnist_cnn(sgd,
         loss = autograd.softmax_cross_entropy(out, ty)
         for p, g in autograd.backward(loss):
             sychronize(p, sgd)
+    dev.ExecBuffOps()
+    print("pass2")
 
     # Training and Evaulation Loop
     for epoch in range(max_epoch):
@@ -227,6 +235,7 @@ def train_mnist_cnn(sgd,
         train_loss = np.zeros(shape=[1], dtype=np.float32)
 
         for b in range(num_train_batch):
+            print("pass2b")
             x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
             x = augmentation(x, batch_size)
             y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
@@ -268,6 +277,7 @@ def train_mnist_cnn(sgd,
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
             out_test = model.forward(tx)
+            dev.ExecBuffOps()
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:

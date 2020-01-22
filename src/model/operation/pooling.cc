@@ -188,19 +188,19 @@ Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x) {
   CHECK_EQ(x.device()->lang(), kCuda);
   CHECK_EQ(x.nDim(), 4u);
 
-  Tensor output =
-      Tensor({cph.batchsize, cph.channels, cph.pooled_height, cph.pooled_width},
-             x.device(), x.data_type());
+  Tensor *output = new Tensor(
+      {cph.batchsize, cph.channels, cph.pooled_height, cph.pooled_width},
+      x.device(), x.data_type());
 
-  output.device()->Exec(
+  output->device()->Exec(
       [&](Context *ctx) {
         float alpha = 1.0f, beta = 0.0f;
         cudnnPoolingForward(ctx->cudnn_handle, cph.pool_desc, &alpha,
                             cph.x_desc, x.block()->data(), &beta, cph.y_desc,
-                            output.block()->mutable_data());
+                            output->block()->mutable_data());
       },
-      {x.block()}, {output.block()});
-  return output;
+      {x.block()}, {output->block()});
+  return *output;
 }
 
 Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy,
@@ -208,19 +208,19 @@ Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy,
   CHECK_EQ(dy.device()->lang(), kCuda);
   CHECK_EQ(dy.nDim(), 4u);
 
-  Tensor dx;
-  dx.ResetLike(x);
+  Tensor *dx = new Tensor();
+  dx->ResetLike(x);
 
-  dx.device()->Exec(
+  dx->device()->Exec(
       [&](Context *ctx) {
         float alpha = 1.0f, beta = 0.0f;
         cudnnPoolingBackward(ctx->cudnn_handle, cph.pool_desc, &alpha,
                              cph.y_desc, y.block()->data(), cph.y_desc,
                              dy.block()->data(), cph.x_desc, x.block()->data(),
-                             &beta, cph.x_desc, dx.block()->mutable_data());
+                             &beta, cph.x_desc, dx->block()->mutable_data());
       },
-      {dy.block(), y.block(), x.block()}, {dx.block()});
-  return dx;
+      {dy.block(), y.block(), x.block()}, {dx->block()});
+  return *dx;
 };
 #endif  // USE_CUDNN
 

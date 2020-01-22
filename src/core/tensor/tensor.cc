@@ -63,6 +63,7 @@ Tensor::Tensor(const Tensor &in)
       block_(in.block()),
       shape_(in.shape_),
       stride_(in.stride_) {
+  // printf("i am here in &in\n");
   if (block_ != nullptr) block_->IncRefCount();
 }
 
@@ -71,6 +72,7 @@ Tensor::Tensor(Tensor &&in)
       device_(in.device_),
       shape_(std::move(in.shape_)),
       stride_(std::move(in.stride_)) {
+  // printf("i am here in &&in\n");
   block_ = in.block_;
   in.block_ = nullptr;
 }
@@ -175,13 +177,13 @@ Tensor Tensor::AsType(const DataType type) {
 Tensor &Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is restricted. May compare against device ID?
   if (device_ != dst) {
-    Tensor tmp(shape_, dst, data_type_);
+    Tensor *tmp = new Tensor(shape_, dst, data_type_);
     if (block_ != nullptr && Size() && block_->initialized())
-      tmp.CopyData(*this);
+      tmp->CopyData(*this);
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
-    block_ = tmp.block_;
-    tmp.block_ = nullptr;
+    block_ = tmp->block_;
+    tmp->block_ = nullptr;
     device_ = dst;
   }
   return *this;
@@ -740,10 +742,11 @@ template void Tensor::SetValue<int>(const int x);
 template <typename SType>
 void Tensor::get_value(SType *value, const size_t num) {
   CHECK(device_ == defaultDevice);
-  Tensor t(shape_, device_, data_type_);
+  Tensor *t = new Tensor(shape_, device_, data_type_);
   // transform function arrange data in memory considering stride
-  singa::Transform(*this, &t);
-  auto ptr = static_cast<const SType *>(t.block()->data());
+  singa::Transform(*this, t);
+  device_->ExecBuffOps();
+  auto ptr = static_cast<const SType *>(t->block()->data());
   for (size_t i = 0; i < num; i++) value[i] = ptr[i];
 }
 template void Tensor::get_value<float>(float *value, const size_t num);
@@ -766,13 +769,12 @@ template void Tensor::GetValue<int>(int *value, const size_t num);
     });                                                                \
   } while (0)
 
-#define GenUnaryTensorFn(fn)                             \
-  Tensor fn(const Tensor &in) {                          \
-    Tensor ret(in.shape(), in.device(), in.data_type()); \
-    auto *retptr = &ret;                                 \
-    EltwiseUnaryTensorFn(fn, in, retptr);                \
-    return ret;                                          \
-  }                                                      \
+#define GenUnaryTensorFn(fn)                                              \
+  Tensor fn(const Tensor &in) {                                           \
+    Tensor *retptr = new Tensor(in.shape(), in.device(), in.data_type()); \
+    EltwiseUnaryTensorFn(fn, in, retptr);                                 \
+    return *retptr;                                                       \
+  }                                                                       \
   void fn(const Tensor &in, Tensor *out) { EltwiseUnaryTensorFn(fn, in, out); }
 
 GenUnaryTensorFn(Abs);
@@ -836,10 +838,16 @@ void SoftMax(const Tensor &in, Tensor *out, int axis) {
 }
 
 Tensor SoftMax(const Tensor &in, int axis) {
-  Tensor ret(in.shape(), in.device(), in.data_type());
-  auto *retptr = &ret;
-  SoftMax(in, retptr, axis);
-  return ret;
+  printf("enter softmax\n");
+  Tensor *retptr = new Tensor(in.shape(), in.device(), in.data_type());
+  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+    retptr->device()->Exec(
+        [in, retptr, axis](Context *ctx) {
+          SoftMax<DType, Lang>(in, retptr, ctx, axis);
+        },
+        {in.block()}, {retptr->block()});
+  });
+  return *retptr;
 }
 void SoftMaxBackward(const Tensor &in, Tensor *out, int axis,
                      const Tensor &fdout) {
@@ -897,32 +905,32 @@ Tensor SoftMaxBackward(const Tensor &in, int axis, const Tensor &fdout) {
     });                                                                    \
   } while (0)
 
-#define GenBinaryTensorFn(op, fn)                              \
-  Tensor op(const Tensor &lhs, const Tensor &rhs) {            \
-    if (lhs.shape() != rhs.shape()) {                          \
-      auto lhs_ = Broadcast(lhs, rhs.shape());                 \
-      auto rhs_ = Broadcast(rhs, lhs.shape());                 \
-      Tensor ret(lhs_.shape(), lhs.device(), lhs.data_type()); \
-      fn(lhs_, rhs_, &ret);                                    \
-      return ret;                                              \
-    } else {                                                   \
-      Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());  \
-      fn(lhs, rhs, &ret);                                      \
-      return ret;                                              \
-    }                                                          \
-  }                                                            \
-  void fn(const Tensor &lhs, const Tensor &rhs, Tensor *ret) { \
-    CHECK_EQ(lhs.device(), ret->device());                     \
-    CHECK_EQ(rhs.device(), ret->device());                     \
-    if (lhs.shape() != rhs.shape()) {                          \
-      auto lhs_ = Broadcast(lhs, rhs.shape());                 \
-      auto rhs_ = Broadcast(rhs, lhs.shape());                 \
-      CHECK(lhs_.shape() == ret->shape());                     \
-      EltwiseBinaryTensorFn(fn, lhs_, rhs_, ret);              \
-    } else {                                                   \
-      CHECK(lhs.shape() == ret->shape());                      \
-      EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                \
-    }                                                          \
+#define GenBinaryTensorFn(op, fn)                                            \
+  Tensor op(const Tensor &lhs, const Tensor &rhs) {                          \
+    if (lhs.shape() != rhs.shape()) {                                        \
+      auto lhs_ = Broadcast(lhs, rhs.shape());                               \
+      auto rhs_ = Broadcast(rhs, lhs.shape());                               \
+      Tensor *ret = new Tensor(lhs_.shape(), lhs.device(), lhs.data_type()); \
+      fn(lhs_, rhs_, ret);                                                   \
+      return *ret;                                                           \
+    } else {                                                                 \
+      Tensor *ret = new Tensor(lhs.shape(), lhs.device(), lhs.data_type());  \
+      fn(lhs, rhs, ret);                                                     \
+      return *ret;                                                           \
+    }                                                                        \
+  }                                                                          \
+  void fn(const Tensor &lhs, const Tensor &rhs, Tensor *ret) {               \
+    CHECK_EQ(lhs.device(), ret->device());                                   \
+    CHECK_EQ(rhs.device(), ret->device());                                   \
+    if (lhs.shape() != rhs.shape()) {                                        \
+      auto lhs_ = Broadcast(lhs, rhs.shape());                               \
+      auto rhs_ = Broadcast(rhs, lhs.shape());                               \
+      CHECK(lhs_.shape() == ret->shape());                                   \
+      EltwiseBinaryTensorFn(fn, lhs_, rhs_, ret);                            \
+    } else {                                                                 \
+      CHECK(lhs.shape() == ret->shape());                                    \
+      EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                              \
+    }                                                                        \
   }
 
 // boradcasting operations:
@@ -949,18 +957,18 @@ GenBinaryTensorFn(ReLUBackward, ReLUBackward);
     });                                                                   \
   } while (0)
 
-#define GenTensorScalarFn(op, fn)                             \
-  template <typename SType>                                   \
-  Tensor op(const Tensor &in, const SType x) {                \
-    Tensor ret(in.shape(), in.device(), in.data_type());      \
-    fn(in, x, &ret);                                          \
-    return ret;                                               \
-  }                                                           \
-  template <typename SType>                                   \
-  void fn(const Tensor &in, const SType x, Tensor *ret) {     \
-    EltwiseTensorScalarFn(fn, in, x, ret);                    \
-  }                                                           \
-  template Tensor op<float>(const Tensor &in, const float x); \
+#define GenTensorScalarFn(op, fn)                                      \
+  template <typename SType>                                            \
+  Tensor op(const Tensor &in, const SType x) {                         \
+    Tensor *ret = new Tensor(in.shape(), in.device(), in.data_type()); \
+    fn(in, x, ret);                                                    \
+    return *ret;                                                       \
+  }                                                                    \
+  template <typename SType>                                            \
+  void fn(const Tensor &in, const SType x, Tensor *ret) {              \
+    EltwiseTensorScalarFn(fn, in, x, ret);                             \
+  }                                                                    \
+  template Tensor op<float>(const Tensor &in, const float x);          \
   template void fn<float>(const Tensor &in, const float x, Tensor *ret)
 
 GenTensorScalarFn(operator+, Add);
@@ -974,9 +982,9 @@ GenTensorScalarFn(operator>, GT);
 GenTensorScalarFn(operator>=, GE);
 template <typename SType>
 Tensor Div(const SType alpha, const Tensor &in) {
-  Tensor out(in.shape(), in.device(), in.data_type());
-  Div(alpha, in, &out);
-  return out;
+  Tensor *out = new Tensor(in.shape(), in.device(), in.data_type());
+  Div(alpha, in, out);
+  return *out;
 }
 template Tensor Div<float>(const float, const Tensor &);
 
@@ -1038,46 +1046,42 @@ float Sum<float>(const Tensor &in) {
 
 Tensor Sum(const Tensor &M, int axis) {
   if (axis == 0) {
-    Tensor out(Shape{M.shape(1)}, M.device(), M.data_type());
-    SumRows(M, &out);
-    return out;
-  } else if (axis == 1) {
-    Tensor out(Shape{M.shape(0)}, M.device(), M.data_type());
-    SumColumns(M, &out);
-    return out;
+    Tensor *out = new Tensor(Shape{M.shape(1)}, M.device(), M.data_type());
+    SumRows(M, out);
+    return *out;
   } else {
-    LOG(FATAL) << "Not currently support Sum over axis = " << axis;
+    CHECK_EQ(axis, 1) << "Not support Sum over axis = " << axis;
+    Tensor *out = new Tensor(Shape{M.shape(0)}, M.device(), M.data_type());
+    SumColumns(M, out);
+    return *out;
   }
 }
 
 Tensor SumAll(const Tensor &in) {
-  Tensor out({(size_t)1}, in.device(), in.data_type());
-  Tensor one(in.shape(), in.device(), in.data_type());
-  auto *outPtr = &out;
-  one.SetValue(1.0f);
+  Tensor *out = new Tensor({(size_t)1}, in.device(), in.data_type());
+  Tensor *one = new Tensor(in.shape(), in.device(), in.data_type());
+  one->SetValue(1.0f);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    one.device()->Exec(
-        [in, one, outPtr](Context *ctx) {
-          Dot<DType, Lang>(in, one, outPtr, ctx);
-        },
-        {in.block(), one.block()}, {outPtr->block()});
+    one->device()->Exec(
+        [in, one, out](Context *ctx) { Dot<DType, Lang>(in, *one, out, ctx); },
+        {in.block(), one->block()}, {out->block()});
   });
-  return out;
+  return *out;
 }
 
 Tensor RowMax(const Tensor &in) {
-  Tensor ret({in.shape(0)}, in.device(), in.data_type());
+  Tensor *ret = new Tensor({in.shape(0)}, in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     in.device()->Exec(
-        [&in, &ret](Context *ctx) {
+        [&in, ret](Context *ctx) {
           // size_t nrow = 1;
           // if (in.nDim() > 1) nrow = in.shape(0);
           // size_t ncol = in.Size() / nrow;
-          RowMax<DType, Lang>(in, &ret, ctx);
+          RowMax<DType, Lang>(in, ret, ctx);
         },
-        {in.block()}, {ret.block()});
+        {in.block()}, {ret->block()});
   });
-  return ret;
+  return *ret;
 }
 
 void AddColumn(const Tensor &v, Tensor *M) { AddColumn(1, 1, v, M); }
@@ -1085,19 +1089,20 @@ void AddColumn(const Tensor &v, Tensor *M) { AddColumn(1, 1, v, M); }
 template <typename SType>
 void AddColumn(const SType alpha, const SType beta, const Tensor &v,
                Tensor *M) {
+  printf("enter Addrcolumn\n");
   if (M->transpose()) {
-    Tensor X = Transpose(*M);
-    AddRow(v, &X);
+    Tensor *X = new Tensor(Transpose(*M));
+    AddRow(v, X);
   } else {
     CHECK_EQ(M->nDim(), 2u);
     // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
     size_t nb_row = M->shape(0), nb_col = M->shape(1);
     CHECK_EQ(nb_row, v.Size());
 
-    Tensor one(Shape{1, nb_col}, M->device(), M->data_type());
-    one.SetValue(1.0f);  // TODO(wangwei) cast type
-    Tensor vmat = Reshape(v, Shape{nb_row, 1});
-    Mult(alpha, vmat, one, beta, M);
+    Tensor *one = new Tensor(Shape{1, nb_col}, M->device(), M->data_type());
+    one->SetValue(1.0f);  // TODO(wangwei) cast type
+    Tensor *vmat = new Tensor(Reshape(v, Shape{nb_row, 1}));
+    Mult(alpha, *vmat, *one, beta, M);
   }
 }
 template void AddColumn(const float alpha, const float beta, const Tensor &v,
@@ -1108,19 +1113,22 @@ void AddRow(const Tensor &v, Tensor *M) { AddRow(1, 1, v, M); }
 /// Add row 'v' by each column of matrix M; write results into 'out'
 template <typename SType>
 void AddRow(const SType alpha, const SType beta, const Tensor &v, Tensor *M) {
+  printf("enter Addrow\n");
   if (M->transpose()) {
-    Tensor X = Transpose(*M);
-    AddColumn(v, &X);
+    Tensor *X = new Tensor(Transpose(*M));
+    AddColumn(v, X);
   } else {
     CHECK_EQ(M->nDim(), 2u);
     // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
     size_t nb_row = M->shape(0), nb_col = M->shape(1);
     CHECK_EQ(nb_col, v.Size());
 
-    Tensor one(Shape{nb_row, 1}, M->device(), M->data_type());
-    one.SetValue(1.0f);
-    Tensor vmat = Reshape(v, Shape{1, nb_col});
-    Mult(alpha, one, vmat, beta, M);
+    Tensor *one = new Tensor(Shape{nb_row, 1}, M->device(), M->data_type());
+    one->SetValue(1.0f);
+    // printf("before create1\n");
+    Tensor *vmat = new Tensor(Reshape(v, Shape{1, nb_col}));
+    // printf("before create2\n");
+    Mult(alpha, *one, *vmat, beta, M);
   }
 }
 template void AddRow(const float alpha, const float beta, const Tensor &v,
@@ -1484,9 +1492,9 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 // Misc.
 // ************************
 Tensor CrossEntropyFwd(const Tensor &p, const Tensor &t) {
-  Tensor loss({p.shape(0)}, p.device(), p.data_type());
-  ComputeCrossEntropy(p, t, &loss);
-  return loss;
+  Tensor *loss = new Tensor({p.shape(0)}, p.device(), p.data_type());
+  ComputeCrossEntropy(p, t, loss);
+  return *loss;
 }
 
 Tensor SoftmaxCrossEntropyBwd(const Tensor &p, const Tensor &t) {
@@ -1536,6 +1544,7 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
 Tensor &Tensor::Reshape(const Shape &shape) {
   // Check original volumn with the new one
   // do not use Product(shape_) due to stride 0 from broadcasting.
+  // printf("reshape loc b\n");
   CHECK_EQ(Product(shape), Size());
   if (transpose()) {
     Tensor t(shape_, device_, data_type_);
@@ -1546,10 +1555,12 @@ Tensor &Tensor::Reshape(const Shape &shape) {
     shape_ = shape;
   }
   generate_stride();
+  // printf("reshape loc c\n");
   return *this;
 }
 
 Tensor Reshape(const Tensor &in, const Shape &s) {
+  // printf("reshape loc a\n");
   Tensor out(in);
   return out.Reshape(s);
 }

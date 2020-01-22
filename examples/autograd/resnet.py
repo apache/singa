@@ -265,6 +265,7 @@ if __name__ == "__main__":
     y = np.random.randint(0, 1000, batch_size, dtype=np.int32)
     tx.copy_from_numpy(x)
     ty.copy_from_numpy(y)
+    print("pass1")
 
     import time
 
@@ -278,20 +279,34 @@ if __name__ == "__main__":
             dev.Sync()
             tick = time.time()
             x = model(tx)
+            print("pass2")
             dev.Sync()
             fd += time.time() - tick
             tick = time.time()
+            dev.ExecBuffOps()
+            dev.Sync()
+            print("pass2b")
             loss = autograd.softmax_cross_entropy(x, ty)
             dev.Sync()
             softmax += time.time() - tick
+            print("pass3")
+            dev.ExecBuffOps()
+            r = 0
             for p, g in autograd.backward(loss):
+                r += 1
+                print(g.name)
                 dev.Sync(
                 )  # this "for" loops for a large number of times, so can slow down
                 tick = time.time()
+                print("pass3", r)
                 sgd.update(p, g)
+                print("pass4", r)
                 dev.Sync(
                 )  # this "for" loops for a large number of times, so can slow down
                 update += time.time() - tick
+                dev.ExecBuffOps()
+                print("pass5", r)
+            dev.ExecBuffOps()
 
     dev.Sync()
     end = time.time()
