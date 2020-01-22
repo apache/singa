@@ -27,8 +27,29 @@ Device::Device(int id, int num_executors)
 
 void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
                     const vector<Block*> write_blocks, bool use_rand_generator) {
-  // TODO(wangwei) execute operations scheduled by the scheduler.
-  DoExec(std::move(fn), 0);
+  //buffer=false;
+  if (buffer==true)
+  {
+	 printf("EnterEXEC\n");
+   buffOps.push_back(fn);
+  }
+  else
+  {
+    printf("immediately ops\n");
+    DoExec(std::move(fn), 0);
+  }
+}
+
+void Device::ExecBuffOps() {
+  buffer=false;
+  while (!buffOps.empty())
+  {
+	  printf("EnterBuffStart, %d\n", buffOps.size());
+  	DoExec(std::move(buffOps.front()), 0);
+  	buffOps.erase(buffOps.begin());
+    printf("EnterBuffExit\n");
+  }
+  buffer=true;
 }
 
 // TODO(wangwei) get Block from the memory manager

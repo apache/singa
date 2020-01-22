@@ -158,17 +158,25 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
         world_size = sgd.world_size
     else:
         # For Single GPU
-        dev = device.create_cuda_gpu()
+        dev = device.create_cuda_gpu_on(0)
         world_size = 1
+
+    print("pass0")
+
 
     # create model
     model = CNN()
+
+    print("pass0a")
+
 
     tx = tensor.Tensor((batch_size, 1, IMG_SIZE, IMG_SIZE), dev, tensor.float32)
     ty = tensor.Tensor((batch_size, num_classes), dev, tensor.int32)
     num_train_batch = train_x.shape[0] // batch_size
     num_test_batch = test_x.shape[0] // batch_size
     idx = np.arange(train_x.shape[0], dtype=np.int32)
+
+    print("pass1")
 
     if DIST:
         #Sychronize the initial parameters
@@ -181,6 +189,8 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
         loss = autograd.softmax_cross_entropy(out, ty)               
         for p, g in autograd.backward(loss):
             sychronize(p, sgd)
+    dev.ExecBuffOps()
+    print("pass2")
 
     # Training and Evaulation Loop
     for epoch in range(max_epoch):
@@ -197,22 +207,34 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
         train_loss = np.zeros(shape=[1],dtype=np.float32)
         
         for b in range(num_train_batch):
+            print("pass2b")
             x = train_x[idx[b * batch_size: (b + 1) * batch_size]]
             x = augmentation(x, batch_size)
             y = train_y[idx[b * batch_size: (b + 1) * batch_size]]
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
             out = model.forward(tx)
-            loss = autograd.softmax_cross_entropy(out, ty)               
+            print("pass2c") 
+            dev.ExecBuffOps()
+            loss = autograd.softmax_cross_entropy(out, ty)
+            print("pass2d")
+            dev.ExecBuffOps()
+            print("pass2e")
             train_correct += accuracy(tensor.to_numpy(out), y)
             train_loss += tensor.to_numpy(loss)[0]
-            if DIST:
-                if (spars == 0):
-                    sgd.backward_and_update(loss, threshold = 50000)
-                else:
-                    sgd.backward_and_spars_update(loss, spars = spars, topK = topK, corr = corr)
-            else:
-                sgd.backward_and_update(loss)
+            r=0
+            for p, g in autograd.backward(loss):
+                r+=1
+                print(g.name)
+                dev.Sync()  # this "for" loops for a large number of times, so can slow down
+                tick = time.time()
+                print("pass3",r)
+                sgd.update(p, g)
+                print("pass4",r)
+                dev.Sync()  # this "for" loops for a large number of times, so can slow down
+                update += time.time() - tick
+                dev.ExecBuffOps()
+            dev.ExecBuffOps()
 
         if DIST:
             # Reduce the Evaluation Accuracy and Loss from Multiple Devices
@@ -232,6 +254,7 @@ def train_mnist_cnn(sgd, max_epoch, batch_size, DIST=False, data_partition=None,
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
             out_test = model.forward(tx)
+            dev.ExecBuffOps()
             test_correct += accuracy(tensor.to_numpy(out_test), y)
 
         if DIST:

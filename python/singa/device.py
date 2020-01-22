@@ -117,7 +117,7 @@ def create_cuda_gpus_on(device_ids):
     return singa.Platform.CreateCudaGPUsOn(device_ids)
 
 
-def create_cuda_gpu_on(device_id):
+def create_cuda_gpu_on(device_id, set_default = True):
     '''Create a CudaGPU device on the given device ID.
 
     Args:
@@ -128,6 +128,8 @@ def create_cuda_gpu_on(device_id):
     '''
     assert singa.USE_CUDA, 'SINGA has not been compiled with CUDA enabled.'
     devices = create_cuda_gpus_on([device_id])
+    if set_default is True:
+        set_default_device(devices[0])
     return devices[0]
 
 
@@ -141,9 +143,13 @@ def create_opencl_device():
     return singa.Platform.GetDefaultOpenclDevice()
 
 
-default_device = singa.Platform.GetDefaultDevice()
+Device.default_device = singa.Platform.GetDefaultDevice()
 
 
 def get_default_device():
     '''Get the default host device which is a CppCPU device'''
-    return default_device
+    return Device.default_device
+
+def set_default_device(device):
+    '''Set the Device class static variable default_device'''
+    Device.default_device = device

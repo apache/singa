@@ -88,6 +88,10 @@ class Device {
                     const vector<Block*> write_blocks,
                     bool use_rand_generator = false);
 
+  bool buffer = true;
+
+  void ExecBuffOps();
+
   // Wait for one event.
   // void WaitFor();
 
@@ -109,6 +113,7 @@ class Device {
 
  private:
   Device() {};
+  std::vector<std::function<void(Context *)>> buffOps;
 
  protected:
   /// Execute one operation on one executor.

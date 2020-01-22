@@ -22,11 +22,14 @@ from singa.tensor import Tensor
 from singa import autograd
 from singa import optimizer
 import numpy as np
-
+from singa import device
 
 if __name__ == "__main__":
+    dev = device.get_default_device()
+    #dev = device.create_cuda_gpu_on(0)
 
     autograd.training = True
+    np.random.seed(0)
 
     # prepare training data in numpy array
 
@@ -59,35 +62,44 @@ if __name__ == "__main__":
         categorical[np.arange(n), y] = 1
         return categorical
 
+
+
     label = to_categorical(label, 2).astype(np.float32)
     print("train_data_shape:", data.shape)
     print("train_label_shape:", label.shape)
 
     inputs = Tensor(data=data)
     target = Tensor(data=label)
+    dev.ExecBuffOps()
 
     w0 = Tensor(shape=(2, 3), requires_grad=True, stores_grad=True)
-    w0.gaussian(0.0, 0.1)
+    w0.set_value(10.0)
     b0 = Tensor(shape=(1, 3), requires_grad=True, stores_grad=True)
-    b0.set_value(0.0)
+    b0.set_value(1.0)
 
     w1 = Tensor(shape=(3, 2), requires_grad=True, stores_grad=True)
-    w1.gaussian(0.0, 0.1)
+    w1.set_value(10.0)
     b1 = Tensor(shape=(1, 2), requires_grad=True, stores_grad=True)
     b1.set_value(0.0)
+    dev.ExecBuffOps()
+
+    a=tensor.to_numpy(w1)[0]
+    dev.ExecBuffOps()
+    print(a)
 
     sgd = optimizer.SGD(0.05)
-    # training process
-    for i in range(1001):
-        x = autograd.matmul(inputs, w0)
-        x = autograd.add_bias(x, b0)
-        x = autograd.relu(x)
-        x = autograd.matmul(x, w1)
-        x = autograd.add_bias(x, b1)
-        x = autograd.softmax(x)
-        loss = autograd.cross_entropy(x, target)
-        for p, gp in autograd.backward(loss):
-            sgd.apply(0, gp, p, "")
 
-        if i % 100 == 0:
-            print("training loss = ", tensor.to_numpy(loss)[0])
+    x = autograd.matmul(inputs, w0)
+    x = autograd.add_bias(x, b0)
+    x = autograd.relu(x)
+    x = autograd.matmul(x, w1)
+    x = autograd.add_bias(x, b1)
+    dev.ExecBuffOps()
+    print(tensor.to_numpy(x)[0])    
+    loss = autograd.softmax_cross_entropy(x, target)
+    dev.ExecBuffOps()
+    print(tensor.to_numpy(loss)[0])
+    print("start backward loop")
+    for p, gp in autograd.backward(loss):
+        sgd.apply(0, gp, p, "")
+    dev.ExecBuffOps()

@@ -964,9 +964,9 @@ class SoftMaxCrossEntropy(Operation):
 
     def forward(self, x):
         self.p = singa.SoftMax(x)
-        loss = CTensor((1,), self.p.device())
         ret = singa.CrossEntropyFwd(self.p, self.t)
-        loss.SetFloatValue(singa.SumAsFloat(ret) / x.shape()[0])
+        loss = singa.SumAll(ret)
+        loss /= x.shape()[0]
         return loss
 
     def backward(self, dy=1.0):
@@ -1562,8 +1562,8 @@ class _BatchNorm2d(Operation):
                 self.handle, dy, x, scale, mean, var
             )
             
-        return dx, ds, db
-
+#        return dx, ds, db
+        return dx
 
 def batchnorm_2d(handle, x, scale, bias, running_mean, running_var):
     return _BatchNorm2d(handle, running_mean, running_var, scale, bias)(x)[0]

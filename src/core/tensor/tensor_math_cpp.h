@@ -649,6 +649,19 @@ void Dot<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
     LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet." ;
   }
 }
+template <>
+void Dot<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
+                           Tensor *out, Context *ctx) {
+  //check input tensor for strides first
+  if (!(in1.transpose()) && !(in2.transpose())) {
+    const float *in1Ptr = static_cast<const float *>(in1.block()->data());
+    const float *in2Ptr = static_cast<const float *>(in2.block()->data());
+    float* outPtr = static_cast<float*>(out->block()->mutable_data());
+    *outPtr = cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
+  } else {
+    LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet." ;
+  }
+}
 
 template <>
 void Scale<float, lang::Cpp>(const float x, Tensor *out,
@@ -821,6 +834,7 @@ void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
     const size_t dim, const Block *p,
     const Block *t, Block *loss,
     Context *ctx) {
+  printf("enter cpu crossentropy");
   const float *pPtr = static_cast<const float *>(p->data());
   const int *tPtr = static_cast<const int *>(t->data());
   float *lossPtr = static_cast<float *>(loss->mutable_data());
@@ -898,6 +912,7 @@ void RowMax<float, lang::Cpp>(const Tensor& in, Tensor *out, Context *ctx) {
 
 template <>
 void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context* ctx) {
+  printf("enter cpp softmax\n");
   CHECK_LE(in.nDim(), 2u) << "Axis is required for SoftMax on multi dimemsional tensor";
   out->CopyData(in);
   size_t nrow = 1, ncol = in.Size(), size = ncol;
