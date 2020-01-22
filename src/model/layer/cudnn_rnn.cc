@@ -19,9 +19,9 @@
 #ifdef USE_CUDNN
 #include <cudnn.h>
 #if CUDNN_VERSION >= 5005
-#include <chrono>
 #include "./cudnn_utils.h"
 #include "singa/utils/logging.h"
+#include <chrono>
 
 namespace singa {
 RegisterLayerClass(cudnn_rnn, CudnnRNN);
@@ -64,16 +64,16 @@ void CudnnRNN::DestroyIODescriptors() {
       CUDNN_CHECK(cudnnDestroyTensorDescriptor(x_descs_[i]));
       CUDNN_CHECK(cudnnDestroyTensorDescriptor(dx_descs_[i]));
     }
-    delete [] x_descs_;
-    delete [] dx_descs_;
+    delete[] x_descs_;
+    delete[] dx_descs_;
   }
   if (y_descs_ != nullptr) {
     for (size_t i = 0; i < max_length_; i++) {
       CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_descs_[i]));
       CUDNN_CHECK(cudnnDestroyTensorDescriptor(dy_descs_[i]));
     }
-    delete [] y_descs_;
-    delete [] dy_descs_;
+    delete[] y_descs_;
+    delete[] dy_descs_;
   }
 }
 
@@ -125,8 +125,8 @@ void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
   CUDNN_CHECK(cudnnDropoutGetStatesSize(ctx->cudnn_handle, &state_size));
   dropout_state_ = Tensor(Shape{state_size}, dev, kChar);
   CUDNN_CHECK(cudnnSetDropoutDescriptor(
-                dropout_desc_, ctx->cudnn_handle, 1 - dropout_,  // keep probability
-                dropout_state_.block()->mutable_data(), state_size, seed_));
+      dropout_desc_, ctx->cudnn_handle, 1 - dropout_, // keep probability
+      dropout_state_.block()->mutable_data(), state_size, seed_));
 
   CUDNN_CHECK(cudnnCreateRNNDescriptor(&rnn_desc_));
   cudnnRNNInputMode_t input_mode = CUDNN_LINEAR_INPUT;
@@ -149,9 +149,9 @@ void CudnnRNN::SetRNNDescriptor(shared_ptr<Device> dev) {
                                     dropout_desc_, input_mode, direction,
                                     rnn_mode, dtype_));
 #else
-  CUDNN_CHECK(cudnnSetRNNDescriptor(ctx->cudnn_handle, rnn_desc_, hidden_size_, num_stacks_,
-                                    dropout_desc_, input_mode, direction,
-                                    rnn_mode, CUDNN_RNN_ALGO_STANDARD, dtype_));
+  CUDNN_CHECK(cudnnSetRNNDescriptor(
+      ctx->cudnn_handle, rnn_desc_, hidden_size_, num_stacks_, dropout_desc_,
+      input_mode, direction, rnn_mode, CUDNN_RNN_ALGO_STANDARD, dtype_));
 #endif
   size_t weight_size;
   CUDNN_CHECK(cudnnGetRNNParamsSize(ctx->cudnn_handle, rnn_desc_, x_descs_[0],
@@ -196,15 +196,15 @@ void CudnnRNN::ResetHiddenAndCellDescriptors(size_t batch_size) {
 void CudnnRNN::UpdateSpaces(size_t seq_length, shared_ptr<Device> dev) {
   size_t count;
   auto ctx = dev->context(0);
-  CUDNN_CHECK(cudnnGetRNNWorkspaceSize(ctx->cudnn_handle, rnn_desc_,
-                                       seq_length, x_descs_, &count));
+  CUDNN_CHECK(cudnnGetRNNWorkspaceSize(ctx->cudnn_handle, rnn_desc_, seq_length,
+                                       x_descs_, &count));
   if (workspace_.Size() != count) {
     workspace_ = Tensor(Shape{count}, dev, kChar);
     // workspace_.SetValue(0);
   }
 
   CUDNN_CHECK(cudnnGetRNNTrainingReserveSize(ctx->cudnn_handle, rnn_desc_,
-              seq_length, x_descs_, &count));
+                                             seq_length, x_descs_, &count));
   if (reserve_space_.Size() != count) {
     reserve_space_ = Tensor(Shape{count}, dev, kChar);
     // reserve_space_.SetValue(0);
@@ -227,7 +227,8 @@ Tensor CudnnRNN::MergeInputs(size_t num, const vector<Tensor> &in) {
   if (num == 1)
     return in.at(0);
   size_t size = 0;
-  for (size_t i = 0; i < num; i++) size += in.at(i).Size();
+  for (size_t i = 0; i < num; i++)
+    size += in.at(i).Size();
   Tensor out(Shape{size}, in.at(0).device(), in.at(0).data_type());
   for (size_t i = 0, offset = 0; i < num; i++) {
     CopyDataToFrom(&out, in.at(i), in.at(i).Size(), offset);
@@ -308,16 +309,17 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
   // LOG(INFO) << "hidden size " << hy.Size();
   // LOG(INFO) << "weight size " << weight_.Size() << " value " << weight_.L1();
   Block *inb = input.block(), *outb = output.block(),
-         *wb = this->weight_.block(), *hxb = hx.block(), *cxb = cx.block(),
-          *hyb = hy.block(), *cyb = cy.block(),
-           *wspace = this->workspace_.block(),
-            *rspace = this->reserve_space_.block();
+        *wb = this->weight_.block(), *hxb = hx.block(), *cxb = cx.block(),
+        *hyb = hy.block(), *cyb = cy.block(),
+        *wspace = this->workspace_.block(),
+        *rspace = this->reserve_space_.block();
   if (flag & kTrain) {
     CHECK_EQ(reserve_space_.device()->lang(), kCuda);
     CHECK_EQ(did, reserve_space_.device()->id());
     dev->Exec(
-    [inb, outb, wb, hxb, cxb, hyb, cyb, wspace, rspace, this](Context * ctx) {
-      // clang-format off
+        [inb, outb, wb, hxb, cxb, hyb, cyb, wspace, rspace,
+         this](Context *ctx) {
+          // clang-format off
       cudnnRNNForwardTraining(
         ctx->cudnn_handle,
         this->rnn_desc_,
@@ -332,16 +334,17 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
         wspace->mutable_data(),
         this->workspace_.Size(), rspace->mutable_data(),
         this->reserve_space_.Size());
-      // clang-format on
-    },
-    {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace, rspace});
+          // clang-format on
+        },
+        {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace, rspace});
     buf_.push(input);
     buf_.push(output);
     buf_.push(hx);
     buf_.push(cx);
   } else {
-    dev->Exec([inb, outb, wb, hxb, cxb, hyb, cyb, wspace, this](Context * ctx) {
-      // clang-format off
+    dev->Exec(
+        [inb, outb, wb, hxb, cxb, hyb, cyb, wspace, this](Context *ctx) {
+          // clang-format off
       cudnnRNNForwardInference(
         ctx->cudnn_handle,
         this->rnn_desc_,
@@ -354,21 +357,23 @@ const vector<Tensor> CudnnRNN::Forward(int flag, const vector<Tensor> &inputs) {
         this->hy_desc_, hyb->mutable_data(),
         this->cy_desc_, cyb == nullptr ? nullptr : cyb->mutable_data(),
         wspace->mutable_data(), this->workspace_.Size());
-      // clang-format on
-    }, {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace});
+          // clang-format on
+        },
+        {inb, wb, hxb, cxb}, {outb, hyb, cyb, wspace});
   }
   auto outputs =
-    SplitOutput(num_x, hidden_size_ * num_directions_, inputs, output);
+      SplitOutput(num_x, hidden_size_ * num_directions_, inputs, output);
   outputs.push_back(hy);
-  if (has_cell_) outputs.push_back(cy);
+  if (has_cell_)
+    outputs.push_back(cy);
   return outputs;
 }
 
 // TODO(wangwei) check Tensor device to be on cuda?
-const std::pair<vector<Tensor>, vector<Tensor>> CudnnRNN::Backward(
-int flag, const vector<Tensor> &grads) {
+const std::pair<vector<Tensor>, vector<Tensor>>
+CudnnRNN::Backward(int flag, const vector<Tensor> &grads) {
   // dhy (and dcy) is at last
-  const Tensor cx = buf_.top();  // cannot use const Tensor& due to pop()
+  const Tensor cx = buf_.top(); // cannot use const Tensor& due to pop()
   buf_.pop();
   const Tensor hx = buf_.top();
   buf_.pop();
@@ -400,15 +405,15 @@ int flag, const vector<Tensor> &grads) {
     dcx.ResetLike(dhx);
   dw.SetValue(0.0f);
   Block *yb = y.block(), *dyb = dy.block(), *dhyb = dhy.block(),
-         *dcyb = dcy.block(), *xb = x.block(), *cxb = cx.block(),
-          *wb = weight_.block(), *dwb = dw.block(), *hxb = hx.block(),
-           *dxb = dx.block(), *dhxb = dhx.block(), *dcxb = dcx.block(),
-            *wspace = workspace_.block(), *rspace = reserve_space_.block();
+        *dcyb = dcy.block(), *xb = x.block(), *cxb = cx.block(),
+        *wb = weight_.block(), *dwb = dw.block(), *hxb = hx.block(),
+        *dxb = dx.block(), *dhxb = dhx.block(), *dcxb = dcx.block(),
+        *wspace = workspace_.block(), *rspace = reserve_space_.block();
 
   y.device()->Exec(
-    [yb, dyb, dhyb, dcyb, xb, cxb, wb, dwb, hxb, dxb, dhxb, dcxb, wspace,
-  rspace, this](Context * ctx) {
-    // clang-format off
+      [yb, dyb, dhyb, dcyb, xb, cxb, wb, dwb, hxb, dxb, dhxb, dcxb, wspace,
+       rspace, this](Context *ctx) {
+        // clang-format off
     cudnnRNNBackwardData(
       ctx->cudnn_handle,
       this->rnn_desc_,
@@ -435,12 +440,12 @@ int flag, const vector<Tensor> &grads) {
       wspace->data(), this->workspace_.Size(),
       this->dweight_desc_, dwb->mutable_data(),
       rspace->data(), this->reserve_space_.Size());
-    // clang-format on
-  },
-  {yb, dyb, dhyb, dcyb, xb, wb, wspace, rspace},
-  {dxb, dwb, dhxb, dcxb, wspace, rspace});
+        // clang-format on
+      },
+      {yb, dyb, dhyb, dcyb, xb, wb, wspace, rspace},
+      {dxb, dwb, dhxb, dcxb, wspace, rspace});
 
-  vector <Tensor> param_grad{dw};
+  vector<Tensor> param_grad{dw};
   auto data_grads = SplitOutput(num_dy, input_size_, grads, dx);
   data_grads.push_back(dhx);
   if (has_cell_)
@@ -448,6 +453,6 @@ int flag, const vector<Tensor> &grads) {
   return std::make_pair(data_grads, param_grad);
 }
 
-}  // namespace singa
-#endif  // CUDNN_VERSION >= 5005
-#endif  // USE_CUDNN
+} // namespace singa
+#endif // CUDNN_VERSION >= 5005
+#endif // USE_CUDNN

@@ -23,32 +23,32 @@
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
 
-#include "lrn.h"
 #include "cudnn_utils.h"
+#include "lrn.h"
 
 namespace singa {
 class CudnnLRN : public LRN {
- public:
+public:
   ~CudnnLRN();
   /// \copy doc Layer::layer_type()
   // const std::string layer_type() const override { return "CudnnLRN"; }
 
-  const Tensor Forward(int flag, const Tensor& input) override;
+  const Tensor Forward(int flag, const Tensor &input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                   const Tensor& grad) override;
+                                                   const Tensor &grad) override;
 
- private:
+private:
   /// Init cudnn related data structures.
-  void InitCudnn(const Shape& shape, DataType dtype);
+  void InitCudnn(const Shape &shape, DataType dtype);
 
- private:
+private:
   bool has_init_cudnn_ = false;
   cudnnLRNMode_t mode_;
   cudnnLRNDescriptor_t lrn_desc_ = nullptr;
   cudnnTensorDescriptor_t shape_desc_ = nullptr;
 
-};  // class CudnnLRN
-}  // namespcae
+}; // class CudnnLRN
+} // namespcae
 
-#endif  // USE_CUDNN
-#endif  // SINGA_MODEL_LAYER_CUDNN_LRN_H_H
+#endif // USE_CUDNN
+#endif // SINGA_MODEL_LAYER_CUDNN_LRN_H_H

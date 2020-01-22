@@ -32,26 +32,27 @@
 
 namespace singa {
 class CudnnPooling : public Pooling {
- public:
+public:
   ~CudnnPooling();
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "CudnnPooling"; }
 
-  void Setup(const Shape& in_sample, const LayerConf &conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
   const Tensor Forward(int flag, const Tensor &input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor &grad) override;
- private:
-  /// Init cudnn related data structures.
-  void InitCudnn(const Tensor& input);
 
- private:
+private:
+  /// Init cudnn related data structures.
+  void InitCudnn(const Tensor &input);
+
+private:
   bool has_init_cudnn_ = false;
   cudnnTensorDescriptor_t x_desc_ = nullptr;
   cudnnTensorDescriptor_t y_desc_ = nullptr;
   cudnnPoolingDescriptor_t pool_desc_ = nullptr;
   cudnnNanPropagation_t nan_prop_;
 };
-}  // namespace singa
-#endif  // USE_CUDNN
-#endif  // SRC_MODEL_LAYER_CUDNN_POOLING_H_
+} // namespace singa
+#endif // USE_CUDNN
+#endif // SRC_MODEL_LAYER_CUDNN_POOLING_H_

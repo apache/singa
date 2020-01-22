@@ -21,34 +21,34 @@
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
 
-#include <cudnn.h>
 #include "singa/proto/core.pb.h"
 #include "singa/utils/logging.h"
+#include <cudnn.h>
 namespace singa {
 inline cudnnDataType_t GetCudnnDataType(DataType dtype) {
   cudnnDataType_t ret = CUDNN_DATA_FLOAT;
   switch (dtype) {
-    case kFloat32:
-      ret = CUDNN_DATA_FLOAT;
-      break;
-    case kDouble:
-      ret = CUDNN_DATA_DOUBLE;
-      break;
-    case kFloat16:
-      ret = CUDNN_DATA_HALF;
-      break;
-    default:
-      LOG(FATAL) << "The data type " << DataType_Name(dtype)
-                 << " is not support by cudnn";
+  case kFloat32:
+    ret = CUDNN_DATA_FLOAT;
+    break;
+  case kDouble:
+    ret = CUDNN_DATA_DOUBLE;
+    break;
+  case kFloat16:
+    ret = CUDNN_DATA_HALF;
+    break;
+  default:
+    LOG(FATAL) << "The data type " << DataType_Name(dtype)
+               << " is not support by cudnn";
   }
   return ret;
 }
 
-#define CUDNN_CHECK(condition)                                             \
-  do {                                                                     \
-    cudnnStatus_t status = condition;                                      \
-    CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << " "                          \
-                                           << cudnnGetErrorString(status); \
+#define CUDNN_CHECK(condition)                                                 \
+  do {                                                                         \
+    cudnnStatus_t status = condition;                                          \
+    CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << " "                              \
+                                           << cudnnGetErrorString(status);     \
   } while (0)
 
 /*
@@ -81,6 +81,6 @@ inline const char* cudnnGetErrorString(cudnnStatus_t status) {
 }
 */
 
-}  // namespace singa
-#endif  // USE_CUDNN
-#endif  // SRC_MODEL_LAYER_CUDNN_UTILS_H_
+} // namespace singa
+#endif // USE_CUDNN
+#endif // SRC_MODEL_LAYER_CUDNN_UTILS_H_

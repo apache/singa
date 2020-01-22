@@ -31,7 +31,7 @@ Dense::~Dense() {
   // delete weight_;
   // delete bias_;
 }
-void Dense::Setup(const Shape& in_sample, const LayerConf &conf) {
+void Dense::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   auto dense_conf = conf.dense_conf();
   CHECK_EQ(in_sample.size(), 1u);
@@ -39,13 +39,13 @@ void Dense::Setup(const Shape& in_sample, const LayerConf &conf) {
   hdim_ = dense_conf.num_output();
   transpose_ = dense_conf.transpose();
   bias_term_ = dense_conf.bias_term();
-  if (transpose_)  // was {vdim_, hdim} by zhaojing?
+  if (transpose_) // was {vdim_, hdim} by zhaojing?
     weight_.Resize(Shape{hdim_, vdim_});
   else
     weight_.Resize(Shape{vdim_, hdim_});
   if (bias_term_)
     bias_.Resize(Shape{hdim_});
-  for (auto specs: conf.param())
+  for (auto specs : conf.param())
     param_specs_.push_back(specs);
 }
 
@@ -54,7 +54,7 @@ const Tensor Dense::Forward(int flag, const Tensor &input) {
   CHECK(buf_.empty());
   Tensor output;
   CHECK_EQ(input.nDim(), 2u);
-  if (transpose_)  // use the transposed version of weight_ for computing
+  if (transpose_) // use the transposed version of weight_ for computing
     output = Mult(input, Transpose(weight_));
   else
     output = Mult(input, weight_);

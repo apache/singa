@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./merge.h"
+#include "singa/model/layer.h"
 namespace singa {
 
 RegisterLayerClass(singa_merge, Merge);
@@ -25,12 +25,12 @@ RegisterLayerClass(singacpp_merge, Merge);
 RegisterLayerClass(singacuda_merge, Merge);
 RegisterLayerClass(singacl_merge, Merge);
 
-void Merge::Setup(const Shape& in_sample, const LayerConf& conf) {
+void Merge::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
 }
 
-const vector<Tensor> Merge::Forward(int flag, const vector<Tensor>& inputs) {
+const vector<Tensor> Merge::Forward(int flag, const vector<Tensor> &inputs) {
   vector<Tensor> outputs;
   input_size_ = inputs.size();
   if (inputs.size() == 1u) {
@@ -51,8 +51,8 @@ const vector<Tensor> Merge::Forward(int flag, const vector<Tensor>& inputs) {
   return outputs;
 }
 
-const std::pair<vector<Tensor>, vector<Tensor>> Merge::Backward(
-    int flag, const vector<Tensor>& grads) {
+const std::pair<vector<Tensor>, vector<Tensor>>
+Merge::Backward(int flag, const vector<Tensor> &grads) {
   vector<Tensor> input_grad, param_grad;
   CHECK_EQ(grads.size(), 1u) << "Merge layer only have one output tensor.";
   for (size_t i = 0; i < input_size_; i++)
@@ -60,4 +60,4 @@ const std::pair<vector<Tensor>, vector<Tensor>> Merge::Backward(
   return std::make_pair(input_grad, param_grad);
 }
 
-}  // namespace singa
+} // namespace singa

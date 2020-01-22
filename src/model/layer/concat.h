@@ -17,35 +17,35 @@
  */
 #ifndef SINGA_MODEL_LAYER_CONCAT_H_
 #define SINGA_MODEL_LAYER_CONCAT_H_
-#include <utility>
-#include <string>
-#include <vector>
 #include "singa/model/layer.h"
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace singa {
 /**
  * Cocnatenate tensors from the source layers along the give axis.
  */
 class Concat : public Layer {
- public:
+public:
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "Concat"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const vector<Shape>& in_shapes, const LayerConf& conf);
+  void Setup(const vector<Shape> &in_shapes, const LayerConf &conf);
   const Shape GetOutputSampleShape() const override {
     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
     return out_sample_shape_;
   }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&)
-  const vector<Tensor> Forward(int flag, const vector<Tensor>& input) override;
+  const vector<Tensor> Forward(int flag, const vector<Tensor> &input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
-  const std::pair<vector<Tensor>, vector<Tensor>> Backward(int flag,
-      const vector<Tensor>& grad) override;
+  const std::pair<vector<Tensor>, vector<Tensor>>
+  Backward(int flag, const vector<Tensor> &grad) override;
 
- protected:
+protected:
   /// >= 0
   int axis_ = 0;
   /// slice_point_[i] the end offset of the i-th source tensor on the concat
@@ -54,5 +54,5 @@ class Concat : public Layer {
   Shape out_sample_shape_;
 };
 
-}  // namespace singa
-#endif  // SINGA_MODEL_LAYER_CONCAT_H_
+} // namespace singa
+#endif // SINGA_MODEL_LAYER_CONCAT_H_

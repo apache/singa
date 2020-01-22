@@ -20,18 +20,18 @@
 #define SRC_MODEL_LAYER_CUDNN_CONVOLUTION_H_
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
-#include <string>
-#include <utility>
-#include <vector>
 #include "./convolution.h"
 #include "singa/core/common.h"
 #include "singa/model/layer.h"
 #include "singa/proto/core.pb.h"
 #include "singa/utils/string.h"
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace singa {
 class CudnnConvolution : public Convolution {
- public:
+public:
   ~CudnnConvolution();
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "CudnnConvolution";}
@@ -41,18 +41,18 @@ class CudnnConvolution : public Convolution {
                                                    const Tensor &grad) override;
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf &conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
 
   void ToDevice(std::shared_ptr<Device> device) override;
 
   size_t workspace_byte_limit() { return workspace_byte_limit_; }
   string prefer() { return prefer_; }
 
- protected:
+protected:
   /// Init cudnn related data structures.
-  void InitCudnn(const Tensor& input);
+  void InitCudnn(const Tensor &input);
 
- protected:
+protected:
   bool has_init_cudnn_ = false;
   cudnnTensorDescriptor_t x_desc_ = nullptr;
   cudnnTensorDescriptor_t y_desc_ = nullptr;
@@ -67,7 +67,7 @@ class CudnnConvolution : public Convolution {
   string prefer_;
 };
 
-}  // namespace singa
+} // namespace singa
 
-#endif  // USE_CUDNN
-#endif  // SRC_MODEL_LAYER_CUDNN_CONVOLUTION_H_
+#endif // USE_CUDNN
+#endif // SRC_MODEL_LAYER_CUDNN_CONVOLUTION_H_

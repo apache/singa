@@ -56,7 +56,8 @@ TEST(Flatten, ForwardCPU) {
   EXPECT_EQ(6u, out.shape(0));
   EXPECT_EQ(2u, out.shape(1));
   const float *yptr = out.data<float>();
-  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(x[i], yptr[i]);
+  for (size_t i = 0; i < n; i++)
+    EXPECT_FLOAT_EQ(x[i], yptr[i]);
 }
 
 TEST(Flatten, BackwardCPU) {
@@ -83,7 +84,8 @@ TEST(Flatten, BackwardCPU) {
   EXPECT_EQ(1u, out.first.shape(1));
   EXPECT_EQ(3u, out.first.shape(2));
   EXPECT_EQ(2u, out.first.shape(3));
-  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dy[i], xptr[i]);
+  for (size_t i = 0; i < n; i++)
+    EXPECT_FLOAT_EQ(dy[i], xptr[i]);
 }
 
 #ifdef USE_CUDA
@@ -108,7 +110,8 @@ TEST(Flatten, ForwardGPU) {
   EXPECT_EQ(6u, out.shape(0));
   EXPECT_EQ(2u, out.shape(1));
   const float *yptr = out.data<float>();
-  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(x[i], yptr[i]);
+  for (size_t i = 0; i < n; i++)
+    EXPECT_FLOAT_EQ(x[i], yptr[i]);
 }
 
 TEST(Flatten, BackwardGPU) {
@@ -138,6 +141,7 @@ TEST(Flatten, BackwardGPU) {
   EXPECT_EQ(1u, in_diff.shape(1));
   EXPECT_EQ(3u, in_diff.shape(2));
   EXPECT_EQ(2u, in_diff.shape(3));
-  for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dy[i], xptr[i]);
+  for (size_t i = 0; i < n; i++)
+    EXPECT_FLOAT_EQ(dy[i], xptr[i]);
 }
 #endif // USE_CUDA

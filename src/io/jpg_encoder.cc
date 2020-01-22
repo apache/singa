@@ -26,14 +26,14 @@
 
 namespace singa {
 
-std::string JPGEncoder::Encode(vector<Tensor>& data) {
+std::string JPGEncoder::Encode(vector<Tensor> &data) {
   // suppose image: image, data[1]: label
   CHECK_LE(data.size(), 2u);
-  const Tensor& image = data.at(0);
+  const Tensor &image = data.at(0);
   CHECK_EQ(image.nDim(), 3u);
   CHECK_EQ(image.data_type(), kUChar) << "Data type " << image.data_type()
-    << " is invalid for an raw image";
-  const auto* raw = image.data<unsigned char>();
+                                      << " is invalid for an raw image";
+  const auto *raw = image.data<unsigned char>();
   cv::Mat mat;
   if (image_dim_order_ == "HWC") {
     size_t height = image.shape(0), width = image.shape(1),
@@ -61,7 +61,7 @@ std::string JPGEncoder::Encode(vector<Tensor>& data) {
   std::vector<uchar> buff;
   std::vector<int> param = std::vector<int>(2);
   param[0] = CV_IMWRITE_JPEG_QUALITY;
-  param[1] = 100;  // default is 95
+  param[1] = 100; // default is 95
   cv::imencode(".jpg", mat, buff, param);
   std::string buf(buff.begin(), buff.end());
 
@@ -73,15 +73,15 @@ std::string JPGEncoder::Encode(vector<Tensor>& data) {
 
   // suppose each image is attached with at most one label
   if (data.size() == 2) {
-    const int* label = data[1].data<int>();
-    //CHECK_EQ(label[0], 2);
+    const int *label = data[1].data<int>();
+    // CHECK_EQ(label[0], 2);
     record.add_label(label[0]);
   }
 
   record.SerializeToString(&output);
   return output;
 }
-}  // namespace singa
-#endif  // USE_OPENCV
+} // namespace singa
+#endif // USE_OPENCV
 
 #endif

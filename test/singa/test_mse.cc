@@ -19,22 +19,22 @@
 *
 *************************************************************/
 
-#include "gtest/gtest.h"
-#include "singa/core/tensor.h"
 #include "singa/core/device.h"
+#include "singa/core/tensor.h"
 #include "singa/model/loss.h"
+#include "gtest/gtest.h"
 
 using singa::Tensor;
 class TestMSE : public ::testing::Test {
- protected:
+protected:
   virtual void SetUp() {
     p.Resize(singa::Shape{2, 3});
     t.Resize(singa::Shape{2, 3});
     p.CopyDataFromHostPtr(pdat, sizeof(pdat) / sizeof(float));
     t.CopyDataFromHostPtr(tdat, sizeof(pdat) / sizeof(float));
   }
-  const float pdat[6] = { 0.1f, 1.1f, 2.1f, 0.3f, 2.2f, 1.8f};
-  const float tdat[6] = { 0.1f, 1.1f, 2.0f, 0.3f, 2.2f, 1.8f};
+  const float pdat[6] = {0.1f, 1.1f, 2.1f, 0.3f, 2.2f, 1.8f};
+  const float tdat[6] = {0.1f, 1.1f, 2.0f, 0.3f, 2.2f, 1.8f};
 
   singa::Tensor p, t;
 };
@@ -42,7 +42,7 @@ class TestMSE : public ::testing::Test {
 #ifdef USE_CBLAS
 TEST_F(TestMSE, CppForward) {
   singa::MSE mse;
-  const Tensor& loss = mse.Forward(singa::kEval, p, t);
+  const Tensor &loss = mse.Forward(singa::kEval, p, t);
   auto ldat = loss.data<float>();
 
   for (size_t i = 0, k = 0; i < loss.Size(); i++) {
@@ -58,7 +58,7 @@ TEST_F(TestMSE, CppForward) {
 TEST_F(TestMSE, CppBackward) {
   singa::MSE mse;
   mse.Forward(singa::kTrain, p, t);
-  const Tensor& grad = mse.Backward();
+  const Tensor &grad = mse.Backward();
 
   auto gdat = grad.data<float>();
 
@@ -68,7 +68,7 @@ TEST_F(TestMSE, CppBackward) {
 #endif
 #ifdef USE_CUDA
 TEST_F(TestMSE, CudaForward) {
-  singa::MSE* mse = new singa::MSE();
+  singa::MSE *mse = new singa::MSE();
   auto dev = std::make_shared<singa::CudaGPU>();
   p.ToDevice(dev);
   t.ToDevice(dev);
@@ -85,8 +85,8 @@ TEST_F(TestMSE, CudaForward) {
     }
     EXPECT_FLOAT_EQ(ldat[i], 0.5 * l);
   }
-	p.ToHost();
-	t.ToHost();
+  p.ToHost();
+  t.ToHost();
   delete mse;
 }
 
@@ -102,8 +102,7 @@ TEST_F(TestMSE, CudaBackward) {
 
   for (size_t i = 0; i < grad.Size(); i++)
     EXPECT_FLOAT_EQ(gdat[i], (1.0f / p.shape().at(0)) * (pdat[i] - tdat[i]));
-	p.ToHost();
-	t.ToHost();
-
+  p.ToHost();
+  t.ToHost();
 }
 #endif

@@ -29,18 +29,18 @@ using singa::CudnnRNN;
 using singa::Shape;
 using singa::Tensor;
 class TestCudnnRNN : public ::testing::Test {
-  protected:
-    virtual void SetUp() {
-      singa::RNNConf *rnnconf = conf.mutable_rnn_conf();
-      rnnconf->set_hidden_size(hidden_size);
-      rnnconf->set_num_stacks(1);
-      rnnconf->set_dropout(0);
-      rnnconf->set_input_mode("linear");
-      rnnconf->set_direction("unidirectional");
-      rnnconf->set_rnn_mode("tanh");
-    }
-    singa::LayerConf conf;
-    size_t hidden_size = 4;
+protected:
+  virtual void SetUp() {
+    singa::RNNConf *rnnconf = conf.mutable_rnn_conf();
+    rnnconf->set_hidden_size(hidden_size);
+    rnnconf->set_num_stacks(1);
+    rnnconf->set_dropout(0);
+    rnnconf->set_input_mode("linear");
+    rnnconf->set_direction("unidirectional");
+    rnnconf->set_rnn_mode("tanh");
+  }
+  singa::LayerConf conf;
+  size_t hidden_size = 4;
 };
 
 TEST_F(TestCudnnRNN, Setup) {
@@ -54,8 +54,8 @@ TEST_F(TestCudnnRNN, Setup) {
 TEST_F(TestCudnnRNN, Forward) {
   auto cuda = std::make_shared<singa::CudaGPU>();
   const size_t seqLength = 4, batchsize = 1, dim = 2;
-  const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-                                          1.0f, 1.0f, 1.0f};
+  const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f,
+                                                1.0f, 1.0f, 1.0f, 1.0f};
 
   vector<Tensor> inputs;
   for (size_t i = 0; i < seqLength; i++) {
@@ -108,8 +108,8 @@ TEST_F(TestCudnnRNN, Forward) {
 TEST_F(TestCudnnRNN, Backward) {
   auto cuda = std::make_shared<singa::CudaGPU>();
   const size_t seqLength = 4, batchsize = 1, dim = 2;
-  const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-                                          1.0f, 1.0f, 1.0f};
+  const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f,
+                                                1.0f, 1.0f, 1.0f, 1.0f};
 
   vector<Tensor> inputs;
   for (size_t i = 0; i < seqLength; i++) {
@@ -148,7 +148,7 @@ TEST_F(TestCudnnRNN, Backward) {
   grads.push_back(dhy);
   vector<float> dhyptr(hidden_size, 0.0f);
   const auto ret = rnn.Backward(singa::kTrain, grads);
-  for (size_t i = seqLength - 1; i > 0 ; i --) {
+  for (size_t i = seqLength - 1; i > 0; i--) {
     auto dx = ret.first[i];
     auto y = outs[i].Clone();
     y.ToHost();
@@ -177,5 +177,5 @@ TEST_F(TestCudnnRNN, Backward) {
     std::copy(tmp.begin(), tmp.end(), dhyptr.begin());
   }
 }
-#endif  // CUDNN_VERSION >= 5005
-#endif  // USE_CUDNN
+#endif // CUDNN_VERSION >= 5005
+#endif // USE_CUDNN

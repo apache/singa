@@ -21,13 +21,13 @@
 
 namespace singa {
 namespace io {
-bool BinFileWriter::Open(const std::string& path, Mode mode) {
+bool BinFileWriter::Open(const std::string &path, Mode mode) {
   path_ = path;
   mode_ = mode;
   return OpenFile();
 }
 
-bool BinFileWriter::Open(const std::string& path, Mode mode, int capacity) {
+bool BinFileWriter::Open(const std::string &path, Mode mode, int capacity) {
   CHECK(!fdat_.is_open());
   path_ = path;
   mode_ = mode;
@@ -38,15 +38,17 @@ bool BinFileWriter::Open(const std::string& path, Mode mode, int capacity) {
 void BinFileWriter::Close() {
   Flush();
   if (buf_ != nullptr) {
-    delete [] buf_;
+    delete[] buf_;
     buf_ = nullptr;
   }
-  if (fdat_.is_open()) fdat_.close();
+  if (fdat_.is_open())
+    fdat_.close();
 }
 
-bool BinFileWriter::Write(const std::string& key, const std::string& value) {
+bool BinFileWriter::Write(const std::string &key, const std::string &value) {
   CHECK(fdat_.is_open()) << "File not open!";
-  if (value.size() == 0) return false;
+  if (value.size() == 0)
+    return false;
   // magic_word + (key_len + key) + val_len + val
   char magic[4];
   int size;
@@ -54,10 +56,11 @@ bool BinFileWriter::Write(const std::string& key, const std::string& value) {
   magic[3] = 0;
   if (key.size() == 0) {
     magic[2] = 0;
-    size = (int) (sizeof(magic) + sizeof(size_t) + value.size());
+    size = (int)(sizeof(magic) + sizeof(size_t) + value.size());
   } else {
     magic[2] = 1;
-    size = (int) (sizeof(magic) + 2 * sizeof(size_t) + key.size() + value.size());
+    size =
+        (int)(sizeof(magic) + 2 * sizeof(size_t) + key.size() + value.size());
   }
 
   if (bufsize_ + size > capacity_) {
@@ -70,15 +73,15 @@ bool BinFileWriter::Write(const std::string& key, const std::string& value) {
   memcpy(buf_ + bufsize_, magic, sizeof(magic));
   bufsize_ += sizeof(magic);
   if (key.size() > 0) {
-    *reinterpret_cast<size_t*>(buf_ + bufsize_) = key.size();
+    *reinterpret_cast<size_t *>(buf_ + bufsize_) = key.size();
     bufsize_ += sizeof(size_t);
     std::memcpy(buf_ + bufsize_, key.data(), key.size());
-    bufsize_ += (int) key.size();
+    bufsize_ += (int)key.size();
   }
-  *reinterpret_cast<size_t*>(buf_ + bufsize_) = value.size();
+  *reinterpret_cast<size_t *>(buf_ + bufsize_) = value.size();
   bufsize_ += sizeof(size_t);
   std::memcpy(buf_ + bufsize_, value.data(), value.size());
-  bufsize_ += (int) value.size();
+  bufsize_ += (int)value.size();
   return true;
 }
 
@@ -94,19 +97,19 @@ bool BinFileWriter::OpenFile() {
   CHECK(buf_ == nullptr);
   buf_ = new char[capacity_];
   switch (mode_) {
-    case kCreate:
-      fdat_.open(path_, std::ios::binary | std::ios::out | std::ios::trunc);
-      CHECK(fdat_.is_open()) << "Cannot create file " << path_;
-      break;
-    case kAppend:
-      fdat_.open(path_, std::ios::app | std::ios::binary);
-      CHECK(fdat_.is_open()) << "Cannot open file " << path_;
-      break;
-    default:
-      LOG(FATAL) << "unknown mode to open binary file " << mode_;
-      break;
+  case kCreate:
+    fdat_.open(path_, std::ios::binary | std::ios::out | std::ios::trunc);
+    CHECK(fdat_.is_open()) << "Cannot create file " << path_;
+    break;
+  case kAppend:
+    fdat_.open(path_, std::ios::app | std::ios::binary);
+    CHECK(fdat_.is_open()) << "Cannot open file " << path_;
+    break;
+  default:
+    LOG(FATAL) << "unknown mode to open binary file " << mode_;
+    break;
   }
   return fdat_.is_open();
 }
-}  // namespace io
-}  // namespace singa
+} // namespace io
+} // namespace singa

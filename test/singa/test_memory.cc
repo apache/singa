@@ -19,12 +19,12 @@
 *
 *************************************************************/
 
-#include "gtest/gtest.h"
-#include "singa/utils/logging.h"
 #include "singa/core/memory.h"
 #include "singa/singa_config.h"
-#include "singa/utils/timer.h"
 #include "singa/utils/cuda_utils.h"
+#include "singa/utils/logging.h"
+#include "singa/utils/timer.h"
+#include "gtest/gtest.h"
 
 #ifdef USE_CUDA
 /*
@@ -73,14 +73,14 @@ TEST(MemPool, CompareCudaCnmem) {
   int numOfTests = 5000;
   int allocSize = 32;
 
-  singa::DeviceMemPool* pool = NULL;
+  singa::DeviceMemPool *pool = NULL;
   pool = &cnPool;
 
   CUDA_CHECK(cudaSetDevice(0));
   singa::Timer tick;
   for (int i = 0; i < numOfTests; i++) {
-    int* memPtrs = NULL;
-    pool->Malloc((void**)&memPtrs, allocSize);
+    int *memPtrs = NULL;
+    pool->Malloc((void **)&memPtrs, allocSize);
     pool->Free(memPtrs);
   }
   tick.Tick();
@@ -88,12 +88,12 @@ TEST(MemPool, CompareCudaCnmem) {
 
   pool = &cudaPool;
   for (int i = 0; i < numOfTests; i++) {
-    int* memPtrs = NULL;
-    pool->Malloc((void**)&memPtrs, allocSize);
+    int *memPtrs = NULL;
+    pool->Malloc((void **)&memPtrs, allocSize);
     pool->Free(memPtrs);
   }
   tick.Tick();
   int cuda_time = tick.Elapsed();
   EXPECT_GE(cuda_time, cn_time);
 }
-#endif  // USE_CUDA
+#endif // USE_CUDA

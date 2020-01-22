@@ -19,28 +19,28 @@
 #ifndef SINGA_IO_TRANSFORMER_H_
 #define SINGA_IO_TRANSFORMER_H_
 
-#include <vector>
-#include <string>
 #include "singa/core/tensor.h"
 #include "singa/proto/io.pb.h"
 #include "singa/proto/model.pb.h"
+#include <string>
+#include <vector>
 
 namespace singa {
 
 /// Base apply class that does data transformations in pre-processing stage.
 class Transformer {
- public:
+public:
   Transformer() {}
   virtual ~Transformer() {}
 
-  virtual void Setup(const TransformerConf& conf) {}
+  virtual void Setup(const TransformerConf &conf) {}
 
-  virtual Tensor Apply(int flag, Tensor& input) = 0;
+  virtual Tensor Apply(int flag, Tensor &input) = 0;
 };
 
-class ImageTransformer: public Transformer {
- public:
-  void Setup(const TransformerConf& conf) override {
+class ImageTransformer : public Transformer {
+public:
+  void Setup(const TransformerConf &conf) override {
     featurewise_center_ = conf.featurewise_center();
     featurewise_std_norm_ = conf.featurewise_std_norm();
     resize_height_ = conf.resize_height();
@@ -48,13 +48,13 @@ class ImageTransformer: public Transformer {
     rescale_ = conf.rescale();
     horizontal_mirror_ = conf.horizontal_mirror();
     image_dim_order_ = conf.image_dim_order();
-    
+
     /// if crop_shape not contain 2 elements, ignore crop option.
     if (conf.crop_shape_size() == 2)
-      crop_shape_ = {conf.crop_shape(0), conf.crop_shape(1)};      
+      crop_shape_ = {conf.crop_shape(0), conf.crop_shape(1)};
   }
 
-  Tensor Apply(int flag, Tensor& input) override;
+  Tensor Apply(int flag, Tensor &input) override;
 
   bool featurewise_center() const { return featurewise_center_; }
   bool featurewise_std_norm() const { return featurewise_std_norm_; }
@@ -65,7 +65,7 @@ class ImageTransformer: public Transformer {
   const Shape crop_shape() const { return crop_shape_; }
   const string image_dim_order() const { return image_dim_order_; }
 
- private:
+private:
   bool featurewise_center_ = false;
   bool featurewise_std_norm_ = false;
   bool horizontal_mirror_ = false;
@@ -77,13 +77,13 @@ class ImageTransformer: public Transformer {
 };
 
 #ifdef USE_OPENCV
-Tensor resize(Tensor& input, const size_t resize_height, 
-         const size_t resize_width, const string& image_dim_order);
+Tensor resize(Tensor &input, const size_t resize_height,
+              const size_t resize_width, const string &image_dim_order);
 #endif
-Tensor crop(Tensor& input, const size_t crop_height, 
-             const size_t crop_width, const size_t crop_h_offset, 
-             const size_t crop_w_offset, const string& image_dim_order);
-Tensor mirror(Tensor& input, const bool horizontal_mirror, 
-             const bool vertical_mirror, const string& image_dim_order);
+Tensor crop(Tensor &input, const size_t crop_height, const size_t crop_width,
+            const size_t crop_h_offset, const size_t crop_w_offset,
+            const string &image_dim_order);
+Tensor mirror(Tensor &input, const bool horizontal_mirror,
+              const bool vertical_mirror, const string &image_dim_order);
 } // namespace singa
-#endif  // SINGA_IO_TRANSFORMER_H_
+#endif // SINGA_IO_TRANSFORMER_H_

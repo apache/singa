@@ -25,8 +25,8 @@
 using singa::Shape;
 
 TEST(Concat, Setup) {
-  Shape s1 {2u, 3u};
-  Shape s2 {1u, 3u};
+  Shape s1{2u, 3u};
+  Shape s2{1u, 3u};
   singa::LayerConf conf;
   conf.set_type("singa_concat");
   conf.mutable_concat_conf()->set_axis(0);
@@ -53,16 +53,15 @@ void ForwardConcatRowTest(std::shared_ptr<singa::Device> dev) {
   EXPECT_EQ(out.size(), 1u);
 
   out[0].ToHost();
-  const float * outptr = out[0].data<float>();
+  const float *outptr = out[0].data<float>();
   for (size_t i = 0; i < a; i++) {
     for (size_t j = 0; j < c; j++)
       EXPECT_FLOAT_EQ(outptr[i * c + j], 1.0f);
   }
   for (size_t i = a; i < a + b; i++) {
     for (size_t j = 0; j < c; j++)
-      EXPECT_FLOAT_EQ(outptr[i  * c + j], 2.0f);
+      EXPECT_FLOAT_EQ(outptr[i * c + j], 2.0f);
   }
-
 }
 
 void ForwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
@@ -81,16 +80,15 @@ void ForwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
   auto out = layer.Forward(singa::kTrain, {t1, t2});
   EXPECT_EQ(out.size(), 1u);
   out[0].ToHost();
-  const float * outptr = out[0].data<float>();
+  const float *outptr = out[0].data<float>();
   for (size_t i = 0; i < c; i++) {
     for (size_t j = 0; j < a; j++)
       EXPECT_FLOAT_EQ(outptr[i * (a + b) + j], 1.0f);
   }
   for (size_t i = 0; i < c; i++) {
     for (size_t j = a; j < a + b; j++)
-      EXPECT_FLOAT_EQ(outptr[i  * (a + b) + j], 2.0f);
+      EXPECT_FLOAT_EQ(outptr[i * (a + b) + j], 2.0f);
   }
-
 }
 TEST(Concat, ForwardConcatRowCpp) {
   ForwardConcatRowTest(singa::defaultDevice);
@@ -100,7 +98,6 @@ TEST(Concat, ForwardConcatColumnCpp) {
   ForwardConcatColumnTest(singa::defaultDevice);
 }
 
-
 #ifdef USE_CUDA
 TEST(Concat, ForwardConcatRowCuda) {
   ForwardConcatRowTest(std::make_shared<singa::CudaGPU>());
@@ -109,8 +106,7 @@ TEST(Concat, ForwardConcatRowCuda) {
 TEST(Concat, ForwardConcatColumnCuda) {
   ForwardConcatColumnTest(std::make_shared<singa::CudaGPU>());
 }
-#endif  // USE_CUDA
-
+#endif // USE_CUDA
 
 void BackwardConcatRowTest(std::shared_ptr<singa::Device> dev) {
   size_t a = 2u, b = 1u, c = 3u;
@@ -134,18 +130,18 @@ void BackwardConcatRowTest(std::shared_ptr<singa::Device> dev) {
   EXPECT_EQ(grads.size(), 2u);
 
   t.ToHost();
-  const float* tptr = t.data<float>();
+  const float *tptr = t.data<float>();
 
   grads[0].ToHost();
-  const float * outa = grads[0].data<float>();
+  const float *outa = grads[0].data<float>();
   for (size_t i = 0; i < a; i++)
     for (size_t j = 0; j < c; j++)
       EXPECT_FLOAT_EQ(outa[i * c + j], tptr[i * c + j]);
   grads[1].ToHost();
-  const float * outb = grads[1].data<float>();
+  const float *outb = grads[1].data<float>();
   for (size_t i = 0; i < b; i++)
     for (size_t j = 0; j < c; j++)
-      EXPECT_FLOAT_EQ(outb[i  * c + j], tptr[(i + a) * c + j]);
+      EXPECT_FLOAT_EQ(outb[i * c + j], tptr[(i + a) * c + j]);
 }
 
 void BackwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
@@ -170,18 +166,18 @@ void BackwardConcatColumnTest(std::shared_ptr<singa::Device> dev) {
   EXPECT_EQ(grads.size(), 2u);
 
   t.ToHost();
-  const float* tptr = t.data<float>();
+  const float *tptr = t.data<float>();
 
   grads[0].ToHost();
-  const float * outa = grads[0].data<float>();
+  const float *outa = grads[0].data<float>();
   for (size_t i = 0; i < c; i++)
     for (size_t j = 0; j < a; j++)
       EXPECT_FLOAT_EQ(outa[i * a + j], tptr[i * (a + b) + j]);
   grads[1].ToHost();
-  const float * outb = grads[1].data<float>();
+  const float *outb = grads[1].data<float>();
   for (size_t i = 0; i < c; i++)
     for (size_t j = 0; j < b; j++)
-      EXPECT_FLOAT_EQ(outb[i  * b + j], tptr[i * (a + b) + a + j]);
+      EXPECT_FLOAT_EQ(outb[i * b + j], tptr[i * (a + b) + a + j]);
 }
 
 TEST(Concat, BackwardConcatRowCpp) {
@@ -192,7 +188,6 @@ TEST(Concat, BackwardConcatColumn) {
   BackwardConcatColumnTest(singa::defaultDevice);
 }
 
-
 #ifdef USE_CUDA
 TEST(Concat, BackwardConcatRowCuda) {
   BackwardConcatRowTest(std::make_shared<singa::CudaGPU>());
@@ -201,4 +196,4 @@ TEST(Concat, BackwardConcatRowCuda) {
 TEST(Concat, BackwardConcatColumnCuda) {
   BackwardConcatColumnTest(std::make_shared<singa::CudaGPU>());
 }
-#endif  // USE_CUDA
+#endif // USE_CUDA

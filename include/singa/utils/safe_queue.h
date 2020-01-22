@@ -23,28 +23,25 @@
 #define SINGA_UTILS_SAFE_QUEUE_H_
 
 #include <algorithm>
-#include <queue>
+#include <condition_variable>
 #include <list>
 #include <mutex>
-#include <condition_variable>
+#include <queue>
 #include <thread>
 
 /**
  * Thread-safe queue.
  */
-template <typename T, class Container = std::queue<T>>
-class SafeQueue {
- public:
+template <typename T, class Container = std::queue<T>> class SafeQueue {
+public:
   SafeQueue() = default;
-  ~SafeQueue() {
-    std::lock_guard<std::mutex> lock(mutex_);
-  }
+  ~SafeQueue() { std::lock_guard<std::mutex> lock(mutex_); }
 
   /**
    * Push an element into the queue. Blocking operation.
    * @return true if success;
    */
-  bool Push(const T& e) {
+  bool Push(const T &e) {
     std::lock_guard<std::mutex> lock(mutex_);
     queue_.push(e);
     condition_.notify_one();
@@ -55,7 +52,7 @@ class SafeQueue {
    * Pop an element from the queue.
    * It will be blocked until one element is poped.
    */
-  void Pop(T& e) {
+  void Pop(T &e) {
     std::unique_lock<std::mutex> lock(mutex_);
     condition_.wait(lock, [this]() { return !queue_.empty(); });
     e = queue_.front();
@@ -65,15 +62,15 @@ class SafeQueue {
    * Pop an item from the queue until one element is poped or timout.
    * @param[in] timeout, return false after waiting this number of microseconds
    */
-  bool Pop(T& item, std::uint64_t timeout) {
+  bool Pop(T &item, std::uint64_t timeout) {
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (queue_.empty()) {
       if (timeout == 0)
         return false;
 
-      if (condition_.wait_for(lock, std::chrono::microseconds(timeout))
-          == std::cv_status::timeout)
+      if (condition_.wait_for(lock, std::chrono::microseconds(timeout)) ==
+          std::cv_status::timeout)
         return false;
     }
 
@@ -86,7 +83,7 @@ class SafeQueue {
    *  Try to pop an element from the queue.
    * \return false the queue is empty now.
    */
-  bool TryPop(T& e) {
+  bool TryPop(T &e) {
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (queue_.empty())
@@ -97,7 +94,6 @@ class SafeQueue {
     return true;
   }
 
-
   /**
    * @return Number of elements in the queue.
    */
@@ -106,7 +102,7 @@ class SafeQueue {
     return queue_.size();
   }
 
- private:
+private:
   Container queue_;
   mutable std::mutex mutex_;
   std::condition_variable condition_;
@@ -115,16 +111,15 @@ class SafeQueue {
 /**
  * Thread safe priority queue.
  */
-template<typename T>
-class PriorityQueue {
- public:
+template <typename T> class PriorityQueue {
+public:
   PriorityQueue() = default;
   /**
    * Push an element into the queue with a given priority.
    * The queue should not be a priority queue.
    * @return true if success; otherwise false, e.g., due to capacity constraint.
    */
-  bool Push(const T& e, int priority) {
+  bool Push(const T &e, int priority) {
     Element ele;
     ele.data = e;
     ele.priority = priority;
@@ -136,7 +131,7 @@ class PriorityQueue {
    * Pop an element from the queue with the highest priority.
    * It blocks until one element is poped.
    */
-  void Pop(T& e) {
+  void Pop(T &e) {
     Element ele;
     queue_.pop(ele);
     e = ele.data;
@@ -147,7 +142,7 @@ class PriorityQueue {
    * @param[in] timeout, return false if no element is poped after this number
    * of microseconds.
    */
-  bool Pop(T& e, std::uint64_t timeout) {
+  bool Pop(T &e, std::uint64_t timeout) {
     Element ele;
     if (queue_.pop(ele, timeout)) {
       e = ele.data;
@@ -161,7 +156,7 @@ class PriorityQueue {
    * Try to pop an element from the queue.
    * @return false if the queue is empty now.
    */
-  bool TryPop(T& e) {
+  bool TryPop(T &e) {
     Element ele;
     if (queue_.TryPop(ele)) {
       e = ele.data;
@@ -174,11 +169,9 @@ class PriorityQueue {
   /**
    * @return Number of elements in the queue.
    */
-  unsigned int Size() const {
-    return queue_.Size();
-  }
+  unsigned int Size() const { return queue_.Size(); }
 
- private:
+private:
   struct Element {
     T data;
     int priority;
@@ -190,4 +183,4 @@ class PriorityQueue {
   SafeQueue<Element, std::priority_queue<Element>> queue_;
 };
 
-#endif  // SINGA_UTILS_SAFE_QUEUE_H_
+#endif // SINGA_UTILS_SAFE_QUEUE_H_

@@ -24,7 +24,7 @@
 #include "gtest/gtest.h"
 #ifdef USE_LMDB
 
-const char* path_lmdb = "./test_lmdb";
+const char *path_lmdb = "./test_lmdb";
 using singa::io::LMDBReader;
 using singa::io::LMDBWriter;
 TEST(LMDBWriter, Create) {
@@ -137,4 +137,4 @@ TEST(LMDBReader, SeekToFirst) {
   remove("./test_lmdb/lock.mdb");
   remove("./test_lmdb");
 }
-#endif  // USE_LMDB
+#endif // USE_LMDB

@@ -25,12 +25,12 @@
 
 namespace singa {
 class LRN : public Layer {
- public:
+public:
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "LRN"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
   const Shape GetOutputSampleShape() const override {
     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
     return out_sample_shape_;
@@ -42,22 +42,22 @@ class LRN : public Layer {
    * @f$ b_i=a_i/x_i^beta @f$
    * @f$x_i=k+alpha*\sum_{j=max(0,i-n/2)}^{min(N,i+n/2)}(a_j)^2 @f$
    * n is size of local response area.
-   * @f$a_i@f$, the activation (after ReLU) of a neuron convolved with the i-th kernel.
+   * @f$a_i@f$, the activation (after ReLU) of a neuron convolved with the i-th
+   * kernel.
    * @f$b_i@f$, the neuron after normalization, N is the total num of kernels
    */
-  const Tensor Forward(int flag, const Tensor& input)
-    override;
+  const Tensor Forward(int flag, const Tensor &input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
-  const std::pair<Tensor, vector<Tensor>> Backward(
-      int flag, const Tensor& grad) override;
+  const std::pair<Tensor, vector<Tensor>> Backward(int flag,
+                                                   const Tensor &grad) override;
 
   int local_size() const { return local_size_; }
   float alpha() const { return alpha_; }
   float beta() const { return beta_; }
   float k() const { return k_; }
 
- protected:
+protected:
   //!< hyper-parameter: size local response (neighbor) area
   int local_size_;
   //!< other hyper-parameters
@@ -69,5 +69,4 @@ class LRN : public Layer {
 }; // class LRN
 } // namespace
 
-#endif  // SINGA_MODEL_LAYER_LRN_H_
-
+#endif // SINGA_MODEL_LAYER_LRN_H_

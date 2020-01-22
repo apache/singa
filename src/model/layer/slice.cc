@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./slice.h"
+#include "singa/model/layer.h"
 namespace singa {
 
 RegisterLayerClass(singa_slice, Slice);
@@ -25,7 +25,7 @@ RegisterLayerClass(singacpp_slice, Slice);
 RegisterLayerClass(singacuda_slice, Slice);
 RegisterLayerClass(singacl_slice, Slice);
 
-void Slice::Setup(const Shape& in_sample, const LayerConf& conf) {
+void Slice::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shapes_.clear();
   slice_point_.clear();
@@ -53,26 +53,26 @@ void Slice::Setup(const Shape& in_sample, const LayerConf& conf) {
   }
 }
 
-const vector<Tensor> Slice::Forward(int flag, const vector<Tensor>& inputs) {
+const vector<Tensor> Slice::Forward(int flag, const vector<Tensor> &inputs) {
   // TODO(wangwei) check the inputs shape to be the same for all iterations
   vector<Tensor> outputs;
   CHECK_EQ(inputs.size(), 1u) << "Split layer only have one input tensor.";
   size_t offset = 0;
-  for (auto& s : slice_point_) {
-      outputs.push_back(SliceOn(inputs.at(0), offset, s, axis_));
+  for (auto &s : slice_point_) {
+    outputs.push_back(SliceOn(inputs.at(0), offset, s, axis_));
     offset = s;
   }
-  outputs.push_back(SliceOn(inputs.at(0), offset, inputs.at(0).shape(axis_),
-        axis_));
+  outputs.push_back(
+      SliceOn(inputs.at(0), offset, inputs.at(0).shape(axis_), axis_));
   return outputs;
 }
 
-const std::pair<vector<Tensor>, vector<Tensor>> Slice::Backward(
-    int flag, const vector<Tensor>& grads) {
+const std::pair<vector<Tensor>, vector<Tensor>>
+Slice::Backward(int flag, const vector<Tensor> &grads) {
   vector<Tensor> input_grad, param_grad;
   CHECK_EQ(grads.size(), out_sample_shapes_.size());
   input_grad.push_back(ConcatOn(grads, axis_));
   return std::make_pair(input_grad, param_grad);
 }
 
-}  // namespace singa
+} // namespace singa

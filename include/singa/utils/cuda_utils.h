@@ -9,7 +9,7 @@
 #include <cuda_runtime.h>
 #include <curand.h>
 
-inline const char* cublasGetErrorString(cublasStatus_t error) {
+inline const char *cublasGetErrorString(cublasStatus_t error) {
   switch (error) {
   case CUBLAS_STATUS_SUCCESS:
     return "CUBLAS_STATUS_SUCCESS";
@@ -39,7 +39,7 @@ inline const char* cublasGetErrorString(cublasStatus_t error) {
   return "Unknown cublas status";
 }
 
-inline const char* curandGetErrorString(curandStatus_t error) {
+inline const char *curandGetErrorString(curandStatus_t error) {
   switch (error) {
   case CURAND_STATUS_SUCCESS:
     return "CURAND_STATUS_SUCCESS";
@@ -76,27 +76,26 @@ inline const char* curandGetErrorString(curandStatus_t error) {
 //
 
 // CUDA: various checks for different function calls.
-#define CUDA_CHECK(condition) \
-  /* Code block avoids redefinition of cudaError_t error */ \
-  do { \
-    cudaError_t error = condition; \
-    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+#define CUDA_CHECK(condition)                                                  \
+  /* Code block avoids redefinition of cudaError_t error */                    \
+  do {                                                                         \
+    cudaError_t error = condition;                                             \
+    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error);          \
   } while (0)
 
-#define CUBLAS_CHECK(condition) \
-  do { \
-    cublasStatus_t status = condition; \
-    CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " \
-      << cublasGetErrorString(status); \
+#define CUBLAS_CHECK(condition)                                                \
+  do {                                                                         \
+    cublasStatus_t status = condition;                                         \
+    CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " "                             \
+                                            << cublasGetErrorString(status);   \
   } while (0)
 
-#define CURAND_CHECK(condition) \
-  do { \
-    curandStatus_t status = condition; \
-    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << " " \
-      << curandGetErrorString(status); \
+#define CURAND_CHECK(condition)                                                \
+  do {                                                                         \
+    curandStatus_t status = condition;                                         \
+    CHECK_EQ(status, CURAND_STATUS_SUCCESS) << " "                             \
+                                            << curandGetErrorString(status);   \
   } while (0)
 
-
-#endif  // USE_CUDA
-#endif  // SINGA_UTILS_CUDA_UTILS_H_
+#endif // USE_CUDA
+#endif // SINGA_UTILS_CUDA_UTILS_H_

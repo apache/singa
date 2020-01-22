@@ -30,20 +30,21 @@ CudnnLRN::~CudnnLRN() {
     CUDNN_CHECK(cudnnDestroyTensorDescriptor(shape_desc_));
   }
 }
-void CudnnLRN::InitCudnn(const Shape& shape, DataType dtype) {
+void CudnnLRN::InitCudnn(const Shape &shape, DataType dtype) {
   CHECK_EQ(shape.size(), 4u);
   if (!has_init_cudnn_) {
     mode_ = CUDNN_LRN_CROSS_CHANNEL_DIM1;
     CUDNN_CHECK(cudnnCreateTensorDescriptor(&shape_desc_));
     CUDNN_CHECK(cudnnCreateLRNDescriptor(&lrn_desc_));
-    CUDNN_CHECK(cudnnSetLRNDescriptor(lrn_desc_, local_size_, alpha_, beta_, k_));
+    CUDNN_CHECK(
+        cudnnSetLRNDescriptor(lrn_desc_, local_size_, alpha_, beta_, k_));
   }
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(shape_desc_, CUDNN_TENSOR_NCHW,
-        GetCudnnDataType(dtype), shape[0],
-        shape[1], shape[2], shape[3]));
+                                         GetCudnnDataType(dtype), shape[0],
+                                         shape[1], shape[2], shape[3]));
   has_init_cudnn_ = true;
 }
-const Tensor CudnnLRN::Forward(int flag, const Tensor& input) {
+const Tensor CudnnLRN::Forward(int flag, const Tensor &input) {
   auto shape = input.shape();
   auto dtype = input.data_type();
   if (!has_init_cudnn_) {
@@ -51,29 +52,30 @@ const Tensor CudnnLRN::Forward(int flag, const Tensor& input) {
   } else {
     int n, c, h, w, s;
     cudnnDataType_t type;
-    CUDNN_CHECK(cudnnGetTensor4dDescriptor(shape_desc_, &type,
-          &n, &c, &h, &w, &s, &s, &s, &s));
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(shape_desc_, &type, &n, &c, &h, &w,
+                                           &s, &s, &s, &s));
     if (shape[0] != static_cast<size_t>(n))
       InitCudnn(shape, dtype);
-    CHECK(input.shape(1) == static_cast<size_t>(c)
-        && input.shape(2) == static_cast<size_t>(h)
-        && input.shape(3) == static_cast<size_t>(w))
-      << "input sample shape should not change"
-      << "previous shape " << c << ", " << h << ", " << w
-      << "current shape " << input.shape(1) << ", " << input.shape(2) << ", "
-      << input.shape(3);
+    CHECK(input.shape(1) == static_cast<size_t>(c) &&
+          input.shape(2) == static_cast<size_t>(h) &&
+          input.shape(3) == static_cast<size_t>(w))
+        << "input sample shape should not change"
+        << "previous shape " << c << ", " << h << ", " << w << "current shape "
+        << input.shape(1) << ", " << input.shape(2) << ", " << input.shape(3);
   }
 
   Tensor output;
   output.ResetLike(input);
-  output.device()->Exec([=](Context* ctx) {
-    Block* inblock = input.block(), * outblock = output.block();
-    const float alpha = 1.0f, beta = 0.0f;
-    CUDNN_CHECK(cudnnLRNCrossChannelForward(
-        ctx->cudnn_handle, this->lrn_desc_, this->mode_, &alpha,
-        this->shape_desc_, inblock->data(), &beta, this->shape_desc_,
-        outblock->mutable_data()));
-  }, {input.block()}, {output.block()});
+  output.device()->Exec(
+      [=](Context *ctx) {
+        Block *inblock = input.block(), *outblock = output.block();
+        const float alpha = 1.0f, beta = 0.0f;
+        CUDNN_CHECK(cudnnLRNCrossChannelForward(
+            ctx->cudnn_handle, this->lrn_desc_, this->mode_, &alpha,
+            this->shape_desc_, inblock->data(), &beta, this->shape_desc_,
+            outblock->mutable_data()));
+      },
+      {input.block()}, {output.block()});
 
   if (flag & kTrain) {
     buf_.push(input);
@@ -83,7 +85,7 @@ const Tensor CudnnLRN::Forward(int flag, const Tensor& input) {
 }
 
 const std::pair<Tensor, vector<Tensor>> CudnnLRN::Backward(int flag,
-                                                           const Tensor& grad) {
+                                                           const Tensor &grad) {
   vector<Tensor> param_grad;
   Tensor dx;
   CHECK(!buf_.empty());
@@ -93,21 +95,23 @@ const std::pair<Tensor, vector<Tensor>> CudnnLRN::Backward(int flag,
   buf_.pop();
   if ((flag & kTrain) == kTrain) {
     dx.ResetLike(grad);
-    dx.device()->Exec([=](Context* ctx) {
-      Block* dyblock = grad.block(), * dxblock = dx.block();
-      Block* yblock = output.block(), * xblock = input.block();
-      float alpha = 1.0f, beta = 0.0f;
-      CUDNN_CHECK(cudnnLRNCrossChannelBackward(
-          ctx->cudnn_handle, this->lrn_desc_, this->mode_, &alpha,
-          this->shape_desc_, yblock->data(), this->shape_desc_, dyblock->data(),
-          this->shape_desc_, xblock->data(), &beta, this->shape_desc_,
-          dxblock->mutable_data()));
-    }, {output.block(), grad.block(), input.block()}, {dx.block()});
+    dx.device()->Exec(
+        [=](Context *ctx) {
+          Block *dyblock = grad.block(), *dxblock = dx.block();
+          Block *yblock = output.block(), *xblock = input.block();
+          float alpha = 1.0f, beta = 0.0f;
+          CUDNN_CHECK(cudnnLRNCrossChannelBackward(
+              ctx->cudnn_handle, this->lrn_desc_, this->mode_, &alpha,
+              this->shape_desc_, yblock->data(), this->shape_desc_,
+              dyblock->data(), this->shape_desc_, xblock->data(), &beta,
+              this->shape_desc_, dxblock->mutable_data()));
+        },
+        {output.block(), grad.block(), input.block()}, {dx.block()});
   } else {
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }
   return std::make_pair(dx, param_grad);
 }
-}  // namespace
+} // namespace
 
-#endif  // USE_CUDNN
+#endif // USE_CUDNN

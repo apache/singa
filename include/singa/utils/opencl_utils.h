@@ -30,36 +30,35 @@
 #define CL_HPP_TARGET_OPENCL_VERSION 120
 
 #ifndef VIENNACL_WITH_OPENCL
-  #define VIENNACL_WITH_OPENCL
+#define VIENNACL_WITH_OPENCL
 #endif
 
 #ifndef __APPLE__
-  #include "CL/cl.h"
+#include "CL/cl.h"
 #else
-  #include "OpenCL/cl.h"
+#include "OpenCL/cl.h"
 #endif
 
 #include <viennacl/backend/opencl.hpp>
 
-#include <viennacl/ocl/device.hpp>
-#include <viennacl/ocl/platform.hpp>
 #include <viennacl/ocl/backend.hpp>
+#include <viennacl/ocl/device.hpp>
 #include <viennacl/ocl/device_utils.hpp>
-#include <viennacl/ocl/utils.hpp>
-#include <viennacl/ocl/program.hpp>
 #include <viennacl/ocl/kernel.hpp>
+#include <viennacl/ocl/platform.hpp>
+#include <viennacl/ocl/program.hpp>
+#include <viennacl/ocl/utils.hpp>
 
-
-inline viennacl::ocl::handle<cl_mem>
-WrapHandle(cl_mem in, viennacl::ocl::context &ctx) {
+inline viennacl::ocl::handle<cl_mem> WrapHandle(cl_mem in,
+                                                viennacl::ocl::context &ctx) {
   if (in != nullptr) {
     viennacl::ocl::handle<cl_mem> memhandle(in, ctx);
     memhandle.inc();
     return memhandle;
   } else {
     cl_int err;
-    cl_mem dummy = clCreateBuffer(ctx.handle().get(), CL_MEM_READ_WRITE, 0,
-                                  nullptr, &err);
+    cl_mem dummy =
+        clCreateBuffer(ctx.handle().get(), CL_MEM_READ_WRITE, 0, nullptr, &err);
     viennacl::ocl::handle<cl_mem> memhandle(dummy, ctx);
     return memhandle;
   }

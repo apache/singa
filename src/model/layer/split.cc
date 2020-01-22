@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./split.h"
+#include "singa/model/layer.h"
 namespace singa {
 
 RegisterLayerClass(singa_split, Split);
@@ -25,14 +25,14 @@ RegisterLayerClass(singacpp_split, Split);
 RegisterLayerClass(singacuda_split, Split);
 RegisterLayerClass(singacl_split, Split);
 
-void Split::Setup(const Shape& in_sample, const LayerConf& conf) {
+void Split::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   SplitConf split_conf = conf.split_conf();
   output_size_ = split_conf.output_size();
   out_sample_shape_ = in_sample;
 }
 
-const vector<Tensor> Split::Forward(int flag, const vector<Tensor>& inputs) {
+const vector<Tensor> Split::Forward(int flag, const vector<Tensor> &inputs) {
   vector<Tensor> outputs;
   CHECK_EQ(inputs.size(), 1u) << "Split layer only have one input tensor.";
   for (size_t i = 0; i < output_size_; i++)
@@ -40,8 +40,8 @@ const vector<Tensor> Split::Forward(int flag, const vector<Tensor>& inputs) {
   return outputs;
 }
 
-const std::pair<vector<Tensor>, vector<Tensor>> Split::Backward(
-    int flag, const vector<Tensor>& grads) {
+const std::pair<vector<Tensor>, vector<Tensor>>
+Split::Backward(int flag, const vector<Tensor> &grads) {
   vector<Tensor> input_grad, param_grad;
   CHECK_EQ(grads.size(), output_size_);
 
@@ -53,4 +53,4 @@ const std::pair<vector<Tensor>, vector<Tensor>> Split::Backward(
   return std::make_pair(input_grad, param_grad);
 }
 
-}  // namespace singa
+} // namespace singa

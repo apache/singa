@@ -92,4 +92,4 @@ std::size_t Message::getPayload(void **p) {
 }
 }
 
-#endif  // ENABLE_DIST
+#endif // ENABLE_DIST

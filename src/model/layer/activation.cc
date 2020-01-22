@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./activation.h"
+#include "singa/model/layer.h"
 #include "singa/utils/string.h"
 namespace singa {
 
@@ -35,39 +35,42 @@ RegisterLayerClass(singacpp_tanh, Activation);
 RegisterLayerClass(singacuda_tanh, Activation);
 RegisterLayerClass(singacl_tanh, Activation);
 
-void Activation::Setup(const Shape& in_sample, const LayerConf& conf) {
+void Activation::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   auto pos = conf.type().find_first_of('_');
   CHECK_NE(pos, string::npos) << "There should be a '_' in the laye type "
-    << conf.type();
+                              << conf.type();
   mode_ = ToLowerCase(conf.type().substr(pos + 1));
   if (mode_ != "relu" && mode_ != "sigmoid" && mode_ != "tanh")
     LOG(FATAL) << "Unkown activation type: " << conf.type() << " " << mode_
-      << ". Please use singa_relu, singa_sigmoid, or singa_tanh";
+               << ". Please use singa_relu, singa_sigmoid, or singa_tanh";
   if (mode_ == "relu") {
     neg_slope_ = conf.relu_conf().negative_slope();
   }
   out_sample_shape_ = in_sample;
 }
 
-const Tensor Activation::Forward(int flag, const Tensor& input) {
+const Tensor Activation::Forward(int flag, const Tensor &input) {
   Tensor output;
   if (mode_ == "sigmoid") {
     output = Sigmoid(input);
-    if (flag & kTrain) buf_.push(output);
+    if (flag & kTrain)
+      buf_.push(output);
   } else if (mode_ == "tanh") {
     output = Tanh(input);
-    if (flag & kTrain) buf_.push(output);
+    if (flag & kTrain)
+      buf_.push(output);
   } else if (mode_ == "relu") {
     output = ReLU(input);
-    if (flag & kTrain) buf_.push(input);
+    if (flag & kTrain)
+      buf_.push(input);
   } else
     LOG(FATAL) << "Unkown activation: " << mode_;
   return output;
 }
 
-const std::pair<Tensor, vector<Tensor>> Activation::Backward(
-    int flag, const Tensor& grad) {
+const std::pair<Tensor, vector<Tensor>>
+Activation::Backward(int flag, const Tensor &grad) {
   vector<Tensor> param_grad;
   CHECK(!buf_.empty());
   // inout means either input or output, but only one is valid for an
@@ -80,8 +83,9 @@ const std::pair<Tensor, vector<Tensor>> Activation::Backward(
     input_grad = grad * (inout * inout * (-1.f) + 1.f);
   else if (mode_ == "relu")
     input_grad = grad * (inout > 0.f) + (inout <= 0.f) * neg_slope_;
-  else LOG(FATAL) << "Unkown activation: " << mode_;
+  else
+    LOG(FATAL) << "Unkown activation: " << mode_;
   return std::make_pair(input_grad, param_grad);
 }
 
-}  // namespace singa
+} // namespace singa

@@ -19,14 +19,14 @@
 #ifndef SINGA_MODEL_LAYER_H_
 #define SINGA_MODEL_LAYER_H_
 
-#include <vector>
-#include <string>
-#include <stack>
-#include <utility>
-#include <memory>
 #include "singa/core/tensor.h"
 #include "singa/proto/model.pb.h"
 #include "singa/utils/factory.h"
+#include <memory>
+#include <stack>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace singa {
 
@@ -35,28 +35,27 @@ typedef vector<size_t> Shape;
 /// Generally, a layer conducts feature transformation against a set of Tensor
 /// to generate a set of Tensor. Each layer may have some parameters.
 class Layer {
- public:
+public:
   Layer() = default;
 
   /// Set meta data fields from a string representing a proto message.
   /// 'in_shape' is the shape of the input feature for one sample
-  void Setup(const Shape& in_shape, const string& proto_str) {
+  void Setup(const Shape &in_shape, const string &proto_str) {
     LayerConf conf;
     conf.ParseFromString(proto_str);
     this->Setup(in_shape, conf);
   }
 
   /// 'in_shapes' is the shape of the input feature for one sample
-  void Setup(const vector<Shape>& in_shapes, const string& proto_str) {
+  void Setup(const vector<Shape> &in_shapes, const string &proto_str) {
     LayerConf conf;
     conf.ParseFromString(proto_str);
     this->Setup(in_shapes, conf);
   }
 
-
   // ============= Following Functions could be override =====================
   /// Destruct objects created by this layer.
-  virtual ~Layer() {};
+  virtual ~Layer(){};
 
   /// Each layer sub-class would optionaly have a type name.
   /// Used for debugging and logging.
@@ -69,13 +68,13 @@ class Layer {
   /// from the last layer.
   /// After calling Setup, the shape info of parameters should be accssed
   /// correctly. Internal buffer/fields are set assuming batchsize is 1.
-  virtual void Setup(const Shape& in_sample, const LayerConf& conf) {
+  virtual void Setup(const Shape &in_sample, const LayerConf &conf) {
     name_ = conf.name();
     // TODO(wangwei) load param values from checkpoint files.
   }
 
   /// Used for layers that have multiple input tensors, e.g., concatenate layer.
-  virtual void Setup(const vector<Shape>& in_samples, const LayerConf& conf) {
+  virtual void Setup(const vector<Shape> &in_samples, const LayerConf &conf) {
     name_ = conf.name();
     // TODO(wangwei) load param values from checkpoint files.
   }
@@ -100,7 +99,7 @@ class Layer {
   /// It will return a Tensor (denoted as y).
   /// If the 'input' or 'output' is required for computing the gradients in
   /// Backward(), then buffer them as internal data.
-  virtual const Tensor Forward(int flag, const Tensor& input) {
+  virtual const Tensor Forward(int flag, const Tensor &input) {
     LOG(FATAL) << "Not implemented";
     Tensor t;
     return t;
@@ -111,9 +110,10 @@ class Layer {
   /// If there is only one input tensor, it will call Forward(int, const
   /// Tensor&) by default. Users can override this function for layers who
   /// generate more than one outputs.
-  virtual const vector<Tensor> Forward(int flag, const vector<Tensor>& inputs) {
+  virtual const vector<Tensor> Forward(int flag, const vector<Tensor> &inputs) {
     vector<Tensor> ret;
-    if (inputs.size() == 1) ret.push_back(Forward(flag, inputs.at(0)));
+    if (inputs.size() == 1)
+      ret.push_back(Forward(flag, inputs.at(0)));
 
     LOG(FATAL) << "Not implemented";
     return ret;
@@ -130,7 +130,7 @@ class Layer {
   /// would be used for other phases when training other nets.
   /// 'grad' is a Tensor for gradient (dy) from the upper layer.
   virtual const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                           const Tensor& grad) {
+                                                           const Tensor &grad) {
     LOG(FATAL) << "Not implemented!";
     Tensor t;
     return std::make_pair(t, vector<Tensor>{});
@@ -138,8 +138,8 @@ class Layer {
 
   /// \copydoc Backward(int, const vector<Tensor>&)
   /// For Forward(int, const vector<Tensor>&)
-  virtual const std::pair<vector<Tensor>, vector<Tensor>> Backward(
-      int flag, const vector<Tensor>& grads) {
+  virtual const std::pair<vector<Tensor>, vector<Tensor>>
+  Backward(int flag, const vector<Tensor> &grads) {
     vector<Tensor> input_grad, param_grad;
     if (grads.size() == 1u) {
       auto ret = Backward(flag, grads.at(0));
@@ -156,17 +156,15 @@ class Layer {
   // virtual Layer* Clone(std::shared_ptr<Device> device);
   /// Move the layer (including its parameters and other internal Tensor) onto
   /// the given device
-  virtual void ToDevice(std::shared_ptr<Device> device) {
-  }
+  virtual void ToDevice(std::shared_ptr<Device> device) {}
 
   /// Set the data type of Tensor in this layer.
-  virtual void AsType(DataType dtype) {
-  }
+  virtual void AsType(DataType dtype) {}
 
   /// Serialize the layer info (including params) into a LayerConf proto message
-  virtual void ToProto(LayerConf* conf) const {
-    //conf->set_name(name_);
-    //for (const auto& spec : param_specs_) {
+  virtual void ToProto(LayerConf *conf) const {
+    // conf->set_name(name_);
+    // for (const auto& spec : param_specs_) {
     //  ParamSpec* p = conf->add_param();
     //  p->CopyFrom(spec);
     //}
@@ -189,25 +187,24 @@ class Layer {
   const vector<ParamSpec> param_specs() { return param_specs_; }
 
   /// Return the i-th ParamSpec.
-  const ParamSpec& param_specs(size_t i) {
+  const ParamSpec &param_specs(size_t i) {
     CHECK_LT(i, param_specs_.size());
     return param_specs_.at(i);
   }
 
   /// Return pointers to parameter Tensor s.
-  virtual const vector<Tensor> param_values() {
-    return vector<Tensor>{};
-  }
+  virtual const vector<Tensor> param_values() { return vector<Tensor>{}; }
 
   /// Return names of all parmaeters.
   const vector<string> param_names() {
     vector<string> pname;
-    for (const auto& spec : param_specs_) pname.push_back(spec.name());
+    for (const auto &spec : param_specs_)
+      pname.push_back(spec.name());
     return pname;
   }
 
   /// Return the 'i'-th parameter name.
-  const string& param_name(size_t i) {
+  const string &param_name(size_t i) {
     CHECK_LT(i, param_specs_.size());
     return param_specs_.at(i).name();
   }
@@ -216,7 +213,7 @@ class Layer {
   /// Used for debugging and logging.
   const std::string name() const { return name_; }
 
- protected:
+protected:
   std::string name_;
   vector<ParamSpec> param_specs_;
 };
@@ -232,7 +229,7 @@ class Layer {
 /// to be compatible with previous commits, the following identifier is
 /// registered. Better avoid using it, as it would be deprecated.
 /// RegisterLayerClass("singa_dropout", Dropout)
-#define RegisterLayerClass(Name, SubLayer) \
+#define RegisterLayerClass(Name, SubLayer)                                     \
   static Registra<Layer, SubLayer> Name##SubLayer(#Name);
 
 inline std::shared_ptr<Layer> CreateLayer(const std::string type) {
@@ -248,5 +245,5 @@ inline const std::vector<std::string> GetRegisteredLayers() {
   }
   return ret;
 }
-}  // namespace singa
-#endif  // SINGA_MODEL_LAYER_H_
+} // namespace singa
+#endif // SINGA_MODEL_LAYER_H_

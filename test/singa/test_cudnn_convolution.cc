@@ -70,8 +70,8 @@ TEST(CudnnConvolution, Forward) {
   // Set weight and bias manually
   const size_t num_filters = 1;
   const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
-  const float we[num_filters * col_height] = {
-      1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
+  const float we[num_filters * col_height] = {1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+                                              -1.0f, 0.0f, 1.0f, 0.0f};
   singa::Tensor weight(singa::Shape{num_filters, col_height}, cuda);
   weight.CopyDataFromHostPtr(we, col_height);
   const float b[num_filters] = {1.0f};
@@ -121,10 +121,9 @@ TEST(CudnnConvolution, Backward) {
   // Set weight_ and bias_ manually
   const size_t num_filters = 1;
   const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
-  const float we[num_filters * col_height] = {
-      1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
-  singa::Tensor weight(singa::Shape{num_filters, col_height},
-                       cuda);
+  const float we[num_filters * col_height] = {1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+                                              -1.0f, 0.0f, 1.0f, 0.0f};
+  singa::Tensor weight(singa::Shape{num_filters, col_height}, cuda);
   weight.CopyDataFromHostPtr(we, col_height);
   const float b[num_filters] = {1.0f};
   singa::Tensor bias(singa::Shape{num_filters}, cuda);
@@ -168,9 +167,9 @@ TEST(CudnnConvolution, Backward) {
   EXPECT_EQ(dy[0] * wptr[5] + dy[1] * wptr[3], dx[1]);
   EXPECT_EQ(dy[1] * wptr[4], dx[2]);
   EXPECT_EQ(dy[0] * wptr[7] + dy[2] * wptr[1], dx[3]);
-  EXPECT_EQ(
-      dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] + dy[3] * wptr[0],
-      dx[4]);
+  EXPECT_EQ(dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] +
+                dy[3] * wptr[0],
+            dx[4]);
   EXPECT_EQ(dy[1] * wptr[7] + dy[3] * wptr[1], dx[5]);
   EXPECT_EQ(dy[2] * wptr[4], dx[6]);
   EXPECT_EQ(dy[2] * wptr[5] + dy[3] * wptr[3], dx[7]);
@@ -340,9 +339,9 @@ TEST(CudnnConvolution_AT, Backward) {
   EXPECT_EQ(dy[0] * wptr[5] + dy[1] * wptr[3], dx[1]);
   EXPECT_EQ(dy[1] * wptr[4], dx[2]);
   EXPECT_EQ(dy[0] * wptr[7] + dy[2] * wptr[1], dx[3]);
-  EXPECT_EQ(
-      dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] + dy[3] * wptr[0],
-      dx[4]);
+  EXPECT_EQ(dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] +
+                dy[3] * wptr[0],
+            dx[4]);
   EXPECT_EQ(dy[1] * wptr[7] + dy[3] * wptr[1], dx[5]);
   EXPECT_EQ(dy[2] * wptr[4], dx[6]);
   EXPECT_EQ(dy[2] * wptr[5] + dy[3] * wptr[3], dx[7]);
@@ -368,4 +367,4 @@ TEST(CudnnConvolution_AT, Backward) {
   EXPECT_EQ(dy[0] * x[3] + dy[1] * x[5], dwptr[7]);
   EXPECT_EQ(dy[0] * x[4], dwptr[8]);
 }
-#endif  // USE_CUDNN
+#endif // USE_CUDNN

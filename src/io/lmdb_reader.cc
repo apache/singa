@@ -24,7 +24,7 @@
 
 namespace singa {
 namespace io {
-bool LMDBReader::Open(const std::string& path) {
+bool LMDBReader::Open(const std::string &path) {
   path_ = path;
   MDB_CHECK(mdb_env_create(&mdb_env_));
   int flags = MDB_RDONLY | MDB_NOTLS;
@@ -63,22 +63,23 @@ void LMDBReader::Close() {
   }
 }
 
-bool LMDBReader::Read(std::string* key, std::string* value) {
+bool LMDBReader::Read(std::string *key, std::string *value) {
   if (first_ != true)
     Seek(MDB_NEXT);
-  if (valid_ == false) return false;
-  *key = string(static_cast<const char*>(mdb_key_.mv_data), mdb_key_.mv_size);
+  if (valid_ == false)
+    return false;
+  *key = string(static_cast<const char *>(mdb_key_.mv_data), mdb_key_.mv_size);
   *value =
-      string(static_cast<const char*>(mdb_value_.mv_data), mdb_value_.mv_size);
+      string(static_cast<const char *>(mdb_value_.mv_data), mdb_value_.mv_size);
   first_ = false;
   return true;
 }
 
 int LMDBReader::Count() {
-  MDB_env* env;
+  MDB_env *env;
   MDB_dbi dbi;
-  MDB_txn* txn;
-  MDB_cursor* cursor;
+  MDB_txn *txn;
+  MDB_cursor *cursor;
   int flags = MDB_RDONLY | MDB_NOTLS | MDB_NOLOCK;
   MDB_CHECK(mdb_env_create(&env));
   MDB_CHECK(mdb_env_open(env, path_.c_str(), flags, 0664));
@@ -90,7 +91,8 @@ int LMDBReader::Count() {
   MDB_val key, value;
   while (true) {
     status = mdb_cursor_get(cursor, &key, &value, MDB_NEXT);
-    if (status == MDB_NOTFOUND) break;
+    if (status == MDB_NOTFOUND)
+      break;
     count++;
   }
   mdb_cursor_close(cursor);
@@ -100,7 +102,10 @@ int LMDBReader::Count() {
   return count;
 }
 
-void LMDBReader::SeekToFirst() { Seek(MDB_FIRST); first_ = true; }
+void LMDBReader::SeekToFirst() {
+  Seek(MDB_FIRST);
+  first_ = true;
+}
 
 void LMDBReader::Seek(MDB_cursor_op op) {
   int mdb_status = mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, op);
@@ -115,8 +120,8 @@ void LMDBReader::Seek(MDB_cursor_op op) {
 inline void LMDBReader::MDB_CHECK(int mdb_status) {
   CHECK_EQ(mdb_status, MDB_SUCCESS) << mdb_strerror(mdb_status);
 }
-}  // namespace io
-}  // namespace singa
-#endif  // USE_LMDB
+} // namespace io
+} // namespace singa
+#endif // USE_LMDB
 
 #endif

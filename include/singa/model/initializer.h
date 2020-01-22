@@ -18,26 +18,26 @@
 
 #ifndef SINGA_MODEL_INITIALIZER_H_
 #define SINGA_MODEL_INITIALIZER_H_
-#include <string>
 #include "singa/core/tensor.h"
 #include "singa/proto/model.pb.h"
 #include "singa/utils/string.h"
+#include <string>
 namespace singa {
 /// Base class for initializing parameter values.
 using InitializerConf = FillerConf;
 class Initializer {
- public:
+public:
   Initializer() = default;
-  void Setup(const std::string& str) {
+  void Setup(const std::string &str) {
     InitializerConf conf;
     conf.ParseFromString(str);
     Setup(conf);
   }
 
   /// Set meta fields from user configurations.
-  virtual void Setup(const InitializerConf& conf) {}
+  virtual void Setup(const InitializerConf &conf) {}
 
-  virtual void Fill(Tensor& t) = 0;
+  virtual void Fill(Tensor &t) = 0;
 };
 
 namespace init {
@@ -45,10 +45,10 @@ class Constant : public Initializer {
 public:
   Constant() = default;
   Constant(const float x) : v_(x) {}
-  void Setup(const InitializerConf& conf) override { v_ = conf.value(); }
-  void Fill(Tensor& t) override { t.SetValue(v_); }
+  void Setup(const InitializerConf &conf) override { v_ = conf.value(); }
+  void Fill(Tensor &t) override { t.SetValue(v_); }
 
- private:
+private:
   float v_ = 0;
 };
 
@@ -56,27 +56,27 @@ class Uniform : public Initializer {
 public:
   Uniform() = default;
   Uniform(const float low, const float high) : min_(low), max_(high) {}
-  void Setup(const InitializerConf& conf) override {
+  void Setup(const InitializerConf &conf) override {
     min_ = conf.min();
     max_ = conf.max();
   }
-  void Fill(Tensor& t) override { singa::Uniform(min_, max_, &t); }
+  void Fill(Tensor &t) override { singa::Uniform(min_, max_, &t); }
 
- private:
+private:
   float min_ = 0, max_ = 1;
 };
 
 class Gaussian : public Initializer {
 public:
   Gaussian() = default;
-  Gaussian(const float m, const float s): mean_(m), std_(s) {}
-  void Setup(const InitializerConf& conf) override {
+  Gaussian(const float m, const float s) : mean_(m), std_(s) {}
+  void Setup(const InitializerConf &conf) override {
     mean_ = conf.mean();
     std_ = conf.std();
   }
-  void Fill(Tensor& t) override { singa::Gaussian(mean_, std_, &t); }
+  void Fill(Tensor &t) override { singa::Gaussian(mean_, std_, &t); }
 
- private:
+private:
   float mean_ = 0, std_ = 1;
 };
 
@@ -84,7 +84,7 @@ public:
 /// feedforward neural networks
 class Xavier : public Initializer {
 public:
-  void Fill(Tensor& t) override {
+  void Fill(Tensor &t) override {
     CHECK_EQ(t.nDim(), 2u);
     float scale = sqrt(6.0f / (t.shape(0) + t.shape(1)));
     LOG(INFO) << "xavier scale " << scale;
@@ -95,18 +95,18 @@ public:
 /// Ref: [He, Zhang, Ren and Sun 2015]: Delving Deep into Rectifiers:
 /// Surpassing Human-Level Performance on ImageNet Classification
 class MSRA : public Initializer {
- public:
-  void Fill(Tensor& t) override {
+public:
+  void Fill(Tensor &t) override {
     CHECK_EQ(t.nDim(), 2u);
     float std = sqrt(2.0f / t.shape(0));
     singa::Gaussian(0.0f, std, &t);
   }
 };
 
-}  // namespace init
+} // namespace init
 
 /// TODO(wangwei) create the initializers from factory like that for Layer.
-std::shared_ptr<Initializer> CreateInitializer(const InitializerConf& conf) {
+std::shared_ptr<Initializer> CreateInitializer(const InitializerConf &conf) {
   std::shared_ptr<Initializer> init;
   if (ToLowerCase(conf.type()) == "constant") {
     init = std::make_shared<init::Constant>();
@@ -124,5 +124,5 @@ std::shared_ptr<Initializer> CreateInitializer(const InitializerConf& conf) {
   init->Setup(conf);
   return init;
 }
-}  // namespace singa
-#endif  // SINGA_MODEL_INITIALIZER_H_
+} // namespace singa
+#endif // SINGA_MODEL_INITIALIZER_H_

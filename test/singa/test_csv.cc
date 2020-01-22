@@ -19,11 +19,11 @@
 *
 *************************************************************/
 
-#include "singa/io/encoder.h"
 #include "singa/io/decoder.h"
+#include "singa/io/encoder.h"
 #include "gtest/gtest.h"
-#include <sstream>
 #include <algorithm>
+#include <sstream>
 
 using singa::Shape;
 using singa::Tensor;
@@ -53,8 +53,9 @@ TEST(CSV, EncoderDecode) {
   EXPECT_EQ(in_str, value);
 
   std::vector<Tensor> output = decoder.Decode(value);
-  const auto* out_data = output.at(0).data<float>();
-  const auto* out_label = output.at(1).data<int>();
-  for (size_t i = 0; i < size; i++) EXPECT_EQ(in_data[i], out_data[i]);
+  const auto *out_data = output.at(0).data<float>();
+  const auto *out_label = output.at(1).data<int>();
+  for (size_t i = 0; i < size; i++)
+    EXPECT_EQ(in_data[i], out_data[i]);
   EXPECT_EQ(in_label, out_label[0]);
 }

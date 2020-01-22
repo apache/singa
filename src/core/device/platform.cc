@@ -25,8 +25,8 @@ using namespace std;
 namespace singa {
 
 #ifdef USE_CUDA
- 
-std::vector<std::shared_ptr<Device> > Platform::UsedDevice;
+
+std::vector<std::shared_ptr<Device>> Platform::UsedDevice;
 std::mutex Platform::mtx_;
 int Platform::GetNumGPUs() {
   int count;
@@ -55,7 +55,7 @@ const vector<int> Platform::GetGPUIDs() {
 }
 
 const std::pair<size_t, size_t> Platform::GetGPUMemSize(const int device) {
-  std::pair<size_t, size_t> ret{ 0, 0 };
+  std::pair<size_t, size_t> ret{0, 0};
   if (Platform::CheckDevice(device)) {
     CUDA_CHECK(cudaSetDevice(device));
     size_t free = 0, total = 0;
@@ -78,20 +78,17 @@ const vector<std::pair<size_t, size_t>> Platform::GetGPUMemSize() {
 
 const string Platform::DeviceQuery(int device, bool verbose) {
   if (cudaSuccess != cudaGetDevice(&device)) {
-    return "The device (ID = " + std::to_string(device) + " is not available" ;
+    return "The device (ID = " + std::to_string(device) + " is not available";
   }
   cudaDeviceProp prop;
   CUDA_CHECK(cudaGetDeviceProperties(&prop, device));
   std::ostringstream out;
   out << "Device id:                     " << device << '\n';
   out << "Total global memory:           " << prop.totalGlobalMem << '\n';
-  out << "Total shared memory per block: " << prop.sharedMemPerBlock
-      << '\n';
-  out << "Maximum threads per block:     " << prop.maxThreadsPerBlock
-      << '\n';
-  out << "Maximum dimension of block:    "
-      << prop.maxThreadsDim[0 << '\n'] << ", " << prop.maxThreadsDim[1]
-      << ", " << prop.maxThreadsDim[2] << '\n';
+  out << "Total shared memory per block: " << prop.sharedMemPerBlock << '\n';
+  out << "Maximum threads per block:     " << prop.maxThreadsPerBlock << '\n';
+  out << "Maximum dimension of block:    " << prop.maxThreadsDim[0 << '\n']
+      << ", " << prop.maxThreadsDim[1] << ", " << prop.maxThreadsDim[2] << '\n';
   out << "Maximum dimension of grid:     " << prop.maxGridSize[0] << ", "
       << "Concurrent copy and execution: "
       << (prop.deviceOverlap ? "Yes" : "No") << '\n';
@@ -103,7 +100,7 @@ const string Platform::DeviceQuery(int device, bool verbose) {
     out << "Total registers per block:     " << prop.regsPerBlock << '\n';
     out << "Maximum memory pitch:          " << prop.memPitch << '\n';
     out << "Warp size:                     " << prop.warpSize
-      << prop.maxGridSize[1] << ", " << prop.maxGridSize[2] << '\n';
+        << prop.maxGridSize[1] << ", " << prop.maxGridSize[2] << '\n';
     out << "Clock rate:                    " << prop.clockRate << '\n';
     out << "Number of multiprocessors:     " << prop.multiProcessorCount
         << '\n';
@@ -121,10 +118,11 @@ Platform::CreateCudaGPUs(const size_t num_devices, size_t init_size) {
   return CreateCudaGPUsOn(use_gpus, init_size);
 }
 
-const vector<shared_ptr<Device> > Platform::CreateCudaGPUsOn(
-    const vector<int>& devices, size_t init_size) {
+const vector<shared_ptr<Device>>
+Platform::CreateCudaGPUsOn(const vector<int> &devices, size_t init_size) {
   MemPoolConf conf;
-  if (init_size > 0) conf.set_init_size(init_size);
+  if (init_size > 0)
+    conf.set_init_size(init_size);
   size_t bytes = conf.init_size() << 20;
   for (auto device : devices) {
     conf.add_device(device);
@@ -133,10 +131,11 @@ const vector<shared_ptr<Device> > Platform::CreateCudaGPUsOn(
   mtx_.lock();
   if (UsedDevice.size() == 0) {
     int count = Platform::GetNumGPUs();
-    for (int i = 0; i < count; i++) UsedDevice.push_back(nullptr);
+    for (int i = 0; i < count; i++)
+      UsedDevice.push_back(nullptr);
   }
   auto pool = std::make_shared<CnMemPool>(conf);
-  vector<shared_ptr<Device> > ret;
+  vector<shared_ptr<Device>> ret;
   for (size_t i = 0; i < devices.size(); i++) {
     if (UsedDevice[devices[i]] == nullptr)
       UsedDevice[devices[i]] = std::make_shared<CudaGPU>(devices[i], pool);
@@ -146,7 +145,7 @@ const vector<shared_ptr<Device> > Platform::CreateCudaGPUsOn(
   return ret;
 }
 
-#endif  // USE_CUDA
+#endif // USE_CUDA
 
 #ifdef USE_OPENCL
 
@@ -186,6 +185,6 @@ Platform::CreateOpenclDevices(const std::vector<int> &id) {
 */
 #endif // USE_OPENCL
 
-}  // namespace singa
+} // namespace singa
 
 #endif

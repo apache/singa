@@ -21,7 +21,7 @@
 #include <functional>
 namespace singa {
 
-void Nesterov::Setup(const OptimizerConf& conf) {
+void Nesterov::Setup(const OptimizerConf &conf) {
   float m = conf.momentum();
   SetMomentumGenerator([m](int step) { return m; });
 }
@@ -30,8 +30,8 @@ void Nesterov::Setup(const OptimizerConf& conf) {
 // history = lr * grad + history * mom
 // tmp = (1+mom) * history - tmp * mom;
 // value = value - tmp;
-void Nesterov::Apply(int epoch, float lr, const string& name, Tensor& grad,
-                     Tensor& value, int step) {
+void Nesterov::Apply(int epoch, float lr, const string &name, Tensor &grad,
+                     Tensor &value, int step) {
   if (grad.empty())
     return;
   ApplyRegularizerConstraint(epoch, name, value, grad, step);
@@ -43,7 +43,7 @@ void Nesterov::Apply(int epoch, float lr, const string& name, Tensor& grad,
       history_gradient_[name].ResetLike(value);
       history_gradient_[name].SetValue(0.0f);
     }
-    Tensor& history = history_gradient_[name];
+    Tensor &history = history_gradient_[name];
     Tensor tmp = history.Clone();
     history *= mom;
     Axpy(lr, grad, &history);
@@ -52,5 +52,5 @@ void Nesterov::Apply(int epoch, float lr, const string& name, Tensor& grad,
     value -= tmp;
   }
 }
-}  // namespace singa
-#endif  // SRC_MODEL_OPTIMIZER_NESTEROV_H_
+} // namespace singa
+#endif // SRC_MODEL_OPTIMIZER_NESTEROV_H_

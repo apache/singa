@@ -28,7 +28,8 @@ namespace singa {
 
 ChannelManager::~ChannelManager() {
   for (auto it : name2ptr_) {
-    if (it.second != nullptr) delete (it.second);
+    if (it.second != nullptr)
+      delete (it.second);
   }
 }
 
@@ -36,18 +37,19 @@ void ChannelManager::Init() {
   // do nothing here
 }
 
-void ChannelManager::SetDefaultDir(const char* dir) {
+void ChannelManager::SetDefaultDir(const char *dir) {
   if (dir != nullptr) {
     dir_ = dir;
-    if (dir[dir_.length() - 1] != '/') dir_ += '/';
+    if (dir[dir_.length() - 1] != '/')
+      dir_ += '/';
   }
 }
 
-Channel* ChannelManager::GetInstance(const std::string& channel) {
+Channel *ChannelManager::GetInstance(const std::string &channel) {
   // find the channel
   if (name2ptr_.find(channel) == name2ptr_.end()) {
     // create new channel
-    Channel* chn = new Channel(channel);
+    Channel *chn = new Channel(channel);
     chn->SetDestFilePath(dir_ + channel);
     chn->EnableDestFile(true);
     name2ptr_[channel] = chn;
@@ -55,15 +57,17 @@ Channel* ChannelManager::GetInstance(const std::string& channel) {
   return name2ptr_[channel];
 }
 
-Channel::Channel(const std::string& name) { name_ = name; }
+Channel::Channel(const std::string &name) { name_ = name; }
 
 Channel::~Channel() {
-  if (os_.is_open()) os_.close();
+  if (os_.is_open())
+    os_.close();
 }
 
-void Channel::SetDestFilePath(const std::string& file) {
+void Channel::SetDestFilePath(const std::string &file) {
   // file is append only
-  if (os_.is_open()) os_.close();
+  if (os_.is_open())
+    os_.close();
   {
     std::ifstream fin(file.c_str());
     if (fin.good())
@@ -74,31 +78,35 @@ void Channel::SetDestFilePath(const std::string& file) {
     LOG(WARNING) << "Cannot open channel file (" << file << ")";
 }
 
-void Channel::Send(const std::string& message) {
-  if (stderr_) fprintf(stderr, "%s\n", message.c_str());
-  if (file_ && os_.is_open()) os_ << message << "\n";
+void Channel::Send(const std::string &message) {
+  if (stderr_)
+    fprintf(stderr, "%s\n", message.c_str());
+  if (file_ && os_.is_open())
+    os_ << message << "\n";
   // TODO(wangwei) flush
 }
 
-void Channel::Send(const google::protobuf::Message& message) {
-  if (stderr_) fprintf(stderr, "%s\n", message.DebugString().c_str());
-  if (file_ && os_.is_open()) message.SerializeToOstream(&os_);
+void Channel::Send(const google::protobuf::Message &message) {
+  if (stderr_)
+    fprintf(stderr, "%s\n", message.DebugString().c_str());
+  if (file_ && os_.is_open())
+    message.SerializeToOstream(&os_);
   // TODO(wangwei) flush
 }
 
-void InitChannel(const char* argv) {
-  ChannelManager* mng = Singleton<ChannelManager>().Instance();
+void InitChannel(const char *argv) {
+  ChannelManager *mng = Singleton<ChannelManager>().Instance();
   mng->Init();
 }
 
-void SetChannelDirectory(const char* path) {
-  ChannelManager* mng = Singleton<ChannelManager>().Instance();
+void SetChannelDirectory(const char *path) {
+  ChannelManager *mng = Singleton<ChannelManager>().Instance();
   mng->SetDefaultDir(path);
 }
 
-Channel* GetChannel(const std::string& channel_name) {
-  ChannelManager* mng = Singleton<ChannelManager>().Instance();
+Channel *GetChannel(const std::string &channel_name) {
+  ChannelManager *mng = Singleton<ChannelManager>().Instance();
   return mng->GetInstance(channel_name);
 }
 
-}  // namespace singa
+} // namespace singa

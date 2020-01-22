@@ -17,10 +17,10 @@
  */
 #ifndef SINGA_MODEL_LAYER_SLICE_H_
 #define SINGA_MODEL_LAYER_SLICE_H_
-#include <utility>
-#include <string>
-#include <vector>
 #include "singa/model/layer.h"
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace singa {
 /**
@@ -28,12 +28,12 @@ namespace singa {
  * the give slicep points.
  */
 class Slice : public Layer {
- public:
+public:
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "Slice"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
   /// the i-th subshape is the shape of the i-th output tensor
   const Shape GetOutputSampleShape(int k) override {
     CHECK(out_sample_shapes_.size()) << "You may haven't call Setup()";
@@ -41,13 +41,13 @@ class Slice : public Layer {
   }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&)
-  const vector<Tensor> Forward(int flag, const vector<Tensor>& input) override;
+  const vector<Tensor> Forward(int flag, const vector<Tensor> &input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
-  const std::pair<vector<Tensor>, vector<Tensor>> Backward(int flag,
-      const vector<Tensor>& grad) override;
+  const std::pair<vector<Tensor>, vector<Tensor>>
+  Backward(int flag, const vector<Tensor> &grad) override;
 
- protected:
+protected:
   /// >= 0
   int axis_ = 0;
   /// out_sample_shapes_[i] is the shape of the i-th output tensor
@@ -56,5 +56,5 @@ class Slice : public Layer {
   vector<size_t> slice_point_;
 };
 
-}  // namespace singa
-#endif  // SINGA_MODEL_LAYER_CONCAT_H_
+} // namespace singa
+#endif // SINGA_MODEL_LAYER_CONCAT_H_

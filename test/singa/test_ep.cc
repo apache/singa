@@ -24,10 +24,9 @@
 #include "singa/utils/integer.h"
 #include "singa/utils/logging.h"
 #include <assert.h>
-#include <unistd.h>
-#include <string.h>
 #include <memory>
-
+#include <string.h>
+#include <unistd.h>
 
 #define SIZE 10000000
 #define PORT 10000
@@ -110,4 +109,4 @@ int main(int argc, char **argv) {
   //    m = m1;
   //}
 }
-#endif  // ENABLE_DIST
+#endif // ENABLE_DIST

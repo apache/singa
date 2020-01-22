@@ -21,8 +21,8 @@
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
 #include <cudnn.h>
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "./activation.h"
@@ -32,28 +32,27 @@
 
 namespace singa {
 class CudnnActivation : public Activation {
- public:
+public:
   ~CudnnActivation();
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "CudnnActivation"; }
 
-  const Tensor Forward(int flag, const Tensor& input) override;
+  const Tensor Forward(int flag, const Tensor &input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                   const Tensor& grad) override;
-
+                                                   const Tensor &grad) override;
 
   const cudnnActivationMode_t CudnnMode() const { return cudnn_mode_; }
 
- private:
+private:
   /// Init cudnn related data structures.
   void InitCudnn(size_t size, DataType dtype);
 
- private:
+private:
   bool has_init_cudnn_ = false;
   cudnnActivationDescriptor_t acti_desc_ = nullptr;
   cudnnTensorDescriptor_t desc_ = nullptr;
   cudnnActivationMode_t cudnn_mode_;
 };
-}  // namespace
-#endif  // USE_CUDNN
-#endif  // SINGA_MODEL_LAYER_CUDNN_ACTIVATION_H_
+} // namespace
+#endif // USE_CUDNN
+#endif // SINGA_MODEL_LAYER_CUDNN_ACTIVATION_H_

@@ -17,8 +17,8 @@
  */
 
 #include "./convolution.h"
-#include <vector>
 #include "singa/model/layer.h"
+#include <vector>
 
 namespace singa {
 using std::vector;
@@ -68,14 +68,14 @@ void Convolution::Setup(const Shape &in_sample, const LayerConf &conf) {
     stride_w_ = kStrideDefault;
     stride_h_ = kStrideDefault;
     if (conv_conf.has_stride_w()) {
-        stride_w_ = conv_conf.stride_w();
+      stride_w_ = conv_conf.stride_w();
     }
     if (conv_conf.has_stride_h()) {
-        stride_h_ = conv_conf.stride_h();
+      stride_h_ = conv_conf.stride_h();
     }
   }
   CHECK_GT(stride_w_, 0u);
-  CHECK_GE(stride_h_, 0u);  // 0 for 1D conv
+  CHECK_GE(stride_h_, 0u); // 0 for 1D conv
 
   num_filters_ = conv_conf.num_output();
   bias_term_ = conv_conf.bias_term();
@@ -100,7 +100,8 @@ void Convolution::Setup(const Shape &in_sample, const LayerConf &conf) {
   if (bias_term_)
     bias_.Resize(Shape{num_filters_});
   // Assume the order of param is: weight, bias
-  for (const auto &spec : conf.param()) param_specs_.push_back(spec);
+  for (const auto &spec : conf.param())
+    param_specs_.push_back(spec);
 }
 
 /// \copydoc Layer::Forward(int flag, const Tensor&)
@@ -108,12 +109,14 @@ const Tensor Convolution::Forward(int flag, const Tensor &input) {
   CHECK(buf_.empty());
   CHECK_EQ(input.device()->lang(), kCpp);
   CHECK_EQ(input.nDim(), 4u);
-  if (flag & kTrain) buf_.push(input);
+  if (flag & kTrain)
+    buf_.push(input);
   size_t batchsize = input.shape(0);
   size_t imagesize = input.Size() / batchsize;
   // TODO(wangwei) update the layer config if the input sample shape changes
   CHECK(input.shape(1) == channels_ && input.shape(2) == height_ &&
-      input.shape(3) == width_) << "input sample shape should not change";
+        input.shape(3) == width_)
+      << "input sample shape should not change";
   DataType dtype = input.data_type();
   auto dev = input.device();
   Shape shape{batchsize, num_filters_, conv_height_, conv_width_};
@@ -123,7 +126,7 @@ const Tensor Convolution::Forward(int flag, const Tensor &input) {
   auto in_data = input.data<float>();
   for (size_t b = 0; b < batchsize; b++) {
     Im2col(in_data + b * imagesize, channels_, height_, width_, kernel_h_,
-        kernel_w_, pad_h_, pad_w_, stride_h_, stride_w_, data_col);
+           kernel_w_, pad_h_, pad_w_, stride_h_, stride_w_, data_col);
     col_data.CopyDataFromHostPtr(data_col, col_height_ * col_width_);
     Tensor each = Mult(weight_, col_data);
     if (bias_term_) {
@@ -136,8 +139,8 @@ const Tensor Convolution::Forward(int flag, const Tensor &input) {
 }
 
 /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
-const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
-    int flag, const Tensor &grad) {
+const std::pair<Tensor, vector<Tensor>>
+Convolution::Backward(int flag, const Tensor &grad) {
   CHECK_EQ(grad.device()->lang(), kCpp);
   CHECK_EQ(grad.nDim(), 4u);
   CHECK(!buf_.empty());
@@ -152,7 +155,8 @@ const std::pair<Tensor, vector<Tensor>> Convolution::Backward(
   size_t batchsize = grad.shape(0);
   size_t imagesize = src_data.Size() / batchsize;
   if (bias_term_) {
-    auto tmpshp = Shape{batchsize * num_filters_, grad.Size() / (batchsize * num_filters_)};
+    auto tmpshp = Shape{batchsize * num_filters_,
+                        grad.Size() / (batchsize * num_filters_)};
     Tensor tmp1 = Reshape(grad, tmpshp);
 
     Tensor tmp2(Shape{batchsize * num_filters_});
@@ -194,14 +198,12 @@ void Convolution::ToDevice(std::shared_ptr<Device> device) {
   bias_.ToDevice(device);
 }
 
-void Im2col(const float *data_im, const int channels,
-                         const int height, const int width,
-                         const int kernel_h, const int kernel_w,
-                         const int pad_h, const int pad_w,
-                         const int stride_h, const int stride_w,
-                         float *data_col) {
+void Im2col(const float *data_im, const int channels, const int height,
+            const int width, const int kernel_h, const int kernel_w,
+            const int pad_h, const int pad_w, const int stride_h,
+            const int stride_w, float *data_col) {
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
-  int width_col  = ( width + 2 * pad_w - kernel_w) / stride_w + 1;
+  int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
   int channels_col = channels * kernel_h * kernel_w;
   for (int c = 0; c < channels_col; ++c) {
     int w_offset = c % kernel_w;
@@ -221,15 +223,13 @@ void Im2col(const float *data_im, const int channels,
   }
 }
 
-void Col2im(const float *data_col, const int channels,
-                         const int height, const int width,
-                         const int kernel_h, const int kernel_w,
-                         const int pad_h, const int pad_w,
-                         const int stride_h, const int stride_w,
-                         float *data_im) {
-  memset(data_im, 0, (unsigned long) height * width * channels * sizeof(float));
+void Col2im(const float *data_col, const int channels, const int height,
+            const int width, const int kernel_h, const int kernel_w,
+            const int pad_h, const int pad_w, const int stride_h,
+            const int stride_w, float *data_im) {
+  memset(data_im, 0, (unsigned long)height * width * channels * sizeof(float));
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
-  int width_col  = ( width + 2 * pad_w - kernel_w) / stride_w + 1;
+  int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
   int channels_col = channels * kernel_h * kernel_w;
   for (int c = 0; c < channels_col; ++c) {
     int w_offset = c % kernel_w;
@@ -246,4 +246,4 @@ void Col2im(const float *data_col, const int channels,
     }
   }
 }
-}  // namespace singa
+} // namespace singa

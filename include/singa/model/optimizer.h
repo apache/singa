@@ -39,42 +39,42 @@ class Regularizer;
 /// An overview of gradient descent algorithms,
 /// http://sebastianruder.com/optimizing-gradient-descent/
 class Optimizer {
- public:
+public:
   Optimizer() = default;
   virtual ~Optimizer();
   /// Setup the optimzier using configurations from serialized string (for
   /// binding languages).
-  void Setup(const string& str) {
+  void Setup(const string &str) {
     OptimizerConf conf;
     conf.ParseFromString(str);
     this->Setup(conf);
   }
 
   /// Setup the meta fields of the optimizer
-  virtual void Setup(const OptimizerConf& conf);
+  virtual void Setup(const OptimizerConf &conf);
   /// Register the parameter, e.g., create Constraint and Regularizers.
   /// If there is no constraint or regularizer, then no need to register the
   /// parameter.
-  virtual void Register(const string& name, const ParamSpec& specs);
+  virtual void Register(const string &name, const ParamSpec &specs);
 
-
-  virtual void ApplyRegularizerConstraint(int epoch, const string& name,
-      const Tensor& value, Tensor& grad, int step = -1);
+  virtual void ApplyRegularizerConstraint(int epoch, const string &name,
+                                          const Tensor &value, Tensor &grad,
+                                          int step = -1);
 
   /// Apply the updating algorithm if the gradient is not empty.
   /// No learning rate scaling, gradient constraints/regularization will be
   /// conducted. It assumes all these operations are done either by users or
   /// by Apply(int, const string&, Tensor*, Tensor*).
   /// All sub-classes should override this function.
-  virtual void Apply(int epoch, float lr, const string& name,
-                     Tensor& grad, Tensor& value, int step = -1) = 0;
+  virtual void Apply(int epoch, float lr, const string &name, Tensor &grad,
+                     Tensor &value, int step = -1) = 0;
 
   /// Apply the updating algorithm if the gradient is not empty.
   /// It will apply regularization and constraint to the parameters if
   /// configured during Register(). If will also scale the learning rate if
   /// configured in ParamSpecs (see Register).
-  void Apply(int epoch, const string& name, Tensor& grad, Tensor& value,
-      int step = -1);
+  void Apply(int epoch, const string &name, Tensor &grad, Tensor &value,
+             int step = -1);
 
   /// The argument is a function that returns the learning rate given the
   /// current step (i.e., curren running iteration).
@@ -88,13 +88,13 @@ class Optimizer {
       return 0;
   }
 
- protected:
+protected:
   function<float(int)> learning_rate_generator_;
   std::unordered_map<std::string, float> learning_rate_multplier_;
-  std::unordered_map<std::string, Constraint*> constraints_;
-  std::unordered_map<std::string, Regularizer*> regularizers_;
-  Constraint* constraint_ = nullptr;
-  Regularizer* regularizer_ = nullptr;
+  std::unordered_map<std::string, Constraint *> constraints_;
+  std::unordered_map<std::string, Regularizer *> regularizers_;
+  Constraint *constraint_ = nullptr;
+  Regularizer *regularizer_ = nullptr;
 
   OptimizerConf conf_;
 };
@@ -104,13 +104,13 @@ class Optimizer {
 /// \ref http://keras.io/constraints/
 /// TODO(wangwei) implement a sub-class for each type of constraint
 class Constraint {
- public:
+public:
   Constraint() = default;
-  explicit Constraint(const ConstraintConf& conf) { Setup(conf); }
-  Constraint(const string& type, float threshold)
+  explicit Constraint(const ConstraintConf &conf) { Setup(conf); }
+  Constraint(const string &type, float threshold)
       : type_(type), threshold_(threshold) {}
-  void Setup(const ConstraintConf& conf);
-  void Setup(const string& conf_str) {
+  void Setup(const ConstraintConf &conf);
+  void Setup(const string &conf_str) {
     ConstraintConf conf;
     conf.ParseFromString(conf_str);
     Setup(conf);
@@ -119,13 +119,13 @@ class Constraint {
   /// e.g., clip each gradient if it is too large w.r.t the threshold,
   /// \ref
   /// https://www.reddit.com/r/MachineLearning/comments/31b6x8/gradient_clipping_rnns/
-  void Apply(int epoch, const Tensor& value, Tensor& grad, int step = -1);
+  void Apply(int epoch, const Tensor &value, Tensor &grad, int step = -1);
   /// Apply the constraint for multiple parameter objects together.
   /// \ref https://github.com/Lasagne/Lasagne/blob/master/lasagne/updates.py
-  void Apply(int epoch, const vector<Tensor>& values,
-             const vector<Tensor>& grads, int step = -1);
+  void Apply(int epoch, const vector<Tensor> &values,
+             const vector<Tensor> &grads, int step = -1);
 
- private:
+private:
   /// currently only support "L2" norm constraint, i.e., the norm should be less
   /// than the configured threshold_, otherwise, the parameters would be clipped
   /// to make the norm within that threshold.
@@ -140,13 +140,13 @@ inline std::shared_ptr<Constraint> CreateConstraint(std::string type) {
 /// Apply regularization for parameters (gradient), e.g., L1 norm and L2 norm.
 /// TODO(wangwei) implement a sub-class for each type of regularizer
 class Regularizer {
- public:
+public:
   Regularizer() = default;
-  explicit Regularizer(const RegularizerConf& conf) { Setup(conf); }
-  Regularizer(const string& type, float coefficient)
+  explicit Regularizer(const RegularizerConf &conf) { Setup(conf); }
+  Regularizer(const string &type, float coefficient)
       : type_(type), coefficient_(coefficient) {}
-  void Setup(const RegularizerConf& conf);
-  void Setup(const string& conf_str) {
+  void Setup(const RegularizerConf &conf);
+  void Setup(const string &conf_str) {
     RegularizerConf conf;
     conf.ParseFromString(conf_str);
     Setup(conf);
@@ -156,13 +156,13 @@ class Regularizer {
   /// e.g., clip each gradient if it is too large w.r.t the threshold,
   /// \ref
   /// https://www.reddit.com/r/MachineLearning/comments/31b6x8/gradient_clipping_rnns/
-  void Apply(int epoch, const Tensor& value, Tensor& grad, int step = -1);
+  void Apply(int epoch, const Tensor &value, Tensor &grad, int step = -1);
   /// Apply the regularizer for multiple parameter objects together.
   /// \ref https://github.com/Lasagne/Lasagne/blob/master/lasagne/updates.py
-  void Apply(int epoch, const vector<Tensor>& values,
-             const vector<Tensor>& grads, int step = -1);
+  void Apply(int epoch, const vector<Tensor> &values,
+             const vector<Tensor> &grads, int step = -1);
 
- private:
+private:
   /// currently only support "L2" regularizer. type_ is case insensitive.
   /// TODO(wangwei) add more regularizer, e.g., L1.
   string type_ = "NotSet";
@@ -172,15 +172,13 @@ inline std::shared_ptr<Regularizer> CreateRegularizer(std::string type) {
   return std::make_shared<Regularizer>();
 }
 
-
-
 // =============Vallina SGD with Momentum=====================================
 class SGD : public Optimizer {
- public:
-  void Setup(const OptimizerConf& conf);
+public:
+  void Setup(const OptimizerConf &conf);
   /// Apply the updating algorithm.
-  void Apply(int epoch, float lr, const string& name, Tensor& grad,
-             Tensor& value, int step = -1) override;
+  void Apply(int epoch, float lr, const string &name, Tensor &grad,
+             Tensor &value, int step = -1) override;
 
   /// The argument function returns the momentum value given the current running
   /// step (i.e., iterations/mini-batches).
@@ -188,18 +186,18 @@ class SGD : public Optimizer {
     momentum_generator_ = func;
   }
 
- private:
+private:
   std::unordered_map<string, Tensor> history_gradient_;
   std::function<float(int)> momentum_generator_;
 };
 
 // =============Nesterov======================================================
 class Nesterov : public Optimizer {
- public:
-  void Setup(const OptimizerConf& conf);
+public:
+  void Setup(const OptimizerConf &conf);
   /// Apply the updating algorithm.
-  void Apply(int epoch, float lr, const string& name, Tensor& grad,
-             Tensor& value, int step = -1) override;
+  void Apply(int epoch, float lr, const string &name, Tensor &grad,
+             Tensor &value, int step = -1) override;
 
   /// The argument function returns the momentum value given the current running
   /// step (i.e., iterations/mini-batches).
@@ -207,40 +205,39 @@ class Nesterov : public Optimizer {
     momentum_generator_ = func;
   }
 
- private:
+private:
   std::unordered_map<string, Tensor> history_gradient_;
   std::function<float(int)> momentum_generator_;
 };
 
 // =============Adagrad=======================================================
 class AdaGrad : public Optimizer {
- public:
-  void Setup(const OptimizerConf& conf);
+public:
+  void Setup(const OptimizerConf &conf);
   /// Apply the updating algorithm.
-  void Apply(int epoch, float lr, const string& name, Tensor& grad,
-             Tensor& value, int step = -1) override;
+  void Apply(int epoch, float lr, const string &name, Tensor &grad,
+             Tensor &value, int step = -1) override;
 
- private:
+private:
   std::unordered_map<string, Tensor> history_gradient_;
   float delta_;
 };
 // =============RMSProp=======================================================
 class RMSProp : public Optimizer {
- public:
-  void Setup(const OptimizerConf& conf);
+public:
+  void Setup(const OptimizerConf &conf);
   /// Apply the updating algorithm.
-  void Apply(int epoch, float lr, const string& name, Tensor& grad,
-             Tensor& value, int step = -1) override;
+  void Apply(int epoch, float lr, const string &name, Tensor &grad,
+             Tensor &value, int step = -1) override;
   virtual ~RMSProp() = default;
 
- private:
+private:
   std::unordered_map<string, Tensor> history_gradient_;
   float delta_, rho_;
 };
 
-
-inline std::shared_ptr<Optimizer> CreateOptimizer(const string& type) {
-  std::shared_ptr<Optimizer>  opt;
+inline std::shared_ptr<Optimizer> CreateOptimizer(const string &type) {
+  std::shared_ptr<Optimizer> opt;
   if (type == "SGD")
     opt = std::shared_ptr<Optimizer>(new SGD());
   else if (type == "RMSProp")
@@ -305,4 +302,4 @@ register the specs
 };
 */
 }
-#endif  // SINGA_MODEL_OPTIMIZER_H_
+#endif // SINGA_MODEL_OPTIMIZER_H_

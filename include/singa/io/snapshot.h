@@ -22,16 +22,16 @@
 #ifndef SINGA_UTILS_SNAPSHOT_H_
 #define SINGA_UTILS_SNAPSHOT_H_
 
+#include "singa/core/tensor.h"
 #include "singa/io/reader.h"
 #include "singa/io/writer.h"
-#include "singa/utils/logging.h"
 #include "singa/proto/core.pb.h"
-#include "singa/core/tensor.h"
+#include "singa/utils/logging.h"
 
-#include <string>
-#include <unordered_set>
-#include <unordered_map>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace singa {
 /// The snapshot management.
@@ -42,7 +42,7 @@ namespace singa {
 /// the parameters from checkpoint files using Snapshot after creating the
 /// neural network.
 class Snapshot {
- public:
+public:
   enum Mode { kRead, kWrite };
   /// <prefix>.model is the binary file for parameter key-value pair.
   /// <prefix>.meta is the text file describing information about paramters,
@@ -50,26 +50,24 @@ class Snapshot {
   /// name and shape, one line per parameter.
   /// kRead for reading snapshot, whereas kWrite for dumping out snapshot.
   /// max_param_size: in MB
-  Snapshot(const std::string& prefix, Mode mode, int max_param_size = 10);
+  Snapshot(const std::string &prefix, Mode mode, int max_param_size = 10);
   ~Snapshot() {}
   /// Read parameters saved as tensors from checkpoint file.
   std::vector<std::pair<std::string, Tensor>> Read();
   /// Read parameter shapes from description file.
   std::vector<std::pair<std::string, Shape>> ReadShape();
   /// Read parameter returned as a tensor for a given parameter name.
-  Tensor Read(const std::string& Key);
+  Tensor Read(const std::string &Key);
   /// Read parameter shape for a given parameter name.
-  Shape ReadShape(const std::string& key);
+  Shape ReadShape(const std::string &key);
   /// Serialize and dump out parameter. This method will write two files, one
   /// binary file is for serialized tensors, the other csv file is for parameter
   /// names and shapes.
-  void Write(const std::string& key, const Tensor& param);
+  void Write(const std::string &key, const Tensor &param);
   /// available for singa > 1.0.1
-  int version() const {
-    return version_;
-  }
+  int version() const { return version_; }
 
- private:
+private:
   /// version of SINGA which generates the snapshot
   int version_ = 0;
   std::string prefix_;
@@ -82,6 +80,6 @@ class Snapshot {
   /// Preload key-parameter tensor pairs for seeking a specified key.
   std::unordered_map<std::string, Tensor> param_map_;
 };
-}  //  namespace singa
+} //  namespace singa
 
-#endif  //  SINGA_UTILS_SNAPSHOT_H_
+#endif //  SINGA_UTILS_SNAPSHOT_H_

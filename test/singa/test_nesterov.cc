@@ -19,9 +19,9 @@
 *
 *************************************************************/
 
-#include "gtest/gtest.h"
 #include "singa/model/optimizer.h"
 #include "singa/singa_config.h"
+#include "gtest/gtest.h"
 
 TEST(Nesterov, ApplyCPU) {
   singa::Nesterov nesterov;
@@ -38,25 +38,27 @@ TEST(Nesterov, ApplyCPU) {
   nesterov.Apply(0, lr, "xx", grad, value);
 
   singa::Tensor v1 = value.Clone();
-  const float* newv1 = v1.data<float>();
+  const float *newv1 = v1.data<float>();
   float history[4], tmp[4];
   for (int i = 0; i < 4; ++i) {
     history[i] = g[i] * lr;
     tmp[i] = history[i] * (1 + func(0));
   }
-  for (int i = 0; i < 4; ++i) EXPECT_FLOAT_EQ(newv1[i], v[i] - tmp[i]);
+  for (int i = 0; i < 4; ++i)
+    EXPECT_FLOAT_EQ(newv1[i], v[i] - tmp[i]);
 
   grad.CopyDataFromHostPtr(g, 4);
   nesterov.Apply(1, lr, "xx", grad, value);
   singa::Tensor v2 = value.Clone();
-  const float* newv2 = v2.data<float>();
+  const float *newv2 = v2.data<float>();
   for (int i = 0; i < 4; ++i) {
     tmp[i] = history[i];
     history[i] = history[i] * func(1) + g[i] * lr;
     tmp[i] = history[i] * (1 + func(1)) - tmp[i] * func(1);
   }
 
-  for (int i = 0; i < 4; ++i) EXPECT_FLOAT_EQ(newv2[i], newv1[i] - tmp[i]);
+  for (int i = 0; i < 4; ++i)
+    EXPECT_FLOAT_EQ(newv2[i], newv1[i] - tmp[i]);
 }
 
 #ifdef USE_CUDA
@@ -77,25 +79,27 @@ TEST(Nesterov, ApplyCUDA) {
 
   singa::Tensor v1 = value.Clone();
   v1.ToHost();
-  const float* newv1 = v1.data<float>();
+  const float *newv1 = v1.data<float>();
   float history[4], tmp[4];
   for (int i = 0; i < 4; ++i) {
     history[i] = g[i] * lr;
     tmp[i] = history[i] * (1 + func(0));
   }
-  for (int i = 0; i < 4; ++i) EXPECT_FLOAT_EQ(newv1[i], v[i] - tmp[i]);
+  for (int i = 0; i < 4; ++i)
+    EXPECT_FLOAT_EQ(newv1[i], v[i] - tmp[i]);
 
   grad.CopyDataFromHostPtr(g, 4);
   nesterov.Apply(1, lr, "xx", grad, value);
   singa::Tensor v2 = value.Clone();
   v2.ToHost();
-  const float* newv2 = v2.data<float>();
+  const float *newv2 = v2.data<float>();
   for (int i = 0; i < 4; ++i) {
     tmp[i] = history[i];
     history[i] = history[i] * func(1) + g[i] * lr;
     tmp[i] = history[i] * (1 + func(1)) - tmp[i] * func(1);
   }
 
-  for (int i = 0; i < 4; ++i) EXPECT_FLOAT_EQ(newv2[i], newv1[i] - tmp[i]);
+  for (int i = 0; i < 4; ++i)
+    EXPECT_FLOAT_EQ(newv2[i], newv1[i] - tmp[i]);
 }
 #endif

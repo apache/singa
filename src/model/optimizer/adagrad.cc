@@ -21,12 +21,12 @@
 #include <functional>
 namespace singa {
 
-void AdaGrad::Setup(const OptimizerConf& conf) { delta_ = conf.delta(); }
+void AdaGrad::Setup(const OptimizerConf &conf) { delta_ = conf.delta(); }
 
 // history += grad*grad;
 // value = value - lr*grad/sqrt(history+delta)
-void AdaGrad::Apply(int epoch, float lr, const string& name,
-    Tensor& grad, Tensor& value, int step) {
+void AdaGrad::Apply(int epoch, float lr, const string &name, Tensor &grad,
+                    Tensor &value, int step) {
   if (grad.empty())
     return;
   ApplyRegularizerConstraint(epoch, name, value, grad, step);
@@ -37,7 +37,7 @@ void AdaGrad::Apply(int epoch, float lr, const string& name,
     history_gradient_[name].ResetLike(value);
     history_gradient_[name].SetValue(0.0f);
   }
-  Tensor& history = history_gradient_[name];
+  Tensor &history = history_gradient_[name];
   Tensor tmp = Square(grad);
   history += tmp;
   Add(history, delta_, &tmp);
@@ -45,5 +45,5 @@ void AdaGrad::Apply(int epoch, float lr, const string& name,
   Div(grad, tmp, &tmp);
   Axpy(-lr, tmp, &value);
 }
-}  // namespace singa
-#endif  // SRC_MODEL_OPTIMIZER_ADAGRAD_H_
+} // namespace singa
+#endif // SRC_MODEL_OPTIMIZER_ADAGRAD_H_

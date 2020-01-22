@@ -25,12 +25,12 @@
 #include "singa/utils/integer.h"
 #include "singa/utils/logging.h"
 
-#include <sys/socket.h>
-#include <netdb.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #include <atomic>
 

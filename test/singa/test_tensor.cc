@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
 #include "singa/core/tensor.h"
+#include "gtest/gtest.h"
 using singa::Tensor;
 using singa::Shape;
 using singa::Device;
@@ -87,7 +87,7 @@ TEST(TensorClass, CopyDataFromHostPtr) {
   float data[] = {1.0f, 2.0f, 3.0f};
   Tensor t(Shape{3});
   t.CopyDataFromHostPtr(data, 3);
-  const float* dptr = static_cast<const float*>(t.block()->data());
+  const float *dptr = static_cast<const float *>(t.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(2.0f, dptr[1]);
   EXPECT_FLOAT_EQ(3.0f, dptr[2]);
@@ -100,7 +100,7 @@ TEST(TensorClass, CopyData) {
 
   Tensor o(Shape{3});
   o.CopyData(t);
-  const float* dptr = static_cast<const float*>(o.block()->data());
+  const float *dptr = static_cast<const float *>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(2.0f, dptr[1]);
   EXPECT_FLOAT_EQ(3.0f, dptr[2]);
@@ -112,7 +112,7 @@ TEST(TensorClass, Clone) {
   t.CopyDataFromHostPtr(data, 3);
 
   Tensor o = t.Clone();
-  const float* dptr = static_cast<const float*>(o.block()->data());
+  const float *dptr = static_cast<const float *>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(2.0f, dptr[1]);
   EXPECT_FLOAT_EQ(3.0f, dptr[2]);
@@ -122,12 +122,12 @@ TEST(TensorClass, T) {
   Tensor t(Shape{2, 3});
   EXPECT_FALSE(t.transpose());
   Tensor o = t.T(); // o = t = {3,2}
-  t.T(); // t = {2,3}
+  t.T();            // t = {2,3}
   EXPECT_EQ(true, o.transpose());
   EXPECT_EQ(t.block(), o.block());
   EXPECT_EQ(t.data_type(), o.data_type());
-  EXPECT_EQ(t.shape()[0],  o.shape()[1]);
-  EXPECT_EQ(t.shape()[1],  o.shape()[0]);
+  EXPECT_EQ(t.shape()[0], o.shape()[1]);
+  EXPECT_EQ(t.shape()[1], o.shape()[0]);
 }
 
 TEST(TensorClass, Repeat) {
@@ -135,8 +135,8 @@ TEST(TensorClass, Repeat) {
   Tensor t(Shape{3});
   t.CopyDataFromHostPtr(data, 3);
 
-  Tensor o = t.Repeat(vector <size_t> {2}, 9999);
-  const float* dptr = static_cast<const float*>(o.block()->data());
+  Tensor o = t.Repeat(vector<size_t>{2}, 9999);
+  const float *dptr = static_cast<const float *>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(1.0f, dptr[1]);
   EXPECT_FLOAT_EQ(2.0f, dptr[2]);
@@ -152,7 +152,7 @@ TEST(TensorClass, RepeatData) {
 
   Tensor o(Shape{6});
   o.RepeatData({2}, 9999, 2, t);
-  const float* dptr = static_cast<const float*>(o.block()->data());
+  const float *dptr = static_cast<const float *>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(1.0f, dptr[1]);
   EXPECT_FLOAT_EQ(2.0f, dptr[2]);
@@ -194,7 +194,7 @@ TEST(TensorClass, Broadcast) {
     Tensor a1(Shape{1, 4, 5}), b1(Shape{2, 3, 1, 1});
     auto c1 = Broadcast(a1, b1.shape()).shape();
     auto c2 = Broadcast(b1, a1.shape()).shape();
- 
+
     EXPECT_EQ(c1[0], 2);
     EXPECT_EQ(c1[1], 3);
     EXPECT_EQ(c1[2], 4);
@@ -209,7 +209,7 @@ TEST(TensorClass, Broadcast) {
     Tensor a1(Shape{3, 4, 5}), b1(Shape{2, 1, 1, 1});
     auto c1 = Broadcast(a1, b1.shape()).shape();
     auto c2 = Broadcast(b1, a1.shape()).shape();
- 
+
     EXPECT_EQ(c1[0], 2);
     EXPECT_EQ(c1[1], 3);
     EXPECT_EQ(c1[2], 4);

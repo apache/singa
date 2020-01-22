@@ -25,7 +25,7 @@
 
 #include "gtest/gtest.h"
 
-bool inline GetBitValue(const char* x, int pos) {
+bool inline GetBitValue(const char *x, int pos) {
   const unsigned char BitMask[] = {1, 2, 4, 8, 16, 32, 64, 128};
   int idx = pos / 8;
   int offset = pos % 8;
@@ -39,7 +39,7 @@ TEST(CudnnDropout, Setup) {
   // EXPECT_EQ("CudnnDropout", drop.layer_type());
 
   singa::LayerConf conf;
-  singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
+  singa::DropoutConf *dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(0.8);
 
   drop.Setup(Shape{1}, conf);
@@ -56,7 +56,7 @@ TEST(CudnnDropout, Forward) {
   float pdrop = 0.5;
   CudnnDropout drop;
   singa::LayerConf conf;
-  singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
+  singa::DropoutConf *dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
   drop.Setup(Shape{1}, conf);
 
@@ -64,12 +64,12 @@ TEST(CudnnDropout, Forward) {
 
   singa::Tensor mask(drop.mask().shape(), drop.mask().data_type());
   mask.CopyData(drop.mask());
-  const char* mptr = mask.data<char>();
+  const char *mptr = mask.data<char>();
   for (size_t i = 0; i < n; i++)
     EXPECT_FLOAT_EQ(0, GetBitValue(mptr, i) * (GetBitValue(mptr, i) - 1));
 
   out1.ToHost();
-  const float* outptr1 = out1.data<float>();
+  const float *outptr1 = out1.data<float>();
   EXPECT_EQ(n, out1.Size());
   float scale = 1.0f / (1.0f - pdrop);
   // the output value should be 0 or the same as the input
@@ -80,7 +80,7 @@ TEST(CudnnDropout, Forward) {
   singa::Tensor out2 = drop.Forward(singa::kEval, in);
   out2.ToHost();
   EXPECT_EQ(n, out2.Size());
-  const float* outptr2 = out2.data<float>();
+  const float *outptr2 = out2.data<float>();
   // the output value should be the same as the input
   EXPECT_EQ(x[0], outptr2[0]);
   EXPECT_EQ(x[1], outptr2[1]);
@@ -99,7 +99,7 @@ TEST(CudnnDropout, Backward) {
 
   CudnnDropout drop;
   singa::LayerConf conf;
-  singa::DropoutConf* dropconf = conf.mutable_dropout_conf();
+  singa::DropoutConf *dropconf = conf.mutable_dropout_conf();
   dropconf->set_dropout_ratio(pdrop);
   drop.Setup(Shape{1}, conf);
   singa::Tensor out1 = drop.Forward(singa::kTrain, in);
@@ -111,16 +111,15 @@ TEST(CudnnDropout, Backward) {
   const auto ret = drop.Backward(singa::kTrain, grad);
   singa::Tensor in_grad = ret.first;
   in_grad.ToHost();
-  const float* dx = in_grad.data<float>();
+  const float *dx = in_grad.data<float>();
 
   singa::Tensor mask(drop.mask().shape(), drop.mask().data_type());
   mask.CopyData(drop.mask());
-  const char* mptr = mask.data<char>();
-
+  const char *mptr = mask.data<char>();
 
   EXPECT_FLOAT_EQ(dx[0], dy[0] * GetBitValue(mptr, 0) * scale);
   EXPECT_FLOAT_EQ(dx[1], dy[1] * GetBitValue(mptr, 1) * scale);
   EXPECT_FLOAT_EQ(dx[7], dy[7] * GetBitValue(mptr, 7) * scale);
 }
-#endif  // CUDNN_MAJOR>=5
-#endif  // USE_CUDNN
+#endif // CUDNN_MAJOR>=5
+#endif // USE_CUDNN

@@ -25,18 +25,20 @@ Device::Device(int id, int num_executors)
   host_ = defaultDevice;
 }
 
-void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
-                    const vector<Block*> write_blocks, bool use_rand_generator) {
+void Device::Exec(function<void(Context *)> &&fn,
+                  const vector<Block *> read_blocks,
+                  const vector<Block *> write_blocks, bool use_rand_generator) {
   // TODO(wangwei) execute operations scheduled by the scheduler.
   DoExec(std::move(fn), 0);
 }
 
 // TODO(wangwei) get Block from the memory manager
-Block* Device::NewBlock(int size) {
-  CHECK_GE(size, 0) << "size is negative, could be caused by the type cast "
-    << "from size_t to int. In that case, the size is too large.";
+Block *Device::NewBlock(int size) {
+  CHECK_GE(size, 0)
+      << "size is negative, could be caused by the type cast "
+      << "from size_t to int. In that case, the size is too large.";
   if (size > 0) {
-    void* ptr = Malloc(size);
+    void *ptr = Malloc(size);
     return new Block(ptr, size);
   } else {
     return nullptr;
@@ -44,33 +46,33 @@ Block* Device::NewBlock(int size) {
 }
 
 // TODO(wangwei) return Block to the memory manager
-void Device::FreeBlock(Block* block) {
+void Device::FreeBlock(Block *block) {
   if (block != nullptr) {
     Free(block->mutable_data());
     delete block;
   }
 }
 
-void Device::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
+void Device::CopyDataToFrom(Block *dst, Block *src, size_t nBytes,
                             CopyDirection direct, int dst_offset,
                             int src_offset) {
   this->Exec(
-      [this, dst, src, nBytes, direct, dst_offset, src_offset](Context* ctx) {
+      [this, dst, src, nBytes, direct, dst_offset, src_offset](Context *ctx) {
         this->CopyToFrom(
-            reinterpret_cast<char*>(dst->mutable_data()) + dst_offset,
-            reinterpret_cast<const char*>(src->data()) + src_offset, nBytes,
+            reinterpret_cast<char *>(dst->mutable_data()) + dst_offset,
+            reinterpret_cast<const char *>(src->data()) + src_offset, nBytes,
             direct, ctx);
       },
       {src}, {dst});
 }
 
-void Device::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
+void Device::CopyDataFromHostPtr(Block *dst, const void *src, size_t nBytes,
                                  size_t dst_offset) {
   auto direct = lang_ == kCpp ? kHostToHost : kHostToDevice;
-  void* dstptr = reinterpret_cast<char*>(dst->mutable_data()) + dst_offset;
+  void *dstptr = reinterpret_cast<char *>(dst->mutable_data()) + dst_offset;
   Exec([this, dstptr, src, nBytes,
-        direct](Context* ctx) { CopyToFrom(dstptr, src, nBytes, direct, ctx); },
+        direct](Context *ctx) { CopyToFrom(dstptr, src, nBytes, direct, ctx); },
        {}, {dst});
 }
 void Device::Sync() {}
-}  // namespace singa
+} // namespace singa

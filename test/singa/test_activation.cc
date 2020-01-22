@@ -31,7 +31,7 @@ TEST(Activation, Setup) {
 
   singa::LayerConf conf;
   conf.set_type("singa_relu");
-  singa::ReLUConf* reluconf = conf.mutable_relu_conf();
+  singa::ReLUConf *reluconf = conf.mutable_relu_conf();
   reluconf->set_negative_slope(0.5);
 
   acti.Setup(Shape{3}, conf);
@@ -53,30 +53,27 @@ TEST(Activation, Forward) {
     std::string layertype = types[j];
     conf.set_type(layertype);
     if (layertype == "relu") {
-      singa::ReLUConf* reluconf = conf.mutable_relu_conf();
+      singa::ReLUConf *reluconf = conf.mutable_relu_conf();
       reluconf->set_negative_slope(neg_slope);
     }
     acti.Setup(Shape{n}, conf);
 
     singa::Tensor out = acti.Forward(singa::kTrain, in);
 
-    const float* yptr = out.data<float>();
+    const float *yptr = out.data<float>();
     EXPECT_EQ(n, out.Size());
 
-    float* y = new float[n];
+    float *y = new float[n];
     if (acti.Mode() == "sigmoid") {
       for (size_t i = 0; i < n; i++)
         y[i] = 1.f / (1.f + exp(-x[i]));
-    }
-    else if (acti.Mode() == "tanh") {
+    } else if (acti.Mode() == "tanh") {
       for (size_t i = 0; i < n; i++)
         y[i] = tanh(x[i]);
-    }
-    else if (acti.Mode() == "relu") {
+    } else if (acti.Mode() == "relu") {
       for (size_t i = 0; i < n; i++)
         y[i] = (x[i] >= 0.f) ? x[i] : 0.f;
-    }
-    else
+    } else
       LOG(FATAL) << "Unkown activation: " << acti.Mode();
     EXPECT_FLOAT_EQ(y[0], yptr[0]);
     EXPECT_FLOAT_EQ(y[4], yptr[4]);
@@ -99,34 +96,31 @@ TEST(Activation, Backward) {
     std::string layertype = types[j];
     conf.set_type(layertype);
     if (layertype == "relu") {
-      singa::ReLUConf* reluconf = conf.mutable_relu_conf();
+      singa::ReLUConf *reluconf = conf.mutable_relu_conf();
       reluconf->set_negative_slope(neg_slope);
     }
     acti.Setup(Shape{n}, conf);
 
     singa::Tensor out = acti.Forward(singa::kTrain, in);
-    const float* yptr = out.data<float>();
+    const float *yptr = out.data<float>();
 
     const float grad[] = {2.0f, -3.0f, 1.0f, 3.0f, -1.0f, -2.0};
     singa::Tensor out_diff(singa::Shape{n});
     out_diff.CopyDataFromHostPtr<float>(grad, n);
     const auto in_diff = acti.Backward(singa::kTrain, out_diff);
-    const float* xptr = in_diff.first.data<float>();
+    const float *xptr = in_diff.first.data<float>();
 
-    float* dx = new float[n];
+    float *dx = new float[n];
     if (acti.Mode() == "sigmoid") {
       for (size_t i = 0; i < n; i++)
         dx[i] = grad[i] * yptr[i] * (1.0f - yptr[i]);
-    }
-    else if (acti.Mode() == "tanh") {
+    } else if (acti.Mode() == "tanh") {
       for (size_t i = 0; i < n; i++)
         dx[i] = grad[i] * (1 - yptr[i] * yptr[i]);
-    }
-    else if (acti.Mode() == "relu") {
+    } else if (acti.Mode() == "relu") {
       for (size_t i = 0; i < n; i++)
         dx[i] = grad[i] * (x[i] > 0.f) + acti.Negative_slope() * (x[i] <= 0.f);
-    }
-    else
+    } else
       LOG(FATAL) << "Unkown activation: " << acti.Mode();
     EXPECT_FLOAT_EQ(dx[0], xptr[0]);
     EXPECT_FLOAT_EQ(dx[4], xptr[4]);

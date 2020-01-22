@@ -35,20 +35,21 @@ std::vector<Tensor> JPGDecoder::Decode(std::string value) {
 
   // decode image
   cv::Mat mat = cv::imdecode(cv::Mat(pixel), CV_LOAD_IMAGE_COLOR);
-  size_t height = mat.size().height, width = mat.size().width, channel = mat.channels();
+  size_t height = mat.size().height, width = mat.size().width,
+         channel = mat.channels();
   Shape shape(record.shape().begin(), record.shape().end());
-  //CHECK_EQ(shape[0], height);
-  //CHECK_EQ(shape[1], width);
-  //CHECK_EQ(shape[2], channel);
+  // CHECK_EQ(shape[0], height);
+  // CHECK_EQ(shape[1], width);
+  // CHECK_EQ(shape[2], channel);
   Tensor image(shape);
 
-  float* data = new float[image.Size()];
+  float *data = new float[image.Size()];
   if (image_dim_order_ == "CHW") {
     for (size_t i = 0; i < height; i++)
       for (size_t j = 0; j < width; j++)
         for (size_t k = 0; k < channel; k++)
-          data[k * height * width + i * width + j] = static_cast<float>(
-              static_cast<int>(mat.at<cv::Vec3b>(i, j)[k]));
+          data[k * height * width + i * width + j] =
+              static_cast<float>(static_cast<int>(mat.at<cv::Vec3b>(i, j)[k]));
   } else if (image_dim_order_ == "HWC") {
 
     for (size_t i = 0; i < height; i++)
@@ -72,7 +73,7 @@ std::vector<Tensor> JPGDecoder::Decode(std::string value) {
   }
   return output;
 }
-}  // namespace singa
+} // namespace singa
 #endif
 
 #endif

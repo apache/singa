@@ -21,12 +21,12 @@
 
 namespace singa {
 namespace io {
-bool BinFileReader::Open(const std::string& path) {
+bool BinFileReader::Open(const std::string &path) {
   path_ = path;
   return OpenFile();
 }
 
-bool BinFileReader::Open(const std::string& path, int capacity) {
+bool BinFileReader::Open(const std::string &path, int capacity) {
   path_ = path;
   capacity_ = capacity;
   return OpenFile();
@@ -37,14 +37,16 @@ void BinFileReader::Close() {
     delete[] buf_;
     buf_ = nullptr;
   }
-  if (fdat_.is_open()) fdat_.close();
+  if (fdat_.is_open())
+    fdat_.close();
 }
 
-bool BinFileReader::Read(std::string* key, std::string* value) {
+bool BinFileReader::Read(std::string *key, std::string *value) {
   CHECK(fdat_.is_open()) << "File not open!";
   char magic[4];
   int smagic = sizeof(magic);
-  if (!PrepareNextField(smagic)) return false;
+  if (!PrepareNextField(smagic))
+    return false;
   memcpy(magic, buf_ + offset_, smagic);
   offset_ += smagic;
 
@@ -52,10 +54,11 @@ bool BinFileReader::Read(std::string* key, std::string* value) {
     if (magic[2] != 0 && magic[2] != 1)
       LOG(FATAL) << "File format error: magic word does not match!";
     if (magic[2] == 1)
-      if (!ReadField(key)) return false;
-    if (!ReadField(value)) return false;
-  }
-  else {
+      if (!ReadField(key))
+        return false;
+    if (!ReadField(value))
+      return false;
+  } else {
     LOG(FATAL) << "File format error: magic word does not match!";
   }
   return true;
@@ -68,18 +71,23 @@ int BinFileReader::Count() {
   while (true) {
     size_t len;
     char magic[4];
-    fin.read(reinterpret_cast<char*>(magic), sizeof(magic));
-    if (!fin.good()) break;
+    fin.read(reinterpret_cast<char *>(magic), sizeof(magic));
+    if (!fin.good())
+      break;
     if (magic[2] == 1) {
-      fin.read(reinterpret_cast<char*>(&len), sizeof(len));
-      if (!fin.good()) break;
+      fin.read(reinterpret_cast<char *>(&len), sizeof(len));
+      if (!fin.good())
+        break;
       fin.seekg(len, std::ios_base::cur);
-      if (!fin.good()) break;
+      if (!fin.good())
+        break;
     }
-    fin.read(reinterpret_cast<char*>(&len), sizeof(len));
-    if (!fin.good()) break;
+    fin.read(reinterpret_cast<char *>(&len), sizeof(len));
+    if (!fin.good())
+      break;
     fin.seekg(len, std::ios_base::cur);
-    if (!fin.good()) break;
+    if (!fin.good())
+      break;
     count++;
   }
   fin.close();
@@ -102,16 +110,18 @@ bool BinFileReader::OpenFile() {
   return fdat_.is_open();
 }
 
-bool BinFileReader::ReadField(std::string* content) {
+bool BinFileReader::ReadField(std::string *content) {
   content->clear();
   int ssize = sizeof(size_t);
-  if (!PrepareNextField(ssize)) return false;
-  int len = *reinterpret_cast<int*>(buf_ + offset_);
+  if (!PrepareNextField(ssize))
+    return false;
+  int len = *reinterpret_cast<int *>(buf_ + offset_);
   offset_ += ssize;
-  if (!PrepareNextField(len)) return false;
+  if (!PrepareNextField(len))
+    return false;
   content->reserve(len);
   content->insert(0, buf_ + offset_, len);
-  //for (int i = 0; i < len; ++i) content->push_back(buf_[offset_ + i]);
+  // for (int i = 0; i < len; ++i) content->push_back(buf_[offset_ + i]);
   offset_ += len;
   return true;
 }
@@ -126,12 +136,12 @@ bool BinFileReader::PrepareNextField(int size) {
       return false;
     } else {
       fdat_.read(buf_ + bufsize_, capacity_ - bufsize_);
-      bufsize_ += (int) fdat_.gcount();
+      bufsize_ += (int)fdat_.gcount();
       CHECK_LE(size, bufsize_) << "Field size is too large: " << size;
     }
   }
   return true;
 }
 
-}  // namespace io
-}  // namespace singa
+} // namespace io
+} // namespace singa

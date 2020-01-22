@@ -21,10 +21,10 @@
 
 namespace singa {
 
-std::string CSVEncoder::Encode(vector<Tensor>& data) {
+std::string CSVEncoder::Encode(vector<Tensor> &data) {
   CHECK_GE(data.size(), 1u);
   size_t size = data[0].Size();
-  const float* value = data[0].data<float>();
+  const float *value = data[0].data<float>();
   std::string des = "";
   if (data.size() == 2) {
     const float label = (const float)data[1].data<int>()[0];
@@ -35,9 +35,11 @@ std::string CSVEncoder::Encode(vector<Tensor>& data) {
   for (size_t i = 0; i < size; i++) {
     std::ostringstream buff;
     buff << value[i];
-    if (i == size - 1) des += buff.str();
-    else des += buff.str() + ',';
+    if (i == size - 1)
+      des += buff.str();
+    else
+      des += buff.str() + ',';
   }
   return des;
 }
-}  // namespace singa
+} // namespace singa

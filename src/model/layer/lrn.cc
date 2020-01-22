@@ -26,7 +26,7 @@ RegisterLayerClass(singa_lrn, LRN);
 RegisterLayerClass(singacpp_lrn, LRN);
 RegisterLayerClass(singacuda_lrn, LRN);
 RegisterLayerClass(singacl_lrn, LRN);
-void LRN::Setup(const Shape& in_sample, const LayerConf& conf) {
+void LRN::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
   local_size_ = conf.lrn_conf().local_size();
@@ -36,7 +36,7 @@ void LRN::Setup(const Shape& in_sample, const LayerConf& conf) {
   beta_ = conf.lrn_conf().beta();
 }
 
-const Tensor LRN::Forward(int flag, const Tensor& input) {
+const Tensor LRN::Forward(int flag, const Tensor &input) {
   Tensor x = input.Clone();
   x.Reshape(Shape{input.shape(0), input.Size() / input.shape(0)});
   vector<Tensor> channels, images;
@@ -78,7 +78,7 @@ const Tensor LRN::Forward(int flag, const Tensor& input) {
 }
 
 const std::pair<Tensor, vector<Tensor>> LRN::Backward(int flag,
-                                                      const Tensor& grad) {
+                                                      const Tensor &grad) {
   Tensor dx;
   if ((flag & kTrain) == kTrain) {
     Tensor dy = grad.Clone();
@@ -147,4 +147,4 @@ const std::pair<Tensor, vector<Tensor>> LRN::Backward(int flag,
   return std::make_pair(dx, param_grad);
 }
 
-}  // namespace
+} // namespace

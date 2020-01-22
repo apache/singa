@@ -17,15 +17,15 @@
  */
 #ifndef DISABLE_WARNINGS
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 
-#include "singa/core/device.h"
-#include "singa/utils/tinydir.h"
-#include "singa/utils/opencl_utils.h"
 #include "./opencl_func.h"
+#include "singa/core/device.h"
+#include "singa/utils/opencl_utils.h"
+#include "singa/utils/tinydir.h"
 
 #ifdef USE_OPENCL
 
@@ -35,53 +35,56 @@ using namespace viennacl::backend::opencl;
 namespace singa {
 
 OpenclDevice::OpenclDevice(int id, int num_executors)
-	: Device(id, num_executors) {
+    : Device(id, num_executors) {
   CHECK_GE(id, 0);
   lang_ = kOpencl;
-  
+
   ocl::current_context().build_options("-cl-std=CL1.2");
-  
+
   ctx_.vcl_ctx_id = 0;
   this->this_device = ocl::current_device();
-  
+
   BuildPrograms();
 }
-
 
 OpenclDevice::~OpenclDevice() {
 
   // Flush and finish the command queue.
   auto cmdq = ocl::current_context().get_queue();
-  
+
   cmdq.flush();
   cmdq.finish();
 }
 
-
 void OpenclDevice::SetRandSeed(unsigned seed) { seed = seed; }
 
-
-void OpenclDevice::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-                                  CopyDirection direction, int dst_offset, int src_offset) {
+void OpenclDevice::CopyDataToFrom(Block *dst, Block *src, size_t nBytes,
+                                  CopyDirection direction, int dst_offset,
+                                  int src_offset) {
   // Pointers must be valid.
-  if (!dst || !src) return;
-  
+  if (!dst || !src)
+    return;
+
   auto ocl_ctx = viennacl::ocl::get_context(ctx_.vcl_ctx_id);
 
-  switch(direction) {
+  switch (direction) {
   case kHostToDevice: {
-    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
+    auto dst_handle =
+        WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
     memory_write(dst_handle, dst_offset, nBytes, src->data());
     return;
   }
   case kDeviceToHost: {
-    auto src_handle = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
+    auto src_handle =
+        WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
     memory_read(src_handle, src_offset, nBytes, dst->mutable_data());
     return;
   }
   case kDeviceToDevice: {
-    auto src_handle = WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
-    auto dst_handle = WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
+    auto src_handle =
+        WrapHandle(static_cast<cl_mem>(src->mutable_data()), ocl_ctx);
+    auto dst_handle =
+        WrapHandle(static_cast<cl_mem>(dst->mutable_data()), ocl_ctx);
     memory_copy(src_handle, dst_handle, src_offset, dst_offset, nBytes);
     return;
   }
@@ -90,28 +93,28 @@ void OpenclDevice::CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
   }
 }
 
-
 void OpenclDevice::BuildPrograms() {
-  ocl::current_context().add_program(opencl::distribution_str, "opencl_distribution");
-  ocl::current_context().add_program(opencl::tensormath_str, "opencl_tensor_math");
+  ocl::current_context().add_program(opencl::distribution_str,
+                                     "opencl_distribution");
+  ocl::current_context().add_program(opencl::tensormath_str,
+                                     "opencl_tensor_math");
   ocl::current_context().add_program(opencl::im2col_str, "opencl_im2col");
   ocl::current_context().add_program(opencl::pooling_str, "opencl_pooling");
 }
 
-
-void OpenclDevice::DoExec(function<void(Context*)>&& fn, int executor) {
+void OpenclDevice::DoExec(function<void(Context *)> &&fn, int executor) {
   fn(&ctx_);
 }
 
-
-void OpenclDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
-                  CopyDirection direction, Context* ctx) {
+void OpenclDevice::CopyToFrom(void *dst, const void *src, size_t nBytes,
+                              CopyDirection direction, Context *ctx) {
   // Pointers must be valid.
-  if (!dst || !src) return;
-  
+  if (!dst || !src)
+    return;
+
   auto ocl_ctx = viennacl::ocl::get_context(ctx->vcl_ctx_id);
 
-  switch(direction) {
+  switch (direction) {
   case kHostToDevice: {
     auto dst_handle = WrapHandle(static_cast<cl_mem>(dst), ocl_ctx);
     memory_write(dst_handle, 0, nBytes, src);
@@ -133,16 +136,15 @@ void OpenclDevice::CopyToFrom(void* dst, const void* src, size_t nBytes,
   }
 }
 
-
-void* OpenclDevice::Malloc(int size) {
+void *OpenclDevice::Malloc(int size) {
   cl_mem buffer = memory_create(ocl::current_context(), size, nullptr);
 
-  return static_cast<void*>(buffer);
+  return static_cast<void *>(buffer);
 }
 
-
-void OpenclDevice::Free(void* p) {
-  if (!p) return;
+void OpenclDevice::Free(void *p) {
+  if (!p)
+    return;
   cl_mem buffer = static_cast<cl_mem>(p);
   clReleaseMemObject(buffer);
 }

@@ -23,7 +23,7 @@
 #include "../include/singa/io/writer.h"
 #include "gtest/gtest.h"
 
-const char* path_bin = "./binfile_test";
+const char *path_bin = "./binfile_test";
 using singa::io::BinFileReader;
 using singa::io::BinFileWriter;
 TEST(BinFileWriter, Create) {

@@ -54,18 +54,18 @@ void ForwardSliceRowTest(std::shared_ptr<singa::Device> dev) {
   EXPECT_EQ(grads.size(), 2u);
 
   t.ToHost();
-  const float* tptr = t.data<float>();
+  const float *tptr = t.data<float>();
 
   grads[0].ToHost();
-  const float * outa = grads[0].data<float>();
+  const float *outa = grads[0].data<float>();
   for (size_t i = 0; i < a; i++)
     for (size_t j = 0; j < c; j++)
       EXPECT_FLOAT_EQ(outa[i * c + j], tptr[i * c + j]);
   grads[1].ToHost();
-  const float * outb = grads[1].data<float>();
+  const float *outb = grads[1].data<float>();
   for (size_t i = 0; i < b; i++)
     for (size_t j = 0; j < c; j++)
-      EXPECT_FLOAT_EQ(outb[i  * c + j], tptr[(i + a) * c + j]);
+      EXPECT_FLOAT_EQ(outb[i * c + j], tptr[(i + a) * c + j]);
 }
 
 void ForwardSliceColumnTest(std::shared_ptr<singa::Device> dev) {
@@ -85,29 +85,25 @@ void ForwardSliceColumnTest(std::shared_ptr<singa::Device> dev) {
   EXPECT_EQ(out.size(), 2u);
 
   t.ToHost();
-  const float* tptr = t.data<float>();
+  const float *tptr = t.data<float>();
 
   out[0].ToHost();
-  const float * outa = out[0].data<float>();
+  const float *outa = out[0].data<float>();
   for (size_t i = 0; i < c; i++)
     for (size_t j = 0; j < a; j++)
       EXPECT_FLOAT_EQ(outa[i * a + j], tptr[i * (a + b) + j]);
   out[1].ToHost();
-  const float * outb = out[1].data<float>();
+  const float *outb = out[1].data<float>();
   for (size_t i = 0; i < c; i++)
     for (size_t j = 0; j < b; j++)
-      EXPECT_FLOAT_EQ(outb[i  * b + j], tptr[i * (a + b) + a + j]);
+      EXPECT_FLOAT_EQ(outb[i * b + j], tptr[i * (a + b) + a + j]);
 }
 
-
-TEST(Slice, ForwardSliceRowCpp) {
-  ForwardSliceRowTest(singa::defaultDevice);
-}
+TEST(Slice, ForwardSliceRowCpp) { ForwardSliceRowTest(singa::defaultDevice); }
 
 TEST(Slice, ForwardSliceColumn) {
   ForwardSliceColumnTest(singa::defaultDevice);
 }
-
 
 #ifdef USE_CUDA
 TEST(Slice, ForwardSliceRowCuda) {
@@ -117,9 +113,7 @@ TEST(Slice, ForwardSliceRowCuda) {
 TEST(Slice, ForwardSliceColumnCuda) {
   ForwardSliceColumnTest(std::make_shared<singa::CudaGPU>());
 }
-#endif  // USE_CUDA
-
-
+#endif // USE_CUDA
 
 void BackwardSliceRowTest(std::shared_ptr<singa::Device> dev) {
   size_t a = 2u, b = 1u, c = 3u;
@@ -140,14 +134,14 @@ void BackwardSliceRowTest(std::shared_ptr<singa::Device> dev) {
   auto grad = out.first[0];
 
   grad.ToHost();
-  const float * outptr = grad.data<float>();
+  const float *outptr = grad.data<float>();
   for (size_t i = 0; i < a; i++) {
     for (size_t j = 0; j < c; j++)
       EXPECT_FLOAT_EQ(outptr[i * c + j], 1.0f);
   }
   for (size_t i = a; i < a + b; i++) {
     for (size_t j = 0; j < c; j++)
-      EXPECT_FLOAT_EQ(outptr[i  * c + j], 2.0f);
+      EXPECT_FLOAT_EQ(outptr[i * c + j], 2.0f);
   }
 }
 
@@ -169,26 +163,22 @@ void BackwardSliceColumnTest(std::shared_ptr<singa::Device> dev) {
   auto out = layer.Backward(singa::kTrain, {t1, t2});
   auto grad = out.first[0];
   grad.ToHost();
-  const float * outptr = grad.data<float>();
+  const float *outptr = grad.data<float>();
   for (size_t i = 0; i < c; i++) {
     for (size_t j = 0; j < a; j++)
       EXPECT_FLOAT_EQ(outptr[i * (a + b) + j], 1.0f);
   }
   for (size_t i = 0; i < c; i++) {
     for (size_t j = a; j < a + b; j++)
-      EXPECT_FLOAT_EQ(outptr[i  * (a + b) + j], 2.0f);
+      EXPECT_FLOAT_EQ(outptr[i * (a + b) + j], 2.0f);
   }
 }
 
-
-TEST(Slice, BackwardSliceRowCpp) {
-  BackwardSliceRowTest(singa::defaultDevice);
-}
+TEST(Slice, BackwardSliceRowCpp) { BackwardSliceRowTest(singa::defaultDevice); }
 
 TEST(Slice, BackwardSliceColumn) {
   BackwardSliceColumnTest(singa::defaultDevice);
 }
-
 
 #ifdef USE_CUDA
 TEST(Slice, BackwardSliceRowCuda) {
@@ -198,4 +188,4 @@ TEST(Slice, BackwardSliceRowCuda) {
 TEST(Slice, BackwardSliceColumnCuda) {
   BackwardSliceColumnTest(std::make_shared<singa::CudaGPU>());
 }
-#endif  // USE_CUDA
+#endif // USE_CUDA

@@ -16,21 +16,21 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./dropout.h"
+#include "singa/model/layer.h"
 namespace singa {
 
 RegisterLayerClass(singa_dropout, Dropout);
 RegisterLayerClass(singacpp_dropout, Dropout);
 RegisterLayerClass(singacuda_dropout, Dropout);
 RegisterLayerClass(singacl_dropout, Dropout);
-void Dropout::Setup(const Shape& in_sample, const LayerConf& conf) {
+void Dropout::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   dropout_ratio_ = conf.dropout_conf().dropout_ratio();
-  out_sample_shape_= in_sample;
+  out_sample_shape_ = in_sample;
 }
 
-const Tensor Dropout::Forward(int flag, const Tensor& input) {
+const Tensor Dropout::Forward(int flag, const Tensor &input) {
   Tensor out;
   if (flag & kTrain) {
     mask_.ResetLike(input);
@@ -45,7 +45,7 @@ const Tensor Dropout::Forward(int flag, const Tensor& input) {
 }
 
 const std::pair<Tensor, vector<Tensor>> Dropout::Backward(int flag,
-                                                          const Tensor& grad) {
+                                                          const Tensor &grad) {
   vector<Tensor> param_grad;
   Tensor input_grad;
   if (flag & kTrain) {
@@ -62,4 +62,4 @@ void Dropout::ToDevice(std::shared_ptr<Device> device) {
   mask_.ToDevice(device);
 }
 
-}  // namespace singa
+} // namespace singa

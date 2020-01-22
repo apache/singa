@@ -23,5 +23,5 @@ namespace singa {
 /// Scheduling Tensor operations with dependency detection.
 class Scheduler {};
 
-}  // namespace singa
-#endif  // SINGA_CORE_SCHEDULER_H_
+} // namespace singa
+#endif // SINGA_CORE_SCHEDULER_H_

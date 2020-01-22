@@ -17,41 +17,41 @@
  */
 #ifndef SINGA_MODEL_LAYER_ACTIVATION_H_
 #define SINGA_MODEL_LAYER_ACTIVATION_H_
-#include <utility>
-#include <string>
-#include <vector>
 #include "singa/model/layer.h"
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace singa {
 class Activation : public Layer {
- public:
+public:
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "Activation"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
   const Shape GetOutputSampleShape() const override {
     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
     return out_sample_shape_;
   }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&)
-  const Tensor Forward(int flag, const Tensor& input) override;
+  const Tensor Forward(int flag, const Tensor &input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                   const Tensor& grad) override;
+                                                   const Tensor &grad) override;
 
   const std::string Mode() const { return mode_; }
 
   float Negative_slope() const { return neg_slope_; }
 
- protected:
+protected:
   std::string mode_;
   std::stack<Tensor> buf_;
   Shape out_sample_shape_;
   float neg_slope_;
 };
 
-}  // namespace singa
-#endif  // SINGA_MODEL_LAYER_ACTIVATION_H_
+} // namespace singa
+#endif // SINGA_MODEL_LAYER_ACTIVATION_H_

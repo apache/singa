@@ -18,8 +18,8 @@
 #include "./cudnn_pooling.h"
 #ifdef USE_CUDNN
 
-#include <cudnn.h>
 #include <chrono>
+#include <cudnn.h>
 
 #include "./cudnn_utils.h"
 #include "singa/utils/logging.h"
@@ -29,11 +29,13 @@ RegisterLayerClass(cudnn_pooling, CudnnPooling);
 CudnnPooling::~CudnnPooling() {
   if (pool_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyPoolingDescriptor(pool_desc_));
-  if (x_desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(x_desc_));
-  if (y_desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_desc_));
+  if (x_desc_ != nullptr)
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(x_desc_));
+  if (y_desc_ != nullptr)
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(y_desc_));
 }
 
-void CudnnPooling::Setup(const Shape& in_sample, const LayerConf &conf) {
+void CudnnPooling::Setup(const Shape &in_sample, const LayerConf &conf) {
   Pooling::Setup(in_sample, conf);
   PoolingConf pool_conf = conf.pooling_conf();
   if (pool_conf.nan_prop())
@@ -83,28 +85,29 @@ const Tensor CudnnPooling::Forward(int flag, const Tensor &input) {
   } else {
     int n, c, h, w, s;
     cudnnDataType_t type;
-    CUDNN_CHECK(cudnnGetTensor4dDescriptor(x_desc_, &type, &n, &c, &h, &w,
-          &s, &s, &s, &s));
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(x_desc_, &type, &n, &c, &h, &w, &s,
+                                           &s, &s, &s));
     if (batchsize != static_cast<size_t>(n))
       InitCudnn(input);
-    CHECK(input.shape(1) == static_cast<size_t>(c)
-        && input.shape(2) == static_cast<size_t>(h)
-        && input.shape(3) == static_cast<size_t>(w))
-      << "input sample shape should not change"
-      << "previous shape " << c << ", " << h << ", " << w
-      << "current shape " << input.shape(1) << ", " << input.shape(2) << ", "
-      << input.shape(3);
+    CHECK(input.shape(1) == static_cast<size_t>(c) &&
+          input.shape(2) == static_cast<size_t>(h) &&
+          input.shape(3) == static_cast<size_t>(w))
+        << "input sample shape should not change"
+        << "previous shape " << c << ", " << h << ", " << w << "current shape "
+        << input.shape(1) << ", " << input.shape(2) << ", " << input.shape(3);
   }
 
   Shape shape{batchsize, channels_, pooled_height_, pooled_width_};
   Tensor output = Tensor(shape, dev, dtype);
-  output.device()->Exec([input, output, this](Context *ctx) {
-    Block *inblock = input.block(), *outblock = output.block();
-    float alpha = 1.0f, beta = 0.0f;
-    cudnnPoolingForward(ctx->cudnn_handle, this->pool_desc_, &alpha,
-                        this->x_desc_, inblock->data(), &beta, this->y_desc_,
-                        outblock->mutable_data());
-  }, {input.block()}, {output.block()});
+  output.device()->Exec(
+      [input, output, this](Context *ctx) {
+        Block *inblock = input.block(), *outblock = output.block();
+        float alpha = 1.0f, beta = 0.0f;
+        cudnnPoolingForward(ctx->cudnn_handle, this->pool_desc_, &alpha,
+                            this->x_desc_, inblock->data(), &beta,
+                            this->y_desc_, outblock->mutable_data());
+      },
+      {input.block()}, {output.block()});
   if (flag & kTrain) {
     buf_.push(input);
     buf_.push(output);
@@ -112,8 +115,8 @@ const Tensor CudnnPooling::Forward(int flag, const Tensor &input) {
   return output;
 }
 
-const std::pair<Tensor, vector<Tensor>> CudnnPooling::Backward(
-    int flag, const Tensor &grad) {
+const std::pair<Tensor, vector<Tensor>>
+CudnnPooling::Backward(int flag, const Tensor &grad) {
   CHECK_EQ(grad.device()->lang(), kCuda);
   CHECK_EQ(grad.nDim(), 4u);
   vector<Tensor> param_grad;
@@ -125,17 +128,19 @@ const std::pair<Tensor, vector<Tensor>> CudnnPooling::Backward(
   Tensor dx;
   dx.ResetLike(x);
 
-  dx.device()->Exec([dx, grad, x, y, this](Context *ctx) {
-    Block *dyblock = grad.block(), *dxblock = dx.block(), *yblock = y.block(),
-          *xblock = x.block();
-    float alpha = 1.0f, beta = 0.0f;
-    cudnnPoolingBackward(ctx->cudnn_handle, this->pool_desc_, &alpha,
-                         this->y_desc_, yblock->data(), this->y_desc_,
-                         dyblock->data(), this->x_desc_, xblock->data(), &beta,
-                         this->x_desc_, dxblock->mutable_data());
-  }, {grad.block(), y.block(), x.block()}, {dx.block()});
+  dx.device()->Exec(
+      [dx, grad, x, y, this](Context *ctx) {
+        Block *dyblock = grad.block(), *dxblock = dx.block(),
+              *yblock = y.block(), *xblock = x.block();
+        float alpha = 1.0f, beta = 0.0f;
+        cudnnPoolingBackward(ctx->cudnn_handle, this->pool_desc_, &alpha,
+                             this->y_desc_, yblock->data(), this->y_desc_,
+                             dyblock->data(), this->x_desc_, xblock->data(),
+                             &beta, this->x_desc_, dxblock->mutable_data());
+      },
+      {grad.block(), y.block(), x.block()}, {dx.block()});
 
   return std::make_pair(dx, param_grad);
 }
-}  // namespace singa
-#endif  // USE_CUDNN
+} // namespace singa
+#endif // USE_CUDNN

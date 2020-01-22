@@ -37,13 +37,13 @@ void CudnnBatchNorm::ToDevice(std::shared_ptr<Device> device) {
   resultSaveVariance_.ToDevice(device);
 }
 
-void CudnnBatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
+void CudnnBatchNorm::Setup(const Shape &in_sample, const LayerConf &conf) {
   BatchNorm::Setup(in_sample, conf);
   resultSaveMean_.Resize(Shape{channels_});
   resultSaveVariance_.Resize(Shape{channels_});
 }
 
-void CudnnBatchNorm::InitCudnn(const Shape& shape, DataType dtype) {
+void CudnnBatchNorm::InitCudnn(const Shape &shape, DataType dtype) {
   if (!has_init_cudnn_) {
     if (is_2d_)
       mode_ = CUDNN_BATCHNORM_PER_ACTIVATION;
@@ -61,7 +61,7 @@ void CudnnBatchNorm::InitCudnn(const Shape& shape, DataType dtype) {
                                          1, 1));
   has_init_cudnn_ = true;
 }
-const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
+const Tensor CudnnBatchNorm::Forward(int flag, const Tensor &input) {
   auto shape = input.shape();
   auto dtype = input.data_type();
   Tensor output;
@@ -76,32 +76,30 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
   } else {
     int n, c, h, w, s;
     cudnnDataType_t type;
-    CUDNN_CHECK(cudnnGetTensor4dDescriptor(shape_desc_, &type,
-          &n, &c, &h, &w, &s, &s, &s, &s));
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(shape_desc_, &type, &n, &c, &h, &w,
+                                           &s, &s, &s, &s));
     if (shape[0] != static_cast<size_t>(n))
       InitCudnn(shape, dtype);
-    CHECK(shape[1] == static_cast<size_t>(c)
-        && shape[2] == static_cast<size_t>(h)
-        && shape[3] == static_cast<size_t>(w))
-      << "input sample shape should not change"
-      << "previous shape " << c << ", " << h << ", " << w
-      << "current shape " << shape[1] << ", " << shape[2] << ", "
-      << shape[3];
+    CHECK(shape[1] == static_cast<size_t>(c) &&
+          shape[2] == static_cast<size_t>(h) &&
+          shape[3] == static_cast<size_t>(w))
+        << "input sample shape should not change"
+        << "previous shape " << c << ", " << h << ", " << w << "current shape "
+        << shape[1] << ", " << shape[2] << ", " << shape[3];
   }
-
 
   // TODO(wangji): check device id of input and params
   output.ResetLike(x);
   if ((flag & kTrain) == kTrain) {
     output.device()->Exec(
-        [=](Context* ctx) {
-          Block* inBlock = x.block(), * outBlock = output.block(),
-                 * saveMeanBlock = resultSaveMean_.block(),
-                 * saveVarBlock = resultSaveVariance_.block(),
-                 * runningMeanBlock = runningMean_.block(),
-                 * runningVarBlock = runningVariance_.block(),
-                 * bnScaleBlock = bnScale_.block(),
-                 * bnBiasBlock = bnBias_.block();
+        [=](Context *ctx) {
+          Block *inBlock = x.block(), *outBlock = output.block(),
+                *saveMeanBlock = resultSaveMean_.block(),
+                *saveVarBlock = resultSaveVariance_.block(),
+                *runningMeanBlock = runningMean_.block(),
+                *runningVarBlock = runningVariance_.block(),
+                *bnScaleBlock = bnScale_.block(),
+                *bnBiasBlock = bnBias_.block();
           const float alpha = 1.0f, beta = 0.0f;
           double epsilon = CUDNN_BN_MIN_EPSILON;
           CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
@@ -118,12 +116,12 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
     buf_.push(x);
   } else {
     output.device()->Exec(
-        [=](Context* ctx) {
-          Block* inBlock = x.block(), * outBlock = output.block(),
-                 * runningMeanBlock = runningMean_.block(),
-                 * runningVarBlock = runningVariance_.block(),
-                 * bnScaleBlock = bnScale_.block(),
-                 * bnBiasBlock = bnBias_.block();
+        [=](Context *ctx) {
+          Block *inBlock = x.block(), *outBlock = output.block(),
+                *runningMeanBlock = runningMean_.block(),
+                *runningVarBlock = runningVariance_.block(),
+                *bnScaleBlock = bnScale_.block(),
+                *bnBiasBlock = bnBias_.block();
           const float alpha = 1.0f, beta = 0.0f;
           double epsilon = CUDNN_BN_MIN_EPSILON;
           CUDNN_CHECK(cudnnBatchNormalizationForwardInference(
@@ -136,12 +134,13 @@ const Tensor CudnnBatchNorm::Forward(int flag, const Tensor& input) {
          runningVariance_.block()},
         {output.block()});
   }
-  if (is_2d_) output.Reshape(Shape{shape.at(0), shape.at(1)});
+  if (is_2d_)
+    output.Reshape(Shape{shape.at(0), shape.at(1)});
   return output;
 }
 
-const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
-    int flag, const Tensor& grad) {
+const std::pair<Tensor, vector<Tensor>>
+CudnnBatchNorm::Backward(int flag, const Tensor &grad) {
   vector<Tensor> param_grad;
   Tensor dx;
   if ((flag & kTrain) == kTrain) {
@@ -149,13 +148,13 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
     buf_.pop();
     dx.ResetLike(grad);
     dx.device()->Exec(
-        [=](Context* ctx) {
-          Block* dyblock = grad.block(), * dxblock = dx.block(),
-                 * xblock = x.block(), * bnScaleBlock = bnScale_.block(),
-                 * dbnScaleBlock = dbnScale_.block(),
-                 * dbnBiasBlock = dbnBias_.block(),
-                 * saveMeanBlock = resultSaveMean_.block(),
-                 * saveVarBlock = resultSaveVariance_.block();
+        [=](Context *ctx) {
+          Block *dyblock = grad.block(), *dxblock = dx.block(),
+                *xblock = x.block(), *bnScaleBlock = bnScale_.block(),
+                *dbnScaleBlock = dbnScale_.block(),
+                *dbnBiasBlock = dbnBias_.block(),
+                *saveMeanBlock = resultSaveMean_.block(),
+                *saveVarBlock = resultSaveVariance_.block();
           const float alpha = 1.0f, beta = .0f;
           double epsilon = CUDNN_BN_MIN_EPSILON;
           CUDNN_CHECK(cudnnBatchNormalizationBackward(
@@ -178,9 +177,10 @@ const std::pair<Tensor, vector<Tensor>> CudnnBatchNorm::Backward(
   Tensor dummy;
   param_grad.push_back(dummy);
   param_grad.push_back(dummy);
-  if (is_2d_) dx.Reshape(Shape{dx.shape().at(0), dx.shape().at(1)});
+  if (is_2d_)
+    dx.Reshape(Shape{dx.shape().at(0), dx.shape().at(1)});
   return std::make_pair(dx, param_grad);
 }
-}  // namespace
+} // namespace
 
-#endif  // USE_CUDNN
+#endif // USE_CUDNN

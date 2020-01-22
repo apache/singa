@@ -21,7 +21,7 @@
 
 namespace singa {
 namespace io {
-bool TextFileReader::Open(const std::string& path) {
+bool TextFileReader::Open(const std::string &path) {
   path_ = path;
   fdat_.open(path_, std::ios::in);
   if (!fdat_.is_open())
@@ -30,10 +30,11 @@ bool TextFileReader::Open(const std::string& path) {
 }
 
 void TextFileReader::Close() {
-  if (fdat_.is_open()) fdat_.close();
+  if (fdat_.is_open())
+    fdat_.close();
 }
 
-bool TextFileReader::Read(std::string* key, std::string* value) {
+bool TextFileReader::Read(std::string *key, std::string *value) {
   CHECK(fdat_.is_open()) << "File not open!";
   key->clear();
   value->clear();
@@ -54,7 +55,8 @@ int TextFileReader::Count() {
   string line;
   while (!fin.eof()) {
     std::getline(fin, line);
-    if (line != "") count++;
+    if (line != "")
+      count++;
   }
   fin.close();
   return count;
@@ -66,5 +68,5 @@ void TextFileReader::SeekToFirst() {
   fdat_.clear();
   fdat_.seekg(0);
 }
-}  // namespace io
-}  // namespace singa
+} // namespace io
+} // namespace singa

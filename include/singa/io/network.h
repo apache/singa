@@ -23,17 +23,17 @@
 #define SINGA_COMM_NETWORK_H_
 #include "singa/singa_config.h"
 #ifdef ENABLE_DIST
-#include <ev.h>
-#include <thread>
-#include <unordered_map>
-#include <map>
-#include <vector>
-#include <condition_variable>
-#include <mutex>
 #include <atomic>
-#include <string>
+#include <condition_variable>
+#include <ev.h>
+#include <map>
+#include <mutex>
 #include <netinet/in.h>
 #include <queue>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 
 namespace singa {
 
@@ -99,7 +99,7 @@ private:
   struct sockaddr_in addr_;
   ev_timer timer_;
   ev_tstamp last_msg_time_;
-  int fd_[2] = { -1, -1 }; // two endpoints simultaneously connect to each other
+  int fd_[2] = {-1, -1}; // two endpoints simultaneously connect to each other
   int pfd_ = -1;
   bool is_socket_loop_ = false;
   int conn_status_ = CONN_INIT;
@@ -167,5 +167,5 @@ public:
   void onTimeout(struct ev_timer *timer);
 };
 }
-#endif  // ENABLE_DIST
+#endif // ENABLE_DIST
 #endif

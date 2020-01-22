@@ -19,9 +19,9 @@
 *
 *************************************************************/
 
-#include "gtest/gtest.h"
 #include "singa/model/optimizer.h"
 #include "singa/singa_config.h"
+#include "gtest/gtest.h"
 #include <cmath>
 
 TEST(AdaGrad, ApplyCPU) {
@@ -39,9 +39,10 @@ TEST(AdaGrad, ApplyCPU) {
   adagrad.Apply(0, lr, "xx", grad, value);
 
   singa::Tensor v1 = value.Clone();
-  const float* newv1 = v1.data<float>();
+  const float *newv1 = v1.data<float>();
   float history[4];
-  for (int i = 0; i < 4; ++i) history[i] = g[i] * g[i];
+  for (int i = 0; i < 4; ++i)
+    history[i] = g[i] * g[i];
   for (int i = 0; i < 4; ++i)
     EXPECT_NEAR(newv1[i], v[i] - lr * g[i] / sqrt(history[i] + conf.delta()),
                 1e-5);
@@ -49,8 +50,9 @@ TEST(AdaGrad, ApplyCPU) {
   grad.CopyDataFromHostPtr(g, 4);
   adagrad.Apply(1, lr, "xx", grad, value);
   singa::Tensor v2 = value.Clone();
-  const float* newv2 = v2.data<float>();
-  for (int i = 0; i < 4; ++i) history[i] += g[i] * g[i];
+  const float *newv2 = v2.data<float>();
+  for (int i = 0; i < 4; ++i)
+    history[i] += g[i] * g[i];
 
   for (int i = 0; i < 4; ++i)
     EXPECT_NEAR(newv2[i],
@@ -75,9 +77,10 @@ TEST(AdaGrad, ApplyCUDA) {
 
   singa::Tensor v1 = value.Clone();
   v1.ToHost();
-  const float* newv1 = v1.data<float>();
+  const float *newv1 = v1.data<float>();
   float history[4];
-  for (int i = 0; i < 4; ++i) history[i] = g[i] * g[i];
+  for (int i = 0; i < 4; ++i)
+    history[i] = g[i] * g[i];
   for (int i = 0; i < 4; ++i)
     EXPECT_NEAR(newv1[i], v[i] - lr * g[i] / sqrt(history[i] + conf.delta()),
                 1e-5);
@@ -86,8 +89,9 @@ TEST(AdaGrad, ApplyCUDA) {
   adagrad.Apply(1, lr, "xx", grad, value);
   singa::Tensor v2 = value.Clone();
   v2.ToHost();
-  const float* newv2 = v2.data<float>();
-  for (int i = 0; i < 4; ++i) history[i] += g[i] * g[i];
+  const float *newv2 = v2.data<float>();
+  for (int i = 0; i < 4; ++i)
+    history[i] += g[i] * g[i];
 
   for (int i = 0; i < 4; ++i)
     EXPECT_FLOAT_EQ(newv2[i],

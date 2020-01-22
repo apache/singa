@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
 #include "singa/utils/timer.h"
+#include "gtest/gtest.h"
 
 #include <chrono>
 #include <thread>

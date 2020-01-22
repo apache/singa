@@ -21,15 +21,15 @@
 #include <functional>
 namespace singa {
 
-void RMSProp::Setup(const OptimizerConf& conf) {
+void RMSProp::Setup(const OptimizerConf &conf) {
   delta_ = conf.delta();
   rho_ = conf.rho();
 }
 
 // history = history * rho + grad * grad * (1 - rho)
 // value = value - lr * grad / sqrt(history + delta)
-void RMSProp::Apply(int epoch, float lr, const string& name, Tensor& grad,
-                    Tensor& value, int step) {
+void RMSProp::Apply(int epoch, float lr, const string &name, Tensor &grad,
+                    Tensor &value, int step) {
   if (grad.empty())
     return;
   ApplyRegularizerConstraint(epoch, name, value, grad, step);
@@ -40,7 +40,7 @@ void RMSProp::Apply(int epoch, float lr, const string& name, Tensor& grad,
     history_gradient_[name].ResetLike(value);
     history_gradient_[name].SetValue(0.0f);
   }
-  Tensor& history = history_gradient_[name];
+  Tensor &history = history_gradient_[name];
   history *= rho_;
   Tensor tmp = Square(grad);
   Axpy(1 - rho_, tmp, &history);
@@ -48,5 +48,5 @@ void RMSProp::Apply(int epoch, float lr, const string& name, Tensor& grad,
   Div(grad, tmp, &tmp);
   Axpy(-lr, tmp, &value);
 }
-}  // namespace singa
-#endif  // SRC_MODEL_OPTIMIZER_ADAGRAD_H_
+} // namespace singa
+#endif // SRC_MODEL_OPTIMIZER_ADAGRAD_H_

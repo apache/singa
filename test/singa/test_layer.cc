@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
 #include "singa/model/layer.h"
 #include "singa/singa_config.h"
+#include "gtest/gtest.h"
 
 TEST(Layer, CreateLayer) {
   std::vector<std::string> types{"convolution", "dense",   "dropout", "relu",

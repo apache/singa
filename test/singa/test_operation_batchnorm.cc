@@ -28,8 +28,7 @@ using namespace singa;
 #ifdef USE_MKLDNN
 
 TEST(OperationBatchNorm, ForwardInference) {
-  const float x_data[] = {1, 2,
-                          3, 4};
+  const float x_data[] = {1, 2, 3, 4};
   Tensor in(Shape{2, 2});
   in.CopyDataFromHostPtr(x_data, 2 * 2);
 
@@ -50,9 +49,9 @@ TEST(OperationBatchNorm, ForwardInference) {
   moving_var.CopyDataFromHostPtr(var_, 2);
 
   // momentum
-  BatchNormHandle batch_norm_handle(0u,in);
-  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, in, alpha, beta, moving_mean, moving_var);
-
+  BatchNormHandle batch_norm_handle(0u, in);
+  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, in, alpha, beta,
+                                          moving_mean, moving_var);
 
   const float *outptr = y.data<float>();
   const auto &shape = y.shape();
@@ -66,29 +65,25 @@ TEST(OperationBatchNorm, ForwardInference) {
 }
 
 TEST(OperationBatchNorm, ForwardInference4D) {
-  float x_data[] = {
-      0.0736655, 0.0459045, 0.0779517, 0.0771059,
-      0.0586862, 0.0561263, 0.0708457, 0.0977273,
-      0.0405025, -0.170897, 0.0208982, 0.136865,
-      -0.0367905, -0.0618205, -0.0103908, -0.0522777,
-      -0.122161, -0.025427, -0.0718576, -0.185941,
-      0.0166533, 0.178679, -0.0576606, -0.137817,
-      0.150676, 0.153442, -0.0929899, -0.148675,
-      -0.112459, -0.106284, -0.103074, -0.0668811
-  };
+  float x_data[] = {0.0736655,  0.0459045,  0.0779517,  0.0771059,  0.0586862,
+                    0.0561263,  0.0708457,  0.0977273,  0.0405025,  -0.170897,
+                    0.0208982,  0.136865,   -0.0367905, -0.0618205, -0.0103908,
+                    -0.0522777, -0.122161,  -0.025427,  -0.0718576, -0.185941,
+                    0.0166533,  0.178679,   -0.0576606, -0.137817,  0.150676,
+                    0.153442,   -0.0929899, -0.148675,  -0.112459,  -0.106284,
+                    -0.103074,  -0.0668811};
   Tensor in(Shape{1, 2, 4, 4});
-  in.CopyDataFromHostPtr(x_data, 2*4*4);
+  in.CopyDataFromHostPtr(x_data, 2 * 4 * 4);
 
-  const float alpha_[] = {1,1};
+  const float alpha_[] = {1, 1};
   Tensor alpha(Shape{2});
   alpha.CopyDataFromHostPtr(alpha_, 2);
 
-  const float beta_[] = {0,0};
+  const float beta_[] = {0, 0};
   Tensor beta(Shape{2});
   beta.CopyDataFromHostPtr(beta_, 2);
 
-
-  const float mean_[] = { 0.02650639, -0.04573606};
+  const float mean_[] = {0.02650639, -0.04573606};
   Tensor moving_mean(Shape{2});
   moving_mean.CopyDataFromHostPtr(mean_, 2);
 
@@ -97,9 +92,9 @@ TEST(OperationBatchNorm, ForwardInference4D) {
   moving_var.CopyDataFromHostPtr(var_, 2);
 
   // momentum
-  BatchNormHandle batch_norm_handle(0.0f,in);
-  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, in, alpha, beta, moving_mean, moving_var);
-
+  BatchNormHandle batch_norm_handle(0.0f, in);
+  Tensor y = CpuBatchNormForwardInference(batch_norm_handle, in, alpha, beta,
+                                          moving_mean, moving_var);
 
   // y = {1,1,1,1, 3,3,3,3}
   const float *outptr = y.data<float>();
@@ -109,16 +104,16 @@ TEST(OperationBatchNorm, ForwardInference4D) {
   EXPECT_EQ(2u, shape[1]);
   EXPECT_EQ(4u, shape[2]);
   EXPECT_EQ(4u, shape[3]);
-  EXPECT_NEAR(0.637092, outptr[0],  1e-4f);
-  EXPECT_NEAR(0.262057, outptr[1],  1e-4f);
-  EXPECT_NEAR(0.694995, outptr[2],  1e-4f);
-  EXPECT_NEAR(0.683569, outptr[3],  1e-4f);
-  EXPECT_NEAR(0.434730, outptr[4],  1e-4f);
-  EXPECT_NEAR(0.400147, outptr[5],  1e-4f);
-  EXPECT_NEAR(0.598998, outptr[6],  1e-4f);
-  EXPECT_NEAR(0.962152, outptr[7],  1e-4f);
-  EXPECT_NEAR(0.189079, outptr[8],  1e-4f);
-  EXPECT_NEAR(-2.66680, outptr[9],  1e-4f);
+  EXPECT_NEAR(0.637092, outptr[0], 1e-4f);
+  EXPECT_NEAR(0.262057, outptr[1], 1e-4f);
+  EXPECT_NEAR(0.694995, outptr[2], 1e-4f);
+  EXPECT_NEAR(0.683569, outptr[3], 1e-4f);
+  EXPECT_NEAR(0.434730, outptr[4], 1e-4f);
+  EXPECT_NEAR(0.400147, outptr[5], 1e-4f);
+  EXPECT_NEAR(0.598998, outptr[6], 1e-4f);
+  EXPECT_NEAR(0.962152, outptr[7], 1e-4f);
+  EXPECT_NEAR(0.189079, outptr[8], 1e-4f);
+  EXPECT_NEAR(-2.66680, outptr[9], 1e-4f);
   EXPECT_NEAR(-0.07576, outptr[10], 1e-4f);
   EXPECT_NEAR(1.490880, outptr[11], 1e-4f);
   EXPECT_NEAR(-0.85510, outptr[12], 1e-4f);
@@ -164,18 +159,17 @@ TEST(OperationBatchNorm, ForwardTraining) {
   Tensor beta(Shape{2});
   beta.CopyDataFromHostPtr(beta_, 2);
 
-
   // 0 momentum will ignore running mean and var
-  BatchNormHandle batch_norm_handle(0.3f,x);
-  const float running_mean_[] = {0,0};
+  BatchNormHandle batch_norm_handle(0.3f, x);
+  const float running_mean_[] = {0, 0};
   Tensor running_mean(Shape{2});
   Tensor running_var(Shape{2});
   running_mean.CopyDataFromHostPtr(running_mean_, 2);
   running_var.CopyDataFromHostPtr(running_mean_, 2);
 
-
   // training operation calculate the running mean and var for backward
-  auto ret1 = CpuBatchNormForwardTraining(batch_norm_handle, x, alpha, beta, running_mean, running_var);
+  auto ret1 = CpuBatchNormForwardTraining(batch_norm_handle, x, alpha, beta,
+                                          running_mean, running_var);
   const float *yptr = ret1[0].data<float>();
   EXPECT_NEAR(-1.0f, yptr[0], 1e-4f);
   EXPECT_NEAR(-1.0f, yptr[1], 1e-4f);
@@ -210,21 +204,21 @@ TEST(OperationBatchNorm, Backward) {
   Tensor beta(Shape{2});
   beta.CopyDataFromHostPtr(beta_, 2);
 
-
   // 0 momentum will ignore running mean and var
-  BatchNormHandle batch_norm_handle(0.0f,x);
-  const float running_mean_[] = {1,2};
+  BatchNormHandle batch_norm_handle(0.0f, x);
+  const float running_mean_[] = {1, 2};
   Tensor running_mean(Shape{2});
   Tensor running_var(Shape{2});
   running_mean.CopyDataFromHostPtr(running_mean_, 2);
   running_var.CopyDataFromHostPtr(running_mean_, 2);
 
-
   // training operation calculate the running mean and var for backward
-  auto ret1 = CpuBatchNormForwardTraining(batch_norm_handle, x, alpha, beta, running_mean, running_var);
+  auto ret1 = CpuBatchNormForwardTraining(batch_norm_handle, x, alpha, beta,
+                                          running_mean, running_var);
 
   // calculate dx, dscale, dbias
-  auto ret2 = CpuBatchNormBackwardx( batch_norm_handle, y, dy, x, alpha, beta, ret1[1],  ret1[2]);
+  auto ret2 = CpuBatchNormBackwardx(batch_norm_handle, y, dy, x, alpha, beta,
+                                    ret1[1], ret1[2]);
 
   const auto &shape = ret2[0].shape();
   EXPECT_EQ(2u, shape.size());
@@ -235,7 +229,6 @@ TEST(OperationBatchNorm, Backward) {
   EXPECT_NEAR(.0f, dxptr[1], 1e-4f);
   EXPECT_NEAR(.0f, dxptr[2], 1e-4f);
   EXPECT_NEAR(.0f, dxptr[3], 1e-4f);
-
 
   const auto &dbnScaleShape = ret2[1].shape();
   EXPECT_EQ(2u, dbnScaleShape[0]);

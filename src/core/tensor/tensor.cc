@@ -21,9 +21,8 @@
 #include "./tensor_math_cpp.h"
 #include "./tensor_math_cuda.h"
 #include "./tensor_math_opencl.h"
-#include <utility>
 #include <algorithm>
-
+#include <utility>
 
 #define Noaxis 9999
 
@@ -40,44 +39,40 @@ Tensor::Tensor() {
   stride_ = {1};
 }
 
-//non-strided constructors
+// non-strided constructors
 Tensor::Tensor(const Shape &shape, DataType dtype)
-  : data_type_(dtype), device_(defaultDevice), shape_(shape) {
+    : data_type_(dtype), device_(defaultDevice), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock((int)size);
   generate_stride();
 }
 
-
-//non-strided constructors with device
+// non-strided constructors with device
 Tensor::Tensor(const Shape &shape, std::shared_ptr<Device> device,
                DataType dtype)
-  : data_type_(dtype), device_(device), shape_(shape) {
+    : data_type_(dtype), device_(device), shape_(shape) {
   size_t size = Product(shape_) * SizeOf(data_type_);
   if (size)
     block_ = device_->NewBlock((int)size);
   generate_stride();
 }
 
-
-Tensor::Tensor(const Tensor &in) : data_type_(in.data_type_),
-  device_(in.device_),  block_(in.block()),  shape_(in.shape_),
-  stride_(in.stride_) {
+Tensor::Tensor(const Tensor &in)
+    : data_type_(in.data_type_), device_(in.device_), block_(in.block()),
+      shape_(in.shape_), stride_(in.stride_) {
   if (block_ != nullptr)
     block_->IncRefCount();
 }
 
-
-Tensor::Tensor(Tensor &&in) : data_type_(in.data_type_),
-  device_(in.device_), shape_(std::move(in.shape_)),
-  stride_(std::move(in.stride_)) {
+Tensor::Tensor(Tensor &&in)
+    : data_type_(in.data_type_), device_(in.device_),
+      shape_(std::move(in.shape_)), stride_(std::move(in.stride_)) {
   block_ = in.block_;
   in.block_ = nullptr;
 }
 
-
-Tensor& Tensor::ResetLike(const Tensor &in) {
+Tensor &Tensor::ResetLike(const Tensor &in) {
   if (block_ == nullptr || device_ != in.device_ || MemSize() != in.MemSize()) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
@@ -90,7 +85,7 @@ Tensor& Tensor::ResetLike(const Tensor &in) {
   return *this;
 }
 
-Tensor& Tensor::Resize(const Shape& shape) {
+Tensor &Tensor::Resize(const Shape &shape) {
   if (Size() != Product(shape)) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
@@ -101,14 +96,13 @@ Tensor& Tensor::Resize(const Shape& shape) {
   return *this;
 }
 
-Tensor Resize(const Tensor& in, const Shape& shape) {
+Tensor Resize(const Tensor &in, const Shape &shape) {
   Tensor out(in);
   out.Resize(shape);
   return out;
 }
 
-
-Tensor& Tensor::AsType(const DataType type) {
+Tensor &Tensor::AsType(const DataType type) {
   if (data_type_ != type) {
     if (block_ != nullptr && block_->DecRefCount() == 0)
       device_->FreeBlock(block_);
@@ -118,7 +112,7 @@ Tensor& Tensor::AsType(const DataType type) {
   return *this;
 }
 
-Tensor& Tensor::ToDevice(std::shared_ptr<Device> dst) {
+Tensor &Tensor::ToDevice(std::shared_ptr<Device> dst) {
   // TODO(wangwei) the comparison is restricted. May compare against device ID?
   if (device_ != dst) {
     Tensor tmp(shape_, dst, data_type_);
@@ -133,8 +127,9 @@ Tensor& Tensor::ToDevice(std::shared_ptr<Device> dst) {
   return *this;
 }
 
-Tensor& Tensor::ToHost() {
-  if (device_ != defaultDevice) ToDevice(device_->host());
+Tensor &Tensor::ToHost() {
+  if (device_ != defaultDevice)
+    ToDevice(device_->host());
   return *this;
 }
 
@@ -152,12 +147,12 @@ void Tensor::CopyDataFromHostPtr(const DType *src, const size_t num,
   }
 }
 template void Tensor::CopyDataFromHostPtr(const unsigned char *src,
-    const size_t num,
-    const size_t offset);
+                                          const size_t num,
+                                          const size_t offset);
 template void Tensor::CopyDataFromHostPtr(const float *src, const size_t num,
-    const size_t offset);
+                                          const size_t offset);
 template void Tensor::CopyDataFromHostPtr(const int *src, const size_t num,
-    const size_t offset);
+                                          const size_t offset);
 
 void Tensor::CopyData(const Tensor &src) {
   CHECK_EQ(Size(), src.Size());
@@ -168,12 +163,12 @@ void Tensor::CopyData(const Tensor &src) {
   }
 }
 
-void Tensor::RepeatData(const vector<size_t>& repeats, int axis, int total_repeats,
-                        const Tensor &src) {
+void Tensor::RepeatData(const vector<size_t> &repeats, int axis,
+                        int total_repeats, const Tensor &src) {
   if (repeats.size() == 1) {
-    CHECK_EQ(Size(), src.Size()*total_repeats);
+    CHECK_EQ(Size(), src.Size() * total_repeats);
   } else {
-    CHECK_EQ(Size(), src.Size()*total_repeats / src.shape()[axis]);
+    CHECK_EQ(Size(), src.Size() * total_repeats / src.shape()[axis]);
   }
 
   CHECK(block_ != nullptr);
@@ -187,12 +182,14 @@ void Tensor::FromProto(const singa::TensorProto &proto) {
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
   block_ = nullptr;
-  for (uint32_t s : proto.shape()) shape_.push_back(s);
+  for (uint32_t s : proto.shape())
+    shape_.push_back(s);
   data_type_ = proto.data_type();
   block_ = device_->NewBlock((int)(Product(shape()) * SizeOf(data_type_)));
-  //transpose_ = proto.transpose();
+  // transpose_ = proto.transpose();
   stride_.clear();
-  for (int32_t s : proto.stride()) stride_.push_back(s);
+  for (int32_t s : proto.stride())
+    stride_.push_back(s);
   switch (data_type_) {
   case kFloat32: {
     std::unique_ptr<float[]> data_ptr(new float[Product(shape_)]);
@@ -210,12 +207,15 @@ void Tensor::FromProto(const singa::TensorProto &proto) {
   }
   case kInt: {
     std::unique_ptr<int[]> data(new int[Product(shape_)]);
-    for (size_t i = 0; i < Product(shape_); ++i) data[i] = proto.int_data((int)i);
+    for (size_t i = 0; i < Product(shape_); ++i)
+      data[i] = proto.int_data((int)i);
     CopyDataFromHostPtr<int>(data.get(), Product(shape_));
     break;
   }
-  ///TODO(wangji): Implement to support C++ type char using bytes type in protobuf
-  /// which is equivalent to string type is different from the other cases. The kchar
+  /// TODO(wangji): Implement to support C++ type char using bytes type in
+  /// protobuf
+  /// which is equivalent to string type is different from the other cases. The
+  /// kchar
   /// and kUChar case is to be implemented.
   /*
   case kChar: {
@@ -241,7 +241,7 @@ void Tensor::to_proto(singa::TensorProto *proto) const {
     proto->add_shape(s);
   }
   proto->set_data_type(data_type_);
-  //proto->set_transpose(transpose_);
+  // proto->set_transpose(transpose_);
   proto->clear_stride();
   for (auto s : stride_) {
     proto->add_stride(s);
@@ -288,18 +288,17 @@ void Tensor::to_proto(singa::TensorProto *proto) const {
   }
 }
 
-void Tensor::ToProto(singa::TensorProto *proto) const {
-  to_proto(proto);
-}
+void Tensor::ToProto(singa::TensorProto *proto) const { to_proto(proto); }
 
-Tensor Tensor::Repeat(const vector<size_t>& repeats, int axis,
+Tensor Tensor::Repeat(const vector<size_t> &repeats, int axis,
                       std::shared_ptr<Device> device) {
-  if (device == nullptr) device = device_;
+  if (device == nullptr)
+    device = device_;
   vector<size_t> tshape;
   int total_repeats = 0;
   if (axis == Noaxis) {
     total_repeats = repeats[0];
-    tshape.push_back(Product(shape_)*total_repeats);
+    tshape.push_back(Product(shape_) * total_repeats);
   } else {
     if (repeats.size() == 1) {
       total_repeats = repeats[0];
@@ -330,21 +329,22 @@ Tensor Tensor::Repeat(const vector<size_t>& repeats, int axis,
     }
   }
   Tensor t(tshape, device_);
-  //t.stride_.push_back(1);
+  // t.stride_.push_back(1);
   t.RepeatData(repeats, axis, total_repeats, *this);
   return t;
 }
 
 Tensor Tensor::Clone(std::shared_ptr<Device> device) const {
-  if (device == nullptr) device = device_;
+  if (device == nullptr)
+    device = device_;
   Tensor t(shape_, device_, data_type_);
-  //t.transpose_ = transpose_;
+  // t.transpose_ = transpose_;
   t.stride_ = stride_;
   t.CopyData(*this);
   return t;
 }
 
-Tensor& Tensor::Broadcast(const Shape& shape) {
+Tensor &Tensor::Broadcast(const Shape &shape) {
   // TODO(wangwei) do we need to transform the mem layout if the tensor was
   // transposed?
   auto m = shape_.size() - 1, n = shape.size() - 1;
@@ -364,29 +364,29 @@ Tensor& Tensor::Broadcast(const Shape& shape) {
   return *this;
 }
 
-Tensor Broadcast(const Tensor& in, const Shape& shape) {
+Tensor Broadcast(const Tensor &in, const Shape &shape) {
   Tensor out(in);
   return out.Broadcast(shape);
 }
 
-Tensor& Tensor::T() {
+Tensor &Tensor::T() {
   // this function only works for 2d tensors
   CHECK_EQ(shape_.size(), 2u);
   Transpose();
   return *this;
 }
 
-//normal transpose without axes
-Tensor& Tensor::Transpose() {
+// normal transpose without axes
+Tensor &Tensor::Transpose() {
   std::reverse(shape_.begin(), shape_.end());
   std::reverse(stride_.begin(), stride_.end());
   return *this;
 }
 
-//transpose with axes
-Tensor& Tensor::Transpose(const vector<size_t> &axes) {
-  CHECK_EQ(axes.size(), shape_.size()) <<
-                                       "Tranpose axes's length should be equal to shape";
+// transpose with axes
+Tensor &Tensor::Transpose(const vector<size_t> &axes) {
+  CHECK_EQ(axes.size(), shape_.size())
+      << "Tranpose axes's length should be equal to shape";
 
   auto shape = shape_;
   auto stride = stride_;
@@ -399,15 +399,15 @@ Tensor& Tensor::Transpose(const vector<size_t> &axes) {
   return *this;
 }
 
-//normal transpose without axes
-Tensor Transpose(const Tensor& in) {
+// normal transpose without axes
+Tensor Transpose(const Tensor &in) {
   Tensor out(in);
   out.Transpose();
   return out;
 }
 
-//transpose with axes
-Tensor Transpose(const Tensor& in, const vector<size_t> &axes) {
+// transpose with axes
+Tensor Transpose(const Tensor &in, const vector<size_t> &axes) {
   Tensor out(in);
   out.Transpose(axes);
   return out;
@@ -438,11 +438,10 @@ Tensor &Tensor::operator=(Tensor &&in) {
   return *this;
 }
 
-
-#define GenUnaryTensorArgMemberFn(op, fn) \
-  Tensor &Tensor::op(const Tensor &in) {  \
-    fn(*this, in, this);                  \
-    return *this;                         \
+#define GenUnaryTensorArgMemberFn(op, fn)                                      \
+  Tensor &Tensor::op(const Tensor &in) {                                       \
+    fn(*this, in, this);                                                       \
+    return *this;                                                              \
   }
 
 GenUnaryTensorArgMemberFn(operator+=, Add);
@@ -450,12 +449,11 @@ GenUnaryTensorArgMemberFn(operator-=, Sub);
 GenUnaryTensorArgMemberFn(operator*=, EltwiseMult);
 GenUnaryTensorArgMemberFn(operator/=, Div);
 
-#define GenUnaryScalarArgMemberFn(op, fn) \
-  template <typename DType>               \
-  Tensor &Tensor::op(const DType x) {     \
-    fn(*this, x, this);                   \
-    return *this;                         \
-  }                                       \
+#define GenUnaryScalarArgMemberFn(op, fn)                                      \
+  template <typename DType> Tensor &Tensor::op(const DType x) {                \
+    fn(*this, x, this);                                                        \
+    return *this;                                                              \
+  }                                                                            \
   template Tensor &Tensor::op<float>(const float x)
 
 GenUnaryScalarArgMemberFn(operator-=, Sub);
@@ -489,12 +487,14 @@ void CopyDataToFrom(Tensor *dst, const Tensor &src, const size_t num,
     }
   } else {
     auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
-    src_dev->CopyDataToFrom(to, from, nBytes, direct, (int)d_offset, (int)s_offset);
+    src_dev->CopyDataToFrom(to, from, nBytes, direct, (int)d_offset,
+                            (int)s_offset);
   }
 }
 
-void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int axis,
-                      Tensor *dst, const Tensor &src, const size_t num) {
+void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
+                      int axis, Tensor *dst, const Tensor &src,
+                      const size_t num) {
   if (repeats.size() == 1) {
     broadcast_flag = true;
   } else if (repeats.size() > 1) {
@@ -534,15 +534,19 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int ax
         if (dst_dev->lang() != src_dev->lang()) {
           // let the none cpp device conduct copy op
           if (dst_dev->lang() == kCpp) {
-            src_dev->CopyDataToFrom(to, from, chunk, kDeviceToHost, dst_offset, src_offset);
+            src_dev->CopyDataToFrom(to, from, chunk, kDeviceToHost, dst_offset,
+                                    src_offset);
           } else if (src_dev->lang() == kCpp) {
-            dst_dev->CopyDataToFrom(to, from, chunk, kHostToDevice, dst_offset, src_offset);
+            dst_dev->CopyDataToFrom(to, from, chunk, kHostToDevice, dst_offset,
+                                    src_offset);
           } else {
-            LOG(FATAL) << "Not support mem repeat copy betwee Cuda and OpenCL device";
+            LOG(FATAL)
+                << "Not support mem repeat copy betwee Cuda and OpenCL device";
           }
         } else {
           auto direct = src_dev->lang() == kCpp ? kHostToHost : kDeviceToDevice;
-          src_dev->CopyDataToFrom(to, from, chunk, direct, dst_offset, src_offset);
+          src_dev->CopyDataToFrom(to, from, chunk, direct, dst_offset,
+                                  src_offset);
         }
         dst_offset += chunk;
       }
@@ -554,127 +558,124 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int ax
 //============================================================================
 /// typedef DType accroding to type value.
 /// DType would be used in the code block __VA_ARGS__.
-#define TYPE_SWITCH(type, DType, ...)                               \
-  do {                                                              \
-    switch (type) {                                                 \
-      case kFloat32: {                                              \
-        typedef float DType;                                        \
-        { __VA_ARGS__ }                                             \
-        break;                                                      \
-      }                                                             \
-      case kInt: {                                                  \
-        typedef int DType;                                          \
-        { __VA_ARGS__ }                                             \
-        break;                                                      \
-      }                                                             \
-      case kChar: {                                                 \
-        typedef char DType;                                         \
-        { __VA_ARGS__ }                                             \
-        break;                                                      \
-      }                                                             \
-      case kDouble: {                                               \
-        typedef double DType;                                       \
-        { __VA_ARGS__ }                                             \
-        break;                                                      \
-      }                                                             \
-      default:                                                      \
-        LOG(FATAL) << "Unknow data type = " << DataType_Name(type); \
-    }                                                               \
+#define TYPE_SWITCH(type, DType, ...)                                          \
+  do {                                                                         \
+    switch (type) {                                                            \
+    case kFloat32: {                                                           \
+      typedef float DType;                                                     \
+      { __VA_ARGS__ }                                                          \
+      break;                                                                   \
+    }                                                                          \
+    case kInt: {                                                               \
+      typedef int DType;                                                       \
+      { __VA_ARGS__ }                                                          \
+      break;                                                                   \
+    }                                                                          \
+    case kChar: {                                                              \
+      typedef char DType;                                                      \
+      { __VA_ARGS__ }                                                          \
+      break;                                                                   \
+    }                                                                          \
+    case kDouble: {                                                            \
+      typedef double DType;                                                    \
+      { __VA_ARGS__ }                                                          \
+      break;                                                                   \
+    }                                                                          \
+    default:                                                                   \
+      LOG(FATAL) << "Unknow data type = " << DataType_Name(type);              \
+    }                                                                          \
   } while (0)
 
 /// typedef DType and Lang according to data type and device programming
 /// language respectively.
 /// type is from DataType, and lang is from LangType.
 /// DType and Lang would be used in __VA_ARGS__.
-#define TYPE_LANG_SWITCH(dtype, DType, ltype, Lang, ...)       \
-  do {                                                         \
-    const int _SwitchShift = 3;                                \
-    int _SwitchHash = ((dtype) << _SwitchShift) + (ltype);     \
-    switch (_SwitchHash) {                                     \
-      case ((kFloat32 << _SwitchShift) + kCuda): {             \
-        typedef float DType;                                   \
-        typedef lang::Cuda Lang;                               \
-        { __VA_ARGS__ }                                        \
-        break;                                                 \
-      }                                                        \
-      case ((kFloat32 << _SwitchShift) + kCpp): {              \
-        typedef float DType;                                   \
-        typedef lang::Cpp Lang;                                \
-        { __VA_ARGS__ }                                        \
-        break;                                                 \
-      }                                                        \
-      case ((kInt << _SwitchShift) + kCpp): {              \
-        typedef float DType;                                   \
-        typedef lang::Cpp Lang;                                \
-        { __VA_ARGS__ }                                        \
-        break;                                                 \
-      }                                                        \
-      case ((kFloat32 << _SwitchShift) + kOpencl): {           \
-        typedef float DType;                                   \
-        typedef lang::Opencl Lang;                             \
-        { __VA_ARGS__ }                                        \
-        break;                                                 \
-      }                                                        \
-      default:                                                 \
-        LOG(FATAL) << "Unknown combination of data type "      \
-                   << DataType_Name(dtype) << " and language " \
-                   << LangType_Name(ltype);                    \
-    }                                                          \
+#define TYPE_LANG_SWITCH(dtype, DType, ltype, Lang, ...)                       \
+  do {                                                                         \
+    const int _SwitchShift = 3;                                                \
+    int _SwitchHash = ((dtype) << _SwitchShift) + (ltype);                     \
+    switch (_SwitchHash) {                                                     \
+    case ((kFloat32 << _SwitchShift) + kCuda): {                               \
+      typedef float DType;                                                     \
+      typedef lang::Cuda Lang;                                                 \
+      { __VA_ARGS__ }                                                          \
+      break;                                                                   \
+    }                                                                          \
+    case ((kFloat32 << _SwitchShift) + kCpp): {                                \
+      typedef float DType;                                                     \
+      typedef lang::Cpp Lang;                                                  \
+      { __VA_ARGS__ }                                                          \
+      break;                                                                   \
+    }                                                                          \
+    case ((kInt << _SwitchShift) + kCpp): {                                    \
+      typedef float DType;                                                     \
+      typedef lang::Cpp Lang;                                                  \
+      { __VA_ARGS__ }                                                          \
+      break;                                                                   \
+    }                                                                          \
+    case ((kFloat32 << _SwitchShift) + kOpencl): {                             \
+      typedef float DType;                                                     \
+      typedef lang::Opencl Lang;                                               \
+      { __VA_ARGS__ }                                                          \
+      break;                                                                   \
+    }                                                                          \
+    default:                                                                   \
+      LOG(FATAL) << "Unknown combination of data type "                        \
+                 << DataType_Name(dtype) << " and language "                   \
+                 << LangType_Name(ltype);                                      \
+    }                                                                          \
   } while (0)
 
 // =============Element-wise operations====================================
 float Tensor::l1() const {
   float nrm = 0.0f;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
-    device_->Exec([&nrm, this](Context * ctx) {
-      DType ret = DType(0);
-      Asum<DType, Lang>(*this, &ret, ctx);
-      nrm = TypeCast<DType, float>(ret);
-    }, {this->block()}, {});
+    device_->Exec(
+        [&nrm, this](Context *ctx) {
+          DType ret = DType(0);
+          Asum<DType, Lang>(*this, &ret, ctx);
+          nrm = TypeCast<DType, float>(ret);
+        },
+        {this->block()}, {});
   });
   return nrm / Size();
 }
 
 // DEPRECATED use l1()
-float Tensor::L1() const {
-  return l1();
-}
+float Tensor::L1() const { return l1(); }
 
 /// L2 norm, Do not use Nrm2 (name conflict).
 float Tensor::l2() const {
   float nrm = 0.0f;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
-    device_->Exec([&nrm, this](Context * ctx) {
-      DType ret = DType(0);
-      Nrm2<DType, Lang>(*this, &ret, ctx);
-      nrm = TypeCast<DType, float>(ret);
-    }, {this->block()}, {});
+    device_->Exec(
+        [&nrm, this](Context *ctx) {
+          DType ret = DType(0);
+          Nrm2<DType, Lang>(*this, &ret, ctx);
+          nrm = TypeCast<DType, float>(ret);
+        },
+        {this->block()}, {});
   });
   return nrm / Size();
 }
 
 // DEPRECATED use l2()
-float Tensor::L2() const {
-  return l2();
-}
+float Tensor::L2() const { return l2(); }
 
-
-template <typename SType>
-void Tensor::SetValue(const SType x) {
+template <typename SType> void Tensor::SetValue(const SType x) {
   CHECK_EQ(sizeof(SType), SizeOf(data_type_));
-  //auto size = Size();
+  // auto size = Size();
   auto ptr = block_;
 
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     // TODO(wangwei) cast x to DType
-    device_->Exec([this, x, ptr](Context * ctx) {
-      Set<DType, Lang>(x, this, ctx);
-    }, {}, {ptr});
+    device_->Exec(
+        [this, x, ptr](Context *ctx) { Set<DType, Lang>(x, this, ctx); }, {},
+        {ptr});
   });
 }
 template void Tensor::SetValue<float>(const float x);
 template void Tensor::SetValue<int>(const int x);
-
 
 template <typename SType>
 void Tensor::get_value(SType *value, const size_t num) {
@@ -682,8 +683,9 @@ void Tensor::get_value(SType *value, const size_t num) {
   Tensor t(shape_, device_, data_type_);
   // transform function arrange data in memory considering stride
   singa::Transform(*this, &t);
-  auto ptr = static_cast<const SType*>(t.block()->data());
-  for (size_t i = 0; i < num; i++) value[i] = ptr[i];
+  auto ptr = static_cast<const SType *>(t.block()->data());
+  for (size_t i = 0; i < num; i++)
+    value[i] = ptr[i];
 }
 template void Tensor::get_value<float>(float *value, const size_t num);
 template void Tensor::get_value<int>(int *value, const size_t num);
@@ -696,22 +698,22 @@ void Tensor::GetValue(SType *value, const size_t num) {
 template void Tensor::GetValue<float>(float *value, const size_t num);
 template void Tensor::GetValue<int>(int *value, const size_t num);
 
-#define EltwiseUnaryTensorFn(fn, t, ret)                               \
-  do {                                                                 \
-    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, { \
-      ret->device()->Exec([t, ret](Context * ctx) {                    \
-        fn<DType, Lang>(t, ret, ctx);       \
-      }, {t.block()}, {ret->block()});                                 \
-    });                                                                \
+#define EltwiseUnaryTensorFn(fn, t, ret)                                       \
+  do {                                                                         \
+    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {         \
+      ret->device()->Exec(                                                     \
+          [t, ret](Context *ctx) { fn<DType, Lang>(t, ret, ctx); },            \
+          {t.block()}, {ret->block()});                                        \
+    });                                                                        \
   } while (0)
 
-#define GenUnaryTensorFn(fn)                             \
-  Tensor fn(const Tensor &in) {                          \
-    Tensor ret(in.shape(), in.device(), in.data_type()); \
-    auto *retptr = &ret;                                 \
-    EltwiseUnaryTensorFn(fn, in, retptr);                \
-    return ret;                                          \
-  }                                                      \
+#define GenUnaryTensorFn(fn)                                                   \
+  Tensor fn(const Tensor &in) {                                                \
+    Tensor ret(in.shape(), in.device(), in.data_type());                       \
+    auto *retptr = &ret;                                                       \
+    EltwiseUnaryTensorFn(fn, in, retptr);                                      \
+    return ret;                                                                \
+  }                                                                            \
   void fn(const Tensor &in, Tensor *out) { EltwiseUnaryTensorFn(fn, in, out); }
 
 GenUnaryTensorFn(Abs);
@@ -747,25 +749,26 @@ void SoftMax(const Tensor &in, Tensor *out, int axis) {
   // { a_0 * a_1 * ... a_k-1, a_k * ... a_n-1 }
 
   // assert axis \in {-r, r-1}
-  CHECK_LE(axis, (int)in.shape().size()-1 );
-  CHECK_GE(axis, -1*(int)in.nDim() );
+  CHECK_LE(axis, (int)in.shape().size() - 1);
+  CHECK_GE(axis, -1 * (int)in.nDim());
 
   Shape original_shape = in.shape();
-  if (axis < 0) axis = in.shape().size() + axis;
+  if (axis < 0)
+    axis = in.shape().size() + axis;
 
   Shape coerced_shape = {1, 1};
   for (std::size_t i = 0, max = in.shape().size(); i != max; ++i) {
-      if (i < axis)
-        coerced_shape[0] *= in.shape()[i];
-      else
-        coerced_shape[1] *= in.shape()[i];
+    if (i < axis)
+      coerced_shape[0] *= in.shape()[i];
+    else
+      coerced_shape[1] *= in.shape()[i];
   }
   Tensor in_reshaped = Reshape(in, coerced_shape);
   out->Reshape(coerced_shape);
 
   // optimise by minus x - x.max()
   auto in_max = RowMax(in_reshaped);
-  in_max.Reshape({coerced_shape[0],1});
+  in_max.Reshape({coerced_shape[0], 1});
   in_reshaped = in_reshaped - in_max;
 
   SoftMax(in_reshaped, out);
@@ -780,47 +783,48 @@ Tensor SoftMax(const Tensor &in, int axis) {
   return ret;
 }
 
-
-#define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                            \
-  do {                                                                      \
-    TYPE_LANG_SWITCH(lhs.data_type(), DType, lhs.device()->lang(), Lang, {  \
-      CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                     \
-      ret->device()->Exec([lhs, rhs, ret](Context * ctx) {                  \
-        fn<DType, Lang>(lhs, rhs, ret, \
-                        ctx);                                               \
-      }, {lhs.block(), rhs.block()}, {ret->block()});                       \
-    });                                                                     \
+#define EltwiseBinaryTensorFn(fn, lhs, rhs, ret)                               \
+  do {                                                                         \
+    TYPE_LANG_SWITCH(lhs.data_type(), DType, lhs.device()->lang(), Lang, {     \
+      CHECK_EQ(sizeof(DType), SizeOf(rhs.data_type()));                        \
+      ret->device()->Exec(                                                     \
+          [lhs, rhs, ret](Context *ctx) {                                      \
+            fn<DType, Lang>(lhs, rhs, ret, ctx);                               \
+          },                                                                   \
+          {lhs.block(), rhs.block()}, {ret->block()});                         \
+    });                                                                        \
   } while (0)
 
-#define GenBinaryTensorFn(op, fn)                              \
-  Tensor op(const Tensor &lhs, const Tensor &rhs) {            \
-    if (lhs.shape() != rhs.shape()) {                          \
-      auto lhs_ = Broadcast(lhs, rhs.shape());                 \
-      auto rhs_ = Broadcast(rhs, lhs.shape());                 \
-      Tensor ret(lhs_.shape(), lhs.device(), lhs.data_type()); \
-      fn(lhs_, rhs_, &ret);                                      \
-      return ret;                                              \
-    } else {                                                   \
-      Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());  \
-      fn(lhs, rhs, &ret);                                      \
-      return ret;                                              \
-    }                                                          \
-  }                                                            \
-  void fn(const Tensor &lhs, const Tensor &rhs, Tensor *ret) { \
-    CHECK_EQ(lhs.device(), ret->device());                     \
-    CHECK_EQ(rhs.device(), ret->device());                     \
-    if (lhs.shape() != rhs.shape()) {                          \
-      auto lhs_ = Broadcast(lhs, rhs.shape());                 \
-      auto rhs_ = Broadcast(rhs, lhs.shape());                 \
-      CHECK(lhs_.shape() == ret->shape());                    \
-      EltwiseBinaryTensorFn(fn, lhs_, rhs_, ret);              \
-    } else {                                                   \
-      CHECK(lhs.shape() == ret->shape());                      \
-      EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                \
-    }                                                          \
+#define GenBinaryTensorFn(op, fn)                                              \
+  Tensor op(const Tensor &lhs, const Tensor &rhs) {                            \
+    if (lhs.shape() != rhs.shape()) {                                          \
+      auto lhs_ = Broadcast(lhs, rhs.shape());                                 \
+      auto rhs_ = Broadcast(rhs, lhs.shape());                                 \
+      Tensor ret(lhs_.shape(), lhs.device(), lhs.data_type());                 \
+      fn(lhs_, rhs_, &ret);                                                    \
+      return ret;                                                              \
+    } else {                                                                   \
+      Tensor ret(lhs.shape(), lhs.device(), lhs.data_type());                  \
+      fn(lhs, rhs, &ret);                                                      \
+      return ret;                                                              \
+    }                                                                          \
+  }                                                                            \
+  void fn(const Tensor &lhs, const Tensor &rhs, Tensor *ret) {                 \
+    CHECK_EQ(lhs.device(), ret->device());                                     \
+    CHECK_EQ(rhs.device(), ret->device());                                     \
+    if (lhs.shape() != rhs.shape()) {                                          \
+      auto lhs_ = Broadcast(lhs, rhs.shape());                                 \
+      auto rhs_ = Broadcast(rhs, lhs.shape());                                 \
+      CHECK(lhs_.shape() == ret->shape());                                     \
+      EltwiseBinaryTensorFn(fn, lhs_, rhs_, ret);                              \
+    } else {                                                                   \
+      CHECK(lhs.shape() == ret->shape());                                      \
+      EltwiseBinaryTensorFn(fn, lhs, rhs, ret);                                \
+    }                                                                          \
   }
 
-// boradcasting operations: https://github.com/onnx/onnx/blob/master/docs/Broadcasting.md
+// boradcasting operations:
+// https://github.com/onnx/onnx/blob/master/docs/Broadcasting.md
 GenBinaryTensorFn(operator+, Add);
 GenBinaryTensorFn(operator-, Sub);
 GenBinaryTensorFn(operator*, EltwiseMult);
@@ -832,29 +836,28 @@ GenBinaryTensorFn(operator>, GT);
 GenBinaryTensorFn(operator>=, GE);
 GenBinaryTensorFn(ReLUBackward, ReLUBackward);
 
-#define EltwiseTensorScalarFn(fn, t, x, ret)                            \
-  do {                                                                  \
-    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {  \
-      static_assert(std::is_same<SType, DType>::value,                  \
-                    "The Scalar type must match the Tensor data type"); \
-      ret->device()->Exec([t, x, ret](Context * ctx) {                  \
-        fn<DType, Lang>(t, x, ret, ctx);     \
-      }, {t.block()}, {ret->block()});                                  \
-    });                                                                 \
+#define EltwiseTensorScalarFn(fn, t, x, ret)                                   \
+  do {                                                                         \
+    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {         \
+      static_assert(std::is_same<SType, DType>::value,                         \
+                    "The Scalar type must match the Tensor data type");        \
+      ret->device()->Exec(                                                     \
+          [t, x, ret](Context *ctx) { fn<DType, Lang>(t, x, ret, ctx); },      \
+          {t.block()}, {ret->block()});                                        \
+    });                                                                        \
   } while (0)
 
-#define GenTensorScalarFn(op, fn)                             \
-  template <typename SType>                                   \
-  Tensor op(const Tensor &in, const SType x) {                \
-    Tensor ret(in.shape(), in.device(), in.data_type());      \
-    fn(in, x, &ret);                                          \
-    return ret;                                               \
-  }                                                           \
-  template <typename SType>                                   \
-  void fn(const Tensor &in, const SType x, Tensor *ret) {     \
-    EltwiseTensorScalarFn(fn, in, x, ret);                    \
-  }                                                           \
-  template Tensor op <float>(const Tensor &in, const float x); \
+#define GenTensorScalarFn(op, fn)                                              \
+  template <typename SType> Tensor op(const Tensor &in, const SType x) {       \
+    Tensor ret(in.shape(), in.device(), in.data_type());                       \
+    fn(in, x, &ret);                                                           \
+    return ret;                                                                \
+  }                                                                            \
+  template <typename SType>                                                    \
+  void fn(const Tensor &in, const SType x, Tensor *ret) {                      \
+    EltwiseTensorScalarFn(fn, in, x, ret);                                     \
+  }                                                                            \
+  template Tensor op<float>(const Tensor &in, const float x);                  \
   template void fn<float>(const Tensor &in, const float x, Tensor *ret)
 
 GenTensorScalarFn(operator+, Add);
@@ -866,8 +869,7 @@ GenTensorScalarFn(operator<, LT);
 GenTensorScalarFn(operator<=, LE);
 GenTensorScalarFn(operator>, GT);
 GenTensorScalarFn(operator>=, GE);
-template <typename SType>
-Tensor Div(const SType alpha, const Tensor &in) {
+template <typename SType> Tensor Div(const SType alpha, const Tensor &in) {
   Tensor out(in.shape(), in.device(), in.data_type());
   Div(alpha, in, &out);
   return out;
@@ -880,9 +882,11 @@ void Div(const SType alpha, const Tensor &in, Tensor *out) {
   CHECK(in.shape() == out->shape());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     // TODO(wangwei) type cast SType to DType;
-    in.device()->Exec([alpha, in, out](Context * ctx) {
-      Div<DType, Lang>(alpha, in, out, ctx);
-    }, {in.block()}, {out->block()});
+    in.device()->Exec(
+        [alpha, in, out](Context *ctx) {
+          Div<DType, Lang>(alpha, in, out, ctx);
+        },
+        {in.block()}, {out->block()});
   });
 }
 template void Div<float>(const float, const Tensor &, Tensor *);
@@ -911,17 +915,18 @@ Tensor Average(const Tensor &M, int axis) {
   }
 }
 // TODO(wangwei) conside async exec
-template <>
-float Sum<float>(const Tensor &in) {
+template <> float Sum<float>(const Tensor &in) {
   float s = 0.0f;
   Tensor one(in.shape(), in.device(), in.data_type());
   one.SetValue(1.0f);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    one.device()->Exec([in, one, &s](Context * ctx) {
-      DType ret = DType(0);
-      Dot<DType, Lang>(in, one, &ret, ctx);
-      s = ret;
-    }, {in.block(), one.block()}, {});
+    one.device()->Exec(
+        [in, one, &s](Context *ctx) {
+          DType ret = DType(0);
+          Dot<DType, Lang>(in, one, &ret, ctx);
+          s = ret;
+        },
+        {in.block(), one.block()}, {});
   });
   return s;
 }
@@ -931,7 +936,7 @@ Tensor Sum(const Tensor &M, int axis) {
     Tensor out(Shape{M.shape(1)}, M.device(), M.data_type());
     SumRows(M, &out);
     return out;
-  } else if(axis == 1) {
+  } else if (axis == 1) {
     Tensor out(Shape{M.shape(0)}, M.device(), M.data_type());
     SumColumns(M, &out);
     return out;
@@ -943,12 +948,14 @@ Tensor Sum(const Tensor &M, int axis) {
 Tensor RowMax(const Tensor &in) {
   Tensor ret({in.shape(0)}, in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    in.device()->Exec([&in, &ret](Context * ctx) {
-      //size_t nrow = 1;
-      //if (in.nDim() > 1) nrow = in.shape(0);
-      //size_t ncol = in.Size() / nrow;
-      RowMax<DType, Lang>(in, &ret, ctx);
-    }, {in.block()}, {ret.block()});
+    in.device()->Exec(
+        [&in, &ret](Context *ctx) {
+          // size_t nrow = 1;
+          // if (in.nDim() > 1) nrow = in.shape(0);
+          // size_t ncol = in.Size() / nrow;
+          RowMax<DType, Lang>(in, &ret, ctx);
+        },
+        {in.block()}, {ret.block()});
   });
   return ret;
 }
@@ -968,13 +975,13 @@ void AddColumn(const SType alpha, const SType beta, const Tensor &v,
     CHECK_EQ(nb_row, v.Size());
 
     Tensor one(Shape{1, nb_col}, M->device(), M->data_type());
-    one.SetValue(1.0f);  // TODO(wangwei) cast type
+    one.SetValue(1.0f); // TODO(wangwei) cast type
     Tensor vmat = Reshape(v, Shape{nb_row, 1});
     Mult(alpha, vmat, one, beta, M);
   }
 }
-template
-void AddColumn(const float alpha, const float beta, const Tensor &v, Tensor *M);
+template void AddColumn(const float alpha, const float beta, const Tensor &v,
+                        Tensor *M);
 
 void AddRow(const Tensor &v, Tensor *M) { AddRow(1, 1, v, M); }
 
@@ -1013,16 +1020,17 @@ Tensor ConcatOn(const std::vector<Tensor> &in, int axis) {
   // CHECK_GE(dim, 2u) << " Only work for tensor of dim >=2 ";
   size_t size = in[0].Size() / in[0].shape(axis);
   size_t new_size = 0u;
-  for (const auto& t : in) {
+  for (const auto &t : in) {
     CHECK_EQ(dim, t.shape().size()) << "All tensors should have the same dim";
-    CHECK_EQ(size, t.Size() / t.shape(axis)) << "The size of all axis should "
+    CHECK_EQ(size, t.Size() / t.shape(axis))
+        << "The size of all axis should "
         << " be the same except the concatenated axis";
     new_size += t.shape(axis);
   }
   out_shape[axis] = new_size;
   if (axis == 0) {
     size_t nrow = 0;
-    for (const auto& t : in) {
+    for (const auto &t : in) {
       nrow += t.shape(0);
       tmp.push_back(Reshape(t, {t.shape(0), t.Size() / t.shape(0)}));
     }
@@ -1030,7 +1038,7 @@ Tensor ConcatOn(const std::vector<Tensor> &in, int axis) {
     ret.Reshape(out_shape);
     return ret;
   } else {
-    for (const auto& t : in) {
+    for (const auto &t : in) {
       size_t nrow = 1;
       for (int i = 0; i < axis; i++)
         nrow *= t.shape(i);
@@ -1062,9 +1070,7 @@ Tensor ConcatenateRows(const vector<Tensor> &in) {
   }
   return out;
 }
-Tensor ConcatRows(const vector<Tensor> &in) {
-  return ConcatenateRows(in);
-}
+Tensor ConcatRows(const vector<Tensor> &in) { return ConcatenateRows(in); }
 // TODO(wangwei) add a copypatch function for improve the efficiency on GPU.
 Tensor ConcatenateColumns(const vector<Tensor> &in) {
   size_t nrow = 0, ncol = 0;
@@ -1105,8 +1111,7 @@ Tensor CopyRows(const Tensor &in, const size_t start, const size_t end) {
   return out;
 }
 
-
-Tensor SliceOn(const Tensor&in, const size_t start, const size_t end,
+Tensor SliceOn(const Tensor &in, const size_t start, const size_t end,
                int axis) {
   Shape out_shape = in.shape();
   out_shape[axis] = end - start;
@@ -1149,7 +1154,6 @@ Tensor SliceColumns(const Tensor &in, const size_t start, const size_t end) {
   return CopyColumns(in, start, end);
 }
 
-
 /// Divide row 'v' by each row of matrix M; write results into 'out'
 void DivRow(const Tensor &v, Tensor *M) {
   Tensor inv;
@@ -1159,31 +1163,29 @@ void DivRow(const Tensor &v, Tensor *M) {
 
 /// Multiply column 'v' and each column of matrix M; write results into 'out'
 void MultColumn(const Tensor &v, Tensor *M) {
-  //CHECK(!M->transpose()) << "Not supported yet";
+  // CHECK(!M->transpose()) << "Not supported yet";
   CHECK_EQ(M->nDim(), 2u);
   // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
   CHECK_EQ(v.Size(), M->shape(0));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
-    v.device()->Exec([M, v](Context * ctx) {
-      DGMM<DType, Lang>(false, *M, v,
-      M, ctx);
-    }, {M->block(), v.block()}, {M->block()});
+    v.device()->Exec(
+        [M, v](Context *ctx) { DGMM<DType, Lang>(false, *M, v, M, ctx); },
+        {M->block(), v.block()}, {M->block()});
   });
 }
 
 /// Multiply row 'v' with each row of matrix M; write results into 'out'
 void MultRow(const Tensor &v, Tensor *M) {
-  //CHECK(!M->transpose()) << "Not supported yet";
+  // CHECK(!M->transpose()) << "Not supported yet";
   CHECK_EQ(M->nDim(), 2u);
   // CHECK_EQ(v.nDim(), 1u); (chonho) shape of v is 2-element tuple
   CHECK_EQ(v.Size(), M->shape(1));
   CheckDataTypeAndLang(*M, v);
   TYPE_LANG_SWITCH(v.data_type(), DType, v.device()->lang(), Lang, {
-    v.device()->Exec([M, v](Context * ctx) {
-      DGMM<DType, Lang>(true, *M, v,
-      M, ctx);
-    }, {M->block(), v.block()}, {M->block()});
+    v.device()->Exec(
+        [M, v](Context *ctx) { DGMM<DType, Lang>(true, *M, v, M, ctx); },
+        {M->block(), v.block()}, {M->block()});
   });
 }
 
@@ -1202,7 +1204,7 @@ void SumColumns(const Tensor &M, Tensor *v) {
     CHECK_EQ(nb_row, v->Size());
 
     Tensor one(Shape{nb_col}, M.device(), M.data_type());
-    one.SetValue(1.0f);  // TODO(wangwei) cast type
+    one.SetValue(1.0f); // TODO(wangwei) cast type
     Mult(M, one, v);
   }
 }
@@ -1217,19 +1219,18 @@ void SumRows(const Tensor &M, Tensor *v) {
     CHECK_EQ(nb_col, v->Size());
 
     Tensor one(Shape{nb_row}, M.device(), M.data_type());
-    one.SetValue(1.0f);  // TODO(wangwei) cast type
+    one.SetValue(1.0f); // TODO(wangwei) cast type
     Tensor X = Transpose(M);
     Mult(X, one, v);
   }
 }
 // ====================Random operations=====================================
-template <typename SType>
-void Bernoulli(const SType p, Tensor *out) {
+template <typename SType> void Bernoulli(const SType p, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto prob = TypeCast<SType, DType>(p);
-    out->device()->Exec([prob, out](Context * ctx) {
-      Bernoulli<DType, Lang>(prob, out, ctx);
-    }, {}, {out->block()}, true);
+    out->device()->Exec(
+        [prob, out](Context *ctx) { Bernoulli<DType, Lang>(prob, out, ctx); },
+        {}, {out->block()}, true);
   });
 }
 
@@ -1240,9 +1241,9 @@ void Uniform(const SType low, const SType high, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto l = TypeCast<SType, DType>(low);
     auto h = TypeCast<SType, DType>(high);
-    out->device()->Exec([l, h, out](Context * ctx) {
-      Uniform<DType, Lang>(l, h, out, ctx);
-    }, {}, {out->block()}, true);
+    out->device()->Exec(
+        [l, h, out](Context *ctx) { Uniform<DType, Lang>(l, h, out, ctx); }, {},
+        {out->block()}, true);
   });
 }
 
@@ -1253,9 +1254,9 @@ void Gaussian(const SType mean, const SType std, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
     auto m = TypeCast<SType, DType>(mean);
     auto s = TypeCast<SType, DType>(std);
-    out->device()->Exec([m, s, out](Context * ctx) {
-      Gaussian<DType, Lang>(m, s, out, ctx);
-    }, {}, {out->block()}, true);
+    out->device()->Exec(
+        [m, s, out](Context *ctx) { Gaussian<DType, Lang>(m, s, out, ctx); },
+        {}, {out->block()}, true);
   });
 }
 template void Gaussian<float>(const float mean, const float std, Tensor *out);
@@ -1266,19 +1267,19 @@ template <typename SType>
 void Axpy(const SType alpha, const Tensor &in, Tensor *out) {
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     auto a = TypeCast<SType, DType>(alpha);
-    out->device()->Exec([a, in, out](Context * ctx) {
-      Axpy<DType, Lang>(a, in, out, ctx);
-    }, {in.block(), out->block()}, {out->block()});
+    out->device()->Exec(
+        [a, in, out](Context *ctx) { Axpy<DType, Lang>(a, in, out, ctx); },
+        {in.block(), out->block()}, {out->block()});
   });
 }
 
-template
-void Axpy<float>(const float alpha, const Tensor &in, Tensor *out);
+template void Axpy<float>(const float alpha, const Tensor &in, Tensor *out);
 
 Tensor Mult(const Tensor &A, const Tensor &B) {
   Shape s;
   s.push_back(A.shape(0));
-  if (B.nDim() == 2) s.push_back(B.shape(1));
+  if (B.nDim() == 2)
+    s.push_back(B.shape(1));
   Tensor out(s, A.device(), A.data_type());
   Mult(A, B, &out);
   return out;
@@ -1296,19 +1297,22 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
-      C->device()->Exec([a, A, b, B, C](Context * ctx) {
-        GEMV<DType, Lang>(a, A, B, b, C, ctx);
-      }, {A.block(), B.block()}, {C->block()});
+      C->device()->Exec(
+          [a, A, b, B, C](Context *ctx) {
+            GEMV<DType, Lang>(a, A, B, b, C, ctx);
+          },
+          {A.block(), B.block()}, {C->block()});
     });
   } else {
     CHECK(!C->transpose());
     TYPE_LANG_SWITCH(A.data_type(), DType, A.device()->lang(), Lang, {
       auto a = TypeCast<SType, DType>(alpha);
       auto b = TypeCast<SType, DType>(beta);
-      C->device()->Exec([a, A, b, B, C](Context * ctx) {
-        GEMM<DType, Lang>(a, A, B, b, C,
-        ctx);
-      }, {A.block(), B.block()}, {C->block()});
+      C->device()->Exec(
+          [a, A, b, B, C](Context *ctx) {
+            GEMM<DType, Lang>(a, A, B, b, C, ctx);
+          },
+          {A.block(), B.block()}, {C->block()});
     });
   }
 }
@@ -1316,13 +1320,13 @@ void Mult(const SType alpha, const Tensor &A, const Tensor &B, const SType beta,
 // ************************
 // Misc.
 // ************************
-Tensor CrossEntropyFwd(const Tensor& p, const Tensor& t) {
+Tensor CrossEntropyFwd(const Tensor &p, const Tensor &t) {
   Tensor loss({p.shape(0)}, p.device(), p.data_type());
   ComputeCrossEntropy(p, t, &loss);
   return loss;
 }
 
-Tensor SoftmaxCrossEntropyBwd(const Tensor& p, const Tensor& t) {
+Tensor SoftmaxCrossEntropyBwd(const Tensor &p, const Tensor &t) {
   auto g = p.Clone();
   SoftmaxCrossEntropyBwd(t, &g);
   return g;
@@ -1332,14 +1336,18 @@ void ComputeCrossEntropy(const Tensor &p, const Tensor &t, Tensor *loss) {
   CHECK_LE(p.nDim(), 2u);
   CHECK_LE(t.nDim(), 2u);
   size_t batchsize = 1;
-  if (p.nDim() == 2u) batchsize = p.shape(0);
+  if (p.nDim() == 2u)
+    batchsize = p.shape(0);
   size_t dim = p.Size() / batchsize;
   TYPE_LANG_SWITCH(p.data_type(), DType, p.device()->lang(), Lang, {
-    p.device()->Exec([batchsize, dim, t, p, loss](Context * ctx) {
-      bool int_target = t.Size() == batchsize;
-      ComputeCrossEntropy<DType, Lang>(int_target, batchsize, dim, p.block(),
-      t.block(), loss->block(), ctx);
-    }, {p.block(), t.block()}, {loss->block()});
+    p.device()->Exec(
+        [batchsize, dim, t, p, loss](Context *ctx) {
+          bool int_target = t.Size() == batchsize;
+          ComputeCrossEntropy<DType, Lang>(int_target, batchsize, dim,
+                                           p.block(), t.block(), loss->block(),
+                                           ctx);
+        },
+        {p.block(), t.block()}, {loss->block()});
   });
 }
 
@@ -1347,21 +1355,24 @@ void SoftmaxCrossEntropyBwd(const Tensor &t, Tensor *p) {
   CHECK_LE(p->nDim(), 2u);
   CHECK_LE(t.nDim(), 2u);
   size_t batchsize = 1;
-  if (p->nDim() == 2u) batchsize = p->shape(0);
+  if (p->nDim() == 2u)
+    batchsize = p->shape(0);
   size_t dim = p->Size() / batchsize;
   TYPE_LANG_SWITCH(p->data_type(), DType, p->device()->lang(), Lang, {
-    p->device()->Exec([batchsize, dim, t, p](Context * ctx) {
-      bool int_target = t.Size() == batchsize;
-      SoftmaxCrossEntropyBwd<DType, Lang>(int_target, batchsize, dim,
-      p->block(), t.block(), p->block(), ctx);
-    }, {p->block(), t.block()}, {p->block()});
+    p->device()->Exec(
+        [batchsize, dim, t, p](Context *ctx) {
+          bool int_target = t.Size() == batchsize;
+          SoftmaxCrossEntropyBwd<DType, Lang>(int_target, batchsize, dim,
+                                              p->block(), t.block(), p->block(),
+                                              ctx);
+        },
+        {p->block(), t.block()}, {p->block()});
   });
 }
 
-
 // if tensor is not transposed yet, we change the shape and generate new stride
 // if tensor is already transposed, we reallocate the memory and generate stride
-Tensor& Tensor::Reshape(const Shape &shape) {
+Tensor &Tensor::Reshape(const Shape &shape) {
   // Check original volumn with the new one
   // do not use Product(shape_) due to stride 0 from broadcasting.
   CHECK_EQ(Product(shape), Size());
@@ -1382,4 +1393,4 @@ Tensor Reshape(const Tensor &in, const Shape &s) {
   return out.Reshape(s);
 }
 
-}  // namespace singa
+} // namespace singa

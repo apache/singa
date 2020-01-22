@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#include "singa/io/encoder.h"
 #include "singa/io/decoder.h"
+#include "singa/io/encoder.h"
 #include "gtest/gtest.h"
 #include <time.h>
 
@@ -35,7 +35,7 @@ TEST(Decoder, Decode) {
 
   // initial random seed
   srand(time(NULL));
- 
+
   singa::EncoderConf encoder_conf;
   encoder_conf.set_image_dim_order("HWC");
   encoder.Setup(encoder_conf);
@@ -62,7 +62,7 @@ TEST(Decoder, Decode) {
   EXPECT_EQ(static_cast<int>(nheight), transformed.size().height);
   EXPECT_EQ(static_cast<int>(channel), transformed.channels());
 
-  unsigned char* buff = transformed.data;
+  unsigned char *buff = transformed.data;
   Shape shape{nheight, nwidth, channel};
   Tensor pixel(shape, singa::kUChar), label(Shape{1}, singa::kInt);
   pixel.CopyDataFromHostPtr<unsigned char>(buff, total);
@@ -72,19 +72,21 @@ TEST(Decoder, Decode) {
   std::vector<Tensor> input;
   input.push_back(pixel);
   input.push_back(label);
-  const auto* in_pixel = input[0].data<unsigned char>();
-  for (size_t i = 0; i < total; i++) EXPECT_EQ(buff[i], in_pixel[i]);
-  const int* in_label = input[1].data<int>();
+  const auto *in_pixel = input[0].data<unsigned char>();
+  for (size_t i = 0; i < total; i++)
+    EXPECT_EQ(buff[i], in_pixel[i]);
+  const int *in_label = input[1].data<int>();
   EXPECT_EQ(2, in_label[0]);
   EXPECT_EQ(2u, input.size());
- 
+
   std::string tmp = encoder.Encode(input);
   std::vector<Tensor> output = decoder.Decode(tmp);
   EXPECT_EQ(2u, output.size());
   EXPECT_EQ(singa::kFloat32, output[0].data_type());
   Shape out_shape = output[0].shape();
-  for (size_t i = 0; i < shape.size(); i++) EXPECT_EQ(shape[i], out_shape[i]);
-  const int* out_label = output[1].data<int>();
+  for (size_t i = 0; i < shape.size(); i++)
+    EXPECT_EQ(shape[i], out_shape[i]);
+  const int *out_label = output[1].data<int>();
   EXPECT_EQ(raw_label, out_label[0]);
   // opencv imencode will have some information loss
   /*const float* out_pixel = output[0].data<const float>();
@@ -92,7 +94,7 @@ TEST(Decoder, Decode) {
   for (size_t i = 0; i < height; i++)
     for (size_t j = 0; j < width; j++)
       for (size_t k = 0; k < channel; k++)
-        out.at<cv::Vec3b>(i, j)[k] = 
+        out.at<cv::Vec3b>(i, j)[k] =
             out_pixel[i * width * channel + j * channel + k];
   for(size_t i = 0; i < total; i++)
     EXPECT_LE(fabs(in_pixel[i]-out_pixel[i]), 10.f);*/

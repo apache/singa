@@ -31,8 +31,8 @@
  * Macro that creats a function which instantiate a subclass instance and
  * returns pointer to the base class.
  */
-#define CreateInstance(SubClass, BaseClass) \
-  [](void)->BaseClass* {return new SubClass();}
+#define CreateInstance(SubClass, BaseClass)                                    \
+  [](void) -> BaseClass * { return new SubClass(); }
 
 /**
  * Factory template to generate class (or a sub-class) object based on id.
@@ -41,9 +41,8 @@
  * 2. call Create() func to call the creation function and return
  * a pointer to the base calss.
  */
-template<typename T, typename ID = std::string>
-class Factory {
- public:
+template <typename T, typename ID = std::string> class Factory {
+public:
   /**
    * Register functions to create user defined classes.
    * This function is called by the REGISTER_FACTORY macro.
@@ -51,9 +50,8 @@ class Factory {
    * @param id Identifier of the creating function/class
    * @param func a function that creates a layer instance
    */
-  static void Register(const ID& id,
-                       const std::function<T*(void)>& creator) {
-    Registry* reg = GetRegistry();
+  static void Register(const ID &id, const std::function<T *(void)> &creator) {
+    Registry *reg = GetRegistry();
     // CHECK(reg->find(id) == reg->end())
     //  << "The id " << id << " has been registered";
     (*reg)[id] = creator;
@@ -64,10 +62,10 @@ class Factory {
    *
    * @param id
    */
-  static T* Create(const ID& id) {
-    Registry* reg = GetRegistry();
-    CHECK(reg->find(id) != reg->end())
-      << "The creation function for " << id << " has not been registered";
+  static T *Create(const ID &id) {
+    Registry *reg = GetRegistry();
+    CHECK(reg->find(id) != reg->end()) << "The creation function for " << id
+                                       << " has not been registered";
     return (*reg)[id]();
   }
 
@@ -78,20 +76,20 @@ class Factory {
     return keys;
   }
 
- private:
+private:
   // Map that stores the registered creation functions
-  typedef std::map<ID, std::function<T*(void)>> Registry;
-  static Registry* GetRegistry() {
+  typedef std::map<ID, std::function<T *(void)>> Registry;
+  static Registry *GetRegistry() {
     static Registry reg;
     return &reg;
   }
 };
 
-template<typename Base, typename Sub, typename ID = std::string>
+template <typename Base, typename Sub, typename ID = std::string>
 class Registra {
- public:
-  Registra(const ID& id) {
+public:
+  Registra(const ID &id) {
     Factory<Base, ID>::Register(id, [](void) { return new Sub(); });
   }
 };
-#endif  // SINGA_UTILS_FACTORY_H_
+#endif // SINGA_UTILS_FACTORY_H_

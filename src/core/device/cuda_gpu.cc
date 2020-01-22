@@ -17,14 +17,14 @@
  */
 #include "singa/singa_config.h"
 #ifdef USE_CUDA
+#include "singa/core/device.h"
+#include "singa/utils/cuda_utils.h"
+#include <chrono>
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <curand.h>
-#include <chrono>
 #include <iostream>
-#include "singa/core/device.h"
-#include "singa/utils/cuda_utils.h"
 namespace singa {
 
 const cudaMemcpyKind copyKind[] = {cudaMemcpyHostToHost, cudaMemcpyHostToDevice,
@@ -32,7 +32,8 @@ const cudaMemcpyKind copyKind[] = {cudaMemcpyHostToHost, cudaMemcpyHostToDevice,
                                    cudaMemcpyDeviceToDevice};
 
 CudaGPU::~CudaGPU() {
-  if (ctx_.cublas_handle) CUBLAS_CHECK(cublasDestroy(ctx_.cublas_handle));
+  if (ctx_.cublas_handle)
+    CUBLAS_CHECK(cublasDestroy(ctx_.cublas_handle));
   if (ctx_.curand_generator)
     CURAND_CHECK(curandDestroyGenerator(ctx_.curand_generator));
 #ifdef USE_CUDNN
@@ -60,7 +61,7 @@ CudaGPU::CudaGPU(int id, std::shared_ptr<DeviceMemPool> pool)
 
 void CudaGPU::Setup() {
   lang_ = kCuda;
-  ctx_.stream = NULL;  // use the default sync stream
+  ctx_.stream = NULL; // use the default sync stream
 
   // TODO(wangwei) create one handle for each steam?
   // Preserse for future use instead of default sync stream, for concurrency
@@ -83,7 +84,7 @@ void CudaGPU::Setup() {
   auto status = cudnnCreate(&ctx_.cudnn_handle);
   CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << cudnnGetErrorString(status);
   cudnnSetStream(ctx_.cudnn_handle, ctx_.stream);
-#endif  // USE_CUDNN
+#endif // USE_CUDNN
 }
 
 void CudaGPU::SetRandSeed(unsigned seed) {
@@ -91,10 +92,12 @@ void CudaGPU::SetRandSeed(unsigned seed) {
   CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(ctx_.curand_generator, seed));
 }
 
-void CudaGPU::DoExec(function<void(Context*)>&& fn, int executor) { fn(&ctx_); }
+void CudaGPU::DoExec(function<void(Context *)> &&fn, int executor) {
+  fn(&ctx_);
+}
 
-void CudaGPU::CopyToFrom(void* dst, const void* src, size_t nBytes,
-                         CopyDirection direction, Context* ctx) {
+void CudaGPU::CopyToFrom(void *dst, const void *src, size_t nBytes,
+                         CopyDirection direction, Context *ctx) {
   // cudaMemcpy(dst, src, nBytes, copyKind[direction]);
   cudaMemcpyAsync(dst, src, nBytes, copyKind[direction], ctx_.stream);
 }
@@ -109,11 +112,11 @@ size_t CudaGPU::GetAllocatedMem() {
 }
 
 /// Allocate gpu memory.
-void* CudaGPU::Malloc(int size) {
-  void* ptr = nullptr;
+void *CudaGPU::Malloc(int size) {
+  void *ptr = nullptr;
   if (size > 0) {
     CUDA_CHECK(cudaSetDevice(id_));
-    pool_->Malloc((void**)&ptr, size);
+    pool_->Malloc((void **)&ptr, size);
     // Comment out for future analysis: without cnmem
     // CUDA_CHECK(cudaMemsetAsync(ptr, 0, size, ctx_.stream));
   }
@@ -121,16 +124,14 @@ void* CudaGPU::Malloc(int size) {
 }
 
 /// Free gpu memory.
-void CudaGPU::Free(void* ptr) {
+void CudaGPU::Free(void *ptr) {
   if (ptr != nullptr) {
     CUDA_CHECK(cudaSetDevice(id_));
     pool_->Free(ptr);
   }
 }
 
-void CudaGPU::Sync() {
-  CUDA_CHECK(cudaStreamSynchronize(ctx_.stream));
-}
+void CudaGPU::Sync() { CUDA_CHECK(cudaStreamSynchronize(ctx_.stream)); }
 
-}  // namespace singa
-#endif  // USE_CUDA
+} // namespace singa
+#endif // USE_CUDA

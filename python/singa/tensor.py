@@ -60,9 +60,12 @@ from builtins import object
 import numpy as np
 from functools import reduce
 
-from .proto import core_pb2
-from . import singa_wrap as singa
-from .device import get_default_device
+#import sys
+#sys.path.append("/root/singa-lint/build/python")
+#sys.path.append("/root/singa-lint/build/python/singa")
+from singa.proto import core_pb2
+from singa import singa_wrap as singa
+from singa.device import get_default_device
 
 
 int32 = core_pb2.kInt

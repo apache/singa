@@ -19,8 +19,8 @@
 *
 *************************************************************/
 
-#include "gtest/gtest.h"
 #include "singa/utils/channel.h"
+#include "gtest/gtest.h"
 
 TEST(Channel, InitChannel) {
   singa::InitChannel("");
@@ -28,12 +28,12 @@ TEST(Channel, InitChannel) {
 }
 
 TEST(Channel, SendStringToFile) {
-  singa::Channel* chn = singa::GetChannel("test_channel");
+  singa::Channel *chn = singa::GetChannel("test_channel");
   chn->Send("test to file");
 }
 
 TEST(Channel, SendStringToFileAndStderr) {
-  singa::Channel* chn = singa::GetChannel("test_channel");
+  singa::Channel *chn = singa::GetChannel("test_channel");
   chn->EnableDestStderr(true);
   chn->Send("test to both file and stderr");
 }

@@ -128,4 +128,4 @@ TEST(CudnnPooling, Backward) {
   EXPECT_EQ(0.3f, dx[7]);
   EXPECT_EQ(0.4f, dx[8]);
 }
-#endif  // USE_CUDNN
+#endif // USE_CUDNN

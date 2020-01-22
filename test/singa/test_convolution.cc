@@ -66,7 +66,7 @@ TEST(Convolution, Forward) {
 
   // Set weight and bias manually
   const size_t num_filters = 1;
-  const size_t col_height = 1 * 3 * 3;  // channels * kernel_w * kernel_h
+  const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
   const float we[num_filters * col_height] = {1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
                                               -1.0f, 0.0f, 1.0f, 0.0f};
   singa::Tensor weight(singa::Shape{num_filters, col_height});
@@ -117,7 +117,7 @@ TEST(Convolution, Backward) {
 
   // Set weight_ and bias_ manually
   const size_t num_filters = 1;
-  const size_t col_height = 1 * 3 * 3;  // channels * kernel_w * kernel_h
+  const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
   const float we[num_filters * col_height] = {1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
                                               -1.0f, 0.0f, 1.0f, 0.0f};
   singa::Tensor weight(singa::Shape{num_filters, col_height});
@@ -161,9 +161,9 @@ TEST(Convolution, Backward) {
   EXPECT_EQ(dy[0] * wptr[5] + dy[1] * wptr[3], dx[1]);
   EXPECT_EQ(dy[1] * wptr[4], dx[2]);
   EXPECT_EQ(dy[0] * wptr[7] + dy[2] * wptr[1], dx[3]);
-  EXPECT_EQ(
-      dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] + dy[3] * wptr[0],
-      dx[4]);
+  EXPECT_EQ(dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] +
+                dy[3] * wptr[0],
+            dx[4]);
   EXPECT_EQ(dy[1] * wptr[7] + dy[3] * wptr[1], dx[5]);
   EXPECT_EQ(dy[2] * wptr[4], dx[6]);
   EXPECT_EQ(dy[2] * wptr[5] + dy[3] * wptr[3], dx[7]);
@@ -172,9 +172,9 @@ TEST(Convolution, Backward) {
   EXPECT_EQ(dy[4] * wptr[5] + dy[1] * wptr[3], dx[10]);
   EXPECT_EQ(dy[5] * wptr[4], dx[11]);
   EXPECT_EQ(dy[4] * wptr[7] + dy[2] * wptr[1], dx[12]);
-  EXPECT_EQ(
-      dy[4] * wptr[8] + dy[5] * wptr[6] + dy[6] * wptr[2] + dy[7] * wptr[0],
-      dx[13]);
+  EXPECT_EQ(dy[4] * wptr[8] + dy[5] * wptr[6] + dy[6] * wptr[2] +
+                dy[7] * wptr[0],
+            dx[13]);
   EXPECT_EQ(dy[5] * wptr[7] + dy[7] * wptr[1], dx[14]);
   EXPECT_EQ(dy[6] * wptr[4], dx[15]);
   EXPECT_EQ(dy[6] * wptr[5] + dy[7] * wptr[3], dx[16]);
@@ -205,4 +205,4 @@ TEST(Convolution, Backward) {
                   dwptr[7]);
   EXPECT_FLOAT_EQ(dy[0] * x[4] + dy[4] * x[13], dwptr[8]);
 }
-#endif  // USE_CBLAS
+#endif // USE_CBLAS

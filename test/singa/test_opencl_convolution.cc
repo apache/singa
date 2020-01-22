@@ -30,7 +30,6 @@ using singa::OpenclConvolution;
 using singa::OpenclDevice;
 using singa::Shape;
 
-
 TEST(OpenclConvolution, Setup) {
   OpenclConvolution conv;
   EXPECT_EQ("OpenclConvolution", conv.layer_type());
@@ -60,20 +59,19 @@ TEST(OpenclConvolution, Setup) {
   EXPECT_EQ(3u, conv.width());
 }
 
-
 TEST(OpenclConvolution, Forward) {
   const size_t batchsize = 2, c = 1, h = 3, w = 3;
   const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
                                           7.0f, 8.0f, 9.0f, 1.0f, 2.0f, 3.0f,
                                           4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
-                                          
+
   auto ocl = std::make_shared<OpenclDevice>();
   singa::Tensor in(singa::Shape{batchsize, c, h, w}, ocl);
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
 
   // Set weight and bias manually
   const size_t num_filters = 1;
-  const size_t col_height = 1 * 3 * 3;  // channels * kernel_w * kernel_h
+  const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
   const float we[num_filters * col_height] = {1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
                                               -1.0f, 0.0f, 1.0f, 0.0f};
   singa::Tensor weight(singa::Shape{num_filters, col_height}, ocl);
@@ -114,7 +112,6 @@ TEST(OpenclConvolution, Forward) {
   EXPECT_EQ(12.0f, outptr1[7]);
 }
 
-
 TEST(OpenclConvolution, Backward) {
   // src_data
   const size_t batchsize = 2, c = 1, src_h = 3, src_w = 3;
@@ -127,7 +124,7 @@ TEST(OpenclConvolution, Backward) {
 
   // Set weight_ and bias_ manually
   const size_t num_filters = 1;
-  const size_t col_height = 1 * 3 * 3;  // channels * kernel_w * kernel_h
+  const size_t col_height = 1 * 3 * 3; // channels * kernel_w * kernel_h
   const float we[num_filters * col_height] = {1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
                                               -1.0f, 0.0f, 1.0f, 0.0f};
   singa::Tensor weight(singa::Shape{num_filters, col_height}, ocl);
@@ -172,9 +169,9 @@ TEST(OpenclConvolution, Backward) {
   EXPECT_EQ(dy[0] * wptr[5] + dy[1] * wptr[3], dx[1]);
   EXPECT_EQ(dy[1] * wptr[4], dx[2]);
   EXPECT_EQ(dy[0] * wptr[7] + dy[2] * wptr[1], dx[3]);
-  EXPECT_EQ(
-      dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] + dy[3] * wptr[0],
-      dx[4]);
+  EXPECT_EQ(dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] +
+                dy[3] * wptr[0],
+            dx[4]);
   EXPECT_EQ(dy[1] * wptr[7] + dy[3] * wptr[1], dx[5]);
   EXPECT_EQ(dy[2] * wptr[4], dx[6]);
   EXPECT_EQ(dy[2] * wptr[5] + dy[3] * wptr[3], dx[7]);
@@ -183,9 +180,9 @@ TEST(OpenclConvolution, Backward) {
   EXPECT_EQ(dy[4] * wptr[5] + dy[1] * wptr[3], dx[10]);
   EXPECT_EQ(dy[5] * wptr[4], dx[11]);
   EXPECT_EQ(dy[4] * wptr[7] + dy[2] * wptr[1], dx[12]);
-  EXPECT_EQ(
-      dy[4] * wptr[8] + dy[5] * wptr[6] + dy[6] * wptr[2] + dy[7] * wptr[0],
-      dx[13]);
+  EXPECT_EQ(dy[4] * wptr[8] + dy[5] * wptr[6] + dy[6] * wptr[2] +
+                dy[7] * wptr[0],
+            dx[13]);
   EXPECT_EQ(dy[5] * wptr[7] + dy[7] * wptr[1], dx[14]);
   EXPECT_EQ(dy[6] * wptr[4], dx[15]);
   EXPECT_EQ(dy[6] * wptr[5] + dy[7] * wptr[3], dx[16]);
@@ -218,6 +215,5 @@ TEST(OpenclConvolution, Backward) {
                   dwptr[7]);
   EXPECT_FLOAT_EQ(dy[0] * x[4] + dy[4] * x[13], dwptr[8]);
 }
-
 
 #endif // USE_OPENCL

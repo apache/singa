@@ -19,8 +19,8 @@
 *
 *************************************************************/
 #include "../src/model/layer/dense.h"
-#include "gtest/gtest.h"
 #include "singa/singa_config.h"
+#include "gtest/gtest.h"
 
 using singa::Dense;
 using singa::Shape;
@@ -68,9 +68,9 @@ TEST(Dense, ForwardCpp) {
   EXPECT_EQ(9u, out1.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
-      EXPECT_FLOAT_EQ((x[i * 2 + 0] * we[j] +
-                       x[i * 2 + 1] * we[3 + j] + bia[j]),
-                      outptr1[i * 3 + j]);
+      EXPECT_FLOAT_EQ(
+          (x[i * 2 + 0] * we[j] + x[i * 2 + 1] * we[3 + j] + bia[j]),
+          outptr1[i * 3 + j]);
 }
 TEST(Dense, BackwardCpp) {
   Dense dense;
@@ -133,7 +133,7 @@ TEST(Dense, BackwardCpp) {
   for (int i = 0; i < 3; i++)
     EXPECT_FLOAT_EQ((dy[0 * 3 + i] + dy[1 * 3 + i] + dy[2 * 3 + i]), dbiasx[i]);
 }
-#endif  // USE_CBLAS
+#endif // USE_CBLAS
 
 #ifdef USE_CUDA
 TEST(Dense, ForwardCuda) {
@@ -169,9 +169,9 @@ TEST(Dense, ForwardCuda) {
   EXPECT_EQ(9u, out1.Size());
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
-      EXPECT_FLOAT_EQ((x[i * 2 + 0] * we[j] +
-                       x[i * 2 + 1] * we[3 + j] + bia[j]),
-                      outptr1[i * 3 + j]);
+      EXPECT_FLOAT_EQ(
+          (x[i * 2 + 0] * we[j] + x[i * 2 + 1] * we[3 + j] + bia[j]),
+          outptr1[i * 3 + j]);
 }
 TEST(Dense, BackwardCuda) {
   Dense dense;

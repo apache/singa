@@ -24,10 +24,9 @@
 
 /// Thread-safe implementation for C++11 according to
 //  http://stackoverflow.com/questions/2576022/efficient-thread-safe-singleton-in-c
-template<typename T>
-class Singleton {
- public:
-  static T* Instance() {
+template <typename T> class Singleton {
+public:
+  static T *Instance() {
     static T data_;
     return &data_;
   }
@@ -47,4 +46,4 @@ class TSingleton {
 };
 */
 
-#endif  // SINGA_UTILS_SINGLETON_H_
+#endif // SINGA_UTILS_SINGLETON_H_

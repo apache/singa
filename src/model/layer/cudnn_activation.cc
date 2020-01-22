@@ -31,7 +31,8 @@ RegisterLayerClass(cudnn_tanh, CudnnActivation);
 CudnnActivation::~CudnnActivation() {
   if (acti_desc_ != nullptr)
     CUDNN_CHECK(cudnnDestroyActivationDescriptor(acti_desc_));
-  if (desc_ != nullptr) CUDNN_CHECK(cudnnDestroyTensorDescriptor(desc_));
+  if (desc_ != nullptr)
+    CUDNN_CHECK(cudnnDestroyTensorDescriptor(desc_));
 }
 
 void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
@@ -48,8 +49,8 @@ void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
     else
       LOG(FATAL) << "Unkown activation: " << mode_;
 
-    CUDNN_CHECK(cudnnSetActivationDescriptor(
-          acti_desc_, cudnn_mode_, CUDNN_PROPAGATE_NAN, 0.0f));
+    CUDNN_CHECK(cudnnSetActivationDescriptor(acti_desc_, cudnn_mode_,
+                                             CUDNN_PROPAGATE_NAN, 0.0f));
   }
 
   CUDNN_CHECK(cudnnSetTensor4dDescriptor(
@@ -58,7 +59,7 @@ void CudnnActivation::InitCudnn(size_t size, DataType dtype) {
   has_init_cudnn_ = true;
 }
 
-const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
+const Tensor CudnnActivation::Forward(int flag, const Tensor &input) {
   CHECK(buf_.empty());
   auto size = input.Size();
   DataType dtype = input.data_type();
@@ -67,21 +68,23 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
   } else {
     int n, c, h, w, s;
     cudnnDataType_t type;
-    CUDNN_CHECK(cudnnGetTensor4dDescriptor(desc_,
-          &type, &n, &c, &h, &w, &s, &s, &s, &s));
+    CUDNN_CHECK(cudnnGetTensor4dDescriptor(desc_, &type, &n, &c, &h, &w, &s, &s,
+                                           &s, &s));
     if (size != static_cast<size_t>(w))
       InitCudnn(size, dtype);
   }
 
   Tensor output;
   output.ResetLike(input);
-  output.device()->Exec([input, output, this](Context* ctx) {
-    Block* inblock = input.block(), * outblock = output.block();
-    float alpha = 1.0f, beta = 0.0f;
-    CUDNN_CHECK(cudnnActivationForward(
-        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
-        inblock->data(), &beta, this->desc_, outblock->mutable_data()));
-  }, {input.block()}, {output.block()});
+  output.device()->Exec(
+      [input, output, this](Context *ctx) {
+        Block *inblock = input.block(), *outblock = output.block();
+        float alpha = 1.0f, beta = 0.0f;
+        CUDNN_CHECK(cudnnActivationForward(
+            ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
+            inblock->data(), &beta, this->desc_, outblock->mutable_data()));
+      },
+      {input.block()}, {output.block()});
   if (flag & kTrain) {
     if (cudnn_mode_ == CUDNN_ACTIVATION_SIGMOID ||
         cudnn_mode_ == CUDNN_ACTIVATION_TANH) {
@@ -93,8 +96,8 @@ const Tensor CudnnActivation::Forward(int flag, const Tensor& input) {
   return output;
 }
 
-const std::pair<Tensor, vector<Tensor>> CudnnActivation::Backward(
-    int flag, const Tensor& grad) {
+const std::pair<Tensor, vector<Tensor>>
+CudnnActivation::Backward(int flag, const Tensor &grad) {
   vector<Tensor> param_grad;
   Tensor dx;
   CHECK(!buf_.empty());
@@ -103,16 +106,18 @@ const std::pair<Tensor, vector<Tensor>> CudnnActivation::Backward(
   Tensor inout = buf_.top();
   buf_.pop();
   dx.ResetLike(grad);
-  dx.device()->Exec([dx, grad, inout, this](Context* ctx) {
-    Block* dyblock = grad.block(), * dxblock = dx.block(),
-           * yblock = inout.block(), * xblock = inout.block();
-    float alpha = 1.0f, beta = 0.0f;
-    CUDNN_CHECK(cudnnActivationBackward(
-        ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
-        yblock->data(), this->desc_, dyblock->data(), this->desc_,
-        xblock->data(), &beta, this->desc_, dxblock->mutable_data()));
-  }, {grad.block(), inout.block()}, {dx.block()});
+  dx.device()->Exec(
+      [dx, grad, inout, this](Context *ctx) {
+        Block *dyblock = grad.block(), *dxblock = dx.block(),
+              *yblock = inout.block(), *xblock = inout.block();
+        float alpha = 1.0f, beta = 0.0f;
+        CUDNN_CHECK(cudnnActivationBackward(
+            ctx->cudnn_handle, this->acti_desc_, &alpha, this->desc_,
+            yblock->data(), this->desc_, dyblock->data(), this->desc_,
+            xblock->data(), &beta, this->desc_, dxblock->mutable_data()));
+      },
+      {grad.block(), inout.block()}, {dx.block()});
   return std::make_pair(dx, param_grad);
 }
-}  // namespace singa
-#endif  // USE_CUDNN
+} // namespace singa
+#endif // USE_CUDNN

@@ -23,7 +23,7 @@
 
 #ifdef USE_CUDNN
 // cudnn lrn is added in cudnn 4
-#if CUDNN_MAJOR >=4
+#if CUDNN_MAJOR >= 4
 #include "gtest/gtest.h"
 
 using singa::CudnnLRN;
@@ -49,18 +49,15 @@ TEST(CudnnLRN, Setup) {
 TEST(CudnnLRN, Forward) {
   CudnnLRN lrn;
   const float x[] = {
-    0.00658502, -0.0496967, -0.0333733, -0.0263094,
-    -0.044298, 0.0211638, 0.0829358, -0.0172312,
-    -0.0665471, -0.10017, -0.0750333, -0.104551,
-    -0.00981208, -0.0583349, -0.0751652, 0.011747,
-    0.0151165, 0.0304321, 0.0736639, -0.00652653,
-    0.00962833, 0.169646, -0.044588, -0.00244141,
-    0.0597329, -0.0530868, 0.0124246, 0.108429,
-    0.0451175, 0.0247055, 0.0304345, 0.0179575
-  };
+      0.00658502,  -0.0496967,  -0.0333733, -0.0263094, -0.044298,  0.0211638,
+      0.0829358,   -0.0172312,  -0.0665471, -0.10017,   -0.0750333, -0.104551,
+      -0.00981208, -0.0583349,  -0.0751652, 0.011747,   0.0151165,  0.0304321,
+      0.0736639,   -0.00652653, 0.00962833, 0.169646,   -0.044588,  -0.00244141,
+      0.0597329,   -0.0530868,  0.0124246,  0.108429,   0.0451175,  0.0247055,
+      0.0304345,   0.0179575};
   auto cuda = std::make_shared<singa::CudaGPU>();
-  singa::Tensor in(singa::Shape{1,2,4,4}, cuda);
-  in.CopyDataFromHostPtr(x, 1*2*4*4);
+  singa::Tensor in(singa::Shape{1, 2, 4, 4}, cuda);
+  in.CopyDataFromHostPtr(x, 1 * 2 * 4 * 4);
 
   singa::LayerConf conf;
   singa::LRNConf *lrn_conf = conf.mutable_lrn_conf();
@@ -73,7 +70,7 @@ TEST(CudnnLRN, Forward) {
   singa::Tensor out = lrn.Forward(singa::kTrain, in);
   out.ToHost();
   const float *outptr = out.data<float>();
-  const auto & shape = out.shape();
+  const auto &shape = out.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);
   EXPECT_EQ(2u, shape[1]);
@@ -118,32 +115,26 @@ TEST(CudnnLRN, Backward) {
   CudnnLRN lrn;
 
   const float x[] = {
-    0.00658502, -0.0496967, -0.0333733, -0.0263094,
-    -0.044298, 0.0211638, 0.0829358, -0.0172312,
-    -0.0665471, -0.10017, -0.0750333, -0.104551,
-    -0.00981208, -0.0583349, -0.0751652, 0.011747,
-    0.0151165, 0.0304321, 0.0736639, -0.00652653,
-    0.00962833, 0.169646, -0.044588, -0.00244141,
-    0.0597329, -0.0530868, 0.0124246, 0.108429,
-    0.0451175, 0.0247055, 0.0304345, 0.0179575
-  };
+      0.00658502,  -0.0496967,  -0.0333733, -0.0263094, -0.044298,  0.0211638,
+      0.0829358,   -0.0172312,  -0.0665471, -0.10017,   -0.0750333, -0.104551,
+      -0.00981208, -0.0583349,  -0.0751652, 0.011747,   0.0151165,  0.0304321,
+      0.0736639,   -0.00652653, 0.00962833, 0.169646,   -0.044588,  -0.00244141,
+      0.0597329,   -0.0530868,  0.0124246,  0.108429,   0.0451175,  0.0247055,
+      0.0304345,   0.0179575};
   auto cuda = std::make_shared<singa::CudaGPU>();
-  singa::Tensor x_tensor(singa::Shape{1,2,4,4}, cuda);
-  x_tensor.CopyDataFromHostPtr(x, 1*2*4*4);
+  singa::Tensor x_tensor(singa::Shape{1, 2, 4, 4}, cuda);
+  x_tensor.CopyDataFromHostPtr(x, 1 * 2 * 4 * 4);
 
   const float dy[] = {
-    -0.103178, -0.0326904, 0.293932, 0.355288,
-    -0.0288079, -0.0543308, -0.0668226, 0.0462216,
-    -0.0448064, -0.068982, -0.0509133, -0.0721143,
-    0.0959078, -0.0389037, -0.0510071, -0.178793,
-    0.00428248, -0.001132, -0.19928, 0.011935,
-    0.00622313, 0.143793, 0.0253894, 0.0104906,
-    -0.170673, 0.0283919, 0.00523488, -0.0455003,
-    0.177807, 0.000892812, -0.00113197, 0.00327798
-  };
+      -0.103178,   -0.0326904, 0.293932,   0.355288,   -0.0288079, -0.0543308,
+      -0.0668226,  0.0462216,  -0.0448064, -0.068982,  -0.0509133, -0.0721143,
+      0.0959078,   -0.0389037, -0.0510071, -0.178793,  0.00428248, -0.001132,
+      -0.19928,    0.011935,   0.00622313, 0.143793,   0.0253894,  0.0104906,
+      -0.170673,   0.0283919,  0.00523488, -0.0455003, 0.177807,   0.000892812,
+      -0.00113197, 0.00327798};
 
-  singa::Tensor dy_tensor(singa::Shape{1,2,4,4}, cuda);
-  dy_tensor.CopyDataFromHostPtr(dy, 1*2*4*4);
+  singa::Tensor dy_tensor(singa::Shape{1, 2, 4, 4}, cuda);
+  dy_tensor.CopyDataFromHostPtr(dy, 1 * 2 * 4 * 4);
 
   singa::LayerConf conf;
   singa::LRNConf *lrn_conf = conf.mutable_lrn_conf();
@@ -158,7 +149,7 @@ TEST(CudnnLRN, Backward) {
   singa::Tensor dx = ret.first;
   dx.ToHost();
   const float *dxptr = dx.data<float>();
-  const auto & shape = dx.shape();
+  const auto &shape = dx.shape();
   EXPECT_EQ(4u, shape.size());
   EXPECT_EQ(1u, shape[0]);
   EXPECT_EQ(2u, shape[1]);
@@ -199,5 +190,5 @@ TEST(CudnnLRN, Backward) {
   EXPECT_NEAR(0.00327978, dxptr[31], 1e-6f);
 }
 
-#endif  //  CUDNN_MAJOR >= 4
-#endif  //  USE_CUDNN
+#endif //  CUDNN_MAJOR >= 4
+#endif //  USE_CUDNN

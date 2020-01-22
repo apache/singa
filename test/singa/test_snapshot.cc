@@ -19,13 +19,13 @@
 *
 *************************************************************/
 
-#include "gtest/gtest.h"
-#include "singa/io/snapshot.h"
-#include "singa/io/reader.h"
 #include "singa/core/tensor.h"
+#include "singa/io/reader.h"
+#include "singa/io/snapshot.h"
+#include "gtest/gtest.h"
 
-#include <string>
 #include <fstream>
+#include <string>
 
 const std::string prefix = "./snapshot_test";
 const float param_1_data[] = {0.1f, 0.2f, 0.3f, 0.4f};
@@ -58,11 +58,11 @@ TEST(Snapshot, ReadTest) {
   EXPECT_EQ(shape2[0], 2u);
   EXPECT_EQ(shape2[1], 2u);
   param_1 = snapshot.Read("Param_1");
-  const float* data_1 = param_1.data<float>();
+  const float *data_1 = param_1.data<float>();
   for (size_t i = 0; i < singa::Product(shape1); ++i)
     EXPECT_FLOAT_EQ(data_1[i], param_1_data[i]);
   param_2 = snapshot.Read("Param_2");
-  const float* data_2 = param_2.data<float>();
+  const float *data_2 = param_2.data<float>();
   for (size_t i = 0; i < singa::Product(shape2); ++i)
     EXPECT_FLOAT_EQ(data_2[i], param_2_data[i]);
   std::ifstream desc_file(prefix + ".desc");
@@ -91,7 +91,7 @@ TEST(Snapshot, ReadIntTest) {
     EXPECT_EQ(shape.size(), 1u);
     EXPECT_EQ(shape[0], 4u);
     singa::Tensor int_param = int_snapshot_read.Read("IntParam");
-    const int* param_data = int_param.data<int>();
+    const int *param_data = int_param.data<int>();
     for (size_t i = 0; i < singa::Product(shape); ++i)
       EXPECT_EQ(param_data[i], int_data[i]);
   }

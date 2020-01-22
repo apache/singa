@@ -22,18 +22,23 @@
 namespace singa {
 
 Optimizer::~Optimizer() {
-  for (auto entry : regularizers_) delete entry.second;
-  for (auto entry : constraints_) delete entry.second;
-  if (constraint_ != nullptr) delete constraint_;
-  if (regularizer_ != nullptr) delete regularizer_;
+  for (auto entry : regularizers_)
+    delete entry.second;
+  for (auto entry : constraints_)
+    delete entry.second;
+  if (constraint_ != nullptr)
+    delete constraint_;
+  if (regularizer_ != nullptr)
+    delete regularizer_;
 }
-void Optimizer::Setup(const OptimizerConf& conf) {
+void Optimizer::Setup(const OptimizerConf &conf) {
   if (conf.has_regularizer())
     regularizer_ = new Regularizer(conf.regularizer());
-  if (conf.has_constraint()) constraint_ = new Constraint(conf.constraint());
+  if (conf.has_constraint())
+    constraint_ = new Constraint(conf.constraint());
   conf_ = conf;
 }
-void Optimizer::Register(const string& name, const ParamSpec& specs) {
+void Optimizer::Register(const string &name, const ParamSpec &specs) {
   if (specs.has_constraint()) {
     CHECK(constraints_.find(name) == constraints_.end())
         << "Parameter with name = " << name << " has already registered";
@@ -60,8 +65,9 @@ void Optimizer::Register(const string& name, const ParamSpec& specs) {
   }
   */
 }
-void Optimizer::ApplyRegularizerConstraint(int epoch, const string& name,
-      const Tensor& value, Tensor& grad, int step) {
+void Optimizer::ApplyRegularizerConstraint(int epoch, const string &name,
+                                           const Tensor &value, Tensor &grad,
+                                           int step) {
   // TODO(wangwei) need to consider the order of constraint and regularizer
   if (regularizers_.find(name) != regularizers_.end()) {
     regularizers_.at(name)->Apply(epoch, value, grad, step);
@@ -74,14 +80,13 @@ void Optimizer::ApplyRegularizerConstraint(int epoch, const string& name,
     constraint_->Apply(epoch, value, grad, step);
 }
 
-
-void Optimizer::Apply(int epoch, const string& name, Tensor& grad,
-                      Tensor& value, int step) {
+void Optimizer::Apply(int epoch, const string &name, Tensor &grad,
+                      Tensor &value, int step) {
   float lr = learning_rate_generator_(step);
   Apply(epoch, lr, name, grad, value, step);
 }
 
-void Regularizer::Setup(const RegularizerConf& conf) {
+void Regularizer::Setup(const RegularizerConf &conf) {
   type_ = conf.type();
   coefficient_ = conf.coefficient();
   if (type_ != "L2" && type_ != "l2") {
@@ -89,8 +94,8 @@ void Regularizer::Setup(const RegularizerConf& conf) {
   }
 }
 
-void Regularizer::Apply(int epoch, const Tensor& value, Tensor& grad, int step)
-{
+void Regularizer::Apply(int epoch, const Tensor &value, Tensor &grad,
+                        int step) {
   if (type_ == "L2" || type_ == "l2") {
     Axpy(coefficient_, value, &grad);
   } else {
@@ -98,24 +103,24 @@ void Regularizer::Apply(int epoch, const Tensor& value, Tensor& grad, int step)
   }
 }
 
-void Regularizer::Apply(int epoch, const vector<Tensor>& values,
-                        const vector<Tensor>& grads, int step) {
+void Regularizer::Apply(int epoch, const vector<Tensor> &values,
+                        const vector<Tensor> &grads, int step) {
   LOG(FATAL) << "Not implemented yet";
 }
 
-void Constraint::Setup(const ConstraintConf& conf) {
+void Constraint::Setup(const ConstraintConf &conf) {
   type_ = conf.type();
   threshold_ = conf.threshold();
 }
 
-void Constraint::Apply(int epoch, const Tensor& value, Tensor& grad, int step) {
+void Constraint::Apply(int epoch, const Tensor &value, Tensor &grad, int step) {
   // TODO(wangwei) implement L2 and hard constraint
   CHECK(type_ == "NotSet") << "Unknown regularizer type = " << type_;
 }
 
-void Constraint::Apply(int epoch, const vector<Tensor>& values,
-                       const vector<Tensor>& grads, int step) {
+void Constraint::Apply(int epoch, const vector<Tensor> &values,
+                       const vector<Tensor> &grads, int step) {
   LOG(FATAL) << "Not implemented yet";
 }
 
-}  // namespace singa
+} // namespace singa

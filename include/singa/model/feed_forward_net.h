@@ -21,15 +21,15 @@
 #include "singa/model/loss.h"
 #include "singa/model/metric.h"
 #include "singa/model/updater.h"
-#include <thread>
 #include <memory>
+#include <thread>
 namespace singa {
 
 /// The feed-forward neural net.
 /// It provides functions for constructing the layers, access layer parameters,
 /// and conducting training, evaluation and prediction.
 class FeedForwardNet {
- public:
+public:
   FeedForwardNet() = default;
   /// Delete all layers.
   ~FeedForwardNet();
@@ -49,8 +49,8 @@ class FeedForwardNet {
   /// Assume the layer is added in corret order.
   /// For the first layer, 'sample_shape' (the input sample shape) is necessary
   /// for calling Setup().
-  std::shared_ptr<Layer> Add(const LayerConf& conf,
-      const Shape* sample_shape = nullptr);
+  std::shared_ptr<Layer> Add(const LayerConf &conf,
+                             const Shape *sample_shape = nullptr);
 
   /// Set some fields used for training and evaluating the neural net.
   /// This method will instantiate an Updater ,then wrap the Optimier into
@@ -60,7 +60,7 @@ class FeedForwardNet {
   /// 'shuffle' indicates shuffling training samples within one epoch it is
   /// valid using Train(). If to_register is set true, parameter will be
   /// registered in Updater.;
-  void Compile(bool shuffle, Optimizer* opt, Loss* loss, Metric* metric);
+  void Compile(bool shuffle, Optimizer *opt, Loss *loss, Metric *metric);
   /// Set some fields used for training and evaluating the neural net.
   /// This method is mainly used in parallel training, where we need
   /// multiple neuralnet instances.
@@ -71,7 +71,7 @@ class FeedForwardNet {
   /// valid using Train(). If to_register is set true, parameter will be
   /// registered in Updater.;
   void Compile(bool shuffle, bool to_register, std::shared_ptr<Updater> updater,
-               Loss* loss, Metric* metric);
+               Loss *loss, Metric *metric);
 
   /// Conduct the training giving the training data 'x' and label 'y'.
   /// 'val_split' of training data is used for
@@ -79,18 +79,18 @@ class FeedForwardNet {
   /// Due to memory limit, 'x' and 'y' could not be very large. Hence, it is
   /// typically used for small training datasets, e.g., cifar10 and MNIST which
   /// can be stored in main memory.
-  void Train(size_t batchsize, int nb_epoch, const Tensor& x, const Tensor& y,
+  void Train(size_t batchsize, int nb_epoch, const Tensor &x, const Tensor &y,
              float val_split = 0.0f);
   /// Conduct the training given the training and validation data.
   /// Validation is performance before every epoch.
   /// Due to memory limit, 'x' and 'y' could not be very large. Hence, it is
   /// typically used for small training datasets, e.g., cifar10 and MNIST which
   /// can be stored in main memory.
-  void Train(size_t batchsize, int nb_epoch, const Tensor& x, const Tensor& y,
-             const Tensor& val_x, const Tensor& val_y);
+  void Train(size_t batchsize, int nb_epoch, const Tensor &x, const Tensor &y,
+             const Tensor &val_x, const Tensor &val_y);
   /// Train the neural net over one batch of training data.
-  const std::pair<float, float> TrainOnBatch(int epoch, const Tensor& x,
-                                             const Tensor& y);
+  const std::pair<float, float> TrainOnBatch(int epoch, const Tensor &x,
+                                             const Tensor &y);
 
   /// Evaluate the neural net with given data.
   /// Returns one tensor for loss values and one tensor for metric values;
@@ -100,10 +100,10 @@ class FeedForwardNet {
   /// Due to memory limit, 'x' and 'y' could not be very large. Hence, it is
   /// typically used for small training datasets, e.g., cifar10 and MNIST which
   /// can be stored in main memory.
-  std::pair<Tensor, Tensor> Evaluate(const Tensor& x, const Tensor& y,
+  std::pair<Tensor, Tensor> Evaluate(const Tensor &x, const Tensor &y,
                                      size_t batchsize = 128);
   /// Evaluate the neural net for one batch of data
-  std::pair<Tensor, Tensor> EvaluateOnBatch(const Tensor& x, const Tensor& y);
+  std::pair<Tensor, Tensor> EvaluateOnBatch(const Tensor &x, const Tensor &y);
 
   /// Predict the probability distributation over candicate classes for each
   /// data sample. 'batchsize' is used for controlling the memory footprint.
@@ -111,16 +111,16 @@ class FeedForwardNet {
   /// Due to memory limit, 'x' and 'y' could not be very large. Hence, it is
   /// typically used for small training datasets, e.g., cifar10 and MNIST which
   /// can be stored in main memory.
-  const Tensor Predict(const Tensor& x, size_t batchsize = 128);
+  const Tensor Predict(const Tensor &x, size_t batchsize = 128);
   /// Predict for one batch data.
-  const Tensor PredictOnBatch(const Tensor& x);
+  const Tensor PredictOnBatch(const Tensor &x);
 
   /// Forward layers one by one using the data batch 'x'.
   /// Returns the prediction results (from the last layer).
-  const Tensor Forward(int flag, const Tensor& x);
+  const Tensor Forward(int flag, const Tensor &x);
   /// Backward layers one by one using the gradient batch 'grad'.
   /// Returns the parameter gradients.
-  const vector<Tensor> Backward(int flag, const Tensor& grad);
+  const vector<Tensor> Backward(int flag, const Tensor &grad);
 
   /// Clone the neuaral net by cloning every layer to the given device.
   /// If 'device' is nullptr, then clone it one the current device.
@@ -132,16 +132,16 @@ class FeedForwardNet {
   void AsType(DataType dtype);
 
   /// A wrapper method to spawn a thread to execute Train() method.
-  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor& x,
-                          const Tensor& y, const Tensor& val_x,
-                          const Tensor& val_y) {
+  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor &x,
+                          const Tensor &y, const Tensor &val_x,
+                          const Tensor &val_y) {
     return std::thread(
         [=]() { Train(batchsize, nb_epoch, x, y, val_x, val_y); });
   }
 
   /// A wrapper method to spawn a thread to execute Train() method.
-  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor& x,
-                          const Tensor& y) {
+  std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor &x,
+                          const Tensor &y) {
     return std::thread([=]() { Train(batchsize, nb_epoch, x, y); });
   }
 
@@ -150,17 +150,17 @@ class FeedForwardNet {
   const vector<ParamSpec> GetParamSpecs() const;
   const vector<Tensor> GetParamValues() const;
 
- protected:
+protected:
   vector<std::shared_ptr<Layer>> layers_;
   std::shared_ptr<Updater> updater_;
-  Loss* loss_;
-  Metric* metric_;
+  Loss *loss_;
+  Metric *metric_;
 
   bool shuffle_ = true;
-  Device* device_ = nullptr;
+  Device *device_ = nullptr;
   DataType dtype_ = kFloat32;
 };
 
 } /* singa */
 
-#endif  // SINGA_MODEL_FEED_FORWARD_NET_H_
+#endif // SINGA_MODEL_FEED_FORWARD_NET_H_

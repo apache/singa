@@ -20,13 +20,13 @@
 
 namespace singa {
 
-void Updater::Setup(const OptimizerConf& conf) { opt_->Setup(conf); }
+void Updater::Setup(const OptimizerConf &conf) { opt_->Setup(conf); }
 
-void Updater::Register(const string& name, const ParamSpec& specs) {
+void Updater::Register(const string &name, const ParamSpec &specs) {
   opt_->Register(name, specs);
 }
 
-void Updater::Apply(int step, const string& name, Tensor& grad, Tensor& value) {
+void Updater::Apply(int step, const string &name, Tensor &grad, Tensor &value) {
   opt_->Apply(step, name, grad, value);
 }
-}  // namesapce singa
+} // namesapce singa

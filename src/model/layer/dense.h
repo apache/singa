@@ -17,32 +17,32 @@
  */
 #ifndef SRC_MODEL_LAYER_DENSE_H_
 #define SRC_MODEL_LAYER_DENSE_H_
+#include "singa/model/layer.h"
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
-#include <stack>
-#include "singa/model/layer.h"
 
 namespace singa {
 class Dense : public Layer {
- public:
+public:
   ~Dense();
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "Dense"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
   const Shape GetOutputSampleShape() const override {
     CHECK(hdim_) << "You may haven't call Setup()";
     return vector<size_t>{hdim_};
   }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&)
-  const Tensor Forward(int flag, const Tensor& input) override;
+  const Tensor Forward(int flag, const Tensor &input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                   const Tensor& grad) override;
+                                                   const Tensor &grad) override;
 
   void ToDevice(std::shared_ptr<Device> device) override;
   const std::vector<Tensor> param_values() override {
@@ -54,19 +54,19 @@ class Dense : public Layer {
   size_t num_output() const { return hdim_; }
   size_t num_input() const { return vdim_; }
   bool transpose() const { return transpose_; }
-  const Tensor& weight() const { return weight_; }
-  const Tensor& bias() const { return bias_; }
+  const Tensor &weight() const { return weight_; }
+  const Tensor &bias() const { return bias_; }
 
-  void set_weight(const Tensor& w) {
+  void set_weight(const Tensor &w) {
     weight_.ResetLike(w);
     weight_.CopyData(w);
   }
-  void set_bias(const Tensor& b) {
+  void set_bias(const Tensor &b) {
     bias_.ResetLike(b);
     bias_.CopyData(b);
   }
 
- protected:
+protected:
   /// Used in auto-encoder, where the decoder would share its weight matrix from
   /// the encoder's transposed weight matrix.
   bool transpose_ = false;
@@ -77,5 +77,5 @@ class Dense : public Layer {
   // Tensor data_, grad_;
   std::stack<Tensor> buf_;
 };
-}  // namespace singa
-#endif  // SRC_MODEL_LAYER_DENSE_H_
+} // namespace singa
+#endif // SRC_MODEL_LAYER_DENSE_H_

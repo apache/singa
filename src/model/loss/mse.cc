@@ -20,12 +20,13 @@
 
 namespace singa {
 
-Tensor MSE::Forward(int flag, const Tensor& prediction, const Tensor& target) {
+Tensor MSE::Forward(int flag, const Tensor &prediction, const Tensor &target) {
   CHECK(buf_.empty()) << "Do not call Forward successively for more than twice."
                       << " The calling pattern is [Forward|Evaluate] Backward";
   Tensor t = prediction - target;
   size_t batchsize = 1;
-  if (t.nDim() > 1) batchsize = t.shape().at(0);
+  if (t.nDim() > 1)
+    batchsize = t.shape().at(0);
   size_t dim = t.Size() / batchsize;
   t.Reshape(Shape{batchsize, dim});
   if (kTrain & flag)
@@ -39,4 +40,4 @@ Tensor MSE::Backward() {
   buf_.pop();
   return ret * (1.0f / ret.shape().at(0));
 }
-}  // namespace singa
+} // namespace singa

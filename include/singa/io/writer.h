@@ -19,16 +19,16 @@
 #ifndef SINGA_IO_WRITER_H_
 #define SINGA_IO_WRITER_H_
 
+#include "singa/singa_config.h"
 #include <cstring>
 #include <fstream>
 #include <string>
-#include "singa/singa_config.h"
 
 #ifdef USE_LMDB
 #include <lmdb.h>
 #include <sys/stat.h>
 #include <vector>
-#endif  // USE_LMDB
+#endif // USE_LMDB
 
 namespace singa {
 namespace io {
@@ -40,7 +40,7 @@ enum Mode { kCreate, kAppend };
 /// Subclasses implement the functions for a specific data storage, e.g., CSV
 /// file, HDFS, image folder, leveldb, lmdb, etc.
 class Writer {
- public:
+public:
   /// In case that users forget to call Close() to release resources, e.g.,
   /// memory, you can release them here.
   virtual ~Writer() {}
@@ -75,7 +75,7 @@ class Writer {
 /// When BinFile is created, it will remove the last tuple if the value size
 /// and key size do not match because the last write crashed.
 class BinFileWriter : public Writer {
- public:
+public:
   ~BinFileWriter() { Close(); }
   /// \copydoc Open(const std::string &path, Mode mode)
   bool Open(const std::string &path, Mode mode) override;
@@ -90,11 +90,11 @@ class BinFileWriter : public Writer {
   /// return path to binary file
   inline std::string path() { return path_; }
 
- protected:
+protected:
   /// Open a file with path_ and initialize buf_
   bool OpenFile();
 
- private:
+private:
   /// file to be written
   std::string path_ = "";
   Mode mode_;
@@ -112,7 +112,7 @@ class BinFileWriter : public Writer {
 
 /// TextFileWriter write training/validation/test tuples in CSV file.
 class TextFileWriter : public Writer {
- public:
+public:
   ~TextFileWriter() { Close(); }
   /// \copydoc Open(const std::string &path, Mode mode)
   bool Open(const std::string &path, Mode mode) override;
@@ -125,7 +125,7 @@ class TextFileWriter : public Writer {
   /// return path to text file
   inline std::string path() { return path_; }
 
- private:
+private:
   /// file to be written
   std::string path_ = "";
   Mode mode_;
@@ -136,7 +136,7 @@ class TextFileWriter : public Writer {
 #ifdef USE_LMDB
 /// LMDBWriter write training/validation/test tuples into LMDB.
 class LMDBWriter : public Writer {
- public:
+public:
   ~LMDBWriter() { Close(); }
   /// \copydoc Open(const std::string &path, Mode mode)
   bool Open(const std::string &path, Mode mode) override;
@@ -149,11 +149,11 @@ class LMDBWriter : public Writer {
   /// return path to text file
   inline std::string path() { return path_; }
 
- protected:
+protected:
   void DoubleMapSize();
   inline void MDB_CHECK(int mdb_status);
 
- private:
+private:
   /// file to be written
   std::string path_ = "";
   /// kCreate or kAppend
@@ -163,9 +163,9 @@ class LMDBWriter : public Writer {
   /// buffer for key-value pairs
   std::vector<string> keys, values;
 };
-#endif  // USE_LMDB
+#endif // USE_LMDB
 
-}  // namespace io
-}  // namespace singa
+} // namespace io
+} // namespace singa
 
-#endif  // SINGA_IO_WRITER_H_
+#endif // SINGA_IO_WRITER_H_

@@ -25,7 +25,7 @@ namespace singa {
 
 /// For benchmarking the time cost of operations.
 class Timer {
- public:
+public:
   typedef std::chrono::duration<int> Seconds;
   typedef std::chrono::duration<int, std::milli> Milliseconds;
   typedef std::chrono::duration<int, std::ratio<60 * 60>> Hours;
@@ -38,20 +38,20 @@ class Timer {
   /// Return the duration since last call to Tick() or since the creation of
   /// Timer. The template arg must be from Second or Millisecond or Hour.
   /// The returned value is the count of the time metric.
-  template <typename T = Milliseconds>
-  int Elapsed() const {
-    static_assert(std::is_same<T, Seconds>::value ||
-                      std::is_same<T, Milliseconds>::value ||
-                      std::is_same<T, Hours>::value ||
-                      std::is_same<T, Microseconds>::value,
-                  "Template arg must be Seconds | Milliseconds | Hours | Microseconds");
-    auto now  = std::chrono::high_resolution_clock::now();
+  template <typename T = Milliseconds> int Elapsed() const {
+    static_assert(
+        std::is_same<T, Seconds>::value ||
+            std::is_same<T, Milliseconds>::value ||
+            std::is_same<T, Hours>::value ||
+            std::is_same<T, Microseconds>::value,
+        "Template arg must be Seconds | Milliseconds | Hours | Microseconds");
+    auto now = std::chrono::high_resolution_clock::now();
     return std::chrono::duration_cast<T>(now - last_).count();
   }
   /// Return the string rep of current wall time
   // std::string CurrentTime();
 
- private:
+private:
   std::chrono::high_resolution_clock::time_point last_;
 };
 }

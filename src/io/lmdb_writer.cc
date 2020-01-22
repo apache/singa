@@ -24,7 +24,7 @@
 
 namespace singa {
 namespace io {
-bool LMDBWriter::Open(const std::string& path, Mode mode) {
+bool LMDBWriter::Open(const std::string &path, Mode mode) {
   path_ = path;
   mode_ = mode;
   MDB_CHECK(mdb_env_create(&mdb_env_));
@@ -62,7 +62,7 @@ void LMDBWriter::Close() {
   }
 }
 
-bool LMDBWriter::Write(const std::string& key, const std::string& value) {
+bool LMDBWriter::Write(const std::string &key, const std::string &value) {
   CHECK_NE(key, "") << "Key is an empty string!";
   keys.push_back(key);
   values.push_back(value);
@@ -71,10 +71,11 @@ bool LMDBWriter::Write(const std::string& key, const std::string& value) {
 
 // Flush is to "commit to DB"
 void LMDBWriter::Flush() {
-  if (keys.size() == 0) return;
+  if (keys.size() == 0)
+    return;
   MDB_dbi mdb_dbi;
   MDB_val mdb_key, mdb_data;
-  MDB_txn* mdb_txn;
+  MDB_txn *mdb_txn;
 
   // Initialize MDB variables
   MDB_CHECK(mdb_txn_begin(mdb_env_, NULL, 0, &mdb_txn));
@@ -82,9 +83,9 @@ void LMDBWriter::Flush() {
 
   for (size_t i = 0; i < keys.size(); i++) {
     mdb_key.mv_size = keys[i].size();
-    mdb_key.mv_data = const_cast<char*>(keys[i].data());
+    mdb_key.mv_data = const_cast<char *>(keys[i].data());
     mdb_data.mv_size = values[i].size();
-    mdb_data.mv_data = const_cast<char*>(values[i].data());
+    mdb_data.mv_data = const_cast<char *>(values[i].data());
 
     // Add data to the transaction
     int put_rc = mdb_put(mdb_txn, mdb_dbi, &mdb_key, &mdb_data, 0);
@@ -130,8 +131,8 @@ void LMDBWriter::DoubleMapSize() {
 inline void LMDBWriter::MDB_CHECK(int mdb_status) {
   CHECK_EQ(mdb_status, MDB_SUCCESS) << mdb_strerror(mdb_status);
 }
-}  // namespace io
-}  // namespace singa
-#endif  // USE_LMDB
+} // namespace io
+} // namespace singa
+#endif // USE_LMDB
 
 #endif

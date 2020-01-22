@@ -21,20 +21,19 @@
 
 #include "singa/model/feed_forward_net.h"
 #include "singa/model/initializer.h"
-#include "singa/utils/logging.h"
 #include "singa/utils/channel.h"
+#include "singa/utils/logging.h"
 namespace singa {
 
-FeedForwardNet::~FeedForwardNet() {
-}
+FeedForwardNet::~FeedForwardNet() {}
 
 std::shared_ptr<Layer> FeedForwardNet::Add(std::shared_ptr<Layer> layer) {
   layers_.push_back(layer);
   return layer;
 }
 
-std::shared_ptr<Layer> FeedForwardNet::Add(const LayerConf& conf,
-    const Shape* sample_shape) {
+std::shared_ptr<Layer> FeedForwardNet::Add(const LayerConf &conf,
+                                           const Shape *sample_shape) {
   std::shared_ptr<Layer> layer(CreateLayer(conf.type()));
   CHECK(conf.has_name()) << "Must set layer name";
   if (sample_shape == nullptr)
@@ -49,32 +48,35 @@ std::shared_ptr<Layer> FeedForwardNet::Add(const LayerConf& conf,
 const vector<string> FeedForwardNet::GetParamNames() const {
   vector<string> names;
   for (auto layer : layers_)
-    for (const auto name : layer->param_names()) names.push_back(name);
+    for (const auto name : layer->param_names())
+      names.push_back(name);
   return names;
 }
 const vector<Tensor> FeedForwardNet::GetParamValues() const {
   vector<Tensor> values;
   for (auto layer : layers_)
-    for (const auto value : layer->param_values()) values.push_back(value);
+    for (const auto value : layer->param_values())
+      values.push_back(value);
   return values;
 }
 
 const vector<ParamSpec> FeedForwardNet::GetParamSpecs() const {
   vector<ParamSpec> specs;
   for (auto layer : layers_)
-    for (const auto spec : layer->param_specs()) specs.push_back(spec);
+    for (const auto spec : layer->param_specs())
+      specs.push_back(spec);
   return specs;
 }
 
-void FeedForwardNet::Compile(bool shuffle, Optimizer* opt, Loss* loss,
-                             Metric* metric) {
+void FeedForwardNet::Compile(bool shuffle, Optimizer *opt, Loss *loss,
+                             Metric *metric) {
   std::shared_ptr<Updater> updater = std::make_shared<Updater>(opt);
   Compile(shuffle, true, updater, loss, metric);
 }
 
 void FeedForwardNet::Compile(bool shuffle, bool to_register,
-                             std::shared_ptr<Updater> updater, Loss* loss,
-                             Metric* metric) {
+                             std::shared_ptr<Updater> updater, Loss *loss,
+                             Metric *metric) {
   shuffle_ = shuffle;
   bool train = (updater != nullptr) && (loss != nullptr);
   bool test = metric != nullptr;
@@ -96,7 +98,8 @@ void FeedForwardNet::Compile(bool shuffle, bool to_register,
 }
 
 void FeedForwardNet::ToDevice(std::shared_ptr<Device> device) {
-  for (auto layer : layers_) layer->ToDevice(device);
+  for (auto layer : layers_)
+    layer->ToDevice(device);
   /*
   opt_->ToDevice(device);
   loss_->ToDevice(device);
@@ -126,10 +129,10 @@ void FeedForwardNet::AsType(DataType dtype) {
   LOG(FATAL) << "FeedForwardNet::AsType not implemented";
 }
 
-void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
-                           const Tensor& y, float val_split) {
+void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor &x,
+                           const Tensor &y, float val_split) {
   CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
-  size_t num_train = (size_t) (x.shape(0) * val_split);
+  size_t num_train = (size_t)(x.shape(0) * val_split);
   if (val_split == 0.0f) {
     Tensor dummy;
     Train(batchsize, nb_epoch, x, y, dummy, dummy);
@@ -142,23 +145,25 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
   }
 }
 
-void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
-                           const Tensor& y, const Tensor& val_x,
-                           const Tensor& val_y) {
+void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor &x,
+                           const Tensor &y, const Tensor &val_x,
+                           const Tensor &val_y) {
   CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
   int num_extra_samples = (int)x.shape(0) % batchsize;
   if (num_extra_samples != 0)
     LOG(WARNING) << "Pls set batchsize to make num_total_samples "
                  << "% batchsize == 0. Otherwise, the last "
                  << num_extra_samples << " samples would not be used";
-  Channel* train_ch = GetChannel("train_perf");
+  Channel *train_ch = GetChannel("train_perf");
   train_ch->EnableDestStderr(true);
-  Channel* val_ch = GetChannel("val_perf");
+  Channel *val_ch = GetChannel("val_perf");
   val_ch->EnableDestStderr(true);
   std::vector<size_t> index;
-  for (size_t i = 0; i < x.shape(0) / batchsize; i++) index.push_back(i);
+  for (size_t i = 0; i < x.shape(0) / batchsize; i++)
+    index.push_back(i);
   for (int epoch = 0; epoch < nb_epoch; epoch++) {
-    if (shuffle_) std::random_shuffle(index.begin(), index.end());
+    if (shuffle_)
+      std::random_shuffle(index.begin(), index.end());
     float loss = 0.0f, metric = 0.0f;
     size_t b = 0;
     for (; b < x.shape(0) / batchsize; b++) {
@@ -169,7 +174,8 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
       loss += ret.first;
       metric += ret.second;
     }
-    if (val_x.Size() == 0) continue;
+    if (val_x.Size() == 0)
+      continue;
     loss /= b;
     metric /= b;
     train_ch->Send(
@@ -187,9 +193,8 @@ void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
   }
 }
 
-const std::pair<float, float> FeedForwardNet::TrainOnBatch(int epoch,
-                                                           const Tensor& x,
-                                                           const Tensor& y) {
+const std::pair<float, float>
+FeedForwardNet::TrainOnBatch(int epoch, const Tensor &x, const Tensor &y) {
   int flag = kTrain;
   const Tensor fea = Forward(flag, x);
   float loss = loss_->Evaluate(flag, fea, y);
@@ -204,7 +209,7 @@ const std::pair<float, float> FeedForwardNet::TrainOnBatch(int epoch,
   return std::make_pair(loss, metric);
 }
 
-const Tensor FeedForwardNet::Forward(int flag, const Tensor& data) {
+const Tensor FeedForwardNet::Forward(int flag, const Tensor &data) {
   Tensor input = data, output;
   // LOG(INFO) << data.L1();
   for (auto layer : layers_) {
@@ -215,7 +220,7 @@ const Tensor FeedForwardNet::Forward(int flag, const Tensor& data) {
   return output;
 }
 
-const vector<Tensor> FeedForwardNet::Backward(int flag, const Tensor& grad) {
+const vector<Tensor> FeedForwardNet::Backward(int flag, const Tensor &grad) {
   vector<Tensor> param_grads;
   std::stack<Tensor> buf;
   Tensor tmp = grad;
@@ -237,9 +242,8 @@ const vector<Tensor> FeedForwardNet::Backward(int flag, const Tensor& grad) {
   return param_grads;
 }
 
-std::pair<Tensor, Tensor> FeedForwardNet::Evaluate(const Tensor& x,
-                                                   const Tensor& y,
-                                                   size_t batchsize) {
+std::pair<Tensor, Tensor>
+FeedForwardNet::Evaluate(const Tensor &x, const Tensor &y, size_t batchsize) {
   CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
   CHECK_GE(x.shape(0), batchsize);
   int num_extra_samples = (int)x.shape(0) % batchsize;
@@ -266,8 +270,8 @@ std::pair<Tensor, Tensor> FeedForwardNet::Evaluate(const Tensor& x,
   return std::make_pair(loss, metric);
 }
 
-std::pair<Tensor, Tensor> FeedForwardNet::EvaluateOnBatch(const Tensor& x,
-                                                          const Tensor& y) {
+std::pair<Tensor, Tensor> FeedForwardNet::EvaluateOnBatch(const Tensor &x,
+                                                          const Tensor &y) {
   int flag = kEval;
   const Tensor fea = Forward(flag, x);
   const Tensor l = loss_->Forward(flag, fea, y);
@@ -275,7 +279,7 @@ std::pair<Tensor, Tensor> FeedForwardNet::EvaluateOnBatch(const Tensor& x,
   return std::make_pair(l, m);
 }
 
-const Tensor FeedForwardNet::Predict(const Tensor& x, size_t batchsize) {
+const Tensor FeedForwardNet::Predict(const Tensor &x, size_t batchsize) {
   CHECK_GE(x.shape(0), batchsize);
   int num_extra_samples = (int)(x.shape(0) % batchsize);
   const auto outshape = layers_.back()->GetOutputSampleShape();
@@ -296,7 +300,7 @@ const Tensor FeedForwardNet::Predict(const Tensor& x, size_t batchsize) {
   return y;
 }
 
-const Tensor FeedForwardNet::PredictOnBatch(const Tensor& x) {
+const Tensor FeedForwardNet::PredictOnBatch(const Tensor &x) {
   return Forward(kEval, x);
 }
-}  // namespace singa
+} // namespace singa

@@ -30,25 +30,25 @@ namespace singa {
 /// multiple labels, T could be vector<vector<int>>, one vector per sample.
 // template <typename T = Tensor>
 class Metric {
- public:
+public:
   // TODO(wangwei) call Setup using a default MetricConf.
   Metric() = default;
   virtual ~Metric() {}
   virtual void ToDevice(std::shared_ptr<Device> device) {}
-  void Setup(const string& conf) {
+  void Setup(const string &conf) {
     MetricConf metric;
     metric.ParseFromString(conf);
     Setup(metric);
   }
 
   /// Set meta fields from user configurations.
-  virtual void Setup(const MetricConf& conf) {}
+  virtual void Setup(const MetricConf &conf) {}
 
   /// Compute the metric for each data sample
-  virtual Tensor Forward(const Tensor& prediction, const Tensor& target) = 0;
+  virtual Tensor Forward(const Tensor &prediction, const Tensor &target) = 0;
 
   /// Comptue the metric value averaged over all samples (in a batch)
-  float Evaluate(const Tensor& prediction, const Tensor& target) {
+  float Evaluate(const Tensor &prediction, const Tensor &target) {
     const Tensor metric = Forward(prediction, target);
     return Sum<float>(metric) / (1.0f * metric.Size());
   }
@@ -57,25 +57,24 @@ class Metric {
 /// ground truth labels.
 /// TODO(wangwei) consider multi-label cases.
 class Accuracy : public Metric {
- public:
+public:
   /// Set meta fields from user configurations.
-  void Setup(const MetricConf& conf) override { top_k_ = conf.top_k(); }
+  void Setup(const MetricConf &conf) override { top_k_ = conf.top_k(); }
 
   /// Check the prediction against the target (ground truth) for each data
   /// sample. The returned Tensor has a float value for each sample, 0 for wrong
   /// and 1 for correct. Users can call Sum(const Tensor&) / Tensor::Size() to
   /// get the accuracy.
-  Tensor Forward(const Tensor& prediction, const Tensor& target);
+  Tensor Forward(const Tensor &prediction, const Tensor &target);
 
- private:
+private:
   /// \copydoc Match(const Tensor&, const Tensor&);
-  Tensor Match(const Tensor& prediction, const vector<int>& target);
+  Tensor Match(const Tensor &prediction, const vector<int> &target);
   /// If the ground truth label is in the top k predicted labels, then the
   /// prediction is correct.
   size_t top_k_ = 1;
 };
 
+} // namespace singa
 
-}  // namespace singa
-
-#endif  // SINGA_MODEL_METRIC_H_
+#endif // SINGA_MODEL_METRIC_H_

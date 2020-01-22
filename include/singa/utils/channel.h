@@ -24,8 +24,8 @@
 
 #include <google/protobuf/message.h>
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <string>
 
@@ -33,25 +33,25 @@ namespace singa {
 
 /// Channel for appending metrics or other information into files or screen.
 class Channel {
- public:
-  explicit Channel(const std::string& name);
+public:
+  explicit Channel(const std::string &name);
   ~Channel();
 
   /// Return the channel name, which is also used for naming the output file.
-  inline const std::string& GetName() { return name_; }
+  inline const std::string &GetName() { return name_; }
   /// Disabled by default.
   inline void EnableDestStderr(bool enable) { stderr_ = enable; }
   /// Enabled by default.
   inline void EnableDestFile(bool enable) { file_ = enable; }
   /// Reset the output file path.
   /// The dest file is named as global dir + channel name by default.
-  void SetDestFilePath(const std::string& file);
+  void SetDestFilePath(const std::string &file);
   /// Append a string message
-  void Send(const std::string& message);
+  void Send(const std::string &message);
   /// Append a protobuf message
-  void Send(const google::protobuf::Message& message);
+  void Send(const google::protobuf::Message &message);
 
- private:
+private:
   std::string name_ = "";
   bool stderr_ = false;
   bool file_ = false;
@@ -59,27 +59,27 @@ class Channel {
 };
 
 class ChannelManager {
- public:
+public:
   ChannelManager() {}
   ~ChannelManager();
 
   void Init();
-  void SetDefaultDir(const char* dir);
-  Channel* GetInstance(const std::string& channel);
+  void SetDefaultDir(const char *dir);
+  Channel *GetInstance(const std::string &channel);
 
- private:
+private:
   std::string dir_ = "";
-  std::map<std::string, Channel*> name2ptr_;
+  std::map<std::string, Channel *> name2ptr_;
 };
 
 /// Initial function for global usage of channel.
 /// 'argv' is for future use.
-void InitChannel(const char* argv);
+void InitChannel(const char *argv);
 /// Set the directory name for persisting channel content
-void SetChannelDirectory(const char* path);
+void SetChannelDirectory(const char *path);
 /// Get the channel instance
-Channel* GetChannel(const std::string& channel_name);
+Channel *GetChannel(const std::string &channel_name);
 
-}  // namespace singa
+} // namespace singa
 
-#endif  // SINGA_UTILS_CHANNEL_H__
+#endif // SINGA_UTILS_CHANNEL_H__

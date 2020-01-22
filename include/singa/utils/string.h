@@ -22,12 +22,12 @@
 #ifndef SINGA_UTILS_TOKENIZER_H_
 #define SINGA_UTILS_TOKENIZER_H_
 
-#include <string>
-#include <algorithm>
 #include "singa/utils/logging.h"
+#include <algorithm>
+#include <string>
 
 namespace singa {
-inline bool icasecmp(const string& l, const string& r) {
+inline bool icasecmp(const string &l, const string &r) {
   return l.size() == r.size() &&
          equal(l.cbegin(), l.cend(), r.cbegin(),
                [](string::value_type l1, string::value_type r1) {
@@ -35,14 +35,14 @@ inline bool icasecmp(const string& l, const string& r) {
                });
 }
 
-inline string ToLowerCase(const string& input) {
+inline string ToLowerCase(const string &input) {
   string out;
   out.resize(input.size());
   std::transform(input.begin(), input.end(), out.begin(), ::tolower);
   return out;
 }
 
-inline int ArgPos(int argc, char** arglist, const char* arg) {
+inline int ArgPos(int argc, char **arglist, const char *arg) {
   for (int i = 0; i < argc; i++) {
     if (strcmp(arglist[i], arg) == 0) {
       return i;
@@ -51,8 +51,7 @@ inline int ArgPos(int argc, char** arglist, const char* arg) {
   return -1;
 }
 
-template<typename T>
-inline std::string VecToStr(const std::vector<T> & in) {
+template <typename T> inline std::string VecToStr(const std::vector<T> &in) {
   std::string out = "(";
 
   for (auto x : in) {
@@ -75,10 +74,10 @@ inline std::string VecToStr(const std::vector<T> & in) {
  */
 
 class Tokenizer {
- public:
-  Tokenizer(const std::string& str, const std::string& sep): start_(0),
-  sep_(sep), buf_(str) {}
-  Tokenizer & operator>>(std::string& out) {
+public:
+  Tokenizer(const std::string &str, const std::string &sep)
+      : start_(0), sep_(sep), buf_(str) {}
+  Tokenizer &operator>>(std::string &out) {
     CHECK_LT(start_, buf_.length());
     int start = start_;
     auto pos = buf_.find_first_of(sep_, start);
@@ -90,12 +89,12 @@ class Tokenizer {
   }
   bool Valid() { return start_ < buf_.length(); }
 
- private:
+private:
   unsigned start_;
   std::string sep_;
-  const std::string& buf_;
+  const std::string &buf_;
 };
 
-}  // namespace singa
+} // namespace singa
 
-#endif  // SINGA_UTILS_TOKENIZER_H_
+#endif // SINGA_UTILS_TOKENIZER_H_

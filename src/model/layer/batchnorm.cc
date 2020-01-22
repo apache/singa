@@ -18,15 +18,15 @@
 * under the License.
 *
 ************************************************************/
-#include <vector>
 #include "batchnorm.h"
+#include <vector>
 
 namespace singa {
 RegisterLayerClass(singa_batchnorm, BatchNorm);
 RegisterLayerClass(singacpp_batchnorm, BatchNorm);
 RegisterLayerClass(singacuda_batchnorm, BatchNorm);
 RegisterLayerClass(singacl_batchnorm, BatchNorm);
-void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
+void BatchNorm::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   out_sample_shape_ = in_sample;
   factor_ = (float)conf.batchnorm_conf().factor();
@@ -53,7 +53,8 @@ void BatchNorm::Setup(const Shape& in_sample, const LayerConf& conf) {
   dbnBias_.ResetLike(bnBias_);
   // Push back params into param_values_
   // Assume the order of param is: bnScale, bnBias, runningMean, runningVariance
-  for (const auto& spec : conf.param()) param_specs_.push_back(spec);
+  for (const auto &spec : conf.param())
+    param_specs_.push_back(spec);
 }
 
 void BatchNorm::ToDevice(std::shared_ptr<Device> device) {
@@ -65,14 +66,14 @@ void BatchNorm::ToDevice(std::shared_ptr<Device> device) {
   runningVariance_.ToDevice(device);
 }
 
-const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
+const Tensor BatchNorm::Forward(int flag, const Tensor &input) {
   Tensor x = input.Clone();
   x.Reshape(Shape{input.shape(0), input.Size() / input.shape(0)});
   Tensor output;
   output.ResetLike(x);
   // TODO(wangwei) input sample shape check
-  if ((flag & kTrain) == kTrain) {  // forward for train
-    if (is_2d_) {                   // batchnorm_per_activation mode
+  if ((flag & kTrain) == kTrain) { // forward for train
+    if (is_2d_) {                  // batchnorm_per_activation mode
       auto mean = Average(x, 0);
       runningMean_ *= 1.0f - factor_;
       Axpy(factor_, mean, &runningMean_);
@@ -95,12 +96,12 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
       buf_.push(mean);
       buf_.push(var);
       buf_.push(xnorm);
-    } else {  // batchnorm_spatial mode
+    } else { // batchnorm_spatial mode
       LOG(FATAL) << "Trainning SpatialBatchNormalization has not been "
                     "implemented yet...";
     }
-  } else {         // forward for test
-    if (is_2d_) {  // batchnorm_per_activation mode
+  } else {        // forward for test
+    if (is_2d_) { // batchnorm_per_activation mode
       auto xnorm = x.Clone();
       SubRow(runningMean_, &xnorm);
       Tensor tmp = runningVariance_.Clone();
@@ -110,7 +111,7 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
       output = xnorm.Clone();
       MultRow(bnScale_, &output);
       AddRow(bnBias_, &output);
-    } else {  // batchnorm_spatial mode
+    } else { // batchnorm_spatial mode
       runningMean_.Reshape(Shape{channels_, 1});
       runningVariance_.Reshape(Shape{channels_, 1});
       bnScale_.Reshape(Shape{channels_, 1});
@@ -155,8 +156,8 @@ const Tensor BatchNorm::Forward(int flag, const Tensor& input) {
   return output;
 }
 
-const std::pair<Tensor, vector<Tensor>> BatchNorm::Backward(
-    int flag, const Tensor& grad) {
+const std::pair<Tensor, vector<Tensor>>
+BatchNorm::Backward(int flag, const Tensor &grad) {
   Tensor dy = grad.Clone();
   dy.Reshape(Shape{grad.shape(0), grad.Size() / grad.shape(0)});
   Tensor xnorm = buf_.top();
@@ -240,8 +241,9 @@ const std::pair<Tensor, vector<Tensor>> BatchNorm::Backward(
   } else {
     LOG(ERROR) << "Do not call backward for evaluation phase";
   }
-  if (!is_2d_) dx.Reshape(Shape{dx.shape(0), channels_, height_, width_});
+  if (!is_2d_)
+    dx.Reshape(Shape{dx.shape(0), channels_, height_, width_});
   return std::make_pair(dx, param_grad);
 }
 
-}  // namespace
+} // namespace

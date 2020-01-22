@@ -19,9 +19,9 @@
 *
 *************************************************************/
 
-#include "gtest/gtest.h"
-#include  "singa/core/device.h"
+#include "singa/core/device.h"
 #include "singa/proto/core.pb.h"
+#include "gtest/gtest.h"
 
 using singa::CppCPU;
 using singa::Block;
@@ -32,7 +32,7 @@ TEST(CppCPU, Constructor) {
 
 TEST(CppCPU, MemoryMallocFree) {
   CppCPU dev;
-  Block* b = dev.NewBlock(4);
+  Block *b = dev.NewBlock(4);
   EXPECT_NE(nullptr, b);
   EXPECT_EQ(4u, b->size());
   dev.FreeBlock(b);
@@ -40,28 +40,26 @@ TEST(CppCPU, MemoryMallocFree) {
 
 TEST(CppCPU, Exec) {
   CppCPU dev;
-  Block* b = dev.NewBlock(4);
-  int x = 1, y =3, z = 0;
-  dev.Exec([x, y, &z](singa::Context *ctx) {
-      z = x + y;
-      }, {b}, {b}, false);
+  Block *b = dev.NewBlock(4);
+  int x = 1, y = 3, z = 0;
+  dev.Exec([x, y, &z](singa::Context *ctx) { z = x + y; }, {b}, {b}, false);
   EXPECT_EQ(x + y, z);
   dev.FreeBlock(b);
 }
 
 TEST(CppCPU, CopyData) {
   CppCPU dev;
-  Block* b = dev.NewBlock(4);
+  Block *b = dev.NewBlock(4);
   char s[] = {'a', 'b', 'c', 'x'};
   dev.CopyDataFromHostPtr(b, s, 4);
-  const char* bstr = static_cast<const char*>(b->data());
+  const char *bstr = static_cast<const char *>(b->data());
   EXPECT_EQ('a', bstr[0]);
   EXPECT_EQ('b', bstr[1]);
   EXPECT_EQ('x', bstr[3]);
 
-  Block* c = dev.NewBlock(4);
+  Block *c = dev.NewBlock(4);
   dev.CopyDataToFrom(c, b, 4, singa::kHostToHost, 0, 0);
-  const char* cstr = static_cast<const char*>(c->data());
+  const char *cstr = static_cast<const char *>(c->data());
 
   EXPECT_EQ('a', cstr[0]);
   EXPECT_EQ('b', cstr[1]);
@@ -69,4 +67,3 @@ TEST(CppCPU, CopyData) {
   dev.FreeBlock(b);
   dev.FreeBlock(c);
 }
-

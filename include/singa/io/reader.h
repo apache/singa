@@ -19,16 +19,16 @@
 #ifndef SINGA_IO_READER_H_
 #define SINGA_IO_READER_H_
 
+#include "singa/singa_config.h"
 #include <cstring>
 #include <fstream>
 #include <string>
-#include "singa/singa_config.h"
 
 #ifdef USE_LMDB
 #include <lmdb.h>
 #include <sys/stat.h>
 #include <vector>
-#endif  // USE_LMDB
+#endif // USE_LMDB
 
 namespace singa {
 namespace io {
@@ -39,7 +39,7 @@ using std::string;
 /// Subclasses implement the functions for a specific data storage, e.g., CSV
 /// file, HDFS, kvfile, leveldb, lmdb, etc.
 class Reader {
- public:
+public:
   /// In case that users forget to call Close() to release resources, e.g.,
   /// memory, you can release them here.
   virtual ~Reader() {}
@@ -47,7 +47,7 @@ class Reader {
   /// path is the path to the storage, could be a file path, database
   /// connection, or hdfs path.
   /// return true if open successfully, otherwise false.
-  virtual bool Open(const std::string& path) = 0;
+  virtual bool Open(const std::string &path) = 0;
 
   /// Release resources.
   virtual void Close() = 0;
@@ -56,7 +56,7 @@ class Reader {
   /// return true if read successfully;
   /// return flase if coming to the end of the file;
   /// LOG(FATAL) if error happens.
-  virtual bool Read(std::string* key, std::string* value) = 0;
+  virtual bool Read(std::string *key, std::string *value) = 0;
 
   /// Iterate through all tuples to get the num of all tuples.
   /// return num of tuples
@@ -68,16 +68,16 @@ class Reader {
 
 /// Binfilereader reads tuples from binary file with key-value pairs.
 class BinFileReader : public Reader {
- public:
+public:
   ~BinFileReader() { Close(); }
   /// \copydoc Open(const std::string& path)
-  bool Open(const std::string& path) override;
+  bool Open(const std::string &path) override;
   /// \copydoc Open(const std::string& path), user defines capacity
-  bool Open(const std::string& path, int capacity);
+  bool Open(const std::string &path, int capacity);
   /// \copydoc Close()
   void Close() override;
   /// \copydoc Read(std::string* key, std::string* value)
-  bool Read(std::string* key, std::string* value) override;
+  bool Read(std::string *key, std::string *value) override;
   /// \copydoc Count()
   int Count() override;
   /// \copydoc SeekToFirst()
@@ -85,23 +85,23 @@ class BinFileReader : public Reader {
   /// return path to binary file
   inline std::string path() { return path_; }
 
- protected:
+protected:
   /// Open a file with path_ and initialize buf_
   bool OpenFile();
   /// Read the next filed, including content_len and content;
   /// return true if succeed.
-  bool ReadField(std::string* content);
+  bool ReadField(std::string *content);
   /// Read data from disk if the current data in the buffer is not a full field.
   /// size is the size of the next field.
   bool PrepareNextField(int size);
 
- private:
+private:
   /// file to be read
   std::string path_ = "";
   /// ifstream
   std::ifstream fdat_;
   /// internal buffer
-  char* buf_ = nullptr;
+  char *buf_ = nullptr;
   /// offset inside the buf_
   int offset_ = 0;
   /// allocated bytes for the buf_, default is 10M
@@ -114,14 +114,14 @@ class BinFileReader : public Reader {
 
 /// TextFileReader reads tuples from CSV file.
 class TextFileReader : public Reader {
- public:
+public:
   ~TextFileReader() { Close(); }
   /// \copydoc Open(const std::string& path)
-  bool Open(const std::string& path) override;
+  bool Open(const std::string &path) override;
   /// \copydoc Close()
   void Close() override;
   /// \copydoc Read(std::string* key, std::string* value)
-  bool Read(std::string* key, std::string* value) override;
+  bool Read(std::string *key, std::string *value) override;
   /// \copydoc Count()
   int Count() override;
   /// \copydoc SeekToFirst()
@@ -129,7 +129,7 @@ class TextFileReader : public Reader {
   /// return path to text file
   inline std::string path() { return path_; }
 
- private:
+private:
   /// file to be read
   std::string path_ = "";
   /// ifstream
@@ -141,14 +141,14 @@ class TextFileReader : public Reader {
 #ifdef USE_LMDB
 /// LMDBReader reads tuples from LMDB.
 class LMDBReader : public Reader {
- public:
+public:
   ~LMDBReader() { Close(); }
   /// \copydoc Open(const std::string& path)
-  bool Open(const std::string& path) override;
+  bool Open(const std::string &path) override;
   /// \copydoc Close()
   void Close() override;
   /// \copydoc Read(std::string* key, std::string* value)
-  bool Read(std::string* key, std::string* value) override;
+  bool Read(std::string *key, std::string *value) override;
   /// \copydoc Count()
   int Count() override;
   /// \copydoc SeekToFirst()
@@ -158,22 +158,22 @@ class LMDBReader : public Reader {
   /// Return valid, to indicate SeekToFirst();
   inline bool valid() { return valid_; }
 
- protected:
+protected:
   /// Seek to a certain position: MDB_FIRST, MDB_NEXT
   void Seek(MDB_cursor_op op);
   inline void MDB_CHECK(int mdb_status);
 
- private:
+private:
   /// file to be read
   std::string path_ = "";
   /// lmdb env variable
-  MDB_env* mdb_env_ = nullptr;
+  MDB_env *mdb_env_ = nullptr;
   /// lmdb db instance
   MDB_dbi mdb_dbi_;
   /// lmdb transaction
-  MDB_txn* mdb_txn_ = nullptr;
+  MDB_txn *mdb_txn_ = nullptr;
   /// lmdb cursor
-  MDB_cursor* mdb_cursor_ = nullptr;
+  MDB_cursor *mdb_cursor_ = nullptr;
   /// lmdb key-value pair
   MDB_val mdb_key_, mdb_value_;
   /// whether the pair is found
@@ -181,8 +181,8 @@ class LMDBReader : public Reader {
   /// whether the cursor is at the first place
   bool first_;
 };
-#endif  // USE_LMDB
-}  // namespace io
-}  // namespace singa
+#endif // USE_LMDB
+} // namespace io
+} // namespace singa
 
-#endif  // SINGA_IO_READER_H_
+#endif // SINGA_IO_READER_H_

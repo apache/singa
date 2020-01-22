@@ -19,15 +19,14 @@
 #ifndef SINGA_CORE_MEMORY_H_
 #define SINGA_CORE_MEMORY_H_
 
-#include <mutex>
-#include <atomic>
 #include "singa/proto/core.pb.h"
 #include "singa/singa_config.h"
+#include <atomic>
+#include <mutex>
 
 #ifdef USE_CUDA
 #include "cnmem.h"
 #endif
-
 
 namespace singa {
 
@@ -35,9 +34,9 @@ namespace singa {
 class VirtualMemory {};
 
 class DeviceMemPool {
- public:
-  virtual void Malloc(void** ptr, const size_t size)  = 0;
-  virtual void Free(void* ptr)  = 0;
+public:
+  virtual void Malloc(void **ptr, const size_t size) = 0;
+  virtual void Free(void *ptr) = 0;
 
   /// Return a pair for free and total memory managed by this pool.
   virtual std::pair<size_t, size_t> GetMemUsage() {
@@ -48,21 +47,21 @@ class DeviceMemPool {
   }
   virtual ~DeviceMemPool(){};
 
- protected:
+protected:
   size_t usage_;
-//  size_t init_size_ = 0, max_size_ = 0;
+  //  size_t init_size_ = 0, max_size_ = 0;
 };
 
 #ifdef USE_CUDA
 class CnMemPool : public DeviceMemPool {
- public:
+public:
   // Create the mem pool by setting the devices [0, numDevices), and
   // initial pool size (MB), and max pool size (no effect currently).
   CnMemPool(int numDevices = 1, size_t init_size = 256, size_t max_size = 0);
-  CnMemPool(const MemPoolConf& conf);
+  CnMemPool(const MemPoolConf &conf);
 
-  void Malloc(void** ptr, const size_t size);
-  void Free(void* ptr);
+  void Malloc(void **ptr, const size_t size);
+  void Free(void *ptr);
 
   std::pair<size_t, size_t> GetMemUsage() override;
   std::pair<size_t, size_t> GetMemUsage(int id) override;
@@ -70,25 +69,22 @@ class CnMemPool : public DeviceMemPool {
   // release all memory and set cnmem manager to unintialized
   ~CnMemPool();
 
- protected:
+protected:
   void Init();
 
-
- private:
-
+private:
   MemPoolConf conf_;
   // whether the (global) memory pool has been initialized
   bool initialized_ = false;
   // lock on the initialized variable
   std::mutex mtx_;
-
 };
 
 class CudaMemPool : public DeviceMemPool {
- public:
-  void Malloc(void** ptr, const size_t size) override;
-  void Free(void* ptr) override;
+public:
+  void Malloc(void **ptr, const size_t size) override;
+  void Free(void *ptr) override;
 };
 #endif
-}  // namespace singa
-#endif  // SINGA_CORE_MEMORY_H_
+} // namespace singa
+#endif // SINGA_CORE_MEMORY_H_

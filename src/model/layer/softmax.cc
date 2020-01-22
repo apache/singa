@@ -23,22 +23,22 @@ RegisterLayerClass(singa_softmax, Softmax);
 RegisterLayerClass(singacpp_softmax, Softmax);
 RegisterLayerClass(singacuda_softmax, Softmax);
 RegisterLayerClass(singacl_softmax, Softmax);
-void Softmax::Setup(const Shape& in_sample, const LayerConf& conf) {
+void Softmax::Setup(const Shape &in_sample, const LayerConf &conf) {
   Layer::Setup(in_sample, conf);
   CHECK_EQ(in_sample.size(), 1u);
   out_sample_shape_ = in_sample;
 }
 
-const Tensor Softmax::Forward(int flag, const Tensor& input) {
+const Tensor Softmax::Forward(int flag, const Tensor &input) {
   CHECK_LE(input.nDim(), 2u);
-  Tensor output =  SoftMax(input);
+  Tensor output = SoftMax(input);
   if (flag & kTrain)
     buf_.push(output);
   return output;
 }
 
 const std::pair<Tensor, vector<Tensor>> Softmax::Backward(int flag,
-                                                          const Tensor& grad) {
+                                                          const Tensor &grad) {
   CHECK_LE(grad.nDim(), 2u);
   Tensor input_grad = grad.Clone();
   CHECK(!buf_.empty());
@@ -71,4 +71,4 @@ const std::pair<Tensor, vector<Tensor>> Softmax::Backward(int flag,
   return std::make_pair(input_grad, param_grad);
 }
 
-}  // namespace singa
+} // namespace singa

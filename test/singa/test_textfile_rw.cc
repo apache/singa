@@ -23,7 +23,7 @@
 #include "../include/singa/io/writer.h"
 #include "gtest/gtest.h"
 
-const char* path_csv = "./textfile_test.csv";
+const char *path_csv = "./textfile_test.csv";
 using singa::io::TextFileReader;
 using singa::io::TextFileWriter;
 TEST(TextFileWriter, Create) {

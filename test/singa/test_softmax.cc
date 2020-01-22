@@ -47,15 +47,15 @@ TEST(Softmax, Forward) {
   sft.Setup(Shape{col}, conf);
 
   singa::Tensor out = sft.Forward(singa::kTrain, in);
-  const float* yptr = out.data<float>();
+  const float *yptr = out.data<float>();
   EXPECT_EQ(n, out.Size());
 
-  float* sigma = new float[row];
+  float *sigma = new float[row];
   for (size_t i = 0; i < row; i++)
     sigma[i] = 0.f;
   for (size_t i = 0; i < n; i++)
     sigma[i / col] += exp(x[i]);
-  //EXPECT_EQ(0, sigma[1]);
+  // EXPECT_EQ(0, sigma[1]);
   for (size_t i = 0; i < row; i++)
     for (size_t j = 0; j < col; j++) {
       EXPECT_FLOAT_EQ(yptr[i * col + j], exp(x[i * col + j]) / sigma[i]);
@@ -75,16 +75,16 @@ TEST(Softmax, Backward) {
   singa::LayerConf conf;
   sft.Setup(Shape{col}, conf);
   singa::Tensor out = sft.Forward(singa::kTrain, in);
-  const float* yptr = out.data<float>();
+  const float *yptr = out.data<float>();
 
   const float grad[] = {2.0f, -3.0f, 1.0f, 3.0f, -1.0f, -2.0};
   singa::Tensor out_diff(singa::Shape{row, col});
   out_diff.CopyDataFromHostPtr<float>(grad, n);
   const auto in_diff = sft.Backward(singa::kTrain, out_diff);
-  const float* xptr = in_diff.first.data<float>();
+  const float *xptr = in_diff.first.data<float>();
 
-  float* dx = new float[n];
-  float* sigma = new float[row];
+  float *dx = new float[n];
+  float *sigma = new float[row];
   for (size_t i = 0; i < row; i++)
     sigma[i] = 0.f;
   for (size_t i = 0; i < n; i++)
@@ -93,7 +93,7 @@ TEST(Softmax, Backward) {
   // EXPECT_EQ(0, sigma[1]);
   for (size_t i = 0; i < row; i++)
     for (size_t j = 0; j < col; j++)
-      dx[i * col + j] = (grad[i * col + j] - sigma[i]) * yptr[i * col +j];
+      dx[i * col + j] = (grad[i * col + j] - sigma[i]) * yptr[i * col + j];
   EXPECT_FLOAT_EQ(dx[0], xptr[0]);
   EXPECT_FLOAT_EQ(dx[4], xptr[4]);
   EXPECT_FLOAT_EQ(dx[5], xptr[5]);

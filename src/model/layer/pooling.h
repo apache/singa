@@ -17,63 +17,58 @@
  */
 #ifndef SRC_MODEL_LAYER_POOLING_H_
 #define SRC_MODEL_LAYER_POOLING_H_
+#include "singa/model/layer.h"
 #include <cfloat>
 #include <stack>
 #include <string>
 #include <utility>
 #include <vector>
-#include "singa/model/layer.h"
 
 namespace singa {
 class Pooling : public Layer {
- public:
+public:
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "Pooling"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
   const Shape GetOutputSampleShape() const override {
     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
     return out_sample_shape_;
   }
   /// \copydoc Layer::Forward(int flag, const Tensor&)
-  const Tensor Forward(int flag, const Tensor& input) override;
+  const Tensor Forward(int flag, const Tensor &input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                   const Tensor& grad) override;
+                                                   const Tensor &grad) override;
 
-  void ForwardMaxPooling(const float* bottom, const int num, const int channels,
-                         const int height, const int width, 
-                         const int pooled_h, const int pooled_w,
-                         const int kernel_h, const int kernel_w,
-                         const int pad_h, const int pad_w,
-                         const int stride_h, const int stride_w, float* top,
-                         float* mask);
+  void ForwardMaxPooling(const float *bottom, const int num, const int channels,
+                         const int height, const int width, const int pooled_h,
+                         const int pooled_w, const int kernel_h,
+                         const int kernel_w, const int pad_h, const int pad_w,
+                         const int stride_h, const int stride_w, float *top,
+                         float *mask);
 
-  void BackwardMaxPooling(const float* top, const float* mask, const int num,
+  void BackwardMaxPooling(const float *top, const float *mask, const int num,
                           const int channels, const int height, const int width,
                           const int pooled_h, const int pooled_w,
                           const int kernel_h, const int kernel_w,
-                          const int pad_h, const int pad_w,
-                          const int stride_h, const int stride_w,
-                          float* bottom);
+                          const int pad_h, const int pad_w, const int stride_h,
+                          const int stride_w, float *bottom);
 
-  void ForwardAvgPooling(const float* bottom, const int num, const int channels,
-                         const int height, const int width,
-                         const int pooled_h, const int pooled_w,
-                         const int kernel_h, const int kernel_w,
-                         const int pad_h, const int pad_w,
-                         const int stride_h, const int stride_w,
-                         float* top);
+  void ForwardAvgPooling(const float *bottom, const int num, const int channels,
+                         const int height, const int width, const int pooled_h,
+                         const int pooled_w, const int kernel_h,
+                         const int kernel_w, const int pad_h, const int pad_w,
+                         const int stride_h, const int stride_w, float *top);
 
-  void BackwardAvgPooling(const float* top, const int num, const int channels,
-                          const int height, const int width,
-                          const int pooled_h, const int pooled_w,
-                          const int kernel_h, const int kernel_w,
-                          const int pad_h, const int pad_w,
+  void BackwardAvgPooling(const float *top, const int num, const int channels,
+                          const int height, const int width, const int pooled_h,
+                          const int pooled_w, const int kernel_h,
+                          const int kernel_w, const int pad_h, const int pad_w,
                           const int stride_h, const int stride_w,
-                          float* bottom);
+                          float *bottom);
 
   size_t kernel_w() const { return kernel_w_; }
   size_t kernel_h() const { return kernel_h_; }
@@ -86,7 +81,7 @@ class Pooling : public Layer {
   size_t height() const { return height_; }
   size_t width() const { return width_; }
 
- protected:
+protected:
   size_t kernel_w_, pad_w_, stride_w_;
   size_t kernel_h_, pad_h_, stride_h_;
   size_t channels_, height_, width_, pooled_height_, pooled_width_;
@@ -95,5 +90,5 @@ class Pooling : public Layer {
   std::stack<Tensor> buf_;
   Shape out_sample_shape_;
 };
-}  // namespace singa
-#endif  // SRC_MODEL_LAYER_POOLING_H_
+} // namespace singa
+#endif // SRC_MODEL_LAYER_POOLING_H_

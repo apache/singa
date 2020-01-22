@@ -33,8 +33,7 @@ TEST(OperationPooling, Forward) {
   Tensor in(Shape{batchsize, c, h, w});
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
 
-
-  PoolingHandle pool_handle(in, {2, 2}, {1,1}, {0,0}, true);
+  PoolingHandle pool_handle(in, {2, 2}, {1, 1}, {0, 0}, true);
   Tensor out1 = CpuPoolingForward(pool_handle, in);
 
   // Parameter "flag" does not influence pooling
@@ -49,23 +48,18 @@ TEST(OperationPooling, Forward) {
   EXPECT_EQ(6.0f, outptr1[5]);
   EXPECT_EQ(8.0f, outptr1[6]);
   EXPECT_EQ(9.0f, outptr1[7]);
-
 }
 
 TEST(OperationPooling, ForwardAverage) {
   const size_t batchsize = 2, c = 1, h = 3, w = 3;
-  const float x[batchsize * c * h * w] = {1.0f, 2.0f, 3.0f,
-                                          4.0f, 5.0f, 6.0f,
-                                          7.0f, 8.0f, 9.0f,
+  const float x[batchsize * c * h * w] = {
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f,
 
-                                          1.0f, 2.0f, 3.0f,
-                                          4.0f, 5.0f, 6.0f,
-                                          7.0f, 8.0f, 9.0f};
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
   Tensor in(Shape{batchsize, c, h, w});
   in.CopyDataFromHostPtr(x, batchsize * c * h * w);
 
-
-  PoolingHandle pool_handle(in, {2, 2}, {1,1}, {0,0}, false);
+  PoolingHandle pool_handle(in, {2, 2}, {1, 1}, {0, 0}, false);
   Tensor out1 = CpuPoolingForward(pool_handle, in);
 
   // Parameter "flag" does not influence pooling
@@ -80,9 +74,7 @@ TEST(OperationPooling, ForwardAverage) {
   EXPECT_EQ(4.0f, outptr1[5]);
   EXPECT_EQ(6.0f, outptr1[6]);
   EXPECT_EQ(7.0f, outptr1[7]);
-
 }
-
 
 TEST(OperationPooling, Backward) {
   // src_data
@@ -93,8 +85,7 @@ TEST(OperationPooling, Backward) {
   Tensor in(Shape{batchsize, c, src_h, src_w});
   in.CopyDataFromHostPtr(x, batchsize * c * src_h * src_w);
 
-
-  PoolingHandle pool_handle(in, {2, 2}, {1,1}, {0,0}, true);
+  PoolingHandle pool_handle(in, {2, 2}, {1, 1}, {0, 0}, true);
 
   Tensor out = CpuPoolingForward(pool_handle, in);
 
@@ -106,7 +97,6 @@ TEST(OperationPooling, Backward) {
   grad.CopyDataFromHostPtr(dy, batchsize * c * grad_h * grad_w);
 
   Tensor in_grad = CpuPoolingBackward(pool_handle, grad, in, out);
-
 
   const float *dx = in_grad.data<float>();
   EXPECT_EQ(18u, in_grad.Size());
@@ -134,18 +124,13 @@ TEST(OperationPooling, BackwardAvg) {
   // src_data
   const size_t batchsize = 2, c = 1, src_h = 3, src_w = 3;
   const float x[batchsize * c * src_h * src_w] = {
-      1.0f, 2.0f, 3.0f,
-      4.0f, 5.0f, 6.0f,
-      7.0f, 8.0f, 9.0f,
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f,
 
-      1.0f, 2.0f, 3.0f,
-      4.0f, 5.0f, 6.0f,
-      7.0f, 8.0f, 9.0f};
+      1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
   Tensor in(Shape{batchsize, c, src_h, src_w});
   in.CopyDataFromHostPtr(x, batchsize * c * src_h * src_w);
 
-
-  PoolingHandle pool_handle(in, {2, 2}, {1,1}, {0,0}, false);
+  PoolingHandle pool_handle(in, {2, 2}, {1, 1}, {0, 0}, false);
 
   Tensor out = CpuPoolingForward(pool_handle, in);
 

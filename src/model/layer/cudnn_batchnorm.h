@@ -28,31 +28,31 @@
 
 namespace singa {
 class CudnnBatchNorm : public BatchNorm {
- public:
+public:
   ~CudnnBatchNorm();
   /// \copy doc Layer::layer_type()
   // const std::string layer_type() const override { return "CudnnBatchNorm"; }
 
-  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
 
-  const Tensor Forward(int flag, const Tensor& input) override;
+  const Tensor Forward(int flag, const Tensor &input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                   const Tensor& grad) override;
+                                                   const Tensor &grad) override;
   void ToDevice(std::shared_ptr<Device> device) override;
 
- private:
+private:
   /// Init cudnn related data structures.
-  void InitCudnn(const Shape& shape, DataType dtype);
+  void InitCudnn(const Shape &shape, DataType dtype);
 
- private:
+private:
   bool has_init_cudnn_ = false;
   cudnnBatchNormMode_t mode_;
   cudnnLRNDescriptor_t lrn_desc_ = nullptr;
   cudnnTensorDescriptor_t shape_desc_ = nullptr, param_desc_ = nullptr;
   Tensor resultSaveMean_, resultSaveVariance_;
 
-};  // class CudnnBatchNorm
-}  // namespace
+}; // class CudnnBatchNorm
+} // namespace
 
-#endif  // USE_CUDNN
-#endif  // SINGA_MODEL_LAYER_CUDNN_BATCHNORM
+#endif // USE_CUDNN
+#endif // SINGA_MODEL_LAYER_CUDNN_BATCHNORM

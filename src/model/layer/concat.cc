@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "singa/model/layer.h"
 #include "./concat.h"
+#include "singa/model/layer.h"
 namespace singa {
 
 RegisterLayerClass(singa_concat, Concat);
@@ -25,7 +25,7 @@ RegisterLayerClass(singacpp_concat, Concat);
 RegisterLayerClass(singacuda_concat, Concat);
 RegisterLayerClass(singacl_concat, Concat);
 
-void Concat::Setup(const vector<Shape>& in_shapes, const LayerConf& conf) {
+void Concat::Setup(const vector<Shape> &in_shapes, const LayerConf &conf) {
   Layer::Setup(in_shapes, conf);
   out_sample_shape_.clear();
   slice_point_.clear();
@@ -35,30 +35,30 @@ void Concat::Setup(const vector<Shape>& in_shapes, const LayerConf& conf) {
   if (axis_ == 0) {
     out_sample_shape_ = in_shapes[0];
     size_t fea_size = Product(in_shapes[0]);
-    for (auto& s: in_shapes) {
+    for (auto &s : in_shapes) {
       CHECK_EQ(Product(s), fea_size) << "Feature length of all source samples "
-        << "must be the same";
+                                     << "must be the same";
     }
   } else {
     out_sample_shape_ = in_shapes[0];
     size_t fea_size = Product(in_shapes[0]) / in_shapes[0][axis_ - 1];
     size_t l = 0;
-    for (auto& s: in_shapes) {
-       CHECK_GE(s.size(), axis_);
-       l += s[axis_ - 1];
-       CHECK_EQ(fea_size, Product(s) / s[axis_ - 1])
-         << "Feature length for all axis except axis_ must be the same";
+    for (auto &s : in_shapes) {
+      CHECK_GE(s.size(), axis_);
+      l += s[axis_ - 1];
+      CHECK_EQ(fea_size, Product(s) / s[axis_ - 1])
+          << "Feature length for all axis except axis_ must be the same";
     }
     out_sample_shape_[axis_ - 1] = l;
   }
 }
 
-const vector<Tensor> Concat::Forward(int flag, const vector<Tensor>& inputs) {
+const vector<Tensor> Concat::Forward(int flag, const vector<Tensor> &inputs) {
   // TODO(wangwei) check the inputs shape to be the same for all iterations
   vector<Tensor> outputs;
   slice_point_.clear();
   size_t offset = 0;
-  for (auto& x : inputs) {
+  for (auto &x : inputs) {
     offset += x.shape(axis_);
     slice_point_.push_back(offset);
   }
@@ -70,8 +70,8 @@ const vector<Tensor> Concat::Forward(int flag, const vector<Tensor>& inputs) {
   return outputs;
 }
 
-const std::pair<vector<Tensor>, vector<Tensor>> Concat::Backward(
-    int flag, const vector<Tensor>& grads) {
+const std::pair<vector<Tensor>, vector<Tensor>>
+Concat::Backward(int flag, const vector<Tensor> &grads) {
   vector<Tensor> input_grad, param_grad;
   CHECK_EQ(grads.size(), 1u) << "Concat layer only have one output tensor.";
   size_t last_offset = 0u;
@@ -82,4 +82,4 @@ const std::pair<vector<Tensor>, vector<Tensor>> Concat::Backward(
   return std::make_pair(input_grad, param_grad);
 }
 
-}  // namespace singa
+} // namespace singa

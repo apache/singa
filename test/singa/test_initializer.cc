@@ -27,11 +27,10 @@ TEST(Initializer, Constant) {
   conf.set_value(3.1f);
   x.Setup(conf);
   x.Fill(t);
-  const float* xPtr = t.data<float>();
+  const float *xPtr = t.data<float>();
   for (size_t i = 0; i < n; i++)
     EXPECT_FLOAT_EQ(xPtr[i], 3.1f);
 }
-
 
 TEST(Initializer, Gaussian) {
   singa::init::Gaussian x;
@@ -42,7 +41,7 @@ TEST(Initializer, Gaussian) {
   conf.set_std(0.01f);
   x.Setup(conf);
   x.Fill(t);
-  const float* xPtr = t.data<float>();
+  const float *xPtr = t.data<float>();
   float mean = 0.0f, std = 0.0f;
   for (size_t i = 0; i < n; i++)
     mean += xPtr[i];
@@ -66,20 +65,18 @@ TEST(Initializer, ConstantCUDA) {
   x.Setup(conf);
   x.Fill(t);
   t.ToHost();
-  const float* xPtr = t.data<float>();
+  const float *xPtr = t.data<float>();
   for (size_t i = 0; i < n; i++)
     EXPECT_FLOAT_EQ(xPtr[i], 3.1f);
-
 
   singa::init::Constant y(-0.1f);
   singa::Tensor s(singa::Shape{n}, dev);
   y.Fill(s);
   s.ToHost();
-  const float* sPtr = s.data<float>();
+  const float *sPtr = s.data<float>();
   for (size_t i = 0; i < n; i++)
     EXPECT_FLOAT_EQ(sPtr[i], -0.1f);
 }
-
 
 TEST(Initializer, GaussianCUDA) {
   singa::init::Gaussian x;
@@ -92,7 +89,7 @@ TEST(Initializer, GaussianCUDA) {
   x.Setup(conf);
   x.Fill(t);
   t.ToHost();
-  const float* tPtr = t.data<float>();
+  const float *tPtr = t.data<float>();
   float mean = 0.0f, std = 0.0f;
   for (size_t i = 0; i < n; i++)
     mean += tPtr[i];
@@ -104,12 +101,11 @@ TEST(Initializer, GaussianCUDA) {
   std = sqrt(std);
   EXPECT_NEAR(std, 0.01f, 1e-2);
 
-
   singa::init::Gaussian y(1.5f, 0.1f);
   singa::Tensor s(singa::Shape{n}, dev);
   y.Fill(s);
   s.ToHost();
-  const float* sPtr = s.data<float>();
+  const float *sPtr = s.data<float>();
   for (size_t i = 0; i < n; i++)
     mean += sPtr[i];
   mean /= n;
@@ -124,11 +120,11 @@ TEST(Initializer, GaussianCUDA) {
 TEST(Initializer, XavierCUDA) {
   singa::init::Constant x;
   auto dev = std::make_shared<singa::CudaGPU>();
-  size_t m = 30, n=40;
+  size_t m = 30, n = 40;
   singa::Tensor t(singa::Shape{m, n}, dev);
   x.Fill(t);
   t.ToHost();
-  const float* xPtr = t.data<float>();
+  const float *xPtr = t.data<float>();
   float mean = 0.0f;
   float high = -100.0f, low = 100.0f;
   for (size_t i = 0; i < n; i++) {

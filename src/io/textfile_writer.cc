@@ -21,34 +21,36 @@
 
 namespace singa {
 namespace io {
-bool TextFileWriter::Open(const std::string& path, Mode mode) {
+bool TextFileWriter::Open(const std::string &path, Mode mode) {
   CHECK(!fdat_.is_open());
   path_ = path;
   mode_ = mode;
   switch (mode) {
-    case kCreate:
-      fdat_.open(path_, std::ios::out | std::ios::trunc);
-      CHECK(fdat_.is_open()) << "Cannot create file " << path_;
-      break;
-    case kAppend:
-      fdat_.open(path_, std::ios::app);
-      CHECK(fdat_.is_open()) << "Cannot open file " << path_;
-      break;
-    default:
-      LOG(FATAL) << "unknown mode to open text file " << mode;
-      break;
+  case kCreate:
+    fdat_.open(path_, std::ios::out | std::ios::trunc);
+    CHECK(fdat_.is_open()) << "Cannot create file " << path_;
+    break;
+  case kAppend:
+    fdat_.open(path_, std::ios::app);
+    CHECK(fdat_.is_open()) << "Cannot open file " << path_;
+    break;
+  default:
+    LOG(FATAL) << "unknown mode to open text file " << mode;
+    break;
   }
   return fdat_.is_open();
 }
 
 void TextFileWriter::Close() {
   Flush();
-  if (fdat_.is_open()) fdat_.close();
+  if (fdat_.is_open())
+    fdat_.close();
 }
 
-bool TextFileWriter::Write(const std::string& key, const std::string& value) {
+bool TextFileWriter::Write(const std::string &key, const std::string &value) {
   CHECK(fdat_.is_open()) << "File not open!";
-  if (value.size() == 0) return false;
+  if (value.size() == 0)
+    return false;
   fdat_ << value << std::endl;
   return true;
 }
@@ -57,5 +59,5 @@ void TextFileWriter::Flush() {
   if (fdat_.is_open())
     fdat_.flush();
 }
-}  // namespace io
-}  // namespace singa
+} // namespace io
+} // namespace singa

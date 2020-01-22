@@ -22,27 +22,27 @@
 namespace singa {
 /// Do softmax for 1D or 2D tensors along the last dimension.
 class Softmax : public Layer {
- public:
+public:
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "Softmax"; }
 
   /// \copydoc Layer::Setup(const LayerConf&);
-  void Setup(const Shape& in_sample, const LayerConf& conf) override;
+  void Setup(const Shape &in_sample, const LayerConf &conf) override;
   const Shape GetOutputSampleShape() const override {
     CHECK(out_sample_shape_.size()) << "You may haven't call Setup()";
     return out_sample_shape_;
   }
 
   /// \copydoc Layer::Forward(int flag, const Tensor&)
-  const Tensor Forward(int flag, const Tensor& input) override;
+  const Tensor Forward(int flag, const Tensor &input) override;
 
   /// \copydoc Layer::Backward(int flag, const Tensor&, const Tensor&);
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                   const Tensor& grad) override;
+                                                   const Tensor &grad) override;
 
- protected:
+protected:
   std::stack<Tensor> buf_;
   Shape out_sample_shape_;
 };
-}  // namespace singa
-#endif  // SINGA_MODEL_LAYER_SOFTMAX_H_
+} // namespace singa
+#endif // SINGA_MODEL_LAYER_SOFTMAX_H_

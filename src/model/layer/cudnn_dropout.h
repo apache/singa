@@ -26,37 +26,38 @@
 #include "./dropout.h"
 
 #include <cudnn.h>
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "singa/model/layer.h"
 
 namespace singa {
 class CudnnDropout : public Dropout {
- public:
+public:
   ~CudnnDropout();
   /// \copydoc Layer::layer_type()
   // const std::string layer_type() const override { return "CudnnDropout"; }
 
-  const Tensor Forward(int flag, const Tensor& input) override;
+  const Tensor Forward(int flag, const Tensor &input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
-                                                   const Tensor& grad) override;
+                                                   const Tensor &grad) override;
 
   void ToDevice(std::shared_ptr<Device> device) override;
- private:
+
+private:
   /// Init cudnn related data structures.
   void InitCudnn(int size, DataType dtype, std::shared_ptr<Device> dev,
-                 Context* ctx);
+                 Context *ctx);
 
- private:
+private:
   bool has_init_cudnn_ = false;
   cudnnDropoutDescriptor_t drop_desc_ = nullptr;
   cudnnTensorDescriptor_t x_desc_ = nullptr, y_desc_ = nullptr;
   size_t state_size_, reserve_size_;
   Tensor state_;
 };
-}  // namespace
-#endif  // CUDNN_MAJOR>=5
-#endif  // USE_CUDNN
-#endif  // SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
+} // namespace
+#endif // CUDNN_MAJOR>=5
+#endif // USE_CUDNN
+#endif // SRC_MODEL_LAYER_CUDNN_DROPOUT_H_
