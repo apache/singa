@@ -7,9 +7,9 @@
 * to you under the Apache License, Version 2.0 (the
 * "License"); you may not use this file except in compliance
 * with the License.  You may obtain a copy of the License at
-* 
+*
 *   http://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing,
 * software distributed under the License is distributed on an
 * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -34,7 +34,7 @@ namespace singa {
 FILE* log_file[NUM_SEVERITIES] = {};
 bool not_log_stderr[NUM_SEVERITIES] = {};
 
-void InitLogging(const char *argv) {
+void InitLogging(const char* argv) {
 #ifdef USE_GLOG
   google::InitGoogleLogging(argv);
 #else
@@ -87,32 +87,22 @@ void LogMessage::GenerateLogMessage() {
   localtime_r(&rw_time, &tm_time);
   // log to a file
   for (int i = severity_; i >= 0; --i)
-    if (log_file[i] )
-      DoLogging(log_file[i], tm_time);
+    if (log_file[i]) DoLogging(log_file[i], tm_time);
   // log to stderr
-  if (!not_log_stderr[severity_])
-    DoLogging(stderr, tm_time);
+  if (!not_log_stderr[severity_]) DoLogging(stderr, tm_time);
 }
 
 void LogMessage::DoLogging(FILE* file, const struct tm& tm_time) {
   fprintf(file, "[%c d%02d%02d t%02d:%02d:%02d p%05d:%03d %s:%d] %s\n",
-          "IWEF"[severity_],
-          1 + tm_time.tm_mon,
-          tm_time.tm_mday,
-          tm_time.tm_hour,
-          tm_time.tm_min,
-          tm_time.tm_sec,
-          GetPID(),
-          static_cast<unsigned>(GetTID()%1000),
-          fname_,
-          line_,
-          str().c_str());
+          "IWEF"[severity_], 1 + tm_time.tm_mon, tm_time.tm_mday,
+          tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec, GetPID(),
+          static_cast<unsigned>(GetTID() % 1000), fname_, line_, str().c_str());
 }
 
 LogMessage::~LogMessage() { GenerateLogMessage(); }
 
 LogMessageFatal::LogMessageFatal(const char* file, int line)
-  : LogMessage(file, line, FATAL) {}
+    : LogMessage(file, line, FATAL) {}
 LogMessageFatal::~LogMessageFatal() {
   // abort() ensures we don't return
   GenerateLogMessage();
@@ -148,7 +138,7 @@ void MakeCheckOpValueString(std::ostream* os, const unsigned char& v) {
 
 template <>
 void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& p) {
-    (*os) << "nullptr";
+  (*os) << "nullptr";
 }
 
 CheckOpMessageBuilder::CheckOpMessageBuilder(const char* exprtext)

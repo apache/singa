@@ -140,4 +140,4 @@ TEST(Flatten, BackwardGPU) {
   EXPECT_EQ(2u, in_diff.shape(3));
   for (size_t i = 0; i < n; i++) EXPECT_FLOAT_EQ(dy[i], xptr[i]);
 }
-#endif // USE_CUDA
+#endif  // USE_CUDA

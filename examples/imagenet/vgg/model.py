@@ -23,13 +23,20 @@ from singa import net as ffnet
 from singa import initializer
 from singa import layer
 
-
-ffnet.verbose=False
+ffnet.verbose = False
 cfg = {
-        11: [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-        13: [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-        16: [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-        19: [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+    11: [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    13: [
+        64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'
+    ],
+    16: [
+        64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512,
+        512, 512, 'M'
+    ],
+    19: [
+        64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512,
+        'M', 512, 512, 512, 512, 'M'
+    ],
 }
 
 
@@ -40,8 +47,12 @@ def create_layers(net, cfg, sample_shape, batch_norm=False):
             net.add(MaxPooling2D('pool/features.%d' % lid, 2, 2, pad=0))
             lid += 1
         else:
-            net.add(Conv2D('conv/features.%d' % lid, v, 3, pad=1,
-                           input_sample_shape=sample_shape))
+            net.add(
+                Conv2D('conv/features.%d' % lid,
+                       v,
+                       3,
+                       pad=1,
+                       input_sample_shape=sample_shape))
             lid += 1
             if batch_norm:
                 net.add(BatchNormalization('bn/features.%d' % lid))
@@ -86,6 +97,7 @@ def create_net(depth, nb_classes, batchnorm=False, use_cpu=False):
     net.add(Dropout('dropout/classifier.5'))
     net.add(Dense('dense/classifier.6', nb_classes))
     return net
+
 
 if __name__ == '__main__':
     create_net(13, 1000)

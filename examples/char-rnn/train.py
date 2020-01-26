@@ -20,7 +20,6 @@ The train file could be any text file,
 e.g., http://cs.stanford.edu/people/karpathy/char-rnn/
 '''
 
-
 from __future__ import division
 from __future__ import print_function
 from builtins import zip
@@ -40,6 +39,7 @@ from singa import utils
 
 
 class Data(object):
+
     def __init__(self, fpath, batch_size=32, seq_length=100, train_ratio=0.8):
         '''Data object for loading a plain text file.
 
@@ -48,7 +48,8 @@ class Data(object):
             train_ratio, split the text file into train and test sets, where
                 train_ratio of the characters are in the train set.
         '''
-        self.raw_data = open(fpath, 'r',encoding='iso-8859-1').read()  # read text file
+        self.raw_data = open(fpath, 'r',
+                             encoding='iso-8859-1').read()  # read text file
         chars = list(set(self.raw_data))
         self.vocab_size = len(chars)
         self.char_to_idx = {ch: i for i, ch in enumerate(chars)}
@@ -61,7 +62,7 @@ class Data(object):
         data = np.reshape(data, (-1, seq_length + 1))
         # shuffle all sequences
         np.random.shuffle(data)
-        self.train_dat = data[0:int(data.shape[0]*train_ratio)]
+        self.train_dat = data[0:int(data.shape[0] * train_ratio)]
         self.num_train_batch = self.train_dat.shape[0] // batch_size
         self.val_dat = data[self.train_dat.shape[0]:]
         self.num_test_batch = self.val_dat.shape[0] // batch_size
@@ -101,30 +102,30 @@ def get_lr(epoch):
     return 0.001 / float(1 << (epoch // 50))
 
 
-def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
-          num_stacks=1, dropout=0.5, model_path='model'):
+def train(data,
+          max_epoch,
+          hidden_size=100,
+          seq_length=100,
+          batch_size=16,
+          num_stacks=1,
+          dropout=0.5,
+          model_path='model'):
     # SGD with L2 gradient normalization
     opt = optimizer.RMSProp(constraint=optimizer.L2Constraint(5))
     cuda = device.create_cuda_gpu()
-    rnn = layer.LSTM(
-        name='lstm',
-        hidden_size=hidden_size,
-        num_stacks=num_stacks,
-        dropout=dropout,
-        input_sample_shape=(
-            data.vocab_size,
-        ))
+    rnn = layer.LSTM(name='lstm',
+                     hidden_size=hidden_size,
+                     num_stacks=num_stacks,
+                     dropout=dropout,
+                     input_sample_shape=(data.vocab_size,))
     rnn.to_device(cuda)
     print('created rnn')
     rnn_w = rnn.param_values()[0]
     rnn_w.uniform(-0.08, 0.08)  # init all rnn parameters
     print('rnn weight l1 = %f' % (rnn_w.l1()))
-    dense = layer.Dense(
-        'dense',
-        data.vocab_size,
-        input_sample_shape=(
-            hidden_size,
-        ))
+    dense = layer.Dense('dense',
+                        data.vocab_size,
+                        input_sample_shape=(hidden_size,))
     dense.to_device(cuda)
     dense_w = dense.param_values()[0]
     dense_b = dense.param_values()[1]
@@ -142,7 +143,7 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
     for epoch in range(max_epoch):
         train_loss = 0
         for b in range(data.num_train_batch):
-            batch = data.train_dat[b * batch_size: (b + 1) * batch_size]
+            batch = data.train_dat[b * batch_size:(b + 1) * batch_size]
             inputs, labels = convert(batch, batch_size, seq_length,
                                      data.vocab_size, cuda)
             inputs.append(tensor.Tensor())
@@ -165,8 +166,8 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
                 g_dense_b += gwb[1]
                 # print output.l1(), act.l1()
             utils.update_progress(
-                b * 1.0 / data.num_train_batch, 'training loss = %f' %
-                (batch_loss / seq_length))
+                b * 1.0 / data.num_train_batch,
+                'training loss = %f' % (batch_loss / seq_length))
             train_loss += batch_loss
 
             grads.append(tensor.Tensor())
@@ -174,18 +175,16 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
             g_rnn_w = rnn.backward(True, grads)[1][0]
             dense_w, dense_b = dense.param_values()
             opt.apply_with_lr(epoch, get_lr(epoch), g_rnn_w, rnn_w, 'rnnw')
-            opt.apply_with_lr(
-                epoch, get_lr(epoch),
-                g_dense_w, dense_w, 'dense_w')
-            opt.apply_with_lr(
-                epoch, get_lr(epoch),
-                g_dense_b, dense_b, 'dense_b')
+            opt.apply_with_lr(epoch, get_lr(epoch), g_dense_w, dense_w,
+                              'dense_w')
+            opt.apply_with_lr(epoch, get_lr(epoch), g_dense_b, dense_b,
+                              'dense_b')
         print('\nEpoch %d, train loss is %f' %
               (epoch, train_loss / data.num_train_batch / seq_length))
 
         eval_loss = 0
         for b in range(data.num_test_batch):
-            batch = data.val_dat[b * batch_size: (b + 1) * batch_size]
+            batch = data.val_dat[b * batch_size:(b + 1) * batch_size]
             inputs, labels = convert(batch, batch_size, seq_length,
                                      data.vocab_size, cuda)
             inputs.append(tensor.Tensor())
@@ -202,9 +201,8 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
             with open('%s_%d.bin' % (model_path, epoch), 'wb') as fd:
                 print('saving model to %s' % model_path)
                 d = {}
-                for name, w in zip(
-                        ['rnn_w', 'dense_w', 'dense_b'],
-                        [rnn_w, dense_w, dense_b]):
+                for name, w in zip(['rnn_w', 'dense_w', 'dense_b'],
+                                   [rnn_w, dense_w, dense_b]):
                     w.to_host()
                     d[name] = tensor.to_numpy(w)
                     w.to_device(cuda)
@@ -215,6 +213,7 @@ def train(data, max_epoch, hidden_size=100, seq_length=100, batch_size=16,
                 d['dropout'] = dropout
 
                 pickle.dump(d, fd)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -228,5 +227,9 @@ if __name__ == '__main__':
     parser.add_argument('-m', type=int, default=50, help='max num of epoch')
     args = parser.parse_args()
     data = Data(args.data, batch_size=args.b, seq_length=args.l)
-    train(data, args.m,  hidden_size=args.d, num_stacks=args.s,
-          seq_length=args.l, batch_size=args.b)
+    train(data,
+          args.m,
+          hidden_size=args.d,
+          num_stacks=args.s,
+          seq_length=args.l,
+          batch_size=args.b)

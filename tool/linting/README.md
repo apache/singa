@@ -17,10 +17,31 @@
     under the License.
 -->
 
-## utility script for linting source code
+# Linting check
+
+This guide is for singa devoloper who should sanitize the code
+before merging into the main branch.
+
+## linting tools
+
+Install cpplint for C++:
+`pip install cpplint`
+
+Install pylint for Python:
+`pip install pylint`
+
+## Linting a single file
+
+For C++ code:
+`cpplint path/to/file`
+
+For Python Code:
+`pylint path/to/file`
+
+## Linting the whole project
 
 usage: `bash tool/linting/linting.sh`
 
-update linting configuration at
-- `./.pylintrc`
-- `./CPPLINT.cfg`
+## Configuration
+Currently the configuration are customized to respect google style.
+Update of configuration could be done at `.pylintrc` and `CPPLINT.cfg`

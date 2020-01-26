@@ -19,19 +19,19 @@
 #ifndef SINGA_MODEL_UPDATER_H_
 #define SINGA_MODEL_UPDATER_H_
 
-#include "singa/model/optimizer.h"
+#include <atomic>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include "singa/core/device.h"
 #include "singa/core/tensor.h"
+#include "singa/model/optimizer.h"
 #include "singa/utils/logging.h"
-
-#include <memory>
-#include <vector>
-#include <mutex>
-#include <condition_variable>
-#include <string>
-#include <utility>
-#include <unordered_map>
-#include <atomic>
 
 namespace singa {
 /// Basic Updater class just forward all the method function call
@@ -71,10 +71,11 @@ class LocalUpdater : public Updater {
   /// all the partial gradients are aggrageted in a synchronized style training.
   virtual void Apply(int step, const string& name, Tensor& grad,
                      Tensor& value) override;
+
  private:
   template <typename T1, typename T2>
   struct key_hasher {
-    size_t operator() (const std::pair<T1, T2>& p) const {
+    size_t operator()(const std::pair<T1, T2>& p) const {
       auto h1 = std::hash<T1>{}(p.first);
       auto h2 = std::hash<T2>{}(p.second);
       return h1 ^ h2;
@@ -86,11 +87,12 @@ class LocalUpdater : public Updater {
   std::unordered_map<std::string, std::atomic<int>> dev_index_;
   std::unordered_map<std::string, int> to_updater_finished_;
   std::unordered_map<std::pair<int, std::string>, Tensor,
-    key_hasher<int, std::string>> grad_buffer_;
+                     key_hasher<int, std::string>>
+      grad_buffer_;
   std::unordered_map<std::string, Tensor> sum_, param_buffer_;
   std::unordered_map<std::string, std::mutex> mtx_;
   std::unordered_map<std::string, std::condition_variable>
-    to_updater_all_finished_;
+      to_updater_all_finished_;
 };
 }  //  namespace singa
 

@@ -20,11 +20,11 @@
 *************************************************************/
 
 #include "gtest/gtest.h"
-#include "singa/utils/logging.h"
 #include "singa/core/memory.h"
 #include "singa/singa_config.h"
-#include "singa/utils/timer.h"
 #include "singa/utils/cuda_utils.h"
+#include "singa/utils/logging.h"
+#include "singa/utils/timer.h"
 
 #ifdef USE_CUDA
 /*

@@ -38,7 +38,7 @@ bool BinFileWriter::Open(const std::string& path, Mode mode, int capacity) {
 void BinFileWriter::Close() {
   Flush();
   if (buf_ != nullptr) {
-    delete [] buf_;
+    delete[] buf_;
     buf_ = nullptr;
   }
   if (fdat_.is_open()) fdat_.close();
@@ -54,10 +54,11 @@ bool BinFileWriter::Write(const std::string& key, const std::string& value) {
   magic[3] = 0;
   if (key.size() == 0) {
     magic[2] = 0;
-    size = (int) (sizeof(magic) + sizeof(size_t) + value.size());
+    size = (int)(sizeof(magic) + sizeof(size_t) + value.size());
   } else {
     magic[2] = 1;
-    size = (int) (sizeof(magic) + 2 * sizeof(size_t) + key.size() + value.size());
+    size =
+        (int)(sizeof(magic) + 2 * sizeof(size_t) + key.size() + value.size());
   }
 
   if (bufsize_ + size > capacity_) {
@@ -73,12 +74,12 @@ bool BinFileWriter::Write(const std::string& key, const std::string& value) {
     *reinterpret_cast<size_t*>(buf_ + bufsize_) = key.size();
     bufsize_ += sizeof(size_t);
     std::memcpy(buf_ + bufsize_, key.data(), key.size());
-    bufsize_ += (int) key.size();
+    bufsize_ += (int)key.size();
   }
   *reinterpret_cast<size_t*>(buf_ + bufsize_) = value.size();
   bufsize_ += sizeof(size_t);
   std::memcpy(buf_ + bufsize_, value.data(), value.size());
-  bufsize_ += (int) value.size();
+  bufsize_ += (int)value.size();
   return true;
 }
 

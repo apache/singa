@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 '''Extract the net parameters from the torch file and store them as python dict
 using cPickle'''
 
@@ -29,7 +28,8 @@ try:
 except ModuleNotFoundError:
     import pickle
 
-verbose=False
+verbose = False
+
 
 def add_param(idx, name, val, params):
     if type(params) == dict:
@@ -82,7 +82,7 @@ def traverse(m, idx, params, param_names):
         the updated idx
     '''
     module_type = m.__dict__['_typename']
-    if module_type in ['nn.Sequential', 'nn.ConcatTable'] :
+    if module_type in ['nn.Sequential', 'nn.ConcatTable']:
         for x in m.modules:
             idx = traverse(x, idx, params, param_names)
     elif 'SpatialConvolution' in module_type:
@@ -95,9 +95,10 @@ def traverse(m, idx, params, param_names):
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser(description='Convert params from torch to python '
-            'dict. \n resnet could have depth of 18, 34, 101, 152; \n'
-            'wrn has depth 50; preact has depth 200; addbn has depth 50')
+    parser = ArgumentParser(
+        description='Convert params from torch to python '
+        'dict. \n resnet could have depth of 18, 34, 101, 152; \n'
+        'wrn has depth 50; preact has depth 200; addbn has depth 50')
     parser.add_argument("infile", help="torch checkpoint file")
     parser.add_argument("model", choices=['resnet', 'wrn', 'preact', 'addbn'])
     parser.add_argument("depth", type=int, choices=[18, 34, 50, 101, 152, 200])

@@ -20,8 +20,8 @@
 *************************************************************/
 
 #include "gtest/gtest.h"
-#include "singa/core/tensor.h"
 #include "singa/core/device.h"
+#include "singa/core/tensor.h"
 #include "singa/model/loss.h"
 #include "singa/singa_config.h"
 
@@ -33,7 +33,7 @@ class TestSoftmaxCrossEntropy : public ::testing::Test {
     t.Resize(singa::Shape{2, 1});
     ta.Resize(singa::Shape{2, 4});
   }
-  const float pdat[8] = {0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f };
+  const float pdat[8] = {0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f};
   const int tdat[2] = {0, 2};
   const int tary[8] = {1, 0, 0, 0, 0, 0, 1, 0};
 
@@ -49,7 +49,7 @@ TEST_F(TestSoftmaxCrossEntropy, CppForward) {
   const Tensor& loss = cross_entropy.Forward(singa::kEval, p, t);
   auto ldat = loss.data<float>();
 
-  const float result_test = (float) -log(0.25);
+  const float result_test = (float)-log(0.25);
   EXPECT_FLOAT_EQ(ldat[0], result_test);
   EXPECT_FLOAT_EQ(ldat[1], result_test);
 }
@@ -63,7 +63,7 @@ TEST_F(TestSoftmaxCrossEntropy, CppForwardAryTarget) {
   const Tensor& loss = cross_entropy.Forward(singa::kEval, p, ta);
   auto ldat = loss.data<float>();
 
-  const float result_test = (float) -log(0.25);
+  const float result_test = (float)-log(0.25);
   EXPECT_FLOAT_EQ(ldat[0], result_test);
   EXPECT_FLOAT_EQ(ldat[1], result_test);
 }
@@ -142,7 +142,6 @@ TEST_F(TestSoftmaxCrossEntropy, CudaForwardAryTarget) {
   EXPECT_FLOAT_EQ(ldat[0], result_test);
   EXPECT_FLOAT_EQ(ldat[1], result_test);
 }
-
 
 TEST_F(TestSoftmaxCrossEntropy, CudaBackward) {
   singa::SoftmaxCrossEntropy cross_entropy;

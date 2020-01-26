@@ -26,9 +26,10 @@ from singa import net as ffnet
 from singa import initializer
 from singa import layer
 
-ffnet.verbose=True
+ffnet.verbose = True
 
 conv_bias = False
+
 
 def conv(net, prefix, n, ksize, stride=1, pad=0, bn=True, relu=True, src=None):
     '''Add a convolution layer and optionally a batchnorm and relu layer.
@@ -42,8 +43,9 @@ def conv(net, prefix, n, ksize, stride=1, pad=0, bn=True, relu=True, src=None):
     Returns:
         the last added layer
     '''
-    ret = net.add(Conv2D(
-        prefix + '-conv', n, ksize, stride, pad=pad, use_bias=conv_bias), src)
+    ret = net.add(
+        Conv2D(prefix + '-conv', n, ksize, stride, pad=pad, use_bias=conv_bias),
+        src)
     if bn:
         ret = net.add(BatchNormalization(prefix + '-bn'))
     if relu:
@@ -64,10 +66,18 @@ def shortcut(net, prefix, inplane, outplane, stride, src, bn=False):
     '''
     if inplane == outplane:
         return src
-    return conv(net, prefix + '-shortcut', outplane, 1, stride, 0, bn, False, src)
+    return conv(net, prefix + '-shortcut', outplane, 1, stride, 0, bn, False,
+                src)
 
 
-def bottleneck(name, net, inplane, midplane, outplane, stride=1, preact=False, add_bn=False):
+def bottleneck(name,
+               net,
+               inplane,
+               midplane,
+               outplane,
+               stride=1,
+               preact=False,
+               add_bn=False):
     '''Add three conv layers, with a>=b<=c filters.
 
     The default structure is
@@ -84,14 +94,17 @@ def bottleneck(name, net, inplane, midplane, outplane, stride=1, preact=False, a
         preact, if true, move the bn3 and relu before conv1, i.e., pre-activation ref identity mapping paper
         add_bn, if true, move the last bn after the addition layer (for resnet-50)
     '''
-    assert not (preact and add_bn), 'preact and batchnorm after addition cannot be true at the same time'
+    assert not (
+        preact and add_bn
+    ), 'preact and batchnorm after addition cannot be true at the same time'
     split = net.add(Split(name + '-split', 2))
     if preact:
         net.add(BatchNormalization(name + '-preact-bn'))
         net.add(Activation(name + '-preact-relu'))
     conv(net, name + '-0', midplane, 1, 1, 0, True, True)
     conv(net, name + '-1', midplane, 3, stride, 1, True, True)
-    br0 = conv(net, name + '-2', outplane, 1, 1, 0, not (preact or add_bn), False)
+    br0 = conv(net, name + '-2', outplane, 1, 1, 0, not (preact or add_bn),
+               False)
     br1 = shortcut(net, name, inplane, outplane, stride, split, not add_bn)
     ret = net.add(Merge(name + '-add'), [br0, br1])
     if add_bn:
@@ -101,7 +114,14 @@ def bottleneck(name, net, inplane, midplane, outplane, stride=1, preact=False, a
     return ret
 
 
-def basicblock(name, net, inplane, midplane, outplane, stride=1, preact=False, add_bn=False):
+def basicblock(name,
+               net,
+               inplane,
+               midplane,
+               outplane,
+               stride=1,
+               preact=False,
+               add_bn=False):
     '''Add two conv layers, with a<=b filters.
 
     The default structure is
@@ -118,7 +138,9 @@ def basicblock(name, net, inplane, midplane, outplane, stride=1, preact=False, a
         preact, if true, move the bn2 and relu before conv1, i.e., pre-activation ref identity mapping paper
         add_bn, if true, move the last bn after the addition layer (for resnet-50)
     '''
-    assert not (preact and add_bn), 'preact and batchnorm after addition cannot be true at the same time'
+    assert not (
+        preact and add_bn
+    ), 'preact and batchnorm after addition cannot be true at the same time'
     split = net.add(Split(name + '-split', 2))
     if preact:
         net.add(BatchNormalization(name + '-preact-bn'))
@@ -134,10 +156,22 @@ def basicblock(name, net, inplane, midplane, outplane, stride=1, preact=False, a
     return ret
 
 
-def stage(sid, net, num_blk, inplane, midplane, outplane, stride, block, preact=False, add_bn=False):
-    block('stage%d-blk%d' % (sid, 0), net, inplane, midplane, outplane, stride, preact, add_bn)
+def stage(sid,
+          net,
+          num_blk,
+          inplane,
+          midplane,
+          outplane,
+          stride,
+          block,
+          preact=False,
+          add_bn=False):
+    block('stage%d-blk%d' % (sid, 0), net, inplane, midplane, outplane, stride,
+          preact, add_bn)
     for i in range(1, num_blk):
-        block('stage%d-blk%d' % (sid, i), net, outplane, midplane, outplane, 1, preact, add_bn)
+        block('stage%d-blk%d' % (sid, i), net, outplane, midplane, outplane, 1,
+              preact, add_bn)
+
 
 def init_params(net, weight_path=None):
     if weight_path is None:
@@ -158,21 +192,30 @@ def init_params(net, weight_path=None):
             elif 'gamma' in pname:
                 initializer.uniform(pval, 0, 1)
     else:
-        net.load(weight_path, use_pickle = 'pickle' in weight_path)
+        net.load(weight_path, use_pickle='pickle' in weight_path)
 
 
-cfg = { 18: [2, 2, 2, 2],  # basicblock
-        34: [3, 4, 6, 3],  # basicblock
-        50: [3, 4, 6, 3],  # bottleneck
-        101: [3, 4, 23, 3], # bottleneck
-        152: [3, 8, 36, 3], # bottleneck
-        200: [3, 24, 36, 3]} # bottleneck
+cfg = {
+    18: [2, 2, 2, 2],  # basicblock
+    34: [3, 4, 6, 3],  # basicblock
+    50: [3, 4, 6, 3],  # bottleneck
+    101: [3, 4, 23, 3],  # bottleneck
+    152: [3, 8, 36, 3],  # bottleneck
+    200: [3, 24, 36, 3]
+}  # bottleneck
 
 
 def create_addbn_resnet(depth=50):
     '''Original resnet with the last batchnorm of each block moved to after the addition layer'''
     net = ffnet.FeedForwardNet()
-    net.add(Conv2D('input-conv', 64, 7, 2, pad=3, use_bias=False, input_sample_shape=(3, 224, 224)))
+    net.add(
+        Conv2D('input-conv',
+               64,
+               7,
+               2,
+               pad=3,
+               use_bias=False,
+               input_sample_shape=(3, 224, 224)))
     net.add(BatchNormalization('input-bn'))
     net.add(Activation('input_relu'))
     net.add(MaxPooling2D('input_pool', 3, 2, pad=1))
@@ -196,7 +239,14 @@ def create_addbn_resnet(depth=50):
 def create_resnet(depth=18):
     '''Original resnet, where the there is a relue after the addition layer'''
     net = ffnet.FeedForwardNet()
-    net.add(Conv2D('input-conv', 64, 7, 2, pad=3, use_bias=False, input_sample_shape=(3, 224, 224)))
+    net.add(
+        Conv2D('input-conv',
+               64,
+               7,
+               2,
+               pad=3,
+               use_bias=False,
+               input_sample_shape=(3, 224, 224)))
     net.add(BatchNormalization('input-bn'))
     net.add(Activation('input_relu'))
     net.add(MaxPooling2D('input_pool', 3, 2, pad=1))
@@ -216,10 +266,18 @@ def create_resnet(depth=18):
     net.add(Dense('dense', 1000))
     return net
 
+
 def create_preact_resnet(depth=200):
     '''Resnet with the batchnorm and relu moved to before the conv layer for each block'''
     net = ffnet.FeedForwardNet()
-    net.add(Conv2D('input-conv', 64, 7, 2, pad=3, use_bias=False, input_sample_shape=(3, 224, 224)))
+    net.add(
+        Conv2D('input-conv',
+               64,
+               7,
+               2,
+               pad=3,
+               use_bias=False,
+               input_sample_shape=(3, 224, 224)))
     net.add(BatchNormalization('input-bn'))
     net.add(Activation('input_relu'))
     net.add(MaxPooling2D('input_pool', 3, 2, pad=1))
@@ -245,7 +303,14 @@ def create_preact_resnet(depth=200):
 def create_wide_resnet(depth=50):
     '''Similar original resnet except that a<=b<=c for the bottleneck block'''
     net = ffnet.FeedForwardNet()
-    net.add(Conv2D('input-conv', 64, 7, 2, pad=3, use_bias=False, input_sample_shape=(3, 224, 224)))
+    net.add(
+        Conv2D('input-conv',
+               64,
+               7,
+               2,
+               pad=3,
+               use_bias=False,
+               input_sample_shape=(3, 224, 224)))
     net.add(BatchNormalization('input-bn'))
     net.add(Activation('input_relu'))
     net.add(MaxPooling2D('input_pool', 3, 2, pad=1))

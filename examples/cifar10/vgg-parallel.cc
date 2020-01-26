@@ -19,24 +19,24 @@
 *
 *************************************************************/
 
+#include <cmath>
+#include <memory>
+#include <thread>
 #include "cifar10.h"
+#include "singa/core/memory.h"
 #include "singa/model/feed_forward_net.h"
-#include "singa/model/optimizer.h"
-#include "singa/model/updater.h"
 #include "singa/model/initializer.h"
 #include "singa/model/metric.h"
+#include "singa/model/optimizer.h"
+#include "singa/model/updater.h"
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
-#include "singa/core/memory.h"
-#include <thread>
-#include <memory>
-#include <cmath>
 
 namespace singa {
 
 // currently supports 'cudnn' and 'singacpp'
 const std::string engine = "cudnn";
-const float default_wd  = 0.0005f;
+const float default_wd = 0.0005f;
 
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
                       int pad, float std = .02f, float bias = .0f) {
@@ -54,7 +54,7 @@ LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
   wspec->set_name(name + "_weight");
   auto wfill = wspec->mutable_filler();
   wfill->set_type("Gaussian");
-  wfill->set_std(sqrt(2.0f/(nb_filter*9.0f)));
+  wfill->set_std(sqrt(2.0f / (nb_filter * 9.0f)));
 
   ParamSpec *bspec = conf.add_param();
   bspec->set_name(name + "_bias");
@@ -85,7 +85,8 @@ LayerConf GenReLUConf(string name) {
   return conf;
 }
 
-LayerConf GenDenseConf(string name, int num_output, float std, float wd = default_wd) {
+LayerConf GenDenseConf(string name, int num_output, float std,
+                       float wd = default_wd) {
   LayerConf conf;
   conf.set_name(name);
   conf.set_type("singa_dense");
@@ -156,10 +157,11 @@ LayerConf GenDropoutConf(string name, float dropout_ratio) {
   return conf;
 }
 
-void ConvBNReLU(FeedForwardNet& net, string name, int nb_filter, Shape* shape = nullptr) {
-  net.Add(GenConvConf(name+"_conv", nb_filter, 3, 1, 1), shape);
-  net.Add(GenBatchNormConf(name+"_bn"));
-  net.Add(GenReLUConf(name+"_relu"));
+void ConvBNReLU(FeedForwardNet &net, string name, int nb_filter,
+                Shape *shape = nullptr) {
+  net.Add(GenConvConf(name + "_conv", nb_filter, 3, 1, 1), shape);
+  net.Add(GenBatchNormConf(name + "_bn"));
+  net.Add(GenReLUConf(name + "_relu"));
 }
 
 FeedForwardNet CreateNet() {
@@ -215,7 +217,8 @@ void Train(float lr, int num_epoch, string data_dir) {
     SubRow(mean, &mtrain);
     Tensor std = Square(mtrain);
     std = Average(std, 0);
-    std = Sqrt(std);;
+    std = Sqrt(std);
+    ;
     std += 1e-6f;
     DivRow(std, &mtrain);
 
@@ -224,11 +227,11 @@ void Train(float lr, int num_epoch, string data_dir) {
 
     LOG(INFO) << "Slicing training data...";
     train_x_1 = Tensor(Shape{nsamples / 2, train.first.shape(1),
-        train.first.shape(2), train.first.shape(3)});
+                             train.first.shape(2), train.first.shape(3)});
     LOG(INFO) << "Copying first data slice...";
     CopyDataToFrom(&train_x_1, train_x, train_x.Size() / 2);
     train_x_2 = Tensor(Shape{nsamples / 2, train.first.shape(1),
-        train.first.shape(2), train.first.shape(3)});
+                             train.first.shape(2), train.first.shape(3)});
     LOG(INFO) << "Copying second data slice...";
     CopyDataToFrom(&train_x_2, train_x, train_x.Size() / 2, 0,
                    train_x.Size() / 2);
@@ -272,7 +275,7 @@ void Train(float lr, int num_epoch, string data_dir) {
   reg->set_coefficient(0.0005);
   sgd.Setup(opt_conf);
   sgd.SetLearningRateGenerator([lr](int epoch) {
-    return 0.01f / static_cast<float>(1u << (epoch/30));
+    return 0.01f / static_cast<float>(1u << (epoch / 30));
   });
 
   SoftmaxCrossEntropy loss_1, loss_2;

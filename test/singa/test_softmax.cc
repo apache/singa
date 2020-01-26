@@ -19,9 +19,9 @@
 *
 *************************************************************/
 
+#include <math.h>  // exp
 #include "../src/model/layer/softmax.h"
 #include "gtest/gtest.h"
-#include <math.h> // exp
 
 using singa::Softmax;
 using singa::Shape;
@@ -51,11 +51,9 @@ TEST(Softmax, Forward) {
   EXPECT_EQ(n, out.Size());
 
   float* sigma = new float[row];
-  for (size_t i = 0; i < row; i++)
-    sigma[i] = 0.f;
-  for (size_t i = 0; i < n; i++)
-    sigma[i / col] += exp(x[i]);
-  //EXPECT_EQ(0, sigma[1]);
+  for (size_t i = 0; i < row; i++) sigma[i] = 0.f;
+  for (size_t i = 0; i < n; i++) sigma[i / col] += exp(x[i]);
+  // EXPECT_EQ(0, sigma[1]);
   for (size_t i = 0; i < row; i++)
     for (size_t j = 0; j < col; j++) {
       EXPECT_FLOAT_EQ(yptr[i * col + j], exp(x[i * col + j]) / sigma[i]);
@@ -85,15 +83,13 @@ TEST(Softmax, Backward) {
 
   float* dx = new float[n];
   float* sigma = new float[row];
-  for (size_t i = 0; i < row; i++)
-    sigma[i] = 0.f;
-  for (size_t i = 0; i < n; i++)
-    sigma[i / col] += grad[i] * yptr[i];
+  for (size_t i = 0; i < row; i++) sigma[i] = 0.f;
+  for (size_t i = 0; i < n; i++) sigma[i / col] += grad[i] * yptr[i];
   // EXPECT_EQ(0, sigma[0]);
   // EXPECT_EQ(0, sigma[1]);
   for (size_t i = 0; i < row; i++)
     for (size_t j = 0; j < col; j++)
-      dx[i * col + j] = (grad[i * col + j] - sigma[i]) * yptr[i * col +j];
+      dx[i * col + j] = (grad[i * col + j] - sigma[i]) * yptr[i * col + j];
   EXPECT_FLOAT_EQ(dx[0], xptr[0]);
   EXPECT_FLOAT_EQ(dx[4], xptr[4]);
   EXPECT_FLOAT_EQ(dx[5], xptr[5]);

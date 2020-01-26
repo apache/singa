@@ -19,13 +19,13 @@
 *
 *************************************************************/
 
-#include "gtest/gtest.h"
-#include "singa/io/snapshot.h"
-#include "singa/io/reader.h"
-#include "singa/core/tensor.h"
-
-#include <string>
 #include <fstream>
+#include <string>
+
+#include "gtest/gtest.h"
+#include "singa/core/tensor.h"
+#include "singa/io/reader.h"
+#include "singa/io/snapshot.h"
 
 const std::string prefix = "./snapshot_test";
 const float param_1_data[] = {0.1f, 0.2f, 0.3f, 0.4f};

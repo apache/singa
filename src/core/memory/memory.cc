@@ -18,9 +18,9 @@
 #ifndef DISABLE_WARNINGS
 
 #include "singa/core/memory.h"
-#include "singa/utils/logging.h"
-#include "singa/proto/core.pb.h"
 #include <iostream>
+#include "singa/proto/core.pb.h"
+#include "singa/utils/logging.h"
 
 #ifdef USE_CUDA
 
@@ -29,7 +29,7 @@ std::pair<size_t, size_t> CnMemPool::GetMemUsage() {
   size_t free, total;
   auto status = cnmemMemGetInfo(&free, &total, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
-    << cnmemGetErrorString(status);
+      << cnmemGetErrorString(status);
   return std::make_pair(free, total);
 }
 std::pair<size_t, size_t> CnMemPool::GetMemUsage(int id) {
@@ -37,20 +37,17 @@ std::pair<size_t, size_t> CnMemPool::GetMemUsage(int id) {
   size_t free, total;
   auto status = cnmemMemGetInfo(&free, &total, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
-    << cnmemGetErrorString(status);
+      << cnmemGetErrorString(status);
   return std::make_pair(free, total);
 }
 
 CnMemPool::CnMemPool(int numDevices, size_t init_size, size_t max_size) {
-  for (int i = 0; i < numDevices; i++)
-    conf_.add_device(i);
+  for (int i = 0; i < numDevices; i++) conf_.add_device(i);
   conf_.set_init_size(init_size);
   conf_.set_max_size(max_size);
 }
 
-CnMemPool::CnMemPool(const MemPoolConf &conf) {
-  conf_ = conf;
-}
+CnMemPool::CnMemPool(const MemPoolConf &conf) { conf_ = conf; }
 
 void CnMemPool::Init() {
   mtx_.lock();
@@ -89,15 +86,15 @@ CnMemPool::~CnMemPool() {
 }
 
 void CnMemPool::Malloc(void **ptr, const size_t size) {
-  if (!initialized_)
-    Init();
+  if (!initialized_) Init();
   cnmemStatus_t status = cnmemMalloc(ptr, size, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
       << " " << cnmemGetErrorString(status);
 }
 
 void CnMemPool::Free(void *ptr) {
-  CHECK(initialized_) << "Cannot free the memory as the pool is not initialzied";
+  CHECK(initialized_)
+      << "Cannot free the memory as the pool is not initialzied";
   cnmemStatus_t status = cnmemFree(ptr, NULL);
   CHECK_EQ(status, cnmemStatus_t::CNMEM_STATUS_SUCCESS)
       << " " << cnmemGetErrorString(status);

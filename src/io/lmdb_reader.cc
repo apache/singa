@@ -64,8 +64,7 @@ void LMDBReader::Close() {
 }
 
 bool LMDBReader::Read(std::string* key, std::string* value) {
-  if (first_ != true)
-    Seek(MDB_NEXT);
+  if (first_ != true) Seek(MDB_NEXT);
   if (valid_ == false) return false;
   *key = string(static_cast<const char*>(mdb_key_.mv_data), mdb_key_.mv_size);
   *value =
@@ -100,7 +99,10 @@ int LMDBReader::Count() {
   return count;
 }
 
-void LMDBReader::SeekToFirst() { Seek(MDB_FIRST); first_ = true; }
+void LMDBReader::SeekToFirst() {
+  Seek(MDB_FIRST);
+  first_ = true;
+}
 
 void LMDBReader::Seek(MDB_cursor_op op) {
   int mdb_status = mdb_cursor_get(mdb_cursor_, &mdb_key_, &mdb_value_, op);

@@ -20,14 +20,13 @@
 *************************************************************/
 #include "singa/singa_config.h"
 #ifdef ENABLE_DIST
+#include <assert.h>
+#include <string.h>
+#include <unistd.h>
+#include <memory>
 #include "singa/io/network.h"
 #include "singa/utils/integer.h"
 #include "singa/utils/logging.h"
-#include <assert.h>
-#include <unistd.h>
-#include <string.h>
-#include <memory>
-
 
 #define SIZE 10000000
 #define PORT 10000
@@ -71,20 +70,18 @@ int main(int argc, char **argv) {
 
   while (1) {
     for (int i = 0; i < ITER; ++i) {
-      if (ep->send(m[i]) < 0)
-        return 1;
+      if (ep->send(m[i]) < 0) return 1;
       delete m[i];
     }
 
     for (int i = 0; i < ITER; ++i) {
       m[i] = ep->recv();
-      if (!m[i])
-        return 1;
+      if (!m[i]) return 1;
       char *p;
-      CHECK(m[i]->getMetadata((void **)&p) == SIZE);
-      CHECK(0 == strncmp(p, md, SIZE));
-      CHECK(m[i]->getPayload((void **)&p) == SIZE);
-      CHECK(0 == strncmp(p, payload, SIZE));
+      CHECK_EQ(m[i]->getMetadata((void **)&p), SIZE);
+      CHECK_EQ(0, strncmp(p, md, SIZE));
+      CHECK_EQ(m[i]->getPayload((void **)&p), SIZE);
+      CHECK_EQ(0, strncmp(p, payload, SIZE));
     }
   }
 

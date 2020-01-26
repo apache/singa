@@ -75,7 +75,6 @@ class Accuracy : public Metric {
   size_t top_k_ = 1;
 };
 
-
 }  // namespace singa
 
 #endif  // SINGA_MODEL_METRIC_H_

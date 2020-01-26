@@ -19,9 +19,9 @@
 *
 ************************************************************/
 
+#include <iostream>
 #include "../src/model/layer/batchnorm.h"
 #include "gtest/gtest.h"
-#include <iostream>
 
 using namespace singa;
 
@@ -98,7 +98,7 @@ TEST(BatchNorm, Backward) {
   Tensor out = batchnorm.Forward(kTrain, in);
   auto ret = batchnorm.Backward(kTrain, dy_in);
   Tensor dx = ret.first;
-  const auto & shape = dx.shape();
+  const auto &shape = dx.shape();
   EXPECT_EQ(2u, shape.size());
   EXPECT_EQ(2u, shape[0]);
   EXPECT_EQ(2u, shape[1]);
@@ -110,7 +110,7 @@ TEST(BatchNorm, Backward) {
 
   Tensor dbnScale = ret.second.at(0);
   const float *dbnScaleptr = dbnScale.data<float>();
-  const auto & dbnScaleShape = dbnScale.shape();
+  const auto &dbnScaleShape = dbnScale.shape();
   EXPECT_EQ(1u, dbnScaleShape.size());
   EXPECT_EQ(2u, dbnScaleShape[0]);
 
@@ -119,7 +119,7 @@ TEST(BatchNorm, Backward) {
 
   Tensor dbnBias = ret.second.at(1);
   const float *dbnBiasptr = dbnBias.data<float>();
-  const auto & dbnBiasShape = dbnBias.shape();
+  const auto &dbnBiasShape = dbnBias.shape();
   EXPECT_EQ(1u, dbnBiasShape.size());
   EXPECT_EQ(2u, dbnBiasShape[0]);
 

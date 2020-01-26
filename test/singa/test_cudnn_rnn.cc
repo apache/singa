@@ -29,18 +29,18 @@ using singa::CudnnRNN;
 using singa::Shape;
 using singa::Tensor;
 class TestCudnnRNN : public ::testing::Test {
-  protected:
-    virtual void SetUp() {
-      singa::RNNConf *rnnconf = conf.mutable_rnn_conf();
-      rnnconf->set_hidden_size(hidden_size);
-      rnnconf->set_num_stacks(1);
-      rnnconf->set_dropout(0);
-      rnnconf->set_input_mode("linear");
-      rnnconf->set_direction("unidirectional");
-      rnnconf->set_rnn_mode("tanh");
-    }
-    singa::LayerConf conf;
-    size_t hidden_size = 4;
+ protected:
+  virtual void SetUp() {
+    singa::RNNConf *rnnconf = conf.mutable_rnn_conf();
+    rnnconf->set_hidden_size(hidden_size);
+    rnnconf->set_num_stacks(1);
+    rnnconf->set_dropout(0);
+    rnnconf->set_input_mode("linear");
+    rnnconf->set_direction("unidirectional");
+    rnnconf->set_rnn_mode("tanh");
+  }
+  singa::LayerConf conf;
+  size_t hidden_size = 4;
 };
 
 TEST_F(TestCudnnRNN, Setup) {
@@ -54,8 +54,8 @@ TEST_F(TestCudnnRNN, Setup) {
 TEST_F(TestCudnnRNN, Forward) {
   auto cuda = std::make_shared<singa::CudaGPU>();
   const size_t seqLength = 4, batchsize = 1, dim = 2;
-  const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-                                          1.0f, 1.0f, 1.0f};
+  const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f,
+                                                1.0f, 1.0f, 1.0f, 1.0f};
 
   vector<Tensor> inputs;
   for (size_t i = 0; i < seqLength; i++) {
@@ -75,8 +75,7 @@ TEST_F(TestCudnnRNN, Forward) {
   size_t weightSize = weight.Size();
   float we[weightSize];
   float wvalue = 0.1f;
-  for (size_t i = 0; i < weightSize; i++)
-    we[i] = wvalue;
+  for (size_t i = 0; i < weightSize; i++) we[i] = wvalue;
   weight.CopyDataFromHostPtr(we, weightSize);
 
   const auto ret = rnn.Forward(singa::kEval, inputs);
@@ -108,8 +107,8 @@ TEST_F(TestCudnnRNN, Forward) {
 TEST_F(TestCudnnRNN, Backward) {
   auto cuda = std::make_shared<singa::CudaGPU>();
   const size_t seqLength = 4, batchsize = 1, dim = 2;
-  const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-                                          1.0f, 1.0f, 1.0f};
+  const float x[seqLength * batchsize * dim] = {1.0f, 1.0f, 1.0f, 1.0f,
+                                                1.0f, 1.0f, 1.0f, 1.0f};
 
   vector<Tensor> inputs;
   for (size_t i = 0; i < seqLength; i++) {
@@ -129,8 +128,7 @@ TEST_F(TestCudnnRNN, Backward) {
   size_t weightSize = weight.Size();
   float we[weightSize];
   float wvalue = 0.1f;
-  for (size_t i = 0; i < weightSize; i++)
-    we[i] = wvalue;
+  for (size_t i = 0; i < weightSize; i++) we[i] = wvalue;
   weight.CopyDataFromHostPtr(we, weightSize);
 
   const auto outs = rnn.Forward(singa::kTrain, inputs);
@@ -148,7 +146,7 @@ TEST_F(TestCudnnRNN, Backward) {
   grads.push_back(dhy);
   vector<float> dhyptr(hidden_size, 0.0f);
   const auto ret = rnn.Backward(singa::kTrain, grads);
-  for (size_t i = seqLength - 1; i > 0 ; i --) {
+  for (size_t i = seqLength - 1; i > 0; i--) {
     auto dx = ret.first[i];
     auto y = outs[i].Clone();
     y.ToHost();

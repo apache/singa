@@ -24,7 +24,7 @@
 
 /// Thread-safe implementation for C++11 according to
 //  http://stackoverflow.com/questions/2576022/efficient-thread-safe-singleton-in-c
-template<typename T>
+template <typename T>
 class Singleton {
  public:
   static T* Instance() {

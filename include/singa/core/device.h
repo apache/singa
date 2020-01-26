@@ -19,26 +19,26 @@
 #ifndef SINGA_CORE_DEVICE_H_
 #define SINGA_CORE_DEVICE_H_
 
-#include <type_traits>
-#include <vector>
-#include <string>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <type_traits>
+#include <vector>
 
-#include "singa/singa_config.h"
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
 #include "singa/core/scheduler.h"
 #include "singa/proto/core.pb.h"
+#include "singa/singa_config.h"
 
 #ifdef USE_CUDA
 #include "singa/utils/cuda_utils.h"
-#endif // USE_CUDA
+#endif  // USE_CUDA
 
 #ifdef USE_OPENCL
 #include "singa/utils/opencl_utils.h"
-#endif // USE_OPENCL
+#endif  // USE_OPENCL
 
 #ifdef USE_MKLDNN
 #include "singa/utils/mkldnn_utils.h"
@@ -55,7 +55,7 @@ namespace singa {
 /// There are three types of devices distinguished by their programming
 /// languages, namely cpp, cuda and opencl.
 class Device {
-  public:
+ public:
   // Device() = default;
   virtual ~Device() {}
   /// Constructor with device ID, num of executors (e.g., cuda streams),
@@ -72,21 +72,19 @@ class Device {
 
   /// Return the size (bytes) of memory in use
   /// TODO(wangwei) override this function for all devices.
-  virtual size_t GetAllocatedMem() {
-    return 0u;
-  }
+  virtual size_t GetAllocatedMem() { return 0u; }
 
   /// Copy data within or across devices.
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-                      CopyDirection direction, int dst_offset, int src_offset);
+                              CopyDirection direction, int dst_offset,
+                              int src_offset);
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
                            size_t dst_offset = 0);
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,
-                    const vector<Block*> write_blocks,
-                    bool use_rand_generator = false);
+            const vector<Block*> write_blocks, bool use_rand_generator = false);
 
   // Wait for one event.
   // void WaitFor();
@@ -95,20 +93,16 @@ class Device {
   virtual void Sync();
 
   /// Return the programming language for this device.
-  LangType lang() const {
-    return lang_;
-  }
+  LangType lang() const { return lang_; }
 
-  virtual std::shared_ptr<Device> host() const { return host_;}
+  virtual std::shared_ptr<Device> host() const { return host_; }
 
-  Context* context(int k) {
-    return &ctx_;
-  }
+  Context* context(int k) { return &ctx_; }
 
   int id() const { return id_; }
 
  private:
-  Device() {};
+  Device(){};
 
  protected:
   /// Execute one operation on one executor.
@@ -149,7 +143,7 @@ class CppCPU : public Device {
   ~CppCPU();
   CppCPU();
 
-  std::shared_ptr<Device> host() const override { return defaultDevice;}
+  std::shared_ptr<Device> host() const override { return defaultDevice; }
   void SetRandSeed(unsigned seed) override;
 
  protected:
@@ -164,7 +158,6 @@ class CppCPU : public Device {
   /// Free cpu memory.
   void Free(void* ptr) override;
 };
-
 
 // Implement Device using OpenCL libs.
 // class OpenclDevice : public Device { };
@@ -199,7 +192,7 @@ class CudaGPU : public Device {
   void Setup();
 
  private:
-	shared_ptr<DeviceMemPool> pool_;
+  shared_ptr<DeviceMemPool> pool_;
 };
 
 /// CudaCPU which uses cudaMallocHost to allocate pinned memory for host.
@@ -210,22 +203,21 @@ class CudaGPU : public Device {
 
 // Implement Device using OpenCL libs.
 class OpenclDevice : public singa::Device {
-public:
-
+ public:
   // TODO: Constructor arguments to consider:
   // Path to kernel sources?
   // Select only certain device types?
   OpenclDevice(int id = 0, int num_executors = 1);
   ~OpenclDevice();
 
-// Overridden, inherited methods
+  // Overridden, inherited methods
   void SetRandSeed(unsigned seed) override;
 
   virtual void CopyDataToFrom(Block* dst, Block* src, size_t nBytes,
-                      CopyDirection direction, int dst_offset = 0,
-                      int src_offset = 0) override;
+                              CopyDirection direction, int dst_offset = 0,
+                              int src_offset = 0) override;
 
-protected:
+ protected:
   /// The OpenCL device that this object represents.
   /// Each OpenclDevice contains exactly one cl::Device for the lifetime of the
   /// object.
@@ -239,7 +231,7 @@ protected:
   /// OpenCL programs, then stores them in the Kernels map.
   void BuildPrograms();
 
-// Overridden, inherited methods.
+  // Overridden, inherited methods.
 
   void DoExec(function<void(Context*)>&& fn, int executor) override;
 
@@ -255,24 +247,22 @@ protected:
   /// This has the effect of freeing up device memory.
   void Free(void* ptr) override;
 
-private:
-
+ private:
   static const std::string cl_src_path;
 };
 #endif  // USE_OPENCL
 
 /// This class queries all available calculating devices on a given machine
-/// grouped according to manufacturer or device drivers. All methods should be static.
-/// If CUDA or OPENCL are not enabled, then the respective related methods should
+/// grouped according to manufacturer or device drivers. All methods should be
+/// static.
+/// If CUDA or OPENCL are not enabled, then the respective related methods
+/// should
 /// return something that indicates their absence (for example, 0 devices);
 /// however they should always be available regardless of compile-time switches.
 class Platform {
-public:
-
+ public:
   /// Return the default host device
-  static std::shared_ptr<Device> GetDefaultDevice() {
-    return defaultDevice;
-  }
+  static std::shared_ptr<Device> GetDefaultDevice() { return defaultDevice; }
 
 #ifdef USE_CUDA
   /// Return the number of total available GPUs
@@ -291,14 +281,14 @@ public:
   static const std::string DeviceQuery(int id, bool verbose = false);
 
   /// Create a set of CudaGPU Device using 'num_devices' free GPUs.
-  static const std::vector<std::shared_ptr<Device>>
-  CreateCudaGPUs(const size_t num_devices, size_t init_size = 0);
+  static const std::vector<std::shared_ptr<Device>> CreateCudaGPUs(
+      const size_t num_devices, size_t init_size = 0);
 
   /// Create a set of CudaGPU Device using given GPU IDs.
-  static const std::vector<std::shared_ptr<Device>>
-  CreateCudaGPUsOn(const std::vector<int> &devices, size_t init_size = 0);
+  static const std::vector<std::shared_ptr<Device>> CreateCudaGPUsOn(
+      const std::vector<int>& devices, size_t init_size = 0);
 
-  static std::vector<std::shared_ptr<Device> > UsedDevice;
+  static std::vector<std::shared_ptr<Device>> UsedDevice;
   /// This function is implementd by Caffe (http://caffe.berkeleyvision.org/).
   /// This function checks the availability of GPU #device_id.
   /// It attempts to create a context on the device by calling cudaFree(0).
@@ -315,34 +305,32 @@ public:
   /// except the context initialization.
   static bool CheckDevice(const int device_id);
   static std::mutex mtx_;
-#endif // USE_CUDA
+#endif  // USE_CUDA
 
 #ifdef USE_OPENCL
 
   const int GetNumOpenclPlatforms();
-  
+
   const int GetNumOpenclDevices();
-  
+
   static const std::shared_ptr<Device> GetDefaultOpenclDevice();
 
-  /// Create a \p num_devices set of valid OpenCL devices, regardless of
-  /// platforms.  If there are fewer valid devices than requested, then this
-  /// method will return as many as possible. If OpenCL is not in use, this
-  /// method will return an empty array.
+/// Create a \p num_devices set of valid OpenCL devices, regardless of
+/// platforms.  If there are fewer valid devices than requested, then this
+/// method will return as many as possible. If OpenCL is not in use, this
+/// method will return an empty array.
 //  static const std::vector<std::shared_ptr<Device>>
 //  CreateOpenclDevices(const size_t num_devices);
 
-  /// Create a set of valid OpenCL devices, regardless of platforms, assigning
-  /// \p id to each device in sequence.
-  /// If there are fewer valid devices than requested, then this method will
-  /// return as many as possible.
-  /// If OpenCL is not in use, this method will return an empty array.
+/// Create a set of valid OpenCL devices, regardless of platforms, assigning
+/// \p id to each device in sequence.
+/// If there are fewer valid devices than requested, then this method will
+/// return as many as possible.
+/// If OpenCL is not in use, this method will return an empty array.
 //  const std::vector<std::shared_ptr<Device>>
 //  CreateOpenclDevices(const vector<int> &id);
-#endif // USE_OPENCL
-
+#endif  // USE_OPENCL
 };
-
 
 }  // namespace singa
 

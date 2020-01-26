@@ -17,8 +17,8 @@
  */
 #ifndef SINGA_MODEL_LAYER_CONCAT_H_
 #define SINGA_MODEL_LAYER_CONCAT_H_
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
 #include "singa/model/layer.h"
 
@@ -42,8 +42,8 @@ class Concat : public Layer {
   const vector<Tensor> Forward(int flag, const vector<Tensor>& input) override;
 
   /// \copydoc Layer::Backward(int, const Tensor&, const Tensor&);
-  const std::pair<vector<Tensor>, vector<Tensor>> Backward(int flag,
-      const vector<Tensor>& grad) override;
+  const std::pair<vector<Tensor>, vector<Tensor>> Backward(
+      int flag, const vector<Tensor>& grad) override;
 
  protected:
   /// >= 0

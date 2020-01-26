@@ -24,8 +24,7 @@ namespace io {
 bool TextFileReader::Open(const std::string& path) {
   path_ = path;
   fdat_.open(path_, std::ios::in);
-  if (!fdat_.is_open())
-    LOG(WARNING) << "Cannot open file " << path_;
+  if (!fdat_.is_open()) LOG(WARNING) << "Cannot open file " << path_;
   return fdat_.is_open();
 }
 

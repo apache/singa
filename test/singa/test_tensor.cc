@@ -121,13 +121,13 @@ TEST(TensorClass, Clone) {
 TEST(TensorClass, T) {
   Tensor t(Shape{2, 3});
   EXPECT_FALSE(t.transpose());
-  Tensor o = t.T(); // o = t = {3,2}
-  t.T(); // t = {2,3}
+  Tensor o = t.T();  // o = t = {3,2}
+  t.T();             // t = {2,3}
   EXPECT_EQ(true, o.transpose());
   EXPECT_EQ(t.block(), o.block());
   EXPECT_EQ(t.data_type(), o.data_type());
-  EXPECT_EQ(t.shape()[0],  o.shape()[1]);
-  EXPECT_EQ(t.shape()[1],  o.shape()[0]);
+  EXPECT_EQ(t.shape()[0], o.shape()[1]);
+  EXPECT_EQ(t.shape()[1], o.shape()[0]);
 }
 
 TEST(TensorClass, Repeat) {
@@ -135,7 +135,7 @@ TEST(TensorClass, Repeat) {
   Tensor t(Shape{3});
   t.CopyDataFromHostPtr(data, 3);
 
-  Tensor o = t.Repeat(vector <size_t> {2}, 9999);
+  Tensor o = t.Repeat(vector<size_t>{2}, 9999);
   const float* dptr = static_cast<const float*>(o.block()->data());
   EXPECT_FLOAT_EQ(1.0f, dptr[0]);
   EXPECT_FLOAT_EQ(1.0f, dptr[1]);
@@ -194,7 +194,7 @@ TEST(TensorClass, Broadcast) {
     Tensor a1(Shape{1, 4, 5}), b1(Shape{2, 3, 1, 1});
     auto c1 = Broadcast(a1, b1.shape()).shape();
     auto c2 = Broadcast(b1, a1.shape()).shape();
- 
+
     EXPECT_EQ(c1[0], 2);
     EXPECT_EQ(c1[1], 3);
     EXPECT_EQ(c1[2], 4);
@@ -209,7 +209,7 @@ TEST(TensorClass, Broadcast) {
     Tensor a1(Shape{3, 4, 5}), b1(Shape{2, 1, 1, 1});
     auto c1 = Broadcast(a1, b1.shape()).shape();
     auto c2 = Broadcast(b1, a1.shape()).shape();
- 
+
     EXPECT_EQ(c1[0], 2);
     EXPECT_EQ(c1[1], 3);
     EXPECT_EQ(c1[2], 4);

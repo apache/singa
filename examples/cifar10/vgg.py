@@ -32,8 +32,13 @@ from singa import net as ffnet
 
 
 def ConvBnReLU(net, name, nb_filers, sample_shape=None):
-    net.add(layer.Conv2D(name + '_1', nb_filers, 3, 1, pad=1,
-                         input_sample_shape=sample_shape))
+    net.add(
+        layer.Conv2D(name + '_1',
+                     nb_filers,
+                     3,
+                     1,
+                     pad=1,
+                     input_sample_shape=sample_shape))
     net.add(layer.BatchNormalization(name + '_2'))
     net.add(layer.Activation(name + '_3'))
 

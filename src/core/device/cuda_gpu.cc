@@ -128,9 +128,7 @@ void CudaGPU::Free(void* ptr) {
   }
 }
 
-void CudaGPU::Sync() {
-  CUDA_CHECK(cudaStreamSynchronize(ctx_.stream));
-}
+void CudaGPU::Sync() { CUDA_CHECK(cudaStreamSynchronize(ctx_.stream)); }
 
 }  // namespace singa
 #endif  // USE_CUDA

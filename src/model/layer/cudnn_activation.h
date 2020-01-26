@@ -21,8 +21,8 @@
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
 #include <cudnn.h>
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "./activation.h"
@@ -40,7 +40,6 @@ class CudnnActivation : public Activation {
   const Tensor Forward(int flag, const Tensor& input) override;
   const std::pair<Tensor, vector<Tensor>> Backward(int flag,
                                                    const Tensor& grad) override;
-
 
   const cudnnActivationMode_t CudnnMode() const { return cudnn_mode_; }
 

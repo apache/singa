@@ -26,7 +26,7 @@
 
 #ifdef USE_MKLDNN
 #include <mkldnn.hpp>
-#endif // USE_MKLDNN
+#endif  // USE_MKLDNN
 
 #ifdef USE_CUDNN
 #include <cudnn.h>
@@ -37,8 +37,8 @@ namespace singa {
 
 class PoolingHandle {
  public:
-  PoolingHandle(const Tensor &input, const std::vector<int>& kernel_size,
-                const std::vector<int>& stride, const std::vector<int>& padding,
+  PoolingHandle(const Tensor &input, const std::vector<int> &kernel_size,
+                const std::vector<int> &stride, const std::vector<int> &padding,
                 const bool is_max = true);
   ~PoolingHandle();
 
@@ -73,38 +73,37 @@ class PoolingHandle {
   const mkldnn::pooling_forward::primitive_desc *pool_fwd_pd = nullptr;
   const mkldnn::memory::primitive_desc *pool_ws_d = nullptr;
   const mkldnn::memory *ws_mem = nullptr;
-#endif // USE_MKLDNN
+#endif  // USE_MKLDNN
 };
 
 #ifdef USE_MKLDNN
 
 Tensor CpuPoolingForward(const PoolingHandle &ph, const Tensor &x);
 Tensor CpuPoolingBackward(const PoolingHandle &ph, const Tensor &dy,
-                          const Tensor& x, const Tensor& y);
+                          const Tensor &x, const Tensor &y);
 
-#endif // USE_MKLDNN
+#endif  // USE_MKLDNN
 
 #ifdef USE_CUDNN
 class CudnnPoolingHandle : public PoolingHandle {
  public:
-  CudnnPoolingHandle(const Tensor &input, const std::vector<int>& kernel_size,
-                     const std::vector<int>& stride, const std::vector<int>& padding,
-                     const bool is_max = true);
+  CudnnPoolingHandle(const Tensor &input, const std::vector<int> &kernel_size,
+                     const std::vector<int> &stride,
+                     const std::vector<int> &padding, const bool is_max = true);
   ~CudnnPoolingHandle();
 
   cudnnTensorDescriptor_t x_desc = nullptr;
   cudnnTensorDescriptor_t y_desc = nullptr;
   cudnnPoolingDescriptor_t pool_desc = nullptr;
   cudnnNanPropagation_t nan_prop = CUDNN_PROPAGATE_NAN;
-
 };
 
 Tensor GpuPoolingForward(const CudnnPoolingHandle &cph, const Tensor &x);
 
 Tensor GpuPoolingBackward(const CudnnPoolingHandle &cph, const Tensor &dy,
-                          const Tensor& x, const Tensor& y);
+                          const Tensor &x, const Tensor &y);
 
-#endif  //USE_CUDNN
+#endif  // USE_CUDNN
 
 }  // namespace singa
 

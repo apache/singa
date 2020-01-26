@@ -46,8 +46,10 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
         dropout = d['dropout']
 
     cuda = device.create_cuda_gpu()
-    rnn = layer.LSTM(name='lstm', hidden_size=hidden_size,
-                     num_stacks=num_stacks, dropout=dropout,
+    rnn = layer.LSTM(name='lstm',
+                     hidden_size=hidden_size,
+                     num_stacks=num_stacks,
+                     dropout=dropout,
                      input_sample_shape=(len(idx_to_char),))
     rnn.to_device(cuda)
     rnn.param_values()[0].copy_data(rnn_w)
@@ -96,12 +98,15 @@ def sample(model_path, nsamples=100, seed_text='', do_sample=True):
         cx = outputs[2]
     print('')
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='sample chars from char-rnn')
     parser.add_argument('model', help='the model checkpoint file')
     parser.add_argument('n', type=int, help='num of characters to sample')
-    parser.add_argument('--seed', help='seed text string which warms up the '
-                        ' rnn states for sampling', default='')
+    parser.add_argument('--seed',
+                        help='seed text string which warms up the '
+                        ' rnn states for sampling',
+                        default='')
     args = parser.parse_args()
     assert args.n > 0, 'n must > 0'
     sample(args.model, args.n, seed_text=args.seed)

@@ -71,7 +71,7 @@ if __name__ == "__main__":
             softmax += time.time() - tick
             sgd.backward_and_update(loss)
 
-    dev.Sync()            
+    dev.Sync()
     end = time.time()
     throughput = float(sgd.world_size * niters * batch_size) / (end - start)
     titer = (end - start) / float(niters)
@@ -82,4 +82,5 @@ if __name__ == "__main__":
     if (sgd.rank_in_global == 0):
         print("\nThroughput = {} per second".format(throughput), flush=True)
         print("Total={}, forward={}, softmax={}, backward={}".format(
-        titer, tforward, tsoftmax, tbackward), flush=True)
+            titer, tforward, tsoftmax, tbackward),
+              flush=True)

@@ -23,9 +23,17 @@ from singa import converter
 
 
 def create_net(use_cpu):
-    urllib.request.urlretrieve("https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_train_test.prototxt", "train_test.prototxt")
-    urllib.request.urlretrieve("https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_solver.prototxt", "solver.prototxt")
-    input_sample_shape = [3, 32, 32, ]
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_train_test.prototxt",
+        "train_test.prototxt")
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/BVLC/caffe/master/examples/cifar10/cifar10_full_solver.prototxt",
+        "solver.prototxt")
+    input_sample_shape = [
+        3,
+        32,
+        32,
+    ]
 
     cvt = converter.CaffeConverter("train_test.prototxt", "solver.prototxt",
                                    input_sample_shape)

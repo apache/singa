@@ -24,8 +24,8 @@
 
 #include <google/protobuf/message.h>
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <string>
 

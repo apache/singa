@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 '''Extract the net parameters from the pytorch file and store them
 as python dict using cPickle. Must install pytorch.
 '''
@@ -53,7 +52,7 @@ def rename(pname):
         suffix = 'running_var'
     else:
         suffix = pname[p2 + 1:]
-    return pname[p1+1:p2] + '.' + suffix
+    return pname[p1 + 1:p2] + '.' + suffix
 
 
 if __name__ == '__main__':
@@ -83,7 +82,7 @@ if __name__ == '__main__':
             params[pname] = np.transpose(ary)
         #pdb.set_trace()
         assert pval.shape == params[pname].shape, 'shape mismatch for {0}, \
-               expected {1} in torch model, got {2} in singa model'.\
+               expected {1} in torch model, got {2} in singa model'                                                                                                                                      .\
                format(pname, params[pname].shape, pval.shape)
 
     with open(args.outfile, 'wb') as fd:

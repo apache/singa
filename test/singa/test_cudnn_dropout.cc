@@ -117,7 +117,6 @@ TEST(CudnnDropout, Backward) {
   mask.CopyData(drop.mask());
   const char* mptr = mask.data<char>();
 
-
   EXPECT_FLOAT_EQ(dx[0], dy[0] * GetBitValue(mptr, 0) * scale);
   EXPECT_FLOAT_EQ(dx[1], dy[1] * GetBitValue(mptr, 1) * scale);
   EXPECT_FLOAT_EQ(dx[7], dy[7] * GetBitValue(mptr, 7) * scale);

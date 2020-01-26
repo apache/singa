@@ -77,7 +77,9 @@ def _cTensor_to_pyTensor(cTensor):
 
 
 class TestAPI(unittest.TestCase):
+
     def test_batchnorm_training(self):
+
         def _run_training(x_0, s_0, b_0, rm_0, rv_0, m_0=0.1):
             # np api
             (y_1, rm_1, rv_1, bm_1, bv_1) = _np_bn_training(x_0,
@@ -112,9 +114,8 @@ class TestAPI(unittest.TestCase):
                                                  decimal=4)
             return
 
-        x_0 = np.array(
-            [1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20],
-            dtype=np.float32).reshape((2, 2, 2, 2))
+        x_0 = np.array([1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20],
+                       dtype=np.float32).reshape((2, 2, 2, 2))
         s_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
         b_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
         rm_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
@@ -132,6 +133,7 @@ class TestAPI(unittest.TestCase):
         _run_training(x_0, s_0, b_0, rm_0, rv_0, m_0=0.2)
 
     def test_batchnorm_testing(self):
+
         def _run_testing(x_0, s_0, b_0, rm_0, rv_0, m_0=0.1):
             # np api
             y_1 = _np_bn_testing(x_0, s_0, b_0, rm_0, rv_0, momentum=m_0)
@@ -153,9 +155,8 @@ class TestAPI(unittest.TestCase):
                 y_1, tensor.to_numpy(_cTensor_to_pyTensor(y_2_c)), decimal=5)
             return
 
-        x_0 = np.array(
-            [1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20],
-            dtype=np.float32).reshape((2, 2, 2, 2))
+        x_0 = np.array([1, 1, 1, 1, 2, 2, 2, 2, 10, 10, 10, 10, 20, 20, 20, 20],
+                       dtype=np.float32).reshape((2, 2, 2, 2))
         s_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
         b_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
         rm_0 = np.array([1, 10], dtype=np.float32).reshape((1, 2, 1, 1))
@@ -170,6 +171,7 @@ class TestAPI(unittest.TestCase):
         _run_testing(x_0, s_0, b_0, rm_0, rv_0, m_0=1.0)
 
     def test_softmax_api(self):
+
         def _run_test(dev, org_shape, axis, aft_shape):
             x_0 = np.random.random(org_shape).astype(np.float32)
             x_0 = x_0 + 1000
@@ -182,13 +184,11 @@ class TestAPI(unittest.TestCase):
             x_0 = x_0.reshape(aft_shape)
             x_0 = x_0 - np.max(x_0)
             y1 = np.divide(np.exp(x_0),
-                           np.sum(np.exp(x_0),
-                                  axis=1).reshape(x_0.shape[0],
-                                                  1))  # 2d softmax
+                           np.sum(np.exp(x_0), axis=1).reshape(x_0.shape[0],
+                                                               1))  # 2d softmax
             y1 = y1.reshape(org_shape)
 
             np.testing.assert_array_almost_equal(tensor.to_numpy(y0), y1)
-
 
         for dev in [gpu_dev, cpu_dev]:
             _run_test(dev, [2, 2], 1, [2, 2])
@@ -211,6 +211,7 @@ class TestAPI(unittest.TestCase):
             _run_test(dev, [2, 2, 2, 2], -4, [1, 16])
 
     def test_tensor_arithmetic_op_broadcast(self):
+
         def _run_test(dev, singa_op, np_op, s1, s2):
             x_0 = np.random.random(s1).astype(np.float32)
             y_0 = np.random.random(s2).astype(np.float32)
@@ -241,10 +242,13 @@ class TestAPI(unittest.TestCase):
                 _run_test(dev, s_op, n_op, [2, 3, 4, 5], [4, 5])  # 45+2345=2345
                 _run_test(dev, s_op, n_op, [3, 1, 2, 1], [3, 1, 2])
                 _run_test(dev, s_op, n_op, [4, 5], [2, 3, 4, 5])  # 45+2345=2345
-                _run_test(dev, s_op, n_op, [1, 4, 5], [2, 3, 1, 1])  # 145+2311=2345
-                _run_test(dev, s_op, n_op, [3, 4, 5], [2, 1, 1, 1])  # 345+2111=2345
+                _run_test(dev, s_op, n_op, [1, 4, 5],
+                          [2, 3, 1, 1])  # 145+2311=2345
+                _run_test(dev, s_op, n_op, [3, 4, 5],
+                          [2, 1, 1, 1])  # 345+2111=2345
 
     def test_transpose_and_arithmetic_op_broadcast(self):
+
         def _test(s1, s2, axis1, axis2, s3, s_op, n_op, dev):
             x_0 = np.random.random(s1).astype(np.float32)
             y_0 = np.random.random(s2).astype(np.float32)

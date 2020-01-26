@@ -84,9 +84,11 @@ def serve(net, label_map, dev, agent, topk=5):
         if msg.is_request():
             try:
                 # process images
-                im = [np.array(x.convert('RGB'),
-                               dtype=np.float32).transpose(2, 0, 1)
-                      for x in image_transform(val['image'])]
+                im = [
+                    np.array(x.convert('RGB'),
+                             dtype=np.float32).transpose(2, 0, 1)
+                    for x in image_transform(val['image'])
+                ]
                 im = np.array(im) / 255
                 im -= mean[np.newaxis, :, np.newaxis, np.newaxis]
                 im /= std[np.newaxis, :, np.newaxis, np.newaxis]
@@ -128,13 +130,16 @@ def main():
         parser = ArgumentParser(description="Wide residual network")
 
         parser.add_argument("--port", default=9999, help="listen port")
-        parser.add_argument("--use_cpu", action="store_true",
+        parser.add_argument("--use_cpu",
+                            action="store_true",
                             help="If set, load models onto CPU devices")
         parser.add_argument("--parameter_file", default="wrn-50-2.pickle")
-        parser.add_argument("--model", choices=['resnet', 'wrn', 'preact',
-                                                'addbn'], default='wrn')
-        parser.add_argument("--depth", type=int, choices=[18, 34, 50, 101,
-                                                          152, 200],
+        parser.add_argument("--model",
+                            choices=['resnet', 'wrn', 'preact', 'addbn'],
+                            default='wrn')
+        parser.add_argument("--depth",
+                            type=int,
+                            choices=[18, 34, 50, 101, 152, 200],
                             default='50')
 
         # Process arguments
