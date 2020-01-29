@@ -53,6 +53,7 @@ RUN apt-get update \
     numpy \
     setuptools \
     protobuf \
+    Deprecated \
     future
 
 # install swig > 3.0.10

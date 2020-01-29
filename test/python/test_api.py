@@ -170,10 +170,10 @@ class TestAPI(unittest.TestCase):
         _run_testing(x_0, s_0, b_0, rm_0, rv_0, m_0=1.0)
 
     def test_softmax_api(self):
-        def _run_test(org_shape, axis, aft_shape):
+        def _run_test(dev, org_shape, axis, aft_shape):
             x_0 = np.random.random(org_shape).astype(np.float32)
             x_0 = x_0 + 1000
-            x0 = tensor.Tensor(device=gpu_dev, data=x_0)
+            x0 = tensor.Tensor(device=dev, data=x_0)
 
             # test with axis
             y0 = tensor._call_singa_func(singa_api.SoftMax, x0.data, axis)
@@ -189,26 +189,26 @@ class TestAPI(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(tensor.to_numpy(y0), y1)
 
-        _run_test([2, 2], 1, [2, 2])
-        _run_test([2, 2], 0, [1, 4])
-        _run_test([2, 2], -1, [2, 2])
-        _run_test([2, 2], -2, [1, 4])
 
-        _run_test([2, 2, 2], 2, [4, 2])
-        _run_test([2, 2, 2], 1, [2, 4])
-        _run_test([2, 2, 2], 0, [1, 8])
-        _run_test([2, 2, 2], -1, [4, 2])
-        _run_test([2, 2, 2], -2, [2, 4])
-        _run_test([2, 2, 2], -3, [1, 8])
-
-        _run_test([2, 2, 2, 2], 3, [8, 2])
-        _run_test([2, 2, 2, 2], 2, [4, 4])
-        _run_test([2, 2, 2, 2], 1, [2, 8])
-        _run_test([2, 2, 2, 2], 0, [1, 16])
-        _run_test([2, 2, 2, 2], -1, [8, 2])
-        _run_test([2, 2, 2, 2], -2, [4, 4])
-        _run_test([2, 2, 2, 2], -3, [2, 8])
-        _run_test([2, 2, 2, 2], -4, [1, 16])
+        for dev in [gpu_dev, cpu_dev]:
+            _run_test(dev, [2, 2], 1, [2, 2])
+            _run_test(dev, [2, 2], 0, [1, 4])
+            _run_test(dev, [2, 2], -1, [2, 2])
+            _run_test(dev, [2, 2], -2, [1, 4])
+            _run_test(dev, [2, 2, 2], 2, [4, 2])
+            _run_test(dev, [2, 2, 2], 1, [2, 4])
+            _run_test(dev, [2, 2, 2], 0, [1, 8])
+            _run_test(dev, [2, 2, 2], -1, [4, 2])
+            _run_test(dev, [2, 2, 2], -2, [2, 4])
+            _run_test(dev, [2, 2, 2], -3, [1, 8])
+            _run_test(dev, [2, 2, 2, 2], 3, [8, 2])
+            _run_test(dev, [2, 2, 2, 2], 2, [4, 4])
+            _run_test(dev, [2, 2, 2, 2], 1, [2, 8])
+            _run_test(dev, [2, 2, 2, 2], 0, [1, 16])
+            _run_test(dev, [2, 2, 2, 2], -1, [8, 2])
+            _run_test(dev, [2, 2, 2, 2], -2, [4, 4])
+            _run_test(dev, [2, 2, 2, 2], -3, [2, 8])
+            _run_test(dev, [2, 2, 2, 2], -4, [1, 16])
 
     def test_tensor_arithmetic_op_broadcast(self):
         def _run_test(dev, singa_op, np_op, s1, s2):
