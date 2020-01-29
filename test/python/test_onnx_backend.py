@@ -735,6 +735,19 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[data_0, data_1], outputs=[result],
                name='test_sum_two_inputs')
 
+    def test_leakyrelu():  # type: () -> None
+        default_alpha = 0.01
+        node = onnx.helper.make_node(
+            'LeakyRelu',
+            inputs=['x'],
+            outputs=['y'],
+        )
+        x = np.random.randn(3, 4, 5).astype(np.float32)
+        y = np.clip(x, 0, np.inf) + np.clip(x, -np.inf, 0) * default_alpha
+        
+        expect(node, inputs=[x], outputs=[y],
+               name='test_leakyrelu')
+
     def test_relu(self):  # type: () -> None
         node = onnx.helper.make_node(
             'Relu',

@@ -38,6 +38,21 @@ autograd.training = True
 
 class TestPythonOnnx(unittest.TestCase):
 
+    def test_leakyrelu(self):
+        X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
+        x = tensor.from_numpy(X)
+        x.to_device(gpu_dev)
+        y = autograd.LeakyRelu(0.01)(x)[0]
+
+        # frontend
+        model = sonnx.to_onnx([x], [y])
+        # print('The model is:\n{}'.format(model))
+
+        # backend
+        sg_ir = sonnx.prepare(model, device=gpu_dev)
+        y_t = sg_ir.run([x])
+        np.testing.assert_array_almost_equal(tensor.to_numpy(y), tensor.to_numpy(y_t[0]), decimal=5)
+
     def test_conv2d(self):
         x = tensor.Tensor(shape=(2, 3, 3, 3), device=gpu_dev)
         x.gaussian(0.0, 1.0)
@@ -53,7 +68,6 @@ class TestPythonOnnx(unittest.TestCase):
 
     def test_relu(self):
         X = np.array([0.8, -1.2, 3.3, -3.6, -0.5, 0.5]).reshape(3, 2).astype(np.float32)
-        XT = np.array([0.8, 0, 3.3, 0, 0, 0.5]).reshape(3, 2).astype(np.float32)
         x = tensor.from_numpy(X)
         x.to_device(gpu_dev)
         y = autograd.ReLU()(x)[0]

@@ -2265,7 +2265,7 @@ def exp(a):
 
 class LeakyRelu(Operation):
     def __init__(self, a):
-        super().__init__(self)
+        super(LeakyRelu, self).__init__()
         self.a = a
 
     def forward(self, x):
