@@ -93,6 +93,7 @@ def get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape, strides_s
         for i in range(len(input_spatial_shape)):
             pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
                 kernel_spatial_shape[i] - input_spatial_shape[i]
+            # todo, cannot add padding at only one dirction
             if (pad_shape[i] % 2) == 0: 
                 pad_shape[i] = pad_shape[i] // 2
             else:
@@ -203,6 +204,7 @@ class SingaFrontend(object):
         'Not': 'Not',
         'Negative': 'Neg',
         'Reciprocal': 'Reciprocal',
+        'LeakyRelu' : 'LeakyRelu',
     }
 
     # this dict indicates the operators that need extra handle
@@ -222,6 +224,7 @@ class SingaFrontend(object):
         'HardSigmoid': '_create_hardsigmoid',
         'Clip': '_create_clip',
         'Transpose': '_create_transpose',
+        'LeakyRelu': '_create_leakyrelu',
     }
 
     # operators with bool output
@@ -240,6 +243,24 @@ class SingaFrontend(object):
     # so we record these items firstly so that we can handle then
     # at other place.
     _unhandled_operators = {}
+
+    @classmethod
+    def _create_leakyrelu(cls, op, op_t):
+        """
+        get a onnx node from singa LeakyRelu operator
+        Args:
+            op: a given operator
+        Args:
+            op_t: the tensor of the operator
+        Returns: 
+            the onnx node
+        """
+        node = cls._common_singa_tensor_to_onnx_node(op, op_t)
+
+        node.attribute.extend([
+            helper.make_attribute('alpha', op.a),
+        ])
+        return node
 
     @classmethod
     def _create_transpose(cls, op, op_t):
@@ -641,7 +662,6 @@ class SingaFrontend(object):
         # since tensor's name might change
         # we record its id
         input_tensors = {id(x): x for x in inputs}
-        # print(input_tensors)
         X = []
         optype = cls._get_singa_op_type(y.creator)
         y_dtype = TensorProto.FLOAT
@@ -651,7 +671,6 @@ class SingaFrontend(object):
 
         for op, yid, op_t in topol:
             optype = cls._get_singa_op_type(op)
-            # print(op.name, cls._get_singa_op_type(op), op_t, optype, yid)
             if yid in input_tensors and optype == 'Dummy':
                 # find the input by its id
                 op_t = input_tensors[yid]
@@ -833,6 +852,7 @@ class SingaBackend(Backend):
         'Not': '_not',
         'Neg': 'negative',
         'Reciprocal': 'reciprocal',
+        'LeakyRelu': 'LeakyRelu',
     }
 
     # this dict indicates the operators that need extra handle
@@ -853,7 +873,28 @@ class SingaBackend(Backend):
         'HardSigmoid': '_create_hardsigmoid',
         'Clip': '_create_clip',
         'Transpose': '_create_transpose',
+        'LeakyRelu': '_create_leakyrelu',
     }
+
+    @classmethod
+    def _create_leakyrelu(cls, onnx_node, inputs, opset_version):
+        """
+        get the LeakyRelu operator from onnx node
+        Args:
+            onnx_node: a given onnx node
+        Args:
+            inputs: the input tensor
+        Args:
+            opset_version: the opset version
+        Returns: 
+            handle, the handle of singa operator
+        Returns: 
+            forward, the autograd of singa operator
+        """
+        alpha = onnx_node.getattr("alpha", 0.01)
+        _, forward = cls._common_onnx_node_to_singa_op(
+            onnx_node, inputs, opset_version)
+        return _, forward(alpha)
 
     @classmethod
     def _create_transpose(cls, onnx_node, inputs, opset_version):
@@ -1335,7 +1376,7 @@ class SingaBackend(Backend):
         return outputs_dict
 
     @classmethod
-    def _onnx_node_to_singa_tensor(cls, node_infos, tensor_map, device):
+    def _onnx_node_to_singa_tensor(cls, node_infos, weights, tensor_map, device):
         """
         init the singa tensor from onnx infos
         Args:
@@ -1346,9 +1387,12 @@ class SingaBackend(Backend):
             device: the used device
         """
         for x in node_infos:
-            x_shape = tuple(dim.dim_value for dim in x.type.tensor_type.shape.dim)
-            tmp_tensor = tensor.from_numpy(np.random.randn(*x_shape).astype(np.float32))
-            tmp_tensor.to_device(device)
+            if x.name in weights:
+                tmp_tensor = weights[x.name]
+            else:
+                x_shape = tuple(dim.dim_value for dim in x.type.tensor_type.shape.dim)
+                tmp_tensor = tensor.from_numpy(np.random.randn(*x_shape).astype(np.float32))
+                tmp_tensor.to_device(device)
             tensor_map[x.name] = tmp_tensor
 
     @classmethod
@@ -1368,17 +1412,22 @@ class SingaBackend(Backend):
         """
         #  runs model checker, optimizer, shape inference engine 
         optimized_model = onnx.utils.polish_model(onnx_model) 
-        # print('The model is:\n{}'.format(optimized_model))
         # this tensor_nap contains all tensors, including outputs of each op
         tensor_map = {}
         # this weights only contains the tensors which have stored the gradients
         weights = {}
         singa_ops = []
         singa_op = collections.namedtuple('SingaOps', ['name', 'op', 'handle', 'forward'])
+        # put the init value into weights
+        for init in optimized_model.graph.initializer:
+            tmp_tensor = tensor.from_numpy(onnx.numpy_helper.to_array(init).astype(np.float32))
+            tmp_tensor.to_device(device)
+            weights[init.name] = tmp_tensor
         # init the input, output, and intermidate nodes as singa tensors 
-        cls._onnx_node_to_singa_tensor(optimized_model.graph.input, tensor_map, device)
-        cls._onnx_node_to_singa_tensor(optimized_model.graph.output, tensor_map, device)
-        cls._onnx_node_to_singa_tensor(optimized_model.graph.value_info, tensor_map, device)
+        # (if the tensor does not exist in weights)
+        cls._onnx_node_to_singa_tensor(optimized_model.graph.input, weights, tensor_map, device)
+        cls._onnx_node_to_singa_tensor(optimized_model.graph.output, weights, tensor_map, device)
+        cls._onnx_node_to_singa_tensor(optimized_model.graph.value_info, weights, tensor_map, device)
         # convert constant nodes to tensor, other nodes to handler
         for node in optimized_model.graph.node:
             node = OnnxNode(node)
@@ -1424,8 +1473,8 @@ class SingaBackend(Backend):
         for imp in model.opset_import:
             if not imp.HasField("domain") or imp.domain == "":
                 opset_version = imp.version
-                if imp.version > cls._known_opset_version:
-                    warnings.warn("This version of singa targets ONNX operator set version {}, but the model we are trying to import uses version {}.  We will try to import it anyway, but if the model uses operators which had BC-breaking changes in the intervening versions, import will fail.".format(cls._known_opset_version, imp.version))
+                if imp.version != cls._known_opset_version:
+                    warnings.warn("This version of singa targets ONNX operator set version {}, but the model we are trying to import uses version {}.  We will try to import it anyway, ".format(cls._known_opset_version, imp.version))
             else:
                 warnings.warn(
                     "Unrecognized operator set {}".format(imp.domain))
