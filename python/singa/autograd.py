@@ -632,18 +632,18 @@ class Reshape(Operation):
             self.shape = list(shape)
 
     def forward(self, x):
-        _shape = x.shape()
+        self._shape = x.shape()
         shape = self.shape
         # handle the shape with 0
-        shape = [_shape[i] if i < len(_shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
+        shape = [self._shape[i] if i < len(self._shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
         # handle the shape with -1
-        hidden_shape = int(np.prod(_shape) // np.abs(np.prod(shape)))
+        hidden_shape = int(np.prod(self._shape) // np.abs(np.prod(shape)))
         self.cache=[s if s != -1 else hidden_shape for s in shape]
 
         return singa.Reshape(x, self.cache)
 
     def backward(self, dy):
-        return singa.Reshape(dy, self.cache)
+        return singa.Reshape(dy, self._shape)
 
 
 def reshape(a,shape):
@@ -1199,7 +1199,7 @@ class _Conv2d(Operation):
             b = CTensor((self.handle.num_filters,), x.device())
             b.SetFloatValue(0.0)
 
-        if singa.USE_CUDA:
+        if (type(self.handle) != singa.ConvHandle):
             return singa.GpuConvForward(x, W, b, self.handle)
         else:
             return singa.CpuConvForward(x, W, b, self.handle)
@@ -1209,7 +1209,7 @@ class _Conv2d(Operation):
             self, "inputs"
         ), "Please set training as True before do BP. "
         
-        if singa.USE_CUDA:
+        if (type(self.handle) != singa.ConvHandle):
             dx = singa.GpuConvBackwardx(
                 dy, self.inputs[1], self.inputs[0], self.handle
             )
@@ -1572,7 +1572,7 @@ class _Pooling2d(Operation):
         self.handle = handle
 
     def forward(self, x):
-        if singa.USE_CUDA:
+        if (type(self.handle) != singa.PoolingHandle):
             y = singa.GpuPoolingForward(self.handle, x)
         else:
             y = singa.CpuPoolingForward(self.handle, x)
@@ -1583,7 +1583,7 @@ class _Pooling2d(Operation):
         return y
 
     def backward(self, dy):
-        if singa.USE_CUDA:
+        if (type(self.handle) != singa.PoolingHandle):
             dx = singa.GpuPoolingBackward(
                 self.handle, dy, self.cache[0], self.cache[1]
             )
