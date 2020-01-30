@@ -2745,5 +2745,58 @@ class TestPythonOperation(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
 
+    def test_gemm(self):
+        devs = [cpu_dev, gpu_dev]
+        configs = [
+            # alpha, beta, transA, transB, shapeA, shapeB, shapeC, shapeY
+            [0.25, 0.35, 0, 0, (3, 4), (4, 5), (1, 5), (3, 5)],
+            [0.25, 0.35, 0, 1, (3, 4), (5, 4), (1, 5), (3, 5)],
+            [0.25, 0.35, 1, 0, (4, 3), (4, 5), (1, 5), (3, 5)],
+            [0.25, 0.35, 1, 1, (4, 3), (5, 4), (1, 5), (3, 5)],
+        ]
+        for dev in devs:
+            for config in configs:
+                alpha = config[0]
+                beta = config[1]
+                transA = config[2]
+                transB = config[3]
+                shapeA = config[4]
+                shapeB = config[5]
+                shapeC = config[6]
+                shapeY = config[7]
+                A = np.random.randn(*shapeA).astype(np.float32)
+                B = np.random.randn(*shapeB).astype(np.float32)
+                C = np.random.randn(*shapeC).astype(np.float32)
+                DY = np.ones(shapeY, dtype=np.float32)
+
+                a = tensor.from_numpy(A)
+                a.to_device(dev)
+                b = tensor.from_numpy(B)
+                b.to_device(dev)
+                c = tensor.from_numpy(C)
+                c.to_device(dev)
+                dy = tensor.from_numpy(DY)
+                dy.to_device(dev)
+
+                result = autograd.gemm(a, b, c, alpha, beta, transA, transB)
+                da, db, dc = result.creator.backward(dy.data)
+                
+                # Y = alpha * A' * B' + beta * C
+                _A = A if transA == 0 else A.T
+                _B = B if transB == 0 else B.T
+                C = C if C is not None else np.array(0)
+                Y = alpha * np.dot(_A, _B) + beta * C
+
+                DA = alpha * np.matmul(DY, _B.T)
+                DA = DA if transA == 0 else DA.T
+                DB = alpha * np.matmul(_A.T, DY)
+                DB = DB if transB == 0 else DB.T
+                DC = beta * np.sum(DY, axis=axis_helper(Y.shape, C.shape)).reshape(C.shape)
+
+                np.testing.assert_array_almost_equal(tensor.to_numpy(result), Y, decimal=5)
+                np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(da)), DA, decimal=5)
+                np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(db)), DB, decimal=5)
+                np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dc)), DC, decimal=5)
+
 if __name__ == '__main__':
     unittest.main()
