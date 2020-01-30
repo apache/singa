@@ -2764,10 +2764,24 @@ def reciprocal(x):
 
 class GlobalAveragePool(Operation):
     def __init__(self, data_format='channels_first'):
+        """
+        init a GlobalAveragePool operator
+        Args:data_format: 
+            A string, we support two formats: channels_last and channels_first, default is channels_first.
+            channels_first means the format of input is (N x C x H x W)
+            channels_last means the format of input is (N x H x W x C)
+        """
         super(GlobalAveragePool, self).__init__()
         self.data_format = data_format
 
     def forward(self, x):
+        """
+        forward propogation of GlobalAveragePool
+        Args:x: 
+            the input tensor
+        Returns: 
+            tensor, the output
+        """
         if training:
             self.mask = singa.Tensor(x.shape(), x.device())
 
@@ -2793,9 +2807,27 @@ class GlobalAveragePool(Operation):
         return singa.MultFloat(x.data, self.shape_divisor)
 
     def backward(self, dy):
+        """
+        backward propogation of GlobalAveragePool
+        Args:dy: 
+            the gradient tensor from upper operations
+        Returns: 
+            tensor, the gradient over input
+        """
         self.mask.SetFloatValue(self.shape_divisor)
         return singa.__mul__(self.mask, dy)
 
 
 def globalaveragepool(x, data_format='channels_first'):
+    """
+    GlobalAveragePool operator
+    Args:x
+        the input tensor
+    Args:data_format: 
+        A string, we support two formats: channels_last and channels_first, default is channels_first.
+        channels_first means the format of input is (N x C x H x W)
+        channels_last means the format of input is (N x H x W x C)
+    Returns: 
+        tensor, the output
+    """
     return GlobalAveragePool(data_format)(x)[0]
