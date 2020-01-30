@@ -815,7 +815,21 @@ void Dot<float, lang::Cuda>(const Tensor& in1, const Tensor& in2, float* out,
   CUBLAS_CHECK(cublasSdot(handle, num, inPtr1, 1, inPtr2, 1, out));
 }
 template <>
-void Nrm2<float, lang::Cuda>(const Tensor& in, float* out, Context* ctx) {
+void Dot<float, lang::Cuda>(const Tensor& in1,
+                            const Tensor& in2, Tensor* out, Context* ctx) {
+  const float* inPtr1 = static_cast<const float*>(in1.block()->data());
+  const float* inPtr2 = static_cast<const float*>(in2.block()->data());
+  float* outPtr = static_cast<float*>(out->block()->mutable_data());
+  auto handle = ctx->cublas_handle;
+  const size_t num = in1.Size();
+  CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE));
+  CUBLAS_CHECK(cublasSdot(handle, num, inPtr1, 1, inPtr2, 1, outPtr));
+  CUBLAS_CHECK(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
+}
+
+template <>
+void Nrm2<float, lang::Cuda>(const Tensor& in, float* out,
+                             Context* ctx) {
   auto handle = ctx->cublas_handle;  // TODO(wangwei) set cudastream
   const float* inPtr = static_cast<const float*>(in.block()->data());
   const size_t num = in.Size();

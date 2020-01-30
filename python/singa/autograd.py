@@ -644,21 +644,18 @@ class Reshape(Operation):
             self.shape = list(shape)
 
     def forward(self, x):
-        _shape = x.shape()
+        self._shape = x.shape()
         shape = self.shape
         # handle the shape with 0
-        shape = [
-            _shape[i] if i < len(_shape) and shape[i] == 0 else shape[i]
-            for i in range(len(shape))
-        ]
+        shape = [self._shape[i] if i < len(self._shape) and shape[i] == 0 else shape[i] for i in range(len(shape))]
         # handle the shape with -1
-        hidden_shape = int(np.prod(_shape) // np.abs(np.prod(shape)))
-        self.cache = [s if s != -1 else hidden_shape for s in shape]
+        hidden_shape = int(np.prod(self._shape) // np.abs(np.prod(shape)))
+        self.cache=[s if s != -1 else hidden_shape for s in shape]
 
         return singa.Reshape(x, self.cache)
 
     def backward(self, dy):
-        return singa.Reshape(dy, self.cache)
+        return singa.Reshape(dy, self._shape)
 
 
 def reshape(a, shape):
@@ -954,9 +951,8 @@ class CrossEntropy(Operation):
         Returns:
             loss (CTensor): scalar.
         """
-        loss = CTensor((1,))
-        loss_data = -singa.SumAsFloat(singa.__mul__(t, singa.Log(x)))
-        loss.SetFloatValue(loss_data / x.shape()[0])
+        loss = singa.SumAll(singa.__mul__(t, singa.Log(x)))
+        loss /= -x.shape()[0]
         self.x = x
         self.t = t
         self.input = (x, t)
@@ -973,7 +969,7 @@ class CrossEntropy(Operation):
                           dy = 1.0
         """
         dx = singa.__div__(self.t, self.x)
-        dx *= float(-1 / self.x.shape()[0])
+        dx *= float(-1.0 / self.x.shape()[0])
         if isinstance(dy, float):
             # dtype of dy: float
             dx *= dy
@@ -994,9 +990,9 @@ class SoftMaxCrossEntropy(Operation):
 
     def forward(self, x):
         self.p = singa.SoftMax(x)
-        loss = CTensor((1,), self.p.device())
         ret = singa.CrossEntropyFwd(self.p, self.t)
-        loss.SetFloatValue(singa.SumAsFloat(ret) / x.shape()[0])
+        loss = singa.SumAll(ret)
+        loss /= x.shape()[0]
         return loss
 
     def backward(self, dy=1.0):
@@ -1018,8 +1014,8 @@ class MeanSquareError(Operation):
     def forward(self, x, t):
         self.err = singa.__sub__(x, t)
         sqr = singa.Square(self.err)
-        loss = CTensor((1,), x.device())
-        loss.SetFloatValue(singa.SumAsFloat(sqr) / x.shape()[0] / 2)
+        loss = singa.SumAll(sqr)
+        loss /= (x.shape()[0] * 2)
         return loss
 
     def backward(self, dy=1.0):
@@ -1233,20 +1229,23 @@ class _Conv2d(Operation):
             b = CTensor((self.handle.num_filters,), x.device())
             b.SetFloatValue(0.0)
 
-        if singa.USE_CUDA:
+        if (type(self.handle) != singa.ConvHandle):
             return singa.GpuConvForward(x, W, b, self.handle)
         else:
             return singa.CpuConvForward(x, W, b, self.handle)
 
     def backward(self, dy):
         assert training is True and hasattr(
-            self, "inputs"), "Please set training as True before do BP. "
-
-        if singa.USE_CUDA:
-            dx = singa.GpuConvBackwardx(dy, self.inputs[1], self.inputs[0],
-                                        self.handle)
-            dW = singa.GpuConvBackwardW(dy, self.inputs[0], self.inputs[1],
-                                        self.handle)
+            self, "inputs"
+        ), "Please set training as True before do BP. "
+        
+        if (type(self.handle) != singa.ConvHandle):
+            dx = singa.GpuConvBackwardx(
+                dy, self.inputs[1], self.inputs[0], self.handle
+            )
+            dW = singa.GpuConvBackwardW(
+                dy, self.inputs[0], self.inputs[1], self.handle
+            )
             if self.handle.bias_term:
                 db = singa.GpuConvBackwardb(dy, self.inputs[2], self.handle)
                 return dx, dW, db
@@ -1589,7 +1588,7 @@ class _Pooling2d(Operation):
         self.handle = handle
 
     def forward(self, x):
-        if singa.USE_CUDA:
+        if (type(self.handle) != singa.PoolingHandle):
             y = singa.GpuPoolingForward(self.handle, x)
         else:
             y = singa.CpuPoolingForward(self.handle, x)
@@ -1600,9 +1599,10 @@ class _Pooling2d(Operation):
         return y
 
     def backward(self, dy):
-        if singa.USE_CUDA:
-            dx = singa.GpuPoolingBackward(self.handle, dy, self.cache[0],
-                                          self.cache[1])
+        if (type(self.handle) != singa.PoolingHandle):
+            dx = singa.GpuPoolingBackward(
+                self.handle, dy, self.cache[0], self.cache[1]
+            )
         else:
             dx = singa.CpuPoolingBackward(self.handle, dy, self.cache[0],
                                           self.cache[1])

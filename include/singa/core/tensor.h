@@ -533,6 +533,7 @@ void SumRows(const Tensor &M, Tensor *out);
 /// if 'axis' is 1, sum all columns into a single column
 /// TODO(wangwei) support arbitrary Tensor like numpy.sum
 Tensor Sum(const Tensor &in, const int axis);
+Tensor SumAll(const Tensor &in);
 
 // ================Random operations==========================================
 /// For each element x set x = 1 if random() < p; otherwise x = 1.

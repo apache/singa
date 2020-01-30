@@ -944,6 +944,19 @@ Tensor Sum(const Tensor &M, int axis) {
   }
 }
 
+Tensor SumAll(const Tensor &in) {
+  Tensor out({(size_t)1}, in.device(), in.data_type());
+  Tensor one(in.shape(), in.device(), in.data_type());
+  auto *outPtr = &out;
+  one.SetValue(1.0f);
+  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+    one.device()->Exec([in, one, outPtr](Context * ctx) {
+      Dot<DType, Lang>(in, one, outPtr, ctx);
+    }, {in.block(), one.block()}, {outPtr->block()});
+  });
+  return out;
+}
+ 
 Tensor RowMax(const Tensor &in) {
   Tensor ret({in.shape(0)}, in.device(), in.data_type());
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
