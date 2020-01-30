@@ -2760,3 +2760,40 @@ class Reciprocal(Operation):
 
 def reciprocal(x):
     return Reciprocal()(x)[0]
+
+
+class GlobalAveragePool(Operation):
+    def __init__(self, data_format='channels_first'):
+        super(GlobalAveragePool, self).__init__()
+        self.data_format = data_format
+
+    def forward(self, x):
+        #y=1/x elementwise
+        if training:
+            self.mask = singa.Tensor(list(x.shape()), x.device())
+
+        shape = list(x.shape())
+
+        if self.data_format == 'channels_first':
+            axes = tuple(i for i in range(2, len(shape)))
+            self.shape_divisor = 1/np.prod(shape[2:])
+        else:
+            axes = tuple(i for i in range(1, len(shape)-1))
+            self.shape_divisor = 1/np.prod(shape[1:-1])
+
+        # output shape
+        for i in axes:
+            shape[i] = 1
+
+        x = tensor.from_raw_tensor(x)
+        x = tensor.sum(x, axis=axes)
+        x = tensor.reshape(x, shape)
+        return singa.MultFloat(x.data, self.shape_divisor)
+
+    def backward(self, dy):
+        self.mask.SetFloatValue(self.shape_divisor)
+        return singa.__mul__(self.mask, dy)
+
+
+def globalaveragepool(x, data_format='channels_first'):
+    return GlobalAveragePool(data_format)(x)[0]
