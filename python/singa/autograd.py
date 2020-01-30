@@ -2768,20 +2768,22 @@ class GlobalAveragePool(Operation):
         self.data_format = data_format
 
     def forward(self, x):
-        #y=1/x elementwise
         if training:
             self.mask = singa.Tensor(list(x.shape()), x.device())
 
         shape = list(x.shape())
-
+        
+        # (N x C x H x W) for channels_first
         if self.data_format == 'channels_first':
             axes = tuple(i for i in range(2, len(shape)))
             self.shape_divisor = 1/np.prod(shape[2:])
-        else:
+        else: # (N x H x W x C) for channels_last
             axes = tuple(i for i in range(1, len(shape)-1))
             self.shape_divisor = 1/np.prod(shape[1:-1])
 
         # output shape
+        # (N x C x 1 x 1) for channels_first
+        # (N x 1 x 1 x C) for channels_last
         for i in axes:
             shape[i] = 1
 
