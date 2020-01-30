@@ -2769,7 +2769,7 @@ class GlobalAveragePool(Operation):
 
     def forward(self, x):
         if training:
-            self.mask = singa.Tensor(list(x.shape()), x.device())
+            self.mask = singa.Tensor(x.shape(), x.device())
 
         shape = list(x.shape())
         
