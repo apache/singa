@@ -108,7 +108,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node_without_padding, inputs=[x, W], outputs=[y_without_padding],
                name='test_basic_conv_without_padding')
 
-    def test_conv2d_with_strides(self):  # type: () -> None
+    def test_conv2d_with_strides(self):
 
         x = np.array([[[[0., 1., 2., 3., 4.],  # (1, 1, 7, 5) input tensor
                         [5., 6., 7., 8., 9.],
@@ -171,7 +171,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node_with_asymmetric_padding, inputs=[x, W], outputs=[y_with_asymmetric_padding],
                name='test_conv_with_strides_and_asymmetric_padding')
 
-    def test_averagepool_2d_precomputed_pads(self):  # type: () -> None
+    def test_averagepool_2d_precomputed_pads(self):
         """
         input_shape: [1, 1, 5, 5]
         output_shape: [1, 1, 5, 5]
@@ -201,7 +201,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_averagepool_2d_precomputed_pads')
 
-    def test_averagepool_2d_precomputed_strides(self):  # type: () -> None
+    def test_averagepool_2d_precomputed_strides(self):
         """
         input_shape: [1, 1, 5, 5]
         output_shape: [1, 1, 2, 2]
@@ -226,7 +226,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_averagepool_2d_precomputed_strides')
 
-    def test_averagepool_2d_precomputed_same_upper(self):  # type: () -> None
+    def test_averagepool_2d_precomputed_same_upper(self):
         """
         input_shape: [1, 1, 5, 5]
         output_shape: [1, 1, 3, 3]
@@ -254,7 +254,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_averagepool_2d_precomputed_same_upper')
 
-    def test_averagepool_2d_default(self):  # type: () -> None
+    def test_averagepool_2d_default(self):
         """
         input_shape: [1, 3, 32, 32]
         output_shape: [1, 3, 31, 31]
@@ -278,7 +278,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_averagepool_2d_default')
 
-    def test_averagepool_2d_pads(self):  # type: () -> None
+    def test_averagepool_2d_pads(self):
         """
         input_shape: [1, 3, 28, 28]
         output_shape: [1, 3, 30, 30]
@@ -309,7 +309,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
 
         expect(node, inputs=[x], outputs=[y], name='test_averagepool_2d_pads')
 
-    def test_averagepool_2d_strides(self):  # type: () -> None
+    def test_averagepool_2d_strides(self):
         """
         input_shape: [1, 3, 32, 32]
         output_shape: [1, 3, 10, 10]
@@ -334,7 +334,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_averagepool_2d_strides')
 
-    def test_maxpool_2d_precomputed_pads(self):  # type: () -> None
+    def test_maxpool_2d_precomputed_pads(self):
         """
         input_shape: [1, 1, 5, 5]
         output_shape: [1, 1, 5, 5]
@@ -365,7 +365,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_maxpool_2d_precomputed_pads')
 
-    def test_maxpool_with_argmax_2d_precomputed_pads(self):  # type: () -> None
+    def test_maxpool_with_argmax_2d_precomputed_pads(self):
         """
         input_shape: [1, 1, 5, 5]
         output_shape: [1, 1, 5, 5]
@@ -401,7 +401,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y, z],
                name='test_maxpool_with_argmax_2d_precomputed_pads')
 
-    def test_maxpool_2d_precomputed_strides(self):  # type: () -> None
+    def test_maxpool_2d_precomputed_strides(self):
         """
         input_shape: [1, 1, 5, 5]
         output_shape: [1, 1, 2, 2]
@@ -426,7 +426,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_maxpool_2d_precomputed_strides')
 
-    # type: () -> None
+  
     def test_maxpool_with_argmax_2d_precomputed_strides(self):
         """
         input_shape: [1, 1, 5, 5]
@@ -455,7 +455,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[
                y, z], name='test_maxpool_with_argmax_2d_precomputed_strides')
 
-    def test_maxpool_2d_precomputed_same_upper(self):  # type: () -> None
+    def test_maxpool_2d_precomputed_same_upper(self):
         """
         input_shape: [1, 1, 5, 5]
         output_shape: [1, 1, 3, 3]
@@ -483,7 +483,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_maxpool_2d_precomputed_same_upper')
 
-    def test_maxpool_2d_default(self):  # type: () -> None
+    def test_maxpool_2d_default(self):
         """
         input_shape: [1, 3, 32, 32]
         output_shape: [1, 3, 31, 31]
@@ -506,7 +506,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
 
         expect(node, inputs=[x], outputs=[y], name='test_maxpool_2d_default')
 
-    def test_maxpool_2d_pads(self):  # type: () -> None
+    def test_maxpool_2d_pads(self):
         """
         input_shape: [1, 3, 28, 28]
         output_shape: [1, 3, 30, 30]
@@ -534,7 +534,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
 
         expect(node, inputs=[x], outputs=[y], name='test_maxpool_2d_pads')
 
-    def test_maxpool_2d_strides(self):  # type: () -> None
+    def test_maxpool_2d_strides(self):
         """
         input_shape: [1, 3, 32, 32]
         output_shape: [1, 3, 10, 10]
@@ -558,7 +558,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
 
         expect(node, inputs=[x], outputs=[y], name='test_maxpool_2d_strides')
 
-    def test_reshape(self):  # type: () -> None
+    def test_reshape(self):
 
         def reshape_reference_implementation(data, shape):  # type: (np.ndarray, np.ndarray) -> np.ndarray
             # replace zeros with corresponding dim size
@@ -595,7 +595,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
             expect(node, inputs=[data, shape], outputs=[reshaped],
                    name='test_reshape_' + test_name)
 
-    def test_concat(self):  # type: () -> None
+    def test_concat(self):
         test_cases = {
             # '1d': ([1, 2], not support 1d
             #    [3, 4]),
@@ -631,7 +631,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
                 expect(node, inputs=[v for v in values], outputs=[output],
                        name='test_concat_' + test_case + '_axis_negative_' + str(abs(i)))
 
-    def test_flatten(self):  # type: () -> None
+    def test_flatten(self):
         shape = (2, 3, 4, 5)
         a = np.random.random_sample(shape).astype(np.float32)
 
@@ -649,7 +649,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
             expect(node, inputs=[a], outputs=[b],
                    name='test_flatten_axis' + str(i))
 
-    def test_flatten_with_default_axis(self):  # type: () -> None
+    def test_flatten_with_default_axis(self):
         node = onnx.helper.make_node(
             'Flatten',
             inputs=['a'],
@@ -663,7 +663,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[a], outputs=[b],
                name='test_flatten_default_axis')
 
-    def test_flatten_negative_axis(self):  # type: () -> None
+    def test_flatten_negative_axis(self):
         shape = (2, 3, 4, 5)
         a = np.random.random_sample(shape).astype(np.float32)
 
@@ -680,7 +680,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
             expect(node, inputs=[a], outputs=[b],
                    name='test_flatten_negative_axis' + str(abs(i)))
 
-    def test_add(self):  # type: () -> None
+    def test_add(self):
         node = onnx.helper.make_node(
             'Add',
             inputs=['x', 'y'],
@@ -692,7 +692,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[x + y],
                name='test_add')
 
-    def test_add_broadcast(self):  # type: () -> None
+    def test_add_broadcast(self):
         node = onnx.helper.make_node(
             'Add',
             inputs=['x', 'y'],
@@ -705,7 +705,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[x + y],
                name='test_add_bcast')
 
-    def test_sum(self):  # type: () -> None
+    def test_sum(self):
         data_0 = np.array([3, 0, 2]).astype(np.float32)
         data_1 = np.array([1, 3, 4]).astype(np.float32)
         data_2 = np.array([2, 6, 6]).astype(np.float32)
@@ -735,7 +735,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[data_0, data_1], outputs=[result],
                name='test_sum_two_inputs')
 
-    def test_relu(self):  # type: () -> None
+    def test_relu(self):
         node = onnx.helper.make_node(
             'Relu',
             inputs=['x'],
@@ -747,7 +747,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_relu')
 
-    def test_sigmoid(self):  # type: () -> None
+    def test_sigmoid(self):
         node = onnx.helper.make_node(
             'Sigmoid',
             inputs=['x'],
@@ -765,7 +765,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_sigmoid')
 
-    def test_matmul(self):  # type: () -> None
+    def test_matmul(self):
         node = onnx.helper.make_node(
             'MatMul',
             inputs=['a', 'b'],
@@ -793,7 +793,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         # expect(node, inputs=[a, b], outputs=[c],
         #        name='test_matmul_4d')
 
-    def test_cos(self):  # type: () -> None
+    def test_cos(self):
         node = onnx.helper.make_node(
             'Cos',
             inputs=['x'],
@@ -810,7 +810,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_cos')
 
-    def test_cosh(self):  # type: () -> None
+    def test_cosh(self):
         node = onnx.helper.make_node(
             'Cosh',
             inputs=['x'],
@@ -827,7 +827,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_cosh')
 
-    def test_Sin(self):  # type: () -> None
+    def test_Sin(self):
         node = onnx.helper.make_node(
             'Sin',
             inputs=['x'],
@@ -844,7 +844,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_sin')
 
-    def test_Sinh(self):  # type: () -> None
+    def test_Sinh(self):
         node = onnx.helper.make_node(
             'Sinh',
             inputs=['x'],
@@ -861,7 +861,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_sinh')
 
-    def test_Tan(self):  # type: () -> None
+    def test_Tan(self):
         node = onnx.helper.make_node(
             'Tan',
             inputs=['x'],
@@ -878,7 +878,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_tan')
 
-    def test_Tanh(self):  # type: () -> None
+    def test_Tanh(self):
         node = onnx.helper.make_node(
             'Tanh',
             inputs=['x'],
@@ -895,7 +895,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_tanh')
 
-    def test_Acos(self):  # type: () -> None
+    def test_Acos(self):
         node = onnx.helper.make_node(
             'Acos',
             inputs=['x'],
@@ -912,7 +912,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_acos')
 
-    def test_Acosh(self):  # type: () -> None
+    def test_Acosh(self):
         node = onnx.helper.make_node(
             'Acosh',
             inputs=['x'],
@@ -929,7 +929,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_acosh')
 
-    def test_Asin(self):  # type: () -> None
+    def test_Asin(self):
         node = onnx.helper.make_node(
             'Asin',
             inputs=['x'],
@@ -946,7 +946,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_asin')
 
-    def test_Asinh(self):  # type: () -> None
+    def test_Asinh(self):
         node = onnx.helper.make_node(
             'Asinh',
             inputs=['x'],
@@ -963,7 +963,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_asinh')
 
-    def test_Atan(self):  # type: () -> None
+    def test_Atan(self):
         node = onnx.helper.make_node(
             'Atan',
             inputs=['x'],
@@ -980,7 +980,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_atan')
 
-    def test_Atanh(self):  # type: () -> None
+    def test_Atanh(self):
         node = onnx.helper.make_node(
             'Atanh',
             inputs=['x'],
@@ -997,7 +997,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_atanh')
 
-    def test_selu(self):  # type: () -> None
+    def test_selu(self):
         node = onnx.helper.make_node(
             'Selu',
             inputs=['x'],
@@ -1019,7 +1019,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_selu')
 
-    def test_selu_default(self):  # type: () -> None
+    def test_selu_default(self):
         default_alpha = 1.67326319217681884765625
         default_gamma = 1.05070102214813232421875
         node = onnx.helper.make_node(
@@ -1033,7 +1033,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_selu_default')
 
-    def test_elu(self):  # type: () -> None
+    def test_elu(self):
         node = onnx.helper.make_node(
             'Elu',
             inputs=['x'],
@@ -1052,7 +1052,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_elu')
 
-    def test_elu_default(self):  # type: () -> None
+    def test_elu_default(self):
         default_alpha = 1.0
         node = onnx.helper.make_node(
             'Elu',
@@ -1065,7 +1065,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_elu_default')
 
-    def test_equal(self):  # type: () -> None
+    def test_equal(self):
         node = onnx.helper.make_node(
             'Equal',
             inputs=['x', 'y'],
@@ -1079,7 +1079,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_equal')
 
-    def test_equal_broadcast(self):  # type: () -> None
+    def test_equal_broadcast(self):
         node = onnx.helper.make_node(
             'Equal',
             inputs=['x', 'y'],
@@ -1092,7 +1092,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_equal_bcast')
 
-    def test_less(self):  # type: () -> None
+    def test_less(self):
         node = onnx.helper.make_node(
             'Less',
             inputs=['x', 'y'],
@@ -1105,7 +1105,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_less')
 
-    def test_less_broadcast(self):  # type: () -> None
+    def test_less_broadcast(self):
         node = onnx.helper.make_node(
             'Less',
             inputs=['x', 'y'],
@@ -1118,7 +1118,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_less_bcast')
 
-    def test_sign(self):  # type: () -> None
+    def test_sign(self):
         node = onnx.helper.make_node(
             'Sign',
             inputs=['x'],
@@ -1130,7 +1130,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_sign')
 
-    def test_sub(self):  # type: () -> None
+    def test_sub(self):
         node = onnx.helper.make_node(
             'Sub',
             inputs=['x', 'y'],
@@ -1149,7 +1149,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_sub')
 
-    def test_sub_broadcast(self):  # type: () -> None
+    def test_sub_broadcast(self):
         node = onnx.helper.make_node(
             'Sub',
             inputs=['x', 'y'],
@@ -1162,7 +1162,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_sub_bcast')
 
-    def test_sqrt(self):  # type: () -> None
+    def test_sqrt(self):
         node = onnx.helper.make_node(
             'Sqrt',
             inputs=['x'],
@@ -1179,7 +1179,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_sqrt')
 
-    def test_log(self):  # type: () -> None
+    def test_log(self):
         node = onnx.helper.make_node(
             'Log',
             inputs=['x'],
@@ -1196,7 +1196,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_log')
 
-    def test_greater(self):  # type: () -> None
+    def test_greater(self):
         node = onnx.helper.make_node(
             'Greater',
             inputs=['x', 'y'],
@@ -1209,7 +1209,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_greater')
 
-    def test_greater_broadcast(self):  # type: () -> None
+    def test_greater_broadcast(self):
         node = onnx.helper.make_node(
             'Greater',
             inputs=['x', 'y'],
@@ -1222,7 +1222,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_greater_bcast')
 
-    def test_hardsigmoid(self):  # type: () -> None
+    def test_hardsigmoid(self):
         node = onnx.helper.make_node(
             'HardSigmoid',
             inputs=['x'],
@@ -1241,7 +1241,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_hardsigmoid')
 
-    def test_hardsigmoid_default(self):  # type: () -> None
+    def test_hardsigmoid_default(self):
         default_alpha = 0.2
         default_beta = 0.5
         node = onnx.helper.make_node(
@@ -1334,7 +1334,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[data_0, data_1], outputs=[result],
                name='test_mean_two_inputs')
 
-    def test_transpose_default(self):  # type: () -> None
+    def test_transpose_default(self):
         shape = (2, 3, 4)
         data = np.random.random_sample(shape).astype(np.float32)
 
@@ -1348,7 +1348,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[data], outputs=[transposed],
                name='test_transpose_default')
 
-    def test_transpose_all_permutations(self):  # type: () -> None
+    def test_transpose_all_permutations(self):
         shape = (2, 3, 4)
         data = np.random.random_sample(shape).astype(np.float32)
         permutations = list(itertools.permutations(np.arange(len(shape))))
@@ -1450,7 +1450,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_shape')
 
-    def test_and(self):  # type: () -> None
+    def test_and(self):
         node = onnx.helper.make_node(
             'And',
             inputs=['x', 'y'],
@@ -1478,7 +1478,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_and4d')
                
-    def test_and_broadcast(self):  # type: () -> None
+    def test_and_broadcast(self):
         node = onnx.helper.make_node(
             'And',
             inputs=['x', 'y'],
@@ -1548,7 +1548,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_or4d')
 
-    def test_or_broadcast(self):  # type: () -> None
+    def test_or_broadcast(self):
         node = onnx.helper.make_node(
             'Or',
             inputs=['x', 'y'],
@@ -1590,7 +1590,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_or_bcast4v4d')
 
-    def test_xor(self):  # type: () -> None
+    def test_xor(self):
         node = onnx.helper.make_node(
             'Xor',
             inputs=['x', 'y'],
@@ -1618,7 +1618,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_xor4d')
 
-    def test_xor_broadcast(self):  # type: () -> None
+    def test_xor_broadcast(self):
         node = onnx.helper.make_node(
             'Xor',
             inputs=['x', 'y'],
@@ -1716,7 +1716,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_reciprocal')
 
-    def test_batchnorm(self):  # type: () -> None
+    def test_batchnorm(self):
         # we changed this test cases
         # according to the paper https://arxiv.org/pdf/1502.03167.pdf
         def _batchnorm_test_mode(x, s, bias, mean, var, momentum=0.9, epsilon=1e-5):  # type: ignore
@@ -1769,7 +1769,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, s, bias, mean, var], outputs=[y],
                name='test_batchnorm_epsilon')
 
-    def test_softmax(self):  # type: () -> None
+    def test_softmax(self):
         node = onnx.helper.make_node(
             'Softmax',
             inputs=['x'],
@@ -1781,7 +1781,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_softmax_example')
 
-    def test_softmax_axis(self):  # type: () -> None
+    def test_softmax_axis(self):
         def softmax_2d(x):  # type: (np.ndarray) -> np.ndarray
             max_x = np.max(x, axis=1).reshape((-1, 1))
             exp_x = np.exp(x - max_x)
@@ -1850,7 +1850,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x], outputs=[y],
                name='test_softmax_negative_axis')
 
-    def test_div(self):  # type: () -> None
+    def test_div(self):
         node = onnx.helper.make_node(
             'Div',
             inputs=['x', 'y'],
@@ -1869,7 +1869,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
             name='test_div')
 
-    def test_div_broadcast(self):  # type: () -> None
+    def test_div_broadcast(self):
         node = onnx.helper.make_node(
             'Div',
             inputs=['x', 'y'],
@@ -1902,7 +1902,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_pow')
 
-    def test_pow_broadcast(self):  # type: () -> None
+    def test_pow_broadcast(self):
         node = onnx.helper.make_node(
             'Pow',
             inputs=['x', 'y'],
@@ -1969,7 +1969,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, min_val, max_val], outputs=[y],
                name='test_clip_splitbounds')
 
-    def test_clip_default(self):  # type: () -> None
+    def test_clip_default(self):
         node = onnx.helper.make_node(
             'Clip',
             inputs=['x', 'min'],
@@ -2020,7 +2020,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
                name='test_prelu_example')
 
     #todo, not support prelu broadcast
-    def test_prelu_broadcast(self):  # type: () -> None
+    def test_prelu_broadcast(self):
         node = onnx.helper.make_node(
             'PRelu',
             inputs=['x', 'slope'],
@@ -2053,7 +2053,7 @@ class TestPythonOnnxBackend(unittest.TestCase):
         expect(node, inputs=[x, y], outputs=[z],
                name='test_mul')
 
-    def test_mul_broadcast(self):  # type: () -> None
+    def test_mul_broadcast(self):
         node = onnx.helper.make_node(
             'Mul',
             inputs=['x', 'y'],
@@ -2065,6 +2065,167 @@ class TestPythonOnnxBackend(unittest.TestCase):
         z = x * y
         expect(node, inputs=[x, y], outputs=[z],
                name='test_mul_bcast')
+
+    def test_gemm_default_zero_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([3, 5]).astype(np.float32)
+        b = np.random.ranf([5, 4]).astype(np.float32)
+        c = np.zeros([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_zero_bias')
+
+    def test_gemm_default_no_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b'],
+            outputs=['y']
+        )
+        a = np.random.ranf([2, 10]).astype(np.float32)
+        b = np.random.ranf([10, 3]).astype(np.float32)
+        y = gemm_reference_implementation(a, b)
+        expect(node, inputs=[a, b], outputs=[y],
+                name='test_gemm_default_no_bias')
+
+    def test_gemm_default_scalar_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([2, 3]).astype(np.float32)
+        b = np.random.ranf([3, 4]).astype(np.float32)
+        c = np.array(3.14).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_scalar_bias')
+
+    def test_gemm_default_single_elem_vector_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([3, 7]).astype(np.float32)
+        b = np.random.ranf([7, 3]).astype(np.float32)
+        c = np.random.ranf([1]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_single_elem_vector_bias')
+
+    def test_gemm_default_vector_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([2, 7]).astype(np.float32)
+        b = np.random.ranf([7, 4]).astype(np.float32)
+        c = np.random.ranf([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_vector_bias')
+
+    def test_gemm_default_matrix_bias(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y']
+        )
+        a = np.random.ranf([3, 6]).astype(np.float32)
+        b = np.random.ranf([6, 4]).astype(np.float32)
+        c = np.random.ranf([3, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_default_matrix_bias')
+
+    def test_gemm_transposeA(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            transA=1
+        )
+        a = np.random.ranf([6, 3]).astype(np.float32)
+        b = np.random.ranf([6, 4]).astype(np.float32)
+        c = np.zeros([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, transA=1)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_transposeA')
+
+    def test_gemm_transposeB(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            transB=1
+        )
+        a = np.random.ranf([3, 6]).astype(np.float32)
+        b = np.random.ranf([4, 6]).astype(np.float32)
+        c = np.zeros([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, transB=1)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_transposeB')
+
+    def test_gemm_alpha(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            alpha=0.5
+        )
+        a = np.random.ranf([3, 5]).astype(np.float32)
+        b = np.random.ranf([5, 4]).astype(np.float32)
+        c = np.zeros([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, alpha=0.5)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_alpha')
+
+    def test_gemm_beta(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            beta=0.5
+        )
+        a = np.random.ranf([2, 7]).astype(np.float32)
+        b = np.random.ranf([7, 4]).astype(np.float32)
+        c = np.random.ranf([1, 4]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, beta=0.5)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_beta')
+
+    def test_gemm_all_attributes(self):
+        node = onnx.helper.make_node(
+            'Gemm',
+            inputs=['a', 'b', 'c'],
+            outputs=['y'],
+            alpha=0.25,
+            beta=0.35,
+            transA=1,
+            transB=1
+        )
+        a = np.random.ranf([4, 3]).astype(np.float32)
+        b = np.random.ranf([5, 4]).astype(np.float32)
+        c = np.random.ranf([1, 5]).astype(np.float32)
+        y = gemm_reference_implementation(a, b, c, transA=1, transB=1, alpha=0.25, beta=0.35)
+        expect(node, inputs=[a, b, c], outputs=[y],
+                name='test_gemm_all_attributes')
+
+
+def gemm_reference_implementation(A, B, C=None, alpha=1., beta=1., transA=0,
+                                transB=0):  # type: (np.ndarray, np.ndarray, Optional[np.ndarray], float, float, int, int) -> np.ndarray
+    A = A if transA == 0 else A.T
+    B = B if transB == 0 else B.T
+    C = C if C is not None else np.array(0)
+
+    Y = alpha * np.dot(A, B) + beta * C
+
+    return Y
 
 
 # return padding shape of conv2d or pooling
@@ -2140,6 +2301,9 @@ def pool(padded,  # type: np.ndarray
         else:
             y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
     return y.astype(np.float32)
+
+
+
 
 
 if __name__ == '__main__':
