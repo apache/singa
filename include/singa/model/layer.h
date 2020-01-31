@@ -19,11 +19,11 @@
 #ifndef SINGA_MODEL_LAYER_H_
 #define SINGA_MODEL_LAYER_H_
 
-#include <memory>
-#include <stack>
-#include <string>
-#include <utility>
 #include <vector>
+#include <string>
+#include <stack>
+#include <utility>
+#include <memory>
 #include "singa/core/tensor.h"
 #include "singa/proto/model.pb.h"
 #include "singa/utils/factory.h"
@@ -53,9 +53,10 @@ class Layer {
     this->Setup(in_shapes, conf);
   }
 
+
   // ============= Following Functions could be override =====================
   /// Destruct objects created by this layer.
-  virtual ~Layer(){};
+  virtual ~Layer() {};
 
   /// Each layer sub-class would optionaly have a type name.
   /// Used for debugging and logging.
@@ -155,15 +156,17 @@ class Layer {
   // virtual Layer* Clone(std::shared_ptr<Device> device);
   /// Move the layer (including its parameters and other internal Tensor) onto
   /// the given device
-  virtual void ToDevice(std::shared_ptr<Device> device) {}
+  virtual void ToDevice(std::shared_ptr<Device> device) {
+  }
 
   /// Set the data type of Tensor in this layer.
-  virtual void AsType(DataType dtype) {}
+  virtual void AsType(DataType dtype) {
+  }
 
   /// Serialize the layer info (including params) into a LayerConf proto message
   virtual void ToProto(LayerConf* conf) const {
-    // conf->set_name(name_);
-    // for (const auto& spec : param_specs_) {
+    //conf->set_name(name_);
+    //for (const auto& spec : param_specs_) {
     //  ParamSpec* p = conf->add_param();
     //  p->CopyFrom(spec);
     //}
@@ -192,7 +195,9 @@ class Layer {
   }
 
   /// Return pointers to parameter Tensor s.
-  virtual const vector<Tensor> param_values() { return vector<Tensor>{}; }
+  virtual const vector<Tensor> param_values() {
+    return vector<Tensor>{};
+  }
 
   /// Return names of all parmaeters.
   const vector<string> param_names() {

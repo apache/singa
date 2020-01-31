@@ -23,8 +23,8 @@
 #include "singa/singa_config.h"
 #ifdef USE_CUDNN
 
-#include "cudnn_utils.h"
 #include "lrn.h"
+#include "cudnn_utils.h"
 
 namespace singa {
 class CudnnLRN : public LRN {

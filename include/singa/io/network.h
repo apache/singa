@@ -24,16 +24,16 @@
 #include "singa/singa_config.h"
 #ifdef ENABLE_DIST
 #include <ev.h>
-#include <netinet/in.h>
-#include <atomic>
-#include <condition_variable>
-#include <map>
-#include <mutex>
-#include <queue>
-#include <string>
 #include <thread>
 #include <unordered_map>
+#include <map>
 #include <vector>
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
+#include <string>
+#include <netinet/in.h>
+#include <queue>
 
 namespace singa {
 
@@ -60,7 +60,7 @@ class EndPoint;
 class EndPointFactory;
 
 class Message {
- private:
+private:
   uint8_t type_;
   uint32_t id_;
   std::size_t msize_ = 0;
@@ -73,7 +73,7 @@ class Message {
   friend class NetworkThread;
   friend class EndPoint;
 
- public:
+public:
   Message(int = MSG_DATA, uint32_t = 0);
   Message(const Message &) = delete;
   Message(Message &&);
@@ -90,7 +90,7 @@ class Message {
 };
 
 class EndPoint {
- private:
+private:
   std::queue<Message *> send_;
   std::queue<Message *> recv_;
   std::queue<Message *> to_ack_;
@@ -99,7 +99,7 @@ class EndPoint {
   struct sockaddr_in addr_;
   ev_timer timer_;
   ev_tstamp last_msg_time_;
-  int fd_[2] = {-1, -1};  // two endpoints simultaneously connect to each other
+  int fd_[2] = { -1, -1 }; // two endpoints simultaneously connect to each other
   int pfd_ = -1;
   bool is_socket_loop_ = false;
   int conn_status_ = CONN_INIT;
@@ -111,13 +111,13 @@ class EndPoint {
   friend class NetworkThread;
   friend class EndPointFactory;
 
- public:
+public:
   int send(Message *);
   Message *recv();
 };
 
 class EndPointFactory {
- private:
+private:
   std::unordered_map<uint32_t, EndPoint *> ip_ep_map_;
   std::condition_variable map_cv_;
   std::mutex map_mtx_;
@@ -126,7 +126,7 @@ class EndPointFactory {
   EndPoint *getOrCreateEp(uint32_t ip);
   friend class NetworkThread;
 
- public:
+public:
   EndPointFactory(NetworkThread *thread) : thread_(thread) {}
   ~EndPointFactory();
   EndPoint *getEp(const char *host);
@@ -134,7 +134,7 @@ class EndPointFactory {
 };
 
 class NetworkThread {
- private:
+private:
   struct ev_loop *loop_;
   ev_async ep_sig_;
   ev_async msg_sig_;
@@ -153,7 +153,7 @@ class NetworkThread {
   void asyncSendPendingMsg(EndPoint *);
   void afterConnEst(EndPoint *ep, int fd, bool active);
 
- public:
+public:
   EndPointFactory *epf_;
 
   NetworkThread(int);

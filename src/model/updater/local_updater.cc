@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include <vector>
 #include "singa/model/updater.h"
+#include <vector>
 
 namespace singa {
 

@@ -21,18 +21,18 @@
 #include "singa/singa_config.h"
 #ifdef ENABLE_DIST
 
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
-#include <atomic>
-
 #include "singa/io/network.h"
 #include "singa/utils/integer.h"
 #include "singa/utils/logging.h"
+
+#include <sys/socket.h>
+#include <netdb.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <arpa/inet.h>
+
+#include <atomic>
 
 namespace singa {
 
@@ -200,6 +200,7 @@ NetworkThread::NetworkThread(int port) {
 }
 
 void NetworkThread::doWork() {
+
   // prepare event loop
   if (!(loop_ = ev_default_loop(0))) {
     // log here
@@ -238,19 +239,20 @@ void NetworkThread::doWork() {
 
   ev_set_userdata(loop_, this);
 
-  while (1) ev_run(loop_, 0);
+  while (1)
+    ev_run(loop_, 0);
 }
 
 void NetworkThread::notify(int signal) {
   switch (signal) {
-    case SIG_EP:
-      ev_async_send(this->loop_, &this->ep_sig_);
-      break;
-    case SIG_MSG:
-      ev_async_send(this->loop_, &this->msg_sig_);
-      break;
-    default:
-      break;
+  case SIG_EP:
+    ev_async_send(this->loop_, &this->ep_sig_);
+    break;
+  case SIG_MSG:
+    ev_async_send(this->loop_, &this->msg_sig_);
+    break;
+  default:
+    break;
   }
 }
 
@@ -262,6 +264,7 @@ void NetworkThread::onNewEp() {
     std::unique_lock<std::mutex> ep_lock(ep->mtx_);
     int &fd = ep->fd_[0];
     if (ep->conn_status_ == CONN_INIT) {
+
       fd = socket(AF_INET, SOCK_STREAM, 0);
       if (fd < 0) {
         // resources not available
@@ -314,6 +317,7 @@ void NetworkThread::onNewEp() {
 }
 
 void NetworkThread::onConnEst(int fd) {
+
   // EndPoint* ep = epf_->getEp(this->fd_ip_map_[fd]);
   CHECK(fd_ep_map_.count(fd) > 0);
   EndPoint *ep = fd_ep_map_.at(fd);
@@ -335,6 +339,7 @@ void NetworkThread::onConnEst(int fd) {
       ep->cv_.notify_all();
 
   } else {
+
     afterConnEst(ep, fd, true);
 
     // ep->conn_status_ = CONN_EST;
@@ -377,6 +382,7 @@ void NetworkThread::onNewConn() {
 }
 
 void NetworkThread::onTimeout(struct ev_timer *timer) {
+
   EndPoint *ep = reinterpret_cast<EndPoint *>(timer->data);
 
   ev_tstamp timeout = EP_TIMEOUT + ep->last_msg_time_;
@@ -385,11 +391,13 @@ void NetworkThread::onTimeout(struct ev_timer *timer) {
   std::unique_lock<std::mutex> lock(ep->mtx_);
   if (now > timeout) {
     if (!ep->to_ack_.empty() || !ep->send_.empty()) {
+
       LOG(INFO) << "EndPoint " << inet_ntoa(ep->addr_.sin_addr) << " timeouts";
       // we consider this ep has been disconnected
       for (int i = 0; i < 2; ++i) {
         int fd = ep->fd_[i];
-        if (fd >= 0) handleConnLost(fd, ep);
+        if (fd >= 0)
+          handleConnLost(fd, ep);
       }
       return;
     }
@@ -411,6 +419,7 @@ void NetworkThread::onTimeout(struct ev_timer *timer) {
  * @param active indicate whethen this socket is locally initiated or not
  */
 void NetworkThread::afterConnEst(EndPoint *ep, int fd, bool active) {
+
   if (active)
     LOG(INFO) << "Connected to " << inet_ntoa(ep->addr_.sin_addr)
               << ", fd = " << fd;
@@ -443,7 +452,8 @@ void NetworkThread::afterConnEst(EndPoint *ep, int fd, bool active) {
   ev_io_start(loop_, &fd_rwatcher_map_[fd]);
 
   // stop watching the writable watcher if necessary
-  if (active) ev_io_stop(loop_, &fd_wwatcher_map_[fd]);
+  if (active)
+    ev_io_stop(loop_, &fd_wwatcher_map_[fd]);
   ev_io_init(&fd_wwatcher_map_[fd], writable_cb, fd, EV_WRITE);
 
   ep->last_msg_time_ = ev_now(loop_);
@@ -473,7 +483,7 @@ void NetworkThread::afterConnEst(EndPoint *ep, int fd, bool active) {
       }
     }
   } else {
-    ep->pfd_ = fd;  // set the primary fd
+    ep->pfd_ = fd; // set the primary fd
     ep->conn_status_ = CONN_EST;
 
     // start timeout watcher to detect the liveness of EndPoint
@@ -508,10 +518,12 @@ void NetworkThread::onSend(int fd) {
     for (auto &p : fd_ep_map_) {
       // send message
       // LOG(INFO) << "Try to send over fd " << p.first;
-      if (asyncSend(p.first) < 0) invalid_fd.push_back(p.first);
+      if (asyncSend(p.first) < 0)
+        invalid_fd.push_back(p.first);
     }
   } else {
-    if (asyncSend(fd) < 0) invalid_fd.push_back(fd);
+    if (asyncSend(fd) < 0)
+      invalid_fd.push_back(fd);
   }
 
   for (auto &p : invalid_fd) {
@@ -548,6 +560,7 @@ void NetworkThread::asyncSendPendingMsg(EndPoint *ep) {
  *
  */
 int NetworkThread::asyncSend(int fd) {
+
   // EndPoint* ep = epf_->getEp(fd_ip_map_[fd]);
   CHECK(fd_ep_map_.count(fd) > 0);
   EndPoint *ep = fd_ep_map_.at(fd);
@@ -564,6 +577,7 @@ int NetworkThread::asyncSend(int fd) {
     goto out;
 
   while (!ep->send_.empty()) {
+
     Message &msg = *ep->send_.front();
     int nbytes;
 
@@ -628,13 +642,15 @@ int NetworkThread::asyncSend(int fd) {
     // }
   }
 out:
-  if (ep->send_.empty()) ev_io_stop(loop_, &this->fd_wwatcher_map_[fd]);
+  if (ep->send_.empty())
+    ev_io_stop(loop_, &this->fd_wwatcher_map_[fd]);
   return 0;
 err:
   return -1;
 }
 
 void NetworkThread::onRecv(int fd) {
+
   Message *m = &pending_msgs_[fd];
   Message &msg = (*m);
   int nread;
@@ -771,7 +787,8 @@ void NetworkThread::handleConnLost(int fd, EndPoint *ep, bool reconn) {
   close(fd);
 
   if (fd == ep->pfd_) {
-    if (!ep->send_.empty()) ep->send_.front()->processed_ = 0;
+    if (!ep->send_.empty())
+      ep->send_.front()->processed_ = 0;
   }
 
   int sfd = (fd == ep->fd_[0]) ? ep->fd_[1] : ep->fd_[0];
@@ -783,7 +800,8 @@ void NetworkThread::handleConnLost(int fd, EndPoint *ep, bool reconn) {
   if (reconn) {
     // see if the other fd is alive or not
     if (sfd < 0) {
-      if (ep->conn_status_ == CONN_EST) ev_timer_stop(loop_, &ep->timer_);
+      if (ep->conn_status_ == CONN_EST)
+        ev_timer_stop(loop_, &ep->timer_);
       if (ep->retry_cnt_ < MAX_RETRY_CNT) {
         // notify myself for retry
         ep->retry_cnt_++;
@@ -813,4 +831,4 @@ void NetworkThread::handleConnLost(int fd, EndPoint *ep, bool reconn) {
 }
 }
 
-#endif  // ENABLE_DIST
+#endif // ENABLE_DIST

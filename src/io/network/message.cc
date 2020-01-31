@@ -40,11 +40,13 @@ Message::Message(Message &&msg) {
 }
 
 Message::Message(int type, uint32_t ack_msg_id) : type_(type), id_(ack_msg_id) {
-  if (type_ == MSG_ACK) appendInteger(mdata_, type_, id_);
+  if (type_ == MSG_ACK)
+    appendInteger(mdata_, type_, id_);
 }
 
 Message::~Message() {
-  if (msg_) free(msg_);
+  if (msg_)
+    free(msg_);
 }
 
 std::size_t Message::getSize() {

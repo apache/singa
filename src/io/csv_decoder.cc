@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-#include <sstream>
-#include <string>
 #include "singa/io/decoder.h"
+#include <string>
+#include <sstream>
 
 const int kMaxCSVBufSize = 40960;
 
@@ -29,7 +29,8 @@ std::vector<Tensor> CSVDecoder::Decode(std::string value) {
   std::stringstream ss;
   ss.str(value);
   int l = 0;
-  if (has_label_ == true) ss >> l;
+  if (has_label_ == true)
+    ss >> l;
   std::string str;
   float d[kMaxCSVBufSize];
   int size = 0;
@@ -41,11 +42,11 @@ std::vector<Tensor> CSVDecoder::Decode(std::string value) {
     }
   }
 
-  Tensor data(Shape{static_cast<size_t>(size)}, kFloat32);
+  Tensor data(Shape {static_cast<size_t>(size)}, kFloat32);
   data.CopyDataFromHostPtr(d, size);
   output.push_back(data);
   if (has_label_ == true) {
-    Tensor label(Shape{1}, kInt);
+    Tensor label(Shape {1}, kInt);
     label.CopyDataFromHostPtr(&l, 1);
     output.push_back(label);
   }

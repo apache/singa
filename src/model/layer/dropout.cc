@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "./dropout.h"
 #include "singa/model/layer.h"
+#include "./dropout.h"
 namespace singa {
 
 RegisterLayerClass(singa_dropout, Dropout);
@@ -27,7 +27,7 @@ RegisterLayerClass(singacl_dropout, Dropout);
 void Dropout::Setup(const Shape& in_sample, const LayerConf& conf) {
   Layer::Setup(in_sample, conf);
   dropout_ratio_ = conf.dropout_conf().dropout_ratio();
-  out_sample_shape_ = in_sample;
+  out_sample_shape_= in_sample;
 }
 
 const Tensor Dropout::Forward(int flag, const Tensor& input) {

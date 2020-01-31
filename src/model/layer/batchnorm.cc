@@ -18,8 +18,8 @@
 * under the License.
 *
 ************************************************************/
-#include "batchnorm.h"
 #include <vector>
+#include "batchnorm.h"
 
 namespace singa {
 RegisterLayerClass(singa_batchnorm, BatchNorm);

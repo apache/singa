@@ -21,11 +21,12 @@
 
 #include "singa/model/feed_forward_net.h"
 #include "singa/model/initializer.h"
-#include "singa/utils/channel.h"
 #include "singa/utils/logging.h"
+#include "singa/utils/channel.h"
 namespace singa {
 
-FeedForwardNet::~FeedForwardNet() {}
+FeedForwardNet::~FeedForwardNet() {
+}
 
 std::shared_ptr<Layer> FeedForwardNet::Add(std::shared_ptr<Layer> layer) {
   layers_.push_back(layer);
@@ -33,7 +34,7 @@ std::shared_ptr<Layer> FeedForwardNet::Add(std::shared_ptr<Layer> layer) {
 }
 
 std::shared_ptr<Layer> FeedForwardNet::Add(const LayerConf& conf,
-                                           const Shape* sample_shape) {
+    const Shape* sample_shape) {
   std::shared_ptr<Layer> layer(CreateLayer(conf.type()));
   CHECK(conf.has_name()) << "Must set layer name";
   if (sample_shape == nullptr)
@@ -128,7 +129,7 @@ void FeedForwardNet::AsType(DataType dtype) {
 void FeedForwardNet::Train(size_t batchsize, int nb_epoch, const Tensor& x,
                            const Tensor& y, float val_split) {
   CHECK_EQ(x.shape(0), y.shape(0)) << "Diff num of sampels in x and y";
-  size_t num_train = (size_t)(x.shape(0) * val_split);
+  size_t num_train = (size_t) (x.shape(0) * val_split);
   if (val_split == 0.0f) {
     Tensor dummy;
     Train(batchsize, nb_epoch, x, y, dummy, dummy);

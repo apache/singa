@@ -19,19 +19,18 @@
 *
 *************************************************************/
 
-#include <iostream>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-
-#include "singa/io/snapshot.h"
 #include "singa/singa_config.h"
+#include "singa/io/snapshot.h"
+
+#include <string>
+#include <unordered_set>
+#include <unordered_map>
+#include <memory>
+#include <utility>
+#include <iostream>
 
 namespace singa {
-Snapshot::Snapshot(const std::string& prefix, Mode mode,
-                   int max_param_size /*in MB*/)
+Snapshot::Snapshot(const std::string& prefix, Mode mode, int max_param_size /*in MB*/)
     : prefix_(prefix),
       mode_(mode),
       bin_writer_ptr_(mode_ == kWrite ? (new io::BinFileWriter) : nullptr),
@@ -43,10 +42,10 @@ Snapshot::Snapshot(const std::string& prefix, Mode mode,
     text_writer_ptr_->Open(prefix + ".desc", io::kCreate);
 
     // write the current version ids
-    // text_writer_ptr_->Write("SINGA_VERSION", std::to_string(SINGA_VERSION));
-    text_writer_ptr_->Write("",
-                            "SINGA VERSION: " + std::to_string(SINGA_VERSION));
+    //text_writer_ptr_->Write("SINGA_VERSION", std::to_string(SINGA_VERSION));
+    text_writer_ptr_->Write("", "SINGA VERSION: " + std::to_string(SINGA_VERSION));
   } else if (mode == kRead) {
+
     /*
     auto text_reader_ptr = new io::TextFileReader();
     text_reader_ptr->Open(prefix + ".desc");
@@ -60,15 +59,13 @@ Snapshot::Snapshot(const std::string& prefix, Mode mode,
     std::string key, val;
     if (!bin_reader_ptr_->Open(prefix + ".bin", max_param_size << 20))
       CHECK(bin_reader_ptr_->Open(prefix + ".model", max_param_size << 20))
-          << "Cannot open the checkpoint bin file:"
-          << prefix + ".bin (>=1.0.1) "
-          << " or " << prefix + " .model (used by 1.0.0)";
+        << "Cannot open the checkpoint bin file:" << prefix + ".bin (>=1.0.1) "
+        <<" or " << prefix + " .model (used by 1.0.0)";
     singa::TensorProto tp;
     while (bin_reader_ptr_->Read(&key, &val)) {
       /*
       if (key == "SINGA_VERSION") {
-        CHECK(version_ == std::stoi(val)) << key << " in .bin and .desc
-      mismatch: "
+        CHECK(version_ == std::stoi(val)) << key << " in .bin and .desc mismatch: "
           << val << " (bin) vs " << version_ << " (desc)";
         continue;
       }
@@ -79,7 +76,7 @@ Snapshot::Snapshot(const std::string& prefix, Mode mode,
       CHECK(tp.ParseFromString(val));
       param_map_[key].FromProto(tp);
     }
-    // need ro set version_ by getting data form param_map_["SINGA_VERSION"]?
+    //need ro set version_ by getting data form param_map_["SINGA_VERSION"]?
   } else {
     LOG(FATAL)
         << "Mode for snapshot should be Snapshot::kWrite or Snapshot::kRead";
@@ -95,7 +92,7 @@ void Snapshot::Write(const std::string& key, const Tensor& param) {
   std::string serialized_str;
   CHECK(tp.SerializeToString(&serialized_str));
   bin_writer_ptr_->Write(key, serialized_str);
-  //  bin_writer_ptr_->Flush();
+//  bin_writer_ptr_->Flush();
 
   std::string desc_str = "parameter name: " + key;
   Shape shape = param.shape();
@@ -104,7 +101,7 @@ void Snapshot::Write(const std::string& key, const Tensor& param) {
   desc_str += "\tshape:";
   for (size_t s : shape) desc_str += " " + std::to_string(s);
   text_writer_ptr_->Write(key, desc_str);
-  // text_writer_ptr_->Flush();
+ // text_writer_ptr_->Flush();
 }
 
 std::vector<std::pair<std::string, Tensor>> Snapshot::Read() {

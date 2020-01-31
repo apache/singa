@@ -17,8 +17,8 @@
  */
 #ifndef SINGA_MODEL_LAYER_SOFTMAX_H_
 #define SINGA_MODEL_LAYER_SOFTMAX_H_
-#include <stack>
 #include "singa/model/layer.h"
+#include <stack>
 namespace singa {
 /// Do softmax for 1D or 2D tensors along the last dimension.
 class Softmax : public Layer {

@@ -54,7 +54,8 @@ bool TextFileWriter::Write(const std::string& key, const std::string& value) {
 }
 
 void TextFileWriter::Flush() {
-  if (fdat_.is_open()) fdat_.flush();
+  if (fdat_.is_open())
+    fdat_.flush();
 }
 }  // namespace io
 }  // namespace singa
