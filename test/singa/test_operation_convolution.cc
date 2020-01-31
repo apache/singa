@@ -27,14 +27,13 @@
 #include "gtest/gtest.h"
 
 using namespace singa;
+#ifdef USE_DNNL
 
-#ifdef USE_MKLDNN
-
-TEST(Operation_Convolution, Forward) {
+TEST(DNNLOperation_Convolution, Forward) {
   const size_t batch_size = 2, c = 1, h = 3, w = 3;
   const float x[batch_size * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
-                                          7.0f, 8.0f, 9.0f, 1.0f, 2.0f, 3.0f,
-                                          4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
+                                           7.0f, 8.0f, 9.0f, 1.0f, 2.0f, 3.0f,
+                                           4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
   Tensor in(Shape{batch_size, c, h, w});
   in.CopyDataFromHostPtr(x, batch_size * c * h * w);
 
@@ -45,18 +44,18 @@ TEST(Operation_Convolution, Forward) {
   const std::vector<size_t> padding = {1, 1};
   const bool bias_flag = true;
 
-  const float we[num_filters * kernel_w * kernel_h] = {1.0f, 1.0f, 0.0f,
-                                                       0.0f, 0.0f, -1.0f,
-                                                       0.0f, 1.0f, 0.0f};
+  const float we[num_filters * kernel_w * kernel_h] = {
+      1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
   Tensor weight(Shape{num_filters, num_filters, 3, 3});
-  weight.CopyDataFromHostPtr(we, num_filters * num_filters * kernel_w * kernel_h);
+  weight.CopyDataFromHostPtr(we,
+                             num_filters * num_filters * kernel_w * kernel_h);
 
   const float b[num_filters] = {1.0f};
   Tensor bias(Shape{num_filters});
   bias.CopyDataFromHostPtr(b, num_filters);
 
-
-  ConvHandle conv_handle(in, {kernel_w, kernel_h}, stride, padding, c, num_filters, bias_flag);
+  ConvHandle conv_handle(in, {kernel_w, kernel_h}, stride, padding, c,
+                         num_filters, bias_flag);
   Tensor out1 = CpuConvForward(in, weight, bias, conv_handle);
 
   const float *out_ptr1 = out1.data<float>();
@@ -73,7 +72,7 @@ TEST(Operation_Convolution, Forward) {
   EXPECT_EQ(12.0f, out_ptr1[7]);
 }
 
-TEST(Operation_Convolution, Backward) {
+TEST(DNNLOperation_Convolution, Backward) {
   const size_t batch_size = 2, c = 1, h = 3, w = 3;
   const float x[batch_size * c * h * w] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f,
                                            7.0f, 8.0f, 9.0f, 1.0f, 2.0f, 3.0f,
@@ -88,18 +87,18 @@ TEST(Operation_Convolution, Backward) {
   const std::vector<size_t> padding = {1, 1};
   const bool bias_flag = true;
 
-  const float we[num_filters * kernel_w * kernel_h] = {1.0f, 1.0f, 0.0f,
-                                                       0.0f, 0.0f, -1.0f,
-                                                       0.0f, 1.0f, 0.0f};
+  const float we[num_filters * kernel_w * kernel_h] = {
+      1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
   Tensor weight(Shape{num_filters, num_filters, 3, 3});
-  weight.CopyDataFromHostPtr(we, num_filters * num_filters * kernel_w * kernel_h);
+  weight.CopyDataFromHostPtr(we,
+                             num_filters * num_filters * kernel_w * kernel_h);
 
   const float b[num_filters] = {1.0f};
   Tensor bias(Shape{num_filters});
   bias.CopyDataFromHostPtr(b, num_filters);
 
-
-  ConvHandle conv_handle(in, {kernel_w, kernel_h}, stride, padding, c, num_filters, bias_flag);
+  ConvHandle conv_handle(in, {kernel_w, kernel_h}, stride, padding, c,
+                         num_filters, bias_flag);
   Tensor out1 = CpuConvForward(in, weight, bias, conv_handle);
 
   // grad
@@ -118,9 +117,9 @@ TEST(Operation_Convolution, Backward) {
   EXPECT_EQ(dy[0] * wptr[5] + dy[1] * wptr[3], dx[1]);
   EXPECT_EQ(dy[1] * wptr[4], dx[2]);
   EXPECT_EQ(dy[0] * wptr[7] + dy[2] * wptr[1], dx[3]);
-  EXPECT_EQ(
-      dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] + dy[3] * wptr[0],
-      dx[4]);
+  EXPECT_EQ(dy[0] * wptr[8] + dy[1] * wptr[6] + dy[2] * wptr[2] +
+                dy[3] * wptr[0],
+            dx[4]);
   EXPECT_EQ(dy[1] * wptr[7] + dy[3] * wptr[1], dx[5]);
   EXPECT_EQ(dy[2] * wptr[4], dx[6]);
   EXPECT_EQ(dy[2] * wptr[5] + dy[3] * wptr[3], dx[7]);
@@ -129,18 +128,16 @@ TEST(Operation_Convolution, Backward) {
   EXPECT_EQ(dy[4] * wptr[5] + dy[1] * wptr[3], dx[10]);
   EXPECT_EQ(dy[5] * wptr[4], dx[11]);
   EXPECT_EQ(dy[4] * wptr[7] + dy[2] * wptr[1], dx[12]);
-  EXPECT_EQ(
-      dy[4] * wptr[8] + dy[5] * wptr[6] + dy[6] * wptr[2] + dy[7] * wptr[0],
-      dx[13]);
+  EXPECT_EQ(dy[4] * wptr[8] + dy[5] * wptr[6] + dy[6] * wptr[2] +
+                dy[7] * wptr[0],
+            dx[13]);
   EXPECT_EQ(dy[5] * wptr[7] + dy[7] * wptr[1], dx[14]);
   EXPECT_EQ(dy[6] * wptr[4], dx[15]);
   EXPECT_EQ(dy[6] * wptr[5] + dy[7] * wptr[3], dx[16]);
   EXPECT_EQ(dy[7] * wptr[4], dx[17]);
 
-
   Tensor dw = CpuConvBackwardW(grad, in, weight, conv_handle);
   Tensor db = CpuConvBackwardb(grad, bias, conv_handle);
-
 
   const float *dbptr = db.data<float>();
   EXPECT_FLOAT_EQ(dy[0] + dy[1] + dy[2] + dy[3] + dy[4] + dy[5] + dy[6] + dy[7],
@@ -155,8 +152,8 @@ TEST(Operation_Convolution, Backward) {
   EXPECT_FLOAT_EQ(dy[1] * x[1] + dy[5] * x[10] + dy[3] * x[7] + dy[7] * x[16],
                   dwptr[3]);
   EXPECT_FLOAT_EQ(dy[0] * x[0] + dy[4] * x[9] + dy[1] * x[2] + dy[5] * x[11] +
-                  dy[2] * x[6] + dy[6] * x[15] + dy[3] * x[8] +
-                  dy[7] * x[17],
+                      dy[2] * x[6] + dy[6] * x[15] + dy[3] * x[8] +
+                      dy[7] * x[17],
                   dwptr[4]);
   EXPECT_FLOAT_EQ(dy[0] * x[1] + dy[4] * x[10] + dy[2] * x[7] + dy[6] * x[16],
                   dwptr[5]);
@@ -166,6 +163,7 @@ TEST(Operation_Convolution, Backward) {
   EXPECT_FLOAT_EQ(dy[0] * x[4] + dy[4] * x[13], dwptr[8]);
 }
 
-#endif  // USE_MKLDNN
+#endif // USE_DNNL
+
 
 #endif  // USE_CBLAS

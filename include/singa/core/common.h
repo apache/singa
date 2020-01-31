@@ -34,14 +34,15 @@
 #endif
 #endif // USE_CUDA
 
+#ifdef USE_DNNL
+#include <dnnl.hpp>
+#endif // USE_DNNL
+
 
 #ifdef USE_OPENCL
 #include "singa/utils/opencl_utils.h"
 #endif  // USE_OPENCL
 
-#ifdef USE_MKLDNN
-#include <mkldnn.hpp>
-#endif  // USE_MKLDNN
 
 using std::atomic;
 
@@ -110,14 +111,16 @@ typedef struct _Context {
 #endif
 #endif // USE_CUDA
 
+#ifdef USE_DNNL
+  dnnl::engine dnnl_engine;
+  dnnl::stream dnnl_stream;
+#endif // USE_DNNL
+
 #ifdef USE_OPENCL
   // This stores the context ID of the OpenCL context controlled by ViennaCL.
   long vcl_ctx_id;
 #endif
 
-#ifdef USE_MKLDNN
-  mkldnn::engine *engine;
-#endif  // USE_MKLDNN
 
 } Context;
 
