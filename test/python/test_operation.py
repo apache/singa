@@ -2745,55 +2745,59 @@ class TestPythonOperation(unittest.TestCase):
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx0)), grad0, decimal=5)
             np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx1)), grad1, decimal=5)
 
-    def test_globalaveragepool_channel_first(self):
-        devs = [gpu_dev, cpu_dev]
-        for dev in devs:
-            X = np.array([[[
-                [1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 9],
-            ]]]).astype(np.float32)
-            XT = np.array([[[[5]]]]).astype(np.float32)
-            DY = np.ones((1, 1, 1, 1), dtype=np.float32)
+    def globalaveragepool_channel_first(self, dev):
+        X = np.array([[[
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+        ]]]).astype(np.float32)
+        XT = np.array([[[[5]]]]).astype(np.float32)
+        DY = np.ones((1, 1, 1, 1), dtype=np.float32)
 
-            x = tensor.from_numpy(X)
-            x.to_device(dev)
-            dy = tensor.from_numpy(DY)
-            dy.to_device(dev)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+        dy = tensor.from_numpy(DY)
+        dy.to_device(dev)
 
-            result = autograd.globalaveragepool(x)
-            dx = result.creator.backward(dy.data)
+        result = autograd.globalaveragepool(x)
+        dx = result.creator.backward(dy.data)
 
-            DX = np.ones(X.shape, dtype=np.float32)
-            DX = np.multiply(DX, DY) / np.prod(X.shape[2:])
+        DX = np.ones(X.shape, dtype=np.float32)
+        DX = np.multiply(DX, DY) / np.prod(X.shape[2:])
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
 
-    def test_globalaveragepool_channel_last(self):
-        devs = [gpu_dev, cpu_dev]
-        for dev in devs:
-            X = np.array([[
-                [[1], [2], [3]],
-                [[4], [5], [6]],
-                [[7], [8], [9]],
-            ]]).astype(np.float32)
-            XT = np.array([[[[5]]]]).astype(np.float32)
-            DY = np.ones((1, 1, 1, 1), dtype=np.float32)
+    def globalaveragepool_channel_last(self, dev):
+        X = np.array([[
+            [[1], [2], [3]],
+            [[4], [5], [6]],
+            [[7], [8], [9]],
+        ]]).astype(np.float32)
+        XT = np.array([[[[5]]]]).astype(np.float32)
+        DY = np.ones((1, 1, 1, 1), dtype=np.float32)
 
-            x = tensor.from_numpy(X)
-            x.to_device(dev)
-            dy = tensor.from_numpy(DY)
-            dy.to_device(dev)
+        x = tensor.from_numpy(X)
+        x.to_device(dev)
+        dy = tensor.from_numpy(DY)
+        dy.to_device(dev)
 
-            result = autograd.globalaveragepool(x, 'channel_last')
-            dx = result.creator.backward(dy.data)
+        result = autograd.globalaveragepool(x, 'channel_last')
+        dx = result.creator.backward(dy.data)
 
-            DX = np.ones(X.shape, dtype=np.float32)
-            DX = np.multiply(DX, DY) / np.prod(X.shape[1:-1])
+        DX = np.ones(X.shape, dtype=np.float32)
+        DX = np.multiply(DX, DY) / np.prod(X.shape[1:-1])
 
-            np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
-            np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(result), XT, decimal=5)
+        np.testing.assert_array_almost_equal(tensor.to_numpy(tensor.from_raw_tensor(dx)), DX, decimal=5)
+
+    def test_globalaveragepool_cpu(self):
+        self.globalaveragepool_channel_first(cpu_dev)
+        self.globalaveragepool_channel_last(cpu_dev)
+
+    def test_globalaveragepool_gpu(self):
+        self.globalaveragepool_channel_first(gpu_dev)
+        self.globalaveragepool_channel_last(gpu_dev)
 
 if __name__ == '__main__':
     unittest.main()
