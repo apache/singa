@@ -21,8 +21,8 @@
 
 #include "./cifar10.h"
 #include "singa/model/feed_forward_net.h"
-#include "singa/model/metric.h"
 #include "singa/model/optimizer.h"
+#include "singa/model/metric.h"
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
 namespace singa {
@@ -53,7 +53,7 @@ LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
   ParamSpec *bspec = conf.add_param();
   bspec->set_name(name + "_bias");
   bspec->set_lr_mult(2);
-  //  bspec->set_decay_mult(0);
+//  bspec->set_decay_mult(0);
   return conf;
 }
 
@@ -144,8 +144,8 @@ void Train(int num_epoch, string data_dir) {
     auto train = data.ReadTrainData();
     size_t nsamples = train.first.shape(0);
     auto mtrain =
-        Reshape(train.first, Shape{nsamples, train.first.Size() / nsamples});
-    const Tensor &mean = Average(mtrain, 0);
+         Reshape(train.first, Shape{nsamples, train.first.Size() / nsamples});
+    const Tensor& mean = Average(mtrain, 0);
     SubRow(mean, &mtrain);
     train_x = Reshape(mtrain, train.first.shape());
     train_y = train.second;

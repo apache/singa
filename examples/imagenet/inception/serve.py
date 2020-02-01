@@ -90,9 +90,9 @@ def serve(agent, net, use_cpu, parameter_file, topk=5):
                 response = "Sorry, error triggered sys.exit() during prediction."
             agent.push(MsgType.kResponse, response)
         elif MsgType.kCommandStop.equal(msg_type):
-            print('get stop command')
-            agent.push(MsgType.kStatus, "success")
-            break
+                print('get stop command')
+                agent.push(MsgType.kStatus, "success")
+                break
         else:
             print('get unsupported message %s' % str(msg_type))
             agent.push(MsgType.kStatus, "Unknown command")
@@ -109,8 +109,7 @@ def main():
         parser.add_argument("--model", choices=['v3', 'v4'], default='v4')
         parser.add_argument("-p", "--port", default=9999, help="listen port")
         parser.add_argument("-C", "--use_cpu", action="store_true")
-        parser.add_argument("--parameter_file",
-                            default="inception_v4.pickle",
+        parser.add_argument("--parameter_file", default="inception_v4.pickle",
                             help="relative path")
 
         # Process arguments

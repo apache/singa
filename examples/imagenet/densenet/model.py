@@ -35,17 +35,12 @@ conv_bias = False
 def add_dense_connected_layers(name, net, growth_rate):
     net.add(BatchNormalization('%s/bn1' % name))
     net.add(Activation('%s/relu1' % name))
-    net.add(
-        Conv2D('%s/conv1' % name,
-               4 * growth_rate,
-               1,
-               1,
-               pad=0,
-               use_bias=conv_bias))
+    net.add(Conv2D('%s/conv1' % name, 4 * growth_rate, 1, 1,
+                   pad=0, use_bias=conv_bias))
     net.add(BatchNormalization('%s/bn2' % name))
     net.add(Activation('%s/relu2' % name))
-    return net.add(
-        Conv2D('%s/conv2' % name, growth_rate, 3, 1, pad=1, use_bias=conv_bias))
+    return net.add(Conv2D('%s/conv2' % name, growth_rate, 3, 1,
+                          pad=1, use_bias=conv_bias))
 
 
 def add_layer(name, net, growth_rate):
@@ -58,19 +53,12 @@ def add_transition(name, net, n_channels, last=False):
     net.add(BatchNormalization('%s/norm' % name))
     lyr = net.add(Activation('%s/relu' % name))
     if last:
-        net.add(
-            AvgPooling2D('%s/pool' % name,
-                         lyr.get_output_sample_shape()[1:3],
-                         pad=0))
+        net.add(AvgPooling2D('%s/pool' % name, 
+                             lyr.get_output_sample_shape()[1:3], pad=0))
         net.add(Flatten('flat'))
     else:
-        net.add(
-            Conv2D('%s/conv' % name,
-                   n_channels,
-                   1,
-                   1,
-                   pad=0,
-                   use_bias=conv_bias))
+        net.add(Conv2D('%s/conv' % name, n_channels, 1, 1, 
+                       pad=0, use_bias=conv_bias))
         net.add(AvgPooling2D('%s/pool' % name, 2, 2, pad=0))
 
 
@@ -102,32 +90,26 @@ def densenet_base(depth, growth_rate=32, reduction=0.5):
     growth_rate = 48 if depth == 161 else 32
     n_channels = 2 * growth_rate
 
-    net.add(
-        Conv2D('input/conv',
-               n_channels,
-               7,
-               2,
-               pad=3,
-               use_bias=conv_bias,
-               input_sample_shape=(3, 224, 224)))
+    net.add(Conv2D('input/conv', n_channels, 7, 2, pad=3, 
+                   use_bias=conv_bias, input_sample_shape=(3, 224, 224)))
     net.add(BatchNormalization('input/bn'))
     net.add(Activation('input/relu'))
     net.add(MaxPooling2D('input/pool', 3, 2, pad=1))
 
     # Dense-Block 1 and transition (56x56)
     n_channels = add_block('block1', net, n_channels, stages[0], growth_rate)
-    add_transition('trans1', net, int(math.floor(n_channels * reduction)))
-    n_channels = math.floor(n_channels * reduction)
+    add_transition('trans1', net, int(math.floor(n_channels*reduction)))
+    n_channels = math.floor(n_channels*reduction)
 
     # Dense-Block 2 and transition (28x28)
     n_channels = add_block('block2', net, n_channels, stages[1], growth_rate)
-    add_transition('trans2', net, int(math.floor(n_channels * reduction)))
-    n_channels = math.floor(n_channels * reduction)
+    add_transition('trans2', net, int(math.floor(n_channels*reduction)))
+    n_channels = math.floor(n_channels*reduction)
 
     # Dense-Block 3 and transition (14x14)
     n_channels = add_block('block3', net, n_channels, stages[2], growth_rate)
-    add_transition('trans3', net, int(math.floor(n_channels * reduction)))
-    n_channels = math.floor(n_channels * reduction)
+    add_transition('trans3', net, int(math.floor(n_channels*reduction)))
+    n_channels = math.floor(n_channels*reduction)
 
     # Dense-Block 4 and transition (7x7)
     n_channels = add_block('block4', net, n_channels, stages[3], growth_rate)
@@ -181,7 +163,6 @@ def create_net(depth, nb_classes, dense=0, use_cpu=True):
 
     net.add(layer.Dense('sigmoid', nb_classes))
     return net
-
 
 if __name__ == '__main__':
     create_net(121, 1000)

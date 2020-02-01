@@ -18,10 +18,10 @@
 * under the License.
 *
 *************************************************************/
-#include <cstdint>
 #include <fstream>
-#include <iostream>
 #include <string>
+#include <cstdint>
+#include <iostream>
 #include "singa/core/tensor.h"
 using std::string;
 namespace singa {

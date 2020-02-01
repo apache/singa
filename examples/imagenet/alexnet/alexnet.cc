@@ -174,8 +174,7 @@ void TrainOneEpoch(FeedForwardNet &net, ILSVRC &data,
   size_t b = 0;
   size_t n_read;
   Timer timer, ttr;
-  Tensor prefetch_x(Shape{batchsize, 3, kCropSize, kCropSize}),
-      prefetch_y(Shape{batchsize}, kInt);
+  Tensor prefetch_x(Shape{batchsize, 3, kCropSize, kCropSize}), prefetch_y(Shape{batchsize}, kInt);
   string binfile = bin_folder + "/train1.bin";
   timer.Tick();
   data.LoadData(kTrain, binfile, batchsize, &prefetch_x, &prefetch_y, &n_read,
@@ -343,21 +342,20 @@ int main(int argc, char **argv) {
   singa::InitChannel(nullptr);
   int pos = singa::ArgPos(argc, argv, "-h");
   if (pos != -1) {
-    std::cout
-        << "Usage:\n"
-        << "\t-epoch <int>: number of epoch to be trained, default is 90;\n"
-        << "\t-lr <float>: base learning rate;\n"
-        << "\t-batchsize <int>: batchsize, it should be changed regarding "
-           "to your memory;\n"
-        << "\t-filesize <int>: number of training images that stores in "
-           "each binary file;\n"
-        << "\t-ntrain <int>: number of training images;\n"
-        << "\t-ntest <int>: number of test images;\n"
-        << "\t-data <folder>: the folder which stores the binary files;\n"
-        << "\t-pfreq <int>: the frequency(in batch) of printing current "
-           "model status(loss and accuracy);\n"
-        << "\t-nthreads <int>`: the number of threads to load data which "
-           "feed to the model.\n";
+    std::cout << "Usage:\n"
+              << "\t-epoch <int>: number of epoch to be trained, default is 90;\n"
+              << "\t-lr <float>: base learning rate;\n"
+              << "\t-batchsize <int>: batchsize, it should be changed regarding "
+                 "to your memory;\n"
+              << "\t-filesize <int>: number of training images that stores in "
+                 "each binary file;\n"
+              << "\t-ntrain <int>: number of training images;\n"
+              << "\t-ntest <int>: number of test images;\n"
+              << "\t-data <folder>: the folder which stores the binary files;\n"
+              << "\t-pfreq <int>: the frequency(in batch) of printing current "
+                 "model status(loss and accuracy);\n"
+              << "\t-nthreads <int>`: the number of threads to load data which "
+                 "feed to the model.\n";
     return 0;
   }
   pos = singa::ArgPos(argc, argv, "-epoch");

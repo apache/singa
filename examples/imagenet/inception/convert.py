@@ -25,7 +25,7 @@ def rename(name, suffix):
     p = name.rfind("/")
     if p == -1:
         print("Bad name=%s" % name)
-    return name[0:p + 1] + suffix
+    return name[0 : p + 1] + suffix
 
 
 def convert(model, file_name):
@@ -82,10 +82,13 @@ def convert(model, file_name):
     except Exception as e:  # pylint: disable=broad-except
         print(str(e))
         if "corrupted compressed block contents" in str(e):
-            print("It's likely that your checkpoint file has been compressed "
-                  "with SNAPPY.")
-        if "Data loss" in str(e) and (any(
-            [e in file_name for e in [".index", ".meta", ".data"]])):
+            print(
+                "It's likely that your checkpoint file has been compressed "
+                "with SNAPPY."
+            )
+        if "Data loss" in str(e) and (
+            any([e in file_name for e in [".index", ".meta", ".data"]])
+        ):
             proposed_file = ".".join(file_name.split(".")[0:-1])
             v2_file_error_template = """
     It's likely that this is a V2 checkpoint and you need to provide

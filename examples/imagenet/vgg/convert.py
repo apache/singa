@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 '''Extract the net parameters from the pytorch file and store them
 as python dict using cPickle. Must install pytorch.
 '''
@@ -28,6 +29,7 @@ try:
     import cPickle as pickle
 except ModuleNotFoundError:
     import pickle
+
 
 model_urls = {
     'vgg11': 'https://download.pytorch.org/models/vgg11-bbd30ac9.pth',
@@ -55,7 +57,7 @@ def rename(pname):
         suffix = 'running_var'
     else:
         suffix = pname[p2 + 1:]
-    return pname[p1 + 1:p2] + '.' + suffix
+    return pname[p1+1:p2] + '.' + suffix
 
 
 if __name__ == '__main__':
@@ -63,8 +65,7 @@ if __name__ == '__main__':
                             'dict. ')
     parser.add_argument("depth", type=int, choices=[11, 13, 16, 19])
     parser.add_argument("outfile")
-    parser.add_argument("--batchnorm",
-                        action='store_true',
+    parser.add_argument("--batchnorm", action='store_true',
                         help='use batchnorm or not')
 
     args = parser.parse_args()

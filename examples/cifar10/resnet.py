@@ -32,11 +32,9 @@ from singa import net as ffnet
 def Block(net, name, nb_filters, stride):
     split = net.add(layer.Split(name + "-split", 2))
     if stride > 1:
-        net.add(layer.Conv2D(name + "-br2-conv", nb_filters, 1, stride, pad=0),
-                split)
+        net.add(layer.Conv2D(name + "-br2-conv", nb_filters, 1, stride, pad=0), split)
         br2bn = net.add(layer.BatchNormalization(name + "-br2-bn"))
-    net.add(layer.Conv2D(name + "-br1-conv1", nb_filters, 3, stride, pad=1),
-            split)
+    net.add(layer.Conv2D(name + "-br1-conv1", nb_filters, 3, stride, pad=1), split)
     net.add(layer.BatchNormalization(name + "-br1-bn1"))
     net.add(layer.Activation(name + "-br1-relu"))
     net.add(layer.Conv2D(name + "-br1-conv2", nb_filters, 3, 1, pad=1))
@@ -52,8 +50,7 @@ def create_net(use_cpu=False):
         layer.engine = 'singacpp'
 
     net = ffnet.FeedForwardNet(loss.SoftmaxCrossEntropy(), metric.Accuracy())
-    net.add(
-        layer.Conv2D("conv1", 16, 3, 1, pad=1, input_sample_shape=(3, 32, 32)))
+    net.add(layer.Conv2D("conv1", 16, 3, 1, pad=1, input_sample_shape=(3, 32, 32)))
     net.add(layer.BatchNormalization("bn1"))
     net.add(layer.Activation("relu1"))
 

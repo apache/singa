@@ -72,7 +72,7 @@ def load_train_data(dir_path, num_batches=5):
 
 def load_test_data(dir_path):
     images, labels = load_dataset(dir_path + "/test_batch")
-    return np.array(images, dtype=np.float32), np.array(labels, dtype=np.int32)
+    return np.array(images,  dtype=np.float32), np.array(labels, dtype=np.int32)
 
 
 def normalize_for_vgg(train_x, test_x):
@@ -121,12 +121,7 @@ def caffe_lr(epoch):
         return 0.0001
 
 
-def train(data,
-          net,
-          max_epoch,
-          get_lr,
-          weight_decay,
-          batch_size=100,
+def train(data, net, max_epoch, get_lr, weight_decay, batch_size=100,
           use_cpu=False):
     print('Start intialization............')
     if use_cpu:
@@ -153,15 +148,14 @@ def train(data,
         with trange(num_train_batch) as t:
             t.set_description('Epoch={}'.format(epoch))
             for b in t:
-                x = train_x[idx[b * batch_size:(b + 1) * batch_size]]
-                y = train_y[idx[b * batch_size:(b + 1) * batch_size]]
+                x = train_x[idx[b * batch_size: (b + 1) * batch_size]]
+                y = train_y[idx[b * batch_size: (b + 1) * batch_size]]
                 tx.copy_from_numpy(x)
                 ty.copy_from_numpy(y)
                 grads, (l, a) = net.train(tx, ty)
                 loss += l
                 acc += a
-                for (s, p, g) in zip(net.param_names(), net.param_values(),
-                                     grads):
+                for (s, p, g) in zip(net.param_names(), net.param_values(), grads):
                     opt.apply_with_lr(epoch, get_lr(epoch), g, p, str(s), b)
                 t.set_postfix(loss=l, accuracy=a)
 
@@ -171,23 +165,21 @@ def train(data,
 
         loss, acc = 0.0, 0.0
         for b in range(num_test_batch):
-            x = test_x[b * batch_size:(b + 1) * batch_size]
-            y = test_y[b * batch_size:(b + 1) * batch_size]
+            x = test_x[b * batch_size: (b + 1) * batch_size]
+            y = test_y[b * batch_size: (b + 1) * batch_size]
             tx.copy_from_numpy(x)
             ty.copy_from_numpy(y)
             l, a = net.evaluate(tx, ty)
             loss += l
             acc += a
 
-        print('Test loss = %f, test accuracy = %f' % ((loss / num_test_batch),
-                                                      (acc / num_test_batch)))
+        print('Test loss = %f, test accuracy = %f' %
+              ((loss / num_test_batch), (acc / num_test_batch)))
     net.save('model', 20)  # save model params into checkpoint file
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train dcnn for cifar10')
-    parser.add_argument('model',
-                        choices=['vgg', 'cnn', 'resnet', 'caffe'],
+    parser.add_argument('model', choices=['vgg', 'cnn', 'resnet', 'caffe'],
                         default='vgg')
     parser.add_argument('data', default='cifar-10-batches-py')
     parser.add_argument('--use_cpu', action='store_true')
@@ -201,11 +193,7 @@ if __name__ == '__main__':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = caffe_net.create_net(args.use_cpu)
         # for cifar10_full_train_test.prototxt
-        train((train_x, train_y, test_x, test_y),
-              net,
-              160,
-              alexnet_lr,
-              0.004,
+        train((train_x, train_y, test_x, test_y), net, 160, alexnet_lr, 0.004,
               use_cpu=args.use_cpu)
         # for cifar10_quick_train_test.prototxt
         # train((train_x, train_y, test_x, test_y), net, 18, caffe_lr, 0.004,
@@ -213,27 +201,15 @@ if __name__ == '__main__':
     elif args.model == 'cnn':
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = cnn.create_net(args.use_cpu)
-        train((train_x, train_y, test_x, test_y),
-              net,
-              2,
-              alexnet_lr,
-              0.004,
+        train((train_x, train_y, test_x, test_y), net, 2, alexnet_lr, 0.004,
               use_cpu=args.use_cpu)
     elif args.model == 'vgg':
         train_x, test_x = normalize_for_vgg(train_x, test_x)
         net = vgg.create_net(args.use_cpu)
-        train((train_x, train_y, test_x, test_y),
-              net,
-              250,
-              vgg_lr,
-              0.0005,
+        train((train_x, train_y, test_x, test_y), net, 250, vgg_lr, 0.0005,
               use_cpu=args.use_cpu)
     else:
         train_x, test_x = normalize_for_alexnet(train_x, test_x)
         net = resnet.create_net(args.use_cpu)
-        train((train_x, train_y, test_x, test_y),
-              net,
-              200,
-              resnet_lr,
-              1e-4,
+        train((train_x, train_y, test_x, test_y), net, 200, resnet_lr, 1e-4,
               use_cpu=args.use_cpu)

@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
+
+
 """
 http://arxiv.org/abs/1602.07261.
 
@@ -24,6 +26,7 @@ http://arxiv.org/abs/1602.07261.
 Refer to
 https://github.com/tensorflow/models/blob/master/slim/nets/inception_v4.py
 """
+
 
 from __future__ import absolute_import
 from __future__ import division
@@ -38,11 +41,10 @@ ffnet.verbose = True
 
 
 def conv2d(net, name, nb_filter, k, s=1, border_mode='SAME', src=None):
-    net.add(
-        Conv2D(name, nb_filter, k, s, border_mode=border_mode, use_bias=False),
-        src)
+    net.add(Conv2D(name, nb_filter, k, s, border_mode=border_mode,
+                   use_bias=False), src)
     net.add(BatchNormalization('%s/BatchNorm' % name))
-    return net.add(Activation(name + '/relu'))
+    return net.add(Activation(name+'/relu'))
 
 
 def block_inception_a(blk, net):
@@ -64,26 +66,14 @@ def block_reduction_a(blk, net):
     """Builds Reduction-A block for Inception v4 network."""
     # By default use stride=1 and SAME padding
     s = net.add(Split('%s/Split' % blk, 3))
-    br0 = conv2d(net,
-                 '%s/Branch_0/Conv2d_1a_3x3' % blk,
-                 384,
-                 3,
-                 2,
-                 border_mode='VALID',
-                 src=s)
+    br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 384, 3, 2,
+                 border_mode='VALID', src=s)
     conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 192, 1, src=s)
     conv2d(net, '%s/Branch_1/Conv2d_0b_3x3' % blk, 224, 3)
-    br1 = conv2d(net,
-                 '%s/Branch_1/Conv2d_1a_3x3' % blk,
-                 256,
-                 3,
-                 2,
+    br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, 256, 3, 2,
                  border_mode='VALID')
-    br2 = net.add(
-        MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk,
-                     3,
-                     2,
-                     border_mode='VALID'), s)
+    br2 = net.add(MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk, 3, 2,
+                               border_mode='VALID'), s)
     return net.add(Concat('%s/Concat' % blk, 1), [br0, br1, br2])
 
 
@@ -110,26 +100,15 @@ def block_reduction_b(blk, net):
     # By default use stride=1 and SAME padding
     s = net.add(Split('%s/Split' % blk, 3))
     conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 192, 1, src=s)
-    br0 = conv2d(net,
-                 '%s/Branch_0/Conv2d_1a_3x3' % blk,
-                 192,
-                 3,
-                 2,
+    br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 192, 3, 2,
                  border_mode='VALID')
     conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 256, 1, src=s)
     conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 256, (1, 7))
     conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, 320, (7, 1))
-    br1 = conv2d(net,
-                 '%s/Branch_1/Conv2d_1a_3x3' % blk,
-                 320,
-                 3,
-                 2,
+    br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, 320, 3, 2,
                  border_mode='VALID')
-    br2 = net.add(
-        MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk,
-                     3,
-                     2,
-                     border_mode='VALID'), s)
+    br2 = net.add(MaxPooling2D('%s/Branch_2/MaxPool_1a_3x3' % blk, 3, 2,
+                               border_mode='VALID'), s)
     return net.add(Concat('%s/Concat' % blk, 1), [br0, br1, br2])
 
 
@@ -158,8 +137,7 @@ def block_inception_c(blk, net):
     return net.add(Concat('%s/Concat' % blk, 1), [br0, br1, br2, br3])
 
 
-def inception_v4_base(sample_shape,
-                      final_endpoint='Inception/Mixed_7d',
+def inception_v4_base(sample_shape, final_endpoint='Inception/Mixed_7d',
                       aux_endpoint='Inception/Mixed_6e'):
     """Creates the Inception V4 network up to the given final endpoint.
 
@@ -193,14 +171,8 @@ def inception_v4_base(sample_shape,
 
     # 299 x 299 x 3
     blk = name + '/Conv2d_1a_3x3'
-    net.add(
-        Conv2D(blk,
-               32,
-               3,
-               2,
-               border_mode='VALID',
-               use_bias=False,
-               input_sample_shape=sample_shape))
+    net.add(Conv2D(blk, 32, 3, 2, border_mode='VALID', use_bias=False,
+                   input_sample_shape=sample_shape))
     net.add(BatchNormalization('%s/BatchNorm' % blk))
     end_points[blk] = net.add(Activation('%s/relu' % blk))
     if final_aux_check(blk):
@@ -221,18 +193,10 @@ def inception_v4_base(sample_shape,
     # 147 x 147 x 64
     blk = name + '/Mixed_3a'
     s = net.add(Split('%s/Split' % blk, 2))
-    br0 = net.add(
-        MaxPooling2D('%s/Branch_0/MaxPool_0a_3x3' % blk,
-                     3,
-                     2,
-                     border_mode='VALID'), s)
-    br1 = conv2d(net,
-                 '%s/Branch_1/Conv2d_0a_3x3' % blk,
-                 96,
-                 3,
-                 2,
-                 border_mode='VALID',
-                 src=s)
+    br0 = net.add(MaxPooling2D('%s/Branch_0/MaxPool_0a_3x3' % blk, 3, 2,
+                               border_mode='VALID'), s)
+    br1 = conv2d(net, '%s/Branch_1/Conv2d_0a_3x3' % blk, 96, 3, 2,
+                 border_mode='VALID', src=s)
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1), [br0, br1])
     if final_aux_check(blk):
         return net, end_points
@@ -241,18 +205,12 @@ def inception_v4_base(sample_shape,
     blk = name + '/Mixed_4a'
     s = net.add(Split('%s/Split' % blk, 2))
     conv2d(net, '%s/Branch_0/Conv2d_0a_1x1' % blk, 64, 1, src=s)
-    br0 = conv2d(net,
-                 '%s/Branch_0/Conv2d_1a_3x3' % blk,
-                 96,
-                 3,
+    br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 96, 3,
                  border_mode='VALID')
     conv2d(net, '%s/Branch_1/Conv2d_0a_1x1' % blk, 64, 1, src=s)
     conv2d(net, '%s/Branch_1/Conv2d_0b_1x7' % blk, 64, (1, 7))
     conv2d(net, '%s/Branch_1/Conv2d_0c_7x1' % blk, 64, (7, 1))
-    br1 = conv2d(net,
-                 '%s/Branch_1/Conv2d_1a_3x3' % blk,
-                 96,
-                 3,
+    br1 = conv2d(net, '%s/Branch_1/Conv2d_1a_3x3' % blk, 96, 3,
                  border_mode='VALID')
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1), [br0, br1])
     if final_aux_check(blk):
@@ -261,18 +219,10 @@ def inception_v4_base(sample_shape,
     # 71 x 71 x 192
     blk = name + '/Mixed_5a'
     s = net.add(Split('%s/Split' % blk, 2))
-    br0 = conv2d(net,
-                 '%s/Branch_0/Conv2d_1a_3x3' % blk,
-                 192,
-                 3,
-                 2,
-                 border_mode='VALID',
-                 src=s)
-    br1 = net.add(
-        MaxPooling2D('%s/Branch_1/MaxPool_1a_3x3' % blk,
-                     3,
-                     2,
-                     border_mode='VALID'), s)
+    br0 = conv2d(net, '%s/Branch_0/Conv2d_1a_3x3' % blk, 192, 3, 2,
+                 border_mode='VALID', src=s)
+    br1 = net.add(MaxPooling2D('%s/Branch_1/MaxPool_1a_3x3' % blk, 3, 2,
+                               border_mode='VALID'), s)
     end_points[blk] = net.add(Concat('%s/Concat' % blk, 1), [br0, br1])
     if final_aux_check(blk):
         return net, end_points
@@ -319,11 +269,8 @@ def inception_v4_base(sample_shape,
         'final_enpoint = %s is not in the net' % final_endpoint
 
 
-def create_net(num_classes=1001,
-               sample_shape=(3, 299, 299),
-               is_training=True,
-               dropout_keep_prob=0.8,
-               final_endpoint='InceptionV4/Mixed_7d',
+def create_net(num_classes=1001, sample_shape=(3, 299, 299), is_training=True,
+               dropout_keep_prob=0.8, final_endpoint='InceptionV4/Mixed_7d',
                aux_endpoint='InceptionV4/Mixed_6e'):
     """Creates the Inception V4 model.
 
@@ -347,17 +294,11 @@ def create_net(num_classes=1001,
         # 17 x 17 x 1024
         aux_logits = end_points[aux_endpoint + '-aux']
         blk = name + '/AuxLogits'
-        net.add(
-            AvgPooling2D('%s/AvgPool_1a_5x5' % blk,
-                         5,
-                         stride=3,
-                         border_mode='VALID'), aux_logits)
+        net.add(AvgPooling2D('%s/AvgPool_1a_5x5' % blk, 5, stride=3,
+                             border_mode='VALID'), aux_logits)
         t = conv2d(net, '%s/Conv2d_1b_1x1' % blk, 128, 1)
-        conv2d(net,
-               '%s/Conv2d_2a' % blk,
-               768,
-               t.get_output_sample_shape()[1:3],
-               border_mode='VALID')
+        conv2d(net, '%s/Conv2d_2a' % blk, 768,
+               t.get_output_sample_shape()[1:3], border_mode='VALID')
         net.add(Flatten('%s/flat' % blk))
         end_points[blk] = net.add(Dense('%s/Aux_logits' % blk, num_classes))
 
@@ -365,10 +306,10 @@ def create_net(num_classes=1001,
     # 8 x 8 x 1536
     blk = name + '/Logits'
     last_layer = end_points[final_endpoint]
-    net.add(
-        AvgPooling2D('%s/AvgPool_1a' % blk,
-                     last_layer.get_output_sample_shape()[1:3],
-                     border_mode='VALID'), last_layer)
+    net.add(AvgPooling2D('%s/AvgPool_1a' % blk,
+                         last_layer.get_output_sample_shape()[1:3],
+                         border_mode='VALID'),
+            last_layer)
     # 1 x 1 x 1536
     net.add(Dropout('%s/Dropout_1b' % blk, 1 - dropout_keep_prob))
     net.add(Flatten('%s/PreLogitsFlatten' % blk))

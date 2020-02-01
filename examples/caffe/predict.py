@@ -27,6 +27,7 @@ from singa import device
 from singa import tensor
 from singa import converter
 
+
 # for debug: print norm of each layer
 # net.verbose = True
 

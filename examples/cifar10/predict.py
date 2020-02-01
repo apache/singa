@@ -75,13 +75,12 @@ def load_train_data(dir_path, num_batches=5):
 
 def load_test_data(dir_path):
     images, labels = load_dataset(dir_path + "/test_batch")
-    return np.array(images, dtype=np.float32), np.array(labels, dtype=np.int32)
+    return np.array(images,  dtype=np.float32), np.array(labels, dtype=np.int32)
 
 
 def compute_image_mean(train_dir):
     images, _ = load_train_data(train_dir)
     return np.average(images, 0)
-
 
 if __name__ == '__main__':
     model = alexnet.create_net(True)

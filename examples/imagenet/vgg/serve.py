@@ -59,7 +59,7 @@ def serve(net, label_map, dev, agent, topk=5):
             try:
                 # process images
                 img = imread(val['image'], mode='RGB').astype(np.float32) / 255
-                height, width = img.shape[:2]
+                height,width = img.shape[:2]
                 img -= mean
                 img /= std
                 img = img.transpose((2, 0, 1))
@@ -104,16 +104,12 @@ def main():
         parser = ArgumentParser(description="VGG inference")
 
         parser.add_argument("--port", default=9999, help="listen port")
-        parser.add_argument("--use_cpu",
-                            action="store_true",
+        parser.add_argument("--use_cpu", action="store_true",
                             help="If set, load models onto CPU devices")
         parser.add_argument("--parameter_file", default="")
-        parser.add_argument("--depth",
-                            type=int,
-                            choices=[11, 13, 16, 19],
+        parser.add_argument("--depth", type=int, choices=[11, 13, 16, 19],
                             default='11')
-        parser.add_argument("--batchnorm",
-                            action='store_true',
+        parser.add_argument("--batchnorm", action='store_true',
                             help='use batchnorm or not')
 
         # Process arguments
