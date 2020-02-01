@@ -203,6 +203,7 @@ class SingaFrontend(object):
         'Not': 'Not',
         'Negative': 'Neg',
         'Reciprocal': 'Reciprocal',
+        'GlobalAveragePool' : 'GlobalAveragePool'
     }
 
     # this dict indicates the operators that need extra handle
@@ -808,6 +809,7 @@ class SingaBackend(Backend):
         'Not': '_not',
         'Neg': 'negative',
         'Reciprocal': 'reciprocal',
+        'GlobalAveragePool' : 'globalaveragepool'
     }
 
     # this dict indicates the operators that need extra handle

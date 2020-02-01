@@ -2141,6 +2141,19 @@ def pool(padded,  # type: np.ndarray
             y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
     return y.astype(np.float32)
 
+    def test_globalaveragepool(self):
+        node = onnx.helper.make_node(
+            'GlobalAveragePool',
+            inputs=['x'],
+            outputs=['y'],
+        )
+        x = np.array([[[
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+        ]]]).astype(np.float32)
+        y = np.array([[[[5]]]]).astype(np.float32)
+        expect(node, inputs=[x], outputs=[y], name='test_globalaveragepool_precomputed')
 
 if __name__ == '__main__':
     unittest.main()
